@@ -105,7 +105,7 @@ namespace System.Diagnostics
         public short CategoryNumber { get { throw null; } }
         public byte[] Data { get { throw null; } }
         public System.Diagnostics.EventLogEntryType EntryType { get { throw null; } }
-        [System.ObsoleteAttribute("EventLogEntry.EventID has been deprecated. Use System.Diagnostics.EventLogEntry.InstanceId.")]
+        [System.ObsoleteAttribute("EventLogEntry.EventID has been deprecated. Use System.Diagnostics.EventLogEntry.InstanceId instead.")]
         public int EventID { get { throw null; } }
         public int Index { get { throw null; } }
         public long InstanceId { get { throw null; } }
@@ -514,7 +514,7 @@ namespace System.Diagnostics.Eventing.Reader
         WdiDiagnostic = (long)1125899906842624,
         Sqm = (long)2251799813685248,
         AuditFailure = (long)4503599627370496,
-        [System.ObsoleteAttribute("Incorrect value: use CorrelationHint2 instead", false)]
+        [System.ObsoleteAttribute("StandardEventKeywords.CorrelationHint has an incorrect value and has been deprecated. Use CorrelationHint2 instead.", false)]
         CorrelationHint = (long)4503599627370496,
         AuditSuccess = (long)9007199254740992,
         CorrelationHint2 = (long)18014398509481984,

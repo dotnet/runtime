@@ -269,7 +269,7 @@ namespace System.Xml
             }
         }
 
-        [Obsolete("XmlReaderSettings.ProhibitDtd has been deprecated. Use the DtdProcessing property.")]
+        [Obsolete("XmlReaderSettings.ProhibitDtd has been deprecated. Use DtdProcessing instead.")]
         public bool ProhibitDtd
         {
             get

@@ -547,7 +547,7 @@ namespace System.Threading
              RegisteredWaitHandle registeredWaitHandle
              );
 
-        [Obsolete("ThreadPool.BindHandle(IntPtr) has been deprecated. Use ThreadPool.BindHandle(SafeHandle).", false)]
+        [Obsolete("ThreadPool.BindHandle(IntPtr) has been deprecated. Use ThreadPool.BindHandle(SafeHandle) instead.", false)]
         [SupportedOSPlatform("windows")]
         public static bool BindHandle(IntPtr osHandle)
         {

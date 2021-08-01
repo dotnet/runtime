@@ -511,7 +511,7 @@ namespace System.Net
             }
         }
 
-        [Obsolete("IPAddress.Address is address family dependent and has been deprecated. Use IPAddress.Equals to perform comparisons.")]
+        [Obsolete("IPAddress.Address is address family dependent and has been deprecated. Use IPAddress.Equals to perform comparisons instead.")]
         public long Address
         {
             get

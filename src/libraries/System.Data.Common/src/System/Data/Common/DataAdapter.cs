@@ -201,7 +201,7 @@ namespace System.Data.Common
             }
         }
 
-        [Obsolete("CloneInternals() has been deprecated. Use the DataAdapter(DataAdapter from) constructor.")]
+        [Obsolete("CloneInternals() has been deprecated. Use the DataAdapter(DataAdapter from) constructor instead.")]
         protected virtual DataAdapter CloneInternals()
         {
             DataAdapter clone = (DataAdapter)Activator.CreateInstance(GetType())!;

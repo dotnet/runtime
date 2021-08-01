@@ -19,28 +19,28 @@ namespace System.IO
         private readonly FileStreamStrategy _strategy;
 
         [EditorBrowsable(EditorBrowsableState.Never)]
-        [Obsolete("This constructor has been deprecated. Use new FileStream(SafeFileHandle handle, FileAccess access).")]
+        [Obsolete("This constructor has been deprecated. Use FileStream(SafeFileHandle handle, FileAccess access) instead.")]
         public FileStream(IntPtr handle, FileAccess access)
             : this(handle, access, true, DefaultBufferSize, DefaultIsAsync)
         {
         }
 
         [EditorBrowsable(EditorBrowsableState.Never)]
-        [Obsolete("This constructor has been deprecated. Use new FileStream(SafeFileHandle handle, FileAccess access) and optionally make a new SafeFileHandle with ownsHandle=false if needed.")]
+        [Obsolete("This constructor has been deprecated. Use FileStream(SafeFileHandle handle, FileAccess access) and optionally make a new SafeFileHandle with ownsHandle=false if needed instead.")]
         public FileStream(IntPtr handle, FileAccess access, bool ownsHandle)
             : this(handle, access, ownsHandle, DefaultBufferSize, DefaultIsAsync)
         {
         }
 
         [EditorBrowsable(EditorBrowsableState.Never)]
-        [Obsolete("This constructor has been deprecated. Use new FileStream(SafeFileHandle handle, FileAccess access, int bufferSize) and optionally make a new SafeFileHandle with ownsHandle=false if needed.")]
+        [Obsolete("This constructor has been deprecated. Use FileStream(SafeFileHandle handle, FileAccess access, int bufferSize) and optionally make a new SafeFileHandle with ownsHandle=false if needed instead.")]
         public FileStream(IntPtr handle, FileAccess access, bool ownsHandle, int bufferSize)
             : this(handle, access, ownsHandle, bufferSize, DefaultIsAsync)
         {
         }
 
         [EditorBrowsable(EditorBrowsableState.Never)]
-        [Obsolete("This constructor has been deprecated. Use new FileStream(SafeFileHandle handle, FileAccess access, int bufferSize, bool isAsync) and optionally make a new SafeFileHandle with ownsHandle=false if needed.")]
+        [Obsolete("This constructor has been deprecated. Use FileStream(SafeFileHandle handle, FileAccess access, int bufferSize, bool isAsync) and optionally make a new SafeFileHandle with ownsHandle=false if needed instead.")]
         public FileStream(IntPtr handle, FileAccess access, bool ownsHandle, int bufferSize, bool isAsync)
         {
             SafeFileHandle safeHandle = new SafeFileHandle(handle, ownsHandle: ownsHandle);
@@ -210,7 +210,7 @@ namespace System.IO
             _strategy = FileStreamHelpers.ChooseStrategy(this, path, mode, access, share, bufferSize, options, preallocationSize);
         }
 
-        [Obsolete("FileStream.Handle has been deprecated. Use FileStream's SafeFileHandle property.")]
+        [Obsolete("FileStream.Handle has been deprecated. Use FileStream's SafeFileHandle property instead.")]
         public virtual IntPtr Handle => _strategy.Handle;
 
         [UnsupportedOSPlatform("ios")]

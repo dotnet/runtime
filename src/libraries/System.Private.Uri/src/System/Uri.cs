@@ -369,7 +369,7 @@ namespace System
         //
         //  Uri constructor. Assumes that input string is canonically escaped
         //
-        [Obsolete("This constructor has been deprecated; the dontEscape parameter is always false. Use Uri(string).")]
+        [Obsolete("This constructor has been deprecated; the dontEscape parameter is always false. Use Uri(string) instead.")]
         public Uri(string uriString, bool dontEscape)
         {
             if (uriString == null)
@@ -385,7 +385,7 @@ namespace System
         //  Uri combinatorial constructor. Do not perform character escaping if
         //  DontEscape is true
         //
-        [Obsolete("This constructor has been deprecated; the dontEscape parameter is always false. Use Uri(Uri, string).")]
+        [Obsolete("This constructor has been deprecated; the dontEscape parameter is always false. Use Uri(Uri, string) instead.")]
         public Uri(Uri baseUri, string? relativeUri, bool dontEscape)
         {
             if (baseUri is null)
@@ -5064,7 +5064,7 @@ namespace System
         // Throws:
         //  ArgumentNullException, InvalidOperationException
         //
-        [Obsolete("Uri.MakeRelative has been deprecated. Use MakeRelativeUri(Uri uri).")]
+        [Obsolete("Uri.MakeRelative has been deprecated. Use MakeRelativeUri(Uri uri) instead.")]
         public string MakeRelative(Uri toUri)
         {
             if (toUri == null)

@@ -1045,7 +1045,7 @@ namespace System.Runtime.InteropServices
         VariantBool = 37,
         FunctionPtr = 38,
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
-        [System.ObsoleteAttribute("Marshalling arbitrary types may be unavailable in future releases. Please specify the type you wish to marshal as.")]
+        [System.ObsoleteAttribute("Marshalling arbitrary types may be unavailable in future releases. Specify the type you wish to marshal as.")]
         AsAny = 40,
         LPArray = 42,
         LPStruct = 43,

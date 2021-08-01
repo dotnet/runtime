@@ -2683,10 +2683,10 @@ namespace System
         [System.CLSCompliantAttribute(false)]
         public static object ToObject(System.Type enumType, ulong value) { throw null; }
         public override string ToString() { throw null; }
-        [System.ObsoleteAttribute("The provider argument is not used. Please use ToString().")]
+        [System.ObsoleteAttribute("The provider argument is not used. Use ToString() instead.")]
         public string ToString(System.IFormatProvider? provider) { throw null; }
         public string ToString(string? format) { throw null; }
-        [System.ObsoleteAttribute("The provider argument is not used. Please use ToString(String).")]
+        [System.ObsoleteAttribute("The provider argument is not used. Use ToString(String) instead.")]
         public string ToString(string? format, System.IFormatProvider? provider) { throw null; }
         public static bool TryParse(System.Type enumType, System.ReadOnlySpan<char> value, bool ignoreCase, out object? result) { throw null; }
         public static bool TryParse(System.Type enumType, System.ReadOnlySpan<char> value, out object? result) { throw null; }
@@ -2830,7 +2830,7 @@ namespace System
         public new System.Type GetType() { throw null; }
         public override string ToString() { throw null; }
     }
-    [System.ObsoleteAttribute("This type previously indicated an unspecified fatal error in the runtime. The runtime no longer raises this exception so this type is obsolete.")]
+    [System.ObsoleteAttribute("ExecutionEngineException previously indicated an unspecified fatal error in the runtime. The runtime no longer raises this exception so this type is obsolete.")]
     public sealed partial class ExecutionEngineException : System.SystemException
     {
         public ExecutionEngineException() { }
@@ -5121,7 +5121,7 @@ namespace System
         public int Length { get { throw null; } }
         public void CopyTo(System.Span<T> destination) { }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
-        [System.ObsoleteAttribute("Equals() on ReadOnlySpan will always throw an exception. Use the == operator.")]
+        [System.ObsoleteAttribute("Equals() on ReadOnlySpan will always throw an exception. Use the equality operator instead.")]
         public override bool Equals(object? obj) { throw null; }
         public System.ReadOnlySpan<T>.Enumerator GetEnumerator() { throw null; }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
@@ -5670,7 +5670,7 @@ namespace System
         public void Clear() { }
         public void CopyTo(System.Span<T> destination) { }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
-        [System.ObsoleteAttribute("Equals() on Span will always throw an exception. Use the == operator.")]
+        [System.ObsoleteAttribute("Equals() on Span will always throw an exception. Use the equality operator instead.")]
         public override bool Equals(object? obj) { throw null; }
         public void Fill(T value) { }
         public System.Span<T>.Enumerator GetEnumerator() { throw null; }
@@ -6230,7 +6230,7 @@ namespace System
         static System.TimeSpan IUnaryPlusOperators<System.TimeSpan, System.TimeSpan>.operator +(System.TimeSpan value) { throw null; }
 #endif // FEATURE_GENERIC_MATH
     }
-    [System.ObsoleteAttribute("System.TimeZone has been deprecated. Please investigate the use of System.TimeZoneInfo.")]
+    [System.ObsoleteAttribute("System.TimeZone has been deprecated. Investigate the use of System.TimeZoneInfo instead.")]
     public abstract partial class TimeZone
     {
         protected TimeZone() { }
@@ -7657,11 +7657,11 @@ namespace System
         public static readonly string UriSchemeWss;
         protected Uri(System.Runtime.Serialization.SerializationInfo serializationInfo, System.Runtime.Serialization.StreamingContext streamingContext) { }
         public Uri(string uriString) { }
-        [System.ObsoleteAttribute("This constructor has been deprecated; the dontEscape parameter is always false. Use Uri(string).")]
+        [System.ObsoleteAttribute("This constructor has been deprecated; the dontEscape parameter is always false. Use Uri(string) instead.")]
         public Uri(string uriString, bool dontEscape) { }
         public Uri(string uriString, System.UriKind uriKind) { }
         public Uri(System.Uri baseUri, string? relativeUri) { }
-        [System.ObsoleteAttribute("This constructor has been deprecated; the dontEscape parameter is always false. Use Uri(Uri, string).")]
+        [System.ObsoleteAttribute("This constructor has been deprecated; the dontEscape parameter is always false. Use Uri(Uri, string) instead.")]
         public Uri(System.Uri baseUri, string? relativeUri, bool dontEscape) { }
         public Uri(System.Uri baseUri, System.Uri relativeUri) { }
         public string AbsolutePath { get { throw null; } }
@@ -8281,29 +8281,29 @@ namespace System.Collections
         public Hashtable() { }
         public Hashtable(System.Collections.IDictionary d) { }
         public Hashtable(System.Collections.IDictionary d, System.Collections.IEqualityComparer? equalityComparer) { }
-        [System.ObsoleteAttribute("This constructor has been deprecated. Use Hashtable(IDictionary, IEqualityComparer).")]
+        [System.ObsoleteAttribute("This constructor has been deprecated. Use Hashtable(IDictionary, IEqualityComparer) instead.")]
         public Hashtable(System.Collections.IDictionary d, System.Collections.IHashCodeProvider? hcp, System.Collections.IComparer? comparer) { }
         public Hashtable(System.Collections.IDictionary d, float loadFactor) { }
         public Hashtable(System.Collections.IDictionary d, float loadFactor, System.Collections.IEqualityComparer? equalityComparer) { }
-        [System.ObsoleteAttribute("This constructor has been deprecated. Use Hashtable(IDictionary, float, IEqualityComparer).")]
+        [System.ObsoleteAttribute("This constructor has been deprecated. Use Hashtable(IDictionary, float, IEqualityComparer) instead.")]
         public Hashtable(System.Collections.IDictionary d, float loadFactor, System.Collections.IHashCodeProvider? hcp, System.Collections.IComparer? comparer) { }
         public Hashtable(System.Collections.IEqualityComparer? equalityComparer) { }
         [System.ObsoleteAttribute("This constructor has been deprecated. Use Hashtable(IEqualityComparer).")]
         public Hashtable(System.Collections.IHashCodeProvider? hcp, System.Collections.IComparer? comparer) { }
         public Hashtable(int capacity) { }
         public Hashtable(int capacity, System.Collections.IEqualityComparer? equalityComparer) { }
-        [System.ObsoleteAttribute("This constructor has been deprecated. Use Hashtable(int, IEqualityComparer).")]
+        [System.ObsoleteAttribute("This constructor has been deprecated. Use Hashtable(int, IEqualityComparer) instead.")]
         public Hashtable(int capacity, System.Collections.IHashCodeProvider? hcp, System.Collections.IComparer? comparer) { }
         public Hashtable(int capacity, float loadFactor) { }
         public Hashtable(int capacity, float loadFactor, System.Collections.IEqualityComparer? equalityComparer) { }
-        [System.ObsoleteAttribute("This constructor has been deprecated. Use Hashtable(int, float, IEqualityComparer).")]
+        [System.ObsoleteAttribute("This constructor has been deprecated. Use Hashtable(int, float, IEqualityComparer) instead.")]
         public Hashtable(int capacity, float loadFactor, System.Collections.IHashCodeProvider? hcp, System.Collections.IComparer? comparer) { }
         protected Hashtable(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
-        [System.ObsoleteAttribute("Hashtable.comparer has been deprecated. Use the KeyComparer properties.")]
+        [System.ObsoleteAttribute("Hashtable.comparer has been deprecated. Use the KeyComparer properties instead.")]
         protected System.Collections.IComparer? comparer { get { throw null; } set { } }
         public virtual int Count { get { throw null; } }
         protected System.Collections.IEqualityComparer? EqualityComparer { get { throw null; } }
-        [System.ObsoleteAttribute("Hashtable.hcp has been deprecated. Use the EqualityComparer property.")]
+        [System.ObsoleteAttribute("Hashtable.hcp has been deprecated. Use the EqualityComparer property instead.")]
         protected System.Collections.IHashCodeProvider? hcp { get { throw null; } set { } }
         public virtual bool IsFixedSize { get { throw null; } }
         public virtual bool IsReadOnly { get { throw null; } }
@@ -8375,7 +8375,7 @@ namespace System.Collections
         bool Equals(object? x, object? y);
         int GetHashCode(object obj);
     }
-    [System.ObsoleteAttribute("IHashCodeProvider has been deprecated. Use IEqualityComparer.")]
+    [System.ObsoleteAttribute("IHashCodeProvider has been deprecated. Use IEqualityComparer instead.")]
     public partial interface IHashCodeProvider
     {
         int GetHashCode(object obj);
@@ -9290,9 +9290,9 @@ namespace System.Globalization
         AllCultures = 7,
         UserCustomCulture = 8,
         ReplacementCultures = 16,
-        [System.ObsoleteAttribute("This value has been deprecated.  Please use other values in CultureTypes.")]
+        [System.ObsoleteAttribute("CultureTypes.WindowsOnlyCultures has been deprecated. Use other values in CultureTypes instead.")]
         WindowsOnlyCultures = 32,
-        [System.ObsoleteAttribute("This value has been deprecated.  Please use other values in CultureTypes.")]
+        [System.ObsoleteAttribute("CultureTypes.FrameworkCultures has been deprecated. Use other values in CultureTypes instead.")]
         FrameworkCultures = 64,
     }
     public sealed partial class DateTimeFormatInfo : System.ICloneable, System.IFormatProvider
@@ -10164,16 +10164,16 @@ namespace System.IO
         public FileStream(Microsoft.Win32.SafeHandles.SafeFileHandle handle, System.IO.FileAccess access, int bufferSize) { }
         public FileStream(Microsoft.Win32.SafeHandles.SafeFileHandle handle, System.IO.FileAccess access, int bufferSize, bool isAsync) { }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
-        [System.ObsoleteAttribute("This constructor has been deprecated. Use new FileStream(SafeFileHandle handle, FileAccess access).")]
+        [System.ObsoleteAttribute("This constructor has been deprecated. Use FileStream(SafeFileHandle handle, FileAccess access) instead.")]
         public FileStream(System.IntPtr handle, System.IO.FileAccess access) { }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
-        [System.ObsoleteAttribute("This constructor has been deprecated. Use new FileStream(SafeFileHandle handle, FileAccess access) and optionally make a new SafeFileHandle with ownsHandle=false if needed.")]
+        [System.ObsoleteAttribute("This constructor has been deprecated. Use FileStream(SafeFileHandle handle, FileAccess access) and optionally make a new SafeFileHandle with ownsHandle=false if needed instead.")]
         public FileStream(System.IntPtr handle, System.IO.FileAccess access, bool ownsHandle) { }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
-        [System.ObsoleteAttribute("This constructor has been deprecated. Use new FileStream(SafeFileHandle handle, FileAccess access, int bufferSize) and optionally make a new SafeFileHandle with ownsHandle=false if needed.")]
+        [System.ObsoleteAttribute("This constructor has been deprecated. Use FileStream(SafeFileHandle handle, FileAccess access, int bufferSize) and optionally make a new SafeFileHandle with ownsHandle=false if needed instead.")]
         public FileStream(System.IntPtr handle, System.IO.FileAccess access, bool ownsHandle, int bufferSize) { }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
-        [System.ObsoleteAttribute("This constructor has been deprecated. Use new FileStream(SafeFileHandle handle, FileAccess access, int bufferSize, bool isAsync) and optionally make a new SafeFileHandle with ownsHandle=false if needed.")]
+        [System.ObsoleteAttribute("This constructor has been deprecated. Use FileStream(SafeFileHandle handle, FileAccess access, int bufferSize, bool isAsync) and optionally make a new SafeFileHandle with ownsHandle=false if needed instead.")]
         public FileStream(System.IntPtr handle, System.IO.FileAccess access, bool ownsHandle, int bufferSize, bool isAsync) { }
         public FileStream(string path, System.IO.FileMode mode) { }
         public FileStream(string path, System.IO.FileMode mode, System.IO.FileAccess access) { }
@@ -10185,7 +10185,7 @@ namespace System.IO
         public override bool CanRead { get { throw null; } }
         public override bool CanSeek { get { throw null; } }
         public override bool CanWrite { get { throw null; } }
-        [System.ObsoleteAttribute("FileStream.Handle has been deprecated. Use FileStream's SafeFileHandle property.")]
+        [System.ObsoleteAttribute("FileStream.Handle has been deprecated. Use FileStream's SafeFileHandle property instead.")]
         public virtual System.IntPtr Handle { get { throw null; } }
         public virtual bool IsAsync { get { throw null; } }
         public override long Length { get { throw null; } }
@@ -10540,7 +10540,7 @@ namespace System.IO
     {
         public static readonly char AltDirectorySeparatorChar;
         public static readonly char DirectorySeparatorChar;
-        [System.ObsoleteAttribute("Path.InvalidPathChars has been deprecated. Use GetInvalidPathChars or GetInvalidFileNameChars.")]
+        [System.ObsoleteAttribute("Path.InvalidPathChars has been deprecated. Use GetInvalidPathChars or GetInvalidFileNameChars instead.")]
         public static readonly char[] InvalidPathChars;
         public static readonly char PathSeparator;
         public static readonly char VolumeSeparatorChar;
@@ -10625,7 +10625,7 @@ namespace System.IO
         public System.Threading.Tasks.Task CopyToAsync(System.IO.Stream destination, int bufferSize) { throw null; }
         public virtual System.Threading.Tasks.Task CopyToAsync(System.IO.Stream destination, int bufferSize, System.Threading.CancellationToken cancellationToken) { throw null; }
         public System.Threading.Tasks.Task CopyToAsync(System.IO.Stream destination, System.Threading.CancellationToken cancellationToken) { throw null; }
-        [System.ObsoleteAttribute("Stream.CreateWaitHandle has been deprecated. Use new ManualResetEvent(false).")]
+        [System.ObsoleteAttribute("Stream.CreateWaitHandle has been deprecated. Use new ManualResetEvent(false) instead.")]
         protected virtual System.Threading.WaitHandle CreateWaitHandle() { throw null; }
         public void Dispose() { }
         protected virtual void Dispose(bool disposing) { }
@@ -11150,7 +11150,7 @@ namespace System.Reflection
         public System.Reflection.Module LoadModule(string moduleName, byte[]? rawModule) { throw null; }
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Types and members the loaded module depends on might be removed")]
         public virtual System.Reflection.Module LoadModule(string moduleName, byte[]? rawModule, byte[]? rawSymbolStore) { throw null; }
-        [System.ObsoleteAttribute("Assembly.LoadWithPartialName has been deprecated. Use Assembly.Load().")]
+        [System.ObsoleteAttribute("Assembly.LoadWithPartialName has been deprecated. Use Assembly.Load() instead.")]
         public static System.Reflection.Assembly? LoadWithPartialName(string partialName) { throw null; }
         public static bool operator ==(System.Reflection.Assembly? left, System.Reflection.Assembly? right) { throw null; }
         public static bool operator !=(System.Reflection.Assembly? left, System.Reflection.Assembly? right) { throw null; }
@@ -11232,15 +11232,15 @@ namespace System.Reflection
     [System.AttributeUsageAttribute(System.AttributeTargets.Assembly, Inherited=false)]
     public sealed partial class AssemblyFlagsAttribute : System.Attribute
     {
-        [System.ObsoleteAttribute("This constructor has been deprecated. Use AssemblyFlagsAttribute(AssemblyNameFlags).")]
+        [System.ObsoleteAttribute("This constructor has been deprecated. Use AssemblyFlagsAttribute(AssemblyNameFlags) instead.")]
         public AssemblyFlagsAttribute(int assemblyFlags) { }
         public AssemblyFlagsAttribute(System.Reflection.AssemblyNameFlags assemblyFlags) { }
         [System.CLSCompliantAttribute(false)]
-        [System.ObsoleteAttribute("This constructor has been deprecated. Use AssemblyFlagsAttribute(AssemblyNameFlags).")]
+        [System.ObsoleteAttribute("This constructor has been deprecated. Use AssemblyFlagsAttribute(AssemblyNameFlags) instead.")]
         public AssemblyFlagsAttribute(uint flags) { }
         public int AssemblyFlags { get { throw null; } }
         [System.CLSCompliantAttribute(false)]
-        [System.ObsoleteAttribute("This property has been deprecated. Use AssemblyFlags.")]
+        [System.ObsoleteAttribute("AssemblyFlagsAttribute.Flags has been deprecated. Use AssemblyFlags instead.")]
         public uint Flags { get { throw null; } }
     }
     [System.AttributeUsageAttribute(System.AttributeTargets.Assembly, Inherited=false)]
@@ -13022,7 +13022,7 @@ namespace System.Runtime.CompilerServices
     }
     public static partial class RuntimeHelpers
     {
-        [System.ObsoleteAttribute("OffsetToStringData has been deprecated. Use string.GetPinnableReference().")]
+        [System.ObsoleteAttribute("OffsetToStringData has been deprecated. Use string.GetPinnableReference() instead.")]
         public static int OffsetToStringData { get { throw null; } }
         public static System.IntPtr AllocateTypeAssociatedMemory(System.Type type, int size) { throw null; }
         public static void EnsureSufficientExecutionStack() { }
@@ -14173,7 +14173,7 @@ namespace System.Text
         public virtual System.ReadOnlySpan<byte> Preamble { get { throw null; } }
         public static System.Text.Encoding Unicode { get { throw null; } }
         public static System.Text.Encoding UTF32 { get { throw null; } }
-        [System.ObsoleteAttribute("The UTF-7 encoding is insecure and should not be used. Consider using UTF-8.", DiagnosticId = "SYSLIB0001", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+        [System.ObsoleteAttribute("The UTF-7 encoding is insecure and should not be used. Consider using UTF-8 instead.", DiagnosticId = "SYSLIB0001", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         public static System.Text.Encoding UTF7 { get { throw null; } }
         public static System.Text.Encoding UTF8 { get { throw null; } }
         public virtual string WebName { get { throw null; } }
@@ -14576,7 +14576,7 @@ namespace System.Threading
         protected static readonly System.IntPtr InvalidHandle;
         public const int WaitTimeout = 258;
         protected WaitHandle() { }
-        [System.ObsoleteAttribute("WaitHandle.Handle has been deprecated. Use the SafeWaitHandle property.")]
+        [System.ObsoleteAttribute("WaitHandle.Handle has been deprecated. Use the SafeWaitHandle property instead.")]
         public virtual System.IntPtr Handle { get { throw null; } set { } }
         [System.Diagnostics.CodeAnalysis.AllowNullAttribute]
         public Microsoft.Win32.SafeHandles.SafeWaitHandle SafeWaitHandle { get { throw null; } set { } }

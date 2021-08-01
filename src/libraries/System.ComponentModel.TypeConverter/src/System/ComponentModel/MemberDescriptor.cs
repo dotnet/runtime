@@ -465,7 +465,7 @@ namespace System.ComponentModel
         /// </summary>
         protected static ISite? GetSite(object? component) => (component as IComponent)?.Site;
 
-        [Obsolete("MemberDescriptor.GetInvokee has been deprecated. Use GetInvocationTarget.")]
+        [Obsolete("MemberDescriptor.GetInvokee has been deprecated. Use GetInvocationTarget instead.")]
         protected static object GetInvokee(Type componentClass, object component)
         {
 

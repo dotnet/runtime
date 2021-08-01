@@ -125,7 +125,7 @@ namespace System.Xml.Schema
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
         [XmlIgnore]
-        [Obsolete("XmlSchemaType.BaseSchemaType has been deprecated. Use the BaseXmlSchemaType property that returns a strongly typed base schema type.")]
+        [Obsolete("XmlSchemaType.BaseSchemaType has been deprecated. Use the BaseXmlSchemaType property that returns a strongly typed base schema type instead.")]
         public object? BaseSchemaType
         {
             get

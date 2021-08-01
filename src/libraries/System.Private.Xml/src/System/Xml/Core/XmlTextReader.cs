@@ -384,7 +384,7 @@ namespace System.Xml
             set { _impl.WhitespaceHandling = value; }
         }
 
-        [Obsolete("XmlTextReader.ProhibitDtd has been deprecated. Use the DtdProcessing property.")]
+        [Obsolete("XmlTextReader.ProhibitDtd has been deprecated. Use DtdProcessing instead.")]
         public bool ProhibitDtd
         {
             get { return _impl.DtdProcessing == DtdProcessing.Prohibit; }

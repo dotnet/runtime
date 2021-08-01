@@ -6,7 +6,7 @@ namespace System.ComponentModel
     /// <summary>
     /// Top level mapping layer between a COM object and TypeDescriptor.
     /// </summary>
-    [Obsolete("IComNativeDescriptorHandler has been deprecated. Add a TypeDescriptionProvider to handle type TypeDescriptor.ComObjectType.")]
+    [Obsolete("IComNativeDescriptorHandler has been deprecated. Add a TypeDescriptionProvider to handle type TypeDescriptor.ComObjectType instead.")]
     public interface IComNativeDescriptorHandler
     {
         AttributeCollection GetAttributes(object component);

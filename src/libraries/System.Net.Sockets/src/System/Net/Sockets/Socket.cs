@@ -242,9 +242,9 @@ namespace System.Net.Sockets
 
         // The CLR allows configuration of these properties, separately from whether the OS supports IPv4/6.  We
         // do not provide these config options, so SupportsIPvX === OSSupportsIPvX.
-        [Obsolete("SupportsIPv4 has been deprecated. Use OSSupportsIPv4.")]
+        [Obsolete("SupportsIPv4 has been deprecated. Use OSSupportsIPv4 instead.")]
         public static bool SupportsIPv4 => OSSupportsIPv4;
-        [Obsolete("SupportsIPv6 has been deprecated. Use OSSupportsIPv6.")]
+        [Obsolete("SupportsIPv6 has been deprecated. Use OSSupportsIPv6 instead.")]
         public static bool SupportsIPv6 => OSSupportsIPv6;
 
         public static bool OSSupportsIPv4 => SocketProtocolSupportPal.OSSupportsIPv4;

@@ -162,7 +162,7 @@ namespace Microsoft.Win32
         /// <summary>
         ///  Occurs when the system is running out of available RAM.
         /// </summary>
-        [Obsolete("The LowMemory event is obsolete and no longer supported.")]
+        [Obsolete("The LowMemory event has been deprecated and is no longer supported.")]
         [Browsable(false), EditorBrowsable(EditorBrowsableState.Never)]
         public static event EventHandler? LowMemory
         {

@@ -10,7 +10,7 @@ using System.Collections.Generic;
 
 namespace System.Xml
 {
-    [Obsolete("XmlValidatingReader has been deprecated. Use XmlReader created by XmlReader.Create() method using appropriate XmlReaderSettings.")]
+    [Obsolete("XmlValidatingReader has been deprecated. Use XmlReader created by XmlReader.Create() method using appropriate XmlReaderSettings instead.")]
     public class XmlValidatingReader : XmlReader, IXmlLineInfo, IXmlNamespaceResolver
     {
         //

@@ -658,10 +658,10 @@ namespace System.Data
         Utc = 4,
     }
     [System.AttributeUsageAttribute(System.AttributeTargets.All)]
-    [System.ObsoleteAttribute("DataSysDescriptionAttribute has been deprecated.", false)]
+    [System.ObsoleteAttribute("DataSysDescriptionAttribute has been deprecated and is no longer supported.", false)]
     public partial class DataSysDescriptionAttribute : System.ComponentModel.DescriptionAttribute
     {
-        [System.ObsoleteAttribute("DataSysDescriptionAttribute has been deprecated.", false)]
+        [System.ObsoleteAttribute("DataSysDescriptionAttribute has been deprecated and is no longer supported.", false)]
         public DataSysDescriptionAttribute(string description) { }
         public override string Description { get { throw null; } }
     }
@@ -1758,7 +1758,7 @@ namespace System.Data.Common
         [System.ComponentModel.DesignerSerializationVisibilityAttribute(System.ComponentModel.DesignerSerializationVisibility.Content)]
         public System.Data.Common.DataTableMappingCollection TableMappings { get { throw null; } }
         public event System.Data.FillErrorEventHandler? FillError { add { } remove { } }
-        [System.ObsoleteAttribute("CloneInternals() has been deprecated.  Use the DataAdapter(DataAdapter from) constructor.")]
+        [System.ObsoleteAttribute("CloneInternals() has been deprecated. Use the DataAdapter(DataAdapter from) constructor instead.")]
         protected virtual System.Data.Common.DataAdapter CloneInternals() { throw null; }
         protected virtual System.Data.Common.DataTableMappingCollection CreateTableMappings() { throw null; }
         protected override void Dispose(bool disposing) { }
@@ -3713,7 +3713,7 @@ namespace System.Data.SqlTypes
 }
 namespace System.Xml
 {
-    [System.ObsoleteAttribute("XmlDataDocument class will be removed in a future release.")]
+    [System.ObsoleteAttribute("XmlDataDocument has been deprecated and is no longer supported.")]
     public partial class XmlDataDocument : System.Xml.XmlDocument
     {
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("XmlDataDocument is used for serialization and deserialization. Members from serialized types may be trimmed if not referenced directly.")]

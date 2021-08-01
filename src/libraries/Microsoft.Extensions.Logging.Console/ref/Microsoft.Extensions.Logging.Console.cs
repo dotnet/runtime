@@ -53,17 +53,17 @@ namespace Microsoft.Extensions.Logging.Console
     public partial class ConsoleLoggerOptions
     {
         public ConsoleLoggerOptions() { }
-        [System.ObsoleteAttribute("ConsoleLoggerOptions.DisableColors has been deprecated. Please use SimpleConsoleFormatterOptions.ColorBehavior instead.", false)]
+        [System.ObsoleteAttribute("ConsoleLoggerOptions.DisableColors has been deprecated. Use SimpleConsoleFormatterOptions.ColorBehavior instead.", false)]
         public bool DisableColors { get { throw null; } set { } }
-        [System.ObsoleteAttribute("ConsoleLoggerOptions.Format has been deprecated. Please use ConsoleLoggerOptions.FormatterName instead.", false)]
+        [System.ObsoleteAttribute("ConsoleLoggerOptions.Format has been deprecated. Use ConsoleLoggerOptions.FormatterName instead.", false)]
         public Microsoft.Extensions.Logging.Console.ConsoleLoggerFormat Format { get { throw null; } set { } }
         public string FormatterName { get { throw null; } set { } }
-        [System.ObsoleteAttribute("ConsoleLoggerOptions.IncludeScopes has been deprecated. Please use ConsoleFormatterOptions.IncludeScopes instead.", false)]
+        [System.ObsoleteAttribute("ConsoleLoggerOptions.IncludeScopes has been deprecated. Use ConsoleFormatterOptions.IncludeScopes instead.", false)]
         public bool IncludeScopes { get { throw null; } set { } }
         public Microsoft.Extensions.Logging.LogLevel LogToStandardErrorThreshold { get { throw null; } set { } }
-        [System.ObsoleteAttribute("ConsoleLoggerOptions.TimestampFormat has been deprecated. Please use ConsoleFormatterOptions.TimestampFormat instead.", false)]
+        [System.ObsoleteAttribute("ConsoleLoggerOptions.TimestampFormat has been deprecated. Use ConsoleFormatterOptions.TimestampFormat instead.", false)]
         public string TimestampFormat { get { throw null; } set { } }
-        [System.ObsoleteAttribute("ConsoleLoggerOptions.UseUtcTimestamp has been deprecated. Please use ConsoleFormatterOptions.UseUtcTimestamp instead.", false)]
+        [System.ObsoleteAttribute("ConsoleLoggerOptions.UseUtcTimestamp has been deprecated. Use ConsoleFormatterOptions.UseUtcTimestamp instead.", false)]
         public bool UseUtcTimestamp { get { throw null; } set { } }
     }
     [System.Runtime.Versioning.UnsupportedOSPlatform("browser")]

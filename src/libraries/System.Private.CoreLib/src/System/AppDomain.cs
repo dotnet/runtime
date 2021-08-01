@@ -211,7 +211,7 @@ namespace System
 
         public long MonitoringTotalAllocatedMemorySize => GC.GetTotalAllocatedBytes(precise: false);
 
-        [Obsolete("AppDomain.GetCurrentThreadId has been deprecated because it does not provide a stable Id when managed threads are running on fibers (aka lightweight threads). To get a stable identifier for a managed thread, use the ManagedThreadId property on Thread.", false)]
+        [Obsolete("AppDomain.GetCurrentThreadId has been deprecated because it does not provide a stable Id when managed threads are running on fibers (aka lightweight threads). To get a stable identifier for a managed thread, use the ManagedThreadId property on Thread instead.", false)]
         public static int GetCurrentThreadId() => Environment.CurrentManagedThreadId;
 
         public bool ShadowCopyFiles => false;

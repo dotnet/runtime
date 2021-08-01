@@ -255,7 +255,7 @@ namespace System.Net
         public static IPAddress[] EndGetHostAddresses(IAsyncResult asyncResult) =>
             TaskToApm.End<IPAddress[]>(asyncResult ?? throw new ArgumentNullException(nameof(asyncResult)));
 
-        [Obsolete("GetHostByName has been deprecated. Use GetHostEntry.")]
+        [Obsolete("GetHostByName has been deprecated. Use GetHostEntry instead.")]
         public static IPHostEntry GetHostByName(string hostName)
         {
             if (hostName is null)
@@ -271,15 +271,15 @@ namespace System.Net
             return GetHostEntryCore(hostName, AddressFamily.Unspecified);
         }
 
-        [Obsolete("BeginGetHostByName has been deprecated. Use BeginGetHostEntry.")]
+        [Obsolete("BeginGetHostByName has been deprecated. Use BeginGetHostEntry instead.")]
         public static IAsyncResult BeginGetHostByName(string hostName, AsyncCallback? requestCallback, object? stateObject) =>
             TaskToApm.Begin(GetHostEntryCoreAsync(hostName, justReturnParsedIp: true, throwOnIIPAny: true, AddressFamily.Unspecified, CancellationToken.None), requestCallback, stateObject);
 
-        [Obsolete("EndGetHostByName has been deprecated. Use EndGetHostEntry.")]
+        [Obsolete("EndGetHostByName has been deprecated. Use EndGetHostEntry instead.")]
         public static IPHostEntry EndGetHostByName(IAsyncResult asyncResult) =>
             TaskToApm.End<IPHostEntry>(asyncResult ?? throw new ArgumentNullException(nameof(asyncResult)));
 
-        [Obsolete("GetHostByAddress has been deprecated. Use GetHostEntry.")]
+        [Obsolete("GetHostByAddress has been deprecated. Use GetHostEntry instead.")]
         public static IPHostEntry GetHostByAddress(string address)
         {
             if (address is null)
@@ -293,7 +293,7 @@ namespace System.Net
             return ipHostEntry;
         }
 
-        [Obsolete("GetHostByAddress has been deprecated. Use GetHostEntry.")]
+        [Obsolete("GetHostByAddress has been deprecated. Use GetHostEntry instead.")]
         public static IPHostEntry GetHostByAddress(IPAddress address)
         {
             if (address is null)
@@ -307,7 +307,7 @@ namespace System.Net
             return ipHostEntry;
         }
 
-        [Obsolete("Resolve has been deprecated. Use GetHostEntry.")]
+        [Obsolete("Resolve has been deprecated. Use GetHostEntry instead.")]
         public static IPHostEntry Resolve(string hostName)
         {
             if (hostName is null)
@@ -339,11 +339,11 @@ namespace System.Net
             return ipHostEntry;
         }
 
-        [Obsolete("BeginResolve has been deprecated. Use BeginGetHostEntry.")]
+        [Obsolete("BeginResolve has been deprecated. Use BeginGetHostEntry instead.")]
         public static IAsyncResult BeginResolve(string hostName, AsyncCallback? requestCallback, object? stateObject) =>
             TaskToApm.Begin(GetHostEntryCoreAsync(hostName, justReturnParsedIp: false, throwOnIIPAny: false, AddressFamily.Unspecified, CancellationToken.None), requestCallback, stateObject);
 
-        [Obsolete("EndResolve has been deprecated. Use EndGetHostEntry.")]
+        [Obsolete("EndResolve has been deprecated. Use EndGetHostEntry instead.")]
         public static IPHostEntry EndResolve(IAsyncResult asyncResult)
         {
             IPHostEntry ipHostEntry;

@@ -60,7 +60,7 @@ namespace System.Net
     }
     public partial class FileWebResponse : System.Net.WebResponse, System.Runtime.Serialization.ISerializable
     {
-        [System.ObsoleteAttribute("Serialization has been deprecated for FileWebResponse")]
+        [System.ObsoleteAttribute("Serialization has been deprecated for FileWebResponse.")]
         protected FileWebResponse(System.Runtime.Serialization.SerializationInfo serializationInfo, System.Runtime.Serialization.StreamingContext streamingContext) { }
         public override long ContentLength { get { throw null; } }
         public override string ContentType { get { throw null; } }
@@ -173,7 +173,7 @@ namespace System.Net
     public delegate void HttpContinueDelegate(int StatusCode, System.Net.WebHeaderCollection httpHeaders);
     public partial class HttpWebRequest : System.Net.WebRequest, System.Runtime.Serialization.ISerializable
     {
-        [System.ObsoleteAttribute("WebRequest, HttpWebRequest, ServicePoint, and WebClient are obsolete. Use HttpClient.", DiagnosticId = "SYSLIB0014", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+        [System.ObsoleteAttribute("WebRequest, HttpWebRequest, ServicePoint, and WebClient are obsolete. Use HttpClient instead", DiagnosticId = "SYSLIB0014", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         protected HttpWebRequest(System.Runtime.Serialization.SerializationInfo serializationInfo, System.Runtime.Serialization.StreamingContext streamingContext) { }
         public string? Accept { get { throw null; } set { } }
         public System.Uri Address { get { throw null; } }
@@ -335,9 +335,9 @@ namespace System.Net
     }
     public abstract partial class WebRequest : System.MarshalByRefObject, System.Runtime.Serialization.ISerializable
     {
-        [System.ObsoleteAttribute("WebRequest, HttpWebRequest, ServicePoint, and WebClient are obsolete. Use HttpClient.", DiagnosticId = "SYSLIB0014", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+        [System.ObsoleteAttribute("WebRequest, HttpWebRequest, ServicePoint, and WebClient are obsolete. Use HttpClient instead.", DiagnosticId = "SYSLIB0014", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         protected WebRequest() { }
-        [System.ObsoleteAttribute("WebRequest, HttpWebRequest, ServicePoint, and WebClient are obsolete. Use HttpClient.", DiagnosticId = "SYSLIB0014", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+        [System.ObsoleteAttribute("WebRequest, HttpWebRequest, ServicePoint, and WebClient are obsolete. Use HttpClient instead.", DiagnosticId = "SYSLIB0014", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         protected WebRequest(System.Runtime.Serialization.SerializationInfo serializationInfo, System.Runtime.Serialization.StreamingContext streamingContext) { }
         public System.Net.Security.AuthenticationLevel AuthenticationLevel { get { throw null; } set { } }
         public virtual System.Net.Cache.RequestCachePolicy? CachePolicy { get { throw null; } set { } }
@@ -359,15 +359,15 @@ namespace System.Net
         public virtual void Abort() { }
         public virtual System.IAsyncResult BeginGetRequestStream(System.AsyncCallback? callback, object? state) { throw null; }
         public virtual System.IAsyncResult BeginGetResponse(System.AsyncCallback? callback, object? state) { throw null; }
-        [System.ObsoleteAttribute("WebRequest, HttpWebRequest, ServicePoint, and WebClient are obsolete. Use HttpClient.", DiagnosticId = "SYSLIB0014", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+        [System.ObsoleteAttribute("WebRequest, HttpWebRequest, ServicePoint, and WebClient are obsolete. Use HttpClient instead.", DiagnosticId = "SYSLIB0014", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         public static System.Net.WebRequest Create(string requestUriString) { throw null; }
-        [System.ObsoleteAttribute("WebRequest, HttpWebRequest, ServicePoint, and WebClient are obsolete. Use HttpClient.", DiagnosticId = "SYSLIB0014", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+        [System.ObsoleteAttribute("WebRequest, HttpWebRequest, ServicePoint, and WebClient are obsolete. Use HttpClient instead.", DiagnosticId = "SYSLIB0014", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         public static System.Net.WebRequest Create(System.Uri requestUri) { throw null; }
-        [System.ObsoleteAttribute("WebRequest, HttpWebRequest, ServicePoint, and WebClient are obsolete. Use HttpClient.", DiagnosticId = "SYSLIB0014", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+        [System.ObsoleteAttribute("WebRequest, HttpWebRequest, ServicePoint, and WebClient are obsolete. Use HttpClient instead.", DiagnosticId = "SYSLIB0014", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         public static System.Net.WebRequest CreateDefault(System.Uri requestUri) { throw null; }
-        [System.ObsoleteAttribute("WebRequest, HttpWebRequest, ServicePoint, and WebClient are obsolete. Use HttpClient.", DiagnosticId = "SYSLIB0014", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+        [System.ObsoleteAttribute("WebRequest, HttpWebRequest, ServicePoint, and WebClient are obsolete. Use HttpClient instead.", DiagnosticId = "SYSLIB0014", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         public static System.Net.HttpWebRequest CreateHttp(string requestUriString) { throw null; }
-        [System.ObsoleteAttribute("WebRequest, HttpWebRequest, ServicePoint, and WebClient are obsolete. Use HttpClient.", DiagnosticId = "SYSLIB0014", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+        [System.ObsoleteAttribute("WebRequest, HttpWebRequest, ServicePoint, and WebClient are obsolete. Use HttpClient instead.", DiagnosticId = "SYSLIB0014", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         public static System.Net.HttpWebRequest CreateHttp(System.Uri requestUri) { throw null; }
         public virtual System.IO.Stream EndGetRequestStream(System.IAsyncResult asyncResult) { throw null; }
         public virtual System.Net.WebResponse EndGetResponse(System.IAsyncResult asyncResult) { throw null; }

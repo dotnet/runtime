@@ -189,12 +189,12 @@ namespace System.Security.Cryptography.X509Certificates
         public virtual string GetExpirationDateString() { throw null; }
         public virtual string GetFormat() { throw null; }
         public override int GetHashCode() { throw null; }
-        [System.ObsoleteAttribute("X509Certificate.GetIssuerName has been deprecated. Use the Issuer property.")]
+        [System.ObsoleteAttribute("X509Certificate.GetIssuerName has been deprecated. Use the Issuer property instead.")]
         public virtual string GetIssuerName() { throw null; }
         public virtual string GetKeyAlgorithm() { throw null; }
         public virtual byte[] GetKeyAlgorithmParameters() { throw null; }
         public virtual string GetKeyAlgorithmParametersString() { throw null; }
-        [System.ObsoleteAttribute("X509Certificate.GetName has been deprecated. Use the Subject property.")]
+        [System.ObsoleteAttribute("X509Certificate.GetName has been deprecated. Use the Subject property instead.")]
         public virtual string GetName() { throw null; }
         public virtual byte[] GetPublicKey() { throw null; }
         public virtual string GetPublicKeyString() { throw null; }

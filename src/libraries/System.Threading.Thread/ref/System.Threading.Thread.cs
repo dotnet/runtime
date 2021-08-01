@@ -36,7 +36,7 @@ namespace System.Threading
         public Thread(System.Threading.ParameterizedThreadStart start, int maxStackSize) { }
         public Thread(System.Threading.ThreadStart start) { }
         public Thread(System.Threading.ThreadStart start, int maxStackSize) { }
-        [System.ObsoleteAttribute("The ApartmentState property has been deprecated.  Use GetApartmentState, SetApartmentState or TrySetApartmentState.", false)]
+        [System.ObsoleteAttribute("The ApartmentState property has been deprecated. Use GetApartmentState, SetApartmentState or TrySetApartmentState instead.", false)]
         public System.Threading.ApartmentState ApartmentState { get { throw null; } set { } }
         public System.Globalization.CultureInfo CurrentCulture { get { throw null; } set { } }
         public static System.Security.Principal.IPrincipal? CurrentPrincipal { get { throw null; } set { } }
@@ -64,7 +64,7 @@ namespace System.Threading
         ~Thread() { }
         public static void FreeNamedDataSlot(string name) { }
         public System.Threading.ApartmentState GetApartmentState() { throw null; }
-        [System.ObsoleteAttribute("Thread.GetCompressedStack is no longer supported. Please use the System.Threading.CompressedStack class")]
+        [System.ObsoleteAttribute("Thread.GetCompressedStack is no longer supported. Use the System.Threading.CompressedStack class instead.")]
         public System.Threading.CompressedStack GetCompressedStack() { throw null; }
         public static int GetCurrentProcessorId() { throw null; }
         public static object? GetData(System.LocalDataStoreSlot slot) { throw null; }
@@ -83,7 +83,7 @@ namespace System.Threading
         public void Resume() { }
         [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
         public void SetApartmentState(System.Threading.ApartmentState state) { }
-        [System.ObsoleteAttribute("Thread.SetCompressedStack has been deprecated and is no longer supported. Use the System.Threading.CompressedStack class.")]
+        [System.ObsoleteAttribute("Thread.SetCompressedStack has been deprecated and is no longer supported. Use the System.Threading.CompressedStack class instead.")]
         public void SetCompressedStack(System.Threading.CompressedStack stack) { }
         public static void SetData(System.LocalDataStoreSlot slot, object? data) { }
         public static void Sleep(int millisecondsTimeout) { }

@@ -19,7 +19,7 @@ namespace System.Xml.Schema
     /// The Validate method then uses this internal representation for
     /// efficient runtime validation of any given subtree.
     /// </summary>
-    [Obsolete("XmlSchemaCollection has been deprecated. Use System.Xml.Schema.XmlSchemaSet for schema compilation and validation.")]
+    [Obsolete("XmlSchemaCollection has been deprecated. Use System.Xml.Schema.XmlSchemaSet for schema compilation and validation instead.")]
     public sealed class XmlSchemaCollection : ICollection
     {
         private readonly Hashtable _collection;

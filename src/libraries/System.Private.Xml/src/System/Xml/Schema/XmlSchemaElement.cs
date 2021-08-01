@@ -164,7 +164,7 @@ namespace System.Xml.Schema
         }
 
         [XmlIgnore]
-        [Obsolete("XmlSchemaElement.ElementType has been deprecated. Use the ElementSchemaType property that returns a strongly typed element type.")]
+        [Obsolete("XmlSchemaElement.ElementType has been deprecated. Use the ElementSchemaType property that returns a strongly typed element type instead.")]
         public object? ElementType
         {
             get

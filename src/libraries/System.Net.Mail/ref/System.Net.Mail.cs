@@ -146,7 +146,7 @@ namespace System.Net.Mail
         public System.Text.Encoding? HeadersEncoding { get { throw null; } set { } }
         public bool IsBodyHtml { get { throw null; } set { } }
         public System.Net.Mail.MailPriority Priority { get { throw null; } set { } }
-        [System.ObsoleteAttribute("ReplyTo is deprecated. Use ReplyToList instead which can accept multiple addresses.")]
+        [System.ObsoleteAttribute("ReplyTo has been deprecated. Use ReplyToList instead, which can accept multiple addresses.")]
         public System.Net.Mail.MailAddress? ReplyTo { get { throw null; } set { } }
         public System.Net.Mail.MailAddressCollection ReplyToList { get { throw null; } }
         [System.Diagnostics.CodeAnalysis.DisallowNullAttribute]

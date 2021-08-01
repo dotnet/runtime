@@ -237,7 +237,7 @@ namespace System.Diagnostics
             CreateEventSource(new EventSourceCreationData(source, logName, "."));
         }
 
-        [Obsolete("EventLog.CreateEventSource has been deprecated. Use System.Diagnostics.EventLog.CreateEventSource(EventSourceCreationData sourceData).")]
+        [Obsolete("EventLog.CreateEventSource has been deprecated. Use System.Diagnostics.EventLog.CreateEventSource(EventSourceCreationData sourceData) instead.")]
         public static void CreateEventSource(string source, string logName, string machineName)
         {
             CreateEventSource(new EventSourceCreationData(source, logName, machineName));

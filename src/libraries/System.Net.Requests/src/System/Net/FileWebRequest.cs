@@ -35,7 +35,7 @@ namespace System.Net
             _uri = uri;
         }
 
-        [Obsolete("Serialization has been deprecated for FileWebRequest")]
+        [Obsolete("Serialization has been deprecated for FileWebRequest.")]
         protected FileWebRequest(SerializationInfo serializationInfo, StreamingContext streamingContext) : base(serializationInfo, streamingContext)
         {
             throw new PlatformNotSupportedException();

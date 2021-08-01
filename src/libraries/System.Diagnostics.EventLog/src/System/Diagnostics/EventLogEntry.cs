@@ -117,7 +117,7 @@ namespace System.Diagnostics
         /// <summary>
         /// The number identifying the message for this source.
         /// </summary>
-        [Obsolete("EventLogEntry.EventID has been deprecated. Use System.Diagnostics.EventLogEntry.InstanceId.")]
+        [Obsolete("EventLogEntry.EventID has been deprecated. Use System.Diagnostics.EventLogEntry.InstanceId instead.")]
         public int EventID
         {
             get
