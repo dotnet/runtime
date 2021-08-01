@@ -64,7 +64,7 @@ namespace System.Threading
         ~Thread() { }
         public static void FreeNamedDataSlot(string name) { }
         public System.Threading.ApartmentState GetApartmentState() { throw null; }
-        [System.ObsoleteAttribute("Thread.GetCompressedStack is no longer supported. Use the System.Threading.CompressedStack class instead.")]
+        [System.ObsoleteAttribute("Thread.GetCompressedStack is not supported. Use the System.Threading.CompressedStack class instead.")]
         public System.Threading.CompressedStack GetCompressedStack() { throw null; }
         public static int GetCurrentProcessorId() { throw null; }
         public static object? GetData(System.LocalDataStoreSlot slot) { throw null; }
@@ -83,7 +83,7 @@ namespace System.Threading
         public void Resume() { }
         [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
         public void SetApartmentState(System.Threading.ApartmentState state) { }
-        [System.ObsoleteAttribute("Thread.SetCompressedStack has been deprecated and is no longer supported. Use the System.Threading.CompressedStack class instead.")]
+        [System.ObsoleteAttribute("Thread.SetCompressedStack has been deprecated and is not supported. Use the System.Threading.CompressedStack class instead.")]
         public void SetCompressedStack(System.Threading.CompressedStack stack) { }
         public static void SetData(System.LocalDataStoreSlot slot, object? data) { }
         public static void Sleep(int millisecondsTimeout) { }

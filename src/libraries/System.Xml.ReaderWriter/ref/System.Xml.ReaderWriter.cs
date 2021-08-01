@@ -86,7 +86,7 @@ namespace System.Xml
         [System.ObsoleteAttribute("ValidationType.Auto has been deprecated. Use DTD or Schema instead.")]
         Auto = 1,
         DTD = 2,
-        [System.ObsoleteAttribute("XDR Validation through XmlValidatingReader has been deprecated and is no longer supported.")]
+        [System.ObsoleteAttribute("XDR Validation through XmlValidatingReader has been deprecated and is not supported.")]
         XDR = 3,
         Schema = 4,
     }

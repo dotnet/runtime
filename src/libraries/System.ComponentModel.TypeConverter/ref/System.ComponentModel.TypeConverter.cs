@@ -1950,9 +1950,9 @@ namespace System.ComponentModel.Design
         [System.ObsoleteAttribute("SelectionTypes.Normal has been deprecated. Use SelectionTypes.Auto instead.")]
         Normal = 1,
         Replace = 2,
-        [System.ObsoleteAttribute("SelectionTypes.MouseDown has been deprecated and is no longer supported.")]
+        [System.ObsoleteAttribute("SelectionTypes.MouseDown has been deprecated and is not supported.")]
         MouseDown = 4,
-        [System.ObsoleteAttribute("SelectionTypes.MouseUp has been deprecated and is no longer supported.")]
+        [System.ObsoleteAttribute("SelectionTypes.MouseUp has been deprecated and is not supported.")]
         MouseUp = 8,
         [System.ObsoleteAttribute("SelectionTypes.Click has been deprecated. Use SelectionTypes.Primary instead.")]
         Click = 16,

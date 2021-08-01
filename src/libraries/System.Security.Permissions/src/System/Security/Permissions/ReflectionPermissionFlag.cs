@@ -13,10 +13,10 @@ namespace System.Security.Permissions
         AllFlags = 7,
         MemberAccess = 2,
         NoFlags = 0,
-        [Obsolete("ReflectionPermissionFlag.ReflectionEmit  has been deprecated and is no longer supported.")]
+        [Obsolete("ReflectionPermissionFlag.ReflectionEmit  has been deprecated and is not supported.")]
         ReflectionEmit = 4,
         RestrictedMemberAccess = 8,
-        [Obsolete("ReflectionPermissionFlag.TypeInformation has been deprecated and is no longer supported.")]
+        [Obsolete("ReflectionPermissionFlag.TypeInformation has been deprecated and is not supported.")]
         TypeInformation = 1,
     }
 }

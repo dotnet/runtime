@@ -46,7 +46,7 @@ namespace System
 
         public string? DynamicDirectory => null;
 
-        [Obsolete("AppDomain.SetDynamicBase has been deprecated and is no longer supported.")]
+        [Obsolete("AppDomain.SetDynamicBase has been deprecated and is not supported.")]
         public void SetDynamicBase(string? path) { }
 
         public string FriendlyName
@@ -216,22 +216,22 @@ namespace System
 
         public bool ShadowCopyFiles => false;
 
-        [Obsolete("AppDomain.AppendPrivatePath has been deprecated and is no longer supported.")]
+        [Obsolete("AppDomain.AppendPrivatePath has been deprecated and is not supported.")]
         public void AppendPrivatePath(string? path) { }
 
-        [Obsolete("AppDomain.ClearPrivatePath has been deprecated and is no longer supported.")]
+        [Obsolete("AppDomain.ClearPrivatePath has been deprecated and is not supported.")]
         public void ClearPrivatePath() { }
 
-        [Obsolete("AppDomain.ClearShadowCopyPath has been deprecated and is no longer supported.")]
+        [Obsolete("AppDomain.ClearShadowCopyPath has been deprecated and is not supported.")]
         public void ClearShadowCopyPath() { }
 
-        [Obsolete("AppDomain.SetCachePath has been deprecated and is no longer supported.")]
+        [Obsolete("AppDomain.SetCachePath has been deprecated and is not supported.")]
         public void SetCachePath(string? path) { }
 
-        [Obsolete("AppDomain.SetShadowCopyFiles has been deprecated and is no longer supported.")]
+        [Obsolete("AppDomain.SetShadowCopyFiles has been deprecated and is not supported.")]
         public void SetShadowCopyFiles() { }
 
-        [Obsolete("AppDomain.SetShadowCopyPath has been deprecated and is no longer supported.")]
+        [Obsolete("AppDomain.SetShadowCopyPath has been deprecated and is not supported.")]
         public void SetShadowCopyPath(string? path) { }
 
         public Assembly[] GetAssemblies() => AssemblyLoadContext.GetLoadedAssemblies();

@@ -144,12 +144,12 @@ namespace System
         public event System.ResolveEventHandler? ResourceResolve { add { } remove { } }
         public event System.ResolveEventHandler? TypeResolve { add { } remove { } }
         public event System.UnhandledExceptionEventHandler? UnhandledException { add { } remove { } }
-        [System.ObsoleteAttribute("AppDomain.AppendPrivatePath has been deprecated and is no longer supported.")]
+        [System.ObsoleteAttribute("AppDomain.AppendPrivatePath has been deprecated and is not supported.")]
         public void AppendPrivatePath(string? path) { }
         public string ApplyPolicy(string assemblyName) { throw null; }
-        [System.ObsoleteAttribute("AppDomain.ClearPrivatePath has been deprecated and is no longer supported.")]
+        [System.ObsoleteAttribute("AppDomain.ClearPrivatePath has been deprecated and is not supported.")]
         public void ClearPrivatePath() { }
-        [System.ObsoleteAttribute("AppDomain.ClearShadowCopyPath has been deprecated and is no longer supported.")]
+        [System.ObsoleteAttribute("AppDomain.ClearShadowCopyPath has been deprecated and is not supported.")]
         public void ClearShadowCopyPath() { }
         [System.ObsoleteAttribute("Creating and unloading AppDomains is not supported and throws an exception.", DiagnosticId = "SYSLIB0024", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         public static System.AppDomain CreateDomain(string friendlyName) { throw null; }
@@ -201,15 +201,15 @@ namespace System
         public System.Reflection.Assembly Load(System.Reflection.AssemblyName assemblyRef) { throw null; }
         public System.Reflection.Assembly Load(string assemblyString) { throw null; }
         public System.Reflection.Assembly[] ReflectionOnlyGetAssemblies() { throw null; }
-        [System.ObsoleteAttribute("AppDomain.SetCachePath has been deprecated and is no longer supported.")]
+        [System.ObsoleteAttribute("AppDomain.SetCachePath has been deprecated and is not supported.")]
         public void SetCachePath(string? path) { }
         public void SetData(string name, object? data) { }
-        [System.ObsoleteAttribute("AppDomain.SetDynamicBase has been deprecated and is no longer supported.")]
+        [System.ObsoleteAttribute("AppDomain.SetDynamicBase has been deprecated and is not supported.")]
         public void SetDynamicBase(string? path) { }
         public void SetPrincipalPolicy(System.Security.Principal.PrincipalPolicy policy) { }
-        [System.ObsoleteAttribute("AppDomain.SetShadowCopyFiles has been deprecated and is no longer supported.")]
+        [System.ObsoleteAttribute("AppDomain.SetShadowCopyFiles has been deprecated and is not supported.")]
         public void SetShadowCopyFiles() { }
-        [System.ObsoleteAttribute("AppDomain.SetShadowCopyPath has been deprecated and is no longer supported.")]
+        [System.ObsoleteAttribute("AppDomain.SetShadowCopyPath has been deprecated and is not supported.")]
         public void SetShadowCopyPath(string? path) { }
         public void SetThreadPrincipal(System.Security.Principal.IPrincipal principal) { }
         public override string ToString() { throw null; }
@@ -4491,10 +4491,10 @@ namespace System
         NotSpecified = 0,
         SingleDomain = 1,
         MultiDomain = 2,
-        [System.ObsoleteAttribute("LoaderOptimization.DomainMask has been deprecated and is no longer supported.")]
+        [System.ObsoleteAttribute("LoaderOptimization.DomainMask has been deprecated and is not supported.")]
         DomainMask = 3,
         MultiDomainHost = 3,
-        [System.ObsoleteAttribute("LoaderOptimization.DisallowBindings has been deprecated and is no longer supported.")]
+        [System.ObsoleteAttribute("LoaderOptimization.DisallowBindings has been deprecated and is not supported.")]
         DisallowBindings = 4,
     }
     [System.AttributeUsageAttribute(System.AttributeTargets.Method)]
@@ -7686,15 +7686,15 @@ namespace System
         public string[] Segments { get { throw null; } }
         public bool UserEscaped { get { throw null; } }
         public string UserInfo { get { throw null; } }
-        [System.ObsoleteAttribute("Uri.Canonicalize has been deprecated and is no longer supported.")]
+        [System.ObsoleteAttribute("Uri.Canonicalize has been deprecated and is not supported.")]
         protected virtual void Canonicalize() { }
         public static System.UriHostNameType CheckHostName(string? name) { throw null; }
         public static bool CheckSchemeName([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? schemeName) { throw null; }
-        [System.ObsoleteAttribute("Uri.CheckSecurity has been deprecated and is no longer supported.")]
+        [System.ObsoleteAttribute("Uri.CheckSecurity has been deprecated and is not supported.")]
         protected virtual void CheckSecurity() { }
         public static int Compare(System.Uri? uri1, System.Uri? uri2, System.UriComponents partsToCompare, System.UriFormat compareFormat, System.StringComparison comparisonType) { throw null; }
         public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? comparand) { throw null; }
-        [System.ObsoleteAttribute("Uri.Escape has been deprecated and is no longer supported.")]
+        [System.ObsoleteAttribute("Uri.Escape has been deprecated and is not supported.")]
         protected virtual void Escape() { }
         public static string EscapeDataString(string stringToEscape) { throw null; }
         [System.ObsoleteAttribute("Uri.EscapeString has been deprecated. Use GetComponents() or static EscapeDataString() to escape a Uri component or a string.")]
@@ -7708,14 +7708,14 @@ namespace System
         protected void GetObjectData(System.Runtime.Serialization.SerializationInfo serializationInfo, System.Runtime.Serialization.StreamingContext streamingContext) { }
         public static string HexEscape(char character) { throw null; }
         public static char HexUnescape(string pattern, ref int index) { throw null; }
-        [System.ObsoleteAttribute("Uri.IsBadFileSystemCharacter has been deprecated and is no longer supported.")]
+        [System.ObsoleteAttribute("Uri.IsBadFileSystemCharacter has been deprecated and is not supported.")]
         protected virtual bool IsBadFileSystemCharacter(char character) { throw null; }
         public bool IsBaseOf(System.Uri uri) { throw null; }
-        [System.ObsoleteAttribute("Uri.IsExcludedCharacter has been deprecated and is no longer supported.")]
+        [System.ObsoleteAttribute("Uri.IsExcludedCharacter has been deprecated and is not supported.")]
         protected static bool IsExcludedCharacter(char character) { throw null; }
         public static bool IsHexDigit(char character) { throw null; }
         public static bool IsHexEncoding(string pattern, int index) { throw null; }
-        [System.ObsoleteAttribute("Uri.IsReservedCharacter has been deprecated and is no longer supported.")]
+        [System.ObsoleteAttribute("Uri.IsReservedCharacter has been deprecated and is not supported.")]
         protected virtual bool IsReservedCharacter(char character) { throw null; }
         public bool IsWellFormedOriginalString() { throw null; }
         public static bool IsWellFormedUriString([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? uriString, System.UriKind uriKind) { throw null; }
@@ -7724,7 +7724,7 @@ namespace System
         public System.Uri MakeRelativeUri(System.Uri uri) { throw null; }
         public static bool operator ==(System.Uri? uri1, System.Uri? uri2) { throw null; }
         public static bool operator !=(System.Uri? uri1, System.Uri? uri2) { throw null; }
-        [System.ObsoleteAttribute("Uri.Parse has been deprecated and is no longer supported.")]
+        [System.ObsoleteAttribute("Uri.Parse has been deprecated and is not supported.")]
         protected virtual void Parse() { }
         void System.Runtime.Serialization.ISerializable.GetObjectData(System.Runtime.Serialization.SerializationInfo serializationInfo, System.Runtime.Serialization.StreamingContext streamingContext) { }
         public override string ToString() { throw null; }

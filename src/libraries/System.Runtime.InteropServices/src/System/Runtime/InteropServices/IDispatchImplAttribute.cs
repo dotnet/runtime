@@ -4,7 +4,7 @@
 namespace System.Runtime.InteropServices
 {
     [AttributeUsage(AttributeTargets.Class | AttributeTargets.Assembly, Inherited = false)]
-    [Obsolete("IDispatchImplAttribute has deprecated and is no longer supported.", error: false)]
+    [Obsolete("IDispatchImplAttribute has deprecated and is not supported.", error: false)]
     public sealed class IDispatchImplAttribute : Attribute
     {
         public IDispatchImplAttribute(short implType) : this((IDispatchImplType)implType)

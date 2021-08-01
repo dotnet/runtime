@@ -20,7 +20,7 @@ The acceptance criteria for adding an obsoletion includes:
         * `<Compile Include="$(CommonPath)System\Obsoletions.cs" Link="Common\System\Obsoletions.cs" />`
 * Annotate `ref` files using the hard-coded strings copied from `Obsoletions.cs`
     * This matches our general pattern of `ref` files using hard-coded attribute strings
-    * Example: `[System.ObsoleteAttribute("The UTF-7 encoding is insecure and should not be used. Consider using UTF-8.", DiagnosticId = "SYSLIB0001", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]`
+    * Example: `[System.ObsoleteAttribute("The UTF-7 encoding is insecure and should not be used. Consider using UTF-8 instead.", DiagnosticId = "SYSLIB0001", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]`
 * If the library builds against downlevel targets earlier than .NET 5.0, then add an internal copy of `ObsoleteAttribute`
     * The compiler recognizes internal implementations of `ObsoleteAttribute` to enable the `DiagnosticId` and `UrlFormat` properties to light up downlevel
     * An MSBuild property can be added to the project's first `<PropertyGroup>` to achieve this easily
@@ -55,7 +55,7 @@ The PR that reveals the implementation of the `<IncludeInternalObsoleteAttribute
 
 | Diagnostic ID     | Description |
 | :---------------- | :---------- |
-|  __`SYSLIB0001`__ | The UTF-7 encoding is insecure and should not be used. Consider using UTF-8. |
+|  __`SYSLIB0001`__ | The UTF-7 encoding is insecure and should not be used. Consider using UTF-8 instead. |
 |  __`SYSLIB0002`__ | PrincipalPermissionAttribute is not honored by the runtime and must not be used. |
 |  __`SYSLIB0003`__ | Code Access Security is not supported or honored by the runtime. |
 |  __`SYSLIB0004`__ | The Constrained Execution Region (CER) feature is not supported. |
@@ -66,24 +66,24 @@ The PR that reveals the implementation of the `<IncludeInternalObsoleteAttribute
 |  __`SYSLIB0009`__ | The AuthenticationManager Authenticate and PreAuthenticate methods are not supported and throw PlatformNotSupportedException. |
 |  __`SYSLIB0010`__ | This Remoting API is not supported and throws PlatformNotSupportedException. |
 |  __`SYSLIB0011`__ | `BinaryFormatter` serialization is obsolete and should not be used. See https://aka.ms/binaryformatter for recommended alternatives. |
-|  __`SYSLIB0012`__ | Assembly.CodeBase and Assembly.EscapedCodeBase are only included for .NET Framework compatibility. Use Assembly.Location. |
-|  __`SYSLIB0013`__ | Uri.EscapeUriString can corrupt the Uri string in some cases. Consider using Uri.EscapeDataString for query string components. |
-|  __`SYSLIB0014`__ | WebRequest, HttpWebRequest, ServicePoint, and WebClient are obsolete. Use HttpClient. |
+|  __`SYSLIB0012`__ | Assembly.CodeBase and Assembly.EscapedCodeBase are only included for .NET Framework compatibility. Use Assembly.Location instead. |
+|  __`SYSLIB0013`__ | Uri.EscapeUriString can corrupt the Uri string in some cases. Consider using Uri.EscapeDataString for query string components instead. |
+|  __`SYSLIB0014`__ | WebRequest, HttpWebRequest, ServicePoint, and WebClient are obsolete. Use HttpClient instead. |
 |  __`SYSLIB0015`__ | DisablePrivateReflectionAttribute has no effect in .NET 6.0+. |
 |  __`SYSLIB0016`__ | Use the Graphics.GetContextInfo overloads that accept arguments for better performance and fewer allocations. |
 |  __`SYSLIB0017`__ | Strong name signing is not supported and throws PlatformNotSupportedException. |
 |  __`SYSLIB0018`__ | ReflectionOnly loading is not supported and throws PlatformNotSupportedException. |
 |  __`SYSLIB0019`__ | RuntimeEnvironment members SystemConfigurationFile, GetRuntimeInterfaceAsIntPtr, and GetRuntimeInterfaceAsObject are no longer supported and throw PlatformNotSupportedException. |
 |  __`SYSLIB0020`__ | JsonSerializerOptions.IgnoreNullValues is obsolete. To ignore null values when serializing, set DefaultIgnoreCondition to JsonIgnoreCondition.WhenWritingNull. |
-|  __`SYSLIB0021`__ | Derived cryptographic types are obsolete. Use the Create method on the base type. |
-|  __`SYSLIB0022`__ | The Rijndael and RijndaelManaged types are obsolete. Use Aes. |
-|  __`SYSLIB0023`__ | RNGCryptoServiceProvider is obsolete. To generate a random number, use one of the RandomNumberGenerator static methods. |
+|  __`SYSLIB0021`__ | Derived cryptographic types are obsolete. Use the Create method on the base type instead. |
+|  __`SYSLIB0022`__ | The Rijndael and RijndaelManaged types are obsolete. Use Aes instead. |
+|  __`SYSLIB0023`__ | RNGCryptoServiceProvider is obsolete. To generate a random number, use one of the RandomNumberGenerator static methods instead. |
 |  __`SYSLIB0024`__ | Creating and unloading AppDomains is not supported and throws an exception. |
 |  __`SYSLIB0025`__ | SuppressIldasmAttribute has no effect in .NET 6.0+. |
 |  __`SYSLIB0026`__ | X509Certificate and X509Certificate2 are immutable. Use the appropriate constructor to create a new certificate. |
 |  __`SYSLIB0027`__ | PublicKey.Key is obsolete. Use the appropriate method to get the public key, such as GetRSAPublicKey. |
 |  __`SYSLIB0028`__ | X509Certificate2.PrivateKey is obsolete. Use the appropriate method to get the private key, such as GetRSAPrivateKey, or use the CopyWithPrivateKey method to create a new instance with a private key. |
-|  __`SYSLIB0029`__ | ProduceLegacyHmacValues is obsolete. Producing legacy HMAC values is no longer supported. |
+|  __`SYSLIB0029`__ | ProduceLegacyHmacValues is obsolete. Producing legacy HMAC values is not supported. |
 |  __`SYSLIB0030`__ | HMACSHA1 always uses the algorithm implementation provided by the platform. Use a constructor without the useManagedSha1 parameter. |
 |  __`SYSLIB0031`__ | EncodeOID is obsolete. Use the ASN.1 functionality provided in System.Formats.Asn1. |
 

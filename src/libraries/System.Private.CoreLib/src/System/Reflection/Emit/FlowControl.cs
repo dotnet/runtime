@@ -21,7 +21,7 @@ namespace System.Reflection.Emit
         Cond_Branch = 3,
         Meta = 4,
         Next = 5,
-        [Obsolete("FlowControl.Phi has been deprecated and is no longer supported.")]
+        [Obsolete("FlowControl.Phi has been deprecated and is not supported.")]
         Phi = 6,
         Return = 7,
         Throw = 8,

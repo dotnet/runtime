@@ -5080,7 +5080,7 @@ namespace System
         }
 
         /// <internalonly/>
-        [Obsolete("Uri.Canonicalize has been deprecated and is no longer supported.")]
+        [Obsolete("Uri.Canonicalize has been deprecated and is not supported.")]
         protected virtual void Canonicalize()
         {
             // this method if suppressed by the derived class
@@ -5090,7 +5090,7 @@ namespace System
         }
 
         /// <internalonly/>
-        [Obsolete("Uri.Parse has been deprecated and is no longer supported.")]
+        [Obsolete("Uri.Parse has been deprecated and is not supported.")]
         protected virtual void Parse()
         {
             // this method if suppressed by the derived class
@@ -5100,7 +5100,7 @@ namespace System
         }
 
         /// <internalonly/>
-        [Obsolete("Uri.Escape has been deprecated and is no longer supported.")]
+        [Obsolete("Uri.Escape has been deprecated and is not supported.")]
         protected virtual void Escape()
         {
             // this method if suppressed by the derived class
@@ -5142,7 +5142,7 @@ namespace System
         //  Check for any invalid or problematic character sequences
         //
         /// <internalonly/>
-        [Obsolete("Uri.CheckSecurity has been deprecated and is no longer supported.")]
+        [Obsolete("Uri.CheckSecurity has been deprecated and is not supported.")]
         protected virtual void CheckSecurity()
         {
             // This method just does not make sense
@@ -5158,7 +5158,7 @@ namespace System
         //  true if <character> is reserved else false
         //
         /// <internalonly/>
-        [Obsolete("Uri.IsReservedCharacter has been deprecated and is no longer supported.")]
+        [Obsolete("Uri.IsReservedCharacter has been deprecated and is not supported.")]
         protected virtual bool IsReservedCharacter(char character)
         {
             // This method just does not make sense as protected virtual
@@ -5186,7 +5186,7 @@ namespace System
         //  true if <character> should be escaped else false
         //
         /// <internalonly/>
-        [Obsolete("Uri.IsExcludedCharacter has been deprecated and is no longer supported.")]
+        [Obsolete("Uri.IsExcludedCharacter has been deprecated and is not supported.")]
         protected static bool IsExcludedCharacter(char character)
         {
             // This method just does not make sense as protected
@@ -5229,7 +5229,7 @@ namespace System
         //  true if <character> would be a treated as a bad file system character
         //  else false
         //
-        [Obsolete("Uri.IsBadFileSystemCharacter has been deprecated and is no longer supported.")]
+        [Obsolete("Uri.IsBadFileSystemCharacter has been deprecated and is not supported.")]
         protected virtual bool IsBadFileSystemCharacter(char character)
         {
             // This method just does not make sense as protected virtual

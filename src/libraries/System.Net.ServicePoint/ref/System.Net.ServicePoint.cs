@@ -11,7 +11,7 @@ namespace System.Net
     public enum SecurityProtocolType
     {
         SystemDefault = 0,
-        [System.ObsoleteAttribute("SecurityProtocolType.Ssl3 has been deprecated and is no longer supported.")]
+        [System.ObsoleteAttribute("SecurityProtocolType.Ssl3 has been deprecated and is not supported.")]
         Ssl3 = 48,
         Tls = 192,
         Tls11 = 768,

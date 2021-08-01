@@ -658,10 +658,10 @@ namespace System.Data
         Utc = 4,
     }
     [System.AttributeUsageAttribute(System.AttributeTargets.All)]
-    [System.ObsoleteAttribute("DataSysDescriptionAttribute has been deprecated and is no longer supported.", false)]
+    [System.ObsoleteAttribute("DataSysDescriptionAttribute has been deprecated and is not supported.", false)]
     public partial class DataSysDescriptionAttribute : System.ComponentModel.DescriptionAttribute
     {
-        [System.ObsoleteAttribute("DataSysDescriptionAttribute has been deprecated and is no longer supported.", false)]
+        [System.ObsoleteAttribute("DataSysDescriptionAttribute has been deprecated and is not supported.", false)]
         public DataSysDescriptionAttribute(string description) { }
         public override string Description { get { throw null; } }
     }
@@ -3713,7 +3713,7 @@ namespace System.Data.SqlTypes
 }
 namespace System.Xml
 {
-    [System.ObsoleteAttribute("XmlDataDocument has been deprecated and is no longer supported.")]
+    [System.ObsoleteAttribute("XmlDataDocument has been deprecated and is not supported.")]
     public partial class XmlDataDocument : System.Xml.XmlDocument
     {
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("XmlDataDocument is used for serialization and deserialization. Members from serialized types may be trimmed if not referenced directly.")]

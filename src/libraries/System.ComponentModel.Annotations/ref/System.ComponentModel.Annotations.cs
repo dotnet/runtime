@@ -16,7 +16,7 @@ namespace System.ComponentModel.DataAnnotations
     }
 #nullable enable
     [System.AttributeUsageAttribute(System.AttributeTargets.Field | System.AttributeTargets.Property, AllowMultiple=false, Inherited=true)]
-    [System.ObsoleteAttribute("AssociationAttribute has been deprecated and is no longer supported.")]
+    [System.ObsoleteAttribute("AssociationAttribute has been deprecated and is not supported.")]
     public sealed partial class AssociationAttribute : System.Attribute
     {
         public AssociationAttribute(string name, string thisKey, string otherKey) { }
@@ -165,7 +165,7 @@ namespace System.ComponentModel.DataAnnotations
         public override bool IsValid(object? value) { throw null; }
     }
     [System.AttributeUsageAttribute(System.AttributeTargets.Field | System.AttributeTargets.Property, AllowMultiple=false)]
-    [System.ObsoleteAttribute("FilterUIHintAttribute has been deprecated and is no longer supported.")]
+    [System.ObsoleteAttribute("FilterUIHintAttribute has been deprecated and is not supported.")]
     public sealed partial class FilterUIHintAttribute : System.Attribute
     {
         public FilterUIHintAttribute(string filterUIHint) { }

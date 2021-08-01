@@ -507,13 +507,13 @@ namespace System.Threading
             return SetApartmentStateUnchecked(state, throwOnError);
         }
 
-        [Obsolete("Thread.GetCompressedStack is no longer supported. Use the System.Threading.CompressedStack class instead.")]
+        [Obsolete("Thread.GetCompressedStack is not supported. Use the System.Threading.CompressedStack class instead.")]
         public CompressedStack GetCompressedStack()
         {
             throw new InvalidOperationException(SR.Thread_GetSetCompressedStack_NotSupported);
         }
 
-        [Obsolete("Thread.SetCompressedStack is no longer supported. Use the System.Threading.CompressedStack class instead.")]
+        [Obsolete("Thread.SetCompressedStack is not supported. Use the System.Threading.CompressedStack class instead.")]
         public void SetCompressedStack(CompressedStack stack)
         {
             throw new InvalidOperationException(SR.Thread_GetSetCompressedStack_NotSupported);

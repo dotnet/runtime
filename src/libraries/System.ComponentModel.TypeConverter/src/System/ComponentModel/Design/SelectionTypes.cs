@@ -37,7 +37,7 @@ namespace System.ComponentModel.Design
         /// component in the selection list is already selected, it does not remove the
         /// existing selection, but promotes that component to be the primary selection.
         /// </summary>
-        [Obsolete("SelectionTypes.MouseDown has been deprecated and is no longer supported.")]
+        [Obsolete("SelectionTypes.MouseDown has been deprecated and is not supported.")]
         MouseDown = 0x0004,
 
         /// <summary>
@@ -46,7 +46,7 @@ namespace System.ComponentModel.Design
         /// in the selection list is already selected, it does not remove the
         /// existing selection, but promotes that component to be the primary selection.
         /// </summary>
-        [Obsolete("SelectionTypes.MouseUp has been deprecated and is no longer supported.")]
+        [Obsolete("SelectionTypes.MouseUp has been deprecated and is not supported.")]
         MouseUp = 0x0008,
 
         /// <summary>
