@@ -8470,6 +8470,8 @@ void CodeGen::genFnEpilog(BasicBlock* block)
                 // clang-format off
                 if (call->IsR2RRelativeIndir())
                 {
+                    // Indirection cell is in REG_FASTTAILCALL_TARGET, so just emit
+                    // jmp [reg]
                     GetEmitter()->emitIns_Call(
                             emitter::EC_INDIR_ARD,
                             call->gtCallMethHnd,
@@ -8481,7 +8483,7 @@ void CodeGen::genFnEpilog(BasicBlock* block)
                             gcInfo.gcVarPtrSetCur,
                             gcInfo.gcRegGCrefSetCur,
                             gcInfo.gcRegByrefSetCur,
-                            BAD_IL_OFFSET, REG_RAX, REG_NA, 0, 0,  /* iloffset, ireg, xreg, xmul, disp */
+                            BAD_IL_OFFSET, REG_FASTTAILCALL_TARGET, REG_NA, 0, 0,  /* iloffset, ireg, xreg, xmul, disp */
                             true /* isJump */
                     );
                 }
@@ -8538,9 +8540,9 @@ void CodeGen::genFnEpilog(BasicBlock* block)
                 else
                 {
                     // Target requires indirection to obtain. genCallInstruction will have materialized
-                    // it into RAX already, so just jump to it. The stack walker requires that a register
-                    // indirect tail call be rex.w prefixed.
-                    GetEmitter()->emitIns_R(INS_rex_jmp, emitTypeSize(TYP_I_IMPL), REG_RAX);
+                    // it into REG_FASTTAILCALL_TARGET already, so just jump to it. The stack walker requires that a
+                    // register indirect tail call be rex.w prefixed.
+                    GetEmitter()->emitIns_R(INS_rex_jmp, emitTypeSize(TYP_I_IMPL), REG_FASTTAILCALL_TARGET);
                 }
             }
 

@@ -2875,7 +2875,7 @@ void Compiler::fgInitArgInfo(GenTreeCall* call)
 #ifdef DEBUG
         indirectCellAddress->AsIntCon()->gtTargetHandle = (size_t)call->gtCallMethHnd;
 #endif
-        indirectCellAddress->SetRegNum(REG_RAX);
+        indirectCellAddress->SetRegNum(REG_FASTTAILCALL_TARGET);
 
         // Push the stub address onto the list of arguments.
         call->gtCallArgs = gtPrependNewCallArg(indirectCellAddress, call->gtCallArgs);
@@ -7691,7 +7691,7 @@ GenTree* Compiler::fgMorphPotentialTailCall(GenTreeCall* call)
 
 // For R2R we might need a different entry point for this call if we are doing a tailcall.
 // The reason is that the normal delay load helper uses the return address to find the indirection
-// cell in x64, but now the JIT is expected to leave the indirection cell in rax.
+// cell in x64, but now the JIT is expected to leave the indirection cell in REG_FASTTAILCALL_TARGET.
 // We optimize delegate invocations manually in the JIT so skip this for those.
 #ifdef FEATURE_READYTORUN_COMPILER
     if (call->IsR2RRelativeIndir() && canFastTailCall && !fastTailCallToLoop && !call->IsDelegateInvoke())

@@ -1216,9 +1216,9 @@ int LinearScan::BuildCall(GenTreeCall* call)
         // computed into a register.
         if (call->IsFastTailCall() && !ctrlExpr->isContained())
         {
-            // Fast tail call - make sure that call target is always computed in RAX
-            // so that epilog sequence can generate "jmp rax" to achieve fast tail call.
-            ctrlExprCandidates = RBM_RAX;
+            // Fast tail call - make sure that call target is always computed in REG_FASTTAILCALL_TARGET
+            // so that epilog sequence can generate "jmp reg" to achieve fast tail call.
+            ctrlExprCandidates = RBM_FASTTAILCALL_TARGET;
         }
 #ifdef TARGET_X86
         else if (call->IsVirtualStub() && (call->gtCallType == CT_INDIRECT))
