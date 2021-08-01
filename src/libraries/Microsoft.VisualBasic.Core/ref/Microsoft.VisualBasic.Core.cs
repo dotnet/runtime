@@ -383,7 +383,7 @@ namespace Microsoft.VisualBasic
         public static void FilePut(int FileNumber, string Value, long RecordNumber = (long)-1, bool StringIsFixedLength = false) { }
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The origin object type could not be statically analyzed and may be trimmed")]
         public static void FilePut(int FileNumber, System.ValueType Value, long RecordNumber = (long)-1) { }
-        [System.ObsoleteAttribute("This member has been deprecated. Please use FilePutObject to write Object types, or coerce FileNumber and RecordNumber to Integer for writing non-Object types. https://go.microsoft.com/fwlink/?linkid=14202")]
+        [System.ObsoleteAttribute("FileSystem.FilePut has been deprecated. Use FilePutObject to write Object types, or coerce FileNumber and RecordNumber to Integer for writing non-Object types.")]
         public static void FilePut(object FileNumber, object Value, object RecordNumber) { }
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The origin object type could not be statically analyzed and may be trimmed")]
         public static void FilePutObject(int FileNumber, object Value, long RecordNumber = (long)-1) { }

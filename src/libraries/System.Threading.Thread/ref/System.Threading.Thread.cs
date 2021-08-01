@@ -36,7 +36,7 @@ namespace System.Threading
         public Thread(System.Threading.ParameterizedThreadStart start, int maxStackSize) { }
         public Thread(System.Threading.ThreadStart start) { }
         public Thread(System.Threading.ThreadStart start, int maxStackSize) { }
-        [System.ObsoleteAttribute("The ApartmentState property has been deprecated.  Use GetApartmentState, SetApartmentState or TrySetApartmentState instead.", false)]
+        [System.ObsoleteAttribute("The ApartmentState property has been deprecated.  Use GetApartmentState, SetApartmentState or TrySetApartmentState.", false)]
         public System.Threading.ApartmentState ApartmentState { get { throw null; } set { } }
         public System.Globalization.CultureInfo CurrentCulture { get { throw null; } set { } }
         public static System.Security.Principal.IPrincipal? CurrentPrincipal { get { throw null; } set { } }
@@ -79,11 +79,11 @@ namespace System.Threading
         public static void MemoryBarrier() { }
         [System.ObsoleteAttribute("Thread.ResetAbort is not supported and throws PlatformNotSupportedException.", DiagnosticId = "SYSLIB0006", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         public static void ResetAbort() { }
-        [System.ObsoleteAttribute("Thread.Resume has been deprecated.  Please use other classes in System.Threading, such as Monitor, Mutex, Event, and Semaphore, to synchronize Threads or protect resources.  https://go.microsoft.com/fwlink/?linkid=14202", false)]
+        [System.ObsoleteAttribute("Thread.Resume has been deprecated. Use other classes in System.Threading, such as Monitor, Mutex, Event, and Semaphore, to synchronize Threads or protect resources.", false)]
         public void Resume() { }
         [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
         public void SetApartmentState(System.Threading.ApartmentState state) { }
-        [System.ObsoleteAttribute("Thread.SetCompressedStack is no longer supported. Please use the System.Threading.CompressedStack class")]
+        [System.ObsoleteAttribute("Thread.SetCompressedStack has been deprecated and is no longer supported. Use the System.Threading.CompressedStack class.")]
         public void SetCompressedStack(System.Threading.CompressedStack stack) { }
         public static void SetData(System.LocalDataStoreSlot slot, object? data) { }
         public static void Sleep(int millisecondsTimeout) { }
@@ -93,7 +93,7 @@ namespace System.Threading
         public void Start() { }
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public void Start(object? parameter) { }
-        [System.ObsoleteAttribute("Thread.Suspend has been deprecated.  Please use other classes in System.Threading, such as Monitor, Mutex, Event, and Semaphore, to synchronize Threads or protect resources.  https://go.microsoft.com/fwlink/?linkid=14202", false)]
+        [System.ObsoleteAttribute("Thread.Suspend has been deprecated. Use other classes in System.Threading, such as Monitor, Mutex, Event, and Semaphore, to synchronize Threads or protect resources.", false)]
         public void Suspend() { }
         public bool TrySetApartmentState(System.Threading.ApartmentState state) { throw null; }
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
