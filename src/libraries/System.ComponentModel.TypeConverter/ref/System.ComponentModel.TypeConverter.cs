@@ -2195,7 +2195,7 @@ namespace System.ComponentModel.Design.Serialization
     }
     public delegate void ResolveNameEventHandler(object? sender, System.ComponentModel.Design.Serialization.ResolveNameEventArgs e);
     [System.AttributeUsageAttribute(System.AttributeTargets.Class | System.AttributeTargets.Interface, AllowMultiple=true, Inherited=true)]
-    [System.ObsoleteAttribute("RootDesignerSerializerAttribute has been deprecated. Use DesignerSerializerAttribute. For example, to specify a root designer for CodeDom, use DesignerSerializerAttribute(...,typeof(TypeCodeDomSerializer)) instead.")]
+    [System.ObsoleteAttribute("RootDesignerSerializerAttribute has been deprecated. Use DesignerSerializerAttribute instead. For example, to specify a root designer for CodeDom, use DesignerSerializerAttribute(...,typeof(TypeCodeDomSerializer)) instead.")]
     public sealed partial class RootDesignerSerializerAttribute : System.Attribute
     {
         public RootDesignerSerializerAttribute(string? serializerTypeName, string? baseSerializerTypeName, bool reloadable) { }

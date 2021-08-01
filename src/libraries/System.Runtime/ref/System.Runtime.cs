@@ -10625,7 +10625,7 @@ namespace System.IO
         public System.Threading.Tasks.Task CopyToAsync(System.IO.Stream destination, int bufferSize) { throw null; }
         public virtual System.Threading.Tasks.Task CopyToAsync(System.IO.Stream destination, int bufferSize, System.Threading.CancellationToken cancellationToken) { throw null; }
         public System.Threading.Tasks.Task CopyToAsync(System.IO.Stream destination, System.Threading.CancellationToken cancellationToken) { throw null; }
-        [System.ObsoleteAttribute("Stream.CreateWaitHandle has been deprecated. Use new ManualResetEvent(false) instead.")]
+        [System.ObsoleteAttribute("Stream.CreateWaitHandle has been deprecated. Use the ManualResetEvent(false) constructor instead.")]
         protected virtual System.Threading.WaitHandle CreateWaitHandle() { throw null; }
         public void Dispose() { }
         protected virtual void Dispose(bool disposing) { }
