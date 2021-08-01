@@ -8,8 +8,9 @@ namespace System.Globalization
         private static partial class Settings
         {
             /// <summary>
-            /// Load ICU (when not in Invariant mode) in a static cctor to ensure it is loaded early in the process.
-            /// Other places, e.g. CompareInfo.GetSortKey, rely on ICU already being loaded before they are called.
+            /// Load ICU (when not in Invariant mode) in a static cctor to ensure it is loaded as side-effect of
+            /// the GlobalizationMode.Invariant check. Globalization P/Invokes, e.g. in CompareInfo.GetSortKey,
+            /// rely on ICU already being loaded before they are called.
             /// </summary>
             static Settings()
             {
