@@ -989,14 +989,7 @@ namespace ILCompiler
 #if DEBUG
             try
             {
-                try
-                {
-                    return new Program().Run(args);
-                }
-                finally
-                {
-                    ReadyToRunCodegenCompilationBuilder.ShutdownJit();
-                }
+                return new Program().Run(args);
             }
             catch (CodeGenerationFailedException ex) when (DumpReproArguments(ex))
             {
@@ -1005,14 +998,7 @@ namespace ILCompiler
 #else
             try
             {
-                try
-                {
-                    return new Program().Run(args);
-                }
-                finally
-                {
-                    ReadyToRunCodegenCompilationBuilder.ShutdownJit();
-                }
+                return new Program().Run(args);
             }
             catch (Exception e)
             {
