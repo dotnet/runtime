@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Threading.Tasks.Sources;
@@ -34,20 +35,16 @@ namespace System.IO.Strategies
 
         public override ValueTask<int> ReadAsync(Memory<byte> destination, CancellationToken cancellationToken)
         {
-            if (!CanRead)
+            if (!CanSeek)
             {
-                ThrowHelper.ThrowNotSupportedException_UnreadableStream();
+                return RandomAccess.ReadAtOffsetAsync(_fileHandle, destination, fileOffset: -1, cancellationToken);
             }
 
-            if (CanSeek)
-            {
-                // This implementation updates the file position after the operation completes, rather than before.
-                // Also, unlike the Net5CompatFileStreamStrategy implementation, this implementation doesn't serialize operations.
-                ReadAsyncTaskSource rats = Interlocked.Exchange(ref _readAsyncTaskSource, null) ?? new ReadAsyncTaskSource(this);
-                return rats.QueueRead(destination, cancellationToken);
-            }
-
-            return RandomAccess.ReadAtOffsetAsync(_fileHandle, destination, fileOffset: -1, cancellationToken);
+            // This implementation updates the file position before the operation starts and updates it after incomplete read.
+            // Also, unlike the Net5CompatFileStreamStrategy implementation, this implementation doesn't serialize operations.
+            long readOffset = Interlocked.Add(ref _filePosition, destination.Length) - destination.Length;
+            ReadAsyncTaskSource rats = Interlocked.Exchange(ref _readAsyncTaskSource, null) ?? new ReadAsyncTaskSource(this);
+            return rats.QueueRead(destination, readOffset, cancellationToken);
         }
 
         public override IAsyncResult BeginWrite(byte[] buffer, int offset, int count, AsyncCallback? callback, object? state) =>
@@ -61,19 +58,8 @@ namespace System.IO.Strategies
 
         public override ValueTask WriteAsync(ReadOnlyMemory<byte> source, CancellationToken cancellationToken)
         {
-            if (!CanWrite)
-            {
-                ThrowHelper.ThrowNotSupportedException_UnwritableStream();
-            }
-
-            long filePositionBefore = -1;
-            if (CanSeek)
-            {
-                filePositionBefore = _filePosition;
-                _filePosition += source.Length;
-            }
-
-            return RandomAccess.WriteAtOffsetAsync(_fileHandle, source, filePositionBefore, cancellationToken);
+            long writeOffset = CanSeek ? Interlocked.Add(ref _filePosition, source.Length) - source.Length : -1;
+            return RandomAccess.WriteAtOffsetAsync(_fileHandle, source, writeOffset, cancellationToken);
         }
 
         /// <summary>Provides a reusable ValueTask-backing object for implementing ReadAsync.</summary>
@@ -83,14 +69,16 @@ namespace System.IO.Strategies
             private ManualResetValueTaskSourceCore<int> _source;
 
             private Memory<byte> _destination;
+            private long _readOffset;
             private ExecutionContext? _context;
             private CancellationToken _cancellationToken;
 
             public ReadAsyncTaskSource(UnixFileStreamStrategy stream) => _stream = stream;
 
-            public ValueTask<int> QueueRead(Memory<byte> destination, CancellationToken cancellationToken)
+            public ValueTask<int> QueueRead(Memory<byte> destination, long readOffset, CancellationToken cancellationToken)
             {
                 _destination = destination;
+                _readOffset = readOffset;
                 _cancellationToken = cancellationToken;
                 _context = ExecutionContext.Capture();
 
@@ -123,7 +111,7 @@ namespace System.IO.Strategies
                     }
                     else
                     {
-                        result = _stream.Read(_destination.Span);
+                        result = RandomAccess.ReadAtOffset(_stream._fileHandle, _destination.Span, _readOffset);
                     }
                 }
                 catch (Exception e)
@@ -132,7 +120,14 @@ namespace System.IO.Strategies
                 }
                 finally
                 {
+                    // if the read was incomplete, we need to update the file position:
+                    if (result != _destination.Length)
+                    {
+                        _stream.OnIncompleteRead(_destination.Length, result);
+                    }
+
                     _destination = default;
+                    _readOffset = -1;
                     _cancellationToken = default;
                     _context = null;
                 }
