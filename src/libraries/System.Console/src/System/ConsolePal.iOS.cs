@@ -1,22 +1,34 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics;
 using System.IO;
+using System.Runtime.InteropServices;
 using System.Text;
 
 namespace System
 {
     internal sealed class NSLogStream : ConsoleStream
     {
+        private readonly StringBuilder _buffer = new StringBuilder();
+
         public NSLogStream() : base(FileAccess.Write) {}
 
         public override int Read(Span<byte> buffer) => throw Error.GetReadNotSupported();
 
         public override unsafe void Write(ReadOnlySpan<byte> buffer)
         {
-            fixed (byte* ptr = buffer)
+            ReadOnlySpan<char> charSpan = MemoryMarshal.Cast<byte, char>(buffer);
+
+            lock (_buffer)
             {
-                Interop.Sys.Log(ptr, buffer.Length);
+                AccumulateNewLines(_buffer, charSpan, line =>
+                {
+                    fixed (char* ptr = line)
+                    {
+                        Interop.Sys.Log((byte*)ptr, line.Length * 2);
+                    }
+                });
             }
         }
     }
