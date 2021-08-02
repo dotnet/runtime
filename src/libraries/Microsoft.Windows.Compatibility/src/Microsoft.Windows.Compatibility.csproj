@@ -7,10 +7,15 @@
     <NoTargetsDoNotReferenceOutputAssemblies>false</NoTargetsDoNotReferenceOutputAssemblies>
     <!-- This is a meta package and doesn't contain any libs. -->
     <NoWarn>$(NoWarn);NU5128</NoWarn>
-    <!-- By default, don't build the project references to avoid unnecessary incremental builds. -->
-    <NoBuild>true</NoBuild>
     <PackageDescription>This Windows Compatibility Pack provides access to APIs that were previously available only for .NET Framework. It can be used from both .NET Core as well as .NET Standard.</PackageDescription>
   </PropertyGroup>
+
+  <!-- By default, don't build the project references to avoid unnecessary incremental builds. -->
+  <ItemDefinitionGroup Condition="'$(BuildProjectReferences)' != 'true'">
+    <ProjectReference>
+      <BuildReference>false</BuildReference>
+    </ProjectReference>
+  </ItemDefinitionGroup>
 
   <ItemGroup>
     <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Win32.Registry.AccessControl\src\Microsoft.Win32.Registry.AccessControl.csproj" />
