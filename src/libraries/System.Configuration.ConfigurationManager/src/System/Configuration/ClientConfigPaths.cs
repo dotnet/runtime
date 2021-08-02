@@ -92,7 +92,23 @@ namespace System.Configuration
                 }
             }
 
-            if (!string.IsNullOrEmpty(ApplicationUri))
+            string externalConfigPath = AppDomain.CurrentDomain.GetData("APP_CONFIG_FILE") as string;
+            if (!string.IsNullOrEmpty(externalConfigPath))
+            {
+                if (Uri.IsWellFormedUriString(externalConfigPath, UriKind.Absolute))
+                {
+                    Uri externalConfigUri = new Uri(externalConfigPath);
+                    if (externalConfigUri.IsFile)
+                    {
+                        ApplicationConfigUri = externalConfigUri.LocalPath;
+                    }
+                }
+                else
+                {
+                    ApplicationConfigUri = Path.GetFullPath(externalConfigPath);
+                }
+            }
+            else if (!string.IsNullOrEmpty(ApplicationUri))
             {
                 string applicationPath = ApplicationUri;
                 if (isSingleFile)

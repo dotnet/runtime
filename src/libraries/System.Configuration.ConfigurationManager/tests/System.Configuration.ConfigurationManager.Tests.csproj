@@ -65,6 +65,7 @@
     <Compile Include="System\Configuration\ConfigurationElementCollectionTests.cs" />
     <Compile Include="System\Configuration\ConfigurationElementTests.cs" />
     <Compile Include="System\Configuration\ConfigurationPropertyAttributeTests.cs" />
+    <Compile Include="System\Configuration\ConfigurationPathTests.cs" />
     <Compile Include="System\Configuration\CustomHostTests.cs" />
     <Compile Include="System\Configuration\ConfigurationPropertyTests.cs" />
     <Compile Include="System\Configuration\ConfigurationTests.cs" />
