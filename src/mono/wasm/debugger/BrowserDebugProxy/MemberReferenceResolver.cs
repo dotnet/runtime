@@ -75,6 +75,48 @@ namespace Microsoft.WebAssembly.Diagnostics
             }
             return null;
         }
+
+        public async Task<JObject> TryToRunOnLoadedClasses(string varName, CancellationToken token)
+        {
+            string classNameToFind = "";
+            string[] parts = varName.Split(".");
+            var typeId = -1;
+            foreach (string part in parts)
+            {
+                if (classNameToFind.Length > 0)
+                    classNameToFind += ".";
+                classNameToFind += part.Trim();
+                if (typeId != -1)
+                {
+                    var fields = await proxy.SdbHelper.GetTypeFields(sessionId, typeId, token);
+                    foreach (var field in fields)
+                    {
+                        if (field.Name == part.Trim())
+                        {
+                            var isInitialized = await proxy.SdbHelper.TypeIsInitialized(sessionId, typeId, token);
+                            if (isInitialized == 0)
+                            {
+                                isInitialized = await proxy.SdbHelper.TypeInitialize(sessionId, typeId, token);
+                            }
+                            var valueRet = await proxy.SdbHelper.GetFieldValue(sessionId, typeId, field.Id, token);
+                            return await GetValueFromObject(valueRet, token);
+                        }
+                    }
+                }
+                var store = await proxy.LoadStore(sessionId, token);
+                foreach (var asm in store.assemblies)
+                {
+                    var type = asm.GetTypeByName(classNameToFind);
+                    if (type != null)
+                    {
+                        var assemblyId = await proxy.SdbHelper.GetAssemblyId(sessionId, type.assembly.Name, token);
+                        typeId = await proxy.SdbHelper.GetTypeIdFromToken(sessionId, assemblyId, type.Token, token);
+                    }
+                }
+            }
+            return null;
+        }
+
         // Checks Locals, followed by `this`
         public async Task<JObject> Resolve(string varName, CancellationToken token)
         {
@@ -140,7 +182,8 @@ namespace Microsoft.WebAssembly.Diagnostics
                         }
                         else
                         {
-                            return null;
+                            rootObject = await TryToRunOnLoadedClasses(varName, token);
+                            return rootObject;
                         }
                     }
                 }
@@ -177,8 +220,8 @@ namespace Microsoft.WebAssembly.Diagnostics
                         var typeName = await proxy.SdbHelper.GetTypeName(sessionId, typeId[0], token);
                         throw new Exception($"Method '{methodName}' not found in type '{typeName}'");
                     }
-                    var command_params_obj = new MemoryStream();
-                    var commandParamsObjWriter = new MonoBinaryWriter(command_params_obj);
+                    var commandParamsObj = new MemoryStream();
+                    var commandParamsObjWriter = new MonoBinaryWriter(commandParamsObj);
                     commandParamsObjWriter.WriteObj(objectId, proxy.SdbHelper);
                     if (method.ArgumentList != null)
                     {
@@ -197,7 +240,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                                     return null;
                             }
                         }
-                        var retMethod = await proxy.SdbHelper.InvokeMethod(sessionId, command_params_obj.ToArray(), methodId, "methodRet", token);
+                        var retMethod = await proxy.SdbHelper.InvokeMethod(sessionId, commandParamsObj.ToArray(), methodId, "methodRet", token);
                         return await GetValueFromObject(retMethod, token);
                     }
                 }

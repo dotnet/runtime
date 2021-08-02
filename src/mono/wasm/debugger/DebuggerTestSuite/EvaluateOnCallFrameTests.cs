@@ -585,6 +585,20 @@ namespace DebuggerTests
                 props = await GetObjectOnFrame(frame, "this");
                 CheckNumber(props, "a", 11);
            });
+
+        [Fact]
+        public async Task EvaluateStaticClassField() => await CheckInspectLocalsAtBreakpointSite(
+            "DebuggerTests.EvaluateMethodTestsClass/TestEvaluate", "run", 9, "run",
+            "window.setTimeout(function() { invoke_static_method ('[debugger-test] DebuggerTests.EvaluateMethodTestsClass:EvaluateMethods'); })",
+            wait_for_event_fn: async (pause_location) =>
+           {
+                var id = pause_location["callFrames"][0]["callFrameId"].Value<string>();
+
+                var frame = pause_location["callFrames"][0];
+
+                await EvaluateOnCallFrameAndCheck(id,
+                    ("DebuggerTests.EvaluateStaticClass.StaticField1", TNumber(10)));
+           });
     }
 
 }

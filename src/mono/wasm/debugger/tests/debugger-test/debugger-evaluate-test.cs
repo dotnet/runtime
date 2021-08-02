@@ -406,4 +406,10 @@ namespace DebuggerTests
 
     }
 
+    public static class EvaluateStaticClass
+    {
+        public static int StaticField1 = 10;
+        public static string StaticProperty1 => "StaticProperty1";
+    }
+
 }
