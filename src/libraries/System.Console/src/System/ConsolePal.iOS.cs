@@ -31,6 +31,38 @@ namespace System
                 });
             }
         }
+
+        private static void AccumulateNewLines(StringBuilder accumulator, ReadOnlySpan<char> buffer, Action<string> printer)
+        {
+            int lineStartIndex = 0;
+            for (int i = 0; i < buffer.Length; i++)
+            {
+                if (buffer[i] == '\n')
+                {
+                    ReadOnlySpan<char> sliceWithNl = buffer.Slice(lineStartIndex, i - lineStartIndex);
+                    if (accumulator.Length > 0)
+                    {
+                        // we found a new line, append content from accumulator if it's not empty
+                        accumulator.Append(sliceWithNl);
+                        printer(accumulator.ToString());
+                        accumulator.Clear();
+                    }
+                    else
+                    {
+                        // accumulator is empty - print the line as it is
+                        printer(sliceWithNl.ToString());
+                    }
+                    lineStartIndex = i + 1;
+                }
+            }
+
+            if (buffer.Length > 0 && buffer[^1] != '\n')
+            {
+                // add a line without '\n' to accumulator
+                ReadOnlySpan<char> appendix = buffer.Slice(lineStartIndex, buffer.Length - lineStartIndex);
+                accumulator.Append(appendix);
+            }
+        }
     }
 
     internal static class ConsolePal
