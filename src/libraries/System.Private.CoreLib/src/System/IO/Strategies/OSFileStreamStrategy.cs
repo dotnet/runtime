@@ -102,7 +102,8 @@ namespace System.IO.Strategies
 
         // in case of concurrent incomplete reads, there can be multiple threads trying to update the position
         // at the same time. That is why we are using Interlocked here.
-        internal void OnIncompleteOperation(int expectedBytesRead, int actualBytesRead) => Interlocked.Add(ref _filePosition, actualBytesRead - expectedBytesRead);
+        internal void OnIncompleteOperation(int expectedBytesTransferred, int actualBytesTransferred)
+            => Interlocked.Add(ref _filePosition, actualBytesTransferred - expectedBytesTransferred);
 
         protected bool LengthCachingSupported => OperatingSystem.IsWindows() && _lengthCanBeCached;
 
@@ -295,7 +296,7 @@ namespace System.IO.Strategies
         public override ValueTask WriteAsync(ReadOnlyMemory<byte> source, CancellationToken cancellationToken)
         {
             long writeOffset = CanSeek ? Interlocked.Add(ref _filePosition, source.Length) - source.Length : -1;
-            return RandomAccess.WriteAtOffsetAsync(_fileHandle, source, writeOffset, cancellationToken);
+            return RandomAccess.WriteAtOffsetAsync(_fileHandle, source, writeOffset, cancellationToken, this);
         }
 
         public sealed override IAsyncResult BeginRead(byte[] buffer, int offset, int count, AsyncCallback? callback, object? state) =>

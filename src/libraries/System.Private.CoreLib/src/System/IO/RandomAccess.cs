@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.IO.Strategies;
 using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
@@ -276,9 +277,9 @@ namespace System.IO
         }
 
         private static ValueTask ScheduleSyncWriteAtOffsetAsync(SafeFileHandle handle, ReadOnlyMemory<byte> buffer,
-            long fileOffset, CancellationToken cancellationToken)
+            long fileOffset, CancellationToken cancellationToken, OSFileStreamStrategy? strategy)
         {
-            return handle.GetThreadPoolValueTaskSource().QueueWrite(buffer, fileOffset, cancellationToken);
+            return handle.GetThreadPoolValueTaskSource().QueueWrite(buffer, fileOffset, cancellationToken, strategy);
         }
 
         private static ValueTask ScheduleSyncWriteGatherAtOffsetAsync(SafeFileHandle handle, IReadOnlyList<ReadOnlyMemory<byte>> buffers,
