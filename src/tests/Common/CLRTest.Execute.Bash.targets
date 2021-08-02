@@ -392,7 +392,6 @@ $__Command $HARNESS_RUNNER apple just-run %5c
   --set-env="MONO_APPLE_APP_ASSEMBLY_LOAD_PREFIX=testdir-$(MsBuildProjectName)" %5c
   --expected-exit-code=100 %5c
   --targets ios-simulator-64 %5c
-  --device `$__Command $HARNESS_RUNNER apple device ios-simulator-64` %5c
   -v
 CLRTestExitCode=$?
 
