@@ -1398,12 +1398,6 @@ namespace System.Text.RegularExpressions
                 node = node.Child(0);
             }
 
-            // If the loop's body terminates with a {one/notone/set} loop, return it.
-            if (node.Type == Oneloop || node.Type == Notoneloop || node.Type == Setloop)
-            {
-                return node;
-            }
-
             // If the loop's body is a concatenate, we can skip to its last child iff that
             // last child doesn't conflict with the first child, since this whole concatenation
             // could be repeated, such that the first node ends up following the last.  For
