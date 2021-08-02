@@ -45,7 +45,7 @@ def setup_args(args):
 
     coreclr_args.verify(args,
                         "partition_index",
-                        lambda partition_index: partition_index.isnumeric(),
+                        lambda partition_index: True, #partition_index.isnumeric(),
                         "Unable to set partition_index")
 
     coreclr_args.verify(args,
