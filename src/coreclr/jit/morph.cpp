@@ -907,9 +907,43 @@ void fgArgTabEntry::Dump() const
     {
         printf(", isBackFilled");
     }
-    if (isNonStandard)
+    if (nonStandardArgKind != NonStandardArgKind::None)
     {
-        printf(", isNonStandard");
+        const char* kind;
+        switch (nonStandardArgKind)
+        {
+            case NonStandardArgKind::PInvokeFrame:
+                kind = "PInvokeFrame";
+                break;
+            case NonStandardArgKind::PInvokeTarget:
+                kind = "PInvokeTarget";
+                break;
+            case NonStandardArgKind::PInvokeCookie:
+                kind = "PInvokeCookie";
+                break;
+            case NonStandardArgKind::WrapperDelegateCell:
+                kind = "WrapperDelegateCell";
+                break;
+            case NonStandardArgKind::ShiftLow:
+                kind = "ShiftLow";
+                break;
+            case NonStandardArgKind::ShiftHigh:
+                kind = "ShiftHigh";
+                break;
+            case NonStandardArgKind::RetBuffer:
+                kind = "RetBuffer";
+                break;
+            case NonStandardArgKind::VirtualStubCell:
+                kind = "VirtualStubCell";
+                break;
+            case NonStandardArgKind::R2RIndirectionCell:
+                kind = "R2RIndirectionCell";
+                break;
+            default:
+                kind = "Unknown";
+                break;
+        }
+        printf(", nonStandard[%s]", kind);
     }
     if (isStruct)
     {
@@ -1106,9 +1140,9 @@ fgArgTabEntry* fgArgInfo::AddRegArg(unsigned          argNum,
     {
         curArgTabEntry->SetHfaElemKind(CORINFO_HFA_ELEM_NONE);
     }
-    curArgTabEntry->isBackFilled  = false;
-    curArgTabEntry->isNonStandard = false;
-    curArgTabEntry->isStruct      = isStruct;
+    curArgTabEntry->isBackFilled       = false;
+    curArgTabEntry->nonStandardArgKind = NonStandardArgKind::None;
+    curArgTabEntry->isStruct           = isStruct;
     curArgTabEntry->SetIsVararg(isVararg);
     curArgTabEntry->SetByteAlignment(byteAlignment);
     curArgTabEntry->SetByteSize(byteSize, isStruct, isFloatHfa);
@@ -1204,9 +1238,9 @@ fgArgTabEntry* fgArgInfo::AddStkArg(unsigned          argNum,
     {
         curArgTabEntry->SetHfaElemKind(CORINFO_HFA_ELEM_NONE);
     }
-    curArgTabEntry->isBackFilled  = false;
-    curArgTabEntry->isNonStandard = false;
-    curArgTabEntry->isStruct      = isStruct;
+    curArgTabEntry->isBackFilled       = false;
+    curArgTabEntry->nonStandardArgKind = NonStandardArgKind::None;
+    curArgTabEntry->isStruct           = isStruct;
     curArgTabEntry->SetIsVararg(isVararg);
 
     curArgTabEntry->SetByteAlignment(byteAlignment);
@@ -2562,9 +2596,10 @@ void Compiler::fgInitArgInfo(GenTreeCall* call)
     {
         struct NonStandardArg
         {
-            regNumber reg;  // The register to be assigned to this non-standard argument.
-            GenTree*  node; // The tree node representing this non-standard argument.
-                            //   Note that this must be updated if the tree node changes due to morphing!
+            GenTree* node;           // The tree node representing this non-standard argument.
+                                     //   Note that this must be updated if the tree node changes due to morphing!
+            regNumber          reg;  // The register to be assigned to this non-standard argument.
+            NonStandardArgKind kind; // The kind of the nonstandard arg
         };
 
         ArrayStack<NonStandardArg> args;
@@ -2584,9 +2619,9 @@ void Compiler::fgInitArgInfo(GenTreeCall* call)
         // Return Value:
         //    None.
         //
-        void Add(GenTree* node, regNumber reg)
+        void Add(GenTree* node, regNumber reg, NonStandardArgKind kind)
         {
-            NonStandardArg nsa = {reg, node};
+            NonStandardArg nsa = {node, reg, kind};
             args.Push(nsa);
         }
 
@@ -2626,7 +2661,7 @@ void Compiler::fgInitArgInfo(GenTreeCall* call)
         //          register to use.
         //    'false' otherwise (in this case, *pReg is unmodified).
         //
-        bool FindReg(GenTree* node, regNumber* pReg)
+        bool Find(GenTree* node, regNumber* pReg, NonStandardArgKind* kind)
         {
             for (int i = 0; i < args.Height(); i++)
             {
@@ -2634,6 +2669,7 @@ void Compiler::fgInitArgInfo(GenTreeCall* call)
                 if (node == nsa.node)
                 {
                     *pReg = nsa.reg;
+                    *kind = nsa.kind;
                     return true;
                 }
             }
@@ -2691,7 +2727,7 @@ void Compiler::fgInitArgInfo(GenTreeCall* call)
         GenTreeCall::Use* args = call->gtCallArgs;
         GenTree*          arg1 = args->GetNode();
         assert(arg1 != nullptr);
-        nonStandardArgs.Add(arg1, REG_PINVOKE_FRAME);
+        nonStandardArgs.Add(arg1, REG_PINVOKE_FRAME, NonStandardArgKind::PInvokeFrame);
     }
 #endif // defined(TARGET_X86) || defined(TARGET_ARM)
 #if defined(TARGET_ARM)
@@ -2728,7 +2764,7 @@ void Compiler::fgInitArgInfo(GenTreeCall* call)
         *insertionPoint = gtNewCallArgs(newArg);
 
         numArgs++;
-        nonStandardArgs.Add(newArg, virtualStubParamInfo->GetReg());
+        nonStandardArgs.Add(newArg, virtualStubParamInfo->GetReg(), NonStandardArgKind::WrapperDelegateCell);
     }
 #endif // defined(TARGET_ARM)
 #if defined(TARGET_X86)
@@ -2740,12 +2776,12 @@ void Compiler::fgInitArgInfo(GenTreeCall* call)
         GenTreeCall::Use* args = call->gtCallArgs;
         GenTree*          arg1 = args->GetNode();
         assert(arg1 != nullptr);
-        nonStandardArgs.Add(arg1, REG_LNGARG_LO);
+        nonStandardArgs.Add(arg1, REG_LNGARG_LO, NonStandardArgKind::ShiftLow);
 
         args          = args->GetNext();
         GenTree* arg2 = args->GetNode();
         assert(arg2 != nullptr);
-        nonStandardArgs.Add(arg2, REG_LNGARG_HI);
+        nonStandardArgs.Add(arg2, REG_LNGARG_HI, NonStandardArgKind::ShiftHigh);
     }
 #else  // !TARGET_X86
     // TODO-X86-CQ: Currently RyuJIT/x86 passes args on the stack, so this is not needed.
@@ -2768,7 +2804,7 @@ void Compiler::fgInitArgInfo(GenTreeCall* call)
 
         // We don't increment numArgs here, since we already counted this argument above.
 
-        nonStandardArgs.Add(argx, theFixedRetBuffReg());
+        nonStandardArgs.Add(argx, theFixedRetBuffReg(), NonStandardArgKind::RetBuffer);
     }
 
     // We are allowed to have a Fixed Return Buffer argument combined
@@ -2785,7 +2821,7 @@ void Compiler::fgInitArgInfo(GenTreeCall* call)
             call->gtCallArgs = gtPrependNewCallArg(stubAddrArg, call->gtCallArgs);
 
             numArgs++;
-            nonStandardArgs.Add(stubAddrArg, stubAddrArg->GetRegNum());
+            nonStandardArgs.Add(stubAddrArg, stubAddrArg->GetRegNum(), NonStandardArgKind::VirtualStubCell);
         }
         else
         {
@@ -2817,7 +2853,7 @@ void Compiler::fgInitArgInfo(GenTreeCall* call)
         call->gtCallArgs = gtPrependNewCallArg(arg, call->gtCallArgs);
 #endif // defined(TARGET_X86)
 
-        nonStandardArgs.Add(arg, REG_PINVOKE_COOKIE_PARAM);
+        nonStandardArgs.Add(arg, REG_PINVOKE_COOKIE_PARAM, NonStandardArgKind::PInvokeCookie);
         numArgs++;
 
         // put destination into R10/EAX
@@ -2825,7 +2861,7 @@ void Compiler::fgInitArgInfo(GenTreeCall* call)
         call->gtCallArgs = gtPrependNewCallArg(arg, call->gtCallArgs);
         numArgs++;
 
-        nonStandardArgs.Add(arg, REG_PINVOKE_TARGET_PARAM);
+        nonStandardArgs.Add(arg, REG_PINVOKE_TARGET_PARAM, NonStandardArgKind::PInvokeTarget);
 
         // finally change this call to a helper call
         call->gtCallType    = CT_HELPER;
@@ -2857,7 +2893,8 @@ void Compiler::fgInitArgInfo(GenTreeCall* call)
         call->gtCallArgs = gtPrependNewCallArg(indirectCellAddress, call->gtCallArgs);
 
         numArgs++;
-        nonStandardArgs.Add(indirectCellAddress, indirectCellAddress->GetRegNum());
+        nonStandardArgs.Add(indirectCellAddress, indirectCellAddress->GetRegNum(),
+                            NonStandardArgKind::R2RIndirectionCell);
     }
 #elif defined(TARGET_XARCH)
     // For xarch fast tailcalls we do the same as ARM, leaving the indirection cell in the
@@ -2881,7 +2918,8 @@ void Compiler::fgInitArgInfo(GenTreeCall* call)
         call->gtCallArgs = gtPrependNewCallArg(indirectCellAddress, call->gtCallArgs);
 
         numArgs++;
-        nonStandardArgs.Add(indirectCellAddress, indirectCellAddress->GetRegNum());
+        nonStandardArgs.Add(indirectCellAddress, indirectCellAddress->GetRegNum(),
+                            NonStandardArgKind::R2RIndirectionCell);
     }
 
 #endif
@@ -3083,11 +3121,11 @@ void Compiler::fgInitArgInfo(GenTreeCall* call)
 #if !defined(OSX_ARM64_ABI)
         unsigned argAlignBytes = TARGET_POINTER_SIZE;
 #endif
-        unsigned  size          = 0;
-        unsigned  byteSize      = 0;
-        bool      isRegArg      = false;
-        bool      isNonStandard = false;
-        regNumber nonStdRegNum  = REG_NA;
+        unsigned           size               = 0;
+        unsigned           byteSize           = 0;
+        bool               isRegArg           = false;
+        NonStandardArgKind nonStandardArgKind = NonStandardArgKind::None;
+        regNumber          nonStdRegNum       = REG_NA;
 
         if (GlobalJitOptions::compFeatureHfa)
         {
@@ -3483,10 +3521,11 @@ void Compiler::fgInitArgInfo(GenTreeCall* call)
         //
         // They should not affect the placement of any other args or stack space required.
         // Example: on AMD64 R10 and R11 are used for indirect VSD (generic interface) and cookie calls.
-        isNonStandard = nonStandardArgs.FindReg(argx, &nonStdRegNum);
+        bool isNonStandard = nonStandardArgs.Find(argx, &nonStdRegNum, &nonStandardArgKind);
         if (isNonStandard)
         {
-            isRegArg = (nonStdRegNum != REG_STK);
+            assert(nonStdRegNum != REG_STK);
+            isRegArg = true;
         }
         else if (call->IsTailCallViaJitHelper())
         {
@@ -3589,7 +3628,7 @@ void Compiler::fgInitArgInfo(GenTreeCall* call)
                                                                UNIX_AMD64_ABI_ONLY_ARG(structFloatRegs)
                                                                    UNIX_AMD64_ABI_ONLY_ARG(&structDesc));
             newArgEntry->SetIsBackFilled(isBackFilled);
-            newArgEntry->isNonStandard = isNonStandard;
+            newArgEntry->nonStandardArgKind = nonStandardArgKind;
 
             // Set up the next intArgRegNum and fltArgRegNum values.
             if (!isBackFilled)
@@ -3818,7 +3857,7 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* call)
             }
         }
 #endif // DEBUG
-        if (argEntry->isNonStandard)
+        if (argEntry->isNonStandard())
         {
             // We need to update the node field for this nonStandard arg here
             // as it may have been changed by the call to fgMorphTree.
@@ -8894,15 +8933,22 @@ unsigned Compiler::fgGetArgTabEntryParameterLclNum(GenTreeCall* call, fgArgTabEn
     unsigned        argCount = argInfo->ArgCount();
     fgArgTabEntry** argTable = argInfo->ArgTable();
 
-    unsigned numNonStandardBefore = 0;
+    unsigned numToRemove = 0;
     for (unsigned i = 0; i < argCount; i++)
     {
         fgArgTabEntry* arg = argTable[i];
-        if (arg->isNonStandard && (arg->argNum < argTabEntry->argNum))
-            numNonStandardBefore++;
+        if (!arg->isNonStandard())
+            continue;
+
+        // Ret buffer is added as a local, so don't subtract one for it
+        if (arg->nonStandardArgKind == NonStandardArgKind::RetBuffer)
+            continue;
+
+        if (arg->argNum < argTabEntry->argNum)
+            numToRemove++;
     }
 
-    return argTabEntry->argNum - numNonStandardBefore;
+    return argTabEntry->argNum - numToRemove;
 }
 
 //------------------------------------------------------------------------------
@@ -8996,7 +9042,9 @@ void Compiler::fgMorphRecursiveFastTailCallIntoLoop(BasicBlock* block, GenTreeCa
             {
                 // This is an actual argument that needs to be assigned to the corresponding caller parameter.
                 fgArgTabEntry* curArgTabEntry = gtArgEntryByArgNum(recursiveTailCall, earlyArgIndex);
-                if (!curArgTabEntry->isNonStandard)
+                // Ret buffer is part of locals so assign it
+                if (!curArgTabEntry->isNonStandard() ||
+                    (curArgTabEntry->nonStandardArgKind == NonStandardArgKind::RetBuffer))
                 {
                     Statement* paramAssignStmt =
                         fgAssignRecursiveCallArgToCallerParam(earlyArg, curArgTabEntry,
@@ -9022,7 +9070,7 @@ void Compiler::fgMorphRecursiveFastTailCallIntoLoop(BasicBlock* block, GenTreeCa
         // A late argument is an actual argument that needs to be assigned to the corresponding caller's parameter.
         GenTree*       lateArg        = use.GetNode();
         fgArgTabEntry* curArgTabEntry = gtArgEntryByLateArgIndex(recursiveTailCall, lateArgIndex);
-        if (!curArgTabEntry->isNonStandard)
+        if (!curArgTabEntry->isNonStandard() || curArgTabEntry->nonStandardArgKind == NonStandardArgKind::RetBuffer)
         {
             Statement* paramAssignStmt =
                 fgAssignRecursiveCallArgToCallerParam(lateArg, curArgTabEntry,
