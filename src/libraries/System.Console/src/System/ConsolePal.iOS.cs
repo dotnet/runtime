@@ -22,17 +22,11 @@ namespace System
 
             lock (_buffer)
             {
-                AccumulateNewLines(_buffer, charSpan, line =>
-                {
-                    fixed (char* ptr = line)
-                    {
-                        Interop.Sys.Log((byte*)ptr, line.Length * 2);
-                    }
-                });
+                AccumulateNewLines(_buffer, charSpan);
             }
         }
 
-        private static void AccumulateNewLines(StringBuilder accumulator, ReadOnlySpan<char> buffer, Action<string> printer)
+        private static unsafe void AccumulateNewLines(StringBuilder accumulator, ReadOnlySpan<char> buffer)
         {
             for (int i = buffer.Length - 1; i >= 0; i--)
             {
@@ -60,6 +54,14 @@ namespace System
 
             // no newlines found, add the entire buffer to the accumulator
             accumulator.Append(buffer);
+
+            static void printer(string line)
+            {
+                fixed (char* ptr = line)
+                {
+                    Interop.Sys.Log((byte*)ptr, line.Length * 2);
+                }
+            }
         }
     }
 
