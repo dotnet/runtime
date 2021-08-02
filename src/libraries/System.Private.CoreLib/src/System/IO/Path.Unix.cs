@@ -22,7 +22,32 @@ namespace System.IO
             if (path.Length == 0)
                 throw new ArgumentException(SR.Arg_PathEmpty, nameof(path));
 
-            if (path.Contains('\0'))
+            return GetPartiallyQualifiedPath(path, false);
+        }
+
+        public static string GetFullPath(string path, string basePath)
+        {
+            if (path == null)
+                throw new ArgumentNullException(nameof(path));
+
+            if (basePath == null)
+                throw new ArgumentNullException(nameof(basePath));
+
+            if (!IsPathFullyQualified(basePath))
+                throw new ArgumentException(SR.Arg_BasePathNotFullyQualified, nameof(basePath));
+
+            if (basePath.Contains('\0') || path.Contains('\0'))
+                throw new ArgumentException(SR.Argument_InvalidPathChars);
+
+            if (IsPathFullyQualified(path))
+                return GetPartiallyQualifiedPath(path, true);
+
+            return GetPartiallyQualifiedPath(CombineInternal(basePath, path), true);
+        }
+
+        internal static string GetPartiallyQualifiedPath(string path, bool checkedForInvalids)
+        {
+            if (!checkedForInvalids && path.Contains('\0'))
                 throw new ArgumentException(SR.Argument_InvalidPathChars, nameof(path));
 
             // Expand with current directory if necessary
@@ -41,26 +66,6 @@ namespace System.IO
             string result = collapsedString.Length == 0 ? PathInternal.DirectorySeparatorCharAsString : collapsedString;
 
             return result;
-        }
-
-        public static string GetFullPath(string path, string basePath)
-        {
-            if (path == null)
-                throw new ArgumentNullException(nameof(path));
-
-            if (basePath == null)
-                throw new ArgumentNullException(nameof(basePath));
-
-            if (!IsPathFullyQualified(basePath))
-                throw new ArgumentException(SR.Arg_BasePathNotFullyQualified, nameof(basePath));
-
-            if (basePath.Contains('\0') || path.Contains('\0'))
-                throw new ArgumentException(SR.Argument_InvalidPathChars);
-
-            if (IsPathFullyQualified(path))
-                return GetFullPath(path);
-
-            return GetFullPath(CombineInternal(basePath, path));
         }
 
         private static string RemoveLongPathPrefix(string path)
