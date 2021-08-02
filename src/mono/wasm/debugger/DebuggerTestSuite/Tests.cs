@@ -91,7 +91,7 @@ namespace DebuggerTests
         [Fact]
         public async Task InspectLocalsTypesAtBreakpointSite() =>
             await CheckInspectLocalsAtBreakpointSite(
-                "dotnet://debugger-test.dll/debugger-test2.cs", 48, 8, "Types",
+                "dotnet://debugger-test.dll/debugger-test2.cs", 49, 8, "Types",
                 "window.setTimeout(function() { invoke_static_method (\"[debugger-test] Fancy:Types\")(); }, 1);",
                 use_cfo: false,
                 test_fn: (locals) =>
@@ -825,6 +825,24 @@ namespace DebuggerTests
             var source = await cli.SendCommand("Debugger.getScriptSource", sourceToGet, token);
             Assert.True(source.IsOk);
         }
+
+        [Fact]
+        public async Task InspectTaskAtLocals() => await CheckInspectLocalsAtBreakpointSite(
+            "InspectTask",
+            "RunInspectTask",
+            7,
+            "<RunInspectTask>b__0" ,
+            $"window.setTimeout(function() {{ invoke_static_method_async('[debugger-test] InspectTask:RunInspectTask'); }}, 1);",
+            wait_for_event_fn: async (pause_location) =>
+            {
+                var locals = await GetProperties(pause_location["callFrames"][0]["callFrameId"].Value<string>());
+
+                var t_arr = await GetObjectOnLocals(locals, "t");
+				await CheckProps(t_arr, new
+                    {
+                        s_taskIdCounter = TNumber(0)
+                    }, "t_arr", num_fields: 53);
+            });
 
         //TODO add tests covering basic stepping behavior as step in/out/over
     }

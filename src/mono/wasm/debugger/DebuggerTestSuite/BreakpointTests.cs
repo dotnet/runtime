@@ -259,7 +259,7 @@ namespace DebuggerTests
         {
             await EvaluateAndCheck(
                 "window.setTimeout(function() { invoke_static_method_async('[debugger-test] UserBreak:BreakOnDebuggerBreakCommand'); }, 1);",
-                "dotnet://debugger-test.dll/debugger-test2.cs", 56, 4,
+                "dotnet://debugger-test.dll/debugger-test2.cs", 58, 4,
                 "BreakOnDebuggerBreakCommand");
         }
 
