@@ -32,6 +32,8 @@ namespace System.Net.Quic.Implementations
 
         internal abstract System.Net.Security.SslApplicationProtocol NegotiatedApplicationProtocol { get; }
 
+        internal abstract System.Security.Cryptography.X509Certificates.X509Certificate? RemoteCertificate { get ; }
+
         internal abstract ValueTask CloseAsync(long errorCode, CancellationToken cancellationToken = default);
 
         public abstract void Dispose();

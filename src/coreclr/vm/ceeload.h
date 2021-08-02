@@ -2679,17 +2679,17 @@ public:
     IMDInternalImport *GetNativeAssemblyImport(BOOL loadAllowed = TRUE);
     IMDInternalImport *GetNativeAssemblyImportIfLoaded();
 
-    BOOL FixupNativeEntry(CORCOMPILE_IMPORT_SECTION * pSection, SIZE_T fixupIndex, SIZE_T *fixup);
+    BOOL FixupNativeEntry(CORCOMPILE_IMPORT_SECTION * pSection, SIZE_T fixupIndex, SIZE_T *fixup, BOOL mayUsePrecompiledNDirectMethods = TRUE);
 
     //this split exists to support new CLR Dump functionality in DAC.  The
     //template removes any indirections.
-    BOOL FixupDelayList(TADDR pFixupList);
+    BOOL FixupDelayList(TADDR pFixupList, BOOL mayUsePrecompiledNDirectMethods = TRUE);
 
     template<typename Ptr, typename FixupNativeEntryCallback>
     BOOL FixupDelayListAux(TADDR pFixupList,
                            Ptr pThis, FixupNativeEntryCallback pfnCB,
                            PTR_CORCOMPILE_IMPORT_SECTION pImportSections, COUNT_T nImportSections,
-                           PEDecoder * pNativeImage);
+                           PEDecoder * pNativeImage, BOOL mayUsePrecompiledNDirectMethods = TRUE);
     void RunEagerFixups();
     void RunEagerFixupsUnlocked();
 

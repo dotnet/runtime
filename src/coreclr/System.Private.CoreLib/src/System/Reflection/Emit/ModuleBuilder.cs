@@ -706,6 +706,7 @@ namespace System.Reflection.Emit
             return GetType(parameters, baseType);
         }
 
+        [RequiresAssemblyFiles(UnknownStringMessageInRAF)]
         public override string FullyQualifiedName => _moduleData._moduleName;
 
         [RequiresUnreferencedCode("Trimming changes metadata tokens")]
@@ -785,6 +786,7 @@ namespace System.Reflection.Emit
 
         public override string ScopeName => InternalModule.ScopeName;
 
+        [RequiresAssemblyFiles(UnknownStringMessageInRAF)]
         public override string Name => InternalModule.Name;
 
         public override Assembly Assembly => _assemblyBuilder;

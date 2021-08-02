@@ -242,21 +242,23 @@ namespace System.IO
             return ScheduleSyncReadAtOffsetAsync(handle, buffer, fileOffset, cancellationToken);
         }
 
-        internal static unsafe (SafeFileHandle.OverlappedValueTaskSource? vts, int errorCode) QueueAsyncReadFile(SafeFileHandle handle, Memory<byte> buffer, long fileOffset, CancellationToken cancellationToken)
+        internal static unsafe (SafeFileHandle.OverlappedValueTaskSource? vts, int errorCode) QueueAsyncReadFile(SafeFileHandle handle, Memory<byte> buffer, long fileOffset,
+            CancellationToken cancellationToken, AsyncWindowsFileStreamStrategy? strategy = null)
         {
             handle.EnsureThreadPoolBindingInitialized();
 
             SafeFileHandle.OverlappedValueTaskSource vts = handle.GetOverlappedValueTaskSource();
+            int errorCode = 0;
             try
             {
-                NativeOverlapped* nativeOverlapped = vts.PrepareForOperation(buffer, fileOffset);
+                NativeOverlapped* nativeOverlapped = vts.PrepareForOperation(buffer, fileOffset, strategy);
                 Debug.Assert(vts._memoryHandle.Pointer != null);
 
                 // Queue an async ReadFile operation.
                 if (Interop.Kernel32.ReadFile(handle, (byte*)vts._memoryHandle.Pointer, buffer.Length, IntPtr.Zero, nativeOverlapped) == 0)
                 {
                     // The operation failed, or it's pending.
-                    int errorCode = FileStreamHelpers.GetLastWin32ErrorAndDisposeHandleIfInvalid(handle);
+                    errorCode = FileStreamHelpers.GetLastWin32ErrorAndDisposeHandleIfInvalid(handle);
                     switch (errorCode)
                     {
                         case Interop.Errors.ERROR_IO_PENDING:
@@ -285,6 +287,13 @@ namespace System.IO
             {
                 vts.Dispose();
                 throw;
+            }
+            finally
+            {
+                if (errorCode != Interop.Errors.ERROR_IO_PENDING && errorCode != Interop.Errors.ERROR_SUCCESS)
+                {
+                    strategy?.OnIncompleteRead(buffer.Length, 0);
+                }
             }
 
             // Completion handled by callback.
@@ -686,8 +695,11 @@ namespace System.IO
             Debug.Assert(!handle.IsAsync);
 
             NativeOverlapped result = default;
-            result.OffsetLow = unchecked((int)fileOffset);
-            result.OffsetHigh = (int)(fileOffset >> 32);
+            if (handle.CanSeek)
+            {
+                result.OffsetLow = unchecked((int)fileOffset);
+                result.OffsetHigh = (int)(fileOffset >> 32);
+            }
             return result;
         }
 

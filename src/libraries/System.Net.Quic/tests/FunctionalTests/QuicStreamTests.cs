@@ -573,8 +573,7 @@ namespace System.Net.Quic.Tests
                     await using QuicStream stream = await connection.AcceptStreamAsync();
 
                     QuicStreamAbortedException ex = await Assert.ThrowsAsync<QuicStreamAbortedException>(() => WriteForever(stream));
-                    // [ActiveIssue("https://github.com/dotnet/runtime/issues/55746")]
-                    //Assert.Equal(expectedErrorCode, ex.ErrorCode);
+                    Assert.Equal(expectedErrorCode, ex.ErrorCode);
 
                     // We should still return true from CanWrite, even though the write has been aborted.
                     Assert.True(stream.CanWrite);

@@ -489,6 +489,9 @@ jobs:
         ${{ if in(parameters.testGroup, 'gc-standalone') }}:
           scenarios:
           - gcstandalone
+        ${{ if in(parameters.testGroup, 'gc-standalone-server') }}:
+          scenarios:
+          - gcstandaloneserver
         ${{ if in(parameters.testGroup, 'jitelthookenabled') }}:
           scenarios:
           - jitelthookenabled

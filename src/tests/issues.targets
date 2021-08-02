@@ -1183,6 +1183,9 @@
         <ExcludeList Include="$(XunitTestBinBase)/Interop/COM/Reflection/Reflection/**">
             <Issue>https://github.com/dotnet/runtime/issues/34371</Issue>
         </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Interop/COM/ComWrappers/**"> 
+            <Issue>Not supported on Mono</Issue> 
+        </ExcludeList>        
         <ExcludeList Include="$(XunitTestBinBase)/Interop/ICastable/Castable/**">
             <Issue>needs triage</Issue>
         </ExcludeList>

@@ -10162,6 +10162,20 @@ bool CEEInfo::pInvokeMarshalingRequired(CORINFO_METHOD_HANDLE method, CORINFO_SI
 #endif
     }
 
+    PrepareCodeConfig *config = GetThread()->GetCurrentPrepareCodeConfig();
+    if (config != nullptr && config->IsForMulticoreJit())
+    {
+        bool suppressGCTransition = false;
+        CorInfoCallConvExtension unmanagedCallConv = getUnmanagedCallConv(method, callSiteSig, &suppressGCTransition);
+
+        if (suppressGCTransition)
+        {
+            // MultiCoreJit thread can't inline PInvoke with SuppressGCTransitionAttribute,
+            // because it can't be resolved in mcj thread
+            result = TRUE;
+        }
+    }
+
     EE_TO_JIT_TRANSITION();
 
     return result;
@@ -13777,7 +13791,8 @@ bool IsInstructionSetSupported(CORJIT_FLAGS jitFlags, ReadyToRunInstructionSet r
 
 BOOL LoadDynamicInfoEntry(Module *currentModule,
                           RVA fixupRva,
-                          SIZE_T *entry)
+                          SIZE_T *entry,
+                          BOOL mayUsePrecompiledNDirectMethods)
 {
     STANDARD_VM_CONTRACT;
 
@@ -14005,10 +14020,17 @@ BOOL LoadDynamicInfoEntry(Module *currentModule,
 
     case ENCODE_PINVOKE_TARGET:
         {
-            MethodDesc *pMethod = ZapSig::DecodeMethod(currentModule, pInfoModule, pBlob);
+            if (mayUsePrecompiledNDirectMethods)
+            {
+                MethodDesc *pMethod = ZapSig::DecodeMethod(currentModule, pInfoModule, pBlob);
 
-            _ASSERTE(pMethod->IsNDirect());
-            result = (size_t)(LPVOID)NDirectMethodDesc::ResolveAndSetNDirectTarget((NDirectMethodDesc*)pMethod);
+                _ASSERTE(pMethod->IsNDirect());
+                result = (size_t)(LPVOID)NDirectMethodDesc::ResolveAndSetNDirectTarget((NDirectMethodDesc*)pMethod);
+            }
+            else
+            {
+                return FALSE;
+            }
         }
         break;
 
