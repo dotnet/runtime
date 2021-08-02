@@ -35,8 +35,6 @@ namespace System.Net.Test.Common
         public Stream Stream => _connectionStream;
         public Task<bool> SettingAckWaiter => _ignoredSettingsAckPromise?.Task;
 
-        public Func<PingFrame, bool> PingFrameCallback { get; set; }
-
         private Http2LoopbackConnection(SocketWrapper socket, Stream stream, TimeSpan timeout, bool transparentPingResponse)
         {
             _connectionSocket = socket;
@@ -240,13 +238,6 @@ namespace System.Net.Test.Common
         {
             if (_transparentPingResponse && !pingFrame.AckFlag)
             {
-                bool respond = PingFrameCallback != null ? PingFrameCallback(pingFrame) : true;
-                if (!respond)
-                {
-                    // Threat it as processed without response:
-                    return true;
-                }
-
                 try
                 {
                     await SendPingAckAsync(pingFrame.Data);
