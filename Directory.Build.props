@@ -288,6 +288,8 @@
     <!-- We have very special projects that don't always contain default references. We also build MSBuild Tasks
     and there are some implicit namespaces that clash, i.e System.Threading.Tasks. -->
     <DisableImplicitNamespaceImports>true</DisableImplicitNamespaceImports>
+    <!-- We need to set this property as well to workaround: https://github.com/dotnet/sdk/issues/19465 -->
+    <DisableImplicitNamespaceImports_DotNet>true</DisableImplicitNamespaceImports_DotNet>
   </PropertyGroup>
 
   <PropertyGroup>
