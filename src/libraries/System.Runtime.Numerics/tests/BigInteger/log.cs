@@ -9,7 +9,7 @@ namespace System.Numerics.Tests
     public class logTest
     {
         private const int NumberOfRandomIterations = 10;
-        private const int RequiredPrecision = 15;
+        private const int RequiredPrecision = 10;
         private static Random s_random = new Random(100);
 
         public static IEnumerable<object[]> RunLogOfZeroIsInfinityTestSources
