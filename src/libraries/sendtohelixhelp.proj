@@ -392,7 +392,9 @@
         WorkingDirectory="$(NodeFolder)"
         IgnoreStandardErrorWarningFormat="true" 
         Condition="'$(ForNode)' == 'true'"/>
-    <HelixCorrelationPayload Include="$(NodeFolder)/node-v14.17.4-linux-x64/bin" Condition="'$(ForNode)' == 'true'" />
+    <ItemGroup Condition="'$(ForNode)' == 'true'" >
+      <HelixCorrelationPayload Include="$(NodeFolder)/node-v14.17.4-linux-x64/bin" />
+    </ItemGroup>
 
     <ItemGroup Condition="'$(TargetOS)' != 'Android' and '$(TargetOS)' != 'iOS' and '$(TargetOS)' != 'iOSSimulator' and '$(TargetOS)' != 'tvOS' and '$(TargetOS)' != 'tvOSSimulator' and '$(TargetOS)' != 'MacCatalyst'">
       <HelixCorrelationPayload Include="$(HelixCorrelationPayload)"
