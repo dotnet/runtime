@@ -56,7 +56,6 @@ namespace System.Reflection.Emit
         private __ExceptionInfo[]? m_currExcStack;         // This is the stack of exceptions which we're currently in.
 
         internal ScopeTree m_ScopeTree;            // this variable tracks all debugging scope information
-        internal LineNumberInfo m_LineNumberInfo;       // this variable tracks all line number information
 
         internal MethodInfo m_methodBuilder;
         internal int m_localCount;
@@ -89,7 +88,6 @@ namespace System.Reflection.Emit
 
             // initialize the scope tree
             m_ScopeTree = new ScopeTree();
-            m_LineNumberInfo = new LineNumberInfo();
             m_methodBuilder = methodBuilder;
 
             // initialize local signature
@@ -1296,20 +1294,6 @@ namespace System.Reflection.Emit
             }
         }
 
-        public virtual void MarkSequencePoint(
-            ISymbolDocumentWriter document,
-            int startLine,       // line number is 1 based
-            int startColumn,     // column is 0 based
-            int endLine,         // line number is 1 based
-            int endColumn)       // column is 0 based
-        {
-            if (startLine == 0 || startLine < 0 || endLine == 0 || endLine < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(startLine));
-            }
-            m_LineNumberInfo.AddLineNumberInfo(document, m_length, startLine, startColumn, endLine, endColumn);
-        }
-
         public virtual void BeginScope()
         {
             m_ScopeTree.AddScopeInfo(ScopeAction.Open, m_length);
@@ -1687,84 +1671,6 @@ namespace System.Reflection.Emit
         internal int m_iOpenScopeCount;          // keep track how many scopes are open
         internal const int InitialSize = 16;
         internal LocalSymInfo?[] m_localSymInfos = null!;            // keep track debugging local information
-    }
-
-    /// <summary>
-    /// This class tracks the line number info
-    /// </summary>
-    internal sealed class LineNumberInfo
-    {
-        internal LineNumberInfo()
-        {
-            // initialize data variables
-            m_DocumentCount = 0;
-            m_iLastFound = 0;
-        }
-
-        internal void AddLineNumberInfo(
-            ISymbolDocumentWriter document,
-            int iOffset,
-            int iStartLine,
-            int iStartColumn,
-            int iEndLine,
-            int iEndColumn)
-        {
-            // make sure that arrays are large enough to hold addition info
-            int i = FindDocument(document);
-
-            Debug.Assert(i < m_DocumentCount, "Bad document look up!");
-            m_Documents[i].AddLineNumberInfo(document, iOffset, iStartLine, iStartColumn, iEndLine, iEndColumn);
-        }
-
-        // Find a REDocument representing document. If we cannot find one, we will add a new entry into
-        // the REDocument array.
-        private int FindDocument(ISymbolDocumentWriter document)
-        {
-            // This is an optimization. The chance that the previous line is coming from the same
-            // document is very high.
-            if (m_iLastFound < m_DocumentCount && m_Documents[m_iLastFound].m_document == document)
-                return m_iLastFound;
-
-            for (int i = 0; i < m_DocumentCount; i++)
-            {
-                if (m_Documents[i].m_document == document)
-                {
-                    m_iLastFound = i;
-                    return m_iLastFound;
-                }
-            }
-
-            // cannot find an existing document so add one to the array
-            EnsureCapacity();
-            m_iLastFound = m_DocumentCount;
-            m_Documents[m_iLastFound] = new REDocument(document);
-            checked { m_DocumentCount++; }
-            return m_iLastFound;
-        }
-
-        /// <summary>
-        /// Helper to ensure arrays are large enough
-        /// </summary>
-        private void EnsureCapacity()
-        {
-            if (m_DocumentCount == 0)
-            {
-                // First time. Allocate the arrays.
-                m_Documents = new REDocument[InitialSize];
-            }
-            else if (m_DocumentCount == m_Documents.Length)
-            {
-                // the arrays are full. Enlarge the arrays
-                REDocument[] temp = new REDocument[m_DocumentCount * 2];
-                Array.Copy(m_Documents, temp, m_DocumentCount);
-                m_Documents = temp;
-            }
-        }
-
-        private int m_DocumentCount;         // how many documents that we have right now
-        private REDocument[] m_Documents = null!;             // array of documents
-        private const int InitialSize = 16;
-        private int m_iLastFound;
     }
 
     /// <summary>
