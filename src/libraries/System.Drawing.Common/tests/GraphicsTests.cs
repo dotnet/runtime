@@ -6,6 +6,7 @@ using System.ComponentModel;
 using System.Drawing.Drawing2D;
 using System.Drawing.Imaging;
 using System.Drawing.Text;
+using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
 
 namespace System.Drawing.Tests
@@ -102,6 +103,12 @@ namespace System.Drawing.Tests
         [MemberData(nameof(FromHdc_TestData))]
         public void FromHdc_ValidHdc_ReturnsExpected(IntPtr hdc)
         {
+            if (PlatformDetection.IsArm64Process && OperatingSystem.IsWindows())
+            {
+                // ActiveIssue: 51097
+                throw new SkipTestException("Visible clipping region is not empty.");
+            }
+
             using (Graphics graphics = Graphics.FromHdc(hdc))
             {
                 Rectangle expected = Helpers.GetWindowDCRect(hdc);
@@ -114,6 +121,12 @@ namespace System.Drawing.Tests
         [MemberData(nameof(FromHdc_TestData))]
         public void FromHdc_ValidHdcWithContext_ReturnsExpected(IntPtr hdc)
         {
+            if (PlatformDetection.IsArm64Process && OperatingSystem.IsWindows())
+            {
+                // ActiveIssue: 51097
+                throw new SkipTestException("Visible clipping region is not empty.");
+            }
+
             using (Graphics graphics = Graphics.FromHdc(hdc, IntPtr.Zero))
             {
                 Rectangle expected = Helpers.GetWindowDCRect(hdc);
@@ -126,6 +139,12 @@ namespace System.Drawing.Tests
         [MemberData(nameof(FromHdc_TestData))]
         public void FromHdcInternal_GetDC_ReturnsExpected(IntPtr hdc)
         {
+            if (PlatformDetection.IsArm64Process && OperatingSystem.IsWindows())
+            {
+                // ActiveIssue: 51097
+                throw new SkipTestException("Visible clipping region is not empty.");
+            }
+
             using (Graphics graphics = Graphics.FromHdcInternal(hdc))
             {
                 Rectangle expected = Helpers.GetWindowDCRect(hdc);
@@ -262,6 +281,12 @@ namespace System.Drawing.Tests
         [MemberData(nameof(Hwnd_TestData))]
         public void FromHwnd_ValidHwnd_ReturnsExpected(IntPtr hWnd)
         {
+            if (PlatformDetection.IsArm64Process && OperatingSystem.IsWindows ())
+            {
+                // ActiveIssue: 51097
+                throw new SkipTestException("Visible clipping region is not empty.");
+            }
+
             using (Graphics graphics = Graphics.FromHwnd(hWnd))
             {
                 Rectangle expected = Helpers.GetHWndRect(hWnd);
@@ -274,6 +299,12 @@ namespace System.Drawing.Tests
         [MemberData(nameof(Hwnd_TestData))]
         public void FromHwndInternal_ValidHwnd_ReturnsExpected(IntPtr hWnd)
         {
+            if (PlatformDetection.IsArm64Process && OperatingSystem.IsWindows())
+            {
+                // ActiveIssue: 51097
+                throw new SkipTestException("Visible clipping region is not empty.");
+            }
+
             using (Graphics graphics = Graphics.FromHwnd(hWnd))
             {
                 Rectangle expected = Helpers.GetHWndRect(hWnd);
