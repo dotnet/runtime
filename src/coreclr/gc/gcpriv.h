@@ -3426,9 +3426,6 @@ public:
     GCEvent bgc_start_event;
 #endif //BACKGROUND_GC
 
-    // The variables in this block are known to the DAC and must come first
-    // in the gc_heap class.
-
     // Keeps track of the highest address allocated by Alloc
     PER_HEAP
     uint8_t* alloc_allocated;
@@ -3468,11 +3465,8 @@ public:
     PER_HEAP
     BOOL heap_analyze_success;
 
-    // The generation table. Must always be last.
     PER_HEAP
     generation generation_table [total_generation_count];
-
-    // End DAC zone
 
 #ifdef USE_REGIONS
 #ifdef STRESS_REGIONS
@@ -4940,26 +4934,6 @@ protected:
     PER_HEAP
     void update_collection_counts ();
 }; // class gc_heap
-
-#define ASSERT_OFFSETS_MATCH(field) \
-  static_assert(offsetof(dac_gc_heap, field) == offsetof(gc_heap, field), #field " offset mismatch")
-
-#ifndef USE_REGIONS
-#ifdef MULTIPLE_HEAPS
-ASSERT_OFFSETS_MATCH(alloc_allocated);
-ASSERT_OFFSETS_MATCH(ephemeral_heap_segment);
-ASSERT_OFFSETS_MATCH(finalize_queue);
-ASSERT_OFFSETS_MATCH(oom_info);
-ASSERT_OFFSETS_MATCH(interesting_data_per_heap);
-ASSERT_OFFSETS_MATCH(compact_reasons_per_heap);
-ASSERT_OFFSETS_MATCH(expand_mechanisms_per_heap);
-ASSERT_OFFSETS_MATCH(interesting_mechanism_bits_per_heap);
-ASSERT_OFFSETS_MATCH(internal_root_array);
-ASSERT_OFFSETS_MATCH(internal_root_array_index);
-ASSERT_OFFSETS_MATCH(heap_analyze_success);
-ASSERT_OFFSETS_MATCH(generation_table);
-#endif // MULTIPLE_HEAPS
-#endif //USE_REGIONS
 
 #ifdef FEATURE_PREMORTEM_FINALIZATION
 class CFinalize

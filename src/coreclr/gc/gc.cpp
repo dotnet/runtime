@@ -45569,6 +45569,27 @@ bool GCHeap::IsConcurrentGCEnabled()
 void PopulateDacVars(GcDacVars *gcDacVars)
 {
 #ifndef DACCESS_COMPILE
+
+#ifdef MULTIPLE_HEAPS
+    static int gc_heap_field_offsets[] = {
+
+#define DEFINE_FIELD(field_name, field_type) offsetof(gc_heap, field_name),
+#define DEFINE_DPTR_FIELD(field_name, field_type) offsetof(gc_heap, field_name),
+#define DEFINE_ARRAY_FIELD(field_name, field_type, array_length) offsetof(gc_heap, field_name),
+#define DEFINE_MISSING_FIELD -1,
+
+#include "gc_typefields.h"
+
+#undef DEFINE_MISSING_FIELD
+#undef DEFINE_ARRAY_FIELD
+#undef DEFINE_DPTR_FIELD
+#undef DEFINE_FIELD
+
+        offsetof(gc_heap, generation_table)
+    };
+    static_assert(sizeof(gc_heap_field_offsets) == (GENERATION_TABLE_FIELD_INDEX + 1) * sizeof(int), "GENERATION_TABLE_INDEX mismatch");
+#endif //MULTIPLE_HEAPS
+
     assert(gcDacVars != nullptr);
     *gcDacVars = {};
     // Note: these version numbers are not actually checked by SOS, so if you change
@@ -45582,10 +45603,10 @@ void PopulateDacVars(GcDacVars *gcDacVars)
     gcDacVars->generation_size = sizeof(generation);
     gcDacVars->total_generation_count = total_generation_count;
     gcDacVars->max_gen = &g_max_generation;
+    gcDacVars->current_c_gc_state = const_cast<c_gc_state*>(&gc_heap::current_c_gc_state);
 #ifndef MULTIPLE_HEAPS
     gcDacVars->mark_array = &gc_heap::mark_array;
     gcDacVars->ephemeral_heap_segment = reinterpret_cast<dac_heap_segment**>(&gc_heap::ephemeral_heap_segment);
-    gcDacVars->current_c_gc_state = const_cast<c_gc_state*>(&gc_heap::current_c_gc_state);
 #ifdef USE_REGIONS
     gcDacVars->saved_sweep_ephemeral_seg = 0;
     gcDacVars->saved_sweep_ephemeral_start = 0;
@@ -45614,7 +45635,8 @@ void PopulateDacVars(GcDacVars *gcDacVars)
 #endif // HEAP_ANALYZE
 #else
     gcDacVars->n_heaps = &gc_heap::n_heaps;
-    gcDacVars->g_heaps = reinterpret_cast<dac_gc_heap***>(&gc_heap::g_heaps);
+    gcDacVars->g_heaps = reinterpret_cast<opaque_gc_heap***>(&gc_heap::g_heaps);
+    gcDacVars->gc_heap_field_offsets = reinterpret_cast<int**>(&gc_heap_field_offsets);
 #endif // MULTIPLE_HEAPS
 #else
     UNREFERENCED_PARAMETER(gcDacVars);
