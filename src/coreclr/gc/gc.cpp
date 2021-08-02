@@ -11784,12 +11784,16 @@ void region_free_list::transfer_regions (region_free_list* from)
     size_free_regions += from->size_free_regions;
     size_committed_in_free_regions += from->size_committed_in_free_regions;
 
+    from->num_free_regions_removed += from->num_free_regions;
     from->num_free_regions = 0;
     from->size_free_regions = 0;
     from->size_committed_in_free_regions = 0;
 
     from->head_free_region = nullptr;
     from->tail_free_region = nullptr;
+
+    assert(this->num_free_regions == (this->num_free_regions_added - this->num_free_regions_removed));
+    assert(from->num_free_regions == (from->num_free_regions_added - from->num_free_regions_removed));
 }
 
 size_t region_free_list::get_num_free_regions()
@@ -11871,7 +11875,7 @@ void gc_heap::distribute_free_regions()
     size_t target_num_regions[kind_count];
     int region_factor[kind_count] = { 1, LARGE_REGION_FACTOR };
 #ifdef TRACE_GC
-    const char* kind_name[kind_count] = { "basic", "large" };
+    const char* kind_name[count_free_region_kinds] = { "basic", "large", "huge"};
 #endif // TRACE_GC
 
 #ifndef MULTIPLE_HEAPS
@@ -11927,9 +11931,18 @@ void gc_heap::distribute_free_regions()
                                                                    kind == basic_free_region,
                                                                    global_regions_to_decommit);
 
-                dprintf(REGIONS_LOG, ("Moved %Id %s regions to decommit list", num_regions_to_decommit[kind], kind_name[kind]));
+                dprintf (REGIONS_LOG, ("Moved %Id %s regions to decommit list", global_regions_to_decommit[kind].get_num_free_regions(), kind_name[kind]));
 
-                assert(global_regions_to_decommit[kind].get_num_free_regions() != 0);
+                if (kind == basic_free_region)
+                {
+                    assert (global_regions_to_decommit[kind].get_num_free_regions() == num_regions_to_decommit[kind]);
+                }
+                else
+                {
+                    dprintf (REGIONS_LOG, ("Moved %Id %s regions to decommit list", global_regions_to_decommit[huge_free_region].get_num_free_regions(), kind_name[huge_free_region]));
+
+                    // cannot assert we moved any regions because there may be a single huge region with more than we want to decommit
+                }
             }
         }
     }
