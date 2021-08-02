@@ -27,40 +27,29 @@ namespace System.IO.Strategies
         public override ValueTask<int> ReadAsync(Memory<byte> destination, CancellationToken cancellationToken = default)
             => ReadAsyncInternal(destination, cancellationToken);
 
-        private unsafe ValueTask<int> ReadAsyncInternal(Memory<byte> destination, CancellationToken cancellationToken)
+        private ValueTask<int> ReadAsyncInternal(Memory<byte> destination, CancellationToken cancellationToken)
         {
-            if (!CanRead)
+            if (!CanSeek)
             {
-                ThrowHelper.ThrowNotSupportedException_UnreadableStream();
+                return RandomAccess.ReadAtOffsetAsync(_fileHandle, destination, fileOffset: -1, cancellationToken);
             }
 
-            long positionBefore = _filePosition;
-            if (CanSeek)
+            if (LengthCachingSupported && _length >= 0 && Volatile.Read(ref _filePosition) >= _length)
             {
-                long len = Length;
-                if (positionBefore + destination.Length > len)
-                {
-                    destination = positionBefore <= len ?
-                        destination.Slice(0, (int)(len - positionBefore)) :
-                        default;
-                }
-
-                // When using overlapped IO, the OS is not supposed to
-                // touch the file pointer location at all.  We will adjust it
-                // ourselves, but only in memory. This isn't threadsafe.
-                _filePosition += destination.Length;
-
-                // We know for sure that there is nothing to read, so we just return here and avoid a sys-call.
-                if (destination.IsEmpty && LengthCachingSupported)
-                {
-                    return ValueTask.FromResult(0);
-                }
+                // We know for sure that the file length can be safely cached and it has already been obtained.
+                // If we have reached EOF we just return here and avoid a sys-call.
+                return ValueTask.FromResult(0);
             }
 
-            (SafeFileHandle.OverlappedValueTaskSource? vts, int errorCode) = RandomAccess.QueueAsyncReadFile(_fileHandle, destination, positionBefore, cancellationToken);
+            // This implementation updates the file position before the operation starts and updates it after incomplete read.
+            // This is done to keep backward compatibility for concurrent reads.
+            // It uses Interlocked as there can be multiple concurrent incomplete reads updating position at the same time.
+            long readOffset = Interlocked.Add(ref _filePosition, destination.Length) - destination.Length;
+
+            (SafeFileHandle.OverlappedValueTaskSource? vts, int errorCode) = RandomAccess.QueueAsyncReadFile(_fileHandle, destination, readOffset, cancellationToken, this);
             return vts != null
                 ? new ValueTask<int>(vts, vts.Version)
-                : (errorCode == 0) ? ValueTask.FromResult(0) : ValueTask.FromException<int>(HandleIOError(positionBefore, errorCode));
+                : (errorCode == 0) ? ValueTask.FromResult(0) : ValueTask.FromException<int>(HandleIOError(readOffset, errorCode));
         }
 
         public override Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
@@ -69,35 +58,22 @@ namespace System.IO.Strategies
         public override ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default)
             => WriteAsyncInternal(buffer, cancellationToken);
 
-        private unsafe ValueTask WriteAsyncInternal(ReadOnlyMemory<byte> source, CancellationToken cancellationToken)
+        private ValueTask WriteAsyncInternal(ReadOnlyMemory<byte> source, CancellationToken cancellationToken)
         {
-            if (!CanWrite)
-            {
-                ThrowHelper.ThrowNotSupportedException_UnwritableStream();
-            }
+            long writeOffset = CanSeek ? Interlocked.Add(ref _filePosition, source.Length) - source.Length : -1;
 
-            long positionBefore = _filePosition;
-            if (CanSeek)
-            {
-                // When using overlapped IO, the OS is not supposed to
-                // touch the file pointer location at all.  We will adjust it
-                // ourselves, but only in memory.  This isn't threadsafe.
-                _filePosition += source.Length;
-                UpdateLengthOnChangePosition();
-            }
-
-            (SafeFileHandle.OverlappedValueTaskSource? vts, int errorCode) = RandomAccess.QueueAsyncWriteFile(_fileHandle, source, positionBefore, cancellationToken);
+            (SafeFileHandle.OverlappedValueTaskSource? vts, int errorCode) = RandomAccess.QueueAsyncWriteFile(_fileHandle, source, writeOffset, cancellationToken);
             return vts != null
                 ? new ValueTask(vts, vts.Version)
-                : (errorCode == 0) ? ValueTask.CompletedTask : ValueTask.FromException(HandleIOError(positionBefore, errorCode));
+                : (errorCode == 0) ? ValueTask.CompletedTask : ValueTask.FromException(HandleIOError(writeOffset, errorCode));
         }
 
         private Exception HandleIOError(long positionBefore, int errorCode)
         {
-            if (!_fileHandle.IsClosed && CanSeek)
+            if (_fileHandle.CanSeek)
             {
                 // Update Position... it could be anywhere.
-                _filePosition = positionBefore;
+                Interlocked.Exchange(ref _filePosition, positionBefore);
             }
 
             return SafeFileHandle.OverlappedValueTaskSource.GetIOError(errorCode, _fileHandle.Path);

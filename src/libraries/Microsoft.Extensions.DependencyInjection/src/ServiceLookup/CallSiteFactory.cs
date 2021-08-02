@@ -51,10 +51,17 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
                             SR.Format(SR.TypeCannotBeActivated, implementationType, serviceType));
                     }
 
-                    if (serviceType.GetGenericArguments().Length != implementationType.GetGenericArguments().Length)
+                    Type[] serviceTypeGenericArguments = serviceType.GetGenericArguments();
+                    Type[] implementationTypeGenericArguments = implementationType.GetGenericArguments();
+                    if (serviceTypeGenericArguments.Length != implementationTypeGenericArguments.Length)
                     {
                         throw new ArgumentException(
                             SR.Format(SR.ArityOfOpenGenericServiceNotEqualArityOfOpenGenericImplementation, serviceType, implementationType), "descriptors");
+                    }
+
+                    if (ServiceProvider.VerifyOpenGenericServiceTrimmability)
+                    {
+                        ValidateTrimmingAnnotations(serviceType, serviceTypeGenericArguments, implementationType, implementationTypeGenericArguments);
                     }
                 }
                 else if (descriptor.ImplementationInstance == null && descriptor.ImplementationFactory == null)
@@ -75,6 +82,68 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
                 _descriptorLookup.TryGetValue(cacheKey, out ServiceDescriptorCacheItem cacheItem);
                 _descriptorLookup[cacheKey] = cacheItem.Add(descriptor);
             }
+        }
+
+        /// <summary>
+        /// Validates that two generic type definitions have compatible trimming annotations on their generic arguments.
+        /// </summary>
+        /// <remarks>
+        /// When open generic types are used in DI, there is an error when the concrete implementation type
+        /// has [DynamicallyAccessedMembers] attributes on a generic argument type, but the interface/service type
+        /// doesn't have matching annotations. The problem is that the trimmer doesn't see the members that need to
+        /// be preserved on the type being passed to the generic argument. But when the interface/service type also has
+        /// the annotations, the trimmer will see which members need to be preserved on the closed generic argument type.
+        /// </remarks>
+        private static void ValidateTrimmingAnnotations(
+            Type serviceType,
+            Type[] serviceTypeGenericArguments,
+            Type implementationType,
+            Type[] implementationTypeGenericArguments)
+        {
+            Debug.Assert(serviceTypeGenericArguments.Length == implementationTypeGenericArguments.Length);
+
+            for (int i = 0; i < serviceTypeGenericArguments.Length; i++)
+            {
+                Type serviceGenericType = serviceTypeGenericArguments[i];
+                Type implementationGenericType = implementationTypeGenericArguments[i];
+
+                DynamicallyAccessedMemberTypes serviceDynamicallyAccessedMembers = GetDynamicallyAccessedMemberTypes(serviceGenericType);
+                DynamicallyAccessedMemberTypes implementationDynamicallyAccessedMembers = GetDynamicallyAccessedMemberTypes(implementationGenericType);
+
+                if (!AreCompatible(serviceDynamicallyAccessedMembers, implementationDynamicallyAccessedMembers))
+                {
+                    throw new ArgumentException(SR.Format(SR.TrimmingAnnotationsDoNotMatch, implementationType.FullName, serviceType.FullName));
+                }
+
+                bool serviceHasNewConstraint = serviceGenericType.GenericParameterAttributes.HasFlag(GenericParameterAttributes.DefaultConstructorConstraint);
+                bool implementationHasNewConstraint = implementationGenericType.GenericParameterAttributes.HasFlag(GenericParameterAttributes.DefaultConstructorConstraint);
+                if (implementationHasNewConstraint && !serviceHasNewConstraint)
+                {
+                    throw new ArgumentException(SR.Format(SR.TrimmingAnnotationsDoNotMatch_NewConstraint, implementationType.FullName, serviceType.FullName));
+                }
+            }
+        }
+
+        private static DynamicallyAccessedMemberTypes GetDynamicallyAccessedMemberTypes(Type serviceGenericType)
+        {
+            foreach (CustomAttributeData attributeData in serviceGenericType.GetCustomAttributesData())
+            {
+                if (attributeData.AttributeType.FullName == "System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute" &&
+                    attributeData.ConstructorArguments.Count == 1 &&
+                    attributeData.ConstructorArguments[0].ArgumentType.FullName == "System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes")
+                {
+                    return (DynamicallyAccessedMemberTypes)(int)attributeData.ConstructorArguments[0].Value;
+                }
+            }
+
+            return DynamicallyAccessedMemberTypes.None;
+        }
+
+        private static bool AreCompatible(DynamicallyAccessedMemberTypes serviceDynamicallyAccessedMembers, DynamicallyAccessedMemberTypes implementationDynamicallyAccessedMembers)
+        {
+            // The DynamicallyAccessedMemberTypes don't need to exactly match.
+            // The service type needs to preserve a superset of the members required by the implementation type.
+            return serviceDynamicallyAccessedMembers.HasFlag(implementationDynamicallyAccessedMembers);
         }
 
         // For unit testing
@@ -273,6 +342,10 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
             return null;
         }
 
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2055:MakeGenericType",
+            Justification = "MakeGenericType here is used to create a closed generic implementation type given the closed service type. " +
+            "Trimming annotations on the generic types are verified when 'Microsoft.Extensions.DependencyInjection.VerifyOpenGenericServiceTrimmability' is set, which is set by default when PublishTrimmed=true. " +
+            "That check informs developers when these generic types don't have compatible trimming annotations.")]
         private ServiceCallSite TryCreateOpenGeneric(ServiceDescriptor descriptor, Type serviceType, CallSiteChain callSiteChain, int slot, bool throwOnConstraintViolation)
         {
             if (serviceType.IsConstructedGenericType &&

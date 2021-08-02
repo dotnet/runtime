@@ -55,14 +55,13 @@ namespace System.IO.Tests
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.Is64BitProcess))]
         [OuterLoop]
-        [InlineData(int.MaxValue / 2 + 1)]
-        public void WriteFromByte_InputSizeLargerThanHalfOfMaxInt_ShouldSuccess(int inputSize)
+        public void WriteFromByte_InputSizeLargerThanHalfOfMaxInt_ShouldSuccess()
         {
+            const int InputSize = int.MaxValue / 2 + 1;
             byte[] bytes;
-
             try
             {
-                bytes = new byte[inputSize];
+                bytes = new byte[InputSize];
             }
             catch (OutOfMemoryException)
             {
@@ -72,21 +71,20 @@ namespace System.IO.Tests
             var writableStream = new WriteOnlyStream();
             using (var bs = new BufferedStream(writableStream))
             {
-                bs.Write(bytes, 0, inputSize);
-                Assert.Equal(inputSize, writableStream.Position);
+                bs.Write(bytes, 0, InputSize);
+                Assert.Equal(InputSize, writableStream.Position);
             }
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.Is64BitProcess))]
         [OuterLoop]
-        [InlineData(int.MaxValue / 2 + 1)]
-        public void WriteFromSpan_InputSizeLargerThanHalfOfMaxInt_ShouldSuccess(int inputSize)
+        public void WriteFromSpan_InputSizeLargerThanHalfOfMaxInt_ShouldSuccess()
         {
+            const int InputSize = int.MaxValue / 2 + 1;
             byte[] bytes;
-
             try
             {
-                bytes = new byte[inputSize];
+                bytes = new byte[InputSize];
             }
             catch (OutOfMemoryException)
             {
@@ -97,7 +95,7 @@ namespace System.IO.Tests
             using (var bs = new BufferedStream(writableStream))
             {
                 bs.Write(new ReadOnlySpan<byte>(bytes));
-                Assert.Equal(inputSize, writableStream.Position);
+                Assert.Equal(InputSize, writableStream.Position);
             }
         }
 
