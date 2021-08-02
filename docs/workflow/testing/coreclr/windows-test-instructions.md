@@ -15,6 +15,22 @@ By default, the test build uses Release as the libraries configuration. To use a
 src\tests\build.cmd /p:LibrariesConfiguration=Debug
 ```
 
+## Building Native Test Components
+
+Sometimes you want to only build the native test components instead of the managed and native components. To build the native test components only, pass the `skipmanaged` and `skipgeneratelayout` parameters to the build script as follows:
+
+```
+src\tests\build.cmd skipmanaged skipgeneratelayout
+```
+
+## Building C++/CLI native test components against the live ref assemblies
+
+By default, the C++/CLI native test components build against the ref pack from the SDK specified in the `global.json` file in the root of the repository. To build these components against the ref assemblies produced in the build, pass the `-cmakeargs -DCPP_CLI_LIVE_REF_ASSEMBLIES=1` parameters to the test build. For example:
+
+```
+src\tests\build.cmd skipmanaged -cmakeargs -DCPP_CLI_LIVE_REF_ASSEMBLIES=1
+```
+
 ## Building Precompiled Tests
 
 ```

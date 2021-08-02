@@ -4450,7 +4450,12 @@ mini_get_cpu_features (MonoCompile* cfg)
 
 #if defined(TARGET_ARM64)
 	// All Arm64 devices have this set
-	features |= MONO_CPU_ARM64_BASE; 
+	features |= MONO_CPU_ARM64_BASE;
+
+	// This is a standard part of ARMv8-A; see A1.5 in "ARM
+	// Architecture Reference Manual ARMv8, for ARMv8-A
+	// architecture profile"
+	features |= MONO_CPU_ARM64_NEON; 
 #endif
 
 	// apply parameters passed via -mattr

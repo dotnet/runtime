@@ -1170,6 +1170,8 @@ namespace System.Net.Http.Functional.Tests
                         handler.ServerCertificateCustomValidationCallback = HttpClientHandler.DangerousAcceptAnyServerCertificateValidator;
                     }
                     using HttpClient client = CreateHttpClient(handler);
+                    client.Timeout = TimeSpan.FromSeconds(30);
+
                     if (expectedResult is Type type)
                     {
                         Exception exception = await Assert.ThrowsAnyAsync<Exception>(() => client.SendAsync(request));
@@ -1186,10 +1188,10 @@ namespace System.Net.Http.Functional.Tests
                 {
                     try
                     {
-                        HttpRequestData requestData = await server.AcceptConnectionSendResponseAndCloseAsync();
+                        HttpRequestData requestData = await server.HandleRequestAsync().WaitAsync(TimeSpan.FromSeconds(30));
                         Assert.Equal(expectedResult, requestData.Version);
                     }
-                    catch (Exception ex) when (expectedResult is Type)
+                    catch (Exception ex) when (ex is not TaskCanceledException && expectedResult is Type)
                     {
                         _output.WriteLine("Server exception: " + ex.ToString());
                     }

@@ -56,8 +56,6 @@ BOOL bgc_heap_walk_for_etw_p = FALSE;
 #define MIN_SOH_CROSS_GEN_REFS (400)
 #define MIN_LOH_CROSS_GEN_REFS (800)
 
-static size_t smoothed_desired_per_heap = 0;
-
 #ifdef SERVER_GC
 #define partial_size_th 100
 #define num_partial_refs 64
@@ -1148,7 +1146,7 @@ public:
         {
             if (alloc_objects [i] != (uint8_t*)0)
             {
-                GCToOSInterface::DebugBreak();
+                FATAL_GC_ERROR();
             }
         }
     }
@@ -2297,6 +2295,7 @@ bool        affinity_config_specified_p = false;
 #ifdef USE_REGIONS
 region_allocator global_region_allocator;
 uint8_t*(*initial_regions)[total_generation_count][2] = nullptr;
+size_t      gc_heap::region_count = 0;
 #endif //USE_REGIONS
 
 #ifdef BACKGROUND_GC
@@ -2808,6 +2807,8 @@ size_t     gc_heap::interesting_mechanism_bits_per_heap[max_gc_mechanism_bits_co
 
 /* end of per heap static initialization */
 
+// budget smoothing
+size_t     gc_heap::smoothed_desired_per_heap[total_generation_count];
 /* end of static initialization */
 
 #ifndef DACCESS_COMPILE
@@ -3510,12 +3511,6 @@ size_t get_basic_region_index_for_address (uint8_t* address)
 {
     size_t basic_region_index = (size_t)address >> gc_heap::min_segment_size_shr;
     return (basic_region_index - ((size_t)g_gc_lowest_address >> gc_heap::min_segment_size_shr));
-}
-
-inline
-size_t get_total_region_count()
-{
-    return (get_basic_region_index_for_address (g_gc_highest_address) + 1);
 }
 
 // Go from a random address to its region info. The random address could be 
@@ -9741,7 +9736,6 @@ size_t gc_heap::sort_mark_list()
 
 #ifdef USE_REGIONS
     // first set the pieces for all regions to empty
-    size_t region_count = get_total_region_count();
     assert (g_mark_list_piece_size >= region_count);
     for (size_t region_index = 0; region_index < region_count; region_index++)
     {
@@ -15053,6 +15047,7 @@ BOOL gc_heap::a_fit_free_list_uoh_p (size_t size,
                 if (loh_pad)
                 {
                     make_unused_array (free_list, loh_pad);
+                    generation_free_obj_space (gen) += loh_pad;
                     limit -= loh_pad;
                     free_list += loh_pad;
                     free_list_size -= loh_pad;
@@ -15191,6 +15186,7 @@ found_fit:
     if (gen_number == loh_generation)
     {
         make_unused_array (allocated, loh_pad);
+        generation_free_obj_space (generation_of (gen_number)) += loh_pad;
         allocated += loh_pad;
         limit -= loh_pad;
     }
@@ -19439,6 +19435,18 @@ void gc_heap::update_end_ngc_time()
 #endif //HEAP_BALANCE_INSTRUMENTATION
 }
 
+size_t gc_heap::exponential_smoothing (int gen, size_t collection_count, size_t desired_per_heap)
+{
+    // to avoid spikes in mem usage due to short terms fluctuations in survivorship,
+    // apply some smoothing.
+    size_t smoothing = min(3, collection_count);
+    
+    size_t new_smoothed_desired_per_heap = desired_per_heap / smoothing + ((smoothed_desired_per_heap[gen] / smoothing) * (smoothing - 1));
+    dprintf (2, ("new smoothed_desired_per_heap for gen %d = %Id, desired_per_heap = %Id", gen, new_smoothed_desired_per_heap, desired_per_heap));
+    smoothed_desired_per_heap[gen] = new_smoothed_desired_per_heap;
+    return Align (smoothed_desired_per_heap[gen], get_alignment_constant (gen <= soh_gen2));
+}
+
 //internal part of gc used by the serial and concurrent version
 void gc_heap::gc1()
 {
@@ -19839,10 +19847,7 @@ void gc_heap::gc1()
 #if 1 //subsumed by the linear allocation model
                     // to avoid spikes in mem usage due to short terms fluctuations in survivorship,
                     // apply some smoothing.
-                    size_t smoothing = 3; // exponential smoothing factor
-                    smoothed_desired_per_heap = desired_per_heap / smoothing + ((smoothed_desired_per_heap / smoothing) * (smoothing-1));
-                    dprintf (HEAP_BALANCE_LOG, ("TEMPsn = %Id  n = %Id", smoothed_desired_per_heap, desired_per_heap));
-                    desired_per_heap = Align(smoothed_desired_per_heap, get_alignment_constant (true));
+                    desired_per_heap = exponential_smoothing (gen, dd_collection_count (dynamic_data_of(gen)), desired_per_heap);
 #endif //0
 
                     if (!heap_hard_limit)
@@ -19871,14 +19876,7 @@ void gc_heap::gc1()
                 {
                     // to avoid spikes in mem usage due to short terms fluctuations in survivorship,
                     // apply some smoothing.
-                    static size_t smoothed_desired_per_heap_uoh = 0;
-                    size_t smoothing = 3; // exponential smoothing factor
-                    size_t uoh_count = dd_collection_count (dynamic_data_of (max_generation));
-                    if (smoothing  > uoh_count)
-                        smoothing  = uoh_count;
-                    smoothed_desired_per_heap_uoh = desired_per_heap / smoothing + ((smoothed_desired_per_heap_uoh / smoothing) * (smoothing-1));
-                    dprintf (2, ("smoothed_desired_per_heap_loh  = %Id  desired_per_heap = %Id", smoothed_desired_per_heap_uoh, desired_per_heap));
-                    desired_per_heap = Align(smoothed_desired_per_heap_uoh, get_alignment_constant (false));
+                    desired_per_heap = exponential_smoothing (gen, dd_collection_count (dynamic_data_of (max_generation)), desired_per_heap);
                 }
 #endif //0
                 for (int i = 0; i < gc_heap::n_heaps; i++)
@@ -21138,7 +21136,6 @@ size_t gc_heap::get_promoted_bytes()
     }
 
     dprintf (3, ("h%d getting surv", heap_number));
-    size_t region_count = get_total_region_count();
     size_t promoted = 0;
     for (size_t i = 0; i < region_count; i++)
     {
@@ -23934,6 +23931,7 @@ void gc_heap::mark_phase (int condemned_gen_number, BOOL mark_only_p)
 
 #ifdef USE_REGIONS
         special_sweep_p = false;
+        region_count = global_region_allocator.get_used_region_count();
         grow_mark_list_piece();
 #endif //USE_REGIONS
 
@@ -24002,7 +24000,7 @@ void gc_heap::mark_phase (int condemned_gen_number, BOOL mark_only_p)
 #endif //MULTIPLE_HEAPS
             survived_per_region = (size_t*)&g_mark_list_piece[heap_number * 2 * g_mark_list_piece_size];
             old_card_survived_per_region = (size_t*)&survived_per_region[g_mark_list_piece_size];
-            size_t region_info_to_clear = get_total_region_count() * sizeof (size_t);
+            size_t region_info_to_clear = region_count * sizeof (size_t);
             memset (survived_per_region, 0, region_info_to_clear);
             memset (old_card_survived_per_region, 0, region_info_to_clear);
         }
@@ -26213,7 +26211,6 @@ void gc_heap::process_remaining_regions (int current_plan_gen_num, generation* c
 
 void gc_heap::grow_mark_list_piece()
 {
-    size_t region_count = get_total_region_count();
     if (g_mark_list_piece_size < region_count)
     {
         delete[] g_mark_list_piece;
@@ -26238,11 +26235,10 @@ void gc_heap::save_current_survived()
 {
     if (!survived_per_region) return;
 
-    size_t region_info_to_copy = get_total_region_count() * sizeof (size_t);
+    size_t region_info_to_copy = region_count * sizeof (size_t);
     memcpy (old_card_survived_per_region, survived_per_region, region_info_to_copy);
 
 #ifdef _DEBUG
-    size_t region_count = get_total_region_count();
     for (size_t region_index = 0; region_index < region_count; region_index++)
     {
         if (survived_per_region[region_index] != 0)
@@ -26259,7 +26255,6 @@ void gc_heap::update_old_card_survived()
 {
     if (!survived_per_region) return;
 
-    size_t region_count = get_total_region_count();
     for (size_t region_index = 0; region_index < region_count; region_index++)
     {
         old_card_survived_per_region[region_index] = survived_per_region[region_index] - 
@@ -33357,6 +33352,11 @@ void gc_heap::bgc_thread_function()
 
                 desired_per_heap = Align ((total_desired/n_heaps), get_alignment_constant (FALSE));
 
+                if (gen >= loh_generation)
+                {
+                    desired_per_heap = exponential_smoothing (gen, dd_collection_count (dynamic_data_of (max_generation)), desired_per_heap);
+                }
+
                 for (int i = 0; i < n_heaps; i++)
                 {
                     hp = gc_heap::g_heaps[i];
@@ -37207,7 +37207,7 @@ bool gc_heap::init_dynamic_data()
     if (heap_number == 0)
     {
         process_start_time = now;
-        smoothed_desired_per_heap = dynamic_data_of (0)->min_size;
+        smoothed_desired_per_heap[0] = dynamic_data_of (0)->min_size;
 #ifdef HEAP_BALANCE_INSTRUMENTATION
         last_gc_end_time_us = now;
         dprintf (HEAP_BALANCE_LOG, ("qpf=%I64d, start: %I64d(%d)", qpf, start_raw_ts, now));
@@ -43762,14 +43762,14 @@ void gc_heap::do_post_gc()
     record_interesting_info_per_heap();
 #endif //MULTIPLE_HEAPS
 
+    record_global_mechanisms();
+#endif //GC_CONFIG_DRIVEN
+
     if (mark_list_overflow)
     {
         grow_mark_list();
         mark_list_overflow = false;
     }
-
-    record_global_mechanisms();
-#endif //GC_CONFIG_DRIVEN
 }
 
 unsigned GCHeap::GetGcCount()

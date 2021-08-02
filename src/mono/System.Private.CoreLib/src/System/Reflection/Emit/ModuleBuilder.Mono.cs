@@ -106,6 +106,7 @@ namespace System.Reflection.Emit
             set_wrappers_type(this, type);
         }
 
+        [RequiresAssemblyFiles(UnknownStringMessageInRAF)]
         public override string FullyQualifiedName
         {
             get
@@ -116,11 +117,6 @@ namespace System.Reflection.Emit
 
                 return fullyQualifiedName;
             }
-        }
-
-        public bool IsTransient()
-        {
-            return true;
         }
 
         public void CreateGlobalFunctions()
@@ -596,8 +592,6 @@ namespace System.Reflection.Emit
                 throw new ArgumentNullException(nameof(type));
             if (type.IsByRef)
                 throw new ArgumentException("type can't be a byref type", nameof(type));
-            if (!IsTransient() && (type.Module is ModuleBuilder) && ((ModuleBuilder)type.Module).IsTransient())
-                throw new InvalidOperationException("a non-transient module can't reference a transient module");
             return type.MetadataToken;
         }
 
@@ -823,6 +817,7 @@ namespace System.Reflection.Emit
             get { return assemblyb; }
         }
 
+        [RequiresAssemblyFiles(UnknownStringMessageInRAF)]
         public override string Name
         {
             get { return name; }
@@ -881,7 +876,7 @@ namespace System.Reflection.Emit
 
             m = GetRegisteredToken(metadataToken) as MemberInfo;
             if (m == null)
-                throw RuntimeModule.resolve_token_exception(Name, metadataToken, error, "MemberInfo");
+                throw RuntimeModule.resolve_token_exception(this, metadataToken, error, "MemberInfo");
             else
                 return m;
         }

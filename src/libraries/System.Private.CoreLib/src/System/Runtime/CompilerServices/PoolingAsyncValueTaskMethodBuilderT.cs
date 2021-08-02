@@ -356,14 +356,18 @@ namespace System.Runtime.CompilerServices
                     // Get the current processor ID.  We need to ensure it fits within s_perCoreCache, so we
                     // could % by its length, but we can do so instead by Environment.ProcessorCount, which will be a const
                     // in tier 1, allowing better code gen, and then further use uints for even better code gen.
-                    Debug.Assert(s_perCoreCache.Length == Environment.ProcessorCount);
+                    Debug.Assert(s_perCoreCache.Length == Environment.ProcessorCount, $"{s_perCoreCache.Length} != {Environment.ProcessorCount}");
                     int i = (int)((uint)Thread.GetCurrentProcessorId() % (uint)Environment.ProcessorCount);
 
                     // We want an array of StateMachineBox<> objects, each consuming its own cache line so that
                     // elements don't cause false sharing with each other.  But we can't use StructLayout.Explicit
                     // with generics.  So we use object fields, but always reinterpret them (for all reads and writes
                     // to avoid any safety issues) as StateMachineBox<> instances.
-                    Debug.Assert(s_perCoreCache[i].Object is null || s_perCoreCache[i].Object is StateMachineBox<TStateMachine>);
+#if DEBUG
+                    object? transientValue = s_perCoreCache[i].Object;
+                    Debug.Assert(transientValue is null || transientValue is StateMachineBox<TStateMachine>,
+                        $"Expected null or {nameof(StateMachineBox<TStateMachine>)}, got '{transientValue}'");
+#endif
                     return ref Unsafe.As<object?, StateMachineBox<TStateMachine>?>(ref s_perCoreCache[i].Object);
                 }
             }
@@ -385,7 +389,7 @@ namespace System.Runtime.CompilerServices
             private static void ExecutionContextCallback(object? s)
             {
                 // Only used privately to pass directly to EC.Run
-                Debug.Assert(s is StateMachineBox<TStateMachine>);
+                Debug.Assert(s is StateMachineBox<TStateMachine>, $"Expected {nameof(StateMachineBox<TStateMachine>)}, got '{s}'");
                 Unsafe.As<StateMachineBox<TStateMachine>>(s).StateMachine!.MoveNext();
             }
 
@@ -402,7 +406,7 @@ namespace System.Runtime.CompilerServices
 
                 if (context is null)
                 {
-                    Debug.Assert(StateMachine is not null);
+                    Debug.Assert(StateMachine is not null, $"Null {nameof(StateMachine)}");
                     StateMachine.MoveNext();
                 }
                 else

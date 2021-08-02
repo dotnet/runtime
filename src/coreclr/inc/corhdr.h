@@ -1869,12 +1869,6 @@ typedef enum LoadHintEnum
 #define DEPENDENCY_TYPE_W                       W("System.Runtime.CompilerServices.DependencyAttribute")
 #define DEPENDENCY_TYPE                         "System.Runtime.CompilerServices.DependencyAttribute"
 
-#define TARGET_FRAMEWORK_TYPE_W                 W("System.Runtime.Versioning.TargetFrameworkAttribute")
-#define TARGET_FRAMEWORK_TYPE                   "System.Runtime.Versioning.TargetFrameworkAttribute"
-
-#define ASSEMBLY_METADATA_TYPE_W                W("System.Reflection.AssemblyMetadataAttribute")
-#define ASSEMBLY_METADATA_TYPE                  "System.Reflection.AssemblyMetadataAttribute"
-
 
 #define CMOD_CALLCONV_NAMESPACE_OLD             "System.Runtime.InteropServices"
 #define CMOD_CALLCONV_NAMESPACE                 "System.Runtime.CompilerServices"

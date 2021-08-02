@@ -55,7 +55,7 @@ jobs:
   - template: /eng/pipelines/common/evaluate-default-paths.yml
 
 #
-# iOS/tvOS/Catalyst interp - requires AOT Compilation and Interp flags 
+# iOS/tvOS/Catalyst interp - requires AOT Compilation and Interp flags
 # Build the whole product using Mono and run libraries tests
 #
 - template: /eng/pipelines/common/platform-matrix.yml
@@ -167,7 +167,7 @@ jobs:
           eq(dependencies.evaluate_paths.outputs['SetPathVars_mono.containsChange'], true),
           eq(dependencies.evaluate_paths.outputs['SetPathVars_installer.containsChange'], true),
           eq(variables['isFullMatrix'], true))
-      
+
       # don't run tests on PRs until we can get significantly more devices
       ${{ if eq(variables['isFullMatrix'], true) }}:
         # extra steps, run tests

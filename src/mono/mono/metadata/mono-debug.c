@@ -124,7 +124,7 @@ static void
 free_debug_handle (MonoDebugHandle *handle)
 {
 	if (handle->ppdb)
-		mono_ppdb_close (handle);
+		mono_ppdb_close (handle->ppdb);
 	if (handle->symfile)
 		mono_debug_close_mono_symbol_file (handle->symfile);
 	/* decrease the refcount added with mono_image_addref () */
@@ -838,6 +838,17 @@ mono_debug_lookup_source_location_by_il (MonoMethod *method, guint32 il_offset, 
 MonoDebugSourceLocation *
 mono_debug_method_lookup_location (MonoDebugMethodInfo *minfo, int il_offset)
 {
+	MonoImage* img = m_class_get_image (minfo->method->klass);
+	if (img->has_updates) {
+		int idx = mono_metadata_token_index (minfo->method->token);
+		MonoDebugInformationEnc *mdie = (MonoDebugInformationEnc *) mono_metadata_update_get_updated_method_ppdb (img, idx);
+		if (mdie != NULL) {
+			MonoDebugSourceLocation * ret = mono_ppdb_lookup_location_enc (mdie->ppdb_file, mdie->idx, il_offset);
+			if (ret)
+				return ret;
+		}
+	} 
+
 	MonoDebugSourceLocation *location;
 
 	mono_debugger_lock ();
@@ -866,7 +877,7 @@ mono_debug_lookup_locals (MonoMethod *method, mono_bool ignore_pdb)
 		int idx = mono_metadata_token_index (method->token);
 		MonoDebugInformationEnc *mdie = (MonoDebugInformationEnc *) mono_metadata_update_get_updated_method_ppdb (img, idx);
 		if (mdie != NULL) {
-			res = mono_ppdb_lookup_locals_enc (mdie->image, mdie->idx);
+			res = mono_ppdb_lookup_locals_enc (mdie->ppdb_file->image, mdie->idx);
 			if (res != NULL)
 				return res;
 		}
@@ -1128,11 +1139,11 @@ void
 mono_debug_get_seq_points (MonoDebugMethodInfo *minfo, char **source_file, GPtrArray **source_file_list, int **source_files, MonoSymSeqPoint **seq_points, int *n_seq_points)
 {
 	MonoImage* img = m_class_get_image (minfo->method->klass);
-	if (img->has_updates && !source_file_list) {
+	if (img->has_updates) {
 		int idx = mono_metadata_token_index (minfo->method->token);
 		MonoDebugInformationEnc *mdie = (MonoDebugInformationEnc *) mono_metadata_update_get_updated_method_ppdb (img, idx);
 		if (mdie != NULL) {
-			if (mono_ppdb_get_seq_points_enc (mdie->image, mdie->idx, seq_points, n_seq_points))
+			if (mono_ppdb_get_seq_points_enc (minfo, mdie->ppdb_file, mdie->idx, source_file, source_file_list, source_files, seq_points, n_seq_points))
 				return;
 		}
 	} 
