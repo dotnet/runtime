@@ -39,17 +39,15 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [OuterLoop("Runs long")]
-        [Theory]
-        [InlineData(HttpKeepAlivePingPolicy.Always)]
-        [InlineData(HttpKeepAlivePingPolicy.WithActiveRequests)]
-        public async Task KeepAlivePingDelay_Infinite_NoKeepAlivePingIsSent(HttpKeepAlivePingPolicy policy)
+        [Fact]
+        public async Task KeepAlivePingDelay_Infinite_NoKeepAlivePingIsSent()
         {
             await Http2LoopbackServer.CreateClientAndServerAsync(async uri =>
             {
                 SocketsHttpHandler handler = new SocketsHttpHandler()
                 {
                     KeepAlivePingTimeout = TimeSpan.FromSeconds(1),
-                    KeepAlivePingPolicy = policy,
+                    KeepAlivePingPolicy = HttpKeepAlivePingPolicy.Always,
                     KeepAlivePingDelay = Timeout.InfiniteTimeSpan
                 };
                 handler.SslOptions.RemoteCertificateValidationCallback = delegate { return true; };
@@ -141,11 +139,11 @@ namespace System.Net.Http.Functional.Tests
                 Interlocked.Exchange(ref _pingCounter, 0); // reset the PING counter
 
                 // Simulate inactive period:
-                await Task.Delay(10_000);
+                await Task.Delay(5_000);
 
                 // We may receive one RTT PING in response to HEADERS.
-                // Upon that, we expect to receive at least 2 keep alive PINGs:
-                Assert.True(_pingCounter > 2);
+                // Upon that, we expect to receive at least 1 keep alive PING:
+                Assert.True(_pingCounter > 1);
 
                 // Finish the response:
                 await GuardConnctionWriteAsync(() => _connection.SendDefaultResponseAsync(streamId2));
@@ -154,11 +152,11 @@ namespace System.Net.Http.Functional.Tests
                 if (policy == HttpKeepAlivePingPolicy.Always)
                 {
                     // Simulate inactive period:
-                    await Task.Delay(10_000);
+                    await Task.Delay(5_000);
 
                     // We may receive one RTT PING in response to HEADERS.
-                    // Upon that, we expect to receive at least 2 keep alive PINGs:
-                    Assert.True(_pingCounter > 2);
+                    // Upon that, we expect to receive at least 2 keep alive PING:
+                    Assert.True(_pingCounter > 1);
                 }
                 else
                 {
@@ -180,17 +178,15 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [OuterLoop("Runs long")]
-        [Theory]
-        [InlineData(HttpKeepAlivePingPolicy.Always)]
-        [InlineData(HttpKeepAlivePingPolicy.WithActiveRequests)]
-        public async Task KeepAliveConfigured_NoPingResponseDuringActiveStream_RequestShouldFail(HttpKeepAlivePingPolicy policy)
+        [Fact]
+        public async Task KeepAliveConfigured_NoPingResponseDuringActiveStream_RequestShouldFail()
         {
             await Http2LoopbackServer.CreateClientAndServerAsync(async uri =>
             {
                 SocketsHttpHandler handler = new SocketsHttpHandler()
                 {
-                    KeepAlivePingTimeout = TimeSpan.FromSeconds(2),
-                    KeepAlivePingPolicy = policy,
+                    KeepAlivePingTimeout = TimeSpan.FromSeconds(1.5),
+                    KeepAlivePingPolicy = HttpKeepAlivePingPolicy.WithActiveRequests,
                     KeepAlivePingDelay = TimeSpan.FromSeconds(1)
                 };
                 handler.SslOptions.RemoteCertificateValidationCallback = delegate { return true; };
@@ -222,7 +218,7 @@ namespace System.Net.Http.Functional.Tests
                 DisablePingResponse();
 
                 // Simulate inactive period:
-                await Task.Delay(10_000);
+                await Task.Delay(6_000);
 
                 // Finish the response:
                 await GuardConnctionWriteAsync(() => _connection.SendDefaultResponseAsync(streamId2));
@@ -239,7 +235,7 @@ namespace System.Net.Http.Functional.Tests
             {
                 SocketsHttpHandler handler = new SocketsHttpHandler()
                 {
-                    KeepAlivePingTimeout = TimeSpan.FromSeconds(2),
+                    KeepAlivePingTimeout = TimeSpan.FromSeconds(1.5),
                     KeepAlivePingPolicy = HttpKeepAlivePingPolicy.Always,
                     KeepAlivePingDelay = TimeSpan.FromSeconds(1)
                 };
@@ -269,7 +265,7 @@ namespace System.Net.Http.Functional.Tests
                 DisablePingResponse();
 
                 // Simulate inactive period:
-                await Task.Delay(10_000);
+                await Task.Delay(6_000);
 
                 // Request under the test scope.
                 int streamId2 = await ReadRequestHeaderAsync();
