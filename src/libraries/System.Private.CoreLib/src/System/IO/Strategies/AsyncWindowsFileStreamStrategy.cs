@@ -43,28 +43,17 @@ namespace System.IO.Strategies
             (SafeFileHandle.OverlappedValueTaskSource? vts, int errorCode) = RandomAccess.QueueAsyncReadFile(_fileHandle, destination, readOffset, cancellationToken, this);
             return vts != null
                 ? new ValueTask<int>(vts, vts.Version)
-                : (errorCode == 0) ? ValueTask.FromResult(0) : ValueTask.FromException<int>(HandleIOError(readOffset, errorCode));
+                : (errorCode == 0) ? ValueTask.FromResult(0) : ValueTask.FromException<int>(SafeFileHandle.OverlappedValueTaskSource.GetIOError(errorCode, _fileHandle.Path));
         }
 
         public override ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default)
         {
             long writeOffset = CanSeek ? Interlocked.Add(ref _filePosition, buffer.Length) - buffer.Length : -1;
 
-            (SafeFileHandle.OverlappedValueTaskSource? vts, int errorCode) = RandomAccess.QueueAsyncWriteFile(_fileHandle, buffer, writeOffset, cancellationToken);
+            (SafeFileHandle.OverlappedValueTaskSource? vts, int errorCode) = RandomAccess.QueueAsyncWriteFile(_fileHandle, buffer, writeOffset, cancellationToken, this);
             return vts != null
                 ? new ValueTask(vts, vts.Version)
-                : (errorCode == 0) ? ValueTask.CompletedTask : ValueTask.FromException(HandleIOError(writeOffset, errorCode));
-        }
-
-        private Exception HandleIOError(long positionBefore, int errorCode)
-        {
-            if (_fileHandle.CanSeek)
-            {
-                // Update Position... it could be anywhere.
-                Interlocked.Exchange(ref _filePosition, positionBefore);
-            }
-
-            return SafeFileHandle.OverlappedValueTaskSource.GetIOError(errorCode, _fileHandle.Path);
+                : (errorCode == 0) ? ValueTask.CompletedTask : ValueTask.FromException(SafeFileHandle.OverlappedValueTaskSource.GetIOError(errorCode, _fileHandle.Path));
         }
 
         public override Task CopyToAsync(Stream destination, int bufferSize, CancellationToken cancellationToken)

@@ -248,7 +248,7 @@ namespace System.IO
             handle.EnsureThreadPoolBindingInitialized();
 
             SafeFileHandle.OverlappedValueTaskSource vts = handle.GetOverlappedValueTaskSource();
-            int errorCode = 0;
+            int errorCode = Interop.Errors.ERROR_SUCCESS;
             try
             {
                 NativeOverlapped* nativeOverlapped = vts.PrepareForOperation(buffer, fileOffset, strategy);
@@ -292,7 +292,7 @@ namespace System.IO
             {
                 if (errorCode != Interop.Errors.ERROR_IO_PENDING && errorCode != Interop.Errors.ERROR_SUCCESS)
                 {
-                    strategy?.OnIncompleteRead(buffer.Length, 0);
+                    strategy?.OnIncompleteOperation(buffer.Length, 0);
                 }
             }
 
@@ -323,21 +323,23 @@ namespace System.IO
             return ScheduleSyncWriteAtOffsetAsync(handle, buffer, fileOffset, cancellationToken);
         }
 
-        internal static unsafe (SafeFileHandle.OverlappedValueTaskSource? vts, int errorCode) QueueAsyncWriteFile(SafeFileHandle handle, ReadOnlyMemory<byte> buffer, long fileOffset, CancellationToken cancellationToken)
+        internal static unsafe (SafeFileHandle.OverlappedValueTaskSource? vts, int errorCode) QueueAsyncWriteFile(SafeFileHandle handle, ReadOnlyMemory<byte> buffer, long fileOffset,
+            CancellationToken cancellationToken, AsyncWindowsFileStreamStrategy? strategy = null)
         {
             handle.EnsureThreadPoolBindingInitialized();
 
             SafeFileHandle.OverlappedValueTaskSource vts = handle.GetOverlappedValueTaskSource();
+            int errorCode = Interop.Errors.ERROR_SUCCESS;
             try
             {
-                NativeOverlapped* nativeOverlapped = vts.PrepareForOperation(buffer, fileOffset);
+                NativeOverlapped* nativeOverlapped = vts.PrepareForOperation(buffer, fileOffset, strategy);
                 Debug.Assert(vts._memoryHandle.Pointer != null);
 
                 // Queue an async WriteFile operation.
                 if (Interop.Kernel32.WriteFile(handle, (byte*)vts._memoryHandle.Pointer, buffer.Length, IntPtr.Zero, nativeOverlapped) == 0)
                 {
                     // The operation failed, or it's pending.
-                    int errorCode = FileStreamHelpers.GetLastWin32ErrorAndDisposeHandleIfInvalid(handle);
+                    errorCode = FileStreamHelpers.GetLastWin32ErrorAndDisposeHandleIfInvalid(handle);
                     switch (errorCode)
                     {
                         case Interop.Errors.ERROR_IO_PENDING:
@@ -359,6 +361,13 @@ namespace System.IO
             {
                 vts.Dispose();
                 throw;
+            }
+            finally
+            {
+                if (errorCode != Interop.Errors.ERROR_IO_PENDING && errorCode != Interop.Errors.ERROR_SUCCESS)
+                {
+                    strategy?.OnIncompleteOperation(buffer.Length, 0);
+                }
             }
 
             // Completion handled by callback.

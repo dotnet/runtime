@@ -198,9 +198,9 @@ namespace Microsoft.Win32.SafeHandles
                 AsyncWindowsFileStreamStrategy? strategy = _strategy;
                 ReleaseResources();
 
-                if (strategy is not null && _bufferSize != numBytes) // true only for incomplete reads
+                if (strategy is not null && _bufferSize != numBytes) // true only for incomplete operations
                 {
-                    strategy.OnIncompleteRead(_bufferSize, (int)numBytes);
+                    strategy.OnIncompleteOperation(_bufferSize, (int)numBytes);
                 }
 
                 switch (errorCode)

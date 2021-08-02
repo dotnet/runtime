@@ -102,7 +102,7 @@ namespace System.IO.Strategies
 
         // in case of concurrent incomplete reads, there can be multiple threads trying to update the position
         // at the same time. That is why we are using Interlocked here.
-        internal void OnIncompleteRead(int expectedBytesRead, int actualBytesRead) => Interlocked.Add(ref _filePosition, actualBytesRead - expectedBytesRead);
+        internal void OnIncompleteOperation(int expectedBytesRead, int actualBytesRead) => Interlocked.Add(ref _filePosition, actualBytesRead - expectedBytesRead);
 
         protected bool LengthCachingSupported => OperatingSystem.IsWindows() && _lengthCanBeCached;
 
@@ -382,7 +382,7 @@ namespace System.IO.Strategies
                     // if the read was incomplete, we need to update the file position:
                     if (result != _destination.Length)
                     {
-                        _stream.OnIncompleteRead(_destination.Length, result);
+                        _stream.OnIncompleteOperation(_destination.Length, result);
                     }
 
                     _destination = default;
