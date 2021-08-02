@@ -15047,6 +15047,7 @@ BOOL gc_heap::a_fit_free_list_uoh_p (size_t size,
                 if (loh_pad)
                 {
                     make_unused_array (free_list, loh_pad);
+                    generation_free_obj_space (gen) += loh_pad;
                     limit -= loh_pad;
                     free_list += loh_pad;
                     free_list_size -= loh_pad;
@@ -15185,6 +15186,7 @@ found_fit:
     if (gen_number == loh_generation)
     {
         make_unused_array (allocated, loh_pad);
+        generation_free_obj_space (generation_of (gen_number)) += loh_pad;
         allocated += loh_pad;
         limit -= loh_pad;
     }
