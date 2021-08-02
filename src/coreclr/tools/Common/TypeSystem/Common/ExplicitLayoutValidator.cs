@@ -6,8 +6,10 @@ using System.Diagnostics;
 
 namespace Internal.TypeSystem
 {
-    public struct ExplicitLayoutValidator
+    public ref struct ExplicitLayoutValidator
     {
+        private const int FieldLayoutSegmentSize = 1024;
+
         private enum FieldLayoutTag : byte
         {
             Empty,
@@ -17,20 +19,43 @@ namespace Internal.TypeSystem
 
         private readonly int _pointerSize;
 
-        private readonly FieldLayoutTag[] _fieldLayout;
+        // Break FieldLayout data storage into an initial Span, which is stack allocated, and thus
+        // doesn't use GC memory, and an array of arrays for data beyond the first segment of field
+        // layout data. This allows the typical explicit layout structure to not require memory allocation
+        // and larger structures to avoid allocation for unused portions of the structure
+        // and when a large structure is in use, then the memory allocated will not be a huge buffer
+        // which is vulnerable to memory fragmentation problems on 32bit platforms.
+        //
+        // Ideally, for large structures this would be an interval tree of some sort, but the large structure
+        // code is rarely exercised, and thus I expect would be likely to contain bugs if such a structure
+        // were only implemented for this feature.
+        private readonly FieldLayoutTag[][] _fieldLayout;
+        private readonly Span<FieldLayoutTag> _firstFieldLayoutSegment;
 
         private readonly MetadataType _typeBeingValidated;
 
-        private ExplicitLayoutValidator(MetadataType type, int typeSizeInBytes)
+        private ExplicitLayoutValidator(MetadataType type, int typeSizeInBytes, Span<FieldLayoutTag> firstSegment)
         {
             _typeBeingValidated = type;
             _pointerSize = type.Context.Target.PointerSize;
-            _fieldLayout = new FieldLayoutTag[typeSizeInBytes];
+            _firstFieldLayoutSegment = firstSegment;
+            if (typeSizeInBytes > firstSegment.Length)
+            {
+                _fieldLayout = new FieldLayoutTag[((typeSizeInBytes - firstSegment.Length) / FieldLayoutSegmentSize) + 1][];
+            }
+            else
+            {
+                _fieldLayout = null;
+            }
         }
 
         public static void Validate(MetadataType type, ComputedInstanceFieldLayout layout)
         {
-            ExplicitLayoutValidator validator = new ExplicitLayoutValidator(type, layout.ByteCountUnaligned.AsInt);
+            int typeSizeInBytes = layout.ByteCountUnaligned.AsInt;
+            Span<FieldLayoutTag> firstSegment = stackalloc FieldLayoutTag[Math.Min(typeSizeInBytes, FieldLayoutSegmentSize)];
+
+            ExplicitLayoutValidator validator = new ExplicitLayoutValidator(type, typeSizeInBytes, firstSegment);
+
             foreach (FieldAndOffset fieldAndOffset in layout.Offsets)
             {
                 validator.AddToFieldLayout(fieldAndOffset.Offset.AsInt, fieldAndOffset.Field.FieldType);
@@ -133,16 +158,41 @@ namespace Internal.TypeSystem
             }
         }
 
+        private int GetSegmentIndex(int offset, out int segmentInternalIndex)
+        {
+            segmentInternalIndex = offset % FieldLayoutSegmentSize;
+            return (offset - _firstFieldLayoutSegment.Length) / FieldLayoutSegmentSize;
+        }
+
         private void SetFieldLayout(int offset, FieldLayoutTag tag)
         {
-            FieldLayoutTag existingTag = _fieldLayout[offset];
+            FieldLayoutTag existingTag;
+            Span<FieldLayoutTag> segment;
+            int segmentInternalIndex = offset;
+            
+            if (offset >= FieldLayoutSegmentSize)
+            {
+                segment = _firstFieldLayoutSegment;
+            }
+            else
+            {
+                int segmentIndex = GetSegmentIndex(offset, out segmentInternalIndex);
+                if (_fieldLayout[segmentIndex] == null)
+                {
+                    _fieldLayout[segmentIndex] = new FieldLayoutTag[FieldLayoutSegmentSize];
+                }
+                segment = _fieldLayout[segmentIndex];
+            }
+
+            existingTag = segment[segmentInternalIndex];
+
             if (existingTag != tag)
             {
                 if (existingTag != FieldLayoutTag.Empty)
                 {
                     ThrowFieldLayoutError(offset);
                 }
-                _fieldLayout[offset] = tag;
+                segment[segmentInternalIndex] = tag;
             }
         }
 
