@@ -14,7 +14,6 @@ namespace System.IO.Strategies
     {
         protected readonly SafeFileHandle _fileHandle; // only ever null if ctor throws
         private readonly FileAccess _access; // What file was opened for.
-        private ReadAsyncTaskSource? _readAsyncTaskSource; // Cached IValueTaskSource used for async-over-sync reads
 
         protected long _filePosition;
         protected long _length = -1; // negative means that hasn't been fetched.
@@ -310,118 +309,10 @@ namespace System.IO.Strategies
 
         public override ValueTask<int> ReadAsync(Memory<byte> destination, CancellationToken cancellationToken)
         {
-            if (!CanSeek)
-            {
-                return RandomAccess.ReadAtOffsetAsync(_fileHandle, destination, fileOffset: -1, cancellationToken);
-            }
-
             // This implementation updates the file position before the operation starts and updates it after incomplete read.
             // Also, unlike the Net5CompatFileStreamStrategy implementation, this implementation doesn't serialize operations.
-            long readOffset = Interlocked.Add(ref _filePosition, destination.Length) - destination.Length;
-            ReadAsyncTaskSource rats = Interlocked.Exchange(ref _readAsyncTaskSource, null) ?? new ReadAsyncTaskSource(this);
-            return rats.QueueRead(destination, readOffset, cancellationToken);
-        }
-
-        /// <summary>Provides a reusable ValueTask-backing object for implementing ReadAsync.</summary>
-        private sealed class ReadAsyncTaskSource : IValueTaskSource<int>, IThreadPoolWorkItem
-        {
-            private readonly OSFileStreamStrategy _stream;
-            private ManualResetValueTaskSourceCore<int> _source;
-
-            private Memory<byte> _destination;
-            private long _readOffset;
-            private ExecutionContext? _context;
-            private CancellationToken _cancellationToken;
-
-            public ReadAsyncTaskSource(OSFileStreamStrategy stream) => _stream = stream;
-
-            public ValueTask<int> QueueRead(Memory<byte> destination, long readOffset, CancellationToken cancellationToken)
-            {
-                _destination = destination;
-                _readOffset = readOffset;
-                _cancellationToken = cancellationToken;
-                _context = ExecutionContext.Capture();
-
-                ThreadPool.UnsafeQueueUserWorkItem(this, preferLocal: true);
-                return new ValueTask<int>(this, _source.Version);
-            }
-
-            void IThreadPoolWorkItem.Execute()
-            {
-                if (_context is null || _context.IsDefault)
-                {
-                    Read();
-                }
-                else
-                {
-                    ExecutionContext.RunForThreadPoolUnsafe(_context, static x => x.Read(), this);
-                }
-            }
-
-            private void Read()
-            {
-                Exception? error = null;
-                int result = 0;
-
-                try
-                {
-                    if (_cancellationToken.IsCancellationRequested)
-                    {
-                        error = new OperationCanceledException(_cancellationToken);
-                    }
-                    else
-                    {
-                        result = RandomAccess.ReadAtOffset(_stream._fileHandle, _destination.Span, _readOffset);
-                    }
-                }
-                catch (Exception e)
-                {
-                    error = e;
-                }
-                finally
-                {
-                    // if the read was incomplete, we need to update the file position:
-                    if (result != _destination.Length)
-                    {
-                        _stream.OnIncompleteOperation(_destination.Length, result);
-                    }
-
-                    _destination = default;
-                    _readOffset = -1;
-                    _cancellationToken = default;
-                    _context = null;
-                }
-
-                if (error is not null)
-                {
-                    _source.SetException(error);
-                }
-                else
-                {
-                    _source.SetResult(result);
-                }
-            }
-
-            int IValueTaskSource<int>.GetResult(short token)
-            {
-                try
-                {
-                    return _source.GetResult(token);
-                }
-                finally
-                {
-                    _source.Reset();
-#pragma warning disable CS0197
-                    Volatile.Write(ref _stream._readAsyncTaskSource, this);
-#pragma warning restore CS0197
-                }
-            }
-
-            ValueTaskSourceStatus IValueTaskSource<int>.GetStatus(short token) =>
-                _source.GetStatus(token);
-
-            void IValueTaskSource<int>.OnCompleted(Action<object?> continuation, object? state, short token, ValueTaskSourceOnCompletedFlags flags) =>
-                _source.OnCompleted(continuation, state, token, flags);
+            long readOffset = CanSeek ? Interlocked.Add(ref _filePosition, destination.Length) - destination.Length : -1;
+            return RandomAccess.ReadAtOffsetAsync(_fileHandle, destination, readOffset, cancellationToken, this);
         }
     }
 }

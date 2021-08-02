@@ -118,11 +118,17 @@ namespace Microsoft.Win32.SafeHandles
                 }
                 finally
                 {
-                    if (_strategy is not null && exception is not null)
+                    if (_strategy is not null)
                     {
-                        Debug.Assert(_operation == Operation.Write);
                         // WriteAtOffset returns void, so we need to fix position only in case of an exception
-                        _strategy.OnIncompleteOperation(_singleSegment.Length, 0);
+                        if (exception is not null)
+                        {
+                            _strategy.OnIncompleteOperation(_singleSegment.Length, 0);
+                        }
+                        else if (_operation == Operation.Read && result != _singleSegment.Length)
+                        {
+                            _strategy.OnIncompleteOperation(_singleSegment.Length, (int)result);
+                        }
                     }
 
                     _operation = Operation.None;
@@ -162,7 +168,7 @@ namespace Microsoft.Win32.SafeHandles
                 ThreadPool.UnsafeQueueUserWorkItem(this, preferLocal: true);
             }
 
-            public ValueTask<int> QueueRead(Memory<byte> buffer, long fileOffset, CancellationToken cancellationToken)
+            public ValueTask<int> QueueRead(Memory<byte> buffer, long fileOffset, CancellationToken cancellationToken, OSFileStreamStrategy? strategy)
             {
                 ValidateInvariants();
 
@@ -170,6 +176,7 @@ namespace Microsoft.Win32.SafeHandles
                 _singleSegment = buffer;
                 _fileOffset = fileOffset;
                 _cancellationToken = cancellationToken;
+                _strategy = strategy;
                 QueueToThreadPool();
 
                 return new ValueTask<int>(this, _source.Version);

@@ -220,7 +220,8 @@ namespace System.IO
             }
         }
 
-        internal static ValueTask<int> ReadAtOffsetAsync(SafeFileHandle handle, Memory<byte> buffer, long fileOffset, CancellationToken cancellationToken)
+        internal static ValueTask<int> ReadAtOffsetAsync(SafeFileHandle handle, Memory<byte> buffer, long fileOffset,
+            CancellationToken cancellationToken, OSFileStreamStrategy? strategy = null)
         {
             if (handle.IsAsync)
             {
@@ -239,7 +240,7 @@ namespace System.IO
                 return ValueTask.FromException<int>(Win32Marshal.GetExceptionForWin32Error(errorCode));
             }
 
-            return ScheduleSyncReadAtOffsetAsync(handle, buffer, fileOffset, cancellationToken);
+            return ScheduleSyncReadAtOffsetAsync(handle, buffer, fileOffset, cancellationToken, strategy);
         }
 
         internal static unsafe (SafeFileHandle.OverlappedValueTaskSource? vts, int errorCode) QueueAsyncReadFile(SafeFileHandle handle, Memory<byte> buffer, long fileOffset,

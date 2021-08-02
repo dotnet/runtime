@@ -265,9 +265,9 @@ namespace System.IO
         }
 
         private static ValueTask<int> ScheduleSyncReadAtOffsetAsync(SafeFileHandle handle, Memory<byte> buffer,
-            long fileOffset, CancellationToken cancellationToken)
+            long fileOffset, CancellationToken cancellationToken, OSFileStreamStrategy? strategy)
         {
-            return handle.GetThreadPoolValueTaskSource().QueueRead(buffer, fileOffset, cancellationToken);
+            return handle.GetThreadPoolValueTaskSource().QueueRead(buffer, fileOffset, cancellationToken, strategy);
         }
 
         private static ValueTask<long> ScheduleSyncReadScatterAtOffsetAsync(SafeFileHandle handle, IReadOnlyList<Memory<byte>> buffers,
