@@ -272,6 +272,7 @@ namespace System.Net.Security
             {
                 if (_decryptedBytesCount is not 0)
                 {
+                    _nestedAuth = 0;
                     throw new InvalidOperationException(SR.net_ssl_renegotiate_buffer);
                 }
 
