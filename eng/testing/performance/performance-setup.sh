@@ -280,13 +280,13 @@ if [[ "$wasm_runtime_loc" != "" ]]; then
     using_wasm=true
     wasm_dotnet_path=$payload_directory/dotnet-wasm
     mv $wasm_runtime_loc $wasm_dotnet_path
-    # wasm aot and interpreter need some source code from dotnet\runtime repo
-    rsync -aq --progress $source_directory/* $wasm_dotnet_path --exclude Payload --exclude docs --exclude src/coreclr --exclude src/tests --exclude artifacts/obj --exclude artifacts/log --exclude artifacts/tests --exclude __download__
-    # install EMSDK if $EMSDK_PATH is not Set. EMSDK may be available in the payload in a different directory, should visit this install to avoid deplicated payload.
     pushd $source_directory/src/mono/wasm/
     make provision-wasm
     EMSDK_PATH = $source_directory/src/mono/wasm/emsdk
     popd
+    # wasm aot and interpreter need some source code from dotnet\runtime repo
+    rsync -aq --progress $source_directory/* $wasm_dotnet_path --exclude Payload --exclude docs --exclude src/coreclr --exclude src/tests --exclude artifacts/obj --exclude artifacts/log --exclude artifacts/tests --exclude __download__
+    # install EMSDK if $EMSDK_PATH is not Set. EMSDK may be available in the payload in a different directory, should visit this install to avoid deplicated payload.
     # copy wasm build drop to the location that aot and interpreter build expects
     rsync -a --progress $wasm_dotnet_path/artifacts/BrowserWasm/artifacts/* $wasm_dotnet_path/artifacts
     rm -r $wasm_dotnet_path/artifacts/BrowserWasm/artifacts
