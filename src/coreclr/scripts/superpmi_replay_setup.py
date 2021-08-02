@@ -26,7 +26,7 @@ import tempfile
 
 from os.path import isfile, join
 from coreclr_arguments import *
-from superpmi_setup import copy_directory, copy_files, set_pipeline_variable
+from superpmi_setup import copy_directory, copy_files, set_pipeline_variable, run_command
 
 parser = argparse.ArgumentParser(description="description")
 
@@ -145,6 +145,12 @@ def main(main_args):
 
     # Partition mch/mct zip files
     partition_mch(mch_directory, workitem_directory)
+
+    # Print correlation_payload_directory and workitem_directory
+    print("==> correlation_payload_directory:")
+    run_command(["dir", "/s", "/b", correlation_payload_directory])
+    print("==> workitem_directory:")
+    run_command(["dir", "/s", "/b", workitem_directory])
 
     # Set variables
     print('Setting pipeline variables:')
