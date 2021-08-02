@@ -6,11 +6,6 @@ using System.Runtime.Versioning;
 
 namespace System.Runtime.InteropServices
 {
-    [UnsupportedOSPlatform("android")]
-    [UnsupportedOSPlatform("browser")]
-    [UnsupportedOSPlatform("ios")]
-    [UnsupportedOSPlatform("maccatalyst")]
-    [UnsupportedOSPlatform("tvos")]
     public abstract partial class ComWrappers
     {
         public partial struct ComInterfaceDispatch
