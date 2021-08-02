@@ -11,7 +11,7 @@
 
    <!-- <PropertyGroup>
      <HelixTargetQueues>Some_Queue</HelixTargetQueues>
-     <WorkItemDirectory>E:\temp\replay-setup\workitem\mch</WorkItemDirectory>
+     <WorkItemDirectory>E:\temp\replay-setup\workitem</WorkItemDirectory>
    </PropertyGroup>
 
   <Target Name="printItems">
@@ -38,7 +38,7 @@
 
   <ItemGroup>
     <HelixWorkItem Include="@(Partition)">
-      <Command>$(WorkItemCommand) -mch_directory $(SpmiCollectionFolder)\%(Identity)\mch -partition_index %(Identity) -log_directory $(SuperpmiLogsLocation)</Command>
+      <Command>$(WorkItemCommand) -mch_directory $(SpmiCollectionFolder)\%(HelixWorkItem.PartitionId)\mch -partition_index %(HelixWorkItem.PartitionId) -log_directory $(SuperpmiLogsLocation)</Command>
       <Timeout>$(WorkItemTimeout)</Timeout>
       <DownloadFilesFromResults>superpmi_%(Identity).log</DownloadFilesFromResults>
     </HelixWorkItem>

@@ -91,8 +91,8 @@ def partition_mch(mch_directory, dst_directory):
     for mch_file in mch_zip_files:
         print("Processing {}".format(mch_file))
         file_names = []
-        file_names += [path.join(mch_directory, mch_file)]
-        file_names += [path.join(mch_directory, mch_file.replace(".mch.zip", ".mch.mct.zip"))]
+        file_names += [mch_file]
+        file_names += [mch_file.replace(".mch.zip", ".mch.mct.zip")]
         curr_dst_path = path.join(dst_directory, "partitions", str(index))
         copy_files(mch_directory, curr_dst_path, file_names)
         index += 1
