@@ -58,5 +58,13 @@ namespace Internal.TypeSystem
 
             return canonicalType.ValueTypeShapeCharacteristics;
         }
+
+        public override bool ComputeIsUnsafeValueType(DefType type)
+        {
+            RuntimeDeterminedType runtimeDeterminedType = (RuntimeDeterminedType)type;
+            DefType canonicalType = runtimeDeterminedType.CanonicalType;
+
+            return canonicalType.IsUnsafeValueType;
+        }
     }
 }
