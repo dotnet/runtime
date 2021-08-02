@@ -54,6 +54,7 @@ namespace System.Runtime.InteropServices.Tests
 
         [Theory]
         [MemberData(nameof(QueryInterface_NoSuchInterface_TestData))]
+        [SkipOnMono("ComWrappers are not supported on Mono")]
         public void QueryInterface_NoSuchInterface_Success(object o, string iidString)
         {
             var cw = new ComWrappersImpl();
