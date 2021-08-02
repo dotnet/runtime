@@ -16,7 +16,7 @@ namespace System.IO.Strategies
         private readonly FileAccess _access; // What file was opened for.
 
         protected long _filePosition;
-        protected long _length = -1; // negative means that hasn't been fetched.
+        private long _length = -1; // negative means that hasn't been fetched.
         private long _appendStart; // When appending, prevent overwriting file.
         private bool _lengthCanBeCached; // SafeFileHandle hasn't been exposed, file has been opened for reading and not shared for writing.
 
@@ -104,7 +104,7 @@ namespace System.IO.Strategies
         internal void OnIncompleteOperation(int expectedBytesTransferred, int actualBytesTransferred)
             => Interlocked.Add(ref _filePosition, actualBytesTransferred - expectedBytesTransferred);
 
-        protected bool LengthCachingSupported => OperatingSystem.IsWindows() && _lengthCanBeCached;
+        private bool LengthCachingSupported => OperatingSystem.IsWindows() && _lengthCanBeCached;
 
         /// <summary>Gets or sets the position within the current stream</summary>
         public sealed override long Position
@@ -292,7 +292,7 @@ namespace System.IO.Strategies
         public sealed override Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken) =>
             WriteAsync(new ReadOnlyMemory<byte>(buffer, offset, count), cancellationToken).AsTask();
 
-        public override ValueTask WriteAsync(ReadOnlyMemory<byte> source, CancellationToken cancellationToken)
+        public sealed override ValueTask WriteAsync(ReadOnlyMemory<byte> source, CancellationToken cancellationToken)
         {
             long writeOffset = CanSeek ? Interlocked.Add(ref _filePosition, source.Length) - source.Length : -1;
             return RandomAccess.WriteAtOffsetAsync(_fileHandle, source, writeOffset, cancellationToken, this);
@@ -307,11 +307,24 @@ namespace System.IO.Strategies
         public sealed override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken) =>
             ReadAsync(new Memory<byte>(buffer, offset, count), cancellationToken).AsTask();
 
-        public override ValueTask<int> ReadAsync(Memory<byte> destination, CancellationToken cancellationToken)
+        public sealed override ValueTask<int> ReadAsync(Memory<byte> destination, CancellationToken cancellationToken)
         {
+            if (!CanSeek)
+            {
+                return RandomAccess.ReadAtOffsetAsync(_fileHandle, destination, fileOffset: -1, cancellationToken);
+            }
+
+            if (LengthCachingSupported && _length >= 0 && Volatile.Read(ref _filePosition) >= _length)
+            {
+                // We know for sure that the file length can be safely cached and it has already been obtained.
+                // If we have reached EOF we just return here and avoid a sys-call.
+                return ValueTask.FromResult(0);
+            }
+
             // This implementation updates the file position before the operation starts and updates it after incomplete read.
-            // Also, unlike the Net5CompatFileStreamStrategy implementation, this implementation doesn't serialize operations.
-            long readOffset = CanSeek ? Interlocked.Add(ref _filePosition, destination.Length) - destination.Length : -1;
+            // This is done to keep backward compatibility for concurrent reads.
+            // It uses Interlocked as there can be multiple concurrent incomplete reads updating position at the same time.
+            long readOffset = Interlocked.Add(ref _filePosition, destination.Length) - destination.Length;
             return RandomAccess.ReadAtOffsetAsync(_fileHandle, destination, readOffset, cancellationToken, this);
         }
     }

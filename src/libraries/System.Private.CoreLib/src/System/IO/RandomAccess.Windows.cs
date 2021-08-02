@@ -225,7 +225,7 @@ namespace System.IO
         {
             if (handle.IsAsync)
             {
-                (SafeFileHandle.OverlappedValueTaskSource? vts, int errorCode) = QueueAsyncReadFile(handle, buffer, fileOffset, cancellationToken);
+                (SafeFileHandle.OverlappedValueTaskSource? vts, int errorCode) = QueueAsyncReadFile(handle, buffer, fileOffset, cancellationToken, strategy);
 
                 if (vts is not null)
                 {
@@ -237,14 +237,14 @@ namespace System.IO
                     return ValueTask.FromResult(0);
                 }
 
-                return ValueTask.FromException<int>(Win32Marshal.GetExceptionForWin32Error(errorCode));
+                return ValueTask.FromException<int>(Win32Marshal.GetExceptionForWin32Error(errorCode, handle.Path));
             }
 
             return ScheduleSyncReadAtOffsetAsync(handle, buffer, fileOffset, cancellationToken, strategy);
         }
 
-        internal static unsafe (SafeFileHandle.OverlappedValueTaskSource? vts, int errorCode) QueueAsyncReadFile(SafeFileHandle handle, Memory<byte> buffer, long fileOffset,
-            CancellationToken cancellationToken, AsyncWindowsFileStreamStrategy? strategy = null)
+        private static unsafe (SafeFileHandle.OverlappedValueTaskSource? vts, int errorCode) QueueAsyncReadFile(SafeFileHandle handle, Memory<byte> buffer, long fileOffset,
+            CancellationToken cancellationToken, OSFileStreamStrategy? strategy)
         {
             handle.EnsureThreadPoolBindingInitialized();
 
@@ -307,9 +307,7 @@ namespace System.IO
         {
             if (handle.IsAsync)
             {
-                Debug.Assert(strategy is null || strategy is not AsyncWindowsFileStreamStrategy); // AsyncWindowsFileStreamStrategy should not use this code path
-
-                (SafeFileHandle.OverlappedValueTaskSource? vts, int errorCode) = QueueAsyncWriteFile(handle, buffer, fileOffset, cancellationToken);
+                (SafeFileHandle.OverlappedValueTaskSource? vts, int errorCode) = QueueAsyncWriteFile(handle, buffer, fileOffset, cancellationToken, strategy);
 
                 if (vts is not null)
                 {
@@ -321,14 +319,14 @@ namespace System.IO
                     return ValueTask.CompletedTask;
                 }
 
-                return ValueTask.FromException(Win32Marshal.GetExceptionForWin32Error(errorCode));
+                return ValueTask.FromException(Win32Marshal.GetExceptionForWin32Error(errorCode, handle.Path));
             }
 
             return ScheduleSyncWriteAtOffsetAsync(handle, buffer, fileOffset, cancellationToken, strategy);
         }
 
-        internal static unsafe (SafeFileHandle.OverlappedValueTaskSource? vts, int errorCode) QueueAsyncWriteFile(SafeFileHandle handle, ReadOnlyMemory<byte> buffer, long fileOffset,
-            CancellationToken cancellationToken, AsyncWindowsFileStreamStrategy? strategy = null)
+        private static unsafe (SafeFileHandle.OverlappedValueTaskSource? vts, int errorCode) QueueAsyncWriteFile(SafeFileHandle handle, ReadOnlyMemory<byte> buffer, long fileOffset,
+            CancellationToken cancellationToken, OSFileStreamStrategy? strategy)
         {
             handle.EnsureThreadPoolBindingInitialized();
 
