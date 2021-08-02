@@ -826,6 +826,33 @@ namespace DebuggerTests
             Assert.True(source.IsOk);
         }
 
+        [Fact]
+        public async Task GetObjectValueWithInheritance()
+        {
+            var pause_location = await EvaluateAndCheck(
+               "window.setTimeout(function() { invoke_static_method('[debugger-test] TestChild:TestWatchWithInheritance'); }, 1);",
+                "dotnet://debugger-test.dll/debugger-test2.cs", 83, 4,
+               "TestWatchWithInheritance");
+            var frame_id = pause_location["callFrames"][0]["callFrameId"].Value<string>();
+            var frame_locals = await GetProperties(frame_id);
+            var test_props = await GetObjectOnLocals(frame_locals, "test");
+            Console.WriteLine($"test_props - {test_props}");
+            await CheckProps(test_props, new
+            {
+                j = TNumber(20),
+                i = TNumber(50),
+                k = TNumber(30),
+                GetJ = TGetter("GetJ"),
+                GetI = TGetter("GetI"),
+                GetK = TGetter("GetK")
+            }, "test_props");
+            await EvaluateOnCallFrameAndCheck(frame_id,
+                ($"test.GetJ", TNumber(20)),
+                ($"test.GetI", TNumber(50)),
+                ($"test.GetK", TNumber(30))
+            );
+        }
+
         //TODO add tests covering basic stepping behavior as step in/out/over
     }
 }
