@@ -25,7 +25,7 @@
 
   <PropertyGroup>
     <Python>%HELIX_PYTHONPATH%</Python>
-    <ProductDirectory>$HELIX_CORRELATION_PAYLOAD</ProductDirectory>
+    <ProductDirectory>%HELIX_CORRELATION_PAYLOAD%</ProductDirectory>
     <SpmiCollectionFolder>$(WorkItemDirectory)\partitions</SpmiCollectionFolder>
     <SuperpmiLogsLocation>$HELIX_WORKITEM_UPLOAD_ROOT</SuperpmiLogsLocation>
     <WorkItemCommand>$(Python) $(ProductDirectory)\superpmi-replay.py -arch $(Architecture) -jit_directory $(ProductDirectory)</WorkItemCommand>
