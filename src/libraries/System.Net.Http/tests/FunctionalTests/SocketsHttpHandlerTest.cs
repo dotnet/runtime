@@ -2556,15 +2556,9 @@ namespace System.Net.Http.Functional.Tests
             await new[] { serverTask, clientTask }.WhenAllOrAnyFailed(60_000);
         }
 
-        public static IEnumerable<object[]> LongRunning()
-        {
-            return Enumerable.Repeat(true, 10000).Select((b, i) => new object[] { i % 2 == 0 }).ToArray();
-        }
-
         [ConditionalTheory(nameof(PlatformSupportsUnixDomainSockets))]
-        [MemberData(nameof(LongRunning))]
-        //[InlineData(true)]
-        //[InlineData(false)]
+        [InlineData(true)]
+        [InlineData(false)]
         public async Task ConnectCallback_UseUnixDomainSocket_Success(bool useSsl)
         {
             GenericLoopbackOptions options = new GenericLoopbackOptions() { UseSsl = useSsl };
