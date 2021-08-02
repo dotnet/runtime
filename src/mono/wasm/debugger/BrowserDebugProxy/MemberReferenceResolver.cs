@@ -102,6 +102,15 @@ namespace Microsoft.WebAssembly.Diagnostics
                             return await GetValueFromObject(valueRet, token);
                         }
                     }
+                    var methodId = await proxy.SdbHelper.GetPropertyMethodIdByName(sessionId, typeId, part.Trim(), token);
+                    if (methodId != -1)
+                    {
+                        var commandParamsObj = new MemoryStream();
+                        var commandParamsObjWriter = new MonoBinaryWriter(commandParamsObj);
+                        commandParamsObjWriter.Write(0); //param count
+                        var retMethod = await proxy.SdbHelper.InvokeMethod(sessionId, commandParamsObj.ToArray(), methodId, "methodRet", token);
+                        return await GetValueFromObject(retMethod, token);
+                    }
                 }
                 var store = await proxy.LoadStore(sessionId, token);
                 foreach (var asm in store.assemblies)
