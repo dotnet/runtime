@@ -21,6 +21,11 @@ namespace System.Reflection.Emit
             return GetMethodSigHelper(mod, CallingConventions.Standard, returnType, null, null, parameterTypes, null, null);
         }
 
+        public static SignatureHelper GetMethodSigHelper(Module? mod, CallingConventions callingConvention, Type? returnType)
+        {
+            return GetMethodSigHelper(mod, callingConvention, returnType, null, null, null, null, null);
+        }
+
         internal static SignatureHelper GetMethodSpecSigHelper(Module? scope, Type[] inst)
         {
             SignatureHelper sigHelp = new SignatureHelper(scope, MdSigCallingConvention.GenericInst);
@@ -72,7 +77,7 @@ namespace System.Reflection.Emit
             return sigHelp;
         }
 
-        public static SignatureHelper GetMethodSigHelper(Module? mod, CallingConvention unmanagedCallConv, Type? returnType)
+        internal static SignatureHelper GetMethodSigHelper(Module? mod, CallingConvention unmanagedCallConv, Type? returnType)
         {
             MdSigCallingConvention intCall;
 
@@ -107,7 +112,12 @@ namespace System.Reflection.Emit
             return GetLocalVarSigHelper(null);
         }
 
-        public static SignatureHelper GetMethodSigHelper(CallingConvention unmanagedCallingConvention, Type? returnType)
+        public static SignatureHelper GetMethodSigHelper(CallingConventions callingConvention, Type? returnType)
+        {
+            return GetMethodSigHelper(null, callingConvention, returnType);
+        }
+
+        internal static SignatureHelper GetMethodSigHelper(CallingConvention unmanagedCallingConvention, Type? returnType)
         {
             return GetMethodSigHelper(null, unmanagedCallingConvention, returnType);
         }
