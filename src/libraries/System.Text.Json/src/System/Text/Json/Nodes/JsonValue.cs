@@ -107,7 +107,7 @@ namespace System.Text.Json.Nodes
         ///   The underlying value of a <see cref="JsonValue"/> after deserialization is an instance of <see cref="JsonElement"/>,
         ///   otherwise it's the value specified when the <see cref="JsonValue"/> was created.
         /// </remarks>
-        /// <seealso cref="JsonNode.GetValue{TValue}"></seealso>
+        /// <seealso cref="JsonNode.GetValue{T}"></seealso>
         /// <typeparam name="T">The type of value to obtain.</typeparam>
         /// <param name="value">When this method returns, contains the parsed value.</param>
         /// <returns><see langword="true"/> if the value can be successfully obtained; otherwise, <see langword="false"/>.</returns>
