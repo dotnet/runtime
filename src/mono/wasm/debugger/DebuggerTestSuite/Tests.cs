@@ -838,7 +838,7 @@ namespace DebuggerTests
                 var locals = await GetProperties(pause_location["callFrames"][0]["callFrameId"].Value<string>());
 
                 var t_arr = await GetObjectOnLocals(locals, "t");
-				await CheckProps(t_arr, new
+                await CheckProps(t_arr, new
                     {
                         s_taskIdCounter = TNumber(0)
                     }, "t_arr", num_fields: 53);
