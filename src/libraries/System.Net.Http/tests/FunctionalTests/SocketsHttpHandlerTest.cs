@@ -2556,10 +2556,15 @@ namespace System.Net.Http.Functional.Tests
             await new[] { serverTask, clientTask }.WhenAllOrAnyFailed(60_000);
         }
 
+        public static IEnumerable<object[]> LongRunning()
+        {
+            return Enumerable.Repeat(true, 10000).Select((b, i) => new object[] { i % 2 == 0 }).ToArray();
+        }
+
         [ConditionalTheory(nameof(PlatformSupportsUnixDomainSockets))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/44183", TestPlatforms.Windows)]
-        [InlineData(true)]
-        [InlineData(false)]
+        [MemberData(nameof(LongRunning))]
+        //[InlineData(true)]
+        //[InlineData(false)]
         public async Task ConnectCallback_UseUnixDomainSocket_Success(bool useSsl)
         {
             GenericLoopbackOptions options = new GenericLoopbackOptions() { UseSsl = useSsl };
@@ -2584,6 +2589,7 @@ namespace System.Net.Http.Functional.Tests
                 return new NetworkStream(clientSocket, ownsSocket: true);
             };
 
+            GenericLoopbackConnection loopbackConnection;
             using (HttpClient client = CreateHttpClient(handler))
             {
                 client.DefaultVersionPolicy = HttpVersionPolicy.RequestVersionExact;
@@ -2591,19 +2597,18 @@ namespace System.Net.Http.Functional.Tests
                 Task<string> clientTask = client.GetStringAsync($"{(options.UseSsl ? "https" : "http")}://{guid}/foo");
 
                 Socket serverSocket = await listenSocket.AcceptAsync();
-                using (GenericLoopbackConnection loopbackConnection = await LoopbackServerFactory.CreateConnectionAsync(socket: null, new NetworkStream(serverSocket, ownsSocket: true), options))
-                {
-                    await loopbackConnection.InitializeConnectionAsync();
+                loopbackConnection = await LoopbackServerFactory.CreateConnectionAsync(socket: null, new NetworkStream(serverSocket, ownsSocket: true), options);
+                await loopbackConnection.InitializeConnectionAsync();
 
-                    HttpRequestData requestData = await loopbackConnection.ReadRequestDataAsync();
-                    Assert.Equal("/foo", requestData.Path);
+                HttpRequestData requestData = await loopbackConnection.ReadRequestDataAsync();
+                Assert.Equal("/foo", requestData.Path);
 
-                    await loopbackConnection.SendResponseAsync(content: "foo");
+                await loopbackConnection.SendResponseAsync(content: "foo");
 
-                    string response = await clientTask;
-                    Assert.Equal("foo", response);
-                }
+                string response = await clientTask;
+                Assert.Equal("foo", response);
             }
+            loopbackConnection.Dispose();
         }
 
         [Theory]
