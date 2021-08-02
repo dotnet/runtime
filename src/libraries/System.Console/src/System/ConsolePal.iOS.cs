@@ -34,34 +34,32 @@ namespace System
 
         private static void AccumulateNewLines(StringBuilder accumulator, ReadOnlySpan<char> buffer, Action<string> printer)
         {
-            int lineStartIndex = 0;
-            for (int i = 0; i < buffer.Length; i++)
+            for (int i = buffer.Length - 1; i >= 0; i--)
             {
                 if (buffer[i] == '\n')
                 {
-                    ReadOnlySpan<char> sliceWithNl = buffer.Slice(lineStartIndex, i - lineStartIndex);
                     if (accumulator.Length > 0)
                     {
-                        // we found a new line, append content from accumulator if it's not empty
-                        accumulator.Append(sliceWithNl);
-                        printer(accumulator.ToString());
+                        printer(accumulator.Append(buffer.Slice(0, i + 1)).ToString());
                         accumulator.Clear();
                     }
                     else
                     {
-                        // accumulator is empty - print the line as it is
-                        printer(sliceWithNl.ToString());
+                        printer(buffer.Slice(0, i + 1).ToString());
                     }
-                    lineStartIndex = i + 1;
+
+                    if (i < buffer.Length - 1)
+                    {
+                        // there's text after the last newline, add it to the accumulator
+                        accumulator.Append(buffer.Slice(i + 1));
+                    }
+
+                    return;
                 }
             }
 
-            if (buffer.Length > 0 && buffer[^1] != '\n')
-            {
-                // add a line without '\n' to accumulator
-                ReadOnlySpan<char> appendix = buffer.Slice(lineStartIndex, buffer.Length - lineStartIndex);
-                accumulator.Append(appendix);
-            }
+            // no newlines found, add the entire buffer to the accumulator
+            accumulator.Append(buffer);
         }
     }
 
