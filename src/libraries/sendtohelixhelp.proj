@@ -382,7 +382,9 @@
     </ItemGroup>
 
     <!-- Helix has an old version of Node that we don't support. So we send a valid version (current LTS) in the correlation payload -->
-    <NodeFolder Condition="'$(ForNode)' == 'true'">$([MSBuild]::NormalizeDirectory('$(ArtifactsDir)', 'bin', 'nodejs'))</NodeFolder>
+    <PropertyGroup Condition="'$(ForNode)' == 'true'">
+      <NodeFolder>$([MSBuild]::NormalizeDirectory('$(ArtifactsDir)', 'bin', 'nodejs'))</NodeFolder>
+    </PropertyGroup>
     <DownloadFile Condition="'$(ForNode)' == 'true'"
       SourceUrl="https://nodejs.org/dist/latest-v14.x/node-v14.17.4-linux-x64.tar.xz"
       DestinationFolder="$(NodeFolder)"/>
