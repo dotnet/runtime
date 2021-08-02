@@ -1014,6 +1014,33 @@ namespace Internal.TypeSystem
             return NotHA;
         }
 
+        public override bool ComputeIsUnsafeValueType(DefType type)
+        {
+            if (!type.IsValueType)
+                return false;
+
+            MetadataType metadataType = (MetadataType)type;
+            if (metadataType.HasCustomAttribute("System.Runtime.CompilerServices", "UnsafeValueTypeAttribute"))
+                return true;
+
+            foreach (FieldDesc field in metadataType.GetFields())
+            {
+                if (field.IsStatic || field.IsLiteral)
+                    continue;
+
+                if (!(field.FieldType is DefType fieldType))
+                    continue;
+
+                if (fieldType.IsPrimitive)
+                    continue;
+
+                if (fieldType.IsUnsafeValueType)
+                    return true;
+            }
+
+            return false;
+        }
+
         private struct SizeAndAlignment
         {
             public LayoutInt Size;
