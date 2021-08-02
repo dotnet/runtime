@@ -8470,8 +8470,7 @@ void CodeGen::genFnEpilog(BasicBlock* block)
                 // clang-format off
                 if (call->IsR2RRelativeIndir())
                 {
-                    // Indirection cell is in REG_FASTTAILCALL_TARGET, so just emit
-                    // jmp [reg]
+                    // Indirection cell is in REG_FASTTAILCALL_TARGET.
                     GetEmitter()->emitIns_Call(
                             emitter::EC_INDIR_ARD,
                             call->gtCallMethHnd,

@@ -7522,9 +7522,20 @@ void emitter::emitIns_Call(EmitCallType          callType,
         {
             ins = INS_l_jmp;
         }
-        else
+        else if (callType == EC_FUNC_TOKEN_INDIR)
         {
             ins = INS_i_jmp;
+        }
+        else
+        {
+            assert(callType == EC_INDIR_ARD);
+#ifdef TARGET_AMD64
+            // The unwinder needs rex prefix to recognize that this jump is part of the epilog.
+            // See excepamd64.cpp/RtlpxVirtualUnwind.
+            ins = INS_rex_jmp;
+#else
+            ins = INS_i_jmp;
+#endif
         }
     }
     id->idIns(ins);
@@ -8891,7 +8902,12 @@ void emitter::emitDispIns(
             emitDispAddrMode(id, isNew);
             emitDispShift(ins);
 
-            if ((ins == INS_call) || (ins == INS_i_jmp))
+            bool isCallInst;
+            isCallInst = (ins == INS_call) || (ins == INS_i_jmp);
+#ifdef TARGET_AMD64
+            isCallInst = isCallInst || (ins == INS_rex_jmp);
+#endif
+            if (isCallInst)
             {
                 assert(id->idInsFmt() == IF_ARD);
 
