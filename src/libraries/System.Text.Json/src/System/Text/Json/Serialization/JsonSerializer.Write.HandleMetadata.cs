@@ -113,6 +113,7 @@ namespace System.Text.Json
         /// </summary>
         internal static bool TryWriteReferenceForBoxedStruct(object currentValue, ref WriteStack state, Utf8JsonWriter writer)
         {
+            Debug.Assert(state.BoxedStructReferenceId == null);
             Debug.Assert(currentValue.GetType().IsValueType);
 
             string referenceId = state.ReferenceResolver.GetReference(currentValue, out bool alreadyExists);
