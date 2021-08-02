@@ -1284,9 +1284,6 @@
         "wp8": "8.0.0.0"
       }
     },
-    "Microsoft.Private.CoreFx.OOB": {
-      "InboxOn": {}
-    },
     "Microsoft.Private.PackageBaseline": {
       "StableVersions": [
         "1.0.0"

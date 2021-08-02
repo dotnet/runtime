@@ -283,10 +283,10 @@ private:
     IMetaDataAssemblyImport *m_manifestAssemblyImport;
 
     //helper for ComputeMethodFixupHistogram
-    BOOL HandleFixupForHistogram(PTR_CORCOMPILE_IMPORT_SECTION pSection, SIZE_T fixupIndex, SIZE_T *fixupCell);
+    BOOL HandleFixupForHistogram(PTR_CORCOMPILE_IMPORT_SECTION pSection, SIZE_T fixupIndex, SIZE_T *fixupCell, BOOL mayUsePrecompiledNDirectMethods = TRUE);
 
     //helper for DumpMethodFixups
-    BOOL HandleFixupForMethodDump(PTR_CORCOMPILE_IMPORT_SECTION pSection, SIZE_T fixupIndex, SIZE_T *fixupCell);
+    BOOL HandleFixupForMethodDump(PTR_CORCOMPILE_IMPORT_SECTION pSection, SIZE_T fixupIndex, SIZE_T *fixupCell, BOOL mayUsePrecompiledNDirectMethods = TRUE);
 
     // Dependencies
 

@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Numerics;
 using System.Runtime.InteropServices;
+using System.Threading;
 
 #if ES_BUILD_STANDALONE
 using Microsoft.Win32;
@@ -209,6 +210,7 @@ namespace System.Diagnostics.Tracing
             // deadlocks in race conditions (dispose racing with an ETW command).
             //
             // We solve by Unregistering after releasing the EventListenerLock.
+            Debug.Assert(!Monitor.IsEntered(EventListener.EventListenersLock));
             if (registrationHandle != 0)
                 EventUnregister(registrationHandle);
         }

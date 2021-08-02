@@ -10262,7 +10262,7 @@ PTR_BYTE Module::GetNativeDebugInfo(MethodDesc * pMD)
 
 //-----------------------------------------------------------------------------
 
-BOOL Module::FixupNativeEntry(CORCOMPILE_IMPORT_SECTION* pSection, SIZE_T fixupIndex, SIZE_T* fixupCell)
+BOOL Module::FixupNativeEntry(CORCOMPILE_IMPORT_SECTION* pSection, SIZE_T fixupIndex, SIZE_T* fixupCell, BOOL mayUsePrecompiledNDirectMethods)
 {
     CONTRACTL
     {
@@ -10280,7 +10280,7 @@ BOOL Module::FixupNativeEntry(CORCOMPILE_IMPORT_SECTION* pSection, SIZE_T fixupI
         {
             PTR_DWORD pSignatures = dac_cast<PTR_DWORD>(GetNativeOrReadyToRunImage()->GetRvaData(pSection->Signatures));
 
-            if (!LoadDynamicInfoEntry(this, pSignatures[fixupIndex], fixupCell))
+            if (!LoadDynamicInfoEntry(this, pSignatures[fixupIndex], fixupCell, mayUsePrecompiledNDirectMethods))
                 return FALSE;
 
             _ASSERTE(*fixupCell != NULL);
@@ -10291,7 +10291,7 @@ BOOL Module::FixupNativeEntry(CORCOMPILE_IMPORT_SECTION* pSection, SIZE_T fixupI
         if (CORCOMPILE_IS_FIXUP_TAGGED(fixup, pSection))
         {
             // Fixup has not been fixed up yet
-            if (!LoadDynamicInfoEntry(this, (RVA)CORCOMPILE_UNTAG_TOKEN(fixup), fixupCell))
+            if (!LoadDynamicInfoEntry(this, (RVA)CORCOMPILE_UNTAG_TOKEN(fixup), fixupCell, mayUsePrecompiledNDirectMethods))
                 return FALSE;
 
             _ASSERTE(!CORCOMPILE_IS_FIXUP_TAGGED(*fixupCell, pSection));
@@ -12442,7 +12442,7 @@ idMethodSpec Module::LogInstantiatedMethod(const MethodDesc * md, ULONG flagNum)
 // ===========================================================================
 
 /* static */
-ReflectionModule *ReflectionModule::Create(Assembly *pAssembly, PEFile *pFile, AllocMemTracker *pamTracker, LPCWSTR szName, BOOL fIsTransient)
+ReflectionModule *ReflectionModule::Create(Assembly *pAssembly, PEFile *pFile, AllocMemTracker *pamTracker, LPCWSTR szName)
 {
     CONTRACT(ReflectionModule *)
     {
@@ -12467,9 +12467,6 @@ ReflectionModule *ReflectionModule::Create(Assembly *pAssembly, PEFile *pFile, A
     ReflectionModuleHolder pModule(new (pMemory) ReflectionModule(pAssembly, token, pFile));
 
     pModule->DoInit(pamTracker, szName);
-
-    // Set this at module creation time. The m_fIsTransient field should never change during the lifetime of this ReflectionModule.
-    pModule->SetIsTransient(fIsTransient ? true : false);
 
     RETURN pModule.Extract();
 }
@@ -12498,7 +12495,6 @@ ReflectionModule::ReflectionModule(Assembly *pAssembly, mdFile token, PEFile *pF
     m_pCeeFileGen = NULL;
     m_pDynamicMetadata = NULL;
     m_fSuppressMetadataCapture = false;
-    m_fIsTransient = false;
 }
 
 HRESULT STDMETHODCALLTYPE CreateICeeGen(REFIID riid, void **pCeeGen);

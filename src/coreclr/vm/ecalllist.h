@@ -324,7 +324,6 @@ FCFuncStart(gCOMModuleFuncs)
     QCFuncElement("GetScopeName", COMModule::GetScopeName)
     FCFuncElement("GetTypes", COMModule::GetTypes)
     QCFuncElement("GetFullyQualifiedName", COMModule::GetFullyQualifiedName)
-    QCFuncElement("nIsTransientInternal", COMModule::IsTransient)
     FCFuncElement("IsResource", COMModule::IsResource)
 FCFuncEnd()
 

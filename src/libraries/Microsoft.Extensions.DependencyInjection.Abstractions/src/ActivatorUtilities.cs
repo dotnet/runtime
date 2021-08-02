@@ -98,10 +98,10 @@ namespace Microsoft.Extensions.DependencyInjection
             ParameterExpression? argumentArray = Expression.Parameter(typeof(object[]), "argumentArray");
             Expression? factoryExpressionBody = BuildFactoryExpression(constructor, parameterMap, provider, argumentArray);
 
-            var factoryLambda = Expression.Lambda<Func<IServiceProvider, object[], object>>(
+            var factoryLambda = Expression.Lambda<Func<IServiceProvider, object?[]?, object>>(
                 factoryExpressionBody, provider, argumentArray);
 
-            Func<IServiceProvider, object[], object>? result = factoryLambda.Compile();
+            Func<IServiceProvider, object?[]?, object>? result = factoryLambda.Compile();
             return result.Invoke;
         }
 

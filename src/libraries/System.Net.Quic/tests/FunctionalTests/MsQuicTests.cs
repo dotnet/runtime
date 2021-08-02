@@ -111,6 +111,8 @@ namespace System.Net.Quic.Tests
             Task<QuicConnection> serverTask = listener.AcceptConnectionAsync().AsTask();
             await TaskTimeoutExtensions.WhenAllOrAnyFailed(clientConnection.ConnectAsync().AsTask(), serverTask, PassingTestTimeoutMilliseconds);
             using QuicConnection serverConnection = serverTask.Result;
+            Assert.Equal(certificate, clientConnection.RemoteCertificate);
+            Assert.Null(serverConnection.RemoteCertificate);
         }
 
         [Fact]
@@ -152,7 +154,6 @@ namespace System.Net.Quic.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/56263")]
         public async Task ConnectWithCertificateCallback()
         {
             X509Certificate2 c1 = System.Net.Test.Common.Configuration.Certificates.GetServerCertificate();
@@ -309,7 +310,6 @@ namespace System.Net.Quic.Tests
 
         [Fact]
         [PlatformSpecific(TestPlatforms.Windows)]
-        [ActiveIssue("https://github.com/microsoft/msquic/pull/1728")]
         public async Task ConnectWithClientCertificate()
         {
             bool clientCertificateOK = false;
@@ -345,6 +345,7 @@ namespace System.Net.Quic.Tests
             await PingPong(clientConnection, serverConnection);
             // check we completed the client certificate verification.
             Assert.True(clientCertificateOK);
+            Assert.Equal(ClientCertificate, serverConnection.RemoteCertificate);
 
             await serverConnection.CloseAsync(0);
         }
@@ -549,21 +550,18 @@ namespace System.Net.Quic.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/49157")]
         public async Task CloseAsync_ByServer_AcceptThrows()
         {
-            await RunClientServer(
-                clientConnection =>
-                {
-                    return Task.CompletedTask;
-                },
-                async serverConnection =>
-                {
-                    var acceptTask = serverConnection.AcceptStreamAsync();
-                    await serverConnection.CloseAsync(errorCode: 0);
-                    // make sure
-                    await Assert.ThrowsAsync<QuicOperationAbortedException>(() => acceptTask.AsTask());
-                });
+            (QuicConnection clientConnection, QuicConnection serverConnection) = await CreateConnectedQuicConnection();
+
+            using (clientConnection)
+            using (serverConnection)
+            {
+                var acceptTask = serverConnection.AcceptStreamAsync();
+                await serverConnection.CloseAsync(errorCode: 0);
+                // make sure we throw
+                await Assert.ThrowsAsync<QuicOperationAbortedException>(() => acceptTask.AsTask());
+            }
         }
 
         internal static ReadOnlySequence<byte> CreateReadOnlySequenceFromBytes(byte[] data)

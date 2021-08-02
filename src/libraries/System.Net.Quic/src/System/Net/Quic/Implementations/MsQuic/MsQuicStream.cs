@@ -595,9 +595,7 @@ namespace System.Net.Quic.Implementations.MsQuic
             byte[] rentedBuffer = ArrayPool<byte>.Shared.Rent(buffer.Length);
             try
             {
-                Task<int> t = ReadAsync(new Memory<byte>(rentedBuffer, 0, buffer.Length)).AsTask();
-                ((IAsyncResult)t).AsyncWaitHandle.WaitOne();
-                int readLength = t.GetAwaiter().GetResult();
+                int readLength = ReadAsync(new Memory<byte>(rentedBuffer, 0, buffer.Length)).AsTask().GetAwaiter().GetResult();
                 rentedBuffer.AsSpan(0, readLength).CopyTo(buffer);
                 return readLength;
             }
@@ -612,9 +610,7 @@ namespace System.Net.Quic.Implementations.MsQuic
             ThrowIfDisposed();
 
             // TODO: optimize this.
-            Task t = WriteAsync(buffer.ToArray()).AsTask();
-            ((IAsyncResult)t).AsyncWaitHandle.WaitOne();
-            t.GetAwaiter().GetResult();
+            WriteAsync(buffer.ToArray()).AsTask().GetAwaiter().GetResult();
         }
 
         // MsQuic doesn't support explicit flushing
@@ -1336,6 +1332,13 @@ namespace System.Net.Quic.Implementations.MsQuic
             {
                 state.ShutdownCompletionSource.SetException(
                     ExceptionDispatchInfo.SetCurrentStackTrace(GetConnectionAbortedException(state)));
+            }
+
+            // Dispose was called before complete event.
+            bool releaseHandles = Interlocked.Exchange(ref state.ShutdownDone, 2) == 1;
+            if (releaseHandles)
+            {
+                state.Cleanup();
             }
 
             return MsQuicStatusCodes.Success;

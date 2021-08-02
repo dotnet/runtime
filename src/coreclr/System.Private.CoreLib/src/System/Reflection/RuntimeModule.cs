@@ -17,9 +17,6 @@ namespace System.Reflection
         [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
         private static extern void GetType(QCallModule module, string className, bool throwOnError, bool ignoreCase, ObjectHandleOnStack type, ObjectHandleOnStack keepAlive);
 
-        [DllImport(RuntimeHelpers.QCall)]
-        private static extern bool nIsTransientInternal(QCallModule module);
-
         [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
         private static extern void GetScopeName(QCallModule module, StringHandleOnStack retString);
 
@@ -382,12 +379,6 @@ namespace System.Reflection
         #region Internal Members
         internal RuntimeType RuntimeType => m_runtimeType ??= ModuleHandle.GetModuleType(this);
 
-        internal bool IsTransientInternal()
-        {
-            RuntimeModule thisAsLocal = this;
-            return RuntimeModule.nIsTransientInternal(new QCallModule(ref thisAsLocal));
-        }
-
         internal MetadataImport MetadataImport => ModuleHandle.GetMetadataImport(this);
         #endregion
 
@@ -450,6 +441,7 @@ namespace System.Reflection
             return retType;
         }
 
+        [RequiresAssemblyFiles(UnknownStringMessageInRAF)]
         internal string GetFullyQualifiedName()
         {
             string? fullyQualifiedName = null;
@@ -458,9 +450,10 @@ namespace System.Reflection
             return fullyQualifiedName!;
         }
 
+        [RequiresAssemblyFiles(UnknownStringMessageInRAF)]
         public override string FullyQualifiedName => GetFullyQualifiedName();
 
-      [RequiresUnreferencedCode("Types might be removed")]
+        [RequiresUnreferencedCode("Types might be removed")]
         public override Type[] GetTypes()
         {
             return GetTypes(this);
@@ -527,6 +520,7 @@ namespace System.Reflection
             }
         }
 
+        [RequiresAssemblyFiles(UnknownStringMessageInRAF)]
         public override string Name
         {
             get

@@ -32,6 +32,21 @@ namespace System.Text.Json.Serialization.Tests
         public MetadataTests_LowLevel() : base(JsonSerializerWrapperForString.ReaderWriterSerializer) { }
     }
 
+    public class MetadataTests_Document : MetadataTests
+    {
+        public MetadataTests_Document() : base(JsonSerializerWrapperForString.DocumentSerializer) { }
+    }
+
+    public class MetadataTests_Element : MetadataTests
+    {
+        public MetadataTests_Element() : base(JsonSerializerWrapperForString.ElementSerializer) { }
+    }
+
+    public class MetadataTests_Node : MetadataTests
+    {
+        public MetadataTests_Node() : base(JsonSerializerWrapperForString.NodeSerializer) { }
+    }
+
     public abstract partial class MetadataTests
     {
         protected JsonSerializerWrapperForString Serializer { get; }

@@ -8,6 +8,7 @@ using System.Linq;
 using System.Net.Sockets;
 using System.Threading.Tasks;
 using Microsoft.DotNet.RemoteExecutor;
+using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
 using Xunit.Sdk;
 
@@ -16,7 +17,6 @@ namespace System.Net.NameResolution.Tests
     public class TelemetryTest
     {
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/50928", TestPlatforms.Android)]
         public static void EventSource_ExistsWithCorrectId()
         {
             Type esType = typeof(Dns).Assembly.GetType("System.Net.NameResolutionTelemetry", throwOnError: true, ignoreCase: false);
@@ -153,6 +153,12 @@ namespace System.Net.NameResolution.Tests
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public static void ResolutionsWaitingOnQueue_ResolutionStartCalledBeforeEnqueued()
         {
+            if (PlatformDetection.IsMonoInterpreter && PlatformDetection.IsDebian9)
+            {
+                // [ActiveIssue("https://github.com/dotnet/runtime/issues/56449")]
+                throw new SkipTestException("Test is consistently failing with Mono interpreter");
+            }
+
             // Some platforms (non-Windows) don't have proper support for GetAddrInfoAsync.
             // Instead we perform async-over-sync with a per-host queue.
             // This test ensures that ResolutionStart events are written before waiting on the queue.
@@ -164,10 +170,12 @@ namespace System.Net.NameResolution.Tests
                 using var listener = new TestEventListener("System.Net.NameResolution", EventLevel.Informational);
                 listener.AddActivityTracking();
 
-                TaskCompletionSource firstResolutionStart = new();
-                TaskCompletionSource secondResolutionStop = new();
+                TaskCompletionSource firstResolutionStart = new(TaskCreationOptions.RunContinuationsAsynchronously);
+                TaskCompletionSource secondResolutionStop = new(TaskCreationOptions.RunContinuationsAsynchronously);
 
                 List<(string EventName, Guid ActivityId)> events = new();
+
+                bool? callbackWaitTimedOut = null;
 
                 await listener.RunWithCallbackAsync(e =>
                 {
@@ -178,7 +186,7 @@ namespace System.Net.NameResolution.Tests
 
                     if (e.EventName == "ResolutionStart" && firstResolutionStart.TrySetResult())
                     {
-                        secondResolutionStop.Task.Wait();
+                        callbackWaitTimedOut = !secondResolutionStop.Task.Wait(TimeSpan.FromSeconds(15));
                     }
                 },
                 async () =>
@@ -219,6 +227,8 @@ namespace System.Net.NameResolution.Tests
                 Assert.Equal(events[0].ActivityId, events[3].ActivityId);
                 Assert.Equal(events[1].ActivityId, events[2].ActivityId);
                 Assert.NotEqual(events[0].ActivityId, events[1].ActivityId);
+
+                Assert.False(callbackWaitTimedOut);
             }).Dispose();
         }
     }

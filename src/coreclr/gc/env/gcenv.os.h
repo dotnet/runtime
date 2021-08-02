@@ -34,7 +34,7 @@ class CLRCriticalSection
 
 public:
     // Initialize the critical section
-    void Initialize();
+    bool Initialize();
 
     // Destroy the critical section
     void Destroy();
