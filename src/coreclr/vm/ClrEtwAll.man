@@ -7249,7 +7249,7 @@
 
             <!-- Mono Profiler Publisher-->
             <provider name="Microsoft-DotNETRuntimeMonoProfiler"
-                      guid="{5CF93F63-D58B-4EE3-B884-9EDA84A192DB}"
+                      guid="{7F442D82-0F1D-5155-4B8C-1529EB2E31C2}"
                       symbol="MICROSOFT_DOTNETRUNTIME_MONO_PROFILER_PROVIDER"
                       resourceFileName="%INSTALL_PATH%\clretwrc.dll"
                       messageFileName="%INSTALL_PATH%\clretwrc.dll">

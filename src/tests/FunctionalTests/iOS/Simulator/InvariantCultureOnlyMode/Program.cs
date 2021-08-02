@@ -16,21 +16,21 @@ public static class Program
     {
         mono_ios_set_summary($"Starting functional test");
         CultureInfo culture;
-        try 
+        int result = 1;
+
+        try
         {
+            // only invariant culture is supported, so it should error.
             culture = new CultureInfo("es-ES", false);
         }
-        catch
+        catch(CultureNotFoundException)
         {
-            culture = new CultureInfo("", false);
+            culture = CultureInfo.InvariantCulture;
+            // https://github.com/dotnet/runtime/blob/main/docs/design/features/globalization-invariant-mode.md#cultures-and-culture-data
+            result = culture.LCID == 127 && culture.NativeName == "Invariant Language (Invariant Country)" ? 42 : 1;
         }
 
-        // https://github.com/dotnet/runtime/blob/main/docs/design/features/globalization-invariant-mode.md#cultures-and-culture-data
-        int result = culture.LCID == CultureInfo.InvariantCulture.LCID && culture.NativeName == "Invariant Language (Invariant Country)" ? 42 : 1;
-
-        Console.WriteLine("Done!");
         await Task.Delay(5000);
-        
         return result;
     }
 }

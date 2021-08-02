@@ -1024,7 +1024,7 @@ namespace System
                 {
                     case 'G':
                     case 'g':
-                        return GetEnumName(rtType, ToUInt64(value)) ?? value.ToString()!;
+                        return InternalFormat(rtType, ToUInt64(value)) ?? value.ToString()!;
 
                     case 'D':
                     case 'd':

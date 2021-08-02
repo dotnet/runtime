@@ -460,6 +460,15 @@ int LinearScan::BuildPutArgStk(GenTreePutArgStk* argNode)
     {
         assert(!putArgChild->isContained());
         srcCount = BuildOperandUses(putArgChild);
+#if defined(FEATURE_SIMD) && defined(OSX_ARM64_ABI)
+        if (argNode->GetStackByteSize() == 12)
+        {
+            // Vector3 is read/written as two reads/writes: 8 byte and 4 byte.
+            // To assemble the vector properly we would need an additional int register.
+            // The other platforms can write it as 16-byte using 1 write.
+            buildInternalIntRegisterDefForNode(argNode);
+        }
+#endif // FEATURE_SIMD && OSX_ARM64_ABI
     }
     buildInternalRegisterUses();
     return srcCount;

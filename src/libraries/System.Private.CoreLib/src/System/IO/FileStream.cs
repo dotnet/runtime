@@ -48,7 +48,7 @@ namespace System.IO
             {
                 ValidateHandle(safeHandle, access, bufferSize, isAsync);
 
-                _strategy = FileStreamHelpers.ChooseStrategy(this, safeHandle, access, DefaultShare, bufferSize, isAsync);
+                _strategy = FileStreamHelpers.ChooseStrategy(this, safeHandle, access, bufferSize, isAsync);
             }
             catch
             {
@@ -107,14 +107,14 @@ namespace System.IO
         {
             ValidateHandle(handle, access, bufferSize);
 
-            _strategy = FileStreamHelpers.ChooseStrategy(this, handle, access, DefaultShare, bufferSize, handle.IsAsync);
+            _strategy = FileStreamHelpers.ChooseStrategy(this, handle, access, bufferSize, handle.IsAsync);
         }
 
         public FileStream(SafeFileHandle handle, FileAccess access, int bufferSize, bool isAsync)
         {
             ValidateHandle(handle, access, bufferSize, isAsync);
 
-            _strategy = FileStreamHelpers.ChooseStrategy(this, handle, access, DefaultShare, bufferSize, isAsync);
+            _strategy = FileStreamHelpers.ChooseStrategy(this, handle, access, bufferSize, isAsync);
         }
 
         public FileStream(string path, FileMode mode)
@@ -280,9 +280,14 @@ namespace System.IO
             {
                 return Task.FromCanceled<int>(cancellationToken);
             }
-            else if (_strategy.IsClosed)
+            else if (!_strategy.CanRead)
             {
-                ThrowHelper.ThrowObjectDisposedException_FileClosed();
+                if (_strategy.IsClosed)
+                {
+                    ThrowHelper.ThrowObjectDisposedException_FileClosed();
+                }
+
+                ThrowHelper.ThrowNotSupportedException_UnreadableStream();
             }
 
             return _strategy.ReadAsync(buffer, offset, count, cancellationToken);
@@ -294,9 +299,14 @@ namespace System.IO
             {
                 return ValueTask.FromCanceled<int>(cancellationToken);
             }
-            else if (_strategy.IsClosed)
+            else if (!_strategy.CanRead)
             {
-                ThrowHelper.ThrowObjectDisposedException_FileClosed();
+                if (_strategy.IsClosed)
+                {
+                    ThrowHelper.ThrowObjectDisposedException_FileClosed();
+                }
+
+                ThrowHelper.ThrowNotSupportedException_UnreadableStream();
             }
 
             return _strategy.ReadAsync(buffer, cancellationToken);
@@ -319,9 +329,14 @@ namespace System.IO
             {
                 return Task.FromCanceled(cancellationToken);
             }
-            else if (_strategy.IsClosed)
+            else if (!_strategy.CanWrite)
             {
-                ThrowHelper.ThrowObjectDisposedException_FileClosed();
+                if (_strategy.IsClosed)
+                {
+                    ThrowHelper.ThrowObjectDisposedException_FileClosed();
+                }
+
+                ThrowHelper.ThrowNotSupportedException_UnwritableStream();
             }
 
             return _strategy.WriteAsync(buffer, offset, count, cancellationToken);
@@ -333,9 +348,14 @@ namespace System.IO
             {
                 return ValueTask.FromCanceled(cancellationToken);
             }
-            else if (_strategy.IsClosed)
+            else if (!_strategy.CanWrite)
             {
-                ThrowHelper.ThrowObjectDisposedException_FileClosed();
+                if (_strategy.IsClosed)
+                {
+                    ThrowHelper.ThrowObjectDisposedException_FileClosed();
+                }
+
+                ThrowHelper.ThrowNotSupportedException_UnwritableStream();
             }
 
             return _strategy.WriteAsync(buffer, cancellationToken);

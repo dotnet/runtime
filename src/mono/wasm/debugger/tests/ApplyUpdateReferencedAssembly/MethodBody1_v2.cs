@@ -27,8 +27,15 @@ namespace ApplyUpdateReferencedAssembly
     public class MethodBody3 {
         public static string StaticMethod3 () {
             bool c = true;
-            Console.WriteLine("v2");
+            int d = 10;
+            int e = 20;
+            int f = 50;
             return "NEWEST STRING";
+        }
+    }
+
+    public class MethodBody4 {
+        public static void StaticMethod4 () {
         }
     }
 }

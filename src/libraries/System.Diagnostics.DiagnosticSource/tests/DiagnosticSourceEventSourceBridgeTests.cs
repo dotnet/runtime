@@ -1302,7 +1302,6 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/50924", TestPlatforms.Android)]
         public void NoExceptionThrownWhenProcessingStaticActivityProperties()
         {
             // Ensures that no exception is thrown when static properties on the Activity type are passed to EventListener.

@@ -38,6 +38,12 @@
     <TestConsoleAppSourceFiles Include="TypeBuilderComDisabled.cs">
       <DisabledFeatureSwitches>System.Runtime.InteropServices.BuiltInComInterop.IsSupported</DisabledFeatureSwitches>
     </TestConsoleAppSourceFiles>
+    <TestConsoleAppSourceFiles Include="NullabilityInfoContextSupportFalse.cs">
+      <DisabledFeatureSwitches>System.Reflection.NullabilityInfoContext.IsSupported</DisabledFeatureSwitches>
+    </TestConsoleAppSourceFiles>
+    <TestConsoleAppSourceFiles Include="NullabilityInfoContextSupportTrue.cs">
+      <EnabledFeatureSwitches>System.Reflection.NullabilityInfoContext.IsSupported</EnabledFeatureSwitches>
+    </TestConsoleAppSourceFiles>
   </ItemGroup>
 
   <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.targets))" />

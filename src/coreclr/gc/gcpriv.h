@@ -3585,6 +3585,8 @@ public:
     size_t* survived_per_region;
     PER_HEAP
     size_t* old_card_survived_per_region;
+    PER_HEAP_ISOLATED
+    size_t region_count;
 #endif //USE_REGIONS
 
 #define max_oom_history_count 4
@@ -4928,6 +4930,12 @@ public:
                          size_t& card, size_t& end_card, size_t& card_word_end);
 #endif //FEATURE_CARD_MARKING_STEALING
 
+    PER_HEAP_ISOLATED
+    size_t smoothed_desired_per_heap[total_generation_count];
+
+    PER_HEAP_ISOLATED
+    size_t exponential_smoothing (int gen, size_t collection_count, size_t desired_per_heap);
+
 protected:
     PER_HEAP
     void update_collection_counts ();
@@ -5694,6 +5702,14 @@ public:
     size_t get_free() { return (total_free_units * region_alignment) ; }
     size_t get_region_alignment () { return region_alignment; }
     size_t get_large_region_alignment () { return large_region_alignment; }
+    size_t get_used_region_count()
+    {
+        // currently we don't allocate anything from the right -
+        // once we do, we need a more sophisticated way to iterate
+        // through the used regions
+        assert (region_map_right_start == region_map_right_end);
+        return (region_map_left_end - region_map_left_start);
+    }
 };
 #endif //USE_REGIONS
 

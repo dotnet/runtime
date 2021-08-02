@@ -229,11 +229,16 @@ CorUnix::InternalOpen(
         va_end(ap);
     }
 
+    do
+    {
 #if OPEN64_IS_USED_INSTEAD_OF_OPEN
         nRet = open64(szPath, nFlags, mode);
 #else
         nRet = open(szPath, nFlags, mode);
 #endif
+    }
+    while ((nRet == -1) && (errno == EINTR));
+
     return nRet;
 }
 

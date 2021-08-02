@@ -1452,11 +1452,10 @@ namespace System.Net.WebSockets
         {
             Debug.Assert(_sendFrameAsyncLock.CurrentCount == 0, "Caller should hold the _sendFrameAsyncLock");
 
-            byte[]? old = _sendBuffer;
-            if (old != null)
+            if (_sendBuffer is byte[] toReturn)
             {
                 _sendBuffer = null;
-                ArrayPool<byte>.Shared.Return(old);
+                ArrayPool<byte>.Shared.Return(toReturn);
             }
         }
 

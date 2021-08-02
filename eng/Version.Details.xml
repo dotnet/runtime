@@ -4,7 +4,7 @@
       <Uri>https://github.com/dotnet/icu</Uri>
       <Sha>08293141bc33a81b7e58120535079d8eac36519f</Sha>
     </Dependency>
-    <Dependency Name="System.Net.MsQuic.Transport" Version="6.0.0-preview.7.21357.1">
+    <Dependency Name="System.Net.MsQuic.Transport" Version="6.0.0-preview.7.21379.5">
       <Uri>https://github.com/dotnet/msquic</Uri>
       <Sha>d7db669b70f4dd67ec001c192f9809c218cab88b</Sha>
     </Dependency>
@@ -186,9 +186,9 @@
       <Uri>https://github.com/dotnet/runtime</Uri>
       <Sha>95863758cd16c345d0b8fca067d5db5d6901e498</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.NET.ILLink.Tasks" Version="6.0.100-preview.6.21370.1">
+    <Dependency Name="Microsoft.NET.ILLink.Tasks" Version="6.0.100-preview.6.21378.1">
       <Uri>https://github.com/mono/linker</Uri>
-      <Sha>6eae01980dc694107bdee0bc723d75a0dd601f0e</Sha>
+      <Sha>0cb9250a903cfc90cbac602ed79c0cbc588d8d3f</Sha>
     </Dependency>
     <Dependency Name="Microsoft.DotNet.XHarness.TestRunners.Xunit" Version="1.0.0-prerelease.21373.1">
       <Uri>https://github.com/dotnet/xharness</Uri>

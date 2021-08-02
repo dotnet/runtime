@@ -133,8 +133,9 @@ namespace System.Net.Http.Json
             if (!_disposed)
             {
                 _disposed = true;
-                ArrayPool<char>.Shared.Return(_charBuffer);
+                char[] toReturn = _charBuffer;
                 _charBuffer = null!;
+                ArrayPool<char>.Shared.Return(toReturn);
             }
         }
 

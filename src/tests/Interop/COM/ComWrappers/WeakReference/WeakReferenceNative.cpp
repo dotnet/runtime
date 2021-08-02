@@ -3,8 +3,10 @@
 
 #include <xplatform.h>
 #include <ComHelpers.h>
+#ifdef _WIN32
 #include <inspectable.h>
 #include <WeakReference.h>
+#endif //_WIN32
 
 namespace
 {
@@ -46,7 +48,32 @@ namespace
             /* [in] */ REFIID riid,
             /* [iid_is][out] */ _COM_Outptr_ void __RPC_FAR* __RPC_FAR* ppvObject)
         {
+#ifdef _WIN32
             return DoQueryInterface(riid, ppvObject, static_cast<IWeakReference*>(this));
+#else
+            if (ppvObject == nullptr)
+               return E_POINTER;
+
+            if (riid == __uuidof(IUnknown))
+            {
+                *ppvObject = static_cast<IUnknown*>(this);
+            }
+            else
+            {
+                if (riid == __uuidof(IWeakReference))
+                {
+                    *ppvObject = static_cast<IWeakReference*>(this);
+                }
+                else
+                {
+                    *ppvObject = nullptr;
+                    return E_NOINTERFACE;
+                }
+            }
+
+            DoAddRef();
+            return S_OK;
+#endif
         }
 
         DEFINE_REF_COUNTING()
@@ -89,7 +116,34 @@ namespace
             /* [in] */ REFIID riid,
             /* [iid_is][out] */ _COM_Outptr_ void __RPC_FAR* __RPC_FAR* ppvObject)
         {
+#ifdef _WIN32
             HRESULT hr = DoQueryInterface(riid, ppvObject, static_cast<IWeakReferenceSource*>(this), static_cast<IInspectable*>(this), static_cast<IWeakReferenceSource*>(this));
+#else        
+            HRESULT hr;
+
+            if (ppvObject == nullptr)
+               hr = E_POINTER;
+
+            if (riid == __uuidof(IUnknown) || riid == __uuidof(IWeakReferenceSource))
+            {
+                *ppvObject = static_cast<IWeakReferenceSource*>(this);
+                hr = S_OK;
+            }
+            else if (riid == __uuidof(IInspectable))
+            {
+                *ppvObject = static_cast<IInspectable*>(this);
+                hr = S_OK;
+            }
+            else
+            {
+                *ppvObject = nullptr;
+                hr = E_NOINTERFACE;
+            }
+                
+            
+            if (hr == S_OK)
+               DoAddRef();
+#endif
             if (SUCCEEDED(hr) && _weakReference)
             {
                 _weakReference->AddStrongRef();

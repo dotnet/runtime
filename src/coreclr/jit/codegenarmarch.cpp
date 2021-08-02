@@ -560,7 +560,7 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
 //------------------------------------------------------------------------
 // genSetRegToIcon: Generate code that will set the given register to the integer constant.
 //
-void CodeGen::genSetRegToIcon(regNumber reg, ssize_t val, var_types type, insFlags flags)
+void CodeGen::genSetRegToIcon(regNumber reg, ssize_t val, var_types type, insFlags flags DEBUGARG(GenTreeFlags gtFlags))
 {
     // Reg cannot be a FP reg
     assert(!genIsValidFloatReg(reg));
@@ -603,7 +603,7 @@ void CodeGen::genSetGSSecurityCookie(regNumber initReg, bool* pInitRegZeroed)
     else
     {
         instGen_Set_Reg_To_Imm(EA_PTR_DSP_RELOC, initReg, (ssize_t)compiler->gsGlobalSecurityCookieAddr,
-                               INS_FLAGS_DONT_CARE DEBUGARG((size_t)THT_SetGSCookie) DEBUGARG(0));
+                               INS_FLAGS_DONT_CARE DEBUGARG((size_t)THT_SetGSCookie) DEBUGARG(GTF_EMPTY));
         GetEmitter()->emitIns_R_R_I(INS_ldr, EA_PTRSIZE, initReg, initReg, 0);
         regSet.verifyRegUsed(initReg);
         GetEmitter()->emitIns_S_R(INS_str, EA_PTRSIZE, initReg, compiler->lvaGSSecurityCookie, 0);
@@ -739,13 +739,24 @@ void CodeGen::genPutArgStk(GenTreePutArgStk* treeNode)
             assert(!source->isContained());
 
             regNumber srcReg = genConsumeReg(source);
-
-            emitAttr storeAttr = emitTypeSize(targetType);
-
             assert((srcReg != REG_NA) && (genIsValidFloatReg(srcReg)));
-            emit->emitIns_S_R(INS_str, storeAttr, srcReg, varNumOut, argOffsetOut);
 
-            argOffsetOut += EA_SIZE_IN_BYTES(storeAttr);
+#if !defined(OSX_ARM64_ABI)
+            assert(treeNode->GetStackByteSize() % TARGET_POINTER_SIZE == 0);
+#else  // OSX_ARM64_ABI
+            if (treeNode->GetStackByteSize() == 12)
+            {
+                regNumber tmpReg = treeNode->GetSingleTempReg();
+                GetEmitter()->emitStoreSIMD12ToLclOffset(varNumOut, argOffsetOut, srcReg, tmpReg);
+                argOffsetOut += 12;
+            }
+            else
+#endif // OSX_ARM64_ABI
+            {
+                emitAttr storeAttr = emitTypeSize(targetType);
+                emit->emitIns_S_R(INS_str, storeAttr, srcReg, varNumOut, argOffsetOut);
+                argOffsetOut += EA_SIZE_IN_BYTES(storeAttr);
+            }
             assert(argOffsetOut <= argOffsetMax); // We can't write beyound the outgoing area area
             return;
         }
@@ -1033,7 +1044,7 @@ void CodeGen::genPutArgStk(GenTreePutArgStk* treeNode)
             }
 #endif // TARGET_ARM
 
-            // For a 12-byte structSize we will we will generate two load instructions
+            // For a 12-byte structSize we will generate two load instructions
             //             ldr     x2, [x0]
             //             ldr     w3, [x0, #8]
             //             str     x2, [sp, #16]
