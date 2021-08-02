@@ -17,6 +17,8 @@
     <PublishTrimmed>true</PublishTrimmed>
     <!-- Suppress linker warnings as these are tests -->
     <SuppressTrimAnalysisWarnings>true</SuppressTrimAnalysisWarnings>
+    <!-- Can be removed when SDK update picks up https://github.com/dotnet/sdk/pull/18655. -->
+    <NoWarn>$(NoWarn);IL2111</NoWarn>
     <!-- https://github.com/dotnet/sdk/issues/18581 tracks needing to set 2 properties to disable warnings. -->
     <EnableTrimAnalyzer>false</EnableTrimAnalyzer>
 
