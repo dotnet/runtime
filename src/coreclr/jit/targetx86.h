@@ -188,6 +188,10 @@
   #define REG_VIRTUAL_STUB_TARGET  REG_EAX
   #define RBM_VIRTUAL_STUB_TARGET  RBM_EAX
 
+  // Register where tailcall target is left, not currently used.
+  #define REG_FASTTAILCALL_TARGET  REG_EAX
+  #define RBM_FASTTAILCALL_TARGET  RBM_EAX
+
   // Registers used by PInvoke frame setup
   #define REG_PINVOKE_FRAME        REG_EDI      // EDI is p/invoke "Frame" pointer argument to CORINFO_HELP_INIT_PINVOKE_FRAME helper
   #define RBM_PINVOKE_FRAME        RBM_EDI

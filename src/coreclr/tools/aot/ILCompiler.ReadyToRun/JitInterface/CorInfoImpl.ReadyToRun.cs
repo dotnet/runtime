@@ -899,6 +899,8 @@ namespace Internal.JitInterface
                 case CorInfoHelpFunc.CORINFO_HELP_GETREFANY:
                 // For Vector256.Create and similar cases
                 case CorInfoHelpFunc.CORINFO_HELP_THROW_NOT_IMPLEMENTED:
+                // For x86 tailcall where helper is required we need runtime JIT.
+                case CorInfoHelpFunc.CORINFO_HELP_TAILCALL:
                     throw new RequiresRuntimeJitException(ftnNum.ToString());
 
                 default:
