@@ -447,7 +447,6 @@ namespace System.Net.Sockets.Tests
         [InlineData(false)]
         [InlineData(true)]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/52124", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
-
         public async Task Ctor_SafeHandle_Listening_Success(bool shareSafeHandle)
         {
             await Task.Run(async () =>
@@ -481,7 +480,7 @@ namespace System.Net.Sockets.Tests
                         }
                     }
                 }
-            }).WaitAsync(TimeSpan.FromSeconds(30)); 
+            }).WaitAsync(TestSettings.PassingTestTimeout); 
         }
 
         [DllImport("libc")]
