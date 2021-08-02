@@ -2,13 +2,13 @@
   <PropertyGroup>
     <!-- Using a csproj extension to get the correct multi-targeting behavior. -->
     <TargetFrameworks>$(NetCoreAppCurrent);netcoreapp3.1;netstandard2.1;netstandard2.0</TargetFrameworks>
-    <!-- The project doesn't compile anything therefore create the package during build. -->
-    <GeneratePackageOnBuild Condition="'$(BuildingAnOfficialBuildLeg)' != 'true'">true</GeneratePackageOnBuild>
     <IsPackable>true</IsPackable>
     <!-- Reference the outputs for the dependency nodes calculation. -->
     <NoTargetsDoNotReferenceOutputAssemblies>false</NoTargetsDoNotReferenceOutputAssemblies>
     <!-- This is a meta package and doesn't contain any libs. -->
     <NoWarn>$(NoWarn);NU5128</NoWarn>
+    <!-- By default, don't build the project references to avoid unnecessary incremental builds. -->
+    <NoBuild>true</NoBuild>
     <PackageDescription>This Windows Compatibility Pack provides access to APIs that were previously available only for .NET Framework. It can be used from both .NET Core as well as .NET Standard.</PackageDescription>
   </PropertyGroup>
 
