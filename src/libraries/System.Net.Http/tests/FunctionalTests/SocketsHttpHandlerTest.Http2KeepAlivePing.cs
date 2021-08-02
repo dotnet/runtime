@@ -155,7 +155,7 @@ namespace System.Net.Http.Functional.Tests
                     await Task.Delay(5_000);
 
                     // We may receive one RTT PING in response to HEADERS.
-                    // Upon that, we expect to receive at least 2 keep alive PING:
+                    // Upon that, we expect to receive at least 1 keep alive PING:
                     Assert.True(_pingCounter > 1);
                 }
                 else
