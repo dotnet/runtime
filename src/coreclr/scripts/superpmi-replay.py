@@ -89,6 +89,9 @@ def main(main_args):
     target_arch_name = match_mch_elems.group(3)
     run_name = "{}_{}_{}".format(os_name, target_arch_name, coreclr_args.arch)
 
+    print("=============> Running superpmi.py download")
+    run_command([python_path, path.join(cwd, "superpmi.py"), "download", "-f", "benchmarks"])
+
     # populate based on zip file name and jit_directory
     jit_path = path.join(coreclr_args.jit_directory, 'clrjit_{}.dll'.format(run_name))
     run_id = 0
