@@ -9,6 +9,7 @@ namespace System.Numerics.Tests
     public class logTest
     {
         private const int NumberOfRandomIterations = 10;
+        private const int RequiredPrecision = 15;
         private static Random s_random = new Random(100);
 
         public static IEnumerable<object[]> RunLogOfZeroIsInfinityTestSources
@@ -39,7 +40,7 @@ namespace System.Numerics.Tests
                     BigInteger currentValue;
                     do
                     {
-                        currentValue = new BigInteger(GetRandomPosByteArray(s_random, 8));
+                        currentValue = new BigInteger(MyBigIntImp.GetRandomPosByteArray(s_random, 8));
                     }
                     while (currentValue == BigInteger.One);
                     yield return new object[] { currentValue };
@@ -60,7 +61,7 @@ namespace System.Numerics.Tests
             {
                 for (int i = 0; i < NumberOfRandomIterations; i++)
                 {
-                    BigInteger currentValue = new BigInteger(GetRandomByteArray(s_random, 10));
+                    BigInteger currentValue = new BigInteger(MyBigIntImp.GetRandomByteArray(s_random, 10));
                     yield return new object[] { currentValue };
                 }
             }
@@ -79,7 +80,7 @@ namespace System.Numerics.Tests
             {
                 for (int i = 0; i < NumberOfRandomIterations; i++)
                 {
-                    BigInteger currentValue = new BigInteger(GetRandomByteArray(s_random, 10));
+                    BigInteger currentValue = new BigInteger(MyBigIntImp.GetRandomByteArray(s_random, 10));
                     yield return new object[] { currentValue };
                 }
             }
@@ -113,7 +114,7 @@ namespace System.Numerics.Tests
             {
                 for (int i = 0; i < NumberOfRandomIterations; i++)
                 {
-                    BigInteger currentValue = new BigInteger(GetRandomByteArray(s_random, 10));
+                    BigInteger currentValue = new BigInteger(MyBigIntImp.GetRandomByteArray(s_random, 10));
                     double baseValue = -s_random.NextDouble();
                     yield return new object[] { currentValue, baseValue };
                 }
@@ -133,7 +134,7 @@ namespace System.Numerics.Tests
             {
                 for (int i = 0; i < NumberOfRandomIterations; i++)
                 {
-                    BigInteger currentValue = new BigInteger(GetRandomByteArray(s_random, 10));
+                    BigInteger currentValue = new BigInteger(MyBigIntImp.GetRandomByteArray(s_random, 10));
                     double baseValue = Math.Min(s_random.NextDouble(), 0.5);
                     double expectedValue = Math.Log((double)currentValue, baseValue);
                     yield return new object[] { currentValue, baseValue, expectedValue };
@@ -145,7 +146,7 @@ namespace System.Numerics.Tests
         [MemberData(nameof(RunLogOfSmallValueTestSources))]
         public void RunLogOfSmallValueTest(BigInteger testValue, double baseValue, double expectedValue)
         {
-            Assert.True(ApproxEqual(BigInteger.Log(testValue, baseValue), expectedValue));
+            Assert.Equal(expectedValue, BigInteger.Log(testValue, baseValue), RequiredPrecision);
         }
 
         public static IEnumerable<object[]> RunLogOfLargeValueTestSources
@@ -154,7 +155,7 @@ namespace System.Numerics.Tests
             {
                 for (int i = 0; i < NumberOfRandomIterations; i++)
                 {
-                    BigInteger currentValue = new BigInteger(GetRandomPosByteArray(s_random, s_random.Next(1, 100)));
+                    BigInteger currentValue = new BigInteger(MyBigIntImp.GetRandomPosByteArray(s_random, s_random.Next(1, 100)));
                     double baseValue = Math.Min(s_random.NextDouble(), 0.5);
                     double expectedValue = Math.Log((double)currentValue, baseValue);
                     yield return new object[] { currentValue, baseValue, expectedValue };
@@ -166,7 +167,7 @@ namespace System.Numerics.Tests
         [MemberData(nameof(RunLogOfLargeValueTestSources))]
         public void RunLogOfLargeValueTest(BigInteger testValue, double baseValue, double expectedValue)
         {
-            Assert.True(ApproxEqual(BigInteger.Log(testValue, baseValue), expectedValue));
+            Assert.Equal(expectedValue, BigInteger.Log(testValue, baseValue), RequiredPrecision);
         }
 
         public static IEnumerable<object[]> RunLargeValueLogTestSources
@@ -195,8 +196,9 @@ namespace System.Numerics.Tests
         /// </summary>
         private static void LargeValueLogTests(int startShift, int bigShiftLoopLimit, int smallShift = 0, int smallShiftLoopLimit = 1)
         {
+            const double logbase = 2D;
             BigInteger init = BigInteger.One << startShift;
-            double logbase = 2D;
+
 
             for (int i = 0; i < smallShiftLoopLimit; i++)
             {
@@ -209,53 +211,10 @@ namespace System.Numerics.Tests
                         (double)startShift +
                         smallShift * (double)(i + 1) +
                         (int.MaxValue / 10) * (double)(j + 1);
-                    Assert.True(ApproxEqual(BigInteger.Log(temp, logbase), expected));
+                    Assert.Equal(expected, BigInteger.Log(temp, logbase), RequiredPrecision);
                 }
 
             }
-        }
-
-        private static byte[] GetRandomByteArray(Random random, int size)
-        {
-            return MyBigIntImp.GetRandomByteArray(random, size);
-        }
-
-        //Be carefully, this method can generate byte array, which can not be accurately presented by double.
-        private static byte[] GetRandomPosByteArray(Random random, int size)
-        {
-            byte[] value = new byte[size];
-
-            for (int i = 0; i < value.Length; i++)
-            {
-                value[i] = (byte)random.Next(0, 256);
-            }
-            value[value.Length - 1] &= 0x7F;
-
-            return value;
-        }
-
-        private static bool ApproxEqual(double value1, double value2)
-        {
-            //Special case values;
-            if (double.IsNaN(value1))
-            {
-                return double.IsNaN(value2);
-            }
-            if (double.IsNegativeInfinity(value1))
-            {
-                return double.IsNegativeInfinity(value2);
-            }
-            if (double.IsPositiveInfinity(value1))
-            {
-                return double.IsPositiveInfinity(value2);
-            }
-            if (value2 == 0)
-            {
-                return (value1 == 0);
-            }
-
-            double result = Math.Abs((value1 / value2) - 1);
-            return (result <= double.Parse("1e-15"));
         }
     }
 }

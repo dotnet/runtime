@@ -8,6 +8,8 @@ namespace System.Numerics.Tests
 {
     public static class MyBigIntImp
     {
+        private const byte NegativeResetter = 0b0111_1111;
+
         public static BigInteger DoUnaryOperatorMine(BigInteger num1, string op)
         {
             List<byte> bytes1 = new List<byte>(num1.ToByteArray());
@@ -941,6 +943,16 @@ namespace System.Numerics.Tests
             byte[] value = new byte[size];
             random.NextBytes(value);
             return value;
+        }
+
+        public static byte[] GetRandomPosByteArray(Random random, int size)
+        {
+            byte[] returnValue;
+
+            returnValue = GetRandomByteArray(random, size);
+            returnValue[returnValue.Length - 1] &= NegativeResetter;
+
+            return returnValue;
         }
 
         public static BigInteger ApproximateBigInteger(double value)
