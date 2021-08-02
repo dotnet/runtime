@@ -91,7 +91,7 @@ namespace DebuggerTests
         [Fact]
         public async Task InspectLocalsTypesAtBreakpointSite() =>
             await CheckInspectLocalsAtBreakpointSite(
-                "dotnet://debugger-test.dll/debugger-test2.cs", 49, 8, "Types",
+                "dotnet://debugger-test.dll/debugger-test2.cs", 50, 8, "Types",
                 "window.setTimeout(function() { invoke_static_method (\"[debugger-test] Fancy:Types\")(); }, 1);",
                 use_cfo: false,
                 test_fn: (locals) =>
