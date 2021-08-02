@@ -912,16 +912,20 @@ Edit rule 12 to specify that "The method signature defined by *MethodBody* shall
 
 ## Unsigned data conversion with overflow detection
 
-conv.ovf.<to type>.un opcode is purposed for converting a value on the stack to an integral value while treating the stack source as unsigned. Ecma does not distinguish signed and unsigned values on the stack so such opcode is needed as a complement for conv.ovf.<to type>.
+`conv.ovf.<to type>.un` opcode is purposed for converting a value on the stack to an integral value while treating the stack source as unsigned. Ecma does not distinguish signed and unsigned values on the stack so such opcode is needed as a complement for `conv.ovf.<to type>`.
 So if the value on the stack is 4-byte size integral created by `Ldc_I4 0xFFFFFFFF` the results of different conversion opcodes will be:
-conv.ovf.i4 -> -1 (0xFFFFFFFF)
-conv.ovf.u4 -> overflow
-conv.ovf.i4.un -> overflow
-conv.ovf.u4.un -> uint.MaxValue (0xFFFFFFFF)
 
-However, the source of these opcodes can be a float value and it was not clear how in such case .un should be treated. The ECMA was saying: ""The item on the top of the stack is treated as an unsigned value before the conversion." but there was no definition of "treated" so the result of:
+* conv.ovf.i4 -> -1 (0xFFFFFFFF)
+* conv.ovf.u4 -> overflow
+* conv.ovf.i4.un -> overflow
+* conv.ovf.u4.un -> uint.MaxValue (0xFFFFFFFF)
+
+However, the source of these opcodes can be a float value and it was not clear how in such case .un should be treated. The ECMA was saying: "The item on the top of the stack is treated as an unsigned value before the conversion." but there was no definition of "treated" so the result of:
+
+```
 ldc.r4 -1
 conv.ovf.i4.un
+```
 was ambiguous, it could treat -1 as 0xFFFFFFFF and return 0xFFFFFFFF or it could throw an overflow exception.
 
 ### III.3.19, conv.ovf.to type.un (page 354)
