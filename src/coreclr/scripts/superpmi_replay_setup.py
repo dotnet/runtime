@@ -148,9 +148,16 @@ def main(main_args):
 
     # Print correlation_payload_directory and workitem_directory
     print("==> correlation_payload_directory:")
-    run_command(["dir", "/s", "/b", correlation_payload_directory])
+    for file_path, dirs, files in walk(correlation_payload_directory, topdown=True):
+        for name in files:
+            curr_file_path = path.join(file_path, name)
+            print(curr_file_path)
+
     print("==> workitem_directory:")
-    run_command(["dir", "/s", "/b", workitem_directory])
+    for file_path, dirs, files in walk(workitem_directory, topdown=True):
+        for name in files:
+            curr_file_path = path.join(file_path, name)
+            print(curr_file_path)
 
     # Set variables
     print('Setting pipeline variables:')
