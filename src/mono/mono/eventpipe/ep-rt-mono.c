@@ -2558,7 +2558,7 @@ ep_rt_mono_write_event_method_load (
 	MonoMethod *method,
 	MonoJitInfo *ji)
 {
-	if (!EventEnabledMethodLoad_V1 () && !EventEnabledMethodLoadVerbose_V1())
+	if (!EventEnabledMethodLoad_V1 () && !EventEnabledMethodLoadVerbose_V1 ())
 		return true;
 
 	//TODO: Optimize string formatting into functions accepting GString to reduce heap alloc.
@@ -2720,7 +2720,7 @@ get_module_event_data (
 bool
 ep_rt_mono_write_event_module_load (MonoImage *image)
 {
-	if (!EventEnabledModuleLoad_V2 () && !EventEnabledDomainModuleLoad_V1())
+	if (!EventEnabledModuleLoad_V2 () && !EventEnabledDomainModuleLoad_V1 ())
 		return true;
 
 	if (image) {
@@ -3864,7 +3864,7 @@ mono_profiler_jit_done (
 	MonoMethod *method,
 	MonoJitInfo *ji)
 {
-	if (!EventEnabledMonoProfilerJitDone() && !EventEnabledMonoProfilerJitDone_V1() && !EventEnabledMonoProfilerJitDoneVerbose())
+	if (!EventEnabledMonoProfilerJitDone () && !EventEnabledMonoProfilerJitDone_V1 () && !EventEnabledMonoProfilerJitDoneVerbose ())
 		return;
 
 	bool verbose = (MICROSOFT_DOTNETRUNTIME_MONO_PROFILER_PROVIDER_EVENTPIPE_Context.Level >= (uint8_t)EP_EVENT_LEVEL_VERBOSE);
@@ -4047,7 +4047,7 @@ mono_profiler_class_loaded (
 	MonoProfiler *prof,
 	MonoClass *klass)
 {
-	if (!EventEnabledMonoProfilerClassLoaded())
+	if (!EventEnabledMonoProfilerClassLoaded () && !EventEnabledMonoProfilerClassLoaded_V1 ())
 		return;
 
 	uint64_t class_id;
