@@ -639,6 +639,7 @@ nomac:CLRStackStress:::CLRStackWalkStress
 #################################
 # Events from the Mono profiler provider
 #################################
+noclrinstanceid::MonoProfiler::JitDoneVerbose
 nostack::MonoProfiler::ExceptionClause
 nostack::MonoProfiler::MonoProfilerMethodEnter
 nostack::MonoProfiler::MonoProfilerMethodLeave

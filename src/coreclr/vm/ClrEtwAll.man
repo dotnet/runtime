@@ -7864,23 +7864,59 @@
                     </template>
 
                     <template tid="JitDoneVerbose">
-                        <data name="ClrInstanceID" inType="win:UInt16" />
                         <data name="MethodID" inType="win:UInt64" outType="win:HexInt64" />
-                        <data name="ModuleID" inType="win:UInt64" outType="win:HexInt64" />
-                        <data name="MethodToken" inType="win:UInt32" outType="win:HexInt32" />
                         <data name="MethodNamespace" inType="win:UnicodeString" />
                         <data name="MethodName" inType="win:UnicodeString" />
                         <data name="MethodSignature" inType="win:UnicodeString" />
                         <UserData>
                             <JitDoneVerbose xmlns="myNs">
-                                <ClrInstanceID> %1 </ClrInstanceID>
                                 <MethodID> %2 </MethodID>
-                                <ModuleID> %3 </ModuleID>
-                                <MethodToken> %4 </MethodToken>
                                 <MethodNamespace> %5 </MethodNamespace>
                                 <MethodName> %6 </MethodName>
                                 <MethodSignature> %7 </MethodSignature>
                             </JitDoneVerbose>
+                        </UserData>
+                    </template>
+
+                    <template tid="JitDone_V1">
+                        <data name="ClrInstanceID" inType="win:UInt16" />
+                        <data name="MethodID" inType="win:UInt64" outType="win:HexInt64" />
+                        <data name="ModuleID" inType="win:UInt64" outType="win:HexInt64" />
+                        <data name="MethodToken" inType="win:UInt32" outType="win:HexInt32" />
+                        <data name="Count" inType="win:UInt32" outType="win:HexInt32" />
+                        <struct name="Values" count="Count">
+                            <data name="Type" inType="win:UInt8" />
+                            <data name="ClassID" inType="win:UInt64" outType="win:HexInt64" />
+                        </struct>
+                        <UserData>
+                            <JitBeginFailedDone xmlns="myNs">
+                                <ClrInstanceID> %1 </ClrInstanceID>
+                                <MethodID> %2 </MethodID>
+                                <ModuleID> %3 </ModuleID>
+                                <MethodToken> %4 </MethodToken>
+                                <Count> %5 </Count>
+                            </JitBeginFailedDone>
+                        </UserData>
+                    </template>
+
+                    <template tid="ClassLoaded_V1">
+                        <data name="ClrInstanceID" inType="win:UInt16" />
+                        <data name="ClassID" inType="win:UInt64" outType="win:HexInt64" />
+                        <data name="ModuleID" inType="win:UInt64" outType="win:HexInt64" />
+                        <data name="ClassName" inType="win:UnicodeString" />
+                        <data name="Count" inType="win:UInt32" outType="win:HexInt32" />
+                        <struct name="Values" count="Count">
+                            <data name="Type" inType="win:UInt8" />
+                            <data name="ClassID" inType="win:UInt64" outType="win:HexInt64" />
+                        </struct>
+                        <UserData>
+                            <ClassLoaded xmlns="myNs">
+                                <ClrInstanceID> %1 </ClrInstanceID>
+                                <ClassID> %2 </ClassID>
+                                <ModuleID> %3 </ModuleID>
+                                <ClassName> %4 </ClassName>
+                                <Count> %5 </Count>
+                            </ClassLoaded>
                         </UserData>
                     </template>
 
@@ -7937,6 +7973,11 @@
                            task="MonoProfiler"
                            symbol="MonoProfilerJitDone" message="$(string.MonoProfilerPublisher.JitBeginFailedDoneEventMessage)" />
 
+                    <event value="10" version="1" level="win:Informational"  template="JitDone_V1"
+                           keywords ="JitKeyword" opcode="JitDone"
+                           task="MonoProfiler"
+                           symbol="MonoProfilerJitDone_V1" message="$(string.MonoProfilerPublisher.JitDone_v1EventMessage)" />
+
                     <event value="11" version="0" level="win:Informational"  template="JitChunkCreated"
                            keywords ="JitKeyword" opcode="JitChunkCreated"
                            task="MonoProfiler"
@@ -7966,6 +8007,11 @@
                            keywords ="TypeLoadingKeyword" opcode="ClassLoaded"
                            task="MonoProfiler"
                            symbol="MonoProfilerClassLoaded" message="$(string.MonoProfilerPublisher.ClassLoadedEventMessage)" />
+
+                    <event value="16" version="1" level="win:Informational"  template="ClassLoaded_V1"
+                           keywords ="TypeLoadingKeyword" opcode="ClassLoaded"
+                           task="MonoProfiler"
+                           symbol="MonoProfilerClassLoaded_V1" message="$(string.MonoProfilerPublisher.ClassLoaded_V1EventMessage)" />
 
                     <event value="17" version="0" level="win:Verbose"  template="VTableLoadingFailedLoaded"
                            keywords ="TypeLoadingKeyword" opcode="VTableLoading"
@@ -9357,6 +9403,7 @@
                 <string id="MonoProfilerPublisher.AppDomainNameEventMessage" value="ClrInstanceID=%1;%nAppDomainId=%2;%nAppDomainName=%3" />
 
                 <string id="MonoProfilerPublisher.JitBeginFailedDoneEventMessage" value="ClrInstanceID=%1;%nMethodId=%2;%nModuleID=%3;%nMethodToken=%4" />
+                <string id="MonoProfilerPublisher.JitDone_V1EventMessage" value="ClrInstanceID=%1;%nMethodId=%2;%nModuleID=%3;%nMethodToken=%4;%nCount=%5" />
 
                 <string id="MonoProfilerPublisher.JitChunkCreatedEventMessage" value="ClrInstanceID=%1;%nChunkID=%2;%nChunkSize=%3" />
                 <string id="MonoProfilerPublisher.JitChunkDestroyedEventMessage" value="ClrInstanceID=%1;%nChunkID=%2" />
@@ -9364,6 +9411,7 @@
 
                 <string id="MonoProfilerPublisher.ClassLoadingFailedEventMessage" value="ClrInstanceID=%1;%nClassID=%2;%nModuleID=%3" />
                 <string id="MonoProfilerPublisher.ClassLoadedEventMessage" value="ClrInstanceID=%1;%nClassID=%2;%nModuleID=%3;%nClassName=%4" />
+                <string id="MonoProfilerPublisher.ClassLoaded_V1EventMessage" value="ClrInstanceID=%1;%nClassID=%2;%nModuleID=%3;%nClassName=%4;%nCount=%5" />
 
                 <string id="MonoProfilerPublisher.VTableLoadingFailedLoadedEventMessage" value="ClrInstanceID=%1;%nVTableID=%2;%nClassID=%3;%nAppDomainID=%4" />
 
