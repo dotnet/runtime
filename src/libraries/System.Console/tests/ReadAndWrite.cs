@@ -194,6 +194,25 @@ public class ReadAndWrite
         }
     }
 
+    [Fact]
+    [PlatformSpecific(TestPlatforms.iOS | TestPlatforms.MacCatalyst | TestPlatforms.tvOS)]
+    public void TestConsoleWrite()
+    {
+        Stream s = new MemoryStream();
+        TextWriter w = new StreamWriter(s);
+        ((StreamWriter)w).AutoFlush = true;
+        TextReader r = new StreamReader(s);
+        Console.SetOut(w);
+
+        Console.Write("A");
+        Console.Write("B");
+        Console.Write("C");
+
+        s.Position = 0;
+        string line = r.ReadToEnd();
+        Assert.Equal("ABC", line);
+    }
+
     private static unsafe void ValidateConsoleEncoding(Encoding encoding)
     {
         Assert.NotNull(encoding);
