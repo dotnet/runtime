@@ -14,7 +14,7 @@ namespace System.Globalization
             /// </summary>
             static Settings()
             {
-                // Use GlobalizationMode.Invariant to allow ICU initialization to be trimmed when Invariant=false
+                // Use GlobalizationMode.Invariant to allow ICU initialization to be trimmed when Invariant=true
                 // and PredefinedCulturesOnly is unspecified.
                 if (!GlobalizationMode.Invariant)
                 {
