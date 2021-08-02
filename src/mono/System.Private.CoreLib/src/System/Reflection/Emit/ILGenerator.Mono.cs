@@ -947,20 +947,6 @@ namespace System.Reflection.Emit
                 cur_stack = labels[loc.m_label].maxStack;
         }
 
-        public virtual void MarkSequencePoint(ISymbolDocumentWriter document, int startLine,
-                               int startColumn, int endLine, int endColumn)
-        {
-            if (currentSequence == null || currentSequence.Document != document)
-            {
-                if (sequencePointLists == null)
-                    sequencePointLists = new List<SequencePointList>();
-                currentSequence = new SequencePointList(document);
-                sequencePointLists.Add(currentSequence);
-            }
-
-            currentSequence.AddSequencePoint(code_len, startLine, startColumn, endLine, endColumn);
-        }
-
         /*
                 internal void GenerateDebugInfo (ISymbolWriter symbolWriter)
                 {
