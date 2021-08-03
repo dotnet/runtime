@@ -46,6 +46,7 @@ steps:
       coreClrRepoRoot: $(Build.SourcesDirectory)/src/coreclr
       runtimeFlavorDisplayName: ${{ parameters.runtimeFlavorDisplayName }}
       shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
+      forNode: ${{ parameters.forNode }}
 
       ${{ if eq(variables['System.TeamProject'], 'public') }}:
         creator: $(Build.DefinitionName)
