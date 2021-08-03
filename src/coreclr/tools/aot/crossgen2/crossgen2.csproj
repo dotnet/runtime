@@ -3,7 +3,13 @@
     <OutputPath>$(RuntimeBinDir)/crossgen2</OutputPath>
     <!-- The default value for macOS is false -->
     <UseAppHost>true</UseAppHost>
+    <PublishTrimmed>true</PublishTrimmed>
+    <SuppressTrimAnalysisWarnings>true</SuppressTrimAnalysisWarnings>
     <AppHostRuntimeIdentifier>$(Crossgen2PackageRID)</AppHostRuntimeIdentifier>
   </PropertyGroup>
   <Import Project="crossgen2.props" />
+
+  <Target Name="PublishCrossgen"
+          AfterTargets="Build"
+          DependsOnTargets="Publish" />
 </Project>
