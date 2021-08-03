@@ -10928,8 +10928,8 @@ void gc_heap::return_free_region (heap_segment* region)
     uint8_t* region_end = heap_segment_reserved (region);
 
     int num_basic_regions = (int)((region_end - region_start) >> min_segment_size_shr);
-    dprintf (REGIONS_LOG, ("RETURNING region %Ix (%d basic regions) to free, total %d", 
-        heap_segment_mem (region), num_basic_regions, free_regions[kind].get_num_free_regions()));
+    dprintf (REGIONS_LOG, ("RETURNING region %Ix (%d basic regions) to free", 
+        heap_segment_mem (region), num_basic_regions));
     for (int i = 0; i < num_basic_regions; i++)
     {
         uint8_t* basic_region_start = region_start + ((size_t)i << min_segment_size_shr);
@@ -11870,7 +11870,6 @@ void gc_heap::distribute_free_regions()
         for (int gen = soh_gen0; gen < total_generation_count; gen++)
         {
             ptrdiff_t budget_gen = hp->estimate_gen_growth (gen);
-            dprintf (REGIONS_LOG, ("budget for gen %d on heap %d is %Id (new %Id, free %Id)", gen, i, budget_gen, new_allocation_gen, free_list_space_gen));
             assert (budget_gen >= 0);
             total_budget[gen >= loh_generation] += budget_gen;
         }
