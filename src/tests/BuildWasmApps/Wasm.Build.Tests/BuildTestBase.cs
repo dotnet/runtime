@@ -43,28 +43,36 @@ namespace Wasm.Build.Tests
 
         static BuildTestBase()
         {
-            s_buildEnv = new BuildEnvironment();
-            s_runtimePackPathRegex = new Regex(s_runtimePackPathPattern);
-
-            s_skipProjectCleanup = !string.IsNullOrEmpty(EnvironmentVariables.SkipProjectCleanup) && EnvironmentVariables.SkipProjectCleanup == "1";
-
-            if (string.IsNullOrEmpty(EnvironmentVariables.XHarnessCliPath))
-                s_xharnessRunnerCommand = "xharness";
-            else
-                s_xharnessRunnerCommand = EnvironmentVariables.XHarnessCliPath;
-
-            string? nugetPackagesPath = Environment.GetEnvironmentVariable("NUGET_PACKAGES");
-            if (!string.IsNullOrEmpty(nugetPackagesPath))
+            try
             {
-                if (!Directory.Exists(nugetPackagesPath))
-                    Directory.CreateDirectory(nugetPackagesPath);
-            }
+                s_buildEnv = new BuildEnvironment();
+                s_runtimePackPathRegex = new Regex(s_runtimePackPathPattern);
 
-            Console.WriteLine ("");
-            Console.WriteLine ($"==============================================================================================");
-            Console.WriteLine ($"=============== Running with {(s_buildEnv.IsWorkload ? "Workloads" : "EMSDK")} ===============");
-            Console.WriteLine ($"==============================================================================================");
-            Console.WriteLine ("");
+                s_skipProjectCleanup = !string.IsNullOrEmpty(EnvironmentVariables.SkipProjectCleanup) && EnvironmentVariables.SkipProjectCleanup == "1";
+
+                if (string.IsNullOrEmpty(EnvironmentVariables.XHarnessCliPath))
+                    s_xharnessRunnerCommand = "xharness";
+                else
+                    s_xharnessRunnerCommand = EnvironmentVariables.XHarnessCliPath;
+
+                string? nugetPackagesPath = Environment.GetEnvironmentVariable("NUGET_PACKAGES");
+                if (!string.IsNullOrEmpty(nugetPackagesPath))
+                {
+                    if (!Directory.Exists(nugetPackagesPath))
+                        Directory.CreateDirectory(nugetPackagesPath);
+                }
+
+                Console.WriteLine ("");
+                Console.WriteLine ($"==============================================================================================");
+                Console.WriteLine ($"=============== Running with {(s_buildEnv.IsWorkload ? "Workloads" : "EMSDK")} ===============");
+                Console.WriteLine ($"==============================================================================================");
+                Console.WriteLine ("");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine ($"Exception: {ex}");
+                throw;
+            }
         }
 
         public BuildTestBase(ITestOutputHelper output, SharedBuildPerTestClassFixture buildContext)
