@@ -13,6 +13,7 @@ using System.Runtime.ExceptionServices;
 using System.Runtime.Versioning;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.Win32.SafeHandles;
 
 namespace System.Net.Sockets
 {
@@ -3784,6 +3785,7 @@ namespace System.Net.Sockets
 
         // Helper for SendFile implementations
         private static FileStream? OpenFile(string? name) => string.IsNullOrEmpty(name) ? null : File.OpenRead(name);
+        private static SafeFileHandle? OpenFileHandle(string? name) => string.IsNullOrEmpty(name) ? null : File.OpenHandle(name, FileMode.Open, FileAccess.Read);
 
         private void UpdateReceiveSocketErrorForDisposed(ref SocketError socketError, int bytesTransferred)
         {
