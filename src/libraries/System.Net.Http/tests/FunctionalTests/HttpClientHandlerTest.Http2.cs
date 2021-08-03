@@ -3578,11 +3578,18 @@ namespace System.Net.Http.Functional.Tests
                     }
                 });
         }
-
-        [Fact]
-        [OuterLoop("Uses Task.Delay")]
-        public async Task SocketSendQueueFull_RequestCanceled_ThrowsOperationCanceled()
+        
+        public static IEnumerable<object[]> LongRunning()
         {
+            return Enumerable.Repeat(true, 100).Select((b, i) => new object[] { i % 2 == 0 }).ToArray();
+        }
+
+        [ConditionalTheory(nameof(SupportsAlpn))]
+        [MemberData(nameof(LongRunning))]
+        [OuterLoop("Uses Task.Delay")]
+        public async Task SocketSendQueueFull_RequestCanceled_ThrowsOperationCanceled(bool b)
+        {
+            Assert.Equal(b, b);
             TaskCompletionSource clientComplete = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
 
             await Http2LoopbackServer.CreateClientAndServerAsync(
