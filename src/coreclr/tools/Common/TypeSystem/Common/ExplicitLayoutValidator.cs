@@ -9,7 +9,14 @@ namespace Internal.TypeSystem
 {
     public struct ExplicitLayoutValidator
     {
-        struct FieldLayoutInterval : IComparable<FieldLayoutInterval>
+        private enum FieldLayoutTag : byte
+        {
+            Empty,
+            NonORef,
+            ORef,
+        }
+
+        private struct FieldLayoutInterval : IComparable<FieldLayoutInterval>
         {
             public FieldLayoutInterval(int start, int size, FieldLayoutTag tag)
             {
@@ -46,13 +53,6 @@ namespace Internal.TypeSystem
                 
                 return 1;
             }
-        }
-
-        private enum FieldLayoutTag : byte
-        {
-            Empty,
-            NonORef,
-            ORef,
         }
 
         private readonly int _pointerSize;
@@ -218,7 +218,7 @@ namespace Internal.TypeSystem
                 int newIntervalLocation = ~binarySearchIndex;
 
                 // Check for previous interval overlaps cases
-                if ((newIntervalLocation - 1) > 0)
+                if (newIntervalLocation > 0)
                 {
                     var previousInterval = fieldLayoutInterval[newIntervalLocation - 1];
                     bool tagMatches = previousInterval.Tag == tag;
