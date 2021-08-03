@@ -6,9 +6,15 @@
 
   <ItemGroup Condition="'$(BuildAllConfigurations)' == 'true'">
     <ProjectReference Include="$(MSBuildThisFileDirectory)System.Runtime.Experimental\ref\System.Runtime.Experimental.csproj" />
-    <ProjectReference Include="$(PkgDir)*\*.proj" Exclude="$(PkgDir)test\*" />
     <ProjectReference Include="$(MSBuildThisFileDirectory)*\src\*.*proj"
                       Exclude="$(MSBuildThisFileDirectory)*\src\**\*.shproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Build the identity package in the allconfigurations build. -->
+    <ProjectReference Include="$(MSBuildThisFileDirectory)*\pkg\runtime.native.*.proj" Condition="'$(BuildAllConfigurations)' == 'true'" />
+    <!-- Build the runtime specific package matching the current RID, outside of an allconfigurations build. -->
+    <ProjectReference Include="$(MSBuildThisFileDirectory)*\pkg\runtime.$(OutputRid).*.proj" Condition="'$(BuildAllConfigurations)' != 'true'" />
   </ItemGroup>
 
   <!-- Need the PackageIndexFile file property from baseline.props -->
