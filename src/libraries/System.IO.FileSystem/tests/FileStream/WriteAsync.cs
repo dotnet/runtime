@@ -108,7 +108,7 @@ namespace System.IO.Tests
         public async Task WriteAsyncCancelledFile(int bufferSize, bool isAsync)
         {
             const int writeSize = 1024 * 1024;
-            using (FileStream fs = new FileStream(GetTestFilePath(), FileMode.Create, FileAccess.Write, FileShare.None, bufferSize, isAsync))
+            using (FileStream fs = new FileStream(GetTestFilePath(), FileMode.CreateNew, FileAccess.Write, FileShare.None, bufferSize, isAsync))
             {
                 byte[] buffer = new byte[writeSize];
                 CancellationTokenSource cts = new CancellationTokenSource();
@@ -124,6 +124,7 @@ namespace System.IO.Tests
                     // but since cancellation is a race condition we accept either outcome
                     Assert.Equal(cts.Token, oce.CancellationToken);
 
+                    Assert.Equal(0, fs.Length); // if write was cancelled, the file should be empty
                     Assert.Equal(0, fs.Position); // if write was cancelled, the Position should remain unchanged
                 }
             }
