@@ -650,7 +650,7 @@ namespace System.Net.Http.Functional.Tests
                 using Http3LoopbackConnection connection = (Http3LoopbackConnection)await server.EstablishGenericConnectionAsync();
 
                 SslApplicationProtocol negotiatedAlpn = ExtractMsQuicNegotiatedAlpn(connection);
-                Assert.Equal(new SslApplicationProtocol("h3"), negotiatedAlpn);
+                Assert.Equal(SslApplicationProtocol.Http3, negotiatedAlpn);
 
                 using Http3LoopbackStream stream = await connection.AcceptRequestStreamAsync();
                 await stream.HandleRequestAsync();
