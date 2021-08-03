@@ -8,6 +8,10 @@
     <SuppressDependenciesWhenPacking Condition="'$(ExcludeFromPackage)' == 'true' or ('$(TargetsAnyOS)' != 'true' and $([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net5.0')))">true</SuppressDependenciesWhenPacking>
     <PackageDesignerMarkerFile>$(MSBuildThisFileDirectory)useSharedDesignerContext.txt</PackageDesignerMarkerFile>
     <PackageValidationBaselineVersion Condition="'$(PackageValidationBaselineVersion)' == ''">$([MSBuild]::Subtract($(MajorVersion), 1)).0.0</PackageValidationBaselineVersion>
+  </PropertyGroup>
+
+  <!-- Set unconditionally until all package projects move to use the nuget pack task -->
+  <PropertyGroup>
     <BeforePack>IncludeAnalyzersInPackage;$(BeforePack)</BeforePack>
     <BuildAnalyzerReferences>$(BuildProjectReferences)</BuildAnalyzerReferences>
     <BuildAnalyzerReferences Condition="'$(BuildingInsideVisualStudio)' == 'true'">false</BuildAnalyzerReferences>
