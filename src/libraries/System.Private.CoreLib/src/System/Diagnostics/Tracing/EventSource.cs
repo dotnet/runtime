@@ -2823,14 +2823,17 @@ namespace System.Diagnostics.Tracing
                 Debug.Assert(m_eventData != null);
 
                 // TODO Enforce singleton pattern
-                Debug.Assert(EventListener.s_EventSources != null, "should be called within lock on EventListener.EventListenersLock which ensures s_EventSources to be initialized");
-                foreach (WeakReference<EventSource> eventSourceRef in EventListener.s_EventSources)
+                if (!AllowMultipleEventSources)
                 {
-                    if (eventSourceRef.TryGetTarget(out EventSource? eventSource) && eventSource.Guid == m_guid && !eventSource.IsDisposed)
+                    Debug.Assert(EventListener.s_EventSources != null, "should be called within lock on EventListener.EventListenersLock which ensures s_EventSources to be initialized");
+                    foreach (WeakReference<EventSource> eventSourceRef in EventListener.s_EventSources)
                     {
-                        if (eventSource != this)
+                        if (eventSourceRef.TryGetTarget(out EventSource? eventSource) && eventSource.Guid == m_guid && !eventSource.IsDisposed)
                         {
-                            throw new ArgumentException(SR.Format(SR.EventSource_EventSourceGuidInUse, m_guid));
+                            if (eventSource != this)
+                            {
+                                throw new ArgumentException(SR.Format(SR.EventSource_EventSourceGuidInUse, m_guid));
+                            }
                         }
                     }
                 }
@@ -3882,6 +3885,15 @@ namespace System.Diagnostics.Tracing
         private ActivityTracker m_activityTracker = null!;
         internal const string s_ActivityStartSuffix = "Start";
         internal const string s_ActivityStopSuffix = "Stop";
+
+        internal const string MultipleEventSourcesSwitch = "System.Diagnostics.Tracing.EventSource.AllowMultipleEventSources";
+        internal const string MultipleEventSourcesEnvironmentVariable = "DOTNET_" + MultipleEventSourcesSwitch;
+        private static readonly bool AllowMultipleEventSources =
+#if !ES_BUILD_STANDALONE
+            AppContextConfigHelper.GetBooleanConfig(switchName: MultipleEventSourcesSwitch, envVariable: MultipleEventSourcesEnvironmentVariable, defaultValue: false);
+#else
+            false;
+#endif // !ES_BUILD_STANDALONE
 
         // WARNING: Do not depend upon initialized statics during creation of EventSources, as it is possible for creation of an EventSource to trigger
         // creation of yet another EventSource.  When this happens, these statics may not yet be initialized.
