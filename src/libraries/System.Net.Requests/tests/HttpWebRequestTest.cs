@@ -1500,6 +1500,7 @@ namespace System.Net.Tests
         [InlineData(true)]
         [InlineData(false)]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/37087", TestPlatforms.Android)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/56798", TestPlatforms.tvOS)]
         public async Task HaveResponse_GetResponseAsync_ExpectTrue(bool useSsl)
         {
             var options = new LoopbackServer.Options { UseSsl = useSsl };
