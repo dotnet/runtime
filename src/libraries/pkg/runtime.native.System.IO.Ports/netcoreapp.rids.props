@@ -6,6 +6,9 @@
     <BuildRID Include="linux-arm64">
       <Platform>arm64</Platform>
     </BuildRID>
+    <BuildRID Include="linux-s390x">
+      <Platform>s390x</Platform>
+    </BuildRID>
     <BuildRID Include="linux-x64" />
     <BuildRID Include="osx-x64" />
   </ItemGroup>

@@ -209,7 +209,7 @@ public:
 
     virtual void getBoundaries(MethodDesc * ftn,
                        unsigned int *cILOffsets, DWORD **pILOffsets,
-                       ICorDebugInfo::BoundaryTypes* implictBoundaries) = 0;
+                       ICorDebugInfo::BoundaryTypes* implicitBoundaries) = 0;
 
     virtual void getVars(MethodDesc * ftn,
                  ULONG32 *cVars, ICorDebugInfo::ILVarInfo **vars,
@@ -363,7 +363,7 @@ public:
                                          SIZE_T                     *rgVal2,
                                          BYTE                      **rgpVCs) = 0;
 
-    virtual BOOL IsThreadContextInvalid(Thread *pThread) = 0;
+    virtual BOOL IsThreadContextInvalid(Thread *pThread, CONTEXT *pCtx) = 0;
 
     // For Just-My-Code (aka Just-User-Code).
     // The jit inserts probes that look like.

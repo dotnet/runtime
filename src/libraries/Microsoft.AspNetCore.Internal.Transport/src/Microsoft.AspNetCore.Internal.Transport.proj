@@ -1,6 +1,29 @@
-<Project Sdk="Microsoft.Build.NoTargets">
-  <!-- These are wrapper project files for packaging.-->
+﻿<Project Sdk="Microsoft.Build.NoTargets">
   <PropertyGroup>
-    <TargetFrameworks>netstandard1.0</TargetFrameworks>
+    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
+    <IsPackable>true</IsPackable>
+    <IsShipping>false</IsShipping>
+    <!-- This is non-shipping package. -->
+    <DisablePackageBaselineValidation>true</DisablePackageBaselineValidation>
+    <PackageDescription>Internal transport package to provide aspnetcore with the assemblies that make up the Microsoft.ASPNetCore.App shared framework.</PackageDescription>
+    <!-- Reference elements are missing from the nuspec: https://github.com/NuGet/Home/issues/8684. -->
+    <NoWarn>$(NoWarn);NU5131</NoWarn>
   </PropertyGroup>
+  
+  <ItemGroup>
+    <_analyzer Include="$(ASPNETCoreAppPackageRootPath)\analyzers\**\*.*" />
+    <_libDoc Include="$(ASPNETCoreAppPackageRuntimePath)\*.xml" />
+
+    <Content Include="@(_analyzer)"
+             Pack="true"
+             PackagePath="analyzers" />
+    <Content Include="$(ASPNETCoreAppPackageRefPath)\*.*;
+                      @(_libDoc)"
+             Pack="true"
+             PackagePath="ref\$(NetCoreAppCurrent)" />
+    <Content Include="$(ASPNETCoreAppPackageRuntimePath)\*.*"
+             Exclude="@(_libDoc)"
+             Pack="true"
+             PackagePath="lib\$(NetCoreAppCurrent)" />
+  </ItemGroup>
 </Project>

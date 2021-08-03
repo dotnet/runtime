@@ -17,7 +17,6 @@
 #include "stdinterfaces.h"
 #include "threads.h"
 #include "comutilnative.h"
-#include "spinlock.h"
 #include "comtoclrcall.h"
 #include "dispatchinfo.h"
 #include "wrappers.h"
@@ -29,7 +28,6 @@ class ConnectionPoint;
 class MethodTable;
 class ComCallWrapper;
 struct SimpleComCallWrapper;
-class RCWHolder;
 struct ComMethodTable;
 
 typedef DPTR(struct SimpleComCallWrapper) PTR_SimpleComCallWrapper;
@@ -158,89 +156,6 @@ class ComCallWrapperTemplate
     friend class ClrDataAccess;
 
 public:
-    // Small "L1" cache to speed up QI's on CCWs with variance. It caches both positive and negative
-    // results (i.e. also keeps track of IIDs that the QI doesn't respond to).
-    class IIDToInterfaceTemplateCache
-    {
-        enum
-        {
-            // There is also some number of IIDs QI'ed for by external code that we won't
-            // recognize - this number is potentially unbounded so even if this was a different data
-            // structure, we would want to limit its size. Simple sequentially searched array seems to
-            // work the best both in terms of memory footprint and lookup performance.
-            CACHE_SIZE = 16,
-        };
-
-        struct CacheItem
-        {
-            IID          m_iid;
-
-            // The lowest bit indicates whether this item is being used (since NULL is a legal value).
-            // The second lowest bit indicates whether the item has been accessed since the last eviction.
-            // The rest of the bits contain ComCallWrapperTemplate pointer.
-            SIZE_T       m_pTemplate;
-
-            bool IsFree()
-            {
-                LIMITED_METHOD_CONTRACT;
-                return (m_pTemplate == 0);
-            }
-
-            bool IsHot()
-            {
-                LIMITED_METHOD_CONTRACT;
-                return ((m_pTemplate & 0x2) == 0x2);
-            }
-
-            ComCallWrapperTemplate *GetTemplate()
-            {
-                LIMITED_METHOD_CONTRACT;
-                return (ComCallWrapperTemplate *)(m_pTemplate & ~0x3);
-            }
-
-            void SetTemplate(ComCallWrapperTemplate *pTemplate)
-            {
-                LIMITED_METHOD_CONTRACT;
-                m_pTemplate = ((SIZE_T)pTemplate | 0x1);
-            }
-
-            void MarkHot()
-            {
-                LIMITED_METHOD_CONTRACT;
-                m_pTemplate |= 0x2;
-            }
-
-            void MarkCold()
-            {
-                LIMITED_METHOD_CONTRACT;
-                m_pTemplate &= ~0x2;
-            }
-        };
-
-        // array of cache items
-        CacheItem m_items[CACHE_SIZE];
-
-        // spin lock to protect concurrent access to m_items
-        SpinLock  m_lock;
-
-    public:
-        IIDToInterfaceTemplateCache()
-        {
-            CONTRACTL
-            {
-                THROWS;
-                GC_NOTRIGGER;
-            }
-            CONTRACTL_END;
-
-            ZeroMemory(this, sizeof(IIDToInterfaceTemplateCache));
-            m_lock.Init(LOCK_TYPE_DEFAULT);
-        }
-
-        bool LookupInterfaceTemplate(REFIID riid, ComCallWrapperTemplate **ppTemplate);
-        void InsertInterfaceTemplate(REFIID riid, ComCallWrapperTemplate *pTemplate);
-    };
-
     // Iterates COM-exposed interfaces of a class.
     class CCWInterfaceMapIterator
     {
@@ -321,8 +236,6 @@ public:
     static ComMethodTable *SetupComMethodTableForClass(MethodTable *pMT, BOOL bLayOutComMT);
 
     MethodDesc * GetICustomQueryInterfaceGetInterfaceMD();
-
-    IIDToInterfaceTemplateCache *GetOrCreateIIDToInterfaceTemplateCache();
 
     BOOL HasInvisibleParent()
     {
@@ -422,7 +335,6 @@ private:
     };
     DWORD                                   m_flags;
     MethodDesc*                             m_pICustomQueryInterfaceGetInterfaceMD;
-    Volatile<IIDToInterfaceTemplateCache *> m_pIIDToInterfaceTemplateCache;
     ULONG                                   m_cbInterfaces;
     SLOT*                                   m_rgpIPtr[1];
 };
@@ -499,11 +411,13 @@ struct ComMethodTable
     // Accessor for the IDispatch information.
     DispatchInfo* GetDispatchInfo();
 
+#ifndef DACCESS_COMPILE
     LONG AddRef()
     {
         LIMITED_METHOD_CONTRACT;
 
-        return InterlockedIncrement(&m_cbRefCount);
+        ExecutableWriterHolder<ComMethodTable> comMTWriterHolder(this, sizeof(ComMethodTable));
+        return InterlockedIncrement(&comMTWriterHolder.GetRW()->m_cbRefCount);
     }
 
     LONG Release()
@@ -517,14 +431,16 @@ struct ComMethodTable
         }
         CONTRACTL_END;
 
+        ExecutableWriterHolder<ComMethodTable> comMTWriterHolder(this, sizeof(ComMethodTable));
         // use a different var here becuase cleanup will delete the object
         // so can no longer make member refs
-        LONG cbRef = InterlockedDecrement(&m_cbRefCount);
+        LONG cbRef = InterlockedDecrement(&comMTWriterHolder.GetRW()->m_cbRefCount);
         if (cbRef == 0)
             Cleanup();
 
         return cbRef;
     }
+#endif // DACCESS_COMPILE
 
     CorIfaceAttr GetInterfaceType()
     {
@@ -744,6 +660,7 @@ struct ComMethodTable
     }
 
 
+#ifndef DACCESS_COMPILE
     inline REFIID GetIID()
     {
         // Cannot use a normal CONTRACT since the return type is ref type which
@@ -759,12 +676,14 @@ struct ComMethodTable
         // Generate the IClassX IID if it hasn't been generated yet.
         if (!(m_Flags & enum_GuidGenerated))
         {
-            GenerateClassItfGuid(TypeHandle(m_pMT), &m_IID);
-            m_Flags |= enum_GuidGenerated;
+            ExecutableWriterHolder<ComMethodTable> comMTWriterHolder(this, sizeof(ComMethodTable));
+            GenerateClassItfGuid(TypeHandle(m_pMT), &comMTWriterHolder.GetRW()->m_IID);
+            comMTWriterHolder.GetRW()->m_Flags |= enum_GuidGenerated;
         }
 
         return m_IID;
     }
+#endif // DACCESS_COMPILE
 
     void CheckParentComVisibility(BOOL fForIDispatch)
     {

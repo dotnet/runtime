@@ -63,7 +63,7 @@ struct _EventPipeProviderCallbackData {
 #else
 struct _EventPipeProviderCallbackData_Internal {
 #endif
-	const ep_char8_t *filter_data;
+	ep_char8_t *filter_data;
 	EventPipeCallback callback_function;
 	void *callback_data;
 	int64_t keywords;
@@ -190,6 +190,36 @@ ep_provider_config_init (
 
 void
 ep_provider_config_fini (EventPipeProviderConfiguration *provider_config);
+
+/*
+ * EventPipeExecutionCheckpoint.
+ */
+
+#if defined(EP_INLINE_GETTER_SETTER) || defined(EP_IMPL_EP_GETTER_SETTER)
+struct _EventPipeExecutionCheckpoint {
+#else
+struct _EventPipeExecutionCheckpoint_Internal {
+#endif
+	ep_char8_t *name;
+	ep_timestamp_t timestamp;
+};
+
+#if !defined(EP_INLINE_GETTER_SETTER) && !defined(EP_IMPL_EP_GETTER_SETTER)
+struct _EventPipeExecutionCheckpoint {
+	uint8_t _internal [sizeof (struct _EventPipeExecutionCheckpoint_Internal)];
+};
+#endif
+
+EP_DEFINE_GETTER(EventPipeExecutionCheckpoint *, execution_checkpoint, const ep_char8_t *, name)
+EP_DEFINE_GETTER(EventPipeExecutionCheckpoint *, execution_checkpoint, const ep_timestamp_t, timestamp)
+
+EventPipeExecutionCheckpoint *
+ep_execution_checkpoint_alloc (
+	const ep_char8_t *name,
+	ep_timestamp_t timestamp);
+
+void
+ep_execution_checkpoint_free (EventPipeExecutionCheckpoint *execution_checkpoint);
 
 static
 inline

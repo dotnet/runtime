@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
 using System.Linq;
 using System.Net.Http;
 using System.Net.Http.Headers;
@@ -50,11 +51,11 @@ namespace Microsoft.Extensions.Http.Logging
                     m.EventId == LoggingScopeHttpMessageHandler.Log.EventIds.RequestHeader &&
                     m.LoggerName == "System.Net.Http.HttpClient.test.LogicalHandler";
             }));
-            Assert.StartsWith(
+            Assert.StartsWith(LineEndingsHelper.Normalize(
 @"Request Headers:
 Authorization: *
 Cache-Control: no-cache
-", message.Message);
+"), message.Message);
 
             message = Assert.Single(messages.Where(m =>
             {
@@ -62,11 +63,11 @@ Cache-Control: no-cache
                     m.EventId == LoggingHttpMessageHandler.Log.EventIds.RequestHeader &&
                     m.LoggerName == "System.Net.Http.HttpClient.test.ClientHandler";
             }));
-            Assert.StartsWith(
+            Assert.StartsWith(LineEndingsHelper.Normalize(
 @"Request Headers:
 Authorization: *
 Cache-Control: no-cache
-", message.Message);
+"), message.Message);
 
             message = Assert.Single(messages.Where(m =>
             {
@@ -74,11 +75,11 @@ Cache-Control: no-cache
                     m.EventId == LoggingHttpMessageHandler.Log.EventIds.ResponseHeader &&
                     m.LoggerName == "System.Net.Http.HttpClient.test.ClientHandler";
             }));
-            Assert.StartsWith(
+            Assert.StartsWith(LineEndingsHelper.Normalize(
 @"Response Headers:
 X-Sensitive: *
 Y-Non-Sensitive: innocuous value
-", message.Message);
+"), message.Message);
 
             message = Assert.Single(messages.Where(m =>
             {
@@ -86,11 +87,11 @@ Y-Non-Sensitive: innocuous value
                     m.EventId == LoggingScopeHttpMessageHandler.Log.EventIds.ResponseHeader &&
                     m.LoggerName == "System.Net.Http.HttpClient.test.LogicalHandler";
             }));
-            Assert.StartsWith(
+            Assert.StartsWith(LineEndingsHelper.Normalize(
 @"Response Headers:
 X-Sensitive: *
 Y-Non-Sensitive: innocuous value
-", message.Message);
+"), message.Message);
         }
 
         [Fact]
@@ -131,11 +132,11 @@ Y-Non-Sensitive: innocuous value
                     m.EventId == LoggingScopeHttpMessageHandler.Log.EventIds.RequestHeader &&
                     m.LoggerName == "System.Net.Http.HttpClient.test.LogicalHandler";
             }));
-            Assert.StartsWith(
+            Assert.StartsWith(LineEndingsHelper.Normalize(
 @"Request Headers:
 Authorization: *
 Cache-Control: no-cache
-", message.Message);
+"), message.Message);
 
             message = Assert.Single(messages.Where(m =>
             {
@@ -143,11 +144,11 @@ Cache-Control: no-cache
                     m.EventId == LoggingHttpMessageHandler.Log.EventIds.RequestHeader &&
                     m.LoggerName == "System.Net.Http.HttpClient.test.ClientHandler";
             }));
-            Assert.StartsWith(
+            Assert.StartsWith(LineEndingsHelper.Normalize(
 @"Request Headers:
 Authorization: *
 Cache-Control: no-cache
-", message.Message);
+"), message.Message);
 
             message = Assert.Single(messages.Where(m =>
             {
@@ -155,11 +156,11 @@ Cache-Control: no-cache
                     m.EventId == LoggingHttpMessageHandler.Log.EventIds.ResponseHeader &&
                     m.LoggerName == "System.Net.Http.HttpClient.test.ClientHandler";
             }));
-            Assert.StartsWith(
+            Assert.StartsWith(LineEndingsHelper.Normalize(
 @"Response Headers:
 X-Sensitive: *
 Y-Non-Sensitive: innocuous value
-", message.Message);
+"), message.Message);
 
             message = Assert.Single(messages.Where(m =>
             {
@@ -167,11 +168,11 @@ Y-Non-Sensitive: innocuous value
                     m.EventId == LoggingScopeHttpMessageHandler.Log.EventIds.ResponseHeader &&
                     m.LoggerName == "System.Net.Http.HttpClient.test.LogicalHandler";
             }));
-            Assert.StartsWith(
+            Assert.StartsWith(LineEndingsHelper.Normalize(
 @"Response Headers:
 X-Sensitive: *
 Y-Non-Sensitive: innocuous value
-", message.Message);
+"), message.Message);
         }
 
         private class TestMessageHandler : HttpClientHandler

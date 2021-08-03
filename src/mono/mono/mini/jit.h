@@ -58,8 +58,10 @@ typedef enum {
 	MONO_AOT_MODE_FULL,
 	/* Same as full, but use only llvm compiled code */
 	MONO_AOT_MODE_LLVMONLY,
-	/* Uses Interpreter, JIT is disabled and not allowed,
-	 * equivalent to "--full-aot --interpreter" */
+	/*
+	 * Use interpreter only, no native code is generated
+	 * at runtime. Trampolines are loaded from corlib aot image.
+	 */
 	MONO_AOT_MODE_INTERP,
 	/* Same as INTERP, but use only llvm compiled code */
 	MONO_AOT_MODE_INTERP_LLVMONLY,

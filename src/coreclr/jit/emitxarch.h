@@ -83,7 +83,15 @@ code_t insEncodeOpreg(instruction ins, regNumber reg, emitAttr size);
 
 unsigned insSSval(unsigned scale);
 
-bool IsAVXInstruction(instruction ins);
+static bool IsSSEInstruction(instruction ins);
+static bool IsSSEOrAVXInstruction(instruction ins);
+static bool IsAVXOnlyInstruction(instruction ins);
+static bool IsFMAInstruction(instruction ins);
+static bool IsAVXVNNIInstruction(instruction ins);
+static bool IsBMIInstruction(instruction ins);
+static regNumber getBmiRegNumber(instruction ins);
+static regNumber getSseShiftRegNumber(instruction ins);
+bool IsAVXInstruction(instruction ins) const;
 code_t insEncodeMIreg(instruction ins, regNumber reg, emitAttr size, code_t code);
 
 code_t AddRexWPrefix(instruction ins, code_t code);
@@ -94,10 +102,16 @@ code_t AddRexPrefix(instruction ins, code_t code);
 
 bool EncodedBySSE38orSSE3A(instruction ins);
 bool Is4ByteSSEInstruction(instruction ins);
+static bool IsMovInstruction(instruction ins);
+bool IsRedundantMov(
+    instruction ins, insFormat fmt, emitAttr size, regNumber dst, regNumber src, bool canIgnoreSideEffects);
+
+static bool IsJccInstruction(instruction ins);
+static bool IsJmpInstruction(instruction ins);
 
 bool AreUpper32BitsZero(regNumber reg);
 
-bool AreFlagsSetToZeroCmp(regNumber reg, emitAttr opSize, bool needsOCFlags);
+bool AreFlagsSetToZeroCmp(regNumber reg, emitAttr opSize, genTreeOps treeOps);
 
 bool hasRexPrefix(code_t code)
 {
@@ -113,7 +127,8 @@ bool hasRexPrefix(code_t code)
 #define VEX_PREFIX_MASK_3BYTE 0xFF000000000000ULL
 #define VEX_PREFIX_CODE_3BYTE 0xC4000000000000ULL
 
-bool TakesVexPrefix(instruction ins);
+bool TakesVexPrefix(instruction ins) const;
+static bool TakesRexWPrefix(instruction ins, emitAttr attr);
 
 // Returns true if the instruction encoding already contains VEX prefix
 bool hasVexPrefix(code_t code)
@@ -139,7 +154,7 @@ code_t AddVexPrefixIfNeededAndNotPresent(instruction ins, code_t code, emitAttr 
 }
 
 bool useVEXEncodings;
-bool UseVEXEncoding()
+bool UseVEXEncoding() const
 {
     return useVEXEncodings;
 }
@@ -170,6 +185,10 @@ void SetContains256bitAVX(bool value)
 
 bool IsDstDstSrcAVXInstruction(instruction ins);
 bool IsDstSrcSrcAVXInstruction(instruction ins);
+bool DoesWriteZeroFlag(instruction ins);
+bool DoesResetOverflowAndCarryFlags(instruction ins);
+bool IsFlagsAlwaysModified(instrDesc* id);
+
 bool IsThreeOperandAVXInstruction(instruction ins)
 {
     return (IsDstDstSrcAVXInstruction(ins) || IsDstSrcSrcAVXInstruction(ins));
@@ -308,7 +327,9 @@ void emitIns_R(instruction ins, emitAttr attr, regNumber reg);
 
 void emitIns_C(instruction ins, emitAttr attr, CORINFO_FIELD_HANDLE fdlHnd, int offs);
 
-void emitIns_R_I(instruction ins, emitAttr attr, regNumber reg, ssize_t val);
+void emitIns_R_I(instruction ins, emitAttr attr, regNumber reg, ssize_t val DEBUGARG(GenTreeFlags gtFlags = GTF_EMPTY));
+
+void emitIns_Mov(instruction ins, emitAttr attr, regNumber dstReg, regNumber srgReg, bool canSkip);
 
 void emitIns_R_R(instruction ins, emitAttr attr, regNumber reg1, regNumber reg2);
 

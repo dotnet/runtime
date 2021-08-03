@@ -391,7 +391,7 @@ void getBoundaries(
           CORINFO_METHOD_HANDLE ftn,
           unsigned int* cILOffsets,
           uint32_t** pILOffsets,
-          ICorDebugInfo::BoundaryTypes* implictBoundaries) override;
+          ICorDebugInfo::BoundaryTypes* implicitBoundaries) override;
 
 void setBoundaries(
           CORINFO_METHOD_HANDLE ftn,
@@ -440,9 +440,6 @@ uint32_t GetErrorMessage(
 int FilterException(
           struct _EXCEPTION_POINTERS* pExceptionPointers) override;
 
-void HandleException(
-          struct _EXCEPTION_POINTERS* pExceptionPointers) override;
-
 void ThrowExceptionForJitResult(
           JITINTERFACE_HRESULT result) override;
 
@@ -450,6 +447,10 @@ void ThrowExceptionForHelper(
           const CORINFO_HELPER_DESC* throwHelper) override;
 
 bool runWithErrorTrap(
+          ICorJitInfo::errorTrapFunction function,
+          void* parameter) override;
+
+bool runWithSPMIErrorTrap(
           ICorJitInfo::errorTrapFunction function,
           void* parameter) override;
 
@@ -635,14 +636,7 @@ bool notifyInstructionSetUsage(
           bool supportEnabled) override;
 
 void allocMem(
-          uint32_t hotCodeSize,
-          uint32_t coldCodeSize,
-          uint32_t roDataSize,
-          uint32_t xcptnsCount,
-          CorJitAllocMemFlag flag,
-          void** hotCodeBlock,
-          void** coldCodeBlock,
-          void** roDataBlock) override;
+          AllocMemArgs* pArgs) override;
 
 void reserveUnwindInfo(
           bool isFunclet,
@@ -685,7 +679,8 @@ JITINTERFACE_HRESULT getPgoInstrumentationResults(
           CORINFO_METHOD_HANDLE ftnHnd,
           ICorJitInfo::PgoInstrumentationSchema** pSchema,
           uint32_t* pCountSchemaItems,
-          uint8_t** pInstrumentationData) override;
+          uint8_t** pInstrumentationData,
+          ICorJitInfo::PgoSource* pgoSource) override;
 
 JITINTERFACE_HRESULT allocPgoInstrumentationBySchema(
           CORINFO_METHOD_HANDLE ftnHnd,
@@ -700,6 +695,7 @@ void recordCallSite(
 
 void recordRelocation(
           void* location,
+          void* locationRW,
           void* target,
           uint16_t fRelocType,
           uint16_t slotNum,

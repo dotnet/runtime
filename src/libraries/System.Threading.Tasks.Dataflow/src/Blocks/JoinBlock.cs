@@ -100,13 +100,11 @@ namespace System.Threading.Tasks.Dataflow
             // Handle async cancellation requests by declining on the target
             Common.WireCancellationToComplete(
                 dataflowBlockOptions.CancellationToken, _source.Completion, state => ((JoinBlock<T1, T2>)state!)._sharedResources.CompleteEachTarget(), this);
-#if FEATURE_TRACING
             DataflowEtwProvider etwLog = DataflowEtwProvider.Log;
             if (etwLog.IsEnabled())
             {
                 etwLog.DataflowBlockCreated(this, dataflowBlockOptions);
             }
-#endif
         }
 
         /// <include file='XmlDocs/CommonXmlDocComments.xml' path='CommonXmlDocComments/Sources/Member[@name="LinkTo"]/*' />
@@ -322,13 +320,11 @@ namespace System.Threading.Tasks.Dataflow
             // Handle async cancellation requests by declining on the target
             Common.WireCancellationToComplete(
                 dataflowBlockOptions.CancellationToken, _source.Completion, state => ((JoinBlock<T1, T2, T3>)state!)._sharedResources.CompleteEachTarget(), this);
-#if FEATURE_TRACING
             DataflowEtwProvider etwLog = DataflowEtwProvider.Log;
             if (etwLog.IsEnabled())
             {
                 etwLog.DataflowBlockCreated(this, dataflowBlockOptions);
             }
-#endif
         }
 
         /// <include file='XmlDocs/CommonXmlDocComments.xml' path='CommonXmlDocComments/Sources/Member[@name="LinkTo"]/*' />
@@ -1273,7 +1269,6 @@ namespace System.Threading.Tasks.Dataflow.Internal
             _taskForInputProcessing = new Task(thisSharedResources => ((JoinBlockTargetSharedResources)thisSharedResources!).ProcessMessagesLoopCore(), this,
                                                 Common.GetCreationOptionsForTask(isReplacementReplica));
 
-#if FEATURE_TRACING
             DataflowEtwProvider etwLog = DataflowEtwProvider.Log;
             if (etwLog.IsEnabled())
             {
@@ -1281,7 +1276,6 @@ namespace System.Threading.Tasks.Dataflow.Internal
                     _ownerJoin, _taskForInputProcessing, DataflowEtwProvider.TaskLaunchedReason.ProcessingInputMessages,
                     _targets.Max(t => t.NumberOfMessagesAvailableOrPostponed));
             }
-#endif
 
             // Start the task handling scheduling exceptions
             Exception? exception = Common.StartTaskSafe(_taskForInputProcessing, _dataflowBlockOptions.TaskScheduler);

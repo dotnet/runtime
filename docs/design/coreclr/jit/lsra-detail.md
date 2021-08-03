@@ -170,11 +170,11 @@ There are four main phases to LSRA:
 
         -   For fork edges (the source block has multiple targets, but
             each target has only that one source), any required
-            resolution is placed at the target.
+            resolution is placed at the individual target(s).
 
         -   For join edges (a single target block has multiple sources,
             but each source has only that one target), any required
-            resolution is placed at the source.
+            resolution is placed at the individual source(s).
 
         -   Critical edges require more complicated handling, and may
             require splitting of the edge for placement of resolution.
@@ -707,7 +707,7 @@ LinearScanAllocation(List<RefPosition> refPositions)
            - Next, for the remaining variables, classify them as either:
              - In different registers at one or more targets. These require that the edge
                be split so that we can insert the move on the edge (this is the `diffResolutionSet`).
-             - In the same register at each target (this is the `sameResolutionSet`).
+             - In the same register at each target (this is the `sameResolutionSet`), but different from the end of this block.
                For these, we can insert a move at the end of this block, as long as they
                don't write to any of the registers read by the `diffResolutionSet` as those
                must remain live into the split block.

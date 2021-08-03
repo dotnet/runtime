@@ -7,8 +7,13 @@
 
 class NullProfiler : public Profiler
 {
+private:
+    std::atomic<uint32_t> _failures;
+
 public:
-    NullProfiler() : Profiler()
+    NullProfiler() : 
+        Profiler(),
+        _failures(0)
     {
         
     }

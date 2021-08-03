@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.IO;
 using System.Reflection.Metadata;
 using System.Reflection.PortableExecutable;
@@ -35,6 +36,8 @@ namespace ILCompiler
         private Dictionary<string, string> _allInputFilePaths = new Dictionary<string, string>();
         private List<ModuleDesc> _referenceableModules = new List<ModuleDesc>();
 
+        private Dictionary<string, string> _inputbubblereferenceFilePaths = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+
         private CompilerTypeSystemContext _typeSystemContext;
         private ReadyToRunMethodLayoutAlgorithm _methodLayout;
         private ReadyToRunFileLayoutAlgorithm _fileLayout;
@@ -43,36 +46,40 @@ namespace ILCompiler
         {
         }
 
-        private void InitializeDefaultOptions()
+        public static void ComputeDefaultOptions(out TargetOS os, out TargetArchitecture arch)
         {
-            // We could offer this as a command line option, but then we also need to
-            // load a different RyuJIT, so this is a future nice to have...
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-                _targetOS = TargetOS.Windows;
+                os = TargetOS.Windows;
             else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
-                _targetOS = TargetOS.Linux;
+                os = TargetOS.Linux;
             else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
-                _targetOS = TargetOS.OSX;
+                os = TargetOS.OSX;
             else
                 throw new NotImplementedException();
 
             switch (RuntimeInformation.ProcessArchitecture)
             {
                 case Architecture.X86:
-                    _targetArchitecture = TargetArchitecture.X86;
+                    arch = TargetArchitecture.X86;
                     break;
                 case Architecture.X64:
-                    _targetArchitecture = TargetArchitecture.X64;
+                    arch = TargetArchitecture.X64;
                     break;
                 case Architecture.Arm:
-                    _targetArchitecture = TargetArchitecture.ARM;
+                    arch = TargetArchitecture.ARM;
                     break;
                 case Architecture.Arm64:
-                    _targetArchitecture = TargetArchitecture.ARM64;
+                    arch = TargetArchitecture.ARM64;
                     break;
                 default:
                     throw new NotImplementedException();
             }
+
+        }
+
+        private void InitializeDefaultOptions()
+        {
+            ComputeDefaultOptions(out _targetOS, out _targetArchitecture);
         }
 
         private void ProcessCommandLine(string[] args)
@@ -127,6 +134,9 @@ namespace ILCompiler
             foreach (var reference in _commandLineOptions.ReferenceFilePaths)
                 Helpers.AppendExpandedPaths(_referenceFilePaths, reference, false);
 
+            foreach (var reference in _commandLineOptions.InputBubbleReferenceFilePaths)
+              Helpers.AppendExpandedPaths(_inputbubblereferenceFilePaths, reference, false);
+
 
             int alignment = _commandLineOptions.CustomPESectionAlignment;
             if (alignment != 0)
@@ -145,6 +155,7 @@ namespace ILCompiler
                     "hotcold" => ReadyToRunMethodLayoutAlgorithm.HotCold,
                     "hotwarmcold" => ReadyToRunMethodLayoutAlgorithm.HotWarmCold,
                     "callfrequency" => ReadyToRunMethodLayoutAlgorithm.CallFrequency,
+                    "pettishansen" => ReadyToRunMethodLayoutAlgorithm.PettisHansen,
                     _ => throw new CommandLineException(SR.InvalidMethodLayout)
                 };
             }
@@ -161,6 +172,26 @@ namespace ILCompiler
 
         }
 
+        public static TargetArchitecture GetTargetArchitectureFromArg(string archArg, out bool armelAbi)
+        {
+            armelAbi = false;
+            if (archArg.Equals("x86", StringComparison.OrdinalIgnoreCase))
+                return TargetArchitecture.X86;
+            else if (archArg.Equals("x64", StringComparison.OrdinalIgnoreCase))
+                return  TargetArchitecture.X64;
+            else if (archArg.Equals("arm", StringComparison.OrdinalIgnoreCase))
+                return  TargetArchitecture.ARM;
+            else if (archArg.Equals("armel", StringComparison.OrdinalIgnoreCase))
+            {
+                armelAbi = true;
+                return TargetArchitecture.ARM;
+            }
+            else if (archArg.Equals("arm64", StringComparison.OrdinalIgnoreCase))
+                return TargetArchitecture.ARM64;
+            else
+                throw new CommandLineException(SR.TargetArchitectureUnsupported);
+        }
+
         private void ConfigureTarget()
         {
             //
@@ -168,21 +199,7 @@ namespace ILCompiler
             //
             if (_commandLineOptions.TargetArch != null)
             {
-                if (_commandLineOptions.TargetArch.Equals("x86", StringComparison.OrdinalIgnoreCase))
-                    _targetArchitecture = TargetArchitecture.X86;
-                else if (_commandLineOptions.TargetArch.Equals("x64", StringComparison.OrdinalIgnoreCase))
-                    _targetArchitecture = TargetArchitecture.X64;
-                else if (_commandLineOptions.TargetArch.Equals("arm", StringComparison.OrdinalIgnoreCase))
-                    _targetArchitecture = TargetArchitecture.ARM;
-                else if (_commandLineOptions.TargetArch.Equals("armel", StringComparison.OrdinalIgnoreCase))
-                {
-                    _targetArchitecture = TargetArchitecture.ARM;
-                    _armelAbi = true;
-                }
-                else if (_commandLineOptions.TargetArch.Equals("arm64", StringComparison.OrdinalIgnoreCase))
-                    _targetArchitecture = TargetArchitecture.ARM64;
-                else
-                    throw new CommandLineException(SR.TargetArchitectureUnsupported);
+                _targetArchitecture = GetTargetArchitectureFromArg(_commandLineOptions.TargetArch, out _armelAbi);
             }
             if (_commandLineOptions.TargetOS != null)
             {
@@ -217,11 +234,6 @@ namespace ILCompiler
             if (_commandLineOptions.InstructionSet != null)
             {
                 List<string> instructionSetParams = new List<string>();
-
-                // At this time, instruction sets may only be specified with --input-bubble, as
-                // we do not yet have a stable ABI for all vector parameter/return types.
-                if (!_commandLineOptions.InputBubble)
-                    throw new CommandLineException(SR.InstructionSetWithoutInputBubble);
 
                 // Normalize instruction set format to include implied +.
                 string[] instructionSetParamsInput = _commandLineOptions.InstructionSet.Split(",");
@@ -437,13 +449,27 @@ namespace ILCompiler
                     {
                         EcmaModule module = _typeSystemContext.GetModuleFromPath(referenceFile);
                         _referenceableModules.Add(module);
-                        if (_commandLineOptions.InputBubble)
+                        if (_commandLineOptions.InputBubble && _inputbubblereferenceFilePaths.Count == 0)
                         {
                             // In large version bubble mode add reference paths to the compilation group
+                            // Consider bubble as large if no explicit bubble references were passed
                             versionBubbleModulesHash.Add(module);
                         }
                     }
                     catch { } // Ignore non-managed pe files
+                }
+
+                if (_commandLineOptions.InputBubble)
+                {
+                    foreach (var referenceFile in _inputbubblereferenceFilePaths.Values)
+                    {
+                        try
+                        {
+                            EcmaModule module = _typeSystemContext.GetModuleFromPath(referenceFile);
+                            versionBubbleModulesHash.Add(module);
+                        }
+                        catch { } // Ignore non-managed pe files
+                    }
                 }
             }
 
@@ -497,7 +523,6 @@ namespace ILCompiler
 
                     List<EcmaModule> inputModules = new List<EcmaModule>();
                     List<EcmaModule> rootingModules = new List<EcmaModule>();
-                    Guid? inputModuleMvid = null;
 
                     foreach (var inputFile in inFilePaths)
                     {
@@ -506,10 +531,6 @@ namespace ILCompiler
                         rootingModules.Add(module);
                         versionBubbleModulesHash.Add(module);
 
-                        if (!_commandLineOptions.Composite && !inputModuleMvid.HasValue)
-                        {
-                            inputModuleMvid = module.MetadataReader.GetGuid(module.MetadataReader.GetModuleDefinition().Mvid);
-                        }
 
                         if (!_commandLineOptions.CompositeOrInputBubble)
                         {
@@ -634,6 +655,19 @@ namespace ILCompiler
                         optimizationMode = ((EcmaAssembly)inputModules[0].Assembly).HasOptimizationsDisabled() ? OptimizationMode.None : OptimizationMode.Blended;
                     }
 
+                    CompositeImageSettings compositeImageSettings = new CompositeImageSettings();
+
+                    if (_commandLineOptions.CompositeKeyFile != null)
+                    {
+                        ImmutableArray<byte> compositeStrongNameKey = File.ReadAllBytes(_commandLineOptions.CompositeKeyFile).ToImmutableArray();
+                        if (!IsValidPublicKey(compositeStrongNameKey))
+                        {
+                            throw new Exception(string.Format(SR.ErrorCompositeKeyFileNotPublicKey));
+                        }
+
+                        compositeImageSettings.PublicKey = compositeStrongNameKey;
+                    }
+
                     //
                     // Compile
                     //
@@ -654,11 +688,12 @@ namespace ILCompiler
                         .UseMapFile(_commandLineOptions.Map)
                         .UseMapCsvFile(_commandLineOptions.MapCsv)
                         .UsePdbFile(_commandLineOptions.Pdb, _commandLineOptions.PdbPath)
-                        .UsePerfMapFile(_commandLineOptions.PerfMap, _commandLineOptions.PerfMapPath, inputModuleMvid)
+                        .UsePerfMapFile(_commandLineOptions.PerfMap, _commandLineOptions.PerfMapPath, _commandLineOptions.PerfMapFormatVersion)
                         .UseProfileFile(jsonProfile != null)
                         .UseParallelism(_commandLineOptions.Parallelism)
                         .UseProfileData(profileDataManager)
                         .FileLayoutAlgorithms(_methodLayout, _fileLayout)
+                        .UseCompositeImageSettings(compositeImageSettings)
                         .UseJitPath(_commandLineOptions.JitPath)
                         .UseInstructionSetSupport(instructionSetSupport)
                         .UseCustomPESectionAlignment(_commandLineOptions.CustomPESectionAlignment)
@@ -827,6 +862,128 @@ namespace ILCompiler
             return false;
         }
 
+        private enum AlgorithmClass
+        {
+            Signature = 1,
+            Hash = 4,
+        }
+
+        private enum AlgorithmSubId
+        {
+            Sha1Hash = 4,
+            MacHash = 5,
+            RipeMdHash = 6,
+            RipeMd160Hash = 7,
+            Ssl3ShaMD5Hash = 8,
+            HmacHash = 9,
+            Tls1PrfHash = 10,
+            HashReplacOwfHash = 11,
+            Sha256Hash = 12,
+            Sha384Hash = 13,
+            Sha512Hash = 14,
+        }
+
+        private struct AlgorithmId
+        {
+            // From wincrypt.h
+            private const int AlgorithmClassOffset = 13;
+            private const int AlgorithmClassMask = 0x7;
+            private const int AlgorithmSubIdOffset = 0;
+            private const int AlgorithmSubIdMask = 0x1ff;
+
+            private readonly uint _flags;
+
+            public const int RsaSign = 0x00002400;
+            public const int Sha = 0x00008004;
+
+            public bool IsSet
+            {
+                get { return _flags != 0; }
+            }
+
+            public AlgorithmClass Class
+            {
+                get { return (AlgorithmClass)((_flags >> AlgorithmClassOffset) & AlgorithmClassMask); }
+            }
+
+            public AlgorithmSubId SubId
+            {
+                get { return (AlgorithmSubId)((_flags >> AlgorithmSubIdOffset) & AlgorithmSubIdMask); }
+            }
+
+            public AlgorithmId(uint flags)
+            {
+                _flags = flags;
+            }
+        }
+
+        private static readonly ImmutableArray<byte> s_ecmaKey = ImmutableArray.Create(new byte[] { 0, 0, 0, 0, 0, 0, 0, 0, 4, 0, 0, 0, 0, 0, 0, 0 });
+
+        private const int SnPublicKeyBlobSize = 13;
+
+        // From wincrypt.h
+        private const byte PublicKeyBlobId = 0x06;
+        private const byte PrivateKeyBlobId = 0x07;
+
+        // internal for testing
+        internal const int s_publicKeyHeaderSize = SnPublicKeyBlobSize - 1;
+
+        // From StrongNameInternal.cpp
+        // Checks to see if a public key is a valid instance of a PublicKeyBlob as
+        // defined in StongName.h
+        internal static bool IsValidPublicKey(ImmutableArray<byte> blob)
+        {
+            // The number of public key bytes must be at least large enough for the header and one byte of data.
+            if (blob.IsDefault || blob.Length < s_publicKeyHeaderSize + 1)
+            {
+                return false;
+            }
+
+            var blobReader = new BinaryReader(new MemoryStream(blob.ToArray()));
+
+            // Signature algorithm ID
+            var sigAlgId = blobReader.ReadUInt32();
+            // Hash algorithm ID
+            var hashAlgId = blobReader.ReadUInt32();
+            // Size of public key data in bytes, not including the header
+            var publicKeySize = blobReader.ReadUInt32();
+            // publicKeySize bytes of public key data
+            var publicKey = blobReader.ReadByte();
+
+            // The number of public key bytes must be the same as the size of the header plus the size of the public key data.
+            if (blob.Length != s_publicKeyHeaderSize + publicKeySize)
+            {
+                return false;
+            }
+
+            // Check for the ECMA key, which does not obey the invariants checked below.
+            if (System.Linq.Enumerable.SequenceEqual(blob, s_ecmaKey))
+            {
+                return true;
+            }
+
+            // The public key must be in the wincrypto PUBLICKEYBLOB format
+            if (publicKey != PublicKeyBlobId)
+            {
+                return false;
+            }
+
+            var signatureAlgorithmId = new AlgorithmId(sigAlgId);
+            if (signatureAlgorithmId.IsSet && signatureAlgorithmId.Class != AlgorithmClass.Signature)
+            {
+                return false;
+            }
+
+            var hashAlgorithmId = new AlgorithmId(hashAlgId);
+            if (hashAlgorithmId.IsSet && (hashAlgorithmId.Class != AlgorithmClass.Hash || hashAlgorithmId.SubId < AlgorithmSubId.Sha1Hash))
+            {
+                return false;
+            }
+
+            return true;
+        }
+
+
         private static int Main(string[] args)
         {
 #if DEBUG
@@ -850,6 +1007,7 @@ namespace ILCompiler
                 return 1;
             }
 #endif
+
         }
     }
 }

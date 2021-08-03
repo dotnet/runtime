@@ -1034,14 +1034,29 @@ CHECK PEDecoder::CheckCorHeader() const
 
     IMAGE_COR20_HEADER *pCor = GetCorHeader();
 
+    // Currently composite r2r images miss some information, for example the version is 0.0.
+    // We may want to change that to something more conforming and explicit.
+    // For now, for compatibility purposes, we will accept that as a valid format.
+    bool possiblyCompositeR2R =
+        pCor->MinorRuntimeVersion == 0 &&
+        pCor->MajorRuntimeVersion == 0;
+
     //CHECK(((ULONGLONG)pCor & 0x3)==0);
 
     // If the file is COM+ 1.0, which by definition has nothing the runtime can
     // use, or if the file requires a newer version of this engine than us,
     // it cannot be run by this engine.
-    CHECK(VAL16(pCor->MajorRuntimeVersion) > 1 && VAL16(pCor->MajorRuntimeVersion) <= COR_VERSION_MAJOR);
+    if (!possiblyCompositeR2R)
+        CHECK(VAL16(pCor->MajorRuntimeVersion) > 1 && VAL16(pCor->MajorRuntimeVersion) <= COR_VERSION_MAJOR);
 
+#ifdef HOST_WINDOWS
     CHECK(CheckDirectory(&pCor->MetaData, IMAGE_SCN_MEM_WRITE, HasNativeHeader() ? NULL_OK : NULL_NOT_OK));
+#else
+    CHECK(CheckDirectory(
+        &pCor->MetaData,
+        possiblyCompositeR2R ? 0 : IMAGE_SCN_MEM_WRITE,
+        HasNativeHeader() ? NULL_OK : NULL_NOT_OK));
+#endif
     CHECK(CheckDirectory(&pCor->Resources, IMAGE_SCN_MEM_WRITE, NULL_OK));
     CHECK(CheckDirectory(&pCor->StrongNameSignature, IMAGE_SCN_MEM_WRITE, NULL_OK));
     CHECK(CheckDirectory(&pCor->CodeManagerTable, IMAGE_SCN_MEM_WRITE, NULL_OK));
@@ -1083,7 +1098,7 @@ CHECK PEDecoder::CheckCorHeader() const
 
     // IL library files (really a misnomer - these are native images or ReadyToRun images)
     // only they can have a native image header
-    if ((pCor->Flags&VAL32(COMIMAGE_FLAGS_IL_LIBRARY)) == 0)
+    if ((pCor->Flags&VAL32(COMIMAGE_FLAGS_IL_LIBRARY)) == 0 && !possiblyCompositeR2R)
     {
         CHECK(VAL32(pCor->ManagedNativeHeader.Size) == 0);
     }
@@ -2346,8 +2361,7 @@ READYTORUN_HEADER * PEDecoder::FindReadyToRunHeader() const
     return NULL;
 }
 
-#ifndef DACCESS_COMPILE
-void *PEDecoder::GetExport(LPCSTR exportName) const
+PTR_VOID PEDecoder::GetExport(LPCSTR exportName) const
 {
     // Get the export directory entry
     PIMAGE_DATA_DIRECTORY pExportDirectoryEntry = GetDirectoryEntry(IMAGE_DIRECTORY_ENTRY_EXPORT);
@@ -2356,30 +2370,30 @@ void *PEDecoder::GetExport(LPCSTR exportName) const
         return NULL;
     }
 
-    uint8_t *imageBase = (uint8_t *)GetBase();
-    const IMAGE_EXPORT_DIRECTORY *pExportDir = (const IMAGE_EXPORT_DIRECTORY *)GetDirectoryData(pExportDirectoryEntry);
+    PTR_IMAGE_EXPORT_DIRECTORY pExportDir = dac_cast<PTR_IMAGE_EXPORT_DIRECTORY>(GetDirectoryData(pExportDirectoryEntry));
 
     uint32_t namePointerCount = VAL32(pExportDir->NumberOfNames);
     uint32_t addressTableRVA = VAL32(pExportDir->AddressOfFunctions);
-    uint32_t namePointersRVA = VAL32(pExportDir->AddressOfNames);
+    uint32_t ordinalTableRVA = VAL32(pExportDir->AddressOfNameOrdinals);
+    uint32_t nameTableRVA = VAL32(pExportDir->AddressOfNames);
 
     for (uint32_t nameIndex = 0; nameIndex < namePointerCount; nameIndex++)
     {
-        uint32_t namePointerRVA = VAL32(*(const uint32_t *)&imageBase[namePointersRVA + sizeof(uint32_t) * nameIndex]);
+        uint32_t namePointerRVA = *dac_cast<PTR_UINT32>(GetRvaData(nameTableRVA + sizeof(uint32_t) * nameIndex));
         if (namePointerRVA != 0)
         {
-            const char *namePointer = (const char *)&imageBase[namePointerRVA];
+            const char *namePointer = dac_cast<PTR_CSTR>(GetRvaData(namePointerRVA));
             if (!strcmp(namePointer, exportName))
             {
-                uint32_t exportRVA = VAL32(*(const uint32_t *)&imageBase[addressTableRVA + sizeof(uint32_t) * nameIndex]);
-                return &imageBase[exportRVA];
+                uint16_t ordinalForNamedExport = *dac_cast<PTR_UINT16>(GetRvaData(ordinalTableRVA + sizeof(uint16_t) * nameIndex));
+                uint32_t exportRVA = *dac_cast<PTR_UINT32>(GetRvaData(addressTableRVA + sizeof(uint32_t) * ordinalForNamedExport));
+                return dac_cast<PTR_VOID>(GetRvaData(exportRVA));
             }
         }
     }
 
     return NULL;
 }
-#endif
 
 //
 // code:PEDecoder::CheckILMethod and code:PEDecoder::ComputeILMethodSize really belong to

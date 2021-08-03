@@ -934,11 +934,17 @@ using NonVMComHolder = SpecializedWrapper<_TYPE, DoTheRelease<_TYPE>>;
 //  } // foo->DecRef() on out of scope
 //
 //-----------------------------------------------------------------------------
+template<typename _TYPE>
+class ExecutableWriterHolder;
+
 template <typename TYPE>
 FORCEINLINE void StubRelease(TYPE* value)
 {
     if (value)
-        value->DecRef();
+    {
+        ExecutableWriterHolder<TYPE> stubWriterHolder(value, sizeof(TYPE));
+        stubWriterHolder.GetRW()->DecRef();
+    }
 }
 
 template<typename _TYPE>

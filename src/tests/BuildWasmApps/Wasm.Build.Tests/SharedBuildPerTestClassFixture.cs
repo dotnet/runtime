@@ -20,7 +20,7 @@ namespace Wasm.Build.Tests
 
         public void RemoveFromCache(string buildPath)
         {
-            KeyValuePair<BuildArgs, BuildProduct>? foundKvp = _buildPaths.Where(kvp => kvp.Value.BuildPath == buildPath).SingleOrDefault();
+            KeyValuePair<BuildArgs, BuildProduct>? foundKvp = _buildPaths.Where(kvp => kvp.Value.ProjectDir == buildPath).SingleOrDefault();
             if (foundKvp == null)
                 throw new Exception($"Could not find build path {buildPath} in cache to remove.");
 
@@ -36,7 +36,7 @@ namespace Wasm.Build.Tests
             Console.WriteLine ($"============== DELETING THE BUILDS =============");
             foreach (var kvp in _buildPaths.Values)
             {
-                RemoveDirectory(kvp.BuildPath);
+                RemoveDirectory(kvp.ProjectDir);
             }
         }
 

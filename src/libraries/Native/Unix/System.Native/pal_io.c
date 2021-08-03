@@ -22,6 +22,7 @@
 #include <sys/file.h>
 #include <sys/ioctl.h>
 #include <sys/socket.h>
+#include <sys/uio.h>
 #include <syslog.h>
 #include <termios.h>
 #include <unistd.h>
@@ -33,6 +34,11 @@
 #endif
 #if HAVE_INOTIFY
 #include <sys/inotify.h>
+#endif
+#if HAVE_STATFS_VFS // Linux
+#include <sys/vfs.h>
+#elif HAVE_STATFS_MOUNT // BSD
+#include <sys/mount.h>
 #endif
 
 #ifdef _AIX
@@ -662,7 +668,7 @@ int32_t SystemNative_FSync(intptr_t fd)
     int fileDescriptor = ToFileDescriptor(fd);
 
     int32_t result;
-    while ((result = 
+    while ((result =
 #if defined(TARGET_OSX) && HAVE_F_FULLFSYNC
     fcntl(fileDescriptor, F_FULLFSYNC)
 #else
@@ -711,6 +717,13 @@ int32_t SystemNative_Link(const char* source, const char* linkTarget)
 {
     int32_t result;
     while ((result = link(source, linkTarget)) < 0 && errno == EINTR);
+    return result;
+}
+
+int32_t SystemNative_SymLink(const char* target, const char* linkPath)
+{
+    int32_t result;
+    while ((result = symlink(target, linkPath)) < 0 && errno == EINTR);
     return result;
 }
 
@@ -991,6 +1004,85 @@ int32_t SystemNative_PosixFAdvise(intptr_t fd, int64_t offset, int64_t length, i
 #endif
 }
 
+int32_t SystemNative_PosixFAllocate(intptr_t fd, int64_t offset, int64_t length)
+{
+    assert_msg(offset == 0, "Invalid offset value", (int)offset);
+
+    int fileDescriptor = ToFileDescriptor(fd);
+    int32_t result;
+#if HAVE_POSIX_FALLOCATE64 // 64-bit Linux
+    while ((result = posix_fallocate64(fileDescriptor, (off64_t)offset, (off64_t)length)) == EINTR);
+#elif HAVE_POSIX_FALLOCATE // 32-bit Linux
+    while ((result = posix_fallocate(fileDescriptor, (off_t)offset, (off_t)length)) == EINTR);
+#elif defined(F_PREALLOCATE) // macOS
+    fstore_t fstore;
+    fstore.fst_flags = F_ALLOCATECONTIG; // ensure contiguous space
+    fstore.fst_posmode = F_PEOFPOSMODE;  // allocate from the physical end of file, as offset MUST NOT be 0 for F_VOLPOSMODE
+    fstore.fst_offset = (off_t)offset;
+    fstore.fst_length = (off_t)length;
+    fstore.fst_bytesalloc = 0; // output size, can be > length
+
+    while ((result = fcntl(fileDescriptor, F_PREALLOCATE, &fstore)) == -1 && errno == EINTR);
+
+    if (result == -1)
+    {
+        // we have failed to allocate contiguous space, let's try non-contiguous
+        fstore.fst_flags = F_ALLOCATEALL; // all or nothing
+        while ((result = fcntl(fileDescriptor, F_PREALLOCATE, &fstore)) == -1 && errno == EINTR);
+    }
+#elif defined(F_ALLOCSP) || defined(F_ALLOCSP64) // FreeBSD
+    #if HAVE_FLOCK64
+    struct flock64 lockArgs;
+    int command = F_ALLOCSP64;
+    #else
+    struct flock lockArgs;
+    int command = F_ALLOCSP;
+    #endif
+
+    lockArgs.l_whence = SEEK_SET;
+    lockArgs.l_start = (off_t)offset;
+    lockArgs.l_len = (off_t)length;
+
+    while ((result = fcntl(fileDescriptor, command, &lockArgs)) == -1 && errno == EINTR);
+#endif
+
+#if defined(F_PREALLOCATE) || defined(F_ALLOCSP) || defined(F_ALLOCSP64)
+    // most of the Unixes implement posix_fallocate which does NOT set the last error
+    // fctnl does, but to mimic the posix_fallocate behaviour we just return error
+    if (result == -1)
+    {
+        result = errno;
+    }
+    else
+    {
+        // align the behaviour with what posix_fallocate does (change reported file size)
+        ftruncate(fileDescriptor, length);
+    }
+#endif
+
+    // error codes can be OS-specific, so this is why this handling is done here rather than in the managed layer
+    switch (result)
+    {
+        case ENOSPC: // there was not enough space
+            return -1;
+        case EFBIG: // the file was too large
+            return -2;
+        case ENODEV: // not a regular file
+        case ESPIPE: // a pipe
+            // We ignore it, as FileStream contract makes it clear that allocationSize is ignored for non-regular files.
+            return 0;
+        case EINVAL:
+            // We control the offset and length so they are correct.
+            assert_msg(length >= 0, "Invalid length value", (int)length);
+            // But if the underlying filesystem does not support the operation, we just ignore it and treat as a hint.
+            return 0;
+        default:
+            assert(result != EINTR); // it can't happen here as we retry the call on EINTR
+            assert(result != EBADF); // it can't happen here as this method is being called after a succesfull call to open (with write permissions) before returning the SafeFileHandle to the user
+            return 0;
+    }
+}
+
 int32_t SystemNative_Read(intptr_t fd, void* buffer, int32_t bufferSize)
 {
     return Common_Read(fd, buffer, bufferSize);
@@ -1116,41 +1208,46 @@ int32_t SystemNative_CopyFile(intptr_t sourceFd, intptr_t destinationFd)
         return -1;
     }
 
-
     // On 32-bit, if you use 64-bit offsets, the last argument of `sendfile' will be a
     // `size_t' a 32-bit integer while the `st_size' field of the stat structure will be off64_t.
     // So `size' will have to be `uint64_t'. In all other cases, it will be `size_t'.
     uint64_t size = (uint64_t)sourceStat.st_size;
-
-    // Note that per man page for large files, you have to iterate until the
-    // whole file is copied (Linux has a limit of 0x7ffff000 bytes copied).
-    while (size > 0)
+    if (size != 0)
     {
-        ssize_t sent = sendfile(outFd, inFd, NULL, (size >= SSIZE_MAX ? SSIZE_MAX : (size_t)size));
-        if (sent < 0)
+        // Note that per man page for large files, you have to iterate until the
+        // whole file is copied (Linux has a limit of 0x7ffff000 bytes copied).
+        while (size > 0)
         {
-            if (errno != EINVAL && errno != ENOSYS)
+            ssize_t sent = sendfile(outFd, inFd, NULL, (size >= SSIZE_MAX ? SSIZE_MAX : (size_t)size));
+            if (sent < 0)
             {
-                return -1;
+                if (errno != EINVAL && errno != ENOSYS)
+                {
+                    return -1;
+                }
+                else
+                {
+                    break;
+                }
             }
             else
             {
-                break;
+                assert((size_t)sent <= size);
+                size -= (size_t)sent;
             }
         }
-        else
+
+        if (size == 0)
         {
-            assert((size_t)sent <= size);
-            size -= (size_t)sent;
+            copied = true;
         }
     }
-    if (size == 0)
-    {
-        copied = true;
-    }
+
     // sendfile couldn't be used; fall back to a manual copy below. This could happen
     // if we're on an old kernel, for example, where sendfile could only be used
-    // with sockets and not regular files.
+    // with sockets and not regular files.  Additionally, certain files (e.g. procfs)
+    // may return a size of 0 even though reading from then will produce data.  As such,
+    // we avoid using sendfile with the queried size if the size is reported as 0.
 #endif // HAVE_SENDFILE_4
 
     // Manually read all data from the source and write it to the destination.
@@ -1184,7 +1281,7 @@ int32_t SystemNative_CopyFile(intptr_t sourceFd, intptr_t destinationFd)
 #endif
     }
     // If we copied to a filesystem (eg EXFAT) that does not preserve POSIX ownership, all files appear
-    // to be owned by root. If we aren't running as root, then we won't be an owner of our new file, and 
+    // to be owned by root. If we aren't running as root, then we won't be an owner of our new file, and
     // attempting to copy metadata to it will fail with EPERM. We have copied successfully, we just can't
     // copy metadata. The best thing we can do is skip copying the metadata.
     if (ret != 0 && errno != EPERM)
@@ -1299,6 +1396,20 @@ static int16_t ConvertLockType(int16_t managedLockType)
     }
 }
 
+int64_t SystemNative_GetFileSystemType(intptr_t fd)
+{
+#if HAVE_STATFS_VFS || HAVE_STATFS_MOUNT
+    int statfsRes;
+    struct statfs statfsArgs;
+    // for our needs (get file system type) statfs is always enough and there is no need to use statfs64
+    // which got deprecated in macOS 10.6, in favor of statfs
+    while ((statfsRes = fstatfs(ToFileDescriptor(fd), &statfsArgs)) == -1 && errno == EINTR) ;
+    return statfsRes == -1 ? (int64_t)-1 : (int64_t)statfsArgs.f_type;
+#else
+    #error "Platform doesn't support fstatfs"
+#endif
+}
+
 int32_t SystemNative_LockFileRegion(intptr_t fd, int64_t offset, int64_t length, int16_t lockType)
 {
     int16_t unixLockType = ConvertLockType(lockType);
@@ -1374,4 +1485,108 @@ int32_t SystemNative_ReadProcessStatusInfo(pid_t pid, ProcessStatus* processStat
     errno = ENOTSUP;
     return -1;
 #endif // __sun
+}
+
+int32_t SystemNative_PRead(intptr_t fd, void* buffer, int32_t bufferSize, int64_t fileOffset)
+{
+    assert(buffer != NULL);
+    assert(bufferSize >= 0);
+
+    ssize_t count;
+    while ((count = pread(ToFileDescriptor(fd), buffer, (uint32_t)bufferSize, (off_t)fileOffset)) < 0 && errno == EINTR);
+
+    assert(count >= -1 && count <= bufferSize);
+    return (int32_t)count;
+}
+
+int32_t SystemNative_PWrite(intptr_t fd, void* buffer, int32_t bufferSize, int64_t fileOffset)
+{
+    assert(buffer != NULL);
+    assert(bufferSize >= 0);
+
+    ssize_t count;
+    while ((count = pwrite(ToFileDescriptor(fd), buffer, (uint32_t)bufferSize, (off_t)fileOffset)) < 0 && errno == EINTR);
+
+    assert(count >= -1 && count <= bufferSize);
+    return (int32_t)count;
+}
+
+int64_t SystemNative_PReadV(intptr_t fd, IOVector* vectors, int32_t vectorCount, int64_t fileOffset)
+{
+    assert(vectors != NULL);
+    assert(vectorCount >= 0);
+
+    int64_t count = 0;
+    int fileDescriptor = ToFileDescriptor(fd);
+#if HAVE_PREADV && !defined(TARGET_WASM) // preadv is buggy on WASM
+    while ((count = preadv(fileDescriptor, (struct iovec*)vectors, (int)vectorCount, (off_t)fileOffset)) < 0 && errno == EINTR);
+#else
+    int64_t current;
+    for (int i = 0; i < vectorCount; i++)
+    {
+        IOVector vector = vectors[i];
+        while ((current = pread(fileDescriptor, vector.Base, vector.Count, (off_t)(fileOffset + count))) < 0 && errno == EINTR);
+
+        if (current < 0)
+        {
+            // if previous calls were succesfull, we return what we got so far
+            // otherwise, we return the error code
+            return count > 0 ? count : current;
+        }
+
+        count += current;
+
+        // Incomplete pread operation may happen for two reasons:
+        // a) We have reached EOF.
+        // b) The operation was interrupted by a signal handler.
+        // To mimic preadv, we stop on the first incomplete operation.
+        if (current != (int64_t)vector.Count)
+        {
+            return count;
+        }
+    }
+#endif
+
+    assert(count >= -1);
+    return count;
+}
+
+int64_t SystemNative_PWriteV(intptr_t fd, IOVector* vectors, int32_t vectorCount, int64_t fileOffset)
+{
+    assert(vectors != NULL);
+    assert(vectorCount >= 0);
+
+    int64_t count = 0;
+    int fileDescriptor = ToFileDescriptor(fd);
+#if HAVE_PWRITEV && !defined(TARGET_WASM) // pwritev is buggy on WASM
+    while ((count = pwritev(fileDescriptor, (struct iovec*)vectors, (int)vectorCount, (off_t)fileOffset)) < 0 && errno == EINTR);
+#else
+    int64_t current;
+    for (int i = 0; i < vectorCount; i++)
+    {
+        IOVector vector = vectors[i];
+        while ((current = pwrite(fileDescriptor, vector.Base, vector.Count, (off_t)(fileOffset + count))) < 0 && errno == EINTR);
+
+        if (current < 0)
+        {
+            // if previous calls were succesfull, we return what we got so far
+            // otherwise, we return the error code
+            return count > 0 ? count : current;
+        }
+
+        count += current;
+
+        // Incomplete pwrite operation may happen for few reasons:
+        // a) There was not enough space available or the file is too large for given file system.
+        // b) The operation was interrupted by a signal handler.
+        // To mimic pwritev, we stop on the first incomplete operation.
+        if (current != (int64_t)vector.Count)
+        {
+            return count;
+        }
+    }
+#endif
+
+    assert(count >= -1);
+    return count;
 }

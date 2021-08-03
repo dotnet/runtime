@@ -136,24 +136,6 @@ namespace System.DirectoryServices.Protocols
             _serverCertificateRoutine = new VERIFYSERVERCERT(ProcessServerCertificate);
         }
 
-        public ReferralChasingOptions ReferralChasing
-        {
-            get
-            {
-                int result = GetIntValueHelper(LdapOption.LDAP_OPT_REFERRALS);
-                return result == 1 ? ReferralChasingOptions.All : (ReferralChasingOptions)result;
-            }
-            set
-            {
-                if (((value) & (~ReferralChasingOptions.All)) != 0)
-                {
-                    throw new InvalidEnumArgumentException(nameof(value), (int)value, typeof(ReferralChasingOptions));
-                }
-
-                SetIntValueHelper(LdapOption.LDAP_OPT_REFERRALS, (int)value);
-            }
-        }
-
         public int ReferralHopLimit
         {
             get => GetIntValueHelper(LdapOption.LDAP_OPT_REFERRAL_HOP_LIMIT);
@@ -166,12 +148,6 @@ namespace System.DirectoryServices.Protocols
 
                 SetIntValueHelper(LdapOption.LDAP_OPT_REFERRAL_HOP_LIMIT, value);
             }
-        }
-
-        public int ProtocolVersion
-        {
-            get => GetIntValueHelper(LdapOption.LDAP_OPT_VERSION);
-            set => SetIntValueHelper(LdapOption.LDAP_OPT_VERSION, value);
         }
 
         public string HostName
@@ -783,6 +759,33 @@ namespace System.DirectoryServices.Protocols
 
             int temp = value;
             int error = LdapPal.SetIntOption(_connection._ldapHandle, option, ref temp);
+
+            ErrorChecking.CheckAndSetLdapError(error);
+        }
+
+        private IntPtr GetPtrValueHelper(LdapOption option)
+        {
+            if (_connection._disposed)
+            {
+                throw new ObjectDisposedException(GetType().Name);
+            }
+
+            IntPtr outValue = new IntPtr(0);
+            int error = LdapPal.GetPtrOption(_connection._ldapHandle, option, ref outValue);
+            ErrorChecking.CheckAndSetLdapError(error);
+
+            return outValue;
+        }
+
+        private void SetPtrValueHelper(LdapOption option, IntPtr value)
+        {
+            if (_connection._disposed)
+            {
+                throw new ObjectDisposedException(GetType().Name);
+            }
+
+            IntPtr temp = value;
+            int error = LdapPal.SetPtrOption(_connection._ldapHandle, option, ref temp);
 
             ErrorChecking.CheckAndSetLdapError(error);
         }

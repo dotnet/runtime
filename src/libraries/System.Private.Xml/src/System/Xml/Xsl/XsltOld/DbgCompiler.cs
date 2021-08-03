@@ -4,7 +4,7 @@
 namespace System.Xml.Xsl.XsltOld
 {
     using System;
-    using System.Collections;
+    using System.Collections.Generic;
     using System.Diagnostics;
     using System.Xml.XPath;
     using System.Xml.Xsl.XsltOld.Debugger;
@@ -50,8 +50,8 @@ namespace System.Xml.Xsl.XsltOld
         //          Duplicated globals from different stilesheets are replaced (by import presidence)
         // Locals:  Visible only in scope and after it was defined.
         //          No duplicates posible.
-        private readonly ArrayList _globalVars = new ArrayList();
-        private readonly ArrayList _localVars = new ArrayList();
+        private readonly List<VariableAction> _globalVars = new List<VariableAction>();
+        private readonly List<VariableAction> _localVars = new List<VariableAction>();
         private VariableAction[]? _globalVarsCache, _localVarsCache;
 
         public VariableAction[] GlobalVariables
@@ -61,7 +61,7 @@ namespace System.Xml.Xsl.XsltOld
                 Debug.Assert(this.Debugger != null);
                 if (_globalVarsCache == null)
                 {
-                    _globalVarsCache = (VariableAction[])_globalVars.ToArray(typeof(VariableAction));
+                    _globalVarsCache = _globalVars.ToArray();
                 }
                 return _globalVarsCache;
             }
@@ -73,7 +73,7 @@ namespace System.Xml.Xsl.XsltOld
                 Debug.Assert(this.Debugger != null);
                 if (_localVarsCache == null)
                 {
-                    _localVarsCache = (VariableAction[])_localVars.ToArray(typeof(VariableAction));
+                    _localVarsCache = _localVars.ToArray();
                 }
                 return _localVarsCache;
             }

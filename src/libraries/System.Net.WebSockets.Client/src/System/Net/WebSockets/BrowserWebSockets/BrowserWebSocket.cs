@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
@@ -168,13 +167,13 @@ namespace System.Net.WebSockets
                 _onError = errorEvt => errorEvt.Dispose();
 
                 // Attach the onError callback
-                _innerWebSocket.SetObjectProperty("onerror", _onError);
+                _innerWebSocket.AddEventListener("error", _onError);
 
                 // Setup the onClose callback
                 _onClose = (closeEvent) => OnCloseCallback(closeEvent, cancellationToken);
 
                 // Attach the onClose callback
-                _innerWebSocket.SetObjectProperty("onclose", _onClose);
+                _innerWebSocket.AddEventListener("close", _onClose);
 
                 // Setup the onOpen callback
                 _onOpen = (evt) =>
@@ -204,13 +203,13 @@ namespace System.Net.WebSockets
                 };
 
                 // Attach the onOpen callback
-                _innerWebSocket.SetObjectProperty("onopen", _onOpen);
+                _innerWebSocket.AddEventListener("open", _onOpen);
 
                 // Setup the onMessage callback
                 _onMessage = (messageEvent) => OnMessageCallback(messageEvent);
 
                 // Attach the onMessage callaback
-                _innerWebSocket.SetObjectProperty("onmessage", _onMessage);
+                _innerWebSocket.AddEventListener("message", _onMessage);
                 await _tcsConnect.Task.ConfigureAwait(continueOnCapturedContext: true);
             }
             catch (Exception wse)
@@ -299,7 +298,7 @@ namespace System.Net.WebSockets
                                         }
                                     }
                                 };
-                                reader.Invoke("addEventListener", "loadend", loadend);
+                                reader.AddEventListener("loadend", loadend);
                                 reader.Invoke("readAsArrayBuffer", blobData);
                             }
                             break;
@@ -319,26 +318,10 @@ namespace System.Net.WebSockets
         {
             // We need to clear the events on websocket as well or stray events
             // are possible leading to crashes.
-            if (_onClose != null)
-            {
-                _innerWebSocket?.SetObjectProperty("onclose", "");
-                _onClose = null;
-            }
-            if (_onError != null)
-            {
-                _innerWebSocket?.SetObjectProperty("onerror", "");
-                _onError = null;
-            }
-            if (_onOpen != null)
-            {
-                _innerWebSocket?.SetObjectProperty("onopen", "");
-                _onOpen = null;
-            }
-            if (_onMessage != null)
-            {
-                _innerWebSocket?.SetObjectProperty("onmessage", "");
-                _onMessage = null;
-            }
+            _innerWebSocket?.RemoveEventListener("close", _onClose);
+            _innerWebSocket?.RemoveEventListener("error", _onError);
+            _innerWebSocket?.RemoveEventListener("open", _onOpen);
+            _innerWebSocket?.RemoveEventListener("message", _onMessage);
         }
 
         public override void Dispose()
@@ -575,7 +558,15 @@ namespace System.Net.WebSockets
                 _innerWebSocketCloseStatus = closeStatus;
                 _innerWebSocketCloseStatusDescription = statusDescription;
                 _innerWebSocket!.Invoke("close", (int)closeStatus, statusDescription);
-                _closeStatus = (int)_innerWebSocket.GetObjectProperty("readyState");
+                if (_innerWebSocket != null && !_innerWebSocket.IsDisposed && _state != (int)InternalState.Aborted)
+                {
+                    _closeStatus = (int)_innerWebSocket.GetObjectProperty("readyState");
+                }
+                else
+                {
+                    _closeStatus = 3; // (CLOSED)
+                }
+
                 return _tcsClose.Task;
             }
             catch (Exception exc)
@@ -613,7 +604,14 @@ namespace System.Net.WebSockets
                 _innerWebSocketCloseStatus = closeStatus;
                 _innerWebSocketCloseStatusDescription = statusDescription;
                 _innerWebSocket!.Invoke("close", (int)closeStatus, statusDescription);
-                _closeStatus = (int)_innerWebSocket.GetObjectProperty("readyState");
+                if (_innerWebSocket != null && !_innerWebSocket.IsDisposed && _state != (int)InternalState.Aborted)
+                {
+                    _closeStatus = (int)_innerWebSocket.GetObjectProperty("readyState");
+                }
+                else
+                {
+                    _closeStatus = 3; // (CLOSED)
+                }
                 OnCloseCallback(null, cancellationToken);
                 return Task.CompletedTask;
             }

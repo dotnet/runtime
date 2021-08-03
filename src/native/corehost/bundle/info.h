@@ -79,6 +79,7 @@ namespace bundle
         pal::string_t m_base_path;
         size_t m_bundle_size;
         int64_t m_header_offset;
+        int64_t m_offset_in_file;
         header_t m_header;
         config_t m_deps_json;
         config_t m_runtimeconfig_json;

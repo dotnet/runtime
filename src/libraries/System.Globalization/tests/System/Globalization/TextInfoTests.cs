@@ -278,11 +278,16 @@ namespace System.Globalization.Tests
 
             foreach (string cultureName in GetTestLocales())
             {
+                // Android has its own ICU, which doesn't work well with tr
+                if (!PlatformDetection.IsAndroid)
+                {
+                    yield return new object[] { cultureName, "I", "\u0131" };
+                    yield return new object[] { cultureName, "HI!", "h\u0131!" };
+                    yield return new object[] { cultureName, "HI\n\0H\u0130\t!", "h\u0131\n\0hi\u0009!" };
+                }
                 yield return new object[] { cultureName, "\u0130", "i" };
                 yield return new object[] { cultureName, "i", "i" };
-                yield return new object[] { cultureName, "I", "\u0131" };
-                yield return new object[] { cultureName, "HI!", "h\u0131!" };
-                yield return new object[] { cultureName, "HI\n\0H\u0130\t!", "h\u0131\n\0hi\u0009!" };
+                
             }
 
             // ICU has special tailoring for the en-US-POSIX locale which treats "i" and "I" as different letters
@@ -305,7 +310,6 @@ namespace System.Globalization.Tests
 
         [Theory]
         [MemberData(nameof(ToLower_TestData))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/36672", TestPlatforms.Android)]
         public void ToLower(string name, string str, string expected)
         {
             TestToLower(name, str, expected);
@@ -402,11 +406,15 @@ namespace System.Globalization.Tests
             // Turkish i
             foreach (string cultureName in GetTestLocales())
             {
-                yield return new object[] { cultureName, "i", "\u0130" };
+                // Android has its own ICU, which doesn't work well with tr
+                if (!PlatformDetection.IsAndroid)
+                {
+                    yield return new object[] { cultureName, "i", "\u0130" };
+                    yield return new object[] { cultureName, "H\u0131\n\0Hi\u0009!", "HI\n\0H\u0130\t!" };
+                }
                 yield return new object[] { cultureName, "\u0130", "\u0130" };
                 yield return new object[] { cultureName, "\u0131", "I" };
                 yield return new object[] { cultureName, "I", "I" };
-                yield return new object[] { cultureName, "H\u0131\n\0Hi\u0009!", "HI\n\0H\u0130\t!" };
             }
 
             // ICU has special tailoring for the en-US-POSIX locale which treats "i" and "I" as different letters
@@ -429,7 +437,6 @@ namespace System.Globalization.Tests
 
         [Theory]
         [MemberData(nameof(ToUpper_TestData))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/36672", TestPlatforms.Android)]
         public void ToUpper(string name, string str, string expected)
         {
             TestToUpper(name, str, expected);

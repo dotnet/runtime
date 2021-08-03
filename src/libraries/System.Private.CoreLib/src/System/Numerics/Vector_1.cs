@@ -248,7 +248,7 @@ namespace System.Numerics
 
                 if ((uint)index >= (uint)Count)
                 {
-                    throw new IndexOutOfRangeException(SR.Format(SR.Arg_ArgumentOutOfRangeException, index));
+                    ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.index);
                 }
 
                 return GetElement(index);
@@ -820,6 +820,19 @@ namespace System.Numerics
             }
 
             return product;
+        }
+
+        [Intrinsic]
+        internal static T Sum(Vector<T> value)
+        {
+            T sum = default;
+
+            for (nint index = 0; index < Count; index++)
+            {
+                sum = ScalarAdd(sum, value.GetElement(index));
+            }
+
+            return sum;
         }
 
         [Intrinsic]

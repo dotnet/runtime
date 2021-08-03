@@ -11,6 +11,12 @@
     <TestConsoleAppSourceFiles Include="GenericArraySortHelperTest.cs" />
     <TestConsoleAppSourceFiles Include="InheritedAttributeTests.cs" />
     <TestConsoleAppSourceFiles Include="InterfacesOnArrays.cs" />
+    <TestConsoleAppSourceFiles Include="InvariantGlobalizationFalse.cs">
+      <DisabledFeatureSwitches>System.Globalization.Invariant</DisabledFeatureSwitches>
+    </TestConsoleAppSourceFiles>
+    <TestConsoleAppSourceFiles Include="InvariantGlobalizationTrue.cs">
+      <EnabledFeatureSwitches>System.Globalization.Invariant;System.Globalization.PredefinedCulturesOnly</EnabledFeatureSwitches>
+    </TestConsoleAppSourceFiles>
     <TestConsoleAppSourceFiles Include="StackFrameHelperTest.cs">
       <!-- There is a bug with the linker where it is corrupting the pdbs while trimming
       causing the framework to not be able to get source line info any longer. This
@@ -27,7 +33,16 @@
     <TestConsoleAppSourceFiles Include="VerifyResourcesGetTrimmedTest.cs">
       <!-- Setting the Trimming feature switch to make sure that the Resources get trimmed by the linker
       as this test will ensure exceptions are using Resource keys -->
-      <ExtraTrimmerArgs>--feature System.Resources.UseSystemResourceKeys true</ExtraTrimmerArgs>
+      <EnabledFeatureSwitches>System.Resources.UseSystemResourceKeys</EnabledFeatureSwitches>
+    </TestConsoleAppSourceFiles>
+    <TestConsoleAppSourceFiles Include="TypeBuilderComDisabled.cs">
+      <DisabledFeatureSwitches>System.Runtime.InteropServices.BuiltInComInterop.IsSupported</DisabledFeatureSwitches>
+    </TestConsoleAppSourceFiles>
+    <TestConsoleAppSourceFiles Include="NullabilityInfoContextSupportFalse.cs">
+      <DisabledFeatureSwitches>System.Reflection.NullabilityInfoContext.IsSupported</DisabledFeatureSwitches>
+    </TestConsoleAppSourceFiles>
+    <TestConsoleAppSourceFiles Include="NullabilityInfoContextSupportTrue.cs">
+      <EnabledFeatureSwitches>System.Reflection.NullabilityInfoContext.IsSupported</EnabledFeatureSwitches>
     </TestConsoleAppSourceFiles>
   </ItemGroup>
 

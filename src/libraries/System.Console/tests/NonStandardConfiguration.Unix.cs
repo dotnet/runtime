@@ -12,7 +12,6 @@ namespace System.Tests
     {
         [PlatformSpecific(TestPlatforms.AnyUnix)] // Uses P/Invokes
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/49568", typeof(PlatformDetection), nameof(PlatformDetection.IsMacOsAppleSilicon))]
         public void NonBlockingStdout_AllDataReceived()
         {
             RemoteInvokeHandle remote = RemoteExecutor.Invoke(() =>

@@ -31,6 +31,8 @@ function(create_standalone_jit)
     set(JIT_ARCH_SOURCES ${JIT_I386_SOURCES})
   elseif(TARGETDETAILS_ARCH STREQUAL "arm64")
     set(JIT_ARCH_SOURCES ${JIT_ARM64_SOURCES})
+  elseif(TARGETDETAILS_ARCH STREQUAL "s390x")
+    set(JIT_ARCH_SOURCES ${JIT_S390X_SOURCES})
   else()
     clr_unknown_arch()
   endif()
@@ -120,6 +122,7 @@ set( JIT_SOURCES
   lsra.cpp
   lsrabuild.cpp
   morph.cpp
+  morphblock.cpp
   objectalloc.cpp
   optcse.cpp
   optimizer.cpp
@@ -213,6 +216,8 @@ if (CLR_CMAKE_TARGET_WIN32)
     loopcloningopts.h
     lower.h
     lsra_reftypes.h
+    lsra_stats.h
+    lsra_score.h
     lsra.h
     namedintrinsiclist.h
     objectalloc.h
@@ -238,6 +243,10 @@ if (CLR_CMAKE_TARGET_WIN32)
     ssarenamestate.h
     stacklevelsetter.h
     target.h
+    targetx86.h
+    targetamd64.h
+    targetarm.h
+    targetarm64.h
     tinyarray.h
     titypes.h
     treelifeupdater.h
@@ -249,7 +258,12 @@ if (CLR_CMAKE_TARGET_WIN32)
     valuenumtype.h
     varset.h
     vartype.h
+    vartypesdef.h
   )
+
+  # Append clrjit.natvis file
+  list (APPEND JIT_SOURCES
+    clrjit.natvis)
 
   if (CLR_CMAKE_TARGET_ARCH_ARM64 OR CLR_CMAKE_TARGET_ARCH_ARM)
     list (APPEND JIT_HEADERS
@@ -334,6 +348,10 @@ set( JIT_ARM64_SOURCES
   hwintrinsiccodegenarm64.cpp
 )
 
+set( JIT_S390X_SOURCES
+  # Not supported as JIT target
+)
+
 if(CLR_CMAKE_TARGET_ARCH_AMD64)
   set(JIT_ARCH_SOURCES ${JIT_AMD64_SOURCES})
 elseif(CLR_CMAKE_TARGET_ARCH_ARM)
@@ -342,6 +360,8 @@ elseif(CLR_CMAKE_TARGET_ARCH_I386)
   set(JIT_ARCH_SOURCES ${JIT_I386_SOURCES})
 elseif(CLR_CMAKE_TARGET_ARCH_ARM64)
   set(JIT_ARCH_SOURCES ${JIT_ARM64_SOURCES})
+elseif(CLR_CMAKE_TARGET_ARCH_S390X)
+  set(JIT_ARCH_SOURCES ${JIT_S390X_SOURCES})
 else()
   clr_unknown_arch()
 endif()
@@ -452,6 +472,10 @@ function(add_jit jitName)
         ${JIT_ARCH_LINK_LIBRARIES}
     )
 
+    if (CLR_CMAKE_HOST_WIN32)
+        link_natvis_sources_for_target(${jitName} PRIVATE clrjit.natvis)
+    endif()
+
     # add the install targets
     install_clr(TARGETS ${jitName} ${ARGN} COMPONENT alljits)
 endfunction()
@@ -493,8 +517,14 @@ target_compile_definitions(clrjit_unix_arm_${ARCH_HOST_NAME} PRIVATE ARM_SOFTFP 
 create_standalone_jit(TARGET clrjit_win_arm_${ARCH_HOST_NAME} OS win ARCH arm DESTINATIONS .)
 create_standalone_jit(TARGET clrjit_win_x86_${ARCH_HOST_NAME} OS win ARCH x86 DESTINATIONS .)
 
+if (CLR_CMAKE_TARGET_ARCH_I386 AND CLR_CMAKE_TARGET_UNIX)
+  create_standalone_jit(TARGET clrjit_unix_x86_${ARCH_HOST_NAME} OS unix ARCH x86 DESTINATIONS .)
+endif (CLR_CMAKE_TARGET_ARCH_I386 AND CLR_CMAKE_TARGET_UNIX)
+
 if (CLR_CMAKE_TARGET_UNIX)
-    install_clr(TARGETS clrjit_unix_${ARCH_TARGET_NAME}_${ARCH_HOST_NAME} DESTINATIONS . COMPONENT jit)
+    if (NOT ARCH_TARGET_NAME STREQUAL s390x)
+      install_clr(TARGETS clrjit_unix_${ARCH_TARGET_NAME}_${ARCH_HOST_NAME} DESTINATIONS . COMPONENT jit)
+    endif(NOT ARCH_TARGET_NAME STREQUAL s390x)
     if (ARCH_TARGET_NAME STREQUAL arm)
       target_compile_definitions(clrjit_unix_arm_${ARCH_HOST_NAME} PRIVATE ARM_SOFTFP CONFIGURABLE_ARM_ABI)
   endif (ARCH_TARGET_NAME STREQUAL arm)

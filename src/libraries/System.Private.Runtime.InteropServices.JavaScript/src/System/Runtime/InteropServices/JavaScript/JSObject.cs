@@ -73,7 +73,63 @@ namespace System.Runtime.InteropServices.JavaScript
             object res = Interop.Runtime.InvokeJSWithArgs(JSHandle, method, args, out int exception);
             if (exception != 0)
                 throw new JSException((string)res);
+            Interop.Runtime.ReleaseInFlight(res);
             return res;
+        }
+
+        public struct EventListenerOptions {
+            public bool Capture;
+            public bool Once;
+            public bool Passive;
+            public object? Signal;
+        }
+
+        public int AddEventListener(string name, Delegate listener, EventListenerOptions? options = null)
+        {
+            var optionsDict = options.HasValue
+                ? new JSObject()
+                : null;
+
+            try {
+                if (options?.Signal != null)
+                    throw new NotImplementedException("EventListenerOptions.Signal");
+
+                var jsfunc = Runtime.GetJSOwnedObjectHandle(listener);
+                // int exception;
+                if (options.HasValue) {
+                    // TODO: Optimize this
+                    var _options = options.Value;
+                    optionsDict?.SetObjectProperty("capture", _options.Capture, true, true);
+                    optionsDict?.SetObjectProperty("once", _options.Once, true, true);
+                    optionsDict?.SetObjectProperty("passive", _options.Passive, true, true);
+                }
+
+                // TODO: Pass options explicitly instead of using the object
+                // TODO: Handle errors
+                // We can't currently do this because adding any additional parameters or a return value causes
+                //  a signature mismatch at runtime
+                var ret = Interop.Runtime.AddEventListener(JSHandle, name, jsfunc, optionsDict?.JSHandle ?? 0);
+                if (ret != null)
+                    throw new JSException(ret);
+                return jsfunc;
+            } finally {
+                optionsDict?.Dispose();
+            }
+        }
+
+        public void RemoveEventListener(string name, Delegate? listener, EventListenerOptions? options = null)
+        {
+            if (listener == null)
+                return;
+            var jsfunc = Runtime.GetJSOwnedObjectHandle(listener);
+            RemoveEventListener(name, jsfunc, options);
+        }
+
+        public void RemoveEventListener(string name, int listenerHandle, EventListenerOptions? options = null)
+        {
+            var ret = Interop.Runtime.RemoveEventListener(JSHandle, name, listenerHandle, options?.Capture ?? false);
+            if (ret != null)
+                throw new JSException(ret);
         }
 
         /// <summary>
@@ -103,6 +159,7 @@ namespace System.Runtime.InteropServices.JavaScript
             object propertyValue = Interop.Runtime.GetObjectProperty(JSHandle, name, out int exception);
             if (exception != 0)
                 throw new JSException((string)propertyValue);
+            Interop.Runtime.ReleaseInFlight(propertyValue);
             return propertyValue;
         }
 

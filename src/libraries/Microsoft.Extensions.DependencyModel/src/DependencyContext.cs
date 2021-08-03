@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Reflection;
 
@@ -10,6 +11,9 @@ namespace Microsoft.Extensions.DependencyModel
 {
     public class DependencyContext
     {
+
+        [UnconditionalSuppressMessage("SingleFile", "IL3002:Avoid calling members marked with 'RequiresAssemblyFilesAttribute' when publishing as a single-file",
+            Justification = "The annotation should be on the static constructor but is Compiler Generated, annotating the caller Default method instead")]
         private static readonly Lazy<DependencyContext> _defaultContext = new Lazy<DependencyContext>(LoadDefault);
 
         public DependencyContext(TargetInfo target,
@@ -46,6 +50,7 @@ namespace Microsoft.Extensions.DependencyModel
             RuntimeGraph = runtimeGraph.ToArray();
         }
 
+        [RequiresAssemblyFiles("DependencyContext for an assembly from a application published as single-file is not supported. The method will return null. Make sure the calling code can handle this case.")]
         public static DependencyContext Default => _defaultContext.Value;
 
         public TargetInfo Target { get; }
@@ -74,6 +79,7 @@ namespace Microsoft.Extensions.DependencyModel
                 );
         }
 
+        [RequiresAssemblyFiles("DependencyContext for an assembly from a application published as single-file is not supported. The method will return null. Make sure the calling code can handle this case.")]
         private static DependencyContext LoadDefault()
         {
             var entryAssembly = Assembly.GetEntryAssembly();
@@ -85,6 +91,7 @@ namespace Microsoft.Extensions.DependencyModel
             return Load(entryAssembly);
         }
 
+        [RequiresAssemblyFiles("DependencyContext for an assembly from a application published as single-file is not supported. The method will return null. Make sure the calling code can handle this case.")]
         public static DependencyContext Load(Assembly assembly)
         {
             return DependencyContextLoader.Default.Load(assembly);

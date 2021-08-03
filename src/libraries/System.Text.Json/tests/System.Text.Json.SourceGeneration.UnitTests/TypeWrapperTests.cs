@@ -46,11 +46,14 @@ namespace System.Text.Json.SourceGeneration.UnitTests
             using System.Text.Json.Serialization;
             using ReferencedAssembly;
 
-            [assembly: JsonSerializable(typeof(HelloWorld.MyType))]
-            [assembly: JsonSerializable(typeof(ReferencedAssembly.ReferencedType))]
-
             namespace HelloWorld
             {
+                [JsonSerializable(typeof(HelloWorld.MyType))]
+                [JsonSerializable(typeof(ReferencedAssembly.ReferencedType))]
+                internal partial class JsonContext : JsonSerializerContext
+                {
+                }
+
                 public class MyType
                 {
                     public void MyMethod() { }
@@ -82,10 +85,13 @@ namespace System.Text.Json.SourceGeneration.UnitTests
             using System;
             using System.Text.Json.Serialization;
 
-            [assembly: JsonSerializable(typeof(HelloWorld.MyType))]
-
             namespace HelloWorld
             {
+                [JsonSerializable(typeof(HelloWorld.MyType))]
+                internal partial class JsonContext : JsonSerializerContext
+                {
+                }
+
                 public class MyType
                 {
                     [JsonInclude]
@@ -152,8 +158,10 @@ namespace System.Text.Json.SourceGeneration.UnitTests
                 receivedMethodsWithAttributeNames
             );
 
+            BindingFlags bindingFlags = BindingFlags.Public | BindingFlags.Instance;
+
             // Check for FieldInfoWrapper attribute usage.
-            (string, string[])[] receivedFieldsWithAttributeNames = foundType.GetFields().Select(field => (field.Name, field.GetCustomAttributesData().Cast<CustomAttributeData>().Select(attributeData => attributeData.AttributeType.Name).ToArray())).Where(x => x.Item2.Any()).ToArray();
+            (string, string[])[] receivedFieldsWithAttributeNames = foundType.GetFields(bindingFlags).Select(field => (field.Name, field.GetCustomAttributesData().Cast<CustomAttributeData>().Select(attributeData => attributeData.AttributeType.Name).ToArray())).Where(x => x.Item2.Any()).ToArray();
             Assert.Equal(
                 new (string, string[])[] {
                     ("PublicDouble", new string[] { "JsonIncludeAttribute" }),
@@ -163,7 +171,7 @@ namespace System.Text.Json.SourceGeneration.UnitTests
             );
 
             // Check for PropertyInfoWrapper attribute usage.
-            (string, string[])[] receivedPropertyWithAttributeNames  = foundType.GetProperties().Select(property => (property.Name, property.GetCustomAttributesData().Cast<CustomAttributeData>().Select(attributeData => attributeData.AttributeType.Name).ToArray())).Where(x => x.Item2.Any()).ToArray();
+            (string, string[])[] receivedPropertyWithAttributeNames  = foundType.GetProperties(bindingFlags).Select(property => (property.Name, property.GetCustomAttributesData().Cast<CustomAttributeData>().Select(attributeData => attributeData.AttributeType.Name).ToArray())).Where(x => x.Item2.Any()).ToArray();
             Assert.Equal(
                 new (string, string[])[] {
                     ("PublicPropertyInt", new string[] { "JsonPropertyNameAttribute" }),

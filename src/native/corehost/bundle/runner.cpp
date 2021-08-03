@@ -21,6 +21,7 @@ StatusCode runner_t::extract()
 
         // Set the Reader at header_offset
         reader_t reader(addr, m_bundle_size, m_header_offset);
+        m_offset_in_file = reader.offset_in_file();
 
         // Read the bundle header
         m_header = header_t::read(reader);
@@ -74,7 +75,7 @@ bool runner_t::probe(const pal::string_t& relative_path, int64_t* offset, int64_
     assert(!entry->is_disabled());
     assert(entry->offset() != 0);
 
-    *offset = entry->offset();
+    *offset = entry->offset() + m_offset_in_file;
     *size = entry->size();
     *compressedSize = entry->compressedSize();
 

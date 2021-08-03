@@ -197,6 +197,7 @@ namespace System.Diagnostics.Tests
 
         [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/50570", TestPlatforms.Android)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36882", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public void Trace_ClearTraceListeners_StopsWritingToDebugger()
         {
             VerifyLogged(() => Debug.Write("pizza"), "pizza");
@@ -231,6 +232,7 @@ namespace System.Diagnostics.Tests
 
         [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/50570", TestPlatforms.Android)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36882", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public void TraceWriteLineIf()
         {
             VerifyLogged(() => Trace.WriteLineIf(true, 5), "5" + Environment.NewLine);

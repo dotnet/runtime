@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Security;
 using System.Threading;
@@ -27,6 +28,8 @@ namespace System.IO.IsolatedStorage
             return dataDirectory;
         }
 
+        [UnconditionalSuppressMessage("SingleFile", "IL3000:Avoid accessing Assembly file path when publishing as a single file",
+            Justification = "Code handles single-file deployment by using the information of the .exe file")]
         internal static void GetDefaultIdentityAndHash(out object identity, out string hash, char separator)
         {
             // In .NET Framework IsolatedStorage uses identity from System.Security.Policy.Evidence to build
@@ -43,31 +46,37 @@ namespace System.IO.IsolatedStorage
             // by pulling directly from EntryAssembly.
             //
             // Note that it is possible that there won't be an EntryAssembly, which is something the .NET Framework doesn't
-            // have to deal with and shouldn't be likely on .NET Core due to a single AppDomain. Without Evidence
-            // to pull from we'd have to dig into the use case to try and find a reasonable solution should we
-            // run into this in the wild.
+            // have to deal with and isn't likely on .NET Core due to a single AppDomain. The exception is Android which
+            // doesn't set an EntryAssembly.
 
             Assembly? assembly = Assembly.GetEntryAssembly();
+            string? location = null;
 
-            if (assembly == null)
+            if (assembly != null)
+            {
+                AssemblyName assemblyName = assembly.GetName();
+
+                hash = IdentityHelper.GetNormalizedStrongNameHash(assemblyName)!;
+                if (hash != null)
+                {
+                    hash = "StrongName" + separator + hash;
+                    identity = assemblyName;
+                    return;
+                }
+                else
+                {
+                    location = assembly.Location;
+                }
+            }
+
+            // In case of SingleFile deployment, Assembly.Location is empty. On Android there is no entry assembly.
+            if (string.IsNullOrEmpty(location))
+                location = Environment.ProcessPath;
+            if (string.IsNullOrEmpty(location))
                 throw new IsolatedStorageException(SR.IsolatedStorage_Init);
-
-            AssemblyName assemblyName = assembly.GetName();
-#pragma warning disable SYSLIB0012
-            Uri codeBase = new Uri(assembly.CodeBase!);
-#pragma warning restore SYSLIB0012
-
-            hash = IdentityHelper.GetNormalizedStrongNameHash(assemblyName)!;
-            if (hash != null)
-            {
-                hash = "StrongName" + separator + hash;
-                identity = assemblyName;
-            }
-            else
-            {
-                hash = "Url" + separator + IdentityHelper.GetNormalizedUriHash(codeBase);
-                identity = codeBase;
-            }
+            Uri locationUri = new Uri(location);
+            hash = "Url" + separator + IdentityHelper.GetNormalizedUriHash(locationUri);
+            identity = locationUri;
         }
 
         internal static string GetRandomDirectory(string rootDirectory, IsolatedStorageScope scope)

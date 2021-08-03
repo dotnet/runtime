@@ -37,7 +37,7 @@ namespace System.Net.Http
 
             public sealed override Task CopyToAsync(Stream destination, int bufferSize, CancellationToken cancellationToken) => throw new NotSupportedException();
 
-            public abstract ValueTask FinishAsync(bool async);
+            public abstract Task FinishAsync(bool async);
         }
     }
 }

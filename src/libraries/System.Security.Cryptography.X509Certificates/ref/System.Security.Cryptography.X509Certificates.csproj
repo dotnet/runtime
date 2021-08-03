@@ -2,6 +2,7 @@
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppCurrent)</TargetFrameworks>
     <Nullable>enable</Nullable>
+    <NoWarn>$(NoWarn);SYSLIB0026</NoWarn>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System.Security.Cryptography.X509Certificates.cs" />

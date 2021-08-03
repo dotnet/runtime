@@ -26,7 +26,7 @@ bool GetModuleFileNameWrapper(HMODULE hModule, pal::string_t* recv)
         return false;
 
     path.resize(dwModuleFileName);
-    *recv = path;
+    recv->assign(path);
     return true;
 }
 
@@ -38,13 +38,6 @@ bool GetModuleHandleFromAddress(void *addr, HMODULE *hModule)
         hModule);
 
     return (res != FALSE);
-}
-
-pal::string_t pal::to_lower(const pal::string_t& in)
-{
-    pal::string_t ret = in;
-    std::transform(ret.begin(), ret.end(), ret.begin(), ::towlower);
-    return ret;
 }
 
 pal::string_t pal::get_timestamp()
@@ -339,7 +332,7 @@ bool pal::get_dotnet_self_registered_config_location(pal::string_t* recv)
     const pal::char_t* value;
     get_dotnet_install_location_registry_path(&key_hive, &sub_key, &value);
 
-    *recv = (key_hive == HKEY_CURRENT_USER ? _X("HKCU\\") : _X("HKLM\\")) + sub_key + _X("\\") + value;
+    recv->assign((key_hive == HKEY_CURRENT_USER ? _X("HKCU\\") : _X("HKLM\\")) + sub_key + _X("\\") + value);
     return true;
 #endif
 }
@@ -569,7 +562,7 @@ bool pal::get_module_path(dll_t mod, string_t* recv)
     return GetModuleFileNameWrapper(mod, recv);
 }
 
-bool pal::get_temp_directory(pal::string_t& tmp_dir)
+bool get_extraction_base_parent_directory(pal::string_t& directory)
 {
     const size_t max_len = MAX_PATH + 1;
     pal::char_t temp_path[max_len];
@@ -581,14 +574,14 @@ bool pal::get_temp_directory(pal::string_t& tmp_dir)
     }
 
     assert(len < max_len);
-    tmp_dir.assign(temp_path);
+    directory.assign(temp_path);
 
-    return realpath(&tmp_dir);
+    return pal::realpath(&directory);
 }
 
 bool pal::get_default_bundle_extraction_base_dir(pal::string_t& extraction_dir)
 {
-    if (!get_temp_directory(extraction_dir))
+    if (!get_extraction_base_parent_directory(extraction_dir))
     {
         return false;
     }
@@ -652,11 +645,15 @@ bool pal::clr_palstring(const char* cstr, pal::string_t* out)
 // Return if path is valid and file exists, return true and adjust path as appropriate.
 bool pal::realpath(string_t* path, bool skip_error_logging)
 {
+    if (path->empty())
+    {
+        return false;
+    }
+
     if (LongFile::IsNormalized(*path))
     {
         WIN32_FILE_ATTRIBUTE_DATA data;
-        if (path->empty() // An empty path doesn't exist
-            || GetFileAttributesExW(path->c_str(), GetFileExInfoStandard, &data) != 0)
+        if (GetFileAttributesExW(path->c_str(), GetFileExInfoStandard, &data) != 0)
         {
             return true;
         }
@@ -720,11 +717,6 @@ bool pal::realpath(string_t* path, bool skip_error_logging)
 
 bool pal::file_exists(const string_t& path)
 {
-    if (path.empty())
-    {
-        return false;
-    }
-
     string_t tmp(path);
     return pal::realpath(&tmp, true);
 }

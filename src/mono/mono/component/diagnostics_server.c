@@ -8,12 +8,6 @@
 #include <mono/utils/mono-compiler.h>
 #include <eventpipe/ds-server.h>
 
-#ifndef STATIC_COMPONENTS
-MONO_COMPONENT_EXPORT_ENTRYPOINT
-MonoComponentDiagnosticsServer *
-mono_component_diagnostics_server_init (void);
-#endif
-
 static bool
 diagnostics_server_available (void);
 

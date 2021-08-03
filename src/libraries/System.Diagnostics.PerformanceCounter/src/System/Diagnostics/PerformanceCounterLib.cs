@@ -14,7 +14,7 @@ using System.IO;
 
 using static Interop.Advapi32;
 
-#if NETCOREAPP2_0 || !NETCOREAPP
+#if !NETCOREAPP
 using MemoryMarshal = System.Diagnostics.PerformanceCounterLib;
 #endif
 
@@ -105,7 +105,7 @@ namespace System.Diagnostics
             }
         }
 
-#if NETCOREAPP2_0 || !NETCOREAPP
+#if !NETCOREAPP
         internal static T Read<T>(ReadOnlySpan<byte> span) where T : struct
             => System.Runtime.InteropServices.MemoryMarshal.Read<T>(span);
 

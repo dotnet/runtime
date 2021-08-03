@@ -34,6 +34,10 @@ endif(CORECLR_SET_RPATH)
 
 OPTION(CLR_CMAKE_ENABLE_CODE_COVERAGE "Enable code coverage" OFF)
 
+if(CLR_CMAKE_HOST_ARCH_S390X)
+  add_definitions(-DBIGENDIAN)
+endif(CLR_CMAKE_HOST_ARCH_S390X)
+
 #----------------------------------------------------
 # Cross target Component build specific configuration
 #----------------------------------------------------
@@ -115,6 +119,8 @@ add_subdirectory(pal/prebuilt/inc)
 
 add_subdirectory(debug/debug-pal)
 
+add_subdirectory(minipal)
+
 if(CLR_CMAKE_TARGET_WIN32)
   add_subdirectory(gc/sample)
 endif()
@@ -167,6 +173,7 @@ include_directories("classlibnative/cryptography")
 include_directories("classlibnative/inc")
 include_directories("${GENERATED_INCLUDE_DIR}")
 include_directories("hosts/inc")
+include_directories("minipal")
 
 if(CLR_CMAKE_TARGET_WIN32 AND FEATURE_EVENT_TRACE)
     include_directories("${GENERATED_INCLUDE_DIR}/etw")

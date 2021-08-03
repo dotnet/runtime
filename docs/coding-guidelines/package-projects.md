@@ -1,4 +1,6 @@
 # Package projects
+** IMPORTANT ** Package projects are in the process of being deprecated, please do not create new package projects.  Instead use normal projects (csproj) following the guidelines here: [libraries-packaging](libraries-packaging.md)
+
 Package projects bring together all the assemblies that make up a library on different platforms into a set of NuGet packages.
 
 ## Package hierarchy

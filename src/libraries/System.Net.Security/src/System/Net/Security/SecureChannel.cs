@@ -737,7 +737,7 @@ namespace System.Net.Security
             {
                 if (token.Failed)
                 {
-                    NetEventSource.Error(this, $"Authentication failed. Status: {status.ToString()}, Exception message: {token.GetException()!.Message}");
+                    NetEventSource.Error(this, $"Authentication failed. Status: {status}, Exception message: {token.GetException()!.Message}");
                 }
             }
             return token;
@@ -830,6 +830,15 @@ namespace System.Net.Security
             return status;
         }
 
+        internal SecurityStatusPal Renegotiate(out byte[]? output)
+        {
+            return SslStreamPal.Renegotiate(
+                                      ref _credentialsHandle!,
+                                      ref _securityContext,
+                                      _sslAuthenticationOptions,
+                                      out output);
+        }
+
         /*++
             ProcessHandshakeSuccess -
                Called on successful completion of Handshake -
@@ -870,7 +879,7 @@ namespace System.Net.Security
         --*/
         internal SecurityStatusPal Encrypt(ReadOnlyMemory<byte> buffer, ref byte[] output, out int resultSize)
         {
-            if (NetEventSource.Log.IsEnabled()) NetEventSource.DumpBuffer(this, buffer);
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.DumpBuffer(this, buffer.Span);
 
             byte[] writeBuffer = output;
 
@@ -894,24 +903,12 @@ namespace System.Net.Security
             return secStatus;
         }
 
-        internal SecurityStatusPal Decrypt(byte[]? payload, ref int offset, ref int count)
+        internal SecurityStatusPal Decrypt(Span<byte> buffer, out int outputOffset, out int outputCount)
         {
-            if ((uint)offset > (uint)(payload == null ? 0 : payload.Length))
-            {
-                Debug.Fail("Argument 'offset' out of range.");
-                throw new ArgumentOutOfRangeException(nameof(offset));
-            }
-
-            if ((uint)count > (uint)(payload == null ? 0 : payload.Length - offset))
-            {
-                Debug.Fail("Argument 'count' out of range.");
-                throw new ArgumentOutOfRangeException(nameof(count));
-            }
-
-            SecurityStatusPal status = SslStreamPal.DecryptMessage(_securityContext!, payload!, ref offset, ref count);
+            SecurityStatusPal status = SslStreamPal.DecryptMessage(_securityContext!, buffer, out outputOffset, out outputCount);
             if (NetEventSource.Log.IsEnabled() && status.ErrorCode == SecurityStatusPalErrorCode.OK)
             {
-                NetEventSource.DumpBuffer(this, payload!, offset, count);
+                NetEventSource.DumpBuffer(this, buffer.Slice(outputOffset, outputCount));
             }
 
             return status;
@@ -925,7 +922,7 @@ namespace System.Net.Security
         --*/
 
         //This method validates a remote certificate.
-        internal bool VerifyRemoteCertificate(RemoteCertificateValidationCallback? remoteCertValidationCallback, ref ProtocolToken? alertToken, out SslPolicyErrors sslPolicyErrors, out X509ChainStatusFlags chainStatus)
+        internal bool VerifyRemoteCertificate(RemoteCertificateValidationCallback? remoteCertValidationCallback, SslCertificateTrust? trust, ref ProtocolToken? alertToken, out SslPolicyErrors sslPolicyErrors, out X509ChainStatusFlags chainStatus)
         {
             sslPolicyErrors = SslPolicyErrors.None;
             chainStatus = X509ChainStatusFlags.NoError;
@@ -966,6 +963,19 @@ namespace System.Net.Security
                     if (remoteCertificateStore != null)
                     {
                         chain.ChainPolicy.ExtraStore.AddRange(remoteCertificateStore);
+                    }
+
+                    if (trust != null)
+                    {
+                        chain.ChainPolicy.TrustMode = X509ChainTrustMode.CustomRootTrust;
+                        if (trust._store != null)
+                        {
+                            chain.ChainPolicy.CustomTrustStore.AddRange(trust._store.Certificates);
+                        }
+                        if (trust._trustList != null)
+                        {
+                            chain.ChainPolicy.CustomTrustStore.AddRange(trust._trustList);
+                        }
                     }
 
                     sslPolicyErrors |= CertificateValidationPal.VerifyCertificateProperties(

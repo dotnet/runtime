@@ -559,7 +559,12 @@ namespace System.Text.Json
             {
                 if (_memberAccessorStrategy == null)
                 {
-#if NETFRAMEWORK || NETCOREAPP
+#if NETCOREAPP
+                    // if dynamic code isn't supported, fallback to reflection
+                    _memberAccessorStrategy = RuntimeFeature.IsDynamicCodeSupported ?
+                        new ReflectionEmitMemberAccessor() :
+                        new ReflectionMemberAccessor();
+#elif NETFRAMEWORK
                     _memberAccessorStrategy = new ReflectionEmitMemberAccessor();
 #else
                     _memberAccessorStrategy = new ReflectionMemberAccessor();
@@ -636,6 +641,16 @@ namespace System.Text.Json
         {
             _classes.Clear();
             _lastClass = null;
+        }
+
+        internal JsonDocumentOptions GetDocumentOptions()
+        {
+            return new JsonDocumentOptions
+            {
+                AllowTrailingCommas = AllowTrailingCommas,
+                CommentHandling = ReadCommentHandling,
+                MaxDepth = MaxDepth
+            };
         }
 
         internal JsonNodeOptions GetNodeOptions()

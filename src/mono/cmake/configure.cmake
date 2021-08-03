@@ -16,6 +16,10 @@ if(C_SUPPORTS_WUNGUARDED_AVAILABILITY)
   set(CMAKE_REQUIRED_FLAGS "${CMAKE_REQUIRED_FLAGS} -Werror=unguarded-availability")
 endif()
 
+if(HOST_SOLARIS)
+  set(CMAKE_REQUIRED_DEFINITIONS "${CMAKE_REQUIRED_DEFINITIONS} -DGC_SOLARIS_THREADS -DGC_SOLARIS_PTHREADS -D_REENTRANT -D_POSIX_PTHREAD_SEMANTICS -DUSE_MMAP -DUSE_MUNMAP -DHOST_SOLARIS -D__EXTENSIONS__ -D_XPG4_2")
+endif()
+
 function(ac_check_headers)
   foreach(arg ${ARGN})
 	check_include_file ("${arg}" FOUND_${arg})
@@ -57,8 +61,8 @@ endfunction()
 ac_check_headers (
   sys/types.h sys/stat.h sys/filio.h sys/sockio.h sys/utime.h sys/un.h sys/syscall.h sys/uio.h sys/param.h sys/sysctl.h
   sys/prctl.h sys/socket.h sys/utsname.h sys/select.h sys/user.h sys/poll.h sys/wait.h sts/auxv.h sys/resource.h
-  sys/ioctl.h sys/errno.h sys/sendfile.h sys/statvfs.h sys/statfs.h sys/mman.h sys/mount.h sys/time.h sys/random.h
-  strings.h stdint.h unistd.h netdb.h utime.h semaphore.h libproc.h alloca.h ucontext.h pwd.h
+  sys/ioctl.h sys/errno.h sys/sendfile.h sys/statvfs.h sys/statfs.h sys/mman.h sys/mount.h sys/time.h sys/random.h sys/mman.h
+  strings.h stdint.h unistd.h netdb.h utime.h semaphore.h libproc.h alloca.h ucontext.h pwd.h elf.h
   gnu/lib-names.h netinet/tcp.h netinet/in.h link.h arpa/inet.h unwind.h poll.h wchar.h linux/magic.h
   android/legacy_signal_inlines.h android/ndk-version.h execinfo.h pthread.h pthread_np.h net/if.h dirent.h
   CommonCrypto/CommonDigest.h dlfcn.h getopt.h pwd.h iconv.h alloca.h
@@ -66,7 +70,7 @@ ac_check_headers (
 
 ac_check_funcs (
   sigaction kill clock_nanosleep kqueue backtrace_symbols mkstemp mmap
-  madvise getrusage dladdr sysconf getrlimit prctl nl_langinfo
+  getrusage dladdr sysconf getrlimit prctl nl_langinfo
   sched_getaffinity sched_setaffinity getpwuid_r readlink chmod lstat getdtablesize ftruncate msync
   getpeername utime utimes openlog closelog atexit popen strerror_r inet_pton inet_aton
   shm_open poll getfsstat mremap posix_fadvise vsnprintf sendfile statfs statvfs setpgid system
@@ -89,6 +93,7 @@ ac_check_funcs(
   pthread_attr_setstacksize pthread_get_stackaddr_np
 )
 
+check_symbol_exists(madvise "sys/mman.h" HAVE_MADVISE)
 check_symbol_exists(pthread_mutexattr_setprotocol "pthread.h" HAVE_DECL_PTHREAD_MUTEXATTR_SETPROTOCOL)
 check_symbol_exists(CLOCK_MONOTONIC "time.h" HAVE_CLOCK_MONOTONIC)
 check_symbol_exists(CLOCK_MONOTONIC_COARSE "time.h" HAVE_CLOCK_MONOTONIC_COARSE)
@@ -159,4 +164,14 @@ if(HOST_IOS)
   endif()
 elseif(HOST_MACCAT)
   set(HAVE_SYSTEM 0)
+endif()
+
+if(HOST_BROWSER)
+  set(HAVE_FORK 0)
+endif()
+
+if(HOST_SOLARIS)
+  set(HAVE_GETPROTOBYNAME 1)
+  set(HAVE_NETINET_TCP_H 1)
+  set(HAVE_GETADDRINFO 1)
 endif()

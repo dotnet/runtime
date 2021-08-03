@@ -1330,8 +1330,6 @@ private:
 
     PTR_PEFile              m_file;
 
-    MethodDesc              *m_pDllMain;
-
     enum {
         // These are the values set in m_dwTransientFlags.
         // Note that none of these flags survive a prejit save/restore.
@@ -2503,18 +2501,6 @@ public:
     // Enregisters a VASig.
     VASigCookie *GetVASigCookie(Signature vaSignature);
 
-    // DLL entry point
-    MethodDesc *GetDllEntryPoint()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return m_pDllMain;
-    }
-    void SetDllEntryPoint(MethodDesc *pMD)
-    {
-        LIMITED_METHOD_CONTRACT;
-        m_pDllMain = pMD;
-    }
-
 #ifdef FEATURE_PREJIT
     // This data is only valid for NGEN'd modules, and for modules we're creating at NGEN time.
     ModuleCtorInfo* GetZapModuleCtorInfo()
@@ -2525,10 +2511,7 @@ public:
     }
 #endif
 
- private:
-
-
- public:
+public:
 #ifndef DACCESS_COMPILE
     BOOL Equals(Module *pModule) { WRAPPER_NO_CONTRACT; return m_file->Equals(pModule->m_file); }
     BOOL Equals(PEFile *pFile) { WRAPPER_NO_CONTRACT; return m_file->Equals(pFile); }
@@ -2696,17 +2679,17 @@ public:
     IMDInternalImport *GetNativeAssemblyImport(BOOL loadAllowed = TRUE);
     IMDInternalImport *GetNativeAssemblyImportIfLoaded();
 
-    BOOL FixupNativeEntry(CORCOMPILE_IMPORT_SECTION * pSection, SIZE_T fixupIndex, SIZE_T *fixup);
+    BOOL FixupNativeEntry(CORCOMPILE_IMPORT_SECTION * pSection, SIZE_T fixupIndex, SIZE_T *fixup, BOOL mayUsePrecompiledNDirectMethods = TRUE);
 
     //this split exists to support new CLR Dump functionality in DAC.  The
     //template removes any indirections.
-    BOOL FixupDelayList(TADDR pFixupList);
+    BOOL FixupDelayList(TADDR pFixupList, BOOL mayUsePrecompiledNDirectMethods = TRUE);
 
     template<typename Ptr, typename FixupNativeEntryCallback>
     BOOL FixupDelayListAux(TADDR pFixupList,
                            Ptr pThis, FixupNativeEntryCallback pfnCB,
                            PTR_CORCOMPILE_IMPORT_SECTION pImportSections, COUNT_T nImportSections,
-                           PEDecoder * pNativeImage);
+                           PEDecoder * pNativeImage, BOOL mayUsePrecompiledNDirectMethods = TRUE);
     void RunEagerFixups();
     void RunEagerFixupsUnlocked();
 
@@ -3227,9 +3210,6 @@ private:
     // This is used to allow bulk emitting types without re-emitting the metadata between each type.
     bool m_fSuppressMetadataCapture;
 
-    // If true, then only other transient modules can depend on this module.
-    bool m_fIsTransient;
-
 #if !defined DACCESS_COMPILE && !defined CROSSGEN_COMPILE
     // Returns true iff metadata capturing is suppressed
     bool IsMetadataCaptureSuppressed();
@@ -3261,7 +3241,7 @@ public:
 #endif
 
 #if !defined DACCESS_COMPILE && !defined CROSSGEN_COMPILE
-    static ReflectionModule *Create(Assembly *pAssembly, PEFile *pFile, AllocMemTracker *pamTracker, LPCWSTR szName, BOOL fIsTransient);
+    static ReflectionModule *Create(Assembly *pAssembly, PEFile *pFile, AllocMemTracker *pamTracker, LPCWSTR szName);
     void Initialize(AllocMemTracker *pamTracker, LPCWSTR szName);
     void Destruct();
 #endif // !DACCESS_COMPILE && !CROSSGEN_COMPILE
@@ -3311,20 +3291,6 @@ public:
         _ASSERTE(m_pISymUnmanagedWriter != NULL);
 
         return &m_pISymUnmanagedWriter;
-    }
-
-    bool IsTransient()
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        return m_fIsTransient;
-    }
-
-    void SetIsTransient(bool fIsTransient)
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        m_fIsTransient = fIsTransient;
     }
 
 #ifndef DACCESS_COMPILE

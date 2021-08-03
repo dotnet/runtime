@@ -150,7 +150,7 @@ namespace System.Net.Http.Functional.Tests
         // The purpose of this test is mainly to validate the .NET Framework OOB System.Net.Http implementation
         // since it has an underlying dependency to WebRequest. While .NET Core implementations of System.Net.Http
         // are not using any WebRequest code, the test is still useful to validate correctness.
-        [OuterLoop("Uses external server")]
+        [OuterLoop("Uses external servers")]
         [Fact]
         public async Task ProxyNotExplicitlyProvided_DefaultCredentialsSet_DefaultWebProxySetToNull_Success()
         {

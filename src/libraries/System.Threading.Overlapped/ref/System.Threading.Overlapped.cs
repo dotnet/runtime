@@ -49,6 +49,8 @@ namespace System.Threading
         public PreAllocatedOverlapped(System.Threading.IOCompletionCallback callback, object? state, object? pinData) { }
         public void Dispose() { }
         ~PreAllocatedOverlapped() { }
+        [System.CLSCompliantAttribute(false)]
+        public static System.Threading.PreAllocatedOverlapped UnsafeCreate(System.Threading.IOCompletionCallback callback, object? state, object? pinData) { throw null; }
     }
     public sealed partial class ThreadPoolBoundHandle : System.IDisposable
     {
@@ -64,5 +66,7 @@ namespace System.Threading
         public unsafe void FreeNativeOverlapped(System.Threading.NativeOverlapped* overlapped) { }
         [System.CLSCompliantAttribute(false)]
         public unsafe static object? GetNativeOverlappedState(System.Threading.NativeOverlapped* overlapped) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public unsafe System.Threading.NativeOverlapped* UnsafeAllocateNativeOverlapped(System.Threading.IOCompletionCallback callback, object? state, object? pinData) { throw null; }
     }
 }

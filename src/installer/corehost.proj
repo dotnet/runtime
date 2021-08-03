@@ -5,7 +5,6 @@
     package's targets into the build.
   -->
   <PropertyGroup>
-    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
     <IncrementalNativeBuild Condition="'$(IncrementalNativeBuild)' == ''">true</IncrementalNativeBuild>
     <BuildCoreHostDependsOn>GetProductVersions;GenerateNativeVersionFile</BuildCoreHostDependsOn>
     <BuildCoreHostDependsOn Condition="'$(DisableSourceLink)' != 'true'">$(BuildCoreHostDependsOn);InitializeSourceControlInformationFromSourceControlManager</BuildCoreHostDependsOn>
@@ -31,6 +30,7 @@
       <BuildArgs>$(BuildArgs) -coreclrartifacts $(CoreCLRArtifactsPath)</BuildArgs>
       <BuildArgs Condition="'$(Ninja)' == 'true'">$(BuildArgs) -ninja</BuildArgs>
       <BuildArgs>$(BuildArgs) -runtimeflavor $(RuntimeFlavor)</BuildArgs>
+      <BuildArgs Condition="'$(OfficialBuildId)' != ''">$(BuildArgs) /p:OfficialBuildId="$(OfficialBuildId)"</BuildArgs>
     </PropertyGroup>
 
     <!--

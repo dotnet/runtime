@@ -426,6 +426,7 @@ eventpipe_protocol_helper_collect_tracing (
 		payload->serialization_format,
 		true,
 		ds_ipc_stream_get_stream_ref (stream),
+		NULL,
 		NULL);
 
 	if (session_id == 0) {
@@ -475,6 +476,7 @@ eventpipe_protocol_helper_collect_tracing_2 (
 		payload->serialization_format,
 		payload->rundown_requested,
 		ds_ipc_stream_get_stream_ref (stream),
+		NULL,
 		NULL);
 
 	if (session_id == 0) {

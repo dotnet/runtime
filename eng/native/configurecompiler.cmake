@@ -43,11 +43,15 @@ set(CMAKE_EXE_LINKER_FLAGS_DEBUG "")
 set(CMAKE_EXE_LINKER_FLAGS_DEBUG "")
 set(CMAKE_EXE_LINKER_FLAGS_RELWITHDEBINFO "")
 
-add_compile_definitions("$<$<OR:$<CONFIG:DEBUG>,$<CONFIG:CHECKED>>:DEBUG;_DEBUG;_DBG;URTBLDENV_FRIENDLY=Checked;BUILDENV_CHECKED=1>")
+add_compile_definitions("$<$<CONFIG:DEBUG>:DEBUG;_DEBUG;_DBG;URTBLDENV_FRIENDLY=Debug;BUILDENV_DEBUG=1>")
+add_compile_definitions("$<$<CONFIG:CHECKED>:DEBUG;_DEBUG;_DBG;URTBLDENV_FRIENDLY=Checked;BUILDENV_CHECKED=1>")
 add_compile_definitions("$<$<OR:$<CONFIG:RELEASE>,$<CONFIG:RELWITHDEBINFO>>:NDEBUG;URTBLDENV_FRIENDLY=Retail>")
 
 if (MSVC)
-  add_linker_flag(/GUARD:CF)
+  add_linker_flag(/guard:cf)
+  #if (CLR_CMAKE_HOST_ARCH_AMD64)
+  #  add_linker_flag(/guard:ehcont)
+  #endif (CLR_CMAKE_HOST_ARCH_AMD64)
 
   # Linker flags
   #
@@ -69,6 +73,10 @@ if (MSVC)
   set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} /DEBUG")
   set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} /IGNORE:4197,4013,4254,4070,4221")
   set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} /SUBSYSTEM:WINDOWS,${WINDOWS_SUBSYSTEM_VERSION}")
+
+  #if (CLR_CMAKE_HOST_ARCH_AMD64)
+  #  set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} /CETCOMPAT")
+  #endif (CLR_CMAKE_HOST_ARCH_AMD64)
 
   set(CMAKE_STATIC_LINKER_FLAGS "${CMAKE_STATIC_LINKER_FLAGS} /IGNORE:4221")
 
@@ -208,6 +216,10 @@ elseif (CLR_CMAKE_HOST_ARCH_ARM64)
   set(ARCH_HOST_NAME arm64)
   add_definitions(-DHOST_ARM64)
   add_definitions(-DHOST_64BIT)
+elseif (CLR_CMAKE_HOST_ARCH_S390X)
+  set(ARCH_HOST_NAME s390x)
+  add_definitions(-DHOST_S390X)
+  add_definitions(-DHOST_64BIT)
 else ()
   clr_unknown_arch()
 endif ()
@@ -222,6 +234,8 @@ if (CLR_CMAKE_HOST_UNIX)
       message("Detected Linux ARM64")
     elseif(CLR_CMAKE_HOST_UNIX_X86)
       message("Detected Linux i686")
+    elseif(CLR_CMAKE_HOST_UNIX_S390X)
+      message("Detected Linux s390x")
     else()
       clr_unknown_arch()
     endif()
@@ -277,6 +291,11 @@ elseif (CLR_CMAKE_TARGET_ARCH_I386)
     set(ARCH_TARGET_NAME x86)
     set(ARCH_SOURCES_DIR i386)
     add_compile_definitions($<$<NOT:$<BOOL:$<TARGET_PROPERTY:IGNORE_DEFAULT_TARGET_ARCH>>>:TARGET_X86>)
+elseif (CLR_CMAKE_TARGET_ARCH_S390X)
+    set(ARCH_TARGET_NAME s390x)
+    set(ARCH_SOURCES_DIR s390x)
+    add_compile_definitions($<$<NOT:$<BOOL:$<TARGET_PROPERTY:IGNORE_DEFAULT_TARGET_ARCH>>>:TARGET_S390X>)
+    add_compile_definitions($<$<NOT:$<BOOL:$<TARGET_PROPERTY:IGNORE_DEFAULT_TARGET_ARCH>>>:TARGET_64BIT>)
 else ()
     clr_unknown_arch()
 endif ()
@@ -381,30 +400,33 @@ if (CLR_CMAKE_HOST_UNIX)
       # replaced with a default value, and always gets expanded to an OS version.
       # https://gitlab.kitware.com/cmake/cmake/-/issues/20132
       # We need to disable the warning that -tagret replaces -mmacosx-version-min
-      add_compile_options(-Wno-overriding-t-option)
+      set(DISABLE_OVERRIDING_MIN_VERSION_ERROR -Wno-overriding-t-option)
       add_link_options(-Wno-overriding-t-option)
       if(CLR_CMAKE_HOST_ARCH_ARM64)
-        add_compile_options(-target arm64-apple-ios14.2-macabi)
+        set(MACOS_VERSION_MIN_FLAGS "-target arm64-apple-ios14.2-macabi")
         add_link_options(-target arm64-apple-ios14.2-macabi)
       elseif(CLR_CMAKE_HOST_ARCH_AMD64)
-        add_compile_options(-target x86_64-apple-ios13.5-macabi)
+        set(MACOS_VERSION_MIN_FLAGS "-target x86_64-apple-ios13.5-macabi")
         add_link_options(-target x86_64-apple-ios13.5-macabi)
       else()
         clr_unknown_arch()
       endif()
+      # These options are intentionally set using the CMAKE_XXX_FLAGS instead of
+      # add_compile_options so that they take effect on the configuration functions
+      # in various configure.cmake files.
+      set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${MACOS_VERSION_MIN_FLAGS} ${DISABLE_OVERRIDING_MIN_VERSION_ERROR}")
+      set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${MACOS_VERSION_MIN_FLAGS} ${DISABLE_OVERRIDING_MIN_VERSION_ERROR}")
+      set(CMAKE_ASM_FLAGS "${CMAKE_ASM_FLAGS} ${MACOS_VERSION_MIN_FLAGS} ${DISABLE_OVERRIDING_MIN_VERSION_ERROR}")
     else()
       if(CLR_CMAKE_HOST_ARCH_ARM64)
-        # 'pthread_jit_write_protect_np' is only available on macOS 11.0 or newer
-        set(MACOS_VERSION_MIN_FLAGS -mmacosx-version-min=11.0)
+        set(CMAKE_OSX_DEPLOYMENT_TARGET "11.0")
         add_compile_options(-arch arm64)
       elseif(CLR_CMAKE_HOST_ARCH_AMD64)
-        set(MACOS_VERSION_MIN_FLAGS -mmacosx-version-min=10.13)
+        set(CMAKE_OSX_DEPLOYMENT_TARGET "10.13")
         add_compile_options(-arch x86_64)
       else()
         clr_unknown_arch()
       endif()
-      add_compile_options(${MACOS_VERSION_MIN_FLAGS})
-      add_linker_flag(${MACOS_VERSION_MIN_FLAGS})
     endif(CLR_CMAKE_TARGET_MACCATALYST)
   endif(CLR_CMAKE_HOST_OSX OR CLR_CMAKE_HOST_MACCATALYST)
 
@@ -549,6 +571,14 @@ if (MSVC)
   # Added using variables instead of add_compile_options to let individual projects override it
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /guard:cf")
   set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /guard:cf")
+
+  # Enable EH-continuation table for native components for amd64 builds
+  # Added using variables instead of add_compile_options to let individual projects override it
+  if (CLR_CMAKE_HOST_ARCH_AMD64)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /guard:ehcont")
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /guard:ehcont")
+    set(CMAKE_ASM_MASM_FLAGS "${CMAKE_C_FLAGS} /guard:ehcont")
+  endif (CLR_CMAKE_HOST_ARCH_AMD64)
 
   # Statically linked CRT (libcmt[d].lib, libvcruntime[d].lib and libucrt[d].lib) by default. This is done to avoid
   # linking in VCRUNTIME140.DLL for a simplified xcopy experience by reducing the dependency on VC REDIST.

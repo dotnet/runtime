@@ -90,13 +90,14 @@ jobs:
     - windows_x64
     - windows_x86
     - windows_arm64
+    - CoreClrTestBuildHost # Either OSX_x64 or Linux_x64
     helixQueueGroup: ci
     helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
     jobParameters:
       testGroup: outerloop
       liveLibrariesBuildConfig: Release
-      collectionType: crossgen
-      collectionName: libraries
+      collectionType: pmi
+      collectionName: coreclr_tests
 
 - template: /eng/pipelines/common/platform-matrix.yml
   parameters:
@@ -118,29 +119,7 @@ jobs:
       testGroup: outerloop
       liveLibrariesBuildConfig: Release
       collectionType: pmi
-      collectionName: tests
-
-- template: /eng/pipelines/common/platform-matrix.yml
-  parameters:
-    jobTemplate: /eng/pipelines/coreclr/templates/superpmi-job.yml
-    buildConfig: checked
-    platforms:
-    # Linux tests are built on the OSX machines.
-    # - OSX_x64
-    - Linux_arm
-    - Linux_arm64
-    - Linux_x64
-    - windows_x64
-    - windows_x86
-    - windows_arm64
-    - CoreClrTestBuildHost # Either OSX_x64 or Linux_x64
-    helixQueueGroup: ci
-    helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
-    jobParameters:
-      testGroup: outerloop
-      liveLibrariesBuildConfig: Release
-      collectionType: pmi
-      collectionName: tests_libraries
+      collectionName: libraries_tests
 
 - template: /eng/pipelines/common/platform-matrix.yml
   parameters:

@@ -109,7 +109,7 @@ namespace System.Net.Http.Functional.Tests
                     Task serverTask = server.AcceptConnectionAsync(async connection =>
                     {
                         await connection.ReadRequestDataAsync();
-                        await connection.SendResponseAsync(HttpStatusCode.OK, content: null, isFinal: false);
+                        await connection.SendPartialResponseHeadersAsync(HttpStatusCode.OK);
 
                         partialResponseHeadersSent.TrySetResult(true);
                         await clientFinished.Task;
@@ -329,6 +329,7 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Fact]
+        [SkipOnPlatform(TestPlatforms.Browser, "MaxConnectionsPerServer is not supported on Browser")]
         public async Task MaxConnectionsPerServer_WaitingConnectionsAreCancelable()
         {
             if (LoopbackServerFactory.Version >= HttpVersion20.Value)

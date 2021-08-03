@@ -41,7 +41,7 @@ public:
     {
         WRAPPER_NO_CONTRACT;
 
-        m_crst.Init(CrstLeafLock, CRST_UNSAFE_ANYMODE);
+        m_crst.Init(CrstUMEntryThunkFreeListLock, CRST_UNSAFE_ANYMODE);
     }
 
     UMEntryThunk *GetUMEntryThunk()
@@ -64,7 +64,7 @@ public:
         return pThunk;
     }
 
-    void AddToList(UMEntryThunk *pThunk)
+    void AddToList(UMEntryThunk *pThunkRX, UMEntryThunk *pThunkRW)
     {
         CONTRACTL
         {
@@ -74,22 +74,19 @@ public:
 
         CrstHolder ch(&m_crst);
 
-#if defined(HOST_OSX) && defined(HOST_ARM64)
-        auto jitWriteEnableHolder = PAL_JITWriteEnable(true);
-#endif // defined(HOST_OSX) && defined(HOST_ARM64)
-
         if (m_pHead == NULL)
         {
-            m_pHead = pThunk;
-            m_pTail = pThunk;
+            m_pHead = pThunkRX;
+            m_pTail = pThunkRX;
         }
         else
         {
-            m_pTail->m_pNextFreeThunk = pThunk;
-            m_pTail = pThunk;
+            ExecutableWriterHolder<UMEntryThunk> tailThunkWriterHolder(m_pTail, sizeof(UMEntryThunk));
+            tailThunkWriterHolder.GetRW()->m_pNextFreeThunk = pThunkRX;
+            m_pTail = pThunkRX;
         }
 
-        pThunk->m_pNextFreeThunk = NULL;
+        pThunkRW->m_pNextFreeThunk = NULL;
 
         ++m_count;
     }
@@ -158,9 +155,6 @@ UMEntryThunk *UMEntryThunkCache::GetUMEntryThunk(MethodDesc *pMD)
     else
     {
         // cache miss -> create a new thunk
-#if defined(HOST_OSX) && defined(HOST_ARM64)
-        auto jitWriteEnableHolder = PAL_JITWriteEnable(true);
-#endif // defined(HOST_OSX) && defined(HOST_ARM64)
         pThunk = UMEntryThunk::CreateUMEntryThunk();
         Holder<UMEntryThunk *, DoNothing, UMEntryThunk::FreeUMEntryThunk> umHolder;
         umHolder.Assign(pThunk);
@@ -169,8 +163,11 @@ UMEntryThunk *UMEntryThunkCache::GetUMEntryThunk(MethodDesc *pMD)
         Holder<UMThunkMarshInfo *, DoNothing, UMEntryThunkCache::DestroyMarshInfo> miHolder;
         miHolder.Assign(pMarshInfo);
 
-        pMarshInfo->LoadTimeInit(pMD);
-        pThunk->LoadTimeInit(NULL, NULL, pMarshInfo, pMD);
+        ExecutableWriterHolder<UMThunkMarshInfo> marshInfoWriterHolder(pMarshInfo, sizeof(UMThunkMarshInfo));
+        marshInfoWriterHolder.GetRW()->LoadTimeInit(pMD);
+
+        ExecutableWriterHolder<UMEntryThunk> thunkWriterHolder(pThunk, sizeof(UMEntryThunk));
+        thunkWriterHolder.GetRW()->LoadTimeInit(pThunk, NULL, NULL, pMarshInfo, pMD);
 
         // add it to the cache
         CacheElement element;
@@ -281,11 +278,8 @@ void STDCALL UMEntryThunk::DoRunTimeInit(UMEntryThunk* pUMEntryThunk)
     {
         GCX_PREEMP();
 
-#if defined(HOST_OSX) && defined(HOST_ARM64)
-        auto jitWriteEnableHolder = PAL_JITWriteEnable(true);
-#endif // defined(HOST_OSX) && defined(HOST_ARM64)
-
-        pUMEntryThunk->RunTimeInit();
+        ExecutableWriterHolder<UMEntryThunk> uMEntryThunkWriterHolder(pUMEntryThunk, sizeof(UMEntryThunk));
+        uMEntryThunkWriterHolder.GetRW()->RunTimeInit(pUMEntryThunk);
     }
 
     UNINSTALL_UNWIND_AND_CONTINUE_HANDLER;
@@ -323,19 +317,16 @@ void UMEntryThunk::Terminate()
     }
     CONTRACTL_END;
 
+    ExecutableWriterHolder<UMEntryThunk> thunkWriterHolder(this, sizeof(UMEntryThunk));
     m_code.Poison();
 
     if (GetObjectHandle())
     {
-#if defined(HOST_OSX) && defined(HOST_ARM64)
-        auto jitWriteEnableHolder = PAL_JITWriteEnable(true);
-#endif // defined(HOST_OSX) && defined(HOST_ARM64)
-
         DestroyLongWeakHandle(GetObjectHandle());
-        m_pObjectHandle = 0;
+        thunkWriterHolder.GetRW()->m_pObjectHandle = 0;
     }
 
-    s_thunkFreeList.AddToList(this);
+    s_thunkFreeList.AddToList(this, thunkWriterHolder.GetRW());
 }
 
 VOID UMEntryThunk::FreeUMEntryThunk(UMEntryThunk* p)

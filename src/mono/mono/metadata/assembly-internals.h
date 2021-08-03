@@ -31,7 +31,7 @@ typedef enum {
 
 G_ENUM_FUNCTIONS (MonoAssemblyNameEqFlags)
 
-void
+MONO_COMPONENT_API void
 mono_assembly_name_free_internal (MonoAssemblyName *aname);
 
 gboolean
@@ -108,7 +108,7 @@ void                   mono_assembly_request_prepare_open (MonoAssemblyOpenReque
 							   MonoAssemblyContextKind asmctx,
 							   MonoAssemblyLoadContext *alc);
 
-void                   mono_assembly_request_prepare_byname (MonoAssemblyByNameRequest *req,
+MONO_COMPONENT_API void mono_assembly_request_prepare_byname (MonoAssemblyByNameRequest *req,
 							     MonoAssemblyContextKind asmctx,
 							     MonoAssemblyLoadContext *alc);
 
@@ -120,7 +120,7 @@ MonoAssembly*          mono_assembly_request_load_from (MonoImage *image, const 
 							const MonoAssemblyLoadRequest *req,
 							MonoImageOpenStatus *status);
 
-MonoAssembly*          mono_assembly_request_byname (MonoAssemblyName *aname,
+MONO_COMPONENT_API MonoAssembly* mono_assembly_request_byname (MonoAssemblyName *aname,
 						     const MonoAssemblyByNameRequest *req,
 						     MonoImageOpenStatus *status);
 
@@ -147,6 +147,7 @@ mono_assembly_get_image_internal (MonoAssembly *assembly);
 void
 mono_set_assemblies_path_direct (char **path);
 
+MONO_COMPONENT_API
 gboolean
 mono_assembly_is_jit_optimizer_disabled (MonoAssembly *assembly);
 

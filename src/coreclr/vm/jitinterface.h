@@ -34,6 +34,7 @@ enum SignatureKind
     SK_NOT_CALLSITE,
     SK_CALLSITE,
     SK_VIRTUAL_CALLSITE,
+    SK_STATIC_VIRTUAL_CODEPOINTER_CALLSITE,
 };
 
 class Stub;
@@ -88,7 +89,8 @@ void getMethodInfoILMethodHeaderHelper(
 
 BOOL LoadDynamicInfoEntry(Module *currentModule,
                           RVA fixupRva,
-                          SIZE_T *entry);
+                          SIZE_T *entry,
+                          BOOL mayUsePrecompiledNDirectMethods = TRUE);
 
 //
 // The legacy x86 monitor helpers do not need a state argument
@@ -237,15 +239,10 @@ extern "C" FCDECL2(Object*, ChkCastAny_NoCacheLookup, CORINFO_CLASS_HANDLE type,
 extern "C" FCDECL2(Object*, IsInstanceOfAny_NoCacheLookup, CORINFO_CLASS_HANDLE type, Object* obj);
 extern "C" FCDECL2(LPVOID, Unbox_Helper, CORINFO_CLASS_HANDLE type, Object* obj);
 
-#if defined(TARGET_ARM64) || defined(FEATURE_WRITEBARRIER_COPY)
 // ARM64 JIT_WriteBarrier uses speciall ABI and thus is not callable directly
 // Copied write barriers must be called at a different location
 extern "C" FCDECL2(VOID, JIT_WriteBarrier_Callable, Object **dst, Object *ref);
 #define WriteBarrier_Helper JIT_WriteBarrier_Callable
-#else
-// in other cases the regular JIT helper is callable.
-#define WriteBarrier_Helper JIT_WriteBarrier
-#endif
 
 extern "C" FCDECL1(void, JIT_InternalThrow, unsigned exceptNum);
 extern "C" FCDECL1(void*, JIT_InternalThrowFromHelper, unsigned exceptNum);
@@ -343,28 +340,25 @@ EXTERN_C FCDECL2_VV(UINT64, JIT_LRsz, UINT64 num, int shift);
 
 #ifdef TARGET_X86
 
+#define ENUM_X86_WRITE_BARRIER_REGISTERS() \
+    X86_WRITE_BARRIER_REGISTER(EAX) \
+    X86_WRITE_BARRIER_REGISTER(ECX) \
+    X86_WRITE_BARRIER_REGISTER(EBX) \
+    X86_WRITE_BARRIER_REGISTER(ESI) \
+    X86_WRITE_BARRIER_REGISTER(EDI) \
+    X86_WRITE_BARRIER_REGISTER(EBP)
+
 extern "C"
 {
-    void STDCALL JIT_CheckedWriteBarrierEAX(); // JIThelp.asm/JIThelp.s
-    void STDCALL JIT_CheckedWriteBarrierEBX(); // JIThelp.asm/JIThelp.s
-    void STDCALL JIT_CheckedWriteBarrierECX(); // JIThelp.asm/JIThelp.s
-    void STDCALL JIT_CheckedWriteBarrierESI(); // JIThelp.asm/JIThelp.s
-    void STDCALL JIT_CheckedWriteBarrierEDI(); // JIThelp.asm/JIThelp.s
-    void STDCALL JIT_CheckedWriteBarrierEBP(); // JIThelp.asm/JIThelp.s
 
-    void STDCALL JIT_DebugWriteBarrierEAX(); // JIThelp.asm/JIThelp.s
-    void STDCALL JIT_DebugWriteBarrierEBX(); // JIThelp.asm/JIThelp.s
-    void STDCALL JIT_DebugWriteBarrierECX(); // JIThelp.asm/JIThelp.s
-    void STDCALL JIT_DebugWriteBarrierESI(); // JIThelp.asm/JIThelp.s
-    void STDCALL JIT_DebugWriteBarrierEDI(); // JIThelp.asm/JIThelp.s
-    void STDCALL JIT_DebugWriteBarrierEBP(); // JIThelp.asm/JIThelp.s
+// JIThelp.asm/JIThelp.s
+#define X86_WRITE_BARRIER_REGISTER(reg) \
+    void STDCALL JIT_CheckedWriteBarrier##reg(); \
+    void STDCALL JIT_DebugWriteBarrier##reg(); \
+    void STDCALL JIT_WriteBarrier##reg();
 
-    void STDCALL JIT_WriteBarrierEAX();        // JIThelp.asm/JIThelp.s
-    void STDCALL JIT_WriteBarrierEBX();        // JIThelp.asm/JIThelp.s
-    void STDCALL JIT_WriteBarrierECX();        // JIThelp.asm/JIThelp.s
-    void STDCALL JIT_WriteBarrierESI();        // JIThelp.asm/JIThelp.s
-    void STDCALL JIT_WriteBarrierEDI();        // JIThelp.asm/JIThelp.s
-    void STDCALL JIT_WriteBarrierEBP();        // JIThelp.asm/JIThelp.s
+    ENUM_X86_WRITE_BARRIER_REGISTERS()
+#undef X86_WRITE_BARRIER_REGISTER
 
     void STDCALL JIT_WriteBarrierGroup();
     void STDCALL JIT_WriteBarrierGroup_End();
@@ -418,6 +412,7 @@ class CEEInfo : public ICorJitInfo
     void GetTypeContext(CORINFO_CONTEXT_HANDLE context, SigTypeContext* pTypeContext);
     BOOL ContextIsInstantiated(CORINFO_CONTEXT_HANDLE context);
 
+    void HandleException(struct _EXCEPTION_POINTERS* pExceptionPointers);
 public:
 #include "icorjitinfoimpl_generated.h"
     uint32_t getClassAttribsInternal (CORINFO_CLASS_HANDLE cls);
@@ -625,6 +620,7 @@ protected:
 /*********************************************************************/
 
 class  EEJitManager;
+struct  HeapList;
 struct _hpCodeHdr;
 typedef struct _hpCodeHdr CodeHeader;
 
@@ -636,16 +632,7 @@ class CEEJitInfo : public CEEInfo
 public:
     // ICorJitInfo stuff
 
-    void allocMem (
-            uint32_t            hotCodeSize,    /* IN */
-            uint32_t            coldCodeSize,   /* IN */
-            uint32_t            roDataSize,     /* IN */
-            uint32_t            xcptnsCount,    /* IN */
-            CorJitAllocMemFlag  flag,           /* IN */
-            void **             hotCodeBlock,   /* OUT */
-            void **             coldCodeBlock,  /* OUT */
-            void **             roDataBlock     /* OUT */
-            ) override final;
+    void allocMem (AllocMemArgs *pArgs) override final;
 
     void reserveUnwindInfo(bool isFunclet, bool isColdCode, uint32_t unwindSize) override final;
 
@@ -684,7 +671,8 @@ public:
             CORINFO_METHOD_HANDLE ftnHnd, /* IN */
             PgoInstrumentationSchema** pSchema, /* OUT */
             uint32_t* pCountSchemaItems, /* OUT */
-            uint8_t**pInstrumentationData /* OUT */
+            uint8_t**pInstrumentationData, /* OUT */
+            PgoSource *pPgoSource /* OUT */
             ) override final;
 
     void recordCallSite(
@@ -695,6 +683,7 @@ public:
 
     void recordRelocation(
             void                    *location,
+            void                    *locationRW,
             void                    *target,
             uint16_t                 fRelocType,
             uint16_t                 slot,
@@ -704,18 +693,6 @@ public:
 
     uint32_t getExpectedTargetArchitecture() override final;
 
-    CodeHeader* GetCodeHeader()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return m_CodeHeader;
-    }
-
-    void SetCodeHeader(CodeHeader* pValue)
-    {
-        LIMITED_METHOD_CONTRACT;
-        m_CodeHeader = pValue;
-    }
-
     void ResetForJitRetry()
     {
         CONTRACTL {
@@ -723,7 +700,19 @@ public:
             GC_NOTRIGGER;
         } CONTRACTL_END;
 
+        if (m_CodeHeaderRW != m_CodeHeader)
+        {
+            delete [] (BYTE*)m_CodeHeaderRW;
+        }
+
         m_CodeHeader = NULL;
+        m_CodeHeaderRW = NULL;
+
+        m_codeWriteBufferSize = 0;
+#ifdef USE_INDIRECT_CODEHEADER
+        m_pRealCodeHeader = NULL;
+#endif
+        m_pCodeHeap = NULL;
 
         if (m_pOffsetMapping != NULL)
             delete [] ((BYTE*) m_pOffsetMapping);
@@ -823,6 +812,12 @@ public:
         : CEEInfo(fd, fVerifyOnly, allowInlining),
           m_jitManager(jm),
           m_CodeHeader(NULL),
+          m_CodeHeaderRW(NULL),
+          m_codeWriteBufferSize(0),
+#ifdef USE_INDIRECT_CODEHEADER
+          m_pRealCodeHeader(NULL),
+#endif
+          m_pCodeHeap(NULL),
           m_ILHeader(header),
 #ifdef FEATURE_EH_FUNCLETS
           m_moduleBase(NULL),
@@ -870,6 +865,11 @@ public:
             GC_NOTRIGGER;
             MODE_ANY;
         } CONTRACTL_END;
+
+        if (m_CodeHeaderRW != m_CodeHeader)
+        {
+            delete [] (BYTE*)m_CodeHeaderRW;
+        }
 
         if (m_pOffsetMapping != NULL)
             delete [] ((BYTE*) m_pOffsetMapping);
@@ -928,10 +928,14 @@ public:
 
     void BackoutJitData(EEJitManager * jitMgr);
 
+    void WriteCode(EEJitManager * jitMgr);
+
     void setPatchpointInfo(PatchpointInfo* patchpointInfo) override final;
     PatchpointInfo* getOSRInfo(unsigned* ilOffset) override final;
 
 protected :
+
+    void WriteCodeBytes();
 
 #ifdef FEATURE_PGO
     // PGO data
@@ -946,13 +950,20 @@ protected :
         UINT32 m_cSchemaElems;
         BYTE *m_pInstrumentationData = nullptr;
         HRESULT m_hr = E_NOTIMPL;
+        PgoSource m_pgoSource = PgoSource::Unknown;
     };
     ComputedPgoData*        m_foundPgoData = nullptr;
 #endif
 
 
     EEJitManager*           m_jitManager;   // responsible for allocating memory
-    CodeHeader*             m_CodeHeader;   // descriptor for JITTED code
+    CodeHeader*             m_CodeHeader;   // descriptor for JITTED code - read/execute address
+    CodeHeader*             m_CodeHeaderRW; // descriptor for JITTED code - code write scratch buffer address
+    size_t                  m_codeWriteBufferSize;
+#ifdef USE_INDIRECT_CODEHEADER
+    BYTE*                   m_pRealCodeHeader;
+#endif
+    HeapList*               m_pCodeHeap;
     COR_ILMETHOD_DECODER *  m_ILHeader;     // the code header as exist in the file
 #ifdef FEATURE_EH_FUNCLETS
     TADDR                   m_moduleBase;       // Base for unwind Infos
@@ -1140,8 +1151,16 @@ CORJIT_FLAGS GetDebuggerCompileFlags(Module* pModule, CORJIT_FLAGS flags);
 
 bool __stdcall TrackAllocationsEnabled();
 
-FCDECL0(INT64, GetJittedBytes);
-FCDECL0(INT32, GetJittedMethodsCount);
+
+extern Volatile<int64_t> g_cbILJitted;
+extern Volatile<int64_t> g_cMethodsJitted;
+extern Volatile<int64_t> g_c100nsTicksInJit;
+extern thread_local int64_t t_cbILJittedForThread;
+extern thread_local int64_t t_cMethodsJittedForThread;
+extern thread_local int64_t t_c100nsTicksInJitForThread;
+
+FCDECL1(INT64, GetCompiledILBytes, CLR_BOOL currentThread);
+FCDECL1(INT64, GetCompiledMethodCount, CLR_BOOL currentThread);
+FCDECL1(INT64, GetCompilationTimeInTicks, CLR_BOOL currentThread);
 
 #endif // JITINTERFACE_H
-

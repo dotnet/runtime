@@ -1525,6 +1525,9 @@ build_imt_slots (MonoClass *klass, MonoVTable *vt, gpointer* imt, GSList *extra_
 				continue;
 			}
 
+			if (m_method_is_static (method))
+				continue;
+
 			if (method->flags & METHOD_ATTRIBUTE_VIRTUAL) {
 				add_imt_builder_entry (imt_builder, method, &imt_collisions_bitmap, vt_slot, slot_num);
 				vt_slot ++;
@@ -4145,7 +4148,7 @@ mono_unhandled_exception_internal (MonoObject *exc_raw)
 void
 mono_unhandled_exception (MonoObject *exc)
 {
-	MONO_EXTERNAL_ONLY_VOID (mono_unhandled_exception_internal (exc));
+	MONO_EXTERNAL_ONLY_GC_UNSAFE_VOID (mono_unhandled_exception_internal (exc));
 }
 
 static MonoObjectHandle
@@ -5681,6 +5684,39 @@ mono_array_new_full_checked (MonoClass *array_class, uintptr_t *lengths, intptr_
 	return array;
 }
 
+static MonoArray*
+mono_array_new_jagged_helper (MonoClass *klass, int n, uintptr_t *lengths, int index, MonoError *error)
+{
+	HANDLE_FUNCTION_ENTER ();
+
+	MonoArray *ret = mono_array_new_full_checked (klass, &lengths [index], NULL, error);
+	goto_if_nok (error, exit);
+
+	MONO_HANDLE_PIN (ret);
+
+	if (index < (n - 1)) {
+		// We have a new dimension argument. This means the elements in the allocated array
+		// are also arrays and we allocate each one of them.
+		MonoClass *element_class = m_class_get_element_class (klass);
+		g_assert (m_class_get_rank (element_class) == 1);
+		for (int i = 0; i < lengths [index]; i++) {
+			MonoArray *o = mono_array_new_jagged_helper (element_class, n, lengths, index + 1, error);
+			goto_if_nok (error, exit);
+			mono_array_setref_fast (ret, i, o);
+		}
+	}
+
+exit:
+	HANDLE_FUNCTION_RETURN_VAL (ret);
+}
+
+MonoArray *
+mono_array_new_jagged_checked (MonoClass *klass, int n, uintptr_t *lengths, MonoError *error)
+{
+	return mono_array_new_jagged_helper (klass, n, lengths, 0, error);
+}
+
+
 /**
  * mono_array_new:
  * \param domain domain where the object is created
@@ -6736,16 +6772,36 @@ mono_string_is_interned_lookup (MonoStringHandle str, gboolean insert, MonoError
 	res = (MonoString *)mono_g_hash_table_lookup (ldstr_table, MONO_HANDLE_RAW (str));
 	if (res)
 		MONO_HANDLE_ASSIGN_RAW (s, res);
-	else
+	else {
 		mono_g_hash_table_insert_internal (ldstr_table, MONO_HANDLE_RAW (s), MONO_HANDLE_RAW (s));
+
+#ifdef HOST_WASM
+		mono_set_string_interned_internal ((MonoObject *)MONO_HANDLE_RAW (s));
+#endif
+	}
 	ldstr_unlock ();
 	return s;
 }
 
+#ifdef HOST_WASM
+/**
+ * mono_string_instance_is_interned:
+ * Searches the interned string table for the provided string instance.
+ * \param str String to probe
+ * \returns TRUE if the string is interned, FALSE otherwise.
+ */
+int
+mono_string_instance_is_interned (MonoString *str)
+{
+	return mono_is_string_interned_internal ((MonoObject *)str);
+}
+#endif
+
 /**
  * mono_string_is_interned:
- * \param o String to probe
- * \returns Whether the string has been interned.
+ * Searches the interned string table for a string with value equal to the provided string.
+ * \param str String to probe
+ * \returns The string located within the intern table, or null.
  */
 MonoString*
 mono_string_is_interned (MonoString *str_raw)

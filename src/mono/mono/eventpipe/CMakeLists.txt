@@ -1,5 +1,7 @@
 if(ENABLE_PERFTRACING)
 
+    include(${MONO_EVENTPIPE_SHIM_SOURCE_PATH}/gen-eventing.cmake)
+
     if (FEATURE_PERFTRACING_PAL_TCP)
         add_definitions(-DENABLE_PERFTRACING_PAL_TCP)
     endif (FEATURE_PERFTRACING_PAL_TCP)
@@ -77,11 +79,10 @@ if(ENABLE_PERFTRACING)
     addprefix(shared_diagnostic_server_sources_base ${SHARED_EVENTPIPE_SOURCE_PATH} "${shared_diagnostic_server_sources_base}")
     addprefix(mono_diagnostic_server_shim_sources_base ${MONO_EVENTPIPE_SHIM_SOURCE_PATH} "${mono_diagnostic_server_shim_sources_base}")
 
-    set(eventpipe_sources ${shared_eventpipe_sources_base} ${mono_eventpipe_shim_sources_base})
+    set(eventpipe_sources ${shared_eventpipe_sources_base} ${mono_eventpipe_shim_sources_base} ${MONO_EVENTPIPE_GEN_HEADERS} ${MONO_EVENTPIPE_GEN_SOURCES})
     set(diagnostic_server_sources ${shared_diagnostic_server_sources_base} ${mono_diagnostic_server_shim_sources_base})
 
     set_source_files_properties(${SHARED_EVENTPIPE_SOURCE_PATH}/ep-sources.c PROPERTIES COMPILE_DEFINITIONS EP_FORCE_INCLUDE_SOURCE_FILES)
     set_source_files_properties(${SHARED_EVENTPIPE_SOURCE_PATH}/ds-sources.c PROPERTIES COMPILE_DEFINITIONS DS_FORCE_INCLUDE_SOURCE_FILES)
-
 
 endif(ENABLE_PERFTRACING)

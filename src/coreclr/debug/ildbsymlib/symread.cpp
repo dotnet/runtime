@@ -722,6 +722,12 @@ SymReader::InitializeFromFile(
     }
 
 ErrExit:
+    if (hMod)
+        UnmapViewOfFile(hMod);
+    if (hMapFile != INVALID_HANDLE_VALUE)
+        CloseHandle(hMapFile);
+    if (hFile != INVALID_HANDLE_VALUE)
+        CloseHandle(hFile);
 
     return hr;
 }

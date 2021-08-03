@@ -176,15 +176,7 @@ GenTree* Compiler::impSimdAsHWIntrinsic(NamedIntrinsic        intrinsic,
         return nullptr;
     }
 
-#if defined(TARGET_XARCH)
-    CORINFO_InstructionSet minimumIsa = InstructionSet_SSE2;
-#elif defined(TARGET_ARM64)
-    CORINFO_InstructionSet minimumIsa = InstructionSet_AdvSimd;
-#else
-#error Unsupported platform
-#endif // !TARGET_XARCH && !TARGET_ARM64
-
-    if (!compOpportunisticallyDependsOn(minimumIsa) || !JitConfig.EnableHWIntrinsic())
+    if (!IsBaselineSimdIsaSupported())
     {
         // The user disabled support for the baseline ISA so
         // don't emit any SIMD intrinsics as they all require
@@ -230,6 +222,12 @@ GenTree* Compiler::impSimdAsHWIntrinsic(NamedIntrinsic        intrinsic,
 
         isInstanceMethod = true;
         argClass         = clsHnd;
+
+        if (SimdAsHWIntrinsicInfo::BaseTypeFromThisArg(intrinsic))
+        {
+            assert(simdBaseJitType == CORINFO_TYPE_UNDEF);
+            simdBaseJitType = getBaseJitTypeAndSizeOfSIMDType(clsHnd, &simdSize);
+        }
     }
     else if ((clsHnd == m_simdHandleCache->SIMDVectorHandle) && (numArgs != 0))
     {
@@ -436,6 +434,39 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
         }
 
 #if defined(TARGET_XARCH)
+        case NI_VectorT256_get_Item:
+        case NI_VectorT128_get_Item:
+        {
+            switch (simdBaseType)
+            {
+                // Using software fallback if simdBaseType is not supported by hardware
+                case TYP_BYTE:
+                case TYP_UBYTE:
+                case TYP_INT:
+                case TYP_UINT:
+                case TYP_LONG:
+                case TYP_ULONG:
+                    if (!compExactlyDependsOn(InstructionSet_SSE41))
+                    {
+                        return nullptr;
+                    }
+                    break;
+
+                case TYP_DOUBLE:
+                case TYP_FLOAT:
+                case TYP_SHORT:
+                case TYP_USHORT:
+                    // short/ushort/float/double is supported by SSE2
+                    break;
+
+                default:
+                    unreached();
+            }
+            break;
+        }
+#endif // TARGET_XARCH
+
+#if defined(TARGET_XARCH)
         case NI_VectorT128_Dot:
         {
             if (!compOpportunisticallyDependsOn(InstructionSet_SSE41))
@@ -444,6 +475,27 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
                 // The other types should be handled via the table driven paths
 
                 assert((simdBaseType == TYP_INT) || (simdBaseType == TYP_UINT));
+                return nullptr;
+            }
+            break;
+        }
+
+        case NI_VectorT128_Sum:
+        {
+            // TODO-XArch-CQ: We could support this all the way down to SSE2 and that might be
+            // worthwhile so we can accelerate cases like byte/sbyte and long/ulong
+
+            if (varTypeIsFloating(simdBaseType))
+            {
+                if (!compOpportunisticallyDependsOn(InstructionSet_SSE3))
+                {
+                    // Floating-point types require SSE3.HorizontalAdd
+                    return nullptr;
+                }
+            }
+            else if (!compOpportunisticallyDependsOn(InstructionSet_SSSE3))
+            {
+                // Integral types require SSSE3.HorizontalAdd
                 return nullptr;
             }
             break;
@@ -688,11 +740,114 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
                     }
                     break;
                 }
+                case NI_VectorT128_Sum:
+                {
+
+                    GenTree* tmp;
+                    unsigned vectorLength = getSIMDVectorLength(simdSize, simdBaseType);
+                    int      haddCount    = genLog2(vectorLength);
+
+                    NamedIntrinsic horizontalAdd =
+                        varTypeIsFloating(simdBaseType) ? NI_SSE3_HorizontalAdd : NI_SSSE3_HorizontalAdd;
+
+                    for (int i = 0; i < haddCount; i++)
+                    {
+                        op1 = impCloneExpr(op1, &tmp, clsHnd, (unsigned)CHECK_SPILL_ALL,
+                                           nullptr DEBUGARG("Clone op1 for Vector<T>.Sum"));
+                        op1 = gtNewSimdAsHWIntrinsicNode(simdType, op1, tmp, horizontalAdd, simdBaseJitType, simdSize);
+                    }
+
+                    return gtNewSimdAsHWIntrinsicNode(retType, op1, NI_Vector128_ToScalar, simdBaseJitType, simdSize);
+                }
+                case NI_VectorT256_Sum:
+                {
+                    // HorizontalAdd combines pairs so we need log2(vectorLength) passes to sum all elements together.
+                    unsigned vectorLength = getSIMDVectorLength(simdSize, simdBaseType);
+                    int haddCount = genLog2(vectorLength) - 1; // Minus 1 because for the last pass we split the vector
+                                                               // to low / high and add them together.
+                    GenTree*       tmp;
+                    NamedIntrinsic horizontalAdd = NI_AVX2_HorizontalAdd;
+                    NamedIntrinsic add           = NI_SSE2_Add;
+
+                    if (simdBaseType == TYP_DOUBLE)
+                    {
+                        horizontalAdd = NI_AVX_HorizontalAdd;
+                    }
+                    else if (simdBaseType == TYP_FLOAT)
+                    {
+                        horizontalAdd = NI_AVX_HorizontalAdd;
+                        add           = NI_SSE_Add;
+                    }
+
+                    for (int i = 0; i < haddCount; i++)
+                    {
+                        op1 = impCloneExpr(op1, &tmp, clsHnd, (unsigned)CHECK_SPILL_ALL,
+                                           nullptr DEBUGARG("Clone op1 for Vector<T>.Sum"));
+                        op1 = gtNewSimdAsHWIntrinsicNode(simdType, op1, tmp, horizontalAdd, simdBaseJitType, simdSize);
+                    }
+
+                    op1 = impCloneExpr(op1, &tmp, clsHnd, (unsigned)CHECK_SPILL_ALL,
+                                       nullptr DEBUGARG("Clone op1 for Vector<T>.Sum"));
+                    op1 = gtNewSimdAsHWIntrinsicNode(TYP_SIMD16, op1, gtNewIconNode(0x01, TYP_INT),
+                                                     NI_AVX_ExtractVector128, simdBaseJitType, simdSize);
+
+                    tmp = gtNewSimdAsHWIntrinsicNode(simdType, tmp, NI_Vector256_GetLower, simdBaseJitType, simdSize);
+                    op1 = gtNewSimdAsHWIntrinsicNode(TYP_SIMD16, op1, tmp, add, simdBaseJitType, 16);
+
+                    return gtNewSimdAsHWIntrinsicNode(retType, op1, NI_Vector128_ToScalar, simdBaseJitType, 16);
+                }
 #elif defined(TARGET_ARM64)
                 case NI_VectorT128_Abs:
                 {
                     assert(varTypeIsUnsigned(simdBaseType));
                     return op1;
+                }
+                case NI_VectorT128_Sum:
+                {
+                    GenTree* tmp;
+
+                    switch (simdBaseType)
+                    {
+                        case TYP_BYTE:
+                        case TYP_UBYTE:
+                        case TYP_SHORT:
+                        case TYP_USHORT:
+                        case TYP_INT:
+                        case TYP_UINT:
+                        {
+                            tmp = gtNewSimdAsHWIntrinsicNode(simdType, op1, NI_AdvSimd_Arm64_AddAcross, simdBaseJitType,
+                                                             simdSize);
+                            return gtNewSimdAsHWIntrinsicNode(retType, tmp, NI_Vector64_ToScalar, simdBaseJitType, 8);
+                        }
+                        case TYP_FLOAT:
+                        {
+                            unsigned vectorLength = getSIMDVectorLength(simdSize, simdBaseType);
+                            int      haddCount    = genLog2(vectorLength);
+
+                            for (int i = 0; i < haddCount; i++)
+                            {
+                                op1 = impCloneExpr(op1, &tmp, clsHnd, (unsigned)CHECK_SPILL_ALL,
+                                                   nullptr DEBUGARG("Clone op1 for Vector<T>.Sum"));
+                                op1 = gtNewSimdAsHWIntrinsicNode(simdType, op1, tmp, NI_AdvSimd_Arm64_AddPairwise,
+                                                                 simdBaseJitType, simdSize);
+                            }
+
+                            return gtNewSimdAsHWIntrinsicNode(retType, op1, NI_Vector128_ToScalar, simdBaseJitType,
+                                                              simdSize);
+                        }
+                        case TYP_DOUBLE:
+                        case TYP_LONG:
+                        case TYP_ULONG:
+                        {
+                            op1 = gtNewSimdAsHWIntrinsicNode(TYP_SIMD8, op1, NI_AdvSimd_Arm64_AddPairwiseScalar,
+                                                             simdBaseJitType, simdSize);
+                            return gtNewSimdAsHWIntrinsicNode(retType, op1, NI_Vector64_ToScalar, simdBaseJitType, 8);
+                        }
+                        default:
+                        {
+                            unreached();
+                        }
+                    }
                 }
 #else
 #error Unsupported platform
@@ -735,6 +890,13 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
                     copyBlkSrc = gtNewSimdCreateBroadcastNode(simdType, op2, simdBaseJitType, simdSize,
                                                               /* isSimdAsHWIntrinsic */ true);
                     break;
+                }
+
+                case NI_VectorT128_get_Item:
+                case NI_VectorT256_get_Item:
+                {
+                    return gtNewSimdGetElementNode(retType, op1, op2, simdBaseJitType, simdSize,
+                                                   /* isSimdAsHWIntrinsic */ true);
                 }
 
                 case NI_Vector2_op_Division:
@@ -1056,6 +1218,12 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
                     copyBlkSrc = gtNewSimdCreateBroadcastNode(simdType, op2, simdBaseJitType, simdSize,
                                                               /* isSimdAsHWIntrinsic */ true);
                     break;
+                }
+
+                case NI_VectorT128_get_Item:
+                {
+                    return gtNewSimdGetElementNode(retType, op1, op2, simdBaseJitType, simdSize,
+                                                   /* isSimdAsHWIntrinsic */ true);
                 }
 
                 case NI_VectorT128_Max:

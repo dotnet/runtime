@@ -391,6 +391,7 @@ $@"{nameof(UnregisterClassForTypeInternal)} arguments:
             throw new COMException(string.Empty, CLASS_E_CLASSNOTAVAILABLE);
         }
 
+        [RequiresUnreferencedCode("The trimmer might remove types which are needed by the assemblies loaded in this method.")]
         private static AssemblyLoadContext GetALC(string assemblyPath)
         {
             AssemblyLoadContext? alc;
@@ -411,15 +412,17 @@ $@"{nameof(UnregisterClassForTypeInternal)} arguments:
         private sealed class BasicClassFactory : IClassFactory
         {
             private readonly Guid _classId;
+
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.Interfaces)]
             private readonly Type _classType;
 
-            public BasicClassFactory(Guid clsid, Type classType)
+            public BasicClassFactory(Guid clsid, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.Interfaces)] Type classType)
             {
                 _classId = clsid;
                 _classType = classType;
             }
 
-            public static Type GetValidatedInterfaceType(Type classType, ref Guid riid, object? outer)
+            public static Type GetValidatedInterfaceType([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.Interfaces)] Type classType, ref Guid riid, object? outer)
             {
                 Debug.Assert(classType != null);
                 if (riid == Marshal.IID_IUnknown)
@@ -519,9 +522,11 @@ $@"{nameof(UnregisterClassForTypeInternal)} arguments:
         {
             private readonly LicenseInteropProxy _licenseProxy = new LicenseInteropProxy();
             private readonly Guid _classId;
+
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.Interfaces)]
             private readonly Type _classType;
 
-            public LicenseClassFactory(Guid clsid, Type classType)
+            public LicenseClassFactory(Guid clsid, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.Interfaces)] Type classType)
             {
                 _classId = clsid;
                 _classType = classType;

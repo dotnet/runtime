@@ -92,6 +92,7 @@ namespace System.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/50957", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsMonoAOT))]
         public static void Exception_TargetSite_OtherMethod()
         {
             Exception ex = Assert.ThrowsAny<Exception>(() => ThrowException());
@@ -99,6 +100,7 @@ namespace System.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/50957", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsMonoAOT))]
         public static void Exception_TargetSite_Rethrow()
         {
             Exception ex = Assert.ThrowsAny<Exception>(() => RethrowException());
@@ -233,6 +235,7 @@ namespace System.Tests
             return "DerivedException.ToString()";
         }
 
+#pragma warning disable SYSLIB0011 // BinaryFormatter serialization is obsolete and should not be used.
         [Fact]
         public static void Exception_SerializeObjectState()
         {
@@ -240,6 +243,7 @@ namespace System.Tests
             Assert.Throws<PlatformNotSupportedException>(() => excp.SerializeObjectState += (exception, eventArgs) => eventArgs.AddSerializedState(null));
             Assert.Throws<PlatformNotSupportedException>(() => excp.SerializeObjectState -= (exception, eventArgs) => eventArgs.AddSerializedState(null));
         }
+#pragma warning restore SYSLIB0011
 
         [Fact]
         public static void Exception_OverriddenToStringOnInnerException()

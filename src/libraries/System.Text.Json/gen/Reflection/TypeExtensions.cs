@@ -1,53 +1,93 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 
-namespace System.Text.Json.SourceGeneration.Reflection
+namespace System.Text.Json.Reflection
 {
     internal static class TypeExtensions
     {
-        public static string GetUniqueCompilableTypeName(this Type type) => GetCompilableTypeName(type, type.FullName);
-
-        public static string GetCompilableTypeName(this Type type) => GetCompilableTypeName(type, type.Name);
-
-        private static string GetCompilableTypeName(Type type, string name)
+        public static string GetCompilableName(this Type type)
         {
-            if (!type.IsGenericType)
+            if (type.IsArray)
             {
-                return name.Replace('+', '.');
+                return GetCompilableName(type.GetElementType()) + "[]";
             }
 
-            // TODO: Guard upstream against open generics.
-            Debug.Assert(!type.ContainsGenericParameters);
+            string compilableName;
 
-            int backTickIndex = name.IndexOf('`');
-            string baseName = name.Substring(0, backTickIndex).Replace('+', '.');
+            if (!type.IsGenericType)
+            {
+                compilableName = type.FullName;
+            }
+            else
+            {
+                StringBuilder sb = new();
 
-            return $"{baseName}<{string.Join(",", type.GetGenericArguments().Select(arg => GetUniqueCompilableTypeName(arg)))}>";
+                string fullName = type.FullName;
+                int backTickIndex = fullName.IndexOf('`');
+
+                string baseName = fullName.Substring(0, backTickIndex);
+
+                sb.Append(baseName);
+
+                sb.Append("<");
+
+                Type[] genericArgs = type.GetGenericArguments();
+                int genericArgCount = genericArgs.Length;
+                List<string> genericArgNames = new(genericArgCount);
+
+                for (int i = 0; i < genericArgCount; i++)
+                {
+                    genericArgNames.Add(GetCompilableName(genericArgs[i]));
+                }
+
+                sb.Append(string.Join(", ", genericArgNames));
+
+                sb.Append(">");
+
+                compilableName = sb.ToString();
+            }
+
+            compilableName = compilableName.Replace("+", ".");
+            return "global::" + compilableName;
         }
 
-        public static string GetFriendlyTypeName(this Type type)
+        public static string GetTypeInfoPropertyName(this Type type)
         {
-            return GetFriendlyTypeName(type.GetCompilableTypeName());
+            if (type.IsArray)
+            {
+                return GetTypeInfoPropertyName(type.GetElementType()) + "Array";
+            }
+            else if (!type.IsGenericType)
+            {
+                return type.Name;
+            }
+
+            StringBuilder sb = new();
+
+            string name = ((TypeWrapper)type).SimpleName;
+
+            sb.Append(name);
+
+            foreach (Type genericArg in type.GetGenericArguments())
+            {
+                sb.Append(GetTypeInfoPropertyName(genericArg));
+            }
+
+            return sb.ToString();
         }
 
-        private static string GetFriendlyTypeName(string compilableName)
+        public static bool IsNullableValueType(this Type type, Type nullableOfTType, out Type? underlyingType)
         {
-            return compilableName.Replace(".", "").Replace("<", "").Replace(">", "").Replace(",", "").Replace("[]", "Array");
-        }
-
-        public static Type NullableOfTType { get; set; }
-
-        public static bool IsNullableValueType(this Type type, out Type? underlyingType)
-        {
-            Debug.Assert(NullableOfTType != null);
+            Debug.Assert(nullableOfTType != null);
 
             // TODO: log bug because Nullable.GetUnderlyingType doesn't work due to
             // https://github.com/dotnet/runtimelab/blob/7472c863db6ec5ddab7f411ddb134a6e9f3c105f/src/libraries/System.Private.CoreLib/src/System/Nullable.cs#L124
             // i.e. type.GetGenericTypeDefinition() will never equal typeof(Nullable<>), as expected in that code segment.
-            if (type.IsGenericType && type.GetGenericTypeDefinition() == NullableOfTType)
+            if (type.IsGenericType && type.GetGenericTypeDefinition() == nullableOfTType)
             {
                 underlyingType = type.GetGenericArguments()[0];
                 return true;
@@ -56,6 +96,22 @@ namespace System.Text.Json.SourceGeneration.Reflection
             underlyingType = null;
             return false;
         }
+
+        public static bool IsNullableValueType(this Type type, out Type? underlyingType)
+        {
+            if (type.IsGenericType && type.Name.StartsWith("Nullable`1"))
+            {
+                underlyingType = type.GetGenericArguments()[0];
+                return true;
+            }
+
+            underlyingType = null;
+            return false;
+        }
+
+        public static bool IsObjectType(this Type type) => type.FullName == "System.Object";
+
+        public static bool IsStringType(this Type type) => type.FullName == "System.String";
 
         public static Type? GetCompatibleBaseClass(this Type type, string baseTypeFullName)
         {

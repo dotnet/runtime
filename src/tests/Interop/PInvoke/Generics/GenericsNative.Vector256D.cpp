@@ -8,17 +8,21 @@
 
 #if defined(TARGET_XARCH)
     #include <immintrin.h>
-
-    typedef __m256d Vector256D;
 #elif defined(TARGET_ARMARCH)
+    // Intentionally empty
+#else
+    #error Unsupported target architecture
+#endif
+
+#if defined(__AVX2__)
+    typedef __m256 Vector256D;
+#else
     typedef struct {
         double e00;
         double e01;
         double e02;
         double e03;
     } Vector256D;
-#else
-    #error Unsupported target architecture
 #endif
 
 static Vector256D Vector256DValue = { };

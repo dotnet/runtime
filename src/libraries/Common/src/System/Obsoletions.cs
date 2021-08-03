@@ -54,7 +54,7 @@ namespace System
         internal const string WebRequestMessage = "WebRequest, HttpWebRequest, ServicePoint, and WebClient are obsolete. Use HttpClient instead.";
         internal const string WebRequestDiagId = "SYSLIB0014";
 
-        internal const string DisablePrivateReflectionAttributeMessage = "DisablePrivateReflectionAttribute has no effect in .NET 6.0+ applications.";
+        internal const string DisablePrivateReflectionAttributeMessage = "DisablePrivateReflectionAttribute has no effect in .NET 6.0+.";
         internal const string DisablePrivateReflectionAttributeDiagId = "SYSLIB0015";
 
         internal const string GetContextInfoMessage = "Use the Graphics.GetContextInfo overloads that accept arguments for better performance and fewer allocations.";
@@ -72,10 +72,37 @@ namespace System
         internal const string JsonSerializerOptionsIgnoreNullValuesMessage = "JsonSerializerOptions.IgnoreNullValues is obsolete. To ignore null values when serializing, set DefaultIgnoreCondition to JsonIgnoreCondition.WhenWritingNull.";
         internal const string JsonSerializerOptionsIgnoreNullValuesDiagId = "SYSLIB0020";
 
+        internal const string DerivedCryptographicTypesMessage = "Derived cryptographic types are obsolete. Use the Create method on the base type instead.";
+        internal const string DerivedCryptographicTypesDiagId = "SYSLIB0021";
+
         internal const string RijndaelMessage = "The Rijndael and RijndaelManaged types are obsolete. Use Aes instead.";
         internal const string RijndaelDiagId = "SYSLIB0022";
 
         internal const string RNGCryptoServiceProviderMessage = "RNGCryptoServiceProvider is obsolete. To generate a random number, use one of the RandomNumberGenerator static methods instead.";
         internal const string RNGCryptoServiceProviderDiagId = "SYSLIB0023";
+
+        internal const string AppDomainCreateUnloadMessage = "Creating and unloading AppDomains is not supported and throws an exception.";
+        internal const string AppDomainCreateUnloadDiagId = "SYSLIB0024";
+
+        internal const string SuppressIldasmAttributeMessage = "SuppressIldasmAttribute has no effect in .NET 6.0+.";
+        internal const string SuppressIldasmAttributeDiagId = "SYSLIB0025";
+
+        internal const string X509CertificateImmutableMessage = "X509Certificate and X509Certificate2 are immutable. Use the appropriate constructor to create a new certificate.";
+        internal const string X509CertificateImmutableDiagId = "SYSLIB0026";
+
+        internal const string PublicKeyPropertyMessage = "PublicKey.Key is obsolete. Use the appropriate method to get the public key, such as GetRSAPublicKey.";
+        internal const string PublicKeyPropertyDiagId = "SYSLIB0027";
+
+        internal const string X509CertificatePrivateKeyMessage = "X509Certificate2.PrivateKey is obsolete. Use the appropriate method to get the private key, such as GetRSAPrivateKey, or use the CopyWithPrivateKey method to create a new instance with a private key.";
+        internal const string X509CertificatePrivateKeyDiagId = "SYSLIB0028";
+
+        internal const string ProduceLegacyHmacValuesMessage = "ProduceLegacyHmacValues is obsolete. Producing legacy HMAC values is no longer supported.";
+        internal const string ProduceLegacyHmacValuesDiagId = "SYSLIB0029";
+
+        internal const string UseManagedSha1Message = "HMACSHA1 always uses the algorithm implementation provided by the platform. Use a constructor without the useManagedSha1 parameter.";
+        internal const string UseManagedSha1DiagId = "SYSLIB0030";
+
+        internal const string CryptoConfigEncodeOIDMessage = "EncodeOID is obsolete. Use the ASN.1 functionality provided in System.Formats.Asn1.";
+        internal const string CryptoConfigEncodeOIDDiagId = "SYSLIB0031";
     }
 }

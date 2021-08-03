@@ -163,9 +163,9 @@ namespace System.Security.Cryptography
                 }
 
                 if (_buffer != null)
-                    Array.Clear(_buffer, 0, _buffer.Length);
+                    Array.Clear(_buffer);
                 if (_salt != null)
-                    Array.Clear(_salt, 0, _salt.Length);
+                    Array.Clear(_salt);
             }
             base.Dispose(disposing);
         }
@@ -260,7 +260,7 @@ namespace System.Security.Cryptography
         private void Initialize()
         {
             if (_buffer != null)
-                Array.Clear(_buffer, 0, _buffer.Length);
+                Array.Clear(_buffer);
             _buffer = new byte[_blockSize];
             _block = 0;
             _startIndex = _endIndex = 0;

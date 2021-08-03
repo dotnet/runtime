@@ -831,20 +831,43 @@ namespace System.Tests
         {
             if (index == 0 && length == array.Length)
             {
-                // Use IList.Clear()
+                // Use Array.Clear()
                 Array arrayClone1 = (Array)array.Clone();
-                ((IList)arrayClone1).Clear();
+                Array.Clear(arrayClone1);
                 Assert.Equal(expected, arrayClone1);
+
+                // Use IList.Clear()
+                Array arrayClone2 = (Array)array.Clone();
+                ((IList)arrayClone2).Clear();
+                Assert.Equal(expected, arrayClone2);
             }
-            Array arrayClone2 = (Array)array.Clone();
-            Array.Clear(arrayClone2, index, length);
-            Assert.Equal(expected, arrayClone2);
+
+            Array arrayClone3 = (Array)array.Clone();
+            Array.Clear(arrayClone3, index, length);
+            Assert.Equal(expected, arrayClone3);
         }
 
         [Fact]
         public static void Clear_Struct_WithReferenceAndValueTypeFields_Array()
         {
             var array = new NonGenericStruct[]
+            {
+            new NonGenericStruct { x = 1, s = "Hello", z = 2 },
+            new NonGenericStruct { x = 2, s = "Hello", z = 3 },
+            new NonGenericStruct { x = 3, s = "Hello", z = 4 },
+            new NonGenericStruct { x = 4, s = "Hello", z = 5 },
+            new NonGenericStruct { x = 5, s = "Hello", z = 6 }
+            };
+
+            Array.Clear(array);
+            for (int i = 0; i < array.Length; i++)
+            {
+                Assert.Equal(0, array[i].x);
+                Assert.Null(array[i].s);
+                Assert.Equal(0, array[i].z);
+            }
+
+            array = new NonGenericStruct[]
             {
             new NonGenericStruct { x = 1, s = "Hello", z = 2 },
             new NonGenericStruct { x = 2, s = "Hello", z = 3 },
@@ -891,6 +914,7 @@ namespace System.Tests
         [Fact]
         public static void Clear_Invalid()
         {
+            AssertExtensions.Throws<ArgumentNullException>("array", () => Array.Clear(null)); // Array is null
             AssertExtensions.Throws<ArgumentNullException>("array", () => Array.Clear(null, 0, 0)); // Array is null
 
             Assert.Throws<IndexOutOfRangeException>(() => Array.Clear(new int[10], -1, 0)); // Index < 0
@@ -4251,6 +4275,76 @@ namespace System.Tests
             AssertExtensions.Throws<ArgumentOutOfRangeException>("count", () => Array.Fill(new string[arrayLength], "", startIndex, count));
         }
 
+        public class Bar : IEquatable<Bar>
+        {
+            public string Value { get; set; }
+
+            public bool Equals(Bar other) => string.Equals(Value, other.Value);
+        }
+
+        public class Foo
+        {
+        }
+
+        private static Bar[] CreateBarArray()
+        {
+            return new Bar[]
+            {
+                new Bar() { Value = "0" },
+                new Bar() { Value = "1" },
+                new Bar() { Value = "2" },
+                new Bar() { Value = "3" },
+            };
+        }
+
+        [Fact]
+        public static void Fill_Downcast()
+        {
+            Bar[] barArray = CreateBarArray();
+            Array.Fill<object>(barArray, new Bar() { Value = "x" });
+            Assert.Equal(new string[] { "x", "x", "x", "x" }, barArray.Select(e => e.Value));
+        }
+
+        [Fact]
+        public static void FillWithStartIndexAndCount_Downcast()
+        {
+            Bar[] barArray = CreateBarArray();
+            Array.Fill<object>(barArray, new Bar() { Value = "x" }, 1, 2);
+            Assert.Equal(new string[] { "0", "x", "x", "3" }, barArray.Select(e => e.Value));
+        }
+
+        [Fact]
+        public static void Fill_Sidecast()
+        {
+            uint[] uintArray = (uint[])(object)new int[] { 0, 1, 2, 3 };
+            Array.Fill<uint>(uintArray, 42);
+            Assert.Equal(new int[] { 42, 42, 42, 42 }, (int[])(object)uintArray);
+        }
+
+        [Fact]
+        public static void FillWithStartIndexAndCount_Sidecast()
+        {
+            uint[] uintArray = (uint[])(object)new int[] { 0, 1, 2, 3 };
+            Array.Fill<uint>(uintArray, 42, 1, 2);
+            Assert.Equal(new int[] { 0, 42, 42, 3 }, (int[])(object)uintArray);
+        }
+
+        [Fact]
+        public static void Fill_ThrowsArrayTypeMismatchException()
+        {
+            Bar[] barArray = CreateBarArray();
+            Assert.Throws<ArrayTypeMismatchException>(() => Array.Fill<object>(barArray, new Foo()));
+            Assert.Equal(CreateBarArray(), barArray);
+        }
+
+        [Fact]
+        public static void FillWithStartIndexAndCount_ThrowsArrayTypeMismatchException()
+        {
+            Bar[] barArray = CreateBarArray();
+            Assert.Throws<ArrayTypeMismatchException>(() => Array.Fill<object>(barArray, new Foo(), 1, 2));
+            Assert.Equal(CreateBarArray(), barArray);
+        }
+
         public static IEnumerable<object[]> Reverse_Generic_Int_TestData()
         {
             // TODO: use (or merge this data into) Reverse_TestData if/when xunit/xunit#965 is merged
@@ -4675,8 +4769,14 @@ namespace System.Tests
             }
 
             short[,] a = AllocateLargeMDArray(2, 2_000_000_000);
-            a[1, 1_999_999_999] = 0x1234;
 
+            // Test 1: use Array.Clear
+            a[1, 1_999_999_999] = 0x1234;
+            Array.Clear(a);
+            Assert.Equal(0, a[1, 1_999_999_999]);
+
+            // Test 2: use IList.Clear
+            a[1, 1_999_999_999] = 0x1234;
             ((IList)a).Clear();
             Assert.Equal(0, a[1, 1_999_999_999]);
         }

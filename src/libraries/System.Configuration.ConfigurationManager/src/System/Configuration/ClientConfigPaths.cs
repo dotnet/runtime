@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.IO;
 using System.Reflection;
@@ -28,6 +29,10 @@ namespace System.Configuration
         private readonly bool _includesUserConfig;
         private string _companyName;
 
+        [UnconditionalSuppressMessage("SingleFile", "IL3000: Avoid accessing Assembly file path when publishing as a single file",
+            Justification = "Code handles single file case")]
+        [UnconditionalSuppressMessage("SingleFile", "IL3002: RequiresAssemblyFiles on Module.Name",
+            Justification = "Code handles single file case")]
         private ClientConfigPaths(string exePath, bool includeUserConfig)
         {
             _includesUserConfig = includeUserConfig;
@@ -219,6 +224,8 @@ namespace System.Configuration
         // The evidence we use, in priority order, is Strong Name, Url and Exe Path. If one of
         // these is found, we compute a SHA1 hash of it and return a suffix based on that.
         // If none is found, we return null.
+        [UnconditionalSuppressMessage("SingleFile", "IL3002: RequiresAssemblyFiles on Module.Name",
+            Justification = "Code handles single file case")]
         private static string GetTypeAndHashSuffix(string exePath, bool isSingleFile)
         {
             Assembly assembly = Assembly.GetEntryAssembly();

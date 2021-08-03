@@ -11,7 +11,7 @@
     <Compile Include="*.cs" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="../CMakeLists.txt" />
+    <ProjectReference Include="./CMakeLists.txt" />
     <ProjectReference Include="$(TestSourceDir)Common/CoreCLRTestLibrary/CoreCLRTestLibrary.csproj" />
   </ItemGroup>
 </Project>

@@ -1273,35 +1273,6 @@ OBJECTREF DomainAssembly::GetExposedAssemblyObject()
 } // DomainAssembly::GetExposedAssemblyObject
 #endif // CROSSGEN_COMPILE
 
-DomainFile* DomainAssembly::FindIJWModule(HMODULE hMod)
-{
-    CONTRACT (DomainFile*)
-    {
-        INSTANCE_CHECK;
-        THROWS;
-        GC_NOTRIGGER;
-        MODE_ANY;
-        POSTCONDITION(CheckPointer(RETVAL, NULL_OK));
-    }
-    CONTRACT_END;
-
-    ModuleIterator i = IterateModules(kModIterIncludeLoaded);
-    while (i.Next())
-    {
-        PEFile *pFile = i.GetDomainFile()->GetFile();
-
-        if (   !pFile->IsResource()
-            && !pFile->IsDynamic()
-            && !pFile->IsILOnly()
-            && pFile->GetIJWBase() == hMod)
-        {
-            RETURN i.GetDomainFile();
-        }
-    }
-    RETURN NULL;
-}
-
-
 void DomainAssembly::Begin()
 {
     STANDARD_VM_CONTRACT;

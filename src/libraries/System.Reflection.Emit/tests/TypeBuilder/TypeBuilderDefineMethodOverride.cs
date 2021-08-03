@@ -266,5 +266,82 @@ namespace System.Reflection.Emit.Tests
         {
             int Method(string s, int i);
         }
+
+        [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/49904", TestRuntimes.Mono)]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Static virtual interface methods not supported on .NET Framework")]
+        public void DefineMethodOverride_StaticVirtualInterfaceMethod()
+        {
+            AssemblyBuilder assembly = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName("Name"), AssemblyBuilderAccess.Run);
+            ModuleBuilder module = assembly.DefineDynamicModule("Name");
+
+            TypeBuilder interfaceType = module.DefineType("InterfaceType", TypeAttributes.Public | TypeAttributes.Interface | TypeAttributes.Abstract, parent: null);
+            MethodBuilder svmInterface = interfaceType.DefineMethod("StaticVirtualMethod", MethodAttributes.Public | MethodAttributes.Virtual | MethodAttributes.Static | MethodAttributes.Abstract, CallingConventions.Standard, typeof(void), Array.Empty<Type>());
+            MethodBuilder vmInterface = interfaceType.DefineMethod("NormalInterfaceMethod", MethodAttributes.Public | MethodAttributes.Virtual | MethodAttributes.Abstract, CallingConventions.HasThis, typeof(void), Array.Empty<Type>());
+            Type interfaceTypeActual = interfaceType.CreateType();
+
+            TypeBuilder implType = module.DefineType("ImplType", TypeAttributes.Public, parent: typeof(object), new Type[]{interfaceTypeActual});
+            MethodBuilder svmImpl = implType.DefineMethod("StaticVirtualMethodImpl", MethodAttributes.Public | MethodAttributes.Static, CallingConventions.Standard, typeof(void), Array.Empty<Type>());
+            ILGenerator ilGenerator = svmImpl.GetILGenerator();
+            ilGenerator.Emit(OpCodes.Ret);
+            implType.DefineMethodOverride(svmImpl, svmInterface);
+
+            MethodBuilder vmImpl = implType.DefineMethod("NormalVirtualMethodImpl", MethodAttributes.Public | MethodAttributes.Virtual, CallingConventions.HasThis, typeof(void), Array.Empty<Type>());
+            ilGenerator = vmImpl.GetILGenerator();
+            ilGenerator.Emit(OpCodes.Ret);
+            implType.DefineMethodOverride(vmImpl, vmInterface);
+
+            Type implTypeActual = implType.CreateType();
+        }
+
+        [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/49904", TestRuntimes.Mono)]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Static virtual interface methods not supported on .NET Framework")]
+        public void DefineMethodOverride_StaticVirtualInterfaceMethod_VerifyWithInterfaceMap()
+        {
+            AssemblyBuilder assembly = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName("Name"), AssemblyBuilderAccess.Run);
+            ModuleBuilder module = assembly.DefineDynamicModule("Name");
+
+            TypeBuilder interfaceType = module.DefineType("InterfaceType", TypeAttributes.Public | TypeAttributes.Interface | TypeAttributes.Abstract, parent: null);
+            MethodBuilder svmInterface = interfaceType.DefineMethod("StaticVirtualMethod", MethodAttributes.Public | MethodAttributes.Virtual | MethodAttributes.Static | MethodAttributes.Abstract, CallingConventions.Standard, typeof(void), Array.Empty<Type>());
+            MethodBuilder vmInterface = interfaceType.DefineMethod("NormalInterfaceMethod", MethodAttributes.Public | MethodAttributes.Virtual | MethodAttributes.Abstract, CallingConventions.HasThis, typeof(void), Array.Empty<Type>());
+            Type interfaceTypeActual = interfaceType.CreateType();
+            MethodInfo svmInterfaceActual = interfaceTypeActual.GetMethod("StaticVirtualMethod");
+            Assert.NotNull(svmInterfaceActual);
+            MethodInfo vmInterfaceActual = interfaceTypeActual.GetMethod("NormalInterfaceMethod");
+            Assert.NotNull(vmInterfaceActual);
+
+            TypeBuilder implType = module.DefineType("ImplType", TypeAttributes.Public, parent: typeof(object), new Type[]{interfaceTypeActual});
+            MethodBuilder svmImpl = implType.DefineMethod("StaticVirtualMethodImpl", MethodAttributes.Public | MethodAttributes.Static, CallingConventions.Standard, typeof(void), Array.Empty<Type>());
+            ILGenerator ilGenerator = svmImpl.GetILGenerator();
+            ilGenerator.Emit(OpCodes.Ret);
+            implType.DefineMethodOverride(svmImpl, svmInterface);
+
+            MethodBuilder vmImpl = implType.DefineMethod("NormalVirtualMethodImpl", MethodAttributes.Public | MethodAttributes.Virtual, CallingConventions.HasThis, typeof(void), Array.Empty<Type>());
+            ilGenerator = vmImpl.GetILGenerator();
+            ilGenerator.Emit(OpCodes.Ret);
+            implType.DefineMethodOverride(vmImpl, vmInterface);
+
+            Type implTypeActual = implType.CreateType();
+            MethodInfo svmImplActual = implTypeActual.GetMethod("StaticVirtualMethodImpl");
+            MethodInfo vmImplActual = implTypeActual.GetMethod("NormalVirtualMethodImpl");
+            Assert.NotNull(svmImplActual);
+            Assert.NotNull(vmImplActual);
+
+            InterfaceMapping actualMapping = implTypeActual.GetInterfaceMap(interfaceTypeActual);
+            Assert.Equal(2, actualMapping.InterfaceMethods.Length);
+            Assert.Equal(2, actualMapping.TargetMethods.Length);
+
+            Assert.Contains(svmInterfaceActual, actualMapping.InterfaceMethods);
+            Assert.True(svmInterfaceActual.IsVirtual);
+            Assert.Contains(vmInterfaceActual, actualMapping.InterfaceMethods);
+
+            Assert.Contains(svmImplActual, actualMapping.TargetMethods);
+            Assert.False(svmImplActual.IsVirtual);
+            Assert.Contains(vmImplActual, actualMapping.TargetMethods);
+
+            Assert.Equal(Array.IndexOf(actualMapping.InterfaceMethods, svmInterfaceActual), Array.IndexOf(actualMapping.TargetMethods, svmImplActual));
+            Assert.Equal(Array.IndexOf(actualMapping.InterfaceMethods, vmInterfaceActual), Array.IndexOf(actualMapping.TargetMethods, vmImplActual));
+        }
     }
 }

@@ -7,12 +7,14 @@
   <ItemGroup>
     <_allSrc Include="$(MSBuildThisFileDirectory)*\src\*.csproj"
              Exclude="@(ProjectExclusions)" />
-    <NonNetCoreAppProject Include="$(MSBuildThisFileDirectory)*\gen\*.csproj"
-                          Exclude="@(ProjectExclusions)" />
+    <!-- Don't build ProjectReferences of the compat pack in a traversal build to avoid unnecessary incremental builds. -->
+    <_allSrc Update="$(MSBuildThisFileDirectory)Microsoft.Windows.Compatibility\src\Microsoft.Windows.Compatibility.csproj"
+             AdditionalProperties="BuildProjectReferences=false" />
+    <!-- Only build the compat pack in the allconfigurations leg. -->
+    <_allSrc Remove="$(MSBuildThisFileDirectory)Microsoft.Windows.Compatibility\src\Microsoft.Windows.Compatibility.csproj"
+             Condition="'$(BuildAllConfigurations)' != 'true'" />
     <NonNetCoreAppProject Include="@(_allSrc)"
                           Exclude="@(NetCoreAppLibrary->'%(Identity)\src\%(Identity).csproj')" />
-    <NonNetCoreAppProject Include="$(MSBuildThisFileDirectory)*\gen\*.csproj"
-                          Exclude="@(ProjectExclusions)" />
     <NetCoreAppProject Include="$(CoreLibProject);
                                 @(_allSrc);
                                 $(MSBuildThisFileDirectory)Microsoft.VisualBasic.Core\src\Microsoft.VisualBasic.Core.vbproj;
@@ -21,7 +23,7 @@
     <ManualShimProject Include="shims\manual\*.csproj" />
     <ApiCompatProject Include="shims\ApiCompat.proj"
                       Condition="'$(DotNetBuildFromSource)' != 'true' and
-                                 '$(BuildingNETCoreAppVertical)' == 'true' and
+                                 ('$(BuildTargetFramework)' == '$(NetCoreAppCurrent)' or '$(BuildTargetFramework)' == '') and
                                  '$(RunApiCompat)' != 'false'" />
   </ItemGroup>
 
@@ -51,8 +53,8 @@
              Properties="$(TraversalGlobalProperties)" />
   </Target>
 
-  <Import Condition="'$(BuildingNetCoreAppVertical)' == 'true'"
-          Project="$(MSBuildThisFileDirectory)\illink-trimassemblies.targets" />
+  <Import Project="$(MSBuildThisFileDirectory)illink-trimassemblies.targets"
+          Condition="'$(BuildTargetFramework)' == '$(NetCoreAppCurrent)' or '$(BuildTargetFramework)' == ''" />
 
   <Target Name="RunApiCompat"
           Condition="'@(ApiCompatProject)' != ''"

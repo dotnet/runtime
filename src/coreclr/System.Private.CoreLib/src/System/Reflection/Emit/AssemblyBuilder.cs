@@ -77,11 +77,13 @@ namespace System.Reflection.Emit
             throw new NotSupportedException(SR.NotSupported_DynamicAssembly);
         }
 
+        [RequiresAssemblyFiles(ThrowingMessageInRAF)]
         public override FileStream GetFile(string name)
         {
             throw new NotSupportedException(SR.NotSupported_DynamicAssembly);
         }
 
+        [RequiresAssemblyFiles(ThrowingMessageInRAF)]
         public override FileStream[] GetFiles(bool getResourceModules)
         {
             throw new NotSupportedException(SR.NotSupported_DynamicAssembly);
@@ -104,6 +106,7 @@ namespace System.Reflection.Emit
 
         public override string Location => throw new NotSupportedException(SR.NotSupported_DynamicAssembly);
 
+        [RequiresAssemblyFiles(ThrowingMessageInRAF)]
         public override string? CodeBase => throw new NotSupportedException(SR.NotSupported_DynamicAssembly);
 
         [RequiresUnreferencedCode("Types might be removed")]
@@ -303,10 +306,6 @@ namespace System.Reflection.Emit
         [DynamicSecurityMethod] // Methods containing StackCrawlMark local var has to be marked DynamicSecurityMethod.
         public ModuleBuilder DefineDynamicModule(string name) =>
             DefineDynamicModuleInternal(name, emitSymbolInfo: false);
-
-        [DynamicSecurityMethod] // Methods containing StackCrawlMark local var has to be marked DynamicSecurityMethod.
-        public ModuleBuilder DefineDynamicModule(string name, bool emitSymbolInfo) =>
-            DefineDynamicModuleInternal(name, emitSymbolInfo);
 
         private ModuleBuilder DefineDynamicModuleInternal(string name, bool emitSymbolInfo)
         {

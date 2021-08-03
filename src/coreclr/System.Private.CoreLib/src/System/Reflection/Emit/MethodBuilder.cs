@@ -94,8 +94,9 @@ namespace System.Reflection.Emit
             }
             else if ((attributes & MethodAttributes.Virtual) != 0)
             {
-                // A method can't be both static and virtual
-                throw new ArgumentException(SR.Arg_NoStaticVirtual);
+                // On an interface, the rule is slighlty different
+                if (((attributes & MethodAttributes.Abstract) == 0))
+                    throw new ArgumentException(SR.Arg_NoStaticVirtual);
             }
 
             m_callingConvention = callingConvention;
@@ -757,12 +758,10 @@ namespace System.Reflection.Emit
             set { ThrowIfGeneric(); m_fInitLocals = value; }
         }
 
-        public Module GetModule()
+        internal Module GetModule()
         {
             return GetModuleBuilder();
         }
-
-        public string Signature => GetMethodSignature().ToString();
 
         public void SetCustomAttribute(ConstructorInfo con, byte[] binaryAttribute)
         {

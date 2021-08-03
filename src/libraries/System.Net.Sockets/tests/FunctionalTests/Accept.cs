@@ -397,6 +397,50 @@ namespace System.Net.Sockets.Tests
         public AcceptTask(ITestOutputHelper output) : base(output) {}
     }
 
+    public sealed class AcceptCancellableTask : Accept<SocketHelperCancellableTask>
+    {
+        public AcceptCancellableTask(ITestOutputHelper output) : base(output) { }
+
+        [Fact]
+        public async Task AcceptAsync_Precanceled_Throws()
+        {
+            using (Socket listen = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
+            {
+                int port = listen.BindToAnonymousPort(IPAddress.Loopback);
+                listen.Listen(1);
+
+                var cts = new CancellationTokenSource();
+                cts.Cancel();
+
+                var acceptTask = listen.AcceptAsync(cts.Token);
+                Assert.True(acceptTask.IsCompleted);
+
+                var oce = await Assert.ThrowsAnyAsync<OperationCanceledException>(async () => await acceptTask);
+                Assert.Equal(cts.Token, oce.CancellationToken);
+            }
+        }
+
+        [Fact]
+        public async Task AcceptAsync_CanceledDuringOperation_Throws()
+        {
+            using (Socket listen = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
+            {
+                int port = listen.BindToAnonymousPort(IPAddress.Loopback);
+                listen.Listen(1);
+
+                var cts = new CancellationTokenSource();
+
+                var acceptTask = listen.AcceptAsync(cts.Token);
+                Assert.False(acceptTask.IsCompleted);
+
+                cts.Cancel();
+
+                var oce = await Assert.ThrowsAnyAsync<OperationCanceledException>(async () => await acceptTask);
+                Assert.Equal(cts.Token, oce.CancellationToken);
+            }
+        }
+    }
+
     public sealed class AcceptEap : Accept<SocketHelperEap>
     {
         public AcceptEap(ITestOutputHelper output) : base(output) {}

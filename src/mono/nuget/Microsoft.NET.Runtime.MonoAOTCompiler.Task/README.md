@@ -29,3 +29,27 @@ The `MonoAOTCompiler` MSBuild task is also useful outside the context of `dotnet
     </MonoAOTCompiler>
 </Target>
 ```
+
+------------
+Use `UsingTask` directly
+## In the project file
+```
+<!-- Import the NuGet package into the project -->
+<ItemGroup>
+    <PackageReference Include="Microsoft.NET.Runtime.MonoAOTCompiler.Task" Version="<desired-dotnet-6-sdk-version>" GeneratePathProperty="true" />
+</ItemGroup>
+
+<UsingTask TaskName="MonoAOTCompiler"
+           AssemblyFile="$(PkgMicrosoft_NET_Runtime_MonoAOTCompiler_Task)/tools/<target-framework>/MonoAOTCompiler.dll" />
+
+<!-- Use the MonoAOTCompiler task in a target -->
+<Target>
+    <MonoAOTCompiler 
+        CompilerBinaryPath="$(CompilerBinaryPath)"
+        Assemblies="@(Assemblies)"
+        <!-- Other parameters -->
+        >
+        <Output TaskParameter="CompiledAssemblies" ItemName="CompiledAssemblies" />
+    </MonoAOTCompiler>
+</Target>
+```

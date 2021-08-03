@@ -94,7 +94,12 @@ namespace System.Reflection
             }
         }
 
-        public override string ToString() => ParameterType.FormatTypeName() + " " + Name;
+        public override string ToString()
+        {
+            string typeName = ParameterType.FormatTypeName();
+            string? name = Name;
+            return name is null ? typeName : typeName + " " + name;
+        }
 
         protected ParameterAttributes AttrsImpl;
         protected Type? ClassImpl;

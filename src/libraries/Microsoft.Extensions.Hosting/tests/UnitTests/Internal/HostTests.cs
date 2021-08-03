@@ -677,7 +677,7 @@ namespace Microsoft.Extensions.Hosting.Internal
 
         [Fact]
         public async Task HostStopsApplicationWithOneBackgroundServiceErrorAndOthersWithoutError()
-        { 
+        {
             var wasOtherServiceStarted = false;
 
             TaskCompletionSource<bool> throwingTcs = new();

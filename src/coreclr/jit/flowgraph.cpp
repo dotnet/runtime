@@ -25,11 +25,11 @@
 static bool blockNeedsGCPoll(BasicBlock* block)
 {
     bool blockMayNeedGCPoll = false;
-    for (Statement* stmt = block->FirstNonPhiDef(); stmt != nullptr; stmt = stmt->GetNextStmt())
+    for (Statement* const stmt : block->NonPhiStatements())
     {
         if ((stmt->GetRootNode()->gtFlags & GTF_CALL) != 0)
         {
-            for (GenTree* tree = stmt->GetTreeList(); tree != nullptr; tree = tree->gtNext)
+            for (GenTree* const tree : stmt->TreeList())
             {
                 if (tree->OperGet() == GT_CALL)
                 {
@@ -91,7 +91,7 @@ PhaseStatus Compiler::fgInsertGCPolls()
     BasicBlock* block;
 
     // Walk through the blocks and hunt for a block that needs a GC Poll
-    for (block = fgFirstBB; block; block = block->bbNext)
+    for (block = fgFirstBB; block != nullptr; block = block->bbNext)
     {
         // When optimizations are enabled, we can't rely on BBF_HAS_SUPPRESSGC_CALL flag:
         // the call could've been moved, e.g., hoisted from a loop, CSE'd, etc.
@@ -321,7 +321,7 @@ BasicBlock* Compiler::fgCreateGCPoll(GCPollType pollType, BasicBlock* block)
         unsigned char lpIndex     = top->bbNatLoopNum;
 
         // Update block flags
-        const unsigned __int64 originalFlags = top->bbFlags | BBF_GC_SAFE_POINT;
+        const BasicBlockFlags originalFlags = top->bbFlags | BBF_GC_SAFE_POINT;
 
         // We are allowed to split loops and we need to keep a few other flags...
         //
@@ -629,7 +629,7 @@ PhaseStatus Compiler::fgImport()
     // Note this includes (to some extent) the impact of importer folded
     // branches, provided the folded tree covered the entire block's IL.
     unsigned importedILSize = 0;
-    for (BasicBlock* block = fgFirstBB; block != nullptr; block = block->bbNext)
+    for (BasicBlock* const block : Blocks())
     {
         if ((block->bbFlags & BBF_IMPORTED) != 0)
         {
@@ -812,8 +812,8 @@ GenTreeLclVar* Compiler::fgIsIndirOfAddrOfLocal(GenTree* tree)
 
 GenTreeCall* Compiler::fgGetStaticsCCtorHelper(CORINFO_CLASS_HANDLE cls, CorInfoHelpFunc helper)
 {
-    bool     bNeedClassID = true;
-    unsigned callFlags    = 0;
+    bool         bNeedClassID = true;
+    GenTreeFlags callFlags    = GTF_EMPTY;
 
     var_types type = TYP_BYREF;
 
@@ -948,13 +948,12 @@ GenTreeCall* Compiler::fgGetSharedCCtor(CORINFO_CLASS_HANDLE cls)
 //------------------------------------------------------------------------------
 // fgAddrCouldBeNull : Check whether the address tree can represent null.
 //
-//
 // Arguments:
 //    addr     -  Address to check
 //
 // Return Value:
 //    True if address could be null; false otherwise
-
+//
 bool Compiler::fgAddrCouldBeNull(GenTree* addr)
 {
     addr = addr->gtEffectiveVal();
@@ -1395,8 +1394,6 @@ inline void Compiler::fgLoopCallTest(BasicBlock* srcBB, BasicBlock* dstBB)
 
 void Compiler::fgLoopCallMark()
 {
-    BasicBlock* block;
-
     /* If we've already marked all the block, bail */
 
     if (fgLoopCallMarked)
@@ -1408,7 +1405,7 @@ void Compiler::fgLoopCallMark()
 
     /* Walk the blocks, looking for backward edges */
 
-    for (block = fgFirstBB; block; block = block->bbNext)
+    for (BasicBlock* const block : Blocks())
     {
         switch (block->bbJumpKind)
         {
@@ -1420,17 +1417,10 @@ void Compiler::fgLoopCallMark()
                 break;
 
             case BBJ_SWITCH:
-
-                unsigned jumpCnt;
-                jumpCnt = block->bbJumpSwt->bbsCount;
-                BasicBlock** jumpPtr;
-                jumpPtr = block->bbJumpSwt->bbsDstTab;
-
-                do
+                for (BasicBlock* const bTarget : block->SwitchTargets())
                 {
-                    fgLoopCallTest(block, *jumpPtr);
-                } while (++jumpPtr, --jumpCnt);
-
+                    fgLoopCallTest(block, bTarget);
+                }
                 break;
 
             default:
@@ -1849,7 +1839,7 @@ void Compiler::fgAddSyncMethodEnterExit()
     fgCreateMonitorTree(lvaMonAcquired, lvaCopyThis, faultBB, false /*exit*/);
 
     // non-exceptional cases
-    for (BasicBlock* block = fgFirstBB; block != nullptr; block = block->bbNext)
+    for (BasicBlock* const block : Blocks())
     {
         if (block->bbJumpKind == BBJ_RETURN)
         {
@@ -2091,7 +2081,7 @@ bool Compiler::fgMoreThanOneReturnBlock()
 {
     unsigned retCnt = 0;
 
-    for (BasicBlock* block = fgFirstBB; block; block = block->bbNext)
+    for (BasicBlock* const block : Blocks())
     {
         if (block->bbJumpKind == BBJ_RETURN)
         {
@@ -2612,8 +2602,8 @@ void Compiler::fgAddInternal()
     noway_assert(!compIsForInlining());
 
     // The backend requires a scratch BB into which it can safely insert a P/Invoke method prolog if one is
-    // required. Create it here.
-    if (compMethodRequiresPInvokeFrame())
+    // required. Similarly, we need a scratch BB for poisoning. Create it here.
+    if (compMethodRequiresPInvokeFrame() || compShouldPoisonFrame())
     {
         fgEnsureFirstBBisScratch();
         fgFirstBB->bbFlags |= BBF_DONT_REMOVE;
@@ -2920,10 +2910,10 @@ void Compiler::fgFindOperOrder()
     /* Walk the basic blocks and for each statement determine
      * the evaluation order, cost, FP levels, etc... */
 
-    for (BasicBlock* block = fgFirstBB; block; block = block->bbNext)
+    for (BasicBlock* const block : Blocks())
     {
         compCurBB = block;
-        for (Statement* stmt : block->Statements())
+        for (Statement* const stmt : block->Statements())
         {
             /* Recursively process the statement */
 
@@ -2953,7 +2943,7 @@ void Compiler::fgSimpleLowering()
     unsigned outgoingArgSpaceSize = 0;
 #endif // FEATURE_FIXED_OUT_ARGS
 
-    for (BasicBlock* block = fgFirstBB; block; block = block->bbNext)
+    for (BasicBlock* const block : Blocks())
     {
         // Walk the statement trees in this basic block.
         compCurBB = block; // Used in fgRngChkTarget.
@@ -3187,9 +3177,8 @@ void Compiler::fgInsertFuncletPrologBlock(BasicBlock* block)
     // the handler go to the prolog. Edges coming from with the handler are back-edges, and
     // go to the existing 'block'.
 
-    for (flowList* pred = block->bbPreds; pred; pred = pred->flNext)
+    for (BasicBlock* const predBlock : block->PredBlocks())
     {
-        BasicBlock* predBlock = pred->getBlock();
         if (!fgIsIntraHandlerPred(predBlock, block))
         {
             // It's a jump from outside the handler; add it to the newHead preds list and remove
@@ -3235,11 +3224,9 @@ void Compiler::fgCreateFuncletPrologBlocks()
     noway_assert(!fgDomsComputed); // this function doesn't maintain the dom sets
     assert(!fgFuncletsCreated);
 
-    bool      prologBlocksCreated = false;
-    EHblkDsc* HBtabEnd;
-    EHblkDsc* HBtab;
+    bool prologBlocksCreated = false;
 
-    for (HBtab = compHndBBtab, HBtabEnd = compHndBBtab + compHndBBtabCount; HBtab < HBtabEnd; HBtab++)
+    for (EHblkDsc* const HBtab : EHClauses(this))
     {
         BasicBlock* head = HBtab->ebdHndBeg;
 
@@ -4295,7 +4282,7 @@ void Compiler::fgSetBlockOrder()
     /* If we don't compute the doms, then we never mark blocks as loops. */
     if (fgDomsComputed)
     {
-        for (BasicBlock* block = fgFirstBB; block; block = block->bbNext)
+        for (BasicBlock* const block : Blocks())
         {
             /* If this block is a loop header, mark it appropriately */
 
@@ -4310,11 +4297,7 @@ void Compiler::fgSetBlockOrder()
         /* If we don't have the dominators, use an abbreviated test for fully interruptible.  If there are
          * any back edges, check the source and destination blocks to see if they're GC Safe.  If not, then
          * go fully interruptible. */
-
-        /* XXX Mon 1/21/2008
-         * Wouldn't it be nice to have a block iterator that can do this loop?
-         */
-        for (BasicBlock* block = fgFirstBB; block; block = block->bbNext)
+        for (BasicBlock* const block : Blocks())
         {
 // true if the edge is forward, or if it is a back edge and either the source and dest are GC safe.
 #define EDGE_IS_GC_SAFE(src, dst)                                                                                      \
@@ -4329,17 +4312,10 @@ void Compiler::fgSetBlockOrder()
                     break;
 
                 case BBJ_SWITCH:
-
-                    unsigned jumpCnt;
-                    jumpCnt = block->bbJumpSwt->bbsCount;
-                    BasicBlock** jumpPtr;
-                    jumpPtr = block->bbJumpSwt->bbsDstTab;
-
-                    do
+                    for (BasicBlock* const bTarget : block->SwitchTargets())
                     {
-                        partiallyInterruptible &= EDGE_IS_GC_SAFE(block, *jumpPtr);
-                    } while (++jumpPtr, --jumpCnt);
-
+                        partiallyInterruptible &= EDGE_IS_GC_SAFE(block, bTarget);
+                    }
                     break;
 
                 default:
@@ -4363,7 +4339,7 @@ void Compiler::fgSetBlockOrder()
         }
     }
 
-    for (BasicBlock* block = fgFirstBB; block; block = block->bbNext)
+    for (BasicBlock* const block : Blocks())
     {
 
 #if FEATURE_FASTTAILCALL
@@ -4482,7 +4458,7 @@ void Compiler::fgSetStmtSeq(Statement* stmt)
 
 void Compiler::fgSetBlockOrder(BasicBlock* block)
 {
-    for (Statement* stmt : block->Statements())
+    for (Statement* const stmt : block->Statements())
     {
         fgSetStmtSeq(stmt);
 

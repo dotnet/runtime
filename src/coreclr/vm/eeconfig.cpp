@@ -813,17 +813,7 @@ HRESULT EEConfig::sync()
 
         tieredCompilation_CallCountingDelayMs = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_TC_CallCountingDelayMs);
 
-        bool hasSingleProcessor;
-#ifndef TARGET_UNIX
-        if (CPUGroupInfo::CanEnableThreadUseAllCpuGroups())
-        {
-            hasSingleProcessor = CPUGroupInfo::GetNumActiveProcessors() == 1;
-        }
-        else
-#endif
-        {
-            hasSingleProcessor = GetCurrentProcessCpuCount() == 1;
-        }
+        bool hasSingleProcessor = GetCurrentProcessCpuCount() == 1;
         if (hasSingleProcessor)
         {
             DWORD delayMultiplier = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_TC_DelaySingleProcMultiplier);

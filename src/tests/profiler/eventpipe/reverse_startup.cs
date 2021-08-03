@@ -68,6 +68,16 @@ namespace ReverseStartupTests
                             DiagnosticsIPCWorkaround client = new DiagnosticsIPCWorkaround(processId);
                             client.SetStartupProfiler(ReverseStartupProfilerGuid, profilerPath);
 
+                            if (!client.SetEnvironmentVariable("ReverseServerTest_OverwriteMe", "Overwritten"))
+                            {
+                                throw new Exception("Failed setting environment variable.");
+                            }
+
+                            if (!client.SetEnvironmentVariable("ReverseServerTest_ClearMe", null))
+                            {
+                                throw new Exception("Failed clearing environment variable.");
+                            }
+
                             // Resume runtime message
                             IpcMessage resumeMessage = new IpcMessage(0x04,0x01);
                             Console.WriteLine($"Sent resume runtime message: {resumeMessage.ToString()}");
@@ -94,10 +104,17 @@ namespace ReverseStartupTests
                 }
             });
 
+            Dictionary<string, string> envVars = new Dictionary<string, string>()
+            {
+                { "ReverseServerTest_OverwriteMe", "OriginalValue" },
+                { "ReverseServerTest_ClearMe", "OriginalValue" }
+            };
+
             return ProfilerTestRunner.Run(profileePath: System.Reflection.Assembly.GetExecutingAssembly().Location,
                                           testName: "ReverseStartup",
                                           profilerClsid: Guid.Empty,
                                           profileeOptions: ProfileeOptions.NoStartupAttach | ProfileeOptions.ReverseDiagnosticsMode,
+                                          envVars: envVars,
                                           reverseServerName: serverName);
         }
 

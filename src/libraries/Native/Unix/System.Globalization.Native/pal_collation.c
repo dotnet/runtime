@@ -112,6 +112,17 @@ static const UChar g_HalfFullHigherChars[] = {
 };
 static const int32_t g_HalfFullCharsLength = (sizeof(g_HalfFullHigherChars) / sizeof(UChar));
 
+// Hiragana without [semi-]voiced sound mark for custom collation rules
+// If Hiragana with [semi-]voiced sound mark is added to custom collation rules, there is a conflict
+// between the custom rule and some default rule.
+static const UChar g_HiraganaWithoutVoicedSoundMarkChars[] = {
+    0x3041, 0x3042, 0x3043, 0x3044, 0x3045, 0x3046, 0x3047, 0x3048, 0x3049, 0x304A, 0x304B, 0x304D, 0x304F, 0x3051, 0x3053,
+    0x3055, 0x3057, 0x3059, 0x305B, 0x305D, 0x305F, 0x3061, 0x3063, 0x3064, 0x3066, 0x3068, 0x306A, 0x306B, 0x306C, 0x306D,
+    0x306E, 0x306F, 0x3072, 0x3075, 0x3078, 0x307B, 0x307E, 0x307F, 0x3080, 0x3081, 0x3082, 0x3083, 0x3084, 0x3085, 0x3086,
+    0x3087, 0x3088, 0x3089, 0x308A, 0x308B, 0x308C, 0x308D, 0x308E, 0x308F, 0x3090, 0x3091, 0x3092, 0x3093, 0x3095, 0x3096, 0x309D,
+};
+static const int32_t g_HiraganaWithoutVoicedSoundMarkCharsLength = (sizeof(g_HiraganaWithoutVoicedSoundMarkChars) / sizeof(UChar));
+
 /*
 ICU collation rules reserve any punctuation and whitespace characters for use in the syntax.
 Thus, to use these characters in a rule, they need to be escaped.
@@ -150,22 +161,36 @@ custom rules in order to support IgnoreKanaType and IgnoreWidth CompareOptions c
 */
 static void FillIgnoreKanaRules(UChar* completeRules, int32_t* fillIndex, int32_t completeRulesLength, int32_t isIgnoreKanaType)
 {
-    UChar compareChar = isIgnoreKanaType ? '=' : '<';
-
     assert((*fillIndex) + (4 * (hiraganaEnd - hiraganaStart + 1)) <= completeRulesLength);
     if ((*fillIndex) + (4 * (hiraganaEnd - hiraganaStart + 1)) > completeRulesLength) // check the allocated the size
     {
         return;
     }
 
-    for (UChar hiraganaChar = hiraganaStart; hiraganaChar <= hiraganaEnd; hiraganaChar++)
+    if (isIgnoreKanaType)
     {
-        // Hiragana is the range 3041 to 3096 & 309D & 309E
-        if (hiraganaChar <= 0x3096 || hiraganaChar >= 0x309D) // characters between 3096 and 309D are not mapped to katakana
+        for (UChar hiraganaChar = hiraganaStart; hiraganaChar <= hiraganaEnd; hiraganaChar++)
         {
+            // Hiragana is the range 3041 to 3096 & 309D & 309E
+            if (hiraganaChar <= 0x3096 || hiraganaChar >= 0x309D) // characters between 3096 and 309D are not mapped to katakana
+            {
+                completeRules[*fillIndex] = '&';
+                completeRules[(*fillIndex) + 1] = hiraganaChar;
+                completeRules[(*fillIndex) + 2] = '=';
+                completeRules[(*fillIndex) + 3] = hiraganaChar + hiraganaToKatakanaOffset;
+                (*fillIndex) += 4;
+            }
+        }
+    }
+    else
+    {
+        // Avoid conflicts between default [semi-]voiced sound mark rules and custom rules
+        for (int i = 0; i < g_HiraganaWithoutVoicedSoundMarkCharsLength; i++)
+        {
+            UChar hiraganaChar = g_HiraganaWithoutVoicedSoundMarkChars[i];
             completeRules[*fillIndex] = '&';
             completeRules[(*fillIndex) + 1] = hiraganaChar;
-            completeRules[(*fillIndex) + 2] = compareChar;
+            completeRules[(*fillIndex) + 2] = '<';
             completeRules[(*fillIndex) + 3] = hiraganaChar + hiraganaToKatakanaOffset;
             (*fillIndex) += 4;
         }
@@ -814,11 +839,35 @@ int32_t GlobalizationNative_LastIndexOf(
 
     result = usearch_last(pSearch, &err);
 
-    // if the search was successful,
-    // we'll try to get the matched string length.
-    if (result != USEARCH_DONE && pMatchedLength != NULL)
+    // if the search was successful, we'll try to get the matched string length.
+    if (result != USEARCH_DONE)
     {
-        *pMatchedLength = usearch_getMatchedLength(pSearch);
+        int32_t matchLength = -1;
+
+        if (pMatchedLength != NULL)
+        {
+            matchLength = usearch_getMatchedLength(pSearch);
+            *pMatchedLength = matchLength;
+        }
+
+        // In case the search result is pointing at the last character (including Surrogate case) of the source string, we need to check if the target string
+        // was constructed with characters which have no sort weights. The way we do that is to check that the matched length is 0.
+        // We need to update the returned index to have consistent behavior with Ordinal and NLS operations, and satisfy the condition:
+        //      index = source.LastIndexOf(value, comparisonType);
+        //      originalString.Substring(index).StartsWith(value, comparisonType) == true.
+        // https://github.com/dotnet/runtime/issues/13383
+        if (result >= cwSourceLength - 2)
+        {
+            if (pMatchedLength == NULL)
+            {
+                matchLength = usearch_getMatchedLength(pSearch);
+            }
+
+            if (matchLength == 0)
+            {
+                result = cwSourceLength;
+            }
+        }
     }
 
     RestoreSearchHandle(pSortHandle, pSearch, searchCacheSlot);

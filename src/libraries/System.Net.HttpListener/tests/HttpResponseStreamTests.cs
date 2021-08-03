@@ -454,7 +454,7 @@ namespace System.Net.Tests
             }
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // [ActiveIssue("https://github.com/dotnet/runtime/issues/18258")]
+        [Theory]
         [InlineData(true)]
         [InlineData(false)]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/21022", platforms: TestPlatforms.Windows)] // Indeterminate failure - socket not always fully disconnected.
@@ -494,7 +494,7 @@ namespace System.Net.Tests
             }
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // [ActiveIssue("https://github.com/dotnet/runtime/issues/18258")]
+        [Theory]
         [InlineData(true)]
         [InlineData(false)]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/21022", platforms: TestPlatforms.Windows)] // Indeterminate failure - socket not always fully disconnected.

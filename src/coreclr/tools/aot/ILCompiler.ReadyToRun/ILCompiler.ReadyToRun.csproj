@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>Library</OutputType>
     <AssemblyName>ILCompiler.ReadyToRun</AssemblyName>
@@ -109,6 +109,7 @@
     <Compile Include="ObjectWriter\MapFileBuilder.cs" />
     <Compile Include="CodeGen\ReadyToRunObjectWriter.cs" />
     <Compile Include="Compiler\CompilationModuleGroup.ReadyToRun.cs" />
+    <Compile Include="Compiler\CompositeImageSettings.cs" />
     <Compile Include="Compiler\CryptographicHashProvider.cs" />
     <Compile Include="Compiler\DependencyAnalysis\AllMethodsOnTypeNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ArrayOfEmbeddedDataNode.cs" />
@@ -180,13 +181,16 @@
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\TransitionBlock.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\TypeFixupSignature.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\TypesTableNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\VirtualResolutionFixupSignature.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\Win32ResourcesNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRunSymbolNodeFactory.cs" />
     <Compile Include="Compiler\DependencyAnalysis\SortableDependencyNodeCompilerSpecific.cs" />
     <Compile Include="Compiler\DependencyAnalysis\TypeAndMethod.cs" />
     <Compile Include="Compiler\IRootingServiceProvider.cs" />
-    <Compile Include="Compiler\MethodExtensions.cs" />
     <Compile Include="Compiler\ReadyToRunCompilationModuleGroupBase.cs" />
+    <Compile Include="Compiler\PettisHansenSort\CallGraphNode.cs" />
+    <Compile Include="Compiler\PettisHansenSort\DisjointSetForest.cs" />
+    <Compile Include="Compiler\PettisHansenSort\PettisHansen.cs" />
     <Compile Include="IBC\IBCDataModel.cs" />
     <Compile Include="IBC\IBCDataReader.cs" />
     <Compile Include="IBC\MIbcProfileParser.cs" />
@@ -243,6 +247,9 @@
     </Compile>
     <Compile Include="..\..\Common\TypeSystem\IL\HelperExtensions.cs">
       <Link>IL\HelperExtensions.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\TypeSystem\Interop\CallConvHelpers.cs">
+      <Link>Interop\CallConvHelpers.cs</Link>
     </Compile>
     <Compile Include="..\..\Common\JitInterface\TypeString.cs">
       <Link>JitInterface\TypeString.cs</Link>

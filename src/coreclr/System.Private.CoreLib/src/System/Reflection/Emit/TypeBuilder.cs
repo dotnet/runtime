@@ -837,6 +837,8 @@ namespace System.Reflection.Emit
             return m_bakedRuntimeType.GetFields(bindingAttr);
         }
 
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.Interfaces)]
+        [return: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.Interfaces)]
         public override Type? GetInterface(string name, bool ignoreCase)
         {
             if (!IsCreated())
@@ -845,6 +847,7 @@ namespace System.Reflection.Emit
             return m_bakedRuntimeType.GetInterface(name, ignoreCase);
         }
 
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.Interfaces)]
         public override Type[] GetInterfaces()
         {
             if (m_bakedRuntimeType != null)
@@ -921,7 +924,7 @@ namespace System.Reflection.Emit
             return m_bakedRuntimeType.GetMember(name, type, bindingAttr);
         }
 
-        public override InterfaceMapping GetInterfaceMap(Type interfaceType)
+        public override InterfaceMapping GetInterfaceMap([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods | DynamicallyAccessedMemberTypes.NonPublicMethods)] Type interfaceType)
         {
             if (!IsCreated())
                 throw new NotSupportedException(SR.NotSupported_TypeNotYetCreated);
@@ -947,6 +950,9 @@ namespace System.Reflection.Emit
             return m_bakedRuntimeType.GetMembers(bindingAttr);
         }
 
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2070:UnrecognizedReflectionPattern",
+            Justification = "The GetInterfaces technically requires all interfaces to be preserved" +
+                "But in this case it acts only on TypeBuilder which is never trimmed (as it's runtime created).")]
         public override bool IsAssignableFrom([NotNullWhen(true)] Type? c)
         {
             if (IsTypeEqual(c, this))

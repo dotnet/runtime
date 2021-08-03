@@ -4,10 +4,15 @@
          plan on shipping a new desktop version out of band. Instead add API
          to a different assembly. -->
     <AssemblyVersion>4.0.0.0</AssemblyVersion>
-    <TargetFrameworks>netstandard2.0;netstandard1.1</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent);netstandard2.0</TargetFrameworks>
     <Nullable>enable</Nullable>
   </PropertyGroup>
+
   <ItemGroup>
     <Compile Include="System.Reflection.Context.cs" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)'">
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime\ref\System.Runtime.csproj" />
   </ItemGroup>
 </Project>

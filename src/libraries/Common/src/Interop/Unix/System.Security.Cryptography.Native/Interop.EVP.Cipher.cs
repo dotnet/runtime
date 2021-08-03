@@ -145,6 +145,21 @@ internal static partial class Interop
             }
         }
 
+        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EvpCipherGetAeadTag")]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        private static extern bool EvpCipherGetAeadTag(
+            SafeEvpCipherCtxHandle ctx,
+            ref byte tag,
+            int tagLength);
+
+        internal static void EvpCipherGetAeadTag(SafeEvpCipherCtxHandle ctx, Span<byte> tag)
+        {
+            if (!EvpCipherGetAeadTag(ctx, ref MemoryMarshal.GetReference(tag), tag.Length))
+            {
+                throw CreateOpenSslCryptographicException();
+            }
+        }
+
         [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EvpCipherSetGcmTag")]
         [return: MarshalAs(UnmanagedType.Bool)]
         private static extern bool EvpCipherSetGcmTag(
@@ -155,6 +170,21 @@ internal static partial class Interop
         internal static void EvpCipherSetGcmTag(SafeEvpCipherCtxHandle ctx, ReadOnlySpan<byte> tag)
         {
             if (!EvpCipherSetGcmTag(ctx, ref MemoryMarshal.GetReference(tag), tag.Length))
+            {
+                throw CreateOpenSslCryptographicException();
+            }
+        }
+
+        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EvpCipherSetAeadTag")]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        private static extern bool EvpCipherSetAeadTag(
+            SafeEvpCipherCtxHandle ctx,
+            ref byte tag,
+            int tagLength);
+
+        internal static void EvpCipherSetAeadTag(SafeEvpCipherCtxHandle ctx, ReadOnlySpan<byte> tag)
+        {
+            if (!EvpCipherSetAeadTag(ctx, ref MemoryMarshal.GetReference(tag), tag.Length))
             {
                 throw CreateOpenSslCryptographicException();
             }
@@ -279,6 +309,9 @@ internal static partial class Interop
 
         [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EvpRC2Ecb")]
         internal static extern IntPtr EvpRC2Ecb();
+
+        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EvpChaCha20Poly1305")]
+        internal static extern IntPtr EvpChaCha20Poly1305();
 
         internal enum EvpCipherDirection : int
         {

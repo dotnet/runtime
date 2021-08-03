@@ -50,7 +50,9 @@ enum EXTRA_JIT_FLAGS
     HAS_PGO = 63,
     HAS_EDGE_PROFILE = 62,
     HAS_CLASS_PROFILE = 61,
-    HAS_LIKELY_CLASS = 60
+    HAS_LIKELY_CLASS = 60,
+    HAS_STATIC_PROFILE = 59,
+    HAS_DYNAMIC_PROFILE = 58
 };
 
 // Asserts to catch changes in corjit flags definitions.
@@ -59,6 +61,8 @@ static_assert((int)EXTRA_JIT_FLAGS::HAS_PGO == (int)CORJIT_FLAGS::CorJitFlag::CO
 static_assert((int)EXTRA_JIT_FLAGS::HAS_EDGE_PROFILE == (int)CORJIT_FLAGS::CorJitFlag::CORJIT_FLAG_UNUSED35, "Jit Flags Mismatch");
 static_assert((int)EXTRA_JIT_FLAGS::HAS_CLASS_PROFILE == (int)CORJIT_FLAGS::CorJitFlag::CORJIT_FLAG_UNUSED34, "Jit Flags Mismatch");
 static_assert((int)EXTRA_JIT_FLAGS::HAS_LIKELY_CLASS == (int)CORJIT_FLAGS::CorJitFlag::CORJIT_FLAG_UNUSED33, "Jit Flags Mismatch");
+static_assert((int)EXTRA_JIT_FLAGS::HAS_STATIC_PROFILE == (int)CORJIT_FLAGS::CorJitFlag::CORJIT_FLAG_UNUSED32, "Jit Flags Mismatch");
+static_assert((int)EXTRA_JIT_FLAGS::HAS_DYNAMIC_PROFILE == (int)CORJIT_FLAGS::CorJitFlag::CORJIT_FLAG_UNUSED31, "Jit Flags Mismatch");
 
 class MethodContext
 {
@@ -99,7 +103,7 @@ public:
     int dumpMethodIdentityInfoToBuffer(char* buff, int len, bool ignoreMethodName = false, CORINFO_METHOD_INFO* optInfo = nullptr, unsigned optFlags = 0);
     int dumpMethodMD5HashToBuffer(char* buff, int len, bool ignoreMethodName = false, CORINFO_METHOD_INFO* optInfo = nullptr, unsigned optFlags = 0);
 
-    bool hasPgoData(bool& hasEdgeProfile, bool& hasClassProfile, bool& hasLikelyClass);
+    bool hasPgoData(bool& hasEdgeProfile, bool& hasClassProfile, bool& hasLikelyClass, ICorJitInfo::PgoSource& pgoSource);
 
     void recGlobalContext(const MethodContext& other);
 
@@ -148,12 +152,12 @@ public:
     void recGetBoundaries(CORINFO_METHOD_HANDLE         ftn,
                           unsigned int*                 cILOffsets,
                           uint32_t**                       pILOffsets,
-                          ICorDebugInfo::BoundaryTypes* implictBoundaries);
+                          ICorDebugInfo::BoundaryTypes* implicitBoundaries);
     void dmpGetBoundaries(DWORDLONG key, const Agnostic_GetBoundaries& value);
     void repGetBoundaries(CORINFO_METHOD_HANDLE         ftn,
                           unsigned int*                 cILOffsets,
                           uint32_t**                    pILOffsets,
-                          ICorDebugInfo::BoundaryTypes* implictBoundaries);
+                          ICorDebugInfo::BoundaryTypes* implicitBoundaries);
 
     void recInitClass(CORINFO_FIELD_HANDLE   field,
                       CORINFO_METHOD_HANDLE  method,
@@ -626,9 +630,6 @@ public:
     void dmpFilterException(DWORD key, DWORD value);
     int repFilterException(struct _EXCEPTION_POINTERS* pExceptionPointers);
 
-    void recHandleException(struct _EXCEPTION_POINTERS* pExceptionPointers);
-    void dmpHandleException(DWORD key, DWORD value);
-
     void recGetAddressOfPInvokeTarget(CORINFO_METHOD_HANDLE method, CORINFO_CONST_LOOKUP* pLookup);
     void dmpGetAddressOfPInvokeTarget(DWORDLONG key, DLD value);
     void repGetAddressOfPInvokeTarget(CORINFO_METHOD_HANDLE method, CORINFO_CONST_LOOKUP* pLookup);
@@ -699,9 +700,9 @@ public:
     void dmpAllocPgoInstrumentationBySchema(DWORDLONG key, const Agnostic_AllocPgoInstrumentationBySchema& value);
     HRESULT repAllocPgoInstrumentationBySchema(CORINFO_METHOD_HANDLE ftnHnd, ICorJitInfo::PgoInstrumentationSchema* pSchema, UINT32 countSchemaItems, BYTE** pInstrumentationData);
 
-    void recGetPgoInstrumentationResults(CORINFO_METHOD_HANDLE ftnHnd, ICorJitInfo::PgoInstrumentationSchema** pSchema, UINT32* pCountSchemaItems, BYTE** pInstrumentationData, HRESULT result);
+    void recGetPgoInstrumentationResults(CORINFO_METHOD_HANDLE ftnHnd, ICorJitInfo::PgoInstrumentationSchema** pSchema, UINT32* pCountSchemaItems, BYTE** pInstrumentationData, ICorJitInfo::PgoSource* pPgoSource, HRESULT result);
     void dmpGetPgoInstrumentationResults(DWORDLONG key, const Agnostic_GetPgoInstrumentationResults& value);
-    HRESULT repGetPgoInstrumentationResults(CORINFO_METHOD_HANDLE ftnHnd, ICorJitInfo::PgoInstrumentationSchema** pSchema, UINT32* pCountSchemaItems, BYTE** pInstrumentationData);
+    HRESULT repGetPgoInstrumentationResults(CORINFO_METHOD_HANDLE ftnHnd, ICorJitInfo::PgoInstrumentationSchema** pSchema, UINT32* pCountSchemaItems, BYTE** pInstrumentationData, ICorJitInfo::PgoSource* pPgoSource);
 
     void recMergeClasses(CORINFO_CLASS_HANDLE cls1, CORINFO_CLASS_HANDLE cls2, CORINFO_CLASS_HANDLE result);
     void dmpMergeClasses(DLDL key, DWORDLONG value);
@@ -1038,7 +1039,7 @@ enum mcPackets
     Packet_GetUnmanagedCallConv                          = 94,
     Packet_GetVarArgsHandle                              = 95,
     Packet_GetVars                                       = 96,
-    Packet_HandleException                               = 135,
+    Packet_HandleException                               = 135, // Retired 7/19/2021
     Packet_InitClass                                     = 97,
     Packet_InitConstraintsForVerification                = 98, // Retired 2/18/2020
     Packet_IsCompatibleDelegate                          = 99,
@@ -1098,4 +1099,6 @@ enum mcPackets
     PacketCR_CrSigInstHandleMap                = 185,
 };
 
-#endif
+void SetDebugDumpVariables();
+
+#endif // _MethodContext

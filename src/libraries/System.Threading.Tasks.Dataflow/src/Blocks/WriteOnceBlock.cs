@@ -96,13 +96,11 @@ namespace System.Threading.Tasks.Dataflow
                         dataflowBlockOptions.CancellationToken, _lazyCompletionTaskSource.Task, state => ((WriteOnceBlock<T>)state!).Complete(), this);
                 }
             }
-#if FEATURE_TRACING
             DataflowEtwProvider etwLog = DataflowEtwProvider.Log;
             if (etwLog.IsEnabled())
             {
                 etwLog.DataflowBlockCreated(this, dataflowBlockOptions);
             }
-#endif
         }
 
         /// <summary>Asynchronously completes the block on another task.</summary>
@@ -123,14 +121,12 @@ namespace System.Threading.Tasks.Dataflow
                 var taskForOutputProcessing = new Task(state => ((WriteOnceBlock<T>)state!).OfferToTargetsAndCompleteBlock(), this,
                                                         Common.GetCreationOptionsForTask());
 
-#if FEATURE_TRACING
                 DataflowEtwProvider etwLog = DataflowEtwProvider.Log;
                 if (etwLog.IsEnabled())
                 {
                     etwLog.TaskLaunchedForMessageHandling(
                         this, taskForOutputProcessing, DataflowEtwProvider.TaskLaunchedReason.OfferingOutputMessages, _header.IsValid ? 1 : 0);
                 }
-#endif
 
                 // Start the task handling scheduling exceptions
                 Exception? exception = Common.StartTaskSafe(taskForOutputProcessing, _dataflowBlockOptions.TaskScheduler);
@@ -200,13 +196,11 @@ namespace System.Threading.Tasks.Dataflow
 
             // Now that the completion task is completed, we may propagate completion to the linked targets
             _targetRegistry.PropagateCompletion(linkedTargets);
-#if FEATURE_TRACING
             DataflowEtwProvider etwLog = DataflowEtwProvider.Log;
             if (etwLog.IsEnabled())
             {
                 etwLog.DataflowBlockCompleted(this);
             }
-#endif
         }
 
         /// <include file='XmlDocs/CommonXmlDocComments.xml' path='CommonXmlDocComments/Blocks/Member[@name="Fault"]/*' />

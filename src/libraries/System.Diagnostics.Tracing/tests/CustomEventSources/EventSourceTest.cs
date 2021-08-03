@@ -26,8 +26,9 @@ namespace SdtEventSources
     [EventSource(Guid = "69e2aa3e-083b-5014-cad4-3e511a0b94cf", Name = "EventSourceTest")]
     public sealed class EventSourceTest : EventSource
     {
-        public EventSourceTest(bool useSelfDescribingEvents = false)
-            : base(true)
+        public EventSourceTest(bool useSelfDescribingEvents = false, bool throwOnEventWriteErrors = false)
+            : base((useSelfDescribingEvents ? EventSourceSettings.EtwSelfDescribingEventFormat : EventSourceSettings.EtwManifestEventFormat)
+                  | (throwOnEventWriteErrors ? EventSourceSettings.ThrowOnEventWriteErrors : 0))
         { }
 
         protected override void OnEventCommand(EventCommandEventArgs command)
@@ -324,6 +325,46 @@ namespace SdtEventSources
         public void EventWithByteArray(byte[] arr)
         {
             this.WriteEvent(52, arr);
+        }
+
+        [Event(53)]
+        public unsafe void EventWithByteArrayCustom(byte[] arr)
+        {
+            // This implementation does not guard against passing null as DataPointer for Length == 0 case
+            arr ??= Array.Empty<byte>();
+
+            fixed (byte* arg1Ptr = arr)
+            {
+                int bufferLength = arr.Length;
+
+                const int NumEventDatas = 2;
+                var descrs = stackalloc EventData[NumEventDatas];
+
+                descrs[0] = new EventData
+                {
+                    DataPointer = (IntPtr)(&bufferLength),
+                    Size = sizeof(int)
+                };
+                descrs[1] = new EventData
+                {
+                    DataPointer = (IntPtr)arg1Ptr,
+                    Size = arr.Length
+                };
+
+                WriteEventCore(53, 2, descrs);
+            }
+        }
+
+        [Event(54)]
+        public unsafe void EventWithBytePointer(byte* ptr, int length)
+        {
+            var data = new EventData
+            {
+                DataPointer = (IntPtr)ptr,
+                Size = length
+            };
+
+            WriteEventCore(54, 1, &data);
         }
 
         #region Keywords / Tasks /Opcodes / Channels

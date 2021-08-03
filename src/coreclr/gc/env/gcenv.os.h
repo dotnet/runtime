@@ -34,7 +34,7 @@ class CLRCriticalSection
 
 public:
     // Initialize the critical section
-    void Initialize();
+    bool Initialize();
 
     // Destroy the critical section
     void Destroy();
@@ -387,11 +387,6 @@ public:
     // Return:
     //  Size of the cache
     static size_t GetCacheSizePerLogicalCpu(bool trueSize = true);
-
-    // Get number of processors assigned to the current process
-    // Return:
-    //  The number of processors
-    static uint32_t GetCurrentProcessCpuCount();
 
     // Sets the calling thread's affinity to only run on the processor specified.
     // Parameters:

@@ -13,5 +13,5 @@ Create a BigInteger from its binary representation.
 
 The returned jobject will be a local reference.
 */
-jobject AndroidCryptoNative_BigNumFromBinary(uint8_t* bytes, int32_t len);
-int32_t AndroidCryptoNative_GetBigNumBytesIncludingPaddingByteForSign(jobject bignum);
+jobject AndroidCryptoNative_BigNumFromBinary(uint8_t* bytes, int32_t len) ARGS_NON_NULL_ALL;
+int32_t AndroidCryptoNative_GetBigNumBytesIncludingPaddingByteForSign(jobject bignum) ARGS_NON_NULL_ALL;

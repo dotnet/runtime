@@ -19,7 +19,7 @@ internal static partial class Interop
             internal int Copy(byte[] destination, int offset)
             {
                 Debug.Assert(destination != null, "target destination cannot be null");
-                Debug.Assert((offset >= 0 && offset < destination.Length) || destination.Length == 0, "invalid offset " + offset);
+                Debug.Assert((offset >= 0 && offset < destination.Length) || destination.Length == 0, $"invalid offset {offset}");
 
                 if (_data == IntPtr.Zero || _length == 0)
                 {

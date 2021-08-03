@@ -33,6 +33,8 @@ elseif(HOST_LINUX)
 set(OS_LIBS pthread m dl)
 elseif(HOST_WIN32)
 set(OS_LIBS bcrypt.lib Mswsock.lib ws2_32.lib psapi.lib version.lib advapi32.lib winmm.lib kernel32.lib)
+elseif(HOST_SOLARIS)
+  set(OS_LIBS socket pthread m ${CMAKE_DL_LIBS})
 endif()
 
 #
@@ -168,15 +170,9 @@ set(mini_common_sources
     monovm.c)
 
 set(debugger_sources
-  debugger-engine.h
-  debugger-engine.c
-  debugger-agent.h
-  debugger-agent.c
-  debugger-protocol.h
-  debugger-protocol.c
-  debugger-agent-stubs.c
-  debugger-state-machine.h
-  debugger-state-machine.c)
+  debugger-agent-external.h
+  debugger-agent-external.c
+  )
 
 set(amd64_sources
     mini-amd64.c
@@ -216,12 +212,18 @@ set(arm_sources
     tramp-arm-gsharedvt.c
     cpu-arm.h)
 
+set(s390x_sources
+    mini-s390x.c
+    mini-s390x.h
+    exceptions-s390x.c
+    tramp-s390x.c
+    cpu-s390x.h)
+
 set(wasm_sources
     mini-wasm.c
     tramp-wasm.c
     exceptions-wasm.c
     aot-runtime-wasm.c
-    mini-wasm-debugger.c
     wasm_m2n_invoke.g.h
     cpu-wasm.h)
 
@@ -233,6 +235,8 @@ elseif(TARGET_ARM64)
 set(arch_sources ${arm64_sources})
 elseif(TARGET_ARM)
 set(arch_sources ${arm_sources})
+elseif(TARGET_S390X)
+set(arch_sources ${s390x_sources})
 elseif(TARGET_WASM)
 set(arch_sources ${wasm_sources})
 endif()
@@ -251,7 +255,7 @@ set(posix_sources
 
 if(HOST_DARWIN)
 set(os_sources "${darwin_sources};${posix_sources}")
-elseif(HOST_LINUX)
+elseif(HOST_LINUX OR HOST_SOLARIS)
 set(os_sources "${posix_sources}")
 elseif(HOST_WIN32)
 set(os_sources "${windows_sources}")
@@ -379,6 +383,47 @@ if(NOT DISABLE_SHARED_LIBS)
     add_library(monosgen-shared-dac SHARED "mini-windows-dlldac.c")
     set_target_properties(monosgen-shared-dac PROPERTIES OUTPUT_NAME ${MONO_SHARED_LIB_NAME}-dac)
   endif()
+
+  if(BUILD_DARWIN_FRAMEWORKS)
+    if(TARGET_DARWIN)
+      # In cmake, you cannot have list entries which contain a space or semicolon - those are considered
+      # record separators (i.e. a list of list(APPEND foo "a" "b;c" "d e") is a five entry list of values
+      # a, b, c, d and e.
+      # So, in order to treat the components lists as single list entries, swap out the ; character
+      # for a temporary replacement character, allowing the full lists to be treated as single entries
+      string(REPLACE ";" "*" mono-components-objects-nowhitespace "${mono-components-objects}")
+      string(REPLACE ";" "*" mono-components-stub-objects-nowhitespace "${mono-components-stub-objects}")
+      list(APPEND FrameworkConfig Mono.debug Mono.release)
+      list(APPEND ComponentsObjects "${mono-components-objects-nowhitespace}" "${mono-components-stub-objects-nowhitespace}")
+      foreach(frameworkconfig componentsobjects IN ZIP_LISTS FrameworkConfig ComponentsObjects)
+        if("${componentsobjects}" STREQUAL "")
+          #components list is empty, use stubs instead
+          set(componentsobjects "${mono-components-stub-objects-nowhitespace}")
+        endif()
+        add_library(${frameworkconfig} SHARED $<TARGET_OBJECTS:monosgen-objects>)
+        target_compile_definitions(${frameworkconfig} PRIVATE -DMONO_DLL_EXPORT)
+        target_sources(${frameworkconfig} PRIVATE $<TARGET_OBJECTS:eglib_objects>)
+        target_link_libraries(${frameworkconfig} PRIVATE ${OS_LIBS} ${ICONV_LIB} ${LLVM_LIBS} ${ICU_LIBS})
+        if(ICU_LDFLAGS)
+          set_property(TARGET ${frameworkconfig} APPEND_STRING PROPERTY LINK_FLAGS " ${ICU_LDFLAGS}")
+        endif()
+        if(STATIC_ICU)
+          set_property(TARGET ${frameworkconfig} APPEND_STRING PROPERTY LINKER_LANGUAGE CXX)
+        endif ()
+        set_property(TARGET ${frameworkconfig} APPEND_STRING PROPERTY LINK_FLAGS " -Wl,-compatibility_version -Wl,2.0 -Wl,-current_version -Wl,2.0")
+        string(REPLACE "*" ";" componentsobjects-whitespace "${componentsobjects}")
+        target_sources(${frameworkconfig} PRIVATE "${componentsobjects-whitespace}")
+        set_target_properties(${frameworkconfig} PROPERTIES
+          FRAMEWORK TRUE
+          FRAMEWORK_VERSION C
+          MACOSX_FRAMEWORK_IDENTIFIER net.dot.mono-framework
+        )
+        install(TARGETS ${frameworkconfig}
+          FRAMEWORK DESTINATION ${CMAKE_INSTALL_LIBDIR}
+        )
+      endforeach()
+    endif()
+  endif()
 endif()
 
 find_package(Python3 COMPONENTS Interpreter)
@@ -389,6 +434,7 @@ file(GENERATE OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/buildver-sgen.h CONTENT [=[cons
 add_custom_command(
   OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/cpu-amd64.h
   COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/genmdesc.py TARGET_AMD64 ${CMAKE_CURRENT_SOURCE_DIR} cpu-amd64.h amd64_desc ${CMAKE_CURRENT_SOURCE_DIR}/cpu-amd64.md
+  DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/genmdesc.py mini-ops.h
   VERBATIM
 )
 
@@ -407,6 +453,12 @@ add_custom_command(
 add_custom_command(
   OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/cpu-arm.h
   COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/genmdesc.py TARGET_ARM ${CMAKE_CURRENT_SOURCE_DIR} cpu-arm.h arm_cpu_desc ${CMAKE_CURRENT_SOURCE_DIR}/cpu-arm.md
+  VERBATIM
+)
+
+add_custom_command(
+  OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/cpu-s390x.h
+  COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/genmdesc.py TARGET_S390X ${CMAKE_CURRENT_SOURCE_DIR} cpu-s390x.h s390x_cpu_desc ${CMAKE_CURRENT_SOURCE_DIR}/cpu-s390x.md
   VERBATIM
 )
 

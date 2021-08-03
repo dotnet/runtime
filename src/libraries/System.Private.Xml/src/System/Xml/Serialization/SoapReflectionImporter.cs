@@ -7,7 +7,7 @@ namespace System.Xml.Serialization
     using System;
     using System.Globalization;
     using System.Xml.Schema;
-    using System.Collections;
+    using System.Collections.Generic;
     using System.ComponentModel;
     using System.Threading;
     using System.Xml;
@@ -382,7 +382,7 @@ namespace System.Xml.Serialization
                     return false;
                 }
             }
-            ArrayList members = new ArrayList();
+            var members = new List<MemberMapping>();
             foreach (MemberInfo memberInfo in model.GetMemberInfos())
             {
                 if (!(memberInfo is FieldInfo) && !(memberInfo is PropertyInfo))
@@ -407,7 +407,7 @@ namespace System.Xml.Serialization
                 }
                 members.Add(member);
             }
-            mapping.Members = (MemberMapping[])members.ToArray(typeof(MemberMapping));
+            mapping.Members = members.ToArray();
             if (mapping.BaseMapping == null) mapping.BaseMapping = GetRootMapping();
             IncludeTypes(model.Type, limiter);
 
@@ -572,7 +572,7 @@ namespace System.Xml.Serialization
                 mapping.IsFlags = model.Type.IsDefined(typeof(FlagsAttribute), false);
                 _typeScope.AddTypeMapping(mapping);
                 _types.Add(typeName, typeNs, mapping);
-                ArrayList constants = new ArrayList();
+                var constants = new List<ConstantMapping>();
                 for (int i = 0; i < model.Constants.Length; i++)
                 {
                     ConstantMapping? constant = ImportConstantMapping(model.Constants[i]);
@@ -582,7 +582,7 @@ namespace System.Xml.Serialization
                 {
                     throw new InvalidOperationException(SR.Format(SR.XmlNoSerializableMembers, model.TypeDesc.FullName));
                 }
-                mapping.Constants = (ConstantMapping[])constants.ToArray(typeof(ConstantMapping));
+                mapping.Constants = constants.ToArray();
             }
             return mapping;
         }

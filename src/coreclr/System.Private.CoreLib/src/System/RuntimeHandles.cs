@@ -8,11 +8,13 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Loader;
 using System.Runtime.Serialization;
+using System.Runtime.Versioning;
 using System.Threading;
 using Internal.Runtime.CompilerServices;
 
 namespace System
 {
+    [NonVersionable]
     public unsafe struct RuntimeTypeHandle : ISerializable
     {
         // Returns handle for interop with EE. The handle is guaranteed to be non-null.
@@ -435,6 +437,9 @@ namespace System
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern int GetNumVirtuals(RuntimeType type);
 
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        internal static extern int GetNumVirtualsAndStaticVirtuals(RuntimeType type);
+
         [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
         private static extern void VerifyInterfaceIsImplemented(QCallTypeHandle handle, QCallTypeHandle interfaceHandle);
 
@@ -455,8 +460,17 @@ namespace System
             return GetInterfaceMethodImplementation(new QCallTypeHandle(ref nativeHandle), new QCallTypeHandle(ref nativeInterfaceHandle), interfaceMethodHandle);
         }
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern bool IsComObject(RuntimeType type, bool isGenericCOM);
+        internal static bool IsComObject(RuntimeType type, bool isGenericCOM)
+        {
+#if FEATURE_COMINTEROP
+            if (isGenericCOM)
+                return type == typeof(__ComObject);
+
+            return RuntimeTypeHandle.CanCastTo(type, (RuntimeType)typeof(__ComObject));
+#else
+            return false;
+#endif
+        }
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern bool IsInterface(RuntimeType type);
@@ -798,6 +812,7 @@ namespace System
         }
     }
 
+    [NonVersionable]
     public unsafe struct RuntimeMethodHandle : ISerializable
     {
         // Returns handle for interop with EE. The handle is guaranteed to be non-null.
@@ -1122,6 +1137,7 @@ namespace System
         RuntimeFieldHandleInternal IRuntimeFieldInfo.Value => m_fieldHandle;
     }
 
+    [NonVersionable]
     public unsafe struct RuntimeFieldHandle : ISerializable
     {
         // Returns handle for interop with EE. The handle is guaranteed to be non-null.
@@ -1298,8 +1314,11 @@ namespace System
         }
 
         // SQL-CLR LKG9 Compiler dependency
+        [RequiresUnreferencedCode("Trimming changes metadata tokens")]
         public RuntimeTypeHandle GetRuntimeTypeHandleFromMetadataToken(int typeToken) { return ResolveTypeHandle(typeToken); }
+        [RequiresUnreferencedCode("Trimming changes metadata tokens")]
         public RuntimeTypeHandle ResolveTypeHandle(int typeToken) => ResolveTypeHandle(typeToken, null, null);
+        [RequiresUnreferencedCode("Trimming changes metadata tokens")]
         public RuntimeTypeHandle ResolveTypeHandle(int typeToken, RuntimeTypeHandle[]? typeInstantiationContext, RuntimeTypeHandle[]? methodInstantiationContext)
         {
             RuntimeModule module = GetRuntimeModule();
@@ -1352,8 +1371,11 @@ namespace System
                                                             ObjectHandleOnStack type);
 
         // SQL-CLR LKG9 Compiler dependency
+        [RequiresUnreferencedCode("Trimming changes metadata tokens")]
         public RuntimeMethodHandle GetRuntimeMethodHandleFromMetadataToken(int methodToken) { return ResolveMethodHandle(methodToken); }
+        [RequiresUnreferencedCode("Trimming changes metadata tokens")]
         public RuntimeMethodHandle ResolveMethodHandle(int methodToken) => ResolveMethodHandle(methodToken, null, null);
+        [RequiresUnreferencedCode("Trimming changes metadata tokens")]
         public RuntimeMethodHandle ResolveMethodHandle(int methodToken, RuntimeTypeHandle[]? typeInstantiationContext, RuntimeTypeHandle[]? methodInstantiationContext)
         {
             RuntimeModule module = GetRuntimeModule();
@@ -1400,8 +1422,11 @@ namespace System
                                                         int methodInstCount);
 
         // SQL-CLR LKG9 Compiler dependency
+        [RequiresUnreferencedCode("Trimming changes metadata tokens")]
         public RuntimeFieldHandle GetRuntimeFieldHandleFromMetadataToken(int fieldToken) { return ResolveFieldHandle(fieldToken); }
+        [RequiresUnreferencedCode("Trimming changes metadata tokens")]
         public RuntimeFieldHandle ResolveFieldHandle(int fieldToken) => ResolveFieldHandle(fieldToken, null, null);
+        [RequiresUnreferencedCode("Trimming changes metadata tokens")]
         public RuntimeFieldHandle ResolveFieldHandle(int fieldToken, RuntimeTypeHandle[]? typeInstantiationContext, RuntimeTypeHandle[]? methodInstantiationContext)
         {
             RuntimeModule module = GetRuntimeModule();

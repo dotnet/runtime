@@ -103,15 +103,17 @@ enum ClrToProfEntrypointFlags
 };
 
 #define ASSERT_EVAC_COUNTER_NONZERO()   \
-    _ASSERTE((GetThreadNULLOk() == NULL) ||                                             \
-             (GetThreadNULLOk()->GetProfilerEvacuationCounter() != 0U))
+    _ASSERTE(m_pProfilerInfo->dwProfilerEvacuationCounter.Load() > 0)
 
 #define CHECK_PROFILER_STATUS(ee2pFlags)                                                \
     /* If one of these asserts fires, perhaps you forgot to use                     */  \
-    /* BEGIN/END_PIN_PROFILER                                                       */  \
+    /* BEGIN/END_PROFILER_CALLBACK                                                  */  \
     ASSERT_EVAC_COUNTER_NONZERO();                                                      \
-    _ASSERTE(g_profControlBlock.pProfInterface.Load() != NULL);                         \
-    _ASSERTE(g_profControlBlock.pProfInterface == this);                                \
+    /* Either we are initializing, or we have the ProfToEEInterfaceImpl             */  \
+    _ASSERTE((((ee2pFlags) & kEE2PAllowableWhileInitializing) != 0) || (m_pProfilerInfo->pProfInterface.Load() != NULL));   \
+    /* If we are initializing, null is fine. Otherwise we want to make sure we haven't messed up the association between */ \
+    /* EEToProfInterfaceImpl/ProfToEEInterfaceImpl somehow.                         */  \
+    _ASSERTE((((ee2pFlags) & kEE2PAllowableWhileInitializing) != 0) || (m_pProfilerInfo->pProfInterface == this));          \
     /* Early abort if...                                                            */  \
     if (                                                                                \
         /* Profiler isn't active,                                                   */  \
@@ -121,7 +123,7 @@ enum ClrToProfEntrypointFlags
         /* on a detaching profiler, and b) the profiler is detaching                */  \
         !(                                                                              \
             (((ee2pFlags) & kEE2PAllowableWhileDetaching) != 0) &&                      \
-            (g_profControlBlock.curProfStatus.Get() == kProfStatusDetaching)            \
+            (m_pProfilerInfo->curProfStatus.Get() == kProfStatusDetaching)            \
          ) &&                                                                           \
                                                                                         \
         /* and it's not the case that both a) this callback is allowed              */  \
@@ -129,9 +131,9 @@ enum ClrToProfEntrypointFlags
         !(                                                                              \
             (((ee2pFlags) & kEE2PAllowableWhileInitializing) != 0) &&                   \
             (                                                                           \
-              (g_profControlBlock.curProfStatus.Get()                                   \
+              (m_pProfilerInfo->curProfStatus.Get()                                   \
                   == kProfStatusInitializingForStartupLoad) ||                          \
-              (g_profControlBlock.curProfStatus.Get()                                   \
+              (m_pProfilerInfo->curProfStatus.Get()                                   \
                   == kProfStatusInitializingForAttachLoad)                              \
             )                                                                           \
          )                                                                              \
@@ -412,14 +414,13 @@ EEToProfInterfaceImpl::EEToProfInterfaceImpl() :
     m_pCallback8(NULL),
     m_pCallback9(NULL),
     m_pCallback10(NULL),
+    m_pCallback11(NULL),
     m_hmodProfilerDLL(NULL),
     m_fLoadedViaAttach(FALSE),
     m_pProfToEE(NULL),
     m_pProfilersFuncIDMapper(NULL),
     m_pProfilersFuncIDMapper2(NULL),
     m_pProfilersFuncIDMapper2ClientData(NULL),
-    m_GUID(k_guidZero),
-    m_lGUIDCount(0),
     m_pGCRefDataFreeList(NULL),
     m_csGCRefDataFreeList(NULL),
     m_pEnter(NULL),
@@ -437,6 +438,7 @@ EEToProfInterfaceImpl::EEToProfInterfaceImpl() :
     m_pTailcall3WithInfo(NULL),
     m_fUnrevertiblyModifiedIL(FALSE),
     m_fModifiedRejitState(FALSE),
+    m_pProfilerInfo(NULL),
     m_pFunctionIDHashTable(NULL),
     m_pFunctionIDHashTableRWLock(NULL),
     m_dwConcurrentGCWaitTimeoutInMs(INFINITE),
@@ -585,6 +587,12 @@ HRESULT EEToProfInterfaceImpl::Init(
     return S_OK;
 }
 
+void EEToProfInterfaceImpl::SetProfilerInfo(ProfilerInfo *pProfilerInfo)
+{
+    LIMITED_METHOD_CONTRACT;
+    m_pProfilerInfo = pProfilerInfo;
+    m_pProfToEE->SetProfilerInfo(pProfilerInfo);
+}
 
 //---------------------------------------------------------------------------------------
 //
@@ -660,17 +668,38 @@ HRESULT EEToProfInterfaceImpl::CreateProfiler(
 
     // ATTENTION: Please update EEToProfInterfaceImpl::~EEToProfInterfaceImpl() after adding the next ICorProfilerCallback interface here !!!
 
-    // The profiler may optionally support ICorProfilerCallback3,4,5,6,7,8,9,10.  Let's check.
-    ReleaseHolder<ICorProfilerCallback10> pCallback10;
+    // The profiler may optionally support ICorProfilerCallback3,4,5,6,7,8,9,10,11.  Let's check.
+    ReleaseHolder<ICorProfilerCallback11> pCallback11;
     hr = m_pCallback2->QueryInterface(
-        IID_ICorProfilerCallback10,
-        (LPVOID *)&pCallback10);
-    if (SUCCEEDED(hr) && (pCallback10 != NULL))
+        IID_ICorProfilerCallback11,
+        (LPVOID *)&pCallback11);
+    if (SUCCEEDED(hr) && (pCallback11 != NULL))
+    {
+        _ASSERTE(m_pCallback11 == NULL);
+        m_pCallback11 = pCallback11.Extract();
+        pCallback11 = NULL;
+    }
+
+    if (m_pCallback11 == NULL)
+    {
+        ReleaseHolder<ICorProfilerCallback10> pCallback10;
+        hr = m_pCallback2->QueryInterface(
+            IID_ICorProfilerCallback10,
+            (LPVOID *)&pCallback10);
+        if (SUCCEEDED(hr) && (pCallback10 != NULL))
+        {
+            _ASSERTE(m_pCallback10 == NULL);
+            m_pCallback10 = pCallback10.Extract();
+            pCallback10 = NULL;
+        }
+    }
+    else
     {
         _ASSERTE(m_pCallback10 == NULL);
-        m_pCallback10 = pCallback10.Extract();
-        pCallback10 = NULL;
+        m_pCallback10 = static_cast<ICorProfilerCallback10 *>(m_pCallback11);
+        m_pCallback10->AddRef();
     }
+
 
     // Due to inheritance, if we have an interface we must also have
     // all the previous versions
@@ -847,7 +876,7 @@ EEToProfInterfaceImpl::~EEToProfInterfaceImpl()
     // scan through list of detaching profilers to make sure none of them give a
     // GetEEToProfPtr() equal to this
 #ifdef FEATURE_PROFAPI_ATTACH_DETACH
-    _ASSERTE(ProfilingAPIDetach::GetEEToProfPtr() == NULL);
+    _ASSERTE(!ProfilingAPIDetach::IsEEToProfPtrRegisteredForDetach(this));
 #endif // FEATURE_PROFAPI_ATTACH_DETACH
 
     // Release user-specified profiler DLL
@@ -912,6 +941,12 @@ EEToProfInterfaceImpl::~EEToProfInterfaceImpl()
             m_pCallback10 = NULL;
         }
 
+        if (m_pCallback11 != NULL)
+        {
+            m_pCallback11->Release();
+            m_pCallback11 = NULL;
+        }
+
         // Only unload the V4 profiler if this is not part of shutdown.  This protects
         // Whidbey profilers that aren't used to being FreeLibrary'd.
         if (fIsV4Profiler && !g_fEEShutDown)
@@ -972,8 +1007,6 @@ EEToProfInterfaceImpl::~EEToProfInterfaceImpl()
         m_pSavedAllocDataBlock = NULL;
     }
 
-    m_GUID = k_guidZero;
-
     if (m_csGCRefDataFreeList != NULL)
     {
         ClrDeleteCriticalSection(m_csGCRefDataFreeList);
@@ -991,70 +1024,6 @@ EEToProfInterfaceImpl::~EEToProfInterfaceImpl()
         delete m_pFunctionIDHashTableRWLock;
         m_pFunctionIDHashTableRWLock = NULL;
     }
-}
-
-
-
-//---------------------------------------------------------------------------------------
-//
-// Initialize the GUID used for the cookie in remoting callbacks.  If already
-// initialized, this just does nothing and returns S_OK.
-//
-// Return Value:
-//      HRESULT indicating success or failure.  If the GUID was already initialized,
-//      just returns S_OK
-//
-//
-
-HRESULT EEToProfInterfaceImpl::InitGUID()
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        CANNOT_TAKE_LOCK;
-        ASSERT_NO_EE_LOCKS_HELD();
-    }
-    CONTRACTL_END;
-
-    if (IsEqualGUID(m_GUID, k_guidZero))
-    {
-        return CoCreateGuid(&m_GUID);
-    }
-
-    return S_OK;
-}
-
-//---------------------------------------------------------------------------------------
-//
-// Returns a GUID suitable for use as a remoting callback cookie for this thread.
-// The GUID is based on the template GUID (m_GUID), the current thread, and
-// a counter.
-//
-// Arguments:
-//      pGUID - [out] The GUID requested
-//
-
-void EEToProfInterfaceImpl::GetGUID(GUID * pGUID)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        ASSERT_NO_EE_LOCKS_HELD();
-    }
-    CONTRACTL_END;
-
-    // the member GUID and the argument should both be valid
-    _ASSERTE(!(IsEqualGUID(m_GUID, k_guidZero)));
-    _ASSERTE(pGUID);
-
-    // Copy the contents of the template GUID
-    memcpy(pGUID, &m_GUID, sizeof(GUID));
-
-    // Adjust the last two bytes
-    pGUID->Data4[6] = (BYTE) GetCurrentThreadId();
-    pGUID->Data4[7] = (BYTE) InterlockedIncrement((LPLONG)&m_lGUIDCount);
 }
 
 //---------------------------------------------------------------------------------------
@@ -1955,14 +1924,13 @@ HRESULT EEToProfInterfaceImpl::EnsureProfilerDetachable()
 {
     LIMITED_METHOD_CONTRACT;
 
-    if (((g_profControlBlock.dwEventMask & COR_PRF_MONITOR_IMMUTABLE) != 0) ||
-        ((g_profControlBlock.dwEventMaskHigh & COR_PRF_HIGH_MONITOR_IMMUTABLE) != 0))
+    if (m_pProfilerInfo->eventMask.IsEventMaskSet(COR_PRF_MONITOR_IMMUTABLE) ||
+        m_pProfilerInfo->eventMask.IsEventMaskHighSet(COR_PRF_HIGH_MONITOR_IMMUTABLE))
     {
         LOG((
             LF_CORPROF,
             LL_ERROR,
-            "**PROF: Profiler may not detach because it set an immutable flag.  Flags = 0x%x.\n",
-            g_profControlBlock.dwEventMask));
+            "**PROF: Profiler may not detach because it set an immutable flag.\n"));
 
         return CORPROF_E_IMMUTABLE_FLAGS_SET;
     }
@@ -2172,6 +2140,15 @@ HRESULT EEToProfInterfaceImpl::SetEventMask(DWORD dwEventMask, DWORD dwEventMask
     }
     CONTRACTL_END;
 
+    BOOL isMainProfiler = g_profControlBlock.IsMainProfiler(this);
+
+    if (!isMainProfiler &&
+        ((dwEventMask & ~COR_PRF_ALLOWABLE_NOTIFICATION_PROFILER)
+            || (dwEventMaskHigh & ~COR_PRF_HIGH_ALLOWABLE_NOTIFICATION_PROFILER)))
+    {
+        return E_INVALIDARG;
+    }
+
     static const DWORD kEventFlagsRequiringSlowPathEnterLeaveHooks =
         COR_PRF_ENABLE_FUNCTION_ARGS   |
         COR_PRF_ENABLE_FUNCTION_RETVAL |
@@ -2222,17 +2199,17 @@ HRESULT EEToProfInterfaceImpl::SetEventMask(DWORD dwEventMask, DWORD dwEventMask
     // not trying to set an immutable attribute
     // FUTURE: If we add immutable flags to the high event mask, this would be a good
     // place to check for them as well.
-    if (g_profControlBlock.curProfStatus.Get() != kProfStatusInitializingForStartupLoad)
+    if (m_pProfilerInfo->curProfStatus.Get() != kProfStatusInitializingForStartupLoad)
     {
 #ifdef _DEBUG
         if (((dwEventMask & dwImmutableEventFlags) !=
-                (g_profControlBlock.dwEventMask & dwImmutableEventFlags)) ||
+                (m_pProfilerInfo->eventMask.GetEventMask() & dwImmutableEventFlags)) ||
 #else //!_DEBUG
         if (((dwEventMask & COR_PRF_MONITOR_IMMUTABLE) !=
-                (g_profControlBlock.dwEventMask & COR_PRF_MONITOR_IMMUTABLE)) ||
+                (m_pProfilerInfo->eventMask.GetEventMask() & COR_PRF_MONITOR_IMMUTABLE)) ||
 #endif //_DEBUG
             ((dwEventMaskHigh & COR_PRF_HIGH_MONITOR_IMMUTABLE) !=
-                (g_profControlBlock.dwEventMaskHigh & COR_PRF_HIGH_MONITOR_IMMUTABLE)))
+                (m_pProfilerInfo->eventMask.GetEventMaskHigh() & COR_PRF_HIGH_MONITOR_IMMUTABLE)))
         {
             // FUTURE: Should we have a dedicated HRESULT for setting immutable flag?
             return E_FAIL;
@@ -2254,7 +2231,7 @@ HRESULT EEToProfInterfaceImpl::SetEventMask(DWORD dwEventMask, DWORD dwEventMask
 
     // After fast path ELT hooks are set in Initial callback, the startup profiler is not allowed to change flags
     // that require slow path ELT hooks or disable ELT hooks.
-    if ((g_profControlBlock.curProfStatus.Get() == kProfStatusInitializingForStartupLoad) &&
+    if ((m_pProfilerInfo->curProfStatus.Get() == kProfStatusInitializingForStartupLoad) &&
         (
             (m_pEnter3    != NULL) ||
             (m_pLeave3    != NULL) ||
@@ -2266,13 +2243,13 @@ HRESULT EEToProfInterfaceImpl::SetEventMask(DWORD dwEventMask, DWORD dwEventMask
         )
        )
     {
-        _ASSERTE((g_profControlBlock.dwEventMask & kEventFlagsRequiringSlowPathEnterLeaveHooks) == 0);
+        _ASSERTE(!m_pProfilerInfo->eventMask.IsEventMaskSet(kEventFlagsRequiringSlowPathEnterLeaveHooks));
         return CORPROF_E_INCONSISTENT_WITH_FLAGS;
     }
 
     // After slow path ELT hooks are set in Initial callback, the startup profiler is not allowed to remove
     // all flags that require slow path ELT hooks or to change the flag to disable the ELT hooks.
-    if ((g_profControlBlock.curProfStatus.Get() == kProfStatusInitializingForStartupLoad) &&
+    if ((m_pProfilerInfo->curProfStatus.Get() == kProfStatusInitializingForStartupLoad) &&
         (
             (m_pEnter3WithInfo    != NULL) ||
             (m_pLeave3WithInfo    != NULL) ||
@@ -2284,7 +2261,7 @@ HRESULT EEToProfInterfaceImpl::SetEventMask(DWORD dwEventMask, DWORD dwEventMask
         )
        )
     {
-        _ASSERTE((g_profControlBlock.dwEventMask & kEventFlagsRequiringSlowPathEnterLeaveHooks) != 0);
+        _ASSERTE(m_pProfilerInfo->eventMask.IsEventMaskSet(kEventFlagsRequiringSlowPathEnterLeaveHooks));
         return CORPROF_E_INCONSISTENT_WITH_FLAGS;
     }
 
@@ -2295,7 +2272,7 @@ HRESULT EEToProfInterfaceImpl::SetEventMask(DWORD dwEventMask, DWORD dwEventMask
         (
             (
                 // Old flags
-                ((g_profControlBlock.dwEventMask & kEventFlagsAffectingEnterLeaveHooks) ^
+                ((m_pProfilerInfo->eventMask.GetEventMask() & kEventFlagsAffectingEnterLeaveHooks) ^
                 // XORed w/ the new flags
                 (dwEventMask & kEventFlagsAffectingEnterLeaveHooks))
             ) != 0
@@ -2316,13 +2293,18 @@ HRESULT EEToProfInterfaceImpl::SetEventMask(DWORD dwEventMask, DWORD dwEventMask
             (m_pTailcall          != NULL)
         );
 
+    if (fEnterLeaveHooksAffected && !isMainProfiler)
+    {
+        return E_INVALIDARG;
+    }
+
     BOOL fNeedToTurnOffConcurrentGC = FALSE;
 
     if (((dwEventMask & COR_PRF_MONITOR_GC) != 0) &&
-        ((g_profControlBlock.dwEventMask & COR_PRF_MONITOR_GC) == 0))
+        ((m_pProfilerInfo->eventMask.GetEventMask() & COR_PRF_MONITOR_GC) == 0))
     {
         // We don't need to worry about startup load as we'll turn off concurrent GC later
-        if (g_profControlBlock.curProfStatus.Get() != kProfStatusInitializingForStartupLoad)
+        if (m_pProfilerInfo->curProfStatus.Get() != kProfStatusInitializingForStartupLoad)
         {
             // Since we're not an initializing startup profiler, the EE must be fully started up
             // so we can check whether concurrent GC is on
@@ -2341,7 +2323,7 @@ HRESULT EEToProfInterfaceImpl::SetEventMask(DWORD dwEventMask, DWORD dwEventMask
 
             // If we are attaching and we are turning on COR_PRF_MONITOR_GC, turn off concurrent GC later
             // in this function
-            if (g_profControlBlock.curProfStatus.Get() == kProfStatusInitializingForAttachLoad)
+            if (m_pProfilerInfo->curProfStatus.Get() == kProfStatusInitializingForAttachLoad)
             {
                 if (GCHeapUtilities::GetGCHeap()->IsConcurrentGCEnabled())
                 {
@@ -2375,12 +2357,12 @@ HRESULT EEToProfInterfaceImpl::SetEventMask(DWORD dwEventMask, DWORD dwEventMask
 
     if ((dwEventMask & COR_PRF_ENABLE_REJIT) != 0)
     {
-        if ((g_profControlBlock.curProfStatus.Get() != kProfStatusInitializingForStartupLoad) && !ReJitManager::IsReJITEnabled())
+        if ((m_pProfilerInfo->curProfStatus.Get() != kProfStatusInitializingForStartupLoad) && !ReJitManager::IsReJITEnabled())
         {
             return CORPROF_E_REJIT_NOT_ENABLED;
         }
 
-        g_profControlBlock.pProfInterface->SetModifiedRejitState();
+        m_pProfilerInfo->pProfInterface->SetModifiedRejitState();
     }
 
     // High event bits
@@ -2398,8 +2380,10 @@ HRESULT EEToProfInterfaceImpl::SetEventMask(DWORD dwEventMask, DWORD dwEventMask
     }
 
     // Now save the modified masks
-    g_profControlBlock.dwEventMask = dwEventMask;
-    g_profControlBlock.dwEventMaskHigh = dwEventMaskHigh;
+    m_pProfilerInfo->eventMask.SetEventMask(dwEventMask);
+    m_pProfilerInfo->eventMask.SetEventMaskHigh(dwEventMaskHigh);
+
+    g_profControlBlock.UpdateGlobalEventMask();
 
     if (fEnterLeaveHooksAffected)
     {
@@ -2410,26 +2394,13 @@ HRESULT EEToProfInterfaceImpl::SetEventMask(DWORD dwEventMask, DWORD dwEventMask
         }
     }
 
-    if (g_profControlBlock.curProfStatus.Get() == kProfStatusInitializingForStartupLoad)
-    {
-        // If the profiler has requested remoting cookies so that it can
-        // track logical call stacks, then we must initialize the cookie
-        // template.
-        if ((g_profControlBlock.dwEventMask & COR_PRF_MONITOR_REMOTING_COOKIE)
-            == COR_PRF_MONITOR_REMOTING_COOKIE)
-        {
-            hr = InitGUID();
-            if (FAILED(hr))
-            {
-                return hr;
-            }
-        }
-    }
-
     // Turn off concurrent GC as the last step so that we don't need to turn it back on if something
     // else failed after that
     if (fNeedToTurnOffConcurrentGC)
     {
+        // Remember that we've turned off concurrent GC and we'll turn it back on in TerminateProfiling
+        g_profControlBlock.fConcurrentGCDisabledForAttach = TRUE;
+
         // Turn off concurrent GC if it is on so that user can walk the heap safely in GC callbacks
         IGCHeap * pGCHeap = GCHeapUtilities::GetGCHeap();
 
@@ -2460,12 +2431,13 @@ HRESULT EEToProfInterfaceImpl::SetEventMask(DWORD dwEventMask, DWORD dwEventMask
                 m_bHasTimedOutWaitingForConcurrentGC = TRUE;
             }
 
+            // TODO: think about race conditions... I am pretty sure there is one
+            // Remember that we've turned off concurrent GC and we'll turn it back on in TerminateProfiling
+            g_profControlBlock.fConcurrentGCDisabledForAttach = FALSE;
             pGCHeap->TemporaryEnableConcurrentGC();
+            
             return hr;
         }
-
-        // Remember that we've turned off concurrent GC and we'll turn it back on in TerminateProfiling
-        g_profControlBlock.fConcurrentGCDisabledForAttach = TRUE;
 
         LOG((LF_CORPROF, LL_INFO10, "**PROF: Concurrent GC has been turned off at attach.\n"));
     }
@@ -5339,290 +5311,6 @@ HRESULT EEToProfInterfaceImpl::RuntimeThreadResumed(ThreadID resumedThreadId)
 }
 
 //---------------------------------------------------------------------------------------
-// REMOTING
-//
-
-HRESULT EEToProfInterfaceImpl::RemotingClientInvocationStarted()
-{
-    CONTRACTL
-    {
-        // Yay!
-        NOTHROW;
-
-        // Yay!
-        GC_TRIGGERS;
-
-        // Yay!
-        MODE_PREEMPTIVE;
-
-        // Yay!
-        CAN_TAKE_LOCK;
-
-        // Yay!
-        ASSERT_NO_EE_LOCKS_HELD();
-
-    }
-    CONTRACTL_END;
-
-    CLR_TO_PROFILER_ENTRYPOINT((LF_CORPROF,
-                                LL_INFO1000,
-                                "**PROF: RemotingClientInvocationStarted. ThreadID: 0x%p\n",
-                                GetThreadNULLOk()));
-
-    {
-        // All callbacks are really NOTHROW, but that's enforced partially by the profiler,
-        // whose try/catch blocks aren't visible to the contract system
-        PERMANENT_CONTRACT_VIOLATION(ThrowsViolation, ReasonProfilerCallout);
-        return m_pCallback2->RemotingClientInvocationStarted();
-    }
-}
-
-HRESULT EEToProfInterfaceImpl::RemotingClientSendingMessage(GUID *pCookie, BOOL fIsAsync)
-{
-    CONTRACTL
-    {
-        // Yay!
-        NOTHROW;
-
-        // Yay!
-        GC_TRIGGERS;
-
-        // Yay!
-        MODE_PREEMPTIVE;
-
-        // Yay!
-        CAN_TAKE_LOCK;
-
-        // Yay!
-        ASSERT_NO_EE_LOCKS_HELD();
-
-    }
-    CONTRACTL_END;
-
-    CLR_TO_PROFILER_ENTRYPOINT((LF_CORPROF,
-                                LL_INFO1000,
-                                "**PROF: RemotingClientSendingMessage. ThreadID: 0x%p\n",
-                                GetThreadNULLOk()));
-
-    {
-        // All callbacks are really NOTHROW, but that's enforced partially by the profiler,
-        // whose try/catch blocks aren't visible to the contract system
-        PERMANENT_CONTRACT_VIOLATION(ThrowsViolation, ReasonProfilerCallout);
-        return m_pCallback2->RemotingClientSendingMessage(pCookie, fIsAsync);
-    }
-}
-
-HRESULT EEToProfInterfaceImpl::RemotingClientReceivingReply(GUID * pCookie, BOOL fIsAsync)
-{
-    CONTRACTL
-    {
-        // Yay!
-        NOTHROW;
-
-        // Yay!
-        GC_TRIGGERS;
-
-        // Yay!
-        MODE_PREEMPTIVE;
-
-        // Yay!
-        CAN_TAKE_LOCK;
-
-        // Yay!
-        ASSERT_NO_EE_LOCKS_HELD();
-
-    }
-    CONTRACTL_END;
-
-    CLR_TO_PROFILER_ENTRYPOINT((LF_CORPROF,
-                                LL_INFO1000,
-                                "**PROF: RemotingClientReceivingReply. ThreadID: 0x%p\n",
-                                GetThreadNULLOk()));
-
-    {
-        // All callbacks are really NOTHROW, but that's enforced partially by the profiler,
-        // whose try/catch blocks aren't visible to the contract system
-        PERMANENT_CONTRACT_VIOLATION(ThrowsViolation, ReasonProfilerCallout);
-        return m_pCallback2->RemotingClientReceivingReply(pCookie, fIsAsync);
-    }
-}
-
-HRESULT EEToProfInterfaceImpl::RemotingClientInvocationFinished()
-{
-    CONTRACTL
-    {
-        // Yay!
-        NOTHROW;
-
-        // Yay!
-        GC_TRIGGERS;
-
-        // Yay!
-        MODE_PREEMPTIVE;
-
-        // Yay!
-        CAN_TAKE_LOCK;
-
-        // Yay!
-        ASSERT_NO_EE_LOCKS_HELD();
-
-    }
-    CONTRACTL_END;
-
-    CLR_TO_PROFILER_ENTRYPOINT((LF_CORPROF,
-                                LL_INFO1000,
-                                "**PROF: RemotingClientInvocationFinished. ThreadID: 0x%p\n",
-                                GetThreadNULLOk()));
-
-    {
-        // All callbacks are really NOTHROW, but that's enforced partially by the profiler,
-        // whose try/catch blocks aren't visible to the contract system
-        PERMANENT_CONTRACT_VIOLATION(ThrowsViolation, ReasonProfilerCallout);
-        return m_pCallback2->RemotingClientInvocationFinished();
-    }
-}
-
-HRESULT EEToProfInterfaceImpl::RemotingServerReceivingMessage(GUID *pCookie, BOOL fIsAsync)
-{
-    CONTRACTL
-    {
-        // Yay!
-        NOTHROW;
-
-        // Yay!
-        GC_TRIGGERS;
-
-        // Yay!
-        MODE_PREEMPTIVE;
-
-        // Yay!
-        CAN_TAKE_LOCK;
-
-        // Yay!
-        ASSERT_NO_EE_LOCKS_HELD();
-
-    }
-    CONTRACTL_END;
-
-    CLR_TO_PROFILER_ENTRYPOINT((LF_CORPROF,
-                                LL_INFO1000,
-                                "**PROF: RemotingServerReceivingMessage. ThreadID: 0x%p\n",
-                                GetThreadNULLOk()));
-
-    {
-        // All callbacks are really NOTHROW, but that's enforced partially by the profiler,
-        // whose try/catch blocks aren't visible to the contract system
-        PERMANENT_CONTRACT_VIOLATION(ThrowsViolation, ReasonProfilerCallout);
-        return m_pCallback2->RemotingServerReceivingMessage(pCookie, fIsAsync);
-    }
-}
-
-HRESULT EEToProfInterfaceImpl::RemotingServerInvocationStarted()
-{
-    CONTRACTL
-    {
-        // Yay!
-        NOTHROW;
-
-        // Yay!
-        GC_TRIGGERS;
-
-        // Yay!
-        MODE_PREEMPTIVE;
-
-        // Yay!
-        CAN_TAKE_LOCK;
-
-        // Yay!
-        ASSERT_NO_EE_LOCKS_HELD();
-
-    }
-    CONTRACTL_END;
-
-    CLR_TO_PROFILER_ENTRYPOINT((LF_CORPROF,
-                                LL_INFO1000,
-                                "**PROF: RemotingServerInvocationStarted. ThreadID: 0x%p\n",
-                                GetThreadNULLOk()));
-
-    {
-        // All callbacks are really NOTHROW, but that's enforced partially by the profiler,
-        // whose try/catch blocks aren't visible to the contract system
-        PERMANENT_CONTRACT_VIOLATION(ThrowsViolation, ReasonProfilerCallout);
-        return m_pCallback2->RemotingServerInvocationStarted();
-    }
-}
-
-HRESULT EEToProfInterfaceImpl::RemotingServerInvocationReturned()
-{
-    CONTRACTL
-    {
-        // Yay!
-        NOTHROW;
-
-        // Yay!
-        GC_TRIGGERS;
-
-        // Yay!
-        MODE_PREEMPTIVE;
-
-        // Yay!
-        CAN_TAKE_LOCK;
-
-        // Yay!
-        ASSERT_NO_EE_LOCKS_HELD();
-
-    }
-    CONTRACTL_END;
-
-    CLR_TO_PROFILER_ENTRYPOINT((LF_CORPROF,
-                                LL_INFO1000,
-                                "**PROF: RemotingServerInvocationReturned. ThreadID: 0x%p\n",
-                                GetThreadNULLOk()));
-
-    {
-        // All callbacks are really NOTHROW, but that's enforced partially by the profiler,
-        // whose try/catch blocks aren't visible to the contract system
-        PERMANENT_CONTRACT_VIOLATION(ThrowsViolation, ReasonProfilerCallout);
-        return m_pCallback2->RemotingServerInvocationReturned();
-    }
-}
-
-HRESULT EEToProfInterfaceImpl::RemotingServerSendingReply(GUID *pCookie, BOOL fIsAsync)
-{
-    CONTRACTL
-    {
-        // Yay!
-        NOTHROW;
-
-        // Yay!
-        GC_TRIGGERS;
-
-        // Yay!
-        MODE_PREEMPTIVE;
-
-        // Yay!
-        CAN_TAKE_LOCK;
-
-        // Yay!
-        ASSERT_NO_EE_LOCKS_HELD();
-
-    }
-    CONTRACTL_END;
-
-    CLR_TO_PROFILER_ENTRYPOINT((LF_CORPROF,
-                                LL_INFO1000,
-                                "**PROF: RemotingServerSendingReply. ThreadID: 0x%p\n",
-                                GetThreadNULLOk()));
-
-    {
-        // All callbacks are really NOTHROW, but that's enforced partially by the profiler,
-        // whose try/catch blocks aren't visible to the contract system
-        PERMANENT_CONTRACT_VIOLATION(ThrowsViolation, ReasonProfilerCallout);
-        return m_pCallback2->RemotingServerSendingReply(pCookie, fIsAsync);
-    }
-}
-
-//---------------------------------------------------------------------------------------
 // GC EVENTS
 //
 
@@ -6352,6 +6040,33 @@ HRESULT EEToProfInterfaceImpl::EventPipeProviderCreated(EventPipeProvider *provi
 #else // FEATURE_PERFTRACING
     return E_NOTIMPL;
 #endif // FEATURE_PERFTRACING
+}
+
+HRESULT EEToProfInterfaceImpl::LoadAsNotficationOnly(BOOL *pbNotificationOnly)
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+        MODE_ANY;
+    }
+    CONTRACTL_END;
+
+    // This one API is special, we call in to the profiler before we've set up any of our 
+    // machinery to do asserts (m_pProfilerInfo in specific). So we can't use 
+    // CLR_TO_PROFILER_ENTRYPOINT here.
+
+    LOG((LF_CORPROF,
+        LL_INFO1000,
+        "**PROF: LoadAsNotficationOnly.\n"));
+
+    if (m_pCallback11 == NULL)
+    {
+        *pbNotificationOnly = FALSE;
+        return S_OK;
+    }
+
+    return m_pCallback11->LoadAsNotficationOnly(pbNotificationOnly);
 }
 
 #endif // PROFILING_SUPPORTED

@@ -167,7 +167,7 @@ inline void PEFile::GetMVID(GUID *pMvid)
 // Descriptive strings
 // ------------------------------------------------------------
 
-inline const SString &PEFile::GetPath()
+inline const SString& PEFile::GetPath()
 {
     CONTRACTL
     {
@@ -184,10 +184,31 @@ inline const SString &PEFile::GetPath()
     {
         return SString::Empty();
     }
-    else
-        return m_identity->GetPath();
+    return m_identity->GetPath();
 }
 
+//
+// Returns the identity path even for single-file/bundled apps.
+//
+inline const SString& PEFile::GetIdentityPath()
+{
+    CONTRACTL
+    {
+        INSTANCE_CHECK;
+        GC_NOTRIGGER;
+        NOTHROW;
+        CANNOT_TAKE_LOCK;
+        MODE_ANY;
+        SUPPORTS_DAC;
+    }
+    CONTRACTL_END;
+
+    if (m_identity == nullptr)
+    {
+        return SString::Empty();
+    }
+    return m_identity->GetPath();
+}
 
 #ifdef DACCESS_COMPILE
 inline const SString &PEFile::GetModuleFileNameHint()
@@ -306,7 +327,6 @@ inline PEAssembly *PEFile::GetAssembly() const
     WRAPPER_NO_CONTRACT;
     _ASSERTE(IsAssembly());
     return dac_cast<PTR_PEAssembly>(this);
-
 }
 
 // ------------------------------------------------------------

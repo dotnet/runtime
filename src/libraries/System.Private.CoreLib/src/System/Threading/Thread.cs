@@ -164,7 +164,8 @@ namespace System.Threading
         }
 
 #if !TARGET_BROWSER
-        internal const bool IsThreadStartSupported = true;
+        [UnsupportedOSPlatformGuard("browser")]
+        internal static bool IsThreadStartSupported => true;
 
         /// <summary>Causes the operating system to change the state of the current instance to <see cref="ThreadState.Running"/>, and optionally supplies an object containing data to be used by the method the thread executes.</summary>
         /// <param name="parameter">An object that contains data to be used by the method the thread executes.</param>

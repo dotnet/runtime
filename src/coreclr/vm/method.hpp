@@ -668,6 +668,7 @@ public:
         return GetMethodTable()->IsInterface();
     }
 
+    BOOL HasUnmanagedCallConvAttribute();
     BOOL HasUnmanagedCallersOnlyAttribute();
     BOOL ShouldSuppressGCTransition();
 
@@ -2022,7 +2023,7 @@ private:
     PCODE GetPrecompiledCode(PrepareCodeConfig* pConfig, bool shouldTier);
     PCODE GetPrecompiledNgenCode(PrepareCodeConfig* pConfig);
     PCODE GetPrecompiledR2RCode(PrepareCodeConfig* pConfig);
-    PCODE GetMulticoreJitCode(PrepareCodeConfig* pConfig, bool* pWasTier0Jit);
+    PCODE GetMulticoreJitCode(PrepareCodeConfig* pConfig, bool* pWasTier0);
     COR_ILMETHOD_DECODER* GetAndVerifyILHeader(PrepareCodeConfig* pConfig, COR_ILMETHOD_DECODER* pIlDecoderMemory);
     COR_ILMETHOD_DECODER* GetAndVerifyMetadataILHeader(PrepareCodeConfig* pConfig, COR_ILMETHOD_DECODER* pIlDecoderMemory);
     COR_ILMETHOD_DECODER* GetAndVerifyNoMetadataILHeader();
@@ -2207,7 +2208,8 @@ public:
         }
     }
 
-    bool FinalizeOptimizationTierForTier0Jit();
+    bool FinalizeOptimizationTierForTier0Load();
+    bool FinalizeOptimizationTierForTier0LoadOrJit();
 #endif
 
 public:
@@ -2299,21 +2301,21 @@ public:
 class MulticoreJitPrepareCodeConfig : public PrepareCodeConfig
 {
 private:
-    bool m_wasTier0Jit;
+    bool m_wasTier0;
 
 public:
     MulticoreJitPrepareCodeConfig(MethodDesc* pMethod);
 
-    bool WasTier0Jit() const
+    bool WasTier0() const
     {
         LIMITED_METHOD_CONTRACT;
-        return m_wasTier0Jit;
+        return m_wasTier0;
     }
 
-    void SetWasTier0Jit()
+    void SetWasTier0()
     {
         LIMITED_METHOD_CONTRACT;
-        m_wasTier0Jit = true;
+        m_wasTier0 = true;
     }
 
     virtual BOOL SetNativeCode(PCODE pCode, PCODE * ppAlternateCodeToUse) override;
@@ -3027,6 +3029,8 @@ public:
         kIsQCall                        = 0x1000,
 
         kDefaultDllImportSearchPathsStatus = 0x2000, // either method has custom attribute or not.
+
+        kNDirectPopulated               = 0x8000, // Indicate if the NDirect has been fully populated.
     };
 
     // Resolve the import to the NDirect target and set it on the NDirectMethodDesc.
@@ -3157,6 +3161,12 @@ public:
     {
         LIMITED_METHOD_CONTRACT;
         return (ndirect.m_wFlags & kDefaultDllImportSearchPathsIsCached) != 0;
+    }
+
+    BOOL IsPopulated()
+    {
+        LIMITED_METHOD_CONTRACT;
+        return (ndirect.m_wFlags & kNDirectPopulated) != 0;
     }
 
     ULONG DefaultDllImportSearchPathsAttributeCachedValue()

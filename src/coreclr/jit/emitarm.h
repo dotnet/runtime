@@ -20,8 +20,8 @@ BYTE* emitOutputIT(BYTE* dst, instruction ins, insFormat fmt, code_t condcode);
 BYTE* emitOutputLJ(insGroup* ig, BYTE* dst, instrDesc* id);
 BYTE* emitOutputShortBranch(BYTE* dst, instruction ins, insFormat fmt, ssize_t distVal, instrDescJmp* id);
 
-static unsigned emitOutput_Thumb1Instr(BYTE* dst, code_t code);
-static unsigned emitOutput_Thumb2Instr(BYTE* dst, code_t code);
+unsigned emitOutput_Thumb1Instr(BYTE* dst, code_t code);
+unsigned emitOutput_Thumb2Instr(BYTE* dst, code_t code);
 
 /************************************************************************/
 /*             Debug-only routines to display instructions              */
@@ -92,6 +92,7 @@ emitter::code_t emitInsCode(instruction ins, insFormat fmt);
 void emitInsLoadStoreOp(instruction ins, emitAttr attr, regNumber dataReg, GenTreeIndir* indir);
 void emitInsLoadStoreOp(instruction ins, emitAttr attr, regNumber dataReg, GenTreeIndir* indir, int offset);
 
+static bool IsMovInstruction(instruction ins);
 static bool isModImmConst(int imm);
 static int encodeModImmConst(int imm);
 
@@ -219,9 +220,19 @@ void emitIns_I(instruction ins, emitAttr attr, target_ssize_t imm);
 
 void emitIns_R(instruction ins, emitAttr attr, regNumber reg);
 
-void emitIns_R_I(
-    instruction ins, emitAttr attr, regNumber reg, target_ssize_t imm, insFlags flags = INS_FLAGS_DONT_CARE);
+void emitIns_R_I(instruction    ins,
+                 emitAttr       attr,
+                 regNumber      reg,
+                 target_ssize_t imm,
+                 insFlags flags = INS_FLAGS_DONT_CARE DEBUGARG(GenTreeFlags gtFlags = GTF_EMPTY));
 void emitIns_MovRelocatableImmediate(instruction ins, emitAttr attr, regNumber reg, BYTE* addr);
+
+void emitIns_Mov(instruction ins,
+                 emitAttr    attr,
+                 regNumber   dstReg,
+                 regNumber   srgReg,
+                 bool        canSkip,
+                 insFlags    flags = INS_FLAGS_DONT_CARE);
 
 void emitIns_R_R(instruction ins, emitAttr attr, regNumber reg1, regNumber reg2, insFlags flags = INS_FLAGS_DONT_CARE);
 

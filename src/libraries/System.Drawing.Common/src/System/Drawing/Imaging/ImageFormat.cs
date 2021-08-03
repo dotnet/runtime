@@ -170,7 +170,7 @@ namespace System.Drawing.Imaging
             if (this.Guid == s_tiff.Guid) return "Tiff";
             if (this.Guid == s_exif.Guid) return "Exif";
             if (this.Guid == s_icon.Guid) return "Icon";
-            return "[ImageFormat: " + _guid + "]";
+            return $"[ImageFormat: {_guid}]";
         }
     }
 }

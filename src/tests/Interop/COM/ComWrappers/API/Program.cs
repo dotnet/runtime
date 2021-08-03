@@ -18,10 +18,10 @@ namespace ComWrappersTests
         {
             protected unsafe override ComInterfaceEntry* ComputeVtables(object obj, CreateComInterfaceFlags flags, out int count)
             {
-                IntPtr fpQueryInteface = default;
+                IntPtr fpQueryInterface = default;
                 IntPtr fpAddRef = default;
                 IntPtr fpRelease = default;
-                ComWrappers.GetIUnknownImpl(out fpQueryInteface, out fpAddRef, out fpRelease);
+                ComWrappers.GetIUnknownImpl(out fpQueryInterface, out fpAddRef, out fpRelease);
 
                 ComInterfaceEntry* entryRaw = null;
                 count = 0;
@@ -31,7 +31,7 @@ namespace ComWrappersTests
                     {
                         IUnknownImpl = new IUnknownVtbl()
                         {
-                            QueryInterface = fpQueryInteface,
+                            QueryInterface = fpQueryInterface,
                             AddRef = fpAddRef,
                             Release = fpRelease
                         },
@@ -70,9 +70,9 @@ namespace ComWrappersTests
             {
                 Console.WriteLine($"Running {nameof(ValidateIUnknownImpls)}...");
 
-                ComWrappers.GetIUnknownImpl(out IntPtr fpQueryInteface, out IntPtr fpAddRef, out IntPtr fpRelease);
+                ComWrappers.GetIUnknownImpl(out IntPtr fpQueryInterface, out IntPtr fpAddRef, out IntPtr fpRelease);
 
-                Assert.AreNotEqual(fpQueryInteface, IntPtr.Zero);
+                Assert.AreNotEqual(fpQueryInterface, IntPtr.Zero);
                 Assert.AreNotEqual(fpAddRef, IntPtr.Zero);
                 Assert.AreNotEqual(fpRelease, IntPtr.Zero);
             }
@@ -198,7 +198,7 @@ namespace ComWrappersTests
 
         static void ValidateWrappersInstanceIsolation()
         {
-            Console.WriteLine($"Running {nameof(ValidateWrappersInstanceIsolation)}...");   
+            Console.WriteLine($"Running {nameof(ValidateWrappersInstanceIsolation)}...");
 
             var cw1 = new TestComWrappers();
             var cw2 = new TestComWrappers();
@@ -278,6 +278,56 @@ namespace ComWrappersTests
                 {
                     cw.GetOrRegisterObjectForComInstance(trackerObjRaw, CreateObjectFlags.None, null);
                 });
+        }
+
+        static void ValidateExternalWrapperCacheCleanUp()
+        {
+            Console.WriteLine($"Running {nameof(ValidateExternalWrapperCacheCleanUp)}...");
+
+            var cw = new TestComWrappers();
+
+            // Get an object from a tracker runtime.
+            IntPtr trackerObjRaw = MockReferenceTrackerRuntime.CreateTrackerObject();
+
+            // Create a wrapper for the object instance.
+            var weakRef1 = CreateAndRegisterWrapper(cw, trackerObjRaw);
+
+            // Run the GC to have the wrapper marked for collection.
+            ForceGC();
+
+            // Create a new wrapper for the same external object.
+            var weakRef2 = CreateAndRegisterWrapper(cw, trackerObjRaw);
+
+            // We are using a tracking resurrection WeakReference<T> so we should be able
+            // to get back the objects as they are all continually re-registering for Finalization.
+            Assert.IsTrue(weakRef1.TryGetTarget(out ITrackerObjectWrapper wrapper1));
+            Assert.IsTrue(weakRef2.TryGetTarget(out ITrackerObjectWrapper wrapper2));
+
+            // Check that the two wrappers aren't equal, meaning we created a new wrapper since
+            // the first wrapper was removed from the internal cache.
+            Assert.AreNotEqual(wrapper1, wrapper2);
+
+            // Let the wrappers Finalize.
+            wrapper1.ReregisterForFinalize = false;
+            wrapper2.ReregisterForFinalize = false;
+
+            static WeakReference<ITrackerObjectWrapper> CreateAndRegisterWrapper(ComWrappers cw, IntPtr trackerObjRaw)
+            {
+                // Manually create a wrapper
+                var iid = typeof(ITrackerObject).GUID;
+                IntPtr iTestComObject;
+                int hr = Marshal.QueryInterface(trackerObjRaw, ref iid, out iTestComObject);
+                Assert.AreEqual(0, hr);
+                var nativeWrapper = new ITrackerObjectWrapper(iTestComObject);
+
+                nativeWrapper = (ITrackerObjectWrapper)cw.GetOrRegisterObjectForComInstance(trackerObjRaw, CreateObjectFlags.None, nativeWrapper);
+
+                // Set this on the return instead of during creation since the returned wrapper may be the one from
+                // the internal cache and not the one passed in above.
+                nativeWrapper.ReregisterForFinalize = true;
+
+                return new WeakReference<ITrackerObjectWrapper>(nativeWrapper, trackResurrection: true);
+            }
         }
 
         static void ValidateSuppliedInnerNotAggregation()
@@ -566,6 +616,7 @@ namespace ComWrappersTests
                 ValidateCreateObjectCachingScenario();
                 ValidateWrappersInstanceIsolation();
                 ValidatePrecreatedExternalWrapper();
+                ValidateExternalWrapperCacheCleanUp();
                 ValidateSuppliedInnerNotAggregation();
                 ValidateIUnknownImpls();
                 ValidateBadComWrapperImpl();

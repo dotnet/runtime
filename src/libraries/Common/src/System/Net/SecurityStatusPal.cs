@@ -69,6 +69,7 @@ namespace System.Net
         UnsupportedPreauth,
         BadBinding,
         DowngradeDetected,
-        ApplicationProtocolMismatch
+        ApplicationProtocolMismatch,
+        NoRenegotiation
     }
 }
