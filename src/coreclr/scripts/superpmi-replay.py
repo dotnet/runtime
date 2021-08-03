@@ -1,6 +1,4 @@
 
-jitstressregs_values = ['1', '2', '3', '4', '8', '0x10', '0x80', '0x1000']
-
 import argparse
 from os import path, system
 import os
@@ -25,6 +23,17 @@ parser.add_argument("-jit_directory", help="path to the directory containing clr
 parser.add_argument("-mch_directory", help="path to the directory containing mch files")
 parser.add_argument("-log_directory", help="path to the directory containing superpmi log files")
 
+jit_flags = [
+    "JitStressRegs=0",
+    "JitStressRegs=1",
+    "JitStressRegs=2",
+    "JitStressRegs=3",
+    "JitStressRegs=4",
+    "JitStressRegs=8",
+    "JitStressRegs=0x10",
+    "JitStressRegs=0x80",
+    "JitStressRegs=0x1000",
+    ]
 
 def setup_args(args):
     """ Setup the args for SuperPMI to use.
@@ -86,7 +95,7 @@ def main(main_args):
     log_directory = coreclr_args.log_directory
     mch_filename = ''
 
-    print("=============> Running superpmi.py download")
+    print("Running superpmi.py download")
     run_command([python_path, path.join(cwd, "superpmi.py"), "download", "-f", "benchmarks", "-core_root", cwd, "-spmi_location", spmi_location])
 
     for f in listdir(spmi_location):
@@ -106,10 +115,10 @@ def main(main_args):
     host_arch_name = "x64" if arch_name.endswith("x64") else "x86"
     jit_path = path.join(coreclr_args.jit_directory, 'clrjit_{}_{}_{}.dll'.format(os_name, arch_name, host_arch_name))
     # run_id = 0
-    for jitstressregs in jitstressregs_values:
+    for jit_flag in jit_flags:
         # TODO: This should be DownloadFilesFromResults
-        log_file = path.join(log_directory, 'superpmi_flag_{}.log'.format(jitstressregs))
-
+        log_file = path.join(log_directory, 'superpmi_{}.log'.format(jit_flag.replace("=", "_")))
+        print("Running superpmi.py replay for {}".format(jit_flag))
         # print(' '.join([
         #         python_path, path.join(cwd, "superpmi.py"), "replay", "-core_root", cwd,
         #         "-jitoption", "JitStressRegs=" + jitstressregs, "-jitoption", "TieredCompilation=0",
@@ -123,18 +132,17 @@ def main(main_args):
 
         run_command([
                 python_path, path.join(cwd, "superpmi.py"), "replay", "-core_root", cwd,
-                "-jitoption", "JitStressRegs=" + jitstressregs, "-jitoption", "TieredCompilation=0",
+                "-jitoption", jit_flag, "-jitoption", "TieredCompilation=0",
                 "-jit_path", jit_path, "-spmi_location", spmi_location,
-                "-log_level", "debug", "-log_file", log_file],
-                _exit_on_fail=True)
+                "-log_level", "debug", "-log_file", log_file])
 
         # run_id += 1
 
-    # Consolidate all superpmi.logs in superpmi_partition_index.log
+    # Consolidate all superpmi_*.logs in superpmi_platform_architecture.log
     final_log_name = path.join(log_directory, "superpmi_{}_{}.log".format(coreclr_args.platform, arch_name))
     with open(final_log_name, "a") as final_superpmi_log:
         for superpmi_log in listdir(log_directory):
-            if not f.startswith("superpmi_flag") and not f.endswith(".log"):
+            if not f.startswith("superpmi_Jit") and not f.endswith(".log"):
                 continue
 
             final_superpmi_log.write("======================================================={}".format(os.linesep))
