@@ -54,7 +54,7 @@ namespace System
             if (s_showILOffset < 0) return false;
             if (s_showILOffset > 0) return true;
 
-            // Disabled by default. 
+            // Disabled by default.
             bool isSwitchEnabled = AppContextConfigHelper.GetBooleanConfig("Switch.System.Diagnostics.StackTrace.ShowILOffsets", false);
             s_showILOffset = isSwitchEnabled ? 1 : -1;
 
