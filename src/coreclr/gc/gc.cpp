@@ -10880,8 +10880,10 @@ void gc_heap::clear_region_info (heap_segment* region)
                         settings.gc_index, current_bgc_state,
                         seg_deleted);
 
-    if (g_low_memory_status)
+    if (settings.entry_memory_load >= high_memory_load_th || g_low_memory_status)
+    {
         decommit_mark_array_by_seg (region);
+    }
 #endif //BACKGROUND_GC
 }
 
@@ -11367,8 +11369,10 @@ size_t gc_heap::decommit_heap_segment_pages_worker (heap_segment* seg,
                                                     uint8_t* new_committed)
 {
 #ifdef USE_REGIONS
-    if (!g_low_memory_status)
+    if (settings.entry_memory_load < high_memory_load_th && !g_low_memory_status)
+    {
         return 0;
+    }
 #endif
     assert (!use_large_pages_p);
     uint8_t* page_start = align_on_page (new_committed);
@@ -11400,8 +11404,10 @@ size_t gc_heap::decommit_heap_segment_pages_worker (heap_segment* seg,
 void gc_heap::decommit_heap_segment (heap_segment* seg)
 {
 #ifdef USE_REGIONS
-    if (!g_low_memory_status)
+    if (settings.entry_memory_load < high_memory_load_th && !g_low_memory_status)
+    {
         return;
+    }
 #endif
 
     uint8_t*  page_start = align_on_page (heap_segment_mem (seg));
