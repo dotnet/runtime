@@ -20,8 +20,6 @@ namespace System.Runtime.InteropServices.JavaScript
     {
         internal object? RawObject;
 
-        private WeakReference<Delegate>? WeakRawObject;
-
         // to detect redundant calls
         public bool IsDisposed { get; private set; }
 
@@ -42,11 +40,6 @@ namespace System.Runtime.InteropServices.JavaScript
         internal JSObject(int jsHandle, object rawObj) : base(jsHandle, false)
         {
             RawObject = rawObj;
-        }
-
-        internal JSObject(int jsHandle, Delegate rawDelegate, bool ownsHandle = true) : base(jsHandle, ownsHandle)
-        {
-            WeakRawObject = new WeakReference<Delegate>(rawDelegate, trackResurrection: false);
         }
 
         /// <summary>
@@ -205,11 +198,9 @@ namespace System.Runtime.InteropServices.JavaScript
         /// <param name="prop">The String name or Symbol of the property to test.</param>
         public bool PropertyIsEnumerable(string prop) => (bool)Invoke("propertyIsEnumerable", prop);
 
-        internal bool IsWeakWrapper => WeakRawObject?.TryGetTarget(out _) == true;
-
         internal object? GetWrappedObject()
         {
-            return RawObject ?? (WeakRawObject is WeakReference<Delegate> wr && wr.TryGetTarget(out Delegate? d) ? d : null);
+            return RawObject;
         }
         internal void FreeHandle()
         {
@@ -217,7 +208,6 @@ namespace System.Runtime.InteropServices.JavaScript
             SetHandleAsInvalid();
             IsDisposed = true;
             RawObject = null;
-            WeakRawObject = null;
             FreeGCHandle();
         }
 
@@ -258,7 +248,7 @@ namespace System.Runtime.InteropServices.JavaScript
 
         public override string ToString()
         {
-            return $"(js-obj js '{Int32Handle}' raw '{RawObject != null}' weak_raw '{WeakRawObject != null}')";
+            return $"(js-obj js '{Int32Handle}' raw '{RawObject != null}')";
         }
     }
 }

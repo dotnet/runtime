@@ -14,11 +14,6 @@ namespace System.Runtime.InteropServices.JavaScript
     {
         private static readonly Dictionary<int, WeakReference<JSObject>> _boundObjects = new Dictionary<int, WeakReference<JSObject>>();
         private static readonly Dictionary<object, JSObject> _rawToJS = new Dictionary<object, JSObject>();
-        // _weakDelegateTable is a ConditionalWeakTable with the Delegate and associated JSObject:
-        // Key Lifetime:
-        //    Once the key dies, the dictionary automatically removes the key/value entry.
-        // No need to lock as it is thread safe.
-        private static readonly ConditionalWeakTable<Delegate, JSObject> _weakDelegateTable = new ConditionalWeakTable<Delegate, JSObject>();
 
         private const string TaskGetResultName = "get_Result";
         private static readonly MethodInfo _taskGetResultMethodInfo = typeof(Task<>).GetMethod(TaskGetResultName)!;
@@ -50,11 +45,6 @@ namespace System.Runtime.InteropServices.JavaScript
 
         public static void FreeObject(object obj)
         {
-            if (obj is Delegate)
-            {
-                return;
-            }
-
             JSObject? jsobj;
             lock (_rawToJS)
             {
@@ -147,7 +137,7 @@ namespace System.Runtime.InteropServices.JavaScript
         {
             Interop.Runtime.ReleaseHandle(objToRelease.JSHandle, out int exception);
             if (exception != 0)
-                throw new JSException($"Error releasing handle on (js-obj js '{objToRelease.JSHandle}' mono '{objToRelease.Int32Handle} raw '{objToRelease.RawObject != null}' weak raw '{objToRelease.IsWeakWrapper}'   )");
+                throw new JSException($"Error releasing handle on (js-obj js '{objToRelease.JSHandle}' mono '{objToRelease.Int32Handle} raw '{objToRelease.RawObject != null}')");
 
             lock (_boundObjects)
             {
@@ -200,26 +190,11 @@ namespace System.Runtime.InteropServices.JavaScript
         public static int BindExistingObject(object rawObj, int jsId)
         {
             JSObject? jsObject;
-            if (rawObj is Delegate dele)
+            lock (_rawToJS)
             {
-                jsObject = new JSObject(jsId, dele);
-                lock (_boundObjects)
+                if (!_rawToJS.TryGetValue(rawObj, out jsObject))
                 {
-                    _boundObjects.Add(jsId, new WeakReference<JSObject>(jsObject));
-                }
-                lock (_weakDelegateTable)
-                {
-                    _weakDelegateTable.Add(dele, jsObject);
-                }
-            }
-            else
-            {
-                lock (_rawToJS)
-                {
-                    if (!_rawToJS.TryGetValue(rawObj, out jsObject))
-                    {
-                        _rawToJS.Add(rawObj, jsObject = new JSObject(jsId, rawObj));
-                    }
+                    _rawToJS.Add(rawObj, jsObject = new JSObject(jsId, rawObj));
                 }
             }
             return jsObject.Int32Handle;
@@ -263,19 +238,9 @@ namespace System.Runtime.InteropServices.JavaScript
         public static int GetJSObjectId(object rawObj)
         {
             JSObject? jsObject;
-            if (rawObj is Delegate dele)
+            lock (_rawToJS)
             {
-                lock (_weakDelegateTable)
-                {
-                    _weakDelegateTable.TryGetValue(dele, out jsObject);
-                }
-            }
-            else
-            {
-                lock (_rawToJS)
-                {
-                    _rawToJS.TryGetValue(rawObj, out jsObject);
-                }
+                _rawToJS.TryGetValue(rawObj, out jsObject);
             }
             return jsObject?.JSHandle ?? -1;
         }

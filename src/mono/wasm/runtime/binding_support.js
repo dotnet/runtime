@@ -144,7 +144,6 @@ var BindingSupportLib = {
 			this.create_date_time = get_method ("CreateDateTime");
 			this.create_uri = get_method ("CreateUri");
 
-			this.safehandle_addref = get_method ("SafeHandleAddRef");
 			this.safehandle_release = get_method ("SafeHandleRelease");
 			this.safehandle_get_handle = get_method ("SafeHandleGetHandle");
 			this.safehandle_release_by_handle = get_method ("SafeHandleReleaseByHandle");
