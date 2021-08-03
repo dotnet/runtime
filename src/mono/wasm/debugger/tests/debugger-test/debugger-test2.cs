@@ -3,6 +3,8 @@
 
 using System;
 using System.Diagnostics;
+using System.Net.Http.Json;
+
 public class Misc
 { //Only append content to this class as the test suite depends on line info
     public static int CreateObject(int foo, int bar)
@@ -54,6 +56,43 @@ public class UserBreak {
     public static void BreakOnDebuggerBreakCommand()
     {
         Debugger.Break();
+    }
+}
+
+public class WeatherForecast
+{
+    public DateTime Date { get; set; }
+
+    public int TemperatureC { get; set; }
+
+    public int TemperatureF => 32 + (int)(TemperatureC / 0.5556);
+
+    public string Summary { get; set; }
+}
+
+public class InspectTask
+{
+    public static async System.Threading.Tasks.Task RunInspectTask()
+    {
+        WeatherForecast[] forecasts = null;
+        var httpClient = new System.Net.Http.HttpClient();
+        var getJsonTask = httpClient.GetFromJsonAsync<WeatherForecast[]>("http://localhost:9400/weather.json");
+        try
+        {
+            await getJsonTask.ContinueWith(t =>
+                {
+                    if (t.IsCompletedSuccessfully)
+                        forecasts = t.Result;
+
+                    if (t.IsFaulted)
+                        throw t.Exception!;
+                });
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"error {ex}");
+            return;
+        }
     }
 }
 

@@ -8025,6 +8025,8 @@ type_commands_internal (int command, MonoClass *klass, MonoDomain *domain, guint
 			buffer_add_string (buf, f->name);
 			buffer_add_typeid (buf, domain, mono_class_from_mono_type_internal (f->type));
 			buffer_add_int (buf, f->type->attrs);
+			if (CHECK_PROTOCOL_VERSION(2, 61))
+				buffer_add_int(buf, mono_class_field_is_special_static(f));
 			i ++;
 		}
 		g_assert (i == nfields);
