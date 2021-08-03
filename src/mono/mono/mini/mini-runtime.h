@@ -245,7 +245,6 @@ typedef struct MonoDebugOptions {
 	gboolean suspend_on_exception;
 	gboolean suspend_on_unhandled;
 	gboolean dyn_runtime_invoke;
-	gboolean gdb;
 	gboolean lldb;
 
 	/*

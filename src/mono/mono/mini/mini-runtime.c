@@ -3933,7 +3933,7 @@ mini_parse_debug_option (const char *option)
 	else if (!strcmp (option, "dyn-runtime-invoke"))
 		mini_debug_options.dyn_runtime_invoke = TRUE;
 	else if (!strcmp (option, "gdb"))
-		mini_debug_options.gdb = TRUE;
+		fprintf (stderr, "MONO_DEBUG=gdb is deprecated.");
 	else if (!strcmp (option, "lldb"))
 		mini_debug_options.lldb = TRUE;
 	else if (!strcmp (option, "llvm-disable-inlining"))
