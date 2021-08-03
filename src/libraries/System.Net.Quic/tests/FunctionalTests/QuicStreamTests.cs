@@ -171,12 +171,12 @@ namespace System.Net.Quic.Tests
             {
                 for (int i = 0; i < count; i++)
                 {
-                    tasks[i] = makeStreams(clientConnection, serverConnection);
+                    tasks[i] = MakeStreams(clientConnection, serverConnection);
                 }
                 await tasks.WhenAllOrAnyFailed(PassingTestTimeoutMilliseconds);
             }
 
-            static async Task makeStreams(QuicConnection clientConnection, QuicConnection serverConnection)
+            static async Task MakeStreams(QuicConnection clientConnection, QuicConnection serverConnection)
             {
                 byte[] buffer = new byte[64];
                 QuicStream clientStream = clientConnection.OpenBidirectionalStream();
