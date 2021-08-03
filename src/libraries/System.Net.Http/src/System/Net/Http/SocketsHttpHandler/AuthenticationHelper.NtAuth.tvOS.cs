@@ -12,7 +12,7 @@ namespace System.Net.Http
         private static Task<HttpResponseMessage> InnerSendAsync(HttpRequestMessage request, Uri authUri, bool async, ICredentials credentials, bool isProxyAuth, HttpConnection connection, HttpConnectionPool connectionPool, CancellationToken cancellationToken)
         {
             return isProxyAuth ?
-                SendWithProxyAuthAsync(request, authUri, async, credentials, true, connectionPool, cancellationToken).AsTask() :
+                SendWithProxyAuthAsync(request, authUri, async, credentials, false, connectionPool, cancellationToken).AsTask() :
                 SendWithRequestAuthAsync(request, async, credentials, false, connectionPool, cancellationToken).AsTask();
         }
 
