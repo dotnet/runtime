@@ -30,6 +30,5 @@ jobs:
     platforms:
     - windows_x64
     - windows_x86
-    - Linux_x64
     helixQueueGroup: ci
     helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml

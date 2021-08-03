@@ -24,16 +24,9 @@ jobs:
     dependOnEvaluatePaths: ${{ parameters.dependOnEvaluatePaths }}
     additionalSetupParameters: ${{ parameters.additionalSetupParameters }}
     # dependsOn:
-    #  - ${{ format('coreclr_jit_build_windows{0}_{1}_{2}', parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
+    #  - ${{ format('coreclr_jit_build_{0}{1}_{2}_{3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
 
-    variables:
-    - ${{ parameters.variables }}
-
-    - name: ClrJitRootFolder
-      value: '$(Build.SourcesDirectory)/artifacts/bin/coreclr/windows.$(archType).$(buildConfigUpper)'
-
-    - name: ClrJitArtifactName
-      value: 'CoreCLRProduct_${{ parameters.pgoType }}_${{ parameters.runtimeVariant }}_windows$(osSubgroup)_$(archType)_$(buildConfig)'
+    variables: ${{ parameters.variables }}
 
     frameworks:
       - ${{ parameters.framework }}
@@ -43,7 +36,7 @@ jobs:
     # Download jit builds
     - template: /eng/pipelines/common/download-specific-artifact-step.yml
       parameters:
-        unpackFolder: '$(ClrJitRootFolder)'
-        artifactFileName: '$(ClrJitArtifactName).zip'
-        artifactName: '$(ClrJitArtifactName)'
+        unpackFolder: $(buildProductRootFolderPath)
+        artifactFileName: '$(buildProductArtifactName)$(archiveExtension)'
+        artifactName: '$(buildProductArtifactName)'
         displayName: 'JIT product build'

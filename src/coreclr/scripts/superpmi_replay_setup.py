@@ -31,7 +31,7 @@ from superpmi_setup import copy_directory, copy_files, set_pipeline_variable, ru
 parser = argparse.ArgumentParser(description="description")
 
 parser.add_argument("-arch", help="Architecture")
-parser.add_argument("-platform", help="OS platform")
+# parser.add_argument("-platform", help="OS platform")
 parser.add_argument("-source_directory", help="path to the directory containing binaries")
 parser.add_argument("-product_directory", help="path to the directory containing binaries")
 # parser.add_argument("-mch_directory", help="path to directory containing compressed mch files")
@@ -55,10 +55,10 @@ def setup_args(args):
                         lambda unused: True,
                         "Unable to set arch")
 
-    coreclr_args.verify(args,
-                        "platform",
-                        lambda unused: True,
-                        "Unable to set platform")
+    # coreclr_args.verify(args,
+    #                     "platform",
+    #                     lambda unused: True,
+    #                     "Unable to set platform")
 
     coreclr_args.verify(args,
                         "source_directory",
@@ -125,7 +125,6 @@ def main(main_args):
     coreclr_args = setup_args(main_args)
 
     arch = coreclr_args.arch
-    platform = coreclr_args.platform
     source_directory = coreclr_args.source_directory
     product_directory = coreclr_args.product_directory
     # mch_directory = coreclr_args.mch_directory
@@ -175,7 +174,6 @@ def main(main_args):
     print('Setting pipeline variables:')
     set_pipeline_variable("CorrelationPayloadDirectory", correlation_payload_directory)
     set_pipeline_variable("WorkItemDirectory", workitem_directory)
-    set_pipeline_variable("Platform", platform)
     set_pipeline_variable("Architecture", arch)
     set_pipeline_variable("Creator", creator)
     set_pipeline_variable("Queue", helix_queue)

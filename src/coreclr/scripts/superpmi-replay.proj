@@ -31,8 +31,8 @@
     <SpmiCollectionFolder>$(WorkItemDirectory)\partitions</SpmiCollectionFolder>
     <SuperpmiLogsLocation>%HELIX_WORKITEM_UPLOAD_ROOT%</SuperpmiLogsLocation>
     <!-- Workaround until https://github.com/dotnet/arcade/pull/6179 is not available -->
-    <!-- <HelixResultsDestinationDir>$(BUILD_SOURCESDIRECTORY)\artifacts\helixresults</HelixResultsDestinationDir> -->
-    <WorkItemCommand>$(Python) $(ProductDirectory)\superpmi-replay.py -arch $(Architecture) -platform $(Platform) -jit_directory $(ProductDirectory)</WorkItemCommand>
+    <HelixResultsDestinationDir>$(BUILD_SOURCESDIRECTORY)\artifacts\helixresults</HelixResultsDestinationDir>
+    <WorkItemCommand>$(Python) $(ProductDirectory)\superpmi-replay.py -jit_directory $(ProductDirectory)</WorkItemCommand>
   </PropertyGroup>
 
   <ItemGroup>
@@ -46,9 +46,21 @@
     <Partition Include="@(PartitionDirectories -> '%(Filename)')" PartitionId="%(Filename)" />
   </ItemGroup> -->
 
+  <ItemGroup Condition="'$(Architecture)' == 'x64'">
+    <SPMI_Partition Platform="windows" Architecture="x64" />
+    <SPMI_Partition Platform="windows" Architecture="arm64" />
+    <SPMI_Partition Platform="Linux" Architecture="x64" />
+    <SPMI_Partition Platform="Linux" Architecture="arm64" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(Architecture)' == 'x86'">
+    <SPMI_Partition Platform="windows" Architecture="x86" />
+    <SPMI_Partition Platform="Linux" Architecture="arm" />
+  </ItemGroup>
+
   <ItemGroup>
-    <HelixWorkItem Include="$(Platform)_$(Architecture)">
-      <Command>$(WorkItemCommand) -log_directory $(SuperpmiLogsLocation)\$(Platform)_$(Architecture)</Command>
+    <HelixWorkItem Include="@(SPMI_Partition)">
+      <Command>$(WorkItemCommand) -arch $(HelixWorkItem.Architecture) -platform $(HelixWorkItem.Platform)  -log_directory $(SuperpmiLogsLocation)</Command>
       <!-- <Command>$(WorkItemCommand) -arch %(HelixWorkItem.Architecture) -platform %(HelixWorkItem.Platform) -log_directory $(SuperpmiLogsLocation)</Command> -->
       <!-- <Command>$(WorkItemCommand) -mch_directory $(SpmiCollectionFolder)\%(HelixWorkItem.PartitionId)\mch -partition_index %(HelixWorkItem.PartitionId) -log_directory $(SuperpmiLogsLocation)</Command> -->
       <!-- <PayloadDirectory>$(WorkItemDirectory)</PayloadDirectory> -->
