@@ -510,10 +510,10 @@ public static partial class XmlSerializerTests
 
         MemoryStream ms = new MemoryStream();
         new XmlSerializer(typeof(WithXmlElement)).Serialize(ms, original);
+
         ms.Position = 0;
         StreamReader sr = new StreamReader(ms);
         string output = sr.ReadToEnd();
-
         Assert.Contains("<empty></empty>", output);   // Self-closed, or completely empty is OK. No added space.
     }
 
