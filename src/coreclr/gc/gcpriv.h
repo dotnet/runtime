@@ -854,6 +854,7 @@ public:
 static_assert(offsetof(dac_generation, allocation_context) == offsetof(generation, allocation_context), "DAC generation offset mismatch");
 static_assert(offsetof(dac_generation, start_segment) == offsetof(generation, start_segment), "DAC generation offset mismatch");
 #ifndef USE_REGIONS
+// REGIONS TODO: make sure the debugger handles this correctly in all cases.
 static_assert(offsetof(dac_generation, allocation_start) == offsetof(generation, allocation_start), "DAC generation offset mismatch");
 #endif //!USE_REGIONS
 

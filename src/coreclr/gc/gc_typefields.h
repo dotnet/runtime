@@ -17,7 +17,8 @@ DEFINE_FIELD       (background_saved_lowest_address,    uint8_t*)
 DEFINE_FIELD       (background_saved_highest_address,   uint8_t*)
 #if defined(ALL_FIELDS) || !defined(USE_REGIONS)
 DEFINE_DPTR_FIELD  (saved_sweep_ephemeral_seg,          dac_heap_segment)
-DEFINE_FIELD       (saved_sweep_ephemeral_start,        uint8_t*)
+// Do not add fields before this one. It's index is currently hard coded in the DAC to detect regions build
+DEFINE_FIELD       (saved_sweep_ephemeral_start,        uint8_t*) 
 #else
 DEFINE_MISSING_FIELD
 DEFINE_MISSING_FIELD

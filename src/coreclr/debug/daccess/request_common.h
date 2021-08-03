@@ -95,6 +95,20 @@ GenerationTableIndex(DPTR(dac_generation) base, size_t index)
         }                                                                                    \
     }
 
+inline bool IsRegion()
+{
+    if (GCHeapUtilities::IsServerHeap())
+    {
+        // TODO, avoid hard coding constant
+        int saved_sweep_ephemeral_start_index = 17;
+        return g_gcDacGlobals->gc_heap_field_offsets[saved_sweep_ephemeral_start_index] == -1;
+    }
+    else
+    {
+        return g_gcDacGlobals->saved_sweep_ephemeral_start == nullptr;
+    }
+}
+
 // Indexes into a heap's generation table, given the heap instance
 // and the desired index. Returns a DPTR to the requested element.
 inline DPTR(dac_generation)
