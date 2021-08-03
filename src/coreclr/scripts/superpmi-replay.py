@@ -75,7 +75,7 @@ def setup_args(args):
 
     coreclr_args.verify(args,
                         "log_directory",
-                        lambda log_directory: os.path.isdir(log_directory),
+                        lambda log_directory: True, #os.path.isdir(log_directory),
                         "log_directory doesn't exist")
 
     return coreclr_args

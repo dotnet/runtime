@@ -15,7 +15,7 @@ jobs:
 - template: ${{ parameters.runJobTemplate }}
   parameters:
     jobName: ${{ format('superpmibuild_{0}{1}_{2}_{3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
-    displayName: ${{ format('SuperPMI replay {0}', parameters.archType) }}
+    displayName: ${{ format('SuperPMI replay {0} {1}', parameters.osGroup, parameters.archType) }}
     pool: ${{ parameters.pool }}
     buildConfig: ${{ parameters.buildConfig }}
     archType: ${{ parameters.archType }}
@@ -26,7 +26,14 @@ jobs:
     # dependsOn:
     #  - ${{ format('coreclr_jit_build_{0}{1}_{2}_{3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
 
-    variables: ${{ parameters.variables }}
+    variables:
+    - ${{ parameters.variables }}
+
+    - name: ClrJitRootFolder
+      value: '$(Build.SourcesDirectory)/artifacts/bin/coreclr/windows.$(archType).$(buildConfigUpper)'
+
+    - name: ClrJitArtifactName
+      value: 'CoreCLRProduct_${{ parameters.pgoType }}_${{ parameters.runtimeVariant }}_windows$(osSubgroup)_$(archType)_$(buildConfig)'
 
     frameworks:
       - ${{ parameters.framework }}
@@ -36,7 +43,7 @@ jobs:
     # Download jit builds
     - template: /eng/pipelines/common/download-specific-artifact-step.yml
       parameters:
-        unpackFolder: $(buildProductRootFolderPath)
-        artifactFileName: '$(buildProductArtifactName)$(archiveExtension)'
-        artifactName: '$(buildProductArtifactName)'
+        unpackFolder: '$(ClrJitRootFolder)'
+        artifactFileName: '$(ClrJitArtifactName)$(archiveExtension)'
+        artifactName: '$(ClrJitArtifactName)'
         displayName: 'JIT product build'
