@@ -572,10 +572,6 @@ MONO_API int mono_ee_api_version (void);
 gboolean  mono_debug_count                  (void);
 
 #ifdef __linux__
-#define XDEBUG_ENABLED 1
-#endif
-
-#ifdef __linux__
 /* maybe enable also for other systems? */
 #define ENABLE_JIT_MAP 1
 void mono_enable_jit_map (void);

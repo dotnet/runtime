@@ -144,7 +144,6 @@ set(mini_common_sources
     dwarfwriter.c
     mini-gc.h
     mini-gc.c
-    xdebug.c
     mini-llvm.h
     mini-llvm-cpp.h
     llvm-jit.h
