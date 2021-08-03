@@ -94,9 +94,13 @@ def main(main_args):
     spmi_location = path.join(cwd, "artifacts", "spmi")
     log_directory = coreclr_args.log_directory
     mch_filename = ''
+    os_name = "win" if coreclr_args.platform.lower() == "windows" else "unix"
+    arch_name = coreclr_args.arch
+    host_arch_name = "x64" if arch_name.endswith("x64") else "x86"
+    jit_path = path.join(coreclr_args.jit_directory, 'clrjit_{}_{}_{}.dll'.format(os_name, arch_name, host_arch_name))
 
     print("Running superpmi.py download")
-    run_command([python_path, path.join(cwd, "superpmi.py"), "download", "-f", "benchmarks", "-core_root", cwd, "-spmi_location", spmi_location])
+    run_command([python_path, path.join(cwd, "superpmi.py"), "download", "-f", "benchmarks", "-target_os", coreclr_args.platform.lower(), "-target_arch", arch_name, "-core_root", cwd, "-spmi_location", spmi_location])
 
     for f in listdir(spmi_location):
         if f.endswith(".mch.zip"):
@@ -110,10 +114,7 @@ def main(main_args):
 
 
     # populate based on zip file name and jit_directory
-    os_name = "win" if coreclr_args.platform.lower() == "windows" else "unix"
-    arch_name = coreclr_args.arch
-    host_arch_name = "x64" if arch_name.endswith("x64") else "x86"
-    jit_path = path.join(coreclr_args.jit_directory, 'clrjit_{}_{}_{}.dll'.format(os_name, arch_name, host_arch_name))
+
     # run_id = 0
     for jit_flag in jit_flags:
         # TODO: This should be DownloadFilesFromResults
@@ -133,6 +134,8 @@ def main(main_args):
         run_command([
                 python_path, path.join(cwd, "superpmi.py"), "replay", "-core_root", cwd,
                 "-jitoption", jit_flag, "-jitoption", "TieredCompilation=0",
+                "-target_os", coreclr_args.platform.lower(), "-target_arch", arch_name,
+                "-arch", host_arch_name,
                 "-jit_path", jit_path, "-spmi_location", spmi_location,
                 "-log_level", "debug", "-log_file", log_file])
 

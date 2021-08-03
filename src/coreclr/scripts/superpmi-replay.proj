@@ -28,7 +28,7 @@
     <ProductDirectory>%HELIX_CORRELATION_PAYLOAD%</ProductDirectory>
     <SpmiCollectionFolder>$(WorkItemDirectory)\partitions</SpmiCollectionFolder>
     <SuperpmiLogsLocation>%HELIX_WORKITEM_UPLOAD_ROOT%</SuperpmiLogsLocation>
-    <WorkItemCommand>$(Python) $(ProductDirectory)\superpmi-replay.py -jit_directory $(ProductDirectory)</WorkItemCommand>
+    <WorkItemCommand>$(Python) $(ProductDirectory)\superpmi-replay.py -arch $(Architecture) -platform $(Platform) -log_directory $(SuperpmiLogsLocation) -jit_directory $(ProductDirectory)</WorkItemCommand>
   </PropertyGroup>
 
   <ItemGroup>
@@ -42,14 +42,10 @@
     <Partition Include="@(PartitionDirectories -> '%(Filename)')" PartitionId="%(Filename)" />
   </ItemGroup> -->
 
-  <!-- <ItemGroup>
-    <Partition Include="Partition0" Platform="Windows" Architecture="x64" />
-    <Partition Include="Partition1" Platform="Linux" Architecture="x64" />
-  </ItemGroup> -->
-
   <ItemGroup>
-    <HelixWorkItem Include="@(Partition)">
-      <Command>$(WorkItemCommand) -arch %(HelixWorkItem.Architecture) -platform %(HelixWorkItem.Platform) -log_directory $(SuperpmiLogsLocation)</Command>
+    <HelixWorkItem Include="WorkItem">
+      <Command>$(WorkItemCommand)</Command>
+      <!-- <Command>$(WorkItemCommand) -arch %(HelixWorkItem.Architecture) -platform %(HelixWorkItem.Platform) -log_directory $(SuperpmiLogsLocation)</Command> -->
       <!-- <Command>$(WorkItemCommand) -mch_directory $(SpmiCollectionFolder)\%(HelixWorkItem.PartitionId)\mch -partition_index %(HelixWorkItem.PartitionId) -log_directory $(SuperpmiLogsLocation)</Command> -->
       <!-- <PayloadDirectory>$(WorkItemDirectory)</PayloadDirectory> -->
       <Timeout>$(WorkItemTimeout)</Timeout>
