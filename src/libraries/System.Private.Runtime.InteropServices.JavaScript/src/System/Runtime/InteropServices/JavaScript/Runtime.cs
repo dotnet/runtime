@@ -91,6 +91,8 @@ namespace System.Runtime.InteropServices.JavaScript
                 }
             }
 
+            target.AddInFlight();
+
             return target.Int32Handle;
         }
 
@@ -216,6 +218,74 @@ namespace System.Runtime.InteropServices.JavaScript
             return jsObject.Int32Handle;
         }
 
+        private static int NextJSOwnedObjectID = 1;
+        private static object JSOwnedObjectLock = new object();
+        private static Dictionary<object, int> IDFromJSOwnedObject = new Dictionary<object, int>();
+        private static Dictionary<int, object> JSOwnedObjectFromID = new Dictionary<int, object>();
+
+        // A JSOwnedObject is a managed object with its lifetime controlled by javascript.
+        // The managed side maintains a strong reference to the object, while the JS side
+        //  maintains a weak reference and notifies the managed side if the JS wrapper object
+        //  has been reclaimed by the JS GC. At that point, the managed side will release its
+        //  strong references, allowing the managed object to be collected.
+        // This ensures that things like delegates and promises will never 'go away' while JS
+        //  is expecting to be able to invoke or await them.
+        public static int GetJSOwnedObjectHandle (object o) {
+            if (o == null)
+                return 0;
+
+            int result;
+            lock (JSOwnedObjectLock) {
+                if (IDFromJSOwnedObject.TryGetValue(o, out result))
+                    return result;
+
+                result = NextJSOwnedObjectID++;
+                IDFromJSOwnedObject[o] = result;
+                JSOwnedObjectFromID[result] = o;
+                return result;
+            }
+        }
+
+        // The JS layer invokes this method when the JS wrapper for a JS owned object
+        //  has been collected by the JS garbage collector
+        public static void ReleaseJSOwnedObjectByHandle (int id) {
+            lock (JSOwnedObjectLock) {
+                if (!JSOwnedObjectFromID.TryGetValue(id, out object? o))
+                    throw new Exception($"JS-owned object with id {id} was already released");
+                IDFromJSOwnedObject.Remove(o);
+                JSOwnedObjectFromID.Remove(id);
+            }
+        }
+
+        // The JS layer invokes this API when the JS wrapper for a delegate is invoked.
+        // In multiple places this function intentionally returns false instead of throwing
+        //  in an unexpected condition. This is done because unexpected conditions of this
+        //  type are usually caused by a JS object (i.e. a WebSocket) receiving an event
+        //  after its managed owner has been disposed - throwing in that case is unwanted.
+        public static bool TryInvokeJSOwnedDelegateByHandle (int id, JSObject? arg1) {
+            Delegate? del;
+            lock (JSOwnedObjectLock) {
+                if (!JSOwnedObjectFromID.TryGetValue(id, out object? o))
+                    return false;
+                del = (Delegate)o;
+            }
+
+            if (del == null)
+                return false;
+
+// error CS0117: 'Array' does not contain a definition for 'Empty' [/home/kate/Projects/dotnet-runtime-wasm/src/libraries/System.Private.Runtime.InteropServices.JavaScript/src/System.Private.Runtime.InteropServices.JavaScript.csproj]
+#pragma warning disable CA1825
+
+            if (arg1 != null)
+                del.DynamicInvoke(new object[] { arg1 });
+            else
+                del.DynamicInvoke(new object[0]);
+
+#pragma warning restore CA1825
+
+            return true;
+        }
+
         public static int GetJSObjectId(object rawObj)
         {
             JSObject? jsObject;
@@ -236,12 +306,21 @@ namespace System.Runtime.InteropServices.JavaScript
             return jsObject?.JSHandle ?? -1;
         }
 
-        public static object? GetDotNetObject(int gcHandle)
+        /// <param name="gcHandle"></param>
+        /// <param name="shouldAddInflight">when true, we would create Normal GCHandle to the JSObject, so that it would not get collected before passing it back to managed code</param>
+        public static object? GetDotNetObject(int gcHandle, int shouldAddInflight)
         {
             GCHandle h = (GCHandle)(IntPtr)gcHandle;
 
-            return h.Target is JSObject js ?
-                js.GetWrappedObject() ?? h.Target : h.Target;
+            if (h.Target is JSObject jso)
+            {
+                if (shouldAddInflight != 0)
+                {
+                    jso.AddInFlight();
+                }
+                return jso.GetWrappedObject() ?? jso;
+            }
+            return h.Target;
         }
 
         public static bool IsSimpleArray(object a)

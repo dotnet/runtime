@@ -89,7 +89,8 @@ void getMethodInfoILMethodHeaderHelper(
 
 BOOL LoadDynamicInfoEntry(Module *currentModule,
                           RVA fixupRva,
-                          SIZE_T *entry);
+                          SIZE_T *entry,
+                          BOOL mayUsePrecompiledNDirectMethods = TRUE);
 
 //
 // The legacy x86 monitor helpers do not need a state argument
@@ -411,6 +412,7 @@ class CEEInfo : public ICorJitInfo
     void GetTypeContext(CORINFO_CONTEXT_HANDLE context, SigTypeContext* pTypeContext);
     BOOL ContextIsInstantiated(CORINFO_CONTEXT_HANDLE context);
 
+    void HandleException(struct _EXCEPTION_POINTERS* pExceptionPointers);
 public:
 #include "icorjitinfoimpl_generated.h"
     uint32_t getClassAttribsInternal (CORINFO_CLASS_HANDLE cls);
@@ -1149,8 +1151,16 @@ CORJIT_FLAGS GetDebuggerCompileFlags(Module* pModule, CORJIT_FLAGS flags);
 
 bool __stdcall TrackAllocationsEnabled();
 
-FCDECL0(INT64, GetJittedBytes);
-FCDECL0(INT32, GetJittedMethodsCount);
+
+extern Volatile<int64_t> g_cbILJitted;
+extern Volatile<int64_t> g_cMethodsJitted;
+extern Volatile<int64_t> g_c100nsTicksInJit;
+extern thread_local int64_t t_cbILJittedForThread;
+extern thread_local int64_t t_cMethodsJittedForThread;
+extern thread_local int64_t t_c100nsTicksInJitForThread;
+
+FCDECL1(INT64, GetCompiledILBytes, CLR_BOOL currentThread);
+FCDECL1(INT64, GetCompiledMethodCount, CLR_BOOL currentThread);
+FCDECL1(INT64, GetCompilationTimeInTicks, CLR_BOOL currentThread);
 
 #endif // JITINTERFACE_H
-

@@ -15,7 +15,7 @@ using Xunit;
 
 namespace Microsoft.Extensions.FileProviders
 {
-    public class PhysicalFileProviderTests
+    public partial class PhysicalFileProviderTests
     {
         private const int WaitTimeForTokenToFire = 500;
         private const int WaitTimeForTokenCallback = 10000;
@@ -1510,6 +1510,60 @@ namespace Microsoft.Extensions.FileProviders
                     }
                 }
             }
+        }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/56190", TestPlatforms.AnyUnix)]
+        public async Task UsePollingFileWatcher_UseActivePolling_HasChanged(bool useWildcard)
+        {
+            // Arrange
+            using var root = new DisposableFileSystem();
+            string fileName = Path.GetRandomFileName();
+            string filePath = Path.Combine(root.RootPath, fileName);
+            File.WriteAllText(filePath, "v1.1");
+
+            using var provider = new PhysicalFileProvider(root.RootPath) { UsePollingFileWatcher = true, UseActivePolling = true };
+            IChangeToken token = provider.Watch(useWildcard ? "*" : fileName);
+
+            var tcs = new TaskCompletionSource<object>();
+            token.RegisterChangeCallback(_ => { tcs.TrySetResult(null); }, null);
+
+            // Act
+            await Task.Delay(1000); // Wait a second before writing again, see https://github.com/dotnet/runtime/issues/55951.
+            File.WriteAllText(filePath, "v1.2");
+
+            // Assert
+            Assert.True(tcs.Task.Wait(TimeSpan.FromSeconds(30)),
+                $"Change event was not raised - current time: {DateTime.UtcNow:O}, file LastWriteTimeUtc: {File.GetLastWriteTimeUtc(filePath):O}");
+        }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/56190", TestPlatforms.AnyUnix)]
+        public void UsePollingFileWatcher_UseActivePolling_HasChanged_FileDeleted(bool useWildcard)
+        {
+            // Arrange
+            using var root = new DisposableFileSystem();
+            string fileName = Path.GetRandomFileName();
+            string filePath = Path.Combine(root.RootPath, fileName);
+            File.WriteAllText(filePath, "v1.1");
+
+            string filter = useWildcard ? "*" : fileName;
+            using var provider = new PhysicalFileProvider(root.RootPath) { UsePollingFileWatcher = true, UseActivePolling = true };
+            IChangeToken token = provider.Watch(filter);
+
+            var tcs = new TaskCompletionSource<object>();
+            token.RegisterChangeCallback(_ => { tcs.TrySetResult(null); }, null);
+
+            // Act
+            File.Delete(filePath);
+
+            // Assert
+            Assert.True(tcs.Task.Wait(TimeSpan.FromSeconds(30)),
+                $"Change event was not raised - current time: {DateTime.UtcNow:O}, file Exists: {File.Exists(filePath)}.");
         }
 
         [Fact]

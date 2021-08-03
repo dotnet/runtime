@@ -4,7 +4,7 @@
     <SkipPackageFileCheck>true</SkipPackageFileCheck>
     <SkipValidatePackage>true</SkipValidatePackage>
   </PropertyGroup>
-  <ItemGroup Condition="'$(PackageTargetRuntime)' == 'linux-arm' or '$(PackageTargetRuntime)' == 'linux-arm64' or '$(PackageTargetRuntime)' == 'linux-x64' or '$(PackageTargetRuntime)' == 'osx-x64' or '$(PackageTargetRuntime)' == 'freebsd-x64'">
+  <ItemGroup Condition="'$(PackageTargetRuntime)' == 'linux-arm' or '$(PackageTargetRuntime)' == 'linux-arm64' or '$(PackageTargetRuntime)' == 'linux-s390x' or '$(PackageTargetRuntime)' == 'linux-x64' or '$(PackageTargetRuntime)' == 'osx-x64' or '$(PackageTargetRuntime)' == 'freebsd-x64'">
     <File Include="$(NativeBinDir)$(LibPrefix)System.IO.Ports.Native$(LibSuffix)" >
       <TargetPath>runtimes/$(OutputRid)/native</TargetPath>
     </File>

@@ -14,8 +14,6 @@
     <MicrosoftNetCoreAppFrameworkName>{MicrosoftNetCoreAppFrameworkName}</MicrosoftNetCoreAppFrameworkName>
     <MicrosoftNetCoreAppRefPackDir>{MicrosoftNetCoreAppRefPackDir}</MicrosoftNetCoreAppRefPackDir>
 
-    <!-- Turn off end of life target framework checks as we intentionally build older .NETCoreApp configurations. -->
-    <CheckEolTargetFramework>false</CheckEolTargetFramework>
     <NETCoreAppMaximumVersion>$(NetCoreAppCurrentVersion)</NETCoreAppMaximumVersion>
   </PropertyGroup>
 

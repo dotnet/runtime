@@ -370,8 +370,7 @@ namespace System.Numerics
 
         public override bool Equals([NotNullWhen(true)] object? obj)
         {
-            if (!(obj is Complex)) return false;
-            return Equals((Complex)obj);
+            return obj is Complex other && Equals(other);
         }
 
         public bool Equals(Complex value)
@@ -379,14 +378,7 @@ namespace System.Numerics
             return m_real.Equals(value.m_real) && m_imaginary.Equals(value.m_imaginary);
         }
 
-        public override int GetHashCode()
-        {
-            int n1 = 99999997;
-            int realHash = m_real.GetHashCode() % n1;
-            int imaginaryHash = m_imaginary.GetHashCode();
-            int finalHash = realHash ^ imaginaryHash;
-            return finalHash;
-        }
+        public override int GetHashCode() => HashCode.Combine(m_real, m_imaginary);
 
         public override string ToString() => $"({m_real}, {m_imaginary})";
 

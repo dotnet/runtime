@@ -18,12 +18,10 @@ namespace System.Net.Http
     [SupportedOSPlatform("windows")]
     [SupportedOSPlatform("linux")]
     [SupportedOSPlatform("macos")]
-    internal sealed class Http3Connection : HttpConnectionBase, IDisposable
+    internal sealed class Http3Connection : HttpConnectionBase
     {
         // TODO: once HTTP/3 is standardized, create APIs for this.
-        public static readonly SslApplicationProtocol Http3ApplicationProtocol29 = new SslApplicationProtocol("h3-29");
-        public static readonly SslApplicationProtocol Http3ApplicationProtocol30 = new SslApplicationProtocol("h3-30");
-        public static readonly SslApplicationProtocol Http3ApplicationProtocol31 = new SslApplicationProtocol("h3-31");
+        public static readonly SslApplicationProtocol Http3ApplicationProtocol = new SslApplicationProtocol("h3");
 
         private readonly HttpConnectionPool _pool;
         private readonly HttpAuthority? _origin;
@@ -92,7 +90,7 @@ namespace System.Net.Http
         /// <summary>
         /// Starts shutting down the <see cref="Http3Connection"/>. Final cleanup will happen when there are no more active requests.
         /// </summary>
-        public void Dispose()
+        public override void Dispose()
         {
             lock (SyncObj)
             {
@@ -155,7 +153,7 @@ namespace System.Net.Http
             }
         }
 
-        public override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, bool async, CancellationToken cancellationToken)
+        public async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, bool async, CancellationToken cancellationToken)
         {
             Debug.Assert(async);
 
@@ -283,7 +281,7 @@ namespace System.Net.Http
 
             lock (SyncObj)
             {
-                if (lastProcessedStreamId > _lastProcessedStreamId)
+                if (_lastProcessedStreamId != -1 && lastProcessedStreamId > _lastProcessedStreamId)
                 {
                     // Server can send multiple GOAWAY frames.
                     // Spec says a server MUST NOT increase the stream ID in subsequent GOAWAYs,
@@ -328,6 +326,8 @@ namespace System.Net.Http
                 }
             }
         }
+
+        public override long GetIdleTicks(long nowTicks) => throw new NotImplementedException("We aren't scavenging HTTP3 connections yet");
 
         public override void Trace(string message, [CallerMemberName] string? memberName = null) =>
             Trace(0, message, memberName);

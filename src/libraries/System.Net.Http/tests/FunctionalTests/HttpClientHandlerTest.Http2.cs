@@ -129,7 +129,7 @@ namespace System.Net.Http.Functional.Tests
                 DataFrame invalidFrame = new DataFrame(new byte[10], FrameFlags.Padded, 10, 1);
                 await connection.WriteFrameAsync(invalidFrame);
 
-                await AssertProtocolErrorAsync(sendTask, ProtocolErrors.PROTOCOL_ERROR);
+                await Assert.ThrowsAsync<HttpRequestException>(() => sendTask);
             }
         }
 
@@ -244,10 +244,10 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [ConditionalTheory(nameof(SupportsAlpn))]
-        [InlineData(SettingId.MaxFrameSize, 16383, ProtocolErrors.PROTOCOL_ERROR)]
-        [InlineData(SettingId.MaxFrameSize, 162777216, ProtocolErrors.PROTOCOL_ERROR)]
-        [InlineData(SettingId.InitialWindowSize, 0x80000000, ProtocolErrors.FLOW_CONTROL_ERROR)]
-        public async Task Http2_ServerSendsInvalidSettingsValue_Error(SettingId settingId, uint value, ProtocolErrors expectedError)
+        [InlineData(SettingId.MaxFrameSize, 16383)]
+        [InlineData(SettingId.MaxFrameSize, 162777216)]
+        [InlineData(SettingId.InitialWindowSize, 0x80000000)]
+        public async Task Http2_ServerSendsInvalidSettingsValue_Error(SettingId settingId, uint value)
         {
             using (Http2LoopbackServer server = Http2LoopbackServer.CreateServer())
             using (HttpClient client = CreateHttpClient())
@@ -257,7 +257,7 @@ namespace System.Net.Http.Functional.Tests
                 // Send invalid initial SETTINGS value
                 Http2LoopbackConnection connection = await server.EstablishConnectionAsync(new SettingsEntry { SettingId = settingId, Value = value });
 
-                await AssertProtocolErrorAsync(sendTask, expectedError);
+                await Assert.ThrowsAsync<HttpRequestException>(() => sendTask);
 
                 connection.Dispose();
             }
@@ -3383,16 +3383,15 @@ namespace System.Net.Http.Functional.Tests
                         options.ServerCertificate = Net.Test.Common.Configuration.Certificates.GetServerCertificate();
                         options.ApplicationProtocols = new List<SslApplicationProtocol>() { SslApplicationProtocol.Http2 };
                         options.ApplicationProtocols.Add(SslApplicationProtocol.Http2);
+
                         // Negotiate TLS.
                         await sslStream.AuthenticateAsServerAsync(options, CancellationToken.None).ConfigureAwait(false);
+
                         // Send back HTTP/1.1 response
                         await sslStream.WriteAsync(Encoding.ASCII.GetBytes("HTTP/1.1 400 Unrecognized request\r\n\r\n"), CancellationToken.None);
                     });
 
-
                     Exception e = await Assert.ThrowsAsync<HttpRequestException>(() => requestTask);
-                    Assert.NotNull(e.InnerException);
-                    Assert.False(e.InnerException is ObjectDisposedException);
                 });
             }
         }

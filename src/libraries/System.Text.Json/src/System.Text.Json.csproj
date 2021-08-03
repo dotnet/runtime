@@ -22,7 +22,7 @@
     <Compile Include="..\Common\JsonCamelCaseNamingPolicy.cs" Link="Common\System\Text\Json\JsonCamelCaseNamingPolicy.cs" />
     <Compile Include="..\Common\JsonNamingPolicy.cs" Link="Common\System\Text\Json\JsonNamingPolicy.cs" />
     <Compile Include="..\Common\JsonAttribute.cs" Link="Common\System\Text\Json\Serialization\JsonAttribute.cs" />
-    <Compile Include="..\Common\JsonHelpers.cs" Link ="Common\System\Text\Json\JsonHelpers.cs" />
+    <Compile Include="..\Common\JsonHelpers.cs" Link="Common\System\Text\Json\JsonHelpers.cs" />
     <Compile Include="..\Common\JsonIgnoreCondition.cs" Link="Common\System\Text\Json\Serialization\JsonIgnoreCondition.cs" />
     <Compile Include="..\Common\JsonKnownNamingPolicy.cs" Link="Common\System\Text\Json\Serialization\JsonKnownNamingPolicy.cs" />
     <Compile Include="..\Common\JsonNumberHandling.cs" Link="Common\System\Text\Json\Serialization\JsonNumberHandling.cs" />
@@ -59,20 +59,17 @@
     <Compile Include="System\Text\Json\Nodes\JsonArray.cs" />
     <Compile Include="System\Text\Json\Nodes\JsonArray.IList.cs" />
     <Compile Include="System\Text\Json\Nodes\JsonNode.cs" />
-    <Compile Include="System\Text\Json\Nodes\JsonNode.Dynamic.cs" />
     <Compile Include="System\Text\Json\Nodes\JsonNode.Operators.cs" />
     <Compile Include="System\Text\Json\Nodes\JsonNode.Parse.cs" />
     <Compile Include="System\Text\Json\Nodes\JsonNode.To.cs" />
     <Compile Include="System\Text\Json\Nodes\JsonNodeOptions.cs" />
     <Compile Include="System\Text\Json\Nodes\JsonObject.cs" />
-    <Compile Include="System\Text\Json\Nodes\JsonObject.Dynamic.cs" />
     <Compile Include="System\Text\Json\Nodes\JsonObject.IDictionary.cs" />
     <Compile Include="System\Text\Json\Nodes\JsonValue.CreateOverloads.cs" />
     <Compile Include="System\Text\Json\Nodes\JsonValue.cs" />
     <Compile Include="System\Text\Json\Nodes\JsonValueNotTrimmable.cs" />
     <Compile Include="System\Text\Json\Nodes\JsonValueOfT.cs" />
     <Compile Include="System\Text\Json\Nodes\JsonValueTrimmable.cs" />
-    <Compile Include="System\Text\Json\Nodes\MetaDynamic.cs" />
     <Compile Include="System\Text\Json\Reader\ConsumeNumberResult.cs" />
     <Compile Include="System\Text\Json\Reader\ConsumeTokenResult.cs" />
     <Compile Include="System\Text\Json\Reader\JsonReaderException.cs" />
@@ -92,13 +89,24 @@
     <Compile Include="System\Text\Json\Serialization\Attributes\JsonIncludeAttribute.cs" />
     <Compile Include="System\Text\Json\Serialization\Attributes\JsonNumberHandlingAttribute.cs" />
     <Compile Include="System\Text\Json\Serialization\Attributes\JsonPropertyNameAttribute.cs" />
+    <Compile Include="System\Text\Json\Serialization\Attributes\JsonPropertyOrderAttribute.cs" />
+    <Compile Include="System\Text\Json\Serialization\Converters\Collection\ImmutableDictionaryOfTKeyTValueConverterWithReflection.cs" />
+    <Compile Include="System\Text\Json\Serialization\Converters\Collection\ImmutableEnumerableOfTConverterWithReflection.cs" />
+    <Compile Include="System\Text\Json\Serialization\Converters\Collection\StackOrQueueConverterWithReflection.cs" />
     <Compile Include="System\Text\Json\Serialization\Converters\JsonMetadataServicesConverter.cs" />
     <Compile Include="System\Text\Json\Serialization\IgnoreReferenceResolver.cs" />
     <Compile Include="System\Text\Json\Serialization\IJsonOnDeserialized.cs" />
     <Compile Include="System\Text\Json\Serialization\IJsonOnDeserializing.cs" />
     <Compile Include="System\Text\Json\Serialization\IJsonOnSerialized.cs" />
     <Compile Include="System\Text\Json\Serialization\IJsonOnSerializing.cs" />
+    <Compile Include="System\Text\Json\Serialization\JsonSerializer.Read.Document.cs" />
+    <Compile Include="System\Text\Json\Serialization\JsonSerializer.Read.Element.cs" />
+    <Compile Include="System\Text\Json\Serialization\JsonSerializer.Read.Node.cs" />
+    <Compile Include="System\Text\Json\Serialization\JsonSerializer.Write.Document.cs" />
+    <Compile Include="System\Text\Json\Serialization\JsonSerializer.Write.Element.cs" />
+    <Compile Include="System\Text\Json\Serialization\JsonSerializer.Write.Node.cs" />
     <Compile Include="System\Text\Json\Serialization\JsonSerializerContext.cs" />
+    <Compile Include="System\Text\Json\Serialization\Metadata\FSharpCoreReflectionProxy.cs" />
     <Compile Include="System\Text\Json\Serialization\Metadata\JsonMetadataServices.Collections.cs" />
     <Compile Include="System\Text\Json\Serialization\Metadata\JsonMetadataServices.Converters.cs" />
     <Compile Include="System\Text\Json\Serialization\Metadata\JsonTypeInfoInternalOfT.cs" />
@@ -122,7 +130,7 @@
     <Compile Include="System\Text\Json\Serialization\Converters\Collection\IEnumerableConverterFactoryHelpers.cs" />
     <Compile Include="System\Text\Json\Serialization\Converters\Collection\IEnumerableDefaultConverter.cs" />
     <Compile Include="System\Text\Json\Serialization\Converters\Collection\IEnumerableOfTConverter.cs" />
-    <Compile Include="System\Text\Json\Serialization\Converters\Collection\IEnumerableWithAddMethodConverter.cs" />
+    <Compile Include="System\Text\Json\Serialization\Converters\Collection\StackOrQueueConverter.cs" />
     <Compile Include="System\Text\Json\Serialization\Converters\Collection\IListConverter.cs" />
     <Compile Include="System\Text\Json\Serialization\Converters\Collection\IListOfTConverter.cs" />
     <Compile Include="System\Text\Json\Serialization\Converters\Collection\ImmutableDictionaryOfTKeyTValueConverter.cs" />
@@ -134,6 +142,12 @@
     <Compile Include="System\Text\Json\Serialization\Converters\Collection\ListOfTConverter.cs" />
     <Compile Include="System\Text\Json\Serialization\Converters\Collection\QueueOfTConverter.cs" />
     <Compile Include="System\Text\Json\Serialization\Converters\Collection\StackOfTConverter.cs" />
+    <Compile Include="System\Text\Json\Serialization\Converters\FSharp\FSharpListConverter.cs" />
+    <Compile Include="System\Text\Json\Serialization\Converters\FSharp\FSharpMapConverter.cs" />
+    <Compile Include="System\Text\Json\Serialization\Converters\FSharp\FSharpSetConverter.cs" />
+    <Compile Include="System\Text\Json\Serialization\Converters\FSharp\FSharpTypeConverterFactory.cs" />
+    <Compile Include="System\Text\Json\Serialization\Converters\FSharp\FSharpOptionConverter.cs" />
+    <Compile Include="System\Text\Json\Serialization\Converters\FSharp\FSharpValueOptionConverter.cs" />
     <Compile Include="System\Text\Json\Serialization\Converters\Node\JsonArrayConverter.cs" />
     <Compile Include="System\Text\Json\Serialization\Converters\Node\JsonNodeConverter.cs" />
     <Compile Include="System\Text\Json\Serialization\Converters\Node\JsonNodeConverterFactory.cs" />
@@ -298,7 +312,6 @@
     <Reference Include="System.Collections.Concurrent" />
     <Reference Include="System.Diagnostics.Debug" />
     <Reference Include="System.Diagnostics.Tools" Condition="'$(TargetFramework)' == 'netcoreapp3.1'" />
-    <Reference Include="System.Linq.Expressions" />
     <Reference Include="System.Memory" />
     <Reference Include="System.Numerics.Vectors" />
     <Reference Include="System.Reflection.Emit.ILGeneration" />
@@ -315,7 +328,6 @@
   </ItemGroup>
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">
     <PackageReference Include="System.Buffers" Version="$(SystemBuffersVersion)" />
-    <PackageReference Include="System.Linq.Expressions" Version="$(SystemLinqExpressionsVersion)" />
     <PackageReference Include="System.Memory" Version="$(SystemMemoryVersion)" />
     <PackageReference Include="System.Numerics.Vectors" Version="$(SystemNumericsVectorsVersion)" />
     <PackageReference Include="System.Threading.Tasks.Extensions" Version="$(SystemThreadingTasksExtensionsVersion)" />

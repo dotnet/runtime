@@ -2245,7 +2245,8 @@ public:
             {
                 if (pCurrentMethodTable->HasSameTypeDefAs(pMT) && 
                     pMT->HasInstantiation() && 
-                    pCurrentMethodTable->IsSpecialMarkerTypeForGenericCasting() && 
+                    pCurrentMethodTable->IsSpecialMarkerTypeForGenericCasting() &&
+                    !pMTOwner->ContainsGenericVariables() &&
                     pMT->GetInstantiation().ContainsAllOneType(pMTOwner))
                 {
                     exactMatch = true;
@@ -3241,7 +3242,8 @@ public:
             UINT32                    cTypeIDs,
             MethodTable *             pMT,
             UINT32                    cCurrentChainDepth,
-            MethodDataEntry *         rgWorkingData);
+            MethodDataEntry *         rgWorkingData,
+            size_t                    cWorkingData);
     };  // class MethodData
 
     typedef ::Holder < MethodData *, MethodData::HolderAcquire, MethodData::HolderRelease > MethodDataHolder;

@@ -8,6 +8,7 @@
     <SuppressDependenciesWhenPacking Condition="'$(ExcludeFromPackage)' == 'true' or ('$(TargetsAnyOS)' != 'true' and $([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net5.0')))">true</SuppressDependenciesWhenPacking>
     <PackageDesignerMarkerFile>$(MSBuildThisFileDirectory)useSharedDesignerContext.txt</PackageDesignerMarkerFile>
     <PackageValidationBaselineVersion Condition="'$(PackageValidationBaselineVersion)' == ''">$([MSBuild]::Subtract($(MajorVersion), 1)).0.0</PackageValidationBaselineVersion>
+    <BeforePack>IncludeAnalyzersInPackage;$(BeforePack)</BeforePack>
   </PropertyGroup>
 
   <!--     There are some packages where we require only one ref for a specific framework to be present. In order to avoid problems with this package when targetting 
@@ -78,5 +79,53 @@
         <TargetFramework>$(TargetFrameworkWithoutSuffix)</TargetFramework>
       </TfmSpecificDebugSymbolsFile>
     </ItemGroup>
+  </Target>
+
+  <Target Name="LibIntellisenseDocs"
+          Condition="'$(IncludeBuildOutput)' == 'true'">
+   <PropertyGroup>
+     <_intellisenseRootFolder>$(BuildOutputTargetFolder)</_intellisenseRootFolder>
+     <_intellisenseRootFolder Condition="'$(_intellisenseRootFolder)' == ''">lib</_intellisenseRootFolder>
+   </PropertyGroup>
+   <ItemGroup>
+      <TfmSpecificPackageFile Include="$(XmlDocFileRoot)1033\$(TargetName).xml"
+                              Condition="Exists('$(XmlDocFileRoot)1033\$(TargetName).xml')"
+                              PackagePath="$(_intellisenseRootFolder)/$(TargetFramework)" />
+    </ItemGroup>
+  </Target>
+
+  <Target Name="IncludeAnalyzersInPackage" Condition="'@(AnalyzerReference)' != ''">
+    <!-- Call a target in the analyzer project to get all the files it would normally place in a package.
+         These will be returned as items with identity pointing to the built file, and PackagePath metadata
+         set to their location in the package.  IsSymbol metadata will be set to distinguish symbols. -->
+    <MSBuild Projects="@(AnalyzerReference)"
+             Targets="GetAnalyzerPackFiles">
+      <Output TaskParameter="TargetOutputs" ItemName="_AnalyzerFile" />
+    </MSBuild>
+
+    <ItemGroup>
+      <Content Include="@(_AnalyzerFile)" Pack="True" Condition="!%(_AnalyzerFile.IsSymbol)" />
+      <!-- Symbols don't honor PackagePath.  By default they are placed in lib/%(TargetFramework).
+           Pack does honor TargetPath and does Path.Combine("lib/%(TargetFramework)", "%(TargetPath)"),
+           so a rooted path value for TargetPath will override lib.
+           https://github.com/NuGet/Home/issues/10860 -->
+      <_TargetPathsToSymbols Include="@(_AnalyzerFile)" TargetPath="/%(_AnalyzerFile.PackagePath)" Condition="%(_AnalyzerFile.IsSymbol)" />
+    </ItemGroup>
+  </Target>
+
+  <Target Name="GetAnalyzerPackFiles"
+          DependsOnTargets="$(GenerateNuspecDependsOn)"
+          Returns="@(_AnalyzerPackFile)">
+    <PropertyGroup>
+      <_analyzerPath>analyzers/dotnet</_analyzerPath>
+      <_analyzerPath Condition="'$(AnalyzerLanguage)' != ''">$(_analyzerPath)/$(AnalyzerLanguage)</_analyzerPath>
+    </PropertyGroup>
+    <ItemGroup>
+      <_AnalyzerPackFile Include="@(_BuildOutputInPackage)" IsSymbol="false" />
+      <_AnalyzerPackFile Include="@(_TargetPathsToSymbols)" IsSymbol="true" />
+      <_AnalyzerPackFile PackagePath="$(_analyzerPath)/%(TargetPath)" />
+    </ItemGroup>
+    <Error Condition="'%(_AnalyzerPackFile.TargetFramework)' != 'netstandard2.0'"
+           Text="Analyzers must only target netstandard2.0 since they run in the compiler which targets netstandard2.0. The following files were found to target '%(_AnalyzerPackFile.TargetFramework)': @(_AnalyzerPackFile)" />
   </Target>
 </Project>

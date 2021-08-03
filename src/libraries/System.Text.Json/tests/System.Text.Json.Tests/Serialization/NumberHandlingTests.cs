@@ -1644,6 +1644,21 @@ namespace System.Text.Json.Serialization.Tests
         public NumberHandlingTests_SyncOverload() : base(JsonSerializerWrapperForString.StringSerializer) { }
     }
 
+    public class NumberHandlingTests_Document : NumberHandlingTests_OverloadSpecific
+    {
+        public NumberHandlingTests_Document() : base(JsonSerializerWrapperForString.DocumentSerializer) { }
+    }
+
+    public class NumberHandlingTests_Element : NumberHandlingTests_OverloadSpecific
+    {
+        public NumberHandlingTests_Element() : base(JsonSerializerWrapperForString.ElementSerializer) { }
+    }
+
+    public class NumberHandlingTests_Node : NumberHandlingTests_OverloadSpecific
+    {
+        public NumberHandlingTests_Node() : base(JsonSerializerWrapperForString.NodeSerializer) { }
+    }
+
     public abstract class NumberHandlingTests_OverloadSpecific
     {
         private JsonSerializerWrapperForString Deserializer { get; }

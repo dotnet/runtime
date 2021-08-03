@@ -1161,11 +1161,11 @@ namespace System.Text.RegularExpressions
 
                     if ((optionsAt & RegexOptions.RightToLeft) == 0)
                     {
-                        prev.Str += (at.Type == One) ? at.Ch.ToString() : at.Str;
+                        prev.Str = (at.Type == One) ? $"{prev.Str}{at.Ch}" : prev.Str + at.Str;
                     }
                     else
                     {
-                        prev.Str = (at.Type == One) ? at.Ch.ToString() + prev.Str : at.Str + prev.Str;
+                        prev.Str = (at.Type == One) ? $"{at.Ch}{prev.Str}" : at.Str + prev.Str;
                     }
                 }
                 else if (at.Type == Empty)

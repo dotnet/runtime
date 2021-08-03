@@ -64,6 +64,15 @@ enum EtwThreadFlags
     kEtwThreadFlagThreadPoolWorker =  0x00000004,
 };
 
+enum EtwGCSettingFlags
+{
+    kEtwGCFlagConcurrent =      0x00000001,
+    kEtwGCFlagLargePages =      0x00000002,
+    kEtwGCFlagFrozenSegs =      0x00000004,
+    kEtwGCFlagHardLimitConfig = 0x00000008,
+    kEtwGCFlagNoAffinitize =    0x00000010,
+};
+
 #ifndef FEATURE_REDHAWK
 
 #if defined(FEATURE_EVENT_TRACE)
@@ -726,6 +735,7 @@ namespace ETW
         friend class ETW::MethodLog;
 #ifdef FEATURE_EVENT_TRACE
         static VOID SendThreadRundownEvent();
+        static VOID SendGCRundownEvent();
         static VOID IterateDomain(BaseDomain *pDomain, DWORD enumerationOptions);
         static VOID IterateAppDomain(AppDomain * pAppDomain, DWORD enumerationOptions);
         static VOID IterateCollectibleLoaderAllocator(AssemblyLoaderAllocator *pLoaderAllocator, DWORD enumerationOptions);

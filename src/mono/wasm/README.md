@@ -4,7 +4,7 @@ This depends on `emsdk` to be installed.
 
 ## emsdk on mac
 
-* You can run `make provision-wasm`, which will install it to `$reporoot/src/mono/wasm/emsdk`.
+* You can run `make provision-wasm`, which will install it to `$reporoot/src/mono/wasm/emsdk` .
 Note: Irrespective of `$(EMSDK_PATH)`'s value, `provision-wasm` will always install into `$reporoot/src/mono/wasm/emsdk`.
 
 `EMSDK_PATH` is set to `$reporoot/src/mono/wasm/emsdk` by default, by the Makefile.

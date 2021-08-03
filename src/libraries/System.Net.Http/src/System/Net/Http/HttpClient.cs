@@ -132,7 +132,7 @@ namespace System.Net.Http
 
         #region Constructors
 
-        public HttpClient() : this(CreateDefaultHandler())
+        public HttpClient() : this(new HttpClientHandler())
         {
         }
 
@@ -813,16 +813,6 @@ namespace System.Net.Http
             }
 
             return (pendingRequestsCts, DisposeTokenSource: false, pendingRequestsCts);
-        }
-
-        private static bool IsNativeHandlerEnabled()
-        {
-            if (!AppContext.TryGetSwitch("System.Net.Http.UseNativeHttpHandler", out bool isEnabled))
-            {
-                return false;
-            }
-
-            return isEnabled;
         }
 
         private Uri? CreateUri(string? uri) =>

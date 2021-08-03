@@ -596,7 +596,7 @@ public:
     // Returns TYP_UNKNOWN if the given value number has not been given a type.
     var_types TypeOfVN(ValueNum vn);
 
-    // Returns MAX_LOOP_NUM if the given value number's loop nest is unknown or ill-defined.
+    // Returns BasicBlock::MAX_LOOP_NUM if the given value number's loop nest is unknown or ill-defined.
     BasicBlock::loopNumber LoopOfVN(ValueNum vn);
 
     // Returns true iff the VN represents a (non-handle) constant.
@@ -880,6 +880,10 @@ public:
     // Prints a representation of a MapStore operation on standard out.
     void vnDumpMapStore(Compiler* comp, VNFuncApp* mapStore);
 
+    // Requires "memOpaque" to be a mem opaque VNFuncApp
+    // Prints a representation of a MemOpaque state on standard out.
+    void vnDumpMemOpaque(Compiler* comp, VNFuncApp* memOpaque);
+
     // Requires "valWithExc" to be a value with an exeception set VNFuncApp.
     // Prints a representation of the exeception set on standard out.
     void vnDumpValWithExc(Compiler* comp, VNFuncApp* valWithExc);
@@ -935,7 +939,6 @@ private:
 
     enum ChunkExtraAttribs : BYTE
     {
-        CEA_None,      // No extra attributes.
         CEA_Const,     // This chunk contains constant values.
         CEA_Handle,    // This chunk contains handle constants.
         CEA_NotAField, // This chunk contains "not a field" values.
@@ -961,18 +964,12 @@ private:
         ValueNum m_baseVN;
 
         // The common attributes of this chunk.
-        var_types              m_typ;
-        ChunkExtraAttribs      m_attribs;
-        BasicBlock::loopNumber m_loopNum;
+        var_types         m_typ;
+        ChunkExtraAttribs m_attribs;
 
-        // Initialize a chunk, starting at "*baseVN", for the given "typ", "attribs", and "loopNum" (using "alloc" for
-        // allocations).
+        // Initialize a chunk, starting at "*baseVN", for the given "typ", and "attribs", using "alloc" for allocations.
         // (Increments "*baseVN" by ChunkSize.)
-        Chunk(CompAllocator          alloc,
-              ValueNum*              baseVN,
-              var_types              typ,
-              ChunkExtraAttribs      attribs,
-              BasicBlock::loopNumber loopNum);
+        Chunk(CompAllocator alloc, ValueNum* baseVN, var_types typ, ChunkExtraAttribs attribs);
 
         // Requires that "m_numUsed < ChunkSize."  Returns the offset of the allocated VN within the chunk; the
         // actual VN is this added to the "m_baseVN" of the chunk.
@@ -1121,14 +1118,14 @@ private:
     JitExpandArrayStack<Chunk*> m_chunks;
 
     // These entries indicate the current allocation chunk, if any, for each valid combination of <var_types,
-    // ChunkExtraAttribute, loopNumber>.  Valid combinations require attribs==CEA_None or loopNum==MAX_LOOP_NUM.
+    // ChunkExtraAttribute>.
     // If the value is NoChunk, it indicates that there is no current allocation chunk for that pair, otherwise
     // it is the index in "m_chunks" of a chunk with the given attributes, in which the next allocation should
     // be attempted.
-    ChunkNum m_curAllocChunk[TYP_COUNT][CEA_Count + MAX_LOOP_NUM + 1];
+    ChunkNum m_curAllocChunk[TYP_COUNT][CEA_Count + 1];
 
     // Returns a (pointer to a) chunk in which a new value number may be allocated.
-    Chunk* GetAllocChunk(var_types typ, ChunkExtraAttribs attribs, BasicBlock::loopNumber loopNum = MAX_LOOP_NUM);
+    Chunk* GetAllocChunk(var_types typ, ChunkExtraAttribs attribs);
 
     // First, we need mechanisms for mapping from constants to value numbers.
     // For small integers, we'll use an array.

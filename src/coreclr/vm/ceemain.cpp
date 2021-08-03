@@ -677,6 +677,7 @@ void EEStartupHelper()
 
         IfFailGo(ExecutableAllocator::StaticInitialize(FatalErrorHandler));
 
+        Thread::StaticInitialize();
         ThreadpoolMgr::StaticInitialize();
 
         MethodDescBackpatchInfoTracker::StaticInitialize();

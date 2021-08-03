@@ -647,6 +647,30 @@ namespace System.Net.NetworkInformation.Tests
                 });
         }
 
+        [Fact]
+        public async Task SendPingWithIPAddressAndBigSize()
+        {
+            IPAddress localIpAddress = TestSettings.GetLocalIPAddress();
+
+            using (Ping p = new Ping())
+            {
+                // Assert.DoesNotThrow
+                PingReply pingReply = await p.SendPingAsync(localIpAddress, TestSettings.PingTimeout, new byte[10001]);
+                
+                // Depending on platform the call may either succeed, report timeout or report too big packet. It
+                // should not throw wrapped SocketException though which is what this test guards.
+                //
+                // On Windows 10 the maximum ping size seems essentially limited to 65500 bytes and thus any buffer
+                // size on the loopback ping succeeds. On macOS anything bigger than 8184 will report packet too
+                // big error. On Linux/Unix the result differs for privileged and unprivileged processes and may
+                // change with different platform versions.
+                if (OperatingSystem.IsMacOS())
+                {
+                    Assert.Equal(IPStatus.PacketTooBig, pingReply.Status);
+                }
+            }
+        }
+
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/52617", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public async Task SendPings_ReuseInstance_Hostname()

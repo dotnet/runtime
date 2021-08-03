@@ -11,6 +11,7 @@
     <WasmExtraFilesToDeploy Include="debugger-driver.html" />
     <WasmExtraFilesToDeploy Include="other.js" />
     <WasmExtraFilesToDeploy Include="runtime-debugger.js" />
+    <WasmExtraFilesToDeploy Include="weather.json" />
 
     <!-- We want to bundle these assemblies, so build them first -->
     <ProjectReference Include="..\lazy-debugger-test\lazy-debugger-test.csproj" Private="true"/>

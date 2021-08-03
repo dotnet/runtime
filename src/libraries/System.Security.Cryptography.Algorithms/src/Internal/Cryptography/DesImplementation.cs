@@ -177,6 +177,58 @@ namespace Internal.Cryptography
             }
         }
 
+        protected override bool TryDecryptCfbCore(
+            ReadOnlySpan<byte> ciphertext,
+            ReadOnlySpan<byte> iv,
+            Span<byte> destination,
+            PaddingMode paddingMode,
+            int feedbackSizeInBits,
+            out int bytesWritten)
+        {
+            ValidateCFBFeedbackSize(feedbackSizeInBits);
+
+            UniversalCryptoTransform transform = CreateTransformCore(
+                CipherMode.CFB,
+                paddingMode,
+                Key,
+                iv: iv.ToArray(),
+                blockSize: BlockSize / BitsPerByte,
+                feedbackSizeInBits / BitsPerByte,
+                paddingSize: feedbackSizeInBits / BitsPerByte,
+                encrypting: false);
+
+            using (transform)
+            {
+                return transform.TransformOneShot(ciphertext, destination, out bytesWritten);
+            }
+        }
+
+        protected override bool TryEncryptCfbCore(
+            ReadOnlySpan<byte> plaintext,
+            ReadOnlySpan<byte> iv,
+            Span<byte> destination,
+            PaddingMode paddingMode,
+            int feedbackSizeInBits,
+            out int bytesWritten)
+        {
+            ValidateCFBFeedbackSize(feedbackSizeInBits);
+
+            UniversalCryptoTransform transform = CreateTransformCore(
+                CipherMode.CFB,
+                paddingMode,
+                Key,
+                iv: iv.ToArray(),
+                blockSize: BlockSize / BitsPerByte,
+                feedbackSizeInBits / BitsPerByte,
+                paddingSize: feedbackSizeInBits / BitsPerByte,
+                encrypting: true);
+
+            using (transform)
+            {
+                return transform.TransformOneShot(plaintext, destination, out bytesWritten);
+            }
+        }
+
         private static void ValidateCFBFeedbackSize(int feedback)
         {
             // only 8bits feedback is available on all platforms

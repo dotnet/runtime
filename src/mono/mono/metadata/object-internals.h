@@ -642,7 +642,7 @@ typedef struct {
 	void (*init_mem_manager)(MonoMemoryManager*);
 	void (*free_mem_manager)(MonoMemoryManager*);
 	void     (*metadata_update_published) (MonoAssemblyLoadContext *alc, uint32_t generation);
-	void (*get_jit_stats)(gint64 *methods_compiled, gint64 *cil_code_size_bytes, gint64 *native_code_size_bytes);
+	void (*get_jit_stats)(gint64 *methods_compiled, gint64 *cil_code_size_bytes, gint64 *native_code_size_bytes, gint64 *jit_time);
 	void (*get_exception_stats)(guint32 *exception_count);
 	// Same as compile_method, but returns a MonoFtnDesc in llvmonly mode
 	gpointer (*get_ftnptr)(MonoMethod *method, MonoError *error);
@@ -1599,7 +1599,7 @@ mono_class_try_get_vtable (MonoClass *klass);
 gboolean
 mono_runtime_run_module_cctor (MonoImage *image, MonoError *error);
 
-gboolean
+MONO_COMPONENT_API gboolean
 mono_runtime_class_init_full (MonoVTable *vtable, MonoError *error);
 
 void
@@ -1948,7 +1948,7 @@ mono_string_hash_internal (MonoString *s);
 MONO_COMPONENT_API int
 mono_object_hash_internal (MonoObject* obj);
 
-ICALL_EXTERN_C
+ICALL_EXPORT
 void
 mono_value_copy_internal (void* dest, const void* src, MonoClass *klass);
 
@@ -2033,7 +2033,7 @@ mono_gchandle_new_internal (MonoObject *obj, mono_bool pinned);
 MONO_COMPONENT_API MonoGCHandle
 mono_gchandle_new_weakref_internal (MonoObject *obj, mono_bool track_resurrection);
 
-MONO_COMPONENT_API ICALL_EXTERN_C
+MONO_COMPONENT_API
 MonoObject*
 mono_gchandle_get_target_internal (MonoGCHandle gchandle);
 
@@ -2075,7 +2075,7 @@ mono_gc_wbarrier_generic_store_internal (void volatile* ptr, MonoObject* value);
 void
 mono_gc_wbarrier_generic_store_atomic_internal (void *ptr, MonoObject *value);
 
-ICALL_EXTERN_C
+ICALL_EXPORT
 void
 mono_gc_wbarrier_generic_nostore_internal (void* ptr);
 

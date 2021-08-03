@@ -38,7 +38,7 @@ jobs:
       targetRid: linux-arm
       platform: Linux_arm
       container:
-        image: ubuntu-16.04-cross-20200413125008-09ec757
+        image: ubuntu-16.04-cross-20210719121212-8a8d3be
         registry: mcr
       jobParameters:
         runtimeFlavor: ${{ parameters.runtimeFlavor }}
@@ -64,7 +64,7 @@ jobs:
       targetRid: linux-arm64
       platform: Linux_arm64
       container:
-        image: ubuntu-16.04-cross-arm64-20201022204150-b2c2436
+        image: ubuntu-16.04-cross-arm64-20210719121212-8a8d3be
         registry: mcr
       jobParameters:
         runtimeFlavor: ${{ parameters.runtimeFlavor }}
@@ -91,7 +91,7 @@ jobs:
       targetRid: linux-musl-x64
       platform: Linux_musl_x64
       container:
-        image: alpine-3.9-WithNode-20200602002639-0fc54a3
+        image: alpine-3.9-WithNode-20210714125437-9b5bbc2
         registry: mcr
       jobParameters:
         runtimeFlavor: ${{ parameters.runtimeFlavor }}
@@ -116,7 +116,7 @@ jobs:
       targetRid: linux-musl-arm
       platform: Linux_musl_arm
       container:
-        image: ubuntu-16.04-cross-arm-alpine-20210409142327-044d5b9
+        image: ubuntu-16.04-cross-arm-alpine-20210719121212-044d5b9
         registry: mcr
       jobParameters:
         runtimeFlavor: ${{ parameters.runtimeFlavor }}
@@ -143,7 +143,7 @@ jobs:
       targetRid: linux-musl-arm64
       platform: Linux_musl_arm64
       container:
-        image: ubuntu-16.04-cross-arm64-alpine-20200413125008-406629a
+        image: ubuntu-16.04-cross-arm64-alpine-20210719121212-b2c2436
         registry: mcr
       jobParameters:
         runtimeFlavor: ${{ parameters.runtimeFlavor }}
@@ -169,7 +169,7 @@ jobs:
       targetRid: linux-x64
       platform: Linux_x64
       container:
-        image: centos-7-20201227183837-5fe0e50
+        image: centos-7-20210714125435-9b5bbc2
         registry: mcr
       jobParameters:
         runtimeFlavor: ${{ parameters.runtimeFlavor }}
@@ -193,7 +193,7 @@ jobs:
       targetRid: linux-x64
       platform: Linux_x64
       container:
-        image: centos-7-source-build-20210408124356-5d87b80
+        image: centos-7-source-build-20210714125450-5d87b80
         registry: mcr
       jobParameters:
         runtimeFlavor: ${{ parameters.runtimeFlavor }}
