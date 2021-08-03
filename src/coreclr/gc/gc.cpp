@@ -3549,6 +3549,19 @@ size_t get_region_size (heap_segment* region_info)
     return (size_t)(heap_segment_reserved (region_info) - get_region_start (region_info));
 }
 
+inline
+size_t get_region_committed_size (heap_segment* region)
+{
+    uint8_t* start = get_region_start (region);
+    uint8_t* committed = heap_segment_committed (region);
+    return committed - start;
+}
+
+inline bool is_free_region (heap_segment* region)
+{
+    return (heap_segment_allocated (region) == nullptr);
+}
+
 bool region_allocator::init (uint8_t* start, uint8_t* end, size_t alignment, uint8_t** lowest, uint8_t** highest)
 {
     uint8_t* actual_start = start;
@@ -3937,7 +3950,7 @@ void region_allocator::move_highest_free_regions (int64_t n, bool small_region_p
         {
             uint32_t* index = current_index - (current_num_units - 1);
             heap_segment* region = get_region_info (region_address_of (index));
-            if (heap_segment_allocated (region) == nullptr)
+            if (is_free_region (region))
             {
                 if (n >= current_num_units)
                 {
@@ -3945,8 +3958,7 @@ void region_allocator::move_highest_free_regions (int64_t n, bool small_region_p
 
                     region_free_list::unlink_region (region);
 
-                    free_region_kind kind = region_free_list::get_region_kind (region);
-                    to_free_list[kind].add_region_front(region);
+                    region_free_list::add_region (region, to_free_list);
                 }
                 else
                 {
@@ -10916,8 +10928,7 @@ void gc_heap::return_free_region (heap_segment* region)
 {
     clear_region_info (region);
 
-    free_region_kind kind = region_free_list::get_region_kind (region);
-    free_regions[kind].add_region_front (region);
+    region_free_list::add_region (region, free_regions);
 
     uint8_t* region_start = get_region_start (region);
     uint8_t* region_end = heap_segment_reserved (region);
@@ -10958,16 +10969,22 @@ heap_segment* gc_heap::get_free_region (int gen_number, size_t size)
     {
         const size_t LARGE_REGION_SIZE = global_region_allocator.get_large_region_alignment();
 
-        free_region_kind kind = size <= LARGE_REGION_SIZE ? large_free_region : huge_free_region;
-
-        // get it from the local list of free large regions if possible
-        region = free_regions[kind].unlink_region_front();
-
-        if (region == nullptr)
+        if (size <= LARGE_REGION_SIZE)
         {
-            ASSERT_HOLDING_SPIN_LOCK (&gc_lock);
+            // get it from the local list of large free regions if possible
+            region = free_regions[large_free_region].unlink_region_front();
+        }
+        else
+        {
+            // get it from the local list of huge free regions if possible
+            region = free_regions[huge_free_region].unlink_smallest_region (size);
+            if (region == nullptr)
+            {
+                ASSERT_HOLDING_SPIN_LOCK(&gc_lock);
 
-            region = global_free_huge_regions.unlink_smallest_region (size);
+                // get it from the global list of huge free regions
+                region = global_free_huge_regions.unlink_smallest_region (size);
+            }
         }
     }
 
@@ -11533,7 +11550,7 @@ void gc_heap::rearrange_heap_segments(BOOL compacting)
 #endif //!USE_REGIONS
 
 #if defined(USE_REGIONS)
-// trim down the list of free regions pointed at by free_link down to target_count, moving the extra ones to surplus_link
+// trim down the list of free regions pointed at by free_list down to target_count, moving the extra ones to surplus_list
 static void remove_surplus_regions (region_free_list* free_list, region_free_list* surplus_list, size_t target_count)
 {
     while (free_list->get_num_free_regions() > target_count)
@@ -11546,7 +11563,7 @@ static void remove_surplus_regions (region_free_list* free_list, region_free_lis
     }
 }
 
-// add regions from surplus_link to free_link, trying to reach target_count
+// add regions from surplus_list to free_list, trying to reach target_count
 static int64_t add_regions (region_free_list* free_list, region_free_list* surplus_list, size_t target_count)
 {
     int64_t added_count = 0;
@@ -11576,11 +11593,50 @@ region_free_list::region_free_list() : num_free_regions (0),
 {
 }
 
-size_t region_free_list::get_region_committed_size (heap_segment* region)
+void region_free_list::verify (bool empty_p)
 {
-    uint8_t* start = get_region_start (region);
-    uint8_t* committed = heap_segment_committed (region);
-    return committed - start;
+#ifdef _DEBUG
+    assert ((num_free_regions == 0) == empty_p);
+    assert ((size_free_regions == 0) == empty_p);
+    assert ((size_committed_in_free_regions == 0) == empty_p);
+    assert ((head_free_region == nullptr) == empty_p);
+    assert ((tail_free_region == nullptr) == empty_p);
+    assert (num_free_regions == (num_free_regions_added - num_free_regions_removed));
+
+    if (!empty_p)
+    {
+        assert (heap_segment_next (tail_free_region) == nullptr);
+        assert (heap_segment_prev_free_region (head_free_region) == nullptr);
+
+        size_t actual_count = 0;
+        heap_segment* last_region = nullptr;
+        for (heap_segment* region = head_free_region; region != nullptr; region = heap_segment_next(region))
+        {
+            last_region = region;
+            actual_count++;
+        }
+        assert (num_free_regions == actual_count);
+        assert (last_region == tail_free_region);
+        heap_segment* first_region = nullptr;
+        for (heap_segment* region = tail_free_region; region != nullptr; region = heap_segment_prev_free_region(region))
+        {
+            first_region = region;
+            actual_count--;
+        }
+        assert (actual_count == 0);
+        assert (head_free_region == first_region);
+    }
+#endif
+}
+
+void region_free_list::reset()
+{
+    num_free_regions = 0;
+    size_free_regions = 0;
+    size_committed_in_free_regions = 0;
+
+    head_free_region = nullptr;
+    tail_free_region = nullptr;
 }
 
 void region_free_list::add_region_front (heap_segment* region)
@@ -11589,13 +11645,11 @@ void region_free_list::add_region_front (heap_segment* region)
     heap_segment_containing_free_list(region) = this;
     if (head_free_region != nullptr)
     {
-        assert (heap_segment_prev_free_region(head_free_region) == nullptr);
         heap_segment_prev_free_region(head_free_region) = region;
         assert (tail_free_region != nullptr);
     }
     else
     {
-        assert (tail_free_region == nullptr);
         tail_free_region = region;
     }
     heap_segment_next (region) = head_free_region;
@@ -11610,6 +11664,8 @@ void region_free_list::add_region_front (heap_segment* region)
 
     size_t region_committed_size = get_region_committed_size (region);
     size_committed_in_free_regions += region_committed_size;
+
+    verify (false);
 }
 
 heap_segment* region_free_list::unlink_region_front()
@@ -11617,7 +11673,7 @@ heap_segment* region_free_list::unlink_region_front()
     heap_segment* region = head_free_region;
     if (region != nullptr)
     {
-        assert (heap_segment_containing_free_list(region) == this);
+        assert (heap_segment_containing_free_list (region) == this);
         unlink_region (region);
     }
     return region;
@@ -11626,13 +11682,15 @@ heap_segment* region_free_list::unlink_region_front()
 void region_free_list::unlink_region (heap_segment* region)
 {
     region_free_list* rfl = heap_segment_containing_free_list (region);
+    rfl->verify (false);
+
     heap_segment* prev = heap_segment_prev_free_region (region);
     heap_segment* next = heap_segment_next (region);
 
     if (prev != nullptr)
     {
         assert (region != rfl->head_free_region);
-        assert (heap_segment_next(prev) == region);
+        assert (heap_segment_next (prev) == region);
         heap_segment_next (prev) = next;
     }
     else
@@ -11656,7 +11714,6 @@ void region_free_list::unlink_region (heap_segment* region)
 
     rfl->num_free_regions--;
     rfl->num_free_regions_removed++;
-    assert (rfl->num_free_regions == (rfl->num_free_regions_added - rfl->num_free_regions_removed));
 
     size_t region_size = get_region_size (region);
     assert (rfl->size_free_regions >= region_size);
@@ -11686,6 +11743,8 @@ free_region_kind region_free_list::get_region_kind (heap_segment* region)
 
 heap_segment* region_free_list::unlink_smallest_region (size_t minimum_size)
 {
+    verify (num_free_regions == 0);
+
     // look for the smallest region that is large enough
     heap_segment* smallest_region = nullptr;
     size_t smallest_size = (size_t)-1;
@@ -11727,45 +11786,27 @@ heap_segment* region_free_list::unlink_smallest_region (size_t minimum_size)
 
 void region_free_list::transfer_regions (region_free_list* from)
 {
+    this->verify (this->num_free_regions == 0);
+    from->verify (from->num_free_regions == 0);
+
     if (from->num_free_regions == 0)
     {
         // the from list is empty
-        assert (from->size_free_regions == 0);
-        assert (from->size_committed_in_free_regions == 0);
-        assert (from->head_free_region == nullptr);
-        assert (from->tail_free_region == nullptr);
         return;
     }
+
     if (num_free_regions == 0)
     {
         // this list is empty
-        assert (size_free_regions == 0);
-        assert (size_committed_in_free_regions == 0);
-        assert (head_free_region == nullptr);
-        assert (tail_free_region == nullptr);
-
         head_free_region = from->head_free_region;
         tail_free_region = from->tail_free_region;
     }
     else
     {
         // both free lists are non-empty
-        assert (from->size_free_regions != 0);
-        assert (from->size_committed_in_free_regions != 0);
-        assert (from->head_free_region != nullptr);
-        assert (from->tail_free_region != nullptr);
-
-        assert (size_free_regions != 0);
-        assert (size_committed_in_free_regions != 0);
-        assert (head_free_region != nullptr);
-        assert (tail_free_region != nullptr);
-
         // attach the from list at the tail
         heap_segment* this_tail = tail_free_region;
         heap_segment* from_head = from->head_free_region;
-
-        assert (heap_segment_next (this_tail) == nullptr);
-        assert (heap_segment_prev_free_region (from_head) == nullptr);
 
         heap_segment_next (this_tail) = from_head;
         heap_segment_prev_free_region (from_head) = this_tail;
@@ -11785,39 +11826,23 @@ void region_free_list::transfer_regions (region_free_list* from)
     size_committed_in_free_regions += from->size_committed_in_free_regions;
 
     from->num_free_regions_removed += from->num_free_regions;
-    from->num_free_regions = 0;
-    from->size_free_regions = 0;
-    from->size_committed_in_free_regions = 0;
+    from->reset();
 
-    from->head_free_region = nullptr;
-    from->tail_free_region = nullptr;
-
-    assert(this->num_free_regions == (this->num_free_regions_added - this->num_free_regions_removed));
-    assert(from->num_free_regions == (from->num_free_regions_added - from->num_free_regions_removed));
+    verify (false);
 }
 
 size_t region_free_list::get_num_free_regions()
 {
 #ifdef _DEBUG
-    size_t actual_count = 0;
-    heap_segment* last_region = nullptr;
-    for (heap_segment* region = head_free_region; region != nullptr; region = heap_segment_next (region))
-    {
-        last_region = region;
-        actual_count++;
-    }
-    assert (num_free_regions == actual_count);
-    assert (last_region == tail_free_region);
-    heap_segment* first_region = nullptr;
-    for (heap_segment* region = tail_free_region; region != nullptr; region = heap_segment_prev_free_region (region))
-    {
-        first_region = region;
-        actual_count--;
-    }
-    assert (actual_count == 0);
-    assert (head_free_region == first_region);
+    verify (num_free_regions == 0);
 #endif //_DEBUG
     return num_free_regions;
+}
+
+void region_free_list::add_region (heap_segment* region, region_free_list to_free_list[count_free_region_kinds])
+{
+    free_region_kind kind = get_region_kind (region);
+    to_free_list[kind].add_region_front (region);
 }
 #endif //USE_REGIONS
 
@@ -11850,17 +11875,10 @@ void gc_heap::distribute_free_regions()
 
         for (int gen = soh_gen0; gen < total_generation_count; gen++)
         {
-            dynamic_data* dd_gen = hp->dynamic_data_of(gen);
-
-            // estimate how much we are going to need in gen - assume half the free list space gets used
-            ptrdiff_t new_allocation_gen = dd_new_allocation (dd_gen);
-            ptrdiff_t free_list_space_gen = generation_free_list_space (hp->generation_of(gen));
-            ptrdiff_t budget_gen = new_allocation_gen - (free_list_space_gen / 2);
+            ptrdiff_t budget_gen = hp->estimate_gen_growth (gen);
             dprintf (REGIONS_LOG, ("budget for gen %d on heap %d is %Id (new %Id, free %Id)", gen, i, budget_gen, new_allocation_gen, free_list_space_gen));
-            if (budget_gen > 0)
-            {
-                total_budget[gen >= loh_generation] += budget_gen;
-            }
+            assert (budget_gen >= 0);
+            total_budget[gen >= loh_generation] += budget_gen;
         }
     }
 
@@ -11871,7 +11889,7 @@ void gc_heap::distribute_free_regions()
     size_t region_size[kind_count] = { global_region_allocator.get_region_alignment(), global_region_allocator.get_large_region_alignment() };
     region_free_list surplus_regions[kind_count];
     ptrdiff_t num_regions_to_decommit[kind_count];
-    size_t total_regions_budget[kind_count];
+    size_t total_budget_in_region_units[kind_count];
     size_t target_num_regions[kind_count];
     int region_factor[kind_count] = { 1, LARGE_REGION_FACTOR };
 #ifdef TRACE_GC
@@ -11893,12 +11911,12 @@ void gc_heap::distribute_free_regions()
 
         num_regions_to_decommit[kind] = surplus_regions[kind].get_num_free_regions();
 
-        total_regions_budget[kind] = (total_budget[kind] + (region_size[kind] - 1)) / region_size[kind];
+        total_budget_in_region_units[kind] = (total_budget[kind] + (region_size[kind] - 1)) / region_size[kind];
 
         dprintf(REGIONS_LOG, ("%Id %s free regions, %Id regions budget, %Id regions on decommit list, %Id huge regions to consider",
             total_num_free_regions[kind],
             kind_name[kind],
-            total_regions_budget[kind],
+            total_budget_in_region_units[kind],
             num_regions_to_decommit[kind],
             num_huge_region_units_to_consider[kind]));
 
@@ -11907,20 +11925,20 @@ void gc_heap::distribute_free_regions()
         total_num_free_regions[kind] += num_regions_to_decommit[kind];
 
         if (background_running_p() ||
-            (total_num_free_regions[kind] + num_huge_region_units_to_consider[kind] < total_regions_budget[kind]))
+            ((total_num_free_regions[kind] + num_huge_region_units_to_consider[kind]) < total_budget_in_region_units[kind]))
         {
             dprintf (REGIONS_LOG, ("distributing the %Id %s regions deficit",
-                total_regions_budget[kind] - total_num_free_regions[kind], kind_name[kind]));
+                total_budget_in_region_units[kind] - total_num_free_regions[kind], kind_name[kind]));
 
             target_num_regions[kind] = (total_num_free_regions[kind] + (n_heaps - 1)) / n_heaps;
         }
         else
         {
-            target_num_regions[kind] = (total_regions_budget[kind] + (n_heaps - 1)) / n_heaps;
-            total_regions_budget[kind] = target_num_regions[kind] * n_heaps;
-            num_regions_to_decommit[kind] = total_num_free_regions[kind] + num_huge_region_units_to_consider[kind] - total_regions_budget[kind];
+            target_num_regions[kind] = (total_budget_in_region_units[kind] + (n_heaps - 1)) / n_heaps;
+            total_budget_in_region_units[kind] = target_num_regions[kind] * n_heaps;
+            num_regions_to_decommit[kind] = total_num_free_regions[kind] + num_huge_region_units_to_consider[kind] - total_budget_in_region_units[kind];
             dprintf(REGIONS_LOG, ("distributing the %Id %s regions, removing %Id regions",
-                total_regions_budget[kind],
+                total_budget_in_region_units[kind],
                 kind_name[kind],
                 num_regions_to_decommit[kind]));
 
@@ -11931,7 +11949,8 @@ void gc_heap::distribute_free_regions()
                                                                    kind == basic_free_region,
                                                                    global_regions_to_decommit);
 
-                dprintf (REGIONS_LOG, ("Moved %Id %s regions to decommit list", global_regions_to_decommit[kind].get_num_free_regions(), kind_name[kind]));
+                dprintf (REGIONS_LOG, ("Moved %Id %s regions to decommit list",
+                         global_regions_to_decommit[kind].get_num_free_regions(), kind_name[kind]));
 
                 if (kind == basic_free_region)
                 {
@@ -11939,7 +11958,8 @@ void gc_heap::distribute_free_regions()
                 }
                 else
                 {
-                    dprintf (REGIONS_LOG, ("Moved %Id %s regions to decommit list", global_regions_to_decommit[huge_free_region].get_num_free_regions(), kind_name[huge_free_region]));
+                    dprintf (REGIONS_LOG, ("Moved %Id %s regions to decommit list",
+                        global_regions_to_decommit[huge_free_region].get_num_free_regions(), kind_name[huge_free_region]));
 
                     // cannot assert we moved any regions because there may be a single huge region with more than we want to decommit
                 }
@@ -38249,6 +38269,26 @@ void gc_heap::trim_youngest_desired_low_memory()
     }
 }
 
+ptrdiff_t gc_heap::estimate_gen_growth (int gen)
+{
+    dynamic_data* dd_gen = dynamic_data_of(gen);
+
+    ptrdiff_t new_allocation_gen = dd_new_allocation (dd_gen);
+    ptrdiff_t free_list_space_gen = generation_free_list_space (generation_of (gen));
+
+    // estimate how we are going to need in this generation - estimate half the free list space gets used
+    ptrdiff_t budget_gen = new_allocation_gen - (free_list_space_gen / 2);
+    dprintf (REGIONS_LOG, ("budget for gen %d on heap %d is %Id (new %Id, free %Id)", gen, heap_number, budget_gen, new_allocation_gen, free_list_space_gen));
+    if (budget_gen > 0)
+    {
+        return budget_gen;
+    }
+    else
+    {
+        return 0;
+    }
+}
+
 void gc_heap::decommit_ephemeral_segment_pages()
 {
     if (settings.concurrent || use_large_pages_p || (settings.pause_mode == pause_no_gc))
@@ -38263,16 +38303,9 @@ void gc_heap::decommit_ephemeral_segment_pages()
 
     dynamic_data* dd0 = dynamic_data_of (0);
 
-    // this is how much we are going to allocate in gen 0
-    ptrdiff_t desired_allocation = dd_desired_allocation (dd0) + loh_size_threshold;
-
-    // estimate how we are going to need in gen 1 - estimate half the free list space gets used
-    dynamic_data* dd1 = dynamic_data_of (1);
-    ptrdiff_t desired_allocation_1 = dd_new_allocation (dd1) - (generation_free_list_space (generation_of (1)) / 2);
-    if (desired_allocation_1 > 0)
-    {
-        desired_allocation += desired_allocation_1;
-    }
+    ptrdiff_t desired_allocation = estimate_gen_growth (soh_gen0) +
+                                   estimate_gen_growth (soh_gen1) +
+                                   loh_size_threshold;
 
     size_t slack_space =
 #ifdef HOST_64BIT

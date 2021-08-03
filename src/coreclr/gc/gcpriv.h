@@ -1174,10 +1174,12 @@ class region_free_list
     heap_segment* head_free_region;
     heap_segment* tail_free_region;
 
-    static size_t get_region_committed_size (heap_segment* region);
+    static free_region_kind get_region_kind(heap_segment* region);
 
 public:
     region_free_list();
+    void verify (bool empty_p);
+    void reset();
     void add_region_front (heap_segment* region);
     void transfer_regions (region_free_list* from);
     heap_segment* unlink_region_front();
@@ -1186,7 +1188,7 @@ public:
     size_t get_size_free_regions() { return size_free_regions; }
     heap_segment* get_first_free_region() { return head_free_region; }
     static void unlink_region (heap_segment* region);
-    static free_region_kind get_region_kind (heap_segment* region);
+    static void add_region (heap_segment* region, region_free_list to_free_list[count_free_region_kinds]);
 };
 #endif
 
@@ -3159,6 +3161,9 @@ protected:
 
     PER_HEAP
     void trim_youngest_desired_low_memory();
+
+    PER_HEAP
+    ptrdiff_t estimate_gen_growth (int gen);
 
     PER_HEAP
     void decommit_ephemeral_segment_pages();
@@ -5562,6 +5567,9 @@ public:
     uint8_t*        free_list_head;
     uint8_t*        free_list_tail;
 
+    PTR_heap_segment    prev_free_region;
+    region_free_list* containing_free_list;
+
     // Fields that we need to provide in response to a
     // random address that might land anywhere on the region.
     // - heap
@@ -5585,8 +5593,6 @@ public:
 
     void thread_free_obj (uint8_t* obj, size_t s);
 
-    PTR_heap_segment    prev_free_region;
-    region_free_list*   containing_free_list;
 #else //USE_REGIONS
 
 #ifdef _MSC_VER
