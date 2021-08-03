@@ -2079,16 +2079,17 @@ namespace System.Net.Http.Functional.Tests
 
         public static IEnumerable<object[]> LongRunning()
         {
-            return Enumerable.Repeat(true, 5000).Select((b, i) => new object[] { i % 2 == 0 }).ToArray();
+            return Enumerable.Repeat(true, 10000).Select((b, i) => new object[] { i % 2 == 0 }).ToArray();
         }
 
         [ConditionalTheory(nameof(SupportsAlpn))]
         [MemberData(nameof(LongRunning))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/41078")]
         public async Task Http2_MultipleConnectionsEnabled_ConnectionLimitNotReached_ConcurrentRequestsSuccessfullyHandled(bool b)
         {
             Assert.Equal(b, b);
             const int MaxConcurrentStreams = 2;
-            using Http2LoopbackServer server = Http2LoopbackServer.CreateServer(new Http2Options { Address = IPAddress.IPv6Loopback });
+            using Http2LoopbackServer server = Http2LoopbackServer.CreateServer();
             using SocketsHttpHandler handler = CreateHandler();
             using (HttpClient client = CreateHttpClient(handler))
             {
@@ -2136,7 +2137,7 @@ namespace System.Net.Http.Functional.Tests
             // Just enough to force the third connection to be created.
             const int RequestCount = (ConnectionCount - 1) * MaxConcurrentStreams + 1;
 
-            using Http2LoopbackServer server = Http2LoopbackServer.CreateServer(new Http2Options());
+            using Http2LoopbackServer server = Http2LoopbackServer.CreateServer();
             server.AllowMultipleConnections = true;
 
             using SocketsHttpHandler handler = CreateHandler();
@@ -2182,13 +2183,12 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [ConditionalTheory(nameof(SupportsAlpn))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/45204")]
         [MemberData(nameof(LongRunning))]
         public async Task Http2_MultipleConnectionsEnabled_InfiniteRequestsCompletelyBlockOneConnection_RemaningRequestsAreHandledByNewConnection(bool b)
         {
             Assert.Equal(b, b);
             const int MaxConcurrentStreams = 2;
-            using Http2LoopbackServer server = Http2LoopbackServer.CreateServer(new Http2Options());
+            using Http2LoopbackServer server = Http2LoopbackServer.CreateServer(new Http2Options { Address = IPAddress.IPv6Loopback });
             using SocketsHttpHandler handler = CreateHandler();
             using (HttpClient client = CreateHttpClient(handler))
             {
@@ -2223,7 +2223,7 @@ namespace System.Net.Http.Functional.Tests
         public async Task Http2_MultipleConnectionsEnabled_OpenAndCloseMultipleConnections_Success()
         {
             const int MaxConcurrentStreams = 2;
-            using Http2LoopbackServer server = Http2LoopbackServer.CreateServer(new Http2Options());
+            using Http2LoopbackServer server = Http2LoopbackServer.CreateServer();
             using SocketsHttpHandler handler = CreateHandler();
             using (HttpClient client = CreateHttpClient(handler))
             {
@@ -2282,7 +2282,7 @@ namespace System.Net.Http.Functional.Tests
         public async Task Http2_MultipleConnectionsEnabled_IdleConnectionTimeoutExpired_ConnectionRemovedAndNewCreated()
         {
             const int MaxConcurrentStreams = 2;
-            using Http2LoopbackServer server = Http2LoopbackServer.CreateServer(new Http2Options());
+            using Http2LoopbackServer server = Http2LoopbackServer.CreateServer();
             using SocketsHttpHandler handler = CreateHandler();
             handler.PooledConnectionIdleTimeout = TimeSpan.FromSeconds(20);
             using (HttpClient client = CreateHttpClient(handler))
