@@ -121,7 +121,6 @@ namespace System.Net.Http
 
                         _heartBeatTimer = new Timer(static state =>
                         {
-                            if (NetEventSource.Log.IsEnabled()) NetEventSource.Log.HandlerMessage(-1, -1, -1, "HeartBeatTimer", "HEARTBEAT!");
                             var wr = (WeakReference<HttpConnectionPoolManager>)state!;
                             if (wr.TryGetTarget(out HttpConnectionPoolManager? thisRef))
                             {
