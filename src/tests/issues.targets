@@ -719,16 +719,6 @@
         </ExcludeList>
     </ItemGroup>
 
-    <!-- MacOS specific CoreCLR -->
-    <ItemGroup Condition="'$(XunitTestBinBase)' != '' and '$(TargetOS)' == 'OSX' and '$(RuntimeFlavor)' == 'coreclr'">
-        <ExcludeList Include="$(XunitTestBinBase)/baseservices/exceptions/simple/ParallelCrash/*">
-            <Issue>https://github.com/dotnet/runtime/issues/47096</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/baseservices/exceptions/simple/ParallelCrashWorkerThreads/*">
-            <Issue>https://github.com/dotnet/runtime/issues/47096</Issue>
-        </ExcludeList>
-    </ItemGroup>
-
     <!-- Tests that need to be triaged for vararg usage as that is not supported -->
     <!-- Note these will only be excluded for unix platforms on all runtimes -->
     <ItemGroup Condition="'$(XunitTestBinBase)' != '' and '$(TargetsWindows)' != 'true' ">

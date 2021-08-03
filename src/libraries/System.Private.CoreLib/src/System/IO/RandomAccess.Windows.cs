@@ -695,8 +695,11 @@ namespace System.IO
             Debug.Assert(!handle.IsAsync);
 
             NativeOverlapped result = default;
-            result.OffsetLow = unchecked((int)fileOffset);
-            result.OffsetHigh = (int)(fileOffset >> 32);
+            if (handle.CanSeek)
+            {
+                result.OffsetLow = unchecked((int)fileOffset);
+                result.OffsetHigh = (int)(fileOffset >> 32);
+            }
             return result;
         }
 
