@@ -87,6 +87,7 @@ namespace System.Net.Quic
         public override bool CanWrite { get { throw null; } }
         public override long Length { get { throw null; } }
         public override long Position { get { throw null; } set { } }
+        public bool ReadsCompleted { get { throw null; } }
         public long StreamId { get { throw null; } }
         public void AbortRead(long errorCode) { }
         public void AbortWrite(long errorCode) { }

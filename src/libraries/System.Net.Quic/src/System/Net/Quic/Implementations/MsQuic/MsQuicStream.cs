@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
 using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -10,6 +11,7 @@ using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
 using static System.Net.Quic.Implementations.MsQuic.Internal.MsQuicNativeMethods;
+using static System.Net.Quic.Implementations.MsQuic.MsQuicConnection;
 
 namespace System.Net.Quic.Implementations.MsQuic
 {
@@ -41,6 +43,8 @@ namespace System.Net.Quic.Implementations.MsQuic
             public string TraceId = null!; // set in ctor.
 
             public ReadState ReadState;
+
+            public bool FinReceived;
 
             // set when ReadState.Aborted:
             public long ReadErrorCode = -1;
@@ -191,6 +195,8 @@ namespace System.Net.Quic.Implementations.MsQuic
         internal override bool CanRead => _disposed == 0 && _canRead;
 
         internal override bool CanWrite => _disposed == 0 && _canWrite;
+
+        internal override bool ReadsCompleted => _state.ReadState >= ReadState.ReadsCompleted;
 
         internal override long StreamId
         {
@@ -842,6 +848,7 @@ namespace System.Net.Quic.Implementations.MsQuic
                         state.ReceiveQuicBuffersCount = (int)receiveEvent.BufferCount;
                         state.ReceiveQuicBuffersTotalBytes = checked((int)receiveEvent.TotalBufferLength);
                         state.ReadState = ReadState.IndividualReadComplete;
+                        state.FinReceived = receiveEvent.Flags.HasFlag(QUIC_RECEIVE_FLAGS.FIN);
                         return MsQuicStatusCodes.Pending;
                     case ReadState.PendingRead:
                         // There is a pending ReadAsync().
@@ -852,6 +859,11 @@ namespace System.Net.Quic.Implementations.MsQuic
                         state.ReadState = ReadState.None;
 
                         readLength = CopyMsQuicBuffersToUserBuffer(new ReadOnlySpan<QuicBuffer>(receiveEvent.Buffers, (int)receiveEvent.BufferCount), state.ReceiveUserBuffer.Span);
+                        if (receiveEvent.Flags.HasFlag(QUIC_RECEIVE_FLAGS.FIN) && readLength == receiveEvent.BufferCount)
+                        {
+                            state.ReadState = ReadState.ReadsCompleted;
+                            state.FinReceived = true;
+                        }
                         state.ReceiveUserBuffer = null;
                         break;
                     default:

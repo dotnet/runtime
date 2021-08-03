@@ -71,6 +71,8 @@ namespace System.Net.Quic
 
         public override bool CanRead => _provider.CanRead;
 
+        public bool ReadsCompleted => _provider.ReadsCompleted;
+
         public override int Read(Span<byte> buffer) => _provider.Read(buffer);
 
         public override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default) => _provider.ReadAsync(buffer, cancellationToken);

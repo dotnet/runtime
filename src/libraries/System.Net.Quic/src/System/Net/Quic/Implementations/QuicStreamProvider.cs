@@ -13,6 +13,8 @@ namespace System.Net.Quic.Implementations
 
         internal abstract bool CanRead { get; }
 
+        internal abstract bool ReadsCompleted { get; }
+
         internal abstract int Read(Span<byte> buffer);
 
         internal abstract ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default);
