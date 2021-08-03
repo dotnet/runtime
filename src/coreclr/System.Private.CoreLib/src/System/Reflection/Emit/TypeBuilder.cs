@@ -1328,7 +1328,7 @@ namespace System.Reflection.Emit
             return method;
         }
 
-        [RequiresUnreferencedCode("Constructors of SafeHandle or blittable classes passed as arguments or returned can be trimmed if not referenced directly.")]
+        [RequiresUnreferencedCode("P/Invoke marshalling may dynamically access members that could be trimmed.")]
         public MethodBuilder DefinePInvokeMethod(string name, string dllName, MethodAttributes attributes,
             CallingConventions callingConvention, Type? returnType, Type[]? parameterTypes,
             CallingConvention nativeCallConv, CharSet nativeCharSet)
@@ -1339,7 +1339,7 @@ namespace System.Reflection.Emit
             return method;
         }
 
-        [RequiresUnreferencedCode("Constructors of SafeHandle or blittable classes passed as arguments or returned can be trimmed if not referenced directly.")]
+        [RequiresUnreferencedCode("P/Invoke marshalling may dynamically access members that could be trimmed.")]
         public MethodBuilder DefinePInvokeMethod(string name, string dllName, string entryName, MethodAttributes attributes,
             CallingConventions callingConvention, Type? returnType, Type[]? parameterTypes,
             CallingConvention nativeCallConv, CharSet nativeCharSet)
@@ -1350,7 +1350,7 @@ namespace System.Reflection.Emit
             return method;
         }
 
-        [RequiresUnreferencedCode("Constructors of SafeHandle or blittable classes passed as arguments or returned can be trimmed if not referenced directly.")]
+        [RequiresUnreferencedCode("P/Invoke marshalling may dynamically access members that could be trimmed.")]
         public MethodBuilder DefinePInvokeMethod(string name, string dllName, string entryName, MethodAttributes attributes,
             CallingConventions callingConvention,
             Type? returnType, Type[]? returnTypeRequiredCustomModifiers, Type[]? returnTypeOptionalCustomModifiers,
@@ -1363,7 +1363,7 @@ namespace System.Reflection.Emit
             return method;
         }
 
-        [RequiresUnreferencedCode("Constructors of SafeHandle or blittable classes passed as arguments or returned can be trimmed if not referenced directly.")]
+        [RequiresUnreferencedCode("P/Invoke marshalling may dynamically access members that could be trimmed.")]
         private MethodBuilder DefinePInvokeMethodHelper(
             string name, string dllName, string importName, MethodAttributes attributes, CallingConventions callingConvention,
             Type? returnType, Type[]? returnTypeRequiredCustomModifiers, Type[]? returnTypeOptionalCustomModifiers,
