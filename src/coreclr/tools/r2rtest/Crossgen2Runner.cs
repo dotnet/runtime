@@ -65,6 +65,10 @@ namespace R2RTest
         {
             ProcessParameters processParameters = base.CompilationProcess(outputFileName, inputAssemblyFileNames);
             processParameters.Arguments = $"{Crossgen2Path} {processParameters.Arguments}";
+            processParameters.EnvironmentOverrides["COMPlus_GCStress"] = "";
+            processParameters.EnvironmentOverrides["COMPlus_HeapVerify"] = "";
+            processParameters.EnvironmentOverrides["COMPlus_ReadyToRun"] = "";
+            processParameters.EnvironmentOverrides["COMPlus_GCName"] = "";
             return processParameters;
         }
 

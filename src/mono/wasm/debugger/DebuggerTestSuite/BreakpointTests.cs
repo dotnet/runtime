@@ -259,32 +259,32 @@ namespace DebuggerTests
         {
             await EvaluateAndCheck(
                 "window.setTimeout(function() { invoke_static_method_async('[debugger-test] UserBreak:BreakOnDebuggerBreakCommand'); }, 1);",
-                "dotnet://debugger-test.dll/debugger-test2.cs", 56, 8,
+                "dotnet://debugger-test.dll/debugger-test2.cs", 58, 8,
                 "BreakOnDebuggerBreakCommand",
                 locals_fn: (locals) =>
                 {
                     CheckNumber(locals, "a", 10);
                 }
             );
-            await StepAndCheck(StepKind.Over, "dotnet://debugger-test.dll/debugger-test2.cs", 57, 8, "BreakOnDebuggerBreakCommand",
+            await StepAndCheck(StepKind.Over, "dotnet://debugger-test.dll/debugger-test2.cs", 59, 8, "BreakOnDebuggerBreakCommand",
             locals_fn: (locals) =>
                 {
                     CheckNumber(locals, "a", 10);
                 }
             );
-            await StepAndCheck(StepKind.Over, "dotnet://debugger-test.dll/debugger-test2.cs", 58, 8, "BreakOnDebuggerBreakCommand",
+            await StepAndCheck(StepKind.Over, "dotnet://debugger-test.dll/debugger-test2.cs", 60, 8, "BreakOnDebuggerBreakCommand",
             locals_fn: (locals) =>
                 {
                     CheckNumber(locals, "a", 20);
                 }
             );
-            await StepAndCheck(StepKind.Over, "dotnet://debugger-test.dll/debugger-test2.cs", 59, 8, "BreakOnDebuggerBreakCommand",
+            await StepAndCheck(StepKind.Over, "dotnet://debugger-test.dll/debugger-test2.cs", 61, 8, "BreakOnDebuggerBreakCommand",
             locals_fn: (locals) =>
                 {
                     CheckNumber(locals, "a", 50);
                 }
             );
-            await StepAndCheck(StepKind.Over, "dotnet://debugger-test.dll/debugger-test2.cs", 60, 4, "BreakOnDebuggerBreakCommand",
+            await StepAndCheck(StepKind.Over, "dotnet://debugger-test.dll/debugger-test2.cs", 62, 4, "BreakOnDebuggerBreakCommand",
             locals_fn: (locals) =>
                 {
                     CheckNumber(locals, "a", 100);
