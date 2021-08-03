@@ -770,15 +770,6 @@ namespace Microsoft.WebAssembly.Diagnostics
             return retDebuggerCmdReader.ReadInt32();
         }
 
-        public async Task<byte[]> GetMetadataBlob(SessionId sessionId, int assemblyId, CancellationToken token)
-        {
-            var commandParams = new MemoryStream();
-            var commandParamsWriter = new MonoBinaryWriter(commandParams);
-            commandParamsWriter.Write(assemblyId);
-            var retDebuggerCmdReader = await SendDebuggerAgentCommand<CmdAssembly>(sessionId, CmdAssembly.GetMetadataBlob, commandParams, token);
-            return retDebuggerCmdReader.ReadByteArray();
-        }
-
         public async Task<string> GetAssemblyNameFromModule(SessionId sessionId, int moduleId, CancellationToken token)
         {
             var command_params = new MemoryStream();

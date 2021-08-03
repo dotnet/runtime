@@ -110,7 +110,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                 {
                     HttpRequest request = context.Request;
                     PathString requestPath = request.Path;
-                    return $"{devToolsHost.Scheme}://{context.Request.Host}{request.Path}{request.QueryString}";
+                    return $"{devToolsHost.Scheme}://{devToolsHost.Authority}{request.Path}{request.QueryString}";
                 }
 
                 async Task Copy(HttpContext context)
@@ -146,19 +146,26 @@ namespace Microsoft.WebAssembly.Diagnostics
                 async Task ConnectNode(HttpContext context)
                 {
                     // monkey patch some values as Node starts on 9229 by default and the url cannot be made to include /devtools/node
-                    context.Request.Host = new HostString($"{context.Request.Host.Host}:9229");
+                    var devToolsHostForNode = new Uri("http://localhost:9229");
                     context.Request.Path = $"/{context.Request.RouteValues["pageId"]}";
-                    await ConnectProxy(context);
+                    await ConnectProxyInternal(context, devToolsHostForNode);
                 }
 
+
                 async Task ConnectProxy(HttpContext context)
+                {
+                    await ConnectProxyInternal(context, devToolsHost);
+                }
+
+                async Task ConnectProxyInternal(HttpContext context, Uri devToolsHostToConnect)
                 {
                     if (!context.WebSockets.IsWebSocketRequest)
                     {
                         context.Response.StatusCode = 400;
                         return;
                     }
-                    var endpoint = new Uri($"ws://{context.Request.Host}{context.Request.Path}");
+
+                    var endpoint = new Uri($"ws://{devToolsHostToConnect.Authority}{context.Request.Path}");
                     try
                     {
                         using ILoggerFactory loggerFactory = LoggerFactory.Create(builder =>
