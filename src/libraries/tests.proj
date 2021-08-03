@@ -185,8 +185,6 @@
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.IO.Pipes/tests/System.IO.Pipes.Tests.csproj" />
 
     <!-- Crashes or hangs, did not produce testResults.xml -->
-    <!-- https://github.com/dotnet/runtime/issues/56621 -->
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Net.Requests/tests/System.Net.Requests.Tests.csproj" />
     <!-- https://github.com/dotnet/runtime/issues/52120 -->
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Net.Security/tests/FunctionalTests/System.Net.Security.Tests.csproj" />
 

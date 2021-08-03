@@ -123,6 +123,7 @@ namespace System.Net.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsBinaryFormatterSupported))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/56798", TestPlatforms.tvOS)]
         public async Task HttpWebResponse_Serialize_ExpectedResult()
         {
             await LoopbackServer.CreateServerAsync(async (server, url) =>
