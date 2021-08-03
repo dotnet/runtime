@@ -3,24 +3,29 @@
 
 using System.Configuration;
 using System.IO;
+using System.Runtime.CompilerServices;
 using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
 
 namespace System.ConfigurationTests
 {
-    public class ConfigurationPathTests
+    public class ConfigurationPathTests : FileCleanupTestBase
     {
-        private const string ConfigName = "APP_CONFIG_FILE";
+        public ConfigurationPathTests() : base(AppDomain.CurrentDomain.BaseDirectory) // We do not want the files go to temporary directory as that will not test the relative paths correctly
+        {
+        }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void CustomAppConfigIsUsedWhenSpecifiedAsRelativePath()
         {
             const string SettingName = "test_CustomAppConfigIsUsedWhenSpecified";
             string expectedSettingValue = Guid.NewGuid().ToString();
-            string configFilePath = CreateAppConfigFileWithSetting(SettingName, expectedSettingValue);
+            string configFilePath = Path.Combine(GetTestDirectoryName(), CreateAppConfigFileWithSetting(SettingName, expectedSettingValue));
 
             RemoteExecutor.Invoke((string configFilePath, string expectedSettingValue) => {
-                AppDomain.CurrentDomain.SetData(ConfigName, configFilePath);
+                // We change directory so that if product tries to read from the current directory which usually happens to be same as BaseDirectory the test will fail
+                Environment.CurrentDirectory = Path.GetFullPath(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, ".."));
+                AppDomain.CurrentDomain.SetData("APP_CONFIG_FILE", configFilePath);
                 Assert.Equal(expectedSettingValue, ConfigurationManager.AppSettings[SettingName]);
             }, configFilePath, expectedSettingValue).Dispose();
         }
@@ -30,10 +35,10 @@ namespace System.ConfigurationTests
         {
             const string SettingName = "test_CustomAppConfigIsUsedWhenSpecified";
             string expectedSettingValue = Guid.NewGuid().ToString();
-            string configFilePath = Path.GetFullPath(CreateAppConfigFileWithSetting(SettingName, expectedSettingValue));
+            string configFilePath = Path.Combine(TestDirectory, CreateAppConfigFileWithSetting(SettingName, expectedSettingValue));
 
             RemoteExecutor.Invoke((string configFilePath, string expectedSettingValue) => {
-                AppDomain.CurrentDomain.SetData(ConfigName, configFilePath);
+                AppDomain.CurrentDomain.SetData("APP_CONFIG_FILE", configFilePath);
                 Assert.Equal(expectedSettingValue, ConfigurationManager.AppSettings[SettingName]);
             }, configFilePath, expectedSettingValue).Dispose();
         }
@@ -43,10 +48,10 @@ namespace System.ConfigurationTests
         {
             const string SettingName = "test_CustomAppConfigIsUsedWhenSpecified";
             string expectedSettingValue = Guid.NewGuid().ToString();
-            string configFilePath = new Uri(Path.GetFullPath(CreateAppConfigFileWithSetting(SettingName, expectedSettingValue))).ToString();
+            string configFilePath = new Uri(Path.Combine(TestDirectory, CreateAppConfigFileWithSetting(SettingName, expectedSettingValue))).ToString();
 
             RemoteExecutor.Invoke((string configFilePath, string expectedSettingValue) => {
-                AppDomain.CurrentDomain.SetData(ConfigName, configFilePath);
+                AppDomain.CurrentDomain.SetData("APP_CONFIG_FILE", configFilePath);
                 Assert.Equal(expectedSettingValue, ConfigurationManager.AppSettings[SettingName]);
             }, configFilePath, expectedSettingValue).Dispose();
         }
@@ -56,7 +61,7 @@ namespace System.ConfigurationTests
         {
             RemoteExecutor.Invoke(() =>
             {
-                AppDomain.CurrentDomain.SetData(ConfigName, "non-existing-file.config");
+                AppDomain.CurrentDomain.SetData("APP_CONFIG_FILE", "non-existing-file.config");
                 Assert.Null(ConfigurationManager.AppSettings["AnySetting"]);
             }).Dispose();
         }
@@ -67,25 +72,33 @@ namespace System.ConfigurationTests
             const string SettingName = "AnySetting";
 
             // Following will cause malformed config file
-            string configFilePath = CreateAppConfigFileWithSetting(SettingName, "\"");
+            string configFilePath = Path.Combine(TestDirectory, CreateAppConfigFileWithSetting(SettingName, "\""));
 
             RemoteExecutor.Invoke((string configFilePath) => {
-                AppDomain.CurrentDomain.SetData(ConfigName, configFilePath);
+                AppDomain.CurrentDomain.SetData("APP_CONFIG_FILE", configFilePath);
                 Assert.Throws<ConfigurationErrorsException>(() => ConfigurationManager.AppSettings[SettingName]);
             }, configFilePath).Dispose();
         }
 
-        private static string CreateAppConfigFileWithSetting(string key, string rawUnquotedValue)
+        private string GetTestDirectoryName()
         {
-            string fileName = Path.GetRandomFileName() + ".config";
-            File.WriteAllText(fileName,
+            string dir = TestDirectory;
+            if (dir.EndsWith("\\") || dir.EndsWith("/"))
+                dir = dir.Substring(0, dir.Length - 1);
+
+            return Path.GetFileName(dir);
+        }
+
+        private string CreateAppConfigFileWithSetting(string key, string rawUnquotedValue, [CallerMemberName] string memberName = null, [CallerLineNumber] int lineNumber = 0)
+        {
+            string fileName = GetTestFileName(null, memberName, lineNumber) + ".config";
+            File.WriteAllText(Path.Combine(TestDirectory, fileName),
                 @$"<?xml version=""1.0"" encoding=""utf-8"" ?>
 <configuration>
   <appSettings>
     <add key=""{key}"" value=""{rawUnquotedValue}""/>
   </appSettings>
 </configuration>");
-
             return fileName;
         }
     }

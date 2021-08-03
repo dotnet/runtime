@@ -105,7 +105,9 @@ namespace System.Configuration
                 }
                 else
                 {
-                    ApplicationConfigUri = Path.GetFullPath(externalConfigPath);
+                    // Uri constructor would throw for relative paths but full framework doesn't.
+                    // We will mimic full framework behavior here.
+                    ApplicationConfigUri = Path.GetFullPath(externalConfigPath, AppDomain.CurrentDomain.BaseDirectory);
                 }
             }
             else if (!string.IsNullOrEmpty(ApplicationUri))
