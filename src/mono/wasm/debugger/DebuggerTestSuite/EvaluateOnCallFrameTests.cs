@@ -585,6 +585,41 @@ namespace DebuggerTests
                 props = await GetObjectOnFrame(frame, "this");
                 CheckNumber(props, "a", 11);
            });
+
+        [Fact]
+        public async Task EvaluateStaticClass() => await CheckInspectLocalsAtBreakpointSite(
+            "DebuggerTests.EvaluateMethodTestsClass/TestEvaluate", "run", 9, "run",
+            "window.setTimeout(function() { invoke_static_method ('[debugger-test] DebuggerTests.EvaluateMethodTestsClass:EvaluateMethods'); })",
+            wait_for_event_fn: async (pause_location) =>
+           {
+                var id = pause_location["callFrames"][0]["callFrameId"].Value<string>();
+
+                var frame = pause_location["callFrames"][0];
+
+                await EvaluateOnCallFrameAndCheck(id,
+                    ("DebuggerTests.EvaluateStaticClass.StaticField1", TNumber(10)));
+                await EvaluateOnCallFrameAndCheck(id,
+                    ("DebuggerTests.EvaluateStaticClass.StaticProperty1", TString("StaticProperty1")));
+                await EvaluateOnCallFrameAndCheck(id,
+                    ("DebuggerTests.EvaluateStaticClass.StaticPropertyWithError", TString("System.Exception: not implemented")));
+           });
+
+        [Fact]
+        public async Task EvaluateStaticClassInvalidField() => await CheckInspectLocalsAtBreakpointSite(
+            "DebuggerTests.EvaluateMethodTestsClass/TestEvaluate", "run", 9, "run",
+            "window.setTimeout(function() { invoke_static_method ('[debugger-test] DebuggerTests.EvaluateMethodTestsClass:EvaluateMethods'); })",
+            wait_for_event_fn: async (pause_location) =>
+           {
+                var id = pause_location["callFrames"][0]["callFrameId"].Value<string>();
+
+                var frame = pause_location["callFrames"][0];
+
+                var (_, res) = await EvaluateOnCallFrame(id, "DebuggerTests.EvaluateStaticClass.StaticProperty2", expect_ok: false);
+                AssertEqual("Failed to resolve member access for DebuggerTests.EvaluateStaticClass.StaticProperty2", res.Error["result"]?["description"]?.Value<string>(), "wrong error message");
+
+                (_, res) = await EvaluateOnCallFrame(id, "DebuggerTests.InvalidEvaluateStaticClass.StaticProperty2", expect_ok: false);
+                AssertEqual("Failed to resolve member access for DebuggerTests.InvalidEvaluateStaticClass.StaticProperty2", res.Error["result"]?["description"]?.Value<string>(), "wrong error message");
+           });
     }
 
 }

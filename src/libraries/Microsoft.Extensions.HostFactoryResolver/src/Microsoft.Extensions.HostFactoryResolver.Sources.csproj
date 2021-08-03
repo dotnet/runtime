@@ -3,8 +3,6 @@
        package infra globs for .cs files. -->
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
-    <!-- The project doesn't compile anything therefore create the package during build. -->
-    <GeneratePackageOnBuild Condition="'$(BuildingAnOfficialBuildLeg)' != 'true'">true</GeneratePackageOnBuild>
     <IsShipping>false</IsShipping>
     <SuppressDependenciesWhenPacking>true</SuppressDependenciesWhenPacking>
     <!-- This is a source package which includes all .cs files by default. -->
