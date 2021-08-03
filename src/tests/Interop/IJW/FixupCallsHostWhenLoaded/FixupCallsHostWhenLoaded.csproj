@@ -14,7 +14,6 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="FixupCallsHostWhenLoaded.cs" />
-    <Compile Include="../IjwHelper.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="../IjwNativeDll/CMakeLists.txt" />

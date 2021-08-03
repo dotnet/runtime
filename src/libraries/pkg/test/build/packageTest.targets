@@ -1,16 +1,17 @@
 <Project>
-  <PropertyGroup Condition="'$(TargetFrameworkIdentifier)' != ''">
-    <_targetFrameworkIdentifier>$(TargetFrameworkIdentifier.Substring(1).ToLower())</_targetFrameworkIdentifier>
-  </PropertyGroup>
-
   <PropertyGroup>
+    <_targetFrameworkIdentifier Condition="'$(TargetFrameworkIdentifier)' != ''">$(TargetFrameworkIdentifier.Substring(1).ToLower())</_targetFrameworkIdentifier>
     <!-- Make sure the SDK raises the runtime items so that they are passed to conflict resolution -->
     <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
     <!-- Suppress any SYSLIB9000 errors, as in these cases restore/build would succeed, the failure would be at run-time -->
     <SuppressTfmSupportBuildWarnings>true</SuppressTfmSupportBuildWarnings>
   </PropertyGroup>
 
-  <Import Project="build\Packaging.common.targets" />
+  <ItemGroup>
+    <!-- Required for VerifyClosure and VerifyTypes tasks. -->
+    <PackageReference Include="Microsoft.DotNet.PackageTesting" Version="$(MicrosoftDotNetPackageTestingVersion)" />
+  </ItemGroup>
+
   <!-- Import framework settings. -->
   <Import Project="frameworkSettings\$(_targetFrameworkIdentifier)\*.targets"
           Condition="'$(_targetFrameworkIdentifier)' != ''"  />
@@ -28,7 +29,6 @@
     <!-- Type duplicated: https://github.com/dotnet/runtime/issues/34420 -->
     <IgnoredTypes Include="System.Collections.Generic.CollectionExtensions" />
   </ItemGroup>
-
   
   <Target Name="LogBeginTest"
           Condition="'$(TargetFramework)' != ''">

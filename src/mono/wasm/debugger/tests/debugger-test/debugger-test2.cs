@@ -95,3 +95,30 @@ public class InspectTask
         }
     }
 }
+
+public class TestParent2
+{
+    public int k = 30;
+    public int GetK => k;
+}
+
+public class TestParent : TestParent2
+{
+    public int j = 20;
+    public int GetJ => j;
+}
+
+public class TestChild : TestParent
+{
+    public int i = 50;
+    public int GetI => i;
+    public TestChild()
+    {
+        Console.WriteLine("Hi");
+    }
+    public static void TestWatchWithInheritance()
+    {
+        TestChild test = new TestChild();
+        Debugger.Break();
+    }
+}

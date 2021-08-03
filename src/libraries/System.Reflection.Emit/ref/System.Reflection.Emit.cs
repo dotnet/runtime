@@ -29,7 +29,9 @@ namespace System.Reflection.Emit
         public System.Reflection.Emit.ModuleBuilder? GetDynamicModule(string name) { throw null; }
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Types might be removed")]
         public override System.Type[] GetExportedTypes() { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresAssemblyFilesAttribute("This member throws an exception for assemblies embedded in a single-file app")]
         public override System.IO.FileStream GetFile(string name) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresAssemblyFilesAttribute("This member throws an exception for assemblies embedded in a single-file app")]
         public override System.IO.FileStream[] GetFiles(bool getResourceModules) { throw null; }
         public override int GetHashCode() { throw null; }
         public override System.Reflection.Module[] GetLoadedModules(bool getResourceModules) { throw null; }

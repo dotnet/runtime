@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Reflection.Context.Delegation
 {
@@ -22,6 +23,11 @@ namespace System.Reflection.Context.Delegation
             get { return UnderlyingModule.Assembly; }
         }
 
+        internal const string UnknownStringMessageInRAF = "Returns <Unknown> for modules with no file path";
+
+#if NET5_0_OR_GREATER
+        [RequiresAssemblyFiles(UnknownStringMessageInRAF)]
+#endif
         public override string FullyQualifiedName
         {
             get { return UnderlyingModule.FullyQualifiedName; }
@@ -42,6 +48,9 @@ namespace System.Reflection.Context.Delegation
             get { return UnderlyingModule.ModuleVersionId; }
         }
 
+#if NET5_0_OR_GREATER
+        [RequiresAssemblyFiles(UnknownStringMessageInRAF)]
+#endif
         public override string Name
         {
             get { return UnderlyingModule.Name; }

@@ -1,5 +1,6 @@
 Compat issues with assembly System.Runtime.InteropServices:
 TypesMustExist : Type 'System.Runtime.InteropServices.AssemblyRegistrationFlags' does not exist in the reference but it does exist in the implementation.
+CannotChangeAttribute : Attribute 'System.Runtime.Versioning.UnsupportedOSPlatformAttribute' on 'System.Runtime.InteropServices.ComWrappers' changed from '[UnsupportedOSPlatformAttribute("android")]' in the implementation to '[UnsupportedOSPlatformAttribute("android")]' in the reference.
 TypesMustExist : Type 'System.Runtime.InteropServices.ExporterEventKind' does not exist in the reference but it does exist in the implementation.
 TypesMustExist : Type 'System.Runtime.InteropServices.IDispatchImplAttribute' does not exist in the reference but it does exist in the implementation.
 TypesMustExist : Type 'System.Runtime.InteropServices.IDispatchImplType' does not exist in the reference but it does exist in the implementation.
@@ -7,5 +8,4 @@ TypesMustExist : Type 'System.Runtime.InteropServices.RegistrationClassContext' 
 TypesMustExist : Type 'System.Runtime.InteropServices.RegistrationConnectionType' does not exist in the reference but it does exist in the implementation.
 TypesMustExist : Type 'System.Runtime.InteropServices.SetWin32ContextInIDispatchAttribute' does not exist in the reference but it does exist in the implementation.
 MembersMustExist : Member 'public void System.Runtime.InteropServices.UnmanagedFunctionPointerAttribute..ctor()' does not exist in the reference but it does exist in the implementation.
-CannotRemoveAttribute : Attribute 'System.CLSCompliantAttribute' exists on 'System.Runtime.InteropServices.ComTypes.IDataObject' in the implementation but not the reference.
 Total Issues: 9

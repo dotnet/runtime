@@ -65,12 +65,6 @@ namespace ILCompiler
             ((ReadyToRunCompilerContext)context).SetCompilationGroup(group);
         }
 
-        // Shutdown the Jit if it has been loaded. This must only be called once per process
-        public static void ShutdownJit()
-        {
-            CorInfoImpl.ShutdownJit();
-        }
-
         public override CompilationBuilder UseBackendOptions(IEnumerable<string> options)
         {
             var builder = new ArrayBuilder<KeyValuePair<string, string>>();

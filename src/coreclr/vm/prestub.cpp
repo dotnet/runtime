@@ -426,6 +426,12 @@ PCODE MethodDesc::PrepareILBasedCode(PrepareCodeConfig* pConfig)
 #endif
     }
 
+    if (pConfig->IsForMulticoreJit() && pCode == NULL && pConfig->ReadyToRunRejectedPrecompiledCode())
+    {
+        // Was unable to load code from r2r image in mcj thread, don't try to jit it, this method will be loaded later
+        return NULL;
+    }
+
     if (pCode == NULL)
     {
         LOG((LF_CLASSLOADER, LL_INFO1000000,
