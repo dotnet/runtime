@@ -130,6 +130,6 @@
     <value>Unexpected type of FileSystemInfo</value>
   </data>
   <data name="FileSystemWatcher_PlatformNotSupported" xml:space="preserve">
-    <value>The type {0} is not supported on this platform, use polling instead.</value>
+    <value>The type '{0}' is not supported on this platform, use polling instead.</value>
   </data>
 </root>
