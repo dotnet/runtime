@@ -629,7 +629,7 @@ void DECLSPEC_NORETURN EEPolicy::HandleFatalStackOverflow(EXCEPTION_POINTERS *pE
     if (pExceptionInfo && pExceptionInfo->ContextRecord)
     {
         GCX_COOP();
-        AdjustContextForJITHelpers(pExceptionInfo->ExceptionRecord, pExceptionInfo->ContextRecord);
+        Thread::VirtualUnwindToFirstManagedCallFrame(pExceptionInfo->ContextRecord);
         fef.InitAndLink(pExceptionInfo->ContextRecord);
     }
 
