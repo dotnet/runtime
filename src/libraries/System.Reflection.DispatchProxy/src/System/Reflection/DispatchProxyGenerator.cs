@@ -57,18 +57,18 @@ namespace System.Reflection
         // This approach is used to prevent regenerating identical proxy types for identical T/Proxy pairs,
         // which would ultimately be a more expensive leak.
         // Proxy instances are not cached.  Their lifetime is entirely owned by the caller of DispatchProxy.Create.
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
-            Justification = "Use of the MakeGenericMethod is done in a trim-safe way in DispatchProxyGenerator.")]
-        [SuppressMessage("Performance", "CA1810", Justification = "Requires to suppress a trim warning")]
-        static DispatchProxyGenerator()
-        {
-            s_makeGenericMethodMethod = typeof(MethodInfo).GetMethod("MakeGenericMethod", new Type[] { typeof(Type[]) })!;
-        }
         private static readonly Dictionary<Type, Dictionary<Type, GeneratedTypeInfo>> s_baseTypeAndInterfaceToGeneratedProxyType = new Dictionary<Type, Dictionary<Type, GeneratedTypeInfo>>();
         private static readonly ProxyAssembly s_proxyAssembly = new ProxyAssembly();
         private static readonly MethodInfo s_dispatchProxyInvokeMethod = typeof(DispatchProxy).GetMethod("Invoke", BindingFlags.NonPublic | BindingFlags.Instance)!;
         private static readonly MethodInfo s_getTypeFromHandleMethod = typeof(Type).GetRuntimeMethod("GetTypeFromHandle", new Type[] { typeof(RuntimeTypeHandle) })!;
-        private static readonly MethodInfo s_makeGenericMethodMethod;
+        private static readonly MethodInfo s_makeGenericMethodMethod = GetGenericMethodMethodInfo();
+
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+            Justification = "Use of the MakeGenericMethod is done in a trim-safe way in DispatchProxyGenerator.")]
+        private static MethodInfo GetGenericMethodMethodInfo()
+        {
+            return typeof(MethodInfo).GetMethod("MakeGenericMethod", new Type[] { typeof(Type[]) })!;
+        }
 
         // Returns a new instance of a proxy the derives from 'baseType' and implements 'interfaceType'
         internal static object CreateProxyInstance(
@@ -82,6 +82,9 @@ namespace System.Reflection
             return Activator.CreateInstance(proxiedType.GeneratedType, new object[] { proxiedType.MethodInfos })!;
         }
 
+        // Unconditionally generates a new proxy type derived from 'baseType' and implements 'interfaceType'
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2062:UnrecognizedReflectionPattern",
+            Justification = "interfaceType is annotated as preserve All members, so any Types returned from GetInterfaces should be preserved as well once https://github.com/mono/linker/issues/1731 is fixed.")]
         private static GeneratedTypeInfo GetProxyType(
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] Type baseType,
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type interfaceType)
