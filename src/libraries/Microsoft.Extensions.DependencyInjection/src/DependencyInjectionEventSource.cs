@@ -5,6 +5,7 @@ using System;
 using System.Diagnostics.CodeAnalysis;
 using System.Diagnostics.Tracing;
 using System.Linq.Expressions;
+using System.Text;
 using Microsoft.Extensions.DependencyInjection.ServiceLookup;
 
 namespace Microsoft.Extensions.DependencyInjection
@@ -67,6 +68,18 @@ namespace Microsoft.Extensions.DependencyInjection
             WriteEvent(6, exceptionMessage);
         }
 
+        [Event(7, Level = EventLevel.Verbose)]
+        private void ServiceProviderBuilt(int serviceProviderHashCode, int singletonServices, int scopedServices, int transientServices)
+        {
+            WriteEvent(7, serviceProviderHashCode, singletonServices, scopedServices, transientServices);
+        }
+
+        [Event(8, Level = EventLevel.Verbose)]
+        private void ServiceProviderDescriptors(int serviceProviderHashCode, string descriptors, int chunkIndex, int chunkCount)
+        {
+            WriteEvent(8, serviceProviderHashCode, descriptors, chunkIndex, chunkCount);
+        }
+
         [NonEvent]
         public void ServiceResolved(Type serviceType)
         {
@@ -109,6 +122,92 @@ namespace Microsoft.Extensions.DependencyInjection
             {
                 ServiceRealizationFailed(exception.ToString());
             }
+        }
+
+        [NonEvent]
+        public void ServiceProviderBuilt(ServiceProvider provider)
+        {
+            if (IsEnabled(EventLevel.Verbose, EventKeywords.All))
+            {
+                int singletonServices = 0;
+                int scopedServices = 0;
+                int transientServices = 0;
+
+                StringBuilder descriptorBuilder = new StringBuilder("{ \"descriptors\":[ ");
+                bool firstDescriptor = true;
+                foreach (ServiceDescriptor descriptor in provider.CallSiteFactory.Descriptors)
+                {
+                    if (firstDescriptor)
+                    {
+                        firstDescriptor = false;
+                    }
+                    else
+                    {
+                        descriptorBuilder.Append(", ");
+                    }
+
+                    AppendServiceDescriptor(descriptorBuilder, descriptor);
+
+                    switch (descriptor.Lifetime)
+                    {
+                        case ServiceLifetime.Singleton:
+                            singletonServices++;
+                            break;
+                        case ServiceLifetime.Scoped:
+                            scopedServices++;
+                            break;
+                        case ServiceLifetime.Transient:
+                            transientServices++;
+                            break;
+                    }
+                }
+                descriptorBuilder.Append(" ] }");
+
+                int providerHashCode = provider.GetHashCode();
+                ServiceProviderBuilt(providerHashCode, singletonServices, scopedServices, transientServices);
+
+                string descriptorString = descriptorBuilder.ToString();
+                int chunkCount = descriptorString.Length / MaxChunkSize + (descriptorString.Length % MaxChunkSize > 0 ? 1 : 0);
+
+                for (int i = 0; i < chunkCount; i++)
+                {
+                    ServiceProviderDescriptors(
+                        providerHashCode,
+                        descriptorString.Substring(i * MaxChunkSize, Math.Min(MaxChunkSize, descriptorString.Length - i * MaxChunkSize)), i, chunkCount);
+                }
+            }
+        }
+
+        private static void AppendServiceDescriptor(StringBuilder builder, ServiceDescriptor descriptor)
+        {
+            builder.Append("{ \"serviceType\": \"");
+            builder.Append(descriptor.ServiceType);
+            builder.Append("\", \"lifetime\": \"");
+            builder.Append(descriptor.Lifetime);
+            builder.Append("\", ");
+
+            if (descriptor.ImplementationType is not null)
+            {
+                builder.Append("\"implementationType\": \"");
+                builder.Append(descriptor.ImplementationType);
+            }
+            else if (descriptor.ImplementationFactory is not null)
+            {
+                builder.Append("\"implementationFactory\": \"");
+                builder.Append(descriptor.ImplementationFactory.Method);
+            }
+            else if (descriptor.ImplementationInstance is not null)
+            {
+                builder.Append("\"implementationInstance\": \"");
+                builder.Append(descriptor.ImplementationInstance.GetType());
+                builder.Append(" (instance)");
+            }
+            else
+            {
+                builder.Append("\"unknown\": \"");
+            }
+
+            builder.Append("\" }");
         }
     }
 

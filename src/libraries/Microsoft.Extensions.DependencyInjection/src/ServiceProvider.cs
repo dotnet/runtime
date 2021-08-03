@@ -75,6 +75,7 @@ namespace Microsoft.Extensions.DependencyInjection
                 }
             }
 
+            DependencyInjectionEventSource.Log.ServiceProviderBuilt(this);
         }
 
         /// <summary>

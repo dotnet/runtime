@@ -223,6 +223,78 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
             Assert.Equal(6, serviceRealizationFailedEvent.EventId);
         }
 
+        [Fact]
+        public void EmitsServiceProviderBuilt()
+        {
+            var serviceCollection = new ServiceCollection();
+            var fakeDisposeCallback = new FakeDisposeCallback();
+            serviceCollection.AddSingleton(fakeDisposeCallback);
+            serviceCollection.AddTransient<IFakeOuterService, FakeDisposableCallbackOuterService>();
+            serviceCollection.AddSingleton<IFakeMultipleService, FakeDisposableCallbackInnerService>();
+            serviceCollection.AddSingleton<IFakeMultipleService>(provider => new FakeDisposableCallbackInnerService(fakeDisposeCallback));
+            serviceCollection.AddScoped<IFakeMultipleService, FakeDisposableCallbackInnerService>();
+            serviceCollection.AddTransient<IFakeMultipleService, FakeDisposableCallbackInnerService>();
+            serviceCollection.AddSingleton<IFakeService, FakeDisposableCallbackInnerService>();
+
+            serviceCollection.BuildServiceProvider();
+
+            EventWrittenEventArgs serviceProviderBuiltEvent = _listener.EventData.Single(e => e.EventName == "ServiceProviderBuilt");
+            GetProperty<int>(serviceProviderBuiltEvent, "serviceProviderHashCode"); // assert hashcode exists as an int
+            Assert.Equal(4, GetProperty<int>(serviceProviderBuiltEvent, "singletonServices"));
+            Assert.Equal(1, GetProperty<int>(serviceProviderBuiltEvent, "scopedServices"));
+            Assert.Equal(2, GetProperty<int>(serviceProviderBuiltEvent, "transientServices"));
+            Assert.Equal(7, serviceProviderBuiltEvent.EventId);
+
+            EventWrittenEventArgs serviceProviderDescriptorsEvent = _listener.EventData.Single(e => e.EventName == "ServiceProviderDescriptors");
+            Assert.Equal(
+                string.Join(Environment.NewLine,
+                "{",
+                "  \"descriptors\": [",
+                "    {",
+                "      \"serviceType\": \"Microsoft.Extensions.DependencyInjection.Specification.Fakes.FakeDisposeCallback\",",
+                "      \"lifetime\": \"Singleton\",",
+                "      \"implementationInstance\": \"Microsoft.Extensions.DependencyInjection.Specification.Fakes.FakeDisposeCallback (instance)\"",
+                "    },",
+                "    {",
+                "      \"serviceType\": \"Microsoft.Extensions.DependencyInjection.Specification.Fakes.IFakeOuterService\",",
+                "      \"lifetime\": \"Transient\",",
+                "      \"implementationType\": \"Microsoft.Extensions.DependencyInjection.Specification.Fakes.FakeDisposableCallbackOuterService\"",
+                "    },",
+                "    {",
+                "      \"serviceType\": \"Microsoft.Extensions.DependencyInjection.Specification.Fakes.IFakeMultipleService\",",
+                "      \"lifetime\": \"Singleton\",",
+                "      \"implementationType\": \"Microsoft.Extensions.DependencyInjection.Specification.Fakes.FakeDisposableCallbackInnerService\"",
+                "    },",
+                "    {",
+                "      \"serviceType\": \"Microsoft.Extensions.DependencyInjection.Specification.Fakes.IFakeMultipleService\",",
+                "      \"lifetime\": \"Singleton\",",
+                "      \"implementationFactory\": \"Microsoft.Extensions.DependencyInjection.Specification.Fakes.IFakeMultipleService <EmitsServiceProviderBuilt>b__0(System.IServiceProvider)\"",
+                "    },",
+                "    {",
+                "      \"serviceType\": \"Microsoft.Extensions.DependencyInjection.Specification.Fakes.IFakeMultipleService\",",
+                "      \"lifetime\": \"Scoped\",",
+                "      \"implementationType\": \"Microsoft.Extensions.DependencyInjection.Specification.Fakes.FakeDisposableCallbackInnerService\"",
+                "    },",
+                "    {",
+                "      \"serviceType\": \"Microsoft.Extensions.DependencyInjection.Specification.Fakes.IFakeMultipleService\",",
+                "      \"lifetime\": \"Transient\",",
+                "      \"implementationType\": \"Microsoft.Extensions.DependencyInjection.Specification.Fakes.FakeDisposableCallbackInnerService\"",
+                "    },",
+                "    {",
+                "      \"serviceType\": \"Microsoft.Extensions.DependencyInjection.Specification.Fakes.IFakeService\",",
+                "      \"lifetime\": \"Singleton\",",
+                "      \"implementationType\": \"Microsoft.Extensions.DependencyInjection.Specification.Fakes.FakeDisposableCallbackInnerService\"",
+                "    }",
+                "  ]",
+                "}"),
+                JObject.Parse(GetProperty<string>(serviceProviderDescriptorsEvent, "descriptors")).ToString());
+
+            GetProperty<int>(serviceProviderDescriptorsEvent, "serviceProviderHashCode"); // assert hashcode exists as an int
+            Assert.Equal(0, GetProperty<int>(serviceProviderDescriptorsEvent, "chunkIndex"));
+            Assert.Equal(1, GetProperty<int>(serviceProviderDescriptorsEvent, "chunkCount"));
+            Assert.Equal(8, serviceProviderDescriptorsEvent.EventId);
+        }
+
         private T GetProperty<T>(EventWrittenEventArgs data, string propName)
             => (T)data.Payload[data.PayloadNames.IndexOf(propName)];
 
