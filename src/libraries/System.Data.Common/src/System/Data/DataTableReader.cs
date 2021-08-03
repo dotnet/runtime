@@ -741,9 +741,7 @@ namespace System.Data
 
             [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2111:RequiresDynamicallyAccessedMembers",
                 Justification = "The problem is Type.TypeInitializer which requires constructors on the Type instance." +
-                    "In this case the Type instance is about System.Type itself, so adding an explicit dependency on the same" +
-                    "annotation here.")]
-            [DynamicDependency(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors, typeof(Type))]
+                    "In this case the TypeInitializer property is not accessed dynamically.")]
             static DataColumn GetSystemTypeDataColumn() =>
                 new DataColumn(SchemaTableColumn.DataType, typeof(Type));
 

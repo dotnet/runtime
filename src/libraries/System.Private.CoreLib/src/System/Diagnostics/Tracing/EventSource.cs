@@ -233,16 +233,16 @@ namespace System.Diagnostics.Tracing
     // The EnsureDescriptorsInitialized() method might need to access EventSource and its derived type
     // members and the trimmer ensures that these members are preserved.
     [DynamicallyAccessedMembers(ManifestMemberTypes)]
-     [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2113:RequiresUnreferencedCode",
-         Justification = "EnsureDescriptorsInitialized's use of GetType preserves methods on Delegate and MulticastDelegate " +
-                         "because the nested type OverrideEventProvider's base type EventProvider defines a delegate. " +
-                         "This includes Delegate and MulticastDelegate methods which require unreferenced code, but " +
-                         "EnsureDescriptorsInitialized does not access these members and is safe to call.")]
-     [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2115:RequiresDynamicallyAccessedMembers",
-         Justification = "EnsureDescriptorsInitialized's use of GetType preserves methods on Delegate and MulticastDelegate " +
-                         "because the nested type OverrideEventProvider's base type EventProvider defines a delegate. " +
-                         "This includes Delegate and MulticastDelegate methods which have dynamically accessed members requirements, but " +
-                         "EnsureDescriptorsInitialized does not access these members and is safe to call.")]
+    [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2113:RequiresUnreferencedCode",
+        Justification = "EnsureDescriptorsInitialized's use of GetType preserves methods on Delegate and MulticastDelegate " +
+                        "because the nested type OverrideEventProvider's base type EventProvider defines a delegate. " +
+                        "This includes Delegate and MulticastDelegate methods which require unreferenced code, but " +
+                        "EnsureDescriptorsInitialized does not access these members and is safe to call.")]
+    [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2115:RequiresDynamicallyAccessedMembers",
+        Justification = "EnsureDescriptorsInitialized's use of GetType preserves methods on Delegate and MulticastDelegate " +
+                        "because the nested type OverrideEventProvider's base type EventProvider defines a delegate. " +
+                        "This includes Delegate and MulticastDelegate methods which have dynamically accessed members requirements, but " +
+                        "EnsureDescriptorsInitialized does not access these members and is safe to call.")]
 #endif
     public partial class EventSource : IDisposable
     {
