@@ -124,6 +124,7 @@ var BindingSupportLib = {
 			this._bind_js_obj = bind_runtime_method ("BindJSObject", "iii");
 			this._bind_core_clr_obj = bind_runtime_method ("BindCoreCLRObject", "ii");
 			this._bind_existing_obj = bind_runtime_method ("BindExistingObject", "mi");
+			this._alloc_gchandle = bind_runtime_method ("GetJSOwnedObjectHandle", "m");
 			this._unbind_raw_obj_and_free = bind_runtime_method ("UnBindRawJSObjectAndFree", "ii");
 			this._get_js_id = bind_runtime_method ("GetJSObjectId", "m");
 			this._get_raw_mono_obj = bind_runtime_method ("GetDotNetObject", "ii!");
@@ -159,6 +160,12 @@ var BindingSupportLib = {
 
 			this._js_owned_object_table = new Map ();
 			this._js_owned_object_registry = new FinalizationRegistry(this._js_owned_object_finalized.bind(this));
+		},
+
+		_unbox_delegate_root: function (root) {
+			BINDING.bindings_lazy_init ();
+			const gcHandle = this._alloc_gchandle(root.value);
+			return this._get_weak_delegate_from_handle(gcHandle);
 		},
 
 		_get_weak_delegate_from_handle: function (gcHandle) {
@@ -415,16 +422,6 @@ var BindingSupportLib = {
 			} finally {
 				root.release();
 			}
-		},
-
-		_unbox_delegate_root: function (root) {
-			var obj = this.extract_js_obj_root (root);
-			obj.__mono_delegate_alive__ = true;
-			// FIXME: Should we root the object as long as this function has not been GCd?
-			return function () {
-				// TODO: Just use Function.bind
-				return BINDING.invoke_delegate (obj, arguments);
-			};
 		},
 
 		_unbox_task_root: function (root) {
@@ -897,12 +894,6 @@ var BindingSupportLib = {
 				// It's possible the managed object corresponding to this JS object was collected,
 				//  in which case we need to make a new one.
 				if (!result) {
-
-					if (typeof js_obj.__mono_delegate_alive__ !== "undefined") {
-						console.log("The delegate target that is being invoked is no longer available.  Please check if it has been prematurely GC'd.");
-						return null;
-					}
-		
 					delete js_obj.__mono_gchandle__;
 					delete js_obj.is_mono_bridged_obj;
 				}
@@ -1541,37 +1532,6 @@ var BindingSupportLib = {
 			return this._create_named_function(displayName, argumentNames, bodyJs, closure);
 		},
 
-		invoke_delegate: function (delegate_obj, js_args) {
-			this.bindings_lazy_init ();
-
-			// Check to make sure the delegate is still alive on the CLR side of things.
-			if (typeof delegate_obj.__mono_delegate_alive__ !== "undefined") {
-				if (!delegate_obj.__mono_delegate_alive__) {
-					// HACK: It is possible (though unlikely) for a delegate to be invoked after it's been collected
-					//  if it's being used as a JavaScript event handler and the host environment decides to fire events
-					//  at a point where we've already disposed of the object the event handler is attached to.
-					// As such, we log here instead of throwing an error. We may want to not log at all...
-					console.log("The delegate target that is being invoked is no longer available.  Please check if it has been prematurely GC'd.");
-					return;
-				}
-			}
-
-			var delegateRoot = MONO.mono_wasm_new_root (this.extract_mono_obj (delegate_obj));
-			try {
-				if (typeof delegate_obj.__mono_delegate_invoke__ === "undefined")
-					delegate_obj.__mono_delegate_invoke__ = this.mono_wasm_get_delegate_invoke(delegateRoot.value);
-				if (!delegate_obj.__mono_delegate_invoke__)
-					throw new Error("System.Delegate Invoke method can not be resolved.");
-
-				if (typeof delegate_obj.__mono_delegate_invoke_sig__ === "undefined")
-					delegate_obj.__mono_delegate_invoke_sig__ = Module.mono_method_get_call_signature (delegate_obj.__mono_delegate_invoke__, delegateRoot.value);
-
-				return this.call_method (delegate_obj.__mono_delegate_invoke__, delegateRoot.value, delegate_obj.__mono_delegate_invoke_sig__, js_args);
-			} finally {
-				delegateRoot.release();
-			}
-		},
-
 		resolve_method_fqn: function (fqn) {
 			this.bindings_lazy_init ();
 
@@ -1705,12 +1665,6 @@ var BindingSupportLib = {
 
 					obj.__mono_gchandle__ = undefined;
 					obj.__mono_jshandle__ = undefined;
-
-					// If we are unregistering a delegate then mark it as not being alive
-					//  so that attempts will not be made to invoke it even if a JS-side
-					//  reference to it remains (registered as an event handler, etc)
-					if (typeof obj.__mono_delegate_alive__ !== "undefined")
-						obj.__mono_delegate_alive__ = false;
 
 					this.mono_wasm_object_registry[js_id - 1] = undefined;
 					this.mono_wasm_free_list.push(js_id - 1);
