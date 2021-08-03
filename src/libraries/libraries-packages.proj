@@ -9,9 +9,6 @@
     <ProjectReference Include="$(PkgDir)*\*.proj" Exclude="$(PkgDir)test\*" />
     <ProjectReference Include="$(MSBuildThisFileDirectory)*\src\*.*proj"
                       Exclude="$(MSBuildThisFileDirectory)*\src\**\*.shproj" />
-    <!-- Don't build *projs again during the Pack task that have already been built. -->
-    <ProjectReference Update="@(ProjectReference)"
-                      AdditionalProperties="NoBuild=true" />
   </ItemGroup>
 
   <!-- Need the PackageIndexFile file property from baseline.props -->
