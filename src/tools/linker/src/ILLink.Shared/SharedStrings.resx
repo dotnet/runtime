@@ -166,7 +166,7 @@
     <value>Types that derive from a base class with 'RequiresUnreferencedCodeAttribute' need to explicitly use the 'RequiresUnreferencedCodeAttribute' or suppress this warning</value>
   </data>
   <data name="DynamicTypeInvocationMessage" xml:space="preserve">
-    <value>Invoking members on dynamic types is not trimming-compatible. Types or member might have been removed by the trimmer.</value>
+    <value>Invoking members on dynamic types is not trimming-compatible. Types or members might have been removed by the trimmer.</value>
   </data>
   <data name="DynamicTypeInvocationTitle" xml:space="preserve">
     <value>Using dynamic types might cause types or members to be removed by trimmer.</value>

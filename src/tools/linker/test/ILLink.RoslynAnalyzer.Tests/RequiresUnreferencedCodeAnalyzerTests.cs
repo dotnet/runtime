@@ -896,9 +896,9 @@ class C
 }";
 
 			return VerifyRequiresUnreferencedCodeAnalyzer (source,
-				// (8,3): warning IL2026: Invoking members on dynamic types is not trimming safe. Types or member might have been removed by the trimmer.
+				// (8,3): warning IL2026: Invoking members on dynamic types is not trimming safe. Types or members might have been removed by the trimmer.
 				VerifyCS.Diagnostic (dynamicInvocationDiagnosticDescriptor).WithSpan (8, 3, 8, 35),
-				// (24,3): warning IL2026: Invoking members on dynamic types is not trimming safe. Types or member might have been removed by the trimmer.
+				// (24,3): warning IL2026: Invoking members on dynamic types is not trimming safe. Types or members might have been removed by the trimmer.
 				VerifyCS.Diagnostic (dynamicInvocationDiagnosticDescriptor).WithSpan (24, 3, 24, 33));
 		}
 
