@@ -143,11 +143,13 @@ def main(main_args):
 
     # Consolidate all superpmi_*.logs in superpmi_platform_architecture.log
     final_log_name = path.join(log_directory, "superpmi_{}_{}.log".format(coreclr_args.platform, arch_name))
+    print("Consolidating final {}".format(final_log_name))
     with open(final_log_name, "a") as final_superpmi_log:
         for superpmi_log in listdir(log_directory):
             if not f.startswith("superpmi_Jit") and not f.endswith(".log"):
                 continue
 
+            print("Appending {}".format(superpmi_log))
             final_superpmi_log.write("======================================================={}".format(os.linesep))
             final_superpmi_log.write("Contents from {}{}".format(superpmi_log, os.linesep))
             final_superpmi_log.write("======================================================={}".format(os.linesep))
