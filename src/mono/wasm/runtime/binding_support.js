@@ -165,15 +165,24 @@ var BindingSupportLib = {
 		_wrap_js_thenable_as_task: function (thenable) {
 			BINDING.bindings_lazy_init ();
 
+			// hold strong JS reference to thenable while in flight
+			// ideally, this should be hold alive by lifespan of the resulting C# Task, but this is good cheap aproximation
+			var thenable_js_handle = this.mono_wasm_free_list.length ? this.mono_wasm_free_list.pop() : this.mono_wasm_ref_counter++;
+			this.mono_wasm_object_registry[thenable_js_handle] = thenable;
+
 			// TODO optimization: return the tcs.Task on the same call
 			const tcs_gchandle = BINDING.create_tcs();
 			thenable.then (function (result) {
 				BINDING.set_tcs_result(tcs_gchandle, result);
+				// let go of the thenable reference
+				BINDING.mono_wasm_release_handle(thenable_js_handle);
 			}, function (reason) {
 				BINDING.set_tcs_failure(tcs_gchandle, reason);
+				// let go of the thenable reference
+				BINDING.mono_wasm_release_handle(thenable_js_handle);
 			})
 
-			// collect the TaskCompletionSource after js doesn't hold the thenable anymore
+			// collect the TaskCompletionSource with its Task after js doesn't hold the thenable anymore
 			this._js_owned_object_registry.register(thenable, tcs_gchandle);
 
 			// returns raw pointer to tcs.Task
@@ -1618,29 +1627,6 @@ var BindingSupportLib = {
 				return this.mono_wasm_object_registry[handle - 1];
 			return null;
 		},
-		mono_wasm_unregister_obj: function(js_id) {
-			var obj = this.mono_wasm_object_registry[js_id - 1];
-			if (typeof obj  !== "undefined" && obj !== null) {
-				// if this is the global object then do not
-				// unregister it.
-				if (globalThis === obj)
-					return obj;
-
-				var gc_handle = obj.__mono_gchandle__;
-				if (typeof gc_handle  !== "undefined") {
-
-					obj.__mono_gchandle__ = undefined;
-					obj.__mono_jshandle__ = undefined;
-
-					this.mono_wasm_object_registry[js_id - 1] = undefined;
-					this.mono_wasm_free_list.push(js_id - 1);
-				}
-			}
-			return obj;
-		},
-		mono_wasm_free_handle: function(handle) {
-			this.mono_wasm_unregister_obj(handle);
-		},
 		mono_wasm_free_raw_object: function(js_id) {
 			var obj = this.mono_wasm_object_registry[js_id - 1];
 			if (typeof obj  !== "undefined" && obj !== null) {
@@ -1897,7 +1883,22 @@ var BindingSupportLib = {
 	mono_wasm_release_handle: function(js_handle, is_exception) {
 		BINDING.bindings_lazy_init ();
 
-		BINDING.mono_wasm_free_handle(js_handle);
+		var obj = this.mono_wasm_object_registry[js_handle - 1];
+		if (typeof obj  !== "undefined" && obj !== null) {
+			// if this is the global object then do not
+			// unregister it.
+			if (globalThis === obj)
+				return obj;
+
+			if (typeof obj.__mono_gchandle__  !== "undefined") {
+				obj.__mono_gchandle__ = undefined;
+				obj.__mono_jshandle__ = undefined;
+			}
+
+			delete this.mono_wasm_object_registry[js_handle - 1];
+			this.mono_wasm_free_list.push(js_handle - 1);
+		}
+		return obj;
 	},
 	mono_wasm_release_object: function(js_handle, is_exception) {
 		BINDING.bindings_lazy_init ();
