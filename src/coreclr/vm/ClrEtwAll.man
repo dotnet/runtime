@@ -7685,12 +7685,6 @@
                         </UserData>
                     </template>
 
-                    <template tid="GCFinalizingFinalized">
-                        <UserData>
-                            <GCFinalizingFinalized xmlns="myNs" />
-                        </UserData>
-                    </template>
-
                     <template tid="GCFinalizingFinalizedObject">
                         <data name="ObjectID" inType="win:Pointer" outType="win:HexInt64" />
                         <UserData>
@@ -7739,12 +7733,6 @@
                         </UserData>
                     </template>
 
-                    <template tid="GCHeapDumpStartStop">
-                        <UserData>
-                            <GCHeapDumpStartStop xmlns="myNs" />
-                        </UserData>
-                    </template>
-
                     <template tid="GCHeapDumpObjectReference">
                         <data name="ObjectID" inType="win:Pointer" outType="win:HexInt64" />
                         <data name="VTableID" inType="win:UInt64" outType="win:HexInt64" />
@@ -7769,9 +7757,9 @@
                     <template tid="MonitorContentionFailedAcquired">
                         <data name="ObjectID" inType="win:Pointer" outType="win:HexInt64" />
                         <UserData>
-                            <GCHeapDumpStartStop xmlns="myNs">
+                            <MonitorContentionFailedAcquired xmlns="myNs">
                                 <ObjectID> %1 </ObjectID>
-                            </GCHeapDumpStartStop>
+                            </MonitorContentionFailedAcquired>
                         </UserData>
                     </template>
 
@@ -7802,10 +7790,10 @@
                         <data name="MethodSignature" inType="win:UnicodeString" />
                         <UserData>
                             <JitDoneVerbose xmlns="myNs">
-                                <MethodID> %2 </MethodID>
-                                <MethodNamespace> %5 </MethodNamespace>
-                                <MethodName> %6 </MethodName>
-                                <MethodSignature> %7 </MethodSignature>
+                                <MethodID> %1 </MethodID>
+                                <MethodNamespace> %2 </MethodNamespace>
+                                <MethodName> %3 </MethodName>
+                                <MethodSignature> %4 </MethodSignature>
                             </JitDoneVerbose>
                         </UserData>
                     </template>
@@ -7904,7 +7892,7 @@
                     <event value="10" version="1" level="win:Informational"  template="JitDone_V1"
                            keywords ="JitKeyword" opcode="JitDone"
                            task="MonoProfiler"
-                           symbol="MonoProfilerJitDone_V1" message="$(string.MonoProfilerPublisher.JitDone_v1EventMessage)" />
+                           symbol="MonoProfilerJitDone_V1" message="$(string.MonoProfilerPublisher.JitDone_V1EventMessage)" />
 
                     <event value="11" version="0" level="win:Informational"  template="JitChunkCreated"
                            keywords ="JitKeyword" opcode="JitChunkCreated"
@@ -8076,12 +8064,12 @@
                            task="MonoProfiler"
                            symbol="MonoProfilerGCHandleDeleted" message="$(string.MonoProfilerPublisher.GCHandleDeletedEventMessage)" />
 
-                    <event value="44" version="0" level="win:Informational"  template="GCFinalizingFinalized"
+                    <event value="44" version="0" level="win:Informational"
                            keywords ="GCKeyword GCFinalizationKeyword" opcode="GCFinalizing"
                            task="MonoProfiler"
                            symbol="MonoProfilerGCFinalizing" message="$(string.MonoProfilerPublisher.GCFinalizingFinalizedEventMessage)" />
 
-                    <event value="45" version="0" level="win:Informational"  template="GCFinalizingFinalized"
+                    <event value="45" version="0" level="win:Informational"
                            keywords ="GCKeyword GCFinalizationKeyword" opcode="GCFinalized"
                            task="MonoProfiler"
                            symbol="MonoProfilerGCFinalized" message="$(string.MonoProfilerPublisher.GCFinalizingFinalizedEventMessage)" />
@@ -8111,12 +8099,12 @@
                            task="MonoProfiler"
                            symbol="MonoProfilerGCRoots" message="$(string.MonoProfilerPublisher.GCRootsEventMessage)" />
 
-                    <event value="51" version="0" level="win:Informational"  template="GCHeapDumpStartStop"
+                    <event value="51" version="0" level="win:Informational"
                            keywords ="GCKeyword GCHeapDumpKeyword" opcode="GCHeapDumpStart"
                            task="MonoProfiler"
                            symbol="MonoProfilerGCHeapDumpStart" message="$(string.MonoProfilerPublisher.GCHeapDumpStartStopEventMessage)" />
 
-                    <event value="52" version="0" level="win:Informational"  template="GCHeapDumpStartStop"
+                    <event value="52" version="0" level="win:Informational"
                            keywords ="GCKeyword GCHeapDumpKeyword" opcode="GCHeapDumpStop"
                            task="MonoProfiler"
                            symbol="MonoProfilerGCHeapDumpStop" message="$(string.MonoProfilerPublisher.GCHeapDumpStartStopEventMessage)" />
@@ -9360,12 +9348,12 @@
                 <string id="MonoProfilerPublisher.GCResizeEventMessage" value="NewSize=%1" />
                 <string id="MonoProfilerPublisher.GCHandleCreatedEventMessage" value="HandleID=%1;%nHandleType=%2;%nObjectID=%3" />
                 <string id="MonoProfilerPublisher.GCHandleDeletedEventMessage" value="HandleID=%1;%nHandleType=%2" />
-                <string id="MonoProfilerPublisher.GCFinalizingFinalizedEventMessage" value="" />
+                <string id="MonoProfilerPublisher.GCFinalizingFinalizedEventMessage" value="NONE" />
                 <string id="MonoProfilerPublisher.GCFinalizingFinalizedObjectEventMessage" value="ObjectID=%1" />
                 <string id="MonoProfilerPublisher.GCRootRegisterEventMessage" value="RootID=%1;%nRootSize=%2;%nRootType=%3;%nRootKeyID=%4;%nRootKeyName=%5" />
                 <string id="MonoProfilerPublisher.GCRootUnregisterEventMessage" value="RootID=%1" />
                 <string id="MonoProfilerPublisher.GCRootsEventMessage" value="Count=%1" />
-                <string id="MonoProfilerPublisher.GCHeapDumpStartStopEventMessage" value="" />
+                <string id="MonoProfilerPublisher.GCHeapDumpStartStopEventMessage" value="NONE" />
                 <string id="MonoProfilerPublisher.GCHeapDumpObjectReferenceEventMessage" value="ObjectID=%1;%nVTableID=%2;%nObjectSize=%3;%nObjectGeneration=%4;%nCount=%5" />
 
                 <string id="MonoProfilerPublisher.MonitorContentionFailedAcquiredEventMessage" value="ObjectID=%1" />
@@ -9373,7 +9361,7 @@
                 <string id="MonoProfilerPublisher.ThreadStartedStoppingStoppedExitedEventMessage" value="ThreadID=%1" />
                 <string id="MonoProfilerPublisher.ThreadNameEventMessage" value="ThreadID=%1;%nThreadName=%2" />
 
-                <string id="MonoProfilerPublisher.JitDoneVerboseEventMessage" value="MethodId=%1;%nModuleID=%2;%nMethodToken=%3;%nMethodNamespace=%4;%nMethodName=%5;%nMethodSignature=%6" />
+                <string id="MonoProfilerPublisher.JitDoneVerboseEventMessage" value="MethodId=%1;%nMethodNamespace=%2;%nMethodName=%3;%nMethodSignature=%4" />
             </stringTable>
         </resources>
     </localization>
