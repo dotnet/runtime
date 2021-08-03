@@ -133,6 +133,7 @@ public:
     INT_CONFIG   (GCHeapHardLimitLOHPercent, "GCHeapHardLimitLOHPercent", "System.GC.HeapHardLimitLOHPercent", 0,        "Specifies the GC heap LOH usage as a percentage of the total memory")                    \
     INT_CONFIG   (GCHeapHardLimitPOHPercent, "GCHeapHardLimitPOHPercent", "System.GC.HeapHardLimitPOHPercent", 0,        "Specifies the GC heap POH usage as a percentage of the total memory")                    \
     INT_CONFIG   (GCEnabledInstructionSets,  "GCEnabledInstructionSets",  NULL,                                -1,       "Specifies whether GC can use AVX2 or AVX512F - 0 for neither, 1 for AVX2, 3 for AVX512F")\
+    INT_CONFIG   (GCConserveMem,           "GCConserveMemory",      NULL,                             0,                 "Specifies how hard GC should try to conserve memory - values 0-9")                       \
 
 // This class is responsible for retreiving configuration information
 // for how the GC should operate.
