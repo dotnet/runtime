@@ -403,17 +403,6 @@ namespace System.Net.Security.Tests
                 // Verify that the session is usable even renego request failed.
                 await TestHelper.PingPong(client, server, cts.Token);
                 await TestHelper.PingPong(server, client, cts.Token);
-
-                // Should be possible call renegotiation again.
-                // Client needs to be reading for renegotiation to happen.
-                byte[] buffer = new byte[TestHelper.s_ping.Length];
-                ValueTask<int> t = client.ReadAsync(buffer, cts.Token);
-
-                await server.NegotiateClientCertificateAsync(cts.Token);
-
-                // Finish the client's read
-                await server.WriteAsync(TestHelper.s_ping, cts.Token);
-                await t;
             }
         }
 
