@@ -19,6 +19,8 @@ namespace ILLink.RoslynAnalyzer.Tests
 {
 	public class RequiresUnreferencedCodeAnalyzerTests
 	{
+		static readonly DiagnosticDescriptor dynamicInvocationDiagnosticDescriptor = DiagnosticDescriptors.GetDiagnosticDescriptor (DiagnosticId.RequiresUnreferencedCode, new DiagnosticString ("DynamicTypeInvocation"));
+
 		static Task VerifyRequiresUnreferencedCodeAnalyzer (string source, params DiagnosticResult[] expected) =>
 			VerifyRequiresUnreferencedCodeAnalyzer (source, null, expected);
 
@@ -861,6 +863,62 @@ class AnotherImplementation : IRAF
 				VerifyCS.Diagnostic (DiagnosticId.RequiresUnreferencedCodeAttributeMismatch).WithSpan (7, 14, 7, 20).WithArguments ("Member 'Implementation.Method()' with 'RequiresUnreferencedCodeAttribute' implements interface member 'IRAF.Method()' without 'RequiresUnreferencedCodeAttribute'"),
 				// (13,3): warning IL2046: Member 'Implementation.StringProperty.get' with 'RequiresUnreferencedCodeAttribute' implements interface member 'IRAF.StringProperty.get' without 'RequiresUnreferencedCodeAttribute'. Attributes must match across all interface implementations or overrides.
 				VerifyCS.Diagnostic (DiagnosticId.RequiresUnreferencedCodeAttributeMismatch).WithSpan (13, 3, 13, 6).WithArguments ("Member 'Implementation.StringProperty.get' with 'RequiresUnreferencedCodeAttribute' implements interface member 'IRAF.StringProperty.get' without 'RequiresUnreferencedCodeAttribute'"));
+		}
+
+		[Fact]
+		public Task InvocationOnDynamicType ()
+		{
+			var source = @"
+using System;
+class C
+{
+	static void M0 ()
+	{
+		dynamic dynamicField = ""Some string"";
+		Console.WriteLine (dynamicField);
+	}
+
+	static void M1 ()
+	{
+		MethodWithDynamicArgDoNothing (0);
+		MethodWithDynamicArgDoNothing (""Some string"");
+		MethodWithDynamicArg(-1);
+	}
+
+	static void MethodWithDynamicArgDoNothing (dynamic arg)
+	{
+	}
+
+	static void MethodWithDynamicArg (dynamic arg)
+	{
+		arg.MethodWithDynamicArg (arg);
+	}
+}";
+
+			return VerifyRequiresUnreferencedCodeAnalyzer (source,
+				// (8,3): warning IL2026: Invoking members on dynamic types is not trimming safe. Types or member might have been removed by the trimmer.
+				VerifyCS.Diagnostic (dynamicInvocationDiagnosticDescriptor).WithSpan (8, 3, 8, 35),
+				// (24,3): warning IL2026: Invoking members on dynamic types is not trimming safe. Types or member might have been removed by the trimmer.
+				VerifyCS.Diagnostic (dynamicInvocationDiagnosticDescriptor).WithSpan (24, 3, 24, 33));
+		}
+
+		[Fact]
+		public Task InvocationOnDynamicTypeInMethodWithRUCDoesNotWarnTwoTimes ()
+		{
+			var source = @"
+using System;
+using System.Diagnostics.CodeAnalysis;
+class C
+{
+	[RequiresUnreferencedCode (""We should only see the warning related to this annotation, and none about the dynamic type."")]
+	static void M0 ()
+	{
+		dynamic dynamicField = ""Some string"";
+		Console.WriteLine (dynamicField);
+	}
+}";
+
+			return VerifyRequiresUnreferencedCodeAnalyzer (source);
 		}
 	}
 }
