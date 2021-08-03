@@ -94,13 +94,14 @@ def main(main_args):
     spmi_location = path.join(cwd, "artifacts", "spmi")
     log_directory = coreclr_args.log_directory
     mch_filename = ''
-    os_name = "win" if coreclr_args.platform.lower() == "windows" else "unix"
+    platform_name = coreclr_args.platform
+    os_name = "win" if platform_name.lower() == "windows" else "unix"
     arch_name = coreclr_args.arch
     host_arch_name = "x64" if arch_name.endswith("x64") else "x86"
     jit_path = path.join(coreclr_args.jit_directory, 'clrjit_{}_{}_{}.dll'.format(os_name, arch_name, host_arch_name))
 
     print("Running superpmi.py download")
-    run_command([python_path, path.join(cwd, "superpmi.py"), "download", "-f", "benchmarks", "-target_os", coreclr_args.platform.lower(), "-target_arch", arch_name, "-core_root", cwd, "-spmi_location", spmi_location])
+    run_command([python_path, path.join(cwd, "superpmi.py"), "download", "-f", "benchmarks", "-target_os", platform_name, "-target_arch", arch_name, "-core_root", cwd, "-spmi_location", spmi_location])
 
     for f in listdir(spmi_location):
         if f.endswith(".mch.zip"):
@@ -134,7 +135,7 @@ def main(main_args):
         run_command([
                 python_path, path.join(cwd, "superpmi.py"), "replay", "-core_root", cwd,
                 "-jitoption", jit_flag, "-jitoption", "TieredCompilation=0",
-                "-target_os", coreclr_args.platform.lower(), "-target_arch", arch_name,
+                "-target_os", platform_name, "-target_arch", arch_name,
                 "-arch", host_arch_name,
                 "-jit_path", jit_path, "-spmi_location", spmi_location,
                 "-log_level", "debug", "-log_file", log_file])
@@ -142,7 +143,7 @@ def main(main_args):
         # run_id += 1
 
     # Consolidate all superpmi_*.logs in superpmi_platform_architecture.log
-    final_log_name = path.join(log_directory, "superpmi_{}_{}.log".format(coreclr_args.platform, arch_name))
+    final_log_name = path.join(log_directory, "superpmi_{}_{}.log".format(platform_name, arch_name))
     print("Consolidating final {}".format(final_log_name))
     with open(final_log_name, "a") as final_superpmi_log:
         for superpmi_log in listdir(log_directory):

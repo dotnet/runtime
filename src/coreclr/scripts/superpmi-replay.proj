@@ -32,7 +32,7 @@
     <SuperpmiLogsLocation>%HELIX_WORKITEM_UPLOAD_ROOT%</SuperpmiLogsLocation>
     <!-- Workaround until https://github.com/dotnet/arcade/pull/6179 is not available -->
     <HelixResultsDestinationDir>$(BUILD_SOURCESDIRECTORY)\artifacts\helixresults</HelixResultsDestinationDir>
-    <WorkItemCommand>$(Python) $(ProductDirectory)\superpmi-replay.py -arch $(Architecture) -platform $(Platform) -log_directory $(SuperpmiLogsLocation) -jit_directory $(ProductDirectory)</WorkItemCommand>
+    <WorkItemCommand>$(Python) $(ProductDirectory)\superpmi-replay.py -arch $(Architecture) -platform $(Platform) -jit_directory $(ProductDirectory)</WorkItemCommand>
   </PropertyGroup>
 
   <ItemGroup>
@@ -48,7 +48,7 @@
 
   <ItemGroup>
     <HelixWorkItem Include="$(Platform)_$(Architecture)">
-      <Command>$(WorkItemCommand)</Command>
+      <Command>$(WorkItemCommand) -log_directory $(SuperpmiLogsLocation)\$(Platform)_$(Architecture)</Command>
       <!-- <Command>$(WorkItemCommand) -arch %(HelixWorkItem.Architecture) -platform %(HelixWorkItem.Platform) -log_directory $(SuperpmiLogsLocation)</Command> -->
       <!-- <Command>$(WorkItemCommand) -mch_directory $(SpmiCollectionFolder)\%(HelixWorkItem.PartitionId)\mch -partition_index %(HelixWorkItem.PartitionId) -log_directory $(SuperpmiLogsLocation)</Command> -->
       <!-- <PayloadDirectory>$(WorkItemDirectory)</PayloadDirectory> -->
