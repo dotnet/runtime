@@ -393,7 +393,7 @@
         IgnoreStandardErrorWarningFormat="true" 
         Condition="'$(ForNode)' == 'true'"/>
     <ItemGroup Condition="'$(ForNode)' == 'true'" >
-      <HelixCorrelationPayload Include="$(NodeFolder)/node-v14.17.4-linux-x64/bin" />
+      <HelixCorrelationPayload Include="$(NodeFolder)/node-v14.17.4-linux-x64/bin" Destination="node-v14.17.4-linux-x64/bin"/>
     </ItemGroup>
 
     <ItemGroup Condition="'$(TargetOS)' != 'Android' and '$(TargetOS)' != 'iOS' and '$(TargetOS)' != 'iOSSimulator' and '$(TargetOS)' != 'tvOS' and '$(TargetOS)' != 'tvOSSimulator' and '$(TargetOS)' != 'MacCatalyst'">
