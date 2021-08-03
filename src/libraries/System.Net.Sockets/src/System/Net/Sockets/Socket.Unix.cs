@@ -5,6 +5,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Threading.Tasks;
 using System.Runtime.Versioning;
+using Microsoft.Win32.SafeHandles;
 
 namespace System.Net.Sockets
 {
@@ -192,24 +193,22 @@ namespace System.Net.Sockets
 
             // Open the file, if any
             // Open it before we send the preBuffer so that any exception happens first
-            FileStream? fileStream = OpenFile(fileName);
+            SafeFileHandle? fileHandle = OpenFileHandle(fileName);
 
             SocketError errorCode = SocketError.Success;
-            using (fileStream)
-            {
-                // Send the preBuffer, if any
-                // This will throw on error
-                if (!preBuffer.IsEmpty)
-                {
-                    Send(preBuffer);
-                }
 
-                // Send the file, if any
-                if (fileStream != null)
-                {
-                    // This can throw ObjectDisposedException.
-                    errorCode = SocketPal.SendFile(_handle, fileStream);
-                }
+            // Send the preBuffer, if any
+            // This will throw on error
+            if (!preBuffer.IsEmpty)
+            {
+                Send(preBuffer);
+            }
+
+            // Send the file, if any
+            if (fileHandle != null)
+            {
+                // This can throw ObjectDisposedException.
+                errorCode = SocketPal.SendFile(_handle, fileHandle);
             }
 
             if (errorCode != SocketError.Success)

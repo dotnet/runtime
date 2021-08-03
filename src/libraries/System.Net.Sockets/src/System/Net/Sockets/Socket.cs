@@ -3784,7 +3784,6 @@ namespace System.Net.Sockets
         partial void ValidateForMultiConnect(bool isMultiEndpoint);
 
         // Helper for SendFile implementations
-        private static FileStream? OpenFile(string? name) => string.IsNullOrEmpty(name) ? null : File.OpenRead(name);
         private static SafeFileHandle? OpenFileHandle(string? name) => string.IsNullOrEmpty(name) ? null : File.OpenHandle(name, FileMode.Open, FileAccess.Read);
 
         private void UpdateReceiveSocketErrorForDisposed(ref SocketError socketError, int bytesTransferred)
