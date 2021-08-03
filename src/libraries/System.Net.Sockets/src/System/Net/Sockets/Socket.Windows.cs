@@ -399,10 +399,13 @@ namespace System.Net.Sockets
         {
             // Open the file, if any
             SafeFileHandle? fileHandle = OpenFileHandle(fileName);
-
             SocketError errorCode;
-            // This can throw ObjectDisposedException.
-            errorCode = SocketPal.SendFile(_handle, fileHandle, preBuffer, postBuffer, flags);
+
+            using (fileHandle)
+            {
+                // This can throw ObjectDisposedException.
+                errorCode = SocketPal.SendFile(_handle, fileHandle, preBuffer, postBuffer, flags);
+            }
 
             if (errorCode != SocketError.Success)
             {

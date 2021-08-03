@@ -204,11 +204,14 @@ namespace System.Net.Sockets
                 Send(preBuffer);
             }
 
-            // Send the file, if any
-            if (fileHandle != null)
+            using (fileHandle)
             {
-                // This can throw ObjectDisposedException.
-                errorCode = SocketPal.SendFile(_handle, fileHandle);
+                // Send the file, if any
+                if (fileHandle != null)
+                {
+                    // This can throw ObjectDisposedException.
+                    errorCode = SocketPal.SendFile(_handle, fileHandle);
+                }
             }
 
             if (errorCode != SocketError.Success)
