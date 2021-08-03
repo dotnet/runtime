@@ -3578,7 +3578,7 @@ namespace System.Net.Http.Functional.Tests
                     }
                 });
         }
-        
+
         [Fact]
         [OuterLoop("Uses Task.Delay")]
         public async Task SocketSendQueueFull_RequestCanceled_ThrowsOperationCanceled()
