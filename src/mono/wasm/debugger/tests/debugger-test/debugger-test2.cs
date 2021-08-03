@@ -53,6 +53,10 @@ public class Fancy
 public class UserBreak {
     public static void BreakOnDebuggerBreakCommand()
     {
+        int a = 10;
         Debugger.Break();
+        a = 20;
+        a = 50;
+        a = 100;
     }
 }
