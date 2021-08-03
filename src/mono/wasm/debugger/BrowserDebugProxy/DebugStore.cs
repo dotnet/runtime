@@ -970,12 +970,14 @@ namespace Microsoft.WebAssembly.Diagnostics
                     }
 
                 }
-                else // otherwise just load it directly
+                else // otherwise just load it directly -> running on node
                 {
-                    var assemblyFileName = Path.GetFileName(url);
-                    var assemblyId = await SdbHelper.GetAssemblyId(sessionId, assemblyFileName, token);
-                    var metadataBlob = await SdbHelper.GetMetadataBlob(sessionId, assemblyId, token);
-                    var assembly = new AssemblyInfo(url, metadataBlob, null);
+                    byte[] fileByte = File.ReadAllBytes(url);
+                    string candidate_pdb = Path.ChangeExtension(url, "pdb");
+                    byte[] pdbByte = null;
+                    if (File.Exists(candidate_pdb))
+                        pdbByte = File.ReadAllBytes(candidate_pdb);
+                    var assembly = new AssemblyInfo(url, fileByte, pdbByte);
                     assemblies.Add(assembly);
                     foreach (SourceFile source in assembly.Sources)
                     {
