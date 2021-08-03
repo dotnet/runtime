@@ -139,6 +139,10 @@
 
     <_runtimeOS Condition="$(_runtimeOS.StartsWith('tizen'))">linux</_runtimeOS>
     <_runtimeOS Condition="'$(PortableBuild)' == 'true'">$(_portableOS)</_runtimeOS>
+
+    <_packageOS Condition="'$(CrossBuild)' == 'true'">$(_hostOS.ToLowerInvariant)</_packageOS>
+    <_packageOS Condition="'$(_packageOS)' == '' and '$(PortableBuild)' == 'true'">$(_portableOS)</_packageOS>
+    <_packageOS Condition="'$(_packageOS)' == ''">$(_runtimeOS)</_packageOS>
   </PropertyGroup>
 
   <PropertyGroup Label="CalculateRID">
@@ -163,10 +167,11 @@
     <MicrosoftNetCoreIlasmPackageRuntimeId Condition="'$(PortableBuild)' != 'true' and '$(_portableOS)' == 'linux'">linux-$(_hostArch)</MicrosoftNetCoreIlasmPackageRuntimeId>
     <MicrosoftNetCoreIlasmPackageRuntimeId Condition="'$(MicrosoftNetCoreIlasmPackageRuntimeId)' == ''">$(_toolRuntimeRID)</MicrosoftNetCoreIlasmPackageRuntimeId>
 
-    <_packageRID Condition="'$(PortableBuild)' == 'true'">$(_portableOS)-$(TargetArchitecture)</_packageRID>
-    <_packageRID Condition="'$(CrossBuild)' == 'true'">$(_hostOS.ToLowerInvariant)-$(TargetArchitecture)</_packageRID>
-    <PackageRID Condition="'$(PackageRID)' == ''">$(_packageRID)</PackageRID>
-    <PackageRID Condition="'$(PackageRID)' == ''">$(_runtimeOS)-$(TargetArchitecture)</PackageRID>
+    <PackageRID>$(_packageOS)-$(TargetArchitecture)</PackageRID>
+
+    <!-- Crossgen2 does not support armel, so we will use arm instead. -->
+    <Crossgen2PackageRID Condition="'$(TargetArchitecture)' == 'armel'">$(_packageOS)-arm</Crossgen2PackageRID>
+    <Crossgen2PackageRID Condition="'$(TargetArchitecture)' != 'armel'">$(PackageRID)</Crossgen2PackageRID>
 
     <OutputRid Condition="'$(OutputRid)' == ''">$(PackageRID)</OutputRid>
     <OutputRid Condition="'$(PortableBuild)' == 'true'">$(_portableOS)-$(TargetArchitecture)</OutputRid>
@@ -282,7 +287,7 @@
     <ProduceReferenceAssembly>false</ProduceReferenceAssembly>
     <!-- We have very special projects that don't always contain default references. We also build MSBuild Tasks
     and there are some implicit namespaces that clash, i.e System.Threading.Tasks. -->
-    <DisableImplicitNamespaceImports>true</DisableImplicitNamespaceImports>
+    <DisableImplicitNamespaceImports_DotNet>true</DisableImplicitNamespaceImports_DotNet>
   </PropertyGroup>
 
   <PropertyGroup>

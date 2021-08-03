@@ -453,7 +453,8 @@ get_relations_from_previous_bb (MonoVariableRelationsEvaluationArea *area, MonoB
 	MonoValueRelation branch_relation;
 	MonoValueRelation symmetric_relation;
 	gboolean code_path;
-	
+
+	memset (relations, 0, sizeof (MonoAdditionalVariableRelationsForBB));
 	INITIALIZE_VALUE_RELATION (&(relations->relation1.relation));
 	relations->relation1.relation.relation_is_static_definition = FALSE;
 	relations->relation1.relation.next = NULL;

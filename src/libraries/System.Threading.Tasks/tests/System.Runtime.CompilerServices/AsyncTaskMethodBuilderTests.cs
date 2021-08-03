@@ -560,6 +560,7 @@ namespace System.Threading.Tasks.Tests
             {
                 GC.Collect();
                 GC.WaitForPendingFinalizers();
+                await Task.Yield();
             }
 
             if (!Volatile.Read(ref finalized))

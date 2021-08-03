@@ -1146,7 +1146,7 @@ public:
         {
             if (alloc_objects [i] != (uint8_t*)0)
             {
-                GCToOSInterface::DebugBreak();
+                FATAL_GC_ERROR();
             }
         }
     }
@@ -2295,6 +2295,7 @@ bool        affinity_config_specified_p = false;
 #ifdef USE_REGIONS
 region_allocator global_region_allocator;
 uint8_t*(*initial_regions)[total_generation_count][2] = nullptr;
+size_t      gc_heap::region_count = 0;
 #endif //USE_REGIONS
 
 #ifdef BACKGROUND_GC
@@ -3500,12 +3501,6 @@ size_t get_basic_region_index_for_address (uint8_t* address)
 {
     size_t basic_region_index = (size_t)address >> gc_heap::min_segment_size_shr;
     return (basic_region_index - ((size_t)g_gc_lowest_address >> gc_heap::min_segment_size_shr));
-}
-
-inline
-size_t get_total_region_count()
-{
-    return (get_basic_region_index_for_address (g_gc_highest_address) + 1);
 }
 
 // Go from a random address to its region info. The random address could be 
@@ -9780,7 +9775,6 @@ size_t gc_heap::sort_mark_list()
 
 #ifdef USE_REGIONS
     // first set the pieces for all regions to empty
-    size_t region_count = get_total_region_count();
     assert (g_mark_list_piece_size >= region_count);
     for (size_t region_index = 0; region_index < region_count; region_index++)
     {
@@ -15527,6 +15521,7 @@ BOOL gc_heap::a_fit_free_list_uoh_p (size_t size,
                 if (loh_pad)
                 {
                     make_unused_array (free_list, loh_pad);
+                    generation_free_obj_space (gen) += loh_pad;
                     limit -= loh_pad;
                     free_list += loh_pad;
                     free_list_size -= loh_pad;
@@ -15665,6 +15660,7 @@ found_fit:
     if (gen_number == loh_generation)
     {
         make_unused_array (allocated, loh_pad);
+        generation_free_obj_space (generation_of (gen_number)) += loh_pad;
         allocated += loh_pad;
         limit -= loh_pad;
     }
@@ -21621,7 +21617,6 @@ size_t gc_heap::get_promoted_bytes()
     }
 
     dprintf (3, ("h%d getting surv", heap_number));
-    size_t region_count = get_total_region_count();
     size_t promoted = 0;
     for (size_t i = 0; i < region_count; i++)
     {
@@ -24417,6 +24412,7 @@ void gc_heap::mark_phase (int condemned_gen_number, BOOL mark_only_p)
 
 #ifdef USE_REGIONS
         special_sweep_p = false;
+        region_count = global_region_allocator.get_used_region_count();
         grow_mark_list_piece();
 #endif //USE_REGIONS
 
@@ -24485,7 +24481,7 @@ void gc_heap::mark_phase (int condemned_gen_number, BOOL mark_only_p)
 #endif //MULTIPLE_HEAPS
             survived_per_region = (size_t*)&g_mark_list_piece[heap_number * 2 * g_mark_list_piece_size];
             old_card_survived_per_region = (size_t*)&survived_per_region[g_mark_list_piece_size];
-            size_t region_info_to_clear = get_total_region_count() * sizeof (size_t);
+            size_t region_info_to_clear = region_count * sizeof (size_t);
             memset (survived_per_region, 0, region_info_to_clear);
             memset (old_card_survived_per_region, 0, region_info_to_clear);
         }
@@ -26696,7 +26692,6 @@ void gc_heap::process_remaining_regions (int current_plan_gen_num, generation* c
 
 void gc_heap::grow_mark_list_piece()
 {
-    size_t region_count = get_total_region_count();
     if (g_mark_list_piece_size < region_count)
     {
         delete[] g_mark_list_piece;
@@ -26721,11 +26716,10 @@ void gc_heap::save_current_survived()
 {
     if (!survived_per_region) return;
 
-    size_t region_info_to_copy = get_total_region_count() * sizeof (size_t);
+    size_t region_info_to_copy = region_count * sizeof (size_t);
     memcpy (old_card_survived_per_region, survived_per_region, region_info_to_copy);
 
 #ifdef _DEBUG
-    size_t region_count = get_total_region_count();
     for (size_t region_index = 0; region_index < region_count; region_index++)
     {
         if (survived_per_region[region_index] != 0)
@@ -26742,7 +26736,6 @@ void gc_heap::update_old_card_survived()
 {
     if (!survived_per_region) return;
 
-    size_t region_count = get_total_region_count();
     for (size_t region_index = 0; region_index < region_count; region_index++)
     {
         old_card_survived_per_region[region_index] = survived_per_region[region_index] - 
@@ -44318,14 +44311,14 @@ void gc_heap::do_post_gc()
     record_interesting_info_per_heap();
 #endif //MULTIPLE_HEAPS
 
+    record_global_mechanisms();
+#endif //GC_CONFIG_DRIVEN
+
     if (mark_list_overflow)
     {
         grow_mark_list();
         mark_list_overflow = false;
     }
-
-    record_global_mechanisms();
-#endif //GC_CONFIG_DRIVEN
 }
 
 unsigned GCHeap::GetGcCount()
@@ -46125,6 +46118,27 @@ bool GCHeap::IsConcurrentGCEnabled()
 void PopulateDacVars(GcDacVars *gcDacVars)
 {
 #ifndef DACCESS_COMPILE
+
+#ifdef MULTIPLE_HEAPS
+    static int gc_heap_field_offsets[] = {
+
+#define DEFINE_FIELD(field_name, field_type) offsetof(gc_heap, field_name),
+#define DEFINE_DPTR_FIELD(field_name, field_type) offsetof(gc_heap, field_name),
+#define DEFINE_ARRAY_FIELD(field_name, field_type, array_length) offsetof(gc_heap, field_name),
+#define DEFINE_MISSING_FIELD -1,
+
+#include "gc_typefields.h"
+
+#undef DEFINE_MISSING_FIELD
+#undef DEFINE_ARRAY_FIELD
+#undef DEFINE_DPTR_FIELD
+#undef DEFINE_FIELD
+
+        offsetof(gc_heap, generation_table)
+    };
+    static_assert(sizeof(gc_heap_field_offsets) == (GENERATION_TABLE_FIELD_INDEX + 1) * sizeof(int), "GENERATION_TABLE_INDEX mismatch");
+#endif //MULTIPLE_HEAPS
+
     assert(gcDacVars != nullptr);
     *gcDacVars = {};
     // Note: these version numbers are not actually checked by SOS, so if you change
@@ -46138,10 +46152,10 @@ void PopulateDacVars(GcDacVars *gcDacVars)
     gcDacVars->generation_size = sizeof(generation);
     gcDacVars->total_generation_count = total_generation_count;
     gcDacVars->max_gen = &g_max_generation;
+    gcDacVars->current_c_gc_state = const_cast<c_gc_state*>(&gc_heap::current_c_gc_state);
 #ifndef MULTIPLE_HEAPS
     gcDacVars->mark_array = &gc_heap::mark_array;
     gcDacVars->ephemeral_heap_segment = reinterpret_cast<dac_heap_segment**>(&gc_heap::ephemeral_heap_segment);
-    gcDacVars->current_c_gc_state = const_cast<c_gc_state*>(&gc_heap::current_c_gc_state);
 #ifdef USE_REGIONS
     gcDacVars->saved_sweep_ephemeral_seg = 0;
     gcDacVars->saved_sweep_ephemeral_start = 0;
@@ -46170,7 +46184,8 @@ void PopulateDacVars(GcDacVars *gcDacVars)
 #endif // HEAP_ANALYZE
 #else
     gcDacVars->n_heaps = &gc_heap::n_heaps;
-    gcDacVars->g_heaps = reinterpret_cast<dac_gc_heap***>(&gc_heap::g_heaps);
+    gcDacVars->g_heaps = reinterpret_cast<opaque_gc_heap***>(&gc_heap::g_heaps);
+    gcDacVars->gc_heap_field_offsets = reinterpret_cast<int**>(&gc_heap_field_offsets);
 #endif // MULTIPLE_HEAPS
 #else
     UNREFERENCED_PARAMETER(gcDacVars);

@@ -3471,9 +3471,6 @@ public:
     GCEvent bgc_start_event;
 #endif //BACKGROUND_GC
 
-    // The variables in this block are known to the DAC and must come first
-    // in the gc_heap class.
-
     // Keeps track of the highest address allocated by Alloc
     PER_HEAP
     uint8_t* alloc_allocated;
@@ -3513,11 +3510,8 @@ public:
     PER_HEAP
     BOOL heap_analyze_success;
 
-    // The generation table. Must always be last.
     PER_HEAP
     generation generation_table [total_generation_count];
-
-    // End DAC zone
 
 #ifdef USE_REGIONS
 #ifdef STRESS_REGIONS
@@ -3609,6 +3603,8 @@ public:
     size_t* survived_per_region;
     PER_HEAP
     size_t* old_card_survived_per_region;
+    PER_HEAP_ISOLATED
+    size_t region_count;
 #endif //USE_REGIONS
 
 #define max_oom_history_count 4
@@ -4971,26 +4967,6 @@ protected:
     void update_collection_counts ();
 }; // class gc_heap
 
-#define ASSERT_OFFSETS_MATCH(field) \
-  static_assert(offsetof(dac_gc_heap, field) == offsetof(gc_heap, field), #field " offset mismatch")
-
-#ifndef USE_REGIONS
-#ifdef MULTIPLE_HEAPS
-ASSERT_OFFSETS_MATCH(alloc_allocated);
-ASSERT_OFFSETS_MATCH(ephemeral_heap_segment);
-ASSERT_OFFSETS_MATCH(finalize_queue);
-ASSERT_OFFSETS_MATCH(oom_info);
-ASSERT_OFFSETS_MATCH(interesting_data_per_heap);
-ASSERT_OFFSETS_MATCH(compact_reasons_per_heap);
-ASSERT_OFFSETS_MATCH(expand_mechanisms_per_heap);
-ASSERT_OFFSETS_MATCH(interesting_mechanism_bits_per_heap);
-ASSERT_OFFSETS_MATCH(internal_root_array);
-ASSERT_OFFSETS_MATCH(internal_root_array_index);
-ASSERT_OFFSETS_MATCH(heap_analyze_success);
-ASSERT_OFFSETS_MATCH(generation_table);
-#endif // MULTIPLE_HEAPS
-#endif //USE_REGIONS
-
 #ifdef FEATURE_PREMORTEM_FINALIZATION
 class CFinalize
 {
@@ -5738,6 +5714,14 @@ public:
     size_t get_free() { return (total_free_units * region_alignment) ; }
     size_t get_region_alignment () { return region_alignment; }
     size_t get_large_region_alignment () { return large_region_alignment; }
+    size_t get_used_region_count()
+    {
+        // currently we don't allocate anything from the right -
+        // once we do, we need a more sophisticated way to iterate
+        // through the used regions
+        assert (region_map_right_start == region_map_right_end);
+        return (region_map_left_end - region_map_left_start);
+    }
     void move_highest_free_regions (int64_t n, bool small_region_p, region_free_list to_free_list[count_free_region_kinds]);
 };
 #endif //USE_REGIONS
