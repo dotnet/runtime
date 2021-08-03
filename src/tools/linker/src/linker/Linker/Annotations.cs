@@ -552,27 +552,6 @@ namespace Mono.Linker
 			return marked_types_with_cctor.Add (type);
 		}
 
-		/// <summary>
-		/// Looks if there is a RequiresUnreferencedCodeAttribute on the <paramref name="type"/> or any of its declaring types and returns the attribute information
-		/// on <paramref name="attribute"/>
-		/// </summary>
-		/// <param name="type">Type to start the search of the attribute</param>
-		/// <param name="attribute">Information about the found RequiresUnreferencedCode Attribute</param>
-		/// <returns>Returns true along with the RequiresUnreferencedCodeAttribute if found, otherwise returns false</returns>
-		public bool TryGetEffectiveRequiresUnreferencedCodeAttributeOnType (TypeDefinition type, out RequiresUnreferencedCodeAttribute attribute)
-		{
-			while (type != null) {
-				if (TryGetLinkerAttribute (type, out RequiresUnreferencedCodeAttribute declaringTypeAttribute)) {
-					attribute = declaringTypeAttribute;
-					return true;
-				}
-				type = type.DeclaringType;
-			}
-
-			attribute = null;
-			return false;
-		}
-
 		public bool HasLinkerAttribute<T> (IMemberDefinition member) where T : Attribute
 		{
 			// Avoid setting up and inserting LinkerAttributesInformation for members without attributes.
@@ -610,6 +589,18 @@ namespace Mono.Linker
 
 			attribute = attributes.FirstOrDefault ();
 			return attribute != null;
+		}
+
+		internal bool DoesMethodRequireUnreferencedCode (MethodDefinition method, out RequiresUnreferencedCodeAttribute attribute)
+		{
+			if (TryGetLinkerAttribute (method, out attribute))
+				return true;
+
+			if ((method.IsStatic || method.IsConstructor) && method.DeclaringType is not null &&
+				TryGetLinkerAttribute (method.DeclaringType, out attribute))
+				return true;
+
+			return false;
 		}
 
 		public void EnqueueVirtualMethod (MethodDefinition method)
