@@ -31,9 +31,10 @@ from superpmi_setup import copy_directory, copy_files, set_pipeline_variable, ru
 parser = argparse.ArgumentParser(description="description")
 
 parser.add_argument("-arch", help="Architecture")
+parser.add_argument("-platform", help="OS platform")
 parser.add_argument("-source_directory", help="path to the directory containing binaries")
 parser.add_argument("-product_directory", help="path to the directory containing binaries")
-parser.add_argument("-mch_directory", help="path to directory containing compressed mch files")
+# parser.add_argument("-mch_directory", help="path to directory containing compressed mch files")
 
 
 def setup_args(args):
@@ -55,6 +56,11 @@ def setup_args(args):
                         "Unable to set arch")
 
     coreclr_args.verify(args,
+                        "platform",
+                        lambda unused: True,
+                        "Unable to set platform")
+
+    coreclr_args.verify(args,
                         "source_directory",
                         lambda source_directory: os.path.isdir(source_directory),
                         "source_directory doesn't exist")
@@ -64,10 +70,10 @@ def setup_args(args):
                         lambda product_directory: os.path.isdir(product_directory),
                         "product_directory doesn't exist")
 
-    coreclr_args.verify(args,
-                        "mch_directory",
-                        lambda mch_directory: True, #os.path.isdir(mch_directory),
-                        "mch_directory doesn't exist")
+    # coreclr_args.verify(args,
+    #                     "mch_directory",
+    #                     lambda mch_directory: True, #os.path.isdir(mch_directory),
+    #                     "mch_directory doesn't exist")
     return coreclr_args
 
 
@@ -119,9 +125,10 @@ def main(main_args):
     coreclr_args = setup_args(main_args)
 
     arch = coreclr_args.arch
+    platform = coreclr_args.platform
     source_directory = coreclr_args.source_directory
     product_directory = coreclr_args.product_directory
-    mch_directory = coreclr_args.mch_directory
+    # mch_directory = coreclr_args.mch_directory
 
     # CorrelationPayload directories
     correlation_payload_directory = path.join(coreclr_args.source_directory, "payload")
@@ -140,29 +147,35 @@ def main(main_args):
     copy_directory(superpmi_src_directory, correlation_payload_directory, match_func=lambda path: any(path.endswith(extension) for extension in [".py"]))
     
     # Copy clrjit*_arch.dll binaries to CorrelationPayload
-    print('Copying clrjit*_{}.dll {} -> {}'.format(arch, product_directory, correlation_payload_directory))
+    print('Copying binaries {} -> {}'.format(arch, product_directory, correlation_payload_directory))
     copy_directory(product_directory, correlation_payload_directory, match_func=match_correlation_files)
+
+    #TODO: Just send appropriate clrjit*.dll files to workitem_directory
+    # # Copy clrjit*_arch.dll binaries to workitem_directory
+    # print('Copying clrjit_{}_{}.dll {} -> {}'.format(arch, product_directory, correlation_payload_directory))
+    # copy_directory(product_directory, correlation_payload_directory, match_func=match_correlation_files)
 
     # Partition mch/mct zip files
     # partition_mch(mch_directory, workitem_directory)
 
-    # Print correlation_payload_directory and workitem_directory
-    print("==> correlation_payload_directory:")
-    for file_path, dirs, files in walk(correlation_payload_directory, topdown=True):
-        for name in files:
-            curr_file_path = path.join(file_path, name)
-            print(curr_file_path)
+    # # Print correlation_payload_directory and workitem_directory
+    # print("==> correlation_payload_directory:")
+    # for file_path, dirs, files in walk(correlation_payload_directory, topdown=True):
+    #     for name in files:
+    #         curr_file_path = path.join(file_path, name)
+    #         print(curr_file_path)
 
-    print("==> workitem_directory:")
-    for file_path, dirs, files in walk(workitem_directory, topdown=True):
-        for name in files:
-            curr_file_path = path.join(file_path, name)
-            print(curr_file_path)
+    # print("==> workitem_directory:")
+    # for file_path, dirs, files in walk(workitem_directory, topdown=True):
+    #     for name in files:
+    #         curr_file_path = path.join(file_path, name)
+    #         print(curr_file_path)
 
     # Set variables
     print('Setting pipeline variables:')
     set_pipeline_variable("CorrelationPayloadDirectory", correlation_payload_directory)
     set_pipeline_variable("WorkItemDirectory", workitem_directory)
+    set_pipeline_variable("Platform", platform)
     set_pipeline_variable("Architecture", arch)
     set_pipeline_variable("Creator", creator)
     set_pipeline_variable("Queue", helix_queue)

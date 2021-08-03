@@ -43,17 +43,17 @@
   </ItemGroup> -->
 
   <ItemGroup>
-    <Partition Include="Partition0" PartitionId="0" />
-    <Partition Include="Partition1" PartitionId="1" />
+    <Partition Include="Partition0" Platform="Windows" Architecture="x64" />
+    <Partition Include="Partition1" Platform="Linux" Architecture="x64" />
   </ItemGroup>
 
   <ItemGroup>
     <HelixWorkItem Include="@(Partition)">
-      <Command>$(WorkItemCommand) -mch_directory foo.txt -partition_index 1 -log_directory $(SuperpmiLogsLocation)</Command>
+      <Command>$(WorkItemCommand) -arch %(HelixWorkItem.Architecture) -platform %(HelixWorkItem.Platform) -log_directory $(SuperpmiLogsLocation)</Command>
       <!-- <Command>$(WorkItemCommand) -mch_directory $(SpmiCollectionFolder)\%(HelixWorkItem.PartitionId)\mch -partition_index %(HelixWorkItem.PartitionId) -log_directory $(SuperpmiLogsLocation)</Command> -->
       <!-- <PayloadDirectory>$(WorkItemDirectory)</PayloadDirectory> -->
       <Timeout>$(WorkItemTimeout)</Timeout>
-      <DownloadFilesFromResults>superpmi_%(Identity).log</DownloadFilesFromResults>
+      <DownloadFilesFromResults>superpmi_%(HelixWorkItem.Platform)_%(HelixWorkItem.Architecture).log</DownloadFilesFromResults>
     </HelixWorkItem>
   </ItemGroup>
   </Project>
