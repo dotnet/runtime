@@ -45,13 +45,7 @@ namespace Internal.TypeSystem
 
             public int CompareTo(FieldLayoutInterval other)
             {
-                if (other.Start == Start)
-                    return 0;
-                
-                if (Start < other.Start )
-                    return -1;
-                
-                return 1;
+                return Start.CompareTo(other.Start);
             }
         }
 
@@ -186,7 +180,7 @@ namespace Internal.TypeSystem
 
             var newInterval = new FieldLayoutInterval(offset, count, tag);
 
-            int binarySearchIndex = fieldLayoutInterval.BinarySearch(new FieldLayoutInterval(offset, 0, FieldLayoutTag.Empty));
+            int binarySearchIndex = fieldLayoutInterval.BinarySearch(newInterval);
 
             if (binarySearchIndex >= 0)
             {
