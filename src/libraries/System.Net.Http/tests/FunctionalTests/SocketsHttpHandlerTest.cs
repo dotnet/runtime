@@ -2079,7 +2079,7 @@ namespace System.Net.Http.Functional.Tests
 
         public static IEnumerable<object[]> LongRunning()
         {
-            return Enumerable.Repeat(true, 10000).Select((b, i) => new object[] { i % 2 == 0 }).ToArray();
+            return Enumerable.Repeat(true, 5000).Select((b, i) => new object[] { i % 2 == 0 }).ToArray();
         }
 
         [ConditionalTheory(nameof(SupportsAlpn))]
