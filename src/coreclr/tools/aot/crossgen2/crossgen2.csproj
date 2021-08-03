@@ -4,6 +4,7 @@
     <!-- The default value for macOS is false -->
     <UseAppHost>true</UseAppHost>
     <PublishTrimmed>true</PublishTrimmed>
+    <RuntimeIdentifier>$(Crossgen2PackageRID)</RuntimeIdentifier>
     <SuppressTrimAnalysisWarnings>true</SuppressTrimAnalysisWarnings>
     <AppHostRuntimeIdentifier>$(Crossgen2PackageRID)</AppHostRuntimeIdentifier>
   </PropertyGroup>
