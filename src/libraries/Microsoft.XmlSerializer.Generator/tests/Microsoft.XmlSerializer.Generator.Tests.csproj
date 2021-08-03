@@ -35,6 +35,7 @@
       <SerializerName>SerializableAssembly.XmlSerializers</SerializerName>
     </PropertyGroup>
     <Message Text="Running Serialization Tool" Importance="normal" />
+    <Warning Condition="Exists('$(OutputPath)Expected.XmlSerializers.cs') != 'true'" Text="Fail to find $(OutputPath)Expected.XmlSerializers.cs" />
     <Csc Condition="Exists('$(OutputPath)Expected.XmlSerializers.cs') == 'true'" OutputAssembly="$(OutputPath)$(SerializerName).dll" References="@(ReferencePath);@(IntermediateAssembly)" EmitDebugInformation="$(DebugSymbols)" DebugType="$(DebugType)" Sources="$(OutputPath)Expected.XmlSerializers.cs" TargetType="Library" ToolExe="$(CscToolExe)" ToolPath="$(CscToolPath)" DisabledWarnings="$(NoWarn), 219" UseSharedCompilation="true" />
     <Warning Condition="Exists('$(OutputPath)$(SerializerName).dll') != 'true'" Text="Fail to generate $(OutputPath)$(SerializerName).dll" />
     <ItemGroup>
@@ -42,7 +43,4 @@
       <ReferenceCopyLocalPaths Include="$(OutputPath)$(SerializerName).dll" />
     </ItemGroup>
   </Target>
-  <ItemGroup>
-    <AdditionalFiles Remove="C:\Users\smolloy\.nuget\packages\microsoft.dotnet.codeanalysis\6.0.0-beta.21366.1\build\..\content\PinvokeAnalyzer_Win32Apis.txt" />
-  </ItemGroup>
 </Project>
