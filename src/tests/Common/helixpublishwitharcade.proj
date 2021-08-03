@@ -55,7 +55,7 @@
     <Error Condition="'$(_Scenarios)' == ''" Text="_Scenarios not set" />
 
     <MSBuild Projects="$(MSBuildProjectFile)" Targets="PrepareCorrelationPayloadDirectory" />
-    <MSBuild Projects="$(MSBuildProjectFile)" Targets="PreparePayloadsDirectories" Properties="Scenarios=$(_Scenarios)" StopOnFirstFailure="true" />
+    <MSBuild Projects="$(MSBuildProjectFile)" Targets="PreparePayloadsDirectories" Properties="Scenarios=$(_Scenarios);ForNode=$(ForNode)" StopOnFirstFailure="true" />
     <MSBuild Projects="$(MSBuildProjectFile)" Targets="PreparePALTestArchive" Properties="$(_PropertiesToPass)" StopOnFirstFailure="true" />
 
     <ItemGroup>

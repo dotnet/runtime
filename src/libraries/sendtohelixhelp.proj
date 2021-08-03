@@ -116,6 +116,10 @@
     <HelixPreCommand Include="set PATH=%HELIX_CORRELATION_PAYLOAD%\chrome-win%3B%PATH%" />
   </ItemGroup>
 
+  <ItemGroup Condition="'$(ForNode)' == 'true'">
+    <HelixPreCommand Include="export PATH=$HELIX_CORRELATION_PAYLOAD/node-v14.17.4-linux-x64/bin:$PATH" />
+  </ItemGroup>
+
   <Choose>
     <When Condition="'$(NeedsWorkload)' == 'true'">
       <PropertyGroup>
@@ -372,15 +376,30 @@
       <HelixCorrelationPayload Include="$(JsonToItemsTaskFactoryDir)"            Destination="build/JsonToItemsTaskFactory" />
     </ItemGroup>
 
-    <ItemGroup Condition="'$(TargetOS)' == 'Browser' and '$(Scenario)' != 'BuildWasmApps'">
+    <ItemGroup Condition="'$(TargetOS)' == 'Browser' and '$(Scenario)' != 'git logBuildWasmApps'">
       <HelixCorrelationPayload Include="$(TestEchoMiddleware)" Destination="xharness/TestEchoMiddleware" />
       <HelixCorrelationPayload Include="$(RemoteLoopMiddleware)" Destination="xharness/RemoteLoopMiddleware" />
+    </ItemGroup>
+
+    <!-- Helix has an old version of Node that we don't support. So we send a valid version (current LTS) in the correlation payload -->
+    <PropertyGroup Condition="'$(ForNode)' == 'true'">
+      <NodeFolder>$([MSBuild]::NormalizeDirectory('$(ArtifactsDir)', 'bin', 'nodejs'))</NodeFolder>
+    </PropertyGroup>
+    <DownloadFile Condition="'$(ForNode)' == 'true'"
+      SourceUrl="https://nodejs.org/dist/latest-v14.x/node-v14.17.4-linux-x64.tar.xz"
+      DestinationFolder="$(NodeFolder)"/>
+    <Exec Command="tar -xf node-v14.17.4-linux-x64.tar.xz"
+        WorkingDirectory="$(NodeFolder)"
+        IgnoreStandardErrorWarningFormat="true" 
+        Condition="'$(ForNode)' == 'true'"/>
+    <ItemGroup Condition="'$(ForNode)' == 'true'" >
+      <HelixCorrelationPayload Include="$(NodeFolder)/node-v14.17.4-linux-x64/bin" Destination="node-v14.17.4-linux-x64/bin"/>
     </ItemGroup>
 
     <ItemGroup Condition="'$(TargetOS)' != 'Android' and '$(TargetOS)' != 'iOS' and '$(TargetOS)' != 'iOSSimulator' and '$(TargetOS)' != 'tvOS' and '$(TargetOS)' != 'tvOSSimulator' and '$(TargetOS)' != 'MacCatalyst'">
       <HelixCorrelationPayload Include="$(HelixCorrelationPayload)"
                                Condition="'$(IncludeHelixCorrelationPayload)' == 'true' and '$(TargetOS)' != 'Browser'"
-                               AsArchive="$(HelixCorrelationPayload.EndsWith('.zip'))" />
+                               AsArchive="$(HelixCorrelationPayload.EndsWith('.zip')))" />
       <HelixCorrelationPayload Include="chromium" Uri="$(ChromiumUrl)"         Condition="'$(NeedsToRunOnBrowser)' == 'true'" />
       <HelixCorrelationPayload Include="chromedriver" Uri="$(ChromeDriverUrl)" Condition="'$(NeedsToRunOnBrowser)' == 'true'" />
 

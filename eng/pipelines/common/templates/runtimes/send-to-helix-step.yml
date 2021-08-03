@@ -26,6 +26,7 @@ parameters:
   runtimeFlavorDisplayName: 'CoreCLR'
   runtimeVariant: ''
   shouldContinueOnError: false
+  forNode: ''
 
 
 steps:
@@ -33,7 +34,7 @@ steps:
   parameters:
     osGroup: ${{ parameters.osGroup }}
     restoreParams: /p:DotNetPublishToBlobFeed=true -restore -projects $(Build.SourcesDirectory)$(dir)eng$(dir)empty.csproj
-    sendParams: ${{ parameters.helixProjectArguments }} /maxcpucount /bl:$(Build.SourcesDirectory)/artifacts/log/SendToHelix.binlog /p:TargetArchitecture=${{ parameters.archType }} /p:TargetOS=${{ parameters.osGroup }} /p:TargetOSSubgroup=${{ parameters.osSubgroup }} /p:Configuration=${{ parameters.buildConfig }}
+    sendParams: ${{ parameters.helixProjectArguments }} /maxcpucount /bl:$(Build.SourcesDirectory)/artifacts/log/SendToHelix.binlog /p:TargetArchitecture=${{ parameters.archType }} /p:TargetOS=${{ parameters.osGroup }} /p:TargetOSSubgroup=${{ parameters.osSubgroup }} /p:Configuration=${{ parameters.buildConfig }} /p:ForNode=${{ parameters.forNode }}
     condition: and(succeeded(), ${{ parameters.condition }})
     shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
     displayName: ${{ parameters.displayName }}
@@ -57,6 +58,7 @@ steps:
       _TimeoutPerTestInMinutes: ${{ parameters.timeoutPerTestInMinutes }}
       runtimeFlavorDisplayName: ${{ parameters.runtimeFlavorDisplayName }}
       _RuntimeVariant: ${{ parameters.runtimeVariant }}
+      ForNode: ${{ parameters.forNode }}
       ${{ if eq(parameters.publishTestResults, 'true') }}:
         SYSTEM_ACCESSTOKEN: $(System.AccessToken)
       # TODO: remove NUGET_PACKAGES once https://github.com/dotnet/arcade/issues/1578 is fixed
