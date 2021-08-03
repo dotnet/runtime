@@ -55,7 +55,7 @@ def setup_args(args):
 
     coreclr_args.verify(args,
                         "mch_directory",
-                        lambda mch_directory: os.path.isdir(mch_directory),
+                        lambda mch_directory: True, #os.path.isdir(mch_directory),
                         "mch_directory doesn't exist")
 
     coreclr_args.verify(args,
@@ -79,6 +79,9 @@ def main(main_args):
     log_directory = coreclr_args.log_directory
     mch_filename = ''
 
+    print("=============> Running superpmi.py download")
+    run_command([python_path, path.join(cwd, "superpmi.py"), "download", "-f", "benchmarks"])
+
     for f in listdir(mch_directory):
         if f.endswith(".mch.zip"):
             mch_filename = f
@@ -89,8 +92,6 @@ def main(main_args):
     target_arch_name = match_mch_elems.group(3)
     run_name = "{}_{}_{}".format(os_name, target_arch_name, coreclr_args.arch)
 
-    print("=============> Running superpmi.py download")
-    run_command([python_path, path.join(cwd, "superpmi.py"), "download", "-f", "benchmarks"])
 
     # populate based on zip file name and jit_directory
     jit_path = path.join(coreclr_args.jit_directory, 'clrjit_{}.dll'.format(run_name))

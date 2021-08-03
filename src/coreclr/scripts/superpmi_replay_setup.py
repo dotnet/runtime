@@ -66,7 +66,7 @@ def setup_args(args):
 
     coreclr_args.verify(args,
                         "mch_directory",
-                        lambda mch_directory: os.path.isdir(mch_directory),
+                        lambda mch_directory: True, #os.path.isdir(mch_directory),
                         "mch_directory doesn't exist")
     return coreclr_args
 
@@ -144,7 +144,7 @@ def main(main_args):
     copy_directory(product_directory, correlation_payload_directory, match_func=match_correlation_files)
 
     # Partition mch/mct zip files
-    partition_mch(mch_directory, workitem_directory)
+    # partition_mch(mch_directory, workitem_directory)
 
     # Print correlation_payload_directory and workitem_directory
     print("==> correlation_payload_directory:")

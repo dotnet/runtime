@@ -37,15 +37,21 @@
     </HelixCorrelationPayload>
   </ItemGroup>
 
-  <ItemGroup>
+  <!-- <ItemGroup>
     <PartitionDirectories Include="$([System.IO.Directory]::GetDirectories($(SpmiCollectionFolder)))"/>
-    <Partition Include="@(PartitionDirectories -> '%(Filename)')" PmiAssemblies="%(Filename)" PartitionId="%(Filename)" />
+    <Partition Include="@(PartitionDirectories -> '%(Filename)')" PartitionId="%(Filename)" />
+  </ItemGroup> -->
+
+  <ItemGroup>
+    <Partition Include="Partition0" PartitionId="0" />
+    <Partition Include="Partition1" PartitionId="1" />
   </ItemGroup>
 
   <ItemGroup>
     <HelixWorkItem Include="@(Partition)">
-      <Command>$(WorkItemCommand) -mch_directory $(SpmiCollectionFolder)\%(HelixWorkItem.PartitionId)\mch -partition_index %(HelixWorkItem.PartitionId) -log_directory $(SuperpmiLogsLocation)</Command>
-      <PayloadDirectory>$(WorkItemDirectory)</PayloadDirectory>
+      <Command>$(WorkItemCommand) -mch_directory foo.txt -partition_index 1 -log_directory $(SuperpmiLogsLocation)</Command>
+      <!-- <Command>$(WorkItemCommand) -mch_directory $(SpmiCollectionFolder)\%(HelixWorkItem.PartitionId)\mch -partition_index %(HelixWorkItem.PartitionId) -log_directory $(SuperpmiLogsLocation)</Command> -->
+      <!-- <PayloadDirectory>$(WorkItemDirectory)</PayloadDirectory> -->
       <Timeout>$(WorkItemTimeout)</Timeout>
       <DownloadFilesFromResults>superpmi_%(Identity).log</DownloadFilesFromResults>
     </HelixWorkItem>
