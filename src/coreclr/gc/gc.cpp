@@ -17083,8 +17083,8 @@ void gc_heap::add_gen_free (int gen_number, size_t free_size)
     (gen->gen_free_spaces[i])++;
     if (gen_number == max_generation)
     {
-//        dprintf (3, ("Mb b%d: f+ %Id (%Id->%Id)", 
-//            i, free_size, (gen->gen_free_spaces[i]).num_items, (gen->gen_free_spaces[i]).total_size));
+        dprintf (3, ("Mb b%d: f+ %Id (%Id)", 
+            i, free_size, gen->gen_free_spaces[i]));
     }
 #else
     UNREFERENCED_PARAMETER(gen_number);
@@ -17106,8 +17106,8 @@ void gc_heap::remove_gen_free (int gen_number, size_t free_size)
     (gen->gen_free_spaces[i])--;
     if (gen_number == max_generation)
     {
-//        dprintf (3, ("Mb b%d: f- %Id (%Id->%Id)", 
-//            i, free_size, (gen->gen_free_spaces[i]).num_items, (gen->gen_free_spaces[i]).total_size));
+        dprintf (3, ("Mb b%d: f- %Id (%Id)", 
+            i, free_size, gen->gen_free_spaces[i]));
     }
 #else
     UNREFERENCED_PARAMETER(gen_number);

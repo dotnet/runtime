@@ -139,7 +139,7 @@ inline void FATAL_GC_ERROR()
 #define MAX_LONGPATH 1024
 #endif // MAX_LONGPATH
 
-#define TRACE_GC
+//#define TRACE_GC
 //#define SIMPLE_DPRINTF
 
 //#define JOIN_STATS         //amount of time spent in the join
@@ -147,7 +147,7 @@ inline void FATAL_GC_ERROR()
 //#define SYNCHRONIZATION_STATS
 //#define SEG_REUSE_STATS
 
-#define FREE_USAGE_STATS
+//#define FREE_USAGE_STATS
 
 #ifdef SYNCHRONIZATION_STATS
 #define BEGIN_TIMING(x) \
@@ -268,7 +268,6 @@ void GCLog (const char *fmt, ... );
 // to do so.
 //#define dprintf(l, x)
 #define dprintf(l,x) STRESS_LOG_VA(l,x);
-//#define dprintf(l,x) {if ((l <= 2) || (l == GTC_LOG)) { STRESS_LOG_VA(l,x);}}
 
 #endif //SIMPLE_DPRINTF
 
