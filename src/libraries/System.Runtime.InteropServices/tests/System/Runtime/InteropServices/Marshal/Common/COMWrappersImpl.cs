@@ -9,6 +9,7 @@ namespace System.Runtime.InteropServices.Tests.Common
 {
     public class ComWrappersImpl : ComWrappers
     {
+        // Doesn't represent a real interface. The value is only used to support a call to QueryInterface for testing.
         public const string IID_TestQueryInterface = "1F906666-B388-4729-B78C-826BC5FD4245";
 
         protected unsafe override ComInterfaceEntry* ComputeVtables(object obj, CreateComInterfaceFlags flags, out int count)
