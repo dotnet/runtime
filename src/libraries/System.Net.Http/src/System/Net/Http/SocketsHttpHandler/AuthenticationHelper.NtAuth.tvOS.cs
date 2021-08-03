@@ -13,7 +13,7 @@ namespace System.Net.Http
         {
             return isProxyAuth ?
                 SendWithProxyAuthAsync(request, authUri, async, credentials, true, connectionPool, cancellationToken).AsTask() :
-                SendWithRequestAuthAsync(request, async, credentials, true, connectionPool, cancellationToken).AsTask();
+                SendWithRequestAuthAsync(request, async, credentials, false, connectionPool, cancellationToken).AsTask();
         }
 
         public static Task<HttpResponseMessage> SendWithNtProxyAuthAsync(HttpRequestMessage request, Uri proxyUri, bool async, ICredentials proxyCredentials, HttpConnection connection, HttpConnectionPool connectionPool, CancellationToken cancellationToken)
