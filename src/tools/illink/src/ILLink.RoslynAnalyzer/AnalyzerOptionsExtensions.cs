@@ -27,5 +27,17 @@ namespace ILLink.RoslynAnalyzer
 				? value
 				: null;
 		}
+
+		public static bool IsMSBuildPropertyValueTrue (
+			this AnalyzerOptions options,
+			string propertyName,
+			Compilation compilation)
+		{
+			var propertyValue = GetMSBuildPropertyValue (options, propertyName, compilation);
+			if (!string.Equals (propertyValue?.Trim (), "true", System.StringComparison.OrdinalIgnoreCase))
+				return false;
+
+			return true;
+		}
 	}
 }

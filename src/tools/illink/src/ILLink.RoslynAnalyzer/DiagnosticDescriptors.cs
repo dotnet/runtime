@@ -21,6 +21,14 @@ namespace ILLink.RoslynAnalyzer
 				true);
 		}
 
+		public static DiagnosticDescriptor GetDiagnosticDescriptor (DiagnosticId diagnosticId, DiagnosticString diagnosticString)
+			=> new DiagnosticDescriptor (diagnosticId.AsString (),
+				diagnosticString.GetTitle (),
+				diagnosticString.GetMessage (),
+				GetDiagnosticCategory (diagnosticId),
+				DiagnosticSeverity.Warning,
+				true);
+
 		public static DiagnosticDescriptor GetDiagnosticDescriptor (DiagnosticId diagnosticId,
 			LocalizableResourceString? lrsTitle = null,
 			LocalizableResourceString? lrsMessage = null,

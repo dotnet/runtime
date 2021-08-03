@@ -9,7 +9,7 @@ using Microsoft.CodeAnalysis.Operations;
 namespace ILLink.RoslynAnalyzer
 {
 	// Copied from https://github.com/dotnet/roslyn/blob/9c6d864baca08d7572871701ab583cec18279426/src/Compilers/Core/Portable/Operations/OperationExtensions.cs
-	internal static partial class OperationExtensions
+	internal static partial class IOperationExtensions
 	{
 		/// <summary>
 		/// Returns the <see cref="ValueUsageInfo"/> for the given operation.

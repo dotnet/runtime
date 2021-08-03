@@ -25,6 +25,8 @@ namespace ILLink.RoslynAnalyzer
 
 		private protected abstract DiagnosticDescriptor RequiresAttributeMismatch { get; }
 
+		private protected virtual ImmutableArray<(Action<OperationAnalysisContext> Action, OperationKind[] OperationKind)> ExtraOperationActions { get; } = ImmutableArray<(Action<OperationAnalysisContext> Action, OperationKind[] OperationKind)>.Empty;
+
 		public override void Initialize (AnalysisContext context)
 		{
 			context.EnableConcurrentExecution ();
@@ -113,6 +115,10 @@ namespace ILLink.RoslynAnalyzer
 					CheckCalledMember (operationContext, methodSymbol, incompatibleMembers);
 				}, OperationKind.DelegateCreation);
 
+				// Register any extra operation actions supported by the analyzer.
+				foreach (var extraOperationAction in ExtraOperationActions)
+					context.RegisterOperationAction (extraOperationAction.Action, extraOperationAction.OperationKind);
+
 				void CheckStaticConstructors (OperationAnalysisContext operationContext,
 					ImmutableArray<IMethodSymbol> staticConstructors)
 				{
@@ -200,25 +206,29 @@ namespace ILLink.RoslynAnalyzer
 		/// <param name="operationContext">Analyzer operation context to retrieve the current operation.</param>
 		/// <param name="targets">Scope of the attribute to search for callers.</param>
 		/// <returns>The symbol of the caller to the operation</returns>
-		private static ISymbol FindContainingSymbol (OperationAnalysisContext operationContext, DiagnosticTargets targets)
+		protected static ISymbol FindContainingSymbol (OperationAnalysisContext operationContext, DiagnosticTargets targets)
 		{
 			var parent = operationContext.Operation.Parent;
 			while (parent is not null) {
 				switch (parent) {
 				case IAnonymousFunctionOperation lambda:
 					return lambda.Symbol;
+
 				case ILocalFunctionOperation local when targets.HasFlag (DiagnosticTargets.MethodOrConstructor):
 					return local.Symbol;
+
 				case IMethodBodyBaseOperation when targets.HasFlag (DiagnosticTargets.MethodOrConstructor):
 				case IPropertyReferenceOperation when targets.HasFlag (DiagnosticTargets.Property):
 				case IFieldReferenceOperation when targets.HasFlag (DiagnosticTargets.Field):
 				case IEventReferenceOperation when targets.HasFlag (DiagnosticTargets.Event):
 					return operationContext.ContainingSymbol;
+
 				default:
 					parent = parent.Parent;
 					break;
 				}
 			}
+
 			return operationContext.ContainingSymbol;
 		}
 
