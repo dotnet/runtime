@@ -81,9 +81,6 @@ jobs:
         mkdir -p $(SpmiCollectionLocation)
       displayName: Create directory for SPMI collection
 
-    # - script: $(PythonScript) $(Build.SourcesDirectory)/src/coreclr/scripts/superpmi.py download --download_all --download_raw -spmi_location $(SpmiCollectionLocation)
-    #   displayName: Download superpmi collection
-
     - script: $(PythonScript) $(Build.SourcesDirectory)/src/coreclr/scripts/superpmi_replay_setup.py -source_directory $(Build.SourcesDirectory) -product_directory $(buildProductRootFolderPath) -arch $(archType)
       displayName: ${{ format('SuperPMI replay setup ({0} {1})', parameters.osGroup, parameters.archType) }}
 

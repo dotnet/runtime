@@ -41,11 +41,6 @@
     </HelixCorrelationPayload>
   </ItemGroup>
 
-  <!-- <ItemGroup>
-    <PartitionDirectories Include="$([System.IO.Directory]::GetDirectories($(SpmiCollectionFolder)))"/>
-    <Partition Include="@(PartitionDirectories -> '%(Filename)')" PartitionId="%(Filename)" />
-  </ItemGroup> -->
-
   <ItemGroup Condition="'$(Architecture)' == 'x64'">
     <SPMI_Partition Include="win-x64" Platform="windows" Architecture="x64" />
     <SPMI_Partition Include="win-arm64" Platform="windows" Architecture="arm64" />
@@ -61,9 +56,6 @@
   <ItemGroup>
     <HelixWorkItem Include="@(SPMI_Partition)">
       <Command>$(WorkItemCommand) -arch %(HelixWorkItem.Architecture) -platform %(HelixWorkItem.Platform) -log_directory $(SuperpmiLogsLocation)</Command>
-      <!-- <Command>$(WorkItemCommand) -arch %(HelixWorkItem.Architecture) -platform %(HelixWorkItem.Platform) -log_directory $(SuperpmiLogsLocation)</Command> -->
-      <!-- <Command>$(WorkItemCommand) -mch_directory $(SpmiCollectionFolder)\%(HelixWorkItem.PartitionId)\mch -partition_index %(HelixWorkItem.PartitionId) -log_directory $(SuperpmiLogsLocation)</Command> -->
-      <!-- <PayloadDirectory>$(WorkItemDirectory)</PayloadDirectory> -->
       <Timeout>$(WorkItemTimeout)</Timeout>
       <DownloadFilesFromResults>superpmi_%(HelixWorkItem.Platform)_%(HelixWorkItem.Architecture).log</DownloadFilesFromResults>
     </HelixWorkItem>
