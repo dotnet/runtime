@@ -95,9 +95,4 @@
                        TargetPath="" />
     </ItemGroup>
   </Target>
-
-  <Target Name="PublishCrossgen"
-          Condition="'$(IsCrossTargetingBuild)' != 'true'"
-          AfterTargets="Build"
-          DependsOnTargets="Publish" />
 </Project>
