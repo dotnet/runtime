@@ -132,10 +132,11 @@ var BindingSupportLib = {
 			this._is_simple_array = bind_runtime_method ("IsSimpleArray", "m");
 			this.setup_js_cont = get_method ("SetupJSContinuation");
 
-			this.create_tcs = get_method ("CreateTaskSource");
-			this.set_tcs_result = get_method ("SetTaskSourceResult");
-			this.set_tcs_failure = get_method ("SetTaskSourceFailure");
-			this.tcs_get_task_and_bind = get_method ("GetTaskAndBind");
+			this.create_tcs = bind_runtime_method ("CreateTaskSource","");
+			this.set_tcs_result = bind_runtime_method ("SetTaskSourceResult","io");
+			this.set_tcs_failure = bind_runtime_method ("SetTaskSourceFailure","is");
+			this.get_tcs_task = bind_runtime_method ("GetTaskSourceTask","i!");
+			
 			this.get_call_sig = get_method ("GetCallSignature");
 
 			this._object_to_string = bind_runtime_method ("ObjectToString", "m");
@@ -162,13 +163,31 @@ var BindingSupportLib = {
 			this._js_owned_object_registry = new FinalizationRegistry(this._js_owned_object_finalized.bind(this));
 		},
 
+		_wrap_js_thenable_as_task: function (thenable) {
+			BINDING.bindings_lazy_init ();
+
+			// TODO optimization: return the tcs.Task on the same call
+			const tcs_gchandle = BINDING.create_tcs();
+			thenable.then (function (result) {
+				BINDING.set_tcs_result(tcs_gchandle, result);
+			}, function (reason) {
+				BINDING.set_tcs_failure(tcs_gchandle, reason);
+			})
+
+			// collect the TaskCompletionSource after js doesn't hold the thenable anymore
+			this._js_owned_object_registry.register(thenable, tcs_gchandle);
+
+			// returns raw pointer to tcs.Task
+			return BINDING.get_tcs_task(tcs_gchandle);
+		},
+
 		_unbox_delegate_root: function (root) {
 			BINDING.bindings_lazy_init ();
 			const gcHandle = this._alloc_gchandle(root.value);
-			return this._get_weak_delegate_from_handle(gcHandle);
+			return this._wrap_delegate_from_gchandle(gcHandle);
 		},
 
-		_get_weak_delegate_from_handle: function (gcHandle) {
+		_wrap_delegate_from_gchandle: function (gcHandle) {
 			BINDING.bindings_lazy_init ();
 			var result = null;
 
@@ -178,7 +197,7 @@ var BindingSupportLib = {
 				var wr = this._js_owned_object_table.get(gcHandle);
 				result = wr.deref();
 				// result could be null after the previous registration of the same object was GC on JS side
-				// it should only happen after FinalizationRegistry called _js_owned_object_finalized for it
+				// TODO: could this happen before _js_owned_object_finalized ?
 			}
 
 			// If the function for this handle was already collected (or was never created),
@@ -530,24 +549,6 @@ var BindingSupportLib = {
 			}
 		},
 
-		create_task_completion_source: function () {
-			return this.call_method (this.create_tcs, null, "i", [ -1 ]);
-		},
-
-		set_task_result: function (tcs, result) {
-			tcs.is_mono_tcs_result_set = true;
-			this.call_method (this.set_tcs_result, null, "oo", [ tcs, result ]);
-			if (tcs.is_mono_tcs_task_bound)
-				this.free_task_completion_source(tcs);
-		},
-
-		set_task_failure: function (tcs, reason) {
-			tcs.is_mono_tcs_result_set = true;
-			this.call_method (this.set_tcs_failure, null, "os", [ tcs, reason.toString () ]);
-			if (tcs.is_mono_tcs_task_bound)
-				this.free_task_completion_source(tcs);
-		},
-
 		// https://github.com/Planeshifter/emscripten-examples/blob/master/01_PassingArrays/sum_post.js
 		js_typedarray_to_heap: function(typedArray){
 			var numBytes = typedArray.length * typedArray.BYTES_PER_ELEMENT;
@@ -616,18 +617,7 @@ var BindingSupportLib = {
 				case typeof js_obj === "boolean":
 					return this._box_js_bool (js_obj);
 				case isThenable() === true:
-					var the_task = this.try_extract_mono_obj (js_obj);
-					if (the_task)
-						return the_task;
-					// FIXME: We need to root tcs for an appropriate timespan, at least until the Task
-					//  is resolved
-					var tcs = this.create_task_completion_source ();
-					js_obj.then (function (result) {
-						BINDING.set_task_result (tcs, result);
-					}, function (reason) {
-						BINDING.set_task_failure (tcs, reason);
-					})
-					return this.get_task_and_bind (tcs, js_obj);
+					return this._wrap_js_thenable_as_task (js_obj);
 				case js_obj.constructor.name === "Date":
 					// We may need to take into account the TimeZone Offset
 					return this.call_method(this.create_date_time, null, "d!", [ js_obj.getTime() ]);
@@ -856,29 +846,6 @@ var BindingSupportLib = {
 				return this.call_method (this.get_call_sig, null, "im", [ method, instanceRoot.value ]);
 			} finally {
 				instanceRoot.release();
-			}
-		},
-
-		get_task_and_bind: function (tcs, js_obj) {
-			var gc_handle = this.mono_wasm_free_list.length ? this.mono_wasm_free_list.pop() : this.mono_wasm_ref_counter++;
-			var task_gchandle = this.call_method (this.tcs_get_task_and_bind, null, "oi", [ tcs, gc_handle + 1 ]);
-			js_obj.__mono_gchandle__ = task_gchandle;
-			this.mono_wasm_object_registry[gc_handle] = js_obj;
-			this.free_task_completion_source(tcs);
-			tcs.is_mono_tcs_task_bound = true;
-			js_obj.__mono_bound_tcs__ = tcs.__mono_gchandle__;
-			tcs.__mono_bound_task__ = js_obj.__mono_gchandle__;
-			return this.wasm_get_raw_obj (js_obj.__mono_gchandle__, true);
-		},
-
-		free_task_completion_source: function (tcs) {
-			if (tcs.is_mono_tcs_result_set)
-			{
-				this._unbind_raw_obj_and_free (tcs.__mono_gchandle__);
-			}
-			if (tcs.__mono_bound_task__)
-			{
-				this._unbind_raw_obj_and_free (tcs.__mono_bound_task__);
 			}
 		},
 
@@ -2065,7 +2032,7 @@ var BindingSupportLib = {
 			var obj = BINDING.mono_wasm_require_handle(objHandle);
 			if (!obj)
 				throw new Error("Invalid JS object handle");
-			var listener = BINDING._get_weak_delegate_from_handle(listenerId);
+			var listener = BINDING._wrap_delegate_from_gchandle(listenerId);
 			if (!listener)
 				throw new Error("Invalid listener ID");
 			var sName = BINDING.conv_string(nameRoot.value);
@@ -2093,7 +2060,7 @@ var BindingSupportLib = {
 			var obj = BINDING.mono_wasm_require_handle(objHandle);
 			if (!obj)
 				throw new Error("Invalid JS object handle");
-			var listener = BINDING._get_weak_delegate_from_handle(listenerId);
+			var listener = BINDING._wrap_delegate_from_gchandle(listenerId);
 			// Removing a nonexistent listener should not be treated as an error
 			if (!listener)
 				return;

@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Threading.Tasks;
 using Xunit;
 
 namespace System.Runtime.InteropServices.JavaScript.Tests
@@ -143,7 +144,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             ");
             Assert.Equal($"  Hello, {testStr}!  GoodMorning, {testStr}!", HelperMarshal._delegateCallResult);
         }
-        
+
         [Theory]
         [InlineData("CreateDelegateFromAnonymousMethod_VoidString")]
         [InlineData("CreateDelegateFromLambda_VoidString")]
@@ -177,7 +178,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
 
         [Theory]
         [MemberData(nameof(ArrayType_TestData))]
-        public static void InvokeFunctionAcceptingArrayTypes(Function objectPrototype, string creator, JSObject arrayType )
+        public static void InvokeFunctionAcceptingArrayTypes(Function objectPrototype, string creator, JSObject arrayType)
         {
             HelperMarshal._funcActionBufferObjectResultValue = arrayType;
             Assert.Equal(10, HelperMarshal._funcActionBufferObjectResultValue.Length);
@@ -198,7 +199,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         [Fact]
         public static void DispatchToDelegate()
         {
-            Runtime.InvokeJS($"globalThis.dispatcher = " + @"
+            var factory = new Function(@"return
             {
                 callback: null,
                 eventFactory:function(data){
@@ -210,7 +211,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
                     this.callback(evt);
                 }
             };");
-            var dispatcher = (JSObject)Runtime.GetGlobalObject("dispatcher");
+            var dispatcher = (JSObject)factory.Call();
             var temp = new bool[2];
             Action<JSObject> cb = (JSObject envt) =>
             {
@@ -225,6 +226,38 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             dispatcher.Invoke("fireEvent", evnt1);
             Assert.True(temp[0]);
             Assert.True(temp[1]);
+        }
+
+        [Fact]
+        public static async Task ResolvePromise()
+        {
+            var factory = new Function(@"
+                return new Promise((resolve, reject) => {
+                  setTimeout(() => {
+                    resolve('foo');
+                  }, 300);
+                });");
+
+            var promise = (Task<object>)factory.Call();
+            var value = await promise;
+
+            Assert.Equal("foo", (string)value);
+            
+        }
+
+        [Fact]
+        public static async Task RejectPromise()
+        {
+            var factory = new Function(@"
+                return new Promise((resolve, reject) => {
+                  setTimeout(() => {
+                    reject('fail');
+                  }, 300);
+                });");
+
+            var promise = (Task<object>)factory.Call();
+
+            await Assert.ThrowsAsync<JSException>(async () => await promise);
         }
     }
 }

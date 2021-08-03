@@ -170,24 +170,31 @@ namespace System.Runtime.InteropServices.JavaScript
             }
         }
 
-        public static object CreateTaskSource(int jsId)
+        public static int CreateTaskSource()
         {
-            return new TaskCompletionSource<object>();
+            var tcs= new TaskCompletionSource<object>();
+            return GetJSOwnedObjectHandle(tcs);
         }
 
-        public static void SetTaskSourceResult(TaskCompletionSource<object> tcs, object result)
+        public static void SetTaskSourceResult(int tcsGCHhanle, object result)
         {
+            GCHandle handle = (GCHandle)(IntPtr)tcsGCHhanle;
+            TaskCompletionSource<object> tcs = (TaskCompletionSource<object>)handle.Target!;
             tcs.SetResult(result);
         }
 
-        public static void SetTaskSourceFailure(TaskCompletionSource<object> tcs, string reason)
+        public static void SetTaskSourceFailure(int tcsGCHhanle, string reason)
         {
+            GCHandle handle = (GCHandle)(IntPtr)tcsGCHhanle;
+            TaskCompletionSource<object> tcs = (TaskCompletionSource<object>)handle.Target!;
             tcs.SetException(new JSException(reason));
         }
 
-        public static int GetTaskAndBind(TaskCompletionSource<object> tcs, int jsId)
+        public static object GetTaskSourceTask(int tcsGCHhanle)
         {
-            return BindExistingObject(tcs.Task, jsId);
+            GCHandle handle = (GCHandle)(IntPtr)tcsGCHhanle;
+            TaskCompletionSource<object> tcs = (TaskCompletionSource<object>)handle.Target!;
+            return tcs.Task;
         }
 
         public static int BindExistingObject(object rawObj, int jsId)
@@ -245,8 +252,8 @@ namespace System.Runtime.InteropServices.JavaScript
 
         // The JS layer invokes this method when the JS wrapper for a JS owned object
         //  has been collected by the JS garbage collector
-        public static void ReleaseJSOwnedObjectByHandle (int id) {
-            GCHandle handle = (GCHandle)(IntPtr)id;
+        public static void ReleaseJSOwnedObjectByHandle (int gcHandle) {
+            GCHandle handle = (GCHandle)(IntPtr)gcHandle;
             lock (JSOwnedObjectLock) {
                 IDFromJSOwnedObject.Remove(handle.Target!);
             }
