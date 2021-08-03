@@ -42,11 +42,11 @@ bool VMToOSInterface::CreateDoubleMemoryMapper(void** pHandle, size_t *pMaxExecu
 #ifdef TARGET_FREEBSD
     int fd = shm_open(SHM_ANON, O_RDWR | O_CREAT, S_IRWXU);
 #elif defined(TARGET_SUNOS) // has POSIX implementation
-    char anonName[24];
-    sprintf(anonName, "/shm-dotnet-%d", getpid());
-    anonName[sizeof(anonName) - 1] = '\0';
-    shm_unlink(anonName);
-    int fd = shm_open(anonName, O_RDWR | O_CREAT | O_EXCL | O_NOFOLLOW, 0600);
+    char name[24];
+    sprintf(name, "/shm-dotnet-%d", getpid());
+    anonName[sizeof(name) - 1] = '\0';
+    shm_unlink(name);
+    int fd = shm_open(name, O_RDWR | O_CREAT | O_EXCL | O_NOFOLLOW, 0600);
 #else // TARGET_FREEBSD
     int fd = memfd_create("doublemapper", MFD_CLOEXEC);
 #endif // TARGET_FREEBSD
