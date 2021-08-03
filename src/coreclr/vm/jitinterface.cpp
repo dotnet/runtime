@@ -10162,6 +10162,20 @@ bool CEEInfo::pInvokeMarshalingRequired(CORINFO_METHOD_HANDLE method, CORINFO_SI
 #endif
     }
 
+    PrepareCodeConfig *config = GetThread()->GetCurrentPrepareCodeConfig();
+    if (config != nullptr && config->IsForMulticoreJit())
+    {
+        bool suppressGCTransition = false;
+        CorInfoCallConvExtension unmanagedCallConv = getUnmanagedCallConv(method, callSiteSig, &suppressGCTransition);
+
+        if (suppressGCTransition)
+        {
+            // MultiCoreJit thread can't inline PInvoke with SuppressGCTransitionAttribute,
+            // because it can't be resolved in mcj thread
+            result = TRUE;
+        }
+    }
+
     EE_TO_JIT_TRANSITION();
 
     return result;
@@ -10935,6 +10949,23 @@ static LONG RunWithErrorTrapFilter(struct _EXCEPTION_POINTERS* exceptionPointers
 }
 
 #endif // !defined(TARGET_UNIX)
+
+bool CEEInfo::runWithSPMIErrorTrap(void (*function)(void*), void* param)
+{
+    // No dynamic contract here because SEH is used
+    STATIC_CONTRACT_THROWS;
+    STATIC_CONTRACT_GC_TRIGGERS;
+    STATIC_CONTRACT_MODE_PREEMPTIVE;
+
+    // NOTE: the lack of JIT/EE transition markers in this method is intentional. Any
+    //       transitions into the EE proper should occur either via JIT/EE
+    //       interface calls made by `function`.
+
+    // As we aren't SPMI, we don't need to do anything other than call the function.
+
+    function(param);
+    return true;
+}
 
 bool CEEInfo::runWithErrorTrap(void (*function)(void*), void* param)
 {
@@ -13760,7 +13791,8 @@ bool IsInstructionSetSupported(CORJIT_FLAGS jitFlags, ReadyToRunInstructionSet r
 
 BOOL LoadDynamicInfoEntry(Module *currentModule,
                           RVA fixupRva,
-                          SIZE_T *entry)
+                          SIZE_T *entry,
+                          BOOL mayUsePrecompiledNDirectMethods)
 {
     STANDARD_VM_CONTRACT;
 
@@ -13988,10 +14020,17 @@ BOOL LoadDynamicInfoEntry(Module *currentModule,
 
     case ENCODE_PINVOKE_TARGET:
         {
-            MethodDesc *pMethod = ZapSig::DecodeMethod(currentModule, pInfoModule, pBlob);
+            if (mayUsePrecompiledNDirectMethods)
+            {
+                MethodDesc *pMethod = ZapSig::DecodeMethod(currentModule, pInfoModule, pBlob);
 
-            _ASSERTE(pMethod->IsNDirect());
-            result = (size_t)(LPVOID)NDirectMethodDesc::ResolveAndSetNDirectTarget((NDirectMethodDesc*)pMethod);
+                _ASSERTE(pMethod->IsNDirect());
+                result = (size_t)(LPVOID)NDirectMethodDesc::ResolveAndSetNDirectTarget((NDirectMethodDesc*)pMethod);
+            }
+            else
+            {
+                return FALSE;
+            }
         }
         break;
 

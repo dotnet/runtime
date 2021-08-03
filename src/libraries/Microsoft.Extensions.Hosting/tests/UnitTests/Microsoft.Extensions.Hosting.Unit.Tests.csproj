@@ -4,6 +4,7 @@
     <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent);net461</TargetFrameworks>
     <EnableDefaultItems>true</EnableDefaultItems>
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
+    <AutoGenerateBindingRedirects Condition="'$(TargetFramework)' == 'net461'">true</AutoGenerateBindingRedirects>
   </PropertyGroup>
 
   <ItemGroup>

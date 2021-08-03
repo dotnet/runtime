@@ -10,6 +10,7 @@ using System.Linq;
 using System.Net.Quic;
 using System.Net.Security;
 using System.Net.Test.Common;
+using System.Reflection;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -80,6 +81,7 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Theory]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/55957")]
         [InlineData(10)]
         [InlineData(100)]
         [InlineData(1000)]
@@ -118,6 +120,7 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Theory]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/56000")]
         [InlineData(10)]
         [InlineData(100)]
         [InlineData(1000)]
@@ -442,6 +445,311 @@ namespace System.Net.Http.Functional.Tests
                 Assert.Equal(HttpStatusCode.OK, responseB.StatusCode);
                 Assert.NotEqual(3, responseB.Version.Major);
             }
+        }
+
+        public enum CancellationType
+        {
+            Dispose,
+            CancellationToken
+        }
+
+        [ConditionalTheory(nameof(IsMsQuicSupported))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/56194")]
+        [InlineData(CancellationType.Dispose)]
+        [InlineData(CancellationType.CancellationToken)]
+        public async Task ResponseCancellation_ServerReceivesCancellation(CancellationType type)
+        {
+            if (UseQuicImplementationProvider != QuicImplementationProviders.MsQuic)
+            {
+                return;
+            }
+
+            using Http3LoopbackServer server = CreateHttp3LoopbackServer();
+
+            using var clientDone = new SemaphoreSlim(0);
+            using var serverDone = new SemaphoreSlim(0);
+
+            Task serverTask = Task.Run(async () =>
+            {
+                using Http3LoopbackConnection connection = (Http3LoopbackConnection)await server.EstablishGenericConnectionAsync();
+                using Http3LoopbackStream stream = await connection.AcceptRequestStreamAsync();
+
+                HttpRequestData request = await stream.ReadRequestDataAsync().ConfigureAwait(false);
+
+                int contentLength = 2*1024*1024;
+                var headers = new List<HttpHeaderData>();
+                headers.Append(new HttpHeaderData("Content-Length", contentLength.ToString(CultureInfo.InvariantCulture)));
+
+                await stream.SendResponseHeadersAsync(HttpStatusCode.OK, headers).ConfigureAwait(false);
+                await stream.SendDataFrameAsync(new byte[1024]).ConfigureAwait(false);
+
+                await clientDone.WaitAsync();
+
+                // It is possible that PEER_RECEIVE_ABORTED event will arrive with a significant delay after peer calls AbortReceive
+                // In that case even with synchronization via semaphores, first writes after peer aborting may "succeed" (get SEND_COMPLETE event)
+                // We are asserting that PEER_RECEIVE_ABORTED would still arrive eventually
+
+                var ex = await Assert.ThrowsAsync<QuicStreamAbortedException>(() => SendDataForever(stream).WaitAsync(TimeSpan.FromSeconds(10)));
+                Assert.Equal((type == CancellationType.CancellationToken ? 268 : 0xffffffff), ex.ErrorCode);
+
+                serverDone.Release();
+            });
+
+            Task clientTask = Task.Run(async () =>
+            {
+                using HttpClient client = CreateHttpClient();
+
+                using HttpRequestMessage request = new()
+                    {
+                        Method = HttpMethod.Get,
+                        RequestUri = server.Address,
+                        Version = HttpVersion30,
+                        VersionPolicy = HttpVersionPolicy.RequestVersionExact
+                    };
+                HttpResponseMessage response = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead).WaitAsync(TimeSpan.FromSeconds(10));
+
+                Stream stream = await response.Content.ReadAsStreamAsync();
+
+                int bytesRead = await stream.ReadAsync(new byte[1024]);
+                Assert.Equal(1024, bytesRead);
+
+                var cts = new CancellationTokenSource(200);
+
+                if (type == CancellationType.Dispose)
+                {
+                    cts.Token.Register(() => response.Dispose());
+                }
+                CancellationToken readCt = type == CancellationType.CancellationToken ? cts.Token : default;
+
+                Exception ex = await Assert.ThrowsAnyAsync<Exception>(() => stream.ReadAsync(new byte[1024], cancellationToken: readCt).AsTask());
+
+                if (type == CancellationType.CancellationToken)
+                {
+                    Assert.IsType<OperationCanceledException>(ex);
+                }
+                else
+                {
+                    var ioe = Assert.IsType<IOException>(ex);
+                    var hre = Assert.IsType<HttpRequestException>(ioe.InnerException);
+                    Assert.IsType<QuicOperationAbortedException>(hre.InnerException);
+                }
+
+                clientDone.Release();
+                await serverDone.WaitAsync();
+            });
+
+            await new[] { clientTask, serverTask }.WhenAllOrAnyFailed(20_000);
+        }
+
+        [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/56265")]
+        public async Task ResponseCancellation_BothCancellationTokenAndDispose_Success()
+        {
+            if (UseQuicImplementationProvider != QuicImplementationProviders.MsQuic)
+            {
+                return;
+            }
+
+            using Http3LoopbackServer server = CreateHttp3LoopbackServer();
+
+            using var clientDone = new SemaphoreSlim(0);
+            using var serverDone = new SemaphoreSlim(0);
+
+            Task serverTask = Task.Run(async () =>
+            {
+                using Http3LoopbackConnection connection = (Http3LoopbackConnection)await server.EstablishGenericConnectionAsync();
+                using Http3LoopbackStream stream = await connection.AcceptRequestStreamAsync();
+
+                HttpRequestData request = await stream.ReadRequestDataAsync().ConfigureAwait(false);
+
+                int contentLength = 2*1024*1024;
+                var headers = new List<HttpHeaderData>();
+                headers.Append(new HttpHeaderData("Content-Length", contentLength.ToString(CultureInfo.InvariantCulture)));
+
+                await stream.SendResponseHeadersAsync(HttpStatusCode.OK, headers).ConfigureAwait(false);
+                await stream.SendDataFrameAsync(new byte[1024]).ConfigureAwait(false);
+
+                await clientDone.WaitAsync();
+
+                // It is possible that PEER_RECEIVE_ABORTED event will arrive with a significant delay after peer calls AbortReceive
+                // In that case even with synchronization via semaphores, first writes after peer aborting may "succeed" (get SEND_COMPLETE event)
+                // We are asserting that PEER_RECEIVE_ABORTED would still arrive eventually
+
+                var ex = await Assert.ThrowsAsync<QuicStreamAbortedException>(() => SendDataForever(stream).WaitAsync(TimeSpan.FromSeconds(20)));
+                // exact error code depends on who won the race
+                Assert.True(ex.ErrorCode == 268 /* cancellation */ || ex.ErrorCode == 0xffffffff /* disposal */, $"Expected 268 or 0xffffffff, got {ex.ErrorCode}");
+
+                serverDone.Release();
+            });
+
+            Task clientTask = Task.Run(async () =>
+            {
+                using HttpClient client = CreateHttpClient();
+
+                using HttpRequestMessage request = new()
+                    {
+                        Method = HttpMethod.Get,
+                        RequestUri = server.Address,
+                        Version = HttpVersion30,
+                        VersionPolicy = HttpVersionPolicy.RequestVersionExact
+                    };
+                HttpResponseMessage response = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead).WaitAsync(TimeSpan.FromSeconds(20));
+
+                Stream stream = await response.Content.ReadAsStreamAsync();
+
+                int bytesRead = await stream.ReadAsync(new byte[1024]);
+                Assert.Equal(1024, bytesRead);
+
+                var cts = new CancellationTokenSource(200);
+                cts.Token.Register(() => response.Dispose());
+
+                Exception ex = await Assert.ThrowsAnyAsync<Exception>(() => stream.ReadAsync(new byte[1024], cancellationToken: cts.Token).AsTask());
+
+                // exact exception depends on who won the race
+                if (ex is not OperationCanceledException and not ObjectDisposedException)
+                {
+                    var ioe = Assert.IsType<IOException>(ex);
+                    var hre = Assert.IsType<HttpRequestException>(ioe.InnerException);
+                    Assert.IsType<QuicOperationAbortedException>(hre.InnerException);
+                }
+
+                clientDone.Release();
+                await serverDone.WaitAsync();
+            });
+
+            await new[] { clientTask, serverTask }.WhenAllOrAnyFailed(200_000);
+        }
+
+        private static async Task SendDataForever(Http3LoopbackStream stream)
+        {
+            var buf = new byte[100];
+            while (true)
+            {
+                await stream.SendDataFrameAsync(buf);
+            }
+        }
+
+        [ConditionalFact(nameof(IsMsQuicSupported))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/56609")]
+        public async Task Alpn_H3_Success()
+        {
+            // Mock doesn't use ALPN.
+            if (UseQuicImplementationProvider == QuicImplementationProviders.Mock)
+            {
+                return;
+            }
+
+            var options = new Http3Options() { Alpn = "h3" };
+            using Http3LoopbackServer server = CreateHttp3LoopbackServer(options);
+
+            using var clientDone = new SemaphoreSlim(0);
+            using var serverDone = new SemaphoreSlim(0);
+
+            Task serverTask = Task.Run(async () =>
+            {
+                using Http3LoopbackConnection connection = (Http3LoopbackConnection)await server.EstablishGenericConnectionAsync();
+
+                SslApplicationProtocol negotiatedAlpn = ExtractMsQuicNegotiatedAlpn(connection);
+                Assert.Equal(new SslApplicationProtocol("h3"), negotiatedAlpn);
+
+                using Http3LoopbackStream stream = await connection.AcceptRequestStreamAsync();
+                await stream.HandleRequestAsync();
+
+                serverDone.Release();
+                await clientDone.WaitAsync();
+            });
+
+            Task clientTask = Task.Run(async () =>
+            {
+                using HttpClient client = CreateHttpClient();
+
+                using HttpRequestMessage request = new()
+                    {
+                        Method = HttpMethod.Get,
+                        RequestUri = server.Address,
+                        Version = HttpVersion30,
+                        VersionPolicy = HttpVersionPolicy.RequestVersionExact
+                    };
+                HttpResponseMessage response = await client.SendAsync(request).WaitAsync(TimeSpan.FromSeconds(10));
+
+                response.EnsureSuccessStatusCode();
+                Assert.Equal(HttpVersion.Version30, response.Version);
+
+                clientDone.Release();
+                await serverDone.WaitAsync();
+            });
+
+            await new[] { clientTask, serverTask }.WhenAllOrAnyFailed(200_000);
+        }
+
+        [ConditionalFact(nameof(IsMsQuicSupported))]
+        public async Task Alpn_NonH3_NegotiationFailure()
+        {
+            // Mock doesn't use ALPN.
+            if (UseQuicImplementationProvider == QuicImplementationProviders.Mock)
+            {
+                return;
+            }
+
+            var options = new Http3Options() { Alpn = "h3-29" }; // anything other than "h3"
+            using Http3LoopbackServer server = CreateHttp3LoopbackServer(options);
+
+            using var clientDone = new SemaphoreSlim(0);
+
+            Task serverTask = Task.Run(async () =>
+            {
+                // ALPN handshake handled by transport, app level will not get any notification
+                await clientDone.WaitAsync();
+            });
+
+            Task clientTask = Task.Run(async () =>
+            {
+                using HttpClient client = CreateHttpClient();
+
+                using HttpRequestMessage request = new()
+                    {
+                        Method = HttpMethod.Get,
+                        RequestUri = server.Address,
+                        Version = HttpVersion30,
+                        VersionPolicy = HttpVersionPolicy.RequestVersionExact
+                    };
+
+                HttpRequestException ex = await Assert.ThrowsAsync<HttpRequestException>(() => client.SendAsync(request).WaitAsync(TimeSpan.FromSeconds(10)));
+                Assert.Contains("ALPN_NEG_FAILURE", ex.Message);
+
+                clientDone.Release();
+            });
+
+            await new[] { clientTask, serverTask }.WhenAllOrAnyFailed(200_000);
+        }
+
+        private SslApplicationProtocol ExtractMsQuicNegotiatedAlpn(Http3LoopbackConnection loopbackConnection)
+        {
+            // TODO: rewrite after object structure change
+            // current structure:
+            // Http3LoopbackConnection -> private QuicConnection _connection
+            // QuicConnection -> private QuicConnectionProvider _provider (= MsQuicConnection)
+            // MsQuicConnection -> private SslApplicationProtocol _negotiatedAlpnProtocol
+
+            FieldInfo quicConnectionField = loopbackConnection.GetType().GetField("_connection", BindingFlags.Instance | BindingFlags.NonPublic);
+            Assert.NotNull(quicConnectionField);
+            object quicConnection = quicConnectionField.GetValue(loopbackConnection);
+            Assert.NotNull(quicConnection);
+            Assert.Equal("QuicConnection", quicConnection.GetType().Name);
+
+            FieldInfo msQuicConnectionField = quicConnection.GetType().GetField("_provider", BindingFlags.Instance | BindingFlags.NonPublic);
+            Assert.NotNull(msQuicConnectionField);
+            object msQuicConnection = msQuicConnectionField.GetValue(quicConnection);
+            Assert.NotNull(msQuicConnection);
+            Assert.Equal("MsQuicConnection", msQuicConnection.GetType().Name);
+
+            FieldInfo alpnField = msQuicConnection.GetType().GetField("_negotiatedAlpnProtocol", BindingFlags.Instance | BindingFlags.NonPublic);
+            Assert.NotNull(alpnField);
+            object alpn = alpnField.GetValue(msQuicConnection);
+            Assert.NotNull(alpn);
+            Assert.IsType<SslApplicationProtocol>(alpn);
+
+            return (SslApplicationProtocol)alpn;
         }
 
         /// <summary>

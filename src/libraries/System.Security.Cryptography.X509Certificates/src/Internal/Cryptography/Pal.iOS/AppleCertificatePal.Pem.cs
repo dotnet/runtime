@@ -63,8 +63,9 @@ namespace Internal.Cryptography.Pal
                             X509ContentType.Pkcs7;
                         bool cont = derCallback(certBytes.AsSpan(0, bytesWritten), contentType);
 
-                        CryptoPool.Return(certBytes, clearSize: 0);
+                        byte[] toReturn = certBytes;
                         certBytes = null;
+                        CryptoPool.Return(toReturn, clearSize: 0);
 
                         if (!cont)
                         {

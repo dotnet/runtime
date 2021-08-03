@@ -12,6 +12,10 @@ namespace System.Data
     /// This is the generic base class for TypedDataSet
     /// </summary>
     [Serializable]
+    // This coarse suppression silences all RequiresUnreferencedCode warnings in the class.
+    // https://github.com/mono/linker/issues/2136 tracks making it possible to add more granular suppressions at the member level, and with a different warning code.
+    [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+        Justification = "DataTable.CreateInstance's use of GetType uses only the parameterless constructor. Warnings are about serialization related constructors.")]
     public abstract class TypedTableBase<T> : DataTable, IEnumerable<T> where T : DataRow
     {
 

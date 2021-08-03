@@ -72,17 +72,3 @@ jobs:
       readyToRun: true
       displayNameArgs: R2R
 
-#
-# Crossgen-comparison jobs
-#
-- template: /eng/pipelines/common/platform-matrix.yml
-  parameters:
-    jobTemplate: /eng/pipelines/coreclr/templates/crossgen-comparison-job.yml
-    buildConfig: release
-    platforms:
-    - Linux_arm
-    helixQueueGroup: ci
-    helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
-    jobParameters:
-      testGroup: outerloop
-      liveLibrariesBuildConfig: Release

@@ -44,7 +44,7 @@ bool VMToOSInterface::CreateDoubleMemoryMapper(void** pHandle, size_t *pMaxExecu
 #elif defined(TARGET_SUNOS) // has POSIX implementation
     char name[24];
     sprintf(name, "/shm-dotnet-%d", getpid());
-    anonName[sizeof(name) - 1] = '\0';
+    name[sizeof(name) - 1] = '\0';
     shm_unlink(name);
     int fd = shm_open(name, O_RDWR | O_CREAT | O_EXCL | O_NOFOLLOW, 0600);
 #else // TARGET_FREEBSD

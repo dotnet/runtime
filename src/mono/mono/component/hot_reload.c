@@ -19,7 +19,9 @@
 #include "mono/utils/mono-lazy-init.h"
 #include "mono/utils/mono-logger-internals.h"
 #include "mono/utils/mono-path.h"
+#include "mono/metadata/debug-internals.h"
 #include "mono/metadata/mono-debug.h"
+#include "mono/metadata/debug-mono-ppdb.h"
 
 
 #include <mono/component/hot_reload.h>
@@ -161,6 +163,8 @@ typedef struct _DeltaInfo {
 	// for each table, the row in the EncMap table that has the first token for remapping it?
 	uint32_t enc_recs [MONO_TABLE_NUM];
 	delta_row_count count [MONO_TABLE_NUM];
+	
+	MonoPPDBFile *ppdb_file;
 } DeltaInfo;
 
 
@@ -320,7 +324,7 @@ baseline_info_lookup (MonoImage *base_image)
 }
 
 static DeltaInfo*
-delta_info_init (MonoImage *image_dmeta, MonoImage *image_base, BaselineInfo *base_info, uint32_t generation);
+delta_info_init (MonoImage *image_dmeta, MonoImage *image_base, MonoPPDBFile *ppdb_file, BaselineInfo *base_info, uint32_t generation);
 
 static void
 free_ppdb_entry (gpointer key, gpointer val, gpointer user_data)
@@ -337,6 +341,7 @@ delta_info_destroy (DeltaInfo *dinfo)
 		g_hash_table_foreach (dinfo->method_ppdb_table_update, free_ppdb_entry, NULL);
 		g_hash_table_destroy (dinfo->method_ppdb_table_update);
 	}
+	mono_ppdb_close (dinfo->ppdb_file);
 	g_free (dinfo);
 }
 
@@ -918,7 +923,7 @@ hot_reload_relative_delta_index (MonoImage *image_dmeta, int token)
 
 /* LOCKING: assumes publish_lock is held */
 static DeltaInfo*
-delta_info_init (MonoImage *image_dmeta, MonoImage *image_base, BaselineInfo *base_info, uint32_t generation)
+delta_info_init (MonoImage *image_dmeta, MonoImage *image_base, MonoPPDBFile *ppdb_file, BaselineInfo *base_info, uint32_t generation)
 {
 	MonoTableInfo *encmap = &image_dmeta->tables [MONO_TABLE_ENCMAP];
 	g_assert (!delta_info_lookup (image_dmeta));
@@ -929,6 +934,7 @@ delta_info_init (MonoImage *image_dmeta, MonoImage *image_base, BaselineInfo *ba
 	DeltaInfo *delta_info = g_malloc0 (sizeof (DeltaInfo));
 
 	delta_info->generation = generation;
+	delta_info->ppdb_file = ppdb_file;
 
 	table_to_image_lock ();
 	g_hash_table_insert (delta_image_to_info, image_dmeta, delta_info);
@@ -1201,11 +1207,12 @@ set_update_method (MonoImage *image_base, BaselineInfo *base_info, uint32_t gene
 }
 
 static MonoDebugInformationEnc *
-hot_reload_get_method_debug_information (MonoImage *image_dppdb, int idx)
+hot_reload_get_method_debug_information (MonoPPDBFile *ppdb_file, int idx)
 {
-	if (!image_dppdb)
+	if (!ppdb_file)
 		return NULL;
-		
+
+	MonoImage *image_dppdb = ppdb_file->image;
 	MonoTableInfo *table_encmap = &image_dppdb->tables [MONO_TABLE_ENCMAP];
 	int rows = table_info_get_rows (table_encmap);
 	for (int i = 0; i < rows ; ++i) {
@@ -1217,8 +1224,8 @@ hot_reload_get_method_debug_information (MonoImage *image_dppdb, int idx)
 			int token_index = mono_metadata_token_index (map_token);
 			if (token_index == idx)	{
 				MonoDebugInformationEnc *encDebugInfo = g_new0 (MonoDebugInformationEnc, 1);
-				encDebugInfo->idx = i;
-				encDebugInfo->image = image_dppdb;				
+				encDebugInfo->idx = i + 1;
+				encDebugInfo->ppdb_file = ppdb_file;
 				return encDebugInfo;
 			}
 		}
@@ -1228,7 +1235,7 @@ hot_reload_get_method_debug_information (MonoImage *image_dppdb, int idx)
 
 /* do actuall enclog application */
 static gboolean
-apply_enclog_pass2 (MonoImage *image_base, BaselineInfo *base_info, uint32_t generation, MonoImage *image_dmeta, MonoImage *image_dppdb, DeltaInfo *delta_info, gconstpointer dil_data, uint32_t dil_length, MonoError *error)
+apply_enclog_pass2 (MonoImage *image_base, BaselineInfo *base_info, uint32_t generation, MonoImage *image_dmeta, DeltaInfo *delta_info, gconstpointer dil_data, uint32_t dil_length, MonoError *error)
 {
 	MonoTableInfo *table_enclog = &image_dmeta->tables [MONO_TABLE_ENCLOG];
 	int rows = table_info_get_rows (table_enclog);
@@ -1307,7 +1314,7 @@ apply_enclog_pass2 (MonoImage *image_base, BaselineInfo *base_info, uint32_t gen
 			int rva = mono_metadata_decode_row_col (&image_dmeta->tables [MONO_TABLE_METHOD], mapped_token - 1, MONO_METHOD_RVA);
 			if (rva < dil_length) {
 				char *il_address = ((char *) dil_data) + rva;
-				MonoDebugInformationEnc *method_debug_information = hot_reload_get_method_debug_information (image_dppdb, token_index);
+				MonoDebugInformationEnc *method_debug_information = hot_reload_get_method_debug_information (delta_info->ppdb_file, token_index);
 				set_update_method (image_base, base_info, generation, image_dmeta, delta_info, token_index, il_address, method_debug_information);
 			} else {
 				/* rva points probably into image_base IL stream. can this ever happen? */
@@ -1396,19 +1403,20 @@ hot_reload_apply_changes (int origin, MonoImage *image_base, gconstpointer dmeta
 	/* makes a copy of dil_bytes_orig */
 	gpointer dil_bytes = open_dil_data (image_base, dil_bytes_orig, dil_length);
 
-	MonoImage *image_dpdb = NULL;
+	MonoPPDBFile *ppdb_file = NULL;
 	if (dpdb_length > 0)
 	{
-		image_dpdb = image_open_dmeta_from_data (image_base, generation, dpdb_bytes_orig, dpdb_length);
+		MonoImage *image_dpdb = image_open_dmeta_from_data (image_base, generation, dpdb_bytes_orig, dpdb_length);
 		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE, "pdb image string size: 0x%08x", image_dpdb->heap_strings.size);
 		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE, "pdb image user string size: 0x%08x", image_dpdb->heap_us.size);
 		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE, "pdb image blob heap addr: %p", image_dpdb->heap_blob.data);
 		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE, "pdb image blob heap size: 0x%08x", image_dpdb->heap_blob.size);
+		ppdb_file = mono_create_ppdb_file (image_dpdb, FALSE);
 	}
 
 	BaselineInfo *base_info = baseline_info_lookup_or_add (image_base);
 
-	DeltaInfo *delta_info = delta_info_init (image_dmeta, image_base, base_info, generation);
+	DeltaInfo *delta_info = delta_info_init (image_dmeta, image_base, ppdb_file, base_info, generation);
 
 
 	if (image_dmeta->minimal_delta) {
@@ -1460,7 +1468,7 @@ hot_reload_apply_changes (int origin, MonoImage *image_base, gconstpointer dmeta
 	if (mono_trace_is_traced (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE))
 		dump_update_summary (image_base, image_dmeta);
 
-	if (!apply_enclog_pass2 (image_base, base_info, generation, image_dmeta, image_dpdb, delta_info, dil_bytes, dil_length, error)) {
+	if (!apply_enclog_pass2 (image_base, base_info, generation, image_dmeta, delta_info, dil_bytes, dil_length, error)) {
 		mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_METADATA_UPDATE, "Error applying delta image to base=%s, due to: %s", basename, mono_error_get_message (error));
 		hot_reload_update_cancel (generation);
 		return;

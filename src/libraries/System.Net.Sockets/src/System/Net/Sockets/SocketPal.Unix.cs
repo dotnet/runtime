@@ -1918,7 +1918,7 @@ namespace System.Net.Sockets
             return socketError;
         }
 
-        public static async void SendPacketsAsync(
+        public static async Task SendPacketsAsync(
             Socket socket, TransmitFileOptions options, SendPacketsElement[] elements, SafeFileHandle[] fileHandles, CancellationToken cancellationToken, Action<long, SocketError> callback)
         {
             SocketError error = SocketError.Success;

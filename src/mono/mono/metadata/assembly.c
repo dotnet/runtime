@@ -42,7 +42,6 @@
 #include <mono/metadata/reflection.h>
 #include <mono/metadata/coree.h>
 #include <mono/metadata/cil-coff.h>
-#include <mono/utils/mono-io-portability.h>
 #include <mono/utils/atomic.h>
 #include <mono/utils/mono-os-mutex.h>
 #include <mono/metadata/mono-private-unstable.h>

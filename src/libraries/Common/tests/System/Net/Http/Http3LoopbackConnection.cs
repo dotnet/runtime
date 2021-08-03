@@ -189,11 +189,34 @@ namespace System.Net.Test.Common
 
             await stream.SendResponseAsync(statusCode, headers, content).ConfigureAwait(false);
 
-            // closing the connection here causes bytes written to streams to go missing.
-            // Regardless, we told the client we are closing so it shouldn't matter -- they should not use this connection anymore.
-            //await CloseAsync(H3_NO_ERROR).ConfigureAwait(false);
+            await WaitForClientDisconnectAsync();
 
             return request;
+        }
+
+        // Wait for the client to close the connection, e.g. after we send a GOAWAY, or after the HttpClient is disposed.
+        public async Task WaitForClientDisconnectAsync()
+        {
+            while (true)
+            {
+                Http3LoopbackStream stream;
+
+                try
+                {
+                    stream = await AcceptRequestStreamAsync().ConfigureAwait(false);
+                }
+                catch (QuicConnectionAbortedException abortException) when (abortException.ErrorCode == H3_NO_ERROR)
+                {
+                    break;
+                }
+
+                using (stream)
+                {
+                    await stream.AbortAndWaitForShutdownAsync(H3_REQUEST_REJECTED);
+                }
+            }
+
+            await CloseAsync(H3_NO_ERROR);
         }
 
         public override async Task WaitForCancellationAsync(bool ignoreIncomingData = true, int requestId = 0)

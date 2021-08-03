@@ -385,8 +385,9 @@ namespace System
         /// Returns an enumeration of lines over the provided span.
         /// </summary>
         /// <remarks>
-        /// See the documentation for <see cref="string.ReplaceLineEndings"/> for more information
-        /// on how newline sequences are detected.
+        /// It is recommended that protocol parsers not utilize this API. See the documentation
+        /// for <see cref="string.ReplaceLineEndings"/> for more information on how newline
+        /// sequences are detected.
         /// </remarks>
         public static SpanLineEnumerator EnumerateLines(this ReadOnlySpan<char> span)
         {
@@ -397,8 +398,9 @@ namespace System
         /// Returns an enumeration of lines over the provided span.
         /// </summary>
         /// <remarks>
-        /// See the documentation for <see cref="string.ReplaceLineEndings"/> for more information
-        /// on how newline sequences are detected.
+        /// It is recommended that protocol parsers not utilize this API. See the documentation
+        /// for <see cref="string.ReplaceLineEndings"/> for more information on how newline
+        /// sequences are detected.
         /// </remarks>
         public static SpanLineEnumerator EnumerateLines(this Span<char> span)
         {
