@@ -192,7 +192,7 @@ namespace System.Data
         }
 
         // Deserialize the table from binary/xml stream.
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2112:RequiresUnreferencedCode",
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2112:ReflectionToRequiresUnreferencedCode",
             Justification = "CreateInstance's use of GetType uses only the parameterless constructor. Warnings are about serialization related constructors.")]
         [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         protected DataTable(SerializationInfo info, StreamingContext context) : this()

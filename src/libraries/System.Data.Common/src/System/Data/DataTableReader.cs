@@ -739,7 +739,7 @@ namespace System.Data
             DataColumn NumericScale = new DataColumn(SchemaTableColumn.NumericScale, typeof(short));
             DataColumn DataType = GetSystemTypeDataColumn();
 
-            [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2111:RequiresDynamicallyAccessedMembers",
+            [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2111:ReflectionToDynamicallyAccessedMembers",
                 Justification = "The problem is Type.TypeInitializer which requires constructors on the Type instance." +
                     "In this case the TypeInitializer property is not accessed dynamically.")]
             static DataColumn GetSystemTypeDataColumn() =>

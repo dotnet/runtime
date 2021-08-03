@@ -12,7 +12,7 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace System.Data.Common
 {
-    [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2113:RequiresUnreferencedCode",
+    [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2113:ReflectionToRequiresUnreferencedCode",
         Justification = "The use of GetType preserves ICustomTypeDescriptor members with RequiresUnreferencedCode, but the GetType callsites either "
             + "occur in RequiresUnreferencedCode scopes, or have individually justified suppressions.")]
     [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
@@ -391,7 +391,7 @@ namespace System.Data.Common
             return attributes;
         }
 
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2112:RequiresUnreferencedCode",
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2112:ReflectionToRequiresUnreferencedCode",
             Justification = "The use of GetType preserves this member with RequiresUnreferencedCode, but the GetType callsites either "
                 + "occur in RequiresUnreferencedCode scopes, or have individually justified suppressions.")]
         [RequiresUnreferencedCode("PropertyDescriptor's PropertyType cannot be statically discovered.")]
@@ -420,7 +420,7 @@ namespace System.Data.Common
             return propertyDescriptors;
         }
 
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2112:RequiresUnreferencedCode",
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2112:ReflectionToRequiresUnreferencedCode",
             Justification = "The use of GetType preserves this member with RequiresUnreferencedCode, but the GetType callsites either "
                 + "occur in RequiresUnreferencedCode scopes, or have individually justified suppressions.")]
         [RequiresUnreferencedCode("PropertyDescriptor's PropertyType cannot be statically discovered.")]
@@ -530,7 +530,7 @@ namespace System.Data.Common
             }
         }
 
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2112:RequiresUnreferencedCode",
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2112:ReflectionToRequiresUnreferencedCode",
             Justification = "The use of GetType preserves this member with RequiresUnreferencedCode, but the GetType callsites either "
                 + "occur in RequiresUnreferencedCode scopes, or have individually justified suppressions.")]
         [RequiresUnreferencedCode("The public parameterless constructor or the 'Default' static field may be trimmed from the Attribute's Type.")]

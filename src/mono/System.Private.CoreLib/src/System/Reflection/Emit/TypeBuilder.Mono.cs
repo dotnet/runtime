@@ -752,7 +752,7 @@ namespace System.Reflection.Emit
                 null);
         }
 
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2110:RequiresDynamicallyAccessedMembers",
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2110:ReflectionToDynamicallyAccessedMembers",
             Justification = "For instance member internal calls, the linker preserves all fields of the declaring type. " +
             "The parent and created fields have DynamicallyAccessedMembersAttribute requirements, but creating the runtime class is safe " +
             "because the annotations fully preserve the parent type, and the type created via Reflection.Emit is not subject to trimming.")]

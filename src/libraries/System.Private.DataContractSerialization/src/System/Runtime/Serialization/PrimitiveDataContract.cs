@@ -347,7 +347,7 @@ namespace System.Runtime.Serialization
             Justification = "This warns because the call to Base has the type annotated with DynamicallyAccessedMembers so it warns" +
             "when looking into the methods of NullPrimitiveDataContract which are annotated with RequiresUnreferencedCodeAttribute. " +
             "Because this just represents null, we suppress.")]
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2111:RequiresDynamicallyAccessedMembers",
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2111:ReflectionToDynamicallyAccessedMembers",
             Justification = "This warns because the call to Base has the type annotated with DynamicallyAccessedMembers so it warns" +
             "when looking into the methods of NullPrimitiveDataContract which are annotated with DynamicallyAccessedMembersAttribute. " +
             "Because this just represents null, we suppress.")]
