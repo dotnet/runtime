@@ -7421,11 +7421,11 @@
                         <data name="AppDomainID" inType="win:UInt64" outType="win:HexInt64" />
                         <data name="ContextID" inType="win:UInt64" outType="win:HexInt64" />
                         <UserData>
-                            <AppDomainLoadUnload xmlns="myNs">
+                            <ContextLoadedUnloaded xmlns="myNs">
                                 <ObjectID> %1 </ObjectID>
                                 <AppDomainID> %2 </AppDomainID>
                                 <ContextID> %3 </ContextID>
-                            </AppDomainLoadUnload>
+                            </ContextLoadedUnloaded>
                         </UserData>
                     </template>
 
@@ -7570,11 +7570,11 @@
                         <data name="ModuleID" inType="win:UInt64" outType="win:HexInt64" />
                         <data name="AssemblyName" inType="win:UnicodeString" />
                         <UserData>
-                            <ModuleLoadedUnloaded xmlns="myNs">
+                            <AssemblyLoadedUnloaded xmlns="myNs">
                                 <AssemblyID> %1 </AssemblyID>
                                 <ModuleID> %2 </ModuleID>
                                 <AssemblyName> %3 </AssemblyName>
-                            </ModuleLoadedUnloaded>
+                            </AssemblyLoadedUnloaded>
                         </UserData>
                     </template>
 
@@ -7688,9 +7688,9 @@
                     <template tid="GCFinalizingFinalizedObject">
                         <data name="ObjectID" inType="win:Pointer" outType="win:HexInt64" />
                         <UserData>
-                            <GCFinalizingFinalized xmlns="myNs">
+                            <GCFinalizingFinalizedObject xmlns="myNs">
                                 <ObjectID> %1 </ObjectID>
-                            </GCFinalizingFinalized>
+                            </GCFinalizingFinalizedObject>
                         </UserData>
                     </template>
 
