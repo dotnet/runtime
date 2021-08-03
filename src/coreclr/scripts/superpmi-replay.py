@@ -80,7 +80,7 @@ def main(main_args):
     mch_filename = ''
 
     print("=============> Running superpmi.py download")
-    run_command([python_path, path.join(cwd, "superpmi.py"), "download", "-f", "benchmarks"])
+    run_command([python_path, path.join(cwd, "superpmi.py"), "download", "-f", "benchmarks", "-core_root", cwd])
 
     for f in listdir(mch_directory):
         if f.endswith(".mch.zip"):
