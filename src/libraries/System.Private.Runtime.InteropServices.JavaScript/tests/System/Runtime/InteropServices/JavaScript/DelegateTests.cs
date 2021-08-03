@@ -199,8 +199,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         [Fact]
         public static void DispatchToDelegate()
         {
-            var factory = new Function(@"return
-            {
+            var factory = new Function(@"return {
                 callback: null,
                 eventFactory:function(data){
                     return {
