@@ -15,11 +15,11 @@ namespace System.Net.Security
         private static readonly byte[] s_http11Utf8 = new byte[] { 0x68, 0x74, 0x74, 0x70, 0x2f, 0x31, 0x2e, 0x31 }; // "http/1.1"
 
         // Refer to IANA on ApplicationProtocols: https://www.iana.org/assignments/tls-extensiontype-values/tls-extensiontype-values.xhtml#alpn-protocol-ids
-        // h3
+        /// <summary>Defines a <see cref="SslApplicationProtocol"/> instance for HTTP 3.0.</summary>
         public static readonly SslApplicationProtocol Http3 = new SslApplicationProtocol(s_http3Utf8, copy: false);
-        // h2
+        /// <summary>Defines a <see cref="SslApplicationProtocol"/> instance for HTTP 2.0.</summary>
         public static readonly SslApplicationProtocol Http2 = new SslApplicationProtocol(s_http2Utf8, copy: false);
-        // http/1.1
+        /// <summary>Defines a <see cref="SslApplicationProtocol"/> instance for HTTP 1.1.</summary>
         public static readonly SslApplicationProtocol Http11 = new SslApplicationProtocol(s_http11Utf8, copy: false);
 
         private readonly byte[] _readOnlyProtocol;
