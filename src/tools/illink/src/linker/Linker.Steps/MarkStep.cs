@@ -1571,7 +1571,7 @@ namespace Mono.Linker.Steps
 			try {
 				var origin = _scopeStack.CurrentScope.Origin;
 
-				if (member is MethodDefinition method && DoesMethodRequireUnreferencedCode (method, out RequiresUnreferencedCodeAttribute attribute)) {
+				if (member is MethodDefinition method && Annotations.DoesMethodRequireUnreferencedCode (method, out RequiresUnreferencedCodeAttribute attribute)) {
 					var message = string.Format (
 						"'DynamicallyAccessedMembersAttribute' on '{0}' or one of its base types references '{1}' which requires unreferenced code.{2}{3}",
 						type.GetDisplayName (),
@@ -1841,9 +1841,10 @@ namespace Mono.Linker.Steps
 			MarkCustomAttributes (type, new DependencyInfo (DependencyKind.CustomAttribute, type));
 			MarkSecurityDeclarations (type, new DependencyInfo (DependencyKind.CustomAttribute, type));
 
-			if (type.BaseType != null &&
-				!_context.Annotations.TryGetEffectiveRequiresUnreferencedCodeAttributeOnType (type, out RequiresUnreferencedCodeAttribute _) &&
-				_context.Annotations.TryGetEffectiveRequiresUnreferencedCodeAttributeOnType (_context.TryResolve (type.BaseType), out RequiresUnreferencedCodeAttribute effectiveRequiresUnreferencedCode)) {
+			if (type.BaseType is not null &&
+				!_context.Annotations.HasLinkerAttribute<RequiresUnreferencedCodeAttribute> (type) &&
+				_context.Annotations.TryGetLinkerAttribute (_context.TryResolve (type.BaseType), out RequiresUnreferencedCodeAttribute effectiveRequiresUnreferencedCode)) {
+
 				var currentOrigin = _scopeStack.CurrentScope.Origin;
 
 				string formatString = SharedStrings.RequiresOnBaseClassMessage;
@@ -2902,29 +2903,13 @@ namespace Mono.Linker.Steps
 			var currentOrigin = _scopeStack.CurrentScope.Origin;
 
 			IMemberDefinition suppressionContextMember = currentOrigin.SuppressionContextMember;
-			if (suppressionContextMember != null &&
-				(Annotations.HasLinkerAttribute<RequiresUnreferencedCodeAttribute> (suppressionContextMember) ||
-				(suppressionContextMember.DeclaringType != null &&
-				Annotations.TryGetEffectiveRequiresUnreferencedCodeAttributeOnType (suppressionContextMember.DeclaringType, out RequiresUnreferencedCodeAttribute _))))
+			if (suppressionContextMember is MethodDefinition &&
+				Annotations.DoesMethodRequireUnreferencedCode ((MethodDefinition) suppressionContextMember, out _))
 				return true;
 
 			IMemberDefinition originMember = currentOrigin.MemberDefinition;
-			if (suppressionContextMember != originMember && originMember != null &&
-				(Annotations.HasLinkerAttribute<RequiresUnreferencedCodeAttribute> (originMember) ||
-				(originMember.DeclaringType != null &&
-				Annotations.TryGetEffectiveRequiresUnreferencedCodeAttributeOnType (originMember.DeclaringType, out RequiresUnreferencedCodeAttribute _))))
-				return true;
-
-			return false;
-		}
-
-		bool DoesMethodRequireUnreferencedCode (MethodDefinition method, out RequiresUnreferencedCodeAttribute attribute)
-		{
-			if (Annotations.TryGetLinkerAttribute (method, out attribute))
-				return true;
-
-			if ((method.IsStatic || method.IsConstructor) &&
-				Annotations.TryGetEffectiveRequiresUnreferencedCodeAttributeOnType (method.DeclaringType, out attribute))
+			if (originMember is MethodDefinition && suppressionContextMember != originMember &&
+				Annotations.DoesMethodRequireUnreferencedCode ((MethodDefinition) originMember, out _))
 				return true;
 
 			return false;
@@ -2937,7 +2922,7 @@ namespace Mono.Linker.Steps
 			if (ShouldSuppressAnalysisWarningsForRequiresUnreferencedCode ())
 				return;
 
-			if (!DoesMethodRequireUnreferencedCode (method, out RequiresUnreferencedCodeAttribute requiresUnreferencedCode))
+			if (!Annotations.DoesMethodRequireUnreferencedCode (method, out RequiresUnreferencedCodeAttribute requiresUnreferencedCode))
 				return;
 
 			ReportRequiresUnreferencedCode (method.GetDisplayName (), requiresUnreferencedCode, _scopeStack.CurrentScope.Origin);

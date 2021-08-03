@@ -798,10 +798,15 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 
 				public void NonStaticMethod () { }
 
+				// RequiresOnMethod.MethodWithRUC generates a warning that gets suppressed because the declaring type has RUC
+				public static void CallRUCMethod () => RequiresOnMethod.MethodWithRUC ();
+
 				public class NestedClass
 				{
 					public static void NestedStaticMethod () { }
-					// RequiresOnMethod.MethodWithRUC generates a warning that gets suppressed because the declaring type has RUC
+
+					// This warning doesn't get suppressed since the declaring type NestedClass is not annotated with RequiresUnreferencedCode
+					[ExpectedWarning ("IL2026", "RequiresOnClass.RequiresOnMethod.MethodWithRUC()", "MethodWithRUC")]
 					public static void CallRUCMethod () => RequiresOnMethod.MethodWithRUC ();
 				}
 
@@ -850,7 +855,8 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 				}
 			}
 
-			[ExpectedWarning ("IL2109", "RequiresOnClass/DerivedWithoutRequires2", "RequiresOnClass.ClassWithRequiresUnreferencedCode.NestedClass", "--ClassWithRequiresUnreferencedCode--")]
+			// In order to generate IL2109 the nested class would also need to be annotated with RequiresUnreferencedCode
+			// otherwise we threat the nested class as safe
 			private class DerivedWithoutRequires2 : ClassWithRequiresUnreferencedCode.NestedClass
 			{
 				public static void StaticMethod () { }
@@ -892,7 +898,9 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 			{
 				public static void StaticMethodInInheritedClass () { }
 
-				// The requires attribute in the declaring type suppresses IL2109 here
+				// A nested class is not considered a static method nor constructor therefore RequiresUnreferencedCode doesnt apply
+				// and this warning is not suppressed
+				[ExpectedWarning ("IL2109", "RequiresOnClass/DerivedWithRequires2/DerivedNestedClass", "--ClassWithRequiresUnreferencedCode--")]
 				public class DerivedNestedClass : ClassWithRequiresUnreferencedCode
 				{
 					public static void NestedStaticMethod () { }
@@ -910,19 +918,20 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 			{
 				var classObject = new ClassWithRequiresUnreferencedCode ();
 			}
-			[ExpectedWarning ("IL2026", "RequiresOnClass.ClassWithRequiresUnreferencedCode.NestedClass.NestedStaticMethod()", "--ClassWithRequiresUnreferencedCode--", GlobalAnalysisOnly = true)]
+
 			static void TestRequiresInParentClassAccesedByStaticMethod ()
 			{
 				ClassWithRequiresUnreferencedCode.NestedClass.NestedStaticMethod ();
 			}
 
 			[ExpectedWarning ("IL2026", "RequiresOnClass.ClassWithRequiresUnreferencedCode.StaticMethod()", "--ClassWithRequiresUnreferencedCode--", GlobalAnalysisOnly = true)]
-			[ExpectedWarning ("IL2026", "RequiresOnClass.ClassWithRequiresUnreferencedCode.NestedClass.NestedStaticMethod()", "--ClassWithRequiresUnreferencedCode--", GlobalAnalysisOnly = true)]
-			[ExpectedWarning ("IL2026", "RequiresOnClass.ClassWithRequiresUnreferencedCode.NestedClass.CallRUCMethod()", "Message for --ClassWithRequiresUnreferencedCode--", GlobalAnalysisOnly = true)]
+			// Although we suppress the warning from RequiresOnMethod.MethodWithRUC () we still get a warning because we call CallRUCMethod() which is an static method on a type with RUC
+			[ExpectedWarning ("IL2026", "RequiresOnClass.ClassWithRequiresUnreferencedCode.CallRUCMethod()", "--ClassWithRequiresUnreferencedCode--", GlobalAnalysisOnly = true)]
 			static void TestRequiresOnBaseButNotOnDerived ()
 			{
 				DerivedWithoutRequires.StaticMethodInInheritedClass ();
 				DerivedWithoutRequires.StaticMethod ();
+				DerivedWithoutRequires.CallRUCMethod ();
 				DerivedWithoutRequires.DerivedNestedClass.NestedStaticMethod ();
 				DerivedWithoutRequires.NestedClass.NestedStaticMethod ();
 				DerivedWithoutRequires.NestedClass.CallRUCMethod ();
@@ -932,7 +941,6 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 			}
 
 			[ExpectedWarning ("IL2026", "RequiresOnClass.DerivedWithRequires.StaticMethodInInheritedClass()", "--DerivedWithRequires--", GlobalAnalysisOnly = true)]
-			[ExpectedWarning ("IL2026", "RequiresOnClass.DerivedWithRequires.DerivedNestedClass.NestedStaticMethod()", "--DerivedWithRequires--", GlobalAnalysisOnly = true)]
 			static void TestRequiresOnDerivedButNotOnBase ()
 			{
 				DerivedWithRequires.StaticMethodInInheritedClass ();
@@ -942,9 +950,7 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 			}
 
 			[ExpectedWarning ("IL2026", "RequiresOnClass.DerivedWithRequires2.StaticMethodInInheritedClass()", "--DerivedWithRequires2--", GlobalAnalysisOnly = true)]
-			[ExpectedWarning ("IL2026", "RequiresOnClass.DerivedWithRequires2.DerivedNestedClass.NestedStaticMethod()", "--DerivedWithRequires2--", GlobalAnalysisOnly = true)]
 			[ExpectedWarning ("IL2026", "RequiresOnClass.ClassWithRequiresUnreferencedCode.StaticMethod()", "--ClassWithRequiresUnreferencedCode--", GlobalAnalysisOnly = true)]
-			[ExpectedWarning ("IL2026", "RequiresOnClass.ClassWithRequiresUnreferencedCode.NestedClass.NestedStaticMethod()", "--ClassWithRequiresUnreferencedCode--", GlobalAnalysisOnly = true)]
 			static void TestRequiresOnBaseAndDerived ()
 			{
 				DerivedWithRequires2.StaticMethodInInheritedClass ();
