@@ -10,6 +10,7 @@ namespace System.Text.Json.SourceGeneration.Tests
     public interface ITestContext
     {
         public JsonTypeInfo<Location> Location { get; }
+        public JsonTypeInfo<NumberTypes> NumberTypes { get; }
         public JsonTypeInfo<RepeatedTypes.Location> RepeatedLocation { get; }
         public JsonTypeInfo<ActiveOrUpcomingEvent> ActiveOrUpcomingEvent { get; }
         public JsonTypeInfo<CampaignSummaryViewModel> CampaignSummaryViewModel { get; }
