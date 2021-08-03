@@ -191,21 +191,19 @@ namespace System.Net.Sockets
         {
             CheckTransmitFileOptions(flags);
 
-            // Open the file, if any
-            // Open it before we send the preBuffer so that any exception happens first
-            SafeFileHandle? fileHandle = OpenFileHandle(fileName);
-
             SocketError errorCode = SocketError.Success;
 
-            // Send the preBuffer, if any
-            // This will throw on error
-            if (!preBuffer.IsEmpty)
+            // Open the file, if any
+            // Open it before we send the preBuffer so that any exception happens first
+            using (SafeFileHandle? fileHandle = OpenFileHandle(fileName))
             {
-                Send(preBuffer);
-            }
+                // Send the preBuffer, if any
+                // This will throw on error
+                if (!preBuffer.IsEmpty)
+                {
+                    Send(preBuffer);
+                }
 
-            using (fileHandle)
-            {
                 // Send the file, if any
                 if (fileHandle != null)
                 {
