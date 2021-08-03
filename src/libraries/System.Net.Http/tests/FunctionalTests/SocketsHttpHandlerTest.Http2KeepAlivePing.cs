@@ -14,7 +14,7 @@ using Xunit.Abstractions;
 namespace System.Net.Http.Functional.Tests
 {
     [Collection(nameof(NonParallelTestCollection))]
-    [ConditionalClass(typeof(SocketsHttpHandler_Http2FlowControl_Test), nameof(IsSupported))]
+    [ConditionalClass(typeof(SocketsHttpHandler_Http2KeepAlivePing_Test), nameof(IsSupported))]
     public sealed class SocketsHttpHandler_Http2KeepAlivePing_Test : HttpClientHandlerTestBase
     {
         public static readonly bool IsSupported = PlatformDetection.SupportsAlpn && PlatformDetection.IsNotBrowser;
