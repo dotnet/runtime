@@ -143,7 +143,8 @@
       <ParsedRuntimeConfigFilePath>$([System.IO.Path]::GetDirectoryName($(_MainAssemblyPath)))\runtimeconfig.bin</ParsedRuntimeConfigFilePath>
     </PropertyGroup>
 
-    <Error Condition="!Exists('$(RuntimeConfigFilePath)')" Text="RuntimeConfigFilePath=$(RuntimeConfigFilePath) doesn't exist" />
+    <Error Condition="'$(_MainAssemblyPath)' == ''" Text="Could not find assembly named $(AssemblyName).dll in the bundle assemblies" />
+    <Error Condition="!Exists('$(RuntimeConfigFilePath)')" Text="Could not find runtimeconfig.json for $(_MainAssemblyPath). RuntimeConfigFilePath=$(RuntimeConfigFilePath) doesn't exist. " />
 
     <ItemGroup>
       <RuntimeConfigReservedProperties Include="RUNTIME_IDENTIFIER"/>
