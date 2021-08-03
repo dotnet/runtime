@@ -12,6 +12,15 @@
     <UseLiveBuiltDotNetHost Condition="'$(TargetArchitecture)' == 's390x' or '$(TargetArchitecture)' == 'armv6'">true</UseLiveBuiltDotNetHost>
   </PropertyGroup>
 
+  <ItemGroup>
+    <!-- Only binplace the hosts into the shared framework, not the runtime pack-->
+    <BinPlaceTargetFrameworks Include="$(NetCoreAppCurrent)-$(TargetOS)"
+                              Condition="'$(BuildTargetFramework)' == '$(NetCoreAppCurrent)' or '$(BuildTargetFramework)' == ''">
+      <NativePath >$(NetCoreAppCurrentTestHostSharedFrameworkPath)</NativePath>
+      <RuntimePath Condition="'$(IsNETCoreAppSrc)' == 'true'">$(NetCoreAppCurrentTestHostSharedFrameworkPath)</RuntimePath>
+    </BinPlaceTargetFrameworks>
+  </ItemGroup>
+
   <ItemGroup Condition="'$(DotNetBuildFromSource)' != 'true'">
     <PackageReference Include="Microsoft.DiaSymReader.Native"
                       Version="$(MicrosoftDiaSymReaderNativeVersion)" />
