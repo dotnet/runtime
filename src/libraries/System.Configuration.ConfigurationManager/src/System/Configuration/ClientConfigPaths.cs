@@ -107,7 +107,13 @@ namespace System.Configuration
                 {
                     // Uri constructor would throw for relative paths but full framework doesn't.
                     // We will mimic full framework behavior here.
-                    ApplicationConfigUri = Path.GetFullPath(externalConfigPath, AppDomain.CurrentDomain.BaseDirectory);
+                    if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows) && externalConfigPath.Length >= 2 && externalConfigPath.StartsWith('\\') && externalConfigPath[1] != '\\')
+                    {
+                        // if path starts with a single backslash Path.Combine would combine with a root of BaseDirectory so we trim that character to avoid that
+                        externalConfigPath = externalConfigPath.Substring(0, externalConfigPath.Length - 1);
+                    }
+
+                    ApplicationConfigUri = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, externalConfigPath);
                 }
             }
             else if (!string.IsNullOrEmpty(ApplicationUri))
