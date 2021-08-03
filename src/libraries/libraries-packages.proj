@@ -2,13 +2,13 @@
 
   <ItemGroup>
     <PackageReference Include="Microsoft.DotNet.Build.Tasks.Packaging" Version="$(MicrosoftDotNetBuildTasksPackagingVersion)" />
+  </ItemGroup>
 
-    <ProjectReference Include="$(MSBuildThisFileDirectory)System.Runtime.Experimental\ref\System.Runtime.Experimental.csproj"
-                      Condition="'$(BuildAllConfigurations)' == 'true'" />
+  <ItemGroup Condition="'$(BuildAllConfigurations)' == 'true'">
+    <ProjectReference Include="$(MSBuildThisFileDirectory)System.Runtime.Experimental\ref\System.Runtime.Experimental.csproj" />
     <ProjectReference Include="$(PkgDir)*\*.proj" Exclude="$(PkgDir)test\*" />
     <ProjectReference Include="$(MSBuildThisFileDirectory)*\src\*.*proj"
-                      Condition="'$(BuildAllConfigurations)' == 'true'"
-                      Exclude="$(MSBuildThisFileDirectory)*\src\**\*.shproj"/>
+                      Exclude="$(MSBuildThisFileDirectory)*\src\**\*.shproj" />
   </ItemGroup>
 
   <!-- Need the PackageIndexFile file property from baseline.props -->

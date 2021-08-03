@@ -1,13 +1,7 @@
 <Project Sdk="Microsoft.Build.NoTargets">
 
-  <UsingTask TaskName="GetCompatiblePackageTargetFrameworks"
-             AssemblyFile="$(DotNetPackageTestingAssembly)"
-             Condition="'$(DotNetPackageTestingAssembly)' != ''" />
-
   <ItemGroup>
     <PackageReference Include="Microsoft.DotNet.PackageTesting" Version="$(MicrosoftDotNetPackageTestingVersion)" />
-    <!-- Needed by packageTest.targets, could be moved into PackageTesting: https://github.com/dotnet/arcade/issues/7474. -->
-    <PackageReference Include="Microsoft.DotNet.Build.Tasks.Packaging" Version="$(MicrosoftDotNetBuildTasksPackagingVersion)" />
   </ItemGroup>
 
   <PropertyGroup>
@@ -38,11 +32,6 @@
     <ExcludePackages Condition="'$(PackagesToTest)' != ''" Include="@(AllPackages)" Exclude="@(PackagesToTest)" />
     <TestPackages Include="@(AllPackages)" Exclude="@(ExcludePackages)" />
     <TestPackagesPath Include="@(TestPackages->'%(PackagePath)')" />
-
-    <!-- no targeting pack was ever shipped for net463 -->
-    <TargetFrameworksToExclude Include="net463" />
-    <TargetFrameworksToExclude Include="net47" />
-    <TargetFrameworksToExclude Include="netcoreapp2.2" />
   </ItemGroup>
 
   <ItemGroup>
@@ -59,9 +48,6 @@
                               build\Directory.Build.props;
                               build\Directory.Build.targets"
                      DestinationFolder="$(TestDir)" />
-    <TestSupportFile Include="$(PackagingTaskDir)..\..\**\*.*"
-                     Exclude="$(PackagingTaskDir)..\..\*.*"
-                     DestinationFolder="$(TestDir)%(RecursiveDir)" />
     <!-- frameworksettings and packagesettings -->
     <TestSupportFile Include="frameworkSettings\**\*"
                      DestinationFolder="$(TestDir)frameworkSettings\%(RecursiveDir)" />
@@ -77,7 +63,14 @@
   </Target>
 
   <Target Name="GetSupportedPackages">
-    <GetCompatiblePackageTargetFrameworks PackagePaths="@(TestPackagesPath)" SupportedTestFrameworks="@(SupportedTestFramework)">
+    <!-- Adding NetCoreAppCurrent to the supported test frameworks list to avoid a test gap when
+         the repository retargets NetCoreAppCurrent to the next major version. -->
+    <ItemGroup>
+      <SupportedTestFramework Include="$(NetCoreAppCurrent)" />
+    </ItemGroup>
+
+    <GetCompatiblePackageTargetFrameworks PackagePaths="@(TestPackagesPath)"
+                                          SupportedTestFrameworks="@(SupportedTestFramework)">
       <Output TaskParameter="TestProjects" ItemName="SupportedPackage" />
     </GetCompatiblePackageTargetFrameworks>
 
@@ -98,7 +91,7 @@
       </_supportedPackageByTargetFramework>
 
       <_supportedPackageByTargetFrameworkToRemove Include="@(_supportedPackageByTargetFramework)" Exclude="@(TargetFrameworksToInclude)" Condition="'@(TargetFrameworksToInclude)' != ''" />
-      <_filteredSupportedPackageByTargetFramework Include="@(_supportedPackageByTargetFramework)" Exclude="@(TargetFrameworksToExclude);@(_supportedPackageByTargetFrameworkToRemove)" />
+      <_filteredSupportedPackageByTargetFramework Include="@(_supportedPackageByTargetFramework)" Exclude="@(_supportedPackageByTargetFrameworkToRemove)" />
 
       <SupportedPackage Remove="@(SupportedPackage)" />
       <SupportedPackage Include="@(_filteredSupportedPackageByTargetFramework->'%(Original)')" />

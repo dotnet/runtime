@@ -9,6 +9,19 @@
 #include <interoplibabi.h>
 #include "referencetrackertypes.hpp"
 
+#ifndef DEFINE_ENUM_FLAG_OPERATORS
+#define DEFINE_ENUM_FLAG_OPERATORS(ENUMTYPE) \
+extern "C++" { \
+    inline ENUMTYPE operator | (ENUMTYPE a, ENUMTYPE b) { return ENUMTYPE(((int)a)|((int)b)); } \
+    inline ENUMTYPE operator |= (ENUMTYPE &a, ENUMTYPE b) { return (ENUMTYPE &)(((int &)a) |= ((int)b)); } \
+    inline ENUMTYPE operator & (ENUMTYPE a, ENUMTYPE b) { return ENUMTYPE(((int)a)&((int)b)); } \
+    inline ENUMTYPE operator &= (ENUMTYPE &a, ENUMTYPE b) { return (ENUMTYPE &)(((int &)a) &= ((int)b)); } \
+    inline ENUMTYPE operator ~ (ENUMTYPE a) { return (ENUMTYPE)(~((int)a)); } \
+    inline ENUMTYPE operator ^ (ENUMTYPE a, ENUMTYPE b) { return ENUMTYPE(((int)a)^((int)b)); } \
+    inline ENUMTYPE operator ^= (ENUMTYPE &a, ENUMTYPE b) { return (ENUMTYPE &)(((int &)a) ^= ((int)b)); } \
+}
+#endif
+
 enum class CreateComInterfaceFlagsEx : int32_t
 {
     None = InteropLib::Com::CreateComInterfaceFlags_None,
@@ -31,6 +44,8 @@ namespace ABI
     struct ComInterfaceDispatch;
     struct ComInterfaceEntry;
 }
+
+static constexpr size_t ManagedObjectWrapperRefCountOffset();
 
 // Class for wrapping a managed object and projecting it in a non-managed environment
 class ManagedObjectWrapper
@@ -159,7 +174,7 @@ public: // static
     static NativeObjectWrapperContext* MapFromRuntimeContext(_In_ void* cxt);
 
     // Create a NativeObjectWrapperContext instance
-    static HRESULT NativeObjectWrapperContext::Create(
+    static HRESULT Create(
         _In_ IUnknown* external,
         _In_opt_ IUnknown* nativeObjectAsInner,
         _In_ InteropLib::Com::CreateObjectFlags flags,

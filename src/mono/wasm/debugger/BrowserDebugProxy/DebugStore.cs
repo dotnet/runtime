@@ -453,14 +453,16 @@ namespace Microsoft.WebAssembly.Diagnostics
 
     internal class TypeInfo
     {
-        private AssemblyInfo assembly;
+        internal AssemblyInfo assembly;
         private TypeDefinition type;
         private List<MethodInfo> methods;
+        public int Token { get; }
 
-        public TypeInfo(AssemblyInfo assembly, TypeDefinition type)
+        public TypeInfo(AssemblyInfo assembly, TypeDefinitionHandle typeHandle, TypeDefinition type)
         {
             this.assembly = assembly;
             var metadataReader = assembly.asmMetadataReader;
+            Token = MetadataTokens.GetToken(metadataReader, typeHandle);
             this.type = type;
             methods = new List<MethodInfo>();
             Name = metadataReader.GetString(type.Name);
@@ -594,7 +596,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             {
                 var typeDefinition = asmMetadataReader.GetTypeDefinition(type);
 
-                var typeInfo = new TypeInfo(this, typeDefinition);
+                var typeInfo = new TypeInfo(this, type, typeDefinition);
                 typesByName[typeInfo.FullName] = typeInfo;
                 if (pdbMetadataReader != null)
                 {
@@ -876,7 +878,7 @@ namespace Microsoft.WebAssembly.Diagnostics
 
     internal class DebugStore
     {
-        private List<AssemblyInfo> assemblies = new List<AssemblyInfo>();
+        internal List<AssemblyInfo> assemblies = new List<AssemblyInfo>();
         private readonly HttpClient client;
         private readonly ILogger logger;
 

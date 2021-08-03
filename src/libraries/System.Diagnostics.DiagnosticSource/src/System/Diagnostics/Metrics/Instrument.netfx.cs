@@ -22,7 +22,7 @@ namespace System.Diagnostics.Metrics
         private const int MaxTagsCount = 3;
 
         /// <summary>
-        /// Record the measurement by notifying all <see cref="MeterListener" /> objects which listeneing to this instrument.
+        /// Record the measurement by notifying all <see cref="MeterListener" /> objects which listening to this instrument.
         /// </summary>
         /// <param name="measurement">The measurement value.</param>
         /// <param name="tag">A key-value pair tag associated with the measurement.</param>
@@ -36,7 +36,7 @@ namespace System.Diagnostics.Metrics
         }
 
         /// <summary>
-        /// Record the measurement by notifying all <see cref="MeterListener" /> objects which listeneing to this instrument.
+        /// Record the measurement by notifying all <see cref="MeterListener" /> objects which listening to this instrument.
         /// </summary>
         /// <param name="measurement">The measurement value.</param>
         /// <param name="tag1">A first key-value pair tag associated with the measurement.</param>
@@ -52,7 +52,7 @@ namespace System.Diagnostics.Metrics
         }
 
         /// <summary>
-        /// Record the measurement by notifying all <see cref="MeterListener" /> objects which listeneing to this instrument.
+        /// Record the measurement by notifying all <see cref="MeterListener" /> objects which listening to this instrument.
         /// </summary>
         /// <param name="measurement">The measurement value.</param>
         /// <param name="tag1">A first key-value pair tag associated with the measurement.</param>

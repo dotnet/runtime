@@ -445,9 +445,6 @@ invoke_resolve_method (MonoMethod *resolve_method, MonoAssemblyLoadContext *alc,
 	if (mono_runtime_get_no_exec ())
 		return NULL;
 
-	if (!mono_gchandle_get_target_internal (alc->gchandle))
-		return NULL;
-
 	HANDLE_FUNCTION_ENTER ();
 
 	aname_str = mono_stringify_assembly_name (aname);
@@ -456,8 +453,7 @@ invoke_resolve_method (MonoMethod *resolve_method, MonoAssemblyLoadContext *alc,
 	goto_if_nok (error, leave);
 
 	MonoReflectionAssemblyHandle assm;
-	gpointer gchandle;
-	gchandle = (gpointer)alc->gchandle;
+	gpointer gchandle = mono_alc_get_gchandle_for_resolving (alc);
 	gpointer args [2];
 	args [0] = &gchandle;
 	args [1] = MONO_HANDLE_RAW (aname_obj);

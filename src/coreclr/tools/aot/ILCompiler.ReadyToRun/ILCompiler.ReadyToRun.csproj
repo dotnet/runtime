@@ -188,6 +188,9 @@
     <Compile Include="Compiler\DependencyAnalysis\TypeAndMethod.cs" />
     <Compile Include="Compiler\IRootingServiceProvider.cs" />
     <Compile Include="Compiler\ReadyToRunCompilationModuleGroupBase.cs" />
+    <Compile Include="Compiler\PettisHansenSort\CallGraphNode.cs" />
+    <Compile Include="Compiler\PettisHansenSort\DisjointSetForest.cs" />
+    <Compile Include="Compiler\PettisHansenSort\PettisHansen.cs" />
     <Compile Include="IBC\IBCDataModel.cs" />
     <Compile Include="IBC\IBCDataReader.cs" />
     <Compile Include="IBC\MIbcProfileParser.cs" />

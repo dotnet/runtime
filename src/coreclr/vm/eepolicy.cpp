@@ -616,6 +616,10 @@ void DECLSPEC_NORETURN EEPolicy::HandleFatalStackOverflow(EXCEPTION_POINTERS *pE
 
     WRAPPER_NO_CONTRACT;
 
+    // Disable GC stress triggering GC at this point, we don't want the GC to start running
+    // on this thread when we have only a very limited space left on the stack
+    GCStressPolicy::InhibitHolder iholder;
+
     STRESS_LOG0(LF_EH, LL_INFO100, "In EEPolicy::HandleFatalStackOverflow\n");
 
     FrameWithCookie<FaultingExceptionFrame> fef;
