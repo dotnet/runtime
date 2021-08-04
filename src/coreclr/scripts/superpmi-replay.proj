@@ -33,6 +33,9 @@
     <!-- Workaround until https://github.com/dotnet/arcade/pull/6179 is not available -->
     <HelixResultsDestinationDir>$(BUILD_SOURCESDIRECTORY)\artifacts\helixresults</HelixResultsDestinationDir>
     <WorkItemCommand>$(Python) $(ProductDirectory)\superpmi-replay.py -jit_directory $(ProductDirectory)</WorkItemCommand>
+    <EnableAzurePipelinesReporter>false</EnableAzurePipelinesReporter>
+    <EnableXUnitReporter>false</EnableXUnitReporter>
+    <WorkItemTimeout>5:00</WorkItemTimeout>
   </PropertyGroup>
 
   <ItemGroup>
