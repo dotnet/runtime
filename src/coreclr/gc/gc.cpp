@@ -18822,7 +18822,7 @@ int gc_heap::joined_generation_to_condemn (BOOL should_evaluate_elevation,
         }
     }
 
-    if ((conserve_mem_setting != 0) && (n >= max_generation))
+    if ((conserve_mem_setting != 0) && (n == max_generation))
     {
         float frag_limit = 1.0f - conserve_mem_setting / 10.0f;
 
@@ -24018,7 +24018,7 @@ size_t gc_heap::get_total_gen_size (int gen_number)
     for (int hn = 0; hn < gc_heap::n_heaps; hn++)
     {
         gc_heap* hp = gc_heap::g_heaps[hn];
-        size += hp->generation_sizes (hp->generation_of (gen_number));
+        size += hp->generation_size (hp->generation_of (gen_number));
     }
 #else
     size_t size = generation_sizes (generation_of (gen_number));
