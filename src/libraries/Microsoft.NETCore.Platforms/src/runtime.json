@@ -752,6 +752,41 @@
         "debian-x86"
       ]
     },
+    "debian.11": {
+      "#import": [
+        "debian"
+      ]
+    },
+    "debian.11-arm": {
+      "#import": [
+        "debian.11",
+        "debian-arm"
+      ]
+    },
+    "debian.11-arm64": {
+      "#import": [
+        "debian.11",
+        "debian-arm64"
+      ]
+    },
+    "debian.11-armel": {
+      "#import": [
+        "debian.11",
+        "debian-armel"
+      ]
+    },
+    "debian.11-x64": {
+      "#import": [
+        "debian.11",
+        "debian-x64"
+      ]
+    },
+    "debian.11-x86": {
+      "#import": [
+        "debian.11",
+        "debian-x86"
+      ]
+    },
     "debian.8": {
       "#import": [
         "debian"

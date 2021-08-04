@@ -10873,7 +10873,11 @@ void gc_heap::clear_region_info (heap_segment* region)
     ::record_changed_seg ((uint8_t*)region, heap_segment_reserved (region),
                         settings.gc_index, current_bgc_state,
                         seg_deleted);
-    decommit_mark_array_by_seg (region);
+
+    if (settings.entry_memory_load >= high_memory_load_th || g_low_memory_status)
+    {
+        decommit_mark_array_by_seg (region);
+    }
 #endif //BACKGROUND_GC
 }
 
@@ -11358,6 +11362,12 @@ void gc_heap::decommit_heap_segment_pages (heap_segment* seg,
 size_t gc_heap::decommit_heap_segment_pages_worker (heap_segment* seg,
                                                     uint8_t* new_committed)
 {
+#ifdef USE_REGIONS
+    if (settings.entry_memory_load < high_memory_load_th && !g_low_memory_status)
+    {
+        return 0;
+    }
+#endif
     assert (!use_large_pages_p);
     uint8_t* page_start = align_on_page (new_committed);
     size_t size = heap_segment_committed (seg) - page_start;
@@ -11387,6 +11397,13 @@ size_t gc_heap::decommit_heap_segment_pages_worker (heap_segment* seg,
 //decommit all pages except one or 2
 void gc_heap::decommit_heap_segment (heap_segment* seg)
 {
+#ifdef USE_REGIONS
+    if (settings.entry_memory_load < high_memory_load_th && !g_low_memory_status)
+    {
+        return;
+    }
+#endif
+
     uint8_t*  page_start = align_on_page (heap_segment_mem (seg));
 
     dprintf (3, ("Decommitting heap segment %Ix(%Ix)", (size_t)seg, heap_segment_mem (seg)));
@@ -15047,6 +15064,7 @@ BOOL gc_heap::a_fit_free_list_uoh_p (size_t size,
                 if (loh_pad)
                 {
                     make_unused_array (free_list, loh_pad);
+                    generation_free_obj_space (gen) += loh_pad;
                     limit -= loh_pad;
                     free_list += loh_pad;
                     free_list_size -= loh_pad;
@@ -15185,6 +15203,7 @@ found_fit:
     if (gen_number == loh_generation)
     {
         make_unused_array (allocated, loh_pad);
+        generation_free_obj_space (generation_of (gen_number)) += loh_pad;
         allocated += loh_pad;
         limit -= loh_pad;
     }
@@ -45567,6 +45586,27 @@ bool GCHeap::IsConcurrentGCEnabled()
 void PopulateDacVars(GcDacVars *gcDacVars)
 {
 #ifndef DACCESS_COMPILE
+
+#ifdef MULTIPLE_HEAPS
+    static int gc_heap_field_offsets[] = {
+
+#define DEFINE_FIELD(field_name, field_type) offsetof(gc_heap, field_name),
+#define DEFINE_DPTR_FIELD(field_name, field_type) offsetof(gc_heap, field_name),
+#define DEFINE_ARRAY_FIELD(field_name, field_type, array_length) offsetof(gc_heap, field_name),
+#define DEFINE_MISSING_FIELD -1,
+
+#include "gc_typefields.h"
+
+#undef DEFINE_MISSING_FIELD
+#undef DEFINE_ARRAY_FIELD
+#undef DEFINE_DPTR_FIELD
+#undef DEFINE_FIELD
+
+        offsetof(gc_heap, generation_table)
+    };
+    static_assert(sizeof(gc_heap_field_offsets) == (GENERATION_TABLE_FIELD_INDEX + 1) * sizeof(int), "GENERATION_TABLE_INDEX mismatch");
+#endif //MULTIPLE_HEAPS
+
     assert(gcDacVars != nullptr);
     *gcDacVars = {};
     // Note: these version numbers are not actually checked by SOS, so if you change
@@ -45580,10 +45620,10 @@ void PopulateDacVars(GcDacVars *gcDacVars)
     gcDacVars->generation_size = sizeof(generation);
     gcDacVars->total_generation_count = total_generation_count;
     gcDacVars->max_gen = &g_max_generation;
+    gcDacVars->current_c_gc_state = const_cast<c_gc_state*>(&gc_heap::current_c_gc_state);
 #ifndef MULTIPLE_HEAPS
     gcDacVars->mark_array = &gc_heap::mark_array;
     gcDacVars->ephemeral_heap_segment = reinterpret_cast<dac_heap_segment**>(&gc_heap::ephemeral_heap_segment);
-    gcDacVars->current_c_gc_state = const_cast<c_gc_state*>(&gc_heap::current_c_gc_state);
 #ifdef USE_REGIONS
     gcDacVars->saved_sweep_ephemeral_seg = 0;
     gcDacVars->saved_sweep_ephemeral_start = 0;
@@ -45612,7 +45652,8 @@ void PopulateDacVars(GcDacVars *gcDacVars)
 #endif // HEAP_ANALYZE
 #else
     gcDacVars->n_heaps = &gc_heap::n_heaps;
-    gcDacVars->g_heaps = reinterpret_cast<dac_gc_heap***>(&gc_heap::g_heaps);
+    gcDacVars->g_heaps = reinterpret_cast<opaque_gc_heap***>(&gc_heap::g_heaps);
+    gcDacVars->gc_heap_field_offsets = reinterpret_cast<int**>(&gc_heap_field_offsets);
 #endif // MULTIPLE_HEAPS
 #else
     UNREFERENCED_PARAMETER(gcDacVars);

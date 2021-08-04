@@ -639,7 +639,7 @@ namespace System.Net.Http.Functional.Tests
                 return;
             }
 
-            var options = new Http3Options() { Alpn = "h3" };
+            var options = new Http3Options() { Alpn = SslApplicationProtocol.Http3.ToString() };
             using Http3LoopbackServer server = CreateHttp3LoopbackServer(options);
 
             using var clientDone = new SemaphoreSlim(0);
@@ -650,7 +650,7 @@ namespace System.Net.Http.Functional.Tests
                 using Http3LoopbackConnection connection = (Http3LoopbackConnection)await server.EstablishGenericConnectionAsync();
 
                 SslApplicationProtocol negotiatedAlpn = ExtractMsQuicNegotiatedAlpn(connection);
-                Assert.Equal(new SslApplicationProtocol("h3"), negotiatedAlpn);
+                Assert.Equal(SslApplicationProtocol.Http3, negotiatedAlpn);
 
                 using Http3LoopbackStream stream = await connection.AcceptRequestStreamAsync();
                 await stream.HandleRequestAsync();

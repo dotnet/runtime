@@ -60,12 +60,12 @@
     <MicrosoftDotNetXUnitExtensionsVersion>6.0.0-beta.21373.11</MicrosoftDotNetXUnitExtensionsVersion>
     <MicrosoftDotNetXUnitConsoleRunnerVersion>2.5.1-beta.21373.11</MicrosoftDotNetXUnitConsoleRunnerVersion>
     <MicrosoftDotNetBuildTasksArchivesVersion>6.0.0-beta.21373.11</MicrosoftDotNetBuildTasksArchivesVersion>
-    <MicrosoftDotNetBuildTasksInstallersVersion>6.0.0-beta.21373.11</MicrosoftDotNetBuildTasksInstallersVersion>
+    <MicrosoftDotNetBuildTasksInstallersVersion>6.0.0-beta.21403.2</MicrosoftDotNetBuildTasksInstallersVersion>
     <MicrosoftDotNetBuildTasksPackagingVersion>6.0.0-beta.21373.11</MicrosoftDotNetBuildTasksPackagingVersion>
     <MicrosoftDotNetBuildTasksWorkloadsPackageVersion>6.0.0-beta.21373.11</MicrosoftDotNetBuildTasksWorkloadsPackageVersion>
     <MicrosoftDotNetRemoteExecutorVersion>6.0.0-beta.21373.11</MicrosoftDotNetRemoteExecutorVersion>
     <MicrosoftDotNetVersionToolsTasksVersion>6.0.0-beta.21373.11</MicrosoftDotNetVersionToolsTasksVersion>
-    <MicrosoftDotNetPackageTestingVersion>6.0.0-beta.21373.11</MicrosoftDotNetPackageTestingVersion>
+    <MicrosoftDotNetPackageTestingVersion>6.0.0-beta.21402.1</MicrosoftDotNetPackageTestingVersion>
     <!-- NuGet dependencies -->
     <NuGetBuildTasksPackVersion>6.0.0-preview.1.102</NuGetBuildTasksPackVersion>
     <!-- Installer dependencies -->
@@ -154,7 +154,7 @@
     <MicrosoftNETTestSdkVersion>16.9.0-preview-20201201-01</MicrosoftNETTestSdkVersion>
     <MicrosoftDotNetXHarnessTestRunnersXunitVersion>1.0.0-prerelease.21373.1</MicrosoftDotNetXHarnessTestRunnersXunitVersion>
     <MicrosoftDotNetXHarnessCLIVersion>1.0.0-prerelease.21373.1</MicrosoftDotNetXHarnessCLIVersion>
-    <MicrosoftDotNetHotReloadUtilsGeneratorBuildToolVersion>1.0.1-alpha.0.21369.1</MicrosoftDotNetHotReloadUtilsGeneratorBuildToolVersion>
+    <MicrosoftDotNetHotReloadUtilsGeneratorBuildToolVersion>1.0.2-alpha.0.21402.1</MicrosoftDotNetHotReloadUtilsGeneratorBuildToolVersion>
     <XUnitVersion>2.4.1</XUnitVersion>
     <XUnitRunnerVisualStudioVersion>2.4.2</XUnitRunnerVisualStudioVersion>
     <CoverletCollectorVersion>1.3.0</CoverletCollectorVersion>
@@ -166,7 +166,7 @@
     <!-- Docs -->
     <MicrosoftPrivateIntellisenseVersion>5.0.0-preview-20201009.2</MicrosoftPrivateIntellisenseVersion>
     <!-- ILLink -->
-    <MicrosoftNETILLinkTasksVersion>6.0.100-preview.6.21378.1</MicrosoftNETILLinkTasksVersion>
+    <MicrosoftNETILLinkTasksVersion>6.0.100-preview.6.21402.2</MicrosoftNETILLinkTasksVersion>
     <MicrosoftNETILLinkAnalyzerPackageVersion>$(MicrosoftNETILLinkTasksVersion)</MicrosoftNETILLinkAnalyzerPackageVersion>
     <!-- ICU -->
     <MicrosoftNETCoreRuntimeICUTransportVersion>6.0.0-rc.1.21369.1</MicrosoftNETCoreRuntimeICUTransportVersion>

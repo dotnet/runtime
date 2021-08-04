@@ -34,6 +34,17 @@ namespace System.Text.Json.SourceGeneration.Tests
         }
 
         [Fact]
+        public virtual void RoundTripNumberTypes()
+        {
+            NumberTypes expected = CreateNumberTypes();
+
+            string json = JsonSerializer.Serialize(expected, DefaultContext.NumberTypes);
+            NumberTypes obj = JsonSerializer.Deserialize(json, DefaultContext.NumberTypes);
+            VerifyNumberTypes(expected, obj);
+        }
+
+
+        [Fact]
         public virtual void RoundTripIndexViewModel()
         {
             IndexViewModel expected = CreateIndexViewModel();
@@ -125,6 +136,39 @@ namespace System.Text.Json.SourceGeneration.Tests
             Assert.Equal(expected.Name, obj.Name);
             Assert.Equal(expected.PhoneNumber, obj.PhoneNumber);
             Assert.Equal(expected.Country, obj.Country);
+        }
+
+        protected static NumberTypes CreateNumberTypes()
+        {
+            return new NumberTypes
+            {
+                Single = 1.1f,
+                Double = 2.2d,
+                Decimal = 3.3m,
+                SByte = -1,
+                Byte = 1,
+                UShort = 2,
+                Short = -2,
+                UInt = 3,
+                Int = -3,
+                ULong = 4,
+                Long = -4,
+            };
+        }
+
+        protected static void VerifyNumberTypes(NumberTypes expected, NumberTypes obj)
+        {
+            Assert.Equal(expected.Single, obj.Single);
+            Assert.Equal(expected.Double, obj.Double);
+            Assert.Equal(expected.Decimal, obj.Decimal);
+            Assert.Equal(expected.SByte, obj.SByte);
+            Assert.Equal(expected.Byte, obj.Byte);
+            Assert.Equal(expected.UShort, obj.UShort);
+            Assert.Equal(expected.Short, obj.Short);
+            Assert.Equal(expected.UInt, obj.UInt);
+            Assert.Equal(expected.Int, obj.Int);
+            Assert.Equal(expected.ULong, obj.ULong);
+            Assert.Equal(expected.Long, obj.Long);
         }
 
         protected static ActiveOrUpcomingEvent CreateActiveOrUpcomingEvent()

@@ -7,6 +7,12 @@
   <ItemGroup>
     <_allSrc Include="$(MSBuildThisFileDirectory)*\src\*.csproj"
              Exclude="@(ProjectExclusions)" />
+    <!-- Don't build ProjectReferences of the compat pack in a traversal build to avoid unnecessary incremental builds. -->
+    <_allSrc Update="$(MSBuildThisFileDirectory)Microsoft.Windows.Compatibility\src\Microsoft.Windows.Compatibility.csproj"
+             AdditionalProperties="BuildProjectReferences=false" />
+    <!-- Only build the compat pack in the allconfigurations leg. -->
+    <_allSrc Remove="$(MSBuildThisFileDirectory)Microsoft.Windows.Compatibility\src\Microsoft.Windows.Compatibility.csproj"
+             Condition="'$(BuildAllConfigurations)' != 'true'" />
     <NonNetCoreAppProject Include="@(_allSrc)"
                           Exclude="@(NetCoreAppLibrary->'%(Identity)\src\%(Identity).csproj')" />
     <NetCoreAppProject Include="$(CoreLibProject);

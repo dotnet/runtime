@@ -87,9 +87,9 @@ if [ ! -z ${RunCrossGen2+x} ]%3B then
         local heapVerifyModeToRestore=$COMPlus_HeapVerify;
         local readyToRunModeToRestore=$COMPlus_ReadyToRun;
         local gcstandaloneModeToRestore=$COMPlus_GCName;
-        export COMPlus_GCStress=
-        export COMPlus_HeapVerify=
-        export COMPlus_ReadyToRun=
+        unset COMPlus_GCStress
+        unset COMPlus_HeapVerify
+        unset COMPlus_ReadyToRun
         unset COMPlus_GCName
 
         __Command=$_DebuggerFullPath

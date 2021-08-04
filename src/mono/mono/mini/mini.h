@@ -365,7 +365,6 @@ extern int mono_inject_async_exc_pos;
 extern MonoMethodDesc *mono_break_at_bb_method;
 extern int mono_break_at_bb_bb_num;
 extern gboolean mono_do_x86_stack_align;
-extern gboolean	mono_using_xdebug;
 extern int mini_verbose;
 extern int valgrind_register;
 
@@ -2205,12 +2204,6 @@ void      mono_linterval_split              (MonoCompile *cfg, MonoLiveInterval 
 void      mono_liveness_handle_exception_clauses (MonoCompile *cfg);
 
 gpointer mono_realloc_native_code (MonoCompile *cfg);
-
-void     mono_xdebug_init                   (const char *xdebug_opts);
-void     mono_save_xdebug_info              (MonoCompile *cfg);
-void     mono_save_trampoline_xdebug_info   (MonoTrampInfo *info);
-/* This is an exported function */
-void     mono_xdebug_flush                  (void);
 
 void      mono_register_opcode_emulation    (int opcode, const char* name, MonoMethodSignature *sig, gpointer func, gboolean no_throw);
 void      mono_draw_graph                   (MonoCompile *cfg, MonoGraphOptions draw_options);
