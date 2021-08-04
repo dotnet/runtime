@@ -73,7 +73,7 @@ namespace System.Text.Json.Serialization
         /// and whether <see cref="JsonTokenType.Null"/> should be passed on deserialization.
         /// </summary>
         /// <remarks>
-        /// The default value is <see langword="true"/> for converters for value types, and <see langword="false"/> for converters for reference types.
+        /// The default value is <see langword="true"/> for converters based on value types, and <see langword="false"/> for converters based on reference types.
         /// </remarks>
         public virtual bool HandleNull
         {
@@ -139,7 +139,7 @@ namespace System.Text.Json.Serialization
         /// <param name="reader">The <see cref="Utf8JsonReader"/> to read from.</param>
         /// <param name="typeToConvert">The <see cref="Type"/> being converted.</param>
         /// <param name="options">The <see cref="JsonSerializerOptions"/> being used.</param>
-        /// <returns>The value that was converted.</returns>
+        /// <returns>The value that was converted. <seealso cref="HandleNull"/> to determine if the converter handles a 'null' JSON value.</returns>
         public abstract T? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options);
 
         internal bool TryRead(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options, ref ReadStack state, out T? value)
@@ -583,9 +583,15 @@ namespace System.Text.Json.Serialization
         /// cannot be created.
         /// </remarks>
         /// <param name="writer">The <see cref="Utf8JsonWriter"/> to write to.</param>
-        /// <param name="value">The value to convert.</param>
+        /// <param name="value">The value to convert. <seealso cref="HandleNull"/> to determine if the converter handles a 'null' reference.</param>
         /// <param name="options">The <see cref="JsonSerializerOptions"/> being used.</param>
-        public abstract void Write(Utf8JsonWriter writer, T value, JsonSerializerOptions options);
+        public abstract void Write(
+            Utf8JsonWriter writer,
+#nullable disable // T may or may not be nullable depending on the derived type's overload.
+            T
+#nullable restore
+            value,
+            JsonSerializerOptions options);
 
         internal virtual T ReadWithQuotes(ref Utf8JsonReader reader)
         {
