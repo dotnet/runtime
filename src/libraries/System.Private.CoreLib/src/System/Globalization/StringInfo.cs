@@ -96,6 +96,7 @@ namespace System.Globalization
 
         /// <summary>
         /// Returns the first text element (extended grapheme cluster) that occurs in the input string.
+        /// A grapheme cluster is a sequence of one or more Unicode code points that should be treated as a single unit.
         /// </summary>
         /// <param name="str">The input string to analyze.</param>
         /// <returns>The substring corresponding to the first text element within <paramref name="str"/>,
@@ -105,7 +106,8 @@ namespace System.Globalization
 
         /// <summary>
         /// Returns the first text element (extended grapheme cluster) that occurs in the input string
-        /// starting at the specified index.
+        /// starting at the specified index. A grapheme cluster is a sequence of one or more Unicode
+        /// code points that should be treated as a single unit.
         /// </summary>
         /// <param name="str">The input string to analyze.</param>
         /// <param name="index">The char offset in <paramref name="str"/> at which to begin analysis.</param>
@@ -122,6 +124,7 @@ namespace System.Globalization
 
         /// <summary>
         /// Returns the length of the first text element (extended grapheme cluster) that occurs in the input string.
+        /// A grapheme cluster is a sequence of one or more Unicode code points that should be treated as a single unit.
         /// </summary>
         /// <param name="str">The input string to analyze.</param>
         /// <returns>The length (in chars) of the substring corresponding to the first text element within <paramref name="str"/>,
@@ -131,7 +134,8 @@ namespace System.Globalization
 
         /// <summary>
         /// Returns the length of the first text element (extended grapheme cluster) that occurs in the input string
-        /// starting at the specified index.
+        /// starting at the specified index. A grapheme cluster is a sequence of one or more Unicode
+        /// code points that should be treated as a single unit.
         /// </summary>
         /// <param name="str">The input string to analyze.</param>
         /// <param name="index">The char offset in <paramref name="str"/> at which to begin analysis.</param>
@@ -155,6 +159,7 @@ namespace System.Globalization
 
         /// <summary>
         /// Returns the length of the first text element (extended grapheme cluster) that occurs in the input span.
+        /// A grapheme cluster is a sequence of one or more Unicode code points that should be treated as a single unit.
         /// </summary>
         /// <param name="str">The input span to analyze.</param>
         /// <returns>The length (in chars) of the substring corresponding to the first text element within <paramref name="str"/>,
