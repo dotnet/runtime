@@ -182,7 +182,7 @@ var BindingSupportLib = {
 		},
 
 		_wrap_js_thenable_as_task: function (thenable) {
-			BINDING.bindings_lazy_init ();
+			this.bindings_lazy_init ();
 			if (!thenable)
 				return null;
 
@@ -193,26 +193,26 @@ var BindingSupportLib = {
 
 			// TODO optimization: return the tcs.Task on the same call
 			// note that we do not implement promise/task roundtrip
-			const tcs_gchandle = BINDING.create_tcs();
-			thenable.then (function (result) {
-				BINDING.set_tcs_result(tcs_gchandle, result);
+			const tcs_gchandle = this.create_tcs();
+			thenable.then ((result) => {
+				this.set_tcs_result(tcs_gchandle, result);
 				// let go of the thenable reference
-				BINDING.mono_wasm_release_handle(thenable_js_handle);
-			}, function (reason) {
-				BINDING.set_tcs_failure(tcs_gchandle, reason);
+				this.mono_wasm_release_handle(thenable_js_handle);
+			}, (reason) => {
+				this.set_tcs_failure(tcs_gchandle, reason);
 				// let go of the thenable reference
-				BINDING.mono_wasm_release_handle(thenable_js_handle);
-			})
+				this.mono_wasm_release_handle(thenable_js_handle);
+			});
 
 			// collect the TaskCompletionSource with its Task after js doesn't hold the thenable anymore
 			this._js_owned_object_registry.register(thenable, tcs_gchandle);
 
 			// returns raw pointer to tcs.Task
-			return BINDING.get_tcs_task(tcs_gchandle);
+			return this.get_tcs_task(tcs_gchandle);
 		},
 
 		_unbox_task_root_as_promise: function (root) {
-			BINDING.bindings_lazy_init ();
+			this.bindings_lazy_init ();
 			if (!this._are_promises_supported)
 				throw new Error ("Promises are not supported thus 'System.Threading.Tasks.Task' can not work in this context.");
 
@@ -251,7 +251,7 @@ var BindingSupportLib = {
 		},
 
 		_unbox_ref_type_root_as_object: function (root) {
-			BINDING.bindings_lazy_init ();
+			this.bindings_lazy_init ();
 			if (root.value === 0)
 				return null;
 
@@ -284,18 +284,18 @@ var BindingSupportLib = {
 			return result;
 		},
 
-		_unbox_delegate_root_as_function: function (root) {
-			BINDING.bindings_lazy_init ();
+		_wrap_delegate_root_as_function: function (root) {
+			this.bindings_lazy_init ();
 			if (root.value === 0)
 				return null;
 
 			// get strong reference to the Delegate
 			const gcHandle = this._alloc_gchandle(root.value);
-			return this._wrap_delegate_from_gchandle(gcHandle);
+			return this._wrap_delegate_gchandle_as_function(gcHandle);
 		},
 
-		_wrap_delegate_from_gchandle: function (gcHandle) {
-			BINDING.bindings_lazy_init ();
+		_wrap_delegate_gchandle_as_function: function (gcHandle) {
+			this.bindings_lazy_init ();
 
 			// see if we have js owned instance for this handle already
 			var result = this._lookup_js_owned_object(gcHandle);
@@ -554,7 +554,7 @@ var BindingSupportLib = {
 				case 4: //vts
 					throw new Error ("no idea on how to unbox value types");
 				case 5: // delegate
-					return this._unbox_delegate_root_as_function (root);
+					return this._wrap_delegate_root_as_function (root);
 				case 6: // Task
 					return this._unbox_task_root_as_promise (root);
 				case 7: // ref type
@@ -2042,14 +2042,14 @@ var BindingSupportLib = {
 		var res = BINDING.typedarray_copy_from(requireObject, pinned_array, begin, end, bytes_per_element);
 		return BINDING.js_to_mono_obj (res)
 	},
-	mono_wasm_add_event_listener: function (objHandle, name, listenerId, optionsHandle) {
+	mono_wasm_add_event_listener: function (objHandle, name, listener_gchandle, optionsHandle) {
 		var nameRoot = MONO.mono_wasm_new_root (name);
 		try {
 			BINDING.bindings_lazy_init ();
 			var obj = BINDING.mono_wasm_require_handle(objHandle);
 			if (!obj)
 				throw new Error("Invalid JS object handle");
-			var listener = BINDING._wrap_delegate_from_gchandle(listenerId);
+			var listener = BINDING._wrap_delegate_gchandle_as_function(listener_gchandle);
 			if (!listener)
 				throw new Error("Invalid listener ID");
 			var sName = BINDING.conv_string(nameRoot.value);
@@ -2069,14 +2069,14 @@ var BindingSupportLib = {
 			nameRoot.release();
 		}
 	},
-	mono_wasm_remove_event_listener: function (objHandle, name, listenerId, capture) {
+	mono_wasm_remove_event_listener: function (objHandle, name, listener_gchandle, capture) {
 		var nameRoot = MONO.mono_wasm_new_root (name);
 		try {
 			BINDING.bindings_lazy_init ();
 			var obj = BINDING.mono_wasm_require_handle(objHandle);
 			if (!obj)
 				throw new Error("Invalid JS object handle");
-			var listener = BINDING._wrap_delegate_from_gchandle(listenerId);
+			var listener = BINDING._wrap_delegate_gchandle_as_function(listener_gchandle);
 			// Removing a nonexistent listener should not be treated as an error
 			if (!listener)
 				return;
