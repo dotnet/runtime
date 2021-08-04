@@ -2,8 +2,6 @@
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <CLRTestPriority>1</CLRTestPriority>
-    <!-- https://github.com/dotnet/runtime/issues/49189 -->
-    <JitOptimizationSensitive Condition="'$(TargetArchitecture)' == 'x86'">true</JitOptimizationSensitive>
   </PropertyGroup>
   <PropertyGroup>
     <DebugType>PdbOnly</DebugType>
