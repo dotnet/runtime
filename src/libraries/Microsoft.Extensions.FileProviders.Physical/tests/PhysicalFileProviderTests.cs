@@ -325,6 +325,7 @@ namespace Microsoft.Extensions.FileProviders
 
         [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/34582", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
+        [SkipOnPlatform(TestPlatforms.Browser, "Browser always uses Active Polling which doesn't return the same instance between multiple calls to Watch(string)")]
         public void TokenIsSameForSamePath()
         {
             using (var root = new DisposableFileSystem())
@@ -341,7 +342,7 @@ namespace Microsoft.Extensions.FileProviders
 
                     Assert.NotNull(token1);
                     Assert.NotNull(token2);
-                    Assert.Same(token2, token1);
+                    Assert.Equal(token2, token1);
                 }
             }
         }
@@ -825,6 +826,7 @@ namespace Microsoft.Extensions.FileProviders
 
         [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/34582", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
+        [SkipOnPlatform(TestPlatforms.Browser, "Browser always uses Active Polling which doesn't return the same instance between multiple calls to Watch(string)")]
         public void TokenIsSameForSamePathCaseInsensitive()
         {
             using (var root = new DisposableFileSystem())
@@ -834,7 +836,7 @@ namespace Microsoft.Extensions.FileProviders
                     var fileName = Guid.NewGuid().ToString();
                     var token = provider.Watch(fileName);
                     var lowerCaseToken = provider.Watch(fileName.ToLowerInvariant());
-                    Assert.Same(token, lowerCaseToken);
+                    Assert.Equal(token, lowerCaseToken);
                 }
             }
         }
@@ -1199,6 +1201,7 @@ namespace Microsoft.Extensions.FileProviders
 
         [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/34582", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
+        [SkipOnPlatform(TestPlatforms.Browser, "Browser always uses Active Polling which doesn't return the same instance between multiple calls to Watch(string)")]
         public void TokensWithForwardAndBackwardSlashesAreSame()
         {
             using (var root = new DisposableFileSystem())
@@ -1208,7 +1211,7 @@ namespace Microsoft.Extensions.FileProviders
                     var token1 = provider.Watch(@"a/b\c");
                     var token2 = provider.Watch(@"a\b/c");
 
-                    Assert.Same(token1, token2);
+                    Assert.Equal(token1, token2);
                 }
             }
         }
