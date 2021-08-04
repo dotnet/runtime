@@ -130,7 +130,7 @@ namespace System.Net.Test.Common
         {
             MaxUnidirectionalStreams = 100;
             MaxBidirectionalStreams = 100;
-            Alpn = "h3";
+            Alpn = SslApplicationProtocol.Http3.ToString();
         }
     }
 }

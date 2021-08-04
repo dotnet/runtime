@@ -640,7 +640,7 @@ namespace System.Net.Http.Functional.Tests
                 return;
             }
 
-            var options = new Http3Options() { Alpn = "h3" };
+            var options = new Http3Options() { Alpn = SslApplicationProtocol.Http3.ToString() };
             using Http3LoopbackServer server = CreateHttp3LoopbackServer(options);
 
             Http3LoopbackConnection connection = null;
