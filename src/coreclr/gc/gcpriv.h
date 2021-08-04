@@ -266,7 +266,6 @@ void GCLog (const char *fmt, ... );
 // to do so.
 //#define dprintf(l, x)
 #define dprintf(l,x) STRESS_LOG_VA(l,x);
-//#define dprintf(l,x) {if ((l <= 2) || (l == REGIONS_LOG)) {STRESS_LOG_VA(l,x);}}
 
 #endif //SIMPLE_DPRINTF
 
@@ -5543,7 +5542,7 @@ public:
     uint8_t*        free_list_head;
     uint8_t*        free_list_tail;
 
-    PTR_heap_segment    prev_free_region;
+    PTR_heap_segment prev_free_region;
     region_free_list* containing_free_list;
 
     // Fields that we need to provide in response to a
@@ -5568,7 +5567,6 @@ public:
     }
 
     void thread_free_obj (uint8_t* obj, size_t s);
-
 #else //USE_REGIONS
 
 #ifdef _MSC_VER

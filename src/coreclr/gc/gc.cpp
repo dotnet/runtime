@@ -10963,7 +10963,8 @@ heap_segment* gc_heap::get_free_region (int gen_number, size_t size)
     {
         const size_t LARGE_REGION_SIZE = global_region_allocator.get_large_region_alignment();
 
-        if (size <= LARGE_REGION_SIZE)
+        assert (size >= LARGE_REGION_SIZE);
+        if (size == LARGE_REGION_SIZE)
         {
             // get it from the local list of large free regions if possible
             region = free_regions[large_free_region].unlink_region_front();
@@ -28785,7 +28786,6 @@ void gc_heap::plan_phase (int condemned_gen_number)
 #endif //!USE_REGIONS
 
 #ifdef MULTIPLE_HEAPS
-
             //join all threads to make sure they are synchronized
             dprintf(3, ("Restarting after Promotion granted"));
             gc_t_join.restart();
@@ -38271,14 +38271,8 @@ ptrdiff_t gc_heap::estimate_gen_growth (int gen)
     // estimate how we are going to need in this generation - estimate half the free list space gets used
     ptrdiff_t budget_gen = new_allocation_gen - (free_list_space_gen / 2);
     dprintf (REGIONS_LOG, ("budget for gen %d on heap %d is %Id (new %Id, free %Id)", gen, heap_number, budget_gen, new_allocation_gen, free_list_space_gen));
-    if (budget_gen > 0)
-    {
-        return budget_gen;
-    }
-    else
-    {
-        return 0;
-    }
+
+    return max(0, budget_gen);
 }
 
 void gc_heap::decommit_ephemeral_segment_pages()
