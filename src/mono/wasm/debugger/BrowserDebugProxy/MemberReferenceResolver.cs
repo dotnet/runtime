@@ -88,7 +88,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                 classNameToFind += part.Trim();
                 if (typeId != -1)
                 {
-                    var fields = await proxy.SdbHelper.GetTypeFields(sessionId, typeId, token);
+                    var fields = await proxy.SdbHelper.GetTypeFields(sessionId, typeId, false, token);
                     foreach (var field in fields)
                     {
                         if (field.Name == part.Trim())
