@@ -202,7 +202,7 @@
     </PropertyGroup>
     <DownloadFile Condition="'$(ForNode)' == 'true'" SourceUrl="https://nodejs.org/dist/latest-v14.x/node-v14.17.4-linux-x64.tar.xz" DestinationFolder="$(NodeFolder)"/>
     <Exec Command="tar -xf node-v14.17.4-linux-x64.tar.xz" WorkingDirectory="$(NodeFolder)" IgnoreStandardErrorWarningFormat="true"  Condition="'$(ForNode)' == 'true'"/>
-    <Copy SourceFiles="$(NodeFolder)node-v14.17.4-linux-x64/bin" DestinationFolder="$(NodeDestinationFolder)" Condition="'$(ForNode)' == 'true'"/>
+    <Copy SourceFiles="$(NodeFolder)node-v14.17.4-linux-x64/bin/node" DestinationFolder="$(NodeDestinationFolder)" Condition="'$(ForNode)' == 'true'"/>
 
     <Copy SourceFiles="@(_XUnitConsoleRunnerFiles)" DestinationFolder="$(CoreRootDirectory)\xunit" />
     <Copy SourceFiles="$(MSBuildThisFileDirectory)scripts\runincontext.cmd" DestinationFolder="$(CoreRootDirectory)" Condition=" '$(TestWrapperTargetsWindows)' == 'true' and '$(_RunInUnloadableContext)' == 'true'" />
