@@ -83,6 +83,8 @@
     <WasmStripAOTAssemblies>false</WasmStripAOTAssemblies>
 
     <_BeforeWasmBuildAppDependsOn />
+    
+    <_RuntimeConfigJsonFileExistance>false</_RuntimeConfigJsonFileExistance>
   </PropertyGroup>
 
   <Import Project="$(MSBuildThisFileDirectory)WasmApp.Native.targets" />
@@ -122,7 +124,13 @@
       <WasmMainAssemblyFileName Condition="'$(WasmMainAssemblyFileName)' == ''">$(TargetFileName)</WasmMainAssemblyFileName>
 
       <WasmAppDir>$([MSBuild]::NormalizeDirectory($(WasmAppDir)))</WasmAppDir>
+
+      <_MainAssemblyPath Condition="'%(WasmAssembliesToBundle.FileName)' == $(AssemblyName) and '%(WasmAssembliesToBundle.Extension)' == '.dll'">%(WasmAssembliesToBundle.Identity)</_MainAssemblyPath>
+      <_WasmRuntimeConfigFilePath>$([System.IO.Path]::ChangeExtension($(_MainAssemblyPath), '.runtimeconfig.json'))</_WasmRuntimeConfigFilePath>
+      <_RuntimeConfigJsonFileExistance Condition="Exists('$(_WasmRuntimeConfigFilePath)')">true</_RuntimeConfigJsonFileExistance>
     </PropertyGroup>
+
+    <Error Condition="'$(_MainAssemblyPath)' == ''" Text="Could not find assembly named $(AssemblyName).dll in the bundle assemblies" />
 
     <ItemGroup>
       <_WasmAssembliesInternal Include="@(WasmAssembliesToBundle->Distinct())" />
@@ -136,15 +144,10 @@
     </ItemGroup>
   </Target>
 
-  <Target Name="_WasmGenerateRuntimeConfig" Condition="'$(OutputType)' != 'library'">
+  <Target Name="_WasmGenerateRuntimeConfig" Condition="$(_RuntimeConfigJsonFileExistance)">
     <PropertyGroup>
-      <_MainAssemblyPath Condition="'%(WasmAssembliesToBundle.FileName)' == $(AssemblyName) and '%(WasmAssembliesToBundle.Extension)' == '.dll'">%(WasmAssembliesToBundle.Identity)</_MainAssemblyPath>
-      <RuntimeConfigFilePath>$([System.IO.Path]::ChangeExtension($(_MainAssemblyPath), '.runtimeconfig.json'))</RuntimeConfigFilePath>
       <ParsedRuntimeConfigFilePath>$([System.IO.Path]::GetDirectoryName($(_MainAssemblyPath)))\runtimeconfig.bin</ParsedRuntimeConfigFilePath>
     </PropertyGroup>
-
-    <Error Condition="'$(_MainAssemblyPath)' == ''" Text="Could not find assembly named $(AssemblyName).dll in the bundle assemblies" />
-    <Error Condition="!Exists('$(RuntimeConfigFilePath)')" Text="Could not find runtimeconfig.json for $(_MainAssemblyPath). RuntimeConfigFilePath=$(RuntimeConfigFilePath) doesn't exist. " />
 
     <ItemGroup>
       <RuntimeConfigReservedProperties Include="RUNTIME_IDENTIFIER"/>
@@ -153,7 +156,7 @@
 
     <!-- Parse *.runtimeconfig.json file -->
     <RuntimeConfigParserTask
-        RuntimeConfigFile="$(RuntimeConfigFilePath)"
+        RuntimeConfigFile="$(_WasmRuntimeConfigFilePath)"
         OutputFile="$(ParsedRuntimeConfigFilePath)"
         RuntimeConfigReservedProperties="@(RuntimeConfigReservedProperties)">
     </RuntimeConfigParserTask>
