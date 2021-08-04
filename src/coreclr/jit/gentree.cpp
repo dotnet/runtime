@@ -13571,16 +13571,13 @@ GenTree* Compiler::gtFoldExprSpecial(GenTree* tree)
 
             assert(val == 0 || val == 1);
 
-            GenTree* opToDelete;
             if (val)
             {
-                op         = op2->AsColon()->ThenNode();
-                opToDelete = op2->AsColon()->ElseNode();
+                op = op2->AsColon()->ThenNode();
             }
             else
             {
-                op         = op2->AsColon()->ElseNode();
-                opToDelete = op2->AsColon()->ThenNode();
+                op = op2->AsColon()->ElseNode();
             }
 
             // Clear colon flags only if the qmark itself is not conditionaly executed
