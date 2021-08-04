@@ -3104,20 +3104,17 @@ gc_heap::dt_high_frag_p (gc_tuning_point tp,
             }
             else
             {
+#ifndef MULTIPLE_HEAPS
                 if (gen_number == max_generation)
                 {
                     float frag_ratio = (float)(dd_fragmentation (dynamic_data_of (max_generation))) / (float)generation_size (max_generation);
-                    float frag_limit = 1.0f - conserve_mem_setting / 10.0f;
-#ifndef MULTIPLE_HEAPS
-                    if (conserve_mem_setting == 0)
-                        frag_limit = 0.65f;
-#endif //!MULTIPLE_HEAPS
-                    if (frag_ratio > frag_limit)
+                    if (frag_ratio > 0.65)
                     {
                         dprintf (GTC_LOG, ("g2 FR: %d%%", (int)(frag_ratio*100)));
                         return TRUE;
                     }
                 }
+#endif //!MULTIPLE_HEAPS
                 size_t fr = generation_unusable_fragmentation (generation_of (gen_number));
                 ret = (fr > dd_fragmentation_limit(dd));
                 if (ret)
@@ -18788,28 +18785,26 @@ int gc_heap::joined_generation_to_condemn (BOOL should_evaluate_elevation,
         }
         else if ((current_total_committed * 10) >= (heap_hard_limit * 9))
         {
-            size_t combined_frag = get_total_gen_fragmentation (max_generation) +
-                                   get_total_gen_fragmentation (loh_generation);
+            size_t loh_frag = get_total_gen_fragmentation (loh_generation);
 
-            // If the combined frag is >= 1/8 it's worth compacting
-            if ((combined_frag * 8) >= heap_hard_limit)
+            // If the LOH frag is >= 1/8 it's worth compacting it
+            if ((loh_frag * 8) >= heap_hard_limit)
             {
-                dprintf (GTC_LOG, ("gen2+loh frag: %Id > 1/8 of limit %Id", combined_frag, (heap_hard_limit / 8)));
+                dprintf (GTC_LOG, ("loh frag: %Id > 1/8 of limit %Id", loh_frag, (heap_hard_limit / 8)));
                 gc_data_global.gen_to_condemn_reasons.set_condition(gen_joined_limit_loh_frag);
                 full_compact_gc_p = true;
             }
             else
             {
                 // If there's not much fragmentation but it looks like it'll be productive to
-                // collect, do that.
-                size_t est_combined_reclaim = get_total_gen_estimated_reclaim (max_generation) +
-                                              get_total_gen_estimated_reclaim (loh_generation);
-                if ((est_combined_reclaim * 8) >= heap_hard_limit)
+                // collect LOH, do that.
+                size_t est_loh_reclaim = get_total_gen_estimated_reclaim (loh_generation);
+                if ((est_loh_reclaim * 8) >= heap_hard_limit)
                 {
-                    gc_data_global.gen_to_condemn_reasons.set_condition (gen_joined_limit_loh_reclaim);
+                    gc_data_global.gen_to_condemn_reasons.set_condition(gen_joined_limit_loh_reclaim);
                     full_compact_gc_p = true;
                 }
-                dprintf (GTC_LOG, ("gen2+loh est reclaim: %Id, 1/8 of limit %Id", est_combined_reclaim, (heap_hard_limit / 8)));
+                dprintf (GTC_LOG, ("loh est reclaim: %Id, 1/8 of limit %Id", est_loh_reclaim, (heap_hard_limit / 8)));
             }
         }
 
@@ -18818,7 +18813,7 @@ int gc_heap::joined_generation_to_condemn (BOOL should_evaluate_elevation,
             n = max_generation;
             *blocking_collection_p = TRUE;
             settings.loh_compaction = TRUE;
-            dprintf (GTC_LOG, ("compacting gen2+loh due to hard limit"));
+            dprintf (GTC_LOG, ("compacting LOH due to hard limit"));
         }
     }
 
@@ -24021,7 +24016,7 @@ size_t gc_heap::get_total_gen_size (int gen_number)
         size += hp->generation_size (hp->generation_of (gen_number));
     }
 #else
-    size_t size = generation_sizes (generation_of (gen_number));
+    size_t size = generation_size (generation_of (gen_number));
 #endif //MULTIPLE_HEAPS
     return size;
 }
