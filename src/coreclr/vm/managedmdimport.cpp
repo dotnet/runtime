@@ -163,6 +163,7 @@ static int * EnsureResultSize(MetadataEnumResult * pResult, ULONG length)
     else
     {
         ZeroMemory(pResult->smallResult, sizeof(pResult->smallResult));
+        pResult->largeResult = NULL;
         p = pResult->smallResult;
     }
 

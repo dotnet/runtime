@@ -79,32 +79,26 @@ namespace Internal.JitInterface
             [DllImport(JitLibrary)]
             private extern static IntPtr getJit();
 
-            public static IntPtr Get()
-            {
-                if (s_jit != IntPtr.Zero)
-                {
-                    return s_jit;
-                }
-
-                lock(typeof(JitPointerAccessor))
-                {
-                    s_jit = getJit();
-                    return s_jit;
-                }
-            }
-
             [DllImport(JitSupportLibrary)]
             private extern static CorJitResult JitProcessShutdownWork(IntPtr jit);
 
-            public static void ShutdownJit()
+            static JitPointerAccessor()
             {
+                s_jit = getJit();
+
                 if (s_jit != IntPtr.Zero)
                 {
-                    JitProcessShutdownWork(s_jit);
+                    AppDomain.CurrentDomain.ProcessExit += (_, _) => JitProcessShutdownWork(s_jit);
+                    AppDomain.CurrentDomain.UnhandledException += (_, _) => JitProcessShutdownWork(s_jit);
                 }
             }
 
-            private static IntPtr s_jit;
+            public static IntPtr Get()
+            {
+                return s_jit;
+            }
+
+            private static readonly IntPtr s_jit;
         }
 
         [DllImport(JitLibrary)]
@@ -157,11 +151,6 @@ namespace Internal.JitInterface
         public static void Startup()
         {
             jitStartup(GetJitHost(JitConfigProvider.Instance.UnmanagedInstance));
-        }
-
-        public static void ShutdownJit()
-        {
-            JitPointerAccessor.ShutdownJit();
         }
 
         public CorInfoImpl()

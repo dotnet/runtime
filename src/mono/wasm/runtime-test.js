@@ -168,9 +168,9 @@ while (args !== undefined && args.length > 0) {
 	} else if (args [0].startsWith ("--setenv=")) {
 		var arg = args [0].substring ("--setenv=".length);
 		var parts = arg.split ('=');
-		if (parts.length != 2)
+		if (parts.length < 2)
 			fail_exec ("Error: malformed argument: '" + args [0]);
-		setenv [parts [0]] = parts [1];
+		setenv [parts [0]] = arg.substring (parts [0].length + 1);
 		args = args.slice (1);
 	} else if (args [0].startsWith ("--runtime-arg=")) {
 		var arg = args [0].substring ("--runtime-arg=".length);
