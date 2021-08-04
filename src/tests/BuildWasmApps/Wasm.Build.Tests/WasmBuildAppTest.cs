@@ -103,11 +103,11 @@ namespace Wasm.Build.Tests
 
             string runtimeConfigTemplateJson = @"
             {
-                 ""configProperties"": {
-                   ""abc"": ""4"",
-                   ""test_runtimeconfig_json"": ""25""
-                 }
-             }";
+                ""configProperties"": {
+                  ""abc"": ""4"",
+                  ""test_runtimeconfig_json"": ""25""
+                }
+            }";
 
             BuildProject(buildArgs,
                         initProject: () =>
@@ -120,6 +120,52 @@ namespace Wasm.Build.Tests
 
             RunAndTestWasmApp(buildArgs, expectedExitCode: 42,
                                 test: output => Assert.Contains("test_runtimeconfig_json: 25", output), host: host, id: id);
+        }
+
+        [Theory]
+        [BuildAndRun]
+        public void PropertiesFromCsproj(BuildArgs buildArgs, RunHost host, string id)
+        {
+            buildArgs = buildArgs with { ProjectName = $"runtime_config_csproj_{buildArgs.Config}_{buildArgs.AOT}" };
+            buildArgs = ExpandBuildArgs(buildArgs);
+
+            string programText = @"
+                using System;
+                using System.Runtime.CompilerServices;
+
+                var config = AppContext.GetData(""System.Threading.ThreadPool.MaxThreads"");
+                Console.WriteLine ($""System.Threading.ThreadPool.MaxThreads: {(string)config}"");
+                return 42;
+            ";
+
+            string csprojFile = @"
+            <Project Sdk=""Microsoft.NET.Sdk"">
+            <PropertyGroup>
+                <TargetFramework>net6.0</TargetFramework>
+                <OutputType>Exe</OutputType>
+                <WasmGenerateRunV8Script>true</WasmGenerateRunV8Script>
+                <WasmMainJSPath>runtime-test.js</WasmMainJSPath>
+                <ThreadPoolMaxThreads>20</ThreadPoolMaxThreads>
+            </PropertyGroup>
+            <ItemGroup>
+                
+            </ItemGroup>
+                
+            </Project>
+            ";
+
+            BuildProject(buildArgs,
+                        initProject: () =>
+                        {
+                            File.WriteAllText(Path.Combine(_projectDir!, "Program.cs"), programText);
+                            File.WriteAllText(Path.Combine(_projectDir!, $"{buildArgs.ProjectName}.csproj"), csprojFile);
+                        },
+                        id: id,
+                        dotnetWasmFromRuntimePack: !(buildArgs.AOT || buildArgs.Config == "Release"),
+                        createCsProject: false);
+
+            RunAndTestWasmApp(buildArgs, expectedExitCode: 42,
+                                test: output => Assert.Contains("System.Threading.ThreadPool.MaxThreads: 20", output), host: host, id: id);
         }
 
         void TestMain(string projectName,
