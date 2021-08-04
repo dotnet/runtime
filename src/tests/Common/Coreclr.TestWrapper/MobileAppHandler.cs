@@ -81,11 +81,6 @@ namespace CoreclrTestLib
                         }
                     }
 
-                    if (platform != "android")
-                    {
-                        cmdStr += " --target ios-simulator-64";
-                    }
-
                     using (Process process = new Process())
                     {
                         if (OperatingSystem.IsWindows())
