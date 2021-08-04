@@ -1270,7 +1270,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             var commandParamsWriter = new MonoBinaryWriter(commandParams);
             commandParamsWriter.Write((int)type_id);
             commandParamsWriter.WriteString(method_name);
-            commandParamsWriter.Write((int)(BindingFlags.DeclaredOnly | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static)); //instance methods
+            commandParamsWriter.Write((int)(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static)); //instance methods
             commandParamsWriter.Write((int)1); //case sensitive
             var retDebuggerCmdReader = await SendDebuggerAgentCommand<CmdType>(sessionId, CmdType.GetMethodsByNameFlags, commandParams, token);
             var nMethods = retDebuggerCmdReader.ReadInt32();
