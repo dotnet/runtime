@@ -1878,11 +1878,6 @@ public:
     unsigned GetScaleIndexShf();
     unsigned GetScaledIndex();
 
-    // Returns true if "addr" is a GT_ADD node, at least one of whose arguments is an integer
-    // (<= 32 bit) constant.  If it returns true, it sets "*offset" to (one of the) constant value(s), and
-    // "*addr" to the other argument.
-    bool IsAddWithI32Const(GenTree** addr, int* offset);
-
 public:
     static unsigned char s_gtNodeSizes[];
 #if NODEBASH_STATS || MEASURE_NODE_SIZE || COUNT_AST_OPERS
