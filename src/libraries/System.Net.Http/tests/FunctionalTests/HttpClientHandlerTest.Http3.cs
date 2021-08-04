@@ -630,7 +630,6 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [ConditionalFact(nameof(IsMsQuicSupported))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/56609")]
         public async Task Alpn_H3_Success()
         {
             // Mock doesn't use ALPN.
@@ -654,9 +653,6 @@ namespace System.Net.Http.Functional.Tests
 
                 using Http3LoopbackStream stream = await connection.AcceptRequestStreamAsync();
                 await stream.HandleRequestAsync();
-
-                serverDone.Release();
-                await clientDone.WaitAsync();
             });
 
             Task clientTask = Task.Run(async () =>
@@ -674,12 +670,9 @@ namespace System.Net.Http.Functional.Tests
 
                 response.EnsureSuccessStatusCode();
                 Assert.Equal(HttpVersion.Version30, response.Version);
-
-                clientDone.Release();
-                await serverDone.WaitAsync();
             });
 
-            await new[] { clientTask, serverTask }.WhenAllOrAnyFailed(200_000);
+            await new[] { clientTask, serverTask }.WhenAllOrAnyFailed(TestHelper.PassingTestTimeoutMilliseconds);
         }
 
         [ConditionalFact(nameof(IsMsQuicSupported))]
