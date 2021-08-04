@@ -259,13 +259,11 @@ common_setup_arguments="--channel main --queue $queue --build-number $build_numb
 setup_arguments="--repository https://github.com/$repository --branch $branch --get-perf-hash --commit-sha $commit_sha $common_setup_arguments"
 
 if [[ "$run_from_perf_repo" = true ]]; then
-    echo "Running from perf repo"
     payload_directory=
     workitem_directory=$source_directory
     performance_directory=$workitem_directory
     setup_arguments="--perf-hash $commit_sha $common_setup_arguments"
 else
-    echo "Not running from perf repo"
     git clone --branch alicial/wasmaotmicro --depth 1 https://github.com/dotnet/performance.git $performance_directory
     # uncomment to use BenchmarkDotNet sources instead of nuget packages
     # git clone https://github.com/dotnet/BenchmarkDotNet.git $benchmark_directory
