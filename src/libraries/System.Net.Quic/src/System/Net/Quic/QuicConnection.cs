@@ -3,6 +3,7 @@
 
 using System.Net.Quic.Implementations;
 using System.Net.Security;
+using System.Security.Cryptography.X509Certificates;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -57,6 +58,8 @@ namespace System.Net.Quic
         public IPEndPoint? LocalEndPoint => _provider.LocalEndPoint;
 
         public EndPoint RemoteEndPoint => _provider.RemoteEndPoint;
+
+        public X509Certificate? RemoteCertificate => _provider.RemoteCertificate;
 
         public SslApplicationProtocol NegotiatedApplicationProtocol => _provider.NegotiatedApplicationProtocol;
 

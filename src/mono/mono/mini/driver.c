@@ -216,9 +216,6 @@ parse_debug_options (const char* p)
 		} else if (!strncmp (p, "mdb-optimizations", 17)) {
 			opt->mdb_optimizations = TRUE;
 			p += 17;
-		} else if (!strncmp (p, "gdb", 3)) {
-			opt->gdb = TRUE;
-			p += 3;
 		} else if (!strncmp (p, "ignore", 6)) {
 			opt->enabled = FALSE;
 			p += 6;

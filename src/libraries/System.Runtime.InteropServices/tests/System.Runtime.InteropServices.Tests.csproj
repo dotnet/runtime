@@ -137,6 +137,7 @@
     <Compile Include="System\Runtime\InteropServices\Marshal\ZeroFreeGlobalAllocAnsiTests.cs" />
     <Compile Include="System\Runtime\InteropServices\Marshal\ZeroFreeGlobalAllocUnicodeTests.cs" />
     <Compile Include="System\Runtime\InteropServices\Marshal\Common\CommonTypes.cs" />
+    <Compile Include="System\Runtime\InteropServices\Marshal\Common\COMWrappersImpl.cs" />
     <Compile Include="System\Runtime\InteropServices\Marshal\Common\CommonTypes.Windows.cs" Condition="'$(TargetsWindows)' == 'true'" />
     <Compile Include="System\Runtime\InteropServices\Marshal\Common\Variant.cs" />
     <Compile Include="System\Runtime\InteropServices\Marshal\ReadWrite\ByteTests.cs" />

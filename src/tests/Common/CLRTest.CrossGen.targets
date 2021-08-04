@@ -21,6 +21,9 @@ WARNING:   When setting properties based on their current state (for example:
   <PropertyGroup>
     <BashScriptSnippetGen>$(BashScriptSnippetGen);GetCrossgenBashScript</BashScriptSnippetGen>
     <BatchScriptSnippetGen>$(BatchScriptSnippetGen);GetCrossgenBatchScript</BatchScriptSnippetGen>
+
+    <!-- Crossgen2 testing is incompatible with the ilasm/ildasm round trip testing. -->
+    <IlasmRoundTripIncompatible Condition="'$(AlwaysUseCrossGen2)' == 'true'">true</IlasmRoundTripIncompatible>
   </PropertyGroup>
 
   <!--
@@ -62,6 +65,7 @@ if [ ! -z ${RunCrossGen2+x} ]%3B then
         cp $CORE_ROOT/lib*.so $CORE_ROOT/lib*.dylib $(scriptPath)
       else
         cp *.dll IL-CG2/
+        rm IL-CG2/composite-r2r.dll
       fi
 
       ExtraCrossGen2Args+=" $(CrossGen2TestExtraArguments)"
@@ -82,9 +86,11 @@ if [ ! -z ${RunCrossGen2+x} ]%3B then
         local gcStressModeToRestore=$COMPlus_GCStress;
         local heapVerifyModeToRestore=$COMPlus_HeapVerify;
         local readyToRunModeToRestore=$COMPlus_ReadyToRun;
-        export COMPlus_GCStress=
-        export COMPlus_HeapVerify=
-        export COMPlus_ReadyToRun=
+        local gcstandaloneModeToRestore=$COMPlus_GCName;
+        unset COMPlus_GCStress
+        unset COMPlus_HeapVerify
+        unset COMPlus_ReadyToRun
+        unset COMPlus_GCName
 
         __Command=$_DebuggerFullPath
         # Tests run locally need __TestDotNetCmd (set by runtest.py) or a compatible 5.0 dotnet runtime in the path
@@ -113,6 +119,7 @@ if [ ! -z ${RunCrossGen2+x} ]%3B then
         $__Command
         __cg2ExitCode=$?
 
+        export COMPlus_GCName=$gcstandaloneModeToRestore
         export COMPlus_GCStress=$gcStressModeToRestore
         export COMPlus_HeapVerify=$heapVerifyModeToRestore
         export COMPlus_ReadyToRun=$readyToRunModeToRestore
@@ -185,6 +192,7 @@ if defined RunCrossGen2 (
 
     mkdir IL-CG2
     copy *.dll IL-CG2\
+    del IL-CG2\composite-r2r.dll
 
     if defined CompositeBuildMode (
         set ExtraCrossGen2Args=!ExtraCrossGen2Args! --composite
@@ -219,6 +227,8 @@ if defined RunCrossGen2 (
     set COMPlus_HeapVerify=
     set __readyToRunModeToRestore=!COMPlus_ReadyToRun!
     set COMPlus_ReadyToRun=
+    set __gcStandaloneModeToRestore=!COMPlus_GCName!
+    set COMPlus_GCName=
 
     set __Command=!_DebuggerFullPath!
     REM Tests run locally need __TestDotNetCmd (set by runtest.py) or a compatible 5.0 dotnet runtime in the path
@@ -253,6 +263,7 @@ if defined RunCrossGen2 (
     set COMPlus_GCStress=!__gcStressModeToRestore!
     set COMPlus_HeapVerify=!__heapVerifyModeToRestore!
     set COMPlus_ReadyToRun=!__readyToRunModeToRestore!
+    set COMPlus_GCName=!__gcStandaloneModeToRestore!
 
     Exit /b 0
 

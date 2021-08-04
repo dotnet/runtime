@@ -1229,8 +1229,7 @@ HRESULT SafeQueryInterfacePreemp(IUnknown* pUnk, REFIID riid, IUnknown** pResUnk
 }
 #include <optdefault.h>
 
-#ifdef FEATURE_COMINTEROP
-
+#if defined(FEATURE_COMINTEROP) || defined(FEATURE_COMWRAPPERS)
 #ifndef CROSSGEN_COMPILE
 
 //--------------------------------------------------------------------------------
@@ -1247,11 +1246,13 @@ void MinorCleanupSyncBlockComData(InteropSyncBlockInfo* pInteropInfo)
     }
     CONTRACTL_END;
 
+#ifdef FEATURE_COMINTEROP
     // No need to notify the thread that the RCW is in use here.
     // This is a privileged function called during GC or shutdown.
     RCW* pRCW = pInteropInfo->GetRawRCW();
     if (pRCW)
         pRCW->MinorCleanup();
+#endif // FEATURE_COMINTEROP
 
 #ifdef FEATURE_COMWRAPPERS
     void* eoc;
@@ -1282,6 +1283,7 @@ void CleanupSyncBlockComData(InteropSyncBlockInfo* pInteropInfo)
     }
 #endif // FEATURE_COMINTEROP_UNMANAGED_ACTIVATION
 
+#ifdef FEATURE_COMINTEROP
     // No need to notify the thread that the RCW is in use here.
     // This is only called during finalization of a __ComObject so no one
     // else could have a reference to this object.
@@ -1298,6 +1300,7 @@ void CleanupSyncBlockComData(InteropSyncBlockInfo* pInteropInfo)
         pInteropInfo->SetCCW(NULL);
         pCCW->Cleanup();
     }
+#endif // FEATURE_COMINTEROP
 
 #ifdef FEATURE_COMWRAPPERS
     pInteropInfo->ClearManagedObjectComWrappers(&ComWrappersNative::DestroyManagedObjectComWrapper);
@@ -1310,6 +1313,12 @@ void CleanupSyncBlockComData(InteropSyncBlockInfo* pInteropInfo)
     }
 #endif // FEATURE_COMWRAPPERS
 }
+
+#endif // !CROSSGEN_COMPILE
+#endif // FEATURE_COMINTEROP || FEATURE_COMWRAPPERS
+
+#ifdef FEATURE_COMINTEROP
+#ifndef CROSSGEN_COMPILE
 
 //--------------------------------------------------------------------------------
 //  Helper to release all of the RCWs in the specified context across all caches.

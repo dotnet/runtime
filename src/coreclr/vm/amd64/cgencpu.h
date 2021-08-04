@@ -465,7 +465,7 @@ struct HijackArgs
         ULONG64 Rax;
         ULONG64 ReturnValue[1];
     };
-#else // FEATURE_MULTIREG_RETURN
+#else // !FEATURE_MULTIREG_RETURN
     union
     {
         struct
@@ -475,8 +475,11 @@ struct HijackArgs
         };
         ULONG64 ReturnValue[2];
     };
-#endif // TARGET_UNIX
+#endif // !FEATURE_MULTIREG_RETURN
     CalleeSavedRegisters Regs;
+#ifdef TARGET_WINDOWS
+    ULONG64 Rsp;
+#endif
     union
     {
         ULONG64 Rip;

@@ -111,9 +111,11 @@ namespace System.Net.WebSockets.Compression
                     {
                         byte[] newBuffer = ArrayPool<byte>.Shared.Rent(_available + FlushMarkerLength);
                         _buffer.AsSpan(0, _available).CopyTo(newBuffer);
-                        ArrayPool<byte>.Shared.Return(_buffer);
 
+                        byte[] toReturn = _buffer;
                         _buffer = newBuffer;
+
+                        ArrayPool<byte>.Shared.Return(toReturn);
                     }
 
                     FlushMarker.CopyTo(_buffer.AsSpan(_available));
@@ -202,12 +204,13 @@ namespace System.Net.WebSockets.Compression
 
         private void ReleaseBuffer()
         {
-            if (_buffer is not null)
+            if (_buffer is byte[] toReturn)
             {
-                ArrayPool<byte>.Shared.Return(_buffer);
                 _buffer = null;
                 _available = 0;
                 _position = 0;
+
+                ArrayPool<byte>.Shared.Return(toReturn);
             }
         }
 

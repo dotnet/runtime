@@ -66,6 +66,7 @@
       <DotNetPgoCmd>$(DotNetCli) $([MSBuild]::NormalizePath('$(BinDir)', 'dotnet-pgo', 'dotnet-pgo.dll')) merge</DotNetPgoCmd>
       <DotNetPgoCmd>$(DotNetPgoCmd) -o:$(MergedMibcPath)</DotNetPgoCmd>
       <DotNetPgoCmd>$(DotNetPgoCmd) @(OptimizationMibcFiles->'-i:%(Identity)', ' ')</DotNetPgoCmd>
+      <DotNetPgoCmd>$(DotNetPgoCmd) --inherit-timestamp</DotNetPgoCmd> <!-- For incremental builds, otherwise timestamp is too far in the future -->
     </PropertyGroup>
 
     <Message Condition="'$(DotNetBuildFromSource)' != 'true'" Importance="High" Text="$(DotNetPgoCmd)"/>

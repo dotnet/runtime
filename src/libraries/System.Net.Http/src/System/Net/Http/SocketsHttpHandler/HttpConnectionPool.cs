@@ -304,7 +304,7 @@ namespace System.Net.Http
             if (IsHttp3Supported())
             {
                 // TODO: Once the HTTP/3 versions are part of SslApplicationProtocol, see https://github.com/dotnet/runtime/issues/1293, move this back to field initialization.
-                return new List<SslApplicationProtocol>() { Http3Connection.Http3ApplicationProtocol31, Http3Connection.Http3ApplicationProtocol30, Http3Connection.Http3ApplicationProtocol29 };
+                return new List<SslApplicationProtocol>() { Http3Connection.Http3ApplicationProtocol };
             }
 
             return null!;
@@ -1821,6 +1821,9 @@ namespace System.Net.Http
 
                     if (NetEventSource.Log.IsEnabled()) connection.Trace("Dequeued waiting HTTP/2 request.");
                 }
+
+                // Since we only inject one connection at a time, we may want to inject another now.
+                CheckForHttp2ConnectionInjection();
 
                 if (_disposed)
                 {
