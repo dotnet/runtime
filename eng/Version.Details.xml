@@ -50,9 +50,9 @@
       <Uri>https://github.com/dotnet/arcade</Uri>
       <Sha>62a8aafffd4c68ef887680f6837abdff906a662c</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.DotNet.Build.Tasks.Installers" Version="6.0.0-beta.21403.2">
+    <Dependency Name="Microsoft.DotNet.Build.Tasks.Installers" Version="6.0.0-beta.21379.2">
       <Uri>https://github.com/dotnet/arcade</Uri>
-      <Sha>35a36a8ec705945b20275a7d63478affb396ff89</Sha>
+      <Sha>62a8aafffd4c68ef887680f6837abdff906a662c</Sha>
     </Dependency>
     <Dependency Name="Microsoft.DotNet.Build.Tasks.Workloads" Version="6.0.0-beta.21379.2">
       <Uri>https://github.com/dotnet/arcade</Uri>
@@ -198,7 +198,7 @@
       <Uri>https://github.com/dotnet/xharness</Uri>
       <Sha>016171de04070fdd21472bd7514bb0272f0ad3aa</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.DotNet.PackageTesting" Version="6.0.0-beta.21402.1">
+    <Dependency Name="Microsoft.DotNet.PackageTesting" Version="6.0.0-beta.21379.2">
       <Uri>https://github.com/dotnet/arcade</Uri>
       <Sha>62a8aafffd4c68ef887680f6837abdff906a662c</Sha>
     </Dependency>
