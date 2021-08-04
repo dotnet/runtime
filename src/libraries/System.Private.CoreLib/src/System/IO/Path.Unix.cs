@@ -53,7 +53,7 @@ namespace System.IO
         {
             Debug.Assert(!string.IsNullOrEmpty(path));
             Debug.Assert(!path.Contains('\0'));
-            
+
             // Expand with current directory if necessary
             if (!IsPathRooted(path))
             {

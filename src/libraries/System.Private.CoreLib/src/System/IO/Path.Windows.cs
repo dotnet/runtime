@@ -128,7 +128,7 @@ namespace System.IO
         {
             Debug.Assert(!string.IsNullOrEmpty(path));
             Debug.Assert(!path.Contains('\0'));
-            
+
             if (PathInternal.IsExtended(path.AsSpan()))
             {
                 // \\?\ paths are considered normalized by definition. Windows doesn't normalize \\?\
