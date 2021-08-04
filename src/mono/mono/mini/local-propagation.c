@@ -504,14 +504,8 @@ mono_local_cprop (MonoCompile *cfg)
 	int filter = FILTER_IL_SEQ_POINT;
 	int initial_max_vregs = cfg->next_vreg;
 
-#if SIZEOF_REGISTER == 4
-	#define VREG_ADD_SIZE 2
-#else
-	#define VREG_ADD_SIZE 0
-#endif
-
 	max = cfg->next_vreg;
-	defs = (MonoInst **)mono_mempool_alloc (cfg->mempool, sizeof (MonoInst*) * (cfg->next_vreg + VREG_ADD_SIZE));
+	defs = (MonoInst **)mono_mempool_alloc (cfg->mempool, sizeof (MonoInst*) * cfg->next_vreg);
 	def_index = (gint32 *)mono_mempool_alloc (cfg->mempool, sizeof (guint32) * cfg->next_vreg);
 	cfg->cbb = bb_opt = (MonoBasicBlock *)mono_mempool_alloc0 ((cfg)->mempool, sizeof (MonoBasicBlock));
 
