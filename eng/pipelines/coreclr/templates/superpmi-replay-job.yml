@@ -5,7 +5,6 @@ parameters:
   osSubgroup: ''                  # optional -- operating system subgroup
   pool: ''
   stagedBuild: false
-  timeoutInMinutes: ''
   framework: net5.0 # Specify the appropriate framework when running release branches (ie netcoreapp3.0 for release/3.0)
   variables: {}
   dependOnEvaluatePaths: false
