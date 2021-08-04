@@ -341,7 +341,7 @@ namespace Microsoft.Extensions.FileProviders
 
                     Assert.NotNull(token1);
                     Assert.NotNull(token2);
-                    Assert.Equal(token2, token1);
+                    Assert.Same(token2, token1);
                 }
             }
         }
@@ -834,7 +834,7 @@ namespace Microsoft.Extensions.FileProviders
                     var fileName = Guid.NewGuid().ToString();
                     var token = provider.Watch(fileName);
                     var lowerCaseToken = provider.Watch(fileName.ToLowerInvariant());
-                    Assert.Equal(token, lowerCaseToken);
+                    Assert.Same(token, lowerCaseToken);
                 }
             }
         }
@@ -1208,7 +1208,7 @@ namespace Microsoft.Extensions.FileProviders
                     var token1 = provider.Watch(@"a/b\c");
                     var token2 = provider.Watch(@"a\b/c");
 
-                    Assert.Equal(token1, token2);
+                    Assert.Same(token1, token2);
                 }
             }
         }
