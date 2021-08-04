@@ -816,6 +816,11 @@ namespace System.Diagnostics.Metrics.Tests
                 case 2: counter.Add(value, tags[0], tags[1]); break;
                 case 3: counter.Add(value, tags[0], tags[1], tags[2]); break;
                 case 4: counter.Add(value, tags[0], tags[1], tags[2], tags[3]); break;
+                case 5: counter.Add(value, tags[0], tags[1], tags[2], tags[3], tags[4]); break;
+                case 6: counter.Add(value, tags[0], tags[1], tags[2], tags[3], tags[4], tags[5]); break;
+                case 7: counter.Add(value, tags[0], tags[1], tags[2], tags[3], tags[4], tags[5], tags[6]); break;
+                case 8: counter.Add(value, tags[0], tags[1], tags[2], tags[3], tags[4], tags[5], tags[6], tags[7]); break;
+                case 9: counter.Add(value, tags[0], tags[1], tags[2], tags[3], tags[4], tags[5], tags[6], tags[7], tags[8]); break;
                 default: counter.Add(value, tags); break;
             }
         }
@@ -829,6 +834,11 @@ namespace System.Diagnostics.Metrics.Tests
                 case 2: histogram.Record(value, tags[0], tags[1]); break;
                 case 3: histogram.Record(value, tags[0], tags[1], tags[2]); break;
                 case 4: histogram.Record(value, tags[0], tags[1], tags[2], tags[3]); break;
+                case 5: histogram.Record(value, tags[0], tags[1], tags[2], tags[3], tags[4]); break;
+                case 6: histogram.Record(value, tags[0], tags[1], tags[2], tags[3], tags[4], tags[5]); break;
+                case 7: histogram.Record(value, tags[0], tags[1], tags[2], tags[3], tags[4], tags[5], tags[6]); break;
+                case 8: histogram.Record(value, tags[0], tags[1], tags[2], tags[3], tags[4], tags[5], tags[6], tags[7]); break;
+                case 9: histogram.Record(value, tags[0], tags[1], tags[2], tags[3], tags[4], tags[5], tags[6], tags[7], tags[8]); break;
                 default: histogram.Record(value, tags); break;
             }
         }
@@ -940,13 +950,68 @@ namespace System.Diagnostics.Metrics.Tests
             listener.Start();
 
             expectedValue = record(instrument, expectedValue, expectedTags);
-            expectedTags = new KeyValuePair<string, object?>[] { new KeyValuePair<string, object?>("K1", "V1") };
+            expectedTags = new KeyValuePair<string, object?>[] {
+                                    new KeyValuePair<string, object?>("K1", "V1") };
             expectedValue = record(instrument, expectedValue, expectedTags);
-            expectedTags = new KeyValuePair<string, object?>[] { new KeyValuePair<string, object?>("K1", "V1"), new KeyValuePair<string, object?>("K2", "V2") };
+            expectedTags = new KeyValuePair<string, object?>[] {
+                                    new KeyValuePair<string, object?>("K1", "V1"),
+                                    new KeyValuePair<string, object?>("K2", "V2") };
             expectedValue = record(instrument, expectedValue, expectedTags);
-            expectedTags = new KeyValuePair<string, object?>[] { new KeyValuePair<string, object?>("K1", "V1"), new KeyValuePair<string, object?>("K2", "V2"), new KeyValuePair<string, object?>("K3", "V3") };
+            expectedTags = new KeyValuePair<string, object?>[] {
+                                    new KeyValuePair<string, object?>("K1", "V1"),
+                                    new KeyValuePair<string, object?>("K2", "V2"),
+                                    new KeyValuePair<string, object?>("K3", "V3") };
             expectedValue = record(instrument, expectedValue, expectedTags);
-            expectedTags = new KeyValuePair<string, object?>[] { new KeyValuePair<string, object?>("K1", "V1"), new KeyValuePair<string, object?>("K2", "V2"), new KeyValuePair<string, object?>("K3", "V3"), new KeyValuePair<string, object?>("K4", "V4") };
+            expectedTags = new KeyValuePair<string, object?>[] {
+                                    new KeyValuePair<string, object?>("K1", "V1"),
+                                    new KeyValuePair<string, object?>("K2", "V2"),
+                                    new KeyValuePair<string, object?>("K3", "V3"),
+                                    new KeyValuePair<string, object?>("K4", "V4") };
+            expectedValue = record(instrument, expectedValue, expectedTags);
+            expectedTags = new KeyValuePair<string, object?>[] {
+                                    new KeyValuePair<string, object?>("K1", "V1"),
+                                    new KeyValuePair<string, object?>("K2", "V2"),
+                                    new KeyValuePair<string, object?>("K3", "V3"),
+                                    new KeyValuePair<string, object?>("K4", "V4"),
+                                    new KeyValuePair<string, object?>("K5", "V5") };
+            expectedValue = record(instrument, expectedValue, expectedTags);
+            expectedTags = new KeyValuePair<string, object?>[] {
+                                    new KeyValuePair<string, object?>("K1", "V1"),
+                                    new KeyValuePair<string, object?>("K2", "V2"),
+                                    new KeyValuePair<string, object?>("K3", "V3"),
+                                    new KeyValuePair<string, object?>("K4", "V4"),
+                                    new KeyValuePair<string, object?>("K5", "V5"),
+                                    new KeyValuePair<string, object?>("K6", "V6") };
+            expectedValue = record(instrument, expectedValue, expectedTags);
+            expectedTags = new KeyValuePair<string, object?>[] {
+                                    new KeyValuePair<string, object?>("K1", "V1"),
+                                    new KeyValuePair<string, object?>("K2", "V2"),
+                                    new KeyValuePair<string, object?>("K3", "V3"),
+                                    new KeyValuePair<string, object?>("K4", "V4"),
+                                    new KeyValuePair<string, object?>("K5", "V5"),
+                                    new KeyValuePair<string, object?>("K6", "V6"),
+                                    new KeyValuePair<string, object?>("K7", "V7") };
+            expectedValue = record(instrument, expectedValue, expectedTags);
+            expectedTags = new KeyValuePair<string, object?>[] {
+                                    new KeyValuePair<string, object?>("K1", "V1"),
+                                    new KeyValuePair<string, object?>("K2", "V2"),
+                                    new KeyValuePair<string, object?>("K3", "V3"),
+                                    new KeyValuePair<string, object?>("K4", "V4"),
+                                    new KeyValuePair<string, object?>("K5", "V5"),
+                                    new KeyValuePair<string, object?>("K6", "V6"),
+                                    new KeyValuePair<string, object?>("K7", "V7"),
+                                    new KeyValuePair<string, object?>("K8", "V8") };
+            expectedValue = record(instrument, expectedValue, expectedTags);
+            expectedTags = new KeyValuePair<string, object?>[] {
+                                    new KeyValuePair<string, object?>("K1", "V1"),
+                                    new KeyValuePair<string, object?>("K2", "V2"),
+                                    new KeyValuePair<string, object?>("K3", "V3"),
+                                    new KeyValuePair<string, object?>("K4", "V4"),
+                                    new KeyValuePair<string, object?>("K5", "V5"),
+                                    new KeyValuePair<string, object?>("K6", "V6"),
+                                    new KeyValuePair<string, object?>("K7", "V7"),
+                                    new KeyValuePair<string, object?>("K8", "V8"),
+                                    new KeyValuePair<string, object?>("K9", "V9") };
             expectedValue = record(instrument, expectedValue, expectedTags);
         }
 

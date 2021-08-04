@@ -19,7 +19,7 @@ namespace System.Diagnostics.Metrics
     {
         [ThreadStatic] private KeyValuePair<string, object?>[] ts_tags;
 
-        private const int MaxTagsCount = 3;
+        private const int MaxTagsCount = 8;
 
         /// <summary>
         /// Record the measurement by notifying all <see cref="MeterListener" /> objects which listening to this instrument.
@@ -66,6 +66,130 @@ namespace System.Diagnostics.Metrics
             tags[1] = tag2;
             tags[2] = tag3;
             RecordMeasurement(measurement, tags.AsSpan().Slice(0, 3));
+            ts_tags = tags;
+        }
+
+        /// <summary>
+        /// Record the measurement by notifying all <see cref="MeterListener" /> objects which listening to this instrument.
+        /// </summary>
+        /// <param name="measurement">The measurement value.</param>
+        /// <param name="tag1">A first key-value pair tag associated with the measurement.</param>
+        /// <param name="tag2">A second key-value pair tag associated with the measurement.</param>
+        /// <param name="tag3">A third key-value pair tag associated with the measurement.</param>
+        /// <param name="tag4">A fourth key-value pair tag associated with the measurement.</param>
+        protected void RecordMeasurement(T measurement, KeyValuePair<string, object?> tag1, KeyValuePair<string, object?> tag2, KeyValuePair<string, object?> tag3, KeyValuePair<string, object?> tag4)
+        {
+            var tags = ts_tags ?? new KeyValuePair<string, object?>[MaxTagsCount];
+            ts_tags = null;
+            tags[0] = tag1;
+            tags[1] = tag2;
+            tags[2] = tag3;
+            tags[3] = tag4;
+            RecordMeasurement(measurement, tags.AsSpan().Slice(0, 4));
+            ts_tags = tags;
+        }
+
+        /// <summary>
+        /// Record the measurement by notifying all <see cref="MeterListener" /> objects which listening to this instrument.
+        /// </summary>
+        /// <param name="measurement">The measurement value.</param>
+        /// <param name="tag1">A first key-value pair tag associated with the measurement.</param>
+        /// <param name="tag2">A second key-value pair tag associated with the measurement.</param>
+        /// <param name="tag3">A third key-value pair tag associated with the measurement.</param>
+        /// <param name="tag4">A fourth key-value pair tag associated with the measurement.</param>
+        /// <param name="tag5">A fifth key-value pair tag associated with the measurement.</param>
+        protected void RecordMeasurement(T measurement, KeyValuePair<string, object?> tag1, KeyValuePair<string, object?> tag2, KeyValuePair<string, object?> tag3, KeyValuePair<string, object?> tag4,
+                                         KeyValuePair<string, object?> tag5)
+        {
+            var tags = ts_tags ?? new KeyValuePair<string, object?>[MaxTagsCount];
+            ts_tags = null;
+            tags[0] = tag1;
+            tags[1] = tag2;
+            tags[2] = tag3;
+            tags[3] = tag4;
+            tags[4] = tag5;
+            RecordMeasurement(measurement, tags.AsSpan().Slice(0, 5));
+            ts_tags = tags;
+        }
+
+        /// <summary>
+        /// Record the measurement by notifying all <see cref="MeterListener" /> objects which listening to this instrument.
+        /// </summary>
+        /// <param name="measurement">The measurement value.</param>
+        /// <param name="tag1">A first key-value pair tag associated with the measurement.</param>
+        /// <param name="tag2">A second key-value pair tag associated with the measurement.</param>
+        /// <param name="tag3">A third key-value pair tag associated with the measurement.</param>
+        /// <param name="tag4">A fourth key-value pair tag associated with the measurement.</param>
+        /// <param name="tag5">A fifth key-value pair tag associated with the measurement.</param>
+        /// <param name="tag6">A sixth key-value pair tag associated with the measurement.</param>
+        protected void RecordMeasurement(T measurement, KeyValuePair<string, object?> tag1, KeyValuePair<string, object?> tag2, KeyValuePair<string, object?> tag3, KeyValuePair<string, object?> tag4,
+                                         KeyValuePair<string, object?> tag5, KeyValuePair<string, object?> tag6)
+        {
+            var tags = ts_tags ?? new KeyValuePair<string, object?>[MaxTagsCount];
+            ts_tags = null;
+            tags[0] = tag1;
+            tags[1] = tag2;
+            tags[2] = tag3;
+            tags[3] = tag4;
+            tags[4] = tag5;
+            tags[5] = tag6;
+            RecordMeasurement(measurement, tags.AsSpan().Slice(0, 6));
+            ts_tags = tags;
+        }
+
+        /// <summary>
+        /// Record the measurement by notifying all <see cref="MeterListener" /> objects which listening to this instrument.
+        /// </summary>
+        /// <param name="measurement">The measurement value.</param>
+        /// <param name="tag1">A first key-value pair tag associated with the measurement.</param>
+        /// <param name="tag2">A second key-value pair tag associated with the measurement.</param>
+        /// <param name="tag3">A third key-value pair tag associated with the measurement.</param>
+        /// <param name="tag4">A fourth key-value pair tag associated with the measurement.</param>
+        /// <param name="tag5">A fifth key-value pair tag associated with the measurement.</param>
+        /// <param name="tag6">A sixth key-value pair tag associated with the measurement.</param>
+        /// <param name="tag7">A seventh key-value pair tag associated with the measurement.</param>
+        protected void RecordMeasurement(T measurement, KeyValuePair<string, object?> tag1, KeyValuePair<string, object?> tag2, KeyValuePair<string, object?> tag3, KeyValuePair<string, object?> tag4,
+                                         KeyValuePair<string, object?> tag5, KeyValuePair<string, object?> tag6, KeyValuePair<string, object?> tag7)
+        {
+            var tags = ts_tags ?? new KeyValuePair<string, object?>[MaxTagsCount];
+            ts_tags = null;
+            tags[0] = tag1;
+            tags[1] = tag2;
+            tags[2] = tag3;
+            tags[3] = tag4;
+            tags[4] = tag5;
+            tags[5] = tag6;
+            tags[6] = tag7;
+            RecordMeasurement(measurement, tags.AsSpan().Slice(0, 7));
+            ts_tags = tags;
+        }
+
+        /// <summary>
+        /// Record the measurement by notifying all <see cref="MeterListener" /> objects which listening to this instrument.
+        /// </summary>
+        /// <param name="measurement">The measurement value.</param>
+        /// <param name="tag1">A first key-value pair tag associated with the measurement.</param>
+        /// <param name="tag2">A second key-value pair tag associated with the measurement.</param>
+        /// <param name="tag3">A third key-value pair tag associated with the measurement.</param>
+        /// <param name="tag4">A fourth key-value pair tag associated with the measurement.</param>
+        /// <param name="tag5">A fifth key-value pair tag associated with the measurement.</param>
+        /// <param name="tag6">A sixth key-value pair tag associated with the measurement.</param>
+        /// <param name="tag7">A seventh key-value pair tag associated with the measurement.</param>
+        /// <param name="tag8">An eighth key-value pair tag associated with the measurement.</param>
+        protected void RecordMeasurement(T measurement, KeyValuePair<string, object?> tag1, KeyValuePair<string, object?> tag2, KeyValuePair<string, object?> tag3, KeyValuePair<string, object?> tag4,
+                                         KeyValuePair<string, object?> tag5, KeyValuePair<string, object?> tag6, KeyValuePair<string, object?> tag7, KeyValuePair<string, object?> tag8)
+        {
+            var tags = ts_tags ?? new KeyValuePair<string, object?>[MaxTagsCount];
+            ts_tags = null;
+            tags[0] = tag1;
+            tags[1] = tag2;
+            tags[2] = tag3;
+            tags[3] = tag4;
+            tags[4] = tag5;
+            tags[5] = tag6;
+            tags[6] = tag7;
+            tags[7] = tag8;
+            RecordMeasurement(measurement, tags.AsSpan().Slice(0, 8));
             ts_tags = tags;
         }
     }
