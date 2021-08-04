@@ -220,8 +220,7 @@ namespace System.Net.Security.Tests
                 // Initiate Read operation, that results in starting renegotiation as per server response to the above request.
                 int bytesRead = useSync ? ssl.Read(message, 0, message.Length) : await ssl.ReadAsync(message, 0, message.Length);
 
-                // renegotiation will trigger validation callback again.
-                Assert.InRange(validationCount, 2, int.MaxValue);
+                Assert.Equal(1, validationCount);
                 Assert.InRange(bytesRead, 1, message.Length);
                 Assert.Contains("HTTP/1.1 200 OK", Encoding.UTF8.GetString(message));
             }
@@ -249,6 +248,7 @@ namespace System.Net.Security.Tests
         public async Task SslStream_TargetHostName_Succeeds(bool useEmptyName)
         {
             string targetName = useEmptyName ? string.Empty : Guid.NewGuid().ToString("N");
+            int count = 0;
 
             (Stream clientStream, Stream serverStream) = TestHelper.GetConnectedStreams();
             using (clientStream)
@@ -267,7 +267,7 @@ namespace System.Net.Security.Tests
                     {
                         SslStream stream = (SslStream)sender;
                         Assert.Equal(targetName, stream.TargetHostName);
-
+                        count++;
                         return true;
                     };
 
@@ -284,8 +284,12 @@ namespace System.Net.Security.Tests
                 await TestConfiguration.WhenAllOrAnyFailedWithTimeout(
                                 client.AuthenticateAsClientAsync(clientOptions),
                                 server.AuthenticateAsServerAsync(serverOptions));
+
+                await TestHelper.PingPong(client, server);
+
                 Assert.Equal(targetName, client.TargetHostName);
                 Assert.Equal(targetName, server.TargetHostName);
+                Assert.Equal(1, count);
             }
         }
 
