@@ -228,6 +228,24 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         }
 
         [Fact]
+        public static void NullDelegate()
+        {
+            var tcs = new TaskCompletionSource<int>();
+            var factory = new Function("delegate", "callback", @"
+                callback(delegate);
+            ");
+
+            Delegate check = null;
+            Action<Delegate> callback = (Delegate data) =>
+            {
+                check = data;
+            };
+            Assert.Null(check);
+            factory.Call(null, null, callback);
+            Assert.Null(check);
+        }
+
+        [Fact]
         public static async Task ResolvePromise()
         {
             var factory = new Function(@"
@@ -305,5 +323,22 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             Assert.Contains("System.Exception: test", check);
         }
 
+        [Fact]
+        public static void NullTask()
+        {
+            var tcs = new TaskCompletionSource<int>();
+            var factory = new Function("task", "callback", @"
+                callback(task);
+            ");
+
+            Task check = null;
+            Action<Task> callback = (Task data) =>
+            {
+                check = data;
+            };
+            Assert.Null(check);
+            factory.Call(null, null, callback);
+            Assert.Null(check);
+        }
     }
 }
