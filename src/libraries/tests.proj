@@ -325,6 +325,11 @@
     <ProjectExclusions Remove="$(MSBuildThisFileDirectory)System.IO.IsolatedStorage\tests\System.IO.IsolatedStorage.Tests.csproj" />
   </ItemGroup>
 
+  <ItemGroup Condition="'$(TargetOS)' == 'Android'">
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)*\tests\**\*.Tests.csproj" />
+    <ProjectExclusions Remove="$(MSBuildThisFileDirectory)System.Security.Cryptography.Pkcs\tests\System.Security.Cryptography.Pkcs.Tests.csproj" />
+  </ItemGroup>
+
   <ItemGroup>
     <ProjectReference Include="$(MSBuildThisFileDirectory)*\tests\**\*.Tests.csproj"
                       Exclude="@(ProjectExclusions)"
