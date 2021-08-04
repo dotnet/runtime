@@ -458,6 +458,7 @@ namespace System.CodeDom.Compiler.Tests
         [InlineData(null)]
         [InlineData("")]
         [InlineData("cmdArgs")]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
         public void GetResponseFileCmdArgs_ValidCmdArgs_ReturnsExpected(string cmdArgs)
         {
             var compiler = new Compiler();
