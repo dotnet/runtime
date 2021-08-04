@@ -3524,8 +3524,7 @@ void Compiler::fgInitArgInfo(GenTreeCall* call)
         bool isNonStandard = nonStandardArgs.Find(argx, &nonStdRegNum, &nonStandardArgKind);
         if (isNonStandard)
         {
-            assert(nonStdRegNum != REG_STK);
-            isRegArg = true;
+            isRegArg = (nonStdRegNum != REG_STK);
         }
         else if (call->IsTailCallViaJitHelper())
         {
@@ -3628,7 +3627,6 @@ void Compiler::fgInitArgInfo(GenTreeCall* call)
                                                                UNIX_AMD64_ABI_ONLY_ARG(structFloatRegs)
                                                                    UNIX_AMD64_ABI_ONLY_ARG(&structDesc));
             newArgEntry->SetIsBackFilled(isBackFilled);
-            newArgEntry->nonStandardArgKind = nonStandardArgKind;
 
             // Set up the next intArgRegNum and fltArgRegNum values.
             if (!isBackFilled)
@@ -3696,6 +3694,8 @@ void Compiler::fgInitArgInfo(GenTreeCall* call)
             }
 #endif
         }
+
+        newArgEntry->nonStandardArgKind = nonStandardArgKind;
 
         if (GlobalJitOptions::compFeatureHfa)
         {
@@ -3857,7 +3857,7 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* call)
             }
         }
 #endif // DEBUG
-        if (argEntry->isNonStandard())
+        if (argEntry->isNonStandard() && argEntry->isPassedInRegisters())
         {
             // We need to update the node field for this nonStandard arg here
             // as it may have been changed by the call to fgMorphTree.
