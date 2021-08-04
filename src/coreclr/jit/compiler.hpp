@@ -3599,18 +3599,6 @@ inline bool Compiler::IsSharedStaticHelper(GenTree* tree)
     return result1;
 }
 
-inline bool Compiler::IsTreeAlwaysHoistable(GenTree* tree)
-{
-    if (IsSharedStaticHelper(tree))
-    {
-        return (GTF_CALL_HOISTABLE & tree->gtFlags) ? true : false;
-    }
-    else
-    {
-        return false;
-    }
-}
-
 inline bool Compiler::IsGcSafePoint(GenTree* tree)
 {
     if (tree->IsCall())
