@@ -40,6 +40,7 @@ namespace System.Reflection.Metadata
         }
 
         [ConditionalFact(typeof(ApplyUpdateUtil), nameof (ApplyUpdateUtil.IsSupported))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/54617", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsMonoAOT))] 
         void LambdaBodyChange()
         {
             ApplyUpdateUtil.TestCase(static () =>
