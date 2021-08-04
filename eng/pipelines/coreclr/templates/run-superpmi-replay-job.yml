@@ -39,6 +39,7 @@ jobs:
     collectionType: $ {{ parameters.collectionType }}
     collectionName: ${{ parameters.collectionName }}
     dependOnEvaluatePaths: ${{ parameters.dependOnEvaluatePaths }}
+    timeoutInMinutes: ${{ parameters.timeoutInMinutes }}
 
     ${{ if ne(parameters.displayName, '') }}:
       displayName: '${{ parameters.displayName }}'

@@ -81,21 +81,24 @@ def main(main_args):
     jit_path = path.join(coreclr_args.jit_directory, 'clrjit_{}_{}_{}.dll'.format(os_name, arch_name, host_arch_name))
 
     print("Running superpmi.py download")
-    run_command([python_path, path.join(cwd, "superpmi.py"), "download", "-target_os", platform_name, "-target_arch", arch_name, "-core_root", cwd, "-spmi_location", spmi_location])
+    run_command([python_path, path.join(cwd, "superpmi.py"), "download", "-target_os", platform_name, "-target_arch", arch_name, "-core_root", cwd, "-spmi_location", spmi_location],  _exit_on_fail=True)
 
-    # run_id = 0
+    failed_runs = []
     for jit_flag in jit_flags:
         # TODO: This should be DownloadFilesFromResults
         log_file = path.join(log_directory, 'superpmi_{}.log'.format(jit_flag.replace("=", "_")))
         print("Running superpmi.py replay for {}".format(jit_flag))
 
-        run_command([
+        _, _, return_code = run_command([
                 python_path, path.join(cwd, "superpmi.py"), "replay", "-core_root", cwd,
                 "-jitoption", jit_flag, "-jitoption", "TieredCompilation=0",
                 "-target_os", platform_name, "-target_arch", arch_name,
                 "-arch", host_arch_name,
                 "-jit_path", jit_path, "-spmi_location", spmi_location,
                 "-log_level", "debug", "-log_file", log_file])
+
+        if return_code != 0:
+            failed_runs.append("Failure in {}".format(log_file))
 
     # Consolidate all superpmi_*.logs in superpmi_platform_architecture.log
     final_log_name = path.join(log_directory, "superpmi_{}_{}.log".format(platform_name, arch_name))
@@ -112,6 +115,15 @@ def main(main_args):
             with open(path.join(log_directory, superpmi_log), "r") as current_superpmi_log:
                 contents = current_superpmi_log.read()
                 final_superpmi_log.write(contents)
+
+        if len(failed_runs) > 0:
+            final_superpmi_log.write(os.linesep)
+            final_superpmi_log.write(os.linesep)
+            final_superpmi_log.write("========Failed runs summary========".format(os.linesep))
+            final_superpmi_log.write(os.linesep.join(failed_runs))
+
+    return 0 if len(failed_runs) == 0 else 1
+
 
 if __name__ == "__main__":
     args = parser.parse_args()
