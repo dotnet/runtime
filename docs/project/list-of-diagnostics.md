@@ -86,6 +86,7 @@ The PR that reveals the implementation of the `<IncludeInternalObsoleteAttribute
 |  __`SYSLIB0029`__ | ProduceLegacyHmacValues is obsolete. Producing legacy HMAC values is no longer supported. |
 |  __`SYSLIB0030`__ | HMACSHA1 always uses the algorithm implementation provided by the platform. Use a constructor without the useManagedSha1 parameter. |
 |  __`SYSLIB0031`__ | EncodeOID is obsolete. Use the ASN.1 functionality provided in System.Formats.Asn1. |
+|  __`SYSLIB0032`__ | Recovery from corrupted process state exceptions is not supported; HandleProcessCorruptedStateExceptionsAttribute is ignored. |
 
 ## Analyzer Warnings
 
