@@ -159,13 +159,17 @@ namespace System
             ref object? slot = ref a[index];
             object? slotVal = slot;
 
-            if (slotVal is null && System.Threading.Interlocked.CompareExchange<object?>(ref slot, o, null) is null)
-                return true;
+            if (slotVal is null)
+            {
+                slotVal = System.Threading.Interlocked.CompareExchange<object?>(ref slot, o, null);
+                if (slotVal is null)
+                    return true;
+            }
 
             // The slot may be already set because we have added and removed the same method before.
             // Optimize this case, because it's cheaper than copying the array.
             MulticastDelegate d = (MulticastDelegate)o;
-            MulticastDelegate dd = (MulticastDelegate)slotVal!;
+            MulticastDelegate dd = (MulticastDelegate)slotVal;
 
             if (dd._methodPtr == d._methodPtr &&
                 dd._target == d._target &&
