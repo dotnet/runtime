@@ -1883,7 +1883,7 @@ var BindingSupportLib = {
 	mono_wasm_release_handle: function(js_handle, is_exception) {
 		BINDING.bindings_lazy_init ();
 
-		var obj = this.mono_wasm_object_registry[js_handle - 1];
+		var obj = BINDING.mono_wasm_object_registry[js_handle - 1];
 		if (typeof obj  !== "undefined" && obj !== null) {
 			// if this is the global object then do not
 			// unregister it.
@@ -1895,8 +1895,8 @@ var BindingSupportLib = {
 				obj.__mono_jshandle__ = undefined;
 			}
 
-			delete this.mono_wasm_object_registry[js_handle - 1];
-			this.mono_wasm_free_list.push(js_handle - 1);
+			delete BINDING.mono_wasm_object_registry[js_handle - 1];
+			BINDING.mono_wasm_free_list.push(js_handle - 1);
 		}
 		return obj;
 	},
