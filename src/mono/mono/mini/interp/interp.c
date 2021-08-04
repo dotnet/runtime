@@ -1024,7 +1024,7 @@ interp_throw (ThreadContext *context, MonoException *ex, InterpFrame *frame, con
 		if (mono_thread_interruption_request_flag && !mono_threads_is_critical_method (frame->imethod->method)) { \
 			MonoException *exc = mono_thread_interruption_checkpoint ();	\
 			if (exc)							\
-				THROW_EX (exc, ip);					\
+				THROW_EX_GENERAL (exc, ip, TRUE);					\
 		}									\
 	} while (0)
 
@@ -1034,7 +1034,7 @@ interp_throw (ThreadContext *context, MonoException *ex, InterpFrame *frame, con
 		if (mono_thread_interruption_request_flag && !mono_threads_is_critical_method (frame->imethod->method) && mono_thread_is_gc_unsafe_mode ()) { \
 			MonoException *exc = mono_thread_interruption_checkpoint ();	\
 			if (exc)							\
-				THROW_EX (exc, ip);					\
+				THROW_EX_GENERAL (exc, ip, TRUE);					\
 		}									\
 	} while (0)
 
