@@ -43,18 +43,6 @@ namespace System.Runtime.InteropServices.JavaScript
             return Interop.Runtime.New(hostClassName, parms);
         }
 
-        public static void FreeObject(object obj)
-        {
-            JSObject? jsobj;
-            lock (_rawToJS)
-            {
-                if (!_rawToJS.Remove(obj, out jsobj))
-                {
-                    throw new JSException(SR.Format(SR.ErrorReleasingObject, obj));
-                }
-            }
-        }
-
         public static object GetGlobalObject(string? str = null)
         {
             return Interop.Runtime.GetGlobalObject(str);
@@ -391,7 +379,6 @@ namespace System.Runtime.InteropServices.JavaScript
                 finally
                 {
                     continuationObj.Dispose();
-                    FreeObject(task);
                 }
             }
         }

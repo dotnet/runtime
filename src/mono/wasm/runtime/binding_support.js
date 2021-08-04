@@ -452,10 +452,13 @@ var BindingSupportLib = {
 		},
 
 		_unbox_task_root: function (root) {
+			BINDING.bindings_lazy_init ();
 			if (!this._are_promises_supported)
 				throw new Error ("Promises are not supported thus 'System.Threading.Tasks.Task' can not work in this context.");
 
-			var obj = this.extract_js_obj_root (root);
+			// get strong reference to Task
+			const task_gcHandle = this._alloc_gchandle(root.value);
+
 			var cont_obj = null;
 			var promise = new Promise (function (resolve, reject) {
 				cont_obj = {
@@ -464,10 +467,12 @@ var BindingSupportLib = {
 				};
 			});
 
-			// FIXME: Lifetime management/pinning?
+			// register C# side of the continuation
 			this.call_method (this.setup_js_cont, null, "mo", [ root.value, cont_obj ]);
-			obj.__mono_js_cont__ = cont_obj.__mono_gchandle__;
-			cont_obj.__mono_js_task__ = obj.__mono_gchandle__;
+			
+			// register for GC of the Task after the JS side is done with the promise
+			this._js_owned_object_registry.register(promise, task_gcHandle);
+
 			return promise;
 		},
 

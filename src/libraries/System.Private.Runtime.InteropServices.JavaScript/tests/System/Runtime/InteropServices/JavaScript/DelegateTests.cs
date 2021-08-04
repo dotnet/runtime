@@ -258,5 +258,52 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
 
             await Assert.ThrowsAsync<JSException>(async () => await promise);
         }
+
+        [Fact]
+        public static async Task ResolveTask()
+        {
+            var tcs = new TaskCompletionSource<int>();
+            var factory = new Function("task", "callback", @"
+                return task.then((data)=>{
+                    callback(data);
+                })
+            ");
+
+            int check = 0;
+            Action<int> callback = (int data) =>
+            {
+                check = data;
+            };
+            var promise = (Task<object>)factory.Call(null, tcs.Task, callback);
+            Assert.Equal(0, check);
+            tcs.SetResult(1);
+            Assert.Equal(0, check);
+            await promise;
+            Assert.Equal(1, check);
+        }
+
+        [Fact]
+        public static async Task RejectTask()
+        {
+            var tcs = new TaskCompletionSource<int>();
+            var factory = new Function("task", "callback", @"
+                return task.catch((reason)=>{
+                    callback(reason);
+                })
+            ");
+
+            string check = null;
+            Action<string> callback = (string data) =>
+            {
+                check = data;
+            };
+            var promise = (Task<object>)factory.Call(null, tcs.Task, callback);
+            Assert.Null(check);
+            tcs.SetException(new Exception("test"));
+            Assert.Null(check);
+            await promise;
+            Assert.Contains("System.Exception: test", check);
+        }
+
     }
 }
