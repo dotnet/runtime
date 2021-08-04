@@ -3,7 +3,7 @@
     <DefineConstants>$(DefineConstants);XMLSERIALIZERGENERATORTESTS</DefineConstants>
     <TargetFrameworks>$(NetCoreAppCurrent)</TargetFrameworks>
     <SkipTestsOnPlatform Condition="'$(TargetsMobile)' == 'true' or '$(TargetOS)' == 'FreeBSD' or '$(TargetArchitecture)' == 'arm' or '$(TargetArchitecture)' == 'arm64' or '$(TargetArchitecture)' == 'armel' or '$(TargetArchitecture)' == 'wasm'">true</SkipTestsOnPlatform>
-<Message Text="RunningTarget-FirstPropertyGroup" Importance="high" />
+<ProjectLevelMessage>RunningTarget-FirstPropertyGroup</ProjectLevelMessage>
   </PropertyGroup>
 
   <ItemGroup Condition=" '$(SkipTestsOnPlatform)' != 'true'">
@@ -25,16 +25,15 @@
   </ItemGroup>
 
   <ItemGroup Condition=" '$(SkipTestsOnPlatform)' != 'true'">
-<Message Text="RunningTarget-PreProjectReference" Importance="high" />
     <ProjectReference Include="..\src\Microsoft.XmlSerializer.Generator.csproj" />
     <ProjectReference Include="SerializableAssembly.csproj" />
-<Message Text="RunningTarget-PostProjectReference" Importance="high" />
   </ItemGroup>
 
   <!-- This target runs before binplacing as it needs to provide a test assembly to binplace, and depends on CopyFilesToOutputDirectory
        so that the Generator app dll and runtimeconfig will be copied to the OutputPath -->
   <Target Name="GenerateSerializationAssembly" DependsOnTargets="CopyFilesToOutputDirectory" AfterTargets="PrepareForRun" Condition=" '$(SkipTestsOnPlatform)' != 'true' ">
 <Message Text="RunningTarget-GenerateSerializationAssembly" Importance="high" />
+<Message Text="Previously: $(ProjectLevelMessage)" Importance="high" />
 <Message Text="Found Expected.XmlSerializers.cs" Importance="high" Condition="Exists('$(OutputPath)Expected.XmlSerializers.cs') == 'true'"/>
     <PropertyGroup>
       <SerializerName>SerializableAssembly.XmlSerializers</SerializerName>
