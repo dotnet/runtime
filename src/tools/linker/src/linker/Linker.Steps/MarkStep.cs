@@ -2904,12 +2904,12 @@ namespace Mono.Linker.Steps
 
 			IMemberDefinition suppressionContextMember = currentOrigin.SuppressionContextMember;
 			if (suppressionContextMember is MethodDefinition &&
-				Annotations.DoesMethodRequireUnreferencedCode ((MethodDefinition) suppressionContextMember, out _))
+				Annotations.IsMethodInRequiresUnreferencedCodeScope ((MethodDefinition) suppressionContextMember))
 				return true;
 
 			IMemberDefinition originMember = currentOrigin.MemberDefinition;
 			if (originMember is MethodDefinition && suppressionContextMember != originMember &&
-				Annotations.DoesMethodRequireUnreferencedCode ((MethodDefinition) originMember, out _))
+				Annotations.IsMethodInRequiresUnreferencedCodeScope ((MethodDefinition) originMember))
 				return true;
 
 			return false;
