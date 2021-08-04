@@ -1032,7 +1032,7 @@ namespace Internal.TypeSystem
                 if (!fieldType.IsValueType || fieldType.IsPrimitive)
                     continue;
 
-                if ((DefType)fieldType).IsUnsafeValueType)
+                if (((DefType)fieldType).IsUnsafeValueType)
                     return true;
             }
 
