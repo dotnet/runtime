@@ -13,7 +13,6 @@ namespace System.Runtime.InteropServices.JavaScript
     public static class Runtime
     {
         private static readonly Dictionary<int, WeakReference<JSObject>> _boundObjects = new Dictionary<int, WeakReference<JSObject>>();
-        private static readonly Dictionary<object, JSObject> _rawToJS = new Dictionary<object, JSObject>();
 
         private const string TaskGetResultName = "get_Result";
         private static readonly MethodInfo _taskGetResultMethodInfo = typeof(Task<>).GetMethod(TaskGetResultName)!;
@@ -125,27 +124,13 @@ namespace System.Runtime.InteropServices.JavaScript
         {
             Interop.Runtime.ReleaseHandle(objToRelease.JSHandle, out int exception);
             if (exception != 0)
-                throw new JSException($"Error releasing handle on (js-obj js '{objToRelease.JSHandle}' mono '{objToRelease.Int32Handle} raw '{objToRelease.RawObject != null}')");
+                throw new JSException($"Error releasing handle on (js-obj js '{objToRelease.JSHandle}' mono '{objToRelease.Int32Handle})");
 
             lock (_boundObjects)
             {
                 _boundObjects.Remove(objToRelease.JSHandle);
             }
             return true;
-        }
-
-        public static void UnBindRawJSObjectAndFree(int gcHandle)
-        {
-            GCHandle h = (GCHandle)(IntPtr)gcHandle;
-            JSObject? obj = h.Target as JSObject;
-            lock (_rawToJS)
-            {
-                if (obj?.RawObject != null)
-                {
-                    _rawToJS.Remove(obj.RawObject);
-                    obj.FreeHandle();
-                }
-            }
         }
 
         public static int CreateTaskSource()
@@ -173,19 +158,6 @@ namespace System.Runtime.InteropServices.JavaScript
             GCHandle handle = (GCHandle)(IntPtr)tcsGCHhanle;
             TaskCompletionSource<object> tcs = (TaskCompletionSource<object>)handle.Target!;
             return tcs.Task;
-        }
-
-        public static int BindExistingObject(object rawObj, int jsId)
-        {
-            JSObject? jsObject;
-            lock (_rawToJS)
-            {
-                if (!_rawToJS.TryGetValue(rawObj, out jsObject))
-                {
-                    _rawToJS.Add(rawObj, jsObject = new JSObject(jsId, rawObj));
-                }
-            }
-            return jsObject.Int32Handle;
         }
 
         private static object JSOwnedObjectLock = new object();
@@ -225,11 +197,7 @@ namespace System.Runtime.InteropServices.JavaScript
 
         public static int GetJSObjectId(object rawObj)
         {
-            JSObject? jsObject;
-            lock (_rawToJS)
-            {
-                _rawToJS.TryGetValue(rawObj, out jsObject);
-            }
+            JSObject? jsObject = rawObj as JSObject;
             return jsObject?.JSHandle ?? -1;
         }
 
@@ -245,7 +213,7 @@ namespace System.Runtime.InteropServices.JavaScript
                 {
                     jso.AddInFlight();
                 }
-                return jso.GetWrappedObject() ?? jso;
+                return jso;
             }
             return h.Target;
         }

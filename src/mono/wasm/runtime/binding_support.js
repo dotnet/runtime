@@ -123,9 +123,7 @@ var BindingSupportLib = {
 
 			this._bind_js_obj = bind_runtime_method ("BindJSObject", "iii");
 			this._bind_core_clr_obj = bind_runtime_method ("BindCoreCLRObject", "ii");
-			this._bind_existing_obj = bind_runtime_method ("BindExistingObject", "mi");
 			this._alloc_gchandle = bind_runtime_method ("GetJSOwnedObjectHandle", "m");
-			this._unbind_raw_obj_and_free = bind_runtime_method ("UnBindRawJSObjectAndFree", "ii");
 			this._get_js_id = bind_runtime_method ("GetJSObjectId", "m");
 			this._get_raw_mono_obj = bind_runtime_method ("GetDotNetObject", "ii!");
 
@@ -194,6 +192,7 @@ var BindingSupportLib = {
 			this.mono_wasm_object_registry[thenable_js_handle] = thenable;
 
 			// TODO optimization: return the tcs.Task on the same call
+			// note that we do not implement promise/task roundtrip
 			const tcs_gchandle = BINDING.create_tcs();
 			thenable.then (function (result) {
 				BINDING.set_tcs_result(tcs_gchandle, result);
@@ -230,6 +229,7 @@ var BindingSupportLib = {
 			if (!result) {
 
 				var cont_obj = null;
+				// note that we do not implement promise/task roundtrip
 				var result = new Promise (function (resolve, reject) {
 					cont_obj = {
 						resolve: resolve,
@@ -254,9 +254,6 @@ var BindingSupportLib = {
 			BINDING.bindings_lazy_init ();
 			if (root.value === 0)
 				return null;
-			var js_id = this._get_js_id (root.value);
-			if (js_id > 0)
-				return this.mono_wasm_require_handle(js_id);
 
 			// this could be JSObject proxy of a js native object
 			var js_id = this._get_js_id (root.value);
@@ -524,19 +521,6 @@ var BindingSupportLib = {
 				return mono_array;
 			} finally {
 				MONO.mono_wasm_release_roots (arrayRoot, elemRoot);
-			}
-		},
-
-		// TODO unused ?
-		unbox_mono_obj: function (mono_obj) {
-			if (mono_obj === 0)
-				return undefined;
-
-			var root = MONO.mono_wasm_new_root (mono_obj);
-			try {
-				return this._unbox_mono_obj_root (root);
-			} finally {
-				root.release();
 			}
 		},
 
@@ -881,16 +865,6 @@ var BindingSupportLib = {
 				throw new Error (`Expected numeric value for enum argument, got '${js_obj}'`);
 
 			return js_obj | 0;
-		},
-
-		wasm_binding_obj_new: function (js_obj_id, ownsHandle, type)
-		{
-			return this._bind_js_obj (js_obj_id, ownsHandle, type);
-		},
-
-		wasm_bind_existing: function (mono_obj, js_id)
-		{
-			return this._bind_existing_obj (mono_obj, js_id);
 		},
 
 		wasm_bind_core_clr_obj: function (js_id, gc_handle)
@@ -1658,7 +1632,7 @@ var BindingSupportLib = {
 					// Obtain the JS -> C# type mapping.
 					var wasm_type = js_obj[Symbol.for("wasm type")];
 					js_obj.__owns_handle__ = true;
-					gc_handle = js_obj.__mono_gchandle__ = this.wasm_binding_obj_new(handle + 1, js_obj.__owns_handle__, typeof wasm_type === "undefined" ? -1 : wasm_type);
+					gc_handle = js_obj.__mono_gchandle__ = this._bind_js_obj(handle + 1, js_obj.__owns_handle__, typeof wasm_type === "undefined" ? -1 : wasm_type);
 					this.mono_wasm_object_registry[handle] = js_obj;
 					// as this instance was just created, it was already created with Inflight strong GCHandle, so we do not have to do it again
 					return { gc_handle, should_add_in_flight: false };

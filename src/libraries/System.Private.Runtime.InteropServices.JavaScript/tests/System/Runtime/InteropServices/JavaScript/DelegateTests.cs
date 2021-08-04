@@ -277,6 +277,28 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             await Assert.ThrowsAsync<JSException>(async () => await promise);
         }
 
+        [ActiveIssue("not implemented")]
+        [Fact]
+        public static void RoundtripPromise()
+        {
+            var factory = new Function(@"
+                var dummy=new Promise((resolve, reject) => {});
+                return {
+                    dummy:dummy,
+                    check:(promise)=>{
+                        console.log(JSON.stringify(promise));
+                        return promise===dummy ? 1:0;
+                    }
+                }");
+
+            var obj = (JSObject)factory.Call();
+            var dummy = obj.GetObjectProperty("dummy");
+            Assert.IsType<Task<object>>(dummy);
+            var check = obj.Invoke("check", dummy);
+            Assert.Equal(1, check);
+        }
+
+
         [Fact]
         public static async Task ResolveTask()
         {
@@ -339,6 +361,21 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             Assert.Null(check);
             factory.Call(null, null, callback);
             Assert.Null(check);
+        }
+
+        [ActiveIssue("not implemented")]
+        [Fact]
+        public static void RoundtripTask()
+        {
+            var tcs = new TaskCompletionSource<int>();
+            var factory = new Function("dummy", @"
+                return {
+                    dummy:dummy,
+                }");
+
+            var obj = (JSObject)factory.Call(tcs.Task);
+            var dummy = obj.GetObjectProperty("dummy");
+            Assert.IsType<Task<int>>(dummy);
         }
     }
 }

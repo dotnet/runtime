@@ -18,8 +18,6 @@ namespace System.Runtime.InteropServices.JavaScript
     /// </summary>
     public class JSObject : AnyRef, IJSObject, IDisposable
     {
-        internal object? RawObject;
-
         // to detect redundant calls
         public bool IsDisposed { get; private set; }
 
@@ -36,11 +34,6 @@ namespace System.Runtime.InteropServices.JavaScript
 
         internal JSObject(int jsHandle, bool ownsHandle) : base((IntPtr)jsHandle, ownsHandle)
         { }
-
-        internal JSObject(int jsHandle, object rawObj) : base(jsHandle, false)
-        {
-            RawObject = rawObj;
-        }
 
         /// <summary>
         ///   Invoke a named method of the object, or throws a JSException on error.
@@ -171,7 +164,7 @@ namespace System.Runtime.InteropServices.JavaScript
         {
             object setPropResult = Interop.Runtime.SetObjectProperty(JSHandle, name, value, createIfNotExists, hasOwnProperty, out int exception);
             if (exception != 0)
-                throw new JSException($"Error setting {name} on (js-obj js '{JSHandle}' .NET '{Int32Handle} raw '{RawObject != null})");
+                throw new JSException($"Error setting {name} on (js-obj js '{JSHandle}' .NET '{Int32Handle})");
         }
 
         /// <summary>
@@ -198,16 +191,11 @@ namespace System.Runtime.InteropServices.JavaScript
         /// <param name="prop">The String name or Symbol of the property to test.</param>
         public bool PropertyIsEnumerable(string prop) => (bool)Invoke("propertyIsEnumerable", prop);
 
-        internal object? GetWrappedObject()
-        {
-            return RawObject;
-        }
         internal void FreeHandle()
         {
             Runtime.ReleaseJSObject(this);
             SetHandleAsInvalid();
             IsDisposed = true;
-            RawObject = null;
             FreeGCHandle();
         }
 
@@ -248,7 +236,7 @@ namespace System.Runtime.InteropServices.JavaScript
 
         public override string ToString()
         {
-            return $"(js-obj js '{Int32Handle}' raw '{RawObject != null}')";
+            return $"(js-obj js '{Int32Handle}')";
         }
     }
 }
