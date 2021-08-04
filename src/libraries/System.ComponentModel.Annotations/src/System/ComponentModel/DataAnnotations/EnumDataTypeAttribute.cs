@@ -99,7 +99,7 @@ namespace System.ComponentModel.DataAnnotations
         }
 
         private static bool IsEnumTypeInFlagsMode(Type enumType) =>
-            enumType.GetCustomAttributes(typeof(FlagsAttribute), false).Length > 0;
+            enumType.IsDefined(typeof(FlagsAttribute), false);
 
         private static string? GetUnderlyingTypeValueString(Type enumType, object enumValue) =>
             Convert.ChangeType(enumValue, Enum.GetUnderlyingType(enumType), CultureInfo.InvariantCulture).ToString();
