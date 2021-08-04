@@ -126,6 +126,9 @@ namespace System.IO
         // Gets the full path without argument validation
         private static string GetFullPathInternal(string path)
         {
+            Debug.Assert(!string.IsNullOrEmpty(path));
+            Debug.Assert(!path.Contains('\0'));
+            
             if (PathInternal.IsExtended(path.AsSpan()))
             {
                 // \\?\ paths are considered normalized by definition. Windows doesn't normalize \\?\

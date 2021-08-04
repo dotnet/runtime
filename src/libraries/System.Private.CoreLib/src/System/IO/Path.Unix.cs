@@ -51,6 +51,9 @@ namespace System.IO
         // Gets the full path without argument validation
         private static string GetFullPathInternal(string path)
         {
+            Debug.Assert(!string.IsNullOrEmpty(path));
+            Debug.Assert(!path.Contains('\0'));
+            
             // Expand with current directory if necessary
             if (!IsPathRooted(path))
             {
