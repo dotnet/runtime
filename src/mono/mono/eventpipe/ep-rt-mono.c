@@ -4066,7 +4066,7 @@ mono_profiler_mem_block_alloc (uint32_t req_size)
 		block->last_used_offset = 0;
 
 		while (true) {
-			prev = (MonoProfilerMemBlock *)ep_rt_volatile_load_ptr_without_barrier (&_ep_rt_mono_profiler_mem_blocks);
+			prev = (MonoProfilerMemBlock *)ep_rt_volatile_load_ptr_without_barrier ((volatile void **)&_ep_rt_mono_profiler_mem_blocks);
 			if (mono_atomic_cas_ptr ((volatile gpointer*)&_ep_rt_mono_profiler_mem_blocks, block, prev) == prev)
 				break;
 		}
@@ -4085,14 +4085,14 @@ mono_profiler_mem_alloc (uint32_t req_size)
 {
 	EP_ASSERT (mono_profiler_gc_in_progress ());
 
-	MonoProfilerMemBlock *current_block = (MonoProfilerMemBlock *)ep_rt_volatile_load_ptr_without_barrier (&_ep_rt_mono_profiler_current_mem_block);
+	MonoProfilerMemBlock *current_block = (MonoProfilerMemBlock *)ep_rt_volatile_load_ptr_without_barrier ((volatile void **)&_ep_rt_mono_profiler_current_mem_block);
 	uint8_t *buffer = NULL;
 
 	if (!current_block) {
 		current_block = mono_profiler_mem_block_alloc (req_size);
 		if (current_block) {
 			mono_memory_barrier ();
-			ep_rt_volatile_store_ptr_without_barrier (&_ep_rt_mono_profiler_current_mem_block, current_block);
+			ep_rt_volatile_store_ptr_without_barrier ((volatile void **)&_ep_rt_mono_profiler_current_mem_block, current_block);
 		}
 	}
 
@@ -4106,7 +4106,7 @@ mono_profiler_mem_alloc (uint32_t req_size)
 				buffer = current_block->start;
 				current_block->offset += req_size;
 				mono_memory_barrier ();
-				ep_rt_volatile_store_ptr_without_barrier (&_ep_rt_mono_profiler_current_mem_block, current_block);
+				ep_rt_volatile_store_ptr_without_barrier ((volatile void **)&_ep_rt_mono_profiler_current_mem_block, current_block);
 			}
 		} else {
 			buffer = (uint8_t*)current_block->start + prev_offset;
@@ -4122,10 +4122,10 @@ mono_profiler_mem_block_free_all (void)
 {
 	EP_ASSERT (mono_profiler_gc_in_progress ());
 
-	MonoProfilerMemBlock *current_block = (MonoProfilerMemBlock *)ep_rt_volatile_load_ptr (&_ep_rt_mono_profiler_current_mem_block);
+	MonoProfilerMemBlock *current_block = (MonoProfilerMemBlock *)ep_rt_volatile_load_ptr ((volatile void **)&_ep_rt_mono_profiler_current_mem_block);
 
-	ep_rt_volatile_store_ptr_without_barrier (&_ep_rt_mono_profiler_current_mem_block, NULL);
-	ep_rt_volatile_store_ptr_without_barrier (&_ep_rt_mono_profiler_mem_blocks, NULL);
+	ep_rt_volatile_store_ptr_without_barrier ((volatile void **)&_ep_rt_mono_profiler_current_mem_block, NULL);
+	ep_rt_volatile_store_ptr_without_barrier ((volatile void **)&_ep_rt_mono_profiler_mem_blocks, NULL);
 
 	mono_memory_barrier ();
 
@@ -4142,11 +4142,11 @@ mono_profiler_mem_block_free_all_but_current (void)
 {
 	EP_ASSERT (mono_profiler_gc_in_progress ());
 
-	MonoProfilerMemBlock *block_to_keep = (MonoProfilerMemBlock *)ep_rt_volatile_load_ptr (&_ep_rt_mono_profiler_current_mem_block);
+	MonoProfilerMemBlock *block_to_keep = (MonoProfilerMemBlock *)ep_rt_volatile_load_ptr ((volatile void **)&_ep_rt_mono_profiler_current_mem_block);
 	MonoProfilerMemBlock *current_block = block_to_keep;
 
-	ep_rt_volatile_store_ptr_without_barrier (&_ep_rt_mono_profiler_current_mem_block, NULL);
-	ep_rt_volatile_store_ptr_without_barrier (&_ep_rt_mono_profiler_mem_blocks, NULL);
+	ep_rt_volatile_store_ptr_without_barrier ((volatile void **)&_ep_rt_mono_profiler_current_mem_block, NULL);
+	ep_rt_volatile_store_ptr_without_barrier ((volatile void **)&_ep_rt_mono_profiler_mem_blocks, NULL);
 
 	mono_memory_barrier ();
 
@@ -4170,8 +4170,8 @@ mono_profiler_mem_block_free_all_but_current (void)
 
 	mono_memory_barrier ();
 
-	ep_rt_volatile_store_ptr_without_barrier (&_ep_rt_mono_profiler_current_mem_block, block_to_keep);
-	ep_rt_volatile_store_ptr_without_barrier (&_ep_rt_mono_profiler_mem_blocks, block_to_keep);
+	ep_rt_volatile_store_ptr_without_barrier ((volatile void **)&_ep_rt_mono_profiler_current_mem_block, block_to_keep);
+	ep_rt_volatile_store_ptr_without_barrier ((volatile void **)&_ep_rt_mono_profiler_mem_blocks, block_to_keep);
 }
 
 static
@@ -4740,7 +4740,7 @@ mono_profiler_fire_buffered_gc_events_in_alloc_order (GHashTable *cache)
 {
 	EP_ASSERT (mono_profiler_gc_in_progress ());
 
-	MonoProfilerMemBlock *first_block = (MonoProfilerMemBlock *)ep_rt_volatile_load_ptr (&_ep_rt_mono_profiler_current_mem_block);
+	MonoProfilerMemBlock *first_block = (MonoProfilerMemBlock *)ep_rt_volatile_load_ptr ((volatile void **)&_ep_rt_mono_profiler_current_mem_block);
 	while (first_block && first_block->prev)
 		first_block = first_block->prev;
 
