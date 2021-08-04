@@ -25,7 +25,7 @@ namespace System.Threading
         internal const bool SupportsTimeSensitiveWorkItems = true;
 
 #if CORERT
-        internal const bool EnableWorkerTracking = false;
+        private const bool IsWorkerTrackingEnabledInConfig = false;
 #else
         private static readonly bool IsWorkerTrackingEnabledInConfig =
             AppContextConfigHelper.GetBooleanConfig("System.Threading.ThreadPool.EnableWorkerTracking", false);
