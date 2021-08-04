@@ -118,7 +118,7 @@ namespace Microsoft.Extensions.DependencyInjection
 
             Func<ServiceProviderEngineScope, object> realizedService = _realizedServices.GetOrAdd(serviceType, _createServiceAccessor);
             OnResolve(serviceType, serviceProviderEngineScope);
-            DependencyInjectionEventSource.Log.ServiceResolved(serviceType);
+            DependencyInjectionEventSource.Log.ServiceResolved(this, serviceType);
             var result = realizedService.Invoke(serviceProviderEngineScope);
             System.Diagnostics.Debug.Assert(result is null || CallSiteFactory.IsService(serviceType));
             return result;
@@ -150,7 +150,7 @@ namespace Microsoft.Extensions.DependencyInjection
             ServiceCallSite callSite = CallSiteFactory.GetCallSite(serviceType, new CallSiteChain());
             if (callSite != null)
             {
-                DependencyInjectionEventSource.Log.CallSiteBuilt(serviceType, callSite);
+                DependencyInjectionEventSource.Log.CallSiteBuilt(this, serviceType, callSite);
                 OnCreate(callSite);
 
                 // Optimize singleton case

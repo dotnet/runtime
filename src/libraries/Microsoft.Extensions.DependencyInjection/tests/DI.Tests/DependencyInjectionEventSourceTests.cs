@@ -214,12 +214,13 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
         public void EmitsServiceRealizationFailedEvent()
         {
             var exception = new Exception("Test error.");
-            DependencyInjectionEventSource.Log.ServiceRealizationFailed(exception);
+            DependencyInjectionEventSource.Log.ServiceRealizationFailed(exception, 1234);
 
             var eventName = nameof(DependencyInjectionEventSource.Log.ServiceRealizationFailed);
             var serviceRealizationFailedEvent = _listener.EventData.Single(e => e.EventName == eventName);
 
             Assert.Equal("System.Exception: Test error.", GetProperty<string>(serviceRealizationFailedEvent, "exceptionMessage"));
+            Assert.Equal(1234, GetProperty<int>(serviceRealizationFailedEvent, "serviceProviderHashCode"));
             Assert.Equal(6, serviceRealizationFailedEvent.EventId);
         }
 
