@@ -105,8 +105,14 @@ bool IntegralRange::Contains(int64_t value) const
     var_types toType       = cast->CastToType();
     bool      fromUnsigned = cast->IsUnsigned();
 
-    assert((fromType == TYP_INT) || (fromType == TYP_LONG));
+    assert((fromType == TYP_INT) || (fromType == TYP_LONG) || varTypeIsGC(fromType));
     assert(varTypeIsIntegral(toType));
+
+    // Cast from a GC type is the same as a cast from TYP_I_IMPL for our purposes.
+    if (varTypeIsGC(fromType))
+    {
+        fromType = TYP_I_IMPL;
+    }
 
     if (!cast->gtOverflow())
     {
@@ -189,10 +195,11 @@ bool IntegralRange::Contains(int64_t value) const
 // IntegralRange::ForCastOutput: Get the output range for a cast.
 //
 // This method is the "output" counterpart to ForCastInput, it returns
-// a range produces by a cast (by definition, non-overflowing one).
+// a range produced by a cast (by definition, non-overflowing one).
 // The output range is the same for representation-preserving casts, but
 // can be different for others. One example is CAST_OVF(uint <- long).
 // The input range is [0..UINT_MAX], while the output is [INT_MIN..INT_MAX].
+// Unlike ForCastInput, this method supports casts from floating point types.
 //
 // Arguments:
 //   cast - the cast node for which the range will be computed
@@ -206,8 +213,27 @@ bool IntegralRange::Contains(int64_t value) const
     var_types toType       = cast->CastToType();
     bool      fromUnsigned = cast->IsUnsigned();
 
-    assert((fromType == TYP_INT) || (fromType == TYP_LONG));
+    assert((fromType == TYP_INT) || (fromType == TYP_LONG) || varTypeIsFloating(fromType) || varTypeIsGC(fromType));
     assert(varTypeIsIntegral(toType));
+
+    // CAST/CAST_OVF(small type <- float/double) - [TO_TYPE_MIN..TO_TYPE_MAX]
+    // CAST/CAST_OVF(uint/int <- float/double)   - [INT_MIN..INT_MAX]
+    // CAST/CAST_OVF(ulong/long <- float/double) - [LONG_MIN..LONG_MAX]
+    if (varTypeIsFloating(fromType))
+    {
+        if (!varTypeIsSmall(toType))
+        {
+            toType = genActualType(toType);
+        }
+
+        return IntegralRange::ForType(toType);
+    }
+
+    // Cast from a GC type is the same as a cast from TYP_I_IMPL for our purposes.
+    if (varTypeIsGC(fromType))
+    {
+        fromType = TYP_I_IMPL;
+    }
 
     if (varTypeIsSmall(toType) || (genActualType(toType) == fromType))
     {
@@ -1675,7 +1701,7 @@ bool Compiler::optTryExtractSubrangeAssertion(GenTree* source, IntegralRange* pR
             break;
 
         case GT_CAST:
-            if (varTypeIsIntegral(source) && varTypeIsIntegral(source->AsCast()->CastOp()))
+            if (varTypeIsIntegral(source))
             {
                 IntegralRange castRange = IntegralRange::ForCastOutput(source->AsCast());
                 // TODO-Casts: change below to source->TypeGet() when BOX import is fixed to not have CAST(short).
