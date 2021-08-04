@@ -51,7 +51,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             {
                 if (DotnetObjectId.TryParse(objRet?["value"]?["objectId"]?.Value<string>(), out DotnetObjectId objectId))
                 {
-                    var exceptionObject = await proxy.SdbHelper.GetObjectValues(sessionId, int.Parse(objectId.Value), true, false, false, true, false, token);
+                    var exceptionObject = await proxy.SdbHelper.GetObjectValues(sessionId, int.Parse(objectId.Value), true, false, false, true, false, false, token);
                     var exceptionObjectMessage = exceptionObject.FirstOrDefault(attr => attr["name"].Value<string>().Equals("_message"));
                     exceptionObjectMessage["value"]["value"] = objRet["value"]?["className"]?.Value<string>() + ": " + exceptionObjectMessage["value"]?["value"]?.Value<string>();
                     return exceptionObjectMessage["value"]?.Value<JObject>();

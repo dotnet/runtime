@@ -17,7 +17,7 @@ namespace DebuggerTests
         [Fact]
         public async Task UsingDebuggerDisplay()
         {
-            var bp = await SetBreakpointInMethod("debugger-test.dll", "DebuggerTests.DebuggerCustomViewTest", "run", 7);
+            var bp = await SetBreakpointInMethod("debugger-test.dll", "DebuggerTests.DebuggerCustomViewTest", "run", 6);
             var pause_location = await EvaluateAndCheck(
                 "window.setTimeout(function() { invoke_static_method ('[debugger-test] DebuggerTests.DebuggerCustomViewTest:run'); }, 1);",
                 "dotnet://debugger-test.dll/debugger-custom-view-test.cs",
@@ -26,15 +26,15 @@ namespace DebuggerTests
                 "run");
 
             var locals = await GetProperties(pause_location["callFrames"][0]["callFrameId"].Value<string>());
-            //CheckObject(locals, "a", "DebuggerTests.WithDisplayString", description:"Some one Value 2 End");
-		    //CheckObject(locals, "c", "DebuggerTests.DebuggerDisplayMethodTest", description: "First Int:32 Second Int:43");
+            CheckObject(locals, "a", "DebuggerTests.WithDisplayString", description:"Some one Value 2 End");
+		    CheckObject(locals, "c", "DebuggerTests.DebuggerDisplayMethodTest", description: "First Int:32 Second Int:43");
             CheckObject(locals, "myList", "System.Collections.Generic.List<int>", description: "Count = 4");
         }
 
         [Fact]
         public async Task UsingDebuggerTypeProxy()
         {
-            var bp = await SetBreakpointInMethod("debugger-test.dll", "DebuggerTests.DebuggerCustomViewTest", "run", 7);
+            var bp = await SetBreakpointInMethod("debugger-test.dll", "DebuggerTests.DebuggerCustomViewTest", "run", 6);
             var pause_location = await EvaluateAndCheck(
                 "window.setTimeout(function() { invoke_static_method ('[debugger-test] DebuggerTests.DebuggerCustomViewTest:run'); }, 1);",
                 "dotnet://debugger-test.dll/debugger-custom-view-test.cs",
@@ -42,12 +42,17 @@ namespace DebuggerTests
                 bp.Value["locations"][0]["columnNumber"].Value<int>(),
                 "run");
 
-            var locals = await GetProperties(pause_location["callFrames"][0]["callFrameId"].Value<string>());
-            CheckObject(locals, "myList", "System.Collections.Generic.List<int>", description: "Count = 4");
-            /*CheckObject(locals, "b", "DebuggerTests.WithProxy", description:"DebuggerTests.WithProxy");
             var frame = pause_location["callFrames"][0];
-            var props = await GetObjectOnFrame(frame, "b");
-            CheckString(props, "Val2", "one");*/
+            var locals = await GetProperties(frame["callFrameId"].Value<string>());
+            CheckObject(locals, "myList", "System.Collections.Generic.List<int>", description: "Count = 4");
+            var props = await GetObjectOnFrame(frame, "myList");
+            Assert.Equal(1, props.Count());
+
+            CheckArray(props, "Items", "int[]", 4);
+
+            CheckObject(locals, "b", "DebuggerTests.WithProxy", description:"DebuggerTests.WithProxy");
+            props = await GetObjectOnFrame(frame, "b");
+            CheckString(props, "Val2", "one");
         }
     }
 }
