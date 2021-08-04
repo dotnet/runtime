@@ -21,7 +21,7 @@ namespace System.Threading
         public static long CompletedWorkItemCount { get { throw null; } }
         public static long PendingWorkItemCount { get { throw null; } }
         public static int ThreadCount { get { throw null; } }
-        [System.ObsoleteAttribute("ThreadPool.BindHandle(IntPtr) has been deprecated.  Please use ThreadPool.BindHandle(SafeHandle) instead.", false)]
+        [System.ObsoleteAttribute("ThreadPool.BindHandle(IntPtr) has been deprecated. Use ThreadPool.BindHandle(SafeHandle) instead.")]
         [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
         public static bool BindHandle(System.IntPtr osHandle) { throw null; }
         [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]

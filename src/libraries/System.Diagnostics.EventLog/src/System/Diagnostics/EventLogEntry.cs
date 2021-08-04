@@ -117,7 +117,7 @@ namespace System.Diagnostics
         /// <summary>
         /// The number identifying the message for this source.
         /// </summary>
-        [Obsolete("This property has been deprecated.  Please use System.Diagnostics.EventLogEntry.InstanceId instead.  https://go.microsoft.com/fwlink/?linkid=14202")]
+        [Obsolete("EventLogEntry.EventID has been deprecated. Use System.Diagnostics.EventLogEntry.InstanceId instead.")]
         public int EventID
         {
             get

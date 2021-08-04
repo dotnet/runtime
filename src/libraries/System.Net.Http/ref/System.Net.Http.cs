@@ -308,7 +308,7 @@ namespace System.Net.Http
         public System.Net.Http.HttpContent? Content { get { throw null; } set { } }
         public System.Net.Http.Headers.HttpRequestHeaders Headers { get { throw null; } }
         public System.Net.Http.HttpMethod Method { get { throw null; } set { } }
-        [Obsolete("Use Options instead.")]
+        [Obsolete("HttpRequestMessage.Properties has been deprecated. Use Options instead.")]
         public System.Collections.Generic.IDictionary<string, object?> Properties { get { throw null; } }
         public HttpRequestOptions Options { get { throw null; } }
         public System.Uri? RequestUri { get { throw null; } set { } }
