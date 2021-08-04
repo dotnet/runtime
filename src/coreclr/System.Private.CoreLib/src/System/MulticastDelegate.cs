@@ -156,22 +156,22 @@ namespace System
 
         private static bool TrySetSlot(object?[] a, int index, object o)
         {
-            if (a[index] == null && System.Threading.Interlocked.CompareExchange<object?>(ref a[index], o, null) == null)
+            ref object? slot = ref a[index];
+            object? slotVal = slot;
+
+            if (slotVal is null && System.Threading.Interlocked.CompareExchange<object?>(ref slot, o, null) is null)
                 return true;
 
             // The slot may be already set because we have added and removed the same method before.
             // Optimize this case, because it's cheaper than copying the array.
-            if (a[index] is object ai)
-            {
-                MulticastDelegate d = (MulticastDelegate)o;
-                MulticastDelegate dd = (MulticastDelegate)ai;
+            MulticastDelegate d = (MulticastDelegate)o;
+            MulticastDelegate dd = (MulticastDelegate)slotVal!;
 
-                if (dd._methodPtr == d._methodPtr &&
-                    dd._target == d._target &&
-                    dd._methodPtrAux == d._methodPtrAux)
-                {
-                    return true;
-                }
+            if (dd._methodPtr == d._methodPtr &&
+                dd._target == d._target &&
+                dd._methodPtrAux == d._methodPtrAux)
+            {
+                return true;
             }
             return false;
         }
