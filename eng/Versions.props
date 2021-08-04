@@ -112,7 +112,7 @@
     <SystemRuntimeCompilerServicesUnsafeVersion>6.0.0-rc.1.21401.3</SystemRuntimeCompilerServicesUnsafeVersion>
     <SystemThreadingTasksExtensionsVersion>4.5.4</SystemThreadingTasksExtensionsVersion>
     <SystemValueTupleVersion>4.5.0</SystemValueTupleVersion>
-    <runtimenativeSystemIOPortsVersion>6.0.0-rc.1.21401.3</runtimenativeSystemIOPortsVersion>
+    <runtimenativeSystemIOPortsVersion>6.0.0-rc.1.21375.2</runtimenativeSystemIOPortsVersion>
     <!-- Runtime-Assets dependencies -->
     <SystemRuntimeNumericsTestDataVersion>6.0.0-beta.21402.1</SystemRuntimeNumericsTestDataVersion>
     <SystemComponentModelTypeConverterTestDataVersion>6.0.0-beta.21402.1</SystemComponentModelTypeConverterTestDataVersion>
