@@ -160,12 +160,21 @@ namespace Microsoft.Extensions.FileProviders
         {
             string root = PathUtils.EnsureTrailingSlash(Path.GetFullPath(Root));
 
-            // When UsePollingFileWatcher & UseActivePolling are set OR when target platform is browser, we won't use a FileSystemWatcher.
-            FileSystemWatcher watcher = UsePollingFileWatcher && UseActivePolling
+            FileSystemWatcher watcher;
 #if NETCOREAPP
-                 || OperatingSystem.IsBrowser()
+            //  For browser we will proactively fallback to polling since FileSystemWatcher is not supported.
+            if (OperatingSystem.IsBrowser())
+            {
+                UsePollingFileWatcher = true;
+                UseActivePolling = true;
+                watcher = null;
+            }
+            else
 #endif
-                 ? null : new FileSystemWatcher(root);
+            {
+                // When UsePollingFileWatcher & UseActivePolling are set, we won't use a FileSystemWatcher.
+                watcher = UsePollingFileWatcher && UseActivePolling ? null : new FileSystemWatcher(root);
+            }
 
             return new PhysicalFilesWatcher(root, watcher, UsePollingFileWatcher, _filters)
             {
