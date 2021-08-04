@@ -24013,10 +24013,10 @@ size_t gc_heap::get_total_gen_size (int gen_number)
     for (int hn = 0; hn < gc_heap::n_heaps; hn++)
     {
         gc_heap* hp = gc_heap::g_heaps[hn];
-        size += hp->generation_size (hp->generation_of (gen_number));
+        size += hp->generation_size (gen_number);
     }
 #else
-    size_t size = generation_size (generation_of (gen_number));
+    size_t size = generation_size (gen_number);
 #endif //MULTIPLE_HEAPS
     return size;
 }
