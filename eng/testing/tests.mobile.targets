@@ -19,6 +19,8 @@
     <SuppressTrimAnalysisWarnings>true</SuppressTrimAnalysisWarnings>
     <!-- Can be removed when SDK update picks up https://github.com/dotnet/sdk/pull/18655. -->
     <NoWarn>$(NoWarn);IL2111</NoWarn>
+    <!-- based on https://github.com/dotnet/runtime/issues/51602#issuecomment-892815245 -->
+    <NoWarn>$(NoWarn);IL2105</NoWarn>
     <!-- https://github.com/dotnet/sdk/issues/18581 tracks needing to set 2 properties to disable warnings. -->
     <EnableTrimAnalyzer>false</EnableTrimAnalyzer>
 
