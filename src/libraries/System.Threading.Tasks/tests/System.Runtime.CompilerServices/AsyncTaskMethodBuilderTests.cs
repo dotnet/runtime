@@ -642,10 +642,6 @@ namespace System.Threading.Tasks.Tests
         {
             RemoteExecutor.Invoke(() =>
             {
-                // NOTE: This depends on private implementation details generally only used by the debugger.
-                // If those ever change, this test will need to be updated as well.
-                typeof(Task).GetField("s_asyncDebuggingEnabled", BindingFlags.NonPublic | BindingFlags.Static).SetValue(null, true);
-
                 for (int i = 0; i < 1000; i++)
                 {
                     static async Task YieldAsync(TaskCompletionSource tcs) => await tcs.Task;

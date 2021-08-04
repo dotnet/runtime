@@ -5,6 +5,7 @@
     <RootNamespace />
     <AssemblyVersion>9.9.9.9</AssemblyVersion>
     <TargetFrameworks>$(NetCoreAppCurrent)</TargetFrameworks>
+    <SuppressTrimAnalysisWarnings>true</SuppressTrimAnalysisWarnings>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="Drawing\ColorConverterTests.cs" />

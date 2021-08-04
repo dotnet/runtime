@@ -24,6 +24,7 @@
     <_XHarnessArgs Condition="'$(Scenario)' != 'WasmTestOnBrowser'">$(_XHarnessArgs) --engine=$(JSEngine) $(JSEngineArgs) --js-file=runtime.js</_XHarnessArgs>
     <_XHarnessArgs Condition="'$(BrowserHost)' == 'windows'">$(_XHarnessArgs) --browser=chrome --browser-path=%HELIX_CORRELATION_PAYLOAD%\chrome-win\chrome.exe</_XHarnessArgs>
     <_XHarnessArgs Condition="'$(IsFunctionalTest)' == 'true'"     >$(_XHarnessArgs) --expected-exit-code=$(ExpectedExitCode)</_XHarnessArgs>
+    <_XHarnessArgs                                                 >$(_XHarnessArgs) --timeout=3600</_XHarnessArgs>
     <_XHarnessArgs Condition="'$(WasmXHarnessArgs)' != ''"         >$(_XHarnessArgs) $(WasmXHarnessArgs)</_XHarnessArgs>
 
     <_AppArgs Condition="'$(IsFunctionalTest)' != 'true' and '$(Scenario)' != 'BuildWasmApps'">--run WasmTestRunner.dll $(AssemblyName).dll</_AppArgs>
@@ -36,7 +37,7 @@
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(BuildAOTTestsOnHelix)' == 'true'">
-    <_AOTBuildCommand>dotnet msbuild publish/ProxyProjectForAOTOnHelix.proj /bl:$XHARNESS_OUT/AOTBuild.binlog</_AOTBuildCommand>
+    <_AOTBuildCommand>dotnet msbuild publish/ProxyProjectForAOTOnHelix.proj /v:n /bl:$XHARNESS_OUT/AOTBuild.binlog</_AOTBuildCommand>
 
     <!-- running aot-helix tests locally, so we can test with the same project file as CI -->
     <_AOTBuildCommand Condition="'$(ContinuousIntegrationBuild)' != 'true'">$(_AOTBuildCommand) /p:RuntimeSrcDir=$(RepoRoot) /p:RuntimeConfig=$(Configuration)</_AOTBuildCommand>
