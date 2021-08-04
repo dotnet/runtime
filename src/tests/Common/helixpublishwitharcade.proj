@@ -197,15 +197,12 @@
 
     <!-- Helix has an old version of Node that we don't support. So we send a valid version (current LTS) in the correlation payload -->
     <PropertyGroup Condition="'$(ForNode)' == 'true'">
-      <NodeFolder>$([MSBuild]::NormalizeDirectory('$(CoreRootDirectory)', 'nodejs'))</NodeFolder>
+      <NodeFolder>$([MSBuild]::NormalizeDirectory('$(TestBinDir)', 'nodejs'))</NodeFolder>
+      <NodeDestinationFolder>$([MSBuild]::NormalizeDirectory('$(CoreRootDirectory)', 'nodejs'))</NodeDestinationFolder>
     </PropertyGroup>
-    <DownloadFile Condition="'$(ForNode)' == 'true'"
-      SourceUrl="https://nodejs.org/dist/latest-v14.x/node-v14.17.4-linux-x64.tar.xz"
-      DestinationFolder="$(NodeFolder)"/>
-    <Exec Command="tar -xf node-v14.17.4-linux-x64.tar.xz"
-        WorkingDirectory="$(NodeFolder)"
-        IgnoreStandardErrorWarningFormat="true" 
-        Condition="'$(ForNode)' == 'true'"/>
+    <DownloadFile Condition="'$(ForNode)' == 'true'" SourceUrl="https://nodejs.org/dist/latest-v14.x/node-v14.17.4-linux-x64.tar.xz" DestinationFolder="$(NodeFolder)"/>
+    <Exec Command="tar -xf node-v14.17.4-linux-x64.tar.xz" WorkingDirectory="$(NodeFolder)" IgnoreStandardErrorWarningFormat="true"  Condition="'$(ForNode)' == 'true'"/>
+    <Copy SourceFiles="$(NodeFolder)node-v14.17.4-linux-x64/bin" DestinationFolder="$(NodeDestinationFolder)" Condition="'$(ForNode)' == 'true'"/>
 
     <Copy SourceFiles="@(_XUnitConsoleRunnerFiles)" DestinationFolder="$(CoreRootDirectory)\xunit" />
     <Copy SourceFiles="$(MSBuildThisFileDirectory)scripts\runincontext.cmd" DestinationFolder="$(CoreRootDirectory)" Condition=" '$(TestWrapperTargetsWindows)' == 'true' and '$(_RunInUnloadableContext)' == 'true'" />
