@@ -48,7 +48,7 @@ namespace System.Text.Json.Serialization.Metadata
 
         internal Func<JsonSerializerContext, JsonPropertyInfo[]>? PropInitFunc;
 
-        internal Func<JsonParameterClrInfo[]>? CtorParamInitFunc;
+        internal Func<JsonParameterInfoValues[]>? CtorParamInitFunc;
 
         internal static JsonPropertyInfo AddProperty(
             MemberInfo memberInfo,
@@ -629,7 +629,7 @@ namespace System.Text.Json.Serialization.Metadata
             JsonSerializerContext? context = Options._context;
             Debug.Assert(context != null);
 
-            JsonParameterClrInfo[] array;
+            JsonParameterInfoValues[] array;
             if (CtorParamInitFunc == null || (array = CtorParamInitFunc()) == null)
             {
                 ThrowHelper.ThrowInvalidOperationException_NoMetadataForTypeCtorParams(context, Type);

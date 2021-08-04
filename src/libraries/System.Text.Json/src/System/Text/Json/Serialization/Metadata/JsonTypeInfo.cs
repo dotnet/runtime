@@ -303,7 +303,7 @@ namespace System.Text.Json.Serialization.Metadata
                             ParameterInfo[] parameters = converter.ConstructorInfo!.GetParameters();
                             int parameterCount = parameters.Length;
 
-                            JsonParameterClrInfo[] jsonParameters = GetParameterInfoArray(parameters);
+                            JsonParameterInfoValues[] jsonParameters = GetParameterInfoArray(parameters);
                             InitializeConstructorParameters(jsonParameters);
                         }
                     }
@@ -448,7 +448,7 @@ namespace System.Text.Json.Serialization.Metadata
             public JsonPropertyInfo JsonPropertyInfo { get; }
         }
 
-        private void InitializeConstructorParameters(JsonParameterClrInfo[] jsonParameters)
+        private void InitializeConstructorParameters(JsonParameterInfoValues[] jsonParameters)
         {
             var parameterCache = new JsonPropertyDictionary<JsonParameterInfo>(Options.PropertyNameCaseInsensitive, jsonParameters.Length);
 
@@ -476,7 +476,7 @@ namespace System.Text.Json.Serialization.Metadata
                 }
             }
 
-            foreach (JsonParameterClrInfo parameterInfo in jsonParameters)
+            foreach (JsonParameterInfoValues parameterInfo in jsonParameters)
             {
                 ParameterLookupKey paramToCheck = new(parameterInfo.Name, parameterInfo.ParameterType);
 
@@ -509,21 +509,23 @@ namespace System.Text.Json.Serialization.Metadata
             ParameterCount = jsonParameters.Length;
         }
 
-        private static JsonParameterClrInfo[] GetParameterInfoArray(ParameterInfo[] parameters)
+        private static JsonParameterInfoValues[] GetParameterInfoArray(ParameterInfo[] parameters)
         {
             int parameterCount = parameters.Length;
-            JsonParameterClrInfo[] jsonParameters = new JsonParameterClrInfo[parameterCount];
+            JsonParameterInfoValues[] jsonParameters = new JsonParameterInfoValues[parameterCount];
 
             for (int i = 0; i < parameterCount; i++)
             {
                 ParameterInfo reflectionInfo = parameters[i];
 
-                JsonParameterClrInfo jsonInfo = default;
-                jsonInfo.Name = reflectionInfo.Name!;
-                jsonInfo.ParameterType = reflectionInfo.ParameterType;
-                jsonInfo.Position = reflectionInfo.Position;
-                jsonInfo.HasDefaultValue = reflectionInfo.HasDefaultValue;
-                jsonInfo.DefaultValue = reflectionInfo.DefaultValue;
+                JsonParameterInfoValues jsonInfo = new()
+                {
+                    Name = reflectionInfo.Name!,
+                    ParameterType = reflectionInfo.ParameterType,
+                    Position = reflectionInfo.Position,
+                    HasDefaultValue = reflectionInfo.HasDefaultValue,
+                    DefaultValue = reflectionInfo.DefaultValue
+                };
 
                 jsonParameters[i] = jsonInfo;
             }
@@ -568,7 +570,7 @@ namespace System.Text.Json.Serialization.Metadata
         }
 
         private static JsonParameterInfo CreateConstructorParameter(
-            JsonParameterClrInfo parameterInfo,
+            JsonParameterInfoValues parameterInfo,
             JsonPropertyInfo jsonPropertyInfo,
             JsonSerializerOptions options)
         {

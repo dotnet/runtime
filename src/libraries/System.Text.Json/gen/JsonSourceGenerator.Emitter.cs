@@ -57,7 +57,8 @@ namespace System.Text.Json.SourceGeneration
             private const string JsonNumberHandlingTypeRef = "global::System.Text.Json.Serialization.JsonNumberHandling";
             private const string JsonSerializerContextTypeRef = "global::System.Text.Json.Serialization.JsonSerializerContext";
             private const string JsonMetadataServicesTypeRef = "global::System.Text.Json.Serialization.Metadata.JsonMetadataServices";
-            private const string JsonParameterClrInfoTypeRef = "global::System.Text.Json.Serialization.Metadata.JsonParameterClrInfo";
+            private const string JsonObjectInfoValuesTypeRef = "global::System.Text.Json.Serialization.Metadata.JsonObjectInfoValues";
+            private const string JsonParameterInfoValuesTypeRef = "global::System.Text.Json.Serialization.Metadata.JsonParameterInfoValues";
             private const string JsonPropertyInfoTypeRef = "global::System.Text.Json.Serialization.Metadata.JsonPropertyInfo";
             private const string JsonTypeInfoTypeRef = "global::System.Text.Json.Serialization.Metadata.JsonTypeInfo";
 
@@ -214,23 +215,19 @@ namespace {_currentContext.ContextType.Namespace}
                         break;
                     case ClassType.Object:
                         {
-                            if (typeGenerationSpec.ConstructionStrategy == ObjectConstructionStrategy.ParameterizedConstructor)
-                            {
-                                source = GenerateForObjectWithParamCtor(typeGenerationSpec);
-
-                                foreach (ParameterGenerationSpec spec in typeGenerationSpec.CtorParamGenSpecArray!)
-                                {
-                                    GenerateTypeInfo(spec.TypeGenerationSpec);
-                                }
-                            }
-                            else
-                            {
-                                source = GenerateForObject(typeGenerationSpec);
-                            }
+                            source = GenerateForObject(typeGenerationSpec);
 
                             foreach (PropertyGenerationSpec spec in typeGenerationSpec.PropertyGenSpecList)
                             {
                                 GenerateTypeInfo(spec.TypeGenerationSpec);
+                            }
+
+                            if (typeGenerationSpec.ConstructionStrategy == ObjectConstructionStrategy.ParameterizedConstructor)
+                            {
+                                foreach (ParameterGenerationSpec spec in typeGenerationSpec.CtorParamGenSpecArray!)
+                                {
+                                    GenerateTypeInfo(spec.TypeGenerationSpec);
+                                }
                             }
                         }
                         break;
@@ -553,121 +550,68 @@ namespace {_currentContext.ContextType.Namespace}
             private string GenerateForObject(TypeGenerationSpec typeMetadata)
             {
                 string typeFriendlyName = typeMetadata.TypeInfoPropertyName;
+                ObjectConstructionStrategy constructionStrategy = typeMetadata.ConstructionStrategy;
 
-                string createObjectFuncTypeArg = typeMetadata.ConstructionStrategy == ObjectConstructionStrategy.ParameterlessConstructor
-                    ? $"createObjectFunc: static () => new {typeMetadata.TypeRef}()"
-                    : "createObjectFunc: null";
+                string creatorInvocation = constructionStrategy == ObjectConstructionStrategy.ParameterlessConstructor
+                    ? $"static () => new {typeMetadata.TypeRef}()"
+                    : "null";
 
-                string propInitMethodName = $"{typeFriendlyName}{PropInitMethodNameSuffix}";
+                string parameterizedCreatorInvocation = constructionStrategy == ObjectConstructionStrategy.ParameterizedConstructor
+                    ? GetParameterizedCtorInvocationFunc(typeMetadata)
+                    : "null";
+
                 string? propMetadataInitFuncSource = null;
-                string propMetadataInitFuncNamedArg;
-
-                string serializeMethodName = $"{typeFriendlyName}{SerializeMethodNameSuffix}";
-                string? serializeFuncSource = null;
-                string serializeFuncNamedArg;
-
-                if (typeMetadata.GenerateMetadata)
-                {
-                    propMetadataInitFuncSource = GeneratePropMetadataInitFunc(typeMetadata.IsValueType, propInitMethodName, typeMetadata.PropertyGenSpecList!);
-                    propMetadataInitFuncNamedArg = $@"propInitFunc: {propInitMethodName}";
-                }
-                else
-                {
-                    propMetadataInitFuncNamedArg = @"propInitFunc: null";
-                }
-
-                if (typeMetadata.GenerateSerializationLogic)
-                {
-                    serializeFuncSource = GenerateFastPathFuncForObject(typeMetadata, serializeMethodName);
-                    serializeFuncNamedArg = $@"serializeFunc: {serializeMethodName}";
-                }
-                else
-                {
-                    serializeFuncNamedArg = @"serializeFunc: null";
-                }
-
-                string objectInfoInitSource = $@"_{typeFriendlyName} = {JsonMetadataServicesTypeRef}.CreateObjectInfo<{typeMetadata.TypeRef}>(
-                    {OptionsInstanceVariableName},
-                    {createObjectFuncTypeArg},
-                    {propMetadataInitFuncNamedArg},
-                    {GetNumberHandlingAsStr(typeMetadata.NumberHandling)},
-                    {serializeFuncNamedArg});";
-
-                string additionalSource;
-                if (propMetadataInitFuncSource == null || serializeFuncSource == null)
-                {
-                    additionalSource = propMetadataInitFuncSource ?? serializeFuncSource;
-                }
-                else
-                {
-                    additionalSource = @$"{propMetadataInitFuncSource}{serializeFuncSource}";
-                }
-
-                return GenerateForType(typeMetadata, objectInfoInitSource, additionalSource);
-            }
-
-            private string GenerateForObjectWithParamCtor(TypeGenerationSpec typeMetadata)
-            {
-                string typeFriendlyName = typeMetadata.TypeInfoPropertyName;
-
-                Debug.Assert(typeMetadata.ConstructionStrategy == ObjectConstructionStrategy.ParameterizedConstructor);
-                string createObjectFuncTypeArg = GetParameterizedCtorInvocationFunc(typeMetadata);
-
-                string propInitMethodName = $"{typeFriendlyName}{PropInitMethodNameSuffix}";
-                string? propMetadataInitFuncSource = null;
-                string propMetadataInitFuncNamedArg;
-
-                string ctorParamMetadataInitMethodName = $"{typeFriendlyName}{CtorParamInitMethodNameSuffix}";
                 string? ctorParamMetadataInitFuncSource = null;
-                string ctorParamMetadataInitFuncNamedArg;
-
-                string serializeMethodName = $"{typeFriendlyName}{SerializeMethodNameSuffix}";
                 string? serializeFuncSource = null;
-                string serializeFuncNamedArg;
+
+                string propInitMethodName = "null";
+                string ctorParamMetadataInitMethodName = "null";
+                string serializeMethodName = "null";
 
                 if (typeMetadata.GenerateMetadata)
                 {
-                    propMetadataInitFuncSource = GeneratePropMetadataInitFunc(typeMetadata.IsValueType, propInitMethodName, typeMetadata.PropertyGenSpecList!);
-                    propMetadataInitFuncNamedArg = $@"propInitFunc: {propInitMethodName}";
+                    propMetadataInitFuncSource = GeneratePropMetadataInitFunc(typeMetadata);
+                    propInitMethodName = $"{typeFriendlyName}{PropInitMethodNameSuffix}";
 
-                    ctorParamMetadataInitFuncSource = GenerateCtorParamMetadataInitFunc(typeMetadata, ctorParamMetadataInitMethodName);
-                    ctorParamMetadataInitFuncNamedArg = $@"ctorParamInitFunc: {ctorParamMetadataInitMethodName}";
-                }
-                else
-                {
-                    propMetadataInitFuncNamedArg = @"propInitFunc: null";
-                    ctorParamMetadataInitFuncNamedArg = @"ctorParamInitFunc: null";
+                    if (constructionStrategy == ObjectConstructionStrategy.ParameterizedConstructor)
+                    {
+                        ctorParamMetadataInitFuncSource = GenerateCtorParamMetadataInitFunc(typeMetadata);
+                        ctorParamMetadataInitMethodName = $"{typeFriendlyName}{CtorParamInitMethodNameSuffix}";
+                    }
                 }
 
                 if (typeMetadata.GenerateSerializationLogic)
                 {
-                    serializeFuncSource = GenerateFastPathFuncForObject(typeMetadata, serializeMethodName);
-                    serializeFuncNamedArg = $@"serializeFunc: {serializeMethodName}";
-                }
-                else
-                {
-                    serializeFuncNamedArg = @"serializeFunc: null";
+                    serializeFuncSource = GenerateFastPathFuncForObject(typeMetadata);
+                    serializeMethodName = $"{typeFriendlyName}{SerializeMethodNameSuffix}";
                 }
 
-                string objectInfoInitSource = $@"_{typeFriendlyName} = {JsonMetadataServicesTypeRef}.CreateObjectInfo<{typeMetadata.TypeRef}>(
-                    {OptionsInstanceVariableName},
-                    {createObjectFuncTypeArg},
-                    {propMetadataInitFuncNamedArg},
-                    {ctorParamMetadataInitFuncNamedArg},
-                    {GetNumberHandlingAsStr(typeMetadata.NumberHandling)},
-                    {serializeFuncNamedArg});";
+                const string ObjectInfoVarName = "objectInfo";
+                string genericArg = typeMetadata.TypeRef;
+
+                string objectInfoInitSource = $@"{JsonObjectInfoValuesTypeRef}<{genericArg}> {ObjectInfoVarName} = new {JsonObjectInfoValuesTypeRef}<{genericArg}>()
+                {{
+                    ObjectCreator = {creatorInvocation},
+                    ObjectWithParameterizedConstructorCreator = {parameterizedCreatorInvocation},
+                    PropertyMetadataInitializer = {propInitMethodName},
+                    ConstructorParameterMetadataInitializer = {ctorParamMetadataInitMethodName},
+                    NumberHandling = {GetNumberHandlingAsStr(typeMetadata.NumberHandling)},
+                    SerializeHandler = {serializeMethodName}
+                }};
+
+                _{typeFriendlyName} = {JsonMetadataServicesTypeRef}.CreateObjectInfo<{typeMetadata.TypeRef}>({OptionsInstanceVariableName}, {ObjectInfoVarName});";
 
                 string additionalSource = @$"{propMetadataInitFuncSource}{serializeFuncSource}{ctorParamMetadataInitFuncSource}";
+
                 return GenerateForType(typeMetadata, objectInfoInitSource, additionalSource);
             }
 
-            private string GeneratePropMetadataInitFunc(
-                bool declaringTypeIsValueType,
-                string propInitMethodName,
-                List<PropertyGenerationSpec> properties)
+            private string GeneratePropMetadataInitFunc(TypeGenerationSpec typeGenerationSpec)
             {
                 const string PropVarName = "properties";
                 const string JsonContextVarName = "jsonContext";
+
+                List<PropertyGenerationSpec> properties = typeGenerationSpec.PropertyGenSpecList!;
 
                 int propCount = properties.Count;
 
@@ -676,6 +620,7 @@ namespace {_currentContext.ContextType.Namespace}
                     : $"new {JsonPropertyInfoTypeRef}[{propCount}]";
 
                 string contextTypeRef = _currentContext.ContextTypeRef;
+                string propInitMethodName = $"{typeGenerationSpec.TypeInfoPropertyName}{PropInitMethodNameSuffix}";
 
                 StringBuilder sb = new();
 
@@ -716,7 +661,7 @@ private static {JsonPropertyInfoTypeRef}[] {propInitMethodName}({JsonSerializerC
                     string setterNamedArg;
                     if (memberMetadata.CanUseSetter)
                     {
-                        string propMutation = declaringTypeIsValueType
+                        string propMutation = typeGenerationSpec.IsValueType
                             ? @$"{UnsafeTypeRef}.Unbox<{declaringTypeCompilableName}>(obj).{clrPropertyName} = value"
                             : $@"(({declaringTypeCompilableName})obj).{clrPropertyName} = value";
 
@@ -764,7 +709,7 @@ private static {JsonPropertyInfoTypeRef}[] {propInitMethodName}({JsonSerializerC
                 return sb.ToString();
             }
 
-            private string GenerateCtorParamMetadataInitFunc(TypeGenerationSpec typeGenerationSpec, string ctorParamInitMethodName)
+            private string GenerateCtorParamMetadataInitFunc(TypeGenerationSpec typeGenerationSpec)
             {
                 const string parametersVarName = "parameters";
                 const string infoVarName = "info";
@@ -775,10 +720,10 @@ private static {JsonPropertyInfoTypeRef}[] {propInitMethodName}({JsonSerializerC
 
                 StringBuilder sb = new($@"
 
-private static {JsonParameterClrInfoTypeRef}[] {ctorParamInitMethodName}()
+private static {JsonParameterInfoValuesTypeRef}[] {typeGenerationSpec.TypeInfoPropertyName}{CtorParamInitMethodNameSuffix}()
 {{
-    {JsonParameterClrInfoTypeRef}[] {parametersVarName} = new {JsonParameterClrInfoTypeRef}[{paramCount}];
-    {JsonParameterClrInfoTypeRef} info;
+    {JsonParameterInfoValuesTypeRef}[] {parametersVarName} = new {JsonParameterInfoValuesTypeRef}[{paramCount}];
+    {JsonParameterInfoValuesTypeRef} info;
 ");
 
                 for (int i = 0; i < paramCount; i++)
@@ -786,12 +731,14 @@ private static {JsonParameterClrInfoTypeRef}[] {ctorParamInitMethodName}()
                     ParameterInfo reflectionInfo = parameters[i].ParameterInfo;
 
                     sb.Append(@$"
-    {infoVarName} = default;
-    {infoVarName}.Name = ""{reflectionInfo.Name!}"";
-    {infoVarName}.ParameterType = typeof({reflectionInfo.ParameterType.GetCompilableName()});
-    {infoVarName}.Position = {reflectionInfo.Position};
-    {infoVarName}.HasDefaultValue = {ToCSharpKeyword(reflectionInfo.HasDefaultValue)};
-    {infoVarName}.DefaultValue = {GetParamDefaultValueAsString(reflectionInfo.DefaultValue)};
+    {infoVarName} = new()
+    {{
+        Name = ""{reflectionInfo.Name!}"",
+        ParameterType = typeof({reflectionInfo.ParameterType.GetCompilableName()}),
+        Position = {reflectionInfo.Position},
+        HasDefaultValue = {ToCSharpKeyword(reflectionInfo.HasDefaultValue)},
+        DefaultValue = {GetParamDefaultValueAsString(reflectionInfo.DefaultValue)}
+    }};
     {parametersVarName}[{i}] = {infoVarName};
 ");
                 }
@@ -803,10 +750,11 @@ private static {JsonParameterClrInfoTypeRef}[] {ctorParamInitMethodName}()
                 return sb.ToString();
             }
 
-            private string GenerateFastPathFuncForObject(TypeGenerationSpec typeGenSpec, string serializeMethodName)
+            private string GenerateFastPathFuncForObject(TypeGenerationSpec typeGenSpec)
             {
                 JsonSourceGenerationOptionsAttribute options = _currentContext.GenerationOptions;
                 string typeRef = typeGenSpec.TypeRef;
+                string serializeMethodName = $"{typeGenSpec.TypeInfoPropertyName}{SerializeMethodNameSuffix}";
 
                 if (!typeGenSpec.TryFilterSerializableProps(
                     options,
@@ -962,7 +910,7 @@ private static {JsonParameterClrInfoTypeRef}[] {ctorParamInitMethodName}()
                 const string ArgsVarName = "args";
                 int lastIndex = paramCount - 1;
 
-                StringBuilder sb = new($"({ArgsVarName}) => new {typeGenerationSpec.TypeRef}(");
+                StringBuilder sb = new($"static ({ArgsVarName}) => new {typeGenerationSpec.TypeRef}(");
 
                 for (int i = 0; i < lastIndex; i++)
                 {

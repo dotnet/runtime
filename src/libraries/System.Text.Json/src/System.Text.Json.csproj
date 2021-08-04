@@ -22,7 +22,7 @@
     <Compile Include="..\Common\JsonCamelCaseNamingPolicy.cs" Link="Common\System\Text\Json\JsonCamelCaseNamingPolicy.cs" />
     <Compile Include="..\Common\JsonNamingPolicy.cs" Link="Common\System\Text\Json\JsonNamingPolicy.cs" />
     <Compile Include="..\Common\JsonAttribute.cs" Link="Common\System\Text\Json\Serialization\JsonAttribute.cs" />
-    <Compile Include="..\Common\JsonConstants.cs" Link ="Common\System\Text\Json\JsonConstants.cs" />
+    <Compile Include="..\Common\JsonConstants.cs" Link="Common\System\Text\Json\JsonConstants.cs" />
     <Compile Include="..\Common\JsonHelpers.cs" Link="Common\System\Text\Json\JsonHelpers.cs" />
     <Compile Include="..\Common\JsonIgnoreCondition.cs" Link="Common\System\Text\Json\Serialization\JsonIgnoreCondition.cs" />
     <Compile Include="..\Common\JsonKnownNamingPolicy.cs" Link="Common\System\Text\Json\Serialization\JsonKnownNamingPolicy.cs" />
@@ -111,6 +111,7 @@
     <Compile Include="System\Text\Json\Serialization\Metadata\FSharpCoreReflectionProxy.cs" />
     <Compile Include="System\Text\Json\Serialization\Metadata\JsonMetadataServices.Collections.cs" />
     <Compile Include="System\Text\Json\Serialization\Metadata\JsonMetadataServices.Converters.cs" />
+    <Compile Include="System\Text\Json\Serialization\Metadata\JsonObjectInfoValues.cs" />
     <Compile Include="System\Text\Json\Serialization\Metadata\JsonTypeInfoInternalOfT.cs" />
     <Compile Include="System\Text\Json\Serialization\Metadata\JsonTypeInfoOfT.cs" />
     <Compile Include="System\Text\Json\Serialization\Metadata\JsonMetadataServices.cs" />
@@ -221,7 +222,7 @@
     <Compile Include="System\Text\Json\Serialization\JsonStringEnumConverter.cs" />
     <Compile Include="System\Text\Json\Serialization\JsonUnknownTypeHandling.cs" />
     <Compile Include="System\Text\Json\Serialization\Metadata\GenericMethodHolder.cs" />
-    <Compile Include="System\Text\Json\Serialization\Metadata\JsonParameterClrInfo.cs" />
+    <Compile Include="System\Text\Json\Serialization\Metadata\JsonParameterInfoValues.cs" />
     <Compile Include="System\Text\Json\Serialization\Metadata\JsonParameterInfo.cs" />
     <Compile Include="System\Text\Json\Serialization\Metadata\JsonParameterInfoOfT.cs" />
     <Compile Include="System\Text\Json\Serialization\Metadata\JsonPropertyInfo.cs" />

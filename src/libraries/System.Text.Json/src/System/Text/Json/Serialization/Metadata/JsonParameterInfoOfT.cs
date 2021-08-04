@@ -15,7 +15,7 @@ namespace System.Text.Json.Serialization.Metadata
 
         public T TypedDefaultValue { get; private set; } = default!;
 
-        public override void Initialize(JsonParameterClrInfo parameterInfo, JsonPropertyInfo matchingProperty, JsonSerializerOptions options)
+        public override void Initialize(JsonParameterInfoValues parameterInfo, JsonPropertyInfo matchingProperty, JsonSerializerOptions options)
         {
             base.Initialize(parameterInfo, matchingProperty, options);
             InitializeDefaultValue(matchingProperty);

@@ -986,8 +986,7 @@ namespace System.Text.Json.Serialization.Metadata
         public static JsonTypeInfo<TCollection> CreateIReadOnlyDictionaryInfo<TCollection, TKey, TValue>(System.Text.Json.JsonSerializerOptions options, System.Func<TCollection> createObjectFunc, JsonTypeInfo keyInfo, JsonTypeInfo valueInfo, System.Text.Json.Serialization.JsonNumberHandling numberHandling, System.Action<Utf8JsonWriter, TCollection>? serializeFunc) where TCollection : System.Collections.Generic.IReadOnlyDictionary<TKey, TValue> where TKey : notnull { throw null; }
         public static JsonTypeInfo<TCollection> CreateISetInfo<TCollection, TElement>(System.Text.Json.JsonSerializerOptions options, System.Func<TCollection>? createObjectFunc, System.Text.Json.Serialization.Metadata.JsonTypeInfo elementInfo, System.Text.Json.Serialization.JsonNumberHandling numberHandling, System.Action<Utf8JsonWriter, TCollection>? serializeFunc) where TCollection : System.Collections.Generic.ISet<TElement> { throw null; }
         public static System.Text.Json.Serialization.Metadata.JsonTypeInfo<TCollection> CreateListInfo<TCollection, TElement>(System.Text.Json.JsonSerializerOptions options, System.Func<TCollection>? createObjectFunc, System.Text.Json.Serialization.Metadata.JsonTypeInfo elementInfo, System.Text.Json.Serialization.JsonNumberHandling numberHandling, System.Action<System.Text.Json.Utf8JsonWriter, TCollection>? serializeFunc) where TCollection : System.Collections.Generic.List<TElement> { throw null; }
-        public static System.Text.Json.Serialization.Metadata.JsonTypeInfo<T> CreateObjectInfo<T>(System.Text.Json.JsonSerializerOptions options, System.Func<T>? createObjectFunc, System.Func<System.Text.Json.Serialization.JsonSerializerContext, System.Text.Json.Serialization.Metadata.JsonPropertyInfo[]>? propInitFunc, System.Text.Json.Serialization.JsonNumberHandling numberHandling, System.Action<System.Text.Json.Utf8JsonWriter, T>? serializeFunc) where T : notnull { throw null; }
-        public static System.Text.Json.Serialization.Metadata.JsonTypeInfo<T> CreateObjectInfo<T>(System.Text.Json.JsonSerializerOptions options, System.Func<object[], T>? createObjectWithArgsFunc, System.Func<System.Text.Json.Serialization.JsonSerializerContext, System.Text.Json.Serialization.Metadata.JsonPropertyInfo[]>? propInitFunc, Func<System.Text.Json.Serialization.Metadata.JsonParameterClrInfo[]>? ctorParamInitFunc, System.Text.Json.Serialization.JsonNumberHandling numberHandling, System.Action<System.Text.Json.Utf8JsonWriter, T>? serializeFunc) where T : notnull { throw null; }
+        public static System.Text.Json.Serialization.Metadata.JsonTypeInfo<T> CreateObjectInfo<T>(System.Text.Json.JsonSerializerOptions options, System.Text.Json.Serialization.Metadata.JsonObjectInfoValues<T> objectInfo) where T : notnull { throw null; }
         public static System.Text.Json.Serialization.Metadata.JsonPropertyInfo CreatePropertyInfo<T>(System.Text.Json.JsonSerializerOptions options, bool isProperty, bool isPublic, bool isVirtual, System.Type declaringType, System.Text.Json.Serialization.Metadata.JsonTypeInfo propertyTypeInfo, System.Text.Json.Serialization.JsonConverter<T>? converter, System.Func<object, T>? getter, System.Action<object, T>? setter, System.Text.Json.Serialization.JsonIgnoreCondition? ignoreCondition, bool hasJsonInclude, System.Text.Json.Serialization.JsonNumberHandling? numberHandling, string propertyName, string? jsonPropertyName) { throw null; }
         public static JsonTypeInfo<TCollection> CreateQueueInfo<TCollection, TElement>(System.Text.Json.JsonSerializerOptions options, System.Func<TCollection>? createObjectFunc, System.Text.Json.Serialization.Metadata.JsonTypeInfo elementInfo, System.Text.Json.Serialization.JsonNumberHandling numberHandling, System.Action<Utf8JsonWriter, TCollection>? serializeFunc) where TCollection : System.Collections.Generic.Queue<TElement> { throw null; }
         public static JsonTypeInfo<TCollection> CreateStackInfo<TCollection, TElement>(System.Text.Json.JsonSerializerOptions options, System.Func<TCollection>? createObjectFunc, System.Text.Json.Serialization.Metadata.JsonTypeInfo elementInfo, System.Text.Json.Serialization.JsonNumberHandling numberHandling, System.Action<Utf8JsonWriter, TCollection>? serializeFunc) where TCollection : System.Collections.Generic.Stack<TElement> { throw null; }
@@ -996,13 +995,22 @@ namespace System.Text.Json.Serialization.Metadata
         public static System.Text.Json.Serialization.JsonConverter<T> GetEnumConverter<T>(System.Text.Json.JsonSerializerOptions options) where T : struct { throw null; }
         public static System.Text.Json.Serialization.JsonConverter<T?> GetNullableConverter<T>(System.Text.Json.Serialization.Metadata.JsonTypeInfo<T> underlyingTypeInfo) where T : struct { throw null; }
     }
-    public struct JsonParameterClrInfo
+    public sealed partial class JsonObjectInfoValues<T>
     {
-        public object? DefaultValue { readonly get { throw null; } set { } }
-        public bool HasDefaultValue { readonly get { throw null; } set { } }
-        public string Name { readonly get { throw null; } set { } }
-        public System.Type ParameterType { readonly get { throw null; } set { } }
-        public int Position { readonly get { throw null; } set { } }
+        public System.Func<System.Text.Json.Serialization.Metadata.JsonParameterInfoValues[]>? ConstructorParameterMetadataInitializer { get; init; }
+        public System.Text.Json.Serialization.JsonNumberHandling NumberHandling { get; init; }
+        public System.Func<T>? ObjectCreator { get; init; }
+        public System.Func<object[], T>? ObjectWithParameterizedConstructorCreator { get; init; }
+        public System.Func<System.Text.Json.Serialization.JsonSerializerContext, System.Text.Json.Serialization.Metadata.JsonPropertyInfo[]>? PropertyMetadataInitializer { get; init; }
+        public System.Action<System.Text.Json.Utf8JsonWriter, T>? SerializeHandler { get; init; }
+    }
+    public sealed class JsonParameterInfoValues
+    {
+        public object? DefaultValue { get { throw null; } init { } }
+        public bool HasDefaultValue { get { throw null; } init { } }
+        public string Name { get { throw null; } init { } }
+        public System.Type ParameterType { get { throw null; } init { } }
+        public int Position { get { throw null; } init { } }
     }
     public abstract partial class JsonPropertyInfo
     {

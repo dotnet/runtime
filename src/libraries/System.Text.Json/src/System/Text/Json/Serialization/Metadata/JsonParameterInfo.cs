@@ -34,7 +34,7 @@ namespace System.Text.Json.Serialization.Metadata
         public JsonNumberHandling? NumberHandling { get; private set; }
 
         // Using a field to avoid copy semantics.
-        public JsonParameterClrInfo ClrInfo;
+        public JsonParameterInfoValues ClrInfo = null!;
 
         public JsonTypeInfo RuntimeTypeInfo
         {
@@ -61,7 +61,7 @@ namespace System.Text.Json.Serialization.Metadata
 
         public bool ShouldDeserialize { get; private set; }
 
-        public virtual void Initialize(JsonParameterClrInfo parameterInfo, JsonPropertyInfo matchingProperty, JsonSerializerOptions options)
+        public virtual void Initialize(JsonParameterInfoValues parameterInfo, JsonPropertyInfo matchingProperty, JsonSerializerOptions options)
         {
             ClrInfo = parameterInfo;
             Options = options;
@@ -77,7 +77,7 @@ namespace System.Text.Json.Serialization.Metadata
 
         // Create a parameter that is ignored at run-time. It uses the same type (typeof(sbyte)) to help
         // prevent issues with unsupported types and helps ensure we don't accidently (de)serialize it.
-        public static JsonParameterInfo CreateIgnoredParameterPlaceholder(JsonParameterClrInfo parameterInfo, JsonPropertyInfo matchingProperty)
+        public static JsonParameterInfo CreateIgnoredParameterPlaceholder(JsonParameterInfoValues parameterInfo, JsonPropertyInfo matchingProperty)
         {
             JsonParameterInfo jsonParameterInfo = matchingProperty.ConverterBase.CreateJsonParameterInfo();
             jsonParameterInfo.ClrInfo = parameterInfo;

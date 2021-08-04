@@ -21,61 +21,34 @@ namespace System.Text.Json.Serialization.Metadata
         }
 
         /// <summary>
-        /// Creates serialization metadata for an object that will be deserialized with a parameterless constructor.
+        /// Creates serialization metadata for an object.
         /// </summary>
-        public JsonTypeInfoInternal(
-            JsonSerializerOptions options,
-            Func<T>? createObjectFunc,
-            Func<JsonSerializerContext, JsonPropertyInfo[]>? propInitFunc,
-            JsonNumberHandling numberHandling,
-            Action<Utf8JsonWriter, T>? serializeFunc
-            ) : base(typeof(T), options, ConverterStrategy.Object)
+        public JsonTypeInfoInternal(JsonSerializerOptions options, JsonObjectInfoValues<T> objectInfo) : base(typeof(T), options, ConverterStrategy.Object)
         {
-            if (propInitFunc == null && serializeFunc == null)
+#pragma warning disable CS8714
+            // The type cannot be used as type parameter in the generic type or method.
+            // Nullability of type argument doesn't match 'notnull' constraint.
+            JsonConverter converter;
+
+            if (objectInfo.ObjectWithParameterizedConstructorCreator != null)
             {
-                ThrowHelper.ThrowInvalidOperationException_MetadatInitFuncsNull();
+                converter = new JsonMetadataServicesConverter<T>(
+                    () => new LargeObjectWithParameterizedConstructorConverter<T>(),
+                    ConverterStrategy.Object);
+                CreateObjectWithArgs = objectInfo.ObjectWithParameterizedConstructorCreator;
+                CtorParamInitFunc = objectInfo.ConstructorParameterMetadataInitializer;
             }
-
-#pragma warning disable CS8714
-            // The type cannot be used as type parameter in the generic type or method.
-            // Nullability of type argument doesn't match 'notnull' constraint.
-            JsonConverter converter = new JsonMetadataServicesConverter<T>(() => new ObjectDefaultConverter<T>(), ConverterStrategy.Object);
+            else
+            {
+                converter = new JsonMetadataServicesConverter<T>(() => new ObjectDefaultConverter<T>(), ConverterStrategy.Object);
+                SetCreateObjectFunc(objectInfo.ObjectCreator);
+            }
 #pragma warning restore CS8714
 
+            PropInitFunc = objectInfo.PropertyMetadataInitializer;
+            Serialize = objectInfo.SerializeHandler;
             PropertyInfoForTypeInfo = JsonMetadataServices.CreateJsonPropertyInfoForClassInfo(typeof(T), this, converter, Options);
-            NumberHandling = numberHandling;
-            PropInitFunc = propInitFunc;
-            Serialize = serializeFunc;
-
-            SetCreateObjectFunc(createObjectFunc);
-        }
-
-        /// <summary>
-        /// Creates serialization metadata for an object that will be deserialized with a parameterized constructor.
-        /// </summary>
-        public JsonTypeInfoInternal(
-            JsonSerializerOptions options,
-            Func<object[], T>? createObjectWithArgsFunc,
-            Func<JsonSerializerContext, JsonPropertyInfo[]>? propInitFunc,
-            Func<JsonParameterClrInfo[]>? ctorParamInitFunc,
-            JsonNumberHandling numberHandling,
-            Action<Utf8JsonWriter, T>? serializeFunc
-            ) : base(typeof(T), options, ConverterStrategy.Object)
-        {
-#pragma warning disable CS8714
-            // The type cannot be used as type parameter in the generic type or method.
-            // Nullability of type argument doesn't match 'notnull' constraint.
-            JsonConverter converter = new JsonMetadataServicesConverter<T>(
-                () => new LargeObjectWithParameterizedConstructorConverter<T>(),
-                ConverterStrategy.Object);
-#pragma warning restore CS8714
-
-            PropertyInfoForTypeInfo = JsonMetadataServices.CreateJsonPropertyInfoForClassInfo(typeof(T), this, converter, Options);
-            NumberHandling = numberHandling;
-            PropInitFunc = propInitFunc;
-            CtorParamInitFunc = ctorParamInitFunc;
-            Serialize = serializeFunc;
-            CreateObjectWithArgs = createObjectWithArgsFunc;
+            NumberHandling = objectInfo.NumberHandling;
         }
 
         /// <summary>
