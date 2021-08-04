@@ -627,11 +627,11 @@ namespace System.Numerics
             return;
         }
 
-        public static BigInteger Zero { get { return s_bnZeroInt; } }
+        public static BigInteger Zero => s_bnZeroInt;
 
-        public static BigInteger One { get { return s_bnOneInt; } }
+        public static BigInteger One => s_bnOneInt;
 
-        public static BigInteger MinusOne { get { return s_bnMinusOneInt; } }
+        public static BigInteger MinusOne => s_bnMinusOneInt;
 
         public bool IsPowerOfTwo
         {
