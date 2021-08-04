@@ -1051,7 +1051,7 @@ namespace System.Text.Json.SourceGeneration
                 _numberTypes.Add(ResolveType(SpecialType.System_Int32));
                 _numberTypes.Add(ResolveType(SpecialType.System_Int64));
                 _numberTypes.Add(ResolveType(SpecialType.System_Single));
-                _numberTypes.Add(ResolveType(SpecialType.System_UInt64));
+                _numberTypes.Add(ResolveType(SpecialType.System_UInt16));
                 _numberTypes.Add(ResolveType(SpecialType.System_UInt32));
                 _numberTypes.Add(ResolveType(SpecialType.System_UInt64));
             }

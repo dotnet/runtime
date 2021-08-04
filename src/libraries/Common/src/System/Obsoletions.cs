@@ -104,5 +104,8 @@ namespace System
 
         internal const string CryptoConfigEncodeOIDMessage = "EncodeOID is obsolete. Use the ASN.1 functionality provided in System.Formats.Asn1.";
         internal const string CryptoConfigEncodeOIDDiagId = "SYSLIB0031";
+
+        internal const string CorruptedStateRecoveryMessage = "Recovery from corrupted process state exceptions is not supported; HandleProcessCorruptedStateExceptionsAttribute is ignored.";
+        internal const string CorruptedStateRecoveryDiagId = "SYSLIB0032";
     }
 }
