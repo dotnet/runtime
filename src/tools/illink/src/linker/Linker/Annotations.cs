@@ -603,6 +603,15 @@ namespace Mono.Linker
 			return false;
 		}
 
+		internal bool IsMethodInRequiresUnreferencedCodeScope (MethodDefinition method)
+		{
+			if (HasLinkerAttribute<RequiresUnreferencedCodeAttribute> (method) ||
+				method.DeclaringType is not null && HasLinkerAttribute<RequiresUnreferencedCodeAttribute> (method.DeclaringType))
+				return true;
+
+			return false;
+		}
+
 		public void EnqueueVirtualMethod (MethodDefinition method)
 		{
 			if (!method.IsVirtual)

@@ -907,6 +907,56 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 				}
 			}
 
+			class BaseWithoutRequiresOnType
+			{
+				[RequiresUnreferencedCode ("RUC")]
+				public virtual void Method () { }
+			}
+
+			[RequiresUnreferencedCode ("RUC")]
+			class DerivedWithRequiresOnType : BaseWithoutRequiresOnType
+			{
+				public override void Method () { }
+			}
+
+			[RequiresUnreferencedCode ("RUC")]
+			class BaseWithRequiresOnType
+			{
+				public virtual void Method () { }
+			}
+
+			[RequiresUnreferencedCode ("RUC")]
+			class DerivedWithoutRequiresOnType : BaseWithRequiresOnType
+			{
+				public override void Method () { }
+			}
+
+			public interface InterfaceWithoutRequires
+			{
+				[RequiresUnreferencedCode ("RUC")]
+				static int Method ()
+				{
+					return 0;
+				}
+
+				[RequiresUnreferencedCode ("RUC")]
+				int Method (int a);
+			}
+
+			[RequiresUnreferencedCode ("RUC")]
+			class ImplementationWithRequiresOnType : InterfaceWithoutRequires
+			{
+				public static int Method ()
+				{
+					return 1;
+				}
+
+				public int Method (int a)
+				{
+					return a;
+				}
+			}
+
 			[ExpectedWarning ("IL2026", "RequiresOnClass.ClassWithRequiresUnreferencedCode.StaticMethod()", "--ClassWithRequiresUnreferencedCode--", GlobalAnalysisOnly = true)]
 			static void TestRequiresInClassAccessedByStaticMethod ()
 			{
@@ -966,6 +1016,15 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 				TestUnconditionalSuppressMessage.StaticMethodInTestSuppressionClass ();
 			}
 
+			static void RequirePublicMethods ([DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)] Type type)
+			{
+			}
+
+			// Analyzer still dont understand RUC on type
+			[ExpectedWarning ("IL2026", "BaseWithoutRequiresOnType.Method()", GlobalAnalysisOnly = true)]
+			[ExpectedWarning ("IL2026", "InterfaceWithoutRequires.Method(Int32)", GlobalAnalysisOnly = true)]
+			[ExpectedWarning ("IL2026", "InterfaceWithoutRequires.Method()", GlobalAnalysisOnly = true)]
+			[ExpectedWarning ("IL2026", "ImplementationWithRequiresOnType.Method()", GlobalAnalysisOnly = true)]
 			public static void Test ()
 			{
 				TestRequiresInClassAccessedByStaticMethod ();
@@ -975,6 +1034,12 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 				TestRequiresOnDerivedButNotOnBase ();
 				TestRequiresOnBaseAndDerived ();
 				TestSuppressionsOnClass ();
+				RequirePublicMethods (typeof (BaseWithoutRequiresOnType));
+				RequirePublicMethods (typeof (DerivedWithRequiresOnType));
+				RequirePublicMethods (typeof (BaseWithRequiresOnType));
+				RequirePublicMethods (typeof (DerivedWithoutRequiresOnType));
+				RequirePublicMethods (typeof (InterfaceWithoutRequires));
+				RequirePublicMethods (typeof (ImplementationWithRequiresOnType));
 			}
 		}
 	}
