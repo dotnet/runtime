@@ -81,7 +81,7 @@ def main(main_args):
     jit_path = path.join(coreclr_args.jit_directory, 'clrjit_{}_{}_{}.dll'.format(os_name, arch_name, host_arch_name))
 
     print("Running superpmi.py download")
-    run_command([python_path, path.join(cwd, "superpmi.py"), "download", "--no_progress", "-target_os", platform_name, "-target_arch", arch_name, "-core_root", cwd, "-spmi_location", spmi_location],  _exit_on_fail=True)
+    run_command([python_path, path.join(cwd, "superpmi.py"), "download", "--no_progress", "-f", "benchmark", "-target_os", platform_name, "-target_arch", arch_name, "-core_root", cwd, "-spmi_location", spmi_location],  _exit_on_fail=True)
 
     failed_runs = []
     for jit_flag in jit_flags:
