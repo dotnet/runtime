@@ -517,6 +517,23 @@ mono_profiler_app_domain_name (
 
 static
 void
+mono_profiler_get_generic_types (
+	MonoGenericInst *generic_instance,
+	uint32_t *generic_type_count,
+	uint8_t **generic_types);
+
+static
+void
+mono_profiler_get_jit_data (
+	MonoMethod *method,
+	uint64_t *method_id,
+	uint64_t *module_id,
+	uint32_t *method_token,
+	uint32_t *method_generic_type_count,
+	uint8_t **method_generic_types);
+
+static
+void
 mono_profiler_jit_begin (
 	MonoProfiler *prof,
 	MonoMethod *method);
@@ -555,6 +572,16 @@ mono_profiler_jit_code_buffer (
 	uint64_t size,
 	MonoProfilerCodeBufferType type,
 	const void *data);
+
+static
+void
+mono_profiler_get_class_data (
+	MonoClass *klass,
+	uint64_t *class_id,
+	uint64_t *module_id,
+	ep_char8_t **class_name,
+	uint32_t *class_generic_type_count,
+	uint8_t **class_generic_types);
 
 static
 void
@@ -2531,7 +2558,7 @@ ep_rt_mono_write_event_method_load (
 	MonoMethod *method,
 	MonoJitInfo *ji)
 {
-	if (!EventEnabledMethodLoad_V1 () && !EventEnabledMethodLoadVerbose_V1())
+	if (!EventEnabledMethodLoad_V1 () && !EventEnabledMethodLoadVerbose_V1 ())
 		return true;
 
 	//TODO: Optimize string formatting into functions accepting GString to reduce heap alloc.
@@ -2693,7 +2720,7 @@ get_module_event_data (
 bool
 ep_rt_mono_write_event_module_load (MonoImage *image)
 {
-	if (!EventEnabledModuleLoad_V2 () && !EventEnabledDomainModuleLoad_V1())
+	if (!EventEnabledModuleLoad_V2 () && !EventEnabledDomainModuleLoad_V1 ())
 		return true;
 
 	if (image) {
@@ -3652,7 +3679,6 @@ mono_profiler_app_domain_loading (
 
 	uint64_t domain_id = (uint64_t)domain;
 	FireEtwMonoProfilerAppDomainLoading (
-		clr_instance_get_id (),
 		domain_id,
 		NULL,
 		NULL);
@@ -3669,7 +3695,6 @@ mono_profiler_app_domain_loaded (
 
 	uint64_t domain_id = (uint64_t)domain;
 	FireEtwMonoProfilerAppDomainLoaded (
-		clr_instance_get_id (),
 		domain_id,
 		NULL,
 		NULL);
@@ -3686,7 +3711,6 @@ mono_profiler_app_domain_unloading (
 
 	uint64_t domain_id = (uint64_t)domain;
 	FireEtwMonoProfilerAppDomainUnloading (
-		clr_instance_get_id (),
 		domain_id,
 		NULL,
 		NULL);
@@ -3703,7 +3727,6 @@ mono_profiler_app_domain_unloaded (
 
 	uint64_t domain_id = (uint64_t)domain;
 	FireEtwMonoProfilerAppDomainUnloaded (
-		clr_instance_get_id (),
 		domain_id,
 		NULL,
 		NULL);
@@ -3721,7 +3744,6 @@ mono_profiler_app_domain_name (
 
 	uint64_t domain_id = (uint64_t)domain;
 	FireEtwMonoProfilerAppDomainName (
-		clr_instance_get_id (),
 		domain_id,
 		(const ep_char8_t *)(name ? name : ""),
 		NULL,
@@ -3729,13 +3751,39 @@ mono_profiler_app_domain_name (
 }
 
 static
-inline
 void
-get_jit_data (
+mono_profiler_get_generic_types (
+	MonoGenericInst *generic_instance,
+	uint32_t *generic_type_count,
+	uint8_t **generic_types)
+{
+	if (generic_instance) {
+		uint8_t *buffer = g_malloc (generic_instance->type_argc * (sizeof (uint8_t) + sizeof (uint64_t)));
+		if (buffer) {
+			*generic_types = buffer;
+			*generic_type_count = generic_instance->type_argc;
+			for (uint32_t i = 0; i < generic_instance->type_argc; ++i) {
+				uint8_t type = generic_instance->type_argv [i]->type;
+				memcpy (buffer, &type, sizeof (type));
+				buffer += sizeof (type);
+
+				uint64_t class_id = (uint64_t)mono_class_from_mono_type_internal (generic_instance->type_argv [i]);
+				memcpy (buffer, &class_id, sizeof (class_id));
+				buffer += sizeof (class_id);
+			}
+		}
+	}
+}
+
+static
+void
+mono_profiler_get_jit_data (
 	MonoMethod *method,
 	uint64_t *method_id,
 	uint64_t *module_id,
-	uint32_t *method_token)
+	uint32_t *method_token,
+	uint32_t *method_generic_type_count,
+	uint8_t **method_generic_types)
 {
 	*method_id = (uint64_t)method;
 	*module_id = 0;
@@ -3745,6 +3793,14 @@ get_jit_data (
 		*method_token = method->token;
 		if (method->klass)
 			*module_id = (uint64_t)m_class_get_image (method->klass);
+
+		if (method_generic_type_count && method_generic_types) {
+			if (method->is_inflated) {
+				MonoGenericContext *context = mono_method_get_context (method);
+				MonoGenericInst *method_instance = (context && context->method_inst) ? context->method_inst : NULL;
+				mono_profiler_get_generic_types (method_instance, method_generic_type_count, method_generic_types);
+			}
+		}
 	}
 }
 
@@ -3761,10 +3817,9 @@ mono_profiler_jit_begin (
 	uint64_t module_id;
 	uint32_t method_token;
 
-	get_jit_data (method, &method_id, &module_id, &method_token);
+	mono_profiler_get_jit_data (method, &method_id, &module_id, &method_token, NULL, NULL);
 
 	FireEtwMonoProfilerJitBegin (
-		clr_instance_get_id (),
 		method_id,
 		module_id,
 		method_token,
@@ -3785,10 +3840,9 @@ mono_profiler_jit_failed (
 	uint64_t module_id;
 	uint32_t method_token;
 
-	get_jit_data (method, &method_id, &module_id, &method_token);
+	mono_profiler_get_jit_data (method, &method_id, &module_id, &method_token, NULL, NULL);
 
 	FireEtwMonoProfilerJitFailed (
-		clr_instance_get_id (),
 		method_id,
 		module_id,
 		method_token,
@@ -3803,22 +3857,51 @@ mono_profiler_jit_done (
 	MonoMethod *method,
 	MonoJitInfo *ji)
 {
-	if (!EventEnabledMonoProfilerJitDone())
+	if (!EventEnabledMonoProfilerJitDone () && !EventEnabledMonoProfilerJitDone_V1 () && !EventEnabledMonoProfilerJitDoneVerbose ())
 		return;
+
+	bool verbose = (MICROSOFT_DOTNETRUNTIME_MONO_PROFILER_PROVIDER_EVENTPIPE_Context.Level >= (uint8_t)EP_EVENT_LEVEL_VERBOSE);
 
 	uint64_t method_id;
 	uint64_t module_id;
 	uint32_t method_token;
 
-	get_jit_data (method, &method_id, &module_id, &method_token);
+	uint32_t method_generic_type_count = 0;
+	uint8_t *method_generic_types = NULL;
 
-	FireEtwMonoProfilerJitDone (
-		clr_instance_get_id (),
+	mono_profiler_get_jit_data (method, &method_id, &module_id, &method_token, &method_generic_type_count, &method_generic_types);
+
+	FireEtwMonoProfilerJitDone_V1 (
 		method_id,
 		module_id,
 		method_token,
+		method_generic_type_count,
+		sizeof (uint8_t) + sizeof (uint64_t),
+		method_generic_types,
 		NULL,
 		NULL);
+
+	g_free (method_generic_types);
+
+	if (verbose) {
+		//TODO: Optimize string formatting into functions accepting GString to reduce heap alloc.
+		char *method_namespace = NULL;
+		const char *method_name = method->name;
+		char *method_signature = mono_signature_full_name (method->signature);
+		if (method->klass)
+			method_namespace = mono_type_get_name_full (m_class_get_byval_arg (method->klass), MONO_TYPE_NAME_FORMAT_IL);
+
+		FireEtwMonoProfilerJitDoneVerbose (
+			method_id,
+			(const ep_char8_t *)method_namespace,
+			(const ep_char8_t *)method_name,
+			(const ep_char8_t *)method_signature,
+			NULL,
+			NULL);
+
+		g_free (method_namespace);
+		g_free (method_signature);
+	}
 }
 
 static
@@ -3832,7 +3915,6 @@ mono_profiler_jit_chunk_created (
 		return;
 
 	FireEtwMonoProfilerJitChunkCreated (
-		clr_instance_get_id (),
 		chunk,
 		(uint64_t)size,
 		NULL,
@@ -3849,7 +3931,6 @@ mono_profiler_jit_chunk_destroyed (
 		return;
 
 	FireEtwMonoProfilerJitChunkDestroyed (
-		clr_instance_get_id (),
 		chunk,
 		NULL,
 		NULL);
@@ -3868,7 +3949,6 @@ mono_profiler_jit_code_buffer (
 		return;
 
 	FireEtwMonoProfilerJitCodeBuffer (
-		clr_instance_get_id (),
 		buffer,
 		size,
 		(uint8_t)type,
@@ -3877,13 +3957,14 @@ mono_profiler_jit_code_buffer (
 }
 
 static
-inline
 void
-get_class_data (
+mono_profiler_get_class_data (
 	MonoClass *klass,
 	uint64_t *class_id,
 	uint64_t *module_id,
-	ep_char8_t **class_name)
+	ep_char8_t **class_name,
+	uint32_t *class_generic_type_count,
+	uint8_t **class_generic_types)
 {
 	*class_id = (uint64_t)klass;
 	*module_id = 0;
@@ -3895,6 +3976,14 @@ get_class_data (
 		*class_name = (ep_char8_t *)mono_type_get_name_full (m_class_get_byval_arg (klass), MONO_TYPE_NAME_FORMAT_IL);
 	else if (class_name)
 		*class_name = NULL;
+
+	if (class_generic_type_count && class_generic_types) {
+		if (mono_class_is_ginst (klass)) {
+			MonoGenericContext *context = mono_class_get_context (klass);
+			MonoGenericInst *class_instance = (context && context->class_inst) ? context->class_inst : NULL;
+			mono_profiler_get_generic_types (class_instance, class_generic_type_count, class_generic_types);
+		}
+	}
 }
 
 static
@@ -3909,10 +3998,9 @@ mono_profiler_class_loading (
 	uint64_t class_id;
 	uint64_t module_id;
 	
-	get_class_data (klass, &class_id, &module_id, NULL);
+	mono_profiler_get_class_data (klass, &class_id, &module_id, NULL, NULL, NULL);
 
 	FireEtwMonoProfilerClassLoading (
-		clr_instance_get_id (),
 		class_id,
 		module_id,
 		NULL,
@@ -3931,10 +4019,9 @@ mono_profiler_class_failed (
 	uint64_t class_id;
 	uint64_t module_id;
 
-	get_class_data (klass, &class_id, &module_id, NULL);
+	mono_profiler_get_class_data (klass, &class_id, &module_id, NULL, NULL, NULL);
 
 	FireEtwMonoProfilerClassFailed (
-		clr_instance_get_id (),
 		class_id,
 		module_id,
 		NULL,
@@ -3947,24 +4034,30 @@ mono_profiler_class_loaded (
 	MonoProfiler *prof,
 	MonoClass *klass)
 {
-	if (!EventEnabledMonoProfilerClassLoaded())
+	if (!EventEnabledMonoProfilerClassLoaded () && !EventEnabledMonoProfilerClassLoaded_V1 ())
 		return;
 
 	uint64_t class_id;
 	uint64_t module_id;
 	ep_char8_t *class_name;
 
-	get_class_data (klass, &class_id, &module_id, &class_name);
+	uint32_t class_generic_type_count = 0;
+	uint8_t *class_generic_types = NULL;
 
-	FireEtwMonoProfilerClassLoaded (
-		clr_instance_get_id (),
+	mono_profiler_get_class_data (klass, &class_id, &module_id, &class_name, &class_generic_type_count, &class_generic_types);
+
+	FireEtwMonoProfilerClassLoaded_V1 (
 		class_id,
 		module_id,
 		class_name ? class_name : "",
+		class_generic_type_count,
+		sizeof (uint8_t) + sizeof (uint64_t),
+		class_generic_types,
 		NULL,
 		NULL);
 
 	g_free (class_name);
+	g_free (class_generic_types);
 }
 
 static
@@ -4002,7 +4095,6 @@ mono_profiler_vtable_loading (
 	get_vtable_data (vtable, &vtable_id, &class_id, &domain_id);
 
 	FireEtwMonoProfilerVTableLoading (
-		clr_instance_get_id (),
 		vtable_id,
 		class_id,
 		domain_id,
@@ -4026,7 +4118,6 @@ mono_profiler_vtable_failed (
 	get_vtable_data (vtable, &vtable_id, &class_id, &domain_id);
 		
 	FireEtwMonoProfilerVTableFailed (
-		clr_instance_get_id (),
 		vtable_id,
 		class_id,
 		domain_id,
@@ -4050,7 +4141,6 @@ mono_profiler_vtable_loaded (
 	get_vtable_data (vtable, &vtable_id, &class_id, &domain_id);
 		
 	FireEtwMonoProfilerVTableLoaded (
-		clr_instance_get_id (),
 		vtable_id,
 		class_id,
 		domain_id,
@@ -4068,7 +4158,6 @@ mono_profiler_module_loading (
 		return;
 	
 	FireEtwMonoProfilerModuleLoading (
-		clr_instance_get_id (),
 		(uint64_t)image,
 		NULL,
 		NULL);
@@ -4084,7 +4173,6 @@ mono_profiler_module_failed (
 		return;
 
 	FireEtwMonoProfilerModuleFailed (
-		clr_instance_get_id (),
 		(uint64_t)image,
 		NULL,
 		NULL);
@@ -4111,7 +4199,6 @@ mono_profiler_module_loaded (
 	}
 
 	FireEtwMonoProfilerModuleLoaded (
-		clr_instance_get_id (),
 		module_id,
 		module_path ? module_path : "",
 		module_guid ? module_guid : "",
@@ -4129,7 +4216,6 @@ mono_profiler_module_unloading (
 		return;
 
 	FireEtwMonoProfilerModuleUnloading (
-		clr_instance_get_id (),
 		(uint64_t)image,
 		NULL,
 		NULL);
@@ -4156,7 +4242,6 @@ mono_profiler_module_unloaded (
 	}
 
 	FireEtwMonoProfilerModuleUnloaded (
-		clr_instance_get_id (),
 		module_id,
 		module_path ? module_path : "",
 		module_guid ? module_guid : "",
@@ -4200,7 +4285,6 @@ mono_profiler_assembly_loading (
 	get_assembly_data (assembly, &assembly_id, &module_id, NULL);
 
 	FireEtwMonoProfilerAssemblyLoading (
-		clr_instance_get_id (),
 		assembly_id,
 		module_id,
 		NULL,
@@ -4223,7 +4307,6 @@ mono_profiler_assembly_loaded (
 	get_assembly_data (assembly, &assembly_id, &module_id, &assembly_name);
 
 	FireEtwMonoProfilerAssemblyLoaded (
-		clr_instance_get_id (),
 		assembly_id,
 		module_id,
 		assembly_name ? assembly_name : "",
@@ -4248,7 +4331,6 @@ mono_profiler_assembly_unloading (
 	get_assembly_data (assembly, &assembly_id, &module_id, NULL);
 
 	FireEtwMonoProfilerAssemblyUnloading (
-		clr_instance_get_id (),
 		assembly_id,
 		module_id,
 		NULL,
@@ -4271,7 +4353,6 @@ mono_profiler_assembly_unloaded (
 	get_assembly_data (assembly, &assembly_id, &module_id, &assembly_name);
 
 	FireEtwMonoProfilerAssemblyUnloaded (
-		clr_instance_get_id (),
 		assembly_id,
 		module_id,
 		assembly_name ? assembly_name : "",
@@ -4292,7 +4373,6 @@ mono_profiler_method_enter (
 		return;
 
 	FireEtwMonoProfilerMethodEnter (
-		clr_instance_get_id (),
 		(uint64_t)method,
 		NULL,
 		NULL);
@@ -4309,7 +4389,6 @@ mono_profiler_method_leave (
 		return;
 
 	FireEtwMonoProfilerMethodLeave (
-		clr_instance_get_id (),
 		(uint64_t)method,
 		NULL,
 		NULL);
@@ -4326,7 +4405,6 @@ mono_profiler_method_tail_call (
 		return;
 
 	FireEtwMonoProfilerMethodTailCall (
-		clr_instance_get_id (),
 		(uint64_t)method,
 		NULL,
 		NULL);
@@ -4343,7 +4421,6 @@ mono_profiler_method_exception_leave (
 		return;
 
 	FireEtwMonoProfilerMethodExceptionLeave (
-		clr_instance_get_id (),
 		(uint64_t)method,
 		NULL,
 		NULL);
@@ -4359,7 +4436,6 @@ mono_profiler_method_free (
 		return;
 
 	FireEtwMonoProfilerMethodFree (
-		clr_instance_get_id (),
 		(uint64_t)method,
 		NULL,
 		NULL);
@@ -4375,7 +4451,6 @@ mono_profiler_method_begin_invoke (
 		return;
 
 	FireEtwMonoProfilerMethodBeginInvoke (
-		clr_instance_get_id (),
 		(uint64_t)method,
 		NULL,
 		NULL);
@@ -4391,7 +4466,6 @@ mono_profiler_method_end_invoke (
 		return;
 
 	FireEtwMonoProfilerMethodEndInvoke (
-		clr_instance_get_id (),
 		(uint64_t)method,
 		NULL,
 		NULL);
@@ -4427,7 +4501,6 @@ mono_profiler_exception_throw (
 		type_id = (uint64_t)m_class_get_byval_arg (mono_object_class(exc));
 
 	FireEtwMonoProfilerExceptionThrow (
-		clr_instance_get_id (),
 		type_id,
 		SGEN_POINTER_UNTAG_ALL (exc),
 		NULL,
@@ -4452,7 +4525,6 @@ mono_profiler_exception_clause (
 		type_id = (uint64_t)m_class_get_byval_arg (mono_object_class(exc));
 
 	FireEtwMonoProfilerExceptionClause (
-		clr_instance_get_id (),
 		(uint8_t)clause_type,
 		clause_num,
 		(uint64_t)method,
@@ -4475,7 +4547,6 @@ mono_profiler_gc_event (
 
 	// TODO: Needs to be async safe.
 	/*FireEtwMonoProfilerGCEvent (
-		clr_instance_get_id (),
 		(uint8_t)gc_event,
 		generation,
 		NULL,
@@ -4504,7 +4575,6 @@ mono_profiler_gc_allocation (
 	}
 
 	FireEtwMonoProfilerGCAllocation (
-		clr_instance_get_id (),
 		vtable_id,
 		SGEN_POINTER_UNTAG_ALL (object),
 		object_size,
@@ -4537,7 +4607,6 @@ mono_profiler_gc_moves (
 		}
 
 		FireEtwMonoProfilerGCMoves (
-			clr_instance_get_id (),
 			G_N_ELEMENTS (data),
 			sizeof (GCObjectAddressData),
 			data,
@@ -4552,7 +4621,6 @@ mono_profiler_gc_moves (
 		}
 
 		FireEtwMonoProfilerGCMoves (
-			clr_instance_get_id (),
 			data_rest,
 			sizeof (GCObjectAddressData),
 			data,
@@ -4572,7 +4640,6 @@ mono_profiler_gc_resize (
 
 	// TODO: Needs to be async safe.
 	/*FireEtwMonoProfilerGCResize (
-		clr_instance_get_id (),
 		(uint64_t)size,
 		NULL,
 		NULL);*/
@@ -4590,7 +4657,6 @@ mono_profiler_gc_handle_created (
 		return;
 
 	FireEtwMonoProfilerGCHandleCreated (
-		clr_instance_get_id (),
 		handle,
 		(uint8_t)type,
 		SGEN_POINTER_UNTAG_ALL (object),
@@ -4609,7 +4675,6 @@ mono_profiler_gc_handle_deleted (
 		return;
 
 	FireEtwMonoProfilerGCHandleDeleted (
-		clr_instance_get_id (),
 		handle,
 		(uint8_t)type,
 		NULL,
@@ -4624,7 +4689,6 @@ mono_profiler_gc_finalizing (MonoProfiler *prof)
 		return;
 
 	FireEtwMonoProfilerGCFinalizing (
-		clr_instance_get_id (),
 		NULL,
 		NULL);
 }
@@ -4637,7 +4701,6 @@ mono_profiler_gc_finalized (MonoProfiler *prof)
 		return;
 
 	FireEtwMonoProfilerGCFinalized (
-		clr_instance_get_id (),
 		NULL,
 		NULL);
 }
@@ -4652,7 +4715,6 @@ mono_profiler_gc_finalizing_object (
 		return;
 
 	FireEtwMonoProfilerGCFinalizingObject (
-		clr_instance_get_id (),
 		SGEN_POINTER_UNTAG_ALL (object),
 		NULL,
 		NULL);
@@ -4668,7 +4730,6 @@ mono_profiler_gc_finalized_object (
 		return;
 
 	FireEtwMonoProfilerGCFinalizedObject (
-		clr_instance_get_id (),
 		SGEN_POINTER_UNTAG_ALL (object),
 		NULL,
 		NULL);
@@ -4688,7 +4749,6 @@ mono_profiler_gc_root_register (
 		return;
 
 	FireEtwMonoProfilerGCRootRegister (
-		clr_instance_get_id (),
 		start,
 		(uint64_t)size,
 		(uint8_t) source,
@@ -4708,7 +4768,6 @@ mono_profiler_gc_root_unregister (
 		return;
 
 	FireEtwMonoProfilerGCRootUnregister (
-		clr_instance_get_id (),
 		start,
 		NULL,
 		NULL);
@@ -4739,7 +4798,6 @@ mono_profiler_gc_roots (
 		}
 
 		FireEtwMonoProfilerGCRoots (
-			clr_instance_get_id (),
 			G_N_ELEMENTS (data),
 			sizeof (GCAddressObjectData),
 			data,
@@ -4755,7 +4813,6 @@ mono_profiler_gc_roots (
 		}
 
 		FireEtwMonoProfilerGCRoots (
-			clr_instance_get_id (),
 			data_rest,
 			sizeof (GCAddressObjectData),
 			data,
@@ -4774,7 +4831,6 @@ mono_profiler_monitor_contention (
 		return;
 
 	FireEtwMonoProfilerMonitorContention (
-		clr_instance_get_id (),
 		SGEN_POINTER_UNTAG_ALL (object),
 		NULL,
 		NULL);
@@ -4790,7 +4846,6 @@ mono_profiler_monitor_failed (
 		return;
 
 	FireEtwMonoProfilerMonitorFailed (
-		clr_instance_get_id (),
 		SGEN_POINTER_UNTAG_ALL (object),
 		NULL,
 		NULL);
@@ -4806,7 +4861,6 @@ mono_profiler_monitor_acquired (
 		return;
 
 	FireEtwMonoProfilerMonitorAcquired (
-		clr_instance_get_id (),
 		SGEN_POINTER_UNTAG_ALL (object),
 		NULL,
 		NULL);
@@ -4822,7 +4876,6 @@ mono_profiler_thread_started (
 		return;
 
 	FireEtwMonoProfilerThreadStarted (
-		clr_instance_get_id (),
 		(uint64_t)tid,
 		NULL,
 		NULL);
@@ -4838,7 +4891,6 @@ mono_profiler_thread_stopping (
 		return;
 
 	FireEtwMonoProfilerThreadStopping (
-		clr_instance_get_id (),
 		(uint64_t)tid,
 		NULL,
 		NULL);
@@ -4854,7 +4906,6 @@ mono_profiler_thread_stopped (
 		return;
 
 	FireEtwMonoProfilerThreadStopped (
-		clr_instance_get_id (),
 		(uint64_t)tid,
 		NULL,
 		NULL);
@@ -4870,7 +4921,6 @@ mono_profiler_thread_exited (
 		return;
 
 	FireEtwMonoProfilerThreadExited (
-		clr_instance_get_id (),
 		(uint64_t)tid,
 		NULL,
 		NULL);
@@ -4887,7 +4937,6 @@ mono_profiler_thread_name (
 		return;
 
 	FireEtwMonoProfilerThreadName (
-		clr_instance_get_id (),
 		(uint64_t)tid,
 		(ep_char8_t *)(name ? name : ""),
 		NULL,

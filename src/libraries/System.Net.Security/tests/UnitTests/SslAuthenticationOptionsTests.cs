@@ -41,7 +41,7 @@ namespace System.Net.Security.Tests
             Assert.Null(_clientOptions.ApplicationProtocols);
             Assert.Null(_serverOptions.ApplicationProtocols);
 
-            List<SslApplicationProtocol> applnProtos = new List<SslApplicationProtocol> { SslApplicationProtocol.Http2, SslApplicationProtocol.Http11 };
+            List<SslApplicationProtocol> applnProtos = new List<SslApplicationProtocol> { SslApplicationProtocol.Http3, SslApplicationProtocol.Http2, SslApplicationProtocol.Http11 };
             _clientOptions.ApplicationProtocols = applnProtos;
             _serverOptions.ApplicationProtocols = applnProtos;
 

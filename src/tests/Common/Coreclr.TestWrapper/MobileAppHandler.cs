@@ -81,11 +81,6 @@ namespace CoreclrTestLib
                         }
                     }
 
-                    if (platform != "android")
-                    {
-                        cmdStr += " --target ios-simulator-64";
-                    }
-
                     using (Process process = new Process())
                     {
                         if (OperatingSystem.IsWindows())
@@ -102,8 +97,6 @@ namespace CoreclrTestLib
                         process.StartInfo.RedirectStandardOutput = true;
                         process.StartInfo.RedirectStandardError = true;
 
-                        outputWriter.WriteLine("XXXih: cmdStr = {0}", cmdStr);
-                        errorWriter.WriteLine("XXXih: cmdStr = {0}", cmdStr);
                         DateTime startTime = DateTime.Now;
                         process.Start();
 
