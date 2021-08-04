@@ -160,6 +160,35 @@ namespace System.Net.Quic.Tests
         }
 
         [Fact]
+        public async Task MultipleConcurrentStreamsOnSingleConnection()
+        {
+            const int count = 100;
+            Task[] tasks = new Task[count];
+
+            (QuicConnection clientConnection, QuicConnection serverConnection) = await CreateConnectedQuicConnection();
+            using (clientConnection)
+            using (serverConnection)
+            {
+                for (int i = 0; i < count; i++)
+                {
+                    tasks[i] = MakeStreams(clientConnection, serverConnection);
+                }
+                await tasks.WhenAllOrAnyFailed(PassingTestTimeoutMilliseconds);
+            }
+
+            static async Task MakeStreams(QuicConnection clientConnection, QuicConnection serverConnection)
+            {
+                byte[] buffer = new byte[64];
+                QuicStream clientStream = clientConnection.OpenBidirectionalStream();
+                ValueTask writeTask = clientStream.WriteAsync(Encoding.UTF8.GetBytes("PING"), endStream: true);
+                ValueTask<QuicStream> acceptTask = serverConnection.AcceptStreamAsync();
+                await new Task[] { writeTask.AsTask(), acceptTask.AsTask()}.WhenAllOrAnyFailed(PassingTestTimeoutMilliseconds);
+                QuicStream serverStream = acceptTask.Result;
+                await serverStream.ReadAsync(buffer);
+            }
+        }
+
+        [Fact]
         public async Task GetStreamIdWithoutStartWorks()
         {
             using QuicListener listener = CreateQuicListener();

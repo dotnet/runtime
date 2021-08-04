@@ -50,9 +50,9 @@
       <Uri>https://github.com/dotnet/arcade</Uri>
       <Sha>c6a28c81f96d196338b3ea520bc1e6dc7c440ee2</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.DotNet.Build.Tasks.Installers" Version="6.0.0-beta.21373.11">
+    <Dependency Name="Microsoft.DotNet.Build.Tasks.Installers" Version="6.0.0-beta.21403.2">
       <Uri>https://github.com/dotnet/arcade</Uri>
-      <Sha>c6a28c81f96d196338b3ea520bc1e6dc7c440ee2</Sha>
+      <Sha>35a36a8ec705945b20275a7d63478affb396ff89</Sha>
     </Dependency>
     <Dependency Name="Microsoft.DotNet.Build.Tasks.Workloads" Version="6.0.0-beta.21373.11">
       <Uri>https://github.com/dotnet/arcade</Uri>
@@ -186,9 +186,9 @@
       <Uri>https://github.com/dotnet/runtime</Uri>
       <Sha>95863758cd16c345d0b8fca067d5db5d6901e498</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.NET.ILLink.Tasks" Version="6.0.100-preview.6.21378.1">
+    <Dependency Name="Microsoft.NET.ILLink.Tasks" Version="6.0.100-preview.6.21402.2">
       <Uri>https://github.com/mono/linker</Uri>
-      <Sha>0cb9250a903cfc90cbac602ed79c0cbc588d8d3f</Sha>
+      <Sha>ae18468b8712503aee67911228dd921601bd423a</Sha>
     </Dependency>
     <Dependency Name="Microsoft.DotNet.XHarness.TestRunners.Xunit" Version="1.0.0-prerelease.21373.1">
       <Uri>https://github.com/dotnet/xharness</Uri>
@@ -218,9 +218,9 @@
       <Uri>https://dev.azure.com/dnceng/internal/_git/dotnet-optimization</Uri>
       <Sha>f8742ac0820e98221e7eec5f13989d9538579399</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.DotNet.HotReload.Utils.Generator.BuildTool" Version="1.0.1-alpha.0.21369.1">
+    <Dependency Name="Microsoft.DotNet.HotReload.Utils.Generator.BuildTool" Version="1.0.2-alpha.0.21402.1">
       <Uri>https://github.com/dotnet/hotreload-utils</Uri>
-      <Sha>589840a79ed6335a310a011ee9e244e660798cf5</Sha>
+      <Sha>312d3ada595616e44ad827f64231109dc4ea1431</Sha>
     </Dependency>
     <Dependency Name="System.Runtime.Numerics.TestData" Version="6.0.0-beta.21371.1">
       <Uri>https://github.com/dotnet/runtime-assets</Uri>

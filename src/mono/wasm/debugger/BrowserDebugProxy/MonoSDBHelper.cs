@@ -990,6 +990,9 @@ namespace Microsoft.WebAssembly.Diagnostics
                 string fieldNameStr = retDebuggerCmdReader.ReadString();
                 int typeId = retDebuggerCmdReader.ReadInt32(); //typeId
                 retDebuggerCmdReader.ReadInt32(); //attrs
+                int isSpecialStatic = retDebuggerCmdReader.ReadInt32(); //is_special_static
+                if (isSpecialStatic == 1)
+                    continue;
                 if (fieldNameStr.Contains("k__BackingField"))
                 {
                     fieldNameStr = fieldNameStr.Replace("k__BackingField", "");

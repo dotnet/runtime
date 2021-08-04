@@ -13234,6 +13234,7 @@ namespace System.Runtime.ExceptionServices
         public System.Exception Exception { get { throw null; } }
     }
     [System.AttributeUsageAttribute(System.AttributeTargets.Method, AllowMultiple=false, Inherited=false)]
+    [System.ObsoleteAttribute("Recovery from corrupted process state exceptions is not supported; HandleProcessCorruptedStateExceptionsAttribute is ignored.", DiagnosticId = "SYSLIB0032", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
     public sealed partial class HandleProcessCorruptedStateExceptionsAttribute : System.Attribute
     {
         public HandleProcessCorruptedStateExceptionsAttribute() { }

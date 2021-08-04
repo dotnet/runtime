@@ -104,8 +104,7 @@ namespace System.Net.Http
             }
 
             // Add realm
-            if (realm != string.Empty)
-                sb.AppendKeyValue(Realm, realm);
+            sb.AppendKeyValue(Realm, realm);
 
             // Add nonce
             sb.AppendKeyValue(Nonce, nonce);
@@ -407,9 +406,11 @@ namespace System.Net.Http
                         break;
 
                     // Ensure value is valid.
-                    // Opaque and Domain can have empty string
+                    // Opaque, Domain and Realm can have empty string
                     if (value == string.Empty &&
-                       (!key.Equals(Opaque, StringComparison.OrdinalIgnoreCase) && !key.Equals(Domain, StringComparison.OrdinalIgnoreCase)))
+                        !key.Equals(Opaque, StringComparison.OrdinalIgnoreCase) &&
+                        !key.Equals(Domain, StringComparison.OrdinalIgnoreCase) &&
+                        !key.Equals(Realm, StringComparison.OrdinalIgnoreCase))
                         break;
 
                     // Add the key-value pair to Parameters.

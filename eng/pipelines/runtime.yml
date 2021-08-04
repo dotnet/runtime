@@ -650,7 +650,7 @@ jobs:
       extraStepsParameters:
         creator: dotnet-bot
         testRunNamePrefixSuffix: Mono_$(_BuildConfig)
-        forNode: /p:ForNode=true
+        forNode: true
 
 #
 # Build the whole product using Mono for Android and run runtime tests with Android emulator

@@ -3297,6 +3297,7 @@ main_loop:
 			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_BREAK)
 			++ip;
+			SAVE_INTERP_STATE (frame);
 			do_debugger_tramp (mono_component_debugger ()->user_break, frame);
 			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_BREAKPOINT)
