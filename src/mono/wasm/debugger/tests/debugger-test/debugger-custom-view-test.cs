@@ -1,10 +1,10 @@
-
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
 using System.Threading.Tasks;
 using System.Diagnostics;
+using System.Collections.Generic;
 
 namespace DebuggerTests
 {
@@ -62,12 +62,22 @@ namespace DebuggerTests
     {
         public static void run()
         {
-            var a = new WithDisplayString();
+            var tp = Type.GetType("System.Collections.Generic.ICollectionDebugView`1, System.Private.CoreLib, Version=6.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e[System.Int32, System.Private.CoreLib, Version=6.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]");
+            /*var a = new WithDisplayString();
             var b = new WithProxy();
-            var c = new DebuggerDisplayMethodTest();
-            Console.WriteLine(a);
-            Console.WriteLine(b);
-            Console.WriteLine(c);
+            var c = new DebuggerDisplayMethodTest();*/
+            //var b = new WithProxy();
+            List<int> myList = new List<int>{ 1, 2, 3, 4 };
+            Console.WriteLine("parei antes do print");
+            Console.WriteLine("parei antes do print");
+            Console.WriteLine("parei antes do print");
+            Console.WriteLine("parei antes do print");
+            //Console.WriteLine(b);
+            //Console.WriteLine(c);
+            /*
+            var tp = Type.GetType("System.Collections.Generic.ICollectionDebugView`1, System.Private.CoreLib, Version=6.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e[System.Int32, System.Private.CoreLib, Version=6.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]", true, true);
+            Console.WriteLine(tp);
+            */
         }
     }
 }

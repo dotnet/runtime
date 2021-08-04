@@ -639,7 +639,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                     case "array":
                         return await SdbHelper.GetArrayValues(id, int.Parse(objectId.Value), token);
                     case "object":
-                        return await SdbHelper.GetObjectValues(id, int.Parse(objectId.Value), true, false, accessorPropertiesOnly, ownProperties, token);
+                        return await SdbHelper.GetObjectValues(id, int.Parse(objectId.Value), true, false, accessorPropertiesOnly, ownProperties, false, token);
                     case "pointer":
                         return new JArray{await SdbHelper.GetPointerContent(id, int.Parse(objectId.Value), token)};
                     case "cfo_res":
@@ -911,7 +911,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                         string reason = "exception";
                         int object_id = retDebuggerCmdReader.ReadInt32();
                         var caught = retDebuggerCmdReader.ReadByte();
-                        var exceptionObject = await SdbHelper.GetObjectValues(sessionId, object_id, true, false, false, true, token);
+                        var exceptionObject = await SdbHelper.GetObjectValues(sessionId, object_id, true, false, false, true, false, token);
                         var exceptionObjectMessage = exceptionObject.FirstOrDefault(attr => attr["name"].Value<string>().Equals("message"));
                         var data = JObject.FromObject(new
                         {
