@@ -102,7 +102,7 @@ def main(main_args):
     print("Consolidating final {}".format(final_log_name))
     with open(final_log_name, "a") as final_superpmi_log:
         for superpmi_log in listdir(log_directory):
-            if not f.startswith("superpmi_Jit") and not f.endswith(".log"):
+            if not superpmi_log.startswith("superpmi_Jit") and not superpmi_log.endswith(".log"):
                 continue
 
             print("Appending {}".format(superpmi_log))
