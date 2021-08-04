@@ -244,7 +244,6 @@ struct _MonoProfilerBufferedGCEvent {
 	uint32_t payload_size;
 };
 
-#define MONO_PROFILER_GC_IN_PROGRESS_STATE_VALUE 0xFFFF
 #define MONO_PROFILER_MEM_DEFAULT_BLOCK_SIZE (mono_pagesize() * 16)
 #define MONO_PROFILER_MEM_BLOCK_SIZE_INC (mono_pagesize())
 
@@ -267,10 +266,20 @@ static volatile uint32_t _ep_rt_mono_profiler_gc_heap_dump_in_progress = 0;
 static bool _ep_rt_mono_profiler_gc_can_heap_dump = false;
 
 // Lightweight atomic "exclusive/shared" lock, prevents new fire events to happend while GC is in progress and gives GC ability to wait until all pending fire events are done
-// before progressing. State uint32_t is split into two uint16_t, upper uint16_t represent exclusive lock, taken while GC starts, preventing new fire events to execute and lower
-// uint16_t keeps number of fire events in progress, (gc_in_progress << 16) | (fire_event_count & 0xFFFF). Spin lock is only taken on slow path to queue up pending shared requests
+// before progressing. State uint32_t is split into two uint16_t, upper uint16_t represent gc in progress state, taken when GC starts, preventing new fire events to execute and lower
+// uint16_t keeps number of fire events in flight, (gc_in_progress << 16) | (fire_event_count & 0xFFFF). Spin lock is only taken on slow path to queue up pending shared requests
 // while GC is in progress and should very rarely be needed.
-static volatile uint32_t _ep_rt_mono_profiler_gc_state = 0;
+typedef uint32_t mono_profiler_gc_state_t;
+typedef uint16_t mono_profiler_gc_state_count_t;
+
+#define MONO_PROFILER_GC_STATE_GET_FIRE_EVENT_COUNT(x) ((mono_profiler_gc_state_count_t)((x & 0xFFFF)))
+#define MONO_PROFILER_GC_STATE_INC_FIRE_EVENT_COUNT(x) ((mono_profiler_gc_state_t)((mono_profiler_gc_state_t)(x & 0xFFFF0000) | (mono_profiler_gc_state_t)(MONO_PROFILER_GC_STATE_GET_FIRE_EVENT_COUNT(x) + 1)))
+#define MONO_PROFILER_GC_STATE_DEC_FIRE_EVENT_COUNT(x) ((mono_profiler_gc_state_t)((mono_profiler_gc_state_t)(x & 0xFFFF0000) | (mono_profiler_gc_state_t)(MONO_PROFILER_GC_STATE_GET_FIRE_EVENT_COUNT(x) - 1)))
+#define MONO_PROFILER_GC_STATE_GC_IN_PROGRESS_START(x) ((mono_profiler_gc_state_t)((mono_profiler_gc_state_t)(0xFFFF << 16) | (mono_profiler_gc_state_t)MONO_PROFILER_GC_STATE_GET_FIRE_EVENT_COUNT(x)))
+#define MONO_PROFILER_GC_STATE_IS_GC_IN_PROGRESS(x) (((x >> 16) & 0xFFFF) == 0xFFFF)
+#define MONO_PROFILER_GC_STATE_GC_IN_PROGRESS_STOP(x) ((mono_profiler_gc_state_t)((mono_profiler_gc_state_t)MONO_PROFILER_GC_STATE_GET_FIRE_EVENT_COUNT(x)))
+
+static volatile mono_profiler_gc_state_t _ep_rt_mono_profiler_gc_state = 0;
 static ep_rt_spin_lock_handle_t _ep_rt_mono_profiler_gc_state_lock = {0};
 
 /*
@@ -3752,7 +3761,7 @@ EventPipeEtwCallbackDotNETRuntime (
 		}
 
 		if (profiler_callback_is_enabled(match_any_keywords, APP_DOMAIN_RESOURCE_MANAGEMENT_KEYWORD) || profiler_callback_is_enabled(match_any_keywords, THREADING_KEYWORD)) {
-			if (!(profiler_callback_is_enabled(enabled_keywords, APP_DOMAIN_RESOURCE_MANAGEMENT_KEYWORD) || profiler_callback_is_enabled(enabled_keywords, THREADING_KEYWORD))) {
+			if (!(profiler_callback_is_enabled(enabled_keywords, APP_DOMAIN_RESOURCE_MANAGEMENT_KEYWORD) && profiler_callback_is_enabled(enabled_keywords, THREADING_KEYWORD))) {
 				mono_profiler_set_thread_started_callback (_ep_rt_dotnet_runtime_profiler_provider, runtime_profiler_thread_started);
 				mono_profiler_set_thread_stopped_callback (_ep_rt_dotnet_runtime_profiler_provider, runtime_profiler_thread_stopped);
 			}
@@ -3861,69 +3870,74 @@ EventPipeEtwCallbackDotNETRuntimeStress (
 	MICROSOFT_WINDOWS_DOTNETRUNTIME_STRESS_PROVIDER_EVENTPIPE_Context.IsEnabled = (is_enabled == 1 ? true : false);
 }
 
-
+static
 inline
-uint32_t
-mono_profiler_atomic_cas_uint32_t (volatile uint32_t *target, uint32_t expected, uint32_t value)
+mono_profiler_gc_state_t
+mono_profiler_volatile_load_gc_state_t (const volatile mono_profiler_gc_state_t *ptr)
 {
-	return (uint32_t)(mono_atomic_cas_i32 ((volatile gint32 *)(target), (gint32)(value), (gint32)(expected)));
+	return ep_rt_volatile_load_uint32_t ((const volatile uint32_t *)ptr);
+}
+
+static
+inline
+mono_profiler_gc_state_t
+mono_profiler_atomic_cas_gc_state_t (volatile mono_profiler_gc_state_t *target, mono_profiler_gc_state_t expected, mono_profiler_gc_state_t value)
+{
+	return (mono_profiler_gc_state_t)(mono_atomic_cas_i32 ((volatile gint32 *)(target), (gint32)(value), (gint32)(expected)));
 }
 
 static
 void
 mono_profiler_fire_event_enter (void)
 {
-	uint32_t old_state = 0;
-	uint32_t new_state = 0;
+	mono_profiler_gc_state_t old_state = 0;
+	mono_profiler_gc_state_t new_state = 0;
 
 	// NOTE, mono_profiler_fire_event_start should never be called recursivly.
 	do {
-		old_state = ep_rt_volatile_load_uint32_t (&_ep_rt_mono_profiler_gc_state);
-		if (((uint16_t)(old_state >> 16)) == MONO_PROFILER_GC_IN_PROGRESS_STATE_VALUE) {
+		old_state = mono_profiler_volatile_load_gc_state_t (&_ep_rt_mono_profiler_gc_state);
+		if (MONO_PROFILER_GC_STATE_IS_GC_IN_PROGRESS (old_state)) {
 			// GC in progress and thread tries to fire event (this should be an unlikely scenario). Wait until GC is done.
 			ep_rt_spin_lock_aquire (&_ep_rt_mono_profiler_gc_state_lock);
 			ep_rt_spin_lock_release (&_ep_rt_mono_profiler_gc_state_lock);
+			old_state = mono_profiler_volatile_load_gc_state_t (&_ep_rt_mono_profiler_gc_state);
 		}
-		// Increase number of enter calls.
-		new_state = old_state + 1;
-	} while (mono_profiler_atomic_cas_uint32_t (&_ep_rt_mono_profiler_gc_state, old_state, new_state) != old_state);
+		// Increase number of fire event calls.
+		new_state = MONO_PROFILER_GC_STATE_INC_FIRE_EVENT_COUNT (old_state);
+	} while (mono_profiler_atomic_cas_gc_state_t (&_ep_rt_mono_profiler_gc_state, old_state, new_state) != old_state);
 }
 
 static
 void
 mono_profiler_fire_event_exit (void)
 {
-	uint32_t old_state = 0;
-	uint32_t new_state = 0;
-	uint16_t gc_in_progress = 0;
-	uint16_t count = 0;
+	mono_profiler_gc_state_t old_state = 0;
+	mono_profiler_gc_state_t new_state = 0;
 
 	do {
-		old_state = ep_rt_volatile_load_uint32_t (&_ep_rt_mono_profiler_gc_state);
-		count = (uint16_t)old_state;
-		gc_in_progress = old_state >> 16;
-		new_state = (uint32_t)(gc_in_progress << 16) | (uint32_t)(--count);
-	} while (mono_profiler_atomic_cas_uint32_t (&_ep_rt_mono_profiler_gc_state, old_state, new_state) != old_state);
+		old_state = mono_profiler_volatile_load_gc_state_t (&_ep_rt_mono_profiler_gc_state);
+		new_state = MONO_PROFILER_GC_STATE_DEC_FIRE_EVENT_COUNT (old_state);
+	} while (mono_profiler_atomic_cas_gc_state_t (&_ep_rt_mono_profiler_gc_state, old_state, new_state) != old_state);
 }
 
 static
 void
 mono_profiler_gc_in_progress_start (void)
 {
-	uint32_t old_state = 0;
-	uint32_t new_state = 0;
-	uint16_t count = 0;
+	mono_profiler_gc_state_t old_state = 0;
+	mono_profiler_gc_state_t new_state = 0;
 
 	// Make sure fire event calls will block and wait for GC completion.
 	ep_rt_spin_lock_aquire (&_ep_rt_mono_profiler_gc_state_lock);
 
-	// Mark gc state in progress bits, preventing new fire event requests.
+	// Set gc in progress state, preventing new fire event requests.
 	do {
-		old_state = ep_rt_volatile_load_uint32_t (&_ep_rt_mono_profiler_gc_state);
-		count = (uint16_t)old_state;
-		EP_ASSERT ((old_state >> 16) == 0);
-		new_state = (uint32_t)(MONO_PROFILER_GC_IN_PROGRESS_STATE_VALUE << 16) | (uint32_t)(count);
-	} while (mono_profiler_atomic_cas_uint32_t (&_ep_rt_mono_profiler_gc_state, old_state, new_state) != old_state);
+		old_state = mono_profiler_volatile_load_gc_state_t (&_ep_rt_mono_profiler_gc_state);
+		EP_ASSERT (!MONO_PROFILER_GC_STATE_IS_GC_IN_PROGRESS (old_state));
+		new_state = MONO_PROFILER_GC_STATE_GC_IN_PROGRESS_START (old_state);
+	} while (mono_profiler_atomic_cas_gc_state_t (&_ep_rt_mono_profiler_gc_state, old_state, new_state) != old_state);
+
+	mono_profiler_gc_state_count_t count = MONO_PROFILER_GC_STATE_GET_FIRE_EVENT_COUNT (new_state);
 
 	// Wait for all fire events to complete before progressing with gc.
 	// NOTE, mono_profiler_fire_event_start should never be called recursivly.
@@ -3932,11 +3946,11 @@ mono_profiler_gc_in_progress_start (void)
 	while (count) {
 		if (yield_count > 0) {
 			ep_rt_mono_thread_yield ();
-			yield_count --;
+			yield_count--;
 		} else {
 			ep_rt_thread_sleep (200);
 		}
-		count = (uint16_t)ep_rt_volatile_load_uint32_t (&_ep_rt_mono_profiler_gc_state);
+		count = MONO_PROFILER_GC_STATE_GET_FIRE_EVENT_COUNT (mono_profiler_volatile_load_gc_state_t (&_ep_rt_mono_profiler_gc_state));
 	}
 }
 
@@ -3944,14 +3958,17 @@ static
 void
 mono_profiler_gc_in_progress_stop (void)
 {
-	uint32_t old_state = 0;
+	mono_profiler_gc_state_t old_state = 0;
+	mono_profiler_gc_state_t new_state = 0;
 
-	// Reset gc in progress bits.
+	// Reset gc in progress state.
 	do {
-		old_state = ep_rt_volatile_load_uint32_t (&_ep_rt_mono_profiler_gc_state);
-		EP_ASSERT ((old_state >> 16) == MONO_PROFILER_GC_IN_PROGRESS_STATE_VALUE);
-		EP_ASSERT (((uint16_t)old_state) == 0);
-	} while (mono_profiler_atomic_cas_uint32_t (&_ep_rt_mono_profiler_gc_state, old_state, 0) != old_state);
+		old_state = mono_profiler_volatile_load_gc_state_t (&_ep_rt_mono_profiler_gc_state);
+		EP_ASSERT (MONO_PROFILER_GC_STATE_IS_GC_IN_PROGRESS (old_state));
+
+		new_state = MONO_PROFILER_GC_STATE_GC_IN_PROGRESS_STOP (old_state);
+		EP_ASSERT (!MONO_PROFILER_GC_STATE_IS_GC_IN_PROGRESS (new_state));
+	} while (mono_profiler_atomic_cas_gc_state_t (&_ep_rt_mono_profiler_gc_state, old_state, new_state) != old_state);
 
 	// Make sure fire events can continune to execute.
 	ep_rt_spin_lock_release (&_ep_rt_mono_profiler_gc_state_lock);
@@ -3962,7 +3979,7 @@ inline
 bool
 mono_profiler_gc_in_progress (void)
 {
-	return ((ep_rt_volatile_load_uint32_t(&_ep_rt_mono_profiler_gc_state) >> 16) == MONO_PROFILER_GC_IN_PROGRESS_STATE_VALUE) != 0 ? true : false;
+	return MONO_PROFILER_GC_STATE_IS_GC_IN_PROGRESS (mono_profiler_volatile_load_gc_state_t (&_ep_rt_mono_profiler_gc_state));
 }
 
 static
@@ -6457,11 +6474,9 @@ mono_profiler_ep_provider_callback (
 			if (!profiler_callback_is_enabled (enabled_keywords, GC_HEAP_COLLECT_KEYWORD)) {
 				if (mono_profiler_gc_can_heap_dump ()) {
 					mono_profiler_set_gc_finalized_callback (_ep_rt_dotnet_mono_profiler_heap_dump_provider, mono_profiler_trigger_heap_dump);
+					mono_profiler_gc_heap_dump_requests_inc ();
+					mono_gc_finalize_notify ();
 				}
-			}
-			if (mono_profiler_gc_can_heap_dump ()) {
-				mono_profiler_gc_heap_dump_requests_inc ();
-				mono_gc_finalize_notify ();
 			}
 		} else {
 			if (profiler_callback_is_enabled (enabled_keywords, GC_HEAP_COLLECT_KEYWORD)) {
@@ -6470,7 +6485,7 @@ mono_profiler_ep_provider_callback (
 		}
 
 		if (profiler_callback_is_enabled(match_any_keywords, MONITOR_KEYWORD) || profiler_callback_is_enabled(match_any_keywords, CONTENTION_KEYWORD)) {
-			if (!(profiler_callback_is_enabled(enabled_keywords, MONITOR_KEYWORD) || profiler_callback_is_enabled(enabled_keywords, CONTENTION_KEYWORD))) {
+			if (!(profiler_callback_is_enabled(enabled_keywords, MONITOR_KEYWORD) && profiler_callback_is_enabled(enabled_keywords, CONTENTION_KEYWORD))) {
 				mono_profiler_set_monitor_contention_callback (_ep_rt_dotnet_mono_profiler_provider, mono_profiler_monitor_contention);
 			}
 		} else {
