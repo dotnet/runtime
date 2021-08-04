@@ -195,6 +195,18 @@
       <_XUnitConsoleRunnerFiles Include="$(NuGetPackageRoot)Microsoft.DotNet.XUnitConsoleRunner\$(MicrosoftDotNetXUnitConsoleRunnerVersion)\**\xunit.console.*" />
     </ItemGroup>
 
+    <!-- Helix has an old version of Node that we don't support. So we send a valid version (current LTS) in the correlation payload -->
+    <PropertyGroup Condition="'$(ForNode)' == 'true'">
+      <NodeFolder>$([MSBuild]::NormalizeDirectory('$(CoreRootDirectory)', 'nodejs'))</NodeFolder>
+    </PropertyGroup>
+    <DownloadFile Condition="'$(ForNode)' == 'true'"
+      SourceUrl="https://nodejs.org/dist/latest-v14.x/node-v14.17.4-linux-x64.tar.xz"
+      DestinationFolder="$(NodeFolder)"/>
+    <Exec Command="tar -xf node-v14.17.4-linux-x64.tar.xz"
+        WorkingDirectory="$(NodeFolder)"
+        IgnoreStandardErrorWarningFormat="true" 
+        Condition="'$(ForNode)' == 'true'"/>
+
     <Copy SourceFiles="@(_XUnitConsoleRunnerFiles)" DestinationFolder="$(CoreRootDirectory)\xunit" />
     <Copy SourceFiles="$(MSBuildThisFileDirectory)scripts\runincontext.cmd" DestinationFolder="$(CoreRootDirectory)" Condition=" '$(TestWrapperTargetsWindows)' == 'true' and '$(_RunInUnloadableContext)' == 'true'" />
     <Copy SourceFiles="$(MSBuildThisFileDirectory)scripts/runincontext.sh" DestinationFolder="$(CoreRootDirectory)" Condition=" '$(TestWrapperTargetsWindows)' != 'true' and '$(_RunInUnloadableContext)' == 'true'" />
@@ -229,21 +241,6 @@
       <_ProjectsToBuild Include="$(MSBuildProjectFile)">
         <AdditionalProperties>Scenario=%(_Scenario.Identity);PayloadGroups=$(_PayloadGroups);ForNode=$(ForNode)</AdditionalProperties>
       </_ProjectsToBuild>
-    </ItemGroup>
-
-    <!-- Helix has an old version of Node that we don't support. So we send a valid version (current LTS) in the correlation payload -->
-    <PropertyGroup Condition="'$(ForNode)' == 'true'">
-      <NodeFolder>$([MSBuild]::NormalizeDirectory('$(ArtifactsDir)', 'bin', 'nodejs'))</NodeFolder>
-    </PropertyGroup>
-    <DownloadFile Condition="'$(ForNode)' == 'true'"
-      SourceUrl="https://nodejs.org/dist/latest-v14.x/node-v14.17.4-linux-x64.tar.xz"
-      DestinationFolder="$(NodeFolder)"/>
-    <Exec Command="tar -xf node-v14.17.4-linux-x64.tar.xz"
-        WorkingDirectory="$(NodeFolder)"
-        IgnoreStandardErrorWarningFormat="true" 
-        Condition="'$(ForNode)' == 'true'"/>
-    <ItemGroup Condition="'$(ForNode)' == 'true'" >
-      <HelixCorrelationPayload Include="$(NodeFolder)/node-v14.17.4-linux-x64/bin" Destination="node-v14.17.4-linux-x64/bin"/>
     </ItemGroup>
 
     <MSBuild Projects="@(_ProjectsToBuild)" Targets="CreateTestEnvFiles" StopOnFirstFailure="true" />
@@ -317,7 +314,7 @@
   </ItemGroup>
 
   <ItemGroup Condition="'$(ForNode)' == 'true'">
-    <HelixPreCommand Include="export PATH=$HELIX_CORRELATION_PAYLOAD/node-v14.17.4-linux-x64/bin:$PATH" />
+    <HelixPreCommand Include="export PATH=$HELIX_CORRELATION_PAYLOAD/nodejs:$PATH" />
   </ItemGroup>
 
   <PropertyGroup>
