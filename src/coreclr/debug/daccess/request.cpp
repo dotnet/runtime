@@ -747,10 +747,11 @@ ClrDataAccess::GetHeapAllocData(unsigned int count, struct DacpGenerationAllocDa
 
         if (data && count >= 1)
         {
-            DPTR(dac_generation) table = g_gcDacGlobals->generation_table;
+            DPTR(opaque_generation) table = g_gcDacGlobals->generation_table;
             for (unsigned int i=0; i < *g_gcDacGlobals->max_gen + 2; i++)
             {
-                dac_generation entry = *GenerationTableIndex(table, i);
+                TADDR pEntry = GenerationTableIndex(table, i);
+                dac_generation entry = LoadGeneration(pEntry);
                 data[0].allocData[i].allocBytes = (CLRDATA_ADDRESS)(ULONG_PTR) entry.allocation_context.alloc_bytes;
                 data[0].allocData[i].allocBytesLoh = (CLRDATA_ADDRESS)(ULONG_PTR) entry.allocation_context.alloc_bytes_uoh;
             }
@@ -3790,12 +3791,13 @@ ClrDataAccess::EnumWksGlobalMemoryRegions(CLRDataEnumMemoryFlags flags)
             // this is the convention in the GC so it is repeated here
             for (ULONG i = *g_gcDacGlobals->max_gen; i <= *g_gcDacGlobals->max_gen +1; i++)
             {
-                dac_generation *gen = GenerationTableIndex(g_gcDacGlobals->generation_table, i);
-                __DPtr<dac_heap_segment> seg = dac_cast<TADDR>(gen->start_segment);
+                TADDR pGen = GenerationTableIndex(g_gcDacGlobals->generation_table, i);
+                dac_generation gen = LoadGeneration(pGen);
+                __DPtr<dac_heap_segment> seg = dac_cast<TADDR>(gen.start_segment);
                 while (seg)
                 {
-                        DacEnumMemoryRegion(dac_cast<TADDR>(seg), sizeof(dac_heap_segment));
-                        seg = seg->next;
+                    DacEnumMemoryRegion(dac_cast<TADDR>(seg), sizeof(dac_heap_segment));
+                    seg = seg->next;
                 }
             }
     }
