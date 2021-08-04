@@ -284,13 +284,13 @@
     <!--<ProjectExclusions Include="$(MSBuildThisFileDirectory)System.ComponentModel.Annotations\tests\System.ComponentModel.Annotations.Tests.csproj" />-->
 
     <!-- Issue: https://github.com/dotnet/runtime/issues/51708 --> <!-- IL2103 -->
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Linq.Expressions\tests\System.Linq.Expressions.Tests.csproj" />
+    <!--<ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Linq.Expressions\tests\System.Linq.Expressions.Tests.csproj" />-->
 
-    <!-- Issue: https://github.com/dotnet/runtime/issues/56819 --> <!-- IL1005 -->
+    <!-- Issue: https://github.com/dotnet/runtime/issues/56819 --> <!-- IL1005 This is a linker crash -->
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Dynamic.Runtime/tests/System.Dynamic.Runtime.Tests.csproj" />
 
     <!-- IL2103 -->
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)Microsoft.Extensions.DependencyInjection/tests/DI.External.Tests/Microsoft.Extensions.DependencyInjection.ExternalContainers.Tests.csproj" />
+    <!--<ProjectExclusions Include="$(MSBuildThisFileDirectory)Microsoft.Extensions.DependencyInjection/tests/DI.External.Tests/Microsoft.Extensions.DependencyInjection.ExternalContainers.Tests.csproj" />-->
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetOS)' == 'Browser' and '$(BrowserHost)' == 'windows' and '$(RunDisabledWasmTestsOnWindows)' != 'true'">
