@@ -1498,8 +1498,10 @@ public:
     void get_and_reset_loh_alloc_info();
 #endif //BGC_SERVO_TUNING
 
+#ifndef USE_REGIONS
     PER_HEAP
     BOOL expand_soh_with_minimal_gc();
+#endif //!USE_REGIONS
 
     // EE is always suspended when this method is called.
     // returning FALSE means we actually didn't do a GC. This happens
@@ -1668,9 +1670,8 @@ protected:
     void allocate_for_no_gc_after_gc();
 
 #ifdef USE_REGIONS
-    // TODO, enum
     PER_HEAP
-    int extend_soh_for_no_gc();
+    bool extend_soh_for_no_gc();
 #endif //USE_REGIONS
 
     PER_HEAP
