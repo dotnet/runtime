@@ -296,7 +296,7 @@ namespace DebuggerTests
                 // Check ss_local.gs
                 var gs_props = await GetObjectOnLocals(ss_local_props, "gs");
                 CheckString(gs_props, "StringField", "set in MethodWithLocalStructs#SimpleStruct#gs#StringField");
-                CheckObject(gs_props, "List", "System.Collections.Generic.List<System.DateTime>");
+                CheckObject(gs_props, "List", "System.Collections.Generic.List<System.DateTime>", description: "Count = 1");
             }
 
             // Check gs_local's properties
@@ -486,7 +486,7 @@ namespace DebuggerTests
                     new
                     {
                         StringField = TString("set in MethodWithLocalStructsStaticAsync#SimpleStruct#gs#StringField"),
-                        List = TObject("System.Collections.Generic.List<System.DateTime>"),
+                        List = TObject("System.Collections.Generic.List<System.DateTime>", description: "Count = 1"),
                         Options = TEnum("DebuggerTests.Options", "Option1")
                     }
                 );
@@ -497,7 +497,7 @@ namespace DebuggerTests
             await CheckProps(gs_local_props, new
             {
                 StringField = TString("gs_local#GenericStruct<ValueTypesTest>#StringField"),
-                List = TObject("System.Collections.Generic.List<int>"),
+                List = TObject("System.Collections.Generic.List<int>", description: "Count = 2"),
                 Options = TEnum("DebuggerTests.Options", "Option2")
             }, "gs_local");
 
