@@ -380,7 +380,6 @@ namespace System.Net.Http.Functional.Tests
         [OuterLoop]
         [ConditionalTheory(nameof(IsMsQuicSupported))]
         [MemberData(nameof(InteropUris))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/54726")]
         public async Task Public_Interop_ExactVersion_Success(string uri)
         {
             if (UseQuicImplementationProvider == QuicImplementationProviders.Mock)
@@ -405,7 +404,6 @@ namespace System.Net.Http.Functional.Tests
         [OuterLoop]
         [ConditionalTheory(nameof(IsMsQuicSupported))]
         [MemberData(nameof(InteropUris))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/54726")]
         public async Task Public_Interop_Upgrade_Success(string uri)
         {
             if (UseQuicImplementationProvider == QuicImplementationProviders.Mock)
