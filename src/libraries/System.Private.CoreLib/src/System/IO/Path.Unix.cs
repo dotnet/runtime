@@ -22,7 +22,10 @@ namespace System.IO
             if (path.Length == 0)
                 throw new ArgumentException(SR.Arg_PathEmpty, nameof(path));
 
-            return GetPartiallyQualifiedPath(path, false);
+            if (path.Contains('\0'))
+                throw new ArgumentException(SR.Argument_InvalidPathChars, nameof(path));
+
+            return GetFullPathInternal(path);
         }
 
         public static string GetFullPath(string path, string basePath)
@@ -40,16 +43,14 @@ namespace System.IO
                 throw new ArgumentException(SR.Argument_InvalidPathChars);
 
             if (IsPathFullyQualified(path))
-                return GetPartiallyQualifiedPath(path, true);
+                return GetFullPathInternal(path);
 
-            return GetPartiallyQualifiedPath(CombineInternal(basePath, path), true);
+            return GetFullPathInternal(CombineInternal(basePath, path));
         }
 
-        internal static string GetPartiallyQualifiedPath(string path, bool checkedForInvalids)
+        // Gets the full path without argument validation
+        private static string GetFullPathInternal(string path)
         {
-            if (!checkedForInvalids && path.Contains('\0'))
-                throw new ArgumentException(SR.Argument_InvalidPathChars, nameof(path));
-
             // Expand with current directory if necessary
             if (!IsPathRooted(path))
             {

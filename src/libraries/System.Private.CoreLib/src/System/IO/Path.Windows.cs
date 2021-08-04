@@ -44,7 +44,13 @@ namespace System.IO
             if (PathInternal.IsEffectivelyEmpty(path.AsSpan()))
                 throw new ArgumentException(SR.Arg_PathEmpty, nameof(path));
 
-            return GetPartiallyQualifiedPath(path, false);
+            // Embedded null characters are the only invalid character case we trully care about.
+            // This is because the nulls will signal the end of the string to Win32 and therefore have
+            // unpredictable results.
+            if (path.Contains('\0'))
+                throw new ArgumentException(SR.Argument_InvalidPathChars, nameof(path));
+
+            return GetFullPathInternal(path);
         }
 
         public static string GetFullPath(string path, string basePath)
@@ -62,7 +68,7 @@ namespace System.IO
                 throw new ArgumentException(SR.Argument_InvalidPathChars);
 
             if (IsPathFullyQualified(path))
-                return GetPartiallyQualifiedPath(path, true);
+                return GetFullPathInternal(path);
 
             if (PathInternal.IsEffectivelyEmpty(path.AsSpan()))
                 return basePath;
@@ -114,17 +120,12 @@ namespace System.IO
 
             return PathInternal.IsDevice(combinedPath.AsSpan())
                 ? PathInternal.RemoveRelativeSegments(combinedPath, PathInternal.GetRootLength(combinedPath.AsSpan()))
-                : GetPartiallyQualifiedPath(combinedPath, true);
+                : GetFullPathInternal(combinedPath);
         }
 
-        internal static string GetPartiallyQualifiedPath(string path, bool checkedForInvalids)
+        // Gets the full path without argument validation
+        private static string GetFullPathInternal(string path)
         {
-            // Embedded null characters are the only invalid character case we trully care about.
-            // This is because the nulls will signal the end of the string to Win32 and therefore have
-            // unpredictable results.
-            if (!checkedForInvalids && path.Contains('\0'))
-                throw new ArgumentException(SR.Argument_InvalidPathChars, nameof(path));
-
             if (PathInternal.IsExtended(path.AsSpan()))
             {
                 // \\?\ paths are considered normalized by definition. Windows doesn't normalize \\?\
