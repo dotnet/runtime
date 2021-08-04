@@ -1538,6 +1538,7 @@ int64_t SystemNative_GetFileSystemType(intptr_t fd)
     else if (strcmp(statfsArgs.f_basetype, "udev") == 0) result = 0x01021994;
     else if (strcmp(statfsArgs.f_basetype, "zfs") == 0) result = 0x2FC12FC1;
 
+    assert(result != -1);
     return result;
 #else
     #error "Platform doesn't support fstatfs or fstatvfs"
