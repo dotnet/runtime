@@ -166,9 +166,9 @@
       <Uri>https://github.com/dotnet/runtime</Uri>
       <Sha>d90f6b6c86be7001dc839e147ab229dfd1c7d20d</Sha>
     </Dependency>
-    <Dependency Name="runtime.native.System.IO.Ports" Version="6.0.0-rc.1.21401.3">
+    <Dependency Name="runtime.native.System.IO.Ports" Version="6.0.0-rc.1.21375.2">
       <Uri>https://github.com/dotnet/runtime</Uri>
-      <Sha>d90f6b6c86be7001dc839e147ab229dfd1c7d20d</Sha>
+      <Sha>95863758cd16c345d0b8fca067d5db5d6901e498</Sha>
     </Dependency>
     <Dependency Name="Microsoft.NETCore.ILAsm" Version="6.0.0-rc.1.21401.3">
       <Uri>https://github.com/dotnet/runtime</Uri>
