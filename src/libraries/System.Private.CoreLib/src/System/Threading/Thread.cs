@@ -507,13 +507,13 @@ namespace System.Threading
             return SetApartmentStateUnchecked(state, throwOnError);
         }
 
-        [Obsolete("Thread.GetCompressedStack has been deprecated. Use the System.Threading.CompressedStack class instead.")]
+        [Obsolete(Obsoletions.CodeAccessSecurityMessage, DiagnosticId = Obsoletions.CodeAccessSecurityDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public CompressedStack GetCompressedStack()
         {
             throw new InvalidOperationException(SR.Thread_GetSetCompressedStack_NotSupported);
         }
 
-        [Obsolete("Thread.SetCompressedStack has been deprecated. Use the System.Threading.CompressedStack class instead.")]
+        [Obsolete(Obsoletions.CodeAccessSecurityMessage, DiagnosticId = Obsoletions.CodeAccessSecurityDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public void SetCompressedStack(CompressedStack stack)
         {
             throw new InvalidOperationException(SR.Thread_GetSetCompressedStack_NotSupported);
