@@ -242,7 +242,7 @@ namespace System.ComponentModel.DataAnnotations
         ///     Describes the object being validated and provides services and context for the
         ///     validators.  It cannot be <c>null</c>.
         /// </param>
-        /// <exception cref="llException">When <paramref name="instance" /> is null.</exception>
+        /// <exception cref="ArgumentNullException">When <paramref name="instance" /> is null.</exception>
         /// <exception cref="ArgumentNullException">When <paramref name="validationContext" /> is null.</exception>
         /// <exception cref="ArgumentException">
         ///     When <paramref name="instance" /> doesn't match the
