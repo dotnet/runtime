@@ -220,6 +220,21 @@
       </_ProjectsToBuild>
     </ItemGroup>
 
+    <!-- Helix has an old version of Node that we don't support. So we send a valid version (current LTS) in the correlation payload -->
+    <PropertyGroup Condition="'$(ForNode)' == 'true'">
+      <NodeFolder>$([MSBuild]::NormalizeDirectory('$(ArtifactsDir)', 'bin', 'nodejs'))</NodeFolder>
+    </PropertyGroup>
+    <DownloadFile Condition="'$(ForNode)' == 'true'"
+      SourceUrl="https://nodejs.org/dist/latest-v14.x/node-v14.17.4-linux-x64.tar.xz"
+      DestinationFolder="$(NodeFolder)"/>
+    <Exec Command="tar -xf node-v14.17.4-linux-x64.tar.xz"
+        WorkingDirectory="$(NodeFolder)"
+        IgnoreStandardErrorWarningFormat="true" 
+        Condition="'$(ForNode)' == 'true'"/>
+    <ItemGroup Condition="'$(ForNode)' == 'true'" >
+      <HelixCorrelationPayload Include="$(NodeFolder)/node-v14.17.4-linux-x64/bin" Destination="node-v14.17.4-linux-x64/bin"/>
+    </ItemGroup>
+
     <MSBuild Projects="@(_ProjectsToBuild)" Targets="CreateTestEnvFiles" StopOnFirstFailure="true" />
   </Target>
 
@@ -288,6 +303,10 @@
     <HelixPreCommand Include="export __CollectDumps=1" />
     <HelixPreCommand Include="export __CrashDumpFolder=$HELIX_DUMP_FOLDER" />
     <HelixPreCommand Include="cat $__TestEnv" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(ForNode)' == 'true'">
+    <HelixPreCommand Include="export PATH=$HELIX_CORRELATION_PAYLOAD/node-v14.17.4-linux-x64/bin:$PATH" />
   </ItemGroup>
 
   <PropertyGroup>
