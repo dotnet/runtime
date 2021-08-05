@@ -59,11 +59,7 @@
   <Target Name="SetAzureDevOpsVariableForBuiltPackages"
           Condition="'$(ContinuousIntegrationBuild)' == 'true'"
           AfterTargets="Build;Pack">
-    <ItemGroup>
-      <_PackageReports Include="$(PackageReportDir)*.json" />
-    </ItemGroup>
-
-    <Message Condition="'@(_PackageReports)' != '' and Exists('$(ArtifactsDir)packages')" Importance="High" Text="##vso[task.setvariable variable=_librariesBuildProducedPackages]true" />
+    <Message Condition="Exists('$(ArtifactsDir)packages')" Importance="High" Text="##vso[task.setvariable variable=_librariesBuildProducedPackages]true" />
   </Target>
 
 </Project>
