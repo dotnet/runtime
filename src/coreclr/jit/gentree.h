@@ -3054,6 +3054,9 @@ struct GenTreeIntConCommon : public GenTree
     inline void SetIconValue(ssize_t val);
     inline INT64 IntegralValue() const;
 
+    template <typename T>
+    inline void SetValueTruncating(T value);
+
     GenTreeIntConCommon(genTreeOps oper, var_types type DEBUGARG(bool largeNode = false))
         : GenTree(oper, type DEBUGARG(largeNode))
     {
@@ -3259,6 +3262,43 @@ inline INT64 GenTreeIntConCommon::IntegralValue() const
 #else
     return gtOper == GT_CNS_LNG ? LngValue() : (INT64)IconValue();
 #endif // TARGET_64BIT
+}
+
+//------------------------------------------------------------------------
+// SetValueTruncating: Set the value, truncating to TYP_INT if necessary.
+//
+// The function will truncate the supplied value to a 32 bit signed
+// integer if the node's type is not TYP_LONG, otherwise setting it
+// as-is. Note that this function intentionally does not check for
+// small types (such nodes are created in lowering) for TP reasons.
+//
+// This function is intended to be used where its truncating behavior is
+// desirable. One example is folding of ADD(CNS_INT, CNS_INT) performed in
+// wider integers, which is typical when compiling on 64 bit hosts, as
+// most aritmetic is done in ssize_t's aka int64_t's in that case, while
+// the node itself can be of a narrower type.
+//
+// Arguments:
+//    value - Value to set, truncating to TYP_INT if the node is not of TYP_LONG
+//
+// Notes:
+//    This function is templated so that it works well with compiler warnings of
+//    the form "Operation may overflow before being assigned to a wider type", in
+//    case "value" is of type ssize_t, which is common.
+//
+template <typename T>
+inline void GenTreeIntConCommon::SetValueTruncating(T value)
+{
+    static_assert_no_msg((std::is_same<T, int32_t>::value || std::is_same<T, int64_t>::value));
+
+    if (TypeIs(TYP_LONG))
+    {
+        SetLngValue(value);
+    }
+    else
+    {
+        SetIconValue(static_cast<int32_t>(value));
+    }
 }
 
 /* gtDblCon -- double  constant (GT_CNS_DBL) */
