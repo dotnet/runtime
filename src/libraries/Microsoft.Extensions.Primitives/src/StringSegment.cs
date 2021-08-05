@@ -183,7 +183,11 @@ namespace Microsoft.Extensions.Primitives
             }
         }
 
-        /// <inheritdoc />
+        /// <summary>
+        /// Indicates whether the current object is equal to another object of the same type.
+        /// </summary>
+        /// <param name="obj">An object to compare with this object.</param>
+        /// <returns><see langword="true" /> if the current object is equal to the other parameter; otherwise, <see langword="false" />.</returns>
         public override bool Equals(object obj)
         {
             return obj is StringSegment segment && Equals(segment);
