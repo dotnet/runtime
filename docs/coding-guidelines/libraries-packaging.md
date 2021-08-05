@@ -2,11 +2,11 @@
 
 Libraries can be packaged in one or more of the following ways: as part of the .NETCore shared framework, part of a transport package, or as a NuGet package.
 
-## .NETCore Shared framework
+## .NETCoreApp shared framework
 
-To add a library to the .NETCore shared framework, that library's `AssemblyName` should be added to [NetCoreAppLibrary.props](../../src/libraries/NetCoreAppLibrary.props)
+To add a library to the .NETCoreApp shared framework, that library's `AssemblyName` should be added to [NetCoreAppLibrary.props](../../src/libraries/NetCoreAppLibrary.props)
 
-The library should have both a `ref` and `src` project. Its reference assembly will be included in the ref-pack for the Microsoft.NETCore.App shared framework, and its implementation assembly will be included in the runtime pack.
+The library should have both a `ref` and `src` project. Its reference assembly will be included in the targeting pack (also called ref pack) for the Microsoft.NETCore.App shared framework, and its implementation assembly will be included in the runtime pack.
 
 Including a library in the shared framework only includes the best applicable TargetFramework build of that library: `$(NetCoreAppCurrent)` if it exists, but possibly `netstandard2.1` or another if that is best. If a library has builds for other frameworks those will only be shipped if the library also produces a [Nuget package](#nuget-package).
 

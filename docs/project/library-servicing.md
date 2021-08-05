@@ -4,7 +4,7 @@ This document provides the steps necessary after modifying a library in a servic
 
 ## Check if a package is generated
 
-If a library's source project sets `<IsPackable>true</IsPackable>` a package is generated. If the library's source project doesn't set `<IsPackable>true</IsPackable>`, the library is the part of the shared framework. If it is, then there is nothing that needs to be done.
+If a library's source project sets `<IsPackable>true</IsPackable>` a package is generated. If the library's source project doesn't set `<IsPackable>true</IsPackable>`, the library likely is part of the shared framework (to check for that, look into the `NetCoreAppLibrary.props` file). If it is, then there is nothing that needs to be done here.
 
 ## Determine PackageVersion
 
@@ -14,7 +14,7 @@ Note that it's possible that somebody else has already incremented the package v
 
 ## Determine AssemblyVersion
 
-Each library has a property called `AssemblyVersion` which will be in either the library `.csproj` or in `Directory.Build.props`. For servicing events you will want to increment the revision by 1 (e.g `4.0.0.0` -> `4.0.0.1`) in the library's `Directory.Build.props` if the library ships in its own package and has an asset that is applicable to .NET Framework. To determine if it applies to .NET Framework you should check to see if there are any `netstandard` or `net4x` configurations in the ref and/or src project, if there are then it has assets that apply.
+A library's assembly version is controlled by the property `AssemblyVersion`. If the property exists, it's either located in the library's source project or in its `Directory.Build.props` file. If it doesn't exist, it uses the [centrally defined version](https://github.com/dotnet/runtime/blob/1fb151f63dca644347a5c608d7ab17f7cb8e1ccb/eng/Versions.props#L14) and you want to add the property to the library's `Directory.Build.props` file. For servicing events you will want to increment the revision by 1 (e.g `4.0.0.0` -> `4.0.0.1`) if the library ships in its own package and has an asset that is applicable to .NET Framework. To determine if it applies to .NET Framework you should check to see if there are any `netstandard` or `net4x` target frameworks in the source project and if there are, it has assets that apply.
 
 The reason we need to increment the assembly version for things running on .NET Framework is because of the way binding works there. If there are two assemblies with the same assembly version the loader will essentially pick the first one it finds and use that version so applications don't have full control over using the later build with a particular fix included. This is worse if someone puts the older assembly in the GAC as the GAC will always win for matching assembly versions so an application couldn't load the newer one because it has the same assembly version.
 
