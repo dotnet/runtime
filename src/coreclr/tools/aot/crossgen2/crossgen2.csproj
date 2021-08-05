@@ -3,14 +3,30 @@
     <OutputPath>$(RuntimeBinDir)/crossgen2</OutputPath>
     <!-- The default value for macOS is false -->
     <UseAppHost>true</UseAppHost>
-    <PublishTrimmed>true</PublishTrimmed>
-    <RuntimeIdentifier>$(Crossgen2PackageRID)</RuntimeIdentifier>
-    <SuppressTrimAnalysisWarnings>true</SuppressTrimAnalysisWarnings>
     <AppHostRuntimeIdentifier>$(Crossgen2PackageRID)</AppHostRuntimeIdentifier>
   </PropertyGroup>
+
+  <PropertyGroup Condition="'$(RunningPublish)' == 'true">
+    <RuntimeIdentifier>$(Crossgen2PackageRID)</RuntimeIdentifier>
+    <PublishTrimmed>true</PublishTrimmed>
+    <SuppressTrimAnalysisWarnings>true</SuppressTrimAnalysisWarnings>
+  </PropertyGroup>
+
   <Import Project="crossgen2.props" />
 
-  <Target Name="PublishCrossgen"
-          AfterTargets="Build"
-          DependsOnTargets="Publish" />
+  <Target Name="RewriteRuntimePackDir"
+          Condition="'$(RunningPublish)' == 'true'"
+          DependsOnTargets="ResolveRuntimeFilesFromLocalBuild"
+          BeforeTargets="ResolveRuntimePackAssets">
+      <Message Text="@(ResolvedRuntimePack)" Importance="high" />
+      <ItemGroup>
+        <!-- Remove AspNetCore runtime pack-->
+        <ResolvedRuntimePack Remove="Microsoft.AspNetCore.App.Runtime.linux-x64" />
+
+        <ResolvedRuntimePack Update="Microsoft.NETCore.App.Runtime.$(RuntimeIdentifier)">
+          <PackageDirectory>$(MicrosoftNetCoreAppRuntimePackDir)</PackageDirectory>
+        </ResolvedRuntimePack>
+      </ItemGroup>
+  </Target>
+
 </Project>
