@@ -4,7 +4,6 @@
 using System.Diagnostics;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Threading.Tasks.Sources;
 using Microsoft.Win32.SafeHandles;
 
 namespace System.IO.Strategies
@@ -109,8 +108,8 @@ namespace System.IO.Strategies
         /// <summary>Gets or sets the position within the current stream</summary>
         public sealed override long Position
         {
-            get => _filePosition;
-            set => _filePosition = value;
+            get => Interlocked.Read(ref _filePosition);
+            set => Interlocked.Exchange(ref _filePosition, value);
         }
 
         internal sealed override string Name => _fileHandle.Path ?? SR.IO_UnknownFileName;
