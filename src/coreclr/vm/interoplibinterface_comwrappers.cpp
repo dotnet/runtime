@@ -19,10 +19,8 @@
 using CreateObjectFlags = InteropLib::Com::CreateObjectFlags;
 using CreateComInterfaceFlags = InteropLib::Com::CreateComInterfaceFlags;
 
-
 namespace
 {
-
     void* GetCurrentCtxCookieWrapper()
     {
         STATIC_CONTRACT_WRAPPER;
@@ -32,7 +30,6 @@ namespace
     #else
         return NULL;
     #endif // FEATURE_COMINTEROP_APARTMENT_SUPPORT
-
     }
 
     // This class is used to track the external object within the runtime.

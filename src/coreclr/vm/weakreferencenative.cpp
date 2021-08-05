@@ -148,11 +148,10 @@ NativeComWeakHandleInfo* GetComWeakReferenceInfo(OBJECTREF* pObject)
     else
 #endif
     {
-#ifdef FEATURE_COMWRAPPERS        
+#ifdef FEATURE_COMWRAPPERS
         pWeakReferenceSource = reinterpret_cast<IWeakReferenceSource*>(ComWrappersNative::GetIdentityForObject(pObject, IID_IWeakReferenceSource, &wrapperId));
-#endif    
+#endif
     }
-
 
     if (pWeakReferenceSource == nullptr)
     {
@@ -770,7 +769,6 @@ NOINLINE void SetWeakReferenceTarget(WEAKREFERENCEREF weakReference, OBJECTREF t
 #if defined(FEATURE_COMINTEROP) || defined(FEATURE_COMWRAPPERS)
     NewHolder<NativeComWeakHandleInfo> comWeakHandleInfo(GetComWeakReferenceInfo(&target));
 #endif // FEATURE_COMINTEROP || FEATURE_COMWRAPPERS
-
 
     WeakHandleSpinLockHolder handle(AcquireWeakHandleSpinLock(weakReference), &weakReference);
     GCX_NOTRIGGER();
