@@ -434,7 +434,12 @@ namespace System.IO.Ports
             return ReadAsync(buffer, cancellationToken).AsTask();
         }
 
-        public override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
+#if !NETFRAMEWORK && !NETSTANDARD2_0
+        public override
+#else
+        private 
+#endif
+        ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
         {
             CheckHandle();
 
@@ -460,7 +465,12 @@ namespace System.IO.Ports
             return WriteAsync(buffer, cancellationToken).AsTask();
         }
 
-        public override ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default)
+#if !NETFRAMEWORK && !NETSTANDARD2_0
+        public override
+#else
+        private 
+#endif
+        ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default)
         {
             CheckWriteArguments();
 
