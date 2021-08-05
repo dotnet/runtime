@@ -18,5 +18,14 @@ namespace System.Runtime.Versioning
     public sealed class RequiresPreviewFeaturesAttribute : Attribute
     {
         public RequiresPreviewFeaturesAttribute() { }
+
+        public RequiresPreviewFeaturesAttribute(string? message)
+        {
+            Message = message;
+        }
+
+        public string? Message { get; }
+
+        public string? URL { get; set; }
     }
 }
