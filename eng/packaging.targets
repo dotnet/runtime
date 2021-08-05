@@ -1,11 +1,9 @@
 <Project InitialTargets="_OverridePackDependsOnForCsProjToPkgProj">
   
   <PropertyGroup Condition="'$(IsPackable)' == 'true'">
-    <!-- TODO: Remove when the SDK is upgraded to RC1. -->
-    <DotNetPackageValidationAssembly Condition="'$(MSBuildRuntimeType)' != 'Core'">$(NuGetPackageRoot)microsoft.dotnet.packagevalidation\$(MicrosoftDotNetPackageValidationVersion)\tools\net472\Microsoft.DotNet.PackageValidation.dll</DotNetPackageValidationAssembly>
-    <DotNetPackageValidationAssembly Condition="'$(MSBuildRuntimeType)' == 'Core'">$(NuGetPackageRoot)microsoft.dotnet.packagevalidation\$(MicrosoftDotNetPackageValidationVersion)\tools\netcoreapp3.1\Microsoft.DotNet.PackageValidation.dll</DotNetPackageValidationAssembly>
-
     <EnablePackageValidation Condition="'$(IsSourceProject)' == 'true' and !Exists('$(PkgProjPath)')">true</EnablePackageValidation>
+    <!-- Don't restore prebuilt packages during sourcebuild. -->
+    <DisablePackageBaselineValidation Condition="'$(DotNetBuildFromSource)' == 'true'">true</DisablePackageBaselineValidation>
     <PackageValidationBaselineVersion Condition="'$(PackageValidationBaselineVersion)' == ''">$([MSBuild]::Subtract($(MajorVersion), 1)).0.0</PackageValidationBaselineVersion>
     <SymbolPackageOutputPath>$(PackageOutputPath)</SymbolPackageOutputPath>
     <TargetsForTfmSpecificContentInPackage>$(TargetsForTfmSpecificContentInPackage);AddDocumentationFileToPackage;AddRuntimeSpecificFilesToPackage</TargetsForTfmSpecificContentInPackage>

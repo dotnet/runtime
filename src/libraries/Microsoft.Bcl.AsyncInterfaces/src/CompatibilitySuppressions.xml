@@ -2,61 +2,6 @@
 <Suppressions xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
   <Suppression>
     <DiagnosticId>CP0001</DiagnosticId>
-    <Target>T:System.IAsyncDisposable</Target>
-    <Left>lib/netstandard2.0/Microsoft.Bcl.AsyncInterfaces.dll</Left>
-    <Right>lib/netstandard2.1/Microsoft.Bcl.AsyncInterfaces.dll</Right>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0001</DiagnosticId>
-    <Target>T:System.Threading.Tasks.TaskAsyncEnumerableExtensions</Target>
-    <Left>lib/netstandard2.0/Microsoft.Bcl.AsyncInterfaces.dll</Left>
-    <Right>lib/netstandard2.1/Microsoft.Bcl.AsyncInterfaces.dll</Right>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0001</DiagnosticId>
-    <Target>T:System.Threading.Tasks.Sources.ManualResetValueTaskSourceCore`1</Target>
-    <Left>lib/netstandard2.0/Microsoft.Bcl.AsyncInterfaces.dll</Left>
-    <Right>lib/netstandard2.1/Microsoft.Bcl.AsyncInterfaces.dll</Right>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0001</DiagnosticId>
-    <Target>T:System.Runtime.CompilerServices.AsyncIteratorMethodBuilder</Target>
-    <Left>lib/netstandard2.0/Microsoft.Bcl.AsyncInterfaces.dll</Left>
-    <Right>lib/netstandard2.1/Microsoft.Bcl.AsyncInterfaces.dll</Right>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0001</DiagnosticId>
-    <Target>T:System.Runtime.CompilerServices.AsyncIteratorStateMachineAttribute</Target>
-    <Left>lib/netstandard2.0/Microsoft.Bcl.AsyncInterfaces.dll</Left>
-    <Right>lib/netstandard2.1/Microsoft.Bcl.AsyncInterfaces.dll</Right>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0001</DiagnosticId>
-    <Target>T:System.Runtime.CompilerServices.ConfiguredAsyncDisposable</Target>
-    <Left>lib/netstandard2.0/Microsoft.Bcl.AsyncInterfaces.dll</Left>
-    <Right>lib/netstandard2.1/Microsoft.Bcl.AsyncInterfaces.dll</Right>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0001</DiagnosticId>
-    <Target>T:System.Runtime.CompilerServices.ConfiguredCancelableAsyncEnumerable`1</Target>
-    <Left>lib/netstandard2.0/Microsoft.Bcl.AsyncInterfaces.dll</Left>
-    <Right>lib/netstandard2.1/Microsoft.Bcl.AsyncInterfaces.dll</Right>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0001</DiagnosticId>
-    <Target>T:System.Runtime.CompilerServices.EnumeratorCancellationAttribute</Target>
-    <Left>lib/netstandard2.0/Microsoft.Bcl.AsyncInterfaces.dll</Left>
-    <Right>lib/netstandard2.1/Microsoft.Bcl.AsyncInterfaces.dll</Right>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0001</DiagnosticId>
-    <Target>T:System.Collections.Generic.IAsyncEnumerable`1</Target>
-    <Left>lib/netstandard2.0/Microsoft.Bcl.AsyncInterfaces.dll</Left>
-    <Right>lib/netstandard2.1/Microsoft.Bcl.AsyncInterfaces.dll</Right>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0001</DiagnosticId>
-    <Target>T:System.Collections.Generic.IAsyncEnumerator`1</Target>
     <Left>lib/netstandard2.0/Microsoft.Bcl.AsyncInterfaces.dll</Left>
     <Right>lib/netstandard2.1/Microsoft.Bcl.AsyncInterfaces.dll</Right>
   </Suppression>

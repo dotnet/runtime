@@ -2,61 +2,6 @@
 <Suppressions xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
   <Suppression>
     <DiagnosticId>CP0001</DiagnosticId>
-    <Target>T:System.ServiceProcess.PowerBroadcastStatus</Target>
-    <Left>lib/netstandard2.0/System.ServiceProcess.ServiceController.dll</Left>
-    <Right>lib/net461/System.ServiceProcess.ServiceController.dll</Right>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0001</DiagnosticId>
-    <Target>T:System.ServiceProcess.ServiceBase</Target>
-    <Left>lib/netstandard2.0/System.ServiceProcess.ServiceController.dll</Left>
-    <Right>lib/net461/System.ServiceProcess.ServiceController.dll</Right>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0001</DiagnosticId>
-    <Target>T:System.ServiceProcess.ServiceController</Target>
-    <Left>lib/netstandard2.0/System.ServiceProcess.ServiceController.dll</Left>
-    <Right>lib/net461/System.ServiceProcess.ServiceController.dll</Right>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0001</DiagnosticId>
-    <Target>T:System.ServiceProcess.ServiceControllerStatus</Target>
-    <Left>lib/netstandard2.0/System.ServiceProcess.ServiceController.dll</Left>
-    <Right>lib/net461/System.ServiceProcess.ServiceController.dll</Right>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0001</DiagnosticId>
-    <Target>T:System.ServiceProcess.ServiceProcessDescriptionAttribute</Target>
-    <Left>lib/netstandard2.0/System.ServiceProcess.ServiceController.dll</Left>
-    <Right>lib/net461/System.ServiceProcess.ServiceController.dll</Right>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0001</DiagnosticId>
-    <Target>T:System.ServiceProcess.ServiceStartMode</Target>
-    <Left>lib/netstandard2.0/System.ServiceProcess.ServiceController.dll</Left>
-    <Right>lib/net461/System.ServiceProcess.ServiceController.dll</Right>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0001</DiagnosticId>
-    <Target>T:System.ServiceProcess.ServiceType</Target>
-    <Left>lib/netstandard2.0/System.ServiceProcess.ServiceController.dll</Left>
-    <Right>lib/net461/System.ServiceProcess.ServiceController.dll</Right>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0001</DiagnosticId>
-    <Target>T:System.ServiceProcess.SessionChangeDescription</Target>
-    <Left>lib/netstandard2.0/System.ServiceProcess.ServiceController.dll</Left>
-    <Right>lib/net461/System.ServiceProcess.ServiceController.dll</Right>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0001</DiagnosticId>
-    <Target>T:System.ServiceProcess.SessionChangeReason</Target>
-    <Left>lib/netstandard2.0/System.ServiceProcess.ServiceController.dll</Left>
-    <Right>lib/net461/System.ServiceProcess.ServiceController.dll</Right>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0001</DiagnosticId>
-    <Target>T:System.ServiceProcess.TimeoutException</Target>
     <Left>lib/netstandard2.0/System.ServiceProcess.ServiceController.dll</Left>
     <Right>lib/net461/System.ServiceProcess.ServiceController.dll</Right>
   </Suppression>
