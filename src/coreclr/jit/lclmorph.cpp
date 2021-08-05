@@ -942,6 +942,8 @@ private:
         ClassLayout*  structLayout = nullptr;
         FieldSeqNode* fieldSeq     = val.FieldSeq();
 
+        bool cantDoVNOnTHisTree = false;
+
         if ((fieldSeq != nullptr) && (fieldSeq != FieldSeqStore::NotAField()))
         {
             // TODO-ADDR: ObjectAllocator produces FIELD nodes with FirstElemPseudoField as field
@@ -1013,19 +1015,28 @@ private:
                 structLayout = indir->AsBlk()->GetLayout();
             }
 
-            // We're not going to produce a TYP_STRUCT LCL_FLD so we don't need the field sequence.
-            fieldSeq = nullptr;
+            if (fieldSeq != nullptr)
+            {
+                // We're not going to produce a TYP_STRUCT LCL_FLD so we don't need the field sequence.
+                fieldSeq = nullptr;
+                JITDUMP("Dropped field seq from [%06u]\n", m_compiler->dspTreeID(indir));
+            }
         }
 
         // We're only processing TYP_STRUCT variables now so the layout should never be null,
         // otherwise the below layout equality check would be insufficient.
         assert(varDsc->GetLayout() != nullptr);
 
-        if ((val.Offset() == 0) && (structLayout != nullptr) &&
+        if ((val.Offset() == 0) && (structLayout != nullptr) && (fieldSeq == nullptr) &&
             ClassLayout::AreCompatible(structLayout, varDsc->GetLayout()))
         {
             indir->ChangeOper(GT_LCL_VAR);
             indir->AsLclVar()->SetLclNum(val.LclNum());
+
+            if (structLayout->GetClassHandle() != varDsc->GetLayout()->GetClassHandle())
+            {
+                cantDoVNOnTHisTree = true;
+            }
         }
         else if (!varTypeIsStruct(indir->TypeGet()))
         {
@@ -1064,6 +1075,14 @@ private:
         }
 
         indir->gtFlags = flags;
+
+        if (cantDoVNOnTHisTree)
+        {
+            assert(indir->OperIs(GT_LCL_VAR));
+            indir->AsLclVar()->SetDontVN();
+            JITDUMP("Exclude local var tree [%06u] from VN because because of struct reinterpretation\n",
+                    m_compiler->dspTreeID(indir));
+        }
 
         INDEBUG(m_stmtModified = true;)
     }

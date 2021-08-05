@@ -7172,7 +7172,10 @@ void Compiler::fgValueNumberBlockAssignment(GenTree* tree)
                         rhsVarDsc          = &lvaTable[rhsLclNum];
                         if (!lvaInSsa(rhsLclNum) || rhsFldSeq == FieldSeqStore::NotAField())
                         {
-                            rhsVNPair.SetBoth(vnStore->VNForExpr(compCurBB, rhsLclVarTree->TypeGet()));
+                            isNewUniq = true;
+                        }
+                        else if (rhsLclVarTree->OperIs(GT_LCL_VAR) && rhsLclVarTree->AsLclVar()->DontVN())
+                        {
                             isNewUniq = true;
                         }
                         else
@@ -7187,7 +7190,6 @@ void Compiler::fgValueNumberBlockAssignment(GenTree* tree)
                     }
                     else
                     {
-                        rhsVNPair.SetBoth(vnStore->VNForExpr(compCurBB, rhs->TypeGet()));
                         isNewUniq = true;
                     }
                 }
@@ -7270,6 +7272,11 @@ void Compiler::fgValueNumberBlockAssignment(GenTree* tree)
                     // We don't have proper field sequence information for the lhs
                     //
                     JITDUMP("    *** Missing field sequence info for Dst/LHS of COPYBLK\n");
+                    isNewUniq = true;
+                }
+                else if (lclVarTree->OperIs(GT_LCL_VAR) && lclVarTree->AsLclVar()->DontVN())
+                {
+                    JITDUMP("    ***Struct reinterpretation on rhs of COPYBLK\n");
                     isNewUniq = true;
                 }
 
@@ -7399,9 +7406,9 @@ void Compiler::fgValueNumberTree(GenTree* tree)
 
             case GT_LCL_VAR:
             {
-                GenTreeLclVarCommon* lcl    = tree->AsLclVarCommon();
-                unsigned             lclNum = lcl->GetLclNum();
-                LclVarDsc*           varDsc = &lvaTable[lclNum];
+                GenTreeLclVar* lcl    = tree->AsLclVar();
+                unsigned       lclNum = lcl->GetLclNum();
+                LclVarDsc*     varDsc = &lvaTable[lclNum];
 
                 if (varDsc->CanBeReplacedWithItsField(this))
                 {
@@ -7457,7 +7464,11 @@ void Compiler::fgValueNumberTree(GenTree* tree)
                         unsigned typSize = genTypeSize(genActualType(typ));
                         unsigned varSize = genTypeSize(genActualType(varDsc->TypeGet()));
 
-                        if (typSize == varSize)
+                        if (lcl->DontVN())
+                        {
+                            generateUniqueVN = true;
+                        }
+                        else if (typSize == varSize)
                         {
                             lcl->gtVNPair = wholeLclVarVNP;
                         }
@@ -7782,8 +7793,8 @@ void Compiler::fgValueNumberTree(GenTree* tree)
             {
                 case GT_LCL_VAR:
                 {
-                    GenTreeLclVarCommon* lcl          = lhs->AsLclVarCommon();
-                    unsigned             lclDefSsaNum = GetSsaNumForLocalVarDef(lcl);
+                    GenTreeLclVar* lcl          = lhs->AsLclVar();
+                    unsigned       lclDefSsaNum = GetSsaNumForLocalVarDef(lcl);
 
                     // Should not have been recorded as updating the GC heap.
                     assert(!GetMemorySsaMap(GcHeap)->Lookup(tree, &memorySsaNum));
@@ -7794,6 +7805,18 @@ void Compiler::fgValueNumberTree(GenTree* tree)
                         assert(!GetMemorySsaMap(ByrefExposed)->Lookup(tree, &memorySsaNum));
 
                         assert(rhsVNPair.GetLiberal() != ValueNumStore::NoVN);
+
+                        ValueNumPair lhsVNPair;
+
+                        if (!lcl->DontVN())
+                        {
+                            lhsVNPair = rhsVNPair;
+                        }
+                        else
+                        {
+                            ValueNum uniqVN = vnStore->VNForExpr(compCurBB, lcl->TypeGet());
+                            lhsVNPair.SetBoth(uniqVN);
+                        }
 
                         lhs->gtVNPair                                                    = rhsVNPair;
                         lvaTable[lcl->GetLclNum()].GetPerSsaData(lclDefSsaNum)->m_vnPair = rhsVNPair;

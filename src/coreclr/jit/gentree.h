@@ -467,6 +467,10 @@ enum GenTreeFlags : unsigned int
                                       // This flag identifies such nodes in order to make sure that fgDoNormalizeOnStore() is called
                                       // on their parents in post-order morph.
                                       // Relevant for inlining optimizations (see fgInlinePrependStatements)
+    GTF_VAR_DONT_VN    = 0x00080000,  // GT_LCL_VAR -- it is a special tree, usually a result of Unsafe.As,
+                                      // that should generate a unique VN pair because Value numbering does not understand it.
+                                      // This is a temporary fix for 6.0, a proper fix would be to support Obj casts as a special node,
+                                      // support struct LCL_FLD and improve VN to catch and assert on CORINFO_CLASS_HANDLE mistmatch.
 
     GTF_VAR_ARR_INDEX   = 0x00000020, // The variable is part of (the index portion of) an array index expression.
                                       // Shares a value with GTF_REVERSE_OPS, which is meaningless for local var.
@@ -3524,6 +3528,16 @@ public:
         : GenTreeLclVarCommon(oper, type, lclNum DEBUGARG(largeNode)) DEBUGARG(gtLclILoffs(ilOffs))
     {
         assert(OperIsLocal(oper) || OperIsLocalAddr(oper));
+    }
+
+    void SetDontVN()
+    {
+        gtFlags |= GTF_VAR_DONT_VN;
+    }
+
+    bool DontVN() const
+    {
+        return (gtFlags & GTF_VAR_DONT_VN) != 0;
     }
 
 #if DEBUGGABLE_GENTREE

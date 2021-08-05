@@ -10506,6 +10506,13 @@ void Compiler::gtDispNode(GenTree* tree, IndentStack* indentStack, __in __in_z _
             case GT_LCL_FLD_ADDR:
             case GT_STORE_LCL_FLD:
             case GT_STORE_LCL_VAR:
+
+                if (tree->gtFlags & GTF_VAR_DONT_VN)
+                {
+                    printf("$");
+                    --msgLength;
+                }
+
                 if (tree->gtFlags & GTF_VAR_USEASG)
                 {
                     printf("U");
