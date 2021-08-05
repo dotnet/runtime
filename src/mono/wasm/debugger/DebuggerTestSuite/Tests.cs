@@ -201,14 +201,14 @@ namespace DebuggerTests
                 use_cfo: use_cfo,
                 test_fn: (locals) =>
                 {
-                    CheckObject(locals, "list", "System.Collections.Generic.Dictionary<Math[], Math.IsMathNull>");
+                    CheckObject(locals, "list", "System.Collections.Generic.Dictionary<Math[], Math.IsMathNull>", description: "Count = 0");
                     CheckObject(locals, "list_null", "System.Collections.Generic.Dictionary<Math[], Math.IsMathNull>", is_null: true);
 
                     CheckArray(locals, "list_arr", "System.Collections.Generic.Dictionary<Math[], Math.IsMathNull>[]", 1);
                     CheckObject(locals, "list_arr_null", "System.Collections.Generic.Dictionary<Math[], Math.IsMathNull>[]", is_null: true);
 
                     // Unused locals
-                    CheckObject(locals, "list_unused", "System.Collections.Generic.Dictionary<Math[], Math.IsMathNull>");
+                    CheckObject(locals, "list_unused", "System.Collections.Generic.Dictionary<Math[], Math.IsMathNull>", description: "Count = 0");
                     CheckObject(locals, "list_null_unused", "System.Collections.Generic.Dictionary<Math[], Math.IsMathNull>", is_null: true);
 
                     CheckArray(locals, "list_arr_unused", "System.Collections.Generic.Dictionary<Math[], Math.IsMathNull>[]", 1);
