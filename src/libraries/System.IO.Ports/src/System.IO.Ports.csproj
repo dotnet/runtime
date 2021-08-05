@@ -5,6 +5,13 @@
     <IncludeDllSafeSearchPathAttribute>true</IncludeDllSafeSearchPathAttribute>
     <Nullable>annotations</Nullable>
     <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-Unix;$(NetCoreAppCurrent);netstandard2.0-windows;netstandard2.0-Unix;netstandard2.0;net461-windows</TargetFrameworks>
+    <IsPackable>true</IsPackable>
+    <!-- System.IO.Ports shouldn't see and build the runtime specific System.IO.Ports transitive references. -->
+    <DisableTransitiveProjectReferences>true</DisableTransitiveProjectReferences>
+    <PackageDescription>Provides classes for controlling serial ports.
+
+Commonly Used Types:
+System.IO.Ports.SerialPort</PackageDescription>
   </PropertyGroup>
 
   <!-- DesignTimeBuild requires all the TargetFramework Derived Properties to not be present in the first property group. -->
@@ -147,10 +154,20 @@
     <Reference Include="System.Threading.ThreadPool" />
   </ItemGroup>
 
+  <ItemGroup Condition="'$(IsPartialFacadeAssembly)' != 'true'">
+    <!-- Just reference the runtime meta package but don't build it to avoid accidentally packaging it when GeneratePackageOnBuild is true. -->
+    <ProjectReference Include="..\pkg\runtime.native.$(MSBuildProjectName).proj" BuildReference="false" />
+  </ItemGroup>
+
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETStandard'">
     <PackageReference Include="System.Memory" Version="$(SystemMemoryVersion)" />
     <PackageReference Include="Microsoft.Win32.Registry" Version="$(MicrosoftWin32RegistryVersion)" />
-    <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime.CompilerServices.Unsafe\src\System.Runtime.CompilerServices.Unsafe.ilproj" />
+    <!-- S.R.C.Unsafe isn't a primary but transitive dependency and this P2P makes sure that the live version is used. -->
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime.CompilerServices.Unsafe\src\System.Runtime.CompilerServices.Unsafe.ilproj" PrivateAssets="all" />
     <PackageReference Include="System.Threading.Tasks.Extensions" Version="$(SystemThreadingTasksExtensionsVersion)" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <NETStandardCompatError Include="netcoreapp2.0" Supported="$(NetCoreAppMinimum)" />
   </ItemGroup>
 </Project>

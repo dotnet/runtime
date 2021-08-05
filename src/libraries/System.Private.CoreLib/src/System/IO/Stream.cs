@@ -195,7 +195,7 @@ namespace System.IO
                 static state => ((Stream)state!).Flush(), this,
                 cancellationToken, TaskCreationOptions.DenyChildAttach, TaskScheduler.Default);
 
-        [Obsolete("CreateWaitHandle will be removed eventually.  Please use \"new ManualResetEvent(false)\" instead.")]
+        [Obsolete("CreateWaitHandle has been deprecated. Use the ManualResetEvent(false) constructor instead.")]
         protected virtual WaitHandle CreateWaitHandle() => new ManualResetEvent(false);
 
         public virtual IAsyncResult BeginRead(byte[] buffer, int offset, int count, AsyncCallback? callback, object? state) =>

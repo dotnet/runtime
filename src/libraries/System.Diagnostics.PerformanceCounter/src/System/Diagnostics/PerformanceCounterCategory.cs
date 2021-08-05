@@ -192,7 +192,7 @@ namespace System.Diagnostics
         /// <summary>
         ///     Registers one extensible performance category of type NumberOfItems32 with the system
         /// </summary>
-        [Obsolete("This method has been deprecated.  Please use System.Diagnostics.PerformanceCounterCategory.Create(string categoryName, string categoryHelp, PerformanceCounterCategoryType categoryType, string counterName, string counterHelp) instead.  https://go.microsoft.com/fwlink/?linkid=14202")]
+        [Obsolete("This overload of PerformanceCounterCategory.Create has been deprecated. Use System.Diagnostics.PerformanceCounterCategory.Create(string categoryName, string categoryHelp, PerformanceCounterCategoryType categoryType, string counterName, string counterHelp) instead.")]
         public static PerformanceCounterCategory Create(string categoryName, string categoryHelp, string counterName, string counterHelp)
         {
             CounterCreationData customData = new CounterCreationData(counterName, counterHelp, PerformanceCounterType.NumberOfItems32);
@@ -208,7 +208,7 @@ namespace System.Diagnostics
         /// <summary>
         ///     Registers the extensible performance category with the system on the local machine
         /// </summary>
-        [Obsolete("This method has been deprecated.  Please use System.Diagnostics.PerformanceCounterCategory.Create(string categoryName, string categoryHelp, PerformanceCounterCategoryType categoryType, CounterCreationDataCollection counterData) instead.  https://go.microsoft.com/fwlink/?linkid=14202")]
+        [Obsolete("This overload of PerformanceCounterCategory.Create has been deprecated. Use System.Diagnostics.PerformanceCounterCategory.Create(string categoryName, string categoryHelp, PerformanceCounterCategoryType categoryType, CounterCreationDataCollection counterData) instead.")]
         public static PerformanceCounterCategory Create(string categoryName, string categoryHelp, CounterCreationDataCollection counterData)
         {
             return Create(categoryName, categoryHelp, PerformanceCounterCategoryType.Unknown, counterData);

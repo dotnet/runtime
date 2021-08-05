@@ -2,9 +2,6 @@
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppCurrent);netcoreapp3.1;netstandard2.0;net461</TargetFrameworks>
     <Nullable>enable</Nullable>
-    <!-- We only plan to use this ref on .NETCoreApp. For all other netstandard compatible frameworks
-    we should use the lib asset instead. -->
-    <ExcludeFromPackage Condition="$([MSBuild]::GetTargetFrameworkIdentifier('$(TargetFramework)')) != '.NETCoreApp'">true</ExcludeFromPackage>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System.IO.Pipelines.cs" />

@@ -1,10 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
-using System.ComponentModel;
-using System.Linq;
-
 namespace System.ComponentModel.DataAnnotations
 {
     internal sealed class MetadataPropertyDescriptorWrapper : PropertyDescriptor
@@ -16,8 +12,15 @@ namespace System.ComponentModel.DataAnnotations
             : base(descriptor, newAttributes)
         {
             _descriptor = descriptor;
-            var readOnlyAttribute = newAttributes.OfType<ReadOnlyAttribute>().FirstOrDefault();
-            _isReadOnly = (readOnlyAttribute != null ? readOnlyAttribute.IsReadOnly : false);
+
+            foreach (Attribute attribute in newAttributes)
+            {
+                if (attribute is ReadOnlyAttribute readOnlyAttribute)
+                {
+                    _isReadOnly = readOnlyAttribute.IsReadOnly;
+                    break;
+                }
+            }
         }
 
         public override void AddValueChanged(object component, EventHandler handler) { _descriptor.AddValueChanged(component, handler); }

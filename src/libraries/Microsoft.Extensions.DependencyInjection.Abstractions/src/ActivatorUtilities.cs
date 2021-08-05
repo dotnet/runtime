@@ -396,9 +396,7 @@ namespace Microsoft.Extensions.DependencyInjection
                     }
                 }
 
-#if NETCOREAPP
-                return _constructor.Invoke(BindingFlags.DoNotWrapExceptions, binder: null, parameters: _parameterValues, culture: null);
-#else
+#if NETFRAMEWORK || NETSTANDARD2_0
                 try
                 {
                     return _constructor.Invoke(_parameterValues);
@@ -409,6 +407,8 @@ namespace Microsoft.Extensions.DependencyInjection
                     // The above line will always throw, but the compiler requires we throw explicitly.
                     throw;
                 }
+#else
+                return _constructor.Invoke(BindingFlags.DoNotWrapExceptions, binder: null, parameters: _parameterValues, culture: null);
 #endif
             }
         }

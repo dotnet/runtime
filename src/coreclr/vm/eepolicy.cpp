@@ -629,7 +629,13 @@ void DECLSPEC_NORETURN EEPolicy::HandleFatalStackOverflow(EXCEPTION_POINTERS *pE
     if (pExceptionInfo && pExceptionInfo->ContextRecord)
     {
         GCX_COOP();
+#if defined(TARGET_X86) && defined(TARGET_WINDOWS)
+        // For Windows x86, we don't have a reliable method to unwind to the first managed call frame,
+        // so we handle at least the cases when the stack overflow happens in JIT helpers
         AdjustContextForJITHelpers(pExceptionInfo->ExceptionRecord, pExceptionInfo->ContextRecord);
+#else
+        Thread::VirtualUnwindToFirstManagedCallFrame(pExceptionInfo->ContextRecord);
+#endif
         fef.InitAndLink(pExceptionInfo->ContextRecord);
     }
 
