@@ -54,8 +54,6 @@
     <PackageDescription Condition="'$(PackageDescription)' == '' and '$(UseRuntimePackageDisclaimer)' == 'true'">$(RuntimePackageDisclaimer)</PackageDescription>
     <!-- Keep in sync as required by the Packaging SDK in Arcade. -->
     <Description>$(PackageDescription)</Description>
-    <!-- BeforePack hook should be removed after porting all the projects to dotnet pack. -->
-    <BeforePack>$(BeforePack);AddNETStandardCompatErrorFileForPackaging</BeforePack>
     <GenerateNuspecDependsOn>AddNETStandardCompatErrorFileForPackaging;$(GenerateNuspecDependsOn)</GenerateNuspecDependsOn>
   </PropertyGroup>
 

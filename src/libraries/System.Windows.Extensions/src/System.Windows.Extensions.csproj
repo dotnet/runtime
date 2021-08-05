@@ -3,6 +3,11 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent);netcoreapp3.1-windows;netcoreapp3.1</TargetFrameworks>
     <IsPackable>true</IsPackable>
+    <PackageDescription>Provides miscellaneous Windows-specific types
+
+Commonly Used Types:
+System.Security.Cryptography.X509Certificates.X509Certificate2UI
+System.Security.Cryptography.X509Certificates.X509SelectionFlag</PackageDescription>
   </PropertyGroup>
   <!-- DesignTimeBuild requires all the TargetFramework Derived Properties to not be present in the first property group. -->
   <PropertyGroup Condition="'$(TargetsWindows)' != 'true'"> 

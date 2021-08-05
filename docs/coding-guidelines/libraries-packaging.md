@@ -36,7 +36,7 @@ Removing a library from this transport package is a breaking change and should b
 
 ## NuGet package
 
-Libraries to be packaged must be referenced by the [traversal packaging project](../../src/libraries/libraries-packages.proj) and set `IsPackable` to true. By default, all `Libraries/*/src` projects are considered for packaging.
+Libraries to be packaged must set `IsPackable` to true. By default, all `libraries/*/src` projects are considered for packaging.
 
 Package versions and shipping state should be controlled using the properties defined by the [Arcade SDK](https://github.com/dotnet/arcade/blob/master/Documentation/ArcadeSdk.md#project-properties-defined-by-the-sdk). Typically libraries should not need to explicitly set any of these properties.
 
