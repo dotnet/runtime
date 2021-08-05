@@ -437,14 +437,14 @@ namespace System.IO.Ports
 #if !NETFRAMEWORK && !NETSTANDARD2_0
         public override
 #else
-        private 
+        private
 #endif
         ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
         {
             CheckHandle();
 
             if (buffer.IsEmpty)
-                return ValueTask.FromResult(0);
+                return new ValueTask<int>(0);
 
             SerialStreamReadRequest result = new SerialStreamReadRequest(cancellationToken, buffer);
             _readQueue.Enqueue(result);
@@ -475,8 +475,8 @@ namespace System.IO.Ports
             CheckWriteArguments();
 
             if (buffer.IsEmpty)
-                return ValueTask.CompletedTask; // return immediately if no bytes to write; no need for overhead.
-
+                return new ValueTask(); // return immediately if no bytes to write; no need for overhead.
+                
             SerialStreamWriteRequest result = new SerialStreamWriteRequest(cancellationToken, buffer);
             _writeQueue.Enqueue(result);
 
