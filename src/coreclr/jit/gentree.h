@@ -3172,20 +3172,6 @@ struct GenTreeIntCon : public GenTreeIntConCommon
 
     void FixupInitBlkValue(var_types asgType);
 
-#ifdef TARGET_64BIT
-    void TruncateOrSignExtend32()
-    {
-        if (gtFlags & GTF_UNSIGNED)
-        {
-            gtIconVal = UINT32(gtIconVal);
-        }
-        else
-        {
-            gtIconVal = INT32(gtIconVal);
-        }
-    }
-#endif // TARGET_64BIT
-
 #if DEBUGGABLE_GENTREE
     GenTreeIntCon() : GenTreeIntConCommon()
     {
