@@ -245,7 +245,6 @@ namespace System.Dynamic.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/37474", TestPlatforms.Android)]
         public void NonIndexerParameterizedGetterAndSetterIndexAccess()
         {
             dynamic d = GetObjectWithNonIndexerParameterProperty(true, true);
@@ -256,7 +255,6 @@ namespace System.Dynamic.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/37474", TestPlatforms.Android)]
         public void NonIndexerParameterizedGetterOnlyIndexAccess()
         {
             dynamic d = GetObjectWithNonIndexerParameterProperty(true, false);
@@ -267,7 +265,6 @@ namespace System.Dynamic.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/37474", TestPlatforms.Android)]
         public void NonIndexerParameterizedSetterOnlyIndexAccess()
         {
             dynamic d = GetObjectWithNonIndexerParameterProperty(false, true);

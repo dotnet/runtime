@@ -225,13 +225,16 @@ namespace ComWrappersTests
         {
             try
             {
-                ValidateNonComWrappers();
+                if (OperatingSystem.IsWindows())
+                {
+                    ValidateNonComWrappers();
+
+                    ComWrappers.RegisterForMarshalling(TestComWrappers.MarshallingInstance);
+                    ValidateGlobalInstanceMarshalling();
+                }
 
                 ComWrappers.RegisterForTrackerSupport(TestComWrappers.TrackerSupportInstance);
                 ValidateGlobalInstanceTrackerSupport();
-
-                ComWrappers.RegisterForMarshalling(TestComWrappers.MarshallingInstance);
-                ValidateGlobalInstanceMarshalling();
 
                 ValidateLocalInstance();
             }

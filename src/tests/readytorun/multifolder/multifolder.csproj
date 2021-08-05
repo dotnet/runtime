@@ -40,6 +40,10 @@ $(CLRTestBatchPreCommands)
     echo %scriptPath%\..\FolderA\FolderA\FolderA.dll>>%__ResponseFile%
     echo %scriptPath%\..\FolderB\FolderB\FolderB.dll>>%__ResponseFile%
 
+    REM Suppress GC stand alone mode for the duration of Crossgen2 execution
+    set __gcStandaloneModeToRestore=!COMPlus_GCName!
+    set COMPlus_GCName=
+
     set __Command=%_DebuggerFullPath%
     REM Tests run locally need __TestDotNetCmd (set by runtest.py) or a compatible 5.0 dotnet runtime in the path
     if defined __TestDotNetCmd (
@@ -61,6 +65,7 @@ $(CLRTestBatchPreCommands)
 
     set ExePath=multifolder\multifolder.dll
     set COMPlus_NativeImageSearchPaths=%scriptPath%
+    set COMPlus_GCName=!__gcStandaloneModeToRestore!
 
 ]]></CLRTestBatchPreCommands>
     <BashCLRTestPreCommands><![CDATA[
@@ -81,6 +86,10 @@ $(BashCLRTestPreCommands)
     echo $__OutputDir/../FolderA/FolderA/FolderA.dll>>$__ResponseFile
     echo $__OutputDir/../FolderB/FolderB/FolderB.dll>>$__ResponseFile
 
+    # Suppress GC standalone mode for the duration of Crossgen2 execution
+    local gcstandaloneModeToRestore=$COMPlus_GCName;
+    unset COMPlus_GCName
+
     __Command=$_DebuggerFullPath
     # Tests run locally need __TestDotNetCmd (set by runtest.py) or a compatible 5.0 dotnet runtime in the path
     if [ ! -z ${__TestDotNetCmd+x} ] %3B then
@@ -99,6 +108,7 @@ $(BashCLRTestPreCommands)
 
     ExePath=multifolder/multifolder.dll
     export COMPlus_NativeImageSearchPaths=$__OutputDir
+    export COMPlus_GCName=$gcstandaloneModeToRestore
 
 ]]></BashCLRTestPreCommands>
   </PropertyGroup>

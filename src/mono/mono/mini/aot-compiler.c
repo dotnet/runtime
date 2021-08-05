@@ -9093,6 +9093,9 @@ compile_method (MonoAotCompile *acfg, MonoMethod *method)
 
 			/* These only need in wrappers */
 			add_gsharedvt_wrappers (acfg, sig, TRUE, FALSE, FALSE);
+			if (mono_aot_mode_is_interp (&acfg->aot_opts) && sig->param_count > MAX_INTERP_ENTRY_ARGS)
+				/* See below */
+				add_gsharedvt_wrappers (acfg, sig, FALSE, FALSE, TRUE);
 		}
 
 		for (l = cfg->interp_in_signatures; l; l = l->next) {
@@ -14296,7 +14299,7 @@ emit_aot_image (MonoAotCompile *acfg)
 		return 1;
 	}
 	if (acfg->fp)
-		acfg->w = mono_img_writer_create (acfg->fp, FALSE);
+		acfg->w = mono_img_writer_create (acfg->fp);
 
 	/* Compute symbols for methods */
 	for (i = 0; i < acfg->nmethods; ++i) {

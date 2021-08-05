@@ -593,7 +593,6 @@ write_buffer (
     size_t *size,
     bool *fixed_buffer)
 {
-    EP_ASSERT (value != NULL);
     EP_ASSERT (buffer != NULL);
     EP_ASSERT (offset != NULL);
     EP_ASSERT (size != NULL);

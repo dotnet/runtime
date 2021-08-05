@@ -3,7 +3,6 @@
 
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.Diagnostics.CodeAnalysis;
 
 namespace System.Reflection
 {
@@ -16,6 +15,9 @@ namespace System.Reflection
         private const string CompilerServicesNameSpace = "System.Runtime.CompilerServices";
         private readonly Dictionary<Module, NotAnnotatedStatus> _publicOnlyModules = new();
         private readonly Dictionary<MemberInfo, NullabilityState> _context = new();
+
+        internal static bool IsSupported { get; } =
+            AppContext.TryGetSwitch("System.Reflection.NullabilityInfoContext.IsSupported", out bool isSupported) ? isSupported : true;
 
         [Flags]
         private enum NotAnnotatedStatus
@@ -60,13 +62,14 @@ namespace System.Reflection
         /// <param name="parameterInfo">The parameter which nullability info gets populated</param>
         /// <exception cref="ArgumentNullException">If the parameterInfo parameter is null</exception>
         /// <returns><see cref="NullabilityInfo" /></returns>
-        [RequiresUnreferencedCode("By default nullability attributes are trimmed by the trimmer")]
         public NullabilityInfo Create(ParameterInfo parameterInfo)
         {
             if (parameterInfo is null)
             {
                 throw new ArgumentNullException(nameof(parameterInfo));
             }
+
+            EnsureIsSupported();
 
             if (parameterInfo.Member is MethodInfo method && IsPrivateOrInternalMethodAndAnnotationDisabled(method))
             {
@@ -172,13 +175,14 @@ namespace System.Reflection
         /// <param name="propertyInfo">The parameter which nullability info gets populated</param>
         /// <exception cref="ArgumentNullException">If the propertyInfo parameter is null</exception>
         /// <returns><see cref="NullabilityInfo" /></returns>
-        [RequiresUnreferencedCode("By default nullability attributes are trimmed by the trimmer")]
         public NullabilityInfo Create(PropertyInfo propertyInfo)
         {
             if (propertyInfo is null)
             {
                 throw new ArgumentNullException(nameof(propertyInfo));
             }
+
+            EnsureIsSupported();
 
             NullabilityInfo nullability = GetNullabilityInfo(propertyInfo, propertyInfo.PropertyType, propertyInfo.GetCustomAttributesData());
             MethodInfo? getter = propertyInfo.GetGetMethod(true);
@@ -234,13 +238,14 @@ namespace System.Reflection
         /// <param name="eventInfo">The parameter which nullability info gets populated</param>
         /// <exception cref="ArgumentNullException">If the eventInfo parameter is null</exception>
         /// <returns><see cref="NullabilityInfo" /></returns>
-        [RequiresUnreferencedCode("By default nullability attributes are trimmed by the trimmer")]
         public NullabilityInfo Create(EventInfo eventInfo)
         {
             if (eventInfo is null)
             {
                 throw new ArgumentNullException(nameof(eventInfo));
             }
+
+            EnsureIsSupported();
 
             return GetNullabilityInfo(eventInfo, eventInfo.EventHandlerType!, eventInfo.GetCustomAttributesData());
         }
@@ -253,13 +258,14 @@ namespace System.Reflection
         /// <param name="fieldInfo">The parameter which nullability info gets populated</param>
         /// <exception cref="ArgumentNullException">If the fieldInfo parameter is null</exception>
         /// <returns><see cref="NullabilityInfo" /></returns>
-        [RequiresUnreferencedCode("By default nullability attributes are trimmed by the trimmer")]
         public NullabilityInfo Create(FieldInfo fieldInfo)
         {
             if (fieldInfo is null)
             {
                 throw new ArgumentNullException(nameof(fieldInfo));
             }
+
+            EnsureIsSupported();
 
             if (IsPrivateOrInternalFieldAndAnnotationDisabled(fieldInfo))
             {
@@ -270,6 +276,14 @@ namespace System.Reflection
             NullabilityInfo nullability = GetNullabilityInfo(fieldInfo, fieldInfo.FieldType, attributes);
             CheckNullabilityAttributes(nullability, attributes);
             return nullability;
+        }
+
+        private static void EnsureIsSupported()
+        {
+            if (!IsSupported)
+            {
+                throw new InvalidOperationException(SR.NullabilityInfoContext_NotSupported);
+            }
         }
 
         private bool IsPrivateOrInternalFieldAndAnnotationDisabled(FieldInfo fieldInfo)

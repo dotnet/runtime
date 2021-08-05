@@ -5,6 +5,7 @@ using System;
 using System.Buffers;
 using System.Diagnostics;
 using System.IO;
+using System.IO.Strategies;
 using System.Threading;
 using System.Threading.Tasks.Sources;
 
@@ -45,7 +46,9 @@ namespace Microsoft.Win32.SafeHandles
 
             internal readonly PreAllocatedOverlapped _preallocatedOverlapped;
             internal readonly SafeFileHandle _fileHandle;
+            private AsyncWindowsFileStreamStrategy? _strategy;
             internal MemoryHandle _memoryHandle;
+            private int _bufferSize;
             internal ManualResetValueTaskSourceCore<int> _source; // mutable struct; do not make this readonly
             private NativeOverlapped* _overlapped;
             private CancellationTokenRegistration _cancellationRegistration;
@@ -74,9 +77,11 @@ namespace Microsoft.Win32.SafeHandles
                     ? ThrowHelper.CreateEndOfFileException()
                     : Win32Marshal.GetExceptionForWin32Error(errorCode, path);
 
-            internal NativeOverlapped* PrepareForOperation(ReadOnlyMemory<byte> memory, long fileOffset)
+            internal NativeOverlapped* PrepareForOperation(ReadOnlyMemory<byte> memory, long fileOffset, AsyncWindowsFileStreamStrategy? strategy = null)
             {
                 _result = 0;
+                _strategy = strategy;
+                _bufferSize = memory.Length;
                 _memoryHandle = memory.Pin();
                 _overlapped = _fileHandle.ThreadPoolBinding!.AllocateNativeOverlapped(_preallocatedOverlapped);
                 _overlapped->OffsetLow = (int)fileOffset;
@@ -132,8 +137,9 @@ namespace Microsoft.Win32.SafeHandles
                 }
             }
 
-            internal void ReleaseResources()
+            private void ReleaseResources()
             {
+                _strategy = null;
                 // Unpin any pinned buffer.
                 _memoryHandle.Dispose();
 
@@ -187,11 +193,19 @@ namespace Microsoft.Win32.SafeHandles
 
             internal void Complete(uint errorCode, uint numBytes)
             {
+                Debug.Assert(errorCode == Interop.Errors.ERROR_SUCCESS || numBytes == 0, $"Callback returned {errorCode} error and {numBytes} bytes");
+
+                AsyncWindowsFileStreamStrategy? strategy = _strategy;
                 ReleaseResources();
+
+                if (strategy is not null && _bufferSize != numBytes) // true only for incomplete reads
+                {
+                    strategy.OnIncompleteRead(_bufferSize, (int)numBytes);
+                }
 
                 switch (errorCode)
                 {
-                    case 0:
+                    case Interop.Errors.ERROR_SUCCESS:
                     case Interop.Errors.ERROR_BROKEN_PIPE:
                     case Interop.Errors.ERROR_NO_DATA:
                     case Interop.Errors.ERROR_HANDLE_EOF: // logically success with 0 bytes read (read at end of file)

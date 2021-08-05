@@ -243,7 +243,6 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/1581")]
         [ConditionalTheory(nameof(SupportsAlpn))]
         [InlineData(SettingId.MaxFrameSize, 16383)]
         [InlineData(SettingId.MaxFrameSize, 162777216)]
@@ -3582,7 +3581,6 @@ namespace System.Net.Http.Functional.Tests
 
         [Fact]
         [OuterLoop("Uses Task.Delay")]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/44352", TestPlatforms.OSX)]
         public async Task SocketSendQueueFull_RequestCanceled_ThrowsOperationCanceled()
         {
             TaskCompletionSource clientComplete = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);

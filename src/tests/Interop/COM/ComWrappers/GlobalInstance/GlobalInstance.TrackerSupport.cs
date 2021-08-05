@@ -31,15 +31,16 @@ namespace ComWrappersTests.GlobalInstance
                 // The first test registers a global ComWrappers instance for tracker support.
                 // Subsequents tests assume the global instance has already been registered.
                 ValidateRegisterForTrackerSupport();
-
+#if Windows
                 ValidateNotRegisteredForMarshalling();
+#endif                
 
                 IntPtr trackerObjRaw = MockReferenceTrackerRuntime.CreateTrackerObject();
                 var trackerObj = GlobalComWrappers.Instance.GetOrCreateObjectForComInstance(trackerObjRaw, CreateObjectFlags.TrackerObject);
                 Marshal.Release(trackerObjRaw);
 
                 ValidateNotifyEndOfReferenceTrackingOnThread();
-
+#if Windows
                 // Register a global ComWrappers instance for marshalling.
                 ValidateRegisterForMarshalling();
 
@@ -51,7 +52,7 @@ namespace ComWrappersTests.GlobalInstance
 
                 ValidateComActivation(validateUseRegistered: true);
                 ValidateComActivation(validateUseRegistered: false);
-
+#endif
                 ValidateNotifyEndOfReferenceTrackingOnThread();
             }
             catch (Exception e)

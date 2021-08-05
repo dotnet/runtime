@@ -112,7 +112,7 @@ namespace System.Net.Http
 
         internal bool HasHeaders => _headers != null;
 
-        [Obsolete("Use Options instead.")]
+        [Obsolete("HttpRequestMessage.Properties has been deprecated. Use Options instead.")]
         public IDictionary<string, object?> Properties => Options;
 
         public HttpRequestOptions Options => _options ??= new HttpRequestOptions();

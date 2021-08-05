@@ -317,9 +317,9 @@ BEGIN
     IDS_EE_INTEROP_STUB_CA_NO_ACCESS_TO_STUB_METHOD "The interop method '%1' cannot access the stub method '%2' specified in ManagedToNativeComInteropStubAttribute. Please make sure they have compatible access modifiers and security accessibility."
 #endif // FEATURE_COMINTEROP
 
-#ifdef FEATURE_COMINTEROP
+#if defined(FEATURE_COMINTEROP) || defined(FEATURE_COMWRAPPERS)
     IDS_EE_NATIVE_COM_WEAKREF_BAD_TYPE               "The object resolved by a native IWeakReference has an incompatible type for its managed WeakReference instance.\r\nExpected WeakReference target type: '%1'\r\nNative IWeakReference returned type: '%2'"
-#endif // FEATURE_COMINTEROP
+#endif // FEATURE_COMINTEROP || FEATURE_COMWRAPPERS
 
     IDS_EE_INTEROP_CODE_SIZE_COMMENT        "Code size"
 

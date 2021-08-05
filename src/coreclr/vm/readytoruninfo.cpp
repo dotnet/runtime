@@ -978,7 +978,12 @@ PCODE ReadyToRunInfo::GetEntryPoint(MethodDesc * pMD, PrepareCodeConfig* pConfig
 
         if (fFixups)
         {
-            if (!m_pModule->FixupDelayList(dac_cast<TADDR>(GetImage()->GetBase()) + offset))
+            BOOL mayUsePrecompiledNDirectMethods = TRUE;
+#ifndef CROSSGEN_COMPILE
+            mayUsePrecompiledNDirectMethods = !pConfig->IsForMulticoreJit();
+#endif // CROSSGEN_COMPILE
+
+            if (!m_pModule->FixupDelayList(dac_cast<TADDR>(GetImage()->GetBase()) + offset, mayUsePrecompiledNDirectMethods))
             {
 #ifndef CROSSGEN_COMPILE
                 pConfig->SetReadyToRunRejectedPrecompiledCode();

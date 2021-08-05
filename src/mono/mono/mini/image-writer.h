@@ -22,39 +22,7 @@
 
 typedef struct _MonoImageWriter MonoImageWriter;
 
-#if defined(TARGET_AMD64) && !defined(HOST_WIN32) && !defined(__APPLE__)
-#define USE_ELF_WRITER 1
-#define USE_ELF_RELA 1
-#endif
-
-#if defined(TARGET_X86) && !defined(HOST_WIN32) && !defined(__APPLE__)
-#define USE_ELF_WRITER 1
-#endif
-
-#if defined(TARGET_ARM) && !defined(TARGET_MACH) && !defined(HOST_WIN32)
-//#define USE_ELF_WRITER 1
-#endif
-
-#if defined(__mips__)
-#define USE_ELF_WRITER 1
-#endif
-
-#if defined(TARGET_X86) && defined(__APPLE__)
-//#define USE_MACH_WRITER
-#endif
-
-#if defined(USE_ELF_WRITER) || defined(USE_MACH_WRITER)
-#define USE_BIN_WRITER 1
-#endif
-
-/* Relocation types */
-#define R_ARM_CALL 28
-#define R_ARM_JUMP24 29
-#define R_ARM_ALU_PC_G0_NC 59
-
-gboolean mono_bin_writer_supported (void);
-
-MonoImageWriter* mono_img_writer_create (FILE *fp, gboolean use_bin_writer);
+MonoImageWriter* mono_img_writer_create (FILE *fp);
 
 void mono_img_writer_destroy (MonoImageWriter *w);
 

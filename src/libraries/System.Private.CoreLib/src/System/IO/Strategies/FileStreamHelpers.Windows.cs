@@ -27,10 +27,10 @@ namespace System.IO.Strategies
             internal const ulong ResultMask = ((ulong)uint.MaxValue) << 32;
         }
 
-        private static OSFileStreamStrategy ChooseStrategyCore(SafeFileHandle handle, FileAccess access, FileShare share, bool isAsync) =>
+        private static OSFileStreamStrategy ChooseStrategyCore(SafeFileHandle handle, FileAccess access, bool isAsync) =>
             isAsync ?
-                new AsyncWindowsFileStreamStrategy(handle, access, share) :
-                new SyncWindowsFileStreamStrategy(handle, access, share);
+                new AsyncWindowsFileStreamStrategy(handle, access) :
+                new SyncWindowsFileStreamStrategy(handle, access);
 
         private static FileStreamStrategy ChooseStrategyCore(string path, FileMode mode, FileAccess access, FileShare share, FileOptions options, long preallocationSize) =>
             (options & FileOptions.Asynchronous) != 0 ?

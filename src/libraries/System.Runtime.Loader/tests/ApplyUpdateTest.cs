@@ -40,6 +40,33 @@ namespace System.Reflection.Metadata
         }
 
         [ConditionalFact(typeof(ApplyUpdateUtil), nameof (ApplyUpdateUtil.IsSupported))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/54617", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsMonoAOT))] 
+        void LambdaBodyChange()
+        {
+            ApplyUpdateUtil.TestCase(static () =>
+            {
+                var assm = typeof (ApplyUpdate.Test.LambdaBodyChange).Assembly;
+
+                var o = new ApplyUpdate.Test.LambdaBodyChange ();
+                var r = o.MethodWithLambda();
+
+                Assert.Equal("OLD STRING", r);
+
+                ApplyUpdateUtil.ApplyUpdate(assm);
+
+                r = o.MethodWithLambda();
+
+                Assert.Equal("NEW STRING", r);
+
+                ApplyUpdateUtil.ApplyUpdate(assm);
+
+                r = o.MethodWithLambda();
+
+                Assert.Equal("NEWEST STRING!", r);
+            });
+        }
+
+        [ConditionalFact(typeof(ApplyUpdateUtil), nameof (ApplyUpdateUtil.IsSupported))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/52993", TestRuntimes.Mono)]
         void ClassWithCustomAttributes()
         {
@@ -109,6 +136,46 @@ namespace System.Reflection.Metadata
                 Assert.Equal(attrType, cattrs[0].GetType());
                 string p = (cattrs[0] as System.Reflection.Metadata.ApplyUpdate.Test.MyAttribute).StringValue;
                 Assert.Equal("rstuv", p);
+            });
+        }
+
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/52993", TestRuntimes.Mono)]
+        [ConditionalFact(typeof(ApplyUpdateUtil), nameof (ApplyUpdateUtil.IsSupported))]
+        public void CustomAttributeDelete()
+        {
+            // Test that deleting custom attribute on constructor/property works as expected.
+            ApplyUpdateUtil.TestCase(static () =>
+            {
+                var assm = typeof(System.Reflection.Metadata.ApplyUpdate.Test.ClassWithCustomAttributeDelete).Assembly;
+
+                ApplyUpdateUtil.ApplyUpdate(assm);
+                ApplyUpdateUtil.ClearAllReflectionCaches();
+
+                // Just check the updated value on one method
+
+                Type attrType = typeof(System.Reflection.Metadata.ApplyUpdate.Test.MyDeleteAttribute);
+                Type ty = assm.GetType("System.Reflection.Metadata.ApplyUpdate.Test.ClassWithCustomAttributeDelete");
+                Assert.NotNull(ty);
+
+                MethodInfo mi1 = ty.GetMethod(nameof(System.Reflection.Metadata.ApplyUpdate.Test.ClassWithCustomAttributeDelete.Method1), BindingFlags.Public | BindingFlags.Static);
+                Assert.NotNull(mi1);
+                Attribute[] cattrs = Attribute.GetCustomAttributes(mi1, attrType);
+                Assert.NotNull(cattrs);
+                Assert.Equal(0, cattrs.Length);
+
+                MethodInfo mi2 = ty.GetMethod(nameof(System.Reflection.Metadata.ApplyUpdate.Test.ClassWithCustomAttributeDelete.Method2), BindingFlags.Public | BindingFlags.Static);
+                Assert.NotNull(mi2);
+                cattrs = Attribute.GetCustomAttributes(mi2, attrType);
+                Assert.NotNull(cattrs);
+                Assert.Equal(0, cattrs.Length);
+
+                MethodInfo mi3 = ty.GetMethod(nameof(System.Reflection.Metadata.ApplyUpdate.Test.ClassWithCustomAttributeDelete.Method3), BindingFlags.Public | BindingFlags.Static);
+                Assert.NotNull(mi3);
+                cattrs = Attribute.GetCustomAttributes(mi3, attrType);
+                Assert.NotNull(cattrs);
+                Assert.Equal(1, cattrs.Length);
+                string p = (cattrs[0] as System.Reflection.Metadata.ApplyUpdate.Test.MyDeleteAttribute).StringValue;
+                Assert.Equal("Not Deleted", p);
             });
         }
 

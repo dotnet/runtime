@@ -47,7 +47,7 @@ namespace System.IO.Pipelines
         /// > [!IMPORTANT]
         /// > `OnReaderCompleted` may not be invoked on all implementations of <xref:System.IO.Pipelines.PipeWriter>. This method will be removed in a future release.
         /// ]]></format></remarks>
-        [Obsolete("OnReaderCompleted may not be invoked on all implementations of PipeWriter. This will be removed in a future release.")]
+        [Obsolete("OnReaderCompleted has been deprecated and may not be invoked on all implementations of PipeWriter.")]
         public virtual void OnReaderCompleted(Action<Exception?, object?> callback, object? state)
         {
 

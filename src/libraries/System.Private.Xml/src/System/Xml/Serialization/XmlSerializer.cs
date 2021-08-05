@@ -9,6 +9,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.IO;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Runtime.Versioning;
 using System.Security;
 using System.Text;
@@ -109,7 +110,13 @@ namespace System.Xml.Serialization
 
     public class XmlSerializer
     {
-        internal static SerializationMode Mode { get; set; } = SerializationMode.ReflectionAsBackup;
+        private static SerializationMode s_mode = SerializationMode.ReflectionAsBackup;
+
+        internal static SerializationMode Mode
+        {
+            get => RuntimeFeature.IsDynamicCodeSupported ? s_mode : SerializationMode.ReflectionOnly;
+            set => s_mode = value;
+        }
 
         private static bool ReflectionMethodEnabled
         {
@@ -317,7 +324,7 @@ namespace System.Xml.Serialization
         [RequiresUnreferencedCode(TrimSerializationWarning)]
         public void Serialize(TextWriter textWriter, object? o, XmlSerializerNamespaces? namespaces)
         {
-            XmlWriter xmlWriter = XmlWriter.Create(textWriter, new XmlWriterSettings() { Indent = true });
+            XmlWriter xmlWriter = XmlWriter.Create(textWriter);
             Serialize(xmlWriter, o, namespaces);
         }
 
@@ -330,7 +337,7 @@ namespace System.Xml.Serialization
         [RequiresUnreferencedCode(TrimSerializationWarning)]
         public void Serialize(Stream stream, object? o, XmlSerializerNamespaces? namespaces)
         {
-            XmlWriter xmlWriter = XmlWriter.Create(stream, new XmlWriterSettings() { Indent = true });
+            XmlWriter xmlWriter = XmlWriter.Create(stream);
             Serialize(xmlWriter, o, namespaces);
         }
 

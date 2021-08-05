@@ -19,28 +19,28 @@ namespace System.IO
         private readonly FileStreamStrategy _strategy;
 
         [EditorBrowsable(EditorBrowsableState.Never)]
-        [Obsolete("This constructor has been deprecated.  Please use new FileStream(SafeFileHandle handle, FileAccess access) instead.  https://go.microsoft.com/fwlink/?linkid=14202")]
+        [Obsolete("This constructor has been deprecated. Use FileStream(SafeFileHandle handle, FileAccess access) instead.")]
         public FileStream(IntPtr handle, FileAccess access)
             : this(handle, access, true, DefaultBufferSize, DefaultIsAsync)
         {
         }
 
         [EditorBrowsable(EditorBrowsableState.Never)]
-        [Obsolete("This constructor has been deprecated.  Please use new FileStream(SafeFileHandle handle, FileAccess access) instead, and optionally make a new SafeFileHandle with ownsHandle=false if needed.  https://go.microsoft.com/fwlink/?linkid=14202")]
+        [Obsolete("This constructor has been deprecated. Use FileStream(SafeFileHandle handle, FileAccess access) and optionally make a new SafeFileHandle with ownsHandle=false if needed instead.")]
         public FileStream(IntPtr handle, FileAccess access, bool ownsHandle)
             : this(handle, access, ownsHandle, DefaultBufferSize, DefaultIsAsync)
         {
         }
 
         [EditorBrowsable(EditorBrowsableState.Never)]
-        [Obsolete("This constructor has been deprecated.  Please use new FileStream(SafeFileHandle handle, FileAccess access, int bufferSize) instead, and optionally make a new SafeFileHandle with ownsHandle=false if needed.  https://go.microsoft.com/fwlink/?linkid=14202")]
+        [Obsolete("This constructor has been deprecated. Use FileStream(SafeFileHandle handle, FileAccess access, int bufferSize) and optionally make a new SafeFileHandle with ownsHandle=false if needed instead.")]
         public FileStream(IntPtr handle, FileAccess access, bool ownsHandle, int bufferSize)
             : this(handle, access, ownsHandle, bufferSize, DefaultIsAsync)
         {
         }
 
         [EditorBrowsable(EditorBrowsableState.Never)]
-        [Obsolete("This constructor has been deprecated.  Please use new FileStream(SafeFileHandle handle, FileAccess access, int bufferSize, bool isAsync) instead, and optionally make a new SafeFileHandle with ownsHandle=false if needed.  https://go.microsoft.com/fwlink/?linkid=14202")]
+        [Obsolete("This constructor has been deprecated. Use FileStream(SafeFileHandle handle, FileAccess access, int bufferSize, bool isAsync) and optionally make a new SafeFileHandle with ownsHandle=false if needed instead.")]
         public FileStream(IntPtr handle, FileAccess access, bool ownsHandle, int bufferSize, bool isAsync)
         {
             SafeFileHandle safeHandle = new SafeFileHandle(handle, ownsHandle: ownsHandle);
@@ -48,7 +48,7 @@ namespace System.IO
             {
                 ValidateHandle(safeHandle, access, bufferSize, isAsync);
 
-                _strategy = FileStreamHelpers.ChooseStrategy(this, safeHandle, access, DefaultShare, bufferSize, isAsync);
+                _strategy = FileStreamHelpers.ChooseStrategy(this, safeHandle, access, bufferSize, isAsync);
             }
             catch
             {
@@ -107,14 +107,14 @@ namespace System.IO
         {
             ValidateHandle(handle, access, bufferSize);
 
-            _strategy = FileStreamHelpers.ChooseStrategy(this, handle, access, DefaultShare, bufferSize, handle.IsAsync);
+            _strategy = FileStreamHelpers.ChooseStrategy(this, handle, access, bufferSize, handle.IsAsync);
         }
 
         public FileStream(SafeFileHandle handle, FileAccess access, int bufferSize, bool isAsync)
         {
             ValidateHandle(handle, access, bufferSize, isAsync);
 
-            _strategy = FileStreamHelpers.ChooseStrategy(this, handle, access, DefaultShare, bufferSize, isAsync);
+            _strategy = FileStreamHelpers.ChooseStrategy(this, handle, access, bufferSize, isAsync);
         }
 
         public FileStream(string path, FileMode mode)
@@ -210,7 +210,7 @@ namespace System.IO
             _strategy = FileStreamHelpers.ChooseStrategy(this, path, mode, access, share, bufferSize, options, preallocationSize);
         }
 
-        [Obsolete("This property has been deprecated.  Please use FileStream's SafeFileHandle property instead.  https://go.microsoft.com/fwlink/?linkid=14202")]
+        [Obsolete("FileStream.Handle has been deprecated. Use FileStream's SafeFileHandle property instead.")]
         public virtual IntPtr Handle => _strategy.Handle;
 
         [UnsupportedOSPlatform("ios")]
@@ -280,9 +280,14 @@ namespace System.IO
             {
                 return Task.FromCanceled<int>(cancellationToken);
             }
-            else if (_strategy.IsClosed)
+            else if (!_strategy.CanRead)
             {
-                ThrowHelper.ThrowObjectDisposedException_FileClosed();
+                if (_strategy.IsClosed)
+                {
+                    ThrowHelper.ThrowObjectDisposedException_FileClosed();
+                }
+
+                ThrowHelper.ThrowNotSupportedException_UnreadableStream();
             }
 
             return _strategy.ReadAsync(buffer, offset, count, cancellationToken);
@@ -294,9 +299,14 @@ namespace System.IO
             {
                 return ValueTask.FromCanceled<int>(cancellationToken);
             }
-            else if (_strategy.IsClosed)
+            else if (!_strategy.CanRead)
             {
-                ThrowHelper.ThrowObjectDisposedException_FileClosed();
+                if (_strategy.IsClosed)
+                {
+                    ThrowHelper.ThrowObjectDisposedException_FileClosed();
+                }
+
+                ThrowHelper.ThrowNotSupportedException_UnreadableStream();
             }
 
             return _strategy.ReadAsync(buffer, cancellationToken);
@@ -319,9 +329,14 @@ namespace System.IO
             {
                 return Task.FromCanceled(cancellationToken);
             }
-            else if (_strategy.IsClosed)
+            else if (!_strategy.CanWrite)
             {
-                ThrowHelper.ThrowObjectDisposedException_FileClosed();
+                if (_strategy.IsClosed)
+                {
+                    ThrowHelper.ThrowObjectDisposedException_FileClosed();
+                }
+
+                ThrowHelper.ThrowNotSupportedException_UnwritableStream();
             }
 
             return _strategy.WriteAsync(buffer, offset, count, cancellationToken);
@@ -333,9 +348,14 @@ namespace System.IO
             {
                 return ValueTask.FromCanceled(cancellationToken);
             }
-            else if (_strategy.IsClosed)
+            else if (!_strategy.CanWrite)
             {
-                ThrowHelper.ThrowObjectDisposedException_FileClosed();
+                if (_strategy.IsClosed)
+                {
+                    ThrowHelper.ThrowObjectDisposedException_FileClosed();
+                }
+
+                ThrowHelper.ThrowNotSupportedException_UnwritableStream();
             }
 
             return _strategy.WriteAsync(buffer, cancellationToken);

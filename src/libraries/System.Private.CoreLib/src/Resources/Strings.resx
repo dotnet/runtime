@@ -3814,4 +3814,7 @@
   <data name="TimeZoneNotFound_ValidTimeZoneFileMissing" xml:space="preserve">
     <value>Unable to properly load any time zone data files.</value>
   </data>
+  <data name="NullabilityInfoContext_NotSupported" xml:space="preserve">
+    <value>NullabilityInfoContext is not supported in the current application because 'System.Reflection.NullabilityInfoContext.IsSupported' is set to false. Set the MSBuild Property 'NullabilityInfoContextSupport' to true in order to enable it.</value>
+  </data>
 </root>
