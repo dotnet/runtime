@@ -399,7 +399,7 @@ namespace System.Text.Json
             {
                 reader = restore;
                 // Re-throw with Path information.
-                ThrowHelper.ReThrowWithPath(state, ex);
+                ThrowHelper.ReThrowWithPath(ref state, ex);
             }
 
             int length = valueSpan.IsEmpty ? checked((int)valueSequence.Length) : valueSpan.Length;
