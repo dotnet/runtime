@@ -9,9 +9,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <!-- Listing the runtime specific packages to populate the dependencies section.
-         Not building these references to avoid unintentional Build/Pack invocations.
-         They are filtered in the traversal build in src.proj based on the OutputRid. -->      
-    <ProjectReference Include="$(MSBuildThisFileDirectory)*.proj" Exclude="$(MSBuildProjectFile)" BuildReference="false" />
+    <!-- Listing the runtime specific packages to populate the dependencies section. -->
+    <ProjectReference Include="$(MSBuildThisFileDirectory)*.proj" Exclude="$(MSBuildProjectFile)" />
   </ItemGroup>
 </Project>

@@ -2,7 +2,8 @@
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
     <SuppressDependenciesWhenPacking>true</SuppressDependenciesWhenPacking>
-    <IsPackable>true</IsPackable>
+    <!-- The project isn't packable if it doesn't target the current OutputRid. -->
+    <IsPackable Condition="$(MSBuildProjectName.StartsWith('runtime.$(OutputRid).runtime.native'))">true</IsPackable>
     <!-- IncludeBuildOutput needs to be set to true to make NuGet include the passed in debug symbol files. -->
     <IncludeBuildOutput>true</IncludeBuildOutput>
     <DebugSymbols>false</DebugSymbols>
