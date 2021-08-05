@@ -5,9 +5,9 @@ using System.IO;
 
 namespace System.Reflection.Internal
 {
-    internal static class FileStreamReadLightUp
+    internal static partial class StreamExtensions
     {
-        internal static unsafe int ReadFile(Stream stream, byte* buffer, int size)
+        internal static unsafe int Read(this Stream stream, byte* buffer, int size)
             => stream.Read(new Span<byte>(buffer, size));
     }
 }

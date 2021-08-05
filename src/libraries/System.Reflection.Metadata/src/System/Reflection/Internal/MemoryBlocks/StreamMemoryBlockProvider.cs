@@ -76,7 +76,7 @@ namespace System.Reflection.Internal
 
                 int bytesRead = 0;
 
-                if ((bytesRead = FileStreamReadLightUp.ReadFile(stream, block.Pointer, size)) != size)
+                if ((bytesRead = stream.Read(block.Pointer, size)) != size)
                 {
                     stream.CopyTo(block.Pointer + bytesRead, size - bytesRead);
                 }
@@ -132,14 +132,20 @@ namespace System.Reflection.Internal
                 // CreateMemoryMap might modify the stream (calls FileStream.Flush)
                 lock (_streamGuard)
                 {
-                    newMemoryMap =
-                        MemoryMappedFile.CreateFromFile(
-                            (FileStream) _stream,
-                            null,
-                            0,
-                            MemoryMappedFileAccess.Read,
-                            HandleInheritability.None,
-                            leaveOpen: true);
+                    try
+                    {
+                        newMemoryMap =
+                            MemoryMappedFile.CreateFromFile(
+                                (FileStream)_stream,
+                                null,
+                                0,
+                                MemoryMappedFileAccess.Read,
+                                HandleInheritability.None,
+                                leaveOpen: true);
+                    } catch (UnauthorizedAccessException e)
+                    {
+                        throw new IOException(e.Message, e);
+                    }
                 }
 
                 if (newMemoryMap == null)
