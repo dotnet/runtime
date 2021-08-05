@@ -445,7 +445,7 @@ namespace System.IO.Ports
             CheckHandle();
 
             if (buffer.IsEmpty)
-                return new ValueTask.FromResult(0);
+                return new ValueTask<int>(0);
 
             SerialStreamReadRequest result = new SerialStreamReadRequest(cancellationToken, buffer);
             _readQueue.Enqueue(result);
@@ -479,7 +479,7 @@ namespace System.IO.Ports
 
             if (buffer.IsEmpty)
                 return ValueTask.CompletedTask; // return immediately if no bytes to write; no need for overhead.
-                
+
             SerialStreamWriteRequest result = new SerialStreamWriteRequest(cancellationToken, buffer);
             _writeQueue.Enqueue(result);
 
