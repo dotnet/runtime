@@ -2836,6 +2836,7 @@ void CodeGen::genCodeForInitBlkUnroll(GenTreeBlk* node)
 #endif
             if (bytesWritten + regSize > size)
             {
+#ifdef TARGET_AMD64
                 if (size - bytesWritten <= XMM_REGSIZE_BYTES)
                 {
                     regSize = XMM_REGSIZE_BYTES;
@@ -2846,6 +2847,10 @@ void CodeGen::genCodeForInitBlkUnroll(GenTreeBlk* node)
                 assert(shiftBack <= regSize);
                 bytesWritten -= shiftBack;
                 dstOffset -= shiftBack;
+#else
+                assert(srcIntReg != REG_NA);
+                break;
+#endif
             }
 
             if (dstLclNum != BAD_VAR_NUM)
@@ -2865,33 +2870,13 @@ void CodeGen::genCodeForInitBlkUnroll(GenTreeBlk* node)
         size -= bytesWritten;
     }
 
-    unsigned regSize = REGSIZE_BYTES;
-
-    while (regSize > size)
-    {
-        regSize /= 2;
-    }
-
     // Fill the remainder using normal stores.
-    for (; size > regSize; size -= regSize, dstOffset += regSize)
+    for (unsigned regSize = REGSIZE_BYTES; size > 0; size -= regSize, dstOffset += regSize)
     {
-        if (dstLclNum != BAD_VAR_NUM)
+        while (regSize > size)
         {
-            emit->emitIns_S_R(INS_mov, EA_ATTR(regSize), srcIntReg, dstLclNum, dstOffset);
+            regSize /= 2;
         }
-        else
-        {
-            emit->emitIns_ARX_R(INS_mov, EA_ATTR(regSize), srcIntReg, dstAddrBaseReg, dstAddrIndexReg,
-                                dstAddrIndexScale, dstOffset);
-        }
-    }
-
-    if (size > 0)
-    {
-        unsigned shiftBack = regSize - size;
-        assert(shiftBack <= regSize);
-        dstOffset -= shiftBack;
-
         if (dstLclNum != BAD_VAR_NUM)
         {
             emit->emitIns_S_R(INS_mov, EA_ATTR(regSize), srcIntReg, dstLclNum, dstOffset);
@@ -3122,44 +3107,13 @@ void CodeGen::genCodeForCpBlkUnroll(GenTreeBlk* node)
     if (size > 0)
     {
         regNumber tempReg = node->GetSingleTempReg(RBM_ALLINT);
-        unsigned  regSize = REGSIZE_BYTES;
 
-        while (regSize > size)
+        for (unsigned regSize = REGSIZE_BYTES; size > 0; size -= regSize, srcOffset += regSize, dstOffset += regSize)
         {
-            regSize /= 2;
-        }
-
-        for (; size > regSize; size -= regSize, srcOffset += regSize, dstOffset += regSize)
-        {
-            if (srcLclNum != BAD_VAR_NUM)
+            while (regSize > size)
             {
-                emit->emitIns_R_S(INS_mov, EA_ATTR(regSize), tempReg, srcLclNum, srcOffset);
+                regSize /= 2;
             }
-            else
-            {
-                emit->emitIns_R_ARX(INS_mov, EA_ATTR(regSize), tempReg, srcAddrBaseReg, srcAddrIndexReg,
-                                    srcAddrIndexScale, srcOffset);
-            }
-
-            if (dstLclNum != BAD_VAR_NUM)
-            {
-                emit->emitIns_S_R(INS_mov, EA_ATTR(regSize), tempReg, dstLclNum, dstOffset);
-            }
-            else
-            {
-                emit->emitIns_ARX_R(INS_mov, EA_ATTR(regSize), tempReg, dstAddrBaseReg, dstAddrIndexReg,
-                                    dstAddrIndexScale, dstOffset);
-            }
-        }
-
-        if (size > 0)
-        {
-            // Copy the remainder by moving the last regSize bytes of the buffer
-            unsigned shiftBack = regSize - size;
-            assert(shiftBack <= regSize);
-
-            srcOffset -= shiftBack;
-            dstOffset -= shiftBack;
 
             if (srcLclNum != BAD_VAR_NUM)
             {
