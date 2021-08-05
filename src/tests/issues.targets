@@ -981,6 +981,9 @@
 
     <!-- Known failures for mono runtime on *all* architectures/operating systems in *all* runtime modes -->
     <ItemGroup Condition="'$(RuntimeFlavor)' == 'mono'" >
+        <ExcludeList Include = "$(XunitTestBinBase)/reflection/GenericAttribute/**">
+            <Issue>https://github.com/dotnet/runtime/issues/56887</Issue>
+        </ExcludeList>
         <ExcludeList Include = "$(XunitTestBinBase)/JIT/HardwareIntrinsics/X86/Sse2.X64/StoreNonTemporal_r/**">
             <Issue>https://github.com/dotnet/runtime/issues/54176</Issue>
         </ExcludeList>
