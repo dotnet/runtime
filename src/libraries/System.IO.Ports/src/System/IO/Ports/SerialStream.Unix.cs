@@ -431,20 +431,21 @@ namespace System.IO.Ports
                 return Task<int>.FromResult(0); // return immediately if no bytes requested; no need for overhead.
 
             Memory<byte> buffer = new Memory<byte>(array, offset, count);
-            return ReadAsync(buffer, cancellationToken).AsTask();
+            SerialStreamIORequest result = new SerialStreamIORequest(cancellationToken, buffer);
+            _readQueue.Enqueue(result);
+
+            EnsureIOLoopRunning();
+
+            return result.Task;
         }
 
 #if !NETFRAMEWORK && !NETSTANDARD2_0
-        public override
-#else
-        private
-#endif
-        ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
+        public override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
         {
             CheckHandle();
 
             if (buffer.IsEmpty)
-                return new ValueTask<int>(0);
+                return new ValueTask.FromResult(0);
 
             SerialStreamReadRequest result = new SerialStreamReadRequest(cancellationToken, buffer);
             _readQueue.Enqueue(result);
@@ -453,6 +454,7 @@ namespace System.IO.Ports
 
             return new ValueTask<int>(result.Task);
         }
+#endif
 
         public override Task WriteAsync(byte[] array, int offset, int count, CancellationToken cancellationToken)
         {
@@ -461,21 +463,22 @@ namespace System.IO.Ports
             if (count == 0)
                 return Task.CompletedTask; // return immediately if no bytes to write; no need for overhead.
 
-            ReadOnlyMemory<byte> buffer = new ReadOnlyMemory<byte>(array, offset, count);
-            return WriteAsync(buffer, cancellationToken).AsTask();
+            Memory<byte> buffer = new Memory<byte>(array, offset, count);
+            SerialStreamIORequest result = new SerialStreamIORequest(cancellationToken, buffer);
+            _writeQueue.Enqueue(result);
+
+            EnsureIOLoopRunning();
+
+            return result.Task;
         }
 
 #if !NETFRAMEWORK && !NETSTANDARD2_0
-        public override
-#else
-        private 
-#endif
-        ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default)
+        public override ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default)
         {
             CheckWriteArguments();
 
             if (buffer.IsEmpty)
-                return new ValueTask(); // return immediately if no bytes to write; no need for overhead.
+                return ValueTask.CompletedTask; // return immediately if no bytes to write; no need for overhead.
                 
             SerialStreamWriteRequest result = new SerialStreamWriteRequest(cancellationToken, buffer);
             _writeQueue.Enqueue(result);
@@ -484,6 +487,7 @@ namespace System.IO.Ports
 
             return new ValueTask(result.Task);
         }
+#endif
 
         public override IAsyncResult BeginRead(byte[] array, int offset, int numBytes, AsyncCallback userCallback, object stateObject)
         {
