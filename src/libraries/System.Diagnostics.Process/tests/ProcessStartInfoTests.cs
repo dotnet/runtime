@@ -22,7 +22,6 @@ using System.Security.AccessControl;
 
 namespace System.Diagnostics.Tests
 {
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/49568", typeof(PlatformDetection), nameof(PlatformDetection.IsMacOsAppleSilicon))]
     public class ProcessStartInfoTests : ProcessTestBase
     {
         private const string ItemSeparator = "CAFF9451396B4EEF8A5155A15BDC2080"; // random string that shouldn't be in any env vars; used instead of newline to separate env var strings
@@ -33,7 +32,11 @@ namespace System.Diagnostics.Tests
         [Fact]
         public void TestEnvironmentProperty()
         {
-            Assert.NotEqual(0, new Process().StartInfo.Environment.Count);
+            // Whole list of environment variables can no longer be accessed on non-OSX apple platforms
+            if (!PlatformDetection.IsiOS && !PlatformDetection.IstvOS && !PlatformDetection.IsMacCatalyst)
+            {
+                Assert.NotEqual(0, new Process().StartInfo.Environment.Count);
+            }
 
             ProcessStartInfo psi = new ProcessStartInfo();
 
@@ -41,8 +44,11 @@ namespace System.Diagnostics.Tests
             // with current environmental variables.
 
             IDictionary<string, string> environment = psi.Environment;
-
-            Assert.NotEqual(0, environment.Count);
+            // Whole list of environment variables can no longer be accessed on non-OSX apple platforms
+            if (!PlatformDetection.IsiOS && !PlatformDetection.IstvOS && !PlatformDetection.IsMacCatalyst)
+            {
+                Assert.NotEqual(0, environment.Count);
+            }
 
             int countItems = environment.Count;
 
@@ -782,7 +788,11 @@ namespace System.Diagnostics.Tests
 
             StringDictionary environmentVariables = psi.EnvironmentVariables;
 
-            Assert.NotEqual(0, environmentVariables.Count);
+            // Whole list of environment variables can no longer be accessed on non-OSX apple platforms
+            if (!PlatformDetection.IsiOS && !PlatformDetection.IstvOS && !PlatformDetection.IsMacCatalyst)
+            {
+                Assert.NotEqual(0, environmentVariables.Count);
+            }
 
             int CountItems = environmentVariables.Count;
 
@@ -1157,12 +1167,11 @@ namespace System.Diagnostics.Tests
             sb.AppendLine("------------------------------");
 
             string open = GetAssociationString(0, 1 /* ASSOCSTR_COMMAND */, ".txt", "open");
-            sb.AppendFormat("Open command: {0}", open);
-            sb.AppendLine();
+            sb.AppendLine($"Open command: {open}");
 
             string progId = GetAssociationString(0, 20 /* ASSOCSTR_PROGID */, ".txt", null);
-            sb.AppendFormat("ProgID: {0}", progId);
-            sb.AppendLine();
+            sb.AppendLine($"ProgID: {progId}");
+
             return sb.ToString();
         }
 

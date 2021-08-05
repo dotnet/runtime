@@ -3291,6 +3291,10 @@ ClrDataAccess::QueryInterface(THIS_
     {
         ifaceRet = static_cast<ISOSDacInterface10*>(this);
     }
+    else if (IsEqualIID(interfaceId, __uuidof(ISOSDacInterface11)))
+    {
+        ifaceRet = static_cast<ISOSDacInterface11*>(this);
+    }
     else
     {
         *iface = NULL;
@@ -8156,9 +8160,10 @@ void DacHandleWalker::GetRefCountedHandleInfo(
     if (pIsPegged)
         *pIsPegged = FALSE;
 
-#ifdef FEATURE_COMINTEROP
+#if defined(FEATURE_COMINTEROP) || defined(FEATURE_COMWRAPPERS) || defined(FEATURE_OBJCMARSHAL)
     if (uType == HNDTYPE_REFCOUNTED)
     {
+#if defined(FEATURE_COMINTEROP)
         // get refcount from the CCW
         PTR_ComCallWrapper pWrap = ComCallWrapper::GetWrapperForObject(oref);
         if (pWrap != NULL)
@@ -8171,8 +8176,12 @@ void DacHandleWalker::GetRefCountedHandleInfo(
 
             return;
         }
+#endif
+#if defined(FEATURE_OBJCMARSHAL)
+        // [TODO] FEATURE_OBJCMARSHAL
+#endif // FEATURE_OBJCMARSHAL
     }
-#endif // FEATURE_COMINTEROP
+#endif // FEATURE_COMINTEROP || FEATURE_COMWRAPPERS || FEATURE_OBJCMARSHAL
 
     if (pRefCount)
         *pRefCount = 0;

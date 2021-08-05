@@ -14,7 +14,8 @@ internal static partial class Interop
             x64,
             ARM,
             ARM64,
-            WASM
+            WASM,
+            S390x
         }
     }
 }

@@ -1,6 +1,6 @@
 <Project>
   <ItemGroup>
-    <Compile Include="$(IntermediateOutputPath)\ThisAssembly.cs"/>
+    <Compile Include="$(IntermediateOutputPath)ThisAssembly.cs"/>
   </ItemGroup>
 
   <Target Name="GenerateThisAssemblyCs"
@@ -41,7 +41,7 @@ namespace Microsoft.XmlSerializer.Generator
 
     <!-- Write ThisAssembly.cs if this is a new version number, or it is missing -->
     <WriteLinesToFile
-      File="$(IntermediateOutputPath)\ThisAssembly.cs"
+      File="$(IntermediateOutputPath)ThisAssembly.cs"
       Lines="$(ThisAssemblyCsContents)"
       Overwrite="true"
       Encoding="Unicode"/>

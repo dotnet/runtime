@@ -2,27 +2,27 @@
   <ItemGroup>
     <RuntimeGroup Include="unix">
       <Parent>any</Parent>
-      <Architectures>x64;x86;arm;armel;arm64;mips64</Architectures>
+      <Architectures>x64;x86;arm;armel;arm64;mips64;s390x</Architectures>
     </RuntimeGroup>
     <RuntimeGroup Include="linux">
       <Parent>unix</Parent>
-      <Architectures>x64;x86;arm;armel;arm64;mips64</Architectures>
+      <Architectures>x64;x86;arm;armel;arm64;mips64;s390x</Architectures>
     </RuntimeGroup>
     <RuntimeGroup Include="linux-musl">
       <Parent>linux</Parent>
-      <Architectures>x64;x86;arm;armel;arm64</Architectures>
+      <Architectures>x64;x86;arm;armel;arm64;s390x</Architectures>
     </RuntimeGroup>
 
     <RuntimeGroup Include="alpine">
       <Parent>linux-musl</Parent>
       <Architectures>x64;arm;arm64</Architectures>
-      <Versions>3.6;3.7;3.8;3.9;3.10;3.11;3.12;3.13</Versions>
+      <Versions>3.6;3.7;3.8;3.9;3.10;3.11;3.12;3.13;3.14</Versions>
     </RuntimeGroup>
 
     <RuntimeGroup Include="android">
       <Parent>linux</Parent>
       <Architectures>x64;x86;arm;arm64</Architectures>
-      <Versions>21;22;23;24;25;26;27;28;29;30</Versions>
+      <Versions>21;22;23;24;25;26;27;28;29;30;31</Versions>
     </RuntimeGroup>
 
     <RuntimeGroup Include="arch">
@@ -38,7 +38,7 @@
     <RuntimeGroup Include="maccatalyst">
       <Parent>ios</Parent>
       <Architectures>x64;arm64</Architectures>
-      <Versions>13;14</Versions>
+      <Versions>13;14;15</Versions>
     </RuntimeGroup>
 
     <RuntimeGroup Include="centos">
@@ -59,7 +59,7 @@
     <RuntimeGroup Include="debian">
       <Parent>linux</Parent>
       <Architectures>x64;x86;arm;armel;arm64</Architectures>
-      <Versions>8;9;10</Versions>
+      <Versions>8;9;10;11</Versions>
       <TreatVersionsAsCompatible>false</TreatVersionsAsCompatible>
     </RuntimeGroup>
 
@@ -88,7 +88,7 @@
     <RuntimeGroup Include="ios">
       <Parent>unix</Parent>
       <Architectures>arm64;x64</Architectures>
-      <Versions>10;11;12;13;14</Versions>
+      <Versions>10;11;12;13;14;15</Versions>
     </RuntimeGroup>
 
     <RuntimeGroup Include="iossimulator">
@@ -99,7 +99,19 @@
     <RuntimeGroup Include="iossimulator">
       <Parent>ios</Parent>
       <Architectures>arm64;x64</Architectures>
-      <Versions>10;11;12;13;14</Versions>
+      <Versions>10;11;12;13;14;15</Versions>
+    </RuntimeGroup>
+
+    <RuntimeGroup Include="tvos">
+      <Parent>unix</Parent>
+      <Architectures>arm64;x64</Architectures>
+      <Versions>10;11;12;13;14;15</Versions>
+    </RuntimeGroup>
+
+    <RuntimeGroup Include="tvossimulator">
+      <Parent>tvos</Parent>
+      <Architectures>arm64;x64</Architectures>
+      <Versions>10;11;12;13;14;15</Versions>
     </RuntimeGroup>
 
     <!-- linux mint includes major version in Include because Parent is different for each major -->
@@ -213,18 +225,6 @@
       <Parent>linux</Parent>
       <Architectures>x86;armel;arm64</Architectures>
       <Versions>4.0.0;5.0.0;5.5.0;6.0.0</Versions>
-    </RuntimeGroup>
-
-    <RuntimeGroup Include="tvos">
-      <Parent>unix</Parent>
-      <Architectures>arm64;x64</Architectures>
-      <Versions>10;11;12;13</Versions>
-    </RuntimeGroup>
-
-    <RuntimeGroup Include="tvossimulator">
-      <Parent>tvos</Parent>
-      <Architectures>arm64;x64</Architectures>
-      <Versions>10;11;12;13</Versions>
     </RuntimeGroup>
 
     <RuntimeGroup Include="ubuntu">

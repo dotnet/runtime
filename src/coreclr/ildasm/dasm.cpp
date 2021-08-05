@@ -879,22 +879,6 @@ BOOL EnumClasses()
 #pragma warning(pop)
 #endif
 
-#ifndef _DEBUG
-bool HasSuppressingAttribute()
-{
-    const void* pData;
-    ULONG cbData;
-
-    return ((S_OK == g_pImport->GetCustomAttributeByName(TokenFromRid(mdtModule,1),
-                        (LPCUTF8)"System.Runtime.CompilerServices.SuppressIldasmAttribute",
-                        &pData,
-                        &cbData))
-         || (S_OK == g_pImport->GetCustomAttributeByName(TokenFromRid(mdtAssembly,1),
-                        (LPCUTF8)"System.Runtime.CompilerServices.SuppressIldasmAttribute",
-                        &pData,
-                        &cbData)));
-}
-#endif
 void DumpMscorlib(void* GUICookie)
 {
     // In the CoreCLR with reference assemblies and redirection it is more difficult to determine if
@@ -7541,17 +7525,6 @@ DoneInitialization:
         _ASSERTE(g_rchCA);
         memset(g_rchCA,0,g_uNCA+1);
     }
-#ifndef _DEBUG
-    if(HasSuppressingAttribute())
-    {
-        if (g_fDumpHeader)
-            DumpHeader(g_CORHeader,g_pFile);
-        if(g_fDumpMetaInfo)
-            DumpMetaInfo(g_wszFullInputFile,NULL,g_pFile);
-        printError(g_pFile,RstrUTF(IDS_E_SUPPRESSED));
-        goto CloseFileAndExit;
-    }
-#endif
 
     {
         // Dump the CLR header info if requested.
@@ -7814,9 +7787,6 @@ ReportAndExit:
             DumpRTFPostfix(g_pFile);
         }
 
-#ifndef _DEBUG
-CloseFileAndExit:
-#endif
         if(g_pFile)
         {
             fclose(g_pFile);

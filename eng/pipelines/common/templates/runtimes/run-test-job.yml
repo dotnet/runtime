@@ -63,7 +63,13 @@ jobs:
       - ${{ if notIn(parameters.testGroup, 'innerloop', 'clrinterpreter') }}:
         - '${{ parameters.runtimeFlavor }}_common_test_build_p1_AnyOS_AnyCPU_${{parameters.buildConfig }}'
       - ${{ if ne(parameters.stagedBuild, true) }}:
-        - ${{ format('{0}_{1}_product_build_{2}{3}_{4}_{5}', parameters.runtimeFlavor, parameters.runtimeVariant, parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
+        - ${{ if or( eq(parameters.runtimeVariant, 'minijit'), eq(parameters.runtimeVariant, 'monointerpreter'))  }}:
+          # This is needed for creating a CORE_ROOT in the current design.
+          - ${{ format('coreclr_{0}_product_build_{1}{2}_{3}_{4}', '', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
+          # minijit and mono interpreter runtimevariants do not require any special build of the runtime
+          - ${{ format('{0}_{1}_product_build_{2}{3}_{4}_{5}', parameters.runtimeFlavor, '', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
+        - ${{ if not(or(eq(parameters.runtimeVariant, 'minijit'), eq(parameters.runtimeVariant, 'monointerpreter')))  }}:
+          - ${{ format('{0}_{1}_product_build_{2}{3}_{4}_{5}', parameters.runtimeFlavor, parameters.runtimeVariant, parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
         - ${{ if ne(parameters.liveLibrariesBuildConfig, '') }}:
           - ${{ format('libraries_build_{0}{1}_{2}_{3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.liveLibrariesBuildConfig) }}
 
@@ -84,6 +90,13 @@ jobs:
       - name: runtimeFlavorArgs
         value: '-excludemonofailures'
 
+    - name: runtimeVariantArg
+      value: ''
+
+    - ${{ if not(eq(parameters.runtimeVariant, '')) }}:
+      - name: runtimeVariantArg
+        value: '/p:RuntimeVariant=${{ parameters.runtimeVariant }}'
+
     - name: crossgenArg
       value: ''
     - name: LogNamePrefix
@@ -91,7 +104,8 @@ jobs:
 
     - ${{ if eq(parameters.readyToRun, true) }}:
       - name: crossgenArg
-        value: 'crossgen'
+      # Switch R2R to use cg2 by default
+        value: 'crossgen2'
       - name: LogNamePrefix
         value: TestRunLogs_R2R
       - ${{ if eq(parameters.crossgen2, true) }}:
@@ -164,6 +178,9 @@ jobs:
         value: 180
       - name: timeoutPerTestInMinutes
         value: 30
+    - ${{ if in(parameters.testGroup, 'pgo') }}:
+      - name: timeoutPerTestCollectionInMinutes
+        value: 120
 
     - ${{ if eq(parameters.compositeBuildMode, true) }}:
       - name: crossgenArg
@@ -177,7 +194,7 @@ jobs:
     # TODO: update these numbers as they were determined long ago
     ${{ if eq(parameters.testGroup, 'innerloop') }}:
       timeoutInMinutes: 200
-    ${{ if in(parameters.testGroup, 'outerloop', 'jit-experimental') }}:
+    ${{ if in(parameters.testGroup, 'outerloop', 'jit-experimental', 'pgo') }}:
       timeoutInMinutes: 270
     ${{ if in(parameters.testGroup, 'gc-longrunning', 'gc-simulator') }}:
       timeoutInMinutes: 480
@@ -255,7 +272,7 @@ jobs:
 
 
     # Generate test wrappers. This is the step that examines issues.targets to exclude tests.
-    - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) buildtestwrappersonly $(runtimeFlavorArgs) $(crossgenArg) $(buildConfig) $(archType) $(crossArg) $(priorityArg) $(librariesOverrideArg)
+    - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) buildtestwrappersonly $(runtimeFlavorArgs) $(runtimeVariantArg) $(crossgenArg) $(buildConfig) $(archType) $(crossArg) $(priorityArg) $(librariesOverrideArg)
       displayName: Generate test wrappers
 
 
@@ -291,10 +308,10 @@ jobs:
 
     - ${{ if and(eq(parameters.runtimeFlavor, 'mono'), eq(parameters.runtimeVariant, 'llvmaot')) }}:
       - ${{ if eq(parameters.archType, 'x64') }}:
-        - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) mono_aot $(buildConfig) $(archType)
+        - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) mono_aot $(buildConfig) $(archType) $(runtimeVariantArg)
           displayName: "LLVM AOT compile CoreCLR tests"
       - ${{ if eq(parameters.archType, 'arm64') }}:
-        - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) mono_aot $(buildConfig) $(archType) cross
+        - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) mono_aot $(buildConfig) $(archType) cross $(runtimeVariantArg)
           displayName: "LLVM AOT cross-compile CoreCLR tests"
           env:
             __MonoToolPrefix: aarch64-linux-gnu-
@@ -309,6 +326,7 @@ jobs:
         osSubgroup: ${{ parameters.osSubgroup}}
         runtimeFlavorDisplayName: ${{ parameters.runtimeFlavorDisplayName }}
         shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
+        runtimeVariant: ${{ parameters.runtimeVariant }}
 
         ${{ if eq(variables['System.TeamProject'], 'public') }}:
           creator: $(Build.DefinitionName)
@@ -354,8 +372,7 @@ jobs:
           - normal
           - ${{ if eq(parameters.runtimeFlavor, 'coreclr') }}:
             - no_tiered_compilation
-          - ${{ if eq(parameters.runtimeFlavor, 'mono') }}:
-            - interpreter
+
         ${{ if in(parameters.testGroup, 'jitstress') }}:
           scenarios:
           - jitminopts
@@ -455,6 +472,12 @@ jobs:
           - jitminopts
           - forcerelocs
           - gcstress0xf
+        ${{ if in(parameters.testGroup, 'pgo') }}:
+          scenarios:
+          - nopgo
+          - defaultpgo
+          - dynamicpgo
+          - fullpgo
         ${{ if in(parameters.testGroup, 'gc-longrunning') }}:
           longRunningGcTests: true
           scenarios:
@@ -463,6 +486,12 @@ jobs:
           gcSimulatorTests: true
           scenarios:
           - normal
+        ${{ if in(parameters.testGroup, 'gc-standalone') }}:
+          scenarios:
+          - gcstandalone
+        ${{ if in(parameters.testGroup, 'gc-standalone-server') }}:
+          scenarios:
+          - gcstandaloneserver
         ${{ if in(parameters.testGroup, 'jitelthookenabled') }}:
           scenarios:
           - jitelthookenabled
@@ -471,10 +500,7 @@ jobs:
           scenarios:
           - jitosr
           - jitosr_stress
-          - jitehwritethru
           - jitobjectstackallocation
-          - jitpgo
-          - jitpgo_inline
         ${{ if in(parameters.testGroup, 'ilasm') }}:
           scenarios:
           - ilasmroundtrip

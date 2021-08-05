@@ -102,7 +102,7 @@ namespace System.Net.Mail
             }
         }
 
-        [Obsolete("ReplyTo is obsoleted for this type.  Please use ReplyToList instead which can accept multiple addresses. https://go.microsoft.com/fwlink/?linkid=14202")]
+        [Obsolete("ReplyTo has been deprecated. Use ReplyToList instead, which can accept multiple addresses.")]
         public MailAddress? ReplyTo
         {
             get

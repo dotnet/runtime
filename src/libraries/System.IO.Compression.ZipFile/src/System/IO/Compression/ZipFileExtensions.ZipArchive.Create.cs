@@ -94,7 +94,7 @@ namespace System.IO.Compression
 
             // Argument checking gets passed down to FileStream's ctor and CreateEntry
 
-            using (Stream fs = new FileStream(sourceFileName, FileMode.Open, FileAccess.Read, FileShare.Read, bufferSize: 0x1000, useAsync: false))
+            using (FileStream fs = new FileStream(sourceFileName, FileMode.Open, FileAccess.Read, FileShare.Read, bufferSize: 0x1000, useAsync: false))
             {
                 ZipArchiveEntry entry = compressionLevel.HasValue
                                     ? destination.CreateEntry(entryName, compressionLevel.Value)
@@ -109,11 +109,15 @@ namespace System.IO.Compression
 
                 entry.LastWriteTime = lastWrite;
 
+                SetExternalAttributes(fs, entry);
+
                 using (Stream es = entry.Open())
                     fs.CopyTo(es);
 
                 return entry;
             }
         }
+
+        static partial void SetExternalAttributes(FileStream fs, ZipArchiveEntry entry);
     }
 }

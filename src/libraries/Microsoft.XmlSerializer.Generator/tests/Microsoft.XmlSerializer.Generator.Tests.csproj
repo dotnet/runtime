@@ -3,10 +3,11 @@
     <DefineConstants>$(DefineConstants);XMLSERIALIZERGENERATORTESTS</DefineConstants>
     <TargetFrameworks>$(NetCoreAppCurrent)</TargetFrameworks>
     <SkipTestsOnPlatform Condition="'$(TargetsMobile)' == 'true' or '$(TargetOS)' == 'FreeBSD' or '$(TargetArchitecture)' == 'arm' or '$(TargetArchitecture)' == 'arm64' or '$(TargetArchitecture)' == 'armel' or '$(TargetArchitecture)' == 'wasm'">true</SkipTestsOnPlatform>
+    <SkipTestsOnPlatform>true</SkipTestsOnPlatform>
   </PropertyGroup>
 
   <PropertyGroup>
-    <GeneratorRuntimeConfig>$(MSBuildThisFileDirectory)..\pkg\build\dotnet-Microsoft.XmlSerializer.Generator.runtimeconfig.json</GeneratorRuntimeConfig>
+    <GeneratorRuntimeConfig>$(MSBuildThisFileDirectory)..\src\build\dotnet-Microsoft.XmlSerializer.Generator.runtimeconfig.json</GeneratorRuntimeConfig>
     <GeneratorCommand>"$(DotNetTool)"</GeneratorCommand>
     <GeneratorCommand Condition="'$(OS)' == 'Windows_NT'">set DOTNET_MULTILEVEL_LOOKUP=0 &amp; $(GeneratorCommand)</GeneratorCommand>
     <GeneratorCommand Condition="'$(OS)' != 'Windows_NT'">export DOTNET_MULTILEVEL_LOOKUP=0 &amp;&amp; $(GeneratorCommand)</GeneratorCommand>

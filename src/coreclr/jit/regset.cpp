@@ -353,7 +353,7 @@ void RegSet::rsSpillTree(regNumber reg, GenTree* tree, unsigned regIdx /* =0 */)
     // The spill flag on the node should be cleared by the caller of this method.
     assert((tree->gtFlags & GTF_SPILL) != 0);
 
-    unsigned regFlags = 0;
+    GenTreeFlags regFlags = GTF_EMPTY;
     if (call != nullptr)
     {
         regFlags = call->GetRegSpillFlagByIdx(regIdx);
@@ -559,7 +559,7 @@ TempDsc* RegSet::rsUnspillInPlace(GenTree* tree, regNumber oldReg, unsigned regI
     if (tree->IsMultiRegCall())
     {
         GenTreeCall* call  = tree->AsCall();
-        unsigned     flags = call->GetRegSpillFlagByIdx(regIdx);
+        GenTreeFlags flags = call->GetRegSpillFlagByIdx(regIdx);
         flags &= ~GTF_SPILLED;
         call->SetRegSpillFlagByIdx(flags, regIdx);
     }
@@ -567,14 +567,14 @@ TempDsc* RegSet::rsUnspillInPlace(GenTree* tree, regNumber oldReg, unsigned regI
     else if (tree->OperIsPutArgSplit())
     {
         GenTreePutArgSplit* splitArg = tree->AsPutArgSplit();
-        unsigned            flags    = splitArg->GetRegSpillFlagByIdx(regIdx);
+        GenTreeFlags        flags    = splitArg->GetRegSpillFlagByIdx(regIdx);
         flags &= ~GTF_SPILLED;
         splitArg->SetRegSpillFlagByIdx(flags, regIdx);
     }
     else if (tree->OperIsMultiRegOp())
     {
         GenTreeMultiRegOp* multiReg = tree->AsMultiRegOp();
-        unsigned           flags    = multiReg->GetRegSpillFlagByIdx(regIdx);
+        GenTreeFlags       flags    = multiReg->GetRegSpillFlagByIdx(regIdx);
         flags &= ~GTF_SPILLED;
         multiReg->SetRegSpillFlagByIdx(flags, regIdx);
     }
@@ -582,7 +582,7 @@ TempDsc* RegSet::rsUnspillInPlace(GenTree* tree, regNumber oldReg, unsigned regI
     else if (tree->IsMultiRegLclVar())
     {
         GenTreeLclVar* lcl   = tree->AsLclVar();
-        unsigned       flags = lcl->GetRegSpillFlagByIdx(regIdx);
+        GenTreeFlags   flags = lcl->GetRegSpillFlagByIdx(regIdx);
         flags &= ~GTF_SPILLED;
         lcl->SetRegSpillFlagByIdx(flags, regIdx);
     }

@@ -1,7 +1,4 @@
 <Project Sdk="Microsoft.Build.NoTargets">
-  <PropertyGroup>
-    <TargetFramework>$(NetCoreAppToolCurrent)</TargetFramework>
-  </PropertyGroup>
 
   <PropertyGroup>
     <!-- OS name is case sensitive! -->
@@ -11,10 +8,12 @@
     <_MonoCrossAOTTargetOS Condition="$(_MonoGenerateOffsetsOSGroups.contains('+browser+'))">$(_MonoCrossAOTTargetOS)+browser+</_MonoCrossAOTTargetOS>
     <_MonoCrossAOTTargetOS Condition="$(_MonoGenerateOffsetsOSGroups.contains('+tvos+'))">$(_MonoCrossAOTTargetOS)+tvos+</_MonoCrossAOTTargetOS>
     <_MonoCrossAOTTargetOS Condition="$(_MonoGenerateOffsetsOSGroups.contains('+ios+'))">$(_MonoCrossAOTTargetOS)+ios+</_MonoCrossAOTTargetOS>
+    <_MonoCrossAOTTargetOS Condition="$(_MonoGenerateOffsetsOSGroups.contains('+maccatalyst+'))">$(_MonoCrossAOTTargetOS)+maccatalyst+</_MonoCrossAOTTargetOS>
     <MonoAotTargets Condition="$(_MonoCrossAOTTargetOS.contains('+android+'))">$(MonoAotTargets);Android-x64;Android-arm64;Android-x86;Android-arm</MonoAotTargets>
     <MonoAotTargets Condition="$(_MonoCrossAOTTargetOS.contains('+browser+'))">$(MonoAotTargets);Browser-wasm</MonoAotTargets>
     <MonoAotTargets Condition="$(_MonoCrossAOTTargetOS.contains('+tvos+'))">$(MonoAotTargets);tvOSSimulator-x64;tvOSSimulator-arm64;tvOS-arm64</MonoAotTargets>
     <MonoAotTargets Condition="$(_MonoCrossAOTTargetOS.contains('+ios+'))">$(MonoAotTargets);iOSSimulator-x64;iOSSimulator-arm64;iOSSimulator-x86;iOS-arm64;iOS-arm</MonoAotTargets>
+    <MonoAotTargets Condition="$(_MonoCrossAOTTargetOS.contains('+maccatalyst+'))">$(MonoAotTargets);MacCatalyst-x64;MacCatalyst-arm64</MonoAotTargets>
   </PropertyGroup>
 
   <ItemGroup>
@@ -46,9 +45,9 @@
       <_MonoAOTCrossFiles Include="$(ArtifactsBinDir)mono\$(MonoAotTargetOS).$(MonoAotTargetArchitecture).$(Configuration)\cross\$(MonoAotTargetRid.ToLower())\**" />
     </ItemGroup>
 
-    <Message Text="Copying @(_MonoAOTCrossFiles) to $(RealRuntimeBinDir)cross\$(MonoAotTargetRid.ToLower())" Importance="High" />
+    <Message Text="Copying @(_MonoAOTCrossFiles) to $(RealRuntimeBinDir)cross\$(TargetOS.ToLower())-$(TargetArchitecture.ToLower())\$(MonoAotTargetRid.ToLower())" Importance="High" />
 
-    <Copy SourceFiles="@(_MonoAOTCrossFiles)" DestinationFolder="$(RealRuntimeBinDir)cross\$(MonoAotTargetRid.ToLower())">
+    <Copy SourceFiles="@(_MonoAOTCrossFiles)" DestinationFolder="$(RealRuntimeBinDir)cross\$(TargetOS.ToLower())-$(TargetArchitecture.ToLower())\$(MonoAotTargetRid.ToLower())">
       <Output TaskParameter="DestinationFiles" ItemName="FileWrites"/>
     </Copy>
   </Target>

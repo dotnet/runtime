@@ -71,12 +71,6 @@
 /* Define to the home page for this package. */
 #cmakedefine PACKAGE_URL 1
 
-/* Version of the corlib-runtime interface */
-#cmakedefine MONO_CORLIB_VERSION "@MONO_CORLIB_VERSION@"
-
-/* Disables the IO portability layer */
-#cmakedefine DISABLE_PORTABILITY 1
-
 /* This platform does not support symlinks */
 #cmakedefine HOST_NO_SYMLINKS 1
 
@@ -893,6 +887,9 @@
 /* The JIT/AOT targets tvOS */
 #cmakedefine TARGET_TVOS 1
 
+/* The JIT/AOT targets Mac Catalyst */
+#cmakedefine TARGET_MACCAT 1
+
 /* The JIT/AOT targets OSX */
 #cmakedefine TARGET_OSX 1
 
@@ -907,6 +904,9 @@
 
 /* size of target machine integer registers */
 #define SIZEOF_REGISTER @SIZEOF_REGISTER@
+
+/* host or target doesn't allow unaligned memory access */
+#cmakedefine NO_UNALIGNED_ACCESS 1
 
 /* Support for the visibility ("hidden") attribute */
 #cmakedefine HAVE_VISIBILITY_HIDDEN 1
@@ -1064,11 +1064,11 @@
 /* Enable runtime checks of mempool references between metadata images (must set env var MONO_CHECK_MODE=metadata) */
 #cmakedefine ENABLE_CHECKED_BUILD_METADATA 1
 
-/* Enable runtime support for metadata updates */
-#cmakedefine ENABLE_METADATA_UPDATE 1
-
 /* Enable static linking of mono runtime components */
 #cmakedefine STATIC_COMPONENTS
+
+/* Enable perf jit dump support */
+#cmakedefine ENABLE_JIT_DUMP 1
 
 #if defined(ENABLE_LLVM) && defined(HOST_WIN32) && defined(TARGET_WIN32) && (!defined(TARGET_AMD64) || !defined(_MSC_VER))
 #error LLVM for host=Windows and target=Windows is only supported on x64 MSVC build.

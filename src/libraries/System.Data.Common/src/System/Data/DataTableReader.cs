@@ -3,6 +3,7 @@
 
 using System.Data.Common;
 using System.Collections;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Data
 {
@@ -308,6 +309,7 @@ namespace System.Data
             }
         }
 
+        [return: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.PublicFields)]
         public override Type GetProviderSpecificFieldType(int ordinal)
         {
             ValidateOpen(nameof(GetProviderSpecificFieldType));
@@ -525,6 +527,7 @@ namespace System.Data
             }
         }
 
+        [return: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.PublicFields)]
         public override Type GetFieldType(int ordinal)
         {
             ValidateOpen(nameof(GetFieldType));
@@ -734,7 +737,14 @@ namespace System.Data
             DataColumn ColumnSize = new DataColumn(SchemaTableColumn.ColumnSize, typeof(int));
             DataColumn NumericPrecision = new DataColumn(SchemaTableColumn.NumericPrecision, typeof(short));
             DataColumn NumericScale = new DataColumn(SchemaTableColumn.NumericScale, typeof(short));
-            DataColumn DataType = new DataColumn(SchemaTableColumn.DataType, typeof(Type));
+            DataColumn DataType = GetSystemTypeDataColumn();
+
+            [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2111:ReflectionToDynamicallyAccessedMembers",
+                Justification = "The problem is Type.TypeInitializer which requires constructors on the Type instance." +
+                    "In this case the TypeInitializer property is not accessed dynamically.")]
+            static DataColumn GetSystemTypeDataColumn() =>
+                new DataColumn(SchemaTableColumn.DataType, typeof(Type));
+
             DataColumn ProviderType = new DataColumn(SchemaTableColumn.ProviderType, typeof(int));
             DataColumn IsLong = new DataColumn(SchemaTableColumn.IsLong, typeof(bool));
             DataColumn AllowDBNull = new DataColumn(SchemaTableColumn.AllowDBNull, typeof(bool));

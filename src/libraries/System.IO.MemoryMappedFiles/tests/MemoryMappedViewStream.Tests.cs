@@ -18,6 +18,7 @@ namespace System.IO.MemoryMappedFiles.Tests
         /// Test to validate the offset, size, and access parameters to MemoryMappedFile.CreateViewAccessor.
         /// </summary>
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/51375", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public void InvalidArguments()
         {
             int mapLength = s_pageSize.Value;
@@ -90,7 +91,7 @@ namespace System.IO.MemoryMappedFiles.Tests
                 }
                 catch (UnauthorizedAccessException)
                 {
-                    if ((OperatingSystem.IsMacOS() || PlatformDetection.IsInContainer) &&
+                    if ((OperatingSystem.IsMacOS() || OperatingSystem.IsMacCatalyst() || PlatformDetection.IsInContainer) &&
                         (viewAccess == MemoryMappedFileAccess.ReadExecute || viewAccess == MemoryMappedFileAccess.ReadWriteExecute))
                     {
                         // Containers and OSX with SIP enabled do not have execute permissions by default.
@@ -205,7 +206,7 @@ namespace System.IO.MemoryMappedFiles.Tests
                     s.Position = s.Length - data.Length;
                     s.Write(data, 0, data.Length);
                     s.Position = s.Length - data.Length;
-                    Array.Clear(data, 0, data.Length);
+                    Array.Clear(data);
                     Assert.Equal(3, s.Read(data, 0, data.Length));
                     Assert.Equal(new byte[] { 1, 2, 3 }, data);
 

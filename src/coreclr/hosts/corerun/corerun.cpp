@@ -74,7 +74,8 @@ static void wait_for_debugger()
     }
     else if (state == pal::debugger_state_t::not_attached)
     {
-        pal::fprintf(stdout, W("Waiting for the debugger to attach. Press any key to continue ...\n"));
+        uint32_t pid = pal::get_process_id();
+        pal::fprintf(stdout, W("Waiting for the debugger to attach (PID: %u). Press any key to continue ...\n"), pid);
         (void)getchar();
         state = pal::is_debugger_attached();
     }

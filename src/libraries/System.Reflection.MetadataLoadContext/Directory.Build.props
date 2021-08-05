@@ -2,10 +2,5 @@
   <Import Project="..\Directory.Build.props" />
   <PropertyGroup>
     <StrongNameKeyId>Open</StrongNameKeyId>
-    <PackageDescription>Provides read-only reflection on assemblies in an isolated context with support for assemblies that have different architectures and runtimes.
-
-Commonly Used Types:
-System.Reflection.MetadataLoadContext
-System.Reflection.MetadataAssemblyResolver</PackageDescription>
   </PropertyGroup>
 </Project>

@@ -4745,18 +4745,16 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			x86_movd_reg_xreg (code, ins->dreg, ins->sreg1);
 			break;
 		case OP_EXTRACT_I1:
-		case OP_EXTRACT_U1:
 			x86_movd_reg_xreg (code, ins->dreg, ins->sreg1);
 			if (ins->inst_c0)
 				x86_shift_reg_imm (code, X86_SHR, ins->dreg, ins->inst_c0 * 8);
-			x86_widen_reg (code, ins->dreg, ins->dreg, ins->opcode == OP_EXTRACT_I1, FALSE);
+			x86_widen_reg (code, ins->dreg, ins->dreg, ins->inst_c1 == MONO_TYPE_I1, FALSE);
 			break;
 		case OP_EXTRACT_I2:
-		case OP_EXTRACT_U2:
 			x86_movd_reg_xreg (code, ins->dreg, ins->sreg1);
 			if (ins->inst_c0)
 				x86_shift_reg_imm (code, X86_SHR, ins->dreg, 16);
-			x86_widen_reg (code, ins->dreg, ins->dreg, ins->opcode == OP_EXTRACT_I2, TRUE);
+			x86_widen_reg (code, ins->dreg, ins->dreg, ins->inst_c1 == MONO_TYPE_I2, TRUE);
 			break;
 		case OP_EXTRACT_R8:
 			if (ins->inst_c0)
@@ -6312,8 +6310,8 @@ mono_arch_emit_load_got_addr (guint8 *start, guint8 *code, MonoCompile *cfg, Mon
 		*ji = mono_patch_info_list_prepend (*ji, code - start, MONO_PATCH_INFO_GOT_OFFSET, NULL);
 	x86_pop_reg (code, MONO_ARCH_GOT_REG);
 	x86_alu_reg_imm (code, X86_ADD, MONO_ARCH_GOT_REG, 0xf0f0f0f0);
-
-	set_code_cursor (cfg, code);
+	if (cfg)
+		set_code_cursor (cfg, code);
 	return code;
 }
 

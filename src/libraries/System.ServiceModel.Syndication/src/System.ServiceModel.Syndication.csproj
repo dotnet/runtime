@@ -1,15 +1,16 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFrameworks>$(NetCoreAppCurrent);netstandard2.0;net461-windows</TargetFrameworks>
-    <ExcludeCurrentNetCoreAppFromPackage>true</ExcludeCurrentNetCoreAppFromPackage>
+    <TargetFrameworks>$(NetCoreAppCurrent);netcoreapp3.1;netstandard2.0;net461</TargetFrameworks>
     <IncludePlatformAttributes>true</IncludePlatformAttributes>
+    <IsPackable>true</IsPackable>
+    <PackageDescription>Provides classes related to service model syndication.</PackageDescription>
   </PropertyGroup>
   <!-- DesignTimeBuild requires all the TargetFramework Derived Properties to not be present in the first property group. -->
   <PropertyGroup>
-    <IsPartialFacadeAssembly Condition="$(TargetFramework.StartsWith('net4'))">true</IsPartialFacadeAssembly>
-    <OmitResources Condition="$(TargetFramework.StartsWith('net4'))">true</OmitResources>
+    <IsPartialFacadeAssembly Condition="$([MSBuild]::GetTargetFrameworkIdentifier('$(TargetFramework)')) == '.NETFramework'">true</IsPartialFacadeAssembly>
+    <OmitResources Condition="'$(IsPartialFacadeAssembly)' == 'true'">true</OmitResources>
   </PropertyGroup>
-  <ItemGroup Condition="!$(TargetFramework.StartsWith('net4'))">
+  <ItemGroup Condition="'$(IsPartialFacadeAssembly)' != 'true'">
     <Compile Include="System\ServiceModel\Channels\UriGenerator.cs" />
     <Compile Include="System\ServiceModel\Syndication\App10Constants.cs" />
     <Compile Include="System\ServiceModel\Syndication\Atom10Constants.cs" />
@@ -53,17 +54,23 @@
     <Compile Include="System\ServiceModel\Syndication\XmlUriData.cs" />
     <Compile Include="System\ServiceModel\XmlBuffer.cs" />
   </ItemGroup>
-  <ItemGroup Condition="$(TargetFramework.StartsWith('net4'))">
-    <Reference Include="System.ServiceModel" />
-  </ItemGroup>
-  <ItemGroup Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)'">
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
     <Reference Include="System.Collections" />
+    <Reference Include="System.Diagnostics.Debug" Condition="'$(TargetFramework)' == 'netcoreapp3.1'" />
     <Reference Include="System.Linq" />
+    <Reference Include="System.Resources.ResourceManager" Condition="'$(TargetFramework)' == 'netcoreapp3.1'" />
     <Reference Include="System.Runtime" />
+    <Reference Include="System.Runtime.Extensions" Condition="'$(TargetFramework)' == 'netcoreapp3.1'" />
     <Reference Include="System.Runtime.Serialization.Primitives" />
     <Reference Include="System.Runtime.Serialization.Xml" />
     <Reference Include="System.Threading" />
     <Reference Include="System.Xml.ReaderWriter" />
     <Reference Include="System.Xml.XmlSerializer" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(IsPartialFacadeAssembly)' == 'true'">
+    <Reference Include="System.ServiceModel" />
+  </ItemGroup>
+  <ItemGroup>
+    <NETStandardCompatError Include="netcoreapp2.0" Supported="$(NetCoreAppMinimum)" />
   </ItemGroup>
 </Project>

@@ -7,12 +7,7 @@ using System.Runtime.CompilerServices;
 namespace System.Drawing
 {
     [TypeForwardedFrom("System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a")]
-#if NETCOREAPP2_0
-    internal
-#else
-    public
-#endif
-    enum KnownColor
+    public enum KnownColor
     {
         // This enum is order dependent!!!
         //

@@ -1239,7 +1239,7 @@ namespace System.Text.Json.Serialization.Tests
 
             ClassWithExtensionPropertyAsJsonElement obj = JsonSerializer.Deserialize<ClassWithExtensionPropertyAsJsonElement>(Json, options);
             JsonElement overflowProp = obj.MyOverflow["hello"];
-            Assert.Equal(JsonValueKind.String, overflowProp.ValueKind);
+            Assert.Equal(JsonValueKind.Undefined, overflowProp.ValueKind);
 
             string newJson = JsonSerializer.Serialize(obj, options);
             Assert.Equal("{\"hello\":{\"Hi\":\"There\"}}", newJson);

@@ -31,6 +31,7 @@ namespace System.IO.Tests.Enumeration
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/55821", TestPlatforms.Android)]
         public void CanRecurseFromRoot()
         {
             string root = Path.GetPathRoot(Path.GetTempPath());

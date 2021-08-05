@@ -208,7 +208,7 @@ namespace SerializationTestTypes
     public class DataContract
     {
         static Dictionary<RuntimeTypeHandle, DataContract> cache = new Dictionary<RuntimeTypeHandle, DataContract>(RuntimeTypeHandleEqualityComparer.Comparer);
-        static MD5CryptoServiceProvider md5 = null;
+        static MD5 md5 = null;
 
         Type underlyingType;
         bool isValueType;
@@ -267,7 +267,7 @@ namespace SerializationTestTypes
         private static string GetNamespacesDigest(string namespaces)
         {
             if (md5 == null)
-                md5 = new MD5CryptoServiceProvider();
+                md5 = MD5.Create();
             byte[] namespaceBytes = Encoding.UTF8.GetBytes(namespaces);
             byte[] digestBytes = md5.ComputeHash(namespaceBytes);
             char[] digestChars = new char[24];

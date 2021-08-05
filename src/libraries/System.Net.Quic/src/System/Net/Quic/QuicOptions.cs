@@ -3,7 +3,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -19,14 +18,14 @@ namespace System.Net.Quic
         /// Default is 100.
         /// </summary>
         // TODO consider constraining these limits to 0 to whatever the max of the QUIC library we are using.
-        public long MaxBidirectionalStreams { get; set; } = 100;
+        public int MaxBidirectionalStreams { get; set; } = 100;
 
         /// <summary>
         /// Limit on the number of unidirectional streams the remote peer connection can create on an open connection.
         /// Default is 100.
         /// </summary>
         // TODO consider constraining these limits to 0 to whatever the max of the QUIC library we are using.
-        public long MaxUnidirectionalStreams { get; set; } = 100;
+        public int MaxUnidirectionalStreams { get; set; } = 100;
 
         /// <summary>
         /// Idle timeout for connections, after which the connection will be closed.

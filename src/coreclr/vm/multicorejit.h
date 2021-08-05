@@ -84,9 +84,9 @@ private:
     enum class TierInfo : TADDR
     {
         None = 0,
-        WasTier0Jit = 1 << 0,
+        WasTier0 = 1 << 0,
         JitSwitchedToOptimized = 1 << 1,
-        Mask = None | WasTier0Jit | JitSwitchedToOptimized
+        Mask = None | WasTier0 | JitSwitchedToOptimized
     };
 
     TADDR m_entryPointAndTierInfo;
@@ -118,12 +118,12 @@ public:
         return IsNull() ? NULL : PINSTRToPCODE(m_entryPointAndTierInfo & ~(TADDR)TierInfo::Mask);
     }
 
-    bool WasTier0Jit() const
+    bool WasTier0() const
     {
         WRAPPER_NO_CONTRACT;
         VerifyIsNotNull();
 
-        return (m_entryPointAndTierInfo & (TADDR)TierInfo::WasTier0Jit) != 0;
+        return (m_entryPointAndTierInfo & (TADDR)TierInfo::WasTier0) != 0;
     }
 
     bool JitSwitchedToOptimized() const
@@ -207,7 +207,6 @@ private:
     LONG                    m_fSetProfileRootCalled;   // SetProfileRoot has been called
     LONG                    m_fAutoStartCalled;
     bool                    m_fRecorderActive;         // Manager open for recording/event, turned on when initialized properly, turned off when at full capacity
-    bool                    m_fAppxMode;
     CrstExplicitInit        m_playerLock;              // Thread protection (accessing m_pMulticoreJitRecorder)
     MulticoreJitPlayerStat  m_stats;                   // Statistics: normally gathered by player, written to profile
 
@@ -229,7 +228,6 @@ public:
         m_fSetProfileRootCalled = 0;
         m_fAutoStartCalled      = 0;
         m_fRecorderActive       = false;
-        m_fAppxMode             = false;
     }
 
     ~MulticoreJitManager()
@@ -281,7 +279,7 @@ public:
 
     MulticoreJitCodeInfo RequestMethodCode(MethodDesc * pMethod);
 
-    void RecordMethodJit(MethodDesc * pMethod);
+    void RecordMethodJitOrLoad(MethodDesc * pMethod);
 
     MulticoreJitPlayerStat & GetStats()
     {
@@ -299,7 +297,7 @@ public:
 
     static void DisableMulticoreJit();
 
-    static bool IsSupportedModule(Module * pModule, bool fMethodJit, bool fAppx);
+    static bool IsSupportedModule(Module * pModule, bool fMethodJit);
 
     static FileLoadLevel GetModuleFileLoadLevel(Module * pModule);
 

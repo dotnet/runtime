@@ -115,6 +115,29 @@
         "alpine.3.12-x64"
       ]
     },
+    "alpine.3.14": {
+      "#import": [
+        "alpine.3.13"
+      ]
+    },
+    "alpine.3.14-arm": {
+      "#import": [
+        "alpine.3.14",
+        "alpine.3.13-arm"
+      ]
+    },
+    "alpine.3.14-arm64": {
+      "#import": [
+        "alpine.3.14",
+        "alpine.3.13-arm64"
+      ]
+    },
+    "alpine.3.14-x64": {
+      "#import": [
+        "alpine.3.14",
+        "alpine.3.13-x64"
+      ]
+    },
     "alpine.3.6": {
       "#import": [
         "alpine"
@@ -526,6 +549,35 @@
         "android.29-x86"
       ]
     },
+    "android.31": {
+      "#import": [
+        "android.30"
+      ]
+    },
+    "android.31-arm": {
+      "#import": [
+        "android.31",
+        "android.30-arm"
+      ]
+    },
+    "android.31-arm64": {
+      "#import": [
+        "android.31",
+        "android.30-arm64"
+      ]
+    },
+    "android.31-x64": {
+      "#import": [
+        "android.31",
+        "android.30-x64"
+      ]
+    },
+    "android.31-x86": {
+      "#import": [
+        "android.31",
+        "android.30-x86"
+      ]
+    },
     "any": {
       "#import": [
         "base"
@@ -697,6 +749,41 @@
     "debian.10-x86": {
       "#import": [
         "debian.10",
+        "debian-x86"
+      ]
+    },
+    "debian.11": {
+      "#import": [
+        "debian"
+      ]
+    },
+    "debian.11-arm": {
+      "#import": [
+        "debian.11",
+        "debian-arm"
+      ]
+    },
+    "debian.11-arm64": {
+      "#import": [
+        "debian.11",
+        "debian-arm64"
+      ]
+    },
+    "debian.11-armel": {
+      "#import": [
+        "debian.11",
+        "debian-armel"
+      ]
+    },
+    "debian.11-x64": {
+      "#import": [
+        "debian.11",
+        "debian-x64"
+      ]
+    },
+    "debian.11-x86": {
+      "#import": [
+        "debian.11",
         "debian-x86"
       ]
     },
@@ -1211,6 +1298,23 @@
         "ios.13-x64"
       ]
     },
+    "ios.15": {
+      "#import": [
+        "ios.14"
+      ]
+    },
+    "ios.15-arm64": {
+      "#import": [
+        "ios.15",
+        "ios.14-arm64"
+      ]
+    },
+    "ios.15-x64": {
+      "#import": [
+        "ios.15",
+        "ios.14-x64"
+      ]
+    },
     "iossimulator": {
       "#import": [
         "ios"
@@ -1325,6 +1429,23 @@
         "iossimulator.13-x64"
       ]
     },
+    "iossimulator.15": {
+      "#import": [
+        "iossimulator.14"
+      ]
+    },
+    "iossimulator.15-arm64": {
+      "#import": [
+        "iossimulator.15",
+        "iossimulator.14-arm64"
+      ]
+    },
+    "iossimulator.15-x64": {
+      "#import": [
+        "iossimulator.15",
+        "iossimulator.14-x64"
+      ]
+    },
     "linux": {
       "#import": [
         "unix"
@@ -1377,6 +1498,12 @@
         "linux-armel"
       ]
     },
+    "linux-musl-s390x": {
+      "#import": [
+        "linux-musl",
+        "linux-s390x"
+      ]
+    },
     "linux-musl-x64": {
       "#import": [
         "linux-musl",
@@ -1387,6 +1514,12 @@
       "#import": [
         "linux-musl",
         "linux-x86"
+      ]
+    },
+    "linux-s390x": {
+      "#import": [
+        "linux",
+        "unix-s390x"
       ]
     },
     "linux-x64": {
@@ -1571,6 +1704,23 @@
       "#import": [
         "maccatalyst.14",
         "maccatalyst.13-x64"
+      ]
+    },
+    "maccatalyst.15": {
+      "#import": [
+        "maccatalyst.14"
+      ]
+    },
+    "maccatalyst.15-arm64": {
+      "#import": [
+        "maccatalyst.15",
+        "maccatalyst.14-arm64"
+      ]
+    },
+    "maccatalyst.15-x64": {
+      "#import": [
+        "maccatalyst.15",
+        "maccatalyst.14-x64"
       ]
     },
     "ol": {
@@ -2504,6 +2654,40 @@
         "tvos.12-x64"
       ]
     },
+    "tvos.14": {
+      "#import": [
+        "tvos.13"
+      ]
+    },
+    "tvos.14-arm64": {
+      "#import": [
+        "tvos.14",
+        "tvos.13-arm64"
+      ]
+    },
+    "tvos.14-x64": {
+      "#import": [
+        "tvos.14",
+        "tvos.13-x64"
+      ]
+    },
+    "tvos.15": {
+      "#import": [
+        "tvos.14"
+      ]
+    },
+    "tvos.15-arm64": {
+      "#import": [
+        "tvos.15",
+        "tvos.14-arm64"
+      ]
+    },
+    "tvos.15-x64": {
+      "#import": [
+        "tvos.15",
+        "tvos.14-x64"
+      ]
+    },
     "tvossimulator": {
       "#import": [
         "tvos"
@@ -2587,6 +2771,40 @@
       "#import": [
         "tvossimulator.13",
         "tvossimulator.12-x64"
+      ]
+    },
+    "tvossimulator.14": {
+      "#import": [
+        "tvossimulator.13"
+      ]
+    },
+    "tvossimulator.14-arm64": {
+      "#import": [
+        "tvossimulator.14",
+        "tvossimulator.13-arm64"
+      ]
+    },
+    "tvossimulator.14-x64": {
+      "#import": [
+        "tvossimulator.14",
+        "tvossimulator.13-x64"
+      ]
+    },
+    "tvossimulator.15": {
+      "#import": [
+        "tvossimulator.14"
+      ]
+    },
+    "tvossimulator.15-arm64": {
+      "#import": [
+        "tvossimulator.15",
+        "tvossimulator.14-arm64"
+      ]
+    },
+    "tvossimulator.15-x64": {
+      "#import": [
+        "tvossimulator.15",
+        "tvossimulator.14-x64"
       ]
     },
     "ubuntu": {
@@ -3079,6 +3297,11 @@
       ]
     },
     "unix-mips64": {
+      "#import": [
+        "unix"
+      ]
+    },
+    "unix-s390x": {
       "#import": [
         "unix"
       ]

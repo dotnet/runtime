@@ -29,7 +29,7 @@ namespace System.Numerics
                 Debug.Assert(q2.Length == modulus.Length * 2 + 2);
 
                 // Let r = 4^k, with 2^k > m
-                r[r.Length - 1] = 1;
+                r[^1] = 1;
 
                 // Let mu = 4^k / m
                 Divide(r, modulus, mu);

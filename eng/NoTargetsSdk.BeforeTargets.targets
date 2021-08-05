@@ -1,0 +1,9 @@
+<Project>
+
+  <PropertyGroup>
+    <!-- NoTargets SDK needs a TFM set. Use the latest .NETCoreApp TFM that is supported by the SDK.
+         Only set a default if the project isn't multi-targeting. -->
+    <TargetFramework Condition="'$(TargetFramework)' == '' and '$(TargetFrameworks)' == ''">$(NetCoreAppToolCurrent)</TargetFramework>
+  </PropertyGroup>
+
+</Project>

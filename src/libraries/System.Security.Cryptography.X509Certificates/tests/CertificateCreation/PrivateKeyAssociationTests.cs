@@ -426,6 +426,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
         }
 
         [Fact]
+        [SkipOnPlatform(PlatformSupport.MobileAppleCrypto, "DSA is not available")]
         public static void ThirdPartyProvider_DSA()
         {
             using (DSA dsaOther = new DSAOther())

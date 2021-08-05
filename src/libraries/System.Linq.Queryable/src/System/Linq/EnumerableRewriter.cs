@@ -127,18 +127,45 @@ namespace System.Linq
             // we cannot use the expression tree in a context which has only execution
             // permissions.  We should endeavour to translate constants into
             // new constants which have public types.
-            if (t.IsGenericType && t.GetGenericTypeDefinition().GetInterfaces().Contains(typeof(IGrouping<,>)))
+            if (t.IsGenericType && ImplementsIGrouping(t))
                 return typeof(IGrouping<,>).MakeGenericType(t.GetGenericArguments());
             if (!t.IsNestedPrivate)
                 return t;
-            foreach (Type iType in t.GetInterfaces())
-            {
-                if (iType.IsGenericType && iType.GetGenericTypeDefinition() == typeof(IEnumerable<>))
-                    return iType;
-            }
+            if (TryGetImplementedIEnumerable(t, out Type? enumerableOfTType))
+                return enumerableOfTType;
             if (typeof(IEnumerable).IsAssignableFrom(t))
                 return typeof(IEnumerable);
             return t;
+
+            [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2075:UnrecognizedReflectionPattern",
+                Justification = "The IGrouping<,> is kept since it's directly referenced here" +
+                    "and so it will also be preserved in all places where it's implemented." +
+                    "The GetInterfaces may return less after trimming but it will include" +
+                    "the IGrouping<,> if it was there before trimming, which is enough for this" +
+                    "method to work.")]
+            static bool ImplementsIGrouping(Type type) =>
+                type.GetGenericTypeDefinition().GetInterfaces().Contains(typeof(IGrouping<,>));
+
+            [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2070:UnrecognizedReflectionPattern",
+                Justification = "The IEnumerable<> is kept since it's directly referenced here" +
+                    "and so it will also be preserved in all places where it's implemented." +
+                    "The GetInterfaces may return less after trimming but it will include" +
+                    "the IEnumerable<> if it was there before trimming, which is enough for this" +
+                    "method to work.")]
+            static bool TryGetImplementedIEnumerable(Type type, [NotNullWhen(true)] out Type? interfaceType)
+            {
+                foreach (Type iType in type.GetInterfaces())
+                {
+                    if (iType.IsGenericType && iType.GetGenericTypeDefinition() == typeof(IEnumerable<>))
+                    {
+                        interfaceType = iType;
+                        return true;
+                    }
+                }
+
+                interfaceType = null;
+                return false;
+            }
         }
 
         private Type GetEquivalentType(Type type)
@@ -172,26 +199,38 @@ namespace System.Linq
                 }
                 if (equiv == null)
                 {
-                    var interfacesWithInfo = pubType.GetInterfaces();
-                    var singleTypeGenInterfacesWithGetType = interfacesWithInfo
-                        .Where(i => i.IsGenericType && i.GenericTypeArguments.Length == 1)
-                        .Select(i => new { Info = i, GenType = i.GetGenericTypeDefinition() })
-                        .ToArray();
-                    Type? typeArg = singleTypeGenInterfacesWithGetType
-                        .Where(i => i.GenType == typeof(IOrderedQueryable<>) || i.GenType == typeof(IOrderedEnumerable<>))
-                        .Select(i => i.Info.GenericTypeArguments[0])
-                        .Distinct()
-                        .SingleOrDefault();
-                    if (typeArg != null)
-                        equiv = typeof(IOrderedEnumerable<>).MakeGenericType(typeArg);
-                    else
+                    equiv = GetEquivalentTypeToEnumerables(pubType);
+
+                    [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2070:UnrecognizedReflectionPattern",
+                        Justification = "The enumerable interface type (IOrderedQueryable<>, IOrderedEnumerable<>, IQueryable<> and IEnumerable<>) " +
+                            "is kept since it's directly referenced here" +
+                            "and so it will also be preserved in all places where it's implemented." +
+                            "The GetInterfaces may return less after trimming but it will include" +
+                            "the enumerable interface type if it was there before trimming, which is enough for this" +
+                            "method to work.")]
+                    static Type GetEquivalentTypeToEnumerables(Type sourceType)
                     {
-                        typeArg = singleTypeGenInterfacesWithGetType
-                            .Where(i => i.GenType == typeof(IQueryable<>) || i.GenType == typeof(IEnumerable<>))
+                        var interfacesWithInfo = sourceType.GetInterfaces();
+                        var singleTypeGenInterfacesWithGetType = interfacesWithInfo
+                            .Where(i => i.IsGenericType && i.GenericTypeArguments.Length == 1)
+                            .Select(i => new { Info = i, GenType = i.GetGenericTypeDefinition() })
+                            .ToArray();
+                        Type? typeArg = singleTypeGenInterfacesWithGetType
+                            .Where(i => i.GenType == typeof(IOrderedQueryable<>) || i.GenType == typeof(IOrderedEnumerable<>))
                             .Select(i => i.Info.GenericTypeArguments[0])
                             .Distinct()
-                            .Single();
-                        equiv = typeof(IEnumerable<>).MakeGenericType(typeArg);
+                            .SingleOrDefault();
+                        if (typeArg != null)
+                            return typeof(IOrderedEnumerable<>).MakeGenericType(typeArg);
+                        else
+                        {
+                            typeArg = singleTypeGenInterfacesWithGetType
+                                .Where(i => i.GenType == typeof(IQueryable<>) || i.GenType == typeof(IEnumerable<>))
+                                .Select(i => i.Info.GenericTypeArguments[0])
+                                .Distinct()
+                                .Single();
+                            return typeof(IEnumerable<>).MakeGenericType(typeArg);
+                        }
                     }
                 }
                 _equivalentTypeCache.Add(type, equiv);

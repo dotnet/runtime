@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
 using System.Reflection;
@@ -26,38 +27,55 @@ namespace Microsoft.WebAssembly.Diagnostics
             public List<InvocationExpressionSyntax> methodCall = new List<InvocationExpressionSyntax>();
             public List<MemberAccessExpressionSyntax> memberAccesses = new List<MemberAccessExpressionSyntax>();
             public List<object> argValues = new List<object>();
+            public Dictionary<string, JObject> memberAccessValues = new Dictionary<string, JObject>();
+            private int visitCount;
+            public bool hasMethodCalls;
 
+            public void VisitInternal(SyntaxNode node)
+            {
+                Visit(node);
+                visitCount++;
+            }
             public override void Visit(SyntaxNode node)
             {
                 // TODO: PointerMemberAccessExpression
-                if (node is MemberAccessExpressionSyntax maes
-                    && node.Kind() == SyntaxKind.SimpleMemberAccessExpression
-                    && !(node.Parent is MemberAccessExpressionSyntax))
+                if (visitCount == 0)
                 {
-                    memberAccesses.Add(maes);
-                }
+                    if (node is MemberAccessExpressionSyntax maes
+                        && node.Kind() == SyntaxKind.SimpleMemberAccessExpression
+                        && !(node.Parent is MemberAccessExpressionSyntax)
+                        && !(node.Parent is InvocationExpressionSyntax))
+                    {
+                        memberAccesses.Add(maes);
+                    }
 
-                if (node is IdentifierNameSyntax identifier
-                    && !(identifier.Parent is MemberAccessExpressionSyntax)
-                    && !identifiers.Any(x => x.Identifier.Text == identifier.Identifier.Text))
-                {
-                    identifiers.Add(identifier);
+                    if (node is IdentifierNameSyntax identifier
+                        && !(identifier.Parent is MemberAccessExpressionSyntax)
+                        && !(identifier.Parent is InvocationExpressionSyntax)
+                        && !identifiers.Any(x => x.Identifier.Text == identifier.Identifier.Text))
+                    {
+                        identifiers.Add(identifier);
+                    }
                 }
 
                 if (node is InvocationExpressionSyntax)
                 {
-                    methodCall.Add(node as InvocationExpressionSyntax);
-                    throw new Exception("Method Call is not implemented yet");
+                    if (visitCount == 1)
+                        methodCall.Add(node as InvocationExpressionSyntax);
+                    hasMethodCalls = true;
                 }
+
                 if (node is AssignmentExpressionSyntax)
                     throw new Exception("Assignment is not implemented yet");
                 base.Visit(node);
             }
 
-            public SyntaxTree ReplaceVars(SyntaxTree syntaxTree, IEnumerable<JObject> ma_values, IEnumerable<JObject> id_values)
+            public SyntaxTree ReplaceVars(SyntaxTree syntaxTree, IEnumerable<JObject> ma_values, IEnumerable<JObject> id_values, IEnumerable<JObject> method_values)
             {
-                CompilationUnitSyntax root = syntaxTree.GetCompilationUnitRoot();
                 var memberAccessToParamName = new Dictionary<string, string>();
+                var methodCallToParamName = new Dictionary<string, string>();
+
+                CompilationUnitSyntax root = syntaxTree.GetCompilationUnitRoot();
 
                 // 1. Replace all this.a occurrences with this_a_ABDE
                 root = root.ReplaceNodes(memberAccesses, (maes, _) =>
@@ -76,24 +94,60 @@ namespace Microsoft.WebAssembly.Diagnostics
                     return SyntaxFactory.IdentifierName(id_name);
                 });
 
+                 // 1.1 Replace all this.a() occurrences with this_a_ABDE
+                root = root.ReplaceNodes(methodCall, (m, _) =>
+                {
+                    string iesStr = m.ToString();
+                    if (!methodCallToParamName.TryGetValue(iesStr, out string id_name))
+                    {
+                        // Generate a random suffix
+                        string suffix = Guid.NewGuid().ToString().Substring(0, 5);
+                        string prefix = iesStr.Trim().Replace(".", "_").Replace("(", "_").Replace(")", "_");
+                        id_name = $"{prefix}_{suffix}";
+                        methodCallToParamName[iesStr] = id_name;
+                    }
+
+                    return SyntaxFactory.IdentifierName(id_name);
+                });
+
                 var paramsSet = new HashSet<string>();
 
                 // 2. For every unique member ref, add a corresponding method param
-                foreach ((MemberAccessExpressionSyntax maes, JObject value) in memberAccesses.Zip(ma_values))
+                if (ma_values != null)
                 {
-                    string node_str = maes.ToString();
-                    if (!memberAccessToParamName.TryGetValue(node_str, out string id_name))
+                    foreach ((MemberAccessExpressionSyntax maes, JObject value) in memberAccesses.Zip(ma_values))
                     {
-                        throw new Exception($"BUG: Expected to find an id name for the member access string: {node_str}");
+                        string node_str = maes.ToString();
+                        if (!memberAccessToParamName.TryGetValue(node_str, out string id_name))
+                        {
+                            throw new Exception($"BUG: Expected to find an id name for the member access string: {node_str}");
+                        }
+                        memberAccessValues[id_name] = value;
+                        root = UpdateWithNewMethodParam(root, id_name, value);
                     }
-
-                    root = UpdateWithNewMethodParam(root, id_name, value);
                 }
 
-                foreach ((IdentifierNameSyntax idns, JObject value) in identifiers.Zip(id_values))
+                if (id_values != null)
                 {
-                    root = UpdateWithNewMethodParam(root, idns.Identifier.Text, value);
+                    foreach ((IdentifierNameSyntax idns, JObject value) in identifiers.Zip(id_values))
+                    {
+                        root = UpdateWithNewMethodParam(root, idns.Identifier.Text, value);
+                    }
                 }
+
+                if (method_values != null)
+                {
+                    foreach ((InvocationExpressionSyntax ies, JObject value) in methodCall.Zip(method_values))
+                    {
+                        string node_str = ies.ToString();
+                        if (!methodCallToParamName.TryGetValue(node_str, out string id_name))
+                        {
+                            throw new Exception($"BUG: Expected to find an id name for the member access string: {node_str}");
+                        }
+                        root = UpdateWithNewMethodParam(root, id_name, value);
+                    }
+                }
+
 
                 return syntaxTree.WithRootAndOptions(root, syntaxTree.Options);
 
@@ -138,9 +192,9 @@ namespace Microsoft.WebAssembly.Diagnostics
                     case "boolean":
                         return value?.Value<bool>();
                     case "object":
-                        if (subType == "null")
-                            return null;
-                        break;
+                        return null;
+                    case "void":
+                        return null;
                 }
                 throw new Exception($"Evaluate of this datatype {type} not implemented yet");//, "Unsupported");
             }
@@ -157,8 +211,11 @@ namespace Microsoft.WebAssembly.Diagnostics
                         {
                             if (subType == "null")
                                 return variable["className"].Value<string>();
-                            break;
+                            else
+                                return "object";
                         }
+                    case "void":
+                        return "object";
                     default:
                         return value.GetType().FullName;
                 }
@@ -210,6 +267,22 @@ namespace Microsoft.WebAssembly.Diagnostics
             return values;
         }
 
+        private static async Task<IList<JObject>> ResolveMethodCalls(IEnumerable<InvocationExpressionSyntax> methodCalls, Dictionary<string, JObject> memberAccessValues, MemberReferenceResolver resolver, CancellationToken token)
+        {
+            var values = new List<JObject>();
+            foreach (InvocationExpressionSyntax methodCall in methodCalls)
+            {
+                JObject value = await resolver.Resolve(methodCall, memberAccessValues, token);
+                if (value == null)
+                    throw new ReturnAsErrorException($"Failed to resolve member access for {methodCall}", "ReferenceError");
+
+                values.Add(value);
+            }
+            return values;
+        }
+
+        [UnconditionalSuppressMessage("SingleFile", "IL3000:Avoid accessing Assembly file path when publishing as a single file",
+            Justification = "Suppressing the warning until gets fixed, see https://github.com/dotnet/runtime/issues/51202")]
         internal static async Task<JObject> CompileAndRunTheExpression(string expression, MemberReferenceResolver resolver, CancellationToken token)
         {
             expression = expression.Trim();
@@ -228,17 +301,17 @@ namespace Microsoft.WebAssembly.Diagnostics
                 throw new Exception($"BUG: Unable to evaluate {expression}, could not get expression from the syntax tree");
 
             FindVariableNMethodCall findVarNMethodCall = new FindVariableNMethodCall();
-            findVarNMethodCall.Visit(expressionTree);
+            findVarNMethodCall.VisitInternal(expressionTree);
 
             // this fails with `"a)"`
             // because the code becomes: return (a));
             // and the returned expression from GetExpressionFromSyntaxTree is `a`!
             if (expressionTree.Kind() == SyntaxKind.IdentifierName || expressionTree.Kind() == SyntaxKind.ThisExpression)
             {
-                string var_name = expressionTree.ToString();
-                JObject value = await resolver.Resolve(var_name, token);
+                string varName = expressionTree.ToString();
+                JObject value = await resolver.Resolve(varName, token);
                 if (value == null)
-                    throw new ReturnAsErrorException($"Cannot find member named '{var_name}'.", "ReferenceError");
+                    throw new ReturnAsErrorException($"Cannot find member named '{varName}'.", "ReferenceError");
 
                 return value;
             }
@@ -253,7 +326,19 @@ namespace Microsoft.WebAssembly.Diagnostics
 
             IList<JObject> identifierValues = await ResolveIdentifiers(findVarNMethodCall.identifiers, resolver, token);
 
-            syntaxTree = findVarNMethodCall.ReplaceVars(syntaxTree, memberAccessValues, identifierValues);
+            syntaxTree = findVarNMethodCall.ReplaceVars(syntaxTree, memberAccessValues, identifierValues, null);
+
+            if (findVarNMethodCall.hasMethodCalls)
+            {
+                expressionTree = GetExpressionFromSyntaxTree(syntaxTree);
+
+                findVarNMethodCall.VisitInternal(expressionTree);
+
+                IList<JObject> methodValues = await ResolveMethodCalls(findVarNMethodCall.methodCall, findVarNMethodCall.memberAccessValues, resolver, token);
+
+                syntaxTree = findVarNMethodCall.ReplaceVars(syntaxTree, null, null, methodValues);
+            }
+
             expressionTree = GetExpressionFromSyntaxTree(syntaxTree);
             if (expressionTree == null)
                 throw new Exception($"BUG: Unable to evaluate {expression}, could not get expression from the syntax tree");
@@ -310,7 +395,7 @@ namespace Microsoft.WebAssembly.Diagnostics
         private static object ConvertCSharpToJSType(object v, ITypeSymbol type)
         {
             if (v == null)
-                return new { type = "object", subtype = "null", className = type.ToString() };
+                return new { type = "object", subtype = "null", className = type.ToString(), description = type.ToString() };
 
             if (v is string s)
             {

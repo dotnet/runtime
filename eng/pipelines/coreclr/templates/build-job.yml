@@ -183,7 +183,7 @@ jobs:
 
     # Build DacTableGen (Windows-only)
     - ${{ if eq(parameters.osGroup, 'windows') }}:
-      - script: $(Build.SourcesDirectory)$(dir)build$(scriptExt) -subset clr.dactools $(crossArg) -arch $(archType) $(osArg) -c $(buildConfig) $(officialBuildIdArg) -ci /bl:$(Build.SourcesDirectory)artifacts/logs/$(buildConfig)/DacTools.binlog
+      - script: $(Build.SourcesDirectory)$(dir)build$(scriptExt) -subset clr.dactools $(crossArg) -arch $(archType) $(osArg) -c $(buildConfig) $(officialBuildIdArg) -ci /bl:$(Build.SourcesDirectory)artifacts/log/$(buildConfig)/DacTools.binlog
         displayName: Build DAC utility tools
 
     # Build CoreCLR Runtime
@@ -243,6 +243,8 @@ jobs:
           /p:DiagnosticsFilesRoot="$(buildProductRootFolderPath)"
           /p:SignDiagnostics=true
           /p:DotNetSignType=$(SignType)
+          -noBl
+          /bl:$(Build.SourcesDirectory)/artifacts/log/$(buildConfig)/SignDiagnostics.binlog
           -projects $(Build.SourcesDirectory)\eng\empty.csproj
         displayName: Sign Diagnostic Binaries
 
@@ -267,7 +269,7 @@ jobs:
           artifactName: $(buildProductArtifactName)
           displayName: 'product build'
 
-    - ${{ if and(in(parameters.osGroup, 'windows', 'Linux'), ne(parameters.archType, 'x86'), ne(parameters.compilerName, 'gcc'), ne(parameters.testGroup, 'clrTools')) }}:
+    - ${{ if and(in(parameters.osGroup, 'windows', 'Linux'), ne(parameters.archType, 'x86'), ne(parameters.compilerName, 'gcc'), ne(parameters.testGroup, 'clrTools'), eq(parameters.pgoType, '')) }}:
       - template: /eng/pipelines/coreclr/templates/crossdac-build.yml
         parameters:
           archType: ${{ parameters.archType }}

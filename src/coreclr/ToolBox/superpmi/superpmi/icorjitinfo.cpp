@@ -934,11 +934,11 @@ void MyICJI::getBoundaries(CORINFO_METHOD_HANDLE ftn,                      // [I
                            unsigned int*         cILOffsets,               // [OUT] size of pILOffsets
                            uint32_t**            pILOffsets,               // [OUT] IL offsets of interest
                                                                            //       jit MUST free with freeArray!
-                           ICorDebugInfo::BoundaryTypes* implictBoundaries // [OUT] tell jit, all boundries of this type
+                           ICorDebugInfo::BoundaryTypes* implicitBoundaries // [OUT] tell jit, all boundaries of this type
                            )
 {
     jitInstance->mc->cr->AddCall("getBoundaries");
-    jitInstance->mc->repGetBoundaries(ftn, cILOffsets, pILOffsets, implictBoundaries);
+    jitInstance->mc->repGetBoundaries(ftn, cILOffsets, pILOffsets, implicitBoundaries);
 
     // The JIT will want to call freearray on the array we pass back, so move the data into a form that complies with
     // this
@@ -1132,12 +1132,6 @@ int MyICJI::FilterException(struct _EXCEPTION_POINTERS* pExceptionPointers)
     jitInstance->mc->cr->AddCall("FilterException");
     int result = jitInstance->mc->repFilterException(pExceptionPointers);
     return result;
-}
-
-// Cleans up internal EE tracking when an exception is caught.
-void MyICJI::HandleException(struct _EXCEPTION_POINTERS* pExceptionPointers)
-{
-    jitInstance->mc->cr->AddCall("HandleException");
 }
 
 void MyICJI::ThrowExceptionForJitResult(HRESULT result)
@@ -1588,6 +1582,14 @@ bool MyICJI::runWithErrorTrap(void (*function)(void*), void* param)
     return RunWithErrorTrap(function, param);
 }
 
+// Runs the given function with the given parameter under an error trap
+// and returns true if the function completes successfully. This catches
+// all SPMI exceptions and lets others through.
+bool MyICJI::runWithSPMIErrorTrap(void (*function)(void*), void* param)
+{
+    return RunWithSPMIErrorTrap(function, param);
+}
+
 // Ideally we'd just use the copies of this in standardmacros.h
 // however, superpmi is missing various other dependencies as well
 static size_t ALIGN_UP_SPMI(size_t val, size_t alignment)
@@ -1601,54 +1603,46 @@ static void* ALIGN_UP_SPMI(void* val, size_t alignment)
 }
 
 // get a block of memory for the code, readonly data, and read-write data
-void MyICJI::allocMem(uint32_t           hotCodeSize,   /* IN */
-                      uint32_t           coldCodeSize,  /* IN */
-                      uint32_t           roDataSize,    /* IN */
-                      uint32_t           xcptnsCount,   /* IN */
-                      CorJitAllocMemFlag flag,          /* IN */
-                      void**             hotCodeBlock,  /* OUT */
-                      void**             coldCodeBlock, /* OUT */
-                      void**             roDataBlock    /* OUT */
-                      )
+void MyICJI::allocMem(AllocMemArgs* pArgs)
 {
     jitInstance->mc->cr->AddCall("allocMem");
 
     // TODO-Cleanup: Could hot block size be ever 0?
     size_t codeAlignment      = sizeof(void*);
-    size_t hotCodeAlignedSize = static_cast<size_t>(hotCodeSize);
+    size_t hotCodeAlignedSize = static_cast<size_t>(pArgs->hotCodeSize);
 
-    if ((flag & CORJIT_ALLOCMEM_FLG_32BYTE_ALIGN) != 0)
+    if ((pArgs->flag & CORJIT_ALLOCMEM_FLG_32BYTE_ALIGN) != 0)
     {
          codeAlignment = 32;
     }
-    else if ((flag & CORJIT_ALLOCMEM_FLG_16BYTE_ALIGN) != 0)
+    else if ((pArgs->flag & CORJIT_ALLOCMEM_FLG_16BYTE_ALIGN) != 0)
     {
          codeAlignment = 16;
     }
     hotCodeAlignedSize = ALIGN_UP_SPMI(hotCodeAlignedSize, codeAlignment);
     hotCodeAlignedSize = hotCodeAlignedSize + (codeAlignment - sizeof(void*));
-    *hotCodeBlock      = jitInstance->mc->cr->allocateMemory(hotCodeAlignedSize);
-    *hotCodeBlock      = ALIGN_UP_SPMI(*hotCodeBlock, codeAlignment);
+    pArgs->hotCodeBlock      = jitInstance->mc->cr->allocateMemory(hotCodeAlignedSize);
+    pArgs->hotCodeBlock      = ALIGN_UP_SPMI(pArgs->hotCodeBlock, codeAlignment);
 
-    if (coldCodeSize > 0)
-        *coldCodeBlock = jitInstance->mc->cr->allocateMemory(coldCodeSize);
+    if (pArgs->coldCodeSize > 0)
+        pArgs->coldCodeBlock = jitInstance->mc->cr->allocateMemory(pArgs->coldCodeSize);
     else
-        *coldCodeBlock = nullptr;
+        pArgs->coldCodeBlock = nullptr;
 
-    if (roDataSize > 0)
+    if (pArgs->roDataSize > 0)
     {
         size_t roDataAlignment   = sizeof(void*);
-        size_t roDataAlignedSize = static_cast<size_t>(roDataSize);
+        size_t roDataAlignedSize = static_cast<size_t>(pArgs->roDataSize);
 
-        if ((flag & CORJIT_ALLOCMEM_FLG_RODATA_32BYTE_ALIGN) != 0)
+        if ((pArgs->flag & CORJIT_ALLOCMEM_FLG_RODATA_32BYTE_ALIGN) != 0)
         {
             roDataAlignment = 32;
         }
-        else if ((flag & CORJIT_ALLOCMEM_FLG_RODATA_16BYTE_ALIGN) != 0)
+        else if ((pArgs->flag & CORJIT_ALLOCMEM_FLG_RODATA_16BYTE_ALIGN) != 0)
         {
             roDataAlignment = 16;
         }
-        else if (roDataSize >= 8)
+        else if (pArgs->roDataSize >= 8)
         {
             roDataAlignment = 8;
         }
@@ -1660,14 +1654,18 @@ void MyICJI::allocMem(uint32_t           hotCodeSize,   /* IN */
 
         roDataAlignedSize = ALIGN_UP_SPMI(roDataAlignedSize, roDataAlignment);
         roDataAlignedSize = roDataAlignedSize + (roDataAlignment - sizeof(void*));
-        *roDataBlock = jitInstance->mc->cr->allocateMemory(roDataAlignedSize);
-        *roDataBlock = ALIGN_UP_SPMI(*roDataBlock, roDataAlignment);
+        pArgs->roDataBlock = jitInstance->mc->cr->allocateMemory(roDataAlignedSize);
+        pArgs->roDataBlock = ALIGN_UP_SPMI(pArgs->roDataBlock, roDataAlignment);
     }
     else
-        *roDataBlock = nullptr;
+        pArgs->roDataBlock = nullptr;
 
-    jitInstance->mc->cr->recAllocMem(hotCodeSize, coldCodeSize, roDataSize, xcptnsCount, flag, hotCodeBlock,
-                                     coldCodeBlock, roDataBlock);
+    pArgs->hotCodeBlockRW = pArgs->hotCodeBlock;
+    pArgs->coldCodeBlockRW = pArgs->coldCodeBlock;
+    pArgs->roDataBlockRW = pArgs->roDataBlock;
+
+    jitInstance->mc->cr->recAllocMem(pArgs->hotCodeSize, pArgs->coldCodeSize, pArgs->roDataSize, pArgs->xcptnsCount, pArgs->flag, &pArgs->hotCodeBlock,
+                                     &pArgs->coldCodeBlock, &pArgs->roDataBlock);
 }
 
 // Reserve memory for the method/funclet's unwind information.
@@ -1819,10 +1817,12 @@ HRESULT MyICJI::allocPgoInstrumentationBySchema(CORINFO_METHOD_HANDLE ftnHnd,
 HRESULT MyICJI::getPgoInstrumentationResults(CORINFO_METHOD_HANDLE      ftnHnd,
                                              PgoInstrumentationSchema **pSchema,                    // pointer to the schema table which describes the instrumentation results (pointer will not remain valid after jit completes)
                                              uint32_t *                 pCountSchemaItems,          // pointer to the count schema items
-                                             uint8_t **                 pInstrumentationData)       // pointer to the actual instrumentation data (pointer will not remain valid after jit completes)
+                                             uint8_t **                 pInstrumentationData,       // pointer to the actual instrumentation data (pointer will not remain valid after jit completes)
+                                             PgoSource*                 pPgoSource)
+
 {
     jitInstance->mc->cr->AddCall("getPgoInstrumentationResults");
-    return jitInstance->mc->repGetPgoInstrumentationResults(ftnHnd, pSchema, pCountSchemaItems, pInstrumentationData);
+    return jitInstance->mc->repGetPgoInstrumentationResults(ftnHnd, pSchema, pCountSchemaItems, pInstrumentationData, pPgoSource);
 }
 
 // Associates a native call site, identified by its offset in the native code stream, with
@@ -1841,6 +1841,7 @@ void MyICJI::recordCallSite(uint32_t              instrOffset, /* IN */
 // A relocation is recorded if we are pre-jitting.
 // A jump thunk may be inserted if we are jitting
 void MyICJI::recordRelocation(void*    location,   /* IN  */
+                              void*    locationRW, /* IN  */
                               void*    target,     /* IN  */
                               uint16_t fRelocType, /* IN  */
                               uint16_t slotNum,    /* IN  */
@@ -1860,7 +1861,7 @@ uint16_t MyICJI::getRelocTypeHint(void* target)
 
 // For what machine does the VM expect the JIT to generate code? The VM
 // returns one of the IMAGE_FILE_MACHINE_* values. Note that if the VM
-// is cross-compiling (such as the case for crossgen), it will return a
+// is cross-compiling (such as the case for crossgen2), it will return a
 // different value than if it was compiling for the host architecture.
 //
 uint32_t MyICJI::getExpectedTargetArchitecture()

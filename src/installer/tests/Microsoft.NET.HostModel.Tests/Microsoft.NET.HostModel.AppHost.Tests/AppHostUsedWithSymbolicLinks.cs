@@ -22,14 +22,11 @@ namespace Microsoft.NET.HostModel.Tests
         }
 
         [Theory]
+        [SkipOnPlatform(TestPlatforms.Windows, "Creating symbolic links requires administrative privilege on Windows, so skip test.")]
         [InlineData ("a/b/SymlinkToApphost")]
         [InlineData ("a/SymlinkToApphost")]
         public void Run_apphost_behind_symlink(string symlinkRelativePath)
         {
-            // Creating symbolic links requires administrative privilege on Windows, so skip test.
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-                return;
-
             var fixture = sharedTestState.StandaloneAppFixture_Published
                 .Copy();
 
@@ -48,16 +45,13 @@ namespace Microsoft.NET.HostModel.Tests
         }
 
         [Theory]
+        [SkipOnPlatform(TestPlatforms.Windows, "Creating symbolic links requires administrative privilege on Windows, so skip test.")]
         [InlineData ("a/b/FirstSymlink", "c/d/SecondSymlink")]
         [InlineData ("a/b/FirstSymlink", "c/SecondSymlink")]
         [InlineData ("a/FirstSymlink", "c/d/SecondSymlink")]
         [InlineData ("a/FirstSymlink", "c/SecondSymlink")]
         public void Run_apphost_behind_transitive_symlinks(string firstSymlinkRelativePath, string secondSymlinkRelativePath)
         {
-            // Creating symbolic links requires administrative privilege on Windows, so skip test.
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-                return;
-
             var fixture = sharedTestState.StandaloneAppFixture_Published
                 .Copy();
 
@@ -87,12 +81,9 @@ namespace Microsoft.NET.HostModel.Tests
         //[InlineData("a/SymlinkToFrameworkDependentApp")]
         [Fact(Skip = "Currently failing in OSX with \"No such file or directory\" when running Command.Create. " +
             "CI failing to use stat on symbolic links on Linux (permission denied).")]
+        [SkipOnPlatform(TestPlatforms.Windows, "Creating symbolic links requires administrative privilege on Windows, so skip test.")]
         public void Run_framework_dependent_app_behind_symlink(/*string symlinkRelativePath*/)
         {
-            // Creating symbolic links requires administrative privilege on Windows, so skip test.
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-                return;
-
             var symlinkRelativePath = string.Empty;
 
             var fixture = sharedTestState.FrameworkDependentAppFixture_Published
@@ -116,12 +107,9 @@ namespace Microsoft.NET.HostModel.Tests
 
         [Fact(Skip = "Currently failing in OSX with \"No such file or directory\" when running Command.Create. " +
                      "CI failing to use stat on symbolic links on Linux (permission denied).")]
+        [SkipOnPlatform(TestPlatforms.Windows, "Creating symbolic links requires administrative privilege on Windows, so skip test.")]
         public void Run_framework_dependent_app_with_runtime_behind_symlink()
         {
-            // Creating symbolic links requires administrative privilege on Windows, so skip test.
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-                return;
-
             var fixture = sharedTestState.FrameworkDependentAppFixture_Published
                 .Copy();
 
@@ -141,12 +129,9 @@ namespace Microsoft.NET.HostModel.Tests
         }
 
         [Fact]
+        [SkipOnPlatform(TestPlatforms.Windows, "Creating symbolic links requires administrative privilege on Windows, so skip test.")]
         public void Put_app_directory_behind_symlink()
         {
-            // Creating symbolic links requires administrative privilege on Windows, so skip test.
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-                return;
-
             var fixture = sharedTestState.StandaloneAppFixture_Published
                 .Copy();
 
@@ -165,12 +150,9 @@ namespace Microsoft.NET.HostModel.Tests
         }
 
         [Fact]
+        [SkipOnPlatform(TestPlatforms.Windows, "Creating symbolic links requires administrative privilege on Windows, so skip test.")]
         public void Put_dotnet_behind_symlink()
         {
-            // Creating symbolic links requires administrative privilege on Windows, so skip test.
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-                return;
-
             var fixture = sharedTestState.StandaloneAppFixture_Published
                 .Copy();
 
@@ -189,12 +171,9 @@ namespace Microsoft.NET.HostModel.Tests
         }
 
         [Fact]
+        [SkipOnPlatform(TestPlatforms.Windows, "Creating symbolic links requires administrative privilege on Windows, so skip test.")]
         public void Put_app_directory_behind_symlink_and_use_dotnet()
         {
-            // Creating symbolic links requires administrative privilege on Windows, so skip test.
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-                return;
-
             var fixture = sharedTestState.StandaloneAppFixture_Published
                 .Copy();
 
@@ -213,12 +192,9 @@ namespace Microsoft.NET.HostModel.Tests
         }
 
         [Fact]
+        [SkipOnPlatform(TestPlatforms.Windows, "Creating symbolic links requires administrative privilege on Windows, so skip test.")]
         public void Put_app_directory_behind_symlink_and_use_dotnet_run()
         {
-            // Creating symbolic links requires administrative privilege on Windows, so skip test.
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-                return;
-
             var fixture = sharedTestState.StandaloneAppFixture_Published
                 .Copy();
 
@@ -238,14 +214,10 @@ namespace Microsoft.NET.HostModel.Tests
         }
 
         [Fact]
+        // If enabled, this tests will need to set the console code page to output unicode characters: Command.Create("chcp 65001").Execute();
+        [SkipOnPlatform(TestPlatforms.Windows, "Creating symbolic links requires administrative privilege on Windows, so skip test.")]
         public void Put_satellite_assembly_behind_symlink()
         {
-            // Creating symbolic links requires administrative privilege on Windows, so skip test.
-            // If enabled, this tests will need to set the console code page to output unicode characters:
-            // Command.Create("chcp 65001").Execute();
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-                return;
-
             var fixture = sharedTestState.StandaloneAppFixture_Localized
                 .Copy();
 

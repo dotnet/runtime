@@ -767,6 +767,19 @@ namespace SerializationTypes
         }
     }
 
+    public class WithXmlElement
+    {
+        public XmlElement xml;
+
+        public WithXmlElement() { }
+
+        public WithXmlElement(bool init)
+        {
+            var doc = new XmlDocument();
+            xml = doc.CreateElement("Element1");
+        }
+    }
+
     public class WithXElementWithNestedXElement
     {
         public XElement e1;
@@ -837,6 +850,8 @@ namespace SerializationTypes
         public string @Name5 { get; set; }
 
         public virtual string Name6 { get; set; }
+
+        public virtual string Name7 { get; set; }
     }
 
     public class DerivedTypeWithDifferentOverrides : BaseType
@@ -852,6 +867,8 @@ namespace SerializationTypes
         public new string Name5 { get; set; }
 
         public override string Name6 { get; set; }
+
+        public override string Name7 { set { base.Name7 = value; } }
     }
 
     public class DerivedTypeWithDifferentOverrides2 : DerivedTypeWithDifferentOverrides
@@ -1988,6 +2005,13 @@ namespace SerializationTypes
     }
 
     [XmlType(TypeName = "MyXmlType")]
+    public class TypeWithNullableByteArray
+    {
+        [XmlElement(DataType = "base64Binary", IsNullable = true)]
+        public byte[] XmlAttributeForms { get; set; }
+    }
+
+    [XmlType(TypeName = "MyXmlType")]
     public class TypeWithByteArrayArrayAsXmlAttribute
     {
         [XmlAttribute(Form = XmlSchemaForm.Qualified)]
@@ -2376,7 +2400,7 @@ public class Family
         sb.AppendLine("Family members:");
         foreach (var member in this.Members)
         {
-            sb.AppendLine("  " + member);
+            sb.AppendLine($"  {member}");
         }
 
         return sb.ToString();
@@ -2393,7 +2417,7 @@ public class FamilyForStress
         sb.AppendLine("Family members:");
         foreach (var member in this.Members)
         {
-            sb.AppendLine("  " + member);
+            sb.AppendLine($"  {member}");
         }
 
         return sb.ToString();

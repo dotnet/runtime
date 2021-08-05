@@ -5,6 +5,8 @@
 #cmakedefine01 HAVE_MMAP64
 #cmakedefine01 HAVE_FTRUNCATE64
 #cmakedefine01 HAVE_POSIX_FADVISE64
+#cmakedefine01 HAVE_STATFS_VFS
+#cmakedefine01 HAVE_STATFS_MOUNT
 #cmakedefine01 HAVE_FLOCK64
 #cmakedefine01 HAVE_F_DUPFD_CLOEXEC
 #cmakedefine01 HAVE_F_FULLFSYNC
@@ -34,6 +36,10 @@
 #cmakedefine01 HAVE_STRLCAT
 #cmakedefine01 HAVE_SHM_OPEN_THAT_WORKS_WELL_ENOUGH_WITH_MMAP
 #cmakedefine01 HAVE_POSIX_ADVISE
+#cmakedefine01 HAVE_POSIX_FALLOCATE
+#cmakedefine01 HAVE_POSIX_FALLOCATE64
+#cmakedefine01 HAVE_PREADV
+#cmakedefine01 HAVE_PWRITEV
 #cmakedefine01 PRIORITY_REQUIRES_INT_WHO
 #cmakedefine01 KEVENT_REQUIRES_INT_PARAMS
 #cmakedefine01 HAVE_IOCTL
@@ -118,6 +124,11 @@
 #cmakedefine01 HAVE_GETGROUPLIST
 #cmakedefine01 HAVE_SYS_PROCINFO_H
 #cmakedefine01 HAVE_IOSS_H
+#cmakedefine01 HAVE_ALIGNED_ALLOC
+#cmakedefine01 HAVE_MALLOC_SIZE
+#cmakedefine01 HAVE_MALLOC_USABLE_SIZE
+#cmakedefine01 HAVE_MALLOC_USABLE_SIZE_NP
+#cmakedefine01 HAVE_POSIX_MEMALIGN
 
 // Mac OS X has stat64, but it is deprecated since plain stat now
 // provides the same 64-bit aware struct when targeting OS X > 10.5

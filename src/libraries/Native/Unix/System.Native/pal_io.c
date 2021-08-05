@@ -22,6 +22,7 @@
 #include <sys/file.h>
 #include <sys/ioctl.h>
 #include <sys/socket.h>
+#include <sys/uio.h>
 #include <syslog.h>
 #include <termios.h>
 #include <unistd.h>
@@ -34,13 +35,22 @@
 #if HAVE_INOTIFY
 #include <sys/inotify.h>
 #endif
+#if HAVE_STATFS_VFS // Linux
+#include <sys/vfs.h>
+#elif HAVE_STATFS_MOUNT // BSD
+#include <sys/mount.h>
+#elif !HAVE_NON_LEGACY_STATFS // SunOS
+#include <sys/types.h>
+#include <sys/statvfs.h>
+#include <sys/vfs.h>
+#endif
 
 #ifdef _AIX
 #include <alloca.h>
 // Somehow, AIX mangles the definition for this behind a C++ def
 // Redeclare it here
 extern int     getpeereid(int, uid_t *__restrict__, gid_t *__restrict__);
-#elif defined(__sun)
+#elif defined(TARGET_SUNOS)
 #ifndef _KERNEL
 #define _KERNEL
 #define UNDEF_KERNEL
@@ -662,7 +672,7 @@ int32_t SystemNative_FSync(intptr_t fd)
     int fileDescriptor = ToFileDescriptor(fd);
 
     int32_t result;
-    while ((result = 
+    while ((result =
 #if defined(TARGET_OSX) && HAVE_F_FULLFSYNC
     fcntl(fileDescriptor, F_FULLFSYNC)
 #else
@@ -711,6 +721,13 @@ int32_t SystemNative_Link(const char* source, const char* linkTarget)
 {
     int32_t result;
     while ((result = link(source, linkTarget)) < 0 && errno == EINTR);
+    return result;
+}
+
+int32_t SystemNative_SymLink(const char* target, const char* linkPath)
+{
+    int32_t result;
+    while ((result = symlink(target, linkPath)) < 0 && errno == EINTR);
     return result;
 }
 
@@ -991,6 +1008,85 @@ int32_t SystemNative_PosixFAdvise(intptr_t fd, int64_t offset, int64_t length, i
 #endif
 }
 
+int32_t SystemNative_PosixFAllocate(intptr_t fd, int64_t offset, int64_t length)
+{
+    assert_msg(offset == 0, "Invalid offset value", (int)offset);
+
+    int fileDescriptor = ToFileDescriptor(fd);
+    int32_t result;
+#if HAVE_POSIX_FALLOCATE64 // 64-bit Linux
+    while ((result = posix_fallocate64(fileDescriptor, (off64_t)offset, (off64_t)length)) == EINTR);
+#elif HAVE_POSIX_FALLOCATE // 32-bit Linux
+    while ((result = posix_fallocate(fileDescriptor, (off_t)offset, (off_t)length)) == EINTR);
+#elif defined(F_PREALLOCATE) // macOS
+    fstore_t fstore;
+    fstore.fst_flags = F_ALLOCATECONTIG; // ensure contiguous space
+    fstore.fst_posmode = F_PEOFPOSMODE;  // allocate from the physical end of file, as offset MUST NOT be 0 for F_VOLPOSMODE
+    fstore.fst_offset = (off_t)offset;
+    fstore.fst_length = (off_t)length;
+    fstore.fst_bytesalloc = 0; // output size, can be > length
+
+    while ((result = fcntl(fileDescriptor, F_PREALLOCATE, &fstore)) == -1 && errno == EINTR);
+
+    if (result == -1)
+    {
+        // we have failed to allocate contiguous space, let's try non-contiguous
+        fstore.fst_flags = F_ALLOCATEALL; // all or nothing
+        while ((result = fcntl(fileDescriptor, F_PREALLOCATE, &fstore)) == -1 && errno == EINTR);
+    }
+#elif defined(F_ALLOCSP) || defined(F_ALLOCSP64) // FreeBSD
+    #if HAVE_FLOCK64
+    struct flock64 lockArgs;
+    int command = F_ALLOCSP64;
+    #else
+    struct flock lockArgs;
+    int command = F_ALLOCSP;
+    #endif
+
+    lockArgs.l_whence = SEEK_SET;
+    lockArgs.l_start = (off_t)offset;
+    lockArgs.l_len = (off_t)length;
+
+    while ((result = fcntl(fileDescriptor, command, &lockArgs)) == -1 && errno == EINTR);
+#endif
+
+#if defined(F_PREALLOCATE) || defined(F_ALLOCSP) || defined(F_ALLOCSP64)
+    // most of the Unixes implement posix_fallocate which does NOT set the last error
+    // fctnl does, but to mimic the posix_fallocate behaviour we just return error
+    if (result == -1)
+    {
+        result = errno;
+    }
+    else
+    {
+        // align the behaviour with what posix_fallocate does (change reported file size)
+        ftruncate(fileDescriptor, length);
+    }
+#endif
+
+    // error codes can be OS-specific, so this is why this handling is done here rather than in the managed layer
+    switch (result)
+    {
+        case ENOSPC: // there was not enough space
+            return -1;
+        case EFBIG: // the file was too large
+            return -2;
+        case ENODEV: // not a regular file
+        case ESPIPE: // a pipe
+            // We ignore it, as FileStream contract makes it clear that allocationSize is ignored for non-regular files.
+            return 0;
+        case EINVAL:
+            // We control the offset and length so they are correct.
+            assert_msg(length >= 0, "Invalid length value", (int)length);
+            // But if the underlying filesystem does not support the operation, we just ignore it and treat as a hint.
+            return 0;
+        default:
+            assert(result != EINTR); // it can't happen here as we retry the call on EINTR
+            assert(result != EBADF); // it can't happen here as this method is being called after a succesfull call to open (with write permissions) before returning the SafeFileHandle to the user
+            return 0;
+    }
+}
+
 int32_t SystemNative_Read(intptr_t fd, void* buffer, int32_t bufferSize)
 {
     return Common_Read(fd, buffer, bufferSize);
@@ -1116,41 +1212,46 @@ int32_t SystemNative_CopyFile(intptr_t sourceFd, intptr_t destinationFd)
         return -1;
     }
 
-
     // On 32-bit, if you use 64-bit offsets, the last argument of `sendfile' will be a
     // `size_t' a 32-bit integer while the `st_size' field of the stat structure will be off64_t.
     // So `size' will have to be `uint64_t'. In all other cases, it will be `size_t'.
     uint64_t size = (uint64_t)sourceStat.st_size;
-
-    // Note that per man page for large files, you have to iterate until the
-    // whole file is copied (Linux has a limit of 0x7ffff000 bytes copied).
-    while (size > 0)
+    if (size != 0)
     {
-        ssize_t sent = sendfile(outFd, inFd, NULL, (size >= SSIZE_MAX ? SSIZE_MAX : (size_t)size));
-        if (sent < 0)
+        // Note that per man page for large files, you have to iterate until the
+        // whole file is copied (Linux has a limit of 0x7ffff000 bytes copied).
+        while (size > 0)
         {
-            if (errno != EINVAL && errno != ENOSYS)
+            ssize_t sent = sendfile(outFd, inFd, NULL, (size >= SSIZE_MAX ? SSIZE_MAX : (size_t)size));
+            if (sent < 0)
             {
-                return -1;
+                if (errno != EINVAL && errno != ENOSYS)
+                {
+                    return -1;
+                }
+                else
+                {
+                    break;
+                }
             }
             else
             {
-                break;
+                assert((size_t)sent <= size);
+                size -= (size_t)sent;
             }
         }
-        else
+
+        if (size == 0)
         {
-            assert((size_t)sent <= size);
-            size -= (size_t)sent;
+            copied = true;
         }
     }
-    if (size == 0)
-    {
-        copied = true;
-    }
+
     // sendfile couldn't be used; fall back to a manual copy below. This could happen
     // if we're on an old kernel, for example, where sendfile could only be used
-    // with sockets and not regular files.
+    // with sockets and not regular files.  Additionally, certain files (e.g. procfs)
+    // may return a size of 0 even though reading from then will produce data.  As such,
+    // we avoid using sendfile with the queried size if the size is reported as 0.
 #endif // HAVE_SENDFILE_4
 
     // Manually read all data from the source and write it to the destination.
@@ -1184,7 +1285,7 @@ int32_t SystemNative_CopyFile(intptr_t sourceFd, intptr_t destinationFd)
 #endif
     }
     // If we copied to a filesystem (eg EXFAT) that does not preserve POSIX ownership, all files appear
-    // to be owned by root. If we aren't running as root, then we won't be an owner of our new file, and 
+    // to be owned by root. If we aren't running as root, then we won't be an owner of our new file, and
     // attempting to copy metadata to it will fail with EPERM. We have copied successfully, we just can't
     // copy metadata. The best thing we can do is skip copying the metadata.
     if (ret != 0 && errno != EPERM)
@@ -1299,6 +1400,151 @@ static int16_t ConvertLockType(int16_t managedLockType)
     }
 }
 
+int64_t SystemNative_GetFileSystemType(intptr_t fd)
+{
+#if HAVE_STATFS_VFS || HAVE_STATFS_MOUNT
+    int statfsRes;
+    struct statfs statfsArgs;
+    // for our needs (get file system type) statfs is always enough and there is no need to use statfs64
+    // which got deprecated in macOS 10.6, in favor of statfs
+    while ((statfsRes = fstatfs(ToFileDescriptor(fd), &statfsArgs)) == -1 && errno == EINTR) ;
+    return statfsRes == -1 ? (int64_t)-1 : (int64_t)statfsArgs.f_type;
+#elif !HAVE_NON_LEGACY_STATFS
+    int statfsRes;
+    struct statvfs statfsArgs;
+    while ((statfsRes = fstatvfs(ToFileDescriptor(fd), &statfsArgs)) == -1 && errno == EINTR) ;
+    if (statfsRes == -1) return (int64_t)-1;
+
+    int64_t result = -1;
+
+    if (strcmp(statfsArgs.f_basetype, "adfs") == 0) result = 0xADF5;
+    else if (strcmp(statfsArgs.f_basetype, "affs") == 0) result = 0xADFF;
+    else if (strcmp(statfsArgs.f_basetype, "afs") == 0) result = 0x5346414F;
+    else if (strcmp(statfsArgs.f_basetype, "anoninode") == 0) result = 0x09041934;
+    else if (strcmp(statfsArgs.f_basetype, "aufs") == 0) result = 0x61756673;
+    else if (strcmp(statfsArgs.f_basetype, "autofs") == 0) result = 0x0187;
+    else if (strcmp(statfsArgs.f_basetype, "autofs4") == 0) result = 0x6D4A556D;
+    else if (strcmp(statfsArgs.f_basetype, "befs") == 0) result = 0x42465331;
+    else if (strcmp(statfsArgs.f_basetype, "bdevfs") == 0) result = 0x62646576;
+    else if (strcmp(statfsArgs.f_basetype, "bfs") == 0) result = 0x1BADFACE;
+    else if (strcmp(statfsArgs.f_basetype, "binfmt_misc") == 0) result = 0x42494E4D;
+    else if (strcmp(statfsArgs.f_basetype, "bootfs") == 0) result = 0xA56D3FF9;
+    else if (strcmp(statfsArgs.f_basetype, "btrfs") == 0) result = 0x9123683E;
+    else if (strcmp(statfsArgs.f_basetype, "ceph") == 0) result = 0x00C36400;
+    else if (strcmp(statfsArgs.f_basetype, "cgroupfs") == 0) result = 0x0027E0EB;
+    else if (strcmp(statfsArgs.f_basetype, "cgroup2fs") == 0) result = 0x63677270;
+    else if (strcmp(statfsArgs.f_basetype, "cifs") == 0) result = 0xFF534D42;
+    else if (strcmp(statfsArgs.f_basetype, "coda") == 0) result = 0x73757245;
+    else if (strcmp(statfsArgs.f_basetype, "coherent") == 0) result = 0x012FF7B7;
+    else if (strcmp(statfsArgs.f_basetype, "configfs") == 0) result = 0x62656570;
+    else if (strcmp(statfsArgs.f_basetype, "cpuset") == 0) result = 0x01021994;
+    else if (strcmp(statfsArgs.f_basetype, "cramfs") == 0) result = 0x28CD3D45;
+    else if (strcmp(statfsArgs.f_basetype, "ctfs") == 0) result = 0x01021994;
+    else if (strcmp(statfsArgs.f_basetype, "debugfs") == 0) result = 0x64626720;
+    else if (strcmp(statfsArgs.f_basetype, "dev") == 0) result = 0x1373;
+    else if (strcmp(statfsArgs.f_basetype, "devfs") == 0) result = 0x1373;
+    else if (strcmp(statfsArgs.f_basetype, "devpts") == 0) result = 0x1CD1;
+    else if (strcmp(statfsArgs.f_basetype, "ecryptfs") == 0) result = 0xF15F;
+    else if (strcmp(statfsArgs.f_basetype, "efs") == 0) result = 0x00414A53;
+    else if (strcmp(statfsArgs.f_basetype, "exofs") == 0) result = 0x5DF5;
+    else if (strcmp(statfsArgs.f_basetype, "ext") == 0) result = 0x137D;
+    else if (strcmp(statfsArgs.f_basetype, "ext2_old") == 0) result = 0xEF51;
+    else if (strcmp(statfsArgs.f_basetype, "ext2") == 0) result = 0xEF53;
+    else if (strcmp(statfsArgs.f_basetype, "ext3") == 0) result = 0xEF53;
+    else if (strcmp(statfsArgs.f_basetype, "ext4") == 0) result = 0xEF53;
+    else if (strcmp(statfsArgs.f_basetype, "fat") == 0) result = 0x4006;
+    else if (strcmp(statfsArgs.f_basetype, "fd") == 0) result = 0xF00D1E;
+    else if (strcmp(statfsArgs.f_basetype, "fhgfs") == 0) result = 0x19830326;
+    else if (strcmp(statfsArgs.f_basetype, "fuse") == 0) result = 0x65735546;
+    else if (strcmp(statfsArgs.f_basetype, "fuseblk") == 0) result = 0x65735546;
+    else if (strcmp(statfsArgs.f_basetype, "fusectl") == 0) result = 0x65735543;
+    else if (strcmp(statfsArgs.f_basetype, "futexfs") == 0) result = 0x0BAD1DEA;
+    else if (strcmp(statfsArgs.f_basetype, "gfsgfs2") == 0) result = 0x1161970;
+    else if (strcmp(statfsArgs.f_basetype, "gfs2") == 0) result = 0x01161970;
+    else if (strcmp(statfsArgs.f_basetype, "gpfs") == 0) result = 0x47504653;
+    else if (strcmp(statfsArgs.f_basetype, "hfs") == 0) result = 0x4244;
+    else if (strcmp(statfsArgs.f_basetype, "hfsplus") == 0) result = 0x482B;
+    else if (strcmp(statfsArgs.f_basetype, "hpfs") == 0) result = 0xF995E849;
+    else if (strcmp(statfsArgs.f_basetype, "hugetlbfs") == 0) result = 0x958458F6;
+    else if (strcmp(statfsArgs.f_basetype, "inodefs") == 0) result = 0x11307854;
+    else if (strcmp(statfsArgs.f_basetype, "inotifyfs") == 0) result = 0x2BAD1DEA;
+    else if (strcmp(statfsArgs.f_basetype, "isofs") == 0) result = 0x9660;
+    else if (strcmp(statfsArgs.f_basetype, "jffs") == 0) result = 0x07C0;
+    else if (strcmp(statfsArgs.f_basetype, "jffs2") == 0) result = 0x72B6;
+    else if (strcmp(statfsArgs.f_basetype, "jfs") == 0) result = 0x3153464A;
+    else if (strcmp(statfsArgs.f_basetype, "kafs") == 0) result = 0x6B414653;
+    else if (strcmp(statfsArgs.f_basetype, "lofs") == 0) result = 0xEF53;
+    else if (strcmp(statfsArgs.f_basetype, "logfs") == 0) result = 0xC97E8168;
+    else if (strcmp(statfsArgs.f_basetype, "lustre") == 0) result = 0x0BD00BD0;
+    else if (strcmp(statfsArgs.f_basetype, "minix_old") == 0) result = 0x137F;
+    else if (strcmp(statfsArgs.f_basetype, "minix") == 0) result = 0x138F;
+    else if (strcmp(statfsArgs.f_basetype, "minix2") == 0) result = 0x2468;
+    else if (strcmp(statfsArgs.f_basetype, "minix2v2") == 0) result = 0x2478;
+    else if (strcmp(statfsArgs.f_basetype, "minix3") == 0) result = 0x4D5A;
+    else if (strcmp(statfsArgs.f_basetype, "mntfs") == 0) result = 0x01021994;
+    else if (strcmp(statfsArgs.f_basetype, "mqueue") == 0) result = 0x19800202;
+    else if (strcmp(statfsArgs.f_basetype, "msdos") == 0) result = 0x4D44;
+    else if (strcmp(statfsArgs.f_basetype, "nfs") == 0) result = 0x6969;
+    else if (strcmp(statfsArgs.f_basetype, "nfsd") == 0) result = 0x6E667364;
+    else if (strcmp(statfsArgs.f_basetype, "nilfs") == 0) result = 0x3434;
+    else if (strcmp(statfsArgs.f_basetype, "novell") == 0) result = 0x564C;
+    else if (strcmp(statfsArgs.f_basetype, "ntfs") == 0) result = 0x5346544E;
+    else if (strcmp(statfsArgs.f_basetype, "objfs") == 0) result = 0x01021994;
+    else if (strcmp(statfsArgs.f_basetype, "ocfs2") == 0) result = 0x7461636F;
+    else if (strcmp(statfsArgs.f_basetype, "openprom") == 0) result = 0x9FA1;
+    else if (strcmp(statfsArgs.f_basetype, "omfs") == 0) result = 0xC2993D87;
+    else if (strcmp(statfsArgs.f_basetype, "overlay") == 0) result = 0x794C7630;
+    else if (strcmp(statfsArgs.f_basetype, "overlayfs") == 0) result = 0x794C764F;
+    else if (strcmp(statfsArgs.f_basetype, "panfs") == 0) result = 0xAAD7AAEA;
+    else if (strcmp(statfsArgs.f_basetype, "pipefs") == 0) result = 0x50495045;
+    else if (strcmp(statfsArgs.f_basetype, "proc") == 0) result = 0x9FA0;
+    else if (strcmp(statfsArgs.f_basetype, "pstorefs") == 0) result = 0x6165676C;
+    else if (strcmp(statfsArgs.f_basetype, "qnx4") == 0) result = 0x002F;
+    else if (strcmp(statfsArgs.f_basetype, "qnx6") == 0) result = 0x68191122;
+    else if (strcmp(statfsArgs.f_basetype, "ramfs") == 0) result = 0x858458F6;
+    else if (strcmp(statfsArgs.f_basetype, "reiserfs") == 0) result = 0x52654973;
+    else if (strcmp(statfsArgs.f_basetype, "romfs") == 0) result = 0x7275;
+    else if (strcmp(statfsArgs.f_basetype, "rootfs") == 0) result = 0x53464846;
+    else if (strcmp(statfsArgs.f_basetype, "rpc_pipefs") == 0) result = 0x67596969;
+    else if (strcmp(statfsArgs.f_basetype, "samba") == 0) result = 0x517B;
+    else if (strcmp(statfsArgs.f_basetype, "securityfs") == 0) result = 0x73636673;
+    else if (strcmp(statfsArgs.f_basetype, "selinux") == 0) result = 0xF97CFF8C;
+    else if (strcmp(statfsArgs.f_basetype, "sffs") == 0) result = 0x786F4256;
+    else if (strcmp(statfsArgs.f_basetype, "sharefs") == 0) result = 0x01021994;
+    else if (strcmp(statfsArgs.f_basetype, "smb") == 0) result = 0x517B;
+    else if (strcmp(statfsArgs.f_basetype, "smb2") == 0) result = 0xFE534D42;
+    else if (strcmp(statfsArgs.f_basetype, "sockfs") == 0) result = 0x534F434B;
+    else if (strcmp(statfsArgs.f_basetype, "squashfs") == 0) result = 0x73717368;
+    else if (strcmp(statfsArgs.f_basetype, "sysfs") == 0) result = 0x62656572;
+    else if (strcmp(statfsArgs.f_basetype, "sysv2") == 0) result = 0x012FF7B6;
+    else if (strcmp(statfsArgs.f_basetype, "sysv4") == 0) result = 0x012FF7B5;
+    else if (strcmp(statfsArgs.f_basetype, "tmpfs") == 0) result = 0x01021994;
+    else if (strcmp(statfsArgs.f_basetype, "ubifs") == 0) result = 0x24051905;
+    else if (strcmp(statfsArgs.f_basetype, "udf") == 0) result = 0x15013346;
+    else if (strcmp(statfsArgs.f_basetype, "ufs") == 0) result = 0x00011954;
+    else if (strcmp(statfsArgs.f_basetype, "ufscigam") == 0) result = 0x54190100;
+    else if (strcmp(statfsArgs.f_basetype, "ufs2") == 0) result = 0x19540119;
+    else if (strcmp(statfsArgs.f_basetype, "usbdevice") == 0) result = 0x9FA2;
+    else if (strcmp(statfsArgs.f_basetype, "v9fs") == 0) result = 0x01021997;
+    else if (strcmp(statfsArgs.f_basetype, "vagrant") == 0) result = 0x786F4256;
+    else if (strcmp(statfsArgs.f_basetype, "vboxfs") == 0) result = 0x786F4256;
+    else if (strcmp(statfsArgs.f_basetype, "vmhgfs") == 0) result = 0xBACBACBC;
+    else if (strcmp(statfsArgs.f_basetype, "vxfs") == 0) result = 0xA501FCF5;
+    else if (strcmp(statfsArgs.f_basetype, "vzfs") == 0) result = 0x565A4653;
+    else if (strcmp(statfsArgs.f_basetype, "xenfs") == 0) result = 0xABBA1974;
+    else if (strcmp(statfsArgs.f_basetype, "xenix") == 0) result = 0x012FF7B4;
+    else if (strcmp(statfsArgs.f_basetype, "xfs") == 0) result = 0x58465342;
+    else if (strcmp(statfsArgs.f_basetype, "xia") == 0) result = 0x012FD16D;
+    else if (strcmp(statfsArgs.f_basetype, "udev") == 0) result = 0x01021994;
+    else if (strcmp(statfsArgs.f_basetype, "zfs") == 0) result = 0x2FC12FC1;
+
+    assert(result != -1);
+    return result;
+#else
+    #error "Platform doesn't support fstatfs or fstatvfs"
+#endif
+}
+
 int32_t SystemNative_LockFileRegion(intptr_t fd, int64_t offset, int64_t length, int16_t lockType)
 {
     int16_t unixLockType = ConvertLockType(lockType);
@@ -1374,4 +1620,108 @@ int32_t SystemNative_ReadProcessStatusInfo(pid_t pid, ProcessStatus* processStat
     errno = ENOTSUP;
     return -1;
 #endif // __sun
+}
+
+int32_t SystemNative_PRead(intptr_t fd, void* buffer, int32_t bufferSize, int64_t fileOffset)
+{
+    assert(buffer != NULL);
+    assert(bufferSize >= 0);
+
+    ssize_t count;
+    while ((count = pread(ToFileDescriptor(fd), buffer, (uint32_t)bufferSize, (off_t)fileOffset)) < 0 && errno == EINTR);
+
+    assert(count >= -1 && count <= bufferSize);
+    return (int32_t)count;
+}
+
+int32_t SystemNative_PWrite(intptr_t fd, void* buffer, int32_t bufferSize, int64_t fileOffset)
+{
+    assert(buffer != NULL);
+    assert(bufferSize >= 0);
+
+    ssize_t count;
+    while ((count = pwrite(ToFileDescriptor(fd), buffer, (uint32_t)bufferSize, (off_t)fileOffset)) < 0 && errno == EINTR);
+
+    assert(count >= -1 && count <= bufferSize);
+    return (int32_t)count;
+}
+
+int64_t SystemNative_PReadV(intptr_t fd, IOVector* vectors, int32_t vectorCount, int64_t fileOffset)
+{
+    assert(vectors != NULL);
+    assert(vectorCount >= 0);
+
+    int64_t count = 0;
+    int fileDescriptor = ToFileDescriptor(fd);
+#if HAVE_PREADV && !defined(TARGET_WASM) // preadv is buggy on WASM
+    while ((count = preadv(fileDescriptor, (struct iovec*)vectors, (int)vectorCount, (off_t)fileOffset)) < 0 && errno == EINTR);
+#else
+    int64_t current;
+    for (int i = 0; i < vectorCount; i++)
+    {
+        IOVector vector = vectors[i];
+        while ((current = pread(fileDescriptor, vector.Base, vector.Count, (off_t)(fileOffset + count))) < 0 && errno == EINTR);
+
+        if (current < 0)
+        {
+            // if previous calls were succesfull, we return what we got so far
+            // otherwise, we return the error code
+            return count > 0 ? count : current;
+        }
+
+        count += current;
+
+        // Incomplete pread operation may happen for two reasons:
+        // a) We have reached EOF.
+        // b) The operation was interrupted by a signal handler.
+        // To mimic preadv, we stop on the first incomplete operation.
+        if (current != (int64_t)vector.Count)
+        {
+            return count;
+        }
+    }
+#endif
+
+    assert(count >= -1);
+    return count;
+}
+
+int64_t SystemNative_PWriteV(intptr_t fd, IOVector* vectors, int32_t vectorCount, int64_t fileOffset)
+{
+    assert(vectors != NULL);
+    assert(vectorCount >= 0);
+
+    int64_t count = 0;
+    int fileDescriptor = ToFileDescriptor(fd);
+#if HAVE_PWRITEV && !defined(TARGET_WASM) // pwritev is buggy on WASM
+    while ((count = pwritev(fileDescriptor, (struct iovec*)vectors, (int)vectorCount, (off_t)fileOffset)) < 0 && errno == EINTR);
+#else
+    int64_t current;
+    for (int i = 0; i < vectorCount; i++)
+    {
+        IOVector vector = vectors[i];
+        while ((current = pwrite(fileDescriptor, vector.Base, vector.Count, (off_t)(fileOffset + count))) < 0 && errno == EINTR);
+
+        if (current < 0)
+        {
+            // if previous calls were succesfull, we return what we got so far
+            // otherwise, we return the error code
+            return count > 0 ? count : current;
+        }
+
+        count += current;
+
+        // Incomplete pwrite operation may happen for few reasons:
+        // a) There was not enough space available or the file is too large for given file system.
+        // b) The operation was interrupted by a signal handler.
+        // To mimic pwritev, we stop on the first incomplete operation.
+        if (current != (int64_t)vector.Count)
+        {
+            return count;
+        }
+    }
+#endif
+
+    assert(count >= -1);
+    return count;
 }

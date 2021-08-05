@@ -89,14 +89,9 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
         }
 
         [Fact]
+        [PlatformSpecific(TestPlatforms.Windows)] // Multi-level lookup is only supported on Windows.
         public void SdkMultilevelLookup_Global_Json_Single_Digit_Patch_Rollup()
         {
-            if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-            {
-                // Multi-level lookup is only supported on Windows.
-                return;
-            }
-
             // Set specified SDK version = 9999.3.4-global-dummy
             SetGlobalJsonVersion("SingleDigit-global.json");
 
@@ -264,14 +259,9 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
         }
 
         [Fact]
+        [PlatformSpecific(TestPlatforms.Windows)] // Multi-level lookup is only supported on Windows.
         public void SdkMultilevelLookup_Global_Json_Two_Part_Patch_Rollup()
         {
-            if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-            {
-                // Multi-level lookup is only supported on Windows.
-                return;
-            }
-
             // Set specified SDK version = 9999.3.304-global-dummy
             SetGlobalJsonVersion("TwoPart-global.json");
 
@@ -444,14 +434,9 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
         }
 
         [Fact]
+        [PlatformSpecific(TestPlatforms.Windows)] // Multi-level lookup is only supported on Windows.
         public void SdkMultilevelLookup_Precedential_Order()
         {
-            if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-            {
-                // Multi-level lookup is only supported on Windows.
-                return;
-            }
-
             WriteEmptyGlobalJson();
 
             // Add SDK versions
@@ -498,6 +483,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
         }
 
         [Fact]
+        [PlatformSpecific(TestPlatforms.Windows)] // Multi-level lookup is only supported on Windows.
         public void SdkMultilevelLookup_RegistryAccess()
         {
             // The purpose of this test is to verify that the product uses correct code to access
@@ -511,17 +497,11 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
             // different registry key, inside the HKEY_CURRENT_USER hive which is writable without admin.
             // Note that the test creates a unique key (based on PID) for every run, to avoid collisions between parallel running tests.
 
-            if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-            {
-                // Multi-level lookup is only supported on Windows.
-                return;
-            }
-
             WriteEmptyGlobalJson();
 
             using (var registeredInstallLocationOverride = new RegisteredInstallLocationOverride(DotNet.GreatestVersionHostFxrFilePath))
             {
-                registeredInstallLocationOverride.SetInstallLocation(_regDir, RepoDirectories.BuildArchitecture);
+                registeredInstallLocationOverride.SetInstallLocation(new (string, string)[] { (RepoDirectories.BuildArchitecture, _regDir) });
 
                 // Add SDK versions
                 AddAvailableSdkVersions(_regSdkBaseDir, "9999.0.4");
@@ -547,14 +527,9 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
         }
 
         [Fact]
+        [PlatformSpecific(TestPlatforms.Windows)] // Multi-level lookup is only supported on Windows.
         public void SdkMultilevelLookup_Must_Pick_The_Highest_Semantic_Version()
         {
-            if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-            {
-                // Multi-level lookup is only supported on Windows.
-                return;
-            }
-
             WriteEmptyGlobalJson();
 
             // Add SDK versions

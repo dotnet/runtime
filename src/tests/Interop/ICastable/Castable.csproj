@@ -2,7 +2,7 @@
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <ReferenceSystemPrivateCoreLib>true</ReferenceSystemPrivateCoreLib>
-    <CLRTestTargetUnsupported Condition="'$(TargetOS)' == 'Browser' Or '$(TargetOS)' == 'Android'">true</CLRTestTargetUnsupported>
+    <CLRTestTargetUnsupported Condition="'$(TargetOS)' == 'Browser' Or '$(TargetOS)' == 'Android' Or '$(TargetOS)' == 'iOS' Or '$(TargetOS)' == 'iOSSimulator'">true</CLRTestTargetUnsupported>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="Castable.cs" />

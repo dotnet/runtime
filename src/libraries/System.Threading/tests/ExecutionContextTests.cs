@@ -62,7 +62,7 @@ namespace System.Threading.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/49890", TestPlatforms.Android)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/51400", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public static void FlowTest()
         {
             ThreadTestHelpers.RunTestInBackgroundThread(() =>
@@ -170,6 +170,7 @@ namespace System.Threading.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/51400", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public static void CaptureThenSuppressThenRunFlowTest()
         {
             ThreadTestHelpers.RunTestInBackgroundThread(() =>

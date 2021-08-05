@@ -1498,6 +1498,7 @@ typedef enum CorTokenType
     mdtFile                 = 0x26000000,       //
     mdtExportedType         = 0x27000000,       //
     mdtManifestResource     = 0x28000000,       //
+    mdtNestedClass          = 0x29000000,       //
     mdtGenericParam         = 0x2a000000,       //
     mdtMethodSpec           = 0x2b000000,       //
     mdtGenericParamConstraint = 0x2c000000,
@@ -1867,12 +1868,6 @@ typedef enum LoadHintEnum
 
 #define DEPENDENCY_TYPE_W                       W("System.Runtime.CompilerServices.DependencyAttribute")
 #define DEPENDENCY_TYPE                         "System.Runtime.CompilerServices.DependencyAttribute"
-
-#define TARGET_FRAMEWORK_TYPE_W                 W("System.Runtime.Versioning.TargetFrameworkAttribute")
-#define TARGET_FRAMEWORK_TYPE                   "System.Runtime.Versioning.TargetFrameworkAttribute"
-
-#define ASSEMBLY_METADATA_TYPE_W                W("System.Reflection.AssemblyMetadataAttribute")
-#define ASSEMBLY_METADATA_TYPE                  "System.Reflection.AssemblyMetadataAttribute"
 
 
 #define CMOD_CALLCONV_NAMESPACE_OLD             "System.Runtime.InteropServices"

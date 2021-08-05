@@ -113,7 +113,7 @@ public class ReliabilityFramework
 #endif
 {
     // instance members
-    private int _testsRunningCount = 0,_testsRanCount = 0,_failCount = 0;
+    private int _testsRunningCount = 0, _testsRanCount = 0, _failCount = 0;
     private ReliabilityConfig _reliabilityConfig;
     private ReliabilityTestSet _curTestSet;
     private DateTime _startTime;
@@ -127,7 +127,7 @@ public class ReliabilityFramework
 #if !PROJECTK_BUILD
     AppDomain[] _testDomains = null;
 #endif
-    TestAssemblyLoadContext[]  _testALCs = null;
+    TestAssemblyLoadContext[] _testALCs = null;
     private DetourHelpers _detourHelpers;
     private Hashtable _foundTests;
     public int LoadingCount = 0;
@@ -160,7 +160,7 @@ public class ReliabilityFramework
     {
         string configFile = null;
         bool okToContinue = true, doReplay = false;
-        string sTests = "tests", sSeed = "seed",exectime ="maximumExecutionTime";
+        string sTests = "tests", sSeed = "seed", exectime = "maximumExecutionTime";
 
         ReliabilityFramework rf = new ReliabilityFramework();
         rf._logger.WriteToInstrumentationLog(null, LoggingLevels.StartupShutdown, "Started");
@@ -213,8 +213,8 @@ public class ReliabilityFramework
         // if no config file specified, check for [something]_gc.config in the current folder.
         if (configFile == null)
         {
-            var config = IsRunningAsUnitTest ? 
-                "*_gc_ci.config" : 
+            var config = IsRunningAsUnitTest ?
+                "*_gc_ci.config" :
                 "*_gc.config";
 
             configFile = Directory.GetFiles(Environment.CurrentDirectory, config).SingleOrDefault();
@@ -829,7 +829,7 @@ public class ReliabilityFramework
         // so we start new tests sooner (so they start BEFORE we drop below our minimum CPU)
 
         //Console.WriteLine("RF - TestStarter found {0} tests to run", totalTestsToRun);
-        if (_curTestSet.SuppressConsoleOutputFromTests)
+        if ((_curTestSet.DefaultTestStartMode != TestStartModeEnum.AssemblyLoadContextLoader) && (_curTestSet.SuppressConsoleOutputFromTests))
             Console.SetOut(System.IO.TextWriter.Null);
 
         /************************************************************************
@@ -1856,11 +1856,11 @@ public class ReliabilityFramework
 
             if (test.Assembly.ToLower().IndexOf(".exe") == -1 && test.Assembly.ToLower().IndexOf(".dll") == -1)	// must be a simple name or fullname...
             {
-                loadMethod.Invoke(obj, new object[] { test.Assembly, paths});
+                loadMethod.Invoke(obj, new object[] { test.Assembly, paths });
             }
             else			// has an executable extension, must be in local directory.
             {
-                loadFromMethod.Invoke(obj, new object[] { Path.Combine(test.BasePath, test.Assembly), paths});
+                loadFromMethod.Invoke(obj, new object[] { Path.Combine(test.BasePath, test.Assembly), paths });
             }
 
             // check and see if this test is marked as requiring STA.  We only do

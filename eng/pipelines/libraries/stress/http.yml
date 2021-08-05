@@ -25,7 +25,7 @@ variables:
 jobs:
 - job: linux
   displayName: Docker Linux
-  timeoutInMinutes: 150
+  timeoutInMinutes: 180
   pool:
     name: NetCorePublic-Pool
     queue: BuildPool.Ubuntu.1804.Amd64.Open
@@ -46,6 +46,14 @@ jobs:
       echo "##vso[task.setvariable variable=succeeded;isOutput=true]true"
     name: buildStress
     displayName: Build HttpStress
+
+  - bash: |
+      cd '$(httpStressProject)'
+      export HTTPSTRESS_CLIENT_ARGS="$HTTPSTRESS_CLIENT_ARGS -http 3.0"
+      export HTTPSTRESS_SERVER_ARGS="$HTTPSTRESS_SERVER_ARGS -http 3.0"
+      docker-compose up --abort-on-container-exit --no-color
+    displayName: Run HttpStress - HTTP 3.0
+    condition: and(eq(variables['buildRuntime.succeeded'], 'true'), eq(variables['buildStress.succeeded'], 'true'))
 
   - bash: |
       cd '$(httpStressProject)'
@@ -88,6 +96,13 @@ jobs:
     name: buildStress
     displayName: Build HttpStress
 
+    # Firewall is disabled for the test runs, since it can lead to unexpected TCP failures on CI machines, which are unrelated to the HTTP logic.
+    # See: https://github.com/dotnet/runtime/issues/50854
+  - powershell: |
+      Set-NetFirewallProfile -Profile Domain, Public, Private -Enabled False
+    name: disableFirewall
+    displayName: Disable Firewall
+
   - powershell: |
       cd '$(httpStressProject)'
       $env:HTTPSTRESS_CLIENT_ARGS = "$env:HTTPSTRESS_CLIENT_ARGS -http 2.0"
@@ -103,3 +118,8 @@ jobs:
       docker-compose up --abort-on-container-exit --no-color
     displayName: Run HttpStress - HTTP 1.1
     condition: and(eq(variables['buildRuntime.succeeded'], 'true'), eq(variables['buildStress.succeeded'], 'true'))
+
+  - powershell: |
+      Set-NetFirewallProfile -Profile Domain, Public, Private -Enabled True
+    name: enableFirewall
+    displayName: Enable Firewall

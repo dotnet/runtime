@@ -144,6 +144,50 @@ namespace Microsoft.NET.HostModel.Tests
             bundler.BundleManifest.Files.Where(entry => entry.RelativePath.Equals("rel/app.Repeat.dll")).Single().Type.Should().Be(FileType.Assembly);
         }
 
+        private (string bundleFileName, string bundleId) CreateSampleBundle(bool bundleMultipleFiles)
+        {
+            var fixture = sharedTestState.TestFixture.Copy();
+
+            var hostName = BundleHelper.GetHostName(fixture);
+            var bundleDir = Directory.CreateDirectory(
+                Path.Combine(BundleHelper.GetBundleDir(fixture).FullName, Path.GetRandomFileName()));
+            var targetOS = BundleHelper.GetTargetOS(fixture.CurrentRid);
+            var targetArch = BundleHelper.GetTargetArch(fixture.CurrentRid);
+
+            var fileSpecs = new List<FileSpec>();
+            fileSpecs.Add(new FileSpec(BundleHelper.GetHostPath(fixture), BundleHelper.GetHostName(fixture)));
+            if (bundleMultipleFiles)
+            {
+                fileSpecs.Add(new FileSpec(BundleHelper.GetAppPath(fixture), "rel/app.repeat.dll"));
+            }
+
+            Bundler bundler = new Bundler(hostName, bundleDir.FullName, targetOS: targetOS, targetArch: targetArch);
+            return (bundler.GenerateBundle(fileSpecs), bundler.BundleManifest.BundleID);
+        }
+
+        [Fact]
+        public void TestWithIdenticalBundlesShouldBeBinaryEqualPasses()
+        {
+            var firstBundle = CreateSampleBundle(true);
+            byte[] firstBundleContent = File.ReadAllBytes(firstBundle.bundleFileName);
+            var secondBundle = CreateSampleBundle(true);
+            byte[] secondBundleContent = File.ReadAllBytes(secondBundle.bundleFileName);
+
+            firstBundle.bundleId.ShouldBeEquivalentTo(secondBundle.bundleId,
+                "Deterministic/Reproducible build should produce identical bundle id for identical inputs");
+            firstBundleContent.ShouldBeEquivalentTo(secondBundleContent,
+                "Deterministic/Reproducible build should produce identical binary for identical inputs");
+        }
+
+        [Fact]
+        public void TestWithUniqueBundlesShouldHaveUniqueBundleIdsPasses()
+        {
+            string firstBundle = CreateSampleBundle(true).bundleId;
+            string secondBundle = CreateSampleBundle(false).bundleId;
+
+            Assert.NotEqual(firstBundle, secondBundle, StringComparer.Ordinal);
+        }
+
         [Fact]
         public void TestWithMultipleDuplicateEntriesFails()
         {
@@ -187,7 +231,7 @@ namespace Microsoft.NET.HostModel.Tests
             // work correctly in the presence of "."s in the hostName.
             var originalBaseName = "StandaloneApp";
             var newBaseName = "Stand.Alone.App";
-            var exe = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? ".exe" : string.Empty;
+            var exe = OperatingSystem.IsWindows() ? ".exe" : string.Empty;
 
             void rename(string extension)
             {

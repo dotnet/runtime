@@ -839,7 +839,8 @@ class ClrDataAccess
       public ISOSDacInterface7,
       public ISOSDacInterface8,
       public ISOSDacInterface9,
-      public ISOSDacInterface10
+      public ISOSDacInterface10,
+      public ISOSDacInterface11
 {
 public:
     ClrDataAccess(ICorDebugDataTarget * pTarget, ICLRDataTarget * pLegacyTarget=0);
@@ -1213,6 +1214,16 @@ public:
     virtual HRESULT STDMETHODCALLTYPE GetComWrappersCCWData(CLRDATA_ADDRESS ccw, CLRDATA_ADDRESS *managedObject, int *refCount);
     virtual HRESULT STDMETHODCALLTYPE IsComWrappersRCW(CLRDATA_ADDRESS rcw, BOOL *isComWrappersRCW);
     virtual HRESULT STDMETHODCALLTYPE GetComWrappersRCWData(CLRDATA_ADDRESS rcw, CLRDATA_ADDRESS *identity);
+
+    // ISOSDacInterface11
+    virtual HRESULT STDMETHODCALLTYPE IsTrackedType(
+        CLRDATA_ADDRESS objAddr,
+        BOOL *isTrackedType,
+        BOOL *hasTaggedMemory);
+    virtual HRESULT STDMETHODCALLTYPE GetTaggedMemory(
+        CLRDATA_ADDRESS objAddr,
+        CLRDATA_ADDRESS *taggedMemory,
+        size_t *taggedMemorySizeInBytes);
     //
     // ClrDataAccess.
     //
@@ -1312,7 +1323,7 @@ public:
     HRESULT DumpManagedObject(CLRDataEnumMemoryFlags flags, OBJECTREF objRef);
     HRESULT DumpManagedExcepObject(CLRDataEnumMemoryFlags flags, OBJECTREF objRef);
     HRESULT DumpManagedStackTraceStringObject(CLRDataEnumMemoryFlags flags, STRINGREF orefStackTrace);
-#ifdef FEATURE_COMINTEROP
+#if (defined(FEATURE_COMINTEROP) || defined(FEATURE_COMWRAPPERS)) && !defined(TARGET_UNIX)
     HRESULT DumpStowedExceptionObject(CLRDataEnumMemoryFlags flags, CLRDATA_ADDRESS ccwPtr);
     HRESULT EnumMemStowedException(CLRDataEnumMemoryFlags flags);
 #endif
@@ -1989,7 +2000,6 @@ private:
         return &pData[mCurr->count++];
     }
 
-
     template <class IntType, class StructType>
     IntType WalkStack(IntType count, StructType refs[], promote_func promote, GCEnumCallback enumFunc)
     {
@@ -2001,12 +2011,36 @@ private:
         _ASSERTE(mCurr == NULL);
         _ASSERTE(mHead.next == NULL);
 
+        class ProfilerFilterContextHolder
+        {
+            Thread* m_pThread;
+
+        public:
+            ProfilerFilterContextHolder() : m_pThread(NULL)
+            {
+            }
+
+            void Activate(Thread* pThread)
+            {
+                m_pThread = pThread;
+            }
+
+            ~ProfilerFilterContextHolder()
+            {
+                if (m_pThread != NULL)
+                    m_pThread->SetProfilerFilterContext(NULL);
+            }
+        };
+
+        ProfilerFilterContextHolder contextHolder;
+        T_CONTEXT ctx;
+
         // Get the current thread's context and set that as the filter context
         if (mThread->GetFilterContext() == NULL && mThread->GetProfilerFilterContext() == NULL)
         {
-            T_CONTEXT ctx;
             mDac->m_pTarget->GetThreadContext(mThread->GetOSThreadId(), CONTEXT_FULL, sizeof(ctx), (BYTE*)&ctx);
             mThread->SetProfilerFilterContext(&ctx);
+            contextHolder.Activate(mThread);
         }
 
         // Setup GCCONTEXT structs for the stackwalk.

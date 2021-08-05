@@ -515,7 +515,7 @@ Namespace Microsoft.VisualBasic
                 ServerName = Nothing
             Else
                 'Does the ServerName match the MachineName?
-                If String.Compare(Environment.MachineName, ServerName, StringComparison.OrdinalIgnoreCase) = 0 Then
+                If String.Equals(Environment.MachineName, ServerName, StringComparison.OrdinalIgnoreCase) Then
                     ServerName = Nothing
                 End If
             End If

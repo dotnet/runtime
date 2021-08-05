@@ -4,16 +4,16 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Runtime.InteropServices;
 using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace System.IO.Compression
 {
     // The disposable fields that this class owns get disposed when the ZipArchive it belongs to gets disposed
     public partial class ZipArchiveEntry
     {
-        // The maximum index of our buffers, from the maximum index of a byte array
-        private const int MaxSingleBufferSize = 0x7FFFFFC7;
-
         private ZipArchive _archive;
         private readonly bool _originallyInArchive;
         private readonly int _diskNumberStart;
@@ -569,6 +569,7 @@ namespace System.IO.Compression
             if (!_everOpenedForWrite && _originallyInArchive)
             {
                 // we know that it is openable at this point
+                int MaxSingleBufferSize = Array.MaxLength;
 
                 _compressedBytes = new byte[(_compressedSize / MaxSingleBufferSize) + 1][];
                 for (int i = 0; i < _compressedBytes.Length - 1; i++)
@@ -1224,12 +1225,52 @@ namespace System.IO.Compression
                 _position += source.Length;
             }
 
+            public override void WriteByte(byte value) =>
+                Write(MemoryMarshal.CreateReadOnlySpan(ref value, 1));
+
+            public override Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
+            {
+                ValidateBufferArguments(buffer, offset, count);
+                return WriteAsync(new ReadOnlyMemory<byte>(buffer, offset, count), cancellationToken).AsTask();
+            }
+
+            public override ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default)
+            {
+                ThrowIfDisposed();
+                Debug.Assert(CanWrite);
+
+                return !buffer.IsEmpty ?
+                    Core(buffer, cancellationToken) :
+                    default;
+
+                async ValueTask Core(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken)
+                {
+                    if (!_everWritten)
+                    {
+                        _everWritten = true;
+                        // write local header, we are good to go
+                        _usedZip64inLH = _entry.WriteLocalFileHeader(isEmptyFile: false);
+                    }
+
+                    await _crcSizeStream.WriteAsync(buffer, cancellationToken).ConfigureAwait(false);
+                    _position += buffer.Length;
+                }
+            }
+
             public override void Flush()
             {
                 ThrowIfDisposed();
                 Debug.Assert(CanWrite);
 
                 _crcSizeStream.Flush();
+            }
+
+            public override Task FlushAsync(CancellationToken cancellationToken)
+            {
+                ThrowIfDisposed();
+                Debug.Assert(CanWrite);
+
+                return _crcSizeStream.FlushAsync(cancellationToken);
             }
 
             protected override void Dispose(bool disposing)

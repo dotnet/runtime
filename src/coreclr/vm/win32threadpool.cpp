@@ -351,16 +351,7 @@ BOOL ThreadpoolMgr::Initialize()
     BOOL bRet = FALSE;
     BOOL bExceptionCaught = FALSE;
 
-#ifndef TARGET_UNIX
-    //ThreadPool_CPUGroup
-    CPUGroupInfo::EnsureInitialized();
-    if (CPUGroupInfo::CanEnableGCCPUGroups() && CPUGroupInfo::CanEnableThreadUseAllCpuGroups())
-        NumberOfProcessors = CPUGroupInfo::GetNumActiveProcessors();
-    else
-        NumberOfProcessors = GetCurrentProcessCpuCount();
-#else // !TARGET_UNIX
     NumberOfProcessors = GetCurrentProcessCpuCount();
-#endif // !TARGET_UNIX
     InitPlatformVariables();
 
     EX_TRY
@@ -400,7 +391,7 @@ BOOL ThreadpoolMgr::Initialize()
 
 #ifndef TARGET_UNIX
         //ThreadPool_CPUGroup
-        if (CPUGroupInfo::CanEnableGCCPUGroups() && CPUGroupInfo::CanEnableThreadUseAllCpuGroups())
+        if (CPUGroupInfo::CanEnableThreadUseAllCpuGroups())
             RecycledLists.Initialize( CPUGroupInfo::GetNumActiveProcessors() );
         else
             RecycledLists.Initialize( g_SystemInfo.dwNumberOfProcessors );
@@ -1287,8 +1278,9 @@ void ThreadpoolMgr::ManagedWaitIOCompletionCallback_Worker(LPVOID state)
     DestroyHandle(completeWaitWorkItemObjectHandle);
     completeWaitWorkItemObjectHandle = NULL;
 
+    MethodDescCallSite completeAwait(METHOD__COMPLETE_WAIT_THREAD_POOL_WORK_ITEM__COMPLETE_WAIT, &completeWaitWorkItemObject);
     ARG_SLOT args[] = { ObjToArgSlot(completeWaitWorkItemObject) };
-    MethodDescCallSite(METHOD__COMPLETE_WAIT_THREAD_POOL_WORK_ITEM__COMPLETE_WAIT, &completeWaitWorkItemObject).Call(args);
+    completeAwait.Call(args);
 
     GCPROTECT_END();
 }
@@ -3812,7 +3804,7 @@ int ThreadpoolMgr::GetCPUBusyTime_NT(PROCESS_CPU_INFORMATION* pOldInfo)
     newUsage.kernelTime.QuadPart = 0;
     newUsage.userTime.QuadPart   = 0;
 
-    if (CPUGroupInfo::CanEnableGCCPUGroups() && CPUGroupInfo::CanEnableThreadUseAllCpuGroups())
+    if (CPUGroupInfo::CanEnableThreadUseAllCpuGroups())
     {
 #if !defined(FEATURE_REDHAWK) && !defined(TARGET_UNIX)
         FILETIME newIdleTime, newKernelTime, newUserTime;

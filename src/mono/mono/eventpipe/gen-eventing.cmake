@@ -1,0 +1,98 @@
+if(ENABLE_PERFTRACING)
+
+    set(CORECLR_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../../../coreclr)
+    set(CORECLR_VM_DIR ${CORECLR_DIR}/vm)
+
+    set(EVENT_MANIFEST ${CORECLR_VM_DIR}/ClrEtwAll.man)
+    set(EVENT_EXCLUSION_FILE ${CORECLR_VM_DIR}/ClrEtwAllMeta.lst)
+
+    set(EVENT_INCLUSION_FILE ${MONO_EVENTPIPE_SHIM_SOURCE_PATH}/gen-eventing-event-inc.lst)
+
+    if (HOST_WIN32)
+        set(NONEXTERN_ARG "--nonextern")
+        set(NOXPLATHEADER_ARG "--noxplatheader")
+        #set(NEED_XPLAT_HEADER ON)
+    else()
+        set(NONEXTERN_ARG "--nonextern")
+        set(NOXPLATHEADER_ARG "--noxplatheader")
+        #set(NEED_XPLAT_HEADER ON)
+    endif()
+
+    include(FindPythonInterp)
+
+    set (MONO_EVENTPIPE_GEN_HEADERS
+        ${MONO_EVENTPIPE_GEN_INCLUDE_PATH}/etmdummy.h
+        ${MONO_EVENTPIPE_GEN_INCLUDE_PATH}/clretwallmain.h
+        ${MONO_EVENTPIPE_GEN_INCLUDE_PATH}/clreventpipewriteevents.h
+        ${MONO_EVENTPIPE_GEN_INCLUDE_PATH}/clrproviders.h
+    )
+
+    set_source_files_properties(${MONO_EVENTPIPE_GEN_HEADERS} PROPERTIES GENERATED TRUE)
+
+    if (NEED_XPLAT_HEADER)
+        list(APPEND MONO_EVENTPIPE_GEN_HEADERS
+            ${MONO_EVENTPIPE_GEN_INCLUDE_PATH}/clrxplatevents.h)
+    endif()
+
+    set(GEN_EVENTING_SCRIPT ${CORECLR_DIR}/scripts/genEventing.py)
+
+    if(HOST_WIN32 AND NEED_XPLAT_HEADER)
+        set(ETW_PROVIDER_OUTPUTS
+            ${MONO_EVENTPIPE_GEN_INCLUDE_PATH}/etw/ClrEtwAll.h
+            ${MONO_EVENTPIPE_GEN_INCLUDE_PATH}/etw/ClrEtwAll.rc
+            ${MONO_EVENTPIPE_GEN_INCLUDE_PATH}/etw/etwmacros.h
+            ${MONO_EVENTPIPE_GEN_INCLUDE_PATH}/etw/ClrEtwAll_MSG00001.bin
+            ${MONO_EVENTPIPE_GEN_INCLUDE_PATH}/etw/ClrEtwAllTEMP.bin
+        )
+
+        set_source_files_properties(${ETW_PROVIDER_OUTPUTS} PROPERTIES GENERATED TRUE)
+        set(GEN_ETW_PROVIDER_COMMAND ${PYTHON_EXECUTABLE} ${CORECLR_DIR}/scripts/genEtwProvider.py --man ${EVENT_MANIFEST} --exc ${EVENT_EXCLUSION_FILE} --intermediate ${MONO_EVENTPIPE_GEN_INCLUDE_PATH})
+    else()
+        set(GEN_ETW_PROVIDER_COMMAND "")
+    endif()
+
+    add_custom_command(
+        OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_CFG_INTDIR}/${MONO_DIAGNOSTICS_TRACING_COMPONENT_NAME}-gen-headers.timestamp
+        COMMAND ${PYTHON_EXECUTABLE} ${GEN_EVENTING_SCRIPT} --man ${EVENT_MANIFEST} --inc ${MONO_EVENTPIPE_GEN_INCLUDE_PATH} --dummy ${MONO_EVENTPIPE_GEN_INCLUDE_PATH}/etmdummy.h --runtimeflavor mono ${NONEXTERN_ARG} ${NOXPLATHEADER_ARG}
+        COMMAND ${GEN_ETW_PROVIDER_COMMAND}
+        COMMAND ${CMAKE_COMMAND} -E touch ${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_CFG_INTDIR}/${MONO_DIAGNOSTICS_TRACING_COMPONENT_NAME}-gen-headers.timestamp
+        DEPENDS ${GEN_EVENTING_SCRIPT} ${EVENT_MANIFEST} ${EVENT_EXCLUSION_FILE}
+        VERBATIM
+    )
+
+    add_custom_target(${MONO_DIAGNOSTICS_TRACING_COMPONENT_NAME}-gen-headers DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_CFG_INTDIR}/${MONO_DIAGNOSTICS_TRACING_COMPONENT_NAME}-gen-headers.timestamp)
+
+    set(GEN_EVENTPIPE_SCRIPT ${CORECLR_DIR}/scripts/genEventPipe.py)
+    set(GEN_EVENTPIPE_COMMAND ${PYTHON_EXECUTABLE} ${GEN_EVENTPIPE_SCRIPT} --man ${EVENT_MANIFEST} --exc ${EVENT_EXCLUSION_FILE} --inc ${EVENT_INCLUSION_FILE} --intermediate ${CMAKE_CURRENT_BINARY_DIR} --runtimeflavor mono ${NONEXTERN_ARG})
+
+    execute_process(
+        COMMAND ${GEN_EVENTPIPE_COMMAND} --dry-run
+        RESULT_VARIABLE GEN_EVENTPIPE_RESULT
+        OUTPUT_VARIABLE GEN_EVENTPIPE_SOURCE_PATHS
+        ERROR_VARIABLE GEN_EVENTPIPE_ERRORS
+    )
+
+    if (NOT GEN_EVENTPIPE_RESULT EQUAL 0)
+        message(FATAL_ERROR "Failed to generate EventPipe: ${GEN_EVENTPIPE_ERRORS}")
+    endif()
+
+    string(REPLACE "\n" ";" GEN_EVENTPIPE_SOURCE_PATHS ${GEN_EVENTPIPE_SOURCE_PATHS}) # turn the outputted list of files into a CMake list
+
+    set (MONO_EVENTPIPE_GEN_SOURCES "")
+    foreach(GEN_EVENTPIPE_SOURCE_PATH ${GEN_EVENTPIPE_SOURCE_PATHS})
+        file(TO_CMAKE_PATH ${GEN_EVENTPIPE_SOURCE_PATH} GEN_EVENTPIPE_SOURCE)
+        list(APPEND MONO_EVENTPIPE_GEN_SOURCES ${GEN_EVENTPIPE_SOURCE})
+    endforeach()
+
+    add_custom_command(OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_CFG_INTDIR}/${MONO_DIAGNOSTICS_TRACING_COMPONENT_NAME}-gen-sources.timestamp
+        COMMAND ${GEN_EVENTPIPE_COMMAND}
+        COMMAND ${CMAKE_COMMAND} -E touch ${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_CFG_INTDIR}/${MONO_DIAGNOSTICS_TRACING_COMPONENT_NAME}-gen-sources.timestamp
+        DEPENDS ${GEN_EVENTPIPE_SCRIPT} ${EVENT_MANIFEST} ${EVENT_EXCLUSION_FILE} ${EVENT_INCLUSION_FILE}
+    )
+
+    set_source_files_properties(${MONO_EVENTPIPE_GEN_SOURCES} PROPERTIES GENERATED TRUE)
+
+    add_custom_target(${MONO_DIAGNOSTICS_TRACING_COMPONENT_NAME}-gen-sources 
+        DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_CFG_INTDIR}/${MONO_DIAGNOSTICS_TRACING_COMPONENT_NAME}-gen-sources.timestamp ${MONO_DIAGNOSTICS_TRACING_COMPONENT_NAME}-gen-headers)
+
+endif(ENABLE_PERFTRACING)

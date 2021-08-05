@@ -29,9 +29,7 @@ flowList* Compiler::fgGetPredForBlock(BasicBlock* block, BasicBlock* blockPred)
     assert(blockPred);
     assert(!fgCheapPredsValid);
 
-    flowList* pred;
-
-    for (pred = block->bbPreds; pred != nullptr; pred = pred->flNext)
+    for (flowList* const pred : block->PredEdges())
     {
         if (blockPred == pred->getBlock())
         {
@@ -461,17 +459,11 @@ void Compiler::fgRemoveBlockAsPred(BasicBlock* block)
             break;
 
         case BBJ_SWITCH:
-        {
-            unsigned     jumpCnt = block->bbJumpSwt->bbsCount;
-            BasicBlock** jumpTab = block->bbJumpSwt->bbsDstTab;
-
-            do
+            for (BasicBlock* const bTarget : block->SwitchTargets())
             {
-                fgRemoveRefPred(*jumpTab, block);
-            } while (++jumpTab, --jumpCnt);
-
+                fgRemoveRefPred(bTarget, block);
+            }
             break;
-        }
 
         default:
             noway_assert(!"Block doesn't have a valid bbJumpKind!!!!");
@@ -499,8 +491,6 @@ void Compiler::fgComputeCheapPreds()
     noway_assert(!fgComputePredsDone); // We can't do this if we've got the full preds.
     noway_assert(fgFirstBB != nullptr);
 
-    BasicBlock* block;
-
 #ifdef DEBUG
     if (verbose)
     {
@@ -513,7 +503,7 @@ void Compiler::fgComputeCheapPreds()
     // Clear out the cheap preds lists.
     fgRemovePreds();
 
-    for (block = fgFirstBB; block != nullptr; block = block->bbNext)
+    for (BasicBlock* const block : Blocks())
     {
         switch (block->bbJumpKind)
         {
@@ -546,16 +536,10 @@ void Compiler::fgComputeCheapPreds()
                 break;
 
             case BBJ_SWITCH:
-                unsigned jumpCnt;
-                jumpCnt = block->bbJumpSwt->bbsCount;
-                BasicBlock** jumpTab;
-                jumpTab = block->bbJumpSwt->bbsDstTab;
-
-                do
+                for (BasicBlock* const bTarget : block->SwitchTargets())
                 {
-                    fgAddCheapPred(*jumpTab, block);
-                } while (++jumpTab, --jumpCnt);
-
+                    fgAddCheapPred(bTarget, block);
+                }
                 break;
 
             case BBJ_EHFINALLYRET: // It's expensive to compute the preds for this case, so we don't for the cheap
@@ -659,7 +643,7 @@ void Compiler::fgRemovePreds()
     // and are the same size. So, this function removes both.
     static_assert_no_msg(sizeof(((BasicBlock*)nullptr)->bbPreds) == sizeof(((BasicBlock*)nullptr)->bbCheapPreds));
 
-    for (BasicBlock* block = fgFirstBB; block != nullptr; block = block->bbNext)
+    for (BasicBlock* const block : Blocks())
     {
         block->bbPreds = nullptr;
     }
@@ -688,8 +672,6 @@ void Compiler::fgComputePreds()
 {
     noway_assert(fgFirstBB != nullptr);
 
-    BasicBlock* block;
-
 #ifdef DEBUG
     if (verbose)
     {
@@ -700,7 +682,7 @@ void Compiler::fgComputePreds()
 
     // Check that the block numbers are increasing order.
     unsigned lastBBnum = fgFirstBB->bbNum;
-    for (BasicBlock* block = fgFirstBB->bbNext; block != nullptr; block = block->bbNext)
+    for (BasicBlock* const block : Blocks(fgFirstBB->bbNext))
     {
         assert(lastBBnum < block->bbNum);
         lastBBnum = block->bbNum;
@@ -708,7 +690,7 @@ void Compiler::fgComputePreds()
 #endif // DEBUG
 
     // Reset everything pred related
-    for (BasicBlock* block = fgFirstBB; block != nullptr; block = block->bbNext)
+    for (BasicBlock* const block : Blocks())
     {
         block->bbPreds    = nullptr;
         block->bbLastPred = nullptr;
@@ -726,7 +708,7 @@ void Compiler::fgComputePreds()
         fgEntryBB->bbRefs = 1;
     }
 
-    for (block = fgFirstBB; block; block = block->bbNext)
+    for (BasicBlock* const block : Blocks())
     {
         switch (block->bbJumpKind)
         {
@@ -823,16 +805,10 @@ void Compiler::fgComputePreds()
                 break;
 
             case BBJ_SWITCH:
-                unsigned jumpCnt;
-                jumpCnt = block->bbJumpSwt->bbsCount;
-                BasicBlock** jumpTab;
-                jumpTab = block->bbJumpSwt->bbsDstTab;
-
-                do
+                for (BasicBlock* const bTarget : block->SwitchTargets())
                 {
-                    fgAddRefPred(*jumpTab, block, nullptr, true);
-                } while (++jumpTab, --jumpCnt);
-
+                    fgAddRefPred(bTarget, block, nullptr, true);
+                }
                 break;
 
             default:
@@ -841,10 +817,8 @@ void Compiler::fgComputePreds()
         }
     }
 
-    for (unsigned EHnum = 0; EHnum < compHndBBtabCount; EHnum++)
+    for (EHblkDsc* const ehDsc : EHClauses(this))
     {
-        EHblkDsc* ehDsc = ehGetDsc(EHnum);
-
         if (ehDsc->HasFilter())
         {
             // The first block of a filter has an artifical extra refcount.
@@ -949,11 +923,8 @@ Compiler::SwitchUniqueSuccSet Compiler::GetDescriptorForSwitch(BasicBlock* switc
 
         BitVecTraits blockVecTraits(fgBBNumMax + 1, this);
         BitVec       uniqueSuccBlocks(BitVecOps::MakeEmpty(&blockVecTraits));
-        BasicBlock** jumpTable = switchBlk->bbJumpSwt->bbsDstTab;
-        unsigned     jumpCount = switchBlk->bbJumpSwt->bbsCount;
-        for (unsigned i = 0; i < jumpCount; i++)
+        for (BasicBlock* const targ : switchBlk->SwitchTargets())
         {
-            BasicBlock* targ = jumpTable[i];
             BitVecOps::AddElemD(&blockVecTraits, uniqueSuccBlocks, targ->bbNum);
         }
         // Now we have a set of unique successors.
@@ -964,9 +935,8 @@ Compiler::SwitchUniqueSuccSet Compiler::GetDescriptorForSwitch(BasicBlock* switc
         unsigned nonDupInd = 0;
         // At this point, all unique targets are in "uniqueSuccBlocks".  As we encounter each,
         // add to nonDups, remove from "uniqueSuccBlocks".
-        for (unsigned i = 0; i < jumpCount; i++)
+        for (BasicBlock* const targ : switchBlk->SwitchTargets())
         {
-            BasicBlock* targ = jumpTable[i];
             if (BitVecOps::IsMember(&blockVecTraits, uniqueSuccBlocks, targ->bbNum))
             {
                 nonDups[nonDupInd] = targ;
@@ -990,14 +960,12 @@ void Compiler::SwitchUniqueSuccSet::UpdateTarget(CompAllocator alloc,
                                                  BasicBlock*   to)
 {
     assert(switchBlk->bbJumpKind == BBJ_SWITCH); // Precondition.
-    unsigned     jmpTabCnt = switchBlk->bbJumpSwt->bbsCount;
-    BasicBlock** jmpTab    = switchBlk->bbJumpSwt->bbsDstTab;
 
     // Is "from" still in the switch table (because it had more than one entry before?)
     bool fromStillPresent = false;
-    for (unsigned i = 0; i < jmpTabCnt; i++)
+    for (BasicBlock* const bTarget : switchBlk->SwitchTargets())
     {
-        if (jmpTab[i] == from)
+        if (bTarget == from)
         {
             fromStillPresent = true;
             break;

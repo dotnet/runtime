@@ -16,7 +16,6 @@ using System.Runtime.ExceptionServices;
 
 namespace System.Net.Http
 {
-    // TODO: SupportedOSPlatform doesn't work for internal APIs https://github.com/dotnet/runtime/issues/51305
     [SupportedOSPlatform("windows")]
     [SupportedOSPlatform("linux")]
     [SupportedOSPlatform("macos")]
@@ -55,6 +54,9 @@ namespace System.Net.Http
         // When our request content has a precomputed length, it is sent over a single DATA frame.
         // Keep track of how much is remaining in that frame.
         private long _requestContentLengthRemaining;
+
+        // For the precomputed length case, we need to add the DATA framing for the first write only.
+        private bool _singleDataFrameWritten;
 
         public long StreamId
         {
@@ -100,8 +102,6 @@ namespace System.Net.Http
         private void DisposeSyncHelper()
         {
             _connection.RemoveStream(_stream);
-            _connection = null!;
-            _stream = null!;
 
             _sendBuffer.Dispose();
             _recvBuffer.Dispose();
@@ -141,7 +141,7 @@ namespace System.Net.Http
                     // If we don't have content, or we are doing Expect 100 Continue, then we can't rely on
                     // this and must send our headers immediately.
 
-                    await _stream.WriteAsync(_sendBuffer.ActiveMemory, requestCancellationSource.Token).ConfigureAwait(false);
+                    await _stream.WriteAsync(_sendBuffer.ActiveMemory, endStream: _expect100ContinueCompletionSource == null, requestCancellationSource.Token).ConfigureAwait(false);
                     _sendBuffer.Discard(_sendBuffer.ActiveLength);
 
                     if (_expect100ContinueCompletionSource != null)
@@ -149,10 +149,6 @@ namespace System.Net.Http
                         // Flush to ensure we get a response.
                         // TODO: MsQuic may not need any flushing.
                         await _stream.FlushAsync(cancellationToken).ConfigureAwait(false);
-                    }
-                    else
-                    {
-                        _stream.Shutdown();
                     }
                 }
 
@@ -171,7 +167,7 @@ namespace System.Net.Http
                 // See Http2Connection.SendAsync for a full comment on this logic -- it is identical behavior.
                 if (sendContentTask.IsCompleted ||
                     _request.Content?.AllowDuplex != true ||
-                    sendContentTask == await Task.WhenAny(sendContentTask, readResponseTask).ConfigureAwait(false) ||
+                    await Task.WhenAny(sendContentTask, readResponseTask).ConfigureAwait(false) == sendContentTask ||
                     sendContentTask.IsCompleted)
                 {
                     try
@@ -394,9 +390,9 @@ namespace System.Net.Http
                 }
                 _requestContentLengthRemaining -= buffer.Length;
 
-                if (_sendBuffer.ActiveLength != 0)
+                if (!_singleDataFrameWritten)
                 {
-                    // We haven't sent out headers yet, so write them together with the user's content buffer.
+                    // Note we may not have sent headers yet; if so, _sendBuffer.ActiveLength will be > 0, and we will write them in a single write.
 
                     // Because we have a Content-Length, we can write it in a single DATA frame.
                     BufferFrameEnvelope(Http3FrameType.Data, remaining);
@@ -406,10 +402,12 @@ namespace System.Net.Http
                     await _stream.WriteAsync(_gatheredSendBuffer, cancellationToken).ConfigureAwait(false);
 
                     _sendBuffer.Discard(_sendBuffer.ActiveLength);
+
+                    _singleDataFrameWritten = true;
                 }
                 else
                 {
-                    // Headers already sent, send just the content buffer directly.
+                    // DATA frame already sent, send just the content buffer directly.
                     await _stream.WriteAsync(buffer, cancellationToken).ConfigureAwait(false);
                 }
             }
@@ -587,7 +585,7 @@ namespace System.Net.Http
 
             foreach (KeyValuePair<HeaderDescriptor, object> header in headers.HeaderStore)
             {
-                int headerValuesCount = HttpHeaders.GetValuesAsStrings(header.Key, header.Value, ref _headerValues);
+                int headerValuesCount = HttpHeaders.GetStoreValuesIntoStringArray(header.Key, header.Value, ref _headerValues);
                 Debug.Assert(headerValuesCount > 0, "No values for header??");
                 ReadOnlySpan<string> headerValues = _headerValues.AsSpan(0, headerValuesCount);
 
@@ -1030,6 +1028,11 @@ namespace System.Net.Http
                         totalBytesRead += bytesRead;
                         _responseDataPayloadRemaining -= bytesRead;
                         buffer = buffer.Slice(bytesRead);
+
+                        if (_responseDataPayloadRemaining == 0)
+                        {
+                            break;
+                        }
                     }
                 }
 
@@ -1087,6 +1090,11 @@ namespace System.Net.Http
                         totalBytesRead += bytesRead;
                         _responseDataPayloadRemaining -= bytesRead;
                         buffer = buffer.Slice(bytesRead);
+
+                        if (_responseDataPayloadRemaining == 0)
+                        {
+                            break;
+                        }
                     }
                 }
 
@@ -1103,7 +1111,10 @@ namespace System.Net.Http
         {
             switch (ex)
             {
+                // Peer aborted the stream
                 case QuicStreamAbortedException _:
+                // User aborted the stream
+                case QuicOperationAbortedException _:
                     throw new IOException(SR.net_http_client_execution_error, new HttpRequestException(SR.net_http_client_execution_error, ex));
                 case QuicConnectionAbortedException _:
                     // Our connection was reset. Start aborting the connection.
@@ -1114,11 +1125,11 @@ namespace System.Net.Http
                     _connection.Abort(ex);
                     throw new IOException(SR.net_http_client_execution_error, new HttpRequestException(SR.net_http_client_execution_error, ex));
                 case OperationCanceledException oce when oce.CancellationToken == cancellationToken:
-                    _stream.AbortWrite((long)Http3ErrorCode.RequestCancelled);
+                    _stream.AbortRead((long)Http3ErrorCode.RequestCancelled);
                     ExceptionDispatchInfo.Throw(ex); // Rethrow.
                     return; // Never reached.
                 default:
-                    _stream.AbortWrite((long)Http3ErrorCode.InternalError);
+                    _stream.AbortRead((long)Http3ErrorCode.InternalError);
                     throw new IOException(SR.net_http_client_execution_error, new HttpRequestException(SR.net_http_client_execution_error, ex));
             }
         }

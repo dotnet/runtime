@@ -1,6 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Runtime.Versioning;
+
 namespace System.Runtime.CompilerServices
 {
     public static partial class RuntimeFeature
@@ -26,6 +28,12 @@ namespace System.Runtime.CompilerServices
         public const string CovariantReturnsOfClasses = nameof(CovariantReturnsOfClasses);
 
         /// <summary>
+        /// Indicates that this version of runtime supports virtual static members of interfaces.
+        /// </summary>
+        [RequiresPreviewFeatures]
+        public const string VirtualStaticsInInterfaces = nameof(VirtualStaticsInInterfaces);
+
+        /// <summary>
         /// Checks whether a certain feature is supported by the Runtime.
         /// </summary>
         public static bool IsSupported(string feature)
@@ -36,6 +44,7 @@ namespace System.Runtime.CompilerServices
                 case CovariantReturnsOfClasses:
                 case UnmanagedSignatureCallingConvention:
                 case DefaultImplementationsOfInterfaces:
+                case VirtualStaticsInInterfaces:
                     return true;
                 case nameof(IsDynamicCodeSupported):
                     return IsDynamicCodeSupported;

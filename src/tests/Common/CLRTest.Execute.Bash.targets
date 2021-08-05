@@ -11,7 +11,7 @@ This file contains the logic for providing Execution Script generation.
 WARNING:   When setting properties based on their current state (for example:
            <Foo Condition="'$(Foo)'==''>Bar</Foo>).  Be very careful.  Another script generation
            target might be trying to do the same thing.  It's better to avoid this by instead setting a new property.
-           
+
            Additionally, be careful with itemgroups.  Include will propagate outside of the target too!
 
 ***********************************************************************************************
@@ -19,16 +19,16 @@ WARNING:   When setting properties based on their current state (for example:
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
 
   <!-- This is here because of this bug: https://docs.microsoft.com/en-us/archive/blogs/msbuild/well-known-limitation-dynamic-items-and-properties-not-emitted-until-target-execution-completes -->
-  <Target Name="FetchExternalPropertiesForXpalt">
+  <Target Name="FetchExternalPropertiesForXplat">
     <!--Call GetExecuteShFullPath to get ToRunProject cmd file Path  -->
-    <MSBuild Projects="$(CLRTestProjectToRun)" 
+    <MSBuild Projects="$(CLRTestProjectToRun)"
              Targets="GetExecuteShFullPath"
              Properties="GenerateRunScript=True"
              Condition="'$(_CLRTestNeedsProjectToRun)' == 'True'">
       <Output TaskParameter="TargetOutputs" PropertyName="_CLRTestToRunFileFullPath"/>
     </MSBuild>
   </Target>
-  
+
   <!--
     Target: GetExecuteShFullPath
     Return Executed Sh Relative Full Path
@@ -53,23 +53,24 @@ WARNING:   When setting properties based on their current state (for example:
   <!--
   *******************************************************************************************
   TARGET: GenerateExecutionScriptInternal
-  
+
   For tests that "run" we will generate an execution script that wraps any arguments or other
   goo.  This allows generated .lst files to be very simple and reusable to invoke any "stage"
   of test execution.
-  
+
   Notice this is hooked up to run after targets that generate the stores that are marked with GenerateScripts metadata.
   Note also that this means it will run after the first of such targets.
   -->
   <Target Name="GenerateBashExecutionScript"
     Inputs="$(MSBuildProjectFullPath)"
     Outputs="$(OutputPath)\$(MSBuildProjectName).sh"
-    DependsOnTargets="FetchExternalPropertiesForXpalt;$(BashScriptSnippetGen);GetIlasmRoundTripBashScript">
+    DependsOnTargets="FetchExternalPropertiesForXplat;$(BashScriptSnippetGen);GetIlasmRoundTripBashScript">
 
     <Message Text="Project depends on $(_CLRTestToRunFileFullPath)." Condition="'$(_CLRTestNeedsProjectToRun)' == 'True'" />
 
     <PropertyGroup>
       <IncompatibleTestBashScriptExitCode>0</IncompatibleTestBashScriptExitCode>
+      <CoreRunArgs>@(RuntimeHostConfigurationOption -> '-p &quot;%(Identity)=%(Value)&quot;', ' ')</CoreRunArgs>
 
       <BashCLRTestEnvironmentCompatibilityCheck Condition="'$(GCStressIncompatible)' == 'true'"><![CDATA[
 $(BashCLRTestEnvironmentCompatibilityCheck)
@@ -123,11 +124,11 @@ fi
 if [ -z ${CLRTestExpectedExitCode+x} ]%3B then export CLRTestExpectedExitCode=$(CLRTestExitCode)%3B fi
 echo BEGIN EXECUTION]]>
       </BashCLRTestExitCodePrep>
-    
+
       <BashCLRTestArgPrep Condition=" '$(CLRTestExecutionArguments)'!='' ">
 <![CDATA[if [ -z ${CLRTestExecutionArguments+x} ]%3B then CLRTestExecutionArguments=($(CLRTestExecutionArguments))%3B fi]]>
       </BashCLRTestArgPrep>
-    
+
       <!-- By default, be prepared to do a full check -->
       <BashCLRTestExitCodeCheck><![CDATA[
 echo Expected: $CLRTestExpectedExitCode
@@ -149,7 +150,7 @@ else
 fi
       ]]></BashCLRTestExitCodeCheck>
     </PropertyGroup>
-  
+
     <ItemGroup Condition="$(_CLRTestNeedsToRun)">
       <Clean Include="$(OutputPath)\$(MSBuildProjectName).sh"/>
 
@@ -187,29 +188,29 @@ ReflectionRoots=
 
 shopt -s nullglob
 
-if [ ! -z "$DoLink" ]; 
+if [ ! -z "$DoLink" ];
 then
-  if [ ! -x "$ILLINK" ]; 
+  if [ ! -x "$ILLINK" ];
   then
     echo "Illink executable [$ILLINK] Invalid"
     exit 1
   fi
-  
+
   # Clean up old Linked binaries, if any
   rm -rf $LinkBin
-    
+
   # Remove Native images, since the goal is to run from Linked binaries
   rm -f *.ni.*
 
   # Use hints for reflection roots, if provided in $(ReflectionRootsXml)
-  if [ -f $(ReflectionRootsXml) ]; 
+  if [ -f $(ReflectionRootsXml) ];
   then
     ReflectionRoots="-x $(ReflectionRootsXml)"
   fi
 
   # Include all .exe files in this directory as entry points (some tests had multiple .exe file modules)
-  for bin in *.exe *.dll; 
-  do 
+  for bin in *.exe *.dll;
+  do
     Assemblies="$Assemblies -a ${bin%.*}"
   done
 
@@ -223,14 +224,14 @@ then
   if [  $ERRORLEVEL -ne 0 ]
   then
     echo ILLINK FAILED $ERRORLEVEL
-    if [ -z "$KeepLinkedBinaries" ]; 
+    if [ -z "$KeepLinkedBinaries" ];
     then
       rm -rf $LinkBin
     fi
     exit 1
   fi
-  
-  # Copy CORECLR native binaries to $LinkBin, 
+
+  # Copy CORECLR native binaries to $LinkBin,
   # so that we can run the test based on that directory
   cp $CORE_ROOT/*.so $LinkBin/
   cp $CORE_ROOT/corerun $LinkBin/
@@ -251,9 +252,9 @@ fi
 # Clean up the LinkBin directories after test execution.
 # Otherwise, RunTests may run out of disk space.
 
-if [ ! -z "$DoLink" ]; 
+if [ ! -z "$DoLink" ];
 then
-  if [ -z "$KeepLinkedBinaries" ]; 
+  if [ -z "$KeepLinkedBinaries" ];
   then
     rm -rf $LinkBin
   fi
@@ -262,7 +263,7 @@ fi
           </BashLinkerTestCleanupCmds>
       </PropertyGroup>
       <PropertyGroup>
-      <_CLRTestRunFile Condition="'$(CLRTestIsHosted)'=='true'">"$CORE_ROOT/corerun"</_CLRTestRunFile>
+      <_CLRTestRunFile Condition="'$(CLRTestIsHosted)'=='true'">"$CORE_ROOT/corerun" $(CoreRunArgs)</_CLRTestRunFile>
 
       <BashCLRTestPreCommands Condition="'$(CLRTestKind)' == 'BuildAndRun' and '$(TargetArchitecture)' == 'wasm'">
    <![CDATA[
@@ -274,7 +275,7 @@ else
   __Command+=" dotnet"
 fi
 
-$__Command msbuild $CORE_ROOT/wasm-test-runner/WasmTestRunner.proj /p:NetCoreAppCurrent=$(NetCoreAppCurrent) /p:TestAssemblyFileName=$(MsBuildProjectName).dll /p:TestBinDir=`pwd` || exit $?
+$__Command msbuild $CORE_ROOT/wasm-test-runner/WasmTestRunner.proj /p:NetCoreAppCurrent=$(NetCoreAppCurrent) /p:TestAssemblyFileName=$(MsBuildProjectName).dll /p:TestBinDir=`pwd` $(CLRTestMSBuildArgs) || exit $?
 
    ]]>
       </BashCLRTestPreCommands>
@@ -324,8 +325,6 @@ if [ ! -z ${RunCrossGen+x} ]%3B then
   TakeLock
 fi
 
-export MONO_ENV_OPTIONS=--llvm
-
 echo $LAUNCHER $ExePath %24(printf "'%s' " "${CLRTestExecutionArguments[@]}")
 $LAUNCHER $ExePath "${CLRTestExecutionArguments[@]}"
 
@@ -362,10 +361,46 @@ else
 	HARNESS_RUNNER="xharness"
 fi
 
-$__Command $HARNESS_RUNNER android test --instrumentation="net.dot.MonoRunner" --package-name="net.dot.$__Category" --app="$__TestBinaryBase/$__Category.apk" --output-directory=`pwd` --arg=entrypoint:libname=$(MsBuildProjectName).dll --expected-exit-code=100 -v
+$__Command $HARNESS_RUNNER android run --instrumentation="net.dot.MonoRunner" --package-name="net.dot.$__Category" --output-directory="$__OutputDir" --arg=entrypoint:libname=$(MsBuildProjectName).dll --expected-exit-code=100 -v
 CLRTestExitCode=$?
 
-# Exist code of xharness is zero when tests finished successfully
+# Exit code of xharness is zero when tests finished successfully
+CLRTestExpectedExitCode=0
+      ]]>
+      </BashCLRTestLaunchCmds>
+      <BashCLRTestLaunchCmds Condition="'$(CLRTestKind)' == 'BuildAndRun' And $(TargetOS) == 'iOSSimulator' ">
+      <![CDATA[
+__Command=""
+if [ ! -z ${__TestDotNetCmd+x} ] %3B then
+  __Command+=" $__TestDotNetCmd"
+else
+  __Command+=" dotnet"
+fi
+
+if [ ! -z "$XHARNESS_CLI_PATH" ]; then
+	# When running in CI, we only have the .NET runtime available
+	# We need to call the XHarness CLI DLL directly via dotnet exec
+	HARNESS_RUNNER="exec $XHARNESS_CLI_PATH"
+else
+	HARNESS_RUNNER="xharness"
+fi
+
+xcode_path="%24(dirname "%24(dirname "%24(xcode-select -p)")")"
+simulator_app="$xcode_path/Contents/Developer/Applications/Simulator.app"
+open -a "$simulator_app"
+helix_runner_uid="%24(id -u)"
+
+sudo launchctl asuser "$helix_runner_uid" $__Command $HARNESS_RUNNER apple just-run %5c
+  --app="net.dot.$__Category" %5c
+  --output-directory="$__OutputDir" %5c
+  --set-env="MONO_APPLE_APP_ENTRY_POINT_LIB_NAME=testdir-$(MsBuildProjectName)/$(MsBuildProjectName).dll" %5c
+  --set-env="MONO_APPLE_APP_ASSEMBLY_LOAD_PREFIX=testdir-$(MsBuildProjectName)" %5c
+  --expected-exit-code=100 %5c
+  --targets ios-simulator-64 %5c
+  -v
+CLRTestExitCode=$?
+
+# Exit code of xharness is zero when tests finished successfully
 CLRTestExpectedExitCode=0
       ]]>
       </BashCLRTestLaunchCmds>
@@ -384,17 +419,17 @@ CLRTestExpectedExitCode=0
 @(CLRTestBashEnvironmentVariable -> '%(Identity)', '%0a')
       </BashEnvironmentVariables>
     </PropertyGroup>
-     
+
     <Message Text="MSBuildProjectDirectory:$(MSBuildProjectDirectory)" />
     <Message Text="_CLRTestToRunFileFullPath:$(_CLRTestToRunFileFullPath)"/>
     <Message Text="_CLRTestRunFile:$(_CLRTestRunFile)" />
-    
+
     <ItemGroup>
       <_RequiredProperties Include="_CLRTestRunFile">
         <Value>$(_CLRTestRunFile)</Value>
       </_RequiredProperties>
     </ItemGroup>
-    
+
     <!-- Raise an error if any value in _RequiredProperties is missing  -->
     <Error Condition=" '%(_RequiredProperties.Value)'=='' "
       Text="Missing required test property [%(_RequiredProperties.Identity)]. Something isn't plumbed through correctly.  Contact $(_CLRTestBuildSystemOwner)." />
@@ -408,7 +443,7 @@ CLRTestExpectedExitCode=0
 usage()
 {
     echo "Usage: $0  $(_CLRTestParamList)"
-    echo 
+    echo
     echo "Arguments:"
 @(BashCLRTestExecutionScriptArgument -> '    echo "-%(Identity)=%(ParamName)"
     echo      "%(Description)"', '
@@ -499,14 +534,14 @@ $(BashCLRTestExitCodeCheck)
     </PropertyGroup>
 
     <!-- Write the file.
-         Note: under the hood, this will rely on Environment.NewLine for line 
+         Note: under the hood, this will rely on Environment.NewLine for line
          endings. This means that if the scripts are being generated on Windows,
-         the line endings will need to be changed from CR-LF to Unix (LF) line 
+         the line endings will need to be changed from CR-LF to Unix (LF) line
          endings before running the scripts on Unix platforms. -->
     <WriteLinesToFile
       File="$(OutputPath)\$(MSBuildProjectName).sh"
       Lines="$(_CLRTestExecutionScriptText)"
       Overwrite="true" />
   </Target>
-  
+
 </Project>

@@ -3,8 +3,18 @@
     <TargetArchitecture>wasm</TargetArchitecture>
     <TargetOS>Browser</TargetOS>
     <RuntimeIdentifier>browser-wasm</RuntimeIdentifier>
+    <UseMonoRuntime>true</UseMonoRuntime>
 
     <WasmBuildAppAfterThisTarget Condition="'$(WasmBuildAppAfterThisTarget)' == ''">Publish</WasmBuildAppAfterThisTarget>
-    <WasmBuildAppDependsOn>_BeforeWasmBuildApp;_WasmResolveReferences;_WasmBuildNative;_WasmGenerateAppBundle;_AfterWasmBuildApp</WasmBuildAppDependsOn>
+    <WasmBuildAppDependsOn>
+        _InitializeCommonProperties;
+        _BeforeWasmBuildApp;
+        _WasmResolveReferences;
+        _WasmAotCompileApp;
+        _WasmStripAOTAssemblies;
+        _WasmBuildNativeCore;
+        _WasmGenerateAppBundle;
+        _AfterWasmBuildApp
+    </WasmBuildAppDependsOn>
   </PropertyGroup>
 </Project>

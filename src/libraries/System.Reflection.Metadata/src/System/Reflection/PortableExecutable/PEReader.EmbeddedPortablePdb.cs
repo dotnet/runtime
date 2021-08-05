@@ -26,12 +26,13 @@ namespace System.Reflection.PortableExecutable
         /// Reads the data pointed to by the specified Debug Directory entry and interprets them as Embedded Portable PDB blob.
         /// </summary>
         /// <returns>
-        /// Provider of a metadata reader reading Portable PDB image.
+        /// Provider of a metadata reader reading the embedded Portable PDB image.
+        /// Dispose to release resources allocated for the embedded PDB.
         /// </returns>
         /// <exception cref="ArgumentException"><paramref name="entry"/> is not a <see cref="DebugDirectoryEntryType.EmbeddedPortablePdb"/> entry.</exception>
         /// <exception cref="BadImageFormatException">Bad format of the data.</exception>
         /// <exception cref="InvalidOperationException">PE image not available.</exception>
-        public MetadataReaderProvider ReadEmbeddedPortablePdbDebugDirectoryData(DebugDirectoryEntry entry)
+        public unsafe MetadataReaderProvider ReadEmbeddedPortablePdbDebugDirectoryData(DebugDirectoryEntry entry)
         {
             if (entry.Type != DebugDirectoryEntryType.EmbeddedPortablePdb)
             {
@@ -40,11 +41,8 @@ namespace System.Reflection.PortableExecutable
 
             ValidateEmbeddedPortablePdbVersion(entry);
 
-            using (var block = GetDebugDirectoryEntryDataBlock(entry))
-            {
-                var pdbImage = DecodeEmbeddedPortablePdbDebugDirectoryData(block);
-                return MetadataReaderProvider.FromPortablePdbImage(pdbImage);
-            }
+            using var block = GetDebugDirectoryEntryDataBlock(entry);
+            return new MetadataReaderProvider(DecodeEmbeddedPortablePdbDebugDirectoryData(block));
         }
 
         // internal for testing
@@ -69,9 +67,9 @@ namespace System.Reflection.PortableExecutable
         }
 
         // internal for testing
-        internal static unsafe ImmutableArray<byte> DecodeEmbeddedPortablePdbDebugDirectoryData(AbstractMemoryBlock block)
+        internal static unsafe NativeHeapMemoryBlock DecodeEmbeddedPortablePdbDebugDirectoryData(AbstractMemoryBlock block)
         {
-            byte[]? decompressed;
+            NativeHeapMemoryBlock? decompressed;
 
             var headerReader = block.GetReader();
             if (headerReader.ReadUInt32() != PortablePdbVersions.DebugDirectoryEmbeddedSignature)
@@ -83,44 +81,63 @@ namespace System.Reflection.PortableExecutable
 
             try
             {
-                decompressed = new byte[decompressedSize];
+                decompressed = new NativeHeapMemoryBlock(decompressedSize);
             }
             catch
             {
                 throw new BadImageFormatException(SR.DataTooBig);
             }
 
-            var compressed = new ReadOnlyUnmanagedMemoryStream(headerReader.CurrentPointer, headerReader.RemainingBytes);
-            var deflate = new DeflateStream(compressed, CompressionMode.Decompress, leaveOpen: true);
-
-            if (decompressedSize > 0)
+            bool success = false;
+            try
             {
-                int actualLength;
+                var compressed = new ReadOnlyUnmanagedMemoryStream(headerReader.CurrentPointer, headerReader.RemainingBytes);
+                var deflate = new DeflateStream(compressed, CompressionMode.Decompress, leaveOpen: true);
 
-                try
+                if (decompressedSize > 0)
                 {
-                    actualLength = deflate.TryReadAll(decompressed, 0, decompressed.Length);
-                }
-                catch (InvalidDataException e)
-                {
-                    throw new BadImageFormatException(e.Message, e.InnerException);
+                    int actualLength;
+
+                    try
+                    {
+#if NETCOREAPP3_0_OR_GREATER
+                        actualLength = deflate.TryReadAll(new Span<byte>(decompressed.Pointer, decompressed.Size));
+#else
+                        using var decompressedStream = new UnmanagedMemoryStream(decompressed.Pointer, decompressed.Size, decompressed.Size, FileAccess.Write);
+                        deflate.CopyTo(decompressedStream);
+                        actualLength = (int)decompressedStream.Position;
+#endif
+                    }
+                    catch (Exception e)
+                    {
+                        throw new BadImageFormatException(e.Message, e.InnerException);
+                    }
+
+                    if (actualLength != decompressed.Size)
+                    {
+                        throw new BadImageFormatException(SR.SizeMismatch);
+                    }
                 }
 
-                if (actualLength != decompressed.Length)
+                // Check that there is no more compressed data left,
+                // in case the decompressed size specified in the header is smaller
+                // than the actual decompressed size of the data.
+                if (deflate.ReadByte() != -1)
                 {
                     throw new BadImageFormatException(SR.SizeMismatch);
                 }
-            }
 
-            // Check that there is no more compressed data left,
-            // in case the decompressed size specified in the header is smaller
-            // than the actual decompressed size of the data.
-            if (deflate.ReadByte() != -1)
+                success = true;
+            }
+            finally
             {
-                throw new BadImageFormatException(SR.SizeMismatch);
+                if (!success)
+                {
+                    decompressed.Dispose();
+                }
             }
 
-            return ImmutableByteArrayInterop.DangerousCreateFromUnderlyingArray(ref decompressed);
+            return decompressed;
         }
 
         partial void TryOpenEmbeddedPortablePdb(DebugDirectoryEntry embeddedPdbEntry, ref bool openedEmbeddedPdb, ref MetadataReaderProvider? provider, ref Exception? errorToReport)

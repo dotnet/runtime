@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Collections;
+using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Reflection;
@@ -771,7 +771,7 @@ namespace System.Configuration
         /// </summary>
         private PropertyInfo[] SettingsFilter(PropertyInfo[] allProps)
         {
-            ArrayList settingProps = new ArrayList();
+            var settingProps = new List<PropertyInfo>();
             object[] attributes;
             Attribute attr;
 
@@ -789,7 +789,7 @@ namespace System.Configuration
                 }
             }
 
-            return (PropertyInfo[])settingProps.ToArray(typeof(PropertyInfo));
+            return settingProps.ToArray();
         }
 
         /// <summary>

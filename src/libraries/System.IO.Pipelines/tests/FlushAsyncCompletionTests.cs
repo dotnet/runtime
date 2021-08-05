@@ -10,7 +10,6 @@ namespace System.IO.Pipelines.Tests
     public class FlushAsyncCompletionTests : PipeTest
     {
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/50927", TestPlatforms.Android)]
         public void AwaitingFlushAsyncAwaitableTwiceCompletesReaderWithException()
         {
             async Task Await(ValueTask<FlushResult> a)

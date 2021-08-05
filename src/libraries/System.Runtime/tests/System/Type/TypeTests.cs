@@ -248,6 +248,7 @@ namespace System.Tests
 
         [Theory]
         [MemberData(nameof(MakeArray_UnusualTypes_TestData))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/52072", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public void MakeArrayType_UnusualTypes_ReturnsExpected(Type t)
         {
             Type tArray = t.MakeArrayType();
@@ -304,7 +305,6 @@ namespace System.Tests
 
         [Theory]
         [MemberData(nameof(MakeArrayType_ByRef_TestData))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/39001", TestRuntimes.Mono)]
         public void MakeArrayType_ByRef_ThrowsTypeLoadException(Type t)
         {
             Assert.Throws<TypeLoadException>(() => t.MakeArrayType());
@@ -527,6 +527,7 @@ namespace System.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/52393", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsMonoAOT))]
         public void GetTypeByName_InvokeViaReflection_Success()
         {
             MethodInfo method = typeof(Type).GetMethod("GetType", new[] { typeof(string) });
@@ -587,6 +588,7 @@ namespace System.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/52072", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public void IsSZArray_TrueForSZArrayTypes()
         {
             foreach (Type type in NonArrayBaseTypes.Select(nonArrayBaseType => nonArrayBaseType.MakeArrayType()))
@@ -638,6 +640,7 @@ namespace System.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/52072", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public void IsVariableBoundArray_FalseForSZArrayTypes()
         {
             foreach (Type type in NonArrayBaseTypes.Select(nonArrayBaseType => nonArrayBaseType.MakeArrayType()))
@@ -935,6 +938,16 @@ namespace System.Tests
             };
             yield return new object[]
             {
+                typeof(ISimpleInterface),
+                typeof(AbstractSimpleType),
+                new Tuple<MethodInfo, MethodInfo>[]
+                {
+                    new Tuple<MethodInfo, MethodInfo>(typeof(ISimpleInterface).GetMethod("Method"), typeof(AbstractSimpleType).GetMethod("Method")),
+                    new Tuple<MethodInfo, MethodInfo>(typeof(ISimpleInterface).GetMethod("GenericMethod"), typeof(AbstractSimpleType).GetMethod("GenericMethod"))
+                }
+            };
+            yield return new object[]
+            {
                 typeof(IGenericInterface<object>),
                 typeof(DerivedType),
                 new Tuple<MethodInfo, MethodInfo>[]
@@ -951,12 +964,64 @@ namespace System.Tests
                     new Tuple<MethodInfo, MethodInfo>(typeof(IGenericInterface<string>).GetMethod("Method"), typeof(DerivedType).GetMethod("Method", new Type[] { typeof(string) })),
                 }
             };
+            yield return new object[]
+            {
+                typeof(DIMs.I1),
+                typeof(DIMs.C1),
+                new Tuple<MethodInfo, MethodInfo>[]
+                {
+                    new Tuple<MethodInfo, MethodInfo>(typeof(DIMs.I1).GetMethod("M"), typeof(DIMs.I1).GetMethod("M"))
+                }
+            };
+            yield return new object[]
+            {
+                typeof(DIMs.I2),
+                typeof(DIMs.C2),
+                new Tuple<MethodInfo, MethodInfo>[]
+                {
+                    new Tuple<MethodInfo, MethodInfo>(typeof(DIMs.I2).GetMethod("System.Tests.TypeTestsExtended.DIMs.I1.M", BindingFlags.Instance | BindingFlags.NonPublic), null)
+                }
+            };
+            yield return new object[]
+            {
+                typeof(DIMs.I1),
+                typeof(DIMs.C2),
+                new Tuple<MethodInfo, MethodInfo>[]
+                {
+                    new Tuple<MethodInfo, MethodInfo>(typeof(DIMs.I1).GetMethod("M"), typeof(DIMs.C2).GetMethod("M"))
+                }
+            };
+            yield return new object[]
+            {
+                typeof(DIMs.I3),
+                typeof(DIMs.C3),
+                new Tuple<MethodInfo, MethodInfo>[]
+                {
+                    new Tuple<MethodInfo, MethodInfo>(typeof(DIMs.I3).GetMethod("System.Tests.TypeTestsExtended.DIMs.I1.M", BindingFlags.Instance | BindingFlags.NonPublic), typeof(DIMs.I3).GetMethod("System.Tests.TypeTestsExtended.DIMs.I1.M", BindingFlags.Instance | BindingFlags.NonPublic))
+                }
+            };
+            yield return new object[]
+            {
+                typeof(DIMs.I4),
+                typeof(DIMs.C4),
+                new Tuple<MethodInfo, MethodInfo>[]
+                {
+                    new Tuple<MethodInfo, MethodInfo>(typeof(DIMs.I4).GetMethod("System.Tests.TypeTestsExtended.DIMs.I1.M", BindingFlags.Instance | BindingFlags.NonPublic), null)
+                }
+            };
+            yield return new object[]
+            {
+                typeof(DIMs.I2),
+                typeof(DIMs.C4),
+                new Tuple<MethodInfo, MethodInfo>[]
+                {
+                    new Tuple<MethodInfo, MethodInfo>(typeof(DIMs.I2).GetMethod("System.Tests.TypeTestsExtended.DIMs.I1.M", BindingFlags.Instance | BindingFlags.NonPublic), null)
+                }
+            };
         }
 
         [Theory]
         [MemberData(nameof(GetInterfaceMap_TestData))]
-        // Android-only, change to TestPlatforms.Android once arcade dependency is updated
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/36653", TestRuntimes.Mono)]
         public void GetInterfaceMap(Type interfaceType, Type classType, Tuple<MethodInfo, MethodInfo>[] expectedMap)
         {
             InterfaceMapping actualMapping = classType.GetInterfaceMap(interfaceType);
@@ -988,6 +1053,12 @@ namespace System.Tests
             public void GenericMethod<T>() { }
         }
 
+        abstract class AbstractSimpleType : ISimpleInterface
+        {
+            public abstract void Method();
+            public abstract void GenericMethod<T>();
+        }
+
         interface IGenericInterface<T>
         {
             void Method(T arg);
@@ -1001,6 +1072,47 @@ namespace System.Tests
         class DerivedType : GenericBaseType<object>, IGenericInterface<string>
         {
             public void Method(string arg) { }
+        }
+
+        static class DIMs
+        {
+            
+            internal interface I1
+            {
+                void M() { throw new Exception("e"); }
+            }
+
+            internal class C1 : I1 { }
+
+            internal interface I2 : I1
+            {
+                abstract void I1.M(); // reabstracted
+            }
+
+            internal abstract class C2 : I2
+            {
+                public abstract void M();
+            }
+
+            internal interface I3 : I2
+            {
+                void I1.M()
+                { // unabstacted
+                    throw new Exception ("e");
+                }
+            }
+
+            internal class C3 : I3 { }
+
+            internal interface I4 : I3
+            {
+                abstract void I1.M(); // reabstracted again
+            }
+
+            internal abstract class C4 : I4
+            {
+                public abstract void M();
+            }
         }
 #endregion
     }

@@ -16,7 +16,7 @@ namespace System.ComponentModel.DataAnnotations
     }
 #nullable enable
     [System.AttributeUsageAttribute(System.AttributeTargets.Field | System.AttributeTargets.Property, AllowMultiple=false, Inherited=true)]
-    [System.ObsoleteAttribute("This attribute is no longer in use and will be ignored if applied.")]
+    [System.ObsoleteAttribute("AssociationAttribute has been deprecated and is not supported.")]
     public sealed partial class AssociationAttribute : System.Attribute
     {
         public AssociationAttribute(string name, string thisKey, string otherKey) { }
@@ -165,7 +165,7 @@ namespace System.ComponentModel.DataAnnotations
         public override bool IsValid(object? value) { throw null; }
     }
     [System.AttributeUsageAttribute(System.AttributeTargets.Field | System.AttributeTargets.Property, AllowMultiple=false)]
-    [System.ObsoleteAttribute("This attribute is no longer in use and will be ignored if applied.")]
+    [System.ObsoleteAttribute("FilterUIHintAttribute has been deprecated and is not supported.")]
     public sealed partial class FilterUIHintAttribute : System.Attribute
     {
         public FilterUIHintAttribute(string filterUIHint) { }
@@ -174,7 +174,7 @@ namespace System.ComponentModel.DataAnnotations
         public System.Collections.Generic.IDictionary<string, object?> ControlParameters { get { throw null; } }
         public string FilterUIHint { get { throw null; } }
         public string? PresentationLayer { get { throw null; } }
-        public override bool Equals(object? obj) { throw null; }
+        public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? obj) { throw null; }
         public override int GetHashCode() { throw null; }
     }
     public partial interface IValidatableObject
@@ -280,7 +280,7 @@ namespace System.ComponentModel.DataAnnotations
         public System.Collections.Generic.IDictionary<string, object?> ControlParameters { get { throw null; } }
         public string? PresentationLayer { get { throw null; } }
         public string UIHint { get { throw null; } }
-        public override bool Equals(object? obj) { throw null; }
+        public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? obj) { throw null; }
         public override int GetHashCode() { throw null; }
     }
     [System.AttributeUsageAttribute(System.AttributeTargets.Field | System.AttributeTargets.Parameter | System.AttributeTargets.Property, AllowMultiple=false)]

@@ -1246,7 +1246,7 @@ namespace System.Net.WebSockets
 
             // Return the read header
             resultHeader = header;
-            resultHeader.Processed = header.PayloadLength == 0;
+            resultHeader.Processed = header.PayloadLength == 0 && !header.Compressed;
             return null;
         }
 
@@ -1452,11 +1452,10 @@ namespace System.Net.WebSockets
         {
             Debug.Assert(_sendFrameAsyncLock.CurrentCount == 0, "Caller should hold the _sendFrameAsyncLock");
 
-            byte[]? old = _sendBuffer;
-            if (old != null)
+            if (_sendBuffer is byte[] toReturn)
             {
                 _sendBuffer = null;
-                ArrayPool<byte>.Shared.Return(old);
+                ArrayPool<byte>.Shared.Return(toReturn);
             }
         }
 
@@ -1503,7 +1502,15 @@ namespace System.Net.WebSockets
                         maskIndex = (maskIndex + 1) & 3;
                     }
 
-                    int rolledMask = (int)BitOperations.RotateRight((uint)mask, maskIndex * 8);
+                    int rolledMask;
+                    if (BitConverter.IsLittleEndian)
+                    {
+                        rolledMask = (int)BitOperations.RotateRight((uint)mask, maskIndex * 8);
+                    }
+                    else
+                    {
+                        rolledMask = (int)BitOperations.RotateLeft((uint)mask, maskIndex * 8);
+                    }
 
                     // use SIMD if possible.
 

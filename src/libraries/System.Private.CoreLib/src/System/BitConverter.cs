@@ -857,5 +857,59 @@ namespace System
         {
             return *(Half*)&value;
         }
+
+        /// <summary>
+        /// Converts the specified double-precision floating point number to a 64-bit unsigned integer.
+        /// </summary>
+        /// <param name="value">The number to convert.</param>
+        /// <returns>A 64-bit unsigned integer whose bits are identical to <paramref name="value"/>.</returns>
+        [CLSCompliant(false)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static unsafe ulong DoubleToUInt64Bits(double value) => (ulong)DoubleToInt64Bits(value);
+
+        /// <summary>
+        /// Converts the specified 64-bit unsigned integer to a double-precision floating point number.
+        /// </summary>
+        /// <param name="value">The number to convert.</param>
+        /// <returns>A double-precision floating point number whose bits are identical to <paramref name="value"/>.</returns>
+        [CLSCompliant(false)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static unsafe double UInt64BitsToDouble(ulong value) => Int64BitsToDouble((long)value);
+
+        /// <summary>
+        /// Converts the specified single-precision floating point number to a 32-bit unsigned integer.
+        /// </summary>
+        /// <param name="value">The number to convert.</param>
+        /// <returns>A 32-bit unsigned integer whose bits are identical to <paramref name="value"/>.</returns>
+        [CLSCompliant(false)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static unsafe uint SingleToUInt32Bits(float value) => (uint)SingleToInt32Bits(value);
+
+        /// <summary>
+        /// Converts the specified 32-bit unsigned integer to a single-precision floating point number.
+        /// </summary>
+        /// <param name="value">The number to convert.</param>
+        /// <returns>A single-precision floating point number whose bits are identical to <paramref name="value"/>.</returns>
+        [CLSCompliant(false)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static unsafe float UInt32BitsToSingle(uint value) => Int32BitsToSingle((int)value);
+
+        /// <summary>
+        /// Converts the specified half-precision floating point number to a 16-bit unsigned integer.
+        /// </summary>
+        /// <param name="value">The number to convert.</param>
+        /// <returns>A 16-bit unsigned integer whose bits are identical to <paramref name="value"/>.</returns>
+        [CLSCompliant(false)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static unsafe ushort HalfToUInt16Bits(Half value) => (ushort)HalfToInt16Bits(value);
+
+        /// <summary>
+        /// Converts the specified 16-bit unsigned integer to a half-precision floating point number.
+        /// </summary>
+        /// <param name="value">The number to convert.</param>
+        /// <returns>A half-precision floating point number whose bits are identical to <paramref name="value"/>.</returns>
+        [CLSCompliant(false)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static unsafe Half UInt16BitsToHalf(ushort value) => Int16BitsToHalf((short)value);
     }
 }

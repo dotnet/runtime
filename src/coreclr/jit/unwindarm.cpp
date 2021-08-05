@@ -1615,13 +1615,13 @@ void UnwindFragmentInfo::Finalize(UNATIVE_OFFSET functionLength)
     // The unwind code words are already here, following the header, so we're done!
 }
 
-void UnwindFragmentInfo::Reserve(BOOL isFunclet, bool isHotCode)
+void UnwindFragmentInfo::Reserve(bool isFunclet, bool isHotCode)
 {
     assert(isHotCode || !isFunclet); // TODO-CQ: support hot/cold splitting in functions with EH
 
     MergeCodes();
 
-    BOOL isColdCode = isHotCode ? FALSE : TRUE;
+    bool isColdCode = !isHotCode;
 
     ULONG unwindSize = Size();
 
@@ -1958,7 +1958,7 @@ void UnwindInfo::Split()
 
 // Reserve space for the unwind info for all fragments
 
-void UnwindInfo::Reserve(BOOL isFunclet, bool isHotCode)
+void UnwindInfo::Reserve(bool isFunclet, bool isHotCode)
 {
     assert(uwiInitialized == UWI_INITIALIZED_PATTERN);
     assert(isHotCode || !isFunclet);

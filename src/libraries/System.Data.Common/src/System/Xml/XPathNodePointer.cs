@@ -3,6 +3,7 @@
 
 using System.Data;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Xml.XPath;
 
 #pragma warning disable 618 // ignore obsolete warning about XmlDataDocument
@@ -311,6 +312,7 @@ namespace System.Xml
 
         internal string? Value
         {
+            [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
             get
             {
                 RealFoliate();
@@ -351,6 +353,7 @@ namespace System.Xml
 
         internal string InnerText
         {
+            [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
             get
             {
                 RealFoliate();
@@ -1062,6 +1065,7 @@ namespace System.Xml
                     && pointer._parentOfNS == _parentOfNS);
         }
 
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         private XmlNodeOrder CompareNamespacePosition(XPathNodePointer other)
         {
             XPathNodePointer xp1 = Clone((DataDocumentXPathNavigator)(_owner.Target!));
@@ -1087,6 +1091,7 @@ namespace System.Xml
             return curNode;
         }
 
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         internal XmlNodeOrder ComparePosition(XPathNodePointer other)
         {
             RealFoliate();
@@ -1230,6 +1235,7 @@ namespace System.Xml
 
         internal XmlNode? Node
         {
+            [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
             get
             {
                 RealFoliate();
@@ -1322,6 +1328,7 @@ namespace System.Xml
 
         //The function only helps to find out if there is a namespace declaration of given name is defined on the given node
         //It will not check the ancestor of the given node.
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         private string? GetNamespace(XmlBoundElement be, string name)
         {
             if (be == null)
@@ -1355,6 +1362,7 @@ namespace System.Xml
             }
         }
 
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         internal string GetNamespace(string name)
         {
             //we are checking the namespace nodes backwards comparing its normal order in DOM tree
@@ -1454,6 +1462,7 @@ namespace System.Xml
 
         //the function will find the next namespace node on the given bound element starting with the given column or attribute
         // whether to use column or attribute depends on if the bound element is foliated or not.
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         private bool MoveToNextNamespace(XmlBoundElement? be, DataColumn? col, XmlAttribute? curAttr)
         {
             if (be != null)
@@ -1506,6 +1515,7 @@ namespace System.Xml
         }
 
         //Caller( DataDocumentXPathNavigator will make sure that the node is at the right position for this call )
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         internal bool MoveToFirstNamespace(XPathNamespaceScope namespaceScope)
         {
             RealFoliate();
@@ -1541,6 +1551,7 @@ namespace System.Xml
         }
 
         //endElem is on the path from startElem to root is enforced by the caller
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         private bool DuplicateNS(XmlBoundElement endElem, string lname)
         {
             if (_parentOfNS == null || endElem == null)
@@ -1562,6 +1573,7 @@ namespace System.Xml
         }
 
         //Caller( DataDocumentXPathNavigator will make sure that the node is at the right position for this call )
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         internal bool MoveToNextNamespace(XPathNamespaceScope namespaceScope)
         {
             RealFoliate();

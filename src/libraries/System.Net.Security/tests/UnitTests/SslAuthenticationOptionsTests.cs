@@ -41,7 +41,7 @@ namespace System.Net.Security.Tests
             Assert.Null(_clientOptions.ApplicationProtocols);
             Assert.Null(_serverOptions.ApplicationProtocols);
 
-            List<SslApplicationProtocol> applnProtos = new List<SslApplicationProtocol> { SslApplicationProtocol.Http2, SslApplicationProtocol.Http11 };
+            List<SslApplicationProtocol> applnProtos = new List<SslApplicationProtocol> { SslApplicationProtocol.Http3, SslApplicationProtocol.Http2, SslApplicationProtocol.Http11 };
             _clientOptions.ApplicationProtocols = applnProtos;
             _serverOptions.ApplicationProtocols = applnProtos;
 
@@ -68,7 +68,7 @@ namespace System.Net.Security.Tests
         {
             Assert.Null(_clientOptions.LocalCertificateSelectionCallback);
 
-            LocalCertificateSelectionCallback callback = (sender, host, localCertificates, remoteCertificate, issuers) => { return new X509Certificate(); };
+            LocalCertificateSelectionCallback callback = (sender, host, localCertificates, remoteCertificate, issuers) => default;
             _clientOptions.LocalCertificateSelectionCallback = callback;
 
             Assert.Equal(callback, _clientOptions.LocalCertificateSelectionCallback);
@@ -109,7 +109,7 @@ namespace System.Net.Security.Tests
             _serverOptions.ServerCertificate = null;
 
             Assert.Null(_serverOptions.ServerCertificate);
-            X509Certificate cert = new X509Certificate();
+            X509Certificate cert = new X509Certificate2(stackalloc byte[0]);
             _serverOptions.ServerCertificate = cert;
 
             Assert.Equal(cert, _serverOptions.ServerCertificate);

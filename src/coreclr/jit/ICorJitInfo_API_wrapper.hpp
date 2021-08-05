@@ -929,10 +929,10 @@ void WrapICorJitInfo::getBoundaries(
           CORINFO_METHOD_HANDLE ftn,
           unsigned int* cILOffsets,
           uint32_t** pILOffsets,
-          ICorDebugInfo::BoundaryTypes* implictBoundaries)
+          ICorDebugInfo::BoundaryTypes* implicitBoundaries)
 {
     API_ENTER(getBoundaries);
-    wrapHnd->getBoundaries(ftn, cILOffsets, pILOffsets, implictBoundaries);
+    wrapHnd->getBoundaries(ftn, cILOffsets, pILOffsets, implicitBoundaries);
     API_LEAVE(getBoundaries);
 }
 
@@ -1051,14 +1051,6 @@ int WrapICorJitInfo::FilterException(
     return temp;
 }
 
-void WrapICorJitInfo::HandleException(
-          struct _EXCEPTION_POINTERS* pExceptionPointers)
-{
-    API_ENTER(HandleException);
-    wrapHnd->HandleException(pExceptionPointers);
-    API_LEAVE(HandleException);
-}
-
 void WrapICorJitInfo::ThrowExceptionForJitResult(
           JITINTERFACE_HRESULT result)
 {
@@ -1082,6 +1074,16 @@ bool WrapICorJitInfo::runWithErrorTrap(
     API_ENTER(runWithErrorTrap);
     bool temp = wrapHnd->runWithErrorTrap(function, parameter);
     API_LEAVE(runWithErrorTrap);
+    return temp;
+}
+
+bool WrapICorJitInfo::runWithSPMIErrorTrap(
+          ICorJitInfo::errorTrapFunction function,
+          void* parameter)
+{
+    API_ENTER(runWithSPMIErrorTrap);
+    bool temp = wrapHnd->runWithSPMIErrorTrap(function, parameter);
+    API_LEAVE(runWithSPMIErrorTrap);
     return temp;
 }
 
@@ -1526,17 +1528,10 @@ bool WrapICorJitInfo::notifyInstructionSetUsage(
 }
 
 void WrapICorJitInfo::allocMem(
-          uint32_t hotCodeSize,
-          uint32_t coldCodeSize,
-          uint32_t roDataSize,
-          uint32_t xcptnsCount,
-          CorJitAllocMemFlag flag,
-          void** hotCodeBlock,
-          void** coldCodeBlock,
-          void** roDataBlock)
+          AllocMemArgs* pArgs)
 {
     API_ENTER(allocMem);
-    wrapHnd->allocMem(hotCodeSize, coldCodeSize, roDataSize, xcptnsCount, flag, hotCodeBlock, coldCodeBlock, roDataBlock);
+    wrapHnd->allocMem(pArgs);
     API_LEAVE(allocMem);
 }
 
@@ -1624,10 +1619,11 @@ JITINTERFACE_HRESULT WrapICorJitInfo::getPgoInstrumentationResults(
           CORINFO_METHOD_HANDLE ftnHnd,
           ICorJitInfo::PgoInstrumentationSchema** pSchema,
           uint32_t* pCountSchemaItems,
-          uint8_t** pInstrumentationData)
+          uint8_t** pInstrumentationData,
+          ICorJitInfo::PgoSource* pgoSource)
 {
     API_ENTER(getPgoInstrumentationResults);
-    JITINTERFACE_HRESULT temp = wrapHnd->getPgoInstrumentationResults(ftnHnd, pSchema, pCountSchemaItems, pInstrumentationData);
+    JITINTERFACE_HRESULT temp = wrapHnd->getPgoInstrumentationResults(ftnHnd, pSchema, pCountSchemaItems, pInstrumentationData, pgoSource);
     API_LEAVE(getPgoInstrumentationResults);
     return temp;
 }
@@ -1656,13 +1652,14 @@ void WrapICorJitInfo::recordCallSite(
 
 void WrapICorJitInfo::recordRelocation(
           void* location,
+          void* locationRW,
           void* target,
           uint16_t fRelocType,
           uint16_t slotNum,
           int32_t addlDelta)
 {
     API_ENTER(recordRelocation);
-    wrapHnd->recordRelocation(location, target, fRelocType, slotNum, addlDelta);
+    wrapHnd->recordRelocation(location, locationRW, target, fRelocType, slotNum, addlDelta);
     API_LEAVE(recordRelocation);
 }
 

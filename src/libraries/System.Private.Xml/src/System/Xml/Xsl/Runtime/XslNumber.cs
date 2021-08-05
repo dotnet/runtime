@@ -296,7 +296,7 @@ namespace System.Xml.Xsl.Runtime
                     }
                     break;
                 default:
-                    Debug.Assert(CharUtil.IsDecimalDigitOne(startChar), "Unexpected startChar: " + startChar);
+                    Debug.Assert(CharUtil.IsDecimalDigitOne(startChar), $"Unexpected startChar: {startChar}");
                     zero = (char)(startChar - 1);
                     break;
             }

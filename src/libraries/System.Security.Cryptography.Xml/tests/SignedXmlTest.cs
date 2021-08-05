@@ -15,6 +15,7 @@ using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using System.Xml;
 using System.Xml.XPath;
+using Test.Cryptography;
 using Xunit;
 
 namespace System.Security.Cryptography.Xml.Tests
@@ -288,6 +289,7 @@ namespace System.Security.Cryptography.Xml.Tests
 
         [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/20575", TestPlatforms.OSX)]
+        [SkipOnPlatform(PlatformSupport.MobileAppleCrypto, "DSA is not available")]
         public void AsymmetricDSASignature()
         {
             SignedXml signedXml = MSDNSample();
@@ -387,6 +389,7 @@ namespace System.Security.Cryptography.Xml.Tests
         // Using empty constructor
         // The two other constructors don't seems to apply in verifying signatures
         [Fact]
+        [SkipOnPlatform(PlatformSupport.MobileAppleCrypto, "DSA is not available")]
         public void AsymmetricDSAVerify()
         {
             string value = "<Signature xmlns=\"http://www.w3.org/2000/09/xmldsig#\"><SignedInfo><CanonicalizationMethod Algorithm=\"http://www.w3.org/TR/2001/REC-xml-c14n-20010315\" /><SignatureMethod Algorithm=\"http://www.w3.org/2000/09/xmldsig#dsa-sha1\" /><Reference URI=\"#MyObjectId\"><DigestMethod Algorithm=\"http://www.w3.org/2000/09/xmldsig#sha1\" /><DigestValue>/Vvq6sXEVbtZC8GwNtLQnGOy/VI=</DigestValue></Reference></SignedInfo><SignatureValue>BYz/qRGjGsN1yMFPxWa3awUZm1y4I/IxOQroMxkOteRGgk1HIwhRYw==</SignatureValue><KeyInfo><KeyValue xmlns=\"http://www.w3.org/2000/09/xmldsig#\"><DSAKeyValue><P>iglVaZ+LsSL8Y0aDXmFMBwva3xHqIypr3l/LtqBH9ziV2Sh1M4JVasAiKqytWIWt/s/Uk8Ckf2tO2Ww1vsNi1NL+Kg9T7FE52sn380/rF0miwGkZeidzm74OWhykb3J+wCTXaIwOzAWI1yN7FoeoN7wzF12jjlSXAXeqPMlViqk=</P><Q>u4sowiJMHilNRojtdmIuQY2YnB8=</Q><G>SdnN7d+wn1n+HH4Hr8MIryIRYgcXdbZ5TH7jAnuWc1koqRc1AZfcYAZ6RDf+orx6Lzn055FTFiN+1NHQfGUtXJCWW0zz0FVV1NJux7WRj8vGTldjJ5ef0oCenkpwDjcIxWsZgVobve4GPoyN1sAc1scnkJB59oupibklmF4y72A=</G><Y>XejzS8Z51yfl0zbYnxSYYbHqreSLjNCoGPB/KjM1TOyV5sMjz0StKtGrFWryTWc7EgvFY7kUth4e04VKf9HbK8z/FifHTXj8+Tszbjzw8GfInnBwLN+vJgbpnjtypmiI5Bm2nLiRbfkdAHP+OrKtr/EauM9GQfYuaxm3/Vj8B84=</Y><J>vGwGg9wqwwWP9xsoPoXu6kHArJtadiNKe9azBiUx5Ob883gd5wlKfEcGuKkBmBySGbgwxyOsIBovd9Kk48hF01ymfQzAAuHR0EdJECSsTsTTKVTLQNBU32O+PRbLYpv4E8kt6rNL83JLJCBY</J><Seed>sqzn8J6fd2gtEyq6YOqiUSHgPE8=</Seed><PgenCounter>sQ==</PgenCounter></DSAKeyValue></KeyValue></KeyInfo><Object Id=\"MyObjectId\"><MyElement xmlns=\"samples\">This is some text</MyElement></Object></Signature>";
@@ -537,6 +540,7 @@ namespace System.Security.Cryptography.Xml.Tests
         }
 
         [Fact]
+        [SkipOnPlatform(PlatformSupport.MobileAppleCrypto, "DSA is not available")]
         public void ComputeSignatureMissingReferencedObject()
         {
             XmlDocument doc = new XmlDocument();
@@ -639,6 +643,7 @@ namespace System.Security.Cryptography.Xml.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/51370", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public void DigestValue_CRLF()
         {
             XmlDocument doc = CreateSomeXml("\r\n");
@@ -660,7 +665,7 @@ namespace System.Security.Cryptography.Xml.Tests
 
             X509Certificate2 cert = new X509Certificate2(_pkcs12, "mono");
             SignedXml signedXml = new SignedXml(doc);
-            signedXml.SigningKey = cert.PrivateKey;
+            signedXml.SigningKey = cert.GetRSAPrivateKey();
             signedXml.SignedInfo.CanonicalizationMethod = SignedXml.XmlDsigExcC14NTransformUrl;
             signedXml.SignedInfo.SignatureMethod = SignedXml.XmlDsigRSASHA1Url;
 
@@ -698,6 +703,7 @@ namespace System.Security.Cryptography.Xml.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/51370", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public void DigestValue_LF()
         {
             XmlDocument doc = CreateSomeXml("\n");
@@ -719,7 +725,7 @@ namespace System.Security.Cryptography.Xml.Tests
 
             X509Certificate2 cert = new X509Certificate2(_pkcs12, "mono");
             SignedXml signedXml = new SignedXml(doc);
-            signedXml.SigningKey = cert.PrivateKey;
+            signedXml.SigningKey = cert.GetRSAPrivateKey();
             signedXml.SignedInfo.SignatureMethod = SignedXml.XmlDsigRSASHA1Url;
             signedXml.SignedInfo.CanonicalizationMethod = SignedXml.XmlDsigExcC14NTransformUrl;
 
@@ -757,6 +763,7 @@ namespace System.Security.Cryptography.Xml.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/51370", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public void SignedXML_CRLF_Invalid()
         {
             X509Certificate2 cert = new X509Certificate2(_pkcs12, "mono");
@@ -820,6 +827,7 @@ namespace System.Security.Cryptography.Xml.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/51370", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public void SignedXML_CRLF_Valid()
         {
             X509Certificate2 cert = new X509Certificate2(_pkcs12, "mono");
@@ -877,6 +885,7 @@ namespace System.Security.Cryptography.Xml.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/51370", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public void SignedXML_LF_Valid()
         {
             X509Certificate2 cert = new X509Certificate2(_pkcs12, "mono");
@@ -934,6 +943,7 @@ namespace System.Security.Cryptography.Xml.Tests
         }
 
         [Fact] // part of bug #79454
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/51370", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public void MultipleX509Certificates()
         {
             XmlDocument doc = null;
@@ -960,7 +970,7 @@ namespace System.Security.Cryptography.Xml.Tests
             XmlDocument doc = CreateSomeXml(lineFeed);
 
             SignedXml signedXml = new SignedXml(doc);
-            signedXml.SigningKey = cert.PrivateKey;
+            signedXml.SigningKey = cert.GetRSAPrivateKey();
             signedXml.SignedInfo.CanonicalizationMethod = canonicalizationMethod;
             signedXml.SignedInfo.SignatureMethod = SignedXml.XmlDsigRSASHA1Url;
 

@@ -1,10 +1,18 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <TargetFrameworks>netstandard2.0;net461</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent);netstandard2.0;net461</TargetFrameworks>
     <DefineConstants>$(DefineConstants);RESOURCES_EXTENSIONS</DefineConstants>
     <Nullable>enable</Nullable>
+    <IsPackable>true</IsPackable>
+    <TargetsForTfmSpecificContentInPackage>$(TargetsForTfmSpecificContentInPackage);GeneratePackageTargetsFile</TargetsForTfmSpecificContentInPackage>
+    <PackageDescription>Provides classes which read and write resources in a format that supports non-primitive objects.
+
+Commonly Used Types:
+System.Resources.Extensions.DeserializingResourceReader
+System.Resources.Extensions.PreserializedResourceWriter</PackageDescription>
   </PropertyGroup>
+
   <ItemGroup>
     <Compile Include="$(CommonPath)System\Resources\ResourceWriter.cs"
              Link="System\Resources\Extensions\ResourceWriter.cs" />
@@ -26,15 +34,33 @@
     <Compile Include="System\Resources\Extensions\TypeNameComparer.cs" />
     <Compile Include="$(CoreLibSharedDir)System\Numerics\Hashing\HashHelpers.cs"
              Link="System\Numerics\Hashing\HashHelpers.cs" />
+  </ItemGroup>
+
+  <ItemGroup Condition="!$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net5.0'))">
     <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\RequiresUnreferencedCodeAttribute.cs" 
              Link="System\Diagnostics\CodeAnalysis\RequiresUnreferencedCodeAttribute.cs" />
     <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\UnconditionalSuppressMessageAttribute.cs"
              Link="System\Diagnostics\CodeAnalysis\UnconditionalSuppressMessageAttribute.cs" />
   </ItemGroup>
 
-  <ItemGroup>
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
+    <Reference Include="System.Collections" />
+    <Reference Include="System.ComponentModel.TypeConverter" />
+    <Reference Include="System.Memory" />
+    <Reference Include="System.Resources.Writer" />
+    <Reference Include="System.Runtime" />
+    <Reference Include="System.Runtime.Serialization.Formatters" />
+    <Reference Include="System.Threading" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">
     <PackageReference Include="System.Memory" Version="$(SystemMemoryVersion)" />
-    <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime.CompilerServices.Unsafe\src\System.Runtime.CompilerServices.Unsafe.ilproj" />
+    <!-- S.R.C.Unsafe isn't a primary but transitive dependency and this P2P makes sure that the live version is used. -->
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime.CompilerServices.Unsafe\src\System.Runtime.CompilerServices.Unsafe.ilproj" PrivateAssets="all" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <NETStandardCompatError Include="netcoreapp2.0" Supported="$(NetCoreAppMinimum)" />
   </ItemGroup>
 
   <PropertyGroup>
@@ -44,8 +70,7 @@
   <Target Name="GeneratePackageTargetsFile" 
           Condition="'$(TargetFramework)' == 'net461'"
           Inputs="$(MSBuildAllProjects)"
-          Outputs="$(_packageTargetsFile)"
-          BeforeTargets="GetFilesToPackage">
+          Outputs="$(_packageTargetsFile)">
     <PropertyGroup>
       <_packageTargetsFileContent><![CDATA[<Project>
   <!-- ResolveAssemblyReferences will never see the assembly reference embedded in the resources type,
@@ -57,10 +82,14 @@
 </Project>
 ]]></_packageTargetsFileContent>
     </PropertyGroup>
-    <WriteLinesToFile File="$(_packageTargetsFile)" Overwrite="true" Lines="$(_packageTargetsFileContent)" />
+
+    <WriteLinesToFile File="$(_packageTargetsFile)"
+                      Lines="$(_packageTargetsFileContent)"
+                      Overwrite="true" />
+
     <ItemGroup>
-      <FilesToPackage Include="$(_packageTargetsFile)" TargetPath="build/$(TargetFramework)" TargetFramework="$(TargetFramework)" />
-      <FilesToPackage Include="$(_packageTargetsFile)" TargetPath="buildTransitive/$(TargetFramework)" TargetFramework="$(TargetFramework)" />
+      <TfmSpecificPackageFile Include="$(_packageTargetsFile)"
+                              PackagePath="buildTransitive/$(TargetFramework)" />
     </ItemGroup>
   </Target>
 </Project>

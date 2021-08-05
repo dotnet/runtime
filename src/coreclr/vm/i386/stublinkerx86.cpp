@@ -145,7 +145,7 @@ class X64NearJumpSetup : public InstructionFormat
             }
         }
 
-        virtual VOID EmitInstruction(UINT refsize, __int64 fixedUpReference, BYTE *pOutBuffer, UINT variationCode, BYTE *pDataBuffer)
+        virtual VOID EmitInstruction(UINT refsize, __int64 fixedUpReference, BYTE *pOutBufferRX, BYTE *pOutBufferRW, UINT variationCode, BYTE *pDataBuffer)
         {
             LIMITED_METHOD_CONTRACT
             if (k8 == refsize)
@@ -158,19 +158,19 @@ class X64NearJumpSetup : public InstructionFormat
             }
             else if (k64Small == refsize)
             {
-                UINT64 TargetAddress = (INT64)pOutBuffer + fixedUpReference + GetSizeOfInstruction(refsize, variationCode);
+                UINT64 TargetAddress = (INT64)pOutBufferRX + fixedUpReference + GetSizeOfInstruction(refsize, variationCode);
                 _ASSERTE(FitsInU4(TargetAddress));
 
                 // mov eax, imm32  ; zero-extended
-                pOutBuffer[0] = 0xB8;
-                *((UINT32*)&pOutBuffer[1]) = (UINT32)TargetAddress;
+                pOutBufferRW[0] = 0xB8;
+                *((UINT32*)&pOutBufferRW[1]) = (UINT32)TargetAddress;
             }
             else if (k64 == refsize)
             {
                 // mov rax, imm64
-                pOutBuffer[0] = REX_PREFIX_BASE | REX_OPERAND_SIZE_64BIT;
-                pOutBuffer[1] = 0xB8;
-                *((UINT64*)&pOutBuffer[2]) = (UINT64)(((INT64)pOutBuffer) + fixedUpReference + GetSizeOfInstruction(refsize, variationCode));
+                pOutBufferRW[0] = REX_PREFIX_BASE | REX_OPERAND_SIZE_64BIT;
+                pOutBufferRW[1] = 0xB8;
+                *((UINT64*)&pOutBufferRW[2]) = (UINT64)(((INT64)pOutBufferRX) + fixedUpReference + GetSizeOfInstruction(refsize, variationCode));
             }
             else
             {
@@ -274,32 +274,32 @@ class X64NearJumpExecute : public InstructionFormat
             }
         }
 
-        virtual VOID EmitInstruction(UINT refsize, __int64 fixedUpReference, BYTE *pOutBuffer, UINT variationCode, BYTE *pDataBuffer)
+        virtual VOID EmitInstruction(UINT refsize, __int64 fixedUpReference, BYTE *pOutBufferRX, BYTE *pOutBufferRW, UINT variationCode, BYTE *pDataBuffer)
         {
             LIMITED_METHOD_CONTRACT
             if (k8 == refsize)
             {
-                pOutBuffer[0] = 0xeb;
-                *((__int8*)(pOutBuffer+1)) = (__int8)fixedUpReference;
+                pOutBufferRW[0] = 0xeb;
+                *((__int8*)(pOutBufferRW+1)) = (__int8)fixedUpReference;
             }
             else if (k32 == refsize)
             {
-                pOutBuffer[0] = 0xe9;
-                *((__int32*)(pOutBuffer+1)) = (__int32)fixedUpReference;
+                pOutBufferRW[0] = 0xe9;
+                *((__int32*)(pOutBufferRW+1)) = (__int32)fixedUpReference;
             }
             else if (k64Small == refsize)
             {
                 // REX.W jmp rax
-                pOutBuffer[0] = REX_PREFIX_BASE | REX_OPERAND_SIZE_64BIT;
-                pOutBuffer[1] = 0xFF;
-                pOutBuffer[2] = 0xE0;
+                pOutBufferRW[0] = REX_PREFIX_BASE | REX_OPERAND_SIZE_64BIT;
+                pOutBufferRW[1] = 0xFF;
+                pOutBufferRW[2] = 0xE0;
             }
             else if (k64 == refsize)
             {
                 // REX.W jmp rax
-                pOutBuffer[0] = REX_PREFIX_BASE | REX_OPERAND_SIZE_64BIT;
-                pOutBuffer[1] = 0xFF;
-                pOutBuffer[2] = 0xE0;
+                pOutBufferRW[0] = REX_PREFIX_BASE | REX_OPERAND_SIZE_64BIT;
+                pOutBufferRW[1] = 0xFF;
+                pOutBufferRW[2] = 0xE0;
             }
             else
             {
@@ -410,43 +410,43 @@ class X86NearJump : public InstructionFormat
             }
         }
 
-        virtual VOID EmitInstruction(UINT refsize, __int64 fixedUpReference, BYTE *pOutBuffer, UINT variationCode, BYTE *pDataBuffer)
+        virtual VOID EmitInstruction(UINT refsize, __int64 fixedUpReference, BYTE *pOutBufferRX, BYTE *pOutBufferRW, UINT variationCode, BYTE *pDataBuffer)
         {
             LIMITED_METHOD_CONTRACT
             if (k8 == refsize)
             {
-                pOutBuffer[0] = 0xeb;
-                *((__int8*)(pOutBuffer+1)) = (__int8)fixedUpReference;
+                pOutBufferRW[0] = 0xeb;
+                *((__int8*)(pOutBufferRW+1)) = (__int8)fixedUpReference;
             }
             else if (k32 == refsize)
             {
-                pOutBuffer[0] = 0xe9;
-                *((__int32*)(pOutBuffer+1)) = (__int32)fixedUpReference;
+                pOutBufferRW[0] = 0xe9;
+                *((__int32*)(pOutBufferRW+1)) = (__int32)fixedUpReference;
             }
 #ifdef TARGET_AMD64
             else if (k64Small == refsize)
             {
-                UINT64 TargetAddress = (INT64)pOutBuffer + fixedUpReference + GetSizeOfInstruction(refsize, variationCode);
+                UINT64 TargetAddress = (INT64)pOutBufferRX + fixedUpReference + GetSizeOfInstruction(refsize, variationCode);
                 _ASSERTE(FitsInU4(TargetAddress));
 
                 // mov eax, imm32  ; zero-extended
-                pOutBuffer[0] = 0xB8;
-                *((UINT32*)&pOutBuffer[1]) = (UINT32)TargetAddress;
+                pOutBufferRW[0] = 0xB8;
+                *((UINT32*)&pOutBufferRW[1]) = (UINT32)TargetAddress;
 
                 // jmp rax
-                pOutBuffer[5] = 0xFF;
-                pOutBuffer[6] = 0xE0;
+                pOutBufferRW[5] = 0xFF;
+                pOutBufferRW[6] = 0xE0;
             }
             else if (k64 == refsize)
             {
                 // mov rax, imm64
-                pOutBuffer[0] = REX_PREFIX_BASE | REX_OPERAND_SIZE_64BIT;
-                pOutBuffer[1] = 0xB8;
-                *((UINT64*)&pOutBuffer[2]) = (UINT64)(((INT64)pOutBuffer) + fixedUpReference + GetSizeOfInstruction(refsize, variationCode));
+                pOutBufferRW[0] = REX_PREFIX_BASE | REX_OPERAND_SIZE_64BIT;
+                pOutBufferRW[1] = 0xB8;
+                *((UINT64*)&pOutBufferRW[2]) = (UINT64)(((INT64)pOutBufferRX) + fixedUpReference + GetSizeOfInstruction(refsize, variationCode));
 
                 // jmp rax
-                pOutBuffer[10] = 0xFF;
-                pOutBuffer[11] = 0xE0;
+                pOutBufferRW[10] = 0xFF;
+                pOutBufferRW[11] = 0xE0;
             }
 #endif // TARGET_AMD64
             else
@@ -544,19 +544,19 @@ class X86CondJump : public InstructionFormat
             return (refsize == k8 ? 2 : 6);
         }
 
-        virtual VOID EmitInstruction(UINT refsize, __int64 fixedUpReference, BYTE *pOutBuffer, UINT variationCode, BYTE *pDataBuffer)
+        virtual VOID EmitInstruction(UINT refsize, __int64 fixedUpReference, BYTE *pOutBufferRX, BYTE *pOutBufferRW, UINT variationCode, BYTE *pDataBuffer)
         {
         LIMITED_METHOD_CONTRACT
         if (refsize == k8)
         {
-                pOutBuffer[0] = static_cast<BYTE>(0x70 | variationCode);
-                *((__int8*)(pOutBuffer+1)) = (__int8)fixedUpReference;
+                pOutBufferRW[0] = static_cast<BYTE>(0x70 | variationCode);
+                *((__int8*)(pOutBufferRW+1)) = (__int8)fixedUpReference;
         }
         else
         {
-                pOutBuffer[0] = 0x0f;
-                pOutBuffer[1] = static_cast<BYTE>(0x80 | variationCode);
-                *((__int32*)(pOutBuffer+2)) = (__int32)fixedUpReference;
+                pOutBufferRW[0] = 0x0f;
+                pOutBufferRW[1] = static_cast<BYTE>(0x80 | variationCode);
+                *((__int32*)(pOutBufferRW+2)) = (__int32)fixedUpReference;
             }
         }
 };
@@ -601,42 +601,42 @@ class X86Call : public InstructionFormat
             }
         }
 
-        virtual VOID EmitInstruction(UINT refsize, __int64 fixedUpReference, BYTE *pOutBuffer, UINT variationCode, BYTE *pDataBuffer)
+        virtual VOID EmitInstruction(UINT refsize, __int64 fixedUpReference, BYTE *pOutBufferRX, BYTE *pOutBufferRW, UINT variationCode, BYTE *pDataBuffer)
         {
             LIMITED_METHOD_CONTRACT
 
             switch (refsize)
             {
             case k32:
-                pOutBuffer[0] = 0xE8;
-                *((__int32*)(1+pOutBuffer)) = (__int32)fixedUpReference;
+                pOutBufferRW[0] = 0xE8;
+                *((__int32*)(1+pOutBufferRW)) = (__int32)fixedUpReference;
                 break;
 
 #ifdef TARGET_AMD64
             case k64Small:
                 UINT64 TargetAddress;
 
-                TargetAddress = (INT64)pOutBuffer + fixedUpReference + GetSizeOfInstruction(refsize, variationCode);
+                TargetAddress = (INT64)pOutBufferRX + fixedUpReference + GetSizeOfInstruction(refsize, variationCode);
                 _ASSERTE(FitsInU4(TargetAddress));
 
                 // mov  eax,<fixedUpReference>  ; zero-extends
-                pOutBuffer[0] = 0xB8;
-                *((UINT32*)&pOutBuffer[1]) = (UINT32)TargetAddress;
+                pOutBufferRW[0] = 0xB8;
+                *((UINT32*)&pOutBufferRW[1]) = (UINT32)TargetAddress;
 
                 // call rax
-                pOutBuffer[5] = 0xff;
-                pOutBuffer[6] = 0xd0;
+                pOutBufferRW[5] = 0xff;
+                pOutBufferRW[6] = 0xd0;
                 break;
 
             case k64:
                 // mov  rax,<fixedUpReference>
-                pOutBuffer[0] = REX_PREFIX_BASE | REX_OPERAND_SIZE_64BIT;
-                pOutBuffer[1] = 0xB8;
-                *((UINT64*)&pOutBuffer[2]) = (UINT64)(((INT64)pOutBuffer) + fixedUpReference + GetSizeOfInstruction(refsize, variationCode));
+                pOutBufferRW[0] = REX_PREFIX_BASE | REX_OPERAND_SIZE_64BIT;
+                pOutBufferRW[1] = 0xB8;
+                *((UINT64*)&pOutBufferRW[2]) = (UINT64)(((INT64)pOutBufferRX) + fixedUpReference + GetSizeOfInstruction(refsize, variationCode));
 
                 // call rax
-                pOutBuffer[10] = 0xff;
-                pOutBuffer[11] = 0xd0;
+                pOutBufferRW[10] = 0xff;
+                pOutBufferRW[11] = 0xd0;
                 break;
 #endif // TARGET_AMD64
 
@@ -720,14 +720,14 @@ class X86PushImm32 : public InstructionFormat
             return 5;
         }
 
-        virtual VOID EmitInstruction(UINT refsize, __int64 fixedUpReference, BYTE *pOutBuffer, UINT variationCode, BYTE *pDataBuffer)
+        virtual VOID EmitInstruction(UINT refsize, __int64 fixedUpReference, BYTE *pOutBufferRX, BYTE *pOutBufferRW, UINT variationCode, BYTE *pDataBuffer)
         {
             LIMITED_METHOD_CONTRACT;
 
-            pOutBuffer[0] = 0x68;
+            pOutBufferRW[0] = 0x68;
             // only support absolute pushimm32 of the label address. The fixedUpReference is
             // the offset to the label from the current point, so add to get address
-            *((__int32*)(1+pOutBuffer)) = (__int32)(fixedUpReference);
+            *((__int32*)(1+pOutBufferRW)) = (__int32)(fixedUpReference);
         }
 };
 
@@ -790,7 +790,7 @@ class X64LeaRIP : public InstructionFormat
             }
         }
 
-        virtual VOID EmitInstruction(UINT refsize, __int64 fixedUpReference, BYTE *pOutBuffer, UINT variationCode, BYTE *pDataBuffer)
+        virtual VOID EmitInstruction(UINT refsize, __int64 fixedUpReference, BYTE *pOutBufferRX, BYTE *pOutBufferRW, UINT variationCode, BYTE *pDataBuffer)
         {
             LIMITED_METHOD_CONTRACT;
 
@@ -803,12 +803,12 @@ class X64LeaRIP : public InstructionFormat
                 reg = X86RegFromAMD64Reg(reg);
             }
 
-            pOutBuffer[0] = rex;
-            pOutBuffer[1] = 0x8D;
-            pOutBuffer[2] = 0x05 | (reg << 3);
+            pOutBufferRW[0] = rex;
+            pOutBufferRW[1] = 0x8D;
+            pOutBufferRW[2] = 0x05 | (reg << 3);
             // only support absolute pushimm32 of the label address. The fixedUpReference is
             // the offset to the label from the current point, so add to get address
-            *((__int32*)(3+pOutBuffer)) = (__int32)(fixedUpReference);
+            *((__int32*)(3+pOutBufferRW)) = (__int32)(fixedUpReference);
         }
 };
 
@@ -4829,7 +4829,7 @@ COPY_VALUE_CLASS:
                     X86EmitOp(0x8d, kEDX, elemBaseReg, elemOfs, elemScaledReg, elemScale);
 
                     // call JIT_Writeable_Thunks_Buf.WriteBarrierReg[0] (== EAX)
-                    X86EmitCall(NewExternalCodeLabel((LPVOID) &JIT_WriteBarrierEAX), 0);
+                    X86EmitCall(NewExternalCodeLabel((LPVOID) GetWriteBarrierCodeLocation(&JIT_WriteBarrierEAX)), 0);
                 }
                 else
 #else // TARGET_AMD64
@@ -5193,7 +5193,7 @@ void FixupPrecode::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
 
 #ifndef DACCESS_COMPILE
 
-void rel32SetInterlocked(/*PINT32*/ PVOID pRel32, TADDR target, MethodDesc* pMD)
+void rel32SetInterlocked(/*PINT32*/ PVOID pRel32, /*PINT32*/ PVOID pRel32RW, TADDR target, MethodDesc* pMD)
 {
     CONTRACTL
     {
@@ -5204,11 +5204,11 @@ void rel32SetInterlocked(/*PINT32*/ PVOID pRel32, TADDR target, MethodDesc* pMD)
 
     INT32 targetRel32 = rel32UsingJumpStub((INT32*)pRel32, target, pMD);
 
-    _ASSERTE(IS_ALIGNED(pRel32, sizeof(INT32)));
-    FastInterlockExchange((LONG*)pRel32, (LONG)targetRel32);
+    _ASSERTE(IS_ALIGNED(pRel32RW, sizeof(INT32)));
+    FastInterlockExchange((LONG*)pRel32RW, (LONG)targetRel32);
 }
 
-BOOL rel32SetInterlocked(/*PINT32*/ PVOID pRel32, TADDR target, TADDR expected, MethodDesc* pMD)
+BOOL rel32SetInterlocked(/*PINT32*/ PVOID pRel32, /*PINT32*/ PVOID pRel32RW, TADDR target, TADDR expected, MethodDesc* pMD)
 {
     CONTRACTL
     {
@@ -5222,11 +5222,11 @@ BOOL rel32SetInterlocked(/*PINT32*/ PVOID pRel32, TADDR target, TADDR expected, 
 
     INT32 targetRel32 = rel32UsingJumpStub((INT32*)pRel32, target, pMD);
 
-    _ASSERTE(IS_ALIGNED(pRel32, sizeof(INT32)));
-    return FastInterlockCompareExchange((LONG*)pRel32, (LONG)targetRel32, (LONG)expectedRel32) == (LONG)expectedRel32;
+    _ASSERTE(IS_ALIGNED(pRel32RW, sizeof(INT32)));
+    return FastInterlockCompareExchange((LONG*)pRel32RW, (LONG)targetRel32, (LONG)expectedRel32) == (LONG)expectedRel32;
 }
 
-void StubPrecode::Init(MethodDesc* pMD, LoaderAllocator *pLoaderAllocator /* = NULL */,
+void StubPrecode::Init(StubPrecode* pPrecodeRX, MethodDesc* pMD, LoaderAllocator *pLoaderAllocator /* = NULL */,
     BYTE type /* = StubPrecode::Type */, TADDR target /* = NULL */)
 {
     WRAPPER_NO_CONTRACT;
@@ -5244,23 +5244,23 @@ void StubPrecode::Init(MethodDesc* pMD, LoaderAllocator *pLoaderAllocator /* = N
         // that has the same lifetime like as the precode itself
         if (target == NULL)
             target = GetPreStubEntryPoint();
-        m_rel32 = rel32UsingJumpStub(&m_rel32, target, NULL /* pMD */, pLoaderAllocator);
+        m_rel32 = rel32UsingJumpStub(&pPrecodeRX->m_rel32, target, NULL /* pMD */, pLoaderAllocator);
     }
 }
 
 #ifdef HAS_NDIRECT_IMPORT_PRECODE
 
-void NDirectImportPrecode::Init(MethodDesc* pMD, LoaderAllocator *pLoaderAllocator)
+void NDirectImportPrecode::Init(NDirectImportPrecode* pPrecodeRX, MethodDesc* pMD, LoaderAllocator *pLoaderAllocator)
 {
     WRAPPER_NO_CONTRACT;
-    StubPrecode::Init(pMD, pLoaderAllocator, NDirectImportPrecode::Type, GetEEFuncEntryPoint(NDirectImportThunk));
+    StubPrecode::Init(pPrecodeRX, pMD, pLoaderAllocator, NDirectImportPrecode::Type, GetEEFuncEntryPoint(NDirectImportThunk));
 }
 
 #endif // HAS_NDIRECT_IMPORT_PRECODE
 
 
 #ifdef HAS_FIXUP_PRECODE
-void FixupPrecode::Init(MethodDesc* pMD, LoaderAllocator *pLoaderAllocator, int iMethodDescChunkIndex /*=0*/, int iPrecodeChunkIndex /*=0*/)
+void FixupPrecode::Init(FixupPrecode* pPrecodeRX, MethodDesc* pMD, LoaderAllocator *pLoaderAllocator, int iMethodDescChunkIndex /*=0*/, int iPrecodeChunkIndex /*=0*/)
 {
     WRAPPER_NO_CONTRACT;
 
@@ -5292,13 +5292,13 @@ void FixupPrecode::Init(MethodDesc* pMD, LoaderAllocator *pLoaderAllocator, int 
 #ifdef FIXUP_PRECODE_PREALLOCATE_DYNAMIC_METHOD_JUMP_STUBS
     if (pMD->IsLCGMethod())
     {
-        m_rel32 = rel32UsingPreallocatedJumpStub(&m_rel32, target, GetDynamicMethodPrecodeFixupJumpStub(), false /* emitJump */);
+        m_rel32 = rel32UsingPreallocatedJumpStub(&pPrecodeRX->m_rel32, target, pPrecodeRX->GetDynamicMethodPrecodeFixupJumpStub(), GetDynamicMethodPrecodeFixupJumpStub(), false /* emitJump */);
         return;
     }
 #endif // FIXUP_PRECODE_PREALLOCATE_DYNAMIC_METHOD_JUMP_STUBS
     if (pLoaderAllocator != NULL)
     {
-        m_rel32 = rel32UsingJumpStub(&m_rel32, target, NULL /* pMD */, pLoaderAllocator);
+        m_rel32 = rel32UsingJumpStub(&pPrecodeRX->m_rel32, target, NULL /* pMD */, pLoaderAllocator);
     }
 }
 
@@ -5328,7 +5328,9 @@ void FixupPrecode::ResetTargetInterlocked()
     newValue.m_rel32 = rel32UsingJumpStub(&m_rel32, target, pMD);
 
     _ASSERTE(IS_ALIGNED(this, sizeof(INT64)));
-    FastInterlockExchangeLong((INT64*)this, *(INT64*)&newValue);
+
+    ExecutableWriterHolder<FixupPrecode> precodeWriterHolder(this, sizeof(FixupPrecode)); 
+    FastInterlockExchangeLong((INT64*)precodeWriterHolder.GetRW(), *(INT64*)&newValue);
 }
 
 BOOL FixupPrecode::SetTargetInterlocked(TADDR target, TADDR expected)
@@ -5376,15 +5378,24 @@ BOOL FixupPrecode::SetTargetInterlocked(TADDR target, TADDR expected)
         return FALSE;
     }
 
+#ifdef FIXUP_PRECODE_PREALLOCATE_DYNAMIC_METHOD_JUMP_STUBS
+    ExecutableWriterHolder<void> dynamicMethodEntryJumpStubWriterHolder;
+    if (pMD->IsLCGMethod())
+    {
+        dynamicMethodEntryJumpStubWriterHolder = ExecutableWriterHolder<void>((void*)GetDynamicMethodEntryJumpStub(), 12);
+    }
+#endif    
     *(INT32*)(&pNewValue[offsetof(FixupPrecode, m_rel32)]) =
 #ifdef FIXUP_PRECODE_PREALLOCATE_DYNAMIC_METHOD_JUMP_STUBS
         pMD->IsLCGMethod() ?
-            rel32UsingPreallocatedJumpStub(&m_rel32, target, GetDynamicMethodEntryJumpStub(), true /* emitJump */) :
+            rel32UsingPreallocatedJumpStub(&m_rel32, target, GetDynamicMethodEntryJumpStub(), (PCODE)dynamicMethodEntryJumpStubWriterHolder.GetRW(), true /* emitJump */) :
 #endif // FIXUP_PRECODE_PREALLOCATE_DYNAMIC_METHOD_JUMP_STUBS
             rel32UsingJumpStub(&m_rel32, target, pMD);
 
     _ASSERTE(IS_ALIGNED(this, sizeof(INT64)));
-    return FastInterlockCompareExchangeLong((INT64*) this, newValue, oldValue) == oldValue;
+
+    ExecutableWriterHolder<FixupPrecode> precodeWriterHolder(this, sizeof(FixupPrecode));
+    return FastInterlockCompareExchangeLong((INT64*)precodeWriterHolder.GetRW(), newValue, oldValue) == oldValue;
 }
 
 #ifdef FEATURE_NATIVE_IMAGE_GENERATION
@@ -5488,7 +5499,9 @@ BOOL ThisPtrRetBufPrecode::SetTargetInterlocked(TADDR target, TADDR expected)
     INT32 newRel32 = rel32UsingJumpStub(&m_rel32, target, NULL /* pMD */, ((MethodDesc *)GetMethodDesc())->GetLoaderAllocator());
 
     _ASSERTE(IS_ALIGNED(&m_rel32, sizeof(INT32)));
-    FastInterlockExchange((LONG *)&m_rel32, (LONG)newRel32);
+    ExecutableWriterHolder<INT32> rel32WriterHolder(&m_rel32, sizeof(INT32));
+    FastInterlockExchange((LONG*)rel32WriterHolder.GetRW(), (LONG)newRel32);
+
     return TRUE;
 }
 #endif // !DACCESS_COMPILE

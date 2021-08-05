@@ -19,6 +19,7 @@
 #include "daccess.h"
 #include "binder.h"
 #include "win32threadpool.h"
+#include "runtimeinfo.h"
 
 #ifdef FEATURE_COMWRAPPERS
 #include <interoplibinterface.h>
@@ -1064,7 +1065,7 @@ HRESULT ClrDataAccess::EnumMemDumpAllThreadsStack(CLRDataEnumMemoryFlags flags)
 {
     SUPPORTS_DAC;
 
-#if defined(FEATURE_COMINTEROP) || defined(FEATURE_COMWRAPPERS)
+#if (defined(FEATURE_COMINTEROP) || defined(FEATURE_COMWRAPPERS)) && !defined(TARGET_UNIX)
     // Dump the exception object stored in the WinRT stowed exception
     EnumMemStowedException(flags);
 #endif // defined(FEATURE_COMINTEROP) || defined(FEATURE_COMWRAPPERS)
@@ -1297,7 +1298,7 @@ HRESULT ClrDataAccess::EnumMemDumpAllThreadsStack(CLRDataEnumMemoryFlags flags)
 }
 
 
-#if defined(FEATURE_COMINTEROP) || defined(FEATURE_COMWRAPPERS)
+#if (defined(FEATURE_COMINTEROP) || defined(FEATURE_COMWRAPPERS)) && !defined(TARGET_UNIX)
 //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 //
 // WinRT stowed exception holds the (CCW)pointer to a managed exception object.
@@ -1404,7 +1405,7 @@ HRESULT ClrDataAccess::EnumMemStowedException(CLRDataEnumMemoryFlags flags)
         ReportMem(remoteStowedException, sizeof(STOWED_EXCEPTION_INFORMATION_HEADER));
 
         // check if this is a v2 stowed exception
-        STOWED_EXCEPTION_INFORMATION_V2 stowedException = { 0 };
+        STOWED_EXCEPTION_INFORMATION_V2 stowedException = { {0} };
         if (FAILED(m_pTarget->ReadVirtual(TO_CDADDR(remoteStowedException),
             (PBYTE)&stowedException, sizeof(STOWED_EXCEPTION_INFORMATION_HEADER), &bytesRead))
             || bytesRead != sizeof(STOWED_EXCEPTION_INFORMATION_HEADER)
@@ -1556,6 +1557,27 @@ HRESULT ClrDataAccess::EnumMemCLRMainModuleInfo()
     {
         // In later releases, we should log the ERROR_RESOURCE_DATA_NOT_FOUND.
         status = E_UNEXPECTED;
+    }
+
+    if (pe.HasDirectoryEntry(IMAGE_DIRECTORY_ENTRY_EXPORT))
+    {
+        COUNT_T size = 0;
+        TADDR pExportTablesOffset = pe.GetDirectoryEntryData(IMAGE_DIRECTORY_ENTRY_EXPORT, &size);
+
+        ReportMem(pExportTablesOffset, size, true);
+
+        PTR_VOID runtimeExport = pe.GetExport(RUNTIME_INFO_SIGNATURE);
+        const char *runtimeExportSignature = dac_cast<PTR_STR>(runtimeExport);
+        if (runtimeExport != NULL &&
+            strcmp(runtimeExportSignature, RUNTIME_INFO_SIGNATURE) == 0)
+        {
+            ReportMem(dac_cast<TADDR>(runtimeExport), sizeof(RuntimeInfo), true);
+        }
+    }
+    else
+    {
+        // We always expect (attach state, metrics and such on windows, and dac table on mac and linux).
+        return E_UNEXPECTED;
     }
 
     return status;

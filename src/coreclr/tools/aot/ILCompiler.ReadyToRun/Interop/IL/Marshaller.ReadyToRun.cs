@@ -25,8 +25,6 @@ namespace Internal.TypeSystem.Interop
                     return new BooleanMarshaller();
                 case MarshallerKind.AnsiString:
                     return new AnsiStringMarshaller();
-                case MarshallerKind.UTF8String:
-                    return new UTF8StringMarshaller();
                 case MarshallerKind.SafeHandle:
                     return new SafeHandleMarshaller();
                 case MarshallerKind.UnicodeString:
@@ -93,12 +91,16 @@ namespace Internal.TypeSystem.Interop
             if (targetMethod.IsUnmanagedCallersOnly)
                 return true;
 
-            PInvokeFlags flags = targetMethod.GetPInvokeMethodMetadata().Flags;
+            PInvokeMetadata metadata = targetMethod.GetPInvokeMethodMetadata();
+            PInvokeFlags flags = metadata.Flags;
 
             if (flags.SetLastError)
                 return true;
 
             if (!flags.PreserveSig)
+                return true;
+
+            if (MarshalHelpers.ShouldCheckForPendingException(targetMethod.Context.Target, metadata))
                 return true;
 
             var marshallers = GetMarshallersForMethod(targetMethod);

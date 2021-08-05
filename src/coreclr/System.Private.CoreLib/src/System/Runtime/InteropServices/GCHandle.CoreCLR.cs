@@ -22,7 +22,7 @@ namespace System.Runtime.InteropServices
         internal static extern object? InternalGet(IntPtr handle);
 #else
         internal static unsafe object? InternalGet(IntPtr handle) =>
-            Unsafe.As<IntPtr, object>(ref *(IntPtr*)handle);
+            Unsafe.As<IntPtr, object>(ref *(IntPtr*)(nint)handle);
 #endif
 
         [MethodImpl(MethodImplOptions.InternalCall)]

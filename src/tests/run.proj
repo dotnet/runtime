@@ -120,11 +120,25 @@ $(_XunitEpilog)
     <PackageReference Include="Microsoft.DotNet.XUnitConsoleRunner" Version="$(MicrosoftDotNetXUnitConsoleRunnerVersion)" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Content Include="xunit.runner.json" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
   <Import Sdk="Microsoft.NET.Sdk" Project="Sdk.targets" />
 
 </Project>
 ]]>
       </XunitWrapperGenCsProj>
+      <XunitRunnerConfig>
+        <![CDATA[
+{
+    "diagnosticMessages": true,
+    "longRunningTestSeconds": 120,
+    "shadowCopy": false,
+    "preEnumerateTheories": false
+}
+]]>
+      </XunitRunnerConfig>
     </PropertyGroup>
 
     <!-- <Exec Command="md" -->
@@ -140,6 +154,12 @@ $(_XunitEpilog)
     <WriteLinesToFile
       File="$(XunitWrapperSrcDir)\$(XunitWrapper).csproj"
       Lines="$(XunitWrapperGenCsProj)"
+      Overwrite="true" />
+
+    <!-- Write the file -->
+    <WriteLinesToFile
+      File="$(XunitWrapperSrcDir)\xunit.runner.json"
+      Lines="$(XunitRunnerConfig)"
       Overwrite="true" />
   </Target>
 
@@ -161,9 +181,13 @@ $(_XunitEpilog)
       <Category Condition="'$(RunningOnUnix)' == 'true'" >$([System.String]::Copy('$(CategoryWithSlash)').Replace('/','.'))</Category>
       <XunitWrapper>$(Category).XUnitWrapper</XunitWrapper>
       <XunitWrapperSrcDir>$(XunitWrapperGeneratedCSDirBase)$(Category)</XunitWrapperSrcDir>
+      <MobilePlatform Condition=" '$(TargetOS)' == 'Android' ">android</MobilePlatform>
+      <MobilePlatform Condition=" '$(TargetOS)' == 'iOS' Or '$(TargetOS)' == 'iOSSimulator' ">apple</MobilePlatform>
+      <IsMobile>false</IsMobile>
+      <IsMobile Condition=" '$(TargetOS)' == 'Android' Or '$(TargetOS)' == 'iOS' Or '$(TargetOS)' == 'iOSSimulator' ">true</IsMobile>
     </PropertyGroup>
     <PropertyGroup>
-      <_XunitProlog Condition=" '$(_XunitProlog)'=='' ">
+      <_XunitProlog Condition=" '$(_XunitProlog)'=='' and '$(IsMobile)'=='false' ">
         <![CDATA[
 using Xunit%3B
 using Xunit.Abstractions%3B
@@ -184,36 +208,114 @@ namespace $([System.String]::Copy($(Category)).Replace(".","_").Replace("\","").
             internal static string testBinaryBase%3B
             internal static string coreRoot%3B
             internal static string category%3B
+            internal static string helixUploadRoot%3B
 
             static _Global()
             {
-                reportBase = System.Environment.GetEnvironmentVariable(%22XunitTestReportDirBase%22)%3B
-                testBinaryBase = System.IO.Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location)%3B
-                coreRoot = System.Environment.GetEnvironmentVariable(%22CORE_ROOT%22)%3B
+                reportBase = Environment.GetEnvironmentVariable(%22XunitTestReportDirBase%22)%3B
+                testBinaryBase = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location)%3B
+                coreRoot = Environment.GetEnvironmentVariable(%22CORE_ROOT%22)%3B
                 category = "$([System.String]::Copy($(Category)).Replace(".","_").Replace("\","").Replace("-","_"))"%3B
+                helixUploadRoot = Environment.GetEnvironmentVariable(%22HELIX_WORKITEM_UPLOAD_ROOT%22)%3B
+                if (!String.IsNullOrEmpty(helixUploadRoot)) {
+                    reportBase = Path.Combine(Path.GetFullPath(helixUploadRoot), "Reports")%3B
+                }
 
                 if (String.IsNullOrEmpty(reportBase)) {
-                    reportBase = System.IO.Path.Combine(testBinaryBase, "Reports")%3B
+                    reportBase = Path.Combine(testBinaryBase, "Reports")%3B
                 }
                 else
                 {
-                    reportBase = System.IO.Path.GetFullPath(reportBase)%3B
+                    reportBase = Path.GetFullPath(reportBase)%3B
                 }
 
                 if (String.IsNullOrEmpty(coreRoot)) {
                     throw new ArgumentException("Environment variable CORE_ROOT is not set")%3B
                 }
 
-                coreRoot = System.IO.Path.GetFullPath(coreRoot)%3B
+                coreRoot = Path.GetFullPath(coreRoot)%3B
 
-                string operatingSystem = System.Environment.GetEnvironmentVariable("OS")%3B
+                string operatingSystem = Environment.GetEnvironmentVariable("OS")%3B
                 runningInWindows = (operatingSystem != null && operatingSystem.StartsWith("Windows"))%3B
             }
         }
-
 ]]>
       </_XunitProlog>
+      <_XunitProlog Condition=" '$(_XunitProlog)'=='' and '$(IsMobile)'=='true' ">
+        <![CDATA[
+using Xunit%3B
+using Xunit.Abstractions%3B
+using System%3B
+using System.Collections.Generic%3B
+using System.Diagnostics%3B
+using System.Reflection%3B
+using System.Text.RegularExpressions%3B
+using CoreclrTestLib%3B
+using System.IO%3B
 
+namespace $([System.String]::Copy($(Category)).Replace(".","_").Replace("\","").Replace("-","_"))
+{
+        public class _Global : IDisposable
+        {
+            public bool runningInWindows%3B
+            public string reportBase%3B
+            public string testBinaryBase%3B
+            public string coreRoot%3B
+            public string category%3B
+            public string helixUploadRoot%3B
+            public MobileAppHandler handler = new MobileAppHandler()%3B
+
+            public _Global()
+            {
+                reportBase = Environment.GetEnvironmentVariable(%22XunitTestReportDirBase%22)%3B
+                testBinaryBase = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location)%3B
+                coreRoot = Environment.GetEnvironmentVariable(%22CORE_ROOT%22)%3B
+                category = "$([System.String]::Copy($(Category)).Replace(".","_").Replace("\","").Replace("-","_"))"%3B
+                helixUploadRoot = Environment.GetEnvironmentVariable(%22HELIX_WORKITEM_UPLOAD_ROOT%22)%3B
+                int retCode = -100%3B
+
+                if (!String.IsNullOrEmpty(helixUploadRoot)) {
+                    reportBase = Path.Combine(Path.GetFullPath(helixUploadRoot), "Reports")%3B
+                }
+
+                if (String.IsNullOrEmpty(reportBase)) {
+                    reportBase = Path.Combine(testBinaryBase, %22Reports%22)%3B
+                }
+                else
+                {
+                    reportBase = Path.GetFullPath(reportBase)%3B
+                }
+
+                if (String.IsNullOrEmpty(coreRoot)) {
+                    throw new ArgumentException("Environment variable CORE_ROOT is not set")%3B
+                }
+
+                coreRoot = Path.GetFullPath(coreRoot)%3B
+
+                string operatingSystem = Environment.GetEnvironmentVariable("OS")%3B
+                runningInWindows = (operatingSystem != null && operatingSystem.StartsWith("Windows"))%3B
+
+                retCode = handler.InstallMobileApp(%22$(MobilePlatform)%22, category, testBinaryBase, reportBase)%3B
+                Assert.True(retCode == 0, "Failed to install mobile app.")%3B
+            }
+
+            public void Dispose()
+            {
+                int retCode = -100%3B
+                retCode = handler.UninstallMobileApp(%22$(MobilePlatform)%22, category, testBinaryBase, reportBase)%3B
+                Assert.True(retCode == 0, "Failed to uninstall mobile app.")%3B
+            }
+        }
+
+        [CollectionDefinition("Runtime test collection")]
+        public class RuntimeTestCollection : ICollectionFixture<_Global>
+        {
+            // This class has no code, and is never created. Its purpose is simply
+            // to be the place to apply [CollectionDefinition] and all the
+            // ICollectionFixture<> interfaces.
+        }
+]]>
+      </_XunitProlog>
       <_XunitEpilog Condition=" '$(_XunitEpilog)'=='' ">
       <![CDATA[
 }
@@ -246,7 +348,7 @@ namespace $([System.String]::Copy($(Category)).Replace(".","_").Replace("\","").
         <FactName Condition="'$(RunningOnUnix)' == 'true'" >_$([MSBuild]::ValueOrDefault(%(AllCMDs.RelativeToCMDDIR),"").Replace(".","_").Replace("/","_").Replace("-","_"))</FactName>
         <ClassName Condition="'$(RunningOnUnix)' == 'true'" >_$([MSBuild]::ValueOrDefault(%(AllCMDs.RelativeToCMDDIR), '').Replace($(TestScriptExtension),'').Replace('.','_').Replace('/','_').Replace('-','_'))</ClassName>
         <TestGroup>%(AllCMDs.TestGroup)</TestGroup>
-        <XUnitFact >
+        <XUnitFact Condition=" '$(IsMobile)'=='false' ">
           <![CDATA[
 
         public class %(AllCommands.ClassName)
@@ -266,6 +368,7 @@ namespace $([System.String]::Copy($(Category)).Replace(".","_").Replace("\","").
                 string outputFile = null%3B
                 string errorFile = null%3B
                 string testExecutable = null%3B
+                string outputDir = null%3B
                 Exception infraEx = null%3B
 
                 try
@@ -276,6 +379,7 @@ namespace $([System.String]::Copy($(Category)).Replace(".","_").Replace("\","").
                   errorFile = System.IO.Path.GetFullPath(_Global.reportBase + testSubfolder + @"%(AllCMDs.FileName).error.txt")%3B
                   testExecutable = System.IO.Path.GetFullPath(_Global.testBinaryBase + @"$([System.String]::Copy('%(AllCMDs.FullPath)').Replace("$(_CMDDIR)",''))")%3B
                   $(TestExecutableReplacement)
+                  outputDir = System.IO.Path.GetDirectoryName(outputFile)%3B
 
                   if (!_Global.runningInWindows) {
                       testExecutable = testExecutable.Replace(".cmd", ".sh")%3B
@@ -283,7 +387,7 @@ namespace $([System.String]::Copy($(Category)).Replace(".","_").Replace("\","").
 
                   System.IO.Directory.CreateDirectory(_Global.reportBase + testSubfolder)%3B
 
-                  ret = wrapper.RunTest(testExecutable, outputFile, errorFile, _Global.category, _Global.testBinaryBase)%3B
+                  ret = wrapper.RunTest(testExecutable, outputFile, errorFile, _Global.category, _Global.testBinaryBase, outputDir)%3B
                 }
                 catch (Exception ex)
                 {
@@ -342,10 +446,117 @@ namespace $([System.String]::Copy($(Category)).Replace(".","_").Replace("\","").
                         output.WriteLine(line)%3B
                     }
 
+                    Assert.True(ret == CoreclrTestWrapperLib.EXIT_SUCCESS_CODE, string.Join(Environment.NewLine, testOutput))%3B
+                }
+            }
+        }
+
+        ]]>
+        </XUnitFact>
+        <XUnitFact Condition=" '$(IsMobile)'=='true' ">
+          <![CDATA[
+        [Collection("Runtime test collection")]
+        public class %(AllCommands.ClassName)
+        {
+            private readonly ITestOutputHelper output%3B
+            _Global globalVar%3B
+
+            public %(AllCommands.ClassName)(ITestOutputHelper output, _Global globalVar)
+            {
+                this.output = output%3B
+                this.globalVar = globalVar%3B
+            }
+
+            [Fact(DisplayName=@"%(AllCommands.DisplayName)")]
+            [Trait("TestGroup", "%(AllCommands.TestGroup)")]
+            public void %(AllCommands.FactName)()
+            {
+                int ret = -100%3B
+                string outputFile = null%3B
+                string errorFile = null%3B
+                string testExecutable = null%3B
+                string outputDir = null%3B
+                Exception infraEx = null%3B
+
+                try
+                {
+                  CoreclrTestWrapperLib wrapper = new CoreclrTestWrapperLib()%3B
+                  string testSubfolder = @"\$(Category)\$([System.String]::Copy('%(AllCMDs.RelativeDir)').Replace("$(_CMDDIR)$([System.IO.Path]::DirectorySeparatorChar)",''))"%3B
+                  outputFile = System.IO.Path.GetFullPath(globalVar.reportBase + testSubfolder + @"%(AllCMDs.FileName).output.txt")%3B
+                  errorFile = System.IO.Path.GetFullPath(globalVar.reportBase + testSubfolder + @"%(AllCMDs.FileName).error.txt")%3B
+                  testExecutable = System.IO.Path.GetFullPath(globalVar.testBinaryBase + @"$([System.String]::Copy('%(AllCMDs.FullPath)').Replace("$(_CMDDIR)",''))")%3B
+                  $(TestExecutableReplacement)
+                  outputDir = System.IO.Path.GetDirectoryName(outputFile)%3B
+
+                  if (!globalVar.runningInWindows) {
+                      testExecutable = testExecutable.Replace(".cmd", ".sh")%3B
+                  }
+
+                  System.IO.Directory.CreateDirectory(globalVar.reportBase + testSubfolder)%3B
+
+                  ret = wrapper.RunTest(testExecutable, outputFile, errorFile, globalVar.category, globalVar.testBinaryBase, outputDir)%3B
+                }
+                catch (Exception ex)
+                {
+                    infraEx = ex%3B
+                }
+
+                if (infraEx != null)
+                {
+                    Assert.True(false, "Test Infrastructure Failure: " + infraEx.ToString())%3B
+                }
+                else
+                {
+                    List<string> testOutput = new List<string>()%3B
+
+                    try
+                    {
+                        testOutput.AddRange(System.IO.File.ReadAllLines(errorFile))%3B
+                    }
+                    catch (Exception ex)
+                    {
+                        testOutput.Add("Unable to read error file: " + errorFile)%3B
+                        testOutput.Add(ex.ToString())%3B
+                    }
+
+                    testOutput.Add(string.Empty)%3B
+                    testOutput.Add("Return code:      " + ret)%3B
+                    testOutput.Add("Raw output file:      " + outputFile)%3B
+                    testOutput.Add("Raw output:")%3B
+
+                    try
+                    {
+                        testOutput.AddRange(System.IO.File.ReadAllLines(outputFile))%3B
+                    }
+                    catch(Exception ex)
+                    {
+                        testOutput.Add("Unable to read output file: " + outputFile)%3B
+                        testOutput.Add(ex.ToString())%3B
+                    }
+
+                    testOutput.Add("To run the test:")%3B
+                    testOutput.Add("> set CORE_ROOT=" + globalVar.coreRoot)%3B
+                    testOutput.Add("> " + testExecutable)%3B
+
+                    var unicodeControlCharsRegex = new Regex("%5C%5Cp{C}+")%3B
+
+                    // Remove all characters that have no visual or spatial representation.
+                    for (int i = 0%3B i < testOutput.Count%3B i++)
+                    {
+                        string line = testOutput[i]%3B
+                        line = unicodeControlCharsRegex.Replace(line, string.Empty)%3B
+                        testOutput[i] = line%3B
+                    }
+
+                    foreach (string line in testOutput)
+                    {
+                        output.WriteLine(line)%3B
+                    }
+
                     // Add Android app running log to testOutput
                     if (ret != CoreclrTestWrapperLib.EXIT_SUCCESS_CODE)
                     {
-                        string androidLogFile = System.IO.Path.Combine(System.IO.Path.GetDirectoryName(testExecutable), "adb-logcat-net.dot." + _Global.category + ".log")%3B
+                        string androidLogFile = System.IO.Path.Combine(outputDir, "adb-logcat-net.dot." + globalVar.category + "-net.dot.MonoRunner.log")%3B
                         if(File.Exists(androidLogFile))
                         {
                             testOutput.AddRange(System.IO.File.ReadAllLines(androidLogFile))%3B
@@ -356,7 +567,6 @@ namespace $([System.String]::Copy($(Category)).Replace(".","_").Replace("\","").
                 }
             }
         }
-
         ]]>
         </XUnitFact>
       </AllCommands>
@@ -391,16 +601,15 @@ namespace $([System.String]::Copy($(Category)).Replace(".","_").Replace("\","").
     <ItemGroup Condition="'$(TargetArchitecture)' == 'arm64'">
       <MonoAotOption Include="mattr=crc" />
       <MonoAotOption Include="mattr=crypto" />
-      <MonoAotOption Include="mattr=neon" />
     </ItemGroup>
     <ItemGroup Condition="'$(TargetArchitecture)' == 'x64'">
-      <!--
       <MonoAotOption Include="mattr=sse4.2" />
       <MonoAotOption Include="mattr=popcnt" />
       <MonoAotOption Include="mattr=lzcnt" />
       <MonoAotOption Include="mattr=bmi" />
       <MonoAotOption Include="mattr=bmi2" />
-      -->
+      <MonoAotOption Include="mattr=pclmul" />
+      <MonoAotOption Include="mattr=aes" />
     </ItemGroup>
     <PropertyGroup>
       <MonoAotOptions>@(MonoAotOption->'%(Identity)', ',')</MonoAotOptions>
@@ -443,6 +652,8 @@ namespace $([System.String]::Copy($(Category)).Replace(".","_").Replace("\","").
       <AndroidAbi Condition="'$(TargetArchitecture)' == 'arm'">armeabi-v7a</AndroidAbi>
       <AndroidAbi Condition="'$(TargetArchitecture)' == 'x64'">x86_64</AndroidAbi>
       <AndroidAbi Condition="'$(TargetArchitecture)' == 'x86'">x86</AndroidAbi>
+      <MonoInterp>false</MonoInterp>
+      <MonoInterp Condition="'$(RuntimeVariant)' == 'monointerpreter'">true</MonoInterp>
     </PropertyGroup>
 
     <RemoveDir Directories="$(AppDir)" />
@@ -478,20 +689,128 @@ namespace $([System.String]::Copy($(Category)).Replace(".","_").Replace("\","").
         ProjectName="$(Category)"
         MonoRuntimeHeaders="$(MicrosoftNetCoreAppRuntimePackDir)/native/include/mono-2.0"
         StripDebugSymbols="$(StripDebugSymbols)"
+        ForceInterpreter="$(MonoInterp)"
         AppDir="$(BuildDir)"
         OutputDir="$(AppDir)">
         <Output TaskParameter="ApkBundlePath" PropertyName="ApkBundlePath" />
         <Output TaskParameter="ApkPackageId" PropertyName="ApkPackageId" />
     </AndroidAppBuilderTask>
     <Move SourceFiles="$(ApkBundlePath)" DestinationFiles="$(FinalApkPath)" />
-    <Message Importance="High" Text="Apk:       $(FinalApkPath)"/>
-    <Message Importance="High" Text="PackageId: $(ApkPackageId)"/>
+    <Message Importance="High" Text="Apk:        $(FinalApkPath)"/>
+    <Message Importance="High" Text="PackageId:  $(ApkPackageId)"/>
+    <Message Importance="High" Text="MonoInterp: $(MonoInterp)"/>
     <!-- delete the BuildDir in CI builds to save disk space on build agents since they're no longer needed -->
     <RemoveDir Condition="'$(ContinuousIntegrationBuild)' == 'true'" Directories="$(BuildDir)" />
   </Target>
 
   <Target Name="BuildAllAndroidApp" DependsOnTargets="GetListOfTestCmds;FindCmdDirectories">
     <MSBuild Projects="$(MSBuildProjectFile)" Targets="BuildAndroidApp" Properties="_CMDDIR=%(TestDirectories.Identity)" />
+  </Target>
+
+  <UsingTask TaskName="AppleAppBuilderTask" AssemblyFile="$(AppleAppBuilderTasksAssemblyPath)" />
+  <UsingTask TaskName="MonoAOTCompiler" AssemblyFile="$(MonoAOTCompilerTasksAssemblyPath)" />
+
+  <Target Name="BuildiOSApp">
+    <PropertyGroup>
+      <CMDDIR_Grandparent>$([System.IO.Path]::GetDirectoryName($([System.IO.Path]::GetDirectoryName($(_CMDDIR)))))</CMDDIR_Grandparent>
+      <CategoryWithSlash>$([System.String]::Copy('$(_CMDDIR)').Replace("$(CMDDIR_Grandparent)/",""))</CategoryWithSlash>
+      <Category>$([System.String]::Copy('$(CategoryWithSlash)').Replace('/','_'))</Category>
+      <XUnitWrapperFileName>$([System.String]::Copy('$(CategoryWithSlash)').Replace('/', '.')).XUnitWrapper.dll</XUnitWrapperFileName>
+      <XUnitWrapperDll>$(CMDDIR_GrandParent)/$(CategoryWithSlash)/$(XUnitWrapperFileName)</XUnitWrapperDll>
+      <BuildDir>$(IntermediateOutputPath)\iOSApps\$(Category)</BuildDir>
+      <FinalPath>$(XUnitTestBinBase)$(CategoryWithSlash)\$(Category).app</FinalPath>
+    </PropertyGroup>
+
+    <PropertyGroup>
+      <AssemblyName>$(Category)</AssemblyName>
+      <MicrosoftNetCoreAppRuntimePackDir>$(ArtifactsBinDir)microsoft.netcore.app.runtime.iossimulator-$(TargetArchitecture)/$(Configuration)/runtimes/iossimulator-$(TargetArchitecture)</MicrosoftNetCoreAppRuntimePackDir>
+      <MicrosoftNetCoreAppRuntimePackNativeDir>$(MicrosoftNetCoreAppRuntimePackDir)/native</MicrosoftNetCoreAppRuntimePackNativeDir>
+    </PropertyGroup>
+    <ItemGroup>
+      <AllTestScripts Include="$(_CMDDIR)\**\*.sh" />
+    </ItemGroup>
+    <ItemGroup>
+      <TestExclusions Include="@(ExcludeList->Metadata('FullPath'))" Condition="$(HaveExcludes)" />
+      <TestScripts Include="@(AllTestScripts)" Exclude="@(TestExclusions)" />
+      <TestDllPaths Include="$([System.IO.Path]::ChangeExtension('%(TestScripts.Identity)', 'dll'))" />
+      <TestDlls Include="%(TestDllPaths.Identity)" Condition="Exists(%(TestDllPaths.Identity))" />
+      <AssembliesInTestDirs Include="%(AllCMDsPresent.RelativeDir)*.dll" Exclude="@(TestAssemblies)"/>
+      <RuntimePackLibs Include="$(MicrosoftNetCoreAppRuntimePackDir)lib/**/*.dll" />
+    </ItemGroup>
+    <ItemGroup>
+      <ExtraDlls Include="%(TestDlls.RelativeDir)*.dll" Exclude="@(TestDlls)">
+        <TestDllFilename>@(TestDlls->'%(Filename)')</TestDllFilename>
+      </ExtraDlls>
+    </ItemGroup>
+    <PropertyGroup>
+      <BundleDir>$([MSBuild]::NormalizeDirectory('$(BuildDir)', 'AppBundle'))</BundleDir>
+    </PropertyGroup>
+    <ItemGroup>
+      <RuntimePackNativeLibs Include="$(MicrosoftNetCoreAppRuntimePackDir)/**/*.dll;$(MicrosoftNetCoreAppRuntimePackDir)/native/**/*.a;$(MicrosoftNetCoreAppRuntimePackDir)/native/**/*.dylib" />
+    </ItemGroup>
+
+    <RemoveDir Directories="$(BundleDir)" />
+    <RemoveDir Directories="$(BuildDir)" />
+
+    <MakeDir Directories="$(BuildDir)" />
+    <MakeDir Directories="$(BuildDir)/testdir-%(TestDlls.Filename)" />
+
+    <Copy
+        SourceFiles="@(RuntimePackNativeLibs)"
+        DestinationFolder="$(BuildDir)" />
+    <Copy
+        SourceFiles="@(RuntimePackLibs)"
+        DestinationFolder="$(BuildDir)" />
+    <Copy
+        SourceFiles="%(TestDlls.Identity)"
+        DestinationFolder="$(BuildDir)/testdir-%(TestDlls.Filename)" />
+    <Copy
+        SourceFiles="%(ExtraDlls.Identity)"
+        DestinationFolder="$(BuildDir)/testdir-%(ExtraDlls.TestDllFilename)" />
+
+    <AppleAppBuilderTask
+        TargetOS="$(TargetOS)"
+        Arch="$(TargetArchitecture)"
+        ProjectName="$(AssemblyName)"
+        MonoRuntimeHeaders="$(MicrosoftNetCoreAppRuntimePackNativeDir)/include/mono-2.0"
+        Assemblies="@(BundleAssemblies)"
+        ForceInterpreter="$(MonoForceInterpreter)"
+        UseConsoleUITemplate="True"
+        GenerateXcodeProject="True"
+        BuildAppBundle="True"
+        Optimized="True"
+        DevTeamProvisioning="$(DevTeamProvisioning)"
+        OutputDirectory="$(BundleDir)"
+        AppDir="$(BuildDir)"
+        InvariantGlobalization="true"
+    >
+      <Output TaskParameter="AppBundlePath" PropertyName="AppBundlePath" />
+      <Output TaskParameter="XcodeProjectPath" PropertyName="XcodeProjectPath" />
+    </AppleAppBuilderTask>
+
+    <!-- Apparently MSBuild cannot move directories and recursively copying a
+         a directory requires writing some sort of recursive traversal
+         logic yourself. -->
+    <ItemGroup>
+      <RecursiveCopyHack Include="$(AppBundlePath)/**/*.*" />
+    </ItemGroup>
+    <MakeDir Directories="$(FinalPath)" />
+    <Copy SourceFiles="@(RecursiveCopyHack)" DestinationFolder="$(FinalPath)/%(RecursiveDir)" />
+    <RemoveDir Directories="$(AppBundlePath)" />
+    <Message Importance="High" Text="App: $(FinalPath)" />
+  </Target>
+
+  <Target Name="BuildAlliOSApp" DependsOnTargets="GetListOfTestCmds;FindCmdDirectories">
+    <ItemGroup>
+      <RunProj Include="$(MSBuildProjectFile)">
+        <Properties>_CMDDIR=%(TestDirectories.Identity)</Properties>
+      </RunProj>
+    </ItemGroup>
+    <MSBuild
+      Projects="@(RunProj)"
+      Targets="BuildiOSApp"
+      BuildInParallel="true"
+      />
   </Target>
 
   <Target Name="GetListOfTestCmds">

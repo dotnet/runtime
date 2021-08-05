@@ -870,10 +870,7 @@ bool Compiler::ehCanDeleteEmptyBlock(BasicBlock* block)
  */
 void Compiler::ehUpdateLastBlocks(BasicBlock* oldLast, BasicBlock* newLast)
 {
-    EHblkDsc* HBtab;
-    EHblkDsc* HBtabEnd;
-
-    for (HBtab = compHndBBtab, HBtabEnd = compHndBBtab + compHndBBtabCount; HBtab < HBtabEnd; HBtab++)
+    for (EHblkDsc* const HBtab : EHClauses(this))
     {
         if (HBtab->ebdTryLast == oldLast)
         {
@@ -1004,11 +1001,9 @@ bool Compiler::ehAnyFunclets()
 
 unsigned Compiler::ehFuncletCount()
 {
-    unsigned  funcletCnt = 0;
-    EHblkDsc* HBtab;
-    EHblkDsc* HBtabEnd;
+    unsigned funcletCnt = 0;
 
-    for (HBtab = compHndBBtab, HBtabEnd = compHndBBtab + compHndBBtabCount; HBtab < HBtabEnd; HBtab++)
+    for (EHblkDsc* const HBtab : EHClauses(this))
     {
         if (HBtab->HasFilter())
         {
@@ -1420,9 +1415,7 @@ void Compiler::fgRemoveEHTableEntry(unsigned XTnum)
 
         HBtab = compHndBBtab + XTnum;
 
-        EHblkDsc* xtabEnd;
-        EHblkDsc* xtab;
-        for (xtab = compHndBBtab, xtabEnd = compHndBBtab + compHndBBtabCount; xtab < xtabEnd; xtab++)
+        for (EHblkDsc* const xtab : EHClauses(this))
         {
             if ((xtab != HBtab) && (xtab->ebdEnclosingTryIndex != EHblkDsc::NO_ENCLOSING_INDEX) &&
                 (xtab->ebdEnclosingTryIndex >= XTnum))
@@ -1457,7 +1450,7 @@ void Compiler::fgRemoveEHTableEntry(unsigned XTnum)
 
         /* We need to update all of the blocks' bbTryIndex */
 
-        for (BasicBlock* blk = fgFirstBB; blk; blk = blk->bbNext)
+        for (BasicBlock* const blk : Blocks())
         {
             if (blk->hasTryIndex())
             {
@@ -1518,9 +1511,7 @@ EHblkDsc* Compiler::fgAddEHTableEntry(unsigned XTnum)
     {
         // Update all enclosing links that will get invalidated by inserting an entry at 'XTnum'
 
-        EHblkDsc* xtabEnd;
-        EHblkDsc* xtab;
-        for (xtab = compHndBBtab, xtabEnd = compHndBBtab + compHndBBtabCount; xtab < xtabEnd; xtab++)
+        for (EHblkDsc* const xtab : EHClauses(this))
         {
             if ((xtab->ebdEnclosingTryIndex != EHblkDsc::NO_ENCLOSING_INDEX) && (xtab->ebdEnclosingTryIndex >= XTnum))
             {
@@ -1536,7 +1527,7 @@ EHblkDsc* Compiler::fgAddEHTableEntry(unsigned XTnum)
 
         // We need to update the BasicBlock bbTryIndex and bbHndIndex field for all blocks
 
-        for (BasicBlock* blk = fgFirstBB; blk; blk = blk->bbNext)
+        for (BasicBlock* const blk : Blocks())
         {
             if (blk->hasTryIndex() && (blk->getTryIndex() >= XTnum))
             {
@@ -1762,8 +1753,7 @@ void Compiler::fgRemoveEH()
 #ifdef DEBUG
     // Make sure none of the remaining blocks have any EH.
 
-    BasicBlock* blk;
-    foreach_block(this, blk)
+    for (BasicBlock* const blk : Blocks())
     {
         assert(!blk->hasTryIndex());
         assert(!blk->hasHndIndex());
@@ -3124,9 +3114,8 @@ void Compiler::fgVerifyHandlerTab()
     unsigned* blockNumMap   = (unsigned*)_alloca(blockNumBytes);
     memset(blockNumMap, 0, blockNumBytes);
 
-    BasicBlock* block;
-    unsigned    newBBnum = 1;
-    for (block = fgFirstBB; block != nullptr; block = block->bbNext)
+    unsigned newBBnum = 1;
+    for (BasicBlock* const block : Blocks())
     {
         assert((block->bbFlags & BBF_REMOVED) == 0);
         assert(1 <= block->bbNum && block->bbNum <= bbNumMax);
@@ -3151,15 +3140,12 @@ void Compiler::fgVerifyHandlerTab()
 #endif
 
     // To verify that bbCatchTyp is set properly on all blocks, and that some BBF_* flags are only set on the first
-    // block
-    // of 'try' or handlers, create two bool arrays indexed by block number: one for the set of blocks that are the
-    // beginning
-    // blocks of 'try' regions, and one for blocks that are the beginning of handlers (including filters). Note that
-    // since
-    // this checking function runs before EH normalization, we have to handle the case where blocks can be both the
-    // beginning
-    // of a 'try' as well as the beginning of a handler. After we've iterated over the EH table, loop
-    // over all blocks and verify that only handler begin blocks have bbCatchTyp == BBCT_NONE, and some other things.
+    // block of 'try' or handlers, create two bool arrays indexed by block number: one for the set of blocks that
+    // are the beginning blocks of 'try' regions, and one for blocks that are the beginning of handlers (including
+    // filters). Note that since this checking function runs before EH normalization, we have to handle the case
+    // where blocks can be both the beginning of a 'try' as well as the beginning of a handler. After we've iterated
+    // over the EH table, loop over all blocks and verify that only handler begin blocks have bbCatchTyp == BBCT_NONE,
+    // and some other things.
 
     size_t blockBoolSetBytes = (bbNumMax + 1) * sizeof(bool);
     bool*  blockTryBegSet    = (bool*)_alloca(blockBoolSetBytes);
@@ -3495,6 +3481,8 @@ void Compiler::fgVerifyHandlerTab()
     // otherwise set. The duplicate clause handler is truly a duplicate of
     // a previously processed handler, so we ignore it.
 
+    BasicBlock* block;
+
     size_t          blockIndexBytes = (bbNumMax + 1) * sizeof(unsigned short);
     unsigned short* blockTryIndex   = (unsigned short*)_alloca(blockIndexBytes);
     unsigned short* blockHndIndex   = (unsigned short*)_alloca(blockIndexBytes);
@@ -3556,7 +3544,7 @@ void Compiler::fgVerifyHandlerTab()
 #endif // FEATURE_EH_FUNCLETS
 
     // Make sure that all blocks have the right index, including those blocks that should have zero (no EH region).
-    for (block = fgFirstBB; block != nullptr; block = block->bbNext)
+    for (BasicBlock* const block : Blocks())
     {
         assert(block->bbTryIndex == blockTryIndex[block->bbNum]);
         assert(block->bbHndIndex == blockHndIndex[block->bbNum]);
@@ -3761,7 +3749,7 @@ void Compiler::verInsertEhNodeInTree(EHNodeDsc** ppRoot, EHNodeDsc* node)
     node->ehnChild      = nullptr;
     node->ehnEquivalent = nullptr;
 
-    while (TRUE)
+    while (true)
     {
         if (*ppRoot == nullptr)
         {
@@ -4088,12 +4076,12 @@ void Compiler::fgClearFinallyTargetBit(BasicBlock* block)
     assert(fgComputePredsDone);
     assert((block->bbFlags & BBF_FINALLY_TARGET) != 0);
 
-    for (flowList* pred = block->bbPreds; pred; pred = pred->flNext)
+    for (BasicBlock* const predBlock : block->PredBlocks())
     {
-        if (pred->getBlock()->bbJumpKind == BBJ_ALWAYS && pred->getBlock()->bbJumpDest == block)
+        if (predBlock->bbJumpKind == BBJ_ALWAYS && predBlock->bbJumpDest == block)
         {
-            BasicBlock* pPrev = pred->getBlock()->bbPrev;
-            if (pPrev != NULL)
+            BasicBlock* pPrev = predBlock->bbPrev;
+            if (pPrev != nullptr)
             {
                 if (pPrev->bbJumpKind == BBJ_CALLFINALLY)
                 {
@@ -4241,12 +4229,8 @@ bool Compiler::fgAnyIntraHandlerPreds(BasicBlock* block)
     assert(block->hasHndIndex());
     assert(fgFirstBlockOfHandler(block) == block); // this block is the first block of a handler
 
-    flowList* pred;
-
-    for (pred = block->bbPreds; pred; pred = pred->flNext)
+    for (BasicBlock* const predBlock : block->PredBlocks())
     {
-        BasicBlock* predBlock = pred->getBlock();
-
         if (fgIsIntraHandlerPred(predBlock, block))
         {
             // We have a predecessor that is not from our try region
@@ -4395,10 +4379,7 @@ void Compiler::fgExtendEHRegionBefore(BasicBlock* block)
     bPrev->bbCatchTyp = block->bbCatchTyp;
     block->bbCatchTyp = BBCT_NONE;
 
-    EHblkDsc* HBtab;
-    EHblkDsc* HBtabEnd;
-
-    for (HBtab = compHndBBtab, HBtabEnd = compHndBBtab + compHndBBtabCount; HBtab < HBtabEnd; HBtab++)
+    for (EHblkDsc* const HBtab : EHClauses(this))
     {
         /* Multiple pointers in EHblkDsc can point to same block. We can not early out after the first match. */
         if (HBtab->ebdTryBeg == block)

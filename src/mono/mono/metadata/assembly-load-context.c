@@ -72,6 +72,7 @@ mono_alcs_init (void)
 	mono_coop_mutex_init (&alc_list_lock);
 
 	default_alc = mono_alc_create (FALSE);
+	default_alc->gchandle = mono_gchandle_new_internal (NULL, FALSE);
 }
 
 MonoAssemblyLoadContext *
@@ -237,8 +238,10 @@ ves_icall_System_Runtime_Loader_AssemblyLoadContext_InternalInitializeNativeALC 
 	if (is_default_alc) {
 		alc = default_alc;
 		g_assert (alc);
-		if (!alc->gchandle)
-			alc->gchandle = this_gchandle;
+
+		// Change target of the existing GCHandle
+		mono_gchandle_set_target (alc->gchandle, mono_gchandle_get_target_internal (this_gchandle));
+		mono_gchandle_free_internal (this_gchandle);
 	} else {
 		alc = mono_alc_create_individual (this_gchandle, collectible, error);
 	}
@@ -416,8 +419,12 @@ mono_alc_is_default (MonoAssemblyLoadContext *alc)
 MonoAssemblyLoadContext *
 mono_alc_from_gchandle (MonoGCHandle alc_gchandle)
 {
+	if (alc_gchandle == default_alc->gchandle)
+		return default_alc;
+
 	HANDLE_FUNCTION_ENTER ();
 	MonoManagedAssemblyLoadContextHandle managed_alc = MONO_HANDLE_CAST (MonoManagedAssemblyLoadContext, mono_gchandle_get_target_handle (alc_gchandle));
+	g_assert (!MONO_HANDLE_IS_NULL (managed_alc));
 	MonoAssemblyLoadContext *alc = MONO_HANDLE_GETVAL (managed_alc, native_assembly_load_context);
 	HANDLE_FUNCTION_RETURN_VAL (alc);
 }
@@ -446,8 +453,7 @@ invoke_resolve_method (MonoMethod *resolve_method, MonoAssemblyLoadContext *alc,
 	goto_if_nok (error, leave);
 
 	MonoReflectionAssemblyHandle assm;
-	gpointer gchandle;
-	gchandle = (gpointer)alc->gchandle;
+	gpointer gchandle = mono_alc_get_gchandle_for_resolving (alc);
 	gpointer args [2];
 	args [0] = &gchandle;
 	args [1] = MONO_HANDLE_RAW (aname_obj);

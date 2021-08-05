@@ -389,7 +389,7 @@ namespace System.IO
         private void ClearReadBufferBeforeWrite()
         {
             Debug.Assert(_stream != null);
-            Debug.Assert(_readPos <= _readLen, "_readPos <= _readLen [" + _readPos + " <= " + _readLen + "]");
+            Debug.Assert(_readPos <= _readLen, $"_readPos <= _readLen [{_readPos} <= {_readLen}]");
 
             // No read data in the buffer:
             if (_readPos == _readLen)
@@ -730,7 +730,7 @@ namespace System.IO
                 // If the requested read is larger than buffer size, avoid the buffer and still use a single read:
                 if (buffer.Length >= _bufferSize)
                 {
-                    return bytesAlreadySatisfied + await _stream.ReadAsync(buffer, cancellationToken).ConfigureAwait(false);
+                    return await _stream.ReadAsync(buffer, cancellationToken).ConfigureAwait(false) + bytesAlreadySatisfied;
                 }
 
                 // Ok. We can fill the buffer:
@@ -889,7 +889,8 @@ namespace System.IO
             checked
             {  // We do not expect buffer sizes big enough for an overflow, but if it happens, lets fail early:
                 totalUserbytes = _writePos + count;
-                useBuffer = (totalUserbytes + count < (_bufferSize + _bufferSize));
+                // Allow current totalUserbytes up to int.MaxValue by using uint arithmetic operation for totalUserbytes + count
+                useBuffer = ((uint)totalUserbytes + count < (_bufferSize + _bufferSize));
             }
 
             if (useBuffer)
@@ -959,7 +960,8 @@ namespace System.IO
             {
                 // We do not expect buffer sizes big enough for an overflow, but if it happens, lets fail early:
                 totalUserbytes = _writePos + buffer.Length;
-                useBuffer = (totalUserbytes + buffer.Length < (_bufferSize + _bufferSize));
+                // Allow current totalUserbytes up to int.MaxValue by using uint arithmetic operation for totalUserbytes + buffer.Length
+                useBuffer = ((uint)totalUserbytes + buffer.Length < (_bufferSize + _bufferSize));
             }
 
             if (useBuffer)
@@ -1241,7 +1243,7 @@ namespace System.IO
                 _readPos = _readLen = 0;
             }
 
-            Debug.Assert(newPos == Position, "newPos (=" + newPos + ") == Position (=" + Position + ")");
+            Debug.Assert(newPos == Position, $"newPos (={newPos}) == Position (={Position})");
             return newPos;
         }
 

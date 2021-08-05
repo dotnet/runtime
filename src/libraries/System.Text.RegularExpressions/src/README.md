@@ -61,7 +61,7 @@ In particular, we must keep this API stable in order to remain compatible with r
 
 * Representation of a "character class", which defines what characters should be considered a match.  It supports ranges, Unicode categories, and character class subtraction.  As part of reduction / optimization of a `RegexNode` as well as during compilation, trivial character classes may be replaced by faster equivalent forms, e.g. replacing a character class that represents just one character with the corresponding "one" `RegexNode`.
 * Created by `RegexParser`
-* Creates packed string to be held on `RegexNode`. During execution, tihs string is passed to `CharInClass` to determine whether a given character is in the set, although the implementation (in particular in the compiler) may emit faster equivalent checks when possible.
+* Creates packed string to be held on `RegexNode`. During execution, this string is passed to `CharInClass` to determine whether a given character is in the set, although the implementation (in particular in the compiler) may emit faster equivalent checks when possible.
 * Has utility methods for examining the packed string, in particular for testing membership of the class (`CharInClass(..)`)
 
 ### RegexNode

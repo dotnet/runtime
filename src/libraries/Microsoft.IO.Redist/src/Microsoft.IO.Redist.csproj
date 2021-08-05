@@ -1,60 +1,68 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFrameworks>net472</TargetFrameworks>
+    <IsPackable>true</IsPackable>
+    <PackageDescription>Downlevel support package for System.IO classes.</PackageDescription>
     <DefineConstants>$(DefineConstants);MS_IO_REDIST</DefineConstants>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <ClsCompliant>false</ClsCompliant>
     <Nullable>annotations</Nullable>
     <IncludePlatformAttributes>true</IncludePlatformAttributes>
+    <TargetFrameworks>net472</TargetFrameworks>
   </PropertyGroup>
+
   <ItemGroup>
-    <Compile Include="..\..\System.IO.FileSystem\src\System\IO\Directory.cs"
+    <Folder Include="Microsoft\IO\Enumeration\" />
+    <None Include="PinvokeAnalyzerExceptionList.analyzerdata" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="$(CoreLibSharedDir)System\IO\Directory.cs"
              Link="Microsoft\IO\Directory.cs" />
-    <Compile Include="..\..\System.IO.FileSystem\src\System\IO\DirectoryInfo.cs"
+    <Compile Include="$(CoreLibSharedDir)System\IO\DirectoryInfo.cs"
              Link="Microsoft\IO\DirectoryInfo.cs" />
-    <Compile Include="..\..\System.IO.FileSystem\src\System\IO\Enumeration\FileSystemEntry.cs"
+    <Compile Include="$(CoreLibSharedDir)System\IO\Enumeration\FileSystemEntry.cs"
              Link="Microsoft\IO\Enumeration\FileSystemEntry.cs" />
-    <Compile Include="..\..\System.IO.FileSystem\src\System\IO\Enumeration\FileSystemEntry.Windows.cs"
+    <Compile Include="$(CoreLibSharedDir)System\IO\Enumeration\FileSystemEntry.Windows.cs"
              Link="Microsoft\IO\Enumeration\FileSystemEntry.Windows.cs" />
-    <Compile Include="..\..\System.IO.FileSystem\src\System\IO\Enumeration\FileSystemEnumerable.cs"
+    <Compile Include="$(CoreLibSharedDir)System\IO\Enumeration\FileSystemEnumerable.cs"
              Link="Microsoft\IO\Enumeration\FileSystemEnumerable.cs" />
-    <Compile Include="..\..\System.IO.FileSystem\src\System\IO\Enumeration\FileSystemEnumerableFactory.cs"
+    <Compile Include="$(CoreLibSharedDir)System\IO\Enumeration\FileSystemEnumerableFactory.cs"
              Link="Microsoft\IO\Enumeration\FileSystemEnumerableFactory.cs" />
-    <Compile Include="..\..\System.IO.FileSystem\src\System\IO\Enumeration\FileSystemEnumerator.cs"
+    <Compile Include="$(CoreLibSharedDir)System\IO\Enumeration\FileSystemEnumerator.cs"
              Link="Microsoft\IO\Enumeration\FileSystemEnumerator.cs" />
-    <Compile Include="..\..\System.IO.FileSystem\src\System\IO\Enumeration\FileSystemEnumerator.Win32.cs"
+    <Compile Include="$(CoreLibSharedDir)System\IO\Enumeration\FileSystemEnumerator.Win32.cs"
              Link="Microsoft\IO\Enumeration\FileSystemEnumerator.Win32.cs" />
-    <Compile Include="..\..\System.IO.FileSystem\src\System\IO\Enumeration\FileSystemEnumerator.Windows.cs"
+    <Compile Include="$(CoreLibSharedDir)System\IO\Enumeration\FileSystemEnumerator.Windows.cs"
              Link="Microsoft\IO\Enumeration\FileSystemEnumerator.Windows.cs" />
-    <Compile Include="..\..\System.IO.FileSystem\src\System\IO\Enumeration\FileSystemName.cs"
+    <Compile Include="$(CoreLibSharedDir)System\IO\Enumeration\FileSystemName.cs"
              Link="Microsoft\IO\Enumeration\FileSystemName.cs" />
-    <Compile Include="..\..\System.IO.FileSystem\src\System\IO\EnumerationOptions.cs"
+    <Compile Include="$(CoreLibSharedDir)System\IO\EnumerationOptions.cs"
              Link="Microsoft\IO\EnumerationOptions.cs" />
-    <Compile Include="..\..\System.IO.FileSystem\src\System\IO\Error.cs"
-             Link="Microsoft\IO\Error.cs" />
-    <Compile Include="..\..\System.IO.FileSystem\src\System\IO\File.cs"
+    <Compile Include="$(CoreLibSharedDir)System\IO\File.cs"
              Link="Microsoft\IO\File.cs" />
-    <Compile Include="..\..\System.IO.FileSystem\src\System\IO\FileInfo.cs"
+    <Compile Include="$(CoreLibSharedDir)System\IO\FileInfo.cs"
              Link="Microsoft\IO\FileInfo.cs" />
-    <Compile Include="..\..\System.IO.FileSystem\src\System\IO\FileSystem.Win32.cs"
+    <Compile Include="$(CoreLibSharedDir)System\IO\FileSystem.cs"
+             Link="Microsoft\IO\FileSystem.cs" />
+    <Compile Include="$(CoreLibSharedDir)System\IO\FileSystem.Win32.cs"
              Link="Microsoft\IO\FileSystem.Win32.cs" />
-    <Compile Include="..\..\System.IO.FileSystem\src\System\IO\FileSystem.Windows.cs"
+    <Compile Include="$(CoreLibSharedDir)System\IO\FileSystem.Windows.cs"
              Link="Microsoft\IO\FileSystem.Windows.cs" />
-    <Compile Include="..\..\System.IO.FileSystem\src\System\IO\FileSystemInfo.cs"
+    <Compile Include="$(CoreLibSharedDir)System\IO\FileSystemInfo.cs"
              Link="Microsoft\IO\FileSystemInfo.cs" />
-    <Compile Include="..\..\System.IO.FileSystem\src\System\IO\FileSystemInfo.Windows.cs"
+    <Compile Include="$(CoreLibSharedDir)System\IO\FileSystemInfo.Windows.cs"
              Link="Microsoft\IO\FileSystemInfo.Windows.cs" />
-    <Compile Include="..\..\System.IO.FileSystem\src\System\IO\Iterator.cs"
+    <Compile Include="$(CoreLibSharedDir)System\IO\Iterator.cs"
              Link="Microsoft\IO\Iterator.cs" />
-    <Compile Include="..\..\System.IO.FileSystem\src\System\IO\MatchCasing.cs"
+    <Compile Include="$(CoreLibSharedDir)System\IO\MatchCasing.cs"
              Link="Microsoft\IO\MatchCasing.cs" />
-    <Compile Include="..\..\System.IO.FileSystem\src\System\IO\MatchType.cs"
+    <Compile Include="$(CoreLibSharedDir)System\IO\MatchType.cs"
              Link="Microsoft\IO\MatchType.cs" />
-    <Compile Include="..\..\System.IO.FileSystem\src\System\IO\ReadLinesIterator.cs"
+    <Compile Include="$(CoreLibSharedDir)System\IO\ReadLinesIterator.cs"
              Link="Microsoft\IO\ReadLinesIterator.cs" />
-    <Compile Include="..\..\System.IO.FileSystem\src\System\IO\SearchOption.cs"
+    <Compile Include="$(CoreLibSharedDir)System\IO\SearchOption.cs"
              Link="Microsoft\IO\SearchOption.cs" />
-    <Compile Include="..\..\System.IO.FileSystem\src\System\IO\SearchTarget.cs"
+    <Compile Include="$(CoreLibSharedDir)System\IO\SearchTarget.cs"
              Link="Microsoft\IO\SearchTarget.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\BCrypt\Interop.BCryptGenRandom.cs"
              Link="Interop\Windows\BCrypt\Interop.BCryptGenRandom.cs" />
@@ -68,6 +76,10 @@
              Link="Common\Interop\Windows\Interop.BOOLEAN.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.CloseHandle.cs"
              Link="Common\Interop\Windows\Interop.CloseHandle.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.CreateSymbolicLink.cs"
+             Link="Common\Interop\Windows\Interop.CreateSymbolicLink.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.DeviceIoControl.cs"
+             Link="Interop\Windows\Interop.DeviceIoControl.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.FILE_TIME.cs"
              Link="Common\Interop\Windows\Interop.FILE_TIME.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.FILE_BASIC_INFO.cs"
@@ -86,6 +98,8 @@
              Link="Common\Interop\Windows\Interop.GET_FILEEX_INFO_LEVELS.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GetFileAttributesEx.cs"
              Link="Common\Interop\Windows\Interop.GetFileAttributesEx.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GetFinalPathNameByHandle.cs"
+             Link="Common\Interop\Windows\Interop.GetFinalPathNameByHandle.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GetFullPathNameW.cs"
              Link="Interop\Windows\Kernel32\Interop.GetFullPathNameW.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GetLogicalDrives.cs"
@@ -98,6 +112,8 @@
              Link="Interop\Windows\Kernel32\Interop.GetTempPathW.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.MAX_PATH.cs"
              Link="Interop\Windows\Interop.MAX_PATH.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.REPARSE_DATA_BUFFER.cs"
+             Link="Interop\Windows\Interop.REPARSE_DATA_BUFFER.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.SECURITY_ATTRIBUTES.cs"
              Link="Interop\Windows\Interop.SECURITY_ATTRIBUTES.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.SetThreadErrorMode.cs"
@@ -136,6 +152,8 @@
              Link="Common\Interop\Windows\Interop.OBJECT_ATTRIBUTES.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Interop.UNICODE_STRING.cs"
              Link="Common\Interop\Windows\Interop.UNICODE_STRING.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Interop.SECURITY_QUALITY_OF_SERVICE.cs"
+             Link="Common\Interop\Windows\Interop.SECURITY_QUALITY_OF_SERVICE.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.CopyFile.cs"
              Link="Common\Interop\Windows\Interop.CopyFile.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.CopyFileEx.cs"
@@ -193,16 +211,13 @@
     <Compile Include="$(CoreLibSharedDir)System\Runtime\InteropServices\SuppressGCTransitionAttribute.cs"
              Link="System\Runtime\InteropServices\SuppressGCTransitionAttribute.cs" />
     <Compile Include="Microsoft\IO\StringExtensions.cs" />
+    <Compile Include="Microsoft\IO\ThrowHelper.cs" />
   </ItemGroup>
+
   <ItemGroup>
     <PackageReference Include="System.Buffers" Version="$(SystemBuffersVersion)" />
     <PackageReference Include="System.Memory" Version="$(SystemMemoryVersion)" />
-    <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime.CompilerServices.Unsafe\src\System.Runtime.CompilerServices.Unsafe.ilproj" />
-  </ItemGroup>
-  <ItemGroup>
-    <Folder Include="Microsoft\IO\Enumeration\" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="PinvokeAnalyzerExceptionList.analyzerdata" />
+    <!-- S.R.C.Unsafe isn't a primary but transitive dependency and this P2P makes sure that the live version is used. -->
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime.CompilerServices.Unsafe\src\System.Runtime.CompilerServices.Unsafe.ilproj" PrivateAssets="all" />
   </ItemGroup>
 </Project>

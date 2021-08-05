@@ -64,6 +64,7 @@ namespace BasicEventSourceTests
         /// Test the
         /// </summary>
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))] // ActiveIssue: https://github.com/dotnet/runtime/issues/26197
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/51382", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public void Test_BadEventSource_MismatchedIds()
         {
             TestUtilities.CheckNoEventSourcesRunning("Start");
@@ -132,7 +133,7 @@ namespace BasicEventSourceTests
             {
                 EventWrittenEventArgs ea = elEvent.Data;
                 Assert.NotNull(ea);
-                Assert.Equal(Guid.Empty, ea.ActivityId);
+                Assert.Equal(EventSource.CurrentThreadActivityId, ea.ActivityId);
                 Assert.Equal(EventChannel.None, ea.Channel);
                 Assert.Equal(0, ea.EventId);
                 Assert.Equal("EventSourceMessage", ea.EventName);

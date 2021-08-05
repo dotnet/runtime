@@ -4,8 +4,9 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Runtime.CompilerServices;
 using System.Reflection;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using Internal.Runtime.CompilerServices;
 
 namespace System
@@ -225,8 +226,8 @@ namespace System
 
                 nuint elementSize = (nuint)pMT->ComponentSize;
                 nuint byteCount = (uint)length * elementSize;
-                ref byte src = ref Unsafe.AddByteOffset(ref sourceArray.GetRawArrayData(), (uint)sourceIndex * elementSize);
-                ref byte dst = ref Unsafe.AddByteOffset(ref destinationArray.GetRawArrayData(), (uint)destinationIndex * elementSize);
+                ref byte src = ref Unsafe.AddByteOffset(ref MemoryMarshal.GetArrayDataReference(sourceArray), (uint)sourceIndex * elementSize);
+                ref byte dst = ref Unsafe.AddByteOffset(ref MemoryMarshal.GetArrayDataReference(destinationArray), (uint)destinationIndex * elementSize);
 
                 if (pMT->ContainsGCPointers)
                     Buffer.BulkMoveWithWriteBarrier(ref dst, ref src, byteCount);
@@ -266,14 +267,19 @@ namespace System
             Copy(sourceArray, sourceIndex, destinationArray, destinationIndex, length, reliable: true);
         }
 
-        internal static unsafe void Clear(Array array)
+        /// <summary>
+        /// Clears the contents of an array.
+        /// </summary>
+        /// <param name="array">The array to clear.</param>
+        /// <exception cref="ArgumentNullException"><paramref name="array"/> is null.</exception>
+        public static unsafe void Clear(Array array)
         {
             if (array == null)
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.array);
 
             MethodTable* pMT = RuntimeHelpers.GetMethodTable(array);
             nuint totalByteLength = pMT->ComponentSize * array.NativeLength;
-            ref byte pStart = ref array.GetRawArrayData();
+            ref byte pStart = ref MemoryMarshal.GetArrayDataReference(array);
 
             if (!pMT->ContainsGCPointers)
             {

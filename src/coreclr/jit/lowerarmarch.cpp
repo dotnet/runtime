@@ -218,7 +218,7 @@ void Lowering::LowerStoreLoc(GenTreeLclVarCommon* storeLoc)
 // Return Value:
 //    None.
 //
-void Lowering::LowerStoreIndir(GenTreeIndir* node)
+void Lowering::LowerStoreIndir(GenTreeStoreInd* node)
 {
     ContainCheckStoreIndir(node);
 }
@@ -301,6 +301,12 @@ void Lowering::LowerBlockStore(GenTreeBlk* blkNode)
             // Sometimes the GT_IND type is a non-struct type and then GT_IND lowering may contain the
             // address, not knowing that GT_IND is part of a block op that has containment restrictions.
             src->AsIndir()->Addr()->ClearContained();
+        }
+        else if (src->OperIs(GT_LCL_VAR))
+        {
+            // TODO-1stClassStructs: for now we can't work with STORE_BLOCK source in register.
+            const unsigned srcLclNum = src->AsLclVar()->GetLclNum();
+            comp->lvaSetVarDoNotEnregister(srcLclNum DEBUGARG(Compiler::DNER_BlockOp));
         }
 
         if (blkNode->OperIs(GT_STORE_OBJ))
@@ -1376,11 +1382,11 @@ void Lowering::ContainCheckCallOperands(GenTreeCall* call)
 // Arguments:
 //    node - pointer to the node
 //
-void Lowering::ContainCheckStoreIndir(GenTreeIndir* node)
+void Lowering::ContainCheckStoreIndir(GenTreeStoreInd* node)
 {
 #ifdef TARGET_ARM64
-    GenTree* src = node->AsOp()->gtOp2;
-    if (!varTypeIsFloating(src->TypeGet()) && src->IsIntegralConst(0))
+    GenTree* src = node->Data();
+    if (src->IsIntegralConst(0))
     {
         // an integer zero for 'src' can be contained.
         MakeSrcContained(node, src);
@@ -1659,47 +1665,20 @@ void Lowering::ContainCheckSIMD(GenTreeSIMD* simdNode)
 {
     switch (simdNode->gtSIMDIntrinsicID)
     {
-        GenTree* op1;
-        GenTree* op2;
-
         case SIMDIntrinsicInit:
-            op1 = simdNode->AsOp()->gtOp1;
+        {
+            GenTree* op1 = simdNode->AsOp()->gtOp1;
             if (op1->IsIntegralConst(0))
             {
                 MakeSrcContained(simdNode, op1);
             }
             break;
+        }
 
         case SIMDIntrinsicInitArray:
             // We have an array and an index, which may be contained.
             CheckImmedAndMakeContained(simdNode, simdNode->gtGetOp2());
             break;
-
-        case SIMDIntrinsicGetItem:
-        {
-            // This implements get_Item method. The sources are:
-            //  - the source SIMD struct
-            //  - index (which element to get)
-            // The result is simdBaseType of SIMD struct.
-            op1 = simdNode->AsOp()->gtOp1;
-            op2 = simdNode->AsOp()->gtOp2;
-
-            // If the index is a constant, mark it as contained.
-            if (op2->IsCnsIntOrI())
-            {
-                MakeSrcContained(simdNode, op2);
-            }
-
-            if (IsContainableMemoryOp(op1))
-            {
-                MakeSrcContained(simdNode, op1);
-                if (op1->OperGet() == GT_IND)
-                {
-                    op1->AsIndir()->Addr()->ClearContained();
-                }
-            }
-            break;
-        }
 
         default:
             break;
@@ -1765,8 +1744,6 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
             case NI_AdvSimd_InsertScalar:
             case NI_AdvSimd_LoadAndInsertScalar:
             case NI_AdvSimd_Arm64_DuplicateSelectedScalarToVector128:
-            case NI_Vector64_GetElement:
-            case NI_Vector128_GetElement:
                 assert(hasImmediateOperand);
                 assert(varTypeIsIntegral(intrin.op2));
                 if (intrin.op2->IsCnsIntOrI())
@@ -1831,6 +1808,29 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                     MakeSrcContained(node, node->gtOp1);
                 }
                 break;
+
+            case NI_Vector64_GetElement:
+            case NI_Vector128_GetElement:
+            {
+                assert(hasImmediateOperand);
+                assert(varTypeIsIntegral(intrin.op2));
+
+                if (intrin.op2->IsCnsIntOrI())
+                {
+                    MakeSrcContained(node, intrin.op2);
+                }
+
+                if (IsContainableMemoryOp(intrin.op1))
+                {
+                    MakeSrcContained(node, intrin.op1);
+
+                    if (intrin.op1->OperIs(GT_IND))
+                    {
+                        intrin.op1->AsIndir()->Addr()->ClearContained();
+                    }
+                }
+                break;
+            }
 
             default:
                 unreached();

@@ -6,24 +6,24 @@ using System.Runtime.InteropServices;
 using System.Threading;
 using TestLibrary;
 
-internal static class ObjectiveC
+internal static unsafe class ObjectiveC
 {
     [DllImport(nameof(ObjectiveC))]
-    internal static extern IntPtr initObject();
+    public static extern IntPtr initObject();
     [DllImport(nameof(ObjectiveC))]
-    internal static extern void autoreleaseObject(IntPtr art);
+    public static extern void autoreleaseObject(IntPtr art);
     [DllImport(nameof(ObjectiveC))]
-    internal static extern int getNumReleaseCalls();
+    public static extern int getNumReleaseCalls();
 }
 
 public class AutoReleaseTest
 {
     public static int Main()
     {
-        AppContext.SetSwitch("System.Threading.ThreadPool.EnableDispatchAutoreleasePool", true);
         try
         {
-            TestAutoRelease();
+            ValidateNewManagedThreadAutoRelease();
+            ValidateThreadPoolAutoRelease();
         }
         catch (Exception e)
         {
@@ -34,8 +34,40 @@ public class AutoReleaseTest
         return 100;
     }
 
-    private static void TestAutoRelease()
+    private static void ValidateNewManagedThreadAutoRelease()
     {
+        Console.WriteLine($"Running {nameof(ValidateNewManagedThreadAutoRelease)}...");
+        using (AutoResetEvent evt = new AutoResetEvent(false))
+        {
+            int numReleaseCalls = ObjectiveC.getNumReleaseCalls();
+
+            RunScenario(evt);
+
+            // Trigger the GC and wait to clean up the allocated managed Thread instance.
+            GC.Collect();
+            GC.WaitForPendingFinalizers();
+
+            Assert.AreEqual(numReleaseCalls + 1, ObjectiveC.getNumReleaseCalls());
+        }
+
+        static void RunScenario(AutoResetEvent evt)
+        {
+            IntPtr obj = ObjectiveC.initObject();
+            var thread = new Thread(_ =>
+            {
+                ObjectiveC.autoreleaseObject(obj);
+                evt.Set();
+            });
+            thread.Start();
+
+            evt.WaitOne();
+            thread.Join();
+        }
+    }
+
+    private static void ValidateThreadPoolAutoRelease()
+    {
+        Console.WriteLine($"Running {nameof(ValidateThreadPoolAutoRelease)}...");
         using (AutoResetEvent evt = new AutoResetEvent(false))
         {
             int numReleaseCalls = ObjectiveC.getNumReleaseCalls();

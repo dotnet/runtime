@@ -13,9 +13,6 @@ namespace System.IO.Strategies
     /// <summary>Provides an implementation of a file stream for Unix files.</summary>
     internal sealed partial class Net5CompatFileStreamStrategy : FileStreamStrategy
     {
-        /// <summary>File mode.</summary>
-        private FileMode _mode;
-
         /// <summary>Advanced options requested when opening the file.</summary>
         private FileOptions _options;
 
@@ -31,55 +28,16 @@ namespace System.IO.Strategies
         /// </summary>
         private AsyncState? _asyncState;
 
-        /// <summary>Lazily-initialized value for whether the file supports seeking.</summary>
-        private bool? _canSeek;
-
-        /// <summary>Initializes a stream for reading or writing a Unix file.</summary>
-        /// <param name="mode">How the file should be opened.</param>
-        /// <param name="share">What other access to the file should be allowed.  This is currently ignored.</param>
-        /// <param name="originalPath">The original path specified for the FileStream.</param>
-        /// <param name="options">Options, passed via arguments as we have no guarantee that _options field was already set.</param>
-        private void Init(FileMode mode, FileShare share, string originalPath, FileOptions options)
+        private void Init(FileMode mode, string originalPath, FileOptions options)
         {
             // FileStream performs most of the general argument validation.  We can assume here that the arguments
             // are all checked and consistent (e.g. non-null-or-empty path; valid enums in mode, access, share, and options; etc.)
             // Store the arguments
-            _mode = mode;
             _options = options;
 
             if (_useAsyncIO)
+            {
                 _asyncState = new AsyncState();
-
-            _fileHandle.IsAsync = _useAsyncIO;
-
-            // Lock the file if requested via FileShare.  This is only advisory locking. FileShare.None implies an exclusive
-            // lock on the file and all other modes use a shared lock.  While this is not as granular as Windows, not mandatory,
-            // and not atomic with file opening, it's better than nothing.
-            Interop.Sys.LockOperations lockOperation = (share == FileShare.None) ? Interop.Sys.LockOperations.LOCK_EX : Interop.Sys.LockOperations.LOCK_SH;
-            if (Interop.Sys.FLock(_fileHandle, lockOperation | Interop.Sys.LockOperations.LOCK_NB) < 0)
-            {
-                // The only error we care about is EWOULDBLOCK, which indicates that the file is currently locked by someone
-                // else and we would block trying to access it.  Other errors, such as ENOTSUP (locking isn't supported) or
-                // EACCES (the file system doesn't allow us to lock), will only hamper FileStream's usage without providing value,
-                // given again that this is only advisory / best-effort.
-                Interop.ErrorInfo errorInfo = Interop.Sys.GetLastErrorInfo();
-                if (errorInfo.Error == Interop.Error.EWOULDBLOCK)
-                {
-                    throw Interop.GetExceptionForIoErrno(errorInfo, _path, isDirectory: false);
-                }
-            }
-
-            // These provide hints around how the file will be accessed.  Specifying both RandomAccess
-            // and Sequential together doesn't make sense as they are two competing options on the same spectrum,
-            // so if both are specified, we prefer RandomAccess (behavior on Windows is unspecified if both are provided).
-            Interop.Sys.FileAdvice fadv =
-                (options & FileOptions.RandomAccess) != 0 ? Interop.Sys.FileAdvice.POSIX_FADV_RANDOM :
-                (options & FileOptions.SequentialScan) != 0 ? Interop.Sys.FileAdvice.POSIX_FADV_SEQUENTIAL :
-                0;
-            if (fadv != 0)
-            {
-                CheckFileCall(Interop.Sys.PosixFAdvise(_fileHandle, 0, 0, fadv),
-                    ignoreNotSupported: true); // just a hint.
             }
 
             if (mode == FileMode.Append)
@@ -87,22 +45,8 @@ namespace System.IO.Strategies
                 // Jump to the end of the file if opened as Append.
                 _appendStart = SeekCore(_fileHandle, 0, SeekOrigin.End);
             }
-            else if (mode == FileMode.Create || mode == FileMode.Truncate)
-            {
-                // Truncate the file now if the file mode requires it. This ensures that the file only will be truncated
-                // if opened successfully.
-                if (Interop.Sys.FTruncate(_fileHandle, 0) < 0)
-                {
-                    Interop.ErrorInfo errorInfo = Interop.Sys.GetLastErrorInfo();
-                    if (errorInfo.Error != Interop.Error.EBADF && errorInfo.Error != Interop.Error.EINVAL)
-                    {
-                        // We know the file descriptor is valid and we know the size argument to FTruncate is correct,
-                        // so if EBADF or EINVAL is returned, it means we're dealing with a special file that can't be
-                        // truncated.  Ignore the error in such cases; in all others, throw.
-                        throw Interop.GetExceptionForIoErrno(errorInfo, _path, isDirectory: false);
-                    }
-                }
-            }
+
+            Debug.Assert(_fileHandle.IsAsync == _useAsyncIO);
         }
 
         /// <summary>Initializes a stream from an already open file handle (file descriptor).</summary>
@@ -111,42 +55,18 @@ namespace System.IO.Strategies
             if (useAsyncIO)
                 _asyncState = new AsyncState();
 
-            if (CanSeekCore(handle)) // use non-virtual CanSeekCore rather than CanSeek to avoid making virtual call during ctor
+            if (handle.CanSeek)
                 SeekCore(handle, 0, SeekOrigin.Current);
         }
 
-        /// <summary>Gets a value indicating whether the current stream supports seeking.</summary>
-        public override bool CanSeek => CanSeekCore(_fileHandle);
-
-        /// <summary>Gets a value indicating whether the current stream supports seeking.</summary>
-        /// <remarks>
-        /// Separated out of CanSeek to enable making non-virtual call to this logic.
-        /// We also pass in the file handle to allow the constructor to use this before it stashes the handle.
-        /// </remarks>
-        private bool CanSeekCore(SafeFileHandle fileHandle)
-        {
-            if (fileHandle.IsClosed)
-            {
-                return false;
-            }
-
-            if (!_canSeek.HasValue)
-            {
-                // Lazily-initialize whether we're able to seek, tested by seeking to our current location.
-                _canSeek = Interop.Sys.LSeek(fileHandle, 0, Interop.Sys.SeekWhence.SEEK_CUR) >= 0;
-            }
-
-            return _canSeek.GetValueOrDefault();
-        }
+        public override bool CanSeek => _fileHandle.CanSeek;
 
         public override long Length
         {
             get
             {
                 // Get the length of the file as reported by the OS
-                Interop.Sys.FileStatus status;
-                CheckFileCall(Interop.Sys.FStat(_fileHandle, out status));
-                long length = status.Size;
+                long length = RandomAccess.GetFileLength(_fileHandle);
 
                 // But we may have buffered some data to be written that puts our length
                 // beyond what the OS is aware of.  Update accordingly.
@@ -158,6 +78,18 @@ namespace System.IO.Strategies
                 return length;
             }
         }
+
+        /// <summary>Prevents other processes from reading from or writing to the FileStream.</summary>
+        /// <param name="position">The beginning of the range to lock.</param>
+        /// <param name="length">The range to be locked.</param>
+        internal override void Lock(long position, long length) =>
+            FileStreamHelpers.Lock(_fileHandle, CanWrite, position, length);
+
+        /// <summary>Allows access by other processes to all or part of a file that was previously locked.</summary>
+        /// <param name="position">The beginning of the range to unlock.</param>
+        /// <param name="length">The range to be unlocked.</param>
+        internal override void Unlock(long position, long length) =>
+            FileStreamHelpers.Unlock(_fileHandle, position, length);
 
         /// <summary>Releases the unmanaged resources used by the stream.</summary>
         /// <param name="disposing">true to release both managed and unmanaged resources; false to release only unmanaged resources.</param>
@@ -178,16 +110,6 @@ namespace System.IO.Strategies
                         // e.g. if this stream is wrapping a pipe and the pipe is now broken.
                     }
 
-                    // If DeleteOnClose was requested when constructed, delete the file now.
-                    // (Unix doesn't directly support DeleteOnClose, so we mimic it here.)
-                    if (_path != null && (_options & FileOptions.DeleteOnClose) != 0)
-                    {
-                        // Since we still have the file open, this will end up deleting
-                        // it (assuming we're the only link to it) once it's closed, but the
-                        // name will be removed immediately.
-                        Interop.Sys.Unlink(_path); // ignore errors; it's valid that the path may no longer exist
-                    }
-
                     // Closing the file handle can fail, e.g. due to out of disk space
                     // Throw these errors as exceptions when disposing
                     if (_fileHandle != null && !_fileHandle.IsClosed && disposing)
@@ -198,7 +120,7 @@ namespace System.IO.Strategies
 
                         if (SafeFileHandle.t_lastCloseErrorInfo != null)
                         {
-                            throw Interop.GetExceptionForIoErrno(SafeFileHandle.t_lastCloseErrorInfo.GetValueOrDefault(), _path, isDirectory: false);
+                            throw Interop.GetExceptionForIoErrno(SafeFileHandle.t_lastCloseErrorInfo.GetValueOrDefault(), _fileHandle.Path, isDirectory: false);
                         }
                     }
                 }
@@ -229,26 +151,6 @@ namespace System.IO.Strategies
             }
 
             return base.DisposeAsync();
-        }
-
-        /// <summary>Flushes the OS buffer.  This does not flush the internal read/write buffer.</summary>
-        private void FlushOSBuffer()
-        {
-            if (Interop.Sys.FSync(_fileHandle) < 0)
-            {
-                Interop.ErrorInfo errorInfo = Interop.Sys.GetLastErrorInfo();
-                switch (errorInfo.Error)
-                {
-                    case Interop.Error.EROFS:
-                    case Interop.Error.EINVAL:
-                    case Interop.Error.ENOTSUP:
-                        // Ignore failures due to the FileStream being bound to a special file that
-                        // doesn't support synchronization.  In such cases there's nothing to flush.
-                        break;
-                    default:
-                        throw Interop.GetExceptionForIoErrno(errorInfo, _path, isDirectory: false);
-                }
-            }
         }
 
         private void FlushWriteBufferForWriteByte()
@@ -679,42 +581,9 @@ namespace System.IO.Strategies
             return pos;
         }
 
-        /// <summary>Sets the current position of this stream to the given value.</summary>
-        /// <param name="fileHandle">The file handle on which to seek.</param>
-        /// <param name="offset">The point relative to origin from which to begin seeking. </param>
-        /// <param name="origin">
-        /// Specifies the beginning, the end, or the current position as a reference
-        /// point for offset, using a value of type SeekOrigin.
-        /// </param>
-        /// <param name="closeInvalidHandle">not used in Unix implementation</param>
-        /// <returns>The new position in the stream.</returns>
-        private long SeekCore(SafeFileHandle fileHandle, long offset, SeekOrigin origin, bool closeInvalidHandle = false)
-        {
-            Debug.Assert(!fileHandle.IsClosed && CanSeekCore(fileHandle));
-            Debug.Assert(origin >= SeekOrigin.Begin && origin <= SeekOrigin.End);
-
-            long pos = CheckFileCall(Interop.Sys.LSeek(fileHandle, offset, (Interop.Sys.SeekWhence)(int)origin)); // SeekOrigin values are the same as Interop.libc.SeekWhence values
-            _filePosition = pos;
-            return pos;
-        }
-
-        private long CheckFileCall(long result, bool ignoreNotSupported = false)
-        {
-            if (result < 0)
-            {
-                Interop.ErrorInfo errorInfo = Interop.Sys.GetLastErrorInfo();
-                if (!(ignoreNotSupported && errorInfo.Error == Interop.Error.ENOTSUP))
-                {
-                    throw Interop.GetExceptionForIoErrno(errorInfo, _path, isDirectory: false);
-                }
-            }
-
-            return result;
-        }
-
         private int CheckFileCall(int result, bool ignoreNotSupported = false)
         {
-            CheckFileCall((long)result, ignoreNotSupported);
+            FileStreamHelpers.CheckFileCall(result, _fileHandle?.Path, ignoreNotSupported);
 
             return result;
         }

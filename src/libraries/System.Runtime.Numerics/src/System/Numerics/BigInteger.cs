@@ -2192,6 +2192,7 @@ namespace System.Numerics
                  : (xdFromPool = ArrayPool<uint>.Shared.Rent(xl)).AsSpan(0, xl);
 
             bool negx = value.GetPartsForBitManipulation(xd);
+            bool trackSignBit = false;
 
             if (negx)
             {
@@ -2200,11 +2201,16 @@ namespace System.Numerics
                     result = MinusOne;
                     goto exit;
                 }
+
                 NumericsHelpers.DangerousMakeTwosComplement(xd); // Mutates xd
+                if (xd[^1] == 0)
+                {
+                    trackSignBit = true;
+                }
             }
 
             uint[]? zdFromPool = null;
-            int zl = Math.Max(xl - digitShift, 0);
+            int zl = Math.Max(xl - digitShift, 0) + (trackSignBit ? 1 : 0);
             Span<uint> zd = zl <= BigIntegerCalculator.StackAllocThreshold ?
                             stackalloc uint[zl]
                             : (zdFromPool = ArrayPool<uint>.Shared.Rent(zl)).AsSpan(0, zl);
@@ -2232,10 +2238,15 @@ namespace System.Numerics
                     carry = rot << carryShift;
                 }
             }
+
             if (negx)
             {
                 NumericsHelpers.DangerousMakeTwosComplement(zd); // Mutates zd
+
+                if (trackSignBit)
+                    zd[^1] = 1;
             }
+
             result = new BigInteger(zd, negx);
 
             if (zdFromPool != null)

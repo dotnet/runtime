@@ -1,3 +1,4 @@
+
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 /*****************************************************************************/
@@ -379,8 +380,12 @@ public:
 enum LsraStat
 {
 #define LSRA_STAT_DEF(enum_name, enum_str) enum_name,
-#include "lsrastats.h"
+#include "lsra_stats.h"
 #undef LSRA_STAT_DEF
+#define REG_SEL_DEF(enum_name, value, short_str, orderSeqId) STAT_##enum_name,
+#include "lsra_score.h"
+#undef REG_SEL_DEF
+    COUNT
 };
 #endif // TRACK_LSRA_STATS
 
@@ -400,6 +405,14 @@ struct LsraBlockInfo
     // Per block maintained LSRA statistics.
     unsigned stats[LsraStat::COUNT];
 #endif // TRACK_LSRA_STATS
+};
+
+enum RegisterScore
+{
+#define REG_SEL_DEF(enum_name, value, short_str, orderSeqId) enum_name = value,
+#include "lsra_score.h"
+#undef REG_SEL_DEF
+    NONE = 0
 };
 
 // This is sort of a bit mask
@@ -1123,7 +1136,10 @@ private:
      ****************************************************************************/
     RegisterType getRegisterType(Interval* currentInterval, RefPosition* refPosition);
 
-    regNumber allocateReg(Interval* current, RefPosition* refPosition);
+#ifdef DEBUG
+    const char* getScoreName(RegisterScore score);
+#endif
+    regNumber allocateReg(Interval* current, RefPosition* refPosition DEBUG_ARG(RegisterScore* registerScore));
     regNumber assignCopyReg(RefPosition* refPosition);
 
     bool isMatchingConstant(RegRecord* physRegRecord, RefPosition* refPosition);
@@ -1168,42 +1184,117 @@ private:
         return result;
     }
 
-    struct registerSelector
+#ifdef DEBUG
+    class RegisterSelection;
+    // For lsra ordering experimentation
+
+    typedef void (LinearScan::RegisterSelection::*HeuristicFn)();
+    typedef JitHashTable<RegisterScore, JitSmallPrimitiveKeyFuncs<RegisterScore>, HeuristicFn> ScoreMappingTable;
+#define REGSELECT_HEURISTIC_COUNT 17
+#endif
+
+    class RegisterSelection
     {
+    public:
+        RegisterSelection(LinearScan* linearScan);
+
+        // Perform register selection and update currentInterval or refPosition
+        FORCEINLINE regMaskTP select(Interval*    currentInterval,
+                                     RefPosition* refPosition DEBUG_ARG(RegisterScore* registerScore));
+
+        // If the register is from unassigned set such that it was not already
+        // assigned to the current interval
+        FORCEINLINE bool foundUnassignedReg()
+        {
+            assert(found && isSingleRegister(foundRegBit));
+            bool isUnassignedReg = ((foundRegBit & unassignedSet) != RBM_NONE);
+            return isUnassignedReg && !isAlreadyAssigned();
+        }
+
+        // Did register selector decide to spill this interval
+        FORCEINLINE bool isSpilling()
+        {
+            return (foundRegBit & freeCandidates) == RBM_NONE;
+        }
+
+        // Is the value one of the constant that is already in a register
+        FORCEINLINE bool isMatchingConstant()
+        {
+            assert(found && isSingleRegister(foundRegBit));
+            return (matchingConstants & foundRegBit) != RBM_NONE;
+        }
+
+        // Did we apply CONST_AVAILABLE heuristics
+        FORCEINLINE bool isConstAvailable()
+        {
+            return (score & CONST_AVAILABLE) != 0;
+        }
+
+    private:
+#ifdef DEBUG
+        RegisterScore      RegSelectionOrder[REGSELECT_HEURISTIC_COUNT] = {NONE};
+        ScoreMappingTable* mappingTable                                 = nullptr;
+#endif
+        LinearScan*  linearScan      = nullptr;
+        int          score           = 0;
+        Interval*    currentInterval = nullptr;
+        RefPosition* refPosition     = nullptr;
+
+        RegisterType regType         = RegisterType::TYP_UNKNOWN;
+        LsraLocation currentLocation = MinLocation;
+        RefPosition* nextRefPos      = nullptr;
+
         regMaskTP candidates;
-        int       score;
-#ifdef TARGET_ARM
-        var_types regType;
-#endif // TARGET_ARM
+        regMaskTP preferences     = RBM_NONE;
+        Interval* relatedInterval = nullptr;
 
-        // Apply a simple mask-based selection heuristic, and return 'true' if we now have a single candidate.
-        bool applySelection(int selectionScore, regMaskTP selectionCandidates)
+        regMaskTP    relatedPreferences = RBM_NONE;
+        LsraLocation rangeEndLocation;
+        LsraLocation relatedLastLocation;
+        bool         preferCalleeSave = false;
+        RefPosition* rangeEndRefPosition;
+        RefPosition* lastRefPosition;
+        regMaskTP    callerCalleePrefs = RBM_NONE;
+        LsraLocation lastLocation;
+        RegRecord*   prevRegRec = nullptr;
+
+        regMaskTP prevRegBit = RBM_NONE;
+
+        // These are used in the post-selection updates, and must be set for any selection.
+        regMaskTP freeCandidates;
+        regMaskTP matchingConstants;
+        regMaskTP unassignedSet;
+        regMaskTP foundRegBit;
+
+        // Compute the sets for COVERS, OWN_PREFERENCE, COVERS_RELATED, COVERS_FULL and UNASSIGNED together,
+        // as they all require similar computation.
+        regMaskTP coversSet;
+        regMaskTP preferenceSet;
+        regMaskTP coversRelatedSet;
+        regMaskTP coversFullSet;
+        bool      coversSetsCalculated = false;
+        bool      found                = false;
+        bool      skipAllocation       = false;
+        regNumber foundReg             = REG_NA;
+
+        // If the selected register is already assigned to the current internal
+        FORCEINLINE bool isAlreadyAssigned()
         {
-            regMaskTP newCandidates = candidates & selectionCandidates;
-            if (newCandidates != RBM_NONE)
-            {
-                score += selectionScore;
-                candidates = newCandidates;
-                return isSingleRegister(candidates);
-            }
-            return false;
+            assert(found && isSingleRegister(candidates));
+            return (prevRegBit & preferences) == foundRegBit;
         }
 
-        // Select a single register, if it is in the candidate set.
-        // Return true if so.
-        bool applySingleRegSelection(int selectionScore, regMaskTP selectionCandidate)
-        {
-            assert(isSingleRegister(selectionCandidate));
-            regMaskTP newCandidates = candidates & selectionCandidate;
-            if (newCandidates != RBM_NONE)
-            {
-                score += selectionScore;
-                candidates = newCandidates;
-                return true;
-            }
-            return false;
-        }
+        bool applySelection(int selectionScore, regMaskTP selectionCandidates);
+        bool applySingleRegSelection(int selectionScore, regMaskTP selectionCandidate);
+        FORCEINLINE void calculateCoversSets();
+        FORCEINLINE void reset(Interval* interval, RefPosition* refPosition);
+
+#define REG_SEL_DEF(stat, value, shortname, orderSeqId) FORCEINLINE void try_##stat();
+#include "lsra_score.h"
+#undef REG_SEL_DEF
     };
+
+    RegisterSelection* regSelector;
 
     /*****************************************************************************
      * For Resolution phase
@@ -1348,9 +1439,10 @@ private:
         LSRA_EVENT_NO_REG_ALLOCATED, LSRA_EVENT_RELOAD, LSRA_EVENT_SPECIAL_PUTARG, LSRA_EVENT_REUSE_REG,
     };
     void dumpLsraAllocationEvent(LsraDumpEvent event,
-                                 Interval*     interval     = nullptr,
-                                 regNumber     reg          = REG_NA,
-                                 BasicBlock*   currentBlock = nullptr);
+                                 Interval*     interval      = nullptr,
+                                 regNumber     reg           = REG_NA,
+                                 BasicBlock*   currentBlock  = nullptr,
+                                 RegisterScore registerScore = NONE);
 
     void validateIntervals();
 #endif // DEBUG
@@ -1359,10 +1451,12 @@ private:
     unsigned regCandidateVarCount;
     void updateLsraStat(LsraStat stat, unsigned currentBBNum);
     void dumpLsraStats(FILE* file);
-    LsraStat firstRegSelStat = LsraStat::REGSEL_FREE;
+    LsraStat getLsraStatFromScore(RegisterScore registerScore);
+    LsraStat firstRegSelStat = STAT_FREE;
 
 public:
     virtual void dumpLsraStatsCsv(FILE* file);
+    virtual void dumpLsraStatsSummary(FILE* file);
     static const char* getStatName(unsigned stat);
 
 #define INTRACK_STATS(x) x
@@ -1834,6 +1928,7 @@ public:
         , isPartiallySpilled(false)
 #endif
         , isWriteThru(false)
+        , isSingleDef(false)
 #ifdef DEBUG
         , intervalIndex(0)
 #endif
@@ -1928,6 +2023,9 @@ public:
 
     // True if this interval is associated with a lclVar that is written to memory at each definition.
     bool isWriteThru : 1;
+
+    // True if this interval has a single definition.
+    bool isSingleDef : 1;
 
 #ifdef DEBUG
     unsigned int intervalIndex;
@@ -2128,6 +2226,10 @@ public:
     // Spill and Copy info
     //   reload indicates that the value was spilled, and must be reloaded here.
     //   spillAfter indicates that the value is spilled here, so a spill must be added.
+    //   singleDefSpill indicates that it is associated with a single-def var and if it
+    //      is decided to get spilled, it will be spilled at firstRefPosition def. That
+    //      way, the the value of stack will always be up-to-date and no more spills or
+    //      resolutions (from reg to stack) will be needed for such single-def var.
     //   copyReg indicates that the value needs to be copied to a specific register,
     //      but that it will also retain its current assigned register.
     //   moveReg indicates that the value needs to be moved to a different register,
@@ -2146,6 +2248,7 @@ public:
 
     unsigned char reload : 1;
     unsigned char spillAfter : 1;
+    unsigned char singleDefSpill : 1;
     unsigned char writeThru : 1; // true if this var is defined in a register and also spilled. spillAfter must NOT be
                                  // set.
 
@@ -2193,6 +2296,7 @@ public:
         , lastUse(false)
         , reload(false)
         , spillAfter(false)
+        , singleDefSpill(false)
         , writeThru(false)
         , copyReg(false)
         , moveReg(false)
@@ -2351,7 +2455,7 @@ public:
         return *this;
     }
 
-    void dump();
+    void dump(LinearScan* linearScan);
 #endif // DEBUG
 };
 

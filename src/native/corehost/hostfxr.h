@@ -88,6 +88,8 @@ struct hostfxr_initialize_parameters
 //      Number of argv arguments
 //    argv
 //      Command-line arguments for running an application (as if through the dotnet executable).
+//      Only command-line arguments which are accepted by runtime installation are supported, SDK/CLI commands are not supported.
+//      For example 'app.dll app_argument_1 app_argument_2`.
 //    parameters
 //      Optional. Additional parameters for initialization
 //    host_context_handle

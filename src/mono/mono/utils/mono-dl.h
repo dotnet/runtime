@@ -36,6 +36,7 @@ MONO_EXTERN_C
 void        mono_dl_close      (MonoDl *module);
 
 char*       mono_dl_build_path (const char *directory, const char *name, void **iter);
+char*       mono_dl_build_platform_path (const char *directory, const char *name, void **iter);
 
 MonoDl*     mono_dl_open_runtime_lib (const char *lib_name, int flags, char **error_msg);
 

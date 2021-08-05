@@ -246,6 +246,14 @@ public:
         return unsigned(vnf) > VNF_Boundary || GenTreeOpIsLegalVNFunc(static_cast<genTreeOps>(vnf));
     }
 
+    // Returns "true" iff "vnf" is one of:
+    // VNF_ADD_OVF, VNF_SUB_OVF, VNF_MUL_OVF,
+    // VNF_ADD_UN_OVF, VNF_SUB_UN_OVF, VNF_MUL_UN_OVF.
+    static bool VNFuncIsOverflowArithmetic(VNFunc vnf);
+
+    // Returns "true" iff "vnf" is VNF_Cast or VNF_CastOvf.
+    static bool VNFuncIsNumericCast(VNFunc vnf);
+
     // Returns the arity of "vnf".
     static unsigned VNFuncArity(VNFunc vnf);
 
@@ -281,11 +289,16 @@ public:
     }
 #endif
 
-    ValueNum VNForCastOper(var_types castToType, bool srcIsUnsigned = false);
+    // Packs information about the cast into an integer constant represented by the returned value number,
+    // to be used as the second operand of VNF_Cast & VNF_CastOvf.
+    ValueNum VNForCastOper(var_types castToType, bool srcIsUnsigned = false DEBUGARG(bool printResult = true));
+
+    // Unpacks the information stored by VNForCastOper in the constant represented by the value number.
+    void GetCastOperFromVN(ValueNum vn, var_types* pCastToType, bool* pSrcIsUnsigned);
 
     // We keep handle values in a separate pool, so we don't confuse a handle with an int constant
     // that happens to be the same...
-    ValueNum VNForHandle(ssize_t cnsVal, unsigned iconFlags);
+    ValueNum VNForHandle(ssize_t cnsVal, GenTreeFlags iconFlags);
 
     // And the single constant for an object reference type.
     static ValueNum VNForNull()
@@ -334,7 +347,7 @@ public:
     }
 
     // Returns the value number for zero of the given "typ".
-    // It has an unreached() for a "typ" that has no zero value, such as TYP_BYREF.
+    // It has an unreached() for a "typ" that has no zero value, such as TYP_VOID.
     ValueNum VNZeroForType(var_types typ);
 
     // Returns the value number for one of the given "typ".
@@ -530,10 +543,7 @@ public:
     ValueNum VNApplySelectorsAssign(
         ValueNumKind vnk, ValueNum map, FieldSeqNode* fieldSeq, ValueNum rhs, var_types indType, BasicBlock* block);
 
-    // Used after VNApplySelectorsAssign has determined that "elem" is to be writen into a Map using VNForMapStore
-    // It determines whether the 'elem' is of an appropriate type to be writen using using an indirection of 'indType'
-    // It may insert a cast to indType or return a unique value number for an incompatible indType.
-    ValueNum VNApplySelectorsAssignTypeCoerce(ValueNum elem, var_types indType, BasicBlock* block);
+    ValueNum VNApplySelectorsAssignTypeCoerce(ValueNum srcElem, var_types dstIndType, BasicBlock* block);
 
     ValueNumPair VNPairApplySelectors(ValueNumPair map, FieldSeqNode* fieldSeq, var_types indType);
 
@@ -586,13 +596,13 @@ public:
     // Returns TYP_UNKNOWN if the given value number has not been given a type.
     var_types TypeOfVN(ValueNum vn);
 
-    // Returns MAX_LOOP_NUM if the given value number's loop nest is unknown or ill-defined.
+    // Returns BasicBlock::MAX_LOOP_NUM if the given value number's loop nest is unknown or ill-defined.
     BasicBlock::loopNumber LoopOfVN(ValueNum vn);
 
     // Returns true iff the VN represents a (non-handle) constant.
     bool IsVNConstant(ValueNum vn);
 
-    // Returns true iff the VN represents an integeral constant.
+    // Returns true iff the VN represents an integer constant.
     bool IsVNInt32Constant(ValueNum vn);
 
     typedef SmallHashTable<ValueNum, bool, 8U> CheckedBoundVNSet;
@@ -710,7 +720,7 @@ public:
     void GetCompareCheckedBoundArithInfo(ValueNum vn, CompareCheckedBoundArithInfo* info);
 
     // Returns the flags on the current handle. GTF_ICON_SCOPE_HDL for example.
-    unsigned GetHandleFlags(ValueNum vn);
+    GenTreeFlags GetHandleFlags(ValueNum vn);
 
     // Returns true iff the VN represents a handle constant.
     bool IsVNHandle(ValueNum vn);
@@ -870,6 +880,10 @@ public:
     // Prints a representation of a MapStore operation on standard out.
     void vnDumpMapStore(Compiler* comp, VNFuncApp* mapStore);
 
+    // Requires "memOpaque" to be a mem opaque VNFuncApp
+    // Prints a representation of a MemOpaque state on standard out.
+    void vnDumpMemOpaque(Compiler* comp, VNFuncApp* memOpaque);
+
     // Requires "valWithExc" to be a value with an exeception set VNFuncApp.
     // Prints a representation of the exeception set on standard out.
     void vnDumpValWithExc(Compiler* comp, VNFuncApp* valWithExc);
@@ -925,7 +939,6 @@ private:
 
     enum ChunkExtraAttribs : BYTE
     {
-        CEA_None,      // No extra attributes.
         CEA_Const,     // This chunk contains constant values.
         CEA_Handle,    // This chunk contains handle constants.
         CEA_NotAField, // This chunk contains "not a field" values.
@@ -951,18 +964,12 @@ private:
         ValueNum m_baseVN;
 
         // The common attributes of this chunk.
-        var_types              m_typ;
-        ChunkExtraAttribs      m_attribs;
-        BasicBlock::loopNumber m_loopNum;
+        var_types         m_typ;
+        ChunkExtraAttribs m_attribs;
 
-        // Initialize a chunk, starting at "*baseVN", for the given "typ", "attribs", and "loopNum" (using "alloc" for
-        // allocations).
+        // Initialize a chunk, starting at "*baseVN", for the given "typ", and "attribs", using "alloc" for allocations.
         // (Increments "*baseVN" by ChunkSize.)
-        Chunk(CompAllocator          alloc,
-              ValueNum*              baseVN,
-              var_types              typ,
-              ChunkExtraAttribs      attribs,
-              BasicBlock::loopNumber loopNum);
+        Chunk(CompAllocator alloc, ValueNum* baseVN, var_types typ, ChunkExtraAttribs attribs);
 
         // Requires that "m_numUsed < ChunkSize."  Returns the offset of the allocated VN within the chunk; the
         // actual VN is this added to the "m_baseVN" of the chunk.
@@ -981,10 +988,10 @@ private:
 
     struct VNHandle : public JitKeyFuncsDefEquals<VNHandle>
     {
-        ssize_t  m_cnsVal;
-        unsigned m_flags;
+        ssize_t      m_cnsVal;
+        GenTreeFlags m_flags;
         // Don't use a constructor to use the default copy constructor for hashtable rehash.
-        static void Initialize(VNHandle* handle, ssize_t m_cnsVal, unsigned m_flags)
+        static void Initialize(VNHandle* handle, ssize_t m_cnsVal, GenTreeFlags m_flags)
         {
             handle->m_cnsVal = m_cnsVal;
             handle->m_flags  = m_flags;
@@ -1111,14 +1118,14 @@ private:
     JitExpandArrayStack<Chunk*> m_chunks;
 
     // These entries indicate the current allocation chunk, if any, for each valid combination of <var_types,
-    // ChunkExtraAttribute, loopNumber>.  Valid combinations require attribs==CEA_None or loopNum==MAX_LOOP_NUM.
+    // ChunkExtraAttribute>.
     // If the value is NoChunk, it indicates that there is no current allocation chunk for that pair, otherwise
     // it is the index in "m_chunks" of a chunk with the given attributes, in which the next allocation should
     // be attempted.
-    ChunkNum m_curAllocChunk[TYP_COUNT][CEA_Count + MAX_LOOP_NUM + 1];
+    ChunkNum m_curAllocChunk[TYP_COUNT][CEA_Count + 1];
 
     // Returns a (pointer to a) chunk in which a new value number may be allocated.
-    Chunk* GetAllocChunk(var_types typ, ChunkExtraAttribs attribs, BasicBlock::loopNumber loopNum = MAX_LOOP_NUM);
+    Chunk* GetAllocChunk(var_types typ, ChunkExtraAttribs attribs);
 
     // First, we need mechanisms for mapping from constants to value numbers.
     // For small integers, we'll use an array.

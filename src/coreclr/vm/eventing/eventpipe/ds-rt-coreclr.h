@@ -6,6 +6,7 @@
 
 #ifdef ENABLE_PERFTRACING
 #include "ep-rt-coreclr.h"
+#include "ds-process-protocol.h"
 #include "ds-profiler-protocol.h"
 #include "ds-dump-protocol.h"
 
@@ -194,20 +195,10 @@ ds_rt_generate_core_dump (DiagnosticsGenerateCoreDumpCommandPayload *payload)
 	ds_ipc_result_t result = DS_IPC_E_FAIL;
 	EX_TRY
 	{
-#ifdef HOST_WIN32
-		if (GenerateCrashDump (reinterpret_cast<LPCWSTR>(ds_generate_core_dump_command_payload_get_dump_name (payload)),
+		if (GenerateDump (reinterpret_cast<LPCWSTR>(ds_generate_core_dump_command_payload_get_dump_name (payload)),
 			static_cast<int32_t>(ds_generate_core_dump_command_payload_get_dump_type (payload)),
 			(ds_generate_core_dump_command_payload_get_diagnostics (payload) != 0) ? true : false))
 			result = DS_IPC_S_OK;
-#else
-		MAKE_UTF8PTR_FROMWIDE_NOTHROW (dump_name, reinterpret_cast<LPCWSTR>(ds_generate_core_dump_command_payload_get_dump_name (payload)));
-		if (dump_name != nullptr) {
-			if (PAL_GenerateCoreDump (dump_name,
-				static_cast<int32_t>(ds_generate_core_dump_command_payload_get_dump_type (payload)),
-				(ds_generate_core_dump_command_payload_get_diagnostics (payload) != 0) ? true : false))
-				result = DS_IPC_S_OK;
-		}
-#endif
 	}
 	EX_CATCH {}
 	EX_END_CATCH(SwallowAllExceptions);
@@ -309,16 +300,25 @@ ds_rt_profiler_startup (DiagnosticsStartupProfilerCommandPayload *payload)
 	STATIC_CONTRACT_NOTHROW;
 
 	HRESULT hr = S_OK;
-	EX_TRY {
-		memcpy(&(g_profControlBlock.clsStoredProfilerGuid), reinterpret_cast<const CLSID *>(ds_startup_profiler_command_payload_get_profiler_guid_cref (payload)), sizeof(CLSID));
-		g_profControlBlock.sStoredProfilerPath.Set(reinterpret_cast<LPCWSTR>(ds_startup_profiler_command_payload_get_profiler_path (payload)));
-		g_profControlBlock.fIsStoredProfilerRegistered = TRUE;
+	EX_TRY {        
+		StoredProfilerNode *profilerData = new StoredProfilerNode();
+		profilerData->guid = *(reinterpret_cast<const CLSID *>(ds_startup_profiler_command_payload_get_profiler_guid_cref (payload)));
+		profilerData->path.Set(reinterpret_cast<LPCWSTR>(ds_startup_profiler_command_payload_get_profiler_path (payload)));
+
+		g_profControlBlock.storedProfilers.InsertHead(profilerData);
 	}
 	EX_CATCH_HRESULT (hr);
 
 	return hr;
 }
 #endif // PROFILING_SUPPORTED
+
+static
+uint32_t
+ds_rt_set_environment_variable (const ep_char16_t *name, const ep_char16_t *value)
+{
+	return SetEnvironmentVariableW(reinterpret_cast<LPCWSTR>(name), reinterpret_cast<LPCWSTR>(value)) ? S_OK : HRESULT_FROM_WIN32(GetLastError());
+}
 
 /*
 * DiagnosticServer.

@@ -758,10 +758,10 @@ void interceptor_ICJI::getBoundaries(
           CORINFO_METHOD_HANDLE ftn,
           unsigned int* cILOffsets,
           uint32_t** pILOffsets,
-          ICorDebugInfo::BoundaryTypes* implictBoundaries)
+          ICorDebugInfo::BoundaryTypes* implicitBoundaries)
 {
     mcs->AddCall("getBoundaries");
-    original_ICorJitInfo->getBoundaries(ftn, cILOffsets, pILOffsets, implictBoundaries);
+    original_ICorJitInfo->getBoundaries(ftn, cILOffsets, pILOffsets, implicitBoundaries);
 }
 
 void interceptor_ICJI::setBoundaries(
@@ -859,13 +859,6 @@ int interceptor_ICJI::FilterException(
     return original_ICorJitInfo->FilterException(pExceptionPointers);
 }
 
-void interceptor_ICJI::HandleException(
-          struct _EXCEPTION_POINTERS* pExceptionPointers)
-{
-    mcs->AddCall("HandleException");
-    original_ICorJitInfo->HandleException(pExceptionPointers);
-}
-
 void interceptor_ICJI::ThrowExceptionForJitResult(
           JITINTERFACE_HRESULT result)
 {
@@ -886,6 +879,14 @@ bool interceptor_ICJI::runWithErrorTrap(
 {
     mcs->AddCall("runWithErrorTrap");
     return original_ICorJitInfo->runWithErrorTrap(function, parameter);
+}
+
+bool interceptor_ICJI::runWithSPMIErrorTrap(
+          ICorJitInfo::errorTrapFunction function,
+          void* parameter)
+{
+    mcs->AddCall("runWithSPMIErrorTrap");
+    return original_ICorJitInfo->runWithSPMIErrorTrap(function, parameter);
 }
 
 void interceptor_ICJI::getEEInfo(
@@ -1250,17 +1251,10 @@ bool interceptor_ICJI::notifyInstructionSetUsage(
 }
 
 void interceptor_ICJI::allocMem(
-          uint32_t hotCodeSize,
-          uint32_t coldCodeSize,
-          uint32_t roDataSize,
-          uint32_t xcptnsCount,
-          CorJitAllocMemFlag flag,
-          void** hotCodeBlock,
-          void** coldCodeBlock,
-          void** roDataBlock)
+          AllocMemArgs* pArgs)
 {
     mcs->AddCall("allocMem");
-    original_ICorJitInfo->allocMem(hotCodeSize, coldCodeSize, roDataSize, xcptnsCount, flag, hotCodeBlock, coldCodeBlock, roDataBlock);
+    original_ICorJitInfo->allocMem(pArgs);
 }
 
 void interceptor_ICJI::reserveUnwindInfo(
@@ -1336,10 +1330,11 @@ JITINTERFACE_HRESULT interceptor_ICJI::getPgoInstrumentationResults(
           CORINFO_METHOD_HANDLE ftnHnd,
           ICorJitInfo::PgoInstrumentationSchema** pSchema,
           uint32_t* pCountSchemaItems,
-          uint8_t** pInstrumentationData)
+          uint8_t** pInstrumentationData,
+          ICorJitInfo::PgoSource* pgoSource)
 {
     mcs->AddCall("getPgoInstrumentationResults");
-    return original_ICorJitInfo->getPgoInstrumentationResults(ftnHnd, pSchema, pCountSchemaItems, pInstrumentationData);
+    return original_ICorJitInfo->getPgoInstrumentationResults(ftnHnd, pSchema, pCountSchemaItems, pInstrumentationData, pgoSource);
 }
 
 JITINTERFACE_HRESULT interceptor_ICJI::allocPgoInstrumentationBySchema(
@@ -1363,13 +1358,14 @@ void interceptor_ICJI::recordCallSite(
 
 void interceptor_ICJI::recordRelocation(
           void* location,
+          void* locationRW,
           void* target,
           uint16_t fRelocType,
           uint16_t slotNum,
           int32_t addlDelta)
 {
     mcs->AddCall("recordRelocation");
-    original_ICorJitInfo->recordRelocation(location, target, fRelocType, slotNum, addlDelta);
+    original_ICorJitInfo->recordRelocation(location, locationRW, target, fRelocType, slotNum, addlDelta);
 }
 
 uint16_t interceptor_ICJI::getRelocTypeHint(

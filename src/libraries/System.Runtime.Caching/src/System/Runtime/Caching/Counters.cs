@@ -5,9 +5,13 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics.Tracing;
 using System.Threading;
+using System.Runtime.Versioning;
 
 namespace System.Runtime.Caching
 {
+#if NET5_0_OR_GREATER
+    [UnsupportedOSPlatform("browser")]
+#endif
     internal sealed class Counters : EventSource
     {
 #if NETCOREAPP3_1_OR_GREATER

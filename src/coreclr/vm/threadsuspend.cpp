@@ -28,12 +28,19 @@ CLREvent* ThreadSuspend::g_pGCSuspendEvent = NULL;
 
 ThreadSuspend::SUSPEND_REASON ThreadSuspend::m_suspendReason;
 
+#if defined(TARGET_WINDOWS) && defined(TARGET_AMD64)
+void* ThreadSuspend::g_returnAddressHijackTarget = NULL;
+#endif
+
 // If you add any thread redirection function, make sure the debugger can 1) recognize the redirection
 // function, and 2) retrieve the original CONTEXT.  See code:Debugger.InitializeHijackFunctionAddress and
 // code:DacDbiInterfaceImpl.RetrieveHijackedContext.
 extern "C" void             RedirectedHandledJITCaseForGCThreadControl_Stub(void);
 extern "C" void             RedirectedHandledJITCaseForDbgThreadControl_Stub(void);
 extern "C" void             RedirectedHandledJITCaseForUserSuspend_Stub(void);
+#ifdef FEATURE_SPECIAL_USER_MODE_APC
+extern "C" void NTAPI       ApcActivationCallbackStub(ULONG_PTR Parameter);
+#endif
 
 #define GetRedirectHandlerForGCThreadControl()      \
                 ((PFN_REDIRECTTARGET) GetEEFuncEntryPoint(RedirectedHandledJITCaseForGCThreadControl_Stub))
@@ -41,6 +48,10 @@ extern "C" void             RedirectedHandledJITCaseForUserSuspend_Stub(void);
                 ((PFN_REDIRECTTARGET) GetEEFuncEntryPoint(RedirectedHandledJITCaseForDbgThreadControl_Stub))
 #define GetRedirectHandlerForUserSuspend()          \
                 ((PFN_REDIRECTTARGET) GetEEFuncEntryPoint(RedirectedHandledJITCaseForUserSuspend_Stub))
+#ifdef FEATURE_SPECIAL_USER_MODE_APC
+#define GetRedirectHandlerForApcActivation()        \
+                ((PAPCFUNC) GetEEFuncEntryPoint(ApcActivationCallbackStub))
+#endif
 
 #if defined(TARGET_AMD64) || defined(TARGET_ARM) || defined(TARGET_ARM64)
 #if defined(HAVE_GCCOVER) && defined(USE_REDIRECT_FOR_GCSTRESS) // GCCOVER
@@ -49,7 +60,6 @@ extern "C" void             RedirectedHandledJITCaseForGCStress_Stub(void);
                 ((PFN_REDIRECTTARGET) GetEEFuncEntryPoint(RedirectedHandledJITCaseForGCStress_Stub))
 #endif // HAVE_GCCOVER && USE_REDIRECT_FOR_GCSTRESS
 #endif // TARGET_AMD64 || TARGET_ARM
-
 
 // Every PING_JIT_TIMEOUT ms, check to see if a thread in JITted code has wandered
 // into some fully interruptible code (or should have a different hijack to improve
@@ -401,12 +411,12 @@ retry:
 
 #ifdef PROFILING_SUPPORTED
     {
-        BEGIN_PIN_PROFILER(CORProfilerTrackSuspends());
+        BEGIN_PROFILER_CALLBACK(CORProfilerTrackSuspends());
         if (str == STR_Success)
         {
-            g_profControlBlock.pProfInterface->RuntimeThreadSuspended((ThreadID)this);
+            (&g_profControlBlock)->RuntimeThreadSuspended((ThreadID)this);
         }
-        END_PIN_PROFILER();
+        END_PROFILER_CALLBACK();
     }
 #endif // PROFILING_SUPPORTED
 
@@ -438,7 +448,7 @@ DWORD Thread::ResumeThread()
     DWORD res = ::ResumeThread(m_ThreadHandleForResume);
     _ASSERTE (res != 0 && "Thread is not previously suspended");
 #ifdef _DEBUG_IMPL
-    _ASSERTE (!m_Creater.IsCurrentThread());
+    _ASSERTE (!m_Creator.IsCurrentThread());
     if ((res != (DWORD)-1) && (res != 0))
     {
         Thread * pCurThread = GetThreadNULLOk();
@@ -456,12 +466,12 @@ DWORD Thread::ResumeThread()
     }
 #ifdef PROFILING_SUPPORTED
     {
-        BEGIN_PIN_PROFILER(CORProfilerTrackSuspends());
+        BEGIN_PROFILER_CALLBACK(CORProfilerTrackSuspends());
         if ((res != 0) && (res != (DWORD)-1))
         {
-            g_profControlBlock.pProfInterface->RuntimeThreadResumed((ThreadID)this);
+            (&g_profControlBlock)->RuntimeThreadResumed((ThreadID)this);
         }
-        END_PIN_PROFILER();
+        END_PROFILER_CALLBACK();
     }
 #endif
     return res;
@@ -2142,12 +2152,12 @@ void Thread::RareDisablePreemptiveGC()
                 // If profiler desires GC events, notify it that this thread is waiting until the GC is over
                 // Do not send suspend notifications for debugger suspensions
                 {
-                    BEGIN_PIN_PROFILER(CORProfilerTrackSuspends());
+                    BEGIN_PROFILER_CALLBACK(CORProfilerTrackSuspends());
                     if (!(m_State & TS_DebugSuspendPending))
                     {
-                        g_profControlBlock.pProfInterface->RuntimeThreadSuspended((ThreadID)this);
+                        (&g_profControlBlock)->RuntimeThreadSuspended((ThreadID)this);
                     }
-                    END_PIN_PROFILER();
+                    END_PROFILER_CALLBACK();
                 }
 #endif // PROFILING_SUPPORTED
 
@@ -2168,9 +2178,9 @@ void Thread::RareDisablePreemptiveGC()
 #ifdef PROFILING_SUPPORTED
                 // Let the profiler know that this thread is resuming
                 {
-                    BEGIN_PIN_PROFILER(CORProfilerTrackSuspends());
-                    g_profControlBlock.pProfInterface->RuntimeThreadResumed((ThreadID)this);
-                    END_PIN_PROFILER();
+                    BEGIN_PROFILER_CALLBACK(CORProfilerTrackSuspends());
+                    (&g_profControlBlock)->RuntimeThreadResumed((ThreadID)this);
+                    END_PROFILER_CALLBACK();
                 }
 #endif // PROFILING_SUPPORTED
             }
@@ -2402,7 +2412,7 @@ void Thread::RareEnablePreemptiveGC()
 }
 
 // Called when we are passing through a safe point in CommonTripThread or
-// HandleGCSuspensionForInterruptedThread. Do the right thing with this thread,
+// HandleSuspensionForInterruptedThread. Do the right thing with this thread,
 // which can either mean waiting for the GC to complete, or performing a
 // pending suspension.
 void Thread::PulseGCMode()
@@ -3046,10 +3056,21 @@ BOOL Thread::IsAddrOfRedirectFunc(void * pFuncAddr)
         return TRUE;
 #endif // HAVE_GCCOVER && USE_REDIRECT_FOR_GCSTRESS
 
-    return
-        (pFuncAddr == GetRedirectHandlerForGCThreadControl()) ||
+    if ((pFuncAddr == GetRedirectHandlerForGCThreadControl()) ||
         (pFuncAddr == GetRedirectHandlerForDbgThreadControl()) ||
-        (pFuncAddr == GetRedirectHandlerForUserSuspend());
+        (pFuncAddr == GetRedirectHandlerForUserSuspend()))
+    {
+        return TRUE;
+    }
+
+#ifdef FEATURE_SPECIAL_USER_MODE_APC
+    if (pFuncAddr == GetRedirectHandlerForApcActivation())
+    {
+        return TRUE;
+    }
+#endif
+
+    return FALSE;
 }
 
 //************************************************************************
@@ -3226,12 +3247,12 @@ void ThreadSuspend::SuspendRuntime(ThreadSuspend::SUSPEND_REASON reason)
     // If the profiler desires information about GCs, then let it know that one
     // is starting.
     {
-        BEGIN_PIN_PROFILER(CORProfilerTrackSuspends());
+        BEGIN_PROFILER_CALLBACK(CORProfilerTrackSuspends());
         _ASSERTE(reason != ThreadSuspend::SUSPEND_FOR_DEBUGGER);
         _ASSERTE(reason != ThreadSuspend::SUSPEND_FOR_DEBUGGER_SWEEP);
 
         {
-            g_profControlBlock.pProfInterface->RuntimeSuspendStarted(
+            (&g_profControlBlock)->RuntimeSuspendStarted(
                 GCSuspendReasonToProfSuspendReason(reason));
         }
         if (pCurThread)
@@ -3239,9 +3260,9 @@ void ThreadSuspend::SuspendRuntime(ThreadSuspend::SUSPEND_REASON reason)
             // Notify the profiler that the thread that is actually doing the GC is 'suspended',
             // meaning that it is doing stuff other than run the managed code it was before the
             // GC started.
-            g_profControlBlock.pProfInterface->RuntimeThreadSuspended((ThreadID)pCurThread);
+            (&g_profControlBlock)->RuntimeThreadSuspended((ThreadID)pCurThread);
         }
-        END_PIN_PROFILER();
+        END_PROFILER_CALLBACK();
     }
 #endif // PROFILING_SUPPORTED
 
@@ -3345,25 +3366,32 @@ void ThreadSuspend::SuspendRuntime(ThreadSuspend::SUSPEND_REASON reason)
 
             // this is an interesting thread in cooperative mode, let's guide it to preemptive
 
-#ifdef DISABLE_THREADSUSPEND
-            // On platforms that do not support safe thread suspension, we do one of two things:
-            //
-            //     - If we're on a Unix platform where hijacking is enabled, we attempt
-            //       to inject a GC suspension which will try to redirect or hijack the
-            //       thread to get it to a safe point.
-            //
-            //     - Otherwise, we rely on the GCPOLL mechanism enabled by
-            //       TrapReturningThreads.
-
-#if defined(FEATURE_HIJACK) && defined(TARGET_UNIX)
-            bool gcSuspensionSignalSuccess = thread->InjectGcSuspension();
-            if (!gcSuspensionSignalSuccess)
+            if (!Thread::UseContextBasedThreadRedirection())
             {
-                STRESS_LOG1(LF_SYNC, LL_INFO1000, "Thread::SuspendRuntime() -   Failed to raise GC suspension signal for thread %p.\n", thread);
-            }
-#endif // FEATURE_HIJACK && TARGET_UNIX
+                // On platforms that do not support safe thread suspension, we do one of the following:
+                //
+                //     - If we're on a Unix platform where hijacking is enabled, we attempt
+                //       to inject an activation which will try to redirect or hijack the
+                //       thread to get it to a safe point.
+                //
+                //     - Similarly to above, if we're on a Windows platform where the special
+                //       user-mode APC is available, that is used if redirection is necessary.
+                //
+                //     - Otherwise, we rely on the GCPOLL mechanism enabled by
+                //       TrapReturningThreads.
 
-#else // DISABLE_THREADSUSPEND
+#ifdef FEATURE_THREAD_ACTIVATION
+                bool success = thread->InjectActivation(Thread::ActivationReason::SuspendForGC);
+                if (!success)
+                {
+                    STRESS_LOG1(LF_SYNC, LL_INFO1000, "Thread::SuspendRuntime() -   Failed to inject an activation for thread %p.\n", thread);
+                }
+#endif // FEATURE_THREAD_ACTIVATION
+
+                continue;
+            }
+
+#ifndef DISABLE_THREADSUSPEND
 
             if (thread->HasThreadStateOpportunistic(Thread::TS_GCSuspendRedirected))
             {
@@ -3469,7 +3497,7 @@ void ThreadSuspend::SuspendRuntime(ThreadSuspend::SUSPEND_REASON reason)
 
             thread->ResumeThread();
             STRESS_LOG1(LF_SYNC, LL_INFO1000, "    Thread 0x%x is in cooperative needs to rendezvous\n", thread);
-#endif // DISABLE_THREADSUSPEND
+#endif // !DISABLE_THREADSUSPEND
         }
 
         if (countThreads == 0)
@@ -3588,9 +3616,9 @@ void ThreadSuspend::SuspendRuntime(ThreadSuspend::SUSPEND_REASON reason)
 #ifdef PROFILING_SUPPORTED
     // If a profiler is keeping track of GC events, notify it
     {
-    BEGIN_PIN_PROFILER(CORProfilerTrackSuspends());
-    g_profControlBlock.pProfInterface->RuntimeSuspendFinished();
-    END_PIN_PROFILER();
+    BEGIN_PROFILER_CALLBACK(CORProfilerTrackSuspends());
+    (&g_profControlBlock)->RuntimeSuspendFinished();
+    END_PROFILER_CALLBACK();
     }
 #endif // PROFILING_SUPPORTED
 
@@ -3645,28 +3673,26 @@ void Thread::CommitGCStressInstructionUpdate()
         assert(pbDestCode != NULL);
         assert(pbSrcCode != NULL);
 
-#if defined(HOST_OSX) && defined(HOST_ARM64)
-        auto jitWriteEnableHolder = PAL_JITWriteEnable(true);
-#endif // defined(HOST_OSX) && defined(HOST_ARM64)
+        ExecutableWriterHolder<BYTE> destCodeWriterHolder(pbDestCode, sizeof(DWORD));
 
 #if defined(TARGET_X86) || defined(TARGET_AMD64)
 
-        *pbDestCode = *pbSrcCode;
+        *destCodeWriterHolder.GetRW() = *pbSrcCode;
 
 #elif defined(TARGET_ARM)
 
         if (GetARMInstructionLength(pbDestCode) == 2)
-            *(WORD*)pbDestCode  = *(WORD*)pbSrcCode;
+            *(WORD*)destCodeWriterHolder.GetRW()  = *(WORD*)pbSrcCode;
         else
-            *(DWORD*)pbDestCode = *(DWORD*)pbSrcCode;
+            *(DWORD*)destCodeWriterHolder.GetRW() = *(DWORD*)pbSrcCode;
 
 #elif defined(TARGET_ARM64)
 
-        *(DWORD*)pbDestCode = *(DWORD*)pbSrcCode;
+        *(DWORD*)destCodeWriterHolder.GetRW() = *(DWORD*)pbSrcCode;
 
 #else
 
-        *pbDestCode = *pbSrcCode;
+        *destCodeWriterHolder.GetRW() = *pbSrcCode;
 
 #endif
 
@@ -3713,12 +3739,12 @@ void ThreadSuspend::ResumeRuntime(BOOL bFinishedGC, BOOL SuspendSucceded)
 #ifdef PROFILING_SUPPORTED
     // Need to give resume event for the GC thread
     {
-        BEGIN_PIN_PROFILER(CORProfilerTrackSuspends());
+        BEGIN_PROFILER_CALLBACK(CORProfilerTrackSuspends());
         if (pCurThread)
         {
-            g_profControlBlock.pProfInterface->RuntimeThreadResumed((ThreadID)pCurThread);
+            (&g_profControlBlock)->RuntimeThreadResumed((ThreadID)pCurThread);
         }
-        END_PIN_PROFILER();
+        END_PROFILER_CALLBACK();
     }
 #endif // PROFILING_SUPPORTED
 
@@ -3741,10 +3767,10 @@ void ThreadSuspend::ResumeRuntime(BOOL bFinishedGC, BOOL SuspendSucceded)
     // This thread is logically "resuming" from a GC now.  Tell the profiler.
     //
     {
-        BEGIN_PIN_PROFILER(CORProfilerTrackSuspends());
+        BEGIN_PROFILER_CALLBACK(CORProfilerTrackSuspends());
         GCX_PREEMP();
-        g_profControlBlock.pProfInterface->RuntimeResumeFinished();
-        END_PIN_PROFILER();
+        (&g_profControlBlock)->RuntimeResumeFinished();
+        END_PROFILER_CALLBACK();
     }
 #endif // PROFILING_SUPPORTED
 
@@ -4124,50 +4150,56 @@ bool Thread::SysStartSuspendForDebug(AppDomain *pAppDomain)
         // switch back and forth during a debug suspension -- until we
         // can get their Pending bit set.
 
-#if defined(FEATURE_HIJACK) && !defined(TARGET_UNIX)
+#if !defined(DISABLE_THREADSUSPEND) && defined(FEATURE_HIJACK) && !defined(TARGET_UNIX)
         DWORD dwSwitchCount = 0;
     RetrySuspension:
-#endif // FEATURE_HIJACK && !TARGET_UNIX
+#endif // !DISABLE_THREADSUSPEND && FEATURE_HIJACK && !TARGET_UNIX
 
-#ifdef DISABLE_THREADSUSPEND
-        // On platforms that do not support safe thread suspension we have
-        // to rely on the GCPOLL mechanism.
-
-        // When we do not suspend the target thread we rely on the GCPOLL
-        // mechanism enabled by TrapReturningThreads.  However when reading
-        // shared state we need to erect appropriate memory barriers. So
-        // the interlocked operation below ensures that any future reads on
-        // this thread will happen after any earlier writes on a different
-        // thread.
         SuspendThreadResult str = STR_Success;
-        FastInterlockOr(&thread->m_fPreemptiveGCDisabled, 0);
-#else
-        // We can not allocate memory after we suspend a thread.
-        // Otherwise, we may deadlock if suspended thread holds allocator locks.
-        ThreadStore::AllocateOSContext();
-        SuspendThreadResult str = thread->SuspendThread();
-#endif // DISABLE_THREADSUSPEND
+        if (!UseContextBasedThreadRedirection())
+        {
+            // On platforms that do not support safe thread suspension we either
+            // rely on the GCPOLL mechanism mechanism enabled by TrapReturningThreads,
+            // or we try to hijack/redirect the thread using a thread activation.
+
+            // When we do not suspend the target thread, when reading shared state
+            // we need to erect appropriate memory barriers. So the interlocked
+            // operation below ensures that any future reads on this thread will
+            // happen after any earlier writes on a different thread.
+            FastInterlockOr(&thread->m_fPreemptiveGCDisabled, 0);
+        }
+        else
+        {
+#ifndef DISABLE_THREADSUSPEND
+            // We can not allocate memory after we suspend a thread.
+            // Otherwise, we may deadlock if suspended thread holds allocator locks.
+            ThreadStore::AllocateOSContext();
+            str = thread->SuspendThread();
+#endif // !DISABLE_THREADSUSPEND
+        }
 
         if (thread->m_fPreemptiveGCDisabled && str == STR_Success)
         {
-
-#if defined(FEATURE_HIJACK) && !defined(TARGET_UNIX)
-            WorkingOnThreadContextHolder workingOnThreadContext(thread);
-            if (workingOnThreadContext.Acquired() && thread->HandledJITCase())
+#if !defined(DISABLE_THREADSUSPEND) && defined(FEATURE_HIJACK) && !defined(TARGET_UNIX)
+            if (UseContextBasedThreadRedirection())
             {
-                // Redirect thread so we can capture a good thread context
-                // (GetThreadContext is not sufficient, due to an OS bug).
-                // If we don't succeed (should only happen on Win9X, due to
-                // a different OS bug), we must resume the thread and try
-                // again.
-                if (!thread->CheckForAndDoRedirectForDbg())
+                WorkingOnThreadContextHolder workingOnThreadContext(thread);
+                if (workingOnThreadContext.Acquired() && thread->HandledJITCase())
                 {
-                    thread->ResumeThread();
-                    __SwitchToThread(0, ++dwSwitchCount);
-                    goto RetrySuspension;
+                    // Redirect thread so we can capture a good thread context
+                    // (GetThreadContext is not sufficient, due to an OS bug).
+                    // If we don't succeed (should only happen on Win9X, due to
+                    // a different OS bug), we must resume the thread and try
+                    // again.
+                    if (!thread->CheckForAndDoRedirectForDbg())
+                    {
+                        thread->ResumeThread();
+                        __SwitchToThread(0, ++dwSwitchCount);
+                        goto RetrySuspension;
+                    }
                 }
             }
-#endif // FEATURE_HIJACK && !TARGET_UNIX
+#endif // !DISABLE_THREADSUSPEND && FEATURE_HIJACK && !TARGET_UNIX
 
             // Remember that this thread will be running to a safe point
             FastInterlockIncrement(&m_DebugWillSyncCount);
@@ -4179,20 +4211,30 @@ bool Thread::SysStartSuspendForDebug(AppDomain *pAppDomain)
                                        TS_DebugWillSync
                       );
 
-#ifdef DISABLE_THREADSUSPEND
-            // There'a a race above between the moment we first check m_fPreemptiveGCDisabled
-            // and the moment we enable TrapReturningThreads in MarkForSuspension.  However,
-            // nothing bad happens if the thread has transitioned to preemptive before marking
-            // the thread for suspension; the thread will later be identified as Synced in
-            // SysSweepThreadsForDebug.
-            //
-            // If the thread transitions to preemptive mode and into a forbid-suspend-for-debugger
-            // region, SysSweepThreadsForDebug would similarly identify the thread as synced
-            // after it leaves the forbid region.
-#else  // DISABLE_THREADSUSPEND
-            // Resume the thread and let it run to a safe point
-            thread->ResumeThread();
-#endif // DISABLE_THREADSUSPEND
+            if (!UseContextBasedThreadRedirection())
+            {
+                // There'a a race above between the moment we first check m_fPreemptiveGCDisabled
+                // and the moment we enable TrapReturningThreads in MarkForSuspension.  However,
+                // nothing bad happens if the thread has transitioned to preemptive before marking
+                // the thread for suspension; the thread will later be identified as Synced in
+                // SysSweepThreadsForDebug.
+                //
+                // If the thread transitions to preemptive mode and into a forbid-suspend-for-debugger
+                // region, SysSweepThreadsForDebug would similarly identify the thread as synced
+                // after it leaves the forbid region.
+
+#if defined(FEATURE_THREAD_ACTIVATION) && defined(TARGET_WINDOWS)
+                // Inject an activation that will interrupt the thread and try to bring it to a safe point
+                thread->InjectActivation(Thread::ActivationReason::SuspendForDebugger);
+#endif // FEATURE_THREAD_ACTIVATION && TARGET_WINDOWS
+            }
+            else
+            {
+#ifndef DISABLE_THREADSUSPEND
+                // Resume the thread and let it run to a safe point
+                thread->ResumeThread();
+#endif // !DISABLE_THREADSUSPEND
+            }
 
             LOG((LF_CORDB, LL_INFO1000,
                  "[0x%x] SUSPEND: gc disabled - will sync.\n",
@@ -4205,14 +4247,13 @@ bool Thread::SysStartSuspendForDebug(AppDomain *pAppDomain)
             thread->MarkForSuspension(TS_DebugSuspendPending);
 
             if (
-#ifdef DISABLE_THREADSUSPEND
                 // There'a a race above between the moment we first check m_fPreemptiveGCDisabled
                 // and the moment we enable TrapReturningThreads in MarkForSuspension.  To account
                 // for that we check whether the thread moved into cooperative mode, and if it had
                 // we mark it as a DebugWillSync thread, that will be handled later in
                 // SysSweepThreadsForDebug.
-                thread->m_fPreemptiveGCDisabled ||
-#endif // DISABLE_THREADSUSPEND
+                (!UseContextBasedThreadRedirection() && thread->m_fPreemptiveGCDisabled) ||
+
                 // The thread may have been suspended in a forbid-suspend-for-debugger region, or
                 // before the state change to set TS_DebugSuspendPending is made visible to other
                 // threads, the thread may have transitioned into a forbid region. In either case,
@@ -4226,7 +4267,7 @@ bool Thread::SysStartSuspendForDebug(AppDomain *pAppDomain)
             }
 
 #ifndef DISABLE_THREADSUSPEND
-            if (str == STR_Success) {
+            if (str == STR_Success && UseContextBasedThreadRedirection()) {
                 thread->ResumeThread();
             }
 #endif // !DISABLE_THREADSUSPEND
@@ -4296,30 +4337,38 @@ bool Thread::SysSweepThreadsForDebug(bool forceSync)
         if ((thread->m_State & TS_DebugWillSync) == 0)
             continue;
 
-#ifdef DISABLE_THREADSUSPEND
-
-        // On platforms that do not support safe thread suspension we have
-        // to rely on the GCPOLL mechanism.
-
-        // When we do not suspend the target thread we rely on the GCPOLL
-        // mechanism enabled by TrapReturningThreads.  However when reading
-        // shared state we need to erect appropriate memory barriers. So
-        // the interlocked operation below ensures that any future reads on
-        // this thread will happen after any earlier writes on a different
-        // thread.
-        FastInterlockOr(&thread->m_fPreemptiveGCDisabled, 0);
-        if (!thread->m_fPreemptiveGCDisabled && !thread->IsInForbidSuspendForDebuggerRegion())
+        if (!UseContextBasedThreadRedirection())
         {
-            // If the thread toggled to preemptive mode and is not in a
-            // forbid-suspend-for-debugger region, then it's synced.
-            goto Label_MarkThreadAsSynced;
-        }
-        else
-        {
+            // On platforms that do not support safe thread suspension we either
+            // rely on the GCPOLL mechanism mechanism enabled by TrapReturningThreads,
+            // or we try to hijack/redirect the thread using a thread activation.
+
+            // When we do not suspend the target thread, when reading shared state
+            // we need to erect appropriate memory barriers. So the interlocked
+            // operation below ensures that any future reads on this thread will
+            // happen after any earlier writes on a different thread.
+            FastInterlockOr(&thread->m_fPreemptiveGCDisabled, 0);
+            if (!thread->m_fPreemptiveGCDisabled)
+            {
+                if (thread->IsInForbidSuspendForDebuggerRegion())
+                {
+                    continue;
+                }
+
+                // If the thread toggled to preemptive mode and is not in a
+                // forbid-suspend-for-debugger region, then it's synced.
+                goto Label_MarkThreadAsSynced;
+            }
+
+#if defined(FEATURE_THREAD_ACTIVATION) && defined(TARGET_WINDOWS)
+            // Inject an activation that will interrupt the thread and try to bring it to a safe point
+            thread->InjectActivation(Thread::ActivationReason::SuspendForDebugger);
+#endif // FEATURE_THREAD_ACTIVATION && TARGET_WINDOWS
+
             continue;
         }
 
-#else // DISABLE_THREADSUSPEND
+#ifndef DISABLE_THREADSUSPEND
         // Suspend the thread
 
 #if defined(FEATURE_HIJACK) && !defined(TARGET_UNIX)
@@ -4404,7 +4453,7 @@ RetrySuspension:
         thread->ResumeThread();
         continue;
 
-#endif // DISABLE_THREADSUSPEND
+#endif // !DISABLE_THREADSUSPEND
 
         // The thread is synced. Remove the sync bits and dec the sync count.
 Label_MarkThreadAsSynced:
@@ -4633,7 +4682,17 @@ void Thread::HijackThread(ReturnKind returnKind, ExecutionState *esb)
     CONTRACTL_END;
 
     _ASSERTE(IsValidReturnKind(returnKind));
+
     VOID *pvHijackAddr = reinterpret_cast<VOID *>(OnHijackTripThread);
+
+#if defined(TARGET_WINDOWS) && defined(TARGET_AMD64)
+    void* returnAddressHijackTarget = ThreadSuspend::GetReturnAddressHijackTarget();
+    if (returnAddressHijackTarget != NULL)
+    {
+        pvHijackAddr = returnAddressHijackTarget;
+    }
+#endif // TARGET_WINDOWS && TARGET_AMD64
+    
 #ifdef TARGET_X86
     if (returnKind == RT_Float)
     {
@@ -5217,7 +5276,7 @@ BOOL Thread::GetSafelyRedirectableThreadContext(DWORD dwOptions, CONTEXT * pCtx,
     {
         // If we are running under the control of a managed debugger that may have placed breakpoints in the code stream,
         // then there is a special case that we need to check. See the comments in debugger.cpp for more information.
-        if (CORDebuggerAttached() && (g_pDebugInterface->IsThreadContextInvalid(this)))
+        if (CORDebuggerAttached() && (g_pDebugInterface->IsThreadContextInvalid(this, NULL)))
             return FALSE;
     }
 #endif // DEBUGGING_SUPPORTED
@@ -5483,9 +5542,9 @@ void ThreadSuspend::RestartEE(BOOL bFinishedGC, BOOL SuspendSucceded)
     // corresponding call to RuntimeSuspendStarted is done at a lower architectural layer,
     // in ThreadSuspend::SuspendRuntime.
     {
-        BEGIN_PIN_PROFILER(CORProfilerTrackSuspends());
-        g_profControlBlock.pProfInterface->RuntimeResumeStarted();
-        END_PIN_PROFILER();
+        BEGIN_PROFILER_CALLBACK(CORProfilerTrackSuspends());
+        (&g_profControlBlock)->RuntimeResumeStarted();
+        END_PROFILER_CALLBACK();
     }
 #endif // PROFILING_SUPPORTED
 
@@ -5711,10 +5770,10 @@ retry_for_debugger:
 #endif //TARGET_ARM || TARGET_ARM64
 }
 
-#if defined(FEATURE_HIJACK) && defined(TARGET_UNIX)
+#ifdef FEATURE_THREAD_ACTIVATION
 
-// This function is called by PAL to check if the specified instruction pointer
-// is in a function where we can safely inject activation.
+// This function is called by a thread activation to check if the specified instruction pointer
+// is in a function where we can safely handle an activation.
 BOOL CheckActivationSafePoint(SIZE_T ip, BOOL checkingCurrentThread)
 {
     Thread *pThread = GetThreadNULLOk();
@@ -5727,7 +5786,7 @@ BOOL CheckActivationSafePoint(SIZE_T ip, BOOL checkingCurrentThread)
     return checkForManagedCode && ExecutionManager::IsManagedCode(ip);
 }
 
-// This function is called when a GC is pending. It tries to ensure that the current
+// This function is called when thread suspension is pending. It tries to ensure that the current
 // thread is taken to a GC-safe place as quickly as possible. It does this by doing
 // one of the following:
 //
@@ -5742,7 +5801,7 @@ BOOL CheckActivationSafePoint(SIZE_T ip, BOOL checkingCurrentThread)
 //       address to take the thread to the appropriate stub (based on the return
 //       type of the method) which will then handle preparing the thread for GC.
 //
-void HandleGCSuspensionForInterruptedThread(CONTEXT *interruptedContext)
+void HandleSuspensionForInterruptedThread(CONTEXT *interruptedContext)
 {
     Thread *pThread = GetThread();
 
@@ -5763,6 +5822,13 @@ void HandleGCSuspensionForInterruptedThread(CONTEXT *interruptedContext)
     Thread::WorkingOnThreadContextHolder workingOnThreadContext(pThread);
     if (!workingOnThreadContext.Acquired())
         return;
+
+#if defined(DEBUGGING_SUPPORTED) && defined(TARGET_WINDOWS)
+    // If we are running under the control of a managed debugger that may have placed breakpoints in the code stream,
+    // then there is a special case that we need to check. See the comments in debugger.cpp for more information.
+    if (CORDebuggerAttached() && g_pDebugInterface->IsThreadContextInvalid(pThread, interruptedContext))
+        return;
+#endif // DEBUGGING_SUPPORTED && TARGET_WINDOWS
 
     EECodeInfo codeInfo(ip);
     if (!codeInfo.IsValid())
@@ -5785,6 +5851,8 @@ void HandleGCSuspensionForInterruptedThread(CONTEXT *interruptedContext)
         pThread->PulseGCMode();
 
         frame.Pop(pThread);
+
+        // TODO: Windows - Raise thread abort exception if ready for abort
     }
     else
     {
@@ -5835,8 +5903,73 @@ void HandleGCSuspensionForInterruptedThread(CONTEXT *interruptedContext)
     }
 }
 
-bool Thread::InjectGcSuspension()
+#ifdef FEATURE_SPECIAL_USER_MODE_APC
+void Thread::ApcActivationCallback(ULONG_PTR Parameter)
 {
+    // Cannot use contracts here because the thread may be interrupted at any point
+
+    _ASSERTE(UseSpecialUserModeApc());
+    _ASSERTE(Parameter != 0);
+
+    CLONE_PAPC_CALLBACK_DATA pData = (CLONE_PAPC_CALLBACK_DATA)Parameter;
+    ActivationReason reason = (ActivationReason)pData->Parameter;
+    PCONTEXT pContext = pData->ContextRecord;
+
+    struct AutoClearPendingThreadActivation
+    {
+        ~AutoClearPendingThreadActivation()
+        {
+            GetThread()->m_hasPendingActivation = false;
+        }
+    } autoClearPendingThreadActivation;
+
+    if (!CheckActivationSafePoint(GetIP(pContext), true /* checkingCurrentThread */))
+    {
+        return;
+    }
+
+    switch (reason)
+    {
+        case ActivationReason::SuspendForGC:
+        case ActivationReason::SuspendForDebugger:
+            HandleSuspensionForInterruptedThread(pContext);
+            break;
+
+        default:
+            UNREACHABLE_MSG("Unexpected ActivationReason");
+    }
+}
+#endif // FEATURE_SPECIAL_USER_MODE_APC
+
+bool Thread::InjectActivation(ActivationReason reason)
+{
+#ifdef FEATURE_SPECIAL_USER_MODE_APC
+    _ASSERTE(UseSpecialUserModeApc());
+
+    if (m_hasPendingActivation)
+    {
+        // Try to avoid nesting special user-mode APCs, as they can interrupt one another
+        return true;
+    }
+
+    HANDLE hThread = GetThreadHandle();
+    if (hThread == INVALID_HANDLE_VALUE)
+    {
+        return false;
+    }
+
+    m_hasPendingActivation = true;
+    BOOL success =
+        (*s_pfnQueueUserAPC2Proc)(
+            GetRedirectHandlerForApcActivation(),
+            hThread,
+            (ULONG_PTR)reason,
+            SpecialUserModeApcWithContextFlags);
+    _ASSERTE(success);
+    return true;
+#elif defined(TARGET_UNIX)
+    _ASSERTE(reason == ActivationReason::SuspendForGC);
+
     static ConfigDWORD injectionEnabled;
     if (injectionEnabled.val(CLRConfig::INTERNAL_ThreadSuspendInjection) == 0)
         return false;
@@ -5846,16 +5979,36 @@ bool Thread::InjectGcSuspension()
         return ::PAL_InjectActivation(hThread);
 
     return false;
+#else
+#error Unknown platform.
+#endif // FEATURE_SPECIAL_USER_MODE_APC || TARGET_UNIX
 }
 
-#endif // FEATURE_HIJACK && TARGET_UNIX
+#endif // FEATURE_THREAD_ACTIVATION
 
 // Initialize thread suspension support
 void ThreadSuspend::Initialize()
 {
-#if defined(FEATURE_HIJACK) && defined(TARGET_UNIX)
-    ::PAL_SetActivationFunction(HandleGCSuspensionForInterruptedThread, CheckActivationSafePoint);
-#endif
+#ifdef FEATURE_HIJACK
+#if defined(TARGET_UNIX)
+    ::PAL_SetActivationFunction(HandleSuspensionForInterruptedThread, CheckActivationSafePoint);
+#elif defined(TARGET_WINDOWS) && defined(TARGET_AMD64)
+    // Only versions of Windows that have the special user mode APC have a correct implementation of the return address hijack handling
+    if (Thread::UseSpecialUserModeApc())
+    {
+        HMODULE hModNtdll = WszLoadLibrary(W("ntdll.dll"));
+        if (hModNtdll != NULL)
+        {
+            typedef ULONG_PTR (NTAPI *PFN_RtlGetReturnAddressHijackTarget)();
+            PFN_RtlGetReturnAddressHijackTarget pfnRtlGetReturnAddressHijackTarget = (PFN_RtlGetReturnAddressHijackTarget)GetProcAddress(hModNtdll, "RtlGetReturnAddressHijackTarget");
+            if (pfnRtlGetReturnAddressHijackTarget != NULL)
+            {
+                g_returnAddressHijackTarget = (void*)pfnRtlGetReturnAddressHijackTarget();
+            }
+        }
+    }
+#endif // TARGET_WINDOWS && TARGET_AMD64
+#endif // FEATURE_HIJACK
 }
 
 #ifdef _DEBUG

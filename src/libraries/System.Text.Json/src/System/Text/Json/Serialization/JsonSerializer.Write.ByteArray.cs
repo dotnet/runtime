@@ -20,7 +20,7 @@ namespace System.Text.Json
         /// for <typeparamref name="TValue"/> or its serializable members.
         /// </exception>
         [RequiresUnreferencedCode(SerializationUnreferencedCodeMessage)]
-        public static byte[] SerializeToUtf8Bytes<[DynamicallyAccessedMembers(MembersAccessedOnWrite)] TValue>(
+        public static byte[] SerializeToUtf8Bytes<TValue>(
             TValue value,
             JsonSerializerOptions? options = null)
         {
@@ -47,7 +47,7 @@ namespace System.Text.Json
         [RequiresUnreferencedCode(SerializationUnreferencedCodeMessage)]
         public static byte[] SerializeToUtf8Bytes(
             object? value,
-            [DynamicallyAccessedMembers(MembersAccessedOnWrite)] Type inputType,
+            Type inputType,
             JsonSerializerOptions? options = null)
         {
             return WriteCoreBytes(
@@ -122,15 +122,13 @@ namespace System.Text.Json
         {
             JsonSerializerOptions options = jsonTypeInfo.Options;
 
-            using (var output = new PooledByteBufferWriter(options.DefaultBufferSize))
+            using var output = new PooledByteBufferWriter(options.DefaultBufferSize);
+            using (var writer = new Utf8JsonWriter(output, options.GetWriterOptions()))
             {
-                using (var writer = new Utf8JsonWriter(output, options.GetWriterOptions()))
-                {
-                    WriteUsingMetadata(writer, value, jsonTypeInfo);
-                }
-
-                return output.WrittenMemory.ToArray();
+                WriteUsingMetadata(writer, value, jsonTypeInfo);
             }
+
+            return output.WrittenMemory.ToArray();
         }
     }
 }

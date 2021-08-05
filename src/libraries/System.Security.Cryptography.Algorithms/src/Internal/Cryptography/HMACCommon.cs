@@ -97,6 +97,8 @@ namespace Internal.Cryptography
         public int GetCurrentHash(Span<byte> destination) =>
             _hMacProvider.GetCurrentHash(destination);
 
+        public void Reset() => _hMacProvider.Reset();
+
         public void Dispose(bool disposing)
         {
             if (disposing)

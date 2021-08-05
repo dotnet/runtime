@@ -480,7 +480,7 @@ namespace System.Linq.Expressions.Compiler
             EmitBinaryOperator(op, leftType.GetNonNullableType(), rightType.GetNonNullableType(), resultNonNullableType, liftedToNull: false);
 
             // construct result type
-            ConstructorInfo ci = TypeUtils.GetNullableConstructor(resultType, resultNonNullableType);
+            ConstructorInfo ci = TypeUtils.GetNullableConstructor(resultType);
             _ilg.Emit(OpCodes.Newobj, ci);
             _ilg.Emit(OpCodes.Stloc, locResult);
             _ilg.Emit(OpCodes.Br_S, labEnd);

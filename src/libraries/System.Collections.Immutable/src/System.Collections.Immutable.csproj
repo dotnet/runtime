@@ -1,12 +1,27 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFrameworks>$(NetCoreAppCurrent);netstandard1.0;netstandard1.3;netstandard2.0;net461</TargetFrameworks>
-    <ExcludeCurrentNetCoreAppFromPackage>true</ExcludeCurrentNetCoreAppFromPackage>
+    <TargetFrameworks>$(NetCoreAppCurrent);netstandard2.0;net461</TargetFrameworks>
     <Nullable>enable</Nullable>
-  </PropertyGroup>
-  <!-- DesignTimeBuild requires all the TargetFramework Derived Properties to not be present in the first property group. -->
-  <PropertyGroup>
-    <PackageTargetFramework Condition="'$(TargetFramework)' == 'netstandard1.0'">netstandard1.0;portable-net45+win8+wp8+wpa81</PackageTargetFramework>
+    <IsPackable>true</IsPackable>
+    <PackageDescription>This package provides collections that are thread safe and guaranteed to never change their contents, also known as immutable collections. Like strings, any methods that perform modifications will not change the existing instance but instead return a new instance. For efficiency reasons, the implementation uses a sharing mechanism to ensure that newly created instances share as much data as possible with the previous instance while ensuring that operations have a predictable time complexity.
+
+Commonly Used Types:
+System.Collections.Immutable.ImmutableArray
+System.Collections.Immutable.ImmutableArray&lt;T&gt;
+System.Collections.Immutable.ImmutableDictionary
+System.Collections.Immutable.ImmutableDictionary&lt;TKey,TValue&gt;
+System.Collections.Immutable.ImmutableHashSet
+System.Collections.Immutable.ImmutableHashSet&lt;T&gt;
+System.Collections.Immutable.ImmutableList
+System.Collections.Immutable.ImmutableList&lt;T&gt;
+System.Collections.Immutable.ImmutableQueue
+System.Collections.Immutable.ImmutableQueue&lt;T&gt;
+System.Collections.Immutable.ImmutableSortedDictionary
+System.Collections.Immutable.ImmutableSortedDictionary&lt;TKey,TValue&gt;
+System.Collections.Immutable.ImmutableSortedSet
+System.Collections.Immutable.ImmutableSortedSet&lt;T&gt;
+System.Collections.Immutable.ImmutableStack
+System.Collections.Immutable.ImmutableStack&lt;T&gt;</PackageDescription>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="Properties\InternalsVisibleTo.cs" />
@@ -89,11 +104,10 @@
              Link="Common\System\Runtime\Versioning\NonVersionableAttribute.cs" />
     <None Include="Interfaces.cd" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetFramework)' == 'netstandard1.0' or '$(TargetFramework)' == 'netstandard1.3'">
-    <Compile Include="$(CommonPath)System\Diagnostics\CodeAnalysis\ExcludeFromCodeCoverageAttribute.cs"
-             Link="System\Diagnostics\CodeAnalysis\ExcludeFromCodeCoverageAttribute.cs" />
+  <ItemGroup>
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime.CompilerServices.Unsafe\src\System.Runtime.CompilerServices.Unsafe.ilproj" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)'">
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
     <Reference Include="System.Collections" />
     <Reference Include="System.Diagnostics.Contracts" />
     <Reference Include="System.Diagnostics.Debug" />
@@ -102,21 +116,14 @@
     <Reference Include="System.Linq" />
     <Reference Include="System.Resources.ResourceManager" />
     <Reference Include="System.Runtime" />
-    <Reference Include="System.Runtime.CompilerServices.Unsafe" />
     <Reference Include="System.Runtime.Extensions" />
     <Reference Include="System.Runtime.InteropServices" />
     <Reference Include="System.Threading" />
   </ItemGroup>
-  <ItemGroup>
-    <PackageReference Include="System.Diagnostics.Contracts" Condition="$(TargetFramework.StartsWith('netstandard1.'))" Version="$(SystemDiagnosticsContractsVersion)" />
-    <PackageReference Include="System.Runtime.InteropServices" Condition="'$(TargetFramework)' == 'netstandard1.3'" Version="$(SystemRuntimeInteropServicesVersion)" />
-  </ItemGroup>
-  <ItemGroup Condition="'$(TargetFramework)' == 'netstandard1.3' or
-                        '$(TargetFramework)' == 'netstandard2.0' or
-                        $(TargetFramework.StartsWith('net4'))">
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">
     <PackageReference Include="System.Memory"  Version="$(SystemMemoryVersion)" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetFramework)' != '$(NetCoreAppCurrent)'">
-    <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime.CompilerServices.Unsafe\src\System.Runtime.CompilerServices.Unsafe.ilproj" />
+  <ItemGroup>
+    <NETStandardCompatError Include="netcoreapp2.0" Supported="$(NetCoreAppMinimum)" />
   </ItemGroup>
 </Project>

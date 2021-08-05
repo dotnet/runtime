@@ -1,10 +1,14 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+#ifdef FEATURE_COMWRAPPERS
+
 // Runtime headers
 #include "common.h"
 #include "rcwrefcache.h"
+#ifdef FEATURE_COMINTEROP_APARTMENT_SUPPORT
 #include "olecontexthelpers.h"
+#endif
 #include "finalizerthread.h"
 
 // Interop library header
@@ -15,8 +19,22 @@
 using CreateObjectFlags = InteropLib::Com::CreateObjectFlags;
 using CreateComInterfaceFlags = InteropLib::Com::CreateComInterfaceFlags;
 
+
 namespace
 {
+
+    void* GetCurrentCtxCookieWrapper()
+    {
+        STATIC_CONTRACT_WRAPPER;
+
+    #ifdef FEATURE_COMINTEROP_APARTMENT_SUPPORT
+        return GetCurrentCtxCookie();
+    #else
+        return NULL;
+    #endif // FEATURE_COMINTEROP_APARTMENT_SUPPORT
+
+    }
+
     // This class is used to track the external object within the runtime.
     struct ExternalObjectContext : public InteropLibInterface::ExternalObjectContextBase
     {
@@ -28,9 +46,16 @@ namespace
         enum
         {
             Flags_None = 0,
+
+            // The EOC has been collected and is no longer visible from managed code.
             Flags_Collected = 1,
+
             Flags_ReferenceTracker = 2,
             Flags_InCache = 4,
+
+            // The EOC is "detached" and no longer used to map between identity and a managed object.
+            // This will only be set if the EOC was inserted into the cache.
+            Flags_Detached = 8,
         };
         DWORD Flags;
 
@@ -76,6 +101,17 @@ namespace
             _ASSERTE(GCHeapUtilities::IsGCInProgress());
             SyncBlockIndex = InvalidSyncBlockIndex;
             Flags |= Flags_Collected;
+        }
+
+        void MarkDetached()
+        {
+            _ASSERTE(GCHeapUtilities::IsGCInProgress());
+            Flags |= Flags_Detached;
+        }
+
+        void MarkNotInCache()
+        {
+            ::InterlockedAnd((LONG*)&Flags, (~Flags_InCache));
         }
 
         OBJECTREF GetObjectRef()
@@ -141,7 +177,10 @@ namespace
         ~ExternalWrapperResultHolder()
         {
             if (Result.Context != NULL)
+            {
+                GCX_PREEMP();
                 InteropLib::Com::DestroyWrapperForExternal(Result.Context);
+            }
         }
         InteropLib::Com::ExternalWrapperResult* operator&()
         {
@@ -265,9 +304,6 @@ namespace
         // The collection should respect the supplied arguments.
         //        withFlags - If Flag_None, then ignore. Otherwise objects must have these flags.
         //    threadContext - The object must be associated with the supplied thread context.
-        //
-        // [TODO] Performance improvement should be made here to provide a custom IEnumerable
-        // instead of a managed array.
         OBJECTREF CreateManagedEnumerable(_In_ DWORD withFlags, _In_opt_ void* threadContext)
         {
             CONTRACT(OBJECTREF)
@@ -280,64 +316,61 @@ namespace
             }
             CONTRACT_END;
 
-            DWORD objCount;
-            DWORD objCountMax;
-
             struct
             {
                 PTRARRAYREF arrRef;
-                PTRARRAYREF arrRefTmp;
             } gc;
             ::ZeroMemory(&gc, sizeof(gc));
             GCPROTECT_BEGIN(gc);
 
+            CQuickArrayList<ExternalObjectContext*> localList;
+
+            // Determine objects to return
             {
                 LockHolder lock(this);
-                objCountMax = _hashMap.GetCount();
-            }
-
-            // Allocate the max number of objects needed.
-            gc.arrRef = (PTRARRAYREF)AllocateObjectArray(objCountMax, g_pObjectClass);
-
-            // Populate the array
-            {
-                LockHolder lock(this);
-                Iterator curr = _hashMap.Begin();
                 Iterator end = _hashMap.End();
-
-                ExternalObjectContext* inst;
-                for (objCount = 0; curr != end && objCount < objCountMax; objCount++, curr++)
+                for (Iterator curr = _hashMap.Begin(); curr != end; ++curr)
                 {
-                    inst = *curr;
+                    ExternalObjectContext* inst = *curr;
 
                     // Only add objects that are in the correct thread
                     // context and have the appropriate flags set.
                     if (inst->ThreadContext == threadContext
                         && (withFlags == ExternalObjectContext::Flags_None || inst->IsSet(withFlags)))
                     {
-                        // Separate the wrapper from the tracker runtime prior to
-                        // passing this onto the caller. This call is okay to make
-                        // even if the instance isn't from the tracker runtime.
-                        InteropLib::Com::SeparateWrapperFromTrackerRuntime(inst);
-                        gc.arrRef->SetAt(objCount, inst->GetObjectRef());
+                        localList.Push(inst);
                         STRESS_LOG1(LF_INTEROP, LL_INFO100, "Add EOC to Enumerable: 0x%p\n", inst);
                     }
                 }
             }
 
-            // Make the array the correct size
-            if (objCount < objCountMax)
+            // Allocate enumerable type to return.
+            gc.arrRef = (PTRARRAYREF)AllocateObjectArray((DWORD)localList.Size(), g_pObjectClass);
+
+            // Insert objects into enumerable.
+            // The ExternalObjectContexts in the hashmap are only
+            // removed and associated objects collected during a GC. Since
+            // this code is running in Cooperative mode they will never
+            // be null.
+            for (SIZE_T i = 0; i < localList.Size(); i++)
             {
-                gc.arrRefTmp = (PTRARRAYREF)AllocateObjectArray(objCount, g_pObjectClass);
+                ExternalObjectContext* inst = localList[i];
+                gc.arrRef->SetAt(i, inst->GetObjectRef());
+            }
 
-                SIZE_T elementSize = gc.arrRef->GetComponentSize();
-
-                void *src = gc.arrRef->GetDataPtr();
-                void *dest = gc.arrRefTmp->GetDataPtr();
-
-                _ASSERTE(sizeof(Object*) == elementSize && "Assumption invalidated in memmoveGCRefs() usage");
-                memmoveGCRefs(dest, src, objCount * elementSize);
-                gc.arrRef = gc.arrRefTmp;
+            {
+                // Separate the wrapper from the tracker runtime prior to
+                // passing them onto the caller. This call is okay to make
+                // even if the instance isn't from the tracker runtime.
+                // We switch to Preemptive mode since seperating a wrapper
+                // requires us to call out to non-runtime code which could
+                // call back into the runtime and/or trigger a GC.
+                GCX_PREEMP();
+                for (SIZE_T i = 0; i < localList.Size(); i++)
+                {
+                    ExternalObjectContext* inst = localList[i];
+                    InteropLib::Com::SeparateWrapperFromTrackerRuntime(inst);
+                }
             }
 
             GCPROTECT_END();
@@ -425,6 +458,32 @@ namespace
             CONTRACTL_END;
 
             _hashMap.Remove(cxt->GetKey());
+        }
+
+        void DetachNotPromotedEOCs()
+        {
+            CONTRACTL
+            {
+                NOTHROW;
+                GC_NOTRIGGER;
+                MODE_ANY;
+                PRECONDITION(GCHeapUtilities::IsGCInProgress()); // GC is in progress and the runtime is suspended
+            }
+            CONTRACTL_END;
+
+            Iterator curr = _hashMap.Begin();
+            Iterator end = _hashMap.End();
+
+            ExternalObjectContext* cxt;
+            for (; curr != end; ++curr)
+            {
+                cxt = *curr;
+                if (!cxt->IsSet(ExternalObjectContext::Flags_Detached)
+                    && !GCHeapUtilities::GetGCHeap()->IsPromoted(OBJECTREFToObject(cxt->GetObjectRef())))
+                {
+                    cxt->MarkDetached();
+                }
+            }
         }
     };
 
@@ -610,12 +669,15 @@ namespace
                 OBJECTHANDLE instHandle = GetAppDomain()->CreateTypedHandle(gc.instRef, InstanceHandleType);
 
                 // Call the InteropLib and create the associated managed object wrapper.
-                hr = InteropLib::Com::CreateWrapperForObject(
-                    instHandle,
-                    vtableCount,
-                    vtables,
-                    flags,
-                    &newWrapper);
+                {
+                    GCX_PREEMP();
+                    hr = InteropLib::Com::CreateWrapperForObject(
+                        instHandle,
+                        vtableCount,
+                        vtables,
+                        flags,
+                        &newWrapper);
+                }
                 if (FAILED(hr))
                 {
                     DestroyHandleCommon(instHandle, InstanceHandleType);
@@ -725,6 +787,15 @@ namespace
                     handle = handleLocal;
                 }
             }
+            else if (extObjCxt != NULL && extObjCxt->IsSet(ExternalObjectContext::Flags_Detached))
+            {
+                // If an EOC has been found but is marked detached, then we will remove it from the
+                // cache here instead of letting the GC do it later and pretend like it wasn't found.
+                STRESS_LOG1(LF_INTEROP, LL_INFO10, "Detached EOC requested: 0x%p\n", extObjCxt);
+                cache->Remove(extObjCxt);
+                extObjCxt->MarkNotInCache();
+                extObjCxt = NULL;
+            }
         }
 
         STRESS_LOG2(LF_INTEROP, LL_INFO1000, "EOC: 0x%p or Handle: 0x%p\n", extObjCxt, handle);
@@ -754,7 +825,6 @@ namespace
                     sizeof(ExternalObjectContext),
                     &resultHolder);
             }
-
             if (FAILED(hr))
                 COMPlusThrowHR(hr);
 
@@ -782,7 +852,7 @@ namespace
                 ExternalObjectContext::Construct(
                     resultHolder.GetContext(),
                     identity,
-                    GetCurrentCtxCookie(),
+                    GetCurrentCtxCookieWrapper(),
                     gc.objRefMaybe->GetSyncBlockIndex(),
                     wrapperId,
                     eocFlags);
@@ -1001,7 +1071,7 @@ namespace InteropLibImports
             ExtObjCxtCache* cache = ExtObjCxtCache::GetInstanceNoThrow();
             gc.objsEnumRef = cache->CreateManagedEnumerable(
                 ExternalObjectContext::Flags_ReferenceTracker,
-                GetCurrentCtxCookie());
+                GetCurrentCtxCookieWrapper());
 
             CallReleaseObjects(&gc.implRef, &gc.objsEnumRef);
 
@@ -1296,8 +1366,6 @@ namespace InteropLibImports
     }
 }
 
-#ifdef FEATURE_COMWRAPPERS
-
 BOOL QCALLTYPE ComWrappersNative::TryGetOrCreateComInterfaceForObject(
     _In_ QCall::ObjectHandleOnStack comWrappersImpl,
     _In_ INT64 wrapperId,
@@ -1408,14 +1476,18 @@ void ComWrappersNative::DestroyManagedObjectComWrapper(_In_ void* wrapper)
     CONTRACTL
     {
         NOTHROW;
-        GC_NOTRIGGER;
+        GC_TRIGGERS;
         MODE_ANY;
         PRECONDITION(wrapper != NULL);
     }
     CONTRACTL_END;
 
     STRESS_LOG1(LF_INTEROP, LL_INFO100, "Destroying MOW: 0x%p\n", wrapper);
-    InteropLib::Com::DestroyWrapperForObject(wrapper);
+
+    {
+        GCX_PREEMP();
+        InteropLib::Com::DestroyWrapperForObject(wrapper);
+    }
 }
 
 void ComWrappersNative::DestroyExternalComObjectContext(_In_ void* contextRaw)
@@ -1423,7 +1495,7 @@ void ComWrappersNative::DestroyExternalComObjectContext(_In_ void* contextRaw)
     CONTRACTL
     {
         NOTHROW;
-        GC_NOTRIGGER;
+        GC_TRIGGERS;
         MODE_ANY;
         PRECONDITION(contextRaw != NULL);
     }
@@ -1435,7 +1507,11 @@ void ComWrappersNative::DestroyExternalComObjectContext(_In_ void* contextRaw)
 #endif
 
     STRESS_LOG1(LF_INTEROP, LL_INFO100, "Destroying EOC: 0x%p\n", contextRaw);
-    InteropLib::Com::DestroyWrapperForExternal(contextRaw);
+
+    {
+        GCX_PREEMP();
+        InteropLib::Com::DestroyWrapperForExternal(contextRaw);
+    }
 }
 
 void ComWrappersNative::MarkExternalComObjectContextCollected(_In_ void* contextRaw)
@@ -1751,9 +1827,7 @@ bool ComWrappersNative::HasManagedObjectComWrapper(_In_ OBJECTREF object, _Out_ 
     return cxt.HasWrapper;
 }
 
-#endif // FEATURE_COMWRAPPERS
-
-void Interop::OnGCStarted(_In_ int nCondemnedGeneration)
+void ComWrappersNative::OnFullGCStarted()
 {
     CONTRACTL
     {
@@ -1762,42 +1836,26 @@ void Interop::OnGCStarted(_In_ int nCondemnedGeneration)
     }
     CONTRACTL_END;
 
-#ifdef FEATURE_COMWRAPPERS
-    //
-    // Note that we could get nested GCStart/GCEnd calls, such as :
-    // GCStart for Gen 2 background GC
-    //    GCStart for Gen 0/1 foregorund GC
-    //    GCEnd   for Gen 0/1 foreground GC
-    //    ....
-    // GCEnd for Gen 2 background GC
-    //
-    // The nCondemnedGeneration >= 2 check takes care of this nesting problem
-    //
-    // See Interop::OnGCFinished()
-    if (nCondemnedGeneration >= 2)
+    // If no cache exists, then there is nothing to do here.
+    ExtObjCxtCache* cache = ExtObjCxtCache::GetInstanceNoThrow();
+    if (cache != NULL)
     {
-        // If no cache exists, then there is nothing to do here.
-        ExtObjCxtCache* cache = ExtObjCxtCache::GetInstanceNoThrow();
-        if (cache != NULL)
-        {
-            STRESS_LOG0(LF_INTEROP, LL_INFO10000, "Begin Reference Tracking\n");
-            ExtObjCxtRefCache* refCache = cache->GetRefCache();
+        STRESS_LOG0(LF_INTEROP, LL_INFO10000, "Begin Reference Tracking\n");
+        ExtObjCxtRefCache* refCache = cache->GetRefCache();
 
-            // Reset the ref cache
-            refCache->ResetDependentHandles();
+        // Reset the ref cache
+        refCache->ResetDependentHandles();
 
-            // Create a call context for the InteropLib.
-            InteropLibImports::RuntimeCallContext cxt(cache);
-            (void)InteropLib::Com::BeginExternalObjectReferenceTracking(&cxt);
+        // Create a call context for the InteropLib.
+        InteropLibImports::RuntimeCallContext cxt(cache);
+        (void)InteropLib::Com::BeginExternalObjectReferenceTracking(&cxt);
 
-            // Shrink cache and clear unused handles.
-            refCache->ShrinkDependentHandles();
-        }
+        // Shrink cache and clear unused handles.
+        refCache->ShrinkDependentHandles();
     }
-#endif // FEATURE_COMWRAPPERS
 }
 
-void Interop::OnGCFinished(_In_ int nCondemnedGeneration)
+void ComWrappersNative::OnFullGCFinished()
 {
     CONTRACTL
     {
@@ -1806,26 +1864,27 @@ void Interop::OnGCFinished(_In_ int nCondemnedGeneration)
     }
     CONTRACTL_END;
 
-#ifdef FEATURE_COMWRAPPERS
-    //
-    // Note that we could get nested GCStart/GCEnd calls, such as :
-    // GCStart for Gen 2 background GC
-    //    GCStart for Gen 0/1 foregorund GC
-    //    GCEnd   for Gen 0/1 foreground GC
-    //    ....
-    // GCEnd for Gen 2 background GC
-    //
-    // The nCondemnedGeneration >= 2 check takes care of this nesting problem
-    //
-    // See Interop::OnGCStarted()
-    if (nCondemnedGeneration >= 2)
+    ExtObjCxtCache* cache = ExtObjCxtCache::GetInstanceNoThrow();
+    if (cache != NULL)
     {
-        ExtObjCxtCache* cache = ExtObjCxtCache::GetInstanceNoThrow();
-        if (cache != NULL)
-        {
-            (void)InteropLib::Com::EndExternalObjectReferenceTracking();
-            STRESS_LOG0(LF_INTEROP, LL_INFO10000, "End Reference Tracking\n");
-        }
+        (void)InteropLib::Com::EndExternalObjectReferenceTracking();
+        STRESS_LOG0(LF_INTEROP, LL_INFO10000, "End Reference Tracking\n");
     }
-#endif // FEATURE_COMWRAPPERS
 }
+
+void ComWrappersNative::AfterRefCountedHandleCallbacks()
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+        MODE_ANY;
+    }
+    CONTRACTL_END;
+
+    ExtObjCxtCache* cache = ExtObjCxtCache::GetInstanceNoThrow();
+    if (cache != NULL)
+        cache->DetachNotPromotedEOCs();
+}
+
+#endif // FEATURE_COMWRAPPERS

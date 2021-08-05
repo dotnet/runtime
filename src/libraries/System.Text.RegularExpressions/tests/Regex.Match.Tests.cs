@@ -152,6 +152,9 @@ namespace System.Text.RegularExpressions.Tests
             // Using beginning/end of string chars \A, \Z: Actual - "\\Aaaa\\w+zzz\\Z"
             yield return new object[] { @"\Aaaa\w+zzz\Z", "aaaasdfajsdlfjzzza", RegexOptions.None, 0, 18, false, string.Empty };
 
+            // Anchors and multiline
+            yield return new object[] { @"^A$", "ABC\n", RegexOptions.Multiline, 0, 2, false, string.Empty };
+
             // Using beginning/end of string chars \A, \Z: Actual - "\\Aaaa\\w+zzz\\Z"
             yield return new object[] { @"\A(line2\n)line3\Z", "line2\nline3\n", RegexOptions.Multiline, 0, 12, true, "line2\nline3" };
 
@@ -201,9 +204,11 @@ namespace System.Text.RegularExpressions.Tests
             yield return new object[] { "abc", "abc", RegexOptions.None, 0, 3, true, "abc" };
             yield return new object[] { "abc", "aBc", RegexOptions.None, 0, 3, false, string.Empty };
             yield return new object[] { "abc", "aBc", RegexOptions.IgnoreCase, 0, 3, true, "aBc" };
+            yield return new object[] { @"abc.*def", "abcghiDEF", RegexOptions.IgnoreCase, 0, 9, true, "abcghiDEF" };
 
             // Using *, +, ?, {}: Actual - "a+\\.?b*\\.?c{2}"
             yield return new object[] { @"a+\.?b*\.+c{2}", "ab.cc", RegexOptions.None, 0, 5, true, "ab.cc" };
+            yield return new object[] { @"[^a]+\.[^z]+", "zzzzz", RegexOptions.None, 0, 5, false, string.Empty };
 
             // RightToLeft
             yield return new object[] { @"\s+\d+", "sdf 12sad", RegexOptions.RightToLeft, 0, 9, true, " 12" };
@@ -284,6 +289,7 @@ namespace System.Text.RegularExpressions.Tests
             yield return new object[] { "(?(cat)|dog)", "oof", RegexOptions.None, 0, 3, false, string.Empty };
             yield return new object[] { "(?(a:b))", "a", RegexOptions.None, 0, 1, true, string.Empty };
             yield return new object[] { "(?(a:))", "a", RegexOptions.None, 0, 1, true, string.Empty };
+            yield return new object[] { "[^a-z0-9]etag|[^a-z0-9]digest", "this string has .digest as a substring", RegexOptions.None, 16, 7, true, ".digest" };
 
             // No Negation
             yield return new object[] { "[abcd-[abcd]]+", "abcxyzABCXYZ`!@#$%^&*()_-+= \t\n", RegexOptions.None, 0, 30, false, string.Empty };
@@ -376,6 +382,62 @@ namespace System.Text.RegularExpressions.Tests
                 yield return new object[] { "\u05D0(\u05D4\u05D5|\u05D6\u05D7|\u05D8)", "\u05D0\u05D8", options, 0, 2, true, "\u05D0\u05D8" };
                 yield return new object[] { "\u05D0(?:\u05D1|\u05D2|\u05D3)", "\u05D0\u05D2", options, 0, 2, true, "\u05D0\u05D2" };
                 yield return new object[] { "\u05D0(?:\u05D1|\u05D2|\u05D3)", "\u05D0\u05D4", options, 0, 0, false, "" };
+            }
+
+            // .* : Case sensitive
+            foreach (RegexOptions options in new[] { RegexOptions.None, RegexOptions.Compiled })
+            {
+                yield return new object[] { @".*\nfoo", "This shouldn't match", options, 0, 20, false, "" };
+                yield return new object[] { @"a.*\nfoo", "This shouldn't match", options, 0, 20, false, "" };
+                yield return new object[] { @".*\nFoo", $"\nFooThis should match", options, 0, 21, true, "\nFoo" };
+                yield return new object[] { @".*\nfoo", "\nfooThis should match", options, 4, 17, false, "" };
+
+                yield return new object[] { @".*\dfoo", "This shouldn't match", options, 0, 20, false, "" };
+                yield return new object[] { @".*\dFoo", "This1Foo should match", options, 0, 21, true, "This1Foo" };
+                yield return new object[] { @".*\dFoo", "This1foo should 2Foo match", options, 0, 26, true, "This1foo should 2Foo" };
+                yield return new object[] { @".*\dFoo", "This1foo shouldn't 2foo match", options, 0, 29, false, "" };
+                yield return new object[] { @".*\dfoo", "This1foo shouldn't 2foo match", options, 24, 5, false, "" };
+
+                yield return new object[] { @".*\dfoo", "1fooThis1foo should 1foo match", options, 4, 9, true, "This1foo" };
+                yield return new object[] { @".*\dfoo", "This shouldn't match 1foo", options, 0, 20, false, "" };
+            }
+
+            // .* : Case insensitive
+            foreach (RegexOptions options in new[] { RegexOptions.IgnoreCase, RegexOptions.IgnoreCase | RegexOptions.Compiled })
+            {
+                yield return new object[] { @".*\nFoo", "\nfooThis should match", options, 0, 21, true, "\nfoo" };
+                yield return new object[] { @".*\dFoo", "This1foo should match", options, 0, 21, true, "This1foo" };
+                yield return new object[] { @".*\dFoo", "This1foo should 2FoO match", options, 0, 26, true, "This1foo should 2FoO" };
+                yield return new object[] { @".*\dFoo", "This1Foo should 2fOo match", options, 0, 26, true, "This1Foo should 2fOo" };
+                yield return new object[] { @".*\dfoo", "1fooThis1FOO should 1foo match", options, 4, 9, true, "This1FOO" };
+            }
+
+            // .* : RTL, Case-sensitive
+            foreach (RegexOptions options in new[] { RegexOptions.None | RegexOptions.RightToLeft, RegexOptions.Compiled | RegexOptions.RightToLeft })
+            {
+                yield return new object[] { @".*\nfoo", "This shouldn't match", options, 0, 20, false, "" };
+                yield return new object[] { @"a.*\nfoo", "This shouldn't match", options, 0, 20, false, "" };
+                yield return new object[] { @".*\nFoo", $"This should match\nFoo", options, 0, 21, true, "This should match\nFoo" };
+                yield return new object[] { @".*\nfoo", "This should matchfoo\n", options, 4, 13, false, "" };
+
+                yield return new object[] { @".*\dfoo", "This shouldn't match", options, 0, 20, false, "" };
+                yield return new object[] { @".*\dFoo", "This1Foo should match", options, 0, 21, true, "This1Foo" };
+                yield return new object[] { @".*\dFoo", "This1foo should 2Foo match", options, 0, 26, true, "This1foo should 2Foo" };
+                yield return new object[] { @".*\dFoo", "This1foo shouldn't 2foo match", options, 0, 29, false, "" };
+                yield return new object[] { @".*\dfoo", "This1foo shouldn't 2foo match", options, 19, 0, false, "" };
+
+                yield return new object[] { @".*\dfoo", "1fooThis2foo should 1foo match", options, 8, 4, true, "2foo" };
+                yield return new object[] { @".*\dfoo", "This shouldn't match 1foo", options, 0, 20, false, "" };
+            }
+
+            // .* : RTL, case insensitive
+            foreach (RegexOptions options in new[] { RegexOptions.IgnoreCase | RegexOptions.RightToLeft, RegexOptions.IgnoreCase | RegexOptions.Compiled | RegexOptions.RightToLeft })
+            {
+                yield return new object[] { @".*\nFoo", "\nfooThis should match", options, 0, 21, true, "\nfoo" };
+                yield return new object[] { @".*\dFoo", "This1foo should match", options, 0, 21, true, "This1foo" };
+                yield return new object[] { @".*\dFoo", "This1foo should 2FoO match", options, 0, 26, true, "This1foo should 2FoO" };
+                yield return new object[] { @".*\dFoo", "This1Foo should 2fOo match", options, 0, 26, true, "This1Foo should 2fOo" };
+                yield return new object[] { @".*\dfoo", "1fooThis2FOO should 1foo match", options, 8, 4, true, "2FOO" };
             }
         }
 
@@ -613,7 +675,7 @@ namespace System.Text.RegularExpressions.Tests
         public void Match_Timeout_Repetition_Throws(RegexOptions options)
         {
             int repetitionCount = 800_000_000;
-            var regex = new Regex(@"a\s{" + repetitionCount+ "}", options, TimeSpan.FromSeconds(1));
+            var regex = new Regex(@"a\s{" + repetitionCount + "}", options, TimeSpan.FromSeconds(1));
             string input = @"a" + new string(' ', repetitionCount) + @"b";
             Assert.Throws<RegexMatchTimeoutException>(() => regex.Match(input));
         }
@@ -812,7 +874,7 @@ namespace System.Text.RegularExpressions.Tests
                 }
             };
 
-            // Mutliline
+            // Multiline
             yield return new object[]
             {
                 "(line2$\n)line3", "line1\nline2\nline3\n\nline4", RegexOptions.Multiline, 0, 24,
@@ -823,7 +885,7 @@ namespace System.Text.RegularExpressions.Tests
                 }
             };
 
-            // Mutliline
+            // Multiline
             yield return new object[]
             {
                 "(line2\n^)line3", "line1\nline2\nline3\n\nline4", RegexOptions.Multiline, 0, 24,
@@ -834,7 +896,7 @@ namespace System.Text.RegularExpressions.Tests
                 }
             };
 
-            // Mutliline
+            // Multiline
             yield return new object[]
             {
                 "(line3\n$\n)line4", "line1\nline2\nline3\n\nline4", RegexOptions.Multiline, 0, 24,
@@ -845,7 +907,7 @@ namespace System.Text.RegularExpressions.Tests
                 }
             };
 
-            // Mutliline
+            // Multiline
             yield return new object[]
             {
                 "(line3\n^\n)line4", "line1\nline2\nline3\n\nline4", RegexOptions.Multiline, 0, 24,
@@ -856,7 +918,7 @@ namespace System.Text.RegularExpressions.Tests
                 }
             };
 
-            // Mutliline
+            // Multiline
             yield return new object[]
             {
                 "(line2$\n^)line3", "line1\nline2\nline3\n\nline4", RegexOptions.Multiline, 0, 24,

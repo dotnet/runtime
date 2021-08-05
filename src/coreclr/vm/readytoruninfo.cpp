@@ -946,10 +946,10 @@ PCODE ReadyToRunInfo::GetEntryPoint(MethodDesc * pMD, PrepareCodeConfig* pConfig
 #ifndef CROSSGEN_COMPILE
 #ifdef PROFILING_SUPPORTED
         {
-            BEGIN_PIN_PROFILER(CORProfilerTrackCacheSearches());
-            g_profControlBlock.pProfInterface->
+            BEGIN_PROFILER_CALLBACK(CORProfilerTrackCacheSearches());
+            (&g_profControlBlock)->
                 JITCachedFunctionSearchStarted((FunctionID)pMD, &fShouldSearchCache);
-            END_PIN_PROFILER();
+            END_PROFILER_CALLBACK();
         }
         if (!fShouldSearchCache)
         {
@@ -978,7 +978,12 @@ PCODE ReadyToRunInfo::GetEntryPoint(MethodDesc * pMD, PrepareCodeConfig* pConfig
 
         if (fFixups)
         {
-            if (!m_pModule->FixupDelayList(dac_cast<TADDR>(GetImage()->GetBase()) + offset))
+            BOOL mayUsePrecompiledNDirectMethods = TRUE;
+#ifndef CROSSGEN_COMPILE
+            mayUsePrecompiledNDirectMethods = !pConfig->IsForMulticoreJit();
+#endif // CROSSGEN_COMPILE
+
+            if (!m_pModule->FixupDelayList(dac_cast<TADDR>(GetImage()->GetBase()) + offset, mayUsePrecompiledNDirectMethods))
             {
 #ifndef CROSSGEN_COMPILE
                 pConfig->SetReadyToRunRejectedPrecompiledCode();
@@ -1001,10 +1006,10 @@ PCODE ReadyToRunInfo::GetEntryPoint(MethodDesc * pMD, PrepareCodeConfig* pConfig
 #ifndef CROSSGEN_COMPILE
 #ifdef PROFILING_SUPPORTED
         {
-            BEGIN_PIN_PROFILER(CORProfilerTrackCacheSearches());
-            g_profControlBlock.pProfInterface->
+            BEGIN_PROFILER_CALLBACK(CORProfilerTrackCacheSearches());
+            (&g_profControlBlock)->
                 JITCachedFunctionSearchFinished((FunctionID)pMD, COR_PRF_CACHED_FUNCTION_FOUND);
-            END_PIN_PROFILER();
+            END_PROFILER_CALLBACK();
         }
 #endif // PROFILING_SUPPORTED
 #endif // CROSSGEN_COMPILE

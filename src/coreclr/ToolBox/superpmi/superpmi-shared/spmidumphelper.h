@@ -139,6 +139,7 @@ inline std::string SpmiDumpHelper::DumpPSig(
             pbuf += cch;
             sizeOfBuffer -= cch;
         }
+        buffers->Unlock();
     }
 
     return std::string(buffer);

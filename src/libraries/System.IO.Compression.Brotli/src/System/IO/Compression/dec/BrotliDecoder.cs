@@ -59,7 +59,7 @@ namespace System.IO.Compression
 
             bytesConsumed = 0;
             bytesWritten = 0;
-            if (Interop.Brotli.BrotliDecoderIsFinished(_state))
+            if (Interop.Brotli.BrotliDecoderIsFinished(_state) != Interop.BOOL.FALSE)
                 return OperationStatus.Done;
             nuint availableOutput = (nuint)destination.Length;
             nuint availableInput = (nuint)source.Length;
@@ -117,7 +117,7 @@ namespace System.IO.Compression
             fixed (byte* outBytes = &MemoryMarshal.GetReference(destination))
             {
                 nuint availableOutput = (nuint)destination.Length;
-                bool success = Interop.Brotli.BrotliDecoderDecompress((nuint)source.Length, inBytes, ref availableOutput, outBytes);
+                bool success = Interop.Brotli.BrotliDecoderDecompress((nuint)source.Length, inBytes, &availableOutput, outBytes) != Interop.BOOL.FALSE;
 
                 Debug.Assert(success ? availableOutput <= (nuint)destination.Length : availableOutput == 0);
 

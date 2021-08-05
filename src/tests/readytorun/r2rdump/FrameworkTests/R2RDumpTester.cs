@@ -15,7 +15,7 @@ namespace R2RDumpTests
         
         public static string FindExePath(string exe)
         {
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            if (OperatingSystem.IsWindows())
             {
                 exe = exe + ".exe";
             }
@@ -40,12 +40,14 @@ namespace R2RDumpTests
         public void DumpCoreLib()
         {
             string CoreRootVar = Environment.GetEnvironmentVariable(CoreRoot);
-            bool IsUnix = !RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
+            bool IsUnix = !OperatingSystem.IsWindows();
             string R2RDumpAbsolutePath = Path.Combine(CoreRootVar, R2RDumpRelativePath, R2RDumpFile);
             string CoreLibFile = "System.Private.CoreLib.dll";
             string CoreLibAbsolutePath = Path.Combine(CoreRootVar, CoreLibFile);
             string OutputFile = Path.GetTempFileName();
             string TestDotNetCmdVar = Environment.GetEnvironmentVariable("__TestDotNetCmd");
+            // Unset COMPlus_GCName since standalone GC doesnt exist in official "dotnet" deployment
+            Environment.SetEnvironmentVariable("COMPlus_GCName", String.Empty);
             string DotNetAbsolutePath = string.IsNullOrEmpty(TestDotNetCmdVar) ? FindExePath("dotnet") : TestDotNetCmdVar;
 
             ProcessStartInfo processStartInfo = new ProcessStartInfo

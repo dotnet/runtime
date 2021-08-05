@@ -151,6 +151,8 @@ namespace Microsoft.Diagnostics.Tools.Pgo.TypeRefTypeSystem
 
         public override ModuleDesc Module => _module;
 
+        public override DefType BaseType => MetadataBaseType;
+
         public override MetadataType MetadataBaseType
         {
             get

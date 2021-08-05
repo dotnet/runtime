@@ -772,6 +772,9 @@ public:
     TADDR               m_pRCW;
 #endif
 
+#endif // FEATURE_COMINTEROP
+
+#if defined(FEATURE_COMWRAPPERS)
 public:
     bool TryGetManagedObjectComWrapper(_In_ INT64 wrapperId, _Out_ void** mocw)
     {
@@ -820,19 +823,24 @@ public:
         if (m_managedObjectComWrapperMap == NULL)
             return;
 
-        CrstHolder lock(&m_managedObjectComWrapperLock);
-
-        if (callback != NULL)
+        CQuickArrayList<void*> localList;
         {
-            ManagedObjectComWrapperByIdMap::Iterator iter = m_managedObjectComWrapperMap->Begin();
-            while (iter != m_managedObjectComWrapperMap->End())
+            CrstHolder lock(&m_managedObjectComWrapperLock);
+            if (callback != NULL)
             {
-                callback(iter->Value());
-                ++iter;
+                ManagedObjectComWrapperByIdMap::Iterator iter = m_managedObjectComWrapperMap->Begin();
+                while (iter != m_managedObjectComWrapperMap->End())
+                {
+                    localList.Push(iter->Value());
+                    ++iter;
+                }
             }
+
+            m_managedObjectComWrapperMap->RemoveAll();
         }
 
-        m_managedObjectComWrapperMap->RemoveAll();
+        for (SIZE_T i = 0; i < localList.Size(); i++)
+            callback(localList[i]);
     }
 
     using EnumWrappersCallback = bool(void* mocw, void* cxt);
@@ -882,8 +890,47 @@ private:
 
     CrstExplicitInit m_managedObjectComWrapperLock;
     NewHolder<ManagedObjectComWrapperByIdMap> m_managedObjectComWrapperMap;
-#endif // FEATURE_COMINTEROP
+#endif // FEATURE_COMWRAPPERS
 
+#ifdef FEATURE_OBJCMARSHAL
+public:
+#ifndef DACCESS_COMPILE
+    PTR_VOID AllocTaggedMemory(_Out_ size_t* memoryInSizeT)
+    {
+        LIMITED_METHOD_CONTRACT;
+        _ASSERTE(memoryInSizeT != NULL);
+
+        *memoryInSizeT = GetTaggedMemorySizeInBytes() / sizeof(SIZE_T);
+
+        // The allocation is meant to indicate that memory
+        // has been made available by the system. Calling the 'get'
+        // without allocating memory indicates there has been
+        // no request for reference tracking tagged memory.
+        m_taggedMemory = m_taggedAlloc;
+        return m_taggedMemory;
+    }
+#endif // !DACCESS_COMPILE
+
+    PTR_VOID GetTaggedMemory()
+    {
+        LIMITED_METHOD_CONTRACT;
+        return m_taggedMemory;
+    }
+
+    size_t GetTaggedMemorySizeInBytes()
+    {
+        LIMITED_METHOD_CONTRACT;
+        return _countof(m_taggedAlloc);
+    }
+
+private:
+    PTR_VOID m_taggedMemory;
+
+    // Two pointers worth of bytes of the requirement for
+    // the current consuming implementation so that is what
+    // is being allocated.
+    BYTE m_taggedAlloc[2 * sizeof(void*)];
+#endif // FEATURE_OBJCMARSHAL
 };
 
 typedef DPTR(InteropSyncBlockInfo) PTR_InteropSyncBlockInfo;

@@ -19,12 +19,12 @@
 
 static
 void
-session_disable_ipc_streaming_thread (EventPipeSession *session);
+session_disable_streaming_thread (EventPipeSession *session);
 
 // _Requires_lock_held (ep)
 static
 void
-session_create_ipc_streaming_thread (EventPipeSession *session);
+session_create_streaming_thread (EventPipeSession *session);
 
 /*
  * EventPipeSession.
@@ -39,19 +39,19 @@ EP_RT_DEFINE_THREAD_FUNC (streaming_thread)
 	ep_rt_thread_params_t *thread_params = (ep_rt_thread_params_t *)data;
 
 	EventPipeSession *const session = (EventPipeSession *)thread_params->thread_params;
-	if (session->session_type != EP_SESSION_TYPE_IPCSTREAM)
+	if (session->session_type != EP_SESSION_TYPE_IPCSTREAM && session->session_type != EP_SESSION_TYPE_FILESTREAM)
 		return 1;
 
 	if (!thread_params->thread || !ep_rt_thread_has_started (thread_params->thread))
 		return 1;
 
-	session->ipc_streaming_thread = thread_params->thread;
+	session->streaming_thread = thread_params->thread;
 
 	bool success = true;
 	ep_rt_wait_event_handle_t *wait_event = ep_session_get_wait_event (session);
 
 	EP_GCX_PREEMP_ENTER
-		while (ep_session_get_ipc_streaming_enabled (session)) {
+		while (ep_session_get_streaming_enabled (session)) {
 			bool events_written = false;
 			if (!ep_session_write_all_buffers_to_file (session, &events_written)) {
 				success = false;
@@ -71,46 +71,46 @@ EP_RT_DEFINE_THREAD_FUNC (streaming_thread)
 		ep_rt_wait_event_set (&session->rt_thread_shutdown_event);
 	EP_GCX_PREEMP_EXIT
 
+	session->streaming_thread = NULL;
+
 	if (!success)
 		ep_disable ((EventPipeSessionID)session);
-
-	session->ipc_streaming_thread = NULL;
 
 	return (ep_rt_thread_start_func_return_t)0;
 }
 
 static
 void
-session_create_ipc_streaming_thread (EventPipeSession *session)
+session_create_streaming_thread (EventPipeSession *session)
 {
 	EP_ASSERT (session != NULL);
-	EP_ASSERT (session->session_type == EP_SESSION_TYPE_IPCSTREAM);
+	EP_ASSERT (session->session_type == EP_SESSION_TYPE_IPCSTREAM || session->session_type == EP_SESSION_TYPE_FILESTREAM);
 
 	ep_requires_lock_held ();
 
-	ep_session_set_ipc_streaming_enabled (session, true);
+	ep_session_set_streaming_enabled (session, true);
 	ep_rt_wait_event_alloc (&session->rt_thread_shutdown_event, true, false);
 	if (!ep_rt_wait_event_is_valid (&session->rt_thread_shutdown_event))
-		EP_UNREACHABLE ("Unable to create IPC stream flushing thread shutdown event.");
+		EP_UNREACHABLE ("Unable to create stream flushing thread shutdown event.");
 
 	ep_rt_thread_id_t thread_id = ep_rt_uint64_t_to_thread_id_t (0);
 	if (!ep_rt_thread_create ((void *)streaming_thread, (void *)session, EP_THREAD_TYPE_SESSION, &thread_id))
-		EP_UNREACHABLE ("Unable to create IPC stream flushing thread.");
+		EP_UNREACHABLE ("Unable to create stream flushing thread.");
 }
 
 static
 void
-session_disable_ipc_streaming_thread (EventPipeSession *session)
+session_disable_streaming_thread (EventPipeSession *session)
 {
-	EP_ASSERT (session->session_type == EP_SESSION_TYPE_IPCSTREAM);
-	EP_ASSERT (ep_session_get_ipc_streaming_enabled (session));
+	EP_ASSERT (session->session_type == EP_SESSION_TYPE_IPCSTREAM || session->session_type == EP_SESSION_TYPE_FILESTREAM);
+	EP_ASSERT (ep_session_get_streaming_enabled (session));
 
 	EP_ASSERT (!ep_rt_process_detach ());
 	EP_ASSERT (session->buffer_manager != NULL);
 
-	// The IPC streaming thread will watch this value and exit
+	// The streaming thread will watch this value and exit
 	// when profiling is disabled.
-	ep_session_set_ipc_streaming_enabled (session, false);
+	ep_session_set_streaming_enabled (session, false);
 
 	// Thread could be waiting on the event that there is new data to read.
 	ep_rt_wait_event_set (ep_buffer_manager_get_rt_wait_event_ref (session->buffer_manager));
@@ -132,7 +132,8 @@ ep_session_alloc (
 	uint32_t circular_buffer_size_in_mb,
 	const EventPipeProviderConfiguration *providers,
 	uint32_t providers_len,
-	EventPipeSessionSynchronousCallback sync_callback)
+	EventPipeSessionSynchronousCallback sync_callback,
+	void *callback_additional_data)
 {
 	EP_ASSERT (index < EP_MAX_NUMBER_OF_SESSIONS);
 	EP_ASSERT (format < EP_SERIALIZATION_FORMAT_COUNT);
@@ -159,6 +160,7 @@ ep_session_alloc (
 	instance->format = format;
 	instance->rundown_requested = rundown_requested;
 	instance->synchronous_callback = sync_callback;
+	instance->callback_additional_data = callback_additional_data;
 
 	// Hard coded 10MB for now, we'll probably want to make
 	// this configurable later.
@@ -176,6 +178,7 @@ ep_session_alloc (
 	// This is used in the EventListener case.
 	switch (session_type) {
 	case EP_SESSION_TYPE_FILE :
+	case EP_SESSION_TYPE_FILESTREAM :
 		if (output_path) {
 			file_stream_writer = ep_file_stream_writer_alloc (output_path);
 			instance->file = ep_file_alloc (ep_file_stream_writer_get_stream_writer_ref (file_stream_writer), format);
@@ -218,7 +221,7 @@ ep_session_free (EventPipeSession *session)
 {
 	ep_return_void_if_nok (session != NULL);
 
-	EP_ASSERT (!ep_session_get_ipc_streaming_enabled (session));
+	EP_ASSERT (!ep_session_get_streaming_enabled (session));
 
 	ep_rt_wait_event_free (&session->rt_thread_shutdown_event);
 
@@ -305,7 +308,9 @@ ep_on_error:
 }
 
 void
-ep_session_execute_rundown (EventPipeSession *session)
+ep_session_execute_rundown (
+	EventPipeSession *session,
+	ep_rt_execution_checkpoint_array_t *execution_checkpoints)
 {
 	EP_ASSERT (session != NULL);
 
@@ -314,7 +319,7 @@ ep_session_execute_rundown (EventPipeSession *session)
 
 	ep_return_void_if_nok (session->file != NULL);
 
-	ep_rt_execute_rundown ();
+	ep_rt_execute_rundown (execution_checkpoints);
 }
 
 void
@@ -375,12 +380,12 @@ ep_session_start_streaming (EventPipeSession *session)
 	if (session->file != NULL)
 		ep_file_initialize_file (session->file);
 
-	if (session->session_type == EP_SESSION_TYPE_IPCSTREAM)
-		session_create_ipc_streaming_thread (session);
+	if (session->session_type == EP_SESSION_TYPE_IPCSTREAM || session->session_type == EP_SESSION_TYPE_FILESTREAM)
+		session_create_streaming_thread (session);
 
 	if (session->session_type == EP_SESSION_TYPE_SYNCHRONOUS) {
 		EP_ASSERT (session->file == NULL);
-		EP_ASSERT (!ep_session_get_ipc_streaming_enabled (session));
+		EP_ASSERT (!ep_session_get_streaming_enabled (session));
 	}
 
 	ep_requires_lock_held ();
@@ -412,8 +417,8 @@ ep_session_disable (EventPipeSession *session)
 {
 	EP_ASSERT (session != NULL);
 
-	if (session->session_type == EP_SESSION_TYPE_IPCSTREAM && ep_session_get_ipc_streaming_enabled (session))
-		session_disable_ipc_streaming_thread (session);
+	if ((session->session_type == EP_SESSION_TYPE_IPCSTREAM || session->session_type == EP_SESSION_TYPE_FILESTREAM) && ep_session_get_streaming_enabled (session))
+		session_disable_streaming_thread (session);
 
 	bool ignored;
 	ep_session_write_all_buffers_to_file (session, &ignored);
@@ -470,7 +475,8 @@ ep_session_write_event (
 				related_activity_id,
 				event_thread,
 				stack == NULL ? 0 : ep_stack_contents_get_size (stack),
-				stack == NULL ? NULL : (uintptr_t *)ep_stack_contents_get_pointer (stack));
+				stack == NULL ? NULL : (uintptr_t *)ep_stack_contents_get_pointer (stack),
+				session->callback_additional_data);
 			result = true;
 		} else {
 			EP_ASSERT (session->buffer_manager != NULL);
@@ -541,19 +547,19 @@ ep_session_set_rundown_enabled (
 }
 
 bool
-ep_session_get_ipc_streaming_enabled (const EventPipeSession *session)
+ep_session_get_streaming_enabled (const EventPipeSession *session)
 {
 	EP_ASSERT (session != NULL);
-	return (ep_rt_volatile_load_uint32_t(&session->ipc_streaming_enabled) != 0 ? true : false);
+	return (ep_rt_volatile_load_uint32_t(&session->streaming_enabled) != 0 ? true : false);
 }
 
 void
-ep_session_set_ipc_streaming_enabled (
+ep_session_set_streaming_enabled (
 	EventPipeSession *session,
 	bool enabled)
 {
 	EP_ASSERT (session != NULL);
-	ep_rt_volatile_store_uint32_t (&session->ipc_streaming_enabled, (enabled) ? 1 : 0);
+	ep_rt_volatile_store_uint32_t (&session->streaming_enabled, (enabled) ? 1 : 0);
 }
 
 void

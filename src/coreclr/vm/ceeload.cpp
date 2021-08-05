@@ -163,10 +163,10 @@ void Module::DoInit(AllocMemTracker *pamTracker, LPCWSTR szName)
 
 #ifdef PROFILING_SUPPORTED
     {
-        BEGIN_PIN_PROFILER(CORProfilerTrackModuleLoads());
+        BEGIN_PROFILER_CALLBACK(CORProfilerTrackModuleLoads());
         GCX_COOP();
-        g_profControlBlock.pProfInterface->ModuleLoadStarted((ModuleID) this);
-        END_PIN_PROFILER();
+        (&g_profControlBlock)->ModuleLoadStarted((ModuleID) this);
+        END_PROFILER_CALLBACK();
     }
     // Need TRY/HOOK instead of holder so we can get HR of exception thrown for profiler callback
     EX_TRY
@@ -180,9 +180,9 @@ void Module::DoInit(AllocMemTracker *pamTracker, LPCWSTR szName)
     EX_HOOK
     {
         {
-            BEGIN_PIN_PROFILER(CORProfilerTrackModuleLoads());
-            g_profControlBlock.pProfInterface->ModuleLoadFinished((ModuleID) this, GET_EXCEPTION()->GetHR());
-            END_PIN_PROFILER();
+            BEGIN_PROFILER_CALLBACK(CORProfilerTrackModuleLoads());
+            (&g_profControlBlock)->ModuleLoadFinished((ModuleID) this, GET_EXCEPTION()->GetHR());
+            END_PROFILER_CALLBACK();
         }
     }
     EX_END_HOOK;
@@ -291,20 +291,20 @@ void Module::NotifyProfilerLoadFinished(HRESULT hr)
         BOOL profilerCallbackHappened = FALSE;
         // Notify the profiler, this may cause metadata to be updated
         {
-            BEGIN_PIN_PROFILER(CORProfilerTrackModuleLoads());
+            BEGIN_PROFILER_CALLBACK(CORProfilerTrackModuleLoads());
             {
                 GCX_PREEMP();
-                g_profControlBlock.pProfInterface->ModuleLoadFinished((ModuleID) this, hr);
+                (&g_profControlBlock)->ModuleLoadFinished((ModuleID) this, hr);
 
                 if (SUCCEEDED(hr))
                 {
-                    g_profControlBlock.pProfInterface->ModuleAttachedToAssembly((ModuleID) this,
+                    (&g_profControlBlock)->ModuleAttachedToAssembly((ModuleID) this,
                                                                                 (AssemblyID)m_pAssembly);
                 }
 
                 profilerCallbackHappened = TRUE;
             }
-            END_PIN_PROFILER();
+            END_PROFILER_CALLBACK();
         }
 
         // If there are more types than before, add these new types to the
@@ -315,13 +315,13 @@ void Module::NotifyProfilerLoadFinished(HRESULT hr)
         }
 
         {
-            BEGIN_PIN_PROFILER(CORProfilerTrackAssemblyLoads());
+            BEGIN_PROFILER_CALLBACK(CORProfilerTrackAssemblyLoads());
             if (IsManifest())
             {
                 GCX_COOP();
-                g_profControlBlock.pProfInterface->AssemblyLoadFinished((AssemblyID) m_pAssembly, hr);
+                (&g_profControlBlock)->AssemblyLoadFinished((AssemblyID) m_pAssembly, hr);
             }
-            END_PIN_PROFILER();
+            END_PROFILER_CALLBACK();
         }
     }
 }
@@ -1219,7 +1219,7 @@ void Module::Destruct()
     LOG((LF_EEMEM, INFO3, "Deleting module %x\n", this));
 #ifdef PROFILING_SUPPORTED
     {
-        BEGIN_PIN_PROFILER(CORProfilerTrackModuleLoads());
+        BEGIN_PROFILER_CALLBACK(CORProfilerTrackModuleLoads());
         if (!IsBeingUnloaded())
         {
             // Profiler is causing some peripheral class loads. Probably this just needs
@@ -1227,14 +1227,14 @@ void Module::Destruct()
             EX_TRY
             {
                 GCX_PREEMP();
-                g_profControlBlock.pProfInterface->ModuleUnloadStarted((ModuleID) this);
+                (&g_profControlBlock)->ModuleUnloadStarted((ModuleID) this);
             }
             EX_CATCH
             {
             }
             EX_END_CATCH(SwallowAllExceptions);
         }
-        END_PIN_PROFILER();
+        END_PROFILER_CALLBACK();
     }
 #endif // PROFILING_SUPPORTED
 
@@ -1277,19 +1277,19 @@ void Module::Destruct()
 
 #ifdef PROFILING_SUPPORTED
     {
-        BEGIN_PIN_PROFILER(CORProfilerTrackModuleLoads());
+        BEGIN_PROFILER_CALLBACK(CORProfilerTrackModuleLoads());
         // Profiler is causing some peripheral class loads. Probably this just needs
         // to be turned into a Fault_not_fatal and moved to a specific place inside the profiler.
         EX_TRY
         {
             GCX_PREEMP();
-            g_profControlBlock.pProfInterface->ModuleUnloadFinished((ModuleID) this, S_OK);
+            (&g_profControlBlock)->ModuleUnloadFinished((ModuleID) this, S_OK);
         }
         EX_CATCH
         {
         }
         EX_END_CATCH(SwallowAllExceptions);
-        END_PIN_PROFILER();
+        END_PROFILER_CALLBACK();
     }
 
     if (m_pValidatedEmitter.Load() != NULL)
@@ -2618,7 +2618,7 @@ DWORD Module::AllocateDynamicEntry(MethodTable *pMT)
 
     DWORD newId = FastInterlockExchangeAdd((LONG*)&m_cDynamicEntries, 1);
 
-    if (newId >= m_maxDynamicEntries)
+    if (newId >= VolatileLoad(&m_maxDynamicEntries))
     {
         CrstHolder ch(&m_Crst);
 
@@ -2637,7 +2637,7 @@ DWORD Module::AllocateDynamicEntry(MethodTable *pMT)
                 memcpy(pNewDynamicStaticsInfo, m_pDynamicStaticsInfo, sizeof(DynamicStaticsInfo) * m_maxDynamicEntries);
 
             m_pDynamicStaticsInfo = pNewDynamicStaticsInfo;
-            m_maxDynamicEntries = maxDynamicEntries;
+            VolatileStore(&m_maxDynamicEntries, maxDynamicEntries);
         }
     }
 
@@ -3129,7 +3129,7 @@ void Module::StartUnload()
     WRAPPER_NO_CONTRACT;
 #ifdef PROFILING_SUPPORTED
     {
-        BEGIN_PIN_PROFILER(CORProfilerTrackModuleLoads());
+        BEGIN_PROFILER_CALLBACK(CORProfilerTrackModuleLoads());
         if (!IsBeingUnloaded())
         {
             // Profiler is causing some peripheral class loads. Probably this just needs
@@ -3137,14 +3137,14 @@ void Module::StartUnload()
             EX_TRY
             {
                 GCX_PREEMP();
-                g_profControlBlock.pProfInterface->ModuleUnloadStarted((ModuleID) this);
+                (&g_profControlBlock)->ModuleUnloadStarted((ModuleID) this);
             }
             EX_CATCH
             {
             }
             EX_END_CATCH(SwallowAllExceptions);
         }
-        END_PIN_PROFILER();
+        END_PROFILER_CALLBACK();
     }
 #endif // PROFILING_SUPPORTED
 
@@ -3607,11 +3607,11 @@ void Module::SetSymbolBytes(LPCBYTE pbSyms, DWORD cbSyms)
     IfFailThrow(HRESULT_FROM_WIN32(dwError));
 
 #if PROFILING_SUPPORTED && !defined(CROSSGEN_COMPILE)
-    BEGIN_PIN_PROFILER(CORProfilerInMemorySymbolsUpdatesEnabled());
+    BEGIN_PROFILER_CALLBACK(CORProfilerInMemorySymbolsUpdatesEnabled());
     {
-        g_profControlBlock.pProfInterface->ModuleInMemorySymbolsUpdated((ModuleID) this);
+        (&g_profControlBlock)->ModuleInMemorySymbolsUpdated((ModuleID) this);
     }
-    END_PIN_PROFILER();
+    END_PROFILER_CALLBACK();
 #endif //PROFILING_SUPPORTED && !defined(CROSSGEN_COMPILE)
 
     ETW::CodeSymbolLog::EmitCodeSymbols(this);
@@ -5996,7 +5996,11 @@ static HMODULE GetIJWHostForModule(Module* module)
             if ((importNameTable[thunkIndex].u1.Ordinal & (1LL << (sizeof(importNameTable[thunkIndex].u1.Ordinal) * CHAR_BIT - 1))) == 0)
             {
                 IMAGE_IMPORT_BY_NAME* nameImport = (IMAGE_IMPORT_BY_NAME*)(baseAddress + importNameTable[thunkIndex].u1.AddressOfData);
-                if (strcmp("_CorDllMain", nameImport->Name) == 0)
+                if (strcmp("_CorDllMain", nameImport->Name) == 0
+#ifdef TARGET_X86
+                    || strcmp("__CorDllMain@12", nameImport->Name) == 0 // The MSVC compiler can and will bind to the stdcall-decorated name of _CorDllMain if it exists, even if the _CorDllMain symbol also exists.
+#endif
+                )
                 {
                     HMODULE ijwHost;
 
@@ -6329,13 +6333,16 @@ void Module::FixupVTables()
                         (UINT_PTR)&(pPointers[iMethod]), pMD->m_pszDebugMethodName, pMD));
 
                     UMEntryThunk *pUMEntryThunk = (UMEntryThunk*)(void*)(GetDllThunkHeap()->AllocAlignedMem(sizeof(UMEntryThunk), CODE_SIZE_ALIGN)); // UMEntryThunk contains code
-                    FillMemory(pUMEntryThunk, sizeof(*pUMEntryThunk), 0);
+                    ExecutableWriterHolder<UMEntryThunk> uMEntryThunkWriterHolder(pUMEntryThunk, sizeof(UMEntryThunk));
+                    FillMemory(uMEntryThunkWriterHolder.GetRW(), sizeof(UMEntryThunk), 0);
 
                     UMThunkMarshInfo *pUMThunkMarshInfo = (UMThunkMarshInfo*)(void*)(GetThunkHeap()->AllocAlignedMem(sizeof(UMThunkMarshInfo), CODE_SIZE_ALIGN));
-                    FillMemory(pUMThunkMarshInfo, sizeof(*pUMThunkMarshInfo), 0);
+                    ExecutableWriterHolder<UMThunkMarshInfo> uMThunkMarshInfoWriterHolder(pUMThunkMarshInfo, sizeof(UMThunkMarshInfo));
+                    FillMemory(uMThunkMarshInfoWriterHolder.GetRW(), sizeof(UMThunkMarshInfo), 0);
 
-                    pUMThunkMarshInfo->LoadTimeInit(pMD);
-                    pUMEntryThunk->LoadTimeInit(NULL, NULL, pUMThunkMarshInfo, pMD);
+                    uMThunkMarshInfoWriterHolder.GetRW()->LoadTimeInit(pMD);
+                    uMEntryThunkWriterHolder.GetRW()->LoadTimeInit(pUMEntryThunk, NULL, NULL, pUMThunkMarshInfo, pMD);
+
                     SetTargetForVTableEntry(hInstThis, (BYTE **)&pPointers[iMethod], (BYTE *)pUMEntryThunk->GetCode());
 
                     pData->MarkMethodFixedUp(iFixup, iMethod);
@@ -8899,8 +8906,6 @@ void Module::Fixup(DataImage *image)
 
     image->ZeroField(this, offsetof(Module, m_file), sizeof(m_file));
 
-    image->FixupPointerField(this, offsetof(Module, m_pDllMain));
-
     image->ZeroField(this, offsetof(Module, m_dwTransientFlags), sizeof(m_dwTransientFlags));
 
     image->ZeroField(this, offsetof(Module, m_pVASigCookieBlock), sizeof(m_pVASigCookieBlock));
@@ -10261,7 +10266,7 @@ PTR_BYTE Module::GetNativeDebugInfo(MethodDesc * pMD)
 
 //-----------------------------------------------------------------------------
 
-BOOL Module::FixupNativeEntry(CORCOMPILE_IMPORT_SECTION* pSection, SIZE_T fixupIndex, SIZE_T* fixupCell)
+BOOL Module::FixupNativeEntry(CORCOMPILE_IMPORT_SECTION* pSection, SIZE_T fixupIndex, SIZE_T* fixupCell, BOOL mayUsePrecompiledNDirectMethods)
 {
     CONTRACTL
     {
@@ -10279,7 +10284,7 @@ BOOL Module::FixupNativeEntry(CORCOMPILE_IMPORT_SECTION* pSection, SIZE_T fixupI
         {
             PTR_DWORD pSignatures = dac_cast<PTR_DWORD>(GetNativeOrReadyToRunImage()->GetRvaData(pSection->Signatures));
 
-            if (!LoadDynamicInfoEntry(this, pSignatures[fixupIndex], fixupCell))
+            if (!LoadDynamicInfoEntry(this, pSignatures[fixupIndex], fixupCell, mayUsePrecompiledNDirectMethods))
                 return FALSE;
 
             _ASSERTE(*fixupCell != NULL);
@@ -10290,7 +10295,7 @@ BOOL Module::FixupNativeEntry(CORCOMPILE_IMPORT_SECTION* pSection, SIZE_T fixupI
         if (CORCOMPILE_IS_FIXUP_TAGGED(fixup, pSection))
         {
             // Fixup has not been fixed up yet
-            if (!LoadDynamicInfoEntry(this, (RVA)CORCOMPILE_UNTAG_TOKEN(fixup), fixupCell))
+            if (!LoadDynamicInfoEntry(this, (RVA)CORCOMPILE_UNTAG_TOKEN(fixup), fixupCell, mayUsePrecompiledNDirectMethods))
                 return FALSE;
 
             _ASSERTE(!CORCOMPILE_IS_FIXUP_TAGGED(*fixupCell, pSection));
@@ -12441,7 +12446,7 @@ idMethodSpec Module::LogInstantiatedMethod(const MethodDesc * md, ULONG flagNum)
 // ===========================================================================
 
 /* static */
-ReflectionModule *ReflectionModule::Create(Assembly *pAssembly, PEFile *pFile, AllocMemTracker *pamTracker, LPCWSTR szName, BOOL fIsTransient)
+ReflectionModule *ReflectionModule::Create(Assembly *pAssembly, PEFile *pFile, AllocMemTracker *pamTracker, LPCWSTR szName)
 {
     CONTRACT(ReflectionModule *)
     {
@@ -12466,9 +12471,6 @@ ReflectionModule *ReflectionModule::Create(Assembly *pAssembly, PEFile *pFile, A
     ReflectionModuleHolder pModule(new (pMemory) ReflectionModule(pAssembly, token, pFile));
 
     pModule->DoInit(pamTracker, szName);
-
-    // Set this at module creation time. The m_fIsTransient field should never change during the lifetime of this ReflectionModule.
-    pModule->SetIsTransient(fIsTransient ? true : false);
 
     RETURN pModule.Extract();
 }
@@ -12497,7 +12499,6 @@ ReflectionModule::ReflectionModule(Assembly *pAssembly, mdFile token, PEFile *pF
     m_pCeeFileGen = NULL;
     m_pDynamicMetadata = NULL;
     m_fSuppressMetadataCapture = false;
-    m_fIsTransient = false;
 }
 
 HRESULT STDMETHODCALLTYPE CreateICeeGen(REFIID riid, void **pCeeGen);
