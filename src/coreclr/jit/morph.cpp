@@ -14103,18 +14103,11 @@ GenTree* Compiler::fgMorphSmpOpOptional(GenTreeOp* tree)
                     oper = GT_ADD;
                     tree->ChangeOper(oper);
 
-                    op2->AsIntCon()->gtIconVal = iadd * imul;
+                    op2->AsIntCon()->SetValueTruncating(iadd * imul);
 
                     op1->ChangeOper(GT_MUL);
 
-                    add->AsIntCon()->gtIconVal = imul;
-#ifdef TARGET_64BIT
-                    if (add->gtType == TYP_INT)
-                    {
-                        // we need to properly re-sign-extend or truncate after multiplying two int constants above
-                        add->AsIntCon()->TruncateOrSignExtend32();
-                    }
-#endif // TARGET_64BIT
+                    add->AsIntCon()->SetIconValue(imul);
                 }
             }
 
