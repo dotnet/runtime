@@ -2823,7 +2823,7 @@ namespace System.Diagnostics.Tracing
                 Debug.Assert(m_eventData != null);
 
                 // TODO Enforce singleton pattern
-                if (!AllowMultipleEventSources)
+                if (!AllowDuplicateSourceNames)
                 {
                     Debug.Assert(EventListener.s_EventSources != null, "should be called within lock on EventListener.EventListenersLock which ensures s_EventSources to be initialized");
                     foreach (WeakReference<EventSource> eventSourceRef in EventListener.s_EventSources)
@@ -3886,14 +3886,8 @@ namespace System.Diagnostics.Tracing
         internal const string s_ActivityStartSuffix = "Start";
         internal const string s_ActivityStopSuffix = "Stop";
 
-        internal const string MultipleEventSourcesSwitch = "System.Diagnostics.Tracing.EventSource.AllowMultipleEventSources";
-        internal const string MultipleEventSourcesEnvironmentVariable = "DOTNET_" + MultipleEventSourcesSwitch;
-        private static readonly bool AllowMultipleEventSources =
-#if !ES_BUILD_STANDALONE
-            AppContextConfigHelper.GetBooleanConfig(switchName: MultipleEventSourcesSwitch, envVariable: MultipleEventSourcesEnvironmentVariable, defaultValue: false);
-#else
-            false;
-#endif // !ES_BUILD_STANDALONE
+        internal const string DuplicateSourceNamesSwitch = "System.Diagnostics.Tracing.EventSource.AllowDuplicateSourceNames";
+        private static readonly bool AllowDuplicateSourceNames = AppContextConfigHelper.GetBooleanConfig(configName: DuplicateSourceNamesSwitch, defaultValue: false);
 
         // WARNING: Do not depend upon initialized statics during creation of EventSources, as it is possible for creation of an EventSource to trigger
         // creation of yet another EventSource.  When this happens, these statics may not yet be initialized.
