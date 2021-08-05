@@ -293,8 +293,26 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
 
             var promise = (Task<object>)factory.Call();
 
-            await Assert.ThrowsAsync<JSException>(async () => await promise);
+            var ex = await Assert.ThrowsAsync<JSException>(async () => await promise);
+            Assert.Equal("fail", ex.Message);
         }
+
+        [Fact]
+        public static async Task RejectPromiseError()
+        {
+            var factory = new Function(@"
+                return new Promise((resolve, reject) => {
+                  setTimeout(() => {
+                    reject(new Error('fail'));
+                  }, 300);
+                });");
+
+            var promise = (Task<object>)factory.Call();
+
+            var ex = await Assert.ThrowsAsync<JSException>(async () => await promise);
+            Assert.Equal("Error: fail", ex.Message);
+        }
+
 
         [ActiveIssue("not implemented")]
         [Fact]

@@ -199,7 +199,7 @@ var BindingSupportLib = {
 				// let go of the thenable reference
 				this.mono_wasm_unregister_obj(thenable_js_handle);
 			}, (reason) => {
-				this.set_tcs_failure(tcs_gc_handle, reason);
+				this.set_tcs_failure(tcs_gc_handle, reason ? reason.toString() : "");
 				// let go of the thenable reference
 				this.mono_wasm_unregister_obj(thenable_js_handle);
 			});
@@ -406,7 +406,7 @@ var BindingSupportLib = {
 			else if (typeof (string) === "symbol")
 				return this.js_string_to_mono_string_interned (string);
 			else if (typeof (string) !== "string")
-				throw new Error ("Expected string argument");
+				throw new Error ("Expected string argument, got "+ typeof (string));
 
 			// Always use an interned pointer for empty strings
 			if (string.length === 0)
