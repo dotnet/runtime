@@ -271,8 +271,7 @@ namespace Wasm.Build.Tests
                                   bool hasIcudt = true,
                                   bool useCache = true,
                                   bool expectSuccess = true,
-                                  bool createProject = true,
-                                  bool createCsProject = true)
+                                  bool createProject = true)
         {
             if (useCache && _buildContext.TryGetBuildFor(buildArgs, out BuildProduct? product))
             {
@@ -292,10 +291,7 @@ namespace Wasm.Build.Tests
                 InitProjectDir(_projectDir);
                 initProject?.Invoke();
 
-                if (createCsProject)
-                {
-                    File.WriteAllText(Path.Combine(_projectDir, $"{buildArgs.ProjectName}.csproj"), buildArgs.ProjectFileContents);
-                }
+                File.WriteAllText(Path.Combine(_projectDir, $"{buildArgs.ProjectName}.csproj"), buildArgs.ProjectFileContents);
                 File.Copy(Path.Combine(AppContext.BaseDirectory, "runtime-test.js"), Path.Combine(_projectDir, "runtime-test.js"));
             }
             else if (_projectDir is null)
