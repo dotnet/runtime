@@ -375,6 +375,8 @@ namespace System.Net.Http.Functional.Tests
             Assert.Equal(HttpVersion.Version30, response.Version);
             Assert.Null(callbackRequest);
             Assert.Equal(1, invocationCount);
+
+            await serverTask;
         }
 
         [OuterLoop]
@@ -630,7 +632,6 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [ConditionalFact(nameof(IsMsQuicSupported))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/56609")]
         public async Task Alpn_H3_Success()
         {
             // Mock doesn't use ALPN.
@@ -639,47 +640,35 @@ namespace System.Net.Http.Functional.Tests
                 return;
             }
 
-            var options = new Http3Options() { Alpn = "h3" };
+            var options = new Http3Options() { Alpn = SslApplicationProtocol.Http3.ToString() };
             using Http3LoopbackServer server = CreateHttp3LoopbackServer(options);
 
-            using var clientDone = new SemaphoreSlim(0);
-            using var serverDone = new SemaphoreSlim(0);
-
+            Http3LoopbackConnection connection = null;
             Task serverTask = Task.Run(async () =>
             {
-                using Http3LoopbackConnection connection = (Http3LoopbackConnection)await server.EstablishGenericConnectionAsync();
-
-                SslApplicationProtocol negotiatedAlpn = ExtractMsQuicNegotiatedAlpn(connection);
-                Assert.Equal(new SslApplicationProtocol("h3"), negotiatedAlpn);
-
+                connection = (Http3LoopbackConnection)await server.EstablishGenericConnectionAsync();
                 using Http3LoopbackStream stream = await connection.AcceptRequestStreamAsync();
                 await stream.HandleRequestAsync();
-
-                serverDone.Release();
-                await clientDone.WaitAsync();
             });
 
-            Task clientTask = Task.Run(async () =>
+            using HttpClient client = CreateHttpClient();
+            using HttpRequestMessage request = new()
             {
-                using HttpClient client = CreateHttpClient();
+                Method = HttpMethod.Get,
+                RequestUri = server.Address,
+                Version = HttpVersion30,
+                VersionPolicy = HttpVersionPolicy.RequestVersionExact
+            };
+            HttpResponseMessage response = await client.SendAsync(request).WaitAsync(TimeSpan.FromSeconds(10));
+            response.EnsureSuccessStatusCode();
+            Assert.Equal(HttpVersion.Version30, response.Version);
 
-                using HttpRequestMessage request = new()
-                    {
-                        Method = HttpMethod.Get,
-                        RequestUri = server.Address,
-                        Version = HttpVersion30,
-                        VersionPolicy = HttpVersionPolicy.RequestVersionExact
-                    };
-                HttpResponseMessage response = await client.SendAsync(request).WaitAsync(TimeSpan.FromSeconds(10));
+            await serverTask;
+            Assert.NotNull(connection);
 
-                response.EnsureSuccessStatusCode();
-                Assert.Equal(HttpVersion.Version30, response.Version);
-
-                clientDone.Release();
-                await serverDone.WaitAsync();
-            });
-
-            await new[] { clientTask, serverTask }.WhenAllOrAnyFailed(200_000);
+            SslApplicationProtocol negotiatedAlpn = ExtractMsQuicNegotiatedAlpn(connection);
+            Assert.Equal(new SslApplicationProtocol("h3"), negotiatedAlpn);
+            connection.Dispose();
         }
 
         [ConditionalFact(nameof(IsMsQuicSupported))]

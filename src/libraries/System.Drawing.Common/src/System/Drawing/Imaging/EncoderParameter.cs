@@ -311,7 +311,7 @@ namespace System.Drawing.Imaging
             GC.KeepAlive(this);
         }
 
-        [Obsolete("This constructor has been deprecated. Use EncoderParameter(Encoder encoder, int numberValues, EncoderParameterValueType type, IntPtr value) instead.  https://go.microsoft.com/fwlink/?linkid=14202")]
+        [Obsolete("This constructor has been deprecated. Use EncoderParameter(Encoder encoder, int numberValues, EncoderParameterValueType type, IntPtr value) instead.")]
         public EncoderParameter(Encoder encoder, int NumberOfValues, int Type, int Value)
         {
             int size;

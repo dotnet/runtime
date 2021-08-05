@@ -173,7 +173,7 @@ namespace System
         /// Always thrown by this method.
         /// </exception>
         /// </summary>
-        [Obsolete("Equals() on Span will always throw an exception. Use == instead.")]
+        [Obsolete("Equals() on Span will always throw an exception. Use the equality operator instead.")]
         [EditorBrowsable(EditorBrowsableState.Never)]
         public override bool Equals(object? obj) =>
             throw new NotSupportedException(SR.NotSupported_CannotCallEqualsOnSpan);

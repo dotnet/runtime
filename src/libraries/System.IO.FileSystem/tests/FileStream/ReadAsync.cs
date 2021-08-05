@@ -65,8 +65,12 @@ namespace System.IO.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
-        public async Task ReadAsyncCanceledFile()
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [InlineData(0, true)] // 0 == no buffering
+        [InlineData(4096, true)] // 4096 == default buffer size
+        [InlineData(0, false)]
+        [InlineData(4096, false)]
+        public async Task ReadAsyncCanceledFile(int bufferSize, bool isAsync)
         {
             string fileName = GetTestFilePath();
             using (FileStream fs = new FileStream(fileName, FileMode.Create))
@@ -75,7 +79,7 @@ namespace System.IO.Tests
                     fs.Write(TestBuffer, 0, TestBuffer.Length);
             }
 
-            using (FileStream fs = new FileStream(fileName, FileMode.Open))
+            using (FileStream fs = new FileStream(fileName, FileMode.Open, FileAccess.Read, FileShare.None, bufferSize, isAsync))
             {
                 byte[] buffer = new byte[fs.Length];
                 CancellationTokenSource cts = new CancellationTokenSource();
@@ -91,6 +95,8 @@ namespace System.IO.Tests
                     // Ideally we'd be doing an Assert.Throws<OperationCanceledException>
                     // but since cancellation is a race condition we accept either outcome
                     Assert.Equal(cts.Token, oce.CancellationToken);
+
+                    Assert.Equal(0, fs.Position); // if read was cancelled, the Position should remain unchanged
                 }
             }
         }

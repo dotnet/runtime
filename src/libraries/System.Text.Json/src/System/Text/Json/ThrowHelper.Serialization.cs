@@ -52,9 +52,7 @@ namespace System.Text.Json
         [MethodImpl(MethodImplOptions.NoInlining)]
         public static void ThrowJsonException_DeserializeUnableToConvertValue(Type propertyType)
         {
-            var ex = new JsonException(SR.Format(SR.DeserializeUnableToConvertValue, propertyType));
-            ex.AppendPathInformation = true;
-            throw ex;
+            throw new JsonException(SR.Format(SR.DeserializeUnableToConvertValue, propertyType)) { AppendPathInformation = true };
         }
 
         [DoesNotReturn]
@@ -75,43 +73,28 @@ namespace System.Text.Json
         [MethodImpl(MethodImplOptions.NoInlining)]
         public static void ThrowJsonException_SerializationConverterRead(JsonConverter? converter)
         {
-            var ex = new JsonException(SR.Format(SR.SerializationConverterRead, converter));
-            ex.AppendPathInformation = true;
-            throw ex;
+            throw new JsonException(SR.Format(SR.SerializationConverterRead, converter)) { AppendPathInformation = true };
         }
 
         [DoesNotReturn]
         [MethodImpl(MethodImplOptions.NoInlining)]
         public static void ThrowJsonException_SerializationConverterWrite(JsonConverter? converter)
         {
-            var ex = new JsonException(SR.Format(SR.SerializationConverterWrite, converter));
-            ex.AppendPathInformation = true;
-            throw ex;
+            throw new JsonException(SR.Format(SR.SerializationConverterWrite, converter)) { AppendPathInformation = true };
         }
 
         [DoesNotReturn]
         [MethodImpl(MethodImplOptions.NoInlining)]
         public static void ThrowJsonException_SerializerCycleDetected(int maxDepth)
         {
-            throw new JsonException(SR.Format(SR.SerializerCycleDetected, maxDepth));
+            throw new JsonException(SR.Format(SR.SerializerCycleDetected, maxDepth)) { AppendPathInformation = true };
         }
 
         [DoesNotReturn]
         [MethodImpl(MethodImplOptions.NoInlining)]
         public static void ThrowJsonException(string? message = null)
         {
-            JsonException ex;
-            if (string.IsNullOrEmpty(message))
-            {
-                ex = new JsonException();
-            }
-            else
-            {
-                ex = new JsonException(message);
-                ex.AppendPathInformation = true;
-            }
-
-            throw ex;
+            throw new JsonException(message) { AppendPathInformation = true };
         }
 
         [DoesNotReturn]
@@ -296,12 +279,12 @@ namespace System.Text.Json
 
             NotSupportedException ex = new NotSupportedException(
                 SR.Format(SR.ObjectWithParameterizedCtorRefMetadataNotHonored, state.Current.JsonTypeInfo.Type));
-            ThrowNotSupportedException(state, reader, ex);
+            ThrowNotSupportedException(ref state, reader, ex);
         }
 
         [DoesNotReturn]
         [MethodImpl(MethodImplOptions.NoInlining)]
-        public static void ReThrowWithPath(in ReadStack state, JsonReaderException ex)
+        public static void ReThrowWithPath(ref ReadStack state, JsonReaderException ex)
         {
             Debug.Assert(ex.Path == null);
 
@@ -328,15 +311,17 @@ namespace System.Text.Json
 
         [DoesNotReturn]
         [MethodImpl(MethodImplOptions.NoInlining)]
-        public static void ReThrowWithPath(in ReadStack state, in Utf8JsonReader reader, Exception ex)
+        public static void ReThrowWithPath(ref ReadStack state, in Utf8JsonReader reader, Exception ex)
         {
             JsonException jsonException = new JsonException(null, ex);
-            AddJsonExceptionInformation(state, reader, jsonException);
+            AddJsonExceptionInformation(ref state, reader, jsonException);
             throw jsonException;
         }
 
-        public static void AddJsonExceptionInformation(in ReadStack state, in Utf8JsonReader reader, JsonException ex)
+        public static void AddJsonExceptionInformation(ref ReadStack state, in Utf8JsonReader reader, JsonException ex)
         {
+            Debug.Assert(ex.Path is null); // do not overwrite existing path information
+
             long lineNumber = reader.CurrentState._lineNumber;
             ex.LineNumber = lineNumber;
 
@@ -370,15 +355,17 @@ namespace System.Text.Json
 
         [DoesNotReturn]
         [MethodImpl(MethodImplOptions.NoInlining)]
-        public static void ReThrowWithPath(in WriteStack state, Exception ex)
+        public static void ReThrowWithPath(ref WriteStack state, Exception ex)
         {
             JsonException jsonException = new JsonException(null, ex);
-            AddJsonExceptionInformation(state, jsonException);
+            AddJsonExceptionInformation(ref state, jsonException);
             throw jsonException;
         }
 
-        public static void AddJsonExceptionInformation(in WriteStack state, JsonException ex)
+        public static void AddJsonExceptionInformation(ref WriteStack state, JsonException ex)
         {
+            Debug.Assert(ex.Path is null); // do not overwrite existing path information
+
             string path = state.PropertyPath();
             ex.Path = path;
 
@@ -432,7 +419,7 @@ namespace System.Text.Json
         }
 
         [DoesNotReturn]
-        public static void ThrowNotSupportedException(in ReadStack state, in Utf8JsonReader reader, NotSupportedException ex)
+        public static void ThrowNotSupportedException(ref ReadStack state, in Utf8JsonReader reader, NotSupportedException ex)
         {
             string message = ex.Message;
 
@@ -464,7 +451,7 @@ namespace System.Text.Json
         }
 
         [DoesNotReturn]
-        public static void ThrowNotSupportedException(in WriteStack state, NotSupportedException ex)
+        public static void ThrowNotSupportedException(ref WriteStack state, NotSupportedException ex)
         {
             string message = ex.Message;
 
@@ -508,14 +495,14 @@ namespace System.Text.Json
                 message = SR.Format(SR.DeserializeNoConstructor, nameof(JsonConstructorAttribute), type);
             }
 
-            ThrowNotSupportedException(state, reader, new NotSupportedException(message));
+            ThrowNotSupportedException(ref state, reader, new NotSupportedException(message));
         }
 
         [DoesNotReturn]
         [MethodImpl(MethodImplOptions.NoInlining)]
         public static void ThrowNotSupportedException_CannotPopulateCollection(Type type, ref Utf8JsonReader reader, ref ReadStack state)
         {
-            ThrowNotSupportedException(state, reader, new NotSupportedException(SR.Format(SR.CannotPopulateCollection, type)));
+            ThrowNotSupportedException(ref state, reader, new NotSupportedException(SR.Format(SR.CannotPopulateCollection, type)));
         }
 
         [DoesNotReturn]

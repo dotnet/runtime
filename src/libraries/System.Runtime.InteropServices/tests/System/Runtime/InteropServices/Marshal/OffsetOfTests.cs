@@ -33,7 +33,6 @@ namespace System.Runtime.InteropServices.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/49872", TestPlatforms.Android)]
         public void OffsetOf_ExplicitLayout_ReturnsExpected()
         {
             Type t = typeof(ExplicitLayoutTest);
@@ -106,7 +105,6 @@ namespace System.Runtime.InteropServices.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/49872", TestPlatforms.Android)]
         public void OffsetOf_Decimal_ReturnsExpected()
         {
             Type t = typeof(FieldAlignmentTest_Decimal);

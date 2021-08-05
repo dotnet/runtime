@@ -3,7 +3,6 @@
 
 using System.Diagnostics;
 using System.Globalization;
-using System.Linq;
 
 namespace System.ComponentModel.DataAnnotations
 {
@@ -100,7 +99,7 @@ namespace System.ComponentModel.DataAnnotations
         }
 
         private static bool IsEnumTypeInFlagsMode(Type enumType) =>
-            enumType.GetCustomAttributes(typeof(FlagsAttribute), false).Any();
+            enumType.IsDefined(typeof(FlagsAttribute), false);
 
         private static string? GetUnderlyingTypeValueString(Type enumType, object enumValue) =>
             Convert.ChangeType(enumValue, Enum.GetUnderlyingType(enumType), CultureInfo.InvariantCulture).ToString();

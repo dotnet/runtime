@@ -5,9 +5,5 @@
     <IsAspNetCoreApp>true</IsAspNetCoreApp>
     <IncludePlatformAttributes>true</IncludePlatformAttributes>
     <UnsupportedOSPlatforms>browser</UnsupportedOSPlatforms>
-    <PackageDescription>Provides support for PKCS and CMS algorithms.
-
-Commonly Used Types:
-System.Security.Cryptography.Pkcs.EnvelopedCms</PackageDescription>
   </PropertyGroup>
 </Project>
