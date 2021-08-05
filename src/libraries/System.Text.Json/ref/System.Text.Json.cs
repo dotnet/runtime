@@ -821,10 +821,9 @@ namespace System.Text.Json.Serialization
         public abstract void Write(
             System.Text.Json.Utf8JsonWriter writer,
 #nullable disable
-            T
+            T value,
 #nullable restore
-            value,
-           System.Text.Json.JsonSerializerOptions options);
+            System.Text.Json.JsonSerializerOptions options);
     }
     [System.AttributeUsageAttribute(System.AttributeTargets.Field | System.AttributeTargets.Property, AllowMultiple=false)]
     public sealed partial class JsonExtensionDataAttribute : System.Text.Json.Serialization.JsonAttribute

@@ -139,7 +139,8 @@ namespace System.Text.Json.Serialization
         /// <param name="reader">The <see cref="Utf8JsonReader"/> to read from.</param>
         /// <param name="typeToConvert">The <see cref="Type"/> being converted.</param>
         /// <param name="options">The <see cref="JsonSerializerOptions"/> being used.</param>
-        /// <returns>The value that was converted. <seealso cref="HandleNull"/> to determine if the converter handles a 'null' JSON value.</returns>
+        /// <returns>The value that was converted.</returns>
+        /// <remarks><seealso cref="HandleNull"/> to determine if the converter handles a 'null' JSON token.</remarks>
         public abstract T? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options);
 
         internal bool TryRead(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options, ref ReadStack state, out T? value)
@@ -588,9 +589,8 @@ namespace System.Text.Json.Serialization
         public abstract void Write(
             Utf8JsonWriter writer,
 #nullable disable // T may or may not be nullable depending on the derived type's overload.
-            T
+            T value,
 #nullable restore
-            value,
             JsonSerializerOptions options);
 
         internal virtual T ReadWithQuotes(ref Utf8JsonReader reader)
