@@ -88,9 +88,9 @@ namespace System.Numerics
 
             // NOTE: left will get overwritten, we need a local copy
             // However, mutated left is not used afterwards, so use array pooling or stack alloc
-            Span<uint> leftCopy = left.Length <= StackAllocThreshold ?
-                                  stackalloc uint[left.Length]
-                                  : (leftCopyFromPool = ArrayPool<uint>.Shared.Rent(left.Length)).AsSpan(0, left.Length);
+            Span<uint> leftCopy = (left.Length <= StackAllocThreshold ?
+                                  stackalloc uint[StackAllocThreshold]
+                                  : leftCopyFromPool = ArrayPool<uint>.Shared.Rent(left.Length)).Slice(0, left.Length);
             left.CopyTo(leftCopy);
 
             Divide(leftCopy, right, quotient);

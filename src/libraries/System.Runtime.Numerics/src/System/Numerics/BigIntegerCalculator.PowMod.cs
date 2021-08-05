@@ -24,15 +24,15 @@ namespace System.Numerics
             Debug.Assert(bits.Length == PowBound(power, value.Length));
 
             uint[]? tempFromPool = null;
-            Span<uint> temp = bits.Length <= StackAllocThreshold ?
-                              stackalloc uint[bits.Length]
-                              : (tempFromPool = ArrayPool<uint>.Shared.Rent(bits.Length)).AsSpan(0, bits.Length);
+            Span<uint> temp = (bits.Length <= StackAllocThreshold ?
+                              stackalloc uint[StackAllocThreshold]
+                              : tempFromPool = ArrayPool<uint>.Shared.Rent(bits.Length)).Slice(0, bits.Length);
             temp.Clear();
 
             uint[]? valueCopyFromPool = null;
-            Span<uint> valueCopy = bits.Length <= StackAllocThreshold ?
-                                   stackalloc uint[bits.Length]
-                                   : (valueCopyFromPool = ArrayPool<uint>.Shared.Rent(bits.Length)).AsSpan(0, bits.Length);
+            Span<uint> valueCopy = (bits.Length <= StackAllocThreshold ?
+                                   stackalloc uint[StackAllocThreshold]
+                                   : valueCopyFromPool = ArrayPool<uint>.Shared.Rent(bits.Length)).Slice(0, bits.Length);
             value.CopyTo(valueCopy);
             valueCopy.Slice(value.Length).Clear();
 
@@ -215,9 +215,9 @@ namespace System.Numerics
 
             uint[]? valueCopyFromPool = null;
             int size = Math.Max(value.Length, bits.Length);
-            Span<uint> valueCopy = size <= StackAllocThreshold ?
-                                   stackalloc uint[size]
-                                   : (valueCopyFromPool = ArrayPool<uint>.Shared.Rent(size)).AsSpan(0, size);
+            Span<uint> valueCopy = (size <= StackAllocThreshold ?
+                                   stackalloc uint[StackAllocThreshold]
+                                   : valueCopyFromPool = ArrayPool<uint>.Shared.Rent(size)).Slice(0, size);
             valueCopy.Clear();
 
             if (value.Length > modulus.Length)
@@ -230,9 +230,9 @@ namespace System.Numerics
             }
 
             uint[]? tempFromPool = null;
-            Span<uint> temp = bits.Length <= StackAllocThreshold ?
-                              stackalloc uint[bits.Length]
-                              : (tempFromPool = ArrayPool<uint>.Shared.Rent(bits.Length)).AsSpan(0, bits.Length);
+            Span<uint> temp = (bits.Length <= StackAllocThreshold ?
+                              stackalloc uint[StackAllocThreshold]
+                              : tempFromPool = ArrayPool<uint>.Shared.Rent(bits.Length)).Slice(0, bits.Length);
             temp.Clear();
 
             PowCore(valueCopy, ActualLength(valueCopy), power, modulus, temp, bits);
@@ -260,9 +260,9 @@ namespace System.Numerics
 
             int size = Math.Max(value.Length, bits.Length);
             uint[]? valueCopyFromPool = null;
-            Span<uint> valueCopy = size <= StackAllocThreshold ?
-                                   stackalloc uint[size]
-                                   : (valueCopyFromPool = ArrayPool<uint>.Shared.Rent(size)).AsSpan(0, size);
+            Span<uint> valueCopy = (size <= StackAllocThreshold ?
+                                   stackalloc uint[StackAllocThreshold]
+                                   : valueCopyFromPool = ArrayPool<uint>.Shared.Rent(size)).Slice(0, size);
             valueCopy.Clear();
 
             if (value.Length > modulus.Length)
@@ -275,9 +275,9 @@ namespace System.Numerics
             }
 
             uint[]? tempFromPool = null;
-            Span<uint> temp = bits.Length <= StackAllocThreshold ?
-                              stackalloc uint[bits.Length]
-                              : (tempFromPool = ArrayPool<uint>.Shared.Rent(bits.Length)).AsSpan(0, bits.Length);
+            Span<uint> temp = (bits.Length <= StackAllocThreshold ?
+                              stackalloc uint[StackAllocThreshold]
+                              : tempFromPool = ArrayPool<uint>.Shared.Rent(bits.Length)).Slice(0, bits.Length);
             temp.Clear();
 
             PowCore(valueCopy, ActualLength(valueCopy), power, modulus, temp, bits);
@@ -312,29 +312,29 @@ namespace System.Numerics
             {
                 int size = modulus.Length * 2 + 1;
                 uint[]? rFromPool = null;
-                Span<uint> r = size <= StackAllocThreshold ?
-                               stackalloc uint[size]
-                               : (rFromPool = ArrayPool<uint>.Shared.Rent(size)).AsSpan(0, size);
+                Span<uint> r = ((uint)size <= StackAllocThreshold ?
+                               stackalloc uint[StackAllocThreshold]
+                               : rFromPool = ArrayPool<uint>.Shared.Rent(size)).Slice(0, size);
                 r.Clear();
 
                 size = r.Length - modulus.Length + 1;
                 uint[]? muFromPool = null;
-                Span<uint> mu = size <= StackAllocThreshold ?
-                                stackalloc uint[size]
-                                : (muFromPool = ArrayPool<uint>.Shared.Rent(size)).AsSpan(0, size);
+                Span<uint> mu = ((uint)size <= StackAllocThreshold ?
+                                stackalloc uint[StackAllocThreshold]
+                                : muFromPool = ArrayPool<uint>.Shared.Rent(size)).Slice(0, size);
                 mu.Clear();
 
                 size = modulus.Length * 2 + 2;
                 uint[]? q1FromPool = null;
-                Span<uint> q1 = size <= StackAllocThreshold ?
-                                stackalloc uint[size]
-                                : (q1FromPool = ArrayPool<uint>.Shared.Rent(size)).AsSpan(0, size);
+                Span<uint> q1 = ((uint)size <= StackAllocThreshold ?
+                                stackalloc uint[StackAllocThreshold]
+                                : q1FromPool = ArrayPool<uint>.Shared.Rent(size)).Slice(0, size);
                 q1.Clear();
 
                 uint[]? q2FromPool = null;
-                Span<uint> q2 = size <= StackAllocThreshold ?
-                                stackalloc uint[size]
-                                : (q2FromPool = ArrayPool<uint>.Shared.Rent(size)).AsSpan(0, size);
+                Span<uint> q2 = ((uint)size <= StackAllocThreshold ?
+                                stackalloc uint[StackAllocThreshold]
+                                : q2FromPool = ArrayPool<uint>.Shared.Rent(size)).Slice(0, size);
                 q2.Clear();
 
                 FastReducer reducer = new FastReducer(modulus, r, mu, q1, q2);
@@ -368,29 +368,29 @@ namespace System.Numerics
             {
                 int size = modulus.Length * 2 + 1;
                 uint[]? rFromPool = null;
-                Span<uint> r = size <= StackAllocThreshold ?
-                               stackalloc uint[size]
-                               : (rFromPool = ArrayPool<uint>.Shared.Rent(size)).AsSpan(0, size);
+                Span<uint> r = ((uint)size <= StackAllocThreshold ?
+                               stackalloc uint[StackAllocThreshold]
+                               : rFromPool = ArrayPool<uint>.Shared.Rent(size)).Slice(0, size);
                 r.Clear();
 
                 size = r.Length - modulus.Length + 1;
                 uint[]? muFromPool = null;
-                Span<uint> mu = size <= StackAllocThreshold ?
-                                stackalloc uint[size]
-                                : (muFromPool = ArrayPool<uint>.Shared.Rent(size)).AsSpan(0, size);
+                Span<uint> mu = ((uint)size <= StackAllocThreshold ?
+                                stackalloc uint[StackAllocThreshold]
+                                : muFromPool = ArrayPool<uint>.Shared.Rent(size)).Slice(0, size);
                 mu.Clear();
 
                 size = modulus.Length * 2 + 2;
                 uint[]? q1FromPool = null;
-                Span<uint> q1 = size <= StackAllocThreshold ?
-                                stackalloc uint[size]
-                                : (q1FromPool = ArrayPool<uint>.Shared.Rent(size)).AsSpan(0, size);
+                Span<uint> q1 = ((uint)size <= StackAllocThreshold ?
+                                stackalloc uint[StackAllocThreshold]
+                                : q1FromPool = ArrayPool<uint>.Shared.Rent(size)).Slice(0, size);
                 q1.Clear();
 
                 uint[]? q2FromPool = null;
-                Span<uint> q2 = size <= StackAllocThreshold ?
-                                stackalloc uint[size]
-                                : (q2FromPool = ArrayPool<uint>.Shared.Rent(size)).AsSpan(0, size);
+                Span<uint> q2 = ((uint)size <= StackAllocThreshold ?
+                                stackalloc uint[StackAllocThreshold]
+                                : q2FromPool = ArrayPool<uint>.Shared.Rent(size)).Slice(0, size);
                 q2.Clear();
 
                 FastReducer reducer = new FastReducer(modulus, r, mu, q1, q2);
