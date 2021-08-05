@@ -16,6 +16,11 @@ namespace Microsoft.Extensions.DependencyInjection
     {
         public static readonly DependencyInjectionEventSource Log = new DependencyInjectionEventSource();
 
+        public static class Keywords
+        {
+            public const EventKeywords ServiceProviderInitialized = (EventKeywords)0x1;
+        }
+
         // Event source doesn't support large payloads so we chunk large payloads like formatted call site tree and descriptors
         private const int MaxChunkSize = 10 * 1024;
 
@@ -73,7 +78,7 @@ namespace Microsoft.Extensions.DependencyInjection
 
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
             Justification = "Parameters to this method are primitive and are trimmer safe.")]
-        [Event(7, Level = EventLevel.Verbose)]
+        [Event(7, Level = EventLevel.Informational, Keywords = Keywords.ServiceProviderInitialized)]
         private void ServiceProviderBuilt(int serviceProviderHashCode, int singletonServices, int scopedServices, int transientServices)
         {
             WriteEvent(7, serviceProviderHashCode, singletonServices, scopedServices, transientServices);
@@ -81,7 +86,7 @@ namespace Microsoft.Extensions.DependencyInjection
 
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
             Justification = "Parameters to this method are primitive and are trimmer safe.")]
-        [Event(8, Level = EventLevel.Verbose)]
+        [Event(8, Level = EventLevel.Informational, Keywords = Keywords.ServiceProviderInitialized)]
         private void ServiceProviderDescriptors(int serviceProviderHashCode, string descriptors, int chunkIndex, int chunkCount)
         {
             WriteEvent(8, serviceProviderHashCode, descriptors, chunkIndex, chunkCount);
@@ -156,7 +161,7 @@ namespace Microsoft.Extensions.DependencyInjection
         [NonEvent]
         private void WriteServiceProviderBuilt(ServiceProvider provider)
         {
-            if (IsEnabled(EventLevel.Verbose, EventKeywords.All))
+            if (IsEnabled(EventLevel.Informational, Keywords.ServiceProviderInitialized))
             {
                 int singletonServices = 0;
                 int scopedServices = 0;
