@@ -36,7 +36,7 @@ namespace System.Runtime.Versioning.Tests
         [Theory]
         [InlineData(null, "")]
         [InlineData("", null)]
-        [InlineData("message", "https://aka.ms/obsolete/{0}")]
+        [InlineData("message", "https://aka.ms/preview-features/")]
         public void Ctor_String_Url(string message, string url)
         {
             var attribute = new RequiresPreviewFeaturesAttribute(message) { Url = url };
