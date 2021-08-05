@@ -74,8 +74,8 @@ namespace System.IO
             return FileStreamHelpers.CheckFileCall(result, handle.Path);
         }
 
-        internal static ValueTask<int> ReadAtOffsetAsync(SafeFileHandle handle, Memory<byte> buffer, long fileOffset, CancellationToken cancellationToken)
-            => ScheduleSyncReadAtOffsetAsync(handle, buffer, fileOffset, cancellationToken);
+        internal static ValueTask<int> ReadAtOffsetAsync(SafeFileHandle handle, Memory<byte> buffer, long fileOffset, CancellationToken cancellationToken, OSFileStreamStrategy? strategy = null)
+            => ScheduleSyncReadAtOffsetAsync(handle, buffer, fileOffset, cancellationToken, strategy);
 
         private static ValueTask<long> ReadScatterAtOffsetAsync(SafeFileHandle handle, IReadOnlyList<Memory<byte>> buffers,
             long fileOffset, CancellationToken cancellationToken)
@@ -202,8 +202,8 @@ namespace System.IO
             }
         }
 
-        internal static ValueTask WriteAtOffsetAsync(SafeFileHandle handle, ReadOnlyMemory<byte> buffer, long fileOffset, CancellationToken cancellationToken)
-            => ScheduleSyncWriteAtOffsetAsync(handle, buffer, fileOffset, cancellationToken);
+        internal static ValueTask WriteAtOffsetAsync(SafeFileHandle handle, ReadOnlyMemory<byte> buffer, long fileOffset, CancellationToken cancellationToken, OSFileStreamStrategy? strategy = null)
+            => ScheduleSyncWriteAtOffsetAsync(handle, buffer, fileOffset, cancellationToken, strategy);
 
         private static ValueTask WriteGatherAtOffsetAsync(SafeFileHandle handle, IReadOnlyList<ReadOnlyMemory<byte>> buffers,
             long fileOffset, CancellationToken cancellationToken)
