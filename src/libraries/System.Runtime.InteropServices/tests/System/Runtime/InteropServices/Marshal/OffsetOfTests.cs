@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Reflection;
 using System.Reflection.Emit;
+using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
 
 namespace System.Runtime.InteropServices.Tests
@@ -35,7 +36,7 @@ namespace System.Runtime.InteropServices.Tests
         [ConditionalFact]
         public void OffsetOf_ExplicitLayout_ReturnsExpected()
         {
-            if (OperatingSystem.IsAndroid() && RuntimeInformation.ProcessArchitecture == Architecture.x86)
+            if (OperatingSystem.IsAndroid() && RuntimeInformation.ProcessArchitecture == Architecture.X86)
             {
                 throw new SkipTestException("https://github.com/dotnet/runtime/issues/49872 Test fails on Android x86 with -- Expected: 56, Actual: 52");
             }
@@ -112,7 +113,7 @@ namespace System.Runtime.InteropServices.Tests
         [ConditionalFact]
         public void OffsetOf_Decimal_ReturnsExpected()
         {
-            if (OperatingSystem.IsAndroid() && RuntimeInformation.ProcessArchitecture == Architecture.x86)
+            if (OperatingSystem.IsAndroid() && RuntimeInformation.ProcessArchitecture == Architecture.X86)
             {
                 throw new SkipTestException("https://github.com/dotnet/runtime/issues/49872 Test fails on Android x86 with -- Expected: 88, Actual: 72");
             }
