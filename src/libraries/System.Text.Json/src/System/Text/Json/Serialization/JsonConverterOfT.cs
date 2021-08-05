@@ -140,7 +140,7 @@ namespace System.Text.Json.Serialization
         /// <param name="typeToConvert">The <see cref="Type"/> being converted.</param>
         /// <param name="options">The <see cref="JsonSerializerOptions"/> being used.</param>
         /// <returns>The value that was converted.</returns>
-        /// <remarks><seealso cref="HandleNull"/> to determine if the converter handles a 'null' JSON token.</remarks>
+        /// <remarks>Note that the value of <seealso cref="HandleNull"/> determines if the converter handles null JSON tokens.</remarks>
         public abstract T? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options);
 
         internal bool TryRead(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options, ref ReadStack state, out T? value)
