@@ -18,9 +18,9 @@ namespace System.IO
         protected static bool IsProcessElevated => s_isElevated.Value;
 
         /// <summary>Initialize the test class base.  This creates the associated test directory.</summary>
-        protected FileCleanupTestBase(string cleanupRootDirectory = null)
+        protected FileCleanupTestBase(string tempDirectory = null)
         {
-            cleanupRootDirectory ??= Path.GetTempPath();
+            tempDirectory ??= Path.GetTempPath();
 
             // Use a unique test directory per test class.  The test directory lives in the user's temp directory,
             // and includes both the name of the test class and a random string.  The test class name is included
@@ -33,7 +33,7 @@ namespace System.IO
             string failure = string.Empty;
             for (int i = 0; i <= 2; i++)
             {
-                TestDirectory = Path.Combine(cleanupRootDirectory, GetType().Name + "_" + Path.GetRandomFileName());
+                TestDirectory = Path.Combine(tempDirectory, GetType().Name + "_" + Path.GetRandomFileName());
                 try
                 {
                     Directory.CreateDirectory(TestDirectory);
