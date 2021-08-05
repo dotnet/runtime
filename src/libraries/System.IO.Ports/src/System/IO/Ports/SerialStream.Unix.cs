@@ -431,7 +431,7 @@ namespace System.IO.Ports
                 return Task<int>.FromResult(0); // return immediately if no bytes requested; no need for overhead.
 
             Memory<byte> buffer = new Memory<byte>(array, offset, count);
-            SerialStreamIORequest result = new SerialStreamIORequest(cancellationToken, buffer);
+            SerialStreamReadRequest result = new SerialStreamReadRequest(cancellationToken, buffer);
             _readQueue.Enqueue(result);
 
             EnsureIOLoopRunning();
@@ -463,8 +463,8 @@ namespace System.IO.Ports
             if (count == 0)
                 return Task.CompletedTask; // return immediately if no bytes to write; no need for overhead.
 
-            Memory<byte> buffer = new Memory<byte>(array, offset, count);
-            SerialStreamIORequest result = new SerialStreamIORequest(cancellationToken, buffer);
+            ReadOnlyMemory<byte> buffer = new ReadOnlyMemory<byte>(array, offset, count);
+            SerialStreamWriteRequest result = new SerialStreamWriteRequest(cancellationToken, buffer);
             _writeQueue.Enqueue(result);
 
             EnsureIOLoopRunning();
