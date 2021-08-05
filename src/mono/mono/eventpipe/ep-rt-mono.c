@@ -6334,7 +6334,7 @@ mono_profiler_remove_provider_param (
 		GSList *list = *provider_params;
 		EventFilterDescriptor *param = NULL;
 		while (list) {
-			param = (const EventFilterDescriptor *)(list->data);
+			param = (EventFilterDescriptor *)(list->data);
 			if (param && param->ptr && param->type == key->type && param->size == key->size &&
 				memcmp ((const void *)param->ptr, (const void *)key->ptr, param->size) == 0) {
 					g_free ((void *)param->ptr);
@@ -6379,9 +6379,9 @@ mono_profiler_find_heap_collect_ondemand_provider_keyvalue (const EventFilterDes
 
 	if (!current [param->size - 1]) {
 		while (current < end) {
-			if (!stricmp (current, "heapcollect"))
+			if (!ep_rt_utf8_string_compare_ignore_case (current, "heapcollect"))
 				found_heapshot_key = true;
-			else if (!stricmp (current, "ondemand"))
+			else if (!ep_rt_utf8_string_compare_ignore_case (current, "ondemand"))
 				found_ondemand_value = true;
 
 			if (found_heapshot_key && found_ondemand_value)
