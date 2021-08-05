@@ -2870,7 +2870,45 @@ void CodeGen::genCodeForInitBlkUnroll(GenTreeBlk* node)
         size -= bytesWritten;
     }
 
-    // Fill the remainder using normal stores.
+// Fill the remainder using normal stores.
+#ifdef TARGET_AMD64
+    unsigned regSize = REGSIZE_BYTES;
+
+    while (regSize > size)
+    {
+        regSize /= 2;
+    }
+
+    for (; size > regSize; size -= regSize, dstOffset += regSize)
+    {
+        if (dstLclNum != BAD_VAR_NUM)
+        {
+            emit->emitIns_S_R(INS_mov, EA_ATTR(regSize), srcIntReg, dstLclNum, dstOffset);
+        }
+        else
+        {
+            emit->emitIns_ARX_R(INS_mov, EA_ATTR(regSize), srcIntReg, dstAddrBaseReg, dstAddrIndexReg,
+                                dstAddrIndexScale, dstOffset);
+        }
+    }
+
+    if (size > 0)
+    {
+        unsigned shiftBack = regSize - size;
+        assert(shiftBack <= regSize);
+        dstOffset -= shiftBack;
+
+        if (dstLclNum != BAD_VAR_NUM)
+        {
+            emit->emitIns_S_R(INS_mov, EA_ATTR(regSize), srcIntReg, dstLclNum, dstOffset);
+        }
+        else
+        {
+            emit->emitIns_ARX_R(INS_mov, EA_ATTR(regSize), srcIntReg, dstAddrBaseReg, dstAddrIndexReg,
+                                dstAddrIndexScale, dstOffset);
+        }
+    }
+#else // TARGET_X86
     for (unsigned regSize = REGSIZE_BYTES; size > 0; size -= regSize, dstOffset += regSize)
     {
         while (regSize > size)
@@ -2887,6 +2925,7 @@ void CodeGen::genCodeForInitBlkUnroll(GenTreeBlk* node)
                                 dstAddrIndexScale, dstOffset);
         }
     }
+#endif
 }
 
 #ifdef TARGET_AMD64
@@ -3104,10 +3143,71 @@ void CodeGen::genCodeForCpBlkUnroll(GenTreeBlk* node)
         return;
     }
 
+    // Fill the remainder with normal loads/stores
     if (size > 0)
     {
         regNumber tempReg = node->GetSingleTempReg(RBM_ALLINT);
 
+#ifdef TARGET_AMD64
+        unsigned regSize = REGSIZE_BYTES;
+
+        while (regSize > size)
+        {
+            regSize /= 2;
+        }
+
+        for (; size > regSize; size -= regSize, srcOffset += regSize, dstOffset += regSize)
+        {
+            if (srcLclNum != BAD_VAR_NUM)
+            {
+                emit->emitIns_R_S(INS_mov, EA_ATTR(regSize), tempReg, srcLclNum, srcOffset);
+            }
+            else
+            {
+                emit->emitIns_R_ARX(INS_mov, EA_ATTR(regSize), tempReg, srcAddrBaseReg, srcAddrIndexReg,
+                                    srcAddrIndexScale, srcOffset);
+            }
+
+            if (dstLclNum != BAD_VAR_NUM)
+            {
+                emit->emitIns_S_R(INS_mov, EA_ATTR(regSize), tempReg, dstLclNum, dstOffset);
+            }
+            else
+            {
+                emit->emitIns_ARX_R(INS_mov, EA_ATTR(regSize), tempReg, dstAddrBaseReg, dstAddrIndexReg,
+                                    dstAddrIndexScale, dstOffset);
+            }
+        }
+
+        if (size > 0)
+        {
+            unsigned shiftBack = regSize - size;
+            assert(shiftBack <= regSize);
+
+            srcOffset -= shiftBack;
+            dstOffset -= shiftBack;
+
+            if (srcLclNum != BAD_VAR_NUM)
+            {
+                emit->emitIns_R_S(INS_mov, EA_ATTR(regSize), tempReg, srcLclNum, srcOffset);
+            }
+            else
+            {
+                emit->emitIns_R_ARX(INS_mov, EA_ATTR(regSize), tempReg, srcAddrBaseReg, srcAddrIndexReg,
+                                    srcAddrIndexScale, srcOffset);
+            }
+
+            if (dstLclNum != BAD_VAR_NUM)
+            {
+                emit->emitIns_S_R(INS_mov, EA_ATTR(regSize), tempReg, dstLclNum, dstOffset);
+            }
+            else
+            {
+                emit->emitIns_ARX_R(INS_mov, EA_ATTR(regSize), tempReg, dstAddrBaseReg, dstAddrIndexReg,
+                                    dstAddrIndexScale, dstOffset);
+            }
+        }
+#else // TARGET_X86
         for (unsigned regSize = REGSIZE_BYTES; size > 0; size -= regSize, srcOffset += regSize, dstOffset += regSize)
         {
             while (regSize > size)
@@ -3135,6 +3235,7 @@ void CodeGen::genCodeForCpBlkUnroll(GenTreeBlk* node)
                                     dstAddrIndexScale, dstOffset);
             }
         }
+#endif
     }
 }
 
