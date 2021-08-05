@@ -6355,7 +6355,7 @@ void
 mono_profiler_free_provider_params (GSList **provider_params)
 {
 	for (GSList *list = *provider_params; list; list = list->next) {
-		const EventFilterDescriptor *param = (const EventFilterDescriptor *)(list->data);
+		EventFilterDescriptor *param = (EventFilterDescriptor *)(list->data);
 		if (param) {
 			g_free ((void *)param->ptr);
 			ep_event_filter_desc_free (param);
