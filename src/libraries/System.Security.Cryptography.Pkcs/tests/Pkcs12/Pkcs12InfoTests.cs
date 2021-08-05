@@ -290,10 +290,20 @@ namespace System.Security.Cryptography.Pkcs.Tests.Pkcs12
         {
             get
             {
-                yield return new object[] { PbeEncryptionAlgorithm.Aes128Cbc, HashAlgorithmName.SHA256, 700_000 };
-                yield return new object[] { PbeEncryptionAlgorithm.Aes192Cbc, HashAlgorithmName.SHA256, 700_000 };
-                yield return new object[] { PbeEncryptionAlgorithm.Aes256Cbc, HashAlgorithmName.SHA256, 700_000 };
-                yield return new object[] { PbeEncryptionAlgorithm.TripleDes3KeyPkcs12, HashAlgorithmName.SHA1, 600_000 };
+                if (!OperatingSystem.IsAndroid)
+                {
+                    yield return new object[] { PbeEncryptionAlgorithm.Aes128Cbc, HashAlgorithmName.SHA256, 700_000 };
+                    yield return new object[] { PbeEncryptionAlgorithm.Aes192Cbc, HashAlgorithmName.SHA256, 700_000 };
+                    yield return new object[] { PbeEncryptionAlgorithm.Aes256Cbc, HashAlgorithmName.SHA256, 700_000 };
+                    yield return new object[] { PbeEncryptionAlgorithm.TripleDes3KeyPkcs12, HashAlgorithmName.SHA1, 600_000 };
+                }
+                else
+                {
+                    yield return new object[] { PbeEncryptionAlgorithm.Aes128Cbc, HashAlgorithmName.SHA256, 7000 };
+                    yield return new object[] { PbeEncryptionAlgorithm.Aes192Cbc, HashAlgorithmName.SHA256, 7000 };
+                    yield return new object[] { PbeEncryptionAlgorithm.Aes256Cbc, HashAlgorithmName.SHA256, 7000 };
+                    yield return new object[] { PbeEncryptionAlgorithm.TripleDes3KeyPkcs12, HashAlgorithmName.SHA1, 6000 };
+                }
             }
         }
 
