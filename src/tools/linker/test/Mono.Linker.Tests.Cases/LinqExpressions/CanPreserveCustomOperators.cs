@@ -14,6 +14,9 @@ namespace Mono.Linker.Tests.Cases.LinqExpressions
 			var t4 = typeof (SourceTypeImplicit);
 			var t5 = typeof (TargetTypeExplicit);
 			var t6 = typeof (SourceTypeExplicit);
+
+			var t7 = typeof (GenericCustomOperators<>);
+			var t8 = typeof (GenericTypeArgument);
 		}
 
 		class CustomOperators
@@ -89,5 +92,23 @@ namespace Mono.Linker.Tests.Cases.LinqExpressions
 		class TargetTypeExplicit { }
 		[Kept]
 		class SourceTypeExplicit { }
+
+		class GenericCustomOperators<T>
+		{
+			[Kept]
+			public static explicit operator GenericCustomOperators<T> (int i) => null;
+
+			[Kept]
+			public static explicit operator GenericCustomOperators<T> (T t) => null;
+
+			[Kept]
+			public static explicit operator GenericCustomOperators<T> (int[] i) => null;
+
+			[Kept]
+			public static explicit operator GenericCustomOperators<T> (T[] ts) => null;
+		}
+
+		[Kept]
+		class GenericTypeArgument { }
 	}
 }

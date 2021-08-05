@@ -3,6 +3,7 @@ using Mono.Linker.Tests.Cases.Expectations.Metadata;
 
 namespace Mono.Linker.Tests.Cases.LinqExpressions
 {
+	[SetupCompileArgument ("/unsafe")]
 	[SetupLinkerArgument ("--used-attrs-only")]
 	public class CanPreserveNullableCustomOperators
 	{
@@ -20,6 +21,10 @@ namespace Mono.Linker.Tests.Cases.LinqExpressions
 			var t5 = typeof (SourceValueType);
 
 			var s2 = typeof (ValueTypeUnusedOperators);
+
+			var e = typeof (ArrayElementValueType);
+			var p = typeof (PointerElementValueType);
+			var f = typeof (FunctionPointerArgumentValueType);
 		}
 
 		class ReferenceTypeOperators
@@ -61,6 +66,18 @@ namespace Mono.Linker.Tests.Cases.LinqExpressions
 			public static explicit operator TargetValueType? (ValueTypeOperators? self) => null;
 			[Kept]
 			public static explicit operator ValueTypeOperators? (SourceValueType? other) => null;
+
+			[Kept]
+			public static ValueTypeOperators? operator + (ArrayElementValueType?[] left, ValueTypeOperators? right) => null;
+
+			[Kept]
+			public static ValueTypeOperators? operator + (ArrayElementValueType?[][][] left, ValueTypeOperators? right) => null;
+
+			[Kept]
+			public static unsafe explicit operator ValueTypeOperators? (PointerElementValueType?* other) => null;
+
+			[Kept]
+			public static unsafe explicit operator ValueTypeOperators? (delegate*<FunctionPointerArgumentValueType?, void> other) => null;
 		}
 
 		[Kept]
@@ -81,5 +98,14 @@ namespace Mono.Linker.Tests.Cases.LinqExpressions
 		struct AdditionValueTypeUnused { }
 		struct TargetValueTypeUnused { }
 		struct SourceValueTypeUnused { }
+
+		[Kept]
+		struct ArrayElementValueType { }
+
+		[Kept]
+		struct PointerElementValueType { }
+
+		[Kept]
+		struct FunctionPointerArgumentValueType { }
 	}
 }
