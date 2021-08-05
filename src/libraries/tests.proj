@@ -55,9 +55,6 @@
     <!-- Crash https://github.com/dotnet/runtime/issues/55823 -->
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Runtime.Experimental\tests\System.Runtime.Experimental.Tests.csproj" />
 
-    <!-- Crashes on x64 and x86, but not arm64 -->
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Security.Cryptography.Pkcs\tests\System.Security.Cryptography.Pkcs.Tests.csproj" />
-
     <!-- Actual test failures -->
     <!-- https://github.com/dotnet/runtime/issues/37088 -->
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Runtime\tests\System.Runtime.Tests.csproj" />
