@@ -9,11 +9,7 @@
 # Notes:
 #
 # Script to setup directory structure required to perform SuperPMI replay in CI.
-# It does the following steps:
-# 1. It creates `correlation_payload_directory` that contains clrjit*_x64.dll and clrjit*_x86.dll
-# 2. The script takes `input_artifacts` parameter which contains *.mch.zip and *.mct.zip. It will then
-#    partition it by moving each pair of *.mch.zip/*.mct.zip into its own folder under 'payload'
-#    directory.
+#  It creates `correlation_payload_directory` that contains clrjit*_x64.dll and clrjit*_x86.dll
 ################################################################################
 ################################################################################
 
@@ -32,10 +28,8 @@ from superpmi_setup import copy_directory, copy_files, set_pipeline_variable, ru
 parser = argparse.ArgumentParser(description="description")
 
 parser.add_argument("-arch", help="Architecture")
-# parser.add_argument("-platform", help="OS platform")
 parser.add_argument("-source_directory", help="path to the directory containing binaries")
 parser.add_argument("-product_directory", help="path to the directory containing binaries")
-# parser.add_argument("-mch_directory", help="path to directory containing compressed mch files")
 
 
 def setup_args(args):
@@ -56,11 +50,6 @@ def setup_args(args):
                         lambda unused: True,
                         "Unable to set arch")
 
-    # coreclr_args.verify(args,
-    #                     "platform",
-    #                     lambda unused: True,
-    #                     "Unable to set platform")
-
     coreclr_args.verify(args,
                         "source_directory",
                         lambda source_directory: os.path.isdir(source_directory),
@@ -71,10 +60,6 @@ def setup_args(args):
                         lambda product_directory: os.path.isdir(product_directory),
                         "product_directory doesn't exist")
 
-    # coreclr_args.verify(args,
-    #                     "mch_directory",
-    #                     lambda mch_directory: True, #os.path.isdir(mch_directory),
-    #                     "mch_directory doesn't exist")
     return coreclr_args
 
 
@@ -117,6 +102,7 @@ def match_correlation_files(full_path):
 
     return False
 
+
 def main(main_args):
     """Main entrypoint
 
@@ -128,14 +114,10 @@ def main(main_args):
     arch = coreclr_args.arch
     source_directory = coreclr_args.source_directory
     product_directory = coreclr_args.product_directory
-    # mch_directory = coreclr_args.mch_directory
 
     # CorrelationPayload directories
     correlation_payload_directory = path.join(coreclr_args.source_directory, "payload")
     superpmi_src_directory = path.join(source_directory, 'src', 'coreclr', 'scripts')
-
-    # Workitem directories
-    workitem_directory = path.join(source_directory, "workitem")
 
     helix_source_prefix = "official"
     creator = ""
@@ -144,41 +126,21 @@ def main(main_args):
 
     # Copy *.py to CorrelationPayload
     print('Copying {} -> {}'.format(superpmi_src_directory, correlation_payload_directory))
-    copy_directory(superpmi_src_directory, correlation_payload_directory, match_func=lambda path: any(path.endswith(extension) for extension in [".py"]))
-    
+    copy_directory(superpmi_src_directory, correlation_payload_directory,
+                   match_func=lambda path: any(path.endswith(extension) for extension in [".py"]))
+
     # Copy clrjit*_arch.dll binaries to CorrelationPayload
     print('Copying binaries {} -> {}'.format(arch, product_directory, correlation_payload_directory))
     copy_directory(product_directory, correlation_payload_directory, match_func=match_correlation_files)
 
-    #TODO: Just send appropriate clrjit*.dll files to workitem_directory
-    # # Copy clrjit*_arch.dll binaries to workitem_directory
-    # print('Copying clrjit_{}_{}.dll {} -> {}'.format(arch, product_directory, correlation_payload_directory))
-    # copy_directory(product_directory, correlation_payload_directory, match_func=match_correlation_files)
-
-    # Partition mch/mct zip files
-    # partition_mch(mch_directory, workitem_directory)
-
-    # # Print correlation_payload_directory and workitem_directory
-    # print("==> correlation_payload_directory:")
-    # for file_path, dirs, files in walk(correlation_payload_directory, topdown=True):
-    #     for name in files:
-    #         curr_file_path = path.join(file_path, name)
-    #         print(curr_file_path)
-
-    # print("==> workitem_directory:")
-    # for file_path, dirs, files in walk(workitem_directory, topdown=True):
-    #     for name in files:
-    #         curr_file_path = path.join(file_path, name)
-    #         print(curr_file_path)
-
     # Set variables
     print('Setting pipeline variables:')
     set_pipeline_variable("CorrelationPayloadDirectory", correlation_payload_directory)
-    set_pipeline_variable("WorkItemDirectory", workitem_directory)
     set_pipeline_variable("Architecture", arch)
     set_pipeline_variable("Creator", creator)
     set_pipeline_variable("Queue", helix_queue)
     set_pipeline_variable("HelixSourcePrefix", helix_source_prefix)
+
 
 if __name__ == "__main__":
     args = parser.parse_args()

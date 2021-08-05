@@ -81,9 +81,6 @@ jobs:
     - ${{ parameters.variables }}
 
     steps:
-    - script: |
-        echo $(uploadAsArtifacts)
-        echo ${{ parameters.uploadAsArtifacts }}
 
     # Install native dependencies
     # Linux builds use docker images with dependencies preinstalled,

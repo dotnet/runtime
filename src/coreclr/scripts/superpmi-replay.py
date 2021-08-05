@@ -1,3 +1,17 @@
+#!/usr/bin/env python3
+#
+# Licensed to the .NET Foundation under one or more agreements.
+# The .NET Foundation licenses this file to you under the MIT license.
+#
+##
+# Title               : superpmi_setup.py
+#
+# Notes:
+#
+# Script to run "superpmi replay" for various collections under various COMPlus_JitStressRegs value.
+################################################################################
+################################################################################
+
 
 import argparse
 from os import path
@@ -23,7 +37,8 @@ jit_flags = [
     "JitStressRegs=0x10",
     "JitStressRegs=0x80",
     "JitStressRegs=0x1000",
-    ]
+]
+
 
 def setup_args(args):
     """ Setup the args for SuperPMI to use.
@@ -60,6 +75,7 @@ def setup_args(args):
 
     return coreclr_args
 
+
 def main(main_args):
     """Main entrypoint
 
@@ -70,10 +86,8 @@ def main(main_args):
     python_path = sys.executable
     cwd = os.path.dirname(os.path.realpath(__file__))
     coreclr_args = setup_args(main_args)
-    # mch_directory = coreclr_args.mch_directory
     spmi_location = path.join(cwd, "artifacts", "spmi")
     log_directory = coreclr_args.log_directory
-    mch_filename = ''
     platform_name = coreclr_args.platform
     os_name = "win" if platform_name.lower() == "windows" else "unix"
     arch_name = coreclr_args.arch
@@ -81,21 +95,21 @@ def main(main_args):
     jit_path = path.join(coreclr_args.jit_directory, 'clrjit_{}_{}_{}.dll'.format(os_name, arch_name, host_arch_name))
 
     print("Running superpmi.py download")
-    run_command([python_path, path.join(cwd, "superpmi.py"), "download", "--no_progress", "-f", "benchmark", "-target_os", platform_name, "-target_arch", arch_name, "-core_root", cwd, "-spmi_location", spmi_location],  _exit_on_fail=True)
+    run_command([python_path, path.join(cwd, "superpmi.py"), "download", "--no_progress", "-target_os", platform_name,
+                 "-target_arch", arch_name, "-core_root", cwd, "-spmi_location", spmi_location], _exit_on_fail=True)
 
     failed_runs = []
     for jit_flag in jit_flags:
-        # TODO: This should be DownloadFilesFromResults
         log_file = path.join(log_directory, 'superpmi_{}.log'.format(jit_flag.replace("=", "_")))
         print("Running superpmi.py replay for {}".format(jit_flag))
 
         _, _, return_code = run_command([
-                python_path, path.join(cwd, "superpmi.py"), "replay", "-core_root", cwd,
-                "-jitoption", jit_flag, "-jitoption", "TieredCompilation=0",
-                "-target_os", platform_name, "-target_arch", arch_name,
-                "-arch", host_arch_name,
-                "-jit_path", jit_path, "-spmi_location", spmi_location,
-                "-log_level", "debug", "-log_file", log_file])
+            python_path, path.join(cwd, "superpmi.py"), "replay", "-core_root", cwd,
+            "-jitoption", jit_flag, "-jitoption", "TieredCompilation=0",
+            "-target_os", platform_name, "-target_arch", arch_name,
+            "-arch", host_arch_name,
+            "-jit_path", jit_path, "-spmi_location", spmi_location,
+            "-log_level", "debug", "-log_file", log_file])
 
         if return_code != 0:
             failed_runs.append("Failure in {}".format(log_file))
@@ -116,6 +130,7 @@ def main(main_args):
                 contents = current_superpmi_log.read()
                 final_superpmi_log.write(contents)
 
+        # Log failures summary
         if len(failed_runs) > 0:
             final_superpmi_log.write(os.linesep)
             final_superpmi_log.write(os.linesep)
