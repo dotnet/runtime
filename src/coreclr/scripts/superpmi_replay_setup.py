@@ -19,6 +19,7 @@
 
 import argparse
 from os import path, walk
+import os
 import shutil
 import stat
 import subprocess
@@ -149,6 +150,8 @@ def main(main_args):
     print('Copying binaries {} -> {}'.format(arch, product_directory, correlation_payload_directory))
     copy_directory(product_directory, correlation_payload_directory, match_func=match_correlation_files)
 
+    if not os.path.exists(workitem_directory):
+        os.makedirs(workitem_directory)
     dummy_workitem_file = path.join(workitem_directory, "dummy.txt")
     with open(dummy_workitem_file, "a") as dummy_file:
         dummy_file.write("Hello World!")
