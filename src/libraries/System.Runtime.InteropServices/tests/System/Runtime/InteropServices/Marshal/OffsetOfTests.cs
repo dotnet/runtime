@@ -32,9 +32,14 @@ namespace System.Runtime.InteropServices.Tests
             Assert.Equal(new IntPtr(4), Marshal.OffsetOf(typeof(MyPoint), nameof(MyPoint.y)));
         }
 
-        [Fact]
+        [ConditionalFact]
         public void OffsetOf_ExplicitLayout_ReturnsExpected()
         {
+            if (OperatingSystem.IsAndroid() && RuntimeInformation.ProcessArchitecture == Architecture.x86)
+            {
+                throw new SkipTestException("https://github.com/dotnet/runtime/issues/49872 Test fails on Android x86 with -- Expected: 56, Actual: 52");
+            }
+
             Type t = typeof(ExplicitLayoutTest);
             Assert.Equal(56, Marshal.SizeOf(t));
             Assert.Equal(new IntPtr(0), Marshal.OffsetOf(t, nameof(ExplicitLayoutTest.m_short1)));
@@ -104,9 +109,14 @@ namespace System.Runtime.InteropServices.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact]
         public void OffsetOf_Decimal_ReturnsExpected()
         {
+            if (OperatingSystem.IsAndroid() && RuntimeInformation.ProcessArchitecture == Architecture.x86)
+            {
+                throw new SkipTestException("https://github.com/dotnet/runtime/issues/49872 Test fails on Android x86 with -- Expected: 88, Actual: 72");
+            }
+
             Type t = typeof(FieldAlignmentTest_Decimal);
 
             if (OperatingSystem.IsWindows() || (RuntimeInformation.ProcessArchitecture != Architecture.X86 && RuntimeInformation.ProcessArchitecture != Architecture.Wasm))
