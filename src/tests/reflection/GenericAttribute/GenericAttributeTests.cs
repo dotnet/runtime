@@ -8,7 +8,7 @@ class Program
 {
     static int Main(string[] args)
     {
-/* Re-enable once the fix to dotnet/msbuild#6734 propagates to this repo.
+/* Re-enable once the fix to https://github.com/dotnet/msbuild/issues/6734 propagates to this repo.
         Assembly assembly = typeof(Class).GetTypeInfo().Assembly;
         Assert(CustomAttributeExtensions.GetCustomAttribute<SingleAttribute<int>>(assembly) != null);
         Assert(((ICustomAttributeProvider)assembly).GetCustomAttributes(typeof(SingleAttribute<int>), true) != null);

@@ -277,7 +277,7 @@ namespace System.Reflection
             {
                 MetadataImport metadataScope = scope.MetadataImport;
                 var attributeType = scope.ResolveType(metadataScope.GetParentToken(caCtorToken), null, null)!;
-                m_ctor = (scope.ResolveMethod(caCtorToken, attributeType.GenericTypeArguments, null)!.MethodHandle.GetMethodInfo() as RuntimeConstructorInfo)!;
+                m_ctor = (RuntimeConstructorInfo)scope.ResolveMethod(caCtorToken, attributeType.GenericTypeArguments, null)!.MethodHandle.GetMethodInfo();
             }
 
             ParameterInfo[] parameters = m_ctor.GetParametersNoCopy();
