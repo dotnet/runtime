@@ -35,7 +35,7 @@ jobs:
     steps:
 
     # Download jit builds
-    - template: /eng/pipelines/common/download-specific-artifact-step.yml
+    - template: /eng/pipelines/common/download-artifact-step.yml
       parameters:
         unpackFolder: $(buildProductRootFolderPath)
         artifactFileName: '$(buildProductArtifactName)$(archiveExtension)'
