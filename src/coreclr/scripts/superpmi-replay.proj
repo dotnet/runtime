@@ -58,7 +58,6 @@
   <ItemGroup>
     <HelixWorkItem Include="@(SPMI_Partition)">
       <Command>$(WorkItemCommand) -arch %(HelixWorkItem.Architecture) -platform %(HelixWorkItem.Platform) -log_directory $(SuperpmiLogsLocation)</Command>
-      <PayloadDirectory>$(WorkItemDirectory)</PayloadDirectory>
       <Timeout>$(WorkItemTimeout)</Timeout>
       <DownloadFilesFromResults>superpmi_%(HelixWorkItem.Platform)_%(HelixWorkItem.Architecture).log</DownloadFilesFromResults>
     </HelixWorkItem>
