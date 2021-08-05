@@ -26,6 +26,6 @@ namespace System.Runtime.Versioning
 
         public string? Message { get; }
 
-        public string? URL { get; set; }
+        public string? Url { get; set; }
     }
 }
