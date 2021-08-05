@@ -26,7 +26,6 @@ jobs:
     stagedBuild: ${{ parameters.stagedBuild }}
     pool: ${{ parameters.pool }}
     dependOnEvaluatePaths: ${{ parameters.dependOnEvaluatePaths }}
-    uploadAsArtifacts: ${{ parameters.uploadAsArtifacts }}
 
     # Compute job name from template parameters
     name: ${{ format('coreclr_jit_build_{0}{1}_{2}_{3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
@@ -51,6 +50,8 @@ jobs:
 
     - name: publishLogsArtifactPrefix
       value: 'BuildLogs_CoreCLR_JIT'
+    - name: uploadAsArtifacts
+      value: ${{ parameters.uploadAsArtifacts }}
 
     - name: compilerArg
       value: ''
@@ -80,6 +81,9 @@ jobs:
     - ${{ parameters.variables }}
 
     steps:
+    - script: |
+      echo $(uploadAsArtifacts)
+      echo ${{ parameters.uploadAsArtifacts }}
 
     # Install native dependencies
     # Linux builds use docker images with dependencies preinstalled,
