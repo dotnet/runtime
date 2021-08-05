@@ -423,6 +423,9 @@ namespace System.Net.Http.Functional.Tests
 
             Assert.Equal(HttpStatusCode.OK, response.StatusCode);
             Assert.Equal(3, response.Version.Major);
+
+            var content = await response.Content.ReadAsStringAsync();
+            Assert.NotEmpty(content);
         }
 
         [OuterLoop]
@@ -435,7 +438,9 @@ namespace System.Net.Http.Functional.Tests
                 return;
             }
 
-            using HttpClient client = CreateHttpClient();
+            // Create the handler manually without passing in useVersion = Http3 to avoid using VersionHttpClientHandler,
+            // because it overrides VersionPolicy on each request with RequestVersionExact (bypassing Alt-Svc code path completely).
+            using HttpClient client = CreateHttpClient(CreateHttpClientHandler(quicImplementationProvider: UseQuicImplementationProvider));
 
             // First request uses HTTP/1 or HTTP/2 and receives an Alt-Svc either by header or (with HTTP/2) by frame.
 
@@ -443,7 +448,7 @@ namespace System.Net.Http.Functional.Tests
             {
                 Method = HttpMethod.Get,
                 RequestUri = new Uri(uri, UriKind.Absolute),
-                Version = HttpVersion.Version20,
+                Version = HttpVersion.Version30,
                 VersionPolicy = HttpVersionPolicy.RequestVersionOrLower
             })
             {
