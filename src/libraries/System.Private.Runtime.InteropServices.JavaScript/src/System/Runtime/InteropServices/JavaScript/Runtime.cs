@@ -82,13 +82,10 @@ namespace System.Runtime.InteropServices.JavaScript
             {
                 if (_boundObjects.TryGetValue(jsHandle, out WeakReference<JSObject>? wr))
                 {
-                    if (!wr.TryGetTarget(out JSObject? instance))
+
+                    if (!wr.TryGetTarget(out JSObject? instance) || (instance.GCHandle != (int)(IntPtr)h && h.IsAllocated))
                     {
-                        throw new JSException("bound object was collected");
-                    }
-                    else if (instance.GCHandle != (int)(IntPtr)h && h.IsAllocated)
-                    {
-                        throw new JSException(instance.GetType().FullName + SR.Format(SR.MultipleHandlesPointingJsHandle, jsHandle));
+                        throw new JSException(SR.Format(SR.MultipleHandlesPointingJsId, jsHandle));
                     }
 
                     obj = instance;
