@@ -130,8 +130,6 @@
       <_RuntimeConfigJsonFileExistance Condition="Exists('$(_WasmRuntimeConfigFilePath)')">true</_RuntimeConfigJsonFileExistance>
     </PropertyGroup>
 
-    <Error Condition="'$(_MainAssemblyPath)' == ''" Text="Could not find assembly named $(AssemblyName).dll in the bundle assemblies" />
-
     <ItemGroup>
       <_WasmAssembliesInternal Include="@(WasmAssembliesToBundle->Distinct())" />
 
