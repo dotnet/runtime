@@ -53,7 +53,7 @@ namespace Internal.TypeSystem
 
         // Represent field layout bits as as a series of intervals to prevent pathological bad behavior
         // involving excessively large explicit layout structures.
-        private readonly List<FieldLayoutInterval> _fieldLayout = new List<FieldLayoutInterval>();
+        private readonly List<FieldLayoutInterval> _fieldLayout;
 
         private readonly MetadataType _typeBeingValidated;
 
@@ -61,6 +61,7 @@ namespace Internal.TypeSystem
         {
             _typeBeingValidated = type;
             _pointerSize = type.Context.Target.PointerSize;
+            _fieldLayout = new List<FieldLayoutInterval>();
         }
 
         public static void Validate(MetadataType type, ComputedInstanceFieldLayout layout)
