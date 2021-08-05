@@ -23,7 +23,7 @@ namespace System.Runtime.InteropServices.JavaScript
 
         public JSObject() : this(Interop.Runtime.New<object>(), true)
         {
-            object result = Interop.Runtime.BindCoreObject(JSHandle, Int32Handle, out int exception);
+            object result = Interop.Runtime.BindCoreObject(JSHandle, GCHandle, out int exception);
             if (exception != 0)
                 throw new JSException(SR.Format(SR.JSObjectErrorBinding, result));
 
@@ -111,9 +111,9 @@ namespace System.Runtime.InteropServices.JavaScript
             RemoveEventListener(name, jsfunc, options);
         }
 
-        public void RemoveEventListener(string name, int listenerHandle, EventListenerOptions? options = null)
+        public void RemoveEventListener(string name, int listenerGCHandle, EventListenerOptions? options = null)
         {
-            var ret = Interop.Runtime.RemoveEventListener(JSHandle, name, listenerHandle, options?.Capture ?? false);
+            var ret = Interop.Runtime.RemoveEventListener(JSHandle, name, listenerGCHandle, options?.Capture ?? false);
             if (ret != null)
                 throw new JSException(ret);
         }
@@ -164,7 +164,7 @@ namespace System.Runtime.InteropServices.JavaScript
         {
             object setPropResult = Interop.Runtime.SetObjectProperty(JSHandle, name, value, createIfNotExists, hasOwnProperty, out int exception);
             if (exception != 0)
-                throw new JSException($"Error setting {name} on (js-obj js '{JSHandle}' .NET '{Int32Handle})");
+                throw new JSException($"Error setting {name} on (js-obj js '{JSHandle}' .NET '{GCHandle})");
         }
 
         /// <summary>
@@ -236,7 +236,7 @@ namespace System.Runtime.InteropServices.JavaScript
 
         public override string ToString()
         {
-            return $"(js-obj js '{Int32Handle}')";
+            return $"(js-obj js '{GCHandle}')";
         }
     }
 }

@@ -246,7 +246,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         }
 
         [Fact]
-        public static async Task ResolvePromise()
+        public static async Task ResolveStringPromise()
         {
             var factory = new Function(@"
                 return new Promise((resolve, reject) => {
@@ -260,6 +260,25 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
 
             Assert.Equal("foo", (string)value);
             
+        }
+
+        [Fact]
+        public static async Task ResolveJSObjectPromise()
+        {
+            for (int i = 0; i < 10; i++)
+            {
+                var factory = new Function(@"
+                return new Promise((resolve, reject) => {
+                  setTimeout(() => {
+                    resolve({foo:'bar'});
+                  }, 300);
+                });");
+
+                var promise = (Task<object>)factory.Call();
+                var value = (JSObject)await promise;
+
+                Assert.Equal("bar", value.GetObjectProperty("foo"));
+            }
         }
 
         [Fact]

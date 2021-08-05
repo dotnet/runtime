@@ -52,51 +52,55 @@ namespace System.Runtime.InteropServices.JavaScript
             Interop.Runtime.DumpAotProfileData(ref buf, len, extraArg);
         }
 
-        public static int BindJSObject(int jsId, bool ownsHandle, int mappedType)
+        public static int BindJSObject(int jsHandle, bool ownsHandle, int mappedType)
         {
             JSObject? target = null;
 
             lock (_boundObjects)
             {
-                if (!_boundObjects.TryGetValue(jsId, out WeakReference<JSObject>? reference) ||
+                if (!_boundObjects.TryGetValue(jsHandle, out WeakReference<JSObject>? reference) ||
                     !reference.TryGetTarget(out target) ||
                     target.IsDisposed)
                 {
-                    IntPtr jsIntPtr = (IntPtr)jsId;
+                    IntPtr jsIntPtr = (IntPtr)jsHandle;
                     target = mappedType > 0 ? BindJSType(jsIntPtr, ownsHandle, mappedType) : new JSObject(jsIntPtr, ownsHandle);
-                    _boundObjects[jsId] = new WeakReference<JSObject>(target, trackResurrection: true);
+                    _boundObjects[jsHandle] = new WeakReference<JSObject>(target, trackResurrection: true);
                 }
             }
 
             target.AddInFlight();
 
-            return target.Int32Handle;
+            return target.GCHandle;
         }
 
-        public static int BindCoreCLRObject(int jsId, int gcHandle)
+        public static int BindCoreCLRObject(int jsHandle, int gcHandle)
         {
             GCHandle h = (GCHandle)(IntPtr)gcHandle;
             JSObject? obj = null;
 
             lock (_boundObjects)
             {
-                if (_boundObjects.TryGetValue(jsId, out WeakReference<JSObject>? wr))
+                if (_boundObjects.TryGetValue(jsHandle, out WeakReference<JSObject>? wr))
                 {
-                    if (!wr.TryGetTarget(out JSObject? instance) || (instance.Int32Handle != (int)(IntPtr)h && h.IsAllocated))
+                    if (!wr.TryGetTarget(out JSObject? instance))
                     {
-                        throw new JSException(SR.Format(SR.MultipleHandlesPointingJsId, jsId));
+                        throw new JSException("bound object was collected");
+                    }
+                    else if (instance.GCHandle != (int)(IntPtr)h && h.IsAllocated)
+                    {
+                        throw new JSException(instance.GetType().FullName + SR.Format(SR.MultipleHandlesPointingJsHandle, jsHandle));
                     }
 
                     obj = instance;
                 }
                 else if (h.Target is JSObject instance)
                 {
-                    _boundObjects.Add(jsId, new WeakReference<JSObject>(instance, trackResurrection: true));
+                    _boundObjects.Add(jsHandle, new WeakReference<JSObject>(instance, trackResurrection: true));
                     obj = instance;
                 }
             }
 
-            return obj?.Int32Handle ?? 0;
+            return obj?.GCHandle ?? 0;
         }
 
         private static JSObject BindJSType(IntPtr jsIntPtr, bool ownsHandle, int coreType) =>
@@ -124,7 +128,7 @@ namespace System.Runtime.InteropServices.JavaScript
         {
             Interop.Runtime.ReleaseHandle(objToRelease.JSHandle, out int exception);
             if (exception != 0)
-                throw new JSException($"Error releasing handle on (js-obj js '{objToRelease.JSHandle}' mono '{objToRelease.Int32Handle})");
+                throw new JSException($"Error releasing handle on (js-obj js '{objToRelease.JSHandle}' mono '{objToRelease.GCHandle})");
 
             lock (_boundObjects)
             {
@@ -449,22 +453,22 @@ namespace System.Runtime.InteropServices.JavaScript
 #endif
         }
 
-        public static void SafeHandleReleaseByHandle(int jsId)
+        public static void SafeHandleReleaseByHandle(int jsHandle)
         {
 #if DEBUG_HANDLE
-            Debug.WriteLine($"SafeHandleReleaseByHandle: {jsId}");
+            Debug.WriteLine($"SafeHandleReleaseByHandle: {jsHandle}");
 #endif
             lock (_boundObjects)
             {
-                if (_boundObjects.TryGetValue(jsId, out WeakReference<JSObject>? reference))
+                if (_boundObjects.TryGetValue(jsHandle, out WeakReference<JSObject>? reference))
                 {
                     reference.TryGetTarget(out JSObject? target);
-                    Debug.Assert(target != null, $"\tSafeHandleReleaseByHandle: did not find active target {jsId}");
+                    Debug.Assert(target != null, $"\tSafeHandleReleaseByHandle: did not find active target {jsHandle}");
                     SafeHandleRelease(target);
                 }
                 else
                 {
-                    Debug.Fail($"\tSafeHandleReleaseByHandle: did not find reference for {jsId}");
+                    Debug.Fail($"\tSafeHandleReleaseByHandle: did not find reference for {jsHandle}");
                 }
             }
         }

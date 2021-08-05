@@ -16,17 +16,14 @@ namespace System.Runtime.InteropServices.JavaScript
         private GCHandle AnyRefHandle;
         public int JSHandle => (int)handle;
 
-        internal AnyRef(int jsHandle, bool ownsHandle) : this((IntPtr)jsHandle, ownsHandle)
-        { }
-
         internal AnyRef(IntPtr jsHandle, bool ownsHandle) : base(ownsHandle)
         {
             SetHandle(jsHandle);
-            AnyRefHandle = GCHandle.Alloc(this, ownsHandle ? GCHandleType.Weak : GCHandleType.Normal);
+            AnyRefHandle = InteropServices.GCHandle.Alloc(this, ownsHandle ? GCHandleType.Weak : GCHandleType.Normal);
             InFlight = null;
             InFlightCounter = 0;
         }
-        internal int Int32Handle => (int)(IntPtr)AnyRefHandle;
+        internal int GCHandle => (int)(IntPtr)AnyRefHandle;
 
         internal void AddInFlight()
         {
@@ -36,7 +33,7 @@ namespace System.Runtime.InteropServices.JavaScript
                 if (InFlightCounter == 1)
                 {
                     Debug.Assert(InFlight == null);
-                    InFlight = GCHandle.Alloc(this, GCHandleType.Normal);
+                    InFlight = InteropServices.GCHandle.Alloc(this, GCHandleType.Normal);
                 }
             }
         }
