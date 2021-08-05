@@ -97,7 +97,7 @@ namespace System.Configuration
             {
                 if (Uri.IsWellFormedUriString(externalConfigPath, UriKind.Absolute))
                 {
-                    Uri externalConfigUri = new Uri(externalConfigPath);
+                    Uri externalConfigUri = new Uri(externalConfigPath, UriKind.Absolute);
                     if (externalConfigUri.IsFile)
                     {
                         ApplicationConfigUri = externalConfigUri.LocalPath;
@@ -105,14 +105,12 @@ namespace System.Configuration
                 }
                 else
                 {
-                    // Uri constructor would throw for relative paths but full framework doesn't.
-                    // We will mimic full framework behavior here.
+                    if (!Path.IsPathRooted(externalConfigPath))
+                    {
+                        externalConfigPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, externalConfigPath);
+                    }
 
-                    // If path starts with directory separator Path.Combine would combine with a root of BaseDirectory so we trim that character to avoid that
-                    // For absolute path we should already be covered by the other code path
-                    externalConfigPath = externalConfigPath.TrimStart(Path.DirectorySeparatorChar);
-
-                    ApplicationConfigUri = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, externalConfigPath);
+                    ApplicationConfigUri = Path.GetFullPath(externalConfigPath);
                 }
             }
             else if (!string.IsNullOrEmpty(ApplicationUri))
