@@ -24,8 +24,8 @@ jobs:
     dependOnEvaluatePaths: ${{ parameters.dependOnEvaluatePaths }}
     timeoutInMinutes: ${{ parameters.timeoutInMinutes }}
     additionalSetupParameters: ${{ parameters.additionalSetupParameters }}
-    # dependsOn:
-    #  - ${{ format('coreclr_jit_build_{0}{1}_{2}_{3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
+    dependsOn:
+     - ${{ format('coreclr_jit_build_{0}{1}_{2}_{3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
 
     variables: ${{ parameters.variables }}
 
