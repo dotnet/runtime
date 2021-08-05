@@ -584,7 +584,7 @@ namespace System.Text.Json.Serialization
         /// cannot be created.
         /// </remarks>
         /// <param name="writer">The <see cref="Utf8JsonWriter"/> to write to.</param>
-        /// <param name="value">The value to convert. <seealso cref="HandleNull"/> to determine if the converter handles a 'null' reference.</param>
+        /// <param name="value">The value to convert. Note that the value of <seealso cref="HandleNull"/> determines if the converter handles <see langword="null" /> values.</param>
         /// <param name="options">The <see cref="JsonSerializerOptions"/> being used.</param>
         public abstract void Write(
             Utf8JsonWriter writer,
