@@ -1710,6 +1710,48 @@ namespace Microsoft.WebAssembly.Diagnostics
             return retDebuggerCmdReader.ReadByte() == 1 ; //token
         }
 
+        public async Task<JArray> GetHoistedLocalVariables(SessionId sessionId, List<int> objectAlreadyRead, JArray asyncLocals, CancellationToken token)
+        {
+            JArray asyncLocalsFull = new JArray();
+            foreach (var asyncLocal in asyncLocals)
+            {
+                if (asyncLocal["name"].Value<string>().EndsWith("__this"))
+                {
+                    asyncLocal["name"] = "this";
+                    asyncLocalsFull.Add(asyncLocal);
+                }
+                else if (asyncLocal["name"].Value<string>().StartsWith("<>8__") ||
+                        asyncLocal["name"].Value<string>().StartsWith("<>f__ref") ||
+                        asyncLocal["name"].Value<string>().StartsWith("$locvar") ||
+                        asyncLocal["name"].Value<string>().StartsWith("CS$<>")) //same code that has on debugger-libs
+                {
+                    DotnetObjectId.TryParse(asyncLocal?["value"]?["objectId"]?.Value<string>(), out DotnetObjectId dotnetObjectId);
+                    int objectIdToGetInfo = int.Parse(dotnetObjectId.Value);
+                    if (!objectAlreadyRead.Contains(objectIdToGetInfo))
+                    {
+                        objectAlreadyRead.Add(objectIdToGetInfo);
+                        var asyncLocalsFromObject = await GetObjectValues(sessionId, objectIdToGetInfo, true, false, false, false, token);
+                        var hoistedLocalVariable = await GetHoistedLocalVariables(sessionId, objectAlreadyRead, asyncLocalsFromObject, token);
+                        asyncLocalsFull = new JArray(asyncLocalsFull.Union(hoistedLocalVariable));
+                    }
+                }
+                else if (asyncLocal["name"].Value<string>().Contains("<>"))
+                {
+                    continue;
+                }
+                else if (asyncLocal["name"].Value<string>().Contains('<'))
+                {
+                    asyncLocal["name"] = Regex.Match(asyncLocal["name"].Value<string>(), @"\<([^)]*)\>").Groups[1].Value;
+                    asyncLocalsFull.Add(asyncLocal);
+                }
+                else
+                {
+                    asyncLocalsFull.Add(asyncLocal);
+                }
+            }
+            return asyncLocalsFull;
+        }
+
         public async Task<JArray> StackFrameGetValues(SessionId sessionId, MethodInfo method, int thread_id, int frame_id, VarInfo[] varIds, CancellationToken token)
         {
             var commandParams = new MemoryStream();
@@ -1725,18 +1767,13 @@ namespace Microsoft.WebAssembly.Diagnostics
 
             if (await IsAsyncMethod(sessionId, method.DebuggerId, token))
             {
+                List<int> objectAlreadyRead = new List<int>();
                 retDebuggerCmdReader = await SendDebuggerAgentCommand<CmdFrame>(sessionId, CmdFrame.GetThis, commandParams, token);
                 retDebuggerCmdReader.ReadByte(); //ignore type
                 var objectId = retDebuggerCmdReader.ReadInt32();
+                objectAlreadyRead.Add(objectId);
                 var asyncLocals = await GetObjectValues(sessionId, objectId, true, false, false, false, token);
-                asyncLocals = new JArray(asyncLocals.Where( asyncLocal => !asyncLocal["name"].Value<string>().Contains("<>") || asyncLocal["name"].Value<string>().EndsWith("__this")));
-                foreach (var asyncLocal in asyncLocals)
-                {
-                    if (asyncLocal["name"].Value<string>().EndsWith("__this"))
-                        asyncLocal["name"] = "this";
-                    else if (asyncLocal["name"].Value<string>().Contains('<'))
-                        asyncLocal["name"] = Regex.Match(asyncLocal["name"].Value<string>(), @"\<([^)]*)\>").Groups[1].Value;
-                }
+                asyncLocals = await GetHoistedLocalVariables(sessionId, objectAlreadyRead, asyncLocals, token);
                 return asyncLocals;
             }
 
