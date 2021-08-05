@@ -184,6 +184,7 @@ namespace Microsoft.Extensions.DependencyInjection
             }
         }
 
+        [NonEvent]
         private static void AppendServiceDescriptor(StringBuilder builder, ServiceDescriptor descriptor)
         {
             builder.Append("{ \"serviceType\": \"");
