@@ -77,5 +77,10 @@
     <Left>lib/net461/System.IO.Ports.dll</Left>
     <Right>runtimes/unix/lib/netstandard2.0/System.IO.Ports.dll</Right>
   </Suppression>
-
+  <Suppression>
+    <DiagnosticId>CP0001</DiagnosticId>
+    <Target>T:System.IO.Ports.StopBits</Target>
+    <Left>lib/net461/System.IO.Ports.dll</Left>
+    <Right>runtimes/unix/lib/netstandard2.0/System.IO.Ports.dll</Right>
+  </Suppression>
 </Suppressions>
