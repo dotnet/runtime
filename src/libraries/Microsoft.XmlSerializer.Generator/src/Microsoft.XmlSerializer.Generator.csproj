@@ -7,12 +7,31 @@
     <OutputType>Exe</OutputType>
     <TargetFrameworks>netstandard2.0</TargetFrameworks>
     <EnableSingleFileAnalyzer>false</EnableSingleFileAnalyzer>
+    <IsPackable>true</IsPackable>
+    <PackageId>$(MSBuildProjectName)</PackageId>
+    <PackageReleaseNotes>https://go.microsoft.com/fwlink/?LinkID=863421</PackageReleaseNotes>
+    <PackageProjectUrl>https://go.microsoft.com/fwlink/?linkid=858594</PackageProjectUrl>
+    <PackageDescription>Creates an Xml serialization assembly for types contained in an assembly in order to improve the startup performance of Xml serialization when serializing or de-serializing objects of those types using XmlSerializer.</PackageDescription>
+    <DisablePackageBaselineValidation>true</DisablePackageBaselineValidation>
   </PropertyGroup>
 
   <ItemGroup>
     <Compile Include="Sgen.cs" />
   </ItemGroup>
 
-  <Import Project=".\GenerateThisAssemblyCs.targets" />
+  <ItemGroup>
+    <None Include="build\prefercliruntime"
+          PackagePath="/"
+          Pack="true" />
+    <None Include="build\Microsoft.XmlSerializer.Generator.targets"
+          PackagePath="build"
+          Pack="true" />
+    <None Include="build\dotnet-Microsoft.XmlSerializer.Generator.runtimeconfig.json"
+          PackagePath="lib\netstandard2.0"
+          Pack="true" />
+  </ItemGroup>
+
+  <Import Project="GenerateThisAssemblyCs.targets" />
+  <Import Project="GenerateNupkgProps.targets" />
 
 </Project>

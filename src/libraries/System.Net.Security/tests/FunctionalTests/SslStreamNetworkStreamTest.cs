@@ -369,6 +369,7 @@ namespace System.Net.Security.Tests
             using (server)
             {
                 using X509Certificate2 serverCertificate = Configuration.Certificates.GetServerCertificate();
+                using X509Certificate2 clientCertificate = Configuration.Certificates.GetClientCertificate();
 
                 SslClientAuthenticationOptions clientOptions = new SslClientAuthenticationOptions()
                 {
@@ -376,8 +377,12 @@ namespace System.Net.Security.Tests
                     EnabledSslProtocols = SslProtocols.Tls | SslProtocols.Tls11 | SslProtocols.Tls12,
                 };
                 clientOptions.RemoteCertificateValidationCallback = (sender, certificate, chain, sslPolicyErrors) => true;
+                clientOptions.LocalCertificateSelectionCallback = (sender, targetHost, localCertificates, remoteCertificate, acceptableIssuers) =>
+                {
+                    return clientCertificate;
+                };
                 SslServerAuthenticationOptions serverOptions = new SslServerAuthenticationOptions() { ServerCertificate = serverCertificate };
-
+                serverOptions.RemoteCertificateValidationCallback = (sender, certificate, chain, sslPolicyErrors) => true;
                 await TestConfiguration.WhenAllOrAnyFailedWithTimeout(
                                 client.AuthenticateAsClientAsync(clientOptions, cts.Token),
                                 server.AuthenticateAsServerAsync(serverOptions, cts.Token));
@@ -392,6 +397,12 @@ namespace System.Net.Security.Tests
                 await Assert.ThrowsAsync<InvalidOperationException>(()=>
                     server.NegotiateClientCertificateAsync(cts.Token)
                 );
+
+                // Drain client data.
+                await server.ReadAsync(new byte[499]);
+                // Verify that the session is usable even renego request failed.
+                await TestHelper.PingPong(client, server, cts.Token);
+                await TestHelper.PingPong(server, client, cts.Token);
             }
         }
 

@@ -72,8 +72,6 @@
   <!-- Import packaging props -->
   <Import Project="$(RepositoryEngineeringDir)packaging.props" />
 
-  <Import Sdk="Microsoft.DotNet.PackageValidation" Project="Sdk.props" Condition="'$(IsSourceProject)' == 'true'" />
-
   <PropertyGroup>
     <RefRootPath>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'ref'))</RefRootPath>
   </PropertyGroup>

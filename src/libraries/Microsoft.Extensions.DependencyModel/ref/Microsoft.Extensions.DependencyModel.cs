@@ -7,7 +7,7 @@
 namespace Microsoft.DotNet.PlatformAbstractions
 {
     [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
-    [System.ObsoleteAttribute("This type is obsolete and will be removed in a future version. The recommended alternative is System.HashCode.")]
+    [System.ObsoleteAttribute("HashCodeCombiner has been deprecated. Use System.HashCode instead.")]
     public partial struct HashCodeCombiner
     {
         private int _dummyPrimitive;

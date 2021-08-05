@@ -475,7 +475,7 @@ namespace System.Text.Json.Serialization
                 return TryWrite(writer, value, options, ref state);
             }
 
-            if (!(this is JsonDictionaryConverter<T> dictionaryConverter))
+            if (this is not JsonDictionaryConverter<T> dictionaryConverter)
             {
                 // If not JsonDictionaryConverter<T> then we are JsonObject.
                 // Avoid a type reference to JsonObject and its converter to support trimming.

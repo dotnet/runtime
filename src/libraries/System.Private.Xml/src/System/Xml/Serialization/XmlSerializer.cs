@@ -324,7 +324,7 @@ namespace System.Xml.Serialization
         [RequiresUnreferencedCode(TrimSerializationWarning)]
         public void Serialize(TextWriter textWriter, object? o, XmlSerializerNamespaces? namespaces)
         {
-            XmlWriter xmlWriter = XmlWriter.Create(textWriter, new XmlWriterSettings() { Indent = true });
+            XmlWriter xmlWriter = XmlWriter.Create(textWriter);
             Serialize(xmlWriter, o, namespaces);
         }
 
@@ -337,7 +337,7 @@ namespace System.Xml.Serialization
         [RequiresUnreferencedCode(TrimSerializationWarning)]
         public void Serialize(Stream stream, object? o, XmlSerializerNamespaces? namespaces)
         {
-            XmlWriter xmlWriter = XmlWriter.Create(stream, new XmlWriterSettings() { Indent = true });
+            XmlWriter xmlWriter = XmlWriter.Create(stream);
             Serialize(xmlWriter, o, namespaces);
         }
 

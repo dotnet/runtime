@@ -33,7 +33,7 @@ namespace System.Net.NetworkInformation.Tests
             p.StartInfo.RedirectStandardOutput = true;
 
             Stopwatch stopWatch = Stopwatch.StartNew();
-                        
+
             p.Start();
             p.WaitForExit();
 
@@ -47,7 +47,6 @@ namespace System.Net.NetworkInformation.Tests
         [InlineData(50)]
         [InlineData(1000)]
         [PlatformSpecific(TestPlatforms.AnyUnix)] // Tests un-priviledged Ping support on Unix
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/50574", TestPlatforms.Android)]
         public static async Task PacketSizeIsRespected(int payloadSize)
         {
             var stdOutLines = new List<string>();
@@ -55,15 +54,15 @@ namespace System.Net.NetworkInformation.Tests
 
             Process p = ConstructPingProcess(await TestSettings.GetLocalIPAddressAsync(), payloadSize, 1000);
             p.StartInfo.RedirectStandardOutput = true;
-            p.OutputDataReceived += delegate (object sendingProcess, DataReceivedEventArgs outputLine) 
-            { 
-                stdOutLines.Add(outputLine.Data); 
+            p.OutputDataReceived += delegate (object sendingProcess, DataReceivedEventArgs outputLine)
+            {
+                stdOutLines.Add(outputLine.Data);
             };
 
             p.StartInfo.RedirectStandardError = true;
-            p.ErrorDataReceived += delegate (object sendingProcess, DataReceivedEventArgs errorLine) 
-            { 
-                stdErrLines.Add(errorLine.Data); 
+            p.ErrorDataReceived += delegate (object sendingProcess, DataReceivedEventArgs errorLine)
+            {
+                stdErrLines.Add(errorLine.Data);
             };
 
             p.Start();
