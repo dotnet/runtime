@@ -151,6 +151,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
                     var x = new byte[100 + attempt / 100];
                     if (attempt % 1000 == 0)
                     {
+                        Runtime.InvokeJS("gc();");// needs v8 flag --expose-gc
                         GC.Collect();
                     }
                 }
@@ -223,8 +224,8 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             }
         }
 
-        private static JSObject SetupListenerTest (string prefix) {
-            Runtime.InvokeJS($"globalThis.{prefix} = {{" + @"
+        private static JSObject SetupListenerTest () {
+            var factory = new Function(@"return {
     listeners: [],
     eventFactory:function(data){
         return {
@@ -278,13 +279,13 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
     },
 };
 ");
-            return (JSObject)Runtime.GetGlobalObject(prefix);
+            return (JSObject)factory.Call();
         }
 
         [Fact]
         public static void AddEventListenerWorks () {
             var temp = new bool[2];
-            var obj = SetupListenerTest("addEventListenerWorks");
+            var obj = SetupListenerTest();
             obj.AddEventListener("test", (JSObject envt) => {
                 var data = (int)envt.GetObjectProperty("data");
                 temp[data] = true;
@@ -292,6 +293,8 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             var evnt0 = obj.Invoke("eventFactory", 0);
             var evnt1 = obj.Invoke("eventFactory", 1);
             obj.Invoke("fireEvent", "test", evnt0);
+            Runtime.InvokeJS("gc();");// needs v8 flag --expose-gc
+            GC.Collect();
             obj.Invoke("fireEvent", "test", evnt0);
             obj.Invoke("fireEvent", "test", evnt1);
             Assert.True(temp[0]);
@@ -301,7 +304,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         [Fact]
         public static void AddEventListenerPassesOptions () {
             var log = new List<string>();
-            var obj = SetupListenerTest("addEventListenerPassesOptions");
+            var obj = SetupListenerTest();
             obj.AddEventListener("test", (JSObject envt) => {
                 log.Add("Capture");
             }, new JSObject.EventListenerOptions { Capture = true });
@@ -315,7 +318,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
 
         [Fact]
         public static void AddEventListenerForwardsExceptions () {
-            var obj = SetupListenerTest("addEventListenerForwardsExceptions");
+            var obj = SetupListenerTest();
             obj.AddEventListener("test", (JSObject envt) => {
                 throw new Exception("Test exception");
             });
@@ -335,7 +338,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
 
         [Fact]
         public static void RemovedEventListenerIsNotCalled () {
-            var obj = SetupListenerTest("removedEventListenerIsNotCalled");
+            var obj = SetupListenerTest();
             Action<JSObject> del = (JSObject envt) => {
                 throw new Exception("Should not be called");
             };
@@ -351,7 +354,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         [Fact]
         public static void RegisterSameEventListener () {
             var counter = new int[1];
-            var obj = SetupListenerTest("registerSameDelegateTwice");
+            var obj = SetupListenerTest();
             Action<JSObject> del = (JSObject envt) => {
                 counter[0]++;
             };
@@ -377,7 +380,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
 
         [Fact]
         public static void UseAddEventListenerResultToRemove () {
-            var obj = SetupListenerTest("useAddEventListenerResultToRemove");
+            var obj = SetupListenerTest();
             Action<JSObject> del = (JSObject envt) => {
                 throw new Exception("Should not be called");
             };
@@ -393,8 +396,8 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         [Fact]
         public static void RegisterSameEventListenerToMultipleSources () {
             var counter = new int[1];
-            var a = SetupListenerTest("registerSameEventListenerToMultipleSourcesA");
-            var b = SetupListenerTest("registerSameEventListenerToMultipleSourcesB");
+            var a = SetupListenerTest();
+            var b = SetupListenerTest();
             Action<JSObject> del = (JSObject envt) => {
                 counter[0]++;
             };

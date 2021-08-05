@@ -211,7 +211,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
                 }
             };");
             var dispatcher = (JSObject)factory.Call();
-            var temp = new bool[2];
+            var temp = new bool[100];
             Action<JSObject> cb = (JSObject envt) =>
             {
                 var data = (int)envt.GetObjectProperty("data");
@@ -225,6 +225,13 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             dispatcher.Invoke("fireEvent", evnt1);
             Assert.True(temp[0]);
             Assert.True(temp[1]);
+
+            for (int i = 0; i < 100; i++)
+            {
+                var evnti = dispatcher.Invoke("eventFactory", i);
+                dispatcher.Invoke("fireEvent", evnti);
+                Runtime.InvokeJS("gc();");// needs v8 flag --expose-gc
+            }
         }
 
         [Fact]
@@ -278,6 +285,8 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
                 var value = (JSObject)await promise;
 
                 Assert.Equal("bar", value.GetObjectProperty("foo"));
+
+                Runtime.InvokeJS("gc();");// needs v8 flag --expose-gc
             }
         }
 
