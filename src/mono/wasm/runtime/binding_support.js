@@ -1721,16 +1721,16 @@ var BindingSupportLib = {
 		try {
 			BINDING.bindings_lazy_init ();
 
-			var obj = BINDING.get_js_obj (js_handle);
-			if (!obj) {
-				setValue (is_exception, 1, "i32");
-				return BINDING.js_string_to_mono_string ("Invalid JS object handle '" + js_handle + "'");
-			}
-
 			var js_name = BINDING.conv_string (nameRoot.value);
 			if (!js_name || (typeof(js_name) !== "string")) {
 				setValue (is_exception, 1, "i32");
-				return BINDING.js_string_to_mono_string ("Invalid method name object '" + nameRoot.value + "'");
+				return BINDING.js_string_to_mono_string ("Invalid method name object '" + nameRoot.value + "' at mono_wasm_invoke_js_with_args");
+			}
+
+			var obj = BINDING.get_js_obj (js_handle);
+			if (!obj) {
+				setValue (is_exception, 1, "i32");
+				return BINDING.js_string_to_mono_string ("Invalid JS object handle '" + js_handle + "' at mono_wasm_invoke_js_with_args while invoking '"+js_name+"'");
 			}
 
 			var js_args = BINDING.mono_wasm_parse_args_root(argsRoot);
@@ -1761,16 +1761,16 @@ var BindingSupportLib = {
 
 		var nameRoot = MONO.mono_wasm_new_root (property_name);
 		try {
-			var obj = BINDING.mono_wasm_require_handle (js_handle);
-			if (!obj) {
-				setValue (is_exception, 1, "i32");
-				return BINDING.js_string_to_mono_string ("Invalid JS object handle '" + js_handle + "'");
-			}
-
 			var js_name = BINDING.conv_string (nameRoot.value);
 			if (!js_name) {
 				setValue (is_exception, 1, "i32");
-				return BINDING.js_string_to_mono_string ("Invalid property name object '" + nameRoot.value + "'");
+				return BINDING.js_string_to_mono_string ("Invalid property name object '" + nameRoot.value + "' at mono_wasm_get_object_property");
+			}
+
+			var obj = BINDING.mono_wasm_require_handle (js_handle);
+			if (!obj) {
+				setValue (is_exception, 1, "i32");
+				return BINDING.js_string_to_mono_string ("Invalid JS object handle '" + js_handle + "' at mono_wasm_get_object_property while geting '"+js_name+"'");
 			}
 
 			var res;
@@ -1795,16 +1795,16 @@ var BindingSupportLib = {
 		var valueRoot = MONO.mono_wasm_new_root (value), nameRoot = MONO.mono_wasm_new_root (property_name);
 		try {
 			BINDING.bindings_lazy_init ();
-			var requireObject = BINDING.mono_wasm_require_handle (js_handle);
-			if (!requireObject) {
-				setValue (is_exception, 1, "i32");
-				return BINDING.js_string_to_mono_string ("Invalid JS object handle '" + js_handle + "'");
-			}
-
 			var property = BINDING.conv_string (nameRoot.value);
 			if (!property) {
 				setValue (is_exception, 1, "i32");
-				return BINDING.js_string_to_mono_string ("Invalid property name object '" + property_name + "'");
+				return BINDING.js_string_to_mono_string ("Invalid property name object '" + property_name + "' at mono_wasm_set_object_property");
+			}
+
+			var requireObject = BINDING.mono_wasm_require_handle (js_handle);
+			if (!requireObject) {
+				setValue (is_exception, 1, "i32");
+				return BINDING.js_string_to_mono_string ("Invalid JS object handle '" + js_handle + "' at mono_wasm_set_object_property while setting '"+property+"'");
 			}
 
 			var result = false;
@@ -1848,7 +1848,7 @@ var BindingSupportLib = {
 		var obj = BINDING.mono_wasm_require_handle (js_handle);
 		if (!obj) {
 			setValue (is_exception, 1, "i32");
-			return BINDING.js_string_to_mono_string ("Invalid JS object handle '" + js_handle + "'");
+			return BINDING.js_string_to_mono_string ("Invalid JS object handle '" + js_handle + "' at mono_wasm_get_by_index while getting ["+property_index+"]");
 		}
 
 		try {
@@ -1870,7 +1870,7 @@ var BindingSupportLib = {
 			var obj = BINDING.mono_wasm_require_handle (js_handle);
 			if (!obj) {
 				setValue (is_exception, 1, "i32");
-				return BINDING.js_string_to_mono_string ("Invalid JS object handle '" + js_handle + "'");
+				return BINDING.js_string_to_mono_string ("Invalid JS object handle '" + js_handle + "' at mono_wasm_set_by_index while setting ["+property_index+"]");
 			}
 
 			var js_value = BINDING._unbox_mono_obj_root(valueRoot);
@@ -1932,7 +1932,7 @@ var BindingSupportLib = {
 		var requireObject = BINDING.mono_wasm_require_handle (js_handle);
 		if (!requireObject) {
 			setValue (is_exception, 1, "i32");
-			return BINDING.js_string_to_mono_string ("Invalid JS object handle '" + js_handle + "'");
+			return BINDING.js_string_to_mono_string ("Invalid JS object handle '" + js_handle + "' at mono_wasm_bind_core_object");
 		}
 
 		BINDING.wasm_bind_core_clr_obj(js_handle, gc_handle );
@@ -1946,7 +1946,7 @@ var BindingSupportLib = {
 		var requireObject = BINDING.mono_wasm_require_handle (js_handle);
 		if (!requireObject) {
 			setValue (is_exception, 1, "i32");
-			return BINDING.js_string_to_mono_string ("Invalid JS object handle '" + js_handle + "'");
+			return BINDING.js_string_to_mono_string ("Invalid JS object handle '" + js_handle + "' as mono_wasm_bind_host_object");
 		}
 
 		BINDING.wasm_bind_core_clr_obj(js_handle, gc_handle );
@@ -2010,7 +2010,7 @@ var BindingSupportLib = {
 		var requireObject = BINDING.mono_wasm_require_handle (js_handle);
 		if (!requireObject) {
 			setValue (is_exception, 1, "i32");
-			return BINDING.js_string_to_mono_string ("Invalid JS object handle '" + js_handle + "'");
+			return BINDING.js_string_to_mono_string ("Invalid JS object handle '" + js_handle + "' at mono_wasm_typed_array_to_array");
 		}
 
 		return BINDING.js_typed_array_to_array(requireObject);
@@ -2021,7 +2021,7 @@ var BindingSupportLib = {
 		var requireObject = BINDING.mono_wasm_require_handle (js_handle);
 		if (!requireObject) {
 			setValue (is_exception, 1, "i32");
-			return BINDING.js_string_to_mono_string ("Invalid JS object handle '" + js_handle + "'");
+			return BINDING.js_string_to_mono_string ("Invalid JS object handle '" + js_handle + "' at mono_wasm_typed_array_copy_to");
 		}
 
 		var res = BINDING.typedarray_copy_to(requireObject, pinned_array, begin, end, bytes_per_element);
@@ -2038,7 +2038,7 @@ var BindingSupportLib = {
 		var requireObject = BINDING.mono_wasm_require_handle (js_handle);
 		if (!requireObject) {
 			setValue (is_exception, 1, "i32");
-			return BINDING.js_string_to_mono_string ("Invalid JS object handle '" + js_handle + "'");
+			return BINDING.js_string_to_mono_string ("Invalid JS object handle '" + js_handle + "' at mono_wasm_typed_array_copy_from");
 		}
 
 		var res = BINDING.typedarray_copy_from(requireObject, pinned_array, begin, end, bytes_per_element);
@@ -2048,13 +2048,14 @@ var BindingSupportLib = {
 		var nameRoot = MONO.mono_wasm_new_root (name);
 		try {
 			BINDING.bindings_lazy_init ();
+			var sName = BINDING.conv_string(nameRoot.value);
+
 			var obj = BINDING.mono_wasm_require_handle(objHandle);
 			if (!obj)
-				throw new Error("Invalid JS object handle");
+				throw new Error("Invalid JS object handle at mono_wasm_add_event_listener for '"+sName+"'");
 			var listener = BINDING._wrap_delegate_gchandle_as_function(listener_gchandle);
 			if (!listener)
-				throw new Error("Invalid listener ID");
-			var sName = BINDING.conv_string(nameRoot.value);
+				throw new Error("Invalid listener gchandle");
 
 			var options = optionsHandle
 				? BINDING.mono_wasm_require_handle(optionsHandle)
@@ -2077,7 +2078,7 @@ var BindingSupportLib = {
 			BINDING.bindings_lazy_init ();
 			var obj = BINDING.mono_wasm_require_handle(objHandle);
 			if (!obj)
-				throw new Error("Invalid JS object handle");
+				throw new Error("Invalid JS object handle at mono_wasm_remove_event_listener");
 			var listener = BINDING._wrap_delegate_gchandle_as_function(listener_gchandle);
 			// Removing a nonexistent listener should not be treated as an error
 			if (!listener)
