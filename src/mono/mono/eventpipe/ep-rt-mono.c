@@ -21,6 +21,8 @@
 #include <mono/metadata/debug-internals.h>
 #include <mono/metadata/gc-internals.h>
 #include <mono/metadata/profiler-private.h>
+#include <mono/metadata/cil-coff.h>
+#include <mono/metadata/mono-endian.h>
 #include <mono/mini/mini-runtime.h>
 #include <mono/sgen/sgen-conf.h>
 #include <mono/sgen/sgen-tagged-pointer.h>
@@ -166,7 +168,8 @@ typedef struct _EventPipeSampleProfileStackWalkData {
 
 // Event data types.
 struct _ModuleEventData {
-	uint8_t signature [EP_GUID_SIZE];
+	uint8_t module_il_pdb_signature [EP_GUID_SIZE];
+	uint8_t module_native_pdb_signature [EP_GUID_SIZE];
 	uint64_t domain_id;
 	uint64_t module_id;
 	uint64_t assembly_id;
@@ -1299,35 +1302,15 @@ eventpipe_fire_assembly_events (
 	EP_ASSERT (assembly != NULL);
 	EP_ASSERT (assembly_events_func != NULL);
 
-	uint64_t domain_id = (uint64_t)domain;
-	uint64_t module_id = (uint64_t)assembly->image;
-	uint64_t assembly_id = (uint64_t)assembly;
-
-	// TODO: Extract all module IL/Native paths and pdb metadata when available.
-	const char *module_il_path = "";
-	const char *module_il_pdb_path = "";
-	const char *module_native_path = "";
-	const char *module_native_pdb_path = "";
-	uint8_t signature [EP_GUID_SIZE] = { 0 };
-	uint32_t module_il_pdb_age = 0;
-	uint32_t module_native_pdb_age = 0;
-
-	uint32_t reserved_flags = 0;
-	uint64_t binding_id = 0;
-
 	// Native methods are part of JIT table and already emitted.
 	// TODO: FireEtwMethodDCEndVerbose_V1_or_V2 for all native methods in module as well?
 
-	// Netcore has a 1:1 between assemblies and modules, so its always a manifest module.
-	uint32_t module_flags = MODULE_FLAGS_MANIFEST_MODULE;
-	if (assembly->image) {
-		if (assembly->image->dynamic)
-			module_flags |= MODULE_FLAGS_DYNAMIC_MODULE;
-		if (assembly->image->aot_module)
-			module_flags |= MODULE_FLAGS_NATIVE_MODULE;
+	uint64_t binding_id = 0;
 
-		module_il_path = assembly->image->filename ? assembly->image->filename : "";
-	}
+	ModuleEventData module_data;
+	memset (&module_data, 0, sizeof (module_data));
+
+	get_module_event_data (assembly->image, &module_data);
 
 	uint32_t assembly_flags = 0;
 	if (assembly->dynamic)
@@ -1340,22 +1323,22 @@ eventpipe_fire_assembly_events (
 	char *assembly_name = mono_stringify_assembly_name (&assembly->aname);
 
 	assembly_events_func (
-		domain_id,
-		assembly_id,
+		module_data.domain_id,
+		module_data.assembly_id,
 		assembly_flags,
 		binding_id,
 		(const ep_char8_t*)assembly_name,
-		module_id,
-		module_flags,
-		reserved_flags,
-		(const ep_char8_t *)module_il_path,
-		(const ep_char8_t *)module_native_path,
-		signature,
-		module_il_pdb_age,
-		(const ep_char8_t *)module_il_pdb_path,
-		signature,
-		module_native_pdb_age,
-		(const ep_char8_t *)module_native_pdb_path,
+		module_data.module_id,
+		module_data.module_flags,
+		module_data.reserved_flags,
+		(const ep_char8_t *)module_data.module_il_path,
+		(const ep_char8_t *)module_data.module_native_path,
+		module_data.module_il_pdb_signature,
+		module_data.module_il_pdb_age,
+		(const ep_char8_t *)module_data.module_il_pdb_path,
+		module_data.module_native_pdb_signature,
+		module_data.module_native_pdb_age,
+		(const ep_char8_t *)module_data.module_native_pdb_path,
 		NULL);
 
 	g_free (assembly_name);
@@ -2683,35 +2666,60 @@ get_module_event_data (
 	MonoImage *image,
 	ModuleEventData *module_data)
 {
-	if (image && module_data) {
-		memset (module_data->signature, 0, EP_GUID_SIZE);
+	if (module_data) {
+		memset (module_data->module_il_pdb_signature, 0, EP_GUID_SIZE);
+		memset (module_data->module_native_pdb_signature, 0, EP_GUID_SIZE);
 
 		// Under netcore we only have root domain.
 		MonoDomain *root_domain = mono_get_root_domain ();
 
 		module_data->domain_id = (uint64_t)root_domain;
 		module_data->module_id = (uint64_t)image;
-		module_data->assembly_id = (uint64_t)image->assembly;
+		module_data->assembly_id = image ? (uint64_t)image->assembly : 0;
 
-		// TODO: Extract all module IL/Native paths and pdb metadata when available.
-		module_data->module_il_path = "";
-		module_data->module_il_pdb_path = "";
+		// TODO: Extract all module native paths and pdb metadata when available.
 		module_data->module_native_path = "";
 		module_data->module_native_pdb_path = "";
-
-		module_data->module_il_pdb_age = 0;
 		module_data->module_native_pdb_age = 0;
 
 		module_data->reserved_flags = 0;
 
 		// Netcore has a 1:1 between assemblies and modules, so its always a manifest module.
 		module_data->module_flags = MODULE_FLAGS_MANIFEST_MODULE;
-		if (image->dynamic)
+		if (image && image->dynamic)
 			module_data->module_flags |= MODULE_FLAGS_DYNAMIC_MODULE;
-		if (image->aot_module)
+		if (image && image->aot_module)
 			module_data->module_flags |= MODULE_FLAGS_NATIVE_MODULE;
 
-		module_data->module_il_path = image->filename ? image->filename : "";
+		module_data->module_il_path = image && image->filename ? image->filename : "";
+
+		if (image && image->image_info) {
+			MonoPEDirEntry *debug_dir_entry = (MonoPEDirEntry *)&image->image_info->cli_header.datadir.pe_debug;
+			if (debug_dir_entry->size) {
+				ImageDebugDirectory debug_dir;
+				memset (&debug_dir, 0, sizeof (debug_dir));
+
+				uint32_t offset = mono_cli_rva_image_map (image, debug_dir_entry->rva);
+				for (uint32_t idx = 0; idx < debug_dir_entry->size / sizeof (ImageDebugDirectory); ++idx) {
+					uint8_t *data = (uint8_t *) ((ImageDebugDirectory *) (image->raw_data + offset) + idx);
+					debug_dir.major_version = read16 (data + 8);
+					debug_dir.minor_version = read16 (data + 10);
+					debug_dir.type = read32 (data + 12);
+					debug_dir.pointer = read32 (data + 24);
+
+					if (debug_dir.type == DEBUG_DIR_ENTRY_CODEVIEW && debug_dir.major_version == 0x100 && debug_dir.minor_version == 0x504d) {
+						data  = (uint8_t *)(image->raw_data + debug_dir.pointer);
+						int32_t signature = read32 (data);
+						if (signature == 0x53445352) {
+							memcpy (module_data->module_il_pdb_signature, data + 4, EP_GUID_SIZE);
+							module_data->module_il_pdb_age = read32 (data + 20);
+							module_data->module_il_pdb_path = (const char *)(data + 24);
+							break;
+						}
+					}
+				}
+			}
+		}
 	}
 
 	return true;
@@ -2734,10 +2742,10 @@ ep_rt_mono_write_event_module_load (MonoImage *image)
 				module_data.module_il_path,
 				module_data.module_native_path,
 				clr_instance_get_id (),
-				module_data.signature,
+				module_data.module_il_pdb_signature,
 				module_data.module_il_pdb_age,
 				module_data.module_il_pdb_path,
-				module_data.signature,
+				module_data.module_native_pdb_signature,
 				module_data.module_native_pdb_age,
 				module_data.module_native_pdb_path,
 				NULL,
@@ -2777,10 +2785,10 @@ ep_rt_mono_write_event_module_unload (MonoImage *image)
 				module_data.module_il_path,
 				module_data.module_native_path,
 				clr_instance_get_id (),
-				module_data.signature,
+				module_data.module_il_pdb_signature,
 				module_data.module_il_pdb_age,
 				module_data.module_il_pdb_path,
-				module_data.signature,
+				module_data.module_native_pdb_signature,
 				module_data.module_native_pdb_age,
 				module_data.module_native_pdb_path,
 				NULL,
