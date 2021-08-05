@@ -15,18 +15,16 @@ namespace System.Reflection.Metadata.Ecma335
         {
             internal readonly int ILOffset;
             internal readonly LabelHandle Label;
-            private readonly byte _opCode;
-
-            internal ILOpCode OpCode => (ILOpCode)_opCode;
+            internal readonly ILOpCode OpCode;
 
             internal BranchInfo(int ilOffset, LabelHandle label, ILOpCode opCode)
             {
                 ILOffset = ilOffset;
                 Label = label;
-                _opCode = (byte)opCode;
+                OpCode = opCode;
             }
 
-            internal int GetBranchDistance(ImmutableArray<int>.Builder labels, ILOpCode branchOpCode, int branchILOffset, bool isShortBranch)
+            internal int GetBranchDistance(ImmutableArray<int>.Builder labels, int branchILOffset, bool isShortBranch)
             {
                 int labelTargetOffset = labels[Label.Id - 1];
                 if (labelTargetOffset < 0)
@@ -43,7 +41,7 @@ namespace System.Reflection.Metadata.Ecma335
                     // however an optimal algorithm would be rather complex (something like: calculate topological ordering of crossing branch instructions
                     // and then use fixed point to eliminate cycles). If the caller doesn't care about optimal IL size they can use long branches whenever the
                     // distance is unknown upfront. If they do they probably implement more sophisticated algorithm for IL layout optimization already.
-                    throw new InvalidOperationException(SR.Format(SR.DistanceBetweenInstructionAndLabelTooBig, branchOpCode, branchILOffset, distance));
+                    throw new InvalidOperationException(SR.Format(SR.DistanceBetweenInstructionAndLabelTooBig, OpCode, branchILOffset, distance));
                 }
 
                 return distance;
@@ -279,7 +277,7 @@ namespace System.Reflection.Metadata.Ecma335
                     // write branch opcode:
                     dstBuilder.WriteByte(srcBlob.Buffer[srcBlobOffset]);
 
-                    int branchDistance = branch.GetBranchDistance(_labels, branch.OpCode, srcOffset, isShortInstruction);
+                    int branchDistance = branch.GetBranchDistance(_labels, srcOffset, isShortInstruction);
 
                     // write branch operand:
                     if (isShortInstruction)
