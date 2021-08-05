@@ -676,11 +676,6 @@ namespace System
 
         private static string JoinCore<T>(ReadOnlySpan<char> separator, IEnumerable<T> values)
         {
-            if (values == null)
-            {
-                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.values);
-            }
-
             if (typeof(T) == typeof(string))
             {
                 if (values is List<string?> valuesList)
@@ -692,6 +687,11 @@ namespace System
                 {
                     return JoinCore(separator, new ReadOnlySpan<string?>(valuesArray));
                 }
+            }
+
+            if (values == null)
+            {
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.values);
             }
 
             using (IEnumerator<T> en = values.GetEnumerator())
