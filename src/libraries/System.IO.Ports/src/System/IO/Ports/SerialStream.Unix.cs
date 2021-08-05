@@ -436,7 +436,7 @@ namespace System.IO.Ports
 
         public override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
         {
-            CheckReadWriteArguments();
+            CheckHandle();
 
             if (buffer.IsEmpty)
                 return ValueTask.FromResult(0);

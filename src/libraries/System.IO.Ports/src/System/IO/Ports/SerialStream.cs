@@ -100,7 +100,7 @@ namespace System.IO.Ports
                 throw new ArgumentException(SR.Argument_InvalidOffLen);
         }
 
-        private void CheckReadWriteArguments()
+        private void CheckHandle()
         {
             if (_handle == null)
                 InternalResources.FileNotOpen();
@@ -110,7 +110,7 @@ namespace System.IO.Ports
         {
             CheckArrayArguments(array, offset, count);
 
-            CheckReadWriteArguments();
+            CheckHandle();
         }
 
         private void CheckWriteArguments()
@@ -118,7 +118,7 @@ namespace System.IO.Ports
             if (_inBreak)
                 throw new InvalidOperationException(SR.In_Break_State);
 
-            CheckReadWriteArguments();
+            CheckHandle();
         }
 
         private void CheckWriteArguments(byte[] array, int offset, int count)
