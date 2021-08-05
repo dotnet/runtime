@@ -14147,17 +14147,10 @@ GenTree* Compiler::fgMorphSmpOpOptional(GenTreeOp* tree)
                     /* Change "(val + iadd) << ishf" into "(val<<ishf + iadd<<ishf)" */
 
                     tree->ChangeOper(GT_ADD);
-                    ssize_t result = iadd << ishf;
-                    op2->AsIntConCommon()->SetIconValue(result);
-#ifdef TARGET_64BIT
-                    if (op1->gtType == TYP_INT)
-                    {
-                        op2->AsIntCon()->TruncateOrSignExtend32();
-                    }
-#endif // TARGET_64BIT
 
                     // we are reusing the shift amount node here, but the type we want is that of the shift result
                     op2->gtType = op1->gtType;
+                    op2->AsIntConCommon()->SetValueTruncating(iadd << ishf);
 
                     if (cns->gtOper == GT_CNS_INT && cns->AsIntCon()->gtFieldSeq != nullptr &&
                         cns->AsIntCon()->gtFieldSeq->IsConstantIndexFieldSeq())
