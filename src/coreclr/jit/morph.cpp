@@ -16169,6 +16169,10 @@ void Compiler::fgMergeBlockReturn(BasicBlock* block)
             {
                 tree = fgMorphCopyBlock(tree);
             }
+            else if (tree->OperIsInitBlkOp())
+            {
+                tree = fgMorphInitBlock(tree);
+            }
 
             if (pAfterStatement == lastStmt)
             {
