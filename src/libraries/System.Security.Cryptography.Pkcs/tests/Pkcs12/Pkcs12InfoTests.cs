@@ -290,20 +290,12 @@ namespace System.Security.Cryptography.Pkcs.Tests.Pkcs12
         {
             get
             {
-                if (!OperatingSystem.IsAndroid)
-                {
-                    yield return new object[] { PbeEncryptionAlgorithm.Aes128Cbc, HashAlgorithmName.SHA256, 700_000 };
-                    yield return new object[] { PbeEncryptionAlgorithm.Aes192Cbc, HashAlgorithmName.SHA256, 700_000 };
-                    yield return new object[] { PbeEncryptionAlgorithm.Aes256Cbc, HashAlgorithmName.SHA256, 700_000 };
-                    yield return new object[] { PbeEncryptionAlgorithm.TripleDes3KeyPkcs12, HashAlgorithmName.SHA1, 600_000 };
-                }
-                else
-                {
-                    yield return new object[] { PbeEncryptionAlgorithm.Aes128Cbc, HashAlgorithmName.SHA256, 7000 };
-                    yield return new object[] { PbeEncryptionAlgorithm.Aes192Cbc, HashAlgorithmName.SHA256, 7000 };
-                    yield return new object[] { PbeEncryptionAlgorithm.Aes256Cbc, HashAlgorithmName.SHA256, 7000 };
-                    yield return new object[] { PbeEncryptionAlgorithm.TripleDes3KeyPkcs12, HashAlgorithmName.SHA1, 6000 };
-                }
+                // On Android, the tests run out of memory when running DecodeWithHighPbeIterations and causes a crash in CI
+                // Instead of disabling the whole suite, we opted to reduce the number of iterations to help the tests pass
+                yield return new object[] { PbeEncryptionAlgorithm.Aes128Cbc, HashAlgorithmName.SHA256, OperatingSystem.IsAndroid() ? 7000 : 700_000 };
+                yield return new object[] { PbeEncryptionAlgorithm.Aes192Cbc, HashAlgorithmName.SHA256, OperatingSystem.IsAndroid() ? 7000 : 700_000 };
+                yield return new object[] { PbeEncryptionAlgorithm.Aes256Cbc, HashAlgorithmName.SHA256, OperatingSystem.IsAndroid() ? 7000 : 700_000 };
+                yield return new object[] { PbeEncryptionAlgorithm.TripleDes3KeyPkcs12, HashAlgorithmName.SHA1, OperatingSystem.IsAndroid() ? 6000 : 600_000 };
             }
         }
 
