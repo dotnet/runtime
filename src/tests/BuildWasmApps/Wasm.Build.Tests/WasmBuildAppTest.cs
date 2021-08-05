@@ -144,7 +144,7 @@ namespace Wasm.Build.Tests
                             File.WriteAllText(Path.Combine(_projectDir!, "Program.cs"), programText);
                         },
                         id: id,
-                        dotnetWasmFromRuntimePack: !(buildArgs.AOT || buildArgs.Config == "Release");
+                        dotnetWasmFromRuntimePack: !(buildArgs.AOT || buildArgs.Config == "Release"));
 
             RunAndTestWasmApp(buildArgs, expectedExitCode: 42,
                                 test: output => Assert.Contains("System.Threading.ThreadPool.MaxThreads: 20", output), host: host, id: id);
