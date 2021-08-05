@@ -88,15 +88,21 @@ namespace Microsoft.Extensions.DependencyInjection
         /// <inheritdoc />
         public void Dispose()
         {
-            _disposed = true;
+            DisposeCore();
             Root.Dispose();
         }
 
         /// <inheritdoc/>
         public ValueTask DisposeAsync()
         {
-            _disposed = true;
+            DisposeCore();
             return Root.DisposeAsync();
+        }
+
+        private void DisposeCore()
+        {
+            _disposed = true;
+            DependencyInjectionEventSource.Log.ServiceProviderDisposed(this);
         }
 
         private void OnCreate(ServiceCallSite callSite)

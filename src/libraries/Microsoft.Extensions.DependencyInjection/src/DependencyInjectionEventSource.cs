@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Diagnostics.Tracing;
 using System.Linq.Expressions;
@@ -15,8 +16,10 @@ namespace Microsoft.Extensions.DependencyInjection
     {
         public static readonly DependencyInjectionEventSource Log = new DependencyInjectionEventSource();
 
-        // Event source doesn't support large payloads so we chunk formatted call site tree
+        // Event source doesn't support large payloads so we chunk large payloads like formatted call site tree and descriptors
         private const int MaxChunkSize = 10 * 1024;
+
+        private readonly List<ServiceProvider> _providers = new();
 
         private DependencyInjectionEventSource() : base(EventSourceSettings.EtwSelfDescribingEventFormat)
         {
@@ -133,6 +136,26 @@ namespace Microsoft.Extensions.DependencyInjection
         [NonEvent]
         public void ServiceProviderBuilt(ServiceProvider provider)
         {
+            lock (_providers)
+            {
+                _providers.Add(provider);
+            }
+
+            WriteServiceProviderBuilt(provider);
+        }
+
+        [NonEvent]
+        public void ServiceProviderDisposed(ServiceProvider provider)
+        {
+            lock (_providers)
+            {
+                _providers.Remove(provider);
+            }
+        }
+
+        [NonEvent]
+        private void WriteServiceProviderBuilt(ServiceProvider provider)
+        {
             if (IsEnabled(EventLevel.Verbose, EventKeywords.All))
             {
                 int singletonServices = 0;
@@ -215,6 +238,24 @@ namespace Microsoft.Extensions.DependencyInjection
             }
 
             builder.Append("\" }");
+        }
+
+        protected override void OnEventCommand(EventCommandEventArgs command)
+        {
+            if (command.Command == EventCommand.Enable)
+            {
+                // When this EventSource becomes enabled, write out the existing ServiceProvider information
+                // because building the ServiceProvider happens early in the process. This way a listener
+                // can get this information, even if they attach while the process is running.
+
+                lock (_providers)
+                {
+                    foreach (ServiceProvider provider in _providers)
+                    {
+                        WriteServiceProviderBuilt(provider);
+                    }
+                }
+            }
         }
     }
 

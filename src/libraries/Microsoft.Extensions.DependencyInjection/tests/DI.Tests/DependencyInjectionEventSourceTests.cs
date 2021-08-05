@@ -6,6 +6,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics.Tracing;
 using System.Linq;
+using System.Reflection;
 using Microsoft.Extensions.DependencyInjection.Specification.Fakes;
 using Newtonsoft.Json.Linq;
 using Xunit;
@@ -18,12 +19,16 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
     }
 
     [Collection(nameof(EventSourceTests))]
-    public class DependencyInjectionEventSourceTests: IDisposable
+    public class DependencyInjectionEventSourceTests : IDisposable
     {
         private readonly TestEventListener _listener = new TestEventListener();
 
         public DependencyInjectionEventSourceTests()
         {
+            // clear the provider list in between tests
+            typeof(DependencyInjectionEventSource).GetField("_providers", BindingFlags.NonPublic | BindingFlags.Instance)
+                .SetValue(DependencyInjectionEventSource.Log, new List<ServiceProvider>());
+
             _listener.EnableEvents(DependencyInjectionEventSource.Log, EventLevel.Verbose);
         }
 
@@ -227,8 +232,8 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
         [Fact]
         public void EmitsServiceProviderBuilt()
         {
-            var serviceCollection = new ServiceCollection();
-            var fakeDisposeCallback = new FakeDisposeCallback();
+            ServiceCollection serviceCollection = new();
+            FakeDisposeCallback fakeDisposeCallback = new();
             serviceCollection.AddSingleton(fakeDisposeCallback);
             serviceCollection.AddTransient<IFakeOuterService, FakeDisposableCallbackOuterService>();
             serviceCollection.AddSingleton<IFakeMultipleService, FakeDisposableCallbackInnerService>();
@@ -237,7 +242,7 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
             serviceCollection.AddTransient<IFakeMultipleService, FakeDisposableCallbackInnerService>();
             serviceCollection.AddSingleton<IFakeService, FakeDisposableCallbackInnerService>();
 
-            serviceCollection.BuildServiceProvider();
+            using ServiceProvider provider = serviceCollection.BuildServiceProvider();
 
             EventWrittenEventArgs serviceProviderBuiltEvent = _listener.EventData.Single(e => e.EventName == "ServiceProviderBuilt");
             GetProperty<int>(serviceProviderBuiltEvent, "serviceProviderHashCode"); // assert hashcode exists as an int
@@ -294,6 +299,32 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
             Assert.Equal(0, GetProperty<int>(serviceProviderDescriptorsEvent, "chunkIndex"));
             Assert.Equal(1, GetProperty<int>(serviceProviderDescriptorsEvent, "chunkCount"));
             Assert.Equal(8, serviceProviderDescriptorsEvent.EventId);
+        }
+
+        /// <summary>
+        /// Verifies that when an EventListener is enabled after the ServiceProvider has been built,
+        /// the ServiceProviderBuilt events fire. This way users can get ServiceProvider info when
+        /// attaching while the app is running.
+        /// </summary>
+        [Fact]
+        public void EmitsServiceProviderBuiltOnAttach()
+        {
+            _listener.DisableEvents(DependencyInjectionEventSource.Log);
+
+            ServiceCollection serviceCollection = new();
+            serviceCollection.AddSingleton(new FakeDisposeCallback());
+
+            using ServiceProvider provider = serviceCollection.BuildServiceProvider();
+
+            Assert.Empty(_listener.EventData);
+
+            _listener.EnableEvents(DependencyInjectionEventSource.Log, EventLevel.Verbose);
+
+            EventWrittenEventArgs serviceProviderBuiltEvent = _listener.EventData.Single(e => e.EventName == "ServiceProviderBuilt");
+            Assert.Equal(1, GetProperty<int>(serviceProviderBuiltEvent, "singletonServices"));
+
+            EventWrittenEventArgs serviceProviderDescriptorsEvent = _listener.EventData.Single(e => e.EventName == "ServiceProviderDescriptors");
+            Assert.NotNull(JObject.Parse(GetProperty<string>(serviceProviderDescriptorsEvent, "descriptors")));
         }
 
         private T GetProperty<T>(EventWrittenEventArgs data, string propName)
