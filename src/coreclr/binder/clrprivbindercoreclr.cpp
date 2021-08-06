@@ -181,7 +181,7 @@ HRESULT CLRPrivBinderCoreCLR::BindUsingPEImage( /* in */ PEImage *pPEImage,
                 hr = BindAssemblyByNameWorker(pAssemblyName, &pCoreCLRFoundAssembly, true /* excludeAppPaths */);
                 if (SUCCEEDED(hr))
                 {
-                    if (pCoreCLRFoundAssembly->GetIsInGAC())
+                    if (pCoreCLRFoundAssembly->GetIsInTPA())
                     {
                         *ppAssembly = pCoreCLRFoundAssembly.Extract();
                         goto Exit;

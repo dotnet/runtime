@@ -69,7 +69,7 @@ HRESULT LoadContext<dwIncludeFlags>::Register(BindResult *pBindResult)
 
     SAFE_NEW(pContextEntry, ContextEntry);
 
-    pContextEntry->SetIsInGAC(pBindResult->GetIsInGAC());
+    pContextEntry->SetIsInTPA(pBindResult->GetIsInTPA());
     pContextEntry->SetAssemblyName(pBindResult->GetAssemblyName(), TRUE /* fAddRef */);
     pContextEntry->SetAssembly(pBindResult->GetAssembly());
 

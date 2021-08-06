@@ -170,7 +170,7 @@ namespace BINDER_SPACE
                                        pPEImage,
                                        pNativePEImage,
                                        asesmblyPath,
-                                       FALSE /* fIsInGAC */));
+                                       FALSE /* fIsInTPA */));
 
             pBindResult->SetResult(pAssembly);
             pBindResult->SetIsFirstRequest(TRUE);
@@ -379,7 +379,7 @@ namespace BINDER_SPACE
         CombinePath(sCoreLib, sCoreLibName, sCoreLib);
 
         hr = AssemblyBinder::GetAssembly(sCoreLib,
-                                         TRUE /* fIsInGAC */,
+                                         TRUE /* fIsInTPA */,
                                          fBindToNativeImage,
                                          &pSystemAssembly,
                                          NULL /* szMDAssemblyPath */,
@@ -420,7 +420,7 @@ namespace BINDER_SPACE
             }
 
             hr = AssemblyBinder::GetAssembly(sCoreLib,
-                TRUE /* fIsInGAC */,
+                TRUE /* fIsInTPA */,
                 fBindToNativeImage,
                 &pSystemAssembly,
                 NULL /* szMDAssemblyPath */,
@@ -479,7 +479,7 @@ namespace BINDER_SPACE
 
         ReleaseHolder<Assembly> pSystemAssembly;
         IF_FAIL_GO(AssemblyBinder::GetAssembly(sCoreLibSatellite,
-                                               TRUE /* fIsInGAC */,
+                                               TRUE /* fIsInTPA */,
                                                FALSE /* fExplicitBindToNativeImage */,
                                                &pSystemAssembly,
                                                NULL /* szMDAssemblyPath */,
@@ -594,7 +594,7 @@ namespace BINDER_SPACE
         // Design decision. For now, keep the V2 model of Fusion being oblivious of the strong name.
         // Security team did not see any security concern with interpreting the version information.
         IF_FAIL_GO(GetAssembly(assemblyPath,
-                               FALSE /* fIsInGAC */,
+                               FALSE /* fIsInTPA */,
 
                                // Pass through caller's intent of whether to bind to the
                                // NI using an explicit path to the NI that was
@@ -785,7 +785,7 @@ namespace BINDER_SPACE
 
             ReleaseHolder<Assembly> pAssembly;
             hr = AssemblyBinder::GetAssembly(relativePath,
-                                             FALSE /* fIsInGAC */,
+                                             FALSE /* fIsInTPA */,
                                              FALSE /* fExplicitBindToNativeImage */,
                                              &pAssembly,
                                              NULL,  // szMDAssemblyPath
@@ -835,7 +835,7 @@ namespace BINDER_SPACE
                 CombinePath(fileName, relativePath, fileName);
 
                 hr = AssemblyBinder::GetAssembly(fileName,
-                                                 FALSE /* fIsInGAC */,
+                                                 FALSE /* fIsInTPA */,
                                                  FALSE /* fExplicitBindToNativeImage */,
                                                  &pAssembly);
                 BinderTracing::PathProbed(fileName, pathSource, hr);
@@ -944,7 +944,7 @@ namespace BINDER_SPACE
                 PathString fileName(fileNameWithoutExtension);
                 fileName.Append(useNativeImages ? W(".ni.dll") : W(".dll"));
                 hr = AssemblyBinder::GetAssembly(fileName,
-                                                 FALSE, // fIsInGAC
+                                                 FALSE, // fIsInTPA
                                                  useNativeImages, // fExplicitBindToNativeImage
                                                  &pAssembly);
                 BinderTracing::PathProbed(fileName, pathSource, hr);
@@ -954,7 +954,7 @@ namespace BINDER_SPACE
                     fileName.Set(fileNameWithoutExtension);
                     fileName.Append(useNativeImages ? W(".ni.exe") : W(".exe"));
                     hr = AssemblyBinder::GetAssembly(fileName,
-                                                     FALSE, // fIsInGAC
+                                                     FALSE, // fIsInTPA
                                                      useNativeImages, // fExplicitBindToNativeImage
                                                      &pAssembly);
                     BinderTracing::PathProbed(fileName, pathSource, hr);
@@ -1052,7 +1052,7 @@ namespace BINDER_SPACE
                     if (bundleFileLocation.IsValid())
                     {
                         hr = GetAssembly(assemblyFilePath,
-                                         TRUE,  // fIsInGAC
+                                         TRUE,  // fIsInTPA
                                          FALSE, // fExplicitBindToNativeImage
                                          &pTPAAssembly,
                                          NULL,  // szMDAssemblyPath
@@ -1087,7 +1087,7 @@ namespace BINDER_SPACE
                     SString fileName(pTpaEntry->m_wszNIFileName);
 
                     hr = GetAssembly(fileName,
-                                     TRUE,  // fIsInGAC
+                                     TRUE,  // fIsInTPA
                                      TRUE,  // fExplicitBindToNativeImage
                                      &pTPAAssembly);
                     BinderTracing::PathProbed(fileName, BinderTracing::PathSource::ApplicationAssemblies, hr);
@@ -1098,7 +1098,7 @@ namespace BINDER_SPACE
                     SString fileName(pTpaEntry->m_wszILFileName);
 
                     hr = GetAssembly(fileName,
-                                     TRUE,  // fIsInGAC
+                                     TRUE,  // fIsInTPA
                                      FALSE, // fExplicitBindToNativeImage
                                      &pTPAAssembly);
                     BinderTracing::PathProbed(fileName, BinderTracing::PathSource::ApplicationAssemblies, hr);
@@ -1193,7 +1193,7 @@ namespace BINDER_SPACE
 
     /* static */
     HRESULT AssemblyBinder::GetAssembly(SString            &assemblyPath,
-                                        BOOL               fIsInGAC,
+                                        BOOL               fIsInTPA,
 
                                         // When binding to the native image, should we
                                         // assume assemblyPath explicitly specifies that
@@ -1267,7 +1267,7 @@ namespace BINDER_SPACE
                                    pPEImage,
                                    pNativePEImage,
                                    assemblyPath,
-                                   fIsInGAC));
+                                   fIsInTPA));
 
         // We're done
         *ppAssembly = pAssembly.Extract();

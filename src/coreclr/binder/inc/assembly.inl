@@ -82,20 +82,20 @@ void Assembly::SetAssemblyName(AssemblyName *pAssemblyName,
     }
 }
 
-BOOL Assembly::GetIsInGAC()
+BOOL Assembly::GetIsInTPA()
 {
-    return ((m_dwAssemblyFlags & FLAG_IS_IN_GAC) != 0);
+    return ((m_dwAssemblyFlags & FLAG_IS_IN_TPA) != 0);
 }
 
-void Assembly::SetIsInGAC(BOOL fIsInGAC)
+void Assembly::SetIsInTPA(BOOL fIsInTPA)
 {
-    if (fIsInGAC)
+    if (fIsInTPA)
     {
-        m_dwAssemblyFlags |= FLAG_IS_IN_GAC;
+        m_dwAssemblyFlags |= FLAG_IS_IN_TPA;
     }
     else
     {
-        m_dwAssemblyFlags &= ~FLAG_IS_IN_GAC;
+        m_dwAssemblyFlags &= ~FLAG_IS_IN_TPA;
     }
 }
 

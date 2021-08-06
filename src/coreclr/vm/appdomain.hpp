@@ -2701,7 +2701,7 @@ public:
         if (path.EqualsCaseInsensitive(m_BaseLibrary))
             return TRUE;
 
-        // Or, it might be the GAC location of CoreLib
+        // Or, it might be the location of CoreLib
         if (System()->SystemAssembly() != NULL
             && path.EqualsCaseInsensitive(System()->SystemAssembly()->GetManifestFile()->GetPath()))
             return TRUE;

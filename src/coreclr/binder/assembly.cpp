@@ -103,7 +103,7 @@ namespace BINDER_SPACE
                            PEImage                 *pPEImage,
                            PEImage                 *pNativePEImage,
                            SString                 &assemblyPath,
-                           BOOL                     fIsInGAC)
+                           BOOL                     fIsInTPA)
     {
         HRESULT hr = S_OK;
 
@@ -113,7 +113,7 @@ namespace BINDER_SPACE
         // Get assembly name def from meta data import and store it for later refs access
         IF_FAIL_GO(pAssemblyName->Init(pIMetaDataAssemblyImport, PeKind));
         SetMDImport(pIMetaDataAssemblyImport);
-        if (!fIsInGAC)
+        if (!fIsInTPA)
         {
             GetPath().Set(assemblyPath);
         }
@@ -121,7 +121,7 @@ namespace BINDER_SPACE
         // Safe architecture for validation
         PEKIND kAssemblyArchitecture;
         kAssemblyArchitecture = pAssemblyName->GetArchitecture();
-        SetIsInGAC(fIsInGAC);
+        SetIsInTPA(fIsInTPA);
         SetPEImage(pPEImage);
         SetNativePEImage(pNativePEImage);
         pAssemblyName->SetIsDefinition(TRUE);

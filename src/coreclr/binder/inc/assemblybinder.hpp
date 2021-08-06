@@ -49,7 +49,7 @@ namespace BINDER_SPACE
                                              /* out */ Assembly **ppSystemAssembly);
 
         static HRESULT GetAssembly(/* in */  SString     &assemblyPath,
-                                   /* in */  BOOL         fIsInGAC,
+                                   /* in */  BOOL         fIsInTPA,
                                    /* in */  BOOL         fExplicitBindToNativeImage,
                                    /* out */ Assembly   **ppAssembly,
                                    /* in */  LPCTSTR      szMDAssemblyPath = NULL,

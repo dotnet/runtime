@@ -92,10 +92,10 @@ namespace BINDER_SPACE
                      /* in */ PEImage                 *pPEImage,
                      /* in */ PEImage                 *pPENativeImage,
                      /* in */ SString                 &assemblyPath,
-                     /* in */ BOOL                     fIsInGAC);
+                     /* in */ BOOL                     fIsInTPA);
 
         inline AssemblyName *GetAssemblyName(BOOL fAddRef = FALSE);
-        inline BOOL GetIsInGAC();
+        inline BOOL GetIsInTPA();
 
         inline SString &GetPath();
 
@@ -120,7 +120,7 @@ namespace BINDER_SPACE
         enum
         {
             FLAG_NONE = 0x00,
-            FLAG_IS_IN_GAC = 0x02,
+            FLAG_IS_IN_TPA = 0x02,
             //FLAG_IS_DYNAMIC_BIND = 0x04,
             FLAG_IS_BYTE_ARRAY = 0x08,
         };
@@ -130,7 +130,7 @@ namespace BINDER_SPACE
 
         inline void SetAssemblyName(AssemblyName *pAssemblyName,
                                     BOOL          fAddRef = TRUE);
-        inline void SetIsInGAC(BOOL fIsInGAC);
+        inline void SetIsInTPA(BOOL fIsInTPA);
 
         inline IMDInternalImport *GetMDImport();
         inline void SetMDImport(IMDInternalImport *pMDImport);

@@ -26,7 +26,7 @@ namespace BINDER_SPACE
         {
             RESULT_FLAG_NONE             = 0x00,
             //RESULT_FLAG_IS_DYNAMIC_BIND  = 0x01,
-            RESULT_FLAG_IS_IN_GAC        = 0x02,
+            RESULT_FLAG_IS_IN_TPA        = 0x02,
             //RESULT_FLAG_FROM_MANIFEST    = 0x04,
             RESULT_FLAG_CONTEXT_BOUND    = 0x08,
             RESULT_FLAG_FIRST_REQUEST    = 0x10,
@@ -43,20 +43,20 @@ namespace BINDER_SPACE
             SAFE_RELEASE(m_pIUnknownAssembly);
         }
 
-        BOOL GetIsInGAC()
+        BOOL GetIsInTPA()
         {
-            return ((m_dwResultFlags & RESULT_FLAG_IS_IN_GAC) != 0);
+            return ((m_dwResultFlags & RESULT_FLAG_IS_IN_TPA) != 0);
         }
 
-        void SetIsInGAC(BOOL fIsInGAC)
+        void SetIsInTPA(BOOL fIsInTPA)
         {
-            if (fIsInGAC)
+            if (fIsInTPA)
             {
-                m_dwResultFlags |= RESULT_FLAG_IS_IN_GAC;
+                m_dwResultFlags |= RESULT_FLAG_IS_IN_TPA;
             }
             else
             {
-                m_dwResultFlags &= ~RESULT_FLAG_IS_IN_GAC;
+                m_dwResultFlags &= ~RESULT_FLAG_IS_IN_TPA;
             }
         }
 

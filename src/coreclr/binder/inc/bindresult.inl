@@ -60,20 +60,20 @@ Assembly *BindResult::GetAsAssembly(BOOL fAddRef /* = FALSE */)
     return static_cast<Assembly *>(GetAssembly(fAddRef));
 }
 
-BOOL BindResult::GetIsInGAC()
+BOOL BindResult::GetIsInTPA()
 {
-    return ((m_dwResultFlags & ContextEntry::RESULT_FLAG_IS_IN_GAC) != 0);
+    return ((m_dwResultFlags & ContextEntry::RESULT_FLAG_IS_IN_TPA) != 0);
 }
 
-void BindResult::SetIsInGAC(BOOL fIsInGAC)
+void BindResult::SetIsInTPA(BOOL fIsInTPA)
 {
-    if (fIsInGAC)
+    if (fIsInTPA)
     {
-        m_dwResultFlags |= ContextEntry::RESULT_FLAG_IS_IN_GAC;
+        m_dwResultFlags |= ContextEntry::RESULT_FLAG_IS_IN_TPA;
     }
     else
     {
-        m_dwResultFlags &= ~ContextEntry::RESULT_FLAG_IS_IN_GAC;
+        m_dwResultFlags &= ~ContextEntry::RESULT_FLAG_IS_IN_TPA;
     }
 }
 
@@ -115,7 +115,7 @@ void BindResult::SetResult(ContextEntry *pContextEntry, BOOL fIsContextBound /* 
 {
     _ASSERTE(pContextEntry != NULL);
 
-    SetIsInGAC(pContextEntry->GetIsInGAC());
+    SetIsInTPA(pContextEntry->GetIsInTPA());
     SetIsContextBound(fIsContextBound);
     SAFE_RELEASE(m_pAssemblyName);
     m_pAssemblyName = pContextEntry->GetAssemblyName(TRUE /* fAddRef */);
@@ -126,7 +126,7 @@ void BindResult::SetResult(Assembly *pAssembly)
 {
     _ASSERTE(pAssembly != NULL);
 
-    SetIsInGAC(pAssembly->GetIsInGAC());
+    SetIsInTPA(pAssembly->GetIsInTPA());
     SAFE_RELEASE(m_pAssemblyName);
     m_pAssemblyName = pAssembly->GetAssemblyName(TRUE /* fAddRef */);
     pAssembly->AddRef();

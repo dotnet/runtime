@@ -28,8 +28,8 @@ namespace BINDER_SPACE
         inline IUnknown *GetAssembly(BOOL fAddRef = FALSE);
         inline Assembly *GetAsAssembly(BOOL fAddRef = FALSE);
 
-        inline BOOL GetIsInGAC();
-        inline void SetIsInGAC(BOOL fIsInGAC);
+        inline BOOL GetIsInTPA();
+        inline void SetIsInTPA(BOOL fIsInTPA);
         inline BOOL GetIsContextBound();
         inline void SetIsContextBound(BOOL fIsContextBound);
         inline BOOL GetIsFirstRequest();
