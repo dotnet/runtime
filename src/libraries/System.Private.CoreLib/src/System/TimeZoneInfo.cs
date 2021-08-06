@@ -46,7 +46,7 @@ namespace System
         private readonly TimeSpan _baseUtcOffset;
         private readonly bool _supportsDaylightSavingTime;
         private readonly AdjustmentRule[]? _adjustmentRules;
-        // As we support IANA and Windows Ids, it is possible we create equivalent zone objects which differ only in the Ids.
+        // As we support IANA and Windows IDs, it is possible we create equivalent zone objects which differ only in the IDs.
         private List<TimeZoneInfo>? _equivalentZones;
 
         // constants for TimeZoneInfo.Local and TimeZoneInfo.Utc
@@ -136,7 +136,7 @@ namespace System
         public string Id => _id;
 
         /// <summary>
-        /// Returns true if this TimeZoneInfo object has IANA Id.
+        /// Returns true if this TimeZoneInfo object has an IANA ID.
         /// </summary>
         public bool HasIanaId { get; }
 
@@ -152,7 +152,7 @@ namespace System
 
         /// <summary>
         /// Returns an array of TimeSpan objects representing all of
-        /// possible UTC offset values for this ambiguous time.
+        /// the possible UTC offset values for this ambiguous time.
         /// </summary>
         public TimeSpan[] GetAmbiguousTimeOffsets(DateTimeOffset dateTimeOffset)
         {
@@ -974,28 +974,28 @@ namespace System
         }
 
         /// <summary>
-        /// Tries to convert IANA time zone Id to Windows Id.
+        /// Tries to convert an IANA time zone ID to a Windows ID.
         /// </summary>
-        /// <param name="ianaId">The IANA time zone Id.</param>
-        /// <param name="windowsId">String object hold the Windows Id which resulted from the IANA Id conversion.</param>
-        /// <returns>True if the Id conversion succeed, false otherwise .</returns>
+        /// <param name="ianaId">The IANA time zone ID.</param>
+        /// <param name="windowsId">String object holding the Windows ID which resulted from the IANA ID conversion.</param>
+        /// <returns>True if the ID conversion succeeded, false otherwise.</returns>
         public static unsafe bool TryConvertIanaIdToWindowsId(string ianaId, [NotNullWhen(true)] out string? windowsId) => TryConvertIanaIdToWindowsId(ianaId, allocate: true, out windowsId);
 
         /// <summary>
-        /// Tries to convert Windows time zone Id to IANA Id.
+        /// Tries to convert a Windows time zone ID to an IANA ID.
         /// </summary>
-        /// <param name="windowsId">The Windows time zone Id.</param>
-        /// <param name="ianaId">String object hold the IANA Id which resulted from the Windows Id conversion.</param>
-        /// <returns>True if the Id conversion succeed, false otherwise .</returns>
+        /// <param name="windowsId">The Windows time zone ID.</param>
+        /// <param name="ianaId">String object holding the IANA ID which resulted from the Windows ID conversion.</param>
+        /// <returns>True if the ID conversion succeeded, false otherwise.</returns>
         public static bool TryConvertWindowsIdToIanaId(string windowsId, [NotNullWhen(true)] out string? ianaId) =>  TryConvertWindowsIdToIanaId(windowsId, region: null, allocate: true, out ianaId);
 
         /// <summary>
-        /// Tries to convert Windows time zone Id to IANA Id.
+        /// Tries to convert a Windows time zone ID to an IANA ID.
         /// </summary>
-        /// <param name="windowsId">The Windows time zone Id.</param>
-        /// <param name="region">The ISO 3166 for the country/region.</param>
-        /// <param name="ianaId">String object hold the IANA Id which resulted from the Windows Id conversion.</param>
-        /// <returns>True if the Id conversion succeed, false otherwise .</returns>
+        /// <param name="windowsId">The Windows time zone ID.</param>
+        /// <param name="region">The ISO 3166 code for the country/region.</param>
+        /// <param name="ianaId">String object holding the IANA ID which resulted from the Windows ID conversion.</param>
+        /// <returns>True if the ID conversion succeeded, false otherwise.</returns>
         public static unsafe bool TryConvertWindowsIdToIanaId(string windowsId, string? region, [NotNullWhen(true)] out string? ianaId) => TryConvertWindowsIdToIanaId(windowsId, region, allocate: true, out ianaId);
 
         void IDeserializationCallback.OnDeserialization(object? sender)
