@@ -13,6 +13,9 @@ namespace System.Runtime.InteropServices.JavaScript
     public static class Runtime
     {
         private static readonly Dictionary<int, WeakReference<JSObject>> _boundObjects = new Dictionary<int, WeakReference<JSObject>>();
+        private static object JSOwnedObjectLock = new object();
+        // we use this to maintain identity of GCHandle for a managed object
+        private static Dictionary<object, int> GCHandleFromJSOwnedObject = new Dictionary<object, int>();
 
         private const string TaskGetResultName = "get_Result";
         private static readonly MethodInfo _taskGetResultMethodInfo = typeof(Task<>).GetMethod(TaskGetResultName)!;
@@ -161,9 +164,6 @@ namespace System.Runtime.InteropServices.JavaScript
             return tcs.Task;
         }
 
-        private static object JSOwnedObjectLock = new object();
-        private static Dictionary<object, int> IDFromJSOwnedObject = new Dictionary<object, int>();
-
         // A JSOwnedObject is a managed object with its lifetime controlled by javascript.
         // The managed side maintains a strong reference to the object, while the JS side
         //  maintains a weak reference and notifies the managed side if the JS wrapper object
@@ -177,11 +177,11 @@ namespace System.Runtime.InteropServices.JavaScript
 
             int result;
             lock (JSOwnedObjectLock) {
-                if (IDFromJSOwnedObject.TryGetValue(o, out result))
+                if (GCHandleFromJSOwnedObject.TryGetValue(o, out result))
                     return result;
 
                 result = (int)(IntPtr)GCHandle.Alloc(o, GCHandleType.Normal);
-                IDFromJSOwnedObject[o] = result;
+                GCHandleFromJSOwnedObject[o] = result;
                 return result;
             }
         }
@@ -191,7 +191,7 @@ namespace System.Runtime.InteropServices.JavaScript
         public static void ReleaseJSOwnedObjectByHandle (int gcHandle) {
             GCHandle handle = (GCHandle)(IntPtr)gcHandle;
             lock (JSOwnedObjectLock) {
-                IDFromJSOwnedObject.Remove(handle.Target!);
+                GCHandleFromJSOwnedObject.Remove(handle.Target!);
             }
             handle.Free();
         }
