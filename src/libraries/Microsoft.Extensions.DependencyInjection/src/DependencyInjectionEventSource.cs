@@ -24,7 +24,7 @@ namespace Microsoft.Extensions.DependencyInjection
         // Event source doesn't support large payloads so we chunk large payloads like formatted call site tree and descriptors
         private const int MaxChunkSize = 10 * 1024;
 
-        private readonly List<ServiceProvider> _providers = new();
+        private readonly List<WeakReference<ServiceProvider>> _providers = new();
 
         private DependencyInjectionEventSource() : base(EventSourceSettings.EtwSelfDescribingEventFormat)
         {
@@ -143,7 +143,7 @@ namespace Microsoft.Extensions.DependencyInjection
         {
             lock (_providers)
             {
-                _providers.Add(provider);
+                _providers.Add(new WeakReference<ServiceProvider>(provider));
             }
 
             WriteServiceProviderBuilt(provider);
@@ -154,7 +154,15 @@ namespace Microsoft.Extensions.DependencyInjection
         {
             lock (_providers)
             {
-                _providers.Remove(provider);
+                for (int i = _providers.Count - 1; i >= 0; i--)
+                {
+                    // remove the provider, along with any stale references
+                    WeakReference<ServiceProvider> reference = _providers[i];
+                    if (!reference.TryGetTarget(out ServiceProvider target) || target == provider)
+                    {
+                        _providers.RemoveAt(i);
+                    }
+                }
             }
         }
 
@@ -255,9 +263,12 @@ namespace Microsoft.Extensions.DependencyInjection
 
                 lock (_providers)
                 {
-                    foreach (ServiceProvider provider in _providers)
+                    foreach (WeakReference<ServiceProvider> reference in _providers)
                     {
-                        WriteServiceProviderBuilt(provider);
+                        if (reference.TryGetTarget(out ServiceProvider provider))
+                        {
+                            WriteServiceProviderBuilt(provider);
+                        }
                     }
                 }
             }
