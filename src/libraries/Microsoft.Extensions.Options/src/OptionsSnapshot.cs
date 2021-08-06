@@ -9,7 +9,7 @@ using System.Threading;
 namespace Microsoft.Extensions.Options
 {
     /// <summary>
-    /// Implementation of <see cref="IOptions{TOptions}"/> and <see cref="IOptionsSnapshot{TOptions}"/>.
+    /// Implementation of <see cref="IOptionsSnapshot{TOptions}"/>.
     /// </summary>
     /// <typeparam name="TOptions">Options type.</typeparam>
     internal sealed class OptionsSnapshot<[DynamicallyAccessedMembers(Options.DynamicallyAccessedMembers)] TOptions> :
