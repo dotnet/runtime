@@ -43,7 +43,7 @@ public class RuntimeConfigParserTask : Task
             return false;
         }
 
-        if (!TryConvertInputToDictionary (RuntimeConfigFile, out Dictionary<string, string> configProperties)
+        if (!TryConvertInputToDictionary(RuntimeConfigFile, out Dictionary<string, string> configProperties))
         {
             return false;
         }
@@ -66,7 +66,10 @@ public class RuntimeConfigParserTask : Task
     /// Reads a json file from the given path and extracts the "configProperties" key (assumed to be a string to string dictionary)
     private bool TryConvertInputToDictionary(string inputFilePath, out Dictionary<string, string> result)
     {
-        result = null;
+        var init_result = new Dictionary<string, string>();
+        init_result.Clear();
+        result = init_result;
+
         var options = new JsonSerializerOptions {
             AllowTrailingCommas = true,
             ReadCommentHandling = JsonCommentHandling.Skip,
