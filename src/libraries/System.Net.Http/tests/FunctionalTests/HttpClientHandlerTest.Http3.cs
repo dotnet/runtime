@@ -416,7 +416,6 @@ namespace System.Net.Http.Functional.Tests
         [OuterLoop]
         [ConditionalTheory(nameof(IsMsQuicSupported))]
         [MemberData(nameof(InteropUris))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/54726")]
         public async Task Public_Interop_ExactVersion_Success(string uri)
         {
             if (UseQuicImplementationProvider == QuicImplementationProviders.Mock)
@@ -440,9 +439,8 @@ namespace System.Net.Http.Functional.Tests
 
         [OuterLoop]
         [ConditionalTheory(nameof(IsMsQuicSupported))]
-        [MemberData(nameof(InteropUris))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/54726")]
-        public async Task Public_Interop_Upgrade_Success(string uri)
+        [MemberData(nameof(InteropUrisWithContent))]
+        public async Task Public_Interop_ExactVersion_BufferContent_Success(string uri)
         {
             if (UseQuicImplementationProvider == QuicImplementationProviders.Mock)
             {
@@ -450,6 +448,35 @@ namespace System.Net.Http.Functional.Tests
             }
 
             using HttpClient client = CreateHttpClient();
+            using HttpRequestMessage request = new HttpRequestMessage
+            {
+                Method = HttpMethod.Get,
+                RequestUri = new Uri(uri, UriKind.Absolute),
+                Version = HttpVersion.Version30,
+                VersionPolicy = HttpVersionPolicy.RequestVersionExact
+            };
+            using HttpResponseMessage response = await client.SendAsync(request, HttpCompletionOption.ResponseContentRead).WaitAsync(TimeSpan.FromSeconds(20));
+
+            Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+            Assert.Equal(3, response.Version.Major);
+
+            var content = await response.Content.ReadAsStringAsync();
+            Assert.NotEmpty(content);
+        }
+
+        [OuterLoop]
+        [ConditionalTheory(nameof(IsMsQuicSupported))]
+        [MemberData(nameof(InteropUris))]
+        public async Task Public_Interop_Upgrade_Success(string uri)
+        {
+            if (UseQuicImplementationProvider == QuicImplementationProviders.Mock)
+            {
+                return;
+            }
+
+            // Create the handler manually without passing in useVersion = Http3 to avoid using VersionHttpClientHandler,
+            // because it overrides VersionPolicy on each request with RequestVersionExact (bypassing Alt-Svc code path completely).
+            using HttpClient client = CreateHttpClient(CreateHttpClientHandler(quicImplementationProvider: UseQuicImplementationProvider));
 
             // First request uses HTTP/1 or HTTP/2 and receives an Alt-Svc either by header or (with HTTP/2) by frame.
 
@@ -479,7 +506,7 @@ namespace System.Net.Http.Functional.Tests
                 using HttpResponseMessage responseB = await client.SendAsync(requestB).WaitAsync(TimeSpan.FromSeconds(20));
 
                 Assert.Equal(HttpStatusCode.OK, responseB.StatusCode);
-                Assert.NotEqual(3, responseB.Version.Major);
+                Assert.Equal(3, responseB.Version.Major);
             }
         }
 
@@ -777,14 +804,26 @@ namespace System.Net.Http.Functional.Tests
 
         /// <summary>
         /// These are public interop test servers for various QUIC and HTTP/3 implementations,
-        /// taken from https://github.com/quicwg/base-drafts/wiki/Implementations
+        /// taken from https://github.com/quicwg/base-drafts/wiki/Implementations and https://bagder.github.io/HTTP3-test/.
         /// </summary>
         public static TheoryData<string> InteropUris() =>
             new TheoryData<string>
             {
-                { "https://quic.rocks:4433/" }, // Chromium
-                { "https://http3-test.litespeedtech.com:4433/" }, // LiteSpeed
-                { "https://quic.tech:8443/" } // Cloudflare
+                { "https://www.litespeedtech.com/" }, // LiteSpeed
+                { "https://quic.tech:8443/" }, // Cloudflare
+                { "https://quic.aiortc.org:443/" }, // aioquic
+                { "https://h2o.examp1e.net/" } // h2o/quicly
+            };
+
+        /// <summary>
+        /// These are public interop test servers for various QUIC and HTTP/3 implementations,
+        /// taken from https://github.com/quicwg/base-drafts/wiki/Implementations and https://bagder.github.io/HTTP3-test/.
+        /// </summary>
+        public static TheoryData<string> InteropUrisWithContent() =>
+            new TheoryData<string>
+            {
+                { "https://cloudflare-quic.com/" }, // Cloudflare with content
+                { "https://pgjones.dev/" }, // aioquic with content
             };
     }
 }

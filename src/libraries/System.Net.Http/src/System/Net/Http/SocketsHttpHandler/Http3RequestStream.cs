@@ -1156,6 +1156,11 @@ namespace System.Net.Http
                 switch (frameType)
                 {
                     case Http3FrameType.Data:
+                        // Ignore DATA frames with 0 length.
+                        if (payloadLength == 0)
+                        {
+                            continue;
+                        }
                         _responseDataPayloadRemaining = payloadLength;
                         return true;
                     case Http3FrameType.Headers:
