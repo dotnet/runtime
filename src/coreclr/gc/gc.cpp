@@ -33410,7 +33410,7 @@ void gc_heap::revisit_written_pages (BOOL concurrent_p, BOOL reset_only_p)
             seg = heap_segment_next_rw (seg);
         }
 
-        if (i < loh_generation)
+        if (i == soh_gen2)
         {
             if (!reset_only_p)
             {
