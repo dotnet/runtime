@@ -39,7 +39,7 @@
     <None Include="$(LicenseFile)"
           PackagePath="$([System.IO.Path]::GetFileName('$(LicenseFile)'))"
           Pack="true"
-          Condition="'$(MSBuildProjectExtension)' != '.sfxproj'" />
+          Condition="'$(MSBuildProjectExtension)' != '.sfxproj' and '$(MSBuildProjectFile)' != 'msi.csproj'" />
     <None Include="$(PackageThirdPartyNoticesFile)"
           PackagePath="$([System.IO.Path]::GetFileName('$(PackageThirdPartyNoticesFile)'))"
           Pack="true" />
