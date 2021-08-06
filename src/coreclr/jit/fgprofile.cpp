@@ -73,6 +73,37 @@ bool Compiler::fgHaveSufficientProfileData()
 }
 
 //------------------------------------------------------------------------
+// fgHaveTrustedProfileData: check if profile data source is one
+//   that can be trusted to faithfully represent the current program
+//   behavior.
+//
+// Returns:
+//   true if so
+//
+// Note:
+//   See notes for fgHaveProfileData.
+//
+bool Compiler::fgHaveTrustedProfileData()
+{
+    if (!fgHaveProfileData())
+    {
+        return false;
+    }
+
+    // We allow Text to be trusted so we can use it to stand in
+    // for Dynamic results.
+    //
+    switch (fgPgoSource)
+    {
+        case ICorJitInfo::PgoSource::Dynamic:
+        case ICorJitInfo::PgoSource::Text:
+            return true;
+        default:
+            return false;
+    }
+}
+
+//------------------------------------------------------------------------
 // fgApplyProfileScale: scale inlinee counts by appropriate scale factor
 //
 void Compiler::fgApplyProfileScale()
