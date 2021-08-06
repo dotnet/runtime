@@ -31,6 +31,7 @@ namespace System.Diagnostics.Metrics.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/57003", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsMonoAOT))]
         public void GetOneLabel()
         {
             AggregatorStore<LastValue> store = new AggregatorStore<LastValue>(() => new LastValue());
