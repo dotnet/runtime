@@ -9316,7 +9316,7 @@ void cTreeFlags(Compiler* comp, GenTree* tree)
                 {
                     chars += printf("[CALL_NULLCHECK]");
                 }
-                if (tree->gtFlags & GTF_CALL_POP_ARGS)
+                if (tree->AsCall()->CallerPop())
                 {
                     chars += printf("[CALL_POP_ARGS]");
                 }

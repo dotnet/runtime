@@ -482,7 +482,7 @@ enum GenTreeFlags : unsigned int
     GTF_CALL_VIRT_VTABLE        = 0x20000000, // GT_CALL -- a  vtable-based virtual call
 
     GTF_CALL_NULLCHECK          = 0x08000000, // GT_CALL -- must check instance pointer for null
-    GTF_CALL_POP_ARGS           = 0x04000000, // GT_CALL -- caller pop arguments?
+//    GTF_CALL_POP_ARGS           = 0x04000000, // GT_CALL -- caller pop arguments? Deprecated
     GTF_CALL_HOISTABLE          = 0x02000000, // GT_CALL -- call is hoistable
 
     GTF_MEMORYBARRIER_LOAD      = 0x40000000, // GT_MEMORYBARRIER -- Load barrier
@@ -4404,7 +4404,11 @@ struct GenTreeCall final : public GenTree
     }
     bool CallerPop() const
     {
-        return (gtFlags & GTF_CALL_POP_ARGS) != 0;
+#ifdef TARGET_X86
+        return IsCallerPop(GetUnmanagedCallConv());
+#else
+        return false;
+#endif
     }
     bool IsVirtual() const
     {

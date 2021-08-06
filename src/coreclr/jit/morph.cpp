@@ -74,9 +74,6 @@ GenTree* Compiler::fgMorphIntoHelperCall(GenTree* tree, int helper, GenTreeCall:
     call->gtCallMoreFlags       = GTF_CALL_M_EMPTY;
     call->gtInlineCandidateInfo = nullptr;
     call->gtControlExpr         = nullptr;
-#ifdef UNIX_X86_ABI
-    call->gtFlags |= GTF_CALL_POP_ARGS;
-#endif // UNIX_X86_ABI
 
 #if DEBUG
     // Helper calls are never candidates.
@@ -2901,7 +2898,7 @@ void Compiler::fgInitArgInfo(GenTreeCall* call)
 // For X86 we handle the varargs and unmanaged calling conventions
 
 #ifndef UNIX_X86_ABI
-    if (call->gtFlags & GTF_CALL_POP_ARGS)
+    if (call->CallerPop())
     {
         noway_assert(intArgRegNum < MAX_REG_ARG);
         // No more register arguments for varargs (CALL_POP_ARGS)
@@ -8790,7 +8787,6 @@ void Compiler::fgMorphTailCallViaJitHelper(GenTreeCall* call)
 
     // It is now a varargs tail call.
     call->gtCallMoreFlags |= GTF_CALL_M_VARARGS;
-    call->gtFlags &= ~GTF_CALL_POP_ARGS;
 
     // The function is responsible for doing explicit null check when it is necessary.
     assert(!call->NeedsNullCheck());

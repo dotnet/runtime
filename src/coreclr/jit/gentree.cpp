@@ -6412,9 +6412,6 @@ GenTreeCall* Compiler::gtNewCallNode(
     GenTreeCall* node = new (this, GT_CALL) GenTreeCall(genActualType(type));
 
     node->gtFlags |= (GTF_CALL | GTF_GLOB_REF);
-#ifdef UNIX_X86_ABI
-    node->gtFlags |= GTF_CALL_POP_ARGS;
-#endif // UNIX_X86_ABI
     for (GenTreeCall::Use& use : GenTreeCall::UseList(args))
     {
         node->gtFlags |= (use.GetNode()->gtFlags & GTF_ALL_EFFECT);
@@ -10077,7 +10074,7 @@ void Compiler::gtDispNodeName(GenTree* tree)
         {
             char* gtfTypeBufWalk = gtfTypeBuf;
             gtfTypeBufWalk += SimpleSprintf_s(gtfTypeBufWalk, gtfTypeBuf, sizeof(gtfTypeBuf), " unman");
-            if (tree->gtFlags & GTF_CALL_POP_ARGS)
+            if (tree->AsCall()->CallerPop())
             {
                 gtfTypeBufWalk += SimpleSprintf_s(gtfTypeBufWalk, gtfTypeBuf, sizeof(gtfTypeBuf), " popargs");
             }

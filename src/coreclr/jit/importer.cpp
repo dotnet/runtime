@@ -7034,9 +7034,6 @@ void Compiler::impImportNewObjArray(CORINFO_RESOLVED_TOKEN* pResolvedToken, CORI
 
         node = gtNewHelperCallNode(CORINFO_HELP_NEW_MDARR, TYP_REF, args);
 
-        // varargs, so we pop the arguments
-        node->gtFlags |= GTF_CALL_POP_ARGS;
-
 #ifdef DEBUG
         // At the present time we don't track Caller pop arguments
         // that have GC references in them
@@ -7356,13 +7353,6 @@ void Compiler::impCheckForPInvokeCall(
     if (!call->IsSuppressGCTransition())
     {
         info.compUnmanagedCallCountWithGCTransition++;
-    }
-
-    // AMD64 convention is same for native and managed
-    if (unmanagedCallConv == CorInfoCallConvExtension::C ||
-        unmanagedCallConv == CorInfoCallConvExtension::CMemberFunction)
-    {
-        call->gtFlags |= GTF_CALL_POP_ARGS;
     }
 
     if (unmanagedCallConv == CorInfoCallConvExtension::Thiscall)
@@ -8725,7 +8715,6 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
 
         /* Set the right flags */
 
-        call->gtFlags |= GTF_CALL_POP_ARGS;
         call->AsCall()->gtCallMoreFlags |= GTF_CALL_M_VARARGS;
 
         /* Can't allow tailcall for varargs as it is caller-pop. The caller
@@ -8792,12 +8781,6 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
         BasicBlock* block = compIsForInlining() ? impInlineInfo->iciBlock : compCurBB;
         impCheckForPInvokeCall(call->AsCall(), methHnd, sig, mflags, block);
     }
-
-#ifdef UNIX_X86_ABI
-    // On Unix x86 we use caller-cleaned convention.
-    if ((call->gtFlags & GTF_CALL_UNMANAGED) == 0)
-        call->gtFlags |= GTF_CALL_POP_ARGS;
-#endif // UNIX_X86_ABI
 
     if (call->gtFlags & GTF_CALL_UNMANAGED)
     {
