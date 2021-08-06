@@ -3,7 +3,7 @@
     <RunAnalyzers>false</RunAnalyzers>
     <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <IsTestProject>true</IsTestProject>
+    <IsTestProject Condition="'$(IsTestProject)' == ''">true</IsTestProject>
     <IsFunctionalTest>true</IsFunctionalTest>
   </PropertyGroup>
 
