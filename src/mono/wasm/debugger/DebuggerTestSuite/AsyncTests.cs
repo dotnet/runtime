@@ -31,6 +31,7 @@ namespace DebuggerTests
                 {
                     t = TObject("System.Threading.Tasks.Task.DelayPromise"),
                     code = TEnum("System.Threading.Tasks.TaskStatus", "RanToCompletion"),
+                    @this = TObject("DebuggerTests.AsyncTests.ContinueWithTests.<>c"),
                     dt = TDateTime(new DateTime(4513, 4, 5, 6, 7, 8))
                 }, "locals");
 
