@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Linq;
 using System.IO;
 using System.Net.Test.Common;
 using System.Threading;
@@ -279,10 +280,17 @@ namespace System.Net.WebSockets.Client.Tests
             }
         }
 
-        [ConditionalFact(nameof(WebSocketsSupported))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/34690", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
-        public async Task ConnectAsync_CancellationRequestedAfterConnect_ThrowsOperationCanceledException()
+        public static IEnumerable<object[]> LongRunning()
         {
+            return Enumerable.Repeat(1, 20000).Select(i => new object[] { i }).ToArray();
+        }
+
+        [ConditionalTheory(nameof(WebSocketsSupported))]
+        [MemberData(nameof(LongRunning))]
+        //[ActiveIssue("https://github.com/dotnet/runtime/issues/34690", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
+        public async Task ConnectAsync_CancellationRequestedAfterConnect_ThrowsOperationCanceledException(int i)
+        {
+            Assert.Equal(i, i);
             var releaseServer = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
             await LoopbackServer.CreateClientAndServerAsync(async uri =>
             {
