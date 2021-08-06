@@ -199,6 +199,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         [Fact]
         public static void DispatchToDelegate()
         {
+            const int attempts = 100; // we fire 100 events in a loop, to try that it's GC same
             var factory = new Function(@"return {
                 callback: null,
                 eventFactory:function(data){
@@ -211,7 +212,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
                 }
             };");
             var dispatcher = (JSObject)factory.Call();
-            var temp = new bool[100];
+            var temp = new bool[attempts];
             Action<JSObject> cb = (JSObject envt) =>
             {
                 var data = (int)envt.GetObjectProperty("data");
@@ -226,7 +227,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             Assert.True(temp[0]);
             Assert.True(temp[1]);
 
-            for (int i = 0; i < 100; i++)
+            for (int i = 0; i < attempts; i++)
             {
                 var evnti = dispatcher.Invoke("eventFactory", i);
                 dispatcher.Invoke("fireEvent", evnti);

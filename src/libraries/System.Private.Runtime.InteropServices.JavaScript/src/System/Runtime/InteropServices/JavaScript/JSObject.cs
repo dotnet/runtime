@@ -23,7 +23,7 @@ namespace System.Runtime.InteropServices.JavaScript
 
         public JSObject() : this(Interop.Runtime.New<object>(), true)
         {
-            object result = Interop.Runtime.BindCoreObject(JSHandle, GCHandle, out int exception);
+            object result = Interop.Runtime.BindCoreObject(JSHandle, GCHandleValue, out int exception);
             if (exception != 0)
                 throw new JSException(SR.Format(SR.JSObjectErrorBinding, result));
 
@@ -164,7 +164,7 @@ namespace System.Runtime.InteropServices.JavaScript
         {
             object setPropResult = Interop.Runtime.SetObjectProperty(JSHandle, name, value, createIfNotExists, hasOwnProperty, out int exception);
             if (exception != 0)
-                throw new JSException($"Error setting {name} on (js-obj js '{JSHandle}' .NET '{GCHandle})");
+                throw new JSException($"Error setting {name} on (js-obj js '{JSHandle}' .NET '{GCHandleValue})");
         }
 
         /// <summary>
@@ -236,7 +236,7 @@ namespace System.Runtime.InteropServices.JavaScript
 
         public override string ToString()
         {
-            return $"(js-obj js '{GCHandle}')";
+            return $"(js-obj js '{GCHandleValue}')";
         }
     }
 }

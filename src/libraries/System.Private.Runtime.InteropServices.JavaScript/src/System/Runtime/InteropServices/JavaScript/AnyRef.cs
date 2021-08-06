@@ -23,7 +23,7 @@ namespace System.Runtime.InteropServices.JavaScript
             InFlight = null;
             InFlightCounter = 0;
         }
-        internal int GCHandle => (int)(IntPtr)AnyRefHandle;
+        internal int GCHandleValue => (int)(IntPtr)AnyRefHandle;
 
         internal void AddInFlight()
         {

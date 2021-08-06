@@ -29,7 +29,7 @@ namespace System.Runtime.InteropServices.JavaScript
     {
         protected HostObjectBase(int jsHandle) : base(jsHandle, true)
         {
-            object result = Interop.Runtime.BindHostObject(jsHandle, GCHandle, out int exception);
+            object result = Interop.Runtime.BindHostObject(jsHandle, GCHandleValue, out int exception);
             if (exception != 0)
                 throw new JSException(SR.Format(SR.HostObjectErrorBinding, result));
         }

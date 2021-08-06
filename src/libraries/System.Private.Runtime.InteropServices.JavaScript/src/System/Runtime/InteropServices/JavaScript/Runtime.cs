@@ -73,7 +73,7 @@ namespace System.Runtime.InteropServices.JavaScript
 
             target.AddInFlight();
 
-            return target.GCHandle;
+            return target.GCHandleValue;
         }
 
         public static int BindCoreCLRObject(int jsHandle, int gcHandle)
@@ -86,7 +86,7 @@ namespace System.Runtime.InteropServices.JavaScript
                 if (_boundObjects.TryGetValue(jsHandle, out WeakReference<JSObject>? wr))
                 {
 
-                    if (!wr.TryGetTarget(out JSObject? instance) || (instance.GCHandle != (int)(IntPtr)h && h.IsAllocated))
+                    if (!wr.TryGetTarget(out JSObject? instance) || (instance.GCHandleValue != (int)(IntPtr)h && h.IsAllocated))
                     {
                         throw new JSException(SR.Format(SR.MultipleHandlesPointingJsId, jsHandle));
                     }
@@ -100,7 +100,7 @@ namespace System.Runtime.InteropServices.JavaScript
                 }
             }
 
-            return obj?.GCHandle ?? 0;
+            return obj?.GCHandleValue ?? 0;
         }
 
         private static JSObject BindJSType(IntPtr jsIntPtr, bool ownsHandle, int coreType) =>
@@ -128,7 +128,7 @@ namespace System.Runtime.InteropServices.JavaScript
         {
             Interop.Runtime.ReleaseHandle(objToRelease.JSHandle, out int exception);
             if (exception != 0)
-                throw new JSException($"Error releasing handle on (js-obj js '{objToRelease.JSHandle}' mono '{objToRelease.GCHandle})");
+                throw new JSException($"Error releasing handle on (js-obj js '{objToRelease.JSHandle}' mono '{objToRelease.GCHandleValue})");
 
             lock (_boundObjects)
             {
