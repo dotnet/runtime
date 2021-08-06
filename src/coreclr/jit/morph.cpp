@@ -7118,13 +7118,29 @@ bool Compiler::fgCallHasMustCopyByrefParameter(GenTreeCall* callee)
                             // We only check this for calls with small numbers of arguments,
                             // as the analysis cost will be quadratic.
                             //
-                            if (varDsc->lvRefCnt(RCS_EARLY) == 1)
+                            const unsigned totalAppearances = varDsc->lvRefCnt(RCS_EARLY);
+                            const unsigned callAppearances  = (unsigned)varDsc->lvRefCntWtd(RCS_EARLY);
+                            assert(totalAppearances >= callAppearances);
+
+                            if (totalAppearances == 1)
                             {
                                 JITDUMP("... yes, arg is the only appearance of V%02u\n", lclNum);
                                 hasMustCopyByrefParameter = false;
                             }
+                            else if (totalAppearances > callAppearances)
+                            {
+                                // lvRefCntWtd tracks the number of appearances of the arg at call sites.
+                                // If this number doesn't match the regular ref count, there is
+                                // a non-call appearance, and we must be conservative.
+                                //
+                                JITDUMP("... no, arg has %u non-call appearance(s)\n",
+                                        totalAppearances - callAppearances);
+                            }
                             else if (argInfo->ArgCount() <= argLimit)
                             {
+                                JITDUMP("... all %u appearance(s) are as implicit byref args to calls.\n"
+                                        "... Running alias analysis on this call's args\n",
+                                        totalAppearances);
                                 GenTree* interferingArg = nullptr;
                                 for (unsigned index2 = 0; index2 < argInfo->ArgCount(); ++index2)
                                 {
