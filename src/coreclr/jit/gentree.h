@@ -4405,7 +4405,7 @@ struct GenTreeCall final : public GenTree
     bool CallerPop() const
     {
 #ifdef TARGET_X86
-        return IsCallerPop(GetUnmanagedCallConv());
+        return IsCallerPop(GetUnmanagedCallConv()) || (gtCallMoreFlags & GTF_CALL_M_VARARGS);
 #else
         return false;
 #endif
