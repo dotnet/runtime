@@ -3,7 +3,7 @@
 
 using System.Collections.Generic;
 using System.Collections.Immutable;
-using System.Diagnostics.CodeAnalysis;
+using System.Linq;
 
 namespace System.Reflection.Internal
 {
@@ -15,15 +15,10 @@ namespace System.Reflection.Internal
     {
         public static T? FirstOrDefault<T>(this ImmutableArray<T> collection, Func<T, bool> predicate)
         {
-            foreach (var item in collection)
-            {
-                if (predicate(item))
-                {
-                    return item;
-                }
-            }
-
-            return default;
+            // Despite being on the System.Linq namespace, this function resides
+            // in the System.Collections.Immutable assembly and avoids importing
+            // LINQ elsewhere.
+            return ImmutableArrayExtensions.FirstOrDefault(collection, predicate);
         }
 
         // used only in debugger display so we needn't get fancy with optimizations.
@@ -33,11 +28,6 @@ namespace System.Reflection.Internal
             {
                 yield return selector(item);
             }
-        }
-
-        public static T Last<T>(this ImmutableArray<T>.Builder source)
-        {
-            return source[source.Count - 1];
         }
 
         public static IEnumerable<T> OrderBy<T>(this List<T> source, Comparison<T> comparison)
