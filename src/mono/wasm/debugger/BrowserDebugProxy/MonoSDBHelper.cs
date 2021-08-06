@@ -1767,7 +1767,7 @@ namespace Microsoft.WebAssembly.Diagnostics
 
             if (await IsAsyncMethod(sessionId, method.DebuggerId, token))
             {
-                List<int> objectAlreadyRead = new List<int>();
+                List<int> objectAlreadyRead = new();
                 retDebuggerCmdReader = await SendDebuggerAgentCommand<CmdFrame>(sessionId, CmdFrame.GetThis, commandParams, token);
                 retDebuggerCmdReader.ReadByte(); //ignore type
                 var objectId = retDebuggerCmdReader.ReadInt32();
