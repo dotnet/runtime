@@ -118,8 +118,7 @@ namespace Microsoft.Extensions.Hosting
         }
 
         /// <summary>
-        /// Adds a delegate for configuring the <see cref="HostOptions"/> of the <see cref="IHost"/> instance
-        /// related to th.
+        /// Adds a delegate for configuring the <see cref="HostOptions"/> of the <see cref="IHost"/>.
         /// </summary>
         /// <param name="hostBuilder">The <see cref="IHostBuilder" /> to configure.</param>
         /// <param name="configureOptions">The delegate for configuring the <see cref="HostOptions"/>.</param>
