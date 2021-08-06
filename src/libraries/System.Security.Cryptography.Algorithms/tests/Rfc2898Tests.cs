@@ -155,7 +155,7 @@ namespace System.Security.Cryptography.DeriveBytesTests
         {
             byte[] output;
 
-            using (var deriveBytes = new Rfc2898DeriveBytes("", new byte[0], 1))
+            using (var deriveBytes = new Rfc2898DeriveBytes("", Array.Empty<byte>(), 1))
             {
                 output = deriveBytes.GetBytes(1);
                 Assert.Empty(deriveBytes.Salt);
@@ -476,22 +476,22 @@ namespace System.Security.Cryptography.DeriveBytesTests
 
             yield return new KnownValuesTestCase
             {
-                CaseName = "RFC 6070 Case 5",
-                HashAlgorithmName = "SHA1",
-                Password = "passwordPASSWORDpassword",
-                Salt = ascii.GetBytes("saltSALTsaltSALTsaltSALTsaltSALTsalt"),
-                IterationCount = 4096,
-                AnswerHex = "3D2EEC4FE41C849B80C8D83662C0E44A8B291A964CF2F07038",
-            };
-
-            yield return new KnownValuesTestCase
-            {
                 CaseName = "RFC 6070 Case 1",
                 HashAlgorithmName = "SHA1",
                 Password = "password",
                 Salt = ascii.GetBytes("salt"),
                 IterationCount = 1,
                 AnswerHex="0C60C80F961F0E71F3A9B524AF6012062FE037A6",
+            };
+
+            yield return new KnownValuesTestCase
+            {
+                CaseName = "RFC 6070 Case 5",
+                HashAlgorithmName = "SHA1",
+                Password = "passwordPASSWORDpassword",
+                Salt = ascii.GetBytes("saltSALTsaltSALTsaltSALTsaltSALTsalt"),
+                IterationCount = 4096,
+                AnswerHex = "3D2EEC4FE41C849B80C8D83662C0E44A8B291A964CF2F07038",
             };
 
             // From OpenSSL.
