@@ -2,9 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
-using System.Collections.Immutable;
 using System.Diagnostics;
-using System.Reflection.Internal;
 
 namespace System.Reflection.Metadata.Ecma335
 {
@@ -40,7 +38,7 @@ namespace System.Reflection.Metadata.Ecma335
                 _opCode = opCode;
             }
 
-            internal int GetBranchDistance(ImmutableArray<int>.Builder labels)
+            internal int GetBranchDistance(List<int> labels)
             {
                 int labelTargetOffset = labels[_label.Id - 1];
                 if (labelTargetOffset < 0)
@@ -88,14 +86,14 @@ namespace System.Reflection.Metadata.Ecma335
             }
         }
 
-        private readonly ImmutableArray<BranchInfo>.Builder _branches;
-        private readonly ImmutableArray<int>.Builder _labels;
-        private ImmutableArray<ExceptionHandlerInfo>.Builder? _lazyExceptionHandlers;
+        private readonly List<BranchInfo> _branches;
+        private readonly List<int> _labels;
+        private List<ExceptionHandlerInfo>? _lazyExceptionHandlers;
 
         public ControlFlowBuilder()
         {
-            _branches = ImmutableArray.CreateBuilder<BranchInfo>();
-            _labels = ImmutableArray.CreateBuilder<int>();
+            _branches = new List<BranchInfo>();
+            _labels = new List<int>();
         }
 
         /// <summary>
@@ -117,7 +115,7 @@ namespace System.Reflection.Metadata.Ecma335
         internal void AddBranch(int operandOffset, LabelHandle label, int instructionEndDisplacement, int instructionStartOffset, ILOpCode opCode)
         {
             Debug.Assert(operandOffset >= 0);
-            Debug.Assert(_branches.Count == 0 || operandOffset > _branches.Last().OperandOffset);
+            Debug.Assert(_branches.Count == 0 || operandOffset > _branches[_branches.Count - 1].OperandOffset);
             ValidateLabel(label, nameof(label));
 #if DEBUG
             switch (instructionEndDisplacement)
@@ -242,7 +240,7 @@ namespace System.Reflection.Metadata.Ecma335
             ValidateLabel(handlerStart, nameof(handlerStart));
             ValidateLabel(handlerEnd, nameof(handlerEnd));
 
-            _lazyExceptionHandlers ??= ImmutableArray.CreateBuilder<ExceptionHandlerInfo>();
+            _lazyExceptionHandlers ??= new List<ExceptionHandlerInfo>();
 
             _lazyExceptionHandlers.Add(new ExceptionHandlerInfo(kind, tryStart, tryEnd, handlerStart, handlerEnd, filterStart, catchType));
         }
