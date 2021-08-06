@@ -15,7 +15,6 @@
 
   <ItemGroup>
     <Compile Include="$(TestSourceFolder)..\..\System.Runtime.Serialization.Xml\tests\SerializationTypes.cs" />
-    <Compile Include="SetParentAssemblyIdTask.cs" />
   </ItemGroup>
 
 </Project>

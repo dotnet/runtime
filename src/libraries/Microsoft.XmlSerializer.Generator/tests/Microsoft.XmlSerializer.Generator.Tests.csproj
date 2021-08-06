@@ -28,8 +28,6 @@
     <ProjectReference Include="SerializableAssembly.csproj" />
   </ItemGroup>
 
-  <UsingTask TaskName="SetParentAssemblyId" AssemblyFile="$(OutputPath)SerializableAssembly.dll" />
-
   <!-- This target runs before binplacing as it needs to provide a test assembly to binplace, and depends on CopyFilesToOutputDirectory
        so that the Generator app dll and runtimeconfig will be copied to the OutputPath -->
   <Target Name="GenerateSerializationAssembly" DependsOnTargets="CopyFilesToOutputDirectory" AfterTargets="PrepareForRun" Condition=" '$(SkipTestsOnPlatform)' != 'true' ">
@@ -38,7 +36,7 @@
     </PropertyGroup>
     <Warning Condition="Exists('$(OutputPath)Expected.$(SerializerName).cs') != 'true'" Text="Fail to find $(OutputPath)Expected.$(SerializerName).cs" />
     <Message Text="Compiling Expected Serializers" Importance="normal" />
-    <SetParentAssemblyId CodeFile="$(OutputPath)Expected.$(SerializerName).cs" />
+    <SetParentAssemblyId CodeFile="$(OutputPath)Expected.$(SerializerName).cs" AssemblyFile="$(OutputPath)SerializableAssembly.dll" />
     <Csc Condition="Exists('$(OutputPath)Expected.$(SerializerName).cs') == 'true'" OutputAssembly="$(OutputPath)$(SerializerName).dll" References="@(ReferencePath);@(IntermediateAssembly)" EmitDebugInformation="$(DebugSymbols)" DebugType="$(DebugType)" Sources="$(OutputPath)Expected.$(SerializerName).cs" TargetType="Library" ToolExe="$(CscToolExe)" ToolPath="$(CscToolPath)" DisabledWarnings="$(NoWarn), 219" UseSharedCompilation="true" />
     <Warning Condition="Exists('$(OutputPath)$(SerializerName).dll') != 'true'" Text="Fail to generate $(OutputPath)$(SerializerName).dll" />
     <ItemGroup>
@@ -46,4 +44,38 @@
       <ReferenceCopyLocalPaths Include="$(OutputPath)$(SerializerName).dll" />
     </ItemGroup>
   </Target>
+
+  <UsingTask TaskName="SetParentAssemblyId" TaskFactory="RoslynCodeTaskFactory" AssemblyFile="$(MSBuildBinPath)\Microsoft.Build.Tasks.Core.dll">
+    <ParameterGroup>
+      <CodeFile ParameterType="System.String" Required="true" />
+      <AssemblyFile ParameterType="System.String" Required="true" />
+    </ParameterGroup>
+    <Task>
+      <Using Namespace="System" />
+      <Using Namespace="System.Collections" />
+      <Using Namespace="System.IO" />
+      <Using Namespace="System.Reflection" />
+      <Code Type="Fragment" Language="C#"><![CDATA[
+            // Roughly based on System.Xml.Serialization.TempAssembly.GenerateAssemblyId()
+            var list = new ArrayList();
+            foreach (var module in Assembly.LoadFrom(AssemblyFile).GetModules())
+            {
+                list.Add(module.ModuleVersionId.ToString());
+            }
+            list.Sort();
+
+            var sb = new StringBuilder();
+            for (int i = 0; i < list.Count; i++)
+            {
+                sb.Append(list[i]!.ToString());
+                sb.Append(',');
+            }
+            string parentAssemblyId = sb.ToString();
+
+            string content = File.ReadAllText(CodeFile);
+            content = content.Replace("%%ParentAssemblyId%%", parentAssemblyId);
+            File.WriteAllText(CodeFile, content);
+      ]]></Code>
+    </Task>
+  </UsingTask>
 </Project>
