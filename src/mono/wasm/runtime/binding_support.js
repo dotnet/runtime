@@ -213,11 +213,11 @@ var BindingSupportLib = {
 
 		_unbox_task_root_as_promise: function (root) {
 			this.bindings_lazy_init ();
-			if (!this._are_promises_supported)
-				throw new Error ("Promises are not supported thus 'System.Threading.Tasks.Task' can not work in this context.");
-
 			if (root.value === 0)
 				return null;
+
+			if (!this._are_promises_supported)
+				throw new Error ("Promises are not supported thus 'System.Threading.Tasks.Task' can not work in this context.");
 
 			// get strong reference to Task
 			const gc_handle = this._get_js_owned_object_gc_handle(root.value);
@@ -307,20 +307,28 @@ var BindingSupportLib = {
 				result = function() {
 					const delegateRoot = MONO.mono_wasm_new_root (BINDING.wasm_get_raw_obj(gc_handle, false));
 					try {
-						if (typeof result.__mono_delegate_invoke__ === "undefined")
-							result.__mono_delegate_invoke__ = BINDING.mono_wasm_get_delegate_invoke(delegateRoot.value);
-						
-						if (!result.__mono_delegate_invoke__)
-							throw new Error("System.Delegate Invoke method can not be resolved.");
-		
-						if (typeof result.__mono_delegate_invoke_sig__ === "undefined")
-							result.__mono_delegate_invoke_sig__ = Module.mono_method_get_call_signature (result.__mono_delegate_invoke__, delegateRoot.value);
-
 						return BINDING.call_method (result.__mono_delegate_invoke__, delegateRoot.value, result.__mono_delegate_invoke_sig__, arguments);
 					} finally {
 						delegateRoot.release();
 					}
 				};
+
+				// bind the method
+				const delegateRoot = MONO.mono_wasm_new_root (BINDING.wasm_get_raw_obj(gc_handle, false));
+				try {
+					if (typeof result.__mono_delegate_invoke__ === "undefined"){
+						result.__mono_delegate_invoke__ = BINDING.mono_wasm_get_delegate_invoke(delegateRoot.value);
+						if (!result.__mono_delegate_invoke__){
+							throw new Error("System.Delegate Invoke method can not be resolved.");
+						}
+					}
+
+					if (typeof result.__mono_delegate_invoke_sig__ === "undefined"){
+						result.__mono_delegate_invoke_sig__ = Module.mono_method_get_call_signature (result.__mono_delegate_invoke__, delegateRoot.value);
+					}
+				} finally {
+					delegateRoot.release();
+				}
 
 				// register for GC of the deleate after the JS side is done with the function
 				this._js_owned_object_registry.register(result, gc_handle);
