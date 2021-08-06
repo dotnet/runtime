@@ -43,11 +43,7 @@ public class RuntimeConfigParserTask : Task
             return false;
         }
 
-        var configProperties = new Dictionary<string, string>();
-        configProperties.Clear();
-        bool succeed = ConvertInputToDictionary(RuntimeConfigFile, ref configProperties);
-
-        if (!succeed)
+        if (!TryConvertInputToDictionary (RuntimeConfigFile, out Dictionary<string, string> configProperties)
         {
             return false;
         }
