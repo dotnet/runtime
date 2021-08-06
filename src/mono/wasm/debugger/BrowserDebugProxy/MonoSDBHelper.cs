@@ -623,6 +623,7 @@ namespace Microsoft.WebAssembly.Diagnostics
         private static int MINOR_VERSION = 61;
         private static int MAJOR_VERSION = 2;
         private readonly ILogger logger;
+        private Regex regexForAsyncLocals = new Regex(@"\<([^)]*)\>", RegexOptions.Singleline);
 
         public MonoSDBHelper(MonoProxy proxy, ILogger logger)
         {
@@ -1726,12 +1727,11 @@ namespace Microsoft.WebAssembly.Diagnostics
         {
             JArray asyncLocalsFull = new JArray();
             List<int> objectsAlreadyRead = new();
-            Regex regex = new Regex(@"\<([^)]*)\>", RegexOptions.Singleline);
             objectsAlreadyRead.Add(objectId);
             foreach (var asyncLocal in asyncLocals)
             {
                 var fieldName = asyncLocal["name"].Value<string>();
-                if (fieldName.EndsWith("__this"))
+                if (fieldName.EndsWith("__this", StringComparison.Ordinal))
                 {
                     asyncLocal["name"] = "this";
                     asyncLocalsFull.Add(asyncLocal);
@@ -1748,13 +1748,13 @@ namespace Microsoft.WebAssembly.Diagnostics
                         }
                     }
                 }
-                else if (fieldName.StartsWith("<>")) //examples: <>t__builder, <>1__state
+                else if (fieldName.StartsWith("<>", StringComparison.Ordinal)) //examples: <>t__builder, <>1__state
                 {
                     continue;
                 }
                 else if (fieldName.StartsWith('<')) //examples: <code>5__2
                 {
-                    var match = regex.Match(fieldName);
+                    var match = regexForAsyncLocals.Match(fieldName);
                     if (match.Success)
                         asyncLocal["name"] = match.Groups[1].Value;
                     asyncLocalsFull.Add(asyncLocal);
