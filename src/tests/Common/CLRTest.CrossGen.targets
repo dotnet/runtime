@@ -247,7 +247,8 @@ if defined RunCrossGen2 (
 
     echo "!__Command!"
     call !__Command!
-    endlocal & set CrossGen2Status=%ERRORLEVEL%
+    endlocal
+    set CrossGen2Status=!ERRORLEVEL!
     Exit /b 0
 
 :DoneCrossgen2Operations
