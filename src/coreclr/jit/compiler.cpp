@@ -5388,6 +5388,7 @@ void Compiler::RecomputeLoopInfo()
     for (BasicBlock* const block : Blocks())
     {
         block->bbFlags &= ~BBF_LOOP_FLAGS;
+        block->bbNatLoopNum = BasicBlock::NOT_IN_LOOP;
     }
     fgComputeReachability();
     // Rebuild the loop tree annotations themselves

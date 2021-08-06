@@ -657,7 +657,7 @@ namespace System.Net.Quic.Tests
             {
                 return;
             }
-            
+
             const long expectedErrorCode = 1234;
 
             await RunClientServer(
@@ -691,7 +691,7 @@ namespace System.Net.Quic.Tests
                 {
                     await using QuicStream stream = await connection.AcceptStreamAsync();
 
-                    async Task ReadUntilAborted()  
+                    async Task ReadUntilAborted()
                     {
                         var buffer = new byte[1024];
                         while (true)

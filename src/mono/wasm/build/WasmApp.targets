@@ -122,7 +122,14 @@
       <WasmMainAssemblyFileName Condition="'$(WasmMainAssemblyFileName)' == ''">$(TargetFileName)</WasmMainAssemblyFileName>
 
       <WasmAppDir>$([MSBuild]::NormalizeDirectory($(WasmAppDir)))</WasmAppDir>
+
+      <_MainAssemblyPath Condition="'%(WasmAssembliesToBundle.FileName)' == $(AssemblyName) and '%(WasmAssembliesToBundle.Extension)' == '.dll' and $(WasmGenerateAppBundle) == 'true'">%(WasmAssembliesToBundle.Identity)</_MainAssemblyPath>
+      <_WasmRuntimeConfigFilePath Condition="$(_MainAssemblyPath) != ''">$([System.IO.Path]::ChangeExtension($(_MainAssemblyPath), '.runtimeconfig.json'))</_WasmRuntimeConfigFilePath>
     </PropertyGroup>
+
+    <Warning Condition="'$(WasmGenerateAppBundle)' == 'true' and $(_MainAssemblyPath) == ''" Text="Could not find %24(AssemblyName)=$(AssemblyName) in the assemblies to be bundled.." />
+    <Warning Condition="'$(WasmGenerateAppBundle)' == 'true' and $(_WasmRuntimeConfigFilePath) != '' and !Exists($(_WasmRuntimeConfigFilePath))" 
+             Text="Could not find $(_WasmRuntimeConfigFilePath) for $(_MainAssemblyPath)." />
 
     <ItemGroup>
       <_WasmAssembliesInternal Include="@(WasmAssembliesToBundle->Distinct())" />
@@ -136,7 +143,29 @@
     </ItemGroup>
   </Target>
 
-  <Target Name="_WasmGenerateAppBundle" Condition="'$(WasmGenerateAppBundle)' == 'true'">
+  <Target Name="_WasmGenerateRuntimeConfig" Condition="Exists('$(_WasmRuntimeConfigFilePath)')">
+    <PropertyGroup>
+      <_ParsedRuntimeConfigFilePath>$([System.IO.Path]::GetDirectoryName($(_MainAssemblyPath)))\runtimeconfig.bin</_ParsedRuntimeConfigFilePath>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <_RuntimeConfigReservedProperties Include="RUNTIME_IDENTIFIER"/>
+      <_RuntimeConfigReservedProperties Include="APP_CONTEXT_BASE_DIRECTORY"/>
+    </ItemGroup>
+
+    <!-- Parse *.runtimeconfig.json file -->
+    <RuntimeConfigParserTask
+        RuntimeConfigFile="$(_WasmRuntimeConfigFilePath)"
+        OutputFile="$(_ParsedRuntimeConfigFilePath)"
+        RuntimeConfigReservedProperties="@(_RuntimeConfigReservedProperties)">
+    </RuntimeConfigParserTask>
+
+    <ItemGroup>
+      <WasmFilesToIncludeInFileSystem Include="$(_ParsedRuntimeConfigFilePath)" />
+    </ItemGroup>
+  </Target>
+
+  <Target Name="_WasmGenerateAppBundle" Condition="'$(WasmGenerateAppBundle)' == 'true'" DependsOnTargets="_WasmGenerateRuntimeConfig">
     <Error Condition="'$(WasmMainJSPath)' == ''" Text="%24(WasmMainJSPath) property needs to be set" />
 
     <PropertyGroup>

@@ -11,6 +11,9 @@ namespace System.Text.Json.Serialization.Tests
     {
         [Fact]
         [OuterLoop]
+#if BUILDING_SOURCE_GENERATOR_TESTS
+        [ActiveIssue("Needs JsonExtensionData support.")]
+#endif
         public async Task MultipleThreadsLooping()
         {
             const int Iterations = 100;
@@ -22,6 +25,9 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
+#if BUILDING_SOURCE_GENERATOR_TESTS
+        [ActiveIssue("Needs JsonExtensionData support.")]
+#endif
         public async Task MultipleThreads()
         {
             // Verify the test class has >32 properties since that is a threshold for using the fallback dictionary.
@@ -29,14 +35,14 @@ namespace System.Text.Json.Serialization.Tests
 
             async Task DeserializeObjectAsync(string json, Type type, JsonSerializerOptions options)
             {
-                var obj = await Serializer.DeserializeWrapper(json, type, options);
+                var obj = await JsonSerializerWrapperForString.DeserializeWrapper(json, type, options);
                 ((ITestClassWithParameterizedCtor)obj).Verify();
             }
 
             async Task DeserializeObjectMinimalAsync(Type type, JsonSerializerOptions options)
             {
                 string json = (string)type.GetProperty("s_json_minimal").GetValue(null);
-                var obj = await Serializer.DeserializeWrapper(json, type, options);
+                var obj = await JsonSerializerWrapperForString.DeserializeWrapper(json, type, options);
                 ((ITestClassWithParameterizedCtor)obj).VerifyMinimal();
             };
 
@@ -52,10 +58,10 @@ namespace System.Text.Json.Serialization.Tests
                 await DeserializeObjectAsync(json, type, options);
             };
 
-            void SerializeObject(Type type, JsonSerializerOptions options)
+            async Task SerializeObject(Type type, JsonSerializerOptions options)
             {
                 var obj = ClassWithConstructor_SimpleAndComplexParameters.GetInstance();
-                JsonSerializer.Serialize(obj, options);
+                await JsonSerializerWrapperForString.SerializeWrapper(obj, options);
             };
 
             async Task RunTestAsync(Type type)
@@ -93,13 +99,13 @@ namespace System.Text.Json.Serialization.Tests
             var options = new JsonSerializerOptions();
 
             string json = "{}";
-            await Serializer.DeserializeWrapper<ClassWithConstructor_SimpleAndComplexParameters>(json, options);
+            await JsonSerializerWrapperForString.DeserializeWrapper<ClassWithConstructor_SimpleAndComplexParameters>(json, options);
 
             ClassWithConstructor_SimpleAndComplexParameters testObj = ClassWithConstructor_SimpleAndComplexParameters.GetInstance();
             testObj.Verify();
 
-            json = JsonSerializer.Serialize(testObj, options);
-            testObj = await Serializer.DeserializeWrapper<ClassWithConstructor_SimpleAndComplexParameters>(json, options);
+            json = await JsonSerializerWrapperForString.SerializeWrapper(testObj, options);
+            testObj = await JsonSerializerWrapperForString.DeserializeWrapper<ClassWithConstructor_SimpleAndComplexParameters>(json, options);
             testObj.Verify();
         }
 
@@ -112,12 +118,12 @@ namespace System.Text.Json.Serialization.Tests
             ClassWithConstructor_SimpleAndComplexParameters testObj = ClassWithConstructor_SimpleAndComplexParameters.GetInstance();
             testObj.Verify();
 
-            string json = JsonSerializer.Serialize(testObj, options);
-            testObj = await Serializer.DeserializeWrapper<ClassWithConstructor_SimpleAndComplexParameters>(json, options);
+            string json = await JsonSerializerWrapperForString.SerializeWrapper(testObj, options);
+            testObj = await JsonSerializerWrapperForString.DeserializeWrapper<ClassWithConstructor_SimpleAndComplexParameters>(json, options);
             testObj.Verify();
 
             json = "{}";
-            await Serializer.DeserializeWrapper<ClassWithConstructor_SimpleAndComplexParameters>(json, options);
+            await JsonSerializerWrapperForString.DeserializeWrapper<ClassWithConstructor_SimpleAndComplexParameters>(json, options);
         }
 
         // Use a common options instance to encourage additional metadata collisions across types. Also since
@@ -126,21 +132,24 @@ namespace System.Text.Json.Serialization.Tests
 
         [Fact]
         [SkipOnCoreClr("https://github.com/dotnet/runtime/issues/45464", RuntimeConfiguration.Checked)]
+#if BUILDING_SOURCE_GENERATOR_TESTS
+        [ActiveIssue("Needs JsonExtensionData support.")]
+#endif
         public async Task MultipleTypes()
         {
-            void Serialize<T>(object[] args)
+            async Task Serialize<T>(object[] args)
             {
                 Type type = typeof(T);
 
                 T localTestObj = (T)Activator.CreateInstance(type, args);
                 ((ITestClass)localTestObj).Initialize();
                 ((ITestClass)localTestObj).Verify();
-                string json = JsonSerializer.Serialize(localTestObj, s_options);
+                string json = await JsonSerializerWrapperForString.SerializeWrapper(localTestObj, s_options);
             };
 
             async Task DeserializeAsync<T>(string json)
             {
-                ITestClass obj = (ITestClass)await Serializer.DeserializeWrapper<T>(json, s_options);
+                ITestClass obj = (ITestClass)await JsonSerializerWrapperForString.DeserializeWrapper<T>(json, s_options);
                 obj.Verify();
             };
 
@@ -149,7 +158,7 @@ namespace System.Text.Json.Serialization.Tests
                 // Get the test json with the default options to avoid cache pollution of DeserializeAsync() below.
                 ((ITestClass)testObj).Initialize();
                 ((ITestClass)testObj).Verify();
-                string json = JsonSerializer.Serialize(testObj);
+                string json = await JsonSerializerWrapperForString.SerializeWrapper(testObj);
 
                 const int ThreadCount = 12;
                 const int ConcurrentTestsCount = 2;

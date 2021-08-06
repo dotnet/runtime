@@ -4,6 +4,7 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Reflection;
+using System.Text.Json.Reflection;
 
 namespace System.Text.Json.Serialization.Metadata
 {
@@ -156,6 +157,8 @@ namespace System.Text.Json.Serialization.Metadata
 
             SrcGen_IsPublic = isPublic;
             SrcGen_HasJsonInclude = hasJsonInclude;
+            DeclaredPropertyType = typeof(T);
+            ConverterBase = converter;
 
             if (ignoreCondition == JsonIgnoreCondition.Always)
             {
@@ -169,9 +172,7 @@ namespace System.Text.Json.Serialization.Metadata
                 Set = setter;
                 HasGetter = Get != null;
                 HasSetter = Set != null;
-                ConverterBase = converter;
                 RuntimeTypeInfo = typeInfo;
-                DeclaredPropertyType = typeof(T);
                 DeclaringType = declaringType;
                 IgnoreCondition = ignoreCondition;
                 MemberType = isProperty ? MemberTypes.Property : MemberTypes.Field;

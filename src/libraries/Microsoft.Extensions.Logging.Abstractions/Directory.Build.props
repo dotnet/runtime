@@ -2,15 +2,5 @@
   <Import Project="..\Directory.Build.props" />
   <PropertyGroup>
     <IsAspNetCoreApp>true</IsAspNetCoreApp>
-      <PackageDescription>Logging abstractions for Microsoft.Extensions.Logging.
-
-Commonly Used Types:
-Microsoft.Extensions.Logging.ILogger
-Microsoft.Extensions.Logging.ILoggerFactory
-Microsoft.Extensions.Logging.ILogger&lt;TCategoryName&gt;
-Microsoft.Extensions.Logging.LogLevel
-Microsoft.Extensions.Logging.Logger&lt;T&gt;
-Microsoft.Extensions.Logging.LoggerMessage
-Microsoft.Extensions.Logging.Abstractions.NullLogger</PackageDescription>
   </PropertyGroup>
 </Project>

@@ -1,11 +1,13 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Reflection;
 using System.Runtime.CompilerServices;
+using System.Text.Json.Serialization;
 
-namespace System.Text.Json
+namespace System.Text.Json.Reflection
 {
-    internal static class TypeExtensions
+    internal static partial class ReflectionExtensions
     {
         private static readonly Type s_nullableType = typeof(Nullable<>);
 
@@ -38,5 +40,8 @@ namespace System.Text.Json
 
             return type.IsAssignableFrom(from);
         }
+
+        private static bool HasJsonConstructorAttribute(ConstructorInfo constructorInfo)
+            => constructorInfo.GetCustomAttribute<JsonConstructorAttribute>() != null;
     }
 }

@@ -666,3 +666,4 @@ nostack:MonoProfiler:::MonoProfilerThreadStopping
 nostack:MonoProfiler:::MonoProfilerThreadStopped
 nostack:MonoProfiler:::MonoProfilerThreadExited
 nostack:MonoProfiler:::MonoProfilerThreadName
+nostack:MonoProfiler:::MonoProfilerGCHeapDumpVTableClassReference

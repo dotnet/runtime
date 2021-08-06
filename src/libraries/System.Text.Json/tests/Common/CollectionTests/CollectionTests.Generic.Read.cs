@@ -333,7 +333,7 @@ namespace System.Text.Json.Serialization.Tests
             }
 
             GenericICollectionWrapper<GenericICollectionWrapper<string>> result2 =
-                JsonSerializer.Deserialize<GenericICollectionWrapper<GenericICollectionWrapper<string>>>(@"[[""1"",""2""],[""3"",""4""]]");
+                await JsonSerializerWrapperForString.DeserializeWrapper<GenericICollectionWrapper<GenericICollectionWrapper<string>>>(@"[[""1"",""2""],[""3"",""4""]]");
             expected = 1;
 
             foreach (GenericICollectionWrapper<string> ic in result2)
