@@ -184,7 +184,7 @@ static void WinContextToUnwindContext(CONTEXT *winContext, unw_context_t *unwCon
 {
 #if (defined(HOST_UNIX) && defined(HOST_ARM64)) || (defined(HOST_WINDOWS) && defined(TARGET_ARM64))
     fpsimd_context* fp = GetNativeSigSimdContext(unwContext);
-#define ASSIGN_FP_REG(fp, reg) if (fp) fp->vregs[reg] = winContext->V[reg].Low;
+#define ASSIGN_FP_REG(fp, reg) if (fp) *(NEON128*) &fp->vregs[reg] = winContext->V[reg];
 #endif
 #define ASSIGN_REG(reg) MCREG_##reg(unwContext->uc_mcontext) = winContext->reg;
     ASSIGN_UNWIND_REGS
@@ -232,6 +232,11 @@ static void WinContextToUnwindContext(CONTEXT *winContext, unw_context_t *unwCon
     unwContext->uc_mcontext.regs[26] = winContext->X26;
     unwContext->uc_mcontext.regs[27] = winContext->X27;
     unwContext->uc_mcontext.regs[28] = winContext->X28;
+    unw_fpsimd_context_t *fp = (unw_fpsimd_context_t *)&unwContext->uc_mcontext.__reserved;
+    for (int i = 0; i < 32; i++)
+    {
+        *(NEON128*) &fp->vregs[i] = winContext->V[i];
+    }
 #endif
 }
 
