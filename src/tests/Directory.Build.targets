@@ -356,6 +356,10 @@
         <RunTimeDependencyCopyLocal
           Include="@(RuntimeFiles)"
           TargetDir="runtimepack/native/"/>
+        
+        <RunTimeDependencyCopyLocal
+          Include="$(MicrosoftNetCoreAppRuntimePackRidDir)"
+          TargetDir="runtimepack/"/>
 
         <!-- This throws everything in 'native', include many non-native assemblies.
              This is done because LibrariesRuntimeFiles includes some .js files that
