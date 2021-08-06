@@ -234,13 +234,13 @@ mono_droid_runtime_init (const char* executable, int managed_argc, char* managed
     appctx_values[1] = bundle_path;
 
     char *file_name = RUNTIMECONFIG_BIN_FILE;
-    int str_len = strlen (bundle_path) + strlen (file_name) + 2;
-    char *file_path = (char *)malloc (sizeof (char) * str_len);
-    int num_char = snprintf (file_path, str_len, "%s/%s", bundle_path, file_name);
+    int str_len = strlen (bundle_path) + strlen (file_name) + 1; // +1 is for the "/"
+    char *file_path = (char *)malloc (sizeof (char) * (str_len +1)); // +1 is for the terminating null character
+    int num_char = snprintf (file_path, (str_len + 1), "%s/%s", bundle_path, file_name);
     struct stat buffer;
 
     LOG_INFO ("file_path: %s\n", file_path);
-    assert (num_char > 0 && num_char < str_len);
+    assert (num_char > 0 && num_char == str_len);
 
     if (stat (file_path, &buffer) == 0) {
         MonovmRuntimeConfigArguments *arg = (MonovmRuntimeConfigArguments *)malloc (sizeof (MonovmRuntimeConfigArguments));
