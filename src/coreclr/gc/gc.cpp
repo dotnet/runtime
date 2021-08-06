@@ -37970,7 +37970,7 @@ size_t gc_heap::desired_new_allocation (dynamic_data* dd,
                 // this means we allow 40% fragmentation
                 // to keep heap size stable, we only use half of that (20%) for new allocation
                 // f is (live data + new allocation)/(live data), so would be (60% + 20%) / 60% or 1.33
-                float f_conserve = (10.0f / conserve_mem_setting - 1) * 0.5f + 1.0f;
+                float f_conserve = ((10.0f / conserve_mem_setting) - 1) * 0.5f + 1.0f;
 
                 // use the smaller one
                 f = min (f, f_conserve);
