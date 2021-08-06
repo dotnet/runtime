@@ -9,6 +9,7 @@ using System.Text.Json.Serialization;
 using System.Reflection.Metadata;
 using Microsoft.Build.Framework;
 using Microsoft.Build.Utilities;
+using System.Diagnostics.CodeAnalysis;
 
 public class RuntimeConfigParserTask : Task
 {
@@ -43,7 +44,7 @@ public class RuntimeConfigParserTask : Task
             return false;
         }
 
-        if (!TryConvertInputToDictionary(RuntimeConfigFile, out Dictionary<string, string> configProperties))
+        if (!TryConvertInputToDictionary(RuntimeConfigFile, out Dictionary<string, string>? configProperties))
         {
             return false;
         }
@@ -67,11 +68,9 @@ public class RuntimeConfigParserTask : Task
     }
 
     /// Reads a json file from the given path and extracts the "configProperties" key (assumed to be a string to string dictionary)
-    private bool TryConvertInputToDictionary(string inputFilePath, out Dictionary<string, string> result)
+    private bool TryConvertInputToDictionary(string inputFilePath, [NotNullWhen(true)] out Dictionary<string, string>? result)
     {
-        var init_result = new Dictionary<string, string>();
-        init_result.Clear();
-        result = init_result;
+        result = null;
 
         var options = new JsonSerializerOptions {
             AllowTrailingCommas = true,
