@@ -14213,8 +14213,9 @@ void allocator::thread_sip_fl (heap_segment* region)
         while (region_fl_item)
         {
             uint8_t* next_fl_item = free_list_slot (region_fl_item);
-            thread_item (region_fl_item, size (region_fl_item));
-            total_free_size += size(region_fl_item);
+            size_t size_item = size (region_fl_item);
+            thread_item (region_fl_item, size_item);
+            total_free_size += size_item;
             region_fl_item = next_fl_item;
         }
         assert (total_free_size == region->free_list_size);
