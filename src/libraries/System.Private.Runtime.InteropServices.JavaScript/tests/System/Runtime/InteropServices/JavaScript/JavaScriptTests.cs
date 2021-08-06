@@ -151,7 +151,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
                     var x = new byte[100 + attempt / 100];
                     if (attempt % 1000 == 0)
                     {
-                        Runtime.InvokeJS("gc();");// needs v8 flag --expose-gc
+                        Runtime.InvokeJS("if (gc) gc();");// needs v8 flag --expose-gc
                         GC.Collect();
                     }
                 }
@@ -293,7 +293,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             var evnt0 = obj.Invoke("eventFactory", 0);
             var evnt1 = obj.Invoke("eventFactory", 1);
             obj.Invoke("fireEvent", "test", evnt0);
-            Runtime.InvokeJS("gc();");// needs v8 flag --expose-gc
+            Runtime.InvokeJS("if (gc) gc();");// needs v8 flag --expose-gc
             GC.Collect();
             obj.Invoke("fireEvent", "test", evnt0);
             obj.Invoke("fireEvent", "test", evnt1);
