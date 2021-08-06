@@ -1459,6 +1459,7 @@ namespace System.Net.Tests
         [InlineData(true)]
         [InlineData(false)]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/37087", TestPlatforms.Android)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/56798", TestPlatforms.tvOS)]
         public async Task GetResponseAsync_UseDefaultCredentials_ExpectSuccess(bool useSsl)
         {
             var options = new LoopbackServer.Options { UseSsl = useSsl };
@@ -1499,6 +1500,7 @@ namespace System.Net.Tests
         [InlineData(true)]
         [InlineData(false)]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/37087", TestPlatforms.Android)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/56798", TestPlatforms.tvOS)]
         public async Task HaveResponse_GetResponseAsync_ExpectTrue(bool useSsl)
         {
             var options = new LoopbackServer.Options { UseSsl = useSsl };
@@ -1991,8 +1993,7 @@ namespace System.Net.Tests
             }
         }
 
-        [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/37087", TestPlatforms.Android)]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsBinaryFormatterSupported))]
         public void HttpWebRequest_Serialize_Fails()
         {
             using (MemoryStream fs = new MemoryStream())
