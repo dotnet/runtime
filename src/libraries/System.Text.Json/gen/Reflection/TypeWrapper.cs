@@ -249,7 +249,13 @@ namespace System.Text.Json.Reflection
 
             foreach (IMethodSymbol c in _namedTypeSymbol.Constructors)
             {
-                if (c.DeclaredAccessibility == Accessibility.Public)
+                if (c.IsImplicitlyDeclared && IsValueType)
+                {
+                    continue;
+                }
+
+                if (((BindingFlags.Public & bindingAttr) != 0 && c.DeclaredAccessibility == Accessibility.Public) ||
+                    ((BindingFlags.NonPublic & bindingAttr) != 0 && c.DeclaredAccessibility != Accessibility.Public))
                 {
                     ctors.Add(new ConstructorInfoWrapper(c, _metadataLoadContext));
                 }
@@ -382,6 +388,12 @@ namespace System.Text.Json.Reflection
             {
                 if (item is IPropertySymbol propertySymbol)
                 {
+                    // Skip auto-generated properties on records.
+                    if (_typeSymbol.IsRecord && propertySymbol.DeclaringSyntaxReferences.Length == 0)
+                    {
+                        continue;
+                    }
+
                     // Skip if:
                     if (
                         // we want a static property and this is not static

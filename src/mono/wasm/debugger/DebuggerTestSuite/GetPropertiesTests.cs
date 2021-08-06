@@ -340,7 +340,7 @@ namespace DebuggerTests
         {
             var pause_location = await EvaluateAndCheck(
                "window.setTimeout(function() { invoke_static_method('[debugger-test] TestChild:TestWatchWithInheritance'); }, 1);",
-                "dotnet://debugger-test.dll/debugger-test2.cs", 125, 8,
+                "dotnet://debugger-test.dll/debugger-test2.cs", 127, 8,
                "TestWatchWithInheritance");
             var frame_id = pause_location["callFrames"][0]["callFrameId"].Value<string>();
             var frame_locals = await GetProperties(frame_id);

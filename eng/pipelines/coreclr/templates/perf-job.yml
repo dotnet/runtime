@@ -56,9 +56,9 @@ jobs:
       - ${{ format('libraries_build_{0}{1}_{2}_{3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.liveLibrariesBuildConfig) }}
     - ${{ if and(eq(parameters.runtimeType, 'mono'), ne(parameters.codeGenType, 'AOT')) }}:
       - ${{ format('mono_{0}_product_build_{1}{2}_{3}_{4}', parameters.runtimeVariant, parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
-    - ${{ if eq(parameters.runtimeType, 'wasm') }}:
+    - ${{ if eq(parameters.runtimeType, 'wasm')}}:
       - ${{ format('build_{0}{1}_{2}_{3}_{4}', 'Browser', '', 'wasm', parameters.buildConfig, parameters.runtimeType) }}
-    - ${{ if eq(parameters.codeGenType, 'AOT')}}:
+    - ${{ if and(eq(parameters.codeGenType, 'AOT'), ne(parameters.runtimeType, 'wasm'))}}:
       - ${{ format('build_{0}{1}_{2}_{3}_{4}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig, parameters.codeGenType) }}
     - ${{ if eq(parameters.runtimeType, 'AndroidMono')}}:
       - ${{ 'build_Android_arm64_release_AndroidMono' }}
@@ -73,9 +73,11 @@ jobs:
     ${{ if and(ne(parameters.osGroup, 'windows'), not(in(parameters.runtimeType, 'AndroidMono', 'iOSMono'))) }}:
       ${{ if and(eq(parameters.runtimeType, 'mono'), ne(parameters.codeGenType, 'AOT')) }}:
         extraSetupParameters: --architecture ${{ parameters.archType }} --monodotnet $(Build.SourcesDirectory)/.dotnet-mono
-      ${{ if eq(parameters.runtimeType, 'wasm') }}:
+      ${{ if and(eq(parameters.runtimeType, 'wasm'), ne(parameters.codeGenType, 'AOT')) }}:
         extraSetupParameters: --architecture ${{ parameters.archType }} --wasm $(librariesDownloadDir)/bin/wasm --javascriptengine ${{ parameters.javascriptEngine }}
-      ${{ if eq(parameters.codeGenType, 'AOT') }}:
+      ${{ if and(eq(parameters.runtimeType, 'wasm'), eq(parameters.codeGenType, 'AOT')) }}:
+        extraSetupParameters: --architecture ${{ parameters.archType }} --wasm $(librariesDownloadDir)/bin/wasm --wasmaot --javascriptengine ${{ parameters.javascriptEngine }}
+      ${{ if and(eq(parameters.codeGenType, 'AOT'), ne(parameters.runtimeType, 'wasm')) }}:
         extraSetupParameters: --architecture ${{ parameters.archType }} --monoaot $(librariesDownloadDir)/bin/aot
       ${{ if and(eq(parameters.runtimeType, 'coreclr'), ne(parameters.osSubGroup, '_musl')) }}:
         extraSetupParameters: --corerootdirectory $(Build.SourcesDirectory)/artifacts/tests/coreclr/${{ parameters.osGroup }}.${{ parameters.archType }}.Release/Tests/Core_Root --architecture ${{ parameters.archType }}
@@ -134,8 +136,8 @@ jobs:
       - script: "mkdir $(librariesDownloadDir)/bin/wasm;unzip -o $(librariesDownloadDir)/BrowserWasm/artifacts/packages/Release/Shipping/Microsoft.NETCore.App.Runtime.Mono.browser-wasm.6.0.0-ci.nupkg data/* runtimes/* -d $(librariesDownloadDir)/bin/wasm;cp src/mono/wasm/runtime-test.js $(librariesDownloadDir)/bin/wasm/runtime-test.js;find $(librariesDownloadDir)/bin/wasm -type f -exec chmod 664 {} \\;"
         displayName: "Create wasm directory (Linux)"
 
-    # Download AOT
-    - ${{ if eq(parameters.codeGenType, 'AOT') }}:
+    # Download mono AOT
+    - ${{ if and(eq(parameters.codeGenType, 'AOT'), ne(parameters.runtimeType, 'wasm')) }}:
       - template: /eng/pipelines/common/download-artifact-step.yml
         parameters:
           unpackFolder: $(librariesDownloadDir)/LinuxMonoAOT

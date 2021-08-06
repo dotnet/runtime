@@ -574,7 +574,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
                 ServiceDescriptor.Singleton<ICustomService, CustomService5>()
             };
 
-            var callsiteFactory = new CallSiteFactory(serviceDescriptors.Take(numberOfServices));
+            var callsiteFactory = new CallSiteFactory(serviceDescriptors.Take(numberOfServices).ToArray());
 
             for (int i = 0; i < numberOfServices; i++)
             {

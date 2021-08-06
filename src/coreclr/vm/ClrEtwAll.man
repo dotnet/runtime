@@ -7276,12 +7276,16 @@
                              message="$(string.MonoProfilerPublisher.GCAllocationKeywordMessage)" symbol="CLR_MONO_PROFILER_GC_ALLOCATION_KEYWORD" />
                     <keyword name="GCMovesKeyword" mask="0x400000"
                              message="$(string.MonoProfilerPublisher.GCMovesKeywordMessage)" symbol="CLR_MONO_PROFILER_GC_MOVES_KEYWORD" />
-                    <keyword name="GCRootKeyword" mask="0x800000"
-                             message="$(string.MonoProfilerPublisher.GCRootKeywordMessage)" symbol="CLR_MONO_PROFILER_GC_ROOT_KEYWORD" />
+                    <keyword name="GCHeapCollectKeyword" mask="0x800000"
+                             message="$(string.MonoProfilerPublisher.GCHeapCollectKeywordMessage)" symbol="CLR_MONO_PROFILER_GC_HEAPCOLLECT_KEYWORD" />
                     <keyword name="GCFinalizationKeyword" mask="0x1000000"
                              message="$(string.MonoProfilerPublisher.GCFinalizationKeywordMessage)" symbol="CLR_MONO_PROFILER_GC_FINALIZATION_KEYWORD" />
                     <keyword name="GCResizeKeyword" mask="0x2000000"
                              message="$(string.MonoProfilerPublisher.GCResizeKeywordMessage)" symbol="CLR_MONO_PROFILER_GC_RESIZE_KEYWORD" />
+                    <keyword name="GCRootKeyword" mask="0x4000000"
+                             message="$(string.MonoProfilerPublisher.GCRootKeywordMessage)" symbol="CLR_MONO_PROFILER_GC_ROOT_KEYWORD" />
+                    <keyword name="GCHeapDumpVTableClassReferenceKeyword" mask="0x8000000"
+                             message="$(string.MonoProfilerPublisher.GCHeapDumpVTableClassReferenceKeywordMessage)" symbol="CLR_MONO_PROFILER_GC_HEAPDUMP_VTABLE_CLASS_REFERENCE_KEYWORD" />
                     <keyword name="MethodTracingKeyword" mask="0x20000000"
                              message="$(string.MonoProfilerPublisher.MethodTracingKeywordMessage)" symbol="CLR_MONO_PROFILER_METHOD_TRACING_KEYWORD" />
                     <keyword name="TypeLoadingKeyword" mask="0x8000000000"
@@ -7358,6 +7362,7 @@
                             <opcode name="ThreadExited" message="$(string.MonoProfilerPublisher.ThreadExitedOpcodeMessage)" symbol="CLR_MONO_PROFILER_THREAD_EXITED_OPCODE" value="77" />
                             <opcode name="ThreadName" message="$(string.MonoProfilerPublisher.ThreadNameOpcodeMessage)" symbol="CLR_MONO_PROFILER_THREAD_NAME_OPCODE" value="78" />
                             <opcode name="JitDoneVerbose" message="$(string.MonoProfilerPublisher.JitDoneVerboseOpcodeMessage)" symbol="CLR_MONO_PROFILER_JIT_DONE_VERBOSE_OPCODE" value="79" />
+                            <opcode name="GCHeapDumpVTableClassReference" message="$(string.MonoProfilerPublisher.GCHeapDumpVTableClassReferenceOpcodeMessage)" symbol="CLR_MONO_PROFILER_GC_HEAP_DUMP_VTABLE_CLASS_REFERENCE_OPCODE" value="80" />
                         </opcodes>
                     </task>
                 </tasks>
@@ -7733,11 +7738,20 @@
                         </UserData>
                     </template>
 
+                    <template tid="GCHeapDumpStart">
+                        <data name="HeapCollectParam" inType="win:UnicodeString" />
+                        <UserData>
+                            <GCHeapDumpStart xmlns="myNs">
+                                <HeapCollectParam> %1 </HeapCollectParam>
+                            </GCHeapDumpStart>
+                        </UserData>
+                    </template>
+
                     <template tid="GCHeapDumpObjectReference">
                         <data name="ObjectID" inType="win:Pointer" outType="win:HexInt64" />
                         <data name="VTableID" inType="win:UInt64" outType="win:HexInt64" />
                         <data name="ObjectSize" inType="win:UInt64" outType="win:HexInt64" />
-                        <data name="ObjectGeneration" inType="win:UInt32" />
+                        <data name="ObjectGeneration" inType="win:UInt8" />
                         <data name="Count" inType="win:UInt32" outType="win:HexInt32" />
                         <struct name="Values" count="Count">
                             <data name="ReferenceOffset" inType="win:UInt32" />
@@ -7833,6 +7847,21 @@
                                 <ClassName> %3 </ClassName>
                                 <Count> %4 </Count>
                             </ClassLoaded_V1>
+                        </UserData>
+                    </template>
+
+                    <template tid="GCHeapDumpVTableClassReference">
+                        <data name="VTableID" inType="win:UInt64" outType="win:HexInt64" />
+                        <data name="ClassID" inType="win:UInt64" outType="win:HexInt64" />
+                        <data name="ModuleID" inType="win:UInt64" outType="win:HexInt64" />
+                        <data name="ClassName" inType="win:UnicodeString" />
+                        <UserData>
+                            <GCHeapDumpVTableClassReference xmlns="myNs">
+                                <VTableID> %1 </VTableID>
+                                <ClassID> %2 </ClassID>
+                                <ModuleID> %3 </ModuleID>
+                                <ClassName> %4 </ClassName>
+                            </GCHeapDumpVTableClassReference>
                         </UserData>
                     </template>
 
@@ -8040,77 +8069,77 @@
                            symbol="MonoProfilerGCEvent" message="$(string.MonoProfilerPublisher.GCEventEventMessage)" />
 
                     <event value="39" version="0" level="win:Informational"  template="GCAllocation"
-                           keywords ="GCKeyword GCAllocationKeyword" opcode="GCAllocation"
+                           keywords ="GCAllocationKeyword" opcode="GCAllocation"
                            task="MonoProfiler"
                            symbol="MonoProfilerGCAllocation" message="$(string.MonoProfilerPublisher.GCAllocationEventMessage)" />
 
                     <event value="40" version="0" level="win:Informational"  template="GCMoves"
-                           keywords ="GCKeyword GCMovesKeyword" opcode="GCMoves"
+                           keywords ="GCMovesKeyword" opcode="GCMoves"
                            task="MonoProfiler"
                            symbol="MonoProfilerGCMoves" message="$(string.MonoProfilerPublisher.GCMovesEventMessage)" />
 
                     <event value="41" version="0" level="win:Informational"  template="GCResize"
-                           keywords ="GCKeyword GCResizeKeyword" opcode="GCResize"
+                           keywords ="GCResizeKeyword" opcode="GCResize"
                            task="MonoProfiler"
                            symbol="MonoProfilerGCResize" message="$(string.MonoProfilerPublisher.GCResizeEventMessage)" />
 
                     <event value="42" version="0" level="win:Informational"  template="GCHandleCreated"
-                           keywords ="GCKeyword GCHandleKeyword" opcode="GCHandleCreated"
+                           keywords ="GCHandleKeyword" opcode="GCHandleCreated"
                            task="MonoProfiler"
                            symbol="MonoProfilerGCHandleCreated" message="$(string.MonoProfilerPublisher.GCHandleCreatedEventMessage)" />
 
                     <event value="43" version="0" level="win:Informational"  template="GCHandleDeleted"
-                           keywords ="GCKeyword GCHandleKeyword" opcode="GCHandleDeleted"
+                           keywords ="GCHandleKeyword" opcode="GCHandleDeleted"
                            task="MonoProfiler"
                            symbol="MonoProfilerGCHandleDeleted" message="$(string.MonoProfilerPublisher.GCHandleDeletedEventMessage)" />
 
                     <event value="44" version="0" level="win:Informational"
-                           keywords ="GCKeyword GCFinalizationKeyword" opcode="GCFinalizing"
+                           keywords ="GCFinalizationKeyword" opcode="GCFinalizing"
                            task="MonoProfiler"
                            symbol="MonoProfilerGCFinalizing" message="$(string.MonoProfilerPublisher.GCFinalizingFinalizedEventMessage)" />
 
                     <event value="45" version="0" level="win:Informational"
-                           keywords ="GCKeyword GCFinalizationKeyword" opcode="GCFinalized"
+                           keywords ="GCFinalizationKeyword" opcode="GCFinalized"
                            task="MonoProfiler"
                            symbol="MonoProfilerGCFinalized" message="$(string.MonoProfilerPublisher.GCFinalizingFinalizedEventMessage)" />
 
                     <event value="46" version="0" level="win:Informational"  template="GCFinalizingFinalizedObject"
-                           keywords ="GCKeyword GCFinalizationKeyword" opcode="GCFinalizingObject"
+                           keywords ="GCFinalizationKeyword" opcode="GCFinalizingObject"
                            task="MonoProfiler"
                            symbol="MonoProfilerGCFinalizingObject" message="$(string.MonoProfilerPublisher.GCFinalizingFinalizedObjectEventMessage)" />
 
                     <event value="47" version="0" level="win:Informational"  template="GCFinalizingFinalizedObject"
-                           keywords ="GCKeyword GCFinalizationKeyword" opcode="GCFinalizedObject"
+                           keywords ="GCFinalizationKeyword" opcode="GCFinalizedObject"
                            task="MonoProfiler"
                            symbol="MonoProfilerGCFinalizedObject" message="$(string.MonoProfilerPublisher.GCFinalizingFinalizedObjectEventMessage)" />
 
                     <event value="48" version="0" level="win:Informational"  template="GCRootRegister"
-                           keywords ="GCKeyword GCRootKeyword" opcode="GCRootRegister"
+                           keywords ="GCRootKeyword" opcode="GCRootRegister"
                            task="MonoProfiler"
                            symbol="MonoProfilerGCRootRegister" message="$(string.MonoProfilerPublisher.GCRootRegisterEventMessage)" />
 
                     <event value="49" version="0" level="win:Informational"  template="GCRootUnregister"
-                           keywords ="GCKeyword GCRootKeyword" opcode="GCRootUnregister"
+                           keywords ="GCRootKeyword" opcode="GCRootUnregister"
                            task="MonoProfiler"
                            symbol="MonoProfilerGCRootUnregister" message="$(string.MonoProfilerPublisher.GCRootUnregisterEventMessage)" />
 
                     <event value="50" version="0" level="win:Informational"  template="GCRoots"
-                           keywords ="GCKeyword GCRootKeyword" opcode="GCRoots"
+                           keywords ="GCRootKeyword" opcode="GCRoots"
                            task="MonoProfiler"
                            symbol="MonoProfilerGCRoots" message="$(string.MonoProfilerPublisher.GCRootsEventMessage)" />
 
                     <event value="51" version="0" level="win:Informational"
-                           keywords ="GCKeyword GCHeapDumpKeyword" opcode="GCHeapDumpStart"
+                           keywords ="GCHeapDumpKeyword" opcode="GCHeapDumpStart" template="GCHeapDumpStart"
                            task="MonoProfiler"
-                           symbol="MonoProfilerGCHeapDumpStart" message="$(string.MonoProfilerPublisher.GCHeapDumpStartStopEventMessage)" />
+                           symbol="MonoProfilerGCHeapDumpStart" message="$(string.MonoProfilerPublisher.GCHeapDumpStartEventMessage)" />
 
                     <event value="52" version="0" level="win:Informational"
-                           keywords ="GCKeyword GCHeapDumpKeyword" opcode="GCHeapDumpStop"
+                           keywords ="GCHeapDumpKeyword" opcode="GCHeapDumpStop"
                            task="MonoProfiler"
-                           symbol="MonoProfilerGCHeapDumpStop" message="$(string.MonoProfilerPublisher.GCHeapDumpStartStopEventMessage)" />
+                           symbol="MonoProfilerGCHeapDumpStop" message="$(string.MonoProfilerPublisher.GCHeapDumpStopEventMessage)" />
 
                     <event value="53" version="0" level="win:Informational"  template="GCHeapDumpObjectReference"
-                           keywords ="GCKeyword GCHeapDumpKeyword" opcode="GCHeapDumpObjectReference"
+                           keywords ="GCHeapDumpKeyword" opcode="GCHeapDumpObjectReference"
                            task="MonoProfiler"
                            symbol="MonoProfilerGCHeapDumpObjectReference" message="$(string.MonoProfilerPublisher.GCHeapDumpObjectReferenceEventMessage)" />
 
@@ -8158,6 +8187,11 @@
                            keywords ="JitKeyword" opcode="JitDoneVerbose"
                            task="MonoProfiler"
                            symbol="MonoProfilerJitDoneVerbose" message="$(string.MonoProfilerPublisher.JitDoneVerboseEventMessage)" />
+
+                    <event value="63" version="0" level="win:Informational"  template="GCHeapDumpVTableClassReference"
+                           keywords ="GCHeapDumpVTableClassReferenceKeyword" opcode="GCHeapDumpVTableClassReference"
+                           task="MonoProfiler"
+                           symbol="MonoProfilerGCHeapDumpVTableClassReference" message="$(string.MonoProfilerPublisher.GCHeapDumpVTableClassReferenceEventMessage)" />
                 </events>
             </provider>
         </events>
@@ -9186,9 +9220,11 @@
                 <string id="MonoProfilerPublisher.GCHeapDumpKeywordMessage" value="GCHeapDump" />
                 <string id="MonoProfilerPublisher.GCAllocationKeywordMessage" value="GCAllocation" />
                 <string id="MonoProfilerPublisher.GCMovesKeywordMessage" value="GCMoves" />
-                <string id="MonoProfilerPublisher.GCRootKeywordMessage" value="GCRoot" />
-                <string id="MonoProfilerPublisher.GCFinalizationKeywordMessage" value="GCFinalization" />
+                <string id="MonoProfilerPublisher.GCHeapCollectKeywordMessage" value="GCHeapCollect" />
                 <string id="MonoProfilerPublisher.GCResizeKeywordMessage" value="GCResize" />
+                <string id="MonoProfilerPublisher.GCRootKeywordMessage" value="GCRoot" />
+                <string id="MonoProfilerPublisher.GCHeapDumpVTableClassReferenceKeywordMessage" value="GCHeapDumpVTableClassReference" />
+                <string id="MonoProfilerPublisher.GCFinalizationKeywordMessage" value="GCFinalization" />
                 <string id="MonoProfilerPublisher.MethodTracingKeywordMessage" value="PerfTrack" />
                 <string id="MonoProfilerPublisher.TypeLoadingKeywordMessage" value="TypeLoading" />
                 <string id="MonoProfilerPublisher.MonitorKeywordMessage" value="Monitor" />
@@ -9267,6 +9303,8 @@
                 <string id="MonoProfilerPublisher.ThreadNameOpcodeMessage" value="ThreadName" />
 
                 <string id="MonoProfilerPublisher.JitDoneVerboseOpcodeMessage" value="JitDoneVerbose" />
+
+                <string id="MonoProfilerPublisher.GCHeapDumpVTableClassReferenceOpcodeMessage" value="GCHeapDumpVTableClassReference" />
 
                 <string id="MonoProfilerPublisher.CodeBufferTypeMap.MethodMessage" value="Method" />
                 <string id="MonoProfilerPublisher.CodeBufferTypeMap.MethodTrampolineMessage" value="MethodTrampoline" />
@@ -9353,7 +9391,8 @@
                 <string id="MonoProfilerPublisher.GCRootRegisterEventMessage" value="RootID=%1;%nRootSize=%2;%nRootType=%3;%nRootKeyID=%4;%nRootKeyName=%5" />
                 <string id="MonoProfilerPublisher.GCRootUnregisterEventMessage" value="RootID=%1" />
                 <string id="MonoProfilerPublisher.GCRootsEventMessage" value="Count=%1" />
-                <string id="MonoProfilerPublisher.GCHeapDumpStartStopEventMessage" value="NONE" />
+                <string id="MonoProfilerPublisher.GCHeapDumpStartEventMessage" value="HeapCollectParam=%1" />
+                <string id="MonoProfilerPublisher.GCHeapDumpStopEventMessage" value="NONE" />
                 <string id="MonoProfilerPublisher.GCHeapDumpObjectReferenceEventMessage" value="ObjectID=%1;%nVTableID=%2;%nObjectSize=%3;%nObjectGeneration=%4;%nCount=%5" />
 
                 <string id="MonoProfilerPublisher.MonitorContentionFailedAcquiredEventMessage" value="ObjectID=%1" />
@@ -9362,6 +9401,8 @@
                 <string id="MonoProfilerPublisher.ThreadNameEventMessage" value="ThreadID=%1;%nThreadName=%2" />
 
                 <string id="MonoProfilerPublisher.JitDoneVerboseEventMessage" value="MethodId=%1;%nMethodNamespace=%2;%nMethodName=%3;%nMethodSignature=%4" />
+
+                <string id="MonoProfilerPublisher.GCHeapDumpVTableClassReferenceEventMessage" value="VTableID=%1;%nClassID=%2;%nModuleID=%3;%nClassName=%4" />
             </stringTable>
         </resources>
     </localization>

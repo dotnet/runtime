@@ -6,7 +6,6 @@ using Xunit;
 
 namespace System.Text.Tests
 {
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/38433", TestPlatforms.Browser)] // wasm doesn't honor runtimeconfig.json
     public class UTF7EncodingEncode
     {
         public static IEnumerable<object[]> Encode_Basic_TestData()

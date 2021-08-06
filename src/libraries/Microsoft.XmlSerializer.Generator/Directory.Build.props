@@ -1,9 +1,7 @@
 ﻿<Project>
   <Import Project="..\Directory.Build.props" />
   <PropertyGroup>
-    <SkipValidatePackage>true</SkipValidatePackage>
     <AssemblyFileVersion>$(AssemblyVersion)</AssemblyFileVersion>
     <StrongNameKeyId>Open</StrongNameKeyId>
-    <PackageDescription>Creates an Xml serialization assembly for types contained in an assembly in order to improve the startup performance of Xml serialization when serializing or de-serializing objects of those types using XmlSerializer.</PackageDescription>
   </PropertyGroup>
 </Project>

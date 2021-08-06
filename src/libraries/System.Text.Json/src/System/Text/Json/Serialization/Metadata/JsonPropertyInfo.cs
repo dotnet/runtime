@@ -40,13 +40,18 @@ namespace System.Text.Json.Serialization.Metadata
             return info;
         }
 
-        // Create a property that is ignored at run-time. It uses the same type (typeof(sbyte)) to help
-        // prevent issues with unsupported types and helps ensure we don't accidently (de)serialize it.
-        internal static JsonPropertyInfo CreateIgnoredPropertyPlaceholder(MemberInfo memberInfo, Type memberType, bool isVirtual, JsonSerializerOptions options)
+        // Create a property that is ignored at run-time.
+        internal static JsonPropertyInfo CreateIgnoredPropertyPlaceholder(
+            JsonConverter converter,
+            MemberInfo memberInfo,
+            Type memberType,
+            bool isVirtual,
+            JsonSerializerOptions options)
         {
-            JsonPropertyInfo jsonPropertyInfo = new JsonPropertyInfo<sbyte>();
+            JsonPropertyInfo jsonPropertyInfo = converter.CreateJsonPropertyInfo();
 
             jsonPropertyInfo.Options = options;
+            jsonPropertyInfo.ConverterBase = converter;
             jsonPropertyInfo.MemberInfo = memberInfo;
             jsonPropertyInfo.IsIgnored = true;
             jsonPropertyInfo.DeclaredPropertyType = memberType;

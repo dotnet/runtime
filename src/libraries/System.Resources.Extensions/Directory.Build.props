@@ -2,10 +2,5 @@
   <Import Project="..\Directory.Build.props" />
   <PropertyGroup>
     <StrongNameKeyId>Open</StrongNameKeyId>
-    <PackageDescription>Provides classes which read and write resources in a format that supports non-primitive objects.
-
-Commonly Used Types:
-System.Resources.Extensions.DeserializingResourceReader
-System.Resources.Extensions.PreserializedResourceWriter</PackageDescription>
   </PropertyGroup>
 </Project>

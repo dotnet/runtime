@@ -46,7 +46,7 @@ namespace Microsoft.Win32.SafeHandles
 
             internal readonly PreAllocatedOverlapped _preallocatedOverlapped;
             internal readonly SafeFileHandle _fileHandle;
-            private AsyncWindowsFileStreamStrategy? _strategy;
+            private OSFileStreamStrategy? _strategy;
             internal MemoryHandle _memoryHandle;
             private int _bufferSize;
             internal ManualResetValueTaskSourceCore<int> _source; // mutable struct; do not make this readonly
@@ -77,8 +77,10 @@ namespace Microsoft.Win32.SafeHandles
                     ? ThrowHelper.CreateEndOfFileException()
                     : Win32Marshal.GetExceptionForWin32Error(errorCode, path);
 
-            internal NativeOverlapped* PrepareForOperation(ReadOnlyMemory<byte> memory, long fileOffset, AsyncWindowsFileStreamStrategy? strategy = null)
+            internal NativeOverlapped* PrepareForOperation(ReadOnlyMemory<byte> memory, long fileOffset, OSFileStreamStrategy? strategy = null)
             {
+                Debug.Assert(strategy is null || strategy is AsyncWindowsFileStreamStrategy, $"Strategy was expected to be null or async, got {strategy}.");
+
                 _result = 0;
                 _strategy = strategy;
                 _bufferSize = memory.Length;
@@ -195,12 +197,12 @@ namespace Microsoft.Win32.SafeHandles
             {
                 Debug.Assert(errorCode == Interop.Errors.ERROR_SUCCESS || numBytes == 0, $"Callback returned {errorCode} error and {numBytes} bytes");
 
-                AsyncWindowsFileStreamStrategy? strategy = _strategy;
+                OSFileStreamStrategy? strategy = _strategy;
                 ReleaseResources();
 
-                if (strategy is not null && _bufferSize != numBytes) // true only for incomplete reads
+                if (strategy is not null && _bufferSize != numBytes) // true only for incomplete operations
                 {
-                    strategy.OnIncompleteRead(_bufferSize, (int)numBytes);
+                    strategy.OnIncompleteOperation(_bufferSize, (int)numBytes);
                 }
 
                 switch (errorCode)

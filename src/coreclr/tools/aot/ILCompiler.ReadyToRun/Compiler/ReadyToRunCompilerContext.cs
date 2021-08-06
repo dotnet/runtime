@@ -154,6 +154,11 @@ namespace ILCompiler
             return false;
         }
 
+        public override bool ComputeIsUnsafeValueType(DefType type)
+        {
+            return false;
+        }
+
         public override ComputedInstanceFieldLayout ComputeInstanceLayout(DefType type, InstanceLayoutKind layoutKind)
         {
             DefType similarSpecifiedVector = GetSimilarVector(type);

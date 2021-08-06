@@ -151,9 +151,6 @@ All src outputs are under
 
 `bin\$(MSBuildProjectName)\$(TargetFramework)`
 
-## pkg
-In the pkg directory for the library there should be only **one** `.pkgproj` for the primary package for the library. If the library has platform-specific implementations those should be split into platform specific projects in a subfolder for each platform. (see [Package projects](./package-projects.md))
-
 ## tests
 Similar to the src projects tests projects will define a `TargetFrameworks` property so they can list out the set of target frameworks they support.
 

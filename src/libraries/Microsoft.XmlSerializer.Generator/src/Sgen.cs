@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
@@ -28,6 +29,7 @@ namespace Microsoft.XmlSerializer.Generator
         {
             string assembly = null;
             var types = new List<string>();
+            string defaultNamespace = null;
             string codePath = null;
             var errs = new List<string>();
             bool force = false;
@@ -100,6 +102,18 @@ namespace Microsoft.XmlSerializer.Generator
                         else
                         {
                             assembly = args[i];
+                        }
+                    }
+                    else if (ArgumentMatch(arg, "default-namespace"))
+                    {
+                        i++;
+                        if (i >= args.Length || defaultNamespace != null)
+                        {
+                            errs.Add(SR.Format(SR.ErrInvalidArgument, arg));
+                        }
+                        else
+                        {
+                            defaultNamespace = args[i];
                         }
                     }
                     else if (ArgumentMatch(arg, "quiet"))
@@ -189,7 +203,7 @@ namespace Microsoft.XmlSerializer.Generator
                     ParseReferences();
                 }
 
-                GenerateFile(types, assembly, proxyOnly, silent, verbose, force, codePath, parsableErrors);
+                GenerateFile(types, defaultNamespace, assembly, proxyOnly, silent, verbose, force, codePath, parsableErrors);
             }
             catch (Exception e)
             {
@@ -205,7 +219,7 @@ namespace Microsoft.XmlSerializer.Generator
             return 0;
         }
 
-        private void GenerateFile(List<string> typeNames, string assemblyName, bool proxyOnly, bool silent, bool verbose, bool force, string outputDirectory, bool parsableerrors)
+        private void GenerateFile(List<string> typeNames, string defaultNamespace, string assemblyName, bool proxyOnly, bool silent, bool verbose, bool force, string outputDirectory, bool parsableerrors)
         {
             Assembly assembly = LoadAssembly(assemblyName, true);
             Type[] types;
@@ -248,7 +262,7 @@ namespace Microsoft.XmlSerializer.Generator
 
             var mappings = new List<XmlMapping>();
             var importedTypes = new List<Type>();
-            var importer = new XmlReflectionImporter();
+            var importer = new XmlReflectionImporter(defaultNamespace);
 
             for (int i = 0; i < types.Length; i++)
             {
@@ -294,7 +308,7 @@ namespace Microsoft.XmlSerializer.Generator
 
                 if (!proxyOnly)
                 {
-                    ImportType(type, mappings, importedTypes, verbose, importer, parsableerrors);
+                    ImportType(type, defaultNamespace, mappings, importedTypes, verbose, importer, parsableerrors);
                 }
             }
 
@@ -318,7 +332,7 @@ namespace Microsoft.XmlSerializer.Generator
                     }
                 }
 
-                string serializerName = GetXmlSerializerAssemblyName(serializableTypes[0], null);
+                string serializerName = GetXmlSerializerAssemblyName(serializableTypes[0], defaultNamespace);
                 string codePath = Path.Combine(outputDirectory, serializerName + ".cs");
 
                 if (!force)
@@ -344,14 +358,31 @@ namespace Microsoft.XmlSerializer.Generator
 
                     using (FileStream fs = File.Create(codePath))
                     {
-                        MethodInfo method = typeof(System.Xml.Serialization.XmlSerializer).GetMethod("GenerateSerializer", BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic);
+                        MethodInfo method;
+                        if (defaultNamespace == null)
+                        {
+                            method = typeof(System.Xml.Serialization.XmlSerializer).GetMethod("GenerateSerializer", BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic);
+                        }
+                        else
+                        {
+                            Type tempAssemblyType = typeof(System.Xml.Serialization.XmlSerializer).Assembly.GetType("System.Xml.Serialization.TempAssembly");
+                            method = tempAssemblyType.GetMethod("GenerateSerializerToStream", BindingFlags.Static | BindingFlags.NonPublic);
+                        }
+
                         if (method == null)
                         {
                             Console.Error.WriteLine(FormatMessage(parsableerrors: false, warning: false, message: SR.GenerateSerializerNotFound));
                         }
                         else
                         {
-                            success = (bool)method.Invoke(null, new object[] { serializableTypes, allMappings, fs });
+                            if (defaultNamespace == null)
+                            {
+                                success = (bool)method.Invoke(null, new object[] { serializableTypes, allMappings, fs });
+                            }
+                            else
+                            {
+                                success = (bool)method.Invoke(null, new object[] { allMappings, serializableTypes, defaultNamespace, assembly, new Hashtable(), fs });
+                            }
                         }
                     }
                 }
@@ -410,13 +441,13 @@ namespace Microsoft.XmlSerializer.Generator
             return arg.Equals(shortName, StringComparison.InvariantCultureIgnoreCase);
         }
 
-        private void ImportType(Type type, List<XmlMapping> mappings, List<Type> importedTypes, bool verbose, XmlReflectionImporter importer, bool parsableerrors)
+        private void ImportType(Type type, string defaultNamespace, List<XmlMapping> mappings, List<Type> importedTypes, bool verbose, XmlReflectionImporter importer, bool parsableerrors)
         {
             XmlTypeMapping xmlTypeMapping = null;
-            var localImporter = new XmlReflectionImporter();
+            var localImporter = new XmlReflectionImporter(defaultNamespace);
             try
             {
-                xmlTypeMapping = localImporter.ImportTypeMapping(type);
+                xmlTypeMapping = localImporter.ImportTypeMapping(type, defaultNamespace);
             }
             catch (Exception e)
             {
@@ -435,7 +466,7 @@ namespace Microsoft.XmlSerializer.Generator
             }
             if (xmlTypeMapping != null)
             {
-                xmlTypeMapping = importer.ImportTypeMapping(type);
+                xmlTypeMapping = importer.ImportTypeMapping(type, defaultNamespace);
                 mappings.Add(xmlTypeMapping);
                 importedTypes.Add(type);
             }

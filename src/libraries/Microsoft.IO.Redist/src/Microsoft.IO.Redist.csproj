@@ -1,12 +1,20 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFrameworks>net472</TargetFrameworks>
+    <IsPackable>true</IsPackable>
+    <PackageDescription>Downlevel support package for System.IO classes.</PackageDescription>
     <DefineConstants>$(DefineConstants);MS_IO_REDIST</DefineConstants>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <ClsCompliant>false</ClsCompliant>
     <Nullable>annotations</Nullable>
     <IncludePlatformAttributes>true</IncludePlatformAttributes>
+    <TargetFrameworks>net472</TargetFrameworks>
   </PropertyGroup>
+
+  <ItemGroup>
+    <Folder Include="Microsoft\IO\Enumeration\" />
+    <None Include="PinvokeAnalyzerExceptionList.analyzerdata" />
+  </ItemGroup>
+
   <ItemGroup>
     <Compile Include="$(CoreLibSharedDir)System\IO\Directory.cs"
              Link="Microsoft\IO\Directory.cs" />
@@ -205,15 +213,11 @@
     <Compile Include="Microsoft\IO\StringExtensions.cs" />
     <Compile Include="Microsoft\IO\ThrowHelper.cs" />
   </ItemGroup>
+
   <ItemGroup>
     <PackageReference Include="System.Buffers" Version="$(SystemBuffersVersion)" />
     <PackageReference Include="System.Memory" Version="$(SystemMemoryVersion)" />
-    <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime.CompilerServices.Unsafe\src\System.Runtime.CompilerServices.Unsafe.ilproj" />
-  </ItemGroup>
-  <ItemGroup>
-    <Folder Include="Microsoft\IO\Enumeration\" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="PinvokeAnalyzerExceptionList.analyzerdata" />
+    <!-- S.R.C.Unsafe isn't a primary but transitive dependency and this P2P makes sure that the live version is used. -->
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime.CompilerServices.Unsafe\src\System.Runtime.CompilerServices.Unsafe.ilproj" PrivateAssets="all" />
   </ItemGroup>
 </Project>

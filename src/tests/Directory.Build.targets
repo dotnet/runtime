@@ -381,6 +381,11 @@
           Include="$(ArtifactsBinDir)\JsonToItemsTaskFactory\Debug\$(NetCoreAppToolCurrent)\**"
           TargetDir="JsonToItemsTaskFactory/"/>
 
+        <!-- RuntimeConfigParser always builds in Debug -->
+        <RunTimeDependencyCopyLocal
+          Include="$(ArtifactsBinDir)\RuntimeConfigParser\Debug\$(NetCoreAppToolCurrent)\**"
+          TargetDir="RuntimeConfigParser/"/>
+
         <RunTimeDependencyCopyLocal
           Include="$(RepoRoot)\src\tests\Common\wasm-test-runner\WasmTestRunner.proj"
           TargetDir="wasm-test-runner/"/>

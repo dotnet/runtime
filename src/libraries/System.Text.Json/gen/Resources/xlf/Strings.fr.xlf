@@ -22,6 +22,16 @@
         <target state="translated">Nom de type dupliqué.</target>
         <note />
       </trans-unit>
+      <trans-unit id="MultipleJsonConstructorAttributeFormat">
+        <source>Type '{0}' has multiple constructors annotated with 'JsonConstructorAttribute'.</source>
+        <target state="new">Type '{0}' has multiple constructors annotated with 'JsonConstructorAttribute'.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="MultipleJsonConstructorAttributeTitle">
+        <source>Type has multiple constructors annotated with JsonConstructorAttribute.</source>
+        <target state="new">Type has multiple constructors annotated with JsonConstructorAttribute.</target>
+        <note />
+      </trans-unit>
       <trans-unit id="TypeNotSupportedMessageFormat">
         <source>Did not generate serialization metadata for type '{0}'.</source>
         <target state="translated">Les métadonnées de sérialisation pour le type « {0} » n’ont pas été générées.</target>

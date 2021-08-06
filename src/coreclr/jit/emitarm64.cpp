@@ -15697,7 +15697,11 @@ bool emitter::IsRedundantLdStr(
         // Make sure src and dst registers are not same.
         //  ldr x0, [x0, #4]
         //  str x0, [x0, #4]  <-- can't eliminate because [x0+3] is not same destination as previous source.
-        if ((reg1 != reg2) && (prevReg1 == reg1) && (prevReg2 == reg2) && (imm == prevImm))
+        // Note, however, that we can not eliminate store in the following sequence
+        //  ldr wzr, [x0, #4]
+        //  str wzr, [x0, #4]
+        // since load operation doesn't (and can't) change the value of its destination register.
+        if ((reg1 != reg2) && (prevReg1 == reg1) && (prevReg2 == reg2) && (imm == prevImm) && (reg1 != REG_ZR))
         {
             JITDUMP("\n -- suppressing 'str reg%u [reg%u, #%u]' as previous 'ldr reg%u [reg%u, #%u]' was from same "
                     "location.\n",

@@ -606,9 +606,7 @@ namespace System.Text.Json.Serialization.Tests
 
             // Each constructor parameter must bind to an object property or field.
             InvalidOperationException ex = Assert.Throws<InvalidOperationException>(() => JsonSerializer.Deserialize("{}", type));
-            string exAsStr = ex.ToString();
-            Assert.Contains(typeof(SerializationInfo).FullName, exAsStr);
-            Assert.Contains(typeof(StreamingContext).FullName, exAsStr);
+            Assert.Contains(type.FullName, ex.ToString());
         }
 
         [Theory]
@@ -676,6 +674,39 @@ namespace System.Text.Json.Serialization.Tests
             [JsonConstructor]
             public StructWithBadCtor_WithProps(SerializationInfo info, StreamingContext ctx) =>
                 (Info, Ctx) = (info, ctx);
+        }
+
+        [Fact]
+        public static void CustomConverterThrowingJsonException_Serialization_ShouldNotOverwriteMetadata()
+        {
+            JsonException ex = Assert.Throws<JsonException>(() => JsonSerializer.Serialize(new { Value = new PocoUsingCustomConverterThrowingJsonException() }));
+            Assert.Equal(PocoConverterThrowingCustomJsonException.ExceptionMessage, ex.Message);
+            Assert.Equal(PocoConverterThrowingCustomJsonException.ExceptionPath, ex.Path);
+        }
+
+        [Fact]
+        public static void CustomConverterThrowingJsonException_Deserialization_ShouldNotOverwriteMetadata()
+        {
+            JsonException ex = Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<PocoUsingCustomConverterThrowingJsonException[]>(@"[{}]"));
+            Assert.Equal(PocoConverterThrowingCustomJsonException.ExceptionMessage, ex.Message);
+            Assert.Equal(PocoConverterThrowingCustomJsonException.ExceptionPath, ex.Path);
+        }
+
+        [JsonConverter(typeof(PocoConverterThrowingCustomJsonException))]
+        public class PocoUsingCustomConverterThrowingJsonException
+        {
+        }
+
+        public class PocoConverterThrowingCustomJsonException : JsonConverter<PocoUsingCustomConverterThrowingJsonException>
+        {
+            public const string ExceptionMessage = "Custom JsonException mesage";
+            public const string ExceptionPath = "$.CustomPath";
+
+            public override PocoUsingCustomConverterThrowingJsonException? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+                => throw new JsonException(ExceptionMessage, ExceptionPath, 0, 0);
+
+            public override void Write(Utf8JsonWriter writer, PocoUsingCustomConverterThrowingJsonException value, JsonSerializerOptions options)
+                => throw new JsonException(ExceptionMessage, ExceptionPath, 0, 0);
         }
     }
 }

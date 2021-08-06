@@ -54,13 +54,13 @@
              AssemblyFile="$(RuntimeConfigParserTasksAssemblyPath)"
              Condition="'$(RuntimeConfigParserTasksAssemblyPath)' != ''" />
 
-  <Target Name="GenerateRuntimeConfig">
+  <Target Name="GenerateRuntimeConfig" Condition="'$(OutputType)' != 'library' and '$(TargetOS)' != 'Browser'">
     <PropertyGroup>
       <RuntimeConfigFilePath>$(PublishDir)$(AssemblyName).runtimeconfig.json</RuntimeConfigFilePath>
       <ParsedRuntimeConfigFilePath>$(PublishDir)runtimeconfig.bin</ParsedRuntimeConfigFilePath>
     </PropertyGroup>
 
-    <ItemGroup Condition="'$(RunAOTCompilation)' == 'true'">
+    <ItemGroup>
       <RuntimeConfigReservedProperties Include="RUNTIME_IDENTIFIER"/>
       <RuntimeConfigReservedProperties Include="APP_CONTEXT_BASE_DIRECTORY"/>
     </ItemGroup>

@@ -507,14 +507,14 @@ namespace System.Security.Cryptography.X509Certificates
             return _lazySerialNumber ?? (_lazySerialNumber = Pal!.SerialNumber);
         }
 
-        [Obsolete("This method has been deprecated.  Please use the Subject property instead.  https://go.microsoft.com/fwlink/?linkid=14202")]
+        [Obsolete("X509Certificate.GetName has been deprecated. Use the Subject property instead.")]
         public virtual string GetName()
         {
             ThrowIfInvalid();
             return Pal!.LegacySubject;
         }
 
-        [Obsolete("This method has been deprecated.  Please use the Issuer property instead.  https://go.microsoft.com/fwlink/?linkid=14202")]
+        [Obsolete("X509Certificate.GetIssuerName has been deprecated. Use the Issuer property instead.")]
         public virtual string GetIssuerName()
         {
             ThrowIfInvalid();

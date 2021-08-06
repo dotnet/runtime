@@ -55,10 +55,10 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
             // Only scope methods are cached
             if (callSite.Cache.Location == CallSiteResultCacheLocation.Scope)
             {
-#if NETSTANDARD2_1
-                return _scopeResolverCache.GetOrAdd(callSite.Cache.Key, _buildTypeDelegate, callSite);
-#else
+#if NETFRAMEWORK || NETSTANDARD2_0
                 return _scopeResolverCache.GetOrAdd(callSite.Cache.Key, key => _buildTypeDelegate(key, callSite));
+#else
+                return _scopeResolverCache.GetOrAdd(callSite.Cache.Key, _buildTypeDelegate, callSite);
 #endif
             }
 
