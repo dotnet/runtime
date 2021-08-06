@@ -46,7 +46,7 @@ namespace System.Collections.Specialized
             Add(col!);
         }
 
-        [Obsolete("Please use NameValueCollection(IEqualityComparer) instead.")]
+        [Obsolete("This constructor has been deprecated. Use NameValueCollection(IEqualityComparer) instead.")]
         public NameValueCollection(IHashCodeProvider? hashProvider, IComparer? comparer)
             : base(hashProvider, comparer)
         {
@@ -88,7 +88,7 @@ namespace System.Collections.Specialized
             Add(col);
         }
 
-        [Obsolete("Please use NameValueCollection(Int32, IEqualityComparer) instead.")]
+        [Obsolete("This constructor has been deprecated. Use NameValueCollection(Int32, IEqualityComparer) instead.")]
         public NameValueCollection(int capacity, IHashCodeProvider? hashProvider, IComparer? comparer)
             : base(capacity, hashProvider, comparer)
         {

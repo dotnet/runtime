@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net.Http.Headers;
+using System.Net.Quic;
 using System.Net.Test.Common;
 using System.Text;
 using System.Threading.Tasks;
@@ -407,7 +408,6 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/56292")]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/54160", TestPlatforms.Browser)]
         public async Task SendAsync_WithZeroLengthHeaderName_Throws()
         {
@@ -429,6 +429,7 @@ namespace System.Net.Http.Functional.Tests
                         });
                     }
                     catch (IOException) { }
+                    catch (QuicConnectionAbortedException) { }
                 });
         }
 

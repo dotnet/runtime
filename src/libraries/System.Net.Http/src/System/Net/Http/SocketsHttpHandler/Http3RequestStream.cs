@@ -1028,6 +1028,11 @@ namespace System.Net.Http
                         totalBytesRead += bytesRead;
                         _responseDataPayloadRemaining -= bytesRead;
                         buffer = buffer.Slice(bytesRead);
+
+                        if (_responseDataPayloadRemaining == 0)
+                        {
+                            break;
+                        }
                     }
                 }
 
@@ -1085,6 +1090,11 @@ namespace System.Net.Http
                         totalBytesRead += bytesRead;
                         _responseDataPayloadRemaining -= bytesRead;
                         buffer = buffer.Slice(bytesRead);
+
+                        if (_responseDataPayloadRemaining == 0)
+                        {
+                            break;
+                        }
                     }
                 }
 

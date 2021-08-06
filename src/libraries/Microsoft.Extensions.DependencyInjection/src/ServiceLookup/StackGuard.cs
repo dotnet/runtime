@@ -16,12 +16,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
 
         public bool TryEnterOnCurrentStack()
         {
-#if NETSTANDARD2_1
-            if (RuntimeHelpers.TryEnsureSufficientExecutionStack())
-            {
-                return true;
-            }
-#else
+#if NETFRAMEWORK || NETSTANDARD2_0
             try
             {
                 RuntimeHelpers.EnsureSufficientExecutionStack();
@@ -29,6 +24,11 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
             }
             catch (InsufficientExecutionStackException)
             {
+            }
+#else
+            if (RuntimeHelpers.TryEnsureSufficientExecutionStack())
+            {
+                return true;
             }
 #endif
 
@@ -42,19 +42,19 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
 
         public TR RunOnEmptyStack<T1, T2, TR>(Func<T1, T2, TR> action, T1 arg1, T2 arg2)
         {
-            // Prefer ValueTuple when available to reduce dependencies on Tuple
-#if NETSTANDARD2_1
-            return RunOnEmptyStackCore(static s =>
-            {
-                var t = ((Func<T1, T2, TR>, T1, T2))s;
-                return t.Item1(t.Item2, t.Item3);
-            }, (action, arg1, arg2));
-#else
+#if NETFRAMEWORK || NETSTANDARD2_0
             return RunOnEmptyStackCore(static s =>
             {
                 var t = (Tuple<Func<T1, T2, TR>, T1, T2>)s;
                 return t.Item1(t.Item2, t.Item3);
             }, Tuple.Create(action, arg1, arg2));
+#else
+            // Prefer ValueTuple when available to reduce dependencies on Tuple
+            return RunOnEmptyStackCore(static s =>
+            {
+                var t = ((Func<T1, T2, TR>, T1, T2))s;
+                return t.Item1(t.Item2, t.Item3);
+            }, (action, arg1, arg2));
 #endif
         }
 
