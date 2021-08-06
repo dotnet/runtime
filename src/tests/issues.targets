@@ -114,9 +114,6 @@
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/JitBlue/DevDiv_255294/DevDiv_255294/*">
             <Issue>https://github.com/dotnet/runtime/issues/44341</Issue>
         </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/tracing/eventpipe/eventsvalidation/ThreadPool/*">
-            <Issue>https://github.com/dotnet/runtime/issues/48727</Issue>
-        </ExcludeList>
     </ItemGroup>
 
     <!-- All Unix targets on all runtimes -->
