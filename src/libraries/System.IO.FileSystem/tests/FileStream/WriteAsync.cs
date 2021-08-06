@@ -1,6 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Linq;
+using System.Security.Cryptography;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
@@ -159,6 +161,34 @@ namespace System.IO.Tests
                 await WriteAsync(fs, TestBuffer, 0, 4);
                 Assert.True(fs.Length == 14);
             }
+        }
+
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [InlineData(FileShare.None, FileOptions.Asynchronous)] // FileShare.None: exclusive access
+        [InlineData(FileShare.ReadWrite, FileOptions.Asynchronous)] // FileShare.ReadWrite: others can write to the file, the length can't be cached
+        [InlineData(FileShare.None, FileOptions.None)]
+        [InlineData(FileShare.ReadWrite, FileOptions.None)]
+        public async Task ConcurrentWritesKeepCorrectOrder(FileShare fileShare, FileOptions options)
+        {
+            const int fileSize = 10_000;
+            string filePath = GetTestFilePath();
+            byte[] content = RandomNumberGenerator.GetBytes(fileSize);
+
+            using (FileStream fs = new FileStream(filePath, FileMode.CreateNew, FileAccess.Write, fileShare, bufferSize: 0, options))
+            {
+                Task[] writes = Enumerable.Range(0, 10).Select(index => WriteAsync(fs, content, index * 1000, 1000)).ToArray();
+
+                // the writes were not awaited, it's an anti-pattern and Position can be (0, fileSize) now:
+                Assert.InRange(fs.Position, 0, fileSize);
+
+                await Task.WhenAll(writes);
+
+                Assert.Equal(fileSize, fs.Position);
+                Assert.Equal(fileSize, fs.Length);
+                Assert.All(writes, write => Assert.True(write.IsCompletedSuccessfully));                
+            }
+
+            AssertExtensions.SequenceEqual(content, await File.ReadAllBytesAsync(filePath));
         }
 
         public static IEnumerable<object[]> MemberData_FileStreamAsyncWriting()

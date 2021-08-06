@@ -14,7 +14,8 @@ namespace System.IO.Strategies
         protected readonly SafeFileHandle _fileHandle; // only ever null if ctor throws
         private readonly FileAccess _access; // What file was opened for.
 
-        protected long _filePosition;
+        protected long _filePosition; // updated after every operation finishes
+        private long _nextAsyncOperationOffset; // updated before async operation starts and after it finishes
         private long _length = -1; // negative means that hasn't been fetched.
         private long _appendStart; // When appending, prevent overwriting file.
         private bool _lengthCanBeCached; // SafeFileHandle hasn't been exposed, file has been opened for reading and not shared for writing.
@@ -100,16 +101,23 @@ namespace System.IO.Strategies
 
         // in case of concurrent incomplete reads, there can be multiple threads trying to update the position
         // at the same time. That is why we are using Interlocked here.
-        internal void OnIncompleteOperation(int expectedBytesTransferred, int actualBytesTransferred)
-            => Interlocked.Add(ref _filePosition, actualBytesTransferred - expectedBytesTransferred);
+        internal void OnFinishedAsyncOperation(int expectedBytesTransferred, int actualBytesTransferred)
+        {
+            if (actualBytesTransferred > 0)
+            {
+                _filePosition += actualBytesTransferred;
+            }
+
+            Interlocked.Add(ref _nextAsyncOperationOffset, -expectedBytesTransferred);
+        }
 
         private bool LengthCachingSupported => OperatingSystem.IsWindows() && _lengthCanBeCached;
 
         /// <summary>Gets or sets the position within the current stream</summary>
         public sealed override long Position
         {
-            get => Interlocked.Read(ref _filePosition);
-            set => Interlocked.Exchange(ref _filePosition, value);
+            get => _filePosition;
+            set => _filePosition = value;
         }
 
         internal sealed override string Name => _fileHandle.Path ?? SR.IO_UnknownFileName;
@@ -293,7 +301,7 @@ namespace System.IO.Strategies
 
         public sealed override ValueTask WriteAsync(ReadOnlyMemory<byte> source, CancellationToken cancellationToken)
         {
-            long writeOffset = CanSeek ? Interlocked.Add(ref _filePosition, source.Length) - source.Length : -1;
+            long writeOffset = CanSeek ? _filePosition + Interlocked.Add(ref _nextAsyncOperationOffset, source.Length) - source.Length : -1;
             return RandomAccess.WriteAtOffsetAsync(_fileHandle, source, writeOffset, cancellationToken, this);
         }
 
@@ -323,7 +331,7 @@ namespace System.IO.Strategies
             // This implementation updates the file position before the operation starts and updates it after incomplete read.
             // This is done to keep backward compatibility for concurrent reads.
             // It uses Interlocked as there can be multiple concurrent incomplete reads updating position at the same time.
-            long readOffset = Interlocked.Add(ref _filePosition, destination.Length) - destination.Length;
+            long readOffset = _filePosition + Interlocked.Add(ref _nextAsyncOperationOffset, destination.Length) - destination.Length;
             return RandomAccess.ReadAtOffsetAsync(_fileHandle, destination, readOffset, cancellationToken, this);
         }
     }

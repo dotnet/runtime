@@ -132,6 +132,36 @@ namespace System.IO.Tests
                 Assert.Equal(fileSize, fs.Position);
             }
         }
+
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [InlineData(FileShare.None, FileOptions.Asynchronous)] // FileShare.None: exclusive access
+        [InlineData(FileShare.ReadWrite, FileOptions.Asynchronous)] // FileShare.ReadWrite: others can write to the file, the length can't be cached
+        [InlineData(FileShare.None, FileOptions.None)]
+        [InlineData(FileShare.ReadWrite, FileOptions.None)]
+        public async Task ConcurrentReadsKeepCorrectOrder(FileShare fileShare, FileOptions options)
+        {
+            const int fileSize = 10_000;
+            string filePath = GetTestFilePath();
+            byte[] content = RandomNumberGenerator.GetBytes(fileSize);
+            File.WriteAllBytes(filePath, content);
+
+            byte[] buffer = new byte[fileSize];
+
+            using (FileStream fs = new FileStream(filePath, FileMode.Open, FileAccess.Read, fileShare, bufferSize: 0, options))
+            {
+                Task<int>[] reads = Enumerable.Range(0, 10).Select(index => ReadAsync(fs, buffer, index * 1000, 1000)).ToArray();
+
+                // the reads were not awaited, it's an anti-pattern and Position can be (0, fileSize) now:
+                Assert.InRange(fs.Position, 0, fileSize);
+
+                await Task.WhenAll(reads);
+
+                Assert.All(reads, read => Assert.Equal(1000, read.Result));
+                AssertExtensions.SequenceEqual(content, buffer);
+                Assert.Equal(fileSize, fs.Position);
+                Assert.Equal(fileSize, fs.Length);
+            }
+        }
     }
 
     [ActiveIssue("https://github.com/dotnet/runtime/issues/34582", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]

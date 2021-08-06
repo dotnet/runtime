@@ -100,6 +100,7 @@ namespace Microsoft.Win32.SafeHandles
                                 break;
                             case Operation.Write:
                                 RandomAccess.WriteAtOffset(_fileHandle, _singleSegment.Span, _fileOffset);
+                                result = _singleSegment.Length;
                                 break;
                             case Operation.ReadScatter:
                                 Debug.Assert(_readScatterBuffers != null);
@@ -118,18 +119,7 @@ namespace Microsoft.Win32.SafeHandles
                 }
                 finally
                 {
-                    if (_strategy is not null)
-                    {
-                        // WriteAtOffset returns void, so we need to fix position only in case of an exception
-                        if (exception is not null)
-                        {
-                            _strategy.OnIncompleteOperation(_singleSegment.Length, 0);
-                        }
-                        else if (_operation == Operation.Read && result != _singleSegment.Length)
-                        {
-                            _strategy.OnIncompleteOperation(_singleSegment.Length, (int)result);
-                        }
-                    }
+                    _strategy?.OnFinishedAsyncOperation(_singleSegment.Length, (int)result);
 
                     _operation = Operation.None;
                     _context = null;

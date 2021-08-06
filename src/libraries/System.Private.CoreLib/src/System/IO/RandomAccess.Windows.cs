@@ -293,7 +293,7 @@ namespace System.IO
             {
                 if (errorCode != Interop.Errors.ERROR_IO_PENDING && errorCode != Interop.Errors.ERROR_SUCCESS)
                 {
-                    strategy?.OnIncompleteOperation(buffer.Length, 0);
+                    strategy?.OnFinishedAsyncOperation(buffer.Length, 0);
                 }
             }
 
@@ -368,7 +368,7 @@ namespace System.IO
             {
                 if (errorCode != Interop.Errors.ERROR_IO_PENDING && errorCode != Interop.Errors.ERROR_SUCCESS)
                 {
-                    strategy?.OnIncompleteOperation(buffer.Length, 0);
+                    strategy?.OnFinishedAsyncOperation(buffer.Length, 0);
                 }
             }
 

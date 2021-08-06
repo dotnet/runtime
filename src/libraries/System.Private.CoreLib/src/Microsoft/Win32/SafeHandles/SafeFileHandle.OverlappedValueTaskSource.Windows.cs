@@ -200,10 +200,7 @@ namespace Microsoft.Win32.SafeHandles
                 OSFileStreamStrategy? strategy = _strategy;
                 ReleaseResources();
 
-                if (strategy is not null && _bufferSize != numBytes) // true only for incomplete operations
-                {
-                    strategy.OnIncompleteOperation(_bufferSize, (int)numBytes);
-                }
+                strategy?.OnFinishedAsyncOperation(_bufferSize, (int)numBytes);
 
                 switch (errorCode)
                 {
