@@ -188,8 +188,7 @@ var BindingSupportLib = {
 
 			// hold strong JS reference to thenable while in flight
 			// ideally, this should be hold alive by lifespan of the resulting C# Task, but this is good cheap aproximation
-			var thenable_js_handle = this.mono_wasm_free_list.length ? this.mono_wasm_free_list.pop() : this.mono_wasm_ref_counter++;
-			this.mono_wasm_object_registry[thenable_js_handle] = thenable;
+			var thenable_js_handle = BINDING.mono_wasm_get_js_handle(thenable);
 
 			// Note that we do not implement promise/task roundtrip. 
 			// With more complexity we could recover original instance when this Task is marshaled back to JS.
@@ -231,7 +230,7 @@ var BindingSupportLib = {
 
 				var cont_obj = null;
 				// note that we do not implement promise/task roundtrip
-				// With more complexity we could recover original instance when this promised is marshaled back to C#.
+				// With more complexity we could recover original instance when this promise is marshaled back to C#.
 				var result = new Promise (function (resolve, reject) {
 					cont_obj = {
 						resolve: resolve,
@@ -260,7 +259,7 @@ var BindingSupportLib = {
 			// this could be JSObject proxy of a js native object
 			var js_handle = this._get_js_id (root.value);
 			if (js_handle > 0)
-				return this.mono_wasm_require_handle(js_handle);
+				return this.mono_wasm_get_jsobj_from_js_handle(js_handle);
 			// otherwise this is C# only object
 	
 			// get strong reference to Object
@@ -451,7 +450,7 @@ var BindingSupportLib = {
 
 		get_js_obj: function (js_handle) {
 			if (js_handle > 0)
-				return this.mono_wasm_require_handle(js_handle);
+				return this.mono_wasm_get_jsobj_from_js_handle(js_handle);
 			return null;
 		},
 
@@ -529,7 +528,7 @@ var BindingSupportLib = {
 		_unbox_safehandle_root: function (root) {
 			var addRef = true;
 			var js_handle = this.call_method(this.safehandle_get_handle, null, "mi", [ root.value, addRef ]);
-			var requiredObject = BINDING.mono_wasm_require_handle (js_handle);
+			var requiredObject = BINDING.mono_wasm_get_jsobj_from_js_handle (js_handle);
 			if (addRef)
 			{
 				if (typeof this.mono_wasm_owned_objects_LMF === "undefined")
@@ -1628,13 +1627,11 @@ var BindingSupportLib = {
 				gc_handle = js_obj.__mono_gc_handle__;
 
 				if (typeof gc_handle === "undefined") {
-					var js_handle = this.mono_wasm_free_list.length ? this.mono_wasm_free_list.pop() : this.mono_wasm_ref_counter++;
-					js_obj.__mono_js_handle__ = js_handle;
 					// Obtain the JS -> C# type mapping.
 					var wasm_type = js_obj[Symbol.for("wasm type")];
-					js_obj.__owns_handle__ = true;
-					gc_handle = js_obj.__mono_gc_handle__ = this._bind_js_obj(js_handle, js_obj.__owns_handle__, typeof wasm_type === "undefined" ? -1 : wasm_type);
-					this.mono_wasm_object_registry[js_handle] = js_obj;
+
+					var js_handle = BINDING.mono_wasm_get_js_handle(js_obj);
+					gc_handle = js_obj.__mono_gc_handle__ = this._bind_js_obj(js_handle, true, typeof wasm_type === "undefined" ? -1 : wasm_type);
 					// as this instance was just created, it was already created with Inflight strong gc_handle, so we do not have to do it again
 					return { gc_handle, should_add_in_flight: false };
 				}
@@ -1642,13 +1639,22 @@ var BindingSupportLib = {
 			// this is pre-existing instance, we need to add Inflight strong gc_handle before passing it to managed
 			return { gc_handle, should_add_in_flight: true };
 		},
-		// TODO rename me
-		mono_wasm_require_handle: function(js_handle) {
+		mono_wasm_get_jsobj_from_js_handle: function(js_handle) {
 			if (js_handle > 0)
 				return this.mono_wasm_object_registry[js_handle];
 			return null;
 		},
-		mono_wasm_unregister_obj: function(js_handle, is_exception) {
+		mono_wasm_get_js_handle: function(js_obj) {
+			if(js_obj.__mono_js_handle__){
+				return js_obj.__mono_js_handle__;
+			}
+			var js_handle = this.mono_wasm_free_list.length ? this.mono_wasm_free_list.pop() : this.mono_wasm_ref_counter++;
+			// note mono_wasm_object_registry is list, not Map. That's why we maintain mono_wasm_free_list.
+			this.mono_wasm_object_registry[js_handle] = js_obj;
+			js_obj.__mono_js_handle__ = js_handle;
+			return js_handle;
+		},
+		_mono_wasm_release_js_handle: function(js_handle) {
 			var obj = BINDING.mono_wasm_object_registry[js_handle];
 			if (typeof obj  !== "undefined" && obj !== null) {
 				// if this is the global object then do not
@@ -1656,33 +1662,13 @@ var BindingSupportLib = {
 				if (globalThis === obj)
 					return obj;
 
-				if (typeof obj.__mono_gc_handle__  !== "undefined") {
+				if (typeof obj.__mono_js_handle__  !== "undefined") {
 					obj.__mono_gc_handle__ = undefined;
 					obj.__mono_js_handle__ = undefined;
 				}
 
 				BINDING.mono_wasm_object_registry[js_handle] = undefined;
 				BINDING.mono_wasm_free_list.push(js_handle);
-			}
-			return obj;
-		},
-		mono_wasm_free_raw_object: function(js_handle) {
-			var obj = this.mono_wasm_object_registry[js_handle];
-			if (typeof obj  !== "undefined" && obj !== null) {
-				// if this is the global object then do not
-				// unregister it.
-				if (globalThis === obj)
-					return obj;
-
-				var gc_handle = obj.__mono_gc_handle__;
-				if (typeof gc_handle  !== "undefined") {
-
-					obj.__mono_gc_handle__ = undefined;
-					obj.__mono_js_handle__ = undefined;
-
-					this.mono_wasm_object_registry[js_handle] = undefined;
-					this.mono_wasm_free_list.push(js_handle);
-				}
 			}
 			return obj;
 		},
@@ -1768,7 +1754,7 @@ var BindingSupportLib = {
 				return BINDING.js_string_to_mono_string ("Invalid property name object '" + nameRoot.value + "' at mono_wasm_get_object_property");
 			}
 
-			var obj = BINDING.mono_wasm_require_handle (js_handle);
+			var obj = BINDING.mono_wasm_get_jsobj_from_js_handle (js_handle);
 			if (!obj) {
 				setValue (is_exception, 1, "i32");
 				return BINDING.js_string_to_mono_string ("Invalid JS object handle '" + js_handle + "' at mono_wasm_get_object_property while geting '"+js_name+"'");
@@ -1802,8 +1788,8 @@ var BindingSupportLib = {
 				return BINDING.js_string_to_mono_string ("Invalid property name object '" + property_name + "' at mono_wasm_set_object_property");
 			}
 
-			var requireObject = BINDING.mono_wasm_require_handle (js_handle);
-			if (!requireObject) {
+			var js_obj = BINDING.mono_wasm_get_jsobj_from_js_handle (js_handle);
+			if (!js_obj) {
 				setValue (is_exception, 1, "i32");
 				return BINDING.js_string_to_mono_string ("Invalid JS object handle '" + js_handle + "' at mono_wasm_set_object_property while setting '"+property+"'");
 			}
@@ -1814,24 +1800,24 @@ var BindingSupportLib = {
 			BINDING.mono_wasm_save_LMF();
 
 			if (createIfNotExist) {
-				requireObject[property] = js_value;
+				js_obj[property] = js_value;
 				result = true;
 			}
 			else {
 				result = false;
 				if (!createIfNotExist)
 				{
-					if (!requireObject.hasOwnProperty(property))
+					if (!js_obj.hasOwnProperty(property))
 						return false;
 				}
 				if (hasOwnProperty === true) {
-					if (requireObject.hasOwnProperty(property)) {
-						requireObject[property] = js_value;
+					if (js_obj.hasOwnProperty(property)) {
+						js_obj[property] = js_value;
 						result = true;
 					}
 				}
 				else {
-					requireObject[property] = js_value;
+					js_obj[property] = js_value;
 					result = true;
 				}
 
@@ -1846,7 +1832,7 @@ var BindingSupportLib = {
 	mono_wasm_get_by_index: function(js_handle, property_index, is_exception) {
 		BINDING.bindings_lazy_init ();
 
-		var obj = BINDING.mono_wasm_require_handle (js_handle);
+		var obj = BINDING.mono_wasm_get_jsobj_from_js_handle (js_handle);
 		if (!obj) {
 			setValue (is_exception, 1, "i32");
 			return BINDING.js_string_to_mono_string ("Invalid JS object handle '" + js_handle + "' at mono_wasm_get_by_index while getting ["+property_index+"]");
@@ -1868,7 +1854,7 @@ var BindingSupportLib = {
 		try {
 			BINDING.bindings_lazy_init ();
 
-			var obj = BINDING.mono_wasm_require_handle (js_handle);
+			var obj = BINDING.mono_wasm_get_jsobj_from_js_handle (js_handle);
 			if (!obj) {
 				setValue (is_exception, 1, "i32");
 				return BINDING.js_string_to_mono_string ("Invalid JS object handle '" + js_handle + "' at mono_wasm_set_by_index while setting ["+property_index+"]");
@@ -1920,38 +1906,20 @@ var BindingSupportLib = {
 	},
 	mono_wasm_release_handle: function(js_handle, is_exception) {
 		BINDING.bindings_lazy_init ();
-		BINDING.mono_wasm_unregister_obj(js_handle);
-	},
-	mono_wasm_release_object: function(js_handle, is_exception) {
-		BINDING.bindings_lazy_init ();
-
-		BINDING.mono_wasm_free_raw_object(js_handle);
+		BINDING._mono_wasm_release_js_handle(js_handle);
 	},
 	mono_wasm_bind_core_object: function(js_handle, gc_handle, is_exception) {
 		BINDING.bindings_lazy_init ();
 
-		var requireObject = BINDING.mono_wasm_require_handle (js_handle);
-		if (!requireObject) {
+		var js_obj = BINDING.mono_wasm_get_jsobj_from_js_handle (js_handle);
+		if (!js_obj) {
 			setValue (is_exception, 1, "i32");
 			return BINDING.js_string_to_mono_string ("Invalid JS object handle '" + js_handle + "' at mono_wasm_bind_core_object");
 		}
 
 		BINDING.wasm_bind_core_clr_obj(js_handle, gc_handle );
-		requireObject.__mono_gc_handle__ = gc_handle;
-		requireObject.__js_handle__ = js_handle;
-		return gc_handle;
-	},
-	mono_wasm_bind_host_object: function(js_handle, gc_handle, is_exception) {
-		BINDING.bindings_lazy_init ();
-
-		var requireObject = BINDING.mono_wasm_require_handle (js_handle);
-		if (!requireObject) {
-			setValue (is_exception, 1, "i32");
-			return BINDING.js_string_to_mono_string ("Invalid JS object handle '" + js_handle + "' as mono_wasm_bind_host_object");
-		}
-
-		BINDING.wasm_bind_core_clr_obj(js_handle, gc_handle );
-		requireObject.__mono_gc_handle__ = gc_handle;
+		js_obj.__mono_gc_handle__ = gc_handle;
+		js_obj.__mono_js_handle__ = js_handle;
 		return gc_handle;
 	},
 	mono_wasm_new: function (core_name, args, is_exception) {
@@ -1990,8 +1958,7 @@ var BindingSupportLib = {
 				};
 
 				var res = allocator(coreObj, js_args);
-				var js_handle = BINDING.mono_wasm_free_list.length ? BINDING.mono_wasm_free_list.pop() : BINDING.mono_wasm_ref_counter++;
-				BINDING.mono_wasm_object_registry[js_handle] = res;
+				var js_handle = BINDING.mono_wasm_get_js_handle(res);
 				return BINDING.mono_wasm_convert_return_value(js_handle);
 			} catch (e) {
 				var res = e.toString ();
@@ -2008,24 +1975,24 @@ var BindingSupportLib = {
 	mono_wasm_typed_array_to_array: function(js_handle, is_exception) {
 		BINDING.bindings_lazy_init ();
 
-		var requireObject = BINDING.mono_wasm_require_handle (js_handle);
-		if (!requireObject) {
+		var js_obj = BINDING.mono_wasm_get_jsobj_from_js_handle (js_handle);
+		if (!js_obj) {
 			setValue (is_exception, 1, "i32");
 			return BINDING.js_string_to_mono_string ("Invalid JS object handle '" + js_handle + "' at mono_wasm_typed_array_to_array");
 		}
 
-		return BINDING.js_typed_array_to_array(requireObject);
+		return BINDING.js_typed_array_to_array(js_obj);
 	},
 	mono_wasm_typed_array_copy_to: function(js_handle, pinned_array, begin, end, bytes_per_element, is_exception) {
 		BINDING.bindings_lazy_init ();
 
-		var requireObject = BINDING.mono_wasm_require_handle (js_handle);
-		if (!requireObject) {
+		var js_obj = BINDING.mono_wasm_get_jsobj_from_js_handle (js_handle);
+		if (!js_obj) {
 			setValue (is_exception, 1, "i32");
 			return BINDING.js_string_to_mono_string ("Invalid JS object handle '" + js_handle + "' at mono_wasm_typed_array_copy_to");
 		}
 
-		var res = BINDING.typedarray_copy_to(requireObject, pinned_array, begin, end, bytes_per_element);
+		var res = BINDING.typedarray_copy_to(js_obj, pinned_array, begin, end, bytes_per_element);
 		return BINDING.js_to_mono_obj (res)
 	},
 	mono_wasm_typed_array_from: function(pinned_array, begin, end, bytes_per_element, type, is_exception) {
@@ -2036,13 +2003,13 @@ var BindingSupportLib = {
 	mono_wasm_typed_array_copy_from: function(js_handle, pinned_array, begin, end, bytes_per_element, is_exception) {
 		BINDING.bindings_lazy_init ();
 
-		var requireObject = BINDING.mono_wasm_require_handle (js_handle);
-		if (!requireObject) {
+		var js_obj = BINDING.mono_wasm_get_jsobj_from_js_handle (js_handle);
+		if (!js_obj) {
 			setValue (is_exception, 1, "i32");
 			return BINDING.js_string_to_mono_string ("Invalid JS object handle '" + js_handle + "' at mono_wasm_typed_array_copy_from");
 		}
 
-		var res = BINDING.typedarray_copy_from(requireObject, pinned_array, begin, end, bytes_per_element);
+		var res = BINDING.typedarray_copy_from(js_obj, pinned_array, begin, end, bytes_per_element);
 		return BINDING.js_to_mono_obj (res)
 	},
 	mono_wasm_add_event_listener: function (objHandle, name, listener_gc_handle, optionsHandle) {
@@ -2051,7 +2018,7 @@ var BindingSupportLib = {
 			BINDING.bindings_lazy_init ();
 			var sName = BINDING.conv_string(nameRoot.value);
 
-			var obj = BINDING.mono_wasm_require_handle(objHandle);
+			var obj = BINDING.mono_wasm_get_jsobj_from_js_handle(objHandle);
 			if (!obj)
 				throw new Error("Invalid JS object handle at mono_wasm_add_event_listener for '"+sName+"'");
 			var listener = BINDING._wrap_delegate_gc_handle_as_function(listener_gc_handle);
@@ -2059,7 +2026,7 @@ var BindingSupportLib = {
 				throw new Error("Invalid listener gc_handle");
 
 			var options = optionsHandle
-				? BINDING.mono_wasm_require_handle(optionsHandle)
+				? BINDING.mono_wasm_get_jsobj_from_js_handle(optionsHandle)
 				: null;
 
 			if (options)
@@ -2077,7 +2044,7 @@ var BindingSupportLib = {
 		var nameRoot = MONO.mono_wasm_new_root (name);
 		try {
 			BINDING.bindings_lazy_init ();
-			var obj = BINDING.mono_wasm_require_handle(objHandle);
+			var obj = BINDING.mono_wasm_get_jsobj_from_js_handle(objHandle);
 			if (!obj)
 				throw new Error("Invalid JS object handle at mono_wasm_remove_event_listener");
 			var listener = BINDING._wrap_delegate_gc_handle_as_function(listener_gc_handle);

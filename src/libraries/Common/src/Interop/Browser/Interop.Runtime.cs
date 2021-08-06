@@ -36,11 +36,7 @@ internal static partial class Interop
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         internal static extern object ReleaseHandle(int jsHandle, out int exceptionalResult);
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal static extern object ReleaseObject(int jsHandle, out int exceptionalResult);
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
         internal static extern object BindCoreObject(int jsHandle, int gcHandle, out int exceptionalResult);
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal static extern object BindHostObject(int jsHandle, int gcHandle, out int exceptionalResult);
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         internal static extern object New(string className, object[] parms, out int exceptionalResult);
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
