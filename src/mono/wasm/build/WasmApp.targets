@@ -83,8 +83,6 @@
     <WasmStripAOTAssemblies>false</WasmStripAOTAssemblies>
 
     <_BeforeWasmBuildAppDependsOn />
-    
-    <_RuntimeConfigJsonFileExistance>false</_RuntimeConfigJsonFileExistance>
   </PropertyGroup>
 
   <Import Project="$(MSBuildThisFileDirectory)WasmApp.Native.targets" />
@@ -127,8 +125,9 @@
 
       <_MainAssemblyPath Condition="'%(WasmAssembliesToBundle.FileName)' == $(AssemblyName) and '%(WasmAssembliesToBundle.Extension)' == '.dll' and $(WasmGenerateAppBundle) == 'true'">%(WasmAssembliesToBundle.Identity)</_MainAssemblyPath>
       <_WasmRuntimeConfigFilePath>$([System.IO.Path]::ChangeExtension($(_MainAssemblyPath), '.runtimeconfig.json'))</_WasmRuntimeConfigFilePath>
-      <_RuntimeConfigJsonFileExistance Condition="Exists('$(_WasmRuntimeConfigFilePath)')">true</_RuntimeConfigJsonFileExistance>
     </PropertyGroup>
+
+    <Warning Condition="$(_MainAssemblyPath) == ''" Text="_MainAssemblyPath is empty." />
 
     <ItemGroup>
       <_WasmAssembliesInternal Include="@(WasmAssembliesToBundle->Distinct())" />
@@ -142,25 +141,25 @@
     </ItemGroup>
   </Target>
 
-  <Target Name="_WasmGenerateRuntimeConfig" Condition="$(_RuntimeConfigJsonFileExistance)">
+  <Target Name="_WasmGenerateRuntimeConfig" Condition="Exists('$(_WasmRuntimeConfigFilePath)')">
     <PropertyGroup>
-      <ParsedRuntimeConfigFilePath>$([System.IO.Path]::GetDirectoryName($(_MainAssemblyPath)))\runtimeconfig.bin</ParsedRuntimeConfigFilePath>
+      <_ParsedRuntimeConfigFilePath>$([System.IO.Path]::GetDirectoryName($(_MainAssemblyPath)))\runtimeconfig.bin</_ParsedRuntimeConfigFilePath>
     </PropertyGroup>
 
     <ItemGroup>
-      <RuntimeConfigReservedProperties Include="RUNTIME_IDENTIFIER"/>
-      <RuntimeConfigReservedProperties Include="APP_CONTEXT_BASE_DIRECTORY"/>
+      <_RuntimeConfigReservedProperties Include="RUNTIME_IDENTIFIER"/>
+      <_RuntimeConfigReservedProperties Include="APP_CONTEXT_BASE_DIRECTORY"/>
     </ItemGroup>
 
     <!-- Parse *.runtimeconfig.json file -->
     <RuntimeConfigParserTask
         RuntimeConfigFile="$(_WasmRuntimeConfigFilePath)"
-        OutputFile="$(ParsedRuntimeConfigFilePath)"
-        RuntimeConfigReservedProperties="@(RuntimeConfigReservedProperties)">
+        OutputFile="$(_ParsedRuntimeConfigFilePath)"
+        RuntimeConfigReservedProperties="@(_RuntimeConfigReservedProperties)">
     </RuntimeConfigParserTask>
 
     <ItemGroup>
-      <WasmFilesToIncludeInFileSystem Include="$(ParsedRuntimeConfigFilePath)" />
+      <WasmFilesToIncludeInFileSystem Include="$(_ParsedRuntimeConfigFilePath)" />
     </ItemGroup>
   </Target>
 
