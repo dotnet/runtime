@@ -617,13 +617,18 @@ namespace Microsoft.WebAssembly.Diagnostics
         internal async Task<JToken> RuntimeGetPropertiesInternal(SessionId id, DotnetObjectId objectId, JToken args, CancellationToken token)
         {
             var accessorPropertiesOnly = false;
-            var ownProperties = false;
+            GetObjectCommandType objectValuesOpt = GetObjectCommandType.WithProperties;
             if (args != null)
             {
-                if (args["accessorPropertiesOnly"] != null)
-                    accessorPropertiesOnly = args["accessorPropertiesOnly"].Value<bool>();
-                if (args["ownProperties"] != null)
-                    ownProperties = args["ownProperties"].Value<bool>();
+                if (args["accessorPropertiesOnly"] != null && args["accessorPropertiesOnly"].Value<bool>())
+                {
+                    objectValuesOpt |= GetObjectCommandType.AccessorPropertiesOnly;
+                    accessorPropertiesOnly = true;
+                }
+                if (args["ownProperties"] != null && args["ownProperties"].Value<bool>())
+                {
+                    objectValuesOpt |= GetObjectCommandType.OwnProperties;
+                }
             }
             //Console.WriteLine($"RuntimeGetProperties - {args}");
             try {
@@ -639,7 +644,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                     case "array":
                         return await SdbHelper.GetArrayValues(id, int.Parse(objectId.Value), token);
                     case "object":
-                        return await SdbHelper.GetObjectValues(id, int.Parse(objectId.Value), withProperties: true, withSetter: false, accessorPropertiesOnly, ownProperties, fromDebuggerProxyAttribute: false, fromDebuggerDisplayAttribute: false, token);
+                        return await SdbHelper.GetObjectValues(id, int.Parse(objectId.Value), objectValuesOpt, token);
                     case "pointer":
                         return new JArray{await SdbHelper.GetPointerContent(id, int.Parse(objectId.Value), token)};
                     case "cfo_res":
@@ -911,7 +916,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                         string reason = "exception";
                         int object_id = retDebuggerCmdReader.ReadInt32();
                         var caught = retDebuggerCmdReader.ReadByte();
-                        var exceptionObject = await SdbHelper.GetObjectValues(sessionId, object_id, withProperties: true, withSetter: false, accessorPropertiesOnly: false, ownProperties: true, fromDebuggerProxyAttribute: false, fromDebuggerDisplayAttribute: false, token);
+                        var exceptionObject = await SdbHelper.GetObjectValues(sessionId, object_id, GetObjectCommandType.WithProperties | GetObjectCommandType.OwnProperties, token);
                         var exceptionObjectMessage = exceptionObject.FirstOrDefault(attr => attr["name"].Value<string>().Equals("message"));
                         var data = JObject.FromObject(new
                         {

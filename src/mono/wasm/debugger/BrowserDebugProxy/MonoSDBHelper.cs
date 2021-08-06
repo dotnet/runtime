@@ -50,6 +50,17 @@ namespace Microsoft.WebAssembly.Diagnostics
         MdtBaseType             = 0x72000000,       // Leave this on the high end value. This does not correspond to metadata table
     }
 
+    internal enum GetObjectCommandType
+    {
+        None = 0,
+        WithSetter = 1,
+        AccessorPropertiesOnly = 2,
+        OwnProperties = 4,
+        FromDebuggerProxyAttribute = 8,
+        FromDebuggerDisplayAttribute = 16,
+        WithProperties = 32
+    }
+
     internal enum CommandSet {
         Vm = 1,
         ObjectRef = 9,
@@ -1129,7 +1140,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                     var stringId = retDebuggerCmdReader.ReadInt32();
                     var dispAttrStr = await GetStringValue(sessionId, stringId, token);
                     ExecutionContext context = proxy.GetContext(sessionId);
-                    var objectValues = await GetObjectValues(sessionId, objectId, withProperties: true, withSetter: false, accessorPropertiesOnly: false, ownProperties: false, fromDebuggerProxyAttribute: false, fromDebuggerDisplayAttribute: true, token);
+                    var objectValues = await GetObjectValues(sessionId, objectId, GetObjectCommandType.WithProperties | GetObjectCommandType.FromDebuggerDisplayAttribute, token);
 
                     var thisObj = CreateJObject<string>("", "object", "", false, objectId:$"dotnet:object:{objectId}");
                     thisObj["name"] = "this";
@@ -1824,7 +1835,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                 retDebuggerCmdReader = await SendDebuggerAgentCommand<CmdFrame>(sessionId, CmdFrame.GetThis, commandParams, token);
                 retDebuggerCmdReader.ReadByte(); //ignore type
                 var objectId = retDebuggerCmdReader.ReadInt32();
-                var asyncLocals = await GetObjectValues(sessionId, objectId, withProperties: true, withSetter: false, accessorPropertiesOnly: false, ownProperties: false, fromDebuggerProxyAttribute: false, fromDebuggerDisplayAttribute: false, token);
+                var asyncLocals = await GetObjectValues(sessionId, objectId, GetObjectCommandType.WithProperties, token);
                 asyncLocals = new JArray(asyncLocals.Where( asyncLocal => !asyncLocal["name"].Value<string>().Contains("<>") || asyncLocal["name"].Value<string>().EndsWith("__this")));
                 foreach (var asyncLocal in asyncLocals)
                 {
@@ -2005,7 +2016,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                     }
                     var retMethod = await InvokeMethod(sessionId, invokeParams.ToArray(), methodId, "methodRet", token);
                     DotnetObjectId.TryParse(retMethod?["value"]?["objectId"]?.Value<string>(), out DotnetObjectId dotnetObjectId);
-                    var displayAttrs = await GetObjectValues(sessionId, int.Parse(dotnetObjectId.Value), withProperties: true, withSetter: false, accessorPropertiesOnly: false, ownProperties: false, fromDebuggerProxyAttribute: true, fromDebuggerDisplayAttribute: false, token);
+                    var displayAttrs = await GetObjectValues(sessionId, int.Parse(dotnetObjectId.Value), GetObjectCommandType.WithProperties | GetObjectCommandType.FromDebuggerProxyAttribute, token);
                     return displayAttrs;
                 }
             }
@@ -2016,10 +2027,10 @@ namespace Microsoft.WebAssembly.Diagnostics
             return null;
         }
 
-        public async Task<JArray> GetObjectValues(SessionId sessionId, int objectId, bool withProperties, bool withSetter, bool accessorPropertiesOnly, bool ownProperties, bool fromDebuggerProxyAttribute, bool fromDebuggerDisplayAttribute, CancellationToken token)
+        public async Task<JArray> GetObjectValues(SessionId sessionId, int objectId, GetObjectCommandType getCommandType, CancellationToken token)
         {
             var typeId = await GetTypeIdFromObject(sessionId, objectId, true, token);
-            if (!fromDebuggerDisplayAttribute)
+            if (!getCommandType.HasFlag(GetObjectCommandType.FromDebuggerDisplayAttribute))
             {
                 var debuggerProxy = await GetDebuggerProxyAttribute(sessionId, objectId, typeId[0], token);
                 if (debuggerProxy != null)
@@ -2045,9 +2056,9 @@ namespace Microsoft.WebAssembly.Diagnostics
             }
             for (int i = 0; i < typeId.Count; i++)
             {
-                if (!accessorPropertiesOnly)
+                if (!getCommandType.HasFlag(GetObjectCommandType.AccessorPropertiesOnly))
                 {
-                    var fields = await GetTypeFields(sessionId, typeId[i], fromDebuggerProxyAttribute, token);
+                    var fields = await GetTypeFields(sessionId, typeId[i], getCommandType.HasFlag(GetObjectCommandType.FromDebuggerProxyAttribute), token);
                     JArray objectFields = new JArray();
 
                     var commandParams = new MemoryStream();
@@ -2071,7 +2082,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                         if (ret.Where(attribute => attribute["name"].Value<string>().Equals(fieldValue["name"].Value<string>())).Any()) {
                             continue;
                         }
-                        if (withSetter)
+                        if (getCommandType.HasFlag(GetObjectCommandType.WithSetter))
                         {
                             var command_params_to_set = new MemoryStream();
                             var command_params_writer_to_set = new MonoBinaryWriter(command_params_to_set);
@@ -2091,12 +2102,12 @@ namespace Microsoft.WebAssembly.Diagnostics
                     }
                     ret = new JArray(ret.Union(objectFields));
                 }
-                if (!withProperties)
+                if (!getCommandType.HasFlag(GetObjectCommandType.WithProperties))
                     return ret;
                 var command_params_obj = new MemoryStream();
                 var commandParamsObjWriter = new MonoBinaryWriter(command_params_obj);
                 commandParamsObjWriter.WriteObj(new DotnetObjectId("object", $"{objectId}"), this);
-                var props = await CreateJArrayForProperties(sessionId, typeId[i], command_params_obj.ToArray(), ret, fromDebuggerProxyAttribute, $"dotnet:object:{objectId}", i == 0, token);
+                var props = await CreateJArrayForProperties(sessionId, typeId[i], command_params_obj.ToArray(), ret, getCommandType.HasFlag(GetObjectCommandType.FromDebuggerProxyAttribute), $"dotnet:object:{objectId}", i == 0, token);
                 ret = new JArray(ret.Union(props));
 
                 // ownProperties
@@ -2108,7 +2119,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                 /*if (accessorPropertiesOnly)
                     break;*/
             }
-            if (accessorPropertiesOnly)
+            if (getCommandType.HasFlag(GetObjectCommandType.AccessorPropertiesOnly))
             {
                 var retAfterRemove = new JArray();
                 List<List<FieldTypeClass>> allFields = new List<List<FieldTypeClass>>();
@@ -2144,7 +2155,7 @@ namespace Microsoft.WebAssembly.Diagnostics
 
         public async Task<JArray> GetObjectProxy(SessionId sessionId, int objectId, CancellationToken token)
         {
-            var ret = await GetObjectValues(sessionId, objectId, withProperties: false, withSetter: true, accessorPropertiesOnly: false, ownProperties: false, fromDebuggerProxyAttribute: false, fromDebuggerDisplayAttribute: false, token);
+            var ret = await GetObjectValues(sessionId, objectId, GetObjectCommandType.WithSetter, token);
             var typeIds = await GetTypeIdFromObject(sessionId, objectId, true, token);
             foreach (var typeId in typeIds)
             {
