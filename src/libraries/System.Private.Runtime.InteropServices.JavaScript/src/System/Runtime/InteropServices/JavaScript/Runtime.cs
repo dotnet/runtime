@@ -192,8 +192,8 @@ namespace System.Runtime.InteropServices.JavaScript
             GCHandle handle = (GCHandle)(IntPtr)gcHandle;
             lock (JSOwnedObjectLock) {
                 GCHandleFromJSOwnedObject.Remove(handle.Target!);
+                handle.Free();
             }
-            handle.Free();
         }
 
         public static int GetJSObjectId(object rawObj)
