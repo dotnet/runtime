@@ -1367,6 +1367,45 @@ namespace Microsoft.Extensions.Hosting.Internal
             }
         }
 
+        /// <summary>
+        /// Tests that when a BackgroundService is canceled when stopping the host,
+        /// no error is logged.
+        /// </summary>
+        [Fact]
+        public async Task HostNoErrorWhenServiceIsCanceledAsPartOfStop()
+        {
+            using TestEventListener listener = new TestEventListener();
+
+            using IHost host = CreateBuilder()
+                .ConfigureLogging(logging =>
+                {
+                    logging.AddEventSourceLogger();
+                })
+                .ConfigureServices(services =>
+                {
+                    services.AddHostedService<AsyncWaitingService>();
+                })
+                .Build();
+
+            host.Start();
+            await host.StopAsync();
+
+            EventWrittenEventArgs[] events =
+                listener.EventData.Where(
+                    e => e.EventSource.Name == "Microsoft-Extensions-Logging").ToArray();
+
+            foreach (EventWrittenEventArgs eventArg in events)
+            {
+                int levelIndex = eventArg.PayloadNames.IndexOf("Level");
+                LogLevel level = (LogLevel)eventArg.Payload[levelIndex];
+                Assert.True(level < LogLevel.Error);
+
+                int eventNameIndex = eventArg.PayloadNames.IndexOf("EventName");
+                string eventName = (string)eventArg.Payload[eventNameIndex];
+                Assert.NotEqual("BackgroundServiceFaulted", eventName);
+            }
+        }
+
         private IHostBuilder CreateBuilder(IConfiguration config = null)
         {
             return new HostBuilder().ConfigureHostConfiguration(builder => builder.AddConfiguration(config ?? new ConfigurationBuilder().Build()));
@@ -1511,6 +1550,19 @@ namespace Microsoft.Extensions.Hosting.Internal
                 await _executeDelayTask;
 
                 throw new Exception("Background Exception");
+            }
+        }
+
+        private class AsyncWaitingService : BackgroundService
+        {
+            public AsyncWaitingService() { }
+
+            protected override async Task ExecuteAsync(CancellationToken stoppingToken)
+            {
+                while (!stoppingToken.IsCancellationRequested)
+                {
+                    await Task.Delay(1000, stoppingToken);
+                }
             }
         }
     }

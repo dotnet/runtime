@@ -22,6 +22,7 @@ namespace Microsoft.Extensions.Hosting.Internal
         private readonly IHostEnvironment _hostEnvironment;
         private readonly PhysicalFileProvider _defaultProvider;
         private IEnumerable<IHostedService> _hostedServices;
+        private bool _stopping;
 
         public Host(IServiceProvider services,
                     IHostEnvironment hostEnvironment,
@@ -84,6 +85,13 @@ namespace Microsoft.Extensions.Hosting.Internal
             }
             catch (Exception ex)
             {
+                // When the host is being stopped, it cancels the background services.
+                // This isn't an error condition, so don't log it as an error.
+                if (_stopping && backgroundService.ExecuteTask.IsCanceled && ex is OperationCanceledException)
+                {
+                    return;
+                }
+
                 _logger.BackgroundServiceFaulted(ex);
                 if (_options.BackgroundServiceExceptionBehavior == BackgroundServiceExceptionBehavior.StopHost)
                 {
@@ -95,52 +103,60 @@ namespace Microsoft.Extensions.Hosting.Internal
 
         public async Task StopAsync(CancellationToken cancellationToken = default)
         {
-            _logger.Stopping();
-
-            using (var cts = new CancellationTokenSource(_options.ShutdownTimeout))
-            using (var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(cts.Token, cancellationToken))
+            try
             {
-                CancellationToken token = linkedCts.Token;
-                // Trigger IHostApplicationLifetime.ApplicationStopping
-                _applicationLifetime.StopApplication();
+                _stopping = true;
+                _logger.Stopping();
 
-                IList<Exception> exceptions = new List<Exception>();
-                if (_hostedServices != null) // Started?
+                using (var cts = new CancellationTokenSource(_options.ShutdownTimeout))
+                using (var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(cts.Token, cancellationToken))
                 {
-                    foreach (IHostedService hostedService in _hostedServices.Reverse())
+                    CancellationToken token = linkedCts.Token;
+                    // Trigger IHostApplicationLifetime.ApplicationStopping
+                    _applicationLifetime.StopApplication();
+
+                    IList<Exception> exceptions = new List<Exception>();
+                    if (_hostedServices != null) // Started?
                     {
-                        try
+                        foreach (IHostedService hostedService in _hostedServices.Reverse())
                         {
-                            await hostedService.StopAsync(token).ConfigureAwait(false);
+                            try
+                            {
+                                await hostedService.StopAsync(token).ConfigureAwait(false);
+                            }
+                            catch (Exception ex)
+                            {
+                                exceptions.Add(ex);
+                            }
                         }
-                        catch (Exception ex)
-                        {
-                            exceptions.Add(ex);
-                        }
+                    }
+
+                    // Fire IHostApplicationLifetime.Stopped
+                    _applicationLifetime.NotifyStopped();
+
+                    try
+                    {
+                        await _hostLifetime.StopAsync(token).ConfigureAwait(false);
+                    }
+                    catch (Exception ex)
+                    {
+                        exceptions.Add(ex);
+                    }
+
+                    if (exceptions.Count > 0)
+                    {
+                        var ex = new AggregateException("One or more hosted services failed to stop.", exceptions);
+                        _logger.StoppedWithException(ex);
+                        throw ex;
                     }
                 }
 
-                // Fire IHostApplicationLifetime.Stopped
-                _applicationLifetime.NotifyStopped();
-
-                try
-                {
-                    await _hostLifetime.StopAsync(token).ConfigureAwait(false);
-                }
-                catch (Exception ex)
-                {
-                    exceptions.Add(ex);
-                }
-
-                if (exceptions.Count > 0)
-                {
-                    var ex = new AggregateException("One or more hosted services failed to stop.", exceptions);
-                    _logger.StoppedWithException(ex);
-                    throw ex;
-                }
+                _logger.Stopped();
             }
-
-            _logger.Stopped();
+            finally
+            {
+                _stopping = false;
+            }
         }
 
         public void Dispose() => DisposeAsync().AsTask().GetAwaiter().GetResult();
