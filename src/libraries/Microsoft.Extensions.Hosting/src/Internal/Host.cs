@@ -22,7 +22,7 @@ namespace Microsoft.Extensions.Hosting.Internal
         private readonly IHostEnvironment _hostEnvironment;
         private readonly PhysicalFileProvider _defaultProvider;
         private IEnumerable<IHostedService> _hostedServices;
-        private bool _stopping;
+        private volatile bool _stopping;
 
         public Host(IServiceProvider services,
                     IHostEnvironment hostEnvironment,
