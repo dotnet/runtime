@@ -4,7 +4,6 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
-using System.Linq;
 using Microsoft.Extensions.Primitives;
 
 namespace Microsoft.Extensions.Options
@@ -34,14 +33,31 @@ namespace Microsoft.Extensions.Options
             _factory = factory;
             _cache = cache;
 
-            foreach (IOptionsChangeTokenSource<TOptions> source in (sources as IOptionsChangeTokenSource<TOptions>[] ?? sources.ToArray()))
+            void RegisterSource(IOptionsChangeTokenSource<TOptions> source)
             {
                 IDisposable registration = ChangeToken.OnChange(
-                      () => source.GetChangeToken(),
-                      (name) => InvokeChanged(name),
-                      source.Name);
+                          () => source.GetChangeToken(),
+                          (name) => InvokeChanged(name),
+                          source.Name);
 
                 _registrations.Add(registration);
+            }
+
+            // The default DI container uses arrays under the covers. Take advantage of this knowledge
+            // by checking for an array and enumerate over that, so we don't need to allocate an enumerator.
+            if (sources is IOptionsChangeTokenSource<TOptions>[] sourcesArray)
+            {
+                foreach (IOptionsChangeTokenSource<TOptions> source in sourcesArray)
+                {
+                    RegisterSource(source);
+                }
+            }
+            else
+            {
+                foreach (IOptionsChangeTokenSource<TOptions> source in sources)
+                {
+                    RegisterSource(source);
+                }
             }
         }
 
