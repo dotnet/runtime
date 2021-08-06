@@ -10,8 +10,7 @@ namespace System.Runtime.Versioning.Tests
         [Fact]
         public void RequiresPreviewFeaturesAttributeTest()
         {
-            var attribute = new RequiresPreviewFeaturesAttribute();
-            Assert.NotNull(attribute);
+            new RequiresPreviewFeaturesAttribute();
         }
 
         [Fact]
@@ -28,8 +27,8 @@ namespace System.Runtime.Versioning.Tests
         [InlineData("message")]
         public void Ctor_String_Message(string message)
         {
-            var attribute = new RequiresPreviewFeaturesAttribute(message) {};
-            Assert.Equal(message, attribute.Message);
+            var attribute = new RequiresPreviewFeaturesAttribute(message);
+            Assert.Same(message, attribute.Message);
             Assert.Null(attribute.Url);
         }
 
@@ -40,8 +39,8 @@ namespace System.Runtime.Versioning.Tests
         public void Ctor_String_Url(string message, string url)
         {
             var attribute = new RequiresPreviewFeaturesAttribute(message) { Url = url };
-            Assert.Equal(message, attribute.Message);
-            Assert.Equal(url, attribute.Url);
+            Assert.Same(message, attribute.Message);
+            Assert.Same(url, attribute.Url);
         }
     }
 }
