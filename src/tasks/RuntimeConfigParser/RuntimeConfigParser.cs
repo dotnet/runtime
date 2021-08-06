@@ -64,8 +64,9 @@ public class RuntimeConfigParserTask : Task
     }
 
     /// Reads a json file from the given path and extracts the "configProperties" key (assumed to be a string to string dictionary)
-    private bool ConvertInputToDictionary(string inputFilePath, ref Dictionary<string, string> result)
+    private bool TryConvertInputToDictionary(string inputFilePath, out Dictionary<string, string> result)
     {
+        result = null;
         var options = new JsonSerializerOptions {
             AllowTrailingCommas = true,
             ReadCommentHandling = JsonCommentHandling.Skip,
