@@ -26,4 +26,8 @@
     <ProjectReference Include="..\Ancillary.Interop\Ancillary.Interop.csproj" />
     <ProjectReference Include="..\DllImportGenerator\DllImportGenerator.csproj" />
   </ItemGroup>
+
+  <ItemGroup>
+	<None Include="$(RepoRoot)/NuGet.config" Link="NuGet.config" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
 </Project>
