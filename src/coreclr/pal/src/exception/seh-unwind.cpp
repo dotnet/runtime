@@ -130,7 +130,31 @@ enum
     ASSIGN_REG(X25)        \
     ASSIGN_REG(X26)        \
     ASSIGN_REG(X27)        \
-    ASSIGN_REG(X28)
+    ASSIGN_REG(X28)        \
+    ASSIGN_FP_REG(8)       \
+    ASSIGN_FP_REG(9)       \
+    ASSIGN_FP_REG(10)       \
+    ASSIGN_FP_REG(11)       \
+    ASSIGN_FP_REG(12)       \
+    ASSIGN_FP_REG(13)       \
+    ASSIGN_FP_REG(14)       \
+    ASSIGN_FP_REG(15)       \
+    ASSIGN_FP_REG(16)       \
+    ASSIGN_FP_REG(17)       \
+    ASSIGN_FP_REG(18)       \
+    ASSIGN_FP_REG(19)       \
+    ASSIGN_FP_REG(20)       \
+    ASSIGN_FP_REG(21)       \
+    ASSIGN_FP_REG(22)       \
+    ASSIGN_FP_REG(23)       \
+    ASSIGN_FP_REG(24)       \
+    ASSIGN_FP_REG(25)       \
+    ASSIGN_FP_REG(26)       \
+    ASSIGN_FP_REG(27)       \
+    ASSIGN_FP_REG(28)       \
+    ASSIGN_FP_REG(29)       \
+    ASSIGN_FP_REG(30)       \
+    ASSIGN_FP_REG(31)
 #elif (defined(HOST_UNIX) && defined(HOST_X86)) || (defined(HOST_WINDOWS) && defined(TARGET_X86))
 #define ASSIGN_UNWIND_REGS \
     ASSIGN_REG(Eip)        \
@@ -158,9 +182,14 @@ enum
 
 static void WinContextToUnwindContext(CONTEXT *winContext, unw_context_t *unwContext)
 {
+#if (defined(HOST_UNIX) && defined(HOST_ARM64)) || (defined(HOST_WINDOWS) && defined(TARGET_ARM64))
+    fpsimd_context* fp = GetNativeSigSimdContext(unwContext);
+#define ASSIGN_FP_REG(fp, reg) if (fp) fp->vregs[reg] = winContext->V[reg].Low;
+#endif
 #define ASSIGN_REG(reg) MCREG_##reg(unwContext->uc_mcontext) = winContext->reg;
     ASSIGN_UNWIND_REGS
 #undef ASSIGN_REG
+#undef ASSIGN_FP_REG
 }
 #else
 static void WinContextToUnwindContext(CONTEXT *winContext, unw_context_t *unwContext)
