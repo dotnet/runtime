@@ -50,7 +50,10 @@ public class RuntimeConfigParserTask : Task
 
         if (RuntimeConfigReservedProperties.Length != 0)
         {
-            CheckDuplicateProperties(configProperties, RuntimeConfigReservedProperties);
+            if (!CheckDuplicateProperties(configProperties, RuntimeConfigReservedProperties))
+            {
+                return false;
+            }
         }
 
         var blobBuilder = new BlobBuilder();
@@ -116,15 +119,20 @@ public class RuntimeConfigParserTask : Task
         }
     }
 
-    private void CheckDuplicateProperties(IReadOnlyDictionary<string, string> properties, ITaskItem[] keys)
+    private bool CheckDuplicateProperties(IReadOnlyDictionary<string, string> properties, ITaskItem[] keys)
     {
+        var succeed = true;
+
         foreach (var key in keys)
         {
             if (properties.ContainsKey(key.ItemSpec))
             {
                 Log.LogError($"Property '{key}' can't be set by the user!");
+                succeed = false;
             }
         }
+
+        return succeed;
     }
 }
 
