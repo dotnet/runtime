@@ -14196,6 +14196,7 @@ void allocator::thread_sip_fl (heap_segment* region)
     if (!region_fl_head)
     {
         assert (!region_fl_tail);
+        assert (region->free_list_size == 0);
         return;
     }
 
@@ -14225,12 +14226,16 @@ void allocator::thread_sip_fl (heap_segment* region)
             heap_segment_gen_num (region), heap_segment_mem (region), gen_number));
         // If we have a bucketed free list we'd need to go through the region's free list.
         uint8_t* region_fl_item = region_fl_head;
+        size_t total_free_size = 0;
         while (region_fl_item)
         {
             uint8_t* next_fl_item = free_list_slot (region_fl_item);
-            thread_item (region_fl_item, size (region_fl_item));
+            size_t size_item = size (region_fl_item);
+            thread_item (region_fl_item, size_item);
+            total_free_size += size_item;
             region_fl_item = next_fl_item;
         }
+        assert (total_free_size == region->free_list_size);
     }
 }
 #endif //USE_REGIONS
@@ -14890,6 +14895,7 @@ BOOL gc_heap::a_fit_free_list_p (int gen_number,
                     limit += remain_size;
                 }
                 generation_free_list_space (gen) -= limit;
+                assert ((ptrdiff_t)generation_free_list_space (gen) >= 0);
 
                 adjust_limit_clr (free_list, limit, size, acontext, flags, 0, align_const, gen_number);
 
@@ -14904,6 +14910,7 @@ BOOL gc_heap::a_fit_free_list_p (int gen_number,
 
                 gen_allocator->unlink_item (a_l_idx, free_list, prev_free_item, FALSE);
                 generation_free_list_space (gen) -= free_list_size;
+                assert ((ptrdiff_t)generation_free_list_space (gen) >= 0);
             }
             else
             {
@@ -15089,6 +15096,7 @@ BOOL gc_heap::a_fit_free_list_uoh_p (size_t size,
                     generation_free_obj_space (gen) += remain_size;
                 }
                 generation_free_list_space (gen) -= free_list_size;
+                assert ((ptrdiff_t)generation_free_list_space (gen) >= 0);
                 generation_free_list_allocated (gen) += limit;
 
                 dprintf (3, ("found fit on loh at %Ix", free_list));
@@ -17251,6 +17259,7 @@ uint8_t* gc_heap::allocate_in_older_generation (generation* gen, size_t size,
 
                         gen_allocator->unlink_item_no_undo_added (a_l_idx, free_list, prev_free_item);
                         generation_free_list_space (gen) -= free_list_size;
+                        assert ((ptrdiff_t)generation_free_list_space (gen) >= 0);
 
                         remove_gen_free (gen->gen_num, free_list_size);
 
@@ -17273,6 +17282,7 @@ uint8_t* gc_heap::allocate_in_older_generation (generation* gen, size_t size,
 
                         gen_allocator->unlink_item_no_undo_added (a_l_idx, free_list, prev_free_item);
                         generation_free_list_space (gen) -= free_list_size;
+                        assert ((ptrdiff_t)generation_free_list_space (gen) >= 0);
 
                         remove_gen_free (gen->gen_num, free_list_size);
                     }
@@ -17302,6 +17312,7 @@ uint8_t* gc_heap::allocate_in_older_generation (generation* gen, size_t size,
 
                     gen_allocator->unlink_item (a_l_idx, free_list, prev_free_item, use_undo_p);
                     generation_free_list_space (gen) -= free_list_size;
+                    assert ((ptrdiff_t)generation_free_list_space (gen) >= 0);
                     remove_gen_free (gen->gen_num, free_list_size);
 
 #ifdef DOUBLY_LINKED_FL
@@ -17331,6 +17342,7 @@ uint8_t* gc_heap::allocate_in_older_generation (generation* gen, size_t size,
 
                     gen_allocator->unlink_item (a_l_idx, free_list, prev_free_item, FALSE);
                     generation_free_list_space (gen) -= free_list_size;
+                    assert ((ptrdiff_t)generation_free_list_space (gen) >= 0);
                     remove_gen_free (gen->gen_num, free_list_size);
 
 #ifdef DOUBLY_LINKED_FL
@@ -28603,7 +28615,10 @@ heap_segment* gc_heap::find_first_valid_region (heap_segment* region, bool compa
         dprintf (REGIONS_LOG, ("threading SIP region %Ix surv %Id onto gen%d",
             heap_segment_mem (current_region), heap_segment_survived (current_region), gen_num));
 
-        generation_allocator (generation_of (gen_num))->thread_sip_fl (current_region);
+        generation* gen = generation_of (gen_num);
+        generation_allocator (gen)->thread_sip_fl (current_region);
+        generation_free_list_space (gen) += heap_segment_free_list_size (current_region);
+        generation_free_obj_space (gen) += heap_segment_free_obj_size (current_region);
     }
 
     // Take this opportunity to make sure all the regions left with flags only for this GC are reset.
@@ -28945,7 +28960,6 @@ bool gc_heap::should_sweep_in_plan (heap_segment* region)
     return sip_p;
 }
 
-// TODO: we need to update some accounting here.
 void heap_segment::thread_free_obj (uint8_t* obj, size_t s)
 {
     //dprintf (REGIONS_LOG, ("threading SIP free obj %Ix-%Ix(%Id)", obj, (obj + s), s));
@@ -28964,6 +28978,12 @@ void heap_segment::thread_free_obj (uint8_t* obj, size_t s)
         }
 
         free_list_tail = obj;
+
+        free_list_size += s;
+    }
+    else
+    {
+        free_obj_size += s;
     }
 }
 
@@ -39623,6 +39643,7 @@ void gc_heap::background_sweep()
                             {
                                 generation_allocator (gen)->unlink_item_no_undo (o, size_o);
                                 generation_free_list_space (gen) -= size_o;
+                                assert ((ptrdiff_t)generation_free_list_space (gen) >= 0);
                                 generation_free_obj_space (gen) += size_o;
 
                                 dprintf (3333, ("[h%d] gen2F-: %Ix->%Ix(%Id) FL: %Id",

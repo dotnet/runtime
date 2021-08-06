@@ -5508,6 +5508,8 @@ public:
     // We may keep per region free list later which requires more work.
     uint8_t*        free_list_head;
     uint8_t*        free_list_tail;
+    size_t          free_list_size;
+    size_t          free_obj_size;
 
     // Fields that we need to provide in response to a
     // random address that might land anywhere on the region.
@@ -5528,6 +5530,8 @@ public:
     {
         free_list_head = 0;
         free_list_tail = 0;
+        free_list_size = 0;
+        free_obj_size = 0;
     }
 
     void thread_free_obj (uint8_t* obj, size_t s);
@@ -5916,6 +5920,16 @@ inline
 uint8_t* heap_segment_free_list_tail (heap_segment* inst)
 {
     return inst->free_list_tail;
+}
+inline
+size_t heap_segment_free_list_size (heap_segment* inst)
+{
+    return inst->free_list_size;
+}
+inline
+size_t heap_segment_free_obj_size (heap_segment* inst)
+{
+    return inst->free_obj_size;
 }
 inline
 bool heap_segment_demoted_p (heap_segment* inst)
