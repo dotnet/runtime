@@ -21,7 +21,7 @@ namespace System.Text.Json.SourceGeneration
 
         public List<TypeGenerationSpec> RootSerializableTypes { get; } = new();
 
-        public HashSet<TypeGenerationSpec>? NullableUnderlyingTypes { get; } = new();
+        public HashSet<TypeGenerationSpec>? ImplicitlyRegisteredTypes { get; } = new();
 
         public List<string> ContextClassDeclarationList { get; init; }
 

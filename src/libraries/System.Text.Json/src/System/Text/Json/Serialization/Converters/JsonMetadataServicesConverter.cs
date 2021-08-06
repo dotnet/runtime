@@ -19,9 +19,6 @@ namespace System.Text.Json.Serialization.Converters
 
         private readonly ConverterStrategy _converterStrategy;
 
-        private readonly Type? _keyType;
-        private readonly Type? _elementType;
-
         private JsonConverter<T>? _converter;
 
         // A backing converter for when fast-path logic cannot be used.
@@ -32,33 +29,39 @@ namespace System.Text.Json.Serialization.Converters
                 _converter ??= _converterCreator();
                 Debug.Assert(_converter != null);
                 Debug.Assert(_converter.ConverterStrategy == _converterStrategy);
-                Debug.Assert(_converter.KeyType == _keyType);
-                Debug.Assert(_converter.ElementType == _elementType);
                 return _converter;
             }
         }
 
         internal override ConverterStrategy ConverterStrategy => _converterStrategy;
 
-        internal override Type? KeyType => _keyType;
+        internal override Type? KeyType => Converter.KeyType;
 
-        internal override Type? ElementType => _elementType;
+        internal override Type? ElementType => Converter.ElementType;
 
-        public JsonMetadataServicesConverter(Func<JsonConverter<T>> converterCreator, ConverterStrategy converterStrategy, Type? keyType, Type? elementType)
+        internal override bool ConstructorIsParameterized => Converter.ConstructorIsParameterized;
+
+        public JsonMetadataServicesConverter(Func<JsonConverter<T>> converterCreator, ConverterStrategy converterStrategy)
         {
             _converterCreator = converterCreator ?? throw new ArgumentNullException(nameof(converterCreator));
             _converterStrategy = converterStrategy;
-            _keyType = keyType;
-            _elementType = elementType;
         }
 
         internal override bool OnTryRead(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options, ref ReadStack state, out T? value)
         {
             JsonTypeInfo jsonTypeInfo = state.Current.JsonTypeInfo;
 
-            if (_converterStrategy == ConverterStrategy.Object && jsonTypeInfo.PropertyCache == null)
+            if (_converterStrategy == ConverterStrategy.Object)
             {
-                jsonTypeInfo.InitializePropCache();
+                if (jsonTypeInfo.PropertyCache == null)
+                {
+                    jsonTypeInfo.InitializePropCache();
+                }
+
+                if (jsonTypeInfo.ParameterCache == null && jsonTypeInfo.IsObjectWithParameterizedCtor)
+                {
+                    jsonTypeInfo.InitializeParameterCache();
+                }
             }
 
             return Converter.OnTryRead(ref reader, typeToConvert, options, ref state, out value);
