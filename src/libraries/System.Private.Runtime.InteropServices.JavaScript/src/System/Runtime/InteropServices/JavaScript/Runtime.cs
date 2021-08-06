@@ -140,26 +140,29 @@ namespace System.Runtime.InteropServices.JavaScript
         public static int CreateTaskSource()
         {
             var tcs= new TaskCompletionSource<object>();
-            return GetJSOwnedObjectHandle(tcs);
+            return GetJSOwnedObjectGCHandle(tcs);
         }
 
-        public static void SetTaskSourceResult(int tcsGCHhanle, object result)
+        public static void SetTaskSourceResult(int tcsGCHandle, object result)
         {
-            GCHandle handle = (GCHandle)(IntPtr)tcsGCHhanle;
+            GCHandle handle = (GCHandle)(IntPtr)tcsGCHandle;
+            // this is JS owned Normal handle. We always have a Target
             TaskCompletionSource<object> tcs = (TaskCompletionSource<object>)handle.Target!;
             tcs.SetResult(result);
         }
 
-        public static void SetTaskSourceFailure(int tcsGCHhanle, string reason)
+        public static void SetTaskSourceFailure(int tcsGCHandle, string reason)
         {
-            GCHandle handle = (GCHandle)(IntPtr)tcsGCHhanle;
+            GCHandle handle = (GCHandle)(IntPtr)tcsGCHandle;
+            // this is JS owned Normal handle. We always have a Target
             TaskCompletionSource<object> tcs = (TaskCompletionSource<object>)handle.Target!;
             tcs.SetException(new JSException(reason));
         }
 
-        public static object GetTaskSourceTask(int tcsGCHhanle)
+        public static object GetTaskSourceTask(int tcsGCHandle)
         {
-            GCHandle handle = (GCHandle)(IntPtr)tcsGCHhanle;
+            GCHandle handle = (GCHandle)(IntPtr)tcsGCHandle;
+            // this is JS owned Normal handle. We always have a Target
             TaskCompletionSource<object> tcs = (TaskCompletionSource<object>)handle.Target!;
             return tcs.Task;
         }
@@ -171,7 +174,7 @@ namespace System.Runtime.InteropServices.JavaScript
         //  strong references, allowing the managed object to be collected.
         // This ensures that things like delegates and promises will never 'go away' while JS
         //  is expecting to be able to invoke or await them.
-        public static int GetJSOwnedObjectHandle (object o) {
+        public static int GetJSOwnedObjectGCHandle (object o) {
             if (o == null)
                 return 0;
 

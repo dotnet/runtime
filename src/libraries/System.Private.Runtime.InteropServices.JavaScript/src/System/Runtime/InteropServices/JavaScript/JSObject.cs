@@ -80,7 +80,7 @@ namespace System.Runtime.InteropServices.JavaScript
                 if (options?.Signal != null)
                     throw new NotImplementedException("EventListenerOptions.Signal");
 
-                var jsfunc = Runtime.GetJSOwnedObjectHandle(listener);
+                var jsfunc = Runtime.GetJSOwnedObjectGCHandle(listener);
                 // int exception;
                 if (options.HasValue) {
                     // TODO: Optimize this
@@ -107,7 +107,7 @@ namespace System.Runtime.InteropServices.JavaScript
         {
             if (listener == null)
                 return;
-            var jsfunc = Runtime.GetJSOwnedObjectHandle(listener);
+            var jsfunc = Runtime.GetJSOwnedObjectGCHandle(listener);
             RemoveEventListener(name, jsfunc, options);
         }
 

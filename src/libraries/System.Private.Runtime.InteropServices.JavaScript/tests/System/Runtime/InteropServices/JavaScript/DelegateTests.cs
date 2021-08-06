@@ -199,6 +199,37 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         [Fact]
         public static void DispatchToDelegate()
         {
+            var factory = new Function(@"return {
+                callback: null,
+                eventFactory:function(data){
+                    return {
+                        data:data
+                    };
+                },
+                fireEvent: function (evt) {
+                    this.callback(evt);
+                }
+            };");
+            var dispatcher = (JSObject)factory.Call();
+            var temp = new bool[2];
+            Action<JSObject> cb = (JSObject envt) =>
+            {
+                var data = (int)envt.GetObjectProperty("data");
+                temp[data] = true;
+            };
+            dispatcher.SetObjectProperty("callback", cb);
+            var evnt0 = dispatcher.Invoke("eventFactory", 0);
+            var evnt1 = dispatcher.Invoke("eventFactory", 1);
+            dispatcher.Invoke("fireEvent", evnt0);
+            dispatcher.Invoke("fireEvent", evnt0);
+            dispatcher.Invoke("fireEvent", evnt1);
+            Assert.True(temp[0]);
+            Assert.True(temp[1]);
+        }
+
+        [Fact]
+        public static void EventsAreNotCollected()
+        {
             const int attempts = 100; // we fire 100 events in a loop, to try that it's GC same
             var factory = new Function(@"return {
                 callback: null,
@@ -219,26 +250,21 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
                 temp[data] = true;
             };
             dispatcher.SetObjectProperty("callback", cb);
-            var evnt0 = dispatcher.Invoke("eventFactory", 0);
-            var evnt1 = dispatcher.Invoke("eventFactory", 1);
-            dispatcher.Invoke("fireEvent", evnt0);
-            dispatcher.Invoke("fireEvent", evnt0);
-            dispatcher.Invoke("fireEvent", evnt1);
-            Assert.True(temp[0]);
-            Assert.True(temp[1]);
 
+            var evnt = dispatcher.Invoke("eventFactory", 0);
             for (int i = 0; i < attempts; i++)
             {
                 var evnti = dispatcher.Invoke("eventFactory", i);
                 dispatcher.Invoke("fireEvent", evnti);
+                dispatcher.Invoke("fireEvent", evnt);
                 Runtime.InvokeJS("if (gc) gc();");// needs v8 flag --expose-gc
             }
         }
 
+
         [Fact]
         public static void NullDelegate()
         {
-            var tcs = new TaskCompletionSource<int>();
             var factory = new Function("delegate", "callback", @"
                 callback(delegate);
             ");
@@ -248,7 +274,6 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             {
                 check = data;
             };
-            Assert.Null(check);
             factory.Call(null, null, callback);
             Assert.Null(check);
         }
@@ -260,7 +285,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
                 return new Promise((resolve, reject) => {
                   setTimeout(() => {
                     resolve('foo');
-                  }, 300);
+                  }, 10);
                 });");
 
             var promise = (Task<object>)factory.Call();
@@ -279,14 +304,13 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
                 return new Promise((resolve, reject) => {
                   setTimeout(() => {
                     resolve({foo:'bar'});
-                  }, 300);
+                  }, 10);
                 });");
 
                 var promise = (Task<object>)factory.Call();
                 var value = (JSObject)await promise;
 
                 Assert.Equal("bar", value.GetObjectProperty("foo"));
-
                 Runtime.InvokeJS("if (gc) gc();");// needs v8 flag --expose-gc
             }
         }
@@ -298,7 +322,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
                 return new Promise((resolve, reject) => {
                   setTimeout(() => {
                     reject('fail');
-                  }, 300);
+                  }, 10);
                 });");
 
             var promise = (Task<object>)factory.Call();
@@ -314,7 +338,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
                 return new Promise((resolve, reject) => {
                   setTimeout(() => {
                     reject(new Error('fail'));
-                  }, 300);
+                  }, 10);
                 });");
 
             var promise = (Task<object>)factory.Call();
@@ -324,7 +348,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         }
 
 
-        [ActiveIssue("not implemented")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/56963")]
         [Fact]
         public static void RoundtripPromise()
         {
@@ -333,7 +357,6 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
                 return {
                     dummy:dummy,
                     check:(promise)=>{
-                        console.log(JSON.stringify(promise));
                         return promise===dummy ? 1:0;
                     }
                 }");
@@ -361,11 +384,14 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             {
                 check = data;
             };
-            var promise = (Task<object>)factory.Call(null, tcs.Task, callback);
-            Assert.Equal(0, check);
+            Task<int> task = tcs.Task;
+            // we are testing that Task is marshaled as thenable
+            var promise = (Task<object>)factory.Call(null, task, callback);
             tcs.SetResult(1);
+            // the result value is not applied until we await the promise
             Assert.Equal(0, check);
             await promise;
+            // but it's set after we do
             Assert.Equal(1, check);
         }
 
@@ -400,17 +426,16 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
                 callback(task);
             ");
 
-            Task check = null;
+            Task check = Task.FromResult(1);
             Action<Task> callback = (Task data) =>
             {
                 check = data;
             };
-            Assert.Null(check);
             factory.Call(null, null, callback);
             Assert.Null(check);
         }
 
-        [ActiveIssue("not implemented")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/56963")]
         [Fact]
         public static void RoundtripTask()
         {

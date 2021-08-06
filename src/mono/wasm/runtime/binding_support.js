@@ -123,7 +123,7 @@ var BindingSupportLib = {
 
 			this._bind_js_obj = bind_runtime_method ("BindJSObject", "iii");
 			this._bind_core_clr_obj = bind_runtime_method ("BindCoreCLRObject", "ii");
-			this._alloc_gc_handle = bind_runtime_method ("GetJSOwnedObjectHandle", "m");
+			this._get_js_owned_object_gc_handle = bind_runtime_method ("GetJSOwnedObjectGCHandle", "m");
 			this._get_js_id = bind_runtime_method ("GetJSObjectId", "m");
 			this._get_raw_mono_obj = bind_runtime_method ("GetDotNetObject", "ii!");
 
@@ -161,10 +161,10 @@ var BindingSupportLib = {
 		},
 
 		_js_owned_object_finalized: function (gc_handle) {
-			// The JS function associated with this gc_handle has been collected by the JS GC.
+			// The JS object associated with this gc_handle has been collected by the JS GC.
 			// As such, it's not possible for this gc_handle to be invoked by JS anymore, so
 			//  we can release the tracking weakref (it's null now, by definition),
-			//  and tell the C# side to stop holding a reference to the managed delegate.
+			//  and tell the C# side to stop holding a reference to the managed object.
 			this._js_owned_object_table.delete(gc_handle);
 			this.release_js_owned_object_by_handle(gc_handle);
 		},
@@ -191,8 +191,9 @@ var BindingSupportLib = {
 			var thenable_js_handle = this.mono_wasm_free_list.length ? this.mono_wasm_free_list.pop() : this.mono_wasm_ref_counter++;
 			this.mono_wasm_object_registry[thenable_js_handle] = thenable;
 
-			// TODO optimization: return the tcs.Task on the same call
-			// note that we do not implement promise/task roundtrip
+			// Note that we do not implement promise/task roundtrip. 
+			// With more complexity we could recover original instance when this Task is marshaled back to JS.
+			// TODO optimization: return the tcs.Task on this same call instead of get_tcs_task
 			const tcs_gc_handle = this.create_tcs();
 			thenable.then ((result) => {
 				this.set_tcs_result(tcs_gc_handle, result);
@@ -220,7 +221,7 @@ var BindingSupportLib = {
 				return null;
 
 			// get strong reference to Task
-			const gc_handle = this._alloc_gc_handle(root.value);
+			const gc_handle = this._get_js_owned_object_gc_handle(root.value);
 
 			// see if we have js owned instance for this gc_handle already
 			var result = this._lookup_js_owned_object(gc_handle);
@@ -230,6 +231,7 @@ var BindingSupportLib = {
 
 				var cont_obj = null;
 				// note that we do not implement promise/task roundtrip
+				// With more complexity we could recover original instance when this promised is marshaled back to C#.
 				var result = new Promise (function (resolve, reject) {
 					cont_obj = {
 						resolve: resolve,
@@ -262,7 +264,7 @@ var BindingSupportLib = {
 			// otherwise this is C# only object
 	
 			// get strong reference to Object
-			const gc_handle = this._alloc_gc_handle(root.value);
+			const gc_handle = this._get_js_owned_object_gc_handle(root.value);
 
 			// see if we have js owned instance for this gc_handle already
 			var result = this._lookup_js_owned_object(gc_handle);
@@ -290,7 +292,7 @@ var BindingSupportLib = {
 				return null;
 
 			// get strong reference to the Delegate
-			const gc_handle = this._alloc_gc_handle(root.value);
+			const gc_handle = this._get_js_owned_object_gc_handle(root.value);
 			return this._wrap_delegate_gc_handle_as_function(gc_handle);
 		},
 
@@ -307,7 +309,8 @@ var BindingSupportLib = {
 					const delegateRoot = MONO.mono_wasm_new_root (BINDING.wasm_get_raw_obj(gc_handle, false));
 					try {
 						if (typeof result.__mono_delegate_invoke__ === "undefined")
-						result.__mono_delegate_invoke__ = BINDING.mono_wasm_get_delegate_invoke(delegateRoot.value);
+							result.__mono_delegate_invoke__ = BINDING.mono_wasm_get_delegate_invoke(delegateRoot.value);
+						
 						if (!result.__mono_delegate_invoke__)
 							throw new Error("System.Delegate Invoke method can not be resolved.");
 		
@@ -1658,7 +1661,7 @@ var BindingSupportLib = {
 					obj.__mono_js_handle__ = undefined;
 				}
 
-				delete BINDING.mono_wasm_object_registry[js_handle];
+				BINDING.mono_wasm_object_registry[js_handle] = undefined;
 				BINDING.mono_wasm_free_list.push(js_handle);
 			}
 			return obj;

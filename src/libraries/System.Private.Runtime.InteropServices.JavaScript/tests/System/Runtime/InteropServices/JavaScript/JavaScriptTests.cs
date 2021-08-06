@@ -293,12 +293,31 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             var evnt0 = obj.Invoke("eventFactory", 0);
             var evnt1 = obj.Invoke("eventFactory", 1);
             obj.Invoke("fireEvent", "test", evnt0);
-            Runtime.InvokeJS("if (gc) gc();");// needs v8 flag --expose-gc
-            GC.Collect();
-            obj.Invoke("fireEvent", "test", evnt0);
             obj.Invoke("fireEvent", "test", evnt1);
             Assert.True(temp[0]);
             Assert.True(temp[1]);
+        }
+
+        [Fact]
+        public static void EventsAreNotCollected()
+        {
+            const int attempts = 100; // we fire 100 events in a loop, to try that it's GC same
+            var temp = new bool[100];
+            var obj = SetupListenerTest();
+            obj.AddEventListener("test", (JSObject envt) => {
+                var data = (int)envt.GetObjectProperty("data");
+                temp[data] = true;
+            });
+            var evnt = obj.Invoke("eventFactory", 0);
+            for (int i = 0; i < attempts; i++)
+            {
+                var evnti = obj.Invoke("eventFactory", 0);
+                obj.Invoke("fireEvent", "test", evnt);
+                obj.Invoke("fireEvent", "test", evnti);
+                // we are trying to test that managed side doesn't lose strong reference to evnt instance
+                Runtime.InvokeJS("if (gc) gc();");// needs v8 flag --expose-gc
+                GC.Collect();
+            }
         }
 
         [Fact]
