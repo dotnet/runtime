@@ -89,7 +89,7 @@ namespace DebuggerTests.AsyncTests
                     Console.WriteLine ($"t2: {t2.Status}, str: {str}, {dt1}, {dt0}");//this, t2, dt1, str, dt0
                 });
             });
-            Console.WriteLine ($"done with this metho d");
+            Console.WriteLine ($"done with this method");
         }
 
     }
