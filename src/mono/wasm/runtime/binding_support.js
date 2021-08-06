@@ -142,7 +142,6 @@ var BindingSupportLib = {
 			this.create_date_time = get_method ("CreateDateTime");
 			this.create_uri = get_method ("CreateUri");
 
-			this.safehandle_release = get_method ("SafeHandleRelease");
 			this.safehandle_get_handle = get_method ("SafeHandleGetHandle");
 			this.safehandle_release_by_handle = get_method ("SafeHandleReleaseByHandle");
 			this.release_js_owned_object_by_handle = bind_runtime_method ("ReleaseJSOwnedObjectByHandle", "i");
@@ -549,7 +548,7 @@ var BindingSupportLib = {
 		_unbox_safehandle_root: function (root) {
 			var addRef = true;
 			var js_handle = this.call_method(this.safehandle_get_handle, null, "mi", [ root.value, addRef ]);
-			var requiredObject = BINDING.mono_wasm_get_jsobj_from_js_handle (js_handle);
+			var js_obj = BINDING.mono_wasm_get_jsobj_from_js_handle (js_handle);
 			if (addRef)
 			{
 				if (typeof this.mono_wasm_owned_objects_LMF === "undefined")
@@ -557,7 +556,7 @@ var BindingSupportLib = {
 
 				this.mono_wasm_owned_objects_LMF.push(js_handle);
 			}
-			return requiredObject;
+			return js_obj;
 		},
 
 		_unbox_mono_obj_root_with_known_nonprimitive_type: function (root, type) {
