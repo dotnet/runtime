@@ -51,7 +51,7 @@ public class RuntimeConfigParserTask : Task
 
         if (RuntimeConfigReservedProperties.Length != 0)
         {
-            if (!CheckDuplicateProperties(configProperties, RuntimeConfigReservedProperties))
+            if (!CheckReservedProperties(configProperties, RuntimeConfigReservedProperties))
             {
                 return false;
             }
@@ -118,7 +118,7 @@ public class RuntimeConfigParserTask : Task
         }
     }
 
-    private bool CheckDuplicateProperties(IReadOnlyDictionary<string, string> properties, ITaskItem[] keys)
+    private bool CheckReservedProperties(IReadOnlyDictionary<string, string> properties, ITaskItem[] keys)
     {
         var succeed = true;
 
