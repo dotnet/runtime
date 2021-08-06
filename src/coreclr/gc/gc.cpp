@@ -11948,7 +11948,7 @@ void gc_heap::distribute_free_regions()
 
                 if (kind == basic_free_region)
                 {
-                    assert (global_regions_to_decommit[kind].get_num_free_regions() == num_regions_to_decommit[kind]);
+                    assert (global_regions_to_decommit[kind].get_num_free_regions() == (size_t)num_regions_to_decommit[kind]);
                 }
                 else
                 {
