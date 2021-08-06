@@ -6482,7 +6482,7 @@ mono_profiler_push_gc_heap_collect_param_request_value (const EventFilterDescrip
 	if (!_ep_rt_mono_profiler_gc_heap_collect_request_params)
 		_ep_rt_mono_profiler_gc_heap_collect_request_params = g_queue_new ();
 	if (_ep_rt_mono_profiler_gc_heap_collect_request_params)
-		g_queue_push_tail (_ep_rt_mono_profiler_gc_heap_collect_request_params, ep_rt_utf8_string_dup (value ? value : ""));
+		g_queue_push_tail (_ep_rt_mono_profiler_gc_heap_collect_request_params, (gpointer)ep_rt_utf8_string_dup (value ? value : ""));
 }
 
 static
@@ -6503,10 +6503,10 @@ mono_profiler_get_gc_heap_collect_param_request_value (void)
 {
 	ep_rt_spin_lock_requires_lock_held (&_ep_rt_mono_profiler_gc_state_lock);
 
-	const ep_char8_t *value = NULL;
+	ep_char8_t *value = NULL;
 	if (_ep_rt_mono_profiler_gc_heap_collect_request_params && !g_queue_is_empty (_ep_rt_mono_profiler_gc_heap_collect_request_params)) {
 		value = (ep_char8_t *)g_queue_pop_head (_ep_rt_mono_profiler_gc_heap_collect_request_params);
-		g_queue_push_head (_ep_rt_mono_profiler_gc_heap_collect_request_params, value);
+		g_queue_push_head (_ep_rt_mono_profiler_gc_heap_collect_request_params, (gpointer)value);
 	}
 	return value ? value : "";
 }
