@@ -1710,38 +1710,45 @@ namespace Microsoft.WebAssembly.Diagnostics
             return retDebuggerCmdReader.ReadByte() == 1 ; //token
         }
 
-        public async Task<JArray> GetHoistedLocalVariables(SessionId sessionId, List<int> objectAlreadyRead, JArray asyncLocals, CancellationToken token)
+        public async Task<JArray> GetHoistedLocalVariables(SessionId sessionId, int objectId, JArray asyncLocals, CancellationToken token)
         {
             JArray asyncLocalsFull = new JArray();
+            List<int> objectsAlreadyRead = new();
+            objectsAlreadyRead.Add(objectId);
             foreach (var asyncLocal in asyncLocals)
             {
-                if (asyncLocal["name"].Value<string>().EndsWith("__this"))
+                var fieldName = asyncLocal["name"].Value<string>();
+                Console.WriteLine($"olha aqui thays {fieldName}");
+                if (fieldName.EndsWith("__this"))
                 {
                     asyncLocal["name"] = "this";
                     asyncLocalsFull.Add(asyncLocal);
                 }
-                else if (asyncLocal["name"].Value<string>().StartsWith("<>8__") ||
-                        asyncLocal["name"].Value<string>().StartsWith("<>f__ref") ||
-                        asyncLocal["name"].Value<string>().StartsWith("$locvar") ||
-                        asyncLocal["name"].Value<string>().StartsWith("CS$<>")) //same code that has on debugger-libs
+                else if (fieldName.StartsWith("<>8__") ||
+                        fieldName.StartsWith("<>f__ref") ||
+                        fieldName.StartsWith("$locvar") ||
+                        fieldName.StartsWith("CS$<>")) //same code that has on debugger-libs
                 {
-                    DotnetObjectId.TryParse(asyncLocal?["value"]?["objectId"]?.Value<string>(), out DotnetObjectId dotnetObjectId);
-                    int objectIdToGetInfo = int.Parse(dotnetObjectId.Value);
-                    if (!objectAlreadyRead.Contains(objectIdToGetInfo))
+                    if (DotnetObjectId.TryParse(asyncLocal?["value"]?["objectId"]?.Value<string>(), out DotnetObjectId dotnetObjectId))
                     {
-                        objectAlreadyRead.Add(objectIdToGetInfo);
-                        var asyncLocalsFromObject = await GetObjectValues(sessionId, objectIdToGetInfo, true, false, false, false, token);
-                        var hoistedLocalVariable = await GetHoistedLocalVariables(sessionId, objectAlreadyRead, asyncLocalsFromObject, token);
-                        asyncLocalsFull = new JArray(asyncLocalsFull.Union(hoistedLocalVariable));
+                        if (int.TryParse(dotnetObjectId.Value, out int objectIdToGetInfo))
+                        {
+                            if (!objectsAlreadyRead.Contains(objectIdToGetInfo))
+                            {
+                                var asyncLocalsFromObject = await GetObjectValues(sessionId, objectIdToGetInfo, true, false, false, false, token);
+                                var hoistedLocalVariable = await GetHoistedLocalVariables(sessionId, objectIdToGetInfo, asyncLocalsFromObject, token);
+                                asyncLocalsFull = new JArray(asyncLocalsFull.Union(hoistedLocalVariable));
+                            }
+                        }
                     }
                 }
-                else if (asyncLocal["name"].Value<string>().Contains("<>"))
+                else if (fieldName.StartsWith("<>")) //examples: <>t__builder, <>1__state
                 {
                     continue;
                 }
-                else if (asyncLocal["name"].Value<string>().Contains('<'))
+                else if (fieldName.StartsWith('<')) //examples: <code>5__2
                 {
-                    asyncLocal["name"] = Regex.Match(asyncLocal["name"].Value<string>(), @"\<([^)]*)\>").Groups[1].Value;
+                    asyncLocal["name"] = Regex.Match(fieldName, @"\<([^)]*)\>").Groups[1].Value;
                     asyncLocalsFull.Add(asyncLocal);
                 }
                 else
@@ -1767,13 +1774,11 @@ namespace Microsoft.WebAssembly.Diagnostics
 
             if (await IsAsyncMethod(sessionId, method.DebuggerId, token))
             {
-                List<int> objectAlreadyRead = new();
                 retDebuggerCmdReader = await SendDebuggerAgentCommand<CmdFrame>(sessionId, CmdFrame.GetThis, commandParams, token);
                 retDebuggerCmdReader.ReadByte(); //ignore type
                 var objectId = retDebuggerCmdReader.ReadInt32();
-                objectAlreadyRead.Add(objectId);
                 var asyncLocals = await GetObjectValues(sessionId, objectId, true, false, false, false, token);
-                asyncLocals = await GetHoistedLocalVariables(sessionId, objectAlreadyRead, asyncLocals, token);
+                asyncLocals = await GetHoistedLocalVariables(sessionId, objectId, asyncLocals, token);
                 return asyncLocals;
             }
 

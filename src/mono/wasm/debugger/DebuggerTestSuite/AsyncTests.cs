@@ -19,14 +19,15 @@ namespace DebuggerTests
         // FIXME: check object properties..
 
         //FIXME: function name
-        [Fact] // Same as Instance case
-        public async Task AsyncLocalsInContinueWithStaticBlock() => await CheckInspectLocalsAtBreakpointSite(
-             "DebuggerTests.AsyncTests.ContinueWithTests", "ContinueWithStaticAsync", 5, "<ContinueWithStaticAsync>b__3_0",
+        [Theory]
+        [InlineData("ContinueWithStaticAsync", "<ContinueWithStaticAsync>b__3_0")]
+        [InlineData("ContinueWithInstanceAsync", "<ContinueWithInstanceAsync>b__5_0")]
+        public async Task AsyncLocalsInContinueWith(string method_name, string expected_method_name) => await CheckInspectLocalsAtBreakpointSite(
+             "DebuggerTests.AsyncTests.ContinueWithTests", method_name, 5, expected_method_name,
              "window.setTimeout(function() { invoke_static_method('[debugger-test] DebuggerTests.AsyncTests.ContinueWithTests:RunAsync'); })",
              wait_for_event_fn: async (pause_location) =>
              {
                 var frame_locals = await GetProperties(pause_location["callFrames"][0]["callFrameId"].Value<string>());
-                Console.WriteLine (frame_locals);
                 await CheckProps(frame_locals, new
                 {
                     t = TObject("System.Threading.Tasks.Task.DelayPromise"),
@@ -40,33 +41,12 @@ namespace DebuggerTests
              });
 
         [Fact]
-        public async Task AsyncLocalsInContinueWithInstanceBlock() => await CheckInspectLocalsAtBreakpointSite(
-             "DebuggerTests.AsyncTests.ContinueWithTests", "ContinueWithInstanceAsync", 5, "<ContinueWithInstanceAsync>b__5_0",
-             "window.setTimeout(function() { invoke_static_method('[debugger-test] DebuggerTests.AsyncTests.ContinueWithTests:RunAsync'); })",
-             wait_for_event_fn: async (pause_location) =>
-             {
-                var frame_locals = await GetProperties(pause_location["callFrames"][0]["callFrameId"].Value<string>());
-                await CheckProps(frame_locals, new
-                {
-                    t = TObject("System.Threading.Tasks.Task.DelayPromise"),
-                    code = TEnum("System.Threading.Tasks.TaskStatus", "RanToCompletion"),
-                    dt = TDateTime(new DateTime(4513, 4, 5, 6, 7, 8)),
-                    @this = TObject("DebuggerTests.AsyncTests.ContinueWithTests.<>c"),
-                }, "locals");
-
-                var res = await InvokeGetter(GetAndAssertObjectWithName(frame_locals, "t"), "Status");
-                await CheckValue(res.Value["result"], TEnum("System.Threading.Tasks.TaskStatus", "RanToCompletion"), "t.Status");
-             });
-
-
-        [Fact]
         public async Task AsyncLocalsInContinueWithInstanceUsingThisBlock() => await CheckInspectLocalsAtBreakpointSite(
              "DebuggerTests.AsyncTests.ContinueWithTests", "ContinueWithInstanceUsingThisAsync", 5, "<ContinueWithInstanceUsingThisAsync>b__6_0",
              "window.setTimeout(function() { invoke_static_method('[debugger-test] DebuggerTests.AsyncTests.ContinueWithTests:RunAsync'); })",
              wait_for_event_fn: async (pause_location) =>
              {
                 var frame_locals = await GetProperties(pause_location["callFrames"][0]["callFrameId"].Value<string>());
-                Console.WriteLine (frame_locals);
                 await CheckProps(frame_locals, new
                 {
                     t = TObject("System.Threading.Tasks.Task.DelayPromise"),
@@ -88,9 +68,7 @@ namespace DebuggerTests
               "window.setTimeout(function() { invoke_static_method('[debugger-test] DebuggerTests.AsyncTests.ContinueWithTests:RunAsync'); })",
               wait_for_event_fn: async (pause_location) =>
               {
-                 Console.WriteLine(pause_location["callFrames"][0]);
                  var frame_locals = await GetProperties(pause_location["callFrames"][0]["callFrameId"].Value<string>());
-                 Console.WriteLine (frame_locals);
                  await CheckProps(frame_locals, new
                  {
                      t = TObject("System.Threading.Tasks.Task.DelayPromise"),
