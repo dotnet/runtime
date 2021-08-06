@@ -257,7 +257,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
                 var evnti = dispatcher.Invoke("eventFactory", i);
                 dispatcher.Invoke("fireEvent", evnti);
                 dispatcher.Invoke("fireEvent", evnt);
-                Runtime.InvokeJS("if (gc) gc();");// needs v8 flag --expose-gc
+                Runtime.InvokeJS("if (globalThis.gc) globalThis.gc();");// needs v8 flag --expose-gc
             }
         }
 
@@ -311,7 +311,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
                 var value = (JSObject)await promise;
 
                 Assert.Equal("bar", value.GetObjectProperty("foo"));
-                Runtime.InvokeJS("if (gc) gc();");// needs v8 flag --expose-gc
+                Runtime.InvokeJS("if (globalThis.gc) globalThis.gc();");// needs v8 flag --expose-gc
             }
         }
 

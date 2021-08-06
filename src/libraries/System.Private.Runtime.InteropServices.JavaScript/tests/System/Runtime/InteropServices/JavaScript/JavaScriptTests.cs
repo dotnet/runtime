@@ -151,7 +151,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
                     var x = new byte[100 + attempt / 100];
                     if (attempt % 1000 == 0)
                     {
-                        Runtime.InvokeJS("if (gc) gc();");// needs v8 flag --expose-gc
+                        Runtime.InvokeJS("if (globalThis.gc) globalThis.gc();");// needs v8 flag --expose-gc
                         GC.Collect();
                     }
                 }
@@ -315,7 +315,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
                 obj.Invoke("fireEvent", "test", evnt);
                 obj.Invoke("fireEvent", "test", evnti);
                 // we are trying to test that managed side doesn't lose strong reference to evnt instance
-                Runtime.InvokeJS("if (gc) gc();");// needs v8 flag --expose-gc
+                Runtime.InvokeJS("if (globalThis.gc) globalThis.gc();");// needs v8 flag --expose-gc
                 GC.Collect();
             }
         }
