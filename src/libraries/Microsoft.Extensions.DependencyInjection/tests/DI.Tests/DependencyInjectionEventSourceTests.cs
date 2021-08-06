@@ -27,7 +27,7 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
         {
             // clear the provider list in between tests
             typeof(DependencyInjectionEventSource).GetField("_providers", BindingFlags.NonPublic | BindingFlags.Instance)
-                .SetValue(DependencyInjectionEventSource.Log, new List<ServiceProvider>());
+                .SetValue(DependencyInjectionEventSource.Log, new List<WeakReference<ServiceProvider>>());
 
             _listener.EnableEvents(DependencyInjectionEventSource.Log, EventLevel.Verbose);
         }
