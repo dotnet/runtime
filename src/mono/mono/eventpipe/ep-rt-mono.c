@@ -57,9 +57,8 @@ static uint32_t _ep_rt_mono_max_sampled_thread_count = 32;
 static MonoProfilerHandle _ep_rt_default_profiler = NULL;
 static MonoProfilerHandle _ep_rt_dotnet_runtime_profiler_provider = NULL;
 static MonoProfilerHandle _ep_rt_dotnet_mono_profiler_provider = NULL;
-static MonoProfilerHandle _ep_rt_dotnet_mono_profiler_heap_dump_provider = NULL;
+static MonoProfilerHandle _ep_rt_dotnet_mono_profiler_heap_collect_provider = NULL;
 static MonoCallSpec _ep_rt_dotnet_mono_profiler_provider_callspec = {0};
-static GSList *_ep_rt_dotnet_mono_profiler_provider_params = NULL;
 
 // Phantom JIT compile method.
 MonoMethod *_ep_rt_mono_runtime_helper_compile_method = NULL;
@@ -262,9 +261,12 @@ struct _MonoProfilerMemBlock {
 // MonoProfiler GC dump.
 static volatile MonoProfilerMemBlock *_ep_rt_mono_profiler_mem_blocks = NULL;
 static volatile MonoProfilerMemBlock *_ep_rt_mono_profiler_current_mem_block = NULL;
-static volatile uint32_t _ep_rt_mono_profiler_gc_heap_dump_requests = 0;
-static volatile uint32_t _ep_rt_mono_profiler_gc_heap_dump_in_progress = 0;
-static bool _ep_rt_mono_profiler_gc_can_heap_dump = false;
+static volatile uint32_t _ep_rt_mono_profiler_gc_heap_collect_requests = 0;
+static volatile uint32_t _ep_rt_mono_profiler_gc_heap_collect_in_progress = 0;
+static bool _ep_rt_mono_profiler_gc_can_collect_heap = false;
+
+static GSList *_ep_rt_mono_profiler_provider_params = NULL;
+static GQueue *_ep_rt_mono_profiler_gc_heap_collect_request_params = NULL;
 
 // Lightweight atomic "exclusive/shared" lock, prevents new fire events to happend while GC is in progress and gives GC ability to wait until all pending fire events are done
 // before progressing. State uint32_t is split into two uint16_t, upper uint16_t represent gc in progress state, taken when GC starts, preventing new fire events to execute and lower
@@ -580,7 +582,7 @@ mono_profiler_mem_block_free_all_but_current (void);
 
 static
 void
-mono_profiler_trigger_heap_dump (MonoProfiler *prof);
+mono_profiler_trigger_heap_collect (MonoProfiler *prof);
 
 static
 void
@@ -1043,23 +1045,46 @@ mono_profiler_thread_name (
 
 static
 const EventFilterDescriptor *
-mono_profiler_add_provider_param (
-	GSList **provider_params,
-	const EventFilterDescriptor *key);
+mono_profiler_add_provider_param (const EventFilterDescriptor *key);
 
 static
 bool
-mono_profiler_remove_provider_param (
-	GSList **provider_params,
-	const EventFilterDescriptor *key);
+mono_profiler_remove_provider_param (const EventFilterDescriptor *key);
 
 static
 void
-mono_profiler_free_provider_params (GSList **provider_params);
+mono_profiler_free_provider_params (void);
 
 static
 bool
-mono_profiler_find_heap_collect_ondemand_provider_keyvalue (const EventFilterDescriptor *param);
+mono_profiler_provider_params_get_value (
+	const EventFilterDescriptor *param,
+	const ep_char8_t *key,
+	const ep_char8_t **value);
+
+static
+bool
+mono_profiler_provider_param_contains_heap_collect_ondemand (const EventFilterDescriptor *param);
+
+static
+void
+mono_profiler_push_gc_heap_collect_param_request_value (const EventFilterDescriptor *param);
+
+static
+void
+mono_profiler_pop_gc_heap_collect_param_request_value (void);
+
+static
+void
+mono_profiler_pop_gc_heap_collect_param_request_value (void);
+
+static
+const ep_char8_t *
+mono_profiler_get_gc_heap_collect_param_request_value (void);
+
+static
+void
+mono_profiler_free_gc_heap_collect_param_requests (void);
 
 static
 void
@@ -1809,7 +1834,7 @@ static
 void
 profiler_eventpipe_runtime_initialized (MonoProfiler *prof)
 {
-	_ep_rt_mono_profiler_gc_can_heap_dump = true;
+	_ep_rt_mono_profiler_gc_can_collect_heap = true;
 }
 
 static
@@ -1855,7 +1880,7 @@ ep_rt_mono_component_init (void)
 	_ep_rt_default_profiler = mono_profiler_create (NULL);
 	_ep_rt_dotnet_runtime_profiler_provider = mono_profiler_create (NULL);
 	_ep_rt_dotnet_mono_profiler_provider = mono_profiler_create (NULL);
-	_ep_rt_dotnet_mono_profiler_heap_dump_provider = mono_profiler_create (NULL);
+	_ep_rt_dotnet_mono_profiler_heap_collect_provider = mono_profiler_create (NULL);
 
 	char *diag_env = g_getenv("MONO_DIAGNOSTICS");
 	if (diag_env) {
@@ -1918,7 +1943,7 @@ ep_rt_mono_init (void)
 	EP_ASSERT (_ep_rt_default_profiler != NULL);
 	EP_ASSERT (_ep_rt_dotnet_runtime_profiler_provider != NULL);
 	EP_ASSERT (_ep_rt_dotnet_mono_profiler_provider != NULL);
-	EP_ASSERT (_ep_rt_dotnet_mono_profiler_heap_dump_provider != NULL);
+	EP_ASSERT (_ep_rt_dotnet_mono_profiler_heap_collect_provider != NULL);
 
 	ep_rt_spin_lock_alloc (&_ep_rt_mono_profiler_gc_state_lock);
 
@@ -2039,7 +2064,8 @@ ep_rt_mono_fini (void)
 		mono_callspec_cleanup (&_ep_rt_dotnet_mono_profiler_provider_callspec);
 	}
 
-	mono_profiler_free_provider_params (&_ep_rt_dotnet_mono_profiler_provider_params);
+	mono_profiler_free_gc_heap_collect_param_requests ();
+	mono_profiler_free_provider_params ();
 
 	ep_rt_spin_lock_free (&_ep_rt_mono_profiler_gc_state_lock);
 
@@ -4008,64 +4034,69 @@ mono_profiler_gc_in_progress (void)
 static
 inline
 bool
-mono_profiler_gc_can_heap_dump (void)
+mono_profiler_gc_can_collect_heap (void)
 {
-	return _ep_rt_mono_profiler_gc_can_heap_dump;
+	return _ep_rt_mono_profiler_gc_can_collect_heap;
 }
 
 static
 inline
 void
-mono_profiler_gc_heap_dump_requests_inc (void)
+mono_profiler_gc_heap_collect_requests_inc (void)
 {
-	EP_ASSERT (mono_profiler_gc_can_heap_dump ());
-	ep_rt_atomic_inc_uint32_t (&_ep_rt_mono_profiler_gc_heap_dump_requests);
+	EP_ASSERT (mono_profiler_gc_can_collect_heap ());
+	ep_rt_atomic_inc_uint32_t (&_ep_rt_mono_profiler_gc_heap_collect_requests);
 }
 
 static
 inline
 void
-mono_profiler_gc_heap_dump_requests_dec (void)
+mono_profiler_gc_heap_collect_requests_dec (void)
 {
-	EP_ASSERT (mono_profiler_gc_can_heap_dump ());
-	ep_rt_atomic_dec_uint32_t (&_ep_rt_mono_profiler_gc_heap_dump_requests);
+	EP_ASSERT (mono_profiler_gc_can_collect_heap ());
+	ep_rt_atomic_dec_uint32_t (&_ep_rt_mono_profiler_gc_heap_collect_requests);
 }
 
 static
 inline
 bool
-mono_profiler_gc_heap_dump_requested (void)
+mono_profiler_gc_heap_collect_requested (void)
 {
-	if (!mono_profiler_gc_can_heap_dump ())
+	if (!mono_profiler_gc_can_collect_heap ())
 		return false;
 
-	return ep_rt_volatile_load_uint32_t(&_ep_rt_mono_profiler_gc_heap_dump_requests) != 0 ? true : false;
+	return ep_rt_volatile_load_uint32_t(&_ep_rt_mono_profiler_gc_heap_collect_requests) != 0 ? true : false;
 }
 
 static
 inline
 bool
-mono_profiler_gc_heap_dump_in_progress (void)
+mono_profiler_gc_heap_collect_in_progress (void)
 {
-	return ep_rt_volatile_load_uint32_t(&_ep_rt_mono_profiler_gc_heap_dump_in_progress) != 0 ? true : false;
+	ep_rt_spin_lock_requires_lock_held (&_ep_rt_mono_profiler_gc_state_lock);
+	return ep_rt_volatile_load_uint32_t_without_barrier (&_ep_rt_mono_profiler_gc_heap_collect_in_progress) != 0 ? true : false;
 }
 
 static
 inline
 void
-mono_profiler_gc_heap_dump_in_progress_start (void)
+mono_profiler_gc_heap_collect_in_progress_start (void)
 {
-	EP_ASSERT (mono_profiler_gc_can_heap_dump ());
-	ep_rt_atomic_inc_uint32_t(&_ep_rt_mono_profiler_gc_heap_dump_in_progress);
+	EP_ASSERT (mono_profiler_gc_can_collect_heap ());
+
+	ep_rt_spin_lock_requires_lock_held (&_ep_rt_mono_profiler_gc_state_lock);
+	ep_rt_volatile_store_uint32_t_without_barrier (&_ep_rt_mono_profiler_gc_heap_collect_in_progress, 1);
 }
 
 static
 inline
 void
-mono_profiler_gc_heap_dump_in_progress_stop (void)
+mono_profiler_gc_heap_collect_in_progress_stop (void)
 {
-	EP_ASSERT (mono_profiler_gc_can_heap_dump ());
-	ep_rt_atomic_dec_uint32_t(&_ep_rt_mono_profiler_gc_heap_dump_in_progress);
+	EP_ASSERT (mono_profiler_gc_can_collect_heap ());
+
+	ep_rt_spin_lock_requires_lock_held (&_ep_rt_mono_profiler_gc_state_lock);
+	ep_rt_volatile_store_uint32_t_without_barrier (&_ep_rt_mono_profiler_gc_heap_collect_in_progress, 0);
 }
 
 static
@@ -4208,13 +4239,20 @@ mono_profiler_buffered_gc_event_alloc (uint32_t req_size)
 
 static
 void
-mono_profiler_trigger_heap_dump (MonoProfiler *prof)
+mono_profiler_trigger_heap_collect (MonoProfiler *prof)
 {
-	if (mono_profiler_gc_heap_dump_requested ()) {
-		mono_profiler_gc_heap_dump_requests_dec ();
-		mono_profiler_gc_heap_dump_in_progress_start ();
+	if (mono_profiler_gc_heap_collect_requested ()) {
+		ep_rt_spin_lock_aquire (&_ep_rt_mono_profiler_gc_state_lock);
+			mono_profiler_gc_heap_collect_requests_dec ();
+			mono_profiler_gc_heap_collect_in_progress_start ();
+		ep_rt_spin_lock_release (&_ep_rt_mono_profiler_gc_state_lock);
+
 		mono_gc_collect (mono_gc_max_generation ());
-		mono_profiler_gc_heap_dump_in_progress_stop ();
+
+		ep_rt_spin_lock_aquire (&_ep_rt_mono_profiler_gc_state_lock);
+			mono_profiler_pop_gc_heap_collect_param_request_value ();
+			mono_profiler_gc_heap_collect_in_progress_stop ();
+		ep_rt_spin_lock_release (&_ep_rt_mono_profiler_gc_state_lock);
 	}
 }
 
@@ -5851,102 +5889,116 @@ mono_profiler_gc_event (
 
 		mono_profiler_gc_in_progress_start ();
 
-		if (mono_profiler_gc_heap_dump_in_progress ()) {
+		if (mono_profiler_gc_heap_collect_in_progress ()) {
 			FireEtwMonoProfilerGCHeapDumpStart (
+				mono_profiler_get_gc_heap_collect_param_request_value (),
 				NULL,
 				NULL);
 		}
+
 		break;
 	}
 	case MONO_GC_EVENT_POST_STOP_WORLD:
 	{
-		uint64_t enabled_keywords = MICROSOFT_DOTNETRUNTIME_MONO_PROFILER_PROVIDER_EVENTPIPE_Context.EnabledKeywordsBitmask;
+		if (mono_profiler_gc_in_progress ()) {
+			uint64_t enabled_keywords = MICROSOFT_DOTNETRUNTIME_MONO_PROFILER_PROVIDER_EVENTPIPE_Context.EnabledKeywordsBitmask;
 
-		if (profiler_callback_is_enabled (enabled_keywords, GC_ROOT_KEYWORD)) {
-			mono_profiler_set_gc_root_register_callback (_ep_rt_dotnet_mono_profiler_provider, NULL);
-			mono_profiler_set_gc_root_unregister_callback (_ep_rt_dotnet_mono_profiler_provider, NULL);
-			mono_profiler_set_gc_root_register_callback (_ep_rt_dotnet_mono_profiler_heap_dump_provider, mono_profiler_fire_buffered_gc_event_root_register);
-			mono_profiler_set_gc_root_unregister_callback (_ep_rt_dotnet_mono_profiler_heap_dump_provider, mono_profiler_fire_buffered_gc_event_root_unregister);
-		}
-
-		if (mono_profiler_gc_heap_dump_in_progress ()) {
 			if (profiler_callback_is_enabled (enabled_keywords, GC_ROOT_KEYWORD)) {
-				mono_profiler_set_gc_roots_callback (_ep_rt_dotnet_mono_profiler_heap_dump_provider, mono_profiler_fire_buffered_gc_event_roots);
+				mono_profiler_set_gc_root_register_callback (_ep_rt_dotnet_mono_profiler_provider, NULL);
+				mono_profiler_set_gc_root_unregister_callback (_ep_rt_dotnet_mono_profiler_provider, NULL);
+				mono_profiler_set_gc_root_register_callback (_ep_rt_dotnet_mono_profiler_heap_collect_provider, mono_profiler_fire_buffered_gc_event_root_register);
+				mono_profiler_set_gc_root_unregister_callback (_ep_rt_dotnet_mono_profiler_heap_collect_provider, mono_profiler_fire_buffered_gc_event_root_unregister);
 			}
 
-			if (profiler_callback_is_enabled (enabled_keywords, GC_MOVES_KEYWORD)) {
-				mono_profiler_set_gc_moves_callback (_ep_rt_dotnet_mono_profiler_heap_dump_provider, mono_profiler_fire_buffered_gc_event_moves);
+			if (mono_profiler_gc_heap_collect_in_progress ()) {
+				if (profiler_callback_is_enabled (enabled_keywords, GC_ROOT_KEYWORD)) {
+					mono_profiler_set_gc_roots_callback (_ep_rt_dotnet_mono_profiler_heap_collect_provider, mono_profiler_fire_buffered_gc_event_roots);
+				}
+
+				if (profiler_callback_is_enabled (enabled_keywords, GC_MOVES_KEYWORD)) {
+					mono_profiler_set_gc_moves_callback (_ep_rt_dotnet_mono_profiler_heap_collect_provider, mono_profiler_fire_buffered_gc_event_moves);
+				}
+
+				if (profiler_callback_is_enabled (enabled_keywords, GC_RESIZE_KEYWORD)) {
+					mono_profiler_set_gc_resize_callback (_ep_rt_dotnet_mono_profiler_heap_collect_provider, mono_profiler_fire_buffered_gc_event_resize);
+				}
 			}
 
-			if (profiler_callback_is_enabled (enabled_keywords, GC_RESIZE_KEYWORD)) {
-				mono_profiler_set_gc_resize_callback (_ep_rt_dotnet_mono_profiler_heap_dump_provider, mono_profiler_fire_buffered_gc_event_resize);
-			}
+			mono_profiler_fire_buffered_gc_event (
+				(uint8_t)gc_event,
+				generation);
 		}
-
-		mono_profiler_fire_buffered_gc_event (
-			(uint8_t)gc_event,
-			generation);
 		break;
 	}
 	case MONO_GC_EVENT_START:
 	case MONO_GC_EVENT_END:
 	{
-		mono_profiler_fire_buffered_gc_event (
-			(uint8_t)gc_event,
-			generation);
+		if (mono_profiler_gc_in_progress ()) {
+			mono_profiler_fire_buffered_gc_event (
+				(uint8_t)gc_event,
+				generation);
+		}
 		break;
 	}
 	case MONO_GC_EVENT_PRE_START_WORLD:
 	{
-		uint64_t enabled_keywords = MICROSOFT_DOTNETRUNTIME_MONO_PROFILER_PROVIDER_EVENTPIPE_Context.EnabledKeywordsBitmask;
+		if (mono_profiler_gc_in_progress ()) {
+			uint64_t enabled_keywords = MICROSOFT_DOTNETRUNTIME_MONO_PROFILER_PROVIDER_EVENTPIPE_Context.EnabledKeywordsBitmask;
 
-		if (mono_profiler_gc_heap_dump_in_progress () && profiler_callback_is_enabled (enabled_keywords, GC_HEAP_DUMP_KEYWORD))
-			mono_gc_walk_heap (0, mono_profiler_fire_buffered_gc_event_heap_dump_object_reference, NULL);
+			if (mono_profiler_gc_heap_collect_in_progress () && profiler_callback_is_enabled (enabled_keywords, GC_HEAP_DUMP_KEYWORD))
+				mono_gc_walk_heap (0, mono_profiler_fire_buffered_gc_event_heap_dump_object_reference, NULL);
 
-		mono_profiler_set_gc_root_register_callback (_ep_rt_dotnet_mono_profiler_heap_dump_provider, NULL);
-		mono_profiler_set_gc_root_unregister_callback (_ep_rt_dotnet_mono_profiler_heap_dump_provider, NULL);
-		mono_profiler_set_gc_roots_callback (_ep_rt_dotnet_mono_profiler_heap_dump_provider, NULL);
-		mono_profiler_set_gc_moves_callback (_ep_rt_dotnet_mono_profiler_heap_dump_provider, NULL);
-		mono_profiler_set_gc_resize_callback (_ep_rt_dotnet_mono_profiler_heap_dump_provider, NULL);
+			mono_profiler_set_gc_root_register_callback (_ep_rt_dotnet_mono_profiler_heap_collect_provider, NULL);
+			mono_profiler_set_gc_root_unregister_callback (_ep_rt_dotnet_mono_profiler_heap_collect_provider, NULL);
+			mono_profiler_set_gc_roots_callback (_ep_rt_dotnet_mono_profiler_heap_collect_provider, NULL);
+			mono_profiler_set_gc_moves_callback (_ep_rt_dotnet_mono_profiler_heap_collect_provider, NULL);
+			mono_profiler_set_gc_resize_callback (_ep_rt_dotnet_mono_profiler_heap_collect_provider, NULL);
 
-		if (profiler_callback_is_enabled (enabled_keywords, GC_ROOT_KEYWORD)) {
-			mono_profiler_set_gc_root_register_callback (_ep_rt_dotnet_mono_profiler_provider, mono_profiler_gc_root_register);
-			mono_profiler_set_gc_root_unregister_callback (_ep_rt_dotnet_mono_profiler_provider, mono_profiler_gc_root_unregister);
+			if (profiler_callback_is_enabled (enabled_keywords, GC_ROOT_KEYWORD)) {
+				mono_profiler_set_gc_root_register_callback (_ep_rt_dotnet_mono_profiler_provider, mono_profiler_gc_root_register);
+				mono_profiler_set_gc_root_unregister_callback (_ep_rt_dotnet_mono_profiler_provider, mono_profiler_gc_root_unregister);
+			}
+
+			mono_profiler_fire_buffered_gc_event (
+				(uint8_t)gc_event,
+				generation);
 		}
-
-		mono_profiler_fire_buffered_gc_event (
-			(uint8_t)gc_event,
-			generation);
 
 		break;
 	}
 	case MONO_GC_EVENT_POST_START_WORLD:
 	{
-		GHashTable *cache = NULL;
-		uint64_t enabled_keywords = MICROSOFT_DOTNETRUNTIME_MONO_PROFILER_PROVIDER_EVENTPIPE_Context.EnabledKeywordsBitmask;
+		if (mono_profiler_gc_in_progress ()) {
+			GHashTable *cache = NULL;
+			uint64_t enabled_keywords = MICROSOFT_DOTNETRUNTIME_MONO_PROFILER_PROVIDER_EVENTPIPE_Context.EnabledKeywordsBitmask;
 
-		if (mono_profiler_gc_heap_dump_in_progress () && profiler_callback_is_enabled (enabled_keywords, GC_HEAP_DUMP_VTABLE_CLASS_REF_KEYWORD))
-			cache = g_hash_table_new_full (NULL, NULL, NULL, NULL);
+			if (mono_profiler_gc_heap_collect_in_progress () && profiler_callback_is_enabled (enabled_keywords, GC_HEAP_DUMP_VTABLE_CLASS_REF_KEYWORD))
+				cache = g_hash_table_new_full (NULL, NULL, NULL, NULL);
 
-		mono_profiler_fire_buffered_gc_events_in_alloc_order (cache);
-		mono_profiler_fire_cached_gc_events (cache);
+			mono_profiler_fire_buffered_gc_events_in_alloc_order (cache);
+			mono_profiler_fire_cached_gc_events (cache);
 
-		if (cache)
-			g_hash_table_destroy (cache);
+			if (cache)
+				g_hash_table_destroy (cache);
 
-		if (mono_profiler_gc_heap_dump_in_progress ()) {
-			FireEtwMonoProfilerGCHeapDumpStop (
+			if (mono_profiler_gc_heap_collect_in_progress ()) {
+				FireEtwMonoProfilerGCHeapDumpStop (
+					NULL,
+					NULL);
+			}
+
+			FireEtwMonoProfilerGCEvent (
+				(uint8_t)gc_event,
+				generation,
 				NULL,
 				NULL);
+
+			if (!profiler_callback_is_enabled (enabled_keywords, GC_KEYWORD))
+				mono_profiler_set_gc_event_callback (_ep_rt_dotnet_mono_profiler_provider, NULL);
+
+			mono_profiler_gc_heap_collect_in_progress_stop ();
+			mono_profiler_gc_in_progress_stop ();
 		}
-
-		FireEtwMonoProfilerGCEvent (
-			(uint8_t)gc_event,
-			generation,
-			NULL,
-			NULL);
-
-		mono_profiler_gc_in_progress_stop ();
 		break;
 	}
 	default:
@@ -6303,10 +6355,10 @@ mono_profiler_thread_name (
 
 static
 const EventFilterDescriptor *
-mono_profiler_add_provider_param (
-	GSList **provider_params,
-	const EventFilterDescriptor *key)
+mono_profiler_add_provider_param (const EventFilterDescriptor *key)
 {
+	ep_rt_spin_lock_requires_lock_held (&_ep_rt_mono_profiler_gc_state_lock);
+
 	EventFilterDescriptor *param = NULL;
 	if (key && key->ptr && key->size) {
 		uint64_t param_ptr = (uint64_t)g_malloc (key->size);
@@ -6314,7 +6366,7 @@ mono_profiler_add_provider_param (
 			param = ep_event_filter_desc_alloc (param_ptr, key->size, key->type);
 			if (param) {
 				memcpy ((uint8_t*)param->ptr,(const uint8_t*)key->ptr, key->size);
-				*provider_params = g_slist_append (*provider_params, param);
+				_ep_rt_mono_profiler_provider_params = g_slist_append (_ep_rt_mono_profiler_provider_params, param);
 			} else {
 				g_free ((void *)param_ptr);
 			}
@@ -6325,13 +6377,13 @@ mono_profiler_add_provider_param (
 
 static
 bool
-mono_profiler_remove_provider_param (
-	GSList **provider_params,
-	const EventFilterDescriptor *key)
+mono_profiler_remove_provider_param (const EventFilterDescriptor *key)
 {
+	ep_rt_spin_lock_requires_lock_held (&_ep_rt_mono_profiler_gc_state_lock);
+
 	bool removed = false;
-	if (*provider_params && key && key->ptr && key->size) {
-		GSList *list = *provider_params;
+	if (_ep_rt_mono_profiler_provider_params && key && key->ptr && key->size) {
+		GSList *list = _ep_rt_mono_profiler_provider_params;
 		EventFilterDescriptor *param = NULL;
 		while (list) {
 			param = (EventFilterDescriptor *)(list->data);
@@ -6339,7 +6391,7 @@ mono_profiler_remove_provider_param (
 				memcmp ((const void *)param->ptr, (const void *)key->ptr, param->size) == 0) {
 					g_free ((void *)param->ptr);
 					ep_event_filter_desc_free (param);
-					*provider_params = g_slist_delete_link (*provider_params, list);
+					_ep_rt_mono_profiler_provider_params = g_slist_delete_link (_ep_rt_mono_profiler_provider_params, list);
 					removed = true;
 					break;
 			}
@@ -6352,45 +6404,124 @@ mono_profiler_remove_provider_param (
 
 static
 void
-mono_profiler_free_provider_params (GSList **provider_params)
+mono_profiler_free_provider_params (void)
 {
-	for (GSList *list = *provider_params; list; list = list->next) {
+	// Should only be called from ep_rt_mono_fini.
+	for (GSList *list = _ep_rt_mono_profiler_provider_params; list; list = list->next) {
 		EventFilterDescriptor *param = (EventFilterDescriptor *)(list->data);
 		if (param) {
 			g_free ((void *)param->ptr);
 			ep_event_filter_desc_free (param);
 		}
 	}
-	g_slist_free (*provider_params);
-	*provider_params = NULL;
+	g_slist_free (_ep_rt_mono_profiler_provider_params);
+	_ep_rt_mono_profiler_provider_params = NULL;
 }
 
 static
 bool
-mono_profiler_find_heap_collect_ondemand_provider_keyvalue (const EventFilterDescriptor *param)
+mono_profiler_provider_params_get_value (
+	const EventFilterDescriptor *param,
+	const ep_char8_t *key,
+	const ep_char8_t **value)
 {
-	if (!param || !param->ptr || !param->size)
+	if (!param || !param->ptr || !param->size || !key)
 		return false;
 
 	const ep_char8_t *current = (ep_char8_t *)param->ptr;
 	const ep_char8_t *end = current + param->size;
-	bool found_heapshot_key = false;
-	bool found_ondemand_value = false;
+	bool found_key = false;
+
+	if (value)
+		*value = "";
 
 	if (!current [param->size - 1]) {
 		while (current < end) {
-			if (!ep_rt_utf8_string_compare_ignore_case (current, "heapcollect"))
-				found_heapshot_key = true;
-			else if (!ep_rt_utf8_string_compare_ignore_case (current, "ondemand"))
-				found_ondemand_value = true;
-
-			if (found_heapshot_key && found_ondemand_value)
+			if (found_key) {
+				if (value)
+					*value = current;
 				break;
+			}
+
+			if (!ep_rt_utf8_string_compare_ignore_case (current, key)) {
+				found_key = true;
+			}
+
 			current = current + strlen (current) + 1;
 		}
 	}
 
-	return found_heapshot_key && found_ondemand_value;
+	return found_key;
+}
+
+static
+bool
+mono_profiler_provider_param_contains_heap_collect_ondemand (const EventFilterDescriptor *param)
+{
+	const ep_char8_t *value = NULL;
+	bool found_heap_collect_ondemand_value = false;
+
+	if (mono_profiler_provider_params_get_value (param, "heapcollect", &value)) {
+		if (strstr (value, "ondemand"))
+			found_heap_collect_ondemand_value = true;
+	}
+
+	return found_heap_collect_ondemand_value;
+}
+
+static
+void
+mono_profiler_push_gc_heap_collect_param_request_value (const EventFilterDescriptor *param)
+{
+	ep_rt_spin_lock_requires_lock_held (&_ep_rt_mono_profiler_gc_state_lock);
+
+	const ep_char8_t *value = NULL;
+	if (param)
+		mono_profiler_provider_params_get_value (param, "heapcollect", &value);
+
+	if (!_ep_rt_mono_profiler_gc_heap_collect_request_params)
+		_ep_rt_mono_profiler_gc_heap_collect_request_params = g_queue_new ();
+	if (_ep_rt_mono_profiler_gc_heap_collect_request_params)
+		g_queue_push_tail (_ep_rt_mono_profiler_gc_heap_collect_request_params, ep_rt_utf8_string_dup (value ? value : ""));
+}
+
+static
+void
+mono_profiler_pop_gc_heap_collect_param_request_value (void)
+{
+	ep_rt_spin_lock_requires_lock_held (&_ep_rt_mono_profiler_gc_state_lock);
+
+	ep_char8_t *value = NULL;
+	if (_ep_rt_mono_profiler_gc_heap_collect_request_params && !g_queue_is_empty (_ep_rt_mono_profiler_gc_heap_collect_request_params))
+		value = (ep_char8_t *)g_queue_pop_head (_ep_rt_mono_profiler_gc_heap_collect_request_params);
+	g_free (value);
+}
+
+static
+const ep_char8_t *
+mono_profiler_get_gc_heap_collect_param_request_value (void)
+{
+	ep_rt_spin_lock_requires_lock_held (&_ep_rt_mono_profiler_gc_state_lock);
+
+	const ep_char8_t *value = NULL;
+	if (_ep_rt_mono_profiler_gc_heap_collect_request_params && !g_queue_is_empty (_ep_rt_mono_profiler_gc_heap_collect_request_params)) {
+		value = (ep_char8_t *)g_queue_pop_head (_ep_rt_mono_profiler_gc_heap_collect_request_params);
+		g_queue_push_head (_ep_rt_mono_profiler_gc_heap_collect_request_params, value);
+	}
+	return value ? value : "";
+}
+
+static
+void
+mono_profiler_free_gc_heap_collect_param_requests (void)
+{
+	// Should only be called from ep_rt_mono_fini.
+	if (_ep_rt_mono_profiler_gc_heap_collect_request_params) {
+		while (!g_queue_is_empty (_ep_rt_mono_profiler_gc_heap_collect_request_params))
+			g_free (g_queue_pop_head (_ep_rt_mono_profiler_gc_heap_collect_request_params));
+		g_queue_free (_ep_rt_mono_profiler_gc_heap_collect_request_params);
+		_ep_rt_mono_profiler_gc_heap_collect_request_params = NULL;
+	}
 }
 
 static
@@ -6405,10 +6536,11 @@ mono_profiler_ep_provider_callback (
 	void *callback_data)
 {
 	ep_rt_config_requires_lock_not_held ();
+	ep_rt_spin_lock_requires_lock_held (&_ep_rt_mono_profiler_gc_state_lock);
 
 	EP_ASSERT(is_enabled == 0 || is_enabled == 1) ;
 	EP_ASSERT (_ep_rt_dotnet_mono_profiler_provider != NULL);
-	EP_ASSERT (_ep_rt_dotnet_mono_profiler_heap_dump_provider != NULL);
+	EP_ASSERT (_ep_rt_dotnet_mono_profiler_heap_collect_provider != NULL);
 
 	match_any_keywords = (is_enabled == 1) ? match_any_keywords : 0;
 
@@ -6530,9 +6662,8 @@ mono_profiler_ep_provider_callback (
 				mono_profiler_set_gc_event_callback (_ep_rt_dotnet_mono_profiler_provider, mono_profiler_gc_event);
 			}
 		} else {
-			if (profiler_callback_is_enabled (enabled_keywords, GC_KEYWORD)) {
-				mono_profiler_set_gc_event_callback (_ep_rt_dotnet_mono_profiler_provider, NULL);
-			}
+			// NOTE, disabled in mono_profiler_gc_event, MONO_GC_EVENT_POST_START_WORLD to make sure all
+			// callbacks during GC fires.
 		}
 
 		if (profiler_callback_is_enabled(match_any_keywords, GC_ALLOCATION_KEYWORD)) {
@@ -6587,11 +6718,11 @@ mono_profiler_ep_provider_callback (
 
 		if (profiler_callback_is_enabled(match_any_keywords, GC_HEAP_COLLECT_KEYWORD)) {
 			if (!profiler_callback_is_enabled (enabled_keywords, GC_HEAP_COLLECT_KEYWORD)) {
-				mono_profiler_set_gc_finalized_callback (_ep_rt_dotnet_mono_profiler_heap_dump_provider, mono_profiler_trigger_heap_dump);
+				mono_profiler_set_gc_finalized_callback (_ep_rt_dotnet_mono_profiler_heap_collect_provider, mono_profiler_trigger_heap_collect);
 			}
 		} else {
 			if (profiler_callback_is_enabled (enabled_keywords, GC_HEAP_COLLECT_KEYWORD)) {
-				mono_profiler_set_gc_finalized_callback (_ep_rt_dotnet_mono_profiler_heap_dump_provider, NULL);
+				mono_profiler_set_gc_finalized_callback (_ep_rt_dotnet_mono_profiler_heap_collect_provider, NULL);
 			}
 		}
 
@@ -6648,26 +6779,27 @@ mono_profiler_ep_provider_callback (
 		}
 
 		if (match_any_keywords) {
-			bool request_heap_dump = false;
+			bool request_heap_collect = false;
 			if (profiler_callback_is_enabled (match_any_keywords, GC_HEAP_COLLECT_KEYWORD)) {
-				if (mono_profiler_gc_can_heap_dump () && !profiler_callback_is_enabled (enabled_keywords, GC_HEAP_COLLECT_KEYWORD))
-					request_heap_dump = true;
+				if (mono_profiler_gc_can_collect_heap () && !profiler_callback_is_enabled (enabled_keywords, GC_HEAP_COLLECT_KEYWORD))
+					request_heap_collect = true;
 			}
 
 			if (filter_data) {
-				if (mono_profiler_find_heap_collect_ondemand_provider_keyvalue (filter_data) && !mono_profiler_remove_provider_param (&_ep_rt_dotnet_mono_profiler_provider_params, filter_data)) {
-					mono_profiler_add_provider_param (&_ep_rt_dotnet_mono_profiler_provider_params, filter_data);
-					if (mono_profiler_gc_can_heap_dump () && profiler_callback_is_enabled (match_any_keywords, GC_HEAP_COLLECT_KEYWORD))
-						request_heap_dump = true;
+				if (mono_profiler_provider_param_contains_heap_collect_ondemand (filter_data) && !mono_profiler_remove_provider_param (filter_data)) {
+					mono_profiler_add_provider_param (filter_data);
+					if (mono_profiler_gc_can_collect_heap () && profiler_callback_is_enabled (match_any_keywords, GC_HEAP_COLLECT_KEYWORD))
+						request_heap_collect = true;
 				}
 			}
 
-			if (request_heap_dump) {
-				mono_profiler_gc_heap_dump_requests_inc ();
+			if (request_heap_collect) {
+				mono_profiler_push_gc_heap_collect_param_request_value (filter_data);
+				mono_profiler_gc_heap_collect_requests_inc ();
 				mono_gc_finalize_notify ();
 			}
 		} else {
-			mono_profiler_free_provider_params (&_ep_rt_dotnet_mono_profiler_provider_params);
+			mono_profiler_free_provider_params ();
 		}
 
 		MICROSOFT_DOTNETRUNTIME_MONO_PROFILER_PROVIDER_EVENTPIPE_Context.Level = level;

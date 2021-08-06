@@ -7738,6 +7738,15 @@
                         </UserData>
                     </template>
 
+                    <template tid="GCHeapDumpStart">
+                        <data name="HeapCollectParam" inType="win:UnicodeString" />
+                        <UserData>
+                            <GCHeapDumpStart xmlns="myNs">
+                                <HeapCollectParam> %1 </HeapCollectParam>
+                            </GCHeapDumpStart>
+                        </UserData>
+                    </template>
+
                     <template tid="GCHeapDumpObjectReference">
                         <data name="ObjectID" inType="win:Pointer" outType="win:HexInt64" />
                         <data name="VTableID" inType="win:UInt64" outType="win:HexInt64" />
@@ -8120,14 +8129,14 @@
                            symbol="MonoProfilerGCRoots" message="$(string.MonoProfilerPublisher.GCRootsEventMessage)" />
 
                     <event value="51" version="0" level="win:Informational"
-                           keywords ="GCHeapDumpKeyword" opcode="GCHeapDumpStart"
+                           keywords ="GCHeapDumpKeyword" opcode="GCHeapDumpStart" template="GCHeapDumpStart"
                            task="MonoProfiler"
-                           symbol="MonoProfilerGCHeapDumpStart" message="$(string.MonoProfilerPublisher.GCHeapDumpStartStopEventMessage)" />
+                           symbol="MonoProfilerGCHeapDumpStart" message="$(string.MonoProfilerPublisher.GCHeapDumpStartEventMessage)" />
 
                     <event value="52" version="0" level="win:Informational"
                            keywords ="GCHeapDumpKeyword" opcode="GCHeapDumpStop"
                            task="MonoProfiler"
-                           symbol="MonoProfilerGCHeapDumpStop" message="$(string.MonoProfilerPublisher.GCHeapDumpStartStopEventMessage)" />
+                           symbol="MonoProfilerGCHeapDumpStop" message="$(string.MonoProfilerPublisher.GCHeapDumpStopEventMessage)" />
 
                     <event value="53" version="0" level="win:Informational"  template="GCHeapDumpObjectReference"
                            keywords ="GCHeapDumpKeyword" opcode="GCHeapDumpObjectReference"
@@ -9382,7 +9391,8 @@
                 <string id="MonoProfilerPublisher.GCRootRegisterEventMessage" value="RootID=%1;%nRootSize=%2;%nRootType=%3;%nRootKeyID=%4;%nRootKeyName=%5" />
                 <string id="MonoProfilerPublisher.GCRootUnregisterEventMessage" value="RootID=%1" />
                 <string id="MonoProfilerPublisher.GCRootsEventMessage" value="Count=%1" />
-                <string id="MonoProfilerPublisher.GCHeapDumpStartStopEventMessage" value="NONE" />
+                <string id="MonoProfilerPublisher.GCHeapDumpStartEventMessage" value="HeapCollectParam=%1" />
+                <string id="MonoProfilerPublisher.GCHeapDumpStopEventMessage" value="NONE" />
                 <string id="MonoProfilerPublisher.GCHeapDumpObjectReferenceEventMessage" value="ObjectID=%1;%nVTableID=%2;%nObjectSize=%3;%nObjectGeneration=%4;%nCount=%5" />
 
                 <string id="MonoProfilerPublisher.MonitorContentionFailedAcquiredEventMessage" value="ObjectID=%1" />
