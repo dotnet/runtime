@@ -197,11 +197,11 @@ var BindingSupportLib = {
 			thenable.then ((result) => {
 				this.set_tcs_result(tcs_gc_handle, result);
 				// let go of the thenable reference
-				this.mono_wasm_unregister_obj(thenable_js_handle);
+				this._mono_wasm_release_js_handle(thenable_js_handle);
 			}, (reason) => {
 				this.set_tcs_failure(tcs_gc_handle, reason ? reason.toString() : "");
 				// let go of the thenable reference
-				this.mono_wasm_unregister_obj(thenable_js_handle);
+				this._mono_wasm_release_js_handle(thenable_js_handle);
 			});
 
 			// collect the TaskCompletionSource with its Task after js doesn't hold the thenable anymore
@@ -530,6 +530,19 @@ var BindingSupportLib = {
 				return mono_array;
 			} finally {
 				MONO.mono_wasm_release_roots (arrayRoot, elemRoot);
+			}
+		},
+
+		// this is only used from Blazor
+		unbox_mono_obj: function (mono_obj) {
+			if (mono_obj === 0)
+				return undefined;
+
+			var root = MONO.mono_wasm_new_root (mono_obj);
+			try {
+				return this._unbox_mono_obj_root (root);
+			} finally {
+				root.release();
 			}
 		},
 
