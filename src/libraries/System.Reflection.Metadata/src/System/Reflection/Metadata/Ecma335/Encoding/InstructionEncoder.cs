@@ -389,6 +389,23 @@ namespace System.Reflection.Metadata.Ecma335
             return GetBranchBuilder().AddLabel();
         }
 
+        private void LabelOperand(ILOpCode code, LabelHandle label, int instructionEndDisplacement, int instructionStartOffset)
+        {
+            GetBranchBuilder().AddBranch(Offset, label, instructionEndDisplacement, instructionStartOffset, code);
+
+            // -1 points in the middle of the branch instruction and is thus invalid.
+            // We want to produce invalid IL so that if the caller doesn't patch the branches
+            // the branch instructions will be invalid in an obvious way.
+            if (instructionEndDisplacement == 1)
+            {
+                CodeBuilder.WriteSByte(-1);
+            }
+            else
+            {
+                CodeBuilder.WriteInt32(-1);
+            }
+        }
+
         /// <summary>
         /// Encodes a branch instruction.
         /// </summary>
@@ -401,23 +418,12 @@ namespace System.Reflection.Metadata.Ecma335
         public void Branch(ILOpCode code, LabelHandle label)
         {
             // throws if code is not a branch:
-            int size = code.GetBranchOperandSize();
+            int operandSize = code.GetBranchOperandSize();
+            // We want the offset before we add the opcode.
+            int instructionStartOffset = Offset;
 
-            GetBranchBuilder().AddBranch(Offset, label, code);
             OpCode(code);
-
-            // -1 points in the middle of the branch instruction and is thus invalid.
-            // We want to produce invalid IL so that if the caller doesn't patch the branches
-            // the branch instructions will be invalid in an obvious way.
-            if (size == 1)
-            {
-                CodeBuilder.WriteSByte(-1);
-            }
-            else
-            {
-                Debug.Assert(size == 4);
-                CodeBuilder.WriteInt32(-1);
-            }
+            LabelOperand(code, label, operandSize, instructionStartOffset);
         }
 
         /// <summary>
