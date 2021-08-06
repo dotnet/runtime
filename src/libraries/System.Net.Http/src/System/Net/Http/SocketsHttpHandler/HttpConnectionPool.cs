@@ -461,7 +461,7 @@ namespace System.Net.Http
             {
                 try
                 {
-                    connection = await CreateHttp11ConnectionAsync(request, false, cts.Token).ConfigureAwait(false);
+                    connection = await CreateHttp11ConnectionAsync(request, true, cts.Token).ConfigureAwait(false);
                 }
                 catch (OperationCanceledException oce) when (oce.CancellationToken == cts.Token)
                 {
