@@ -24,23 +24,6 @@ namespace BINDER_SPACE
         }
     };
 
-    ULONG Assembly::AddRef()
-    {
-        return InterlockedIncrement(&m_cRef);
-    }
-
-    ULONG Assembly::Release()
-    {
-        ULONG ulRef = InterlockedDecrement(&m_cRef);
-
-        if (ulRef == 0)
-        {
-            delete this;
-        }
-
-        return ulRef;
-    }
-
     Assembly::Assembly()
     {
         m_cRef = 1;

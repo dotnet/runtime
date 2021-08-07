@@ -14,6 +14,23 @@
 #ifndef __BINDER__ASSEMBLY_INL__
 #define __BINDER__ASSEMBLY_INL__
 
+inline ULONG Assembly::AddRef()
+{
+    return InterlockedIncrement(&m_cRef);
+}
+
+inline ULONG Assembly::Release()
+{
+    ULONG ulRef = InterlockedDecrement(&m_cRef);
+
+    if (ulRef == 0)
+    {
+        delete this;
+    }
+
+    return ulRef;
+}
+
 PEImage *Assembly::GetPEImage(BOOL fAddRef /* = FALSE */)
 {
     PEImage *pPEImage = m_pPEImage;
