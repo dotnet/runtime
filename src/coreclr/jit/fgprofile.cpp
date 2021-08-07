@@ -73,6 +73,37 @@ bool Compiler::fgHaveSufficientProfileData()
 }
 
 //------------------------------------------------------------------------
+// fgHaveTrustedProfileData: check if profile data source is one
+//   that can be trusted to faithfully represent the current program
+//   behavior.
+//
+// Returns:
+//   true if so
+//
+// Note:
+//   See notes for fgHaveProfileData.
+//
+bool Compiler::fgHaveTrustedProfileData()
+{
+    if (!fgHaveProfileData())
+    {
+        return false;
+    }
+
+    // We allow Text to be trusted so we can use it to stand in
+    // for Dynamic results.
+    //
+    switch (fgPgoSource)
+    {
+        case ICorJitInfo::PgoSource::Dynamic:
+        case ICorJitInfo::PgoSource::Text:
+            return true;
+        default:
+            return false;
+    }
+}
+
+//------------------------------------------------------------------------
 // fgApplyProfileScale: scale inlinee counts by appropriate scale factor
 //
 void Compiler::fgApplyProfileScale()
@@ -1796,6 +1827,9 @@ PhaseStatus Compiler::fgIncorporateProfileData()
                 break;
 
             default:
+                JITDUMP("Unknown PGO record type 0x%x in schema entry %u (offset 0x%x count 0x%x other 0x%x)\n",
+                        fgPgoSchema[iSchema].InstrumentationKind, iSchema, fgPgoSchema[iSchema].ILOffset,
+                        fgPgoSchema[iSchema].Count, fgPgoSchema[iSchema].Other);
                 otherRecords++;
                 break;
         }
