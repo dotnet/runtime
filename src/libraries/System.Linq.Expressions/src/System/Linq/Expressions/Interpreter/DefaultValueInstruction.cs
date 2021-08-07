@@ -4,6 +4,7 @@
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Dynamic.Utils;
+using System.Runtime.CompilerServices;
 
 namespace System.Linq.Expressions.Interpreter
 {
@@ -26,7 +27,7 @@ namespace System.Linq.Expressions.Interpreter
             Justification = "_type is a ValueType. You can always create an instance of a ValueType.")]
         public override int Run(InterpretedFrame frame)
         {
-            frame.Push(Activator.CreateInstance(_type));
+            frame.Push(RuntimeHelpers.GetUninitializedObject(_type));
             return 1;
         }
 
