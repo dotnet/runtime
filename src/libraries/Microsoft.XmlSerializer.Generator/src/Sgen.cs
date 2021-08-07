@@ -562,7 +562,7 @@ namespace Microsoft.XmlSerializer.Generator
         private static uint GetPersistentHashCode(string value)
         {
             byte[] valueBytes = Encoding.UTF8.GetBytes(value);
-            byte[] hash = SHA512.HashData(valueBytes);
+            byte[] hash = SHA512.Create().ComputeHash(valueBytes);
             return ReadUInt32BigEndian(hash);
         }
 
