@@ -723,8 +723,6 @@ ICLRPrivBinder* AssemblySpec::GetBindingContextFromParentAssembly(AppDomain *pDo
     {
         // Get the PEAssembly associated with the parent's domain assembly
         PEAssembly *pParentPEAssembly = pParentDomainAssembly->GetFile();
-
-        // ICLRPrivAssembly implements ICLRPrivBinder and thus, "is a" binder in a manner of semantics.
         pParentAssemblyBinder = pParentPEAssembly->GetBindingContext();
     }
 

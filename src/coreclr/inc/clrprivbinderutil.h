@@ -12,7 +12,7 @@
 
 //=====================================================================================================================
 // Forward declarations
-typedef DPTR(ICLRPrivAssembly) PTR_ICLRPrivAssembly;
+typedef DPTR(BINDER_SPACE::Assembly) PTR_BINDER_SPACE_Assembly;
 typedef DPTR(ICLRPrivBinder) PTR_ICLRPrivBinder;
 
 //=====================================================================================================================

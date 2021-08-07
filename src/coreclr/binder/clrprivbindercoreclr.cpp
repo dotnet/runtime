@@ -43,7 +43,7 @@ HRESULT CLRPrivBinderCoreCLR::BindAssemblyByNameWorker(BINDER_SPACE::AssemblyNam
 // CLRPrivBinderCoreCLR implementation
 // ============================================================================
 HRESULT CLRPrivBinderCoreCLR::BindAssemblyByName(AssemblyNameData *pAssemblyNameData,
-                                                 ICLRPrivAssembly **ppAssembly)
+                                                 BINDER_SPACE::Assembly **ppAssembly)
 {
     HRESULT hr = S_OK;
     VALIDATE_ARG_RET(pAssemblyNameData != nullptr && ppAssembly != nullptr);
@@ -61,7 +61,7 @@ Exit:
 }
 
 HRESULT CLRPrivBinderCoreCLR::BindUsingAssemblyName(BINDER_SPACE::AssemblyName *pAssemblyName,
-                                                    ICLRPrivAssembly **ppAssembly)
+                                                    BINDER_SPACE::Assembly **ppAssembly)
 {
     HRESULT hr = S_OK;
     VALIDATE_ARG_RET(pAssemblyName != nullptr && ppAssembly != nullptr);
@@ -134,7 +134,7 @@ Exit:;
 #if !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
 HRESULT CLRPrivBinderCoreCLR::BindUsingPEImage( /* in */ PEImage *pPEImage,
                                                 /* in */ BOOL fIsNativeImage,
-                                                /* [retval][out] */ ICLRPrivAssembly **ppAssembly)
+                                                /* [retval][out] */ BINDER_SPACE::Assembly **ppAssembly)
 {
     HRESULT hr = S_OK;
 
@@ -227,7 +227,7 @@ HRESULT CLRPrivBinderCoreCLR::Bind(LPCWSTR            wszCodeBase,
                                    PEAssembly        *pParentAssembly,
                                    BOOL               fNgenExplicitBind,
                                    BOOL               fExplicitBindToNativeImage,
-                                   ICLRPrivAssembly **ppAssembly)
+                                   BINDER_SPACE::Assembly **ppAssembly)
 {
     HRESULT hr = S_OK;
     VALIDATE_ARG_RET(wszCodeBase != NULL && ppAssembly != NULL);

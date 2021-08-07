@@ -139,7 +139,7 @@ Assembly* AssemblyNative::LoadFromPEImage(ICLRPrivBinder* pBinderContext, PEImag
 
     Assembly *pLoadedAssembly = NULL;
 
-    ReleaseHolder<ICLRPrivAssembly> pAssembly;
+    ReleaseHolder<BINDER_SPACE::Assembly> pAssembly;
 
     // Get the correct PEImage to work with.
     BOOL fIsNativeImage = TRUE;
@@ -206,10 +206,7 @@ Assembly* AssemblyNative::LoadFromPEImage(ICLRPrivBinder* pBinderContext, PEImag
         COMPlusThrowHR(COR_E_FILELOAD, dwMessageID, name);
     }
 
-    BINDER_SPACE::Assembly* assem;
-    assem = BINDER_SPACE::GetAssemblyFromPrivAssemblyFast(pAssembly);
-
-    PEAssemblyHolder pPEAssembly(PEAssembly::Open(pParentAssembly, assem->GetPEImage(), assem->GetNativePEImage(), pAssembly));
+    PEAssemblyHolder pPEAssembly(PEAssembly::Open(pParentAssembly, pAssembly->GetPEImage(), pAssembly->GetNativePEImage(), pAssembly));
     bindOperation.SetResult(pPEAssembly.GetValue());
 
     DomainAssembly *pDomainAssembly = pCurDomain->LoadDomainAssembly(&spec, pPEAssembly, FILE_LOADED);

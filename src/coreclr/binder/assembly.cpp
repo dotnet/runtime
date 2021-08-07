@@ -24,38 +24,12 @@ namespace BINDER_SPACE
         }
     };
 
-    STDMETHODIMP Assembly::QueryInterface(REFIID   riid,
-                                          void   **ppv)
-    {
-        HRESULT hr = S_OK;
-
-        if (ppv == NULL)
-        {
-            hr = E_POINTER;
-        }
-        else
-        {
-            if (IsEqualIID(riid, IID_IUnknown))
-            {
-                AddRef();
-                *ppv = static_cast<IUnknown *>(this);
-            }
-            else
-            {
-                *ppv = NULL;
-                hr = E_NOINTERFACE;
-            }
-        }
-
-        return hr;
-    }
-
-    STDMETHODIMP_(ULONG) Assembly::AddRef()
+    ULONG Assembly::AddRef()
     {
         return InterlockedIncrement(&m_cRef);
     }
 
-    STDMETHODIMP_(ULONG) Assembly::Release()
+    ULONG Assembly::Release()
     {
         ULONG ulRef = InterlockedDecrement(&m_cRef);
 
@@ -174,7 +148,7 @@ namespace BINDER_SPACE
     }
 
     // --------------------------------------------------------------------
-    // ICLRPrivAssembly methods
+    // BINDER_SPACE::Assembly methods
     // --------------------------------------------------------------------
     LPCWSTR Assembly::GetSimpleName()
     {
@@ -182,7 +156,7 @@ namespace BINDER_SPACE
         return (pAsmName == nullptr ? nullptr : (LPCWSTR)pAsmName->GetSimpleName());
     }
 
-    HRESULT Assembly::BindAssemblyByName(AssemblyNameData *pAssemblyNameData, ICLRPrivAssembly ** ppAssembly)
+    HRESULT Assembly::BindAssemblyByName(AssemblyNameData *pAssemblyNameData, BINDER_SPACE::Assembly ** ppAssembly)
     {
         return (m_pBinder == NULL) ? E_FAIL : m_pBinder->BindAssemblyByName(pAssemblyNameData, ppAssembly);
     }

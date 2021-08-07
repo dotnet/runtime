@@ -83,7 +83,7 @@ HRESULT CCoreCLRBinderHelper::GetAssemblyIdentity(LPCSTR     szTextualIdentity,
 // Functions that provides binding services beyond the ICLRPrivInterface
 //-----------------------------------------------------------------------------
 
-HRESULT CCoreCLRBinderHelper::BindToSystem(ICLRPrivAssembly **ppSystemAssembly, bool fBindToNativeImage)
+HRESULT CCoreCLRBinderHelper::BindToSystem(BINDER_SPACE::Assembly **ppSystemAssembly, bool fBindToNativeImage)
 {
     HRESULT hr = S_OK;
     VALIDATE_ARG_RET(ppSystemAssembly != NULL);
@@ -107,7 +107,7 @@ HRESULT CCoreCLRBinderHelper::BindToSystem(ICLRPrivAssembly **ppSystemAssembly, 
 HRESULT CCoreCLRBinderHelper::BindToSystemSatellite(SString            &systemPath,
                                                     SString           &sSimpleName,
                                                     SString           &sCultureName,
-                                                    ICLRPrivAssembly **ppSystemAssembly)
+                                                    BINDER_SPACE::Assembly **ppSystemAssembly)
 {
     HRESULT hr = S_OK;
     VALIDATE_ARG_RET(ppSystemAssembly != NULL && !systemPath.IsEmpty());

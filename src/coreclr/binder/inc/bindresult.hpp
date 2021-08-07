@@ -25,8 +25,7 @@ namespace BINDER_SPACE
         inline ~BindResult();
 
         inline AssemblyName *GetAssemblyName(BOOL fAddRef = FALSE);
-        inline IUnknown *GetAssembly(BOOL fAddRef = FALSE);
-        inline Assembly *GetAsAssembly(BOOL fAddRef = FALSE);
+        inline Assembly *GetAssembly(BOOL fAddRef = FALSE);
 
         inline BOOL GetIsInTPA();
         inline void SetIsInTPA(BOOL fIsInTPA);
@@ -70,7 +69,7 @@ namespace BINDER_SPACE
     protected:
         DWORD m_dwResultFlags;
         AssemblyName *m_pAssemblyName;
-        ReleaseHolder<IUnknown> m_pIUnknownAssembly;
+        ReleaseHolder<Assembly> m_pAssembly;
 
         AttemptResult m_inContextAttempt;
         AttemptResult m_applicationAssembliesAttempt;

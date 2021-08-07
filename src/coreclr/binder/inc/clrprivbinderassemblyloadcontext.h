@@ -22,7 +22,7 @@ public:
     //-------------------------------------------------------------------------
     STDMETHOD(BindAssemblyByName)(
             /* [in] */ struct AssemblyNameData *pAssemblyNameData,
-            /* [retval][out] */ ICLRPrivAssembly **ppAssembly);
+            /* [retval][out] */ BINDER_SPACE::Assembly **ppAssembly);
 
     STDMETHOD(GetLoaderAllocator)(
         /* [retval][out] */ LPVOID *pLoaderAllocator);
@@ -51,7 +51,7 @@ public:
 
     HRESULT BindUsingPEImage( /* in */ PEImage *pPEImage,
                               /* in */ BOOL fIsNativeImage,
-                              /* [retval][out] */ ICLRPrivAssembly **ppAssembly);
+                              /* [retval][out] */ BINDER_SPACE::Assembly **ppAssembly);
 
     //=========================================================================
     // Internal implementation details

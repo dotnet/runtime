@@ -1763,7 +1763,7 @@ PEAssembly::PEAssembly(
                 BOOL system,
                 PEImage * pPEImageIL /*= NULL*/,
                 PEImage * pPEImageNI /*= NULL*/,
-                ICLRPrivAssembly * pHostAssembly /*= NULL*/)
+                BINDER_SPACE::Assembly * pHostAssembly /*= NULL*/)
 
   : PEFile(pBindResultInfo ? (pBindResultInfo->GetPEImage() ? pBindResultInfo->GetPEImage() :
                                                               (pBindResultInfo->HasNativeImage() ? pBindResultInfo->GetNativeImage() : NULL)
@@ -1855,7 +1855,7 @@ PEAssembly *PEAssembly::Open(
     PEAssembly *       pParent,
     PEImage *          pPEImageIL,
     PEImage *          pPEImageNI,
-    ICLRPrivAssembly * pHostAssembly)
+    BINDER_SPACE::Assembly * pHostAssembly)
 {
     STANDARD_VM_CONTRACT;
 
@@ -1926,7 +1926,7 @@ PEAssembly *PEAssembly::DoOpenSystem(IUnknown * pAppCtx)
 
     ETWOnStartup (FusionBinding_V1, FusionBindingEnd_V1);
     CoreBindResult bindResult;
-    ReleaseHolder<ICLRPrivAssembly> pPrivAsm;
+    ReleaseHolder<BINDER_SPACE::Assembly> pPrivAsm;
     IfFailThrow(CCoreCLRBinderHelper::BindToSystem(&pPrivAsm, !IsCompilationProcess() || g_fAllowNativeImages));
     if(pPrivAsm != NULL)
     {
@@ -2400,10 +2400,14 @@ PTR_ICLRPrivBinder PEFile::GetBindingContext()
     // during EEStartup *before* DefaultContext Binder (aka TPAbinder) is initialized, we dont have a binding context to publish against.
     if (!IsSystem())
     {
-        pBindingContext = dac_cast<PTR_ICLRPrivBinder>(GetHostAssembly());
-        if (!pBindingContext)
+        BINDER_SPACE::Assembly* pHostAssembly = GetHostAssembly();
+        if (pHostAssembly)
         {
-            // If we do not have any binding context, check if we are dealing with
+            pBindingContext = dac_cast<PTR_ICLRPrivBinder>(pHostAssembly->GetBinder());
+        }
+        else
+        {
+            // If we do not have a host assembly, check if we are dealing with
             // a dynamically emitted assembly and if so, use its fallback load context
             // binder reference.
             if (IsDynamic())

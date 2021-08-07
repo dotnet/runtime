@@ -44,14 +44,6 @@ typedef interface ICLRPrivBinder ICLRPrivBinder;
 
 #endif 	/* __ICLRPrivBinder_FWD_DEFINED__ */
 
-
-#ifndef __ICLRPrivAssembly_FWD_DEFINED__
-#define __ICLRPrivAssembly_FWD_DEFINED__
-typedef interface ICLRPrivAssembly ICLRPrivAssembly;
-
-#endif 	/* __ICLRPrivAssembly_FWD_DEFINED__ */
-
-
 /* header files for imported files */
 #include "unknwn.h"
 #include "objidl.h"
@@ -81,14 +73,19 @@ extern RPC_IF_HANDLE __MIDL_itf_clrprivbinding_0000_0000_v0_0_s_ifspec;
 EXTERN_C const IID IID_ICLRPrivBinder;
 
 #if defined(__cplusplus) && !defined(CINTERFACE)
-    
+
+namespace BINDER_SPACE
+{
+    class Assembly;
+};
+
     MIDL_INTERFACE("2601F621-E462-404C-B299-3E1DE72F8542")
     ICLRPrivBinder : public IUnknown
     {
     public:
         virtual HRESULT STDMETHODCALLTYPE BindAssemblyByName( 
             /* [in] */ struct AssemblyNameData *pAssemblyNameData,
-            /* [retval][out] */ ICLRPrivAssembly **ppAssembly) = 0;
+            /* [retval][out] */ BINDER_SPACE::Assembly **ppAssembly) = 0;
         
         virtual HRESULT STDMETHODCALLTYPE GetBinderID( 
             /* [retval][out] */ UINT_PTR *pBinderId) = 0;
@@ -120,7 +117,7 @@ EXTERN_C const IID IID_ICLRPrivBinder;
         HRESULT ( STDMETHODCALLTYPE *BindAssemblyByName )( 
             ICLRPrivBinder * This,
             /* [in] */ struct AssemblyNameData *pAssemblyNameData,
-            /* [retval][out] */ ICLRPrivAssembly **ppAssembly);
+            /* [retval][out] */ BINDER_SPACE::Assembly **ppAssembly);
         
         HRESULT ( STDMETHODCALLTYPE *GetBinderID )( 
             ICLRPrivBinder * This,
@@ -175,109 +172,6 @@ EXTERN_C const IID IID_ICLRPrivBinder;
 
 /* interface __MIDL_itf_clrprivbinding_0000_0001 */
 /* [local] */ 
-
-
-enum ASSEMBLY_IMAGE_TYPES
-    {
-        ASSEMBLY_IMAGE_TYPE_IL	= 0x1,
-        ASSEMBLY_IMAGE_TYPE_NATIVE	= 0x2,
-        ASSEMBLY_IMAGE_TYPE_DEFAULT	= 0x3,
-        ASSEMBLY_IMAGE_TYPE_ASSEMBLY	= 0x4
-    } ;
-
-
-extern RPC_IF_HANDLE __MIDL_itf_clrprivbinding_0000_0001_v0_0_c_ifspec;
-extern RPC_IF_HANDLE __MIDL_itf_clrprivbinding_0000_0001_v0_0_s_ifspec;
-
-#ifndef __ICLRPrivAssembly_INTERFACE_DEFINED__
-#define __ICLRPrivAssembly_INTERFACE_DEFINED__
-
-/* interface ICLRPrivAssembly */
-/* [object][local][version][uuid] */ 
-
-
-EXTERN_C const IID IID_ICLRPrivAssembly;
-
-#if defined(__cplusplus) && !defined(CINTERFACE)
-    
-    MIDL_INTERFACE("2601F621-E462-404C-B299-3E1DE72F8543")
-    ICLRPrivAssembly : public ICLRPrivBinder
-    {
-    };
-    
-    
-#else 	/* C style interface */
-
-    typedef struct ICLRPrivAssemblyVtbl
-    {
-        BEGIN_INTERFACE
-        
-        HRESULT ( STDMETHODCALLTYPE *QueryInterface )( 
-            ICLRPrivAssembly * This,
-            /* [in] */ REFIID riid,
-            /* [annotation][iid_is][out] */ 
-            _COM_Outptr_  void **ppvObject);
-        
-        ULONG ( STDMETHODCALLTYPE *AddRef )( 
-            ICLRPrivAssembly * This);
-        
-        ULONG ( STDMETHODCALLTYPE *Release )( 
-            ICLRPrivAssembly * This);
-        
-        HRESULT ( STDMETHODCALLTYPE *BindAssemblyByName )( 
-            ICLRPrivAssembly * This,
-            /* [in] */ struct AssemblyNameData *pAssemblyNameData,
-            /* [retval][out] */ ICLRPrivAssembly **ppAssembly);
-        
-        HRESULT ( STDMETHODCALLTYPE *GetBinderID )( 
-            ICLRPrivAssembly * This,
-            /* [retval][out] */ UINT_PTR *pBinderId);
-        
-        HRESULT ( STDMETHODCALLTYPE *GetLoaderAllocator )( 
-            ICLRPrivAssembly * This,
-            /* [retval][out] */ LPVOID *pLoaderAllocator);
-               
-        END_INTERFACE
-    } ICLRPrivAssemblyVtbl;
-
-    interface ICLRPrivAssembly
-    {
-        CONST_VTBL struct ICLRPrivAssemblyVtbl *lpVtbl;
-    };
-
-    
-
-#ifdef COBJMACROS
-
-
-#define ICLRPrivAssembly_QueryInterface(This,riid,ppvObject)	\
-    ( (This)->lpVtbl -> QueryInterface(This,riid,ppvObject) ) 
-
-#define ICLRPrivAssembly_AddRef(This)	\
-    ( (This)->lpVtbl -> AddRef(This) ) 
-
-#define ICLRPrivAssembly_Release(This)	\
-    ( (This)->lpVtbl -> Release(This) ) 
-
-
-#define ICLRPrivAssembly_BindAssemblyByName(This,pAssemblyNameData,ppAssembly)	\
-    ( (This)->lpVtbl -> BindAssemblyByName(This,pAssemblyNameData,ppAssembly) ) 
-
-#define ICLRPrivAssembly_GetBinderID(This,pBinderId)	\
-    ( (This)->lpVtbl -> GetBinderID(This,pBinderId) ) 
-
-#define ICLRPrivAssembly_GetLoaderAllocator(This,pLoaderAllocator)	\
-    ( (This)->lpVtbl -> GetLoaderAllocator(This,pLoaderAllocator) ) 
-
-#endif /* COBJMACROS */
-
-
-#endif 	/* C style interface */
-
-
-
-
-#endif 	/* __ICLRPrivAssembly_INTERFACE_DEFINED__ */
 
 
 /* Additional Prototypes for ALL interfaces */

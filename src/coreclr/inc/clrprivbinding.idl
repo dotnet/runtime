@@ -6,7 +6,7 @@ import "objidl.idl";
 
 // Forward declarations
 interface ICLRPrivBinder;
-interface ICLRPrivAssembly;
+interface Assembly;
 
 /**************************************************************************************
  ** This IDL file defines the assembly binding host interfaces. Some things to keep
@@ -37,7 +37,7 @@ interface ICLRPrivBinder : IUnknown
      **********************************************************************************/
     HRESULT BindAssemblyByName(
         [in] struct AssemblyNameData* pAssemblyNameData,
-        [out, retval] ICLRPrivAssembly ** ppAssembly);
+        [out, retval] Assembly ** ppAssembly);
 
     /**********************************************************************************
      ** GetBinderID
@@ -58,17 +58,4 @@ interface ICLRPrivBinder : IUnknown
      **********************************************************************************/
     HRESULT GetLoaderAllocator(
         [out, retval] LPVOID * pLoaderAllocator);
-};
-
-/**************************************************************************************
- ** ICLRPrivAssembly - Represents an assembly bind result. Extends ICLRPrivBinder, which
- ** implicitly tracks the parent binder, and enables simple assembly-relative binds.
- **************************************************************************************/
-[
-    uuid(2601F621-E462-404C-B299-3E1DE72F8543),
-    version(1.0),
-    local
-]
-interface ICLRPrivAssembly : ICLRPrivBinder
-{
 };

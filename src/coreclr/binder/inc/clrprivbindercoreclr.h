@@ -20,7 +20,7 @@ public:
     //-------------------------------------------------------------------------
     STDMETHOD(BindAssemblyByName)(
             /* [in] */ struct AssemblyNameData *pAssemblyNameData,
-            /* [retval][out] */ ICLRPrivAssembly **ppAssembly);
+            /* [retval][out] */ BINDER_SPACE::Assembly **ppAssembly);
 
     STDMETHOD(GetLoaderAllocator)(
         /* [retval][out] */ LPVOID *pLoaderAllocator);
@@ -41,15 +41,15 @@ public:
                  PEAssembly  *pParentAssembly,
                  BOOL         fNgenExplicitBind,
                  BOOL         fExplicitBindToNativeImage,
-                 ICLRPrivAssembly **ppAssembly);
+                 BINDER_SPACE::Assembly **ppAssembly);
 
     HRESULT BindUsingAssemblyName(BINDER_SPACE::AssemblyName *pAssemblyName,
-                                  ICLRPrivAssembly **ppAssembly);
+                                  BINDER_SPACE::Assembly **ppAssembly);
 
 #if !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
     HRESULT BindUsingPEImage( /* in */ PEImage *pPEImage,
                               /* in */ BOOL fIsNativeImage,
-                              /* [retval][out] */ ICLRPrivAssembly **ppAssembly);
+                              /* [retval][out] */ BINDER_SPACE::Assembly **ppAssembly);
 #endif // !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
 
     HRESULT BindAssemblyByNameWorker(

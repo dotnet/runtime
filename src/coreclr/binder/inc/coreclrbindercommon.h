@@ -32,12 +32,12 @@ public:
     //=============================================================================
     // Class functions that provides binding services beyond the ICLRPrivInterface
     //-----------------------------------------------------------------------------
-    static HRESULT BindToSystem(ICLRPrivAssembly **ppSystemAssembly, bool fBindToNativeImage);
+    static HRESULT BindToSystem(BINDER_SPACE::Assembly **ppSystemAssembly, bool fBindToNativeImage);
 
     static HRESULT BindToSystemSatellite(SString            &systemPath,
                                          SString           &sSimpleName,
                                          SString           &sCultureName,
-                                         ICLRPrivAssembly **ppSystemAssembly);
+                                         BINDER_SPACE::Assembly **ppSystemAssembly);
 };
 
 #endif // __CORECLR_BINDER_COMMON_H__

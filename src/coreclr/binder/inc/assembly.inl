@@ -117,9 +117,4 @@ void Assembly::SetMDImport(IMDInternalImport *pMDImport)
     m_pMDImport->AddRef();
 }
 
-BINDER_SPACE::Assembly* GetAssemblyFromPrivAssemblyFast(ICLRPrivAssembly *pPrivAssembly)
-{
-    return (BINDER_SPACE::Assembly *)pPrivAssembly;
-}
-
 #endif

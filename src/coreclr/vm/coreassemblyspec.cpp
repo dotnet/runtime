@@ -98,7 +98,7 @@ VOID  AssemblySpec::Bind(AppDomain      *pAppDomain,
     // Get the reference to the TPABinder context
     CLRPrivBinderCoreCLR *pTPABinder = pAppDomain->GetTPABinderContext();
 
-    ReleaseHolder<ICLRPrivAssembly> pPrivAsm;
+    ReleaseHolder<BINDER_SPACE::Assembly> pPrivAsm;
     _ASSERTE(pBinder != NULL);
 
     if (m_wszCodeBase == NULL && IsCoreLibSatellite())
@@ -142,7 +142,7 @@ VOID  AssemblySpec::Bind(AppDomain      *pAppDomain,
     {
         _ASSERTE(pPrivAsm != nullptr);
 
-        result = BINDER_SPACE::GetAssemblyFromPrivAssemblyFast(pPrivAsm.Extract());
+        result = pPrivAsm.Extract();
         _ASSERTE(result != nullptr);
 
         pResult->Init(result);

@@ -43,7 +43,7 @@ HRESULT CLRPrivBinderAssemblyLoadContext::BindAssemblyByNameWorker(BINDER_SPACE:
 }
 
 HRESULT CLRPrivBinderAssemblyLoadContext::BindAssemblyByName(AssemblyNameData *pAssemblyNameData,
-                                                             ICLRPrivAssembly **ppAssembly)
+                                                             BINDER_SPACE::Assembly **ppAssembly)
 {
     HRESULT hr = S_OK;
     VALIDATE_ARG_RET(pAssemblyNameData != nullptr && ppAssembly != nullptr);
@@ -114,7 +114,7 @@ Exit:;
 
 HRESULT CLRPrivBinderAssemblyLoadContext::BindUsingPEImage( /* in */ PEImage *pPEImage,
                                                             /* in */ BOOL fIsNativeImage,
-                                                            /* [retval][out] */ ICLRPrivAssembly **ppAssembly)
+                                                            /* [retval][out] */ BINDER_SPACE::Assembly **ppAssembly)
 {
     HRESULT hr = S_OK;
 

@@ -1237,7 +1237,7 @@ void DomainAssembly::Begin()
         AppDomain::LoadLockHolder lock(m_pDomain);
         m_pDomain->AddAssembly(this);
     }
-    // Make it possible to find this DomainAssembly object from associated ICLRPrivAssembly.
+    // Make it possible to find this DomainAssembly object from associated BINDER_SPACE::Assembly.
     GetAppDomain()->PublishHostedAssembly(this);
     m_fHostAssemblyPublished = true;
 }

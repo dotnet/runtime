@@ -2392,14 +2392,14 @@ private:
 
 private:
     //-----------------------------------------------------------
-    // Static ICLRPrivAssembly -> DomainAssembly mapping functions.
+    // Static BINDER_SPACE::Assembly -> DomainAssembly mapping functions.
     // This map does not maintain a reference count to either key or value.
-    // PEFile maintains a reference count on the ICLRPrivAssembly through its code:PEFile::m_pHostAssembly field.
+    // PEFile maintains a reference count on the BINDER_SPACE::Assembly through its code:PEFile::m_pHostAssembly field.
     // It is removed from this hash table by code:DomainAssembly::~DomainAssembly.
     struct HostAssemblyHashTraits : public DefaultSHashTraits<PTR_DomainAssembly>
     {
     public:
-        typedef PTR_ICLRPrivAssembly key_t;
+        typedef PTR_BINDER_SPACE_Assembly key_t;
 
         static key_t GetKey(element_t const & elem)
         {
@@ -2446,7 +2446,7 @@ private:
 
 public:
     // Returns DomainAssembly.
-    PTR_DomainAssembly FindAssembly(PTR_ICLRPrivAssembly pHostAssembly);
+    PTR_DomainAssembly FindAssembly(PTR_BINDER_SPACE_Assembly pHostAssembly);
 
 #ifndef DACCESS_COMPILE
 private:

@@ -33,7 +33,7 @@
 extern HRESULT RuntimeInvokeHostAssemblyResolver(INT_PTR pManagedAssemblyLoadContextToBindWithin,
                                                  BINDER_SPACE::AssemblyName *pAssemblyName,
                                                  CLRPrivBinderCoreCLR *pTPABinder,
-                                                 ICLRPrivAssembly **ppLoadedAssembly);
+                                                 BINDER_SPACE::Assembly **ppLoadedAssembly);
 
 #endif // !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
 
@@ -334,11 +334,11 @@ namespace BINDER_SPACE
             }
             else if (hr == S_OK)
             {
-                *ppAssembly = hostBindResult.GetAsAssembly(TRUE /* fAddRef */);
+                *ppAssembly = hostBindResult.GetAssembly(TRUE /* fAddRef */);
             }
 #else // CROSSGEN_COMPILE
 
-            *ppAssembly = bindResult.GetAsAssembly(TRUE /* fAddRef */);
+            *ppAssembly = bindResult.GetAssembly(TRUE /* fAddRef */);
 
 #endif // CROSSGEN_COMPILE
         }
@@ -691,7 +691,7 @@ namespace BINDER_SPACE
             {
                 bool isCompatible = IsCompatibleAssemblyVersion(pAssemblyName, pBindResult->GetAssemblyName());
                 hr = isCompatible ? S_OK : FUSION_E_APP_DOMAIN_LOCKED;
-                pBindResult->SetAttemptResult(hr, pBindResult->GetAsAssembly());
+                pBindResult->SetAttemptResult(hr, pBindResult->GetAssembly());
 
                 // TPA binder returns FUSION_E_REF_DEF_MISMATCH for incompatible version
                 if (hr == FUSION_E_APP_DOMAIN_LOCKED && isTpaListProvided)
@@ -1415,13 +1415,13 @@ HRESULT AssemblyBinder::BindUsingHostAssemblyResolver(/* in */ INT_PTR pManagedA
     _ASSERTE(pManagedAssemblyLoadContextToBindWithin != NULL);
 
     // RuntimeInvokeHostAssemblyResolver will perform steps 2-4 of CLRPrivBinderAssemblyLoadContext::BindAssemblyByName.
-    ICLRPrivAssembly *pLoadedAssembly = NULL;
+    BINDER_SPACE::Assembly *pLoadedAssembly = NULL;
     hr = RuntimeInvokeHostAssemblyResolver(pManagedAssemblyLoadContextToBindWithin,
                                            pAssemblyName, pTPABinder, &pLoadedAssembly);
     if (SUCCEEDED(hr))
     {
         _ASSERTE(pLoadedAssembly != NULL);
-        *ppAssembly = static_cast<Assembly *>(pLoadedAssembly);
+        *ppAssembly = pLoadedAssembly;
     }
 
     return hr;
@@ -1491,7 +1491,7 @@ Retry:
 
                 // If we cannot get MVID, then err on side of caution and fail the
                 // load.
-                IF_FAIL_GO(bindResult.GetAsAssembly()->GetMVID(&boundMVID));
+                IF_FAIL_GO(bindResult.GetAssembly()->GetMVID(&boundMVID));
 
                 mvidMismatch = incomingMVID != boundMVID;
                 if (mvidMismatch)
@@ -1532,7 +1532,7 @@ Retry:
         }
         else if (hr == S_OK)
         {
-            *ppAssembly = hostBindResult.GetAsAssembly(TRUE /* fAddRef */);
+            *ppAssembly = hostBindResult.GetAssembly(TRUE /* fAddRef */);
         }
     }
 

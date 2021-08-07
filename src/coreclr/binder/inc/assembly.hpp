@@ -55,25 +55,16 @@ namespace BINDER_SPACE
     //
     // This allows us to preferentially use the NGEN image if it is available.
     class Assembly
-        : public ICLRPrivAssembly
     {
     public:
-        // --------------------------------------------------------------------
-        // IUnknown methods
-        // --------------------------------------------------------------------
-        STDMETHOD(QueryInterface)(REFIID riid,
-                                  void ** ppv);
-        STDMETHOD_(ULONG, AddRef)();
-        STDMETHOD_(ULONG, Release)();
+        ULONG AddRef();
+        ULONG Release();
 
-        // --------------------------------------------------------------------
-        // ICLRPrivAssembly methods
-        // --------------------------------------------------------------------
         LPCWSTR GetSimpleName();
 
         STDMETHOD(BindAssemblyByName)(
             /* [in] */ AssemblyNameData *pAssemblyNameData,
-            /* [retval][out] */ ICLRPrivAssembly **ppAssembly);
+            /* [retval][out] */ BINDER_SPACE::Assembly **ppAssembly);
 
         STDMETHOD(GetBinderID)(UINT_PTR *pBinderId);
 
@@ -154,10 +145,6 @@ namespace BINDER_SPACE
         friend class ::CLRPrivBinderAssemblyLoadContext;
 #endif // !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
     };
-
-    // This is a fast version which goes around the COM interfaces and directly
-    // casts the interfaces and does't AddRef
-    inline BINDER_SPACE::Assembly * GetAssemblyFromPrivAssemblyFast(ICLRPrivAssembly *pPrivAssembly);
 
 #include "assembly.inl"
 };
