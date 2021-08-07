@@ -171,7 +171,12 @@ namespace System.Net.Quic.Implementations.MsQuic
         // constructor for outbound connections
         public MsQuicConnection(QuicClientConnectionOptions options)
         {
-            _remoteEndPoint = options.RemoteEndPoint!;
+            if (options.RemoteEndPoint == null)
+            {
+                throw new ArgumentNullException(nameof(options.RemoteEndPoint));
+            }
+
+            _remoteEndPoint = options.RemoteEndPoint;
             _configuration = SafeMsQuicConfigurationHandle.Create(options);
             _state.RemoteCertificateRequired = true;
             if (options.ClientAuthenticationOptions != null)
@@ -523,6 +528,10 @@ namespace System.Net.Quic.Implementations.MsQuic
         internal override QuicStreamProvider OpenUnidirectionalStream()
         {
             ThrowIfDisposed();
+            if (!Connected)
+            {
+                throw new InvalidOperationException(SR.net_quic_not_connected);
+            }
 
             return new MsQuicStream(_state, QUIC_STREAM_OPEN_FLAGS.UNIDIRECTIONAL);
         }
@@ -530,6 +539,10 @@ namespace System.Net.Quic.Implementations.MsQuic
         internal override QuicStreamProvider OpenBidirectionalStream()
         {
             ThrowIfDisposed();
+            if (!Connected)
+            {
+                throw new InvalidOperationException(SR.net_quic_not_connected);
+            }
 
             return new MsQuicStream(_state, QUIC_STREAM_OPEN_FLAGS.NONE);
         }
@@ -552,7 +565,7 @@ namespace System.Net.Quic.Implementations.MsQuic
 
             if (_configuration is null)
             {
-                throw new Exception($"{nameof(ConnectAsync)} must not be called on a connection obtained from a listener.");
+                throw new InvalidOperationException($"{nameof(ConnectAsync)} must not be called on a connection obtained from a listener.");
             }
 
             QUIC_ADDRESS_FAMILY af = _remoteEndPoint.AddressFamily switch
@@ -560,7 +573,7 @@ namespace System.Net.Quic.Implementations.MsQuic
                 AddressFamily.Unspecified => QUIC_ADDRESS_FAMILY.UNSPEC,
                 AddressFamily.InterNetwork => QUIC_ADDRESS_FAMILY.INET,
                 AddressFamily.InterNetworkV6 => QUIC_ADDRESS_FAMILY.INET6,
-                _ => throw new Exception(SR.Format(SR.net_quic_unsupported_address_family, _remoteEndPoint.AddressFamily))
+                _ => throw new ArgumentException(SR.Format(SR.net_quic_unsupported_address_family, _remoteEndPoint.AddressFamily))
             };
 
             Debug.Assert(_state.StateGCHandle.IsAllocated);
@@ -592,7 +605,7 @@ namespace System.Net.Quic.Implementations.MsQuic
             }
             else
             {
-                throw new Exception($"Unsupported remote endpoint type '{_remoteEndPoint.GetType()}'.");
+                throw new ArgumentException($"Unsupported remote endpoint type '{_remoteEndPoint.GetType()}'.");
             }
 
             // We store TCS to local variable to avoid NRE if callbacks finish fast and set _state.ConnectTcs to null.
@@ -759,7 +772,7 @@ namespace System.Net.Quic.Implementations.MsQuic
             if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(_state, $"{TraceId()} Connection disposing {disposing}");
 
             // If we haven't already shutdown gracefully (via a successful CloseAsync call), then force an abortive shutdown.
-            if (_state.Handle != null)
+            if (_state.Handle != null && !_state.Handle.IsInvalid && !_state.Handle.IsClosed)
             {
                 // Handle can be null if outbound constructor failed and we are called from finalizer.
                 Debug.Assert(!Monitor.IsEntered(_state));

@@ -12,7 +12,6 @@ using System.Threading;
 using System.Threading.Channels;
 using System.Threading.Tasks;
 using static System.Net.Quic.Implementations.MsQuic.Internal.MsQuicNativeMethods;
-using System.Security.Authentication;
 
 namespace System.Net.Quic.Implementations.MsQuic
 {
@@ -37,6 +36,12 @@ namespace System.Net.Quic.Implementations.MsQuic
 
             public QuicOptions ConnectionOptions = new QuicOptions();
             public SslServerAuthenticationOptions AuthenticationOptions = new SslServerAuthenticationOptions();
+#if DEBUG
+            public int EventCount;
+            public int ErrorCount;
+            public int ConnectionCount;
+            public Exception? ex;
+#endif
 
             public State(QuicListenerOptions options)
             {
@@ -219,15 +224,20 @@ namespace System.Net.Quic.Implementations.MsQuic
             IntPtr context,
             ref ListenerEvent evt)
         {
-            if (evt.Type != QUIC_LISTENER_EVENT.NEW_CONNECTION)
-            {
-                return MsQuicStatusCodes.InternalError;
-            }
-
             GCHandle gcHandle = GCHandle.FromIntPtr(context);
             Debug.Assert(gcHandle.IsAllocated);
             Debug.Assert(gcHandle.Target is not null);
             var state = (State)gcHandle.Target;
+#if DEBUG
+            state.EventCount++;
+#endif
+            if (evt.Type != QUIC_LISTENER_EVENT.NEW_CONNECTION)
+            {
+#if DEBUG
+                state.ErrorCount++;
+#endif
+                return MsQuicStatusCodes.InternalError;
+            }
 
             SafeMsQuicConnectionHandle? connectionHandle = null;
             MsQuicConnection? msQuicConnection = null;
@@ -266,6 +276,10 @@ namespace System.Net.Quic.Implementations.MsQuic
                     if (connectionConfiguration == null)
                     {
                         // We don't have safe handle yet so MsQuic will cleanup new connection.
+#if DEBUG
+                        state.ErrorCount++;
+#endif
+
                         return MsQuicStatusCodes.InternalError;
                     }
                 }
@@ -280,6 +294,10 @@ namespace System.Net.Quic.Implementations.MsQuic
 
                     if (state.AcceptConnectionQueue.Writer.TryWrite(msQuicConnection))
                     {
+#if DEBUG
+                        state.ConnectionCount++;
+#endif
+
                         return MsQuicStatusCodes.Success;
                     }
                 }
@@ -288,12 +306,18 @@ namespace System.Net.Quic.Implementations.MsQuic
             }
             catch (Exception ex)
             {
+#if DEBUG
+                state.ex = ex;
+#endif
+
                 if (NetEventSource.Log.IsEnabled())
                 {
                     NetEventSource.Error(state, $"[Listener#{state.GetHashCode()}] Exception occurred during handling {(QUIC_LISTENER_EVENT)evt.Type} connection callback: {ex}");
                 }
             }
-
+#if DEBUG
+            state.ErrorCount++;
+#endif
             // This handle will be cleaned up by MsQuic by returning InternalError.
             connectionHandle?.SetHandleAsInvalid();
             msQuicConnection?.Dispose();
