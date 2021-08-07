@@ -17,10 +17,8 @@ extern MonoObject* mono_wasm_set_object_property (int js_handle, MonoString *pro
 extern MonoObject* mono_wasm_set_by_index (int js_handle, int property_index, MonoObject *value, int *is_exception);
 extern MonoObject* mono_wasm_get_global_object (MonoString *global_name, int *is_exception);
 extern void* mono_wasm_release_handle (int js_handle, int *is_exception);
-extern void* mono_wasm_release_object (int js_handle, int *is_exception);
 extern MonoObject* mono_wasm_new (MonoString *core_name, MonoArray *args, int *is_exception);
 extern int mono_wasm_bind_core_object (int js_handle, int gc_handle, int *is_exception);
-extern int mono_wasm_bind_host_object (int js_handle, int gc_handle, int *is_exception);
 extern MonoObject* mono_wasm_typed_array_to_array (int js_handle, int *is_exception);
 extern MonoObject* mono_wasm_typed_array_copy_to (int js_handle, int ptr, int begin, int end, int bytes_per_element, int *is_exception);
 extern MonoObject* mono_wasm_typed_array_from (int ptr, int begin, int end, int bytes_per_element, int type, int *is_exception);
@@ -78,9 +76,7 @@ void core_initialize_internals ()
 	mono_add_internal_call ("Interop/Runtime::SetByIndex", mono_wasm_set_by_index);
 	mono_add_internal_call ("Interop/Runtime::GetGlobalObject", mono_wasm_get_global_object);
 	mono_add_internal_call ("Interop/Runtime::ReleaseHandle", mono_wasm_release_handle);
-	mono_add_internal_call ("Interop/Runtime::ReleaseObject", mono_wasm_release_object);
 	mono_add_internal_call ("Interop/Runtime::BindCoreObject", mono_wasm_bind_core_object);
-	mono_add_internal_call ("Interop/Runtime::BindHostObject", mono_wasm_bind_host_object);
 	mono_add_internal_call ("Interop/Runtime::New", mono_wasm_new);
 	mono_add_internal_call ("Interop/Runtime::TypedArrayToArray", mono_wasm_typed_array_to_array);
 	mono_add_internal_call ("Interop/Runtime::TypedArrayCopyTo", mono_wasm_typed_array_copy_to);
@@ -89,7 +85,6 @@ void core_initialize_internals ()
 	mono_add_internal_call ("Interop/Runtime::CompileFunction", mono_wasm_compile_function);
 	mono_add_internal_call ("Interop/Runtime::AddEventListener", mono_wasm_add_event_listener);
 	mono_add_internal_call ("Interop/Runtime::RemoveEventListener", mono_wasm_remove_event_listener);
-
 }
 
 // Int8Array 		| int8_t	| byte or SByte (signed byte)
