@@ -119,15 +119,6 @@ void Assembly::SetMDImport(IMDInternalImport *pMDImport)
 
 BINDER_SPACE::Assembly* GetAssemblyFromPrivAssemblyFast(ICLRPrivAssembly *pPrivAssembly)
 {
-#ifdef _DEBUG
-    if(pPrivAssembly != nullptr)
-    {
-        // Ensure the pPrivAssembly we are about to cast is indeed a valid Assembly
-        DWORD dwImageType = 0;
-        pPrivAssembly->GetAvailableImageTypes(&dwImageType);
-        _ASSERTE((dwImageType & ASSEMBLY_IMAGE_TYPE_ASSEMBLY) == ASSEMBLY_IMAGE_TYPE_ASSEMBLY);
-    }
-#endif
     return (BINDER_SPACE::Assembly *)pPrivAssembly;
 }
 

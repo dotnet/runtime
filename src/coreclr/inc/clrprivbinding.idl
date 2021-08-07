@@ -61,21 +61,6 @@ interface ICLRPrivBinder : IUnknown
 };
 
 /**************************************************************************************
- ** ASSEMBLY_IMAGE_TYPES - The set of assembly image formats.
- **************************************************************************************/
-enum ASSEMBLY_IMAGE_TYPES
-{
-    // IL image format
-    ASSEMBLY_IMAGE_TYPE_IL                      = 0x0001,
-    // Native image (NGEN) format
-    ASSEMBLY_IMAGE_TYPE_NATIVE                  = 0x0002,
-    // Binder's preferred image type
-    ASSEMBLY_IMAGE_TYPE_DEFAULT                 = 0x0003,
-    // Only supported on CoreCLR
-    ASSEMBLY_IMAGE_TYPE_ASSEMBLY                = 0x0004,
-};
-
-/**************************************************************************************
  ** ICLRPrivAssembly - Represents an assembly bind result. Extends ICLRPrivBinder, which
  ** implicitly tracks the parent binder, and enables simple assembly-relative binds.
  **************************************************************************************/
@@ -86,14 +71,4 @@ enum ASSEMBLY_IMAGE_TYPES
 ]
 interface ICLRPrivAssembly : ICLRPrivBinder
 {
-    /**********************************************************************************
-     ** GetAvailableImageTypes - Use to retrieve the set of images available for an
-     ** assembly.
-     **     NOTE: This method is required to be idempotent. See general comment above.
-     **
-     ** pdwImageTypes - set to values from ASSEMBLY_IMAGE_TYPES to indicate
-     **     which image formats are available for the assembly.
-     **********************************************************************************/
-    HRESULT GetAvailableImageTypes(
-        [out, retval] LPDWORD pdwImageTypes);
 };

@@ -196,18 +196,5 @@ namespace BINDER_SPACE
     {
         return (m_pBinder == NULL) ? E_FAIL : m_pBinder->GetLoaderAllocator(pLoaderAllocator);
     }
-
-    HRESULT Assembly::GetAvailableImageTypes(
-        LPDWORD pdwImageTypes)
-    {
-        HRESULT hr = E_FAIL;
-
-        if(pdwImageTypes == nullptr)
-            return E_INVALIDARG;
-
-        *pdwImageTypes = ASSEMBLY_IMAGE_TYPE_ASSEMBLY;
-
-        return S_OK;
-    }
 }
 

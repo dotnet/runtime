@@ -203,10 +203,6 @@ EXTERN_C const IID IID_ICLRPrivAssembly;
     MIDL_INTERFACE("2601F621-E462-404C-B299-3E1DE72F8543")
     ICLRPrivAssembly : public ICLRPrivBinder
     {
-    public:
-        virtual HRESULT STDMETHODCALLTYPE GetAvailableImageTypes( 
-            /* [retval][out] */ LPDWORD pdwImageTypes) = 0;
-        
     };
     
     
@@ -240,11 +236,7 @@ EXTERN_C const IID IID_ICLRPrivAssembly;
         HRESULT ( STDMETHODCALLTYPE *GetLoaderAllocator )( 
             ICLRPrivAssembly * This,
             /* [retval][out] */ LPVOID *pLoaderAllocator);
-        
-        HRESULT ( STDMETHODCALLTYPE *GetAvailableImageTypes )( 
-            ICLRPrivAssembly * This,
-            /* [retval][out] */ LPDWORD pdwImageTypes);
-        
+               
         END_INTERFACE
     } ICLRPrivAssemblyVtbl;
 
@@ -276,10 +268,6 @@ EXTERN_C const IID IID_ICLRPrivAssembly;
 
 #define ICLRPrivAssembly_GetLoaderAllocator(This,pLoaderAllocator)	\
     ( (This)->lpVtbl -> GetLoaderAllocator(This,pLoaderAllocator) ) 
-
-
-#define ICLRPrivAssembly_GetAvailableImageTypes(This,pdwImageTypes)	\
-    ( (This)->lpVtbl -> GetAvailableImageTypes(This,pdwImageTypes) ) 
 
 #endif /* COBJMACROS */
 

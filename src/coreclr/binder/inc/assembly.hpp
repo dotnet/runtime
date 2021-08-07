@@ -75,8 +75,6 @@ namespace BINDER_SPACE
             /* [in] */ AssemblyNameData *pAssemblyNameData,
             /* [retval][out] */ ICLRPrivAssembly **ppAssembly);
 
-        STDMETHOD(GetAvailableImageTypes)(PDWORD pdwImageTypes);
-
         STDMETHOD(GetBinderID)(UINT_PTR *pBinderId);
 
         STDMETHOD(GetLoaderAllocator)(LPVOID* pLoaderAllocator);
