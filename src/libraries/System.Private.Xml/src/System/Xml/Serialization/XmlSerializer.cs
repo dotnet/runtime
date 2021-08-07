@@ -633,6 +633,14 @@ namespace System.Xml.Serialization
             Justification = "Code is used on diagnostics so we fallback to print assembly.FullName if assembly.Location is empty")]
         internal static bool GenerateSerializer(Type[]? types, XmlMapping[] mappings, Stream stream)
         {
+            return GenerateSerializer(types, mappings, null, stream);
+        }
+
+        [RequiresUnreferencedCode("calls GenerateSerializerToStream")]
+        [UnconditionalSuppressMessage("SingleFile", "IL3000: Avoid accessing Assembly file path when publishing as a single file",
+            Justification = "Code is used on diagnostics so we fallback to print assembly.FullName if assembly.Location is empty")]
+        internal static bool GenerateSerializer(Type[]? types, XmlMapping[] mappings, string defaultNamespace, Stream stream)
+        {
             if (types == null || types.Length == 0)
                 return false;
 
@@ -669,7 +677,7 @@ namespace System.Xml.Serialization
                 }
             }
 
-            return TempAssembly.GenerateSerializerToStream(mappings, types, null, assembly, new Hashtable(), stream);
+            return TempAssembly.GenerateSerializerToStream(mappings, types, defaultNamespace, assembly, new Hashtable(), stream);
         }
 
         [RequiresUnreferencedCode("calls Contract")]
