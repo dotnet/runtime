@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Collections.Generic;
+using System.Collections.Concurrent;
 using Microsoft.Extensions.Logging;
 
 namespace Microsoft.Extensions.Hosting.Tests
@@ -11,7 +11,10 @@ namespace Microsoft.Extensions.Hosting.Tests
     {
         private readonly TestLogger _logger = new();
 
-        public List<LogEvent> Events => _logger.Events;
+        /// <summary>
+        /// Provides a snapshot of the current events.
+        /// </summary>
+        public LogEvent[] GetEvents() => _logger.GetEvents();
 
         public ILogger CreateLogger(string categoryName)
         {
@@ -22,7 +25,9 @@ namespace Microsoft.Extensions.Hosting.Tests
 
         private class TestLogger : ILogger
         {
-            internal List<LogEvent> Events = new();
+            private readonly ConcurrentQueue<LogEvent> _events = new();
+
+            internal LogEvent[] GetEvents() => _events.ToArray();
 
             public IDisposable BeginScope<TState>(TState state) => new Scope();
 
@@ -30,7 +35,7 @@ namespace Microsoft.Extensions.Hosting.Tests
 
             public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception? exception, Func<TState, Exception?, string> formatter)
             {
-                Events.Add(new LogEvent()
+                _events.Enqueue(new LogEvent()
                 {
                     LogLevel = logLevel,
                     EventId = eventId,

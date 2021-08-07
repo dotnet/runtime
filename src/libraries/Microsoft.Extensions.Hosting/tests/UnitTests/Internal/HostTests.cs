@@ -1350,8 +1350,9 @@ namespace Microsoft.Extensions.Hosting.Internal
 
             while (true)
             {
+                LogEvent[] events = logger.GetEvents();
                 if (expectedExceptionMessages.All(
-                        expectedMessage => logger.Events.Any(
+                        expectedMessage => events.Any(
                             e => e.Message.Contains(expectedMessage))))
                 {
                     break;
@@ -1385,7 +1386,7 @@ namespace Microsoft.Extensions.Hosting.Internal
             host.Start();
             await host.StopAsync();
 
-            foreach (LogEvent logEvent in logger.Events)
+            foreach (LogEvent logEvent in logger.GetEvents())
             {
                 Assert.True(logEvent.LogLevel < LogLevel.Error);
 
