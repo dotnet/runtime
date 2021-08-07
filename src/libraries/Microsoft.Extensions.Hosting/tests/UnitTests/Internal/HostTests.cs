@@ -1325,13 +1325,13 @@ namespace Microsoft.Extensions.Hosting.Internal
             BackgroundServiceExceptionBehavior testBehavior,
             params string[] expectedExceptionMessages)
         {
-            using TestEventListener listener = new TestEventListener();
+            TestLoggerProvider logger = new TestLoggerProvider();
             var backgroundDelayTaskSource = new TaskCompletionSource<bool>();
 
             using IHost host = CreateBuilder()
                 .ConfigureLogging(logging =>
                 {
-                    logging.AddEventSourceLogger();
+                    logging.AddProvider(logger);
                 })
                 .ConfigureServices((hostContext, services) =>
                 {
@@ -1350,14 +1350,9 @@ namespace Microsoft.Extensions.Hosting.Internal
 
             while (true)
             {
-                EventWrittenEventArgs[] events =
-                    listener.EventData.Where(
-                        e => e.EventSource.Name == "Microsoft-Extensions-Logging").ToArray();
-
                 if (expectedExceptionMessages.All(
-                        expectedMessage => events.Any(
-                            e => e.Payload.OfType<string>().Any(
-                                p => p.Contains(expectedMessage)))))
+                        expectedMessage => logger.Events.Any(
+                            e => e.Message.Contains(expectedMessage))))
                 {
                     break;
                 }
@@ -1374,12 +1369,12 @@ namespace Microsoft.Extensions.Hosting.Internal
         [Fact]
         public async Task HostNoErrorWhenServiceIsCanceledAsPartOfStop()
         {
-            using TestEventListener listener = new TestEventListener();
+            TestLoggerProvider logger = new TestLoggerProvider();
 
             using IHost host = CreateBuilder()
                 .ConfigureLogging(logging =>
                 {
-                    logging.AddEventSourceLogger();
+                    logging.AddProvider(logger);
                 })
                 .ConfigureServices(services =>
                 {
@@ -1390,19 +1385,11 @@ namespace Microsoft.Extensions.Hosting.Internal
             host.Start();
             await host.StopAsync();
 
-            EventWrittenEventArgs[] events =
-                listener.EventData.Where(
-                    e => e.EventSource.Name == "Microsoft-Extensions-Logging").ToArray();
-
-            foreach (EventWrittenEventArgs eventArg in events)
+            foreach (LogEvent logEvent in logger.Events)
             {
-                int levelIndex = eventArg.PayloadNames.IndexOf("Level");
-                LogLevel level = (LogLevel)eventArg.Payload[levelIndex];
-                Assert.True(level < LogLevel.Error);
+                Assert.True(logEvent.LogLevel < LogLevel.Error);
 
-                int eventNameIndex = eventArg.PayloadNames.IndexOf("EventName");
-                string eventName = (string)eventArg.Payload[eventNameIndex];
-                Assert.NotEqual("BackgroundServiceFaulted", eventName);
+                Assert.NotEqual("BackgroundServiceFaulted", logEvent.EventId.Name);
             }
         }
 
