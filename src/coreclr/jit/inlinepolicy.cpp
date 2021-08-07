@@ -1338,7 +1338,7 @@ void ExtendedDefaultPolicy::NoteInt(InlineObservation obs, int value)
             unsigned maxCodeSize = static_cast<unsigned>(JitConfig.JitExtDefaultPolicyMaxIL());
 
             // TODO: Enable for PgoSource::Static as well if it's not the generic profile we bundle.
-            if (m_HasProfile && (m_RootCompiler->fgPgoSource == ICorJitInfo::PgoSource::Dynamic))
+            if (m_HasProfile && (m_RootCompiler->fgHaveTrustedProfileData()))
             {
                 maxCodeSize = static_cast<unsigned>(JitConfig.JitExtDefaultPolicyMaxILProf());
             }
@@ -1684,9 +1684,8 @@ double ExtendedDefaultPolicy::DetermineMultiplier()
         const double profileTrustCoef = (double)JitConfig.JitExtDefaultPolicyProfTrust() / 10.0;
         const double profileScale     = (double)JitConfig.JitExtDefaultPolicyProfScale() / 10.0;
 
-        if (m_RootCompiler->fgPgoSource == ICorJitInfo::PgoSource::Dynamic)
+        if (m_RootCompiler->fgHaveTrustedProfileData())
         {
-            // For now we only "trust" dynamic profiles.
             multiplier *= (1.0 - profileTrustCoef) + min(m_ProfileFrequency, 1.0) * profileScale;
         }
         else

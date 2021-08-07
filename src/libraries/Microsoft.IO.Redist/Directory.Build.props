@@ -1,7 +1,0 @@
-﻿<Project>
-  <Import Project="..\Directory.Build.props" />
-  <PropertyGroup>
-    <StrongNameKeyId>Open</StrongNameKeyId>
-    <PackageDescription>Downlevel support package for System.IO classes.</PackageDescription>
-  </PropertyGroup>
-</Project>

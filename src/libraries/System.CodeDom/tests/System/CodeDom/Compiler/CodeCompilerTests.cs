@@ -458,6 +458,7 @@ namespace System.CodeDom.Compiler.Tests
         [InlineData(null)]
         [InlineData("")]
         [InlineData("cmdArgs")]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Occasionally fails in .NET framework, probably caused from a very edge case bug in .NET Framework which we will not be fixing")]
         public void GetResponseFileCmdArgs_ValidCmdArgs_ReturnsExpected(string cmdArgs)
         {
             var compiler = new Compiler();

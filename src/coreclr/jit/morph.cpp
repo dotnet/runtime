@@ -12748,6 +12748,8 @@ DONE_MORPHING_CHILDREN:
 
         CM_ADD_OP:
 
+            FALLTHROUGH;
+
         case GT_OR:
         case GT_XOR:
         case GT_AND:
@@ -16166,6 +16168,10 @@ void Compiler::fgMergeBlockReturn(BasicBlock* block)
             if (tree->OperIsCopyBlkOp())
             {
                 tree = fgMorphCopyBlock(tree);
+            }
+            else if (tree->OperIsInitBlkOp())
+            {
+                tree = fgMorphInitBlock(tree);
             }
 
             if (pAfterStatement == lastStmt)

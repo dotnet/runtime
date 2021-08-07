@@ -635,6 +635,7 @@ namespace Microsoft.WebAssembly.Diagnostics
         private static int MINOR_VERSION = 61;
         private static int MAJOR_VERSION = 2;
         private readonly ILogger logger;
+        private Regex regexForAsyncLocals = new Regex(@"\<([^)]*)\>", RegexOptions.Singleline);
 
         public MonoSDBHelper(MonoProxy proxy, ILogger logger)
         {
@@ -1815,6 +1816,62 @@ namespace Microsoft.WebAssembly.Diagnostics
 
             var retDebuggerCmdReader = await SendDebuggerAgentCommand<CmdMethod>(sessionId, CmdMethod.AsyncDebugInfo, commandParams, token);
             return retDebuggerCmdReader.ReadByte() == 1 ; //token
+        }
+
+        private bool IsClosureReferenceField (string fieldName)
+        {
+            // mcs is "$locvar"
+            // old mcs is "<>f__ref"
+            // csc is "CS$<>"
+            // roslyn is "<>8__"
+            return fieldName.StartsWith ("CS$<>", StringComparison.Ordinal) ||
+                        fieldName.StartsWith ("<>f__ref", StringComparison.Ordinal) ||
+                        fieldName.StartsWith ("$locvar", StringComparison.Ordinal) ||
+                        fieldName.StartsWith ("<>8__", StringComparison.Ordinal);
+        }
+
+        public async Task<JArray> GetHoistedLocalVariables(SessionId sessionId, int objectId, JArray asyncLocals, CancellationToken token)
+        {
+            JArray asyncLocalsFull = new JArray();
+            List<int> objectsAlreadyRead = new();
+            objectsAlreadyRead.Add(objectId);
+            foreach (var asyncLocal in asyncLocals)
+            {
+                var fieldName = asyncLocal["name"].Value<string>();
+                if (fieldName.EndsWith("__this", StringComparison.Ordinal))
+                {
+                    asyncLocal["name"] = "this";
+                    asyncLocalsFull.Add(asyncLocal);
+                }
+                else if (IsClosureReferenceField(fieldName)) //same code that has on debugger-libs
+                {
+                    if (DotnetObjectId.TryParse(asyncLocal?["value"]?["objectId"]?.Value<string>(), out DotnetObjectId dotnetObjectId))
+                    {
+                        if (int.TryParse(dotnetObjectId.Value, out int objectIdToGetInfo) && !objectsAlreadyRead.Contains(objectIdToGetInfo))
+                        {
+                            var asyncLocalsFromObject = await GetObjectValues(sessionId, objectIdToGetInfo, true, false, false, false, token);
+                            var hoistedLocalVariable = await GetHoistedLocalVariables(sessionId, objectIdToGetInfo, asyncLocalsFromObject, token);
+                            asyncLocalsFull = new JArray(asyncLocalsFull.Union(hoistedLocalVariable));
+                        }
+                    }
+                }
+                else if (fieldName.StartsWith("<>", StringComparison.Ordinal)) //examples: <>t__builder, <>1__state
+                {
+                    continue;
+                }
+                else if (fieldName.StartsWith('<')) //examples: <code>5__2
+                {
+                    var match = regexForAsyncLocals.Match(fieldName);
+                    if (match.Success)
+                        asyncLocal["name"] = match.Groups[1].Value;
+                    asyncLocalsFull.Add(asyncLocal);
+                }
+                else
+                {
+                    asyncLocalsFull.Add(asyncLocal);
+                }
+            }
+            return asyncLocalsFull;
         }
 
         public async Task<JArray> StackFrameGetValues(SessionId sessionId, MethodInfo method, int thread_id, int frame_id, VarInfo[] varIds, CancellationToken token)

@@ -8,20 +8,20 @@ namespace System.Reflection
     {
         private readonly AssemblyNameFlags _flags;
 
-        [Obsolete("This constructor has been deprecated. Please use AssemblyFlagsAttribute(AssemblyNameFlags) instead. https://go.microsoft.com/fwlink/?linkid=14202")]
+        [Obsolete("This constructor has been deprecated. Use AssemblyFlagsAttribute(AssemblyNameFlags) instead.")]
         [CLSCompliant(false)]
         public AssemblyFlagsAttribute(uint flags)
         {
             _flags = (AssemblyNameFlags)flags;
         }
 
-        [Obsolete("This property has been deprecated. Please use AssemblyFlags instead. https://go.microsoft.com/fwlink/?linkid=14202")]
+        [Obsolete("AssemblyFlagsAttribute.Flags has been deprecated. Use AssemblyFlags instead.")]
         [CLSCompliant(false)]
         public uint Flags => (uint)_flags;
 
         public int AssemblyFlags => (int)_flags;
 
-        [Obsolete("This constructor has been deprecated. Please use AssemblyFlagsAttribute(AssemblyNameFlags) instead. https://go.microsoft.com/fwlink/?linkid=14202")]
+        [Obsolete("This constructor has been deprecated. Use AssemblyFlagsAttribute(AssemblyNameFlags) instead.")]
         public AssemblyFlagsAttribute(int assemblyFlags)
         {
             _flags = (AssemblyNameFlags)assemblyFlags;

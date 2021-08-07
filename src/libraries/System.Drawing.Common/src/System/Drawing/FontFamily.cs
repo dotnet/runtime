@@ -225,7 +225,7 @@ namespace System.Drawing
         /// Returns an array that contains all of the <see cref='FontFamily'/> objects associated with the specified
         /// graphics context.
         /// </summary>
-        [Obsolete("Do not use method GetFamilies, use property Families instead")]
+        [Obsolete("FontFamily.GetFamilies has been deprecated. Use Families instead.")]
         public static FontFamily[] GetFamilies(Graphics graphics)
         {
             if (graphics == null)

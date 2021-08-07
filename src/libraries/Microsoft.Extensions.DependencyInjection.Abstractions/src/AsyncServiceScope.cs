@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 namespace Microsoft.Extensions.DependencyInjection
 {
     /// <summary>
-    /// A <see cref="IServiceScope" /> implementation that implements <see cref="IAsyncDisposable" />.
+    /// An <see cref="IServiceScope" /> implementation that implements <see cref="IAsyncDisposable" />.
     /// </summary>
     public readonly struct AsyncServiceScope : IServiceScope, IAsyncDisposable
     {
@@ -16,8 +16,8 @@ namespace Microsoft.Extensions.DependencyInjection
         /// <summary>
         /// Initializes a new instance of the <see cref="AsyncServiceScope"/> struct.
         /// Wraps an instance of <see cref="IServiceScope" />.
-        /// <param name="serviceScope">The <see cref="IServiceScope"/> instance to wrap.</param>
         /// </summary>
+        /// <param name="serviceScope">The <see cref="IServiceScope"/> instance to wrap.</param>
         public AsyncServiceScope(IServiceScope serviceScope)
         {
             _serviceScope = serviceScope ?? throw new ArgumentNullException(nameof(serviceScope));

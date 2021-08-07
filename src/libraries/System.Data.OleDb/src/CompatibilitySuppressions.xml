@@ -1,0 +1,8 @@
+<?xml version="1.0"?>
+<Suppressions xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+  <Suppression>
+    <DiagnosticId>CP0001</DiagnosticId>
+    <Left>lib/netstandard2.0/System.Data.OleDb.dll</Left>
+    <Right>lib/net461/System.Data.OleDb.dll</Right>
+  </Suppression>
+</Suppressions>

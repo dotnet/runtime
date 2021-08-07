@@ -27,7 +27,7 @@ namespace System.Security.Policy
     [Obsolete(Obsoletions.CodeAccessSecurityMessage, DiagnosticId = Obsoletions.CodeAccessSecurityDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
 #endif
         public NamedPermissionSet ChangeNamedPermissionSet(string name, PermissionSet pSet) { return default(NamedPermissionSet); }
-        [Obsolete("AppDomain policy levels are obsolete. See https://go.microsoft.com/fwlink/?LinkID=155570 for more information.")]
+        [Obsolete("Code Access Security is not supported or honored by the runtime.")]
         public static PolicyLevel CreateAppDomainLevel() { return default(PolicyLevel); }
         public void FromXml(SecurityElement e) { }
 #if NET5_0_OR_GREATER

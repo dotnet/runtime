@@ -16,6 +16,6 @@ namespace System.Text.Json.SourceGeneration
         Enumerable = 4,
         Dictionary = 5,
         Nullable = 6,
-        Enum = 7,
+        Enum = 7
     }
 }

@@ -40,6 +40,33 @@ namespace System.Reflection.Metadata
         }
 
         [ConditionalFact(typeof(ApplyUpdateUtil), nameof (ApplyUpdateUtil.IsSupported))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/54617", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsMonoAOT))] 
+        void LambdaBodyChange()
+        {
+            ApplyUpdateUtil.TestCase(static () =>
+            {
+                var assm = typeof (ApplyUpdate.Test.LambdaBodyChange).Assembly;
+
+                var o = new ApplyUpdate.Test.LambdaBodyChange ();
+                var r = o.MethodWithLambda();
+
+                Assert.Equal("OLD STRING", r);
+
+                ApplyUpdateUtil.ApplyUpdate(assm);
+
+                r = o.MethodWithLambda();
+
+                Assert.Equal("NEW STRING", r);
+
+                ApplyUpdateUtil.ApplyUpdate(assm);
+
+                r = o.MethodWithLambda();
+
+                Assert.Equal("NEWEST STRING!", r);
+            });
+        }
+
+        [ConditionalFact(typeof(ApplyUpdateUtil), nameof (ApplyUpdateUtil.IsSupported))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/52993", TestRuntimes.Mono)]
         void ClassWithCustomAttributes()
         {

@@ -100,11 +100,15 @@ namespace System.IO.Tests
             }
         }
 
-        [Fact]
-        public async Task WriteAsyncCancelledFile()
+        [Theory]
+        [InlineData(0, true)] // 0 == no buffering
+        [InlineData(4096, true)] // 4096 == default buffer size
+        [InlineData(0, false)]
+        [InlineData(4096, false)]
+        public async Task WriteAsyncCancelledFile(int bufferSize, bool isAsync)
         {
             const int writeSize = 1024 * 1024;
-            using (FileStream fs = new FileStream(GetTestFilePath(), FileMode.Create))
+            using (FileStream fs = new FileStream(GetTestFilePath(), FileMode.CreateNew, FileAccess.Write, FileShare.None, bufferSize, isAsync))
             {
                 byte[] buffer = new byte[writeSize];
                 CancellationTokenSource cts = new CancellationTokenSource();
@@ -119,6 +123,9 @@ namespace System.IO.Tests
                     // Ideally we'd be doing an Assert.Throws<OperationCanceledException>
                     // but since cancellation is a race condition we accept either outcome
                     Assert.Equal(cts.Token, oce.CancellationToken);
+
+                    Assert.Equal(0, fs.Length); // if write was cancelled, the file should be empty
+                    Assert.Equal(0, fs.Position); // if write was cancelled, the Position should remain unchanged
                 }
             }
         }

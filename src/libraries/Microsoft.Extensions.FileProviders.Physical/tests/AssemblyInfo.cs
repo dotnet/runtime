@@ -2,6 +2,4 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using Xunit;
-
-[assembly: SkipOnPlatform(TestPlatforms.Browser, "Microsoft.Extensions.FileProviders.Physical is not supported on Browser")]
+using Xunit;    

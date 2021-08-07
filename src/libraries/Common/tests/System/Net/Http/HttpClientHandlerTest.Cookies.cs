@@ -296,6 +296,12 @@ namespace System.Net.Http.Functional.Tests
         [SkipOnPlatform(TestPlatforms.Browser, "CookieContainer is not supported on Browser")]
         public async Task GetAsyncWithRedirect_SetCookieContainer_CorrectCookiesSent()
         {
+            if (UseVersion == HttpVersion30)
+            {
+                // [ActiveIssue("https://github.com/dotnet/runtime/issues/56870")]
+                return;
+            }
+
             const string path1 = "/foo";
             const string path2 = "/bar";
             const string unusedPath = "/unused";
@@ -471,6 +477,12 @@ namespace System.Net.Http.Functional.Tests
         [SkipOnPlatform(TestPlatforms.Browser, "CookieContainer is not supported on Browser")]
         public async Task GetAsync_Redirect_CookiesArePreserved()
         {
+            if (UseVersion == HttpVersion30)
+            {
+                // [ActiveIssue("https://github.com/dotnet/runtime/issues/56870")]
+                return;
+            }
+
             HttpClientHandler handler = CreateHttpClientHandler();
 
             string loginPath = "/login/user";
@@ -601,6 +613,12 @@ namespace System.Net.Http.Functional.Tests
         [SkipOnPlatform(TestPlatforms.Browser, "CookieContainer is not supported on Browser")]
         public async Task GetAsyncWithRedirect_ReceiveSetCookie_CookieSent()
         {
+            if (UseVersion == HttpVersion30)
+            {
+                // [ActiveIssue("https://github.com/dotnet/runtime/issues/56870")]
+                return;
+            }
+
             const string path1 = "/foo";
             const string path2 = "/bar";
 
@@ -655,6 +673,12 @@ namespace System.Net.Http.Functional.Tests
         [SkipOnPlatform(TestPlatforms.Browser, "CookieContainer is not supported on Browser")]
         public async Task GetAsyncWithBasicAuth_ReceiveSetCookie_CookieSent()
         {
+            if (UseVersion == HttpVersion30)
+            {
+                // [ActiveIssue("https://github.com/dotnet/runtime/issues/56870")]
+                return;
+            }
+
             if (IsWinHttpHandler)
             {
                 // Issue https://github.com/dotnet/runtime/issues/24979

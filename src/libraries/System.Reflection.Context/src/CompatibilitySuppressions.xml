@@ -1,0 +1,11 @@
+<?xml version="1.0"?>
+<Suppressions xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+  <Suppression>
+    <DiagnosticId>PKV006</DiagnosticId>
+    <Target>.NETCore,Version=v5.0</Target>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>PKV006</DiagnosticId>
+    <Target>.NETStandard,Version=v1.1</Target>
+  </Suppression>
+</Suppressions>

@@ -14,7 +14,7 @@ namespace System.Diagnostics
     /// </summary>
     public class InstanceDataCollection : DictionaryBase
     {
-        [Obsolete("This constructor has been deprecated.  Please use System.Diagnostics.InstanceDataCollectionCollection.get_Item to get an instance of this collection instead.  https://go.microsoft.com/fwlink/?linkid=14202")]
+        [Obsolete("This constructor has been deprecated. Use System.Diagnostics.InstanceDataCollectionCollection.get_Item to get an instance of this collection instead.")]
         public InstanceDataCollection(string counterName)
         {
             if (counterName == null)
