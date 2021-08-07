@@ -75,6 +75,7 @@ namespace Microsoft.Extensions.DependencyInjection
                 }
             }
 
+            DependencyInjectionEventSource.Log.ServiceProviderBuilt(this);
         }
 
         /// <summary>
@@ -87,15 +88,21 @@ namespace Microsoft.Extensions.DependencyInjection
         /// <inheritdoc />
         public void Dispose()
         {
-            _disposed = true;
+            DisposeCore();
             Root.Dispose();
         }
 
         /// <inheritdoc/>
         public ValueTask DisposeAsync()
         {
-            _disposed = true;
+            DisposeCore();
             return Root.DisposeAsync();
+        }
+
+        private void DisposeCore()
+        {
+            _disposed = true;
+            DependencyInjectionEventSource.Log.ServiceProviderDisposed(this);
         }
 
         private void OnCreate(ServiceCallSite callSite)
@@ -117,7 +124,7 @@ namespace Microsoft.Extensions.DependencyInjection
 
             Func<ServiceProviderEngineScope, object> realizedService = _realizedServices.GetOrAdd(serviceType, _createServiceAccessor);
             OnResolve(serviceType, serviceProviderEngineScope);
-            DependencyInjectionEventSource.Log.ServiceResolved(serviceType);
+            DependencyInjectionEventSource.Log.ServiceResolved(this, serviceType);
             var result = realizedService.Invoke(serviceProviderEngineScope);
             System.Diagnostics.Debug.Assert(result is null || CallSiteFactory.IsService(serviceType));
             return result;
@@ -149,7 +156,7 @@ namespace Microsoft.Extensions.DependencyInjection
             ServiceCallSite callSite = CallSiteFactory.GetCallSite(serviceType, new CallSiteChain());
             if (callSite != null)
             {
-                DependencyInjectionEventSource.Log.CallSiteBuilt(serviceType, callSite);
+                DependencyInjectionEventSource.Log.CallSiteBuilt(this, serviceType, callSite);
                 OnCreate(callSite);
 
                 // Optimize singleton case
