@@ -19,6 +19,11 @@ namespace Internal.Win32.SafeHandles
     {
         public SafeRegistryHandle() : base(true) { }
 
+        /// <summary>
+        /// Creates a SafeRegistryHandle around a Windows registry handle.
+        /// </summary>
+        /// <param name="preexistingHandle">Handle to wrap</param>
+        /// <param name="ownsHandle">Whether to control the handle lifetime</param>
         public SafeRegistryHandle(IntPtr preexistingHandle, bool ownsHandle) : base(ownsHandle)
         {
             SetHandle(preexistingHandle);

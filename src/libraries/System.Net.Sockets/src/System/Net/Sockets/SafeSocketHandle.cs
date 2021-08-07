@@ -31,6 +31,11 @@ namespace System.Net.Sockets
 #endif
         private int _ownClose;
 
+        /// <summary>
+        /// Creates a SafeSocketHandle around a socket handle.
+        /// </summary>
+        /// <param name="preexistingHandle">Handle to wrap</param>
+        /// <param name="ownsHandle">Whether to control the handle lifetime</param>
         public SafeSocketHandle(IntPtr preexistingHandle, bool ownsHandle)
             : base(ownsHandle)
         {

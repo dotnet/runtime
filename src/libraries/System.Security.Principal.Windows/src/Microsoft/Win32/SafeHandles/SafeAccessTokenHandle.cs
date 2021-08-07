@@ -11,7 +11,10 @@ namespace Microsoft.Win32.SafeHandles
     {
         public SafeAccessTokenHandle() : base(IntPtr.Zero, true) { }
 
-        // 0 is an Invalid Handle
+        /// <summary>
+        /// Creates a SafeAccessTokenHandle around a Windows thread or process access token.
+        /// </summary>
+        /// <param name="handle">Handle to wrap</param>
         public SafeAccessTokenHandle(IntPtr handle) : base(handle, true) { }
 
         public static SafeAccessTokenHandle InvalidHandle

@@ -14,6 +14,11 @@ namespace Microsoft.Win32.SafeHandles
         {
         }
 
+        /// <summary>
+        /// Creates a SafePipeHandle around a Windows pipe handle.
+        /// </summary>
+        /// <param name="preexistingHandle">Handle to wrap</param>
+        /// <param name="ownsHandle">Whether to control the handle lifetime</param>
         public SafePipeHandle(IntPtr preexistingHandle, bool ownsHandle)
             : base(ownsHandle)
         {

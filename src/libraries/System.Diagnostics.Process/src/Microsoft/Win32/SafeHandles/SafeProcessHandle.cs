@@ -19,6 +19,9 @@ namespace Microsoft.Win32.SafeHandles
     {
         internal static readonly SafeProcessHandle InvalidHandle = new SafeProcessHandle();
 
+        /// <summary>
+        /// Creates a SafeProcessHandle
+        /// </summary>
         public SafeProcessHandle()
             : this(IntPtr.Zero)
         {
@@ -29,6 +32,11 @@ namespace Microsoft.Win32.SafeHandles
         {
         }
 
+        /// <summary>
+        /// Creates a SafeProcessHandle around a Windows process handle.
+        /// </summary>
+        /// <param name="preexistingHandle">Handle to wrap</param>
+        /// <param name="ownsHandle">Whether to control the handle lifetime</param>
         public SafeProcessHandle(IntPtr existingHandle, bool ownsHandle)
             : base(ownsHandle)
         {
