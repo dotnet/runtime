@@ -10,7 +10,7 @@ namespace System.Text.Json
     public static partial class JsonSerializer
     {
         /// <summary>
-        /// Convert the provided value into a <see cref="byte"/> array.
+        /// Converts the provided value into a <see cref="byte"/> array.
         /// </summary>
         /// <returns>A UTF-8 representation of the value.</returns>
         /// <param name="value">The value to convert.</param>
@@ -28,7 +28,7 @@ namespace System.Text.Json
         }
 
         /// <summary>
-        /// Convert the provided value into a <see cref="byte"/> array.
+        /// Converts the provided value into a <see cref="byte"/> array.
         /// </summary>
         /// <returns>A UTF-8 representation of the value.</returns>
         /// <param name="value">The value to convert.</param>
@@ -57,7 +57,7 @@ namespace System.Text.Json
         }
 
         /// <summary>
-        /// Convert the provided value into a <see cref="byte"/> array.
+        /// Converts the provided value into a <see cref="byte"/> array.
         /// </summary>
         /// <returns>A UTF-8 representation of the value.</returns>
         /// <param name="value">The value to convert.</param>
@@ -80,7 +80,7 @@ namespace System.Text.Json
         }
 
         /// <summary>
-        /// Convert the provided value into a <see cref="byte"/> array.
+        /// Converts the provided value into a <see cref="byte"/> array.
         /// </summary>
         /// <returns>A UTF-8 representation of the value.</returns>
         /// <param name="value">The value to convert.</param>

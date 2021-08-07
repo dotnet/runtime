@@ -4,7 +4,7 @@
 namespace System.Text.Json.Serialization
 {
     /// <summary>
-    /// The <see cref="Json.JsonNamingPolicy"/> to be used at run-time.
+    /// The <see cref="Json.JsonNamingPolicy"/> to be used at run time.
     /// </summary>
 #if BUILDING_SOURCE_GENERATOR
     internal

@@ -12,7 +12,7 @@ namespace System.Text.Json
     public static partial class JsonSerializer
     {
         /// <summary>
-        /// Convert the provided value into a <see cref="JsonNode"/>.
+        /// Converts the provided value into a <see cref="JsonNode"/>.
         /// </summary>
         /// <returns>A <see cref="JsonNode"/> representation of the JSON value.</returns>
         /// <param name="value">The value to convert.</param>
@@ -26,7 +26,7 @@ namespace System.Text.Json
             WriteNode(value, GetRuntimeType(value), options);
 
         /// <summary>
-        /// Convert the provided value into a <see cref="JsonNode"/>.
+        /// Converts the provided value into a <see cref="JsonNode"/>.
         /// </summary>
         /// <returns>A <see cref="JsonNode"/> representation of the value.</returns>
         /// <param name="value">The value to convert.</param>
@@ -50,7 +50,7 @@ namespace System.Text.Json
                 options);
 
         /// <summary>
-        /// Convert the provided value into a <see cref="JsonNode"/>.
+        /// Converts the provided value into a <see cref="JsonNode"/>.
         /// </summary>
         /// <returns>A <see cref="JsonNode"/> representation of the value.</returns>
         /// <param name="value">The value to convert.</param>
@@ -73,7 +73,7 @@ namespace System.Text.Json
         }
 
         /// <summary>
-        /// Convert the provided value into a <see cref="JsonNode"/>.
+        /// Converts the provided value into a <see cref="JsonNode"/>.
         /// </summary>
         /// <returns>A <see cref="JsonNode"/> representation of the value.</returns>
         /// <param name="value">The value to convert.</param>

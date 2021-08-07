@@ -67,7 +67,7 @@ namespace System.Text.Json.Serialization.Metadata
             NumberHandling = matchingProperty.NumberHandling;
         }
 
-        // Create a parameter that is ignored at run-time. It uses the same type (typeof(sbyte)) to help
+        // Create a parameter that is ignored at run time. It uses the same type (typeof(sbyte)) to help
         // prevent issues with unsupported types and helps ensure we don't accidently (de)serialize it.
         public static JsonParameterInfo CreateIgnoredParameterPlaceholder(JsonPropertyInfo matchingProperty)
         {

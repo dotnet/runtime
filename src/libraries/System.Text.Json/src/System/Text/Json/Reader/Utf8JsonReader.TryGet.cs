@@ -102,7 +102,7 @@ namespace System.Text.Json
         /// <seealso cref="TokenType" />
         /// </exception>
         /// <exception cref="FormatException">
-        /// Thrown when the JSON string contains data outside of the expected Base64 range, or if it contains invalid/more than two padding characters,
+        /// The JSON string contains data outside of the expected Base64 range, or if it contains invalid/more than two padding characters,
         /// or is incomplete (i.e. the JSON string length is not a multiple of 4).
         /// </exception>
         public byte[] GetBytesFromBase64()
