@@ -99,7 +99,7 @@ namespace System.Xml.Serialization
             get { return (_namespaces == null) ? 0 : _namespaces.Count; }
         }
 
-        internal ValueCollection Namespaces => NamespacesInternal.Values;
+        internal Dictionary<string, XmlQualifiedName>.ValueCollection Namespaces => NamespacesInternal.Values;
 
         private Dictionary<string, XmlQualifiedName> NamespacesInternal
         {
