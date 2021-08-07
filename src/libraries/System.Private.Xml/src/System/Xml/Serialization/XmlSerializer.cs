@@ -633,7 +633,7 @@ namespace System.Xml.Serialization
             Justification = "Code is used on diagnostics so we fallback to print assembly.FullName if assembly.Location is empty")]
         internal static bool GenerateSerializer(Type[]? types, XmlMapping[] mappings, Stream stream)
         {
-            return GenerateSerializer(types, mappings, null, stream);
+            return GenerateSerializer(types, mappings, null!, stream);
         }
 
         [RequiresUnreferencedCode("calls GenerateSerializerToStream")]
