@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 using System;
-using System.Buffers.Binary;
 using System.Collections;
 using System.Collections.Generic;
 using System.Globalization;
@@ -564,7 +563,12 @@ namespace Microsoft.XmlSerializer.Generator
         {
             byte[] valueBytes = Encoding.UTF8.GetBytes(value);
             byte[] hash = SHA512.HashData(valueBytes);
-            return BinaryPrimitives.ReadUInt32BigEndian(hash);
+            return ReadUInt32BigEndian(hash);
+        }
+
+        private static uint ReadUInt32BigEndian(byte[] value)
+        {
+            return (uint)(value[0] << 24 | value[1] << 16 | value[2] << 8 | value[3]);
         }
 
         private static void ParseReferences()
