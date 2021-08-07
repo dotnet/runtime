@@ -20,10 +20,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Reference Include="System.Memory" />
-  </ItemGroup>
-
-  <ItemGroup>
     <None Include="build\prefercliruntime"
           PackagePath="/"
           Pack="true" />
