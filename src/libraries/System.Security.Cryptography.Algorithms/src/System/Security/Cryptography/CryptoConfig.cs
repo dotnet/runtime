@@ -186,8 +186,7 @@ namespace System.Security.Cryptography
                 ht.Add("System.Security.Cryptography.AsymmetricAlgorithm", RSACryptoServiceProviderType);
 
                 if (!OperatingSystem.IsIOS() &&
-                    !OperatingSystem.IsTvOS() &&
-                    !OperatingSystem.IsMacCatalyst())
+                    !OperatingSystem.IsTvOS())
                 {
                     ht.Add("DSA", DSACryptoServiceProviderType);
                     ht.Add("System.Security.Cryptography.DSA", DSACryptoServiceProviderType);

@@ -31,7 +31,7 @@ namespace System.IO
 #if MS_IO_REDIST
                 return false; // Windows is always case-insensitive
 #else
-                return !(OperatingSystem.IsWindows() || OperatingSystem.IsMacOS() || OperatingSystem.IsMacCatalyst() || OperatingSystem.IsIOS() || OperatingSystem.IsTvOS() || OperatingSystem.IsWatchOS());
+                return !(OperatingSystem.IsWindows() || OperatingSystem.IsMacOS() || OperatingSystem.IsIOS() || OperatingSystem.IsTvOS() || OperatingSystem.IsWatchOS());
 #endif
             }
         }

@@ -11,7 +11,7 @@ namespace Microsoft.Extensions.Hosting
     {
         private static void AddLifetime(ServiceCollection services)
         {
-            if (!OperatingSystem.IsAndroid() && !OperatingSystem.IsBrowser() && !OperatingSystem.IsIOS() && !OperatingSystem.IsMacCatalyst() && !OperatingSystem.IsTvOS())
+            if (!OperatingSystem.IsAndroid() && !OperatingSystem.IsBrowser() && !OperatingSystem.IsIOS() && !OperatingSystem.IsTvOS())
             {
                 services.AddSingleton<IHostLifetime, ConsoleLifetime>();
             }
