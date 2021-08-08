@@ -32,7 +32,7 @@ namespace System.IO
         /// </summary>
         internal static EnumerationOptions Default { get; } = new EnumerationOptions();
 
-        /// <summary>Initializes a new instance of the <see cref="System.IO.EnumerationOptions" /> class with the recommended default options.</summary>
+        /// <summary>Initializes a new instance of the <see cref="EnumerationOptions" /> class with the recommended default options.</summary>
         public EnumerationOptions()
         {
             IgnoreInaccessible = true;

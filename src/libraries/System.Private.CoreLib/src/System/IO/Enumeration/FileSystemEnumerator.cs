@@ -12,7 +12,7 @@ namespace Microsoft.IO.Enumeration
 namespace System.IO.Enumeration
 #endif
 {
-    /// <summary>Enumerates the file system elements of the provided type that are being searched and filtered by a <see cref="System.IO.Enumeration.FileSystemEnumerable{T}" />.</summary>
+    /// <summary>Enumerates the file system elements of the provided type that are being searched and filtered by a <see cref="FileSystemEnumerable{T}" />.</summary>
     /// <typeparam name="TResult">The type of the result produced by this file system enumerator.</typeparam>
     public unsafe abstract partial class FileSystemEnumerator<TResult> : CriticalFinalizerObject, IEnumerator<TResult>
     {
@@ -74,7 +74,7 @@ namespace System.IO.Enumeration
 
         /// <summary>Gets the currently visited object.</summary>
         /// <value>The currently visited object.</value>
-        /// <remarks>This member is an explicit interface member implementation. It can be used only when the <see cref="System.IO.Enumeration.FileSystemEnumerator{T}" /> instance is cast to an <see cref="System.Collections.IEnumerator" /> interface.</remarks>
+        /// <remarks>This member is an explicit interface member implementation. It can be used only when the <see cref="FileSystemEnumerator{T}" /> instance is cast to an <see cref="System.Collections.IEnumerator" /> interface.</remarks>
         object? IEnumerator.Current => Current;
 
         private void DirectoryFinished()
@@ -102,14 +102,14 @@ namespace System.IO.Enumeration
             throw new NotSupportedException();
         }
 
-        /// <summary>Releases the resources used by the current instance of the <see cref="System.IO.Enumeration.FileSystemEnumerator{T}" /> class.</summary>
+        /// <summary>Releases the resources used by the current instance of the <see cref="Enumeration.FileSystemEnumerator{T}" /> class.</summary>
         public void Dispose()
         {
             InternalDispose(disposing: true);
             GC.SuppressFinalize(this);
         }
 
-        /// <summary>When overridden in a derived class, releases the unmanaged resources used by the <see cref="System.IO.Enumeration.FileSystemEnumerator{T}" /> class and optionally releases the managed resources.</summary>
+        /// <summary>When overridden in a derived class, releases the unmanaged resources used by the <see cref="Enumeration.FileSystemEnumerator{T}" /> class and optionally releases the managed resources.</summary>
         /// <param name="disposing"><see langword="true" /> to release both managed and unmanaged resources; <see langword="false" /> to release only unmanaged resources.</param>
         protected virtual void Dispose(bool disposing)
         {
