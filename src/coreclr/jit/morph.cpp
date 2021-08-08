@@ -6021,8 +6021,17 @@ GenTree* Compiler::fgMorphLocalVar(GenTree* tree, bool forceRemorph)
     if (!varAddr && varDsc->lvNormalizeOnLoad())
     {
 #if LOCAL_ASSERTION_PROP
-        // Assertion prop can tell us to omit adding a cast here
-        if (optLocalAssertionProp &&
+        // TYP_BOOL quirk: previously, the code in optAssertionIsSubrange did not handle TYP_BOOL.
+        // Now it does, but this leads to some regressions because we lose the uniform VNs for trees
+        // that represent the "reduced" normalize-on-load locals, i. e. LCL_VAR(small type V00), created
+        // here with local assertions, and "expanded", i. e. CAST(small type <- LCL_VAR(int V00)).
+        // This is a pretty fundamental problem with how normalize-on-load locals appear to the optimizer.
+        // This quirk preserves the previous behavior.
+        // TODO-CQ: fix the VNs for normalize-on-load locals and remove this quirk.
+        bool isBoolQuirk = varType == TYP_BOOL;
+
+        // Assertion prop can tell us to omit adding a cast here.
+        if (optLocalAssertionProp && !isBoolQuirk &&
             optAssertionIsSubrange(tree, IntegralRange::ForType(varType), apFull) != NO_ASSERTION_INDEX)
         {
             // The previous assertion can guarantee us that if this node gets
