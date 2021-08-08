@@ -44,6 +44,7 @@ build_mono_aot()
 {
     __RuntimeFlavor="mono"
     __TestBinDir="$__TestWorkingDir"
+    __Exclude="$__RepoRootDir/src/tests/issues.targets"
     CORE_ROOT="$__TestBinDir"/Tests/Core_Root
     __MonoFullAotPropVal="false"
     if [[ "$__MonoFullAot" -eq 1 ]]; then
