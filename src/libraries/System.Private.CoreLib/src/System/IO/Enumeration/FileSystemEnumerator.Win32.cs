@@ -12,6 +12,8 @@ namespace Microsoft.IO.Enumeration
 namespace System.IO.Enumeration
 #endif
 {
+    /// <summary>Enumerates the file system elements of the provided type that are being searched and filtered by a <see cref="System.IO.Enumeration.FileSystemEnumerable{T}" />.</summary>
+    /// <typeparam name="TResult">The type of the result produced by this file system enumerator.</typeparam>
     public partial class FileSystemEnumerator<TResult>
     {
         /// <returns>'true' if new data was found</returns>
