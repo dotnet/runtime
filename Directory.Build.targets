@@ -131,40 +131,16 @@
 
       <!--
         By default, we are always building the nuget packages for HostPolicy, HostFXR and
-        Dotnet/AppHost. Thus, the "UseShipped*" properties (below) are always set to false.
-        However, there are scenarios when some of these components will not change (e.g. during
+        Dotnet/AppHost. Thus, the properties (below) are always set to $(ProductVersion).
+        However, there are scenarios when only some of these components will change (e.g. during
         servicing, we may only change HostPolicy but not HostFXR and Dotnet/AppHost). In such cases,
-        set the appropriate "UseShipped*" property below to true and the corresponding "*Version"
-        property to the desired version so that we use the last shipped version of the package.
+        pass the appropriate version value(s) as argument to the build command in order to override;
+        e.g. 'build -p:HostPolicyVersion=x.y.z ...'
       -->
-
-      <!-- The host/apphost package versions are only updated whenever there is a change in the components -->
-      <UseShippedHostPackage>false</UseShippedHostPackage>
-      <HostVersion Condition="'$(UseShippedHostPackage)' != 'true'">$(ProductVersion)</HostVersion>
-      <HostVersion Condition="'$(UseShippedHostPackage)' == 'true'">2.0.0</HostVersion>
-
-      <!-- The AppHostVersion is used for all hosts that aren't dotnet.exe -->
-      <UseShippedAppHostPackage>false</UseShippedAppHostPackage>
-      <AppHostVersion Condition="'$(UseShippedAppHostPackage)' != 'true'">$(ProductVersion)</AppHostVersion>
-      <AppHostVersion Condition="'$(UseShippedAppHostPackage)' == 'true'">2.0.0</AppHostVersion>
-
-      <!--
-        The FXR Resolver package version is only updated whenever there is a change in it.
-        If there is ever a need to use a shipped version of the package, then set the property
-        below to true.
-      -->
-      <UseShippedHostResolverPackage>false</UseShippedHostResolverPackage>
-      <HostResolverVersion Condition="'$(UseShippedHostResolverPackage)' != 'true'">$(ProductVersion)</HostResolverVersion>
-      <HostResolverVersion Condition="'$(UseShippedHostResolverPackage)' == 'true'">2.0.0</HostResolverVersion>
-
-      <!--
-        Host Policy package version is only updated whenever there is a change in it.
-        If there is ever a need to use a shipped version of the package, then set the property
-        below to true.
-      -->
-      <UseShippedHostPolicyPackage>false</UseShippedHostPolicyPackage>
-      <HostPolicyVersion Condition="'$(UseShippedHostPolicyPackage)' != 'true'">$(ProductVersion)</HostPolicyVersion>
-      <HostPolicyVersion Condition="'$(UseShippedHostPolicyPackage)' == 'true'">2.0.0</HostPolicyVersion>
+      <HostVersion Condition="'$(HostVersion)' == ''">$(ProductVersion)</HostVersion>
+      <AppHostVersion Condition="'$(AppHostVersion)' == ''">$(ProductVersion)</AppHostVersion>
+      <HostResolverVersion Condition="'$(HostResolverVersion)' == ''">$(ProductVersion)</HostResolverVersion>
+      <HostPolicyVersion Condition="'$(HostPolicyVersion)' == ''">$(ProductVersion)</HostPolicyVersion>
     </PropertyGroup>
   </Target>
 </Project>
