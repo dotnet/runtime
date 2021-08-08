@@ -5069,7 +5069,6 @@ void Compiler::fgMakeOutgoingStructArgCopy(GenTreeCall*         call,
             const bool isNoReturnLastUse = (totalAppearances == 1) && call->IsNoReturn();
             if (isTailCallLastUse || isCallLastUse || isNoReturnLastUse)
             {
-                varDsc->setLvRefCnt(0, RCS_EARLY);
                 args->SetNode(lcl);
                 assert(argEntry->GetNode() == lcl);
 
@@ -17380,6 +17379,7 @@ void Compiler::fgResetImplicitByRefRefCount()
             // optimization for single-use implicit-by-ref params whose single use is as
             // an outgoing call argument.
             varDsc->setLvRefCnt(0, RCS_EARLY);
+            varDsc->setLvRefCntWtd(0, RCS_EARLY);
         }
     }
 
@@ -17530,11 +17530,6 @@ void Compiler::fgRetypeImplicitByRefArgs()
                     {
                         // Set the new parent.
                         fieldVarDsc->lvParentLcl = newLclNum;
-                        // Clear the ref count field; it is used to communicate the number of references
-                        // to the implicit byref parameter when morphing calls that pass the implicit byref
-                        // out as an outgoing argument value, but that doesn't pertain to this field local
-                        // which is now a field of a non-arg local.
-                        fieldVarDsc->setLvRefCnt(0, RCS_EARLY);
                     }
 
                     fieldVarDsc->lvIsParam = false;
@@ -17645,16 +17640,9 @@ void Compiler::fgMarkDemotedImplicitByRefArgs()
                 unsigned structLclNum   = varDsc->lvFieldLclStart;
                 varDsc->lvFieldLclStart = 0;
 
-                // Clear the arg's ref count; this was set during address-taken analysis so that
-                // call morphing could identify single-use implicit byrefs; we're done with
-                // that, and want it to be in its default state of zero when we go to set
-                // real ref counts for all variables.
-                varDsc->setLvRefCnt(0, RCS_EARLY);
-
                 // The temp struct is now unused; set flags appropriately so that we
                 // won't allocate space for it on the stack.
-                LclVarDsc* structVarDsc = &lvaTable[structLclNum];
-                structVarDsc->setLvRefCnt(0, RCS_EARLY);
+                LclVarDsc* structVarDsc     = &lvaTable[structLclNum];
                 structVarDsc->lvAddrExposed = false;
 #ifdef DEBUG
                 structVarDsc->lvUnusedStruct = true;
@@ -17673,7 +17661,6 @@ void Compiler::fgMarkDemotedImplicitByRefArgs()
 
                     // The field local is now unused; set flags appropriately so that
                     // we won't allocate stack space for it.
-                    fieldVarDsc->setLvRefCnt(0, RCS_EARLY);
                     fieldVarDsc->lvAddrExposed = false;
                 }
             }
