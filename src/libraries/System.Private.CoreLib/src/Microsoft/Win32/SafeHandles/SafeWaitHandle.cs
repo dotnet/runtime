@@ -17,7 +17,7 @@ namespace Microsoft.Win32.SafeHandles
         /// <summary>
         /// Creates a SafeWaitHandle around a Windows wait handle.
         /// </summary>
-        /// <param name="preexistingHandle">Handle to wrap</param>
+        /// <param name="existingHandle">Handle to wrap</param>
         /// <param name="ownsHandle">Whether to control the handle lifetime</param>
         public SafeWaitHandle(IntPtr existingHandle, bool ownsHandle) : base(ownsHandle)
         {
