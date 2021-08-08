@@ -11,7 +11,7 @@ namespace System.Text.RegularExpressions.Tests
     public partial class RegexParserTests
     {
         /// <summary>
-        /// Checks if action throws either a RegexParseException or an ArgumentException depending on the
+        /// Checks that action throws either a RegexParseException or an ArgumentException depending on the
         /// environment and the supplied error.
         /// </summary>
         /// <param name="error">The expected parse error</param>
@@ -33,6 +33,26 @@ namespace System.Text.RegularExpressions.Tests
             }
 
             throw new XunitException($"Expected ArgumentException with error: ({error}) -> Actual: No exception thrown");
+        }
+
+       /// <summary>
+        /// Checks that action succeeds or throws either a RegexParseException or an ArgumentException.
+        /// </summary>
+        /// <param name="action">The action to invoke.</param>
+        static partial void MayThrow(Action action)
+        {
+            try
+            {
+                action();
+            }
+            catch (ArgumentException)
+            {
+                return;
+            }
+            catch (Exception e)
+            {
+                throw new XunitException($"Expected RegexParseException or no exception -> Actual: ({e})");
+            }
         }
     }
 }
