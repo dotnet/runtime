@@ -123,7 +123,7 @@ internal static partial class Interop
                 // https://www.openssl.org/docs/manmaster/ssl/SSL_shutdown.html
                 Ssl.SslCtxSetQuietShutdown(innerContext);
 
-                if (sslAuthenticationOptions.ApplicationProtocols != null && sslAuthenticationOptions.ApplicationProtocols.Count != 0)
+                if (sslAuthenticationOptions.IsServer && sslAuthenticationOptions.ApplicationProtocols != null && sslAuthenticationOptions.ApplicationProtocols.Count != 0)
                 {
                     unsafe
                     {
@@ -157,7 +157,8 @@ internal static partial class Interop
             SafeSslContextHandle? sslCtx = null;
             SafeSslContextHandle? innerContext = null;
             SslProtocols protocols = sslAuthenticationOptions.EnabledSslProtocols;
-            bool cacheSslContext = sslAuthenticationOptions.EncryptionPolicy == EncryptionPolicy.RequireEncryption;
+            bool cacheSslContext = sslAuthenticationOptions.EncryptionPolicy == EncryptionPolicy.RequireEncryption &&
+                    (!sslAuthenticationOptions.IsServer || (sslAuthenticationOptions.ApplicationProtocols != null && sslAuthenticationOptions.ApplicationProtocols.Count != 0));
 
             if (sslAuthenticationOptions.CertificateContext != null && cacheSslContext)
             {
