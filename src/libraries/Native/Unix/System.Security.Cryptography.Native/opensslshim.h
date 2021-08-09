@@ -128,7 +128,6 @@ const SSL_CIPHER* SSL_CIPHER_find(SSL *ssl, const unsigned char *ptr);
 #include "osslcompat_111.h"
 #endif
 
-
 #if !HAVE_OPENSSL_ALPN
 #undef HAVE_OPENSSL_ALPN
 #define HAVE_OPENSSL_ALPN 1
@@ -458,6 +457,7 @@ const EVP_CIPHER* EVP_chacha20_poly1305(void);
     LIGHTUP_FUNCTION(SSL_CIPHER_get_name) \
     LIGHTUP_FUNCTION(SSL_CIPHER_get_version) \
     REQUIRED_FUNCTION(SSL_ctrl) \
+    REQUIRED_FUNCTION(SSL_set_alpn_protos) \
     REQUIRED_FUNCTION(SSL_set_quiet_shutdown) \
     REQUIRED_FUNCTION(SSL_CTX_check_private_key) \
     FALLBACK_FUNCTION(SSL_CTX_config) \
@@ -473,6 +473,7 @@ const EVP_CIPHER* EVP_chacha20_poly1305(void);
     REQUIRED_FUNCTION(SSL_CTX_set_quiet_shutdown) \
     FALLBACK_FUNCTION(SSL_CTX_set_options) \
     FALLBACK_FUNCTION(SSL_CTX_set_security_level) \
+    FALLBACK_FUNCTION(SSL_set_security_level) \
     REQUIRED_FUNCTION(SSL_CTX_set_verify) \
     REQUIRED_FUNCTION(SSL_CTX_use_certificate) \
     REQUIRED_FUNCTION(SSL_CTX_use_PrivateKey) \
@@ -482,6 +483,7 @@ const EVP_CIPHER* EVP_chacha20_poly1305(void);
     REQUIRED_FUNCTION(SSL_get_client_CA_list) \
     REQUIRED_FUNCTION(SSL_get_current_cipher) \
     REQUIRED_FUNCTION(SSL_get_error) \
+    REQUIRED_FUNCTION(SSL_get_ex_data) \
     REQUIRED_FUNCTION(SSL_get_finished) \
     REQUIRED_FUNCTION(SSL_get_peer_cert_chain) \
     REQUIRED_FUNCTION(SSL_get_peer_finished) \
@@ -499,7 +501,10 @@ const EVP_CIPHER* EVP_chacha20_poly1305(void);
     FALLBACK_FUNCTION(SSL_session_reused) \
     REQUIRED_FUNCTION(SSL_set_accept_state) \
     REQUIRED_FUNCTION(SSL_set_bio) \
+    REQUIRED_FUNCTION(SSL_set_cipher_list) \
+    LIGHTUP_FUNCTION(SSL_set_ciphersuites) \
     REQUIRED_FUNCTION(SSL_set_connect_state) \
+    REQUIRED_FUNCTION(SSL_set_ex_data) \
     FALLBACK_FUNCTION(SSL_set_options) \
     REQUIRED_FUNCTION(SSL_set_verify) \
     REQUIRED_FUNCTION(SSL_shutdown) \
@@ -908,6 +913,7 @@ FOR_ALL_OPENSSL_FUNCTIONS
 #define SSL_CIPHER_get_name SSL_CIPHER_get_name_ptr
 #define SSL_CIPHER_get_version SSL_CIPHER_get_version_ptr
 #define SSL_ctrl SSL_ctrl_ptr
+#define SSL_set_alpn_protos SSL_set_alpn_protos_ptr
 #define SSL_set_quiet_shutdown SSL_set_quiet_shutdown_ptr
 #define SSL_CTX_check_private_key SSL_CTX_check_private_key_ptr
 #define SSL_CTX_config SSL_CTX_config_ptr
@@ -922,6 +928,7 @@ FOR_ALL_OPENSSL_FUNCTIONS
 #define SSL_CTX_set_options SSL_CTX_set_options_ptr
 #define SSL_CTX_set_quiet_shutdown SSL_CTX_set_quiet_shutdown_ptr
 #define SSL_CTX_set_security_level SSL_CTX_set_security_level_ptr
+#define SSL_set_security_level SSL_set_security_level_ptr
 #define SSL_CTX_set_verify SSL_CTX_set_verify_ptr
 #define SSL_CTX_use_certificate SSL_CTX_use_certificate_ptr
 #define SSL_CTX_use_PrivateKey SSL_CTX_use_PrivateKey_ptr
@@ -931,6 +938,7 @@ FOR_ALL_OPENSSL_FUNCTIONS
 #define SSL_get_client_CA_list SSL_get_client_CA_list_ptr
 #define SSL_get_current_cipher SSL_get_current_cipher_ptr
 #define SSL_get_error SSL_get_error_ptr
+#define SSL_get_ex_data SSL_get_ex_data_ptr
 #define SSL_get_finished SSL_get_finished_ptr
 #define SSL_get_peer_cert_chain SSL_get_peer_cert_chain_ptr
 #define SSL_get_peer_finished SSL_get_peer_finished_ptr
@@ -951,7 +959,10 @@ FOR_ALL_OPENSSL_FUNCTIONS
 #define SSL_session_reused SSL_session_reused_ptr
 #define SSL_set_accept_state SSL_set_accept_state_ptr
 #define SSL_set_bio SSL_set_bio_ptr
+#define SSL_set_cipher_list SSL_set_cipher_list_ptr
+#define SSL_set_ciphersuites SSL_set_ciphersuites_ptr
 #define SSL_set_connect_state SSL_set_connect_state_ptr
+#define SSL_set_ex_data SSL_set_ex_data_ptr
 #define SSL_set_options SSL_set_options_ptr
 #define SSL_set_verify SSL_set_verify_ptr
 #define SSL_shutdown SSL_shutdown_ptr

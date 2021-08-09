@@ -318,14 +318,33 @@ Shims the SSL_CTX_set_verify method.
 PALEXPORT void CryptoNative_SslCtxSetVerify(SSL_CTX* ctx, SslCtxSetVerifyCallback callback);
 
 /*
+Shims the SSL_set_verify method.
+*/
+PALEXPORT void CryptoNative_SslSetVerifyPeer(SSL* ssl);
+
+
+PALEXPORT int32_t  CryptoNative_SslSetData(SSL* ssl, void *ptr);
+PALEXPORT void* CryptoNative_SslGetData(SSL* ssl);
+
+
+/*
+Shims the SSL_CTX_set_cert_verify_callback method.
+*/
+//PALEXPORT void
+//CryptoNative_SslCtxSetCertVerifyCallback(SSL_CTX* ctx, SslCtxSetCertVerifyCallbackCallback callback, void* arg);
+
+/*
+
 Sets the specified encryption policy on the SSL_CTX.
 */
-PALEXPORT int32_t CryptoNative_SetEncryptionPolicy(SSL_CTX* ctx, EncryptionPolicy policy);
+PALEXPORT int32_t CryptoNative_SslCtxSetEncryptionPolicy(SSL_CTX* ctx, EncryptionPolicy policy);
+PALEXPORT int32_t CryptoNative_SetEncryptionPolicy(SSL* ssl, EncryptionPolicy policy);
 
 /*
 Sets ciphers (< TLS 1.3) and cipher suites (TLS 1.3) on the SSL_CTX
 */
-PALEXPORT int32_t CryptoNative_SetCiphers(SSL_CTX* ctx, const char* cipherList, const char* cipherSuites);
+PALEXPORT int32_t CryptoNative_SslCtxSetCiphers(SSL_CTX* ctx, const char* cipherList, const char* cipherSuites);
+PALEXPORT int32_t CryptoNative_SetCiphers(SSL* ssl, const char* cipherList, const char* cipherSuites);
 
 /*
 Determines if TLS 1.3 is supported by this OpenSSL implementation
@@ -366,6 +385,7 @@ Shims the ssl_ctx_set_alpn_protos method.
 Returns 0 on success, non-zero on failure.
 */
 PALEXPORT int32_t CryptoNative_SslCtxSetAlpnProtos(SSL_CTX* ctx, const uint8_t* protos, uint32_t protos_len);
+PALEXPORT int32_t CryptoNative_SslSetAlpnProtos(SSL* ssl, const uint8_t* protos, uint32_t protos_len);
 
 /*
 Shims the ssl_get0_alpn_selected method.

@@ -4,6 +4,7 @@
 using System;
 using System.Runtime.InteropServices;
 using System.Security.Authentication;
+using Microsoft.Win32.SafeHandles;
 
 internal static partial class Interop
 {
@@ -11,5 +12,8 @@ internal static partial class Interop
     {
         [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SetProtocolOptions")]
         internal static extern void SetProtocolOptions(IntPtr ctx, SslProtocols protocols);
+
+        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SetProtocolOptions")]
+        internal static extern void SetProtocolOptions(SafeSslContextHandle ctx, SslProtocols protocols);
     }
 }
