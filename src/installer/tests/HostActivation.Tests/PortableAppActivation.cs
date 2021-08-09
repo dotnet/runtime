@@ -494,11 +494,9 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
             }
         }
 
-        [Theory]
+        [Fact]
         [PlatformSpecific(TestPlatforms.Windows)] // GUI app host is only supported on Windows.
-        [InlineData(true)]
-        [InlineData(false)]
-        public void AppHost_GUI_FrameworkDependent_MissingRuntimeFramework_ErrorReportedInDialog(bool missingHostfxr)
+        public void AppHost_GUI_FrameworkDependent_MissingRuntimeFramework_ErrorReportedInDialog()
         {
             var fixture = sharedTestState.PortableAppFixture_Built
                 .Copy();
@@ -515,22 +513,12 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
 
                 string expectedErrorCode;
                 string expectedUrlQuery;
-                string expectedUrlParameter = null;
-                if (missingHostfxr)
-                {
-                    expectedErrorCode = Constants.ErrorCode.CoreHostLibMissingFailure.ToString("x");
-                    expectedUrlQuery = "missing_runtime=true&";
-                    expectedUrlParameter = $"&apphost_version={sharedTestState.RepoDirectories.MicrosoftNETCoreAppVersion}";
-                }
-                else
-                {
-                    invalidDotNet = new DotNetBuilder(invalidDotNet, sharedTestState.RepoDirectories.BuiltDotnet, "missingFramework")
-                        .Build()
-                        .BinPath;
-                    expectedErrorCode = Constants.ErrorCode.FrameworkMissingFailure.ToString("x");
-                    expectedUrlQuery = $"framework={Constants.MicrosoftNETCoreApp}&framework_version={sharedTestState.RepoDirectories.MicrosoftNETCoreAppVersion}";
-                }
+                invalidDotNet = new DotNetBuilder(invalidDotNet, sharedTestState.RepoDirectories.BuiltDotnet, "missingFramework")
+                    .Build()
+                    .BinPath;
 
+                expectedErrorCode = Constants.ErrorCode.FrameworkMissingFailure.ToString("x");
+                expectedUrlQuery = $"framework={Constants.MicrosoftNETCoreApp}&framework_version={sharedTestState.RepoDirectories.MicrosoftNETCoreAppVersion}";
                 Command command = Command.Create(appExe)
                     .EnableTracingAndCaptureOutputs()
                     .DotNetRoot(invalidDotNet)
@@ -541,22 +529,16 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                 command.Process.Kill();
 
                 var result = command.WaitForExit(true)
-                    .Should().Fail();
-
-                result.And.HaveStdErrContaining($"Showing error dialog for application: '{Path.GetFileName(appExe)}' - error code: 0x{expectedErrorCode}")
+                    .Should().Fail()
+                    .And.HaveStdErrContaining($"Showing error dialog for application: '{Path.GetFileName(appExe)}' - error code: 0x{expectedErrorCode}")
                     .And.HaveStdErrContaining($"url: 'https://aka.ms/dotnet-core-applaunch?{expectedUrlQuery}")
                     .And.HaveStdErrContaining("&gui=true");
-
-                if (expectedUrlParameter != null)
-                {
-                    result.And.HaveStdErrContaining(expectedUrlParameter);
-                }
             }
         }
 
         [Fact]
         [PlatformSpecific(TestPlatforms.Windows)]
-        public void AppHost_GUI_RuntimeMissing_PrintArchitectureAndRuntimeVersionOnDialog()
+        public void AppHost_GUI_MissingRuntime_ErrorReportedInDialog()
         {
             var fixture = sharedTestState.PortableAppFixture_Built
                 .Copy();
@@ -567,25 +549,26 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
             AppHostExtensions.SetWindowsGraphicalUserInterfaceBit(appExe);
 
             string invalidDotNet = SharedFramework.CalculateUniqueTestDirectory(Path.Combine(TestArtifact.TestArtifactsPath, "guiErrors"));
-            Directory.CreateDirectory(invalidDotNet);
-            File.Copy(sharedTestState.BuiltDotNet.DotnetExecutablePath, Path.Combine(invalidDotNet, "dotnet.exe"), true);
+            using (new TestArtifact(invalidDotNet))
+            {
+                Directory.CreateDirectory(invalidDotNet);
+                var command = Command.Create(appExe)
+                    .EnableTracingAndCaptureOutputs()
+                    .DotNetRoot(invalidDotNet)
+                    .MultilevelLookup(false)
+                    .Start();
 
-            var command = Command.Create(appExe)
-                .EnableTracingAndCaptureOutputs()
-                .DotNetRoot(invalidDotNet)
-                .MultilevelLookup(false)
-                .Start();
+                WaitForPopupFromProcess(command.Process);
+                command.Process.Kill();
 
-            WaitForPopupFromProcess(command.Process);
-            command.Process.Kill();
-
-            var expectedErrorCode = Constants.ErrorCode.CoreHostLibMissingFailure.ToString("x");
-            var result = command.WaitForExit(true)
-                .Should().Fail()
-                .And.HaveStdErrContaining($"Showing error dialog for application: '{Path.GetFileName(appExe)}' - error code: 0x{expectedErrorCode}")
-                .And.HaveStdErrContaining($"url: 'https://aka.ms/dotnet-core-applaunch?missing_runtime=true")
-                .And.HaveStdErrContaining("gui=true")
-                .And.HaveStdErrContaining($"&apphost_version={sharedTestState.RepoDirectories.MicrosoftNETCoreAppVersion}");
+                var expectedErrorCode = Constants.ErrorCode.CoreHostLibMissingFailure.ToString("x");
+                var result = command.WaitForExit(true)
+                    .Should().Fail()
+                    .And.HaveStdErrContaining($"Showing error dialog for application: '{Path.GetFileName(appExe)}' - error code: 0x{expectedErrorCode}")
+                    .And.HaveStdErrContaining($"url: 'https://aka.ms/dotnet-core-applaunch?missing_runtime=true")
+                    .And.HaveStdErrContaining("gui=true")
+                    .And.HaveStdErrContaining($"&apphost_version={sharedTestState.RepoDirectories.MicrosoftNETCoreAppVersion}");
+            }
         }
 
         [Fact]
