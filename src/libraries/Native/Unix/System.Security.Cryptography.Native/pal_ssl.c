@@ -513,23 +513,6 @@ int32_t CryptoNative_SslCtxSetEncryptionPolicy(SSL_CTX* ctx, EncryptionPolicy po
     return false;
 }
 
-int32_t CryptoNative_SetEncryptionPolicy(SSL* ssl, EncryptionPolicy policy)
-{
-    switch (policy)
-    {
-        case AllowNoEncryption:
-        case NoEncryption:
-            // No minimum security policy, same as OpenSSL 1.0
-            SSL_set_security_level(ssl, 0);
-            //ResetCtxProtocolRestrictions(ctx);
-            return true;
-        case RequireEncryption:
-            return true;
-    }
-
-    return false;
-}
-
 int32_t CryptoNative_SslCtxSetCiphers(SSL_CTX* ctx, const char* cipherList, const char* cipherSuites)
 {
     int32_t ret = true;

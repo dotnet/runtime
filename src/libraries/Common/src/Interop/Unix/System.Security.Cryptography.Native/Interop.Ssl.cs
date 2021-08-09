@@ -137,9 +137,6 @@ internal static partial class Interop
         [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_GetOpenSslCipherSuiteName")]
         private static extern IntPtr GetOpenSslCipherSuiteName(SafeSslHandle ssl, int cipherSuite, out int isTls12OrLower);
 
-        //[DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SetEncryptionPolicy")]
-        //internal static extern bool SetEncryptionPolicy(SafeSslHandle ssl, EncryptionPolicy policy);
-
         [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SetCiphers")]
         internal static extern unsafe bool SslSetCiphers(SafeSslHandle ssl, byte* cipherList, byte* cipherSuites);
 

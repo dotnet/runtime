@@ -262,13 +262,6 @@ internal static partial class Interop
                             Ssl.SslSetVerifyPeer(context);
                         }
                     }
-
-                    // Sets policy and security level
-//                    if (!Ssl.SetEncryptionPolicy(context, sslAuthenticationOptions.EncryptionPolicy))
-//                    {
-//                        throw new SslException(
-//                            SR.Format(SR.net_ssl_encryptionpolicy_notsupported, sslAuthenticationOptions.EncryptionPolicy));
-//                    }
                 }
                 catch
                 {
@@ -285,12 +278,8 @@ internal static partial class Interop
                 if (innerContext != null && cacheSslContext)
                 {
                     // We allocated new context
-                    if (sslAuthenticationOptions.CertificateContext?.contexts != null &&
-                        sslAuthenticationOptions.CertificateContext.contexts.TryAdd((int)sslAuthenticationOptions.EnabledSslProtocols, innerContext))
-                    {
-                        //Console.WriteLine("Added {0} to CTX cache", sslCtx.DangerousGetHandle());
-                    }
-                    else
+                    if (sslAuthenticationOptions.CertificateContext?.contexts == null ||
+                        !sslAuthenticationOptions.CertificateContext.contexts.TryAdd((int)sslAuthenticationOptions.EnabledSslProtocols, innerContext))
                     {
                         innerContext.Dispose();
                     }
@@ -519,7 +508,6 @@ internal static partial class Interop
             *outlen = 0;
             IntPtr sslData =  Ssl.SslGetData(ssl);
 
-            Console.WriteLine("AlpnServerSelectCallback called for {0} and {1}", ssl, sslData);
             if (sslData == IntPtr.Zero)
             {
                 // We did not set ALPN list.

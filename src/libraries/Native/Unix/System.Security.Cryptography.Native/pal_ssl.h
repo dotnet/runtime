@@ -326,19 +326,11 @@ PALEXPORT void CryptoNative_SslSetVerifyPeer(SSL* ssl);
 PALEXPORT int32_t  CryptoNative_SslSetData(SSL* ssl, void *ptr);
 PALEXPORT void* CryptoNative_SslGetData(SSL* ssl);
 
-
-/*
-Shims the SSL_CTX_set_cert_verify_callback method.
-*/
-//PALEXPORT void
-//CryptoNative_SslCtxSetCertVerifyCallback(SSL_CTX* ctx, SslCtxSetCertVerifyCallbackCallback callback, void* arg);
-
 /*
 
 Sets the specified encryption policy on the SSL_CTX.
 */
 PALEXPORT int32_t CryptoNative_SslCtxSetEncryptionPolicy(SSL_CTX* ctx, EncryptionPolicy policy);
-PALEXPORT int32_t CryptoNative_SetEncryptionPolicy(SSL* ssl, EncryptionPolicy policy);
 
 /*
 Sets ciphers (< TLS 1.3) and cipher suites (TLS 1.3) on the SSL_CTX
