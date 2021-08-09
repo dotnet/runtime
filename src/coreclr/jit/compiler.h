@@ -1230,6 +1230,7 @@ public:
         return {LowerBoundForType(type), UpperBoundForType(type)};
     }
 
+    static IntegralRange ForNode(GenTree* node, Compiler* compiler);
     static IntegralRange ForCastInput(GenTreeCast* cast);
     static IntegralRange ForCastOutput(GenTreeCast* cast);
 

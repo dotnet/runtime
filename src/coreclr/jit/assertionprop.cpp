@@ -119,6 +119,59 @@ bool IntegralRange::Contains(int64_t value) const
 }
 
 //------------------------------------------------------------------------
+// ForNode: Compute the integral range for a node.
+//
+// Arguments:
+//    node     - the node, of an integral type, in question
+//    compiler - the Compiler, used to retrieve additional info
+//
+// Return Value:
+//    The integral range this node produces.
+//
+/* static */ IntegralRange IntegralRange::ForNode(GenTree* node, Compiler* compiler)
+{
+    assert(varTypeIsIntegral(node));
+
+    var_types rangeType = node->TypeGet();
+
+    switch (node->OperGet())
+    {
+        case GT_EQ:
+        case GT_NE:
+        case GT_LT:
+        case GT_LE:
+        case GT_GE:
+        case GT_GT:
+            return {SymbolicIntegerValue::Zero, SymbolicIntegerValue::One};
+
+        case GT_ARR_LENGTH:
+            return {SymbolicIntegerValue::Zero, SymbolicIntegerValue::IntMax};
+
+        case GT_CALL:
+            if (node->AsCall()->NormalizesSmallTypesOnReturn())
+            {
+                rangeType = static_cast<var_types>(node->AsCall()->gtReturnType);
+            }
+            break;
+
+        case GT_LCL_VAR:
+            if (compiler->lvaGetDesc(node->AsLclVar())->lvNormalizeOnStore())
+            {
+                rangeType = compiler->lvaGetDesc(node->AsLclVar())->TypeGet();
+            }
+            break;
+
+        case GT_CAST:
+            return ForCastOutput(node->AsCast());
+
+        default:
+            break;
+    }
+
+    return ForType(rangeType);
+}
+
+//------------------------------------------------------------------------
 // ForCastInput: Get the non-overflowing input range for a cast.
 //
 // This routine computes the input range for a cast from
