@@ -144,7 +144,7 @@ namespace System.Runtime.InteropServices.JavaScript
         {
             object setPropResult = Interop.Runtime.SetObjectProperty(JSHandle, name, value, createIfNotExists, hasOwnProperty, out int exception);
             if (exception != 0)
-                throw new JSException($"Error setting {name} on (js-obj js '{JSHandle}' .NET '{GCHandleValue})");
+                throw new JSException($"Error setting {name} on (js-obj js '{JSHandle}')");
         }
 
         /// <summary>

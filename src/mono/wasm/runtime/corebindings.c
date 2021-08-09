@@ -17,7 +17,7 @@ extern MonoObject* mono_wasm_set_object_property (int js_handle, MonoString *pro
 extern MonoObject* mono_wasm_set_by_index (int js_handle, int property_index, MonoObject *value, int *is_exception);
 extern MonoObject* mono_wasm_get_global_object (MonoString *global_name, int *is_exception);
 extern void* mono_wasm_release_cs_owned_object (int js_handle);
-extern MonoObject* mono_wasm_create_cs_owned_object (int gc_handle, MonoString *core_name, MonoArray *args, int *is_exception);
+extern MonoObject* mono_wasm_create_cs_owned_object (MonoString *core_name, MonoArray *args, int *is_exception);
 extern MonoObject* mono_wasm_typed_array_to_array (int js_handle, int *is_exception);
 extern MonoObject* mono_wasm_typed_array_copy_to (int js_handle, int ptr, int begin, int end, int bytes_per_element, int *is_exception);
 extern MonoObject* mono_wasm_typed_array_from (int ptr, int begin, int end, int bytes_per_element, int type, int *is_exception);

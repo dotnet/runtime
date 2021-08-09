@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Threading.Tasks;
@@ -44,44 +43,42 @@ namespace System.Runtime.InteropServices.JavaScript
             Interop.Runtime.DumpAotProfileData(ref buf, len, extraArg);
         }
 
-        public static int CsOwnedObjectGetJsHandle(JSObject target, bool addRef)
+        public static int GetCsOwnedObjectJsHandle(JSObject target, int shouldAddInflight)
         {
-            if (addRef)
+            if (shouldAddInflight != 0)
             {
                 target.AddInFlight();
             }
             return target.JSHandle;
         }
 
-        public static void ReleaseCsOwnedObjectByHandle(int jsHandle)
-        {
-            lock (_csOwnedObjects)
-            {
-                if (_csOwnedObjects.TryGetValue(jsHandle, out WeakReference<JSObject>? reference))
-                {
-                    reference.TryGetTarget(out JSObject? target);
-                    Debug.Assert(target != null, $"\tSafeHandleReleaseByHandle: did not find active target {jsHandle}");
-
-                    target.ReleaseInFlight();
-                }
-                else
-                {
-                    Debug.Fail($"\tSafeHandleReleaseByHandle: did not find reference for {jsHandle}");
-                }
-            }
-        }
-
         internal static bool ReleaseCsOwnedObject(JSObject objToRelease)
         {
             lock (_csOwnedObjects)
             {
-                Interop.Runtime.ReleaseCsOwnedObject(objToRelease.JSHandle);
                 _csOwnedObjects.Remove(objToRelease.JSHandle);
+                Interop.Runtime.ReleaseCsOwnedObject(objToRelease.JSHandle);
             }
             return true;
         }
 
-        public static int CreateCSOwnedObject(int jsHandle, int mappedType)
+        internal static IntPtr CreateCsOwnedObject(JSObject proxy, string typeName, params object[] parms)
+        {
+            object res = Interop.Runtime.CreateCsOwnedObject(typeName, parms, out int exception);
+            if (exception != 0)
+                throw new JSException((string)res);
+
+            var jsHandle = (int)res;
+
+            lock (_csOwnedObjects)
+            {
+                _csOwnedObjects[jsHandle] = new WeakReference<JSObject>(proxy, trackResurrection: true);
+            }
+
+            return (IntPtr)jsHandle;
+        }
+
+        public static JSObject CreateCSOwnedObject(int jsHandle, int mappedType)
         {
             JSObject? target = null;
 
@@ -98,30 +95,31 @@ namespace System.Runtime.InteropServices.JavaScript
 
             target.AddInFlight();
 
-            return target.GCHandleValue;
+            return target;
         }
 
         public static int TryGetCsOwnedObjectJsHandle(object rawObj)
         {
             JSObject? jsObject = rawObj as JSObject;
-            return jsObject?.JSHandle ?? -1;
+            return jsObject?.JSHandle ?? 0;
         }
 
-        public static object GetJSOwnedObjectByGcHandle(int gcHandle)
+        public static JSObject? GetCSOwnedObjectByJsHandle(int jsHandle, int shouldAddInflight)
         {
-            GCHandle h = (GCHandle)(IntPtr)gcHandle;
-            return h.Target!;
-        }
-
-        public static JSObject? GetCSOwnedObjectByGcHandle(int gcHandle, int shouldAddInflight)
-        {
-            GCHandle h = (GCHandle)(IntPtr)gcHandle;
-            var jso = (JSObject?)h.Target;
-            if (shouldAddInflight != 0 && jso != null)
+            lock (_csOwnedObjects)
             {
-                jso.AddInFlight();
+                if (_csOwnedObjects.TryGetValue(jsHandle, out WeakReference<JSObject>? reference))
+                {
+                    reference.TryGetTarget(out JSObject? jso);
+                    if (shouldAddInflight != 0 && jso != null)
+                    {
+                        jso.AddInFlight();
+                    }
+                    return jso;
+                }
             }
-            return jso;
+            return null;
+
         }
 
         private static JSObject BindJSType(IntPtr jsHandle, int coreType) =>
@@ -175,6 +173,12 @@ namespace System.Runtime.InteropServices.JavaScript
             return tcs.Task;
         }
 
+        public static object GetJSOwnedObjectByGcHandle(int gcHandle)
+        {
+            GCHandle h = (GCHandle)(IntPtr)gcHandle;
+            return h.Target!;
+        }
+
         // A JSOwnedObject is a managed object with its lifetime controlled by javascript.
         // The managed side maintains a strong reference to the object, while the JS side
         //  maintains a weak reference and notifies the managed side if the JS wrapper object
@@ -201,7 +205,7 @@ namespace System.Runtime.InteropServices.JavaScript
 
         // The JS layer invokes this method when the JS wrapper for a JS owned object
         //  has been collected by the JS garbage collector
-        public static void ReleaseJSOwnedObjectByHandle(int gcHandle)
+        public static void ReleaseJSOwnedObjectByGcHandle(int gcHandle)
         {
             GCHandle handle = (GCHandle)(IntPtr)gcHandle;
             lock (JSOwnedObjectLock)

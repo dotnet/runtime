@@ -123,19 +123,17 @@ var BindingSupportLib = {
 			//  that any code relying on the old get_method/call_method pattern will
 			//  break in a more understandable way.
 
-			this._get_js_owned_object_by_gc_handle = bind_runtime_method ("GetJSOwnedObjectByGcHandle", "i!");
-			this._get_cs_owned_object_by_gc_handle = bind_runtime_method ("GetCSOwnedObjectByGcHandle", "ii!");
-			
-
-			this._create_cs_owned_object = bind_runtime_method ("CreateCSOwnedObject", "ii");
+			this._get_cs_owned_object_by_js_handle = bind_runtime_method ("GetCSOwnedObjectByJsHandle", "ii!");
+			this._get_cs_owned_object_js_handle = bind_runtime_method ("GetCsOwnedObjectJsHandle", 'mi');
 			this._try_get_cs_owned_object_js_handle = bind_runtime_method ("TryGetCsOwnedObjectJsHandle", "m");
-			this._cs_owned_object_get_js_handle = bind_runtime_method ("CsOwnedObjectGetJsHandle", 'mi');
-			this._release_cs_owned_object_by_handle = bind_runtime_method ("ReleaseCsOwnedObjectByHandle", 'i');
 
-			this._get_js_owned_object_gc_handle = bind_runtime_method ("GetJSOwnedObjectGCHandle", "m");
-			this._release_js_owned_object_by_handle = bind_runtime_method ("ReleaseJSOwnedObjectByHandle", "i");
+			this._create_cs_owned_object = bind_runtime_method ("CreateCSOwnedObject", "ii!");
 
 			this._is_simple_array = bind_runtime_method ("IsSimpleArray", "m");
+
+			this._get_js_owned_object_by_gc_handle = bind_runtime_method ("GetJSOwnedObjectByGcHandle", "i!");
+			this._get_js_owned_object_gc_handle = bind_runtime_method ("GetJSOwnedObjectGCHandle", "m");
+			this._release_js_owned_object_by_gc_handle = bind_runtime_method ("ReleaseJSOwnedObjectByGcHandle", "i");
 
 			this._create_tcs = bind_runtime_method ("CreateTaskSource","");
 			this._set_tcs_result = bind_runtime_method ("SetTaskSourceResult","io");
@@ -173,7 +171,7 @@ var BindingSupportLib = {
 			//  we can release the tracking weakref (it's null now, by definition),
 			//  and tell the C# side to stop holding a reference to the managed object.
 			this._js_owned_object_table.delete(gc_handle);
-			this._release_js_owned_object_by_handle(gc_handle);
+			this._release_js_owned_object_by_gc_handle(gc_handle);
 		},
 
 		_lookup_js_owned_object: function (gc_handle) {
@@ -265,8 +263,9 @@ var BindingSupportLib = {
 
 			// this could be JSObject proxy of a js native object
 			var js_handle = this._try_get_cs_owned_object_js_handle (root.value);
-			if (js_handle > 0)
+			if (js_handle) {
 				return this.mono_wasm_get_jsobj_from_js_handle(js_handle);
+			}
 			// otherwise this is C# only object
 	
 			// get strong reference to Object
@@ -554,7 +553,7 @@ var BindingSupportLib = {
 		},
 
 		_unbox_cs_owned_root_as_js_object: function (root) {
-			var js_handle = this._cs_owned_object_get_js_handle(root.value, true);
+			var js_handle = this._get_cs_owned_object_js_handle(root.value, true);
 			var js_obj = BINDING.mono_wasm_get_jsobj_from_js_handle (js_handle);
 			return js_obj;
 		},
@@ -886,16 +885,16 @@ var BindingSupportLib = {
 
 		// when should_add_in_flight === true, the JSObject would be temporarily hold by Normal gc_handle, so that it would not get collected during transition to the managed stack.
 		// its InFlight gc_handle would be freed when the instance arrives to managed side via Interop.Runtime.ReleaseInFlight
-		get_cs_owned_object_by_gc_handle: function (gc_handle, should_add_in_flight)
+		get_cs_owned_object_by_js_handle: function (js_handle, should_add_in_flight)
 		{
-			if(!gc_handle){
+			if(!js_handle){
 				return 0;
 			}
 			const should_add_in_flight_int = should_add_in_flight ? 1 : 0;
 		
 			// TODO: should_add_in_flight -> mono_inflight_current_frame?
 
-			return this._get_cs_owned_object_by_gc_handle (gc_handle, should_add_in_flight_int);
+			return this._get_cs_owned_object_by_js_handle (js_handle, should_add_in_flight_int);
 		},
 
 		mono_method_get_call_signature: function(method, mono_obj) {
@@ -919,13 +918,13 @@ var BindingSupportLib = {
 				result = this.get_js_owned_object_by_gc_handle (js_obj.__js_owned_gc_handle__);
 				return result;
 			}
-			if (js_obj.__mono_gc_handle__) {
-				result = this.get_cs_owned_object_by_gc_handle (js_obj.__mono_gc_handle__, true);
+			if (js_obj.__cs_owned_js_handle__) {
+				result = this.get_cs_owned_object_by_js_handle (js_obj.__cs_owned_js_handle__, true);
 
 				// It's possible the managed object corresponding to this JS object was collected,
 				//  in which case we need to make a new one.
 				if (!result) {
-					delete js_obj.__mono_gc_handle__;
+					delete js_obj.__cs_owned_js_handle__;
 				}
 			}
 
@@ -935,9 +934,9 @@ var BindingSupportLib = {
 				const wasm_type_id = typeof wasm_type === "undefined" ? -1 : wasm_type;
 
 				var js_handle = BINDING.mono_wasm_get_js_handle(js_obj);
-				var gc_handle = js_obj.__mono_gc_handle__ = this._create_cs_owned_object(js_handle, wasm_type_id);
-				// as this instance was just created, it was already created with Inflight strong gc_handle, so we do not have to do it again
-				result = this.get_cs_owned_object_by_gc_handle (gc_handle, false);
+
+				// pointer to JSObject with AddInFlight
+				result = this._create_cs_owned_object(js_handle, wasm_type_id);
 			}
 
 			return result;
@@ -1634,13 +1633,13 @@ var BindingSupportLib = {
 			return null;
 		},
 		mono_wasm_get_js_handle: function(js_obj) {
-			if(js_obj.__mono_js_handle__){
-				return js_obj.__mono_js_handle__;
+			if(js_obj.__cs_owned_js_handle__){
+				return js_obj.__cs_owned_js_handle__;
 			}
 			var js_handle = this.mono_wasm_free_list.length ? this.mono_wasm_free_list.pop() : this.mono_wasm_ref_counter++;
 			// note mono_wasm_object_registry is list, not Map. That's why we maintain mono_wasm_free_list.
 			this.mono_wasm_object_registry[js_handle] = js_obj;
-			js_obj.__mono_js_handle__ = js_handle;
+			js_obj.__cs_owned_js_handle__ = js_handle;
 			return js_handle;
 		},
 		_mono_wasm_release_js_handle: function(js_handle) {
@@ -1651,9 +1650,8 @@ var BindingSupportLib = {
 				if (globalThis === obj)
 					return obj;
 
-				if (typeof obj.__mono_js_handle__  !== "undefined") {
-					obj.__mono_gc_handle__ = undefined;
-					obj.__mono_js_handle__ = undefined;
+				if (typeof obj.__cs_owned_js_handle__  !== "undefined") {
+					obj.__cs_owned_js_handle__ = undefined;
 				}
 
 				BINDING.mono_wasm_object_registry[js_handle] = undefined;
@@ -1720,8 +1718,6 @@ var BindingSupportLib = {
 			var res;
 			try {
 				var m = obj [js_name];
-				if (m === Object(m) && obj.__is_mono_proxied__)
-					m.__is_mono_proxied__ = true;
 
 				return BINDING.js_to_mono_obj (m);
 			} catch (e) {
@@ -1861,7 +1857,7 @@ var BindingSupportLib = {
 		BINDING.bindings_lazy_init ();
 		BINDING._mono_wasm_release_js_handle(js_handle);
 	},
-	mono_wasm_create_cs_owned_object: function (gc_handle, core_name, args, is_exception) {
+	mono_wasm_create_cs_owned_object: function (core_name, args, is_exception) {
 		var argsRoot = MONO.mono_wasm_new_root (args), nameRoot = MONO.mono_wasm_new_root (core_name);
 		try {
 			BINDING.bindings_lazy_init ();
@@ -1897,7 +1893,6 @@ var BindingSupportLib = {
 				};
 
 				var js_obj = allocator(coreObj, js_args);
-				js_obj.__mono_gc_handle__ = gc_handle;
 				var js_handle = BINDING.mono_wasm_get_js_handle(js_obj);
 				// yes, convert int, because on error we need to return String on same method signature
 				return BINDING.js_to_mono_obj(js_handle);

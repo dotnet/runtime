@@ -2,11 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Collections.Generic;
-using System.Reflection;
 using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
-using System.Threading.Tasks;
 
 using JSObject = System.Runtime.InteropServices.JavaScript.JSObject;
 using JSException = System.Runtime.InteropServices.JavaScript.JSException;
@@ -36,7 +32,7 @@ internal static partial class Interop
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         internal static extern object ReleaseCsOwnedObject(int jsHandle);
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal static extern object CreateCsOwnedObject(int gcHandle, string className, object[] parms, out int exceptionalResult);
+        internal static extern object CreateCsOwnedObject(string className, object[] parms, out int exceptionalResult);
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         internal static extern object TypedArrayToArray(int jsHandle, out int exceptionalResult);
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
@@ -71,14 +67,6 @@ internal static partial class Interop
                 throw new JSException((string)res);
             ReleaseInFlight(res);
             return res as System.Runtime.InteropServices.JavaScript.Function;
-        }
-
-        internal static IntPtr CreateCsOwnedObject(int gcHandle, string typeName, params object[] parms)
-        {
-            object res = CreateCsOwnedObject(gcHandle, typeName, parms, out int exception);
-            if (exception != 0)
-                throw new JSException((string)res);
-            return (IntPtr)(int)res;
         }
 
         public static object GetGlobalObject(string? str = null)

@@ -11,38 +11,30 @@ namespace System.Runtime.InteropServices.JavaScript
     {
         private GCHandle? InFlight;
         private int InFlightCounter;
-        private GCHandle WeakRefHandle;
         public int JSHandle => (int)handle;
-        internal int GCHandleValue => (int)(IntPtr)WeakRefHandle;
         public bool IsDisposed { get; private set; }
 
         public JSObject() : base(true)
         {
-            // this is weak C# reference to the JSObject, it has same lifetime as the JSObject
-            WeakRefHandle = GCHandle.Alloc(this, GCHandleType.Weak);
             InFlight = null;
             InFlightCounter = 0;
 
-            var jsHandle = Interop.Runtime.CreateCsOwnedObject(GCHandleValue, nameof(Object));
+            var jsHandle = Runtime.CreateCsOwnedObject(this, nameof(Object));
             SetHandle(jsHandle);
         }
 
         protected JSObject(string typeName, object[] _params) : base(true)
         {
-            // this is weak C# reference to the JSObject, it has same lifetime as the JSObject
-            WeakRefHandle = GCHandle.Alloc(this, GCHandleType.Weak);
             InFlight = null;
             InFlightCounter = 0;
 
-            var jsHandle = Interop.Runtime.CreateCsOwnedObject(GCHandleValue, typeName, _params);
+            var jsHandle = Runtime.CreateCsOwnedObject(this, typeName, _params);
             SetHandle(jsHandle);
         }
 
         internal JSObject(IntPtr jsHandle) : base(true)
         {
             SetHandle(jsHandle);
-            // this is weak C# reference to the JSObject, it has same lifetime as the JSObject
-            WeakRefHandle = GCHandle.Alloc(this, GCHandleType.Weak);
             InFlight = null;
             InFlightCounter = 0;
         }
@@ -82,7 +74,6 @@ namespace System.Runtime.InteropServices.JavaScript
             Runtime.ReleaseCsOwnedObject(this);
             SetHandleAsInvalid();
             IsDisposed = true;
-            WeakRefHandle.Free();
             return true;
         }
 
@@ -92,7 +83,7 @@ namespace System.Runtime.InteropServices.JavaScript
 
         public override string ToString()
         {
-            return $"(js-obj js '{GCHandleValue}')";
+            return $"(js-obj js '{JSHandle}')";
         }
     }
 }
