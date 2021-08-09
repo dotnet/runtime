@@ -19,11 +19,8 @@ namespace System.Net.Http.Headers
 
         private object[]? _specialCollectionsSlots;
         private HttpGeneralHeaders? _generalHeaders;
-
-#if !TARGET_BROWSER
         private HttpHeaderValueCollection<NameValueWithParametersHeaderValue>? _expect;
         private bool _expectContinueSet;
-#endif
 
         #region Request Headers
 
@@ -54,21 +51,6 @@ namespace System.Net.Http.Headers
             set { SetOrRemoveParsedValue(KnownHeaders.Authorization.Descriptor, value); }
         }
 
-#if TARGET_BROWSER
-        public HttpHeaderValueCollection<NameValueWithParametersHeaderValue> Expect
-        {
-            get => throw new PlatformNotSupportedException();
-        }
-
-        public bool? ExpectContinue
-        {
-            get => false;
-            set
-            {
-                if (value ?? false) { throw new PlatformNotSupportedException();}
-            }
-        }
-#else
         public HttpHeaderValueCollection<NameValueWithParametersHeaderValue> Expect
         {
             get { return ExpectCore; }
@@ -107,7 +89,6 @@ namespace System.Net.Http.Headers
                 }
             }
         }
-#endif
 
         public string? From
         {
@@ -208,10 +189,8 @@ namespace System.Net.Http.Headers
         public HttpHeaderValueCollection<ProductInfoHeaderValue> UserAgent =>
             GetSpecializedCollection(UserAgentSlot, static thisRef => new HttpHeaderValueCollection<ProductInfoHeaderValue>(KnownHeaders.UserAgent.Descriptor, thisRef));
 
-#if !TARGET_BROWSER
         private HttpHeaderValueCollection<NameValueWithParametersHeaderValue> ExpectCore =>
             _expect ??= new HttpHeaderValueCollection<NameValueWithParametersHeaderValue>(KnownHeaders.Expect.Descriptor, this, HeaderUtilities.ExpectContinue);
-#endif
 
         #endregion
 
@@ -295,13 +274,11 @@ namespace System.Net.Http.Headers
                 GeneralHeaders.AddSpecialsFrom(sourceRequestHeaders._generalHeaders);
             }
 
-#if !TARGET_BROWSER
             bool? expectContinue = ExpectContinue;
             if (!expectContinue.HasValue)
             {
                 ExpectContinue = sourceRequestHeaders.ExpectContinue;
             }
-#endif
         }
 
         private HttpGeneralHeaders GeneralHeaders => _generalHeaders ?? (_generalHeaders = new HttpGeneralHeaders(this));
