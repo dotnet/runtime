@@ -13612,6 +13612,9 @@ namespace System.Runtime.Versioning
     public sealed partial class RequiresPreviewFeaturesAttribute : System.Attribute
     {
         public RequiresPreviewFeaturesAttribute() { }
+        public RequiresPreviewFeaturesAttribute(string? message) { }
+        public string? Message { get { throw null; } }
+        public string? Url { get { throw null; } set { } }
     }
     [System.AttributeUsageAttribute(System.AttributeTargets.Constructor | System.AttributeTargets.Method | System.AttributeTargets.Property, Inherited=false)]
     [System.Diagnostics.ConditionalAttribute("RESOURCE_ANNOTATION_WORK")]
