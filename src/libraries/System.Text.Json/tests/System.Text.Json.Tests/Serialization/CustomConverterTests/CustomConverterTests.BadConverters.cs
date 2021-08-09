@@ -483,6 +483,9 @@ namespace System.Text.Json.Serialization.Tests
             public T Property { get; set; }
         }
 
+        /// <summary>
+        /// A double converter that incorrectly claims to support double? types.
+        /// </summary>
         private class BadDoubleConverter : JsonConverter<double>
         {
             public override bool CanConvert(Type typeToConvert) => typeToConvert == typeof(double) || typeToConvert == typeof(double?);
@@ -490,6 +493,9 @@ namespace System.Text.Json.Serialization.Tests
             public override void Write(Utf8JsonWriter writer, double value, JsonSerializerOptions options) => writer.WriteNumberValue(value);
         }
 
+        /// <summary>
+        /// A double? converter that incorrectly claims to support double types.
+        /// </summary>
         private class BadNullableDoubleConverter : JsonConverter<double?>
         {
             public override bool CanConvert(Type typeToConvert) => typeToConvert == typeof(double) || typeToConvert == typeof(double?);
