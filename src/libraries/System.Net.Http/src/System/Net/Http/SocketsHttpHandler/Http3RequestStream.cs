@@ -127,6 +127,13 @@ namespace System.Net.Http
 
             try
             {
+                // Works around linker issue where it tries to eliminate QuicStreamAbortedException
+                // https://github.com/dotnet/runtime/issues/57010
+                #if TARGET_MOBILE
+                if (string.Empty.Length > 0)
+                    throw new QuicStreamAbortedException("", 0);
+                #endif
+
                 BufferHeaders(_request);
 
                 // If using Expect 100 Continue, setup a TCS to wait to send content until we get a response.
@@ -233,24 +240,22 @@ namespace System.Net.Http
 
                 return response;
             }
+            catch (QuicStreamAbortedException ex) when (ex.ErrorCode == (long)Http3ErrorCode.VersionFallback)
+            {
+                // The server is requesting us fall back to an older HTTP version.
+                throw new HttpRequestException(SR.net_http_retry_on_older_version, ex, RequestRetryType.RetryOnLowerHttpVersion);
+            }
+            catch (QuicStreamAbortedException ex) when (ex.ErrorCode == (long)Http3ErrorCode.RequestRejected)
+            {
+                // The server is rejecting the request without processing it, retry it on a different connection.
+                throw new HttpRequestException(SR.net_http_request_aborted, ex, RequestRetryType.RetryOnConnectionFailure);
+            }
             catch (QuicStreamAbortedException ex)
             {
-                if (ex.ErrorCode == (long)Http3ErrorCode.VersionFallback)
-                {
-                    // The server is requesting us fall back to an older HTTP version.
-                    throw new HttpRequestException(SR.net_http_retry_on_older_version, ex, RequestRetryType.RetryOnLowerHttpVersion);
-                }
-                else if (ex.ErrorCode == (long)Http3ErrorCode.RequestRejected)
-                {
-                    // The server is rejecting the request without processing it, retry it on a different connection.
-                    throw new HttpRequestException(SR.net_http_request_aborted, ex, RequestRetryType.RetryOnConnectionFailure);
-                }
-                else
-                {
-                    // Our stream was reset.
-                    Exception? abortException = _connection.AbortException;
-                    throw new HttpRequestException(SR.net_http_client_execution_error, abortException ?? ex);
-                }
+                // Our stream was reset.
+
+                Exception? abortException = _connection.AbortException;
+                throw new HttpRequestException(SR.net_http_client_execution_error, abortException ?? ex);
             }
             catch (QuicConnectionAbortedException ex)
             {
@@ -258,6 +263,21 @@ namespace System.Net.Http
 
                 Exception abortException = _connection.Abort(ex);
                 throw new HttpRequestException(SR.net_http_client_execution_error, abortException);
+            }
+            // It is possible for user's Content code to throw an unexpected OperationCanceledException.
+            catch (OperationCanceledException ex) when (ex.CancellationToken == requestCancellationSource.Token)
+            {
+                // We're either observing GOAWAY, or the cancellationToken parameter has been canceled.
+                if (cancellationToken.IsCancellationRequested)
+                {
+                    _stream.AbortWrite((long)Http3ErrorCode.RequestCancelled);
+                    throw new OperationCanceledException(ex.Message, ex, cancellationToken);
+                }
+                else
+                {
+                    Debug.Assert(_goawayCancellationToken.IsCancellationRequested == true);
+                    throw new HttpRequestException(SR.net_http_request_aborted, ex, RequestRetryType.RetryOnConnectionFailure);
+                }
             }
             catch (Http3ConnectionException ex)
             {
@@ -267,30 +287,12 @@ namespace System.Net.Http
             }
             catch (Exception ex)
             {
-                // It is possible for user's Content code to throw an unexpected OperationCanceledException.
-                if (ex is OperationCanceledException && ((OperationCanceledException)ex).CancellationToken == requestCancellationSource.Token)
+                _stream.AbortWrite((long)Http3ErrorCode.InternalError);
+                if (ex is HttpRequestException)
                 {
-                    // We're either observing GOAWAY, or the cancellationToken parameter has been canceled.
-                    if (cancellationToken.IsCancellationRequested)
-                    {
-                        _stream.AbortWrite((long)Http3ErrorCode.RequestCancelled);
-                        throw new OperationCanceledException(ex.Message, ex, cancellationToken);
-                    }
-                    else
-                    {
-                        Debug.Assert(_goawayCancellationToken.IsCancellationRequested == true);
-                        throw new HttpRequestException(SR.net_http_request_aborted, ex, RequestRetryType.RetryOnConnectionFailure);
-                    }
+                    throw;
                 }
-                else
-                {
-                    _stream.AbortWrite((long)Http3ErrorCode.InternalError);
-                    if (ex is HttpRequestException)
-                    {
-                        throw;
-                    }
-                    throw new HttpRequestException(SR.net_http_client_execution_error, ex);
-                }
+                throw new HttpRequestException(SR.net_http_client_execution_error, ex);
             }
             finally
             {
