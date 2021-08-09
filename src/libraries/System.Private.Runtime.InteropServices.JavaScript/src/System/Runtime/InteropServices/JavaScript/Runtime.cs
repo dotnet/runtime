@@ -406,9 +406,9 @@ namespace System.Runtime.InteropServices.JavaScript
 
         public static void SafeHandleReleaseByHandle(int jsHandle)
         {
-            lock (_boundObjects)
+            lock (_csOwnedObjects)
             {
-                if (_boundObjects.TryGetValue(jsHandle, out WeakReference<JSObject>? reference))
+                if (_csOwnedObjects.TryGetValue(jsHandle, out WeakReference<JSObject>? reference))
                 {
                     reference.TryGetTarget(out JSObject? target);
                     Debug.Assert(target != null, $"\tSafeHandleReleaseByHandle: did not find active target {jsHandle}");
