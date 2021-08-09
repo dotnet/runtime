@@ -9,6 +9,7 @@ using System.Text.Json.Serialization;
 using System.Reflection.Metadata;
 using Microsoft.Build.Framework;
 using Microsoft.Build.Utilities;
+using System.Diagnostics.CodeAnalysis;
 
 public class RuntimeConfigParserTask : Task
 {
@@ -43,14 +44,17 @@ public class RuntimeConfigParserTask : Task
             return false;
         }
 
-        if (!TryConvertInputToDictionary(RuntimeConfigFile, out Dictionary<string, string> configProperties))
+        if (!TryConvertInputToDictionary(RuntimeConfigFile, out Dictionary<string, string>? configProperties))
         {
             return false;
         }
 
         if (RuntimeConfigReservedProperties.Length != 0)
         {
-            CheckDuplicateProperties(configProperties, RuntimeConfigReservedProperties);
+            if (!CheckReservedProperties(configProperties, RuntimeConfigReservedProperties))
+            {
+                return false;
+            }
         }
 
         var blobBuilder = new BlobBuilder();
@@ -64,11 +68,9 @@ public class RuntimeConfigParserTask : Task
     }
 
     /// Reads a json file from the given path and extracts the "configProperties" key (assumed to be a string to string dictionary)
-    private bool TryConvertInputToDictionary(string inputFilePath, out Dictionary<string, string> result)
+    private bool TryConvertInputToDictionary(string inputFilePath, [NotNullWhen(true)] out Dictionary<string, string>? result)
     {
-        var init_result = new Dictionary<string, string>();
-        init_result.Clear();
-        result = init_result;
+        result = null;
 
         var options = new JsonSerializerOptions {
             AllowTrailingCommas = true,
@@ -116,15 +118,20 @@ public class RuntimeConfigParserTask : Task
         }
     }
 
-    private void CheckDuplicateProperties(IReadOnlyDictionary<string, string> properties, ITaskItem[] keys)
+    private bool CheckReservedProperties(IReadOnlyDictionary<string, string> properties, ITaskItem[] keys)
     {
+        var succeed = true;
+
         foreach (var key in keys)
         {
             if (properties.ContainsKey(key.ItemSpec))
             {
                 Log.LogError($"Property '{key}' can't be set by the user!");
+                succeed = false;
             }
         }
+
+        return succeed;
     }
 }
 
