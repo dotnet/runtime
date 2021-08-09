@@ -119,7 +119,9 @@ jobs:
     # It is too early to include OSX_arm64 in platform group all
     # Adding it here will enable it to also run this test
     - OSX_arm64
-    helixQueueGroup: ci
+    # Use the "outerloop" helix queue group to enable additional helix queues for supported platforms.
+    # This will get us basic CI coverage for runtime tests for platforms like Windows 7.
+    helixQueueGroup: outerloop
     helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
     jobParameters:
       testGroup: outerloop
