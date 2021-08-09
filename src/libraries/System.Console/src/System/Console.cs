@@ -38,7 +38,7 @@ namespace System
         [UnsupportedOSPlatform("android")]
         [UnsupportedOSPlatform("browser")]
         [UnsupportedOSPlatform("ios")]
-         [UnsupportedOSPlatform("tvos")]
+        [UnsupportedOSPlatform("tvos")]
         public static TextReader In
         {
             get
