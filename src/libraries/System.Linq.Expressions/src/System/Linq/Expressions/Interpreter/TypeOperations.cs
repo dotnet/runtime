@@ -162,7 +162,7 @@ namespace System.Linq.Expressions.Interpreter
                 if (frame.Peek() == null)
                 {
                     frame.Pop();
-                    frame.Push(Activator.CreateInstance(_defaultValueType));
+                    frame.Push(RuntimeHelpers.GetUninitializedObject(_defaultValueType));
                 }
                 return 1;
             }

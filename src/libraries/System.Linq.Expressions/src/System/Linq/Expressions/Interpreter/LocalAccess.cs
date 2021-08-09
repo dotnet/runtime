@@ -385,7 +385,7 @@ namespace System.Linq.Expressions.Interpreter
             {
                 try
                 {
-                    frame.Data[_index] = Activator.CreateInstance(_type);
+                    frame.Data[_index] = RuntimeHelpers.GetUninitializedObject(_type);
                 }
                 catch (TargetInvocationException e)
                 {
@@ -424,7 +424,7 @@ namespace System.Linq.Expressions.Interpreter
 
                 try
                 {
-                    value = Activator.CreateInstance(_type);
+                    value = RuntimeHelpers.GetUninitializedObject(_type);
                 }
                 catch (TargetInvocationException e)
                 {

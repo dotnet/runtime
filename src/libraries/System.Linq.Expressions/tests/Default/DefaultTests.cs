@@ -117,5 +117,72 @@ namespace System.Linq.Expressions.Tests
             ValueTypeWithParameterlessConstructor defaultValue = func();
             Assert.False(defaultValue.ConstructorWasRun);
         }
+
+        [Theory]
+        [ClassData(typeof(CompilationTypes))]
+        public static void GetValueOrDefault(bool useInterpreter)
+        {
+            Expression<Func<ValueTypeWithParameterlessConstructor?, ValueTypeWithParameterlessConstructor>> e =
+                (ValueTypeWithParameterlessConstructor? x) => x.GetValueOrDefault();
+
+            Func<ValueTypeWithParameterlessConstructor?, ValueTypeWithParameterlessConstructor> f = e.Compile(useInterpreter);
+            Assert.True(f(new ValueTypeWithParameterlessConstructor()).ConstructorWasRun);
+            Assert.False(f(null).ConstructorWasRun);
+        }
+
+        private struct DontUseParameterlessConstructor
+        {
+            public readonly object Value;
+            public DontUseParameterlessConstructor() { throw new InvalidOperationException(); }
+            public DontUseParameterlessConstructor(object value) { Value = value; }
+        }
+
+        [Theory]
+        [ClassData(typeof(CompilationTypes))]
+        public static void MutableValue(bool useInterpreter)
+        {
+            // f = () =>
+            //     {
+            //         DontUseParameterlessConstructor p;
+            //         p = new DontUseParameterlessConstructor(42);
+            //         return p.Value;
+            //     };
+            const int value = 42;
+            ParameterExpression p = Expression.Variable(typeof(DontUseParameterlessConstructor));
+            Expression<Func<object>> e = Expression.Lambda<Func<object>>(
+                Expression.Block(
+                    new[] { p },
+                    Expression.Assign(p, Expression.Constant(new DontUseParameterlessConstructor(value), typeof(DontUseParameterlessConstructor))),
+                    Expression.Field(p, typeof(DontUseParameterlessConstructor).GetField("Value"))));
+
+            Func<object> f = e.Compile(useInterpreter);
+            Assert.Equal(value, f());
+        }
+
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void MutableBox(bool useInterpreter)
+        {
+            // f = () =>
+            //     {
+            //         DontUseParameterlessConstructor p;
+            //         Func<DontUseParameterlessConstructor> q;
+            //         q = () => p;
+            //         p = new DontUseParameterlessConstructor(42);
+            //         return q().Value;
+            //     };
+            const int value = 42;
+            ParameterExpression p = Expression.Parameter(typeof(DontUseParameterlessConstructor));
+            ParameterExpression q = Expression.Parameter(typeof(Func<DontUseParameterlessConstructor>));
+            Expression<Func<object>> e =
+                Expression.Lambda<Func<object>>(
+                    Expression.Block(
+                        new[] { p, q },
+                        Expression.Assign(q, Expression.Lambda<Func<DontUseParameterlessConstructor>>(p)),
+                        Expression.Assign(p, Expression.Constant(new DontUseParameterlessConstructor(value), typeof(DontUseParameterlessConstructor))),
+                        Expression.Field(Expression.Invoke(q), typeof(DontUseParameterlessConstructor).GetField("Value"))));
+
+            Func<object> f = e.Compile(useInterpreter);
+            Assert.Equal(value, f());
+        }
     }
 }
