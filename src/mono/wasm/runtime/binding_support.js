@@ -123,7 +123,6 @@ var BindingSupportLib = {
 			//  that any code relying on the old get_method/call_method pattern will
 			//  break in a more understandable way.
 
-			this._bind_core_clr_obj = bind_runtime_method ("BindCoreCLRObject", "ii");
 			this._get_raw_mono_obj = bind_runtime_method ("GetDotNetObject", "ii!");
 
 			this._create_cs_owned_object = bind_runtime_method ("CreateCSOwnedObject", "ii");
@@ -552,10 +551,9 @@ var BindingSupportLib = {
 			}
 		},
 
-		_unbox_cs_owned_root: function (root) {
-			var gc_handle = this._cs_owned_object_get_js_handle(root.value, true);
-			var js_obj = BINDING.mono_wasm_get_jsobj_from_js_handle (gc_handle);
-			this.mono_inflight_current_frame.push(gc_handle);
+		_unbox_cs_owned_root_as_js_object: function (root) {
+			var js_handle = this._cs_owned_object_get_js_handle(root.value, true);
+			var js_obj = BINDING.mono_wasm_get_jsobj_from_js_handle (js_handle);
 			return js_obj;
 		},
 
@@ -600,7 +598,7 @@ var BindingSupportLib = {
 					var uriValue = this._object_to_string (root.value);
 					return uriValue;
 				case 23: // clr .NET SafeHandle/JSObject
-					return this._unbox_cs_owned_root (root);
+					return this._unbox_cs_owned_root_as_js_object (root);
 				case 30:
 					return undefined;
 				default:
@@ -873,11 +871,6 @@ var BindingSupportLib = {
 				throw new Error (`Expected numeric value for enum argument, got '${js_obj}'`);
 
 			return js_obj | 0;
-		},
-
-		wasm_bind_core_clr_obj: function (js_handle, gc_handle)
-		{
-			return this._bind_core_clr_obj (js_handle, gc_handle);
 		},
 
 		// when should_add_in_flight === true, the JSObject would be temporarily hold by Normal gc_handle, so that it would not get collected during transition to the managed stack.
@@ -1657,33 +1650,6 @@ var BindingSupportLib = {
 			}
 			return obj;
 		},
-		mono_wasm_parse_args_root : function (argsRoot) {
-			var js_args = this._mono_array_root_to_js_array(argsRoot);
-			this.mono_inflight_push_current_frame();
-			return js_args;
-		},
-		mono_inflight_push_current_frame : function () {
-			BINDING.mono_inflight_frames.push(BINDING.mono_inflight_current_frame);
-			BINDING.mono_inflight_current_frame = [];
-		},
-		// Release all managed objects that are loaded into the last of mono_inflight_frames
-		mono_inflight_pop_current_frame : function () {
-			if(!this.mono_inflight_frames.length){
-				throw new Error('ERR14: pop frame before push');
-			}
-			var inflight_frame = this.mono_inflight_frames.pop();
-			// TODO: Look into passing the array of owned object handles in one pass.
-			for (var refidx = 0; refidx < inflight_frame.length; refidx++)
-			{
-				var js_handle = inflight_frame[refidx];
-				this._release_cs_owned_object_by_handle(js_handle);
-			}
-		},
-		mono_wasm_convert_return_value: function (ret) {
-			var res = this.js_to_mono_obj (ret);
-			this.mono_inflight_pop_current_frame();
-			return res;
-		},
 	},
 	mono_wasm_invoke_js_with_args: function(js_handle, method_name, args, is_exception) {
 		let argsRoot = MONO.mono_wasm_new_root (args), nameRoot = MONO.mono_wasm_new_root (method_name);
@@ -1702,7 +1668,7 @@ var BindingSupportLib = {
 				return BINDING.js_string_to_mono_string ("ERR13: Invalid JS object handle '" + js_handle + "' while invoking '"+js_name+"'");
 			}
 
-			var js_args = BINDING.mono_wasm_parse_args_root(argsRoot);
+			var js_args = BINDING._mono_array_root_to_js_array(argsRoot);
 
 			var res;
 			try {
@@ -1710,10 +1676,8 @@ var BindingSupportLib = {
 				if (typeof m === "undefined")
 					throw new Error("Method: '" + js_name + "' not found for: '" + Object.prototype.toString.call(obj) + "'");
 				var res = m.apply (obj, js_args);
-				return BINDING.mono_wasm_convert_return_value(res);
+				return BINDING.js_to_mono_obj(res);
 			} catch (e) {
-				// make sure we release object reference counts on errors.
-				BINDING.mono_inflight_pop_current_frame();
 				var res = e.toString ();
 				setValue (is_exception, 1, "i32");
 				if (res === null || res === undefined)
@@ -1779,7 +1743,6 @@ var BindingSupportLib = {
 			var result = false;
 
 			var js_value = BINDING._unbox_mono_obj_root(valueRoot);
-			BINDING.mono_inflight_push_current_frame();
 
 			if (createIfNotExist) {
 				js_obj[property] = js_value;
@@ -1804,7 +1767,6 @@ var BindingSupportLib = {
 				}
 
 			}
-			BINDING.mono_inflight_pop_current_frame();
 			return BINDING._box_js_bool (result);
 		} finally {
 			nameRoot.release();
@@ -1843,11 +1805,9 @@ var BindingSupportLib = {
 			}
 
 			var js_value = BINDING._unbox_mono_obj_root(valueRoot);
-			BINDING.mono_inflight_push_current_frame();
 
 			try {
 				obj [property_index] = js_value;
-				BINDING.mono_inflight_pop_current_frame();
 				return true;
 			} catch (e) {
 				var res = e.toString ();
@@ -1909,7 +1869,7 @@ var BindingSupportLib = {
 				return BINDING.js_string_to_mono_string ("JavaScript host object '" + js_name + "' not found.");
 			}
 
-			var js_args = BINDING.mono_wasm_parse_args_root(argsRoot);
+			var js_args = BINDING._mono_array_root_to_js_array(argsRoot);
 
 			try {
 
@@ -1929,7 +1889,7 @@ var BindingSupportLib = {
 				js_obj.__mono_gc_handle__ = gc_handle;
 				var js_handle = BINDING.mono_wasm_get_js_handle(js_obj);
 				// yes, convert int, because on error we need to return String on same method signature
-				return BINDING.mono_wasm_convert_return_value(js_handle);
+				return BINDING.js_to_mono_obj(js_handle);
 			} catch (e) {
 				var res = e.toString ();
 				setValue (is_exception, 1, "i32");

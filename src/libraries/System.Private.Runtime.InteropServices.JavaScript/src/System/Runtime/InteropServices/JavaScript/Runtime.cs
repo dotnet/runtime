@@ -101,33 +101,6 @@ namespace System.Runtime.InteropServices.JavaScript
             return target.GCHandleValue;
         }
 
-        public static int BindCoreCLRObject(int jsHandle, int gcHandle)
-        {
-            GCHandle h = (GCHandle)(IntPtr)gcHandle;
-            JSObject? obj = null;
-
-            lock (_csOwnedObjects)
-            {
-                if (_csOwnedObjects.TryGetValue(jsHandle, out WeakReference<JSObject>? wr))
-                {
-
-                    if (!wr.TryGetTarget(out JSObject? instance) || (instance.GCHandleValue != (int)(IntPtr)h && h.IsAllocated))
-                    {
-                        throw new JSException(SR.Format(SR.MultipleHandlesPointingJsId, jsHandle));
-                    }
-
-                    obj = instance;
-                }
-                else if (h.Target is JSObject instance)
-                {
-                    _csOwnedObjects.Add(jsHandle, new WeakReference<JSObject>(instance, trackResurrection: true));
-                    obj = instance;
-                }
-            }
-
-            return obj?.GCHandleValue ?? 0;
-        }
-
         public static int TryGetCsOwnedObjectJsHandle(object rawObj)
         {
             JSObject? jsObject = rawObj as JSObject;
