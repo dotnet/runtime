@@ -271,8 +271,8 @@ namespace System.Tests
 
             yield return new object[] { ".234", defaultStyle, null, 0.234f };
             yield return new object[] { "234.", defaultStyle, null, 234.0f };
+            yield return new object[] { new string('0', 72) + "3" + new string('0', 38) + ".", defaultStyle, null, 3E38f };
             yield return new object[] { new string('0', 73) + "3" + new string('0', 38) + ".", defaultStyle, null, 3E38f };
-            yield return new object[] { new string('0', 74) + "3" + new string('0', 38) + ".", defaultStyle, null, 3E38f };
 
             // 2^24 + 1. Not exactly representable
             yield return new object[] { "16777217.0", defaultStyle, invariantFormat, 16777216.0f };
