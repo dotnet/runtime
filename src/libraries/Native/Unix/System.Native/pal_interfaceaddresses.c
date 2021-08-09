@@ -29,6 +29,8 @@
 #endif
 #if HAVE_NET_IFMEDIA_H
 #include <net/if_media.h>
+#elif HAVE_IOS_NET_IFMEDIA_H
+#include "ios/net/if_media.h"
 #endif
 
 #if defined(AF_PACKET)
@@ -203,7 +205,7 @@ int32_t SystemNative_EnumerateInterfaceAddresses(void* context,
                 lla.NumAddressBytes = sadl->sdl_alen;
                 lla.HardwareType = MapHardwareType(sadl->sdl_type);
 
-#if HAVE_NET_IFMEDIA_H
+#if HAVE_NET_IFMEDIA_H || HAVE_IOS_NET_IFMEDIA_H
                 if (lla.HardwareType == NetworkInterfaceType_Ethernet)
                 {
                     // WI-FI and Ethernet have same address type so we can try to distinguish more
