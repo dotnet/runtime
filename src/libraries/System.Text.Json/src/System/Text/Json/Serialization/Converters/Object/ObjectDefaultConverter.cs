@@ -14,6 +14,8 @@ namespace System.Text.Json.Serialization.Converters
     /// </summary>
     internal class ObjectDefaultConverter<T> : JsonObjectConverter<T> where T : notnull
     {
+        internal override bool CanHaveIdMetadata => true;
+
         internal override bool OnTryRead(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options, ref ReadStack state, [MaybeNullWhen(false)] out T value)
         {
             JsonTypeInfo jsonTypeInfo = state.Current.JsonTypeInfo;

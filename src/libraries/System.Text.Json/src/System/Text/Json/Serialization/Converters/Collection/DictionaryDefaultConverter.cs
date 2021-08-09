@@ -16,6 +16,8 @@ namespace System.Text.Json.Serialization.Converters
         where TDictionary : IEnumerable<KeyValuePair<TKey, TValue>>
         where TKey : notnull
     {
+        internal override bool CanHaveIdMetadata => true;
+
         protected internal override bool OnWriteResume(
             Utf8JsonWriter writer,
             TDictionary value,

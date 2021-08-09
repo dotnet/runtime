@@ -379,12 +379,26 @@ namespace System.Text.Json.Serialization
                         JsonConverter jsonConverter = state.Current.InitializeReEntry(type, options);
                         Debug.Assert(jsonConverter != this);
 
-                        if (options.ReferenceHandlingStrategy == ReferenceHandlingStrategy.IgnoreCycles &&
-                            jsonConverter.IsValueType)
+                        // For boxed value types: invoke the reference handler
+                        // before the instance gets unboxed by the subtype converter.
+                        if (jsonConverter.IsValueType)
                         {
-                            // For boxed value types: push the value before it gets unboxed on TryWriteAsObject.
-                            state.ReferenceResolver.PushReferenceForCycleDetection(value);
-                            ignoreCyclesPopReference = true;
+                            switch (options.ReferenceHandlingStrategy)
+                            {
+                                case ReferenceHandlingStrategy.Preserve when (jsonConverter.CanHaveIdMetadata && !state.IsContinuation):
+                                    if (JsonSerializer.TryWriteReferenceForBoxedStruct(value, ref state, writer))
+                                    {
+                                        return true;
+                                    }
+                                    break;
+
+                                case ReferenceHandlingStrategy.IgnoreCycles:
+                                    state.ReferenceResolver.PushReferenceForCycleDetection(value);
+                                    ignoreCyclesPopReference = true;
+                                    break;
+                                default:
+                                    break;
+                            }
                         }
 
                         // We found a different converter; forward to that.
