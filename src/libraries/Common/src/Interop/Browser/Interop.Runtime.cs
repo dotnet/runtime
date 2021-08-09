@@ -34,7 +34,7 @@ internal static partial class Interop
         internal static extern object GetGlobalObject(string? globalName, out int exceptionalResult);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal static extern object ReleaseHandle(int jsHandle, out int exceptionalResult);
+        internal static extern object ReleaseCsOwnedObject(int jsHandle);
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         internal static extern object BindCoreObject(int jsHandle, int gcHandle, out int exceptionalResult);
         [MethodImplAttribute(MethodImplOptions.InternalCall)]

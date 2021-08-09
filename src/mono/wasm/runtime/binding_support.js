@@ -121,7 +121,7 @@ var BindingSupportLib = {
 			//  that any code relying on the old get_method/call_method pattern will
 			//  break in a more understandable way.
 
-			this._bind_js_obj = bind_runtime_method ("BindJSObject", "ii");
+			this._bind_cs_owned_object = bind_runtime_method ("BindCSOwnedObject", "ii");
 			this._bind_core_clr_obj = bind_runtime_method ("BindCoreCLRObject", "ii");
 			this._get_js_owned_object_gc_handle = bind_runtime_method ("GetJSOwnedObjectGCHandle", "m");
 			this._get_js_id = bind_runtime_method ("GetJSObjectId", "m");
@@ -1627,7 +1627,7 @@ var BindingSupportLib = {
 					var wasm_type = js_obj[Symbol.for("wasm type")];
 
 					var js_handle = BINDING.mono_wasm_get_js_handle(js_obj);
-					gc_handle = js_obj.__mono_gc_handle__ = this._bind_js_obj(js_handle, typeof wasm_type === "undefined" ? -1 : wasm_type);
+					gc_handle = js_obj.__mono_gc_handle__ = this._bind_cs_owned_object(js_handle, typeof wasm_type === "undefined" ? -1 : wasm_type);
 					// as this instance was just created, it was already created with Inflight strong gc_handle, so we do not have to do it again
 					return { gc_handle, should_add_in_flight: false };
 				}
@@ -1894,7 +1894,7 @@ var BindingSupportLib = {
 			nameRoot.release();
 		}
 	},
-	mono_wasm_release_handle: function(js_handle, is_exception) {
+	mono_wasm_release_cs_owned_object: function(js_handle) {
 		BINDING.bindings_lazy_init ();
 		BINDING._mono_wasm_release_js_handle(js_handle);
 	},

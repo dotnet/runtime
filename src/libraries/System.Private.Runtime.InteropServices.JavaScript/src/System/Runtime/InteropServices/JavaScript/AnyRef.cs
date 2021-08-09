@@ -11,9 +11,9 @@ namespace System.Runtime.InteropServices.JavaScript
     {
         private GCHandle? InFlight;
         private int InFlightCounter;
-        private GCHandle AnyRefHandle;
+        private GCHandle WeakRefHandle;
         public int JSHandle => (int)handle;
-        internal int GCHandleValue => (int)(IntPtr)AnyRefHandle;
+        internal int GCHandleValue => (int)(IntPtr)WeakRefHandle;
         public bool IsDisposed { get; private set; }
 
         public JSObject() : this(Interop.Runtime.New<object>())
@@ -26,7 +26,8 @@ namespace System.Runtime.InteropServices.JavaScript
         internal JSObject(IntPtr jsHandle) : base(true)
         {
             SetHandle(jsHandle);
-            AnyRefHandle = GCHandle.Alloc(this, GCHandleType.Weak);
+            // this is weak C# reference to the JSObject, it has same lifetime as the JSObject
+            WeakRefHandle = GCHandle.Alloc(this, GCHandleType.Weak);
             InFlight = null;
             InFlightCounter = 0;
         }
@@ -63,10 +64,10 @@ namespace System.Runtime.InteropServices.JavaScript
 
         protected override bool ReleaseHandle()
         {
-            Runtime.ReleaseJSObject(this);
+            Runtime.ReleaseCsOwnedObject(this);
             SetHandleAsInvalid();
             IsDisposed = true;
-            AnyRefHandle.Free();
+            WeakRefHandle.Free();
             return true;
         }
 

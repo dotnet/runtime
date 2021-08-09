@@ -12,7 +12,7 @@ namespace System.Runtime.InteropServices.JavaScript
 {
     public static class Runtime
     {
-        private static readonly Dictionary<int, WeakReference<JSObject>> _boundObjects = new Dictionary<int, WeakReference<JSObject>>();
+        private static readonly Dictionary<int, WeakReference<JSObject>> _csOwnedObjects = new Dictionary<int, WeakReference<JSObject>>();
         private static object JSOwnedObjectLock = new object();
         // we use this to maintain identity of GCHandle for a managed object
         private static Dictionary<object, int> GCHandleFromJSOwnedObject = new Dictionary<object, int>();
@@ -55,18 +55,18 @@ namespace System.Runtime.InteropServices.JavaScript
             Interop.Runtime.DumpAotProfileData(ref buf, len, extraArg);
         }
 
-        public static int BindJSObject(int jsHandle, int mappedType)
+        public static int BindCSOwnedObject(int jsHandle, int mappedType)
         {
             JSObject? target = null;
 
-            lock (_boundObjects)
+            lock (_csOwnedObjects)
             {
-                if (!_boundObjects.TryGetValue(jsHandle, out WeakReference<JSObject>? reference) ||
+                if (!_csOwnedObjects.TryGetValue(jsHandle, out WeakReference<JSObject>? reference) ||
                     !reference.TryGetTarget(out target) ||
                     target.IsDisposed)
                 {
                     target = mappedType > 0 ? BindJSType((IntPtr)jsHandle, mappedType) : new JSObject((IntPtr)jsHandle);
-                    _boundObjects[jsHandle] = new WeakReference<JSObject>(target, trackResurrection: true);
+                    _csOwnedObjects[jsHandle] = new WeakReference<JSObject>(target, trackResurrection: true);
                 }
             }
 
@@ -80,9 +80,9 @@ namespace System.Runtime.InteropServices.JavaScript
             GCHandle h = (GCHandle)(IntPtr)gcHandle;
             JSObject? obj = null;
 
-            lock (_boundObjects)
+            lock (_csOwnedObjects)
             {
-                if (_boundObjects.TryGetValue(jsHandle, out WeakReference<JSObject>? wr))
+                if (_csOwnedObjects.TryGetValue(jsHandle, out WeakReference<JSObject>? wr))
                 {
 
                     if (!wr.TryGetTarget(out JSObject? instance) || (instance.GCHandleValue != (int)(IntPtr)h && h.IsAllocated))
@@ -94,7 +94,7 @@ namespace System.Runtime.InteropServices.JavaScript
                 }
                 else if (h.Target is JSObject instance)
                 {
-                    _boundObjects.Add(jsHandle, new WeakReference<JSObject>(instance, trackResurrection: true));
+                    _csOwnedObjects.Add(jsHandle, new WeakReference<JSObject>(instance, trackResurrection: true));
                     obj = instance;
                 }
             }
@@ -123,15 +123,12 @@ namespace System.Runtime.InteropServices.JavaScript
                 _ => throw new ArgumentOutOfRangeException(nameof(coreType))
             };
 
-        internal static bool ReleaseJSObject(JSObject objToRelease)
+        internal static bool ReleaseCsOwnedObject(JSObject objToRelease)
         {
-            Interop.Runtime.ReleaseHandle(objToRelease.JSHandle, out int exception);
-            if (exception != 0)
-                throw new JSException($"Error releasing handle on (js-obj js '{objToRelease.JSHandle}' mono '{objToRelease.GCHandleValue})");
-
-            lock (_boundObjects)
+            lock (_csOwnedObjects)
             {
-                _boundObjects.Remove(objToRelease.JSHandle);
+                Interop.Runtime.ReleaseCsOwnedObject(objToRelease.JSHandle);
+                _csOwnedObjects.Remove(objToRelease.JSHandle);
             }
             return true;
         }
