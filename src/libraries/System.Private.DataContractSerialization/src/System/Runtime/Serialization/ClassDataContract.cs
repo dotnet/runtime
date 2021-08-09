@@ -704,6 +704,7 @@ namespace System.Runtime.Serialization
         private sealed class ClassDataContractCriticalHelper : DataContract.DataContractCriticalHelper
         {
             private static Type[]? s_serInfoCtorArgs;
+            private static readonly MethodInfo s_getKeyValuePairMethod = typeof(KeyValuePair<,>).GetMethod("GetKeyValuePair", Globals.ScanAllMembers)!;
 
             private ClassDataContract? _baseContract;
             private List<DataMember>? _members;
@@ -1398,7 +1399,6 @@ namespace System.Runtime.Serialization
             }
 
             [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
-            [DynamicDependency(DynamicallyAccessedMemberTypes.PublicMethods | DynamicallyAccessedMemberTypes.NonPublicMethods, typeof(KeyValue<,>))]
             private void SetKeyValuePairAdapterFlags(
                 [DynamicallyAccessedMembers(DataContractPreserveMemberTypes)]
                 Type type)
@@ -1408,7 +1408,7 @@ namespace System.Runtime.Serialization
                     _isKeyValuePairAdapter = true;
                     _keyValuePairGenericArguments = type.GetGenericArguments();
                     _keyValuePairCtorInfo = type.GetConstructor(Globals.ScanAllMembers, new Type[] { Globals.TypeOfKeyValuePair.MakeGenericType(_keyValuePairGenericArguments) });
-                    _getKeyValuePairMethodInfo = type.GetMethod("GetKeyValuePair", Globals.ScanAllMembers)!;
+                    _getKeyValuePairMethodInfo = (MethodInfo)type.GetMemberWithSameMetadataDefinitionAs(s_getKeyValuePairMethod);
                 }
             }
 
