@@ -138,8 +138,8 @@ var BindingSupportLib = {
 			this.get_call_sig = get_method ("GetCallSignature");
 
 			this._object_to_string = bind_runtime_method ("ObjectToString", "m");
-			this.get_date_value = get_method ("GetDateValue");
-			this.create_date_time = get_method ("CreateDateTime");
+			this.get_date_value = bind_runtime_method ("GetDateValue", "m");
+			this.create_date_time = bind_runtime_method ("CreateDateTime", "d!");
 			this.create_uri = get_method ("CreateUri");
 
 			this.safehandle_get_handle = get_method ("SafeHandleGetHandle");
@@ -147,6 +147,12 @@ var BindingSupportLib = {
 			this.release_js_owned_object_by_handle = bind_runtime_method ("ReleaseJSOwnedObjectByHandle", "i");
 
 			this._are_promises_supported = ((typeof Promise === "object") || (typeof Promise === "function")) && (typeof Promise.resolve === "function");
+			this.isThenable = (js_obj) => {
+				// When using an external Promise library like Bluebird the Promise.resolve may not be sufficient
+				// to identify the object as a Promise.
+				return Promise.resolve(js_obj) === js_obj ||
+						((typeof js_obj === "object" || typeof js_obj === "function") && typeof js_obj.then === "function")
+			}
 
 			this._empty_string = "";
 			this._empty_string_ptr = 0;
@@ -591,7 +597,7 @@ var BindingSupportLib = {
 				case 18:
 					throw new Error ("Marshalling of primitive arrays are not supported.  Use the corresponding TypedArray instead.");
 				case 20: // clr .NET DateTime
-					var dateValue = this.call_method(this.get_date_value, null, "m", [ root.value ]);
+					var dateValue = this.get_date_value(root.value);
 					return new Date(dateValue);
 				case 21: // clr .NET DateTimeOffset
 					var dateoffsetValue = this._object_to_string (root.value);
@@ -663,19 +669,6 @@ var BindingSupportLib = {
 		js_to_mono_obj: function (js_obj) {
 			this.bindings_lazy_init ();
 
-			// determines if the javascript object is a Promise or Promise like which can happen
-			// when using an external Promise library.  The javascript object should be marshalled
-			// as managed Task objects.
-			//
-			// Example is when Bluebird is included in a web page using a script tag, it overwrites the
-			// global Promise object by default with its own version of Promise.
-			function isThenable() {
-				// When using an external Promise library the Promise.resolve may not be sufficient
-				// to identify the object as a Promise.
-				return Promise.resolve(js_obj) === js_obj ||
-						((typeof js_obj === "object" || typeof js_obj === "function") && typeof js_obj.then === "function")
-			}
-
 			switch (true) {
 				case js_obj === null:
 				case typeof js_obj === "undefined":
@@ -698,11 +691,11 @@ var BindingSupportLib = {
 					return this.js_string_to_mono_string_interned (js_obj);
 				case typeof js_obj === "boolean":
 					return this._box_js_bool (js_obj);
-				case isThenable() === true:
+				case this.isThenable(js_obj) === true:
 					return this._wrap_js_thenable_as_task (js_obj);
 				case js_obj.constructor.name === "Date":
-					// We may need to take into account the TimeZone Offset
-					return this.call_method(this.create_date_time, null, "d!", [ js_obj.getTime() ]);
+					// getTime() is always UTC
+					return this.create_date_time(js_obj.getTime());
 				default:
 					return this.extract_mono_obj (js_obj);
 			}
@@ -902,16 +895,6 @@ var BindingSupportLib = {
 			}
 
 			return this._get_raw_mono_obj (gc_handle, should_add_in_flight ? 1 : 0);
-		},
-
-		try_extract_mono_obj:function (js_obj) {
-			if (js_obj === null || typeof js_obj === "undefined")
-				return 0;
-			if(js_obj.__js_owned_gc_handle__)
-				return this.wasm_get_raw_obj (js_obj.__js_owned_gc_handle__, true);
-			if(js_obj.__mono_gc_handle__)
-				return this.wasm_get_raw_obj (js_obj.__mono_gc_handle__, true);
-			return 0;
 		},
 
 		mono_method_get_call_signature: function(method, mono_obj) {

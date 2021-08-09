@@ -445,7 +445,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
                     dummy:dummy,
                 }");
 
-            var obj = (JSObject)factory.Call(tcs.Task);
+            var obj = (JSObject)factory.Call(null, tcs.Task);
             var dummy = obj.GetObjectProperty("dummy");
             Assert.IsType<Task<int>>(dummy);
         }

@@ -44,7 +44,7 @@ namespace System.Runtime.InteropServices.JavaScript
         /// <returns>The result of calling the function with the specified `this` value and arguments.</returns>
         /// <param name="thisArg">Optional (null value). The value of this provided for the call to a function. Note that this may not be the actual value seen by the method: if the method is a function in non-strict mode, null and undefined will be replaced with the global object and primitive values will be converted to objects.</param>
         /// <param name="argsArray">Optional. Arguments for the function.</param>
-        public object Call(object? thisArg = null, params object[] argsArray)
+        public object Call(JSObject? thisArg = null, params object[] argsArray)
         {
             object?[] argsList = new object[argsArray.Length + 1];
             argsList[0] = thisArg;
