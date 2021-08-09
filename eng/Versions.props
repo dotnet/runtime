@@ -41,9 +41,9 @@
     <ProjectServicingConfiguration Include="Microsoft.NETCore.App.Ref" PatchVersion="0" />
   </ItemGroup>
   <PropertyGroup>
-    <!-- For source generator support we need to target a pinned version in order to be able to run on older versions of Roslyn -->
-    <MicrosoftCodeAnalysisCSharpWorkspacesVersion>3.9.0</MicrosoftCodeAnalysisCSharpWorkspacesVersion>
-    <MicrosoftCodeAnalysisVersion>3.9.0</MicrosoftCodeAnalysisVersion>
+    <!-- For source generator support we are targeting the latest version of Roslyn for now, until we can support multi-targeting -->
+    <MicrosoftCodeAnalysisCSharpWorkspacesVersion>4.0.0-3.final</MicrosoftCodeAnalysisCSharpWorkspacesVersion>
+    <MicrosoftCodeAnalysisVersion>4.0.0-3.final</MicrosoftCodeAnalysisVersion>
   </PropertyGroup>
   <PropertyGroup>
     <!-- Code analysis dependencies -->

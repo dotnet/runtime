@@ -78,15 +78,15 @@ namespace System.Text.Json.SourceGeneration
                 defaultSeverity: DiagnosticSeverity.Warning,
                 isEnabledByDefault: true);
 
-            private readonly GeneratorExecutionContext _executionContext;
+            private readonly SourceProductionContext _sourceProductionContext;
 
             private ContextGenerationSpec _currentContext = null!;
 
             private readonly SourceGenerationSpec _generationSpec = null!;
 
-            public Emitter(in GeneratorExecutionContext executionContext, SourceGenerationSpec generationSpec)
+            public Emitter(in SourceProductionContext sourceProductionContext, SourceGenerationSpec generationSpec)
             {
-                _executionContext = executionContext;
+                _sourceProductionContext = sourceProductionContext;
                 _generationSpec = generationSpec;
             }
 
@@ -165,7 +165,7 @@ namespace {@namespace}
                     sb.AppendLine("}");
                 }
 
-                _executionContext.AddSource(fileName, SourceText.From(sb.ToString(), Encoding.UTF8));
+                _sourceProductionContext.AddSource(fileName, SourceText.From(sb.ToString(), Encoding.UTF8));
             }
 
             private void GenerateTypeInfo(TypeGenerationSpec typeGenerationSpec)
@@ -242,7 +242,7 @@ namespace {@namespace}
                         break;
                     case ClassType.TypeUnsupportedBySourceGen:
                         {
-                            _executionContext.ReportDiagnostic(
+                            _sourceProductionContext.ReportDiagnostic(
                                 Diagnostic.Create(TypeNotSupported, Location.None, new string[] { typeGenerationSpec.TypeRef }));
                             return;
                         }
@@ -258,7 +258,7 @@ namespace {@namespace}
                 }
                 catch (ArgumentException)
                 {
-                    _executionContext.ReportDiagnostic(Diagnostic.Create(DuplicateTypeName, Location.None, new string[] { typeGenerationSpec.TypeInfoPropertyName }));
+                    _sourceProductionContext.ReportDiagnostic(Diagnostic.Create(DuplicateTypeName, Location.None, new string[] { typeGenerationSpec.TypeInfoPropertyName }));
                 }
             }
 
