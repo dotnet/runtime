@@ -1849,7 +1849,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                     {
                         if (int.TryParse(dotnetObjectId.Value, out int objectIdToGetInfo) && !objectsAlreadyRead.Contains(objectIdToGetInfo))
                         {
-                            var asyncLocalsFromObject = await GetObjectValues(sessionId, objectIdToGetInfo, true, false, false, false, token);
+                            var asyncLocalsFromObject = await GetObjectValues(sessionId, objectIdToGetInfo, GetObjectCommandType.WithProperties, token);
                             var hoistedLocalVariable = await GetHoistedLocalVariables(sessionId, objectIdToGetInfo, asyncLocalsFromObject, token);
                             asyncLocalsFull = new JArray(asyncLocalsFull.Union(hoistedLocalVariable));
                         }
