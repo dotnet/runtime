@@ -1,13 +1,9 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <ApplicationManifest>App.manifest</ApplicationManifest>
-    <UseManagedCOMServer>true</UseManagedCOMServer>
-    <IsManagedCOMClient>true</IsManagedCOMClient>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <!-- There is a Windows and a non-Windows version of this test to allow it to be compiled for all targets -->
     <CLRTestTargetUnsupported Condition="'$(TargetsWindows)' == 'true'">true</CLRTestTargetUnsupported>
-    <DisableProjectBuild Condition="'$(RuntimeFlavor)' == 'mono'">true</DisableProjectBuild>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="GlobalInstance.cs" />
@@ -18,15 +14,5 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="../MockReferenceTrackerRuntime/CMakeLists.txt" />
-    <ProjectReference Include="../../NETServer/NETServer.csproj">
-      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
-      <OutputItemType>Content</OutputItemType>
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </ProjectReference>
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="CoreShim.X.manifest">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
   </ItemGroup>
 </Project>
