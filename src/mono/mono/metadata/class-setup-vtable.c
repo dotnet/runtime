@@ -369,8 +369,8 @@ mono_class_setup_interface_offsets (MonoClass *klass)
 }
 
 
-#define DEBUG_INTERFACE_VTABLE_CODE 0
-#define TRACE_INTERFACE_VTABLE_CODE 0
+#define DEBUG_INTERFACE_VTABLE_CODE 1
+#define TRACE_INTERFACE_VTABLE_CODE 1
 #define VERIFY_INTERFACE_VTABLE_CODE 0
 #define VTABLE_SELECTOR (1)
 
@@ -451,6 +451,7 @@ enum MonoInterfaceMethodOverrideFlags {
 	MONO_ITF_OVERRIDE_REQUIRE_NEWSLOT = 0x01,
 	MONO_ITF_OVERRIDE_EXPLICITLY_IMPLEMENTED = 0x02,
 	MONO_ITF_OVERRIDE_SLOT_EMPTY = 0x04,
+	MONO_ITF_OVERRIDE_VARIANT_ITF = 0x08,
 };
 
 static gboolean
@@ -459,6 +460,7 @@ check_interface_method_override (MonoClass *klass, MonoMethod *im, MonoMethod *c
 	gboolean require_newslot = (flags & MONO_ITF_OVERRIDE_REQUIRE_NEWSLOT) != 0;
 	gboolean interface_is_explicitly_implemented_by_class = (flags & MONO_ITF_OVERRIDE_EXPLICITLY_IMPLEMENTED) != 0;
 	gboolean slot_is_empty = (flags & MONO_ITF_OVERRIDE_SLOT_EMPTY) != 0;
+	gboolean variant_itf = (flags & MONO_ITF_OVERRIDE_VARIANT_ITF) != 0;
 	MonoMethodSignature *cmsig, *imsig;
 	if (strcmp (im->name, cm->name) == 0) {
 		if (! (cm->flags & METHOD_ATTRIBUTE_PUBLIC)) {
@@ -486,7 +488,19 @@ check_interface_method_override (MonoClass *klass, MonoMethod *im, MonoMethod *c
 			return FALSE;
 		}
 
-		if (! mono_metadata_signature_equal (cmsig, imsig)) {
+		/* if there's a variant interface, the method could be using the generic param in a
+		 * variant position compared to the interface sig
+		 *
+		 * public interface IFactory<out T> { T Get(); }
+		 * public class Foo {}
+		 * public class Bar : Foo {}
+		 * public class FooFactory : IFactory<Foo> { public Foo Get() => new Foo(); }
+		 * public class BarFactory : FooFactory, IFactory<Bar> { public new Bar Get() => new Bar(); }
+		 *
+		 * In this case, there's an explicit newslot but we want to match up 'Bar BarFactory:Get ()'
+		 * with 'Foo IFactory<Foo>:Get ()'.
+		 */
+		if (! mono_metadata_signature_equal (cmsig, imsig) && !(require_newslot && variant_itf) ) {
 			TRACE_INTERFACE_VTABLE (printf ("[SIGNATURE CHECK FAILED  "));
 			TRACE_INTERFACE_VTABLE (print_method_signatures (im, cm));
 			TRACE_INTERFACE_VTABLE (printf ("]"));
@@ -1753,6 +1767,7 @@ mono_class_setup_vtable_general (MonoClass *klass, MonoMethod **overrides, int o
 		MonoClass *parent = klass->parent;
 		int ic_offset;
 		gboolean interface_is_explicitly_implemented_by_class;
+		gboolean variant_itf;
 		int im_index;
 		
 		ic = klass->interfaces_packed [i];
@@ -1766,10 +1781,20 @@ mono_class_setup_vtable_general (MonoClass *klass, MonoMethod **overrides, int o
 		if (parent != NULL) {
 			int implemented_interfaces_index;
 			interface_is_explicitly_implemented_by_class = FALSE;
+			variant_itf = mono_class_has_variant_generic_params (ic);
 			for (implemented_interfaces_index = 0; implemented_interfaces_index < klass->interface_count; implemented_interfaces_index++) {
 				if (ic == klass->interfaces [implemented_interfaces_index]) {
 					interface_is_explicitly_implemented_by_class = TRUE;
 					break;
+				}
+				if (variant_itf) {
+					if (mono_class_is_variant_compatible (ic, klass->interfaces [implemented_interfaces_index], FALSE)) {
+						MonoClass *impl_itf;
+						impl_itf = klass->interfaces [implemented_interfaces_index];
+						TRACE_INTERFACE_VTABLE (printf ("  variant interface '%s' is explicitly implemented by '%s'\n", mono_type_full_name (m_class_get_byval_arg (ic)), mono_type_full_name (m_class_get_byval_arg (impl_itf))));
+						interface_is_explicitly_implemented_by_class = TRUE;
+						break;
+					}
 				}
 			}
 		} else {
@@ -1800,6 +1825,8 @@ mono_class_setup_vtable_general (MonoClass *klass, MonoMethod **overrides, int o
 					flags = MONO_ITF_OVERRIDE_REQUIRE_NEWSLOT;
 					if (interface_is_explicitly_implemented_by_class)
 						flags |= MONO_ITF_OVERRIDE_EXPLICITLY_IMPLEMENTED;
+					if (interface_is_explicitly_implemented_by_class && variant_itf)
+						flags |= MONO_ITF_OVERRIDE_VARIANT_ITF;
 					if (vtable [im_slot] == NULL)
 						flags |= MONO_ITF_OVERRIDE_SLOT_EMPTY;
 					if (check_interface_method_override (klass, im, cm, flags)) {
