@@ -4450,7 +4450,7 @@ void CodeGen::genCodeForStoreLclFld(GenTreeLclFld* tree)
             LclVarDsc* varDsc = compiler->lvaGetDesc(lclNum);
 
             GetEmitter()->emitIns_S_R(ins_Store(srcType, compiler->isSIMDTypeLocalAligned(lclNum)),
-                                      emitTypeSize(targetType), bitCastSrc->GetRegNum(), lclNum, 0);
+                                      emitTypeSize(targetType), bitCastSrc->GetRegNum(), lclNum, tree->GetLclOffs());
             varDsc->SetRegNum(REG_STK);
         }
         else
