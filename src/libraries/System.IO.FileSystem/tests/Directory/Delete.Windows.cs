@@ -23,7 +23,7 @@ namespace System.IO.Tests
 
             var subDir = parent.CreateSubdirectory("subdir");
             File.Create(Path.Combine(subDir.FullName, GetTestFileName())).Dispose();
-            Directory.Delete(subDir.FullName, recursive: true);
+            Delete(subDir.FullName, recursive: true);
             Assert.False(subDir.Exists);
         }
     }
