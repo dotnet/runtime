@@ -10,14 +10,14 @@ namespace System.Runtime.InteropServices.JavaScript
         /// <summary>
         /// Initializes a new instance of the JavaScript Core ArrayBuffer class.
         /// </summary>
-        public ArrayBuffer() : base(Interop.Runtime.New<ArrayBuffer>())
+        public ArrayBuffer() : base(nameof(ArrayBuffer))
         { }
 
         /// <summary>
         /// Initializes a new instance of the JavaScript Core ArrayBuffer class.
         /// </summary>
         /// <param name="length">Length.</param>
-        public ArrayBuffer(int length) : base(Interop.Runtime.New<ArrayBuffer>(length))
+        public ArrayBuffer(int length) : base(nameof(ArrayBuffer), length)
         { }
 
         /// <summary>

@@ -123,28 +123,29 @@ var BindingSupportLib = {
 			//  that any code relying on the old get_method/call_method pattern will
 			//  break in a more understandable way.
 
-			this._create_cs_owned_object = bind_runtime_method ("CreateCSOwnedObject", "ii");
 			this._bind_core_clr_obj = bind_runtime_method ("BindCoreCLRObject", "ii");
-			this._get_js_owned_object_gc_handle = bind_runtime_method ("GetJSOwnedObjectGCHandle", "m");
-			this._try_get_cs_owned_object_js_handle = bind_runtime_method ("TryGetCsOwnedObjectJsHandle", "m");
 			this._get_raw_mono_obj = bind_runtime_method ("GetDotNetObject", "ii!");
 
+			this._create_cs_owned_object = bind_runtime_method ("CreateCSOwnedObject", "ii");
+			this._try_get_cs_owned_object_js_handle = bind_runtime_method ("TryGetCsOwnedObjectJsHandle", "m");
+			this._cs_owned_object_get_js_handle = bind_runtime_method ("CsOwnedObjectGetJsHandle", 'mi');
+			this._release_cs_owned_object_by_handle = bind_runtime_method ("ReleaseCsOwnedObjectByHandle", 'i');
+
+			this._get_js_owned_object_gc_handle = bind_runtime_method ("GetJSOwnedObjectGCHandle", "m");
+			this._release_js_owned_object_by_handle = bind_runtime_method ("ReleaseJSOwnedObjectByHandle", "i");
+
 			this._is_simple_array = bind_runtime_method ("IsSimpleArray", "m");
-			this._setup_js_cont = bind_runtime_method ("SetupJSContinuation", "mo");
 
 			this._create_tcs = bind_runtime_method ("CreateTaskSource","");
 			this._set_tcs_result = bind_runtime_method ("SetTaskSourceResult","io");
 			this._set_tcs_failure = bind_runtime_method ("SetTaskSourceFailure","is");
 			this._get_tcs_task = bind_runtime_method ("GetTaskSourceTask","i!");
+			this._setup_js_cont = bind_runtime_method ("SetupJSContinuation", "mo");
 			
 			this._object_to_string = bind_runtime_method ("ObjectToString", "m");
 			this._get_date_value = bind_runtime_method ("GetDateValue", "m");
 			this._create_date_time = bind_runtime_method ("CreateDateTime", "d!");
 			this._create_uri = bind_runtime_method ("CreateUri","s!");
-
-			this._cs_owned_object_get_js_handle = bind_runtime_method ("CsOwnedObjectGetJsHandle", 'mi');
-			this._release_cs_owned_object_by_handle = bind_runtime_method ("ReleaseCsOwnedObjectByHandle", 'i');
-			this._release_js_owned_object_by_handle = bind_runtime_method ("ReleaseJSOwnedObjectByHandle", "i");
 
 			this._are_promises_supported = ((typeof Promise === "object") || (typeof Promise === "function")) && (typeof Promise.resolve === "function");
 			this.isThenable = (js_obj) => {
@@ -152,7 +153,7 @@ var BindingSupportLib = {
 				// to identify the object as a Promise.
 				return Promise.resolve(js_obj) === js_obj ||
 						((typeof js_obj === "object" || typeof js_obj === "function") && typeof js_obj.then === "function")
-			}
+			};
 
 			this._empty_string = "";
 			this._empty_string_ptr = 0;
@@ -1889,21 +1890,7 @@ var BindingSupportLib = {
 		BINDING.bindings_lazy_init ();
 		BINDING._mono_wasm_release_js_handle(js_handle);
 	},
-	mono_wasm_bind_core_object: function(js_handle, gc_handle, is_exception) {
-		BINDING.bindings_lazy_init ();
-
-		var js_obj = BINDING.mono_wasm_get_jsobj_from_js_handle (js_handle);
-		if (!js_obj) {
-			setValue (is_exception, 1, "i32");
-			return BINDING.js_string_to_mono_string ("ERR05: Invalid JS object handle '" + js_handle + "'");
-		}
-
-		BINDING.wasm_bind_core_clr_obj(js_handle, gc_handle );
-		js_obj.__mono_gc_handle__ = gc_handle;
-		js_obj.__mono_js_handle__ = js_handle;
-		return gc_handle;
-	},
-	mono_wasm_new: function (core_name, args, is_exception) {
+	mono_wasm_create_cs_owned_object: function (gc_handle, core_name, args, is_exception) {
 		var argsRoot = MONO.mono_wasm_new_root (args), nameRoot = MONO.mono_wasm_new_root (core_name);
 		try {
 			BINDING.bindings_lazy_init ();
@@ -1934,13 +1921,14 @@ var BindingSupportLib = {
 					if (js_args)
 						argsList = argsList.concat (js_args);
 					var tempCtor = constructor.bind.apply (constructor, argsList);
-					var obj = new tempCtor ();
-					return obj;
+					var js_obj = new tempCtor ();
+					return js_obj;
 				};
 
-				var res = allocator(coreObj, js_args);
-				var js_handle = BINDING.mono_wasm_get_js_handle(res);
-				// yes, convert int
+				var js_obj = allocator(coreObj, js_args);
+				js_obj.__mono_gc_handle__ = gc_handle;
+				var js_handle = BINDING.mono_wasm_get_js_handle(js_obj);
+				// yes, convert int, because on error we need to return String on same method signature
 				return BINDING.mono_wasm_convert_return_value(js_handle);
 			} catch (e) {
 				var res = e.toString ();

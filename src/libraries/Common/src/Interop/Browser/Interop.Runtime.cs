@@ -36,9 +36,7 @@ internal static partial class Interop
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         internal static extern object ReleaseCsOwnedObject(int jsHandle);
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal static extern object BindCoreObject(int jsHandle, int gcHandle, out int exceptionalResult);
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal static extern object New(string className, object[] parms, out int exceptionalResult);
+        internal static extern object CreateCsOwnedObject(int gcHandle, string className, object[] parms, out int exceptionalResult);
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         internal static extern object TypedArrayToArray(int jsHandle, out int exceptionalResult);
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
@@ -75,17 +73,9 @@ internal static partial class Interop
             return res as System.Runtime.InteropServices.JavaScript.Function;
         }
 
-        public static IntPtr New<T>(params object[] parms)
+        internal static IntPtr CreateCsOwnedObject(int gcHandle, string typeName, params object[] parms)
         {
-            object res = New(typeof(T).Name, parms, out int exception);
-            if (exception != 0)
-                throw new JSException((string)res);
-            return (IntPtr)(int)res;
-        }
-
-        public static IntPtr New(string hostClassName, params object[] parms)
-        {
-            object res = New(hostClassName, parms, out int exception);
+            object res = CreateCsOwnedObject(gcHandle, typeName, parms, out int exception);
             if (exception != 0)
                 throw new JSException((string)res);
             return (IntPtr)(int)res;

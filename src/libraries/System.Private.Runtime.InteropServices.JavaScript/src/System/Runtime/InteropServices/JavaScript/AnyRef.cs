@@ -16,11 +16,26 @@ namespace System.Runtime.InteropServices.JavaScript
         internal int GCHandleValue => (int)(IntPtr)WeakRefHandle;
         public bool IsDisposed { get; private set; }
 
-        public JSObject() : this(Interop.Runtime.New<object>())
+        public JSObject() : base(true)
         {
-            object result = Interop.Runtime.BindCoreObject(JSHandle, GCHandleValue, out int exception);
-            if (exception != 0)
-                throw new JSException(SR.Format(SR.JSObjectErrorBinding, result));
+            // this is weak C# reference to the JSObject, it has same lifetime as the JSObject
+            WeakRefHandle = GCHandle.Alloc(this, GCHandleType.Weak);
+            InFlight = null;
+            InFlightCounter = 0;
+
+            var jsHandle = Interop.Runtime.CreateCsOwnedObject(GCHandleValue, nameof(Object));
+            SetHandle(jsHandle);
+        }
+
+        protected JSObject(string typeName, object[] _params) : base(true)
+        {
+            // this is weak C# reference to the JSObject, it has same lifetime as the JSObject
+            WeakRefHandle = GCHandle.Alloc(this, GCHandleType.Weak);
+            InFlight = null;
+            InFlightCounter = 0;
+
+            var jsHandle = Interop.Runtime.CreateCsOwnedObject(GCHandleValue, typeName, _params);
+            SetHandle(jsHandle);
         }
 
         internal JSObject(IntPtr jsHandle) : base(true)

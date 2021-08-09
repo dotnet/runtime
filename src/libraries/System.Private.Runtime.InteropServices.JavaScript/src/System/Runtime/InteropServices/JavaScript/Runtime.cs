@@ -34,16 +34,6 @@ namespace System.Runtime.InteropServices.JavaScript
             return Interop.Runtime.CompileFunction(snippet);
         }
 
-        public static IntPtr New<T>(params object[] parms)
-        {
-            return Interop.Runtime.New(typeof(T).Name, parms);
-        }
-
-        public static IntPtr New(string hostClassName, params object[] parms)
-        {
-            return Interop.Runtime.New(hostClassName, parms);
-        }
-
         public static object GetGlobalObject(string? str = null)
         {
             return Interop.Runtime.GetGlobalObject(str);

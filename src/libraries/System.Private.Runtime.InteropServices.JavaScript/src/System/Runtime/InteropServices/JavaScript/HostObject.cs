@@ -19,19 +19,9 @@ namespace System.Runtime.InteropServices.JavaScript
     public interface IHostObject
     { }
 
-    public class HostObject : HostObjectBase
+    public class HostObject : JSObject, IHostObject
     {
-        public HostObject(string hostName, params object[] _params) : base(Interop.Runtime.New(hostName, _params))
+        public HostObject(string typeName, params object[] _params) : base(typeName, _params)
         { }
-    }
-
-    public abstract class HostObjectBase : JSObject, IHostObject
-    {
-        protected HostObjectBase(IntPtr jsHandle) : base(jsHandle)
-        {
-            object result = Interop.Runtime.BindCoreObject((int)jsHandle, GCHandleValue, out int exception);
-            if (exception != 0)
-                throw new JSException(SR.Format(SR.HostObjectErrorBinding, result));
-        }
     }
 }

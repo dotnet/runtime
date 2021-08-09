@@ -16,7 +16,7 @@ namespace System.Runtime.InteropServices.JavaScript
     /// </remarks>
     public class Function : CoreObject
     {
-        public Function(params object[] args) : base(Interop.Runtime.New<Function>(args))
+        public Function(params object[] args) : base(nameof(Function), args)
         { }
 
         internal Function(IntPtr jsHandle) : base(jsHandle)

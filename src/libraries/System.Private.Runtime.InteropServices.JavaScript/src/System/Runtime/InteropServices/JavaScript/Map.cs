@@ -14,7 +14,7 @@ namespace System.Runtime.InteropServices.JavaScript
         /// <summary>
         /// Initializes a new instance of the Map class.
         /// </summary>
-        public Map() : base(Runtime.New<Map>())
+        public Map() : base(nameof(Map))
         { }
 
         /// <summary>

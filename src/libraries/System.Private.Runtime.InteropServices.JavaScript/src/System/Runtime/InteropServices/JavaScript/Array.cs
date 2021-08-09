@@ -14,7 +14,7 @@ namespace System.Runtime.InteropServices.JavaScript
         /// Initializes a new instance of the Array class.
         /// </summary>
         /// <param name="_params">Parameters.</param>
-        public Array(params object[] _params) : base(Interop.Runtime.New<Array>(_params))
+        public Array(params object[] _params) : base(nameof(Array), _params)
         { }
 
         /// <summary>

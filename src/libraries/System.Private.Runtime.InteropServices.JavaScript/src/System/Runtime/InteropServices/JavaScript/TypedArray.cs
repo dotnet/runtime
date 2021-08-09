@@ -51,28 +51,28 @@ namespace System.Runtime.InteropServices.JavaScript
     /// </summary>
     public abstract class TypedArray<T, U> : CoreObject, ITypedArray, ITypedArray<T, U> where U : struct
     {
-        protected TypedArray() : base(Interop.Runtime.New<T>())
+        protected TypedArray() : base(typeof(T).Name)
         { }
 
-        protected TypedArray(int length) : base(Interop.Runtime.New<T>(length))
+        protected TypedArray(int length) : base(typeof(T).Name, length)
         { }
 
-        protected TypedArray(ArrayBuffer buffer) : base(Interop.Runtime.New<T>(buffer))
+        protected TypedArray(ArrayBuffer buffer) : base(typeof(T).Name, buffer)
         { }
 
-        protected TypedArray(ArrayBuffer buffer, int byteOffset) : base(Interop.Runtime.New<T>(buffer, byteOffset))
+        protected TypedArray(ArrayBuffer buffer, int byteOffset) : base(typeof(T).Name, buffer, byteOffset)
         { }
 
-        protected TypedArray(ArrayBuffer buffer, int byteOffset, int length) : base(Interop.Runtime.New<T>(buffer, byteOffset, length))
+        protected TypedArray(ArrayBuffer buffer, int byteOffset, int length) : base(typeof(T).Name, buffer, byteOffset, length)
         { }
 
-        protected TypedArray(SharedArrayBuffer buffer) : base(Interop.Runtime.New<T>(buffer))
+        protected TypedArray(SharedArrayBuffer buffer) : base(typeof(T).Name, buffer)
         { }
 
-        protected TypedArray(SharedArrayBuffer buffer, int byteOffset) : base(Interop.Runtime.New<T>(buffer, byteOffset))
+        protected TypedArray(SharedArrayBuffer buffer, int byteOffset) : base(typeof(T).Name, buffer, byteOffset)
         { }
 
-        protected TypedArray(SharedArrayBuffer buffer, int byteOffset, int length) : base(Interop.Runtime.New<T>(buffer, byteOffset, length))
+        protected TypedArray(SharedArrayBuffer buffer, int byteOffset, int length) : base(typeof(T).Name, buffer, byteOffset, length)
         { }
 
         internal TypedArray(IntPtr jsHandle) : base(jsHandle)
