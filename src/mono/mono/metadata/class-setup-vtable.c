@@ -369,8 +369,8 @@ mono_class_setup_interface_offsets (MonoClass *klass)
 }
 
 
-#define DEBUG_INTERFACE_VTABLE_CODE 1
-#define TRACE_INTERFACE_VTABLE_CODE 1
+#define DEBUG_INTERFACE_VTABLE_CODE 0
+#define TRACE_INTERFACE_VTABLE_CODE 0
 #define VERIFY_INTERFACE_VTABLE_CODE 0
 #define VTABLE_SELECTOR (1)
 
