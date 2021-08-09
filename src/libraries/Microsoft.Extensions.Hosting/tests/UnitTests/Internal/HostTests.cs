@@ -1379,7 +1379,7 @@ namespace Microsoft.Extensions.Hosting.Internal
                 })
                 .ConfigureServices(services =>
                 {
-                    services.AddHostedService<AsyncWaitingService>();
+                    services.AddHostedService<WorkerTemplateService>();
                 })
                 .Build();
 
@@ -1541,14 +1541,23 @@ namespace Microsoft.Extensions.Hosting.Internal
             }
         }
 
-        private class AsyncWaitingService : BackgroundService
+        /// <summary>
+        /// A copy of the default "Worker" template.
+        /// </summary>
+        private class WorkerTemplateService : BackgroundService
         {
-            public AsyncWaitingService() { }
+            private readonly ILogger<WorkerTemplateService> _logger;
+
+            public WorkerTemplateService(ILogger<WorkerTemplateService> logger)
+            {
+                _logger = logger;
+            }
 
             protected override async Task ExecuteAsync(CancellationToken stoppingToken)
             {
                 while (!stoppingToken.IsCancellationRequested)
                 {
+                    _logger.LogInformation("Worker running at: {time}", DateTimeOffset.Now);
                     await Task.Delay(1000, stoppingToken);
                 }
             }
