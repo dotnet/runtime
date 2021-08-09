@@ -143,13 +143,9 @@ jobs:
 
     - name: clrRuntimePortableBuildArg
       value: ''
-    - name: clrManagedPortableBuildArg
-      value: ''
     - ${{ if eq(parameters.archType, 'armel' )}}:
       - name: clrRuntimePortableBuildArg
         value: '-portablebuild=false'
-      - name: clrManagedPortableBuildArg
-        value: '--portablebuild false'
 
     - ${{ parameters.variables }}
 
@@ -211,7 +207,7 @@ jobs:
         displayName: Disk Usage after Build
 
     # Build CoreCLR Managed Components
-    - script: $(Build.SourcesDirectory)$(dir)build$(scriptExt) -subset clr.corelib+clr.nativecorelib+clr.tools+clr.packages+clr.paltestlist $(crossArg) -arch $(archType) $(osArg) -c $(buildConfig) $(pgoInstrumentArg) $(officialBuildIdArg) $(clrManagedPortableBuildArg) -ci
+    - script: $(Build.SourcesDirectory)$(dir)build$(scriptExt) -subset clr.corelib+clr.nativecorelib+clr.tools+clr.packages+clr.paltestlist $(crossArg) -arch $(archType) $(osArg) -c $(buildConfig) $(pgoInstrumentArg) $(officialBuildIdArg) -ci
       displayName: Build managed product components and packages
 
     # Run CoreCLR Tools unit tests
@@ -220,7 +216,7 @@ jobs:
         displayName: Run CoreCLR Tools unit tests
 
     # Build native test components
-    - ${{ if ne(parameters.isOfficialBuild, true) }}:
+    - ${{ if and(ne(parameters.isOfficialBuild, true), ne(parameters.archType, 'armel')) }}:
       - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) skipmanaged skipgeneratelayout $(buildConfig) $(archType) $(crossArg) $(osArg) $(priorityArg) $(compilerArg)
         displayName: Build native test components
 
@@ -267,7 +263,7 @@ jobs:
         condition: always()
 
     # Builds using gcc are not tested, and clrTools unitests do not publish the build artifacts
-    - ${{ if and(ne(parameters.compilerName, 'gcc'), ne(parameters.testGroup, 'clrTools')) }}:
+    - ${{ if and(ne(parameters.compilerName, 'gcc'), ne(parameters.testGroup, 'clrTools'), ne(parameters.archType, 'armel')) }}:
       # Publish product output directory for consumption by tests.
       - template: /eng/pipelines/common/upload-artifact-step.yml
         parameters:
