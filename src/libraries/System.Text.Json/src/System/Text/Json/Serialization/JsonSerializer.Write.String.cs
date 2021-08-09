@@ -10,7 +10,7 @@ namespace System.Text.Json
     public static partial class JsonSerializer
     {
         /// <summary>
-        /// Convert the provided value into a <see cref="string"/>.
+        /// Converts the provided value into a <see cref="string"/>.
         /// </summary>
         /// <returns>A <see cref="string"/> representation of the value.</returns>
         /// <param name="value">The value to convert.</param>
@@ -30,7 +30,7 @@ namespace System.Text.Json
         }
 
         /// <summary>
-        /// Convert the provided value into a <see cref="string"/>.
+        /// Converts the provided value into a <see cref="string"/>.
         /// </summary>
         /// <returns>A <see cref="string"/> representation of the value.</returns>
         /// <param name="value">The value to convert.</param>
@@ -63,7 +63,7 @@ namespace System.Text.Json
         }
 
         /// <summary>
-        /// Convert the provided value into a <see cref="string"/>.
+        /// Converts the provided value into a <see cref="string"/>.
         /// </summary>
         /// <returns>A <see cref="string"/> representation of the value.</returns>
         /// <param name="value">The value to convert.</param>
@@ -85,7 +85,7 @@ namespace System.Text.Json
         }
 
         /// <summary>
-        /// Convert the provided value into a <see cref="string"/>.
+        /// Converts the provided value into a <see cref="string"/>.
         /// </summary>
         /// <returns>A <see cref="string"/> representation of the value.</returns>
         /// <param name="value">The value to convert.</param>

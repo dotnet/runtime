@@ -2503,6 +2503,7 @@ mono_jit_compile_method_with_opt (MonoMethod *method, guint32 opt, gboolean jit_
 		code = mini_get_interp_callbacks ()->create_method_pointer (method, TRUE, error);
 		if (code)
 			return code;
+		return_val_if_nok (error, NULL);
 	}
 
 	if (mono_llvm_only)

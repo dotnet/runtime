@@ -122,7 +122,33 @@ namespace System.Text.Json.SourceGeneration.Tests
 
     internal sealed class StreamSerializerWrapper : JsonSerializerWrapperForStream
     {
-        protected internal override Task<T> DeserializeWrapper<T>(Stream utf8Json, JsonSerializerOptions options = null) => throw new NotImplementedException();
+        private readonly JsonSerializerContext _defaultContext;
+        private readonly Func<JsonSerializerOptions, JsonSerializerContext> _customContextCreator;
+
+        public StreamSerializerWrapper(JsonSerializerContext defaultContext, Func<JsonSerializerOptions, JsonSerializerContext> customContextCreator)
+        {
+            _defaultContext = defaultContext ?? throw new ArgumentNullException(nameof(defaultContext));
+            _customContextCreator = customContextCreator ?? throw new ArgumentNullException(nameof(defaultContext));
+        }
+
+        protected internal override async Task<T> DeserializeWrapper<T>(Stream utf8Json, JsonSerializerOptions? options = null)
+        {
+            if (options != null)
+            {
+                return await Deserialize<T>(utf8Json, options);
+            }
+
+            JsonTypeInfo<T> typeInfo = (JsonTypeInfo<T>)_defaultContext.GetTypeInfo(typeof(T));
+            return await JsonSerializer.DeserializeAsync<T>(utf8Json, typeInfo);
+        }
+
+        private async Task<T> Deserialize<T>(Stream utf8Json, JsonSerializerOptions options)
+        {
+            JsonSerializerContext context = _customContextCreator(new JsonSerializerOptions(options));
+            JsonTypeInfo<T> typeInfo = (JsonTypeInfo<T>)context.GetTypeInfo(typeof(T));
+            return await JsonSerializer.DeserializeAsync<T>(utf8Json, typeInfo);
+        }
+
         protected internal override Task<object> DeserializeWrapper(Stream utf8Json, Type returnType, JsonSerializerOptions options = null) => throw new NotImplementedException();
         protected internal override Task<T> DeserializeWrapper<T>(Stream utf8Json, JsonTypeInfo<T> jsonTypeInfo) => throw new NotImplementedException();
         protected internal override Task SerializeWrapper<T>(Stream stream, T value, JsonSerializerOptions options = null) => throw new NotImplementedException();

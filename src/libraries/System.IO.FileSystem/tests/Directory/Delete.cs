@@ -217,7 +217,7 @@ namespace System.IO.Tests
         #endregion
     }
 
-    public class Directory_Delete_str_bool : Directory_Delete_str
+    public partial class Directory_Delete_str_bool : Directory_Delete_str
     {
         #region Utilities
 

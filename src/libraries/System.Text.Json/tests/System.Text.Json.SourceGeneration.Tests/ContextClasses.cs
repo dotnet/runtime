@@ -67,14 +67,13 @@ namespace System.Text.Json.SourceGeneration.Tests
             {
                 if (_JsonMessage == null)
                 {
-                    JsonTypeInfo<JsonMessage> objectInfo = JsonMetadataServices.CreateObjectInfo<JsonMessage>(
-                        Options,
-                        createObjectFunc: static () => new JsonMessage(),
-                        propInitFunc: null,
-                        default,
-                        serializeFunc: JsonMessageSerialize);
+                    JsonObjectInfoValues<JsonMessage> objectInfo = new()
+                    {
+                        ObjectCreator = static () => new JsonMessage(),
+                        SerializeHandler = JsonMessageSerialize
+                    };
 
-                    _JsonMessage = objectInfo;
+                    _JsonMessage = JsonMetadataServices.CreateObjectInfo<JsonMessage>(Options, objectInfo);
                 }
 
                 return _JsonMessage;

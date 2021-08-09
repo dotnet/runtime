@@ -231,7 +231,6 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/50570", TestPlatforms.Android)]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/36882", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public void TraceWriteLineIf()
         {

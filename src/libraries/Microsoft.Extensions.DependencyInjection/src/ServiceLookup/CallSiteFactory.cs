@@ -6,7 +6,6 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-using System.Linq;
 using System.Reflection;
 using Microsoft.Extensions.Internal;
 
@@ -22,12 +21,16 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
 
         private readonly StackGuard _stackGuard;
 
-        public CallSiteFactory(IEnumerable<ServiceDescriptor> descriptors)
+        public CallSiteFactory(ICollection<ServiceDescriptor> descriptors)
         {
             _stackGuard = new StackGuard();
-            _descriptors = descriptors.ToArray();
+            _descriptors = new ServiceDescriptor[descriptors.Count];
+            descriptors.CopyTo(_descriptors, 0);
+
             Populate();
         }
+
+        internal ServiceDescriptor[] Descriptors => _descriptors;
 
         private void Populate()
         {

@@ -244,7 +244,7 @@ jobs:
         value: 180
     jobParameters:
       testGroup: innerloop
-      nameSuffix: AllSubsets_Mono_RuntimeTests
+      nameSuffix: AllSubsets_Mono_RuntimeTests_Interp
       buildArgs: -s mono+libs -c $(_BuildConfig)
       timeoutInMinutes: 240
       runtimeVariant: monointerpreter

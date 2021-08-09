@@ -1931,6 +1931,12 @@ namespace System.Net.Http
                     _associatedHttp2ConnectionCount -= (_availableHttp2Connections?.Count ?? 0);
                     _availableHttp2Connections?.Clear();
 
+                    if (_http3Connection is not null)
+                    {
+                        toDispose.Add(_http3Connection);
+                        _http3Connection = null;
+                    }
+
                     if (_authorityExpireTimer != null)
                     {
                         _authorityExpireTimer.Dispose();

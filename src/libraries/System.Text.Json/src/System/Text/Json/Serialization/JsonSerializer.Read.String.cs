@@ -15,7 +15,7 @@ namespace System.Text.Json
     public static partial class JsonSerializer
     {
         /// <summary>
-        /// Parse the text representing a single JSON value into a <typeparamref name="TValue"/>.
+        /// Parses the text representing a single JSON value into a <typeparamref name="TValue"/>.
         /// </summary>
         /// <returns>A <typeparamref name="TValue"/> representation of the JSON value.</returns>
         /// <param name="json">JSON text to parse.</param>
@@ -83,7 +83,7 @@ namespace System.Text.Json
         }
 
         /// <summary>
-        /// Parse the text representing a single JSON value into a <paramref name="returnType"/>.
+        /// Parses the text representing a single JSON value into a <paramref name="returnType"/>.
         /// </summary>
         /// <returns>A <paramref name="returnType"/> representation of the JSON value.</returns>
         /// <param name="json">JSON text to parse.</param>
@@ -126,7 +126,7 @@ namespace System.Text.Json
         }
 
         /// <summary>
-        /// Parse the text representing a single JSON value into an instance of a specified type.
+        /// Parses the text representing a single JSON value into an instance of a specified type.
         /// </summary>
         /// <returns>A <paramref name="returnType"/> representation of the JSON value.</returns>
         /// <param name="json">The JSON text to parse.</param>
@@ -166,7 +166,7 @@ namespace System.Text.Json
         }
 
         /// <summary>
-        /// Parse the text representing a single JSON value into a <typeparamref name="TValue"/>.
+        /// Parses the text representing a single JSON value into a <typeparamref name="TValue"/>.
         /// </summary>
         /// <returns>A <typeparamref name="TValue"/> representation of the JSON value.</returns>
         /// <param name="json">JSON text to parse.</param>
@@ -213,7 +213,7 @@ namespace System.Text.Json
         }
 
         /// <summary>
-        /// Parse the text representing a single JSON value into a <typeparamref name="TValue"/>.
+        /// Parses the text representing a single JSON value into a <typeparamref name="TValue"/>.
         /// </summary>
         /// <returns>A <typeparamref name="TValue"/> representation of the JSON value.</returns>
         /// <param name="json">JSON text to parse.</param>
@@ -255,7 +255,7 @@ namespace System.Text.Json
         }
 
         /// <summary>
-        /// Parse the text representing a single JSON value into a <paramref name="returnType"/>.
+        /// Parses the text representing a single JSON value into a <paramref name="returnType"/>.
         /// </summary>
         /// <returns>A <paramref name="returnType"/> representation of the JSON value.</returns>
         /// <param name="json">JSON text to parse.</param>
@@ -300,7 +300,7 @@ namespace System.Text.Json
         }
 
         /// <summary>
-        /// Parse the text representing a single JSON value into a <paramref name="returnType"/>.
+        /// Parses the text representing a single JSON value into a <paramref name="returnType"/>.
         /// </summary>
         /// <returns>A <paramref name="returnType"/> representation of the JSON value.</returns>
         /// <param name="json">JSON text to parse.</param>
