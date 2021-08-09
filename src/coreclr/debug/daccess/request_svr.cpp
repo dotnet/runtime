@@ -89,8 +89,7 @@ HRESULT ClrDataAccess::GetServerAllocData(unsigned int count, struct DacpGenerat
             TADDR pHeap = HeapTableIndex(g_gcDacGlobals->g_heaps, n);
             for (int i=0;i<NUMBERGENERATIONS;i++)
             {
-                TADDR pGeneration = ServerGenerationTableIndex(pHeap, i);
-                dac_generation generation = LoadGeneration(pGeneration);
+                dac_generation generation = ServerGenerationTableIndex(pHeap, i);
                 data[n].allocData[i].allocBytes = (CLRDATA_ADDRESS)(ULONG_PTR) generation.allocation_context.alloc_bytes;
                 data[n].allocData[i].allocBytesLoh = (CLRDATA_ADDRESS)(ULONG_PTR) generation.allocation_context.alloc_bytes_uoh;
             }
@@ -150,12 +149,12 @@ ClrDataAccess::ServerGCHeapDetails(CLRDATA_ADDRESS heapAddr, DacpGcHeapDetails *
     // get bounds for the different generations
     for (unsigned int i=0; i < DAC_NUMBERGENERATIONS; i++)
     {
-        DPTR(dac_generation) generation = ServerGenerationTableIndex(heapAddress, i);
-        detailsData->generation_table[i].start_segment     = (CLRDATA_ADDRESS)dac_cast<TADDR>(generation->start_segment);
-        detailsData->generation_table[i].allocation_start   = (CLRDATA_ADDRESS)(ULONG_PTR)generation->allocation_start;
-        DPTR(gc_alloc_context) alloc_context = dac_cast<TADDR>(generation) + offsetof(dac_generation, allocation_context);
-        detailsData->generation_table[i].allocContextPtr    = (CLRDATA_ADDRESS)(ULONG_PTR) alloc_context->alloc_ptr;
-        detailsData->generation_table[i].allocContextLimit = (CLRDATA_ADDRESS)(ULONG_PTR) alloc_context->alloc_limit;
+        dac_generation generation = ServerGenerationTableIndex(heapAddress, i);
+        detailsData->generation_table[i].start_segment     = (CLRDATA_ADDRESS)dac_cast<TADDR>(generation.start_segment);
+        detailsData->generation_table[i].allocation_start   = (CLRDATA_ADDRESS)(ULONG_PTR)generation.allocation_start;
+        gc_alloc_context alloc_context = generation.allocation_context;
+        detailsData->generation_table[i].allocContextPtr    = (CLRDATA_ADDRESS)(ULONG_PTR) alloc_context.alloc_ptr;
+        detailsData->generation_table[i].allocContextLimit = (CLRDATA_ADDRESS)(ULONG_PTR) alloc_context.alloc_limit;
     }
 
     DPTR(dac_finalize_queue) fq = pHeap->finalize_queue;
@@ -269,8 +268,7 @@ ClrDataAccess::EnumSvrGlobalMemoryRegions(CLRDataEnumMemoryFlags flags)
         // this is the convention in the GC so it is repeated here
         for (ULONG i = *g_gcDacGlobals->max_gen; i <= *g_gcDacGlobals->max_gen +1; i++)
         {
-            TADDR pGeneration = ServerGenerationTableIndex(heapAddress, i);
-            dac_generation generation = LoadGeneration(pGeneration);
+            dac_generation generation = ServerGenerationTableIndex(heapAddress, i);
             DPTR(dac_heap_segment) seg = generation.start_segment;
             while (seg)
             {
@@ -310,16 +308,11 @@ HRESULT DacHeapWalker::InitHeapDataSvr(HeapData *&pHeaps, size_t &pCount)
         TADDR heapAddress = HeapTableIndex(g_gcDacGlobals->g_heaps, i);    
         dac_gc_heap heap = LoadGcHeapData(heapAddress);
         dac_gc_heap* pHeap = &heap;
-        TADDR pGen0 = ServerGenerationTableIndex(heapAddress, 0);
-        TADDR pGen1 = ServerGenerationTableIndex(heapAddress, 1);
-        TADDR pGen2 = ServerGenerationTableIndex(heapAddress, 2);
-        TADDR pLoh  = ServerGenerationTableIndex(heapAddress, 3);
-        TADDR pPoh  = ServerGenerationTableIndex(heapAddress, 4);
-        dac_generation gen0 = LoadGeneration(pGen0);
-        dac_generation gen1 = LoadGeneration(pGen1);
-        dac_generation gen2 = LoadGeneration(pGen2);
-        dac_generation loh = LoadGeneration(pLoh);
-        dac_generation poh = LoadGeneration(pPoh);
+        dac_generation gen0 = ServerGenerationTableIndex(heapAddress, 0);
+        dac_generation gen1 = ServerGenerationTableIndex(heapAddress, 1);
+        dac_generation gen2 = ServerGenerationTableIndex(heapAddress, 2);
+        dac_generation loh  = ServerGenerationTableIndex(heapAddress, 3);
+        dac_generation poh  = ServerGenerationTableIndex(heapAddress, 4);
 
         pHeaps[i].YoungestGenPtr = (CORDB_ADDRESS)gen0.allocation_context.alloc_ptr;
         pHeaps[i].YoungestGenLimit = (CORDB_ADDRESS)gen0.allocation_context.alloc_limit;

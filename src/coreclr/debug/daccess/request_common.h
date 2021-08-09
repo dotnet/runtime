@@ -36,14 +36,6 @@ HeapTableIndex(DPTR(opaque_gc_heap**) heaps, size_t index)
     return Dereference(ptr).GetAddr();
 }
 
-// Indexes into a given generation table, returning a TADDR to the requested
-// generation.
-inline TADDR
-GenerationTableIndex(DPTR(opaque_generation) base, size_t index)
-{
-    return TableIndex(base, index, g_gcDacGlobals->generation_size).GetAddr();
-}
-
 // Starting .NET 6, it is possible for the gc_heap and generation object to have different
 // layouts for coreclr.dll and clrgc.dll. Instead of using assuming dac_gc_heap and gc_heap
 // have identical layout, we have the gc exported arrays of field offsets instead.
@@ -100,20 +92,6 @@ inline bool IsRegion()
     return (g_gcDacGlobals->minor_version_number & 1) != 0;
 }
 
-// Indexes into a heap's generation table, given the heap instance
-// and the desired index. Returns a DPTR to the requested element.
-inline TADDR
-ServerGenerationTableIndex(TADDR heap, size_t index)
-{
-    DPTR(int) field_offsets = g_gcDacGlobals->gc_heap_field_offsets;
-    int field_index = GENERATION_TABLE_FIELD_INDEX;
-    #define BASE heap
-    LOAD_BASE (generation_table, opaque_generation);
-    #undef BASE
-    assert (generation_table_offset != -1);
-    return TableIndex(p_generation_table, index, g_gcDacGlobals->generation_size).GetAddr();
-}
-
 // Load an instance of dac_gc_heap for the heap pointed by heap.
 // Fields that does not exist in the current gc_heap instance is zero initialized.
 // Return the dac_gc_heap object.
@@ -168,6 +146,27 @@ LoadGeneration(TADDR generation)
 #undef BASE
 
     return result;
+}
+
+// Indexes into a given generation table, returning a dac_generation
+inline dac_generation
+GenerationTableIndex(DPTR(opaque_generation) base, size_t index)
+{
+    return LoadGeneration(TableIndex(base, index, g_gcDacGlobals->generation_size).GetAddr());
+}
+
+// Indexes into a heap's generation table, given the heap instance
+// and the desired index. Returns a dac_generation
+inline dac_generation
+ServerGenerationTableIndex(TADDR heap, size_t index)
+{
+    DPTR(int) field_offsets = g_gcDacGlobals->gc_heap_field_offsets;
+    int field_index = GENERATION_TABLE_FIELD_INDEX;
+    #define BASE heap
+    LOAD_BASE (generation_table, opaque_generation);
+    #undef BASE
+    assert (generation_table_offset != -1);
+    return LoadGeneration(TableIndex(p_generation_table, index, g_gcDacGlobals->generation_size).GetAddr());
 }
 
 #undef LOAD_ARRAY

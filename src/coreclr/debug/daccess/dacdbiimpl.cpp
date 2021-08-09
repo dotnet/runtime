@@ -6751,16 +6751,11 @@ HRESULT DacHeapWalker::InitHeapDataWks(HeapData *&pHeaps, size_t &pCount)
     if (pHeaps == NULL)
         return E_OUTOFMEMORY;
 
-    TADDR pGen0 = GenerationTableIndex(g_gcDacGlobals->generation_table, 0);
-    TADDR pGen1 = GenerationTableIndex(g_gcDacGlobals->generation_table, 1);
-    TADDR pGen2 = GenerationTableIndex(g_gcDacGlobals->generation_table, 2);
-    TADDR pLoh  = GenerationTableIndex(g_gcDacGlobals->generation_table, 3);
-    TADDR pPoh  = GenerationTableIndex(g_gcDacGlobals->generation_table, 4);
-    dac_generation gen0 = LoadGeneration(pGen0);
-    dac_generation gen1 = LoadGeneration(pGen1);
-    dac_generation gen2 = LoadGeneration(pGen2);
-    dac_generation loh = LoadGeneration(pLoh);
-    dac_generation poh = LoadGeneration(pPoh);
+    dac_generation gen0 = GenerationTableIndex(g_gcDacGlobals->generation_table, 0);
+    dac_generation gen1 = GenerationTableIndex(g_gcDacGlobals->generation_table, 1);
+    dac_generation gen2 = GenerationTableIndex(g_gcDacGlobals->generation_table, 2);
+    dac_generation loh  = GenerationTableIndex(g_gcDacGlobals->generation_table, 3);
+    dac_generation poh  = GenerationTableIndex(g_gcDacGlobals->generation_table, 4);
 
     pHeaps[0].YoungestGenPtr = (CORDB_ADDRESS)gen0.allocation_context.alloc_ptr;
     pHeaps[0].YoungestGenLimit = (CORDB_ADDRESS)gen0.allocation_context.alloc_limit;
