@@ -581,7 +581,7 @@ namespace $([System.String]::Copy($(Category)).Replace(".","_").Replace("\","").
       <TestScripts Include="@(AllTestScripts)" Exclude="@(TestExclusions)" />
       <TestDllPaths Include="$([System.IO.Path]::ChangeExtension('%(TestScripts.Identity)', 'dll'))" />
       <TestDlls Include="%(TestDllPaths.Identity)" Condition="Exists(%(TestDllPaths.Identity))" />
-      <CoreRootDlls Include="$(CORE_ROOT)/*.dll" />
+      <CoreRootDlls Include="$(CORE_ROOT)/*.dll" Exclude="$(CORE_ROOT)/xunit.performance.api.dll" />
       <AllDlls Condition="'$(MonoFullAot)' == 'true'" Include="@(TestDlls);@(CoreRootDlls)" />
       <AllDlls Condition="'$(MonoFullAot)' != 'true'" Include="@(TestDlls)" />
     </ItemGroup>
