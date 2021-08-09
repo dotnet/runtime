@@ -20,8 +20,8 @@ namespace Sample
             const int success = 42;
             const int failure = 1;
 
-            var ty = typeof(System.Reflection.Metadata.AssemblyExtensions);
-            var mi = ty.GetMethod("GetApplyUpdateCapabilities", BindingFlags.NonPublic | BindingFlags.Static, Array.Empty<Type>());
+            var ty = typeof(System.Reflection.Metadata.MetadataUpdater);
+            var mi = ty.GetMethod("GetCapabilities", BindingFlags.NonPublic | BindingFlags.Static, Array.Empty<Type>());
 
             if (mi == null)
                 return failure;
