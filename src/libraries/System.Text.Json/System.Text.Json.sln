@@ -43,6 +43,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Text.Encodings.Web",
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Collections.Immutable", "..\System.Collections.Immutable\ref\System.Collections.Immutable.csproj", "{BE27618A-2916-4269-9AD5-6BC5EDC32B30}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Text.Json.SourceGeneration.UnitTests", "tests\System.Text.Json.SourceGeneration.UnitTests\System.Text.Json.SourceGeneration.UnitTests.csproj", "{F6A18EB5-A8CC-4A39-9E85-5FA226019C3D}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -117,6 +119,10 @@ Global
 		{BE27618A-2916-4269-9AD5-6BC5EDC32B30}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{BE27618A-2916-4269-9AD5-6BC5EDC32B30}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{BE27618A-2916-4269-9AD5-6BC5EDC32B30}.Release|Any CPU.Build.0 = Release|Any CPU
+		{F6A18EB5-A8CC-4A39-9E85-5FA226019C3D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F6A18EB5-A8CC-4A39-9E85-5FA226019C3D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F6A18EB5-A8CC-4A39-9E85-5FA226019C3D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F6A18EB5-A8CC-4A39-9E85-5FA226019C3D}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -139,6 +145,7 @@ Global
 		{A0178BAA-A1AF-4C69-8E4A-A700A2723DDC} = {E07C6980-EB71-4D19-A80A-7BEB80B635B1}
 		{C56337BB-8CBC-4EE5-AB4D-8BB0A922813E} = {0371C5D8-D5F5-4747-9810-D91D71D8C0E4}
 		{BE27618A-2916-4269-9AD5-6BC5EDC32B30} = {0371C5D8-D5F5-4747-9810-D91D71D8C0E4}
+		{F6A18EB5-A8CC-4A39-9E85-5FA226019C3D} = {E07C6980-EB71-4D19-A80A-7BEB80B635B1}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {5868B757-D821-41FC-952E-2113A0519506}
