@@ -12,11 +12,12 @@
   </PropertyGroup>
 
   <!--
-    Explicitly build the externals.csproj project first to create the PlatformManifest for
+    Explicitly build the externals.csproj and binplace-runtime project first to create the PlatformManifest for
     the targeting and runtimepack before the test runners which consume that asset are built.
   -->
   <ItemGroup>
     <ExternalsProject Include="externals.csproj" />
+    <ExternalsProject Include="runtime-binplace.csproj" />
     <ProjectReference Include="@(ExternalsProject)" Condition="'$(MSBuildRestoreSessionId)' != ''" />
 
     <ProjectReference Include="$(CommonTestPath)AppleTestRunner\AppleTestRunner.csproj" Condition="'$(TargetOS)' == 'MacCatalyst' or '$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'iOSSimulator' or '$(TargetOS)' == 'tvOS' or '$(TargetOS)' == 'tvOSSimulator'"/>

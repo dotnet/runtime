@@ -4,7 +4,7 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <OutputType>Exe</OutputType>
     <TargetFramework>$(NetCoreAppToolCurrent)</TargetFramework>
-    <NoWarn>8002,NU1701</NoWarn>
+    <NoWarn>$(NoWarn);8002,NU1701</NoWarn>
     <Platforms>x64;x86;arm64;arm</Platforms>
     <PlatformTarget>AnyCPU</PlatformTarget>
     <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>

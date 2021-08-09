@@ -24,6 +24,13 @@
     <PermitDllAndExeFilesLackingFileVersion>true</PermitDllAndExeFilesLackingFileVersion>
   </PropertyGroup>
 
+  <Target Name="PublishCrossgen"
+          BeforeTargets="GetFilesToPublish">
+    <MSBuild Projects="$(RepoRoot)src/coreclr/tools/aot/crossgen2/crossgen2.csproj"
+             Properties="RunningPublish=true"
+             Targets="Restore;Build;Publish" />
+  </Target>
+
   <PropertyGroup>
     <TargetOSComponent>unix</TargetOSComponent>
     <TargetOSComponent Condition="'$(TargetOS)' == 'windows'">win</TargetOSComponent>

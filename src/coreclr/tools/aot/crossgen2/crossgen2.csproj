@@ -3,10 +3,12 @@
     <OutputPath>$(RuntimeBinDir)/crossgen2</OutputPath>
     <!-- The default value for macOS is false -->
     <UseAppHost>true</UseAppHost>
+    <PublishTrimmed>true</PublishTrimmed>
+    <SuppressTrimAnalysisWarnings>true</SuppressTrimAnalysisWarnings>
     <AppHostRuntimeIdentifier>$(Crossgen2PackageRID)</AppHostRuntimeIdentifier>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(RunningPublish)' == 'true">
+  <PropertyGroup Condition="'$(RunningPublish)' == 'true'">
     <RuntimeIdentifier>$(Crossgen2PackageRID)</RuntimeIdentifier>
     <PublishTrimmed>true</PublishTrimmed>
     <SuppressTrimAnalysisWarnings>true</SuppressTrimAnalysisWarnings>

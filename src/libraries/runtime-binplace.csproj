@@ -1,0 +1,46 @@
+<!-- Copies runtime files from the local build to the framework layouts -->
+<Project Sdk="Microsoft.Build.NoTargets">
+  <PropertyGroup>
+    <SwapNativeForIL Condition="'$(SwapNativeForIL)' == '' and ('$(Configuration)' == 'Debug' or '$(Coverage)' == 'true') and '$(RuntimeFlavor)' != 'Mono'">true</SwapNativeForIL>
+    <TargetFrameworks>$(NetCoreAppCurrent)</TargetFrameworks>
+    <!-- Binplace properties -->
+    <BinPlaceForTargetVertical>false</BinPlaceForTargetVertical>
+    <BinPlaceNative>true</BinPlaceNative>
+    <BinPlaceRuntime>false</BinPlaceRuntime>
+    <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
+  </PropertyGroup>
+
+  <Target Name="OverrideRuntimeCoreCLR"
+          DependsOnTargets="ResolveRuntimeFilesFromLocalBuild"
+          AfterTargets="AfterResolveReferences"
+          Condition="'$(RuntimeFlavor)' != 'Mono'">
+    <ItemGroup>
+      <!-- CoreRun is not used for testing anymore, but we still use it for benchmarking and profiling -->
+      <RuntimeFiles Include="$(CoreCLRArtifactsPath)\corerun*" />
+      <RuntimeFiles Include="$(CoreCLRArtifactsPath)\PDB\corerun*" />
+      <ReferenceCopyLocalPaths Include="@(RuntimeFiles)" />
+    </ItemGroup>
+    <ItemGroup Condition="'$(SwapNativeForIL)' == 'true'">
+      <CoreCLRILFiles Include="$(CoreCLRArtifactsPath)\IL\*.*" />
+      <ReferenceCopyLocalPaths Remove="@(ReferenceCopyLocalPaths)" Condition="'@(CoreCLRILFiles->'%(FileName)%(Extension)')' == '%(FileName)%(Extension)'" />
+      <ReferenceCopyLocalPaths Remove="@(ReferenceCopyLocalPaths)" Condition="'@(CoreCLRILFiles->'%(FileName).ni%(Extension)')' == '%(FileName)%(Extension)'" />
+      <ReferenceCopyLocalPaths Include="@(CoreCLRILFiles)" />
+    </ItemGroup>
+    <Error Condition="'$(SwapNativeForIL)' == 'true' and '@(CoreCLRILFiles)' == ''" Text="Could not locate CoreCLR IL files." />
+  </Target>
+
+  <Target Name="OverrideRuntimeMono"
+          DependsOnTargets="ResolveRuntimeFilesFromLocalBuild"
+          AfterTargets="AfterResolveReferences"
+          Condition="'$(RuntimeFlavor)' == 'Mono'">
+    <ItemGroup>
+      <ReferenceCopyLocalPaths Include="@(RuntimeFiles)" />
+      <!-- Setup runtime pack native. -->
+      <ReferenceCopyLocalPaths Include="@(MonoCrossFiles)"
+                               DestinationSubDirectory="cross/%(RecursiveDir)" />
+      <ReferenceCopyLocalPaths Include="@(MonoIncludeFiles)"
+                               DestinationSubDirectory="include/%(RecursiveDir)" />
+    </ItemGroup>
+  </Target>
+
+</Project>
