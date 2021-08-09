@@ -35,12 +35,12 @@ namespace System.Runtime.InteropServices.JavaScript
             return Interop.Runtime.CompileFunction(snippet);
         }
 
-        public static int New<T>(params object[] parms)
+        public static IntPtr New<T>(params object[] parms)
         {
             return Interop.Runtime.New(typeof(T).Name, parms);
         }
 
-        public static int New(string hostClassName, params object[] parms)
+        public static IntPtr New(string hostClassName, params object[] parms)
         {
             return Interop.Runtime.New(hostClassName, parms);
         }
@@ -55,7 +55,7 @@ namespace System.Runtime.InteropServices.JavaScript
             Interop.Runtime.DumpAotProfileData(ref buf, len, extraArg);
         }
 
-        public static int BindJSObject(int jsHandle, bool ownsHandle, int mappedType)
+        public static int BindJSObject(int jsHandle, int mappedType)
         {
             JSObject? target = null;
 
@@ -65,8 +65,7 @@ namespace System.Runtime.InteropServices.JavaScript
                     !reference.TryGetTarget(out target) ||
                     target.IsDisposed)
                 {
-                    IntPtr jsIntPtr = (IntPtr)jsHandle;
-                    target = mappedType > 0 ? BindJSType(jsIntPtr, ownsHandle, mappedType) : new JSObject(jsIntPtr, ownsHandle);
+                    target = mappedType > 0 ? BindJSType((IntPtr)jsHandle, mappedType) : new JSObject((IntPtr)jsHandle);
                     _boundObjects[jsHandle] = new WeakReference<JSObject>(target, trackResurrection: true);
                 }
             }
@@ -103,24 +102,24 @@ namespace System.Runtime.InteropServices.JavaScript
             return obj?.GCHandleValue ?? 0;
         }
 
-        private static JSObject BindJSType(IntPtr jsIntPtr, bool ownsHandle, int coreType) =>
+        private static JSObject BindJSType(IntPtr jsHandle, int coreType) =>
             coreType switch
             {
-                1 => new Array(jsIntPtr, ownsHandle),
-                2 => new ArrayBuffer(jsIntPtr, ownsHandle),
-                3 => new DataView(jsIntPtr, ownsHandle),
-                4 => new Function(jsIntPtr, ownsHandle),
-                5 => new Map(jsIntPtr, ownsHandle),
-                6 => new SharedArrayBuffer(jsIntPtr, ownsHandle),
-                10 => new Int8Array(jsIntPtr, ownsHandle),
-                11 => new Uint8Array(jsIntPtr, ownsHandle),
-                12 => new Uint8ClampedArray(jsIntPtr, ownsHandle),
-                13 => new Int16Array(jsIntPtr, ownsHandle),
-                14 => new Uint16Array(jsIntPtr, ownsHandle),
-                15 => new Int32Array(jsIntPtr, ownsHandle),
-                16 => new Uint32Array(jsIntPtr, ownsHandle),
-                17 => new Float32Array(jsIntPtr, ownsHandle),
-                18 => new Float64Array(jsIntPtr, ownsHandle),
+                1 => new Array(jsHandle),
+                2 => new ArrayBuffer(jsHandle),
+                3 => new DataView(jsHandle),
+                4 => new Function(jsHandle),
+                5 => new Map(jsHandle),
+                6 => new SharedArrayBuffer(jsHandle),
+                10 => new Int8Array(jsHandle),
+                11 => new Uint8Array(jsHandle),
+                12 => new Uint8ClampedArray(jsHandle),
+                13 => new Int16Array(jsHandle),
+                14 => new Uint16Array(jsHandle),
+                15 => new Int32Array(jsHandle),
+                16 => new Uint32Array(jsHandle),
+                17 => new Float32Array(jsHandle),
+                18 => new Float64Array(jsHandle),
                 _ => throw new ArgumentOutOfRangeException(nameof(coreType))
             };
 
@@ -408,63 +407,16 @@ namespace System.Runtime.InteropServices.JavaScript
             return new Uri(uri);
         }
 
-        public static bool SafeHandleAddRef(SafeHandle safeHandle)
-        {
-            bool _addRefSucceeded = false;
-#if DEBUG_HANDLE
-            var _anyref = safeHandle as AnyRef;
-#endif
-            try
-            {
-                safeHandle.DangerousAddRef(ref _addRefSucceeded);
-#if DEBUG_HANDLE
-                if (_addRefSucceeded && _anyref != null)
-                    _anyref.AddRef();
-#endif
-            }
-            catch
-            {
-                if (_addRefSucceeded)
-                {
-                    safeHandle.DangerousRelease();
-#if DEBUG_HANDLE
-                    if (_anyref != null)
-                        _anyref.Release();
-#endif
-                    _addRefSucceeded = false;
-                }
-            }
-#if DEBUG_HANDLE
-            Debug.WriteLine($"\tSafeHandleAddRef: {safeHandle.DangerousGetHandle()} / RefCount: {((_anyref == null) ? 0 : _anyref.RefCount)}");
-#endif
-            return _addRefSucceeded;
-        }
-
-        public static void SafeHandleRelease(SafeHandle safeHandle)
-        {
-            safeHandle.DangerousRelease();
-#if DEBUG_HANDLE
-            var _anyref = safeHandle as AnyRef;
-            if (_anyref != null)
-            {
-                _anyref.Release();
-                Debug.WriteLine($"\tSafeHandleRelease: {safeHandle.DangerousGetHandle()} / RefCount: {_anyref.RefCount}");
-            }
-#endif
-        }
-
         public static void SafeHandleReleaseByHandle(int jsHandle)
         {
-#if DEBUG_HANDLE
-            Debug.WriteLine($"SafeHandleReleaseByHandle: {jsHandle}");
-#endif
             lock (_boundObjects)
             {
                 if (_boundObjects.TryGetValue(jsHandle, out WeakReference<JSObject>? reference))
                 {
                     reference.TryGetTarget(out JSObject? target);
                     Debug.Assert(target != null, $"\tSafeHandleReleaseByHandle: did not find active target {jsHandle}");
-                    SafeHandleRelease(target);
+
+                    target.DangerousRelease();
                 }
                 else
                 {
@@ -475,12 +427,27 @@ namespace System.Runtime.InteropServices.JavaScript
 
         public static IntPtr SafeHandleGetHandle(SafeHandle safeHandle, bool addRef)
         {
-#if DEBUG_HANDLE
-            Debug.WriteLine($"SafeHandleGetHandle: {safeHandle.DangerousGetHandle()} / addRef {addRef}");
-#endif
-            if (addRef && !SafeHandleAddRef(safeHandle)) return IntPtr.Zero;
+            if (addRef)
+            {
+                bool _addRefSucceeded = false;
+                try
+                {
+                    safeHandle.DangerousAddRef(ref _addRefSucceeded);
+                }
+                catch
+                {
+                    if (_addRefSucceeded)
+                    {
+                        safeHandle.DangerousRelease();
+                        _addRefSucceeded = false;
+                    }
+                }
+                if (!_addRefSucceeded)
+                {
+                    return IntPtr.Zero;
+                }
+            }
             return safeHandle.DangerousGetHandle();
         }
-
     }
 }

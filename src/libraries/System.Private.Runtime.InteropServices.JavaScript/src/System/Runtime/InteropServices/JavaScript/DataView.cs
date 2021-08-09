@@ -63,8 +63,7 @@ namespace System.Runtime.InteropServices.JavaScript
         /// Initializes a new instance of the DataView class.
         /// </summary>
         /// <param name="jsHandle">Js handle.</param>
-        /// <param name="ownsHandle">Managed owned</param>
-        internal DataView(IntPtr jsHandle, bool ownsHandle) : base(jsHandle, ownsHandle)
+        internal DataView(IntPtr jsHandle) : base(jsHandle)
         { }
 
         /// <summary>

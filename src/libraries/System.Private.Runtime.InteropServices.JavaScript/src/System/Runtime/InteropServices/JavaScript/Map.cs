@@ -21,8 +21,7 @@ namespace System.Runtime.InteropServices.JavaScript
         /// Initializes a new instance of the Map class.
         /// </summary>
         /// <param name="jsHandle">Js handle.</param>
-        /// <param name="ownsHandle">Whether or not the handle is owned by the clr or not.</param>
-        internal Map(IntPtr jsHandle, bool ownsHandle) : base(jsHandle, ownsHandle)
+        internal Map(IntPtr jsHandle) : base(jsHandle)
         { }
 
         /// <summary>

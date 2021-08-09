@@ -24,8 +24,7 @@ namespace System.Runtime.InteropServices.JavaScript
         /// Initializes a new instance of the JavaScript Core ArrayBuffer class.
         /// </summary>
         /// <param name="jsHandle">Js handle.</param>
-        /// <param name="ownsHandle">Whether or not the handle is owned by the clr or not.</param>
-        internal ArrayBuffer(IntPtr jsHandle, bool ownsHandle) : base(jsHandle, ownsHandle)
+        internal ArrayBuffer(IntPtr jsHandle) : base(jsHandle)
         { }
 
         /// <summary>

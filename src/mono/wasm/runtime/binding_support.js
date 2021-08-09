@@ -8,8 +8,8 @@ var BindingSupportLib = {
 		mono_wasm_object_registry: [],
 		mono_wasm_ref_counter: 1,
 		mono_wasm_free_list: [],
-		mono_wasm_owned_objects_frames: [],
-		mono_wasm_owned_objects_LMF: [],
+		mono_inflight_frames: [],
+		mono_inflight_current_frame: [],
 		mono_wasm_marshal_enum_as_int: true,
 		mono_bindings_init: function (binding_asm) {
 			this.BINDING_ASM = binding_asm;
@@ -121,7 +121,7 @@ var BindingSupportLib = {
 			//  that any code relying on the old get_method/call_method pattern will
 			//  break in a more understandable way.
 
-			this._bind_js_obj = bind_runtime_method ("BindJSObject", "iii");
+			this._bind_js_obj = bind_runtime_method ("BindJSObject", "ii");
 			this._bind_core_clr_obj = bind_runtime_method ("BindCoreCLRObject", "ii");
 			this._get_js_owned_object_gc_handle = bind_runtime_method ("GetJSOwnedObjectGCHandle", "m");
 			this._get_js_id = bind_runtime_method ("GetJSObjectId", "m");
@@ -142,8 +142,8 @@ var BindingSupportLib = {
 			this.create_date_time = bind_runtime_method ("CreateDateTime", "d!");
 			this.create_uri = get_method ("CreateUri");
 
-			this.safehandle_get_handle = get_method ("SafeHandleGetHandle");
-			this.safehandle_release_by_handle = get_method ("SafeHandleReleaseByHandle");
+			this.safehandle_get_handle = bind_runtime_method ("SafeHandleGetHandle", 'mi');
+			this.safehandle_release_by_handle = bind_runtime_method ("SafeHandleReleaseByHandle", 'i');
 			this.release_js_owned_object_by_handle = bind_runtime_method ("ReleaseJSOwnedObjectByHandle", "i");
 
 			this._are_promises_supported = ((typeof Promise === "object") || (typeof Promise === "function")) && (typeof Promise.resolve === "function");
@@ -552,16 +552,9 @@ var BindingSupportLib = {
 		},
 
 		_unbox_safehandle_root: function (root) {
-			var addRef = true;
-			var js_handle = this.call_method(this.safehandle_get_handle, null, "mi", [ root.value, addRef ]);
+			var js_handle = this.safehandle_get_handle(root.value, true);
 			var js_obj = BINDING.mono_wasm_get_jsobj_from_js_handle (js_handle);
-			if (addRef)
-			{
-				if (typeof this.mono_wasm_owned_objects_LMF === "undefined")
-					this.mono_wasm_owned_objects_LMF = [];
-
-				this.mono_wasm_owned_objects_LMF.push(js_handle);
-			}
+			this.mono_inflight_current_frame.push(js_handle);
 			return js_obj;
 		},
 
@@ -1634,7 +1627,7 @@ var BindingSupportLib = {
 					var wasm_type = js_obj[Symbol.for("wasm type")];
 
 					var js_handle = BINDING.mono_wasm_get_js_handle(js_obj);
-					gc_handle = js_obj.__mono_gc_handle__ = this._bind_js_obj(js_handle, true, typeof wasm_type === "undefined" ? -1 : wasm_type);
+					gc_handle = js_obj.__mono_gc_handle__ = this._bind_js_obj(js_handle, typeof wasm_type === "undefined" ? -1 : wasm_type);
 					// as this instance was just created, it was already created with Inflight strong gc_handle, so we do not have to do it again
 					return { gc_handle, should_add_in_flight: false };
 				}
@@ -1677,32 +1670,26 @@ var BindingSupportLib = {
 		},
 		mono_wasm_parse_args_root : function (argsRoot) {
 			var js_args = this._mono_array_root_to_js_array(argsRoot);
-			this.mono_wasm_save_LMF();
+			this.mono_inflight_push_current_frame();
 			return js_args;
 		},
-		mono_wasm_save_LMF : function () {
-			//console.log("save LMF: " + BINDING.mono_wasm_owned_objects_frames.length)
-			BINDING.mono_wasm_owned_objects_frames.push(BINDING.mono_wasm_owned_objects_LMF);
-			BINDING.mono_wasm_owned_objects_LMF = undefined;
+		mono_inflight_push_current_frame : function () {
+			BINDING.mono_inflight_frames.push(BINDING.mono_inflight_current_frame);
+			BINDING.mono_inflight_current_frame = [];
 		},
-		mono_wasm_unwind_LMF : function () {
-			var __owned_objects__ = this.mono_wasm_owned_objects_frames.pop();
-			// Release all managed objects that are loaded into the LMF
-			if (typeof __owned_objects__ !== "undefined")
+		// Release all managed objects that are loaded into the last of mono_inflight_frames
+		mono_inflight_pop_current_frame : function () {
+			var inflight_frame = this.mono_inflight_frames.pop();
+			// TODO: Look into passing the array of owned object handles in one pass.
+			var refidx;
+			for (refidx = 0; refidx < inflight_frame.length; refidx++)
 			{
-				// TODO: Look into passing the array of owned object handles in one pass.
-				var refidx;
-				for (refidx = 0; refidx < __owned_objects__.length; refidx++)
-				{
-					var ownerRelease = __owned_objects__[refidx];
-					this.call_method(this.safehandle_release_by_handle, null, "i", [ ownerRelease ]);
-				}
+				var js_handle = inflight_frame[refidx];
+				this.safehandle_release_by_handle(js_handle);
 			}
-			//console.log("restore LMF: " + BINDING.mono_wasm_owned_objects_frames.length)
-
 		},
 		mono_wasm_convert_return_value: function (ret) {
-			this.mono_wasm_unwind_LMF();
+			this.mono_inflight_pop_current_frame();
 			return this.js_to_mono_obj (ret);
 		},
 	},
@@ -1734,7 +1721,7 @@ var BindingSupportLib = {
 				return BINDING.mono_wasm_convert_return_value(res);
 			} catch (e) {
 				// make sure we release object reference counts on errors.
-				BINDING.mono_wasm_unwind_LMF();
+				BINDING.mono_inflight_pop_current_frame();
 				var res = e.toString ();
 				setValue (is_exception, 1, "i32");
 				if (res === null || res === undefined)
@@ -1800,7 +1787,7 @@ var BindingSupportLib = {
 			var result = false;
 
 			var js_value = BINDING._unbox_mono_obj_root(valueRoot);
-			BINDING.mono_wasm_save_LMF();
+			BINDING.mono_inflight_push_current_frame();
 
 			if (createIfNotExist) {
 				js_obj[property] = js_value;
@@ -1825,7 +1812,7 @@ var BindingSupportLib = {
 				}
 
 			}
-			BINDING.mono_wasm_unwind_LMF();
+			BINDING.mono_inflight_pop_current_frame();
 			return BINDING._box_js_bool (result);
 		} finally {
 			nameRoot.release();
@@ -1864,11 +1851,11 @@ var BindingSupportLib = {
 			}
 
 			var js_value = BINDING._unbox_mono_obj_root(valueRoot);
-			BINDING.mono_wasm_save_LMF();
+			BINDING.mono_inflight_push_current_frame();
 
 			try {
 				obj [property_index] = js_value;
-				BINDING.mono_wasm_unwind_LMF();
+				BINDING.mono_inflight_pop_current_frame();
 				return true;
 			} catch (e) {
 				var res = e.toString ();

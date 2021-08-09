@@ -2,26 +2,35 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
-using System.Threading;
+using System.Diagnostics.CodeAnalysis;
 using Microsoft.Win32.SafeHandles;
 
 namespace System.Runtime.InteropServices.JavaScript
 {
-    public abstract class AnyRef : SafeHandleMinusOneIsInvalid
+    public partial class JSObject : SafeHandleMinusOneIsInvalid
     {
         private GCHandle? InFlight;
         private int InFlightCounter;
         private GCHandle AnyRefHandle;
         public int JSHandle => (int)handle;
+        internal int GCHandleValue => (int)(IntPtr)AnyRefHandle;
+        public bool IsDisposed { get; private set; }
 
-        internal AnyRef(IntPtr jsHandle, bool ownsHandle) : base(ownsHandle)
+        public JSObject() : this(Interop.Runtime.New<object>())
+        {
+            object result = Interop.Runtime.BindCoreObject(JSHandle, GCHandleValue, out int exception);
+            if (exception != 0)
+                throw new JSException(SR.Format(SR.JSObjectErrorBinding, result));
+        }
+
+        internal JSObject(IntPtr jsHandle) : base(true)
         {
             SetHandle(jsHandle);
-            AnyRefHandle = GCHandle.Alloc(this, ownsHandle ? GCHandleType.Weak : GCHandleType.Normal);
+            AnyRefHandle = GCHandle.Alloc(this, GCHandleType.Weak);
             InFlight = null;
             InFlightCounter = 0;
         }
-        internal int GCHandleValue => (int)(IntPtr)AnyRefHandle;
+
 
         internal void AddInFlight()
         {
@@ -52,26 +61,22 @@ namespace System.Runtime.InteropServices.JavaScript
             }
         }
 
-
-        protected void FreeGCHandle()
+        protected override bool ReleaseHandle()
         {
+            Runtime.ReleaseJSObject(this);
+            SetHandleAsInvalid();
+            IsDisposed = true;
             AnyRefHandle.Free();
+            return true;
         }
-#if DEBUG_HANDLE
-        private int _refCount;
 
-        internal void AddRef()
+        public override bool Equals([NotNullWhen(true)] object? obj) => obj is JSObject other && JSHandle == other.JSHandle;
+
+        public override int GetHashCode() => JSHandle;
+
+        public override string ToString()
         {
-            Interlocked.Increment(ref _refCount);
+            return $"(js-obj js '{GCHandleValue}')";
         }
-
-        internal void Release()
-        {
-            Debug.Assert(_refCount > 0, "AnyRefSafeHandle: Release() called more times than AddRef");
-            Interlocked.Decrement(ref _refCount);
-        }
-
-        internal int RefCount => _refCount;
-#endif
     }
 }

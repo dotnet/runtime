@@ -75,20 +75,20 @@ internal static partial class Interop
             return res as System.Runtime.InteropServices.JavaScript.Function;
         }
 
-        public static int New<T>(params object[] parms)
+        public static IntPtr New<T>(params object[] parms)
         {
             object res = New(typeof(T).Name, parms, out int exception);
             if (exception != 0)
                 throw new JSException((string)res);
-            return (int)res;
+            return (IntPtr)(int)res;
         }
 
-        public static int New(string hostClassName, params object[] parms)
+        public static IntPtr New(string hostClassName, params object[] parms)
         {
             object res = New(hostClassName, parms, out int exception);
             if (exception != 0)
                 throw new JSException((string)res);
-            return (int)res;
+            return (IntPtr)(int)res;
         }
 
         public static object GetGlobalObject(string? str = null)
