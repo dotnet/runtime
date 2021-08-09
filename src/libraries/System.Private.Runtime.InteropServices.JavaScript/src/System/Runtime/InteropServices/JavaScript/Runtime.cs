@@ -55,7 +55,7 @@ namespace System.Runtime.InteropServices.JavaScript
             Interop.Runtime.DumpAotProfileData(ref buf, len, extraArg);
         }
 
-        public static int BindCSOwnedObject(int jsHandle, int mappedType)
+        public static int CreateCSOwnedObject(int jsHandle, int mappedType)
         {
             JSObject? target = null;
 
@@ -404,7 +404,7 @@ namespace System.Runtime.InteropServices.JavaScript
             return new Uri(uri);
         }
 
-        public static void SafeHandleReleaseByHandle(int jsHandle)
+        public static void ReleaseCsOwnedObjectByHandle(int jsHandle)
         {
             lock (_csOwnedObjects)
             {

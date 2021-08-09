@@ -121,7 +121,7 @@ var BindingSupportLib = {
 			//  that any code relying on the old get_method/call_method pattern will
 			//  break in a more understandable way.
 
-			this._bind_cs_owned_object = bind_runtime_method ("BindCSOwnedObject", "ii");
+			this._create_cs_owned_object = bind_runtime_method ("CreateCSOwnedObject", "ii");
 			this._bind_core_clr_obj = bind_runtime_method ("BindCoreCLRObject", "ii");
 			this._get_js_owned_object_gc_handle = bind_runtime_method ("GetJSOwnedObjectGCHandle", "m");
 			this._get_js_id = bind_runtime_method ("GetJSObjectId", "m");
@@ -143,7 +143,7 @@ var BindingSupportLib = {
 			this.create_uri = get_method ("CreateUri");
 
 			this.safehandle_get_handle = bind_runtime_method ("SafeHandleGetHandle", 'mi');
-			this.safehandle_release_by_handle = bind_runtime_method ("SafeHandleReleaseByHandle", 'i');
+			this.release_cs_owned_object_by_handle = bind_runtime_method ("ReleaseCsOwnedObjectByHandle", 'i');
 			this.release_js_owned_object_by_handle = bind_runtime_method ("ReleaseJSOwnedObjectByHandle", "i");
 
 			this._are_promises_supported = ((typeof Promise === "object") || (typeof Promise === "function")) && (typeof Promise.resolve === "function");
@@ -551,10 +551,10 @@ var BindingSupportLib = {
 			}
 		},
 
-		_unbox_safehandle_root: function (root) {
-			var js_handle = this.safehandle_get_handle(root.value, true);
-			var js_obj = BINDING.mono_wasm_get_jsobj_from_js_handle (js_handle);
-			this.mono_inflight_current_frame.push(js_handle);
+		_unbox_cs_owned_root: function (root) {
+			var gc_handle = this.safehandle_get_handle(root.value, true);
+			var js_obj = BINDING.mono_wasm_get_jsobj_from_js_handle (gc_handle);
+			this.mono_inflight_current_frame.push(gc_handle);
 			return js_obj;
 		},
 
@@ -598,8 +598,8 @@ var BindingSupportLib = {
 				case 22: // clr .NET Uri
 					var uriValue = this._object_to_string (root.value);
 					return uriValue;
-				case 23: // clr .NET SafeHandle
-					return this._unbox_safehandle_root (root);
+				case 23: // clr .NET SafeHandle/JSObject
+					return this._unbox_cs_owned_root (root);
 				case 30:
 					return undefined;
 				default:
@@ -1627,7 +1627,7 @@ var BindingSupportLib = {
 					var wasm_type = js_obj[Symbol.for("wasm type")];
 
 					var js_handle = BINDING.mono_wasm_get_js_handle(js_obj);
-					gc_handle = js_obj.__mono_gc_handle__ = this._bind_cs_owned_object(js_handle, typeof wasm_type === "undefined" ? -1 : wasm_type);
+					gc_handle = js_obj.__mono_gc_handle__ = this._create_cs_owned_object(js_handle, typeof wasm_type === "undefined" ? -1 : wasm_type);
 					// as this instance was just created, it was already created with Inflight strong gc_handle, so we do not have to do it again
 					return { gc_handle, should_add_in_flight: false };
 				}
@@ -1679,18 +1679,21 @@ var BindingSupportLib = {
 		},
 		// Release all managed objects that are loaded into the last of mono_inflight_frames
 		mono_inflight_pop_current_frame : function () {
+			if(!this.mono_inflight_frames.length){
+				throw new Error('ERR14: pop frame before push');
+			}
 			var inflight_frame = this.mono_inflight_frames.pop();
 			// TODO: Look into passing the array of owned object handles in one pass.
-			var refidx;
-			for (refidx = 0; refidx < inflight_frame.length; refidx++)
+			for (var refidx = 0; refidx < inflight_frame.length; refidx++)
 			{
 				var js_handle = inflight_frame[refidx];
-				this.safehandle_release_by_handle(js_handle);
+				this.release_cs_owned_object_by_handle(js_handle);
 			}
 		},
 		mono_wasm_convert_return_value: function (ret) {
+			var res = this.js_to_mono_obj (ret);
 			this.mono_inflight_pop_current_frame();
-			return this.js_to_mono_obj (ret);
+			return res;
 		},
 	},
 	mono_wasm_invoke_js_with_args: function(js_handle, method_name, args, is_exception) {
@@ -1949,6 +1952,7 @@ var BindingSupportLib = {
 
 				var res = allocator(coreObj, js_args);
 				var js_handle = BINDING.mono_wasm_get_js_handle(res);
+				// yes, convert int
 				return BINDING.mono_wasm_convert_return_value(js_handle);
 			} catch (e) {
 				var res = e.toString ();
