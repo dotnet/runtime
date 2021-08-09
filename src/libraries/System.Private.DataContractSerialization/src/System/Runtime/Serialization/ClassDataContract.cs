@@ -704,7 +704,7 @@ namespace System.Runtime.Serialization
         private sealed class ClassDataContractCriticalHelper : DataContract.DataContractCriticalHelper
         {
             private static Type[]? s_serInfoCtorArgs;
-            private static readonly MethodInfo s_getKeyValuePairMethod = typeof(KeyValuePair<,>).GetMethod("GetKeyValuePair", Globals.ScanAllMembers)!;
+            private static readonly MethodInfo s_getKeyValuePairMethod = typeof(KeyValuePairAdapter<,>).GetMethod("GetKeyValuePair", Globals.ScanAllMembers)!;
 
             private ClassDataContract? _baseContract;
             private List<DataMember>? _members;
