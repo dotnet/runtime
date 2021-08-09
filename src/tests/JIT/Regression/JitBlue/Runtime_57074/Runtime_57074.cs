@@ -16,11 +16,11 @@ public class Program
     static uint s_9 = 1;
     static long s_13;
     static uint s_15;
-    public static void Main()
+    public static int Main()
     {
         s_5 = s_5; // Make sure we get no static helpers in function below
         M49();
-        System.Console.WriteLine(s_9);
+        return s_9 == 0 ? 100 : -1;
     }
 
     // Redundant branch opts would optimize BB03 -> BB05 to go BB03 -> BB06.
