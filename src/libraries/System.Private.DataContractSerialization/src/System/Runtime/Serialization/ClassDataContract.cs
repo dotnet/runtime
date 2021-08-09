@@ -1398,6 +1398,7 @@ namespace System.Runtime.Serialization
             }
 
             [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
+            [DynamicDependency(DynamicallyAccessedMemberTypes.PublicMethods | DynamicallyAccessedMemberTypes.NonPublicMethods, typeof(KeyValue<,>))]
             private void SetKeyValuePairAdapterFlags(
                 [DynamicallyAccessedMembers(DataContractPreserveMemberTypes)]
                 Type type)
