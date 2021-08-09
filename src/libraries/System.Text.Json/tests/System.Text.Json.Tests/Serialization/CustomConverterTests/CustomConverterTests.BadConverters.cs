@@ -419,5 +419,88 @@ namespace System.Text.Json.Serialization.Tests
                 throw new NotImplementedException();
             }
         }
+
+
+        [Fact]
+        public static void BadDoubleConverter_Serialization()
+        {
+            var options = new JsonSerializerOptions
+            {
+                Converters = { new BadDoubleConverter() }
+            };
+
+            Assert.Throws<InvalidOperationException>(() => JsonSerializer.Serialize<double?>(3.14, options));
+            Assert.Throws<InvalidOperationException>(() => JsonSerializer.Serialize(new { value = (double?)3.14 }, options));
+            Assert.Throws<InvalidOperationException>(() => JsonSerializer.Serialize(new double?[] { 3.14 }, options));
+            Assert.Throws<InvalidOperationException>(() => JsonSerializer.Serialize(new Dictionary<string, double?> { ["key"] = 3.14 }, options));
+        }
+
+        [Fact]
+        public static void BadDoubleConverter_Deserialization()
+        {
+            var options = new JsonSerializerOptions
+            {
+                Converters = { new BadDoubleConverter() }
+            };
+
+            Assert.Throws<InvalidOperationException>(() => JsonSerializer.Deserialize<double?>("3.14", options));
+            Assert.Throws<InvalidOperationException>(() => JsonSerializer.Deserialize<PocoWithGenericProperty<double?>>(@"{""Property"":3.14}", options));
+            Assert.Throws<InvalidOperationException>(() => JsonSerializer.Deserialize<double?[]>("[3.14]", options));
+            Assert.Throws<InvalidOperationException>(() => JsonSerializer.Deserialize<Dictionary<string, double?>>(@"{""key"":3.14}", options));
+        }
+
+
+        [Fact]
+        public static void BadNullableDoubleConverter_Serialization()
+        {
+            var options = new JsonSerializerOptions
+            {
+                Converters = { new BadNullableDoubleConverter() }
+            };
+
+            Assert.Throws<InvalidOperationException>(() => JsonSerializer.Serialize(3.14, options));
+            Assert.Throws<InvalidOperationException>(() => JsonSerializer.Serialize(new { value = 3.14 }, options));
+            Assert.Throws<InvalidOperationException>(() => JsonSerializer.Serialize(new[] { 3.14 }, options));
+            Assert.Throws<InvalidOperationException>(() => JsonSerializer.Serialize(new Dictionary<string, double> { ["key"] = 3.14 }, options));
+        }
+
+        [Fact]
+        public static void BadNullableDoubleConverter_Deserialization()
+        {
+            var options = new JsonSerializerOptions
+            {
+                Converters = { new BadNullableDoubleConverter() }
+            };
+
+            Assert.Throws<InvalidOperationException>(() => JsonSerializer.Deserialize<double>("3.14", options));
+            Assert.Throws<InvalidOperationException>(() => JsonSerializer.Deserialize<PocoWithGenericProperty<double>>(@"{""Property"":3.14}", options));
+            Assert.Throws<InvalidOperationException>(() => JsonSerializer.Deserialize<double[]>("[3.14]", options));
+            Assert.Throws<InvalidOperationException>(() => JsonSerializer.Deserialize<Dictionary<string, double>>(@"{""key"":3.14}", options));
+        }
+
+        private class PocoWithGenericProperty<T>
+        {
+            public T Property { get; set; }
+        }
+
+        /// <summary>
+        /// A double converter that incorrectly claims to support double? types.
+        /// </summary>
+        private class BadDoubleConverter : JsonConverter<double>
+        {
+            public override bool CanConvert(Type typeToConvert) => typeToConvert == typeof(double) || typeToConvert == typeof(double?);
+            public override double Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options) => reader.GetDouble();
+            public override void Write(Utf8JsonWriter writer, double value, JsonSerializerOptions options) => writer.WriteNumberValue(value);
+        }
+
+        /// <summary>
+        /// A double? converter that incorrectly claims to support double types.
+        /// </summary>
+        private class BadNullableDoubleConverter : JsonConverter<double?>
+        {
+            public override bool CanConvert(Type typeToConvert) => typeToConvert == typeof(double) || typeToConvert == typeof(double?);
+            public override double? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options) => reader.GetDouble();
+            public override void Write(Utf8JsonWriter writer, double? value, JsonSerializerOptions options) => writer.WriteNumberValue(value.Value);
+        }
     }
 }
