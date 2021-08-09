@@ -52,6 +52,8 @@
                                             ($(MSBuildProjectName.StartsWith('runtime.native')) or '$(PackageTargetRuntime)' != '')">true</UseRuntimePackageDisclaimer>
     <PackageDescription Condition="'$(PackageDescription)' != '' and '$(UseRuntimePackageDisclaimer)' == 'true'">$(RuntimePackageDisclaimer) %0A$(PackageDescription)</PackageDescription>
     <PackageDescription Condition="'$(PackageDescription)' == '' and '$(UseRuntimePackageDisclaimer)' == 'true'">$(RuntimePackageDisclaimer)</PackageDescription>
+    <!-- Keep in sync as required by the Packaging SDK in Arcade. -->
+    <Description>$(PackageDescription)</Description>
     <GenerateNuspecDependsOn>ErrorForMissingPackageDescription;$(GenerateNuspecDependsOn)</GenerateNuspecDependsOn>
   </PropertyGroup>
 
