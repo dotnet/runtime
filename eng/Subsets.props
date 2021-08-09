@@ -290,7 +290,7 @@
 
   <!-- Host sets -->
   <ItemGroup Condition="$(_subset.Contains('+host.native+'))">
-    <CorehostProjectToBuild Include="$(InstallerProjectRoot)corehost.proj" SignPhase="Binaries" BuildInParallel="false" />
+    <CorehostProjectToBuild Include="$(SharedNativeRoot)corehost\corehost.proj" SignPhase="Binaries" BuildInParallel="false" />
     <ProjectToBuild Include="@(CorehostProjectToBuild)" Pack="true" Category="host" />
   </ItemGroup>
 
