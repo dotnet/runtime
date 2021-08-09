@@ -232,8 +232,4 @@ System.ComponentModel.Composition.ReflectionModel.ReflectionModelServices</Packa
     <Reference Include="System.Threading.Thread" />
     <Reference Include="System.Text.Encoding.Extensions" />
   </ItemGroup>
-
-  <ItemGroup>
-    <NETStandardCompatError Include="netcoreapp2.0" Supported="$(NetCoreAppMinimum)" />
-  </ItemGroup>
 </Project>

@@ -1,4 +1,4 @@
-<Project InitialTargets="ErrorForMissingPackageDescription;_OverridePackDependsOn">
+<Project InitialTargets="_OverridePackDependsOn">
   <PropertyGroup>
     <!--
     For non-SDK projects that import this file and then import Microsoft.Common.targets,
@@ -52,14 +52,12 @@
                                             ($(MSBuildProjectName.StartsWith('runtime.native')) or '$(PackageTargetRuntime)' != '')">true</UseRuntimePackageDisclaimer>
     <PackageDescription Condition="'$(PackageDescription)' != '' and '$(UseRuntimePackageDisclaimer)' == 'true'">$(RuntimePackageDisclaimer) %0A$(PackageDescription)</PackageDescription>
     <PackageDescription Condition="'$(PackageDescription)' == '' and '$(UseRuntimePackageDisclaimer)' == 'true'">$(RuntimePackageDisclaimer)</PackageDescription>
-    <!-- Keep in sync as required by the Packaging SDK in Arcade. -->
-    <Description>$(PackageDescription)</Description>
-    <GenerateNuspecDependsOn>AddNETStandardCompatErrorFileForPackaging;$(GenerateNuspecDependsOn)</GenerateNuspecDependsOn>
+    <GenerateNuspecDependsOn>ErrorForMissingPackageDescription;$(GenerateNuspecDependsOn)</GenerateNuspecDependsOn>
   </PropertyGroup>
 
   <!-- Remove when https://github.com/NuGet/Home/issues/10405 is implemented and consumed. -->
   <Target Name="ErrorForMissingPackageDescription"
-          Condition="'$(IsPackable)' == 'true' and '$(PackageDescription)' == ''">
+          Condition="'$(PackageDescription)' == ''">
     <Error Text="Required property 'PackageDescription' is missing for $(MSBuildProjectName)." />
   </Target>
 
@@ -70,40 +68,6 @@
     <PropertyGroup>
       <PackDependsOn />
     </PropertyGroup>
-  </Target>
-
-  <!-- Add targets file that marks a .NETStandard applicable tfm as unsupported. -->
-  <Target Name="AddNETStandardCompatErrorFileForPackaging"
-          Condition="'@(NETStandardCompatError)' != ''"
-          Inputs="%(NETStandardCompatError.Identity)"
-          Outputs="unused">
-    <PropertyGroup>
-      <_NETStandardCompatErrorFilePath>$(BaseIntermediateOutputPath)netstandardcompaterrors\%(NETStandardCompatError.Identity)\$(PackageId).targets</_NETStandardCompatErrorFilePath>
-      <_NETStandardCompatErrorFileTarget>NETStandardCompatError_$(PackageId.Replace('.', '_'))_$([System.String]::new('%(NETStandardCompatError.Supported)').Replace('.', '_'))</_NETStandardCompatErrorFileTarget>
-      <_NETStandardCompatErrorFileContent>
-<![CDATA[<Project InitialTargets="$(_NETStandardCompatErrorFileTarget)">
-  <Target Name="$(_NETStandardCompatErrorFileTarget)"
-          Condition="'%24(SuppressTfmSupportBuildWarnings)' == ''">
-    <Error Text="$(PackageId) doesn't support %24(TargetFramework). Consider updating your TargetFramework to %(NETStandardCompatError.Supported) or later." />
-  </Target>
-</Project>]]>
-      </_NETStandardCompatErrorFileContent>
-    </PropertyGroup>
-
-    <WriteLinesToFile File="$(_NETStandardCompatErrorFilePath)"
-                      Lines="$(_NETStandardCompatErrorFileContent)"
-                      Overwrite="true"
-                      WriteOnlyWhenDifferent="true" />
-
-    <ItemGroup>
-      <None Include="$(_NETStandardCompatErrorFilePath)"
-            PackagePath="buildTransitive\%(NETStandardCompatError.Identity)"
-            Pack="true" />
-      <None Include="$(PlaceholderFile)"
-            PackagePath="buildTransitive\%(NETStandardCompatError.Supported)"
-            Pack="true" />
-      <FileWrites Include="$(_NETStandardCompatErrorFilePath)" />
-    </ItemGroup>
   </Target>
 
   <!--

@@ -80,8 +80,4 @@ System.Reflection.Context.CustomReflectionContext</PackageDescription>
     <Reference Include="System.Collections" />
     <Reference Include="System.Runtime" />
   </ItemGroup>
-
-  <ItemGroup>
-    <NETStandardCompatError Include="netcoreapp2.0" Supported="$(NetCoreAppMinimum)" />
-  </ItemGroup>
 </Project>
