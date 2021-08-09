@@ -3307,7 +3307,7 @@ namespace System.CodeDom.Compiler.Tests
                 {
                     new CodeCommentStatement(
                         "' Lines starting with a single quote" + Environment.NewLine +
-                        "' each get a separating space," + Environment.NewLine +
+                        "'' or more than one quote, each get a separating space," + Environment.NewLine +
                         "but other lines do not get a space. This way generated files only change on tool upgrade where there were generation bugs.",
                         docComment: true),
                 },
@@ -3316,7 +3316,7 @@ namespace System.CodeDom.Compiler.Tests
             AssertEqualPreserveLineBreaks(codeTypeDeclaration,
                 @"
                   ''' ' Lines starting with a single quote
-                  ''' ' each get a separating space,
+                  ''' '' or more than one quote, each get a separating space,
                   '''but other lines do not get a space. This way generated files only change on tool upgrade where there were generation bugs.
                   Public Class ClassWithCommment
                   End Class
