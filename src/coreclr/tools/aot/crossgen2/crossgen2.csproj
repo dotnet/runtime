@@ -11,6 +11,8 @@
   <PropertyGroup Condition="'$(RunningPublish)' == 'true'">
     <RuntimeIdentifier>$(Crossgen2PackageRID)</RuntimeIdentifier>
     <PublishTrimmed>true</PublishTrimmed>
+    <PublishSingleFile>true</PublishSingleFile>
+    <PublishReadyToRun>true</PublishReadyToRun>
     <SuppressTrimAnalysisWarnings>true</SuppressTrimAnalysisWarnings>
   </PropertyGroup>
 
