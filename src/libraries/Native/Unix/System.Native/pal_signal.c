@@ -627,6 +627,7 @@ void SystemNative_DisablePosixSignalHandling(int signalCode)
 void InstallTTOUHandlerForConsole(ConsoleSigTtouHandler handler)
 {
     bool installed;
+    (void)installed; // only used for assert
 
     pthread_mutex_lock(&lock);
     {
