@@ -39,7 +39,7 @@ namespace System.Runtime.InteropServices.JavaScript
             return Interop.Runtime.GetGlobalObject(str);
         }
 
-        public static void DumpAotProfileData (ref byte buf, int len, string extraArg)
+        public static void DumpAotProfileData(ref byte buf, int len, string extraArg)
         {
             Interop.Runtime.DumpAotProfileData(ref buf, len, extraArg);
         }
@@ -107,23 +107,22 @@ namespace System.Runtime.InteropServices.JavaScript
             return jsObject?.JSHandle ?? -1;
         }
 
-        /// <param name="gcHandle"></param>
-        /// <param name="shouldAddInflight">when true, we would create Normal GCHandle to the JSObject, so that it would not get collected before passing it back to managed code</param>
-        public static object? GetDotNetObject(int gcHandle, int shouldAddInflight)
+        public static object GetJSOwnedObjectByGcHandle(int gcHandle)
         {
             GCHandle h = (GCHandle)(IntPtr)gcHandle;
-
-            if (h.Target is JSObject jso)
-            {
-                if (shouldAddInflight != 0)
-                {
-                    jso.AddInFlight();
-                }
-                return jso;
-            }
-            return h.Target;
+            return h.Target!;
         }
 
+        public static JSObject? GetCSOwnedObjectByGcHandle(int gcHandle, int shouldAddInflight)
+        {
+            GCHandle h = (GCHandle)(IntPtr)gcHandle;
+            var jso = (JSObject?)h.Target;
+            if (shouldAddInflight != 0 && jso != null)
+            {
+                jso.AddInFlight();
+            }
+            return jso;
+        }
 
         private static JSObject BindJSType(IntPtr jsHandle, int coreType) =>
             coreType switch
@@ -148,7 +147,7 @@ namespace System.Runtime.InteropServices.JavaScript
 
         public static int CreateTaskSource()
         {
-            var tcs= new TaskCompletionSource<object>();
+            var tcs = new TaskCompletionSource<object>();
             return GetJSOwnedObjectGCHandle(tcs);
         }
 
@@ -183,12 +182,14 @@ namespace System.Runtime.InteropServices.JavaScript
         //  strong references, allowing the managed object to be collected.
         // This ensures that things like delegates and promises will never 'go away' while JS
         //  is expecting to be able to invoke or await them.
-        public static int GetJSOwnedObjectGCHandle (object o) {
+        public static int GetJSOwnedObjectGCHandle(object o)
+        {
             if (o == null)
                 return 0;
 
             int result;
-            lock (JSOwnedObjectLock) {
+            lock (JSOwnedObjectLock)
+            {
                 if (GCHandleFromJSOwnedObject.TryGetValue(o, out result))
                     return result;
 
@@ -200,9 +201,11 @@ namespace System.Runtime.InteropServices.JavaScript
 
         // The JS layer invokes this method when the JS wrapper for a JS owned object
         //  has been collected by the JS garbage collector
-        public static void ReleaseJSOwnedObjectByHandle (int gcHandle) {
+        public static void ReleaseJSOwnedObjectByHandle(int gcHandle)
+        {
             GCHandle handle = (GCHandle)(IntPtr)gcHandle;
-            lock (JSOwnedObjectLock) {
+            lock (JSOwnedObjectLock)
+            {
                 GCHandleFromJSOwnedObject.Remove(handle.Target!);
                 handle.Free();
             }

@@ -123,7 +123,9 @@ var BindingSupportLib = {
 			//  that any code relying on the old get_method/call_method pattern will
 			//  break in a more understandable way.
 
-			this._get_raw_mono_obj = bind_runtime_method ("GetDotNetObject", "ii!");
+			this._get_js_owned_object_by_gc_handle = bind_runtime_method ("GetJSOwnedObjectByGcHandle", "i!");
+			this._get_cs_owned_object_by_gc_handle = bind_runtime_method ("GetCSOwnedObjectByGcHandle", "ii!");
+			
 
 			this._create_cs_owned_object = bind_runtime_method ("CreateCSOwnedObject", "ii");
 			this._try_get_cs_owned_object_js_handle = bind_runtime_method ("TryGetCsOwnedObjectJsHandle", "m");
@@ -310,7 +312,7 @@ var BindingSupportLib = {
 			if (!result) {
 				// note that we do not implement function/delegate roundtrip
 				result = function() {
-					const delegateRoot = MONO.mono_wasm_new_root (BINDING.wasm_get_raw_obj(gc_handle, false));
+					const delegateRoot = MONO.mono_wasm_new_root (BINDING.get_js_owned_object_by_gc_handle(gc_handle));
 					try {
 						return BINDING.call_method (result.__mono_delegate_invoke__, delegateRoot.value, result.__mono_delegate_invoke_sig__, arguments);
 					} finally {
@@ -319,7 +321,7 @@ var BindingSupportLib = {
 				};
 
 				// bind the method
-				const delegateRoot = MONO.mono_wasm_new_root (BINDING.wasm_get_raw_obj(gc_handle, false));
+				const delegateRoot = MONO.mono_wasm_new_root (BINDING.get_js_owned_object_by_gc_handle(gc_handle));
 				try {
 					if (typeof result.__mono_delegate_invoke__ === "undefined"){
 						result.__mono_delegate_invoke__ = BINDING.mono_wasm_get_delegate_invoke(delegateRoot.value);
@@ -873,9 +875,18 @@ var BindingSupportLib = {
 			return js_obj | 0;
 		},
 
+		get_js_owned_object_by_gc_handle: function (gc_handle)
+		{
+			if(!gc_handle){
+				return 0;
+			}
+			// this is always strong gc_handle
+			return this._get_js_owned_object_by_gc_handle (gc_handle);
+		},
+
 		// when should_add_in_flight === true, the JSObject would be temporarily hold by Normal gc_handle, so that it would not get collected during transition to the managed stack.
 		// its InFlight gc_handle would be freed when the instance arrives to managed side via Interop.Runtime.ReleaseInFlight
-		wasm_get_raw_obj: function (gc_handle, should_add_in_flight)
+		get_cs_owned_object_by_gc_handle: function (gc_handle, should_add_in_flight)
 		{
 			if(!gc_handle){
 				return 0;
@@ -884,7 +895,7 @@ var BindingSupportLib = {
 		
 			// TODO: should_add_in_flight -> mono_inflight_current_frame?
 
-			return this._get_raw_mono_obj (gc_handle, should_add_in_flight_int);
+			return this._get_cs_owned_object_by_gc_handle (gc_handle, should_add_in_flight_int);
 		},
 
 		mono_method_get_call_signature: function(method, mono_obj) {
@@ -905,11 +916,11 @@ var BindingSupportLib = {
 			var result = null;
 			if (js_obj.__js_owned_gc_handle__) {
 				// for __js_owned_gc_handle__ we don't want to create new proxy
-				result = this.wasm_get_raw_obj (js_obj.__js_owned_gc_handle__, true);
+				result = this.get_js_owned_object_by_gc_handle (js_obj.__js_owned_gc_handle__);
 				return result;
 			}
 			if (js_obj.__mono_gc_handle__) {
-				result = this.wasm_get_raw_obj (js_obj.__mono_gc_handle__, true);
+				result = this.get_cs_owned_object_by_gc_handle (js_obj.__mono_gc_handle__, true);
 
 				// It's possible the managed object corresponding to this JS object was collected,
 				//  in which case we need to make a new one.
@@ -926,7 +937,7 @@ var BindingSupportLib = {
 				var js_handle = BINDING.mono_wasm_get_js_handle(js_obj);
 				var gc_handle = js_obj.__mono_gc_handle__ = this._create_cs_owned_object(js_handle, wasm_type_id);
 				// as this instance was just created, it was already created with Inflight strong gc_handle, so we do not have to do it again
-				result = this.wasm_get_raw_obj (gc_handle, false);
+				result = this.get_cs_owned_object_by_gc_handle (gc_handle, false);
 			}
 
 			return result;
