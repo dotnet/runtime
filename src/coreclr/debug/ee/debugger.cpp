@@ -9712,7 +9712,7 @@ void Debugger::SendRawUpdateModuleSymsEvent(Module *pRuntimeModule, AppDomain *p
     // callback.  That callback is defined to pass a PDB stream, and so we still use this
     // only for legacy compatibility reasons when we've actually got PDB symbols.
     // New clients know they must request a new symbol reader after ClassLoad events.
-    if (pRuntimeModule->GetInMemorySymbolStreamFormat() != eSymbolFormatPDB)
+    if (pRuntimeModule->GetInMemorySymbolStream() == NULL)
         return; // Non-PDB symbols
 
     DebuggerModule* module = LookupOrCreateModule(pRuntimeModule, pAppDomain);
