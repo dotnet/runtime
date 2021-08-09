@@ -128,7 +128,7 @@
   </Target>
 
   <!-- Include a netstandard compat error if the project targets both .NETStandard and
-       .NETCoreApp. This prohibits users to consume packages on an older .NETCorAapp version
+       .NETCoreApp. This prohibits users to consume packages on an older .NETCoreApp version
        than the minimum supported one. -->
   <ItemGroup Condition="'$(DisableNETStandardCompatErrorForNETCoreApp)' != 'true'">
     <NETStandardCompatError Include="netcoreapp2.0"
