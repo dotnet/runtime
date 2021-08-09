@@ -3516,5 +3516,61 @@ namespace System.CodeDom.Compiler.Tests
                   }
                 ");
         }
+
+        [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "The bug was present on .NET Framework: https://github.com/dotnet/runtime/issues/56267")]
+        public void OrdinaryCommentsDoNotAccidentallyBecomeDocumentationComments()
+        {
+            var codeTypeDeclaration = new CodeTypeDeclaration("ClassWithCommment")
+            {
+                IsClass = true,
+                Comments =
+                {
+                    new CodeCommentStatement(
+                        "/ Lines starting with exactly one slash" + Environment.NewLine +
+                        "/ each get a separating space," + Environment.NewLine +
+                        "but other lines do not get a space. This way generated files only change on tool upgrade where there were generation bugs."+ Environment.NewLine +
+                        "// This includes lines starting with more than one slash.",
+                        docComment: false),
+                },
+            };
+
+            AssertEqualPreserveLineBreaks(codeTypeDeclaration,
+                @"
+                  // / Lines starting with exactly one slash
+                  // / each get a separating space,
+                  //but other lines do not get a space. This way generated files only change on tool upgrade where there were generation bugs.
+                  //// This includes lines starting with more than one slash.
+                  public class ClassWithCommment {
+                  }
+                ");
+        }
+
+        [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "The bug was present on .NET Framework: https://github.com/dotnet/runtime/issues/56267")]
+        public void DocumentationCommentsDoNotAccidentallyBecomeOrdinaryComments()
+        {
+            var codeTypeDeclaration = new CodeTypeDeclaration("ClassWithCommment")
+            {
+                IsClass = true,
+                Comments =
+                {
+                    new CodeCommentStatement(
+                        "/ Lines starting with a slash each get a separating space," + Environment.NewLine +
+                        "// including lines starting with more than one slash," + Environment.NewLine +
+                        "but other lines do not get a space. This way generated files only change on tool upgrade where there were generation bugs.",
+                        docComment: true),
+                },
+            };
+
+            AssertEqualPreserveLineBreaks(codeTypeDeclaration,
+                @"
+                  /// / Lines starting with a slash each get a separating space,
+                  /// // including lines starting with more than one slash,
+                  ///but other lines do not get a space. This way generated files only change on tool upgrade where there were generation bugs.
+                  public class ClassWithCommment {
+                  }
+                ");
+        }
     }
 }
