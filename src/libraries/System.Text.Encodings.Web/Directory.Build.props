@@ -2,11 +2,5 @@
   <Import Project="..\Directory.Build.props" />
   <PropertyGroup>
     <StrongNameKeyId>Open</StrongNameKeyId>
-    <PackageDescription>Provides types for encoding and escaping strings for use in JavaScript, HyperText Markup Language (HTML), and uniform resource locators (URL).
-
-Commonly Used Types:
-System.Text.Encodings.Web.HtmlEncoder
-System.Text.Encodings.Web.UrlEncoder
-System.Text.Encodings.Web.JavaScriptEncoder</PackageDescription>
   </PropertyGroup>
 </Project>

@@ -8,6 +8,7 @@ namespace System.Text.Json.SourceGeneration.Tests
 {
     [JsonSerializable(typeof(Location), GenerationMode = JsonSourceGenerationMode.Metadata)]
     [JsonSerializable(typeof(RepeatedTypes.Location), TypeInfoPropertyName = "RepeatedLocation", GenerationMode = JsonSourceGenerationMode.Serialization)]
+    [JsonSerializable(typeof(NumberTypes), GenerationMode = JsonSourceGenerationMode.Metadata)]
     [JsonSerializable(typeof(ActiveOrUpcomingEvent), GenerationMode = JsonSourceGenerationMode.Metadata)]
     [JsonSerializable(typeof(CampaignSummaryViewModel), GenerationMode = JsonSourceGenerationMode.Serialization)]
     [JsonSerializable(typeof(IndexViewModel), GenerationMode = JsonSourceGenerationMode.Metadata)]
@@ -38,6 +39,7 @@ namespace System.Text.Json.SourceGeneration.Tests
         {
             Assert.Null(MixedModeContext.Default.Location.Serialize);
             Assert.NotNull(MixedModeContext.Default.RepeatedLocation.Serialize);
+            Assert.Null(MixedModeContext.Default.NumberTypes.Serialize);
             Assert.NotNull(MixedModeContext.Default.CampaignSummaryViewModel.Serialize);
             Assert.Null(MixedModeContext.Default.IndexViewModel.Serialize);
             Assert.Null(MixedModeContext.Default.WeatherForecastWithPOCOs.Serialize);

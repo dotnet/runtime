@@ -14299,7 +14299,7 @@ emit_aot_image (MonoAotCompile *acfg)
 		return 1;
 	}
 	if (acfg->fp)
-		acfg->w = mono_img_writer_create (acfg->fp, FALSE);
+		acfg->w = mono_img_writer_create (acfg->fp);
 
 	/* Compute symbols for methods */
 	for (i = 0; i < acfg->nmethods; ++i) {

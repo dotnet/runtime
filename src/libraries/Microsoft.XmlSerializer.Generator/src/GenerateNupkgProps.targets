@@ -1,0 +1,28 @@
+<Project>
+  <PropertyGroup>
+    <BeforePack>GenerateNupkgProps;$(BeforePack)</BeforePack>
+    <PropsFilePath>$(BaseIntermediateOutputPath)$(PackageId).props</PropsFilePath>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="$(PropsFilePath)"
+          PackagePath="build"
+          Pack="true" />
+  </ItemGroup>
+
+  <Target Name="GenerateNupkgProps">
+    <PropertyGroup>
+      <PropsFileContents>
+&lt;Project&gt;
+  &lt;ItemGroup&gt;
+    &lt;DotNetCliToolReference Include="$(PackageId)" Version="$(PackageVersion)" /&gt;
+  &lt;/ItemGroup&gt;
+&lt;/Project&gt;
+      </PropsFileContents>
+    </PropertyGroup>
+
+    <WriteLinesToFile File="$(PropsFilePath)"
+                      Lines="$(PropsFileContents)"
+                      Overwrite="true" />
+  </Target>
+</Project>

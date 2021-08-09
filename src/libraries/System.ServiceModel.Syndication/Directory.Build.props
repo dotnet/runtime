@@ -2,6 +2,5 @@
   <Import Project="..\Directory.Build.props" />
   <PropertyGroup>
     <StrongNameKeyId>Open</StrongNameKeyId>
-    <PackageDescription>Provides classes related to service model syndication.</PackageDescription>
   </PropertyGroup>
 </Project>

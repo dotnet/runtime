@@ -7,6 +7,11 @@
     <CoreCompileDependsOn>$(CoreCompileDependsOn);GenerateVersionFile</CoreCompileDependsOn>
     <DocumentationFile>$(MSBuildThisFileDirectory)System.Runtime.CompilerServices.Unsafe.xml</DocumentationFile>
     <IlasmFlags>$(IlasmFlags) -DEBUG=$(DebugOptimization)</IlasmFlags>
+    <IsPackable>true</IsPackable>
+    <PackageDescription>Provides the System.Runtime.CompilerServices.Unsafe class, which provides generic, low-level functionality for manipulating pointers.
+
+Commonly Used Types:
+System.Runtime.CompilerServices.Unsafe</PackageDescription>
   </PropertyGroup>
   <PropertyGroup Condition="$([MSBuild]::GetTargetFrameworkIdentifier('$(TargetFramework)')) == '.NETCoreApp'">
     <ExtraMacros>#define netcoreapp</ExtraMacros>
@@ -26,6 +31,9 @@
     <!-- mscorlib is passed in as an explicit reference from C# targets but not via the IL SDK. -->
     <Reference Include="$(CoreAssembly)"
                Condition="'$(TargetFramework)' != 'netstandard2.0'" />
+  </ItemGroup>
+  <ItemGroup>
+    <NETStandardCompatError Include="netcoreapp2.0" Supported="$(NetCoreAppMinimum)" />
   </ItemGroup>
 
   <Target Name="GenerateVersionFile"

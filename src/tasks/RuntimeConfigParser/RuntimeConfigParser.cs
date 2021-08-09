@@ -34,14 +34,19 @@ public class RuntimeConfigParserTask : Task
         if (string.IsNullOrEmpty(RuntimeConfigFile))
         {
             Log.LogError($"'{nameof(RuntimeConfigFile)}' is required.");
+            return false;
         }
 
         if (string.IsNullOrEmpty(OutputFile))
         {
             Log.LogError($"'{nameof(OutputFile)}' is required.");
+            return false;
         }
 
-        Dictionary<string, string> configProperties = ConvertInputToDictionary(RuntimeConfigFile);
+        if (!TryConvertInputToDictionary(RuntimeConfigFile, out Dictionary<string, string> configProperties))
+        {
+            return false;
+        }
 
         if (RuntimeConfigReservedProperties.Length != 0)
         {
@@ -59,8 +64,12 @@ public class RuntimeConfigParserTask : Task
     }
 
     /// Reads a json file from the given path and extracts the "configProperties" key (assumed to be a string to string dictionary)
-    private Dictionary<string, string> ConvertInputToDictionary(string inputFilePath)
+    private bool TryConvertInputToDictionary(string inputFilePath, out Dictionary<string, string> result)
     {
+        var init_result = new Dictionary<string, string>();
+        init_result.Clear();
+        result = init_result;
+
         var options = new JsonSerializerOptions {
             AllowTrailingCommas = true,
             ReadCommentHandling = JsonCommentHandling.Skip,
@@ -75,18 +84,22 @@ public class RuntimeConfigParserTask : Task
 
         if (parsedJson == null)
         {
-            throw new ArgumentException("Wasn't able to parse the json file successfully.");
+            Log.LogError("Wasn't able to parse the json file successfully.");
+            return false;
         }
         if (parsedJson.RuntimeOptions == null)
         {
-            throw new ArgumentException("Key runtimeOptions wasn't found in the json file.");
+            Log.LogError("Key runtimeOptions wasn't found in the json file.");
+            return false;
         }
         if (parsedJson.RuntimeOptions.ConfigProperties == null)
         {
-            throw new ArgumentException("Key runtimeOptions->configProperties wasn't found in the json file.");
+            Log.LogError("Key runtimeOptions->configProperties wasn't found in the json file.");
+            return false;
         }
 
-        return parsedJson.RuntimeOptions.ConfigProperties;
+        result = parsedJson.RuntimeOptions.ConfigProperties;
+        return true;
     }
 
     /// Just write the dictionary out to a blob as a count followed by
@@ -109,7 +122,7 @@ public class RuntimeConfigParserTask : Task
         {
             if (properties.ContainsKey(key.ItemSpec))
             {
-                throw new ArgumentException($"Property '{key}' can't be set by the user!");
+                Log.LogError($"Property '{key}' can't be set by the user!");
             }
         }
     }

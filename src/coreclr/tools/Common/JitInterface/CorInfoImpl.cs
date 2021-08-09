@@ -1875,9 +1875,8 @@ namespace Internal.JitInterface
                 if (metadataType.IsExplicitLayout || (metadataType.IsSequentialLayout && metadataType.GetClassLayout().Size != 0) || metadataType.IsWellKnownType(WellKnownType.TypedReference))
                     result |= CorInfoFlag.CORINFO_FLG_CUSTOMLAYOUT;
 
-                // TODO
-                // if (type.IsUnsafeValueType)
-                //    result |= CorInfoFlag.CORINFO_FLG_UNSAFE_VALUECLASS;
+                if (metadataType.IsUnsafeValueType)
+                    result |= CorInfoFlag.CORINFO_FLG_UNSAFE_VALUECLASS;
             }
 
             if (type.IsCanonicalSubtype(CanonicalFormKind.Any))

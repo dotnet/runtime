@@ -160,6 +160,35 @@ namespace System.Net.Quic.Tests
         }
 
         [Fact]
+        public async Task MultipleConcurrentStreamsOnSingleConnection()
+        {
+            const int count = 100;
+            Task[] tasks = new Task[count];
+
+            (QuicConnection clientConnection, QuicConnection serverConnection) = await CreateConnectedQuicConnection();
+            using (clientConnection)
+            using (serverConnection)
+            {
+                for (int i = 0; i < count; i++)
+                {
+                    tasks[i] = MakeStreams(clientConnection, serverConnection);
+                }
+                await tasks.WhenAllOrAnyFailed(PassingTestTimeoutMilliseconds);
+            }
+
+            static async Task MakeStreams(QuicConnection clientConnection, QuicConnection serverConnection)
+            {
+                byte[] buffer = new byte[64];
+                QuicStream clientStream = clientConnection.OpenBidirectionalStream();
+                ValueTask writeTask = clientStream.WriteAsync(Encoding.UTF8.GetBytes("PING"), endStream: true);
+                ValueTask<QuicStream> acceptTask = serverConnection.AcceptStreamAsync();
+                await new Task[] { writeTask.AsTask(), acceptTask.AsTask()}.WhenAllOrAnyFailed(PassingTestTimeoutMilliseconds);
+                QuicStream serverStream = acceptTask.Result;
+                await serverStream.ReadAsync(buffer);
+            }
+        }
+
+        [Fact]
         public async Task GetStreamIdWithoutStartWorks()
         {
             using QuicListener listener = CreateQuicListener();
@@ -475,7 +504,6 @@ namespace System.Net.Quic.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/55948")]
         public async Task ReadOutstanding_ReadAborted_Throws()
         {
             // aborting doesn't work properly on mock
@@ -484,27 +512,31 @@ namespace System.Net.Quic.Tests
                 return;
             }
 
-            const int ExpectedErrorCode = 0xfffffff;
+            (QuicConnection clientConnection, QuicConnection serverConnection) = await CreateConnectedQuicConnection();
+            using (clientConnection)
+            using (serverConnection)
+            {
+                byte[] buffer = new byte[1] { 42 };
+                const int ExpectedErrorCode = 0xfffffff;
 
-            using SemaphoreSlim sem = new SemaphoreSlim(0);
+                QuicStream clientStream = clientConnection.OpenBidirectionalStream();
+                Task<QuicStream> t = serverConnection.AcceptStreamAsync().AsTask();
+                await TaskTimeoutExtensions.WhenAllOrAnyFailed(clientStream.WriteAsync(buffer).AsTask(), t, PassingTestTimeoutMilliseconds);
+                QuicStream serverStream = t.Result;
+                Assert.Equal(1, await serverStream.ReadAsync(buffer));
 
-            await RunBidirectionalClientServer(
-                async clientStream =>
-                {
-                    await sem.WaitAsync();
-                },
-                async serverStream =>
+                // streams are new established and in good shape.
+                using (clientStream)
+                using (serverStream)
                 {
                     Task exTask = Assert.ThrowsAsync<QuicOperationAbortedException>(() => serverStream.ReadAsync(new byte[1]).AsTask());
-
                     Assert.False(exTask.IsCompleted);
 
                     serverStream.AbortRead(ExpectedErrorCode);
 
                     await exTask;
-
-                    sem.Release();
-                });
+                }
+            }
         }
 
         [Fact]
@@ -625,7 +657,7 @@ namespace System.Net.Quic.Tests
             {
                 return;
             }
-            
+
             const long expectedErrorCode = 1234;
 
             await RunClientServer(
@@ -659,7 +691,7 @@ namespace System.Net.Quic.Tests
                 {
                     await using QuicStream stream = await connection.AcceptStreamAsync();
 
-                    async Task ReadUntilAborted()  
+                    async Task ReadUntilAborted()
                     {
                         var buffer = new byte[1024];
                         while (true)

@@ -74,7 +74,6 @@ namespace System.Net.Quic.Implementations.MsQuic
             // Backlog limit is managed by MsQuic so it can be unbounded here.
             public readonly Channel<MsQuicStream> AcceptQueue = Channel.CreateUnbounded<MsQuicStream>(new UnboundedChannelOptions()
             {
-                SingleReader = true,
                 SingleWriter = true,
             });
 

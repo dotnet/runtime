@@ -63,7 +63,7 @@
     <DefaultLibrariesSubsets Condition="'$(BuildTargetFramework)' == '$(NetCoreAppCurrent)' or
                                         '$(BuildTargetFramework)' == '' or
                                         '$(BuildAllConfigurations)' == 'true'">libs.native+</DefaultLibrariesSubsets>
-    <DefaultLibrariesSubsets>$(DefaultLibrariesSubsets)libs.ref+libs.src+libs.packages</DefaultLibrariesSubsets>
+    <DefaultLibrariesSubsets>$(DefaultLibrariesSubsets)libs.ref+libs.src</DefaultLibrariesSubsets>
     <DefaultLibrariesSubsets Condition="'$(DotNetBuildFromSource)' != 'true'">$(DefaultLibrariesSubsets)+libs.pretest</DefaultLibrariesSubsets>
 
     <DefaultHostSubsets>host.native+host.tools</DefaultHostSubsets>
@@ -282,10 +282,6 @@
 
   <ItemGroup Condition="$(_subset.Contains('+libs.pretest+'))">
     <ProjectToBuild Include="$(LibrariesProjectRoot)pretest.proj" Category="libs"  />
-  </ItemGroup>
-
-  <ItemGroup Condition="$(_subset.Contains('+libs.packages+')) and '$(PgoInstrument)' != 'true'">
-    <ProjectToBuild Include="$(LibrariesProjectRoot)libraries-packages.proj" Category="libs" Pack="true" />
   </ItemGroup>
 
   <ItemGroup Condition="$(_subset.Contains('+libs.tests+'))">

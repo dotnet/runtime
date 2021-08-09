@@ -32,7 +32,7 @@ Visual Studio 2019 installation process:
   - For Arm32, check the box for **MSVC v142 - VS 2019 C++ ARM build tools (Latest)** (v14.23 or newer),
   - For Arm64, check the box for **MSVC v142 - VS 2019 C++ ARM64 build tools (Latest)** (v14.23 or newer).
 - To build the tests, you will need some additional components:
-  - **Windows 10 SDK (10.0.18362)** or newer. This component is installed by default as a part of **Desktop Development with C++** workload.
+  - **Windows 10 SDK (10.0.19041)** or newer. This component is installed by default as a part of **Desktop Development with C++** workload.
   - **C++/CLI support for v142 build tools (Latest)** (v14.23 or newer).
 
 A `.vsconfig` file is included in the root of the dotnet/runtime repository that includes all components needed to build the dotnet/runtime repository. You can [import `.vsconfig` in your Visual Studio installer](https://docs.microsoft.com/en-us/visualstudio/install/import-export-installation-configurations?view=vs-2019#import-a-configuration) to install all necessary components.

@@ -562,23 +562,22 @@ list(APPEND VM_SOURCES_WKS
 list(APPEND VM_HEADERS_WKS
     interoplibinterface.h
 )
-if(FEATURE_COMWRAPPERS OR FEATURE_OBJCMARSHAL)
-    if (FEATURE_COMWRAPPERS)
-        list(APPEND VM_SOURCES_WKS
-            interoplibinterface.cpp
-            rcwrefcache.cpp
-        )
-        list(APPEND VM_HEADERS_WKS
-            rcwrefcache.h
-        )
-    endif (FEATURE_COMWRAPPERS)
 
-    if (FEATURE_OBJCMARSHAL)
-        list(APPEND VM_SOURCES_WKS
-            interoplibinterface_objc.cpp
-        )
-    endif (FEATURE_OBJCMARSHAL)
-endif(FEATURE_COMWRAPPERS OR FEATURE_OBJCMARSHAL)
+if(FEATURE_COMWRAPPERS)
+    list(APPEND VM_SOURCES_WKS
+        interoplibinterface_comwrappers.cpp
+        rcwrefcache.cpp
+    )
+    list(APPEND VM_HEADERS_WKS
+        rcwrefcache.h
+    )
+endif(FEATURE_COMWRAPPERS)
+
+if(FEATURE_OBJCMARSHAL)
+    list(APPEND VM_SOURCES_WKS
+        interoplibinterface_objc.cpp
+    )
+endif(FEATURE_OBJCMARSHAL)
 
 if(CLR_CMAKE_TARGET_WIN32)
 

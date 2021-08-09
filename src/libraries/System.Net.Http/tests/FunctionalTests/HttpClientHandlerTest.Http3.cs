@@ -375,12 +375,47 @@ namespace System.Net.Http.Functional.Tests
             Assert.Equal(HttpVersion.Version30, response.Version);
             Assert.Null(callbackRequest);
             Assert.Equal(1, invocationCount);
+
+            await serverTask;
+        }
+
+        [Fact]
+        public async Task DisposeHttpClient_Http3ConnectionIsClosed()
+        {
+            using Http3LoopbackServer server = CreateHttp3LoopbackServer();
+
+            Task serverTask = Task.Run(async () =>
+            {
+                using Http3LoopbackConnection connection = (Http3LoopbackConnection)await server.EstablishGenericConnectionAsync();
+                HttpRequestData request = await connection.ReadRequestDataAsync();
+                await connection.SendResponseAsync();
+
+                await connection.WaitForClientDisconnectAsync(refuseNewRequests: false);
+            });
+
+            Task clientTask = Task.Run(async () =>
+            {
+                using HttpClient client = CreateHttpClient();
+                using HttpRequestMessage request = new()
+                {
+                    Method = HttpMethod.Get,
+                    RequestUri = server.Address,
+                    Version = HttpVersion30,
+                    VersionPolicy = HttpVersionPolicy.RequestVersionExact
+                };
+
+                using HttpResponseMessage response = await client.SendAsync(request);
+                Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+
+                // Return and let the HttpClient be disposed
+            });
+
+            await new[] { clientTask, serverTask }.WhenAllOrAnyFailed(20_000);
         }
 
         [OuterLoop]
         [ConditionalTheory(nameof(IsMsQuicSupported))]
         [MemberData(nameof(InteropUris))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/54726")]
         public async Task Public_Interop_ExactVersion_Success(string uri)
         {
             if (UseQuicImplementationProvider == QuicImplementationProviders.Mock)
@@ -404,9 +439,8 @@ namespace System.Net.Http.Functional.Tests
 
         [OuterLoop]
         [ConditionalTheory(nameof(IsMsQuicSupported))]
-        [MemberData(nameof(InteropUris))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/54726")]
-        public async Task Public_Interop_Upgrade_Success(string uri)
+        [MemberData(nameof(InteropUrisWithContent))]
+        public async Task Public_Interop_ExactVersion_BufferContent_Success(string uri)
         {
             if (UseQuicImplementationProvider == QuicImplementationProviders.Mock)
             {
@@ -414,6 +448,35 @@ namespace System.Net.Http.Functional.Tests
             }
 
             using HttpClient client = CreateHttpClient();
+            using HttpRequestMessage request = new HttpRequestMessage
+            {
+                Method = HttpMethod.Get,
+                RequestUri = new Uri(uri, UriKind.Absolute),
+                Version = HttpVersion.Version30,
+                VersionPolicy = HttpVersionPolicy.RequestVersionExact
+            };
+            using HttpResponseMessage response = await client.SendAsync(request, HttpCompletionOption.ResponseContentRead).WaitAsync(TimeSpan.FromSeconds(20));
+
+            Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+            Assert.Equal(3, response.Version.Major);
+
+            var content = await response.Content.ReadAsStringAsync();
+            Assert.NotEmpty(content);
+        }
+
+        [OuterLoop]
+        [ConditionalTheory(nameof(IsMsQuicSupported))]
+        [MemberData(nameof(InteropUris))]
+        public async Task Public_Interop_Upgrade_Success(string uri)
+        {
+            if (UseQuicImplementationProvider == QuicImplementationProviders.Mock)
+            {
+                return;
+            }
+
+            // Create the handler manually without passing in useVersion = Http3 to avoid using VersionHttpClientHandler,
+            // because it overrides VersionPolicy on each request with RequestVersionExact (bypassing Alt-Svc code path completely).
+            using HttpClient client = CreateHttpClient(CreateHttpClientHandler(quicImplementationProvider: UseQuicImplementationProvider));
 
             // First request uses HTTP/1 or HTTP/2 and receives an Alt-Svc either by header or (with HTTP/2) by frame.
 
@@ -443,7 +506,7 @@ namespace System.Net.Http.Functional.Tests
                 using HttpResponseMessage responseB = await client.SendAsync(requestB).WaitAsync(TimeSpan.FromSeconds(20));
 
                 Assert.Equal(HttpStatusCode.OK, responseB.StatusCode);
-                Assert.NotEqual(3, responseB.Version.Major);
+                Assert.Equal(3, responseB.Version.Major);
             }
         }
 
@@ -630,7 +693,6 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [ConditionalFact(nameof(IsMsQuicSupported))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/56609")]
         public async Task Alpn_H3_Success()
         {
             // Mock doesn't use ALPN.
@@ -639,47 +701,35 @@ namespace System.Net.Http.Functional.Tests
                 return;
             }
 
-            var options = new Http3Options() { Alpn = "h3" };
+            var options = new Http3Options() { Alpn = SslApplicationProtocol.Http3.ToString() };
             using Http3LoopbackServer server = CreateHttp3LoopbackServer(options);
 
-            using var clientDone = new SemaphoreSlim(0);
-            using var serverDone = new SemaphoreSlim(0);
-
+            Http3LoopbackConnection connection = null;
             Task serverTask = Task.Run(async () =>
             {
-                using Http3LoopbackConnection connection = (Http3LoopbackConnection)await server.EstablishGenericConnectionAsync();
-
-                SslApplicationProtocol negotiatedAlpn = ExtractMsQuicNegotiatedAlpn(connection);
-                Assert.Equal(new SslApplicationProtocol("h3"), negotiatedAlpn);
-
+                connection = (Http3LoopbackConnection)await server.EstablishGenericConnectionAsync();
                 using Http3LoopbackStream stream = await connection.AcceptRequestStreamAsync();
                 await stream.HandleRequestAsync();
-
-                serverDone.Release();
-                await clientDone.WaitAsync();
             });
 
-            Task clientTask = Task.Run(async () =>
+            using HttpClient client = CreateHttpClient();
+            using HttpRequestMessage request = new()
             {
-                using HttpClient client = CreateHttpClient();
+                Method = HttpMethod.Get,
+                RequestUri = server.Address,
+                Version = HttpVersion30,
+                VersionPolicy = HttpVersionPolicy.RequestVersionExact
+            };
+            HttpResponseMessage response = await client.SendAsync(request).WaitAsync(TimeSpan.FromSeconds(10));
+            response.EnsureSuccessStatusCode();
+            Assert.Equal(HttpVersion.Version30, response.Version);
 
-                using HttpRequestMessage request = new()
-                    {
-                        Method = HttpMethod.Get,
-                        RequestUri = server.Address,
-                        Version = HttpVersion30,
-                        VersionPolicy = HttpVersionPolicy.RequestVersionExact
-                    };
-                HttpResponseMessage response = await client.SendAsync(request).WaitAsync(TimeSpan.FromSeconds(10));
+            await serverTask;
+            Assert.NotNull(connection);
 
-                response.EnsureSuccessStatusCode();
-                Assert.Equal(HttpVersion.Version30, response.Version);
-
-                clientDone.Release();
-                await serverDone.WaitAsync();
-            });
-
-            await new[] { clientTask, serverTask }.WhenAllOrAnyFailed(200_000);
+            SslApplicationProtocol negotiatedAlpn = ExtractMsQuicNegotiatedAlpn(connection);
+            Assert.Equal(new SslApplicationProtocol("h3"), negotiatedAlpn);
+            connection.Dispose();
         }
 
         [ConditionalFact(nameof(IsMsQuicSupported))]
@@ -754,14 +804,26 @@ namespace System.Net.Http.Functional.Tests
 
         /// <summary>
         /// These are public interop test servers for various QUIC and HTTP/3 implementations,
-        /// taken from https://github.com/quicwg/base-drafts/wiki/Implementations
+        /// taken from https://github.com/quicwg/base-drafts/wiki/Implementations and https://bagder.github.io/HTTP3-test/.
         /// </summary>
         public static TheoryData<string> InteropUris() =>
             new TheoryData<string>
             {
-                { "https://quic.rocks:4433/" }, // Chromium
-                { "https://http3-test.litespeedtech.com:4433/" }, // LiteSpeed
-                { "https://quic.tech:8443/" } // Cloudflare
+                { "https://www.litespeedtech.com/" }, // LiteSpeed
+                { "https://quic.tech:8443/" }, // Cloudflare
+                { "https://quic.aiortc.org:443/" }, // aioquic
+                { "https://h2o.examp1e.net/" } // h2o/quicly
+            };
+
+        /// <summary>
+        /// These are public interop test servers for various QUIC and HTTP/3 implementations,
+        /// taken from https://github.com/quicwg/base-drafts/wiki/Implementations and https://bagder.github.io/HTTP3-test/.
+        /// </summary>
+        public static TheoryData<string> InteropUrisWithContent() =>
+            new TheoryData<string>
+            {
+                { "https://cloudflare-quic.com/" }, // Cloudflare with content
+                { "https://pgjones.dev/" }, // aioquic with content
             };
     }
 }

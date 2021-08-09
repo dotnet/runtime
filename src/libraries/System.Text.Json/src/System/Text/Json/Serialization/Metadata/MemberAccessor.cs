@@ -12,7 +12,7 @@ namespace System.Text.Json.Serialization.Metadata
         public abstract JsonTypeInfo.ConstructorDelegate? CreateConstructor(
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] Type classType);
 
-        public abstract JsonTypeInfo.ParameterizedConstructorDelegate<T>? CreateParameterizedConstructor<T>(ConstructorInfo constructor);
+        public abstract Func<object[], T>? CreateParameterizedConstructor<T>(ConstructorInfo constructor);
 
         public abstract JsonTypeInfo.ParameterizedConstructorDelegate<T, TArg0, TArg1, TArg2, TArg3>?
             CreateParameterizedConstructor<T, TArg0, TArg1, TArg2, TArg3>(ConstructorInfo constructor);

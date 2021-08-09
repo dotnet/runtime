@@ -23,7 +23,13 @@ function proxyMethod (prefix, func, asJson) {
 		if(payload === undefined) payload = 'undefined';
 		else if(payload === null) payload = 'null';
 		else if(typeof payload === 'function') payload = payload.toString();
-		else if(typeof payload !== 'string') payload = JSON.stringify(payload);
+		else if(typeof payload !== 'string') {
+			try{
+				payload = JSON.stringify(payload);
+			}catch(e){
+				payload = payload.toString();
+			}
+		}
 
 		if (asJson) {
 			func (JSON.stringify({
@@ -168,9 +174,9 @@ while (args !== undefined && args.length > 0) {
 	} else if (args [0].startsWith ("--setenv=")) {
 		var arg = args [0].substring ("--setenv=".length);
 		var parts = arg.split ('=');
-		if (parts.length != 2)
+		if (parts.length < 2)
 			fail_exec ("Error: malformed argument: '" + args [0]);
-		setenv [parts [0]] = parts [1];
+		setenv [parts [0]] = arg.substring (parts [0].length + 1);
 		args = args.slice (1);
 	} else if (args [0].startsWith ("--runtime-arg=")) {
 		var arg = args [0].substring ("--runtime-arg=".length);

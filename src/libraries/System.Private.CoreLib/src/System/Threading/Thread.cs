@@ -447,13 +447,13 @@ namespace System.Threading
             throw new PlatformNotSupportedException(SR.PlatformNotSupported_ThreadAbort);
         }
 
-        [Obsolete("Thread.Suspend has been deprecated.  Please use other classes in System.Threading, such as Monitor, Mutex, Event, and Semaphore, to synchronize Threads or protect resources.  https://go.microsoft.com/fwlink/?linkid=14202", false)]
+        [Obsolete("Thread.Suspend has been deprecated. Use other classes in System.Threading, such as Monitor, Mutex, Event, and Semaphore, to synchronize Threads or protect resources.")]
         public void Suspend()
         {
             throw new PlatformNotSupportedException(SR.PlatformNotSupported_ThreadSuspend);
         }
 
-        [Obsolete("Thread.Resume has been deprecated.  Please use other classes in System.Threading, such as Monitor, Mutex, Event, and Semaphore, to synchronize Threads or protect resources.  https://go.microsoft.com/fwlink/?linkid=14202", false)]
+        [Obsolete("Thread.Resume has been deprecated. Use other classes in System.Threading, such as Monitor, Mutex, Event, and Semaphore, to synchronize Threads or protect resources.")]
         public void Resume()
         {
             throw new PlatformNotSupportedException(SR.PlatformNotSupported_ThreadSuspend);
@@ -473,7 +473,7 @@ namespace System.Threading
         public static object? GetData(LocalDataStoreSlot slot) => LocalDataStore.GetData(slot);
         public static void SetData(LocalDataStoreSlot slot, object? data) => LocalDataStore.SetData(slot, data);
 
-        [Obsolete("The ApartmentState property has been deprecated.  Use GetApartmentState, SetApartmentState or TrySetApartmentState instead.", false)]
+        [Obsolete("The ApartmentState property has been deprecated. Use GetApartmentState, SetApartmentState or TrySetApartmentState.")]
         public ApartmentState ApartmentState
         {
             get => GetApartmentState();
@@ -507,13 +507,13 @@ namespace System.Threading
             return SetApartmentStateUnchecked(state, throwOnError);
         }
 
-        [Obsolete("Thread.GetCompressedStack is no longer supported. Please use the System.Threading.CompressedStack class")]
+        [Obsolete(Obsoletions.CodeAccessSecurityMessage, DiagnosticId = Obsoletions.CodeAccessSecurityDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public CompressedStack GetCompressedStack()
         {
             throw new InvalidOperationException(SR.Thread_GetSetCompressedStack_NotSupported);
         }
 
-        [Obsolete("Thread.SetCompressedStack is no longer supported. Please use the System.Threading.CompressedStack class")]
+        [Obsolete(Obsoletions.CodeAccessSecurityMessage, DiagnosticId = Obsoletions.CodeAccessSecurityDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public void SetCompressedStack(CompressedStack stack)
         {
             throw new InvalidOperationException(SR.Thread_GetSetCompressedStack_NotSupported);

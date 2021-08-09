@@ -20,9 +20,6 @@ namespace System.Net.Http
     [SupportedOSPlatform("macos")]
     internal sealed class Http3Connection : HttpConnectionBase
     {
-        // TODO: once HTTP/3 is standardized, create APIs for this.
-        public static readonly SslApplicationProtocol Http3ApplicationProtocol = new SslApplicationProtocol("h3");
-
         private readonly HttpConnectionPool _pool;
         private readonly HttpAuthority? _origin;
         private readonly HttpAuthority _authority;
