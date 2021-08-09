@@ -413,7 +413,7 @@ namespace System.Runtime.InteropServices.JavaScript
                     reference.TryGetTarget(out JSObject? target);
                     Debug.Assert(target != null, $"\tSafeHandleReleaseByHandle: did not find active target {jsHandle}");
 
-                    target.DangerousRelease();
+                    target.ReleaseInFlight();
                 }
                 else
                 {
@@ -422,29 +422,13 @@ namespace System.Runtime.InteropServices.JavaScript
             }
         }
 
-        public static IntPtr SafeHandleGetHandle(SafeHandle safeHandle, bool addRef)
+        public static int SafeHandleGetHandle(JSObject target, bool addRef)
         {
             if (addRef)
             {
-                bool _addRefSucceeded = false;
-                try
-                {
-                    safeHandle.DangerousAddRef(ref _addRefSucceeded);
-                }
-                catch
-                {
-                    if (_addRefSucceeded)
-                    {
-                        safeHandle.DangerousRelease();
-                        _addRefSucceeded = false;
-                    }
-                }
-                if (!_addRefSucceeded)
-                {
-                    return IntPtr.Zero;
-                }
+                target.AddInFlight();
             }
-            return safeHandle.DangerousGetHandle();
+            return target.JSHandle;
         }
     }
 }

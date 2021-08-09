@@ -125,7 +125,7 @@ internal static partial class Interop
             }
         }
 
-        public static void ReleaseInFlight(object? obj)
+        internal static void ReleaseInFlight(object? obj)
         {
             JSObject? jsObj = obj as JSObject;
             jsObj?.ReleaseInFlight();
