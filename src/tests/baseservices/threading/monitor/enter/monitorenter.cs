@@ -477,7 +477,7 @@ class MonEnterTests
 
             // The newly allocated thread can have an id <= 1024 if the thread pool frees threads
             // as just the right time such that the newly allocated thread has a low thread id.
-            // This is quite unlikely, but under GC stress 
+            // This is quite unlikely, but under GC stress it can happen
             if (highThread.ManagedThreadId <= 1024)
             {
                 Assert(highThread.ManagedThreadId >= 0, "Thread id greater than 0");
