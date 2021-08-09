@@ -5,7 +5,6 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
-using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 
 namespace System.Runtime.InteropServices.JavaScript
@@ -55,6 +54,43 @@ namespace System.Runtime.InteropServices.JavaScript
             Interop.Runtime.DumpAotProfileData(ref buf, len, extraArg);
         }
 
+        public static int SafeHandleGetHandle(JSObject target, bool addRef)
+        {
+            if (addRef)
+            {
+                target.AddInFlight();
+            }
+            return target.JSHandle;
+        }
+
+        public static void ReleaseCsOwnedObjectByHandle(int jsHandle)
+        {
+            lock (_csOwnedObjects)
+            {
+                if (_csOwnedObjects.TryGetValue(jsHandle, out WeakReference<JSObject>? reference))
+                {
+                    reference.TryGetTarget(out JSObject? target);
+                    Debug.Assert(target != null, $"\tSafeHandleReleaseByHandle: did not find active target {jsHandle}");
+
+                    target.ReleaseInFlight();
+                }
+                else
+                {
+                    Debug.Fail($"\tSafeHandleReleaseByHandle: did not find reference for {jsHandle}");
+                }
+            }
+        }
+
+        internal static bool ReleaseCsOwnedObject(JSObject objToRelease)
+        {
+            lock (_csOwnedObjects)
+            {
+                Interop.Runtime.ReleaseCsOwnedObject(objToRelease.JSHandle);
+                _csOwnedObjects.Remove(objToRelease.JSHandle);
+            }
+            return true;
+        }
+
         public static int CreateCSOwnedObject(int jsHandle, int mappedType)
         {
             JSObject? target = null;
@@ -102,6 +138,30 @@ namespace System.Runtime.InteropServices.JavaScript
             return obj?.GCHandleValue ?? 0;
         }
 
+        public static int TryGetCsOwnedObjectJsHandle(object rawObj)
+        {
+            JSObject? jsObject = rawObj as JSObject;
+            return jsObject?.JSHandle ?? -1;
+        }
+
+        /// <param name="gcHandle"></param>
+        /// <param name="shouldAddInflight">when true, we would create Normal GCHandle to the JSObject, so that it would not get collected before passing it back to managed code</param>
+        public static object? GetDotNetObject(int gcHandle, int shouldAddInflight)
+        {
+            GCHandle h = (GCHandle)(IntPtr)gcHandle;
+
+            if (h.Target is JSObject jso)
+            {
+                if (shouldAddInflight != 0)
+                {
+                    jso.AddInFlight();
+                }
+                return jso;
+            }
+            return h.Target;
+        }
+
+
         private static JSObject BindJSType(IntPtr jsHandle, int coreType) =>
             coreType switch
             {
@@ -122,16 +182,6 @@ namespace System.Runtime.InteropServices.JavaScript
                 18 => new Float64Array(jsHandle),
                 _ => throw new ArgumentOutOfRangeException(nameof(coreType))
             };
-
-        internal static bool ReleaseCsOwnedObject(JSObject objToRelease)
-        {
-            lock (_csOwnedObjects)
-            {
-                Interop.Runtime.ReleaseCsOwnedObject(objToRelease.JSHandle);
-                _csOwnedObjects.Remove(objToRelease.JSHandle);
-            }
-            return true;
-        }
 
         public static int CreateTaskSource()
         {
@@ -193,29 +243,6 @@ namespace System.Runtime.InteropServices.JavaScript
                 GCHandleFromJSOwnedObject.Remove(handle.Target!);
                 handle.Free();
             }
-        }
-
-        public static int GetJSObjectId(object rawObj)
-        {
-            JSObject? jsObject = rawObj as JSObject;
-            return jsObject?.JSHandle ?? -1;
-        }
-
-        /// <param name="gcHandle"></param>
-        /// <param name="shouldAddInflight">when true, we would create Normal GCHandle to the JSObject, so that it would not get collected before passing it back to managed code</param>
-        public static object? GetDotNetObject(int gcHandle, int shouldAddInflight)
-        {
-            GCHandle h = (GCHandle)(IntPtr)gcHandle;
-
-            if (h.Target is JSObject jso)
-            {
-                if (shouldAddInflight != 0)
-                {
-                    jso.AddInFlight();
-                }
-                return jso;
-            }
-            return h.Target;
         }
 
         public static bool IsSimpleArray(object a)
@@ -402,33 +429,6 @@ namespace System.Runtime.InteropServices.JavaScript
         public static Uri CreateUri(string uri)
         {
             return new Uri(uri);
-        }
-
-        public static void ReleaseCsOwnedObjectByHandle(int jsHandle)
-        {
-            lock (_csOwnedObjects)
-            {
-                if (_csOwnedObjects.TryGetValue(jsHandle, out WeakReference<JSObject>? reference))
-                {
-                    reference.TryGetTarget(out JSObject? target);
-                    Debug.Assert(target != null, $"\tSafeHandleReleaseByHandle: did not find active target {jsHandle}");
-
-                    target.ReleaseInFlight();
-                }
-                else
-                {
-                    Debug.Fail($"\tSafeHandleReleaseByHandle: did not find reference for {jsHandle}");
-                }
-            }
-        }
-
-        public static int SafeHandleGetHandle(JSObject target, bool addRef)
-        {
-            if (addRef)
-            {
-                target.AddInFlight();
-            }
-            return target.JSHandle;
         }
     }
 }

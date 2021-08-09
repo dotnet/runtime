@@ -124,7 +124,7 @@ var BindingSupportLib = {
 			this._create_cs_owned_object = bind_runtime_method ("CreateCSOwnedObject", "ii");
 			this._bind_core_clr_obj = bind_runtime_method ("BindCoreCLRObject", "ii");
 			this._get_js_owned_object_gc_handle = bind_runtime_method ("GetJSOwnedObjectGCHandle", "m");
-			this._get_js_id = bind_runtime_method ("GetJSObjectId", "m");
+			this._try_get_cs_owned_object_js_handle = bind_runtime_method ("TryGetCsOwnedObjectJsHandle", "m");
 			this._get_raw_mono_obj = bind_runtime_method ("GetDotNetObject", "ii!");
 
 			this._is_simple_array = bind_runtime_method ("IsSimpleArray", "m");
@@ -262,7 +262,7 @@ var BindingSupportLib = {
 				return null;
 
 			// this could be JSObject proxy of a js native object
-			var js_handle = this._get_js_id (root.value);
+			var js_handle = this._try_get_cs_owned_object_js_handle (root.value);
 			if (js_handle > 0)
 				return this.mono_wasm_get_jsobj_from_js_handle(js_handle);
 			// otherwise this is C# only object
@@ -886,8 +886,11 @@ var BindingSupportLib = {
 			if(!gc_handle){
 				return 0;
 			}
+			const should_add_in_flight_int = should_add_in_flight ? 1 : 0;
+		
+			// TODO: should_add_in_flight -> mono_inflight_current_frame?
 
-			return this._get_raw_mono_obj (gc_handle, should_add_in_flight ? 1 : 0);
+			return this._get_raw_mono_obj (gc_handle, should_add_in_flight_int);
 		},
 
 		mono_method_get_call_signature: function(method, mono_obj) {
@@ -922,8 +925,14 @@ var BindingSupportLib = {
 			}
 
 			if (!result) {
-				var { gc_handle: new_gc_handle, should_add_in_flight } = this.mono_wasm_register_obj(js_obj);
-				result = this.wasm_get_raw_obj (new_gc_handle, should_add_in_flight);
+				// Obtain the JS -> C# type mapping.
+				const wasm_type = js_obj[Symbol.for("wasm type")];
+				const wasm_type_id = typeof wasm_type === "undefined" ? -1 : wasm_type;
+
+				var js_handle = BINDING.mono_wasm_get_js_handle(js_obj);
+				var gc_handle = js_obj.__mono_gc_handle__ = this._create_cs_owned_object(js_handle, wasm_type_id);
+				// as this instance was just created, it was already created with Inflight strong gc_handle, so we do not have to do it again
+				result = this.wasm_get_raw_obj (gc_handle, false);
 			}
 
 			return result;
@@ -1613,27 +1622,6 @@ var BindingSupportLib = {
 		},
 		call_assembly_entry_point: function (assembly, args, signature) {
 			return this.bind_assembly_entry_point (assembly, signature) (...args)
-		},
-		// Object wrapping helper functions to handle reference handles that will
-		// be used in managed code.
-		mono_wasm_register_obj: function(js_obj) {
-			var gc_handle = undefined;
-			if (js_obj !== null && typeof js_obj !== "undefined")
-			{
-				gc_handle = js_obj.__mono_gc_handle__;
-
-				if (typeof gc_handle === "undefined") {
-					// Obtain the JS -> C# type mapping.
-					var wasm_type = js_obj[Symbol.for("wasm type")];
-
-					var js_handle = BINDING.mono_wasm_get_js_handle(js_obj);
-					gc_handle = js_obj.__mono_gc_handle__ = this._create_cs_owned_object(js_handle, typeof wasm_type === "undefined" ? -1 : wasm_type);
-					// as this instance was just created, it was already created with Inflight strong gc_handle, so we do not have to do it again
-					return { gc_handle, should_add_in_flight: false };
-				}
-			}
-			// this is pre-existing instance, we need to add Inflight strong gc_handle before passing it to managed
-			return { gc_handle, should_add_in_flight: true };
 		},
 		mono_wasm_get_jsobj_from_js_handle: function(js_handle) {
 			if (js_handle > 0)
