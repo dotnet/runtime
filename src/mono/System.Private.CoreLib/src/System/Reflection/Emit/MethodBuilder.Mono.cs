@@ -383,18 +383,7 @@ namespace System.Reflection.Emit
                     TypeBuilder.ResolveUserTypes(types);
             }
         }
-        /*
-                internal void GenerateDebugInfo (ISymbolWriter symbolWriter)
-                {
-                    if (ilgen != null && ilgen.HasDebugInfo) {
-                        SymbolToken token = new SymbolToken (GetToken().Token);
-                        symbolWriter.OpenMethod (token);
-                        symbolWriter.SetSymAttribute (token, "__name", System.Text.Encoding.UTF8.GetBytes (Name));
-                        ilgen.GenerateDebugInfo (symbolWriter);
-                        symbolWriter.CloseMethod ();
-                    }
-                }
-        */
+
         public void SetCustomAttribute(CustomAttributeBuilder customBuilder)
         {
             if (customBuilder == null)
