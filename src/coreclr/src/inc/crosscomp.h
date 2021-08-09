@@ -41,7 +41,9 @@
 #define ARM_MAX_BREAKPOINTS     8
 #define ARM_MAX_WATCHPOINTS     1
 
+#ifndef CONTEXT_UNWOUND_TO_CALL
 #define CONTEXT_UNWOUND_TO_CALL 0x20000000
+#endif
 
 typedef struct _NEON128 {
     ULONGLONG Low;
