@@ -117,6 +117,8 @@ var BindingSupportLib = {
 				return BINDING.bind_method (method, 0, signature, "BINDINGS_" + method_name);
 			};
 
+			this.get_call_sig = get_method ("GetCallSignature");
+
 			// NOTE: The bound methods have a _ prefix on their names to ensure
 			//  that any code relying on the old get_method/call_method pattern will
 			//  break in a more understandable way.
@@ -128,23 +130,21 @@ var BindingSupportLib = {
 			this._get_raw_mono_obj = bind_runtime_method ("GetDotNetObject", "ii!");
 
 			this._is_simple_array = bind_runtime_method ("IsSimpleArray", "m");
-			this.setup_js_cont = get_method ("SetupJSContinuation");
+			this._setup_js_cont = bind_runtime_method ("SetupJSContinuation", "mo");
 
-			this.create_tcs = bind_runtime_method ("CreateTaskSource","");
-			this.set_tcs_result = bind_runtime_method ("SetTaskSourceResult","io");
-			this.set_tcs_failure = bind_runtime_method ("SetTaskSourceFailure","is");
-			this.get_tcs_task = bind_runtime_method ("GetTaskSourceTask","i!");
+			this._create_tcs = bind_runtime_method ("CreateTaskSource","");
+			this._set_tcs_result = bind_runtime_method ("SetTaskSourceResult","io");
+			this._set_tcs_failure = bind_runtime_method ("SetTaskSourceFailure","is");
+			this._get_tcs_task = bind_runtime_method ("GetTaskSourceTask","i!");
 			
-			this.get_call_sig = get_method ("GetCallSignature");
-
 			this._object_to_string = bind_runtime_method ("ObjectToString", "m");
-			this.get_date_value = bind_runtime_method ("GetDateValue", "m");
-			this.create_date_time = bind_runtime_method ("CreateDateTime", "d!");
-			this.create_uri = get_method ("CreateUri");
+			this._get_date_value = bind_runtime_method ("GetDateValue", "m");
+			this._create_date_time = bind_runtime_method ("CreateDateTime", "d!");
+			this._create_uri = bind_runtime_method ("CreateUri","s!");
 
-			this.safehandle_get_handle = bind_runtime_method ("SafeHandleGetHandle", 'mi');
-			this.release_cs_owned_object_by_handle = bind_runtime_method ("ReleaseCsOwnedObjectByHandle", 'i');
-			this.release_js_owned_object_by_handle = bind_runtime_method ("ReleaseJSOwnedObjectByHandle", "i");
+			this._cs_owned_object_get_js_handle = bind_runtime_method ("CsOwnedObjectGetJsHandle", 'mi');
+			this._release_cs_owned_object_by_handle = bind_runtime_method ("ReleaseCsOwnedObjectByHandle", 'i');
+			this._release_js_owned_object_by_handle = bind_runtime_method ("ReleaseJSOwnedObjectByHandle", "i");
 
 			this._are_promises_supported = ((typeof Promise === "object") || (typeof Promise === "function")) && (typeof Promise.resolve === "function");
 			this.isThenable = (js_obj) => {
@@ -171,7 +171,7 @@ var BindingSupportLib = {
 			//  we can release the tracking weakref (it's null now, by definition),
 			//  and tell the C# side to stop holding a reference to the managed object.
 			this._js_owned_object_table.delete(gc_handle);
-			this.release_js_owned_object_by_handle(gc_handle);
+			this._release_js_owned_object_by_handle(gc_handle);
 		},
 
 		_lookup_js_owned_object: function (gc_handle) {
@@ -197,14 +197,14 @@ var BindingSupportLib = {
 
 			// Note that we do not implement promise/task roundtrip. 
 			// With more complexity we could recover original instance when this Task is marshaled back to JS.
-			// TODO optimization: return the tcs.Task on this same call instead of get_tcs_task
-			const tcs_gc_handle = this.create_tcs();
+			// TODO optimization: return the tcs.Task on this same call instead of _get_tcs_task
+			const tcs_gc_handle = this._create_tcs();
 			thenable.then ((result) => {
-				this.set_tcs_result(tcs_gc_handle, result);
+				this._set_tcs_result(tcs_gc_handle, result);
 				// let go of the thenable reference
 				this._mono_wasm_release_js_handle(thenable_js_handle);
 			}, (reason) => {
-				this.set_tcs_failure(tcs_gc_handle, reason ? reason.toString() : "");
+				this._set_tcs_failure(tcs_gc_handle, reason ? reason.toString() : "");
 				// let go of the thenable reference
 				this._mono_wasm_release_js_handle(thenable_js_handle);
 			});
@@ -213,7 +213,7 @@ var BindingSupportLib = {
 			this._js_owned_object_registry.register(thenable, tcs_gc_handle);
 
 			// returns raw pointer to tcs.Task
-			return this.get_tcs_task(tcs_gc_handle);
+			return this._get_tcs_task(tcs_gc_handle);
 		},
 
 		_unbox_task_root_as_promise: function (root) {
@@ -244,7 +244,7 @@ var BindingSupportLib = {
 				});
 
 				// register C# side of the continuation
-				this.call_method (this.setup_js_cont, null, "mo", [ root.value, cont_obj ]);
+				this._setup_js_cont (root.value, cont_obj );
 				
 				// register for GC of the Task after the JS side is done with the promise
 				this._js_owned_object_registry.register(result, gc_handle);
@@ -552,7 +552,7 @@ var BindingSupportLib = {
 		},
 
 		_unbox_cs_owned_root: function (root) {
-			var gc_handle = this.safehandle_get_handle(root.value, true);
+			var gc_handle = this._cs_owned_object_get_js_handle(root.value, true);
 			var js_obj = BINDING.mono_wasm_get_jsobj_from_js_handle (gc_handle);
 			this.mono_inflight_current_frame.push(gc_handle);
 			return js_obj;
@@ -590,7 +590,7 @@ var BindingSupportLib = {
 				case 18:
 					throw new Error ("Marshalling of primitive arrays are not supported.  Use the corresponding TypedArray instead.");
 				case 20: // clr .NET DateTime
-					var dateValue = this.get_date_value(root.value);
+					var dateValue = this._get_date_value(root.value);
 					return new Date(dateValue);
 				case 21: // clr .NET DateTimeOffset
 					var dateoffsetValue = this._object_to_string (root.value);
@@ -688,7 +688,7 @@ var BindingSupportLib = {
 					return this._wrap_js_thenable_as_task (js_obj);
 				case js_obj.constructor.name === "Date":
 					// getTime() is always UTC
-					return this.create_date_time(js_obj.getTime());
+					return this._create_date_time(js_obj.getTime());
 				default:
 					return this.extract_mono_obj (js_obj);
 			}
@@ -703,7 +703,7 @@ var BindingSupportLib = {
 					return 0;
 				case typeof js_obj === "symbol":
 				case typeof js_obj === "string":
-					return this.call_method(this.create_uri, null, "s!", [ js_obj ])
+					return this._create_uri(js_obj)
 				default:
 					return this.extract_mono_obj (js_obj);
 			}
@@ -1675,7 +1675,7 @@ var BindingSupportLib = {
 			for (var refidx = 0; refidx < inflight_frame.length; refidx++)
 			{
 				var js_handle = inflight_frame[refidx];
-				this.release_cs_owned_object_by_handle(js_handle);
+				this._release_cs_owned_object_by_handle(js_handle);
 			}
 		},
 		mono_wasm_convert_return_value: function (ret) {

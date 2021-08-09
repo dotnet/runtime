@@ -54,7 +54,7 @@ namespace System.Runtime.InteropServices.JavaScript
             Interop.Runtime.DumpAotProfileData(ref buf, len, extraArg);
         }
 
-        public static int SafeHandleGetHandle(JSObject target, bool addRef)
+        public static int CsOwnedObjectGetJsHandle(JSObject target, bool addRef)
         {
             if (addRef)
             {
