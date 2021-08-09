@@ -555,6 +555,40 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
         }
 
         [Fact]
+        [PlatformSpecific(TestPlatforms.Windows)]
+        public void AppHost_GUI_RuntimeMissing_PrintArchitectureAndRuntimeVersionOnDialog()
+        {
+            var fixture = sharedTestState.PortableAppFixture_Built
+                .Copy();
+
+            string appExe = fixture.TestProject.AppExe;
+            File.Copy(sharedTestState.BuiltAppHost, appExe, overwrite: true);
+            AppHostExtensions.BindAppHost(appExe);
+            AppHostExtensions.SetWindowsGraphicalUserInterfaceBit(appExe);
+
+            string invalidDotNet = SharedFramework.CalculateUniqueTestDirectory(Path.Combine(TestArtifact.TestArtifactsPath, "guiErrors"));
+            Directory.CreateDirectory(invalidDotNet);
+            File.Copy(sharedTestState.BuiltDotNet.DotnetExecutablePath, Path.Combine(invalidDotNet, "dotnet.exe"), true);
+
+            var command = Command.Create(appExe)
+                .EnableTracingAndCaptureOutputs()
+                .DotNetRoot(invalidDotNet)
+                .MultilevelLookup(false)
+                .Start();
+
+            WaitForPopupFromProcess(command.Process);
+            command.Process.Kill();
+
+            var expectedErrorCode = Constants.ErrorCode.CoreHostLibMissingFailure.ToString("x");
+            var result = command.WaitForExit(true)
+                .Should().Fail()
+                .And.HaveStdErrContaining($"Showing error dialog for application: '{Path.GetFileName(appExe)}' - error code: 0x{expectedErrorCode}")
+                .And.HaveStdErrContaining($"url: 'https://aka.ms/dotnet-core-applaunch?missing_runtime=true")
+                .And.HaveStdErrContaining("gui=true")
+                .And.HaveStdErrContaining($"&apphost_version={sharedTestState.RepoDirectories.MicrosoftNETCoreAppVersion}");
+        }
+
+        [Fact]
         [PlatformSpecific(TestPlatforms.Windows)] // GUI app host is only supported on Windows.
         public void AppHost_GUI_NoCustomErrorWriter_FrameworkMissing_ErrorReportedInDialog()
         {
