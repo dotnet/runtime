@@ -617,7 +617,7 @@ namespace $([System.String]::Copy($(Category)).Replace(".","_").Replace("\","").
     </ItemGroup>
     <PropertyGroup>
       <MonoAotOptions>@(MonoAotOption->'%(Identity)', ',')</MonoAotOptions>
-      <MonoPath Condition="'$(CROSSCOMPILE)' != ''">$(CORE_ROOT)</MonoPath>
+      <MonoPath>$(CORE_ROOT)</MonoPath>
     </PropertyGroup>
 
     <Message Importance="High" Text="Mono AOT options: $(MonoAotOptions)" />
