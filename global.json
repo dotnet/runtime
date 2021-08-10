@@ -18,6 +18,6 @@
     "Microsoft.DotNet.SharedFramework.Sdk": "6.0.0-beta.21406.6",
     "Microsoft.Build.NoTargets": "3.0.4",
     "Microsoft.Build.Traversal": "3.0.23",
-    "Microsoft.NET.Sdk.IL": "6.0.0-rc.1.21401.3"
+    "Microsoft.NET.Sdk.IL": "6.0.0-rc.1.21406.5"
   }
 }
