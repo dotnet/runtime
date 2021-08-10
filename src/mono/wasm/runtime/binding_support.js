@@ -263,6 +263,9 @@ var BindingSupportLib = {
 			// this could be JSObject proxy of a js native object
 			var js_handle = this._try_get_cs_owned_object_js_handle (root.value);
 			if (js_handle) {
+				if (js_handle===-1){
+					throw new Error("Cannot access a disposed JSObject at " + root.value);
+				}
 				return this.mono_wasm_get_jsobj_from_js_handle(js_handle);
 			}
 			// otherwise this is C# only object
