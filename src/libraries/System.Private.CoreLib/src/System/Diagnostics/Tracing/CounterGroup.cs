@@ -23,6 +23,7 @@ namespace System.Diagnostics.Tracing
         private readonly EventSource _eventSource;
         private readonly List<DiagnosticCounter> _counters;
         private static readonly object s_counterGroupLock = new object();
+        private static readonly TimeSpan s_minimumPollingInterval = TimeSpan.FromSeconds(1);
 
         internal CounterGroup(EventSource eventSource)
         {
@@ -252,7 +253,8 @@ namespace System.Diagnostics.Tracing
                 {
                     _timeStampSinceCollectionStarted = now;
                     TimeSpan delta = now - _nextPollingTimeStamp;
-                    if (delta > TimeSpan.Zero && _pollingIntervalInMilliseconds > 0)
+                    delta = s_minimumPollingInterval > delta ? s_minimumPollingInterval : delta;
+                    if (_pollingIntervalInMilliseconds > 0)
                         _nextPollingTimeStamp += TimeSpan.FromMilliseconds(_pollingIntervalInMilliseconds * Math.Ceiling(delta.TotalMilliseconds / _pollingIntervalInMilliseconds));
                 }
             }
