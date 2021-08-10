@@ -16,15 +16,33 @@ enum {
     func_flag_end_of_array = 0x01,
     func_flag_has_signature = 0x02,
     func_flag_unreferenced = 0x04, // Suppress unused fcall check
-    func_flag_qcall = 0x08, // QCall - mscorlib.dll to mscorwks.dll transition implemented as PInvoke
+    func_flag_qcall = 0x08, // QCall - System.Private.CoreLib.dll to native runtime transition implemented as PInvoke
 };
+
+#ifndef DISABLE_QCALLS
+    #define FCFuncStart(name) static const MonoQCallFunc name[] = {
+    #define FCFuncEnd() { func_flag_end_of_array, NULL, NULL }  };
+    #define QCFuncElement(name,impl) { func_flag_qcall, (void*)(impl), name },
+    #define FCClassElement(name, namespace, funcs)
+    #include "mono/metadata/qcall-def.h"
+    #undef FCClassElement
+    #undef QCFuncElement
+    #undef FCFuncEnd
+    #undef FCFuncStart
+#endif
 
 static const MonoQCallDef c_qcalls[] =
 {
 #ifndef DISABLE_QCALLS
+    #define FCFuncStart(name)
+    #define FCFuncEnd()
+    #define QCFuncElement(name,impl)
     #define FCClassElement(name,namespace,funcs) {name, namespace, funcs},
     #include "mono/metadata/qcall-def.h"
     #undef FCClassElement
+    #undef QCFuncElement
+    #undef FCFuncEnd
+    #undef FCFuncStart
 #endif
 };
 
