@@ -1399,6 +1399,8 @@ namespace System.Runtime.Serialization
             }
 
             [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
+            // DynamicDependency attribute is required due to a bug in the trimmer. It should be removed once this issue is fixed: https://github.com/mono/linker/issues/2200
+            [DynamicDependency(DynamicallyAccessedMemberTypes.PublicMethods | DynamicallyAccessedMemberTypes.NonPublicMethods, typeof(KeyValuePairAdapter<,>))]
             private void SetKeyValuePairAdapterFlags(
                 [DynamicallyAccessedMembers(DataContractPreserveMemberTypes)]
                 Type type)
