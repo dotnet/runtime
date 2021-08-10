@@ -2,15 +2,54 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Collections.Concurrent;
+using System.Collections.Generic;
+using System.Diagnostics.Tracing;
+using System.Linq;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.DependencyInjection.Specification.Fakes;
+using Microsoft.Extensions.DependencyInjection.Tests;
 using Xunit;
-using Xunit.Abstractions;
 
 namespace Microsoft.Extensions.DependencyInjection
 {
+    public class ABC { }
+
     public class ServiceCollectionDescriptorExtensionsTest
     {
+        [Fact]
+        internal void GetService_FactoryCallSite_Transient_DoesNotFail()
+        {
+            TestEventListener listener = new TestEventListener();
+            listener.EnableEvents(DependencyInjectionEventSource.Log, EventLevel.Verbose);
+            IServiceProvider serviceProvider = null;
+
+            try
+            {
+                IServiceCollection services = new ServiceCollection();
+                services.Add(ServiceDescriptor.Describe(typeof(ABC), (sp) => new ABC(), ServiceLifetime.Transient));
+
+                var sp = services.BuildServiceProvider(ServiceProviderMode.Dynamic);
+                serviceProvider = sp
+                    .CreateScope()
+                    .ServiceProvider;
+
+                serviceProvider.GetService<ABC>();
+
+                for (int i = 0; i < 50; i++)
+                {
+                    serviceProvider.GetService<ABC>();
+                    System.Threading.Thread.Sleep(10); // Give the background thread time to compile
+                }
+            
+                Assert.Null(listener.EventData.FirstOrDefault(e => e.EventName == nameof(DependencyInjectionEventSource.Log.ServiceRealizationFailed)));
+            }
+            finally
+            {
+                ((IDisposable)serviceProvider).Dispose();
+            }
+        }
+
         [Fact]
         public void Add_AddsDescriptorToServiceDescriptors()
         {

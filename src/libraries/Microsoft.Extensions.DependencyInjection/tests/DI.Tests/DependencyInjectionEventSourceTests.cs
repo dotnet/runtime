@@ -17,6 +17,28 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
     {
     }
 
+    internal class TestEventListener : EventListener
+    {
+        private volatile bool _disposed;
+        private ConcurrentQueue<EventWrittenEventArgs> _events = new ConcurrentQueue<EventWrittenEventArgs>();
+
+        public IEnumerable<EventWrittenEventArgs> EventData => _events;
+
+        protected override void OnEventWritten(EventWrittenEventArgs eventData)
+        {
+            if (!_disposed)
+            {
+                _events.Enqueue(eventData);
+            }
+        }
+
+        public override void Dispose()
+        {
+            _disposed = true;
+            base.Dispose();
+        }
+    }
+
     [Collection(nameof(EventSourceTests))]
     public class DependencyInjectionEventSourceTests: IDisposable
     {
@@ -225,28 +247,6 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
 
         private T GetProperty<T>(EventWrittenEventArgs data, string propName)
             => (T)data.Payload[data.PayloadNames.IndexOf(propName)];
-
-        private class TestEventListener : EventListener
-        {
-            private volatile bool _disposed;
-            private ConcurrentQueue<EventWrittenEventArgs> _events = new ConcurrentQueue<EventWrittenEventArgs>();
-
-            public IEnumerable<EventWrittenEventArgs> EventData => _events;
-
-            protected override void OnEventWritten(EventWrittenEventArgs eventData)
-            {
-                if (!_disposed)
-                {
-                    _events.Enqueue(eventData);
-                }
-            }
-
-            public override void Dispose()
-            {
-                _disposed = true;
-                base.Dispose();
-            }
-        }
 
         public void Dispose()
         {
