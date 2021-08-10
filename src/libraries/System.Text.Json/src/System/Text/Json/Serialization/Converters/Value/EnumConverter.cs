@@ -330,6 +330,8 @@ namespace System.Text.Json.Serialization.Converters
             // Try to obtain values from caches
             if (options.DictionaryKeyPolicy != null)
             {
+                Debug.Assert(!state.Current.IgnoreDictionaryKeyPolicy);
+
                 if (_dictionaryKeyPolicyCache != null && _dictionaryKeyPolicyCache.TryGetValue(key, out JsonEncodedText formatted))
                 {
                     writer.WritePropertyName(formatted);
