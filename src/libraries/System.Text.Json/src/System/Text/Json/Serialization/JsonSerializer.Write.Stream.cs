@@ -318,7 +318,7 @@ namespace System.Text.Json
             JsonSerializerOptions? options,
             CancellationToken cancellationToken)
         {
-            JsonTypeInfo jsonTypeInfo = GetTypeInfo(runtimeType, options);
+            JsonTypeInfo jsonTypeInfo = GetTypeInfo(options, runtimeType);
             return WriteAsyncCore(utf8Json, value!, jsonTypeInfo, cancellationToken);
         }
 
@@ -329,7 +329,7 @@ namespace System.Text.Json
             Type runtimeType,
             JsonSerializerOptions? options)
         {
-            JsonTypeInfo jsonTypeInfo = GetTypeInfo(runtimeType, options);
+            JsonTypeInfo jsonTypeInfo = GetTypeInfo(options, runtimeType);
             WriteCore(utf8Json, value!, jsonTypeInfo);
         }
 

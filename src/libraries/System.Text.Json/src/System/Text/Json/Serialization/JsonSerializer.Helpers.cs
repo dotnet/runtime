@@ -13,10 +13,14 @@ namespace System.Text.Json
         internal const string SerializationUnreferencedCodeMessage = "JSON serialization and deserialization might require types that cannot be statically analyzed. Use the overload that takes a JsonTypeInfo or JsonSerializerContext, or make sure all of the required types are preserved.";
 
         [RequiresUnreferencedCode(SerializationUnreferencedCodeMessage)]
-        private static JsonTypeInfo GetTypeInfo(Type runtimeType, JsonSerializerOptions? options)
+        private static JsonTypeInfo GetTypeInfo(JsonSerializerOptions? options, Type runtimeType)
         {
             options ??= JsonSerializerOptions.s_defaultOptions;
-            options.RootBuiltInConvertersAndTypeInfoCreator();
+            if (!options.IsInitializedForReflectionSerializer)
+            {
+                options.InitializeForReflectionSerializer();
+            }
+
             return options.GetOrAddClassForRootType(runtimeType);
         }
 

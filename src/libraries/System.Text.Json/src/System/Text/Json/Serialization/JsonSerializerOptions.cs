@@ -247,6 +247,8 @@ namespace System.Text.Json
             }
         }
 
+        internal bool IsInitializedForReflectionSerializer { get; set; }
+
         /// <summary>
         /// Determines whether null values are ignored during serialization and deserialization.
         /// The default value is false.
@@ -576,10 +578,12 @@ namespace System.Text.Json
         }
 
         [RequiresUnreferencedCode(JsonSerializer.SerializationUnreferencedCodeMessage)]
-        internal void RootBuiltInConvertersAndTypeInfoCreator()
+        internal void InitializeForReflectionSerializer()
         {
+            // For threading cases, the state that is set here can be overwritten.
             RootBuiltInConverters();
-            _typeInfoCreationFunc ??= CreateJsonTypeInfo;
+            _typeInfoCreationFunc = CreateJsonTypeInfo;
+            IsInitializedForReflectionSerializer = true;
 
             [RequiresUnreferencedCode(JsonSerializer.SerializationUnreferencedCodeMessage)]
             static JsonTypeInfo CreateJsonTypeInfo(Type type, JsonSerializerOptions options) => new JsonTypeInfo(type, options);
