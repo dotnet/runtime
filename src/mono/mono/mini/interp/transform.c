@@ -3162,8 +3162,21 @@ interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target
 			 * the InterpMethod pointer. FIXME
 			 */
 			native = csignature->pinvoke || method->wrapper_type == MONO_WRAPPER_RUNTIME_INVOKE;
+			if (!method->dynamic && !method->wrapper_type && csignature->pinvoke && !csignature->suppress_gc_transition) {
+				// native calli needs a wrapper
+				target_method = mono_marshal_get_native_func_wrapper_indirect (method->klass, csignature, FALSE);
+				calli = FALSE;
+				native = FALSE;
+				// The function pointer is passed last, but the wrapper expects it as first argument
+				// Switch the arguments
+				StackInfo sp_fp = td->sp [-1];
+				StackInfo *start = &td->sp [-csignature->param_count - 1];
+				memmove (start + 1, start, csignature->param_count * sizeof (StackInfo));
+				*start = sp_fp;
 
-			target_method = NULL;
+				// The method we are calling has a different signature
+				csignature = mono_method_signature_internal (target_method);
+			}
 		} else {
 			target_method = interp_get_method (method, token, image, generic_context, error);
 			return_val_if_nok (error, FALSE);
