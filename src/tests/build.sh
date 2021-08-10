@@ -370,6 +370,13 @@ build_MSBuild_projects()
             buildArgs+=("\"/p:CopyNativeProjectBinaries=${__CopyNativeProjectsAfterCombinedTestBuild}\"");
             buildArgs+=("/p:__SkipPackageRestore=true");
             buildArgs+=("/bl:${__RepoRootDir}/artifacts/log/${__BuildType}/build_managed_tests_${testGroupToBuild}.binlog");
+            buildArgs+=("/p:BuildTestProject=${__BuildTestProject}");
+            buildArgs+=("/p:BuildTestDir=${__BuildTestDir}");
+            buildArgs+=("/p:BuildTestTree=${__BuildTestTree}");
+
+            if [[ "$__BuildTestAll" -ne 0 ]]; then
+                buildArgs+=("/t:rebuild");
+            fi
 
             # Disable warnAsError - coreclr issue 19922
             nextCommand="\"$__RepoRootDir/eng/common/msbuild.sh\" $__ArcadeScriptArgs --warnAsError false ${buildArgs[@]}"
@@ -432,6 +439,11 @@ usage_list+=("-buildtestwrappersonly: only build the test wrappers.")
 usage_list+=("-copynativeonly: Only copy the native test binaries to the managed output. Do not build the native or managed tests.")
 usage_list+=("-generatelayoutonly: only pull down dependencies and build coreroot.")
 
+usage_list+=("-test:xxx - only build a single test project");
+usage_list+=("-dir:xxx - build all tests in a given directory");
+usage_list+=("-tree:xxx - build all tests in a given subtree");
+usage_list+=("-all:xxx - rebuild all the specified tests");
+
 usage_list+=("-crossgen2: Precompiles the framework managed assemblies in coreroot using the Crossgen2 compiler.")
 usage_list+=("-priority1: include priority=1 tests in the build.")
 usage_list+=("-allTargets: Build managed tests for all target platforms.")
@@ -492,6 +504,28 @@ handle_arguments_local() {
             __RebuildTests=1
             ;;
 
+        test*|-test*)
+            local arg="$1"
+            local parts=(${arg//:/ })
+            __BuildTestProject=${parts[1]}
+            ;;
+
+        dir*|-dir*)
+            local arg="$1"
+            local parts=(${arg//:/ })
+            __BuildTestDir=${parts[1]}
+            ;;
+
+        tree*|-tree*)
+            local arg="$1"
+            local parts=(${arg//:/ })
+            __BuildTestTree=${parts[1]}
+            ;;
+
+        all|-all)
+            __BuildTestAll=1
+            ;;
+
         runtests|-runtests)
             __RunTests=1
             ;;
@@ -541,6 +575,10 @@ __DistroRid=""
 __DoCrossgen2=0
 __CompositeBuildMode=0
 __TestBuildMode=
+__BuildTestProject=""
+__BuildTestDir=""
+__BuildTestTree=""
+__BuildTestAll=0
 __DotNetCli="$__RepoRootDir/dotnet.sh"
 __GenerateLayoutOnly=
 __IsMSBuildOnNETCoreSupported=0

@@ -19,7 +19,23 @@
       <DisabledProjects Include="$(TestRoot)TestWrappers*\**\*.csproj" />
     </ItemGroup>
 
-    <ItemGroup>
+    <ItemGroup Condition="'$(BuildTestProject)' != ''">
+      <AllProjects Include="$([MSBuild]::NormalizePath('$(TestRoot)', '$(BuildTestProject)'))" Exclude="@(DisabledProjects)" />
+    </ItemGroup>
+
+    <ItemGroup Condition="'$(BuildTestDir)' != ''">
+      <AllProjects Include="$([MSBuild]::NormalizeDirectory('$(TestRoot)', '$(BuildTestDir)'))\*.csproj" Exclude="@(DisabledProjects)" />
+      <AllProjects Include="$([MSBuild]::NormalizeDirectory('$(TestRoot)', '$(BuildTestDir)'))\*.fsproj" Exclude="@(DisabledProjects)" />
+      <AllProjects Include="$([MSBuild]::NormalizeDirectory('$(TestRoot)', '$(BuildTestDir)'))\*.ilproj" Exclude="@(DisabledProjects)" />
+    </ItemGroup>
+
+    <ItemGroup Condition="'$(BuildTestTree)' != ''">
+      <AllProjects Include="$([MSBuild]::NormalizeDirectory('$(TestRoot)', '$(BuildTestTree)'))\**\*.csproj" Exclude="@(DisabledProjects)" />
+      <AllProjects Include="$([MSBuild]::NormalizeDirectory('$(TestRoot)', '$(BuildTestTree)'))\**\*.fsproj" Exclude="@(DisabledProjects)" />
+      <AllProjects Include="$([MSBuild]::NormalizeDirectory('$(TestRoot)', '$(BuildTestTree)'))\**\*.ilproj" Exclude="@(DisabledProjects)" />
+    </ItemGroup>
+
+    <ItemGroup Condition="'$(BuildTestProject)' == '' and '$(BuildTestDir)' == '' and '$(BuildTestTree)' == ''">
       <AllProjects Include="$(TestRoot)**\*.csproj" Exclude="@(DisabledProjects)" />
       <AllProjects Include="$(TestRoot)**\*.fsproj" Exclude="@(DisabledProjects)" />
       <AllProjects Include="$(TestRoot)**\*.ilproj" Exclude="@(DisabledProjects)" />
