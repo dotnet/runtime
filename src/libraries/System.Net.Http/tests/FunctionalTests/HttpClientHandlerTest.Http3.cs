@@ -320,6 +320,117 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Fact]
+        public async Task RequestSentResponseDisposed_ThrowsOnServer()
+        {
+            byte[] data = Encoding.UTF8.GetBytes(new string('a', 1024));
+
+            using Http3LoopbackServer server = CreateHttp3LoopbackServer();
+
+            Task serverTask = Task.Run(async () =>
+            {
+                using Http3LoopbackConnection connection = (Http3LoopbackConnection)await server.EstablishGenericConnectionAsync();
+                using Http3LoopbackStream stream = await connection.AcceptRequestStreamAsync();
+                HttpRequestData request = await stream.ReadRequestDataAsync();
+                await stream.SendResponseHeadersAsync();
+
+                Stopwatch sw = Stopwatch.StartNew();
+                bool hasFailed = false;
+                while (sw.Elapsed < TestHelper.PassingTestTimeout)
+                {
+                    try
+                    {
+                        await stream.SendResponseBodyAsync(data, isFinal: false);
+                    }
+                    catch (QuicStreamAbortedException)
+                    {
+                        hasFailed = true;
+                        break;
+                    }
+                }
+                Assert.True(hasFailed, $"Expected {nameof(QuicStreamAbortedException)}, instead ran successfully for {sw.Elapsed}");
+            });
+
+            Task clientTask = Task.Run(async () =>
+            {
+                using HttpClient client = CreateHttpClient();
+                using HttpRequestMessage request = new()
+                {
+                    Method = HttpMethod.Get,
+                    RequestUri = server.Address,
+                    Version = HttpVersion30,
+                    VersionPolicy = HttpVersionPolicy.RequestVersionExact
+                };
+
+                var response = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead);
+                var stream = await response.Content.ReadAsStreamAsync();
+                byte[] buffer = new byte[512];
+                for (int i = 0; i < 5; ++i)
+                {
+                    var count = await stream.ReadAsync(buffer);
+                }
+
+                // We haven't finished reading the whole respose, but we're disposing it, which should turn into an exception on the server-side.
+                response.Dispose();
+            });
+
+            await new[] { clientTask, serverTask }.WhenAllOrAnyFailed(20_000);
+        }
+
+        [Fact]
+        public async Task RequestSendingResponseDisposed_ThrowsOnServer()
+        {
+            byte[] data = Encoding.UTF8.GetBytes(new string('a', 1024));
+
+            using Http3LoopbackServer server = CreateHttp3LoopbackServer();
+
+            Task serverTask = Task.Run(async () =>
+            {
+                using Http3LoopbackConnection connection = (Http3LoopbackConnection)await server.EstablishGenericConnectionAsync();
+                using Http3LoopbackStream stream = await connection.AcceptRequestStreamAsync();
+                HttpRequestData request = await stream.ReadRequestDataAsync(false);
+                await stream.SendResponseHeadersAsync();
+
+                Stopwatch sw = Stopwatch.StartNew();
+                bool hasFailed = false;
+                while (sw.Elapsed < TestHelper.PassingTestTimeout)
+                {
+                    try
+                    {
+                        var (frameType, payload) = await stream.ReadFrameAsync();
+                        Assert.Equal(Http3LoopbackStream.DataFrame, frameType);
+                    }
+                    catch (QuicStreamAbortedException)
+                    {
+                        hasFailed = true;
+                        break;
+                    }
+                }
+                Assert.True(hasFailed, $"Expected {nameof(QuicStreamAbortedException)}, instead ran successfully for {sw.Elapsed}");
+            });
+
+            Task clientTask = Task.Run(async () =>
+            {
+                using HttpClient client = CreateHttpClient();
+                using HttpRequestMessage request = new()
+                {
+                    Method = HttpMethod.Get,
+                    RequestUri = server.Address,
+                    Version = HttpVersion30,
+                    VersionPolicy = HttpVersionPolicy.RequestVersionExact,
+                    Content = new ByteAtATimeContent(60*4, Task.CompletedTask, new TaskCompletionSource<bool>(), 250)
+                };
+
+                var response = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead);
+                var stream = await response.Content.ReadAsStreamAsync();
+
+                // We haven't finished sending the whole request, but we're disposing the response, which should turn into an exception on the server-side.
+                response.Dispose();
+            });
+
+            await new[] { clientTask, serverTask }.WhenAllOrAnyFailed(20_000);
+        }
+
+        [Fact]
         public async Task ServerCertificateCustomValidationCallback_Succeeds()
         {
             // Mock doesn't make use of cart validation callback.
