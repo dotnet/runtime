@@ -145,6 +145,30 @@
       System.Xml.XPath;
       System.Xml.XPath.XDocument;
     </NetCoreAppLibrary>
+    <WindowsDesktopCoreAppLibrary>
+      Microsoft.Win32.Registry;
+      Microsoft.Win32.Registry.AccessControl;
+      Microsoft.Win32.SystemEvents;
+      System.CodeDom;
+      System.Configuration.ConfigurationManager;
+      System.Diagnostics.EventLog;
+      System.Diagnostics.PerformanceCounter;
+      System.DirectoryServices;
+      System.Drawing.Common;
+      System.IO.FileSystem.AccessControl;
+      System.IO.Packaging;
+      System.IO.Pipes.AccessControl;
+      System.Resources.Extensions;
+      System.Security.AccessControl;
+      System.Security.Cryptography.Cng;
+      System.Security.Cryptography.Pkcs;
+      System.Security.Cryptography.ProtectedData;
+      System.Security.Cryptography.Xml;
+      System.Security.Permissions;
+      System.Security.Principal.Windows;
+      System.Threading.AccessControl;
+      System.Windows.Extensions;
+    </WindowsDesktopCoreAppLibrary>
   </PropertyGroup>
   <!-- Make NetCoreAppLibrary available as an item. -->
   <ItemGroup>
