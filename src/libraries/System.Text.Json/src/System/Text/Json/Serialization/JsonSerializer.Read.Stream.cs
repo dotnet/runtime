@@ -18,20 +18,20 @@ namespace System.Text.Json
     public static partial class JsonSerializer
     {
         /// <summary>
-        /// Read the UTF-8 encoded text representing a single JSON value into a <typeparamref name="TValue"/>.
+        /// Reads the UTF-8 encoded text representing a single JSON value into a <typeparamref name="TValue"/>.
         /// The Stream will be read to completion.
         /// </summary>
         /// <returns>A <typeparamref name="TValue"/> representation of the JSON value.</returns>
         /// <param name="utf8Json">JSON data to parse.</param>
         /// <param name="options">Options to control the behavior during reading.</param>
         /// <param name="cancellationToken">
-        /// The <see cref="System.Threading.CancellationToken"/> which may be used to cancel the read operation.
+        /// The <see cref="System.Threading.CancellationToken"/> that can be used to cancel the read operation.
         /// </param>
         /// <exception cref="System.ArgumentNullException">
         /// <paramref name="utf8Json"/> is <see langword="null"/>.
         /// </exception>
         /// <exception cref="JsonException">
-        /// Thrown when the JSON is invalid,
+        /// The JSON is invalid,
         /// <typeparamref name="TValue"/> is not compatible with the JSON,
         /// or when there is remaining data in the Stream.
         /// </exception>
@@ -54,7 +54,7 @@ namespace System.Text.Json
         }
 
         /// <summary>
-        /// Read the UTF-8 encoded text representing a single JSON value into a <typeparamref name="TValue"/>.
+        /// Reads the UTF-8 encoded text representing a single JSON value into a <typeparamref name="TValue"/>.
         /// The Stream will be read to completion.
         /// </summary>
         /// <returns>A <typeparamref name="TValue"/> representation of the JSON value.</returns>
@@ -64,7 +64,7 @@ namespace System.Text.Json
         /// <paramref name="utf8Json"/> is <see langword="null"/>.
         /// </exception>
         /// <exception cref="JsonException">
-        /// Thrown when the JSON is invalid,
+        /// The JSON is invalid,
         /// <typeparamref name="TValue"/> is not compatible with the JSON,
         /// or when there is remaining data in the Stream.
         /// </exception>
@@ -86,7 +86,7 @@ namespace System.Text.Json
         }
 
         /// <summary>
-        /// Read the UTF-8 encoded text representing a single JSON value into a <paramref name="returnType"/>.
+        /// Reads the UTF-8 encoded text representing a single JSON value into a <paramref name="returnType"/>.
         /// The Stream will be read to completion.
         /// </summary>
         /// <returns>A <paramref name="returnType"/> representation of the JSON value.</returns>
@@ -94,13 +94,13 @@ namespace System.Text.Json
         /// <param name="returnType">The type of the object to convert to and return.</param>
         /// <param name="options">Options to control the behavior during reading.</param>
         /// <param name="cancellationToken">
-        /// The <see cref="System.Threading.CancellationToken"/> which may be used to cancel the read operation.
+        /// The <see cref="System.Threading.CancellationToken"/> that can be used to cancel the read operation.
         /// </param>
         /// <exception cref="System.ArgumentNullException">
         /// <paramref name="utf8Json"/> or <paramref name="returnType"/> is <see langword="null"/>.
         /// </exception>
         /// <exception cref="JsonException">
-        /// Thrown when the JSON is invalid,
+        /// The JSON is invalid,
         /// the <paramref name="returnType"/> is not compatible with the JSON,
         /// or when there is remaining data in the Stream.
         /// </exception>
@@ -129,7 +129,7 @@ namespace System.Text.Json
         }
 
         /// <summary>
-        /// Read the UTF-8 encoded text representing a single JSON value into a <paramref name="returnType"/>.
+        /// Reads the UTF-8 encoded text representing a single JSON value into a <paramref name="returnType"/>.
         /// The Stream will be read to completion.
         /// </summary>
         /// <returns>A <paramref name="returnType"/> representation of the JSON value.</returns>
@@ -140,7 +140,7 @@ namespace System.Text.Json
         /// <paramref name="utf8Json"/> or <paramref name="returnType"/> is <see langword="null"/>.
         /// </exception>
         /// <exception cref="JsonException">
-        /// Thrown when the JSON is invalid,
+        /// The JSON is invalid,
         /// the <paramref name="returnType"/> is not compatible with the JSON,
         /// or when there is remaining data in the Stream.
         /// </exception>
@@ -168,20 +168,20 @@ namespace System.Text.Json
         }
 
         /// <summary>
-        /// Read the UTF-8 encoded text representing a single JSON value into a <typeparamref name="TValue"/>.
+        /// Reads the UTF-8 encoded text representing a single JSON value into a <typeparamref name="TValue"/>.
         /// The Stream will be read to completion.
         /// </summary>
         /// <returns>A <typeparamref name="TValue"/> representation of the JSON value.</returns>
         /// <param name="utf8Json">JSON data to parse.</param>
         /// <param name="jsonTypeInfo">Metadata about the type to convert.</param>
         /// <param name="cancellationToken">
-        /// The <see cref="System.Threading.CancellationToken"/> which may be used to cancel the read operation.
+        /// The <see cref="System.Threading.CancellationToken"/> that can be used to cancel the read operation.
         /// </param>
         /// <exception cref="System.ArgumentNullException">
         /// <paramref name="utf8Json"/> or <paramref name="jsonTypeInfo"/> is <see langword="null"/>.
         /// </exception>
         /// <exception cref="JsonException">
-        /// Thrown when the JSON is invalid,
+        /// The JSON is invalid,
         /// <typeparamref name="TValue"/> is not compatible with the JSON,
         /// or when there is remaining data in the Stream.
         /// </exception>
@@ -208,7 +208,7 @@ namespace System.Text.Json
         }
 
         /// <summary>
-        /// Read the UTF-8 encoded text representing a single JSON value into a <typeparamref name="TValue"/>.
+        /// Reads the UTF-8 encoded text representing a single JSON value into a <typeparamref name="TValue"/>.
         /// The Stream will be read to completion.
         /// </summary>
         /// <returns>A <typeparamref name="TValue"/> representation of the JSON value.</returns>
@@ -218,7 +218,7 @@ namespace System.Text.Json
         /// <paramref name="utf8Json"/> or <paramref name="jsonTypeInfo"/> is <see langword="null"/>.
         /// </exception>
         /// <exception cref="JsonException">
-        /// Thrown when the JSON is invalid,
+        /// The JSON is invalid,
         /// <typeparamref name="TValue"/> is not compatible with the JSON,
         /// or when there is remaining data in the Stream.
         /// </exception>
@@ -244,7 +244,7 @@ namespace System.Text.Json
         }
 
         /// <summary>
-        /// Read the UTF-8 encoded text representing a single JSON value into a <paramref name="returnType"/>.
+        /// Reads the UTF-8 encoded text representing a single JSON value into a <paramref name="returnType"/>.
         /// The Stream will be read to completion.
         /// </summary>
         /// <returns>A <paramref name="returnType"/> representation of the JSON value.</returns>
@@ -252,13 +252,13 @@ namespace System.Text.Json
         /// <param name="returnType">The type of the object to convert to and return.</param>
         /// <param name="context">A metadata provider for serializable types.</param>
         /// <param name="cancellationToken">
-        /// The <see cref="System.Threading.CancellationToken"/> which may be used to cancel the read operation.
+        /// The <see cref="System.Threading.CancellationToken"/> that can be used to cancel the read operation.
         /// </param>
         /// <exception cref="System.ArgumentNullException">
         /// <paramref name="utf8Json"/>, <paramref name="returnType"/>, or <paramref name="context"/> is <see langword="null"/>.
         /// </exception>
         /// <exception cref="JsonException">
-        /// Thrown when the JSON is invalid,
+        /// The JSON is invalid,
         /// the <paramref name="returnType"/> is not compatible with the JSON,
         /// or when there is remaining data in the Stream.
         /// </exception>
@@ -295,7 +295,7 @@ namespace System.Text.Json
         }
 
         /// <summary>
-        /// Read the UTF-8 encoded text representing a single JSON value into a <paramref name="returnType"/>.
+        /// Reads the UTF-8 encoded text representing a single JSON value into a <paramref name="returnType"/>.
         /// The Stream will be read to completion.
         /// </summary>
         /// <returns>A <paramref name="returnType"/> representation of the JSON value.</returns>
@@ -306,7 +306,7 @@ namespace System.Text.Json
         /// <paramref name="utf8Json"/>, <paramref name="returnType"/>, or <paramref name="context"/> is <see langword="null"/>.
         /// </exception>
         /// <exception cref="JsonException">
-        /// Thrown when the JSON is invalid,
+        /// The JSON is invalid,
         /// the <paramref name="returnType"/> is not compatible with the JSON,
         /// or when there is remaining data in the Stream.
         /// </exception>
@@ -348,7 +348,7 @@ namespace System.Text.Json
         /// <returns>An <see cref="IAsyncEnumerable{TValue}" /> representation of the provided JSON array.</returns>
         /// <param name="utf8Json">JSON data to parse.</param>
         /// <param name="options">Options to control the behavior during reading.</param>
-        /// <param name="cancellationToken">The <see cref="System.Threading.CancellationToken"/> which may be used to cancel the read operation.</param>
+        /// <param name="cancellationToken">The <see cref="System.Threading.CancellationToken"/> that can be used to cancel the read operation.</param>
         /// <returns>An <typeparamref name="TValue"/> representation of the JSON value.</returns>
         /// <exception cref="System.ArgumentNullException">
         /// <paramref name="utf8Json"/> is <see langword="null"/>.

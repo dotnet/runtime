@@ -70,6 +70,11 @@ namespace System.Text.Json
         /// </summary>
         public bool SupportContinuation;
 
+        /// <summary>
+        /// Stores a reference id that has been calculated by a polymorphic converter handling a newly encountered boxed struct.
+        /// </summary>
+        public string? BoxedStructReferenceId;
+
         private void EnsurePushCapacity()
         {
             if (_stack is null)

@@ -1184,7 +1184,7 @@ private:
 
         if (isArgToCall)
         {
-            JITDUMP("LocalAddressVisitor incrementing weighted ref count from %d to %d"
+            JITDUMP("LocalAddressVisitor incrementing weighted ref count from " FMT_WT " to " FMT_WT
                     " for implicit by-ref V%02d arg passed to call\n",
                     varDsc->lvRefCntWtd(RCS_EARLY), varDsc->lvRefCntWtd(RCS_EARLY) + 1, lclNum);
             varDsc->incLvRefCntWtd(1, RCS_EARLY);

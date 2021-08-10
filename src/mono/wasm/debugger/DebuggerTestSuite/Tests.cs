@@ -830,12 +830,13 @@ namespace DebuggerTests
         public async Task InspectTaskAtLocals() => await CheckInspectLocalsAtBreakpointSite(
             "InspectTask",
             "RunInspectTask",
-            7,
+            10,
             "<RunInspectTask>b__0" ,
             $"window.setTimeout(function() {{ invoke_static_method_async('[debugger-test] InspectTask:RunInspectTask'); }}, 1);",
             wait_for_event_fn: async (pause_location) =>
             {
                 var locals = await GetProperties(pause_location["callFrames"][0]["callFrameId"].Value<string>());
+                CheckNumber(locals, "a", 10);
 
                 var t_props = await GetObjectOnLocals(locals, "t");
                 await CheckProps(t_props, new
