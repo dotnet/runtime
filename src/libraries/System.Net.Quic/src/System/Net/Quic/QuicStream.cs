@@ -84,19 +84,13 @@ namespace System.Net.Quic
         public override int ReadTimeout
         {
             get => _provider.ReadTimeout;
-            set
-            {
-                 _provider.ReadTimeout = value;
-            }
+            set => _provider.ReadTimeout = value;
         }
 
         public override int WriteTimeout
         {
             get => _provider.WriteTimeout;
-            set
-            {
-                 _provider.WriteTimeout = value;
-            }
+            set => _provider.WriteTimeout = value;
         }
 
         public override ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default) => _provider.WriteAsync(buffer, cancellationToken);
