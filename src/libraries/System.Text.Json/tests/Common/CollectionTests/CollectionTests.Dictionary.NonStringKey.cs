@@ -621,59 +621,49 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
-        public static void KeyWithCustomConverter()
+        public static void KeyWithCustomPrimitiveConverter_FallbackToDefaultConverter()
         {
-            // TODO: update these tests after https://github.com/dotnet/runtime/issues/50071 is implemented.
+            // Validates .NET 5 primitive custom key converter behavior.
 
             JsonSerializerOptions options = new()
             {
-                Converters = { new ConverterForInt32(), new ComplexKeyConverter() }
+                Converters = { new ConverterForInt32() }
             };
 
-            // Primitive key
-            string json = @"{
-    ""PrimitiveKey"":{
-        ""1"":""1""
-    }
-}
-";
-            ClassWithNonStringDictKeys obj = new()
-            {
-                PrimitiveKey = new Dictionary<int, string> { [1] = "1" },
-            };
-            RunTest(obj, json, typeof(int).ToString(), typeof(ConverterForInt32).ToString());
+            var dictionary = new Dictionary<int, string> { [1] = "1" };
 
-            // Complex key
-            json = @"{
-    ""ComplexKey"":{
-        ""SomeStringRepresentation"":""1""
-    }
-}
-";
-            obj = new()
-            {
-                ComplexKey = new Dictionary<ClassWithIDictionary, string> { [new ClassWithIDictionary()] = "1" },
-            };
-            RunTest(obj, json, typeof(ClassWithIDictionary).ToString(), typeof(ComplexKeyConverter).ToString());
+            string expectedJson = @"{""1"":""1""}";
+            string actualJson = JsonSerializer.Serialize(dictionary, options);
+            Assert.Equal(expectedJson, actualJson);
 
-            void RunTest(ClassWithNonStringDictKeys obj, string payload, string keyTypeAsStr, string converterTypeAsStr)
-            {
-                NotSupportedException ex = Assert.Throws<NotSupportedException>(() => JsonSerializer.Serialize(obj, options));
-                string exAsStr = ex.ToString();
-                Assert.Contains(keyTypeAsStr, exAsStr);
-                Assert.Contains(converterTypeAsStr, exAsStr);
-
-                ex = Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize<ClassWithNonStringDictKeys>(payload, options));
-                exAsStr = ex.ToString();
-                Assert.Contains(keyTypeAsStr, exAsStr);
-                Assert.Contains(converterTypeAsStr, exAsStr);
-            }
+            dictionary = JsonSerializer.Deserialize<Dictionary<int, string>>(expectedJson);
+            Assert.True(dictionary.ContainsKey(1));
         }
 
-        private class ClassWithNonStringDictKeys
+        [Fact]
+        public static void KeyWithCustomClassConverter_ThrowsNotSupportedException()
         {
-            public Dictionary<int, string> PrimitiveKey { get; set; }
-            public Dictionary<ClassWithIDictionary, string> ComplexKey { get; set; }
+            // TODO: update after https://github.com/dotnet/runtime/issues/46520 is implemented.
+
+            JsonSerializerOptions options = new()
+            {
+                Converters = { new ComplexKeyConverter() }
+            };
+
+            var dictionary = new Dictionary<ClassWithIDictionary, string> { [new ClassWithIDictionary()] = "1" };
+
+            NotSupportedException ex = Assert.Throws<NotSupportedException>(() => JsonSerializer.Serialize(dictionary, options));
+            ValidateException(ex);
+
+            string json = @"{""SomeStringRepresentation"":""1""}";
+            ex = Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize<Dictionary<ClassWithIDictionary, string>>(json, options));
+            ValidateException(ex);
+
+            static void ValidateException(NotSupportedException ex)
+            {
+                Assert.Contains(nameof(ClassWithIDictionary), ex.Message);
+                Assert.Contains(nameof(ComplexKeyConverter), ex.Message);
+            }
         }
 
         private class ComplexKeyConverter : JsonConverter<ClassWithIDictionary>

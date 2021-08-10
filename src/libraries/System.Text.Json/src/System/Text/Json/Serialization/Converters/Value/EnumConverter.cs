@@ -84,7 +84,7 @@ namespace System.Text.Json.Serialization.Converters
                     return default;
                 }
 
-                return ReadWithQuotes(ref reader);
+                return ReadFromPropertyName(ref reader, typeToConvert, options);
             }
 
             if (token != JsonTokenType.Number || !_converterOptions.HasFlag(EnumConverterOptions.AllowNumbers))
@@ -304,7 +304,7 @@ namespace System.Text.Json.Serialization.Converters
             return converted;
         }
 
-        internal override T ReadWithQuotes(ref Utf8JsonReader reader)
+        internal override T ReadFromPropertyName(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
         {
             string? enumString = reader.GetString();
 
@@ -318,7 +318,7 @@ namespace System.Text.Json.Serialization.Converters
             return value;
         }
 
-        internal override void WriteWithQuotes(Utf8JsonWriter writer, T value, JsonSerializerOptions options, ref WriteStack state)
+        internal override void WriteToPropertyName(Utf8JsonWriter writer, T value, JsonSerializerOptions options, ref WriteStack state)
         {
             // An EnumConverter that invokes this method
             // can only be created by JsonSerializerOptions.GetDictionaryKeyConverter
@@ -330,8 +330,6 @@ namespace System.Text.Json.Serialization.Converters
             // Try to obtain values from caches
             if (options.DictionaryKeyPolicy != null)
             {
-                Debug.Assert(!state.Current.IgnoreDictionaryKeyPolicy);
-
                 if (_dictionaryKeyPolicyCache != null && _dictionaryKeyPolicyCache.TryGetValue(key, out JsonEncodedText formatted))
                 {
                     writer.WritePropertyName(formatted);

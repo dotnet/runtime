@@ -15,12 +15,12 @@ namespace System.Text.Json.Serialization.Converters
             writer.WriteStringValue(value);
         }
 
-        internal override DateTimeOffset ReadWithQuotes(ref Utf8JsonReader reader)
+        internal override DateTimeOffset ReadFromPropertyName(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
         {
             return reader.GetDateTimeOffsetNoValidation();
         }
 
-        internal override void WriteWithQuotes(Utf8JsonWriter writer, DateTimeOffset value, JsonSerializerOptions options, ref WriteStack state)
+        internal override void WriteToPropertyName(Utf8JsonWriter writer, DateTimeOffset value, JsonSerializerOptions options, ref WriteStack state)
         {
             writer.WritePropertyName(value);
         }

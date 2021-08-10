@@ -105,9 +105,9 @@ namespace System.Text.Json.Serialization
         internal abstract bool WriteCoreAsObject(Utf8JsonWriter writer, object? value, JsonSerializerOptions options, ref WriteStack state);
 
         /// <summary>
-        /// Loosely-typed WriteWithQuotes() that forwards to strongly-typed WriteWithQuotes().
+        /// Loosely-typed WriteToPropertyName() that forwards to strongly-typed WriteToPropertyName().
         /// </summary>
-        internal abstract void WriteWithQuotesAsObject(Utf8JsonWriter writer, object value, JsonSerializerOptions options, ref WriteStack state);
+        internal abstract void WriteToPropertyNameAsObject(Utf8JsonWriter writer, object value, JsonSerializerOptions options, ref WriteStack state);
 
         // Whether a type (ConverterStrategy.Object) is deserialized using a parameterized constructor.
         internal virtual bool ConstructorIsParameterized { get; }
