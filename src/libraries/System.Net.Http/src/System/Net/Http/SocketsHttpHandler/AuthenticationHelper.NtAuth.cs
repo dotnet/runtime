@@ -16,26 +16,26 @@ namespace System.Net.Http
         private const string UsePortInSpnCtxSwitch = "System.Net.Http.UsePortInSpn";
         private const string UsePortInSpnEnvironmentVariable = "DOTNET_SYSTEM_NET_HTTP_USEPORTINSPN";
 
-        private static bool UsePortInSpn
+        private static bool UsePortInSpn => s_UsePortInSpn.Value;
+        private static readonly Lazy<bool> s_UsePortInSpn = new Lazy<bool>(GetUsePortInSpn);
+
+        private static bool GetUsePortInSpn()
         {
-            get
+            // First check for the AppContext switch, giving it priority over the environment variable.
+            if (AppContext.TryGetSwitch(UsePortInSpnCtxSwitch, out bool disabled))
             {
-                // First check for the AppContext switch, giving it priority over the environment variable.
-                if (AppContext.TryGetSwitch(UsePortInSpnCtxSwitch, out bool disabled))
-                {
-                    return disabled;
-                }
+                return disabled;
+            }
 
-                // AppContext switch wasn't used. Check the environment variable.
-                string? envVar = Environment.GetEnvironmentVariable(UsePortInSpnEnvironmentVariable);
+            // AppContext switch wasn't used. Check the environment variable.
+            string? envVar = Environment.GetEnvironmentVariable(UsePortInSpnEnvironmentVariable);
 
-                if (envVar is not null)
-                {
-                    return envVar == "1" || envVar.Equals("true", StringComparison.OrdinalIgnoreCase);
-                }
+            if (envVar is not null)
+            {
+                return envVar == "1" || envVar.Equals("true", StringComparison.OrdinalIgnoreCase);
+            }
 
-                return false;
-             }
+            return false;
         }
 
         private static Task<HttpResponseMessage> InnerSendAsync(HttpRequestMessage request, bool async, bool isProxyAuth, HttpConnectionPool pool, HttpConnection connection, CancellationToken cancellationToken)
