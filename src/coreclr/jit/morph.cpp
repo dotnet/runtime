@@ -13785,36 +13785,34 @@ GenTree* Compiler::fgOptimizeEqualityComparison(GenTreeOp* cmp)
     } // END if (ival2 != INT_MAX)
 
 SKIP:
+
     // Now check for compares with small constant longs that can be cast to int.
-
-    if (!cns2->OperIsConst())
-    {
-        return cmp;
-    }
-
-    if (!cns2->TypeIs(TYP_LONG))
+    if (!cns2->OperIsConst() || !cns2->TypeIs(TYP_LONG))
     {
         return cmp;
     }
 
     // Is the constant 31 bits or smaller?
-
     if ((cns2->AsIntConCommon()->LngValue() >> 31) != 0)
     {
         return cmp;
     }
 
-    // Is the first comparand mask operation of type long?
-
     if (!op1->OperIs(GT_AND))
     {
         // Another interesting case: cast from int.
-
         if (op1->OperIs(GT_CAST) && op1->AsCast()->CastOp()->TypeIs(TYP_INT) && !op1->gtOverflow())
         {
             // Simply make this into an integer comparison.
             cmp->gtOp1 = op1->AsCast()->CastOp();
-            cmp->gtOp2 = gtNewIconNode(static_cast<int32_t>(cns2->AsIntConCommon()->LngValue()), TYP_INT);
+
+            int64_t op2Value = cns2->AsIntConCommon()->LngValue();
+            cns2->ChangeOperConst(GT_CNS_INT);
+            cns2->ChangeType(TYP_INT);
+            cns2->AsIntCon()->SetIconValue(static_cast<int32_t>(op2Value));
+            fgUpdateConstTreeValueNumber(cns2);
+
+            cmp->gtOp2 = cns2;
         }
 
         return cmp;
@@ -13834,7 +13832,15 @@ SKIP:
         return cmp;
     }
 
-    // Now we know that we can cast AsOp()->gtOp1 of AND to int.
+    // Now we narrow AsOp()->gtOp1 of AND to int.
+    if (optNarrowTree(op1->AsOp()->gtGetOp1(), TYP_LONG, TYP_INT, ValueNumPair(), false))
+    {
+        optNarrowTree(op1->AsOp()->gtGetOp1(), TYP_LONG, TYP_INT, ValueNumPair(), true);
+    }
+    else
+    {
+        op1->AsOp()->gtOp1 = gtNewCastNode(TYP_INT, op1->AsOp()->gtGetOp1(), false, TYP_INT);
+    }
 
     op1->AsOp()->gtOp1 = gtNewCastNode(TYP_INT, op1->AsOp()->gtGetOp1(), false, TYP_INT);
 
