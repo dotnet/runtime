@@ -41,9 +41,9 @@ set processedArgs=
 set __UnprocessedBuildArgs=
 set __CommonMSBuildArgs=
 
-set __BuildTestProject=
-set __BuildTestDir=
-set __BuildTestTree=
+set __BuildTestProject=%%3B
+set __BuildTestDir=%%3B
+set __BuildTestTree=%%3B
 set __BuildTestAll=
 
 set __SkipRestorePackages=
@@ -100,9 +100,9 @@ if /i "%1" == "skipnative"            (set __SkipNative=1&set __CopyNativeProjec
 if /i "%1" == "skiptestwrappers"      (set __SkipTestWrappers=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "skipgeneratelayout"    (set __SkipGenerateLayout=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 
-if /i "%1" == "test"                  (set __BuildTestProject=%2&shift&shift&goto Arg_Loop)
-if /i "%1" == "dir"                   (set __BuildTestDir=%2&shift&shift&goto Arg_Loop)
-if /i "%1" == "tree"                  (set __BuildTestTree=%2&shift&shift&goto Arg_Loop)
+if /i "%1" == "test"                  (set __BuildTestProject=!__BuildTestProject!%2%%3B&shift&shift&goto Arg_Loop)
+if /i "%1" == "dir"                   (set __BuildTestDir=!__BuildTestDir!%2%%3B&shift&shift&goto Arg_Loop)
+if /i "%1" == "tree"                  (set __BuildTestTree=!__BuildTestTree!%2%%3B&shift&shift&goto Arg_Loop)
 if /i "%1" == "all"                   (set __BuildTestAll=1&shift&goto Arg_Loop)
 
 if /i "%1" == "copynativeonly"        (set __CopyNativeTestBinaries=1&set __SkipNative=1&set __CopyNativeProjectsAfterCombinedTestBuild=false&set __SkipGenerateLayout=1&set __SkipTestWrappers=1&set __SkipCrossgenFramework=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)

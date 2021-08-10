@@ -507,19 +507,19 @@ handle_arguments_local() {
         test*|-test*)
             local arg="$1"
             local parts=(${arg//:/ })
-            __BuildTestProject=${parts[1]}
+            __BuildTestProject="$__BuildTestProject;${parts[1]}"
             ;;
 
         dir*|-dir*)
             local arg="$1"
             local parts=(${arg//:/ })
-            __BuildTestDir=${parts[1]}
+            __BuildTestDir="$__BuildTestDir;${parts[1]}"
             ;;
 
         tree*|-tree*)
             local arg="$1"
             local parts=(${arg//:/ })
-            __BuildTestTree=${parts[1]}
+            __BuildTestTree="$__BuildTestTree;${parts[1]}"
             ;;
 
         all|-all)
