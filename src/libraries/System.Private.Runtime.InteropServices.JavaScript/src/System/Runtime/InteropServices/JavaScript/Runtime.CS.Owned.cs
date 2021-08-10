@@ -9,6 +9,34 @@ namespace System.Runtime.InteropServices.JavaScript
     {
         private static readonly Dictionary<int, WeakReference<JSObject>> _csOwnedObjects = new Dictionary<int, WeakReference<JSObject>>();
 
+        public static JSObject? GetCSOwnedObjectByJsHandle(int jsHandle, int shouldAddInflight)
+        {
+            lock (_csOwnedObjects)
+            {
+                if (_csOwnedObjects.TryGetValue(jsHandle, out WeakReference<JSObject>? reference))
+                {
+                    reference.TryGetTarget(out JSObject? jso);
+                    if (shouldAddInflight != 0 && jso != null)
+                    {
+                        jso.AddInFlight();
+                    }
+                    return jso;
+                }
+            }
+            return null;
+
+        }
+
+        public static int TryGetCsOwnedObjectJsHandle(object rawObj, int shouldAddInflight)
+        {
+            JSObject? jsObject = rawObj as JSObject;
+            if (jsObject != null && shouldAddInflight != 0)
+            {
+                jsObject.AddInFlight();
+            }
+            return jsObject?.JSHandle ?? 0;
+        }
+
         public static int GetCsOwnedObjectJsHandle(JSObject target, int shouldAddInflight)
         {
             if (shouldAddInflight != 0)
@@ -18,33 +46,7 @@ namespace System.Runtime.InteropServices.JavaScript
             return target.JSHandle;
         }
 
-        internal static bool ReleaseCsOwnedObject(JSObject objToRelease)
-        {
-            lock (_csOwnedObjects)
-            {
-                _csOwnedObjects.Remove(objToRelease.JSHandle);
-                Interop.Runtime.ReleaseCsOwnedObject(objToRelease.JSHandle);
-            }
-            return true;
-        }
-
-        internal static IntPtr CreateCsOwnedObject(JSObject proxy, string typeName, params object[] parms)
-        {
-            object res = Interop.Runtime.CreateCsOwnedObject(typeName, parms, out int exception);
-            if (exception != 0)
-                throw new JSException((string)res);
-
-            var jsHandle = (int)res;
-
-            lock (_csOwnedObjects)
-            {
-                _csOwnedObjects[jsHandle] = new WeakReference<JSObject>(proxy, trackResurrection: true);
-            }
-
-            return (IntPtr)jsHandle;
-        }
-
-        public static JSObject CreateCsOwnedProxy(IntPtr jsHandle, MappedType mappedType)
+        public static JSObject CreateCsOwnedProxy(IntPtr jsHandle, MappedType mappedType, int shouldAddInflight)
         {
             JSObject? target = null;
 
@@ -77,35 +79,44 @@ namespace System.Runtime.InteropServices.JavaScript
                     _csOwnedObjects[(int)jsHandle] = new WeakReference<JSObject>(target, trackResurrection: true);
                 }
             }
-
-            target.AddInFlight();
+            if (shouldAddInflight != 0)
+            {
+                target.AddInFlight();
+            }
 
             return target;
         }
 
-        public static int TryGetCsOwnedObjectJsHandle(object rawObj)
-        {
-            JSObject? jsObject = rawObj as JSObject;
-            return jsObject?.JSHandle ?? 0;
-        }
+        #region used from C# side
 
-        public static JSObject? GetCSOwnedObjectByJsHandle(int jsHandle, int shouldAddInflight)
+        internal static bool ReleaseCsOwnedObject(JSObject objToRelease)
         {
             lock (_csOwnedObjects)
             {
-                if (_csOwnedObjects.TryGetValue(jsHandle, out WeakReference<JSObject>? reference))
-                {
-                    reference.TryGetTarget(out JSObject? jso);
-                    if (shouldAddInflight != 0 && jso != null)
-                    {
-                        jso.AddInFlight();
-                    }
-                    return jso;
-                }
+                _csOwnedObjects.Remove(objToRelease.JSHandle);
+                Interop.Runtime.ReleaseCsOwnedObject(objToRelease.JSHandle);
             }
-            return null;
-
+            return true;
         }
+
+        internal static IntPtr CreateCsOwnedObject(JSObject proxy, string typeName, params object[] parms)
+        {
+            object res = Interop.Runtime.CreateCsOwnedObject(typeName, parms, out int exception);
+            if (exception != 0)
+                throw new JSException((string)res);
+
+            var jsHandle = (int)res;
+
+            lock (_csOwnedObjects)
+            {
+                _csOwnedObjects[jsHandle] = new WeakReference<JSObject>(proxy, trackResurrection: true);
+            }
+
+            return (IntPtr)jsHandle;
+        }
+
+        #endregion
+
 
         // please keep BINDING wasm_type_symbol in sync
         public enum MappedType

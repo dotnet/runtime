@@ -129,8 +129,8 @@ var BindingSupportLib = {
 
 			this._get_cs_owned_object_by_js_handle = bind_runtime_method ("GetCSOwnedObjectByJsHandle", "ii!");
 			this._get_cs_owned_object_js_handle = bind_runtime_method ("GetCsOwnedObjectJsHandle", 'mi');
-			this._try_get_cs_owned_object_js_handle = bind_runtime_method ("TryGetCsOwnedObjectJsHandle", "m");
-			this._create_cs_owned_proxy = bind_runtime_method ("CreateCsOwnedProxy", "ii!");
+			this._try_get_cs_owned_object_js_handle = bind_runtime_method ("TryGetCsOwnedObjectJsHandle", "mi");
+			this._create_cs_owned_proxy = bind_runtime_method ("CreateCsOwnedProxy", "iii!");
 
 			this._get_js_owned_object_by_gc_handle = bind_runtime_method ("GetJSOwnedObjectByGCHandle", "i!");
 			this._get_js_owned_object_gc_handle = bind_runtime_method ("GetJSOwnedObjectGCHandle", "m");
@@ -258,13 +258,14 @@ var BindingSupportLib = {
 			return result;
 		},
 
-		_unbox_ref_type_root_as_object: function (root) {
+		_unbox_ref_type_root_as_js_object: function (root) {
 			this.bindings_lazy_init ();
 			if (root.value === 0)
 				return null;
 
 			// this could be JSObject proxy of a js native object
-			var js_handle = this._try_get_cs_owned_object_js_handle (root.value);
+			// we don't need in-flight reference as we already have it rooted here
+			var js_handle = this._try_get_cs_owned_object_js_handle (root.value, false);
 			if (js_handle) {
 				if (js_handle===-1){
 					throw new Error("Cannot access a disposed JSObject at " + root.value);
@@ -583,7 +584,7 @@ var BindingSupportLib = {
 				case 6: // Task
 					return this._unbox_task_root_as_promise (root);
 				case 7: // ref type
-					return this._unbox_ref_type_root_as_object (root);
+					return this._unbox_ref_type_root_as_js_object (root);
 				case 10: // arrays
 				case 11:
 				case 12:
@@ -920,6 +921,7 @@ var BindingSupportLib = {
 			var result = null;
 			if (js_obj.__js_owned_gc_handle__) {
 				// for __js_owned_gc_handle__ we don't want to create new proxy
+				// since this is strong gc_handle we don't need to in-flight reference
 				result = this.get_js_owned_object_by_gc_handle (js_obj.__js_owned_gc_handle__);
 				return result;
 			}
@@ -940,8 +942,7 @@ var BindingSupportLib = {
 
 				var js_handle = BINDING.mono_wasm_get_js_handle(js_obj);
 
-				// pointer to JSObject with AddInFlight
-				result = this._create_cs_owned_proxy(js_handle, wasm_type_id);
+				result = this._create_cs_owned_proxy(js_handle, wasm_type_id, true);
 			}
 
 			return result;

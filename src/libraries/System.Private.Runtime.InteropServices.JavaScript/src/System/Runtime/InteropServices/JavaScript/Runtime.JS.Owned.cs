@@ -26,19 +26,19 @@ namespace System.Runtime.InteropServices.JavaScript
         //  strong references, allowing the managed object to be collected.
         // This ensures that things like delegates and promises will never 'go away' while JS
         //  is expecting to be able to invoke or await them.
-        public static int GetJSOwnedObjectGCHandle(object o)
+        public static int GetJSOwnedObjectGCHandle(object obj)
         {
-            if (o == null)
+            if (obj == null)
                 return 0;
 
             int result;
             lock (JSOwnedObjectLock)
             {
-                if (GCHandleFromJSOwnedObject.TryGetValue(o, out result))
+                if (GCHandleFromJSOwnedObject.TryGetValue(obj, out result))
                     return result;
 
-                result = (int)(IntPtr)GCHandle.Alloc(o, GCHandleType.Normal);
-                GCHandleFromJSOwnedObject[o] = result;
+                result = (int)(IntPtr)GCHandle.Alloc(obj, GCHandleType.Normal);
+                GCHandleFromJSOwnedObject[obj] = result;
                 return result;
             }
         }
