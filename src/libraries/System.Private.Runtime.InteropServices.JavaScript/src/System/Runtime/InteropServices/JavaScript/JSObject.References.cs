@@ -84,7 +84,7 @@ namespace System.Runtime.InteropServices.JavaScript
 #if DEBUG
         public void AssertInFlight(int expectedInFlightCount)
         {
-            if (InFlightCounter != expectedInFlightCount) throw new InvalidProgramException($"Invalid InFlightCounter, expected {expectedInFlightCount}, actual {InFlightCounter}");
+            if (InFlightCounter != expectedInFlightCount) throw new InvalidProgramException($"Invalid InFlightCounter for JSObject {JSHandle}, expected: {expectedInFlightCount}, actual: {InFlightCounter}");
         }
 #endif
 

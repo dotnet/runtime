@@ -15,12 +15,12 @@ namespace System.Runtime.InteropServices.JavaScript
             {
                 if (_csOwnedObjects.TryGetValue(jsHandle, out WeakReference<JSObject>? reference))
                 {
-                    reference.TryGetTarget(out JSObject? jso);
-                    if (shouldAddInflight != 0 && jso != null)
+                    reference.TryGetTarget(out JSObject? jsObject);
+                    if (shouldAddInflight != 0 && jsObject != null)
                     {
-                        jso.AddInFlight();
+                        jsObject.AddInFlight();
                     }
-                    return jso;
+                    return jsObject;
                 }
             }
             return null;
@@ -37,28 +37,28 @@ namespace System.Runtime.InteropServices.JavaScript
             return jsObject?.JSHandle ?? 0;
         }
 
-        public static int GetCsOwnedObjectJsHandle(JSObject target, int shouldAddInflight)
+        public static int GetCsOwnedObjectJsHandle(JSObject jsObject, int shouldAddInflight)
         {
-            target.AssertNotDisposed();
+            jsObject.AssertNotDisposed();
 
             if (shouldAddInflight != 0)
             {
-                target.AddInFlight();
+                jsObject.AddInFlight();
             }
-            return target.JSHandle;
+            return jsObject.JSHandle;
         }
 
         public static JSObject CreateCsOwnedProxy(IntPtr jsHandle, MappedType mappedType, int shouldAddInflight)
         {
-            JSObject? target = null;
+            JSObject? jsObject = null;
 
             lock (_csOwnedObjects)
             {
                 if (!_csOwnedObjects.TryGetValue((int)jsHandle, out WeakReference<JSObject>? reference) ||
-                    !reference.TryGetTarget(out target) ||
-                    target.IsDisposed)
+                    !reference.TryGetTarget(out jsObject) ||
+                    jsObject.IsDisposed)
                 {
-                    target = mappedType switch
+                    jsObject = mappedType switch
                     {
                         MappedType.JSObject => new JSObject(jsHandle),
                         MappedType.Array => new Array(jsHandle),
@@ -78,15 +78,15 @@ namespace System.Runtime.InteropServices.JavaScript
                         MappedType.Float64Array => new Float64Array(jsHandle),
                         _ => throw new ArgumentOutOfRangeException(nameof(mappedType))
                     };
-                    _csOwnedObjects[(int)jsHandle] = new WeakReference<JSObject>(target, trackResurrection: true);
+                    _csOwnedObjects[(int)jsHandle] = new WeakReference<JSObject>(jsObject, trackResurrection: true);
                 }
             }
             if (shouldAddInflight != 0)
             {
-                target.AddInFlight();
+                jsObject.AddInFlight();
             }
 
-            return target;
+            return jsObject;
         }
 
         #region used from C# side

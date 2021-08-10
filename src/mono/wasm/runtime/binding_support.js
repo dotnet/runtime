@@ -535,7 +535,7 @@ var BindingSupportLib = {
 					if (asString)
 						obj = obj.toString ();
 
-					elemRoot.value = this.js_to_mono_obj (obj, should_add_in_flight);
+					elemRoot.value = this._js_to_mono_obj (should_add_in_flight, obj);
 					this.mono_obj_array_set (arrayRoot.value, i, elemRoot.value);
 				}
 
@@ -545,6 +545,11 @@ var BindingSupportLib = {
 			}
 		},
 
+		// this is only used from Blazor
+		js_to_mono_obj: function (js_obj) {
+			return this._js_to_mono_obj(false, js_obj)
+		},
+		
 		// this is only used from Blazor
 		unbox_mono_obj: function (mono_obj) {
 			if (mono_obj === 0)
@@ -666,7 +671,7 @@ var BindingSupportLib = {
 			return this.mono_wasm_box_primitive (this._class_boolean, this._box_buffer, 4);
 		},
 
-		js_to_mono_uri: function (js_obj, should_add_in_flight=false) {
+		_js_to_mono_uri: function (should_add_in_flight, js_obj) {
 			this.bindings_lazy_init ();
 
 			switch (true) {
@@ -677,11 +682,10 @@ var BindingSupportLib = {
 				case typeof js_obj === "string":
 					return this._create_uri(js_obj)
 				default:
-					return this._extract_mono_obj (js_obj);
+					return this._extract_mono_obj (should_add_in_flight, js_obj);
 			}
 		},
-
-		js_to_mono_obj: function (js_obj, should_add_in_flight=false) {
+		_js_to_mono_obj: function (should_add_in_flight, js_obj) {
 			this.bindings_lazy_init ();
 
 			switch (true) {
@@ -712,11 +716,11 @@ var BindingSupportLib = {
 					// getTime() is always UTC
 					return this._create_date_time(js_obj.getTime());
 				default:
-					return this._extract_mono_obj (js_obj, should_add_in_flight);
+					return this._extract_mono_obj (should_add_in_flight, js_obj);
 			}
 		},
 
-		_extract_mono_obj: function (js_obj, should_add_in_flight) {
+		_extract_mono_obj: function (should_add_in_flight, js_obj) {
 			if (js_obj === null || typeof js_obj === "undefined")
 				return 0;
 
@@ -1002,8 +1006,8 @@ var BindingSupportLib = {
 			result.set ('m', { steps: [{ }], size: 0});
 			result.set ('s', { steps: [{ convert: this.js_string_to_mono_string.bind (this) }], size: 0, needs_root: true });
 			result.set ('S', { steps: [{ convert: this.js_string_to_mono_string_interned.bind (this) }], size: 0, needs_root: true });
-			result.set ('o', { steps: [{ convert: this.js_to_mono_obj.bind (this) }], size: 0, needs_root: true });
-			result.set ('u', { steps: [{ convert: this.js_to_mono_uri.bind (this) }], size: 0, needs_root: true });
+			result.set ('o', { steps: [{ convert: this._js_to_mono_obj.bind (this, false) }], size: 0, needs_root: true });
+			result.set ('u', { steps: [{ convert: this._js_to_mono_uri.bind (this, false) }], size: 0, needs_root: true });
 
 			// result.set ('k', { steps: [{ convert: this.js_to_mono_enum.bind (this), indirect: 'i64'}], size: 8});
 			result.set ('j', { steps: [{ convert: this.js_to_mono_enum.bind (this), indirect: 'i32'}], size: 8});
@@ -1688,7 +1692,7 @@ var BindingSupportLib = {
 				if (typeof m === "undefined")
 					throw new Error("Method: '" + js_name + "' not found for: '" + Object.prototype.toString.call(obj) + "'");
 				var res = m.apply (obj, js_args);
-				return BINDING.js_to_mono_obj(res, true);
+				return BINDING._js_to_mono_obj(true, res);
 			} catch (e) {
 				var res = e.toString ();
 				setValue (is_exception, 1, "i32");
@@ -1722,7 +1726,7 @@ var BindingSupportLib = {
 			try {
 				var m = obj [js_name];
 
-				return BINDING.js_to_mono_obj (m, true);
+				return BINDING._js_to_mono_obj (true, m);
 			} catch (e) {
 				var res = e.toString ();
 				setValue (is_exception, 1, "i32");
@@ -1794,7 +1798,7 @@ var BindingSupportLib = {
 
 		try {
 			var m = obj [property_index];
-			return BINDING.js_to_mono_obj (m, true);
+			return BINDING._js_to_mono_obj (true, m);
 		} catch (e) {
 			var res = e.toString ();
 			setValue (is_exception, 1, "i32");
@@ -1852,7 +1856,7 @@ var BindingSupportLib = {
 				return BINDING.js_string_to_mono_string ("Global object '" + js_name + "' not found.");
 			}
 
-			return BINDING.js_to_mono_obj (globalObj, true);
+			return BINDING._js_to_mono_obj (true, globalObj);
 		} finally {
 			nameRoot.release();
 		}
@@ -1900,7 +1904,7 @@ var BindingSupportLib = {
 				var js_handle = BINDING.mono_wasm_get_js_handle(js_obj);
 				// returns boxed js_handle int, because on exception we need to return String on same method signature
 				// here we don't have anything to in-flight reference, as the JSObject doesn't exist yet
-				return BINDING.js_to_mono_obj(js_handle, false);
+				return BINDING._js_to_mono_obj(false, js_handle);
 			} catch (e) {
 				var res = e.toString ();
 				setValue (is_exception, 1, "i32");
@@ -1936,13 +1940,13 @@ var BindingSupportLib = {
 
 		var res = BINDING.typedarray_copy_to(js_obj, pinned_array, begin, end, bytes_per_element);
 		// returns num_of_bytes boxed
-		return BINDING.js_to_mono_obj (res, false)
+		return BINDING._js_to_mono_obj (false, res)
 	},
 	mono_wasm_typed_array_from: function(pinned_array, begin, end, bytes_per_element, type, is_exception) {
 		BINDING.bindings_lazy_init ();
 		var res = BINDING.typed_array_from(pinned_array, begin, end, bytes_per_element, type);
 		// returns JS typed array like Int8Array, to be wraped with JSObject proxy
-		return BINDING.js_to_mono_obj (res, true)
+		return BINDING._js_to_mono_obj (true, res)
 	},
 	mono_wasm_typed_array_copy_from: function(js_handle, pinned_array, begin, end, bytes_per_element, is_exception) {
 		BINDING.bindings_lazy_init ();
@@ -1955,7 +1959,7 @@ var BindingSupportLib = {
 
 		var res = BINDING.typedarray_copy_from(js_obj, pinned_array, begin, end, bytes_per_element);
 		// returns num_of_bytes boxed
-		return BINDING.js_to_mono_obj (res, false)
+		return BINDING._js_to_mono_obj (false, res)
 	},
 	mono_wasm_add_event_listener: function (objHandle, name, listener_gc_handle, optionsHandle) {
 		var nameRoot = MONO.mono_wasm_new_root (name);
