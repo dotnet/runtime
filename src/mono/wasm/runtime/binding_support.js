@@ -32,24 +32,26 @@ var BindingSupportLib = {
 
 			// avoid infinite recursion
 			this.init = true;
+			this.wasm_type_symbol = Symbol.for("wasm type");
 
-			Object.prototype[Symbol.for("wasm type")] = 0;
-			Array.prototype[Symbol.for("wasm type")] = 1;
-			ArrayBuffer.prototype[Symbol.for("wasm type")] = 2;
-			DataView.prototype[Symbol.for("wasm type")] = 3;
-			Function.prototype[Symbol.for("wasm type")] =  4;
-			Map.prototype[Symbol.for("wasm type")] = 5;
+			// please keep System.Runtime.InteropServices.JavaScript.Runtime.MappedType in sync
+			Object.prototype[this.wasm_type_symbol] = 0;
+			Array.prototype[this.wasm_type_symbol] = 1;
+			ArrayBuffer.prototype[this.wasm_type_symbol] = 2;
+			DataView.prototype[this.wasm_type_symbol] = 3;
+			Function.prototype[this.wasm_type_symbol] =  4;
+			Map.prototype[this.wasm_type_symbol] = 5;
 			if (typeof SharedArrayBuffer !== 'undefined')
-				SharedArrayBuffer.prototype[Symbol.for("wasm type")] =  6;
-			Int8Array.prototype[Symbol.for("wasm type")] = 10;
-			Uint8Array.prototype[Symbol.for("wasm type")] = 11;
-			Uint8ClampedArray.prototype[Symbol.for("wasm type")] = 12;
-			Int16Array.prototype[Symbol.for("wasm type")] = 13;
-			Uint16Array.prototype[Symbol.for("wasm type")] = 14;
-			Int32Array.prototype[Symbol.for("wasm type")] = 15;
-			Uint32Array.prototype[Symbol.for("wasm type")] = 16;
-			Float32Array.prototype[Symbol.for("wasm type")] = 17;
-			Float64Array.prototype[Symbol.for("wasm type")] = 18;
+				SharedArrayBuffer.prototype[this.wasm_type_symbol] =  6;
+			Int8Array.prototype[this.wasm_type_symbol] = 10;
+			Uint8Array.prototype[this.wasm_type_symbol] = 11;
+			Uint8ClampedArray.prototype[this.wasm_type_symbol] = 12;
+			Int16Array.prototype[this.wasm_type_symbol] = 13;
+			Uint16Array.prototype[this.wasm_type_symbol] = 14;
+			Int32Array.prototype[this.wasm_type_symbol] = 15;
+			Uint32Array.prototype[this.wasm_type_symbol] = 16;
+			Float32Array.prototype[this.wasm_type_symbol] = 17;
+			Float64Array.prototype[this.wasm_type_symbol] = 18;
 
 			this.assembly_load = Module.cwrap ('mono_wasm_assembly_load', 'number', ['string']);
 			this.find_corlib_class = Module.cwrap ('mono_wasm_find_corlib_class', 'number', ['string', 'string']);
@@ -125,10 +127,7 @@ var BindingSupportLib = {
 			this._get_cs_owned_object_by_js_handle = bind_runtime_method ("GetCSOwnedObjectByJsHandle", "ii!");
 			this._get_cs_owned_object_js_handle = bind_runtime_method ("GetCsOwnedObjectJsHandle", 'mi');
 			this._try_get_cs_owned_object_js_handle = bind_runtime_method ("TryGetCsOwnedObjectJsHandle", "m");
-
 			this._create_cs_owned_proxy = bind_runtime_method ("CreateCsOwnedProxy", "ii!");
-
-			this._is_simple_array = bind_runtime_method ("IsSimpleArray", "m");
 
 			this._get_js_owned_object_by_gc_handle = bind_runtime_method ("GetJSOwnedObjectByGcHandle", "i!");
 			this._get_js_owned_object_gc_handle = bind_runtime_method ("GetJSOwnedObjectGCHandle", "m");
@@ -144,6 +143,7 @@ var BindingSupportLib = {
 			this._get_date_value = bind_runtime_method ("GetDateValue", "m");
 			this._create_date_time = bind_runtime_method ("CreateDateTime", "d!");
 			this._create_uri = bind_runtime_method ("CreateUri","s!");
+			this._is_simple_array = bind_runtime_method ("IsSimpleArray", "m");
 
 			this._are_promises_supported = ((typeof Promise === "object") || (typeof Promise === "function")) && (typeof Promise.resolve === "function");
 			this.isThenable = (js_obj) => {
@@ -726,7 +726,7 @@ var BindingSupportLib = {
 			// https://developer.mozilla.org/en-US/docs/Web/JavaScript/Typed_arrays
 			if (!!(this.has_backing_array_buffer(js_obj) && js_obj.BYTES_PER_ELEMENT))
 			{
-				var arrayType = js_obj[Symbol.for("wasm type")];
+				var arrayType = js_obj[this.wasm_type_symbol];
 				var heapBytes = this.js_typedarray_to_heap(js_obj);
 				var bufferArray = this.mono_typed_array_new(heapBytes.byteOffset, js_obj.length, js_obj.BYTES_PER_ELEMENT, arrayType);
 				Module._free(heapBytes.byteOffset);
@@ -929,7 +929,7 @@ var BindingSupportLib = {
 
 			if (!result) {
 				// Obtain the JS -> C# type mapping.
-				const wasm_type = js_obj[Symbol.for("wasm type")];
+				const wasm_type = js_obj[this.wasm_type_symbol];
 				const wasm_type_id = typeof wasm_type === "undefined" ? 0 : wasm_type;
 
 				var js_handle = BINDING.mono_wasm_get_js_handle(js_obj);

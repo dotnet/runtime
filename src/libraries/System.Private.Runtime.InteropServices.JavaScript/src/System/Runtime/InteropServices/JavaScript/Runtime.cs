@@ -78,7 +78,28 @@ namespace System.Runtime.InteropServices.JavaScript
             return (IntPtr)jsHandle;
         }
 
-        public static JSObject CreateCsOwnedProxy(IntPtr jsHandle, int mappedType)
+        // please keep BINDING wasm_type_symbol in sync
+        public enum MappedType
+        {
+            JSObject = 0,
+            Array = 1,
+            ArrayBuffer = 2,
+            DataView = 3,
+            Function = 4,
+            Map = 5,
+            SharedArrayBuffer = 6,
+            Int8Array = 10,
+            Uint8Array = 11,
+            Uint8ClampedArray = 12,
+            Int16Array = 13,
+            Uint16Array = 14,
+            Int32Array = 15,
+            Uint32Array = 16,
+            Float32Array = 17,
+            Float64Array = 18,
+        }
+
+        public static JSObject CreateCsOwnedProxy(IntPtr jsHandle, MappedType mappedType)
         {
             JSObject? target = null;
 
@@ -90,22 +111,22 @@ namespace System.Runtime.InteropServices.JavaScript
                 {
                     target = mappedType switch
                     {
-                        0 => new JSObject(jsHandle),
-                        1 => new Array(jsHandle),
-                        2 => new ArrayBuffer(jsHandle),
-                        3 => new DataView(jsHandle),
-                        4 => new Function(jsHandle),
-                        5 => new Map(jsHandle),
-                        6 => new SharedArrayBuffer(jsHandle),
-                        10 => new Int8Array(jsHandle),
-                        11 => new Uint8Array(jsHandle),
-                        12 => new Uint8ClampedArray(jsHandle),
-                        13 => new Int16Array(jsHandle),
-                        14 => new Uint16Array(jsHandle),
-                        15 => new Int32Array(jsHandle),
-                        16 => new Uint32Array(jsHandle),
-                        17 => new Float32Array(jsHandle),
-                        18 => new Float64Array(jsHandle),
+                        MappedType.JSObject => new JSObject(jsHandle),
+                        MappedType.Array => new Array(jsHandle),
+                        MappedType.ArrayBuffer => new ArrayBuffer(jsHandle),
+                        MappedType.DataView => new DataView(jsHandle),
+                        MappedType.Function => new Function(jsHandle),
+                        MappedType.Map => new Map(jsHandle),
+                        MappedType.SharedArrayBuffer => new SharedArrayBuffer(jsHandle),
+                        MappedType.Int8Array => new Int8Array(jsHandle),
+                        MappedType.Uint8Array => new Uint8Array(jsHandle),
+                        MappedType.Uint8ClampedArray => new Uint8ClampedArray(jsHandle),
+                        MappedType.Int16Array => new Int16Array(jsHandle),
+                        MappedType.Uint16Array => new Uint16Array(jsHandle),
+                        MappedType.Int32Array => new Int32Array(jsHandle),
+                        MappedType.Uint32Array => new Uint32Array(jsHandle),
+                        MappedType.Float32Array => new Float32Array(jsHandle),
+                        MappedType.Float64Array => new Float64Array(jsHandle),
                         _ => throw new ArgumentOutOfRangeException(nameof(mappedType))
                     };
                     _csOwnedObjects[(int)jsHandle] = new WeakReference<JSObject>(target, trackResurrection: true);
