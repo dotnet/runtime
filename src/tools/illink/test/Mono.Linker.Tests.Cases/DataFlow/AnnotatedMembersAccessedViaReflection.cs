@@ -84,6 +84,38 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				typeof (AnnotatedField).RequiresPublicFields ();
 			}
 
+			class NestedType
+			{
+				[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)]
+				public static Type _annotatedField;
+			}
+
+			[ExpectedWarning ("IL2110", nameof (_annotatedField))]
+			[ExpectedWarning ("IL2026", "test")]
+			static void DynamicallyAccessedMembersAll1 ()
+			{
+				typeof (AnnotatedField).RequiresAll ();
+			}
+
+			[ExpectedWarning ("IL2110", nameof (_annotatedField))]
+			[ExpectedWarning ("IL2026", "test")]
+			static void DynamicallyAccessedMembersAll2 ()
+			{
+				typeof (AnnotatedField).RequiresAll ();
+			}
+
+			[ExpectedWarning ("IL2110", nameof (NestedType), nameof (NestedType._annotatedField))]
+			static void DynamicallyAccessedMembersNestedTypes1 ()
+			{
+				typeof (AnnotatedField).RequiresNonPublicNestedTypes ();
+			}
+
+			[ExpectedWarning ("IL2110", nameof (NestedType), nameof (NestedType._annotatedField))]
+			static void DynamicallyAccessedMembersNestedTypes2 ()
+			{
+				typeof (AnnotatedField).RequiresNonPublicNestedTypes ();
+			}
+
 			[UnconditionalSuppressMessage ("test", "IL2026")]
 			public static void Test ()
 			{
@@ -95,6 +127,10 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				DynamicDependencyByName ();
 				DynamicallyAccessedMembers ();
 				DynamicallyAccessedMembersSuppressedByRUC ();
+				DynamicallyAccessedMembersAll1 ();
+				DynamicallyAccessedMembersAll2 ();
+				DynamicallyAccessedMembersNestedTypes1 ();
+				DynamicallyAccessedMembersNestedTypes2 ();
 			}
 		}
 
@@ -177,6 +213,22 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				var _ = new Action<Type> (instance.AnnotatedMethod);
 			}
 
+			[ExpectedWarning ("IL2111", nameof (MethodWithSingleAnnotatedParameter))]
+			[ExpectedWarning ("IL2026", "test")]
+			[ExpectedWarning ("IL2111", nameof (IWithAnnotatedMethod.AnnotatedMethod))]
+			static void DynamicallyAccessedMembersAll1 ()
+			{
+				typeof (AnnotatedMethodParameters).RequiresAll ();
+			}
+
+			[ExpectedWarning ("IL2111", nameof (MethodWithSingleAnnotatedParameter))]
+			[ExpectedWarning ("IL2026", "test")]
+			[ExpectedWarning ("IL2111", nameof (IWithAnnotatedMethod.AnnotatedMethod))]
+			static void DynamicallyAccessedMembersAll2 ()
+			{
+				typeof (AnnotatedMethodParameters).RequiresAll ();
+			}
+
 			[UnconditionalSuppressMessage ("test", "IL2026")]
 			public static void Test ()
 			{
@@ -189,6 +241,8 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				DynamicallyAccessedMembersSuppressedByRUC ();
 				Ldftn ();
 				Ldvirtftn ();
+				DynamicallyAccessedMembersAll1 ();
+				DynamicallyAccessedMembersAll2 ();
 			}
 		}
 
@@ -395,6 +449,24 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				typeof (AnnotatedProperty).RequiresPublicProperties ();
 			}
 
+			[ExpectedWarning ("IL2111", nameof (PropertyWithAnnotation) + ".set")]
+			[ExpectedWarning ("IL2026", "test")]
+			[ExpectedWarning ("IL2111", nameof (VirtualPropertyWithAnnotationGetterOnly) + ".get")]
+			[UnconditionalSuppressMessage ("Test", "IL2110", Justification = "Suppress warning about backing field of PropertyWithAnnotation")]
+			static void DynamicallyAccessedMembersAll1 ()
+			{
+				typeof (AnnotatedProperty).RequiresAll ();
+			}
+
+			[ExpectedWarning ("IL2111", nameof (PropertyWithAnnotation) + ".set")]
+			[ExpectedWarning ("IL2026", "test")]
+			[ExpectedWarning ("IL2111", nameof (VirtualPropertyWithAnnotationGetterOnly) + ".get")]
+			[UnconditionalSuppressMessage ("Test", "IL2110", Justification = "Suppress warning about backing field of PropertyWithAnnotation")]
+			static void DynamicallyAccessedMembersAll2 ()
+			{
+				typeof (AnnotatedProperty).RequiresAll ();
+			}
+
 			[UnconditionalSuppressMessage ("test", "IL2026")]
 			public static void Test ()
 			{
@@ -410,6 +482,8 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				DynamicDependencySuppressedByRUC ();
 				DynamicallyAccessedMembers ();
 				DynamicallyAccessedMembersSuppressedByRUC ();
+				DynamicallyAccessedMembersAll1 ();
+				DynamicallyAccessedMembersAll2 ();
 			}
 		}
 
@@ -446,12 +520,19 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				typeof (AnnotatedGenerics).GetMethod (nameof (GenericWithAnnotation)).MakeGenericMethod (type);
 			}
 
+			// Like above, no warning expected
+			static void DynamicallyAccessedMembersAll ()
+			{
+				typeof (AnnotatedGenerics).RequiresAll ();
+			}
+
 			public static void Test ()
 			{
 				ReflectionOnly ();
 				DynamicDependency ();
 				DynamicallyAccessedMembers ();
 				InstantiateGeneric ();
+				DynamicallyAccessedMembersAll ();
 			}
 		}
 
@@ -499,6 +580,20 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				typeof (AnnotationOnGenerics).RequiresPublicMethods ();
 			}
 
+			[ExpectedWarning ("IL2111", nameof (GenericMethodWithAnnotation))]
+			[ExpectedWarning ("IL2111", "GenericWithAnnotatedMethod", "AnnotatedMethod")]
+			static void DynamicallyAccessedMembersAll1 ()
+			{
+				typeof (AnnotationOnGenerics).RequiresAll ();
+			}
+
+			[ExpectedWarning ("IL2111", nameof (GenericMethodWithAnnotation))]
+			[ExpectedWarning ("IL2111", "GenericWithAnnotatedMethod", "AnnotatedMethod")]
+			static void DynamicallyAccessedMembersAll2 ()
+			{
+				typeof (AnnotationOnGenerics).RequiresAll ();
+			}
+
 			public static void Test ()
 			{
 				GenericTypeWithStaticMethodViaLdftn ();
@@ -506,6 +601,8 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				GenericMethodWithAnnotationDirectCall ();
 				GenericMethodWithAnnotationViaLdftn ();
 				GenericMethodDynamicallyAccessedMembers ();
+				DynamicallyAccessedMembersAll1 ();
+				DynamicallyAccessedMembersAll2 ();
 			}
 		}
 

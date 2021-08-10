@@ -17,20 +17,27 @@ namespace Mono.Linker.Tests.Cases.Reflection
 	{
 		public static void Main ()
 		{
-			RequirePublicMethods (annotatedBase.GetType ());
+			annotatedBase.GetType ().RequiresPublicMethods ();
+			var baseType = annotatedBaseSharedByNestedTypes.GetType ();
+			baseType.RequiresPublicNestedTypes ();
+			baseType.RequiresPublicMethods ();
+			var derivedType = typeof (DerivedWithNestedTypes);
 			// Reference to the derived type should apply base annotations
-			var t = typeof (DerivedFromAnnotatedBase);
-			RequirePublicMethods (annotatedDerivedFromBase.GetType ());
-			RequirePublicNestedTypes (annotatedPublicNestedTypes.GetType ());
-			RequirePublicFields (derivedFromAnnotatedDerivedFromBase.GetType ());
-			RequirePublicMethods (annotatedPublicMethods.GetType ());
-			RequirePublicFields (annotatedPublicFields.GetType ());
-			RequirePublicProperties (annotatedPublicProperties.GetType ());
-			RequirePublicEvents (annotatedPublicEvents.GetType ());
-			RequirePublicNestedTypes (annotatedPublicNestedTypes.GetType ());
-			RequireInterfaces (annotatedInterfaces.GetType ());
-			RequireAll (annotatedAll.GetType ());
-			RequirePublicMethods (annotatedRUCPublicMethods.GetType ());
+			var t1 = typeof (DerivedFromAnnotatedBase);
+			var t2 = typeof (AnnotatedDerivedFromAnnotatedBase);
+			annotatedDerivedFromBase.GetType ().RequiresPublicMethods ();
+			annotatedPublicNestedTypes.GetType ().RequiresPublicNestedTypes ();
+			derivedFromAnnotatedDerivedFromBase.GetType ().RequiresPublicFields ();
+			annotatedPublicMethods.GetType ().RequiresPublicMethods ();
+			annotatedPublicFields.GetType ().RequiresPublicFields ();
+			annotatedPublicProperties.GetType ().RequiresPublicProperties ();
+			annotatedPublicEvents.GetType ().RequiresPublicEvents ();
+			annotatedPublicNestedTypes.GetType ().RequiresPublicNestedTypes ();
+			annotatedInterfaces.GetType ().RequiresInterfaces ();
+			annotatedAll.GetType ().RequiresAll ();
+			var t3 = typeof (DerivedFromAnnotatedAll1);
+			var t4 = typeof (DerivedFromAnnotatedAll2);
+			annotatedRUCPublicMethods.GetType ().RequiresPublicMethods ();
 
 			// Instantiate this type just so its property getters are considered reachable
 			var b = new DerivedFromAnnotatedDerivedFromBase ();
@@ -54,6 +61,8 @@ namespace Mono.Linker.Tests.Cases.Reflection
 		static AnnotatedInterfaces annotatedInterfaces;
 		[Kept]
 		static AnnotatedBase annotatedBase;
+		[Kept]
+		static AnnotatedBaseSharedByNestedTypes annotatedBaseSharedByNestedTypes;
 		[Kept]
 		static AnnotatedDerivedFromBase annotatedDerivedFromBase;
 		[Kept]
@@ -89,6 +98,20 @@ namespace Mono.Linker.Tests.Cases.Reflection
 				Type t
 			)
 			{ }
+		}
+
+		[Kept]
+		[KeptMember (".ctor()")]
+		[KeptBaseType (typeof (AnnotatedAll))]
+		class DerivedFromAnnotatedAll1 : AnnotatedAll
+		{
+		}
+
+		[Kept]
+		[KeptMember (".ctor()")]
+		[KeptBaseType (typeof (AnnotatedAll))]
+		class DerivedFromAnnotatedAll2 : AnnotatedAll
+		{
 		}
 
 		[Kept]
@@ -236,11 +259,14 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			[ExpectedWarning ("IL2112", "--RUC on AnnotatedBase--")]
 			[RequiresUnreferencedCode ("--RUC on AnnotatedBase--")]
 			public void RUCMethod () { }
+
+			[Kept]
+			[KeptAttributeAttribute (typeof (DynamicallyAccessedMembersAttribute))]
+			[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.NonPublicMethods)]
+			public string DAMField1;
 		}
 
 		[KeptBaseType (typeof (AnnotatedBase))]
-		// Warning about base member could go away with https://github.com/mono/linker/issues/2175
-		[ExpectedWarning ("IL2113", "--RUC on AnnotatedBase--")]
 		class DerivedFromAnnotatedBase : AnnotatedBase
 		{
 			[Kept]
@@ -248,6 +274,29 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			[ExpectedWarning ("IL2112", "--RUC on DerivedFromAnnotatedBase--")]
 			[RequiresUnreferencedCode ("--RUC on DerivedFromAnnotatedBase--")]
 			public void RUCMethod () { }
+		}
+
+		[KeptAttributeAttribute (typeof (DynamicallyAccessedMembersAttribute))]
+		[KeptBaseType (typeof (AnnotatedBase))]
+		[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods | DynamicallyAccessedMemberTypes.PublicFields)]
+		// In theory we could avoid warning for public methods on base types because that
+		// annotation is already inherited from the base type, but currently we warn on base
+		// members whenever a type has an explicit annotation.
+		[ExpectedWarning ("IL2113", nameof (AnnotatedBase), nameof (AnnotatedBase.RUCMethod))]
+		[ExpectedWarning ("IL2115", nameof (AnnotatedBase), nameof (AnnotatedBase.DAMField1))]
+		class AnnotatedDerivedFromAnnotatedBase : AnnotatedBase
+		{
+			[Kept]
+			[KeptAttributeAttribute (typeof (RequiresUnreferencedCodeAttribute))]
+			[ExpectedWarning ("IL2112", "--RUC on AnnotatedDerivedFromAnnotatedBase--")]
+			[RequiresUnreferencedCode ("--RUC on AnnotatedDerivedFromAnnotatedBase--")]
+			public void DerivedRUCMethod () { }
+
+			[Kept]
+			[KeptAttributeAttribute (typeof (DynamicallyAccessedMembersAttribute))]
+			[ExpectedWarning ("IL2114", nameof (AnnotatedDerivedFromAnnotatedBase), nameof (DAMField2))]
+			[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.NonPublicMethods)]
+			public string DAMField2;
 		}
 
 		[KeptMember (".ctor()")]
@@ -314,13 +363,11 @@ namespace Mono.Linker.Tests.Cases.Reflection
 		[KeptMember (".ctor()")]
 		[KeptAttributeAttribute (typeof (DynamicallyAccessedMembersAttribute))]
 		[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicFields)]
-		// Warnings about base members could go away with https://github.com/mono/linker/issues/2175
+		// The annotation from this type should warn about all public fields including those
+		// from base types, but the inherited PublicMethods annotation should not warn
+		// again about base methods.
 		[ExpectedWarning ("IL2115", nameof (Base), nameof (DAMField1))]
 		[ExpectedWarning ("IL2115", nameof (AnnotatedDerivedFromBase), nameof (DAMField2))]
-		[ExpectedWarning ("IL2113", "--RUCBaseMethod--")]
-		[ExpectedWarning ("IL2113", "--Base.RUCVirtualMethod--")]
-		[ExpectedWarning ("IL2113", "--RUC on AnnotatedDerivedFromBase--")]
-		[ExpectedWarning ("IL2115", nameof (Base), nameof (Base.DAMVirtualProperty) + ".get")]
 		class DerivedFromAnnotatedDerivedFromBase : AnnotatedDerivedFromBase
 		{
 			[Kept]
@@ -349,8 +396,19 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			public override string DAMVirtualProperty { [Kept] get; }
 		}
 
+		[KeptMember (".ctor()")]
+		public class BaseTypeOfNestedType
+		{
+			[Kept]
+			[KeptAttributeAttribute (typeof (RequiresUnreferencedCodeAttribute))]
+			[RequiresUnreferencedCode ("--RUC on BaseTypeOfNestedType.RUCMethod--")]
+			public void RUCMethod () { }
+		}
+
 		[KeptAttributeAttribute (typeof (DynamicallyAccessedMembersAttribute))]
 		[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicNestedTypes)]
+		// Warnings about base types of nested types are shown at the (outer) type level.
+		[ExpectedWarning ("IL2113", nameof (BaseTypeOfNestedType), nameof (BaseTypeOfNestedType.RUCMethod))]
 		class AnnotatedPublicNestedTypes
 		{
 			[KeptMember (".ctor()")]
@@ -361,6 +419,12 @@ namespace Mono.Linker.Tests.Cases.Reflection
 				[ExpectedWarning ("IL2112", "--RUC on NestedType.RUCMethod--")]
 				[RequiresUnreferencedCode ("--RUC on NestedType.RUCMethod--")]
 				void RUCMethod () { }
+			}
+
+			[KeptMember (".ctor()")]
+			[KeptBaseType (typeof (BaseTypeOfNestedType))]
+			public class NestedTypeWithBase : BaseTypeOfNestedType
+			{
 			}
 
 			[KeptMember (".ctor()")]
@@ -407,6 +471,31 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			}
 		}
 
+		[KeptMember (".ctor()")]
+		[KeptAttributeAttribute (typeof (DynamicallyAccessedMembersAttribute))]
+		[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods | DynamicallyAccessedMemberTypes.PublicNestedTypes)]
+		class AnnotatedBaseSharedByNestedTypes
+		{
+			[Kept]
+			[KeptAttributeAttribute (typeof (RequiresUnreferencedCodeAttribute))]
+			[ExpectedWarning ("IL2112", "--RUC on AnnotatedBaseSharedByNestedTypes.RUCMethod--")]
+			[RequiresUnreferencedCode ("--RUC on AnnotatedBaseSharedByNestedTypes.RUCMethod--")]
+			public void RUCMethod () { }
+		}
+
+		[KeptBaseType (typeof (AnnotatedBaseSharedByNestedTypes))]
+		// Nested types that share the outer class base type can produce warnings about base methods of the annotated type.
+		[ExpectedWarning ("IL2113", "--RUC on AnnotatedBaseSharedByNestedTypes.RUCMethod--")]
+		class DerivedWithNestedTypes : AnnotatedBaseSharedByNestedTypes
+		{
+
+			[KeptMember (".ctor()")]
+			[KeptBaseType (typeof (AnnotatedBaseSharedByNestedTypes))]
+			public class NestedType : AnnotatedBaseSharedByNestedTypes
+			{
+			}
+		}
+
 		[KeptAttributeAttribute (typeof (DynamicallyAccessedMembersAttribute))]
 		[KeptAttributeAttribute (typeof (RequiresUnreferencedCodeAttribute))]
 		[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)]
@@ -428,54 +517,5 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			[ExpectedWarning ("IL2112", "--AnnotatedRUCPublicMethods--")]
 			public static void StaticMethod () { }
 		}
-
-		[Kept]
-		static void RequirePublicMethods (
-			[KeptAttributeAttribute (typeof (DynamicallyAccessedMembersAttribute))]
-			[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)]
-			Type type)
-		{ }
-
-		[Kept]
-		static void RequirePublicFields (
-			[KeptAttributeAttribute (typeof (DynamicallyAccessedMembersAttribute))]
-			[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicFields)]
-			Type type)
-		{ }
-
-		[Kept]
-		static void RequirePublicProperties (
-			[KeptAttributeAttribute (typeof (DynamicallyAccessedMembersAttribute))]
-			[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicProperties)]
-			Type type)
-		{ }
-
-		[Kept]
-		static void RequirePublicEvents (
-			[KeptAttributeAttribute (typeof (DynamicallyAccessedMembersAttribute))]
-			[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicEvents)]
-			Type type)
-		{ }
-
-		[Kept]
-		static void RequireAll (
-			[KeptAttributeAttribute (typeof (DynamicallyAccessedMembersAttribute))]
-			[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.All)]
-			Type type)
-		{ }
-
-		[Kept]
-		static void RequirePublicNestedTypes (
-			[KeptAttributeAttribute (typeof (DynamicallyAccessedMembersAttribute))]
-			[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicNestedTypes)]
-			Type type)
-		{ }
-
-		[Kept]
-		static void RequireInterfaces (
-			[KeptAttributeAttribute (typeof (DynamicallyAccessedMembersAttribute))]
-			[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.Interfaces)]
-			Type type)
-		{ }
 	}
 }
