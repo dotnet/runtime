@@ -13609,40 +13609,28 @@ GenTree* Compiler::fgOptimizeEqualityComparison(GenTreeOp* cmp)
         }
     }
 
-    size_t ival1;
-    size_t ival2;
-
     // Check for "(expr +/- icon1) ==/!= (non-zero-icon2)".
-
     if (op2->IsCnsIntOrI() && (op2->AsIntCon()->IconValue() != 0))
     {
         // Since this can occur repeatedly we use a while loop.
-
         while (op1->OperIs(GT_ADD, GT_SUB) && op1->AsOp()->gtGetOp2()->IsCnsIntOrI() &&
                op1->TypeIs(TYP_INT) && !op1->gtOverflow())
         {
             // Got it; change "x + icon1 == icon2" to "x == icon2 - icon1".
-
-            ival1 = op1->AsOp()->gtGetOp2()->AsIntCon()->IconValue();
-            ival2 = op2->AsIntCon()->IconValue();
+            ssize_t op1Value = op1->AsOp()->gtGetOp2()->AsIntCon()->IconValue();
+            ssize_t op2Value = op2->AsIntCon()->IconValue();
 
             if (op1->OperIs(GT_ADD))
             {
-                ival2 -= ival1;
+                op2Value -= op1Value;
             }
             else
             {
-                ival2 += ival1;
+                op2Value += op1Value;
             }
 
-            op2->AsIntCon()->SetIconValue(ival2);
-
-#ifdef TARGET_64BIT
-            // we need to properly re-sign-extend or truncate as needed.
-            op2->AsIntCon()->TruncateOrSignExtend32();
-#endif // TARGET_64BIT
-
             op1 = op1->AsOp()->gtGetOp1();
+            op2->AsIntCon()->SetIconValue(static_cast<int32_t>(op2Value));
         }
 
         cmp->gtOp1 = op1;
@@ -13655,15 +13643,10 @@ GenTree* Compiler::fgOptimizeEqualityComparison(GenTreeOp* cmp)
     //                        /  \.
     //                      op1   CNS 0/1
     //
-    ival2 = INT_MAX; // The value of INT_MAX for ival2 just means that the constant value is not 0 or 1
-
     if (op2->IsIntegralConst(0) || op2->IsIntegralConst(1))
     {
-        ival2 = static_cast<size_t>(op2->AsIntConCommon()->IntegralValue());
-    }
+        ssize_t op2Value = static_cast<ssize_t>(op2->AsIntConCommon()->IntegralValue());
 
-    if (ival2 != INT_MAX)
-    {
         if (op1->OperIsCompare())
         {
             // Here we look for the following tree
@@ -13678,7 +13661,7 @@ GenTree* Compiler::fgOptimizeEqualityComparison(GenTreeOp* cmp)
 
             // Here we reverse the RELOP if necessary.
 
-            bool reverse = ((ival2 == 0) == (cmp->OperIs(GT_EQ)));
+            bool reverse = ((op2Value == 0) == (cmp->OperIs(GT_EQ)));
 
             if (reverse)
             {
@@ -13737,10 +13720,10 @@ GenTree* Compiler::fgOptimizeEqualityComparison(GenTreeOp* cmp)
                     goto SKIP;
                 }
 
-                andMask->SetIconValue(1 << shiftAmount);
+                andMask->SetIconValue(static_cast<int32_t>(1 << shiftAmount));
 
                 // Reverse the condition if necessary.
-                if (ival2 == 1)
+                if (op2Value == 1)
                 {
                     gtReverseCond(cmp);
                     op2->AsIntCon()->SetIconValue(0);
@@ -13756,7 +13739,7 @@ GenTree* Compiler::fgOptimizeEqualityComparison(GenTreeOp* cmp)
                 andMask->SetLngValue(1ll << shiftAmount);
 
                 // Reverse the cond if necessary
-                if (ival2 == 1)
+                if (op2Value == 1)
                 {
                     gtReverseCond(cmp);
                     op2->AsIntConCommon()->SetLngValue(0);
@@ -13768,7 +13751,7 @@ GenTree* Compiler::fgOptimizeEqualityComparison(GenTreeOp* cmp)
             DEBUG_DESTROY_NODE(rshiftOp->gtGetOp2());
             DEBUG_DESTROY_NODE(rshiftOp);
         }
-    } // END if (ival2 != INT_MAX)
+    }
 
 SKIP:
 
@@ -13837,19 +13820,19 @@ SKIP:
         assert(andMask == andOp->gtGetOp2());
 
         // Now replace the mask node.
-        ival1 = static_cast<int32_t>(andMask->LngValue());
+        int32_t maskValue = static_cast<int32_t>(andMask->LngValue());
         andMask->SetOper(GT_CNS_INT);
         andMask->ChangeType(TYP_INT);
-        andMask->SetIconValue(ival1);
+        andMask->SetIconValue(maskValue);
 
         // Now change the type of the AND node.
         andOp->ChangeType(TYP_INT);
 
         // Finally we replace the comparand.
-        ival2 = static_cast<int32_t>(op2->AsIntConCommon()->LngValue());
+        int32_t op2Value = static_cast<int32_t>(op2->AsIntConCommon()->LngValue());
         op2->SetOper(GT_CNS_INT);
         op2->ChangeType(TYP_INT);
-        op2->AsIntCon()->SetIconValue(ival2);
+        op2->AsIntCon()->SetIconValue(op2Value);
     }
 
     return cmp;
