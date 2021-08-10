@@ -86,9 +86,9 @@ namespace System.Diagnostics
         ///     not an absolute level, but instead contributes to the actual thread priority by
         ///     considering the priority class of the process.
         /// </devdoc>
-        [SupportedOSPlatform("windows")]
         public ThreadPriorityLevel PriorityLevel
         {
+            [SupportedOSPlatform("windows")]
             [SupportedOSPlatform("linux")]
             [SupportedOSPlatform("freebsd")]
             get
@@ -99,6 +99,7 @@ namespace System.Diagnostics
                 }
                 return _priorityLevel.Value;
             }
+            [SupportedOSPlatform("windows")]
             set
             {
                 PriorityLevelCore = value;

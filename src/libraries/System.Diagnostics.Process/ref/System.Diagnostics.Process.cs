@@ -239,8 +239,7 @@ namespace System.Diagnostics
         public int Id { get { throw null; } }
         public int IdealProcessor { set { } }
         public bool PriorityBoostEnabled { get { throw null; } set { } }
-        [System.Runtime.Versioning.SupportedOSPlatform("windows")]
-        public System.Diagnostics.ThreadPriorityLevel PriorityLevel { [System.Runtime.Versioning.SupportedOSPlatform("linux")] [System.Runtime.Versioning.SupportedOSPlatform("freebsd")] get { throw null; } set { } }
+        public System.Diagnostics.ThreadPriorityLevel PriorityLevel { [System.Runtime.Versioning.SupportedOSPlatform("windows")] [System.Runtime.Versioning.SupportedOSPlatform("linux")] [System.Runtime.Versioning.SupportedOSPlatform("freebsd")] get { throw null; } [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")] set { } }
         public System.TimeSpan PrivilegedProcessorTime { get { throw null; } }
         [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
         public System.IntPtr ProcessorAffinity { set { } }
