@@ -644,30 +644,44 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public static void KeyWithCustomPrimitiveConverter_JsonTypeInfo_ThrowsNotSupportedException()
         {
-            JsonSerializerOptions options = new();
-            JsonTypeInfo<int> keyInfo = JsonMetadataServices.CreateValueInfo<int>(options, new ConverterForInt32());
-            JsonTypeInfo<string> valueInfo = JsonMetadataServices.CreateValueInfo<string>(options, JsonMetadataServices.StringConverter);
-            JsonTypeInfo<Dictionary<int, string>> dictionaryInfo = JsonMetadataServices.CreateDictionaryInfo<Dictionary<int, string>, int, string>(
-                options,
-                createObjectFunc: () => new(),
-                keyInfo, valueInfo,
-                numberHandling: default,
-                serializeFunc: null
-            );
+            JsonSerializer.Serialize(42); // Ensure default converters are rooted in current process
+
+            CustomInt32ConverterSerializerContext ctx = new();
 
             var dictionary = new Dictionary<int, string> { [1] = "1" };
-
-            NotSupportedException ex = Assert.Throws<NotSupportedException>(() => JsonSerializer.Serialize(dictionary, dictionaryInfo));
+            NotSupportedException ex = Assert.Throws<NotSupportedException>(() => JsonSerializer.Serialize(dictionary, ctx.DictionaryInt32String));
             ValidateException(ex);
 
             string json = @"{""1"":""1""}";
-            ex = Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize<Dictionary<int, string>>(json, dictionaryInfo));
+            ex = Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize<Dictionary<int, string>>(json, ctx.DictionaryInt32String));
             ValidateException(ex);
 
             static void ValidateException(NotSupportedException ex)
             {
                 Assert.Contains(nameof(Int32), ex.Message);
                 Assert.Contains(nameof(ConverterForInt32), ex.Message);
+            }
+        }
+
+        public class CustomInt32ConverterSerializerContext : JsonSerializerContext
+        {
+            public CustomInt32ConverterSerializerContext() : base(null, null) { }
+            public override JsonTypeInfo? GetTypeInfo(Type _) => throw new NotImplementedException();
+
+            public JsonTypeInfo<Dictionary<int, string>> DictionaryInt32String => _dictionaryInt32String ??= CreateDictionaryConverter();
+            private JsonTypeInfo<Dictionary<int, string>>? _dictionaryInt32String;
+
+            private JsonTypeInfo<Dictionary<int, string>> CreateDictionaryConverter()
+            {
+                JsonTypeInfo<int> keyInfo = JsonMetadataServices.CreateValueInfo<int>(Options, new ConverterForInt32());
+                JsonTypeInfo<string> valueInfo = JsonMetadataServices.CreateValueInfo<string>(Options, JsonMetadataServices.StringConverter);
+                return JsonMetadataServices.CreateDictionaryInfo<Dictionary<int, string>, int, string>(
+                    Options,
+                    createObjectFunc: () => new(),
+                    keyInfo, valueInfo,
+                    numberHandling: default,
+                    serializeFunc: null
+                );
             }
         }
 
