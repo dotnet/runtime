@@ -17284,9 +17284,10 @@ bool Compiler::impReturnInstruction(int prefixFlags, OPCODE& opcode)
                     GenTree* addrChild = effectiveRetVal->gtGetOp1();
                     if (addrChild->OperGet() == GT_LCL_VAR)
                     {
-                        LclVarDsc* varDsc = lvaGetDesc(addrChild->AsLclVarCommon());
+                        GenTreeLclVar* lclVar = addrChild->AsLclVar();
+                        LclVarDsc*     varDsc = lvaGetDesc(lclVar);
 
-                        if (varTypeIsStruct(addrChild->TypeGet()) && !isOpaqueSIMDLclVar(varDsc))
+                        if (varTypeIsStruct(lclVar->TypeGet()) && !isOpaqueSIMDLclVar(varDsc))
                         {
                             CORINFO_CLASS_HANDLE referentClassHandle;
                             CorInfoType          referentType =
@@ -17300,15 +17301,13 @@ bool Compiler::impReturnInstruction(int prefixFlags, OPCODE& opcode)
                                 // to struct2. struct1 and struct2 are different so we are "reinterpreting" the struct.
                                 // This may happen in, for example, System.Runtime.CompilerServices.Unsafe.As<TFrom,
                                 // TTo>.
-                                // We need to mark the source struct variable as having overlapping fields because its
-                                // fields may be accessed using field handles of a different type, which may confuse
-                                // optimizations, in particular, value numbering.
+                                // We need to exclude the local from VN because VN optimizations don't expect such
+                                // transformations.
 
-                                JITDUMP("\nSetting lvOverlappingFields to true on V%02u because of struct "
-                                        "reinterpretation\n",
-                                        addrChild->AsLclVarCommon()->GetLclNum());
+                                JITDUMP("Setting DontVN() on [%06u] because of struct reinterpretation.\n",
+                                        dspTreeID(lclVar));
 
-                                varDsc->lvOverlappingFields = true;
+                                lclVar->SetDontVN();
                             }
                         }
                     }

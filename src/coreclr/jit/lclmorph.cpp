@@ -39,6 +39,10 @@ class LocalAddressVisitor final : public GenTreeVisitor<LocalAddressVisitor>
         unsigned      m_lclNum;
         unsigned      m_offset;
         bool          m_address;
+        bool          m_excludeFromVN; // This value should not participate in VN optimizations,
+                                       // for example, because it represents a reinterpreted struct.
+                                       // When we transform it we should set `DontVN()` for `LclVar`
+                                       // and `NotAField` for `LclFld`.
         INDEBUG(bool m_consumed;)
 
     public:
@@ -49,6 +53,7 @@ class LocalAddressVisitor final : public GenTreeVisitor<LocalAddressVisitor>
             , m_lclNum(BAD_VAR_NUM)
             , m_offset(0)
             , m_address(false)
+            , m_excludeFromVN(false)
 #ifdef DEBUG
             , m_consumed(false)
 #endif // DEBUG
@@ -112,6 +117,10 @@ class LocalAddressVisitor final : public GenTreeVisitor<LocalAddressVisitor>
             assert(!IsLocation() && !IsAddress());
 
             m_lclNum = lclVar->GetLclNum();
+            if (lclVar->DontVN())
+            {
+                m_excludeFromVN = true;
+            }
 
             assert(m_offset == 0);
             assert(m_fieldSeq == nullptr);
@@ -195,10 +204,11 @@ class LocalAddressVisitor final : public GenTreeVisitor<LocalAddressVisitor>
 
             if (val.IsLocation())
             {
-                m_address  = true;
-                m_lclNum   = val.m_lclNum;
-                m_offset   = val.m_offset;
-                m_fieldSeq = val.m_fieldSeq;
+                m_address       = true;
+                m_lclNum        = val.m_lclNum;
+                m_offset        = val.m_offset;
+                m_fieldSeq      = val.m_fieldSeq;
+                m_excludeFromVN = val.m_excludeFromVN;
             }
 
             INDEBUG(val.Consume();)
@@ -246,7 +256,7 @@ class LocalAddressVisitor final : public GenTreeVisitor<LocalAddressVisitor>
                 m_lclNum = val.m_lclNum;
                 m_offset = newOffset.Value();
 
-                if (field->gtFldMayOverlap)
+                if (field->gtFldMayOverlap || val.m_excludeFromVN)
                 {
                     m_fieldSeq = FieldSeqStore::NotAField();
                 }
@@ -287,9 +297,10 @@ class LocalAddressVisitor final : public GenTreeVisitor<LocalAddressVisitor>
 
             if (val.IsAddress())
             {
-                m_lclNum   = val.m_lclNum;
-                m_offset   = val.m_offset;
-                m_fieldSeq = val.m_fieldSeq;
+                m_lclNum        = val.m_lclNum;
+                m_offset        = val.m_offset;
+                m_fieldSeq      = val.m_fieldSeq;
+                m_excludeFromVN = val.m_excludeFromVN;
             }
 
             INDEBUG(val.Consume();)
