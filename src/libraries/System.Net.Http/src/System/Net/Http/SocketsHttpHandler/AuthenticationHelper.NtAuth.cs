@@ -13,6 +13,28 @@ namespace System.Net.Http
 {
     internal static partial class AuthenticationHelper
     {
+        private const string UsePortInSpnCtxSwitch = "System.Net.Http.UsePortInSpn";
+        private const string UsePortInSpnEnvironmentVariable = "DOTNET_SYSTEM_NET_HTTP_USEPORTINSPN";
+
+        private static bool UsePortInSpn()
+        {
+            // First check for the AppContext switch, giving it priority over the environment variable.
+            if (AppContext.TryGetSwitch(UsePortInSpnCtxSwitch, out bool disabled))
+            {
+                return disabled;
+            }
+
+            // AppContext switch wasn't used. Check the environment variable.
+            string? envVar = Environment.GetEnvironmentVariable(UsePortInSpnEnvironmentVariable);
+
+            if (envVar is not null)
+            {
+                return envVar == "1" || envVar.Equals("true", StringComparison.OrdinalIgnoreCase);
+            }
+
+            return false;
+         }
+
         private static Task<HttpResponseMessage> InnerSendAsync(HttpRequestMessage request, bool async, bool isProxyAuth, HttpConnectionPool pool, HttpConnection connection, CancellationToken cancellationToken)
         {
             return isProxyAuth ?
@@ -110,7 +132,7 @@ namespace System.Net.Http
                                 hostName = result.HostName;
                             }
 
-                            if (!isProxyAuth && !authUri.IsDefaultPort)
+                            if (!isProxyAuth && !authUri.IsDefaultPort && UsePortInSpn)
                             {
                                 hostName = string.Create(null, stackalloc char[128], $"{hostName}:{authUri.Port}");
                             }
