@@ -507,19 +507,19 @@ handle_arguments_local() {
         test*|-test*)
             local arg="$1"
             local parts=(${arg//:/ })
-            __BuildTestProject="$__BuildTestProject;${parts[1]}"
+            __BuildTestProject="$__BuildTestProject${parts[1]}%3B"
             ;;
 
         dir*|-dir*)
             local arg="$1"
             local parts=(${arg//:/ })
-            __BuildTestDir="$__BuildTestDir;${parts[1]}"
+            __BuildTestDir="$__BuildTestDir${parts[1]}%3B"
             ;;
 
         tree*|-tree*)
             local arg="$1"
             local parts=(${arg//:/ })
-            __BuildTestTree="$__BuildTestTree;${parts[1]}"
+            __BuildTestTree="$__BuildTestTree${parts[1]}%3B"
             ;;
 
         all|-all)
@@ -575,9 +575,9 @@ __DistroRid=""
 __DoCrossgen2=0
 __CompositeBuildMode=0
 __TestBuildMode=
-__BuildTestProject=""
-__BuildTestDir=""
-__BuildTestTree=""
+__BuildTestProject="%3B"
+__BuildTestDir="%3B"
+__BuildTestTree="%3B"
 __BuildTestAll=0
 __DotNetCli="$__RepoRootDir/dotnet.sh"
 __GenerateLayoutOnly=
