@@ -14477,7 +14477,6 @@ size_t gc_heap::new_allocation_limit (size_t size, size_t physical_limit, int ge
     ptrdiff_t logical_limit = max (new_alloc, (ptrdiff_t)size);
     size_t limit = min (logical_limit, (ptrdiff_t)physical_limit);
     assert (limit == Align (limit, get_alignment_constant (gen_number <= max_generation)));
-    dd_new_allocation (dd) = (new_alloc - limit);
 
     return limit;
 }
@@ -14858,6 +14857,7 @@ BOOL gc_heap::a_fit_free_list_p (int gen_number,
                 // to make sure that we can insert a free object
                 // in adjust_limit will set the limit lower
                 size_t limit = limit_from_size (size, flags, free_list_size, gen_number, align_const);
+                dd_new_allocation (dynamic_data_of (gen_number)) -= limit;
 
                 uint8_t*  remain = (free_list + limit);
                 size_t remain_size = (free_list_size - limit);
@@ -15042,6 +15042,7 @@ BOOL gc_heap::a_fit_free_list_uoh_p (size_t size,
                 // Substract min obj size because limit_from_size adds it. Not needed for LOH
                 size_t limit = limit_from_size (size - Align(min_obj_size, align_const), flags, free_list_size,
                                                 gen_number, align_const);
+                dd_new_allocation (dynamic_data_of (gen_number)) -= limit;
 
 #ifdef FEATURE_LOH_COMPACTION
                 if (loh_pad)
@@ -15145,7 +15146,7 @@ BOOL gc_heap::a_fit_segment_end_p (int gen_number,
 
     end = heap_segment_reserved (seg) - pad;
 
-    if (a_size_fit_p (size, allocated, end, align_const))
+    if ((heap_segment_reserved (seg) != heap_segment_committed (seg)) && (a_size_fit_p (size, allocated, end, align_const)))
     {
         limit = limit_from_size (size,
                                  flags,
@@ -15173,6 +15174,7 @@ BOOL gc_heap::a_fit_segment_end_p (int gen_number,
     goto found_no_fit;
 
 found_fit:
+    dd_new_allocation (dynamic_data_of (gen_number)) -= limit;
 
 #ifdef BACKGROUND_GC
     if (gen_number != 0)
