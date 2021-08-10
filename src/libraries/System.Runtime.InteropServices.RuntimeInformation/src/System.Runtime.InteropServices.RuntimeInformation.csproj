@@ -5,6 +5,14 @@
     <Nullable>enable</Nullable>
     <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-Unix;$(NetCoreAppCurrent)-Browser</TargetFrameworks>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(TargetsUnix)' == 'true'">
+    <DefineConstants Condition="'$(TargetArchitecture)' == 'arm' or '$(TargetArchitecture)' == 'armel'">$(DefineConstants);TARGET_ARM</DefineConstants>
+    <DefineConstants Condition="'$(TargetArchitecture)' == 'arm64'">$(DefineConstants);TARGET_ARM64</DefineConstants>
+    <DefineConstants Condition="'$(TargetArchitecture)' == 'amd64' or '$(TargetArchitecture)' == 'x64'">$(DefineConstants);TARGET_ARM64</DefineConstants>
+    <DefineConstants Condition="'$(TargetArchitecture)' == 'x86'">$(DefineConstants);TARGET_X86</DefineConstants>
+    <DefineConstants Condition="'$(TargetOS)' == 'Browser'">$(DefineConstants);TARGET_WASM</DefineConstants>
+    <DefineConstants Condition="'$(TargetArchitecture)' == 's390x'">$(DefineConstants);TARGET_S390X</DefineConstants>
+  </PropertyGroup>
   <ItemGroup>
     <Compile Include="System\Runtime\InteropServices\RuntimeInformation\RuntimeInformation.cs" />
     <Compile Include="System\Runtime\InteropServices\RuntimeInformation\Architecture.cs" />
@@ -17,12 +25,6 @@
     <Compile Include="System\Runtime\InteropServices\RuntimeInformation\RuntimeInformation.Unix.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.GetUnixVersion.cs"
              Link="Common\Interop\Unix\System.Native\Interop.GetUnixVersion.cs" />
-    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.GetOSArchitecture.cs"
-             Link="Common\Interop\Unix\System.Native\Interop.GetOSArchitecture.cs" />
-    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.GetProcessArchitecture.cs"
-             Link="Common\Interop\Unix\System.Native\Interop.GetProcessArchitecture.cs" />
-    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.ProcessorArchitecture.cs"
-             Link="Common\Interop\Unix\System.Native\Interop.ProcessorArchitecture.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\Interop.Libraries.cs"
              Link="Common\Interop\Unix\Interop.Libraries.cs" />
   </ItemGroup>

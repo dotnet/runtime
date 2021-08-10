@@ -11,29 +11,23 @@ namespace System.Runtime.InteropServices
 
         public static string OSDescription => s_osDescription ??= Interop.Sys.GetUnixVersion();
 
-        public static Architecture OSArchitecture { get; } = Map((Interop.Sys.ProcessorArchitecture)Interop.Sys.GetOSArchitecture());
+        public static Architecture ProcessArchitecture { get; } =
+#if TARGET_AMD64
+            Architecture.X64;
+#elif TARGET_ARM
+            Architecture.Arm;
+#elif TARGET_ARM64
+            Architecture.Arm64;
+#elif TARGET_S390X
+            Architecture.S390x;
+#elif TARGET_WASM
+            Architecture.Wasm;
+#elif TARGET_X86
+            Architecture.X86;
+#else
+#error Unidentified Architecture
+#endif
 
-        public static Architecture ProcessArchitecture { get; } = Map((Interop.Sys.ProcessorArchitecture)Interop.Sys.GetProcessArchitecture());
-
-        private static Architecture Map(Interop.Sys.ProcessorArchitecture arch)
-        {
-            switch (arch)
-            {
-                case Interop.Sys.ProcessorArchitecture.ARM:
-                    return Architecture.Arm;
-                case Interop.Sys.ProcessorArchitecture.x64:
-                    return Architecture.X64;
-                case Interop.Sys.ProcessorArchitecture.ARM64:
-                    return Architecture.Arm64;
-                case Interop.Sys.ProcessorArchitecture.WASM:
-                    return Architecture.Wasm;
-                case Interop.Sys.ProcessorArchitecture.S390x:
-                    return Architecture.S390x;
-                case Interop.Sys.ProcessorArchitecture.x86:
-                default:
-                    Debug.Assert(arch == Interop.Sys.ProcessorArchitecture.x86, "Unidentified Architecture");
-                    return Architecture.X86;
-            }
-        }
+        public static Architecture OSArchitecture { get; } = ProcessArchitecture;
     }
 }
