@@ -37,13 +37,6 @@
 
 #include "debug-mono-ppdb.h"
 
-struct _MonoPPDBFile {
-	MonoImage *image;
-	GHashTable *doc_hash;
-	GHashTable *method_hash;
-	gboolean is_embedded;
-};
-
 typedef struct {
 	gint32 signature;
 	guint8 guid [16];
@@ -130,8 +123,8 @@ doc_free (gpointer key)
 	g_free (info);
 }
 
-static MonoPPDBFile*
-create_ppdb_file (MonoImage *ppdb_image, gboolean is_embedded_ppdb)
+MonoPPDBFile*
+mono_create_ppdb_file (MonoImage *ppdb_image, gboolean is_embedded_ppdb)
 {
 	MonoPPDBFile *ppdb;
 
@@ -161,7 +154,7 @@ mono_ppdb_load_file (MonoImage *image, const guint8 *raw_contents, int size)
 	if (table_info_get_rows (&image->tables [MONO_TABLE_DOCUMENT])) {
 		/* Embedded ppdb */
 		mono_image_addref (image);
-		return create_ppdb_file (image, TRUE);
+		return mono_create_ppdb_file (image, TRUE);
 	}
 
 	if (!get_pe_debug_info (image, pe_guid, &pe_age, &pe_timestamp, &ppdb_data, &ppdb_size, &ppdb_compressed_size)) {
@@ -236,14 +229,12 @@ mono_ppdb_load_file (MonoImage *image, const guint8 *raw_contents, int size)
 		return NULL;
 	}
 
-	return create_ppdb_file (ppdb_image, is_embedded_ppdb);
+	return mono_create_ppdb_file (ppdb_image, is_embedded_ppdb);
 }
 
 void
-mono_ppdb_close (MonoDebugHandle *handle)
+mono_ppdb_close (MonoPPDBFile *ppdb)
 {
-	MonoPPDBFile *ppdb = handle->ppdb;
-
 	mono_image_close (ppdb->image);
 	g_hash_table_destroy (ppdb->doc_hash);
 	g_hash_table_destroy (ppdb->method_hash);
@@ -290,10 +281,11 @@ get_docinfo (MonoPPDBFile *ppdb, MonoImage *image, int docidx)
 	int size, part_size, partidx, nparts;
 	char sep;
 	GString *s;
-	MonoDebugSourceInfo *res, *cached;
+	MonoDebugSourceInfo *res, *cached = NULL;
 
 	mono_debugger_lock ();
-	cached = (MonoDebugSourceInfo *)g_hash_table_lookup (ppdb->doc_hash, GUINT_TO_POINTER (docidx));
+	if (ppdb)
+		cached = (MonoDebugSourceInfo *)g_hash_table_lookup (ppdb->doc_hash, GUINT_TO_POINTER (docidx));
 	mono_debugger_unlock ();
 	if (cached)
 		return cached;
@@ -360,25 +352,17 @@ get_docname (MonoPPDBFile *ppdb, MonoImage *image, int docidx)
  * already looked up the method and also already did the
  * native address -> IL offset mapping.
  */
-MonoDebugSourceLocation *
-mono_ppdb_lookup_location (MonoDebugMethodInfo *minfo, uint32_t offset)
+static MonoDebugSourceLocation *
+mono_ppdb_lookup_location_internal (MonoImage *image, int idx, uint32_t offset, MonoPPDBFile *ppdb)
 {
-	MonoPPDBFile *ppdb = minfo->handle->ppdb;
-	MonoImage *image = ppdb->image;
-	MonoMethod *method = minfo->method;
 	MonoTableInfo *tables = image->tables;
 	guint32 cols [MONO_METHODBODY_SIZE];
 	const char *ptr;
 	const char *end;
-	char *docname;
-	int idx, size, docidx, iloffset, delta_il, delta_lines, delta_cols, start_line, start_col, adv_line, adv_col;
+	char *docname = NULL;
+	int size, docidx, iloffset, delta_il, delta_lines, delta_cols, start_line, start_col, adv_line, adv_col;
 	gboolean first = TRUE, first_non_hidden = TRUE;
 	MonoDebugSourceLocation *location;
-
-	if (!method->token)
-		return NULL;
-
-	idx = mono_metadata_token_index (method->token);
 
 	mono_metadata_decode_row (&tables [MONO_TABLE_METHODBODY], idx-1, cols, MONO_METHODBODY_SIZE);
 
@@ -396,7 +380,6 @@ mono_ppdb_lookup_location (MonoDebugMethodInfo *minfo, uint32_t offset)
 	if (docidx == 0)
 		docidx = mono_metadata_decode_value (ptr, &ptr);
 	docname = get_docname (ppdb, image, docidx);
-
 	iloffset = 0;
 	start_line = 0;
 	start_col = 0;
@@ -443,6 +426,24 @@ mono_ppdb_lookup_location (MonoDebugMethodInfo *minfo, uint32_t offset)
 	return location;
 }
 
+
+MonoDebugSourceLocation *
+mono_ppdb_lookup_location (MonoDebugMethodInfo *minfo, uint32_t offset)
+{
+	MonoPPDBFile *ppdb = minfo->handle->ppdb;
+	MonoImage *image = ppdb->image;
+	MonoMethod *method = minfo->method;
+	if (!method->token)
+		return NULL;
+	return mono_ppdb_lookup_location_internal (image, mono_metadata_token_index (method->token), offset, ppdb);
+}
+
+MonoDebugSourceLocation *
+mono_ppdb_lookup_location_enc (MonoPPDBFile *ppdb_file, int idx, uint32_t offset)
+{
+	return mono_ppdb_lookup_location_internal (ppdb_file->image, idx, offset, ppdb_file);
+}
+
 MonoImage *
 mono_ppdb_get_image (MonoPPDBFile *ppdb)
 {
@@ -456,57 +457,90 @@ mono_ppdb_is_embedded (MonoPPDBFile *ppdb)
 	return ppdb->is_embedded;
 }
 
-static int 
-mono_ppdb_get_seq_points_internal (const char* ptr, MonoSymSeqPoint **seq_points, int *n_seq_points, int docidx, MonoImage *image, MonoPPDBFile *ppdb, GPtrArray **sfiles, char **source_file, int **source_files, GPtrArray **sindexes, gboolean read_doc_value)
+static int
+mono_ppdb_get_seq_points_internal (MonoImage *image, MonoPPDBFile *ppdb, MonoMethod* method, int method_idx, char **source_file, GPtrArray **source_file_list, int **source_files, MonoSymSeqPoint **seq_points, int *n_seq_points)
 {
+	MonoTableInfo *tables = image->tables;
+	guint32 cols [MONO_METHODBODY_SIZE];
+	const char *ptr;
+	const char *end;
+	MonoDebugSourceInfo *docinfo;
+	int i, size, docidx, iloffset, delta_il, delta_lines, delta_cols, start_line, start_col, adv_line, adv_col;
+	gboolean first = TRUE, first_non_hidden = TRUE;
 	GArray *sps;
 	MonoSymSeqPoint sp;
-	int iloffset = 0;
-	int start_line = 0;
-	int start_col = 0;
-	int delta_cols = 0;
-	gboolean first_non_hidden = TRUE;
-	int adv_line, adv_col;
-	int size = mono_metadata_decode_blob_size (ptr, &ptr);
-	const char* end = ptr + size;
-	MonoDebugSourceInfo *docinfo;
-	gboolean first = TRUE;
+	GPtrArray *sfiles = NULL;
+	GPtrArray *sindexes = NULL;
+	if (source_file)
+		*source_file = NULL;
+	if (source_file_list)
+		*source_file_list = NULL;
+	if (source_files)
+		*source_files = NULL;
+	if (seq_points)
+		*seq_points = NULL;
+	if (n_seq_points)
+		*n_seq_points = 0;
+
+	if (source_file_list)
+		*source_file_list = sfiles = g_ptr_array_new ();
+	if (source_files)
+		sindexes = g_ptr_array_new ();
+
+	if (!method->token || table_info_get_rows (&tables [MONO_TABLE_METHODBODY]) == 0)
+		return -1;
+
+	MonoTableInfo *methodbody_table = &tables [MONO_TABLE_METHODBODY];
+	if (G_UNLIKELY (method_idx - 1 >= table_info_get_rows (methodbody_table))) {
+		char *method_name = mono_method_full_name (method, FALSE);
+		g_error ("Method idx %d is greater than number of rows (%d) in PPDB MethodDebugInformation table, for method %s in '%s'. Likely a malformed PDB file.",
+		 method_idx - 1, table_info_get_rows (methodbody_table), method_name, image->name);
+		g_free (method_name);
+	}
+
+	mono_metadata_decode_row (methodbody_table, method_idx - 1, cols, MONO_METHODBODY_SIZE);
+
+	docidx = cols [MONO_METHODBODY_DOCUMENT];
+
+	if (!cols [MONO_METHODBODY_SEQ_POINTS])
+		return -1;
+
+	ptr = mono_metadata_blob_heap (image, cols [MONO_METHODBODY_SEQ_POINTS]);
+	size = mono_metadata_decode_blob_size (ptr, &ptr);
+	end = ptr + size;
 
 	sps = g_array_new (FALSE, TRUE, sizeof (MonoSymSeqPoint));
 
 	/* Header */
 	/* LocalSignature */
 	mono_metadata_decode_value (ptr, &ptr);
-	if (docidx == 0  && read_doc_value)
+	if (docidx == 0)
 		docidx = mono_metadata_decode_value (ptr, &ptr);
-	if (sfiles && *sfiles)
-	{
-		docinfo = get_docinfo (ppdb, image, docidx);
-		g_ptr_array_add (*sfiles, docinfo);
-	}
+	docinfo = get_docinfo (ppdb, image, docidx);
 
-	if (source_file && *source_file)
+	if (sfiles)
+		g_ptr_array_add (sfiles, docinfo);
+
+	if (source_file)
 		*source_file = g_strdup (docinfo->source_file);
 
 	iloffset = 0;
 	start_line = 0;
 	start_col = 0;
 	while (ptr < end) {
-		int delta_il = mono_metadata_decode_value (ptr, &ptr);
-		if (!first && delta_il == 0 && read_doc_value) {
+		delta_il = mono_metadata_decode_value (ptr, &ptr);
+		if (!first && delta_il == 0) {
 			/* subsequent-document-record */
 			docidx = mono_metadata_decode_value (ptr, &ptr);
 			docinfo = get_docinfo (ppdb, image, docidx);
-			if (sfiles && *sfiles)
-			{
-				g_ptr_array_add (*sfiles, docinfo);
-			}
+			if (sfiles)
+				g_ptr_array_add (sfiles, docinfo);
 			continue;
 		}
 		iloffset += delta_il;
 		first = FALSE;
 
-		int delta_lines = mono_metadata_decode_value (ptr, &ptr);
+		delta_lines = mono_metadata_decode_value (ptr, &ptr);
 		if (delta_lines == 0)
 			delta_cols = mono_metadata_decode_value (ptr, &ptr);
 		else
@@ -536,36 +570,36 @@ mono_ppdb_get_seq_points_internal (const char* ptr, MonoSymSeqPoint **seq_points
 		sp.end_column = start_col + delta_cols;
 
 		g_array_append_val (sps, sp);
-		if (sindexes && *sindexes) {
-			g_ptr_array_add (*sindexes, GUINT_TO_POINTER ((*sfiles)->len - 1));
-		}
+		if (source_files)
+			g_ptr_array_add (sindexes, GUINT_TO_POINTER (sfiles->len - 1));
 	}
 
 	if (n_seq_points) {
 		*n_seq_points = sps->len;
-		if (seq_points)	{
-			*seq_points = g_new (MonoSymSeqPoint, sps->len);
-			memcpy (*seq_points, sps->data, sps->len * sizeof (MonoSymSeqPoint));
-		}
+		g_assert (seq_points);
+		*seq_points = g_new (MonoSymSeqPoint, sps->len);
+		memcpy (*seq_points, sps->data, sps->len * sizeof (MonoSymSeqPoint));
 	}
-	int sps_len = sps->len;
+
+	if (source_files) {
+		*source_files = g_new (int, sps->len);
+		for (i = 0; i < sps->len; ++i)
+			(*source_files)[i] = GPOINTER_TO_INT (g_ptr_array_index (sindexes, i));
+		g_ptr_array_free (sindexes, TRUE);
+	}
+	int n_seqs = sps->len;
 	g_array_free (sps, TRUE);
-	return sps_len;
+
+	return n_seqs;
 }
 
 gboolean 
-mono_ppdb_get_seq_points_enc (MonoImage *image, int idx, MonoSymSeqPoint **seq_points, int *n_seq_points)
+mono_ppdb_get_seq_points_enc (MonoDebugMethodInfo *minfo, MonoPPDBFile *ppdb_file, int idx, char **source_file, GPtrArray **source_file_list, int **source_files, MonoSymSeqPoint **seq_points, int *n_seq_points)
 {
-	guint32 cols [MONO_METHODBODY_SIZE];
-	MonoTableInfo *tables = image->tables;
-	MonoTableInfo *methodbody_table = &tables [MONO_TABLE_METHODBODY];
-	mono_metadata_decode_row (methodbody_table, idx, cols, MONO_METHODBODY_SIZE);
-	if (!cols [MONO_METHODBODY_SEQ_POINTS])
-		return FALSE;
-
-	const char *ptr = mono_metadata_blob_heap (image, cols [MONO_METHODBODY_SEQ_POINTS]);
-	mono_ppdb_get_seq_points_internal (ptr, seq_points, n_seq_points, 0, NULL, NULL, NULL, NULL, NULL, NULL, FALSE);
-	return TRUE;
+	MonoMethod *method = minfo->method;
+	if (mono_ppdb_get_seq_points_internal (ppdb_file->image, ppdb_file, method, idx, source_file, source_file_list, source_files, seq_points, n_seq_points) > 0)
+		return TRUE;
+	return FALSE;
 }
 
 void
@@ -574,63 +608,14 @@ mono_ppdb_get_seq_points (MonoDebugMethodInfo *minfo, char **source_file, GPtrAr
 	MonoPPDBFile *ppdb = minfo->handle->ppdb;
 	MonoImage *image = ppdb->image;
 	MonoMethod *method = minfo->method;
-	MonoTableInfo *tables = image->tables;
-	guint32 cols [MONO_METHODBODY_SIZE];
-	const char *ptr;
-	int i, method_idx, docidx;
-	GPtrArray *sfiles = NULL;
-	GPtrArray *sindexes = NULL;
 
-	if (source_file)
-		*source_file = NULL;
-	if (source_file_list)
-		*source_file_list = NULL;
-	if (source_files)
-		*source_files = NULL;
-	if (seq_points)
-		*seq_points = NULL;
-	if (n_seq_points)
-		*n_seq_points = 0;
-
-	if (source_file_list)
-		*source_file_list = sfiles = g_ptr_array_new ();
-	if (source_files)
-		sindexes = g_ptr_array_new ();
-
-	if (!method->token || table_info_get_rows (&tables [MONO_TABLE_METHODBODY]) == 0)
-		return;
-
-	method_idx = mono_metadata_token_index (method->token);
-
-	MonoTableInfo *methodbody_table = &tables [MONO_TABLE_METHODBODY];
-	if (G_UNLIKELY (method_idx - 1 >= table_info_get_rows (methodbody_table))) {
-		char *method_name = mono_method_full_name (method, FALSE);
-		g_error ("Method idx %d is greater than number of rows (%d) in PPDB MethodDebugInformation table, for method %s in '%s'. Likely a malformed PDB file.",
-		 method_idx - 1, table_info_get_rows (methodbody_table), method_name, image->name);
-		g_free (method_name);
-	}
-	mono_metadata_decode_row (methodbody_table, method_idx - 1, cols, MONO_METHODBODY_SIZE);
-
-	docidx = cols [MONO_METHODBODY_DOCUMENT];
-
-	if (!cols [MONO_METHODBODY_SEQ_POINTS])
-		return;
-
-	ptr = mono_metadata_blob_heap (image, cols [MONO_METHODBODY_SEQ_POINTS]);
+	int method_idx = mono_metadata_token_index (method->token);
 	
-	int sps_len = mono_ppdb_get_seq_points_internal (ptr, seq_points, n_seq_points, docidx, image, ppdb, &sfiles, source_file, source_files, &sindexes, TRUE);
-
-	if (source_files) {
-		*source_files = g_new (int, sps_len);
-		for (i = 0; i < sps_len; ++i)
-			(*source_files)[i] = GPOINTER_TO_INT (g_ptr_array_index (sindexes, i));
-		g_ptr_array_free (sindexes, TRUE);
-	}
-
+	mono_ppdb_get_seq_points_internal (image, ppdb, method, method_idx, source_file, source_file_list, source_files, seq_points, n_seq_points);
 }
 
 static MonoDebugLocalsInfo*
-mono_ppdb_lookup_locals_internal (MonoImage *image, int method_idx, gboolean is_enc)
+mono_ppdb_lookup_locals_internal (MonoImage *image, int method_idx)
 {
 	MonoDebugLocalsInfo *res;
 	MonoTableInfo *tables = image->tables;
@@ -727,7 +712,7 @@ mono_ppdb_lookup_locals_internal (MonoImage *image, int method_idx, gboolean is_
 MonoDebugLocalsInfo*
 mono_ppdb_lookup_locals_enc (MonoImage *image, int method_idx)
 {
-	return mono_ppdb_lookup_locals_internal (image, method_idx + 1, TRUE);
+	return mono_ppdb_lookup_locals_internal (image, method_idx);
 }
 
 MonoDebugLocalsInfo*
@@ -749,7 +734,7 @@ mono_ppdb_lookup_locals (MonoDebugMethodInfo *minfo)
 	method_idx = mono_metadata_token_index (method->token);
 
 	
-	return mono_ppdb_lookup_locals_internal (image, method_idx, FALSE);
+	return mono_ppdb_lookup_locals_internal (image, method_idx);
 }
 
 /*

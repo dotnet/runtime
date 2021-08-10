@@ -6,6 +6,14 @@
     <!-- SA1129: https://github.com/DotNetAnalyzers/StyleCopAnalyzers/issues/3277 -->
     <NoWarn>$(NoWarn);CS0649;SA1129;CA1847</NoWarn>
     <SetIsTrimmable>false</SetIsTrimmable>
+    <IsPackable>true</IsPackable>
+    <AddNETFrameworkPlaceholderFileToPackage>true</AddNETFrameworkPlaceholderFileToPackage>
+    <AddNETFrameworkAssemblyReferenceToPackage>true</AddNETFrameworkAssemblyReferenceToPackage>
+    <PackageDescription>Provides types to perform speech synthesis and speech recognition.
+
+Commonly Used Types
+System.Speech.Synthesis.SpeechSynthesizer
+System.Speech.Recognition.SpeechRecognizer</PackageDescription>
   </PropertyGroup>
   <PropertyGroup>
     <!-- System.Speech has its own SR scheme in which resource ID's are mapped to SAPI error codes. So we disable our default SR.cs generation and include resources explicitly -->
@@ -221,7 +229,7 @@
       <LogicalName>upstable_jpn.upsmap</LogicalName>
     </EmbeddedResource>
   </ItemGroup>
-  <ItemGroup Condition="!$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net6.0'))">
+  <ItemGroup Condition="$(TargetFramework.StartsWith('netcoreapp3.1'))">
     <PackageReference Include="Microsoft.Win32.Registry" Version="$(MicrosoftWin32RegistryVersion)" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">

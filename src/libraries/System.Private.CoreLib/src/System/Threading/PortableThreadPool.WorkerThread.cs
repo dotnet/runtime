@@ -124,22 +124,19 @@ namespace System.Threading
                             ThreadCounts newCounts = counts;
                             newCounts.SubtractNumExistingThreads(1);
                             short newNumExistingThreads = (short)(numExistingThreads - 1);
+                            short newNumThreadsGoal =
+                                Math.Max(
+                                    threadPoolInstance.MinThreadsGoal,
+                                    Math.Min(newNumExistingThreads, counts.NumThreadsGoal));
+                            newCounts.NumThreadsGoal = newNumThreadsGoal;
 
-                            ThreadCounts oldCounts = threadPoolInstance._separated.counts.InterlockedCompareExchange(newCounts, counts);
+                            ThreadCounts oldCounts =
+                                threadPoolInstance._separated.counts.InterlockedCompareExchange(newCounts, counts);
                             if (oldCounts == counts)
                             {
-                                short newNumThreadsGoal =
-                                    Math.Max(
-                                        threadPoolInstance.MinThreadsGoal,
-                                        Math.Min(newNumExistingThreads, threadPoolInstance._separated.numThreadsGoal));
-                                if (threadPoolInstance._separated.numThreadsGoal != newNumThreadsGoal)
-                                {
-                                    threadPoolInstance._separated.numThreadsGoal = newNumThreadsGoal;
-                                    HillClimbing.ThreadPoolHillClimber.ForceChange(
-                                        newNumThreadsGoal,
-                                        HillClimbing.StateOrTransition.ThreadTimedOut);
-                                }
-
+                                HillClimbing.ThreadPoolHillClimber.ForceChange(
+                                    newNumThreadsGoal,
+                                    HillClimbing.StateOrTransition.ThreadTimedOut);
                                 if (NativeRuntimeEventSource.Log.IsEnabled())
                                 {
                                     NativeRuntimeEventSource.Log.ThreadPoolWorkerThreadStop((uint)newNumExistingThreads);
@@ -181,7 +178,7 @@ namespace System.Threading
                 while (true)
                 {
                     numProcessingWork = counts.NumProcessingWork;
-                    if (numProcessingWork >= threadPoolInstance._separated.numThreadsGoal)
+                    if (numProcessingWork >= counts.NumThreadsGoal)
                     {
                         return;
                     }
@@ -256,7 +253,7 @@ namespace System.Threading
                     // code from which this implementation was ported, which turns a processing thread into a retired thread
                     // and checks for pending requests like RemoveWorkingWorker. In this implementation there are
                     // no retired threads, so only the count of threads processing work is considered.
-                    if (counts.NumProcessingWork <= threadPoolInstance._separated.numThreadsGoal)
+                    if (counts.NumProcessingWork <= counts.NumThreadsGoal)
                     {
                         return false;
                     }

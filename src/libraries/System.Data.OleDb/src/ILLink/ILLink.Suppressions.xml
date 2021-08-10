@@ -97,5 +97,10 @@
       <property name="Scope">member</property>
       <property name="Target">M:System.Data.OleDb.OleDbDataReader.GetFieldType(System.Int32)</property>
     </attribute>
-  </assembly>
+    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
+      <argument>ILLink</argument>
+      <argument>IL2111</argument>
+      <property name="Scope">member</property>
+      <property name="Target">M:System.Data.OleDb.OleDbDataReader.BuildSchemaTable(MetaData[])</property>
+    </attribute>  </assembly>
 </linker>

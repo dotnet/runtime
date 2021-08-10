@@ -2125,7 +2125,7 @@ ValueNum ValueNumStore::VNForFunc(var_types typ, VNFunc func, ValueNum arg0VN, V
 //
 // Return Value:     - Returns the ValueNum associated with 'func'('arg0VN','arg1VN','arg2VN','arg3VN')
 //
-// Note:   Currently the only four operand func is the VNF_PtrToArrElem operation
+// Note:   Currently the only four operand funcs are VNF_PtrToArrElem and VNF_MapStore.
 //
 ValueNum ValueNumStore::VNForFunc(
     var_types typ, VNFunc func, ValueNum arg0VN, ValueNum arg1VN, ValueNum arg2VN, ValueNum arg3VN)
@@ -2136,7 +2136,7 @@ ValueNum ValueNumStore::VNForFunc(
     assert(arg0VN == VNNormalValue(arg0VN));
     assert(arg1VN == VNNormalValue(arg1VN));
     assert(arg2VN == VNNormalValue(arg2VN));
-    assert(arg3VN == VNNormalValue(arg3VN));
+    assert((func == VNF_MapStore) || (arg3VN == VNNormalValue(arg3VN)));
     assert(VNFuncArity(func) == 4);
 
     ValueNum resultVN;
@@ -2176,12 +2176,15 @@ ValueNum ValueNumStore::VNForFunc(
 
 ValueNum ValueNumStore::VNForMapStore(var_types typ, ValueNum arg0VN, ValueNum arg1VN, ValueNum arg2VN)
 {
-    ValueNum result = VNForFunc(typ, VNF_MapStore, arg0VN, arg1VN, arg2VN);
+    BasicBlock* const            bb      = m_pComp->compCurBB;
+    BasicBlock::loopNumber const loopNum = bb->bbNatLoopNum;
+    ValueNum const               result  = VNForFunc(typ, VNF_MapStore, arg0VN, arg1VN, arg2VN, loopNum);
+
 #ifdef DEBUG
     if (m_pComp->verbose)
     {
-        printf("    VNForMapStore(" FMT_VN ", " FMT_VN ", " FMT_VN "):%s returns ", arg0VN, arg1VN, arg2VN,
-               varTypeName(typ));
+        printf("    VNForMapStore(" FMT_VN ", " FMT_VN ", " FMT_VN "):%s in " FMT_BB " returns ", arg0VN, arg1VN,
+               arg2VN, varTypeName(typ), bb->bbNum);
         m_pComp->vnPrint(result, 1);
         printf("\n");
     }
@@ -2279,7 +2282,7 @@ TailCall:
     else
     {
         // Give up if we've run out of budget.
-        if (--(*pBudget) <= 0)
+        if (*pBudget == 0)
         {
             // We have to use 'nullptr' for the basic block here, because subsequent expressions
             // in different blocks may find this result in the VNFunc2Map -- other expressions in
@@ -2289,6 +2292,9 @@ TailCall:
             GetVNFunc2Map()->Set(fstruct, res);
             return res;
         }
+
+        // Reduce our budget by one
+        (*pBudget)--;
 
         // If it's recursive, stop the recursion.
         if (SelectIsBeingEvaluatedRecursively(arg0VN, arg1VN))
@@ -2315,6 +2321,8 @@ TailCall:
                             ") ==> " FMT_VN ".\n",
                             funcApp.m_args[0], arg0VN, funcApp.m_args[1], funcApp.m_args[2], arg1VN, funcApp.m_args[2]);
 #endif
+
+                    m_pComp->optRecordLoopMemoryDependence(m_pComp->compCurTree, m_pComp->compCurBB, funcApp.m_args[0]);
                     return funcApp.m_args[2];
                 }
                 // i # j ==> select(store(m, i, v), j) == select(m, j)
@@ -2324,9 +2332,9 @@ TailCall:
                     assert(funcApp.m_args[1] != arg1VN); // we already checked this above.
 #if FEATURE_VN_TRACE_APPLY_SELECTORS
                     JITDUMP("      AX2: " FMT_VN " != " FMT_VN " ==> select([" FMT_VN "]store(" FMT_VN ", " FMT_VN
-                            ", " FMT_VN "), " FMT_VN ") ==> select(" FMT_VN ", " FMT_VN ").\n",
+                            ", " FMT_VN "), " FMT_VN ") ==> select(" FMT_VN ", " FMT_VN ") remaining budget is %d.\n",
                             arg1VN, funcApp.m_args[1], arg0VN, funcApp.m_args[0], funcApp.m_args[1], funcApp.m_args[2],
-                            arg1VN, funcApp.m_args[0], arg1VN);
+                            arg1VN, funcApp.m_args[0], arg1VN, *pBudget);
 #endif
                     // This is the equivalent of the recursive tail call:
                     // return VNForMapSelect(vnk, typ, funcApp.m_args[0], arg1VN);
@@ -4346,8 +4354,9 @@ var_types ValueNumStore::TypeOfVN(ValueNum vn)
 }
 
 //------------------------------------------------------------------------
-// LoopOfVN: If the given value number is VNF_MemOpaque, return
-//    the loop number where the memory update occurs, otherwise returns MAX_LOOP_NUM.
+// LoopOfVN: If the given value number is VNF_MemOpaque, VNF_MapStore, or
+//    VNF_MemoryPhiDef, return the loop number where the memory update occurs,
+//    otherwise returns MAX_LOOP_NUM.
 //
 // Arguments:
 //    vn - Value number to query
@@ -4359,9 +4368,21 @@ var_types ValueNumStore::TypeOfVN(ValueNum vn)
 BasicBlock::loopNumber ValueNumStore::LoopOfVN(ValueNum vn)
 {
     VNFuncApp funcApp;
-    if (GetVNFunc(vn, &funcApp) && (funcApp.m_func == VNF_MemOpaque))
+    if (GetVNFunc(vn, &funcApp))
     {
-        return (BasicBlock::loopNumber)funcApp.m_args[0];
+        if (funcApp.m_func == VNF_MemOpaque)
+        {
+            return (BasicBlock::loopNumber)funcApp.m_args[0];
+        }
+        else if (funcApp.m_func == VNF_MapStore)
+        {
+            return (BasicBlock::loopNumber)funcApp.m_args[3];
+        }
+        else if (funcApp.m_func == VNF_PhiMemoryDef)
+        {
+            BasicBlock* const block = reinterpret_cast<BasicBlock*>(ConstantValue<ssize_t>(funcApp.m_args[0]));
+            return block->bbNatLoopNum;
+        }
     }
 
     return BasicBlock::MAX_LOOP_NUM;
@@ -5707,6 +5728,7 @@ void ValueNumStore::vnDumpMapStore(Compiler* comp, VNFuncApp* mapStore)
     ValueNum mapVN    = mapStore->m_args[0]; // First arg is the map id
     ValueNum indexVN  = mapStore->m_args[1]; // Second arg is the index
     ValueNum newValVN = mapStore->m_args[2]; // Third arg is the new value
+    unsigned loopNum  = mapStore->m_args[3]; // Fourth arg is the loop num
 
     comp->vnPrint(mapVN, 0);
     printf("[");
@@ -5714,6 +5736,10 @@ void ValueNumStore::vnDumpMapStore(Compiler* comp, VNFuncApp* mapStore)
     printf(" := ");
     comp->vnPrint(newValVN, 0);
     printf("]");
+    if (loopNum != BasicBlock::NOT_IN_LOOP)
+    {
+        printf("@" FMT_LP, loopNum);
+    }
 }
 
 void ValueNumStore::vnDumpMemOpaque(Compiler* comp, VNFuncApp* memOpaque)
@@ -6593,7 +6619,10 @@ void Compiler::fgValueNumberBlock(BasicBlock* blk)
 
         for (GenTree* const tree : stmt->TreeList())
         {
+            // Set up ambient var referring to current tree.
+            compCurTree = tree;
             fgValueNumberTree(tree);
+            compCurTree = nullptr;
         }
 
 #ifdef DEBUG
@@ -9653,34 +9682,6 @@ void Compiler::fgValueNumberCall(GenTreeCall* call)
     }
     else
     {
-        if (call->gtCallMoreFlags & GTF_CALL_M_SPECIAL_INTRINSIC)
-        {
-            NamedIntrinsic ni = lookupNamedIntrinsic(call->gtCallMethHnd);
-            if ((ni == NI_System_Collections_Generic_Comparer_get_Default) ||
-                (ni == NI_System_Collections_Generic_EqualityComparer_get_Default))
-            {
-                bool                 isExact   = false;
-                bool                 isNotNull = false;
-                CORINFO_CLASS_HANDLE cls       = gtGetClassHandle(call, &isExact, &isNotNull);
-                if ((cls != nullptr) && isExact && isNotNull)
-                {
-                    ValueNum clsVN = vnStore->VNForHandle(ssize_t(cls), GTF_ICON_CLASS_HDL);
-                    ValueNum funcVN;
-                    if (ni == NI_System_Collections_Generic_EqualityComparer_get_Default)
-                    {
-                        funcVN = vnStore->VNForFunc(call->TypeGet(), VNF_GetDefaultEqualityComparer, clsVN);
-                    }
-                    else
-                    {
-                        assert(ni == NI_System_Collections_Generic_Comparer_get_Default);
-                        funcVN = vnStore->VNForFunc(call->TypeGet(), VNF_GetDefaultComparer, clsVN);
-                    }
-                    call->gtVNPair.SetBoth(funcVN);
-                    return;
-                }
-            }
-        }
-
         if (call->TypeGet() == TYP_VOID)
         {
             call->gtVNPair.SetBoth(ValueNumStore::VNForVoid());

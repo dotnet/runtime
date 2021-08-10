@@ -2,11 +2,11 @@
 
 Libraries can be packaged in one or more of the following ways: as part of the .NETCore shared framework, part of a transport package, or as a NuGet package.
 
-## .NETCore Shared framework
+## .NETCoreApp shared framework
 
-To add a library to the .NETCore shared framework, that library's `AssemblyName` should be added to [NetCoreAppLibrary.props](../../src/libraries/NetCoreAppLibrary.props)
+To add a library to the .NETCoreApp shared framework, that library's `AssemblyName` should be added to [NetCoreAppLibrary.props](../../src/libraries/NetCoreAppLibrary.props)
 
-The library should have both a `ref` and `src` project. Its reference assembly will be included in the ref-pack for the Microsoft.NETCore.App shared framework, and its implementation assembly will be included in the runtime pack.
+The library should have both a `ref` and `src` project. Its reference assembly will be included in the targeting pack (also called ref pack) for the Microsoft.NETCore.App shared framework, and its implementation assembly will be included in the runtime pack.
 
 Including a library in the shared framework only includes the best applicable TargetFramework build of that library: `$(NetCoreAppCurrent)` if it exists, but possibly `netstandard2.1` or another if that is best. If a library has builds for other frameworks those will only be shipped if the library also produces a [Nuget package](#nuget-package).
 
@@ -36,7 +36,7 @@ Removing a library from this transport package is a breaking change and should b
 
 ## NuGet package
 
-Libraries to be packaged must be referenced by the [traversal packaging project](../../src/libraries/libraries-packages.proj) and set `IsPackable` to true. By default, all `Libraries/*/src` projects are considered for packaging.
+Libraries to be packaged must set `IsPackable` to true. By default, all `libraries/*/src` projects are considered for packaging.
 
 Package versions and shipping state should be controlled using the properties defined by the [Arcade SDK](https://github.com/dotnet/arcade/blob/master/Documentation/ArcadeSdk.md#project-properties-defined-by-the-sdk). Typically libraries should not need to explicitly set any of these properties.
 

@@ -48,7 +48,13 @@ namespace Microsoft.Extensions.FileProviders.Physical
         private DateTime GetLastWriteTimeUtc()
         {
             _fileInfo.Refresh();
-            return _fileInfo.Exists ? _fileInfo.LastWriteTimeUtc : DateTime.MinValue;
+
+            if (!_fileInfo.Exists)
+            {
+                return DateTime.MinValue;
+            }
+
+            return FileSystemInfoHelper.GetFileLinkTargetLastWriteTimeUtc(_fileInfo) ?? _fileInfo.LastWriteTimeUtc;
         }
 
         /// <summary>

@@ -384,7 +384,6 @@ g_Framework_Assemblies = [
     'System.Linq.Queryable.dll',
     'System.Management.dll',
     'System.Memory.dll',
-    'System.Net.Connections.dll',
     'System.Net.dll',
     'System.Net.Http.dll',
     'System.Net.Http.Json.dll',

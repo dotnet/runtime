@@ -25,6 +25,8 @@ namespace System.Text.Json.Serialization.Converters
 
         private readonly ConcurrentDictionary<ulong, JsonEncodedText> _nameCache;
 
+        private ConcurrentDictionary<ulong, JsonEncodedText>? _dictionaryKeyPolicyCache;
+
         // This is used to prevent flooding the cache due to exponential bitwise combinations of flags.
         // Since multiple threads can add to the cache, a few more values might be added.
         private const int NameCacheSizeSoftLimit = 64;
@@ -325,35 +327,82 @@ namespace System.Text.Json.Serialization.Converters
 
             ulong key = ConvertToUInt64(value);
 
-            if (_nameCache.TryGetValue(key, out JsonEncodedText formatted))
+            // Try to obtain values from caches
+            if (options.DictionaryKeyPolicy != null)
+            {
+                Debug.Assert(!state.Current.IgnoreDictionaryKeyPolicy);
+
+                if (_dictionaryKeyPolicyCache != null && _dictionaryKeyPolicyCache.TryGetValue(key, out JsonEncodedText formatted))
+                {
+                    writer.WritePropertyName(formatted);
+                    return;
+                }
+            }
+            else if (_nameCache.TryGetValue(key, out JsonEncodedText formatted))
             {
                 writer.WritePropertyName(formatted);
                 return;
             }
 
+
+            // if there are not cached values
             string original = value.ToString();
             if (IsValidIdentifier(original))
             {
-                // We are dealing with a combination of flag constants since
-                // all constant values were cached during warm-up.
-                JavaScriptEncoder? encoder = options.Encoder;
-
-                if (_nameCache.Count < NameCacheSizeSoftLimit)
+                if (options.DictionaryKeyPolicy != null)
                 {
-                    formatted = JsonEncodedText.Encode(original, encoder);
+                    original = options.DictionaryKeyPolicy.ConvertName(original);
 
-                    writer.WritePropertyName(formatted);
+                    if (original == null)
+                    {
+                        ThrowHelper.ThrowInvalidOperationException_NamingPolicyReturnNull(options.DictionaryKeyPolicy);
+                    }
 
-                    _nameCache.TryAdd(key, formatted);
+                    _dictionaryKeyPolicyCache ??= new ConcurrentDictionary<ulong, JsonEncodedText>();
+
+                    if (_dictionaryKeyPolicyCache.Count < NameCacheSizeSoftLimit)
+                    {
+                        JavaScriptEncoder? encoder = options.Encoder;
+
+                        JsonEncodedText formatted = JsonEncodedText.Encode(original, encoder);
+
+                        writer.WritePropertyName(formatted);
+
+                        _dictionaryKeyPolicyCache.TryAdd(key, formatted);
+                    }
+                    else
+                    {
+                        // We also do not create a JsonEncodedText instance here because passing the string
+                        // directly to the writer is cheaper than creating one and not caching it for reuse.
+                        writer.WritePropertyName(original);
+                    }
+
+                    return;
                 }
                 else
                 {
-                    // We also do not create a JsonEncodedText instance here because passing the string
-                    // directly to the writer is cheaper than creating one and not caching it for reuse.
-                    writer.WritePropertyName(original);
-                }
+                    // We might be dealing with a combination of flag constants since all constant values were
+                    // likely cached during warm - up(assuming the number of constants <= NameCacheSizeSoftLimit).
 
-                return;
+                    JavaScriptEncoder? encoder = options.Encoder;
+
+                    if (_nameCache.Count < NameCacheSizeSoftLimit)
+                    {
+                        JsonEncodedText formatted = JsonEncodedText.Encode(original, encoder);
+
+                        writer.WritePropertyName(formatted);
+
+                        _nameCache.TryAdd(key, formatted);
+                    }
+                    else
+                    {
+                        // We also do not create a JsonEncodedText instance here because passing the string
+                        // directly to the writer is cheaper than creating one and not caching it for reuse.
+                        writer.WritePropertyName(original);
+                    }
+
+                    return;
+                }
             }
 
             switch (s_enumTypeCode)

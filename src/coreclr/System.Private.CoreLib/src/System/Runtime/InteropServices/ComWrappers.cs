@@ -300,6 +300,7 @@ namespace System.Runtime.InteropServices
         ///  * P/Invokes with COM-related types
         ///  * COM activation
         /// </remarks>
+        [SupportedOSPlatform("windows")]
         public static void RegisterForMarshalling(ComWrappers instance)
         {
             if (instance == null)

@@ -435,6 +435,14 @@ namespace Microsoft.Extensions.DependencyInjection.Specification
         }
 
         [Fact]
+        public void ServiceProviderIsDisposable()
+        {
+            var provider = CreateServiceProvider(new TestServiceCollection());
+
+            Assert.IsAssignableFrom<IDisposable>(provider);
+        }
+
+        [Fact]
         public void DisposingScopeDisposesService()
         {
             // Arrange
@@ -469,13 +477,10 @@ namespace Microsoft.Extensions.DependencyInjection.Specification
             Assert.True(transient2.Disposed);
             Assert.False(singleton.Disposed);
 
-            var disposableProvider = provider as IDisposable;
-            if (disposableProvider != null)
-            {
-                disposableProvider.Dispose();
-                Assert.True(singleton.Disposed);
-                Assert.True(transient3.Disposed);
-            }
+            (provider as IDisposable).Dispose();
+
+            Assert.True(singleton.Disposed);
+            Assert.True(transient3.Disposed);
         }
 
         [Fact]
@@ -490,7 +495,7 @@ namespace Microsoft.Extensions.DependencyInjection.Specification
 
             // Assert
             Assert.NotNull(serviceProvider);
-            (provider as IDisposable)?.Dispose();
+            (provider as IDisposable).Dispose();
         }
 
         [Fact]
@@ -790,7 +795,7 @@ namespace Microsoft.Extensions.DependencyInjection.Specification
             var multipleServices = outer.MultipleServices.ToArray();
 
             // Act
-            ((IDisposable)serviceProvider).Dispose();
+            (serviceProvider as IDisposable).Dispose();
 
             // Assert
             Assert.Equal(outer, callback.Disposed[0]);

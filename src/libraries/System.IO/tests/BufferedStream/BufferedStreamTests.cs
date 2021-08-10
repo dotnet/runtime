@@ -53,6 +53,52 @@ namespace System.IO.Tests
             Assert.Equal(1234, bufferedStream.BufferSize);
         }
 
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.Is64BitProcess))]
+        [OuterLoop]
+        public void WriteFromByte_InputSizeLargerThanHalfOfMaxInt_ShouldSuccess()
+        {
+            const int InputSize = int.MaxValue / 2 + 1;
+            byte[] bytes;
+            try
+            {
+                bytes = new byte[InputSize];
+            }
+            catch (OutOfMemoryException)
+            {
+                return;
+            }
+
+            var writableStream = new WriteOnlyStream();
+            using (var bs = new BufferedStream(writableStream))
+            {
+                bs.Write(bytes, 0, InputSize);
+                Assert.Equal(InputSize, writableStream.Position);
+            }
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.Is64BitProcess))]
+        [OuterLoop]
+        public void WriteFromSpan_InputSizeLargerThanHalfOfMaxInt_ShouldSuccess()
+        {
+            const int InputSize = int.MaxValue / 2 + 1;
+            byte[] bytes;
+            try
+            {
+                bytes = new byte[InputSize];
+            }
+            catch (OutOfMemoryException)
+            {
+                return;
+            }
+
+            var writableStream = new WriteOnlyStream();
+            using (var bs = new BufferedStream(writableStream))
+            {
+                bs.Write(new ReadOnlySpan<byte>(bytes));
+                Assert.Equal(InputSize, writableStream.Position);
+            }
+        }
+
         [Theory]
         [InlineData(true)]
         [InlineData(false)]
@@ -368,5 +414,50 @@ namespace System.IO.Tests
 
         public override Task FlushAsync(CancellationToken cancellationToken) =>
             throw new InvalidOperationException("Exception from FlushAsync");
+    }
+
+    internal sealed class WriteOnlyStream : Stream
+    {
+        private long _pos;
+
+        public override void Flush()
+        {
+        }
+
+        public override int Read(byte[] buffer, int offset, int count)
+        {
+            throw new NotSupportedException();
+        }
+
+        public override long Seek(long offset, SeekOrigin origin)
+        {
+            throw new NotSupportedException();
+        }
+
+        public override void SetLength(long value)
+        {
+            throw new NotSupportedException();
+        }
+
+        public override void Write(byte[] buffer, int offset, int count)
+        {
+            _pos += count;
+        }
+
+        public override void Write(ReadOnlySpan<byte> buffer)
+        {
+            _pos += buffer.Length;
+        }
+
+        public override bool CanRead => false;
+        public override bool CanSeek => false;
+        public override bool CanWrite => true;
+        public override long Length => _pos;
+
+        public override long Position
+        {
+            get => _pos;
+            set => throw new NotSupportedException();
+        }
     }
 }

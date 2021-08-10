@@ -35,10 +35,10 @@ namespace System.Net.WebSockets.Compression
 
         public void ReleaseBuffer()
         {
-            if (_buffer is not null)
+            if (_buffer is byte[] toReturn)
             {
-                ArrayPool<byte>.Shared.Return(_buffer);
                 _buffer = null;
+                ArrayPool<byte>.Shared.Return(toReturn);
             }
         }
 
@@ -70,8 +70,11 @@ namespace System.Net.WebSockets.Compression
                 // Rent a 30% bigger buffer
                 byte[] newBuffer = ArrayPool<byte>.Shared.Rent((int)(_buffer.Length * 1.3));
                 _buffer.AsSpan(0, position).CopyTo(newBuffer);
-                ArrayPool<byte>.Shared.Return(_buffer);
+
+                byte[] toReturn = _buffer;
                 _buffer = newBuffer;
+
+                ArrayPool<byte>.Shared.Return(toReturn);
             }
 
             return new ReadOnlySpan<byte>(_buffer, 0, position);

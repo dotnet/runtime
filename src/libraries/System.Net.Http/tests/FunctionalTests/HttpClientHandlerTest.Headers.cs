@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net.Http.Headers;
+using System.Net.Quic;
 using System.Net.Test.Common;
 using System.Text;
 using System.Threading.Tasks;
@@ -428,6 +429,7 @@ namespace System.Net.Http.Functional.Tests
                         });
                     }
                     catch (IOException) { }
+                    catch (QuicConnectionAbortedException) { }
                 });
         }
 

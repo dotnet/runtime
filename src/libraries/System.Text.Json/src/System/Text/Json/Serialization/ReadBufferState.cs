@@ -25,8 +25,11 @@ namespace System.Text.Json.Serialization
         {
             // Clear only what we used and return the buffer to the pool
             new Span<byte>(Buffer, 0, ClearMax).Clear();
-            ArrayPool<byte>.Shared.Return(Buffer);
+
+            byte[] toReturn = Buffer;
             Buffer = null!;
+
+            ArrayPool<byte>.Shared.Return(toReturn);
         }
     }
 }

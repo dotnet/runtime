@@ -235,7 +235,7 @@ if(CLR_CMAKE_TARGET_UNIX)
         else()
             add_compile_options($<$<COMPILE_LANGUAGE:ASM>:-Wa,--noexecstack>)
             if(CLR_CMAKE_TARGET_SUNOS)
-                add_definitions(-D__EXTENSIONS__ -D_XPG4_2 -D_POSIX_PTHREAD_SEMANTICS)
+                add_definitions(-D__EXTENSIONS__ -D_XPG4_2 -D_POSIX_PTHREAD_SEMANTICS -DTARGET_SUNOS)
             else()
                 # -z,now is required for full relro.
                 # see https://www.redhat.com/en/blog/hardening-elf-binaries-using-relocation-read-only-relro

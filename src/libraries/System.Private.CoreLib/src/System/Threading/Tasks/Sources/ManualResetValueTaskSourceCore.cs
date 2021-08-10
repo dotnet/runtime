@@ -107,7 +107,7 @@ namespace System.Threading.Tasks.Sources
             }
 
             _error?.Throw();
-            Debug.Fail("Should not get here");
+            Debug.Fail($"{nameof(ThrowForFailedGetResult)} should never get here");
         }
 
         /// <summary>Schedules the continuation action for this operation.</summary>
@@ -250,8 +250,8 @@ namespace System.Threading.Tasks.Sources
             // for the surrounding code to become less efficent (stack spills etc)
             // and it is an uncommon path.
 
-            Debug.Assert(_continuation != null);
-            Debug.Assert(_executionContext != null);
+            Debug.Assert(_continuation != null, $"Null {nameof(_continuation)}");
+            Debug.Assert(_executionContext != null, $"Null {nameof(_executionContext)}");
 
             ExecutionContext? currentContext = ExecutionContext.CaptureForRestore();
             // Restore the captured ExecutionContext before executing anything.
@@ -321,8 +321,8 @@ namespace System.Threading.Tasks.Sources
         /// </summary>
         private void InvokeSchedulerContinuation()
         {
-            Debug.Assert(_capturedContext != null);
-            Debug.Assert(_continuation != null);
+            Debug.Assert(_capturedContext != null, $"Null {nameof(_capturedContext)}");
+            Debug.Assert(_continuation != null, $"Null {nameof(_continuation)}");
 
             switch (_capturedContext)
             {

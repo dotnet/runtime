@@ -84,7 +84,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                             {
                                 if (a.Type != JTokenType.Array)
                                 {
-                                    logger.LogDebug("Invalid event raised args, expected an array: {a}");
+                                    logger.LogDebug($"Invalid event raised args, expected an array: {a.Type}");
                                 }
                                 else
                                 {

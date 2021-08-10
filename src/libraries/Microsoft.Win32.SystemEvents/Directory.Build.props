@@ -1,11 +1,6 @@
 ﻿<Project>
   <Import Project="..\Directory.Build.props" />
   <PropertyGroup>
-    <StrongNameKeyId>Open</StrongNameKeyId>
     <SupportedOSPlatforms>windows</SupportedOSPlatforms>
-    <PackageDescription>Provides access to Windows system event notifications.
-
-Commonly Used Types:
-Microsoft.Win32.SystemEvents</PackageDescription>
   </PropertyGroup>
 </Project>

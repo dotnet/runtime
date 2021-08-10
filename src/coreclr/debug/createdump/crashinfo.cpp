@@ -16,7 +16,8 @@ CrashInfo::CrashInfo(pid_t pid, bool gatherFrames, pid_t crashThread, uint32_t s
     m_gatherFrames(gatherFrames),
     m_crashThread(crashThread),
     m_signal(signal),
-    m_moduleInfos(&ModuleInfoCompare)
+    m_moduleInfos(&ModuleInfoCompare),
+    m_mainModule(nullptr)
 {
     g_crashInfo = this;
 #ifdef __APPLE__
@@ -361,8 +362,9 @@ bool
 CrashInfo::UnwindAllThreads(IXCLRDataProcess* pClrDataProcess)
 {
     ReleaseHolder<ISOSDacInterface> pSos = nullptr;
-    pClrDataProcess->QueryInterface(__uuidof(ISOSDacInterface), (void**)&pSos);
-
+    if (pClrDataProcess != nullptr) {
+        pClrDataProcess->QueryInterface(__uuidof(ISOSDacInterface), (void**)&pSos);
+    }
     // For each native and managed thread
     for (ThreadInfo* thread : m_threads)
     {

@@ -30,7 +30,7 @@ namespace System.Text.Json.Serialization
         /// <summary>
         /// Can the converter have $id metadata.
         /// </summary>
-        internal virtual bool CanHaveIdMetadata => true;
+        internal virtual bool CanHaveIdMetadata => false;
 
         internal bool CanBePolymorphic { get; set; }
 

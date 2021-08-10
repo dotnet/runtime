@@ -28,6 +28,10 @@ CLREvent* ThreadSuspend::g_pGCSuspendEvent = NULL;
 
 ThreadSuspend::SUSPEND_REASON ThreadSuspend::m_suspendReason;
 
+#if defined(TARGET_WINDOWS) && defined(TARGET_AMD64)
+void* ThreadSuspend::g_returnAddressHijackTarget = NULL;
+#endif
+
 // If you add any thread redirection function, make sure the debugger can 1) recognize the redirection
 // function, and 2) retrieve the original CONTEXT.  See code:Debugger.InitializeHijackFunctionAddress and
 // code:DacDbiInterfaceImpl.RetrieveHijackedContext.
@@ -4678,7 +4682,17 @@ void Thread::HijackThread(ReturnKind returnKind, ExecutionState *esb)
     CONTRACTL_END;
 
     _ASSERTE(IsValidReturnKind(returnKind));
+
     VOID *pvHijackAddr = reinterpret_cast<VOID *>(OnHijackTripThread);
+
+#if defined(TARGET_WINDOWS) && defined(TARGET_AMD64)
+    void* returnAddressHijackTarget = ThreadSuspend::GetReturnAddressHijackTarget();
+    if (returnAddressHijackTarget != NULL)
+    {
+        pvHijackAddr = returnAddressHijackTarget;
+    }
+#endif // TARGET_WINDOWS && TARGET_AMD64
+    
 #ifdef TARGET_X86
     if (returnKind == RT_Float)
     {
@@ -5975,9 +5989,26 @@ bool Thread::InjectActivation(ActivationReason reason)
 // Initialize thread suspension support
 void ThreadSuspend::Initialize()
 {
-#if defined(FEATURE_HIJACK) && defined(TARGET_UNIX)
+#ifdef FEATURE_HIJACK
+#if defined(TARGET_UNIX)
     ::PAL_SetActivationFunction(HandleSuspensionForInterruptedThread, CheckActivationSafePoint);
-#endif
+#elif defined(TARGET_WINDOWS) && defined(TARGET_AMD64)
+    // Only versions of Windows that have the special user mode APC have a correct implementation of the return address hijack handling
+    if (Thread::UseSpecialUserModeApc())
+    {
+        HMODULE hModNtdll = WszLoadLibrary(W("ntdll.dll"));
+        if (hModNtdll != NULL)
+        {
+            typedef ULONG_PTR (NTAPI *PFN_RtlGetReturnAddressHijackTarget)();
+            PFN_RtlGetReturnAddressHijackTarget pfnRtlGetReturnAddressHijackTarget = (PFN_RtlGetReturnAddressHijackTarget)GetProcAddress(hModNtdll, "RtlGetReturnAddressHijackTarget");
+            if (pfnRtlGetReturnAddressHijackTarget != NULL)
+            {
+                g_returnAddressHijackTarget = (void*)pfnRtlGetReturnAddressHijackTarget();
+            }
+        }
+    }
+#endif // TARGET_WINDOWS && TARGET_AMD64
+#endif // FEATURE_HIJACK
 }
 
 #ifdef _DEBUG

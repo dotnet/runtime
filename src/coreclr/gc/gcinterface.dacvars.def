@@ -53,13 +53,14 @@ GC_DAC_PTR_VAR    (uint8_t*,              internal_root_array)
 GC_DAC_VAR        (size_t,                internal_root_array_index)
 GC_DAC_VAR        (BOOL,                  heap_analyze_success)
 GC_DAC_VAR        (int,                   n_heaps)
-GC_DAC_PTR_VAR    (dac_gc_heap*,          g_heaps)
+GC_DAC_PTR_VAR    (opaque_gc_heap*,       g_heaps)
 GC_DAC_VAR        (int32_t,               gc_structures_invalid_cnt)
 GC_DAC_ARRAY_VAR  (size_t,                interesting_data_per_heap)
 GC_DAC_ARRAY_VAR  (size_t,                compact_reasons_per_heap)
 GC_DAC_ARRAY_VAR  (size_t,                expand_mechanisms_per_heap)
 GC_DAC_ARRAY_VAR  (size_t,                interesting_mechanism_bits_per_heap)
 GC_DAC_VAR        (dac_handle_table_map,  handle_table_map)
+GC_DAC_ARRAY_VAR  (int,                   gc_heap_field_offsets)
 
 #undef GC_DAC_VAR
 #undef GC_DAC_ARRAY_VAR

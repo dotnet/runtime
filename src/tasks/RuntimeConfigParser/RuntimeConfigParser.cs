@@ -9,6 +9,7 @@ using System.Text.Json.Serialization;
 using System.Reflection.Metadata;
 using Microsoft.Build.Framework;
 using Microsoft.Build.Utilities;
+using System.Diagnostics.CodeAnalysis;
 
 public class RuntimeConfigParserTask : Task
 {
@@ -34,18 +35,26 @@ public class RuntimeConfigParserTask : Task
         if (string.IsNullOrEmpty(RuntimeConfigFile))
         {
             Log.LogError($"'{nameof(RuntimeConfigFile)}' is required.");
+            return false;
         }
 
         if (string.IsNullOrEmpty(OutputFile))
         {
             Log.LogError($"'{nameof(OutputFile)}' is required.");
+            return false;
         }
 
-        Dictionary<string, string> configProperties = ConvertInputToDictionary(RuntimeConfigFile);
+        if (!TryConvertInputToDictionary(RuntimeConfigFile, out Dictionary<string, string>? configProperties))
+        {
+            return false;
+        }
 
         if (RuntimeConfigReservedProperties.Length != 0)
         {
-            CheckDuplicateProperties(configProperties, RuntimeConfigReservedProperties);
+            if (!CheckReservedProperties(configProperties, RuntimeConfigReservedProperties))
+            {
+                return false;
+            }
         }
 
         var blobBuilder = new BlobBuilder();
@@ -59,8 +68,10 @@ public class RuntimeConfigParserTask : Task
     }
 
     /// Reads a json file from the given path and extracts the "configProperties" key (assumed to be a string to string dictionary)
-    private Dictionary<string, string> ConvertInputToDictionary(string inputFilePath)
+    private bool TryConvertInputToDictionary(string inputFilePath, [NotNullWhen(true)] out Dictionary<string, string>? result)
     {
+        result = null;
+
         var options = new JsonSerializerOptions {
             AllowTrailingCommas = true,
             ReadCommentHandling = JsonCommentHandling.Skip,
@@ -75,18 +86,22 @@ public class RuntimeConfigParserTask : Task
 
         if (parsedJson == null)
         {
-            throw new ArgumentException("Wasn't able to parse the json file successfully.");
+            Log.LogError("Wasn't able to parse the json file successfully.");
+            return false;
         }
         if (parsedJson.RuntimeOptions == null)
         {
-            throw new ArgumentException("Key runtimeOptions wasn't found in the json file.");
+            Log.LogError("Key runtimeOptions wasn't found in the json file.");
+            return false;
         }
         if (parsedJson.RuntimeOptions.ConfigProperties == null)
         {
-            throw new ArgumentException("Key runtimeOptions->configProperties wasn't found in the json file.");
+            Log.LogError("Key runtimeOptions->configProperties wasn't found in the json file.");
+            return false;
         }
 
-        return parsedJson.RuntimeOptions.ConfigProperties;
+        result = parsedJson.RuntimeOptions.ConfigProperties;
+        return true;
     }
 
     /// Just write the dictionary out to a blob as a count followed by
@@ -103,15 +118,20 @@ public class RuntimeConfigParserTask : Task
         }
     }
 
-    private void CheckDuplicateProperties(IReadOnlyDictionary<string, string> properties, ITaskItem[] keys)
+    private bool CheckReservedProperties(IReadOnlyDictionary<string, string> properties, ITaskItem[] keys)
     {
+        var succeed = true;
+
         foreach (var key in keys)
         {
             if (properties.ContainsKey(key.ItemSpec))
             {
-                throw new ArgumentException($"Property '{key}' can't be set by the user!");
+                Log.LogError($"Property '{key}' can't be set by the user!");
+                succeed = false;
             }
         }
+
+        return succeed;
     }
 }
 

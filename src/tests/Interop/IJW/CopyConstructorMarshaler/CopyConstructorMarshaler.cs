@@ -20,7 +20,7 @@ namespace CopyConstructorMarshaler
 
             try
             {
-                Assembly ijwNativeDll = IjwHelper.LoadIjwAssembly("IjwCopyConstructorMarshaler");
+                Assembly ijwNativeDll = Assembly.Load("IjwCopyConstructorMarshaler");
                 Type testType = ijwNativeDll.GetType("TestClass");
                 object testInstance = Activator.CreateInstance(testType);
                 MethodInfo testMethod = testType.GetMethod("PInvokeNumCopies");
@@ -33,7 +33,7 @@ namespace CopyConstructorMarshaler
                 // Reverse PInvoke will copy 3 times. Two are from the same paths as the PInvoke,
                 // and the third is from the reverse P/Invoke call.
                 Assert.AreEqual(3, (int)testMethod.Invoke(testInstance, null));
-                
+
                 testMethod = testType.GetMethod("PInvokeNumCopiesDerivedType");
 
                 // PInvoke will copy twice. Once from argument to parameter, and once from the managed to native parameter.

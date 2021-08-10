@@ -254,9 +254,7 @@ namespace System.Reflection.Emit
             return ab;
         }
 
-        public ModuleBuilder DefineDynamicModule(string name) => DefineDynamicModule(name, false);
-
-        public ModuleBuilder DefineDynamicModule(string name, bool emitSymbolInfo)
+        public ModuleBuilder DefineDynamicModule(string name)
         {
             if (name == null)
                 throw new ArgumentNullException(nameof(name));

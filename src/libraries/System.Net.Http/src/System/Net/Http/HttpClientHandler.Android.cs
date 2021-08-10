@@ -22,7 +22,6 @@ namespace System.Net.Http
         [UnsupportedOSPlatform("browser")]
         [UnsupportedOSPlatform("ios")]
         [UnsupportedOSPlatform("tvos")]
-        [UnsupportedOSPlatform("maccatalyst")]
         public DecompressionMethods AutomaticDecompression
         {
             get
@@ -52,7 +51,6 @@ namespace System.Net.Http
         [UnsupportedOSPlatform("browser")]
         [UnsupportedOSPlatform("ios")]
         [UnsupportedOSPlatform("tvos")]
-        [UnsupportedOSPlatform("maccatalyst")]
         public bool UseProxy
         {
             get
@@ -82,7 +80,6 @@ namespace System.Net.Http
         [UnsupportedOSPlatform("browser")]
         [UnsupportedOSPlatform("ios")]
         [UnsupportedOSPlatform("tvos")]
-        [UnsupportedOSPlatform("maccatalyst")]
         public IWebProxy? Proxy
         {
             get
@@ -112,7 +109,6 @@ namespace System.Net.Http
         [UnsupportedOSPlatform("browser")]
         [UnsupportedOSPlatform("ios")]
         [UnsupportedOSPlatform("tvos")]
-        [UnsupportedOSPlatform("maccatalyst")]
         public bool PreAuthenticate
         {
             get
@@ -142,7 +138,6 @@ namespace System.Net.Http
         [UnsupportedOSPlatform("browser")]
         [UnsupportedOSPlatform("ios")]
         [UnsupportedOSPlatform("tvos")]
-        [UnsupportedOSPlatform("maccatalyst")]
         public int MaxAutomaticRedirections
         {
             get

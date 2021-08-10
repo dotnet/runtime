@@ -630,9 +630,6 @@ public:
     void dmpFilterException(DWORD key, DWORD value);
     int repFilterException(struct _EXCEPTION_POINTERS* pExceptionPointers);
 
-    void recHandleException(struct _EXCEPTION_POINTERS* pExceptionPointers);
-    void dmpHandleException(DWORD key, DWORD value);
-
     void recGetAddressOfPInvokeTarget(CORINFO_METHOD_HANDLE method, CORINFO_CONST_LOOKUP* pLookup);
     void dmpGetAddressOfPInvokeTarget(DWORDLONG key, DLD value);
     void repGetAddressOfPInvokeTarget(CORINFO_METHOD_HANDLE method, CORINFO_CONST_LOOKUP* pLookup);
@@ -1042,7 +1039,7 @@ enum mcPackets
     Packet_GetUnmanagedCallConv                          = 94,
     Packet_GetVarArgsHandle                              = 95,
     Packet_GetVars                                       = 96,
-    Packet_HandleException                               = 135,
+    Packet_HandleException                               = 135, // Retired 7/19/2021
     Packet_InitClass                                     = 97,
     Packet_InitConstraintsForVerification                = 98, // Retired 2/18/2020
     Packet_IsCompatibleDelegate                          = 99,

@@ -72,12 +72,12 @@ CrashReportWriter::WriteCrashReport()
     WriteValue("version", version.c_str());
     CloseObject();                  // configuration
 
-    // The main module was saved away in the crash info 
-    if (m_crashInfo.MainModule()->BaseAddress() != 0)
+    // The main module (if one) was saved away in the crash info
+    const ModuleInfo* mainModule = m_crashInfo.MainModule();
+    if (mainModule != nullptr && mainModule->BaseAddress() != 0)
     {
-        WriteValue("process_name", GetFileName(m_crashInfo.MainModule()->ModuleName()).c_str());
+        WriteValue("process_name", GetFileName(mainModule->ModuleName()).c_str());
     }
-
     const char* exceptionType = nullptr;
     OpenArray("threads");
     for (const ThreadInfo* thread : m_crashInfo.Threads())

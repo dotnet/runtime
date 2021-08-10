@@ -61,7 +61,6 @@
 #include <mono/utils/mono-logger-internals.h>
 #include <mono/utils/mono-path.h>
 #include <mono/utils/mono-stdlib.h>
-#include <mono/utils/mono-io-portability.h>
 #include <mono/utils/mono-error-internals.h>
 #include <mono/utils/atomic.h>
 #include <mono/utils/mono-memory-model.h>
@@ -250,8 +249,6 @@ mono_runtime_init_checked (MonoDomain *domain, MonoThreadStartCB start_cb, MonoT
 
 	error_init (error);
 
-	mono_portability_helpers_init ();
-	
 	mono_gc_base_init ();
 	mono_monitor_init ();
 	mono_marshal_init ();
@@ -620,15 +617,7 @@ try_load_from (MonoAssembly **assembly,
 	*assembly = NULL;
 	fullpath = g_build_filename (path1, path2, path3, path4, (const char*)NULL);
 
-	if (IS_PORTABILITY_SET) {
-		gchar *new_fullpath = mono_portability_find_file (fullpath, TRUE);
-		if (new_fullpath) {
-			g_free (fullpath);
-			fullpath = new_fullpath;
-			found = TRUE;
-		}
-	} else
-		found = g_file_test (fullpath, G_FILE_TEST_IS_REGULAR);
+	found = g_file_test (fullpath, G_FILE_TEST_IS_REGULAR);
 	
 	if (found) {
 		*assembly = mono_assembly_request_open (fullpath, req, NULL);

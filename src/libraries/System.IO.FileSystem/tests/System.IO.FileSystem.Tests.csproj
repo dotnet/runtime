@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
@@ -39,6 +39,7 @@
     <Compile Include="FileStream\DisposeAsync.cs" />
     <Compile Include="FileStream\ReadWriteSpan.cs" />
     <Compile Include="Enumeration\ConstructionTests.cs" />
+    <Compile Include="Enumeration\GetTimesTests.cs" />
     <Compile Include="Enumeration\RecursionDepthTests.cs" />
     <Compile Include="Enumeration\SpecialDirectoryTests.cs" />
     <Compile Include="Enumeration\SkipAttributeTests.cs" />
@@ -75,6 +76,7 @@
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsWindows)' == 'true'">
     <Compile Include="Base\SymbolicLinks\BaseSymbolicLinks.Windows.cs" />
+    <Compile Include="Directory\Delete.Windows.cs" />
     <Compile Include="FileSystemTest.Windows.cs" />
     <Compile Include="FileStream\ctor_options_as.Windows.cs" />
     <Compile Include="FileStream\FileStreamConformanceTests.Windows.cs" />
@@ -94,6 +96,7 @@
     <Compile Include="$(CoreLibSharedDir)System\IO\PathInternal.cs" Link="Common\System\IO\PathInternal.cs" />
     <Compile Include="$(CoreLibSharedDir)System\IO\PathInternal.Windows.cs" Link="Common\System\IO\PathInternal.Windows.cs" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.ServiceProcess.ServiceController\src\System.ServiceProcess.ServiceController.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.IO.FileSystem.AccessControl\src\System.IO.FileSystem.AccessControl.csproj" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsBrowser)' == 'true'">
     <Compile Include="Base\SymbolicLinks\BaseSymbolicLinks.Unix.cs" />

@@ -281,8 +281,13 @@ void StubLinkerCPU::Init(void)
 // value of the global into a register.
 struct WriteBarrierDescriptor
 {
+#ifdef TARGET_UNIX
+    DWORD   m_funcStartOffset;              // Offset to the start of the barrier function relative to this struct address
+    DWORD   m_funcEndOffset;                // Offset to the end of the barrier function relative to this struct address
+#else // TARGET_UNIX
     BYTE *  m_pFuncStart;                   // Pointer to the start of the barrier function
     BYTE *  m_pFuncEnd;                     // Pointer to the end of the barrier function
+#endif // TARGET_UNIX
     DWORD   m_dw_g_lowest_address_offset;   // Offset of the instruction reading g_lowest_address
     DWORD   m_dw_g_highest_address_offset;  // Offset of the instruction reading g_highest_address
     DWORD   m_dw_g_ephemeral_low_offset;    // Offset of the instruction reading g_ephemeral_low
@@ -436,18 +441,28 @@ void UpdateGCWriteBarriers(bool postGrow = false)
     // Iterate through the write barrier patch table created in the .clrwb section
     // (see write barrier asm code)
     WriteBarrierDescriptor * pDesc = &g_rgWriteBarrierDescriptors;
+#ifdef TARGET_UNIX
+    while (pDesc->m_funcStartOffset)
+#else // TARGET_UNIX
     while (pDesc->m_pFuncStart)
+#endif // TARGET_UNIX
     {
         // If the write barrier is being currently used (as in copied over to the patchable site)
         // then read the patch location from the table and use the offset to patch the target asm code
+#ifdef TARGET_UNIX
+        PBYTE to = FindWBMapping((BYTE *)pDesc + pDesc->m_funcStartOffset);
+        size_t barrierSize = pDesc->m_funcEndOffset - pDesc->m_funcStartOffset;
+#else // TARGET_UNIX
         PBYTE to = FindWBMapping(pDesc->m_pFuncStart);
+        size_t barrierSize = pDesc->m_pFuncEnd - pDesc->m_pFuncStart;
+#endif // TARGET_UNIX
         if(to)
         {
             to = (PBYTE)PCODEToPINSTR((PCODE)GetWriteBarrierCodeLocation(to));
             ExecutableWriterHolder<BYTE> barrierWriterHolder;
             if (IsWriteBarrierCopyEnabled())
             {
-                barrierWriterHolder = ExecutableWriterHolder<BYTE>(to, pDesc->m_pFuncEnd - pDesc->m_pFuncStart);
+                barrierWriterHolder = ExecutableWriterHolder<BYTE>(to, barrierSize);
                 to = barrierWriterHolder.GetRW();
             }
             GWB_PATCH_OFFSET(g_lowest_address);

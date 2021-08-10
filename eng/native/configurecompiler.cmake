@@ -574,11 +574,11 @@ if (MSVC)
 
   # Enable EH-continuation table for native components for amd64 builds
   # Added using variables instead of add_compile_options to let individual projects override it
-  #if (CLR_CMAKE_HOST_ARCH_AMD64)
-  #  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /guard:ehcont")
-  #  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /guard:ehcont")
-  #  set(CMAKE_ASM_MASM_FLAGS "${CMAKE_C_FLAGS} /guard:ehcont")
-  #endif (CLR_CMAKE_HOST_ARCH_AMD64)
+  if (CLR_CMAKE_HOST_ARCH_AMD64)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /guard:ehcont")
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /guard:ehcont")
+    set(CMAKE_ASM_MASM_FLAGS "${CMAKE_C_FLAGS} /guard:ehcont")
+  endif (CLR_CMAKE_HOST_ARCH_AMD64)
 
   # Statically linked CRT (libcmt[d].lib, libvcruntime[d].lib and libucrt[d].lib) by default. This is done to avoid
   # linking in VCRUNTIME140.DLL for a simplified xcopy experience by reducing the dependency on VC REDIST.

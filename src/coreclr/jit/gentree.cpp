@@ -882,17 +882,6 @@ bool GenTreeCall::IsPure(Compiler* compiler) const
 //      true if this call has any side-effects; false otherwise.
 bool GenTreeCall::HasSideEffects(Compiler* compiler, bool ignoreExceptions, bool ignoreCctors) const
 {
-    // Some named intrinsics are known to have ignorable side effects.
-    if (gtCallMoreFlags & GTF_CALL_M_SPECIAL_INTRINSIC)
-    {
-        NamedIntrinsic ni = compiler->lookupNamedIntrinsic(gtCallMethHnd);
-        if ((ni == NI_System_Collections_Generic_Comparer_get_Default) ||
-            (ni == NI_System_Collections_Generic_EqualityComparer_get_Default))
-        {
-            return false;
-        }
-    }
-
     // Generally all GT_CALL nodes are considered to have side-effects, but we may have extra information about helper
     // calls that can prove them side-effect-free.
     if (gtCallType != CT_HELPER)
@@ -15981,10 +15970,9 @@ void Compiler::gtExtractSideEffList(GenTree*  expr,
                 }
 
                 // Generally all GT_CALL nodes are considered to have side-effects.
-                // So if we get here it must be a helper call or a special intrinsic that we decided it does
+                // So if we get here it must be a helper call that we decided it does
                 // not have side effects that we needed to keep.
-                assert(!node->OperIs(GT_CALL) || (node->AsCall()->gtCallType == CT_HELPER) ||
-                       (node->AsCall()->gtCallMoreFlags & GTF_CALL_M_SPECIAL_INTRINSIC));
+                assert(!node->OperIs(GT_CALL) || (node->AsCall()->gtCallType == CT_HELPER));
             }
 
             if ((m_flags & GTF_IS_IN_CSE) != 0)
@@ -17805,50 +17793,13 @@ CORINFO_CLASS_HANDLE Compiler::gtGetClassHandle(GenTree* tree, bool* pIsExact, b
                     break;
                 }
 
-                // Try to get the actual type of [Equality]Comparer<>.Default
-                if ((ni == NI_System_Collections_Generic_Comparer_get_Default) ||
-                    (ni == NI_System_Collections_Generic_EqualityComparer_get_Default))
+                CORINFO_CLASS_HANDLE specialObjClass = impGetSpecialIntrinsicExactReturnType(call->gtCallMethHnd);
+                if (specialObjClass != nullptr)
                 {
-                    CORINFO_SIG_INFO sig;
-                    info.compCompHnd->getMethodSig(call->gtCallMethHnd, &sig);
-                    assert(sig.sigInst.classInstCount == 1);
-                    CORINFO_CLASS_HANDLE typeHnd = sig.sigInst.classInst[0];
-                    assert(typeHnd != nullptr);
-
-                    // Lookup can incorrect when we have __Canon as it won't appear to implement any interface types.
-                    // And if we do not have a final type, devirt & inlining is unlikely to result in much
-                    // simplification. We can use CORINFO_FLG_FINAL to screen out both of these cases.
-                    const DWORD typeAttribs = info.compCompHnd->getClassAttribs(typeHnd);
-                    const bool  isFinalType = ((typeAttribs & CORINFO_FLG_FINAL) != 0);
-
-                    if (isFinalType)
-                    {
-                        if (ni == NI_System_Collections_Generic_EqualityComparer_get_Default)
-                        {
-                            objClass = info.compCompHnd->getDefaultEqualityComparerClass(typeHnd);
-                        }
-                        else
-                        {
-                            assert(ni == NI_System_Collections_Generic_Comparer_get_Default);
-                            objClass = info.compCompHnd->getDefaultComparerClass(typeHnd);
-                        }
-                    }
-
-                    if (objClass == nullptr)
-                    {
-                        // Don't re-visit this intrinsic in this case.
-                        call->gtCallMoreFlags &= ~GTF_CALL_M_SPECIAL_INTRINSIC;
-                        JITDUMP("Special intrinsic for type %s: type not final, so deferring opt\n",
-                                eeGetClassName(typeHnd))
-                    }
-                    else
-                    {
-                        JITDUMP("Special intrinsic for type %s: return type is %s\n", eeGetClassName(typeHnd),
-                                eeGetClassName(objClass))
-                        *pIsExact   = true;
-                        *pIsNonNull = true;
-                        break;
-                    }
+                    objClass    = specialObjClass;
+                    *pIsExact   = true;
+                    *pIsNonNull = true;
+                    break;
                 }
             }
             if (call->IsInlineCandidate())

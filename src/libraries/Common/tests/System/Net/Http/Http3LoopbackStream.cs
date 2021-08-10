@@ -154,12 +154,6 @@ namespace System.Net.Test.Common
             await _stream.WriteAsync(framePayload).ConfigureAwait(false);
         }
 
-        public async Task ShutdownSendAsync()
-        {
-            _stream.Shutdown();
-            await _stream.ShutdownWriteCompleted().ConfigureAwait(false);
-        }
-
         static int EncodeHttpInteger(long longToEncode, Span<byte> buffer)
         {
             Debug.Assert(longToEncode >= 0);
@@ -273,7 +267,7 @@ namespace System.Net.Test.Common
 
             if (isFinal)
             {
-                await ShutdownSendAsync().ConfigureAwait(false);
+                _stream.Shutdown();
                 await _stream.ShutdownCompleted().ConfigureAwait(false);
                 Dispose();
             }
@@ -363,6 +357,13 @@ namespace System.Net.Test.Common
                         throw new Exception();
                 }
             }
+        }
+
+        public async Task AbortAndWaitForShutdownAsync(long errorCode)
+        {
+            _stream.AbortRead(errorCode);
+            _stream.AbortWrite(errorCode);
+            await _stream.ShutdownCompleted();
         }
 
         public async Task<(long? frameType, byte[] payload)> ReadFrameAsync()

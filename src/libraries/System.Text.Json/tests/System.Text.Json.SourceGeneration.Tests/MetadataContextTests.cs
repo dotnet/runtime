@@ -8,6 +8,7 @@ namespace System.Text.Json.SourceGeneration.Tests
 {
     [JsonSerializable(typeof(Location), GenerationMode = JsonSourceGenerationMode.Metadata)]
     [JsonSerializable(typeof(RepeatedTypes.Location), TypeInfoPropertyName = "RepeatedLocation", GenerationMode = JsonSourceGenerationMode.Metadata)]
+    [JsonSerializable(typeof(NumberTypes), GenerationMode = JsonSourceGenerationMode.Metadata)]
     [JsonSerializable(typeof(ActiveOrUpcomingEvent), GenerationMode = JsonSourceGenerationMode.Metadata)]
     [JsonSerializable(typeof(CampaignSummaryViewModel), GenerationMode = JsonSourceGenerationMode.Metadata)]
     [JsonSerializable(typeof(IndexViewModel), GenerationMode = JsonSourceGenerationMode.Metadata)]
@@ -38,6 +39,7 @@ namespace System.Text.Json.SourceGeneration.Tests
         {
             Assert.Null(MetadataWithPerTypeAttributeContext.Default.Location.Serialize);
             Assert.Null(MetadataWithPerTypeAttributeContext.Default.RepeatedLocation.Serialize);
+            Assert.Null(MetadataWithPerTypeAttributeContext.Default.NumberTypes.Serialize);
             Assert.Null(MetadataWithPerTypeAttributeContext.Default.ActiveOrUpcomingEvent.Serialize);
             Assert.Null(MetadataWithPerTypeAttributeContext.Default.CampaignSummaryViewModel.Serialize);
             Assert.Null(MetadataWithPerTypeAttributeContext.Default.IndexViewModel.Serialize);
@@ -59,6 +61,7 @@ namespace System.Text.Json.SourceGeneration.Tests
     [JsonSourceGenerationOptions(GenerationMode = JsonSourceGenerationMode.Metadata)]
     [JsonSerializable(typeof(Location))]
     [JsonSerializable(typeof(RepeatedTypes.Location), TypeInfoPropertyName = "RepeatedLocation")]
+    [JsonSerializable(typeof(NumberTypes))]
     [JsonSerializable(typeof(ActiveOrUpcomingEvent))]
     [JsonSerializable(typeof(CampaignSummaryViewModel))]
     [JsonSerializable(typeof(IndexViewModel))]
@@ -89,6 +92,7 @@ namespace System.Text.Json.SourceGeneration.Tests
         {
             Assert.Null(MetadataContext.Default.Location.Serialize);
             Assert.Null(MetadataContext.Default.RepeatedLocation.Serialize);
+            Assert.Null(MetadataContext.Default.NumberTypes.Serialize);
             Assert.Null(MetadataContext.Default.ActiveOrUpcomingEvent.Serialize);
             Assert.Null(MetadataContext.Default.CampaignSummaryViewModel.Serialize);
             Assert.Null(MetadataContext.Default.IndexViewModel.Serialize);
