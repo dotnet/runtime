@@ -204,7 +204,7 @@ BOOL Module::SetTransientFlagInterlocked(DWORD dwFlag)
     }
 }
 
-#if PROFILING_SUPPORTED
+#if defined(PROFILING_SUPPORTED) || defined(EnC_SUPPORTED)
 void Module::UpdateNewlyAddedTypes()
 {
     CONTRACTL
@@ -262,7 +262,9 @@ void Module::UpdateNewlyAddedTypes()
     m_dwExportedTypeCount = countExportedTypesAfterProfilerUpdate;
     m_dwCustomAttributeCount = countCustomAttributeCount;
 }
+#endif // PROFILING_SUPPORTED || EnC_SUPPORTED
 
+#if PROFILING_SUPPORTED
 void Module::NotifyProfilerLoadFinished(HRESULT hr)
 {
     CONTRACTL
@@ -1179,12 +1181,12 @@ void Module::ApplyMetaData()
     HRESULT hr = S_OK;
     ULONG ulCount;
 
-#if PROFILING_SUPPORTED
+#if defined(PROFILING_SUPPORTED) || defined(EnC_SUPPORTED)
     if (!IsResource())
     {
         UpdateNewlyAddedTypes();
     }
-#endif // PROFILING_SUPPORTED
+#endif // PROFILING_SUPPORTED || EnC_SUPPORTED
 
     // Ensure for TypeRef
     ulCount = GetMDImport()->GetCountWithTokenKind(mdtTypeRef) + 1;
