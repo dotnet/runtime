@@ -72,7 +72,4 @@ System.Formats.Asn1.AsnWriter</PackageDescription>
     <Reference Include="System.Numerics" />
     <PackageReference Include="System.ValueTuple" Version="$(SystemValueTupleVersion)" />
   </ItemGroup>
-  <ItemGroup>
-    <NETStandardCompatError Include="netcoreapp2.0" Supported="$(NetCoreAppMinimum)" />
-  </ItemGroup>
 </Project>
