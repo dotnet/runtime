@@ -209,7 +209,7 @@ namespace System.Reflection.Metadata
                 {
                     if (attribute is AsyncStateMachineAttribute asm)
                     {
-                        Console.WriteLine(asm.StateMachineType);
+                        Assert.Contains("<TestTaskMethod>", asm.StateMachineType.Name);
                     }
                 }
             });
