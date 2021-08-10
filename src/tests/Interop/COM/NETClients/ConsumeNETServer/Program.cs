@@ -36,11 +36,16 @@ namespace NetClient
             Type t = Type.GetTypeFromCLSID(Guid.Parse(Guids.ConsumeNETServerTesting));
             Assert.IsTrue(t.IsCOMObject);
 
+            object obj = Activator.CreateInstance(t);
+            var test = (CoClass.ConsumeNETServerTesting)obj;
+            test.ReleaseResources();
+            
+            Assert.IsTrue(Marshal.IsComObject(test));
+
             // Use the overload that takes constructor arguments. This tests the path where the runtime searches for the
             // constructor to use (which has some special-casing for COM) instead of just always using the default.
-            object obj = Activator.CreateInstance(t, Array.Empty<object>());
-
-            var test = (CoClass.ConsumeNETServerTesting)obj;
+            obj = Activator.CreateInstance(t, Array.Empty<object>());
+            test = (CoClass.ConsumeNETServerTesting)obj;
             test.ReleaseResources();
 
             Assert.IsTrue(Marshal.IsComObject(test));
