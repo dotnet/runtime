@@ -678,6 +678,7 @@ jobs:
         helixQueueGroup: ${{ parameters.helixQueueGroup }}
         crossBuild: true
         crossrootfsDir: '/crossrootfs/armel'
+        disableClrTest: true
         ${{ insert }}: ${{ parameters.jobParameters }}
 
 # Windows x64
