@@ -69,12 +69,11 @@ namespace System.Threading
 
                 // We need to register for cancellation before storing the waiter into the list.
                 // If we registered after, we might leak a registration if the mutex was exited and the waiter
-                // removed from the list prior to CancellationRegistration being properly assigned. By
-                // registering before, there's a different race condition, that of cancellation being requested
-                // prior to assigning the registration to CancellationRegistration; if that happens, we could
-                // end up with the waiter still stored in the list even though OnCancellation was called.
-                // So once we hold the lock, which OnCancellation also needs to take, we check again whether
-                // cancellation has been requested, and avoid storing the waiter if it has.
+                // removed from the list prior to CancellationRegistration being properly assigned. By registering before,
+                // there's a different race condition, that of cancellation being requested prior to storing the waiter into
+                // the list; if that happens, we could end up adding the waiter and have it still stored in the list even
+                // though OnCancellation was called. So once we hold the lock, which OnCancellation also needs to take, we
+                // check again whether cancellation has been requested,and avoid storing the waiter if it has.
                 w.CancellationRegistration = cancellationToken.UnsafeRegister((s, token) => OnCancellation(s, token), w);
 
                 lock (SyncObj)
