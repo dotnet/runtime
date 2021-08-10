@@ -1,20 +1,14 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Threading.Tasks;
 
 namespace System.Runtime.InteropServices.JavaScript
 {
-    public static class Runtime
+    public static partial class Runtime
     {
-        private static readonly Dictionary<int, WeakReference<JSObject>> _csOwnedObjects = new Dictionary<int, WeakReference<JSObject>>();
-        private static object JSOwnedObjectLock = new object();
-        // we use this to maintain identity of GCHandle for a managed object
-        private static Dictionary<object, int> GCHandleFromJSOwnedObject = new Dictionary<object, int>();
-
         private const string TaskGetResultName = "get_Result";
         private static readonly MethodInfo _taskGetResultMethodInfo = typeof(Task<>).GetMethod(TaskGetResultName)!;
 
@@ -41,197 +35,6 @@ namespace System.Runtime.InteropServices.JavaScript
         public static void DumpAotProfileData(ref byte buf, int len, string extraArg)
         {
             Interop.Runtime.DumpAotProfileData(ref buf, len, extraArg);
-        }
-
-        public static int GetCsOwnedObjectJsHandle(JSObject target, int shouldAddInflight)
-        {
-            if (shouldAddInflight != 0)
-            {
-                target.AddInFlight();
-            }
-            return target.JSHandle;
-        }
-
-        internal static bool ReleaseCsOwnedObject(JSObject objToRelease)
-        {
-            lock (_csOwnedObjects)
-            {
-                _csOwnedObjects.Remove(objToRelease.JSHandle);
-                Interop.Runtime.ReleaseCsOwnedObject(objToRelease.JSHandle);
-            }
-            return true;
-        }
-
-        internal static IntPtr CreateCsOwnedObject(JSObject proxy, string typeName, params object[] parms)
-        {
-            object res = Interop.Runtime.CreateCsOwnedObject(typeName, parms, out int exception);
-            if (exception != 0)
-                throw new JSException((string)res);
-
-            var jsHandle = (int)res;
-
-            lock (_csOwnedObjects)
-            {
-                _csOwnedObjects[jsHandle] = new WeakReference<JSObject>(proxy, trackResurrection: true);
-            }
-
-            return (IntPtr)jsHandle;
-        }
-
-        // please keep BINDING wasm_type_symbol in sync
-        public enum MappedType
-        {
-            JSObject = 0,
-            Array = 1,
-            ArrayBuffer = 2,
-            DataView = 3,
-            Function = 4,
-            Map = 5,
-            SharedArrayBuffer = 6,
-            Int8Array = 10,
-            Uint8Array = 11,
-            Uint8ClampedArray = 12,
-            Int16Array = 13,
-            Uint16Array = 14,
-            Int32Array = 15,
-            Uint32Array = 16,
-            Float32Array = 17,
-            Float64Array = 18,
-        }
-
-        public static JSObject CreateCsOwnedProxy(IntPtr jsHandle, MappedType mappedType)
-        {
-            JSObject? target = null;
-
-            lock (_csOwnedObjects)
-            {
-                if (!_csOwnedObjects.TryGetValue((int)jsHandle, out WeakReference<JSObject>? reference) ||
-                    !reference.TryGetTarget(out target) ||
-                    target.IsDisposed)
-                {
-                    target = mappedType switch
-                    {
-                        MappedType.JSObject => new JSObject(jsHandle),
-                        MappedType.Array => new Array(jsHandle),
-                        MappedType.ArrayBuffer => new ArrayBuffer(jsHandle),
-                        MappedType.DataView => new DataView(jsHandle),
-                        MappedType.Function => new Function(jsHandle),
-                        MappedType.Map => new Map(jsHandle),
-                        MappedType.SharedArrayBuffer => new SharedArrayBuffer(jsHandle),
-                        MappedType.Int8Array => new Int8Array(jsHandle),
-                        MappedType.Uint8Array => new Uint8Array(jsHandle),
-                        MappedType.Uint8ClampedArray => new Uint8ClampedArray(jsHandle),
-                        MappedType.Int16Array => new Int16Array(jsHandle),
-                        MappedType.Uint16Array => new Uint16Array(jsHandle),
-                        MappedType.Int32Array => new Int32Array(jsHandle),
-                        MappedType.Uint32Array => new Uint32Array(jsHandle),
-                        MappedType.Float32Array => new Float32Array(jsHandle),
-                        MappedType.Float64Array => new Float64Array(jsHandle),
-                        _ => throw new ArgumentOutOfRangeException(nameof(mappedType))
-                    };
-                    _csOwnedObjects[(int)jsHandle] = new WeakReference<JSObject>(target, trackResurrection: true);
-                }
-            }
-
-            target.AddInFlight();
-
-            return target;
-        }
-
-        public static int TryGetCsOwnedObjectJsHandle(object rawObj)
-        {
-            JSObject? jsObject = rawObj as JSObject;
-            return jsObject?.JSHandle ?? 0;
-        }
-
-        public static JSObject? GetCSOwnedObjectByJsHandle(int jsHandle, int shouldAddInflight)
-        {
-            lock (_csOwnedObjects)
-            {
-                if (_csOwnedObjects.TryGetValue(jsHandle, out WeakReference<JSObject>? reference))
-                {
-                    reference.TryGetTarget(out JSObject? jso);
-                    if (shouldAddInflight != 0 && jso != null)
-                    {
-                        jso.AddInFlight();
-                    }
-                    return jso;
-                }
-            }
-            return null;
-
-        }
-
-        public static int CreateTaskSource()
-        {
-            var tcs = new TaskCompletionSource<object>();
-            return GetJSOwnedObjectGCHandle(tcs);
-        }
-
-        public static void SetTaskSourceResult(int tcsGCHandle, object result)
-        {
-            GCHandle handle = (GCHandle)(IntPtr)tcsGCHandle;
-            // this is JS owned Normal handle. We always have a Target
-            TaskCompletionSource<object> tcs = (TaskCompletionSource<object>)handle.Target!;
-            tcs.SetResult(result);
-        }
-
-        public static void SetTaskSourceFailure(int tcsGCHandle, string reason)
-        {
-            GCHandle handle = (GCHandle)(IntPtr)tcsGCHandle;
-            // this is JS owned Normal handle. We always have a Target
-            TaskCompletionSource<object> tcs = (TaskCompletionSource<object>)handle.Target!;
-            tcs.SetException(new JSException(reason));
-        }
-
-        public static object GetTaskSourceTask(int tcsGCHandle)
-        {
-            GCHandle handle = (GCHandle)(IntPtr)tcsGCHandle;
-            // this is JS owned Normal handle. We always have a Target
-            TaskCompletionSource<object> tcs = (TaskCompletionSource<object>)handle.Target!;
-            return tcs.Task;
-        }
-
-        public static object GetJSOwnedObjectByGCHandle(int gcHandle)
-        {
-            GCHandle h = (GCHandle)(IntPtr)gcHandle;
-            return h.Target!;
-        }
-
-        // A JSOwnedObject is a managed object with its lifetime controlled by javascript.
-        // The managed side maintains a strong reference to the object, while the JS side
-        //  maintains a weak reference and notifies the managed side if the JS wrapper object
-        //  has been reclaimed by the JS GC. At that point, the managed side will release its
-        //  strong references, allowing the managed object to be collected.
-        // This ensures that things like delegates and promises will never 'go away' while JS
-        //  is expecting to be able to invoke or await them.
-        public static int GetJSOwnedObjectGCHandle(object o)
-        {
-            if (o == null)
-                return 0;
-
-            int result;
-            lock (JSOwnedObjectLock)
-            {
-                if (GCHandleFromJSOwnedObject.TryGetValue(o, out result))
-                    return result;
-
-                result = (int)(IntPtr)GCHandle.Alloc(o, GCHandleType.Normal);
-                GCHandleFromJSOwnedObject[o] = result;
-                return result;
-            }
-        }
-
-        // The JS layer invokes this method when the JS wrapper for a JS owned object
-        //  has been collected by the JS garbage collector
-        public static void ReleaseJSOwnedObjectByGCHandle(int gcHandle)
-        {
-            GCHandle handle = (GCHandle)(IntPtr)gcHandle;
-            lock (JSOwnedObjectLock)
-            {
-                GCHandleFromJSOwnedObject.Remove(handle.Target!);
-                handle.Free();
-            }
         }
 
         public static bool IsSimpleArray(object a)
@@ -323,48 +126,6 @@ namespace System.Runtime.InteropServices.JavaScript
                 }
             }
             return new string(res);
-        }
-
-        public static void SetupJSContinuation(Task task, JSObject continuationObj)
-        {
-            if (task.IsCompleted)
-                Complete();
-            else
-                task.GetAwaiter().OnCompleted(Complete);
-
-            void Complete()
-            {
-                try
-                {
-                    if (task.Exception == null)
-                    {
-                        object? result;
-                        Type task_type = task.GetType();
-                        if (task_type == typeof(Task))
-                        {
-                            result = System.Array.Empty<object>();
-                        }
-                        else
-                        {
-                            result = GetTaskResultMethodInfo(task_type)?.Invoke(task, null);
-                        }
-
-                        continuationObj.Invoke("resolve", result);
-                    }
-                    else
-                    {
-                        continuationObj.Invoke("reject", task.Exception.ToString());
-                    }
-                }
-                catch (Exception e)
-                {
-                    continuationObj.Invoke("reject", e.ToString());
-                }
-                finally
-                {
-                    continuationObj.Dispose();
-                }
-            }
         }
 
         /// <summary>
