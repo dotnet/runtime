@@ -139,6 +139,14 @@ namespace System.Diagnostics
             }
         }
 
+        /// <summary>Returns the time the associated thread was started.</summary>
+        public DateTime StartTime
+        {
+            [SupportedOSPlatform("windows")]
+            [SupportedOSPlatform("linux")]
+            get => GetStartTime();
+        }
+
         /// <devdoc>
         ///     Helper to check preconditions for property access.
         /// </devdoc>

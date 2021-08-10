@@ -242,7 +242,7 @@ namespace System.Diagnostics
         [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
         public System.IntPtr ProcessorAffinity { set { } }
         public System.IntPtr StartAddress { get { throw null; } }
-        public System.DateTime StartTime { get { throw null; } }
+        public System.DateTime StartTime { [System.Runtime.Versioning.SupportedOSPlatform("windows")] [System.Runtime.Versioning.SupportedOSPlatform("linux")] get { throw null; } }
         public System.Diagnostics.ThreadState ThreadState { get { throw null; } }
         public System.TimeSpan TotalProcessorTime { get { throw null; } }
         public System.TimeSpan UserProcessorTime { get { throw null; } }
