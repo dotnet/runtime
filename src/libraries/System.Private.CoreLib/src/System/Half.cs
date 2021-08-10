@@ -126,7 +126,7 @@ namespace System
                 return leftIsNegative && !AreZero(left, right);
             }
 
-            return (left._value != right._value) && (left._value < right._value) ^ leftIsNegative;
+            return (left._value != right._value) && ((left._value < right._value) ^ leftIsNegative);
         }
 
         public static bool operator >(Half left, Half right)
@@ -152,7 +152,7 @@ namespace System
                 return leftIsNegative || AreZero(left, right);
             }
 
-            return (left._value == right._value) || (left._value <= right._value) ^ leftIsNegative;
+            return (left._value == right._value) || ((left._value < right._value) ^ leftIsNegative);
         }
 
         public static bool operator >=(Half left, Half right)
