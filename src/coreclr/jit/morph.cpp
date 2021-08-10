@@ -10988,7 +10988,7 @@ GenTree* Compiler::fgMorphCommutative(GenTreeOp* tree)
     }
 
     cns1->gtIconVal = foldedCns->AsIntCon()->IconValue();
-    if ((oper == GT_ADD) && foldedCns->IsCnsIntOrI())
+    if (oper == GT_ADD)
     {
         cns1->AsIntCon()->gtFieldSeq =
             GetFieldSeqStore()->Append(cns1->AsIntCon()->gtFieldSeq, cns2->AsIntCon()->gtFieldSeq);
