@@ -116,7 +116,7 @@ dump_protocol_helper_generate_core_dump (
 
 	ds_ipc_result_t ipc_result;
 	ipc_result = ds_rt_generate_core_dump (payload);
-	if (result != DS_IPC_S_OK) {
+	if (ipc_result != DS_IPC_S_OK) {
 		ds_ipc_message_send_error (stream, result);
 		ep_raise_error ();
 	} else {

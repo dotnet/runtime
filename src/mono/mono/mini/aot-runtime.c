@@ -2657,7 +2657,6 @@ compute_llvm_code_range (MonoAotModule *amodule, guint8 **code_start, guint8 **c
 
 #ifdef HOST_WASM
 		gsize min = 1 << 30, max = 0;
-		gsize prev = 0;
 
 		// FIXME: This depends on emscripten allocating ftnptr ids sequentially
 		for (int i = 0; i < amodule->info.nmethods; ++i) {
@@ -2666,12 +2665,10 @@ compute_llvm_code_range (MonoAotModule *amodule, guint8 **code_start, guint8 **c
 			addr = get_method (i);
 			gsize val = (gsize)addr;
 			if (val) {
-				//g_assert (val > prev);
 				if (val < min)
 					min = val;
 				else if (val > max)
 					max = val;
-				prev = val;
 			}
 		}
 		if (max) {
@@ -3441,19 +3438,14 @@ mono_aot_find_jit_info (MonoImage *image, gpointer addr)
 	MonoJitInfo *jinfo;
 	guint8 *code, *ex_info, *p;
 	guint32 *table;
-	int nmethods;
 	gpointer *methods;
 	guint8 *code1, *code2;
 	int methods_len;
 	gboolean async;
-	gpointer orig_addr;
 
 	if (!amodule)
 		return NULL;
 
-	nmethods = amodule->info.nmethods;
-
-	orig_addr = addr;
 	addr = MINI_FTNPTR_TO_ADDR (addr);
 
 	if (!amodule_contains_code_addr (amodule, (guint8 *)addr))
@@ -5671,6 +5663,7 @@ get_numerous_trampoline (MonoAotTrampoline tramp_type, int n_got_slots, MonoAotM
 	int index, tramp_size;
 
 	/* Currently, we keep all trampolines in the mscorlib AOT image */
+	(void)image; // avoid compiler warning: variable 'image' set but not used
 	image = mono_defaults.corlib;
 
 	*out_amodule = amodule;

@@ -3358,7 +3358,6 @@ ves_icall_InternalInvoke (MonoReflectionMethodHandle method_handle, MonoObjectHa
 	 */
 	MonoMethod *m = method->method;
 	MonoMethodSignature* const sig = mono_method_signature_internal (m);
-	MonoImage *image = NULL;
 	int pcount = 0;
 	void *obj = this_arg;
 	char *this_name = NULL;
@@ -3430,7 +3429,7 @@ ves_icall_InternalInvoke (MonoReflectionMethodHandle method_handle, MonoObjectHa
 		goto return_null;
 	}
 
-	image = m_class_get_image (m->klass);
+	m_class_get_image (m->klass);
 	
 	if (m_class_get_rank (m->klass) && !strcmp (m->name, ".ctor")) {
 		int i;
@@ -7015,7 +7014,6 @@ ves_icall_RuntimeParameterInfo_GetTypeModifiers (MonoReflectionTypeHandle rt, Mo
 	MonoType *type = MONO_HANDLE_GETVAL (rt, type);
 	MonoClass *member_class = mono_handle_class (member);
 	MonoMethod *method = NULL;
-	MonoImage *image;
 	MonoMethodSignature *sig;
 
 	if (mono_class_is_reflection_method_or_constructor (member_class)) {
@@ -7038,7 +7036,7 @@ ves_icall_RuntimeParameterInfo_GetTypeModifiers (MonoReflectionTypeHandle rt, Mo
 		return NULL_HANDLE_ARRAY;
 	}
 
-	image = m_class_get_image (method->klass);
+	m_class_get_image (method->klass);
 	sig = mono_method_signature_internal (method);
 	if (pos == -1)
 		type = sig->ret;

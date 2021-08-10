@@ -1904,6 +1904,8 @@ mini_get_interp_in_wrapper (MonoMethodSignature *sig)
 		mono_mb_emit_ldloc (mb, retval_var);
 	}
 	mono_mb_emit_byte (mb, CEE_RET);
+#else
+	(void)return_native_struct; // avoid compiler warning: variable 'return_native_struct' set but not used
 #endif
 
 	info = mono_wrapper_info_create (mb, WRAPPER_SUBTYPE_INTERP_IN);
@@ -3994,7 +3996,6 @@ mini_get_shared_gparam (MonoType *t, MonoType *constraint)
 	MonoGenericParam *par = t->data.generic_param;
 	MonoGSharedGenericParam *copy, key;
 	MonoType *res;
-	MonoImage *image = NULL;
 	char *name;
 
 	mm = mono_mem_manager_merge (mono_metadata_get_mem_manager_for_type (t), mono_metadata_get_mem_manager_for_type (constraint));
@@ -4004,7 +4005,7 @@ mini_get_shared_gparam (MonoType *t, MonoType *constraint)
 	key.param.gshared_constraint = constraint;
 
 	g_assert (mono_generic_param_info (par));
-	image = mono_get_image_for_generic_param(par);
+	mono_get_image_for_generic_param(par);
 
 	/*
 	 * Need a cache to ensure the newly created gparam

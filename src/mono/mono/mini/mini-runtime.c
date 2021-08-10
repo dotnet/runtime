@@ -3419,6 +3419,8 @@ mono_jit_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoObjec
 		else
 			return *(MonoObject**)retval;
 	}
+#else
+	(void)invoke; // avoid compiler warning: variable 'invoke' set but not used
 #endif
 
 	MonoObject *result;

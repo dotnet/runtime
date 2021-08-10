@@ -2069,7 +2069,6 @@ mono_main (int argc, char* argv[])
 	MonoDomain *domain;
 	MonoImageOpenStatus open_status;
 	const char* aname, *mname = NULL;
-	char *config_file = NULL;
 	int i, count = 1;
 	guint32 opt, action = DO_EXEC, recompilation_times = 1;
 	MonoGraphOptions mono_graph_options = (MonoGraphOptions)0;
@@ -2207,20 +2206,12 @@ mono_main (int argc, char* argv[])
 			mono_gc_params_set (argv[i] + 12);
 		} else if (strncmp (argv[i], "--gc-debug=", 11) == 0) {
 			mono_gc_debug_set (argv[i] + 11);
-		}
 #ifdef TARGET_OSX
-		else if (strcmp (argv [i], "--arch=32") == 0) {
+		} else if (strcmp (argv [i], "--arch=32") == 0) {
 			switch_arch (argv, "32");
 		} else if (strcmp (argv [i], "--arch=64") == 0) {
 			switch_arch (argv, "64");
-		}
 #endif
-		else if (strcmp (argv [i], "--config") == 0) {
-			if (i +1 >= argc){
-				fprintf (stderr, "error: --config requires a filename argument\n");
-				return 1;
-			}
-			config_file = argv [++i];
 #ifdef HOST_WIN32
 		} else if (strcmp (argv [i], "--mixed-mode") == 0) {
 			mixed_mode = TRUE;
@@ -2797,6 +2788,9 @@ mono_main (int argc, char* argv[])
 		cfg = mini_method_compile (method, opt, (JitFlags)0, 0, -1);
 		mono_destroy_compile (cfg);
 	}
+#else
+	(void)count; // avoid warning: variable 'count' set but not used
+	(void)mono_graph_options; // avoid warning: variable 'mono_graph_options' set but not used
 #endif
 
 	mini_cleanup (domain);
