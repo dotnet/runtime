@@ -261,7 +261,7 @@ namespace System.Text.Json.Serialization
                 else
                 {
                     _keyConverter ??= GetConverter<TKey>(state.Current.JsonTypeInfo.KeyTypeInfo!);
-                    key = _keyConverter.ReadFromPropertyName(ref reader, typeToConvert, options);
+                    key = _keyConverter.ReadAsPropertyName(ref reader, typeToConvert, options);
                     unescapedPropertyNameAsString = reader.GetString()!;
                 }
 

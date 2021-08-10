@@ -28,10 +28,10 @@ namespace System.Text.Json.Serialization.Converters
                 );
         }
 
-        internal override char ReadFromPropertyName(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+        internal override char ReadAsPropertyName(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
             => Read(ref reader, typeToConvert, options);
 
-        internal override void WriteToPropertyName(Utf8JsonWriter writer, char value, JsonSerializerOptions options, ref WriteStack state)
+        internal override void WriteAsPropertyName(Utf8JsonWriter writer, char value, JsonSerializerOptions options, ref WriteStack state)
         {
             writer.WritePropertyName(
 #if BUILDING_INBOX_LIBRARY
