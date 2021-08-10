@@ -120,11 +120,11 @@ namespace Internal.Cryptography.Pal
                 // the moment and it needs to be investigated how to map it to iOS keychain primitives.
                 if ((keyStorageFlags & X509KeyStorageFlags.Exportable) == X509KeyStorageFlags.Exportable)
                 {
-                    throw new PlatformNotSupportedException(SR.Cryptography_X509_PKCS12_PersistKeySetNotSupported);
+                    throw new PlatformNotSupportedException(SR.Cryptography_X509_PKCS12_ExportableNotSupported);
                 }
                 if ((keyStorageFlags & X509KeyStorageFlags.PersistKeySet) == X509KeyStorageFlags.PersistKeySet)
                 {
-                    throw new PlatformNotSupportedException(SR.Cryptography_X509_PKCS12_ExportableNotSupported);
+                    throw new PlatformNotSupportedException(SR.Cryptography_X509_PKCS12_PersistKeySetNotSupported);
                 }
 
                 return ImportPkcs12(rawData, password, ephemeralSpecified);

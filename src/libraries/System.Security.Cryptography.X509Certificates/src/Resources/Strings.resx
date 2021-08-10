@@ -296,10 +296,10 @@
     <value>PKCS#7 certificate format is not supported on this platform.</value>
   </data>
   <data name="Cryptography_X509_PKCS12_PersistKeySetNotSupported" xml:space="preserve">
-    <value>PKCS#12 persist key set flag is not supported on this iOS.</value>
+    <value>PKCS#12 persist key set flag is not supported on this platform.</value>
   </data>
   <data name="Cryptography_X509_PKCS12_ExportableNotSupported" xml:space="preserve">
-    <value>PKCS#12 exportable flag is not supported on this iOS.</value>
+    <value>PKCS#12 exportable flag is not supported on this platform.</value>
   </data>
   <data name="Cryptography_X509_StoreAddFailure" xml:space="preserve">
     <value>The X509 certificate could not be added to the store.</value>
