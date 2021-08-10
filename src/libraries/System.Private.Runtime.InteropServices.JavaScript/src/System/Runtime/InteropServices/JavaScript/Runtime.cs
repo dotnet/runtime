@@ -192,7 +192,7 @@ namespace System.Runtime.InteropServices.JavaScript
             return tcs.Task;
         }
 
-        public static object GetJSOwnedObjectByGcHandle(int gcHandle)
+        public static object GetJSOwnedObjectByGCHandle(int gcHandle)
         {
             GCHandle h = (GCHandle)(IntPtr)gcHandle;
             return h.Target!;
@@ -224,7 +224,7 @@ namespace System.Runtime.InteropServices.JavaScript
 
         // The JS layer invokes this method when the JS wrapper for a JS owned object
         //  has been collected by the JS garbage collector
-        public static void ReleaseJSOwnedObjectByGcHandle(int gcHandle)
+        public static void ReleaseJSOwnedObjectByGCHandle(int gcHandle)
         {
             GCHandle handle = (GCHandle)(IntPtr)gcHandle;
             lock (JSOwnedObjectLock)

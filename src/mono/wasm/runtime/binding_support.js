@@ -129,9 +129,9 @@ var BindingSupportLib = {
 			this._try_get_cs_owned_object_js_handle = bind_runtime_method ("TryGetCsOwnedObjectJsHandle", "m");
 			this._create_cs_owned_proxy = bind_runtime_method ("CreateCsOwnedProxy", "ii!");
 
-			this._get_js_owned_object_by_gc_handle = bind_runtime_method ("GetJSOwnedObjectByGcHandle", "i!");
+			this._get_js_owned_object_by_gc_handle = bind_runtime_method ("GetJSOwnedObjectByGCHandle", "i!");
 			this._get_js_owned_object_gc_handle = bind_runtime_method ("GetJSOwnedObjectGCHandle", "m");
-			this._release_js_owned_object_by_gc_handle = bind_runtime_method ("ReleaseJSOwnedObjectByGcHandle", "i");
+			this._release_js_owned_object_by_gc_handle = bind_runtime_method ("ReleaseJSOwnedObjectByGCHandle", "i");
 
 			this._create_tcs = bind_runtime_method ("CreateTaskSource","");
 			this._set_tcs_result = bind_runtime_method ("SetTaskSourceResult","io");
