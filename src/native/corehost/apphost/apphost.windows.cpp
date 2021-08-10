@@ -82,7 +82,7 @@ namespace
         {
             // We don't have a great way of passing out different kinds of detailed error info across components, so
             // just match the expected error string. See fx_resolver.messages.cpp.
-            dialogMsg = pal::string_t(_X("To run this application, you must install .NET.\n\n"));
+            dialogMsg = pal::string_t(_X("To run this application, you must install missing frameworks for .NET.\n\n"));
             pal::string_t line;
             pal::stringstream_t ss(g_buffered_errors);
             while (std::getline(ss, line, _X('\n'))){

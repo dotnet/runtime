@@ -458,22 +458,24 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
             using (new TestArtifact(invalidDotNet))
             {
                 Directory.CreateDirectory(invalidDotNet);
-
-                string expectedErrorCode;
                 string expectedUrlQuery;
-                string expectedUrlParameter = null;
+                string expectedStdErr = null;
+                int expectedErrorCode = 0;
                 if (missingHostfxr)
                 {
-                    expectedErrorCode = Constants.ErrorCode.CoreHostLibMissingFailure.ToString("x");
+                    expectedErrorCode = Constants.ErrorCode.CoreHostLibMissingFailure;
+                    expectedStdErr = $"&apphost_version={sharedTestState.RepoDirectories.MicrosoftNETCoreAppVersion}";
                     expectedUrlQuery = "missing_runtime=true&";
-                    expectedUrlParameter = $"&apphost_version={sharedTestState.RepoDirectories.MicrosoftNETCoreAppVersion}";
                 }
                 else
                 {
                     invalidDotNet = new DotNetBuilder(invalidDotNet, sharedTestState.RepoDirectories.BuiltDotnet, "missingFramework")
                         .Build()
                         .BinPath;
-                    expectedErrorCode = Constants.ErrorCode.FrameworkMissingFailure.ToString("x");
+
+                    expectedErrorCode = Constants.ErrorCode.FrameworkMissingFailure;
+                    expectedStdErr = $"The framework '{Constants.MicrosoftNETCoreApp}', " +
+                        $"version '{sharedTestState.RepoDirectories.MicrosoftNETCoreAppVersion}' ({fixture.RepoDirProvider.BuildArchitecture}) was not found.";
                     expectedUrlQuery = $"framework={Constants.MicrosoftNETCoreApp}&framework_version={sharedTestState.RepoDirectories.MicrosoftNETCoreAppVersion}";
                 }
 
@@ -484,13 +486,10 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                     .Start();
 
                 var result = command.WaitForExit(true)
-                    .Should().Fail();
-
-                result.And.HaveStdErrContaining($"- https://aka.ms/dotnet-core-applaunch?{expectedUrlQuery}");
-                if (expectedUrlParameter != null)
-                {
-                    result.And.HaveStdErrContaining(expectedUrlParameter);
-                }
+                    .Should().Fail()
+                    .And.HaveStdErrContaining($"- https://aka.ms/dotnet-core-applaunch?{expectedUrlQuery}")
+                    .And.HaveStdErrContaining(expectedStdErr)
+                    .And.ExitWith(expectedErrorCode);
             }
         }
 
