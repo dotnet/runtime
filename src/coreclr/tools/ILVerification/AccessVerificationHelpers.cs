@@ -39,7 +39,7 @@ namespace ILVerify
                 if (!IsTypeVisibleOutsideAssembly(pTargetClass))
                 {
                     // check transparent/critical on type
-                    if (!Security::CheckNonPublicCriticalAccess(pCurrentMD, NULL, NULL, pTargetClass)) 
+                    if (!Security::CheckNonPublicCriticalAccess(pCurrentMD, NULL, NULL, pTargetClass))
                         return FALSE;
                 }
             }
@@ -267,7 +267,7 @@ namespace ILVerify
         private static EcmaAssembly ToEcmaAssembly(this ModuleDesc module)
         {
             return module.Assembly as EcmaAssembly;
-        }   
+        }
 
         private static bool GrantsFriendAccessTo(this ModuleDesc module, ModuleDesc friendModule)
         {
