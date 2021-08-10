@@ -59,10 +59,6 @@ System.Resources.Extensions.PreserializedResourceWriter</PackageDescription>
     <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime.CompilerServices.Unsafe\src\System.Runtime.CompilerServices.Unsafe.ilproj" PrivateAssets="all" />
   </ItemGroup>
 
-  <ItemGroup>
-    <NETStandardCompatError Include="netcoreapp2.0" Supported="$(NetCoreAppMinimum)" />
-  </ItemGroup>
-
   <PropertyGroup>
     <_packageTargetsFile>$(IntermediateOutputPath)$(AssemblyName).targets</_packageTargetsFile>
   </PropertyGroup>

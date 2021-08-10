@@ -61,11 +61,12 @@ namespace
         if (pal::getenv(_X("DOTNET_DISABLE_GUI_ERRORS"), &gui_errors_disabled) && pal::xtoi(gui_errors_disabled.c_str()) == 1)
             return;
 
-        pal::string_t dialogMsg = _X("To run this application, you must install .NET.\n\n");
+        pal::string_t dialogMsg;
         pal::string_t url;
         const pal::string_t url_prefix = _X("  - ") DOTNET_CORE_APPLAUNCH_URL _X("?");
         if (error_code == StatusCode::CoreHostLibMissingFailure)
         {
+            dialogMsg = pal::string_t(_X("To run this application, you must install .NET Desktop Runtime ")) + _STRINGIFY(COMMON_HOST_PKG_VER) + _X(" (") + get_arch() + _X(").\n\n");
             pal::string_t line;
             pal::stringstream_t ss(g_buffered_errors);
             while (std::getline(ss, line, _X('\n'))) {
@@ -81,6 +82,7 @@ namespace
         {
             // We don't have a great way of passing out different kinds of detailed error info across components, so
             // just match the expected error string. See fx_resolver.messages.cpp.
+            dialogMsg = pal::string_t(_X("To run this application, you must install .NET.\n\n"));
             pal::string_t line;
             pal::stringstream_t ss(g_buffered_errors);
             while (std::getline(ss, line, _X('\n'))){
