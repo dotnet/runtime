@@ -4753,7 +4753,7 @@ namespace System.Tests
             {
                 // On these platforms, occasionally the OOM Killer will terminate the
                 // tests when they're using ~1GB, before they complete.
-                throw new SkipTestException("Unable to allocate enough memory");
+                throw new SkipTestException("Prone to OOM killer");
             }
 
             short[,] a = AllocateLargeMDArray(2, 2_000_000_000);
@@ -4779,7 +4779,7 @@ namespace System.Tests
             {
                 // On these platforms, occasionally the OOM Killer will terminate the
                 // tests when they're using ~1GB, before they complete.
-                throw new SkipTestException("Unable to allocate enough memory");
+                throw new SkipTestException("Prone to OOM killer");
             }
 
             short[,] a = AllocateLargeMDArray(2, 2_000_000_000);
