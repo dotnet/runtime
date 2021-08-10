@@ -535,7 +535,8 @@ again:
             var args = new ErrorArgument[]
             {
                 new ErrorArgument("Offset", _currentInstructionOffset),
-                new ErrorArgument("Found", found.ToString())
+                new ErrorArgument("Found", found.ToString()),
+                new ErrorArgument("Expected", expected.ToString())
             };
             ReportVerificationError(args, error);
         }
@@ -1506,6 +1507,7 @@ again:
                     Check(!ecmaMethod.IsAbstract, VerifierError.CallAbstract);
             }
 
+            bool isFunctionPointer = false;
             if (opcode == ILOpcode.newobj && methodType.IsDelegate)
             {
                 Check(sig.Length == 2, VerifierError.DelegateCtor);
@@ -1532,6 +1534,7 @@ again:
                 {
                     var actual = Pop(allowUninitThis: true);
                     var declared = StackValue.CreateFromType(sig[i]);
+                    isFunctionPointer = sig[i].IsFunctionPointer;
 
                     CheckIsAssignable(actual, declared);
 
@@ -1565,7 +1568,7 @@ again:
                 }
             }
             else
-            if (methodType != null)
+            if (methodType != null && !isFunctionPointer)
             {
                 var actualThis = Pop(allowUninitThis: true);
                 instance = actualThis.Type;

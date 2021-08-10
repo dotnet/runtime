@@ -145,6 +145,7 @@ namespace Internal.IL
                 case TypeFlags.IntPtr:
                 case TypeFlags.UIntPtr:
                 case TypeFlags.Pointer:
+                case TypeFlags.FunctionPointer:
                     return CreatePrimitive(StackValueKind.NativeInt);
                 case TypeFlags.Enum:
                     return CreateFromType(type.UnderlyingType);

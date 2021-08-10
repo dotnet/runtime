@@ -28,8 +28,8 @@ namespace ILVerify
                 var signatureBeingPointed = ((FunctionPointerType)targetClass).Signature;
 
                 return currentClass.CanAccess(signatureBeingPointed.ReturnType) &&
-                    signatureBeingPointed._parameters.All(p => currentClass.CanAccess(p));
-            };
+                    signatureBeingPointed._parameters.All(currentClass.CanAccess);
+            }
 
 #if false
             // perform transparency check on the type, if the caller is transparent
