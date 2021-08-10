@@ -20461,7 +20461,43 @@ void gc_heap::update_collection_counts ()
     }
 }
 
-#ifndef USE_REGIONS
+#ifdef USE_REGIONS
+bool gc_heap::extend_soh_for_no_gc()
+{
+    size_t required = soh_allocation_no_gc;
+    heap_segment* region = ephemeral_heap_segment;
+    
+    while (true)
+    {
+        uint8_t* allocated = (region == ephemeral_heap_segment) ? 
+                             alloc_allocated : 
+                             heap_segment_allocated (region);
+        size_t available = heap_segment_reserved (region) - allocated;
+        size_t commit = min (available, required);
+
+        if (grow_heap_segment (region, allocated + commit))
+        {
+            required -= commit;
+            if (required == 0)
+            {
+                break;
+            }
+
+            region = heap_segment_next (region);
+            if ((region == nullptr) && !(region = get_new_region (0)))
+            {
+                break;
+            }
+        }
+        else
+        {
+            break;
+        }
+    }
+
+    return (required == 0);
+}
+#else
 BOOL gc_heap::expand_soh_with_minimal_gc()
 {
     if ((size_t)(heap_segment_reserved (ephemeral_heap_segment) - heap_segment_allocated (ephemeral_heap_segment)) >= soh_allocation_no_gc)
@@ -20530,7 +20566,7 @@ BOOL gc_heap::expand_soh_with_minimal_gc()
         return FALSE;
     }
 }
-#endif //!USE_REGIONS
+#endif //USE_REGIONS
 
 // Only to be done on the thread that calls restart in a join for server GC
 // and reset the oom status per heap.
@@ -20554,61 +20590,6 @@ void gc_heap::check_and_set_no_gc_oom()
     }
 #endif //MULTIPLE_HEAPS
 }
-
-#ifdef USE_REGIONS
-bool gc_heap::extend_soh_for_no_gc()
-{
-    size_t required = soh_allocation_no_gc;
-    heap_segment* region = generation_allocation_segment (generation_of (0));
-    uint8_t* allocated = (region == ephemeral_heap_segment) ? alloc_allocated : heap_segment_allocated (region);
-    size_t available = heap_segment_reserved (region) - allocated;
-    size_t commit = min (available, required);
-    if (grow_heap_segment (region, allocated + commit))
-    {
-        required -= commit;
-        while (true)
-        {
-            if (required == 0)
-            {
-                break;
-            }
-            region = heap_segment_next (region);
-            if (region == nullptr)
-            {
-                break;
-            }
-            assert (heap_segment_mem (region) == heap_segment_allocated(region));
-            available = heap_segment_reserved (region) - heap_segment_allocated(region);
-            commit = min (available, required);
-            if (!grow_heap_segment (region, allocated + commit))
-            {
-                return false;
-            }
-            required -= commit;
-        }
-        while (required > 0)
-        {
-            region = get_new_region (0);
-            if (region == nullptr)
-            {
-                return false;
-            }
-            size_t usable_size = heap_segment_reserved (region) - heap_segment_allocated (region);
-            commit = min (required, usable_size);
-            if (!grow_heap_segment (region, heap_segment_allocated (region) + commit))
-            {
-                return false;
-            }
-            required -= commit;
-        }
-    }
-    else
-    {
-        return false;
-    }
-    return true;
-}
-#endif //USE_REGIONS
 
 void gc_heap::allocate_for_no_gc_after_gc()
 {
