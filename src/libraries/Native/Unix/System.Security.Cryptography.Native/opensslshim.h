@@ -115,6 +115,7 @@ int EC_POINT_set_affine_coordinates_GF2m(
 #undef HAVE_OPENSSL_SET_CIPHERSUITES
 #define HAVE_OPENSSL_SET_CIPHERSUITES 1
 int SSL_CTX_set_ciphersuites(SSL_CTX *ctx, const char *str);
+int SSL_set_ciphersuites(SSL *s, const char *str);
 const SSL_CIPHER* SSL_CIPHER_find(SSL *ssl, const unsigned char *ptr);
 #endif
 
@@ -473,7 +474,6 @@ const EVP_CIPHER* EVP_chacha20_poly1305(void);
     REQUIRED_FUNCTION(SSL_CTX_set_quiet_shutdown) \
     FALLBACK_FUNCTION(SSL_CTX_set_options) \
     FALLBACK_FUNCTION(SSL_CTX_set_security_level) \
-    FALLBACK_FUNCTION(SSL_set_security_level) \
     REQUIRED_FUNCTION(SSL_CTX_set_verify) \
     REQUIRED_FUNCTION(SSL_CTX_use_certificate) \
     REQUIRED_FUNCTION(SSL_CTX_use_PrivateKey) \
@@ -928,7 +928,6 @@ FOR_ALL_OPENSSL_FUNCTIONS
 #define SSL_CTX_set_options SSL_CTX_set_options_ptr
 #define SSL_CTX_set_quiet_shutdown SSL_CTX_set_quiet_shutdown_ptr
 #define SSL_CTX_set_security_level SSL_CTX_set_security_level_ptr
-#define SSL_set_security_level SSL_set_security_level_ptr
 #define SSL_CTX_set_verify SSL_CTX_set_verify_ptr
 #define SSL_CTX_use_certificate SSL_CTX_use_certificate_ptr
 #define SSL_CTX_use_PrivateKey SSL_CTX_use_PrivateKey_ptr
