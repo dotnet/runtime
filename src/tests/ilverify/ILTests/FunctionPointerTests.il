@@ -1,0 +1,64 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
+.assembly extern System.Runtime
+{
+}
+
+.assembly FunctionPointerTests
+{
+}
+
+.class public auto ansi beforefieldinit C
+        extends [System.Runtime]System.Object
+{
+    .method private hidebysig instance void MyDispatcher(method void *(int32) f) cil managed
+    {
+        .locals init (
+            [0] method void *(int32)
+        )
+
+        ldarg.1
+        stloc.0
+        ldc.i4.s 42
+        ldloc.0
+        calli void(int32)
+        ret
+    }
+
+    .method private hidebysig static void StaticMethod(int32 x) cil managed
+    {
+        ldarg.0
+        ldc.i4 571
+        add
+        starg.s x
+        ret
+    }
+
+    .method public hidebysig instance void Call.Dispatcher_Valid() cil managed
+    {
+        ldftn void C::StaticMethod(int32)
+        call instance void C::MyDispatcher(method void *(int32))
+        ret
+    }
+
+    .method public hidebysig instance void Call.Dispatcher_Invalid_MethodAccess() cil managed
+    {
+        ldftn void D::PrivateStaticMethodOfOtherType(int32)
+        call instance void C::MyDispatcher(method void *(int32))
+        ret
+    }
+}
+
+.class public auto ansi beforefieldinit D
+        extends [System.Runtime]System.Object
+{
+    .method private hidebysig static void PrivateStaticMethodOfOtherType(int32 x) cil managed
+    {
+        ldarg.0
+        ldc.i4 571
+        add
+        starg.s x
+        ret
+    }
+}
