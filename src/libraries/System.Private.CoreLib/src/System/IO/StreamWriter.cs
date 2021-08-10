@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
@@ -36,6 +37,8 @@ namespace System.IO
         private readonly char[] _charBuffer;
         private int _charPos;
         private int _charLen;
+        private List<byte> _acc = new List<byte>();
+        private int _lineStartPos;
         private bool _autoFlush;
         private bool _haveWrittenPreamble;
         private readonly bool _closable;
@@ -320,11 +323,55 @@ namespace System.IO
                     (_byteBuffer = new byte[_encoding.GetMaxByteCount(_charBuffer.Length)]);
             }
 
-            int count = _encoder.GetBytes(new ReadOnlySpan<char>(_charBuffer, 0, _charPos), byteBuffer, flushEncoder);
-            _charPos = 0;
-            if (count > 0)
+            if (OperatingSystem.IsIOS() || OperatingSystem.IsTvOS() || OperatingSystem.IsMacCatalyst())
             {
-                _stream.Write(byteBuffer.Slice(0, count));
+                for (int i = _lineStartPos; i < _charPos; i++)
+                {
+                    if (_charBuffer[i] == '\n')
+                    {
+                        int count = _encoder.GetBytes(new ReadOnlySpan<char>(_charBuffer, _lineStartPos, i - _lineStartPos), byteBuffer, flushEncoder);
+                        if (count > 0)
+                        {
+                            _acc.AddRange(byteBuffer.Slice(0, count).ToArray());
+                        }
+
+                        _stream.Write(_acc.ToArray().AsSpan<byte>());
+                        _acc.Clear();
+
+                        _lineStartPos = i + 1;
+                    }
+                }
+
+                if (_lineStartPos < _charPos)
+                {
+                    int count = _encoder.GetBytes(new ReadOnlySpan<char>(_charBuffer, _lineStartPos, _charPos - _lineStartPos), byteBuffer, flushEncoder);
+                    if (count > 0)
+                    {
+                        _acc.AddRange(byteBuffer.Slice(0, count).ToArray());
+                    }
+                }
+
+                _charPos = 0;
+                _lineStartPos = 0;
+
+                if (flushStream && flushEncoder)
+                {
+                    var accArray = _acc.ToArray();
+                    if (accArray.Length > 0)
+                    {
+                        _stream.Write(accArray.AsSpan<byte>().Slice(0, accArray.Length));
+                        _acc.Clear();
+                    }
+                }
+            }
+            else
+            {
+                int count = _encoder.GetBytes(new ReadOnlySpan<char>(_charBuffer, 0, _charPos), byteBuffer, flushEncoder);
+                _charPos = 0;
+                if (count > 0)
+                {
+                    _stream.Write(byteBuffer.Slice(0, count));
+                }
             }
 
             if (flushStream)

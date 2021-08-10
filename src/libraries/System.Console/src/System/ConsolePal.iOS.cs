@@ -10,57 +10,15 @@ namespace System
 {
     internal sealed class NSLogStream : ConsoleStream
     {
-        private readonly StringBuilder _buffer = new StringBuilder();
-
         public NSLogStream() : base(FileAccess.Write) {}
 
         public override int Read(Span<byte> buffer) => throw Error.GetReadNotSupported();
 
         public override unsafe void Write(ReadOnlySpan<byte> buffer)
         {
-            ReadOnlySpan<char> charSpan = MemoryMarshal.Cast<byte, char>(buffer);
-
-            lock (_buffer)
+            fixed (byte* ptr = buffer)
             {
-                AccumulateNewLines(_buffer, charSpan);
-            }
-        }
-
-        private static unsafe void AccumulateNewLines(StringBuilder accumulator, ReadOnlySpan<char> buffer)
-        {
-            for (int i = buffer.Length - 1; i >= 0; i--)
-            {
-                if (buffer[i] == '\n')
-                {
-                    if (accumulator.Length > 0)
-                    {
-                        printer(accumulator.Append(buffer.Slice(0, i + 1)).ToString());
-                        accumulator.Clear();
-                    }
-                    else
-                    {
-                        printer(buffer.Slice(0, i + 1).ToString());
-                    }
-
-                    if (i < buffer.Length - 1)
-                    {
-                        // there's text after the last newline, add it to the accumulator
-                        accumulator.Append(buffer.Slice(i + 1));
-                    }
-
-                    return;
-                }
-            }
-
-            // no newlines found, add the entire buffer to the accumulator
-            accumulator.Append(buffer);
-
-            static void printer(string line)
-            {
-                fixed (char* ptr = line)
-                {
-                    Interop.Sys.Log((byte*)ptr, line.Length * 2);
-                }
+                Interop.Sys.Log(ptr, buffer.Length);
             }
         }
     }
