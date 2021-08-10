@@ -127,6 +127,13 @@ namespace System.Net.Http
 
             try
             {
+                // Works around linker issue where it tries to eliminate QuicStreamAbortedException
+                // https://github.com/dotnet/runtime/issues/57010
+                #if TARGET_MOBILE
+                if (string.Empty.Length > 0)
+                    throw new QuicStreamAbortedException("", 0);
+                #endif
+
                 BufferHeaders(_request);
 
                 // If using Expect 100 Continue, setup a TCS to wait to send content until we get a response.

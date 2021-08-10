@@ -10,7 +10,6 @@ namespace System.Reflection.Metadata
     {
         [System.CLSCompliantAttribute(false)]
         public unsafe static bool TryGetRawMetadata(this System.Reflection.Assembly assembly, out byte* blob, out int length) { throw null; }
-        public static void ApplyUpdate(Assembly assembly, ReadOnlySpan<byte> metadataDelta, ReadOnlySpan<byte> ilDelta, ReadOnlySpan<byte> pdbDelta) { throw null; }
     }
     public static partial class MetadataUpdater
     {
@@ -37,7 +36,6 @@ namespace System.Runtime.Loader
     [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("android")]
     [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
     [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("ios")]
-    [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("maccatalyst")]
     [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("tvos")]
     public sealed partial class AssemblyDependencyResolver
     {

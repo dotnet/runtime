@@ -214,7 +214,6 @@ namespace System.IO
         public virtual IntPtr Handle => _strategy.Handle;
 
         [UnsupportedOSPlatform("ios")]
-        [UnsupportedOSPlatform("maccatalyst")]
         [UnsupportedOSPlatform("macos")]
         [UnsupportedOSPlatform("tvos")]
         public virtual void Lock(long position, long length)
@@ -232,7 +231,6 @@ namespace System.IO
         }
 
         [UnsupportedOSPlatform("ios")]
-        [UnsupportedOSPlatform("maccatalyst")]
         [UnsupportedOSPlatform("macos")]
         [UnsupportedOSPlatform("tvos")]
         public virtual void Unlock(long position, long length)

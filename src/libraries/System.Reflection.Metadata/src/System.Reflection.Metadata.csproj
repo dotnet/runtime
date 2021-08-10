@@ -277,7 +277,4 @@ System.Reflection.PortableExecutable.ManagedPEBuilder</PackageDescription>
     <Reference Include="System.IO.MemoryMappedFiles" />
     <Reference Include="System.Buffers" />
   </ItemGroup>
-  <ItemGroup>
-    <NETStandardCompatError Include="netcoreapp2.0" Supported="$(NetCoreAppMinimum)" />
-  </ItemGroup>
 </Project>
