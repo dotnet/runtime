@@ -228,7 +228,6 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         }
 
         [Fact]
-        [Trait("Category", "Pavel")]
         public static void EventsAreNotCollected()
         {
             const int attempts = 100; // we fire 100 events in a loop, to try that it's GC same
