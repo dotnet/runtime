@@ -13815,53 +13815,57 @@ SKIP:
         return cmp;
     }
 
-    noway_assert(op1->TypeIs(TYP_LONG) && op1->OperIs(GT_AND));
+    // The transform below cannot preserve VNs.
+    if (fgGlobalMorph)
+    {
+        noway_assert(op1->TypeIs(TYP_LONG) && op1->OperIs(GT_AND));
 
-    // Is the result of the mask effectively an INT?
+        // Is the result of the mask effectively an INT?
 
-    GenTree* andMask = op1->AsOp()->gtGetOp2();
-    if (!andMask->OperIs(GT_CNS_NATIVELONG))
-    {
-        return cmp;
-    }
-    if ((andMask->AsIntConCommon()->LngValue() >> 32) != 0)
-    {
-        return cmp;
-    }
+        GenTree* andMask = op1->AsOp()->gtGetOp2();
+        if (!andMask->OperIs(GT_CNS_NATIVELONG))
+        {
+            return cmp;
+        }
+        if ((andMask->AsIntConCommon()->LngValue() >> 32) != 0)
+        {
+            return cmp;
+        }
 
-    // Now we narrow AsOp()->gtOp1 of AND to int.
-    if (optNarrowTree(op1->AsOp()->gtGetOp1(), TYP_LONG, TYP_INT, ValueNumPair(), false))
-    {
-        optNarrowTree(op1->AsOp()->gtGetOp1(), TYP_LONG, TYP_INT, ValueNumPair(), true);
-    }
-    else
-    {
+        // Now we narrow AsOp()->gtOp1 of AND to int.
+        if (optNarrowTree(op1->AsOp()->gtGetOp1(), TYP_LONG, TYP_INT, ValueNumPair(), false))
+        {
+            optNarrowTree(op1->AsOp()->gtGetOp1(), TYP_LONG, TYP_INT, ValueNumPair(), true);
+        }
+        else
+        {
+            op1->AsOp()->gtOp1 = gtNewCastNode(TYP_INT, op1->AsOp()->gtGetOp1(), false, TYP_INT);
+        }
+
         op1->AsOp()->gtOp1 = gtNewCastNode(TYP_INT, op1->AsOp()->gtGetOp1(), false, TYP_INT);
+
+        // Now replace the mask node (AsOp()->gtOp2 of AND node).
+
+        noway_assert(andMask == op1->AsOp()->gtGetOp2());
+
+        ival1 = static_cast<int32_t>(andMask->AsIntConCommon()->LngValue());
+        andMask->SetOper(GT_CNS_INT);
+        andMask->gtType = TYP_INT;
+        andMask->AsIntCon()->SetIconValue(ival1);
+
+        // Now change the type of the AND node.
+
+        op1->gtType = TYP_INT;
+
+        // Finally we replace the comparand.
+
+        ival2 = static_cast<int32_t>(cns2->AsIntConCommon()->LngValue());
+        cns2->SetOper(GT_CNS_INT);
+        cns2->gtType = TYP_INT;
+
+        noway_assert(cns2 == op2);
+        cns2->AsIntCon()->SetIconValue(ival2);
     }
-
-    op1->AsOp()->gtOp1 = gtNewCastNode(TYP_INT, op1->AsOp()->gtGetOp1(), false, TYP_INT);
-
-    // Now replace the mask node (AsOp()->gtOp2 of AND node).
-
-    noway_assert(andMask == op1->AsOp()->gtGetOp2());
-
-    ival1 = static_cast<int32_t>(andMask->AsIntConCommon()->LngValue());
-    andMask->SetOper(GT_CNS_INT);
-    andMask->gtType = TYP_INT;
-    andMask->AsIntCon()->SetIconValue(ival1);
-
-    // Now change the type of the AND node.
-
-    op1->gtType = TYP_INT;
-
-    // Finally we replace the comparand.
-
-    ival2 = static_cast<int32_t>(cns2->AsIntConCommon()->LngValue());
-    cns2->SetOper(GT_CNS_INT);
-    cns2->gtType = TYP_INT;
-
-    noway_assert(cns2 == op2);
-    cns2->AsIntCon()->SetIconValue(ival2);
 
     return cmp;
 }
