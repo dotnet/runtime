@@ -13747,7 +13747,7 @@ GenTree* Compiler::fgOptimizeEqualityComparison(GenTreeOp* cmp)
                     goto SKIP;
                 }
 
-                uint32_t newAndOperand = 1u << shiftAmount;
+                int32_t newAndOperand = 1 << shiftAmount;
 
                 andOp->AsOp()->gtGetOp2()->AsIntCon()->SetIconValue(newAndOperand);
 
@@ -13765,7 +13765,7 @@ GenTree* Compiler::fgOptimizeEqualityComparison(GenTreeOp* cmp)
                     goto SKIP;
                 }
 
-                uint64_t newAndOperand = 1ull << shiftAmount;
+                int64_t newAndOperand = 1ll << shiftAmount;
 
                 andOp->AsOp()->gtGetOp2()->AsIntConCommon()->SetLngValue(newAndOperand);
 
