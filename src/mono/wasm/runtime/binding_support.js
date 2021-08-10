@@ -5,9 +5,12 @@ var BindingSupportLib = {
 	$BINDING__postset: 'BINDING.export_functions (Module);',
 	$BINDING: {
 		BINDING_ASM: "[System.Private.Runtime.InteropServices.JavaScript]System.Runtime.InteropServices.JavaScript.Runtime",
-		mono_wasm_object_registry: [],
-		mono_wasm_ref_counter: 1,
-		mono_wasm_free_list: [],
+
+		// this is array, not map. We maintain list of gaps in _js_handle_free_list so that it could be as compact as possible
+		_cs_owned_objects_by_js_handle: [],
+		_js_handle_free_list: [],
+		_next_js_handle: 1,
+
 		mono_wasm_marshal_enum_as_int: true,
 		mono_bindings_init: function (binding_asm) {
 			this.BINDING_ASM = binding_asm;
@@ -1631,21 +1634,21 @@ var BindingSupportLib = {
 		},
 		mono_wasm_get_jsobj_from_js_handle: function(js_handle) {
 			if (js_handle > 0)
-				return this.mono_wasm_object_registry[js_handle];
+				return this._cs_owned_objects_by_js_handle[js_handle];
 			return null;
 		},
 		mono_wasm_get_js_handle: function(js_obj) {
 			if(js_obj.__cs_owned_js_handle__){
 				return js_obj.__cs_owned_js_handle__;
 			}
-			var js_handle = this.mono_wasm_free_list.length ? this.mono_wasm_free_list.pop() : this.mono_wasm_ref_counter++;
-			// note mono_wasm_object_registry is list, not Map. That's why we maintain mono_wasm_free_list.
-			this.mono_wasm_object_registry[js_handle] = js_obj;
+			var js_handle = this._js_handle_free_list.length ? this._js_handle_free_list.pop() : this._next_js_handle++;
+			// note _cs_owned_objects_by_js_handle is list, not Map. That's why we maintain _js_handle_free_list.
+			this._cs_owned_objects_by_js_handle[js_handle] = js_obj;
 			js_obj.__cs_owned_js_handle__ = js_handle;
 			return js_handle;
 		},
 		_mono_wasm_release_js_handle: function(js_handle) {
-			var obj = BINDING.mono_wasm_object_registry[js_handle];
+			var obj = BINDING._cs_owned_objects_by_js_handle[js_handle];
 			if (typeof obj  !== "undefined" && obj !== null) {
 				// if this is the global object then do not
 				// unregister it.
@@ -1656,8 +1659,8 @@ var BindingSupportLib = {
 					obj.__cs_owned_js_handle__ = undefined;
 				}
 
-				BINDING.mono_wasm_object_registry[js_handle] = undefined;
-				BINDING.mono_wasm_free_list.push(js_handle);
+				BINDING._cs_owned_objects_by_js_handle[js_handle] = undefined;
+				BINDING._js_handle_free_list.push(js_handle);
 			}
 			return obj;
 		},
