@@ -243,6 +243,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		static void TestBaseTypeGenericRequirements ()
 		{
 			new DerivedTypeWithInstantiatedGenericOnBase ();
+			new DerivedTypeWithInstantiationOverSelfOnBase ();
 			new DerivedTypeWithOpenGenericOnBase<TestType> ();
 			new DerivedTypeWithOpenGenericOnBaseWithRequirements<TestType> ();
 		}
@@ -258,6 +259,15 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
 		[RecognizedReflectionAccessPattern]
 		class DerivedTypeWithInstantiatedGenericOnBase : GenericBaseTypeWithRequirements<TestType>
+		{
+		}
+
+		class GenericBaseTypeWithRequiresAll<[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.All)] T>
+		{
+		}
+
+		[RecognizedReflectionAccessPattern]
+		class DerivedTypeWithInstantiationOverSelfOnBase : GenericBaseTypeWithRequirements<DerivedTypeWithInstantiationOverSelfOnBase>
 		{
 		}
 
@@ -277,6 +287,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		static void TestInterfaceTypeGenericRequirements ()
 		{
 			IGenericInterfaceTypeWithRequirements<TestType> instance = new InterfaceImplementationTypeWithInstantiatedGenericOnBase ();
+			new InterfaceImplementationTypeWithInstantiationOverSelfOnBase ();
 			new InterfaceImplementationTypeWithOpenGenericOnBase<TestType> ();
 			new InterfaceImplementationTypeWithOpenGenericOnBaseWithRequirements<TestType> ();
 		}
@@ -287,6 +298,15 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
 		[RecognizedReflectionAccessPattern]
 		class InterfaceImplementationTypeWithInstantiatedGenericOnBase : IGenericInterfaceTypeWithRequirements<TestType>
+		{
+		}
+
+		interface IGenericInterfaceTypeWithRequiresAll<[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.All)] T>
+		{
+		}
+
+		[RecognizedReflectionAccessPattern]
+		class InterfaceImplementationTypeWithInstantiationOverSelfOnBase : IGenericInterfaceTypeWithRequiresAll<InterfaceImplementationTypeWithInstantiationOverSelfOnBase>
 		{
 		}
 

@@ -79,7 +79,6 @@ namespace Mono.Linker.Tests.Cases.Reflection
 
 		[Kept]
 		[KeptBaseType (typeof (Unsuppressed))]
-		[ExpectedWarning ("IL2113", "--RUC on Unsuppressed--")]
 		class DerivedFromUnsuppressed1 : Unsuppressed
 		{
 			[Kept]
@@ -91,7 +90,6 @@ namespace Mono.Linker.Tests.Cases.Reflection
 
 		[Kept]
 		[KeptBaseType (typeof (Unsuppressed))]
-		[ExpectedWarning ("IL2113", "--RUC on Unsuppressed--")]
 		class DerivedFromUnsuppressed2 : Unsuppressed
 		{
 			[Kept]
@@ -116,8 +114,6 @@ namespace Mono.Linker.Tests.Cases.Reflection
 
 		[Kept]
 		[KeptBaseType (typeof (Suppressed))]
-		// Base method should warn even though it was suppressed on the base
-		[ExpectedWarning ("IL2113", "--RUC on Suppressed--")]
 		class DerivedFromSuppressed1 : Suppressed
 		{
 			[Kept]
@@ -129,8 +125,6 @@ namespace Mono.Linker.Tests.Cases.Reflection
 
 		[Kept]
 		[KeptBaseType (typeof (Suppressed))]
-		// Base method should warn even though it was suppressed on the base
-		[ExpectedWarning ("IL2113", "--RUC on Suppressed--")]
 		class DerivedFromSuppressed2 : Suppressed
 		{
 			[Kept]
@@ -142,7 +136,6 @@ namespace Mono.Linker.Tests.Cases.Reflection
 
 		[Kept]
 		[KeptBaseType (typeof (Unsuppressed))]
-		[ExpectedWarning ("IL2113", "--RUC on Unsuppressed--")]
 		class SuppressedOnDerived1 : Unsuppressed
 		{
 			[Kept]
@@ -155,7 +148,6 @@ namespace Mono.Linker.Tests.Cases.Reflection
 
 		[Kept]
 		[KeptBaseType (typeof (Unsuppressed))]
-		[ExpectedWarning ("IL2113", "--RUC on Unsuppressed--")]
 		class SuppressedOnDerived2 : Unsuppressed
 		{
 			[Kept]
@@ -168,9 +160,6 @@ namespace Mono.Linker.Tests.Cases.Reflection
 
 		[Kept]
 		[KeptBaseType (typeof (Unsuppressed))]
-		[KeptAttributeAttribute (typeof (UnconditionalSuppressMessageAttribute))]
-		// Suppress warnings about base members
-		[UnconditionalSuppressMessage ("TrimAnalysis", "IL2113")]
 		class SuppressedBaseWarningsOnDerived : Unsuppressed
 		{
 			[Kept]

@@ -59,7 +59,7 @@ namespace Mono.Linker.Steps
 		readonly List<(TypeDefinition Type, MethodBody Body, Instruction Instr)> _pending_isinst_instr;
 		UnreachableBlocksOptimizer _unreachableBlocksOptimizer;
 		MarkStepContext _markContext;
-		readonly Dictionary<TypeDefinition, bool> _entireTypesMarked; // The value is markBaseAndInterfaceTypes flag used to mark the type
+		readonly HashSet<TypeDefinition> _entireTypesMarked;
 		DynamicallyAccessedMembersTypeHierarchy _dynamicallyAccessedMembersTypeHierarchy;
 		MarkScopeStack _scopeStack;
 
@@ -71,9 +71,7 @@ namespace Mono.Linker.Steps
 		static readonly DependencyKind[] _entireTypeReasons = new DependencyKind[] {
 			DependencyKind.AccessedViaReflection,
 			DependencyKind.BaseType,
-			DependencyKind.DynamicallyAccessedMember,
-			DependencyKind.DynamicallyAccessedMemberOnType,
-			DependencyKind.DynamicDependency,
+			DependencyKind.PreservedDependency,
 			DependencyKind.NestedType,
 			DependencyKind.TypeInAssembly,
 			DependencyKind.Unspecified,
@@ -196,7 +194,7 @@ namespace Mono.Linker.Steps
 			_dynamicInterfaceCastableImplementationTypes = new List<TypeDefinition> ();
 			_unreachableBodies = new List<(MethodBody, MarkScopeStack.Scope)> ();
 			_pending_isinst_instr = new List<(TypeDefinition, MethodBody, Instruction)> ();
-			_entireTypesMarked = new Dictionary<TypeDefinition, bool> ();
+			_entireTypesMarked = new HashSet<TypeDefinition> ();
 		}
 
 		public AnnotationStore Annotations => _context.Annotations;
@@ -311,77 +309,58 @@ namespace Mono.Linker.Steps
 			return false;
 		}
 
-		internal void MarkEntireType (TypeDefinition type, bool includeBaseAndInterfaceTypes, in DependencyInfo reason)
-		{
-			// Prevent cases where there's nothing on the stack (can happen when marking entire assemblies)
-			// In which case we would generate warnings with no source (hard to debug)
-			using var _ = _scopeStack.CurrentScope.Origin.MemberDefinition == null ? _scopeStack.PushScope (new MessageOrigin (type)) : null;
-
-			MarkEntireTypeInternal (type, includeBaseAndInterfaceTypes, reason);
-		}
-
-		void MarkEntireTypeInternal (TypeDefinition type, bool includeBaseAndInterfaceTypes, in DependencyInfo reason)
+		internal void MarkEntireType (TypeDefinition type, in DependencyInfo reason)
 		{
 #if DEBUG
 			if (!_entireTypeReasons.Contains (reason.Kind))
 				throw new InternalErrorException ($"Unsupported type dependency '{reason.Kind}'.");
 #endif
 
-			if (_entireTypesMarked.TryGetValue (type, out bool alreadyIncludedBaseAndInterfaceTypes) &&
-				(!includeBaseAndInterfaceTypes || alreadyIncludedBaseAndInterfaceTypes))
+			// Prevent cases where there's nothing on the stack (can happen when marking entire assemblies)
+			// In which case we would generate warnings with no source (hard to debug)
+			using var _ = _scopeStack.CurrentScope.Origin.MemberDefinition == null ? _scopeStack.PushScope (new MessageOrigin (type)) : null;
+
+			if (!_entireTypesMarked.Add (type))
 				return;
-
-			_entireTypesMarked[type] = includeBaseAndInterfaceTypes;
-
-			bool isDynamicDependencyReason = reason.Kind == DependencyKind.DynamicallyAccessedMember || reason.Kind == DependencyKind.DynamicDependency || reason.Kind == DependencyKind.DynamicallyAccessedMemberOnType;
 
 			if (type.HasNestedTypes) {
 				foreach (TypeDefinition nested in type.NestedTypes)
-					MarkEntireTypeInternal (nested, includeBaseAndInterfaceTypes, new DependencyInfo (isDynamicDependencyReason ? reason.Kind : DependencyKind.NestedType, type));
+					MarkEntireType (nested, new DependencyInfo (DependencyKind.NestedType, type));
 			}
 
 			Annotations.Mark (type, reason);
-			var baseTypeDefinition = _context.Resolve (type.BaseType);
-			if (includeBaseAndInterfaceTypes && baseTypeDefinition != null) {
-				MarkEntireTypeInternal (baseTypeDefinition, true, new DependencyInfo (isDynamicDependencyReason ? reason.Kind : DependencyKind.BaseType, type));
-			}
-			MarkCustomAttributes (type, new DependencyInfo (isDynamicDependencyReason ? reason.Kind : DependencyKind.CustomAttribute, type));
+			MarkCustomAttributes (type, new DependencyInfo (DependencyKind.CustomAttribute, type));
 			MarkTypeSpecialCustomAttributes (type);
 
 			if (type.HasInterfaces) {
-				foreach (InterfaceImplementation iface in type.Interfaces) {
-					var interfaceTypeDefinition = _context.Resolve (iface.InterfaceType);
-					if (includeBaseAndInterfaceTypes && interfaceTypeDefinition != null)
-						MarkEntireTypeInternal (interfaceTypeDefinition, true, new DependencyInfo (reason.Kind, type));
-
+				foreach (InterfaceImplementation iface in type.Interfaces)
 					MarkInterfaceImplementation (iface, new MessageOrigin (type));
-				}
 			}
 
 			MarkGenericParameterProvider (type);
 
 			if (type.HasFields) {
 				foreach (FieldDefinition field in type.Fields) {
-					MarkField (field, new DependencyInfo (isDynamicDependencyReason ? reason.Kind : DependencyKind.MemberOfType, type));
+					MarkField (field, new DependencyInfo (DependencyKind.MemberOfType, type));
 				}
 			}
 
 			if (type.HasMethods) {
 				foreach (MethodDefinition method in type.Methods) {
 					Annotations.SetAction (method, MethodAction.ForceParse);
-					MarkMethod (method, new DependencyInfo (isDynamicDependencyReason ? reason.Kind : DependencyKind.MemberOfType, type));
+					MarkMethod (method, new DependencyInfo (DependencyKind.MemberOfType, type));
 				}
 			}
 
 			if (type.HasProperties) {
 				foreach (var property in type.Properties) {
-					MarkProperty (property, new DependencyInfo (isDynamicDependencyReason ? reason.Kind : DependencyKind.MemberOfType, type));
+					MarkProperty (property, new DependencyInfo (DependencyKind.MemberOfType, type));
 				}
 			}
 
 			if (type.HasEvents) {
 				foreach (var ev in type.Events) {
-					MarkEvent (ev, new DependencyInfo (isDynamicDependencyReason ? reason.Kind : DependencyKind.MemberOfType, type));
+					MarkEvent (ev, new DependencyInfo (DependencyKind.MemberOfType, type));
 				}
 			}
 		}
@@ -944,10 +923,10 @@ namespace Mono.Linker.Steps
 				}
 			}
 
-			MarkMembersVisibleToReflection (type, members, new DependencyInfo (DependencyKind.DynamicDependency, dynamicDependency.OriginalAttribute));
+			MarkMembersVisibleToReflection (members, new DependencyInfo (DependencyKind.DynamicDependency, dynamicDependency.OriginalAttribute));
 		}
 
-		void MarkMembersVisibleToReflection (TypeDefinition typeDefinition, IEnumerable<IMetadataTokenProvider> members, in DependencyInfo reason)
+		void MarkMembersVisibleToReflection (IEnumerable<IMetadataTokenProvider> members, in DependencyInfo reason)
 		{
 			foreach (var member in members) {
 				switch (member) {
@@ -968,9 +947,6 @@ namespace Mono.Linker.Steps
 					break;
 				case InterfaceImplementation interfaceType:
 					MarkInterfaceImplementation (interfaceType, null, reason);
-					break;
-				case null:
-					MarkEntireType (typeDefinition, includeBaseAndInterfaceTypes: true, reason);
 					break;
 				}
 			}
@@ -1033,7 +1009,7 @@ namespace Mono.Linker.Steps
 			}
 
 			if (member == "*") {
-				MarkEntireType (td, includeBaseAndInterfaceTypes: false, new DependencyInfo (DependencyKind.PreservedDependency, ca));
+				MarkEntireType (td, new DependencyInfo (DependencyKind.PreservedDependency, ca));
 				return;
 			}
 
@@ -1411,7 +1387,7 @@ namespace Mono.Linker.Steps
 			MarkCustomAttributes (module, new DependencyInfo (DependencyKind.AssemblyOrModuleAttribute, module));
 
 			foreach (TypeDefinition type in module.Types)
-				MarkEntireType (type, includeBaseAndInterfaceTypes: false, new DependencyInfo (DependencyKind.TypeInAssembly, assembly));
+				MarkEntireType (type, new DependencyInfo (DependencyKind.TypeInAssembly, assembly));
 
 			foreach (ExportedType exportedType in module.ExportedTypes) {
 				MarkingHelpers.MarkExportedType (exportedType, module, new DependencyInfo (DependencyKind.ExportedType, assembly));

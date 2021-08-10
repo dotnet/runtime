@@ -127,7 +127,17 @@ namespace Mono.Linker.Dataflow
 			// Handle cases where a type has no members but annotations are to be applied to derived type members
 			reflectionPatternContext.RecordHandledPattern ();
 
-			MarkTypeForDynamicallyAccessedMembers (ref reflectionPatternContext, type, annotation, DependencyKind.DynamicallyAccessedMemberOnType);
+			// The annotations this type inherited from its base types should not produce
+			// warnings on the base members, since those are covered by warnings in the base type.
+			// For now, annotations that are inherited from base types but also declared explicitly on this type
+			// still warn about base members since the cache doesn't track enough information to tell the difference.
+			var declaredAnnotation = _context.Annotations.FlowAnnotations.GetTypeAnnotation (type);
+			var inheritedOnlyAnnotation = annotation & ~declaredAnnotation;
+
+			// Warn about all members accessed by the annotation on this type (including members of base types/interfaces)
+			MarkTypeForDynamicallyAccessedMembers (ref reflectionPatternContext, type, declaredAnnotation, DependencyKind.DynamicallyAccessedMemberOnType, declaredOnly: false);
+			// Warn about members accessed by inherited annotations (not including members of base types/interfaces)
+			MarkTypeForDynamicallyAccessedMembers (ref reflectionPatternContext, type, inheritedOnlyAnnotation, DependencyKind.DynamicallyAccessedMemberOnType, declaredOnly: true);
 		}
 
 		ValueNode GetValueNodeForCustomAttributeArgument (CustomAttributeArgument argument)
@@ -2285,9 +2295,9 @@ namespace Mono.Linker.Dataflow
 
 		static bool HasBindingFlag (BindingFlags? bindingFlags, BindingFlags? search) => bindingFlags != null && (bindingFlags & search) == search;
 
-		void MarkTypeForDynamicallyAccessedMembers (ref ReflectionPatternContext reflectionContext, TypeDefinition typeDefinition, DynamicallyAccessedMemberTypes requiredMemberTypes, DependencyKind dependencyKind)
+		void MarkTypeForDynamicallyAccessedMembers (ref ReflectionPatternContext reflectionContext, TypeDefinition typeDefinition, DynamicallyAccessedMemberTypes requiredMemberTypes, DependencyKind dependencyKind, bool declaredOnly = false)
 		{
-			foreach (var member in typeDefinition.GetDynamicallyAccessedMembers (_context, requiredMemberTypes)) {
+			foreach (var member in typeDefinition.GetDynamicallyAccessedMembers (_context, requiredMemberTypes, declaredOnly)) {
 				switch (member) {
 				case MethodDefinition method:
 					MarkMethod (ref reflectionContext, method, dependencyKind);
@@ -2296,8 +2306,7 @@ namespace Mono.Linker.Dataflow
 					MarkField (ref reflectionContext, field, dependencyKind);
 					break;
 				case TypeDefinition nestedType:
-					DependencyInfo nestedDependencyInfo = new DependencyInfo (dependencyKind, reflectionContext.Source);
-					reflectionContext.RecordRecognizedPattern (nestedType, () => _markStep.MarkEntireType (nestedType, includeBaseAndInterfaceTypes: true, nestedDependencyInfo));
+					MarkType (ref reflectionContext, nestedType, dependencyKind);
 					break;
 				case PropertyDefinition property:
 					MarkProperty (ref reflectionContext, property, dependencyKind);
@@ -2307,10 +2316,6 @@ namespace Mono.Linker.Dataflow
 					break;
 				case InterfaceImplementation interfaceImplementation:
 					MarkInterfaceImplementation (ref reflectionContext, interfaceImplementation, dependencyKind);
-					break;
-				case null:
-					DependencyInfo dependencyInfo = new DependencyInfo (dependencyKind, reflectionContext.Source);
-					reflectionContext.RecordRecognizedPattern (typeDefinition, () => _markStep.MarkEntireType (typeDefinition, includeBaseAndInterfaceTypes: true, dependencyInfo));
 					break;
 				}
 			}
