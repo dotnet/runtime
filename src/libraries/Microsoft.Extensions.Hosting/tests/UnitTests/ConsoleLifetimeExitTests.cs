@@ -127,6 +127,7 @@ namespace Microsoft.Extensions.Hosting.Tests
         /// Tests that calling Environment.Exit from the "main" thread doesn't hang the process forever.
         /// </summary>
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [SkipOnMono("ThreadPoolBoundHandle.BindHandle is not supported by Mono on Windows", TestPlatforms.Windows)]
         public void EnsureEnvironmentExitDoesntHang()
         {
             using var remoteHandle = RemoteExecutor.Invoke(async () =>
