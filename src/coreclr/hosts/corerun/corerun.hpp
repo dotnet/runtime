@@ -48,6 +48,7 @@ namespace pal
 #ifdef TARGET_WINDOWS
 #include <Windows.h>
 
+#define DLL_EXPORT __declspec(dllexport)
 #define MAIN __cdecl wmain
 #define W(str) L ## str
 
@@ -307,6 +308,11 @@ public:
 #include <config.h>
 #include <getexepath.h>
 
+#if __GNUC__ >= 4
+#define DLL_EXPORT __attribute__ ((visibility ("default")))
+#else
+#define DLL_EXPORT
+#endif
 #define MAIN main
 #define W(str) str
 #define FAILED(result) (result < 0)
@@ -573,7 +579,7 @@ namespace pal
         pal::ensure_trailing_delimiter(coreclr_path);
         coreclr_path.append(pal::coreclr_lib);
         coreclr_path.append(pal::nativelib_ext);
-        
+
         hMod = (pal::mod_t)dlopen(coreclr_path.c_str(), RTLD_NOW | RTLD_LOCAL);
         if (hMod == nullptr)
         {
