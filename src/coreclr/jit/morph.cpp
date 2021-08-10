@@ -13706,32 +13706,29 @@ GenTree* Compiler::fgOptimizeEqualityComparison(GenTreeOp* cmp)
         //                  /  \.
         //                 x   CNS_INT +y
 
-        if (fgGlobalMorph && op1->OperIs(GT_AND))
+        if (fgGlobalMorph && op1->OperIs(GT_AND) && op1->AsOp()->gtGetOp1()->OperIs(GT_RSZ, GT_RSH))
         {
-            GenTree* andOp    = op1;
-            GenTree* rshiftOp = andOp->AsOp()->gtGetOp1();
+            GenTreeOp* andOp    = op1->AsOp();
+            GenTreeOp* rshiftOp = andOp->gtGetOp1()->AsOp();
 
-            if (!rshiftOp->OperIs(GT_RSZ, GT_RSH))
+            if (!rshiftOp->gtGetOp2()->IsCnsIntOrI())
             {
                 goto SKIP;
             }
 
-            if (!rshiftOp->AsOp()->gtGetOp2()->IsCnsIntOrI())
-            {
-                goto SKIP;
-            }
-
-            ssize_t shiftAmount = rshiftOp->AsOp()->gtGetOp2()->AsIntCon()->IconValue();
+            ssize_t shiftAmount = rshiftOp->gtGetOp2()->AsIntCon()->IconValue();
 
             if (shiftAmount < 0)
             {
                 goto SKIP;
             }
 
-            if (!andOp->AsOp()->gtGetOp2()->IsIntegralConst(1))
+            if (!andOp->gtGetOp2()->IsIntegralConst(1))
             {
                 goto SKIP;
             }
+
+            GenTreeIntConCommon* andMask = andOp->gtGetOp2()->AsIntConCommon();
 
             if (andOp->TypeIs(TYP_INT))
             {
@@ -13740,9 +13737,7 @@ GenTree* Compiler::fgOptimizeEqualityComparison(GenTreeOp* cmp)
                     goto SKIP;
                 }
 
-                int32_t newAndOperand = 1 << shiftAmount;
-
-                andOp->AsOp()->gtGetOp2()->AsIntCon()->SetIconValue(newAndOperand);
+                andMask->SetIconValue(1 << shiftAmount);
 
                 // Reverse the condition if necessary.
                 if (ival2 == 1)
@@ -13758,9 +13753,7 @@ GenTree* Compiler::fgOptimizeEqualityComparison(GenTreeOp* cmp)
                     goto SKIP;
                 }
 
-                int64_t newAndOperand = 1ll << shiftAmount;
-
-                andOp->AsOp()->gtGetOp2()->AsIntConCommon()->SetLngValue(newAndOperand);
+                andMask->SetLngValue(1ll << shiftAmount);
 
                 // Reverse the cond if necessary
                 if (ival2 == 1)
@@ -13770,9 +13763,9 @@ GenTree* Compiler::fgOptimizeEqualityComparison(GenTreeOp* cmp)
                 }
             }
 
-            andOp->AsOp()->gtOp1 = rshiftOp->AsOp()->gtOp1;
+            andOp->gtOp1 = rshiftOp->gtGetOp1();
 
-            DEBUG_DESTROY_NODE(rshiftOp->AsOp()->gtOp2);
+            DEBUG_DESTROY_NODE(rshiftOp->gtGetOp2());
             DEBUG_DESTROY_NODE(rshiftOp);
         }
     } // END if (ival2 != INT_MAX)
@@ -13809,53 +13802,53 @@ SKIP:
         return cmp;
     }
 
-    // The transform below cannot preserve VNs.
+    // Now we perform the following optimization:
+    // EQ/NE(AND(OP long, CNS_LNG), CNS_LNG) =>
+    // EQ/NE(AND(CAST(int <- OP), CNS_INT), CNS_INT)
+    // when the constants are sufficiently small.
+    // This transform cannot preserve VNs.
     if (fgGlobalMorph)
     {
-        noway_assert(op1->TypeIs(TYP_LONG) && op1->OperIs(GT_AND));
+        assert(op1->TypeIs(TYP_LONG) && op1->OperIs(GT_AND));
 
         // Is the result of the mask effectively an INT?
-
-        GenTree* andMask = op1->AsOp()->gtGetOp2();
-        if (!andMask->OperIs(GT_CNS_NATIVELONG))
-        {
-            return cmp;
-        }
-        if ((andMask->AsIntConCommon()->LngValue() >> 32) != 0)
+        GenTreeOp* andOp = op1->AsOp();
+        if (!andOp->gtGetOp2()->OperIs(GT_CNS_NATIVELONG))
         {
             return cmp;
         }
 
-        // Now we narrow AsOp()->gtOp1 of AND to int.
-        if (optNarrowTree(op1->AsOp()->gtGetOp1(), TYP_LONG, TYP_INT, ValueNumPair(), false))
+        GenTreeIntConCommon* andMask = andOp->gtGetOp2()->AsIntConCommon();
+        if ((andMask->LngValue() >> 32) != 0)
         {
-            optNarrowTree(op1->AsOp()->gtGetOp1(), TYP_LONG, TYP_INT, ValueNumPair(), true);
+            return cmp;
+        }
+
+        // Now we narrow the first operand of AND to int.
+        if (optNarrowTree(andOp->gtGetOp1(), TYP_LONG, TYP_INT, ValueNumPair(), false))
+        {
+            optNarrowTree(andOp->gtGetOp1(), TYP_LONG, TYP_INT, ValueNumPair(), true);
         }
         else
         {
-            op1->AsOp()->gtOp1 = gtNewCastNode(TYP_INT, op1->AsOp()->gtGetOp1(), false, TYP_INT);
+            andOp->gtOp1 = gtNewCastNode(TYP_INT, andOp->gtGetOp1(), false, TYP_INT);
         }
 
-        op1->AsOp()->gtOp1 = gtNewCastNode(TYP_INT, op1->AsOp()->gtGetOp1(), false, TYP_INT);
+        assert(andMask == andOp->gtGetOp2());
 
-        // Now replace the mask node (AsOp()->gtOp2 of AND node).
-
-        noway_assert(andMask == op1->AsOp()->gtGetOp2());
-
-        ival1 = static_cast<int32_t>(andMask->AsIntConCommon()->LngValue());
+        // Now replace the mask node.
+        ival1 = static_cast<int32_t>(andMask->LngValue());
         andMask->SetOper(GT_CNS_INT);
-        andMask->gtType = TYP_INT;
-        andMask->AsIntCon()->SetIconValue(ival1);
+        andMask->ChangeType(TYP_INT);
+        andMask->SetIconValue(ival1);
 
         // Now change the type of the AND node.
-
-        op1->gtType = TYP_INT;
+        andOp->ChangeType(TYP_INT);
 
         // Finally we replace the comparand.
-
         ival2 = static_cast<int32_t>(op2->AsIntConCommon()->LngValue());
         op2->SetOper(GT_CNS_INT);
-        op2->gtType = TYP_INT;
+        op2->ChangeType(TYP_INT);
         op2->AsIntCon()->SetIconValue(ival2);
     }
 
