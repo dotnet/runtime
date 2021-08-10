@@ -62,7 +62,6 @@ namespace Microsoft.Extensions.FileProviders.Physical
                 catch (FileNotFoundException)
                 {
                     // The file ceased to exist between LinkTarget and ResolveLinkTarget.
-                    // Try one more time, if it fails again just give up.
                 }
 
                 return DateTime.MinValue;
