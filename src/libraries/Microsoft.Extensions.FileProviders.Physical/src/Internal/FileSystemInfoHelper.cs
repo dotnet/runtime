@@ -65,7 +65,7 @@ namespace Microsoft.Extensions.FileProviders.Physical
                     // Try one more time, if it fails again just give up.
                     if (!isSecondTry)
                     {
-                        GetFileLinkTargetLastWriteTimeUtc(fileInfo, isSecondTry: true);
+                        return GetFileLinkTargetLastWriteTimeUtc(fileInfo, isSecondTry: true);
                     }
                 }
 
