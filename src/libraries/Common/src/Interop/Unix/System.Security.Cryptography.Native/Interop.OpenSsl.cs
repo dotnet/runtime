@@ -508,16 +508,6 @@ internal static partial class Interop
             *outlen = 0;
             IntPtr sslData =  Ssl.SslGetData(ssl);
 
-            if (sslData == IntPtr.Zero)
-            {
-                // We did not set ALPN list.
-                *outlen = 0;
-                *outp = (byte*)arg;
-                return Ssl.SSL_TLSEXT_ERR_OK;
-            }
-
-            //return Ssl.SSL_TLSEXT_ERR_OK;
-
             GCHandle protocolHandle = GCHandle.FromIntPtr(sslData);
             if (!(protocolHandle.Target is List<SslApplicationProtocol> protocolList))
             {
