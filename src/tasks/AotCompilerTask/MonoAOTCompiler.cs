@@ -225,7 +225,7 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
             {
                 if (!File.Exists(path))
                 {
-                    Log.LogError($"'{path}' doesn't exist.");
+                    Log.LogError($"AotProfilePath '{path}' doesn't exist.");
                     return false;
                 }
             }
