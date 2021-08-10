@@ -887,11 +887,6 @@ if(CLR_CMAKE_TARGET_MACCATALYST OR CLR_CMAKE_TARGET_IOS OR CLR_CMAKE_TARGET_TVOS
     set(CMAKE_EXTRA_INCLUDE_FILES 
         sys/types.h 
         "${CMAKE_CURRENT_SOURCE_DIR}/System.Native/ios/net/route.h"
-        "${CMAKE_CURRENT_SOURCE_DIR}/System.Native/ios/net/route.h"
-        "${CMAKE_CURRENT_SOURCE_DIR}/System.Native/ios/netinet/icmp_var.h"
-        "${CMAKE_CURRENT_SOURCE_DIR}/System.Native/ios/netinet/ip_var.h"
-        "${CMAKE_CURRENT_SOURCE_DIR}/System.Native/ios/netinet/tcp_fsm.h"
-        "${CMAKE_CURRENT_SOURCE_DIR}/System.Native/ios/netinet/udp_var.h"
     )
 else()
     set(CMAKE_EXTRA_INCLUDE_FILES sys/types.h net/if.h net/route.h)
