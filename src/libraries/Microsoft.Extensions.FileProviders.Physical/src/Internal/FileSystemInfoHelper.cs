@@ -45,7 +45,7 @@ namespace Microsoft.Extensions.FileProviders.Physical
         // If file is a link, and link target does not exists, return DateTime.MinValue
         //   since the link's LastWriteTimeUtc doesn't convey anything for this scenario.
         // If file is not a link, return null to inform the caller that file is not a link.
-        public static DateTime? GetFileLinkTargetLastWriteTimeUtc(FileInfo fileInfo, bool isSecondTry = false)
+        public static DateTime? GetFileLinkTargetLastWriteTimeUtc(FileInfo fileInfo)
         {
 #if NETCOREAPP
             Debug.Assert(fileInfo.Exists);
@@ -63,10 +63,6 @@ namespace Microsoft.Extensions.FileProviders.Physical
                 {
                     // The file ceased to exist between LinkTarget and ResolveLinkTarget.
                     // Try one more time, if it fails again just give up.
-                    if (!isSecondTry)
-                    {
-                        return GetFileLinkTargetLastWriteTimeUtc(fileInfo, isSecondTry: true);
-                    }
                 }
 
                 return DateTime.MinValue;
