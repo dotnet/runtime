@@ -376,6 +376,7 @@ for /l %%G in (1, 1, %__NumberOfTestGroups%) do (
         )
     ) else (
         set __MSBuildBuildArgs=!__RepoRootDir!\src\tests\build.proj -warnAsError:0 /nodeReuse:false !__Logging! !TargetsWindowsMsbuildArg! !__msbuildArgs!  !__PriorityArg! !__BuildNeedTargetArg! !__NativeBinariesLayoutTypeArg!  !__UnprocessedBuildArgs! "/t:CopyAllNativeProjectReferenceBinaries"
+        set __MSBuildBuildArgs=!__MSBuildBuildArgs! /p:RuntimeFlavor=!__RuntimeFlavor!
         echo Running: msbuild !__MSBuildBuildArgs!
         !__CommonMSBuildCmdPrefix! !__MSBuildBuildArgs!
 
