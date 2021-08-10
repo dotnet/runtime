@@ -122,7 +122,7 @@ namespace Internal.Cryptography.Pal
                 {
                     throw new PlatformNotSupportedException(SR.Cryptography_X509_PKCS12_PersistKeySetNotSupported);
                 }
-                if ((keyStorageFlags & X509KeyStorageFlags.PersistKeySet) == X509KeyStorageFlags.PersistKeySet))
+                if ((keyStorageFlags & X509KeyStorageFlags.PersistKeySet) == X509KeyStorageFlags.PersistKeySet)
                 {
                     throw new PlatformNotSupportedException(SR.Cryptography_X509_PKCS12_ExportableNotSupported);
                 }
