@@ -442,7 +442,7 @@ usage_list+=("-generatelayoutonly: only pull down dependencies and build coreroo
 usage_list+=("-test:xxx - only build a single test project");
 usage_list+=("-dir:xxx - build all tests in a given directory");
 usage_list+=("-tree:xxx - build all tests in a given subtree");
-usage_list+=("-all:xxx - rebuild all the specified tests");
+usage_list+=("-all - rebuild all the specified tests");
 
 usage_list+=("-crossgen2: Precompiles the framework managed assemblies in coreroot using the Crossgen2 compiler.")
 usage_list+=("-priority1: include priority=1 tests in the build.")
