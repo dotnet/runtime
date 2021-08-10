@@ -528,6 +528,8 @@ namespace System.Diagnostics
         /// </devdoc>
         public IntPtr ProcessorAffinity
         {
+            [SupportedOSPlatform("windows")]
+            [SupportedOSPlatform("linux")]
             get
             {
                 if (!_haveProcessorAffinity)
@@ -537,6 +539,8 @@ namespace System.Diagnostics
                 }
                 return _processorAffinity;
             }
+            [SupportedOSPlatform("windows")]
+            [SupportedOSPlatform("linux")]
             set
             {
                 ProcessorAffinityCore = value;

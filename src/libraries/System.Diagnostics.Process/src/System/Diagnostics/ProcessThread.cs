@@ -88,6 +88,9 @@ namespace System.Diagnostics
         /// </devdoc>
         public ThreadPriorityLevel PriorityLevel
         {
+            [SupportedOSPlatform("windows")]
+            [SupportedOSPlatform("linux")]
+            [SupportedOSPlatform("freebsd")]
             get
             {
                 if (!_priorityLevel.HasValue)
