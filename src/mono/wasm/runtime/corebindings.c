@@ -38,7 +38,7 @@ EM_JS(MonoObject*, compile_function, (int snippet_ptr, int len, int *is_exceptio
 				+ 'Please use `return` statement to return a function.');
 		}
 		setValue (is_exception, 0, "i32");
-		return BINDING.js_to_mono_obj (func);	
+		return BINDING.js_to_mono_obj (func, true);	
 	}
 	catch (e)
 	{
@@ -46,7 +46,7 @@ EM_JS(MonoObject*, compile_function, (int snippet_ptr, int len, int *is_exceptio
 		setValue (is_exception, 1, "i32");
 		if (res === null || res === undefined)
 			res = "unknown exception";
-		return BINDING.js_to_mono_obj (res);		
+		return BINDING.js_to_mono_obj (res, true);
 	}
 });
 

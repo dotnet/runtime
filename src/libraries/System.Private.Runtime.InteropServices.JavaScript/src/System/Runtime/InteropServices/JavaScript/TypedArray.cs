@@ -1,9 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
 using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 
 namespace System.Runtime.InteropServices.JavaScript
 {
@@ -49,7 +47,9 @@ namespace System.Runtime.InteropServices.JavaScript
     /// <summary>
     /// Represents a JavaScript TypedArray.
     /// </summary>
-    public abstract class TypedArray<T, U> : CoreObject, ITypedArray, ITypedArray<T, U> where U : struct
+    public abstract class TypedArray<T, U> : CoreObject, ITypedArray, ITypedArray<T, U>
+        where U : struct
+        where T: JSObject
     {
         protected TypedArray() : base(typeof(T).Name)
         { }
@@ -154,7 +154,6 @@ namespace System.Runtime.InteropServices.JavaScript
             if (jsValue == null)
                 return null;
 
-            Type type = jsValue.GetType();
             return (U)Convert.ChangeType(jsValue, typeof(U));
         }
 
@@ -186,7 +185,9 @@ namespace System.Runtime.InteropServices.JavaScript
                 object res = Interop.Runtime.TypedArrayFrom((int)ptr, 0, span.Length, Unsafe.SizeOf<U>(), (int)type, out int exception);
                 if (exception != 0)
                     throw new JSException((string)res);
-                return (T)res;
+                var r = (T)res;
+                r.ReleaseInFlight();
+                return r;
             }
 
         }

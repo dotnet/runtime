@@ -72,13 +72,13 @@ internal static partial class Interop
         public static object GetGlobalObject(string? str = null)
         {
             int exception;
-            object globalHandle = Runtime.GetGlobalObject(str, out exception);
+            object jsObj = GetGlobalObject(str, out exception);
 
             if (exception != 0)
                 throw new JSException($"Error obtaining a handle to global {str}");
 
-            ReleaseInFlight(globalHandle);
-            return globalHandle;
+            ReleaseInFlight(jsObj);
+            return jsObj;
         }
 
         [MethodImplAttribute(MethodImplOptions.NoInlining)]

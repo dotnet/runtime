@@ -525,7 +525,7 @@ var BindingSupportLib = {
 			return res;
 		},
 
-		js_array_to_mono_array: function (js_array, asString = false) {
+		js_array_to_mono_array: function (js_array, asString, should_add_in_flight) {
 			var mono_array = asString ? this.mono_wasm_string_array_new (js_array.length) : this.mono_obj_array_new (js_array.length);
 			let [arrayRoot, elemRoot] = MONO.mono_wasm_new_roots ([mono_array, 0]);
 
@@ -535,7 +535,7 @@ var BindingSupportLib = {
 					if (asString)
 						obj = obj.toString ();
 
-					elemRoot.value = this.js_to_mono_obj (obj);
+					elemRoot.value = this.js_to_mono_obj (obj, should_add_in_flight);
 					this.mono_obj_array_set (arrayRoot.value, i, elemRoot.value);
 				}
 
@@ -665,7 +665,22 @@ var BindingSupportLib = {
 			return this.mono_wasm_box_primitive (this._class_boolean, this._box_buffer, 4);
 		},
 
-		js_to_mono_obj: function (js_obj) {
+		js_to_mono_uri: function (js_obj, should_add_in_flight=false) {
+			this.bindings_lazy_init ();
+
+			switch (true) {
+				case js_obj === null:
+				case typeof js_obj === "undefined":
+					return 0;
+				case typeof js_obj === "symbol":
+				case typeof js_obj === "string":
+					return this._create_uri(js_obj)
+				default:
+					return this._extract_mono_obj (js_obj);
+			}
+		},
+
+		js_to_mono_obj: function (js_obj, should_add_in_flight=false) {
 			this.bindings_lazy_init ();
 
 			switch (true) {
@@ -696,25 +711,44 @@ var BindingSupportLib = {
 					// getTime() is always UTC
 					return this._create_date_time(js_obj.getTime());
 				default:
-					return this.extract_mono_obj (js_obj);
+					return this._extract_mono_obj (js_obj, should_add_in_flight);
 			}
 		},
 
-		js_to_mono_uri: function (js_obj) {
-			this.bindings_lazy_init ();
+		_extract_mono_obj: function (js_obj, should_add_in_flight) {
+			if (js_obj === null || typeof js_obj === "undefined")
+				return 0;
 
-			switch (true) {
-				case js_obj === null:
-				case typeof js_obj === "undefined":
-					return 0;
-				case typeof js_obj === "symbol":
-				case typeof js_obj === "string":
-					return this._create_uri(js_obj)
-				default:
-					return this.extract_mono_obj (js_obj);
+			var result = null;
+			if (js_obj.__js_owned_gc_handle__) {
+				// for __js_owned_gc_handle__ we don't want to create new proxy
+				// since this is strong gc_handle we don't need to in-flight reference
+				result = this.get_js_owned_object_by_gc_handle (js_obj.__js_owned_gc_handle__);
+				return result;
 			}
+			if (js_obj.__cs_owned_js_handle__) {
+				result = this.get_cs_owned_object_by_js_handle (js_obj.__cs_owned_js_handle__, should_add_in_flight);
+
+				// It's possible the managed object corresponding to this JS object was collected,
+				//  in which case we need to make a new one.
+				if (!result) {
+					delete js_obj.__cs_owned_js_handle__;
+				}
+			}
+
+			if (!result) {
+				// Obtain the JS -> C# type mapping.
+				const wasm_type = js_obj[this.wasm_type_symbol];
+				const wasm_type_id = typeof wasm_type === "undefined" ? 0 : wasm_type;
+
+				var js_handle = BINDING.mono_wasm_get_js_handle(js_obj);
+
+				result = this._create_cs_owned_proxy(js_handle, wasm_type_id, should_add_in_flight);
+			}
+
+			return result;
 		},
-		
+
 		has_backing_array_buffer: function (js_obj) {
 			return typeof SharedArrayBuffer !== 'undefined'
 				? js_obj.buffer instanceof ArrayBuffer || js_obj.buffer instanceof SharedArrayBuffer
@@ -896,11 +930,7 @@ var BindingSupportLib = {
 			if(!js_handle){
 				return 0;
 			}
-			const should_add_in_flight_int = should_add_in_flight ? 1 : 0;
-		
-			// TODO: should_add_in_flight -> mono_inflight_current_frame?
-
-			return this._get_cs_owned_object_by_js_handle (js_handle, should_add_in_flight_int);
+			return this._get_cs_owned_object_by_js_handle (js_handle, should_add_in_flight);
 		},
 
 		mono_method_get_call_signature: function(method, mono_obj) {
@@ -912,40 +942,6 @@ var BindingSupportLib = {
 			} finally {
 				instanceRoot.release();
 			}
-		},
-
-		extract_mono_obj: function (js_obj) {
-			if (js_obj === null || typeof js_obj === "undefined")
-				return 0;
-
-			var result = null;
-			if (js_obj.__js_owned_gc_handle__) {
-				// for __js_owned_gc_handle__ we don't want to create new proxy
-				// since this is strong gc_handle we don't need to in-flight reference
-				result = this.get_js_owned_object_by_gc_handle (js_obj.__js_owned_gc_handle__);
-				return result;
-			}
-			if (js_obj.__cs_owned_js_handle__) {
-				result = this.get_cs_owned_object_by_js_handle (js_obj.__cs_owned_js_handle__, true);
-
-				// It's possible the managed object corresponding to this JS object was collected,
-				//  in which case we need to make a new one.
-				if (!result) {
-					delete js_obj.__cs_owned_js_handle__;
-				}
-			}
-
-			if (!result) {
-				// Obtain the JS -> C# type mapping.
-				const wasm_type = js_obj[this.wasm_type_symbol];
-				const wasm_type_id = typeof wasm_type === "undefined" ? 0 : wasm_type;
-
-				var js_handle = BINDING.mono_wasm_get_js_handle(js_obj);
-
-				result = this._create_cs_owned_proxy(js_handle, wasm_type_id, true);
-			}
-
-			return result;
 		},
 
 		_create_named_function: function (name, argumentNames, body, closure) {
@@ -1621,7 +1617,7 @@ var BindingSupportLib = {
 				try {
 					var args = [...arguments];
 					if (args.length > 0 && Array.isArray (args[0]))
-						args[0] = BINDING.js_array_to_mono_array (args[0], true);
+						args[0] = BINDING.js_array_to_mono_array (args[0], true, false);
 
 					let result = BINDING.call_method (method, null, signature, args);
 					return Promise.resolve (result);
@@ -1691,7 +1687,7 @@ var BindingSupportLib = {
 				if (typeof m === "undefined")
 					throw new Error("Method: '" + js_name + "' not found for: '" + Object.prototype.toString.call(obj) + "'");
 				var res = m.apply (obj, js_args);
-				return BINDING.js_to_mono_obj(res);
+				return BINDING.js_to_mono_obj(res, true);
 			} catch (e) {
 				var res = e.toString ();
 				setValue (is_exception, 1, "i32");
@@ -1725,7 +1721,7 @@ var BindingSupportLib = {
 			try {
 				var m = obj [js_name];
 
-				return BINDING.js_to_mono_obj (m);
+				return BINDING.js_to_mono_obj (m, true);
 			} catch (e) {
 				var res = e.toString ();
 				setValue (is_exception, 1, "i32");
@@ -1797,7 +1793,7 @@ var BindingSupportLib = {
 
 		try {
 			var m = obj [property_index];
-			return BINDING.js_to_mono_obj (m);
+			return BINDING.js_to_mono_obj (m, true);
 		} catch (e) {
 			var res = e.toString ();
 			setValue (is_exception, 1, "i32");
@@ -1849,12 +1845,13 @@ var BindingSupportLib = {
 				globalObj = globalThis[js_name];
 			}
 
+			// TODO returning null may be useful when probing for browser features
 			if (globalObj === null || typeof globalObj === undefined) {
 				setValue (is_exception, 1, "i32");
 				return BINDING.js_string_to_mono_string ("Global object '" + js_name + "' not found.");
 			}
 
-			return BINDING.js_to_mono_obj (globalObj);
+			return BINDING.js_to_mono_obj (globalObj, true);
 		} finally {
 			nameRoot.release();
 		}
@@ -1900,8 +1897,9 @@ var BindingSupportLib = {
 
 				var js_obj = allocator(coreObj, js_args);
 				var js_handle = BINDING.mono_wasm_get_js_handle(js_obj);
-				// yes, convert int, because on error we need to return String on same method signature
-				return BINDING.js_to_mono_obj(js_handle);
+				// returns boxed js_handle int, because on exception we need to return String on same method signature
+				// here we don't have anything to in-flight reference, as the JSObject doesn't exist yet
+				return BINDING.js_to_mono_obj(js_handle, false);
 			} catch (e) {
 				var res = e.toString ();
 				setValue (is_exception, 1, "i32");
@@ -1923,7 +1921,8 @@ var BindingSupportLib = {
 			return BINDING.js_string_to_mono_string ("ERR06: Invalid JS object handle '" + js_handle + "'");
 		}
 
-		return BINDING.js_typed_array_to_array(js_obj);
+		// returns pointer to C# array
+		return BINDING.js_typed_array_to_array(js_obj, false);
 	},
 	mono_wasm_typed_array_copy_to: function(js_handle, pinned_array, begin, end, bytes_per_element, is_exception) {
 		BINDING.bindings_lazy_init ();
@@ -1935,12 +1934,14 @@ var BindingSupportLib = {
 		}
 
 		var res = BINDING.typedarray_copy_to(js_obj, pinned_array, begin, end, bytes_per_element);
-		return BINDING.js_to_mono_obj (res)
+		// returns num_of_bytes boxed
+		return BINDING.js_to_mono_obj (res, false)
 	},
 	mono_wasm_typed_array_from: function(pinned_array, begin, end, bytes_per_element, type, is_exception) {
 		BINDING.bindings_lazy_init ();
 		var res = BINDING.typed_array_from(pinned_array, begin, end, bytes_per_element, type);
-		return BINDING.js_to_mono_obj (res)
+		// returns JS typed array like Int8Array, to be wraped with JSObject proxy
+		return BINDING.js_to_mono_obj (res, true)
 	},
 	mono_wasm_typed_array_copy_from: function(js_handle, pinned_array, begin, end, bytes_per_element, is_exception) {
 		BINDING.bindings_lazy_init ();
@@ -1952,7 +1953,8 @@ var BindingSupportLib = {
 		}
 
 		var res = BINDING.typedarray_copy_from(js_obj, pinned_array, begin, end, bytes_per_element);
-		return BINDING.js_to_mono_obj (res)
+		// returns num_of_bytes boxed
+		return BINDING.js_to_mono_obj (res, false)
 	},
 	mono_wasm_add_event_listener: function (objHandle, name, listener_gc_handle, optionsHandle) {
 		var nameRoot = MONO.mono_wasm_new_root (name);
