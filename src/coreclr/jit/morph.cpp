@@ -13093,7 +13093,8 @@ DONE_MORPHING_CHILDREN:
                 op2  = tree->AsOp()->gtOp2;
             }
 
-            if (varTypeIsIntegralOrI(tree->TypeGet()) && tree->OperIs(GT_ADD, GT_MUL, GT_AND, GT_OR, GT_XOR))
+            if (varTypeIsIntegralOrI(tree->TypeGet()) && tree->OperIs(GT_ADD, GT_MUL, GT_AND, GT_OR, GT_XOR) &&
+                !optValnumCSE_phase)
             {
                 GenTree* foldedTree = fgMorphCommutative(tree->AsOp());
                 if (foldedTree != nullptr)
