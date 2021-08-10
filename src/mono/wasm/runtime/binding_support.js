@@ -549,7 +549,7 @@ var BindingSupportLib = {
 		js_to_mono_obj: function (js_obj) {
 			return this._js_to_mono_obj(false, js_obj)
 		},
-		
+
 		// this is only used from Blazor
 		unbox_mono_obj: function (mono_obj) {
 			if (mono_obj === 0)
@@ -1006,6 +1006,9 @@ var BindingSupportLib = {
 			result.set ('m', { steps: [{ }], size: 0});
 			result.set ('s', { steps: [{ convert: this.js_string_to_mono_string.bind (this) }], size: 0, needs_root: true });
 			result.set ('S', { steps: [{ convert: this.js_string_to_mono_string_interned.bind (this) }], size: 0, needs_root: true });
+			// note we also bind first argument to false for both _js_to_mono_obj and _js_to_mono_uri, 
+			// because we will root the reference, so we don't need in-flight reference
+			// also as those are callback arguments and we don't have platform code which would release the in-flight reference on C# end
 			result.set ('o', { steps: [{ convert: this._js_to_mono_obj.bind (this, false) }], size: 0, needs_root: true });
 			result.set ('u', { steps: [{ convert: this._js_to_mono_uri.bind (this, false) }], size: 0, needs_root: true });
 
