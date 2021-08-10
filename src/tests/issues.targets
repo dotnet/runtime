@@ -2441,6 +2441,9 @@
         <ExcludeList Include = "$(XunitTestBinBase)/Interop/PInvoke/Primitives/Int/PInvokeIntTest/**">
             <Issue>https://github.com/dotnet/runtime/issues/41519</Issue>
         </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Interop/PInvoke/SetLastError/**">
+            <Issue>https://github.com/dotnet/runtime/issues/41519</Issue>
+        </ExcludeList>
         <ExcludeList Include = "$(XunitTestBinBase)/Interop/SuppressGCTransition/SuppressGCTransitionTest/**">
             <Issue>https://github.com/dotnet/runtime/issues/41519</Issue>
         </ExcludeList>
@@ -2751,6 +2754,9 @@
             <Issue>needs triage</Issue>
         </ExcludeList>
         <ExcludeList Include = "$(XunitTestBinBase)/Interop/PInvoke/Primitives/Pointer/NonBlittablePointer/**">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include = "$(XunitTestBinBase)/Interop/PInvoke/SetLastError/**">
             <Issue>needs triage</Issue>
         </ExcludeList>
         <ExcludeList Include = "$(XunitTestBinBase)/Interop/SuppressGCTransition/SuppressGCTransitionTest/**">
