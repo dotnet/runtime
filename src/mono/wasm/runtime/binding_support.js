@@ -8,8 +8,6 @@ var BindingSupportLib = {
 		mono_wasm_object_registry: [],
 		mono_wasm_ref_counter: 1,
 		mono_wasm_free_list: [],
-		mono_inflight_frames: [],
-		mono_inflight_current_frame: [],
 		mono_wasm_marshal_enum_as_int: true,
 		mono_bindings_init: function (binding_asm) {
 			this.BINDING_ASM = binding_asm;
@@ -35,6 +33,7 @@ var BindingSupportLib = {
 			// avoid infinite recursion
 			this.init = true;
 
+			Object.prototype[Symbol.for("wasm type")] = 0;
 			Array.prototype[Symbol.for("wasm type")] = 1;
 			ArrayBuffer.prototype[Symbol.for("wasm type")] = 2;
 			DataView.prototype[Symbol.for("wasm type")] = 3;
@@ -127,7 +126,7 @@ var BindingSupportLib = {
 			this._get_cs_owned_object_js_handle = bind_runtime_method ("GetCsOwnedObjectJsHandle", 'mi');
 			this._try_get_cs_owned_object_js_handle = bind_runtime_method ("TryGetCsOwnedObjectJsHandle", "m");
 
-			this._create_cs_owned_object = bind_runtime_method ("CreateCSOwnedObject", "ii!");
+			this._create_cs_owned_proxy = bind_runtime_method ("CreateCsOwnedProxy", "ii!");
 
 			this._is_simple_array = bind_runtime_method ("IsSimpleArray", "m");
 
@@ -931,12 +930,12 @@ var BindingSupportLib = {
 			if (!result) {
 				// Obtain the JS -> C# type mapping.
 				const wasm_type = js_obj[Symbol.for("wasm type")];
-				const wasm_type_id = typeof wasm_type === "undefined" ? -1 : wasm_type;
+				const wasm_type_id = typeof wasm_type === "undefined" ? 0 : wasm_type;
 
 				var js_handle = BINDING.mono_wasm_get_js_handle(js_obj);
 
 				// pointer to JSObject with AddInFlight
-				result = this._create_cs_owned_object(js_handle, wasm_type_id);
+				result = this._create_cs_owned_proxy(js_handle, wasm_type_id);
 			}
 
 			return result;

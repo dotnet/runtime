@@ -78,18 +78,37 @@ namespace System.Runtime.InteropServices.JavaScript
             return (IntPtr)jsHandle;
         }
 
-        public static JSObject CreateCSOwnedObject(int jsHandle, int mappedType)
+        public static JSObject CreateCsOwnedProxy(IntPtr jsHandle, int mappedType)
         {
             JSObject? target = null;
 
             lock (_csOwnedObjects)
             {
-                if (!_csOwnedObjects.TryGetValue(jsHandle, out WeakReference<JSObject>? reference) ||
+                if (!_csOwnedObjects.TryGetValue((int)jsHandle, out WeakReference<JSObject>? reference) ||
                     !reference.TryGetTarget(out target) ||
                     target.IsDisposed)
                 {
-                    target = mappedType > 0 ? BindJSType((IntPtr)jsHandle, mappedType) : new JSObject((IntPtr)jsHandle);
-                    _csOwnedObjects[jsHandle] = new WeakReference<JSObject>(target, trackResurrection: true);
+                    target = mappedType switch
+                    {
+                        0 => new JSObject(jsHandle),
+                        1 => new Array(jsHandle),
+                        2 => new ArrayBuffer(jsHandle),
+                        3 => new DataView(jsHandle),
+                        4 => new Function(jsHandle),
+                        5 => new Map(jsHandle),
+                        6 => new SharedArrayBuffer(jsHandle),
+                        10 => new Int8Array(jsHandle),
+                        11 => new Uint8Array(jsHandle),
+                        12 => new Uint8ClampedArray(jsHandle),
+                        13 => new Int16Array(jsHandle),
+                        14 => new Uint16Array(jsHandle),
+                        15 => new Int32Array(jsHandle),
+                        16 => new Uint32Array(jsHandle),
+                        17 => new Float32Array(jsHandle),
+                        18 => new Float64Array(jsHandle),
+                        _ => throw new ArgumentOutOfRangeException(nameof(mappedType))
+                    };
+                    _csOwnedObjects[(int)jsHandle] = new WeakReference<JSObject>(target, trackResurrection: true);
                 }
             }
 
@@ -121,27 +140,6 @@ namespace System.Runtime.InteropServices.JavaScript
             return null;
 
         }
-
-        private static JSObject BindJSType(IntPtr jsHandle, int coreType) =>
-            coreType switch
-            {
-                1 => new Array(jsHandle),
-                2 => new ArrayBuffer(jsHandle),
-                3 => new DataView(jsHandle),
-                4 => new Function(jsHandle),
-                5 => new Map(jsHandle),
-                6 => new SharedArrayBuffer(jsHandle),
-                10 => new Int8Array(jsHandle),
-                11 => new Uint8Array(jsHandle),
-                12 => new Uint8ClampedArray(jsHandle),
-                13 => new Int16Array(jsHandle),
-                14 => new Uint16Array(jsHandle),
-                15 => new Int32Array(jsHandle),
-                16 => new Uint32Array(jsHandle),
-                17 => new Float32Array(jsHandle),
-                18 => new Float64Array(jsHandle),
-                _ => throw new ArgumentOutOfRangeException(nameof(coreType))
-            };
 
         public static int CreateTaskSource()
         {
