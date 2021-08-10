@@ -20,6 +20,12 @@ namespace System.Diagnostics
             get { throw new PlatformNotSupportedException(); }
         }
 
+        /// <summary>Gets the time the associated process was started.</summary>
+        internal DateTime StartTimeCore
+        {
+            get { throw new PlatformNotSupportedException(); }
+        }
+
         /// <summary>
         /// Gets the amount of time the associated process has spent utilizing the CPU.
         /// It is the sum of the <see cref='System.Diagnostics.Process.UserProcessorTime'/> and
