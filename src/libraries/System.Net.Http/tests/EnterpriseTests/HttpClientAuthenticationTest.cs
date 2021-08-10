@@ -11,14 +11,19 @@ namespace System.Net.Http.Enterprise.Tests
     [ConditionalClass(typeof(EnterpriseTestConfiguration), nameof(EnterpriseTestConfiguration.Enabled))]
     public class HttpClientAuthenticationTest
     {
+        private const string AppContextSettingName = "System.Net.Http.UsePortInSpn";
+
         [Theory]
         [InlineData(EnterpriseTestConfiguration.NegotiateAuthWebServer, false)]
-        [InlineData(EnterpriseTestConfiguration.AlternativeService, false)]
+        [InlineData(EnterpriseTestConfiguration.NegotiateAuthWebServerNotDefaultPort, false)]
+        [InlineData(EnterpriseTestConfiguration.AlternativeService, false, true)]
         [InlineData(EnterpriseTestConfiguration.DigestAuthWebServer, true)]
         [InlineData(EnterpriseTestConfiguration.DigestAuthWebServer, false)]
         [InlineData(EnterpriseTestConfiguration.NtlmAuthWebServer, true)]
-        public async Task HttpClient_ValidAuthentication_Success(string url, bool useDomain)
+        public async Task HttpClient_ValidAuthentication_Success(string url, bool useDomain, bool useAltPort = false)
         {
+            // This is safe as we have no parallel tests
+            AppContext.SetSwitch(AppContextSettingName, useAltPort);
             using var handler = new HttpClientHandler();
             handler.Credentials = useDomain ? EnterpriseTestConfiguration.ValidDomainNetworkCredentials : EnterpriseTestConfiguration.ValidNetworkCredentials;
             using var client = new HttpClient(handler);
