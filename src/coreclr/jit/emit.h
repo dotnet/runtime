@@ -884,6 +884,7 @@ protected:
         }
         void idCodeSize(unsigned sz)
         {
+            assert(sz <= 15); // Intel decoder limit.
             if (sz > 15)
             {
                 // This is a temporary workaround for non-precise instr size
