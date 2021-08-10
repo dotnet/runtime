@@ -12,4 +12,8 @@
  * have to end with a func_flag_end_of_array (0x01) entry.
  **/
 
-FCClassElement("", "", NULL)
+FCFuncStart(gInteropNativeLibraryFuncs)
+	QCFuncElement("GetEntryPointModuleHandleInternal", netcore_lookup_self_native_handle)
+FCFuncEnd()
+
+FCClassElement("NativeLibary", "System.Runtime.InteropServices", gInteropNativeLibraryFuncs)

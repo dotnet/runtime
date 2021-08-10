@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.ComponentModel;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Threading;
@@ -255,6 +256,25 @@ namespace System.Runtime.InteropServices
             }
 
             return resolver(libraryName, assembly, hasDllImportSearchPathFlags ? (DllImportSearchPath?)dllImportSearchPathFlags : null);
+        }
+
+        [DllImport(RuntimeHelpers.QCall, SetLastError = true)]
+        private static extern IntPtr GetEntryPointModuleHandleInternal();
+
+        /// <summary>
+        /// Get a handle that can be used with <see cref="GetExport" /> or <see cref="TryGetExport" /> to resolve exports from the entry point module.
+        /// </summary>
+        /// <returns> The handle that can be used to resolve exports from the entry point module.</returns>
+        public static IntPtr GetEntryPointModuleHandle()
+        {
+            IntPtr result = GetEntryPointModuleHandleInternal();
+            // I don't know when a failure case can occur here, but checking for it and throwing an exception
+            // if we encounter it.
+            if (result == IntPtr.Zero)
+            {
+                Marshal.ThrowExceptionForHR(Marshal.GetLastPInvokeError());
+            }
+            return result;
         }
     }
 }

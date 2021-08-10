@@ -71,3 +71,22 @@ INT_PTR QCALLTYPE NativeLibraryNative::GetSymbol(INT_PTR handle, LPCWSTR symbolN
     return address;
 }
 
+//static
+INT_PTR QCALLTYPE NativeLibraryNative::GetEntryPointModuleHandle()
+{
+    QCALL_CONTRACT;
+
+    INT_PTR handle = NULL;
+
+    BEGIN_QCALL;
+
+#if TARGET_WINDOWS
+    handle = GetModuleHandle(NULL);
+#else
+    handle = dlopen(NULL);
+#endif
+
+    END_QCALL;
+
+    return handle;
+}

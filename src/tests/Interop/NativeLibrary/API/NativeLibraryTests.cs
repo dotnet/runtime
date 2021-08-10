@@ -179,6 +179,11 @@ public class NativeLibraryTest
             success &= EXPECT(TryGetLibraryExport(handle, "NonNativeSum"), TestResult.ReturnFailure);
 
             NativeLibrary.Free(handle);
+
+            // -----------------------------------------------
+            //         GetLibraryExport Tests
+            // -----------------------------------------------
+            success &= EXPECT(GetEntryPointModuleHandle());
         }
         catch (Exception e)
         {
@@ -361,6 +366,21 @@ public class NativeLibraryTest
                 return TestResult.ReturnNull;
             if (RunExportedFunction(address, 1, 1) != 2)
                 return TestResult.IncorrectEvaluation;
+            return TestResult.Success;
+        });
+    }
+
+    static TestResult GetEntryPointModuleHandle()
+    {
+        CurrentTest = nameof(GetEntryPointModuleHandle);
+        return Run(() => {
+            IntPtr moduleHandle = NativeLibrary.GetEntryPointModuleHandle();
+            // Get a well-known export name from corerun to validate that we have a valid handle.
+            bool success = NativeLibrary.TryGetExport(moduleHandle, "GetCurrentClrDetails", out address);
+            if (!success)
+                return TestResult.ReturnFailure;
+            if (address == IntPtr.Zero)
+                return TestResult.ReturnNull;
             return TestResult.Success;
         });
     }
