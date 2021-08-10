@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Collections.Specialized;
 using System.IO;
+using System.Text.Json.Serialization.Metadata;
 using System.Threading.Tasks;
 using Xunit;
 
@@ -638,6 +639,36 @@ namespace System.Text.Json.Serialization.Tests
 
             dictionary = JsonSerializer.Deserialize<Dictionary<int, string>>(expectedJson);
             Assert.True(dictionary.ContainsKey(1));
+        }
+
+        [Fact]
+        public static void KeyWithCustomPrimitiveConverter_JsonTypeInfo_ThrowsNotSupportedException()
+        {
+            JsonSerializerOptions options = new();
+            JsonTypeInfo<int> keyInfo = JsonMetadataServices.CreateValueInfo<int>(options, new ConverterForInt32());
+            JsonTypeInfo<string> valueInfo = JsonMetadataServices.CreateValueInfo<string>(options, JsonMetadataServices.StringConverter);
+            JsonTypeInfo<Dictionary<int, string>> dictionaryInfo = JsonMetadataServices.CreateDictionaryInfo<Dictionary<int, string>, int, string>(
+                options,
+                createObjectFunc: () => new(),
+                keyInfo, valueInfo,
+                numberHandling: default,
+                serializeFunc: null
+            );
+
+            var dictionary = new Dictionary<int, string> { [1] = "1" };
+
+            NotSupportedException ex = Assert.Throws<NotSupportedException>(() => JsonSerializer.Serialize(dictionary, dictionaryInfo));
+            ValidateException(ex);
+
+            string json = @"{""1"":""1""}";
+            ex = Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize<Dictionary<int, string>>(json, dictionaryInfo));
+            ValidateException(ex);
+
+            static void ValidateException(NotSupportedException ex)
+            {
+                Assert.Contains(nameof(Int32), ex.Message);
+                Assert.Contains(nameof(ConverterForInt32), ex.Message);
+            }
         }
 
         [Fact]
