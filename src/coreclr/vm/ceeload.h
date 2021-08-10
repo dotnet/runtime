@@ -1093,15 +1093,6 @@ typedef SHash<DynamicILBlobTraits> DynamicILBlobTable;
 typedef DPTR(DynamicILBlobTable) PTR_DynamicILBlobTable;
 
 
-// ESymbolFormat specified the format used by a symbol stream
-typedef enum
-{
-    eSymbolFormatNone,      /* symbol format to use not yet determined */
-    eSymbolFormatPDB,       /* PDB format from diasymreader.dll - only safe for trusted scenarios */
-    eSymbolFormatILDB       /* ILDB format from ildbsymbols.dll */
-}ESymbolFormat;
-
-
 #ifdef FEATURE_COMINTEROP
 
 //---------------------------------------------------------------------------------------
@@ -1433,9 +1424,6 @@ private:
     // Storage for the in-memory symbol stream if any
     // Debugger may retrieve this from out-of-process.
     PTR_CGrowableStream     m_pIStreamSym;
-
-    // Format the above stream is in (if any)
-    ESymbolFormat           m_symbolFormat;
 
     // For protecting additions to the heap
     CrstExplicitInit        m_LookupTableCrst;
@@ -1940,54 +1928,29 @@ protected:
 
     // Get the in-memory symbol stream for this module, if any.
     // If none, this will return null.  This is used by modules loaded in-memory (eg. from a byte-array)
-    // and by dynamic modules.  Callers that actually do anything with the return value will almost
-    // certainly want to check GetInMemorySymbolStreamFormat to know how to interpret the bytes
-    // in the stream.
+    // and by dynamic modules.
     PTR_CGrowableStream GetInMemorySymbolStream()
     {
         LIMITED_METHOD_CONTRACT;
         SUPPORTS_DAC;
 
-        // Symbol format should be "none" if-and-only-if our stream is null
-        // If this fails, it may mean somebody is trying to examine this module after
-        // code:Module::Destruct has been called.
-        _ASSERTE( (m_symbolFormat == eSymbolFormatNone) == (m_pIStreamSym == NULL) );
-
         return m_pIStreamSym;
-    }
-
-    // Get the format of the in-memory symbol stream for this module, or
-    // eSymbolFormatNone if no in-memory symbols.
-    ESymbolFormat GetInMemorySymbolStreamFormat()
-    {
-        LIMITED_METHOD_CONTRACT;
-        SUPPORTS_DAC;
-
-        // Symbol format should be "none" if-and-only-if our stream is null
-        // If this fails, it may mean somebody is trying to examine this module after
-        // code:Module::Destruct has been called.
-        _ASSERTE( (m_symbolFormat == eSymbolFormatNone) == (m_pIStreamSym == NULL) );
-
-        return m_symbolFormat;
     }
 
 #ifndef DACCESS_COMPILE
     // Set the in-memory stream for debug symbols
     // This must only be called when there is no existing stream.
     // This takes an AddRef on the supplied stream.
-    void SetInMemorySymbolStream(CGrowableStream *pStream, ESymbolFormat symbolFormat)
+    void SetInMemorySymbolStream(CGrowableStream *pStream)
     {
         LIMITED_METHOD_CONTRACT;
 
         // Must have provided valid stream data
         CONSISTENCY_CHECK(pStream != NULL);
-        CONSISTENCY_CHECK(symbolFormat != eSymbolFormatNone);
 
         // we expect set to only be called once
         CONSISTENCY_CHECK(m_pIStreamSym == NULL);
-        CONSISTENCY_CHECK(m_symbolFormat == eSymbolFormatNone);
 
-        m_symbolFormat = symbolFormat;
         m_pIStreamSym = pStream;
         m_pIStreamSym->AddRef();
     }
@@ -2000,10 +1963,6 @@ protected:
         {
             m_pIStreamSym->Release();
             m_pIStreamSym = NULL;
-            // We could set m_symbolFormat to eSymbolFormatNone to be consistent with not having
-            // a stream, but no-one should be trying to look at it after destruct time, so it's
-            // better to leave it inconsistent and get an ASSERT if someone tries to examine the
-            // module's sybmol stream after the module was destructed.
         }
     }
 
@@ -3194,7 +3153,6 @@ class ReflectionModule : public Module
     ICeeGenInternal * m_pCeeFileGen;
 private:
     Assembly             *m_pCreatingAssembly;
-    ISymUnmanagedWriter  *m_pISymUnmanagedWriter;
     RefClassWriter       *m_pInMemoryWriter;
 
 
@@ -3211,25 +3169,6 @@ private:
     bool m_fSuppressMetadataCapture;
 
 #if !defined DACCESS_COMPILE && !defined CROSSGEN_COMPILE
-    // Returns true iff metadata capturing is suppressed
-    bool IsMetadataCaptureSuppressed();
-
-    // Toggle whether CaptureModuleMetaDataToMemory should do antyhing. This can be an important perf win to
-    // allow batching up metadata capture. Use SuppressMetadataCaptureHolder to ensure they're balanced.
-    // These are not nestable.
-    void SuppressMetadataCapture();
-    void ResumeMetadataCapture();
-
-    // Glue functions for holders.
-    static void SuppressCaptureWrapper(ReflectionModule * pModule)
-    {
-        pModule->SuppressMetadataCapture();
-    }
-    static void ResumeCaptureWrapper(ReflectionModule * pModule)
-    {
-        pModule->ResumeMetadataCapture();
-    }
-
     ReflectionModule(Assembly *pAssembly, mdFile token, PEFile *pFile);
 #endif // !DACCESS_COMPILE && !CROSSGEN_COMPILE
 
@@ -3272,64 +3211,6 @@ public:
 
         return m_pInMemoryWriter;
     }
-
-    ISymUnmanagedWriter *GetISymUnmanagedWriter()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return m_pISymUnmanagedWriter;
-    }
-
-    // Note: we now use the same writer instance for the life of a module,
-    // so there should no longer be any need for the extra indirection.
-    ISymUnmanagedWriter **GetISymUnmanagedWriterAddr()
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        // We must have setup the writer before trying to get
-        // the address for it. Any calls to this before a
-        // SetISymUnmanagedWriter are very incorrect.
-        _ASSERTE(m_pISymUnmanagedWriter != NULL);
-
-        return &m_pISymUnmanagedWriter;
-    }
-
-#ifndef DACCESS_COMPILE
-#ifndef CROSSGEN_COMPILE
-
-    typedef Wrapper<
-        ReflectionModule*,
-        ReflectionModule::SuppressCaptureWrapper,
-        ReflectionModule::ResumeCaptureWrapper> SuppressMetadataCaptureHolder;
-#endif // !CROSSGEN_COMPILE
-
-    HRESULT SetISymUnmanagedWriter(ISymUnmanagedWriter *pWriter)
-    {
-        CONTRACTL
-        {
-            NOTHROW;
-            GC_NOTRIGGER;
-            INJECT_FAULT(return E_OUTOFMEMORY;);
-        }
-        CONTRACTL_END
-
-
-        // Setting to NULL when we've never set a writer before should
-        // do nothing.
-        if ((pWriter == NULL) && (m_pISymUnmanagedWriter == NULL))
-            return S_OK;
-
-        if (m_pISymUnmanagedWriter != NULL)
-        {
-            // We shouldn't be trying to replace an existing writer anymore
-            _ASSERTE( pWriter == NULL );
-
-            m_pISymUnmanagedWriter->Release();
-        }
-
-        m_pISymUnmanagedWriter = pWriter;
-        return S_OK;
-    }
-#endif // !DACCESS_COMPILE
 
     // Eagerly serialize the metadata to a buffer that the debugger can retrieve.
     void CaptureModuleMetaDataToMemory();
