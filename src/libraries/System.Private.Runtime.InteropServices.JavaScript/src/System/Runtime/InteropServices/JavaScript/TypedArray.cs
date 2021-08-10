@@ -131,6 +131,8 @@ namespace System.Runtime.InteropServices.JavaScript
         {
             get
             {
+                AssertNotDisposed();
+
                 object jsValue = Interop.Runtime.GetByIndex(JSHandle, i, out int exception);
 
                 if (exception != 0)
@@ -141,6 +143,8 @@ namespace System.Runtime.InteropServices.JavaScript
             }
             set
             {
+                AssertNotDisposed();
+
                 object res = Interop.Runtime.SetByIndex(JSHandle, i, value, out int exception);
 
                 if (exception != 0)
@@ -159,6 +163,8 @@ namespace System.Runtime.InteropServices.JavaScript
 
         public U[] ToArray()
         {
+            AssertNotDisposed();
+
             object res = Interop.Runtime.TypedArrayToArray(JSHandle, out int exception);
 
             if (exception != 0)
@@ -194,6 +200,8 @@ namespace System.Runtime.InteropServices.JavaScript
 
         public unsafe int CopyTo(Span<U> span)
         {
+            AssertNotDisposed();
+
             ReadOnlySpan<byte> bytes = MemoryMarshal.AsBytes(span);
             fixed (byte* ptr = bytes)
             {
@@ -206,6 +214,8 @@ namespace System.Runtime.InteropServices.JavaScript
 
         public unsafe int CopyFrom(ReadOnlySpan<U> span)
         {
+            AssertNotDisposed();
+
             // source has to be instantiated.
             if (span == null || span.Length == 0)
             {

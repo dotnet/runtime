@@ -3,6 +3,7 @@
 
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Runtime.CompilerServices;
 using Microsoft.Win32.SafeHandles;
 
 namespace System.Runtime.InteropServices.JavaScript
@@ -42,6 +43,7 @@ namespace System.Runtime.InteropServices.JavaScript
 
         internal void AddInFlight()
         {
+            AssertNotDisposed();
             lock (this)
             {
                 InFlightCounter++;
@@ -67,6 +69,12 @@ namespace System.Runtime.InteropServices.JavaScript
                     InFlight = null;
                 }
             }
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal void AssertNotDisposed()
+        {
+            if (IsDisposed) throw new ObjectDisposedException($"Cannot access a disposed {GetType().Name}.");
         }
 
         protected override bool ReleaseHandle()

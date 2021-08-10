@@ -81,6 +81,8 @@ namespace System.Runtime.InteropServices.JavaScript
         {
             get
             {
+                AssertNotDisposed();
+
                 object indexValue = Interop.Runtime.GetByIndex(JSHandle, i, out int exception);
 
                 if (exception != 0)
@@ -90,6 +92,8 @@ namespace System.Runtime.InteropServices.JavaScript
             }
             set
             {
+                AssertNotDisposed();
+
                 object res = Interop.Runtime.SetByIndex(JSHandle, i, value, out int exception);
 
                 if (exception != 0)

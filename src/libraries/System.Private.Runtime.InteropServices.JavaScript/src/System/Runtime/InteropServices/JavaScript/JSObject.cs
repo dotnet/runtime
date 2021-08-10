@@ -36,6 +36,8 @@ namespace System.Runtime.InteropServices.JavaScript
         /// </returns>
         public object Invoke(string method, params object?[] args)
         {
+            AssertNotDisposed();
+
             object res = Interop.Runtime.InvokeJSWithArgs(JSHandle, method, args, out int exception);
             if (exception != 0)
                 throw new JSException((string)res);
@@ -52,6 +54,8 @@ namespace System.Runtime.InteropServices.JavaScript
 
         public int AddEventListener(string name, Action<JSObject> listener, EventListenerOptions? options = null)
         {
+            AssertNotDisposed();
+
             var optionsDict = options.HasValue
                 ? new JSObject()
                 : null;
@@ -85,6 +89,8 @@ namespace System.Runtime.InteropServices.JavaScript
 
         public void RemoveEventListener(string name, Action<JSObject>? listener, EventListenerOptions? options = null)
         {
+            AssertNotDisposed();
+
             if (listener == null)
                 return;
             var jsfunc = Runtime.GetJSOwnedObjectGCHandle(listener);
@@ -93,6 +99,8 @@ namespace System.Runtime.InteropServices.JavaScript
 
         public void RemoveEventListener(string name, int listenerGCHandle, EventListenerOptions? options = null)
         {
+            AssertNotDisposed();
+
             var ret = Interop.Runtime.RemoveEventListener(JSHandle, name, listenerGCHandle, options?.Capture ?? false);
             if (ret != null)
                 throw new JSException(ret);
@@ -122,6 +130,8 @@ namespace System.Runtime.InteropServices.JavaScript
         /// </returns>
         public object GetObjectProperty(string name)
         {
+            AssertNotDisposed();
+
             object propertyValue = Interop.Runtime.GetObjectProperty(JSHandle, name, out int exception);
             if (exception != 0)
                 throw new JSException((string)propertyValue);
@@ -142,6 +152,8 @@ namespace System.Runtime.InteropServices.JavaScript
         /// <param name="hasOwnProperty"></param>
         public void SetObjectProperty(string name, object value, bool createIfNotExists = true, bool hasOwnProperty = false)
         {
+            AssertNotDisposed();
+
             object setPropResult = Interop.Runtime.SetObjectProperty(JSHandle, name, value, createIfNotExists, hasOwnProperty, out int exception);
             if (exception != 0)
                 throw new JSException($"Error setting {name} on (js-obj js '{JSHandle}')");

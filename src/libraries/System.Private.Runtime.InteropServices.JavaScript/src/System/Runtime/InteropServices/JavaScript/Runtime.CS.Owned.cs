@@ -39,6 +39,8 @@ namespace System.Runtime.InteropServices.JavaScript
 
         public static int GetCsOwnedObjectJsHandle(JSObject target, int shouldAddInflight)
         {
+            target.AssertNotDisposed();
+
             if (shouldAddInflight != 0)
             {
                 target.AddInFlight();
@@ -91,6 +93,8 @@ namespace System.Runtime.InteropServices.JavaScript
 
         internal static bool ReleaseCsOwnedObject(JSObject objToRelease)
         {
+            objToRelease.AssertNotDisposed();
+
             lock (_csOwnedObjects)
             {
                 _csOwnedObjects.Remove(objToRelease.JSHandle);

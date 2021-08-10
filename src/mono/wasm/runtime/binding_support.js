@@ -559,7 +559,8 @@ var BindingSupportLib = {
 		},
 
 		_unbox_cs_owned_root_as_js_object: function (root) {
-			var js_handle = this._get_cs_owned_object_js_handle(root.value, true);
+			// we don't need in-flight reference as we already have it rooted here
+			var js_handle = this._get_cs_owned_object_js_handle(root.value, false);
 			var js_obj = BINDING.mono_wasm_get_jsobj_from_js_handle (js_handle);
 			return js_obj;
 		},
