@@ -72,10 +72,21 @@ namespace System.Runtime.InteropServices.JavaScript
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+#if DEBUG
+        public void AssertNotDisposed()
+#else
         internal void AssertNotDisposed()
+#endif
         {
             if (IsDisposed) throw new ObjectDisposedException($"Cannot access a disposed {GetType().Name}.");
         }
+
+#if DEBUG
+        public void AssertInFlight(int expectedInFlightCount)
+        {
+            if (InFlightCounter != expectedInFlightCount) throw new InvalidProgramException($"Invalid InFlightCounter, expected {expectedInFlightCount}, actual {InFlightCounter}");
+        }
+#endif
 
         protected override bool ReleaseHandle()
         {
