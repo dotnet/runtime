@@ -6,6 +6,8 @@
   <PropertyGroup>
     <DebugType>None</DebugType>
     <Optimize>True</Optimize>
+    <!-- https://github.com/dotnet/runtime/issues/57040 -->
+    <JitOptimizationSensitive Condition="'$(TargetArchitecture)' == 'arm' And '$(TargetOS)' != 'Windows'">true</JitOptimizationSensitive>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="$(MSBuildProjectName).cs" />
