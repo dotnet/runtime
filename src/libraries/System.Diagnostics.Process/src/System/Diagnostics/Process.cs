@@ -524,6 +524,8 @@ namespace System.Diagnostics
         ///       or sets which processors the threads in this process can be scheduled to run on.
         ///    </para>
         /// </devdoc>
+        [SupportedOSPlatform("windows")]
+        [SupportedOSPlatform("linux")]
         public IntPtr ProcessorAffinity
         {
             get
