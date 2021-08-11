@@ -222,7 +222,7 @@ namespace System.ComponentModel
             "Scale" => SR.PropertyCategoryScale,
             "Text" => SR.PropertyCategoryText,
             "WindowStyle" => SR.PropertyCategoryWindowStyle,
-            _ => SR.GetResourceString("PropertyCategory" + value, value)
+            _ => null
         };
 
         public override bool IsDefaultAttribute() => Category == Default.Category;

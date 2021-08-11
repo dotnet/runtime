@@ -4,7 +4,7 @@
   <ItemGroup>
     <TestConsoleAppSourceFiles Include="VerifyCategoryNamesDontGetTrimmed.cs">
       <!-- Setting the Trimming feature switch to make sure that the Resources get trimmed by the linker
-      as this test will ensure Category names will use default values whe the switch is on. -->
+      as this test will ensure Category names will use default values when the switch is on. -->
       <EnabledFeatureSwitches>System.Resources.UseSystemResourceKeys</EnabledFeatureSwitches>
     </TestConsoleAppSourceFiles>
   </ItemGroup>

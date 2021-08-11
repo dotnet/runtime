@@ -16,7 +16,7 @@ namespace Test
     {
         public static int Main()
         {
-            if (GetEnumCategory(AnEnum.Action) == "Action" && GetEnumCategory(AnEnum.Something) == "Something")
+            if (GetEnumCategory(AnEnum.Action) == "Action" && GetEnumCategory(AnEnum.Something) == "Something" && GetEnumCategory(AnEnum.WindowStyle) == "Window Style")
             {
                 return 100;
             }
@@ -48,6 +48,9 @@ namespace Test
         Action = 1,
 
         [Category("Something")] // Custom category
-        Something = 2
+        Something = 2,
+
+        [Category("WindowStyle")] // Built-in category with localized string different than category name.
+        WindowStyle = 3,
     }
 }
