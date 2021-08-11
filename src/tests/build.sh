@@ -64,14 +64,6 @@ generate_layout()
 
     __ProjectFilesDir="$__TestDir"
     __TestBinDir="$__TestWorkingDir"
-
-    if [[ "$__RebuildTests" -ne 0 ]]; then
-        if [[ -d "${__TestBinDir}" ]]; then
-            echo "Removing tests build dir: ${__TestBinDir}"
-            rm -rf "$__TestBinDir"
-        fi
-    fi
-
     __CMakeBinDir="${__TestBinDir}"
 
     if [[ -z "$__TestIntermediateDir" ]]; then
@@ -374,10 +366,6 @@ build_MSBuild_projects()
             buildArgs+=("/p:BuildTestDir=${__BuildTestDir}");
             buildArgs+=("/p:BuildTestTree=${__BuildTestTree}");
 
-            if [[ "$__BuildTestAll" -ne 0 ]]; then
-                buildArgs+=("/t:rebuild");
-            fi
-
             # Disable warnAsError - coreclr issue 19922
             nextCommand="\"$__RepoRootDir/eng/common/msbuild.sh\" $__ArcadeScriptArgs --warnAsError false ${buildArgs[@]}"
             echo "Building step '$stepName' testGroupToBuild=$testGroupToBuild via $nextCommand"
@@ -442,7 +430,6 @@ usage_list+=("-generatelayoutonly: only pull down dependencies and build coreroo
 usage_list+=("-test:xxx - only build a single test project");
 usage_list+=("-dir:xxx - build all tests in a given directory");
 usage_list+=("-tree:xxx - build all tests in a given subtree");
-usage_list+=("-all - rebuild all the specified tests");
 
 usage_list+=("-crossgen2: Precompiles the framework managed assemblies in coreroot using the Crossgen2 compiler.")
 usage_list+=("-priority1: include priority=1 tests in the build.")
@@ -522,10 +509,6 @@ handle_arguments_local() {
             __BuildTestTree="$__BuildTestTree${parts[1]}%3B"
             ;;
 
-        all|-all)
-            __BuildTestAll=1
-            ;;
-
         runtests|-runtests)
             __RunTests=1
             ;;
@@ -578,7 +561,6 @@ __TestBuildMode=
 __BuildTestProject="%3B"
 __BuildTestDir="%3B"
 __BuildTestTree="%3B"
-__BuildTestAll=0
 __DotNetCli="$__RepoRootDir/dotnet.sh"
 __GenerateLayoutOnly=
 __IsMSBuildOnNETCoreSupported=0
@@ -647,6 +629,13 @@ if [[ -z "$HOME" ]]; then
     HOME="$__ProjectDir"/temp_home
     export HOME
     echo "HOME not defined; setting it to $HOME"
+fi
+
+if [[ "$__RebuildTests" -ne 0 ]]; then
+    if [[ -d "${__TestWorkingDir}" ]]; then
+        echo "Removing tests build dir: ${__TestWorkingDir}"
+        rm -rf "__TestWorkingDir"
+    fi
 fi
 
 if [[ (-z "$__GenerateLayoutOnly") && (-z "$__BuildTestWrappersOnly") && ("$__MonoAot" -eq 0) ]]; then

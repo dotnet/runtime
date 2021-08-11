@@ -41,10 +41,10 @@ set processedArgs=
 set __UnprocessedBuildArgs=
 set __CommonMSBuildArgs=
 
+set __RebuildTests=0
 set __BuildTestProject=%%3B
 set __BuildTestDir=%%3B
 set __BuildTestTree=%%3B
-set __BuildTestAll=
 
 set __SkipRestorePackages=
 set __SkipManaged=
@@ -100,10 +100,11 @@ if /i "%1" == "skipnative"            (set __SkipNative=1&set __CopyNativeProjec
 if /i "%1" == "skiptestwrappers"      (set __SkipTestWrappers=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "skipgeneratelayout"    (set __SkipGenerateLayout=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 
-if /i "%1" == "test"                  (set __BuildTestProject=!__BuildTestProject!%2%%3B&shift&shift&goto Arg_Loop)
-if /i "%1" == "dir"                   (set __BuildTestDir=!__BuildTestDir!%2%%3B&shift&shift&goto Arg_Loop)
-if /i "%1" == "tree"                  (set __BuildTestTree=!__BuildTestTree!%2%%3B&shift&shift&goto Arg_Loop)
-if /i "%1" == "all"                   (set __BuildTestAll=1&shift&goto Arg_Loop)
+if /i "%1" == "rebuild"               (set __RebuildTests=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
+
+if /i "%1" == "test"                  (set __BuildTestProject=!__BuildTestProject!%2%%3B&set processedArgs=!processedArgs! %1 %2&shift&shift&goto Arg_Loop)
+if /i "%1" == "dir"                   (set __BuildTestDir=!__BuildTestDir!%2%%3B&set processedArgs=!processedArgs! %1 %2&shift&shift&goto Arg_Loop)
+if /i "%1" == "tree"                  (set __BuildTestTree=!__BuildTestTree!%2%%3B&set processedArgs=!processedArgs! %1 %2&shift&shift&goto Arg_Loop)
 
 if /i "%1" == "copynativeonly"        (set __CopyNativeTestBinaries=1&set __SkipNative=1&set __CopyNativeProjectsAfterCombinedTestBuild=false&set __SkipGenerateLayout=1&set __SkipTestWrappers=1&set __SkipCrossgenFramework=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "generatelayoutonly"    (set __SkipManaged=1&set __SkipNative=1&set __CopyNativeProjectsAfterCombinedTestBuild=false&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
@@ -165,6 +166,11 @@ set "__BinDir=%__RootBinDir%\bin\coreclr\%__OSPlatformConfig%"
 set "__TestRootDir=%__RootBinDir%\tests\coreclr"
 set "__TestBinDir=%__TestRootDir%\%__OSPlatformConfig%"
 set "__TestIntermediatesDir=%__TestRootDir%\obj\%__OSPlatformConfig%"
+
+if "%__RebuildTests%" == "1" (
+    echo Removing tests build dir^: !__TestBinDir!
+    rmdir /s /q !__TestBinDir!
+)
 
 if not defined XunitTestBinBase set XunitTestBinBase=%__TestBinDir%\
 set "CORE_ROOT=%XunitTestBinBase%\Tests\Core_Root"
@@ -374,10 +380,6 @@ for /l %%G in (1, 1, %__NumberOfTestGroups%) do (
         set __MSBuildBuildArgs=!__MSBuildBuildArgs! /p:BuildTestProject=!__BuildTestProject!
         set __MSBuildBuildArgs=!__MSBuildBuildArgs! /p:BuildTestDir=!__BuildTestDir!
         set __MSBuildBuildArgs=!__MSBuildBuildArgs! /p:BuildTestTree=!__BuildTestTree!
-
-        if "!__BuildTestAll!" == "1" (
-            set __MSBuildBuildArgs=!__MSBuildBuildArgs! /t:rebuild
-        )
 
         echo Running: msbuild !__MSBuildBuildArgs!
         !__CommonMSBuildCmdPrefix! !__MSBuildBuildArgs!
