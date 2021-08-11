@@ -1010,7 +1010,6 @@ Namespace Microsoft.VisualBasic
         End Sub
 
         <UnsupportedOSPlatform("ios")>
-        <UnsupportedOSPlatform("maccatalyst")>
         <UnsupportedOSPlatform("macos")>
         <UnsupportedOSPlatform("tvos")>
         Public Function InputString(ByVal FileNumber As Integer, ByVal CharCount As Integer) As String
@@ -1051,7 +1050,6 @@ Namespace Microsoft.VisualBasic
         End Function
 
         <UnsupportedOSPlatform("ios")>
-        <UnsupportedOSPlatform("maccatalyst")>
         <UnsupportedOSPlatform("macos")>
         <UnsupportedOSPlatform("tvos")>
         Public Sub Lock(ByVal FileNumber As Integer)
@@ -1060,7 +1058,6 @@ Namespace Microsoft.VisualBasic
         End Sub
 
         <UnsupportedOSPlatform("ios")>
-        <UnsupportedOSPlatform("maccatalyst")>
         <UnsupportedOSPlatform("macos")>
         <UnsupportedOSPlatform("tvos")>
         Public Sub Lock(ByVal FileNumber As Integer, ByVal Record As Long)
@@ -1069,7 +1066,6 @@ Namespace Microsoft.VisualBasic
         End Sub
 
         <UnsupportedOSPlatform("ios")>
-        <UnsupportedOSPlatform("maccatalyst")>
         <UnsupportedOSPlatform("macos")>
         <UnsupportedOSPlatform("tvos")>
         Public Sub Lock(ByVal FileNumber As Integer, ByVal FromRecord As Long, ByVal ToRecord As Long)
@@ -1078,7 +1074,6 @@ Namespace Microsoft.VisualBasic
         End Sub
 
         <UnsupportedOSPlatform("ios")>
-        <UnsupportedOSPlatform("maccatalyst")>
         <UnsupportedOSPlatform("macos")>
         <UnsupportedOSPlatform("tvos")>
         Public Sub Unlock(ByVal FileNumber As Integer)
@@ -1087,7 +1082,6 @@ Namespace Microsoft.VisualBasic
         End Sub
 
         <UnsupportedOSPlatform("ios")>
-        <UnsupportedOSPlatform("maccatalyst")>
         <UnsupportedOSPlatform("macos")>
         <UnsupportedOSPlatform("tvos")>
         Public Sub Unlock(ByVal FileNumber As Integer, ByVal Record As Long)
@@ -1096,7 +1090,6 @@ Namespace Microsoft.VisualBasic
         End Sub
 
         <UnsupportedOSPlatform("ios")>
-        <UnsupportedOSPlatform("maccatalyst")>
         <UnsupportedOSPlatform("macos")>
         <UnsupportedOSPlatform("tvos")>
         Public Sub Unlock(ByVal FileNumber As Integer, ByVal FromRecord As Long, ByVal ToRecord As Long)

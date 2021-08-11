@@ -32,9 +32,6 @@ System.Runtime.CompilerServices.Unsafe</PackageDescription>
     <Reference Include="$(CoreAssembly)"
                Condition="'$(TargetFramework)' != 'netstandard2.0'" />
   </ItemGroup>
-  <ItemGroup>
-    <NETStandardCompatError Include="netcoreapp2.0" Supported="$(NetCoreAppMinimum)" />
-  </ItemGroup>
 
   <Target Name="GenerateVersionFile"
           DependsOnTargets="GetAssemblyVersion;ResolveReferences"

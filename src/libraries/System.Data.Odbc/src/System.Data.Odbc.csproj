@@ -177,7 +177,4 @@ System.Data.Odbc.OdbcTransaction</PackageDescription>
     <Reference Include="System.Transactions.Local" />
     <Reference Include="System.Xml.ReaderWriter" />
   </ItemGroup>
-  <ItemGroup>
-    <NETStandardCompatError Include="netcoreapp2.0" Supported="$(NetCoreAppMinimum)" />
-  </ItemGroup>
 </Project>

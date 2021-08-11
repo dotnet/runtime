@@ -181,7 +181,6 @@ namespace System.Security.Cryptography.X509Certificates
         /// The key contents are corrupt or could not be read successfully.
         /// </exception>
         [UnsupportedOSPlatform("ios")]
-        [UnsupportedOSPlatform("maccatalyst")]
         [UnsupportedOSPlatform("tvos")]
         public DSA? GetDSAPublicKey()
         {

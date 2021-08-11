@@ -133,7 +133,6 @@ namespace System.Net.Http
         [UnsupportedOSPlatform("browser")]
         [UnsupportedOSPlatform("ios")]
         [UnsupportedOSPlatform("tvos")]
-        [UnsupportedOSPlatform("maccatalyst")]
         public ICredentials? DefaultProxyCredentials
         {
             get => throw new PlatformNotSupportedException();
@@ -253,7 +252,6 @@ namespace System.Net.Http
         [UnsupportedOSPlatform("browser")]
         [UnsupportedOSPlatform("ios")]
         [UnsupportedOSPlatform("tvos")]
-        [UnsupportedOSPlatform("maccatalyst")]
         public int MaxConnectionsPerServer
         {
             get => throw new PlatformNotSupportedException();
@@ -297,7 +295,6 @@ namespace System.Net.Http
         [UnsupportedOSPlatform("browser")]
         [UnsupportedOSPlatform("ios")]
         [UnsupportedOSPlatform("tvos")]
-        [UnsupportedOSPlatform("maccatalyst")]
         public int MaxResponseHeadersLength
         {
             get => throw new PlatformNotSupportedException();
@@ -307,7 +304,6 @@ namespace System.Net.Http
         [UnsupportedOSPlatform("android")]
         [UnsupportedOSPlatform("ios")]
         [UnsupportedOSPlatform("tvos")]
-        [UnsupportedOSPlatform("maccatalyst")]
         public ClientCertificateOption ClientCertificateOptions
         {
             get => throw new PlatformNotSupportedException();
@@ -318,7 +314,6 @@ namespace System.Net.Http
         [UnsupportedOSPlatform("browser")]
         [UnsupportedOSPlatform("ios")]
         [UnsupportedOSPlatform("tvos")]
-        [UnsupportedOSPlatform("maccatalyst")]
         public X509CertificateCollection ClientCertificates
         {
             get
@@ -331,7 +326,6 @@ namespace System.Net.Http
         [UnsupportedOSPlatform("browser")]
         [UnsupportedOSPlatform("ios")]
         [UnsupportedOSPlatform("tvos")]
-        [UnsupportedOSPlatform("maccatalyst")]
         public Func<HttpRequestMessage, X509Certificate2?, X509Chain?, SslPolicyErrors, bool>? ServerCertificateCustomValidationCallback
         {
             get => throw new PlatformNotSupportedException();
@@ -342,7 +336,6 @@ namespace System.Net.Http
         [UnsupportedOSPlatform("browser")]
         [UnsupportedOSPlatform("ios")]
         [UnsupportedOSPlatform("tvos")]
-        [UnsupportedOSPlatform("maccatalyst")]
         public bool CheckCertificateRevocationList
         {
             get => throw new PlatformNotSupportedException();
@@ -353,7 +346,6 @@ namespace System.Net.Http
         [UnsupportedOSPlatform("browser")]
         [UnsupportedOSPlatform("ios")]
         [UnsupportedOSPlatform("tvos")]
-        [UnsupportedOSPlatform("maccatalyst")]
         public SslProtocols SslProtocols
         {
             get => throw new PlatformNotSupportedException();
@@ -363,7 +355,6 @@ namespace System.Net.Http
         [UnsupportedOSPlatform("android")]
         [UnsupportedOSPlatform("ios")]
         [UnsupportedOSPlatform("tvos")]
-        [UnsupportedOSPlatform("maccatalyst")]
         public IDictionary<string, object?> Properties => throw new PlatformNotSupportedException();
 
         //
@@ -374,7 +365,6 @@ namespace System.Net.Http
         [UnsupportedOSPlatform("browser")]
         //[UnsupportedOSPlatform("ios")]
         //[UnsupportedOSPlatform("tvos")]
-        //[UnsupportedOSPlatform("maccatalyst")]
         protected internal override HttpResponseMessage Send(HttpRequestMessage request,
             CancellationToken cancellationToken)
         {
@@ -403,7 +393,6 @@ namespace System.Net.Http
         [UnsupportedOSPlatform("browser")]
         [UnsupportedOSPlatform("ios")]
         [UnsupportedOSPlatform("tvos")]
-        [UnsupportedOSPlatform("maccatalyst")]
         public static Func<HttpRequestMessage, X509Certificate2?, X509Chain?, SslPolicyErrors, bool> DangerousAcceptAnyServerCertificateValidator =>
             throw new PlatformNotSupportedException();
 

@@ -35,7 +35,6 @@ namespace System.Security.Cryptography.X509Certificates
         public byte[] CreateSigningRequest(System.Security.Cryptography.X509Certificates.X509SignatureGenerator signatureGenerator) { throw null; }
     }
     [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("ios")]
-    [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("maccatalyst")]
     [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("tvos")]
     public static partial class DSACertificateExtensions
     {
@@ -70,7 +69,6 @@ namespace System.Security.Cryptography.X509Certificates
         public static System.Security.Cryptography.X509Certificates.PublicKey CreateFromSubjectPublicKeyInfo(System.ReadOnlySpan<byte> source, out int bytesRead) { throw null; }
         public byte[] ExportSubjectPublicKeyInfo() { throw null; }
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("ios")]
-        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("maccatalyst")]
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("tvos")]
         public System.Security.Cryptography.DSA? GetDSAPublicKey() { throw null; }
         public System.Security.Cryptography.ECDiffieHellman? GetECDiffieHellmanPublicKey() { throw null; }
