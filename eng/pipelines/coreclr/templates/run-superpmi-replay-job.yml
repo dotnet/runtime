@@ -18,7 +18,6 @@ parameters:
   liveLibrariesBuildConfig: ''    # optional -- live-live libraries configuration to use for the run
   runtimeType: 'coreclr'          # optional -- Sets the runtime as coreclr or mono
   codeGenType: 'JIT'              # optional -- Decides on the codegen technology if running on mono
-  projectFile: 'superpmi.proj'    # optional -- project file to build helix workitems
   runKind: ''                     # required -- test category
   collectionType: ''
   collectionName: ''

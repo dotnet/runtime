@@ -22,7 +22,7 @@ jobs:
     - windows_x64
     - windows_x86
     jobParameters:
-      uploadAsArtifacts: true
+      uploadAs: 'pipelineArtifacts'
 
 - template: /eng/pipelines/common/platform-matrix.yml
   parameters:

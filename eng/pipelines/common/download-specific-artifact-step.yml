@@ -11,10 +11,10 @@ steps:
     displayName: 'Download specific ${{ parameters.displayName }}'
     inputs:
       buildType: specific
-      project:  'internal'
+      project:  'internal' # 'internal' or 'public'
       pipeline: 'superpmi-replay'
       buildVersionToDownload: specific
-      branchName: 'kpathak/spmi-replay'
+      branchName: 'your/branch/having/artifacts'
       buildId: '1274841'
       downloadType: single
       downloadPath: '$(Build.SourcesDirectory)/__download__'
