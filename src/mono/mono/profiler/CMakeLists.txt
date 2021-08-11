@@ -24,6 +24,13 @@ if(NOT DISABLE_LIBS)
     install(TARGETS mono-profiler-log-static LIBRARY)
   endif()
 
+  if(HOST_ANDROID)
+    add_library(mono-profiler-aot SHARED aot.c helper.c)
+    target_compile_definitions(mono-profiler-aot PRIVATE -DMONO_DLL_EXPORT)
+    target_link_libraries(mono-profiler-aot monosgen-shared eglib_objects log)
+    install(TARGETS mono-profiler-aot LIBRARY)
+  endif()
+
   add_library(mono-profiler-aot-static STATIC aot.c helper.c)
   set_target_properties(mono-profiler-aot-static PROPERTIES OUTPUT_NAME mono-profiler-aot)
   install(TARGETS mono-profiler-aot-static LIBRARY)
