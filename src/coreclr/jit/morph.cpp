@@ -2404,29 +2404,6 @@ void fgArgInfo::EvalArgsToTemps()
 #endif
 }
 
-// Return a conservative estimate of the stack size in bytes.
-// It will be used only on the intercepted-for-host code path to copy the arguments.
-int Compiler::fgEstimateCallStackSize(GenTreeCall* call)
-{
-    int numArgs = 0;
-    for (GenTreeCall::Use& use : call->Args())
-    {
-        numArgs++;
-    }
-
-    int numStkArgs;
-    if (numArgs > MAX_REG_ARG)
-    {
-        numStkArgs = numArgs - MAX_REG_ARG;
-    }
-    else
-    {
-        numStkArgs = 0;
-    }
-
-    return numStkArgs * REGSIZE_BYTES;
-}
-
 //------------------------------------------------------------------------------
 // fgMakeMultiUse : If the node is a local, clone it, otherwise insert a comma form temp
 //
