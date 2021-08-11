@@ -9,6 +9,9 @@ using Mono.Linker.Tests.Cases.Expectations.Metadata;
 [module: UnconditionalSuppressMessage ("Test", "IL2072", Scope = "type", Target = "T:Mono.Linker.Tests.Cases.Warnings.WarningSuppression.WarningsInType")]
 [module: UnconditionalSuppressMessage ("Test", "IL2072", Scope = "member", Target = "M:Mono.Linker.Tests.Cases.Warnings.WarningSuppression.WarningsInMembers.Method")]
 [module: UnconditionalSuppressMessage ("Test", "IL2072", Scope = "member", Target = "M:Mono.Linker.Tests.Cases.Warnings.WarningSuppression.WarningsInMembers.get_Property")]
+[module: UnconditionalSuppressMessage ("Test", "IL2072", Scope = "member", Target = "M:Mono.Linker.Tests.Cases.Warnings.WarningSuppression..get_Property")]
+[module: UnconditionalSuppressMessage ("Test", "IL2072", Scope = "member", Target = "M:Mono.Linker.Tests.Cases.Warnings.WarningSuppression.WarningsInMembers.MultipleWarnings")]
+[module: UnconditionalSuppressMessage ("Test", "IL2026", Scope = "member", Target = "M:Mono.Linker.Tests.Cases.Warnings.WarningSuppression.WarningsInMembers.MultipleSuppressions")]
 
 namespace Mono.Linker.Tests.Cases.Warnings.WarningSuppression
 {
@@ -30,6 +33,9 @@ namespace Mono.Linker.Tests.Cases.Warnings.WarningSuppression
 			var warningsInMembers = new WarningsInMembers ();
 			warningsInMembers.Method ();
 			int propertyThatTriggersWarning = warningsInMembers.Property;
+
+			WarningsInMembers.MultipleWarnings ();
+			WarningsInMembers.MultipleSuppressions ();
 		}
 
 		public static Type TriggerUnrecognizedPattern ()
@@ -73,6 +79,7 @@ namespace Mono.Linker.Tests.Cases.Warnings.WarningSuppression
 		}
 	}
 
+	[ExpectedNoWarnings]
 	public class WarningsInMembers
 	{
 		public void Method ()
@@ -85,6 +92,25 @@ namespace Mono.Linker.Tests.Cases.Warnings.WarningSuppression
 				Expression.Call (SuppressWarningsInMembersAndTypesUsingTarget.TriggerUnrecognizedPattern (), "", Type.EmptyTypes);
 				return 0;
 			}
+		}
+
+		[UnconditionalSuppressMessage ("Test", "IL2026")]
+		public static void MultipleWarnings ()
+		{
+			Expression.Call (SuppressWarningsInMembersAndTypesUsingTarget.TriggerUnrecognizedPattern (), "", Type.EmptyTypes);
+			RUCMethod ();
+		}
+
+		[LogContains (nameof (MultipleSuppressions) + "() has more than one unconditional suppression")]
+		[UnconditionalSuppressMessage ("Test", "IL2026")]
+		public static void MultipleSuppressions ()
+		{
+			RUCMethod ();
+		}
+
+		[RequiresUnreferencedCode ("--RUCMethod--")]
+		static void RUCMethod ()
+		{
 		}
 	}
 }

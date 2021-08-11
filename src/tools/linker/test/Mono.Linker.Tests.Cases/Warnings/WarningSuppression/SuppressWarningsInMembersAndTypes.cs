@@ -111,6 +111,10 @@ namespace Mono.Linker.Tests.Cases.Warnings.WarningSuppression
 			public TypeWithSuppression ()
 			{
 				MethodWithRUC ();
+
+				// Triggering the suppression check a second time
+				// still shouldn't warn about duplicate suppressions.
+				MethodWithRUC ();
 			}
 
 			int _field;
