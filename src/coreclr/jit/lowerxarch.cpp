@@ -142,23 +142,21 @@ void Lowering::LowerStoreIndir(GenTreeStoreInd* node)
         {
             float fltCns = static_cast<float>(dblCns); // should be a safe round-trip
             intCns       = static_cast<ssize_t>(*reinterpret_cast<UINT32*>(&fltCns));
-            type         = TYP_UINT;
+            type         = TYP_INT;
         }
 #ifdef TARGET_AMD64
         else
         {
             assert(node->TypeIs(TYP_DOUBLE));
             intCns = static_cast<ssize_t>(*reinterpret_cast<UINT64*>(&dblCns));
-            type   = TYP_ULONG;
+            type   = TYP_LONG;
         }
 #endif
 
         if (type != TYP_UNKNOWN)
         {
             data->SetContained();
-            data->ChangeOperConst(GT_CNS_INT);
-            data->AsIntCon()->SetIconValue(intCns);
-            data->ChangeType(type);
+            data->BashToConst(intCns, type);
             node->ChangeType(type);
         }
     }

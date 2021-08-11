@@ -246,8 +246,7 @@ bool Compiler::optRedundantBranch(BasicBlock* const block)
 
     JITDUMP("\nRedundant branch opt in " FMT_BB ":\n", block->bbNum);
 
-    tree->ChangeOperConst(GT_CNS_INT);
-    tree->AsIntCon()->gtIconVal = relopValue;
+    tree->BashToConst(relopValue);
 
     fgMorphBlockStmt(block, stmt DEBUGARG(__FUNCTION__));
     return true;
