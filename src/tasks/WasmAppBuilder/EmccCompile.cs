@@ -240,8 +240,8 @@ namespace Microsoft.WebAssembly.Build.Tasks
                     return true;
                 }
 
-                DateTime lastWriteTimeSrc= File.GetLastWriteTimeUtc(inFile);
-                DateTime lastWriteTimeDst= File.GetLastWriteTimeUtc(outFile);
+                DateTime lastWriteTimeSrc = File.GetLastWriteTimeUtc(inFile);
+                DateTime lastWriteTimeDst = File.GetLastWriteTimeUtc(outFile);
 
                 if (lastWriteTimeSrc > lastWriteTimeDst)
                 {

@@ -653,36 +653,9 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
             return false;
         }
 
-        if (Path.GetExtension(tmpOutputFileName) == ".tmp")
-        {
-            string finalPath = Path.Combine(Path.GetDirectoryName(tmpOutputFileName) ?? string.Empty,
-                                                Path.GetFileNameWithoutExtension(tmpOutputFileName));
-
-            if (HaveAsmDependenciesChanged(assembly, depfile, out string? cause))
-            {
-                if (File.Exists(finalPath))
-                    File.Delete(finalPath);
-
-                File.Copy(tmpOutputFileName, finalPath);
-
-                Log.LogMessage(MessageImportance.Low, $"Copying {tmpOutputFileName} to {finalPath} because {cause}");
-                _fileWrites.Add(finalPath);
-
-                int count = Interlocked.Increment(ref _numCompiled);
-                Log.LogMessage(MessageImportance.High, $"[{count}/{_totalNumAssemblies}] {assemblyFilename} -> {Path.GetFileName(finalPath)}");
-            }
-            else
-            {
-                Log.LogMessage(MessageImportance.Low, $"Skipping copying over {finalPath} as the contents are unchanged");
-            }
-        }
-        else
-        {
-            Log.LogWarning($"Bug: expected tmpOutputFileName to end in .tmp: {tmpOutputFileName}");
-        }
-
-        File.Delete(responseFilePath);
+        CopyOutputFileIfChanged(assembly, tmpOutputFileName, depfile);
         File.Delete(tmpOutputFileName);
+        File.Delete(responseFilePath);
         File.Delete(depfile);
 
         compiledAssemblies.GetOrAdd(aotAssembly.ItemSpec, aotAssembly);
@@ -725,47 +698,97 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
         }
     }
 
-    private bool HaveAsmDependenciesChanged(string assemblyFileName, string depfile, [NotNullWhen(true)] out string? cause)
+    private void CopyOutputFileIfChanged(string assemblyPath, string tmpOutputFileName, string depfile)
     {
-        cause = null;
-        if (!File.Exists(depfile))
+        if (Path.GetExtension(tmpOutputFileName) != ".tmp")
         {
-            cause = $"couldn't find depfile {depfile}";
+            Log.LogWarning($"Bug: expected tmpOutputFileName to end in .tmp: {tmpOutputFileName}");
+            return;
+        }
+
+        string finalPath = Path.Combine(Path.GetDirectoryName(tmpOutputFileName) ?? string.Empty,
+                                            Path.GetFileNameWithoutExtension(tmpOutputFileName));
+
+        if (!ShouldCopy(out string? cause))
+        {
+            Log.LogMessage(MessageImportance.Low, $"Skipping copying over {finalPath} as the contents are unchanged");
+            return;
+        }
+
+        if (File.Exists(finalPath))
+            File.Delete(finalPath);
+
+        File.Copy(tmpOutputFileName, finalPath);
+
+        Log.LogMessage(MessageImportance.Low, $"Copying {tmpOutputFileName} to {finalPath} because {cause}");
+        _fileWrites.Add(finalPath);
+
+        int count = Interlocked.Increment(ref _numCompiled);
+        Log.LogMessage(MessageImportance.High, $"[{count}/{_totalNumAssemblies}] {assemblyPath} -> {Path.GetFileName(finalPath)}");
+
+        bool ShouldCopy([NotNullWhen(true)] out string? cause)
+        {
+            cause = null;
+
+            if (_oldCache == null || _newCache == null)
+            {
+                cause = "cache is disabled";
+                return true;
+            }
+
+            if (!File.Exists(assemblyPath))
+            {
+                cause = $"the output file didn't exist";
+                return true;
+            }
+
+            if (!File.Exists(depfile))
+            {
+                cause = $"couldn't find depfile {depfile}";
+                return true;
+            }
+
+            string deps = File.ReadAllText(depfile);
+            string[] parts = deps.Split(new char[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
+            if (parts.Length < 2)
+            {
+                cause = $"{depfile} had invalid format";
+                return true;
+            }
+
+            Log.LogMessage(MessageImportance.Low, $"{assemblyPath} depends on {deps}");
+            string? changedAsm = parts.Skip(1).FirstOrDefault(asm => HasHashChanged(asm.Trim()));
+            if (changedAsm == null)
+                return false;
+
+            cause = changedAsm == assemblyPath
+                        ? "it changed"
+                        : $"dependency {changedAsm} changed.";
             return true;
         }
 
-        string deps = File.ReadAllText(depfile);
-        string[] parts = deps.Split(new char[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
-        if (parts.Length < 2)
+        bool HasHashChanged(string assemblyPath)
         {
-            cause = $"{depfile} had invalid format";
-            return true;
+            if (_oldCache == null || _newCache == null)
+            {
+                // cache disabled
+                return true;
+            }
+
+            if (!_oldCache!.AssemblyHashes.TryGetValue(assemblyPath, out string? oldHash))
+            {
+                // we haven't seen this file before
+                return true;
+            }
+
+            if (!_newCache!.AssemblyHashes.TryGetValue(assemblyPath, out string? newHash))
+            {
+                // um should not happen
+                throw new Exception($"BUG? can't find new hash for {assemblyPath}");
+            }
+
+            return oldHash != newHash;
         }
-
-        Log.LogMessage(MessageImportance.Low, $"{assemblyFileName} depends on {deps}");
-        string? changedAsm = parts.Skip(1).FirstOrDefault(asm => HasHashChanged(asm.Trim()));
-        if (changedAsm != null)
-            cause = changedAsm == assemblyFileName ? "it changed" : $"dependency {changedAsm} changed.";
-
-        return changedAsm != null;
-    }
-
-    private bool HasHashChanged(string assemblyFileName)
-    {
-        if (!_oldCache!.AssemblyHashes.TryGetValue(assemblyFileName, out string? oldHash))
-        {
-            // we haven't seen this file before
-            return true;
-        }
-
-        if (!_newCache!.AssemblyHashes.TryGetValue(assemblyFileName, out string? newHash))
-        {
-            // um should not happen
-            throw new Exception($"BUG? can't find new hash for {assemblyFileName}");
-        }
-
-        var res = oldHash != newHash;
-        return res;
     }
 
     private bool GenerateAotModulesTable(ITaskItem[] assemblies, string[]? profilers, string outputFile)
