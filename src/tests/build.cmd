@@ -581,7 +581,7 @@ echo     666: Build all tests with priority 0, 1 ... 666
 echo test ^<xxx^>: Only build test project ^<xxx^> ^(relative or absolute project path under src\tests^)
 echo dir ^<xxx^>: Build all test projects in the folder ^<xxx^> ^(relative or absolute folder under src\tests^)
 echo tree ^<xxx^>: Build all test projects in the subtree ^<xxx^> ^(relative or absolute folder under src\tests^)
-echo all: Clean-rebuild all selected tests ^(don't use incremental build^)
+echo rebuild: Clean up all test artifacts prior to building tests
 echo allTargets: Build managed tests for all target platforms.
 echo -verbose: enables detailed file logging for the msbuild tasks into the msbuild log file.
 exit /b 1
