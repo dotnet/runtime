@@ -40,6 +40,35 @@ The `src/tests/build.sh` script generates the Core_Root folder, which contains t
 
 The output will be at `<repo_root>/artifacts/tests/coreclr/<os>.<arch>.<configuration>/Tests/Core_Root`.
 
+## Building Test Subsets
+
+The `src/tests/build.sh` script supports three options that let you limit the set of tests to build;
+when none of these is specified, the entire test tree (under `src/tests`) gets built but that can be
+lengthy (especially in `-priority1` mode) and unnecessary when working on a particular test.
+
+1) `-test:<test-project>` - build a particular test project specified by its project file path,
+either absolute or relative to `src/tests`. The option can be specified multiple times on the command
+line to request building several individual projects.
+
+**Example**: `src/tests/build.sh -test:JIT/Methodical/divrem/div/i4div_cs_do.csproj`
+
+2) `-dir:<test-folder>` - build all test projects within a given directory path, either absolute
+or relative to `src/tests`. The option can be specified multiple times on the command line to request
+building projects in several folders.
+
+**Example**: `src/tests/build.sh -dir:JIT/Methodical/Arrays/huge`
+
+3) `-tree:<root-folder>` - build all test projects within the subtree specified by its root path,
+either absolute or relative to `src/tests`. The option can be specified multiple times on the command
+line to request building projects in several subtrees.
+
+**Example**: `src/tests/build.sh -tree:baseservices/exceptions`
+
+**Please note** that priority filtering is orthogonal to specifying test subsets; even when you request
+building a particular test and the test is Pri1, you need to specify `-priority1` in the command line,
+otherwise the test build will get skipped. While somewhat unintuitive, 'fixing' this ad hoc would likely
+create more harm than good and we're hoping to ultimately get rid of the test priorities in the long term
+anyway.
 
 ## Building Individual Tests
 
