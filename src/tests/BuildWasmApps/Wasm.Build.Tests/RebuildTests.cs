@@ -20,7 +20,7 @@ namespace Wasm.Build.Tests
         {
         }
 
-        public IEnumerable<object?[]> NonNativeDebugRebuildData()
+        public static IEnumerable<object?[]> NonNativeDebugRebuildData()
             => ConfigWithAOTData(aot: false, config: "Debug")
                     .WithRunHosts(RunHost.V8)
                     .UnwrapItemsAsArrays().ToList();
