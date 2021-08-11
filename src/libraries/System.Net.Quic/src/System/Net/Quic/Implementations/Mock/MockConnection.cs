@@ -29,6 +29,20 @@ namespace System.Net.Quic.Implementations.Mock
         internal PeerStreamLimit? LocalStreamLimit => _isClient ? _state?._clientStreamLimit : _state?._serverStreamLimit;
         internal PeerStreamLimit? RemoteStreamLimit => _isClient ? _state?._serverStreamLimit : _state?._clientStreamLimit;
 
+        internal long? ConnectionError
+        {
+            get
+            {
+                long? errorCode = _isClient ? _state?._serverErrorCode : _state?._clientErrorCode;
+                if (errorCode == -1)
+                {
+                    errorCode = null;
+                }
+
+                return errorCode;
+            }
+        }
+
         // Constructor for outbound connections
         internal MockConnection(EndPoint? remoteEndPoint, SslClientAuthenticationOptions? sslClientAuthenticationOptions, IPEndPoint? localEndPoint = null, int maxUnidirectionalStreams = 100, int maxBidirectionalStreams = 100)
         {
