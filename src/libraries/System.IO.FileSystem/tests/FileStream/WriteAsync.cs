@@ -103,9 +103,12 @@ namespace System.IO.Tests
         [Fact]
         public async Task TriggerTheProblemAsync()
         {
-            for (int i = 0; i < 10_000; i++)
+            if (OperatingSystem.IsWindows())
             {
-                await WriteAsyncCancelledFile(0, FileOptions.Asynchronous | FileOptions.DeleteOnClose);
+                for (int i = 0; i < 10_000; i++)
+                {
+                    await WriteAsyncCancelledFile(0, FileOptions.Asynchronous | FileOptions.DeleteOnClose);
+                }
             }
         }
 
