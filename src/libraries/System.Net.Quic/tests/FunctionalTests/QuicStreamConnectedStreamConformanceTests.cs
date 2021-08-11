@@ -26,6 +26,7 @@ namespace System.Net.Quic.Tests
         protected override QuicImplementationProvider Provider => QuicImplementationProviders.MsQuic;
         protected override bool UsableAfterCanceledReads => false;
         protected override bool BlocksOnZeroByteReads => true;
+        protected override bool CanTimeout => true;
 
         public MsQuicQuicStreamConformanceTests(ITestOutputHelper output)
         {

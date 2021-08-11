@@ -299,7 +299,7 @@ build_Tests()
     if [[ "$__CopyNativeTestBinaries" == 1 ]]; then
         echo "Copying native test binaries to output..."
 
-        build_MSBuild_projects "Tests_Managed" "$__RepoRootDir/src/tests/build.proj" "Managed tests build (build tests)" "/t:CopyAllNativeProjectReferenceBinaries" "/bl:${__RepoRootDir}/artifacts/log/${__BuildType}/copy_native_test_binaries${__RuntimeFlavor}.binlog"
+        build_MSBuild_projects "Tests_Managed" "$__RepoRootDir/src/tests/build.proj" "Managed tests build (build tests)" "/p:RuntimeFlavor=$__RuntimeFlavor" "/t:CopyAllNativeProjectReferenceBinaries" "/bl:${__RepoRootDir}/artifacts/log/${__BuildType}/copy_native_test_binaries${__RuntimeFlavor}.binlog"
 
         if [[ "$?" -ne 0 ]]; then
             echo "${__ErrMsgPrefix}${__MsgPrefix}Error: copying native test binaries failed. Refer to the build log files for details (above)"
