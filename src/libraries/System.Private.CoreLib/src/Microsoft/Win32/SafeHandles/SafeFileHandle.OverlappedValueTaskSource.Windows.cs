@@ -200,6 +200,12 @@ namespace Microsoft.Win32.SafeHandles
                 OSFileStreamStrategy? strategy = _strategy;
                 ReleaseResources();
 
+                if (errorCode != Interop.Errors.ERROR_SUCCESS && numBytes != 0)
+                {
+                    _source.SetException(new Exception($"The error code was {errorCode} and numBytes was {numBytes}"));
+                    return;
+                }
+
                 if (strategy is not null && _bufferSize != numBytes) // true only for incomplete operations
                 {
                     strategy.OnIncompleteOperation(_bufferSize, (int)numBytes);
