@@ -147,15 +147,12 @@ namespace System.Net.Http
                     // Ideally, headers will be sent out in a gathered write inside of SendContentAsync().
                     // If we don't have content, or we are doing Expect 100 Continue, then we can't rely on
                     // this and must send our headers immediately.
+                    await FlushSendBufferAsync(requestCancellationSource.Token).ConfigureAwait(false);
 
-                    await _stream.WriteAsync(_sendBuffer.ActiveMemory, endStream: _expect100ContinueCompletionSource == null, requestCancellationSource.Token).ConfigureAwait(false);
-                    _sendBuffer.Discard(_sendBuffer.ActiveLength);
-
-                    if (_expect100ContinueCompletionSource != null)
+                    // End the stream writing if there's no content to send.
+                    if (_request.Content == null)
                     {
-                        // Flush to ensure we get a response.
-                        // TODO: MsQuic may not need any flushing.
-                        await _stream.FlushAsync(cancellationToken).ConfigureAwait(false);
+                        _stream.Shutdown();
                     }
                 }
 
@@ -375,8 +372,7 @@ namespace System.Net.Http
             {
                 // Our initial send buffer, which has our headers, are normally sent out on the first write to the Http3WriteStream.
                 // If we get here, it means the content didn't actually do any writing. Send out the headers now.
-                await _stream.WriteAsync(_sendBuffer.ActiveMemory, cancellationToken).ConfigureAwait(false);
-                _sendBuffer.Discard(_sendBuffer.ActiveLength);
+                await FlushSendBufferAsync(cancellationToken).ConfigureAwait(false);
             }
 
             _stream.Shutdown();
@@ -434,6 +430,14 @@ namespace System.Net.Http
 
                 _sendBuffer.Discard(_sendBuffer.ActiveLength);
             }
+        }
+
+        private async ValueTask FlushSendBufferAsync(CancellationToken cancellationToken)
+        {
+            await _stream.WriteAsync(_sendBuffer.ActiveMemory, cancellationToken).ConfigureAwait(false);
+            _sendBuffer.Discard(_sendBuffer.ActiveLength);
+
+            await _stream.FlushAsync(cancellationToken).ConfigureAwait(false);
         }
 
         private async ValueTask DrainContentLength0Frames(CancellationToken cancellationToken)
@@ -1316,6 +1320,16 @@ namespace System.Net.Http
                 }
 
                 return _stream.WriteRequestContentAsync(buffer, cancellationToken);
+            }
+
+            public override Task FlushAsync(CancellationToken cancellationToken)
+            {
+                if (_stream == null)
+                {
+                    return Task.FromException(new ObjectDisposedException(nameof(Http3WriteStream)));
+                }
+
+                return _stream.FlushSendBufferAsync(cancellationToken).AsTask();
             }
         }
 

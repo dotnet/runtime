@@ -380,6 +380,56 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Fact]
+        public async Task EmptyCustomContent_FlushHeaders()
+        {
+            using Http3LoopbackServer server = CreateHttp3LoopbackServer();
+            TaskCompletionSource headersReceived = new TaskCompletionSource();
+
+            Task serverTask = Task.Run(async () =>
+            {
+                using Http3LoopbackConnection connection = (Http3LoopbackConnection)await server.EstablishGenericConnectionAsync();
+                using Http3LoopbackStream stream = await connection.AcceptRequestStreamAsync();
+
+                // Receive headers and unblock the client.
+                await stream.ReadRequestDataAsync(false);
+                headersReceived.SetResult();
+
+                await stream.ReadRequestBodyAsync();
+                await stream.SendResponseAsync();
+            });
+
+            Task clientTask = Task.Run(async () =>
+            {
+                StreamingHttpContent requestContent = new StreamingHttpContent();
+
+                using HttpClient client = CreateHttpClient();
+                using HttpRequestMessage request = new()
+                {
+                    Method = HttpMethod.Post,
+                    RequestUri = server.Address,
+                    Version = HttpVersion30,
+                    VersionPolicy = HttpVersionPolicy.RequestVersionExact,
+                    Content = requestContent
+                };
+
+                Task<HttpResponseMessage> responseTask = client.SendAsync(request);
+
+                Stream requestStream = await requestContent.GetStreamAsync();
+                await requestStream.FlushAsync();
+
+                await headersReceived.Task;
+
+                requestContent.CompleteStream();
+
+                using HttpResponseMessage response = await responseTask;
+
+                Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+            });
+
+            await new[] { clientTask, serverTask }.WhenAllOrAnyFailed(20_000);
+        }
+
+        [Fact]
         public async Task DisposeHttpClient_Http3ConnectionIsClosed()
         {
             using Http3LoopbackServer server = CreateHttp3LoopbackServer();
@@ -825,5 +875,42 @@ namespace System.Net.Http.Functional.Tests
                 { "https://cloudflare-quic.com/" }, // Cloudflare with content
                 { "https://pgjones.dev/" }, // aioquic with content
             };
+    }
+
+    internal class StreamingHttpContent : HttpContent
+    {
+        private readonly TaskCompletionSource _completeTcs = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        private readonly TaskCompletionSource<Stream> _getStreamTcs = new TaskCompletionSource<Stream>(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        protected override Task SerializeToStreamAsync(Stream stream, TransportContext context)
+        {
+            throw new NotSupportedException();
+        }
+
+        protected override async Task SerializeToStreamAsync(Stream stream, TransportContext context, CancellationToken cancellationToken)
+        {
+            _getStreamTcs.TrySetResult(stream);
+
+            var cancellationTcs = new TaskCompletionSource();
+            cancellationToken.Register(() => cancellationTcs.TrySetCanceled());
+
+            await Task.WhenAny(_completeTcs.Task, cancellationTcs.Task);
+        }
+
+        protected override bool TryComputeLength(out long length)
+        {
+            length = -1;
+            return false;
+        }
+
+        public Task<Stream> GetStreamAsync()
+        {
+            return _getStreamTcs.Task;
+        }
+
+        public void CompleteStream()
+        {
+            _completeTcs.TrySetResult();
+        }
     }
 }
