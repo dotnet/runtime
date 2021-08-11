@@ -16,7 +16,7 @@
     <RuntimeGroup Include="alpine">
       <Parent>linux-musl</Parent>
       <Architectures>x64;arm;arm64</Architectures>
-      <Versions>3.6;3.7;3.8;3.9;3.10;3.11;3.12;3.13</Versions>
+      <Versions>3.6;3.7;3.8;3.9;3.10;3.11;3.12;3.13;3.14</Versions>
     </RuntimeGroup>
 
     <RuntimeGroup Include="android">
@@ -53,7 +53,7 @@
     <RuntimeGroup Include="debian">
       <Parent>linux</Parent>
       <Architectures>x64;x86;arm;armel;arm64</Architectures>
-      <Versions>8;9;10</Versions>
+      <Versions>8;9;10;11</Versions>
       <TreatVersionsAsCompatible>false</TreatVersionsAsCompatible>
     </RuntimeGroup>
 
