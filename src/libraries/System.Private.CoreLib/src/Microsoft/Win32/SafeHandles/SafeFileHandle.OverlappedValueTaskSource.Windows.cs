@@ -142,13 +142,14 @@ namespace Microsoft.Win32.SafeHandles
             private void ReleaseResources()
             {
                 _strategy = null;
-                // Unpin any pinned buffer.
-                _memoryHandle.Dispose();
 
                 // Ensure that any cancellation callback has either completed or will never run,
                 // so that we don't try to access an overlapped for this operation after it's already
                 // been freed.
                 _cancellationRegistration.Dispose();
+
+                // Unpin any pinned buffer.
+                _memoryHandle.Dispose();
 
                 // Free the overlapped.
                 if (_overlapped != null)

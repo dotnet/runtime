@@ -3,8 +3,6 @@
 
 using System.Buffers;
 using System.Diagnostics;
-using System.Runtime.ExceptionServices;
-using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks.Sources;
 
@@ -12,31 +10,47 @@ namespace System.IO.Pipes
 {
     public abstract partial class PipeStream : Stream
     {
-        internal abstract unsafe class PipeValueTaskSource<TResult> : IValueTaskSource<TResult>, IValueTaskSource
+        internal abstract unsafe class PipeValueTaskSource : IValueTaskSource<int>, IValueTaskSource
         {
-            private const int NoResult = 0;
-            private const int ResultSuccess = 1;
-            private const int ResultError = 2;
-            private const int RegisteringCancellation = 4;
-            private const int CompletedCallback = 8;
-
             internal static readonly IOCompletionCallback s_ioCallback = IOCallback;
 
             internal readonly PreAllocatedOverlapped _preallocatedOverlapped;
-            private readonly PipeStream _pipeStream;
-            private CancellationTokenRegistration _cancellationRegistration;
-            private int _errorCode;
-            private NativeOverlapped* _overlapped;
-            private MemoryHandle _pinnedMemory;
-            private int _state;
+            internal readonly PipeStream _pipeStream;
+            internal MemoryHandle _memoryHandle;
+            internal ManualResetValueTaskSourceCore<int> _source; // mutable struct; do not make this readonly
+            internal NativeOverlapped* _overlapped;
+            internal CancellationTokenRegistration _cancellationRegistration;
+            /// <summary>
+            /// 0 when the operation hasn't been scheduled, non-zero when either the operation has completed,
+            /// in which case its value is a packed combination of the error code and number of bytes, or when
+            /// the read/write call has finished scheduling the async operation.
+            /// </summary>
+            internal ulong _result;
 
-            protected internal ManualResetValueTaskSourceCore<TResult> _source; // mutable struct; do not make this readonly
+            protected PipeValueTaskSource(PipeStream pipeStream)
+            {
+                _pipeStream = pipeStream;
+                _source.RunContinuationsAsynchronously = true;
+                _preallocatedOverlapped = new PreAllocatedOverlapped(s_ioCallback, this, null);
+            }
+
+            internal void Dispose()
+            {
+                ReleaseResources();
+                _preallocatedOverlapped.Dispose();
+            }
+
+            internal void PrepareForOperation(ReadOnlyMemory<byte> memory = default)
+            {
+                _result = 0;
+                _memoryHandle = memory.Pin();
+                _overlapped = _pipeStream._threadPoolBinding!.AllocateNativeOverlapped(_preallocatedOverlapped);
+            }
+
             public ValueTaskSourceStatus GetStatus(short token) => _source.GetStatus(token);
             public void OnCompleted(Action<object?> continuation, object? state, short token, ValueTaskSourceOnCompletedFlags flags) => _source.OnCompleted(continuation, state, token, flags);
-            void IValueTaskSource.GetResult(short token) => GetResultAndRelease(token);
-            public TResult GetResult(short token) => GetResultAndRelease(token);
-
-            private TResult GetResultAndRelease(short token)
+            void IValueTaskSource.GetResult(short token) => GetResult(token);
+            public int GetResult(short token)
             {
                 try
                 {
@@ -51,177 +65,174 @@ namespace System.IO.Pipes
 
             internal short Version => _source.Version;
 
-            protected PipeValueTaskSource(PipeStream pipeStream)
-            {
-                Debug.Assert(pipeStream != null, "pipeStream is null");
-
-                _pipeStream = pipeStream;
-                // Using RunContinuationsAsynchronously for compat reasons (old API used ThreadPool.QueueUserWorkItem for continuations)
-                _source.RunContinuationsAsynchronously = true;
-                _preallocatedOverlapped = new PreAllocatedOverlapped(s_ioCallback, this, null);
-            }
-
-            internal void Dispose()
-            {
-                ReleaseResources();
-                _preallocatedOverlapped.Dispose();
-            }
-
-            internal NativeOverlapped* Overlapped => _overlapped;
-
-            internal void PrepareForOperation(ReadOnlyMemory<byte> memory = default)
-            {
-                _state = NoResult;
-                _pinnedMemory = memory.Pin();
-                _overlapped = _pipeStream._threadPoolBinding!.AllocateNativeOverlapped(_preallocatedOverlapped);
-            }
-
             internal void RegisterForCancellation(CancellationToken cancellationToken)
             {
-                // Quick check to make sure that the cancellation token supports cancellation, and that the IO hasn't completed
-                if (cancellationToken.CanBeCanceled && _overlapped != null)
+                Debug.Assert(_overlapped != null);
+                if (cancellationToken.CanBeCanceled)
                 {
-                    // Register the cancellation only if the IO hasn't completed
-                    int state = Interlocked.CompareExchange(ref _state, RegisteringCancellation, NoResult);
-                    if (state == NoResult)
+                    try
                     {
-                        // Register the cancellation
-                        _cancellationRegistration = cancellationToken.UnsafeRegister(thisRef => ((PipeValueTaskSource<TResult>)thisRef!).Cancel(), this);
-
-                        // Grab the state for case if IO completed while we were setting the registration.
-                        state = Interlocked.Exchange(ref _state, NoResult);
+                        _cancellationRegistration = cancellationToken.UnsafeRegister(static (s, token) =>
+                        {
+                            PipeValueTaskSource vts = (PipeValueTaskSource)s!;
+                            if (!vts._pipeStream.SafePipeHandle.IsInvalid)
+                            {
+                                try
+                                {
+                                    Interop.Kernel32.CancelIoEx(vts._pipeStream.SafePipeHandle, vts._overlapped);
+                                    // Ignore all failures: no matter whether it succeeds or fails, completion is handled via the IOCallback.
+                                }
+                                catch (ObjectDisposedException) { } // in case the SafeHandle is (erroneously) closed concurrently
+                            }
+                        }, this);
                     }
-                    else if (state != CompletedCallback)
+                    catch (OutOfMemoryException)
                     {
-                        // IO already completed and we have grabbed result state.
-                        // Set NoResult to prevent invocation of CompleteCallback(result state) from AsyncCallback(...)
-                        state = Interlocked.Exchange(ref _state, NoResult);
-                    }
-
-                    // If we have the result state of completed IO call CompleteCallback(result).
-                    // Otherwise IO not completed.
-                    if ((state & (ResultSuccess | ResultError)) != 0)
-                    {
-                        CompleteCallback(state);
+                        // Just in case trying to register OOMs, we ignore it in order to
+                        // protect the higher-level calling code that would proceed to unpin
+                        // memory that might be actively used by an in-flight async operation.
                     }
                 }
             }
 
             internal void ReleaseResources()
             {
+                // Ensure that any cancellation callback has either completed or will never run, so that
+                // we don't try to access an overlapped for this operation after it's already been freed.
                 _cancellationRegistration.Dispose();
 
-                // NOTE: The cancellation must *NOT* be running at this point, or it may observe freed memory
-                // (this is why we disposed the registration above)
+                // Unpin any pinned buffer.
+                _memoryHandle.Dispose();
+
+                // Free the overlapped.
                 if (_overlapped != null)
                 {
                     _pipeStream._threadPoolBinding!.FreeNativeOverlapped(_overlapped);
                     _overlapped = null;
                 }
-
-                _pinnedMemory.Dispose();
             }
 
-            internal abstract void SetCompletedSynchronously();
+            // After calling Read/WriteFile to start the asynchronous operation, the caller may configure cancellation,
+            // and only after that should we allow for completing the operation, as completion needs to factor in work
+            // done by that cancellation registration, e.g. unregistering.  As such, we use _result to both track who's
+            // responsible for calling Complete and for passing the necessary data between parties.
 
+            /// <summary>Invoked when the async operation finished being scheduled.</summary>
+            internal void FinishedScheduling()
+            {
+                // Set the value to 1.  If it was already non-0, then the asynchronous operation already completed but
+                // didn't call Complete, so we call Complete here.  The read result value is the data (packed) necessary
+                // to make the call.
+                ulong result = Interlocked.Exchange(ref _result, 1);
+                if (result != 0)
+                {
+                    Complete(errorCode: (uint)result, numBytes: (uint)(result >> 32) & 0x7FFFFFFF);
+                }
+            }
+
+            /// <summary>Invoked when the asynchronous operation has completed asynchronously.</summary>
             private static void IOCallback(uint errorCode, uint numBytes, NativeOverlapped* pOverlapped)
             {
-                var valueTaskSource = (PipeValueTaskSource<TResult>?)ThreadPoolBoundHandle.GetNativeOverlappedState(pOverlapped);
-                Debug.Assert(valueTaskSource is not null);
-                Debug.Assert(valueTaskSource._overlapped == pOverlapped);
+                PipeValueTaskSource? vts = (PipeValueTaskSource?)ThreadPoolBoundHandle.GetNativeOverlappedState(pOverlapped);
+                Debug.Assert(vts is not null);
+                Debug.Assert(vts._overlapped == pOverlapped, "Overlaps don't match");
 
-                valueTaskSource.AsyncCallback(errorCode, numBytes);
-            }
-
-            protected virtual void AsyncCallback(uint errorCode, uint numBytes)
-            {
-                int resultState;
-                if (errorCode == 0)
+                // Set the value to a packed combination of the error code and number of bytes (plus a high-bit 1
+                // to ensure the value we're setting is non-zero).  If it was already non-0 (the common case), then
+                // the call site already finished scheduling the async operation, in which case we're ready to complete.
+                Debug.Assert(numBytes < int.MaxValue);
+                if (Interlocked.Exchange(ref vts._result, (1ul << 63) | ((ulong)numBytes << 32) | errorCode) != 0)
                 {
-                    resultState = ResultSuccess;
-                }
-                else
-                {
-                    resultState = ResultError;
-                    _errorCode = (int)errorCode;
-                }
-
-                // Store the result so that other threads can observe it
-                // and if no other thread is registering cancellation, continue.
-                // Otherwise CompleteCallback(resultState) will be invoked by RegisterForCancellation().
-                if (Interlocked.Exchange(ref _state, resultState) == NoResult)
-                {
-                    // Now try to prevent invocation of CompleteCallback(resultState) from RegisterForCancellation().
-                    // Otherwise, thread responsible for registering cancellation stole the result and it will invoke CompleteCallback(resultState).
-                    if (Interlocked.Exchange(ref _state, CompletedCallback) != NoResult)
-                    {
-                        CompleteCallback(resultState);
-                    }
+                    vts.Complete(errorCode, numBytes);
                 }
             }
 
-            protected abstract void HandleError(int errorCode);
-
-            private void Cancel()
+            private void Complete(uint errorCode, uint numBytes)
             {
-                SafeHandle handle = _pipeStream._threadPoolBinding!.Handle;
-                NativeOverlapped* overlapped = _overlapped;
-
-                if (!handle.IsInvalid)
-                {
-                    try
-                    {
-                        // If the handle is still valid, attempt to cancel the IO
-                        if (!Interop.Kernel32.CancelIoEx(handle, overlapped))
-                        {
-                            // This case should not have any consequences although
-                            // it will be easier to debug if there exists any special case
-                            // we are not aware of.
-                            int errorCode = Marshal.GetLastPInvokeError();
-                            Debug.WriteLine("CancelIoEx finished with error code {0}.", errorCode);
-                        }
-                    }
-                    catch (ObjectDisposedException) { } // in case the SafeHandle is (erroneously) closed concurrently
-                }
-            }
-
-            protected virtual void HandleUnexpectedCancellation() => SetCanceled();
-
-            private void CompleteCallback(int resultState)
-            {
-                Debug.Assert(resultState == ResultSuccess || resultState == ResultError, "Unexpected result state " + resultState);
-                CancellationToken cancellationToken = _cancellationRegistration.Token;
-
                 ReleaseResources();
-
-                if (resultState == ResultError)
-                {
-                    if (_errorCode == Interop.Errors.ERROR_OPERATION_ABORTED)
-                    {
-                        if (cancellationToken.CanBeCanceled && !cancellationToken.IsCancellationRequested)
-                        {
-                            HandleUnexpectedCancellation();
-                        }
-                        else
-                        {
-                            // otherwise set canceled
-                            SetCanceled(cancellationToken);
-                        }
-                    }
-                    else
-                    {
-                        HandleError(_errorCode);
-                    }
-                }
-                else
-                {
-                    SetCompletedSynchronously();
-                }
+                CompleteCore(errorCode, numBytes);
             }
 
-            protected void SetResult(TResult result) => _source.SetResult(result);
-            protected void SetException(Exception exception) => _source.SetException(ExceptionDispatchInfo.SetCurrentStackTrace(exception));
-            protected void SetCanceled(CancellationToken cancellationToken = default) => SetException(new OperationCanceledException(cancellationToken));
+            private protected abstract void CompleteCore(uint errorCode, uint numBytes);
+        }
+
+        internal sealed class ReadWriteValueTaskSource : PipeValueTaskSource
+        {
+            internal readonly bool _isWrite;
+
+            internal ReadWriteValueTaskSource(PipeStream stream, bool isWrite) : base(stream) => _isWrite = isWrite;
+
+            private protected override void CompleteCore(uint errorCode, uint numBytes)
+            {
+                if (!_isWrite)
+                {
+                    bool messageCompletion = true;
+
+                    switch (errorCode)
+                    {
+                        case Interop.Errors.ERROR_BROKEN_PIPE:
+                        case Interop.Errors.ERROR_PIPE_NOT_CONNECTED:
+                        case Interop.Errors.ERROR_NO_DATA:
+                            errorCode = 0;
+                            break;
+
+                        case Interop.Errors.ERROR_MORE_DATA:
+                            errorCode = 0;
+                            messageCompletion = false;
+                            break;
+                    }
+
+                    _pipeStream.UpdateMessageCompletion(messageCompletion);
+                }
+
+                switch (errorCode)
+                {
+                    case 0:
+                        // Success
+                        _source.SetResult((int)numBytes);
+                        break;
+
+                    case Interop.Errors.ERROR_OPERATION_ABORTED:
+                        // Cancellation
+                        CancellationToken ct = _cancellationRegistration.Token;
+                        _source.SetException(ct.IsCancellationRequested ? new OperationCanceledException(ct) : new OperationCanceledException());
+                        break;
+
+                    default:
+                        // Failure
+                        _source.SetException(_pipeStream.WinIOError((int)errorCode));
+                        break;
+                }
+            }
+        }
+
+        internal sealed class ConnectionValueTaskSource : PipeValueTaskSource
+        {
+            internal ConnectionValueTaskSource(NamedPipeServerStream server) : base(server) { }
+
+            private protected override void CompleteCore(uint errorCode, uint numBytes)
+            {
+                switch (errorCode)
+                {
+                    case 0:
+                    case Interop.Errors.ERROR_PIPE_CONNECTED: // special case for when the client has already connected to us
+                        // Success
+                        _pipeStream.State = PipeState.Connected;
+                        _source.SetResult((int)numBytes);
+                        break;
+
+                    case Interop.Errors.ERROR_OPERATION_ABORTED:
+                        // Cancellation
+                        CancellationToken ct = _cancellationRegistration.Token;
+                        _source.SetException(ct.CanBeCanceled && !ct.IsCancellationRequested ? Error.GetOperationAborted() : new OperationCanceledException(ct));
+                        break;
+
+                    default:
+                        // Failure
+                        _source.SetException(Win32Marshal.GetExceptionForWin32Error((int)errorCode));
+                        break;
+                }
+            }
         }
     }
 }

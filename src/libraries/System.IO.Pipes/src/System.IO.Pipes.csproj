@@ -102,8 +102,6 @@
     <Compile Include="System\IO\Pipes\PipeAuditRule.cs" />
     <Compile Include="System\IO\Pipes\PipesAclExtensions.cs" />
     <Compile Include="System\IO\Pipes\PipeSecurity.cs" />
-    <Compile Include="System\IO\Pipes\PipeStream.ConnectionValueTaskSource.cs" />
-    <Compile Include="System\IO\Pipes\PipeStream.ReadWriteValueTaskSource.cs" />
     <Compile Include="System\IO\Pipes\PipeStream.ValueTaskSource.cs" />
     <Compile Include="System\IO\Pipes\PipeStream.Windows.cs" />
   </ItemGroup>

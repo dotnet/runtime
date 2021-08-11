@@ -2,8 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
-using System.Runtime.CompilerServices;
+using System.Runtime.ExceptionServices;
 using System.Runtime.InteropServices;
 using System.Security.AccessControl;
 using System.Security.Principal;
@@ -55,7 +54,7 @@ namespace System.IO.Pipes
             }
         }
 
-        internal override void TryToReuse<TResult>(PipeValueTaskSource<TResult> source)
+        internal override void TryToReuse(PipeValueTaskSource source)
         {
             base.TryToReuse(source);
 
@@ -324,53 +323,49 @@ namespace System.IO.Pipes
         private unsafe ValueTask WaitForConnectionCoreAsync(CancellationToken cancellationToken)
         {
             CheckConnectOperationsServerWithHandle();
+            Debug.Assert(IsAsync);
 
-            if (!IsAsync)
-            {
-                throw new InvalidOperationException(SR.InvalidOperation_PipeNotAsync);
-            }
-
-            var valueTaskSource = Interlocked.Exchange(ref _reusableConnectionValueTaskSource, null) ?? new ConnectionValueTaskSource(this);
+            ConnectionValueTaskSource? vts = Interlocked.Exchange(ref _reusableConnectionValueTaskSource, null) ?? new ConnectionValueTaskSource(this);
             try
             {
-                valueTaskSource.PrepareForOperation();
-                if (!Interop.Kernel32.ConnectNamedPipe(InternalHandle!, valueTaskSource.Overlapped))
+                vts.PrepareForOperation();
+                if (!Interop.Kernel32.ConnectNamedPipe(InternalHandle!, vts._overlapped))
                 {
                     int errorCode = Marshal.GetLastPInvokeError();
-
                     switch (errorCode)
                     {
                         case Interop.Errors.ERROR_IO_PENDING:
-                            valueTaskSource.RegisterForCancellation(cancellationToken);
+                            // Common case: IO was initiated, completion will be handled by callback.
+                            // Register for cancellation now that the operation has been initiated.
+                            vts.RegisterForCancellation(cancellationToken);
                             break;
 
-                        // If we are here then the pipe is already connected, or there was an error
-                        // so we should unpin and free the overlapped.
                         case Interop.Errors.ERROR_PIPE_CONNECTED:
+                            // If we are here then the pipe is already connected.
                             // IOCompletitionCallback will not be called because we completed synchronously.
-                            valueTaskSource.Dispose();
+                            vts.Dispose();
                             if (State == PipeState.Connected)
                             {
-                                throw new InvalidOperationException(SR.InvalidOperation_PipeAlreadyConnected);
+                                return ValueTask.FromException(ExceptionDispatchInfo.SetCurrentStackTrace(new InvalidOperationException(SR.InvalidOperation_PipeAlreadyConnected)));
                             }
-                            valueTaskSource.SetCompletedSynchronously();
-
-                            // We return a cached task instead of TaskCompletionSource's Task allowing the GC to collect it.
+                            State = PipeState.Connected;
                             return ValueTask.CompletedTask;
 
                         default:
-                            valueTaskSource.Dispose();
-                            return ValueTask.FromException(Win32Marshal.GetExceptionForWin32Error(errorCode));
+                            vts.Dispose();
+                            return ValueTask.FromException(ExceptionDispatchInfo.SetCurrentStackTrace(Win32Marshal.GetExceptionForWin32Error(errorCode)));
                     }
                 }
             }
             catch
             {
-                valueTaskSource.Dispose();
+                vts.Dispose();
                 throw;
             }
 
-            return new ValueTask(valueTaskSource, valueTaskSource.Version);
+            // Completion handled by callback.
+            vts.FinishedScheduling();
+            return new ValueTask(vts, vts.Version);
         }
 
         private void CheckConnectOperationsServerWithHandle()

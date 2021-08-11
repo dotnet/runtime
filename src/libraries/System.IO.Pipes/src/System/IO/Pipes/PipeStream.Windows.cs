@@ -2,12 +2,12 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
+using System.Runtime.ExceptionServices;
 using System.Runtime.InteropServices;
+using System.Runtime.Versioning;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Win32.SafeHandles;
-using System.Runtime.Versioning;
 
 namespace System.IO.Pipes
 {
@@ -260,17 +260,14 @@ namespace System.IO.Pipes
             _threadPoolBinding = ThreadPoolBoundHandle.BindHandle(handle);
         }
 
-        internal virtual void TryToReuse<TResult>(PipeValueTaskSource<TResult> source)
+        internal virtual void TryToReuse(PipeValueTaskSource source)
         {
             source._source.Reset();
 
             if (source is ReadWriteValueTaskSource readWriteSource)
             {
-                ReadWriteValueTaskSource? vts = readWriteSource.IsWrite
-                    ? Interlocked.CompareExchange(ref _reusableWriteValueTaskSource, readWriteSource, null)
-                    : Interlocked.CompareExchange(ref _reusableReadValueTaskSource, readWriteSource, null);
-
-                if (vts is not null)
+                ref ReadWriteValueTaskSource? field = ref readWriteSource._isWrite ? ref _reusableWriteValueTaskSource : ref _reusableReadValueTaskSource;
+                if (Interlocked.CompareExchange(ref field, readWriteSource, null) is not null)
                 {
                     source._preallocatedOverlapped.Dispose();
                 }
@@ -289,61 +286,68 @@ namespace System.IO.Pipes
 
         private unsafe int ReadCore(Span<byte> buffer)
         {
-            int errorCode = 0;
-            int r = ReadFileNative(_handle!, buffer, null, out errorCode);
+            DebugAssertHandleValid(_handle!);
+            Debug.Assert(!_isAsync);
 
-            if (r == -1)
+            if (buffer.Length == 0)
             {
-                // If the other side has broken the connection, set state to Broken and return 0
-                if (errorCode == Interop.Errors.ERROR_BROKEN_PIPE ||
-                    errorCode == Interop.Errors.ERROR_PIPE_NOT_CONNECTED)
+                return 0;
+            }
+
+            fixed (byte* p = &MemoryMarshal.GetReference(buffer))
+            {
+                int bytesRead = 0;
+                if (Interop.Kernel32.ReadFile(_handle!, p, buffer.Length, out bytesRead, IntPtr.Zero) != 0)
                 {
-                    State = PipeState.Broken;
-                    r = 0;
+                    _isMessageComplete = true;
+                    return bytesRead;
                 }
                 else
                 {
-                    throw Win32Marshal.GetExceptionForWin32Error(errorCode, string.Empty);
+                    int errorCode = Marshal.GetLastPInvokeError();
+                    _isMessageComplete = errorCode != Interop.Errors.ERROR_MORE_DATA;
+                    switch (errorCode)
+                    {
+                        case Interop.Errors.ERROR_MORE_DATA:
+                            return bytesRead;
+
+                        case Interop.Errors.ERROR_BROKEN_PIPE:
+                        case Interop.Errors.ERROR_PIPE_NOT_CONNECTED:
+                            State = PipeState.Broken;
+                            return 0;
+
+                        default:
+                            throw Win32Marshal.GetExceptionForWin32Error(errorCode, string.Empty);
+                    }
                 }
             }
-            _isMessageComplete = (errorCode != Interop.Errors.ERROR_MORE_DATA);
-
-            Debug.Assert(r >= 0, "PipeStream's ReadCore is likely broken.");
-
-            return r;
         }
 
-        private ValueTask<int> ReadAsyncCore(Memory<byte> buffer, CancellationToken cancellationToken)
+        private unsafe ValueTask<int> ReadAsyncCore(Memory<byte> buffer, CancellationToken cancellationToken)
         {
-            var valueTaskSource = Interlocked.Exchange(ref _reusableReadValueTaskSource, null) ?? new ReadWriteValueTaskSource(this, isWrite: false);
+            Debug.Assert(_isAsync);
+
+            ReadWriteValueTaskSource vts = Interlocked.Exchange(ref _reusableReadValueTaskSource, null) ?? new ReadWriteValueTaskSource(this, isWrite: false);
             try
             {
-                valueTaskSource.PrepareForOperation(buffer);
-                // Queue an async ReadFile operation and pass in a packed overlapped
-                int errorCode = 0;
-                int r;
-                unsafe
-                {
-                    r = ReadFileNative(_handle!, buffer.Span, valueTaskSource.Overlapped, out errorCode);
-                }
+                vts.PrepareForOperation(buffer);
+                Debug.Assert(vts._memoryHandle.Pointer != null);
 
-                // ReadFile, the OS version, will return 0 on failure, but this ReadFileNative wrapper
-                // returns -1. This will return the following:
-                // - On error, r==-1.
-                // - On async requests that are still pending, r==-1 w/ hr==ERROR_IO_PENDING
-                // - On async requests that completed sequentially, r==0
-                //
-                // You will NEVER RELIABLY be able to get the number of buffer read back from this call
-                // when using overlapped structures!  You must not pass in a non-null lpNumBytesRead to
-                // ReadFile when using overlapped structures!  This is by design NT behavior.
-                if (r == -1)
+                // Queue an async ReadFile operation.
+                if (Interop.Kernel32.ReadFile(_handle!, (byte*)vts._memoryHandle.Pointer, buffer.Length, IntPtr.Zero, vts._overlapped) == 0)
                 {
+                    // The operation failed, or it's pending.
+                    int errorCode = Marshal.GetLastPInvokeError();
                     switch (errorCode)
                     {
                         case Interop.Errors.ERROR_IO_PENDING:
                             // Common case: IO was initiated, completion will be handled by callback.
                             // Register for cancellation now that the operation has been initiated.
-                            valueTaskSource.RegisterForCancellation(cancellationToken);
+                            vts.RegisterForCancellation(cancellationToken);
+                            break;
+
+                        case Interop.Errors.ERROR_MORE_DATA:
+                            // The operation is completing asynchronously but there's nothing to cancel.
                             break;
 
                         // One side has closed its handle or server disconnected.
@@ -351,87 +355,87 @@ namespace System.IO.Pipes
                         case Interop.Errors.ERROR_BROKEN_PIPE:
                         case Interop.Errors.ERROR_PIPE_NOT_CONNECTED:
                             State = PipeState.Broken;
-
-                            unsafe
-                            {
-                                // Clear the overlapped status bit for this special case. Failure to do so looks
-                                // like we are freeing a pending overlapped.
-                                valueTaskSource.Overlapped->InternalLow = IntPtr.Zero;
-                            }
-
-                            valueTaskSource.Dispose();
+                            vts._overlapped->InternalLow = IntPtr.Zero;
+                            vts.Dispose();
                             UpdateMessageCompletion(true);
                             return new ValueTask<int>(0);
 
                         default:
                             // Error. Callback will not be called.
-                            valueTaskSource.Dispose();
+                            vts.Dispose();
                             return ValueTask.FromException<int>(Win32Marshal.GetExceptionForWin32Error(errorCode));
                     }
                 }
             }
             catch
             {
-                valueTaskSource.Dispose();
+                vts.Dispose();
                 throw;
             }
 
-            return new ValueTask<int>(valueTaskSource, valueTaskSource.Version);
+            vts.FinishedScheduling();
+            return new ValueTask<int>(vts, vts.Version);
         }
 
         private unsafe void WriteCore(ReadOnlySpan<byte> buffer)
         {
-            int errorCode = 0;
-            int r = WriteFileNative(_handle!, buffer, null, out errorCode);
+            DebugAssertHandleValid(_handle!);
+            Debug.Assert(!_isAsync);
 
-            if (r == -1)
+            if (buffer.Length == 0)
             {
-                throw WinIOError(errorCode);
+                return;
             }
-            Debug.Assert(r >= 0, "PipeStream's WriteCore is likely broken.");
+
+            fixed (byte* p = &MemoryMarshal.GetReference(buffer))
+            {
+                int bytesWritten = 0;
+                if (Interop.Kernel32.WriteFile(_handle!, p, buffer.Length, out bytesWritten, IntPtr.Zero) == 0)
+                {
+                    throw WinIOError(Marshal.GetLastPInvokeError());
+                }
+            }
         }
 
-        private ValueTask WriteAsyncCore(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken)
+        private unsafe ValueTask WriteAsyncCore(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken)
         {
-            var valueTaskSource = Interlocked.Exchange(ref _reusableWriteValueTaskSource, null) ?? new ReadWriteValueTaskSource(this, isWrite: true);
+            Debug.Assert(_isAsync);
 
+            ReadWriteValueTaskSource vts = Interlocked.Exchange(ref _reusableWriteValueTaskSource, null) ?? new ReadWriteValueTaskSource(this, isWrite: true);
             try
             {
-                valueTaskSource.PrepareForOperation(buffer);
-                int errorCode = 0;
+                vts.PrepareForOperation(buffer);
+                Debug.Assert(vts._memoryHandle.Pointer != null);
 
-                // Queue an async WriteFile operation and pass in a packed overlapped
-                int r;
-                unsafe
+                // Queue an async WriteFile operation.
+                if (Interop.Kernel32.WriteFile(_handle!, (byte*)vts._memoryHandle.Pointer, buffer.Length, IntPtr.Zero, vts._overlapped) == 0)
                 {
-                    r = WriteFileNative(_handle!, buffer.Span, valueTaskSource.Overlapped, out errorCode);
-                }
+                    // The operation failed, or it's pending.
+                    int errorCode = Marshal.GetLastPInvokeError();
+                    switch (errorCode)
+                    {
+                        case Interop.Errors.ERROR_IO_PENDING:
+                            // Common case: IO was initiated, completion will be handled by callback.
+                            // Register for cancellation now that the operation has been initiated.
+                            vts.RegisterForCancellation(cancellationToken);
+                            break;
 
-                // WriteFile, the OS version, will return 0 on failure, but this WriteFileNative
-                // wrapper returns -1. This will return the following:
-                // - On error, r==-1.
-                // - On async requests that are still pending, r==-1 w/ hr==ERROR_IO_PENDING
-                // - On async requests that completed sequentially, r==0
-                //
-                // You will NEVER RELIABLY be able to get the number of buffer written back from this
-                // call when using overlapped structures!  You must not pass in a non-null
-                // lpNumBytesWritten to WriteFile when using overlapped structures!  This is by design
-                // NT behavior.
-                if (r == -1 && errorCode != Interop.Errors.ERROR_IO_PENDING)
-                {
-                    valueTaskSource.Dispose();
-                    return ValueTask.FromException(WinIOError(errorCode));
+                        default:
+                            // Error. Callback will not be invoked.
+                            vts.Dispose();
+                            return ValueTask.FromException(ExceptionDispatchInfo.SetCurrentStackTrace(WinIOError(errorCode)));
+                    }
                 }
-
-                valueTaskSource.RegisterForCancellation(cancellationToken);
             }
             catch
             {
-                valueTaskSource.Dispose();
+                vts.Dispose();
                 throw;
             }
 
-            return new ValueTask(valueTaskSource, valueTaskSource.Version);
+            // Completion handled by callback.
+            vts.FinishedScheduling();
+            return new ValueTask(vts, vts.Version);
         }
 
         // Blocks until the other end of the pipe has read in all written buffer.
@@ -570,77 +574,6 @@ namespace System.IO.Pipes
                         _readMode = value;
                     }
                 }
-            }
-        }
-
-        private unsafe int ReadFileNative(SafePipeHandle handle, Span<byte> buffer, NativeOverlapped* overlapped, out int errorCode)
-        {
-            DebugAssertHandleValid(handle);
-            Debug.Assert((_isAsync && overlapped != null) || (!_isAsync && overlapped == null), "Async IO parameter screwup in call to ReadFileNative.");
-
-            // Note that async callers check to avoid calling this first, so they can call user's callback.
-            if (buffer.Length == 0)
-            {
-                errorCode = 0;
-                return 0;
-            }
-
-            int r = 0;
-            int numBytesRead = 0;
-
-            fixed (byte* p = &MemoryMarshal.GetReference(buffer))
-            {
-                r = _isAsync ?
-                    Interop.Kernel32.ReadFile(handle, p, buffer.Length, IntPtr.Zero, overlapped) :
-                    Interop.Kernel32.ReadFile(handle, p, buffer.Length, out numBytesRead, IntPtr.Zero);
-            }
-
-            if (r == 0)
-            {
-                // In message mode, the ReadFile can inform us that there is more data to come.
-                errorCode = Marshal.GetLastPInvokeError();
-                return errorCode == Interop.Errors.ERROR_MORE_DATA ?
-                    numBytesRead :
-                    -1;
-            }
-            else
-            {
-                errorCode = 0;
-                return numBytesRead;
-            }
-        }
-
-        private unsafe int WriteFileNative(SafePipeHandle handle, ReadOnlySpan<byte> buffer, NativeOverlapped* overlapped, out int errorCode)
-        {
-            DebugAssertHandleValid(handle);
-            Debug.Assert((_isAsync && overlapped != null) || (!_isAsync && overlapped == null), "Async IO parameter screwup in call to WriteFileNative.");
-
-            // Note that async callers check to avoid calling this first, so they can call user's callback.
-            if (buffer.Length == 0)
-            {
-                errorCode = 0;
-                return 0;
-            }
-
-            int r = 0;
-            int numBytesWritten = 0;
-
-            fixed (byte* p = &MemoryMarshal.GetReference(buffer))
-            {
-                r = _isAsync ?
-                    Interop.Kernel32.WriteFile(handle, p, buffer.Length, IntPtr.Zero, overlapped) :
-                    Interop.Kernel32.WriteFile(handle, p, buffer.Length, out numBytesWritten, IntPtr.Zero);
-            }
-
-            if (r == 0)
-            {
-                errorCode = Marshal.GetLastPInvokeError();
-                return -1;
-            }
-            else
-            {
-                errorCode = 0;
-                return numBytesWritten;
             }
         }
 
