@@ -71,6 +71,8 @@ namespace System.Diagnostics
         public long PrivateMemorySize64 { get { throw null; } }
         public System.TimeSpan PrivilegedProcessorTime { get { throw null; } }
         public string ProcessName { get { throw null; } }
+        [System.Runtime.Versioning.SupportedOSPlatform("windows")]
+        [System.Runtime.Versioning.SupportedOSPlatform("linux")]
         public System.IntPtr ProcessorAffinity { get { throw null; } set { } }
         public bool Responding { get { throw null; } }
         public Microsoft.Win32.SafeHandles.SafeProcessHandle SafeHandle { get { throw null; } }
@@ -230,11 +232,13 @@ namespace System.Diagnostics
         public int Id { get { throw null; } }
         public int IdealProcessor { set { } }
         public bool PriorityBoostEnabled { get { throw null; } set { } }
-        public System.Diagnostics.ThreadPriorityLevel PriorityLevel { get { throw null; } [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")] set { } }
+        public System.Diagnostics.ThreadPriorityLevel PriorityLevel { [System.Runtime.Versioning.SupportedOSPlatform("windows")] [System.Runtime.Versioning.SupportedOSPlatform("linux")] [System.Runtime.Versioning.SupportedOSPlatform("freebsd")] get { throw null; } [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")] set { } }
         public System.TimeSpan PrivilegedProcessorTime { get { throw null; } }
         [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
         public System.IntPtr ProcessorAffinity { set { } }
         public System.IntPtr StartAddress { get { throw null; } }
+        [System.Runtime.Versioning.SupportedOSPlatform("windows")]
+        [System.Runtime.Versioning.SupportedOSPlatform("linux")]
         public System.DateTime StartTime { get { throw null; } }
         public System.Diagnostics.ThreadState ThreadState { get { throw null; } }
         public System.TimeSpan TotalProcessorTime { get { throw null; } }

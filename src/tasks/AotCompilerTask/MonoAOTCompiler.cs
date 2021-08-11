@@ -114,7 +114,7 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
     /// <summary>
     /// File to use for profile-guided optimization, *only* the methods described in the file will be AOT compiled.
     /// </summary>
-    public string? AotProfilePath { get; set; }
+    public string[]? AotProfilePath { get; set; }
 
     /// <summary>
     /// List of profilers to use.
@@ -228,10 +228,16 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
             return false;
         }
 
-        if (!string.IsNullOrEmpty(AotProfilePath) && !File.Exists(AotProfilePath))
+        if (AotProfilePath != null)
         {
-            Log.LogError($"'{AotProfilePath}' doesn't exist.", nameof(AotProfilePath));
-            return false;
+            foreach (var path in AotProfilePath)
+            {
+                if (!File.Exists(path))
+                {
+                    Log.LogError($"AotProfilePath '{path}' doesn't exist.");
+                    return false;
+                }
+            }
         }
 
         if (UseLLVM)
@@ -559,9 +565,13 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
             aotAssembly.SetMetadata("AotDataFile", aotDataFile);
         }
 
-        if (!string.IsNullOrEmpty(AotProfilePath))
+        if (AotProfilePath?.Length > 0)
         {
-            aotArgs.Add($"profile={AotProfilePath},profile-only");
+            aotArgs.Add("profile-only");
+            foreach (var path in AotProfilePath)
+            {
+                aotArgs.Add($"profile={path}");
+            }
         }
 
         string depfile = Path.Combine(OutputDir, Path.ChangeExtension(assemblyFilename, ".depfile"));
