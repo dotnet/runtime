@@ -580,9 +580,9 @@ namespace System
 
         public static string Join(string? separator, IEnumerable<string?> values)
         {
-            if (values is List<string?> valuesList)
+            if (values is null)
             {
-                return JoinCore(separator.AsSpan(), CollectionsMarshal.AsSpan(valuesList));
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.values);
             }
 
             if (values is string?[] valuesArray)
@@ -590,9 +590,9 @@ namespace System
                 return JoinCore(separator.AsSpan(), new ReadOnlySpan<string?>(valuesArray));
             }
 
-            if (values == null)
+            if (values is List<string?> valuesList)
             {
-                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.values);
+                return JoinCore(separator.AsSpan(), CollectionsMarshal.AsSpan(valuesList));
             }
 
             using (IEnumerator<string?> en = values.GetEnumerator())
@@ -676,22 +676,22 @@ namespace System
 
         private static string JoinCore<T>(ReadOnlySpan<char> separator, IEnumerable<T> values)
         {
+            if (values is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.values);
+            }
+
             if (typeof(T) == typeof(string))
             {
-                if (values is List<string?> valuesList)
-                {
-                    return JoinCore(separator, CollectionsMarshal.AsSpan(valuesList));
-                }
-
                 if (values is string?[] valuesArray)
                 {
                     return JoinCore(separator, new ReadOnlySpan<string?>(valuesArray));
                 }
-            }
 
-            if (values == null)
-            {
-                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.values);
+                if (values is List<string?> valuesList)
+                {
+                    return JoinCore(separator, CollectionsMarshal.AsSpan(valuesList));
+                }
             }
 
             using (IEnumerator<T> en = values.GetEnumerator())
