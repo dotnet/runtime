@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Reflection;
 using System.Reflection.Emit;
+using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
 
 namespace System.Runtime.InteropServices.Tests
@@ -33,7 +34,7 @@ namespace System.Runtime.InteropServices.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/49872", TestPlatforms.Android)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/49872", typeof(PlatformDetection), nameof(PlatformDetection.IsAndroid), nameof(PlatformDetection.Is32BitProcess))]
         public void OffsetOf_ExplicitLayout_ReturnsExpected()
         {
             Type t = typeof(ExplicitLayoutTest);
@@ -106,7 +107,7 @@ namespace System.Runtime.InteropServices.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/49872", TestPlatforms.Android)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/49872", typeof(PlatformDetection), nameof(PlatformDetection.IsAndroid), nameof(PlatformDetection.Is32BitProcess))]
         public void OffsetOf_Decimal_ReturnsExpected()
         {
             Type t = typeof(FieldAlignmentTest_Decimal);

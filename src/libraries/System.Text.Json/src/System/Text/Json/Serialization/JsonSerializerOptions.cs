@@ -643,6 +643,16 @@ namespace System.Text.Json
             _lastClass = null;
         }
 
+        internal JsonDocumentOptions GetDocumentOptions()
+        {
+            return new JsonDocumentOptions
+            {
+                AllowTrailingCommas = AllowTrailingCommas,
+                CommentHandling = ReadCommentHandling,
+                MaxDepth = MaxDepth
+            };
+        }
+
         internal JsonNodeOptions GetNodeOptions()
         {
             return new JsonNodeOptions

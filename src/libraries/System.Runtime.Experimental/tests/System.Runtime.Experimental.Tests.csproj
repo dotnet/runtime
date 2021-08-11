@@ -41,7 +41,8 @@
     <Compile Include="$(LibrariesProjectRoot)System.Runtime\tests\System\UIntPtrTests.GenericMath.cs" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime.Experimental\ref\System.Runtime.Experimental.csproj" />
+    <!-- it's a reference assembly, but the project system doesn't know that - include it during compilation, but don't publish it -->
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime.Experimental\ref\System.Runtime.Experimental.csproj" IncludeAssets="compile" Private="false" />
     <ProjectReference Include="$(CommonTestPath)TestUtilities.Unicode\TestUtilities.Unicode.csproj" />
   </ItemGroup>
 </Project>

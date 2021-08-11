@@ -398,25 +398,25 @@ namespace System
             }
 
             Span<byte> bytes = MemoryMarshal.AsBytes(new Span<GuidResult>(ref result, 1));
-            uint invalidIfFF = 0;
-            bytes[0] = DecodeByte(guidString[6],   guidString[7],  ref invalidIfFF);
-            bytes[1] = DecodeByte(guidString[4],   guidString[5],  ref invalidIfFF);
-            bytes[2] = DecodeByte(guidString[2],   guidString[3],  ref invalidIfFF);
-            bytes[3] = DecodeByte(guidString[0],   guidString[1],  ref invalidIfFF);
-            bytes[4] = DecodeByte(guidString[11],  guidString[12], ref invalidIfFF);
-            bytes[5] = DecodeByte(guidString[9],   guidString[10], ref invalidIfFF);
-            bytes[6] = DecodeByte(guidString[16],  guidString[17], ref invalidIfFF);
-            bytes[7] = DecodeByte(guidString[14],  guidString[15], ref invalidIfFF);
-            bytes[8] = DecodeByte(guidString[19],  guidString[20], ref invalidIfFF);
-            bytes[9] = DecodeByte(guidString[21],  guidString[22], ref invalidIfFF);
-            bytes[10] = DecodeByte(guidString[24], guidString[25], ref invalidIfFF);
-            bytes[11] = DecodeByte(guidString[26], guidString[27], ref invalidIfFF);
-            bytes[12] = DecodeByte(guidString[28], guidString[29], ref invalidIfFF);
-            bytes[13] = DecodeByte(guidString[30], guidString[31], ref invalidIfFF);
-            bytes[14] = DecodeByte(guidString[32], guidString[33], ref invalidIfFF);
-            bytes[15] = DecodeByte(guidString[34], guidString[35], ref invalidIfFF);
+            int invalidIfNegative = 0;
+            bytes[0] = DecodeByte(guidString[6],   guidString[7],  ref invalidIfNegative);
+            bytes[1] = DecodeByte(guidString[4],   guidString[5],  ref invalidIfNegative);
+            bytes[2] = DecodeByte(guidString[2],   guidString[3],  ref invalidIfNegative);
+            bytes[3] = DecodeByte(guidString[0],   guidString[1],  ref invalidIfNegative);
+            bytes[4] = DecodeByte(guidString[11],  guidString[12], ref invalidIfNegative);
+            bytes[5] = DecodeByte(guidString[9],   guidString[10], ref invalidIfNegative);
+            bytes[6] = DecodeByte(guidString[16],  guidString[17], ref invalidIfNegative);
+            bytes[7] = DecodeByte(guidString[14],  guidString[15], ref invalidIfNegative);
+            bytes[8] = DecodeByte(guidString[19],  guidString[20], ref invalidIfNegative);
+            bytes[9] = DecodeByte(guidString[21],  guidString[22], ref invalidIfNegative);
+            bytes[10] = DecodeByte(guidString[24], guidString[25], ref invalidIfNegative);
+            bytes[11] = DecodeByte(guidString[26], guidString[27], ref invalidIfNegative);
+            bytes[12] = DecodeByte(guidString[28], guidString[29], ref invalidIfNegative);
+            bytes[13] = DecodeByte(guidString[30], guidString[31], ref invalidIfNegative);
+            bytes[14] = DecodeByte(guidString[32], guidString[33], ref invalidIfNegative);
+            bytes[15] = DecodeByte(guidString[34], guidString[35], ref invalidIfNegative);
 
-            if (invalidIfFF != 0xFF)
+            if (invalidIfNegative >= 0)
             {
                 if (!BitConverter.IsLittleEndian)
                 {
@@ -484,25 +484,25 @@ namespace System
             }
 
             Span<byte> bytes = MemoryMarshal.AsBytes(new Span<GuidResult>(ref result, 1));
-            uint invalidIfFF = 0;
-            bytes[0] = DecodeByte(guidString[6], guidString[7], ref invalidIfFF);
-            bytes[1] = DecodeByte(guidString[4], guidString[5], ref invalidIfFF);
-            bytes[2] = DecodeByte(guidString[2], guidString[3], ref invalidIfFF);
-            bytes[3] = DecodeByte(guidString[0], guidString[1], ref invalidIfFF);
-            bytes[4] = DecodeByte(guidString[10], guidString[11], ref invalidIfFF);
-            bytes[5] = DecodeByte(guidString[8], guidString[9], ref invalidIfFF);
-            bytes[6] = DecodeByte(guidString[14], guidString[15], ref invalidIfFF);
-            bytes[7] = DecodeByte(guidString[12], guidString[13], ref invalidIfFF);
-            bytes[8] = DecodeByte(guidString[16], guidString[17], ref invalidIfFF);
-            bytes[9] = DecodeByte(guidString[18], guidString[19], ref invalidIfFF);
-            bytes[10] = DecodeByte(guidString[20], guidString[21], ref invalidIfFF);
-            bytes[11] = DecodeByte(guidString[22], guidString[23], ref invalidIfFF);
-            bytes[12] = DecodeByte(guidString[24], guidString[25], ref invalidIfFF);
-            bytes[13] = DecodeByte(guidString[26], guidString[27], ref invalidIfFF);
-            bytes[14] = DecodeByte(guidString[28], guidString[29], ref invalidIfFF);
-            bytes[15] = DecodeByte(guidString[30], guidString[31], ref invalidIfFF);
+            int invalidIfNegative = 0;
+            bytes[0] = DecodeByte(guidString[6], guidString[7], ref invalidIfNegative);
+            bytes[1] = DecodeByte(guidString[4], guidString[5], ref invalidIfNegative);
+            bytes[2] = DecodeByte(guidString[2], guidString[3], ref invalidIfNegative);
+            bytes[3] = DecodeByte(guidString[0], guidString[1], ref invalidIfNegative);
+            bytes[4] = DecodeByte(guidString[10], guidString[11], ref invalidIfNegative);
+            bytes[5] = DecodeByte(guidString[8], guidString[9], ref invalidIfNegative);
+            bytes[6] = DecodeByte(guidString[14], guidString[15], ref invalidIfNegative);
+            bytes[7] = DecodeByte(guidString[12], guidString[13], ref invalidIfNegative);
+            bytes[8] = DecodeByte(guidString[16], guidString[17], ref invalidIfNegative);
+            bytes[9] = DecodeByte(guidString[18], guidString[19], ref invalidIfNegative);
+            bytes[10] = DecodeByte(guidString[20], guidString[21], ref invalidIfNegative);
+            bytes[11] = DecodeByte(guidString[22], guidString[23], ref invalidIfNegative);
+            bytes[12] = DecodeByte(guidString[24], guidString[25], ref invalidIfNegative);
+            bytes[13] = DecodeByte(guidString[26], guidString[27], ref invalidIfNegative);
+            bytes[14] = DecodeByte(guidString[28], guidString[29], ref invalidIfNegative);
+            bytes[15] = DecodeByte(guidString[30], guidString[31], ref invalidIfNegative);
 
-            if (invalidIfFF != 0xFF)
+            if (invalidIfNegative >= 0)
             {
                 if (!BitConverter.IsLittleEndian)
                 {
@@ -695,21 +695,29 @@ namespace System
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static byte DecodeByte(char ch1, char ch2, ref uint invalidIfFF)
+        private static byte DecodeByte(nuint ch1, nuint ch2, ref int invalidIfNegative)
         {
             // TODO https://github.com/dotnet/runtime/issues/13464:
             // Replace the Unsafe.Add with HexConverter.FromChar once the bounds checks are eliminated.
 
-            uint h1 = 0xFF;
-            if (ch1 < HexConverter.CharToHexLookup.Length)
-                h1 = Unsafe.Add(ref MemoryMarshal.GetReference(HexConverter.CharToHexLookup), ch1);
+            ReadOnlySpan<byte> lookup = HexConverter.CharToHexLookup;
 
-            uint h2 = 0xFF;
-            if (ch2 < HexConverter.CharToHexLookup.Length)
-                h2 = Unsafe.Add(ref MemoryMarshal.GetReference(HexConverter.CharToHexLookup), ch2);
+            int h1 = -1;
+            if (ch1 < (nuint)lookup.Length)
+            {
+                h1 = (sbyte)Unsafe.Add(ref MemoryMarshal.GetReference(lookup), (nint)ch1);
+            }
+            h1 <<= 4;
 
-            invalidIfFF |= h1 | h2;
-            return (byte)(h1 << 4 | h2);
+            int h2 = -1;
+            if (ch2 < (nuint)lookup.Length)
+            {
+                h2 = (sbyte)Unsafe.Add(ref MemoryMarshal.GetReference(lookup), (nint)ch2);
+            }
+
+            int result = h1 | h2;
+            invalidIfNegative |= result;
+            return (byte)result;
         }
 
         private static bool TryParseHex(ReadOnlySpan<char> guidString, out ushort result, ref bool overflow)

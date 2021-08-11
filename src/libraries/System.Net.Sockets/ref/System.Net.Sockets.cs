@@ -287,12 +287,12 @@ namespace System.Net.Sockets
         public int SendBufferSize { get { throw null; } set { } }
         public int SendTimeout { get { throw null; } set { } }
         public System.Net.Sockets.SocketType SocketType { get { throw null; } }
-        [System.ObsoleteAttribute("SupportsIPv4 is obsoleted for this type, please use OSSupportsIPv4 instead. https://go.microsoft.com/fwlink/?linkid=14202")]
+        [System.ObsoleteAttribute("SupportsIPv4 has been deprecated. Use OSSupportsIPv4 instead.")]
         public static bool SupportsIPv4 { get { throw null; } }
-        [System.ObsoleteAttribute("SupportsIPv6 is obsoleted for this type, please use OSSupportsIPv6 instead. https://go.microsoft.com/fwlink/?linkid=14202")]
+        [System.ObsoleteAttribute("SupportsIPv6 has been deprecated. Use OSSupportsIPv6 instead.")]
         public static bool SupportsIPv6 { get { throw null; } }
         public short Ttl { get { throw null; } set { } }
-        [System.ObsoleteAttribute("This property has no effect in .NET 5+ and .NET Core.")]
+        [System.ObsoleteAttribute("UseOnlyOverlappedIO has been deprecated and is not supported.")]
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         public bool UseOnlyOverlappedIO { get { throw null; } set { } }
         public System.Net.Sockets.Socket Accept() { throw null; }
@@ -509,7 +509,7 @@ namespace System.Net.Sockets
         NonBlocking = 1,
         Connected = 2,
         Listening = 4,
-        [System.ObsoleteAttribute("This flag has no effect in .NET 5+ and .NET Core.")]
+        [System.ObsoleteAttribute("SocketInformationOptions.UseOnlyOverlappedIO has been deprecated and is not supported.")]
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         UseOnlyOverlappedIO = 8,
     }
@@ -683,7 +683,7 @@ namespace System.Net.Sockets
     }
     public partial class TcpListener
     {
-        [System.ObsoleteAttribute("This method has been deprecated. Please use TcpListener(IPAddress localaddr, int port) instead. https://go.microsoft.com/fwlink/?linkid=14202")]
+        [System.ObsoleteAttribute("This constructor has been deprecated. Use TcpListener(IPAddress localaddr, int port) instead.")]
         public TcpListener(int port) { }
         public TcpListener(System.Net.IPAddress localaddr, int port) { }
         public TcpListener(System.Net.IPEndPoint localEP) { }

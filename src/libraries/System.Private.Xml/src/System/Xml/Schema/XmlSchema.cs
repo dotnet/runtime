@@ -175,7 +175,7 @@ namespace System.Xml.Schema
             serializer.Serialize(writer, this, ns);
         }
 
-        [Obsolete("Use System.Xml.Schema.XmlSchemaSet for schema compilation and validation. https://go.microsoft.com/fwlink/?linkid=14202")]
+        [Obsolete("XmlSchema.Compile has been deprecated. Use System.Xml.Schema.XmlSchemaSet for schema compilation and validation instead.")]
         public void Compile(ValidationEventHandler? validationEventHandler)
         {
             SchemaInfo sInfo = new SchemaInfo();
@@ -183,7 +183,7 @@ namespace System.Xml.Schema
             CompileSchema(null, null, sInfo, null, validationEventHandler, NameTable, false);
         }
 
-        [Obsolete("Use System.Xml.Schema.XmlSchemaSet for schema compilation and validation. https://go.microsoft.com/fwlink/?linkid=14202")]
+        [Obsolete("XmlSchema.Compile has been deprecated. Use System.Xml.Schema.XmlSchemaSet for schema compilation and validation instead.")]
         public void Compile(ValidationEventHandler? validationEventHandler, XmlResolver? resolver)
         {
             SchemaInfo sInfo = new SchemaInfo();

@@ -5,6 +5,11 @@
     <IncludeDllSafeSearchPathAttribute>true</IncludeDllSafeSearchPathAttribute>
     <Nullable>annotations</Nullable>
     <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-Unix;$(NetCoreAppCurrent);netstandard2.0-windows;netstandard2.0-Unix;netstandard2.0;net461-windows</TargetFrameworks>
+    <IsPackable>true</IsPackable>
+    <PackageDescription>Provides classes for controlling serial ports.
+
+Commonly Used Types:
+System.IO.Ports.SerialPort</PackageDescription>
   </PropertyGroup>
 
   <!-- DesignTimeBuild requires all the TargetFramework Derived Properties to not be present in the first property group. -->
@@ -147,9 +152,17 @@
     <Reference Include="System.Threading.ThreadPool" />
   </ItemGroup>
 
+  <ItemGroup Condition="'$(IsPartialFacadeAssembly)' != 'true'">
+    <!-- Just reference the runtime packages but don't build them in order to avoid unintentional Build/Pack invocations. -->
+    <ProjectReference Include="..\pkg\runtime.native.$(MSBuildProjectName).proj" BuildReference="false" />
+    <!-- Make the runtime specific packages non transitive so that they aren't flowing into other projects. -->
+    <ProjectReference Include="..\pkg\runtime.*.runtime.native.$(MSBuildProjectName).proj" BuildReference="false" PrivateAssets="all" />
+  </ItemGroup>
+
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETStandard'">
     <PackageReference Include="System.Memory" Version="$(SystemMemoryVersion)" />
     <PackageReference Include="Microsoft.Win32.Registry" Version="$(MicrosoftWin32RegistryVersion)" />
-    <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime.CompilerServices.Unsafe\src\System.Runtime.CompilerServices.Unsafe.ilproj" />
+    <!-- S.R.C.Unsafe isn't a primary but transitive dependency and this P2P makes sure that the live version is used. -->
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime.CompilerServices.Unsafe\src\System.Runtime.CompilerServices.Unsafe.ilproj" PrivateAssets="all" />
   </ItemGroup>
 </Project>

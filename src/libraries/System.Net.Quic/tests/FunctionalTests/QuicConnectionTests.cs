@@ -13,6 +13,8 @@ namespace System.Net.Quic.Tests
     {
         const int ExpectedErrorCode = 1234;
 
+        public QuicConnectionTests(ITestOutputHelper output) : base(output) { }
+
         [Fact]
         public async Task TestConnect()
         {
@@ -48,7 +50,6 @@ namespace System.Net.Quic.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/55242", TestPlatforms.Linux)]
         public async Task CloseAsync_WithPendingAcceptAndConnect_PendingAndSubsequentThrowOperationAbortedException()
         {
             using var sync = new SemaphoreSlim(0);
@@ -94,7 +95,6 @@ namespace System.Net.Quic.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/55242", TestPlatforms.Linux)]
         public async Task Dispose_WithPendingAcceptAndConnect_PendingAndSubsequentThrowOperationAbortedException()
         {
             using var sync = new SemaphoreSlim(0);
@@ -128,7 +128,6 @@ namespace System.Net.Quic.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/55242", TestPlatforms.Linux)]
         public async Task ConnectionClosedByPeer_WithPendingAcceptAndConnect_PendingAndSubsequentThrowConnectionAbortedException()
         {
             if (IsMockProvider)
@@ -285,8 +284,14 @@ namespace System.Net.Quic.Tests
         }
     }
 
-    public sealed class QuicConnectionTests_MockProvider : QuicConnectionTests<MockProviderFactory> { }
+    public sealed class QuicConnectionTests_MockProvider : QuicConnectionTests<MockProviderFactory>
+    {
+        public QuicConnectionTests_MockProvider(ITestOutputHelper output) : base(output) { }
+    }
 
     [ConditionalClass(typeof(QuicTestBase<MsQuicProviderFactory>), nameof(QuicTestBase<MsQuicProviderFactory>.IsSupported))]
-    public sealed class QuicConnectionTests_MsQuicProvider : QuicConnectionTests<MsQuicProviderFactory> { }
+    public sealed class QuicConnectionTests_MsQuicProvider : QuicConnectionTests<MsQuicProviderFactory>
+    {
+        public QuicConnectionTests_MsQuicProvider(ITestOutputHelper output) : base(output) { }
+    }
 }

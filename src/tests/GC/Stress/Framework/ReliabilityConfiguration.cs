@@ -388,7 +388,7 @@ public class ReliabilityConfig : IEnumerable, IEnumerator
                                     _curTestSet.MaximumTime = 10;
                                 }
 
-                                    while (currentXML.MoveToNextAttribute())
+                                while (currentXML.MoveToNextAttribute())
                                 {
                                     XmlDebugOut(" " + currentXML.Name + "=\"" + currentXML.Value + "\"");
                                     switch (currentXML.Name)
@@ -456,7 +456,7 @@ public class ReliabilityConfig : IEnumerable, IEnumerator
                                                     cpuCount = Convert.ToInt32(Environment.GetEnvironmentVariable("NUMBER_OF_PROCESSORS"));
                                                 }
 
-                                               if (cpuCount <= 0)
+                                                if (cpuCount <= 0)
                                                     throw new Exception("Invalid Value when reading processor count: " + cpuCount);
                                                 _curTestSet.MinTestsRunning = cpuCount;
                                                 _curTestSet.MaxTestsRunning = (int)(cpuCount * 1.5);
@@ -962,7 +962,7 @@ public class ReliabilityConfig : IEnumerable, IEnumerator
                                 }
 
                                 int testCopies = 1;
-                                if (_curTestSet.AppDomainLoaderMode == AppDomainLoaderMode.FullIsolation || 
+                                if (_curTestSet.AppDomainLoaderMode == AppDomainLoaderMode.FullIsolation ||
                                     _curTestSet.AssemblyLoadContextLoaderMode == AssemblyLoadContextLoaderMode.FullIsolation)
                                 {
                                     // in this mode each copy of the test is ran in it's own app domain or AssemblyLoadContext,

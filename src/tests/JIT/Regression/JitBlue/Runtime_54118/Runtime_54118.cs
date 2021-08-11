@@ -29,29 +29,29 @@ class Runtime_54118
             index++;
         }
 
-        Test(nameof(TestConstantByref), TestConstantByref);
-        Test(nameof(TestConstantArr), TestConstantArr);
-        Test(nameof(TestConstantClsVar), TestConstantClsVar);
-        Test(nameof(TestParamByref), () => TestParamByref(1));
-        Test(nameof(TestParamArr), () => TestParamArr(1));
-        Test(nameof(TestParamClsVar), () => TestParamClsVar(1));
-        Test(nameof(TestPhiByref), TestPhiByref);
-        Test(nameof(TestPhiArr), TestPhiArr);
-        Test(nameof(TestPhiClsVar), TestPhiClsVar);
-        Test(nameof(TestCastByref), TestCastByref);
-        Test(nameof(TestCastArr), TestCastArr);
-        Test(nameof(TestCastClsVar), TestCastClsVar);
+        Test(nameof(TestConstantByref), () => TestConstantByref(2));
+        Test(nameof(TestConstantArr), () => TestConstantArr(2));
+        Test(nameof(TestConstantClsVar), () => TestConstantClsVar(2));
+        Test(nameof(TestParamByref), () => TestParamByref(1, 2));
+        Test(nameof(TestParamArr), () => TestParamArr(1, 2));
+        Test(nameof(TestParamClsVar), () => TestParamClsVar(1, 2));
+        Test(nameof(TestPhiByref), () => TestPhiByref(2));
+        Test(nameof(TestPhiArr), () => TestPhiArr(2));
+        Test(nameof(TestPhiClsVar), () => TestPhiClsVar(2));
+        Test(nameof(TestCastByref), () => TestCastByref(2));
+        Test(nameof(TestCastArr), () => TestCastArr(2));
+        Test(nameof(TestCastClsVar), () => TestCastClsVar(2));
 
         return 100 + result;
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    static bool TestConstantByref()
+    static bool TestConstantByref(int k)
     {
         int[] arr = { -1 };
         ref int r = ref arr[0];
         int val = -1;
-        for (int i = 0; i < 2; i++)
+        for (int i = 0; i < k; i++)
         {
             r = 1;
             val = r;
@@ -61,11 +61,11 @@ class Runtime_54118
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    static bool TestConstantArr()
+    static bool TestConstantArr(int k)
     {
         int[] arr = { -1 };
         int val = -1;
-        for (int i = 0; i < 2; i++)
+        for (int i = 0; i < k; i++)
         {
             arr[0] = 1;
             val = arr[0];
@@ -77,11 +77,11 @@ class Runtime_54118
     static int _clsVar;
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    static bool TestConstantClsVar()
+    static bool TestConstantClsVar(int k)
     {
         _clsVar = -1;
         int val = -1;
-        for (int i = 0; i < 2; i++)
+        for (int i = 0; i < k; i++)
         {
             _clsVar = 1;
             val = _clsVar;
@@ -91,12 +91,12 @@ class Runtime_54118
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    static bool TestParamByref(int one)
+    static bool TestParamByref(int one, int k)
     {
         int[] arr = { -1 };
         ref int r = ref arr[0];
         int val = -1;
-        for (int i = 0; i < 2; i++)
+        for (int i = 0; i < k; i++)
         {
             r = one;
             val = r;
@@ -106,11 +106,11 @@ class Runtime_54118
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    static bool TestParamArr(int one)
+    static bool TestParamArr(int one, int k)
     {
         int[] arr = { -1 };
         int val = -1;
-        for (int i = 0; i < 2; i++)
+        for (int i = 0; i < k; i++)
         {
             arr[0] = one;
             val = arr[0];
@@ -120,11 +120,11 @@ class Runtime_54118
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    static bool TestParamClsVar(int one)
+    static bool TestParamClsVar(int one, int k)
     {
         _clsVar = -1;
         int val = -1;
-        for (int i = 0; i < 2; i++)
+        for (int i = 0; i < k; i++)
         {
             _clsVar = one;
             val = _clsVar;
@@ -134,14 +134,14 @@ class Runtime_54118
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    static bool TestPhiByref()
+    static bool TestPhiByref(int k)
     {
         int[] arr = { -1 };
         ref int r = ref arr[0];
         int val = -1;
-        for (int i = 0; i < 2; i++)
+        for (int i = 0; i < k; i++)
         {
-            for (int j = 0; j < 2; j++)
+            for (int j = 0; j < k; j++)
             {
                 r = i;
                 val = r;
@@ -152,13 +152,13 @@ class Runtime_54118
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    static bool TestPhiArr()
+    static bool TestPhiArr(int k)
     {
         int[] arr = { -1 };
         int val = -1;
-        for (int i = 0; i < 2; i++)
+        for (int i = 0; i < k; i++)
         {
-            for (int j = 0; j < 2; j++)
+            for (int j = 0; j < k; j++)
             {
                 arr[0] = i;
                 val = arr[0];
@@ -169,13 +169,13 @@ class Runtime_54118
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    static bool TestPhiClsVar()
+    static bool TestPhiClsVar(int k)
     {
         _clsVar = -1;
         int val = -1;
-        for (int i = 0; i < 2; i++)
+        for (int i = 0; i < k; i++)
         {
-            for (int j = 0; j < 2; j++)
+            for (int j = 0; j < k; j++)
             {
                 _clsVar = i;
                 val = _clsVar;
@@ -186,14 +186,14 @@ class Runtime_54118
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    static bool TestCastByref()
+    static bool TestCastByref(int k)
     {
         int[] arr = { -1 };
         ref int r = ref arr[0];
         int val = -1;
-        for (int i = 0; i < 2; i++)
+        for (int i = 0; i < k; i++)
         {
-            for (int j = 0; j < 2; j++)
+            for (int j = 0; j < k; j++)
             {
                 r = i;
                 val = (byte)r;
@@ -204,13 +204,13 @@ class Runtime_54118
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    static bool TestCastArr()
+    static bool TestCastArr(int k)
     {
         int[] arr = { -1 };
         int val = -1;
-        for (int i = 0; i < 2; i++)
+        for (int i = 0; i < k; i++)
         {
-            for (int j = 0; j < 2; j++)
+            for (int j = 0; j < k; j++)
             {
                 arr[0] = i;
                 val = (byte)arr[0];
@@ -221,13 +221,13 @@ class Runtime_54118
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    static bool TestCastClsVar()
+    static bool TestCastClsVar(int k)
     {
         _clsVar = -1;
         int val = -1;
-        for (int i = 0; i < 2; i++)
+        for (int i = 0; i < k; i++)
         {
-            for (int j = 0; j < 2; j++)
+            for (int j = 0; j < k; j++)
             {
                 _clsVar = i;
                 val = (byte)_clsVar;

@@ -73,14 +73,14 @@ namespace System.Text.Encodings.Web
             _allowedAsciiCodePoints.PopulateAllowedCodePoints(_allowedBmpCodePoints);
         }
 
-        [Obsolete("Greenfield code shouldn't call this. It should only be used by the TextEncoder adapter.")]
+        [Obsolete("FindFirstCharacterToEncode has been deprecated. It should only be used by the TextEncoder adapter.")]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public unsafe int FindFirstCharacterToEncode(char* text, int textLength)
         {
             return GetIndexOfFirstCharToEncode(new ReadOnlySpan<char>(text, textLength)); // performs bounds checking
         }
 
-        [Obsolete("Greenfield code shouldn't call this. It should only be used by the TextEncoder adapter.")]
+        [Obsolete("TryEncodeUnicodeScalar has been deprecated. It should only be used by the TextEncoder adapter.")]
         public unsafe bool TryEncodeUnicodeScalar(int unicodeScalar, char* buffer, int bufferLength, out int numberOfCharactersWritten)
         {
             Span<char> destination = new Span<char>(buffer, bufferLength);

@@ -12,10 +12,8 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace System.Data.Common
 {
-    // This coarse suppression silences all RequiresUnreferencedCode warnings in the class.
-    // https://github.com/mono/linker/issues/2136 tracks making it possible to add more granular suppressions at the member level, and with a different warning code.
-    [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
-        Justification = "The use of GetType preserves members with RequiresUnreferencedCode, but the GetType callsites either "
+    [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2113:ReflectionToRequiresUnreferencedCode",
+        Justification = "The use of GetType preserves ICustomTypeDescriptor members with RequiresUnreferencedCode, but the GetType callsites either "
             + "occur in RequiresUnreferencedCode scopes, or have individually justified suppressions.")]
     [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
     public class DbConnectionStringBuilder : IDictionary, ICustomTypeDescriptor
@@ -393,6 +391,9 @@ namespace System.Data.Common
             return attributes;
         }
 
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2112:ReflectionToRequiresUnreferencedCode",
+            Justification = "The use of GetType preserves this member with RequiresUnreferencedCode, but the GetType callsites either "
+                + "occur in RequiresUnreferencedCode scopes, or have individually justified suppressions.")]
         [RequiresUnreferencedCode("PropertyDescriptor's PropertyType cannot be statically discovered.")]
         private PropertyDescriptorCollection GetProperties()
         {
@@ -419,6 +420,9 @@ namespace System.Data.Common
             return propertyDescriptors;
         }
 
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2112:ReflectionToRequiresUnreferencedCode",
+            Justification = "The use of GetType preserves this member with RequiresUnreferencedCode, but the GetType callsites either "
+                + "occur in RequiresUnreferencedCode scopes, or have individually justified suppressions.")]
         [RequiresUnreferencedCode("PropertyDescriptor's PropertyType cannot be statically discovered.")]
         protected virtual void GetProperties(Hashtable propertyDescriptors)
         {
@@ -526,6 +530,9 @@ namespace System.Data.Common
             }
         }
 
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2112:ReflectionToRequiresUnreferencedCode",
+            Justification = "The use of GetType preserves this member with RequiresUnreferencedCode, but the GetType callsites either "
+                + "occur in RequiresUnreferencedCode scopes, or have individually justified suppressions.")]
         [RequiresUnreferencedCode("The public parameterless constructor or the 'Default' static field may be trimmed from the Attribute's Type.")]
         private PropertyDescriptorCollection GetProperties(Attribute[]? attributes)
         {

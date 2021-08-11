@@ -233,7 +233,7 @@ namespace System.Net.Test.Common
         }
 
         // Wait for the client to close the connection, e.g. after we send a GOAWAY, or after the HttpClient is disposed.
-        public async Task WaitForClientDisconnectAsync()
+        public async Task WaitForClientDisconnectAsync(bool refuseNewRequests = true)
         {
             while (true)
             {
@@ -242,6 +242,11 @@ namespace System.Net.Test.Common
                 try
                 {
                     stream = await AcceptRequestStreamAsync().ConfigureAwait(false);
+
+                    if (!refuseNewRequests)
+                    {
+                        throw new Exception("Unexpected request stream received while waiting for client disconnect");
+                    }
                 }
                 catch (QuicConnectionAbortedException abortException) when (abortException.ErrorCode == H3_NO_ERROR)
                 {

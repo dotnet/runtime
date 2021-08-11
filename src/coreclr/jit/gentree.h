@@ -3797,6 +3797,8 @@ enum GenTreeCallFlags : unsigned int
                                                      // to restore real function address and load hidden argument
                                                      // as the first argument for calli. It is CoreRT replacement for instantiating
                                                      // stubs, because executable code cannot be generated at runtime.
+    GTF_CALL_M_HELPER_SPECIAL_DCE      = 0x00020000, // this helper call can be removed if it is part of a comma and
+                                                     // the comma result is unused.
     GTF_CALL_M_DEVIRTUALIZED           = 0x00040000, // this call was devirtualized
     GTF_CALL_M_UNBOXED                 = 0x00080000, // this call was optimized to use the unboxed entry point
     GTF_CALL_M_GUARDED_DEVIRT          = 0x00100000, // this call is a candidate for guarded devirtualization

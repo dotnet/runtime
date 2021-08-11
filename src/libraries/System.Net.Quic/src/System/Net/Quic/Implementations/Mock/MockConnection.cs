@@ -2,8 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
-using System.Net;
 using System.Net.Security;
+using System.Security.Cryptography.X509Certificates;
 using System.Runtime.ExceptionServices;
 using System.Threading;
 using System.Threading.Channels;
@@ -42,6 +42,8 @@ namespace System.Net.Quic.Implementations.Mock
                 return errorCode;
             }
         }
+        
+        internal override X509Certificate? RemoteCertificate => null;
 
         // Constructor for outbound connections
         internal MockConnection(EndPoint? remoteEndPoint, SslClientAuthenticationOptions? sslClientAuthenticationOptions, IPEndPoint? localEndPoint = null, int maxUnidirectionalStreams = 100, int maxBidirectionalStreams = 100)

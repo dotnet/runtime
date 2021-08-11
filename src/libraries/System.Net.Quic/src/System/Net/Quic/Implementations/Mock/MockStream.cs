@@ -42,6 +42,20 @@ namespace System.Net.Quic.Implementations.Mock
 
         private StreamBuffer? ReadStreamBuffer => _isInitiator ? _streamState._inboundStreamBuffer : _streamState._outboundStreamBuffer;
 
+        internal override bool CanTimeout => false;
+
+        internal override int ReadTimeout
+        {
+            get => throw new InvalidOperationException();
+            set => throw new InvalidOperationException();
+        }
+
+        internal override int WriteTimeout
+        {
+            get => throw new InvalidOperationException();
+            set => throw new InvalidOperationException();
+        }
+
         internal override bool CanRead => !_disposed && ReadStreamBuffer is not null;
 
         internal override int Read(Span<byte> buffer)

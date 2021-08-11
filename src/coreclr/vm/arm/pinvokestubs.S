@@ -84,7 +84,9 @@
 
         PROLOG_PUSH  "{r4, lr}"
 
-        ldr     r1, =s_gsCookie
+        ldr     r1, =s_gsCookie-(1f+4)
+1:
+        add     r1, pc
         ldr     r1, [r1]
         str     r1, [r0]
         add     r4, r0, SIZEOF__GSCookie
@@ -92,7 +94,9 @@
         // r4 = pFrame
 
         // set first slot to the value of InlinedCallFrame::`vftable' (checked by runtime code)
-        ldr     r1, .L12
+        ldr     r1, =_ZTV16InlinedCallFrame+8-(2f+4)
+2:
+        add     r1, pc
         str     r1, [r4]
 
         mov     r1, 0
@@ -123,9 +127,6 @@
 
     NESTED_END JIT_PInvokeBegin, _TEXT
 
-.L12:
-    .word   _ZTV16InlinedCallFrame+8
-
 // ------------------------------------------------------------------
 // IN:
 // InlinedCallFrame (r0) = pointer to the InlinedCallFrame data, including the GS cookie slot (GS cookie right
@@ -145,7 +146,9 @@
         str     r2, [r1, #Thread_m_fPreemptiveGCDisabled]
 
         // Check return trap
-        ldr     r2, =g_TrapReturningThreads
+        ldr     r2, =g_TrapReturningThreads-(1f+4)
+1:
+        add     r2, pc
         ldr     r2, [r2]
         cbnz    r2, LOCAL_LABEL(RarePath)
 

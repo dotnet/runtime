@@ -150,6 +150,12 @@
   <data name="net_quic_writing_notallowed" xml:space="preserve">
     <value>Writing is not allowed on stream.</value>
   </data>
+  <data name="net_quic_timeout_use_gt_zero" xml:space="preserve">
+    <value>Timeout can only be set to 'System.Threading.Timeout.Infinite' or a value &gt; 0.</value>
+  </data>
+  <data name="net_quic_timeout" xml:space="preserve">
+    <value>Connection timed out.</value>
+  </data>
   <data name="net_quic_ssl_option" xml:space="preserve">
     <value>'{0}' is not supported by System.Net.Quic.</value>
   </data>

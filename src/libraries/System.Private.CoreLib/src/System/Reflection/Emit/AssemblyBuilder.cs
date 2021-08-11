@@ -8,7 +8,7 @@ namespace System.Reflection.Emit
 {
     public sealed partial class AssemblyBuilder : Assembly
     {
-        [RequiresAssemblyFiles("The code will throw for assemblies embedded in a single-file app")]
+        [RequiresAssemblyFiles(ThrowingMessageInRAF)]
         public override string? CodeBase => throw new NotSupportedException(SR.NotSupported_DynamicAssembly);
         public override string Location => throw new NotSupportedException(SR.NotSupported_DynamicAssembly);
         public override MethodInfo? EntryPoint => null;
@@ -18,9 +18,11 @@ namespace System.Reflection.Emit
         public override Type[] GetExportedTypes() =>
             throw new NotSupportedException(SR.NotSupported_DynamicAssembly);
 
+        [RequiresAssemblyFiles(ThrowingMessageInRAF)]
         public override FileStream GetFile(string name) =>
             throw new NotSupportedException(SR.NotSupported_DynamicAssembly);
 
+        [RequiresAssemblyFiles(ThrowingMessageInRAF)]
         public override FileStream[] GetFiles(bool getResourceModules) =>
             throw new NotSupportedException(SR.NotSupported_DynamicAssembly);
 

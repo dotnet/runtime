@@ -240,7 +240,8 @@ namespace Microsoft.WebAssembly.Diagnostics
         CreateInstance = 19,
         GetValueSize = 20,
         GetValuesICorDbg = 21,
-        GetParents = 22
+        GetParents = 22,
+        Initialize = 23,
     }
 
     internal enum CmdArray {
@@ -622,6 +623,7 @@ namespace Microsoft.WebAssembly.Diagnostics
         private static int MINOR_VERSION = 61;
         private static int MAJOR_VERSION = 2;
         private readonly ILogger logger;
+        private Regex regexForAsyncLocals = new Regex(@"\<([^)]*)\>", RegexOptions.Singleline);
 
         public MonoSDBHelper(MonoProxy proxy, ILogger logger)
         {
@@ -929,6 +931,41 @@ namespace Microsoft.WebAssembly.Diagnostics
             return false;
         }
 
+        public async Task<JObject> GetFieldValue(SessionId sessionId, int typeId, int fieldId, CancellationToken token)
+        {
+            var ret = new List<FieldTypeClass>();
+            var commandParams = new MemoryStream();
+            var commandParamsWriter = new MonoBinaryWriter(commandParams);
+            commandParamsWriter.Write(typeId);
+            commandParamsWriter.Write(1);
+            commandParamsWriter.Write(fieldId);
+
+            var retDebuggerCmdReader = await SendDebuggerAgentCommand<CmdType>(sessionId, CmdType.GetValues, commandParams, token);
+            return await CreateJObjectForVariableValue(sessionId, retDebuggerCmdReader, "", false, -1, token);
+        }
+
+        public async Task<int> TypeIsInitialized(SessionId sessionId, int typeId, CancellationToken token)
+        {
+            var ret = new List<FieldTypeClass>();
+            var commandParams = new MemoryStream();
+            var commandParamsWriter = new MonoBinaryWriter(commandParams);
+            commandParamsWriter.Write(typeId);
+
+            var retDebuggerCmdReader = await SendDebuggerAgentCommand<CmdType>(sessionId, CmdType.IsInitialized, commandParams, token);
+            return retDebuggerCmdReader.ReadInt32();
+        }
+
+        public async Task<int> TypeInitialize(SessionId sessionId, int typeId, CancellationToken token)
+        {
+            var ret = new List<FieldTypeClass>();
+            var commandParams = new MemoryStream();
+            var commandParamsWriter = new MonoBinaryWriter(commandParams);
+            commandParamsWriter.Write(typeId);
+
+            var retDebuggerCmdReader = await SendDebuggerAgentCommand<CmdType>(sessionId, CmdType.Initialize, commandParams, token);
+            return retDebuggerCmdReader.ReadInt32();
+        }
+
         public async Task<List<FieldTypeClass>> GetTypeFields(SessionId sessionId, int type_id, CancellationToken token)
         {
             var ret = new List<FieldTypeClass>();
@@ -945,6 +982,9 @@ namespace Microsoft.WebAssembly.Diagnostics
                 string fieldNameStr = retDebuggerCmdReader.ReadString();
                 int typeId = retDebuggerCmdReader.ReadInt32(); //typeId
                 retDebuggerCmdReader.ReadInt32(); //attrs
+                int isSpecialStatic = retDebuggerCmdReader.ReadInt32(); //is_special_static
+                if (isSpecialStatic == 1)
+                    continue;
                 if (fieldNameStr.Contains("k__BackingField"))
                 {
                     fieldNameStr = fieldNameStr.Replace("k__BackingField", "");
@@ -1128,6 +1168,17 @@ namespace Microsoft.WebAssembly.Diagnostics
             return await GetTypeName(sessionId, type_id[0], token);
         }
 
+        public async Task<int> GetTypeIdFromToken(SessionId sessionId, int assemblyId, int typeToken, CancellationToken token)
+        {
+            var ret = new List<string>();
+            var commandParams = new MemoryStream();
+            var commandParamsWriter = new MonoBinaryWriter(commandParams);
+            commandParamsWriter.Write((int)assemblyId);
+            commandParamsWriter.Write((int)typeToken);
+            var retDebuggerCmdReader = await SendDebuggerAgentCommand<CmdAssembly>(sessionId, CmdAssembly.GetTypeFromToken, commandParams, token);
+            return retDebuggerCmdReader.ReadInt32();
+        }
+
         public async Task<int> GetMethodIdByName(SessionId sessionId, int type_id, string method_name, CancellationToken token)
         {
             var ret = new List<string>();
@@ -1191,6 +1242,30 @@ namespace Microsoft.WebAssembly.Diagnostics
             retDebuggerCmdReader.ReadByte(); //number of objects returned.
             return await CreateJObjectForVariableValue(sessionId, retDebuggerCmdReader, varName, false, -1, token);
         }
+
+        public async Task<int> GetPropertyMethodIdByName(SessionId sessionId, int typeId, string propertyName, CancellationToken token)
+        {
+            var commandParams = new MemoryStream();
+            var commandParamsWriter = new MonoBinaryWriter(commandParams);
+            commandParamsWriter.Write(typeId);
+
+            var retDebuggerCmdReader = await SendDebuggerAgentCommand<CmdType>(sessionId, CmdType.GetProperties, commandParams, token);
+            var nProperties = retDebuggerCmdReader.ReadInt32();
+            for (int i = 0 ; i < nProperties; i++)
+            {
+                retDebuggerCmdReader.ReadInt32(); //propertyId
+                string propertyNameStr = retDebuggerCmdReader.ReadString();
+                var getMethodId = retDebuggerCmdReader.ReadInt32();
+                retDebuggerCmdReader.ReadInt32(); //setmethod
+                var attrs = retDebuggerCmdReader.ReadInt32(); //attrs
+                if (propertyNameStr == propertyName)
+                {
+                    return getMethodId;
+                }
+            }
+            return -1;
+        }
+
         public async Task<JArray> CreateJArrayForProperties(SessionId sessionId, int typeId, byte[] object_buffer, JArray attributes, bool isAutoExpandable, string objectId, bool isOwn, CancellationToken token)
         {
             JArray ret = new JArray();
@@ -1636,6 +1711,62 @@ namespace Microsoft.WebAssembly.Diagnostics
             return retDebuggerCmdReader.ReadByte() == 1 ; //token
         }
 
+        private bool IsClosureReferenceField (string fieldName)
+        {
+            // mcs is "$locvar"
+            // old mcs is "<>f__ref"
+            // csc is "CS$<>"
+            // roslyn is "<>8__"
+            return fieldName.StartsWith ("CS$<>", StringComparison.Ordinal) ||
+                        fieldName.StartsWith ("<>f__ref", StringComparison.Ordinal) ||
+                        fieldName.StartsWith ("$locvar", StringComparison.Ordinal) ||
+                        fieldName.StartsWith ("<>8__", StringComparison.Ordinal);
+        }
+
+        public async Task<JArray> GetHoistedLocalVariables(SessionId sessionId, int objectId, JArray asyncLocals, CancellationToken token)
+        {
+            JArray asyncLocalsFull = new JArray();
+            List<int> objectsAlreadyRead = new();
+            objectsAlreadyRead.Add(objectId);
+            foreach (var asyncLocal in asyncLocals)
+            {
+                var fieldName = asyncLocal["name"].Value<string>();
+                if (fieldName.EndsWith("__this", StringComparison.Ordinal))
+                {
+                    asyncLocal["name"] = "this";
+                    asyncLocalsFull.Add(asyncLocal);
+                }
+                else if (IsClosureReferenceField(fieldName)) //same code that has on debugger-libs
+                {
+                    if (DotnetObjectId.TryParse(asyncLocal?["value"]?["objectId"]?.Value<string>(), out DotnetObjectId dotnetObjectId))
+                    {
+                        if (int.TryParse(dotnetObjectId.Value, out int objectIdToGetInfo) && !objectsAlreadyRead.Contains(objectIdToGetInfo))
+                        {
+                            var asyncLocalsFromObject = await GetObjectValues(sessionId, objectIdToGetInfo, true, false, false, false, token);
+                            var hoistedLocalVariable = await GetHoistedLocalVariables(sessionId, objectIdToGetInfo, asyncLocalsFromObject, token);
+                            asyncLocalsFull = new JArray(asyncLocalsFull.Union(hoistedLocalVariable));
+                        }
+                    }
+                }
+                else if (fieldName.StartsWith("<>", StringComparison.Ordinal)) //examples: <>t__builder, <>1__state
+                {
+                    continue;
+                }
+                else if (fieldName.StartsWith('<')) //examples: <code>5__2
+                {
+                    var match = regexForAsyncLocals.Match(fieldName);
+                    if (match.Success)
+                        asyncLocal["name"] = match.Groups[1].Value;
+                    asyncLocalsFull.Add(asyncLocal);
+                }
+                else
+                {
+                    asyncLocalsFull.Add(asyncLocal);
+                }
+            }
+            return asyncLocalsFull;
+        }
+
         public async Task<JArray> StackFrameGetValues(SessionId sessionId, MethodInfo method, int thread_id, int frame_id, VarInfo[] varIds, CancellationToken token)
         {
             var commandParams = new MemoryStream();
@@ -1655,14 +1786,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                 retDebuggerCmdReader.ReadByte(); //ignore type
                 var objectId = retDebuggerCmdReader.ReadInt32();
                 var asyncLocals = await GetObjectValues(sessionId, objectId, true, false, false, false, token);
-                asyncLocals = new JArray(asyncLocals.Where( asyncLocal => !asyncLocal["name"].Value<string>().Contains("<>") || asyncLocal["name"].Value<string>().EndsWith("__this")));
-                foreach (var asyncLocal in asyncLocals)
-                {
-                    if (asyncLocal["name"].Value<string>().EndsWith("__this"))
-                        asyncLocal["name"] = "this";
-                    else if (asyncLocal["name"].Value<string>().Contains('<'))
-                        asyncLocal["name"] = Regex.Match(asyncLocal["name"].Value<string>(), @"\<([^)]*)\>").Groups[1].Value;
-                }
+                asyncLocals = await GetHoistedLocalVariables(sessionId, objectId, asyncLocals, token);
                 return asyncLocals;
             }
 

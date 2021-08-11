@@ -532,7 +532,7 @@ namespace System.Threading.Tasks.Tests
             // We want to make sure that holding on to the resulting Task doesn't keep
             // that finalizable object alive.
 
-            var tcs = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+            bool finalized = false;
 
             Task t = null;
 
@@ -544,7 +544,7 @@ namespace System.Threading.Tasks.Tests
                     GC.KeepAlive(s); // keep s referenced by the state machine
                 }
 
-                var state = new InvokeActionOnFinalization { Action = () => tcs.SetResult() };
+                var state = new InvokeActionOnFinalization { Action = () => Volatile.Write(ref finalized, true) };
                 var al = new AsyncLocal<object>() { Value = state }; // ensure the object is stored in ExecutionContext
                 t = YieldOnceAsync(state); // ensure the object is stored in the state machine
                 al.Value = null;
@@ -556,19 +556,16 @@ namespace System.Threading.Tasks.Tests
             await t; // wait for the async method to complete and clear out its state
             await Task.Yield(); // ensure associated state is not still on the stack as part of the antecedent's execution
 
-            for (int i = 0; i < 2; i++)
+            for (int i = 0; i < 10 && !Volatile.Read(ref finalized); i++)
             {
                 GC.Collect();
                 GC.WaitForPendingFinalizers();
+                await Task.Yield();
             }
 
-            try
+            if (!Volatile.Read(ref finalized))
             {
-                await tcs.Task.WaitAsync(TimeSpan.FromSeconds(60));
-            }
-            catch (Exception e)
-            {
-                Environment.FailFast("Look at the created dump", e);
+                Environment.FailFast("Look at the created dump");
             }
 
             GC.KeepAlive(t); // ensure the object is stored in the state machine

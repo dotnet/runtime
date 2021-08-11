@@ -269,7 +269,7 @@ jobs:
           artifactName: $(buildProductArtifactName)
           displayName: 'product build'
 
-    - ${{ if and(in(parameters.osGroup, 'windows', 'Linux'), ne(parameters.archType, 'x86'), ne(parameters.compilerName, 'gcc'), ne(parameters.testGroup, 'clrTools')) }}:
+    - ${{ if and(in(parameters.osGroup, 'windows', 'Linux'), ne(parameters.archType, 'x86'), ne(parameters.compilerName, 'gcc'), ne(parameters.testGroup, 'clrTools'), eq(parameters.pgoType, '')) }}:
       - template: /eng/pipelines/coreclr/templates/crossdac-build.yml
         parameters:
           archType: ${{ parameters.archType }}
