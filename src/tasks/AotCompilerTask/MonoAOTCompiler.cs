@@ -724,7 +724,7 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
         _fileWrites.Add(finalPath);
 
         int count = Interlocked.Increment(ref _numCompiled);
-        Log.LogMessage(MessageImportance.High, $"[{count}/{_totalNumAssemblies}] {assemblyPath} -> {Path.GetFileName(finalPath)}");
+        Log.LogMessage(MessageImportance.High, $"[{count}/{_totalNumAssemblies}] {Path.GetFileName(assemblyPath)} -> {Path.GetFileName(finalPath)}");
 
         bool ShouldCopy([NotNullWhen(true)] out string? cause)
         {
