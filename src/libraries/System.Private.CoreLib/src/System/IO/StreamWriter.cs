@@ -37,7 +37,7 @@ namespace System.IO
         private readonly char[] _charBuffer;
         private int _charPos;
         private int _charLen;
-        private List<byte> _acc = new List<byte>();
+        private readonly List<byte> _acc = new List<byte>();
         private int _lineStartPos;
         private bool _autoFlush;
         private bool _haveWrittenPreamble;
@@ -335,7 +335,7 @@ namespace System.IO
                             _acc.AddRange(byteBuffer.Slice(0, count).ToArray());
                         }
 
-                        _stream.Write(_acc.ToArray().AsSpan<byte>());
+                        _stream.Write(CollectionsMarshal.AsSpan(_acc));
                         _acc.Clear();
 
                         _lineStartPos = i + 1;
