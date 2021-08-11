@@ -634,7 +634,7 @@ fi
 if [[ "$__RebuildTests" -ne 0 ]]; then
     if [[ -d "${__TestWorkingDir}" ]]; then
         echo "Removing tests build dir: ${__TestWorkingDir}"
-        rm -rf "__TestWorkingDir"
+        rm -rf "${__TestWorkingDir}"
     fi
 fi
 
