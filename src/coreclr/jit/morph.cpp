@@ -13582,8 +13582,14 @@ GenTree* Compiler::fgOptimizeEqualityComparison(GenTreeOp* cmp)
         return cmp;
     }
 
-    GenTree* op1 = cmp->gtGetOp1();
-    GenTree* op2 = cmp->gtGetOp2();
+    // This method only handles compares against constants.
+    if (!cmp->gtGetOp2()->IsIntegralConst())
+    {
+        return cmp;
+    }
+
+    GenTree*             op1 = cmp->gtGetOp1();
+    GenTreeIntConCommon* op2 = cmp->gtGetOp2()->AsIntConCommon();
 
     // Pattern-matching optimization:
     //    (a % c) ==/!= 0
@@ -13610,7 +13616,7 @@ GenTree* Compiler::fgOptimizeEqualityComparison(GenTreeOp* cmp)
     }
 
     // Check for "(expr +/- icon1) ==/!= (non-zero-icon2)".
-    if (op2->IsCnsIntOrI() && (op2->AsIntCon()->IconValue() != 0))
+    if (op2->IsCnsIntOrI() && (op2->IconValue() != 0))
     {
         // Since this can occur repeatedly we use a while loop.
         while (op1->OperIs(GT_ADD, GT_SUB) && op1->AsOp()->gtGetOp2()->IsCnsIntOrI() &&
@@ -13618,7 +13624,7 @@ GenTree* Compiler::fgOptimizeEqualityComparison(GenTreeOp* cmp)
         {
             // Got it; change "x + icon1 == icon2" to "x == icon2 - icon1".
             ssize_t op1Value = op1->AsOp()->gtGetOp2()->AsIntCon()->IconValue();
-            ssize_t op2Value = op2->AsIntCon()->IconValue();
+            ssize_t op2Value = op2->IconValue();
 
             if (op1->OperIs(GT_ADD))
             {
@@ -13630,7 +13636,7 @@ GenTree* Compiler::fgOptimizeEqualityComparison(GenTreeOp* cmp)
             }
 
             op1 = op1->AsOp()->gtGetOp1();
-            op2->AsIntCon()->SetIconValue(static_cast<int32_t>(op2Value));
+            op2->SetIconValue(static_cast<int32_t>(op2Value));
         }
 
         cmp->gtOp1 = op1;
@@ -13645,7 +13651,7 @@ GenTree* Compiler::fgOptimizeEqualityComparison(GenTreeOp* cmp)
     //
     if (op2->IsIntegralConst(0) || op2->IsIntegralConst(1))
     {
-        ssize_t op2Value = static_cast<ssize_t>(op2->AsIntConCommon()->IntegralValue());
+        ssize_t op2Value = static_cast<ssize_t>(op2->IntegralValue());
 
         if (op1->OperIsCompare())
         {
@@ -13726,7 +13732,7 @@ GenTree* Compiler::fgOptimizeEqualityComparison(GenTreeOp* cmp)
                 if (op2Value == 1)
                 {
                     gtReverseCond(cmp);
-                    op2->AsIntCon()->SetIconValue(0);
+                    op2->SetIconValue(0);
                 }
             }
             else if (andOp->TypeIs(TYP_LONG))
@@ -13742,7 +13748,7 @@ GenTree* Compiler::fgOptimizeEqualityComparison(GenTreeOp* cmp)
                 if (op2Value == 1)
                 {
                     gtReverseCond(cmp);
-                    op2->AsIntConCommon()->SetLngValue(0);
+                    op2->SetLngValue(0);
                 }
             }
 
@@ -13756,13 +13762,7 @@ GenTree* Compiler::fgOptimizeEqualityComparison(GenTreeOp* cmp)
 SKIP:
 
     // Now check for compares with small constant longs that can be cast to int.
-    if (!op2->OperIsConst() || !op2->TypeIs(TYP_LONG))
-    {
-        return cmp;
-    }
-
-    // Is the constant 31 bits or smaller?
-    if ((op2->AsIntConCommon()->LngValue() >> 31) != 0)
+    if (!op2->TypeIs(TYP_LONG) || ((op2->LngValue() >> 31) != 0))
     {
         return cmp;
     }
@@ -13775,10 +13775,10 @@ SKIP:
             // Simply make this into an integer comparison.
             cmp->gtOp1 = op1->AsCast()->CastOp();
 
-            int64_t op2Value = op2->AsIntConCommon()->LngValue();
+            int64_t op2Value = op2->LngValue();
             op2->ChangeOperConst(GT_CNS_INT);
             op2->ChangeType(TYP_INT);
-            op2->AsIntCon()->SetIconValue(static_cast<int32_t>(op2Value));
+            op2->SetIconValue(static_cast<int32_t>(op2Value));
             fgUpdateConstTreeValueNumber(op2);
         }
 
@@ -13829,10 +13829,10 @@ SKIP:
         andOp->ChangeType(TYP_INT);
 
         // Finally we replace the comparand.
-        int32_t op2Value = static_cast<int32_t>(op2->AsIntConCommon()->LngValue());
+        int32_t op2Value = static_cast<int32_t>(op2->LngValue());
         op2->SetOper(GT_CNS_INT);
         op2->ChangeType(TYP_INT);
-        op2->AsIntCon()->SetIconValue(op2Value);
+        op2->SetIconValue(op2Value);
     }
 
     return cmp;
