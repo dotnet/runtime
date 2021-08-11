@@ -19,9 +19,9 @@ if(CLR_CMAKE_TARGET_UNIX)
             set(ICU_HOMEBREW_INC_PATH "${brew_prefix}/opt/icu4c/include")
         endif()
 
-        find_path(UTYPES_H "unicode/utypes.h" PATHS ${ICU_HOMEBREW_INC_PATH})
-        if(UTYPES_H STREQUAL UTYPES_H-NOTFOUND)
-            message(FATAL_ERROR "Cannot find utypes.h, try installing libicu-dev (or the appropriate package for your platform)")
+        find_path(UCURR_H "unicode/ucurr.h" PATHS ${ICU_HOMEBREW_INC_PATH})
+        if(UCURR_H STREQUAL UCURR_H-NOTFOUND)
+            message(FATAL_ERROR "Cannot find ucurr.h, try installing libicu-dev (or the appropriate package for your platform)")
             return()
         endif()
 
@@ -42,7 +42,7 @@ if(CLR_CMAKE_TARGET_UNIX)
             endif()
         endif()
 
-        include_directories(${UTYPES_H})
+        include_directories(${UCURR_H})
     endif()
 endif()
 

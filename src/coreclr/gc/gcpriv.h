@@ -1154,6 +1154,43 @@ enum interesting_data_point
     max_idp_count
 };
 
+#ifdef USE_REGIONS
+enum free_region_kind
+{
+    basic_free_region,
+    large_free_region,
+    huge_free_region,
+    count_free_region_kinds,
+};
+
+class region_free_list
+{
+    size_t  num_free_regions;
+    size_t  size_free_regions;
+    size_t  size_committed_in_free_regions;
+    size_t  num_free_regions_added;
+    size_t  num_free_regions_removed;
+    heap_segment* head_free_region;
+    heap_segment* tail_free_region;
+
+    static free_region_kind get_region_kind(heap_segment* region);
+
+public:
+    region_free_list();
+    void verify (bool empty_p);
+    void reset();
+    void add_region_front (heap_segment* region);
+    void transfer_regions (region_free_list* from);
+    heap_segment* unlink_region_front();
+    heap_segment* unlink_smallest_region (size_t size);
+    size_t get_num_free_regions();
+    size_t get_size_free_regions() { return size_free_regions; }
+    heap_segment* get_first_free_region() { return head_free_region; }
+    static void unlink_region (heap_segment* region);
+    static void add_region (heap_segment* region, region_free_list to_free_list[count_free_region_kinds]);
+};
+#endif
+
 //class definition of the internal class
 class gc_heap
 {
@@ -1498,8 +1535,10 @@ public:
     void get_and_reset_loh_alloc_info();
 #endif //BGC_SERVO_TUNING
 
+#ifndef USE_REGIONS
     PER_HEAP
     BOOL expand_soh_with_minimal_gc();
+#endif //!USE_REGIONS
 
     // EE is always suspended when this method is called.
     // returning FALSE means we actually didn't do a GC. This happens
@@ -1666,6 +1705,11 @@ protected:
 
     PER_HEAP
     void allocate_for_no_gc_after_gc();
+
+#ifdef USE_REGIONS
+    PER_HEAP
+    bool extend_soh_for_no_gc();
+#endif //USE_REGIONS
 
     PER_HEAP
     void set_loh_allocations_for_no_gc();
@@ -1937,8 +1981,10 @@ protected:
     void reset_heap_segment_pages (heap_segment* seg);
     PER_HEAP
     void decommit_heap_segment_pages (heap_segment* seg, size_t extra_space);
+#if defined(MULTIPLE_HEAPS) && !defined(USE_REGIONS)
     PER_HEAP
     size_t decommit_ephemeral_segment_pages_step ();
+#endif //MULTIPLE_HEAPS && !USE_REGIONS
     PER_HEAP
     size_t decommit_heap_segment_pages_worker (heap_segment* seg, uint8_t *new_committed);
     PER_HEAP_ISOLATED
@@ -1965,6 +2011,8 @@ protected:
     PER_HEAP
     void rearrange_heap_segments(BOOL compacting);
 #endif //!USE_REGIONS
+    PER_HEAP_ISOLATED
+    void distribute_free_regions();
     PER_HEAP_ISOLATED
     void reset_write_watch_for_gc_heap(void* base_address, size_t region_size);
     PER_HEAP_ISOLATED
@@ -3121,6 +3169,9 @@ protected:
     void trim_youngest_desired_low_memory();
 
     PER_HEAP
+    ptrdiff_t estimate_gen_growth (int gen);
+
+    PER_HEAP
     void decommit_ephemeral_segment_pages();
 
 #ifdef HOST_64BIT
@@ -3426,9 +3477,6 @@ public:
     GCEvent bgc_start_event;
 #endif //BACKGROUND_GC
 
-    // The variables in this block are known to the DAC and must come first
-    // in the gc_heap class.
-
     // Keeps track of the highest address allocated by Alloc
     PER_HEAP
     uint8_t* alloc_allocated;
@@ -3468,11 +3516,8 @@ public:
     PER_HEAP
     BOOL heap_analyze_success;
 
-    // The generation table. Must always be last.
     PER_HEAP
     generation generation_table [total_generation_count];
-
-    // End DAC zone
 
 #ifdef USE_REGIONS
 #ifdef STRESS_REGIONS
@@ -3498,33 +3543,12 @@ public:
 #endif //STRESS_REGIONS
 
     PER_HEAP
-    heap_segment* free_regions;
-
-    PER_HEAP
-    int num_free_regions;
-
-    PER_HEAP
-    int num_free_regions_added;
-
-    PER_HEAP
-    int num_free_regions_removed;
+    region_free_list free_regions[count_free_region_kinds];
 
     // This is the number of regions we would free up if we sweep.
     // It's used in the decision for compaction so we calculate it in plan.
     PER_HEAP
     int num_regions_freed_in_sweep;
-
-    PER_HEAP
-    heap_segment* free_large_regions;
-
-    PER_HEAP
-    int num_free_large_regions;
-
-    PER_HEAP
-    int num_free_large_regions_added;
-
-    PER_HEAP
-    int num_free_large_regions_removed;
 
     PER_HEAP
     int regions_per_gen[max_generation + 1];
@@ -3585,6 +3609,8 @@ public:
     size_t* survived_per_region;
     PER_HEAP
     size_t* old_card_survived_per_region;
+    PER_HEAP_ISOLATED
+    size_t region_count;
 #endif //USE_REGIONS
 
 #define max_oom_history_count 4
@@ -4774,6 +4800,14 @@ protected:
     PER_HEAP_ISOLATED
     heap_segment* segment_standby_list;
 
+#ifdef USE_REGIONS
+    PER_HEAP_ISOLATED
+    region_free_list global_regions_to_decommit[count_free_region_kinds];
+
+    PER_HEAP_ISOLATED
+    region_free_list global_free_huge_regions;
+#endif //USE_REGIONS
+
     PER_HEAP
     size_t ordered_free_space_indices[MAX_NUM_BUCKETS];
 
@@ -4928,30 +4962,16 @@ public:
                          size_t& card, size_t& end_card, size_t& card_word_end);
 #endif //FEATURE_CARD_MARKING_STEALING
 
+    PER_HEAP_ISOLATED
+    size_t smoothed_desired_per_heap[total_generation_count];
+
+    PER_HEAP_ISOLATED
+    size_t exponential_smoothing (int gen, size_t collection_count, size_t desired_per_heap);
+
 protected:
     PER_HEAP
     void update_collection_counts ();
 }; // class gc_heap
-
-#define ASSERT_OFFSETS_MATCH(field) \
-  static_assert(offsetof(dac_gc_heap, field) == offsetof(gc_heap, field), #field " offset mismatch")
-
-#ifndef USE_REGIONS
-#ifdef MULTIPLE_HEAPS
-ASSERT_OFFSETS_MATCH(alloc_allocated);
-ASSERT_OFFSETS_MATCH(ephemeral_heap_segment);
-ASSERT_OFFSETS_MATCH(finalize_queue);
-ASSERT_OFFSETS_MATCH(oom_info);
-ASSERT_OFFSETS_MATCH(interesting_data_per_heap);
-ASSERT_OFFSETS_MATCH(compact_reasons_per_heap);
-ASSERT_OFFSETS_MATCH(expand_mechanisms_per_heap);
-ASSERT_OFFSETS_MATCH(interesting_mechanism_bits_per_heap);
-ASSERT_OFFSETS_MATCH(internal_root_array);
-ASSERT_OFFSETS_MATCH(internal_root_array_index);
-ASSERT_OFFSETS_MATCH(heap_analyze_success);
-ASSERT_OFFSETS_MATCH(generation_table);
-#endif // MULTIPLE_HEAPS
-#endif //USE_REGIONS
 
 #ifdef FEATURE_PREMORTEM_FINALIZATION
 class CFinalize
@@ -5495,7 +5515,9 @@ public:
     size_t          saved_desired_allocation;
 #endif // _DEBUG
 #endif //MULTIPLE_HEAPS
+#if !defined(MULTIPLE_HEAPS) || !defined(USE_REGIONS)
     uint8_t*        decommit_target;
+#endif //!MULTIPLE_HEAPS || !USE_REGIONS
     uint8_t*        plan_allocated;
     // In the plan phase we change the allocated for a seg but we need this
     // value to correctly calculate how much space we can reclaim in 
@@ -5526,6 +5548,11 @@ public:
     // We may keep per region free list later which requires more work.
     uint8_t*        free_list_head;
     uint8_t*        free_list_tail;
+    size_t          free_list_size;
+    size_t          free_obj_size;
+
+    PTR_heap_segment prev_free_region;
+    region_free_list* containing_free_list;
 
     // Fields that we need to provide in response to a
     // random address that might land anywhere on the region.
@@ -5546,6 +5573,8 @@ public:
     {
         free_list_head = 0;
         free_list_tail = 0;
+        free_list_size = 0;
+        free_obj_size = 0;
     }
 
     void thread_free_obj (uint8_t* obj, size_t s);
@@ -5694,6 +5723,15 @@ public:
     size_t get_free() { return (total_free_units * region_alignment) ; }
     size_t get_region_alignment () { return region_alignment; }
     size_t get_large_region_alignment () { return large_region_alignment; }
+    size_t get_used_region_count()
+    {
+        // currently we don't allocate anything from the right -
+        // once we do, we need a more sophisticated way to iterate
+        // through the used regions
+        assert (region_map_right_start == region_map_right_end);
+        return (region_map_left_end - region_map_left_start);
+    }
+    void move_highest_free_regions (int64_t n, bool small_region_p, region_free_list to_free_list[count_free_region_kinds]);
 };
 #endif //USE_REGIONS
 
@@ -5761,11 +5799,13 @@ uint8_t*& heap_segment_committed (heap_segment* inst)
 {
   return inst->committed;
 }
+#if !defined(MULTIPLE_HEAPS) || !defined(USE_REGIONS)
 inline
 uint8_t*& heap_segment_decommit_target (heap_segment* inst)
 {
     return inst->decommit_target;
 }
+#endif //!MULTIPLE_HEAPS || !USE_REGIONS
 inline
 uint8_t*& heap_segment_used (heap_segment* inst)
 {
@@ -5830,6 +5870,18 @@ inline
 bool heap_segment_overflow_p (heap_segment* inst)
 {
     return ((inst->flags & heap_segment_flags_overflow) != 0);
+}
+
+inline
+region_free_list*& heap_segment_containing_free_list (heap_segment* inst)
+{
+    return inst->containing_free_list;
+}
+
+inline
+PTR_heap_segment& heap_segment_prev_free_region (heap_segment* inst)
+{
+    return inst->prev_free_region;
 }
 #endif //USE_REGIONS
 
@@ -5926,6 +5978,16 @@ inline
 uint8_t* heap_segment_free_list_tail (heap_segment* inst)
 {
     return inst->free_list_tail;
+}
+inline
+size_t heap_segment_free_list_size (heap_segment* inst)
+{
+    return inst->free_list_size;
+}
+inline
+size_t heap_segment_free_obj_size (heap_segment* inst)
+{
+    return inst->free_obj_size;
 }
 inline
 bool heap_segment_demoted_p (heap_segment* inst)

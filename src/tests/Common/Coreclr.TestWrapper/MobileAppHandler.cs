@@ -125,7 +125,7 @@ namespace CoreclrTestLib
                                     cmdStr, timeout, startTime.ToString(), endTime.ToString());
                             errorWriter.WriteLine("\ncmdLine:{0} Timed Out (timeout in milliseconds: {1}, start: {2}, end: {3})",
                                     cmdStr, timeout, startTime.ToString(), endTime.ToString());
-                            
+
                             process.Kill(entireProcessTree: true);
                         }
                     }
@@ -152,7 +152,7 @@ namespace CoreclrTestLib
             {
                 cmdPrefix = "-c";
             }
-            
+
             return $"{cmdPrefix} \"{cmd}\"";
         }
     }

@@ -1859,25 +1859,6 @@ void LinearScan::buildPhysRegRecords()
 }
 
 //------------------------------------------------------------------------
-// getNonEmptyBlock: Return the first non-empty block starting with 'block'
-//
-// Arguments:
-//    block - the BasicBlock from which we start looking
-//
-// Return Value:
-//    The first non-empty BasicBlock we find.
-//
-BasicBlock* getNonEmptyBlock(BasicBlock* block)
-{
-    while (block != nullptr && block->GetFirstLIRNode() == nullptr)
-    {
-        block = block->GetUniqueSucc();
-    }
-    assert(block != nullptr && block->GetFirstLIRNode() != nullptr);
-    return block;
-}
-
-//------------------------------------------------------------------------
 // insertZeroInitRefPositions: Handle lclVars that are live-in to the first block
 //
 // Notes:
@@ -1927,9 +1908,8 @@ void LinearScan::insertZeroInitRefPositions()
                 }
 
                 JITDUMP(" creating ZeroInit\n");
-                GenTree*     firstNode = getNonEmptyBlock(compiler->fgFirstBB)->firstNode();
-                RefPosition* pos =
-                    newRefPosition(interval, MinLocation, RefTypeZeroInit, firstNode, allRegs(interval->registerType));
+                RefPosition* pos = newRefPosition(interval, MinLocation, RefTypeZeroInit, nullptr /* theTreeNode */,
+                                                  allRegs(interval->registerType));
                 pos->setRegOptional(true);
             }
             else
@@ -1957,9 +1937,8 @@ void LinearScan::insertZeroInitRefPositions()
                     if (interval->recentRefPosition == nullptr)
                     {
                         JITDUMP(" creating ZeroInit\n");
-                        GenTree*     firstNode = getNonEmptyBlock(compiler->fgFirstBB)->firstNode();
-                        RefPosition* pos       = newRefPosition(interval, MinLocation, RefTypeZeroInit, firstNode,
-                                                          allRegs(interval->registerType));
+                        RefPosition* pos = newRefPosition(interval, MinLocation, RefTypeZeroInit,
+                                                          nullptr /* theTreeNode */, allRegs(interval->registerType));
                         pos->setRegOptional(true);
                         varDsc->lvMustInit = true;
                     }
@@ -2668,7 +2647,8 @@ void LinearScan::validateIntervals()
             }
             Interval* interval = getIntervalForLocalVar(i);
 
-            bool defined = false;
+            bool     defined      = false;
+            unsigned lastUseBBNum = 0;
             JITDUMP("-----------------\n");
             for (RefPosition* ref = interval->firstRefPosition; ref != nullptr; ref = ref->nextRefPosition)
             {
@@ -2677,13 +2657,17 @@ void LinearScan::validateIntervals()
                     ref->dump(this);
                 }
                 RefType refType = ref->refType;
-                if (!defined && RefTypeIsUse(refType))
+                if (!defined && RefTypeIsUse(refType) && (lastUseBBNum == ref->bbNum))
                 {
-                    if (compiler->info.compMethodName != nullptr)
+                    if (!ref->lastUse)
                     {
-                        JITDUMP("%s: ", compiler->info.compMethodName);
+                        if (compiler->info.compMethodName != nullptr)
+                        {
+                            JITDUMP("%s: ", compiler->info.compMethodName);
+                        }
+                        JITDUMP("LocalVar V%02u: undefined use at %u\n", interval->varNum, ref->nodeLocation);
+                        assert(false);
                     }
-                    JITDUMP("LocalVar V%02u: undefined use at %u\n", interval->varNum, ref->nodeLocation);
                 }
 
                 // For single-def intervals, the only the first refposition should be a RefTypeDef
@@ -2696,7 +2680,8 @@ void LinearScan::validateIntervals()
                 // so we can't really check the lastUse flag
                 if (ref->lastUse)
                 {
-                    defined = false;
+                    defined      = false;
+                    lastUseBBNum = ref->bbNum;
                 }
                 if (RefTypeIsDef(refType))
                 {

@@ -2125,7 +2125,7 @@ ValueNum ValueNumStore::VNForFunc(var_types typ, VNFunc func, ValueNum arg0VN, V
 //
 // Return Value:     - Returns the ValueNum associated with 'func'('arg0VN','arg1VN','arg2VN','arg3VN')
 //
-// Note:   Currently the only four operand func is the VNF_PtrToArrElem operation
+// Note:   Currently the only four operand funcs are VNF_PtrToArrElem and VNF_MapStore.
 //
 ValueNum ValueNumStore::VNForFunc(
     var_types typ, VNFunc func, ValueNum arg0VN, ValueNum arg1VN, ValueNum arg2VN, ValueNum arg3VN)
@@ -4354,8 +4354,9 @@ var_types ValueNumStore::TypeOfVN(ValueNum vn)
 }
 
 //------------------------------------------------------------------------
-// LoopOfVN: If the given value number is VNF_MemOpaque or VNF_MapStore, return
-//    the loop number where the memory update occurs, otherwise returns MAX_LOOP_NUM.
+// LoopOfVN: If the given value number is VNF_MemOpaque, VNF_MapStore, or
+//    VNF_MemoryPhiDef, return the loop number where the memory update occurs,
+//    otherwise returns MAX_LOOP_NUM.
 //
 // Arguments:
 //    vn - Value number to query
@@ -4376,6 +4377,11 @@ BasicBlock::loopNumber ValueNumStore::LoopOfVN(ValueNum vn)
         else if (funcApp.m_func == VNF_MapStore)
         {
             return (BasicBlock::loopNumber)funcApp.m_args[3];
+        }
+        else if (funcApp.m_func == VNF_PhiMemoryDef)
+        {
+            BasicBlock* const block = reinterpret_cast<BasicBlock*>(ConstantValue<ssize_t>(funcApp.m_args[0]));
+            return block->bbNatLoopNum;
         }
     }
 
@@ -9676,34 +9682,6 @@ void Compiler::fgValueNumberCall(GenTreeCall* call)
     }
     else
     {
-        if (call->gtCallMoreFlags & GTF_CALL_M_SPECIAL_INTRINSIC)
-        {
-            NamedIntrinsic ni = lookupNamedIntrinsic(call->gtCallMethHnd);
-            if ((ni == NI_System_Collections_Generic_Comparer_get_Default) ||
-                (ni == NI_System_Collections_Generic_EqualityComparer_get_Default))
-            {
-                bool                 isExact   = false;
-                bool                 isNotNull = false;
-                CORINFO_CLASS_HANDLE cls       = gtGetClassHandle(call, &isExact, &isNotNull);
-                if ((cls != nullptr) && isExact && isNotNull)
-                {
-                    ValueNum clsVN = vnStore->VNForHandle(ssize_t(cls), GTF_ICON_CLASS_HDL);
-                    ValueNum funcVN;
-                    if (ni == NI_System_Collections_Generic_EqualityComparer_get_Default)
-                    {
-                        funcVN = vnStore->VNForFunc(call->TypeGet(), VNF_GetDefaultEqualityComparer, clsVN);
-                    }
-                    else
-                    {
-                        assert(ni == NI_System_Collections_Generic_Comparer_get_Default);
-                        funcVN = vnStore->VNForFunc(call->TypeGet(), VNF_GetDefaultComparer, clsVN);
-                    }
-                    call->gtVNPair.SetBoth(funcVN);
-                    return;
-                }
-            }
-        }
-
         if (call->TypeGet() == TYP_VOID)
         {
             call->gtVNPair.SetBoth(ValueNumStore::VNForVoid());

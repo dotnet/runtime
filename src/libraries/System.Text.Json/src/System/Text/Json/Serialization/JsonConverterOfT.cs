@@ -73,7 +73,7 @@ namespace System.Text.Json.Serialization
         /// and whether <see cref="JsonTokenType.Null"/> should be passed on deserialization.
         /// </summary>
         /// <remarks>
-        /// The default value is <see langword="true"/> for converters for value types, and <see langword="false"/> for converters for reference types.
+        /// The default value is <see langword="true"/> for converters based on value types, and <see langword="false"/> for converters based on reference types.
         /// </remarks>
         public virtual bool HandleNull
         {
@@ -140,6 +140,7 @@ namespace System.Text.Json.Serialization
         /// <param name="typeToConvert">The <see cref="Type"/> being converted.</param>
         /// <param name="options">The <see cref="JsonSerializerOptions"/> being used.</param>
         /// <returns>The value that was converted.</returns>
+        /// <remarks>Note that the value of <seealso cref="HandleNull"/> determines if the converter handles null JSON tokens.</remarks>
         public abstract T? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options);
 
         internal bool TryRead(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options, ref ReadStack state, out T? value)
@@ -378,12 +379,26 @@ namespace System.Text.Json.Serialization
                         JsonConverter jsonConverter = state.Current.InitializeReEntry(type, options);
                         Debug.Assert(jsonConverter != this);
 
-                        if (options.ReferenceHandlingStrategy == ReferenceHandlingStrategy.IgnoreCycles &&
-                            jsonConverter.IsValueType)
+                        // For boxed value types: invoke the reference handler
+                        // before the instance gets unboxed by the subtype converter.
+                        if (jsonConverter.IsValueType)
                         {
-                            // For boxed value types: push the value before it gets unboxed on TryWriteAsObject.
-                            state.ReferenceResolver.PushReferenceForCycleDetection(value);
-                            ignoreCyclesPopReference = true;
+                            switch (options.ReferenceHandlingStrategy)
+                            {
+                                case ReferenceHandlingStrategy.Preserve when (jsonConverter.CanHaveIdMetadata && !state.IsContinuation):
+                                    if (JsonSerializer.TryWriteReferenceForBoxedStruct(value, ref state, writer))
+                                    {
+                                        return true;
+                                    }
+                                    break;
+
+                                case ReferenceHandlingStrategy.IgnoreCycles:
+                                    state.ReferenceResolver.PushReferenceForCycleDetection(value);
+                                    ignoreCyclesPopReference = true;
+                                    break;
+                                default:
+                                    break;
+                            }
                         }
 
                         // We found a different converter; forward to that.
@@ -475,7 +490,7 @@ namespace System.Text.Json.Serialization
                 return TryWrite(writer, value, options, ref state);
             }
 
-            if (!(this is JsonDictionaryConverter<T> dictionaryConverter))
+            if (this is not JsonDictionaryConverter<T> dictionaryConverter)
             {
                 // If not JsonDictionaryConverter<T> then we are JsonObject.
                 // Avoid a type reference to JsonObject and its converter to support trimming.
@@ -583,21 +598,43 @@ namespace System.Text.Json.Serialization
         /// cannot be created.
         /// </remarks>
         /// <param name="writer">The <see cref="Utf8JsonWriter"/> to write to.</param>
-        /// <param name="value">The value to convert.</param>
+        /// <param name="value">The value to convert. Note that the value of <seealso cref="HandleNull"/> determines if the converter handles <see langword="null" /> values.</param>
         /// <param name="options">The <see cref="JsonSerializerOptions"/> being used.</param>
-        public abstract void Write(Utf8JsonWriter writer, T value, JsonSerializerOptions options);
+        public abstract void Write(
+            Utf8JsonWriter writer,
+#nullable disable // T may or may not be nullable depending on the derived type's overload.
+            T value,
+#nullable restore
+            JsonSerializerOptions options);
 
-        internal virtual T ReadWithQuotes(ref Utf8JsonReader reader)
+        internal virtual T ReadAsPropertyName(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
         {
+            if (!IsInternalConverter && options.TryGetDefaultSimpleConverter(TypeToConvert, out JsonConverter? defaultConverter))
+            {
+                // .NET 5 backward compatibility: hardcode the default converter for primitive key serialization.
+                Debug.Assert(defaultConverter.IsInternalConverter && defaultConverter is JsonConverter<T>);
+                return ((JsonConverter<T>)defaultConverter).ReadAsPropertyName(ref reader, TypeToConvert, options);
+            }
+
             ThrowHelper.ThrowNotSupportedException_DictionaryKeyTypeNotSupported(TypeToConvert, this);
             return default;
         }
 
-        internal virtual void WriteWithQuotes(Utf8JsonWriter writer, [DisallowNull] T value, JsonSerializerOptions options, ref WriteStack state)
-            => ThrowHelper.ThrowNotSupportedException_DictionaryKeyTypeNotSupported(TypeToConvert, this);
+        internal virtual void WriteAsPropertyName(Utf8JsonWriter writer, T value, JsonSerializerOptions options, ref WriteStack state)
+        {
+            if (!IsInternalConverter && options.TryGetDefaultSimpleConverter(TypeToConvert, out JsonConverter? defaultConverter))
+            {
+                // .NET 5 backward compatibility: hardcode the default converter for primitive key serialization.
+                Debug.Assert(defaultConverter.IsInternalConverter && defaultConverter is JsonConverter<T>);
+                ((JsonConverter<T>)defaultConverter).WriteAsPropertyName(writer, value, options, ref state);
+                return;
+            }
 
-        internal sealed override void WriteWithQuotesAsObject(Utf8JsonWriter writer, object value, JsonSerializerOptions options, ref WriteStack state)
-            => WriteWithQuotes(writer, (T)value, options, ref state);
+            ThrowHelper.ThrowNotSupportedException_DictionaryKeyTypeNotSupported(TypeToConvert, this);
+        }
+
+        internal sealed override void WriteAsPropertyNameAsObject(Utf8JsonWriter writer, object value, JsonSerializerOptions options, ref WriteStack state)
+            => WriteAsPropertyName(writer, (T)value, options, ref state);
 
         internal virtual T ReadNumberWithCustomHandling(ref Utf8JsonReader reader, JsonNumberHandling handling, JsonSerializerOptions options)
             => throw new InvalidOperationException();

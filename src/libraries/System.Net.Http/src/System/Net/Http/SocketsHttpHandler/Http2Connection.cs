@@ -1206,7 +1206,7 @@ namespace System.Net.Http
         private Task SendPingAsync(long pingContent, bool isAck = false) =>
             PerformWriteAsync(FrameHeader.Size + FrameHeader.PingLength, (thisRef: this, pingContent, isAck), static (state, writeBuffer) =>
             {
-                if (NetEventSource.Log.IsEnabled()) state.thisRef.Trace("Started writing.");
+                if (NetEventSource.Log.IsEnabled()) state.thisRef.Trace($"Started writing. {nameof(pingContent)}={state.pingContent}");
 
                 Debug.Assert(sizeof(long) == FrameHeader.PingLength);
 
@@ -1490,6 +1490,11 @@ namespace System.Net.Http
                 {
                     // We have exhausted StreamIds. Shut down the connection.
                     Shutdown();
+                }
+
+                if (_abortException is not null)
+                {
+                    throw GetRequestAbortedException(_abortException);
                 }
 
                 if (_shutdown)

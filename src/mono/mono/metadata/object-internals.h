@@ -1599,7 +1599,7 @@ mono_class_try_get_vtable (MonoClass *klass);
 gboolean
 mono_runtime_run_module_cctor (MonoImage *image, MonoError *error);
 
-gboolean
+MONO_COMPONENT_API gboolean
 mono_runtime_class_init_full (MonoVTable *vtable, MonoError *error);
 
 void

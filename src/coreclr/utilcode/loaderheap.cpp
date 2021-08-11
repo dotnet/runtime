@@ -2181,6 +2181,21 @@ AllocMemTracker::~AllocMemTracker()
         }
     }
 
+// We have seen evidence of memory corruption in this data structure.
+// https://github.com/dotnet/runtime/issues/54469
+// m_pFirstBlock is intended to be a linked list terminating with
+// &m_FirstBlock but we are finding a nullptr in the list before
+// that point. In order to investigate further we need to observe
+// the corrupted memory block(s) before they are deleted below
+#ifdef _DEBUG
+    AllocMemTrackerBlock* pDebugBlock = m_pFirstBlock;
+    for (int i = 0; pDebugBlock != &m_FirstBlock; i++)
+    {
+        CONSISTENCY_CHECK_MSGF(i < 10000, ("Linked list is much longer than expected, memory corruption likely\n"));
+        CONSISTENCY_CHECK_MSGF(pDebugBlock != nullptr, ("Linked list pointer == NULL, memory corruption likely\n"));
+        pDebugBlock = pDebugBlock->m_pNext;
+    }
+#endif
 
     AllocMemTrackerBlock *pBlock = m_pFirstBlock;
     while (pBlock != &m_FirstBlock)

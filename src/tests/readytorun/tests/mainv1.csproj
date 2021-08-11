@@ -3,8 +3,6 @@
     <OutputType>exe</OutputType>
     <CLRTestKind>BuildAndRun</CLRTestKind>
     <CrossGenTest>false</CrossGenTest>
-    <!-- Disabled under GCStress. Tracking issue: https://github.com/dotnet/runtime/issues/54203 -->
-    <GCStressIncompatible>true</GCStressIncompatible>
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="fieldgetter.ilproj" />
@@ -19,6 +17,14 @@
   <PropertyGroup>
     <CLRTestBatchPreCommands><![CDATA[
 $(CLRTestBatchPreCommands)
+
+REM Suppress some COMPlus variables for the duration of Crossgen2 execution
+setlocal
+set "COMPlus_GCName="
+set "COMPlus_GCStress="
+set "COMPlus_HeapVerify="
+set "COMPlus_ReadyToRun="
+
 DEL test.dll
 if exist test.dll (
     echo FAILED to delete test.dll
@@ -65,9 +71,15 @@ if not exist mainv1.ni.dll (
     echo FAILED to build mainv1.ni.dll
     exit /b 1
 )
+
+endlocal
 ]]></CLRTestBatchPreCommands>
     <BashCLRTestPreCommands><![CDATA[
 $(BashCLRTestPreCommands)
+
+# Suppress some COMPlus variables for the duration of Crossgen2 execution
+export -n COMPlus_GCName COMPlus_GCStress COMPlus_HeapVerify COMPlus_ReadyToRun
+
 rm -f test.dll
 if [ -f test.dll ]
 then
@@ -121,6 +133,8 @@ then
   echo Failed to build mainv1.ni.dll
   exit 1
 fi
+
+export COMPlus_GCName COMPlus_GCStress COMPlus_HeapVerify COMPlus_ReadyToRun
 ]]></BashCLRTestPreCommands>
   </PropertyGroup>
 </Project>

@@ -54,6 +54,22 @@ namespace System.IO.Tests
 
         [Theory]
         [MemberData(nameof(GetSyncAsyncOptions))]
+        public async Task WriteBeyondEndOfFileExtendsTheFileAsync(FileOptions options)
+        {
+            string filePath = GetTestFilePath();
+
+            using (SafeFileHandle handle = File.OpenHandle(filePath, FileMode.CreateNew, FileAccess.Write, options: options))
+            {
+                Assert.Equal(0, RandomAccess.GetLength(handle));
+                await RandomAccess.WriteAsync(handle, new byte[1] { 1 }, fileOffset: 1);
+                Assert.Equal(2, RandomAccess.GetLength(handle));
+            }
+
+            Assert.Equal(new byte[] { 0, 1 }, await File.ReadAllBytesAsync(filePath));
+        }
+
+        [Theory]
+        [MemberData(nameof(GetSyncAsyncOptions))]
         public async Task WritesBytesFromGivenBufferToGivenFileAtGivenOffsetAsync(FileOptions options)
         {
             const int fileSize = 4_001;

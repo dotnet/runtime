@@ -282,7 +282,7 @@ namespace System.Globalization
         }
 
         /// <summary>
-        /// Return a specific culture. A tad irrelevent now since we always
+        /// Return a specific culture. A tad irrelevant now since we always
         /// return valid data for neutral locales.
         ///
         /// Note that there's interesting behavior that tries to find a

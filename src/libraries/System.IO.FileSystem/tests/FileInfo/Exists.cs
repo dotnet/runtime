@@ -63,7 +63,6 @@ namespace System.IO.Tests
 
         [Fact]
         [PlatformSpecific(CaseSensitivePlatforms)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/52857", TestPlatforms.MacCatalyst)]
         public void CaseSensitivity()
         {
             string path = GetTestFilePath();

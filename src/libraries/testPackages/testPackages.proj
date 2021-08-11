@@ -1,0 +1,138 @@
+<Project Sdk="Microsoft.Build.NoTargets">
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.DotNet.PackageTesting" Version="$(MicrosoftDotNetPackageTestingVersion)" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <PackageNamePattern>[a-zA-z\.]*\.</PackageNamePattern>
+
+    <TestDir>$(ArtifactsBinDir)testPackages\</TestDir>
+    <TestProjectDir>$(TestDir)projects\</TestProjectDir>
+    <TestPackageDir>$(TestDir)cache\</TestPackageDir>
+    <TestProjectName>dirs.proj</TestProjectName>
+    <ProjectTemplate>project.csproj.template</ProjectTemplate>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackagesToTest Condition="'$(PackagesToTest)' != ''" Include="$(PackagesToTest)" />
+
+    <!-- support override via commandline -->
+    <TargetFrameworksToInclude Condition="'$(TargetFrameworksToInclude)' != ''" Include="$(TargetFrameworksToInclude)" />
+    <SymbolsPackages Include="$(LibrariesAllConfigShippingPackagesDir)*.symbols.nupkg" />
+    
+    <AllPackagesFilePath Include="$(LibrariesAllConfigShippingPackagesDir)*.nupkg" Exclude="@(SymbolsPackages)" Condition="Exists('$(LibrariesAllConfigShippingPackagesDir)')">
+      <PackageName>$([System.String]::new($([System.Text.RegularExpressions.Regex]::Match($([System.IO.Path]::GetFileNameWithoutExtension('%(Identity)')), $(PackageNamePattern)))).TrimEnd('.'))</PackageName>
+      <PackagePath>%(Identity)</PackagePath>
+    </AllPackagesFilePath>
+    <AllPackages Include="@(AllPackagesFilePath->'%(PackageName)')" />
+
+    <!-- runtime.native.System.IO.Ports requires all runtime legs to be built in order to test -->
+    <ExcludePackages Include="runtime.native.System.IO.Ports" />
+    <ExcludePackages Condition="'$(PackagesToTest)' != ''" Include="@(AllPackages)" Exclude="@(PackagesToTest)" />
+    <TestPackages Include="@(AllPackages)" Exclude="@(ExcludePackages)" />
+    <TestPackagesPath Include="@(TestPackages->'%(PackagePath)')" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- The main entry point file. -->
+    <TestSupportFile Include="build\$(TestProjectName)"
+                     DestinationFolder="$(TestDir)" />
+    <!-- msbuild support files and the packaging VerifyClosure assembly. -->
+    <TestSupportFile Include="$(RepoRoot)global.json;
+                              $(RepoRoot)NuGet.config;
+                              $(RepositoryEngineeringDir)Versions.props;
+                              $(RepositoryEngineeringDir)targetingpacks.targets;
+                              $(LibrariesProjectRoot)shims\netfxreference.props;
+                              build\packageTest.targets;
+                              build\Directory.Build.props;
+                              build\Directory.Build.targets"
+                     DestinationFolder="$(TestDir)" />
+    <!-- frameworksettings and packagesettings -->
+    <TestSupportFile Include="frameworkSettings\**\*"
+                     DestinationFolder="$(TestDir)frameworkSettings\%(RecursiveDir)" />
+    <TestSupportFile Include="packageSettings\**\*"
+                     DestinationFolder="$(TestDir)packageSettings\%(RecursiveDir)" />
+  </ItemGroup>
+
+  <Target Name="CreateTestDir"
+          Inputs="@(TestSupportFile)"
+          Outputs="@(TestSupportFile->'%(DestinationFolder)\%(FileName)%(Extension)')">
+    <MakeDir Directories="%(TestSupportFile.DestinationFolder)" />
+    <Copy SourceFiles="@(TestSupportFile)" DestinationFolder="%(TestSupportFile.DestinationFolder)" />
+  </Target>
+
+  <Target Name="GetSupportedPackages">
+    <!-- Adding NetCoreAppCurrent to the supported test frameworks list to avoid a test gap when
+         the repository retargets NetCoreAppCurrent to the next major version. -->
+    <ItemGroup>
+      <SupportedTestFramework Include="$(NetCoreAppCurrent)" />
+    </ItemGroup>
+
+    <GetCompatiblePackageTargetFrameworks PackagePaths="@(TestPackagesPath)"
+                                          SupportedTestFrameworks="@(SupportedTestFramework)">
+      <Output TaskParameter="TestProjects" ItemName="SupportedPackage" />
+    </GetCompatiblePackageTargetFrameworks>
+
+    <ItemGroup>
+      <SupportedPackage>
+        <ProjectDir>$(TestProjectDir)%(Identity)\</ProjectDir>
+      </SupportedPackage>
+      <SupportedPackage>
+        <ProjectFile>%(ProjectDir)project.csproj</ProjectFile>
+      </SupportedPackage>
+    </ItemGroup>
+  </Target>
+
+  <Target Name="UpdateTargetFrameworks" AfterTargets="GetSupportedPackages">
+    <ItemGroup>
+      <_supportedPackageByTargetFramework Include="@(SupportedPackage->'%(TargetFrameworkShort)')">
+        <Original>%(Identity)</Original>
+      </_supportedPackageByTargetFramework>
+
+      <_supportedPackageByTargetFrameworkToRemove Include="@(_supportedPackageByTargetFramework)" Exclude="@(TargetFrameworksToInclude)" Condition="'@(TargetFrameworksToInclude)' != ''" />
+      <_filteredSupportedPackageByTargetFramework Include="@(_supportedPackageByTargetFramework)" Exclude="@(_supportedPackageByTargetFrameworkToRemove)" />
+
+      <SupportedPackage Remove="@(SupportedPackage)" />
+      <SupportedPackage Include="@(_filteredSupportedPackageByTargetFramework->'%(Original)')" />
+    </ItemGroup>
+  </Target>
+
+  <Target Name="GenerateProjects"
+          DependsOnTargets="GetSupportedPackages;CreateTestDir"
+          Inputs="@(TestPackagesPath);$(ProjectTemplate)"
+          Outputs="%(SupportedPackage.ProjectFile)">
+    <PropertyGroup>
+      <_projectDir>%(SupportedPackage.ProjectDir)</_projectDir>
+      <_projectFile>%(SupportedPackage.ProjectFile)</_projectFile>
+      <_packageId>%(SupportedPackage.Identity)</_packageId>
+      <_packageVersion>%(SupportedPackage.Version)</_packageVersion>
+      <_projectTFMs>@(SupportedPackage->'%(TargetFrameworkShort)')</_projectTFMs>
+    </PropertyGroup>
+
+    <!-- Generate project.csproj from template. -->
+    <MakeDir Directories="$(_projectDir)" />
+    <WriteLinesToFile
+      File="$(_projectFile)"
+      Lines="$([System.IO.File]::ReadAllText('$(ProjectTemplate)').Replace('{PackageId}', $(_packageId)).Replace('{PackageVersion}', $(_packageVersion)).Replace('{TargetFrameworks}', $(_projectTFMs)).Replace('{NetCoreAppCurrent}', $(NetCoreAppCurrent)).Replace('{NetCoreAppCurrentVersion}', $(NetCoreAppCurrentVersion)).Replace('{MicrosoftNetCoreAppFrameworkName}', $(MicrosoftNetCoreAppFrameworkName)).Replace('{MicrosoftNetCoreAppRefPackDir}', $(MicrosoftNetCoreAppRefPackDir)).Replace('{RestoreAdditionalProjectSources}', $(ArtifactsPackagesDir)).Replace('{RestorePackagesPath}', $(TestPackageDir)))"
+      Overwrite="true" />
+  </Target>
+
+  <Target Name="InvokeProjects"
+          DependsOnTargets="GenerateProjects"
+          AfterTargets="Build;Test">
+    <ItemGroup>
+      <TestProject Include="$(TestDir)$(TestProjectName)" Condition="'$(PackagesToTest)' == ''" />
+      <TestProject Include="%(SupportedPackage.ProjectFile)" Condition="'$(PackagesToTest)' != ''" />
+    </ItemGroup>
+    
+    <MSBuild Projects="@(TestProject)"
+             Properties="MSBuildRestoreSessionId=$([System.Guid]::NewGuid())"
+             Targets="Restore" />
+
+    <MSBuild Projects="@(TestProject)" />
+  </Target>
+
+  <Target Name="Test" />
+
+</Project>

@@ -355,9 +355,6 @@ bool GCToEEInterface::RefCountedHandleCallbacks(Object * pObject)
     if (ObjCMarshalNative::IsTrackedReference((OBJECTREF)pObject, &isReferenced))
         return isReferenced;
 #endif
-#if (defined(FEATURE_COMINTEROP) || defined(FEATURE_COMWRAPPERS)) && defined(FEATURE_OBJCMARSHAL)
-#error COM and Objective-C are not supported at the same time.
-#endif
 
     return false;
 }

@@ -128,6 +128,12 @@ namespace System.Text.RegularExpressions.Tests
             yield return new object[] { @"(?>\w+)(?<!a)", "aa", RegexOptions.None, 0, 2, false, string.Empty };
             yield return new object[] { @".+a", "baa", RegexOptions.None, 0, 3, true, "baa" };
             yield return new object[] { @"[ab]+a", "cacbaac", RegexOptions.None, 0, 7, true, "baa" };
+            yield return new object[] { @"^(\d{2,3}){2}$", "1234", RegexOptions.None, 0, 4, true, "1234" };
+            yield return new object[] { @"(\d{2,3}){2}", "1234", RegexOptions.None, 0, 4, true, "1234" };
+            yield return new object[] { @"((\d{2,3})){2}", "1234", RegexOptions.None, 0, 4, true, "1234" };
+            yield return new object[] { @"(\d{2,3})+", "1234", RegexOptions.None, 0, 4, true, "123" };
+            yield return new object[] { @"(\d{2,3})*", "123456", RegexOptions.None, 0, 4, true, "123" };
+            yield return new object[] { @"(abc\d{2,3}){2}", "abc123abc4567", RegexOptions.None, 0, 12, true, "abc123abc456" };
             foreach (RegexOptions lineOption in new[] { RegexOptions.None, RegexOptions.Singleline, RegexOptions.Multiline })
             {
                 yield return new object[] { @".*", "abc", lineOption, 1, 2, true, "bc" };
@@ -1213,10 +1219,10 @@ namespace System.Text.RegularExpressions.Tests
 
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)] // take too long due to backtracking
         [Theory]
-        [InlineData(@"(\w*)+\.", "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", false)]
-        [InlineData(@"(a+)+b", "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", false)]
-        [InlineData(@"(x+x+)+y", "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx", false)]
-        public void IsMatch_SucceedQuicklyDueToAutoAtomicity(string regex, string input, bool expected)
+        [InlineData(@"(?:\w*)+\.", "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", false)]
+        [InlineData(@"(?:a+)+b", "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", false)]
+        [InlineData(@"(?:x+x+)+y", "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx", false)]
+        public void IsMatch_SucceedQuicklyDueToLoopReduction(string regex, string input, bool expected)
         {
             Assert.Equal(expected, Regex.IsMatch(input, regex, RegexOptions.None));
             Assert.Equal(expected, Regex.IsMatch(input, regex, RegexOptions.Compiled));

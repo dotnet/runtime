@@ -28,6 +28,7 @@ namespace System.Text.Json.Serialization.Converters
             if (value == null)
             {
                 writer.WriteNullValue();
+                // Note JsonSerializer.Deserialize<T>(JsonNode?) also calls WriteNullValue() for a null + root JsonNode.
             }
             else
             {

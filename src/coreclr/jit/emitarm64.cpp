@@ -15581,16 +15581,18 @@ bool emitter::IsRedundantMov(instruction ins, emitAttr size, regNumber dst, regN
         regNumber prevSrc    = emitLastIns->idReg2();
         insFormat lastInsfmt = emitLastIns->idInsFmt();
 
-        if ((prevDst == dst) && (prevSrc == src))
+        // Sometimes emitLastIns can be a mov with single register e.g. "mov reg, #imm". So ensure to
+        // optimize formats that does vector-to-vector or scalar-to-scalar register movs.
+        //
+        const bool isValidLastInsFormats =
+            ((lastInsfmt == IF_DV_3C) || (lastInsfmt == IF_DR_2G) || (lastInsfmt == IF_DR_2E));
+
+        if (isValidLastInsFormats && (prevDst == dst) && (prevSrc == src))
         {
             assert(emitLastIns->idOpSize() == size);
             JITDUMP("\n -- suppressing mov because previous instruction already moved from src to dst register.\n");
             return true;
         }
-
-        // Sometimes emitLastIns can be a mov with single register e.g. "mov reg, #imm". So ensure to
-        // optimize formats that does vector-to-vector or scalar-to-scalar register movs.
-        bool isValidLastInsFormats = ((lastInsfmt == IF_DV_3C) || (lastInsfmt == IF_DR_2G) || (lastInsfmt == IF_DR_2E));
 
         if ((prevDst == src) && (prevSrc == dst) && isValidLastInsFormats)
         {
@@ -15697,7 +15699,11 @@ bool emitter::IsRedundantLdStr(
         // Make sure src and dst registers are not same.
         //  ldr x0, [x0, #4]
         //  str x0, [x0, #4]  <-- can't eliminate because [x0+3] is not same destination as previous source.
-        if ((reg1 != reg2) && (prevReg1 == reg1) && (prevReg2 == reg2) && (imm == prevImm))
+        // Note, however, that we can not eliminate store in the following sequence
+        //  ldr wzr, [x0, #4]
+        //  str wzr, [x0, #4]
+        // since load operation doesn't (and can't) change the value of its destination register.
+        if ((reg1 != reg2) && (prevReg1 == reg1) && (prevReg2 == reg2) && (imm == prevImm) && (reg1 != REG_ZR))
         {
             JITDUMP("\n -- suppressing 'str reg%u [reg%u, #%u]' as previous 'ldr reg%u [reg%u, #%u]' was from same "
                     "location.\n",

@@ -4467,7 +4467,7 @@ bool Compiler::optInvertWhileLoop(BasicBlock* block)
         // Note "next" is the loop top block, not bTest's bbNext,
         // we'll call this latter block "after".
         //
-        BasicBlock::weight_t const testToNextLikelihood  = weightNext / weightTest;
+        BasicBlock::weight_t const testToNextLikelihood  = min(1.0f, weightNext / weightTest);
         BasicBlock::weight_t const testToAfterLikelihood = 1.0f - testToNextLikelihood;
 
         // Adjust edges out of bTest (which now has weight weightNext)
@@ -6067,15 +6067,41 @@ void Compiler::optRecordLoopMemoryDependence(GenTree* tree, BasicBlock* block, V
 
     // Find the loop associated with this memory VN.
     //
-    unsigned const updateLoopNum = vnStore->LoopOfVN(memoryVN);
+    unsigned updateLoopNum = vnStore->LoopOfVN(memoryVN);
 
-    if (updateLoopNum == BasicBlock::NOT_IN_LOOP)
+    if (updateLoopNum >= BasicBlock::MAX_LOOP_NUM)
     {
+        // There should be only two special non-loop loop nums.
+        //
+        assert((updateLoopNum == BasicBlock::MAX_LOOP_NUM) || (updateLoopNum == BasicBlock::NOT_IN_LOOP));
+
         // memoryVN defined outside of any loop, we can ignore.
         //
         JITDUMP("      ==> Not updating loop memory dependence of [%06u], memory " FMT_VN " not defined in a loop\n",
                 dspTreeID(tree), memoryVN);
         return;
+    }
+
+    // If the loop was removed, then record the dependence in the nearest enclosing loop, if any.
+    //
+    while ((optLoopTable[updateLoopNum].lpFlags & LPFLG_REMOVED) != 0)
+    {
+        unsigned const updateParentLoopNum = optLoopTable[updateLoopNum].lpParent;
+
+        if (updateParentLoopNum == BasicBlock::NOT_IN_LOOP)
+        {
+            // Memory VN was defined in a loop, but no longer.
+            //
+            JITDUMP("      ==> Not updating loop memory dependence of [%06u], memory " FMT_VN
+                    " no longer defined in a loop\n",
+                    dspTreeID(tree), memoryVN);
+            break;
+        }
+
+        JITDUMP("      ==> " FMT_LP " removed, updating dependence to parent " FMT_LP "\n", updateLoopNum,
+                updateParentLoopNum);
+
+        updateLoopNum = updateParentLoopNum;
     }
 
     // If the update block is not the the header of a loop containing
@@ -6117,7 +6143,7 @@ void Compiler::optRecordLoopMemoryDependence(GenTree* tree, BasicBlock* block, V
     // we know of. Update the map.
     //
     JITDUMP("      ==> Updating loop memory dependence of [%06u] to " FMT_LP "\n", dspTreeID(tree), updateLoopNum);
-    map->Set(tree, optLoopTable[updateLoopNum].lpEntry);
+    map->Set(tree, optLoopTable[updateLoopNum].lpEntry, NodeToLoopMemoryBlockMap::Overwrite);
 }
 
 //------------------------------------------------------------------------

@@ -1075,7 +1075,7 @@ public:
         return h;
     }
 
-#ifdef FEATURE_COMINTEROP
+#if defined(FEATURE_COMINTEROP) || defined(FEATURE_COMWRAPPERS)
     OBJECTHANDLE CreateRefcountedHandle(OBJECTREF object)
     {
         WRAPPER_NO_CONTRACT;
@@ -1087,7 +1087,7 @@ public:
         WRAPPER_NO_CONTRACT;
         return ::CreateNativeComWeakHandle(m_handleStore, object, pComWeakHandleInfo);
     }
-#endif // FEATURE_COMINTEROP
+#endif // FEATURE_COMINTEROP || FEATURE_COMWRAPPERS
 
     OBJECTHANDLE CreateVariableHandle(OBJECTREF object, UINT type)
     {

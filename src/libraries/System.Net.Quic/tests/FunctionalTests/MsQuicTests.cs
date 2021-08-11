@@ -8,6 +8,7 @@ using System.Linq;
 using System.Net.Security;
 using System.Net.Sockets;
 using System.Security.Authentication;
+using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using System.Threading;
@@ -111,6 +112,8 @@ namespace System.Net.Quic.Tests
             Task<QuicConnection> serverTask = listener.AcceptConnectionAsync().AsTask();
             await TaskTimeoutExtensions.WhenAllOrAnyFailed(clientConnection.ConnectAsync().AsTask(), serverTask, PassingTestTimeoutMilliseconds);
             using QuicConnection serverConnection = serverTask.Result;
+            Assert.Equal(certificate, clientConnection.RemoteCertificate);
+            Assert.Null(serverConnection.RemoteCertificate);
         }
 
         [Fact]
@@ -152,7 +155,6 @@ namespace System.Net.Quic.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/56263")]
         public async Task ConnectWithCertificateCallback()
         {
             X509Certificate2 c1 = System.Net.Test.Common.Configuration.Certificates.GetServerCertificate();
@@ -309,7 +311,6 @@ namespace System.Net.Quic.Tests
 
         [Fact]
         [PlatformSpecific(TestPlatforms.Windows)]
-        [ActiveIssue("https://github.com/microsoft/msquic/pull/1728")]
         public async Task ConnectWithClientCertificate()
         {
             bool clientCertificateOK = false;
@@ -345,6 +346,7 @@ namespace System.Net.Quic.Tests
             await PingPong(clientConnection, serverConnection);
             // check we completed the client certificate verification.
             Assert.True(clientCertificateOK);
+            Assert.Equal(ClientCertificate, serverConnection.RemoteCertificate);
 
             await serverConnection.CloseAsync(0);
         }
@@ -799,6 +801,60 @@ namespace System.Net.Quic.Tests
                 byte[] buffer = new byte[100];
                 await Assert.ThrowsAsync<QuicOperationAbortedException>(() => serverStream.ReadAsync(buffer).AsTask());
             }).WaitAsync(TimeSpan.FromMilliseconds(PassingTestTimeoutMilliseconds));
+        }
+
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task BigWrite_SmallRead_Success(bool closeWithData)
+        {
+            const int size = 100;
+            (QuicConnection clientConnection, QuicConnection serverConnection) = await CreateConnectedQuicConnection();
+            using (clientConnection)
+            using (serverConnection)
+            {
+                byte[] buffer = new byte[1] { 42 };
+
+                QuicStream clientStream = clientConnection.OpenBidirectionalStream();
+                Task<QuicStream> t = serverConnection.AcceptStreamAsync().AsTask();
+                await TaskTimeoutExtensions.WhenAllOrAnyFailed(clientStream.WriteAsync(buffer).AsTask(), t, PassingTestTimeoutMilliseconds);
+                QuicStream serverStream = t.Result;
+                Assert.Equal(1, await serverStream.ReadAsync(buffer));
+
+                // streams are new established and in good shape.
+                using (clientStream)
+                using (serverStream)
+                {
+                    byte[] expected = RandomNumberGenerator.GetBytes(size);
+                    byte[] actual = new byte[size];
+
+                    // should be small enough to fit.
+                    await serverStream.WriteAsync(expected, closeWithData);
+
+                    // Add delay to have chance to receive the 100b block before ReadAsync starts.
+                    await Task.Delay(10);
+                    int remaining = size;
+                    int readLength;
+                    while (remaining > 0)
+                    {
+                        readLength = await clientStream.ReadAsync(new Memory<byte>(actual, size - remaining, 1));
+                        Assert.Equal(1, readLength);
+                        remaining--;
+                    }
+
+                    Assert.Equal(expected, actual);
+
+                    if (!closeWithData)
+                    {
+                        serverStream.Shutdown();
+                    }
+
+                    readLength = await clientStream.ReadAsync(actual);
+                    Assert.Equal(0, readLength);
+
+                    Assert.Equal(expected, actual);
+                }
+            }
         }
     }
 }

@@ -11,7 +11,11 @@ namespace System.Net.Quic.Implementations
     {
         internal abstract long StreamId { get; }
 
+        internal abstract bool CanTimeout { get; }
+
         internal abstract bool CanRead { get; }
+
+        internal abstract int ReadTimeout { get; set; }
 
         internal abstract int Read(Span<byte> buffer);
 
@@ -24,6 +28,8 @@ namespace System.Net.Quic.Implementations
         internal abstract bool CanWrite { get; }
 
         internal abstract void Write(ReadOnlySpan<byte> buffer);
+
+        internal abstract int WriteTimeout { get; set; }
 
         internal abstract ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default);
 

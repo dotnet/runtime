@@ -3936,7 +3936,7 @@ void emitter::emitDispCommentForHandle(size_t handle, GenTreeFlags flag)
         // NOTE: eGetCPString always returns nullptr on Linux/ARM
         if (wstr == nullptr)
         {
-            printf("%s string handle", commentPrefix);
+            str = "string handle";
         }
         else
         {

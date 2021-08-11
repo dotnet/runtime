@@ -36,7 +36,17 @@ namespace System.Net.Security.Tests
                 listener.AddActivityTracking();
 
                 var events = new ConcurrentQueue<(EventWrittenEventArgs Event, Guid ActivityId)>();
-                await listener.RunWithCallbackAsync(e => events.Enqueue((e, e.ActivityId)), async () =>
+                await listener.RunWithCallbackAsync(e =>
+                {
+                    events.Enqueue((e, e.ActivityId));
+
+                    if (e.EventName == "HandshakeStart")
+                    {
+                        // Wait for a new counter group so that current-tls-handshakes is guaranteed a non-zero value
+                        WaitForEventCountersAsync(events).GetAwaiter().GetResult();
+                    }
+                },
+                async () =>
                 {
                     // Invoke tests that'll cause some events to be generated
                     var test = new SslStreamStreamToStreamTest_Async();
@@ -86,7 +96,17 @@ namespace System.Net.Security.Tests
                 listener.AddActivityTracking();
 
                 var events = new ConcurrentQueue<(EventWrittenEventArgs Event, Guid ActivityId)>();
-                await listener.RunWithCallbackAsync(e => events.Enqueue((e, e.ActivityId)), async () =>
+                await listener.RunWithCallbackAsync(e =>
+                {
+                    events.Enqueue((e, e.ActivityId));
+
+                    if (e.EventName == "HandshakeStart")
+                    {
+                        // Wait for a new counter group so that current-tls-handshakes is guaranteed a non-zero value
+                        WaitForEventCountersAsync(events).GetAwaiter().GetResult();
+                    }
+                },
+                async () =>
                 {
                     // Invoke tests that'll cause some events to be generated
                     var test = new SslStreamStreamToStreamTest_Async();

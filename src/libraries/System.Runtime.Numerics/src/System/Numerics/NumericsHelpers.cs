@@ -2,32 +2,20 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
-using System.Runtime.InteropServices;
 
 namespace System.Numerics
 {
-    [StructLayout(LayoutKind.Explicit)]
-    internal struct DoubleUlong
-    {
-        [FieldOffset(0)]
-        public double dbl;
-        [FieldOffset(0)]
-        public ulong uu;
-    }
-
     internal static class NumericsHelpers
     {
         private const int kcbitUint = 32;
 
         public static void GetDoubleParts(double dbl, out int sign, out int exp, out ulong man, out bool fFinite)
         {
-            DoubleUlong du;
-            du.uu = 0;
-            du.dbl = dbl;
+            ulong bits = BitConverter.DoubleToUInt64Bits(dbl);
 
-            sign = 1 - ((int)(du.uu >> 62) & 2);
-            man = du.uu & 0x000FFFFFFFFFFFFF;
-            exp = (int)(du.uu >> 52) & 0x7FF;
+            sign = 1 - ((int)(bits >> 62) & 2);
+            man = bits & 0x000FFFFFFFFFFFFF;
+            exp = (int)(bits >> 52) & 0x7FF;
             if (exp == 0)
             {
                 // Denormalized number.
@@ -51,15 +39,14 @@ namespace System.Numerics
 
         public static double GetDoubleFromParts(int sign, int exp, ulong man)
         {
-            DoubleUlong du;
-            du.dbl = 0;
+            ulong bits;
 
             if (man == 0)
-                du.uu = 0;
+                bits = 0;
             else
             {
                 // Normalize so that 0x0010 0000 0000 0000 is the highest bit set.
-                int cbitShift = CbitHighZero(man) - 11;
+                int cbitShift = BitOperations.LeadingZeroCount(man) - 11;
                 if (cbitShift < 0)
                     man >>= -cbitShift;
                 else
@@ -74,7 +61,7 @@ namespace System.Numerics
                 if (exp >= 0x7FF)
                 {
                     // Infinity.
-                    du.uu = 0x7FF0000000000000;
+                    bits = 0x7FF0000000000000;
                 }
                 else if (exp <= 0)
                 {
@@ -83,25 +70,25 @@ namespace System.Numerics
                     if (exp < -52)
                     {
                         // Underflow to zero.
-                        du.uu = 0;
+                        bits = 0;
                     }
                     else
                     {
-                        du.uu = man >> -exp;
-                        Debug.Assert(du.uu != 0);
+                        bits = man >> -exp;
+                        Debug.Assert(bits != 0);
                     }
                 }
                 else
                 {
                     // Mask off the implicit high bit.
-                    du.uu = (man & 0x000FFFFFFFFFFFFF) | ((ulong)exp << 52);
+                    bits = (man & 0x000FFFFFFFFFFFFF) | ((ulong)exp << 52);
                 }
             }
 
             if (sign < 0)
-                du.uu |= 0x8000000000000000;
+                bits |= 0x8000000000000000;
 
-            return du.dbl;
+            return BitConverter.UInt64BitsToDouble(bits);
         }
 
         // Do an in-place two's complement. "Dangerous" because it causes
@@ -138,54 +125,6 @@ namespace System.Numerics
                 uint mask = (uint)(a >> 31);
                 return ((uint)a ^ mask) - mask;
             }
-        }
-
-        public static uint CombineHash(uint u1, uint u2)
-        {
-            return ((u1 << 7) | (u1 >> 25)) ^ u2;
-        }
-
-        public static int CombineHash(int n1, int n2)
-        {
-            return unchecked((int)CombineHash((uint)n1, (uint)n2));
-        }
-
-        public static int CbitHighZero(uint u)
-        {
-            if (u == 0)
-                return 32;
-
-            int cbit = 0;
-            if ((u & 0xFFFF0000) == 0)
-            {
-                cbit += 16;
-                u <<= 16;
-            }
-            if ((u & 0xFF000000) == 0)
-            {
-                cbit += 8;
-                u <<= 8;
-            }
-            if ((u & 0xF0000000) == 0)
-            {
-                cbit += 4;
-                u <<= 4;
-            }
-            if ((u & 0xC0000000) == 0)
-            {
-                cbit += 2;
-                u <<= 2;
-            }
-            if ((u & 0x80000000) == 0)
-                cbit += 1;
-            return cbit;
-        }
-
-        public static int CbitHighZero(ulong uu)
-        {
-            if ((uu & 0xFFFFFFFF00000000) == 0)
-                return 32 + CbitHighZero((uint)uu);
-            return CbitHighZero((uint)(uu >> 32));
         }
     }
 }

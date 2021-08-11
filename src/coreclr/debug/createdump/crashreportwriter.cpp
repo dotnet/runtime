@@ -72,12 +72,12 @@ CrashReportWriter::WriteCrashReport()
     WriteValue("version", version.c_str());
     CloseObject();                  // configuration
 
-    // The main module was saved away in the crash info 
-    if (m_crashInfo.MainModule()->BaseAddress() != 0)
+    // The main module (if one) was saved away in the crash info
+    const ModuleInfo* mainModule = m_crashInfo.MainModule();
+    if (mainModule != nullptr && mainModule->BaseAddress() != 0)
     {
-        WriteValue("process_name", GetFileName(m_crashInfo.MainModule()->ModuleName()).c_str());
+        WriteValue("process_name", GetFileName(mainModule->ModuleName()).c_str());
     }
-
     const char* exceptionType = nullptr;
     OpenArray("threads");
     for (const ThreadInfo* thread : m_crashInfo.Threads())
@@ -199,7 +199,7 @@ CrashReportWriter::WriteSysctl(const char* sysctlname, const char* valueName)
 
 void
 CrashReportWriter::WriteStackFrame(const StackFrame& frame)
-{ 
+{
     OpenObject();
     WriteValueBool("is_managed", frame.IsManaged());
     WriteValue64("module_address", frame.ModuleAddress());
@@ -252,7 +252,7 @@ CrashReportWriter::WriteStackFrame(const StackFrame& frame)
 bool
 CrashReportWriter::OpenWriter(const char* fileName)
 {
-    m_fd = open(fileName, O_WRONLY|O_CREAT|O_TRUNC, 0664);
+    m_fd = open(fileName, O_WRONLY|O_CREAT|O_TRUNC, S_IWUSR | S_IRUSR);
     if (m_fd == -1)
     {
         fprintf(stderr, "Could not create json file %s: %d %s\n", fileName, errno, strerror(errno));

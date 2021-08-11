@@ -79,7 +79,14 @@ namespace System.IO.Compression
                 ExtractExternalAttributes(fs, source);
             }
 
-            File.SetLastWriteTime(destinationFileName, source.LastWriteTime.DateTime);
+            try
+            {
+                File.SetLastWriteTime(destinationFileName, source.LastWriteTime.DateTime);
+            }
+            catch (UnauthorizedAccessException)
+            {
+                // some OSes like Android (#35374) might not support setting the last write time, the extraction should not fail because of that
+            }
         }
 
         static partial void ExtractExternalAttributes(FileStream fs, ZipArchiveEntry entry);

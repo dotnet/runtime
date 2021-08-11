@@ -465,13 +465,13 @@
     <value>Properties that start with '$' are not allowed on preserve mode, either escape the character or turn off preserve references by setting ReferenceHandler to null.</value>
   </data>
   <data name="MultipleMembersBindWithConstructorParameter" xml:space="preserve">
-    <value>Members '{0}' and '{1}' on type '{2}' cannot both bind with parameter '{3}' in constructor '{4}' on deserialization.</value>
+    <value>Members '{0}' and '{1}' on type '{2}' cannot both bind with parameter '{3}' in the deserialization constructor.</value>
   </data>
   <data name="ConstructorParamIncompleteBinding" xml:space="preserve">
-    <value>Each parameter in constructor '{0}' on type '{1}' must bind to an object property or field on deserialization. Each parameter name must match with a property or field on the object. The match can be case-insensitive.</value>
+    <value>Each parameter in the deserialization constructor on type '{0}' must bind to an object property or field on deserialization. Each parameter name must match with a property or field on the object. The match can be case-insensitive.</value>
   </data>
   <data name="ConstructorMaxOf64Parameters" xml:space="preserve">
-    <value>The constructor '{0}' on type '{1}' may not have more than 64 parameters for deserialization.</value>
+    <value>The deserialization constructor on type '{0}' may not have more than 64 parameters for deserialization.</value>
   </data>
   <data name="ObjectWithParameterizedCtorRefMetadataNotHonored" xml:space="preserve">
     <value>Reference metadata is not honored when deserializing types using parameterized constructors. See type '{0}'.</value>
@@ -483,7 +483,7 @@
     <value>The unsupported member type is located on type '{0}'.</value>
   </data>
   <data name="ExtensionDataCannotBindToCtorParam" xml:space="preserve">
-    <value>The extension data property '{0}' on type '{1}' cannot bind with a parameter in constructor '{2}'.</value>
+    <value>The extension data property '{0}' on type '{1}' cannot bind with a parameter in the deserialization constructor.</value>
   </data>
   <data name="BufferMaximumSizeExceeded" xml:space="preserve">
     <value>Cannot allocate a buffer of size {0}.</value>
@@ -524,7 +524,7 @@
   <data name="NumberHandlingOnPropertyTypeMustBeNumberOrCollection" xml:space="preserve">
     <value>When 'JsonNumberHandlingAttribute' is placed on a property or field, the property or field must be a number or a collection of numbers. See member '{0}' on type '{1}'.</value>
   </data>
-  <data name="ConverterCanConvertNullableRedundant" xml:space="preserve">
+  <data name="ConverterCanConvertMultipleTypes" xml:space="preserve">
     <value>The converter '{0}' handles type '{1}' but is being asked to convert type '{2}'. Either create a separate converter for type '{2}' or change the converter's 'CanConvert' method to only return 'true' for a single type.</value>
   </data>
   <data name="MetadataReferenceOfTypeCannotBeAssignedToType" xml:space="preserve">
@@ -599,8 +599,8 @@
   <data name="NodeJsonObjectCustomConverterNotAllowedOnExtensionProperty" xml:space="preserve">
     <value>A custom converter for JsonObject is not allowed on an extension property.</value>
   </data>
-  <data name="PropInitAndSerializeFuncsNull" xml:space="preserve">
-    <value>'propInitFunc' and 'serializeFunc' cannot both be 'null'. </value>
+  <data name="MetadataInitFuncsNull" xml:space="preserve">
+    <value>Invalid configuration provided for 'propInitFunc', 'ctorParamInitFunc' and 'serializeFunc'.</value>
   </data>
   <data name="NoMetadataForTypeProperties" xml:space="preserve">
     <value>'JsonSerializerContext' '{0}' did not provide property metadata for type '{1}'.</value>
@@ -616,5 +616,8 @@
   </data>
   <data name="FSharpDiscriminatedUnionsNotSupported" xml:space="preserve">
     <value>F# discriminated union serialization is not supported. Consider authoring a custom converter for the type.</value>
+  </data>
+  <data name="NoMetadataForTypeCtorParams" xml:space="preserve">
+    <value>'JsonSerializerContext' '{0}' did not provide constructor parameter metadata for type '{1}'.</value>
   </data>
 </root>

@@ -5,12 +5,6 @@ build_test_wrappers()
     if [[ "$__BuildTestWrappers" -ne -0 ]]; then
         echo "${__MsgPrefix}Creating test wrappers..."
 
-        if [[ $__Mono -eq 1 ]]; then
-            __RuntimeFlavor="mono"
-        else
-            __RuntimeFlavor="coreclr"
-        fi
-
         __Exclude="$__RepoRootDir/src/tests/issues.targets"
         __BuildLogRootName="Tests_XunitWrapper"
 
@@ -55,6 +49,13 @@ build_mono_aot()
     export __Exclude
     export CORE_ROOT
     build_MSBuild_projects "Tests_MonoAot" "$__RepoRootDir/src/tests/run.proj" "Mono AOT compile tests" "/t:MonoAotCompileTests" "/p:RuntimeFlavor=$__RuntimeFlavor" "/p:MonoBinDir=$__MonoBinDir"
+}
+
+build_ios_apps()
+{
+    __RuntimeFlavor="mono" \
+    __Exclude="$__RepoRootDir/src/tests/issues.targets" \
+    build_MSBuild_projects "Create_iOS_App" "$__RepoRootDir/src/tests/run.proj" "Create iOS Apps" "/t:BuildAlliOSApp"
 }
 
 generate_layout()
@@ -262,7 +263,7 @@ build_Tests()
         fi
     fi
 
-    if [[ "$__SkipNative" != 1 && "$__TargetOS" != "Browser" && "$__TargetOS" != "Android" ]]; then
+    if [[ "$__SkipNative" != 1 && "$__TargetOS" != "Browser" && "$__TargetOS" != "Android" && "$__TargetOS" != "iOS" && "$__TargetOS" != "iOSSimulator" ]]; then
         build_native "$__TargetOS" "$__BuildArch" "$__TestDir" "$__NativeTestIntermediatesDir" "install" "CoreCLR test component"
 
         if [[ "$?" -ne 0 ]]; then
@@ -274,7 +275,7 @@ build_Tests()
     if [[ "$__SkipManaged" != 1 ]]; then
         echo "Starting the Managed Tests Build..."
 
-        build_MSBuild_projects "Tests_Managed" "$__RepoRootDir/src/tests/build.proj" "Managed tests build (build tests)" "$__up"
+        build_MSBuild_projects "Tests_Managed" "$__RepoRootDir/src/tests/build.proj" "Managed tests build (build tests)" "$__up" "/p:RuntimeFlavor=$__RuntimeFlavor"
 
         if [[ "$?" -ne 0 ]]; then
             echo "${__ErrMsgPrefix}${__MsgPrefix}Error: managed test build failed. Refer to the build log files for details (above)"
@@ -298,7 +299,7 @@ build_Tests()
     if [[ "$__CopyNativeTestBinaries" == 1 ]]; then
         echo "Copying native test binaries to output..."
 
-        build_MSBuild_projects "Tests_Managed" "$__RepoRootDir/src/tests/build.proj" "Managed tests build (build tests)" "/t:CopyAllNativeProjectReferenceBinaries" "/bl:${__RepoRootDir}/artifacts/log/${__BuildType}/copy_native_test_binaries${__RuntimeFlavor}.binlog"
+        build_MSBuild_projects "Tests_Managed" "$__RepoRootDir/src/tests/build.proj" "Managed tests build (build tests)" "/p:RuntimeFlavor=$__RuntimeFlavor" "/t:CopyAllNativeProjectReferenceBinaries" "/bl:${__RepoRootDir}/artifacts/log/${__BuildType}/copy_native_test_binaries${__RuntimeFlavor}.binlog"
 
         if [[ "$?" -ne 0 ]]; then
             echo "${__ErrMsgPrefix}${__MsgPrefix}Error: copying native test binaries failed. Refer to the build log files for details (above)"
@@ -573,8 +574,14 @@ if [[ "${__BuildArch}" != "${__HostArch}" ]]; then
     __CrossBuild=1
 fi
 
-if [[ "$__CrossBuild" == 1 ]]; then
+if [[ "$__CrossBuild" == 1 && "$__TargetOS" != "Android" ]]; then
     __UnprocessedBuildArgs+=("/p:CrossBuild=true")
+fi
+
+if [[ $__Mono -eq 1 ]]; then
+    __RuntimeFlavor="mono"
+else
+    __RuntimeFlavor="coreclr"
 fi
 
 # Set dependent variables
@@ -624,6 +631,8 @@ echo "${__MsgPrefix}Test binaries are available at ${__TestBinDir}"
 
 if [ "$__TargetOS" == "Android" ]; then
     build_MSBuild_projects "Create_Android_App" "$__RepoRootDir/src/tests/run.proj" "Create Android Apps" "/t:BuildAllAndroidApp" "/p:RunWithAndroid=true"
+elif [ "$__TargetOS" == "iOS" ] || [ "$__TargetOS" == "iOSSimulator" ]; then
+    build_ios_apps
 fi
 
 if [[ "$__RunTests" -ne 0 ]]; then

@@ -7950,7 +7950,8 @@ MethodTable::MethodData::ProcessMap(
     UINT32                    cTypeIDs,
     MethodTable *             pMT,
     UINT32                    iCurrentChainDepth,
-    MethodDataEntry *         rgWorkingData)
+    MethodDataEntry *         rgWorkingData,
+    size_t                    cWorkingData)
 {
     LIMITED_METHOD_CONTRACT;
 
@@ -7961,10 +7962,8 @@ MethodTable::MethodData::ProcessMap(
             if (it.Entry()->GetTypeID() == rgTypeIDs[nTypeIDIndex])
             {
                 UINT32 curSlot = it.Entry()->GetSlotNumber();
-                // If we're processing an interface, or it's for a virtual, or it's for a non-virtual
-                // for the most derived type, we want to process the entry. In other words, we
-                // want to ignore non-virtuals for parent classes.
-                if ((curSlot < pMT->GetNumVirtuals()) || (iCurrentChainDepth == 0))
+                // This if check is defensive, and should never fail
+                if (curSlot < cWorkingData)
                 {
                     MethodDataEntry * pCurEntry = &rgWorkingData[curSlot];
                     if (!pCurEntry->IsDeclInit() && !pCurEntry->IsImplInit())
@@ -8331,7 +8330,7 @@ MethodTable::MethodDataInterfaceImpl::PopulateNextLevel()
 
     if (m_cDeclTypeIDs != 0)
     {   // We got the TypeIDs from TypeLoader, use them
-        ProcessMap(m_rgDeclTypeIDs, m_cDeclTypeIDs, pMTCur, iChainDepth, GetEntryData());
+        ProcessMap(m_rgDeclTypeIDs, m_cDeclTypeIDs, pMTCur, iChainDepth, GetEntryData(), GetNumVirtuals());
     }
     else
     {   // We should decode all interface duplicates of code:m_pDecl
@@ -8348,7 +8347,7 @@ MethodTable::MethodDataInterfaceImpl::PopulateNextLevel()
                 INDEBUG(dbg_fInterfaceFound = TRUE);
                 DispatchMapTypeID declTypeID = DispatchMapTypeID::InterfaceClassID(it.GetIndex());
 
-                ProcessMap(&declTypeID, 1, pMTCur, iChainDepth, GetEntryData());
+                ProcessMap(&declTypeID, 1, pMTCur, iChainDepth, GetEntryData(), GetNumVirtuals());
             }
         }
         // The interface code:m_Decl should be found at least once in the interface map of code:m_pImpl,

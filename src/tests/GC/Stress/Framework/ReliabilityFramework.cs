@@ -829,7 +829,7 @@ public class ReliabilityFramework
         // so we start new tests sooner (so they start BEFORE we drop below our minimum CPU)
 
         //Console.WriteLine("RF - TestStarter found {0} tests to run", totalTestsToRun);
-        if (_curTestSet.SuppressConsoleOutputFromTests)
+        if ((_curTestSet.DefaultTestStartMode != TestStartModeEnum.AssemblyLoadContextLoader) && (_curTestSet.SuppressConsoleOutputFromTests))
             Console.SetOut(System.IO.TextWriter.Null);
 
         /************************************************************************

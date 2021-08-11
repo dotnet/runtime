@@ -739,13 +739,24 @@ void CodeGen::genPutArgStk(GenTreePutArgStk* treeNode)
             assert(!source->isContained());
 
             regNumber srcReg = genConsumeReg(source);
-
-            emitAttr storeAttr = emitTypeSize(targetType);
-
             assert((srcReg != REG_NA) && (genIsValidFloatReg(srcReg)));
-            emit->emitIns_S_R(INS_str, storeAttr, srcReg, varNumOut, argOffsetOut);
 
-            argOffsetOut += EA_SIZE_IN_BYTES(storeAttr);
+#if !defined(OSX_ARM64_ABI)
+            assert(treeNode->GetStackByteSize() % TARGET_POINTER_SIZE == 0);
+#else  // OSX_ARM64_ABI
+            if (treeNode->GetStackByteSize() == 12)
+            {
+                regNumber tmpReg = treeNode->GetSingleTempReg();
+                GetEmitter()->emitStoreSIMD12ToLclOffset(varNumOut, argOffsetOut, srcReg, tmpReg);
+                argOffsetOut += 12;
+            }
+            else
+#endif // OSX_ARM64_ABI
+            {
+                emitAttr storeAttr = emitTypeSize(targetType);
+                emit->emitIns_S_R(INS_str, storeAttr, srcReg, varNumOut, argOffsetOut);
+                argOffsetOut += EA_SIZE_IN_BYTES(storeAttr);
+            }
             assert(argOffsetOut <= argOffsetMax); // We can't write beyound the outgoing area area
             return;
         }
@@ -1033,7 +1044,7 @@ void CodeGen::genPutArgStk(GenTreePutArgStk* treeNode)
             }
 #endif // TARGET_ARM
 
-            // For a 12-byte structSize we will we will generate two load instructions
+            // For a 12-byte structSize we will generate two load instructions
             //             ldr     x2, [x0]
             //             ldr     w3, [x0, #8]
             //             str     x2, [sp, #16]
@@ -1325,7 +1336,8 @@ void CodeGen::genPutArgSplit(GenTreePutArgSplit* treeNode)
                 if (targetReg == addrReg && idx != treeNode->gtNumRegs - 1)
                 {
                     assert(targetReg != baseReg);
-                    emit->emitIns_Mov(INS_mov, emitActualTypeSize(type), baseReg, addrReg, /* canSkip */ false);
+                    var_types addrType = addrNode->TypeGet();
+                    emit->emitIns_Mov(INS_mov, emitActualTypeSize(addrType), baseReg, addrReg, /* canSkip */ false);
                     addrReg = baseReg;
                 }
 

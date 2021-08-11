@@ -127,7 +127,7 @@ namespace HttpStress
                 {
                     host = host.UseQuic(options =>
                     {
-                        options.Alpn = "h3-29";
+                        options.Alpn = "h3";
                         options.IdleTimeout = TimeSpan.FromMinutes(1);
                     });
                 }

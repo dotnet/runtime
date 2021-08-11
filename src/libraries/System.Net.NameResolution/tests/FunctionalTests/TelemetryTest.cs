@@ -8,6 +8,7 @@ using System.Linq;
 using System.Net.Sockets;
 using System.Threading.Tasks;
 using Microsoft.DotNet.RemoteExecutor;
+using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
 using Xunit.Sdk;
 
@@ -16,7 +17,6 @@ namespace System.Net.NameResolution.Tests
     public class TelemetryTest
     {
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/50928", TestPlatforms.Android)]
         public static void EventSource_ExistsWithCorrectId()
         {
             Type esType = typeof(Dns).Assembly.GetType("System.Net.NameResolutionTelemetry", throwOnError: true, ignoreCase: false);
@@ -153,6 +153,12 @@ namespace System.Net.NameResolution.Tests
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public static void ResolutionsWaitingOnQueue_ResolutionStartCalledBeforeEnqueued()
         {
+            if (PlatformDetection.IsMonoInterpreter && PlatformDetection.IsDebian9)
+            {
+                // [ActiveIssue("https://github.com/dotnet/runtime/issues/56449")]
+                throw new SkipTestException("Test is consistently failing with Mono interpreter");
+            }
+
             // Some platforms (non-Windows) don't have proper support for GetAddrInfoAsync.
             // Instead we perform async-over-sync with a per-host queue.
             // This test ensures that ResolutionStart events are written before waiting on the queue.
