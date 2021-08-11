@@ -184,6 +184,8 @@ namespace Microsoft.WebAssembly.Build.Tasks
 
                     if (!Utils.CopyIfDifferent(tmpObjFile, objFile, useHash: true))
                         Log.LogMessage(MessageImportance.Low, $"Did not overwrite {objFile} as the contents are unchanged");
+                    else
+                        Log.LogMessage(MessageImportance.Low, $"Copied {tmpObjFile} to {objFile}");
 
                     ITaskItem newItem = new TaskItem(objFile);
                     newItem.SetMetadata("SourceFile", srcFile);

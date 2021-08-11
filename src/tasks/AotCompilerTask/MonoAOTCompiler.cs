@@ -207,19 +207,16 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
 
     public override bool Execute()
     {
-        if (string.IsNullOrEmpty(CompilerBinaryPath))
-        {
-            throw new ArgumentException($"'{nameof(CompilerBinaryPath)}' is required.", nameof(CompilerBinaryPath));
-        }
-
         if (!File.Exists(CompilerBinaryPath))
         {
-            throw new ArgumentException($"'{CompilerBinaryPath}' doesn't exist.", nameof(CompilerBinaryPath));
+            Log.LogError($"{nameof(CompilerBinaryPath)}='{CompilerBinaryPath}' doesn't exist.");
+            return false;
         }
 
         if (Assemblies.Length == 0)
         {
-            throw new ArgumentException($"'{nameof(Assemblies)}' is required.", nameof(Assemblies));
+            Log.LogError($"'{nameof(Assemblies)}' is required.");
+            return false;
         }
 
         if (!Path.IsPathRooted(OutputDir))
@@ -661,31 +658,32 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
             return false;
         }
 
-        if (HaveAsmDependenciesChanged(assembly, depfile, out string? cause))
+        if (Path.GetExtension(tmpOutputFileName) == ".tmp")
         {
-            if (Path.GetExtension(tmpOutputFileName) == ".tmp")
+            string finalPath = Path.Combine(Path.GetDirectoryName(tmpOutputFileName) ?? string.Empty,
+                                                Path.GetFileNameWithoutExtension(tmpOutputFileName));
+
+            if (HaveAsmDependenciesChanged(assembly, depfile, out string? cause))
             {
-                string finalFileName = Path.GetFileNameWithoutExtension(tmpOutputFileName);
+                if (File.Exists(finalPath))
+                    File.Delete(finalPath);
 
-                if (File.Exists(finalFileName))
-                    File.Delete(finalFileName);
+                File.Copy(tmpOutputFileName, finalPath);
 
-                File.Copy(tmpOutputFileName, finalFileName);
-
-                Log.LogMessage(MessageImportance.Low, $"[AOT] {assembly} because {cause}");
-                _fileWrites.Add(finalFileName);
+                Log.LogMessage(MessageImportance.Low, $"Copying {tmpOutputFileName} to {finalPath} because {cause}");
+                _fileWrites.Add(finalPath);
 
                 int count = Interlocked.Increment(ref _numCompiled);
-                Log.LogMessage(MessageImportance.High, $"[{count}/{_totalNumAssemblies}] {assemblyFilename} -> {Path.GetFileName(finalFileName)}");
+                Log.LogMessage(MessageImportance.High, $"[{count}/{_totalNumAssemblies}] {assemblyFilename} -> {Path.GetFileName(finalPath)}");
             }
             else
             {
-                Log.LogWarning($"Bug: expected tmpOutputFileName to end in .tmp: {tmpOutputFileName}");
+                Log.LogMessage(MessageImportance.Low, $"Skipping copying over {finalPath} as the contents are unchanged");
             }
         }
         else
         {
-            Log.LogMessage(MessageImportance.Low, $"Skipping precompiling assembly {assembly} because it has unchanged hash.");
+            Log.LogWarning($"Bug: expected tmpOutputFileName to end in .tmp: {tmpOutputFileName}");
         }
 
         File.Delete(responseFilePath);
