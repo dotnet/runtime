@@ -47,13 +47,14 @@ public partial class ThreadPoolBoundHandleTests
         Assert.Equal(DATA_SIZE, result.BytesWritten);
     }
 
-    [Fact]
+    [Theory]
+    [InlineData(nameof(MultipleOperationsOverSingleHandle))]
     [PlatformSpecific(TestPlatforms.Windows)] // ThreadPoolBoundHandle.BindHandle is not supported on Unix
-    public unsafe void MultipleOperationsOverSingleHandle()
+    public unsafe void MultipleOperationsOverSingleHandle(string tempFileNamePrefix)
     {
         const int DATA_SIZE = 2;
 
-        SafeHandle handle = HandleFactory.CreateAsyncFileHandleForWrite(Path.Combine(TestDirectory, @"MultipleOperationsOverSingleHandle.tmp"));
+        SafeHandle handle = HandleFactory.CreateAsyncFileHandleForWrite(Path.Combine(TestDirectory, $"{tempFileNamePrefix}.tmp"));
         ThreadPoolBoundHandle boundHandle = ThreadPoolBoundHandle.BindHandle(handle);
 
         OverlappedContext result1 = new OverlappedContext();
