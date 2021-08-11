@@ -100,15 +100,24 @@ namespace System.IO.Tests
             }
         }
 
+        [Fact]
+        public async Task TriggerTheProblemAsync()
+        {
+            for (int i = 0; i < 10_000; i++)
+            {
+                await WriteAsyncCancelledFile(0, FileOptions.Asynchronous | FileOptions.DeleteOnClose);
+            }
+        }
+
         [Theory]
-        [InlineData(0, true)] // 0 == no buffering
-        [InlineData(4096, true)] // 4096 == default buffer size
-        [InlineData(0, false)]
-        [InlineData(4096, false)]
-        public async Task WriteAsyncCancelledFile(int bufferSize, bool isAsync)
+        [InlineData(0, FileOptions.Asynchronous)] // 0 == no buffering
+        [InlineData(4096, FileOptions.Asynchronous)] // 4096 == default buffer size
+        [InlineData(0, FileOptions.None)]
+        [InlineData(4096, FileOptions.None)]
+        public async Task WriteAsyncCancelledFile(int bufferSize, FileOptions fileOptions)
         {
             const int writeSize = 1024 * 1024;
-            using (FileStream fs = new FileStream(GetTestFilePath(), FileMode.CreateNew, FileAccess.Write, FileShare.None, bufferSize, isAsync))
+            using (FileStream fs = new FileStream(GetTestFilePath(), FileMode.CreateNew, FileAccess.Write, FileShare.None, bufferSize, fileOptions))
             {
                 byte[] buffer = new byte[writeSize];
                 CancellationTokenSource cts = new CancellationTokenSource();
