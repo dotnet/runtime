@@ -1986,9 +1986,11 @@ namespace System
                 {
                     Span<char> destination = _destination;
                     int pos = _pos;
-                    if ((uint)(pos + 1) < (uint)destination.Length)
+                    if ((uint)pos < destination.Length - 1)
                     {
-                        Unsafe.As<char, int>(ref MemoryMarshal.GetReference(destination)) = Unsafe.As<char, int>(ref value.GetRawStringData());
+                        Unsafe.WriteUnaligned(
+                            ref Unsafe.As<char, byte>(ref Unsafe.Add(ref MemoryMarshal.GetReference(destination), pos)),
+                            Unsafe.ReadUnaligned<int>(ref Unsafe.As<char, byte>(ref value.GetRawStringData())));
                         _pos = pos + 2;
                         return true;
                     }

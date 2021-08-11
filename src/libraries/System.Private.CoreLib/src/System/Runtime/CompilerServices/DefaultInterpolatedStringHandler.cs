@@ -173,9 +173,11 @@ namespace System.Runtime.CompilerServices
             {
                 Span<char> chars = _chars;
                 int pos = _pos;
-                if ((uint)(pos + 1) < (uint)chars.Length)
+                if ((uint)pos < chars.Length - 1)
                 {
-                    Unsafe.As<char, int>(ref MemoryMarshal.GetReference(chars)) = Unsafe.As<char, int>(ref value.GetRawStringData());
+                    Unsafe.WriteUnaligned(
+                        ref Unsafe.As<char, byte>(ref Unsafe.Add(ref MemoryMarshal.GetReference(chars), pos)),
+                        Unsafe.ReadUnaligned<int>(ref Unsafe.As<char, byte>(ref value.GetRawStringData())));
                     _pos = pos + 2;
                 }
                 else
