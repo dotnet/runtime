@@ -385,7 +385,9 @@ namespace System.Linq.Expressions.Interpreter
             {
                 try
                 {
-                    frame.Data[_index] = RuntimeHelpers.GetUninitializedObject(_type);
+                    frame.Data[_index] = _type.IsNullableType() ?
+                        Activator.CreateInstance(_type) :
+                        RuntimeHelpers.GetUninitializedObject(_type);
                 }
                 catch (TargetInvocationException e)
                 {
@@ -424,7 +426,9 @@ namespace System.Linq.Expressions.Interpreter
 
                 try
                 {
-                    value = RuntimeHelpers.GetUninitializedObject(_type);
+                    value = _type.IsNullableType() ?
+                        Activator.CreateInstance(_type) :
+                        RuntimeHelpers.GetUninitializedObject(_type);
                 }
                 catch (TargetInvocationException e)
                 {
