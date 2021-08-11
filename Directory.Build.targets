@@ -1,4 +1,4 @@
-<Project InitialTargets="_OverridePackDependsOn">
+<Project>
   <PropertyGroup>
     <!--
     For non-SDK projects that import this file and then import Microsoft.Common.targets,
@@ -54,23 +54,7 @@
     <PackageDescription Condition="'$(PackageDescription)' == '' and '$(UseRuntimePackageDisclaimer)' == 'true'">$(RuntimePackageDisclaimer)</PackageDescription>
     <!-- Keep in sync as required by the Packaging SDK in Arcade. -->
     <Description>$(PackageDescription)</Description>
-    <GenerateNuspecDependsOn>ErrorForMissingPackageDescription;$(GenerateNuspecDependsOn)</GenerateNuspecDependsOn>
   </PropertyGroup>
-
-  <!-- Remove when https://github.com/NuGet/Home/issues/10405 is implemented and consumed. -->
-  <Target Name="ErrorForMissingPackageDescription"
-          Condition="'$(PackageDescription)' == ''">
-    <Error Text="Required property 'PackageDescription' is missing for $(MSBuildProjectName)." />
-  </Target>
-
-  <!-- <GeneratePackage /> controls if a package should be created by clearing out <PackDependsOn />. -->
-  <Target Name="_OverridePackDependsOn"
-          Condition="'$(IsPackable)' == 'true' and
-                     '$(GeneratePackage)' != 'true'">
-    <PropertyGroup>
-      <PackDependsOn />
-    </PropertyGroup>
-  </Target>
 
   <!--
     Arcade SDK versioning is defined by static properties in a targets file: work around this by
