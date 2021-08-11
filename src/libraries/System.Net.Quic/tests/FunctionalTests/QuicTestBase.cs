@@ -157,13 +157,14 @@ namespace System.Net.Quic.Tests
                 {
                     await clientConnection.ConnectAsync().ConfigureAwait(false);
                     break;
-                } catch (QuicException ex) when (ex.HResult == (int)SocketError.ConnectionRefused)
+                }
+                catch (QuicException ex) when (ex.HResult == (int)SocketError.ConnectionRefused)
                 {
                     _output.WriteLine($"ConnectAsync to {clientConnection.RemoteEndPoint} failed with {ex.Message}");
                     await Task.Delay(delay);
                     delay *= 2;
 
-                    if (retry ==0)
+                    if (retry == 0)
                     {
                         Debug.Fail($"ConnectAsync to {clientConnection.RemoteEndPoint} failed with {ex.Message}");
                     }

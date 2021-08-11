@@ -108,7 +108,7 @@ namespace System.Net.Quic.Tests
             X509Certificate? receivedCertificate = null;
 
             var listenerOptions = new QuicListenerOptions();
-            listenerOptions.ListenEndPoint = new IPEndPoint( Socket.OSSupportsIPv6 ? IPAddress.IPv6Loopback : IPAddress.Loopback, 0);
+            listenerOptions.ListenEndPoint = new IPEndPoint(Socket.OSSupportsIPv6 ? IPAddress.IPv6Loopback : IPAddress.Loopback, 0);
             listenerOptions.ServerAuthenticationOptions = GetSslServerAuthenticationOptions();
             using QuicListener listener = new QuicListener(QuicImplementationProviders.MsQuic, listenerOptions);
 
@@ -146,7 +146,7 @@ namespace System.Net.Quic.Tests
             X509Certificate? receivedCertificate = null;
 
             var listenerOptions = new QuicListenerOptions();
-            listenerOptions.ListenEndPoint = new IPEndPoint( Socket.OSSupportsIPv6 ? IPAddress.IPv6Loopback : IPAddress.Loopback, 0);
+            listenerOptions.ListenEndPoint = new IPEndPoint(Socket.OSSupportsIPv6 ? IPAddress.IPv6Loopback : IPAddress.Loopback, 0);
             listenerOptions.ServerAuthenticationOptions = GetSslServerAuthenticationOptions();
             listenerOptions.ServerAuthenticationOptions.ServerCertificate = null;
             listenerOptions.ServerAuthenticationOptions.ServerCertificateSelectionCallback = (sender, hostName) =>
