@@ -6,16 +6,51 @@ using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Reflection;
+using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.DotNet.RemoteExecutor;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.DependencyInjection.Specification.Fakes;
+using Microsoft.Extensions.DependencyInjection.Tests;
 using Xunit;
 
 namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
 {
     public class CallSiteFactoryTest
     {
+        [Fact]
+        public void GetService_FactoryCallSite_Transient_DoesNotFail()
+        {
+            IServiceProvider serviceProvider = null;
+            try
+            {
+                var collection = new ServiceCollection();
+                collection.Add(ServiceDescriptor.Describe(typeof(FakeService), (sp) => new FakeService(), ServiceLifetime.Transient));
+                collection.Add(ServiceDescriptor.Describe(typeof(IFakeService), (sp) => new FakeService(), ServiceLifetime.Transient));
+
+                serviceProvider = collection
+                    .BuildServiceProvider(ServiceProviderMode.Dynamic)
+                    .CreateScope()
+                    .ServiceProvider;
+
+                Type expectedType = typeof(FakeService);
+
+                Assert.Equal(expectedType, serviceProvider.GetService(typeof(IFakeService)).GetType());
+                Assert.Equal(expectedType, serviceProvider.GetService(typeof(FakeService)).GetType());
+
+                for (int i = 0; i < 50; i++)
+                {
+                    serviceProvider.GetService(typeof(IFakeService));
+                    serviceProvider.GetService(typeof(FakeService));
+                    Thread.Sleep(10); // Give the background thread time to compile
+                }
+            }
+            finally
+            {
+                ((IDisposable)serviceProvider).Dispose();
+            }
+        }
+
         [Fact]
         public void CreateCallSite_Throws_IfTypeHasNoPublicConstructors()
         {
