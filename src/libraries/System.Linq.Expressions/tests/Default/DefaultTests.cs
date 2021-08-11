@@ -118,6 +118,28 @@ namespace System.Linq.Expressions.Tests
             Assert.False(defaultValue.ConstructorWasRun);
         }
 
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public void StructTypeWithParameterlessConstructorThatThrows(bool useInterpreter)
+        {
+            Expression<Func<ValueTypeWithParameterlessConstructorThatThrows>> lambda =
+                Expression.Lambda<Func<ValueTypeWithParameterlessConstructorThatThrows>>(
+                    Expression.Default(typeof(ValueTypeWithParameterlessConstructorThatThrows)));
+            Func<ValueTypeWithParameterlessConstructorThatThrows> func = lambda.Compile(useInterpreter);
+            ValueTypeWithParameterlessConstructorThatThrows defaultValue = func();
+            Assert.Null(defaultValue.Value);
+        }
+
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public void NullableStructTypeWithParameterlessConstructor(bool useInterpreter)
+        {
+            Expression<Func<ValueTypeWithParameterlessConstructorThatThrows?>> lambda =
+                Expression.Lambda<Func<ValueTypeWithParameterlessConstructorThatThrows?>>(
+                    Expression.Default(typeof(ValueTypeWithParameterlessConstructorThatThrows?)));
+            Func<ValueTypeWithParameterlessConstructorThatThrows?> func = lambda.Compile(useInterpreter);
+            ValueTypeWithParameterlessConstructorThatThrows? defaultValue = func();
+            Assert.Null(defaultValue);
+        }
+
         [Theory]
         [ClassData(typeof(CompilationTypes))]
         public static void GetValueOrDefault(bool useInterpreter)
@@ -130,30 +152,47 @@ namespace System.Linq.Expressions.Tests
             Assert.False(f(null).ConstructorWasRun);
         }
 
-        private struct DontUseParameterlessConstructor
-        {
-            public readonly object Value;
-            public DontUseParameterlessConstructor() { throw new InvalidOperationException(); }
-            public DontUseParameterlessConstructor(object value) { Value = value; }
-        }
-
         [Theory]
         [ClassData(typeof(CompilationTypes))]
         public static void MutableValue(bool useInterpreter)
         {
             // f = () =>
             //     {
-            //         DontUseParameterlessConstructor p;
-            //         p = new DontUseParameterlessConstructor(42);
+            //         ValueTypeWithParameterlessConstructorThatThrows p;
+            //         p = new ValueTypeWithParameterlessConstructorThatThrows(42);
             //         return p.Value;
             //     };
             const int value = 42;
-            ParameterExpression p = Expression.Variable(typeof(DontUseParameterlessConstructor));
+            ParameterExpression p = Expression.Variable(typeof(ValueTypeWithParameterlessConstructorThatThrows));
             Expression<Func<object>> e = Expression.Lambda<Func<object>>(
                 Expression.Block(
                     new[] { p },
-                    Expression.Assign(p, Expression.Constant(new DontUseParameterlessConstructor(value), typeof(DontUseParameterlessConstructor))),
-                    Expression.Field(p, typeof(DontUseParameterlessConstructor).GetField("Value"))));
+                    Expression.Assign(p, Expression.Constant(new ValueTypeWithParameterlessConstructorThatThrows(value), typeof(ValueTypeWithParameterlessConstructorThatThrows))),
+                    Expression.Field(p, typeof(ValueTypeWithParameterlessConstructorThatThrows).GetField("Value"))));
+
+            Func<object> f = e.Compile(useInterpreter);
+            Assert.Equal(value, f());
+        }
+
+        [Theory]
+        [ClassData(typeof(CompilationTypes))]
+        public static void MutableValue_Nullable(bool useInterpreter)
+        {
+            // f = () =>
+            //     {
+            //         ValueTypeWithParameterlessConstructorThatThrows? p;
+            //         p = new ValueTypeWithParameterlessConstructorThatThrows(42);
+            //         return p.Value.Value;
+            //     };
+            const int value = 42;
+            ParameterExpression p = Expression.Variable(typeof(ValueTypeWithParameterlessConstructorThatThrows?));
+            Expression<Func<object>> e = Expression.Lambda<Func<object>>(
+                Expression.Block(
+                    new[] { p },
+                    Expression.Assign(p, Expression.Constant((ValueTypeWithParameterlessConstructorThatThrows?)new ValueTypeWithParameterlessConstructorThatThrows(value), typeof(ValueTypeWithParameterlessConstructorThatThrows?))),
+                    Expression.Field(
+                        Expression.Property(p, typeof(ValueTypeWithParameterlessConstructorThatThrows?).GetProperty("Value")),
+                        typeof(ValueTypeWithParameterlessConstructorThatThrows).GetField("Value"))));
 
             Func<object> f = e.Compile(useInterpreter);
             Assert.Equal(value, f());
@@ -164,22 +203,50 @@ namespace System.Linq.Expressions.Tests
         {
             // f = () =>
             //     {
-            //         DontUseParameterlessConstructor p;
-            //         Func<DontUseParameterlessConstructor> q;
+            //         ValueTypeWithParameterlessConstructorThatThrows p;
+            //         Func<ValueTypeWithParameterlessConstructorThatThrows> q;
             //         q = () => p;
-            //         p = new DontUseParameterlessConstructor(42);
+            //         p = new ValueTypeWithParameterlessConstructorThatThrows(42);
             //         return q().Value;
             //     };
             const int value = 42;
-            ParameterExpression p = Expression.Parameter(typeof(DontUseParameterlessConstructor));
-            ParameterExpression q = Expression.Parameter(typeof(Func<DontUseParameterlessConstructor>));
+            ParameterExpression p = Expression.Parameter(typeof(ValueTypeWithParameterlessConstructorThatThrows));
+            ParameterExpression q = Expression.Parameter(typeof(Func<ValueTypeWithParameterlessConstructorThatThrows>));
             Expression<Func<object>> e =
                 Expression.Lambda<Func<object>>(
                     Expression.Block(
                         new[] { p, q },
-                        Expression.Assign(q, Expression.Lambda<Func<DontUseParameterlessConstructor>>(p)),
-                        Expression.Assign(p, Expression.Constant(new DontUseParameterlessConstructor(value), typeof(DontUseParameterlessConstructor))),
-                        Expression.Field(Expression.Invoke(q), typeof(DontUseParameterlessConstructor).GetField("Value"))));
+                        Expression.Assign(q, Expression.Lambda<Func<ValueTypeWithParameterlessConstructorThatThrows>>(p)),
+                        Expression.Assign(p, Expression.Constant(new ValueTypeWithParameterlessConstructorThatThrows(value), typeof(ValueTypeWithParameterlessConstructorThatThrows))),
+                        Expression.Field(Expression.Invoke(q), typeof(ValueTypeWithParameterlessConstructorThatThrows).GetField("Value"))));
+
+            Func<object> f = e.Compile(useInterpreter);
+            Assert.Equal(value, f());
+        }
+
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void MutableBox_Nullable(bool useInterpreter)
+        {
+            // f = () =>
+            //     {
+            //         ValueTypeWithParameterlessConstructorThatThrows? p;
+            //         Func<ValueTypeWithParameterlessConstructorThatThrows?> q;
+            //         q = () => p;
+            //         p = new ValueTypeWithParameterlessConstructorThatThrows(42);
+            //         return q().Value.Value;
+            //     };
+            const int value = 42;
+            ParameterExpression p = Expression.Parameter(typeof(ValueTypeWithParameterlessConstructorThatThrows?));
+            ParameterExpression q = Expression.Parameter(typeof(Func<ValueTypeWithParameterlessConstructorThatThrows?>));
+            Expression<Func<object>> e =
+                Expression.Lambda<Func<object>>(
+                    Expression.Block(
+                        new[] { p, q },
+                        Expression.Assign(q, Expression.Lambda<Func<ValueTypeWithParameterlessConstructorThatThrows?>>(p)),
+                        Expression.Assign(p, Expression.Constant((ValueTypeWithParameterlessConstructorThatThrows?)new ValueTypeWithParameterlessConstructorThatThrows(value), typeof(ValueTypeWithParameterlessConstructorThatThrows?))),
+                        Expression.Field(
+                            Expression.Property(Expression.Invoke(q), typeof(ValueTypeWithParameterlessConstructorThatThrows?).GetProperty("Value")),
+                            typeof(ValueTypeWithParameterlessConstructorThatThrows).GetField("Value"))));
 
             Func<object> f = e.Compile(useInterpreter);
             Assert.Equal(value, f());

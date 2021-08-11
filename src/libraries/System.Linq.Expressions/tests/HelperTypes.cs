@@ -347,11 +347,14 @@ namespace System.Linq.Expressions.Tests
     public struct ValueTypeWithParameterlessConstructor
     {
         public readonly bool ConstructorWasRun;
+        public ValueTypeWithParameterlessConstructor() { ConstructorWasRun = true; }
+    }
 
-        public ValueTypeWithParameterlessConstructor()
-        {
-            ConstructorWasRun = true;
-        }
+    public struct ValueTypeWithParameterlessConstructorThatThrows
+    {
+        public readonly object Value;
+        public ValueTypeWithParameterlessConstructorThatThrows() { throw new InvalidOperationException(); }
+        public ValueTypeWithParameterlessConstructorThatThrows(object value) { Value = value; }
     }
 
     public enum ByteEnum : byte { A = byte.MaxValue }

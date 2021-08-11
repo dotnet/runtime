@@ -108,6 +108,19 @@ namespace System.Linq.Expressions.Tests
 
         [Theory]
         [ClassData(typeof(CompilationTypes))]
+        public static void CheckNewNullableStructWithParameterlessConstructorTest(bool useInterpreter)
+        {
+            Expression<Func<ValueTypeWithParameterlessConstructorThatThrows?>> e =
+                Expression.Lambda<Func<ValueTypeWithParameterlessConstructorThatThrows?>>(
+                        Expression.New(typeof(ValueTypeWithParameterlessConstructorThatThrows?)));
+            Func<ValueTypeWithParameterlessConstructorThatThrows?> f = e.Compile(useInterpreter);
+
+            ValueTypeWithParameterlessConstructorThatThrows? newValue = f();
+            Assert.Null(newValue);
+        }
+
+        [Theory]
+        [ClassData(typeof(CompilationTypes))]
         public static void CheckNewNullableStructTest(bool useInterpreter)
         {
             Expression<Func<S?>> e =
