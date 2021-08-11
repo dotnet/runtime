@@ -528,8 +528,8 @@ namespace System.Text.Json.Serialization
                 state.Current.OriginalDepth = writer.CurrentDepth;
             }
 
-            // Ignore the naming policy for extension data.
-            state.Current.IgnoreDictionaryKeyPolicy = true;
+            // Exception data properties change how dictionary key naming policies are applied.
+            state.Current.IsWritingExtensionDataProperty = true;
             state.Current.DeclaredJsonPropertyInfo = state.Current.JsonTypeInfo.ElementTypeInfo!.PropertyInfoForTypeInfo;
 
             success = dictionaryConverter.OnWriteResume(writer, value, options, ref state);
@@ -621,34 +621,82 @@ namespace System.Text.Json.Serialization
 #nullable restore
             JsonSerializerOptions options);
 
-        internal virtual T ReadAsPropertyName(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+        /// <summary>
+        /// Reads a value from a JSON property name.
+        /// </summary>
+        /// <param name="reader">The <see cref="Utf8JsonReader"/> to read from.</param>
+        /// <param name="typeToConvert">The <see cref="Type"/> being converted.</param>
+        /// <param name="options">The <see cref="JsonSerializerOptions"/> being used.</param>
+        /// <returns>The value that was converted.</returns>
+        public virtual T ReadAsPropertyName(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
         {
             if (!IsInternalConverter && options.TryGetDefaultSimpleConverter(TypeToConvert, out JsonConverter? defaultConverter))
             {
                 // .NET 5 backward compatibility: hardcode the default converter for primitive key serialization.
                 Debug.Assert(defaultConverter.IsInternalConverter && defaultConverter is JsonConverter<T>);
-                return ((JsonConverter<T>)defaultConverter).ReadAsPropertyName(ref reader, TypeToConvert, options);
+                return ((JsonConverter<T>)defaultConverter).ReadAsPropertyNameCore(ref reader, TypeToConvert, options);
             }
 
             ThrowHelper.ThrowNotSupportedException_DictionaryKeyTypeNotSupported(TypeToConvert, this);
             return default;
         }
 
-        internal virtual void WriteAsPropertyName(Utf8JsonWriter writer, T value, JsonSerializerOptions options, ref WriteStack state)
+        internal virtual T ReadAsPropertyNameCore(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+        {
+            Debug.Assert(reader.TokenType == JsonTokenType.PropertyName);
+
+            long originalBytesConsumed = reader.BytesConsumed;
+            T result = ReadAsPropertyName(ref reader, typeToConvert, options);
+            if (reader.BytesConsumed != originalBytesConsumed)
+            {
+                ThrowHelper.ThrowJsonException_SerializationConverterRead(this);
+            }
+
+            return result;
+        }
+
+        /// <summary>
+        /// Writes a value as a JSON property name.
+        /// </summary>
+        /// <param name="writer">The <see cref="Utf8JsonWriter"/> to write to.</param>
+        /// <param name="value">The value to convert. Note that the value of <seealso cref="HandleNull"/> determines if the converter handles <see langword="null" /> values.</param>
+        /// <param name="options">The <see cref="JsonSerializerOptions"/> being used.</param>
+        public virtual void WriteAsPropertyName(Utf8JsonWriter writer, T value, JsonSerializerOptions options)
         {
             if (!IsInternalConverter && options.TryGetDefaultSimpleConverter(TypeToConvert, out JsonConverter? defaultConverter))
             {
                 // .NET 5 backward compatibility: hardcode the default converter for primitive key serialization.
                 Debug.Assert(defaultConverter.IsInternalConverter && defaultConverter is JsonConverter<T>);
-                ((JsonConverter<T>)defaultConverter).WriteAsPropertyName(writer, value, options, ref state);
+                ((JsonConverter<T>)defaultConverter).WriteAsPropertyNameCore(writer, value, options, isWritingExtensionDataProperty: false);
                 return;
             }
 
             ThrowHelper.ThrowNotSupportedException_DictionaryKeyTypeNotSupported(TypeToConvert, this);
         }
 
-        internal sealed override void WriteAsPropertyNameAsObject(Utf8JsonWriter writer, object value, JsonSerializerOptions options, ref WriteStack state)
-            => WriteAsPropertyName(writer, (T)value, options, ref state);
+        internal virtual void WriteAsPropertyNameCore(Utf8JsonWriter writer, T value, JsonSerializerOptions options, bool isWritingExtensionDataProperty)
+        {
+            if (isWritingExtensionDataProperty)
+            {
+                // Since we can't pass isWritingExtensionDataProperty information to the public WriteAsPropertyName method,
+                // err on the side of backward compatibility and hardcode the default string property name write semantics.
+                // This implies that any custom WriteAsPropertyName implementations _will not be consulted_ when serializing
+                // extension data properties.
+                Debug.Assert(!IsInternalConverter && TypeToConvert == typeof(string));
+                writer.WritePropertyName((string)(object)value!);
+                return;
+            }
+
+            int originalDepth = writer.CurrentDepth;
+            WriteAsPropertyName(writer, value, options);
+            if (originalDepth != writer.CurrentDepth || writer.TokenType != JsonTokenType.PropertyName)
+            {
+                ThrowHelper.ThrowJsonException_SerializationConverterWrite(this);
+            }
+        }
+
+        internal sealed override void WriteAsPropertyNameCoreAsObject(Utf8JsonWriter writer, object value, JsonSerializerOptions options, bool isWritingExtensionDataProperty)
+            => WriteAsPropertyNameCore(writer, (T)value, options, isWritingExtensionDataProperty);
 
         internal virtual T ReadNumberWithCustomHandling(ref Utf8JsonReader reader, JsonNumberHandling handling, JsonSerializerOptions options)
             => throw new InvalidOperationException();

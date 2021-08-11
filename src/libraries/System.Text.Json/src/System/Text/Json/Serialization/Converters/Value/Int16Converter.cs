@@ -21,12 +21,12 @@ namespace System.Text.Json.Serialization.Converters
             writer.WriteNumberValue((long)value);
         }
 
-        internal override short ReadAsPropertyName(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+        internal override short ReadAsPropertyNameCore(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
         {
             return reader.GetInt16WithQuotes();
         }
 
-        internal override void WriteAsPropertyName(Utf8JsonWriter writer, short value, JsonSerializerOptions options, ref WriteStack state)
+        internal override void WriteAsPropertyNameCore(Utf8JsonWriter writer, short value, JsonSerializerOptions options, bool isWritingExtensionDataProperty)
         {
             writer.WritePropertyName(value);
         }
