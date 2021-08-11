@@ -450,7 +450,7 @@ namespace System.Net.Http
             {
                 try
                 {
-                    connection = await CreateHttp11ConnectionAsync(request, false, cts.Token).ConfigureAwait(false);
+                    connection = await CreateHttp11ConnectionAsync(request, true, cts.Token).ConfigureAwait(false);
                 }
                 catch (OperationCanceledException oce) when (oce.CancellationToken == cts.Token)
                 {
@@ -596,7 +596,7 @@ namespace System.Net.Http
             try
             {
                 // Note, the same CancellationToken from the original HTTP2 connection establishment still applies here.
-                http11Connection = await ConstructHttp11ConnectionAsync(false, socket, stream, transportContext, request, cancellationToken).ConfigureAwait(false);
+                http11Connection = await ConstructHttp11ConnectionAsync(true, socket, stream, transportContext, request, cancellationToken).ConfigureAwait(false);
             }
             catch (OperationCanceledException oce) when (oce.CancellationToken == cancellationToken)
             {
@@ -621,7 +621,7 @@ namespace System.Net.Http
             {
                 try
                 {
-                    (Socket? socket, Stream stream, TransportContext? transportContext) = await ConnectAsync(request, false, cts.Token).ConfigureAwait(false);
+                    (Socket? socket, Stream stream, TransportContext? transportContext) = await ConnectAsync(request, true, cts.Token).ConfigureAwait(false);
 
                     if (IsSecure)
                     {

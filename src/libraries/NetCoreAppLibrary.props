@@ -200,8 +200,10 @@
       System.Windows.Extensions;
     </WindowsDesktopCoreAppLibrary>
   </PropertyGroup>
-  <!-- Make NetCoreAppLibrary available as an item. -->
+  <!-- Make available as an item. -->
   <ItemGroup>
     <NetCoreAppLibrary Include="$(NetCoreAppLibrary)" />
+    <AspNetCoreAppLibrary Include="$(AspNetCoreAppLibrary)" />
+    <WindowsDesktopCoreAppLibrary Include="$(WindowsDesktopCoreAppLibrary)" />
   </ItemGroup>
 </Project>

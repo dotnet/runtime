@@ -1,9 +1,0 @@
-<Project>
-
-  <PropertyGroup>
-    <!-- Needs to be set in a props file when package referencing NuGet.Build.Tasks.Pack, as NuGet's targets file is imported before
-         packaging.targets and hence the BeforePack isn't respected. This can be moved back when the PackageReference is removed. -->
-    <BeforePack>AddNETStandardCompatErrorFileForPackaging;IncludeAnalyzersInPackage;$(BeforePack)</BeforePack>
-  </PropertyGroup>
-
-</Project>
