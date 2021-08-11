@@ -9,8 +9,9 @@
     <DisablePackageBaselineValidation>true</DisablePackageBaselineValidation>
     <SuppressDependenciesWhenPacking>true</SuppressDependenciesWhenPacking>
     <PackageDescription>Internal transport package to provide aspnetcore with the assemblies that make up the Microsoft.ASPNetCore.App shared framework.</PackageDescription>
-    <!-- Reference elements are missing from the nuspec: https://github.com/NuGet/Home/issues/8684. -->
-    <NoWarn>$(NoWarn);NU5131</NoWarn>
+    <!-- NU5131: Reference elements are missing from the nuspec: https://github.com/NuGet/Home/issues/8684.
+         NU5128: Don't list dependencies as this is a mega and not meta package. -->
+    <NoWarn>$(NoWarn);NU5131;NU5128</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>
