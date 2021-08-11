@@ -201,6 +201,7 @@ namespace System
         /// <returns>
         /// A string from the value of this instance, using UTF-8 to decode the bytes.
         /// </returns>
+        /// <seealso cref="ToObjectFromJson{String}" />
         public override unsafe string ToString()
         {
             ReadOnlySpan<byte> span = _bytes.Span;
