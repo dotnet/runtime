@@ -463,7 +463,7 @@ namespace System
         internal static bool IsComObject(RuntimeType type, bool isGenericCOM)
         {
 #if FEATURE_COMINTEROP
-            // We need to check the type handle values - not the instances - to determine if the runtime type is a ComOjbect.
+            // We need to check the type handle values - not the instances - to determine if the runtime type is a ComObject.
             if (isGenericCOM)
                 return type.TypeHandle.Value == typeof(__ComObject).TypeHandle.Value;
 
