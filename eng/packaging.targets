@@ -17,7 +17,6 @@
     <!-- Search for the documentation file in the intellisense package and otherwise pick up the generated one. -->
     <LibIntellisenseDocumentationFilePath>$(XmlDocFileRoot)1033\$(AssemblyName).xml</LibIntellisenseDocumentationFilePath>
     <UseIntellisenseDocumentationFile Condition="'$(UseIntellisenseDocumentationFile)' == '' and Exists('$(LibIntellisenseDocumentationFilePath)')">true</UseIntellisenseDocumentationFile>
-    <IsAspNetCoreApp Condition="$(AspNetCoreAppLibrary.Contains('$(AssemblyName);'))">true</IsAspNetCoreApp>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(ServicingVersion)' != ''">

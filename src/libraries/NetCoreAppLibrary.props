@@ -162,10 +162,8 @@
       Microsoft.Extensions.DependencyInjection.Abstractions;
       Microsoft.Extensions.FileProviders.Abstractions;
       Microsoft.Extensions.FileProviders.Composite;
-      Microsoft.Extensions.FileProviders.Embedded;
       Microsoft.Extensions.FileProviders.Physical;
       Microsoft.Extensions.FileSystemGlobbing;
-      Microsoft.Extensions.HostFactoryResolver;
       Microsoft.Extensions.Hosting;
       Microsoft.Extensions.Hosting.Abstractions;
       Microsoft.Extensions.Http;
@@ -181,7 +179,6 @@
       Microsoft.Extensions.Options.ConfigurationExtensions;
       Microsoft.Extensions.Options.DataAnnotations;
       Microsoft.Extensions.Primitives;
-      Microsoft.Extensions.WebEncoders;
       System.Diagnostics.EventLog;
       System.IO.Pipelines;
       System.Security.Cryptography.Xml;
