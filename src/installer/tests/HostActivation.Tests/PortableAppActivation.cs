@@ -445,7 +445,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
         [Theory]
         [InlineData(true)]
         [InlineData(false)]
-        public void AppHost_CLI_FrameworkDependent_MissingRuntimeFramework_ErrorReportedInDialog(bool missingHostfxr)
+        public void AppHost_CLI_FrameworkDependent_MissingRuntimeFramework_ErrorReportedInStdErr(bool missingHostfxr)
         {
             var fixture = sharedTestState.PortableAppFixture_Built
                 .Copy();
@@ -459,7 +459,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
             {
                 Directory.CreateDirectory(invalidDotNet);
                 string expectedUrlQuery;
-                string expectedStdErr = null;
+                string expectedStdErr;
                 int expectedErrorCode = 0;
                 if (missingHostfxr)
                 {
@@ -485,11 +485,13 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                     .MultilevelLookup(false)
                     .Start();
 
-                var result = command.WaitForExit(true)
-                    .Should().Fail()
+                var result = command.WaitForExit(true);
+                    result.Should().Fail()
                     .And.HaveStdErrContaining($"- https://aka.ms/dotnet-core-applaunch?{expectedUrlQuery}")
-                    .And.HaveStdErrContaining(expectedStdErr)
-                    .And.ExitWith(expectedErrorCode);
+                    .And.HaveStdErrContaining(expectedStdErr);
+
+                // Some Unix systems will have 8 bit exit codes.
+                Assert.True(result.ExitCode == expectedErrorCode || result.ExitCode == (expectedErrorCode & 0xFF));
             }
         }
 
