@@ -177,7 +177,7 @@ namespace System.Threading
 
         // This needs to be initialized after UsePortableThreadPool above, as it may depend on UsePortableThreadPool and the
         // config initialization
-        internal static readonly bool EnableWorkerTracking = GetEnableWorkerTracking();
+        private static readonly bool IsWorkerTrackingEnabledInConfig = GetEnableWorkerTracking();
 
         private static unsafe bool InitializeConfigAndDetermineUsePortableThreadPool()
         {

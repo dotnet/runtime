@@ -153,10 +153,10 @@ System.IO.Ports.SerialPort</PackageDescription>
   </ItemGroup>
 
   <ItemGroup Condition="'$(IsPartialFacadeAssembly)' != 'true'">
-    <!-- Just reference the runtime meta package but don't build it to avoid unintentional Build/Pack invocations. -->
-    <ProjectReference Include="..\pkg\runtime.native.$(MSBuildProjectName).proj" />
+    <!-- Just reference the runtime packages but don't build them in order to avoid unintentional Build/Pack invocations. -->
+    <ProjectReference Include="..\pkg\runtime.native.$(MSBuildProjectName).proj" BuildReference="false" />
     <!-- Make the runtime specific packages non transitive so that they aren't flowing into other projects. -->
-    <ProjectReference Include="..\pkg\runtime.*.runtime.native.$(MSBuildProjectName).proj" PrivateAssets="all" />
+    <ProjectReference Include="..\pkg\runtime.*.runtime.native.$(MSBuildProjectName).proj" BuildReference="false" PrivateAssets="all" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETStandard'">

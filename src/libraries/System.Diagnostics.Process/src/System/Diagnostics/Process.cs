@@ -261,7 +261,6 @@ namespace System.Diagnostics
         public IntPtr MaxWorkingSet
         {
             [UnsupportedOSPlatform("ios")]
-            [UnsupportedOSPlatform("maccatalyst")]
             [UnsupportedOSPlatform("tvos")]
             get
             {
@@ -284,7 +283,6 @@ namespace System.Diagnostics
         public IntPtr MinWorkingSet
         {
             [UnsupportedOSPlatform("ios")]
-            [UnsupportedOSPlatform("maccatalyst")]
             [UnsupportedOSPlatform("tvos")]
             get
             {
@@ -1204,7 +1202,6 @@ namespace System.Diagnostics
         ///    </para>
         /// </devdoc>
         [UnsupportedOSPlatform("ios")]
-        [UnsupportedOSPlatform("maccatalyst")]
         [UnsupportedOSPlatform("tvos")]
         public bool Start()
         {
@@ -1248,7 +1245,6 @@ namespace System.Diagnostics
         ///    </para>
         /// </devdoc>
         [UnsupportedOSPlatform("ios")]
-        [UnsupportedOSPlatform("maccatalyst")]
         [UnsupportedOSPlatform("tvos")]
         public static Process Start(string fileName)
         {
@@ -1267,7 +1263,6 @@ namespace System.Diagnostics
         ///    </para>
         /// </devdoc>
         [UnsupportedOSPlatform("ios")]
-        [UnsupportedOSPlatform("maccatalyst")]
         [UnsupportedOSPlatform("tvos")]
         public static Process Start(string fileName, string arguments)
         {
@@ -1281,7 +1276,6 @@ namespace System.Diagnostics
         /// Starts a process resource by specifying the name of an application and a set of command line arguments
         /// </summary>
         [UnsupportedOSPlatform("ios")]
-        [UnsupportedOSPlatform("maccatalyst")]
         [UnsupportedOSPlatform("tvos")]
         public static Process Start(string fileName, IEnumerable<string> arguments)
         {
@@ -1308,7 +1302,6 @@ namespace System.Diagnostics
         ///    </para>
         /// </devdoc>
         [UnsupportedOSPlatform("ios")]
-        [UnsupportedOSPlatform("maccatalyst")]
         [UnsupportedOSPlatform("tvos")]
         public static Process? Start(ProcessStartInfo startInfo)
         {
