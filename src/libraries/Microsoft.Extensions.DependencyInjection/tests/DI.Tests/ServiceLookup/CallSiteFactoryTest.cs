@@ -26,8 +26,6 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
             collection.Add(ServiceDescriptor.Describe(typeof(IFakeService), (sp) => new FakeService(), ServiceLifetime.Transient));
 
             using ServiceProvider serviceProvider = collection.BuildServiceProvider(ServiceProviderMode.Dynamic);
-
-
             Type expectedType = typeof(FakeService);
 
             Assert.Equal(expectedType, serviceProvider.GetService(typeof(IFakeService)).GetType());
