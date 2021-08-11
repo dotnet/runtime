@@ -802,6 +802,59 @@ namespace System.Net.Http.Functional.Tests
             return (SslApplicationProtocol)alpn;
         }
 
+        [ConditionalTheory(nameof(IsMsQuicSupported))]
+        [MemberData(nameof(StatusCodesTestData))]
+        public async Task StatusCodes_ReceiveSuccess(HttpStatusCode statusCode, bool qpackEncode)
+        {
+            using Http3LoopbackServer server = CreateHttp3LoopbackServer();
+
+            Http3LoopbackConnection connection = null;
+            Task serverTask = Task.Run(async () =>
+            {
+                connection = (Http3LoopbackConnection)await server.EstablishGenericConnectionAsync();
+                using Http3LoopbackStream stream = await connection.AcceptRequestStreamAsync();
+
+                HttpRequestData request = await stream.ReadRequestDataAsync().ConfigureAwait(false);
+
+                if (qpackEncode)
+                {
+                    await stream.SendResponseHeadersWithEncodedStatusAsync(statusCode).ConfigureAwait(false);
+                }
+                else
+                {
+                    await stream.SendResponseHeadersAsync(statusCode).ConfigureAwait(false);
+                }
+            });
+
+            using HttpClient client = CreateHttpClient();
+            using HttpRequestMessage request = new()
+            {
+                Method = HttpMethod.Get,
+                RequestUri = server.Address,
+                Version = HttpVersion30,
+                VersionPolicy = HttpVersionPolicy.RequestVersionExact
+            };
+            HttpResponseMessage response = await client.SendAsync(request).WaitAsync(TimeSpan.FromSeconds(10));
+            
+            Assert.Equal(statusCode, response.StatusCode);
+
+            await serverTask;
+            Assert.NotNull(connection);
+            connection.Dispose();
+        }
+
+        public static TheoryData<HttpStatusCode, bool> StatusCodesTestData()
+        {
+            var statuses = Enum.GetValues(typeof(HttpStatusCode)).Cast<HttpStatusCode>().Where(s => s >= HttpStatusCode.OK); // exclude informational
+            var data = new TheoryData<HttpStatusCode, bool>();
+            foreach (var status in statuses)
+            {
+                data.Add(status, true);
+                data.Add(status, false);
+            }
+            return data;
+        }
+
         /// <summary>
         /// These are public interop test servers for various QUIC and HTTP/3 implementations,
         /// taken from https://github.com/quicwg/base-drafts/wiki/Implementations and https://bagder.github.io/HTTP3-test/.
