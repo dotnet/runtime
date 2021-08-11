@@ -112,10 +112,6 @@
     <NetCoreAppCurrentRefPath>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'ref', '$(NetCoreAppCurrent)'))</NetCoreAppCurrentRefPath>
     <NetCoreAppCurrentRuntimePath>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'runtime', '$(NetCoreAppCurrent)-$(TargetOS)-$(Configuration)-$(TargetArchitecture)'))</NetCoreAppCurrentRuntimePath>
 
-    <ASPNETCoreAppPackageRootPath>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'pkg', 'aspnetcoreapp'))</ASPNETCoreAppPackageRootPath>
-    <ASPNETCoreAppPackageRefPath>$([MSBuild]::NormalizeDirectory('$(ASPNETCoreAppPackageRootPath)', 'ref'))</ASPNETCoreAppPackageRefPath>
-    <ASPNETCoreAppPackageRuntimePath>$([MSBuild]::NormalizeDirectory('$(ASPNETCoreAppPackageRootPath)', 'lib'))</ASPNETCoreAppPackageRuntimePath>
-
     <CommonPathRoot>$([MSBuild]::NormalizeDirectory('$(LibrariesProjectRoot)', 'Common'))</CommonPathRoot>
     <CommonPath>$([MSBuild]::NormalizeDirectory('$(CommonPathRoot)', 'src'))</CommonPath>
     <CommonTestPath>$([MSBuild]::NormalizeDirectory('$(CommonPathRoot)', 'tests'))</CommonTestPath>
