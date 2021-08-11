@@ -55,13 +55,13 @@ class C2
     public C1 F3;
 }
 
-public class Program
+public class Runtime_57061
 {
     static C2 s_23;
     static C1 s_37;
     static sbyte s_56;
     static S3 s_60;
-    public static void Main()
+    public static int Main()
     {
         uint vr2 = default(uint);
         uint vr3;
@@ -95,6 +95,8 @@ public class Program
 
             vr3 = vr3;
         }
+        
+        return 100;
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
