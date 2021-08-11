@@ -2639,7 +2639,7 @@ inline UNATIVE_OFFSET emitter::emitInsSizeCV(instrDesc* id, code_t code, int val
     }
     else
     {
-        assert((ins == INS_mov) || (valSize < 8));
+        //assert((ins == INS_mov) || (valSize < 8));
         assert(!IsSSEOrAVXInstruction(ins));
     }
 
