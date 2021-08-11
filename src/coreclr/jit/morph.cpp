@@ -12095,7 +12095,6 @@ DONE_MORPHING_CHILDREN:
     GenTree*      cns1;
     GenTree*      cns2;
     size_t        ival1;
-    // size_t        ival2;
     GenTree*      lclVarTree;
     GenTree*      effectiveOp1;
     FieldSeqNode* fieldSeq = nullptr;
@@ -12156,12 +12155,15 @@ DONE_MORPHING_CHILDREN:
 
         case GT_EQ:
         case GT_NE:
-            tree = fgOptimizeEqualityComparison(tree->AsOp());
-            oper = tree->OperGet();
-            if (tree->OperIsSimple())
+            // It is not safe to reorder/delete CSE's
+            if (!optValnumCSE_phase && op2->IsIntegralConst())
             {
-                op1 = tree->gtGetOp1();
-                op2 = tree->gtGetOp2IfPresent();
+                tree = fgOptimizeEqualityComparisonWithConst(tree->AsOp());
+                assert(tree->OperIsCompare());
+
+                oper = tree->OperGet();
+                op1  = tree->gtGetOp1();
+                op2  = tree->gtGetOp2();
             }
             goto COMPARE;
 
@@ -13574,19 +13576,21 @@ DONE_MORPHING_CHILDREN:
     return tree;
 }
 
-GenTree* Compiler::fgOptimizeEqualityComparison(GenTreeOp* cmp)
+//------------------------------------------------------------------------
+// fgOptimizeEqualityComparisonWithConst: optimizes various EQ/NE(OP, CONST) patterns.
+//
+// Arguments:
+//    cmp - The GT_NE/GT_EQ tree the second operand of which is an integral constant
+//
+// Return Value:
+//    The optimized tree, "cmp" in case no optimizations were done.
+//    Currently only returns relop trees.
+//
+GenTree* Compiler::fgOptimizeEqualityComparisonWithConst(GenTreeOp* cmp)
 {
-    if (optValnumCSE_phase)
-    {
-        // It is not safe to reorder/delete CSE's
-        return cmp;
-    }
-
-    // This method only handles compares against constants.
-    if (!cmp->gtGetOp2()->IsIntegralConst())
-    {
-        return cmp;
-    }
+    assert(cmp->OperIs(GT_EQ, GT_NE));
+    assert(cmp->gtGetOp2()->IsIntegralConst());
+    assert(!optValnumCSE_phase);
 
     GenTree*             op1 = cmp->gtGetOp1();
     GenTreeIntConCommon* op2 = cmp->gtGetOp2()->AsIntConCommon();
@@ -13619,8 +13623,8 @@ GenTree* Compiler::fgOptimizeEqualityComparison(GenTreeOp* cmp)
     if (op2->IsCnsIntOrI() && (op2->IconValue() != 0))
     {
         // Since this can occur repeatedly we use a while loop.
-        while (op1->OperIs(GT_ADD, GT_SUB) && op1->AsOp()->gtGetOp2()->IsCnsIntOrI() &&
-               op1->TypeIs(TYP_INT) && !op1->gtOverflow())
+        while (op1->OperIs(GT_ADD, GT_SUB) && op1->AsOp()->gtGetOp2()->IsCnsIntOrI() && op1->TypeIs(TYP_INT) &&
+               !op1->gtOverflow())
         {
             // Got it; change "x + icon1 == icon2" to "x == icon2 - icon1".
             ssize_t op1Value = op1->AsOp()->gtGetOp2()->AsIntCon()->IconValue();
