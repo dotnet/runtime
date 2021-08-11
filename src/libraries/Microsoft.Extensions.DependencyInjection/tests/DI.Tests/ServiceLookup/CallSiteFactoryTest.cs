@@ -21,33 +21,23 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
         [Fact]
         public void GetService_FactoryCallSite_Transient_DoesNotFail()
         {
-            IServiceProvider serviceProvider = null;
-            try
+            var collection = new ServiceCollection();
+            collection.Add(ServiceDescriptor.Describe(typeof(FakeService), (sp) => new FakeService(), ServiceLifetime.Transient));
+            collection.Add(ServiceDescriptor.Describe(typeof(IFakeService), (sp) => new FakeService(), ServiceLifetime.Transient));
+
+            using ServiceProvider serviceProvider = collection.BuildServiceProvider(ServiceProviderMode.Dynamic);
+
+
+            Type expectedType = typeof(FakeService);
+
+            Assert.Equal(expectedType, serviceProvider.GetService(typeof(IFakeService)).GetType());
+            Assert.Equal(expectedType, serviceProvider.GetService(typeof(FakeService)).GetType());
+
+            for (int i = 0; i < 50; i++)
             {
-                var collection = new ServiceCollection();
-                collection.Add(ServiceDescriptor.Describe(typeof(FakeService), (sp) => new FakeService(), ServiceLifetime.Transient));
-                collection.Add(ServiceDescriptor.Describe(typeof(IFakeService), (sp) => new FakeService(), ServiceLifetime.Transient));
-
-                serviceProvider = collection
-                    .BuildServiceProvider(ServiceProviderMode.Dynamic)
-                    .CreateScope()
-                    .ServiceProvider;
-
-                Type expectedType = typeof(FakeService);
-
                 Assert.Equal(expectedType, serviceProvider.GetService(typeof(IFakeService)).GetType());
                 Assert.Equal(expectedType, serviceProvider.GetService(typeof(FakeService)).GetType());
-
-                for (int i = 0; i < 50; i++)
-                {
-                    serviceProvider.GetService(typeof(IFakeService));
-                    serviceProvider.GetService(typeof(FakeService));
-                    Thread.Sleep(10); // Give the background thread time to compile
-                }
-            }
-            finally
-            {
-                ((IDisposable)serviceProvider).Dispose();
+                Thread.Sleep(10); // Give the background thread time to compile
             }
         }
 
