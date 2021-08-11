@@ -362,7 +362,7 @@ namespace Microsoft.Extensions.Configuration
                 return convertedValue;
             }
 
-            if (config != null && config.GetChildren().Any())
+            if (config != null && (config.GetChildren().Any() || configValue != null))
             {
                 // If we don't have an instance, try to create one
                 if (instance == null)
@@ -495,7 +495,17 @@ namespace Microsoft.Extensions.Configuration
             Type itemType = collectionType.GenericTypeArguments[0];
             MethodInfo addMethod = collectionType.GetMethod("Add", DeclaredOnlyLookup);
 
-            foreach (IConfigurationSection section in config.GetChildren())
+            IEnumerable<IConfigurationSection> children;
+            if (config.GetChildren().Any(a => long.TryParse(a.Key, out _)))
+            {
+                children = config.GetChildren();
+            }
+            else
+            {
+                children = new[] { config as IConfigurationSection };
+            }
+
+            foreach (IConfigurationSection section in children)
             {
                 try
                 {
@@ -518,7 +528,16 @@ namespace Microsoft.Extensions.Configuration
         [RequiresUnreferencedCode("Cannot statically analyze what the element type is of the Array so its members may be trimmed.")]
         private static Array BindArray(Array source, IConfiguration config, BinderOptions options)
         {
-            IConfigurationSection[] children = config.GetChildren().ToArray();
+            IConfigurationSection[] children;
+            if (config.GetChildren().Any(a => long.TryParse(a.Key, out _)))
+            {
+                children = config.GetChildren().ToArray();
+            }
+            else
+            {
+                children = new[] { config as IConfigurationSection };
+            }
+
             int arrayLength = source.Length;
             Type elementType = source.GetType().GetElementType();
             var newArray = Array.CreateInstance(elementType, arrayLength + children.Length);
