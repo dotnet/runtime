@@ -83,9 +83,6 @@ namespace System.Reflection
             return Activator.CreateInstance(proxiedType.GeneratedType, new object[] { proxiedType.MethodInfos })!;
         }
 
-        // Unconditionally generates a new proxy type derived from 'baseType' and implements 'interfaceType'
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2062:UnrecognizedReflectionPattern",
-            Justification = "interfaceType is annotated as preserve All members, so any Types returned from GetInterfaces should be preserved as well once https://github.com/mono/linker/issues/1731 is fixed.")]
         private static GeneratedTypeInfo GetProxyType(
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] Type baseType,
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type interfaceType)
@@ -110,7 +107,7 @@ namespace System.Reflection
 
         // Unconditionally generates a new proxy type derived from 'baseType' and implements 'interfaceType'
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2062:UnrecognizedReflectionPattern",
-                    Justification = "interfaceType is annotated as preserve All members, so any Types returned from GetInterfaces should be preserved as well once https://github.com/mono/linker/issues/1731 is fixed.")]
+            Justification = "interfaceType is annotated as preserve All members, so any Types returned from GetInterfaces should be preserved as well once https://github.com/mono/linker/issues/1731 is fixed.")]
         private static GeneratedTypeInfo GenerateProxyType(
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] Type baseType,
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type interfaceType)
