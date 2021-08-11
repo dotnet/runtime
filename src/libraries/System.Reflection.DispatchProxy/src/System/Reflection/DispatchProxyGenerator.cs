@@ -64,7 +64,8 @@ namespace System.Reflection
         private static readonly MethodInfo s_makeGenericMethodMethod = GetGenericMethodMethodInfo();
 
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
-            Justification = "Use of the MakeGenericMethod is done in a trim-safe way in DispatchProxyGenerator.")]
+            Justification = "MakeGenericMethod is safe here because the user code invoking the generic method will reference " +
+            "the GenericTypes being used, which will guarantee the requirements of the generic method.")]
         private static MethodInfo GetGenericMethodMethodInfo()
         {
             return typeof(MethodInfo).GetMethod("MakeGenericMethod", new Type[] { typeof(Type[]) })!;
@@ -107,6 +108,7 @@ namespace System.Reflection
             }
         }
 
+        // Unconditionally generates a new proxy type derived from 'baseType' and implements 'interfaceType'
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2062:UnrecognizedReflectionPattern",
                     Justification = "interfaceType is annotated as preserve All members, so any Types returned from GetInterfaces should be preserved as well once https://github.com/mono/linker/issues/1731 is fixed.")]
         private static GeneratedTypeInfo GenerateProxyType(
