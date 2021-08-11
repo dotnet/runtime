@@ -442,7 +442,7 @@ bool Compiler::fgRemoveUnreachableBlocks()
         {
             /* We have to call fgRemoveBlock next */
             hasUnreachableBlocks = true;
-            changed = true;
+            changed              = true;
         }
         continue;
 
