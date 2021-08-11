@@ -40,7 +40,7 @@ The last few lines of the build log should contain something like this:
 To run all tests, execute that command, adding `wasm` to the end.
 
 ### Android:
-Build the runtime tests for Android x64
+Build the runtime tests for Android x64/ARM64
 ```
 $(REPO_ROOT)/src/tests/build.sh -excludemonofailures os Android <x64/arm64> <Release/Debug>
 ```
