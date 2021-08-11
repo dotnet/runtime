@@ -207,7 +207,4 @@
   <ItemGroup>
     <NetCoreAppLibrary Include="$(NetCoreAppLibrary)" />
   </ItemGroup>
-  <PropertyGroup>
-    <IsAspNetCoreApp Condition="$(AspNetCoreAppLibrary.Contains('$(AssemblyName);'))">true</IsAspNetCoreApp>
-  </PropertyGroup>
 </Project>
