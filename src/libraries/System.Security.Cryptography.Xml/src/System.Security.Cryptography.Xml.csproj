@@ -163,7 +163,4 @@ System.Security.Cryptography.Xml.XmlLicenseTransform</PackageDescription>
   <ItemGroup Condition="'$(IsPartialFacadeAssembly)' == 'true'">
     <Reference Include="System.Security" />
   </ItemGroup>
-  <ItemGroup>
-    <NETStandardCompatError Include="netcoreapp2.0" Supported="$(NetCoreAppMinimum)" />
-  </ItemGroup>
 </Project>

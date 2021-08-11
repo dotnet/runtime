@@ -1336,7 +1336,8 @@ void CodeGen::genPutArgSplit(GenTreePutArgSplit* treeNode)
                 if (targetReg == addrReg && idx != treeNode->gtNumRegs - 1)
                 {
                     assert(targetReg != baseReg);
-                    emit->emitIns_Mov(INS_mov, emitActualTypeSize(type), baseReg, addrReg, /* canSkip */ false);
+                    var_types addrType = addrNode->TypeGet();
+                    emit->emitIns_Mov(INS_mov, emitActualTypeSize(addrType), baseReg, addrReg, /* canSkip */ false);
                     addrReg = baseReg;
                 }
 

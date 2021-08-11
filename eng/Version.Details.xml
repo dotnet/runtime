@@ -18,9 +18,9 @@
       <Uri>https://github.com/dotnet/arcade</Uri>
       <Sha>0bb1ae8e4c33203b81c9ed24e418a2b70f3c17ab</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.DotNet.Helix.Sdk" Version="6.0.0-beta.21405.3">
+    <Dependency Name="Microsoft.DotNet.Helix.Sdk" Version="6.0.0-beta.21407.1">
       <Uri>https://github.com/dotnet/arcade</Uri>
-      <Sha>0bb1ae8e4c33203b81c9ed24e418a2b70f3c17ab</Sha>
+      <Sha>7a04201a936a34bb070145302fa3f0af2a018508</Sha>
     </Dependency>
     <Dependency Name="Microsoft.DotNet.ApiCompat" Version="6.0.0-beta.21405.3">
       <Uri>https://github.com/dotnet/arcade</Uri>
@@ -186,9 +186,9 @@
       <Uri>https://github.com/dotnet/runtime</Uri>
       <Sha>d90f6b6c86be7001dc839e147ab229dfd1c7d20d</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.NET.ILLink.Tasks" Version="6.0.100-preview.6.21405.1">
+    <Dependency Name="Microsoft.NET.ILLink.Tasks" Version="6.0.100-preview.6.21409.3">
       <Uri>https://github.com/mono/linker</Uri>
-      <Sha>ffe71535ba927280e6e93db0ca04dd99bde07637</Sha>
+      <Sha>e21bb44ca909d33c18acf3ed0b68f94a413351a5</Sha>
     </Dependency>
     <Dependency Name="Microsoft.DotNet.XHarness.TestRunners.Xunit" Version="1.0.0-prerelease.21404.1">
       <Uri>https://github.com/dotnet/xharness</Uri>

@@ -53,25 +53,21 @@ namespace Microsoft.Extensions.Hosting
         [System.Runtime.Versioning.UnsupportedOSPlatform("android")]
         [System.Runtime.Versioning.UnsupportedOSPlatform("browser")]
         [System.Runtime.Versioning.UnsupportedOSPlatform("ios")]
-        [System.Runtime.Versioning.UnsupportedOSPlatform("maccatalyst")]
         [System.Runtime.Versioning.UnsupportedOSPlatform("tvos")]
         public static System.Threading.Tasks.Task RunConsoleAsync(this Microsoft.Extensions.Hosting.IHostBuilder hostBuilder, System.Action<Microsoft.Extensions.Hosting.ConsoleLifetimeOptions> configureOptions, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
         [System.Runtime.Versioning.UnsupportedOSPlatform("android")]
         [System.Runtime.Versioning.UnsupportedOSPlatform("browser")]
         [System.Runtime.Versioning.UnsupportedOSPlatform("ios")]
-        [System.Runtime.Versioning.UnsupportedOSPlatform("maccatalyst")]
         [System.Runtime.Versioning.UnsupportedOSPlatform("tvos")]
         public static System.Threading.Tasks.Task RunConsoleAsync(this Microsoft.Extensions.Hosting.IHostBuilder hostBuilder, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
         [System.Runtime.Versioning.UnsupportedOSPlatform("android")]
         [System.Runtime.Versioning.UnsupportedOSPlatform("browser")]
         [System.Runtime.Versioning.UnsupportedOSPlatform("ios")]
-        [System.Runtime.Versioning.UnsupportedOSPlatform("maccatalyst")]
         [System.Runtime.Versioning.UnsupportedOSPlatform("tvos")]
         public static Microsoft.Extensions.Hosting.IHostBuilder UseConsoleLifetime(this Microsoft.Extensions.Hosting.IHostBuilder hostBuilder) { throw null; }
         [System.Runtime.Versioning.UnsupportedOSPlatform("android")]
         [System.Runtime.Versioning.UnsupportedOSPlatform("browser")]
         [System.Runtime.Versioning.UnsupportedOSPlatform("ios")]
-        [System.Runtime.Versioning.UnsupportedOSPlatform("maccatalyst")]
         [System.Runtime.Versioning.UnsupportedOSPlatform("tvos")]
         public static Microsoft.Extensions.Hosting.IHostBuilder UseConsoleLifetime(this Microsoft.Extensions.Hosting.IHostBuilder hostBuilder, System.Action<Microsoft.Extensions.Hosting.ConsoleLifetimeOptions> configureOptions) { throw null; }
         public static Microsoft.Extensions.Hosting.IHostBuilder UseContentRoot(this Microsoft.Extensions.Hosting.IHostBuilder hostBuilder, string contentRoot) { throw null; }
@@ -101,7 +97,6 @@ namespace Microsoft.Extensions.Hosting.Internal
     [System.Runtime.Versioning.UnsupportedOSPlatform("android")]
     [System.Runtime.Versioning.UnsupportedOSPlatform("browser")]
     [System.Runtime.Versioning.UnsupportedOSPlatform("ios")]
-    [System.Runtime.Versioning.UnsupportedOSPlatform("maccatalyst")]
     [System.Runtime.Versioning.UnsupportedOSPlatform("tvos")]
     public partial class ConsoleLifetime : Microsoft.Extensions.Hosting.IHostLifetime, System.IDisposable
     {

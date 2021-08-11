@@ -135,8 +135,4 @@ System.Net.Http.WinHttpHandler</PackageDescription>
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">
     <Reference Include="System.Net.Http" />
   </ItemGroup>
-
-  <ItemGroup>
-    <NETStandardCompatError Include="netcoreapp2.0" Supported="$(NetCoreAppMinimum)" />
-  </ItemGroup>
 </Project>
