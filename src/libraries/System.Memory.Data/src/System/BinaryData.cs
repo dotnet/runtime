@@ -193,9 +193,10 @@ namespace System
         /// Converts the value of this instance to a string using UTF-8.
         /// </summary>
         /// <remarks>
-        /// If the underlying object is a JSON string, calling <see cref="ToString"/> will retain the wrapping double quotes in the
-        /// resulting string. If you want to deserialize the JSON string to a string, thereby removing the wrapping double quotes,
-        /// call <see cref="ToObjectFromJson{String}"/> instead.
+        /// No special treatment is given to the contents of the data, it is merely decoded as a UTF-8 string.
+        /// For a JPEG or other binary file format the string will largely be nonsense with many embedded NUL characters,
+        /// and UTF-8 JSON values will look like their file/network representation,
+        /// including starting and stopping quotes on a string.
         /// </remarks>
         /// <returns>
         /// A string from the value of this instance, using UTF-8 to decode the bytes.
