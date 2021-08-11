@@ -11,7 +11,7 @@
     <RunScriptCommand Condition="'$(TargetOS)' == 'windows'">$(AssemblyName).exe</RunScriptCommand>
     <RunScriptCommand Condition="'$(TargetOS)' != 'windows'">chmod +rwx $(AssemblyName) &amp;&amp; ./$(AssemblyName)</RunScriptCommand>
   </PropertyGroup>
-  
+
   <PropertyGroup>
     <PublishSingleFile>true</PublishSingleFile>
     <UseAppHost>true</UseAppHost>

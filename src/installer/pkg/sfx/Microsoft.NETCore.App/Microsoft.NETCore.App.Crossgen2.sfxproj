@@ -4,7 +4,7 @@
 
   <PropertyGroup>
     <SkipBuild Condition="'$(RuntimeFlavor)' == 'Mono'">true</SkipBuild>
-    <PlatformPackageType>RuntimePack</PlatformPackageType>
+    <PlatformPackageType>ToolPack</PlatformPackageType>
     <SharedFrameworkName>$(SharedFrameworkName).Crossgen2</SharedFrameworkName>
     <PgoSuffix Condition="'$(PgoInstrument)' != ''">.PGO</PgoSuffix>
     <OverridePackageId>$(SharedFrameworkName)$(PgoSuffix).$(RuntimeIdentifier)</OverridePackageId>
@@ -12,44 +12,37 @@
     <SharedFrameworkHostFileNameOverride>crossgen2</SharedFrameworkHostFileNameOverride>
     <!-- Build this pack for any RID if building from source. Otherwise, only build select RIDs. -->
     <RuntimeIdentifiers Condition="'$(DotNetBuildFromSource)' != 'true'">linux-x64;linux-musl-x64;linux-arm;linux-musl-arm;linux-arm64;linux-musl-arm64;osx-x64;osx-arm64;win-x64;win-x86;win-arm64;win-arm</RuntimeIdentifiers>
+    <GetSharedFrameworkFilesForReadyToRunDependsOn>CollectCrossgenOutputs</GetSharedFrameworkFilesForReadyToRunDependsOn>
     <GenerateInstallers>false</GenerateInstallers>
-    <GetSharedFrameworkFilesForReadyToRunDependsOn>
-        AddRuntimeFilesToPackage;
-        AddFrameworkFilesToPackage
-    </GetSharedFrameworkFilesForReadyToRunDependsOn>
-    <!-- Disable crossgen on FreeBSD, NetBSD, illumos and Solaris for now. This can be revisited when we have full support. -->
-    <PublishReadyToRun Condition="'$(TargetOS)'=='FreeBSD' Or '$(TargetOS)'=='NetBSD' Or '$(TargetOS)'=='illumos' Or '$(TargetOS)'=='Solaris'">false</PublishReadyToRun>
     <HostJsonTargetPath>tools/</HostJsonTargetPath>
     <PermitDllAndExeFilesLackingFileVersion>true</PermitDllAndExeFilesLackingFileVersion>
   </PropertyGroup>
 
-  <Target Name="PublishCrossgen"
-          BeforeTargets="GetFilesToPublish">
+  <Target Name="PublishCrossgen">
     <MSBuild Projects="$(RepoRoot)src/coreclr/tools/aot/crossgen2/crossgen2.csproj"
-             Properties="RunningPublish=true"
+             Properties="RunningPublish=true;OutputPath=$(OutputPath)"
              Targets="Restore;Publish" />
   </Target>
 
   <Target Name="CollectCrossgenOutputs"
-          DependsOnTargets="PublishCrossgen"
-          AfterTargets="PublishCrossgen">
+          DependsOnTargets="PublishCrossgen">
     <PropertyGroup>
-      <Crossgen2PublishDir>$(OutputPath)publish</Crossgen2PublishDir>
+      <Crossgen2PublishDir>$(OutputPath)publish/</Crossgen2PublishDir>
     </PropertyGroup>
 
     <ItemGroup>
-      <CrossgenPublishFiles Include="$(Crossgen2PublishDir)/crossgen2$(ExeSuffix)" />
-      <CrossgenPublishFiles Include="$(Crossgen2PublishDir)/$(LibPrefix)clrjit*$(LibSuffix)" />
+      <FilesToPackage Include="$(Crossgen2PublishDir)crossgen2$(ExeSuffix)" TargetPath="tools/" />
+      <FilesToPackage Include="$(Crossgen2PublishDir)$(LibPrefix)clrjit*$(LibSuffix)" TargetPath="tools" />
       <Reference Condition="'$(DotNetBuildFromSource)' != 'true'" Include="$(CoreCLRCrossgen2Dir)Microsoft.DiaSymReader.dll" />
-      <NativeRuntimeAsset Include="$(Crossgen2PublishDir)$(LibPrefix)jitinterface_$(TargetArchitecture)$(LibSuffix)" TargetPath="tools/" />
-      <NativeRuntimeAsset Include="$(Crossgen2PublishDir)$(LibPrefix)clrjit_win_x86_$(TargetArchitecture)$(LibSuffix)" TargetPath="tools/"  />
-      <NativeRuntimeAsset Include="$(Crossgen2PublishDir)$(LibPrefix)clrjit_win_arm_$(TargetArchitecture)$(LibSuffix)" TargetPath="tools/"  />
-      <NativeRuntimeAsset Include="$(Crossgen2PublishDir)$(LibPrefix)clrjit_unix_arm_$(TargetArchitecture)$(LibSuffix)" TargetPath="tools/"  />
-      <NativeRuntimeAsset Condition="'$(TargetArchitecture)' == 'arm64' or  '$(TargetArchitecture)' == 'x64'" Include="$(Crossgen2PublishDir)$(LibPrefix)clrjit_win_x64_$(TargetArchitecture)$(LibSuffix)"  TargetPath="tools/" />
-      <NativeRuntimeAsset Condition="'$(TargetArchitecture)' == 'arm64' or  '$(TargetArchitecture)' == 'x64'" Include="$(Crossgen2PublishDir)$(LibPrefix)clrjit_win_arm64_$(TargetArchitecture)$(LibSuffix)" TargetPath="tools/"  />
-      <NativeRuntimeAsset Condition="'$(TargetArchitecture)' == 'arm64' or  '$(TargetArchitecture)' == 'x64'" Include="$(Crossgen2PublishDir)$(LibPrefix)clrjit_unix_x64_$(TargetArchitecture)$(LibSuffix)" TargetPath="tools/" />
-      <NativeRuntimeAsset Condition="'$(TargetArchitecture)' == 'arm64' or  '$(TargetArchitecture)' == 'x64'" Include="$(Crossgen2PublishDir)$(LibPrefix)clrjit_unix_arm64_$(TargetArchitecture)$(LibSuffix)" TargetPath="tools/"  />
-      <NativeRuntimeAsset Condition="'$(TargetArchitecture)' == 'arm64' or  '$(TargetArchitecture)' == 'x64'" Include="$(Crossgen2PublishDir)$(LibPrefix)clrjit_unix_osx_arm64_$(TargetArchitecture)$(LibSuffix)" TargetPath="tools/"  />
+      <FilesToPackage Include="$(Crossgen2PublishDir)$(LibPrefix)jitinterface_$(TargetArchitecture)$(LibSuffix)" TargetPath="tools/" />
+      <FilesToPackage Include="$(Crossgen2PublishDir)$(LibPrefix)clrjit_win_x86_$(TargetArchitecture)$(LibSuffix)" TargetPath="tools/"  />
+      <FilesToPackage Include="$(Crossgen2PublishDir)$(LibPrefix)clrjit_win_arm_$(TargetArchitecture)$(LibSuffix)" TargetPath="tools/"  />
+      <FilesToPackage Include="$(Crossgen2PublishDir)$(LibPrefix)clrjit_unix_arm_$(TargetArchitecture)$(LibSuffix)" TargetPath="tools/"  />
+      <FilesToPackage Condition="'$(TargetArchitecture)' == 'arm64' or  '$(TargetArchitecture)' == 'x64'" Include="$(Crossgen2PublishDir)$(LibPrefix)clrjit_win_x64_$(TargetArchitecture)$(LibSuffix)" TargetPath="tools/" />
+      <FilesToPackage Condition="'$(TargetArchitecture)' == 'arm64' or  '$(TargetArchitecture)' == 'x64'" Include="$(Crossgen2PublishDir)$(LibPrefix)clrjit_win_arm64_$(TargetArchitecture)$(LibSuffix)" TargetPath="tools/"  />
+      <FilesToPackage Condition="'$(TargetArchitecture)' == 'arm64' or  '$(TargetArchitecture)' == 'x64'" Include="$(Crossgen2PublishDir)$(LibPrefix)clrjit_unix_x64_$(TargetArchitecture)$(LibSuffix)" TargetPath="tools/" />
+      <FilesToPackage Condition="'$(TargetArchitecture)' == 'arm64' or  '$(TargetArchitecture)' == 'x64'" Include="$(Crossgen2PublishDir)$(LibPrefix)clrjit_unix_arm64_$(TargetArchitecture)$(LibSuffix)" TargetPath="tools/"  />
+      <FilesToPackage Condition="'$(TargetArchitecture)' == 'arm64' or  '$(TargetArchitecture)' == 'x64'" Include="$(Crossgen2PublishDir)$(LibPrefix)clrjit_unix_osx_arm64_$(TargetArchitecture)$(LibSuffix)" TargetPath="tools/"  />
     </ItemGroup>
   </Target>
 
@@ -58,21 +51,6 @@
     <TargetOSComponent Condition="'$(TargetOS)' == 'windows'">win</TargetOSComponent>
     <TargetSpec>$(TargetOSComponent)-$(TargetArchitecture)</TargetSpec>
   </PropertyGroup>
-
-  <Target Name="AddRuntimeFilesToPackage" DependsOnTargets="ResolveRuntimeFilesFromLocalBuild">
-    <ItemGroup>
-      <CrossgenFile Include="@(RuntimeFiles)" Condition="'%(Filename)' == 'crossgen'" />
-      <OptimizationDataFile Include="@(RuntimeFiles)" Condition="'%(Filename)' == 'StandardOptimizationData'" />
-      <ReferenceCopyLocalPaths Include="@(RuntimeFiles)" Exclude="@(CrossgenFile);@(OptimizationDataFile)" />
-      <ReferenceCopyLocalPaths TargetPath="tools/" />
-    </ItemGroup>
-  </Target>
-
-  <Target Name="AddFrameworkFilesToPackage" DependsOnTargets="ResolveLibrariesFromLocalBuild">
-    <ItemGroup>
-      <ReferenceCopyLocalPaths Include="@(LibrariesRuntimeFiles)" TargetPath="tools/" />
-    </ItemGroup>
-  </Target>
 
   <PropertyGroup Condition="'$(TargetOS)' == 'windows'">
     <!-- DiaSymReader for the target architecture, which is placed into the package -->
@@ -84,6 +62,11 @@
   <ItemGroup Condition="Exists('$(_diaSymReaderTargetArchPath)')">
     <NativeRuntimeAsset Include="$(_diaSymReaderTargetArchPath)" TargetPath="tools/" />
   </ItemGroup>
+
+  <Target Name="SetupPackageOutputPath"
+          BeforeTargets="PublishToDisk">
+    <MakeDir Directories="$(OutputPath)" />
+  </Target>
 
   <Import Project="$(Crossgen2SdkOverridePropsPath)" />
   <Import Project="Sdk.targets" Sdk="Microsoft.NET.Sdk" />

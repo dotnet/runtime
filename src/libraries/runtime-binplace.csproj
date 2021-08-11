@@ -18,6 +18,9 @@
       <!-- CoreRun is not used for testing anymore, but we still use it for benchmarking and profiling -->
       <RuntimeFiles Include="$(CoreCLRArtifactsPath)\corerun*" />
       <RuntimeFiles Include="$(CoreCLRArtifactsPath)\PDB\corerun*" />
+      <!-- Include hostfxr and hostpolicy -->
+      <RuntimeFiles Include="$(HostArtifactsPath)\$(LibPrefix)hostfxr$(LibSuffix)" />
+      <RuntimeFiles Include="$(HostArtifactsPath)\$(LibPrefix)hostpolicy$(LibSuffix)" />
       <ReferenceCopyLocalPaths Include="@(RuntimeFiles)" />
     </ItemGroup>
     <ItemGroup Condition="'$(SwapNativeForIL)' == 'true'">

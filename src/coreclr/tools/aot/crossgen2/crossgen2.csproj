@@ -1,6 +1,8 @@
-<Project Sdk="Microsoft.NET.Sdk">
+<Project>
+
+  <Import Project="Sdk.props" Sdk="Microsoft.NET.Sdk" />
   <PropertyGroup>
-    <OutputPath>$(RuntimeBinDir)/crossgen2</OutputPath>
+    <OutputPath Condition="'$(RunningPublish)' != 'true'">$(RuntimeBinDir)/crossgen2</OutputPath>
     <!-- The default value for macOS is false -->
     <UseAppHost>true</UseAppHost>
     <PublishTrimmed>true</PublishTrimmed>
@@ -32,5 +34,9 @@
         </ResolvedRuntimePack>
       </ItemGroup>
   </Target>
+
+  <Import Project="Sdk.targets" Sdk="Microsoft.NET.Sdk" />
+  <Import Project="../../../../installer/pkg/sfx/Microsoft.NETCore.App/ReadyToRun.targets"
+          Condition="'$(RunningPublish)' == 'true'" />
 
 </Project>
