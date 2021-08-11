@@ -185,8 +185,10 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
     /// </summary>
     public string? LLVMDebug { get; set; } = "nodebug";
 
-    [NotNull]
-    [Required]
+    /// <summary>
+    /// File used to track hashes of assemblies, to act as a cache
+    /// Output files don't get written, if they haven't changed
+    /// </summary>
     public string? CacheFilePath { get; set; }
 
     [Output]
@@ -323,24 +325,7 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
         if (AdditionalAssemblySearchPaths != null)
             monoPaths = string.Join(Path.PathSeparator.ToString(), AdditionalAssemblySearchPaths);
 
-        if (File.Exists(CacheFilePath))
-        {
-            _oldCache = (CompilerCache?)JsonSerializer.Deserialize(File.ReadAllText(CacheFilePath!),
-                                                                    typeof(CompilerCache),
-                                                                    new JsonSerializerOptions());
-            _oldCache ??= new();
-        }
-        else
-        {
-            _oldCache = new();
-        }
-
-        _newCache = new();
-        foreach (var assemblyItem in Assemblies)
-        {
-            string newHash = Utils.ComputeHash(assemblyItem.GetMetadata("FullPath"));
-            _newCache.AssemblyHashes[assemblyItem.ItemSpec] = newHash;
-        }
+        InitCache();
 
         //FIXME: check the nothing changed at all case
 
@@ -873,6 +858,34 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
         }
 
         return true;
+    }
+
+    private void InitCache()
+    {
+        if (string.IsNullOrEmpty(CacheFilePath))
+        {
+            Log.LogMessage(MessageImportance.Low, $"Disabling cache, because {nameof(CacheFilePath)} is not set");
+            return;
+        }
+
+        if (File.Exists(CacheFilePath))
+        {
+            _oldCache = (CompilerCache?)JsonSerializer.Deserialize(File.ReadAllText(CacheFilePath!),
+                                                                    typeof(CompilerCache),
+                                                                    new JsonSerializerOptions());
+            _oldCache ??= new();
+        }
+        else
+        {
+            _oldCache = new();
+        }
+
+        _newCache = new();
+        foreach (var assemblyItem in Assemblies)
+        {
+            string newHash = Utils.ComputeHash(assemblyItem.GetMetadata("FullPath"));
+            _newCache.AssemblyHashes[assemblyItem.ItemSpec] = newHash;
+        }
     }
 
     private bool TryGetAssemblyName(string asmPath, [NotNullWhen(true)] out string? assemblyName)
