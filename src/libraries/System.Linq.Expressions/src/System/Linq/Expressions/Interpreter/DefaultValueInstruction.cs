@@ -24,7 +24,7 @@ namespace System.Linq.Expressions.Interpreter
         public override string InstructionName => "DefaultValue";
 
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2077:UnrecognizedReflectionPattern",
-            Justification = "_type is a ValueType. You can always create an instance of a ValueType.")]
+            Justification = "_type is a ValueType. You can always get an uninitialized ValueType.")]
         public override int Run(InterpretedFrame frame)
         {
             frame.Push(RuntimeHelpers.GetUninitializedObject(_type));

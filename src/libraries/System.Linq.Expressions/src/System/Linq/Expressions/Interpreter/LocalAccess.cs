@@ -380,7 +380,7 @@ namespace System.Linq.Expressions.Interpreter
             }
 
             [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2077:UnrecognizedReflectionPattern",
-                Justification = "_type is a ValueType. You can always create an instance of a ValueType.")]
+                Justification = "_type is a ValueType. You can always get an uninitialized ValueType.")]
             public override int Run(InterpretedFrame frame)
             {
                 try
@@ -419,7 +419,7 @@ namespace System.Linq.Expressions.Interpreter
             }
 
             [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2077:UnrecognizedReflectionPattern",
-                Justification = "_type is a ValueType. You can always create an instance of a ValueType.")]
+                Justification = "_type is a ValueType. You can always get an uninitialized ValueType.")]
             public override int Run(InterpretedFrame frame)
             {
                 object? value;

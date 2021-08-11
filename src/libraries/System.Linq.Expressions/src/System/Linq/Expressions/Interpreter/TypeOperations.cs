@@ -156,7 +156,7 @@ namespace System.Linq.Expressions.Interpreter
             }
 
             [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2077:UnrecognizedReflectionPattern",
-                Justification = "_defaultValueType is a ValueType. You can always create an instance of a ValueType.")]
+                Justification = "_defaultValueType is a ValueType. You can always get an uninitialized ValueType.")]
             public override int Run(InterpretedFrame frame)
             {
                 if (frame.Peek() == null)
