@@ -453,8 +453,7 @@ static const char* BreakIteratorRule = "$CR      = [\\p{Grapheme_Cluster_Break =
                                        "$LF      = [\\p{Grapheme_Cluster_Break = LF}]; \n"          \
                                        "$Control = [[\\p{Grapheme_Cluster_Break = Control}]]; \n"   \
                                        "$Extend  = [[\\p{Grapheme_Cluster_Break = Extend}]];  \n"   \
-                                       "$ZWJ     = [\\p{Grapheme_Cluster_Break = ZWJ}];       \n"   \
-                                       "[^$Control $CR $LF] ($Extend | $ZWJ); \n";
+                                       "[^$Control $CR $LF] ($Extend | [\\u200D]); \n";
 
 // When doing string search operations using ICU, it is internally using a break iterator which doesn't allow breaking between some characters according to
 // the Grapheme Cluster Boundary Rules specified in http://www.unicode.org/reports/tr29/#Grapheme_Cluster_Boundary_Rules.
