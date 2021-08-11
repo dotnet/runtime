@@ -664,15 +664,15 @@ private static {JsonPropertyInfoTypeRef}[] {propInitMethodName}({JsonSerializerC
                         : "jsonPropertyName: null";
 
                     string getterNamedArg = memberMetadata.CanUseGetter
-                        ? $"getter: static (obj) => (({declaringTypeCompilableName})obj).{clrPropertyName}!"
+                        ? $"getter: static (obj) => (({declaringTypeCompilableName})obj).{clrPropertyName}"
                         : "getter: null";
 
                     string setterNamedArg;
                     if (memberMetadata.CanUseSetter)
                     {
                         string propMutation = typeGenerationSpec.IsValueType
-                            ? @$"{UnsafeTypeRef}.Unbox<{declaringTypeCompilableName}>(obj).{clrPropertyName} = value"
-                            : $@"(({declaringTypeCompilableName})obj).{clrPropertyName} = value";
+                            ? @$"{UnsafeTypeRef}.Unbox<{declaringTypeCompilableName}>(obj).{clrPropertyName} = value!"
+                            : $@"(({declaringTypeCompilableName})obj).{clrPropertyName} = value!";
 
                         setterNamedArg = $"setter: static (obj, value) => {propMutation}";
                     }
