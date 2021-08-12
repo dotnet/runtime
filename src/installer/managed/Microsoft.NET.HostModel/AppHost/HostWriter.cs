@@ -38,7 +38,7 @@ namespace Microsoft.NET.HostModel.AppHost
             string appBinaryFilePath,
             bool windowsGraphicalUserInterface = false,
             string assemblyToCopyResorcesFrom = null,
-            bool enableMacOSCodeSign = false)
+            bool enableMacOSCodeSign = true)
         {
             var bytesToWrite = Encoding.UTF8.GetBytes(appBinaryFilePath);
             if (bytesToWrite.Length > 1024)
