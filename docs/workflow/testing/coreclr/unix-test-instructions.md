@@ -48,21 +48,24 @@ lengthy (especially in `-priority1` mode) and unnecessary when working on a part
 
 1) `-test:<test-project>` - build a particular test project specified by its project file path,
 either absolute or relative to `src/tests`. The option can be specified multiple times on the command
-line to request building several individual projects.
+line to request building several individual projects; alternatively, a single occurrence of the option
+can represent several project paths separated by semicolons.
 
-**Example**: `src/tests/build.sh -test:JIT/Methodical/divrem/div/i4div_cs_do.csproj`
+**Example**: `src/tests/build.sh -test:JIT/Methodical/divrem/div/i4div_cs_do.csproj;JIT/Methodical/divrem/div/i8div_cs_do.csproj`
 
 2) `-dir:<test-folder>` - build all test projects within a given directory path, either absolute
 or relative to `src/tests`. The option can be specified multiple times on the command line to request
-building projects in several folders.
+building projects in several folders; alternatively, a single occurrence of this option can represent
+several project folders separated by semicolons.
 
-**Example**: `src/tests/build.sh -dir:JIT/Methodical/Arrays/huge`
+**Example**: `src/tests/build.sh -dir:JIT/Methodical/Arrays/huge;JIT/Methodical/divrem/div`
 
 3) `-tree:<root-folder>` - build all test projects within the subtree specified by its root path,
 either absolute or relative to `src/tests`. The option can be specified multiple times on the command
-line to request building projects in several subtrees.
+line to request building projects in several subtrees; alternatively, a single instance of the option
+can represent several project subtree root folder paths separated by semicolons.
 
-**Example**: `src/tests/build.sh -tree:baseservices/exceptions`
+**Example**: `src/tests/build.sh -tree:baseservices/exceptions;JIT/Methodical`
 
 **Please note** that priority filtering is orthogonal to specifying test subsets; even when you request
 building a particular test and the test is Pri1, you need to specify `-priority1` in the command line,
