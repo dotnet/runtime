@@ -7596,7 +7596,16 @@ void Compiler::fgValueNumberTree(GenTree* tree)
                     else
                     {
                         ValueNumPair lclVNPair = varDsc->GetPerSsaData(ssaNum)->m_vnPair;
-                        tree->gtVNPair = vnStore->VNPairApplySelectors(lclVNPair, lclFld->GetFieldSeq(), indType);
+                        if (lclVNPair.GetLiberal() == ValueNumStore::NoVN)
+                        {
+                            // We didn't not assign a correct VN to the local, probably it was written using a different
+                            // type.
+                            tree->gtVNPair.SetBoth(vnStore->VNForExpr(compCurBB, indType));
+                        }
+                        else
+                        {
+                            tree->gtVNPair = vnStore->VNPairApplySelectors(lclVNPair, lclFld->GetFieldSeq(), indType);
+                        }
                     }
                 }
             }

@@ -12068,7 +12068,6 @@ void Compiler::gtDispTree(GenTree*     tree,
             }
             break;
         }
-        
 
         case GT_CALL:
         {
