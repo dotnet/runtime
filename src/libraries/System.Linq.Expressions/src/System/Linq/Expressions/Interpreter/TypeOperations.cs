@@ -151,6 +151,7 @@ namespace System.Linq.Expressions.Interpreter
             public GetValueOrDefault(MethodInfo mi)
             {
                 Debug.Assert(mi.ReturnType.IsValueType, "Nullable is only allowed on value types.");
+                Debug.Assert(!mi.ReturnType.IsNullableType());
 
                 _defaultValueType = mi.ReturnType;
             }

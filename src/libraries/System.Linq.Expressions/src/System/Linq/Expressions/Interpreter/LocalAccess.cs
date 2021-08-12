@@ -385,9 +385,7 @@ namespace System.Linq.Expressions.Interpreter
             {
                 try
                 {
-                    frame.Data[_index] = _type.IsNullableType() ?
-                        Activator.CreateInstance(_type) :
-                        RuntimeHelpers.GetUninitializedObject(_type);
+                    frame.Data[_index] = GetUninitializedObjectOrNull(_type);
                 }
                 catch (TargetInvocationException e)
                 {
@@ -426,9 +424,7 @@ namespace System.Linq.Expressions.Interpreter
 
                 try
                 {
-                    value = _type.IsNullableType() ?
-                        Activator.CreateInstance(_type) :
-                        RuntimeHelpers.GetUninitializedObject(_type);
+                    value = GetUninitializedObjectOrNull(_type);
                 }
                 catch (TargetInvocationException e)
                 {
@@ -442,6 +438,13 @@ namespace System.Linq.Expressions.Interpreter
             }
 
             public override string InstructionName => "InitMutableBox";
+        }
+
+        private static object? GetUninitializedObjectOrNull(Type type)
+        {
+            return type.IsNullableType() ?
+                Activator.CreateInstance(type) :
+                RuntimeHelpers.GetUninitializedObject(type);
         }
     }
 
