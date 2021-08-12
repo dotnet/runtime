@@ -113,5 +113,8 @@ namespace System
 
         internal const string CmsSignerCspParamsCtorMessage = "CmsSigner(CspParameters) is obsolete and is not supported. Use an alternative constructor instead.";
         internal const string CmsSignerCspParamsCtorDiagId = "SYSLIB0034";
+
+        internal const string SignerInfoCounterSigMessage = "ComputeCounterSignature without specifying a CmsSigner is obsolete and is not supported. Use the overload that accepts a CmsSigner.";
+        internal const string SignerInfoCounterSigDiagId = "SYSLIB0035";
     }
 }

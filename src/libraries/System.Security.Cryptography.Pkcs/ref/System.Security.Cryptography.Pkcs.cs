@@ -270,6 +270,9 @@ namespace System.Security.Cryptography.Pkcs
         public void CheckHash() { }
         public void CheckSignature(bool verifySignatureOnly) { }
         public void CheckSignature(System.Security.Cryptography.X509Certificates.X509Certificate2Collection extraStore, bool verifySignatureOnly) { }
+#if NET6_0_OR_GREATER
+        [System.ObsoleteAttribute("ComputeCounterSignature without specifying a CmsSigner is obsolete and is not supported. Use the overload that accepts a CmsSigner.", DiagnosticId = "SYSLIB0035", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+#endif
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         public void ComputeCounterSignature() { }
         public void ComputeCounterSignature(System.Security.Cryptography.Pkcs.CmsSigner signer) { }
