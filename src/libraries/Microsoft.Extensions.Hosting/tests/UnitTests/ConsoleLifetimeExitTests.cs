@@ -94,7 +94,7 @@ namespace Microsoft.Extensions.Hosting.Tests
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         // SIGTERM is only handled on net6.0+, so the workaround to "clobber" the exit code is still in place on NetFramework
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
-        [SkipOnMono("ThreadPoolBoundHandle.BindHandle is not supported by Mono on Windows", TestPlatforms.Windows)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34582", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         public void EnsureEnvironmentExitCode()
         {
             using var remoteHandle = RemoteExecutor.Invoke(async () =>
@@ -127,7 +127,7 @@ namespace Microsoft.Extensions.Hosting.Tests
         /// Tests that calling Environment.Exit from the "main" thread doesn't hang the process forever.
         /// </summary>
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        [SkipOnMono("ThreadPoolBoundHandle.BindHandle is not supported by Mono on Windows", TestPlatforms.Windows)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34582", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         public void EnsureEnvironmentExitDoesntHang()
         {
             using var remoteHandle = RemoteExecutor.Invoke(async () =>
