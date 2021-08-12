@@ -75,7 +75,7 @@ namespace System.Threading
             }
         }
 
-        private sealed class ThreadLocalNode : IDisposable
+        private sealed class ThreadLocalNode
         {
             private uint _count;
             private readonly ThreadInt64PersistentCounter _counter;
