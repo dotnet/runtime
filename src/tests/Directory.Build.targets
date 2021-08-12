@@ -275,6 +275,8 @@
 
   <Target Name="CopyDependencyToCoreRoot"
           DependsOnTargets="ResolveAssemblyReferences;ResolveRuntimeFilesFromLocalBuild">
+    <Message Text="!!!naricc_debug!!! CopyDependencyToCoreRoot" Importance="high"/>
+
 
     <ItemGroup>
       <RunTimeDependencyExclude Include="$(CORE_ROOT)\**\*.*"  />
@@ -399,6 +401,8 @@
           Include="$(MonoProjectRoot)\wasm\build\*"
           TargetDir="build/"/>
     </ItemGroup>
+
+    <Message Text="!!!naricc_debug!!! RunTimeDependencyCopyLocal: @(RunTimeDependencyCopyLocal)" Importance="High" />
 
     <Copy
       SourceFiles="@(RunTimeDependencyCopyLocal)"

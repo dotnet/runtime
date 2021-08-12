@@ -184,6 +184,9 @@
 
     </ItemGroup>
 
+
+     <Message Text="!!!naricc_debug!!!: CopyDependencyToCoreRoot: MicrosoftNetCoreAppRuntimePackDir: $(MicrosoftNetCoreAppRuntimePackDir): TagetArchitecture: $(TargetArchitecture): RuntimeDependencyCopyLocal: @(RunTimeDependencyCopyLocal) " Importance="high" />
+
     <ItemGroup>
       <RunTimeDependencyCopyLocal Include="$(CoreDisToolsLibrary)" Condition="$(CopyCoreDisToolsToCoreRoot)" />
     </ItemGroup>
