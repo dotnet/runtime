@@ -10,13 +10,13 @@ namespace System.Text.Json
     public static partial class JsonSerializer
     {
         /// <summary>
-        /// Parse the UTF-8 encoded text representing a single JSON value into a <typeparamref name="TValue"/>.
+        /// Parses the UTF-8 encoded text representing a single JSON value into a <typeparamref name="TValue"/>.
         /// </summary>
         /// <returns>A <typeparamref name="TValue"/> representation of the JSON value.</returns>
         /// <param name="utf8Json">JSON text to parse.</param>
         /// <param name="options">Options to control the behavior during parsing.</param>
         /// <exception cref="JsonException">
-        /// Thrown when the JSON is invalid,
+        /// The JSON is invalid,
         /// <typeparamref name="TValue"/> is not compatible with the JSON,
         /// or when there is remaining data in the Stream.
         /// </exception>
@@ -29,7 +29,7 @@ namespace System.Text.Json
             => ReadUsingOptions<TValue>(utf8Json, typeof(TValue), options);
 
         /// <summary>
-        /// Parse the UTF-8 encoded text representing a single JSON value into a <paramref name="returnType"/>.
+        /// Parses the UTF-8 encoded text representing a single JSON value into a <paramref name="returnType"/>.
         /// </summary>
         /// <returns>A <paramref name="returnType"/> representation of the JSON value.</returns>
         /// <param name="utf8Json">JSON text to parse.</param>
@@ -39,7 +39,7 @@ namespace System.Text.Json
         /// <paramref name="returnType"/> is <see langword="null"/>.
         /// </exception>
         /// <exception cref="JsonException">
-        /// Thrown when the JSON is invalid,
+        /// The JSON is invalid,
         /// <paramref name="returnType"/> is not compatible with the JSON,
         /// or when there is remaining data in the Stream.
         /// </exception>
@@ -59,13 +59,13 @@ namespace System.Text.Json
         }
 
         /// <summary>
-        /// Parse the UTF-8 encoded text representing a single JSON value into a <typeparamref name="TValue"/>.
+        /// Parses the UTF-8 encoded text representing a single JSON value into a <typeparamref name="TValue"/>.
         /// </summary>
         /// <returns>A <typeparamref name="TValue"/> representation of the JSON value.</returns>
         /// <param name="utf8Json">JSON text to parse.</param>
         /// <param name="jsonTypeInfo">Metadata about the type to convert.</param>
         /// <exception cref="JsonException">
-        /// Thrown when the JSON is invalid,
+        /// The JSON is invalid,
         /// <typeparamref name="TValue"/> is not compatible with the JSON,
         /// or when there is remaining data in the Stream.
         /// </exception>
@@ -84,7 +84,7 @@ namespace System.Text.Json
         }
 
         /// <summary>
-        /// Parse the UTF-8 encoded text representing a single JSON value into a <paramref name="returnType"/>.
+        /// Parses the UTF-8 encoded text representing a single JSON value into a <paramref name="returnType"/>.
         /// </summary>
         /// <returns>A <paramref name="returnType"/> representation of the JSON value.</returns>
         /// <param name="utf8Json">JSON text to parse.</param>
@@ -94,7 +94,7 @@ namespace System.Text.Json
         /// <paramref name="returnType"/> is <see langword="null"/>.
         /// </exception>
         /// <exception cref="JsonException">
-        /// Thrown when the JSON is invalid,
+        /// The JSON is invalid,
         /// <paramref name="returnType"/> is not compatible with the JSON,
         /// or when there is remaining data in the Stream.
         /// </exception>

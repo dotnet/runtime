@@ -118,8 +118,7 @@ namespace Microsoft.Extensions.Hosting
         }
 
         /// <summary>
-        /// Adds a delegate for configuring the <see cref="HostOptions"/> of the <see cref="IHost"/> instance
-        /// related to th.
+        /// Adds a delegate for configuring the <see cref="HostOptions"/> of the <see cref="IHost"/>.
         /// </summary>
         /// <param name="hostBuilder">The <see cref="IHostBuilder" /> to configure.</param>
         /// <param name="configureOptions">The delegate for configuring the <see cref="HostOptions"/>.</param>
@@ -286,7 +285,6 @@ namespace Microsoft.Extensions.Hosting
         [UnsupportedOSPlatform("android")]
         [UnsupportedOSPlatform("browser")]
         [UnsupportedOSPlatform("ios")]
-        [UnsupportedOSPlatform("maccatalyst")]
         [UnsupportedOSPlatform("tvos")]
         public static IHostBuilder UseConsoleLifetime(this IHostBuilder hostBuilder)
         {
@@ -303,7 +301,6 @@ namespace Microsoft.Extensions.Hosting
         [UnsupportedOSPlatform("android")]
         [UnsupportedOSPlatform("browser")]
         [UnsupportedOSPlatform("ios")]
-        [UnsupportedOSPlatform("maccatalyst")]
         [UnsupportedOSPlatform("tvos")]
         public static IHostBuilder UseConsoleLifetime(this IHostBuilder hostBuilder, Action<ConsoleLifetimeOptions> configureOptions)
         {
@@ -323,7 +320,6 @@ namespace Microsoft.Extensions.Hosting
         [UnsupportedOSPlatform("android")]
         [UnsupportedOSPlatform("browser")]
         [UnsupportedOSPlatform("ios")]
-        [UnsupportedOSPlatform("maccatalyst")]
         [UnsupportedOSPlatform("tvos")]
         public static Task RunConsoleAsync(this IHostBuilder hostBuilder, CancellationToken cancellationToken = default)
         {
@@ -340,7 +336,6 @@ namespace Microsoft.Extensions.Hosting
         [UnsupportedOSPlatform("android")]
         [UnsupportedOSPlatform("browser")]
         [UnsupportedOSPlatform("ios")]
-        [UnsupportedOSPlatform("maccatalyst")]
         [UnsupportedOSPlatform("tvos")]
         public static Task RunConsoleAsync(this IHostBuilder hostBuilder, Action<ConsoleLifetimeOptions> configureOptions, CancellationToken cancellationToken = default)
         {

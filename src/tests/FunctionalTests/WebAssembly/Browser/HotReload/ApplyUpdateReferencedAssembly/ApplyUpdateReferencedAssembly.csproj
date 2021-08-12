@@ -3,8 +3,6 @@
     <TestRuntime>true</TestRuntime>
     <DeltaScript>deltascript.json</DeltaScript>
     <OutputType>library</OutputType>
-    <IsTestProject>false</IsTestProject>
-    <IsTestSupportProject>true</IsTestSupportProject>
     <!-- to call AsssemblyExtensions.ApplyUpdate we need Optimize=false, EmitDebugInformation=true in all configurations -->
     <Optimize>false</Optimize>
     <EmitDebugInformation>true</EmitDebugInformation>

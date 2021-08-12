@@ -9,6 +9,8 @@
 
     <IsSourceProject>false</IsSourceProject>
     <IsPackable>true</IsPackable>
+    <!-- TODO: Enable after AvoidRestoreCycleOnSelfReference hack is removed. -->
+    <DisablePackageBaselineValidation>true</DisablePackageBaselineValidation>
     <IncludeBuildOutput>false</IncludeBuildOutput>
     <IncludeSymbols>false</IncludeSymbols>
     <SuppressDependenciesWhenPacking>true</SuppressDependenciesWhenPacking>

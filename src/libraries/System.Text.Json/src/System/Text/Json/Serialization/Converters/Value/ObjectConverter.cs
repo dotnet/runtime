@@ -30,13 +30,13 @@ namespace System.Text.Json.Serialization.Converters
             writer.WriteEndObject();
         }
 
-        internal override object ReadWithQuotes(ref Utf8JsonReader reader)
+        internal override object ReadAsPropertyName(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
         {
             ThrowHelper.ThrowNotSupportedException_DictionaryKeyTypeNotSupported(TypeToConvert, this);
             return null!;
         }
 
-        internal override void WriteWithQuotes(Utf8JsonWriter writer, object? value, JsonSerializerOptions options, ref WriteStack state)
+        internal override void WriteAsPropertyName(Utf8JsonWriter writer, object? value, JsonSerializerOptions options, ref WriteStack state)
         {
             // This converter does not handle nulls.
             Debug.Assert(value != null);
@@ -48,7 +48,7 @@ namespace System.Text.Json.Serialization.Converters
                 ThrowHelper.ThrowNotSupportedException_DictionaryKeyTypeNotSupported(runtimeType, this);
             }
 
-            runtimeConverter.WriteWithQuotesAsObject(writer, value, options, ref state);
+            runtimeConverter.WriteAsPropertyNameAsObject(writer, value, options, ref state);
         }
 
         internal override object? ReadNumberWithCustomHandling(ref Utf8JsonReader reader, JsonNumberHandling handling, JsonSerializerOptions options)

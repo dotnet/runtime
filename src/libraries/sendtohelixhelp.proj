@@ -370,6 +370,7 @@
       <HelixCorrelationPayload Include="$(WasmBuildTargetsDir)"                  Destination="build/wasm" />
       <HelixCorrelationPayload Include="$(MonoAotCrossDir)"                      Destination="build/cross" />
       <HelixCorrelationPayload Include="$(JsonToItemsTaskFactoryDir)"            Destination="build/JsonToItemsTaskFactory" />
+      <HelixCorrelationPayload Include="$(RuntimeConfigParserDir)"               Destination="build/RuntimeConfigParser" />
     </ItemGroup>
 
     <ItemGroup Condition="'$(TargetOS)' == 'Browser' and '$(Scenario)' != 'BuildWasmApps'">

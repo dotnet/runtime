@@ -13,8 +13,7 @@ namespace Internal.Cryptography
 #if NET5_0_OR_GREATER
         [UnsupportedOSPlatformGuard("ios")]
         [UnsupportedOSPlatformGuard("tvos")]
-        [UnsupportedOSPlatformGuard("maccatalyst")]
-        public static bool IsDSASupported => !OperatingSystem.IsIOS() && !OperatingSystem.IsTvOS() && !OperatingSystem.IsMacCatalyst();
+        public static bool IsDSASupported => !OperatingSystem.IsIOS() && !OperatingSystem.IsTvOS();
 #else
         public static bool IsDSASupported => true;
 #endif

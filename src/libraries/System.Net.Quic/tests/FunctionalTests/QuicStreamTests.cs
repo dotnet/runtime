@@ -657,7 +657,7 @@ namespace System.Net.Quic.Tests
             {
                 return;
             }
-            
+
             const long expectedErrorCode = 1234;
 
             await RunClientServer(
@@ -691,7 +691,7 @@ namespace System.Net.Quic.Tests
                 {
                     await using QuicStream stream = await connection.AcceptStreamAsync();
 
-                    async Task ReadUntilAborted()  
+                    async Task ReadUntilAborted()
                     {
                         var buffer = new byte[1024];
                         while (true)
@@ -718,8 +718,13 @@ namespace System.Net.Quic.Tests
     }
 
     [ConditionalClass(typeof(QuicTestBase<MsQuicProviderFactory>), nameof(QuicTestBase<MsQuicProviderFactory>.IsSupported))]
+    [Collection("NoParallelTests")]
     public sealed class QuicStreamTests_MsQuicProvider : QuicStreamTests<MsQuicProviderFactory>
     {
         public QuicStreamTests_MsQuicProvider(ITestOutputHelper output) : base(output) { }
     }
+
+    // Define test collection for tests to avoid all other tests.
+    [CollectionDefinition("NoParallelTests", DisableParallelization = true)]
+    public partial class NoParallelTests { }
 }

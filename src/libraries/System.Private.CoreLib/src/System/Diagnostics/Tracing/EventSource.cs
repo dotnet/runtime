@@ -2864,14 +2864,17 @@ namespace System.Diagnostics.Tracing
                 Debug.Assert(m_eventData != null);
 
                 // TODO Enforce singleton pattern
-                Debug.Assert(EventListener.s_EventSources != null, "should be called within lock on EventListener.EventListenersLock which ensures s_EventSources to be initialized");
-                foreach (WeakReference<EventSource> eventSourceRef in EventListener.s_EventSources)
+                if (!AllowDuplicateSourceNames)
                 {
-                    if (eventSourceRef.TryGetTarget(out EventSource? eventSource) && eventSource.Guid == m_guid && !eventSource.IsDisposed)
+                    Debug.Assert(EventListener.s_EventSources != null, "should be called within lock on EventListener.EventListenersLock which ensures s_EventSources to be initialized");
+                    foreach (WeakReference<EventSource> eventSourceRef in EventListener.s_EventSources)
                     {
-                        if (eventSource != this)
+                        if (eventSourceRef.TryGetTarget(out EventSource? eventSource) && eventSource.Guid == m_guid && !eventSource.IsDisposed)
                         {
-                            throw new ArgumentException(SR.Format(SR.EventSource_EventSourceGuidInUse, m_guid));
+                            if (eventSource != this)
+                            {
+                                throw new ArgumentException(SR.Format(SR.EventSource_EventSourceGuidInUse, m_guid));
+                            }
                         }
                     }
                 }
@@ -3935,6 +3938,21 @@ namespace System.Diagnostics.Tracing
         private ActivityTracker m_activityTracker = null!;
         internal const string s_ActivityStartSuffix = "Start";
         internal const string s_ActivityStopSuffix = "Stop";
+
+        // This switch controls an opt-in, off-by-default mechanism for allowing multiple EventSources to have the same
+        // name and by extension GUID. This is not considered a mainline scenario and is explicitly intended as a release
+        // valve for users that make heavy use of AssemblyLoadContext and experience exceptions from EventSource.
+        // This does not solve any issues that might arise from this configuration. For instance:
+        //
+        // * If multiple manifest-mode EventSources have the same name/GUID, it is ambiguous which manifest should be used by an ETW parser.
+        //   This can result in events being incorrectly parse. The data will still be there, but EventTrace (or other libraries) won't
+        //   know how to parse it.
+        // * Potential issues in parsing self-describing EventSources that use the same name/GUID, event name, and payload type from the same AssemblyLoadContext
+        //   but have different event IDs set.
+        //
+        // Most users should not turn this on.
+        internal const string DuplicateSourceNamesSwitch = "System.Diagnostics.Tracing.EventSource.AllowDuplicateSourceNames";
+        private static readonly bool AllowDuplicateSourceNames = AppContext.TryGetSwitch(DuplicateSourceNamesSwitch, out bool isEnabled) ? isEnabled : false;
 
         // WARNING: Do not depend upon initialized statics during creation of EventSources, as it is possible for creation of an EventSource to trigger
         // creation of yet another EventSource.  When this happens, these statics may not yet be initialized.

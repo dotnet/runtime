@@ -8493,7 +8493,16 @@ calli_end:
 			if (sp [-1]->type == STACK_R8 || sp [-1]->type == STACK_R4) {
 				/* floats are always signed, _UN has no effect */
 				ADD_UNOP (CEE_CONV_OVF_I8);
-				ADD_UNOP (il_op);
+				if (il_op == MONO_CEE_CONV_OVF_I1_UN)
+					ADD_UNOP (MONO_CEE_CONV_OVF_I1);
+				else if (il_op == MONO_CEE_CONV_OVF_I2_UN)
+					ADD_UNOP (MONO_CEE_CONV_OVF_I2);
+				else if (il_op == MONO_CEE_CONV_OVF_I4_UN)
+					ADD_UNOP (MONO_CEE_CONV_OVF_I4);
+				else if (il_op == MONO_CEE_CONV_OVF_I8_UN)
+					;
+				else
+					ADD_UNOP (il_op);
 			} else {
 				ADD_UNOP (il_op);
 			}

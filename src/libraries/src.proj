@@ -5,20 +5,27 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <_allSrc Include="$(MSBuildThisFileDirectory)*\src\*.csproj"
-             Exclude="@(ProjectExclusions)" />
-    <!-- Don't build ProjectReferences of the compat pack in a traversal build to avoid unnecessary incremental builds. -->
-    <_allSrc Update="$(MSBuildThisFileDirectory)Microsoft.Windows.Compatibility\src\Microsoft.Windows.Compatibility.csproj"
-             AdditionalProperties="BuildProjectReferences=false" />
-    <!-- Only build the compat pack in the allconfigurations leg. -->
-    <_allSrc Remove="$(MSBuildThisFileDirectory)Microsoft.Windows.Compatibility\src\Microsoft.Windows.Compatibility.csproj"
+    <_allSrc Include="$(MSBuildThisFileDirectory)*\src\*.*proj"
+             Exclude="@(ProjectExclusions);
+                      $(MSBuildThisFileDirectory)*\src\**\*.shproj" />
+    <!-- Build these packages which reference many other projects in the allconfigurations leg only. -->
+    <_allSrc Remove="$(MSBuildThisFileDirectory)Microsoft.Windows.Compatibility\src\Microsoft.Windows.Compatibility.csproj;
+                     $(MSBuildThisFileDirectory)Microsoft.AspNetCore.Internal.Transport\src\Microsoft.AspNetCore.Internal.Transport.proj"
              Condition="'$(BuildAllConfigurations)' != 'true'" />
+
     <NonNetCoreAppProject Include="@(_allSrc)"
-                          Exclude="@(NetCoreAppLibrary->'%(Identity)\src\%(Identity).csproj')" />
+                          Exclude="@(NetCoreAppLibrary->'%(Identity)\src\%(Identity).csproj');
+                                   $(MSBuildThisFileDirectory)Microsoft.VisualBasic.Core\src\Microsoft.VisualBasic.Core.vbproj;
+                                   $(MSBuildThisFileDirectory)System.Runtime.CompilerServices.Unsafe\src\System.Runtime.CompilerServices.Unsafe.ilproj" />
+    <!-- During an official build, build the identity package only in the allconfigurations build, otherwise always. -->
+    <NonNetCoreAppProject Include="$(MSBuildThisFileDirectory)*\pkg\runtime.native.*.proj" Condition="'$(BuildingAnOfficialBuildLeg)' != 'true' or '$(BuildAllConfigurations)' == 'true'" />
+    <!-- During an official Build, build the rid specific package matching the OutputRid only outside of an allconfigurations build and only when targeting the CoreCLR runtime.
+         The limitation on the CoreCLR runtime is entirely artificial but avoids duplicate assets being publish. -->
+    <NonNetCoreAppProject Include="$(MSBuildThisFileDirectory)*\pkg\runtime.$(OutputRid).*.proj" Condition="'$(BuildingAnOfficialBuildLeg)' != 'true' or
+                                                                                                            ('$(BuildAllConfigurations)' != 'true' and '$(RuntimeFlavor)' == '$(PrimaryRuntimeFlavor)')" />
+
     <NetCoreAppProject Include="$(CoreLibProject);
-                                @(_allSrc);
-                                $(MSBuildThisFileDirectory)Microsoft.VisualBasic.Core\src\Microsoft.VisualBasic.Core.vbproj;
-                                $(MSBuildThisFileDirectory)System.Runtime.CompilerServices.Unsafe\src\System.Runtime.CompilerServices.Unsafe.ilproj"
+                                @(_allSrc)"
                        Exclude="@(NonNetCoreAppProject)" />
     <ManualShimProject Include="shims\manual\*.csproj" />
     <ApiCompatProject Include="shims\ApiCompat.proj"
@@ -63,4 +70,11 @@
              Projects="@(ApiCompatProject)"
              Properties="$(TraversalGlobalProperties)" />
   </Target>
+
+  <Target Name="SetAzureDevOpsVariableForBuiltPackages"
+          Condition="'$(ContinuousIntegrationBuild)' == 'true'"
+          AfterTargets="Build;Pack">
+    <Message Condition="Exists('$(ArtifactsDir)packages')" Importance="High" Text="##vso[task.setvariable variable=_librariesBuildProducedPackages]true" />
+  </Target>
+
 </Project>

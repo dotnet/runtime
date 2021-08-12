@@ -23,6 +23,7 @@
     <EmbeddedResource Include="MainStrings*.resx" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="ApplyUpdate\System.Reflection.Metadata.ApplyUpdate.Test.AsyncMethodChange\System.Reflection.Metadata.ApplyUpdate.Test.AsyncMethodChange.csproj" />
     <ProjectReference Include="ApplyUpdate\System.Reflection.Metadata.ApplyUpdate.Test.CustomAttributeDelete\System.Reflection.Metadata.ApplyUpdate.Test.CustomAttributeDelete.csproj" />
     <ProjectReference Include="System.Runtime.Loader.Test.Assembly\System.Runtime.Loader.Test.Assembly.csproj" ReferenceOutputAssembly="false" OutputItemType="EmbeddedResource" />
     <ProjectReference Include="System.Runtime.Loader.Test.Assembly2\System.Runtime.Loader.Test.Assembly2.csproj" ReferenceOutputAssembly="false" OutputItemType="EmbeddedResource" />
@@ -50,9 +51,7 @@
       <TrimmerRootAssembly Condition="$([System.String]::Copy('%(ResolvedFileToPublish.FileName)%(ResolvedFileToPublish.Extension)').EndsWith('System.Reflection.Metadata.ApplyUpdate.Test.MethodBody1.dll'))" Include="%(ResolvedFileToPublish.FullPath)" />
       <TrimmerRootAssembly Condition="$([System.String]::Copy('%(ResolvedFileToPublish.FileName)%(ResolvedFileToPublish.Extension)').EndsWith('System.Reflection.Metadata.ApplyUpdate.Test.ClassWithCustomAttributes.dll'))" Include="%(ResolvedFileToPublish.FullPath)" />
       <TrimmerRootAssembly Condition="$([System.String]::Copy('%(ResolvedFileToPublish.FileName)%(ResolvedFileToPublish.Extension)').EndsWith('System.Reflection.Metadata.ApplyUpdate.Test.CustomAttributeUpdate.dll'))" Include="%(ResolvedFileToPublish.FullPath)" />
-      <TrimmerRootAssembly
-          Condition="$([System.String]::Copy('%(ResolvedFileToPublish.FileName)%(ResolvedFileToPublish.Extension)').EndsWith('System.Reflection.Metadata.ApplyUpdate.Test.LambdaBodyChange.dll'))"
-          Include="%(ResolvedFileToPublish.FullPath)" />
+      <TrimmerRootAssembly Condition="$([System.String]::Copy('%(ResolvedFileToPublish.FileName)%(ResolvedFileToPublish.Extension)').EndsWith('System.Reflection.Metadata.ApplyUpdate.Test.LambdaBodyChange.dll'))" Include="%(ResolvedFileToPublish.FullPath)" />
     </ItemGroup>
   </Target>
 

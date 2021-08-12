@@ -127,6 +127,13 @@ namespace System.Net.Http
 
             try
             {
+                // Works around linker issue where it tries to eliminate QuicStreamAbortedException
+                // https://github.com/dotnet/runtime/issues/57010
+                #if TARGET_MOBILE
+                if (string.Empty.Length > 0)
+                    throw new QuicStreamAbortedException("", 0);
+                #endif
+
                 BufferHeaders(_request);
 
                 // If using Expect 100 Continue, setup a TCS to wait to send content until we get a response.
@@ -238,6 +245,11 @@ namespace System.Net.Http
                 // The server is requesting us fall back to an older HTTP version.
                 throw new HttpRequestException(SR.net_http_retry_on_older_version, ex, RequestRetryType.RetryOnLowerHttpVersion);
             }
+            catch (QuicStreamAbortedException ex) when (ex.ErrorCode == (long)Http3ErrorCode.RequestRejected)
+            {
+                // The server is rejecting the request without processing it, retry it on a different connection.
+                throw new HttpRequestException(SR.net_http_request_aborted, ex, RequestRetryType.RetryOnConnectionFailure);
+            }
             catch (QuicStreamAbortedException ex)
             {
                 // Our stream was reset.
@@ -252,11 +264,10 @@ namespace System.Net.Http
                 Exception abortException = _connection.Abort(ex);
                 throw new HttpRequestException(SR.net_http_client_execution_error, abortException);
             }
-            catch (OperationCanceledException ex)
-                when (ex.CancellationToken == requestCancellationSource.Token) // It is possible for user's Content code to throw an unexpected OperationCanceledException.
+            // It is possible for user's Content code to throw an unexpected OperationCanceledException.
+            catch (OperationCanceledException ex) when (ex.CancellationToken == requestCancellationSource.Token)
             {
                 // We're either observing GOAWAY, or the cancellationToken parameter has been canceled.
-
                 if (cancellationToken.IsCancellationRequested)
                 {
                     _stream.AbortWrite((long)Http3ErrorCode.RequestCancelled);
@@ -1152,6 +1163,11 @@ namespace System.Net.Http
                 switch (frameType)
                 {
                     case Http3FrameType.Data:
+                        // Ignore DATA frames with 0 length.
+                        if (payloadLength == 0)
+                        {
+                            continue;
+                        }
                         _responseDataPayloadRemaining = payloadLength;
                         return true;
                     case Http3FrameType.Headers:
