@@ -1178,7 +1178,7 @@ void CodeGen::genPutArgSplit(GenTreePutArgSplit* treeNode)
 
                 unsigned offset = treeNode->getArgOffset() + use.GetOffset() - firstOnStackOffs;
                 // We can't write beyond the outgoing arg area
-                assert(offset + EA_SIZE_IN_BYTES(attr) <= argOffsetMax); 
+                assert(offset + EA_SIZE_IN_BYTES(attr) <= argOffsetMax);
 
                 // Emit store instructions to store the registers produced by the GT_FIELD_LIST into the outgoing
                 // argument area
