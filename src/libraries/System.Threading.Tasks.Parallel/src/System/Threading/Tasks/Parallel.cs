@@ -131,7 +131,8 @@ namespace System.Threading.Tasks
 #if TARGET_BROWSER
         internal const bool IsSingleThreadedHost = true;
 #else
-        internal const bool IsSingleThreadedHost = false;
+// FIXME: The ifdef doesn't work
+        internal const bool IsSingleThreadedHost = true;
 #endif
 
         // static counter for generating unique Fork/Join Context IDs to be used in ETW events

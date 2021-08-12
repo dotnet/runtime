@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Collections.Generic;
 using System.Collections.Concurrent;
 using System.Threading.Tasks;
 
@@ -42,7 +43,6 @@ namespace System.Threading.Tasks
 
             public void Start()
             {
-                System.Diagnostics.Debug.WriteLine("Replica.Start");
                 _pendingTask!.RunSynchronously(_replicator._scheduler);
             }
 
@@ -69,7 +69,6 @@ namespace System.Threading.Tasks
                 {
                     if (!_replicator._stopReplicating && _remainingConcurrency > 0)
                     {
-                        System.Diagnostics.Debug.WriteLine("Replica.Execute.CreateNewReplica");
                         CreateNewReplica();
                         _remainingConcurrency = 0; // new replica is responsible for adding concurrency from now on.
                     }
@@ -80,13 +79,11 @@ namespace System.Threading.Tasks
 
                     if (userActionYieldedBeforeCompletion)
                     {
-                        System.Diagnostics.Debug.WriteLine("Replica.Execute.userActionYieldedBeforeCompletion");
                         _pendingTask = new Task(s => ((Replica)s!).Execute(), this, CancellationToken.None, TaskCreationOptions.None);
                         _pendingTask.Start(_replicator._scheduler);
                     }
                     else
                     {
-                        System.Diagnostics.Debug.WriteLine("Replica.Execute.!userActionYieldedBeforeCompletion");
                         _replicator._stopReplicating = true;
                         _pendingTask = null;
                     }
@@ -135,22 +132,27 @@ namespace System.Threading.Tasks
 
         public static void Run<TState>(ReplicatableUserAction<TState> action, ParallelOptions options, bool stopOnFirstFailure)
         {
-            System.Diagnostics.Debug.WriteLine("TaskReplicator.Run");
+#pragma warning disable CS0162
+            if (System.Threading.Tasks.Parallel.IsSingleThreadedHost) {
+                var timeout = GenerateCooperativeMultitaskingTaskTimeout();
+                var state = default(TState)!;
 
-            int maxConcurrencyLevel =
-                System.Threading.Tasks.Parallel.IsSingleThreadedHost
-                    ? 0
-                    : ((options.EffectiveMaxConcurrencyLevel > 0) ? options.EffectiveMaxConcurrencyLevel : int.MaxValue);
+                action(ref state, timeout, out bool yieldedBeforeCompletion);
+                if (yieldedBeforeCompletion)
+                    throw new Exception("Replicated tasks cannot yield in this single-threaded environment");
+            } else {
+                int maxConcurrencyLevel = (options.EffectiveMaxConcurrencyLevel > 0) ? options.EffectiveMaxConcurrencyLevel : int.MaxValue;
 
-            TaskReplicator replicator = new TaskReplicator(options, stopOnFirstFailure);
-            new Replica<TState>(replicator, maxConcurrencyLevel, CooperativeMultitaskingTaskTimeout_RootTask, action).Start();
+                TaskReplicator replicator = new TaskReplicator(options, stopOnFirstFailure);
+                new Replica<TState>(replicator, maxConcurrencyLevel, CooperativeMultitaskingTaskTimeout_RootTask, action).Start();
 
-            Replica? nextReplica;
-            while (replicator._pendingReplicas.TryDequeue(out nextReplica))
-                nextReplica.Wait();
+                Replica? nextReplica;
+                while (replicator._pendingReplicas.TryDequeue(out nextReplica))
+                    nextReplica.Wait();
 
-            if (replicator._exceptions != null)
-                throw new AggregateException(replicator._exceptions);
+                if (replicator._exceptions != null)
+                    throw new AggregateException(replicator._exceptions);
+            }
         }
 
 
