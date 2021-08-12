@@ -25,6 +25,7 @@
              Link="Common\Interop\Unix\Interop.Log.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\Interop.Libraries.cs"
              Link="Common\Interop\Unix\Interop.Libraries.cs" />
+    <Compile Include="System\IO\StreamWriter.iOS.cs" />
   </ItemGroup>
   <!-- Android -->
   <ItemGroup Condition="'$(TargetsAndroid)' == 'true'">

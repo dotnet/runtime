@@ -10692,6 +10692,15 @@ namespace System.IO
     }
     public partial class StreamWriter : System.IO.TextWriter
     {
+        protected internal readonly System.IO.Stream innerStream;
+        protected internal readonly System.Text.Encoding innerEncoding;
+        protected internal readonly System.Text.Encoder innerEncoder;
+        protected internal byte[]? innerByteBuffer;
+        protected internal readonly char[] innerCharBuffer;
+        protected internal int innerCharPos;
+        protected internal bool innerHaveWrittenPreamble;
+        protected internal void ThrowIfDisposed() { }
+        protected virtual void Flush(bool flushStream, bool flushEncoder) {}
         public static readonly new System.IO.StreamWriter Null;
         public StreamWriter(System.IO.Stream stream) { }
         public StreamWriter(System.IO.Stream stream, System.Text.Encoding encoding) { }
