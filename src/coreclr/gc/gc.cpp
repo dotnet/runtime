@@ -45570,20 +45570,16 @@ void PopulateDacVars(GcDacVars *gcDacVars)
 {
 #ifndef DACCESS_COMPILE
 
+#define DEFINE_FIELD(field_name, field_type) offsetof(CLASS_NAME, field_name),
+#define DEFINE_DPTR_FIELD(field_name, field_type) offsetof(CLASS_NAME, field_name),
+#define DEFINE_ARRAY_FIELD(field_name, field_type, array_length) offsetof(CLASS_NAME, field_name),
+#define DEFINE_MISSING_FIELD(field_name) -1,
+
 #ifdef MULTIPLE_HEAPS
     static int gc_heap_field_offsets[] = {
-
-#define DEFINE_FIELD(field_name, field_type) offsetof(gc_heap, field_name),
-#define DEFINE_DPTR_FIELD(field_name, field_type) offsetof(gc_heap, field_name),
-#define DEFINE_ARRAY_FIELD(field_name, field_type, array_length) offsetof(gc_heap, field_name),
-#define DEFINE_MISSING_FIELD -1,
-
-#include "gcheap_fields.h"
-
-#undef DEFINE_MISSING_FIELD
-#undef DEFINE_ARRAY_FIELD
-#undef DEFINE_DPTR_FIELD
-#undef DEFINE_FIELD
+#define CLASS_NAME gc_heap
+#include "dac_gcheap_fields.h"
+#undef CLASS_NAME
 
         offsetof(gc_heap, generation_table)
     };
@@ -45591,13 +45587,12 @@ void PopulateDacVars(GcDacVars *gcDacVars)
 #endif //MULTIPLE_HEAPS
     static int generation_field_offsets[] = {
 
-#define DEFINE_FIELD(field_name, field_type) offsetof(generation, field_name),
-#define DEFINE_DPTR_FIELD(field_name, field_type) offsetof(generation, field_name),
-#define DEFINE_MISSING_FIELD -1,
-
-#include "generation_fields.h"
+#define CLASS_NAME generation
+#include "dac_generation_fields.h"
+#undef CLASS_NAME
 
 #undef DEFINE_MISSING_FIELD
+#undef DEFINE_ARRAY_FIELD
 #undef DEFINE_DPTR_FIELD
 #undef DEFINE_FIELD
     };
@@ -45635,7 +45630,7 @@ void PopulateDacVars(GcDacVars *gcDacVars)
     gcDacVars->next_sweep_obj = &gc_heap::next_sweep_obj;
     gcDacVars->oom_info = &gc_heap::oom_info;
     gcDacVars->finalize_queue = reinterpret_cast<dac_finalize_queue**>(&gc_heap::finalize_queue);
-    gcDacVars->generation_table = reinterpret_cast<opaque_generation**>(&gc_heap::generation_table);
+    gcDacVars->generation_table = reinterpret_cast<unused_generation**>(&gc_heap::generation_table);
 #ifdef GC_CONFIG_DRIVEN
     gcDacVars->gc_global_mechanisms = reinterpret_cast<size_t**>(&gc_global_mechanisms);
     gcDacVars->interesting_data_per_heap = reinterpret_cast<size_t**>(&gc_heap::interesting_data_per_heap);
@@ -45650,7 +45645,7 @@ void PopulateDacVars(GcDacVars *gcDacVars)
 #endif // HEAP_ANALYZE
 #else
     gcDacVars->n_heaps = &gc_heap::n_heaps;
-    gcDacVars->g_heaps = reinterpret_cast<opaque_gc_heap***>(&gc_heap::g_heaps);
+    gcDacVars->g_heaps = reinterpret_cast<unused_gc_heap***>(&gc_heap::g_heaps);
     gcDacVars->gc_heap_field_offsets = reinterpret_cast<int**>(&gc_heap_field_offsets);
 #endif // MULTIPLE_HEAPS
     gcDacVars->generation_field_offsets = reinterpret_cast<int**>(&generation_field_offsets);

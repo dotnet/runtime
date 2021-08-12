@@ -747,7 +747,7 @@ ClrDataAccess::GetHeapAllocData(unsigned int count, struct DacpGenerationAllocDa
 
         if (data && count >= 1)
         {
-            DPTR(opaque_generation) table = g_gcDacGlobals->generation_table;
+            DPTR(unused_generation) table = g_gcDacGlobals->generation_table;
             for (unsigned int i=0; i < *g_gcDacGlobals->max_gen + 2; i++)
             {
                 dac_generation entry = GenerationTableIndex(table, i);

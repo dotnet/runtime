@@ -6468,7 +6468,8 @@ HRESULT DacHeapWalker::MoveToNextObject()
         mCurrObj += mCurrSize;
 
         // Check to see if we are in the correct bounds.
-        bool isGen0 = IsRegion() ? (mHeaps[mCurrHeap].Segments[mCurrSeg].Generation == 0) : (mHeaps[mCurrHeap].Gen0Start <= mCurrObj && mHeaps[mCurrHeap].Gen0End > mCurrObj);
+        bool isGen0 = IsRegion() ? (mHeaps[mCurrHeap].Segments[mCurrSeg].Generation == 0) : 
+                                   (mHeaps[mCurrHeap].Gen0Start <= mCurrObj && mHeaps[mCurrHeap].Gen0End > mCurrObj);
 
         if (isGen0)
             CheckAllocAndSegmentRange();
@@ -6559,7 +6560,8 @@ HRESULT DacHeapWalker::NextSegment()
 
         mCurrObj = mHeaps[mCurrHeap].Segments[mCurrSeg].Start;
 
-        bool isGen0 = IsRegion() ? (mHeaps[mCurrHeap].Segments[mCurrSeg].Generation == 0) : (mHeaps[mCurrHeap].Gen0Start <= mCurrObj && mHeaps[mCurrHeap].Gen0End > mCurrObj);
+        bool isGen0 = IsRegion() ? (mHeaps[mCurrHeap].Segments[mCurrSeg].Generation == 0) : 
+                                   (mHeaps[mCurrHeap].Gen0Start <= mCurrObj && mHeaps[mCurrHeap].Gen0End > mCurrObj);
 
         if (isGen0)
             CheckAllocAndSegmentRange();

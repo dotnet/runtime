@@ -50,7 +50,7 @@ public:
 #define DEFINE_FIELD(field_name, field_type) field_type field_name;
 #define DEFINE_DPTR_FIELD(field_name, field_type) DPTR(field_type) field_name;
 
-#include "generation_fields.h"
+#include "dac_generation_fields.h"
 
 #undef DEFINE_DPTR_FIELD
 #undef DEFINE_FIELD
@@ -147,7 +147,7 @@ public:
 #define DEFINE_DPTR_FIELD(field_name, field_type) DPTR(field_type) field_name;
 #define DEFINE_ARRAY_FIELD(field_name, field_type, array_length) field_type field_name[array_length];
 
-#include "gcheap_fields.h"
+#include "dac_gcheap_fields.h"
 
 #undef DEFINE_ARRAY_FIELD
 #undef DEFINE_DPTR_FIELD
@@ -170,12 +170,14 @@ public:
 
 #define GENERATION_TABLE_FIELD_INDEX 18
 
-struct opaque_gc_heap
+// Unlike other DACized structures, these types are loaded manually in the debugger.
+// To avoid misuse, pointers to them are explicitly casted to these unused type.
+struct unused_gc_heap
 {
     uint8_t unused;
 };
 
-struct opaque_generation
+struct unused_generation
 {
     uint8_t unused;
 };

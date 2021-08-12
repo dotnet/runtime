@@ -29,10 +29,10 @@ DPTR(T) Dereference(DPTR(T*) ptr)
 // Indexes into the global heap table, returning a TADDR to the requested
 // heap instance.
 inline TADDR
-HeapTableIndex(DPTR(opaque_gc_heap**) heaps, size_t index)
+HeapTableIndex(DPTR(unused_gc_heap**) heaps, size_t index)
 {
-    DPTR(opaque_gc_heap*) heap_table = Dereference(heaps);
-    DPTR(opaque_gc_heap*) ptr = TableIndex(heap_table, index, sizeof(void*));
+    DPTR(unused_gc_heap*) heap_table = Dereference(heaps);
+    DPTR(unused_gc_heap*) ptr = TableIndex(heap_table, index, sizeof(void*));
     return Dereference(ptr).GetAddr();
 }
 
@@ -110,7 +110,7 @@ LoadGcHeapData(TADDR heap)
 #define DEFINE_DPTR_FIELD(field_name, field_type) LOAD_DPTR(field_name, field_type)
 #define DEFINE_ARRAY_FIELD(field_name, field_type, array_length) LOAD_ARRAY(field_name, field_type, array_length);
 
-#include "../../gc/gcheap_fields.h"
+#include "../../gc/dac_gcheap_fields.h"
 
 #undef DEFINE_ARRAY_FIELD
 #undef DEFINE_DPTR_FIELD
@@ -138,7 +138,7 @@ LoadGeneration(TADDR generation)
 #define DEFINE_FIELD(field_name, field_type) LOAD(field_name, field_type)
 #define DEFINE_DPTR_FIELD(field_name, field_type) LOAD_DPTR(field_name, field_type)
 
-#include "../../gc/generation_fields.h"
+#include "../../gc/dac_generation_fields.h"
 
 #undef DEFINE_DPTR_FIELD
 #undef DEFINE_FIELD
@@ -150,7 +150,7 @@ LoadGeneration(TADDR generation)
 
 // Indexes into a given generation table, returning a dac_generation
 inline dac_generation
-GenerationTableIndex(DPTR(opaque_generation) base, size_t index)
+GenerationTableIndex(DPTR(unused_generation) base, size_t index)
 {
     return LoadGeneration(TableIndex(base, index, g_gcDacGlobals->generation_size).GetAddr());
 }
@@ -163,7 +163,7 @@ ServerGenerationTableIndex(TADDR heap, size_t index)
     DPTR(int) field_offsets = g_gcDacGlobals->gc_heap_field_offsets;
     int field_index = GENERATION_TABLE_FIELD_INDEX;
     #define BASE heap
-    LOAD_BASE (generation_table, opaque_generation);
+    LOAD_BASE (generation_table, unused_generation);
     #undef BASE
     assert (generation_table_offset != -1);
     return LoadGeneration(TableIndex(p_generation_table, index, g_gcDacGlobals->generation_size).GetAddr());
