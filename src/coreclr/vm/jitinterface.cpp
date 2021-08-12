@@ -11476,6 +11476,29 @@ uint32_t CEEJitInfo::getExpectedTargetArchitecture()
     return IMAGE_FILE_MACHINE_NATIVE;
 }
 
+bool CEEJitInfo::doesFieldBelongToClass(CORINFO_FIELD_HANDLE fldHnd, CORINFO_CLASS_HANDLE cls)
+{
+    CONTRACTL {
+        THROWS;
+    GC_TRIGGERS;
+    MODE_PREEMPTIVE;
+    } CONTRACTL_END;
+
+    bool result;
+
+    JIT_TO_EE_TRANSITION();
+
+    FieldDesc* field = (FieldDesc*) fldHnd;
+    TypeHandle th(cls);
+
+    MethodTable* pMT = field->GetExactDeclaringType(th.GetMethodTable());
+    result = (pMT != nullptr);
+
+    EE_TO_JIT_TRANSITION();
+
+    return result;
+}
+
 void CEEInfo::JitProcessShutdownWork()
 {
     LIMITED_METHOD_CONTRACT;
@@ -14163,6 +14186,12 @@ uint32_t CEEInfo::getExpectedTargetArchitecture()
     LIMITED_METHOD_CONTRACT;
 
     return IMAGE_FILE_MACHINE_NATIVE;
+}
+
+bool CEEInfo::doesFieldBelongToClass(CORINFO_FIELD_HANDLE fld, CORINFO_CLASS_HANDLE cls)
+{
+    LIMITED_METHOD_CONTRACT;
+    UNREACHABLE_RET();      // only called on derived class.
 }
 
 void CEEInfo::setBoundaries(CORINFO_METHOD_HANDLE ftn, ULONG32 cMap,

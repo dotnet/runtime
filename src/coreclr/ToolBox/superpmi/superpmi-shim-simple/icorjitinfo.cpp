@@ -1217,3 +1217,10 @@ uint32_t interceptor_ICJI::getJitFlags(
     return original_ICorJitInfo->getJitFlags(flags, sizeInBytes);
 }
 
+bool interceptor_ICJI::doesFieldBelongToClass(
+          CORINFO_FIELD_HANDLE fldHnd,
+          CORINFO_CLASS_HANDLE cls)
+{
+    return original_ICorJitInfo->doesFieldBelongToClass(fldHnd, cls);
+}
+
