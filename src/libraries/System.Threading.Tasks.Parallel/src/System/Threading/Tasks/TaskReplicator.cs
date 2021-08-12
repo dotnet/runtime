@@ -42,6 +42,7 @@ namespace System.Threading.Tasks
 
             public void Start()
             {
+                System.Diagnostics.Debug.WriteLine("Replica.Start");
                 _pendingTask!.RunSynchronously(_replicator._scheduler);
             }
 
@@ -68,6 +69,7 @@ namespace System.Threading.Tasks
                 {
                     if (!_replicator._stopReplicating && _remainingConcurrency > 0)
                     {
+                        System.Diagnostics.Debug.WriteLine("Replica.Execute.CreateNewReplica");
                         CreateNewReplica();
                         _remainingConcurrency = 0; // new replica is responsible for adding concurrency from now on.
                     }
@@ -78,11 +80,13 @@ namespace System.Threading.Tasks
 
                     if (userActionYieldedBeforeCompletion)
                     {
+                        System.Diagnostics.Debug.WriteLine("Replica.Execute.userActionYieldedBeforeCompletion");
                         _pendingTask = new Task(s => ((Replica)s!).Execute(), this, CancellationToken.None, TaskCreationOptions.None);
                         _pendingTask.Start(_replicator._scheduler);
                     }
                     else
                     {
+                        System.Diagnostics.Debug.WriteLine("Replica.Execute.!userActionYieldedBeforeCompletion");
                         _replicator._stopReplicating = true;
                         _pendingTask = null;
                     }
@@ -131,7 +135,12 @@ namespace System.Threading.Tasks
 
         public static void Run<TState>(ReplicatableUserAction<TState> action, ParallelOptions options, bool stopOnFirstFailure)
         {
-            int maxConcurrencyLevel = (options.EffectiveMaxConcurrencyLevel > 0) ? options.EffectiveMaxConcurrencyLevel : int.MaxValue;
+            System.Diagnostics.Debug.WriteLine("TaskReplicator.Run");
+
+            int maxConcurrencyLevel =
+                System.Threading.Tasks.Parallel.IsSingleThreadedHost
+                    ? 0
+                    : ((options.EffectiveMaxConcurrencyLevel > 0) ? options.EffectiveMaxConcurrencyLevel : int.MaxValue);
 
             TaskReplicator replicator = new TaskReplicator(options, stopOnFirstFailure);
             new Replica<TState>(replicator, maxConcurrencyLevel, CooperativeMultitaskingTaskTimeout_RootTask, action).Start();

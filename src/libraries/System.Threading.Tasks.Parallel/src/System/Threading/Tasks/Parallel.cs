@@ -128,6 +128,12 @@ namespace System.Threading.Tasks
     /// </remarks>
     public static partial class Parallel
     {
+#if TARGET_BROWSER
+        internal const bool IsSingleThreadedHost = true;
+#else
+        internal const bool IsSingleThreadedHost = false;
+#endif
+
         // static counter for generating unique Fork/Join Context IDs to be used in ETW events
         internal static int s_forkJoinContextID;
 
@@ -245,7 +251,9 @@ namespace System.Threading.Tasks
 
                 // This is more efficient for a large number of actions, or for enforcing MaxDegreeOfParallelism:
                 if ((actionsCopy.Length > SMALL_ACTIONCOUNT_LIMIT) ||
-                     (parallelOptions.MaxDegreeOfParallelism != -1 && parallelOptions.MaxDegreeOfParallelism < actionsCopy.Length))
+                     (parallelOptions.MaxDegreeOfParallelism != -1 && parallelOptions.MaxDegreeOfParallelism < actionsCopy.Length) ||
+                     // Single-threaded hosts need special treatment that will be centralized in TaskReplicator
+                     IsSingleThreadedHost)
                 {
                     // Used to hold any exceptions encountered during action processing
                     ConcurrentQueue<Exception>? exceptionQ = null; // will be lazily initialized if necessary
