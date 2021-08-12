@@ -141,6 +141,7 @@ jobs:
             - template: /eng/pipelines/common/upload-intermediate-artifacts-step.yml
               parameters:
                 name: Libraries_AllConfigurations
+                condition: eq(variables['_librariesBuildProducedPackages'], true)
 
         - ${{ if and(eq(parameters.runTests, true), eq(parameters.useHelix, true)) }}:
           - template: /eng/pipelines/libraries/helix.yml
@@ -155,3 +156,5 @@ jobs:
               creator: dotnet-bot
               testRunNamePrefixSuffix: $(_testRunNamePrefixSuffix)
               extraHelixArguments: $(_extraHelixArguments)
+              ${{ if eq(parameters.framework, 'allConfigurations') }}:
+                condition: eq(variables['_librariesBuildProducedPackages'], true)
