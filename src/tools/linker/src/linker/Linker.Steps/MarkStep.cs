@@ -511,6 +511,19 @@ namespace Mono.Linker.Steps
 						break;
 					}
 				}
+
+				foreach (var handler in body.ExceptionHandlers) {
+					if (handler.TryStart == oldTarget)
+						handler.TryStart = newTarget;
+					if (handler.TryEnd == oldTarget)
+						handler.TryEnd = newTarget;
+					if (handler.HandlerStart == oldTarget)
+						handler.HandlerStart = newTarget;
+					if (handler.HandlerEnd == oldTarget)
+						handler.HandlerEnd = newTarget;
+					if (handler.FilterStart == oldTarget)
+						handler.FilterStart = newTarget;
+				}
 			}
 		}
 

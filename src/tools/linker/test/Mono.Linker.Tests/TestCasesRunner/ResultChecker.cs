@@ -1075,7 +1075,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			var memberName = (string) inAssemblyAttribute.ConstructorArguments[2].Value;
 
 			if (TryVerifyKeptMemberInAssemblyAsMethod (memberName, originalType, linkedType, out MethodDefinition originalMethod, out MethodDefinition linkedMethod)) {
-				static string[] valueCollector (MethodDefinition m) => m.Body.Instructions.Select (ins => AssemblyChecker.FormatInstruction (ins).ToLower ()).ToArray ();
+				static string[] valueCollector (MethodDefinition m) => AssemblyChecker.FormatMethodBody (m.Body);
 				var linkedValues = valueCollector (linkedMethod);
 				var srcValues = valueCollector (originalMethod);
 

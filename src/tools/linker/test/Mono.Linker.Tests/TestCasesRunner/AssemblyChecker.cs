@@ -390,11 +390,42 @@ namespace Mono.Linker.Tests.TestCasesRunner
 				nameof (ExpectedInstructionSequenceAttribute),
 				nameof (ExpectBodyModifiedAttribute),
 				"instructions",
-				m => m.Body.Instructions.Select (ins => FormatInstruction (ins).ToLower ()).ToArray (),
+				m => FormatMethodBody (m.Body),
 				attr => GetStringArrayAttributeValue (attr).Select (v => v.ToLower ()).ToArray ());
 		}
 
-		public static string FormatInstruction (Instruction instr)
+		public static string[] FormatMethodBody (MethodBody body)
+		{
+			List<(Instruction, string)> result = new List<(Instruction, string)> (body.Instructions.Count);
+			for (int index = 0; index < body.Instructions.Count; index++) {
+				var instruction = body.Instructions[index];
+				result.Add ((instruction, FormatInstruction (instruction).ToLowerInvariant ()));
+			}
+
+			HashSet<(Instruction, Instruction)> existingTryBlocks = new HashSet<(Instruction, Instruction)> ();
+			foreach (var exHandler in body.ExceptionHandlers) {
+				if (existingTryBlocks.Add ((exHandler.TryStart, exHandler.TryEnd))) {
+					InsertBeforeInstruction (exHandler.TryStart, ".try");
+					InsertBeforeInstruction (exHandler.TryEnd, ".endtry");
+				}
+
+				if (exHandler.HandlerStart != null)
+					InsertBeforeInstruction (exHandler.HandlerStart, ".catch");
+
+				if (exHandler.HandlerEnd != null)
+					InsertBeforeInstruction (exHandler.HandlerEnd, ".endcatch");
+
+				if (exHandler.FilterStart != null)
+					InsertBeforeInstruction (exHandler.FilterStart, ".filter");
+			}
+
+			return result.Select (i => i.Item2).ToArray ();
+
+			void InsertBeforeInstruction (Instruction instruction, string text) =>
+				result.Insert (result.FindIndex (i => i.Item1 == instruction), (null, text));
+		}
+
+		static string FormatInstruction (Instruction instr)
 		{
 			switch (instr.OpCode.FlowControl) {
 			case FlowControl.Branch:
@@ -474,18 +505,18 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			if (src.CustomAttributes.Any (attr => attr.AttributeType.Name == expectModifiedAttributeName)) {
 				Assert.That (
 					linkedValues,
-					Is.Not.EquivalentTo (srcValues),
+					Is.Not.EqualTo (srcValues),
 					$"Expected method `{src} to have {propertyDescription} modified, however, the {propertyDescription} were the same as the original\n{FormattingUtils.FormatSequenceCompareFailureMessage (linkedValues, srcValues)}");
 			} else if (expectedSequenceAttribute != null) {
 				var expected = getExpectFromSequenceAttribute (expectedSequenceAttribute).ToArray ();
 				Assert.That (
 					linkedValues,
-					Is.EquivalentTo (expected),
+					Is.EqualTo (expected),
 					$"Expected method `{src} to have it's {propertyDescription} modified, however, the sequence of {propertyDescription} does not match the expected value\n{FormattingUtils.FormatSequenceCompareFailureMessage2 (linkedValues, expected, srcValues)}");
 			} else {
 				Assert.That (
 					linkedValues,
-					Is.EquivalentTo (srcValues),
+					Is.EqualTo (srcValues),
 					$"Expected method `{src} to have it's {propertyDescription} unchanged, however, the {propertyDescription} differ from the original\n{FormattingUtils.FormatSequenceCompareFailureMessage (linkedValues, srcValues)}");
 			}
 		}
