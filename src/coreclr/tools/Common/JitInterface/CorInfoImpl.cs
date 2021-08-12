@@ -3531,6 +3531,12 @@ namespace Internal.JitInterface
             }
         }
 
+        private bool doesFieldBelongToClass(CORINFO_FIELD_STRUCT_* fld, CORINFO_CLASS_STRUCT_* cls)
+        {
+            // we need it to return true for both canon and not-canon classes.
+            return (HandleToObject(fld).OwningType == HandleToObject(cls));
+        }
+
         private bool isMethodDefinedInCoreLib()
         {
             TypeDesc owningType = MethodBeingCompiled.OwningType;

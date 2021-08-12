@@ -1574,6 +1574,13 @@ uint32_t MyICJI::getJitFlags(CORJIT_FLAGS* jitFlags, uint32_t sizeInBytes)
     return ret;
 }
 
+bool MyICJI::doesFieldBelongToClass(CORINFO_FIELD_HANDLE fldHnd, CORINFO_CLASS_HANDLE cls)
+{
+    jitInstance->mc->cr->AddCall("doesFieldBelongToClass");
+    bool result = jitInstance->mc->repDoesFieldBelongToClass(fldHnd, cls);
+    return result;
+}
+
 // Runs the given function with the given parameter under an error trap
 // and returns true if the function completes successfully. We fake this
 // up a bit for SuperPMI and simply catch all exceptions.
