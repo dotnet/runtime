@@ -1,11 +1,11 @@
 {
   "sdk": {
-    "version": "6.0.100-rc.1.21379.2",
+    "version": "6.0.100-rc.1.21411.13",
     "allowPrerelease": true,
     "rollForward": "major"
   },
   "tools": {
-    "dotnet": "6.0.100-rc.1.21379.2"
+    "dotnet": "6.0.100-rc.1.21411.13"
   },
   "native-tools": {
     "cmake": "3.16.4",
