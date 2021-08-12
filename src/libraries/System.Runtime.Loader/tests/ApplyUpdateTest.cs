@@ -259,12 +259,5 @@ namespace System.Reflection.Metadata
             bool result = MetadataUpdater.IsSupported;
             Assert.False(result);
         }
-
-        [ConditionalFact(typeof(ApplyUpdateUtil), nameof(ApplyUpdateUtil.TestUsingLaunchEnvironment))]
-        public static void IsSupported2()
-        {
-            bool result = MetadataUpdater.IsSupported;
-            Assert.True(result);
-        }
     }
 }
