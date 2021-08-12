@@ -83,6 +83,7 @@ namespace System.Threading
                 try
                 {
                     counter._overflowCount += _count;
+                    counter._nodes.Remove(this);
                 }
                 finally
                 {
