@@ -647,14 +647,14 @@ namespace System.Tests
         public static TheoryData<string, string, string, Type> TestingCreateInstanceFromObjectHandleData => new TheoryData<string, string, string, Type>()
         {
             // string assemblyFile, string typeName, returnedFullNameType, expectedException
-            {"TestLoadAssembly.dll", "PublicClassSample", "PublicClassSample", null },
-            {"TestLoadAssembly.dll", "publicclasssample", "PublicClassSample", typeof(TypeLoadException) },
+            { "TestLoadAssembly.dll", "PublicClassSample", "PublicClassSample", null },
+            { "TestLoadAssembly.dll", "publicclasssample", "PublicClassSample", typeof(TypeLoadException) },
 
-            {"TestLoadAssembly.dll", "PrivateClassSample", "PrivateClassSample", null },
-            {"TestLoadAssembly.dll", "privateclasssample", "PrivateClassSample", typeof(TypeLoadException) },
+            { "TestLoadAssembly.dll", "PrivateClassSample", "PrivateClassSample", null },
+            { "TestLoadAssembly.dll", "privateclasssample", "PrivateClassSample", typeof(TypeLoadException) },
 
-            {"TestLoadAssembly.dll", "PublicClassNoDefaultConstructorSample", "PublicClassNoDefaultConstructorSample", typeof(MissingMethodException) },
-            {"TestLoadAssembly.dll", "publicclassnodefaultconstructorsample", "PublicClassNoDefaultConstructorSample", typeof(TypeLoadException) }
+            { "TestLoadAssembly.dll", "PublicClassNoDefaultConstructorSample", "PublicClassNoDefaultConstructorSample", typeof(MissingMethodException) },
+            { "TestLoadAssembly.dll", "publicclassnodefaultconstructorsample", "PublicClassNoDefaultConstructorSample", typeof(TypeLoadException) }
         };
 
 
