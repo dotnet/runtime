@@ -183,10 +183,27 @@
       System.IO.Pipelines;
       System.Security.Cryptography.Xml;
     </AspNetCoreAppLibrary>
+    <WindowsDesktopCoreAppLibrary>
+      System.CodeDom;
+      System.Configuration.ConfigurationManager;
+      System.Diagnostics.EventLog;
+      System.Diagnostics.PerformanceCounter;
+      System.DirectoryServices;
+      System.Drawing.Common;
+      System.IO.Packaging;
+      System.Resources.Extensions;
+      System.Security.Cryptography.Pkcs;
+      System.Security.Cryptography.ProtectedData;
+      System.Security.Cryptography.Xml;
+      System.Security.Permissions;
+      System.Threading.AccessControl;
+      System.Windows.Extensions;
+    </WindowsDesktopCoreAppLibrary>
   </PropertyGroup>
-  <!-- Make NetCoreAppLibrary available as an item. -->
+  <!-- Make available as an item. -->
   <ItemGroup>
     <NetCoreAppLibrary Include="$(NetCoreAppLibrary)" />
     <AspNetCoreAppLibrary Include="$(AspNetCoreAppLibrary)" />
+    <WindowsDesktopCoreAppLibrary Include="$(WindowsDesktopCoreAppLibrary)" />
   </ItemGroup>
 </Project>

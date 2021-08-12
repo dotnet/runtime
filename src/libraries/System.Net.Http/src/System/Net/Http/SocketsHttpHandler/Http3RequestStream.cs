@@ -880,24 +880,43 @@ namespace System.Net.Http
                     throw new Http3ConnectionException(Http3ErrorCode.ProtocolError);
                 }
 
-                int statusCode = staticIndex switch
+                int statusCode;
+                if (staticValue != null) // Indexed Header Field -- both name and value are taken from the table
                 {
-                    H3StaticTable.Status103 => 103,
-                    H3StaticTable.Status200 => 200,
-                    H3StaticTable.Status304 => 304,
-                    H3StaticTable.Status404 => 404,
-                    H3StaticTable.Status503 => 503,
-                    H3StaticTable.Status100 => 100,
-                    H3StaticTable.Status204 => 204,
-                    H3StaticTable.Status206 => 206,
-                    H3StaticTable.Status302 => 302,
-                    H3StaticTable.Status400 => 400,
-                    H3StaticTable.Status403 => 403,
-                    H3StaticTable.Status421 => 421,
-                    H3StaticTable.Status425 => 425,
-                    H3StaticTable.Status500 => 500,
-                    _ => HttpConnectionBase.ParseStatusCode(literalValue),
-                };
+                    statusCode = staticIndex switch
+                    {
+                        H3StaticTable.Status103 => 103,
+                        H3StaticTable.Status200 => 200,
+                        H3StaticTable.Status304 => 304,
+                        H3StaticTable.Status404 => 404,
+                        H3StaticTable.Status503 => 503,
+                        H3StaticTable.Status100 => 100,
+                        H3StaticTable.Status204 => 204,
+                        H3StaticTable.Status206 => 206,
+                        H3StaticTable.Status302 => 302,
+                        H3StaticTable.Status400 => 400,
+                        H3StaticTable.Status403 => 403,
+                        H3StaticTable.Status421 => 421,
+                        H3StaticTable.Status425 => 425,
+                        H3StaticTable.Status500 => 500,
+                        // We should never get here, at least while we only use static table. But we can still parse staticValue.
+                        _ => ParseStatusCode(staticIndex, staticValue)
+                    };
+
+                    int ParseStatusCode(int? index, string value)
+                    {
+                        string message = $"Unexpected QPACK table reference for Status code: index={index} value=\'{value}\'";
+                        Debug.Fail(message);
+                        if (NetEventSource.Log.IsEnabled()) Trace(message);
+
+                        // TODO: The parsing is not optimal, but I don't expect this line to be executed at all for now.
+                        return HttpConnectionBase.ParseStatusCode(Encoding.ASCII.GetBytes(value));
+                    }
+                }
+                else // Literal Header Field With Name Reference -- only name is taken from the table
+                {
+                    statusCode = HttpConnectionBase.ParseStatusCode(literalValue);
+                }
 
                 _response = new HttpResponseMessage()
                 {

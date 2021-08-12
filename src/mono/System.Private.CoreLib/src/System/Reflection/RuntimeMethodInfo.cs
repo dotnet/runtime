@@ -663,6 +663,7 @@ namespace System.Reflection
                 namedArgs);
         }
 
+        [RequiresUnreferencedCode("If some of the generic arguments are annotated (either with DynamicallyAccessedMembersAttribute, or generic constraints), trimming can't validate that the requirements of those annotations are met.")]
         public override MethodInfo MakeGenericMethod(Type[] methodInstantiation)
         {
             if (methodInstantiation == null)
