@@ -50,10 +50,15 @@ namespace System.Diagnostics.Tracing
         // as you can't make a constructor partial.
         private RuntimeEventSource(int _) { }
 
-        [Event(2, Level = EventLevel.Informational)]
+        private enum EventId : int
+        {
+            AppContextSwitch = 1
+        }
+
+        [Event((int)EventId.AppContextSwitch, Level = EventLevel.Informational)]
         internal void LogAppContextSwitch(string switchName, int value)
         {
-            base.WriteEvent(2, switchName, value);
+            base.WriteEvent((int)EventId.AppContextSwitch, switchName, value);
         }
 
         protected override void OnEventCommand(EventCommandEventArgs command)

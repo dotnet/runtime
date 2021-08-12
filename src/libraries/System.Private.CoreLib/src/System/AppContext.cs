@@ -150,6 +150,22 @@ namespace System
                     ev.LogAppContextSwitch(k, v ? 0 : 1);
                 }
             }
+
+            if (s_dataStore is null)
+            {
+                return;
+            }
+
+            lock (s_dataStore)
+            {
+                foreach (var (k, v) in s_dataStore)
+                {
+                    if (v is bool b)
+                    {
+                        ev.LogAppContextSwitch(k, b ? 0 : 1);
+                    }
+                }
+            }
         }
 
 #if !CORERT
