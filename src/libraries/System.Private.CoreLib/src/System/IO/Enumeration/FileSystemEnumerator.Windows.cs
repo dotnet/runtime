@@ -77,6 +77,9 @@ namespace System.IO.Enumeration
             }
         }
 
+        /// <summary>
+        /// Fills the buffer with the next set of data.
+        /// </summary>
         /// <returns>'true' if new data was found</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private unsafe bool GetData()

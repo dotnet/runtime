@@ -32,7 +32,12 @@ namespace System.Net.Sockets
         private int _ownClose;
 
         /// <summary>
-        /// Creates a SafeSocketHandle around a socket handle.
+        /// Creates a <see cref="T:System.Net.Sockets.SafeSocketHandle" />.
+        /// </summary>
+        public SafeSocketHandle() : base(ownsHandle: true) => OwnsHandle = true;
+
+        /// <summary>
+        /// Creates a <see cref="T:System.Net.Sockets.SafeSocketHandle" /> around a socket handle.
         /// </summary>
         /// <param name="preexistingHandle">Handle to wrap</param>
         /// <param name="ownsHandle">Whether to control the handle lifetime</param>
@@ -42,8 +47,6 @@ namespace System.Net.Sockets
             OwnsHandle = ownsHandle;
             SetHandleAndValid(preexistingHandle);
         }
-
-        public SafeSocketHandle() : base(ownsHandle: true) => OwnsHandle = true;
 
         internal bool OwnsHandle { get; }
 

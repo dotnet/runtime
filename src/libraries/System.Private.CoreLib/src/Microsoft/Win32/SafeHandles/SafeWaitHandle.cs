@@ -8,14 +8,14 @@ namespace Microsoft.Win32.SafeHandles
     public sealed partial class SafeWaitHandle : SafeHandleZeroOrMinusOneIsInvalid
     {
         /// <summary>
-        /// Creates a SafeWaitHandle
+        /// Creates a <see cref="T:Microsoft.Win32.SafeHandles.SafeWaitHandle" />.
         /// </summary>
         public SafeWaitHandle() : base(true)
         {
         }
 
         /// <summary>
-        /// Creates a SafeWaitHandle around a Windows wait handle.
+        /// Creates a <see cref="T:Microsoft.Win32.SafeHandles.SafeWaitHandle" /> around a wait handle.
         /// </summary>
         /// <param name="existingHandle">Handle to wrap</param>
         /// <param name="ownsHandle">Whether to control the handle lifetime</param>

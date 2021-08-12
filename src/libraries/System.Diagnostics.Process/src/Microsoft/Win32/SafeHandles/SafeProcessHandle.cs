@@ -20,7 +20,7 @@ namespace Microsoft.Win32.SafeHandles
         internal static readonly SafeProcessHandle InvalidHandle = new SafeProcessHandle();
 
         /// <summary>
-        /// Creates a SafeProcessHandle
+        /// Creates a <see cref="T:Microsoft.Win32.SafeHandles.SafeHandle" />.
         /// </summary>
         public SafeProcessHandle()
             : this(IntPtr.Zero)
@@ -33,7 +33,7 @@ namespace Microsoft.Win32.SafeHandles
         }
 
         /// <summary>
-        /// Creates a SafeProcessHandle around a Windows process handle.
+        /// Creates a <see cref="T:Microsoft.Win32.SafeHandles.SafeHandle" /> around a process handle.
         /// </summary>
         /// <param name="existingHandle">Handle to wrap</param>
         /// <param name="ownsHandle">Whether to control the handle lifetime</param>

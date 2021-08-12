@@ -11,7 +11,7 @@ namespace Microsoft.Win32.SafeHandles
     public sealed class SafeX509ChainHandle : SafeHandleZeroOrMinusOneIsInvalid
     {
         /// <summary>
-        /// Creates a SafeX509ChainHandle
+        /// Creates a <see cref="T:Microsoft.Win32.SafeHandles.SafeX509ChainHandle" />.
         /// </summary>
         public SafeX509ChainHandle()
             : base(true)
