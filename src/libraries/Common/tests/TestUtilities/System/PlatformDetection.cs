@@ -286,7 +286,7 @@ namespace System
                               version & 0xFF);
         }
 
-        private static readonly Lazy<bool> _net5CompatFileStream = new Lazy<bool>(() => GetStaticNonPublicBooleanPropertyValue("System.IO.FileStreamHelpers", "UseNet5CompatStrategy"));
+        private static readonly Lazy<bool> _net5CompatFileStream = new Lazy<bool>(() => GetStaticNonPublicBooleanPropertyValue("System.IO.Strategies.FileStreamHelpers", "UseNet5CompatStrategy"));
 
         public static bool IsNet5CompatFileStreamEnabled => _net5CompatFileStream.Value;
 
