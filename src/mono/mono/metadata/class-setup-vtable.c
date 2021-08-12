@@ -1386,7 +1386,7 @@ is_ok_for_covariant_ret (MonoType *type_impl, MonoType *type_decl)
 	MonoClass *class_impl = mono_class_from_mono_type_internal (type_impl);
 
 	/* method declared to return an interface, impl returns a value type that implements the interface */
-	if (m_class_is_valuetype (type_impl) && mono_type_is_reference (type_decl))
+	if (m_class_is_valuetype (class_impl) && mono_type_is_reference (type_decl))
 		return FALSE;
 
 
