@@ -1224,18 +1224,13 @@ namespace System.Net.Http
 
         private void AbortStream()
         {
-            // ToDo : locking??? we don't have any in H/3 stream, we don't have a sync root or anything.
-            // Check if the response body has been fully consumed.
-            bool requestBodyFinished = _requestContentLengthRemaining == 0; // -1 is used for unknown Content-Length, 0 for the end of content writing
-            bool responseBodyFinished = _responseDataPayloadRemaining == -1; // -1 is used for EOF, 0 for consumed DATA frame payload before the next read
-
             // If the request body isn't completed, cancel it now.
-            if (!requestBodyFinished)
+            if (_requestContentLengthRemaining != 0) // 0 is used for the end of content writing, -1 is used for unknown Content-Length
             {
                 _stream.AbortWrite((long)Http3ErrorCode.RequestCancelled);
             }
             // If the response body isn't completed, cancel it now.
-            if (!responseBodyFinished)
+            if (_responseDataPayloadRemaining != -1) // -1 is used for EOF, 0 for consumed DATA frame payload before the next read
             {
                 _stream.AbortRead((long)Http3ErrorCode.RequestCancelled);
             }
