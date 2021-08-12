@@ -66,6 +66,7 @@ namespace DebuggerTests
             var b = new WithProxy();
             var c = new DebuggerDisplayMethodTest();
             List<int> myList = new List<int>{ 1, 2, 3, 4 };
+            var listToTestToList = System.Linq.Enumerable.Range(1, 11);
             Console.WriteLine("break here");
         }
     }

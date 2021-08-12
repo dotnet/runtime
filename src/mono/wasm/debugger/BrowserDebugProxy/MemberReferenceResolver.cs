@@ -88,7 +88,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                 classNameToFind += part.Trim();
                 if (typeId != -1)
                 {
-                    var fields = await proxy.SdbHelper.GetTypeFields(sessionId, typeId, false, token);
+                    var fields = await proxy.SdbHelper.GetTypeFields(sessionId, typeId, onlyPublic: false, token);
                     foreach (var field in fields)
                     {
                         if (field.Name == part.Trim())
@@ -204,6 +204,7 @@ namespace Microsoft.WebAssembly.Diagnostics
         public async Task<JObject> Resolve(InvocationExpressionSyntax method, Dictionary<string, JObject> memberAccessValues, CancellationToken token)
         {
             var methodName = "";
+            int isTryingLinq = 0;
             try
             {
                 JObject rootObject = null;
@@ -223,18 +224,42 @@ namespace Microsoft.WebAssembly.Diagnostics
                 if (rootObject != null)
                 {
                     DotnetObjectId.TryParse(rootObject?["objectId"]?.Value<string>(), out DotnetObjectId objectId);
-                    var typeId = await proxy.SdbHelper.GetTypeIdFromObject(sessionId, int.Parse(objectId.Value), true, token);
-                    int methodId = await proxy.SdbHelper.GetMethodIdByName(sessionId, typeId[0], methodName, token);
+                    var typeIds = await proxy.SdbHelper.GetTypeIdFromObject(sessionId, int.Parse(objectId.Value), true, token);
+                    int methodId = await proxy.SdbHelper.GetMethodIdByName(sessionId, typeIds[0], methodName, token);
+                    var className = await proxy.SdbHelper.GetTypeNameOriginal(sessionId, typeIds[0], token);
+                    if (methodId == 0) //try to search on System.Linq.Enumerable
+                    {
+                        var linqTypeId = await proxy.SdbHelper.GetTypeByName(sessionId, "System.Linq.Enumerable", token);
+                        var linqInitialize = await proxy.SdbHelper.TypeInitialize(sessionId, linqTypeId, token);
+                        Console.WriteLine($"linqInitialize - {linqInitialize}");
+                        methodId = await proxy.SdbHelper.GetMethodIdByName(sessionId, linqTypeId, methodName, token);
+                        if (methodId != 0)
+                        {
+                            foreach (var typeId in typeIds)
+                            {
+                                var genericTypes = await proxy.SdbHelper.GetGenericTypesFromType(sessionId, typeId, token);
+                                if (genericTypes.Count > 0)
+                                {
+                                    isTryingLinq = 1;
+                                    methodId = await proxy.SdbHelper.MakeGenericMethod(sessionId, methodId, genericTypes, token);
+                                    break;
+                                }
+                            }
+                        }
+                    }
                     if (methodId == 0) {
-                        var typeName = await proxy.SdbHelper.GetTypeName(sessionId, typeId[0], token);
+                        var typeName = await proxy.SdbHelper.GetTypeName(sessionId, typeIds[0], token);
                         throw new Exception($"Method '{methodName}' not found in type '{typeName}'");
                     }
                     var commandParamsObj = new MemoryStream();
                     var commandParamsObjWriter = new MonoBinaryWriter(commandParamsObj);
-                    commandParamsObjWriter.WriteObj(objectId, proxy.SdbHelper);
+                    if (isTryingLinq == 0)
+                        commandParamsObjWriter.WriteObj(objectId, proxy.SdbHelper);
                     if (method.ArgumentList != null)
                     {
-                        commandParamsObjWriter.Write((int)method.ArgumentList.Arguments.Count);
+                        commandParamsObjWriter.Write((int)method.ArgumentList.Arguments.Count + isTryingLinq);
+                        if (isTryingLinq == 1)
+                            commandParamsObjWriter.WriteObj(objectId, proxy.SdbHelper);
                         foreach (var arg in method.ArgumentList.Arguments)
                         {
                             if (arg.Expression is LiteralExpressionSyntax)
