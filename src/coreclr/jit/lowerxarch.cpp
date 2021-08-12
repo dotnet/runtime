@@ -141,14 +141,14 @@ void Lowering::LowerStoreIndir(GenTreeStoreInd* node)
         if (node->TypeIs(TYP_FLOAT))
         {
             float fltCns = static_cast<float>(dblCns); // should be a safe round-trip
-            intCns       = static_cast<ssize_t>(*reinterpret_cast<UINT32*>(&fltCns));
+            intCns       = static_cast<ssize_t>(*reinterpret_cast<INT32*>(&fltCns));
             type         = TYP_INT;
         }
 #ifdef TARGET_AMD64
         else
         {
             assert(node->TypeIs(TYP_DOUBLE));
-            intCns = static_cast<ssize_t>(*reinterpret_cast<UINT64*>(&dblCns));
+            intCns = static_cast<ssize_t>(*reinterpret_cast<INT64*>(&dblCns));
             type   = TYP_LONG;
         }
 #endif
