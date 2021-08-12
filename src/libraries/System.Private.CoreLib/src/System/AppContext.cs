@@ -135,6 +135,23 @@ namespace System
             }
         }
 
+        internal static void LogSwitchValues(RuntimeEventSource ev)
+        {
+            if (s_switches is null)
+            {
+                return;
+            }
+
+            lock (s_switches)
+            {
+                foreach (var (k, v) in s_switches)
+                {
+                    // Convert bool to int because it's cheaper to log (no boxing)
+                    ev.LogAppContextSwitch(k, v ? 0 : 1);
+                }
+            }
+        }
+
 #if !CORERT
         internal static unsafe void Setup(char** pNames, char** pValues, int count)
         {
