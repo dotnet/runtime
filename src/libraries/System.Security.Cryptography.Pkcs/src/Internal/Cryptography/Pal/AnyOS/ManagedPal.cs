@@ -9,6 +9,7 @@ using System.Security.Cryptography;
 using System.Security.Cryptography.Asn1;
 using System.Security.Cryptography.Pkcs;
 using System.Security.Cryptography.X509Certificates;
+using Internal.Cryptography;
 
 namespace Internal.Cryptography.Pal.AnyOS
 {
@@ -165,11 +166,13 @@ namespace Internal.Cryptography.Pal.AnyOS
 
             switch (algorithmIdentifier)
             {
-                case Oids.Rc2Cbc:
+                case Oids.Rc2Cbc when Helpers.IsRC2Supported:
 #pragma warning disable CA5351
                     alg = RC2.Create();
 #pragma warning restore CA5351
                     break;
+                case Oids.Rc2Cbc:
+                    throw new PlatformNotSupportedException(SR.PlatformNotSupported_RC2);
                 case Oids.DesCbc:
 #pragma warning disable CA5351
                     alg = DES.Create();

@@ -481,4 +481,7 @@
   <data name="Cryptography_UnknownCertContentType" xml:space="preserve">
     <value>The certificate content type could not be determined.</value>
   </data>
+  <data name="PlatformNotSupported_RC2" xml:space="preserve">
+    <value>The required algorithm RC2 is not supported on this platform.</value>
+  </data>
 </root>
