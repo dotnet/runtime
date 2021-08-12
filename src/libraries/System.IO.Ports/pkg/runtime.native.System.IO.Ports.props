@@ -6,6 +6,7 @@
     <IncludeBuildOutput>true</IncludeBuildOutput>
     <DebugSymbols>false</DebugSymbols>
     <DebugType>none</DebugType>
+    <IsPackable>true</IsPackable>
     <AllowedOutputExtensionsInSymbolsPackageBuildOutputFolder>$(SymbolsSuffix)</AllowedOutputExtensionsInSymbolsPackageBuildOutputFolder>
     <TargetsForTfmSpecificDebugSymbolsInPackage>$(TargetsForTfmSpecificDebugSymbolsInPackage);AddRuntimeSpecificNativeSymbolToPackage</TargetsForTfmSpecificDebugSymbolsInPackage>
     <UseRuntimePackageDisclaimer>true</UseRuntimePackageDisclaimer>
@@ -24,14 +25,6 @@
       <TfmSpecificDebugSymbolsFile Include="$(NativeBinDir)$(LibPrefix)System.IO.Ports.Native$(LibSuffix)$(SymbolsSuffix)"
                                    TargetPath="/runtimes/$(OutputRid)/native"
                                    TargetFramework="$(TargetFramework)" />
-    </ItemGroup>
-  </Target>
-
-  <!-- This is necessary as NuGet reads from this item when IncludeBuildOutput is set to true.
-       Remove when https://github.com/microsoft/MSBuildSdks/pull/276 is merged and a new version is consumed. -->
-  <Target Name="ClearBuiltProjectOutputGroupKeyOutput" BeforeTargets="_WalkEachTargetPerFramework;BuiltProjectOutputGroup">
-    <ItemGroup>
-      <BuiltProjectOutputGroupKeyOutput Remove="@(BuiltProjectOutputGroupKeyOutput)" />
     </ItemGroup>
   </Target>
 </Project>

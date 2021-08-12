@@ -262,16 +262,11 @@ HRESULT EditAndContinueModule::ApplyEditAndContinue(
                 // Field is new - add it
                 IfFailGo(AddField(token));
                 break;
-
-            case mdtTypeRef:
-                EnsureTypeRefCanBeStored(token);
-                break;
-
-            case mdtAssemblyRef:
-                EnsureAssemblyRefCanBeStored(token);
-                break;
         }
     }
+
+    // Update the AvailableClassHash for reflection, etc. ensure that the new TypeRefs, AssemblyRefs and MethodDefs can be stored.
+    ApplyMetaData();
 
 ErrExit:
     if (pIMDInternalImportENC)

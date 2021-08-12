@@ -210,6 +210,7 @@ namespace System.Security.Cryptography
             return password;
         }
 
+        [Obsolete(Obsoletions.Rfc2898CryptDeriveKeyMessage, DiagnosticId = Obsoletions.Rfc2898CryptDeriveKeyDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public byte[] CryptDeriveKey(string algname, string alghashname, int keySize, byte[] rgbIV)
         {
             // If this were to be implemented here, CAPI would need to be used (not CNG) because of

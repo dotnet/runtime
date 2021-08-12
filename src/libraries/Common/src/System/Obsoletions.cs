@@ -107,5 +107,8 @@ namespace System
 
         internal const string CorruptedStateRecoveryMessage = "Recovery from corrupted process state exceptions is not supported; HandleProcessCorruptedStateExceptionsAttribute is ignored.";
         internal const string CorruptedStateRecoveryDiagId = "SYSLIB0032";
+
+        internal const string Rfc2898CryptDeriveKeyMessage = "Rfc2898DeriveBytes.CryptDeriveKey is obsolete and is not supported. Use PasswordDeriveBytes.CryptDeriveKey instead.";
+        internal const string Rfc2898CryptDeriveKeyDiagId = "SYSLIB0033";
     }
 }
