@@ -7349,9 +7349,11 @@ namespace System.Tests
             Assert.False(s.IsNormalized(NormalizationForm.FormC), "String should be not normalized when checking with FormC");
             Assert.False(s.IsNormalized(NormalizationForm.FormD), "String should be not normalized when checking with FormD");
 
-            if (PlatformDetection.IsNotBrowser)
+            // Browser's, iOS's, MacCatalyst's, and tvOS's ICU do not support FormKC and FormKD
+            bool supportsKCKD = !PlatformDetection.IsBrowser && !PlatformDetection.IsiOS && !PlatformDetection.IsMacCatalyst && !PlatformDetection.IstvOS;
+
+            if (supportsKCKD)
             {
-                // Browser's ICU doesn't support FormKC and FormKD
                 Assert.False(s.IsNormalized(NormalizationForm.FormKC), "String should be not normalized when checking with FormKC");
                 Assert.False(s.IsNormalized(NormalizationForm.FormKD), "String should be not normalized when checking with FormKD");
             }
@@ -7367,9 +7369,8 @@ namespace System.Tests
             normalized = s.Normalize(NormalizationForm.FormD);
             Assert.True(normalized.IsNormalized(NormalizationForm.FormD), "Expected to have the normalized string with FormD");
 
-            if (PlatformDetection.IsNotBrowser)
+            if (supportsKCKD)
             {
-                // Browser's ICU doesn't support FormKC and FormKD
                 normalized = s.Normalize(NormalizationForm.FormKC);
                 Assert.True(normalized.IsNormalized(NormalizationForm.FormKC), "Expected to have the normalized string with FormKC");
 
@@ -7382,9 +7383,8 @@ namespace System.Tests
             Assert.True(s.IsNormalized(NormalizationForm.FormC));
             Assert.True(s.IsNormalized(NormalizationForm.FormD));
 
-            if (PlatformDetection.IsNotBrowser)
+            if (supportsKCKD)
             {
-                // Browser's ICU doesn't support FormKC and FormKD
                 Assert.True(s.IsNormalized(NormalizationForm.FormKC));
                 Assert.True(s.IsNormalized(NormalizationForm.FormKD));
             }
@@ -7393,9 +7393,8 @@ namespace System.Tests
             Assert.Same(s, s.Normalize(NormalizationForm.FormC));
             Assert.Same(s, s.Normalize(NormalizationForm.FormD));
 
-            if (PlatformDetection.IsNotBrowser)
+            if (supportsKCKD)
             {
-                // Browser's ICU doesn't support FormKC and FormKD
                 Assert.Same(s, s.Normalize(NormalizationForm.FormKC));
                 Assert.Same(s, s.Normalize(NormalizationForm.FormKD));
             }
