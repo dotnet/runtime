@@ -23,9 +23,7 @@ namespace ILVerify
                 return currentClass.CanAccess(((ParameterizedType)targetClass).ParameterType);
 
             if (targetClass.IsFunctionPointer)
-            {
                 return currentClass.CanAccessSignature(((FunctionPointerType)targetClass).Signature);
-            }
 
             // Check access to class instantiations if generic class
             if (targetClass.HasInstantiation && !currentClass.CanAccessInstantiation(targetClass.Instantiation))
@@ -71,7 +69,7 @@ namespace ILVerify
                     return false;
             }
 
-            return currentTypeDef.CanAccessMethodSignature(targetMethod);
+            return currentTypeDef.CanAccessSignature(targetMethod.Signature);
         }
 
         /// <summary>
@@ -171,48 +169,14 @@ namespace ILVerify
             return true;
         }
 
-        private static bool CanAccessMethodSignature(this TypeDesc currentType, MethodDesc targetMethod)
-        {
-            var methodSig = targetMethod.Signature;
-
-            // Check return type
-            var returnType = methodSig.ReturnType;
-            if (returnType.IsParameterizedType)
-                returnType = ((ParameterizedType)returnType).ParameterType;
-
-            if (!returnType.IsGenericParameter && !returnType.IsSignatureVariable // Generic parameters are always accessible
-                && !returnType.IsVoid)
-            {
-                if (!currentType.CanAccess(returnType))
-                    return false;
-            }
-
-            return currentType.CanAccessSignature(methodSig);
-        }
-
         private static bool CanAccessSignature(this TypeDesc currentType, MethodSignature signature)
         {
-            // Check return type
-            var returnType = signature.ReturnType;
-
-            if (returnType.IsByRef)
-                returnType = ((ByRefType)returnType).ParameterType;
-
-            if (!returnType.IsGenericParameter && !returnType.IsSignatureVariable && // Generic parameters are always accessible
-                !currentType.CanAccess(returnType))
+            if (!currentType.CanAccess(signature.ReturnType))
                 return false;
 
-            // Check arguments
             for (int i = 0; i < signature.Length; ++i)
             {
-                var param = signature[i];
-                if (param.IsByRef)
-                    param = ((ByRefType)param).ParameterType;
-
-                if (param.IsGenericParameter || param.IsSignatureVariable)
-                    continue; // Generic parameters are always accessible
-
-                if (!currentType.CanAccess(param))
+                if (!currentType.CanAccess(signature[i]))
                     return false;
             }
 
