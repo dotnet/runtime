@@ -8801,8 +8801,8 @@ uint32_t* gc_heap::make_card_table (uint8_t* start, uint8_t* end)
     }
     bookkeeping_covered_committed = global_region_allocator.get_left_used_unsafe();
 #else
-    // mark array will be committed separately (per segment).
-    size_t commit_size = card_table_element_layout[mark_array_element];
+    // in case of background gc, the mark array will be committed separately (per segment).
+    size_t commit_size = card_table_element_layout[seg_mapping_table_element + 1];
 
     if (!virtual_commit (mem, commit_size, gc_oh_num::none))
     {
@@ -8940,7 +8940,6 @@ int gc_heap::grow_brick_card_tables (uint8_t* start,
         uint32_t* saved_g_card_bundle_table = g_gc_card_bundle_table;
 #endif
         get_card_table_element_layout(saved_g_lowest_address, saved_g_highest_address, card_table_element_layout);
-        size_t alloc_size = card_table_element_layout[total_bookkeeping_elements];
         size_t cb = 0;
         uint32_t* ct = 0;
         uint32_t* translated_ct = 0;
@@ -8958,6 +8957,7 @@ int gc_heap::grow_brick_card_tables (uint8_t* start,
         }
 #endif //CARD_BUNDLE
 
+        size_t alloc_size = card_table_element_layout[total_bookkeeping_elements];
         uint8_t* mem = (uint8_t*)GCToOSInterface::VirtualReserve (alloc_size, 0, virtual_reserve_flags);
 
         if (!mem)
@@ -8970,8 +8970,8 @@ int gc_heap::grow_brick_card_tables (uint8_t* start,
                                  alloc_size, (size_t)mem, (size_t)((uint8_t*)mem+alloc_size)));
 
         {
-            // mark array will be committed separately (per segment).
-            size_t commit_size = card_table_element_layout[total_bookkeeping_elements - 1];
+            // in case of background gc, the mark array will be committed separately (per segment).
+            size_t commit_size = card_table_element_layout[seg_mapping_table_element + 1];
 
             if (!virtual_commit (mem, commit_size, gc_oh_num::none))
             {
