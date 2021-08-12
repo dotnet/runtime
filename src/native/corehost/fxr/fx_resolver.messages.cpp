@@ -112,11 +112,11 @@ void fx_resolver_t::display_missing_framework_error(
     // Display the error message about missing FX.
     if (fx_version.length())
     {
-        trace::error(_X("The framework '%s', version '%s' was not found."), fx_name.c_str(), fx_version.c_str());
+        trace::error(_X("The framework '%s', version '%s' (%s) was not found."), fx_name.c_str(), fx_version.c_str(), get_arch());
     }
     else
     {
-        trace::error(_X("The framework '%s' was not found."), fx_name.c_str());
+        trace::error(_X("The framework '%s' (%s) was not found."), fx_name.c_str(), get_arch());
     }
 
     if (framework_infos.size())
