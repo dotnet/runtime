@@ -37,6 +37,7 @@
 
     .method public hidebysig instance void Call.Dispatcher_Valid() cil managed
     {
+        newobj instance void C::.ctor()
         ldftn void C::StaticMethod(int32)
         call instance void C::MyDispatcher(method void *(int32))
         ret
@@ -44,8 +45,16 @@
 
     .method public hidebysig instance void Call.Dispatcher_Invalid_MethodAccess() cil managed
     {
+        newobj instance void C::.ctor()
         ldftn void D::PrivateStaticMethodOfOtherType(int32)
         call instance void C::MyDispatcher(method void *(int32))
+        ret
+    }
+
+    .method public hidebysig specialname rtspecialname instance void .ctor () cil managed 
+    {
+        ldarg.0
+        call instance void [System.Runtime]System.Object::.ctor()
         ret
     }
 }
