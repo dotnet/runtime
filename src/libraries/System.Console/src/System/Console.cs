@@ -236,16 +236,11 @@ namespace System
         {
             return TextWriter.Synchronized(outputStream == Stream.Null ?
                 StreamWriter.Null :
-                (OperatingSystem.IsIOS() || OperatingSystem.IsTvOS() || OperatingSystem.IsMacCatalyst()) ?
+#if TARGET_IOS || TARGET_TVOS || TARGET_MACCATALYST
                 new IOSStreamWriter(
-                    stream: outputStream,
-                    encoding: OutputEncoding.RemovePreamble(), // This ensures no prefix is written to the stream.
-                    bufferSize: WriteBufferSize,
-                    leaveOpen: true)
-                {
-                    AutoFlush = true
-                } :
+#else
                 new StreamWriter(
+#endif
                     stream: outputStream,
                     encoding: OutputEncoding.RemovePreamble(), // This ensures no prefix is written to the stream.
                     bufferSize: WriteBufferSize,

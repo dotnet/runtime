@@ -26,78 +26,78 @@ namespace System.IO
             ThrowIfDisposed();
 
             // Perf boost for Flush on non-dirty writers.
-            if (innerCharPos == 0 && !flushStream && !flushEncoder)
+            if (InnerCharPos == 0 && !flushStream && !flushEncoder)
             {
                 return;
             }
 
-            if (!innerHaveWrittenPreamble)
+            if (!InnerHaveWrittenPreamble)
             {
-                innerHaveWrittenPreamble = true;
-                ReadOnlySpan<byte> preamble = innerEncoding.Preamble;
+                InnerHaveWrittenPreamble = true;
+                ReadOnlySpan<byte> preamble = InnerEncoding.Preamble;
                 if (preamble.Length > 0)
                 {
-                    innerStream.Write(preamble);
+                    InnerStream.Write(preamble);
                 }
             }
 
             // For sufficiently small char data being flushed, try to encode to the stack.
             // For anything else, fall back to allocating the byte[] buffer.
             Span<byte> byteBuffer = stackalloc byte[0];
-            if (innerByteBuffer is not null)
+            if (InnerByteBuffer is not null)
             {
-                byteBuffer = innerByteBuffer;
+                byteBuffer = InnerByteBuffer;
             }
             else
             {
-                int maxBytesForCharPos = innerEncoding.GetMaxByteCount(innerCharPos);
+                int maxBytesForCharPos = InnerEncoding.GetMaxByteCount(InnerCharPos);
                 byteBuffer = maxBytesForCharPos <= 1024 ? // arbitrary threshold
                     stackalloc byte[1024] :
-                    (innerByteBuffer = new byte[innerEncoding.GetMaxByteCount(innerCharBuffer.Length)]);
+                    (InnerByteBuffer = new byte[InnerEncoding.GetMaxByteCount(InnerCharBuffer.Length)]);
             }
 
-            for (int i = _lineStartPos; i < innerCharPos; i++)
+            for (int i = _lineStartPos; i < InnerCharPos; i++)
             {
-                if (innerCharBuffer[i] == '\n')
+                if (InnerCharBuffer[i] == '\n')
                 {
-                    int count = innerEncoder.GetBytes(new ReadOnlySpan<char>(innerCharBuffer, _lineStartPos, i - _lineStartPos), byteBuffer, flushEncoder);
+                    int count = InnerEncoder.GetBytes(new ReadOnlySpan<char>(InnerCharBuffer, _lineStartPos, i - _lineStartPos), byteBuffer, flushEncoder);
                     if (count > 0)
                     {
                         _acc.AddRange(byteBuffer.Slice(0, count).ToArray());
                     }
 
-                    innerStream.Write(CollectionsMarshal.AsSpan(_acc));
+                    InnerStream.Write(CollectionsMarshal.AsSpan(_acc));
                     _acc.Clear();
 
                     _lineStartPos = i + 1;
                 }
             }
 
-            if (_lineStartPos < innerCharPos)
+            if (_lineStartPos < InnerCharPos)
             {
-                int count = innerEncoder.GetBytes(new ReadOnlySpan<char>(innerCharBuffer, _lineStartPos, innerCharPos - _lineStartPos), byteBuffer, flushEncoder);
+                int count = InnerEncoder.GetBytes(new ReadOnlySpan<char>(InnerCharBuffer, _lineStartPos, InnerCharPos - _lineStartPos), byteBuffer, flushEncoder);
                 if (count > 0)
                 {
                     _acc.AddRange(byteBuffer.Slice(0, count).ToArray());
                 }
             }
 
-            innerCharPos = 0;
+            InnerCharPos = 0;
             _lineStartPos = 0;
 
             if (flushStream && flushEncoder)
             {
-                var accArray = _acc.ToArray();
-                if (accArray.Length > 0)
+                var accSpan = CollectionsMarshal.AsSpan(_acc);
+                if (accSpan.Length > 0)
                 {
-                    innerStream.Write(accArray.AsSpan<byte>().Slice(0, accArray.Length));
+                    InnerStream.Write(accSpan.Slice(0, accSpan.Length));
                     _acc.Clear();
                 }
             }
 
             if (flushStream)
             {
-                innerStream.Flush();
+                InnerStream.Flush();
             }
         }
     }

@@ -10694,13 +10694,13 @@ namespace System.IO
     }
     public partial class StreamWriter : System.IO.TextWriter
     {
-        protected internal readonly System.IO.Stream innerStream;
-        protected internal readonly System.Text.Encoding innerEncoding;
-        protected internal readonly System.Text.Encoder innerEncoder;
-        protected internal byte[]? innerByteBuffer;
-        protected internal readonly char[] innerCharBuffer;
-        protected internal int innerCharPos;
-        protected internal bool innerHaveWrittenPreamble;
+        protected internal readonly System.IO.Stream InnerStream;
+        protected internal readonly System.Text.Encoding InnerEncoding;
+        protected internal readonly System.Text.Encoder InnerEncoder;
+        protected internal byte[]? InnerByteBuffer;
+        protected internal readonly char[] InnerCharBuffer;
+        protected internal int InnerCharPos;
+        protected internal bool InnerHaveWrittenPreamble;
         protected internal void ThrowIfDisposed() { }
         protected virtual void Flush(bool flushStream, bool flushEncoder) {}
         public static readonly new System.IO.StreamWriter Null;
