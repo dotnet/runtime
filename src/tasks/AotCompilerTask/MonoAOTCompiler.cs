@@ -385,6 +385,7 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
         var aotArgs = new List<string>();
         var processArgs = new List<string>();
         bool isDedup = assembly == DedupAssembly;
+        List<ProxyFile> proxyFiles = new(capacity: 5);
         string msgPrefix = $"[{Path.GetFileName(assembly)}] ";
 
         var a = assemblyItem.GetMetadata("AotArguments");
@@ -447,16 +448,15 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
             aotArgs.Add("dedup-skip");
         }
 
-        string tmpOutputFile;
-
         // compute output mode and file names
         if (parsedAotMode == MonoAotMode.LLVMOnly || parsedAotMode == MonoAotMode.LLVMOnlyInterp)
         {
             aotArgs.Add("llvmonly");
 
             string llvmBitcodeFile = Path.Combine(OutputDir, Path.ChangeExtension(assemblyFilename, ".dll.bc"));
-            tmpOutputFile = llvmBitcodeFile + ".tmp";
-            aotAssembly.SetMetadata("LlvmBitcodeFile", llvmBitcodeFile);
+            ProxyFile proxyFile = new(llvmBitcodeFile);
+            proxyFiles.Add(proxyFile);
+            aotAssembly.SetMetadata("LlvmBitcodeFile", proxyFile.TargetFile);
 
             if (parsedAotMode == MonoAotMode.LLVMOnlyInterp)
             {
@@ -466,11 +466,11 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
             if (parsedOutputType == MonoAotOutputType.AsmOnly)
             {
                 aotArgs.Add("asmonly");
-                aotArgs.Add($"llvm-outfile={tmpOutputFile}");
+                aotArgs.Add($"llvm-outfile={proxyFile.TempFile}");
             }
             else
             {
-                aotArgs.Add($"outfile={tmpOutputFile}");
+                aotArgs.Add($"outfile={proxyFile.TempFile}");
             }
         }
         else
@@ -495,9 +495,10 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
                 case MonoAotOutputType.ObjectFile:
                 {
                     string objectFile = Path.Combine(OutputDir, Path.ChangeExtension(assemblyFilename, ".dll.o"));
-                    tmpOutputFile = objectFile + ".tmp";
-                    aotArgs.Add($"outfile={tmpOutputFile}");
-                    aotAssembly.SetMetadata("ObjectFile", objectFile);
+                    ProxyFile proxyFile = new(objectFile);
+                    proxyFiles.Add((proxyFile));
+                    aotArgs.Add($"outfile={proxyFile.TempFile}");
+                    aotAssembly.SetMetadata("ObjectFile", proxyFile.TargetFile);
                 }
                 break;
 
@@ -506,9 +507,10 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
                     aotArgs.Add("asmonly");
 
                     string assemblerFile = Path.Combine(OutputDir, Path.ChangeExtension(assemblyFilename, ".dll.s"));
-                    tmpOutputFile = assemblerFile + ".tmp";
-                    aotArgs.Add($"outfile={tmpOutputFile}");
-                    aotAssembly.SetMetadata("AssemblerFile", assemblerFile);
+                    ProxyFile proxyFile = new(assemblerFile);
+                    proxyFiles.Add(proxyFile);
+                    aotArgs.Add($"outfile={proxyFile.TempFile}");
+                    aotAssembly.SetMetadata("AssemblerFile", proxyFile.TargetFile);
                 }
                 break;
 
@@ -522,10 +524,11 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
                     };
                     string libraryFileName = $"{LibraryFilePrefix}{assemblyFilename}{extension}";
                     string libraryFilePath = Path.Combine(OutputDir, libraryFileName);
-                    tmpOutputFile = libraryFilePath + ".tmp";
+                    ProxyFile proxyFile = new(libraryFilePath);
+                    proxyFiles.Add(proxyFile);
 
-                    aotArgs.Add($"outfile={tmpOutputFile}");
-                    aotAssembly.SetMetadata("LibraryFile", libraryFilePath);
+                    aotArgs.Add($"outfile={proxyFile.TempFile}");
+                    aotAssembly.SetMetadata("LibraryFile", proxyFile.TargetFile);
                 }
                 break;
 
@@ -536,9 +539,10 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
             if (UseLLVM)
             {
                 string llvmObjectFile = Path.Combine(OutputDir, Path.ChangeExtension(assemblyFilename, ".dll-llvm.o"));
-                tmpOutputFile = llvmObjectFile;
-                aotArgs.Add($"llvm-outfile={tmpOutputFile}");
-                aotAssembly.SetMetadata("LlvmObjectFile", llvmObjectFile);
+                ProxyFile proxyFile = new(llvmObjectFile);
+                proxyFiles.Add(proxyFile);
+                aotArgs.Add($"llvm-outfile={proxyFile.TempFile}");
+                aotAssembly.SetMetadata("LlvmObjectFile", proxyFile.TargetFile);
             }
         }
 
@@ -649,14 +653,27 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
             return false;
         }
 
-        if (!File.Exists(tmpOutputFile))
+
+        bool copied = false;
+        foreach (var proxyFile in proxyFiles)
         {
-            Log.LogError($"Precompiling failed for {assembly}. Could not find output file {tmpOutputFile}");
-            return false;
+            if (!File.Exists(proxyFile.TempFile))
+            {
+                Log.LogError($"Precompiling failed for {assembly}. Could not find output file {proxyFile.TempFile}");
+                return false;
+            }
+
+            copied |= CopyOutputFileIfChanged(proxyFile);
+            File.Delete(proxyFile.TempFile);
         }
 
-        CopyOutputFileIfChanged(assembly, tmpOutputFile);
-        File.Delete(tmpOutputFile);
+        if (copied)
+        {
+            string copiedFiles = string.Join(", ", proxyFiles.Select(tf => Path.GetFileName(tf.TargetFile)));
+            int count = Interlocked.Increment(ref _numCompiled);
+            Log.LogMessage(MessageImportance.High, $"[{count}/{_totalNumAssemblies}] {Path.GetFileName(assembly)} -> {copiedFiles}");
+        }
+
         File.Delete(responseFilePath);
 
         compiledAssemblies.GetOrAdd(aotAssembly.ItemSpec, aotAssembly);
@@ -699,33 +716,22 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
         }
     }
 
-    private void CopyOutputFileIfChanged(string assemblyPath, string tmpOutputFile)
+    private bool CopyOutputFileIfChanged(ProxyFile proxyFile)
     {
-        if (Path.GetExtension(tmpOutputFile) != ".tmp")
-        {
-            Log.LogWarning($"Bug: expected tmpOutputFile to end in .tmp: {tmpOutputFile}");
-            return;
-        }
-
-        string finalOutputFile = Path.Combine(Path.GetDirectoryName(tmpOutputFile) ?? string.Empty,
-                                            Path.GetFileNameWithoutExtension(tmpOutputFile));
-
         if (!ShouldCopy(out string? cause))
         {
-            Log.LogMessage(MessageImportance.Low, $"Skipping copying over {finalOutputFile} as the contents are unchanged");
-            return;
+            Log.LogMessage(MessageImportance.Low, $"Skipping copying over {proxyFile.TargetFile} as the contents are unchanged");
+            return false;
         }
 
-        if (File.Exists(finalOutputFile))
-            File.Delete(finalOutputFile);
+        if (File.Exists(proxyFile.TargetFile))
+            File.Delete(proxyFile.TargetFile);
 
-        File.Copy(tmpOutputFile, finalOutputFile);
+        File.Copy(proxyFile.TempFile, proxyFile.TargetFile);
 
-        Log.LogMessage(MessageImportance.Low, $"Copying {tmpOutputFile} to {finalOutputFile} because {cause}");
-        _fileWrites.Add(finalOutputFile);
-
-        int count = Interlocked.Increment(ref _numCompiled);
-        Log.LogMessage(MessageImportance.High, $"[{count}/{_totalNumAssemblies}] {Path.GetFileName(assemblyPath)} -> {Path.GetFileName(finalOutputFile)}");
+        Log.LogMessage(MessageImportance.Low, $"Copying {proxyFile.TempFile} to {proxyFile.TargetFile} because {cause}");
+        _fileWrites.Add(proxyFile.TargetFile);
+        return true;
 
         bool ShouldCopy([NotNullWhen(true)] out string? cause)
         {
@@ -738,18 +744,18 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
                 return true;
             }
 
-            string newHash = Utils.ComputeHash(tmpOutputFile);
-            _newCache!.FileHashes[finalOutputFile] = newHash;
+            string newHash = Utils.ComputeHash(proxyFile.TempFile);
+            _newCache!.FileHashes[proxyFile.TargetFile] = newHash;
 
-            if (!File.Exists(finalOutputFile))
+            if (!File.Exists(proxyFile.TargetFile))
             {
                 cause = $"the output file didn't exist";
                 return true;
             }
 
             string? oldHash;
-            if (!_oldCache!.FileHashes.TryGetValue(finalOutputFile, out oldHash))
-                oldHash = Utils.ComputeHash(finalOutputFile);
+            if (!_oldCache!.FileHashes.TryGetValue(proxyFile.TargetFile, out oldHash))
+                oldHash = Utils.ComputeHash(proxyFile.TargetFile);
 
             if (oldHash != newHash)
             {
@@ -911,6 +917,18 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
         }
         return outItems;
     }
+
+    internal class ProxyFile
+    {
+        public ProxyFile(string targetFile)
+        {
+            this.TargetFile = targetFile;
+            this.TempFile = targetFile + ".tmp";
+        }
+
+        public string TargetFile { get; }
+        public string TempFile   { get; }
+    }
 }
 
 public enum MonoAotMode
@@ -946,6 +964,6 @@ public enum MonoAotModulesTableLanguage
 
 internal class CompilerCache
 {
-    [JsonPropertyName("assembly_hashes")]
+    [JsonPropertyName("file_hashes")]
     public ConcurrentDictionary<string, string> FileHashes { get; set; } = new();
 }
