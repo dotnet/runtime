@@ -237,12 +237,14 @@ namespace Microsoft.NET.HostModel.Tests
                    sourceAppHostMock,
                    destinationFilePath,
                    appBinaryFilePath,
-                   windowsGraphicalUserInterface: false,
-                   enableMacOSCodeSign: true);
+                   windowsGraphicalUserInterface: false);
 
+                CodeSign.CodeSignAppHost(destinationFilePath);
                 const string codesign = @"/usr/bin/codesign";
                 var psi = new ProcessStartInfo()
                 {
+                    // Display contents. If used on an unsigned binary f, it will print
+                    // f: code object not signed at all.
                     Arguments = $"-d \"{destinationFilePath}\"",
                     FileName = codesign,
                     RedirectStandardError = true,
@@ -308,18 +310,13 @@ namespace Microsoft.NET.HostModel.Tests
                    sourceAppHostMock,
                    destinationFilePath,
                    appBinaryFilePath,
-                   windowsGraphicalUserInterface: false,
-                   enableMacOSCodeSign: true);
+                   windowsGraphicalUserInterface: false);
 
-                // Run CreateAppHost again to sign the apphost a second time,
-                // causing codesign to fail.
+                CodeSign.CodeSignAppHost(destinationFilePath);
+                // Run CodeSignAppHost a second time causing codesign to fail.
                 var exception = Assert.Throws<AppHostSigningException>(() =>
-                    HostWriter.CreateAppHost(
-                    sourceAppHostMock,
-                    destinationFilePath,
-                    appBinaryFilePath,
-                    windowsGraphicalUserInterface: false,
-                    enableMacOSCodeSign: true));
+                    CodeSign.CodeSignAppHost(destinationFilePath));
+
                 Assert.Contains($"{destinationFilePath}: is already signed", exception.Message);
             }
         }
