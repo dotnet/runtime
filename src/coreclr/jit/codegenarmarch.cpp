@@ -1154,13 +1154,14 @@ void CodeGen::genPutArgSplit(GenTreePutArgSplit* treeNode)
     emitter* emit         = GetEmitter();
     unsigned varNumOut    = compiler->lvaOutgoingArgSpaceVar;
     unsigned argOffsetMax = compiler->lvaOutgoingArgSpaceSize;
-    unsigned argOffsetOut = treeNode->getArgOffset();
 
     if (source->OperGet() == GT_FIELD_LIST)
     {
         // Evaluate each of the GT_FIELD_LIST items into their register
         // and store their register into the outgoing argument area
-        unsigned regIndex = 0;
+        unsigned regIndex         = 0;
+        unsigned firstOnStackOffs = UINT_MAX;
+
         for (GenTreeFieldList::Use& use : source->AsFieldList()->Uses())
         {
             GenTree*  nextArgNode = use.GetNode();
@@ -1169,14 +1170,19 @@ void CodeGen::genPutArgSplit(GenTreePutArgSplit* treeNode)
 
             if (regIndex >= treeNode->gtNumRegs)
             {
+                if (firstOnStackOffs == UINT_MAX)
+                    firstOnStackOffs = use.GetOffset();
+
                 var_types type = nextArgNode->TypeGet();
                 emitAttr  attr = emitTypeSize(type);
 
+                unsigned offset = treeNode->getArgOffset() + use.GetOffset() - firstOnStackOffs;
+                // We can't write beyound the outgoing area area
+                assert(offset + EA_SIZE_IN_BYTES(attr) <= argOffsetMax); 
+
                 // Emit store instructions to store the registers produced by the GT_FIELD_LIST into the outgoing
                 // argument area
-                emit->emitIns_S_R(ins_Store(type), attr, fieldReg, varNumOut, argOffsetOut);
-                argOffsetOut += EA_SIZE_IN_BYTES(attr);
-                assert(argOffsetOut <= argOffsetMax); // We can't write beyound the outgoing area area
+                emit->emitIns_S_R(ins_Store(type), attr, fieldReg, varNumOut, offset);
             }
             else
             {
@@ -1287,6 +1293,7 @@ void CodeGen::genPutArgSplit(GenTreePutArgSplit* treeNode)
         unsigned nextIndex     = treeNode->gtNumRegs;
         unsigned structOffset  = nextIndex * TARGET_POINTER_SIZE;
         int      remainingSize = treeNode->GetStackByteSize();
+        unsigned argOffsetOut  = treeNode->getArgOffset();
 
         // remainingSize is always multiple of TARGET_POINTER_SIZE
         assert(remainingSize % TARGET_POINTER_SIZE == 0);
