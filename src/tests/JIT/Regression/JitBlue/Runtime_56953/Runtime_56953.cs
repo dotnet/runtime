@@ -62,8 +62,15 @@ public class TestClass13
     }
     public static int Main(string[] args)
     {
-        TestClass13 objTestClass13 = new TestClass13();
-        objTestClass13.Method0();
+        try
+        {
+          TestClass13 objTestClass13 = new TestClass13();
+          objTestClass13.Method0();
+        }
+        catch(Exception)
+        {
+            // ignore exceptions
+        }
         return 100;
     }
 }
