@@ -1085,7 +1085,7 @@ namespace System.Security.Cryptography
         {
             if (!Helpers.IsRC2Supported)
             {
-                throw new PlatformNotSupportedException(SR.PlatformNotSupported_RC2);
+                throw new PlatformNotSupportedException(SR.Format(SR.Cryptography_AlgorithmNotSupported, nameof(RC2)));
             }
 
             return RC2.Create();

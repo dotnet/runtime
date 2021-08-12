@@ -172,7 +172,7 @@ namespace Internal.Cryptography.Pal.AnyOS
 #pragma warning restore CA5351
                     break;
                 case Oids.Rc2Cbc:
-                    throw new PlatformNotSupportedException(SR.PlatformNotSupported_RC2);
+                    throw new PlatformNotSupportedException(SR.Format(SR.Cryptography_AlgorithmNotSupported, nameof(RC2)));
                 case Oids.DesCbc:
 #pragma warning disable CA5351
                     alg = DES.Create();

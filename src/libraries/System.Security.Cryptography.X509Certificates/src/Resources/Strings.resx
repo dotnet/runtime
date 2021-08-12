@@ -367,6 +367,9 @@
   <data name="Unknown_Error" xml:space="preserve">
     <value>Unknown error.</value>
   </data>
+  <data name="Cryptography_AlgorithmNotSupported" xml:space="preserve">
+    <value>Algorithm '{0}' is not supported on this platform.</value>
+  </data>
   <data name="Cryptography_FileStatusError" xml:space="preserve">
     <value>Unable to get file status.</value>
   </data>
@@ -480,8 +483,5 @@
   </data>
   <data name="Cryptography_UnknownCertContentType" xml:space="preserve">
     <value>The certificate content type could not be determined.</value>
-  </data>
-  <data name="PlatformNotSupported_RC2" xml:space="preserve">
-    <value>The required algorithm RC2 is not supported on this platform.</value>
   </data>
 </root>
