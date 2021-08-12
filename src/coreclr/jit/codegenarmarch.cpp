@@ -757,7 +757,7 @@ void CodeGen::genPutArgStk(GenTreePutArgStk* treeNode)
                 emit->emitIns_S_R(INS_str, storeAttr, srcReg, varNumOut, argOffsetOut);
                 argOffsetOut += EA_SIZE_IN_BYTES(storeAttr);
             }
-            assert(argOffsetOut <= argOffsetMax); // We can't write beyound the outgoing area area
+            assert(argOffsetOut <= argOffsetMax); // We can't write beyond the outgoing arg area
             return;
         }
 
@@ -810,7 +810,7 @@ void CodeGen::genPutArgStk(GenTreePutArgStk* treeNode)
 #endif // TARGET_ARM
         }
         argOffsetOut += EA_SIZE_IN_BYTES(storeAttr);
-        assert(argOffsetOut <= argOffsetMax); // We can't write beyound the outgoing area area
+        assert(argOffsetOut <= argOffsetMax); // We can't write beyond the outgoing arg area
     }
     else // We have some kind of a struct argument
     {
@@ -1005,7 +1005,7 @@ void CodeGen::genPutArgStk(GenTreePutArgStk* treeNode)
                 emit->emitIns_S_S_R_R(INS_stp, emitTypeSize(type0), emitTypeSize(type1), loReg, hiReg, varNumOut,
                                       argOffsetOut);
                 argOffsetOut += (2 * TARGET_POINTER_SIZE); // We stored 16-bytes of the struct
-                assert(argOffsetOut <= argOffsetMax);      // We can't write beyound the outgoing area area
+                assert(argOffsetOut <= argOffsetMax);      // We can't write beyond the outgoing arg area
 
                 remainingSize -= (2 * TARGET_POINTER_SIZE); // We loaded 16-bytes of the struct
                 structOffset += (2 * TARGET_POINTER_SIZE);
@@ -1036,7 +1036,7 @@ void CodeGen::genPutArgStk(GenTreePutArgStk* treeNode)
                 // Emit str instruction to store the register into the outgoing argument area
                 emit->emitIns_S_R(INS_str, emitTypeSize(type), loReg, varNumOut, argOffsetOut);
                 argOffsetOut += TARGET_POINTER_SIZE;  // We stored 4-bytes of the struct
-                assert(argOffsetOut <= argOffsetMax); // We can't write beyound the outgoing area area
+                assert(argOffsetOut <= argOffsetMax); // We can't write beyond the outgoing arg area
 
                 remainingSize -= TARGET_POINTER_SIZE; // We loaded 4-bytes of the struct
                 structOffset += TARGET_POINTER_SIZE;
@@ -1100,7 +1100,7 @@ void CodeGen::genPutArgStk(GenTreePutArgStk* treeNode)
                 instruction storeIns = ins_Store(type);
                 emit->emitIns_S_R(storeIns, attr, loReg, varNumOut, argOffsetOut);
                 argOffsetOut += moveSize;
-                assert(argOffsetOut <= argOffsetMax); // We can't write beyound the outgoing area area
+                assert(argOffsetOut <= argOffsetMax); // We can't write beyond the outgoing arg area
 
                 structOffset += moveSize;
                 nextIndex++;
@@ -1177,7 +1177,7 @@ void CodeGen::genPutArgSplit(GenTreePutArgSplit* treeNode)
                 emitAttr  attr = emitTypeSize(type);
 
                 unsigned offset = treeNode->getArgOffset() + use.GetOffset() - firstOnStackOffs;
-                // We can't write beyound the outgoing area area
+                // We can't write beyond the outgoing arg area
                 assert(offset + EA_SIZE_IN_BYTES(attr) <= argOffsetMax); 
 
                 // Emit store instructions to store the registers produced by the GT_FIELD_LIST into the outgoing
@@ -1318,7 +1318,7 @@ void CodeGen::genPutArgSplit(GenTreePutArgSplit* treeNode)
             // Emit str instruction to store the register into the outgoing argument area
             emit->emitIns_S_R(INS_str, emitTypeSize(type), baseReg, varNumOut, argOffsetOut);
             argOffsetOut += TARGET_POINTER_SIZE;  // We stored 4-bytes of the struct
-            assert(argOffsetOut <= argOffsetMax); // We can't write beyound the outgoing area area
+            assert(argOffsetOut <= argOffsetMax); // We can't write beyond the outgoing arg area
             remainingSize -= TARGET_POINTER_SIZE; // We loaded 4-bytes of the struct
             structOffset += TARGET_POINTER_SIZE;
             nextIndex += 1;
