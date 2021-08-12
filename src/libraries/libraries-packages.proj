@@ -18,6 +18,7 @@
     <ProjectReference Include="$(PkgDir)*\*.proj" Exclude="$(PkgDir)test\*" Condition="'$(BuildAllOOBPackages)' == 'true'" />
     <ProjectReference Include="$(MSBuildThisFileDirectory)*\pkg\**\*.pkgproj" Condition="('$(BuildAllConfigurations)' == 'true' or '$(DotNetBuildFromSource)' == 'true') And '$(BuildAllOOBPackages)' == 'true'" />
     <!-- If setting BuildAllOOBPackages to false, add bellow the individual OOB packages you want to continue to build -->
+    <ProjectReference Include="$(PkgDir)\Microsoft.NETCore.Platforms\Microsoft.NETCore.Platforms.proj" />
     <!-- This is merge marker 1 to help automerge -->
     <!-- This is merge marker 2 to help automerge --> 
     <!-- This is merge marker 3 to help automerge --> 
