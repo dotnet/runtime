@@ -110,5 +110,8 @@ namespace System
 
         internal const string Rfc2898CryptDeriveKeyMessage = "Rfc2898DeriveBytes.CryptDeriveKey is obsolete and is not supported. Use PasswordDeriveBytes.CryptDeriveKey instead.";
         internal const string Rfc2898CryptDeriveKeyDiagId = "SYSLIB0033";
+
+        internal const string CmsSignerCspParamsCtorMessage = "CmsSigner(CspParameters) is obsolete and is not supported. Use an alternative constructor instead.";
+        internal const string CmsSignerCspParamsCtorDiagId = "SYSLIB0034";
     }
 }
