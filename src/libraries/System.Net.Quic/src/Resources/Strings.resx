@@ -165,6 +165,9 @@
   <data name="net_quic_cert_chain_validation" xml:space="preserve">
     <value>The remote certificate is invalid because of errors in the certificate chain: {0}</value>
   </data>
+  <data name="net_quic_not_connected" xml:space="preserve">
+    <value>Connection is not connected.</value>
+  </data>
   <data name="net_ssl_app_protocols_invalid" xml:space="preserve">
     <value>The application protocol list is invalid.</value>
   </data>

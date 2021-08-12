@@ -7,6 +7,7 @@ using System.Collections.Immutable;
 using System.Globalization;
 using System.Linq;
 using System.Reflection;
+using System.Text.Json;
 using Microsoft.CodeAnalysis;
 
 namespace System.Text.Json.Reflection
@@ -139,7 +140,7 @@ namespace System.Text.Json.Reflection
                             sb.Insert(0, $"{currentSymbol.Name}+");
                         }
 
-                        if (!string.IsNullOrWhiteSpace(Namespace))
+                        if (!string.IsNullOrWhiteSpace(Namespace) && Namespace != JsonConstants.GlobalNamespaceValue)
                         {
                             sb.Insert(0, $"{Namespace}.");
                         }

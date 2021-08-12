@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Runtime.CompilerServices;
 using Xunit;
 
 namespace System.Reflection.Metadata
@@ -176,6 +177,41 @@ namespace System.Reflection.Metadata
                 Assert.Equal(1, cattrs.Length);
                 string p = (cattrs[0] as System.Reflection.Metadata.ApplyUpdate.Test.MyDeleteAttribute).StringValue;
                 Assert.Equal("Not Deleted", p);
+            });
+        }
+
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/52993", TestRuntimes.Mono)]
+        [ConditionalFact(typeof(ApplyUpdateUtil), nameof (ApplyUpdateUtil.IsSupported))]
+        public void AsyncMethodChanges()
+        {
+            // Test that changing an async method doesn't cause any type load exceptions
+            ApplyUpdateUtil.TestCase(static () =>
+            {
+                Assembly assembly = typeof(System.Reflection.Metadata.ApplyUpdate.Test.AsyncMethodChange).Assembly;
+
+                ApplyUpdateUtil.ApplyUpdate(assembly);
+                ApplyUpdateUtil.ClearAllReflectionCaches();
+
+                Type ty = typeof(System.Reflection.Metadata.ApplyUpdate.Test.AsyncMethodChange);
+                Assert.NotNull(ty);
+
+                MethodInfo mi = ty.GetMethod(nameof(System.Reflection.Metadata.ApplyUpdate.Test.AsyncMethodChange.TestTaskMethod), BindingFlags.Public | BindingFlags.Static);
+                Assert.NotNull(mi);
+
+                string result = ApplyUpdate.Test.AsyncMethodChange.TestTaskMethod().GetAwaiter().GetResult();
+                Assert.Equal("TestTaskMethod v1", result);
+
+                object[] attributes = mi.GetCustomAttributes(true);
+                Assert.NotNull(attributes);
+                Assert.True(attributes.Length > 0);
+
+                foreach (var attribute in attributes)
+                {
+                    if (attribute is AsyncStateMachineAttribute asm)
+                    {
+                        Assert.Contains("<TestTaskMethod>", asm.StateMachineType.Name);
+                    }
+                }
             });
         }
 

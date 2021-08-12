@@ -12,7 +12,6 @@ using System.Threading;
 using System.Threading.Channels;
 using System.Threading.Tasks;
 using static System.Net.Quic.Implementations.MsQuic.Internal.MsQuicNativeMethods;
-using System.Security.Authentication;
 
 namespace System.Net.Quic.Implementations.MsQuic
 {
@@ -219,15 +218,14 @@ namespace System.Net.Quic.Implementations.MsQuic
             IntPtr context,
             ref ListenerEvent evt)
         {
-            if (evt.Type != QUIC_LISTENER_EVENT.NEW_CONNECTION)
-            {
-                return MsQuicStatusCodes.InternalError;
-            }
-
             GCHandle gcHandle = GCHandle.FromIntPtr(context);
             Debug.Assert(gcHandle.IsAllocated);
             Debug.Assert(gcHandle.Target is not null);
             var state = (State)gcHandle.Target;
+            if (evt.Type != QUIC_LISTENER_EVENT.NEW_CONNECTION)
+            {
+                return MsQuicStatusCodes.InternalError;
+            }
 
             SafeMsQuicConnectionHandle? connectionHandle = null;
             MsQuicConnection? msQuicConnection = null;

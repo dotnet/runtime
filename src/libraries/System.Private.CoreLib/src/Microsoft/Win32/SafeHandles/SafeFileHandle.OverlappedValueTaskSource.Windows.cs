@@ -142,13 +142,14 @@ namespace Microsoft.Win32.SafeHandles
             private void ReleaseResources()
             {
                 _strategy = null;
-                // Unpin any pinned buffer.
-                _memoryHandle.Dispose();
 
                 // Ensure that any cancellation callback has either completed or will never run,
                 // so that we don't try to access an overlapped for this operation after it's already
                 // been freed.
                 _cancellationRegistration.Dispose();
+
+                // Unpin any pinned buffer.
+                _memoryHandle.Dispose();
 
                 // Free the overlapped.
                 if (_overlapped != null)
@@ -195,15 +196,8 @@ namespace Microsoft.Win32.SafeHandles
 
             internal void Complete(uint errorCode, uint numBytes)
             {
-                Debug.Assert(errorCode == Interop.Errors.ERROR_SUCCESS || numBytes == 0, $"Callback returned {errorCode} error and {numBytes} bytes");
-
                 OSFileStreamStrategy? strategy = _strategy;
                 ReleaseResources();
-
-                if (strategy is not null && _bufferSize != numBytes) // true only for incomplete operations
-                {
-                    strategy.OnIncompleteOperation(_bufferSize, (int)numBytes);
-                }
 
                 switch (errorCode)
                 {
@@ -211,11 +205,16 @@ namespace Microsoft.Win32.SafeHandles
                     case Interop.Errors.ERROR_BROKEN_PIPE:
                     case Interop.Errors.ERROR_NO_DATA:
                     case Interop.Errors.ERROR_HANDLE_EOF: // logically success with 0 bytes read (read at end of file)
+                        if (_bufferSize != numBytes) // true only for incomplete operations
+                        {
+                            strategy?.OnIncompleteOperation(_bufferSize, (int)numBytes);
+                        }
                         // Success
                         _source.SetResult((int)numBytes);
                         break;
 
                     case Interop.Errors.ERROR_OPERATION_ABORTED:
+                        strategy?.OnIncompleteOperation(_bufferSize, 0); // don't use numBytes here, as it can be != 0 for this errorCode (#57212)
                         // Cancellation
                         CancellationToken ct = _cancellationRegistration.Token;
                         _source.SetException(ct.IsCancellationRequested ? new OperationCanceledException(ct) : new OperationCanceledException());
@@ -223,6 +222,7 @@ namespace Microsoft.Win32.SafeHandles
 
                     default:
                         // Failure
+                        strategy?.OnIncompleteOperation(_bufferSize, 0);
                         _source.SetException(Win32Marshal.GetExceptionForWin32Error((int)errorCode));
                         break;
                 }
