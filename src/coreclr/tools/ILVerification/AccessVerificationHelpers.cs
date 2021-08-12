@@ -3,7 +3,6 @@
 
 using System;
 using System.Diagnostics;
-using System.Linq;
 using System.Reflection;
 using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
@@ -28,7 +27,7 @@ namespace ILVerify
                 var signatureBeingPointed = ((FunctionPointerType)targetClass).Signature;
 
                 return currentClass.CanAccess(signatureBeingPointed.ReturnType) &&
-                    signatureBeingPointed._parameters.All(currentClass.CanAccess);
+                    currentClass.CanAccessSignatureArguments(signatureBeingPointed);
             }
 
 #if false
@@ -205,10 +204,15 @@ namespace ILVerify
                     return false;
             }
 
+            return currentType.CanAccessSignatureArguments(methodSig);
+        }
+
+        private static bool CanAccessSignatureArguments(this TypeDesc currentType, MethodSignature signature)
+        {
             // Check arguments
-            for (int i = 0; i < methodSig.Length; ++i)
+            for (int i = 0; i < signature.Length; ++i)
             {
-                var param = methodSig[i];
+                var param = signature[i];
                 if (param.IsByRef)
                     param = ((ByRefType)param).ParameterType;
 
