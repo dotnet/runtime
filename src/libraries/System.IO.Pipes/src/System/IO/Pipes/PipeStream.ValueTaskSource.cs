@@ -1,57 +1,25 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
 using System.Buffers;
 using System.Diagnostics;
-using System.IO;
-using System.IO.Strategies;
 using System.Threading;
 using System.Threading.Tasks.Sources;
 
-namespace Microsoft.Win32.SafeHandles
+namespace System.IO.Pipes
 {
-    public sealed partial class SafeFileHandle : SafeHandleZeroOrMinusOneIsInvalid
+    public abstract partial class PipeStream : Stream
     {
-        private OverlappedValueTaskSource? _reusableOverlappedValueTaskSource; // reusable OverlappedValueTaskSource that is currently NOT being used
-
-        // Rent the reusable OverlappedValueTaskSource, or create a new one to use if we couldn't get one (which
-        // should only happen on first use or if the SafeFileHandle is being used concurrently).
-        internal OverlappedValueTaskSource GetOverlappedValueTaskSource() =>
-            Interlocked.Exchange(ref _reusableOverlappedValueTaskSource, null) ?? new OverlappedValueTaskSource(this);
-
-        protected override bool ReleaseHandle()
-        {
-            bool result = Interop.Kernel32.CloseHandle(handle);
-
-            Interlocked.Exchange(ref _reusableOverlappedValueTaskSource, null)?.Dispose();
-
-            return result;
-        }
-
-        private void TryToReuse(OverlappedValueTaskSource source)
-        {
-            source._source.Reset();
-
-            if (Interlocked.CompareExchange(ref _reusableOverlappedValueTaskSource, source, null) is not null)
-            {
-                source._preallocatedOverlapped.Dispose();
-            }
-        }
-
-        /// <summary>Reusable IValueTaskSource for RandomAccess async operations based on Overlapped I/O.</summary>
-        internal sealed unsafe class OverlappedValueTaskSource : IValueTaskSource<int>, IValueTaskSource
+        internal abstract unsafe class PipeValueTaskSource : IValueTaskSource<int>, IValueTaskSource
         {
             internal static readonly IOCompletionCallback s_ioCallback = IOCallback;
 
             internal readonly PreAllocatedOverlapped _preallocatedOverlapped;
-            internal readonly SafeFileHandle _fileHandle;
-            private OSFileStreamStrategy? _strategy;
+            internal readonly PipeStream _pipeStream;
             internal MemoryHandle _memoryHandle;
-            private int _bufferSize;
             internal ManualResetValueTaskSourceCore<int> _source; // mutable struct; do not make this readonly
-            private NativeOverlapped* _overlapped;
-            private CancellationTokenRegistration _cancellationRegistration;
+            internal NativeOverlapped* _overlapped;
+            internal CancellationTokenRegistration _cancellationRegistration;
             /// <summary>
             /// 0 when the operation hasn't been scheduled, non-zero when either the operation has completed,
             /// in which case its value is a packed combination of the error code and number of bytes, or when
@@ -59,11 +27,11 @@ namespace Microsoft.Win32.SafeHandles
             /// </summary>
             internal ulong _result;
 
-            internal OverlappedValueTaskSource(SafeFileHandle fileHandle)
+            protected PipeValueTaskSource(PipeStream pipeStream)
             {
-                _fileHandle = fileHandle;
+                _pipeStream = pipeStream;
                 _source.RunContinuationsAsynchronously = true;
-                _preallocatedOverlapped = PreAllocatedOverlapped.UnsafeCreate(s_ioCallback, this, null);
+                _preallocatedOverlapped = new PreAllocatedOverlapped(s_ioCallback, this, null);
             }
 
             internal void Dispose()
@@ -72,23 +40,11 @@ namespace Microsoft.Win32.SafeHandles
                 _preallocatedOverlapped.Dispose();
             }
 
-            internal static Exception GetIOError(int errorCode, string? path)
-                => errorCode == Interop.Errors.ERROR_HANDLE_EOF
-                    ? ThrowHelper.CreateEndOfFileException()
-                    : Win32Marshal.GetExceptionForWin32Error(errorCode, path);
-
-            internal NativeOverlapped* PrepareForOperation(ReadOnlyMemory<byte> memory, long fileOffset, OSFileStreamStrategy? strategy = null)
+            internal void PrepareForOperation(ReadOnlyMemory<byte> memory = default)
             {
-                Debug.Assert(strategy is null || strategy is AsyncWindowsFileStreamStrategy, $"Strategy was expected to be null or async, got {strategy}.");
-
                 _result = 0;
-                _strategy = strategy;
-                _bufferSize = memory.Length;
                 _memoryHandle = memory.Pin();
-                _overlapped = _fileHandle.ThreadPoolBinding!.AllocateNativeOverlapped(_preallocatedOverlapped);
-                _overlapped->OffsetLow = (int)fileOffset;
-                _overlapped->OffsetHigh = (int)(fileOffset >> 32);
-                return _overlapped;
+                _overlapped = _pipeStream._threadPoolBinding!.AllocateNativeOverlapped(_preallocatedOverlapped);
             }
 
             public ValueTaskSourceStatus GetStatus(short token) => _source.GetStatus(token);
@@ -103,7 +59,7 @@ namespace Microsoft.Win32.SafeHandles
                 finally
                 {
                     // The instance is ready to be reused
-                    _fileHandle.TryToReuse(this);
+                    _pipeStream.TryToReuse(this);
                 }
             }
 
@@ -118,12 +74,12 @@ namespace Microsoft.Win32.SafeHandles
                     {
                         _cancellationRegistration = cancellationToken.UnsafeRegister(static (s, token) =>
                         {
-                            OverlappedValueTaskSource vts = (OverlappedValueTaskSource)s!;
-                            if (!vts._fileHandle.IsInvalid)
+                            PipeValueTaskSource vts = (PipeValueTaskSource)s!;
+                            if (!vts._pipeStream.SafePipeHandle.IsInvalid)
                             {
                                 try
                                 {
-                                    Interop.Kernel32.CancelIoEx(vts._fileHandle, vts._overlapped);
+                                    Interop.Kernel32.CancelIoEx(vts._pipeStream.SafePipeHandle, vts._overlapped);
                                     // Ignore all failures: no matter whether it succeeds or fails, completion is handled via the IOCallback.
                                 }
                                 catch (ObjectDisposedException) { } // in case the SafeHandle is (erroneously) closed concurrently
@@ -139,13 +95,10 @@ namespace Microsoft.Win32.SafeHandles
                 }
             }
 
-            private void ReleaseResources()
+            internal void ReleaseResources()
             {
-                _strategy = null;
-
-                // Ensure that any cancellation callback has either completed or will never run,
-                // so that we don't try to access an overlapped for this operation after it's already
-                // been freed.
+                // Ensure that any cancellation callback has either completed or will never run, so that
+                // we don't try to access an overlapped for this operation after it's already been freed.
                 _cancellationRegistration.Dispose();
 
                 // Unpin any pinned buffer.
@@ -154,7 +107,7 @@ namespace Microsoft.Win32.SafeHandles
                 // Free the overlapped.
                 if (_overlapped != null)
                 {
-                    _fileHandle.ThreadPoolBinding!.FreeNativeOverlapped(_overlapped);
+                    _pipeStream._threadPoolBinding!.FreeNativeOverlapped(_overlapped);
                     _overlapped = null;
                 }
             }
@@ -180,7 +133,7 @@ namespace Microsoft.Win32.SafeHandles
             /// <summary>Invoked when the asynchronous operation has completed asynchronously.</summary>
             private static void IOCallback(uint errorCode, uint numBytes, NativeOverlapped* pOverlapped)
             {
-                OverlappedValueTaskSource? vts = (OverlappedValueTaskSource?)ThreadPoolBoundHandle.GetNativeOverlappedState(pOverlapped);
+                PipeValueTaskSource? vts = (PipeValueTaskSource?)ThreadPoolBoundHandle.GetNativeOverlappedState(pOverlapped);
                 Debug.Assert(vts is not null);
                 Debug.Assert(vts._overlapped == pOverlapped, "Overlaps don't match");
 
@@ -194,27 +147,52 @@ namespace Microsoft.Win32.SafeHandles
                 }
             }
 
-            internal void Complete(uint errorCode, uint numBytes)
+            private void Complete(uint errorCode, uint numBytes)
             {
-                OSFileStreamStrategy? strategy = _strategy;
                 ReleaseResources();
+                CompleteCore(errorCode, numBytes);
+            }
+
+            private protected abstract void CompleteCore(uint errorCode, uint numBytes);
+        }
+
+        internal sealed class ReadWriteValueTaskSource : PipeValueTaskSource
+        {
+            internal readonly bool _isWrite;
+
+            internal ReadWriteValueTaskSource(PipeStream stream, bool isWrite) : base(stream) => _isWrite = isWrite;
+
+            private protected override void CompleteCore(uint errorCode, uint numBytes)
+            {
+                if (!_isWrite)
+                {
+                    bool messageCompletion = true;
+
+                    switch (errorCode)
+                    {
+                        case Interop.Errors.ERROR_BROKEN_PIPE:
+                        case Interop.Errors.ERROR_PIPE_NOT_CONNECTED:
+                        case Interop.Errors.ERROR_NO_DATA:
+                            errorCode = 0;
+                            break;
+
+                        case Interop.Errors.ERROR_MORE_DATA:
+                            errorCode = 0;
+                            messageCompletion = false;
+                            break;
+                    }
+
+                    _pipeStream.UpdateMessageCompletion(messageCompletion);
+                }
 
                 switch (errorCode)
                 {
-                    case Interop.Errors.ERROR_SUCCESS:
-                    case Interop.Errors.ERROR_BROKEN_PIPE:
-                    case Interop.Errors.ERROR_NO_DATA:
-                    case Interop.Errors.ERROR_HANDLE_EOF: // logically success with 0 bytes read (read at end of file)
-                        if (_bufferSize != numBytes) // true only for incomplete operations
-                        {
-                            strategy?.OnIncompleteOperation(_bufferSize, (int)numBytes);
-                        }
+                    case 0:
                         // Success
                         _source.SetResult((int)numBytes);
                         break;
 
                     case Interop.Errors.ERROR_OPERATION_ABORTED:
-                        strategy?.OnIncompleteOperation(_bufferSize, 0); // don't use numBytes here, as it can be != 0 for this errorCode (#57212)
                         // Cancellation
                         CancellationToken ct = _cancellationRegistration.Token;
                         _source.SetException(ct.IsCancellationRequested ? new OperationCanceledException(ct) : new OperationCanceledException());
@@ -222,7 +200,35 @@ namespace Microsoft.Win32.SafeHandles
 
                     default:
                         // Failure
-                        strategy?.OnIncompleteOperation(_bufferSize, 0);
+                        _source.SetException(_pipeStream.WinIOError((int)errorCode));
+                        break;
+                }
+            }
+        }
+
+        internal sealed class ConnectionValueTaskSource : PipeValueTaskSource
+        {
+            internal ConnectionValueTaskSource(NamedPipeServerStream server) : base(server) { }
+
+            private protected override void CompleteCore(uint errorCode, uint numBytes)
+            {
+                switch (errorCode)
+                {
+                    case 0:
+                    case Interop.Errors.ERROR_PIPE_CONNECTED: // special case for when the client has already connected to us
+                        // Success
+                        _pipeStream.State = PipeState.Connected;
+                        _source.SetResult((int)numBytes);
+                        break;
+
+                    case Interop.Errors.ERROR_OPERATION_ABORTED:
+                        // Cancellation
+                        CancellationToken ct = _cancellationRegistration.Token;
+                        _source.SetException(ct.CanBeCanceled && !ct.IsCancellationRequested ? Error.GetOperationAborted() : new OperationCanceledException(ct));
+                        break;
+
+                    default:
+                        // Failure
                         _source.SetException(Win32Marshal.GetExceptionForWin32Error((int)errorCode));
                         break;
                 }
