@@ -4,6 +4,7 @@
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Runtime.Versioning;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -11,12 +12,14 @@ namespace System.Net.NetworkInformation
 {
     internal abstract class UnixIPGlobalProperties : IPGlobalProperties
     {
+        [UnsupportedOSPlatform("unix")]
         public override string DhcpScopeName { get { throw new PlatformNotSupportedException(SR.net_InformationUnavailableOnPlatform); } }
 
         public override string DomainName { get { return HostInformation.DomainName; } }
 
         public override string HostName { get { return HostInformation.HostName; } }
 
+        [UnsupportedOSPlatform("unix")]
         public override bool IsWinsProxy { get { throw new PlatformNotSupportedException(SR.net_InformationUnavailableOnPlatform); } }
 
         public override NetBiosNodeType NodeType { get { return NetBiosNodeType.Unknown; } }
