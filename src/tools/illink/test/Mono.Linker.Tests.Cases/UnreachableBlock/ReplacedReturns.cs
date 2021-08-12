@@ -133,16 +133,20 @@ namespace Mono.Linker.Tests.Cases.UnreachableBlock
 
 		[Kept]
 		[ExpectedInstructionSequence (new[] {
+			".try",
 			"call",
 			"pop",
 			"call",
 			"leave.s il_16",
+			".endtry",
+			".catch",
 			"pop",
 			"call",
 			"leave.s il_15",
+			".endcatch",
 			"ret",
-			"ret"
-			})]
+			"ret",
+		})]
 		static void Test5 ()
 		{
 			try {
@@ -162,6 +166,7 @@ namespace Mono.Linker.Tests.Cases.UnreachableBlock
 
 		[Kept]
 		[ExpectedInstructionSequence (new[] {
+			".try",
 			"call",
 			"pop",
 			"call",
@@ -169,14 +174,17 @@ namespace Mono.Linker.Tests.Cases.UnreachableBlock
 			"conv.i8",
 			"stloc.0",
 			"leave.s il_16",
+			".endtry",
+			".catch",
 			"pop",
 			"ldc.i4.2",
 			"conv.i8",
 			"stloc.0",
 			"leave.s il_16",
+			".endcatch",
 			"ldloc.0",
-			"ret"
-			})]
+			"ret",
+		})]
 		static long Test6 ()
 		{
 			try {
@@ -195,21 +203,25 @@ namespace Mono.Linker.Tests.Cases.UnreachableBlock
 		[ExpectedInstructionSequence (new[] {
 			"ldc.i4.0",
 			"stloc.0",
+			".try",
 			"call",
 			"pop",
 			"call",
 			"ldc.i4.1",
 			"stloc.1",
 			"leave.s il_1c",
+			".endtry",
+			".catch",
 			"pop",
 			"ldloc.0",
 			"call",
 			"leave.s il_1a",
+			".endcatch",
 			"ldc.i4.3",
 			"ret",
 			"ldloc.1",
-			"ret"
-			})]
+			"ret",
+		})]
 		static byte Test7 ()
 		{
 			int i = 0;
@@ -251,13 +263,17 @@ namespace Mono.Linker.Tests.Cases.UnreachableBlock
 
 		[Kept]
 		[ExpectedInstructionSequence (new[] {
+			".try",
 			"call",
 			"pop",
 			"call",
 			"leave.s il_10",
+			".endtry",
+			".catch",
 			"pop",
 			"leave.s il_10",
-			"ret"
+			".endcatch",
+			"ret",
 		})]
 		static void Test9 ()
 		{

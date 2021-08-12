@@ -16,19 +16,24 @@ namespace Mono.Linker.Tests.Cases.UnreachableBlock
 
 		[Kept]
 		[ExpectedInstructionSequence (new[] {
+			".try",
 			"call",
 			"brfalse.s il_7",
 			"call",
 			"leave.s il_1c",
+			".endtry",
+			".filter",
 			"pop",
 			"call",
 			"ldc.i4.0",
 			"cgt.un",
 			"endfilter",
+			".catch",
 			"pop",
 			"leave.s il_1c",
+			".endcatch",
 			"ldc.i4.2",
-			"ret"
+			"ret",
 		})]
 		[ExpectedExceptionHandlerSequence (new string[] { "filter" })]
 		static int TestUnreachableInsideTry ()
@@ -46,8 +51,11 @@ namespace Mono.Linker.Tests.Cases.UnreachableBlock
 
 		[Kept]
 		[ExpectedInstructionSequence (new[] {
+			".try",
 			"call",
 			"leave.s il_18",
+			".endtry",
+			".filter",
 			"pop",
 			"call",
 			"brfalse.s il_f",
@@ -55,10 +63,12 @@ namespace Mono.Linker.Tests.Cases.UnreachableBlock
 			"ldc.i4.0",
 			"cgt.un",
 			"endfilter",
+			".catch",
 			"pop",
 			"leave.s il_18",
+			".endcatch",
 			"ldc.i4.3",
-			"ret"
+			"ret",
 		})]
 		[ExpectedExceptionHandlerSequence (new string[] { "filter" })]
 		static int TestUnreachableInsideFilterCondition ()
