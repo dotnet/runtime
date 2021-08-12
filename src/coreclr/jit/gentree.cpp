@@ -11367,7 +11367,7 @@ void Compiler::gtDispFieldSeq(FieldSeqNode* pfsn)
         }
         else
         {
-            printf("%s", eeGetFieldName(fldHnd));
+            printf("%s(0x%x)", eeGetFieldName(fldHnd), fldHnd);
         }
         pfsn = pfsn->m_next;
         if (pfsn != nullptr)
@@ -12049,23 +12049,26 @@ void Compiler::gtDispTree(GenTree*     tree,
             break;
 
         case GT_FIELD:
-            if (FieldSeqStore::IsPseudoField(tree->AsField()->gtFldHnd))
+        {
+            GenTreeField* fld = tree->AsField();
+            if (FieldSeqStore::IsPseudoField(fld->gtFldHnd))
             {
-                printf(" #PseudoField:0x%x", tree->AsField()->gtFldOffset);
+                printf(" #PseudoField:0x%x", fld->gtFldOffset);
             }
             else
             {
-                printf(" %s", eeGetFieldName(tree->AsField()->gtFldHnd), 0);
+                printf(" %s(0x%x)", eeGetFieldName(fld->gtFldHnd), fld->gtFldHnd);
             }
 
-            gtDispCommonEndLine(tree);
+            gtDispCommonEndLine(fld);
 
-            if (tree->AsField()->gtFldObj && !topOnly)
+            if (fld->gtFldObj && !topOnly)
             {
-                gtDispChild(tree->AsField()->gtFldObj, indentStack, IIArcBottom);
+                gtDispChild(fld->gtFldObj, indentStack, IIArcBottom);
             }
-
             break;
+        }
+        
 
         case GT_CALL:
         {
