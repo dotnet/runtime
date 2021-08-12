@@ -276,4 +276,7 @@
   <data name="Cryptography_FeedbackSizeNotSupported" xml:space="preserve">
     <value>The current platform does not support the specified feedback size.</value>
   </data>
+  <data name="PlatformNotSupported_RC2" xml:space="preserve">
+    <value>The required algorithm RC2 is not supported on this platform.</value>
+  </data>
 </root>
