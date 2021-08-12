@@ -24,25 +24,8 @@ namespace ILVerify
 
             if (targetClass.IsFunctionPointer)
             {
-                var signatureBeingPointed = ((FunctionPointerType)targetClass).Signature;
-
-                return currentClass.CanAccess(signatureBeingPointed.ReturnType) &&
-                    currentClass.CanAccessSignatureArguments(signatureBeingPointed);
+                return currentClass.CanAccessSignature(((FunctionPointerType)targetClass).Signature);
             }
-
-#if false
-            // perform transparency check on the type, if the caller is transparent
-            if ((NULL != pCurrentMD) && Security::IsTransparentMethod(pCurrentMD))
-            {
-                // check if type is visible outside the assembly
-                if (!IsTypeVisibleOutsideAssembly(pTargetClass))
-                {
-                    // check transparent/critical on type
-                    if (!Security::CheckNonPublicCriticalAccess(pCurrentMD, NULL, NULL, pTargetClass))
-                        return FALSE;
-                }
-            }
-#endif
 
             // Check access to class instantiations if generic class
             if (targetClass.HasInstantiation && !currentClass.CanAccessInstantiation(targetClass.Instantiation))
@@ -204,11 +187,21 @@ namespace ILVerify
                     return false;
             }
 
-            return currentType.CanAccessSignatureArguments(methodSig);
+            return currentType.CanAccessSignature(methodSig);
         }
 
-        private static bool CanAccessSignatureArguments(this TypeDesc currentType, MethodSignature signature)
+        private static bool CanAccessSignature(this TypeDesc currentType, MethodSignature signature)
         {
+            // Check return type
+            var returnType = signature.ReturnType;
+
+            if (returnType.IsByRef)
+                returnType = ((ByRefType)returnType).ParameterType;
+
+            if (!returnType.IsGenericParameter && !returnType.IsSignatureVariable && // Generic parameters are always accessible
+                !currentType.CanAccess(returnType))
+                return false;
+
             // Check arguments
             for (int i = 0; i < signature.Length; ++i)
             {
