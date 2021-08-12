@@ -23,7 +23,13 @@ namespace System.Text.Json.Serialization.Converters
                 // Invoking such ctors is not safe when used with untrusted user input.
                 type == typeof(SerializationInfo) ||
                 type == typeof(IntPtr) ||
-                type == typeof(UIntPtr);
+                type == typeof(UIntPtr) ||
+                // To be added in future releases; guard against invalid object-based serializations.
+                // https://github.com/dotnet/runtime/issues/53539
+                IsDateOnlyOrTimeOnly(type);
+
+            static bool IsDateOnlyOrTimeOnly(Type type)
+                => type.Assembly == typeof(int).Assembly && type.FullName is "System.DateOnly" or "System.TimeOnly";
         }
 
         public override JsonConverter CreateConverter(Type type, JsonSerializerOptions options)
