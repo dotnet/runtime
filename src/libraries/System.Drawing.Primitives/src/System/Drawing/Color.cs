@@ -252,7 +252,7 @@ namespace System.Drawing
         /// <summary>
         /// Gets a system-defined color that has an ARGB value of <c>#663399</c>.
         /// </summary>
-        /// <value>A <see cref="Color" /> representing a system-defined color.</value>
+        /// <value>A system-defined color.</value>
         public static Color RebeccaPurple => new Color(KnownColor.RebeccaPurple);
 
         public static Color Red => new Color(KnownColor.Red);
