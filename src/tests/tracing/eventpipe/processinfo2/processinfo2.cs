@@ -65,13 +65,11 @@ namespace Tracing.Tests.ProcessInfoValidation
                     continue;
                 else if (parts[i].StartsWith('-'))
                 {
-                    // if we see '-', then assume it's a '-option argument' pair
-                    sb.Append(parts[i] + " ");
+                    // if we see '-', then assume it's a '-option argument' pair and remove
                     isArgument = true;
                 }
                 else if (isArgument)
                 {
-                    sb.Append(parts[i] + " ");
                     isArgument = false;
                 }
                 else
