@@ -42,7 +42,7 @@ namespace System.Net.Quic.Implementations.Mock
                 return errorCode;
             }
         }
-        
+
         internal override X509Certificate? RemoteCertificate => null;
 
         // Constructor for outbound connections
