@@ -39,7 +39,11 @@ namespace System.Net
 
                 _sslContext = CreateSslContext(credential, sslAuthenticationOptions.IsServer);
 
-                unsafe 
+                // Make sure the class instance is associated to the session and is provided
+                // in the Read/Write callback connection parameter
+                SslSetConnection(_sslContext);
+
+                unsafe
                 {
                     osStatus = Interop.AppleCrypto.SslSetIoCallbacks(
                         _sslContext,
@@ -138,6 +142,13 @@ namespace System.Net
             return sslContext;
         }
 
+        private void SslSetConnection(SafeSslHandle sslContext)
+        {
+            GCHandle handle = GCHandle.Alloc(this, GCHandleType.Weak);
+
+            Interop.AppleCrypto.SslSetConnection(sslContext, GCHandle.ToIntPtr(handle));
+        }
+
         public override bool IsInvalid => _sslContext?.IsInvalid ?? true;
 
         protected override void Dispose(bool disposing)
@@ -157,8 +168,11 @@ namespace System.Net
         }
 
         [UnmanagedCallersOnly]
-        private static unsafe int WriteToConnection(void* connection, byte* data, void** dataLength)
+        private static unsafe int WriteToConnection(IntPtr connection, byte* data, void** dataLength)
         {
+            SafeDeleteSslContext? context = (SafeDeleteSslContext?)GCHandle.FromIntPtr(connection).Target;
+            Debug.Assert(context != null);
+
             // We don't pool these buffers and we can't because there's a race between their us in the native
             // read/write callbacks and being disposed when the SafeHandle is disposed. This race is benign currently,
             // but if we were to pool the buffers we would have a potential use-after-free issue.
@@ -170,9 +184,9 @@ namespace System.Net
                 int toWrite = (int)length;
                 var inputBuffer = new ReadOnlySpan<byte>(data, toWrite);
 
-                _outputBuffer.EnsureAvailableSpace(toWrite);
-                inputBuffer.CopyTo(_outputBuffer.AvailableSpan);
-                _outputBuffer.Commit(toWrite);
+                context._outputBuffer.EnsureAvailableSpace(toWrite);
+                inputBuffer.CopyTo(context._outputBuffer.AvailableSpan);
+                context._outputBuffer.Commit(toWrite);
                 // Since we can enqueue everything, no need to re-assign *dataLength.
 
                 return OSStatus_noErr;
@@ -180,14 +194,17 @@ namespace System.Net
             catch (Exception e)
             {
                 if (NetEventSource.Log.IsEnabled())
-                    NetEventSource.Error(this, $"WritingToConnection failed: {e.Message}");
+                    NetEventSource.Error(context, $"WritingToConnection failed: {e.Message}");
                 return OSStatus_writErr;
             }
         }
 
         [UnmanagedCallersOnly]
-        private static unsafe int ReadFromConnection(void* connection, byte* data, void** dataLength)
+        private static unsafe int ReadFromConnection(IntPtr connection, byte* data, void** dataLength)
         {
+            SafeDeleteSslContext? context = (SafeDeleteSslContext?)GCHandle.FromIntPtr(connection).Target;
+            Debug.Assert(context != null);
+
             try
             {
                 ulong toRead = (ulong)*dataLength;
@@ -199,16 +216,16 @@ namespace System.Net
 
                 uint transferred = 0;
 
-                if (_inputBuffer.ActiveLength == 0)
+                if (context._inputBuffer.ActiveLength == 0)
                 {
                     *dataLength = (void*)0;
                     return OSStatus_errSSLWouldBlock;
                 }
 
-                int limit = Math.Min((int)toRead, _inputBuffer.ActiveLength);
+                int limit = Math.Min((int)toRead, context._inputBuffer.ActiveLength);
 
-                _inputBuffer.ActiveSpan.Slice(0, limit).CopyTo(new Span<byte>(data, limit));
-                _inputBuffer.Discard(limit);
+                context._inputBuffer.ActiveSpan.Slice(0, limit).CopyTo(new Span<byte>(data, limit));
+                context._inputBuffer.Discard(limit);
                 transferred = (uint)limit;
 
                 *dataLength = (void*)transferred;
@@ -217,7 +234,7 @@ namespace System.Net
             catch (Exception e)
             {
                 if (NetEventSource.Log.IsEnabled())
-                    NetEventSource.Error(this, $"ReadFromConnectionfailed: {e.Message}");
+                    NetEventSource.Error(context, $"ReadFromConnectionfailed: {e.Message}");
                 return OSStatus_readErr;
             }
         }
