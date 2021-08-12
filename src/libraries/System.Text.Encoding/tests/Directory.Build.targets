@@ -1,7 +1,0 @@
-﻿<Project>
-  <Import Project="..\..\Directory.Build.targets" />
-  <PropertyGroup>
-    <!-- workaround https://github.com/dotnet/sdk/pull/19677. This can be removed when we get an SDK that has that fix. -->
-    <EnableUnsafeUTF7Encoding>true</EnableUnsafeUTF7Encoding>
-  </PropertyGroup>
-</Project>
