@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 
 namespace Microsoft.Extensions.Configuration
@@ -28,10 +29,10 @@ namespace Microsoft.Extensions.Configuration
         /// <summary>
         /// Shorthand for GetSection("ConnectionStrings")[name].
         /// </summary>
-        /// <param name="configuration">The configuration.</param>
+        /// <param name="configuration">The <see cref="IConfiguration"/> to enumerate.</param>
         /// <param name="name">The connection string key.</param>
         /// <returns>The connection string.</returns>
-        public static string GetConnectionString(this IConfiguration configuration, string name)
+        public static string? GetConnectionString(this IConfiguration configuration, string name)
         {
             return configuration?.GetSection("ConnectionStrings")?[name];
         }
@@ -85,7 +86,7 @@ namespace Microsoft.Extensions.Configuration
         /// <summary>
         /// Gets a configuration sub-section with the specified key.
         /// </summary>
-        /// <param name="configuration"></param>
+        /// <param name="configuration">The <see cref="IConfiguration"/> to enumerate.</param>
         /// <param name="key">The key of the configuration section.</param>
         /// <returns>The <see cref="IConfigurationSection"/>.</returns>
         /// <remarks>
