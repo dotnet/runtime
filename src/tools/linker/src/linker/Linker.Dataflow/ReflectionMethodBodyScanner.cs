@@ -119,27 +119,6 @@ namespace Mono.Linker.Dataflow
 			reflectionContext.Dispose ();
 		}
 
-		public void ApplyDynamicallyAccessedMembersToType (ref ReflectionPatternContext reflectionPatternContext, TypeDefinition type, DynamicallyAccessedMemberTypes annotation)
-		{
-			Debug.Assert (annotation != DynamicallyAccessedMemberTypes.None);
-
-			reflectionPatternContext.AnalyzingPattern ();
-			// Handle cases where a type has no members but annotations are to be applied to derived type members
-			reflectionPatternContext.RecordHandledPattern ();
-
-			// The annotations this type inherited from its base types should not produce
-			// warnings on the base members, since those are covered by warnings in the base type.
-			// For now, annotations that are inherited from base types but also declared explicitly on this type
-			// still warn about base members since the cache doesn't track enough information to tell the difference.
-			var declaredAnnotation = _context.Annotations.FlowAnnotations.GetTypeAnnotation (type);
-			var inheritedOnlyAnnotation = annotation & ~declaredAnnotation;
-
-			// Warn about all members accessed by the annotation on this type (including members of base types/interfaces)
-			MarkTypeForDynamicallyAccessedMembers (ref reflectionPatternContext, type, declaredAnnotation, DependencyKind.DynamicallyAccessedMemberOnType, declaredOnly: false);
-			// Warn about members accessed by inherited annotations (not including members of base types/interfaces)
-			MarkTypeForDynamicallyAccessedMembers (ref reflectionPatternContext, type, inheritedOnlyAnnotation, DependencyKind.DynamicallyAccessedMemberOnType, declaredOnly: true);
-		}
-
 		ValueNode GetValueNodeForCustomAttributeArgument (CustomAttributeArgument argument)
 		{
 			ValueNode valueNode;
@@ -2008,6 +1987,48 @@ namespace Mono.Linker.Dataflow
 				methodReturnValue = MergePointValue.MergeValues (methodReturnValue, NullValue.Instance);
 		}
 
+		public static DynamicallyAccessedMemberTypes GetMissingMemberTypes (DynamicallyAccessedMemberTypes requiredMemberTypes, DynamicallyAccessedMemberTypes availableMemberTypes)
+		{
+			if (availableMemberTypes.HasFlag (requiredMemberTypes))
+				return DynamicallyAccessedMemberTypes.None;
+
+			if (requiredMemberTypes == DynamicallyAccessedMemberTypes.All)
+				return DynamicallyAccessedMemberTypes.All;
+
+			var missingMemberTypes = requiredMemberTypes & ~availableMemberTypes;
+
+			// PublicConstructors is a special case since its value is 3 - so PublicParameterlessConstructor (1) | _PublicConstructor_WithMoreThanOneParameter_ (2)
+			// The above bit logic only works for value with single bit set.
+			if (requiredMemberTypes.HasFlag (DynamicallyAccessedMemberTypes.PublicConstructors) &&
+				!availableMemberTypes.HasFlag (DynamicallyAccessedMemberTypes.PublicConstructors))
+				missingMemberTypes |= DynamicallyAccessedMemberTypes.PublicConstructors;
+
+			return missingMemberTypes;
+		}
+
+		string GetMemberTypesString (DynamicallyAccessedMemberTypes memberTypes)
+		{
+			Debug.Assert (memberTypes != DynamicallyAccessedMemberTypes.None);
+
+			if (memberTypes == DynamicallyAccessedMemberTypes.All)
+				return $"'{nameof (DynamicallyAccessedMemberTypes)}.{nameof (DynamicallyAccessedMemberTypes.All)}'";
+
+			var memberTypesList = AllDynamicallyAccessedMemberTypes
+				.Where (damt => (memberTypes & damt) == damt && damt != DynamicallyAccessedMemberTypes.None)
+				.ToList ();
+
+			if (memberTypes.HasFlag (DynamicallyAccessedMemberTypes.PublicConstructors))
+				memberTypesList.Remove (DynamicallyAccessedMemberTypes.PublicParameterlessConstructor);
+
+			return string.Join (", ", memberTypesList.Select (mt => {
+				string mtName = mt == DynamicallyAccessedMemberTypesOverlay.Interfaces
+					? nameof (DynamicallyAccessedMemberTypesOverlay.Interfaces)
+					: mt.ToString ();
+
+				return $"'{nameof (DynamicallyAccessedMemberTypes)}.{mtName}'";
+			}));
+		}
+
 		void RequireDynamicallyAccessedMembers (ref ReflectionPatternContext reflectionContext, DynamicallyAccessedMemberTypes requiredMemberTypes, ValueNode value, IMetadataTokenProvider targetContext)
 		{
 			foreach (var uniqueValue in value.UniqueValues ()) {
@@ -2018,32 +2039,9 @@ namespace Mono.Linker.Dataflow
 					reflectionContext.RecordHandledPattern ();
 				} else if (uniqueValue is LeafValueWithDynamicallyAccessedMemberNode valueWithDynamicallyAccessedMember) {
 					var availableMemberTypes = valueWithDynamicallyAccessedMember.DynamicallyAccessedMemberTypes;
-					if (!availableMemberTypes.HasFlag (requiredMemberTypes)) {
-						string missingMemberTypes = $"'{nameof (DynamicallyAccessedMemberTypes)}.{nameof (DynamicallyAccessedMemberTypes.All)}'";
-						if (requiredMemberTypes != DynamicallyAccessedMemberTypes.All) {
-							var missingMemberTypesList = AllDynamicallyAccessedMemberTypes
-								.Where (damt => (requiredMemberTypes & ~availableMemberTypes & damt) == damt && damt != DynamicallyAccessedMemberTypes.None)
-								.ToList ();
-
-							// PublicConstructors is a special case since its value is 3 - so PublicParameterlessConstructor (1) | _PublicConstructor_WithMoreThanOneParameter_ (2)
-							// The above bit logic only works for value with single bit set.
-							if (requiredMemberTypes.HasFlag (DynamicallyAccessedMemberTypes.PublicConstructors) &&
-								availableMemberTypes.HasFlag (DynamicallyAccessedMemberTypes.PublicParameterlessConstructor) &&
-								!availableMemberTypes.HasFlag (DynamicallyAccessedMemberTypes.PublicConstructors))
-								missingMemberTypesList.Add (DynamicallyAccessedMemberTypes.PublicConstructors);
-
-							if (missingMemberTypesList.Contains (DynamicallyAccessedMemberTypes.PublicConstructors) &&
-								missingMemberTypesList.Contains (DynamicallyAccessedMemberTypes.PublicParameterlessConstructor))
-								missingMemberTypesList.Remove (DynamicallyAccessedMemberTypes.PublicParameterlessConstructor);
-
-							missingMemberTypes = string.Join (", ", missingMemberTypesList.Select (mmt => {
-								string mmtName = mmt == DynamicallyAccessedMemberTypesOverlay.Interfaces
-									? nameof (DynamicallyAccessedMemberTypesOverlay.Interfaces)
-									: mmt.ToString ();
-
-								return $"'{nameof (DynamicallyAccessedMemberTypes)}.{mmtName}'";
-							}));
-						}
+					var missingMemberTypesValue = GetMissingMemberTypes (requiredMemberTypes, availableMemberTypes);
+					if (missingMemberTypesValue != DynamicallyAccessedMemberTypes.None) {
+						var missingMemberTypes = GetMemberTypesString (missingMemberTypesValue);
 
 						switch ((valueWithDynamicallyAccessedMember.SourceContext, targetContext)) {
 						case (ParameterDefinition sourceParameter, ParameterDefinition targetParameter):
@@ -2295,7 +2293,7 @@ namespace Mono.Linker.Dataflow
 
 		static bool HasBindingFlag (BindingFlags? bindingFlags, BindingFlags? search) => bindingFlags != null && (bindingFlags & search) == search;
 
-		void MarkTypeForDynamicallyAccessedMembers (ref ReflectionPatternContext reflectionContext, TypeDefinition typeDefinition, DynamicallyAccessedMemberTypes requiredMemberTypes, DependencyKind dependencyKind, bool declaredOnly = false)
+		public void MarkTypeForDynamicallyAccessedMembers (ref ReflectionPatternContext reflectionContext, TypeDefinition typeDefinition, DynamicallyAccessedMemberTypes requiredMemberTypes, DependencyKind dependencyKind, bool declaredOnly = false)
 		{
 			foreach (var member in typeDefinition.GetDynamicallyAccessedMembers (_context, requiredMemberTypes, declaredOnly)) {
 				switch (member) {

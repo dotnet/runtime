@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -1347,6 +1347,22 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			}
 
 			[Kept]
+			interface InterfaceImplementedByDerived
+			{
+				[Kept]
+				void Method ();
+			}
+
+			[KeptMember (".ctor()")]
+			[KeptBaseType (typeof (AnnotatedBase))]
+			[KeptInterface (typeof (InterfaceImplementedByDerived))]
+			class DerivedWithInterface : AnnotatedBase, InterfaceImplementedByDerived
+			{
+				[Kept]
+				public void Method () { }
+			}
+
+			[Kept]
 			static AnnotatedBase GetInstance () => new Derived ();
 
 			[Kept]
@@ -1354,6 +1370,7 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			{
 				Type t = GetInstance ().GetType ();
 				t.RequiresAll ();
+				var t2 = typeof (DerivedWithInterface);
 			}
 		}
 
