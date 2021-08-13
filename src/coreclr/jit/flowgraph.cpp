@@ -91,7 +91,7 @@ PhaseStatus Compiler::fgInsertGCPolls()
     BasicBlock* block;
 
     // Walk through the blocks and hunt for a block that needs a GC Poll
-    for (block = fgFirstBB; block != nullptr; block = block->bbNext)
+    for (BasicBlock* const block : Blocks())
     {
         compCurBB = block;
 
