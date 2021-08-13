@@ -402,20 +402,18 @@ namespace System.IO
         // Throws if any of the caches has an error number saved in it
         private void ThrowOnCacheInitializationError(ReadOnlySpan<char> path)
         {
-            int errno = 0;
-
             // Lstat should always be initialized by Refresh
             if (_initializedFileCache != 0)
             {
-                errno = _initializedFileCache;
+                Throw(_initializedFileCache);
             }
             // Stat is optionally initialized when Refresh detects object is a symbolic link
             else if (_initializedSymlinkCache != 0 && _initializedSymlinkCache != -1)
             {
-                errno = _initializedSymlinkCache;
+                Throw(_initializedSymlinkCache);
             }
 
-            if (errno != 0)
+            void Throw(int errno)
             {
                 InvalidateCaches();
                 throw Interop.GetExceptionForIoErrno(new Interop.ErrorInfo(errno), new string(path));
