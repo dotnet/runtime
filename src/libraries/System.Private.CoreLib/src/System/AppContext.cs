@@ -137,32 +137,28 @@ namespace System
 
         internal static void LogSwitchValues(RuntimeEventSource ev)
         {
-            if (s_switches is null)
+            if (s_switches is not null)
             {
-                return;
-            }
-
-            lock (s_switches)
-            {
-                foreach (var (k, v) in s_switches)
+                lock (s_switches)
                 {
-                    // Convert bool to int because it's cheaper to log (no boxing)
-                    ev.LogAppContextSwitch(k, v ? 0 : 1);
+                    foreach (var (k, v) in s_switches)
+                    {
+                        // Convert bool to int because it's cheaper to log (no boxing)
+                        ev.LogAppContextSwitch(k, v ? 0 : 1);
+                    }
                 }
             }
 
-            if (s_dataStore is null)
+            if (s_dataStore is not null)
             {
-                return;
-            }
-
-            lock (s_dataStore)
-            {
-                foreach (var (k, v) in s_dataStore)
+                lock (s_dataStore)
                 {
-                    if (v is bool b)
+                    foreach (var (k, v) in s_dataStore)
                     {
-                        ev.LogAppContextSwitch(k, b ? 0 : 1);
+                        if (v is bool b)
+                        {
+                            ev.LogAppContextSwitch(k, b ? 0 : 1);
+                        }
                     }
                 }
             }
