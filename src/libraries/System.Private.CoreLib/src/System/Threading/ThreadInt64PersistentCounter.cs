@@ -13,7 +13,7 @@ namespace System.Threading
         private static readonly LowLevelLock s_lock = new LowLevelLock();
 
         [ThreadStatic]
-        private static List<ThreadLocalNodeFinalizationHelper> t_nodeFinalizationHelpers;
+        private static List<ThreadLocalNodeFinalizationHelper>? t_nodeFinalizationHelpers;
 
         private long _overflowCount;
         private HashSet<ThreadLocalNode> _nodes = new HashSet<ThreadLocalNode>();
@@ -29,7 +29,7 @@ namespace System.Threading
         {
             var node = new ThreadLocalNode(this);
 
-            List<ThreadLocalNodeFinalizationHelper> nodeFinalizationHelpers = t_nodeFinalizationHelpers;
+            List<ThreadLocalNodeFinalizationHelper>? nodeFinalizationHelpers = t_nodeFinalizationHelpers;
             if (nodeFinalizationHelpers == null)
             {
                 t_nodeFinalizationHelpers = nodeFinalizationHelpers = new List<ThreadLocalNodeFinalizationHelper>(1);
