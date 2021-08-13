@@ -142,7 +142,7 @@ namespace System.Linq.Expressions.Tests
 
         [Theory]
         [ClassData(typeof(CompilationTypes))]
-        public static void GetValueOrDefault(bool useInterpreter)
+        public void GetValueOrDefault(bool useInterpreter)
         {
             Expression<Func<ValueTypeWithParameterlessConstructor?, ValueTypeWithParameterlessConstructor>> e =
                 (ValueTypeWithParameterlessConstructor? x) => x.GetValueOrDefault();
