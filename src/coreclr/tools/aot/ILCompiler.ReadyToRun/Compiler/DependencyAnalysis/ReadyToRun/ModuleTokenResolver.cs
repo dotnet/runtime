@@ -143,6 +143,11 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 AddModuleTokenForType(owningType, new ModuleToken(token.Module, owningTypeHandle));
                 memberRef.DecodeMethodSignature<DummyTypeInfo, ModuleTokenResolver>(new TokenResolverProvider(this, token.Module), this);
             }
+            if (token.TokenType == CorTokenType.mdtMethodDef)
+            {
+                MethodDefinition methodDef = token.MetadataReader.GetMethodDefinition((MethodDefinitionHandle)token.Handle);
+                methodDef.DecodeSignature<DummyTypeInfo, ModuleTokenResolver>(new TokenResolverProvider(this, token.Module), this);
+            }
         }
 
         private void AddModuleTokenForFieldReference(TypeDesc owningType, ModuleToken token)
