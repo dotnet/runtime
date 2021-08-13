@@ -187,6 +187,7 @@ namespace System.Diagnostics.Tracing
 
         private void DisableTimer()
         {
+            Debug.Assert(Monitor.IsEntered(s_counterGroupLock));
             _pollingIntervalInMilliseconds = 0;
             s_counterGroupEnabledList?.Remove(this);
         }
