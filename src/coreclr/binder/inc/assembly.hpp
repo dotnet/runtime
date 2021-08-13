@@ -18,7 +18,6 @@
 #include "assemblyname.hpp"
 
 #include "corpriv.h"
-#include "clrprivbinding.h"
 
 #include "clrprivbindercoreclr.h"
 

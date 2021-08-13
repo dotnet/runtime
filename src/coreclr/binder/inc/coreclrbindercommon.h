@@ -5,7 +5,6 @@
 #ifndef __CORECLR_BINDER_COMMON_H__
 #define __CORECLR_BINDER_COMMON_H__
 
-#include "clrprivbinding.h"
 #include "applicationcontext.hpp"
 
 namespace BINDER_SPACE

@@ -8,8 +8,6 @@
 #ifndef __CLRPRIVBINDERUTIL_H__
 #define __CLRPRIVBINDERUTIL_H__
 
-#include "clrprivbinding.h"
-
 //=====================================================================================================================
 // Forward declarations
 typedef DPTR(BINDER_SPACE::Assembly) PTR_BINDER_SPACE_Assembly;

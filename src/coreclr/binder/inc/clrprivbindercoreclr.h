@@ -14,7 +14,6 @@ class PEImage;
 class CLRPrivBinderCoreCLR : public AssemblyLoadContext
 {
 public:
-
     //=========================================================================
     // ICLRPrivBinder functions
     //-------------------------------------------------------------------------

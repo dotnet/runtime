@@ -119,7 +119,7 @@ namespace BINDER_SPACE
 
         UINT_PTR GetBinderID() { return m_binderID; }
 
-    protected:
+    private:
         LONG               m_cRef;
         Volatile<LONG>     m_cVersion;
         SString            m_applicationName;
