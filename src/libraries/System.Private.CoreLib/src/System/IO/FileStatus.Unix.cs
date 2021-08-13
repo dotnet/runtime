@@ -405,18 +405,14 @@ namespace System.IO
             // Lstat should always be initialized by Refresh
             if (_initializedFileCache != 0)
             {
-                Throw(_initializedFileCache);
+                InvalidateCaches();
+                throw Interop.GetExceptionForIoErrno(new Interop.ErrorInfo(_initializedFileCache), new string(path));
             }
             // Stat is optionally initialized when Refresh detects object is a symbolic link
             else if (_initializedSymlinkCache != 0 && _initializedSymlinkCache != -1)
             {
-                Throw(_initializedSymlinkCache);
-            }
-
-            void Throw(int errno)
-            {
                 InvalidateCaches();
-                throw Interop.GetExceptionForIoErrno(new Interop.ErrorInfo(errno), new string(path));
+                throw Interop.GetExceptionForIoErrno(new Interop.ErrorInfo(_initializedSymlinkCache), new string(path));
             }
         }
 
