@@ -335,7 +335,7 @@ namespace System.Net.Http.Functional.Tests
 
                 Stopwatch sw = Stopwatch.StartNew();
                 bool hasFailed = false;
-                while (sw.Elapsed < TestHelper.PassingTestTimeout)
+                while (sw.Elapsed < TimeSpan.FromSeconds(15))
                 {
                     try
                     {
@@ -371,6 +371,7 @@ namespace System.Net.Http.Functional.Tests
 
                 // We haven't finished reading the whole respose, but we're disposing it, which should turn into an exception on the server-side.
                 response.Dispose();
+                await serverTask;
             });
 
             await new[] { clientTask, serverTask }.WhenAllOrAnyFailed(20_000);
@@ -392,7 +393,7 @@ namespace System.Net.Http.Functional.Tests
 
                 Stopwatch sw = Stopwatch.StartNew();
                 bool hasFailed = false;
-                while (sw.Elapsed < TestHelper.PassingTestTimeout)
+                while (sw.Elapsed < TimeSpan.FromSeconds(15))
                 {
                     try
                     {
@@ -425,6 +426,7 @@ namespace System.Net.Http.Functional.Tests
 
                 // We haven't finished sending the whole request, but we're disposing the response, which should turn into an exception on the server-side.
                 response.Dispose();
+                await serverTask;
             });
 
             await new[] { clientTask, serverTask }.WhenAllOrAnyFailed(20_000);
@@ -996,7 +998,7 @@ namespace System.Net.Http.Functional.Tests
                 VersionPolicy = HttpVersionPolicy.RequestVersionExact
             };
             HttpResponseMessage response = await client.SendAsync(request).WaitAsync(TimeSpan.FromSeconds(10));
-            
+
             Assert.Equal(statusCode, response.StatusCode);
 
             await serverTask;
