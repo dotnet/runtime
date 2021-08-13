@@ -19,7 +19,7 @@ namespace System.Xml.Schema
         Redefine
     };
 
-    internal class RedefineEntry
+    internal sealed class RedefineEntry
     {
         internal XmlSchemaRedefine redefine;
         internal XmlSchema schemaToUpdate;

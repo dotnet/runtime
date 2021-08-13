@@ -31,7 +31,7 @@ namespace System.IO
         // 8 random bytes provides 12 chars in our encoding for the 8.3 name.
         private const int KeyLength = 8;
 
-        [Obsolete("Please use GetInvalidPathChars or GetInvalidFileNameChars instead.")]
+        [Obsolete("Path.InvalidPathChars has been deprecated. Use GetInvalidPathChars or GetInvalidFileNameChars instead.")]
         public static readonly char[] InvalidPathChars = GetInvalidPathChars();
 
         // Changes the extension of a file path. The path parameter
@@ -125,7 +125,7 @@ namespace System.IO
             return end >= 0 ? path.Slice(0, end) : ReadOnlySpan<char>.Empty;
         }
 
-        private static int GetDirectoryNameOffset(ReadOnlySpan<char> path)
+        internal static int GetDirectoryNameOffset(ReadOnlySpan<char> path)
         {
             int rootLength = PathInternal.GetRootLength(path);
             int end = path.Length;
@@ -860,7 +860,7 @@ namespace System.IO
         /// <exception cref="ArgumentNullException">Thrown if <paramref name="relativeTo"/> or <paramref name="path"/> is <c>null</c> or an empty string.</exception>
         public static string GetRelativePath(string relativeTo, string path)
         {
-            return GetRelativePath(relativeTo, path, StringComparison);
+            return GetRelativePath(relativeTo, path, PathInternal.StringComparison);
         }
 
         private static string GetRelativePath(string relativeTo, string path, StringComparison comparisonType)
@@ -956,12 +956,6 @@ namespace System.IO
 
             return sb.ToString();
         }
-
-        /// <summary>Returns a comparison that can be used to compare file and directory names for equality.</summary>
-        internal static StringComparison StringComparison =>
-            IsCaseSensitive ?
-                StringComparison.Ordinal :
-                StringComparison.OrdinalIgnoreCase;
 
         /// <summary>
         /// Trims one trailing directory separator beyond the root of the path.

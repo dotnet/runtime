@@ -41,8 +41,9 @@ namespace DebuggerTests
             _cancellationTokenSource = new CancellationTokenSource();
             Token = _cancellationTokenSource.Token;
 
-            _loggerFactory = LoggerFactory.Create(
-                builder => builder.AddConsole().AddFilter(null, LogLevel.Trace));
+            _loggerFactory = LoggerFactory.Create(builder =>
+                    builder.AddSimpleConsole(options => options.SingleLine = true)
+                           .AddFilter(null, LogLevel.Trace));
 
             Client = new InspectorClient(_loggerFactory.CreateLogger<InspectorClient>());
             _logger = _loggerFactory.CreateLogger<Inspector>();
@@ -146,6 +147,7 @@ namespace DebuggerTests
 
         async Task OnMessage(string method, JObject args, CancellationToken token)
         {
+            bool fail = false;
             switch (method)
             {
                 case "Debugger.paused":
@@ -157,14 +159,22 @@ namespace DebuggerTests
                 case "Runtime.consoleAPICalled":
                     _logger.LogInformation(FormatConsoleAPICalled(args));
                     break;
+                case "Inspector.detached":
+                case "Inspector.targetCrashed":
+                case "Inspector.targetReloadedAfterCrash":
+                    fail = true;
+                    break;
+                case "Runtime.exceptionThrown":
+                    _logger.LogDebug($"Failing all waiters because: {method}: {args}");
+                    fail = true;
+                    break;
             }
             if (eventListeners.TryGetValue(method, out var listener))
             {
                 await listener(args, token).ConfigureAwait(false);
             }
-            else if (String.Compare(method, "Runtime.exceptionThrown") == 0)
+            else if (fail)
             {
-                _logger.LogDebug($"Failing all waiters because: {method}: {args}");
                 FailAllWaiters(new ArgumentException(args.ToString()));
             }
         }

@@ -52,14 +52,14 @@ namespace System.Collections.Specialized
             Reset(capacity);
         }
 
-        [Obsolete("Please use NameObjectCollectionBase(IEqualityComparer) instead.")]
+        [Obsolete("This constructor has been deprecated. Use NameObjectCollectionBase(IEqualityComparer) instead.")]
         protected NameObjectCollectionBase(IHashCodeProvider? hashProvider, IComparer? comparer)
         {
             _keyComparer = new CompatibleComparer(hashProvider, comparer);
             Reset();
         }
 
-        [Obsolete("Please use NameObjectCollectionBase(Int32, IEqualityComparer) instead.")]
+        [Obsolete("This constructor has been deprecated. Use NameObjectCollectionBase(Int32, IEqualityComparer) instead.")]
         protected NameObjectCollectionBase(int capacity, IHashCodeProvider? hashProvider, IComparer? comparer)
         {
             _keyComparer = new CompatibleComparer(hashProvider, comparer);
@@ -473,7 +473,7 @@ namespace System.Collections.Specialized
         // Simple entry class to allow substitution of values and indexed access to keys
         //
 
-        internal class NameObjectEntry
+        internal sealed class NameObjectEntry
         {
             internal NameObjectEntry(string? name, object? value)
             {
@@ -489,7 +489,7 @@ namespace System.Collections.Specialized
         // Enumerator over keys of NameObjectCollection
         //
 
-        internal class NameObjectKeysEnumerator : IEnumerator
+        internal sealed class NameObjectKeysEnumerator : IEnumerator
         {
             private int _pos;
             private readonly NameObjectCollectionBase _coll;

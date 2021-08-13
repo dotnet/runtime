@@ -54,7 +54,28 @@ using asm_sigcontext::_xstate;
 #include <mach/mach_port.h>
 #endif // !HAVE_MACH_EXCEPTIONS else
 
-#if HAVE___GREGSET_T
+#ifdef HOST_S390X
+
+#define MCREG_PSWMask(mc)   ((mc).psw.mask)
+#define MCREG_PSWAddr(mc)   ((mc).psw.addr)
+#define MCREG_R0(mc)        ((mc).gregs[0])
+#define MCREG_R1(mc)        ((mc).gregs[1])
+#define MCREG_R2(mc)        ((mc).gregs[2])
+#define MCREG_R3(mc)        ((mc).gregs[3])
+#define MCREG_R4(mc)        ((mc).gregs[4])
+#define MCREG_R5(mc)        ((mc).gregs[5])
+#define MCREG_R6(mc)        ((mc).gregs[6])
+#define MCREG_R7(mc)        ((mc).gregs[7])
+#define MCREG_R8(mc)        ((mc).gregs[8])
+#define MCREG_R9(mc)        ((mc).gregs[9])
+#define MCREG_R10(mc)       ((mc).gregs[10])
+#define MCREG_R11(mc)       ((mc).gregs[11])
+#define MCREG_R12(mc)       ((mc).gregs[12])
+#define MCREG_R13(mc)       ((mc).gregs[13])
+#define MCREG_R14(mc)       ((mc).gregs[14])
+#define MCREG_R15(mc)       ((mc).gregs[15])
+
+#elif HAVE___GREGSET_T
 
 #ifdef HOST_64BIT
 #define MCREG_Rbx(mc)       ((mc).__gregs[_REG_RBX])
@@ -710,6 +731,8 @@ inline static DWORD64 CONTEXTGetPC(LPCONTEXT pContext)
     return pContext->Eip;
 #elif defined(HOST_ARM64) || defined(HOST_ARM)
     return pContext->Pc;
+#elif defined(HOST_S390X)
+    return pContext->PSWAddr;
 #else
 #error "don't know how to get the program counter for this architecture"
 #endif
@@ -723,6 +746,8 @@ inline static void CONTEXTSetPC(LPCONTEXT pContext, DWORD64 pc)
     pContext->Eip = pc;
 #elif defined(HOST_ARM64) || defined(HOST_ARM)
     pContext->Pc = pc;
+#elif defined(HOST_S390X)
+    pContext->PSWAddr = pc;
 #else
 #error "don't know how to set the program counter for this architecture"
 #endif
@@ -738,6 +763,8 @@ inline static DWORD64 CONTEXTGetFP(LPCONTEXT pContext)
     return pContext->R7;
 #elif defined(HOST_ARM64)
     return pContext->Fp;
+#elif defined(HOST_S390X)
+    return pContext->R11;
 #else
 #error "don't know how to get the frame pointer for this architecture"
 #endif

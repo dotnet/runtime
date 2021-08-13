@@ -65,6 +65,10 @@ namespace R2RTest
         {
             ProcessParameters processParameters = base.CompilationProcess(outputFileName, inputAssemblyFileNames);
             processParameters.Arguments = $"{Crossgen2Path} {processParameters.Arguments}";
+            processParameters.EnvironmentOverrides["COMPlus_GCStress"] = "";
+            processParameters.EnvironmentOverrides["COMPlus_HeapVerify"] = "";
+            processParameters.EnvironmentOverrides["COMPlus_ReadyToRun"] = "";
+            processParameters.EnvironmentOverrides["COMPlus_GCName"] = "";
             return processParameters;
         }
 
@@ -120,6 +124,15 @@ namespace R2RTest
             if (CompositeMode)
             {
                 yield return "--composite";
+            }
+
+            if (_options.MibcPath != null && _options.MibcPath.Length > 0)
+            {
+                yield return "--embed-pgo-data";
+                foreach (FileInfo mibc in _options.MibcPath)
+                {
+                    yield return $"-m:{mibc.FullName}";
+                }
             }
 
             if (!string.IsNullOrEmpty(Crossgen2RunnerOptions.CompositeRoot))

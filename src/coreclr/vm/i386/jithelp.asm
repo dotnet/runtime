@@ -411,6 +411,31 @@ ENDM
 ;*******************************************************************************
 ; Write barrier wrappers with fcall calling convention
 ;
+
+        .data
+        ALIGN 4
+        public  _JIT_WriteBarrierEAX_Loc
+_JIT_WriteBarrierEAX_Loc dd 0
+
+        .code
+
+; WriteBarrierStart and WriteBarrierEnd are used to determine bounds of
+; WriteBarrier functions so can determine if got AV in them.
+;
+PUBLIC _JIT_WriteBarrierGroup@0
+_JIT_WriteBarrierGroup@0 PROC
+ret
+_JIT_WriteBarrierGroup@0 ENDP
+
+        ALIGN 4
+PUBLIC @JIT_WriteBarrier_Callable@8
+@JIT_WriteBarrier_Callable@8 PROC
+        mov eax,edx
+        mov edx,ecx
+        jmp DWORD PTR [_JIT_WriteBarrierEAX_Loc]
+
+@JIT_WriteBarrier_Callable@8 ENDP
+
 UniversalWriteBarrierHelper MACRO name
         ALIGN 4
 PUBLIC @JIT_&name&@8
@@ -420,14 +445,6 @@ PUBLIC @JIT_&name&@8
         jmp _JIT_&name&EAX@0
 @JIT_&name&@8 ENDP
 ENDM
-
-; WriteBarrierStart and WriteBarrierEnd are used to determine bounds of
-; WriteBarrier functions so can determine if got AV in them.
-;
-PUBLIC _JIT_WriteBarrierGroup@0
-_JIT_WriteBarrierGroup@0 PROC
-ret
-_JIT_WriteBarrierGroup@0 ENDP
 
 ifdef FEATURE_USE_ASM_GC_WRITE_BARRIERS
 ; Only define these if we're using the ASM GC write barriers; if this flag is not defined,
@@ -1233,6 +1250,8 @@ fremloopd:
 ; PatchedCodeStart and PatchedCodeEnd are used to determine bounds of patched code.
 ;
 
+            ALIGN 4
+
 _JIT_PatchedCodeStart@0 proc public
 ret
 _JIT_PatchedCodeStart@0 endp
@@ -1313,7 +1332,7 @@ JIT_EndCatch ENDP
 ; The call to the helper will be emitted by JIT in the function prolog when large (larger than 0x3000 bytes) stack frame is required.
 ;
 ; NOTE: this helper will modify a value of esp and must establish the frame pointer.
-PAGE_SIZE equ 1000h
+PROBE_PAGE_SIZE equ 1000h
 
 _JIT_StackProbe@0 PROC public
     ; On entry:
@@ -1323,13 +1342,13 @@ _JIT_StackProbe@0 PROC public
     push    ebp
     mov     ebp, esp
 
-    and     esp, -PAGE_SIZE      ; esp points to the **lowest address** on the last probed page
-                                 ; This is done to make the loop end condition simpler.
+    and     esp, -PROBE_PAGE_SIZE ; esp points to the **lowest address** on the last probed page
+                                  ; This is done to make the loop end condition simpler.
 ProbeLoop:
-    test    [esp - 4], eax       ; esp points to the lowest address on the **last probed** page
-    sub     esp, PAGE_SIZE       ; esp points to the lowest address of the **next page** to probe
+    test    [esp - 4], eax        ; esp points to the lowest address on the **last probed** page
+    sub     esp, PROBE_PAGE_SIZE  ; esp points to the lowest address of the **next page** to probe
     cmp     esp, eax
-    jg      ProbeLoop            ; if esp > eax, then we need to probe at least one more page.
+    jg      ProbeLoop             ; if esp > eax, then we need to probe at least one more page.
 
     mov     esp, ebp
     pop     ebp

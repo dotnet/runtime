@@ -30,11 +30,9 @@ namespace System.Threading
         internal static readonly CancellationTokenSource s_neverCanceledSource = new CancellationTokenSource();
 
         /// <summary>Delegate used with <see cref="Timer"/> to trigger cancellation of a <see cref="CancellationTokenSource"/>.</summary>
-        private static readonly TimerCallback s_timerCallback = obj =>
-        {
-            Debug.Assert(obj is CancellationTokenSource, $"Expected {typeof(CancellationTokenSource)}, got {obj}");
-            ((CancellationTokenSource)obj).NotifyCancellation(throwOnFirstException: false); // skip ThrowIfDisposed() check in Cancel()
-        };
+        private static readonly TimerCallback s_timerCallback = TimerCallback;
+        private static void TimerCallback(object? state) => // separated out into a named method to improve Timer diagnostics in a debugger
+            ((CancellationTokenSource)state!).NotifyCancellation(throwOnFirstException: false); // skip ThrowIfDisposed() check in Cancel()
 
         /// <summary>The current state of the CancellationTokenSource.</summary>
         private volatile int _state;
@@ -68,7 +66,7 @@ namespace System.Threading
         /// canceled concurrently.
         /// </para>
         /// </remarks>
-        public bool IsCancellationRequested => _state >= NotifyingState;
+        public bool IsCancellationRequested => _state != NotCanceledState;
 
         /// <summary>A simple helper to determine whether cancellation has finished.</summary>
         internal bool IsCancellationCompleted => _state == NotifyingCompleteState;
@@ -367,6 +365,54 @@ namespace System.Threading
             }
         }
 
+        /// <summary>
+        /// Attempts to reset the <see cref="CancellationTokenSource"/> to be used for an unrelated operation.
+        /// </summary>
+        /// <returns>
+        /// true if the <see cref="CancellationTokenSource"/> has not had cancellation requested and could
+        /// have its state reset to be reused for a subsequent operation; otherwise, false.
+        /// </returns>
+        /// <remarks>
+        /// <see cref="TryReset"/> is intended to be used by the sole owner of the <see cref="CancellationTokenSource"/>
+        /// when it is known that the operation with which the <see cref="CancellationTokenSource"/> was used has
+        /// completed, no one else will be attempting to cancel it, and any registrations still remaining are erroneous.
+        /// Upon a successful reset, such registrations will no longer be notified for any subsequent cancellation of the
+        /// <see cref="CancellationTokenSource"/>; however, if any component still holds a reference to this
+        /// <see cref="CancellationTokenSource"/> either directly or indirectly via a <see cref="CancellationToken"/>
+        /// handed out from it, polling via their reference will show the current state any time after the reset as
+        /// it's the same instance.  Usage of <see cref="TryReset"/> concurrently with requesting cancellation is not
+        /// thread-safe and may result in TryReset returning true even if cancellation was already requested and may result
+        /// in registrations not being invoked as part of the concurrent cancellation request.
+        /// </remarks>
+        public bool TryReset()
+        {
+            ThrowIfDisposed();
+
+            // We can only reset if cancellation has not yet been requested: we never want to allow a CancellationToken
+            // to transition from canceled to non-canceled.
+            if (_state == NotCanceledState)
+            {
+                // If there is no timer, then we're free to reset.  If there is a timer, then we need to first try
+                // to reset it to be infinite so that it won't fire, and then recognize that it could have already
+                // fired by the time we successfully changed it, and so check to see whether that's possibly the case.
+                // If we successfully reset it and it never fired, then we can be sure it won't trigger cancellation.
+                bool reset =
+                    _timer is not TimerQueueTimer timer ||
+                    (timer.Change(Timeout.UnsignedInfinite, Timeout.UnsignedInfinite) && !timer._everQueued);
+
+                if (reset)
+                {
+                    // We're not canceled and no timer will run to cancel us.
+                    // Clear out all the registrations, and return that we've successfully reset.
+                    Volatile.Read(ref _registrations)?.UnregisterAll();
+                    return true;
+                }
+            }
+
+            // Failed to reset.
+            return false;
+        }
+
         /// <summary>Releases the resources used by this <see cref="CancellationTokenSource" />.</summary>
         /// <remarks>This method is not thread-safe for any other concurrent calls.</remarks>
         public void Dispose()
@@ -436,10 +482,7 @@ namespace System.Threading
         {
             if (_disposed)
             {
-                ThrowObjectDisposedException();
-
-                [DoesNotReturn]
-                static void ThrowObjectDisposedException() => throw new ObjectDisposedException(null, SR.CancellationTokenSource_Disposed);
+                ThrowHelper.ThrowObjectDisposedException(ExceptionResource.CancellationTokenSource_Disposed);
             }
         }
 
@@ -878,6 +921,25 @@ namespace System.Threading
             /// <param name="source">The associated source.</param>
             public Registrations(CancellationTokenSource source) => Source = source;
 
+            [MethodImpl(MethodImplOptions.AggressiveInlining)] // used in only two places, one of which is a hot path
+            private void Recycle(CallbackNode node)
+            {
+                Debug.Assert(_lock == 1);
+
+                // Clear out the unused node and put it on the singly-linked free list.
+                // The only field we don't clear out is the associated Registrations, as that's fixed
+                // throughout the node's lifetime.
+                node.Id = 0;
+                node.Callback = null;
+                node.CallbackState = null;
+                node.ExecutionContext = null;
+                node.SynchronizationContext = null;
+
+                node.Prev = null;
+                node.Next = FreeNodeList;
+                FreeNodeList = node;
+            }
+
             /// <summary>Unregisters a callback.</summary>
             /// <param name="id">The expected id of the registration.</param>
             /// <param name="node">The callback node.</param>
@@ -927,19 +989,33 @@ namespace System.Threading
                         node.Next.Prev = node.Prev;
                     }
 
-                    // Clear out the now unused node and put it on the singly-linked free list.
-                    // The only field we don't clear out is the associated Source, as that's fixed
-                    // throughout the nodes lifetime.
-                    node.Id = 0;
-                    node.Callback = null;
-                    node.CallbackState = null;
-                    node.ExecutionContext = null;
-                    node.SynchronizationContext = null;
-                    node.Prev = null;
-                    node.Next = FreeNodeList;
-                    FreeNodeList = node;
+                    Recycle(node);
 
                     return true;
+                }
+                finally
+                {
+                    ExitLock();
+                }
+            }
+
+            /// <summary>Moves all registrations to the free list.</summary>
+            public void UnregisterAll()
+            {
+                EnterLock();
+                try
+                {
+                    // Null out all callbacks.
+                    CallbackNode? node = Callbacks;
+                    Callbacks = null;
+
+                    // Reset and move each node that was in the callbacks list to the free list.
+                    while (node != null)
+                    {
+                        CallbackNode? next = node.Next;
+                        Recycle(node);
+                        node = next;
+                    }
                 }
                 finally
                 {

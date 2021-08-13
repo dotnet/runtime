@@ -1,7 +1,0 @@
-﻿<Project>
-  <Import Project="..\Directory.Build.props" />
-  <PropertyGroup>
-    <PackageDescription>File system globbing to find files matching a specified pattern.</PackageDescription>
-    <IsAspNetCoreApp>true</IsAspNetCoreApp>
-  </PropertyGroup>
-</Project>

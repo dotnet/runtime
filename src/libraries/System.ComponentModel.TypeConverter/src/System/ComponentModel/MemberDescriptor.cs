@@ -3,6 +3,7 @@
 
 using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 
 namespace System.ComponentModel
@@ -14,17 +15,17 @@ namespace System.ComponentModel
     /// </summary>
     public abstract class MemberDescriptor
     {
-        private readonly string _name;
+        private readonly string? _name;
         private readonly string _displayName;
         private readonly int _nameHash;
-        private AttributeCollection _attributeCollection;
-        private Attribute[] _attributes;
-        private Attribute[] _originalAttributes;
+        private AttributeCollection? _attributeCollection;
+        private Attribute[]? _attributes;
+        private Attribute[]? _originalAttributes;
         private bool _attributesFiltered;
         private bool _attributesFilled;
         private int _metadataVersion;
-        private string _category;
-        private string _description;
+        private string? _category;
+        private string? _description;
         private readonly object _lockCookie = new object();
 
         /// <summary>
@@ -37,7 +38,7 @@ namespace System.ComponentModel
         /// <summary>
         /// Initializes a new instance of the <see cref='System.ComponentModel.MemberDescriptor'/> class with the specified <paramref name="name"/> and <paramref name="attributes "/> array.
         /// </summary>
-        protected MemberDescriptor(string name, Attribute[] attributes)
+        protected MemberDescriptor(string name, Attribute[]? attributes)
         {
             if (name == null)
             {
@@ -88,7 +89,7 @@ namespace System.ComponentModel
         /// <see cref='System.ComponentModel.MemberDescriptor'/> and the attributes
         /// in both the old <see cref='System.ComponentModel.MemberDescriptor'/> and the <see cref='System.Attribute'/> array.
         /// </summary>
-        protected MemberDescriptor(MemberDescriptor oldMemberDescriptor, Attribute[] newAttributes)
+        protected MemberDescriptor(MemberDescriptor oldMemberDescriptor, Attribute[]? newAttributes)
         {
             if (oldMemberDescriptor == null)
             {
@@ -127,7 +128,7 @@ namespace System.ComponentModel
         /// <summary>
         /// Gets or sets an array of attributes.
         /// </summary>
-        protected virtual Attribute[] AttributeArray
+        protected virtual Attribute[]? AttributeArray
         {
             get
             {
@@ -155,7 +156,7 @@ namespace System.ComponentModel
             get
             {
                 CheckAttributesValid();
-                AttributeCollection attrs = _attributeCollection;
+                AttributeCollection? attrs = _attributeCollection;
                 if (attrs == null)
                 {
                     lock (_lockCookie)
@@ -172,19 +173,19 @@ namespace System.ComponentModel
         /// Gets the name of the category that the member belongs to, as specified
         /// in the <see cref='System.ComponentModel.CategoryAttribute'/>.
         /// </summary>
-        public virtual string Category => _category ?? (_category = ((CategoryAttribute)Attributes[typeof(CategoryAttribute)]).Category);
+        public virtual string Category => _category ?? (_category = ((CategoryAttribute)Attributes[typeof(CategoryAttribute)]!).Category);
 
         /// <summary>
         /// Gets the description of the member as specified in the <see cref='System.ComponentModel.DescriptionAttribute'/>.
         /// </summary>
         public virtual string Description => _description ??
-                                             (_description = ((DescriptionAttribute)Attributes[typeof(DescriptionAttribute)]).Description);
+                                             (_description = ((DescriptionAttribute)Attributes[typeof(DescriptionAttribute)]!).Description);
 
         /// <summary>
         /// Gets a value indicating whether the member is browsable as specified in the
         /// <see cref='System.ComponentModel.BrowsableAttribute'/>.
         /// </summary>
-        public virtual bool IsBrowsable => ((BrowsableAttribute)Attributes[typeof(BrowsableAttribute)]).Browsable;
+        public virtual bool IsBrowsable => ((BrowsableAttribute)Attributes[typeof(BrowsableAttribute)]!).Browsable;
 
         /// <summary>
         /// Gets the name of the member.
@@ -248,7 +249,7 @@ namespace System.ComponentModel
         /// Compares this instance to the specified <see cref='System.ComponentModel.MemberDescriptor'/> to see if they are equivalent.
         /// NOTE: If you make a change here, you likely need to change GetHashCode() as well.
         /// </summary>
-        public override bool Equals(object obj)
+        public override bool Equals([NotNullWhen(true)] object? obj)
         {
             if (this == obj)
             {
@@ -274,13 +275,13 @@ namespace System.ComponentModel
             }
 
             if ((mdObj._category == null) != (_category == null) ||
-                (_category != null && !mdObj._category.Equals(_category)))
+                (_category != null && !mdObj._category!.Equals(_category)))
             {
                 return false;
             }
 
             if ((mdObj._description == null) != (_description == null) ||
-                (_description != null && !mdObj._description.Equals(_description)))
+                (_description != null && !mdObj._description!.Equals(_description)))
             {
                 return false;
             }
@@ -294,7 +295,7 @@ namespace System.ComponentModel
 
             if (_attributes != null)
             {
-                if (_attributes.Length != mdObj._attributes.Length)
+                if (_attributes.Length != mdObj._attributes!.Length)
                 {
                     return false;
                 }
@@ -350,7 +351,7 @@ namespace System.ComponentModel
                 }
                 else
                 {
-                    list = new List<Attribute>(_attributes);
+                    list = new List<Attribute>(_attributes!);
                 }
 
                 var map = new Dictionary<object, int>();
@@ -358,7 +359,7 @@ namespace System.ComponentModel
                 for (int i = 0; i < list.Count;)
                 {
                     int savedIndex = -1;
-                    object typeId = list[i]?.TypeId;
+                    object? typeId = list[i]?.TypeId;
                     if (typeId == null)
                     {
                         list.RemoveAt(i);
@@ -390,22 +391,33 @@ namespace System.ComponentModel
         /// <summary>
         /// Finds the given method through reflection. This method only looks for public methods.
         /// </summary>
-        protected static MethodInfo FindMethod(Type componentClass, string name, Type[] args, Type returnType)
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2067:UnrecognizedReflectionPattern",
+            Justification = "This method only looks for public methods by hard-coding publicOnly=true")]
+        protected static MethodInfo? FindMethod(
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)] Type componentClass,
+            string name,
+            Type[] args,
+            Type returnType)
         {
-            return FindMethod(componentClass, name, args, returnType, true);
+            return FindMethod(componentClass, name, args, returnType, publicOnly: true);
         }
 
         /// <summary>
         /// Finds the given method through reflection.
         /// </summary>
-        protected static MethodInfo FindMethod(Type componentClass, string name, Type[] args, Type returnType, bool publicOnly)
+        protected static MethodInfo? FindMethod(
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods | DynamicallyAccessedMemberTypes.NonPublicMethods)] Type componentClass,
+            string name,
+            Type[] args,
+            Type returnType,
+            bool publicOnly)
         {
             if (componentClass == null)
             {
                 throw new ArgumentNullException(nameof(componentClass));
             }
 
-            MethodInfo result = null;
+            MethodInfo? result = null;
             if (publicOnly)
             {
                 result = componentClass.GetMethod(name, args);
@@ -433,7 +445,7 @@ namespace System.ComponentModel
         /// someone associated another object with this instance, or if the instance is a
         /// custom type descriptor, GetInvocationTarget may return a different value.
         /// </summary>
-        protected virtual object GetInvocationTarget(Type type, object instance)
+        protected virtual object? GetInvocationTarget(Type type, object instance)
         {
             if (type == null)
             {
@@ -451,9 +463,9 @@ namespace System.ComponentModel
         /// <summary>
         /// Gets a component site for the given component.
         /// </summary>
-        protected static ISite GetSite(object component) => (component as IComponent)?.Site;
+        protected static ISite? GetSite(object? component) => (component as IComponent)?.Site;
 
-        [Obsolete("This method has been deprecated. Use GetInvocationTarget instead. https://go.microsoft.com/fwlink/?linkid=14202")]
+        [Obsolete("MemberDescriptor.GetInvokee has been deprecated. Use GetInvocationTarget instead.")]
         protected static object GetInvokee(Type componentClass, object component)
         {
 

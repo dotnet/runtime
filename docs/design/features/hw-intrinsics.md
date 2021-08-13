@@ -6,7 +6,7 @@ see https://github.com/dotnet/designs/blob/master/accepted/2018/platform-intrins
 
 In discussing the hardware intrinsics, we refer to the target platform, such as X86 or Arm64, as the "platform" and each set of extensions that are implemented as a unit (e.g. AVX2 on X64 or Simd on Arm64) as an "ISA".
 
-There is a design document for the Arm64 intrinsics: https://github.com/dotnet/runtime/blob/master/docs/design/features/arm64-intrinsics.md. It should be updated to reflect current (and ongoing) progress.
+There is a design document for the Arm64 intrinsics: https://github.com/dotnet/runtime/blob/main/docs/design/features/arm64-intrinsics.md. It should be updated to reflect current (and ongoing) progress.
 
 ## Overview
 
@@ -53,7 +53,7 @@ The JIT depends on the VM and configuration settings to determine what target pl
 
 ### Importation
 
-Hardware intrinsics are built on RyuJIT's `NamedIntrinsic` mechanism to identify method calls that should be recognized as intrinsics (see https://github.com/dotnet/runtime/blob/master/src/coreclr/jit/namedintrinsiclist.h). In the incoming IL, intrinsic invocations are just method calls, so the JIT must distinguish intrinsic calls from ordinary call-sites and map them to its IR representation: the `GenTreeHWIntrinsic` node.
+Hardware intrinsics are built on RyuJIT's `NamedIntrinsic` mechanism to identify method calls that should be recognized as intrinsics (see https://github.com/dotnet/runtime/blob/main/src/coreclr/jit/namedintrinsiclist.h). In the incoming IL, intrinsic invocations are just method calls, so the JIT must distinguish intrinsic calls from ordinary call-sites and map them to its IR representation: the `GenTreeHWIntrinsic` node.
 
 The [Intrinsic] attribute was added to eliminate the need to check each call-site. It [Intrinsic] attribute has a different meaning on each attribute target:
 
@@ -83,8 +83,8 @@ Note that the x86/x64 implementation is shared, while currently the Arm64 intrin
 
 The hardware intrinsics nodes are generally imported as `GenTreeHWIntrinsic` nodes, with the `GT_HWINTRINSIC` operator. On these nodes:
 * The `gtHWIntrinsicId` field contains the intrinsic ID, as declared in the hardware intrinsics table
-* The `gtSIMDBaseType` field indicates the "base type" (generic type argument).
-* The `gtSIMDSize` field indicates the full byte width of the vector (e.g. 16 bytes for `Vector128<T>`).
+* The `GetSimdBaseType` method indicates the "base type" (generic type argument).
+* The `GetSimdSize` method indicates the full byte width of the vector (e.g. 16 bytes for `Vector128<T>`).
 
 ### Lowering
 

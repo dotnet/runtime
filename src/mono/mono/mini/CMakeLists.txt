@@ -19,6 +19,24 @@ include_directories(
   ${PROJECT_SOURCE_DIR}/../eglib
   ${PROJECT_SOURCE_DIR}/../sgen)
 
+if(HOST_DARWIN)
+  set(OS_LIBS "-framework CoreFoundation" "-framework Foundation")
+
+  if(CMAKE_SYSTEM_VARIANT STREQUAL "MacCatalyst")
+    set(OS_LIBS "-lobjc" "-lc++")
+  endif()
+elseif(HOST_IOS)
+set(OS_LIBS "-framework CoreFoundation" "-lobjc" "-lc++")
+elseif(HOST_ANDROID)
+set(OS_LIBS m dl log)
+elseif(HOST_LINUX)
+set(OS_LIBS pthread m dl)
+elseif(HOST_WIN32)
+set(OS_LIBS bcrypt.lib Mswsock.lib ws2_32.lib psapi.lib version.lib advapi32.lib winmm.lib kernel32.lib)
+elseif(HOST_SOLARIS)
+  set(OS_LIBS socket pthread m ${CMAKE_DL_LIBS})
+endif()
+
 #
 # SUBDIRS
 #
@@ -26,30 +44,22 @@ include(../eglib/CMakeLists.txt)
 include(../utils/CMakeLists.txt)
 include(../metadata/CMakeLists.txt)
 include(../sgen/CMakeLists.txt)
-if(HOST_WIN32)  # TODO: hook up HAVE_SYS_ZLIB instead
+if(INTERNAL_ZLIB)  # TODO: hook up HAVE_SYS_ZLIB instead
   include(../zlib/CMakeLists.txt)
 endif()
+include(../component/CMakeLists.txt)
 
-if(ENABLE_PERFTRACING)
-
-    set (SHARED_EVENTPIPE_INCLUDE_PATH "../../../native/")
-    set (SHARED_EVENTPIPE_SOURCE_PATH "../../../native/eventpipe/")
-    set (MONO_EVENTPIPE_SHIM_SOURCE_PATH "../eventpipe/")
-
-    include(${MONO_EVENTPIPE_SHIM_SOURCE_PATH}/CMakeLists.txt)
-
-    include_directories(
-      ${SHARED_EVENTPIPE_INCLUDE_PATH}
-      ${MONO_EVENTPIPE_SHIM_SOURCE_PATH}
-    )
-
-endif(ENABLE_PERFTRACING)
+if(HOST_WIN32)
+  # /OPT:ICF merges idential functions breaking mono_lookup_icall_symbol ()
+  add_link_options(/OPT:NOICF)
+endif()
 
 # ICU
 if(HAVE_SYS_ICU)
   if(STATIC_ICU)
     set(pal_icushim_sources_base
         pal_icushim_static.c)
+    add_definitions(-DSTATIC_ICU=1)
   else()
     set(pal_icushim_sources_base
         pal_icushim.c)
@@ -69,7 +79,7 @@ if(HAVE_SYS_ICU)
       ${pal_icushim_sources_base})
   addprefix(icu_shim_sources "${ICU_SHIM_PATH}" "${icu_shim_sources_base}")
   set_source_files_properties(${icu_shim_sources} PROPERTIES COMPILE_DEFINITIONS OSX_ICU_LIBRARY_PATH="${OSX_ICU_LIBRARY_PATH}")
-  set_source_files_properties(${icu_shim_sources} PROPERTIES COMPILE_FLAGS "-I${ICU_INCLUDEDIR} -I${CMAKE_CURRENT_SOURCE_DIR}/../../../libraries/Native/Unix/System.Globalization.Native/ -I${CMAKE_CURRENT_SOURCE_DIR}/../../../libraries/Native/Unix/Common/ ${ICU_FLAGS}")
+  set_source_files_properties(${icu_shim_sources} PROPERTIES COMPILE_FLAGS "-I\"${ICU_INCLUDEDIR}\" -I\"${CMAKE_CURRENT_SOURCE_DIR}/../../../libraries/Native/Unix/System.Globalization.Native/\" -I\"${CMAKE_CURRENT_SOURCE_DIR}/../../../libraries/Native/Unix/Common/\" ${ICU_FLAGS}")
   if(TARGET_WIN32)
       set_source_files_properties(${icu_shim_sources} PROPERTIES LANGUAGE CXX)
   endif()
@@ -134,7 +144,6 @@ set(mini_common_sources
     dwarfwriter.c
     mini-gc.h
     mini-gc.c
-    xdebug.c
     mini-llvm.h
     mini-llvm-cpp.h
     llvm-jit.h
@@ -143,6 +152,7 @@ set(mini_common_sources
     arch-stubs.c
     llvm-runtime.h
     llvm-intrinsics.h
+    llvm-intrinsics-types.h
     type-checking.c
     lldb.h
     lldb.c
@@ -159,15 +169,9 @@ set(mini_common_sources
     monovm.c)
 
 set(debugger_sources
-  debugger-engine.h
-  debugger-engine.c
-  debugger-agent.h
-  debugger-agent.c
-  debugger-protocol.h
-  debugger-protocol.c
-  debugger-agent-stubs.c
-  debugger-state-machine.h
-  debugger-state-machine.c)
+  debugger-agent-external.h
+  debugger-agent-external.c
+  )
 
 set(amd64_sources
     mini-amd64.c
@@ -207,12 +211,18 @@ set(arm_sources
     tramp-arm-gsharedvt.c
     cpu-arm.h)
 
+set(s390x_sources
+    mini-s390x.c
+    mini-s390x.h
+    exceptions-s390x.c
+    tramp-s390x.c
+    cpu-s390x.h)
+
 set(wasm_sources
     mini-wasm.c
     tramp-wasm.c
     exceptions-wasm.c
     aot-runtime-wasm.c
-    mini-wasm-debugger.c
     wasm_m2n_invoke.g.h
     cpu-wasm.h)
 
@@ -224,6 +234,8 @@ elseif(TARGET_ARM64)
 set(arch_sources ${arm64_sources})
 elseif(TARGET_ARM)
 set(arch_sources ${arm_sources})
+elseif(TARGET_S390X)
+set(arch_sources ${s390x_sources})
 elseif(TARGET_WASM)
 set(arch_sources ${wasm_sources})
 endif()
@@ -235,8 +247,6 @@ set(windows_sources
     mini-windows.c
     mini-windows-tls-callback.c
     mini-windows.h
-    mini-windows-dllmain.c
-    # mini-windows-dlldac.c
     )
 
 set(posix_sources
@@ -244,7 +254,7 @@ set(posix_sources
 
 if(HOST_DARWIN)
 set(os_sources "${darwin_sources};${posix_sources}")
-elseif(HOST_LINUX)
+elseif(HOST_LINUX OR HOST_SOLARIS)
 set(os_sources "${posix_sources}")
 elseif(HOST_WIN32)
 set(os_sources "${windows_sources}")
@@ -303,23 +313,21 @@ if(LLVM_LIBDIR)
   link_directories(${LLVM_LIBDIR})
 endif()
 
-if(HOST_DARWIN)
-set(OS_LIBS "-framework CoreFoundation" "-framework Foundation")
-elseif(HOST_IOS)
-set(OS_LIBS "-framework CoreFoundation" "-lobjc" "-lc++")
-elseif(HOST_ANDROID)
-set(OS_LIBS m dl log)
-elseif(HOST_LINUX)
-set(OS_LIBS pthread m dl)
-elseif(HOST_WIN32)
-set(OS_LIBS bcrypt.lib Mswsock.lib ws2_32.lib psapi.lib version.lib advapi32.lib winmm.lib kernel32.lib)
+if(HOST_WIN32)
 set(mini_sources "${mini_sources};${PROJECT_BINARY_DIR}/../../NativeVersion.rc") # this is generated by GenerateMonoVersionFile in mono.proj
 endif()
 
+set(monosgen-sources "${metadata_sources};${utils_sources};${sgen_sources};${icu_shim_sources};${mini_sources};${zlib_sources}")
 
-add_library(monosgen-objects OBJECT "${eglib_sources};${metadata_sources};${utils_sources};${sgen_sources};${icu_shim_sources};${eventpipe_sources};${mini_sources};${zlib_sources}")
-add_library(monosgen-static STATIC $<TARGET_OBJECTS:monosgen-objects>)
-set_target_properties(monosgen-static PROPERTIES OUTPUT_NAME monosgen-2.0)
+add_library(monosgen-objects OBJECT "${monosgen-sources}")
+add_library(monosgen-static STATIC $<TARGET_OBJECTS:monosgen-objects>;$<TARGET_OBJECTS:eglib_objects>)
+set_target_properties(monosgen-static PROPERTIES OUTPUT_NAME ${MONO_LIB_NAME})
+
+if(DISABLE_COMPONENTS)
+  # add component fallback stubs into static mono library when components have been disabled.
+  target_sources(monosgen-static PRIVATE "${mono-components-stub-objects}")
+endif()
+
 if(NOT DISABLE_LIBS)
   install(TARGETS monosgen-static LIBRARY)
   install(FILES ${metadata_public_headers}
@@ -330,21 +338,91 @@ if(NOT DISABLE_LIBS)
 	DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/mono-2.0/mono/jit)
 endif()
 if(NOT DISABLE_SHARED_LIBS)
-  add_library(monosgen-shared SHARED $<TARGET_OBJECTS:monosgen-objects> )
-  set_target_properties(monosgen-shared PROPERTIES OUTPUT_NAME monosgen-2.0)
+  if(HOST_WIN32)
+    add_library(monosgen-shared SHARED "mini-windows-dllmain.c;${monosgen-sources}")
+    target_compile_definitions(monosgen-shared PRIVATE -DMONO_DLL_EXPORT)
+  else()
+    add_library(monosgen-shared SHARED $<TARGET_OBJECTS:monosgen-objects>)
+    target_compile_definitions(monosgen-objects PRIVATE -DMONO_DLL_EXPORT)
+  endif()
+  target_sources(monosgen-shared PRIVATE $<TARGET_OBJECTS:eglib_objects>)
+  set_target_properties(monosgen-shared PROPERTIES OUTPUT_NAME ${MONO_SHARED_LIB_NAME})
   if(TARGET_WIN32)
-    # on Windows the import library for the shared monosgen-2.0 library will have the same name as the static library (monosgen-2.0.lib),
+    # on Windows the import library for the shared mono library will have the same name as the static library,
     # to avoid a conflict we rename the import library with the .import.lib suffix
     set_target_properties(monosgen-shared PROPERTIES IMPORT_SUFFIX ".import.lib")
   endif()
-  target_link_libraries(monosgen-shared ${OS_LIBS} ${ICONV_LIB} ${LLVM_LIBS} ${ICU_LIBS})
+  target_link_libraries(monosgen-shared PRIVATE ${OS_LIBS} ${ICONV_LIB} ${LLVM_LIBS} ${ICU_LIBS})
   if(ICU_LDFLAGS)
     set_property(TARGET monosgen-shared APPEND_STRING PROPERTY LINK_FLAGS " ${ICU_LDFLAGS}")
   endif()
+  if(NOT TARGET_WASM AND STATIC_ICU)
+    set_property(TARGET monosgen-shared APPEND_STRING PROPERTY LINKER_LANGUAGE CXX)
+  endif ()
   if(TARGET_DARWIN)
     set_property(TARGET monosgen-shared APPEND_STRING PROPERTY LINK_FLAGS " -Wl,-compatibility_version -Wl,2.0 -Wl,-current_version -Wl,2.0")
   endif()
+  if(NOT DISABLE_COMPONENTS AND STATIC_COMPONENTS AND NOT DISABLE_LINK_STATIC_COMPONENTS)
+    # if components are built statically, but we're building a shared lib mono,
+    # link them into the library
+    target_sources(monosgen-shared PRIVATE "${mono-components-objects}")
+  elseif(NOT DISABLE_COMPONENTS AND STATIC_COMPONENTS AND DISABLE_LINK_STATIC_COMPONENTS)
+    # if components are built statically, we're building a shared lib mono, but we shouldn't link components
+    # link the fallback stubs into the runtime
+    target_sources(monosgen-shared PRIVATE "${mono-components-stub-objects}")
+  elseif(NOT DISABLE_COMPONENTS AND NOT STATIC_COMPONENTS)
+    # if components are built dynamically, link the fallback stubs into the runtime
+    target_sources(monosgen-shared PRIVATE "${mono-components-stub-objects}")
+  elseif(DISABLE_COMPONENTS)
+    # if components are disabled, link the fallback stubs into the runtime
+    target_sources(monosgen-shared PRIVATE "${mono-components-stub-objects}")
+  endif()
   install(TARGETS monosgen-shared LIBRARY)
+  if(HOST_WIN32 AND TARGET_AMD64)
+    add_library(monosgen-shared-dac SHARED "mini-windows-dlldac.c")
+    set_target_properties(monosgen-shared-dac PROPERTIES OUTPUT_NAME ${MONO_SHARED_LIB_NAME}-dac)
+  endif()
+
+  if(BUILD_DARWIN_FRAMEWORKS)
+    if(TARGET_DARWIN)
+      # In cmake, you cannot have list entries which contain a space or semicolon - those are considered
+      # record separators (i.e. a list of list(APPEND foo "a" "b;c" "d e") is a five entry list of values
+      # a, b, c, d and e.
+      # So, in order to treat the components lists as single list entries, swap out the ; character
+      # for a temporary replacement character, allowing the full lists to be treated as single entries
+      string(REPLACE ";" "*" mono-components-objects-nowhitespace "${mono-components-objects}")
+      string(REPLACE ";" "*" mono-components-stub-objects-nowhitespace "${mono-components-stub-objects}")
+      list(APPEND FrameworkConfig Mono.debug Mono.release)
+      list(APPEND ComponentsObjects "${mono-components-objects-nowhitespace}" "${mono-components-stub-objects-nowhitespace}")
+      foreach(frameworkconfig componentsobjects IN ZIP_LISTS FrameworkConfig ComponentsObjects)
+        if("${componentsobjects}" STREQUAL "")
+          #components list is empty, use stubs instead
+          set(componentsobjects "${mono-components-stub-objects-nowhitespace}")
+        endif()
+        add_library(${frameworkconfig} SHARED $<TARGET_OBJECTS:monosgen-objects>)
+        target_compile_definitions(${frameworkconfig} PRIVATE -DMONO_DLL_EXPORT)
+        target_sources(${frameworkconfig} PRIVATE $<TARGET_OBJECTS:eglib_objects>)
+        target_link_libraries(${frameworkconfig} PRIVATE ${OS_LIBS} ${ICONV_LIB} ${LLVM_LIBS} ${ICU_LIBS})
+        if(ICU_LDFLAGS)
+          set_property(TARGET ${frameworkconfig} APPEND_STRING PROPERTY LINK_FLAGS " ${ICU_LDFLAGS}")
+        endif()
+        if(STATIC_ICU)
+          set_property(TARGET ${frameworkconfig} APPEND_STRING PROPERTY LINKER_LANGUAGE CXX)
+        endif ()
+        set_property(TARGET ${frameworkconfig} APPEND_STRING PROPERTY LINK_FLAGS " -Wl,-compatibility_version -Wl,2.0 -Wl,-current_version -Wl,2.0")
+        string(REPLACE "*" ";" componentsobjects-whitespace "${componentsobjects}")
+        target_sources(${frameworkconfig} PRIVATE "${componentsobjects-whitespace}")
+        set_target_properties(${frameworkconfig} PROPERTIES
+          FRAMEWORK TRUE
+          FRAMEWORK_VERSION C
+          MACOSX_FRAMEWORK_IDENTIFIER net.dot.mono-framework
+        )
+        install(TARGETS ${frameworkconfig}
+          FRAMEWORK DESTINATION ${CMAKE_INSTALL_LIBDIR}
+        )
+      endforeach()
+    endif()
+  endif()
 endif()
 
 find_package(Python3 COMPONENTS Interpreter)
@@ -355,6 +433,7 @@ file(GENERATE OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/buildver-sgen.h CONTENT [=[cons
 add_custom_command(
   OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/cpu-amd64.h
   COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/genmdesc.py TARGET_AMD64 ${CMAKE_CURRENT_SOURCE_DIR} cpu-amd64.h amd64_desc ${CMAKE_CURRENT_SOURCE_DIR}/cpu-amd64.md
+  DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/genmdesc.py mini-ops.h
   VERBATIM
 )
 
@@ -377,14 +456,38 @@ add_custom_command(
 )
 
 add_custom_command(
+  OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/cpu-s390x.h
+  COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/genmdesc.py TARGET_S390X ${CMAKE_CURRENT_SOURCE_DIR} cpu-s390x.h s390x_cpu_desc ${CMAKE_CURRENT_SOURCE_DIR}/cpu-s390x.md
+  VERBATIM
+)
+
+add_custom_command(
   OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/cpu-wasm.h
   COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/genmdesc.py TARGET_WASM ${CMAKE_CURRENT_SOURCE_DIR} cpu-wasm.h wasm_desc ${CMAKE_CURRENT_SOURCE_DIR}/cpu-wasm.md
   VERBATIM
 )
 
 if(NOT DISABLE_EXECUTABLES)
-  add_executable(mono-sgen "main-sgen.c")
-  target_link_libraries(mono-sgen monosgen-static ${OS_LIBS} ${ICONV_LIB} ${LLVM_LIBS} ${ICU_LIBS})
+  set(sgen_sources "main-sgen.c")
+  if(HOST_WIN32)
+    set(sgen_sources "${sgen_sources};${PROJECT_BINARY_DIR}/../../NativeVersion.rc")
+  endif()
+  add_executable(mono-sgen "${sgen_sources}")
+  target_link_libraries(mono-sgen PRIVATE monosgen-static ${OS_LIBS} ${ICONV_LIB} ${LLVM_LIBS} ${ICU_LIBS})
+  if(NOT DISABLE_COMPONENTS AND STATIC_COMPONENTS AND NOT DISABLE_LINK_STATIC_COMPONENTS)
+    # if components are built statically, link them into runtime.
+    target_sources(mono-sgen PRIVATE "${mono-components-objects}")
+  elseif(NOT DISABLE_COMPONENTS AND STATIC_COMPONENTS AND DISABLE_LINK_STATIC_COMPONENTS)
+    # if components are built statically, but we shouldn't link components
+    # link the fallback stubs into the runtime
+    target_sources(mono-sgen PRIVATE "${mono-components-stub-objects}")
+  elseif(NOT DISABLE_COMPONENTS AND NOT STATIC_COMPONENTS)
+    # if components are built dynamically, link the fallback stubs into the runtime
+    target_sources(mono-sgen PRIVATE "${mono-components-stub-objects}")
+  elseif(DISABLE_COMPONENTS)
+    # if components are disabled, link the fallback stubs into the runtime
+    # fallback stubs already provided in monosgen-static when components are disabled
+  endif()
   if(ICU_LDFLAGS)
     set_property(TARGET mono-sgen APPEND_STRING PROPERTY LINK_FLAGS " ${ICU_LDFLAGS}")
   endif()

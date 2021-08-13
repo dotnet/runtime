@@ -10,7 +10,7 @@ namespace System.Xml.Xsl.XsltOld
     using System.Text;
     using System.Collections;
 
-    internal class XsltOutput : CompiledAction
+    internal sealed class XsltOutput : CompiledAction
     {
         internal enum OutputMethod
         {

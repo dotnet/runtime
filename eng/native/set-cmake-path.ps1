@@ -1,73 +1,42 @@
-# This file probes for the prerequisites for the build system, and outputs commands for eval'ing
-# from the cmd scripts to set variables (and exit on error)
+# This script locates the CMake executable for the build system and outputs either the "set CMakePath=..."
+# command (if CMake is found) or the "exit /b 1" command (if not found) for evaluating from batch files.
 
-function GetCMakeVersions
-{
-  $items = @()
-  $items += @(Get-ChildItem hklm:\SOFTWARE\Wow6432Node\Kitware -ErrorAction SilentlyContinue)
-  $items += @(Get-ChildItem hklm:\SOFTWARE\Kitware -ErrorAction SilentlyContinue)
-  return $items | where { $_.PSChildName.StartsWith("CMake") }
-}
+Set-StrictMode -Version 3
 
-function GetCMakeInfo($regKey)
-{
-  try {
-    $version = [System.Version] $regKey.PSChildName.Split(' ')[1]
+function LocateCMake {
+  # Find the first cmake.exe on the PATH
+  $cmakeApp = (Get-Command cmake.exe -ErrorAction SilentlyContinue)
+  if ($cmakeApp -ne $null) {
+    return $cmakeApp.Path
   }
-  catch {
-    return $null
-  }
-  $itemProperty = Get-ItemProperty $regKey.PSPath;
-  if (Get-Member -inputobject $itemProperty -name "InstallDir" -Membertype Properties) {
-    $cmakeDir = $itemProperty.InstallDir
-  }
-  else {
-    $cmakeDir = $itemProperty.'(default)'
-  }
-  $cmakePath = [System.IO.Path]::Combine($cmakeDir, "artifacts\cmake.exe")
-  if (![System.IO.File]::Exists($cmakePath)) {
-    return $null
-  }
-  return @{'version' = $version; 'path' = $cmakePath}
-}
 
-function LocateCMake
-{
-  $errorMsg = "CMake is a pre-requisite to build this repository but it was not found on the path. Please install CMake from https://cmake.org/download/ and ensure it is on your path."
-  $inPathPath = (get-command cmake.exe -ErrorAction SilentlyContinue)
-  if ($inPathPath -ne $null) {
-    # Resolve the first version of CMake if multiple commands are found
-    if ($inPathPath.Length -gt 1) {
-      return $inPathPath[0].Path
-    }
-    return $inPathPath.Path
+  # Find cmake.exe using the registry
+  $cmakeRegKey = Get-ItemProperty HKLM:\SOFTWARE\Kitware\CMake -Name InstallDir -ErrorAction SilentlyContinue
+  if ($cmakeRegKey -eq $null) {
+    $cmakeRegKey = Get-ItemProperty HKLM:\SOFTWARE\Wow6432Node\Kitware\CMake -Name InstallDir -ErrorAction SilentlyContinue
   }
-  # Let us hope that CMake keep using their current version scheme
-  $validVersions = @()
-  foreach ($regKey in GetCMakeVersions) {
-    $info = GetCMakeInfo($regKey)
-    if ($info -ne $null) {
-      $validVersions += @($info)
+
+  if ($cmakeRegKey -ne $null) {
+    $cmakePath = $cmakeRegKey.InstallDir + "bin\cmake.exe"
+    if (Test-Path $cmakePath -PathType Leaf) {
+      return $cmakePath
     }
   }
-  $newestCMakePath = ($validVersions |
-    Sort-Object -property @{Expression={$_.version}; Ascending=$false} |
-    select -first 1).path
-  if ($newestCMakePath -eq $null) {
-    Throw $errorMsg
-  }
-  return $newestCMakePath
+
+  return $null
 }
 
 try {
   $cmakePath = LocateCMake
+
+  if ($cmakePath -eq $null) {
+    throw "CMake is a pre-requisite to build this repository but it was not found on the PATH or in the registry. Please install CMake from https://cmake.org/download/."
+  }
+
   $version = [Version]$(& $cmakePath --version | Select-String -Pattern '\d+\.\d+\.\d+' | %{$_.Matches.Value})
 
-  if ($version -lt [Version]"3.14.0") {
-      Throw "This repository requires CMake 3.14 and recommends CMake 3.16. The newest version of CMake installed is $version. Please install CMake 3.16 or newer from https://cmake.org/download/ and ensure it is on your path."
-  }
-  elseif ($version -lt [Version]"3.16.0") {
-    [System.Console]::Error.WriteLine("CMake 3.16 or newer is recommended for building this repository. The newest version of CMake installed is $version. Please install CMake 3.16 or newer from https://cmake.org/download/ and ensure it is on your path.")
+  if ($version -lt [Version]"3.16.4") {
+    throw "CMake 3.16.4 or newer is required for building this repository. The newest version of CMake installed is $version. Please install CMake 3.16.4 or newer from https://cmake.org/download/."
   }
 
   [System.Console]::WriteLine("set CMakePath=" + $cmakePath)

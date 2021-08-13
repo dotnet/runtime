@@ -2,13 +2,17 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using Microsoft.DotNet.RemoteExecutor;
+using System.Diagnostics;
+using System.Collections.Concurrent;
 using Xunit;
 
 namespace System.Globalization.Tests
 {
     public class GetCultureInfoTests
     {
-        public static bool PlatformSupportsFakeCulture => !PlatformDetection.IsWindows || (PlatformDetection.WindowsVersion >= 10 && !PlatformDetection.IsNetFramework);
+        public static bool PlatformSupportsFakeCulture => (!PlatformDetection.IsWindows || (PlatformDetection.WindowsVersion >= 10 && !PlatformDetection.IsNetFramework)) && PlatformDetection.IsNotBrowser;
+        public static bool PlatformSupportsFakeCultureAndRemoteExecutor => PlatformSupportsFakeCulture && RemoteExecutor.IsSupported;
 
         public static IEnumerable<object[]> GetCultureInfoTestData()
         {
@@ -109,6 +113,107 @@ namespace System.Globalization.Tests
             Assert.Equal(name, CultureInfo.GetCultureInfo(name).Name);
             Assert.Equal(name, CultureInfo.GetCultureInfo(name, predefinedOnly: false).Name);
             Assert.Throws<CultureNotFoundException>(() => CultureInfo.GetCultureInfo(name, predefinedOnly: true));
+        }
+
+        [ConditionalTheory(nameof(PlatformSupportsFakeCultureAndRemoteExecutor))]
+        [InlineData("1", "xx-XY")]
+        [InlineData("1", "zx-ZY")]
+        [InlineData("0", "xx-XY")]
+        [InlineData("0", "zx-ZY")]
+        public void PredefinedCulturesOnlyEnvVarTest(string predefinedCulturesOnlyEnvVar, string cultureName)
+        {
+            var psi = new ProcessStartInfo();
+            psi.Environment.Clear();
+
+            psi.Environment.Add("DOTNET_SYSTEM_GLOBALIZATION_PREDEFINED_CULTURES_ONLY", predefinedCulturesOnlyEnvVar);
+
+            RemoteExecutor.Invoke((culture, predefined) =>
+            {
+                if (predefined == "1")
+                {
+                    AssertExtensions.Throws<CultureNotFoundException>(() => new CultureInfo(culture));
+                }
+                else
+                {
+                    CultureInfo ci = new CultureInfo(culture);
+                    Assert.Equal(culture, ci.Name);
+                }
+            }, cultureName, predefinedCulturesOnlyEnvVar, new RemoteInvokeOptions { StartInfo = psi }).Dispose();
+        }
+
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [InlineData(true, true, false)]
+        [InlineData(true, true, true)]
+        [InlineData(true, false, true)]
+        [InlineData(false, true, true)]
+        [InlineData(false, true, false)]
+        [InlineData(false, false, true)]
+        public void TestAllowInvariantCultureOnly(bool enableInvariant, bool predefinedCulturesOnly, bool declarePredefinedCulturesOnly)
+        {
+            var psi = new ProcessStartInfo();
+            psi.Environment.Clear();
+
+            if (enableInvariant)
+            {
+                psi.Environment.Add("DOTNET_SYSTEM_GLOBALIZATION_INVARIANT", "true");
+            }
+
+            if (declarePredefinedCulturesOnly)
+            {
+                psi.Environment.Add("DOTNET_SYSTEM_GLOBALIZATION_PREDEFINED_CULTURES_ONLY", predefinedCulturesOnly ? "true" : "false");
+            }
+
+            bool restricted = enableInvariant && (declarePredefinedCulturesOnly ? predefinedCulturesOnly : true);
+
+            RemoteExecutor.Invoke((invariantEnabled, isRestricted) =>
+            {
+                bool restrictedMode = bool.Parse(isRestricted);
+
+                // First ensure we can create the current cultures regardless of the mode we are in
+                Assert.NotNull(CultureInfo.CurrentCulture);
+                Assert.NotNull(CultureInfo.CurrentUICulture);
+
+                // Invariant culture should be valid all the time
+                Assert.Equal("", new CultureInfo("").Name);
+                Assert.Equal("", CultureInfo.InvariantCulture.Name);
+
+                if (restrictedMode)
+                {
+                    Assert.Equal("", CultureInfo.CurrentCulture.Name);
+                    Assert.Equal("", CultureInfo.CurrentUICulture.Name);
+
+                    // Throwing exception is testing accessing the resources in this restricted mode.
+                    // We should retrieve the resources from the neutral resources in the main assemblies.
+                    AssertExtensions.Throws<CultureNotFoundException>(() => new CultureInfo("en-US"));
+                    AssertExtensions.Throws<CultureNotFoundException>(() => new CultureInfo("en"));
+
+                    AssertExtensions.Throws<CultureNotFoundException>(() => new CultureInfo("ja-JP"));
+                    AssertExtensions.Throws<CultureNotFoundException>(() => new CultureInfo("es"));
+
+                    // Test throwing exceptions from non-core assemblies.
+                    Exception exception = Record.Exception(() => new ConcurrentBag<string>(null));
+                    Assert.NotNull(exception);
+                    Assert.IsType<ArgumentNullException>(exception);
+                    Assert.Equal("collection", (exception as ArgumentNullException).ParamName);
+                    Assert.Equal("The collection argument is null. (Parameter 'collection')", exception.Message);
+                }
+                else
+                {
+                    Assert.Equal("en-US", new CultureInfo("en-US").Name);
+                    Assert.Equal("ja-JP", new CultureInfo("ja-JP").Name);
+                    Assert.Equal("en", new CultureInfo("en").Name);
+                    Assert.Equal("es", new CultureInfo("es").Name);
+                }
+
+                // Ensure the Invariant Mode functionality still work
+                if (bool.Parse(invariantEnabled))
+                {
+                    Assert.True(CultureInfo.CurrentCulture.Calendar is GregorianCalendar);
+                    Assert.True("abcd".Equals("ABCD", StringComparison.CurrentCultureIgnoreCase));
+                    Assert.Equal("Invariant Language (Invariant Country)", CultureInfo.CurrentCulture.NativeName);
+                }
+
+            }, enableInvariant.ToString(), restricted.ToString(), new RemoteInvokeOptions { StartInfo = psi }).Dispose();
         }
     }
 }

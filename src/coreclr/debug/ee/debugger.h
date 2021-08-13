@@ -326,16 +326,6 @@ public:
 #define GCX_PREEMP_EEINTERFACE_TOGGLE_IFTHREAD_COND(cond)               \
     GCHolderEEInterface<FALSE, TRUE, TRUE> __gcCoop_onlyOneAllowedPerScope((cond))
 
-
-
-// There are still some APIs that call new that we call from the helper thread.
-// These are unsafe operations, so we wrap them here. Each of these is a potential hang.
-inline DWORD UnsafeGetConfigDWORD_DontUse_(LPCWSTR name, DWORD defValue)
-{
-    SUPPRESS_ALLOCATION_ASSERTS_IN_THIS_SCOPE;
-    return REGUTIL::GetConfigDWORD_DontUse_(name, defValue);
-}
-
 inline DWORD UnsafeGetConfigDWORD(const CLRConfig::ConfigDWORDInfo & info)
 {
     SUPPRESS_ALLOCATION_ASSERTS_IN_THIS_SCOPE;
@@ -1057,7 +1047,14 @@ protected:
 //     different part of the address space (not on the heap).
 // ------------------------------------------------------------------------ */
 
-#define DBG_MAX_EXECUTABLE_ALLOC_SIZE 48
+constexpr uint64_t DBG_MAX_EXECUTABLE_ALLOC_SIZE=112;
+constexpr uint64_t EXPECTED_CHUNKSIZE=128;
+constexpr uint64_t DEBUGGERHEAP_PAGESIZE=4096;
+constexpr uint64_t CHUNKS_PER_DEBUGGERHEAP=(DEBUGGERHEAP_PAGESIZE / EXPECTED_CHUNKSIZE);
+constexpr uint64_t MAX_CHUNK_MASK=((1ull << CHUNKS_PER_DEBUGGERHEAP) - 1);
+constexpr uint64_t BOOKKEEPING_CHUNK_MASK (1ull << (CHUNKS_PER_DEBUGGERHEAP - 1));
+
+#ifndef DACCESS_COMPILE
 
 // Forward declaration
 struct DebuggerHeapExecutableMemoryPage;
@@ -1070,7 +1067,7 @@ struct DebuggerHeapExecutableMemoryPage;
 // for the page, and the remaining ones are DataChunks and are handed out
 // by the allocator when it allocates memory.
 // ------------------------------------------------------------------------ */
-union DECLSPEC_ALIGN(64) DebuggerHeapExecutableMemoryChunk {
+union DECLSPEC_ALIGN(EXPECTED_CHUNKSIZE) DebuggerHeapExecutableMemoryChunk {
 
     struct DataChunk
     {
@@ -1088,13 +1085,14 @@ union DECLSPEC_ALIGN(64) DebuggerHeapExecutableMemoryChunk {
         DebuggerHeapExecutableMemoryPage *nextPage;
 
         uint64_t pageOccupancy;
+        static_assert(CHUNKS_PER_DEBUGGERHEAP <= sizeof(pageOccupancy) * 8,
+            "Our interfaces assume the chunks in a page can be masken on this field");
 
     } bookkeeping;
 
-    char _alignpad[64];
+    char _alignpad[EXPECTED_CHUNKSIZE];
 };
-
-static_assert(sizeof(DebuggerHeapExecutableMemoryChunk) == 64, "DebuggerHeapExecutableMemoryChunk is expect to be 64 bytes.");
+static_assert(sizeof(DebuggerHeapExecutableMemoryChunk) == EXPECTED_CHUNKSIZE, "DebuggerHeapExecutableMemoryChunk is expect to be EXPECTED_CHUNKSIZE bytes.");
 
 // ------------------------------------------------------------------------ */
 // DebuggerHeapExecutableMemoryPage
@@ -1105,7 +1103,7 @@ static_assert(sizeof(DebuggerHeapExecutableMemoryChunk) == 64, "DebuggerHeapExec
 // about which of the other chunks are used/free as well as a pointer to
 // the next page.
 // ------------------------------------------------------------------------ */
-struct DECLSPEC_ALIGN(4096) DebuggerHeapExecutableMemoryPage
+struct DECLSPEC_ALIGN(DEBUGGERHEAP_PAGESIZE) DebuggerHeapExecutableMemoryPage
 {
     inline DebuggerHeapExecutableMemoryPage* GetNextPage()
     {
@@ -1115,10 +1113,12 @@ struct DECLSPEC_ALIGN(4096) DebuggerHeapExecutableMemoryPage
     inline void SetNextPage(DebuggerHeapExecutableMemoryPage* nextPage)
     {
 #if defined(HOST_OSX) && defined(HOST_ARM64)
-        auto jitWriteEnableHolder = PAL_JITWriteEnable(true);
-#endif // defined(HOST_OSX) && defined(HOST_ARM64)
-
-        chunks[0].bookkeeping.nextPage = nextPage;
+        ExecutableWriterHolder<DebuggerHeapExecutableMemoryPage> debuggerHeapPageWriterHolder(this, sizeof(DebuggerHeapExecutableMemoryPage));
+        DebuggerHeapExecutableMemoryPage *pHeapPageRW = debuggerHeapPageWriterHolder.GetRW();
+#else
+        DebuggerHeapExecutableMemoryPage *pHeapPageRW = this;
+#endif
+        pHeapPageRW->chunks[0].bookkeeping.nextPage = nextPage;
     }
 
     inline uint64_t GetPageOccupancy() const
@@ -1128,39 +1128,49 @@ struct DECLSPEC_ALIGN(4096) DebuggerHeapExecutableMemoryPage
 
     inline void SetPageOccupancy(uint64_t newOccupancy)
     {
+        // Can't unset the bookmark chunk!
+        ASSERT((newOccupancy & BOOKKEEPING_CHUNK_MASK) != 0);
+        ASSERT(newOccupancy <= MAX_CHUNK_MASK);
 #if defined(HOST_OSX) && defined(HOST_ARM64)
-        auto jitWriteEnableHolder = PAL_JITWriteEnable(true);
-#endif // defined(HOST_OSX) && defined(HOST_ARM64)
-
-        // Can't unset first bit of occupancy!
-        ASSERT((newOccupancy & 0x8000000000000000) != 0);
-
-        chunks[0].bookkeeping.pageOccupancy = newOccupancy;
+        ExecutableWriterHolder<DebuggerHeapExecutableMemoryPage> debuggerHeapPageWriterHolder(this, sizeof(DebuggerHeapExecutableMemoryPage));
+        DebuggerHeapExecutableMemoryPage *pHeapPageRW = debuggerHeapPageWriterHolder.GetRW();
+#else
+        DebuggerHeapExecutableMemoryPage *pHeapPageRW = this;
+#endif
+        pHeapPageRW->chunks[0].bookkeeping.pageOccupancy = newOccupancy;
     }
 
     inline void* GetPointerToChunk(int chunkNum) const
     {
+        ASSERT(chunkNum >= 0 && (uint)chunkNum < CHUNKS_PER_DEBUGGERHEAP);
         return (char*)this + chunkNum * sizeof(DebuggerHeapExecutableMemoryChunk);
     }
 
     DebuggerHeapExecutableMemoryPage()
     {
+        SetPageOccupancy(BOOKKEEPING_CHUNK_MASK); // only the first bit is set.
 #if defined(HOST_OSX) && defined(HOST_ARM64)
-        auto jitWriteEnableHolder = PAL_JITWriteEnable(true);
-#endif // defined(HOST_OSX) && defined(HOST_ARM64)
-
-        SetPageOccupancy(0x8000000000000000); // only the first bit is set.
-        for (uint8_t i = 1; i < sizeof(chunks)/sizeof(chunks[0]); i++)
+        ExecutableWriterHolder<DebuggerHeapExecutableMemoryPage> debuggerHeapPageWriterHolder(this, sizeof(DebuggerHeapExecutableMemoryPage));
+        DebuggerHeapExecutableMemoryPage *pHeapPageRW = debuggerHeapPageWriterHolder.GetRW();
+#else
+        DebuggerHeapExecutableMemoryPage *pHeapPageRW = this;
+#endif
+        for (uint8_t i = 1; i < CHUNKS_PER_DEBUGGERHEAP; i++)
         {
             ASSERT(i != 0);
-            chunks[i].data.startOfPage = this;
-            chunks[i].data.chunkNumber = i;
+            pHeapPageRW->chunks[i].data.startOfPage = this;
+            pHeapPageRW->chunks[i].data.chunkNumber = i;
         }
     }
 
 private:
-    DebuggerHeapExecutableMemoryChunk chunks[64];
+    DebuggerHeapExecutableMemoryChunk chunks[CHUNKS_PER_DEBUGGERHEAP];
+    static_assert(sizeof(chunks) == DEBUGGERHEAP_PAGESIZE,
+        "Expected DebuggerHeapExecutableMemoryPage to have DEBUGGERHEAP_PAGESIZE bytes worth of chunks.");
+
 };
+static_assert(sizeof(DebuggerHeapExecutableMemoryPage) == DEBUGGERHEAP_PAGESIZE,
+    "DebuggerHeapExecutableMemoryPage exceeded the expected size.");
 
 // ------------------------------------------------------------------------ */
 // DebuggerHeapExecutableMemoryAllocator class
@@ -1188,13 +1198,15 @@ private:
 
     DebuggerHeapExecutableMemoryPage* AddNewPage();
     bool CheckPageForAvailability(DebuggerHeapExecutableMemoryPage* page, /* _Out_ */ int* chunkToUse);
-    void* ChangePageUsage(DebuggerHeapExecutableMemoryPage* page, int chunkNumber, ChangePageUsageAction action);
+    void* GetPointerToChunkWithUsageUpdate(DebuggerHeapExecutableMemoryPage* page, int chunkNumber, ChangePageUsageAction action);
 
 private:
     // Linked list of pages that have been allocated
     DebuggerHeapExecutableMemoryPage* m_pages;
     Crst m_execMemAllocMutex;
 };
+
+#endif // DACCESS_COMPILE
 
 // ------------------------------------------------------------------------ *
 // DebuggerHeap class
@@ -1206,6 +1218,8 @@ private:
 #ifdef FEATURE_INTEROP_DEBUGGING
     #define USE_INTEROPSAFE_HEAP
 #endif
+
+class DebuggerHeapExecutableMemoryAllocator;
 
 class DebuggerHeap
 {
@@ -1983,7 +1997,7 @@ public:
                              unsigned int *cILOffsets, DWORD **pILOffsets);
     void getBoundaries(MethodDesc * ftn,
                        unsigned int *cILOffsets, DWORD **pILOffsets,
-                       ICorDebugInfo::BoundaryTypes* implictBoundaries);
+                       ICorDebugInfo::BoundaryTypes* implicitBoundaries);
 
     void getVars(MethodDesc * ftn,
                  ULONG32 *cVars, ICorDebugInfo::ILVarInfo **vars,
@@ -2351,7 +2365,6 @@ public:
         if (g_fProcessDetach)
             return true;
 
-        BEGIN_GETTHREAD_ALLOWED;
         if (g_pEEInterface->GetThread())
         {
             return (GetThreadIdHelper(g_pEEInterface->GetThread()) == m_mutexOwner);
@@ -2360,7 +2373,6 @@ public:
         {
             return (GetCurrentThreadId() == m_mutexOwner);
         }
-        END_GETTHREAD_ALLOWED;
     }
 #endif // _DEBUG_IMPL
 
@@ -2493,7 +2505,7 @@ public:
                                  SIZE_T                     *rgVal2,
                                  BYTE                      **rgpVCs);
 
-    BOOL IsThreadContextInvalid(Thread *pThread);
+    BOOL IsThreadContextInvalid(Thread *pThread, T_CONTEXT *pCtx);
 
     // notification for SQL fiber debugging support
     void CreateConnection(CONNID dwConnectionId, __in_z WCHAR *wzName);
@@ -2514,7 +2526,6 @@ public:
 
     BOOL ShouldAutoAttach();
     BOOL FallbackJITAttachPrompt();
-    HRESULT SetFiberMode(bool isFiberMode);
 
     HRESULT AddAppDomainToIPC (AppDomain *pAppDomain);
     HRESULT RemoveAppDomainFromIPC (AppDomain *pAppDomain);
@@ -2864,6 +2875,9 @@ private:
 #if defined(HAVE_GCCOVER) && defined(TARGET_AMD64)
         kRedirectedForGCStress,
 #endif // HAVE_GCCOVER && TARGET_AMD64
+#ifdef FEATURE_SPECIAL_USER_MODE_APC
+        kRedirectedForApcActivation,
+#endif // FEATURE_SPECIAL_USER_MODE_APC
         kMaxHijackFunctions,
     };
 
@@ -2965,6 +2979,11 @@ void RedirectedHandledJITCaseForUserSuspend_StubEnd();
 void RedirectedHandledJITCaseForGCStress_Stub();
 void RedirectedHandledJITCaseForGCStress_StubEnd();
 #endif // HAVE_GCCOVER && TARGET_AMD64
+
+#ifdef FEATURE_SPECIAL_USER_MODE_APC
+void NTAPI ApcActivationCallbackStub(ULONG_PTR Parameter);
+void ApcActivationCallbackStubEnd();
+#endif // FEATURE_SPECIAL_USER_MODE_APC
 };
 
 
@@ -3433,7 +3452,7 @@ public:
     TypeHandle                         m_ownerTypeHandle;
     DebuggerEvalBreakpointInfoSegment* m_bpInfoSegment;
 
-    DebuggerEval(T_CONTEXT * pContext, DebuggerIPCE_FuncEvalInfo * pEvalInfo, bool fInException);
+    DebuggerEval(T_CONTEXT * pContext, DebuggerIPCE_FuncEvalInfo * pEvalInfo, bool fInException, DebuggerEvalBreakpointInfoSegment* bpInfoSegmentRX);
 
     bool Init()
     {
@@ -3498,9 +3517,6 @@ public:
 
 class InteropSafe {};
 extern InteropSafe interopsafe;
-
-class InteropSafeExecutable {};
-extern InteropSafeExecutable interopsafeEXEC;
 
 #ifndef DACCESS_COMPILE
 inline void * __cdecl operator new(size_t n, const InteropSafe&)
@@ -3640,62 +3656,6 @@ template<class T> void DeleteInteropSafe(T *p)
         DebuggerHeap * pHeap = g_pDebugger->GetInteropSafeHeap_NoThrow();
         _ASSERTE(pHeap != NULL); // should have had heap around if we're deleting
 
-        pHeap->Free(p);
-    }
-}
-
-inline void * __cdecl operator new(size_t n, const InteropSafeExecutable&)
-{
-    CONTRACTL
-    {
-        THROWS; // throw on OOM
-        GC_NOTRIGGER;
-    }
-    CONTRACTL_END;
-
-    _ASSERTE(g_pDebugger != NULL);
-    void *result = g_pDebugger->GetInteropSafeExecutableHeap()->Alloc((DWORD)n);
-    if (result == NULL) {
-        ThrowOutOfMemory();
-    }
-    return result;
-}
-
-inline void * __cdecl operator new(size_t n, const InteropSafeExecutable&, const NoThrow&) throw()
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-    }
-    CONTRACTL_END;
-
-    _ASSERTE(g_pDebugger != NULL);
-    DebuggerHeap * pHeap = g_pDebugger->GetInteropSafeExecutableHeap_NoThrow();
-    if (pHeap == NULL)
-    {
-        return NULL;
-    }
-    void *result = pHeap->Alloc((DWORD)n);
-    return result;
-}
-
-// Note: there is no C++ syntax for manually invoking this, but if a constructor throws an exception I understand that
-// this delete operator will be invoked automatically to destroy the object.
-inline void __cdecl operator delete(void *p, const InteropSafeExecutable&)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-    }
-    CONTRACTL_END;
-
-    if (p != NULL)
-    {
-        _ASSERTE(g_pDebugger != NULL);
-        DebuggerHeap * pHeap = g_pDebugger->GetInteropSafeExecutableHeap_NoThrow();
-        _ASSERTE(pHeap != NULL); // should have had heap around if we're deleting
         pHeap->Free(p);
     }
 }
@@ -3912,7 +3872,7 @@ HANDLE OpenWin32EventOrThrow(
       if ((m_pRCThread == NULL) || !m_pRCThread->IsRCThreadReady()) { THROWS; } else { NOTHROW; }
 
 #define MAY_DO_HELPER_THREAD_DUTY_GC_TRIGGERS_CONTRACT \
-      if ((m_pRCThread == NULL) || !m_pRCThread->IsRCThreadReady() || (GetThread() != NULL)) { GC_TRIGGERS; } else { GC_NOTRIGGER; }
+      if ((m_pRCThread == NULL) || !m_pRCThread->IsRCThreadReady() || (GetThreadNULLOk() != NULL)) { GC_TRIGGERS; } else { GC_NOTRIGGER; }
 
 #define GC_TRIGGERS_FROM_GETJITINFO if (GetThreadNULLOk() != NULL) { GC_TRIGGERS; } else { GC_NOTRIGGER; }
 

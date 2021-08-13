@@ -51,12 +51,45 @@ DS_DEFINE_GETTER(DiagnosticsAttachProfilerCommandPayload *, attach_profiler_comm
 DS_DEFINE_GETTER(DiagnosticsAttachProfilerCommandPayload *, attach_profiler_command_payload, uint32_t, client_data_len)
 DS_DEFINE_GETTER(DiagnosticsAttachProfilerCommandPayload *, attach_profiler_command_payload, uint8_t *, client_data)
 
-
 DiagnosticsAttachProfilerCommandPayload *
 ds_attach_profiler_command_payload_alloc (void);
 
 void
 ds_attach_profiler_command_payload_free (DiagnosticsAttachProfilerCommandPayload *payload);
+
+
+#if defined(DS_INLINE_GETTER_SETTER) || defined(DS_IMPL_PROFILER_PROTOCOL_GETTER_SETTER)
+struct _DiagnosticsStartupProfilerCommandPayload {
+#else
+struct _DiagnosticsStartupProfilerCommandPayload_Internal {
+#endif
+	uint8_t * incoming_buffer;
+
+	// The protocol buffer is defined as:
+	//   CLSID - profiler GUID
+	//   string - profiler path
+	// returns
+	//   ulong - status
+
+	uint8_t profiler_guid [EP_GUID_SIZE];
+	const ep_char16_t *profiler_path;
+};
+
+#if !defined(DS_INLINE_GETTER_SETTER) && !defined(DS_IMPL_PROFILER_PROTOCOL_GETTER_SETTER)
+struct _DiagnosticsStartupProfilerCommandPayload {
+	uint8_t _internal [sizeof (struct _DiagnosticsStartupProfilerCommandPayload_Internal)];
+};
+#endif
+
+DS_DEFINE_GETTER_ARRAY_REF(DiagnosticsStartupProfilerCommandPayload *, startup_profiler_command_payload, uint8_t *, const uint8_t *, profiler_guid, profiler_guid [0])
+DS_DEFINE_GETTER(DiagnosticsStartupProfilerCommandPayload *, startup_profiler_command_payload, const ep_char16_t *, profiler_path)
+
+DiagnosticsStartupProfilerCommandPayload *
+ds_startup_profiler_command_payload_alloc (void);
+
+void
+ds_startup_profiler_command_payload_free (DiagnosticsAttachProfilerCommandPayload *payload);
+
 
 /*
  * DiagnosticsProfilerProtocolHelper.

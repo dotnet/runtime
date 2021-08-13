@@ -9,14 +9,14 @@ namespace System.Security.Policy
     {
         public ApplicationTrust() { }
         public ApplicationTrust(ApplicationIdentity identity) { }
-#if NET50_OBSOLETIONS
+#if NET5_0_OR_GREATER
         [Obsolete(Obsoletions.CodeAccessSecurityMessage, DiagnosticId = Obsoletions.CodeAccessSecurityDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
 #endif
         public ApplicationTrust(PermissionSet defaultGrantSet, IEnumerable<StrongName> fullTrustAssemblies) { }
         public ApplicationIdentity ApplicationIdentity { get; set; }
         public PolicyStatement DefaultGrantSet { get; set; }
         public object ExtraInfo { get; set; }
-#if NET50_OBSOLETIONS
+#if NET5_0_OR_GREATER
         [Obsolete(Obsoletions.CodeAccessSecurityMessage, DiagnosticId = Obsoletions.CodeAccessSecurityDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
 #endif
         public IList<StrongName> FullTrustAssemblies { get { return default(IList<StrongName>); } }

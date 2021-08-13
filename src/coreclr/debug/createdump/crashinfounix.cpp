@@ -8,7 +8,6 @@ bool GetStatus(pid_t pid, pid_t* ppid, pid_t* tgid, std::string* name);
 bool
 CrashInfo::Initialize()
 {
-#ifndef HAVE_PROCESS_VM_READV
     char memPath[128];
     _snprintf_s(memPath, sizeof(memPath), sizeof(memPath), "/proc/%lu/mem", m_pid);
 
@@ -18,12 +17,13 @@ CrashInfo::Initialize()
         fprintf(stderr, "open(%s) FAILED %d (%s)\n", memPath, errno, strerror(errno));
         return false;
     }
-#endif
     // Get the process info
     if (!GetStatus(m_pid, &m_ppid, &m_tgid, &m_name))
     {
         return false;
     }
+
+    m_canUseProcVmReadSyscall = true;
     return true;
 }
 
@@ -39,13 +39,11 @@ CrashInfo::CleanupAndResumeProcess()
             waitpid(thread->Tid(), &waitStatus, __WALL);
         }
     }
-#ifndef HAVE_PROCESS_VM_READV
     if (m_fd != -1)
     {
         close(m_fd);
         m_fd = -1;
     }
-#endif
 }
 
 //
@@ -253,7 +251,7 @@ CrashInfo::GetDSOInfo()
     int phnum = m_auxvValues[AT_PHNUM];
     assert(m_auxvValues[AT_PHENT] == sizeof(Phdr));
     assert(phnum != PN_XNUM);
-    return EnumerateElfInfo(phdrAddr, phnum); 
+    return EnumerateElfInfo(phdrAddr, phnum);
 }
 
 //
@@ -262,21 +260,25 @@ CrashInfo::GetDSOInfo()
 void
 CrashInfo::VisitModule(uint64_t baseAddress, std::string& moduleName)
 {
-    if (baseAddress == 0 || baseAddress == m_auxvValues[AT_SYSINFO_EHDR] || baseAddress == m_auxvValues[AT_BASE]) {
+    if (baseAddress == 0 || baseAddress == m_auxvValues[AT_SYSINFO_EHDR]) {
         return;
     }
+    AddModuleInfo(false, baseAddress, nullptr, moduleName);
     if (m_coreclrPath.empty())
     {
-        size_t last = moduleName.rfind(MAKEDLLNAME_A("coreclr"));
+        size_t last = moduleName.rfind(DIRECTORY_SEPARATOR_STR_A MAKEDLLNAME_A("coreclr"));
         if (last != std::string::npos) {
-            m_coreclrPath = moduleName.substr(0, last);
+            m_coreclrPath = moduleName.substr(0, last + 1);
 
             // Now populate the elfreader with the runtime module info and
             // lookup the DAC table symbol to ensure that all the memory
             // necessary is in the core dump.
             if (PopulateForSymbolLookup(baseAddress)) {
                 uint64_t symbolOffset;
-                TryLookupSymbol("g_dacTable", &symbolOffset);
+                if (!TryLookupSymbol("g_dacTable", &symbolOffset))
+                {
+                    TRACE("TryLookupSymbol(g_dacTable) FAILED\n");
+                }
             }
         }
     }
@@ -301,8 +303,7 @@ CrashInfo::VisitProgramHeader(uint64_t loadbias, uint64_t baseAddress, Phdr* phd
         break;
 
     case PT_LOAD:
-        MemoryRegion region(0, loadbias + phdr->p_vaddr, loadbias + phdr->p_vaddr + phdr->p_memsz, baseAddress);
-        m_moduleAddresses.insert(region);
+        AddModuleAddressRange(loadbias + phdr->p_vaddr, loadbias + phdr->p_vaddr + phdr->p_memsz, baseAddress);
         break;
     }
 }
@@ -334,17 +335,31 @@ CrashInfo::ReadProcessMemory(void* address, void* buffer, size_t size, size_t* r
 {
     assert(buffer != nullptr);
     assert(read != nullptr);
+    *read = 0;
 
 #ifdef HAVE_PROCESS_VM_READV
-    iovec local{ buffer, size };
-    iovec remote{ address, size };
-    *read = process_vm_readv(m_pid, &local, 1, &remote, 1, 0);
-#else
-    assert(m_fd != -1);
-    *read = pread64(m_fd, buffer, size, (off64_t)address);
+    if (m_canUseProcVmReadSyscall)
+    {
+        iovec local{ buffer, size };
+        iovec remote{ address, size };
+        *read = process_vm_readv(m_pid, &local, 1, &remote, 1, 0);
+    }
+
+    if (!m_canUseProcVmReadSyscall || (*read == (size_t)-1 && errno == EPERM))
 #endif
+    {
+        // If we've failed, avoid going through expensive syscalls
+        // After all, the use of process_vm_readv is largely as a
+        // performance optimization.
+        m_canUseProcVmReadSyscall = false;
+        assert(m_fd != -1);
+        *read = pread64(m_fd, buffer, size, (off64_t)address);
+    }
+
     if (*read == (size_t)-1)
     {
+        int readErrno = errno;
+        TRACE_VERBOSE("ReadProcessMemory FAILED, addr: %" PRIA PRIx ", size: %zu, ERRNO %d: %s\n", address, size, readErrno, strerror(readErrno));
         return false;
     }
     return true;
@@ -398,4 +413,14 @@ GetStatus(pid_t pid, pid_t* ppid, pid_t* tgid, std::string* name)
     free(line);
     fclose(statusFile);
     return true;
+}
+
+void
+ModuleInfo::LoadModule()
+{
+    if (m_module == nullptr)
+    {
+        m_module = dlopen(m_moduleName.c_str(), RTLD_LAZY);
+        m_localBaseAddress = ((struct link_map*)m_module)->l_addr;
+    }
 }

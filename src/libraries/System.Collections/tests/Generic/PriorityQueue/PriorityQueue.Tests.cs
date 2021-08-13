@@ -246,35 +246,58 @@ namespace System.Collections.Tests
 
         #endregion
 
-        [Theory]
-        [MemberData(nameof(ValidPositiveCollectionSizes))]
-        public void PriorityQueue_Enumeration_InvalidateOnModifiedCollection(int count)
-        {
-            IReadOnlyCollection<(int, int)> itemsToEnqueue = Enumerable.Range(1, count).Select(i => (i, i)).ToArray();
-            PriorityQueue<int, int> queue = new PriorityQueue<int, int>();
-            queue.EnqueueRange(itemsToEnqueue.Take(count - 1));
-            var enumerator = queue.UnorderedItems.GetEnumerator();
-
-            (int element, int priority) = itemsToEnqueue.Last();
-            queue.Enqueue(element, priority);
-            Assert.Throws<InvalidOperationException>(() => enumerator.MoveNext());
-        }
-
         #region Enumeration
 
         [Theory]
-        [MemberData(nameof(ValidPositiveCollectionSizes))]
-        public void PriorityQueue_Enumeration_InvalidationOnModifiedCapacity(int count)
+        [MemberData(nameof(GetNonModifyingOperations))]
+        public void PriorityQueue_Enumeration_ValidOnNonModifyingOperation(Action<PriorityQueue<int, int>> nonModifyingOperation, int count)
         {
-            PriorityQueue<int, int> queue = CreatePriorityQueue(initialCapacity: 0, count);
-            var enumerator = queue.UnorderedItems.GetEnumerator();
+            PriorityQueue<int, int> queue = CreatePriorityQueue(initialCapacity: count, count: count);
+            using var enumerator = queue.UnorderedItems.GetEnumerator();
+            nonModifyingOperation(queue);
+            enumerator.MoveNext();
+        }
 
-            int capacityBefore = GetUnderlyingBufferCapacity(queue);
-            queue.EnsureCapacity(count * 2 + 4);
-            int capacityAfter = GetUnderlyingBufferCapacity(queue);
-
-            Assert.NotEqual(capacityBefore, capacityAfter);
+        [Theory]
+        [MemberData(nameof(GetModifyingOperations))]
+        public void PriorityQueue_Enumeration_InvalidationOnModifyingOperation(Action<PriorityQueue<int, int>> modifyingOperation, int count)
+        {
+            PriorityQueue<int, int> queue = CreatePriorityQueue(initialCapacity: count, count: count);
+            using var enumerator = queue.UnorderedItems.GetEnumerator();
+            modifyingOperation(queue);
             Assert.Throws<InvalidOperationException>(() => enumerator.MoveNext());
+        }
+
+        public static IEnumerable<object[]> GetModifyingOperations()
+        {
+            yield return WrapArg(queue => queue.Enqueue(42, 0), 0);
+            yield return WrapArg(queue => queue.Dequeue(), 5);
+            yield return WrapArg(queue => queue.TryDequeue(out _, out _), 5);
+            yield return WrapArg(queue => queue.EnqueueDequeue(5, priority: int.MaxValue), 5);
+            yield return WrapArg(queue => queue.EnqueueDequeue(5, priority: int.MaxValue), 5);
+            yield return WrapArg(queue => queue.EnqueueRange(new[] { (1,2) }), 0);
+            yield return WrapArg(queue => queue.EnqueueRange(new[] { (1, 2) }), 10);
+            yield return WrapArg(queue => queue.EnqueueRange(new[] { 1, 2 }, 42), 0);
+            yield return WrapArg(queue => queue.EnqueueRange(new[] { 1, 2 }, 42), 10);
+            yield return WrapArg(queue => queue.EnsureCapacity(2 * queue.Count), 4);
+            yield return WrapArg(queue => queue.Clear(), 5);
+            yield return WrapArg(queue => queue.Clear(), 0);
+
+            static object[] WrapArg(Action<PriorityQueue<int, int>> arg, int queueCount) => new object[] { arg, queueCount };
+        }
+
+        public static IEnumerable<object[]> GetNonModifyingOperations()
+        {
+            yield return WrapArg(queue => queue.Peek(), 1);
+            yield return WrapArg(queue => queue.TryPeek(out _, out _), 1);
+            yield return WrapArg(queue => queue.TryDequeue(out _, out _), 0);
+            yield return WrapArg(queue => queue.EnqueueDequeue(5, priority: int.MinValue), 1);
+            yield return WrapArg(queue => queue.EnqueueDequeue(5, priority: int.MaxValue), 0);
+            yield return WrapArg(queue => queue.EnqueueRange(Array.Empty<(int, int)>()), 5);
+            yield return WrapArg(queue => queue.EnqueueRange(Array.Empty<int>(), 42), 5);
+            yield return WrapArg(queue => queue.EnsureCapacity(5), 5);
+
+            static object[] WrapArg(Action<PriorityQueue<int, int>> arg, int queueCount) => new object[] { arg, queueCount };
         }
 
         #endregion

@@ -13,5 +13,11 @@ namespace System.Net.Http
         public static readonly TimeSpan DefaultKeepAlivePingTimeout = TimeSpan.FromSeconds(20);
         public static readonly TimeSpan DefaultKeepAlivePingDelay = Timeout.InfiniteTimeSpan;
         public const HttpKeepAlivePingPolicy DefaultKeepAlivePingPolicy = HttpKeepAlivePingPolicy.Always;
+
+        // This is the default value for SocketsHttpHandler.InitialHttp2StreamWindowSize,
+        // which defines the value we communicate in stream SETTINGS frames.
+        // Should not be confused with Http2Connection.DefaultInitialWindowSize, which defines the RFC default.
+        // Unlike that value, DefaultInitialHttp2StreamWindowSize might be changed in the future.
+        public const int DefaultInitialHttp2StreamWindowSize = 65535;
     }
 }

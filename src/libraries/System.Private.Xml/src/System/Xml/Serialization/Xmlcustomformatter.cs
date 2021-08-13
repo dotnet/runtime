@@ -17,7 +17,7 @@ namespace System.Xml.Serialization
     /// <summary>
     ///   The <see cref="XmlCustomFormatter"/> class provides a set of static methods for converting
     ///   primitive type values to and from their XML string representations.</summary>
-    internal class XmlCustomFormatter
+    internal static class XmlCustomFormatter
     {
         private static DateTimeSerializationSection.DateTimeSerializationMode s_mode;
 
@@ -32,7 +32,6 @@ namespace System.Xml.Serialization
                 return s_mode;
             }
         }
-        private XmlCustomFormatter() { }
 
         [return: NotNullIfNotNull("value")]
         internal static string? FromDefaultValue(object? value, string formatter)

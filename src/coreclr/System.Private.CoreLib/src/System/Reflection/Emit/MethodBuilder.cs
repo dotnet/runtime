@@ -94,8 +94,9 @@ namespace System.Reflection.Emit
             }
             else if ((attributes & MethodAttributes.Virtual) != 0)
             {
-                // A method can't be both static and virtual
-                throw new ArgumentException(SR.Arg_NoStaticVirtual);
+                // On an interface, the rule is slighlty different
+                if (((attributes & MethodAttributes.Abstract) == 0))
+                    throw new ArgumentException(SR.Arg_NoStaticVirtual);
             }
 
             m_callingConvention = callingConvention;
@@ -226,30 +227,6 @@ namespace System.Reflection.Emit
             }
 
             m_bIsBaked = true;
-
-            if (dynMod.GetSymWriter() != null)
-            {
-                // set the debugging information such as scope and line number
-                // if it is in a debug module
-                //
-                SymbolToken tk = new SymbolToken(MetadataToken);
-                ISymbolWriter symWriter = dynMod.GetSymWriter()!;
-
-                // call OpenMethod to make this method the current method
-                symWriter.OpenMethod(tk);
-
-                // call OpenScope because OpenMethod no longer implicitly creating
-                // the top-levelsmethod scope
-                //
-                symWriter.OpenScope(0);
-
-                if (m_localSymInfo != null)
-                    m_localSymInfo.EmitLocalSymInfo(symWriter);
-                il.m_ScopeTree.EmitScopeTree(symWriter);
-                il.m_LineNumberInfo.EmitLineNumberInfo(symWriter);
-                symWriter.CloseScope(il.ILOffset);
-                symWriter.CloseMethod();
-            }
         }
 
         // This is only called from TypeBuilder.CreateType after the method has been created
@@ -540,6 +517,7 @@ namespace System.Reflection.Emit
 
         public override Type[] GetGenericArguments() => m_inst ?? Type.EmptyTypes;
 
+        [RequiresUnreferencedCode("If some of the generic arguments are annotated (either with DynamicallyAccessedMembersAttribute, or generic constraints), trimming can't validate that the requirements of those annotations are met.")]
         public override MethodInfo MakeGenericMethod(params Type[] typeArguments)
         {
             return MethodBuilderInstantiation.MakeGenericMethod(this, typeArguments);
@@ -757,12 +735,10 @@ namespace System.Reflection.Emit
             set { ThrowIfGeneric(); m_fInitLocals = value; }
         }
 
-        public Module GetModule()
+        internal Module GetModule()
         {
             return GetModuleBuilder();
         }
-
-        public string Signature => GetMethodSignature().ToString();
 
         public void SetCustomAttribute(ConstructorInfo con, byte[] binaryAttribute)
         {
@@ -827,7 +803,7 @@ namespace System.Reflection.Emit
         #endregion
     }
 
-    internal class LocalSymInfo
+    internal sealed class LocalSymInfo
     {
         // This class tracks the local variable's debugging information
         // and namespace information with a given active lexical scope.
@@ -926,29 +902,6 @@ namespace System.Reflection.Emit
             EnsureCapacityNamespace();
             m_namespace[m_iNameSpaceCount] = strNamespace;
             checked { m_iNameSpaceCount++; }
-        }
-
-        internal virtual void EmitLocalSymInfo(ISymbolWriter symWriter)
-        {
-            int i;
-
-            for (i = 0; i < m_iLocalSymCount; i++)
-            {
-                symWriter.DefineLocalVariable(
-                            m_strName[i],
-                            FieldAttributes.PrivateScope,
-                            m_ubSignature[i],
-                            SymAddressKind.ILOffset,
-                            m_iLocalSlot[i],
-                            0,          // addr2 is not used yet
-                            0,          // addr3 is not used
-                            m_iStartOffset[i],
-                            m_iEndOffset[i]);
-            }
-            for (i = 0; i < m_iNameSpaceCount; i++)
-            {
-                symWriter.UsingNamespace(m_namespace[i]);
-            }
         }
 
         #endregion

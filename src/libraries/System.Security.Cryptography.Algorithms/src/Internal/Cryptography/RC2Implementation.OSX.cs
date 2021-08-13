@@ -5,9 +5,9 @@ using System.Security.Cryptography;
 
 namespace Internal.Cryptography
 {
-    internal partial class RC2Implementation
+    internal sealed partial class RC2Implementation
     {
-        private static ICryptoTransform CreateTransformCore(
+        private static UniversalCryptoTransform CreateTransformCore(
             CipherMode cipherMode,
             PaddingMode paddingMode,
             byte[] key,

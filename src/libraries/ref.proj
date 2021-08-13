@@ -14,7 +14,7 @@
     <NetCoreAppProject Include="@(_allRef)"
                        Exclude="@(NonNetCoreAppProject)" />
     <GeneratedShimProject Include="shims\generated\*.csproj"
-                          Condition="'$(BuildingNETCoreAppVertical)' == 'true'" />
+                          Condition="'$(BuildTargetFramework)' == '$(NetCoreAppCurrent)' or '$(BuildTargetFramework)' == ''" />
   </ItemGroup>
 
   <ItemGroup>
@@ -57,12 +57,12 @@
           AfterTargets="BuildGeneratedShims"
           Inputs="@(RefPackLibFile)"
           Outputs="$(MicrosoftNetCoreAppRefPackDataDir)FrameworkList.xml"
-          Condition="'$(BuildingNETCoreAppVertical)' == 'true'">
+          Condition="'$(BuildTargetFramework)' == '$(NetCoreAppCurrent)' or '$(BuildTargetFramework)' == ''">
     <ItemGroup>
       <FrameworkListRootAttribute Include="Name" Value="$(NetCoreAppCurrentBrandName)" />
       <FrameworkListRootAttribute Include="TargetFrameworkIdentifier" Value="$(NetCoreAppCurrentIdentifier)" />
       <FrameworkListRootAttribute Include="TargetFrameworkVersion" Value="$(NetCoreAppCurrentVersion)" />
-      <FrameworkListRootAttribute Include="FrameworkName" Value="$(SharedFrameworkName)" />
+      <FrameworkListRootAttribute Include="FrameworkName" Value="$(MicrosoftNetCoreAppFrameworkName)" />
     </ItemGroup>
 
     <CreateFrameworkListFile Files="@(RefPackLibFile)"

@@ -7,7 +7,7 @@ using System.Reflection;
 
 namespace System.Composition.TypedParts.Discovery
 {
-    internal class DiscoveredInstanceExport : DiscoveredExport
+    internal sealed class DiscoveredInstanceExport : DiscoveredExport
     {
         public DiscoveredInstanceExport(CompositionContract contract, IDictionary<string, object> metadata)
             : base(contract, metadata)

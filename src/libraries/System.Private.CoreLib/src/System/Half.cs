@@ -5,7 +5,9 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Numerics;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Runtime.Versioning;
 
 namespace System
 {
@@ -15,7 +17,13 @@ namespace System
     /// An IEEE 754 compliant float16 type.
     /// </summary>
     [StructLayout(LayoutKind.Sequential)]
-    public readonly struct Half : IComparable, IFormattable, IComparable<Half>, IEquatable<Half>, ISpanFormattable
+    public readonly struct Half : IComparable, ISpanFormattable, IComparable<Half>, IEquatable<Half>
+#if FEATURE_GENERIC_MATH
+#pragma warning disable SA1001
+        , IBinaryFloatingPoint<Half>,
+          IMinMaxValue<Half>
+#pragma warning restore SA1001
+#endif // FEATURE_GENERIC_MATH
     {
         private const NumberStyles DefaultParseStyle = NumberStyles.Float | NumberStyles.AllowThousands;
 
@@ -26,6 +34,7 @@ namespace System
 
         private const ushort ExponentMask = 0x7C00;
         private const ushort ExponentShift = 10;
+        private const ushort ShiftedExponentMask = ExponentMask >> ExponentShift;
 
         private const ushort SignificandMask = 0x03FF;
         private const ushort SignificandShift = 0;
@@ -116,7 +125,8 @@ namespace System
                 // says they should be equal, even if the signs differ.
                 return leftIsNegative && !AreZero(left, right);
             }
-            return (left._value < right._value) ^ leftIsNegative;
+
+            return (left._value != right._value) && ((left._value < right._value) ^ leftIsNegative);
         }
 
         public static bool operator >(Half left, Half right)
@@ -141,7 +151,8 @@ namespace System
                 // says they should be equal, even if the signs differ.
                 return leftIsNegative || AreZero(left, right);
             }
-            return (left._value <= right._value) ^ leftIsNegative;
+
+            return (left._value == right._value) || ((left._value < right._value) ^ leftIsNegative);
         }
 
         public static bool operator >=(Half left, Half right)
@@ -491,7 +502,7 @@ namespace System
         {
             const int SingleMaxExponent = 0xFF;
 
-            uint floatInt = (uint)BitConverter.SingleToInt32Bits(value);
+            uint floatInt = BitConverter.SingleToUInt32Bits(value);
             bool sign = (floatInt & float.SignMask) >> float.SignShift != 0;
             int exp = (int)(floatInt & float.ExponentMask) >> float.ExponentShift;
             uint sig = floatInt & float.SignificandMask;
@@ -519,7 +530,7 @@ namespace System
         {
             const int DoubleMaxExponent = 0x7FF;
 
-            ulong doubleInt = (ulong)BitConverter.DoubleToInt64Bits(value);
+            ulong doubleInt = BitConverter.DoubleToUInt64Bits(value);
             bool sign = (doubleInt & double.SignMask) >> double.SignShift != 0;
             int exp = (int)((doubleInt & double.ExponentMask) >> double.ExponentShift);
             ulong sig = doubleInt & double.SignificandMask;
@@ -561,7 +572,7 @@ namespace System
             {
                 if (sig == 0)
                 {
-                    return BitConverter.Int32BitsToSingle((int)(sign ? float.SignMask : 0)); // Positive / Negative zero
+                    return BitConverter.UInt32BitsToSingle(sign ? float.SignMask : 0); // Positive / Negative zero
                 }
                 (exp, sig) = NormSubnormalF16Sig(sig);
                 exp -= 1;
@@ -589,7 +600,7 @@ namespace System
             {
                 if (sig == 0)
                 {
-                    return BitConverter.Int64BitsToDouble((long)(sign ? double.SignMask : 0)); // Positive / Negative zero
+                    return BitConverter.UInt64BitsToDouble(sign ? double.SignMask : 0); // Positive / Negative zero
                 }
                 (exp, sig) = NormSubnormalF16Sig(sig);
                 exp -= 1;
@@ -621,7 +632,7 @@ namespace System
             uint signInt = (sign ? 1U : 0U) << SignShift;
             uint sigInt = (uint)(significand >> 54);
 
-            return BitConverter.Int16BitsToHalf((short)(signInt | NaNBits | sigInt));
+            return BitConverter.UInt16BitsToHalf((ushort)(signInt | NaNBits | sigInt));
         }
 
         private static ushort RoundPackToHalf(bool sign, short exp, ushort sig)
@@ -670,7 +681,7 @@ namespace System
             uint signInt = (sign ? 1U : 0U) << float.SignShift;
             uint sigInt = (uint)(significand >> 41);
 
-            return BitConverter.Int32BitsToSingle((int)(signInt | NaNBits | sigInt));
+            return BitConverter.UInt32BitsToSingle(signInt | NaNBits | sigInt);
         }
 
         private static double CreateDoubleNaN(bool sign, ulong significand)
@@ -680,15 +691,900 @@ namespace System
             ulong signInt = (sign ? 1UL : 0UL) << double.SignShift;
             ulong sigInt = significand >> 12;
 
-            return BitConverter.Int64BitsToDouble((long)(signInt | NaNBits | sigInt));
+            return BitConverter.UInt64BitsToDouble(signInt | NaNBits | sigInt);
         }
 
         private static float CreateSingle(bool sign, byte exp, uint sig)
-            => BitConverter.Int32BitsToSingle((int)(((sign ? 1U : 0U) << float.SignShift) + ((uint)exp << float.ExponentShift) + sig));
+            => BitConverter.UInt32BitsToSingle(((sign ? 1U : 0U) << float.SignShift) + ((uint)exp << float.ExponentShift) + sig);
 
         private static double CreateDouble(bool sign, ushort exp, ulong sig)
-            => BitConverter.Int64BitsToDouble((long)(((sign ? 1UL : 0UL) << double.SignShift) + ((ulong)exp << double.ExponentShift) + sig));
+            => BitConverter.UInt64BitsToDouble(((sign ? 1UL : 0UL) << double.SignShift) + ((ulong)exp << double.ExponentShift) + sig);
 
         #endregion
+
+#if FEATURE_GENERIC_MATH
+        //
+        // IAdditionOperators
+        //
+
+        [RequiresPreviewFeatures]
+        static Half IAdditionOperators<Half, Half, Half>.operator +(Half left, Half right)
+            => (Half)((float)left + (float)right);
+
+        // [RequiresPreviewFeatures]
+        // static checked Half IAdditionOperators<Half, Half, Half>.operator +(Half left, Half right)
+        //     => checked((Half)((float)left + (float)right));
+
+        //
+        // IAdditiveIdentity
+        //
+
+        [RequiresPreviewFeatures]
+        static Half IAdditiveIdentity<Half, Half>.AdditiveIdentity => PositiveZero;
+
+        //
+        // IBinaryNumber
+        //
+
+        [RequiresPreviewFeatures]
+        static bool IBinaryNumber<Half>.IsPow2(Half value)
+        {
+            uint bits = BitConverter.HalfToUInt16Bits(value);
+
+            uint exponent = (bits >> ExponentShift) & ShiftedExponentMask;
+            uint significand = bits & SignificandMask;
+
+            return (value > PositiveZero)
+                && (exponent != MinExponent) && (exponent != MaxExponent)
+                && (significand == MinSignificand);
+        }
+
+        [RequiresPreviewFeatures]
+        static Half IBinaryNumber<Half>.Log2(Half value)
+            => (Half)MathF.Log2((float)value);
+
+        //
+        // IBitwiseOperators
+        //
+
+        [RequiresPreviewFeatures]
+        static Half IBitwiseOperators<Half, Half, Half>.operator &(Half left, Half right)
+        {
+            ushort bits = (ushort)(BitConverter.HalfToUInt16Bits(left) & BitConverter.HalfToUInt16Bits(right));
+            return BitConverter.UInt16BitsToHalf(bits);
+        }
+
+        [RequiresPreviewFeatures]
+        static Half IBitwiseOperators<Half, Half, Half>.operator |(Half left, Half right)
+        {
+            ushort bits = (ushort)(BitConverter.HalfToUInt16Bits(left) | BitConverter.HalfToUInt16Bits(right));
+            return BitConverter.UInt16BitsToHalf(bits);
+        }
+
+        [RequiresPreviewFeatures]
+        static Half IBitwiseOperators<Half, Half, Half>.operator ^(Half left, Half right)
+        {
+            ushort bits = (ushort)(BitConverter.HalfToUInt16Bits(left) ^ BitConverter.HalfToUInt16Bits(right));
+            return BitConverter.UInt16BitsToHalf(bits);
+        }
+
+        [RequiresPreviewFeatures]
+        static Half IBitwiseOperators<Half, Half, Half>.operator ~(Half value)
+        {
+            ushort bits = (ushort)(~BitConverter.HalfToUInt16Bits(value));
+            return BitConverter.UInt16BitsToHalf(bits);
+        }
+
+        //
+        // IComparisonOperators
+        //
+
+        [RequiresPreviewFeatures]
+        static bool IComparisonOperators<Half, Half>.operator <(Half left, Half right)
+            => left < right;
+
+        [RequiresPreviewFeatures]
+        static bool IComparisonOperators<Half, Half>.operator <=(Half left, Half right)
+            => left <= right;
+
+        [RequiresPreviewFeatures]
+        static bool IComparisonOperators<Half, Half>.operator >(Half left, Half right)
+            => left > right;
+
+        [RequiresPreviewFeatures]
+        static bool IComparisonOperators<Half, Half>.operator >=(Half left, Half right)
+            => left >= right;
+
+        //
+        // IDecrementOperators
+        //
+
+        [RequiresPreviewFeatures]
+        static Half IDecrementOperators<Half>.operator --(Half value)
+        {
+            var tmp = (float)value;
+            --tmp;
+            return (Half)tmp;
+        }
+
+        // [RequiresPreviewFeatures]
+        // static checked Half IDecrementOperators<Half>.operator --(Half value)
+        // {
+        //     var tmp = (float)value;
+        //     --tmp;
+        //     return (Half)tmp;
+        // }
+
+        //
+        // IEqualityOperators
+        //
+
+        [RequiresPreviewFeatures]
+        static bool IEqualityOperators<Half, Half>.operator ==(Half left, Half right)
+            => left == right;
+
+        [RequiresPreviewFeatures]
+        static bool IEqualityOperators<Half, Half>.operator !=(Half left, Half right)
+            => left != right;
+
+        //
+        // IDivisionOperators
+        //
+
+        [RequiresPreviewFeatures]
+        static Half IDivisionOperators<Half, Half, Half>.operator /(Half left, Half right)
+            => (Half)((float)left / (float)right);
+
+        // [RequiresPreviewFeatures]
+        // static checked Half IDivisionOperators<Half, Half, Half>.operator /(Half left, Half right)
+        //     => checked((Half)((float)left / (float)right));
+
+        //
+        // IFloatingPoint
+        //
+
+        [RequiresPreviewFeatures]
+        static Half IFloatingPoint<Half>.E => (Half)MathF.E;
+
+        [RequiresPreviewFeatures]
+        static Half IFloatingPoint<Half>.Epsilon => Epsilon;
+
+        [RequiresPreviewFeatures]
+        static Half IFloatingPoint<Half>.NaN => NaN;
+
+        [RequiresPreviewFeatures]
+        static Half IFloatingPoint<Half>.NegativeInfinity => NegativeInfinity;
+
+        [RequiresPreviewFeatures]
+        static Half IFloatingPoint<Half>.NegativeZero => NegativeZero;
+
+        [RequiresPreviewFeatures]
+        static Half IFloatingPoint<Half>.Pi => (Half)MathF.PI;
+
+        [RequiresPreviewFeatures]
+        static Half IFloatingPoint<Half>.PositiveInfinity => PositiveInfinity;
+
+        [RequiresPreviewFeatures]
+        static Half IFloatingPoint<Half>.Tau => (Half)MathF.Tau;
+
+        [RequiresPreviewFeatures]
+        static Half IFloatingPoint<Half>.Acos(Half x)
+            => (Half)MathF.Acos((float)x);
+
+        [RequiresPreviewFeatures]
+        static Half IFloatingPoint<Half>.Acosh(Half x)
+            => (Half)MathF.Acosh((float)x);
+
+        [RequiresPreviewFeatures]
+        static Half IFloatingPoint<Half>.Asin(Half x)
+            => (Half)MathF.Asin((float)x);
+
+        [RequiresPreviewFeatures]
+        static Half IFloatingPoint<Half>.Asinh(Half x)
+            => (Half)MathF.Asinh((float)x);
+
+        [RequiresPreviewFeatures]
+        static Half IFloatingPoint<Half>.Atan(Half x)
+            => (Half)MathF.Atan((float)x);
+
+        [RequiresPreviewFeatures]
+        static Half IFloatingPoint<Half>.Atan2(Half y, Half x)
+            => (Half)MathF.Atan2((float)y, (float)x);
+
+        [RequiresPreviewFeatures]
+        static Half IFloatingPoint<Half>.Atanh(Half x)
+            => (Half)MathF.Atanh((float)x);
+
+        [RequiresPreviewFeatures]
+        static Half IFloatingPoint<Half>.BitIncrement(Half x)
+        {
+            ushort bits = BitConverter.HalfToUInt16Bits(x);
+
+            if ((bits & ExponentMask) >= ExponentMask)
+            {
+                // NaN returns NaN
+                // -Infinity returns float.MinValue
+                // +Infinity returns +Infinity
+                return (bits == (ExponentMask | SignMask)) ? MinValue : x;
+            }
+
+            if (bits == NegativeZeroBits)
+            {
+                // -0.0 returns float.Epsilon
+                return Epsilon;
+            }
+
+            // Negative values need to be decremented
+            // Positive values need to be incremented
+
+            bits += unchecked((ushort)((bits < 0) ? -1 : +1));
+            return BitConverter.UInt16BitsToHalf(bits);
+        }
+
+        [RequiresPreviewFeatures]
+        static Half IFloatingPoint<Half>.BitDecrement(Half x)
+        {
+            ushort bits = BitConverter.HalfToUInt16Bits(x);
+
+            if ((bits & ExponentMask) >= ExponentMask)
+            {
+                // NaN returns NaN
+                // -Infinity returns -Infinity
+                // +Infinity returns float.MaxValue
+                return (bits == ExponentMask) ? MaxValue : x;
+            }
+
+            if (bits == PositiveZeroBits)
+            {
+                // +0.0 returns -float.Epsilon
+                return new Half(EpsilonBits | SignMask);
+            }
+
+            // Negative values need to be incremented
+            // Positive values need to be decremented
+
+            bits += (ushort)((bits < 0) ? +1 : -1);
+            return BitConverter.UInt16BitsToHalf(bits);
+        }
+
+        [RequiresPreviewFeatures]
+        static Half IFloatingPoint<Half>.Cbrt(Half x)
+            => (Half)MathF.Cbrt((float)x);
+
+        [RequiresPreviewFeatures]
+        static Half IFloatingPoint<Half>.Ceiling(Half x)
+            => (Half)MathF.Ceiling((float)x);
+
+        [RequiresPreviewFeatures]
+        static Half IFloatingPoint<Half>.CopySign(Half x, Half y)
+            => (Half)MathF.CopySign((float)x, (float)y);
+
+        [RequiresPreviewFeatures]
+        static Half IFloatingPoint<Half>.Cos(Half x)
+            => (Half)MathF.Cos((float)x);
+
+        [RequiresPreviewFeatures]
+        static Half IFloatingPoint<Half>.Cosh(Half x)
+            => (Half)MathF.Cosh((float)x);
+
+        [RequiresPreviewFeatures]
+        static Half IFloatingPoint<Half>.Exp(Half x)
+            => (Half)MathF.Exp((float)x);
+
+        [RequiresPreviewFeatures]
+        static Half IFloatingPoint<Half>.Floor(Half x)
+            => (Half)MathF.Floor((float)x);
+
+        [RequiresPreviewFeatures]
+        static Half IFloatingPoint<Half>.FusedMultiplyAdd(Half left, Half right, Half addend)
+            => (Half)MathF.FusedMultiplyAdd((float)left, (float)right, (float)addend);
+
+        [RequiresPreviewFeatures]
+        static Half IFloatingPoint<Half>.IEEERemainder(Half left, Half right)
+            => (Half)MathF.IEEERemainder((float)left, (float)right);
+
+        [RequiresPreviewFeatures]
+        static TInteger IFloatingPoint<Half>.ILogB<TInteger>(Half x)
+            => TInteger.Create(MathF.ILogB((float)x));
+
+        [RequiresPreviewFeatures]
+        static Half IFloatingPoint<Half>.Log(Half x)
+            => (Half)MathF.Log((float)x);
+
+        [RequiresPreviewFeatures]
+        static Half IFloatingPoint<Half>.Log(Half x, Half newBase)
+            => (Half)MathF.Log((float)x, (float)newBase);
+
+        [RequiresPreviewFeatures]
+        static Half IFloatingPoint<Half>.Log2(Half x)
+            => (Half)MathF.Log2((float)x);
+
+        [RequiresPreviewFeatures]
+        static Half IFloatingPoint<Half>.Log10(Half x)
+            => (Half)MathF.Log10((float)x);
+
+        [RequiresPreviewFeatures]
+        static Half IFloatingPoint<Half>.MaxMagnitude(Half x, Half y)
+            => (Half)MathF.MaxMagnitude((float)x, (float)y);
+
+        [RequiresPreviewFeatures]
+        static Half IFloatingPoint<Half>.MinMagnitude(Half x, Half y)
+            => (Half)MathF.MinMagnitude((float)x, (float)y);
+
+        [RequiresPreviewFeatures]
+        static Half IFloatingPoint<Half>.Pow(Half x, Half y)
+            => (Half)MathF.Pow((float)x, (float)y);
+
+        [RequiresPreviewFeatures]
+        static Half IFloatingPoint<Half>.Round(Half x)
+            => (Half)MathF.Round((float)x);
+
+        [RequiresPreviewFeatures]
+        static Half IFloatingPoint<Half>.Round<TInteger>(Half x, TInteger digits)
+            => (Half)MathF.Round((float)x, int.Create(digits));
+
+        [RequiresPreviewFeatures]
+        static Half IFloatingPoint<Half>.Round(Half x, MidpointRounding mode)
+            => (Half)MathF.Round((float)x, mode);
+
+        [RequiresPreviewFeatures]
+        static Half IFloatingPoint<Half>.Round<TInteger>(Half x, TInteger digits, MidpointRounding mode)
+            => (Half)MathF.Round((float)x, int.Create(digits), mode);
+
+        [RequiresPreviewFeatures]
+        static Half IFloatingPoint<Half>.ScaleB<TInteger>(Half x, TInteger n)
+            => (Half)MathF.ScaleB((float)x, int.Create(n));
+
+        [RequiresPreviewFeatures]
+        static Half IFloatingPoint<Half>.Sin(Half x)
+            => (Half)MathF.Sin((float)x);
+
+        [RequiresPreviewFeatures]
+        static Half IFloatingPoint<Half>.Sinh(Half x)
+            => (Half)MathF.Sinh((float)x);
+
+        [RequiresPreviewFeatures]
+        static Half IFloatingPoint<Half>.Sqrt(Half x)
+            => (Half)MathF.Sqrt((float)x);
+
+        [RequiresPreviewFeatures]
+        static Half IFloatingPoint<Half>.Tan(Half x)
+            => (Half)MathF.Tan((float)x);
+
+        [RequiresPreviewFeatures]
+        static Half IFloatingPoint<Half>.Tanh(Half x)
+            => (Half)MathF.Tanh((float)x);
+
+        [RequiresPreviewFeatures]
+        static Half IFloatingPoint<Half>.Truncate(Half x)
+            => (Half)MathF.Truncate((float)x);
+
+        // static Half IFloatingPoint<Half>.AcosPi(Half x)
+        //     => (Half)MathF.AcosPi((float)x);
+        //
+        // static Half IFloatingPoint<Half>.AsinPi(Half x)
+        //     => (Half)MathF.AsinPi((float)x);
+        //
+        // static Half IFloatingPoint<Half>.AtanPi(Half x)
+        //     => (Half)MathF.AtanPi((float)x);
+        //
+        // static Half IFloatingPoint<Half>.Atan2Pi(Half y, Half x)
+        //     => (Half)MathF.Atan2Pi((float)y, (float)x);
+        //
+        // static Half IFloatingPoint<Half>.Compound(Half x, Half n)
+        //     => (Half)MathF.Compound((float)x, (float)n);
+        //
+        // static Half IFloatingPoint<Half>.CosPi(Half x)
+        //     => (Half)MathF.CosPi((float)x);
+        //
+        // static Half IFloatingPoint<Half>.ExpM1(Half x)
+        //     => (Half)MathF.ExpM1((float)x);
+        //
+        // static Half IFloatingPoint<Half>.Exp2(Half x)
+        //     => (Half)MathF.Exp2((float)x);
+        //
+        // static Half IFloatingPoint<Half>.Exp2M1(Half x)
+        //     => (Half)MathF.Exp2M1((float)x);
+        //
+        // static Half IFloatingPoint<Half>.Exp10(Half x)
+        //     => (Half)MathF.Exp10((float)x);
+        //
+        // static Half IFloatingPoint<Half>.Exp10M1(Half x)
+        //     => (Half)MathF.Exp10M1((float)x);
+        //
+        // static Half IFloatingPoint<Half>.Hypot(Half x, Half y)
+        //     => (Half)MathF.Hypot((float)x, (float)y);
+        //
+        // static Half IFloatingPoint<Half>.LogP1(Half x)
+        //     => (Half)MathF.LogP1((float)x);
+        //
+        // static Half IFloatingPoint<Half>.Log2P1(Half x)
+        //     => (Half)MathF.Log2P1((float)x);
+        //
+        // static Half IFloatingPoint<Half>.Log10P1(Half x)
+        //     => (Half)MathF.Log10P1((float)x);
+        //
+        // static Half IFloatingPoint<Half>.MaxMagnitudeNumber(Half x, Half y)
+        //     => (Half)MathF.MaxMagnitudeNumber((float)x, (float)y);
+        //
+        // static Half IFloatingPoint<Half>.MaxNumber(Half x, Half y)
+        //     => (Half)MathF.MaxNumber((float)x, (float)y);
+        //
+        // static Half IFloatingPoint<Half>.MinMagnitudeNumber(Half x, Half y)
+        //     => (Half)MathF.MinMagnitudeNumber((float)x, (float)y);
+        //
+        // static Half IFloatingPoint<Half>.MinNumber(Half x, Half y)
+        //     => (Half)MathF.MinNumber((float)x, (float)y);
+        //
+        // static Half IFloatingPoint<Half>.Root(Half x, Half n)
+        //     => (Half)MathF.Root((float)x, (float)n);
+        //
+        // static Half IFloatingPoint<Half>.SinPi(Half x)
+        //     => (Half)MathF.SinPi((float)x, (float)y);
+        //
+        // static Half TanPi(Half x)
+        //     => (Half)MathF.TanPi((float)x, (float)y);
+
+        //
+        // IIncrementOperators
+        //
+
+        [RequiresPreviewFeatures]
+        static Half IIncrementOperators<Half>.operator ++(Half value)
+        {
+            var tmp = (float)value;
+            ++tmp;
+            return (Half)tmp;
+        }
+
+        // [RequiresPreviewFeatures]
+        // static checked Half IIncrementOperators<Half>.operator ++(Half value)
+        // {
+        //     var tmp = (float)value;
+        //     ++tmp;
+        //     return (Half)tmp;
+        // }
+
+        //
+        // IMinMaxValue
+        //
+
+        [RequiresPreviewFeatures]
+        static Half IMinMaxValue<Half>.MinValue => MinValue;
+
+        [RequiresPreviewFeatures]
+        static Half IMinMaxValue<Half>.MaxValue => MaxValue;
+
+        //
+        // IModulusOperators
+        //
+
+        [RequiresPreviewFeatures]
+        static Half IModulusOperators<Half, Half, Half>.operator %(Half left, Half right)
+            => (Half)((float)left % (float)right);
+
+        // [RequiresPreviewFeatures]
+        // static checked Half IModulusOperators<Half, Half, Half>.operator %(Half left, Half right)
+        //     => checked((Half)((float)left % (float)right));
+
+        //
+        // IMultiplicativeIdentity
+        //
+
+        [RequiresPreviewFeatures]
+        static Half IMultiplicativeIdentity<Half, Half>.MultiplicativeIdentity => (Half)1.0f;
+
+        //
+        // IMultiplyOperators
+        //
+
+        [RequiresPreviewFeatures]
+        static Half IMultiplyOperators<Half, Half, Half>.operator *(Half left, Half right)
+            => (Half)((float)left * (float)right);
+
+        // [RequiresPreviewFeatures]
+        // static checked Half IMultiplyOperators<Half, Half, Half>.operator *(Half left, Half right)
+        //     => checked((Half)((float)left * (float)right));
+
+        //
+        // INumber
+        //
+
+        [RequiresPreviewFeatures]
+        static Half INumber<Half>.One => (Half)1.0f;
+
+        [RequiresPreviewFeatures]
+        static Half INumber<Half>.Zero => PositiveZero;
+
+        [RequiresPreviewFeatures]
+        static Half INumber<Half>.Abs(Half value)
+            => (Half)MathF.Abs((float)value);
+
+        [RequiresPreviewFeatures]
+        static Half INumber<Half>.Clamp(Half value, Half min, Half max)
+            => (Half)Math.Clamp((float)value, (float)min, (float)max);
+
+        [RequiresPreviewFeatures]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static Half INumber<Half>.Create<TOther>(TOther value)
+        {
+            if (typeof(TOther) == typeof(byte))
+            {
+                return (Half)(byte)(object)value;
+            }
+            else if (typeof(TOther) == typeof(char))
+            {
+                return (Half)(char)(object)value;
+            }
+            else if (typeof(TOther) == typeof(decimal))
+            {
+                return (Half)(float)(decimal)(object)value;
+            }
+            else if (typeof(TOther) == typeof(double))
+            {
+                return (Half)(double)(object)value;
+            }
+            else if (typeof(TOther) == typeof(short))
+            {
+                return (Half)(short)(object)value;
+            }
+            else if (typeof(TOther) == typeof(int))
+            {
+                return (Half)(int)(object)value;
+            }
+            else if (typeof(TOther) == typeof(long))
+            {
+                return (Half)(long)(object)value;
+            }
+            else if (typeof(TOther) == typeof(nint))
+            {
+                return (Half)(long)(nint)(object)value;
+            }
+            else if (typeof(TOther) == typeof(sbyte))
+            {
+                return (Half)(sbyte)(object)value;
+            }
+            else if (typeof(TOther) == typeof(float))
+            {
+                return (Half)(float)(object)value;
+            }
+            else if (typeof(TOther) == typeof(ushort))
+            {
+                return (Half)(ushort)(object)value;
+            }
+            else if (typeof(TOther) == typeof(uint))
+            {
+                return (Half)(uint)(object)value;
+            }
+            else if (typeof(TOther) == typeof(ulong))
+            {
+                return (Half)(ulong)(object)value;
+            }
+            else if (typeof(TOther) == typeof(nuint))
+            {
+                return (Half)(ulong)(nuint)(object)value;
+            }
+            else
+            {
+                ThrowHelper.ThrowNotSupportedException();
+                return default;
+            }
+        }
+
+        [RequiresPreviewFeatures]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static Half INumber<Half>.CreateSaturating<TOther>(TOther value)
+        {
+            if (typeof(TOther) == typeof(byte))
+            {
+                return (Half)(byte)(object)value;
+            }
+            else if (typeof(TOther) == typeof(char))
+            {
+                return (Half)(char)(object)value;
+            }
+            else if (typeof(TOther) == typeof(decimal))
+            {
+                return (Half)(float)(decimal)(object)value;
+            }
+            else if (typeof(TOther) == typeof(double))
+            {
+                return (Half)(double)(object)value;
+            }
+            else if (typeof(TOther) == typeof(short))
+            {
+                return (Half)(short)(object)value;
+            }
+            else if (typeof(TOther) == typeof(int))
+            {
+                return (Half)(int)(object)value;
+            }
+            else if (typeof(TOther) == typeof(long))
+            {
+                return (Half)(long)(object)value;
+            }
+            else if (typeof(TOther) == typeof(nint))
+            {
+                return (Half)(long)(nint)(object)value;
+            }
+            else if (typeof(TOther) == typeof(sbyte))
+            {
+                return (Half)(sbyte)(object)value;
+            }
+            else if (typeof(TOther) == typeof(float))
+            {
+                return (Half)(float)(object)value;
+            }
+            else if (typeof(TOther) == typeof(ushort))
+            {
+                return (Half)(ushort)(object)value;
+            }
+            else if (typeof(TOther) == typeof(uint))
+            {
+                return (Half)(uint)(object)value;
+            }
+            else if (typeof(TOther) == typeof(ulong))
+            {
+                return (Half)(ulong)(object)value;
+            }
+            else if (typeof(TOther) == typeof(nuint))
+            {
+                return (Half)(ulong)(nuint)(object)value;
+            }
+            else
+            {
+                ThrowHelper.ThrowNotSupportedException();
+                return default;
+            }
+        }
+
+        [RequiresPreviewFeatures]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static Half INumber<Half>.CreateTruncating<TOther>(TOther value)
+        {
+            if (typeof(TOther) == typeof(byte))
+            {
+                return (Half)(byte)(object)value;
+            }
+            else if (typeof(TOther) == typeof(char))
+            {
+                return (Half)(char)(object)value;
+            }
+            else if (typeof(TOther) == typeof(decimal))
+            {
+                return (Half)(float)(decimal)(object)value;
+            }
+            else if (typeof(TOther) == typeof(double))
+            {
+                return (Half)(double)(object)value;
+            }
+            else if (typeof(TOther) == typeof(short))
+            {
+                return (Half)(short)(object)value;
+            }
+            else if (typeof(TOther) == typeof(int))
+            {
+                return (Half)(int)(object)value;
+            }
+            else if (typeof(TOther) == typeof(long))
+            {
+                return (Half)(long)(object)value;
+            }
+            else if (typeof(TOther) == typeof(nint))
+            {
+                return (Half)(long)(nint)(object)value;
+            }
+            else if (typeof(TOther) == typeof(sbyte))
+            {
+                return (Half)(sbyte)(object)value;
+            }
+            else if (typeof(TOther) == typeof(float))
+            {
+                return (Half)(float)(object)value;
+            }
+            else if (typeof(TOther) == typeof(ushort))
+            {
+                return (Half)(ushort)(object)value;
+            }
+            else if (typeof(TOther) == typeof(uint))
+            {
+                return (Half)(uint)(object)value;
+            }
+            else if (typeof(TOther) == typeof(ulong))
+            {
+                return (Half)(ulong)(object)value;
+            }
+            else if (typeof(TOther) == typeof(nuint))
+            {
+                return (Half)(ulong)(nuint)(object)value;
+            }
+            else
+            {
+                ThrowHelper.ThrowNotSupportedException();
+                return default;
+            }
+        }
+
+        [RequiresPreviewFeatures]
+        static (Half Quotient, Half Remainder) INumber<Half>.DivRem(Half left, Half right)
+            => ((Half, Half))((float)left / (float)right, (float)left % (float)right);
+
+        [RequiresPreviewFeatures]
+        static Half INumber<Half>.Max(Half x, Half y)
+            => (Half)MathF.Max((float)x, (float)y);
+
+        [RequiresPreviewFeatures]
+        static Half INumber<Half>.Min(Half x, Half y)
+            => (Half)MathF.Min((float)x, (float)y);
+
+        [RequiresPreviewFeatures]
+        static Half INumber<Half>.Parse(string s, NumberStyles style, IFormatProvider? provider)
+            => Parse(s, style, provider);
+
+        [RequiresPreviewFeatures]
+        static Half INumber<Half>.Parse(ReadOnlySpan<char> s, NumberStyles style, IFormatProvider? provider)
+            => Parse(s, style, provider);
+
+        [RequiresPreviewFeatures]
+        static Half INumber<Half>.Sign(Half value)
+            => (Half)MathF.Sign((float)value);
+
+        [RequiresPreviewFeatures]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static bool INumber<Half>.TryCreate<TOther>(TOther value, out Half result)
+        {
+            if (typeof(TOther) == typeof(byte))
+            {
+                result = (Half)(byte)(object)value;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(char))
+            {
+                result = (Half)(char)(object)value;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(decimal))
+            {
+                result = (Half)(float)(decimal)(object)value;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(double))
+            {
+                result = (Half)(double)(object)value;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(short))
+            {
+                result = (Half)(short)(object)value;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(int))
+            {
+                result = (Half)(int)(object)value;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(long))
+            {
+                result = (Half)(long)(object)value;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(nint))
+            {
+                result = (Half)(long)(nint)(object)value;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(sbyte))
+            {
+                result = (Half)(sbyte)(object)value;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(float))
+            {
+                result = (Half)(float)(object)value;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(ushort))
+            {
+                result = (Half)(ushort)(object)value;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(uint))
+            {
+                result = (Half)(uint)(object)value;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(ulong))
+            {
+                result = (Half)(ulong)(object)value;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(nuint))
+            {
+                result = (Half)(ulong)(nuint)(object)value;
+                return true;
+            }
+            else
+            {
+                ThrowHelper.ThrowNotSupportedException();
+                result = default;
+                return false;
+            }
+        }
+
+        [RequiresPreviewFeatures]
+        static bool INumber<Half>.TryParse([NotNullWhen(true)] string? s, NumberStyles style, IFormatProvider? provider, out Half result)
+            => TryParse(s, style, provider, out result);
+
+        [RequiresPreviewFeatures]
+        static bool INumber<Half>.TryParse(ReadOnlySpan<char> s, NumberStyles style, IFormatProvider? provider, out Half result)
+            => TryParse(s, style, provider, out result);
+
+        //
+        // IParseable
+        //
+
+        [RequiresPreviewFeatures]
+        static Half IParseable<Half>.Parse(string s, IFormatProvider? provider)
+            => Parse(s, provider);
+
+        [RequiresPreviewFeatures]
+        static bool IParseable<Half>.TryParse([NotNullWhen(true)] string? s, IFormatProvider? provider, out Half result)
+            => TryParse(s, NumberStyles.Integer, provider, out result);
+
+        //
+        // ISignedNumber
+        //
+
+        [RequiresPreviewFeatures]
+        static Half ISignedNumber<Half>.NegativeOne => (Half)(-1.0f);
+
+        //
+        // ISpanParseable
+        //
+
+        [RequiresPreviewFeatures]
+        static Half ISpanParseable<Half>.Parse(ReadOnlySpan<char> s, IFormatProvider? provider)
+            => Parse(s, NumberStyles.Integer, provider);
+
+        [RequiresPreviewFeatures]
+        static bool ISpanParseable<Half>.TryParse(ReadOnlySpan<char> s, IFormatProvider? provider, out Half result)
+            => TryParse(s, NumberStyles.Integer, provider, out result);
+
+        //
+        // ISubtractionOperators
+        //
+
+        [RequiresPreviewFeatures]
+        static Half ISubtractionOperators<Half, Half, Half>.operator -(Half left, Half right)
+            => (Half)((float)left - (float)right);
+
+        // [RequiresPreviewFeatures]
+        // static checked Half ISubtractionOperators<Half, Half, Half>.operator -(Half left, Half right)
+        //     => checked((Half)((float)left - (float)right));
+
+        //
+        // IUnaryNegationOperators
+        //
+
+        [RequiresPreviewFeatures]
+        static Half IUnaryNegationOperators<Half, Half>.operator -(Half value)
+            => (Half)(-(float)value);
+
+        // [RequiresPreviewFeatures]
+        // static checked Half IUnaryNegationOperators<Half, Half>.operator -(Half value)
+        //     => checked((Half)(-(float)value));
+
+        //
+        // IUnaryNegationOperators
+        //
+
+        [RequiresPreviewFeatures]
+        static Half IUnaryPlusOperators<Half, Half>.operator +(Half value)
+            => value;
+
+        // [RequiresPreviewFeatures]
+        // static checked Half IUnaryPlusOperators<Half, Half>.operator +(Half value)
+        //     => checked(value);
+#endif // FEATURE_GENERIC_MATH
     }
 }

@@ -3,7 +3,7 @@
 
 internal static partial class Interop
 {
-    internal class StatusOptions
+    internal static class StatusOptions
     {
         // Error codes from ntstatus.h
         internal const uint STATUS_SUCCESS                = 0x00000000;
@@ -17,5 +17,7 @@ internal static partial class Interop
         internal const uint STATUS_ACCOUNT_RESTRICTION    = 0xC000006E;
         internal const uint STATUS_NONE_MAPPED            = 0xC0000073;
         internal const uint STATUS_INSUFFICIENT_RESOURCES = 0xC000009A;
+        internal const uint STATUS_DISK_FULL = 0xC000007F;
+        internal const uint STATUS_FILE_TOO_LARGE = 0xC0000904;
     }
 }

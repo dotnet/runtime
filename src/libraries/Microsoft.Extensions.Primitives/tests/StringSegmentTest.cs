@@ -12,7 +12,7 @@ namespace Microsoft.Extensions.Primitives
         public void StringSegment_Empty()
         {
             // Arrange & Act
-            var segment = StringSegment.Empty;
+            StringSegment segment = StringSegment.Empty;
 
             // Assert
             Assert.True(segment.HasValue);
@@ -37,9 +37,101 @@ namespace Microsoft.Extensions.Primitives
         {
             var segment = new StringSegment("Hello");
 
-            var span = segment.AsSpan();
+            ReadOnlySpan<char> span = segment.AsSpan();
 
-            Assert.Equal(5, span.Length);
+            Assert.Equal("Hello", span.ToString());
+        }
+
+        [Fact]
+        public void StringSegment_AsSpanStart_Valid()
+        {
+            var segment = new StringSegment("Hello, World!", 1, 4);
+
+            ReadOnlySpan<char> result = segment.AsSpan(start: 1);
+
+            Assert.Equal("llo", result.ToString());
+        }
+
+        [Fact]
+        public void StringSegment_AsSpan_Valid()
+        {
+            var segment = new StringSegment("Hello, World!", 1, 4);
+
+            ReadOnlySpan<char> result = segment.AsSpan(start: 1, length: 2);
+
+            Assert.Equal("ll", result.ToString());
+        }
+
+        [Fact]
+        public void StringSegment_AsSpan_Empty()
+        {
+            var segment = new StringSegment("Hello, World!");
+
+            ReadOnlySpan<char> result = segment.AsSpan(start: 1, length: 0);
+
+            Assert.True(result.IsEmpty);
+        }
+
+        [Fact]
+        public void StringSegment_AsSpanStart_NoValue()
+        {
+            StringSegment segment = default;
+
+            ArgumentOutOfRangeException exception = Assert.Throws<ArgumentOutOfRangeException>(() => segment.AsSpan(0));
+            Assert.Equal("start", exception.ParamName);
+        }
+
+        [Fact]
+        public void StringSegment_AsSpan_StartBehindLength()
+        {
+            var segment = new StringSegment("Hello, World!", 1, 3);
+
+            ArgumentOutOfRangeException exception = Assert.Throws<ArgumentOutOfRangeException>(() => segment.AsSpan(4));
+            Assert.Equal("start", exception.ParamName);
+        }
+
+        [Fact]
+        public void StringSegment_AsSpanStartLength_NoValue()
+        {
+            StringSegment segment = default;
+
+            Assert.Throws<ArgumentOutOfRangeException>(() => segment.AsSpan(0, 0));
+        }
+
+        [Fact]
+        public void StringSegment_AsSpan_InvalidStart()
+        {
+            var segment = new StringSegment("Hello, World!", 1, 3);
+
+            ArgumentOutOfRangeException exception = Assert.Throws<ArgumentOutOfRangeException>(() => segment.AsSpan(-1, 1));
+            Assert.Equal("start", exception.ParamName);
+        }
+
+        [Fact]
+        public void StringSegment_AsSpan_InvalidLength()
+        {
+            var segment = new StringSegment("Hello, World!", 1, 3);
+
+            ArgumentOutOfRangeException exception = Assert.Throws<ArgumentOutOfRangeException>(() => segment.AsSpan(0, -1));
+            Assert.Equal("length", exception.ParamName);
+        }
+
+        [Fact]
+        public void StringSegment_AsSpan_InvalidOffsetAndLength()
+        {
+            var segment = new StringSegment("Hello, World!", 1, 3);
+
+            ArgumentException exception = Assert.Throws<ArgumentException>(() => segment.AsSpan(2, 3));
+            Assert.Contains("bounds", exception.Message);
+        }
+
+        [Fact]
+        public void StringSegment_AsSpan_OffsetAndLengthOverflows()
+        {
+            var segment = new StringSegment("Hello, World!", 1, 3);
+
+            ArgumentException exception = Assert.Throws<ArgumentException>(() => segment.AsSpan(1, int.MaxValue));
+            Assert.Contains("bounds", exception.Message);
         }
 
         [Fact]
@@ -55,7 +147,7 @@ namespace Microsoft.Extensions.Primitives
         {
             var segment = new StringSegment("Hello");
 
-            var memory = segment.AsMemory();
+            ReadOnlyMemory<char> memory = segment.AsMemory();
 
             Assert.Equal(5, memory.Length);
         }
@@ -84,7 +176,7 @@ namespace Microsoft.Extensions.Primitives
         public void StringSegmentConstructor_NullBuffer_Throws()
         {
             // Arrange, Act and Assert
-            var exception = Assert.Throws<ArgumentNullException>(() => new StringSegment(null, 0, 0));
+            ArgumentNullException exception = Assert.Throws<ArgumentNullException>(() => new StringSegment(null, 0, 0));
             Assert.Contains("buffer", exception.Message);
         }
 
@@ -92,7 +184,7 @@ namespace Microsoft.Extensions.Primitives
         public void StringSegmentConstructor_NegativeOffset_Throws()
         {
             // Arrange, Act and Assert
-            var exception = Assert.Throws<ArgumentOutOfRangeException>(() => new StringSegment("", -1, 0));
+            ArgumentOutOfRangeException exception = Assert.Throws<ArgumentOutOfRangeException>(() => new StringSegment("", -1, 0));
             Assert.Contains("offset", exception.Message);
         }
 
@@ -100,7 +192,7 @@ namespace Microsoft.Extensions.Primitives
         public void StringSegmentConstructor_NegativeLength_Throws()
         {
             // Arrange, Act and Assert
-            var exception = Assert.Throws<ArgumentOutOfRangeException>(() => new StringSegment("", 0, -1));
+            ArgumentOutOfRangeException exception = Assert.Throws<ArgumentOutOfRangeException>(() => new StringSegment("", 0, -1));
             Assert.Contains("length", exception.Message);
         }
 
@@ -133,7 +225,7 @@ namespace Microsoft.Extensions.Primitives
         public void StringSegment_StringCtor_InitializesValuesCorrectly()
         {
             // Arrange
-            var buffer = "Hello world!";
+            string buffer = "Hello world!";
 
             // Act
             var segment = new StringSegment(buffer);
@@ -151,7 +243,7 @@ namespace Microsoft.Extensions.Primitives
             var segment = new StringSegment("Hello, World!", 1, 4);
 
             // Act
-            var value = segment.Value;
+            string value = segment.Value;
 
             // Assert
             Assert.Equal("ello", value);
@@ -164,7 +256,7 @@ namespace Microsoft.Extensions.Primitives
             var segment = new StringSegment();
 
             // Act
-            var value = segment.Value;
+            string value = segment.Value;
 
             // Assert
             Assert.Null(value);
@@ -177,7 +269,7 @@ namespace Microsoft.Extensions.Primitives
             var segment = new StringSegment("Hello, World!", 1, 4);
 
             // Act
-            var hasValue = segment.HasValue;
+            bool hasValue = segment.HasValue;
 
             // Assert
             Assert.True(hasValue);
@@ -190,7 +282,7 @@ namespace Microsoft.Extensions.Primitives
             var segment = new StringSegment();
 
             // Act
-            var hasValue = segment.HasValue;
+            bool hasValue = segment.HasValue;
 
             // Assert
             Assert.False(hasValue);
@@ -207,7 +299,7 @@ namespace Microsoft.Extensions.Primitives
         {
             var segment = new StringSegment(value, offset, length);
 
-            var result = segment[index];
+            char result = segment[index];
 
             Assert.Equal(expected, result);
         }
@@ -252,7 +344,7 @@ namespace Microsoft.Extensions.Primitives
             var segment = new StringSegment("Hello, World!", 1, 4);
 
             // Act
-            var result = segment.EndsWith(candidate, comparison);
+            bool result = segment.EndsWith(candidate, comparison);
 
             // Assert
             Assert.Equal(expectedResult, result);
@@ -265,7 +357,7 @@ namespace Microsoft.Extensions.Primitives
             var segment = new StringSegment();
 
             // Act
-            var result = segment.EndsWith(string.Empty, StringComparison.Ordinal);
+            bool result = segment.EndsWith(string.Empty, StringComparison.Ordinal);
 
             // Assert
             Assert.False(result);
@@ -321,7 +413,7 @@ namespace Microsoft.Extensions.Primitives
             var segment = new StringSegment("Hello, World!", 1, 4);
 
             // Act
-            var result = segment.StartsWith(candidate, comparison);
+            bool result = segment.StartsWith(candidate, comparison);
 
             // Assert
             Assert.Equal(expectedResult, result);
@@ -334,7 +426,7 @@ namespace Microsoft.Extensions.Primitives
             var segment = new StringSegment();
 
             // Act
-            var result = segment.StartsWith(string.Empty, StringComparison.Ordinal);
+            bool result = segment.StartsWith(string.Empty, StringComparison.Ordinal);
 
             // Assert
             Assert.False(result);
@@ -382,7 +474,7 @@ namespace Microsoft.Extensions.Primitives
             var segment = new StringSegment("Hello, World!", 1, 4);
 
             // Act
-            var result = segment.Equals(candidate, comparison);
+            bool result = segment.Equals(candidate, comparison);
 
             // Assert
             Assert.Equal(expectedResult, result);
@@ -474,7 +566,7 @@ namespace Microsoft.Extensions.Primitives
         {
             Assert.False(StringSegment.IsNullOrEmpty("A"));
             Assert.False(StringSegment.IsNullOrEmpty("ABCDefg"));
-            Assert.False(StringSegment.IsNullOrEmpty(new StringSegment("A", 0 , 1)));
+            Assert.False(StringSegment.IsNullOrEmpty(new StringSegment("A", 0, 1)));
             Assert.False(StringSegment.IsNullOrEmpty(new StringSegment("ABCDefg", 3, 2)));
         }
 
@@ -499,8 +591,8 @@ namespace Microsoft.Extensions.Primitives
         public void GetHashCode_ReturnsSameValueForEqualSubstrings(StringSegment segment1, StringSegment segment2)
         {
             // Act
-            var hashCode1 = segment1.GetHashCode();
-            var hashCode2 = segment2.GetHashCode();
+            int hashCode1 = segment1.GetHashCode();
+            int hashCode2 = segment2.GetHashCode();
 
             // Assert
             Assert.Equal(hashCode1, hashCode2);
@@ -510,7 +602,7 @@ namespace Microsoft.Extensions.Primitives
         {
             get
             {
-                var testString = "Test123";
+                string testString = "Test123";
                 return new TheoryData<StringSegment, StringSegment>
                 {
                     { new StringSegment(testString, 0, 1), new StringSegment(string.Empty) },
@@ -528,8 +620,8 @@ namespace Microsoft.Extensions.Primitives
             StringSegment segment2)
         {
             // Act
-            var hashCode1 = segment1.GetHashCode();
-            var hashCode2 = segment2.GetHashCode();
+            int hashCode1 = segment1.GetHashCode();
+            int hashCode2 = segment2.GetHashCode();
 
             // Assert
             Assert.NotEqual(hashCode1, hashCode2);
@@ -542,7 +634,7 @@ namespace Microsoft.Extensions.Primitives
             var segment = new StringSegment();
 
             // Act
-            var result = segment.Equals(string.Empty, StringComparison.Ordinal);
+            bool result = segment.Equals(string.Empty, StringComparison.Ordinal);
 
             // Assert
             Assert.False(result);
@@ -569,7 +661,7 @@ namespace Microsoft.Extensions.Primitives
             var segment = default(StringSegment);
 
             // Act
-            var result = segment.Equals(candidate, StringComparison.Ordinal);
+            bool result = segment.Equals(candidate, StringComparison.Ordinal);
 
             // Assert
             Assert.True(result);
@@ -597,7 +689,7 @@ namespace Microsoft.Extensions.Primitives
             var segment = default(StringSegment);
 
             // Act
-            var result = segment.Equals(candidate, StringComparison.Ordinal);
+            bool result = segment.Equals(candidate, StringComparison.Ordinal);
 
             // Assert
             Assert.False(result);
@@ -624,7 +716,7 @@ namespace Microsoft.Extensions.Primitives
             var segment = default(StringSegment);
 
             // Act
-            var result = segment.Equals(candidate, StringComparison.Ordinal);
+            bool result = segment.Equals(candidate, StringComparison.Ordinal);
 
             // Assert
             Assert.False(result);
@@ -655,7 +747,7 @@ namespace Microsoft.Extensions.Primitives
             var segment = new StringSegment("Hello, World!", 1, 4);
 
             // Act
-            var result = segment.Equals(candidate, comparison);
+            bool result = segment.Equals(candidate, comparison);
 
             // Assert
             Assert.Equal(expectedResult, result);
@@ -669,7 +761,7 @@ namespace Microsoft.Extensions.Primitives
             var candidate = new StringSegment("Hello, World!", 3, 2);
 
             // Act
-            var result = segment.Equals(candidate, StringComparison.Ordinal);
+            bool result = segment.Equals(candidate, StringComparison.Ordinal);
 
             // Assert
             Assert.False(result);
@@ -682,7 +774,7 @@ namespace Microsoft.Extensions.Primitives
             var segment = new StringSegment("Hello, World!", 1, 4);
 
             // Act
-            var result = segment.Substring(offset: 1);
+            string result = segment.Substring(offset: 1);
 
             // Assert
             Assert.Equal("llo", result);
@@ -695,10 +787,19 @@ namespace Microsoft.Extensions.Primitives
             var segment = new StringSegment("Hello, World!", 1, 4);
 
             // Act
-            var result = segment.Substring(offset: 1, length: 2);
+            string result = segment.Substring(offset: 1, length: 2);
 
             // Assert
             Assert.Equal("ll", result);
+        }
+
+        [Fact]
+        public void StringSegment_Substring_NoValue()
+        {
+            StringSegment segment = default;
+
+            ArgumentOutOfRangeException exception = Assert.Throws<ArgumentOutOfRangeException>(() => segment.Substring(0, 0));
+            Assert.Equal("offset", exception.ParamName);
         }
 
         [Fact]
@@ -718,7 +819,7 @@ namespace Microsoft.Extensions.Primitives
             var segment = new StringSegment("Hello, World!", 1, 3);
 
             // Act & Assert
-            var exception = Assert.Throws<ArgumentOutOfRangeException>(() => segment.Substring(-1, 1));
+            ArgumentOutOfRangeException exception = Assert.Throws<ArgumentOutOfRangeException>(() => segment.Substring(-1, 1));
             Assert.Equal("offset", exception.ParamName);
         }
 
@@ -729,29 +830,31 @@ namespace Microsoft.Extensions.Primitives
             var segment = new StringSegment("Hello, World!", 1, 3);
 
             // Act & Assert
-            var exception = Assert.Throws<ArgumentOutOfRangeException>(() => segment.Substring(0, -1));
+            ArgumentOutOfRangeException exception = Assert.Throws<ArgumentOutOfRangeException>(() => segment.Substring(0, -1));
             Assert.Equal("length", exception.ParamName);
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/50878", TestPlatforms.Android)]
         public void StringSegment_Substring_InvalidOffsetAndLength()
         {
             // Arrange
             var segment = new StringSegment("Hello, World!", 1, 3);
 
             // Act & Assert
-            var exception = Assert.Throws<ArgumentException>(() => segment.Substring(2, 3));
+            ArgumentException exception = Assert.Throws<ArgumentException>(() => segment.Substring(2, 3));
             Assert.Contains("bounds", exception.Message);
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/50878", TestPlatforms.Android)]
         public void StringSegment_Substring_OffsetAndLengthOverflows()
         {
             // Arrange
             var segment = new StringSegment("Hello, World!", 1, 3);
 
             // Act & Assert
-            var exception = Assert.Throws<ArgumentException>(() => segment.Substring(1, int.MaxValue));
+            ArgumentException exception = Assert.Throws<ArgumentException>(() => segment.Substring(1, int.MaxValue));
             Assert.Contains("bounds", exception.Message);
         }
 
@@ -762,7 +865,7 @@ namespace Microsoft.Extensions.Primitives
             var segment = new StringSegment("Hello, World!", 1, 4);
 
             // Act
-            var result = segment.Subsegment(offset: 1);
+            StringSegment result = segment.Subsegment(offset: 1);
 
             // Assert
             Assert.Equal(new StringSegment("Hello, World!", 2, 3), result);
@@ -776,11 +879,20 @@ namespace Microsoft.Extensions.Primitives
             var segment = new StringSegment("Hello, World!", 1, 4);
 
             // Act
-            var result = segment.Subsegment(offset: 1, length: 2);
+            StringSegment result = segment.Subsegment(offset: 1, length: 2);
 
             // Assert
             Assert.Equal(new StringSegment("Hello, World!", 2, 2), result);
             Assert.Equal("ll", result.Value);
+        }
+
+        [Fact]
+        public void StringSegment_Subsegment_NoValue()
+        {
+            StringSegment segment = default;
+
+            ArgumentOutOfRangeException exception = Assert.Throws<ArgumentOutOfRangeException>(() => segment.Subsegment(0, 0));
+            Assert.Equal("offset", exception.ParamName);
         }
 
         [Fact]
@@ -800,7 +912,7 @@ namespace Microsoft.Extensions.Primitives
             var segment = new StringSegment("Hello, World!", 1, 3);
 
             // Act & Assert
-            var exception = Assert.Throws<ArgumentOutOfRangeException>(() => segment.Subsegment(-1, 1));
+            ArgumentOutOfRangeException exception = Assert.Throws<ArgumentOutOfRangeException>(() => segment.Subsegment(-1, 1));
             Assert.Equal("offset", exception.ParamName);
         }
 
@@ -811,29 +923,31 @@ namespace Microsoft.Extensions.Primitives
             var segment = new StringSegment("Hello, World!", 1, 3);
 
             // Act & Assert
-            var exception = Assert.Throws<ArgumentOutOfRangeException>(() => segment.Subsegment(0, -1));
+            ArgumentOutOfRangeException exception = Assert.Throws<ArgumentOutOfRangeException>(() => segment.Subsegment(0, -1));
             Assert.Equal("length", exception.ParamName);
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/50878", TestPlatforms.Android)]
         public void StringSegment_Subsegment_InvalidOffsetAndLength()
         {
             // Arrange
             var segment = new StringSegment("Hello, World!", 1, 3);
 
             // Act & Assert
-            var exception = Assert.Throws<ArgumentException>(() => segment.Subsegment(2, 3));
+            ArgumentException exception = Assert.Throws<ArgumentException>(() => segment.Subsegment(2, 3));
             Assert.Contains("bounds", exception.Message);
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/50878", TestPlatforms.Android)]
         public void StringSegment_Subsegment_OffsetAndLengthOverflows()
         {
             // Arrange
             var segment = new StringSegment("Hello, World!", 1, 3);
 
             // Act & Assert
-            var exception = Assert.Throws<ArgumentException>(() => segment.Subsegment(1, int.MaxValue));
+            ArgumentException exception = Assert.Throws<ArgumentException>(() => segment.Subsegment(1, int.MaxValue));
             Assert.Contains("bounds", exception.Message);
         }
 
@@ -859,7 +973,7 @@ namespace Microsoft.Extensions.Primitives
             var segment = new StringSegment("ABCDEF", 1, 4);
 
             // Act
-            var result = comparer.Compare(segment, candidate);
+            int result = comparer.Compare(segment, candidate);
 
             // Assert
             Assert.True(result < 0, $"{segment} should be less than {candidate}");
@@ -888,7 +1002,7 @@ namespace Microsoft.Extensions.Primitives
             var segment = new StringSegment("abcdef", 1, 4);
 
             // Act
-            var result = comparer.Compare(segment, candidate);
+            int result = comparer.Compare(segment, candidate);
 
             // Assert
             Assert.True(result == 0, $"{segment} should equal {candidate}");
@@ -916,7 +1030,7 @@ namespace Microsoft.Extensions.Primitives
             var segment = new StringSegment("abcdef", 1, 4);
 
             // Act
-            var result = comparer.Compare(segment, candidate);
+            int result = comparer.Compare(segment, candidate);
 
             // Assert
             Assert.True(result > 0, $"{segment} should be greater than {candidate}");
@@ -938,11 +1052,11 @@ namespace Microsoft.Extensions.Primitives
         public void StringSegmentComparerOrdinal_GetHashCode_ReturnsSameValueForEqualSubstrings(StringSegment segment1, StringSegment segment2)
         {
             // Arrange
-            var comparer = StringSegmentComparer.Ordinal;
+            StringSegmentComparer comparer = StringSegmentComparer.Ordinal;
 
             // Act
-            var hashCode1 = comparer.GetHashCode(segment1);
-            var hashCode2 = comparer.GetHashCode(segment2);
+            int hashCode1 = comparer.GetHashCode(segment1);
+            int hashCode2 = comparer.GetHashCode(segment2);
 
             // Assert
             Assert.Equal(hashCode1, hashCode2);
@@ -953,11 +1067,11 @@ namespace Microsoft.Extensions.Primitives
         public void StringSegmentComparerOrdinalIgnoreCase_GetHashCode_ReturnsSameValueForEqualSubstrings(StringSegment segment1, StringSegment segment2)
         {
             // Arrange
-            var comparer = StringSegmentComparer.OrdinalIgnoreCase;
+            StringSegmentComparer comparer = StringSegmentComparer.OrdinalIgnoreCase;
 
             // Act
-            var hashCode1 = comparer.GetHashCode(segment1);
-            var hashCode2 = comparer.GetHashCode(segment2);
+            int hashCode1 = comparer.GetHashCode(segment1);
+            int hashCode2 = comparer.GetHashCode(segment2);
 
             // Assert
             Assert.Equal(hashCode1, hashCode2);
@@ -969,11 +1083,11 @@ namespace Microsoft.Extensions.Primitives
             // Arrange
             var segment1 = new StringSegment("abc");
             var segment2 = new StringSegment("Abcd", 0, 3);
-            var comparer = StringSegmentComparer.OrdinalIgnoreCase;
+            StringSegmentComparer comparer = StringSegmentComparer.OrdinalIgnoreCase;
 
             // Act
-            var hashCode1 = comparer.GetHashCode(segment1);
-            var hashCode2 = comparer.GetHashCode(segment2);
+            int hashCode1 = comparer.GetHashCode(segment1);
+            int hashCode2 = comparer.GetHashCode(segment2);
 
             // Assert
             Assert.Equal(hashCode1, hashCode2);
@@ -984,11 +1098,11 @@ namespace Microsoft.Extensions.Primitives
         public void StringSegmentComparerOrdinal_GetHashCode_ReturnsDifferentValuesForInequalSubstrings(StringSegment segment1, StringSegment segment2)
         {
             // Arrange
-            var comparer = StringSegmentComparer.Ordinal;
+            StringSegmentComparer comparer = StringSegmentComparer.Ordinal;
 
             // Act
-            var hashCode1 = comparer.GetHashCode(segment1);
-            var hashCode2 = comparer.GetHashCode(segment2);
+            int hashCode1 = comparer.GetHashCode(segment1);
+            int hashCode2 = comparer.GetHashCode(segment2);
 
             // Assert
             Assert.NotEqual(hashCode1, hashCode2);
@@ -1001,7 +1115,7 @@ namespace Microsoft.Extensions.Primitives
             var segment = new StringSegment("Hello, World!", 1, 10);
 
             // Act
-            var result = segment.IndexOf(',');
+            int result = segment.IndexOf(',');
 
             // Assert
             Assert.Equal(4, result);
@@ -1014,7 +1128,20 @@ namespace Microsoft.Extensions.Primitives
             var segment = new StringSegment("Hello, World!", 1, 3);
 
             // Act
-            var result = segment.IndexOf(',');
+            int result = segment.IndexOf(',');
+
+            // Assert
+            Assert.Equal(-1, result);
+        }
+
+        [Fact]
+        public void IndexOf_ReturnsMinusOne_OnDefaultStringSegment()
+        {
+            // Arrange
+            StringSegment segment = default;
+
+            // Act
+            int result = segment.IndexOf(',');
 
             // Assert
             Assert.Equal(-1, result);
@@ -1028,7 +1155,7 @@ namespace Microsoft.Extensions.Primitives
             var segment = new StringSegment(buffer, 3, buffer.Length - 3);
 
             // Act
-            var result = segment.IndexOf('!', 15);
+            int result = segment.IndexOf('!', 15);
 
             // Assert
             Assert.Equal(buffer.Length - 4, result);
@@ -1042,7 +1169,7 @@ namespace Microsoft.Extensions.Primitives
             var segment = new StringSegment(buffer, 3, buffer.Length - 3);
 
             // Act
-            var result = segment.IndexOf('!', 15, 5);
+            int result = segment.IndexOf('!', 15, 5);
 
             // Assert
             Assert.Equal(-1, result);
@@ -1067,7 +1194,7 @@ namespace Microsoft.Extensions.Primitives
             var segment = new StringSegment(buffer, 3, buffer.Length - 3);
 
             // Act & Assert
-            var exception = Assert.Throws<ArgumentOutOfRangeException>(() => segment.IndexOf('!', int.MaxValue, 3));
+            ArgumentOutOfRangeException exception = Assert.Throws<ArgumentOutOfRangeException>(() => segment.IndexOf('!', int.MaxValue, 3));
             Assert.Equal("start", exception.ParamName);
         }
 
@@ -1078,7 +1205,7 @@ namespace Microsoft.Extensions.Primitives
             var segment = new StringSegment("Hello, World!", 1, 10);
 
             // Act
-            var result = segment.IndexOfAny(new[] { ',' });
+            int result = segment.IndexOfAny(new[] { ',' });
 
             // Assert
             Assert.Equal(4, result);
@@ -1091,7 +1218,20 @@ namespace Microsoft.Extensions.Primitives
             var segment = new StringSegment("Hello, World!", 1, 3);
 
             // Act
-            var result = segment.IndexOfAny(new[] { ',' });
+            int result = segment.IndexOfAny(new[] { ',' });
+
+            // Assert
+            Assert.Equal(-1, result);
+        }
+
+        [Fact]
+        public void IndexOfAny_ReturnsMinusOne_OnDefaultStringSegment()
+        {
+            // Arrange
+            StringSegment segment = default;
+
+            // Act
+            int result = segment.IndexOfAny(new[] { ',' });
 
             // Assert
             Assert.Equal(-1, result);
@@ -1105,7 +1245,7 @@ namespace Microsoft.Extensions.Primitives
             var segment = new StringSegment(buffer, 3, buffer.Length - 3);
 
             // Act
-            var result = segment.IndexOfAny(new[] { '!' }, 15);
+            int result = segment.IndexOfAny(new[] { '!' }, 15);
 
             // Assert
             Assert.Equal(buffer.Length - 4, result);
@@ -1119,10 +1259,21 @@ namespace Microsoft.Extensions.Primitives
             var segment = new StringSegment(buffer, 3, buffer.Length - 3);
 
             // Act
-            var result = segment.IndexOfAny(new[] { '!' }, 15, 5);
+            int result = segment.IndexOfAny(new[] { '!' }, 15, 5);
 
             // Assert
             Assert.Equal(-1, result);
+        }
+
+        [Fact]
+        public void IndexOfAny_StartOverflowsWithOffset_OutOfRangeThrows()
+        {
+            // Arrange
+            StringSegment segment = new StringSegment("12345", 0, 1);
+
+            // Act & Assert
+            ArgumentOutOfRangeException exception = Assert.Throws<ArgumentOutOfRangeException>(() => segment.IndexOfAny(new []{ '5' }, 2, 3));
+            Assert.Equal("start", exception.ParamName);
         }
 
         [Fact]
@@ -1132,7 +1283,7 @@ namespace Microsoft.Extensions.Primitives
             var segment = new StringSegment("Hello, World, how, are, you!", 1, 14);
 
             // Act
-            var result = segment.LastIndexOf(',');
+            int result = segment.LastIndexOf(',');
 
             // Assert
             Assert.Equal(11, result);
@@ -1145,7 +1296,20 @@ namespace Microsoft.Extensions.Primitives
             var segment = new StringSegment("Hello, World!", 1, 3);
 
             // Act
-            var result = segment.LastIndexOf(',');
+            int result = segment.LastIndexOf(',');
+
+            // Assert
+            Assert.Equal(-1, result);
+        }
+
+        [Fact]
+        public void LastIndexOf_ReturnsMinusOne_OnDefaultStringSegment()
+        {
+            // Arrange
+            StringSegment segment = default;
+
+            // Act
+            int result = segment.LastIndexOf(',');
 
             // Assert
             Assert.Equal(-1, result);
@@ -1159,7 +1323,7 @@ namespace Microsoft.Extensions.Primitives
             var segment = new StringSegment(buffer);
 
             // Act
-            var result = segment.Value;
+            string result = segment.Value;
 
             // Assert
             Assert.Same(buffer, result);
@@ -1196,7 +1360,7 @@ namespace Microsoft.Extensions.Primitives
             var segment = new StringSegment(value, start, length);
 
             // Act
-            var actual = segment.Trim();
+            StringSegment actual = segment.Trim();
 
             // Assert
             Assert.Equal(expected, actual.Value);
@@ -1223,7 +1387,7 @@ namespace Microsoft.Extensions.Primitives
             var segment = new StringSegment(value, start, length);
 
             // Act
-            var actual = segment.TrimStart();
+            StringSegment actual = segment.TrimStart();
 
             // Assert
             Assert.Equal(expected, actual.Value);
@@ -1250,7 +1414,7 @@ namespace Microsoft.Extensions.Primitives
             var segment = new StringSegment(value, start, length);
 
             // Act
-            var actual = segment.TrimEnd();
+            StringSegment actual = segment.TrimEnd();
 
             // Assert
             Assert.Equal(expected, actual.Value);
@@ -1268,11 +1432,11 @@ namespace Microsoft.Extensions.Primitives
                     { null, null, StringComparison.InvariantCultureIgnoreCase, 0 },
                     { string.Empty, null, StringComparison.Ordinal, 1 },
                     { string.Empty, null, StringComparison.InvariantCultureIgnoreCase, 1 },
-                    { "x\u00E9y", "xE\u0301y", StringComparison.InvariantCulture, 
+                    { "x\u00E9y", "xE\u0301y", StringComparison.InvariantCulture,
                     PlatformDetection.IsInvariantGlobalization ? 1 : -1 }, // linguistic: lowercase sorts before uppercase
                     { "x\u00E9y", "xE\u0301y", StringComparison.InvariantCultureIgnoreCase,
                     PlatformDetection.IsInvariantGlobalization ? 1 : 0 }, // equal (linguistic, one is normalized)
-                    { "Hello", "HELLO", StringComparison.InvariantCulture, 
+                    { "Hello", "HELLO", StringComparison.InvariantCulture,
                     PlatformDetection.IsInvariantGlobalization ? 1 : -1 }, // linguistic: lowercase sorts before uppercase
                     { "Hello", "HELLO", StringComparison.InvariantCultureIgnoreCase, 0 },
                 };
@@ -1354,10 +1518,10 @@ namespace Microsoft.Extensions.Primitives
                     { null, string.Empty, StringComparison.Ordinal, false }, // null never starts with anything
                     { string.Empty, string.Empty, StringComparison.Ordinal, true }, // not char-for-char equivalent
                     { string.Empty, "\u200d", StringComparison.Ordinal, false }, // not char-for-char equivalent
-                    { string.Empty, "\u200d", StringComparison.InvariantCulture, 
+                    { string.Empty, "\u200d", StringComparison.InvariantCulture,
                     PlatformDetection.IsInvariantGlobalization ? false : true }, // linguistic: ZWJ is zero-weight, occurs at all indices
                     { "\u200d", string.Empty, StringComparison.Ordinal, true }, // all strings trivially start with the empty string
-                    { "\u200d", "\u200d\u200d", StringComparison.InvariantCulture, 
+                    { "\u200d", "\u200d\u200d", StringComparison.InvariantCulture,
                     PlatformDetection.IsInvariantGlobalization ? false : true }, // linguistic: ZWJ is zero-weight
                     { "Hello", "h", StringComparison.Ordinal, false },
                     { "Hello", "h", StringComparison.OrdinalIgnoreCase, true },
@@ -1399,10 +1563,10 @@ namespace Microsoft.Extensions.Primitives
                     { null, string.Empty, StringComparison.Ordinal, false }, // null never ends with anything
                     { string.Empty, string.Empty, StringComparison.Ordinal, true }, // not char-for-char equivalent
                     { string.Empty, "\u200d", StringComparison.Ordinal, false }, // not char-for-char equivalent
-                    { string.Empty, "\u200d", StringComparison.InvariantCulture, 
+                    { string.Empty, "\u200d", StringComparison.InvariantCulture,
                     PlatformDetection.IsInvariantGlobalization ? false : true }, // linguistic: ZWJ is zero-weight, occurs at all indices
                     { "\u200d", string.Empty, StringComparison.Ordinal, true }, // all strings trivially ends with the empty string
-                    { "\u200d", "\u200d\u200d", StringComparison.InvariantCulture, 
+                    { "\u200d", "\u200d\u200d", StringComparison.InvariantCulture,
                     PlatformDetection.IsInvariantGlobalization ? false : true }, // linguistic: ZWJ is zero-weight
                     { "HELLO", "o", StringComparison.Ordinal, false },
                     { "HELLO", "o", StringComparison.OrdinalIgnoreCase, true },

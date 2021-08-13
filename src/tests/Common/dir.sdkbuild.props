@@ -10,7 +10,6 @@
     <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
     <EnableDefaultItems>false</EnableDefaultItems>
     <Platform>AnyCPU</Platform>
-    <NoWarn>$(NoWarn),618,SYSLIB0012</NoWarn>
 
     <!-- [ARCADE REMOVE] This line should be removed we use the Arcade Sdk. -->
     <DeterministicSourcePaths>false</DeterministicSourcePaths>

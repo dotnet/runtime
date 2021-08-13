@@ -6,10 +6,10 @@
 #include "../gc/env/gcenv.ee.h"
 #include "threadsuspend.h"
 #include "nativeoverlapped.h"
+#include "interoplibinterface.h"
 
 #ifdef FEATURE_COMINTEROP
 #include "runtimecallablewrapper.h"
-#include "interoplibinterface.h"
 #include "comcallablewrapper.h"
 #endif // FEATURE_COMINTEROP
 

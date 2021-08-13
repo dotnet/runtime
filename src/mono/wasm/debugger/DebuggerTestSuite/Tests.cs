@@ -26,156 +26,6 @@ namespace DebuggerTests
         }
 
         [Fact]
-        public async Task CreateGoodBreakpoint()
-        {
-            var bp1_res = await SetBreakpoint("dotnet://debugger-test.dll/debugger-test.cs", 10, 8);
-
-            Assert.EndsWith("debugger-test.cs", bp1_res.Value["breakpointId"].ToString());
-            Assert.Equal(1, bp1_res.Value["locations"]?.Value<JArray>()?.Count);
-
-            var loc = bp1_res.Value["locations"]?.Value<JArray>()[0];
-
-            Assert.NotNull(loc["scriptId"]);
-            Assert.Equal("dotnet://debugger-test.dll/debugger-test.cs", scripts[loc["scriptId"]?.Value<string>()]);
-            Assert.Equal(10, loc["lineNumber"]);
-            Assert.Equal(8, loc["columnNumber"]);
-        }
-
-        [Fact]
-        public async Task CreateJSBreakpoint()
-        {
-            // Test that js breakpoints get set correctly
-            // 13 24
-            // 13 31
-            var bp1_res = await SetBreakpoint("/debugger-driver.html", 13, 24);
-
-            Assert.EndsWith("debugger-driver.html", bp1_res.Value["breakpointId"].ToString());
-            Assert.Equal(1, bp1_res.Value["locations"]?.Value<JArray>()?.Count);
-
-            var loc = bp1_res.Value["locations"]?.Value<JArray>()[0];
-
-            Assert.NotNull(loc["scriptId"]);
-            Assert.Equal(13, loc["lineNumber"]);
-            Assert.Equal(24, loc["columnNumber"]);
-
-            var bp2_res = await SetBreakpoint("/debugger-driver.html", 13, 31);
-
-            Assert.EndsWith("debugger-driver.html", bp2_res.Value["breakpointId"].ToString());
-            Assert.Equal(1, bp2_res.Value["locations"]?.Value<JArray>()?.Count);
-
-            var loc2 = bp2_res.Value["locations"]?.Value<JArray>()[0];
-
-            Assert.NotNull(loc2["scriptId"]);
-            Assert.Equal(13, loc2["lineNumber"]);
-            Assert.Equal(31, loc2["columnNumber"]);
-        }
-
-        [Fact]
-        public async Task CreateJS0Breakpoint()
-        {
-            // 13 24
-            // 13 31
-            var bp1_res = await SetBreakpoint("/debugger-driver.html", 13, 0);
-
-            Assert.EndsWith("debugger-driver.html", bp1_res.Value["breakpointId"].ToString());
-            Assert.Equal(1, bp1_res.Value["locations"]?.Value<JArray>()?.Count);
-
-            var loc = bp1_res.Value["locations"]?.Value<JArray>()[0];
-
-            Assert.NotNull(loc["scriptId"]);
-            Assert.Equal(13, loc["lineNumber"]);
-            Assert.Equal(24, loc["columnNumber"]);
-
-            var bp2_res = await SetBreakpoint("/debugger-driver.html", 13, 31);
-
-            Assert.EndsWith("debugger-driver.html", bp2_res.Value["breakpointId"].ToString());
-            Assert.Equal(1, bp2_res.Value["locations"]?.Value<JArray>()?.Count);
-
-            var loc2 = bp2_res.Value["locations"]?.Value<JArray>()[0];
-
-            Assert.NotNull(loc2["scriptId"]);
-            Assert.Equal(13, loc2["lineNumber"]);
-            Assert.Equal(31, loc2["columnNumber"]);
-        }
-
-        [Theory]
-        [InlineData(0)]
-        [InlineData(50)]
-        public async Task CheckMultipleBreakpointsOnSameLine(int col)
-        {
-            var bp1_res = await SetBreakpoint("dotnet://debugger-test.dll/debugger-array-test.cs", 219, col);
-            Assert.EndsWith("debugger-array-test.cs", bp1_res.Value["breakpointId"].ToString());
-            Assert.Equal(1, bp1_res.Value["locations"]?.Value<JArray>()?.Count);
-
-            var loc = bp1_res.Value["locations"]?.Value<JArray>()[0];
-
-            CheckLocation("dotnet://debugger-test.dll/debugger-array-test.cs", 219, 50, scripts, loc);
-
-            var bp2_res = await SetBreakpoint("dotnet://debugger-test.dll/debugger-array-test.cs", 219, 55);
-            Assert.EndsWith("debugger-array-test.cs", bp2_res.Value["breakpointId"].ToString());
-            Assert.Equal(1, bp2_res.Value["locations"]?.Value<JArray>()?.Count);
-
-            var loc2 = bp2_res.Value["locations"]?.Value<JArray>()[0];
-
-            CheckLocation("dotnet://debugger-test.dll/debugger-array-test.cs", 219, 55, scripts, loc2);
-        }
-
-        [Fact]
-        public async Task CreateBadBreakpoint()
-        {
-            var bp1_req = JObject.FromObject(new
-            {
-                lineNumber = 8,
-                columnNumber = 2,
-                url = "dotnet://debugger-test.dll/this-file-doesnt-exist.cs",
-            });
-
-            var bp1_res = await cli.SendCommand("Debugger.setBreakpointByUrl", bp1_req, token);
-
-            Assert.True(bp1_res.IsOk);
-            Assert.Empty(bp1_res.Value["locations"].Values<object>());
-            //Assert.Equal ((int)MonoErrorCodes.BpNotFound, bp1_res.Error ["code"]?.Value<int> ());
-        }
-
-        [Fact]
-        public async Task CreateGoodBreakpointAndHit()
-        {
-            var bp = await SetBreakpoint("dotnet://debugger-test.dll/debugger-test.cs", 10, 8);
-
-            var eval_req = JObject.FromObject(new
-            {
-                expression = "window.setTimeout(function() { invoke_add(); }, 1);",
-            });
-
-            await EvaluateAndCheck(
-                "window.setTimeout(function() { invoke_add(); }, 1);",
-                "dotnet://debugger-test.dll/debugger-test.cs", 10, 8,
-                "IntAdd",
-                wait_for_event_fn: (pause_location) =>
-                {
-                    Assert.Equal("other", pause_location["reason"]?.Value<string>());
-                    Assert.Equal(bp.Value["breakpointId"]?.ToString(), pause_location["hitBreakpoints"]?[0]?.Value<string>());
-
-                    var top_frame = pause_location["callFrames"][0];
-                    Assert.Equal("IntAdd", top_frame["functionName"].Value<string>());
-                    Assert.Contains("debugger-test.cs", top_frame["url"].Value<string>());
-
-                    CheckLocation("dotnet://debugger-test.dll/debugger-test.cs", 8, 4, scripts, top_frame["functionLocation"]);
-
-                    //now check the scope
-                    var scope = top_frame["scopeChain"][0];
-                    Assert.Equal("local", scope["type"]);
-                    Assert.Equal("IntAdd", scope["name"]);
-
-                    Assert.Equal("object", scope["object"]["type"]);
-                    CheckLocation("dotnet://debugger-test.dll/debugger-test.cs", 8, 4, scripts, scope["startLocation"]);
-                    CheckLocation("dotnet://debugger-test.dll/debugger-test.cs", 14, 4, scripts, scope["endLocation"]);
-                    return Task.CompletedTask;
-                }
-            );
-        }
-
-        [Fact]
         public async Task ExceptionThrownInJS()
         {
             var eval_req = JObject.FromObject(new
@@ -241,7 +91,7 @@ namespace DebuggerTests
         [Fact]
         public async Task InspectLocalsTypesAtBreakpointSite() =>
             await CheckInspectLocalsAtBreakpointSite(
-                "dotnet://debugger-test.dll/debugger-test2.cs", 48, 8, "Types",
+                "dotnet://debugger-test.dll/debugger-test2.cs", 50, 8, "Types",
                 "window.setTimeout(function() { invoke_static_method (\"[debugger-test] Fancy:Types\")(); }, 1);",
                 use_cfo: false,
                 test_fn: (locals) =>
@@ -718,7 +568,7 @@ namespace DebuggerTests
                     Day = TNumber(2),
                     Year = TNumber(2020),
                     DayOfWeek = TEnum("System.DayOfWeek", "Thursday")
-                }, "dto_props", num_fields: 22);
+                }, "dto_props", num_fields: 20);
 
             var DT = new DateTime(2004, 10, 15, 1, 2, 3);
             var DTO = new DateTimeOffset(dt0, new TimeSpan(2, 14, 0));
@@ -792,43 +642,6 @@ namespace DebuggerTests
            });
 
         [Fact]
-        public async Task InvalidValueTypeData()
-        {
-            await CheckInspectLocalsAtBreakpointSite(
-                "dotnet://debugger-test.dll/debugger-test.cs", 85, 8,
-                "OuterMethod",
-                "window.setTimeout(function() { invoke_static_method ('[debugger-test] Math:OuterMethod'); })",
-                wait_for_event_fn: async (pause_location) =>
-               {
-                   var new_id = await CreateNewId(@"MONO._new_or_add_id_props ({ scheme: 'valuetype', idArgs: { containerId: 1 }, props: { klass: 3, value64: 4 }});");
-                   await _invoke_getter(new_id, "NonExistant", expect_ok: false);
-
-                   new_id = await CreateNewId(@"MONO._new_or_add_id_props ({ scheme: 'valuetype', idArgs: { containerId: 1 }, props: { klass: 3 }});");
-                   await _invoke_getter(new_id, "NonExistant", expect_ok: false);
-
-                   new_id = await CreateNewId(@"MONO._new_or_add_id_props ({ scheme: 'valuetype', idArgs: { containerId: 1 }, props: { klass: 3, value64: 'AA' }});");
-                   await _invoke_getter(new_id, "NonExistant", expect_ok: false);
-               });
-
-            async Task<string> CreateNewId(string expr)
-            {
-                var res = await cli.SendCommand("Runtime.evaluate", JObject.FromObject(new { expression = expr }), token);
-                Assert.True(res.IsOk, "Expected Runtime.evaluate to succeed");
-                AssertEqual("string", res.Value["result"]?["type"]?.Value<string>(), "Expected Runtime.evaluate to return a string type result");
-                return res.Value["result"]?["value"]?.Value<string>();
-            }
-
-            async Task<Result> _invoke_getter(string obj_id, string property_name, bool expect_ok)
-            {
-                var expr = $"MONO._invoke_getter ('{obj_id}', '{property_name}')";
-                var res = await cli.SendCommand("Runtime.evaluate", JObject.FromObject(new { expression = expr }), token);
-                AssertEqual(expect_ok, res.IsOk, "Runtime.evaluate result not as expected for {expr}");
-
-                return res;
-            }
-        }
-
-        [Fact]
         public async Task MulticastDelegateTest() => await CheckInspectLocalsAtBreakpointSite(
             "MulticastDelegateTestClass", "Test", 5, "Test",
             "window.setTimeout(function() { invoke_static_method('[debugger-test] MulticastDelegateTestClass:run'); })",
@@ -896,7 +709,7 @@ namespace DebuggerTests
 
                  await CheckProps(frame_locals, new
                  {
-                     mi = TObject("System.Reflection.MethodInfo"),
+                     mi = TObject("System.Reflection.RuntimeMethodInfo"), //this is what is returned when debugging desktop apps using VS
                      dt = TDateTime(new DateTime(4210, 3, 4, 5, 6, 7)),
                      i = TNumber(4),
                      strings = TArray("string[]", 1),
@@ -929,7 +742,7 @@ namespace DebuggerTests
 
             var source_location = "dotnet://lazy-debugger-test.dll/lazy-debugger-test.cs";
             Assert.Contains(source_location, scripts.Values);
-
+            System.Threading.Thread.Sleep(1000);
             var pause_location = await EvaluateAndCheck(
                "window.setTimeout(function () { invoke_static_method('[lazy-debugger-test] LazyMath:IntAdd', 5, 10); }, 1);",
                source_location, line, 8,
@@ -961,6 +774,23 @@ namespace DebuggerTests
         }
 
         [Fact]
+        public async Task DebugLazyLoadedAssemblyWithEmbeddedPdbALC()
+        {
+            int line = 9;
+            await SetBreakpoint(".*/lazy-debugger-test-embedded.cs$", line, 0, use_regex: true);
+            var pause_location = await LoadAssemblyDynamicallyALCAndRunMethod(
+                    Path.Combine(DebuggerTestAppPath, "lazy-debugger-test-embedded.dll"),
+                    null, "LazyMath", "IntAdd");
+
+            var source_location = "dotnet://lazy-debugger-test-embedded.dll/lazy-debugger-test-embedded.cs";
+            Assert.Contains(source_location, scripts.Values);
+
+            var locals = await GetProperties(pause_location["callFrames"][0]["callFrameId"].Value<string>());
+            CheckNumber(locals, "a", 5);
+            CheckNumber(locals, "b", 10);
+        }
+
+        [Fact]
         public async Task CannotDebugLazyLoadedAssemblyWithoutPdb()
         {
             int line = 9;
@@ -976,36 +806,46 @@ namespace DebuggerTests
             Assert.DoesNotContain(source_location, scripts.Values);
         }
 
-        async Task LoadAssemblyDynamically(string asm_file, string pdb_file)
+        [Fact]
+        public async Task GetSourceUsingSourceLink()
         {
-            // Simulate loading an assembly into the framework
-            byte[] bytes = File.ReadAllBytes(asm_file);
-            string asm_base64 = Convert.ToBase64String(bytes);
+            var bp = await SetBreakpointInMethod("debugger-test-with-source-link.dll", "DebuggerTests.ClassToBreak", "TestBreakpoint", 0);
+            var pause_location = await EvaluateAndCheck(
+                "window.setTimeout(function() { invoke_static_method ('[debugger-test-with-source-link] DebuggerTests.ClassToBreak:TestBreakpoint'); }, 1);",
+                "dotnet://debugger-test-with-source-link.dll/test.cs",
+                bp.Value["locations"][0]["lineNumber"].Value<int>(),
+                bp.Value["locations"][0]["columnNumber"].Value<int>(),
+                "TestBreakpoint");
 
-            string pdb_base64 = null;
-            if (pdb_file != null)
+            var sourceToGet = JObject.FromObject(new
             {
-                bytes = File.ReadAllBytes(pdb_file);
-                pdb_base64 = Convert.ToBase64String(bytes);
-            }
-
-            var load_assemblies = JObject.FromObject(new
-            {
-                expression = $"{{ let asm_b64 = '{asm_base64}'; let pdb_b64 = '{pdb_base64}'; invoke_static_method('[debugger-test] LoadDebuggerTest:LoadLazyAssembly', asm_b64, pdb_b64); }}"
+                scriptId = pause_location["callFrames"][0]["functionLocation"]["scriptId"].Value<string>()
             });
 
-            Result load_assemblies_res = await cli.SendCommand("Runtime.evaluate", load_assemblies, token);
-            Assert.True(load_assemblies_res.IsOk);
+            var source = await cli.SendCommand("Debugger.getScriptSource", sourceToGet, token);
+            Assert.True(source.IsOk);
         }
 
         [Fact]
-        public async Task BreakOnDebuggerBreak()
-        {
-            await EvaluateAndCheck(
-                "window.setTimeout(function() { invoke_static_method_async('[debugger-test] UserBreak:BreakOnDebuggerBreakCommand'); }, 1);",
-                "dotnet://debugger-test.dll/debugger-test2.cs", 56, 4,
-                "BreakOnDebuggerBreakCommand");
-        }
+        public async Task InspectTaskAtLocals() => await CheckInspectLocalsAtBreakpointSite(
+            "InspectTask",
+            "RunInspectTask",
+            10,
+            "<RunInspectTask>b__0" ,
+            $"window.setTimeout(function() {{ invoke_static_method_async('[debugger-test] InspectTask:RunInspectTask'); }}, 1);",
+            wait_for_event_fn: async (pause_location) =>
+            {
+                var locals = await GetProperties(pause_location["callFrames"][0]["callFrameId"].Value<string>());
+                CheckNumber(locals, "a", 10);
+
+                var t_props = await GetObjectOnLocals(locals, "t");
+                await CheckProps(t_props, new
+                    {
+                        s_taskIdCounter = TNumber(0),
+                        Status = TGetter("Status")
+                    }, "t_props", num_fields: 53);
+            });
+
         //TODO add tests covering basic stepping behavior as step in/out/over
     }
 }

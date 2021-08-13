@@ -28,6 +28,7 @@ namespace System.Diagnostics.Tracing
                 }
 
                 Type parameterType = parameters[i].ParameterType;
+                Type? enumType = parameterType.IsEnum ? Enum.GetUnderlyingType(parameterType) : null;
                 if (parameterType == typeof(IntPtr))
                 {
                     if (IntPtr.Size == 8)
@@ -40,42 +41,42 @@ namespace System.Diagnostics.Tracing
                     }
                     payload = payload.Slice(IntPtr.Size);
                 }
-                else if (parameterType == typeof(int))
+                else if (parameterType == typeof(int) || enumType == typeof(int))
                 {
                     decodedFields[i] = BinaryPrimitives.ReadInt32LittleEndian(payload);
                     payload = payload.Slice(sizeof(int));
                 }
-                else if (parameterType == typeof(uint))
+                else if (parameterType == typeof(uint) || enumType == typeof(uint))
                 {
                     decodedFields[i] = BinaryPrimitives.ReadUInt32LittleEndian(payload);
                     payload = payload.Slice(sizeof(uint));
                 }
-                else if (parameterType == typeof(long))
+                else if (parameterType == typeof(long) || enumType == typeof(long))
                 {
                     decodedFields[i] = BinaryPrimitives.ReadInt64LittleEndian(payload);
                     payload = payload.Slice(sizeof(long));
                 }
-                else if (parameterType == typeof(ulong))
+                else if (parameterType == typeof(ulong) || enumType == typeof(ulong))
                 {
                     decodedFields[i] = BinaryPrimitives.ReadUInt64LittleEndian(payload);
                     payload = payload.Slice(sizeof(ulong));
                 }
-                else if (parameterType == typeof(byte))
+                else if (parameterType == typeof(byte) || enumType == typeof(byte))
                 {
                     decodedFields[i] = MemoryMarshal.Read<byte>(payload);
                     payload = payload.Slice(sizeof(byte));
                 }
-                else if (parameterType == typeof(sbyte))
+                else if (parameterType == typeof(sbyte) || enumType == typeof(sbyte))
                 {
                     decodedFields[i] = MemoryMarshal.Read<sbyte>(payload);
                     payload = payload.Slice(sizeof(sbyte));
                 }
-                else if (parameterType == typeof(short))
+                else if (parameterType == typeof(short) || enumType == typeof(short))
                 {
                     decodedFields[i] = BinaryPrimitives.ReadInt16LittleEndian(payload);
                     payload = payload.Slice(sizeof(short));
                 }
-                else if (parameterType == typeof(ushort))
+                else if (parameterType == typeof(ushort) || enumType == typeof(ushort))
                 {
                     decodedFields[i] = BinaryPrimitives.ReadUInt16LittleEndian(payload);
                     payload = payload.Slice(sizeof(ushort));
@@ -137,7 +138,7 @@ namespace System.Diagnostics.Tracing
                 }
                 else
                 {
-                    Debug.Fail("Unsupported type encountered.");
+                    Debug.Fail($"Unsupported type \"{parameterType}\" encountered.");
                 }
             }
 

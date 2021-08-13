@@ -110,6 +110,8 @@ internal partial class VectorTest
         if (VectorDotTest<sbyte>.VectorDot(3, 2, (sbyte)(6 * Vector<sbyte>.Count)) != Pass) returnVal = Fail;
         if (VectorDotTest<uint>.VectorDot(3u, 2u, (uint)(6 * Vector<uint>.Count)) != Pass) returnVal = Fail;
         if (VectorDotTest<ulong>.VectorDot(3ul, 2ul, 6ul * (ulong)Vector<ulong>.Count) != Pass) returnVal = Fail;
+        if (VectorDotTest<nint>.VectorDot(3, 2, 6 * Vector<nint>.Count) != Pass) returnVal = Fail;
+        if (VectorDotTest<nuint>.VectorDot(3u, 2u, (nuint)(6 * Vector<nuint>.Count)) != Pass) returnVal = Fail;
 
         JitLog jitLog = new JitLog();
         // Dot is only recognized as an intrinsic for floating point element types

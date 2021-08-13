@@ -19,39 +19,56 @@
         $(WasmBuildSupportDir) - directory which has all the tasks, targets, and runtimepack
 -->
 <Project>
+  <Import Project="$(MSBuildThisFileDirectory)WasmApp.props" />
+
   <PropertyGroup>
-    <_NetCoreAppToolCurrent>net5.0</_NetCoreAppToolCurrent>
+    <_NetCoreAppToolCurrent>net6.0</_NetCoreAppToolCurrent>
+    <MSBuildEnableWorkloadResolver>false</MSBuildEnableWorkloadResolver>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(RuntimeSrcDir)' != '' and '$(WasmBuildSupportDir)' == ''">
     <ArtifactsBinDir>$(RuntimeSrcDir)\artifacts\bin\</ArtifactsBinDir>
     <EMSDK_PATH Condition="'$(EMSDK_PATH)' == ''">$(RuntimeSrcDir)\src\mono\wasm\emsdk\</EMSDK_PATH>
 
-    <MicrosoftNetCoreAppRuntimePackLocationToUse>$(ArtifactsBinDir)microsoft.netcore.app.runtime.browser-wasm\$(RuntimeConfig)\</MicrosoftNetCoreAppRuntimePackLocationToUse>
+    <MicrosoftNetCoreAppRuntimePackLocationToUse>$([MSBuild]::NormalizeDirectory($(ArtifactsBinDir), 'microsoft.netcore.app.runtime.browser-wasm', $(RuntimeConfig)))</MicrosoftNetCoreAppRuntimePackLocationToUse>
 
     <WasmAppBuilderDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'WasmAppBuilder', 'Debug', '$(_NetCoreAppToolCurrent)', 'publish'))</WasmAppBuilderDir>
     <WasmBuildTasksDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'WasmBuildTasks', 'Debug', '$(_NetCoreAppToolCurrent)', 'publish'))</WasmBuildTasksDir>
     <MonoAOTCompilerDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'MonoAOTCompiler', 'Debug', '$(_NetCoreAppToolCurrent)'))</MonoAOTCompilerDir>
+    <RuntimeConfigParserDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'RuntimeConfigParser', 'Debug', '$(_NetCoreAppToolCurrent)'))</RuntimeConfigParserDir>
+    <JsonToItemsTaskFactoryDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'JsonToItemsTaskFactory', 'Debug', '$(_NetCoreAppToolCurrent)'))</JsonToItemsTaskFactoryDir>
+
+    <MonoArtifactsPath>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'mono', '$(TargetOS).$(TargetArchitecture).$(RuntimeConfig)'))</MonoArtifactsPath>
+    <_MonoAotCrossCompilerPath>$([MSBuild]::NormalizePath($(MonoArtifactsPath), 'cross', '$(TargetOS.ToLowerInvariant())-$(TargetArchitecture.ToLowerInvariant())', 'mono-aot-cross'))</_MonoAotCrossCompilerPath>
+    <_MonoAotCrossCompilerPath Condition="$([MSBuild]::IsOSPlatform('WINDOWS'))">$(_MonoAotCrossCompilerPath).exe</_MonoAotCrossCompilerPath>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(RuntimeSrcDir)' == '' and '$(WasmBuildSupportDir)' != ''">
     <BuildBaseDir>$(WasmBuildSupportDir)\</BuildBaseDir>
 
-    <MicrosoftNetCoreAppRuntimePackLocationToUse>$(BuildBaseDir)microsoft.netcore.app.runtime.browser-wasm\</MicrosoftNetCoreAppRuntimePackLocationToUse>
-    <MonoAOTCompilerDir>$(BuildBaseDir)\MonoAOTCompiler\</MonoAOTCompilerDir>
-    <WasmAppBuilderDir>$(BuildBaseDir)\WasmAppBuilder\</WasmAppBuilderDir>
-    <WasmBuildTasksDir>$(BuildBaseDir)\WasmBuildTasks\</WasmBuildTasksDir>
+    <MicrosoftNetCoreAppRuntimePackLocationToUse>$([MSBuild]::NormalizeDirectory($(BuildBaseDir), 'microsoft.netcore.app.runtime.browser-wasm'))</MicrosoftNetCoreAppRuntimePackLocationToUse>
+    <MonoAOTCompilerDir>$([MSBuild]::NormalizeDirectory($(BuildBaseDir), 'MonoAOTCompiler'))</MonoAOTCompilerDir>
+    <RuntimeConfigParserDir>$([MSBuild]::NormalizeDirectory($(BuildBaseDir), 'RuntimeConfigParser'))</RuntimeConfigParserDir>
+    <JsonToItemsTaskFactoryDir>$([MSBuild]::NormalizeDirectory($(BuildBaseDir), 'JsonToItemsTaskFactory'))</JsonToItemsTaskFactoryDir>
+    <WasmAppBuilderDir>$([MSBuild]::NormalizeDirectory($(BuildBaseDir), 'WasmAppBuilder'))</WasmAppBuilderDir>
+    <WasmBuildTasksDir>$([MSBuild]::NormalizeDirectory($(BuildBaseDir), 'WasmBuildTasks'))</WasmBuildTasksDir>
+
+    <_MonoAotCrossCompilerPath>$([MSBuild]::NormalizePath($(BuildBaseDir), 'cross', 'mono-aot-cross'))</_MonoAotCrossCompilerPath>
+    <_MonoAotCrossCompilerPath Condition="$([MSBuild]::IsOSPlatform('WINDOWS'))">$(_MonoAotCrossCompilerPath).exe</_MonoAotCrossCompilerPath>
   </PropertyGroup>
 
-  <PropertyGroup>
-    <MicrosoftNetCoreAppRuntimePackRidDir>$(MicrosoftNetCoreAppRuntimePackLocationToUse)runtimes\browser-wasm\</MicrosoftNetCoreAppRuntimePackRidDir>
-    <MonoAotCrossCompilerPath>$(MicrosoftNetCoreAppRuntimePackRidDir)native\cross\$(RuntimeIdentifier)\mono-aot-cross</MonoAotCrossCompilerPath>
-    <MonoAotCrossCompilerPath Condition="$([MSBuild]::IsOSPlatform('WINDOWS'))">$(MonoAotCrossCompilerPath).exe</MonoAotCrossCompilerPath>
+  <ItemGroup>
+    <MonoAotCrossCompiler Include="$(_MonoAotCrossCompilerPath)" RuntimeIdentifier="$(TargetOS.ToLowerInvariant())-$(TargetArchitecture.ToLowerInvariant())" />
+  </ItemGroup>
 
+  <PropertyGroup>
+    <MicrosoftNetCoreAppRuntimePackDir>$([MSBuild]::NormalizeDirectory($(MicrosoftNetCoreAppRuntimePackLocationToUse)))</MicrosoftNetCoreAppRuntimePackDir>
+    <MicrosoftNetCoreAppRuntimePackRidDir>$([MSBuild]::NormalizeDirectory($(MicrosoftNetCoreAppRuntimePackDir), 'runtimes', 'browser-wasm'))</MicrosoftNetCoreAppRuntimePackRidDir>
     <WasmAppBuilderTasksAssemblyPath>$([MSBuild]::NormalizePath('$(WasmAppBuilderDir)', 'WasmAppBuilder.dll'))</WasmAppBuilderTasksAssemblyPath>
     <WasmBuildTasksAssemblyPath>$([MSBuild]::NormalizePath('$(WasmBuildTasksDir)', 'WasmBuildTasks.dll'))</WasmBuildTasksAssemblyPath>
     <MonoAOTCompilerTasksAssemblyPath>$([MSBuild]::NormalizePath('$(MonoAOTCompilerDir)', 'MonoAOTCompiler.dll'))</MonoAOTCompilerTasksAssemblyPath>
+    <RuntimeConfigParserTasksAssemblyPath>$([MSBuild]::NormalizePath('$(RuntimeConfigParserDir)', 'RuntimeConfigParser.dll'))</RuntimeConfigParserTasksAssemblyPath>
+    <JsonToItemsTaskFactoryTasksAssemblyPath>$([MSBuild]::NormalizePath('$(JsonToItemsTaskFactoryDir)', 'JsonToItemsTaskFactory.dll'))</JsonToItemsTaskFactoryTasksAssemblyPath>
   </PropertyGroup>
 
-  <Import Project="$(MSBuildThisFileDirectory)WasmApp.props" />
 </Project>

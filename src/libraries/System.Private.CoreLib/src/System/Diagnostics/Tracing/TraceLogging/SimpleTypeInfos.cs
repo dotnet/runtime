@@ -22,7 +22,11 @@ namespace System.Diagnostics.Tracing
     /// </summary>
     internal sealed class NullTypeInfo : TraceLoggingTypeInfo
     {
+        private static NullTypeInfo? s_instance;
+
         public NullTypeInfo() : base(typeof(EmptyStruct)) { }
+
+        public static TraceLoggingTypeInfo Instance() => s_instance ??= new NullTypeInfo();
 
         public override void WriteMetadata(
             TraceLoggingMetadataCollector collector,
@@ -47,22 +51,35 @@ namespace System.Diagnostics.Tracing
     /// </summary>
     internal sealed class ScalarTypeInfo : TraceLoggingTypeInfo
     {
-        private readonly Func<EventFieldFormat, TraceLoggingDataType, TraceLoggingDataType> formatFunc;
+        private static ScalarTypeInfo? s_boolean;
+        private static ScalarTypeInfo? s_byte;
+        private static ScalarTypeInfo? s_sbyte;
+        private static ScalarTypeInfo? s_char;
+        private static ScalarTypeInfo? s_int16;
+        private static ScalarTypeInfo? s_uint16;
+        private static ScalarTypeInfo? s_int32;
+        private static ScalarTypeInfo? s_uint32;
+        private static ScalarTypeInfo? s_int64;
+        private static ScalarTypeInfo? s_uint64;
+        private static ScalarTypeInfo? s_intptr;
+        private static ScalarTypeInfo? s_uintptr;
+        private static ScalarTypeInfo? s_single;
+        private static ScalarTypeInfo? s_double;
+        private static ScalarTypeInfo? s_guid;
+
         private readonly TraceLoggingDataType nativeFormat;
 
         private ScalarTypeInfo(
             Type type,
-            Func<EventFieldFormat, TraceLoggingDataType, TraceLoggingDataType> formatFunc,
             TraceLoggingDataType nativeFormat)
             : base(type)
         {
-            this.formatFunc = formatFunc;
             this.nativeFormat = nativeFormat;
         }
 
         public override void WriteMetadata(TraceLoggingMetadataCollector collector, string? name, EventFieldFormat format)
         {
-            collector.AddScalar(name!, formatFunc(format, nativeFormat));
+            collector.AddScalar(name!, Statics.FormatScalar(format, nativeFormat));
         }
 
         public override void WriteData(PropertyValue value)
@@ -70,48 +87,60 @@ namespace System.Diagnostics.Tracing
             TraceLoggingDataCollector.AddScalar(value);
         }
 
-        public static TraceLoggingTypeInfo Boolean() { return new ScalarTypeInfo(typeof(bool), Statics.Format8, TraceLoggingDataType.Boolean8); }
-        public static TraceLoggingTypeInfo Byte() { return new ScalarTypeInfo(typeof(byte), Statics.Format8, TraceLoggingDataType.UInt8); }
-        public static TraceLoggingTypeInfo SByte() { return new ScalarTypeInfo(typeof(sbyte), Statics.Format8, TraceLoggingDataType.Int8); }
-        public static TraceLoggingTypeInfo Char() { return new ScalarTypeInfo(typeof(char), Statics.Format16, TraceLoggingDataType.Char16); }
-        public static TraceLoggingTypeInfo Int16() { return new ScalarTypeInfo(typeof(short), Statics.Format16, TraceLoggingDataType.Int16); }
-        public static TraceLoggingTypeInfo UInt16() { return new ScalarTypeInfo(typeof(ushort), Statics.Format16, TraceLoggingDataType.UInt16); }
-        public static TraceLoggingTypeInfo Int32() { return new ScalarTypeInfo(typeof(int), Statics.Format32, TraceLoggingDataType.Int32); }
-        public static TraceLoggingTypeInfo UInt32() { return new ScalarTypeInfo(typeof(uint), Statics.Format32, TraceLoggingDataType.UInt32); }
-        public static TraceLoggingTypeInfo Int64() { return new ScalarTypeInfo(typeof(long), Statics.Format64, TraceLoggingDataType.Int64); }
-        public static TraceLoggingTypeInfo UInt64() { return new ScalarTypeInfo(typeof(ulong), Statics.Format64, TraceLoggingDataType.UInt64); }
-        public static TraceLoggingTypeInfo IntPtr() { return new ScalarTypeInfo(typeof(IntPtr), Statics.FormatPtr, Statics.IntPtrType); }
-        public static TraceLoggingTypeInfo UIntPtr() { return new ScalarTypeInfo(typeof(UIntPtr), Statics.FormatPtr, Statics.UIntPtrType); }
-        public static TraceLoggingTypeInfo Single() { return new ScalarTypeInfo(typeof(float), Statics.Format32, TraceLoggingDataType.Float); }
-        public static TraceLoggingTypeInfo Double() { return new ScalarTypeInfo(typeof(double), Statics.Format64, TraceLoggingDataType.Double); }
-        public static TraceLoggingTypeInfo Guid() { return new ScalarTypeInfo(typeof(Guid), (f, t) => Statics.MakeDataType(TraceLoggingDataType.Guid, f), TraceLoggingDataType.Guid); }
+        public static TraceLoggingTypeInfo Boolean() => s_boolean ??= new ScalarTypeInfo(typeof(bool), TraceLoggingDataType.Boolean8);
+        public static TraceLoggingTypeInfo Byte() => s_byte ??= new ScalarTypeInfo(typeof(byte), TraceLoggingDataType.UInt8);
+        public static TraceLoggingTypeInfo SByte() => s_sbyte ??= new ScalarTypeInfo(typeof(sbyte), TraceLoggingDataType.Int8);
+        public static TraceLoggingTypeInfo Char() => s_char ??= new ScalarTypeInfo(typeof(char), TraceLoggingDataType.Char16);
+        public static TraceLoggingTypeInfo Int16() => s_int16 ??= new ScalarTypeInfo(typeof(short), TraceLoggingDataType.Int16);
+        public static TraceLoggingTypeInfo UInt16() => s_uint16 ??= new ScalarTypeInfo(typeof(ushort), TraceLoggingDataType.UInt16);
+        public static TraceLoggingTypeInfo Int32() => s_int32 ??= new ScalarTypeInfo(typeof(int), TraceLoggingDataType.Int32);
+        public static TraceLoggingTypeInfo UInt32() => s_uint32 ??= new ScalarTypeInfo(typeof(uint), TraceLoggingDataType.UInt32);
+        public static TraceLoggingTypeInfo Int64() => s_int64 ??= new ScalarTypeInfo(typeof(long), TraceLoggingDataType.Int64);
+        public static TraceLoggingTypeInfo UInt64() => s_uint64 ??= new ScalarTypeInfo(typeof(ulong), TraceLoggingDataType.UInt64);
+        public static TraceLoggingTypeInfo IntPtr() => s_intptr ??= new ScalarTypeInfo(typeof(IntPtr), Statics.IntPtrType);
+        public static TraceLoggingTypeInfo UIntPtr() => s_uintptr ??= new ScalarTypeInfo(typeof(UIntPtr), Statics.UIntPtrType);
+        public static TraceLoggingTypeInfo Single() => s_single ??= new ScalarTypeInfo(typeof(float), TraceLoggingDataType.Float);
+        public static TraceLoggingTypeInfo Double() => s_double ??= new ScalarTypeInfo(typeof(double), TraceLoggingDataType.Double);
+        public static TraceLoggingTypeInfo Guid() => s_guid ??= new ScalarTypeInfo(typeof(Guid), TraceLoggingDataType.Guid);
     }
-
 
     /// <summary>
     /// Type handler for arrays of scalars
     /// </summary>
     internal sealed class ScalarArrayTypeInfo : TraceLoggingTypeInfo
     {
-        private readonly Func<EventFieldFormat, TraceLoggingDataType, TraceLoggingDataType> formatFunc;
+        private static ScalarArrayTypeInfo? s_boolean;
+        private static ScalarArrayTypeInfo? s_byte;
+        private static ScalarArrayTypeInfo? s_sbyte;
+        private static ScalarArrayTypeInfo? s_char;
+        private static ScalarArrayTypeInfo? s_int16;
+        private static ScalarArrayTypeInfo? s_uint16;
+        private static ScalarArrayTypeInfo? s_int32;
+        private static ScalarArrayTypeInfo? s_uint32;
+        private static ScalarArrayTypeInfo? s_int64;
+        private static ScalarArrayTypeInfo? s_uint64;
+        private static ScalarArrayTypeInfo? s_intptr;
+        private static ScalarArrayTypeInfo? s_uintptr;
+        private static ScalarArrayTypeInfo? s_single;
+        private static ScalarArrayTypeInfo? s_double;
+        private static ScalarArrayTypeInfo? s_guid;
+
         private readonly TraceLoggingDataType nativeFormat;
         private readonly int elementSize;
 
         private ScalarArrayTypeInfo(
             Type type,
-            Func<EventFieldFormat, TraceLoggingDataType, TraceLoggingDataType> formatFunc,
             TraceLoggingDataType nativeFormat,
             int elementSize)
             : base(type)
         {
-            this.formatFunc = formatFunc;
             this.nativeFormat = nativeFormat;
             this.elementSize = elementSize;
         }
 
         public override void WriteMetadata(TraceLoggingMetadataCollector collector, string? name, EventFieldFormat format)
         {
-            collector.AddArray(name!, formatFunc(format, nativeFormat));
+            collector.AddArray(name!, Statics.FormatScalar(format, nativeFormat));
         }
 
         public override void WriteData(PropertyValue value)
@@ -119,21 +148,21 @@ namespace System.Diagnostics.Tracing
             TraceLoggingDataCollector.AddArray(value, elementSize);
         }
 
-        public static TraceLoggingTypeInfo Boolean() { return new ScalarArrayTypeInfo(typeof(bool[]), Statics.Format8, TraceLoggingDataType.Boolean8, sizeof(bool)); }
-        public static TraceLoggingTypeInfo Byte() { return new ScalarArrayTypeInfo(typeof(byte[]), Statics.Format8, TraceLoggingDataType.UInt8, sizeof(byte)); }
-        public static TraceLoggingTypeInfo SByte() { return new ScalarArrayTypeInfo(typeof(sbyte[]), Statics.Format8, TraceLoggingDataType.Int8, sizeof(sbyte)); }
-        public static TraceLoggingTypeInfo Char() { return new ScalarArrayTypeInfo(typeof(char[]), Statics.Format16, TraceLoggingDataType.Char16, sizeof(char)); }
-        public static TraceLoggingTypeInfo Int16() { return new ScalarArrayTypeInfo(typeof(short[]), Statics.Format16, TraceLoggingDataType.Int16, sizeof(short)); }
-        public static TraceLoggingTypeInfo UInt16() { return new ScalarArrayTypeInfo(typeof(ushort[]), Statics.Format16, TraceLoggingDataType.UInt16, sizeof(ushort)); }
-        public static TraceLoggingTypeInfo Int32() { return new ScalarArrayTypeInfo(typeof(int[]), Statics.Format32, TraceLoggingDataType.Int32, sizeof(int)); }
-        public static TraceLoggingTypeInfo UInt32() { return new ScalarArrayTypeInfo(typeof(uint[]), Statics.Format32, TraceLoggingDataType.UInt32, sizeof(uint)); }
-        public static TraceLoggingTypeInfo Int64() { return new ScalarArrayTypeInfo(typeof(long[]), Statics.Format64, TraceLoggingDataType.Int64, sizeof(long)); }
-        public static TraceLoggingTypeInfo UInt64() { return new ScalarArrayTypeInfo(typeof(ulong[]), Statics.Format64, TraceLoggingDataType.UInt64, sizeof(ulong)); }
-        public static TraceLoggingTypeInfo IntPtr() { return new ScalarArrayTypeInfo(typeof(IntPtr[]), Statics.FormatPtr, Statics.IntPtrType, System.IntPtr.Size); }
-        public static TraceLoggingTypeInfo UIntPtr() { return new ScalarArrayTypeInfo(typeof(UIntPtr[]), Statics.FormatPtr, Statics.UIntPtrType, System.IntPtr.Size); }
-        public static TraceLoggingTypeInfo Single() { return new ScalarArrayTypeInfo(typeof(float[]), Statics.Format32, TraceLoggingDataType.Float, sizeof(float)); }
-        public static TraceLoggingTypeInfo Double() { return new ScalarArrayTypeInfo(typeof(double[]), Statics.Format64, TraceLoggingDataType.Double, sizeof(double)); }
-        public static unsafe TraceLoggingTypeInfo Guid() { return new ScalarArrayTypeInfo(typeof(Guid), (f, t) => Statics.MakeDataType(TraceLoggingDataType.Guid, f), TraceLoggingDataType.Guid, sizeof(Guid)); }
+        public static TraceLoggingTypeInfo Boolean() => s_boolean ??= new ScalarArrayTypeInfo(typeof(bool[]), TraceLoggingDataType.Boolean8, sizeof(bool));
+        public static TraceLoggingTypeInfo Byte() => s_byte ??= new ScalarArrayTypeInfo(typeof(byte[]), TraceLoggingDataType.UInt8, sizeof(byte));
+        public static TraceLoggingTypeInfo SByte() => s_sbyte ??= new ScalarArrayTypeInfo(typeof(sbyte[]), TraceLoggingDataType.Int8, sizeof(sbyte));
+        public static TraceLoggingTypeInfo Char() => s_char ??= new ScalarArrayTypeInfo(typeof(char[]), TraceLoggingDataType.Char16, sizeof(char));
+        public static TraceLoggingTypeInfo Int16() => s_int16 ??= new ScalarArrayTypeInfo(typeof(short[]), TraceLoggingDataType.Int16, sizeof(short));
+        public static TraceLoggingTypeInfo UInt16() => s_uint16 ??= new ScalarArrayTypeInfo(typeof(ushort[]), TraceLoggingDataType.UInt16, sizeof(ushort));
+        public static TraceLoggingTypeInfo Int32() => s_int32 ??= new ScalarArrayTypeInfo(typeof(int[]), TraceLoggingDataType.Int32, sizeof(int));
+        public static TraceLoggingTypeInfo UInt32() => s_uint32 ??= new ScalarArrayTypeInfo(typeof(uint[]), TraceLoggingDataType.UInt32, sizeof(uint));
+        public static TraceLoggingTypeInfo Int64() => s_int64 ??= new ScalarArrayTypeInfo(typeof(long[]), TraceLoggingDataType.Int64, sizeof(long));
+        public static TraceLoggingTypeInfo UInt64() => s_uint64 ??= new ScalarArrayTypeInfo(typeof(ulong[]), TraceLoggingDataType.UInt64, sizeof(ulong));
+        public static TraceLoggingTypeInfo IntPtr() => s_intptr ??= new ScalarArrayTypeInfo(typeof(IntPtr[]), Statics.IntPtrType, System.IntPtr.Size);
+        public static TraceLoggingTypeInfo UIntPtr() => s_uintptr ??= new ScalarArrayTypeInfo(typeof(UIntPtr[]), Statics.UIntPtrType, System.IntPtr.Size);
+        public static TraceLoggingTypeInfo Single() => s_single ??= new ScalarArrayTypeInfo(typeof(float[]), TraceLoggingDataType.Float, sizeof(float));
+        public static TraceLoggingTypeInfo Double() => s_double ??= new ScalarArrayTypeInfo(typeof(double[]), TraceLoggingDataType.Double, sizeof(double));
+        public static unsafe TraceLoggingTypeInfo Guid() => s_guid ??= new ScalarArrayTypeInfo(typeof(Guid[]), TraceLoggingDataType.Guid, sizeof(Guid));
     }
 
     /// <summary>
@@ -141,7 +170,11 @@ namespace System.Diagnostics.Tracing
     /// </summary>
     internal sealed class StringTypeInfo : TraceLoggingTypeInfo
     {
+        private static StringTypeInfo? s_instance;
+
         public StringTypeInfo() : base(typeof(string)) { }
+
+        public static TraceLoggingTypeInfo Instance() => s_instance ??= new StringTypeInfo();
 
         public override void WriteMetadata(
             TraceLoggingMetadataCollector collector,
@@ -176,7 +209,11 @@ namespace System.Diagnostics.Tracing
     /// </summary>
     internal sealed class DateTimeTypeInfo : TraceLoggingTypeInfo
     {
+        private static DateTimeTypeInfo? s_instance;
+
         public DateTimeTypeInfo() : base(typeof(DateTime)) { }
+
+        public static TraceLoggingTypeInfo Instance() => s_instance ??= new DateTimeTypeInfo();
 
         public override void WriteMetadata(
             TraceLoggingMetadataCollector collector,
@@ -204,7 +241,11 @@ namespace System.Diagnostics.Tracing
     /// </summary>
     internal sealed class DateTimeOffsetTypeInfo : TraceLoggingTypeInfo
     {
+        private static DateTimeOffsetTypeInfo? s_instance;
+
         public DateTimeOffsetTypeInfo() : base(typeof(DateTimeOffset)) { }
+
+        public static TraceLoggingTypeInfo Instance() => s_instance ??= new DateTimeOffsetTypeInfo();
 
         public override void WriteMetadata(TraceLoggingMetadataCollector collector, string? name, EventFieldFormat format)
         {
@@ -227,7 +268,11 @@ namespace System.Diagnostics.Tracing
     /// </summary>
     internal sealed class TimeSpanTypeInfo : TraceLoggingTypeInfo
     {
+        private static TimeSpanTypeInfo? s_instance;
+
         public TimeSpanTypeInfo() : base(typeof(TimeSpan)) { }
+
+        public static TraceLoggingTypeInfo Instance() => s_instance ??= new TimeSpanTypeInfo();
 
         public override void WriteMetadata(
             TraceLoggingMetadataCollector collector,
@@ -248,7 +293,11 @@ namespace System.Diagnostics.Tracing
     /// </summary>
     internal sealed class DecimalTypeInfo : TraceLoggingTypeInfo
     {
+        private static DecimalTypeInfo? s_instance;
+
         public DecimalTypeInfo() : base(typeof(decimal)) { }
+
+        public static TraceLoggingTypeInfo Instance() => s_instance ??= new DecimalTypeInfo();
 
         public override void WriteMetadata(
             TraceLoggingMetadataCollector collector,
@@ -271,6 +320,9 @@ namespace System.Diagnostics.Tracing
     {
         private readonly TraceLoggingTypeInfo valueInfo;
 
+#if !ES_BUILD_STANDALONE
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("EventSource WriteEvent will serialize the whole object graph. Trimmer will not safely handle this case because properties may be trimmed. This can be suppressed if the object is a primitive type")]
+#endif
         public NullableTypeInfo(Type type, List<Type> recursionCheck)
             : base(type)
         {

@@ -3,7 +3,7 @@
     <TargetFrameworks>$(NetCoreAppCurrent)-windows;net48-windows</TargetFrameworks>
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
     <DefineConstants>$(DefineConstants);WINHTTPHANDLER_TEST</DefineConstants>
-    <LangVersion>8.0</LangVersion>
+    <LangVersion>10.0</LangVersion>
   </PropertyGroup>
   <ItemGroup Condition=" '$(TargetsWindows)' == 'true' ">
     <Compile Include="$(CommonTestPath)System\Net\Configuration.cs"
@@ -14,11 +14,11 @@
     <Compile Include="BaseCertificateTest.cs" />
     <Compile Include="ServerCertificateTest.cs" />
     <Compile Include="WinHttpHandlerTest.cs" />
-    <Compile Include="XunitTestAssemblyAtrributes.cs" /> 
+    <Compile Include="XunitTestAssemblyAtrributes.cs" />
     <Compile Include="$(CommonPath)\System\Net\Http\HttpHandlerDefaults.cs"
              Link="Common\System\Net\Http\HttpHandlerDefaults.cs" />
     <Compile Include="$(CommonTestPath)System\IO\DelegateStream.cs"
-             Link="Common\System\IO\DelegateStream.cs" />    
+             Link="Common\System\IO\DelegateStream.cs" />
     <Compile Include="$(CommonTestPath)System\Net\Configuration.Certificates.cs"
              Link="Common\System\Net\Configuration.Certificates.cs" />
     <Compile Include="$(CommonTestPath)System\Net\Configuration.Security.cs"
@@ -109,8 +109,6 @@
              Link="Common\System\Net\Http\HttpClient.SelectedSitesTest.cs" />
     <Compile Include="$(CommonTestPath)System\Net\Http\HttpClientEKUTest.cs"
              Link="Common\System\Net\Http\HttpClientEKUTest.cs" />
-    <Compile Include="$(CommonTestPath)System\Net\Http\HttpRetryProtocolTests.cs"
-             Link="Common\System\Net\Http\HttpRetryProtocolTests.cs" />
     <Compile Include="$(CommonTestPath)System\Net\Http\IdnaProtocolTests.cs"
              Link="Common\System\Net\Http\IdnaProtocolTests.cs" />
     <Compile Include="$(CommonTestPath)System\Net\Http\LoopbackProxyServer.cs"
@@ -128,13 +126,13 @@
     <Compile Include="$(CommonTestPath)System\Net\Http\RepeatedFlushContent.cs"
              Link="Common\System\Net\Http\RepeatedFlushContent.cs" />
     <Compile Include="$(CommonTestPath)System\Net\Http\ResponseStreamTest.cs"
-             Link="Common\System\Net\Http\ResponseStreamTest.cs" />    
-    <Compile Include="$(CommonTestPath)System\Net\Http\SchSendAuxRecordHttpTest.cs"
-             Link="Common\System\Net\Http\SchSendAuxRecordHttpTest.cs" />
+             Link="Common\System\Net\Http\ResponseStreamTest.cs" />
     <Compile Include="$(CommonTestPath)System\Net\Http\SyncBlockingContent.cs"
              Link="Common\System\Net\Http\SyncBlockingContent.cs" />
     <Compile Include="$(CommonTestPath)System\Net\Http\ThrowingContent.cs"
              Link="Common\System\Net\Http\ThrowingContent.cs" />
+    <Compile Include="$(CommonTestPath)System\Security\Cryptography\PlatformSupport.cs"
+             Link="CommonTest\System\Security\Cryptography\PlatformSupport.cs" />
     <Compile Include="$(CommonTestPath)System\Threading\Tasks\TaskTimeoutExtensions.cs"
              Link="Common\System\Threading\Tasks\TaskTimeoutExtensions.cs" />
     <Compile Include="$(CommonTestPath)System\Threading\TrackingSynchronizationContext.cs"
@@ -143,6 +141,8 @@
     <Compile Include="WinHttpClientHandler.cs" />
     <Compile Include="PlatformHandlerTest.cs" />
     <Compile Include="ClientCertificateTest.cs" />
+    <Compile Include="TrailingHeadersTest.cs" />
+    <Compile Include="BidirectionStreamingTest.cs" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Newtonsoft.Json" Version="$(NewtonsoftJsonVersion)" />

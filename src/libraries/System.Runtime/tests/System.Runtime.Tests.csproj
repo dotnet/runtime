@@ -1,11 +1,17 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <FeatureGenericMath>false</FeatureGenericMath>
     <NoWarn>$(NoWarn),1718,SYSLIB0013</NoWarn>
     <TestRuntime>true</TestRuntime>
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
     <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-Unix;$(NetCoreAppCurrent)-Browser</TargetFrameworks>
     <Nullable>disable</Nullable>
+    <!-- Disable nullability public only feature for NullabilityInfoContextTests -->
+    <Features>$(Features.Replace('nullablePublicOnly', '')</Features>
+  </PropertyGroup>
+  <PropertyGroup>
+    <DefineConstants Condition="'$(FeatureGenericMath)' == 'true'">$(DefineConstants);FEATURE_GENERIC_MATH</DefineConstants>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="$(CommonTestPath)System\EnumTypes.cs"
@@ -59,6 +65,7 @@
     <Compile Include="System\ByteTests.cs" />
     <Compile Include="System\CharTests.cs" />
     <Compile Include="System\CLSCompliantAttributeTests.cs" />
+    <Compile Include="System\DateOnlyTests.cs" />
     <Compile Include="System\DateTimeTests.cs" />
     <Compile Include="System\DateTimeOffsetTests.cs" />
     <Compile Include="System\DBNullTests.cs" />
@@ -118,6 +125,7 @@
     <Compile Include="System\PseudoCustomAttributeTests.cs" />
     <Compile Include="System\RangeTests.cs" />
     <Compile Include="System\RankExceptionTests.cs" />
+    <Compile Include="System\Reflection\NullabilityInfoContextTests.cs" />
     <Compile Include="System\SByteTests.cs" />
     <Compile Include="System\SingleTests.cs" />
     <Compile Include="System\StackOverflowExceptionTests.cs" />
@@ -127,6 +135,7 @@
     <Compile Include="System\StringSplitExtensions.cs" />
     <Compile Include="System\StringTests.cs" />
     <Compile Include="System\SystemExceptionTests.cs" />
+    <Compile Include="System\TimeOnlyTests.cs" />
     <Compile Include="System\TimeoutExceptionTests.cs" />
     <Compile Include="System\TimeSpanTests.cs" />
     <Compile Include="System\TimeZoneInfoTests.cs" />
@@ -206,16 +215,20 @@
     <Compile Include="System\Reflection\ObfuscateAssemblyAttributeTests.cs" />
     <Compile Include="System\Reflection\ObfuscationAttributeTests.cs" />
     <Compile Include="System\Reflection\PointerTests.cs" />
+    <Compile Include="System\Reflection\ReflectionCacheTests.cs" />
     <Compile Include="System\Reflection\ReflectionContextTests.cs" />
     <Compile Include="System\Reflection\ReflectionTypeLoadExceptionTests.cs" />
     <Compile Include="System\Reflection\StrongNameKeyPairTests.cs" />
     <Compile Include="System\Reflection\TypeDelegatorTests.cs" />
     <Compile Include="System\Reflection\TypeTests.Get.CornerCases.cs" />
     <Compile Include="System\Reflection\TypeTests.GetMember.cs" />
+    <Compile Include="System\Runtime\DependentHandleTests.cs" />
+    <Compile Include="System\Runtime\JitInfoTests.cs" />
     <Compile Include="System\Runtime\MemoryFailPointTests.cs" />
     <Compile Include="System\Runtime\NgenServicingAttributesTests.cs" />
     <Compile Include="System\Runtime\CompilerServices\AttributesTests.cs" />
     <Compile Include="System\Runtime\CompilerServices\ConditionalWeakTableTests.cs" />
+    <Compile Include="System\Runtime\CompilerServices\DefaultInterpolatedStringHandlerTests.cs" />
     <Compile Include="System\Runtime\CompilerServices\FormattableStringFactoryTests.cs" />
     <Compile Include="System\Runtime\CompilerServices\StrongBoxTests.cs" />
     <Compile Include="System\Runtime\CompilerServices\RuntimeHelpersTests.cs" />
@@ -225,9 +238,12 @@
     <Compile Include="System\Runtime\Serialization\SerializationExceptionTests.cs" />
     <Compile Include="System\Runtime\Serialization\StreamingContextTests.cs" />
     <Compile Include="System\Runtime\Versioning\OSPlatformAttributeTests.cs" />
+    <Compile Include="System\Runtime\Versioning\RequiresPreviewFeaturesAttributeTests.cs" />
     <Compile Include="System\Security\SecurityAttributeTests.cs" />
     <Compile Include="System\Security\SecurityExceptionTests.cs" />
     <Compile Include="System\Text\StringBuilderTests.cs" />
+    <Compile Include="System\Text\StringBuilderInterpolationTests.cs" />
+    <Compile Include="System\Threading\PeriodicTimerTests.cs" />
     <Compile Include="System\Threading\WaitHandleTests.cs" />
     <Compile Include="System\Type\TypePropertyTests.cs" />
     <Compile Include="System\Type\TypeTests.cs" />
@@ -237,6 +253,20 @@
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsUnix)' == 'true' or '$(TargetsBrowser)' == 'true'">
     <Compile Include="System\ExitCodeTests.Unix.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(FeatureGenericMath)' == 'true'">
+    <Compile Include="System\ByteTests.GenericMath.cs" />
+    <Compile Include="System\CharTests.GenericMath.cs" />
+    <Compile Include="System\GenericMathHelpers.cs" />
+    <Compile Include="System\Int16Tests.GenericMath.cs" />
+    <Compile Include="System\Int32Tests.GenericMath.cs" />
+    <Compile Include="System\Int64Tests.GenericMath.cs" />
+    <Compile Include="System\IntPtrTests.GenericMath.cs" />
+    <Compile Include="System\SByteTests.GenericMath.cs" />
+    <Compile Include="System\UInt16Tests.GenericMath.cs" />
+    <Compile Include="System\UInt32Tests.GenericMath.cs" />
+    <Compile Include="System\UInt64Tests.GenericMath.cs" />
+    <Compile Include="System\UIntPtrTests.GenericMath.cs" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="System\Reflection\SignatureTypes.cs" />
@@ -259,6 +289,9 @@
     <Compile Include="$(CommonPath)..\tests\System\RealParserTestsBase.cs"
              Link="System\RealParserTestsBase.cs" />
     <Compile Include="System\RealParserTests.cs" />
+
+    <TrimmerRootDescriptor Include="$(ILLinkDescriptorsPath)ILLink.Descriptors.Castle.xml" />
+    <TrimmerRootDescriptor Include="$(MSBuildThisFileDirectory)ILLink.Descriptors.xml" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="$(CommonTestPath)System\Collections\IEnumerable.Generic.Serialization.Tests.cs"
@@ -274,6 +307,7 @@
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Moq" Version="$(MoqVersion)" />
+    <PackageReference Include="System.Runtime.Numerics.TestData" Version="$(SystemRuntimeNumericsTestDataVersion)" GeneratePathProperty="true"/>
     <ProjectReference Include="TestLoadAssembly\TestLoadAssembly.csproj" />
     <ProjectReference Include="TestCollectibleAssembly\TestCollectibleAssembly.csproj" />
     <ProjectReference Include="TestModule\System.Reflection.TestModule.ilproj" />

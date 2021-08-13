@@ -1,0 +1,16 @@
+{
+    "items": {
+        "_MonoRuntimeComponentLinking": [
+            { "identity": "${TemplateMonoRuntimeComponentLinking}", "RuntimeIdentifier": "${TemplateRuntimeIdentifier}" },
+        ],
+        "_MonoRuntimeComponentSharedLibExt": [
+            { "identity": "${TemplateMonoRuntimeComponentSharedLibExt}", "RuntimeIdentifier": "${TemplateRuntimeIdentifier}" },
+        ],
+        "_MonoRuntimeComponentStaticLibExt": [
+            { "identity": "${TemplateMonoRuntimeComponentStaticLibExt}", "RuntimeIdentifier": "${TemplateRuntimeIdentifier}" },
+        ],
+        "_MonoRuntimeAvailableComponents": [
+            ${TemplateMonoRuntimeAvailableComponents}
+        ],
+    }
+}

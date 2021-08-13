@@ -128,29 +128,29 @@ namespace System.Linq.Tests
         }
 
         [Fact]
-        public void NonEnumeratingCount_NullSource_ThrowsArgumentNullException()
+        public void NonEnumeratedCount_NullSource_ThrowsArgumentNullException()
         {
             AssertExtensions.Throws<ArgumentNullException>("source", () => ((IEnumerable<int>)null).TryGetNonEnumeratedCount(out _));
         }
 
         [Theory]
-        [MemberData(nameof(NonEnumeratingCount_SupportedEnumerables))]
-        public void NonEnumeratingCount_SupportedEnumerables_ShouldReturnExpectedCount<T>(int expectedCount, IEnumerable<T> source)
+        [MemberData(nameof(NonEnumeratedCount_SupportedEnumerables))]
+        public void NonEnumeratedCount_SupportedEnumerables_ShouldReturnExpectedCount<T>(int expectedCount, IEnumerable<T> source)
         {
             Assert.True(source.TryGetNonEnumeratedCount(out int actualCount));
             Assert.Equal(expectedCount, actualCount);
         }
 
         [Theory]
-        [MemberData(nameof(NonEnumeratingCount_UnsupportedEnumerables))]
-        public void NonEnumeratingCount_UnsupportedEnumerables_ShouldReturnFalse<T>(IEnumerable<T> source)
+        [MemberData(nameof(NonEnumeratedCount_UnsupportedEnumerables))]
+        public void NonEnumeratedCount_UnsupportedEnumerables_ShouldReturnFalse<T>(IEnumerable<T> source)
         {
             Assert.False(source.TryGetNonEnumeratedCount(out int actualCount));
             Assert.Equal(0, actualCount);
         }
 
         [Fact]
-        public void NonEnumeratingCount_ShouldNotEnumerateSource()
+        public void NonEnumeratedCount_ShouldNotEnumerateSource()
         {
             bool isEnumerated = false;
             Assert.False(Source().TryGetNonEnumeratedCount(out int count));
@@ -164,7 +164,7 @@ namespace System.Linq.Tests
             }
         }
 
-        public static IEnumerable<object[]> NonEnumeratingCount_SupportedEnumerables()
+        public static IEnumerable<object[]> NonEnumeratedCount_SupportedEnumerables()
         {
             yield return WrapArgs(4, new int[]{ 1, 2, 3, 4 });
             yield return WrapArgs(4, new List<int>(new int[] { 1, 2, 3, 4 }));
@@ -179,7 +179,6 @@ namespace System.Linq.Tests
                 yield return WrapArgs(50, Enumerable.Range(1, 50).Select(x => x + 1));
                 yield return WrapArgs(4, new int[] { 1, 2, 3, 4 }.Select(x => x + 1));
                 yield return WrapArgs(50, Enumerable.Range(1, 50).Select(x => x + 1).Select(x => x - 1));
-                yield return WrapArgs(7, Enumerable.Range(1, 20).ToLookup(x => x % 7));
                 yield return WrapArgs(20, Enumerable.Range(1, 20).Reverse());
                 yield return WrapArgs(20, Enumerable.Range(1, 20).OrderBy(x => -x));
                 yield return WrapArgs(20, Enumerable.Range(1, 10).Concat(Enumerable.Range(11, 10)));
@@ -188,7 +187,7 @@ namespace System.Linq.Tests
             static object[] WrapArgs<T>(int expectedCount, IEnumerable<T> source) => new object[] { expectedCount, source };
         }
 
-        public static IEnumerable<object[]> NonEnumeratingCount_UnsupportedEnumerables()
+        public static IEnumerable<object[]> NonEnumeratedCount_UnsupportedEnumerables()
         {
             yield return WrapArgs(Enumerable.Range(1, 100).Where(x => x % 2 == 0));
             yield return WrapArgs(Enumerable.Range(1, 100).GroupBy(x => x % 2 == 0));
@@ -202,7 +201,6 @@ namespace System.Linq.Tests
                 yield return WrapArgs(Enumerable.Range(1, 50).Select(x => x + 1));
                 yield return WrapArgs(new int[] { 1, 2, 3, 4 }.Select(x => x + 1));            
                 yield return WrapArgs(Enumerable.Range(1, 50).Select(x => x + 1).Select(x => x - 1));
-                yield return WrapArgs(Enumerable.Range(1, 20).ToLookup(x => x % 7));
                 yield return WrapArgs(Enumerable.Range(1, 20).Reverse());
                 yield return WrapArgs(Enumerable.Range(1, 20).OrderBy(x => -x));
                 yield return WrapArgs(Enumerable.Range(1, 10).Concat(Enumerable.Range(11, 10)));

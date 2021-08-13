@@ -25,22 +25,7 @@ namespace System.IO
             if (path.Contains('\0'))
                 throw new ArgumentException(SR.Argument_InvalidPathChars, nameof(path));
 
-            // Expand with current directory if necessary
-            if (!IsPathRooted(path))
-            {
-                path = Combine(Interop.Sys.GetCwd(), path);
-            }
-
-            // We would ideally use realpath to do this, but it resolves symlinks, requires that the file actually exist,
-            // and turns it into a full path, which we only want if fullCheck is true.
-            string collapsedString = PathInternal.RemoveRelativeSegments(path, PathInternal.GetRootLength(path));
-
-            Debug.Assert(collapsedString.Length < path.Length || collapsedString.ToString() == path,
-                "Either we've removed characters, or the string should be unmodified from the input path.");
-
-            string result = collapsedString.Length == 0 ? PathInternal.DirectorySeparatorCharAsString : collapsedString;
-
-            return result;
+            return GetFullPathInternal(path);
         }
 
         public static string GetFullPath(string path, string basePath)
@@ -58,9 +43,33 @@ namespace System.IO
                 throw new ArgumentException(SR.Argument_InvalidPathChars);
 
             if (IsPathFullyQualified(path))
-                return GetFullPath(path);
+                return GetFullPathInternal(path);
 
-            return GetFullPath(CombineInternal(basePath, path));
+            return GetFullPathInternal(CombineInternal(basePath, path));
+        }
+
+        // Gets the full path without argument validation
+        private static string GetFullPathInternal(string path)
+        {
+            Debug.Assert(!string.IsNullOrEmpty(path));
+            Debug.Assert(!path.Contains('\0'));
+
+            // Expand with current directory if necessary
+            if (!IsPathRooted(path))
+            {
+                path = Combine(Interop.Sys.GetCwd(), path);
+            }
+
+            // We would ideally use realpath to do this, but it resolves symlinks, requires that the file actually exist,
+            // and turns it into a full path, which we only want if fullCheck is true.
+            string collapsedString = PathInternal.RemoveRelativeSegments(path, PathInternal.GetRootLength(path));
+
+            Debug.Assert(collapsedString.Length < path.Length || collapsedString.ToString() == path,
+                "Either we've removed characters, or the string should be unmodified from the input path.");
+
+            string result = collapsedString.Length == 0 ? PathInternal.DirectorySeparatorCharAsString : collapsedString;
+
+            return result;
         }
 
         private static string RemoveLongPathPrefix(string path)
@@ -129,17 +138,5 @@ namespace System.IO
             return IsPathRooted(path) ? PathInternal.DirectorySeparatorCharAsString.AsSpan() : ReadOnlySpan<char>.Empty;
         }
 
-        /// <summary>Gets whether the system is case-sensitive.</summary>
-        internal static bool IsCaseSensitive
-        {
-            get
-            {
-                #if TARGET_OSX || TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS
-                    return false;
-                #else
-                    return true;
-                #endif
-            }
-        }
     }
 }

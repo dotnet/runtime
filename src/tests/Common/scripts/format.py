@@ -118,7 +118,7 @@ def main(argv):
     elif platform == 'windows':
         bootstrapFilename = "bootstrap.cmd"
 
-    bootstrapUrl = "https://raw.githubusercontent.com/dotnet/jitutils/master/" + bootstrapFilename
+    bootstrapUrl = "https://raw.githubusercontent.com/dotnet/jitutils/main/" + bootstrapFilename
 
     with TempDir() as temp_location:
         bootstrapPath = os.path.join(temp_location, bootstrapFilename)
@@ -232,12 +232,13 @@ def main(argv):
         print("1. From the GitHub 'Checks' page on the Pull Request, with the failing Formatting")
         print("   job selected (e.g., 'Formatting Linux x64'), click the 'View more details on")
         print("   Azure Pipelines' link.")
-        print("3. Select the 'Summary' tab.")
-        print("4. Open the 'Build artifacts published' entry.")
-        print("5. Find the link to the OS/architecture appropriate format patch file.")
-        print("6. Click on the link to download it.")
-        print("7. Unzip the patch file.")
-        print("8. git apply format.patch")
+        print("2. Select the '1 artifact produced' at the end of the log.")
+        print("3. Artifacts are located in alphabetical order, target artifact name is")
+        print("   'format.<OS>.<architecture>.patch.'. Find appropriate format patch artifact.")
+        print("4. On the right side of the artifact there is a 'More actions' menu shown by a")
+        print("   vertical three-dot symbol. Click on it and select 'Download artifacts' option.")
+        print("5. Unzip the patch file.")
+        print("6. git apply format.patch")
 
     if (returncode != 0) and (os.environ.get("TF_BUILD") == "True"):
         print("##vso[task.logissue type=error](NETCORE_ENGINEERING_TELEMETRY=Build) Format job found errors, please apply the format patch.")

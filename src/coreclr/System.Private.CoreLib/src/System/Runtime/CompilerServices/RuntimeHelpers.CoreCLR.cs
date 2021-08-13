@@ -45,6 +45,7 @@ namespace System.Runtime.CompilerServices
         [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
         private static extern void RunClassConstructor(QCallTypeHandle type);
 
+        [RequiresUnreferencedCode("Trimmer can't guarantee existence of class constructor")]
         public static void RunClassConstructor(RuntimeTypeHandle type)
         {
             RuntimeType rt = type.GetRuntimeType();
@@ -132,15 +133,13 @@ namespace System.Runtime.CompilerServices
 
         // This method ensures that there is sufficient stack to execute the average Framework function.
         // If there is not enough stack, then it throws System.InsufficientExecutionStackException.
-        // Note: this method is not part of the CER support, and is not to be confused with ProbeForSufficientStack
-        // below.
+        // Note: this method is not part of the CER support, and is not to be confused with ProbeForSufficientStack.
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern void EnsureSufficientExecutionStack();
 
         // This method ensures that there is sufficient stack to execute the average Framework function.
         // If there is not enough stack, then it return false.
-        // Note: this method is not part of the CER support, and is not to be confused with ProbeForSufficientStack
-        // below.
+        // Note: this method is not part of the CER support, and is not to be confused with ProbeForSufficientStack.
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern bool TryEnsureSufficientExecutionStack();
 
@@ -229,11 +228,6 @@ namespace System.Runtime.CompilerServices
             return rawSize;
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static unsafe ref byte GetRawArrayData(this Array array) =>
-            // See comment on RawArrayData for details
-            ref Unsafe.AddByteOffset(ref Unsafe.As<RawData>(array).Data, (nuint)GetMethodTable(array)->BaseSize - (nuint)(2 * sizeof(IntPtr)));
-
         internal static unsafe ushort GetElementSize(this Array array)
         {
             Debug.Assert(ObjectHasComponentSize(array));
@@ -318,7 +312,7 @@ namespace System.Runtime.CompilerServices
         [StackTraceHidden]
         private static unsafe void DispatchTailCalls(
             IntPtr callersRetAddrSlot,
-            delegate*<IntPtr, IntPtr, IntPtr*, void> callTarget,
+            delegate*<IntPtr, IntPtr, PortableTailCallFrame*, void> callTarget,
             IntPtr retVal)
         {
             IntPtr callersRetAddr;
@@ -331,7 +325,9 @@ namespace System.Runtime.CompilerServices
             }
 
             PortableTailCallFrame newFrame;
-            newFrame.Prev = prevFrame;
+            // GC uses NextCall to keep LoaderAllocator alive after we link it below,
+            // so we must null it out before that.
+            newFrame.NextCall = null;
 
             try
             {
@@ -339,8 +335,7 @@ namespace System.Runtime.CompilerServices
 
                 do
                 {
-                    newFrame.NextCall = null;
-                    callTarget(tls->ArgBuffer, retVal, &newFrame.TailCallAwareReturnAddress);
+                    callTarget(tls->ArgBuffer, retVal, &newFrame);
                     callTarget = newFrame.NextCall;
                 } while (callTarget != null);
             }
@@ -355,16 +350,10 @@ namespace System.Runtime.CompilerServices
                 }
             }
         }
-
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern long GetILBytesJitted();
-
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern int GetMethodsJittedCount();
     }
     // Helper class to assist with unsafe pinning of arbitrary objects.
     // It's used by VM code.
-    internal class RawData
+    internal sealed class RawData
     {
         public byte Data;
     }
@@ -377,7 +366,7 @@ namespace System.Runtime.CompilerServices
     // The BaseSize of an array includes all the fields before the array data,
     // including the sync block and method table. The reference to RawData.Data
     // points at the number of components, skipping over these two pointer-sized fields.
-    internal class RawArrayData
+    internal sealed class RawArrayData
     {
         public uint Length; // Array._numComponents padded to IntPtr
 #if TARGET_64BIT
@@ -413,7 +402,8 @@ namespace System.Runtime.CompilerServices
         private const uint enum_flag_NonTrivialInterfaceCast = 0x00080000 // enum_flag_Category_Array
                                                              | 0x40000000 // enum_flag_ComObject
                                                              | 0x00400000 // enum_flag_ICastable;
-                                                             | 0x00200000;// enum_flag_IDynamicInterfaceCastable;
+                                                             | 0x00200000 // enum_flag_IDynamicInterfaceCastable;
+                                                             | 0x00040000; // enum_flag_Category_ValueType
 
         private const int DebugClassNamePtr = // adjust for debug_m_szClassName
 #if DEBUG
@@ -501,9 +491,8 @@ namespace System.Runtime.CompilerServices
     [StructLayout(LayoutKind.Sequential)]
     internal unsafe struct PortableTailCallFrame
     {
-        public PortableTailCallFrame* Prev;
         public IntPtr TailCallAwareReturnAddress;
-        public delegate*<IntPtr, IntPtr, IntPtr*, void> NextCall;
+        public delegate*<IntPtr, IntPtr, PortableTailCallFrame*, void> NextCall;
     }
 
     [StructLayout(LayoutKind.Sequential)]

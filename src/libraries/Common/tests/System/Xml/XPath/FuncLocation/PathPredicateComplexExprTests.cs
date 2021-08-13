@@ -209,7 +209,6 @@ namespace XPathTests.FunctionalTests.Location.Paths.Predicates
                     Prefix = "my",
                     Value = "\n\t\tWhere in the world is Trenton?\n\t"
                 });
-            ;
 
             Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
         }
@@ -225,8 +224,6 @@ namespace XPathTests.FunctionalTests.Location.Paths.Predicates
             var testExpression =
                 @"descendant::*[position()<last() and count(*[following::* > 3]) and local-name!=""title""] ";
             var expected = new XPathResult(0);
-            ;
-
             Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
@@ -1491,7 +1488,6 @@ namespace XPathTests.FunctionalTests.Location.Paths.Predicates
                 new XPathResultToken { NodeType = XPathNodeType.Text, HasNameTable = true, Value = "Robert Bob" },
                 new XPathResultToken { NodeType = XPathNodeType.Whitespace, HasNameTable = true },
                 new XPathResultToken { NodeType = XPathNodeType.Whitespace, HasNameTable = true });
-            ;
 
             Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
         }
@@ -1509,8 +1505,6 @@ namespace XPathTests.FunctionalTests.Location.Paths.Predicates
             var testExpression =
                 @"descendant::node()[position()<last() and count(following::*) > 3 and local-name!=""title""] ";
             var expected = new XPathResult(0);
-            ;
-
             Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
@@ -1706,7 +1700,6 @@ namespace XPathTests.FunctionalTests.Location.Paths.Predicates
                     HasNameTable = true,
                     Value = "\n\t\t\t\tTrenton\n\t\t\t\tmisery\n\t\t\t"
                 });
-            ;
 
             Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
         }
@@ -1729,7 +1722,6 @@ namespace XPathTests.FunctionalTests.Location.Paths.Predicates
                     Value =
                         "\n\t\n\t\tSeven Years in Trenton\n\t\t\n\t\t\tJoe\n\t\t\tBob\n\t\t\tTrenton Literary Review Honorable Mention\n\t\t\tUSA\n\t\t\n\t\t12\n\t\n\t\n\t\tHistory of Trenton\n\t\t\n\t\t\tMary\n\t\t\tBob\n\t\t\t\n\t\t\t\tSelected Short Stories of\n\t\t\t\tJoeBob\n\t\t\t\tLoser\n\t\t\t\tUS\n\t\t\t\n\t\t\n\t\t55\n\t\n\t\n\t\tXQL The Golden Years\n\t\t\n\t\t\tMike\n\t\t\tHyman\n\t\t\t\n\t\t\t\tXQL For Dummies\n\t\t\t\tJonathan\n\t\t\t\tMarsh\n\t\t\t\n\t\t\n\t\t55.95\n\t\n\t\n\t\tRoad and Track\n\t\t3.50\n\t\t\n\t\tYes\n\t\n\t\n\t\tPC Week\n\t\tfree\n\t\tZiff Davis\n\t\n\t\n\t\tPC Magazine\n\t\t3.95\n\t\tZiff Davis\n\t\t\n\t\t\tCreate a dream PC\n\t\t\t\tCreate a list of needed hardware\n\t\t\t\n\t\t\tThe future of the web\n\t\t\t\tCan Netscape stay alive with Microsoft eating up its browser share?\n\t\t\t\tMSFT 99.30\n\t\t\t\t1998-06-23\n\t\t\t\n\t\t\tVisual Basic 5.0 - Will it stand the test of time?\n\t\t\t\n\t\t\n\t\n\t\n\t\t\n\t\t\tSport Cars - Can you really dream?\n\t\t\t\n\t\t\n\t\n\t\n\t\tPC Magazine Best Product of 1997\n\t\n\t\n\t\tHistory of Trenton 2\n\t\t\n\t\t\tMary F\n\t\t\tRobinson\n\t\t\t\n\t\t\t\tSelected Short Stories of\n\t\t\t\tMary F\n\t\t\t\tRobinson\n\t\t\t\n\t\t\n\t\t55\n\t\n\t\n\t\tHistory of Trenton Vol 3\n\t\t\n\t\t\tMary F\n\t\t\tRobinson\n\t\t\tFrank\n\t\t\tAnderson\n\t\t\tPulizer\n\t\t\t\n\t\t\t\tSelected Short Stories of\n\t\t\t\tMary F\n\t\t\t\tRobinson\n\t\t\t\n\t\t\n\t\t10\n\t\n\t\n\t\tHow To Fix Computers\n\t\t\n\t\t\tHack\n\t\t\ter\n\t\t\tPh.D.\n\t\t\n\t\t08\n\t\n\t\n\t\tTracking Trenton\n\t\t2.50\n\t\t\n\t\n\t\n\t\tTracking Trenton Stocks\n\t\t0.98\n\t\t\n\t\n\t\n\t\tTrenton Today, Trenton Tomorrow\n\t\t\n\t\t\tToni\n\t\t\tBob\n\t\t\tB.A.\n\t\t\tPh.D.\n\t\t\tPulizer\n\t\t\tStill in Trenton\n\t\t\tTrenton Forever\n\t\t\n\t\t6.50\n\t\t\n\t\t\tIt was a dark and stormy night.\n\t\t\tBut then all nights in Trenton seem dark and\n\t\t\tstormy to someone who has gone through what\n\t\t\tI have.\n\t\t\t\n\t\t\t\n\t\t\t\tTrenton\n\t\t\t\tmisery\n\t\t\t\n\t\t\n\t\n\t\n\t\tWho's Who in Trenton\n\t\tRobert Bob\n\t\n\t\n\t\tWhere is Trenton?\n\t\n\t\n\t\tWhere in the world is Trenton?\n\t\n"
                 });
-            ;
 
             Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
         }
@@ -2306,7 +2298,6 @@ namespace XPathTests.FunctionalTests.Location.Paths.Predicates
                 new XPathResultToken { NodeType = XPathNodeType.Whitespace, HasNameTable = true },
                 new XPathResultToken { NodeType = XPathNodeType.Whitespace, HasNameTable = true },
                 new XPathResultToken { NodeType = XPathNodeType.Whitespace, HasNameTable = true });
-            ;
 
             Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
         }
@@ -2383,7 +2374,6 @@ namespace XPathTests.FunctionalTests.Location.Paths.Predicates
                     HasNameTable = true,
                     Value = "Where in the world is Trenton?"
                 });
-            ;
 
             Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
         }
@@ -2755,7 +2745,6 @@ namespace XPathTests.FunctionalTests.Location.Paths.Predicates
                     Prefix = "my",
                     Value = "\n\t\tWhere in the world is Trenton?\n\t"
                 });
-            ;
 
             Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
         }
@@ -2829,7 +2818,6 @@ namespace XPathTests.FunctionalTests.Location.Paths.Predicates
                     HasNameTable = true,
                     Value = "\n\t\t\tHack\n\t\t\ter\n\t\t\tPh.D.\n\t\t"
                 });
-            ;
 
             Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
         }
@@ -2975,7 +2963,6 @@ namespace XPathTests.FunctionalTests.Location.Paths.Predicates
                     Prefix = "my",
                     Value = "Robert Bob"
                 });
-            ;
 
             Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
         }
@@ -3022,7 +3009,6 @@ namespace XPathTests.FunctionalTests.Location.Paths.Predicates
                     Value = "55"
                 },
                 new XPathResultToken { NodeType = XPathNodeType.Text, HasNameTable = true, Value = "55" });
-            ;
 
             Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
         }
@@ -3049,7 +3035,6 @@ namespace XPathTests.FunctionalTests.Location.Paths.Predicates
                     Prefix = "my",
                     Value = "Where in the world is Trenton?"
                 });
-            ;
 
             Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
         }
@@ -3228,7 +3213,6 @@ namespace XPathTests.FunctionalTests.Location.Paths.Predicates
                     Prefix = "my",
                     Value = "Where in the world is Trenton?"
                 });
-            ;
 
             Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
         }
@@ -3254,7 +3238,6 @@ namespace XPathTests.FunctionalTests.Location.Paths.Predicates
                     HasNameTable = true,
                     Value = "3.95"
                 });
-            ;
 
             Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
         }
@@ -3411,7 +3394,6 @@ namespace XPathTests.FunctionalTests.Location.Paths.Predicates
                     Prefix = "my",
                     Value = "\n\t\tWhere in the world is Trenton?\n\t"
                 });
-            ;
 
             Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
         }
@@ -3499,7 +3481,6 @@ namespace XPathTests.FunctionalTests.Location.Paths.Predicates
                     Prefix = "my",
                     Value = "\n\t\tTracking Trenton Stocks\n\t\t0.98\n\t\t\n\t"
                 });
-            ;
 
             Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
         }
@@ -3640,7 +3621,6 @@ namespace XPathTests.FunctionalTests.Location.Paths.Predicates
                     HasNameTable = true,
                     Value = "\n\t\tTracking Trenton\n\t\t2.50\n\t\t\n\t"
                 });
-            ;
 
             Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
         }
@@ -3666,7 +3646,6 @@ namespace XPathTests.FunctionalTests.Location.Paths.Predicates
                     Value =
                         "\n\t\n\t\tSeven Years in Trenton\n\t\t\n\t\t\tJoe\n\t\t\tBob\n\t\t\tTrenton Literary Review Honorable Mention\n\t\t\tUSA\n\t\t\n\t\t12\n\t\n\t\n\t\tHistory of Trenton\n\t\t\n\t\t\tMary\n\t\t\tBob\n\t\t\t\n\t\t\t\tSelected Short Stories of\n\t\t\t\tJoeBob\n\t\t\t\tLoser\n\t\t\t\tUS\n\t\t\t\n\t\t\n\t\t55\n\t\n\t\n\t\tXQL The Golden Years\n\t\t\n\t\t\tMike\n\t\t\tHyman\n\t\t\t\n\t\t\t\tXQL For Dummies\n\t\t\t\tJonathan\n\t\t\t\tMarsh\n\t\t\t\n\t\t\n\t\t55.95\n\t\n\t\n\t\tRoad and Track\n\t\t3.50\n\t\t\n\t\tYes\n\t\n\t\n\t\tPC Week\n\t\tfree\n\t\tZiff Davis\n\t\n\t\n\t\tPC Magazine\n\t\t3.95\n\t\tZiff Davis\n\t\t\n\t\t\tCreate a dream PC\n\t\t\t\tCreate a list of needed hardware\n\t\t\t\n\t\t\tThe future of the web\n\t\t\t\tCan Netscape stay alive with Microsoft eating up its browser share?\n\t\t\t\tMSFT 99.30\n\t\t\t\t1998-06-23\n\t\t\t\n\t\t\tVisual Basic 5.0 - Will it stand the test of time?\n\t\t\t\n\t\t\n\t\n\t\n\t\t\n\t\t\tSport Cars - Can you really dream?\n\t\t\t\n\t\t\n\t\n\t\n\t\tPC Magazine Best Product of 1997\n\t\n\t\n\t\tHistory of Trenton 2\n\t\t\n\t\t\tMary F\n\t\t\tRobinson\n\t\t\t\n\t\t\t\tSelected Short Stories of\n\t\t\t\tMary F\n\t\t\t\tRobinson\n\t\t\t\n\t\t\n\t\t55\n\t\n\t\n\t\tHistory of Trenton Vol 3\n\t\t\n\t\t\tMary F\n\t\t\tRobinson\n\t\t\tFrank\n\t\t\tAnderson\n\t\t\tPulizer\n\t\t\t\n\t\t\t\tSelected Short Stories of\n\t\t\t\tMary F\n\t\t\t\tRobinson\n\t\t\t\n\t\t\n\t\t10\n\t\n\t\n\t\tHow To Fix Computers\n\t\t\n\t\t\tHack\n\t\t\ter\n\t\t\tPh.D.\n\t\t\n\t\t08\n\t\n\t\n\t\tTracking Trenton\n\t\t2.50\n\t\t\n\t\n\t\n\t\tTracking Trenton Stocks\n\t\t0.98\n\t\t\n\t\n\t\n\t\tTrenton Today, Trenton Tomorrow\n\t\t\n\t\t\tToni\n\t\t\tBob\n\t\t\tB.A.\n\t\t\tPh.D.\n\t\t\tPulizer\n\t\t\tStill in Trenton\n\t\t\tTrenton Forever\n\t\t\n\t\t6.50\n\t\t\n\t\t\tIt was a dark and stormy night.\n\t\t\tBut then all nights in Trenton seem dark and\n\t\t\tstormy to someone who has gone through what\n\t\t\tI have.\n\t\t\t\n\t\t\t\n\t\t\t\tTrenton\n\t\t\t\tmisery\n\t\t\t\n\t\t\n\t\n\t\n\t\tWho's Who in Trenton\n\t\tRobert Bob\n\t\n\t\n\t\tWhere is Trenton?\n\t\n\t\n\t\tWhere in the world is Trenton?\n\t\n"
                 });
-            ;
 
             Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
         }
@@ -3682,8 +3661,6 @@ namespace XPathTests.FunctionalTests.Location.Paths.Predicates
             var testExpression =
                 @"store/namespace::*/following::*[string-length(string())>count(child::*)][count(namespace::*)>2][not(@*[local-name()=""inventory""][.=""m112""])]";
             var expected = new XPathResult(0);
-            ;
-
             Utils.XPathNodesetTest(xml, testExpression, expected);
         }
 
@@ -3704,8 +3681,6 @@ namespace XPathTests.FunctionalTests.Location.Paths.Predicates
             namespaceManager.AddNamespace("p4", "http://movie.htm");
             namespaceManager.AddNamespace("p5", "http://documentry.htm");
             var expected = new XPathResult(0);
-            ;
-
             Utils.XPathNodesetTest(xml, testExpression, expected, namespaceManager: namespaceManager);
         }
 
@@ -3779,7 +3754,6 @@ namespace XPathTests.FunctionalTests.Location.Paths.Predicates
                     Value = "Robinson",
                     XmlLang = "en-usabcd"
                 });
-            ;
 
             Utils.XPathNodesetTest(xml, testExpression, expected);
         }
@@ -4162,7 +4136,6 @@ namespace XPathTests.FunctionalTests.Location.Paths.Predicates
                     Prefix = "my",
                     Value = "\n\t\tWhere in the world is Trenton?\n\t"
                 });
-            ;
 
             Utils.XPathNodesetTest(xml, testExpression, expected);
         }
@@ -4231,7 +4204,6 @@ namespace XPathTests.FunctionalTests.Location.Paths.Predicates
                     HasNameTable = true,
                     Value = "9"
                 });
-            ;
 
             Utils.XPathNodesetTest(xml, testExpression, expected);
         }
@@ -4256,7 +4228,6 @@ namespace XPathTests.FunctionalTests.Location.Paths.Predicates
                     HasNameTable = true,
                     Value = "\n\t\t\tJoe\n\t\t\tBob\n\t\t\tTrenton Literary Review Honorable Mention\n\t\t\tUSA\n\t\t"
                 });
-            ;
 
             Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
         }

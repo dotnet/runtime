@@ -3,7 +3,7 @@
 
 namespace System.Net.NetworkInformation
 {
-    internal class LinuxIPGlobalProperties : UnixIPGlobalProperties
+    internal sealed class LinuxIPGlobalProperties : UnixIPGlobalProperties
     {
         public override TcpConnectionInformation[] GetActiveTcpConnections()
         {

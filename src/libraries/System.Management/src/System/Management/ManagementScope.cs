@@ -1038,7 +1038,7 @@ namespace System.Management
 
     }//ManagementScope
 
-    internal class SecuredIEnumWbemClassObjectHandler
+    internal sealed class SecuredIEnumWbemClassObjectHandler
     {
         private readonly IEnumWbemClassObject pEnumWbemClassObjectsecurityHelper;
         private readonly ManagementScope scope;
@@ -1092,7 +1092,7 @@ namespace System.Management
     }
 
 
-    internal class SecuredConnectHandler
+    internal sealed class SecuredConnectHandler
     {
         private readonly ManagementScope scope;
 
@@ -1142,7 +1142,7 @@ namespace System.Management
         }
     }
 
-    internal class SecuredIWbemServicesHandler
+    internal sealed class SecuredIWbemServicesHandler
     {
         private readonly IWbemServices pWbemServiecsSecurityHelper;
         private readonly ManagementScope scope;
@@ -1381,7 +1381,7 @@ namespace System.Management
     }
 
 
-    internal class SecurityHandler
+    internal sealed class SecurityHandler
     {
         private bool needToReset;
         private readonly IntPtr handle;
@@ -1469,7 +1469,7 @@ namespace System.Management
     /// <summary>
     /// Converts a String to a ManagementScope
     /// </summary>
-    internal class ManagementScopeConverter : ExpandableObjectConverter
+    internal sealed class ManagementScopeConverter : ExpandableObjectConverter
     {
 
         /// <summary>

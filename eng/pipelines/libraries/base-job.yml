@@ -23,6 +23,7 @@ parameters:
   testScope: ''
   pool: ''
   runTests: false
+  pgoType: ''
 
 jobs:
   - template: /eng/common/templates/job/job.yml
@@ -79,7 +80,6 @@ jobs:
         - ${{ if eq(parameters.framework, 'allConfigurations') }}:
           - _finalFrameworkArg: -allConfigurations
           - _testModeArg: /p:TestAssemblies=false /p:TestPackages=true
-          - _extraHelixArguments: /p:TestPackages=true
 
         - ${{ if eq(parameters.isOfficialAllConfigurations, true) }}:
           - librariesBuildArtifactName: 'libraries_bin_official_allconfigurations'
@@ -96,7 +96,7 @@ jobs:
           - _runtimeDownloadPath: '$(Build.SourcesDirectory)/artifacts/transport/${{ parameters.runtimeFlavor }}'
           - _runtimeConfigurationArg: -rc ${{ parameters.liveRuntimeBuildConfig }}
           - ${{ if eq(parameters.runTests, true) }}:
-            - _runtimeArtifactName: '$(runtimeFlavorName)Product_${{ parameters.runtimeVariant}}_${{ parameters.osGroup }}${{ parameters.osSubgroup }}_${{ parameters.archType }}_${{ parameters.liveRuntimeBuildConfig }}'
+            - _runtimeArtifactName: '$(runtimeFlavorName)Product_${{ parameters.pgoType }}_${{ parameters.runtimeVariant}}_${{ parameters.osGroup }}${{ parameters.osSubgroup }}_${{ parameters.archType }}_${{ parameters.liveRuntimeBuildConfig }}'
             - _runtimeArtifactsPathArg: ' /p:RuntimeArtifactsPath=$(_runtimeDownloadPath)'
           - ${{ if eq(parameters.testDisplayName, '') }}:
             - _testRunNamePrefixSuffix: $(runtimeFlavorName)_${{ parameters.liveRuntimeBuildConfig }}

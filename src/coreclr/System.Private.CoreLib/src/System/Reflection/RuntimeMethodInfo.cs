@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
+using System.Runtime.CompilerServices;
 using System.Security;
 using System.Text;
 using System.Threading;
@@ -30,9 +31,11 @@ namespace System.Reflection
 
         internal INVOCATION_FLAGS InvocationFlags
         {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get
             {
-                if ((m_invocationFlags & INVOCATION_FLAGS.INVOCATION_FLAGS_INITIALIZED) == 0)
+                [MethodImpl(MethodImplOptions.NoInlining)] // move lazy invocation flags population out of the hot path
+                INVOCATION_FLAGS LazyCreateInvocationFlags()
                 {
                     INVOCATION_FLAGS invocationFlags = INVOCATION_FLAGS.INVOCATION_FLAGS_UNKNOWN;
 
@@ -55,10 +58,17 @@ namespace System.Reflection
                             invocationFlags |= INVOCATION_FLAGS.INVOCATION_FLAGS_CONTAINS_STACK_POINTERS;
                     }
 
-                    m_invocationFlags = invocationFlags | INVOCATION_FLAGS.INVOCATION_FLAGS_INITIALIZED;
+                    invocationFlags |= INVOCATION_FLAGS.INVOCATION_FLAGS_INITIALIZED;
+                    m_invocationFlags = invocationFlags; // accesses are guaranteed atomic
+                    return invocationFlags;
                 }
 
-                return m_invocationFlags;
+                INVOCATION_FLAGS flags = m_invocationFlags;
+                if ((flags & INVOCATION_FLAGS.INVOCATION_FLAGS_INITIALIZED) == 0)
+                {
+                    flags = LazyCreateInvocationFlags();
+                }
+                return flags;
             }
         }
 
@@ -105,7 +115,22 @@ namespace System.Reflection
         internal override bool CacheEquals(object? o) =>
             o is RuntimeMethodInfo m && m.m_handle == m_handle;
 
-        internal Signature Signature => m_signature ??= new Signature(this, m_declaringType);
+        internal Signature Signature
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get
+            {
+                [MethodImpl(MethodImplOptions.NoInlining)] // move lazy sig generation out of the hot path
+                Signature LazyCreateSignature()
+                {
+                    Signature newSig = new Signature(this, m_declaringType);
+                    Volatile.Write(ref m_signature, newSig);
+                    return newSig;
+                }
+
+                return m_signature ?? LazyCreateSignature();
+            }
+        }
 
         internal BindingFlags BindingFlags => m_bindingFlags;
 
@@ -246,7 +271,7 @@ namespace System.Reflection
 
         public override IList<CustomAttributeData> GetCustomAttributesData()
         {
-            return CustomAttributeData.GetCustomAttributesInternal(this);
+            return RuntimeCustomAttributeData.GetCustomAttributesInternal(this);
         }
         #endregion
 
@@ -330,10 +355,11 @@ namespace System.Reflection
         #endregion
 
         #region Invocation Logic(On MemberBase)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void CheckConsistency(object? target)
         {
             // only test instance methods
-            if ((m_methodAttributes & MethodAttributes.Static) != MethodAttributes.Static)
+            if ((m_methodAttributes & MethodAttributes.Static) == 0)
             {
                 if (!m_declaringType.IsInstanceOfType(target))
                 {
@@ -384,51 +410,64 @@ namespace System.Reflection
         [Diagnostics.DebuggerHidden]
         public override object? Invoke(object? obj, BindingFlags invokeAttr, Binder? binder, object?[]? parameters, CultureInfo? culture)
         {
-            object[]? arguments = InvokeArgumentsCheck(obj, invokeAttr, binder, parameters, culture);
-
-            bool wrapExceptions = (invokeAttr & BindingFlags.DoNotWrapExceptions) == 0;
-            if (arguments == null || arguments.Length == 0)
-                return RuntimeMethodHandle.InvokeMethod(obj, null, Signature, false, wrapExceptions);
-            else
-            {
-                object retValue = RuntimeMethodHandle.InvokeMethod(obj, arguments, Signature, false, wrapExceptions);
-
-                // copy out. This should be made only if ByRef are present.
-                for (int index = 0; index < arguments.Length; index++)
-                    parameters![index] = arguments[index];
-
-                return retValue;
-            }
-        }
-
-        [DebuggerStepThroughAttribute]
-        [Diagnostics.DebuggerHidden]
-        private object[]? InvokeArgumentsCheck(object? obj, BindingFlags invokeAttr, Binder? binder, object?[]? parameters, CultureInfo? culture)
-        {
-            Signature sig = Signature;
-
-            // get the signature
-            int formalCount = sig.Arguments.Length;
-            int actualCount = (parameters != null) ? parameters.Length : 0;
-
-            INVOCATION_FLAGS invocationFlags = InvocationFlags;
-
             // INVOCATION_FLAGS_CONTAINS_STACK_POINTERS means that the struct (either the declaring type or the return type)
             // contains pointers that point to the stack. This is either a ByRef or a TypedReference. These structs cannot
             // be boxed and thus cannot be invoked through reflection which only deals with boxed value type objects.
-            if ((invocationFlags & (INVOCATION_FLAGS.INVOCATION_FLAGS_NO_INVOKE | INVOCATION_FLAGS.INVOCATION_FLAGS_CONTAINS_STACK_POINTERS)) != 0)
+            if ((InvocationFlags & (INVOCATION_FLAGS.INVOCATION_FLAGS_NO_INVOKE | INVOCATION_FLAGS.INVOCATION_FLAGS_CONTAINS_STACK_POINTERS)) != 0)
                 ThrowNoInvokeException();
 
             // check basic method consistency. This call will throw if there are problems in the target/method relationship
             CheckConsistency(obj);
 
-            if (formalCount != actualCount)
+            Signature sig = Signature;
+            int actualCount = (parameters != null) ? parameters.Length : 0;
+            if (sig.Arguments.Length != actualCount)
                 throw new TargetParameterCountException(SR.Arg_ParmCnt);
 
+            StackAllocedArguments stackArgs = default; // try to avoid intermediate array allocation if possible
+            Span<object?> arguments = default;
             if (actualCount != 0)
-                return CheckArguments(parameters!, binder, invokeAttr, culture, sig);
-            else
-                return null;
+            {
+                arguments = CheckArguments(ref stackArgs, parameters!, binder, invokeAttr, culture, sig);
+            }
+
+            bool wrapExceptions = (invokeAttr & BindingFlags.DoNotWrapExceptions) == 0;
+            object? retValue = RuntimeMethodHandle.InvokeMethod(obj, arguments, Signature, false, wrapExceptions);
+
+            // copy out. This should be made only if ByRef are present.
+            // n.b. cannot use Span<T>.CopyTo, as parameters.GetType() might not actually be typeof(object[])
+            for (int index = 0; index < arguments.Length; index++)
+                parameters![index] = arguments[index];
+
+            return retValue;
+        }
+
+        [DebuggerStepThroughAttribute]
+        [Diagnostics.DebuggerHidden]
+        internal object? InvokeOneParameter(object? obj, BindingFlags invokeAttr, Binder? binder, object? parameter, CultureInfo? culture)
+        {
+            // INVOCATION_FLAGS_CONTAINS_STACK_POINTERS means that the struct (either the declaring type or the return type)
+            // contains pointers that point to the stack. This is either a ByRef or a TypedReference. These structs cannot
+            // be boxed and thus cannot be invoked through reflection which only deals with boxed value type objects.
+            if ((InvocationFlags & (INVOCATION_FLAGS.INVOCATION_FLAGS_NO_INVOKE | INVOCATION_FLAGS.INVOCATION_FLAGS_CONTAINS_STACK_POINTERS)) != 0)
+            {
+                ThrowNoInvokeException();
+            }
+
+            // check basic method consistency. This call will throw if there are problems in the target/method relationship
+            CheckConsistency(obj);
+
+            Signature sig = Signature;
+            if (sig.Arguments.Length != 1)
+            {
+                throw new TargetParameterCountException(SR.Arg_ParmCnt);
+            }
+
+            StackAllocedArguments stackArgs = default;
+            Span<object?> arguments = CheckArguments(ref stackArgs, new ReadOnlySpan<object?>(ref parameter, 1), binder, invokeAttr, culture, sig);
+
+            bool wrapExceptions = (invokeAttr & BindingFlags.DoNotWrapExceptions) == 0;
+            return RuntimeMethodHandle.InvokeMethod(obj, arguments, Signature, constructor: false, wrapExceptions);
         }
 
         #endregion
@@ -523,6 +562,7 @@ namespace System.Reflection
         #endregion
 
         #region Generics
+        [RequiresUnreferencedCode("If some of the generic arguments are annotated (either with DynamicallyAccessedMembersAttribute, or generic constraints), trimming can't validate that the requirements of those annotations are met.")]
         public override MethodInfo MakeGenericMethod(params Type[] methodInstantiation)
         {
             if (methodInstantiation == null)

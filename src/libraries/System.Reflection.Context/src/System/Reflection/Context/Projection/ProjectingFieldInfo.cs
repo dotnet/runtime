@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Reflection.Context.Delegation;
 
 namespace System.Reflection.Context.Projection
@@ -20,7 +21,7 @@ namespace System.Reflection.Context.Projection
 
         public Projector Projector { get; }
 
-        public override Type DeclaringType
+        public override Type? DeclaringType
         {
             get { return Projector.ProjectType(base.DeclaringType); }
         }
@@ -35,7 +36,7 @@ namespace System.Reflection.Context.Projection
             get { return Projector.ProjectModule(base.Module); }
         }
 
-        public override Type ReflectedType
+        public override Type? ReflectedType
         {
             get { return Projector.ProjectType(base.ReflectedType); }
         }
@@ -69,11 +70,9 @@ namespace System.Reflection.Context.Projection
             return Projector.Project(base.GetRequiredCustomModifiers(), Projector.ProjectType);
         }
 
-        public override bool Equals(object o)
+        public override bool Equals([NotNullWhen(true)] object? o)
         {
-            var other = o as ProjectingFieldInfo;
-
-            return other != null &&
+            return o is ProjectingFieldInfo other &&
                    Projector == other.Projector &&
                    UnderlyingField.Equals(other.UnderlyingField);
         }

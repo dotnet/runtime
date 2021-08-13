@@ -7,7 +7,7 @@ using Microsoft.Extensions.DependencyInjection.ServiceLookup;
 
 namespace Microsoft.Extensions.DependencyInjection
 {
-    internal class CallSiteJsonFormatter: CallSiteVisitor<CallSiteJsonFormatter.CallSiteFormatterContext, object>
+    internal sealed class CallSiteJsonFormatter: CallSiteVisitor<CallSiteJsonFormatter.CallSiteFormatterContext, object>
     {
         internal static CallSiteJsonFormatter Instance = new CallSiteJsonFormatter();
 
@@ -77,11 +77,6 @@ namespace Microsoft.Extensions.DependencyInjection
         }
 
         protected override object VisitServiceProvider(ServiceProviderCallSite serviceProviderCallSite, CallSiteFormatterContext argument)
-        {
-            return null;
-        }
-
-        protected override object VisitServiceScopeFactory(ServiceScopeFactoryCallSite serviceScopeFactoryCallSite, CallSiteFormatterContext argument)
         {
             return null;
         }
@@ -188,7 +183,7 @@ namespace Microsoft.Extensions.DependencyInjection
                 }
                 else
                 {
-                    Builder.AppendFormat( "null");
+                    Builder.Append( "null");
                 }
             }
 

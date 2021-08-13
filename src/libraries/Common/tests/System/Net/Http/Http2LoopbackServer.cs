@@ -91,9 +91,10 @@ namespace System.Net.Test.Common
             Socket connectionSocket = await _listenSocket.AcceptAsync().ConfigureAwait(false);
 
             var stream = new NetworkStream(connectionSocket, ownsSocket: true);
+            var wrapper = new SocketWrapper(connectionSocket);
             Http2LoopbackConnection connection =
-                timeout != null ? await Http2LoopbackConnection.CreateAsync(connectionSocket, stream, _options, timeout.Value).ConfigureAwait(false) :
-                await Http2LoopbackConnection.CreateAsync(connectionSocket, stream, _options).ConfigureAwait(false);
+                timeout != null ? await Http2LoopbackConnection.CreateAsync(wrapper, stream, _options, timeout.Value).ConfigureAwait(false) :
+                await Http2LoopbackConnection.CreateAsync(wrapper, stream, _options).ConfigureAwait(false);
             _connections.Add(connection);
 
             return connection;
@@ -178,6 +179,8 @@ namespace System.Net.Test.Common
     {
         public bool ClientCertificateRequired { get; set; }
 
+        public bool EnableTransparentPingResponse { get; set; } = true;
+
         public Http2Options()
         {
             SslProtocols = SslProtocols.Tls12;
@@ -192,7 +195,7 @@ namespace System.Net.Test.Common
         {
             using (var server = Http2LoopbackServer.CreateServer())
             {
-                await funcAsync(server, server.Address).TimeoutAfter(millisecondsTimeout).ConfigureAwait(false);
+                await funcAsync(server, server.Address).WaitAsync(TimeSpan.FromMilliseconds(millisecondsTimeout));
             }
         }
 
@@ -201,7 +204,7 @@ namespace System.Net.Test.Common
             return Http2LoopbackServer.CreateServer(CreateOptions(options));
         }
 
-        public override async Task<GenericLoopbackConnection> CreateConnectionAsync(Socket socket, Stream stream, GenericLoopbackOptions options = null)
+        public override async Task<GenericLoopbackConnection> CreateConnectionAsync(SocketWrapper socket, Stream stream, GenericLoopbackOptions options = null)
         {
             return await Http2LoopbackConnection.CreateAsync(socket, stream, CreateOptions(options)).ConfigureAwait(false);
         }
@@ -223,7 +226,7 @@ namespace System.Net.Test.Common
         {
             using (var server = CreateServer(options))
             {
-                await funcAsync(server, server.Address).TimeoutAfter(millisecondsTimeout).ConfigureAwait(false);
+                await funcAsync(server, server.Address).WaitAsync(TimeSpan.FromMilliseconds(millisecondsTimeout));
             }
         }
 

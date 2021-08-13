@@ -9,16 +9,56 @@ namespace System.Security.Cryptography
 {
     internal sealed class RsaPaddingProcessor
     {
+        // DigestInfo header values taken from https://tools.ietf.org/html/rfc3447#section-9.2, Note 1.
+        private static readonly byte[] s_digestInfoMD5 =
+            {
+                0x30, 0x20, 0x30, 0x0C, 0x06, 0x08, 0x2A, 0x86,
+                0x48, 0x86, 0xF7, 0x0D, 0x02, 0x05, 0x05, 0x00,
+                0x04, 0x10,
+            };
+
+        private static readonly byte[] s_digestInfoSha1 =
+            {
+                0x30, 0x21, 0x30, 0x09, 0x06, 0x05, 0x2B, 0x0E, 0x03,
+                0x02, 0x1A, 0x05, 0x00, 0x04, 0x14,
+            };
+
+        private static readonly byte[] s_digestInfoSha256 =
+            {
+                0x30, 0x31, 0x30, 0x0D, 0x06, 0x09, 0x60, 0x86, 0x48,
+                0x01, 0x65, 0x03, 0x04, 0x02, 0x01, 0x05, 0x00, 0x04,
+                0x20,
+            };
+
+        private static readonly byte[] s_digestInfoSha384 =
+            {
+                0x30, 0x41, 0x30, 0x0D, 0x06, 0x09, 0x60, 0x86, 0x48,
+                0x01, 0x65, 0x03, 0x04, 0x02, 0x02, 0x05, 0x00, 0x04,
+                0x30,
+            };
+
+        private static readonly byte[] s_digestInfoSha512 =
+            {
+                0x30, 0x51, 0x30, 0x0D, 0x06, 0x09, 0x60, 0x86, 0x48,
+                0x01, 0x65, 0x03, 0x04, 0x02, 0x03, 0x05, 0x00, 0x04,
+                0x40,
+            };
+
         private static readonly ConcurrentDictionary<HashAlgorithmName, RsaPaddingProcessor> s_lookup =
             new ConcurrentDictionary<HashAlgorithmName, RsaPaddingProcessor>();
 
         private readonly HashAlgorithmName _hashAlgorithmName;
         private readonly int _hLen;
+        private readonly ReadOnlyMemory<byte> _digestInfoPrefix;
 
-        private RsaPaddingProcessor(HashAlgorithmName hashAlgorithmName, int hLen)
+        private RsaPaddingProcessor(
+            HashAlgorithmName hashAlgorithmName,
+            int hLen,
+            ReadOnlyMemory<byte> digestInfoPrefix)
         {
             _hashAlgorithmName = hashAlgorithmName;
             _hLen = hLen;
+            _digestInfoPrefix = digestInfoPrefix;
         }
 
         internal static int BytesRequiredForBitCount(int keySizeInBits)
@@ -34,20 +74,47 @@ namespace System.Security.Cryptography
         {
             return s_lookup.GetOrAdd(
                 hashAlgorithmName,
-                alg =>
+                static hashAlgorithmName =>
                 {
                     using (IncrementalHash hasher = IncrementalHash.CreateHash(hashAlgorithmName))
                     {
                         // SHA-2-512 is the biggest we expect
                         Span<byte> stackDest = stackalloc byte[512 / 8];
+                        ReadOnlyMemory<byte> digestInfoPrefix;
+
+                        if (hashAlgorithmName == HashAlgorithmName.MD5)
+                        {
+                            digestInfoPrefix = s_digestInfoMD5;
+                        }
+                        else if (hashAlgorithmName == HashAlgorithmName.SHA1)
+                        {
+                            digestInfoPrefix = s_digestInfoSha1;
+                        }
+                        else if (hashAlgorithmName == HashAlgorithmName.SHA256)
+                        {
+                            digestInfoPrefix = s_digestInfoSha256;
+                        }
+                        else if (hashAlgorithmName == HashAlgorithmName.SHA384)
+                        {
+                            digestInfoPrefix = s_digestInfoSha384;
+                        }
+                        else if (hashAlgorithmName == HashAlgorithmName.SHA512)
+                        {
+                            digestInfoPrefix = s_digestInfoSha512;
+                        }
+                        else
+                        {
+                            Debug.Fail("Unknown digest algorithm");
+                            throw new CryptographicException();
+                        }
 
                         if (hasher.TryGetHashAndReset(stackDest, out int bytesWritten))
                         {
-                            return new RsaPaddingProcessor(hashAlgorithmName, bytesWritten);
+                            return new RsaPaddingProcessor(hashAlgorithmName, bytesWritten, digestInfoPrefix);
                         }
 
                         byte[] big = hasher.GetHashAndReset();
-                        return new RsaPaddingProcessor(hashAlgorithmName, big.Length);
+                        return new RsaPaddingProcessor(hashAlgorithmName, big.Length, digestInfoPrefix);
                     }
                 });
         }
@@ -78,6 +145,44 @@ namespace System.Security.Cryptography
             FillNonZeroBytes(ps);
 
             source.CopyTo(mInEM);
+        }
+
+        internal void PadPkcs1Signature(
+            ReadOnlySpan<byte> source,
+            Span<byte> destination)
+        {
+            // https://tools.ietf.org/html/rfc3447#section-9.2
+
+            // 1. H = Hash(M)
+            // Done by the caller.
+
+            // 2. Encode the DigestInfo value
+            ReadOnlySpan<byte> digestInfoPrefix = _digestInfoPrefix.Span;
+            int expectedLength = digestInfoPrefix[^1];
+
+            if (source.Length != expectedLength)
+            {
+                throw new CryptographicException(SR.Cryptography_SignHash_WrongSize);
+            }
+
+            int tLen = digestInfoPrefix.Length + expectedLength;
+
+            // 3. If emLen < tLen + 11, fail
+            if (destination.Length - 11 < tLen)
+            {
+                throw new CryptographicException(SR.Cryptography_KeyTooSmall);
+            }
+
+            // 4. Generate emLen - tLen - 3 bytes of 0xFF as "PS"
+            int paddingLength = destination.Length - tLen - 3;
+
+            // 5. EM = 0x00 || 0x01 || PS || 0x00 || T
+            destination[0] = 0;
+            destination[1] = 1;
+            destination.Slice(2, paddingLength).Fill(0xFF);
+            destination[paddingLength + 2] = 0;
+            digestInfoPrefix.CopyTo(destination.Slice(paddingLength + 3));
+            source.CopyTo(destination.Slice(paddingLength + 3 + digestInfoPrefix.Length));
         }
 
         internal void PadOaep(

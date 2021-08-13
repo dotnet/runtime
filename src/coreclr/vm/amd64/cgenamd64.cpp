@@ -286,7 +286,11 @@ void HijackFrame::UpdateRegDisplay(const PREGDISPLAY pRD)
     pRD->IsCallerSPValid      = FALSE;        // Don't add usage of this field.  This is only temporary.
 
     pRD->pCurrentContext->Rip = m_ReturnAddress;
+#ifdef TARGET_WINDOWS
+    pRD->pCurrentContext->Rsp = m_Args->Rsp;
+#else
     pRD->pCurrentContext->Rsp = PTR_TO_MEMBER_TADDR(HijackArgs, m_Args, Rip) + sizeof(void *);
+#endif
 
     UpdateRegDisplayFromCalleeSavedRegisters(pRD, &(m_Args->Regs));
 
@@ -450,7 +454,7 @@ void EncodeLoadAndJumpThunk (LPBYTE pBuffer, LPVOID pv, LPVOID pTarget)
     _ASSERTE(DbgIsExecutable(pBuffer, 22));
 }
 
-void emitCOMStubCall (ComCallMethodDesc *pCOMMethod, PCODE target)
+void emitCOMStubCall (ComCallMethodDesc *pCOMMethodRX, ComCallMethodDesc *pCOMMethodRW, PCODE target)
 {
     CONTRACT_VOID
     {
@@ -460,7 +464,8 @@ void emitCOMStubCall (ComCallMethodDesc *pCOMMethod, PCODE target)
     }
     CONTRACT_END;
 
-    BYTE *pBuffer = (BYTE*)pCOMMethod - COMMETHOD_CALL_PRESTUB_SIZE;
+    BYTE *pBufferRX = (BYTE*)pCOMMethodRX - COMMETHOD_CALL_PRESTUB_SIZE;
+    BYTE *pBufferRW = (BYTE*)pCOMMethodRW - COMMETHOD_CALL_PRESTUB_SIZE;
 
     // We need the target to be in a 64-bit aligned memory location and the call instruction
     // to immediately precede the ComCallMethodDesc. We'll generate an indirect call to avoid
@@ -471,21 +476,21 @@ void emitCOMStubCall (ComCallMethodDesc *pCOMMethod, PCODE target)
     // nop                              90
     // call [$ - 10]                    ff 15 f0 ff ff ff
 
-    *((UINT64 *)&pBuffer[COMMETHOD_CALL_PRESTUB_ADDRESS_OFFSET]) = (UINT64)target;
+    *((UINT64 *)&pBufferRW[COMMETHOD_CALL_PRESTUB_ADDRESS_OFFSET]) = (UINT64)target;
 
-    pBuffer[-2]  = 0x90;
-    pBuffer[-1]  = 0x90;
+    pBufferRW[-2]  = 0x90;
+    pBufferRW[-1]  = 0x90;
 
-    pBuffer[0] = 0xFF;
-    pBuffer[1] = 0x15;
-    *((UINT32 UNALIGNED *)&pBuffer[2]) = (UINT32)(COMMETHOD_CALL_PRESTUB_ADDRESS_OFFSET - COMMETHOD_CALL_PRESTUB_SIZE);
+    pBufferRW[0] = 0xFF;
+    pBufferRW[1] = 0x15;
+    *((UINT32 UNALIGNED *)&pBufferRW[2]) = (UINT32)(COMMETHOD_CALL_PRESTUB_ADDRESS_OFFSET - COMMETHOD_CALL_PRESTUB_SIZE);
 
-    _ASSERTE(DbgIsExecutable(pBuffer, COMMETHOD_CALL_PRESTUB_SIZE));
+    _ASSERTE(DbgIsExecutable(pBufferRX, COMMETHOD_CALL_PRESTUB_SIZE));
 
     RETURN;
 }
 
-void emitJump(LPBYTE pBuffer, LPVOID target)
+void emitJump(LPBYTE pBufferRX, LPBYTE pBufferRW, LPVOID target)
 {
     CONTRACTL
     {
@@ -493,25 +498,25 @@ void emitJump(LPBYTE pBuffer, LPVOID target)
         GC_NOTRIGGER;
         MODE_ANY;
 
-        PRECONDITION(CheckPointer(pBuffer));
+        PRECONDITION(CheckPointer(pBufferRX));
     }
     CONTRACTL_END;
 
     // mov rax, 123456789abcdef0h       48 b8 xx xx xx xx xx xx xx xx
     // jmp rax                          ff e0
 
-    pBuffer[0]  = 0x48;
-    pBuffer[1]  = 0xB8;
+    pBufferRW[0]  = 0x48;
+    pBufferRW[1]  = 0xB8;
 
-    *((UINT64 UNALIGNED *)&pBuffer[2]) = (UINT64)target;
+    *((UINT64 UNALIGNED *)&pBufferRW[2]) = (UINT64)target;
 
-    pBuffer[10] = 0xFF;
-    pBuffer[11] = 0xE0;
+    pBufferRW[10] = 0xFF;
+    pBufferRW[11] = 0xE0;
 
-    _ASSERTE(DbgIsExecutable(pBuffer, 12));
+    _ASSERTE(DbgIsExecutable(pBufferRX, 12));
 }
 
-void UMEntryThunkCode::Encode(BYTE* pTargetCode, void* pvSecretParam)
+void UMEntryThunkCode::Encode(UMEntryThunkCode *pEntryThunkCodeRX, BYTE* pTargetCode, void* pvSecretParam)
 {
     CONTRACTL
     {
@@ -542,7 +547,7 @@ void UMEntryThunkCode::Encode(BYTE* pTargetCode, void* pvSecretParam)
     m_jmpRAX[1]  = 0xFF;
     m_jmpRAX[2]  = 0xE0;
 
-    _ASSERTE(DbgIsExecutable(&m_movR10[0], &m_jmpRAX[3]-&m_movR10[0]));
+    _ASSERTE(DbgIsExecutable(&pEntryThunkCodeRX->m_movR10[0], &pEntryThunkCodeRX->m_jmpRAX[3]-&pEntryThunkCodeRX->m_movR10[0]));
 }
 
 void UMEntryThunkCode::Poison()
@@ -555,15 +560,18 @@ void UMEntryThunkCode::Poison()
     }
     CONTRACTL_END;
 
-    m_execstub    = (BYTE *)UMEntryThunk::ReportViolation;
+    ExecutableWriterHolder<UMEntryThunkCode> thunkWriterHolder(this, sizeof(UMEntryThunkCode));
+    UMEntryThunkCode *pThisRW = thunkWriterHolder.GetRW();
 
-    m_movR10[0]  = REX_PREFIX_BASE | REX_OPERAND_SIZE_64BIT;
+    pThisRW->m_execstub    = (BYTE *)UMEntryThunk::ReportViolation;
+
+    pThisRW->m_movR10[0]  = REX_PREFIX_BASE | REX_OPERAND_SIZE_64BIT;
 #ifdef _WIN32
     // mov rcx, pUMEntryThunk // 48 b9 xx xx xx xx xx xx xx xx
-    m_movR10[1]  = 0xB9;
+    pThisRW->m_movR10[1]  = 0xB9;
 #else
     // mov rdi, pUMEntryThunk // 48 bf xx xx xx xx xx xx xx xx
-    m_movR10[1]  = 0xBF;
+    pThisRW->m_movR10[1]  = 0xBF;
 #endif
 
     ClrFlushInstructionCache(&m_movR10[0], &m_jmpRAX[3]-&m_movR10[0]);
@@ -647,7 +655,7 @@ INT32 rel32UsingJumpStub(INT32 UNALIGNED * pRel32, PCODE target, MethodDesc *pMe
     return static_cast<INT32>(offset);
 }
 
-INT32 rel32UsingPreallocatedJumpStub(INT32 UNALIGNED * pRel32, PCODE target, PCODE jumpStubAddr, bool emitJump)
+INT32 rel32UsingPreallocatedJumpStub(INT32 UNALIGNED * pRel32, PCODE target, PCODE jumpStubAddrRX, PCODE jumpStubAddrRW, bool emitJump)
 {
     CONTRACTL
     {
@@ -657,12 +665,12 @@ INT32 rel32UsingPreallocatedJumpStub(INT32 UNALIGNED * pRel32, PCODE target, PCO
     CONTRACTL_END;
 
     TADDR baseAddr = (TADDR)pRel32 + 4;
-    _ASSERTE(FitsInI4(jumpStubAddr - baseAddr));
+    _ASSERTE(FitsInI4(jumpStubAddrRX - baseAddr));
 
     INT_PTR offset = target - baseAddr;
     if (!FitsInI4(offset) INDEBUG(|| PEDecoder::GetForceRelocs()))
     {
-        offset = jumpStubAddr - baseAddr;
+        offset = jumpStubAddrRX - baseAddr;
         if (!FitsInI4(offset))
         {
             _ASSERTE(!"jump stub was not in expected range");
@@ -671,11 +679,11 @@ INT32 rel32UsingPreallocatedJumpStub(INT32 UNALIGNED * pRel32, PCODE target, PCO
 
         if (emitJump)
         {
-            emitBackToBackJump((LPBYTE)jumpStubAddr, (LPVOID)target);
+            emitBackToBackJump((LPBYTE)jumpStubAddrRX, (LPBYTE)jumpStubAddrRW, (LPVOID)target);
         }
         else
         {
-            _ASSERTE(decodeBackToBackJump(jumpStubAddr) == target);
+            _ASSERTE(decodeBackToBackJump(jumpStubAddrRX) == target);
         }
     }
 
@@ -862,7 +870,9 @@ EXTERN_C PCODE VirtualMethodFixupWorker(TransitionBlock * pTransitionBlock, CORC
             *(INT32 *)(pNewValue+1) = rel32UsingJumpStub((INT32*)(&pThunk->callJmp[1]), pCode, pMD, NULL);
 
             _ASSERTE(IS_ALIGNED(pThunk, sizeof(INT64)));
-            FastInterlockCompareExchangeLong((INT64*)pThunk, newValue, oldValue);
+
+            ExecutableWriterHolder<INT64> thunkWriterHolder((INT64*)pThunk, sizeof(INT64));
+            FastInterlockCompareExchangeLong(thunkWriterHolder.GetRW(), newValue, oldValue);
 
             FlushInstructionCache(GetCurrentProcess(), pThunk, 8);
         }
@@ -888,14 +898,17 @@ EXTERN_C PCODE VirtualMethodFixupWorker(TransitionBlock * pTransitionBlock, CORC
 #define BEGIN_DYNAMIC_HELPER_EMIT(size) \
     SIZE_T cb = size; \
     SIZE_T cbAligned = ALIGN_UP(cb, DYNAMIC_HELPER_ALIGNMENT); \
-    BYTE * pStart = (BYTE *)(void *)pAllocator->GetDynamicHelpersHeap()->AllocAlignedMem(cbAligned, DYNAMIC_HELPER_ALIGNMENT); \
+    BYTE * pStartRX = (BYTE *)(void*)pAllocator->GetDynamicHelpersHeap()->AllocAlignedMem(cbAligned, DYNAMIC_HELPER_ALIGNMENT); \
+    ExecutableWriterHolder<BYTE> startWriterHolder(pStartRX, cbAligned); \
+    BYTE * pStart = startWriterHolder.GetRW(); \
+    size_t rxOffset = pStartRX - pStart; \
     BYTE * p = pStart;
 
 #define END_DYNAMIC_HELPER_EMIT() \
     _ASSERTE(pStart + cb == p); \
     while (p < pStart + cbAligned) *p++ = X86_INSTR_INT3; \
-    ClrFlushInstructionCache(pStart, cbAligned); \
-    return (PCODE)pStart
+    ClrFlushInstructionCache(pStartRX, cbAligned); \
+    return (PCODE)pStartRX
 
 PCODE DynamicHelpers::CreateHelper(LoaderAllocator * pAllocator, TADDR arg, PCODE target)
 {
@@ -913,13 +926,13 @@ PCODE DynamicHelpers::CreateHelper(LoaderAllocator * pAllocator, TADDR arg, PCOD
     p += 8;
 
     *p++ = X86_INSTR_JMP_REL32; // jmp rel32
-    *(INT32 *)p = rel32UsingJumpStub((INT32 *)p, target, NULL, pAllocator);
+    *(INT32 *)p = rel32UsingJumpStub((INT32 *)(p + rxOffset), target, NULL, pAllocator);
     p += 4;
 
     END_DYNAMIC_HELPER_EMIT();
 }
 
-void DynamicHelpers::EmitHelperWithArg(BYTE*& p, LoaderAllocator * pAllocator, TADDR arg, PCODE target)
+void DynamicHelpers::EmitHelperWithArg(BYTE*& p, size_t rxOffset, LoaderAllocator * pAllocator, TADDR arg, PCODE target)
 {
     CONTRACTL
     {
@@ -940,7 +953,7 @@ void DynamicHelpers::EmitHelperWithArg(BYTE*& p, LoaderAllocator * pAllocator, T
     p += 8;
 
     *p++ = X86_INSTR_JMP_REL32; // jmp rel32
-    *(INT32 *)p = rel32UsingJumpStub((INT32 *)p, target, NULL, pAllocator);
+    *(INT32 *)p = rel32UsingJumpStub((INT32 *)(p + rxOffset), target, NULL, pAllocator);
     p += 4;
 }
 
@@ -948,7 +961,7 @@ PCODE DynamicHelpers::CreateHelperWithArg(LoaderAllocator * pAllocator, TADDR ar
 {
     BEGIN_DYNAMIC_HELPER_EMIT(15);
 
-    EmitHelperWithArg(p, pAllocator, arg, target);
+    EmitHelperWithArg(p, rxOffset, pAllocator, arg, target);
 
     END_DYNAMIC_HELPER_EMIT();
 }
@@ -976,7 +989,7 @@ PCODE DynamicHelpers::CreateHelper(LoaderAllocator * pAllocator, TADDR arg, TADD
     p += 8;
 
     *p++ = X86_INSTR_JMP_REL32; // jmp rel32
-    *(INT32 *)p = rel32UsingJumpStub((INT32 *)p, target, NULL, pAllocator);
+    *(INT32 *)p = rel32UsingJumpStub((INT32 *)(p + rxOffset), target, NULL, pAllocator);
     p += 4;
 
     END_DYNAMIC_HELPER_EMIT();
@@ -1005,7 +1018,7 @@ PCODE DynamicHelpers::CreateHelperArgMove(LoaderAllocator * pAllocator, TADDR ar
     p += 8;
 
     *p++ = X86_INSTR_JMP_REL32; // jmp rel32
-    *(INT32 *)p = rel32UsingJumpStub((INT32 *)p, target, NULL, pAllocator);
+    *(INT32 *)p = rel32UsingJumpStub((INT32 *)(p + rxOffset), target, NULL, pAllocator);
     p += 4;
 
     END_DYNAMIC_HELPER_EMIT();
@@ -1071,7 +1084,7 @@ PCODE DynamicHelpers::CreateHelperWithTwoArgs(LoaderAllocator * pAllocator, TADD
     p += 8;
 
     *p++ = X86_INSTR_JMP_REL32; // jmp rel32
-    *(INT32 *)p = rel32UsingJumpStub((INT32 *)p, target, NULL, pAllocator);
+    *(INT32 *)p = rel32UsingJumpStub((INT32 *)(p + rxOffset), target, NULL, pAllocator);
     p += 4;
 
     END_DYNAMIC_HELPER_EMIT();
@@ -1100,7 +1113,7 @@ PCODE DynamicHelpers::CreateHelperWithTwoArgs(LoaderAllocator * pAllocator, TADD
     p += 8;
 
     *p++ = X86_INSTR_JMP_REL32; // jmp rel32
-    *(INT32 *)p = rel32UsingJumpStub((INT32 *)p, target, NULL, pAllocator);
+    *(INT32 *)p = rel32UsingJumpStub((INT32 *)(p + rxOffset), target, NULL, pAllocator);
     p += 4;
 
     END_DYNAMIC_HELPER_EMIT();
@@ -1117,9 +1130,10 @@ PCODE DynamicHelpers::CreateDictionaryLookupHelper(LoaderAllocator * pAllocator,
         GetEEFuncEntryPoint(JIT_GenericHandleClassWithSlotAndModule));
 
     GenericHandleArgs * pArgs = (GenericHandleArgs *)(void *)pAllocator->GetDynamicHelpersHeap()->AllocAlignedMem(sizeof(GenericHandleArgs), DYNAMIC_HELPER_ALIGNMENT);
-    pArgs->dictionaryIndexAndSlot = dictionaryIndexAndSlot;
-    pArgs->signature = pLookup->signature;
-    pArgs->module = (CORINFO_MODULE_HANDLE)pModule;
+    ExecutableWriterHolder<GenericHandleArgs> argsWriterHolder(pArgs, sizeof(GenericHandleArgs));
+    argsWriterHolder.GetRW()->dictionaryIndexAndSlot = dictionaryIndexAndSlot;
+    argsWriterHolder.GetRW()->signature = pLookup->signature;
+    argsWriterHolder.GetRW()->module = (CORINFO_MODULE_HANDLE)pModule;
 
     WORD slotOffset = (WORD)(dictionaryIndexAndSlot & 0xFFFF) * sizeof(Dictionary*);
 
@@ -1131,7 +1145,7 @@ PCODE DynamicHelpers::CreateDictionaryLookupHelper(LoaderAllocator * pAllocator,
         // rcx/rdi contains the generic context parameter
         // mov rdx/rsi,pArgs
         // jmp helperAddress
-        EmitHelperWithArg(p, pAllocator, (TADDR)pArgs, helperAddress);
+        EmitHelperWithArg(p, rxOffset, pAllocator, (TADDR)pArgs, helperAddress);
 
         END_DYNAMIC_HELPER_EMIT();
     }
@@ -1238,7 +1252,7 @@ PCODE DynamicHelpers::CreateDictionaryLookupHelper(LoaderAllocator * pAllocator,
 
                 // mov rdx|rsi,pArgs
                 // jmp helperAddress
-                EmitHelperWithArg(p, pAllocator, (TADDR)pArgs, helperAddress);
+                EmitHelperWithArg(p, rxOffset, pAllocator, (TADDR)pArgs, helperAddress);
             }
         }
 

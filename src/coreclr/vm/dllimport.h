@@ -9,19 +9,16 @@
 
 #include "util.hpp"
 
-class ILStubHashBlob;
-class NDirectStubParameters;
 struct PInvokeStaticSigInfo;
-class LoadLibErrorTracker;
 
 // This structure groups together data that describe the signature for which a marshaling stub is being generated.
 struct StubSigDesc
 {
 public:
-    StubSigDesc(MethodDesc * pMD, PInvokeStaticSigInfo* pSigInfo = NULL);
-    StubSigDesc(MethodDesc*  pMD, Signature sig, Module* m_pModule);
-    StubSigDesc(MethodTable* pMT, Signature sig, Module* m_pModule);
-    StubSigDesc(std::nullptr_t, Signature sig, Module* m_pModule);
+    StubSigDesc(MethodDesc* pMD);
+    StubSigDesc(MethodDesc*  pMD, const Signature& sig, Module* m_pModule);
+    StubSigDesc(MethodTable* pMT, const Signature& sig, Module* m_pModule);
+    StubSigDesc(const Signature& sig, Module* m_pModule);
 
     MethodDesc        *m_pMD;
     MethodTable       *m_pMT;
@@ -58,9 +55,17 @@ public:
 //=======================================================================
 class NDirect
 {
-    friend class NDirectMethodDesc;
-
 public:
+    // Get the calling convention and whether to suppress GC transition for a method by checking:
+    //   - SuppressGCTransition attribute
+    //   - For delegates: UnmanagedFunctionPointer attribute
+    //   - For non-delegates: P/Invoke metadata
+    //   - Any modopts encoded in the method signature
+    // If no calling convention is specified, the default calling convention is returned
+    // This function ignores any errors when reading attributes/metadata, treating them as
+    // if no calling convention was specified through that mechanism.
+    static void GetCallingConvention_IgnoreErrors(_In_ MethodDesc* pMD, _Out_opt_ CorInfoCallConvExtension* callConv, _Out_opt_ bool* suppressGCTransition);
+
     //---------------------------------------------------------
     // Does a class or method have a NAT_L CustomAttribute?
     //
@@ -70,24 +75,19 @@ public:
     //---------------------------------------------------------
     static HRESULT HasNAT_LAttribute(IMDInternalImport *pInternalImport, mdToken token, DWORD dwMemberAttrs);
 
-    static LPVOID NDirectGetEntryPoint(NDirectMethodDesc *pMD, NATIVE_LIBRARY_HANDLE hMod);
-    static NATIVE_LIBRARY_HANDLE LoadLibraryFromPath(LPCWSTR libraryPath, BOOL throwOnError);
-    static NATIVE_LIBRARY_HANDLE LoadLibraryByName(LPCWSTR name, Assembly *callingAssembly,
-                                                   BOOL hasDllImportSearchPathFlags, DWORD dllImportSearchPathFlags,
-                                                   BOOL throwOnError);
-    static NATIVE_LIBRARY_HANDLE LoadNativeLibrary(NDirectMethodDesc * pMD, LoadLibErrorTracker *pErrorTracker);
-    static void FreeNativeLibrary(NATIVE_LIBRARY_HANDLE handle);
-    static INT_PTR GetNativeLibraryExport(NATIVE_LIBRARY_HANDLE handle, LPCWSTR symbolName, BOOL throwOnError);
-
-    static VOID NDirectLink(NDirectMethodDesc *pMD);
-
     // Either MD or signature & module must be given.
+    // Note: This method can be called at a time when the associated NDirectMethodDesc
+    // has not been fully populated. This means the optimized path for this call is to rely
+    // on the most basic P/Invoke metadata. An example when this can happen is when the JIT
+    // is compiling a method containing a P/Invoke that is being considered for inlining.
     static BOOL MarshalingRequired(
         _In_opt_ MethodDesc* pMD,
         _In_opt_ PCCOR_SIGNATURE pSig = NULL,
         _In_opt_ Module* pModule = NULL,
         _In_ bool unmanagedCallersOnlyRequiresMarshalling = true);
-    static void PopulateNDirectMethodDesc(NDirectMethodDesc* pNMD, PInvokeStaticSigInfo* pSigInfo);
+
+    static void PopulateNDirectMethodDesc(_Inout_ NDirectMethodDesc* pNMD);
+    static void InitializeSigInfoAndPopulateNDirectMethodDesc(_Inout_ NDirectMethodDesc* pNMD, _Inout_ PInvokeStaticSigInfo* pSigInfo);
 
     static MethodDesc* CreateCLRToNativeILStub(
                     StubSigDesc*             pSigDesc,
@@ -114,14 +114,8 @@ public:
                              MethodDesc* pMD);
 
     static MethodDesc*      GetILStubMethodDesc(NDirectMethodDesc* pNMD, PInvokeStaticSigInfo* pSigInfo, DWORD dwNGenStubFlags);
-    static MethodDesc*      GetStubMethodDesc(MethodDesc *pTargetMD, NDirectStubParameters* pParams, ILStubHashBlob* pHashParams, AllocMemTracker* pamTracker, bool& bILStubCreator, MethodDesc* pLastMD);
-    static void             AddMethodDescChunkWithLockTaken(NDirectStubParameters* pParams, MethodDesc *pMD);
-    static void             RemoveILStubCacheEntry(NDirectStubParameters* pParams, ILStubHashBlob* pHashParams);
-    static ILStubHashBlob*  CreateHashBlob(NDirectStubParameters* pParams);
     static PCODE            GetStubForILStub(NDirectMethodDesc* pNMD, MethodDesc** ppStubMD, DWORD dwStubFlags);
     static PCODE            GetStubForILStub(MethodDesc* pMD, MethodDesc** ppStubMD, DWORD dwStubFlags);
-
-    inline static ILStubCache*     GetILStubCache(NDirectStubParameters* pParams);
 
 private:
     NDirect() {LIMITED_METHOD_CONTRACT;};     // prevent "new"'s on this class
@@ -154,7 +148,7 @@ enum NDirectStubFlags
     NDIRECTSTUB_FL_SUPPRESSGCTRANSITION     = 0x00008000,
     NDIRECTSTUB_FL_STUB_HAS_THIS            = 0x00010000,
     NDIRECTSTUB_FL_TARGET_HAS_THIS          = 0x00020000,
-    // unused                               = 0x00040000,
+    NDIRECTSTUB_FL_CHECK_PENDING_EXCEPTION  = 0x00040000,
     // unused                               = 0x00080000,
     // unused                               = 0x00100000,
     // unused                               = 0x00200000,
@@ -213,6 +207,7 @@ inline bool SF_IsCALLIStub             (DWORD dwStubFlags) { LIMITED_METHOD_CONT
 inline bool SF_IsStubWithCctorTrigger  (DWORD dwStubFlags) { LIMITED_METHOD_CONTRACT; return (dwStubFlags < NDIRECTSTUB_FL_INVALID && 0 != (dwStubFlags & NDIRECTSTUB_FL_TRIGGERCCTOR)); }
 inline bool SF_IsForNumParamBytes      (DWORD dwStubFlags) { LIMITED_METHOD_CONTRACT; return (dwStubFlags < NDIRECTSTUB_FL_INVALID && 0 != (dwStubFlags & NDIRECTSTUB_FL_FOR_NUMPARAMBYTES)); }
 inline bool SF_IsStructMarshalStub     (DWORD dwStubFlags) { LIMITED_METHOD_CONTRACT; return (dwStubFlags < NDIRECTSTUB_FL_INVALID && 0 != (dwStubFlags & NDIRECTSTUB_FL_STRUCT_MARSHAL)); }
+inline bool SF_IsCheckPendingException (DWORD dwStubFlags) { LIMITED_METHOD_CONTRACT; return (dwStubFlags < NDIRECTSTUB_FL_INVALID && 0 != (dwStubFlags & NDIRECTSTUB_FL_CHECK_PENDING_EXCEPTION)); }
 
 #ifdef FEATURE_ARRAYSTUB_AS_IL
 inline bool SF_IsArrayOpStub           (DWORD dwStubFlags) { LIMITED_METHOD_CONTRACT; return ((dwStubFlags == ILSTUB_ARRAYOP_GET) ||
@@ -316,85 +311,26 @@ enum ETW_IL_STUB_FLAGS
 struct PInvokeStaticSigInfo
 {
 public:
-    enum ThrowOnError { THROW_ON_ERROR = TRUE, NO_THROW_ON_ERROR = FALSE };
-
-public:
     PInvokeStaticSigInfo() { LIMITED_METHOD_CONTRACT; }
 
-    PInvokeStaticSigInfo(Signature sig, Module* pModule);
+    PInvokeStaticSigInfo(_In_ const Signature& sig, _In_ Module* pModule);
 
-    PInvokeStaticSigInfo(MethodDesc* pMdDelegate, ThrowOnError throwOnError = THROW_ON_ERROR);
+    PInvokeStaticSigInfo(_In_ MethodDesc* pMdDelegate);
 
-    PInvokeStaticSigInfo(MethodDesc* pMD, LPCUTF8 *pLibName, LPCUTF8 *pEntryPointName);
-
-public:
-    void ReportErrors();
+    PInvokeStaticSigInfo(_In_ MethodDesc* pMD, _Outptr_opt_ LPCUTF8* pLibName, _Outptr_opt_ LPCUTF8* pEntryPointName);
 
 private:
-    void InitCallConv(CorInfoCallConvExtension callConv, BOOL bIsVarArg);
-    void DllImportInit(MethodDesc* pMD, LPCUTF8 *pLibName, LPCUTF8 *pEntryPointName);
-    void PreInit(Module* pModule, MethodTable *pClass);
-    void PreInit(MethodDesc* pMD);
-    void SetError(WORD error) { if (!m_error) m_error = error; }
-    void BestGuessNDirectDefaults(MethodDesc* pMD);
-
-public:
-    DWORD GetStubFlags()
-    {
-        WRAPPER_NO_CONTRACT;
-        return (GetThrowOnUnmappableChar() ? NDIRECTSTUB_FL_THROWONUNMAPPABLECHAR : 0) |
-               (GetBestFitMapping() ? NDIRECTSTUB_FL_BESTFIT : 0) |
-               (IsDelegateInterop() ? NDIRECTSTUB_FL_DELEGATE : 0);
-    }
-    Module* GetModule() { LIMITED_METHOD_CONTRACT; return m_pModule; }
-    BOOL IsStatic() { LIMITED_METHOD_CONTRACT; return m_wFlags & PINVOKE_STATIC_SIGINFO_IS_STATIC; }
-    void SetIsStatic (BOOL isStatic)
-    {
-        LIMITED_METHOD_CONTRACT;
-        if (isStatic)
-            m_wFlags |= PINVOKE_STATIC_SIGINFO_IS_STATIC;
-        else
-            m_wFlags &= ~PINVOKE_STATIC_SIGINFO_IS_STATIC;
-    }
-    BOOL GetThrowOnUnmappableChar() { LIMITED_METHOD_CONTRACT; return m_wFlags & PINVOKE_STATIC_SIGINFO_THROW_ON_UNMAPPABLE_CHAR; }
-    void SetThrowOnUnmappableChar (BOOL throwOnUnmappableChar)
-    {
-        LIMITED_METHOD_CONTRACT;
-        if (throwOnUnmappableChar)
-            m_wFlags |= PINVOKE_STATIC_SIGINFO_THROW_ON_UNMAPPABLE_CHAR;
-        else
-            m_wFlags &= ~PINVOKE_STATIC_SIGINFO_THROW_ON_UNMAPPABLE_CHAR;
-    }
-    BOOL GetBestFitMapping() { LIMITED_METHOD_CONTRACT; return m_wFlags & PINVOKE_STATIC_SIGINFO_BEST_FIT; }
-    void SetBestFitMapping (BOOL bestFit)
-    {
-        LIMITED_METHOD_CONTRACT;
-        if (bestFit)
-            m_wFlags |= PINVOKE_STATIC_SIGINFO_BEST_FIT;
-        else
-            m_wFlags &= ~PINVOKE_STATIC_SIGINFO_BEST_FIT;
-    }
-    BOOL IsDelegateInterop() { LIMITED_METHOD_CONTRACT; return m_wFlags & PINVOKE_STATIC_SIGINFO_IS_DELEGATE_INTEROP; }
-    void SetIsDelegateInterop (BOOL delegateInterop)
-    {
-        LIMITED_METHOD_CONTRACT;
-        if (delegateInterop)
-            m_wFlags |= PINVOKE_STATIC_SIGINFO_IS_DELEGATE_INTEROP;
-        else
-            m_wFlags &= ~PINVOKE_STATIC_SIGINFO_IS_DELEGATE_INTEROP;
-    }
-    CorInfoCallConvExtension GetCallConv() { LIMITED_METHOD_CONTRACT; return m_callConv; }
-    Signature GetSignature() { LIMITED_METHOD_CONTRACT; return m_sig; }
+    void ThrowError(_In_ WORD errorResourceID);
+    void InitCallConv(_In_ CorInfoCallConvExtension callConv, _In_ MethodDesc* pMD);
+    void InitCallConv(_In_ CorInfoCallConvExtension callConv, _In_ BOOL bIsVarArg);
+    void DllImportInit(_In_ MethodDesc* pMD, _Outptr_opt_ LPCUTF8* pLibName, _Outptr_opt_ LPCUTF8* pEntryPointName);
+    void PreInit(_In_ Module* pModule, _In_ MethodTable* pClass);
+    void PreInit(_In_ MethodDesc* pMD);
 
 private:
-    Module* m_pModule;
-    Signature m_sig;
-    CorInfoCallConvExtension m_callConv;
-    WORD m_error;
-
     enum
     {
-        PINVOKE_STATIC_SIGINFO_IS_STATIC = 0x0001,
+        PINVOKE_STATIC_SIGINFO_SUPPRESS_GC_TRANSITION = 0x0001,
         PINVOKE_STATIC_SIGINFO_THROW_ON_UNMAPPABLE_CHAR = 0x0002,
         PINVOKE_STATIC_SIGINFO_BEST_FIT = 0x0004,
 
@@ -407,11 +343,71 @@ private:
     };
     #define COR_NATIVE_LINK_TYPE_SHIFT 3 // Keep in synch with above mask
     #define COR_NATIVE_LINK_FLAGS_SHIFT 6  // Keep in synch with above mask
-    WORD m_wFlags;
 
-  public:
-    CorNativeLinkType GetCharSet() { LIMITED_METHOD_CONTRACT; return (CorNativeLinkType)((m_wFlags & COR_NATIVE_LINK_TYPE_MASK) >> COR_NATIVE_LINK_TYPE_SHIFT); }
-    CorNativeLinkFlags GetLinkFlags() { LIMITED_METHOD_CONTRACT; return (CorNativeLinkFlags)((m_wFlags & COR_NATIVE_LINK_FLAGS_MASK) >> COR_NATIVE_LINK_FLAGS_SHIFT); }
+public: // public getters
+    DWORD GetStubFlags() const
+    {
+        WRAPPER_NO_CONTRACT;
+        DWORD flags = 0;
+        if (GetThrowOnUnmappableChar())
+            flags |= NDIRECTSTUB_FL_THROWONUNMAPPABLECHAR;
+
+        if (GetBestFitMapping())
+            flags |= NDIRECTSTUB_FL_BESTFIT;
+
+        if (IsDelegateInterop())
+            flags |= NDIRECTSTUB_FL_DELEGATE;
+
+        if (ShouldSuppressGCTransition())
+            flags |= NDIRECTSTUB_FL_SUPPRESSGCTRANSITION;
+
+        return flags;
+    }
+    Module* GetModule() const { LIMITED_METHOD_CONTRACT; return m_pModule; }
+    BOOL IsDelegateInterop() const { LIMITED_METHOD_CONTRACT; return m_wFlags & PINVOKE_STATIC_SIGINFO_IS_DELEGATE_INTEROP; }
+    CorInfoCallConvExtension GetCallConv() const { LIMITED_METHOD_CONTRACT; return m_callConv; }
+    Signature GetSignature() const { LIMITED_METHOD_CONTRACT; return m_sig; }
+    CorNativeLinkType GetCharSet() const { LIMITED_METHOD_CONTRACT; return (CorNativeLinkType)((m_wFlags & COR_NATIVE_LINK_TYPE_MASK) >> COR_NATIVE_LINK_TYPE_SHIFT); }
+    CorNativeLinkFlags GetLinkFlags() const { LIMITED_METHOD_CONTRACT; return (CorNativeLinkFlags)((m_wFlags & COR_NATIVE_LINK_FLAGS_MASK) >> COR_NATIVE_LINK_FLAGS_SHIFT); }
+
+public: // private getters
+    BOOL GetThrowOnUnmappableChar() const { LIMITED_METHOD_CONTRACT; return m_wFlags & PINVOKE_STATIC_SIGINFO_THROW_ON_UNMAPPABLE_CHAR; }
+    BOOL GetBestFitMapping() const { LIMITED_METHOD_CONTRACT; return m_wFlags & PINVOKE_STATIC_SIGINFO_BEST_FIT; }
+    BOOL ShouldSuppressGCTransition() const { LIMITED_METHOD_CONTRACT; return m_wFlags & PINVOKE_STATIC_SIGINFO_SUPPRESS_GC_TRANSITION; }
+
+private: // setters
+    void SetThrowOnUnmappableChar(BOOL throwOnUnmappableChar)
+    {
+        LIMITED_METHOD_CONTRACT;
+        if (throwOnUnmappableChar)
+            m_wFlags |= PINVOKE_STATIC_SIGINFO_THROW_ON_UNMAPPABLE_CHAR;
+        else
+            m_wFlags &= ~PINVOKE_STATIC_SIGINFO_THROW_ON_UNMAPPABLE_CHAR;
+    }
+    void SetBestFitMapping(BOOL bestFit)
+    {
+        LIMITED_METHOD_CONTRACT;
+        if (bestFit)
+            m_wFlags |= PINVOKE_STATIC_SIGINFO_BEST_FIT;
+        else
+            m_wFlags &= ~PINVOKE_STATIC_SIGINFO_BEST_FIT;
+    }
+    void SetShouldSuppressGCTransition(BOOL suppress)
+    {
+        LIMITED_METHOD_CONTRACT;
+        if (suppress)
+            m_wFlags |= PINVOKE_STATIC_SIGINFO_SUPPRESS_GC_TRANSITION;
+        else
+            m_wFlags &= ~PINVOKE_STATIC_SIGINFO_SUPPRESS_GC_TRANSITION;
+    }
+    void SetIsDelegateInterop(BOOL delegateInterop)
+    {
+        LIMITED_METHOD_CONTRACT;
+        if (delegateInterop)
+            m_wFlags |= PINVOKE_STATIC_SIGINFO_IS_DELEGATE_INTEROP;
+        else
+            m_wFlags &= ~PINVOKE_STATIC_SIGINFO_IS_DELEGATE_INTEROP;
+    }
     void SetCharSet(CorNativeLinkType linktype)
     {
         LIMITED_METHOD_CONTRACT;
@@ -430,6 +426,12 @@ private:
         // Then set the given value
         m_wFlags |= (linkflags << COR_NATIVE_LINK_FLAGS_SHIFT);
     }
+
+private:
+    Module* m_pModule;
+    Signature m_sig;
+    CorInfoCallConvExtension m_callConv;
+    WORD m_wFlags;
 };
 
 
@@ -565,53 +567,6 @@ protected:
 BOOL HeuristicDoesThisLookLikeAGetLastErrorCall(LPBYTE pTarget);
 DWORD STDMETHODCALLTYPE FalseGetLastError();
 
-class NDirectStubParameters
-{
-public:
-
-    NDirectStubParameters(Signature                sig,
-                          SigTypeContext*          pTypeContext,
-                          Module*                  pModule,
-                          Module*                  pLoaderModule,
-                          CorNativeLinkType        nlType,
-                          CorNativeLinkFlags       nlFlags,
-                          CorInfoCallConvExtension unmgdCallConv,
-                          DWORD                    dwStubFlags,  // NDirectStubFlags
-                          int                      nParamTokens,
-                          mdParamDef*              pParamTokenArray,
-                          int                      iLCIDArg,
-                          MethodTable*             pMT
-                          ) :
-        m_sig(sig),
-        m_pTypeContext(pTypeContext),
-        m_pModule(pModule),
-        m_pLoaderModule(pLoaderModule),
-        m_pParamTokenArray(pParamTokenArray),
-        m_unmgdCallConv(unmgdCallConv),
-        m_nlType(nlType),
-        m_nlFlags(nlFlags),
-        m_dwStubFlags(dwStubFlags),
-        m_iLCIDArg(iLCIDArg),
-        m_nParamTokens(nParamTokens),
-        m_pMT(pMT)
-    {
-        LIMITED_METHOD_CONTRACT;
-    }
-
-    Signature                m_sig;
-    SigTypeContext*          m_pTypeContext;
-    Module*                  m_pModule;
-    Module*                  m_pLoaderModule;
-    mdParamDef*              m_pParamTokenArray;
-    CorInfoCallConvExtension m_unmgdCallConv;
-    CorNativeLinkType        m_nlType;
-    CorNativeLinkFlags       m_nlFlags;
-    DWORD                    m_dwStubFlags;
-    int                      m_iLCIDArg;
-    int                      m_nParamTokens;
-    MethodTable*             m_pMT;
-};
-
 PCODE GetILStubForCalli(VASigCookie *pVASigCookie, MethodDesc *pMD);
 
 MethodDesc *GetStubMethodDescFromInteropMethodDesc(MethodDesc* pMD, DWORD dwStubFlags);
@@ -635,104 +590,5 @@ void MarshalStructViaILStubCode(PCODE pStubCode, void* pManagedData, void* pNati
 //
 #define ETW_IL_STUB_EVENT_STRING_FIELD_MAXSIZE      (1024)
 #define ETW_IL_STUB_EVENT_CODE_STRING_FIELD_MAXSIZE (1024*32)
-
-class SString;
-
-//
-// Truncates a SString by first converting it to unicode and truncate it
-// if it is larger than size. "..." will be appened if it is truncated.
-//
-void TruncateUnicodeString(SString &string, COUNT_T bufSize);
-
-//=======================================================================
-// ILStubCreatorHelper
-// The class is used as a helper class in CreateInteropILStub. It mainly
-// puts two methods NDirect::GetStubMethodDesc and NDirect::RemoveILStubCacheEntry
-// into a holder. See CreateInteropILStub for more information
-//=======================================================================
-class ILStubCreatorHelper
-{
-public:
-    ILStubCreatorHelper(MethodDesc *pTargetMD,
-                        NDirectStubParameters* pParams
-                        ) :
-        m_pTargetMD(pTargetMD),
-        m_pParams(pParams),
-        m_pStubMD(NULL),
-        m_bILStubCreator(false)
-    {
-        STANDARD_VM_CONTRACT;
-        m_pHashParams = NDirect::CreateHashBlob(m_pParams);
-    }
-
-    ~ILStubCreatorHelper()
-    {
-        CONTRACTL
-        {
-            THROWS;
-            GC_TRIGGERS;
-            MODE_ANY;
-        }
-        CONTRACTL_END;
-
-        RemoveILStubCacheEntry();
-    }
-
-    inline void GetStubMethodDesc()
-    {
-        WRAPPER_NO_CONTRACT;
-
-        m_pStubMD = NDirect::GetStubMethodDesc(m_pTargetMD, m_pParams, m_pHashParams, &m_amTracker, m_bILStubCreator, m_pStubMD);
-    }
-
-    inline void RemoveILStubCacheEntry()
-    {
-        WRAPPER_NO_CONTRACT;
-
-        if (m_bILStubCreator)
-        {
-            NDirect::RemoveILStubCacheEntry(m_pParams, m_pHashParams);
-            m_bILStubCreator = false;
-        }
-    }
-
-    inline MethodDesc* GetStubMD()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return m_pStubMD;
-    }
-
-    inline void SuppressRelease()
-    {
-        WRAPPER_NO_CONTRACT;
-        m_bILStubCreator = false;
-        m_amTracker.SuppressRelease();
-    }
-
-    DEBUG_NOINLINE static void HolderEnter(ILStubCreatorHelper *pThis)
-    {
-        WRAPPER_NO_CONTRACT;
-        ANNOTATION_SPECIAL_HOLDER_CALLER_NEEDS_DYNAMIC_CONTRACT;
-        pThis->GetStubMethodDesc();
-    }
-
-    DEBUG_NOINLINE static void HolderLeave(ILStubCreatorHelper *pThis)
-    {
-        WRAPPER_NO_CONTRACT;
-        ANNOTATION_SPECIAL_HOLDER_CALLER_NEEDS_DYNAMIC_CONTRACT;
-        pThis->RemoveILStubCacheEntry();
-    }
-
-private:
-    MethodDesc*                      m_pTargetMD;
-    NDirectStubParameters*           m_pParams;
-    NewArrayHolder<ILStubHashBlob>   m_pHashParams;
-    AllocMemTracker*                 m_pAmTracker;
-    MethodDesc*                      m_pStubMD;
-    AllocMemTracker                  m_amTracker;
-    bool                             m_bILStubCreator;     // Only the creator can remove the ILStub from the Cache
-};  //ILStubCreatorHelper
-
-typedef Wrapper<ILStubCreatorHelper*, ILStubCreatorHelper::HolderEnter, ILStubCreatorHelper::HolderLeave> ILStubCreatorHelperHolder;
 
 #endif // __dllimport_h__

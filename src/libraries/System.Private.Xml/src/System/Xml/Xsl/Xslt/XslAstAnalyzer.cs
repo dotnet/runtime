@@ -18,7 +18,7 @@ namespace System.Xml.Xsl.Xslt
 
     // ------------------------------- XslAstAnalyzer -------------------------------
 
-    internal class XslAstAnalyzer : XslVisitor<XslFlags>
+    internal sealed class XslAstAnalyzer : XslVisitor<XslFlags>
     {
         private CompilerScopeManager<VarPar>? _scope;
         private Compiler? _compiler;
@@ -52,7 +52,7 @@ namespace System.Xml.Xsl.Xslt
         /// Represents a graph using hashtable of adjacency lists.
         /// </summary>
         /// <typeparam name="V">Vertex type</typeparam>
-        internal class Graph<V> : Dictionary<V, List<V>?>
+        internal sealed class Graph<V> : Dictionary<V, List<V>?>
             where V : XslNode
         {
             private static readonly IList<V> s_empty = (new List<V>()).AsReadOnly();
@@ -851,7 +851,7 @@ namespace System.Xml.Xsl.Xslt
             public void ReportWarning(string res, params string?[]? args) { }
         }
 
-        internal class XPathAnalyzer : IXPathBuilder<XslFlags>
+        internal sealed class XPathAnalyzer : IXPathBuilder<XslFlags>
         {
             private readonly XPathParser<XslFlags> _xpathParser = new XPathParser<XslFlags>();
             private readonly CompilerScopeManager<VarPar> _scope;
@@ -969,22 +969,22 @@ namespace System.Xml.Xsl.Xslt
                 }
             }
 
-            public virtual void StartBuild()
+            public void StartBuild()
             {
             }
 
-            public virtual XslFlags EndBuild(XslFlags result)
+            public XslFlags EndBuild(XslFlags result)
             {
                 return result;
             }
 
-            public virtual XslFlags String(string value)
+            public XslFlags String(string value)
             {
                 _typeDonor = null;
                 return XslFlags.String;
             }
 
-            public virtual XslFlags Number(double value)
+            public XslFlags Number(double value)
             {
                 _typeDonor = null;
                 return XslFlags.Number;
@@ -1009,7 +1009,7 @@ namespace System.Xml.Xsl.Xslt
                 /*Union     */ XslFlags.Nodeset,
             };
 
-            public virtual XslFlags Operator(XPathOperator op, XslFlags left, XslFlags right)
+            public XslFlags Operator(XPathOperator op, XslFlags left, XslFlags right)
             {
                 _typeDonor = null;
                 Debug.Assert(op != XPathOperator.Unknown);
@@ -1017,7 +1017,7 @@ namespace System.Xml.Xsl.Xslt
                 return result | s_operatorType[(int)op];
             }
 
-            public virtual XslFlags Axis(XPathAxis xpathAxis, XPathNodeType nodeType, string? prefix, string? name)
+            public XslFlags Axis(XPathAxis xpathAxis, XPathNodeType nodeType, string? prefix, string? name)
             {
                 _typeDonor = null;
                 if (xpathAxis == XPathAxis.Self && nodeType == XPathNodeType.All && prefix == null && name == null)
@@ -1031,20 +1031,20 @@ namespace System.Xml.Xsl.Xslt
             }
 
             // "left/right"
-            public virtual XslFlags JoinStep(XslFlags left, XslFlags right)
+            public XslFlags JoinStep(XslFlags left, XslFlags right)
             {
                 _typeDonor = null;
                 return (left & ~XslFlags.TypeFilter) | XslFlags.Nodeset; // "ex:Foo(position())/Bar"
             }
 
             // "nodeset[predicate]"
-            public virtual XslFlags Predicate(XslFlags nodeset, XslFlags predicate, bool isReverseStep)
+            public XslFlags Predicate(XslFlags nodeset, XslFlags predicate, bool isReverseStep)
             {
                 _typeDonor = null;
                 return (nodeset & ~XslFlags.TypeFilter) | XslFlags.Nodeset | (predicate & XslFlags.SideEffects); // "ex:Foo(position())[Bar]"
             }
 
-            public virtual XslFlags Variable(string prefix, string name)
+            public XslFlags Variable(string prefix, string name)
             {
                 _typeDonor = ResolveVariable(prefix, name);
                 if (_typeDonor == null)
@@ -1054,7 +1054,10 @@ namespace System.Xml.Xsl.Xslt
                 return XslFlags.None;
             }
 
-            public virtual XslFlags Function(string prefix, string name, IList<XslFlags> args)
+            [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+                Justification = "Supressing warning about not having the RequiresUnreferencedCode attribute since xsl Scripts are " +
+                "not supported in .NET Core")]
+            public XslFlags Function(string prefix, string name, IList<XslFlags> args)
             {
                 _typeDonor = null;
 

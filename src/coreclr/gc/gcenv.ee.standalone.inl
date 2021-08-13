@@ -11,6 +11,8 @@
 // will be fowarded to this interface instance.
 extern IGCToCLR* g_theGCToCLR;
 
+struct StressLogMsg;
+
 // When we are building the GC in a standalone environment, we
 // will be dispatching virtually against g_theGCToCLR to call
 // into the EE. This class provides an identical API to the existing
@@ -40,16 +42,16 @@ inline void GCToEEInterface::GcStartWork(int condemned, int max_gen)
     g_theGCToCLR->GcStartWork(condemned, max_gen);
 }
 
+inline void GCToEEInterface::BeforeGcScanRoots(int condemned, bool is_bgc, bool is_concurrent)
+{
+    assert(g_theGCToCLR != nullptr);
+    g_theGCToCLR->BeforeGcScanRoots(condemned, is_bgc, is_concurrent);
+}
+
 inline void GCToEEInterface::AfterGcScanRoots(int condemned, int max_gen, ScanContext* sc)
 {
     assert(g_theGCToCLR != nullptr);
     g_theGCToCLR->AfterGcScanRoots(condemned, max_gen, sc);
-}
-
-inline void GCToEEInterface::GcBeforeBGCSweepWork()
-{
-    assert(g_theGCToCLR != nullptr);
-    g_theGCToCLR->GcBeforeBGCSweepWork();
 }
 
 inline void GCToEEInterface::GcDone(int condemned)
@@ -292,6 +294,16 @@ inline void GCToEEInterface::UpdateGCEventStatus(int publicLevel, int publicKeyw
 #if defined(__linux__)
     g_theGCToCLR->UpdateGCEventStatus(publicLevel, publicKeywords, privateLevel, privateKeywords);
 #endif // __linux__
+}
+
+inline void GCToEEInterface::LogStressMsg(unsigned level, unsigned facility, const StressLogMsg & msg)
+{
+    g_theGCToCLR->LogStressMsg(level, facility, msg);
+}
+
+inline uint32_t GCToEEInterface::GetCurrentProcessCpuCount()
+{
+    return g_theGCToCLR->GetCurrentProcessCpuCount();
 }
 
 #endif // __GCTOENV_EE_STANDALONE_INL__

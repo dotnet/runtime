@@ -145,7 +145,7 @@ SHARED_API int32_t HOSTFXR_CALLTYPE hostfxr_resolve_sdk(
         return 0;
     }
 
-    unsigned long non_negative_buffer_size = static_cast<unsigned long>(buffer_size);
+    size_t non_negative_buffer_size = static_cast<size_t>(buffer_size);
     if (sdk_path.size() < non_negative_buffer_size)
     {
         size_t length = sdk_path.copy(buffer, non_negative_buffer_size - 1);
@@ -158,7 +158,7 @@ SHARED_API int32_t HOSTFXR_CALLTYPE hostfxr_resolve_sdk(
         trace::info(_X("hostfxr_resolve_sdk received a buffer that is too small to hold the located SDK path."));
     }
 
-    return sdk_path.size() + 1;
+    return static_cast<int32_t>(sdk_path.size() + 1);
 }
 
 enum hostfxr_resolve_sdk2_flags_t : int32_t
@@ -325,7 +325,7 @@ SHARED_API int32_t HOSTFXR_CALLTYPE hostfxr_get_available_sdks(
             sdk_dirs.push_back(sdk_info.full_path.c_str());
         }
 
-        result(sdk_dirs.size(), &sdk_dirs[0]);
+        result(static_cast<int32_t>(sdk_dirs.size()), &sdk_dirs[0]);
     }
 
     return StatusCode::Success;

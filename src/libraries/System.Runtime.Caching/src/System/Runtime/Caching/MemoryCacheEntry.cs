@@ -11,7 +11,7 @@ using System.Threading;
 
 namespace System.Runtime.Caching
 {
-    internal class MemoryCacheEntry : MemoryCacheKey
+    internal sealed class MemoryCacheEntry : MemoryCacheKey
     {
         private readonly object _value;
         private readonly DateTime _utcCreated;
@@ -29,7 +29,7 @@ namespace System.Runtime.Caching
         private readonly CacheEntryRemovedCallback _callback;
         private SeldomUsedFields _fields; // optimization to reduce workingset when the entry hasn't any dependencies
 
-        private class SeldomUsedFields
+        private sealed class SeldomUsedFields
         {
             internal Collection<ChangeMonitor> _dependencies; // the entry's dependency needs to be disposed when the entry is released
             internal Dictionary<MemoryCacheEntryChangeMonitor, MemoryCacheEntryChangeMonitor> _dependents;  // dependents must be notified when this entry is removed
@@ -144,7 +144,10 @@ namespace System.Runtime.Caching
 
             _callback = removedCallback;
 
-            if (dependencies != null)
+            // CacheItemPolicy.ChangeMonitors is frequently the source for 'dependencies', and that property
+            // is never null. So check that the collection of dependencies is not empty before allocating
+            // the 'seldom' used fields.
+            if (dependencies != null && dependencies.Count > 0)
             {
                 _fields = new SeldomUsedFields();
                 _fields._dependencies = dependencies;

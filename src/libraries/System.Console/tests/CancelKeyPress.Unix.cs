@@ -12,8 +12,10 @@ using Xunit;
 
 public partial class CancelKeyPressTests
 {
-    [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-    public void HandlerInvokedForSigInt()
+    [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void HandlerInvokedForSigInt(bool redirectStandardInput)
     {
         // .NET Core respects ignored disposition for SIGINT/SIGQUIT.
         if (IsSignalIgnored(SIGINT))
@@ -21,13 +23,15 @@ public partial class CancelKeyPressTests
             return;
         }
 
-        HandlerInvokedForSignal(SIGINT);
+        HandlerInvokedForSignal(SIGINT, redirectStandardInput);
     }
 
     [ActiveIssue("https://github.com/dotnet/runtime/issues/38998", TestPlatforms.OSX)]
-    [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+    [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
     [SkipOnMono("Mono doesn't call CancelKeyPress for SIGQUIT.")]
-    public void HandlerInvokedForSigQuit()
+    [InlineData(false)]
+    [InlineData(true)]
+    public void HandlerInvokedForSigQuit(bool redirectStandardInput)
     {
         // .NET Core respects ignored disposition for SIGINT/SIGQUIT.
         if (IsSignalIgnored(SIGQUIT))
@@ -35,7 +39,7 @@ public partial class CancelKeyPressTests
             return;
         }
 
-        HandlerInvokedForSignal(SIGQUIT);
+        HandlerInvokedForSignal(SIGQUIT, redirectStandardInput);
     }
 
     [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
@@ -77,7 +81,7 @@ public partial class CancelKeyPressTests
         }).Dispose();
     }
 
-    private void HandlerInvokedForSignal(int signalOuter)
+    private void HandlerInvokedForSignal(int signalOuter, bool redirectStandardInput)
     {
         // On Windows we could use GenerateConsoleCtrlEvent to send a ctrl-C to the process,
         // however that'll apply to all processes associated with the same group, which will
@@ -87,6 +91,8 @@ public partial class CancelKeyPressTests
 
         // This test sends a SIGINT back to itself... if run in the xunit process, this would end
         // up canceling the rest of xunit's tests.  So we run the test itself in a separate process.
+        RemoteInvokeOptions options = new RemoteInvokeOptions();
+        options.StartInfo.RedirectStandardInput = redirectStandardInput;
         RemoteExecutor.Invoke(signalStr =>
         {
             var tcs = new TaskCompletionSource<ConsoleSpecialKey>();
@@ -111,7 +117,7 @@ public partial class CancelKeyPressTests
             {
                 Console.CancelKeyPress -= handler;
             }
-        }, signalOuter.ToString()).Dispose();
+        }, signalOuter.ToString(), options).Dispose();
     }
 
     private unsafe static bool IsSignalIgnored(int signal)

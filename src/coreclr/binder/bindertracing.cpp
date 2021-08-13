@@ -196,6 +196,8 @@ bool BinderTracing::IsEnabled()
 
 namespace BinderTracing
 {
+    static thread_local bool t_AssemblyLoadStartInProgress = false;
+
     AssemblyBindOperation::AssemblyBindOperation(AssemblySpec *assemblySpec, const WCHAR *assemblyPath)
         : m_bindRequest { assemblySpec, nullptr, assemblyPath }
         , m_populatedBindRequest { false }
@@ -209,6 +211,7 @@ namespace BinderTracing
         if (!BinderTracing::IsEnabled() || ShouldIgnoreBind())
             return;
 
+        t_AssemblyLoadStartInProgress = true;
         PopulateBindRequest(m_bindRequest);
         m_populatedBindRequest = true;
         FireAssemblyLoadStart(m_bindRequest);
@@ -218,6 +221,8 @@ namespace BinderTracing
     {
         if (BinderTracing::IsEnabled() && !ShouldIgnoreBind())
         {
+            t_AssemblyLoadStartInProgress = false;
+
             // Make sure the bind request is populated. Tracing may have been enabled mid-bind.
             if (!m_populatedBindRequest)
                 PopulateBindRequest(m_bindRequest);
@@ -244,9 +249,9 @@ namespace BinderTracing
         if (m_checkedIgnoreBind)
             return m_ignoreBind;
 
-        // ActivityTracker or EventSource may have triggered the system satellite load.
-        // Don't track system satellite binding to avoid potential infinite recursion.
-        m_ignoreBind = m_bindRequest.AssemblySpec->IsCoreLibSatellite();
+        // ActivityTracker or EventSource may have triggered the system satellite load, or load of System.Private.CoreLib
+        // Don't track such bindings to avoid potential infinite recursion.
+        m_ignoreBind = t_AssemblyLoadStartInProgress && (m_bindRequest.AssemblySpec->IsCoreLib() || m_bindRequest.AssemblySpec->IsCoreLibSatellite());
         m_checkedIgnoreBind = true;
         return m_ignoreBind;
     }

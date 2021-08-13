@@ -213,8 +213,9 @@ namespace System.Collections.Generic
         [MethodImpl(MethodImplOptions.NoInlining)]
         private void AddWithResize(T item)
         {
+            Debug.Assert(_size == _items.Length);
             int size = _size;
-            EnsureCapacityCore(size + 1);
+            Grow(size + 1);
             _size = size + 1;
             _items[size] = item;
         }
@@ -405,7 +406,7 @@ namespace System.Collections.Generic
             }
             if (_items.Length < capacity)
             {
-                EnsureCapacityCore(capacity);
+                Grow(capacity);
                 _version++;
             }
 
@@ -413,27 +414,24 @@ namespace System.Collections.Generic
         }
 
         /// <summary>
-        /// Increase the capacity of this list to at least the specified <paramref name="capacity"/> by continuously twice current capacity.
+        /// Increase the capacity of this list to at least the specified <paramref name="capacity"/>.
         /// </summary>
         /// <param name="capacity">The minimum capacity to ensure.</param>
-        private void EnsureCapacityCore(int capacity)
+        private void Grow(int capacity)
         {
-            Debug.Assert(capacity >= 0);
+            Debug.Assert(_items.Length < capacity);
 
-            if (_items.Length < capacity)
-            {
-                int newcapacity = _items.Length == 0 ? DefaultCapacity : 2 * _items.Length;
+            int newcapacity = _items.Length == 0 ? DefaultCapacity : 2 * _items.Length;
 
-                // Allow the list to grow to maximum possible capacity (~2G elements) before encountering overflow.
-                // Note that this check works even when _items.Length overflowed thanks to the (uint) cast
-                if ((uint)newcapacity > Array.MaxArrayLength) newcapacity = Array.MaxArrayLength;
+            // Allow the list to grow to maximum possible capacity (~2G elements) before encountering overflow.
+            // Note that this check works even when _items.Length overflowed thanks to the (uint) cast
+            if ((uint)newcapacity > Array.MaxLength) newcapacity = Array.MaxLength;
 
-                // If the computed capacity is still less than specified, set to the original argument.
-                // Capacities exceeding MaxArrayLength will be surfaced as OutOfMemoryException by Array.Resize.
-                if (newcapacity < capacity) newcapacity = capacity;
+            // If the computed capacity is still less than specified, set to the original argument.
+            // Capacities exceeding Array.MaxLength will be surfaced as OutOfMemoryException by Array.Resize.
+            if (newcapacity < capacity) newcapacity = capacity;
 
-                Capacity = newcapacity;
-            }
+            Capacity = newcapacity;
         }
 
         public bool Exists(Predicate<T> match)
@@ -695,7 +693,7 @@ namespace System.Collections.Generic
             {
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.index, ExceptionResource.ArgumentOutOfRange_ListInsert);
             }
-            if (_size == _items.Length) EnsureCapacityCore(_size + 1);
+            if (_size == _items.Length) Grow(_size + 1);
             if (index < _size)
             {
                 Array.Copy(_items, index, _items, index + 1, _size - index);
@@ -741,7 +739,10 @@ namespace System.Collections.Generic
                 int count = c.Count;
                 if (count > 0)
                 {
-                    EnsureCapacityCore(_size + count);
+                    if (_items.Length - _size < count)
+                    {
+                        Grow(_size + count);
+                    }
                     if (index < _size)
                     {
                         Array.Copy(_items, index, _items, index + count, _size - index);

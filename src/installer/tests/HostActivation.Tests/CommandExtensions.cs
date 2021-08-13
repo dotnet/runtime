@@ -35,8 +35,11 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                 .CaptureStdErr();
         }
 
-        public static Command DotNetRoot(this Command command, string dotNetRoot)
+        public static Command DotNetRoot(this Command command, string dotNetRoot, string architecture = null)
         {
+            if (!string.IsNullOrEmpty(architecture))
+                return command.EnvironmentVariable($"DOTNET_ROOT_{architecture.ToUpper()}", dotNetRoot);
+
             return command
                 .EnvironmentVariable("DOTNET_ROOT", dotNetRoot)
                 .EnvironmentVariable("DOTNET_ROOT(x86)", dotNetRoot);

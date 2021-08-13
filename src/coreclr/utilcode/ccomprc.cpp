@@ -489,6 +489,9 @@ HRESULT CCompRC::LoadString(ResourceCategory eCategory, UINT iResourceID, __out_
 
 HRESULT CCompRC::LoadString(ResourceCategory eCategory, LocaleID langId, UINT iResourceID, __out_ecount(iMax) LPWSTR szBuffer, int iMax, int *pcwchUsed)
 {
+#ifdef DBI_COMPONENT_MONO
+    return E_NOTIMPL;
+#else
     CONTRACTL
     {
         GC_NOTRIGGER;
@@ -535,6 +538,7 @@ HRESULT CCompRC::LoadString(ResourceCategory eCategory, LocaleID langId, UINT iR
     return LoadNativeStringResource(NATIVE_STRING_RESOURCE_TABLE(NATIVE_STRING_RESOURCE_NAME), iResourceID,
       szBuffer, iMax, pcwchUsed);
 #endif // HOST_WINDOWS
+#endif
 }
 
 #ifndef DACCESS_COMPILE

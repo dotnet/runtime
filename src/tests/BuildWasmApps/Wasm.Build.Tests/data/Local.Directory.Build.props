@@ -1,0 +1,17 @@
+<Project>
+  <PropertyGroup>
+    <!-- disable workloads for this emsdk build -->
+    <MSBuildEnableWorkloadResolver>false</MSBuildEnableWorkloadResolver>
+
+    <_WasmTargetsDir Condition="'$(RuntimeSrcDir)' != ''">$(RuntimeSrcDir)\src\mono\wasm\build\</_WasmTargetsDir>
+    <_WasmTargetsDir Condition="'$(WasmBuildSupportDir)' != ''">$(WasmBuildSupportDir)\wasm\</_WasmTargetsDir>
+    <EMSDK_PATH Condition="'$(WasmBuildSupportDir)' != ''">$(WasmBuildSupportDir)\emsdk\</EMSDK_PATH>
+    <PublishTrimmed>true</PublishTrimmed>
+  </PropertyGroup>
+
+  <Import Project="$(_WasmTargetsDir)WasmApp.LocalBuild.props" Condition="Exists('$(_WasmTargetsDir)WasmApp.LocalBuild.props')" />
+
+  <PropertyGroup>
+    <WasmBuildAppDependsOn>PrepareForWasmBuild;$(WasmBuildAppDependsOn)</WasmBuildAppDependsOn>
+  </PropertyGroup>
+</Project>

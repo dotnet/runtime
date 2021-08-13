@@ -6,47 +6,54 @@
 
 #ifdef ENABLE_PERFTRACING
 #include "ep-rt-coreclr.h"
+#include "ds-process-protocol.h"
 #include "ds-profiler-protocol.h"
 #include "ds-dump-protocol.h"
 
 #undef DS_LOG_ALWAYS_0
-#define DS_LOG_ALWAYS_0(msg) STRESS_LOG0(LF_DIAGNOSTICS_PORT, LL_ALWAYS, msg)
+#define DS_LOG_ALWAYS_0(msg) STRESS_LOG0(LF_DIAGNOSTICS_PORT, LL_ALWAYS, msg "\n")
 
 #undef DS_LOG_ALWAYS_1
-#define DS_LOG_ALWAYS_1(msg, data1) STRESS_LOG1(LF_DIAGNOSTICS_PORT, LL_ALWAYS, msg, data1)
+#define DS_LOG_ALWAYS_1(msg, data1) STRESS_LOG1(LF_DIAGNOSTICS_PORT, LL_ALWAYS, msg "\n", data1)
 
 #undef DS_LOG_ALWAYS_2
-#define DS_LOG_ALWAYS_2(msg, data1, data2) STRESS_LOG2(LF_DIAGNOSTICS_PORT, LL_ALWAYS, msg, data1, data2)
+#define DS_LOG_ALWAYS_2(msg, data1, data2) STRESS_LOG2(LF_DIAGNOSTICS_PORT, LL_ALWAYS, msg "\n", data1, data2)
 
 #undef DS_LOG_INFO_0
-#define DS_LOG_INFO_0(msg) STRESS_LOG0(LF_DIAGNOSTICS_PORT, LL_INFO10, msg)
+#define DS_LOG_INFO_0(msg) STRESS_LOG0(LF_DIAGNOSTICS_PORT, LL_INFO10, msg "\n")
 
 #undef DS_LOG_INFO_1
-#define DS_LOG_INFO_1(msg, data1) STRESS_LOG1(LF_DIAGNOSTICS_PORT, LL_INFO10, msg, data1)
+#define DS_LOG_INFO_1(msg, data1) STRESS_LOG1(LF_DIAGNOSTICS_PORT, LL_INFO10, msg "\n", data1)
 
 #undef DS_LOG_INFO_2
-#define DS_LOG_INFO_2(msg, data1, data2) STRESS_LOG2(LF_DIAGNOSTICS_PORT, LL_INFO10, msg, data1, data2)
+#define DS_LOG_INFO_2(msg, data1, data2) STRESS_LOG2(LF_DIAGNOSTICS_PORT, LL_INFO10, msg "\n", data1, data2)
 
 #undef DS_LOG_ERROR_0
-#define DS_LOG_ERROR_0(msg) STRESS_LOG0(LF_DIAGNOSTICS_PORT, LL_ERROR, msg)
+#define DS_LOG_ERROR_0(msg) STRESS_LOG0(LF_DIAGNOSTICS_PORT, LL_ERROR, msg "\n")
 
 #undef DS_LOG_ERROR_1
-#define DS_LOG_ERROR_1(msg, data1) STRESS_LOG1(LF_DIAGNOSTICS_PORT, LL_ERROR, msg, data1)
+#define DS_LOG_ERROR_1(msg, data1) STRESS_LOG1(LF_DIAGNOSTICS_PORT, LL_ERROR, msg "\n", data1)
 
 #undef DS_LOG_ERROR_2
-#define DS_LOG_ERROR_2(msg, data1, data2) STRESS_LOG2(LF_DIAGNOSTICS_PORT, LL_ERROR, msg, data1, data2)
+#define DS_LOG_ERROR_2(msg, data1, data2) STRESS_LOG2(LF_DIAGNOSTICS_PORT, LL_ERROR, msg "\n", data1, data2)
 
 #undef DS_LOG_WARNING_0
-#define DS_LOG_WARNING_0(msg) STRESS_LOG0(LF_DIAGNOSTICS_PORT, LL_WARNING, msg)
+#define DS_LOG_WARNING_0(msg) STRESS_LOG0(LF_DIAGNOSTICS_PORT, LL_WARNING, msg "\n")
 
 #undef DS_LOG_WARNING_1
-#define DS_LOG_WARNING_1(msg, data1) STRESS_LOG1(LF_DIAGNOSTICS_PORT, LL_WARNING, msg, data1)
+#define DS_LOG_WARNING_1(msg, data1) STRESS_LOG1(LF_DIAGNOSTICS_PORT, LL_WARNING, msg "\n", data1)
 
 #undef DS_LOG_WARNING_2
-#define DS_LOG_WARNING_2(msg, data1, data2) STRESS_LOG2(LF_DIAGNOSTICS_PORT, LL_WARNING, msg, data1, data2)
+#define DS_LOG_WARNING_2(msg, data1, data2) STRESS_LOG2(LF_DIAGNOSTICS_PORT, LL_WARNING, msg "\n", data1, data2)
 
 #undef DS_LOG_DEBUG_0
-#define DS_LOG_DEBUG_0(msg) STRESS_LOG0(LF_DIAGNOSTICS_PORT, LL_INFO1000, msg)
+#define DS_LOG_DEBUG_0(msg) STRESS_LOG0(LF_DIAGNOSTICS_PORT, LL_INFO1000, msg "\n")
+
+#undef DS_LOG_DEBUG_1
+#define DS_LOG_DEBUG_1(msg, data1) STRESS_LOG1(LF_DIAGNOSTICS_PORT, LL_INFO1000, msg "\n", data1)
+
+#undef DS_LOG_DEBUG_2
+#define DS_LOG_DEBUG_2(msg, data1, data2) STRESS_LOG2(LF_DIAGNOSTICS_PORT, LL_INFO1000, msg "\n", data1, data2)
 
 #undef DS_ENTER_BLOCKING_PAL_SECTION
 #define DS_ENTER_BLOCKING_PAL_SECTION
@@ -188,20 +195,10 @@ ds_rt_generate_core_dump (DiagnosticsGenerateCoreDumpCommandPayload *payload)
 	ds_ipc_result_t result = DS_IPC_E_FAIL;
 	EX_TRY
 	{
-#ifdef HOST_WIN32
-		if (GenerateCrashDump (reinterpret_cast<LPCWSTR>(ds_generate_core_dump_command_payload_get_dump_name (payload)),
+		if (GenerateDump (reinterpret_cast<LPCWSTR>(ds_generate_core_dump_command_payload_get_dump_name (payload)),
 			static_cast<int32_t>(ds_generate_core_dump_command_payload_get_dump_type (payload)),
 			(ds_generate_core_dump_command_payload_get_diagnostics (payload) != 0) ? true : false))
 			result = DS_IPC_S_OK;
-#else
-		MAKE_UTF8PTR_FROMWIDE_NOTHROW (dump_name, reinterpret_cast<LPCWSTR>(ds_generate_core_dump_command_payload_get_dump_name (payload)));
-		if (dump_name != nullptr) {
-			if (PAL_GenerateCoreDump (dump_name,
-				static_cast<int32_t>(ds_generate_core_dump_command_payload_get_dump_type (payload)),
-				(ds_generate_core_dump_command_payload_get_diagnostics (payload) != 0) ? true : false))
-				result = DS_IPC_S_OK;
-		}
-#endif
 	}
 	EX_CATCH {}
 	EX_END_CATCH(SwallowAllExceptions);
@@ -262,11 +259,11 @@ DS_RT_DEFINE_ARRAY_REVERSE_ITERATOR (port_config_array, ds_rt_port_config_array_
 /*
 * DiagnosticsProfiler.
 */
-
-#ifdef FEATURE_PROFAPI_ATTACH_DETACH
+#ifdef PROFILING_SUPPORTED
 #include "profilinghelper.h"
 #include "profilinghelper.inl"
 
+#ifdef FEATURE_PROFAPI_ATTACH_DETACH
 static
 uint32_t
 ds_rt_profiler_attach (DiagnosticsAttachProfilerCommandPayload *payload)
@@ -279,7 +276,7 @@ ds_rt_profiler_attach (DiagnosticsAttachProfilerCommandPayload *payload)
 	// Certain actions are only allowable during attach, and this flag is how we track it.
 	ClrFlsSetThreadType (ThreadType_ProfAPI_Attach);
 
-	HRESULT hr;
+	HRESULT hr = S_OK;
 	EX_TRY {
 		hr = ProfilingAPIUtility::LoadProfilerForAttach (reinterpret_cast<const CLSID *>(ds_attach_profiler_command_payload_get_profiler_guid_cref (payload)),
 			reinterpret_cast<LPCWSTR>(ds_attach_profiler_command_payload_get_profiler_path (payload)),
@@ -295,6 +292,33 @@ ds_rt_profiler_attach (DiagnosticsAttachProfilerCommandPayload *payload)
 	return hr;
 }
 #endif // FEATURE_PROFAPI_ATTACH_DETACH
+
+static
+uint32_t
+ds_rt_profiler_startup (DiagnosticsStartupProfilerCommandPayload *payload)
+{
+	STATIC_CONTRACT_NOTHROW;
+
+	HRESULT hr = S_OK;
+	EX_TRY {        
+		StoredProfilerNode *profilerData = new StoredProfilerNode();
+		profilerData->guid = *(reinterpret_cast<const CLSID *>(ds_startup_profiler_command_payload_get_profiler_guid_cref (payload)));
+		profilerData->path.Set(reinterpret_cast<LPCWSTR>(ds_startup_profiler_command_payload_get_profiler_path (payload)));
+
+		g_profControlBlock.storedProfilers.InsertHead(profilerData);
+	}
+	EX_CATCH_HRESULT (hr);
+
+	return hr;
+}
+#endif // PROFILING_SUPPORTED
+
+static
+uint32_t
+ds_rt_set_environment_variable (const ep_char16_t *name, const ep_char16_t *value)
+{
+	return SetEnvironmentVariableW(reinterpret_cast<LPCWSTR>(name), reinterpret_cast<LPCWSTR>(value)) ? S_OK : HRESULT_FROM_WIN32(GetLastError());
+}
 
 /*
 * DiagnosticServer.

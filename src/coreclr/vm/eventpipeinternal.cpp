@@ -42,6 +42,7 @@ UINT64 QCALLTYPE EventPipeInternal::Enable(
             format,
             true,
             nullptr,
+            nullptr,
             nullptr);
         EventPipeAdapter::StartStreaming(sessionID);
     }
@@ -162,7 +163,7 @@ int QCALLTYPE EventPipeInternal::EventActivityIdControl(uint32_t controlCode, GU
 
     BEGIN_QCALL;
 
-    Thread *pThread = GetThread();
+    Thread *pThread = GetThreadNULLOk();
     if (pThread == NULL || pActivityId == NULL)
     {
         retVal = 1;

@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Diagnostics
 {
@@ -15,6 +16,8 @@ namespace System.Diagnostics
     /// </summary>
     public abstract partial class DiagnosticSource
     {
+        internal const string WriteRequiresUnreferencedCode = "The type of object being written to DiagnosticSource cannot be discovered statically.";
+
         /// <summary>
         /// Write is a generic way of logging complex payloads.  Each notification
         /// is given a name, which identifies it as well as a object (typically an anonymous type)
@@ -31,6 +34,7 @@ namespace System.Diagnostics
         /// <param name="name">The name of the event being written.</param>
         /// <param name="value">An object that represent the value being passed as a payload for the event.
         /// This is often an anonymous type which contains several sub-values.</param>
+        [RequiresUnreferencedCode(WriteRequiresUnreferencedCode)]
         public abstract void Write(string name, object? value);
 
         /// <summary>

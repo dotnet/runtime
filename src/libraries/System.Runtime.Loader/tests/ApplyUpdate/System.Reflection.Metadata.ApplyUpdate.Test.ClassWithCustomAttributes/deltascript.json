@@ -1,0 +1,6 @@
+{
+    "changes": [
+        {"document": "ClassWithCustomAttributes.cs", "update": "ClassWithCustomAttributes_v1.cs"},
+    ]
+}
+

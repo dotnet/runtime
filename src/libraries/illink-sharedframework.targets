@@ -2,109 +2,47 @@
 
   <Target Name="ILLinkTrimSharedFramework"
           AfterTargets="Build"
-          DependsOnTargets="SetCommonILLinkArgs">
+          DependsOnTargets="PrepareForAssembliesTrim">
 
     <Message Text="Trimming $(PackageRID) runtime pack assemblies with ILLinker..." Importance="high" />
 
     <PropertyGroup>
-      <LibrariesTrimmedArtifactsPath>$([MSBuild]::NormalizePath('$(ArtifactsBinDir)', 'ILLinkTrimAssembly', '$(BuildSettings)', 'trimmed-runtimepack'))</LibrariesTrimmedArtifactsPath>
+      <LibrariesTrimmedArtifactsPath>$([MSBuild]::NormalizePath('$(ILLinkTrimAssemblyArtifactsRootDir)', 'trimmed-runtimepack'))</LibrariesTrimmedArtifactsPath>
     </PropertyGroup>
 
     <PropertyGroup>
-      <!-- Link all assemblies -->
-      <ILLinkArgs>$(ILLinkArgs) -c link</ILLinkArgs>
-      <ILLinkArgs>$(ILLinkArgs) -u link</ILLinkArgs>
+      <RuntimePackILLinkArgs>$(ILLinkArgs)</RuntimePackILLinkArgs>
       <!-- update debug symbols -->
-      <ILLinkArgs>$(ILLinkArgs) -b true</ILLinkArgs>
-      <!-- suppress warnings with the following codes:
-           IL2009: Could not find method A in type B specified in resource C
-           IL2025: Duplicate preserve of A in B
-      -->
-      <LinkerNoWarn>IL2009;IL2025</LinkerNoWarn>
-      <!-- https://github.com/dotnet/runtime/issues/40336 - need to also suppress the following on non-Windows:
-           IL2008: Could not find type A specified in resource B
-           and on 32-bit builds:
-           IL2012: Could not find field 'Padding' in type 'System.Runtime.CompilerServices.RawArrayData'
-      -->
-      <LinkerNoWarn Condition="'$(TargetOS)' != 'windows'">$(LinkerNoWarn);IL2008</LinkerNoWarn>
-      <LinkerNoWarn Condition="'$(Platform)' != 'x64' AND '$(Platform)' != 'arm64'">$(LinkerNoWarn);IL2012</LinkerNoWarn>
-      <ILLinkArgs>$(ILLinkArgs) --nowarn $(LinkerNoWarn)</ILLinkArgs>
-    </PropertyGroup>
-
-    <!-- Retrieve CoreLib's path as it isn't binplaced alongside the libraries - https://github.com/dotnet/runtime/issues/43095. -->
-    <ItemGroup>
-      <CoreLibProjectWithRuntimeConfig Include="$(CoreLibProject)">
-        <!-- Don't flow TargetFramework and Platform to use same inputs and outputs as the CoreLib's build as part of the runtime. -->
-        <UndefineProperties>$(UndefineProperties);TargetFramework;Platform</UndefineProperties>
-        <!-- If conflicting, manually set the Configuration property of the CoreLib project so that it aligns with the specified runtime configuration in the libraries' build. -->
-        <Properties Condition="'$(RuntimeFlavor)' == 'CoreCLR' and
-                               '$(Configuration)' != '$(CoreCLRConfiguration)'">Configuration=$(CoreCLRConfiguration)</Properties>
-        <Properties Condition="'$(RuntimeFlavor)' == 'Mono' and
-                               '$(Configuration)' != '$(MonoConfiguration)'">Configuration=$(MonoConfiguration)</Properties>
-      </CoreLibProjectWithRuntimeConfig>
-    </ItemGroup>
-
-    <MSBuild Projects="@(CoreLibProjectWithRuntimeConfig)"
-             Targets="GetTargetPath">
-      <Output TaskParameter="TargetOutputs" PropertyName="SystemPrivateCoreLibPath" />
-    </MSBuild>
-
-    <PropertyGroup>
-      <_AssemblyPaths>$(MicrosoftNetCoreAppRuntimePackRidLibTfmDir);$(SystemPrivateCoreLibPath)</_AssemblyPaths>
+      <RuntimePackILLinkArgs>$(RuntimePackILLinkArgs) -b true</RuntimePackILLinkArgs>
     </PropertyGroup>
 
     <ItemGroup>
-      <!-- add references from the libraries directory -->
-      <_DependencyDirectories Include="$(MicrosoftNetCoreAppRuntimePackRidLibTfmDir.TrimEnd('\'))" />
-    </ItemGroup>
+      <_LibrariesToTrim Include="$(MicrosoftNetCoreAppRuntimePackRidLibTfmDir)*.dll" />
+      <_LibrariesToTrim Include="$(SystemPrivateCoreLibPath)" />
 
-    <ItemGroup>
-      <_LibrariesToLink Include="$(MicrosoftNetCoreAppRuntimePackRidLibTfmDir)*.dll" />
-      <_LibrariesToLink Include="$(SystemPrivateCoreLibPath)" />
-
-      <RootAssemblies Include="@(_LibrariesToLink)">
+      <RootAssemblies Include="@(_LibrariesToTrim)">
         <RootMode>library</RootMode>
       </RootAssemblies>
     </ItemGroup>
 
-    <PropertyGroup>
-      <ProjectILLinkSuppressionsFile>src\ILLink\ILLink.Suppressions</ProjectILLinkSuppressionsFile>
-    </PropertyGroup>
-
     <ItemGroup>
       <!-- Include suppression XML files bin-placed in earlier per-library linker run. -->
-      <_SuppressionsXmls Include="$(ILLinkTrimAssemblySuppressionsXmlsDir)*.xml" />
+      <_RuntimePackSuppressionsXmls Include="$(ILLinkTrimAssemblyRuntimePackSuppressionsXmlsDir)*.xml" />
 
       <!-- Collate CoreLib suppression XML files not bin-placed in earlier per-library linker run. CoreLib doesn't use bin-place logic. -->
-      <_SuppressionsXmls Include="$(CoreLibSharedDir)ILLink\ILLink.Suppressions.Shared.xml" />
-      <_SuppressionsXmls Include="$(CoreLibSharedDir)ILLink\ILLink.Suppressions.LibraryBuild.xml" />
-      <_SuppressionsXmls Condition="'$(RuntimeFlavor)' == 'CoreCLR'" Include="$(CoreClrProjectRoot)System.Private.CoreLib\$(ProjectILLinkSuppressionsFile).LibraryBuild.xml" />
-
-      <!-- netstandard2.1-only System.ComponentModel.Annotations XML file is not bin-placed during -allConfigurations builds
-           due to the linker not being run on the assembly (eng\illink.targets). Manually include it. -->
-      <_SuppressionsXmls Condition="'$(BuildAllConfigurations)' == 'true'"
-                         Include="$(LibrariesProjectRoot)System.ComponentModel.Annotations\$(ProjectILLinkSuppressionsFile).xml" />
+      <_RuntimePackSuppressionsXmls Include="$(CoreLibSharedDir)ILLink\ILLink.Suppressions.LibraryBuild.xml" />
+      <_RuntimePackSuppressionsXmls Condition="'$(RuntimeFlavor)' == 'CoreCLR'" Include="$(CoreClrProjectRoot)System.Private.CoreLib\$(ProjectILLinkSuppressionsFile).LibraryBuild.xml" />
     </ItemGroup>
 
     <PropertyGroup>
-      <ILLinkArgs Condition="'@(_SuppressionsXmls)' != ''" >$(ILLinkArgs) --link-attributes @(_SuppressionsXmls->'%(FullPath)', ' --link-attributes ')</ILLinkArgs>
-    </PropertyGroup>
-
-    <!-- When running from Desktop MSBuild, DOTNET_HOST_PATH is not set.
-      In this case, explicitly specify the path to the dotnet host. -->
-    <PropertyGroup Condition=" '$(DOTNET_HOST_PATH)' == '' ">
-      <!-- This is defined when building in Visual Studio. -->
-      <_DotNetHostDirectory>$(NetCoreRoot)</_DotNetHostDirectory>
-      <_DotNetHostFileName>$([System.IO.Path]::GetFileName('$(DotNetTool)'))</_DotNetHostFileName>
+      <RuntimePackILLinkArgs Condition="'@(_RuntimePackSuppressionsXmls)' != ''" >$(RuntimePackILLinkArgs) --link-attributes &quot;@(_RuntimePackSuppressionsXmls->'%(FullPath)', '&quot; --link-attributes &quot;')&quot;</RuntimePackILLinkArgs>
     </PropertyGroup>
 
     <ILLink AssemblyPaths=""
         RootAssemblyNames="@(RootAssemblies)"
         OutputDirectory="$(LibrariesTrimmedArtifactsPath)"
-        ExtraArgs="$(ILLinkArgs)"
+        ExtraArgs="$(RuntimePackILLinkArgs)"
         ToolExe="$(_DotNetHostFileName)"
         ToolPath="$(_DotNetHostDirectory)" />
   </Target>
-
-  <Import Project="$(RepositoryEngineeringDir)illink.targets" />
 </Project>

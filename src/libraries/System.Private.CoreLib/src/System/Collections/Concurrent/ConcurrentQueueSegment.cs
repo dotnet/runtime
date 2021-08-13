@@ -3,6 +3,7 @@
 
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Threading;
 
@@ -69,19 +70,6 @@ namespace System.Collections.Concurrent
             {
                 _slots[i].SequenceNumber = i;
             }
-        }
-
-        /// <summary>Round the specified value up to the next power of 2, if it isn't one already.</summary>
-        internal static int RoundUpToPowerOf2(int i)
-        {
-            // Based on https://graphics.stanford.edu/~seander/bithacks.html#RoundUpPowerOf2
-            --i;
-            i |= i >> 1;
-            i |= i >> 2;
-            i |= i >> 4;
-            i |= i >> 8;
-            i |= i >> 16;
-            return i + 1;
         }
 
         /// <summary>Gets the number of elements this segment can store.</summary>
@@ -153,7 +141,10 @@ namespace System.Collections.Concurrent
                             // If we're preserving, though, we don't zero out the slot, as we need it for
                             // enumerations, peeking, ToArray, etc.  And we don't update the sequence number,
                             // so that an enqueuer will see it as full and be forced to move to a new segment.
-                            slots[slotsIndex].Item = default;
+                            if (RuntimeHelpers.IsReferenceOrContainsReferences<T>())
+                            {
+                                slots[slotsIndex].Item = default;
+                            }
                             Volatile.Write(ref slots[slotsIndex].SequenceNumber, currentHead + slots.Length);
                         }
                         return true;

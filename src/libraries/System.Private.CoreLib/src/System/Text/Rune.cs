@@ -19,6 +19,11 @@ namespace System.Text
     /// </remarks>
     [DebuggerDisplay("{DebuggerDisplay,nq}")]
     public readonly struct Rune : IComparable, IComparable<Rune>, IEquatable<Rune>
+#if SYSTEM_PRIVATE_CORELIB
+#pragma warning disable SA1001 // Commas should be spaced correctly
+        , ISpanFormattable
+#pragma warning restore SA1001
+#endif
     {
         internal const int MaxUtf16CharsPerRune = 2; // supplementary plane code points are encoded as 2 UTF-16 code units
         internal const int MaxUtf8BytesPerRune = 4; // supplementary plane code points are encoded as 4 UTF-8 code units
@@ -135,7 +140,7 @@ namespace System.Text
         public static explicit operator Rune(int value) => new Rune(value);
 
         // Displayed as "'<char>' (U+XXXX)"; e.g., "'e' (U+0065)"
-        private string DebuggerDisplay => FormattableString.Invariant($"U+{_value:X4} '{(IsValid(_value) ? ToString() : "\uFFFD")}'");
+        private string DebuggerDisplay => string.Create(CultureInfo.InvariantCulture, $"U+{_value:X4} '{(IsValid(_value) ? ToString() : "\uFFFD")}'");
 
         /// <summary>
         /// Returns true if and only if this scalar value is ASCII ([ U+0000..U+007F ])
@@ -316,7 +321,7 @@ namespace System.Text
                 // Let's optimistically assume for now it's a high surrogate and hope
                 // that combining it with the next char yields useful results.
 
-                if (1 < (uint)source.Length)
+                if (source.Length > 1)
                 {
                     char secondChar = source[1];
                     if (TryCreate(firstChar, secondChar, out result))
@@ -817,7 +822,7 @@ namespace System.Text
 
                 // Treat 'returnValue' as the high surrogate.
 
-                if (1 >= (uint)input.Length)
+                if (input.Length <= 1)
                 {
                     return -1; // not an argument exception - just a "bad data" failure
                 }
@@ -911,6 +916,13 @@ namespace System.Text
 #endif
         }
 
+#if SYSTEM_PRIVATE_CORELIB
+        bool ISpanFormattable.TryFormat(Span<char> destination, out int charsWritten, ReadOnlySpan<char> format, IFormatProvider? provider) =>
+            TryEncodeToUtf16(destination, out charsWritten);
+
+        string IFormattable.ToString(string? format, IFormatProvider? formatProvider) => ToString();
+#endif
+
         /// <summary>
         /// Attempts to create a <see cref="Rune"/> from the provided input value.
         /// </summary>
@@ -994,19 +1006,27 @@ namespace System.Text
         /// The <see cref="Utf16SequenceLength"/> property can be queried ahead of time to determine
         /// the required size of the <paramref name="destination"/> buffer.
         /// </remarks>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool TryEncodeToUtf16(Span<char> destination, out int charsWritten)
         {
-            if (destination.Length >= 1)
+            // The Rune type fits cleanly into a register, so pass byval rather than byref
+            // to avoid stack-spilling the 'this' parameter.
+            return TryEncodeToUtf16(this, destination, out charsWritten);
+        }
+
+        private static bool TryEncodeToUtf16(Rune value, Span<char> destination, out int charsWritten)
+        {
+            if (!destination.IsEmpty)
             {
-                if (IsBmp)
+                if (value.IsBmp)
                 {
-                    destination[0] = (char)_value;
+                    destination[0] = (char)value._value;
                     charsWritten = 1;
                     return true;
                 }
-                else if (destination.Length >= 2)
+                else if (1 < (uint)destination.Length)
                 {
-                    UnicodeUtility.GetUtf16SurrogatesFromSupplementaryPlaneScalar(_value, out destination[0], out destination[1]);
+                    UnicodeUtility.GetUtf16SurrogatesFromSupplementaryPlaneScalar((uint)value._value, out destination[0], out destination[1]);
                     charsWritten = 2;
                     return true;
                 }
@@ -1030,49 +1050,57 @@ namespace System.Text
         /// The <see cref="Utf8SequenceLength"/> property can be queried ahead of time to determine
         /// the required size of the <paramref name="destination"/> buffer.
         /// </remarks>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool TryEncodeToUtf8(Span<byte> destination, out int bytesWritten)
+        {
+            // The Rune type fits cleanly into a register, so pass byval rather than byref
+            // to avoid stack-spilling the 'this' parameter.
+            return TryEncodeToUtf8(this, destination, out bytesWritten);
+        }
+
+        private static bool TryEncodeToUtf8(Rune value, Span<byte> destination, out int bytesWritten)
         {
             // The bit patterns below come from the Unicode Standard, Table 3-6.
 
-            if (destination.Length >= 1)
+            if (!destination.IsEmpty)
             {
-                if (IsAscii)
+                if (value.IsAscii)
                 {
-                    destination[0] = (byte)_value;
+                    destination[0] = (byte)value._value;
                     bytesWritten = 1;
                     return true;
                 }
 
-                if (destination.Length >= 2)
+                if (1 < (uint)destination.Length)
                 {
-                    if (_value <= 0x7FFu)
+                    if (value.Value <= 0x7FFu)
                     {
                         // Scalar 00000yyy yyxxxxxx -> bytes [ 110yyyyy 10xxxxxx ]
-                        destination[0] = (byte)((_value + (0b110u << 11)) >> 6);
-                        destination[1] = (byte)((_value & 0x3Fu) + 0x80u);
+                        destination[0] = (byte)((value._value + (0b110u << 11)) >> 6);
+                        destination[1] = (byte)((value._value & 0x3Fu) + 0x80u);
                         bytesWritten = 2;
                         return true;
                     }
 
-                    if (destination.Length >= 3)
+                    if (2 < (uint)destination.Length)
                     {
-                        if (_value <= 0xFFFFu)
+                        if (value.Value <= 0xFFFFu)
                         {
                             // Scalar zzzzyyyy yyxxxxxx -> bytes [ 1110zzzz 10yyyyyy 10xxxxxx ]
-                            destination[0] = (byte)((_value + (0b1110 << 16)) >> 12);
-                            destination[1] = (byte)(((_value & (0x3Fu << 6)) >> 6) + 0x80u);
-                            destination[2] = (byte)((_value & 0x3Fu) + 0x80u);
+                            destination[0] = (byte)((value._value + (0b1110 << 16)) >> 12);
+                            destination[1] = (byte)(((value._value & (0x3Fu << 6)) >> 6) + 0x80u);
+                            destination[2] = (byte)((value._value & 0x3Fu) + 0x80u);
                             bytesWritten = 3;
                             return true;
                         }
 
-                        if (destination.Length >= 4)
+                        if (3 < (uint)destination.Length)
                         {
                             // Scalar 000uuuuu zzzzyyyy yyxxxxxx -> bytes [ 11110uuu 10uuzzzz 10yyyyyy 10xxxxxx ]
-                            destination[0] = (byte)((_value + (0b11110 << 21)) >> 18);
-                            destination[1] = (byte)(((_value & (0x3Fu << 12)) >> 12) + 0x80u);
-                            destination[2] = (byte)(((_value & (0x3Fu << 6)) >> 6) + 0x80u);
-                            destination[3] = (byte)((_value & 0x3Fu) + 0x80u);
+                            destination[0] = (byte)((value._value + (0b11110 << 21)) >> 18);
+                            destination[1] = (byte)(((value._value & (0x3Fu << 12)) >> 12) + 0x80u);
+                            destination[2] = (byte)(((value._value & (0x3Fu << 6)) >> 6) + 0x80u);
+                            destination[3] = (byte)((value._value & 0x3Fu) + 0x80u);
                             bytesWritten = 4;
                             return true;
                         }
@@ -1374,9 +1402,7 @@ namespace System.Text
 
             if (GlobalizationMode.Invariant)
             {
-                // If the value isn't ASCII and if the globalization tables aren't available,
-                // case changing has no effect.
-                return value;
+                return UnsafeCreate(CharUnicodeInfo.ToLower(value._value));
             }
 
             // Non-ASCII data requires going through the case folding tables.
@@ -1425,9 +1451,7 @@ namespace System.Text
 
             if (GlobalizationMode.Invariant)
             {
-                // If the value isn't ASCII and if the globalization tables aren't available,
-                // case changing has no effect.
-                return value;
+                return UnsafeCreate(CharUnicodeInfo.ToUpper(value._value));
             }
 
             // Non-ASCII data requires going through the case folding tables.

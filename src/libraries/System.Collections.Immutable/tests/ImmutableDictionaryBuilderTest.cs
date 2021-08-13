@@ -48,6 +48,15 @@ namespace System.Collections.Immutable.Tests
         }
 
         [Fact]
+        public void BuilderAddRangeThrowsWhenAddingNullKey()
+        {
+            var set = ImmutableDictionary<string, int>.Empty.Add("1", 1);
+            var builder = set.ToBuilder();
+            var items = new[] { new KeyValuePair<string, int>(null, 0) };
+            Assert.Throws<ArgumentNullException>(() => builder.AddRange(items));
+        }
+
+        [Fact]
         public void BuilderFromMap()
         {
             var set = ImmutableDictionary<int, string>.Empty.Add(1, "1");

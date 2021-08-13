@@ -48,10 +48,10 @@ Jitutils_url = 'https://github.com/dotnet/jitutils.git'
 
 # The Docker file and possibly options should be hoisted out to a text file to be shared between scripts.
 
-Docker_name_arm32 = 'microsoft/dotnet-buildtools-prereqs:ubuntu-14.04-cross-e435274-20180426002420'
+Docker_name_arm32 = 'mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-14.04-cross-e435274-20180426002420'
 Docker_opts_arm32 = '-e ROOTFS_DIR=/crossrootfs/arm'
 
-Docker_name_arm64 = 'microsoft/dotnet-buildtools-prereqs:ubuntu-16.04-cross-arm64-a3ae44b-20180315221921'
+Docker_name_arm64 = 'mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-16.04-cross-arm64-a3ae44b-20180315221921'
 Docker_opts_arm64 = '-e ROOTFS_DIR=/crossrootfs/arm64'
 
 Is_illumos = ('illumos' in subprocess.Popen(["uname", "-o"], stdout=subprocess.PIPE, stderr=subprocess.PIPE).communicate()[0].decode('utf-8'))
@@ -97,7 +97,7 @@ parser.add_argument('-diff_root', dest='diff_root', default=None)
 parser.add_argument('-scratch_root', dest='scratch_root', default=None)
 parser.add_argument('--skip_baseline_build', dest='skip_baseline_build', action='store_true', default=False)
 parser.add_argument('--skip_diffs', dest='skip_diffs', action='store_true', default=False)
-parser.add_argument('-target_branch', dest='target_branch', default='master')
+parser.add_argument('-target_branch', dest='target_branch', default='main')
 parser.add_argument('-commit_hash', dest='commit_hash', default=None)
 
 ##########################################################################
@@ -502,7 +502,7 @@ def do_pmi_diffs():
 
     # Clone jitutils
 
-    command = 'git clone -b master --single-branch %s %s' % (Jitutils_url, jitutilsPath)
+    command = 'git clone -b main --single-branch %s %s' % (Jitutils_url, jitutilsPath)
     log(command)
     returncode = 0 if testing else os.system(command)
     if returncode != 0:

@@ -11,7 +11,7 @@ using Microsoft.Win32.SafeHandles;
 
 namespace Internal.Cryptography
 {
-    internal class OpenSslCipher : BasicSymmetricCipher
+    internal sealed class OpenSslCipher : BasicSymmetricCipher
     {
         private readonly bool _encrypting;
         private SafeEvpCipherCtxHandle _ctx;

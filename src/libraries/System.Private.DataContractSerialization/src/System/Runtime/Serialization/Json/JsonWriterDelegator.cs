@@ -6,7 +6,7 @@ using System.Globalization;
 
 namespace System.Runtime.Serialization.Json
 {
-    internal class JsonWriterDelegator : XmlWriterDelegator
+    internal sealed class JsonWriterDelegator : XmlWriterDelegator
     {
         private readonly DateTimeFormat? _dateTimeFormat;
 
@@ -209,7 +209,7 @@ namespace System.Runtime.Serialization.Json
                     // +"zzzz";
                     //TimeSpan ts = TimeZone.CurrentTimeZone.GetUtcOffset(value.ToLocalTime());
                     TimeSpan ts = TimeZoneInfo.Local.GetUtcOffset(value.ToLocalTime());
-                    writer.WriteString(string.Format(CultureInfo.InvariantCulture, "{0:+00;-00}{1:00;00}", ts.Hours, ts.Minutes));
+                    writer.WriteString(string.Create(CultureInfo.InvariantCulture, $"{ts.Hours:+00;-00}{ts.Minutes:00;00}"));
                     break;
                 case DateTimeKind.Utc:
                     break;

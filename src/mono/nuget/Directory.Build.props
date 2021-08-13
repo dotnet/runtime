@@ -4,6 +4,9 @@
   <Import Project="$(NuGetPackageRoot)\microsoft.dotnet.build.tasks.packaging\$(MicrosoftDotNetBuildTasksPackagingVersion)\build\Microsoft.DotNet.Build.Tasks.Packaging.props" />
 
   <PropertyGroup>
+    <WorkloadTasksAssemblyPath>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'WorkloadBuildTasks', 'Debug', '$(NetCoreAppToolCurrent)'))WorkloadBuildTasks.dll</WorkloadTasksAssemblyPath>
+  </PropertyGroup>
+  <PropertyGroup>
     <PackageIndexFile>$(MSBuildThisFileDirectory)packageIndex.json</PackageIndexFile>
     <PackagePlatform>AnyCPU</PackagePlatform>
 
@@ -11,7 +14,7 @@
     <SkipIndexCheck>true</SkipIndexCheck>
     
     <!-- Central place to set the versions of all nuget packages produced in the repo -->
-    <PackageVersion Condition="'$(PackageVersion)' == ''">6.0.0</PackageVersion>
+    <PackageVersion Condition="'$(ProductVersion)' == ''">6.0.0</PackageVersion>
     <StableVersion Condition="'$(StabilizePackageVersion)' == 'true' and '$(StableVersion)' == ''">$(PackageVersion)</StableVersion>
   </PropertyGroup>
 

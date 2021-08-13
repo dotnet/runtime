@@ -1,8 +1,4 @@
 <Project Sdk="Microsoft.Build.Traversal" DefaultTargets="Pack">
-  <PropertyGroup>
-    <TraversalGlobalProperties>BuildAllProjects=true</TraversalGlobalProperties>
-  </PropertyGroup>
-
   <ItemGroup Condition="'$(TargetOS)' == 'Android'">
     <ProjectReference Include="Microsoft.NET.Runtime.Android.Sample.Mono\Microsoft.NET.Runtime.Android.Sample.Mono.pkgproj" />
   </ItemGroup>
@@ -13,11 +9,16 @@
     <ProjectReference Include="Microsoft.NET.Runtime.WebAssembly.Sdk\Microsoft.NET.Runtime.WebAssembly.Sdk.pkgproj" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(TargetOS)' == 'iOS'">
+  <ItemGroup Condition="'$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'iOSSimulator'">
     <ProjectReference Include="Microsoft.NET.Runtime.iOS.Sample.Mono\Microsoft.NET.Runtime.iOS.Sample.Mono.pkgproj" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetsMobile)' == 'true'">
+    <ProjectReference Include="Microsoft.NET.Workload.Mono.Toolchain.Manifest\Microsoft.NET.Workload.Mono.Toolchain.Manifest.pkgproj" />
     <ProjectReference Include="Microsoft.NET.Runtime.MonoAOTCompiler.Task\Microsoft.NET.Runtime.MonoAOTCompiler.Task.pkgproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="Microsoft.NET.Runtime.MonoTargets.Sdk\Microsoft.NET.Runtime.MonoTargets.Sdk.pkgproj" />
   </ItemGroup>
 </Project>

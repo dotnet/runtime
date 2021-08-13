@@ -8,14 +8,14 @@ using System.Reflection.Context.Custom;
 
 namespace System.Reflection.Context.Virtual
 {
-    internal partial class VirtualPropertyInfo
+    internal sealed partial class VirtualPropertyInfo
     {
-        private class PropertyGetter : PropertyGetterBase
+        private sealed class PropertyGetter : PropertyGetterBase
         {
-            private readonly Func<object, object> _getter;
+            private readonly Func<object, object?> _getter;
             private readonly IEnumerable<Attribute> _attributes;
 
-            public PropertyGetter(VirtualPropertyBase property, Func<object, object> getter, IEnumerable<Attribute> getterAttributes)
+            public PropertyGetter(VirtualPropertyBase property, Func<object, object?> getter, IEnumerable<Attribute>? getterAttributes)
                 : base(property)
             {
                 Debug.Assert(null != getter);
@@ -24,14 +24,14 @@ namespace System.Reflection.Context.Virtual
                 _attributes = getterAttributes ?? CollectionServices.Empty<Attribute>();
             }
 
-            public override object Invoke(object obj, BindingFlags invokeAttr, Binder binder, object[] parameters, CultureInfo culture)
+            public override object? Invoke(object? obj, BindingFlags invokeAttr, Binder? binder, object?[]? parameters, CultureInfo? culture)
             {
                 // invokeAttr, binder, and culture are ignored, similar to what runtime reflection does with the default binder.
 
                 if (parameters != null && parameters.Length > 0)
                     throw new TargetParameterCountException();
 
-                if (!ReflectedType.IsInstanceOfType(obj))
+                if (!ReflectedType!.IsInstanceOfType(obj))
                     throw new ArgumentException();
 
                 return _getter(obj);

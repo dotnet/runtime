@@ -54,13 +54,16 @@ namespace
                 }
             }
 
-            if (best_match_version == fx_ver_t())
+            if (trace::is_enabled())
             {
-                trace::verbose(_X("No match greater than or equal to [%s] found."), fx_ref.get_fx_version().c_str());
-            }
-            else
-            {
-                trace::verbose(_X("Found version [%s]"), best_match_version.as_str().c_str());
+                if (best_match_version == fx_ver_t())
+                {
+                    trace::verbose(_X("No match greater than or equal to [%s] found."), fx_ref.get_fx_version().c_str());
+                }
+                else
+                {
+                    trace::verbose(_X("Found version [%s]"), best_match_version.as_str().c_str());
+                }
             }
         }
 
@@ -89,14 +92,20 @@ namespace
                 apply_patch_from_version = fx_ref.get_fx_version_number();
             }
 
-            trace::verbose(
-                _X("Applying patch roll forward from [%s] on %s"),
-                apply_patch_from_version.as_str().c_str(),
-                release_only ? _X("release only") : _X("release/pre-release"));
+            if (trace::is_enabled())
+            {
+                trace::verbose(
+                    _X("Applying patch roll forward from [%s] on %s"),
+                    apply_patch_from_version.as_str().c_str(),
+                    release_only ? _X("release only") : _X("release/pre-release"));
+            }
 
             for (const auto& ver : version_list)
             {
-                trace::verbose(_X("Inspecting version... [%s]"), ver.as_str().c_str());
+                if (trace::is_enabled())
+                {
+                    trace::verbose(_X("Inspecting version... [%s]"), ver.as_str().c_str());
+                }
 
                 if ((!release_only || !ver.is_prerelease()) &&
                     (fx_ref.get_apply_patches() || ver.get_patch() == apply_patch_from_version.get_patch()) &&
@@ -170,7 +179,7 @@ namespace
             best_match = fx_ref.get_fx_version_number();
             trace::verbose(_X("Framework reference didn't resolve to any available version."));
         }
-        else
+        else if (trace::is_enabled())
         {
             trace::verbose(_X("Framework reference resolved to version '%s'."), best_match.as_str().c_str());
         }

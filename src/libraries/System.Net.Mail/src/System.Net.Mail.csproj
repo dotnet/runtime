@@ -1,8 +1,9 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-Unix;$(NetCoreAppCurrent)-Browser</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-Unix;$(NetCoreAppCurrent)-Browser;$(NetCoreAppCurrent)-tvOS</TargetFrameworks>
     <Nullable>enable</Nullable>
+    <DefineConstants Condition="'$(TargetstvOS)' == 'true'">$(DefineConstants);NO_NTAUTHENTICATION</DefineConstants>
   </PropertyGroup>
   <!-- DesignTimeBuild requires all the TargetFramework Derived Properties to not be present in the first property group. -->
   <ItemGroup>
@@ -42,10 +43,17 @@
     <Compile Include="System\Net\BufferedReadStream.cs" />
     <Compile Include="System\Net\Mail\LinkedResource.cs" />
     <Compile Include="System\Net\Mail\LinkedResourceCollection.cs" />
+    <Compile Include="System\Net\Mail\DomainLiteralReader.cs" />
+    <Compile Include="System\Net\Mail\DotAtomReader.cs" />
     <Compile Include="System\Net\Mail\MailAddress.cs" />
     <Compile Include="System\Net\Mail\MailAddressCollection.cs" />
+    <Compile Include="System\Net\Mail\MailAddressParser.cs" />
+    <Compile Include="System\Net\Mail\MailBnfHelper.cs" />
     <Compile Include="System\Net\Mail\MailMessage.cs" />
     <Compile Include="System\Net\Mail\MailPriority.cs" />
+    <Compile Include="System\Net\Mail\QuotedPairReader.cs" />
+    <Compile Include="System\Net\Mail\QuotedStringFormatReader.cs" />
+    <Compile Include="System\Net\Mail\WhitespaceReader.cs" />
     <Compile Include="System\Net\Mime\MimeMultiPart.cs" />
     <Compile Include="System\Net\Mime\MimeMultiPartType.cs" />
     <Compile Include="System\Net\Mime\MimeWriter.cs" />
@@ -56,22 +64,8 @@
     <Compile Include="System\Net\DelegatedStream.cs" />
     <Compile Include="$(CommonPath)System\Net\LazyAsyncResult.cs"
              Link="Common\System\Net\LazyAsyncResult.cs" />
-    <Compile Include="$(CommonPath)System\Net\Mail\MailBnfHelper.cs"
-             Link="Common\System\Net\Mail\MailBnfHelper.cs" />
     <Compile Include="$(CommonPath)System\Net\Logging\NetEventSource.Common.cs"
              Link="Common\System\Net\Logging\NetEventSource.Common.cs" />
-    <Compile Include="$(CommonPath)System\Net\Mail\DotAtomReader.cs"
-             Link="Common\System\Net\Mail\DotAtomReader.cs" />
-    <Compile Include="$(CommonPath)System\Net\Mail\MailAddressParser.cs"
-             Link="Common\System\Net\Mail\MailAddressParser.cs" />
-    <Compile Include="$(CommonPath)System\Net\Mail\QuotedStringFormatReader.cs"
-             Link="Common\System\Net\Mail\QuotedStringFormatReader.cs" />
-    <Compile Include="$(CommonPath)System\Net\Mail\WhitespaceReader.cs"
-             Link="Common\System\Net\Mail\WhitespaceReader.cs" />
-    <Compile Include="$(CommonPath)System\Net\Mail\QuotedPairReader.cs"
-             Link="Common\System\Net\Mail\QuotedPairReader.cs" />
-    <Compile Include="$(CommonPath)System\Net\Mail\DomainLiteralReader.cs"
-             Link="Common\System\Net\Mail\DomainLiteralReader.cs" />
     <Compile Include="$(CommonPath)System\StringExtensions.cs"
              Link="Common\System\StringExtensions.cs" />
     <Compile Include="$(CommonPath)System\HexConverter.cs"
@@ -94,14 +88,10 @@
     <Compile Include="System\Net\Mail\SmtpReplyReaderFactory.cs" />
     <Compile Include="System\Net\Mail\SmtpTransport.cs" />
     <Compile Include="System\Net\Mail\SmtpLoginAuthenticationModule.cs" />
-    <Compile Include="System\Net\Mail\SmtpNegotiateAuthenticationModule.cs" />
-    <Compile Include="System\Net\Mail\SmtpNtlmAuthenticationModule.cs" />
     <Compile Include="System\Net\Mail\MailWriter.cs" />
     <Compile Include="System\Net\Mail\NetEventSource.Mail.cs" />
     <Compile Include="$(CommonPath)System\Net\ContextAwareResult.cs"
              Link="Common\System\Net\ContextAwareResult.cs" />
-    <Compile Include="$(CommonPath)System\Net\NTAuthentication.Common.cs"
-             Link="Common\System\Net\NTAuthentication.Common.cs" />
     <Compile Include="$(CommonPath)System\Net\DebugCriticalHandleMinusOneIsInvalid.cs"
              Link="Common\System\Net\DebugCriticalHandleMinusOneIsInvalid.cs" />
     <Compile Include="$(CommonPath)System\Net\DebugCriticalHandleZeroOrMinusOneIsInvalid.cs"
@@ -118,30 +108,38 @@
              Link="Common\System\Collections\Generic\BidirectionalDictionary.cs" />
     <Compile Include="$(CommonPath)System\NotImplemented.cs"
              Link="Common\System\NotImplemented.cs" />
+    <Compile Include="$(CommonPath)System\Net\Security\NetEventSource.Security.cs"
+             Link="Common\System\Net\Security\NetEventSource.Security.cs" />
+    <Compile Include="$(CommonPath)System\Net\SecurityProtocol.cs"
+             Link="Common\System\Net\SecurityProtocol.cs" />
+  </ItemGroup>
+
+  <!-- NT authentication specific files -->
+  <ItemGroup Condition="'$(TargetsBrowser)' != 'true' and '$(TargetstvOS)' != 'true'">
     <Compile Include="$(CommonPath)System\Net\ContextFlagsPal.cs"
              Link="Common\System\Net\ContextFlagsPal.cs" />
     <Compile Include="$(CommonPath)System\Net\NegotiationInfoClass.cs"
              Link="Common\System\Net\NegotiationInfoClass.cs" />
+    <Compile Include="$(CommonPath)System\Net\NTAuthentication.Common.cs"
+             Link="Common\System\Net\NTAuthentication.Common.cs" />
     <Compile Include="$(CommonPath)System\Net\SecurityStatusPal.cs"
              Link="Common\System\Net\SecurityStatusPal.cs" />
     <Compile Include="$(CommonPath)System\Net\Security\SafeCredentialReference.cs"
              Link="Common\System\Net\Security\SafeCredentialReference.cs" />
     <Compile Include="$(CommonPath)System\Net\Security\SSPIHandleCache.cs"
              Link="Common\System\Net\Security\SSPIHandleCache.cs" />
-    <Compile Include="$(CommonPath)System\Net\Security\NetEventSource.Security.cs"
-             Link="Common\System\Net\Security\NetEventSource.Security.cs" />
-    <Compile Include="$(CommonPath)System\Net\SecurityProtocol.cs"
-             Link="Common\System\Net\SecurityProtocol.cs" />
-    <Compile Include="$(CommonPath)Interop\Windows\Interop.UNICODE_STRING.cs"
-             Link="Common\Interop\Windows\Interop.UNICODE_STRING.cs" />
+    <Compile Include="System\Net\Mail\SmtpNegotiateAuthenticationModule.cs" />
+    <Compile Include="System\Net\Mail\SmtpNtlmAuthenticationModule.cs" />
   </ItemGroup>
 
   <!-- Unix specific files -->
   <ItemGroup Condition="'$(TargetsUnix)' == 'true'">
     <Compile Include="$(CommonPath)System\Net\ContextAwareResult.Unix.cs"
              Link="Common\System\Net\ContextAwareResult.Unix.cs" />
-    <Compile Include="$(CommonPath)System\Net\ContextFlagsAdapterPal.Unix.cs"
-             Link="Common\System\Net\ContextFlagsAdapterPal.Unix.cs" />
+  </ItemGroup>
+
+  <!-- Unix specific files (NT Authentication) -->
+  <ItemGroup Condition="'$(TargetsUnix)' == 'true' and '$(TargetstvOS)' != 'true'">
     <Compile Include="$(CommonPath)Interop\Unix\Interop.Libraries.cs"
              Link="Common\Interop\Unix\Interop.Libraries.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Net.Security.Native\Interop.GssBuffer.cs"
@@ -150,25 +148,32 @@
              Link="Common\Interop\Unix\System.Net.Security.Native\Interop.GssApiException.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Net.Security.Native\Interop.NetSecurityNative.cs"
              Link="Common\Interop\Unix\System.Net.Security.Native\Interop.NetSecurityNative.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\System.Net.Security.Native\Interop.NetSecurityNative.GssFlags.cs"
+             Link="Common\Interop\Unix\System.Net.Security.Native\Interop.NetSecurityNative.GssFlags.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\System.Net.Security.Native\Interop.NetSecurityNative.Status.cs"
+             Link="Common\Interop\Unix\System.Net.Security.Native\Interop.NetSecurityNative.Status.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Net.Security.Native\Interop.NetSecurityNative.IsNtlmInstalled.cs"
              Link="Common\Interop\Unix\System.Net.Security.Native\Interop.NetSecurityNative.IsNtlmInstalled.cs" />
+    <Compile Include="$(CommonPath)Microsoft\Win32\SafeHandles\GssSafeHandles.cs"
+             Link="Common\Microsoft\Win32\SafeHandles\GssSafeHandles.cs" />
+    <Compile Include="$(CommonPath)System\Net\ContextFlagsAdapterPal.Unix.cs"
+             Link="Common\System\Net\ContextFlagsAdapterPal.Unix.cs" />
+    <Compile Include="$(CommonPath)System\Net\Security\Unix\SecChannelBindings.cs"
+             Link="Common\System\Net\Security\Unix\SecChannelBindings.cs" />
+    <Compile Include="$(CommonPath)System\Net\Security\Unix\SafeDeleteContext.cs"
+             Link="Common\System\Net\Security\Unix\SafeDeleteContext.cs" />
     <Compile Include="$(CommonPath)System\Net\Security\Unix\SafeDeleteNegoContext.cs"
              Link="Common\System\Net\Security\Unix\SafeDeleteNegoContext.cs" />
     <Compile Include="$(CommonPath)System\Net\Security\Unix\SafeFreeCredentials.cs"
              Link="Common\System\Net\Security\Unix\SafeFreeCredentials.cs" />
-    <Compile Include="$(CommonPath)System\Net\Security\Unix\SafeDeleteContext.cs"
-             Link="Common\System\Net\Security\Unix\SafeDeleteContext.cs" />
-    <Compile Include="$(CommonPath)System\Net\Security\NegotiateStreamPal.Unix.cs"
-             Link="Common\System\Net\Security\NegotiateStreamPal.Unix.cs" />
-    <Compile Include="$(CommonPath)Microsoft\Win32\SafeHandles\GssSafeHandles.cs"
-             Link="Common\Microsoft\Win32\SafeHandles\GssSafeHandles.cs" />
     <Compile Include="$(CommonPath)System\Net\Security\Unix\SafeFreeNegoCredentials.cs"
              Link="Common\System\Net\Security\Unix\SafeFreeNegoCredentials.cs" />
-    <Compile Include="$(CommonPath)System\Net\Security\Unix\SecChannelBindings.cs"
-             Link="Common\System\Net\Security\Unix\SecChannelBindings.cs" />
+    <Compile Include="$(CommonPath)System\Net\Security\NegotiateStreamPal.Unix.cs"
+             Link="Common\System\Net\Security\NegotiateStreamPal.Unix.cs" />
   </ItemGroup>
+
   <!-- Windows specific files -->
-  <ItemGroup Condition="'$(TargetsWindows)'=='true'">
+  <ItemGroup Condition="'$(TargetsWindows)' == 'true'">
     <Compile Include="$(CommonPath)System\Net\Security\SecurityBuffer.Windows.cs"
              Link="Common\System\Net\Security\SecurityBuffer.Windows.cs" />
     <Compile Include="$(CommonPath)System\Net\Security\SecurityBufferType.Windows.cs"
@@ -201,6 +206,10 @@
              Link="Common\Interop\Windows\Crypt32\Interop.DATA_BLOB.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.MsgEncodingType.cs"
              Link="Common\Interop\Windows\Crypt32\Interop.Interop.MsgEncodingType.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Interop.BOOL.cs"
+             Link="Common\Interop\Windows\Interop.BOOL.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Interop.UNICODE_STRING.cs"
+             Link="Common\Interop\Windows\Interop.UNICODE_STRING.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Interop.Libraries.cs"
              Link="Common\Interop\Windows\Interop.Libraries.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\SspiCli\SecPkgContext_Bindings.cs"

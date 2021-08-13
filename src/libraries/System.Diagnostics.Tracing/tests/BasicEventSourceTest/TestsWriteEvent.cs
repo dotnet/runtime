@@ -588,6 +588,9 @@ namespace BasicEventSourceTests
                             {
                                 Assert.Equal(3, evt.PayloadCount);
                                 byte[] retBlob = (byte[])evt.PayloadValue(1, "blob");
+                                Assert.Equal(4, retBlob.Length);
+                                Assert.Equal(retBlob[0], blob[2]);
+                                Assert.Equal(retBlob[3], blob[2 + 3]);
                                 Assert.Equal(1001, (int)evt.PayloadValue(2, "n"));
                             }
                         }));

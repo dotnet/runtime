@@ -7,9 +7,9 @@
 // The Linux/MacOS create dump code
 //
 bool
-CreateDump(const char* dumpPathTemplate, int pid, const char* dumpType, MINIDUMP_TYPE minidumpType)
+CreateDump(const char* dumpPathTemplate, int pid, const char* dumpType, MINIDUMP_TYPE minidumpType, bool crashReport, int crashThread, int signal)
 {
-    ReleaseHolder<CrashInfo> crashInfo = new CrashInfo(pid);
+    ReleaseHolder<CrashInfo> crashInfo = new CrashInfo(pid, crashReport, crashThread, signal);
     DumpWriter dumpWriter(*crashInfo);
     std::string dumpPath;
     bool result = false;
@@ -20,6 +20,11 @@ CreateDump(const char* dumpPathTemplate, int pid, const char* dumpType, MINIDUMP
         goto exit;
     }
     printf("Gathering state for process %d %s\n", pid, crashInfo->Name().c_str());
+
+    if (signal != 0 || crashThread != 0)
+    {
+        printf("Crashing thread %08x signal %08x\n", crashThread, signal);
+    }
 
     // Suspend all the threads in the target process and build the list of threads
     if (!crashInfo->EnumerateAndSuspendThreads())
@@ -36,6 +41,12 @@ CreateDump(const char* dumpPathTemplate, int pid, const char* dumpType, MINIDUMP
     {
         goto exit;
     }
+    // Write the crash report json file if enabled
+    if (crashReport)
+    {
+        CrashReportWriter crashReportWriter(*crashInfo);
+        crashReportWriter.WriteCrashReport(dumpPath);
+    }
     printf("Writing %s to file %s\n", dumpType, dumpPath.c_str());
 
     // Write the actual dump file
@@ -45,6 +56,10 @@ CreateDump(const char* dumpPathTemplate, int pid, const char* dumpType, MINIDUMP
     }
     if (!dumpWriter.WriteDump())
     {
+        fprintf(stderr, "Writing dump FAILED\n");
+
+        // Delete the partial dump file on error
+        remove(dumpPath.c_str());
         goto exit;
     }
     result = true;

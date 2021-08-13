@@ -72,6 +72,7 @@ jobs:
       inputs:
         artifactName: $(buildCrossDacArtifactName)
         downloadPath: $(crossDacArtifactPath)
+        checkDownloadedFiles: true
 
     - script: $(Build.SourcesDirectory)$(dir)build$(scriptExt) -subset crossdacpack -arch $(archType) $(osArg) -c $(buildConfig) $(officialBuildIdArg) $(crossDacArgs) -ci
       displayName: Build crossdac packaging

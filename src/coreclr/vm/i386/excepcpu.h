@@ -23,11 +23,6 @@
 #ifndef FEATURE_EH_FUNCLETS
 class Thread;
 
-#if defined(_MSC_VER)
-#pragma warning(disable:4733) // Inline asm assigning to `FS:0` : handler not registered as safe handler
-                              // Actually, the handler getting set is properly registered
-#endif
-
 #define INSTALL_SEH_RECORD(record)                                        \
     {                                                                     \
        (record)->Next = (PEXCEPTION_REGISTRATION_RECORD)__readfsdword(0); \

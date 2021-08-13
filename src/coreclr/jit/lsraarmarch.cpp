@@ -398,11 +398,11 @@ int LinearScan::BuildPutArgStk(GenTreePutArgStk* argNode)
     int srcCount = 0;
 
     // Do we have a TYP_STRUCT argument (or a GT_FIELD_LIST), if so it must be a multireg pass-by-value struct
-    if ((putArgChild->TypeGet() == TYP_STRUCT) || (putArgChild->OperGet() == GT_FIELD_LIST))
+    if (putArgChild->TypeIs(TYP_STRUCT) || putArgChild->OperIs(GT_FIELD_LIST))
     {
         // We will use store instructions that each write a register sized value
 
-        if (putArgChild->OperGet() == GT_FIELD_LIST)
+        if (putArgChild->OperIs(GT_FIELD_LIST))
         {
             assert(putArgChild->isContained());
             // We consume all of the items in the GT_FIELD_LIST
@@ -410,6 +410,16 @@ int LinearScan::BuildPutArgStk(GenTreePutArgStk* argNode)
             {
                 BuildUse(use.GetNode());
                 srcCount++;
+
+#if defined(FEATURE_SIMD) && defined(OSX_ARM64_ABI)
+                if (use.GetType() == TYP_SIMD12)
+                {
+                    // Vector3 is read/written as two reads/writes: 8 byte and 4 byte.
+                    // To assemble the vector properly we would need an additional int register.
+                    // The other platforms can write it as 16-byte using 1 write.
+                    buildInternalIntRegisterDefForNode(use.GetNode());
+                }
+#endif // FEATURE_SIMD && OSX_ARM64_ABI
             }
         }
         else
@@ -450,6 +460,15 @@ int LinearScan::BuildPutArgStk(GenTreePutArgStk* argNode)
     {
         assert(!putArgChild->isContained());
         srcCount = BuildOperandUses(putArgChild);
+#if defined(FEATURE_SIMD) && defined(OSX_ARM64_ABI)
+        if (argNode->GetStackByteSize() == 12)
+        {
+            // Vector3 is read/written as two reads/writes: 8 byte and 4 byte.
+            // To assemble the vector properly we would need an additional int register.
+            // The other platforms can write it as 16-byte using 1 write.
+            buildInternalIntRegisterDefForNode(argNode);
+        }
+#endif // FEATURE_SIMD && OSX_ARM64_ABI
     }
     buildInternalRegisterUses();
     return srcCount;

@@ -261,6 +261,14 @@ namespace Internal.TypeSystem
             return type.Context.GetAllMethods(type);
         }
 
+        /// <summary>
+        /// Retrieves all virtual methods on a type, including the ones injected by the type system context.
+        /// </summary>
+        public static IEnumerable<MethodDesc> GetAllVirtualMethods(this TypeDesc type)
+        {
+            return type.Context.GetAllVirtualMethods(type);
+        }
+
         public static IEnumerable<MethodDesc> EnumAllVirtualSlots(this TypeDesc type)
         {
             return type.Context.GetVirtualMethodAlgorithmForType(type).ComputeAllVirtualSlots(type);
@@ -278,6 +286,11 @@ namespace Internal.TypeSystem
         public static MethodDesc ResolveVariantInterfaceMethodToVirtualMethodOnType(this TypeDesc type, MethodDesc interfaceMethod)
         {
             return type.Context.GetVirtualMethodAlgorithmForType(type).ResolveVariantInterfaceMethodToVirtualMethodOnType(interfaceMethod, type);
+        }
+
+        public static DefaultInterfaceMethodResolution ResolveInterfaceMethodToDefaultImplementationOnType(this TypeDesc type, MethodDesc interfaceMethod, out MethodDesc implMethod)
+        {
+            return type.Context.GetVirtualMethodAlgorithmForType(type).ResolveInterfaceMethodToDefaultImplementationOnType(interfaceMethod, type, out implMethod);
         }
 
         /// <summary>
@@ -362,6 +375,26 @@ namespace Internal.TypeSystem
             do
             {
                 result = currentType.ResolveInterfaceMethodToVirtualMethodOnType(interfaceMethodToResolve);
+                currentType = currentType.BaseType;
+            }
+            while (result == null && currentType != null);
+
+            return result;
+        }
+
+        /// <summary>
+        /// Scan the type and its base types for an implementation of an interface method. Returns null if no
+        /// implementation is found.
+        /// </summary>
+        public static MethodDesc ResolveInterfaceMethodTargetWithVariance(this TypeDesc thisType, MethodDesc interfaceMethodToResolve)
+        {
+            Debug.Assert(interfaceMethodToResolve.OwningType.IsInterface);
+
+            MethodDesc result = null;
+            TypeDesc currentType = thisType;
+            do
+            {
+                result = currentType.ResolveVariantInterfaceMethodToVirtualMethodOnType(interfaceMethodToResolve);
                 currentType = currentType.BaseType;
             }
             while (result == null && currentType != null);

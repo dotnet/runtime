@@ -14,10 +14,8 @@ using NTSTATUS = Interop.BCrypt.NTSTATUS;
 
 namespace Internal.Cryptography
 {
-    internal partial class Pbkdf2Implementation
+    internal static partial class Pbkdf2Implementation
     {
-        private static readonly bool s_usePseudoHandles = OperatingSystem.IsWindowsVersionAtLeast(10, 0, 0);
-
         // For Windows 7 we will use BCryptDeriveKeyPBKDF2. For Windows 8+ we will use BCryptKeyDerivation
         // since it has better performance.
         private static readonly bool s_useKeyDerivation = OperatingSystem.IsWindowsVersionAtLeast(8, 0, 0);
@@ -115,7 +113,7 @@ namespace Internal.Cryptography
 
             NTSTATUS generateKeyStatus;
 
-            if (s_usePseudoHandles)
+            if (Interop.BCrypt.PseudoHandlesSupported)
             {
                 fixed (byte* pSymmetricKeyMaterial = symmetricKeyMaterial)
                 {

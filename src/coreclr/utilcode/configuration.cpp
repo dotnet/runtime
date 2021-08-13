@@ -52,7 +52,7 @@ static LPCWSTR GetConfigurationValue(LPCWSTR name)
 DWORD Configuration::GetKnobDWORDValue(LPCWSTR name, const CLRConfig::ConfigDWORDInfo& dwordInfo)
 {
     bool returnedDefaultValue;
-    DWORD legacyValue = CLRConfig::GetConfigValue(dwordInfo, true /* acceptExplicitDefaultFromRegutil */, &returnedDefaultValue);
+    DWORD legacyValue = CLRConfig::GetConfigValue(dwordInfo, &returnedDefaultValue);
     if (!returnedDefaultValue)
     {
         return legacyValue;
@@ -108,7 +108,7 @@ LPCWSTR Configuration::GetKnobStringValue(LPCWSTR name)
 bool Configuration::GetKnobBooleanValue(LPCWSTR name, const CLRConfig::ConfigDWORDInfo& dwordInfo)
 {
     bool returnedDefaultValue;
-    DWORD legacyValue = CLRConfig::GetConfigValue(dwordInfo, true /* acceptExplicitDefaultFromRegutil */, &returnedDefaultValue);
+    DWORD legacyValue = CLRConfig::GetConfigValue(dwordInfo, &returnedDefaultValue);
     if (!returnedDefaultValue)
     {
         return (legacyValue != 0);

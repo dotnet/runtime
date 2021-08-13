@@ -203,7 +203,7 @@ namespace Tracing.Tests.Common
             });
             sentinelTask.Start();
 
-            int processId = Process.GetCurrentProcess().Id;;
+            int processId = Process.GetCurrentProcess().Id;
             object threadSync = new object(); // for locking eventpipeSessionId access
             ulong eventpipeSessionId = 0;
             Func<int> optionalTraceValidationCallback = null;
@@ -347,7 +347,7 @@ namespace Tracing.Tests.Common
         // the process that created them, so we don't need to check on that platform.
         static public bool EnsureCleanEnvironment()
         {
-            if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            if (!OperatingSystem.IsWindows())
             {
                 Func<(IEnumerable<IGrouping<int,FileInfo>>, List<int>)> getPidsAndSockets = () =>
                 {

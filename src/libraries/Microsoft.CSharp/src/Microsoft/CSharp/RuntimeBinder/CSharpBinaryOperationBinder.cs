@@ -30,9 +30,11 @@ namespace Microsoft.CSharp.RuntimeBinder
 
         public BindingFlag BindingFlags => 0;
 
+        [RequiresUnreferencedCode(Binder.TrimmerWarning)]
         public Expr DispatchPayload(RuntimeBinder runtimeBinder, ArgumentObject[] arguments, LocalVariableSymbol[] locals)
             => runtimeBinder.BindBinaryOperation(this, arguments, locals);
 
+        [RequiresUnreferencedCode(Binder.TrimmerWarning)]
         public void PopulateSymbolTableWithName(Type callingType, ArgumentObject[] arguments)
         {
             string name = Operation.GetCLROperatorName();
@@ -67,6 +69,7 @@ namespace Microsoft.CSharp.RuntimeBinder
         /// <param name="binaryOperationFlags">The flags associated with this binary operation.</param>
         /// <param name="callingContext">The <see cref="Type"/> that indicates where this operation is defined.</param>
         /// <param name="argumentInfo">The sequence of <see cref="CSharpArgumentInfo"/> instances for the arguments to this operation.</param>
+        [RequiresUnreferencedCode(Binder.TrimmerWarning)]
         public CSharpBinaryOperationBinder(
             ExpressionType operation,
             bool isChecked,
@@ -122,6 +125,8 @@ namespace Microsoft.CSharp.RuntimeBinder
         /// <param name="arg">The right hand side operand of the dynamic binary operation.</param>
         /// <param name="errorSuggestion">The binding result in case the binding fails, or null.</param>
         /// <returns>The <see cref="DynamicMetaObject"/> representing the result of the binding.</returns>
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+            Justification = "This whole class is unsafe. Constructors are marked as such.")]
         public override DynamicMetaObject FallbackBinaryOperation(DynamicMetaObject target, DynamicMetaObject arg, DynamicMetaObject errorSuggestion)
         {
             BinderHelper.ValidateBindArgument(target, nameof(target));

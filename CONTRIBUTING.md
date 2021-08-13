@@ -5,7 +5,7 @@ You can contribute to .NET Runtime with issues and PRs. Simply filing issues for
 
 ## Contribution "Bar"
 
-Project maintainers will merge changes that improve the product significantly and broadly and that align with the [.NET Roadmap](https://github.com/dotnet/core/blob/master/roadmap.md).
+Project maintainers will merge changes that improve the product significantly and broadly align with the [.NET Roadmap](https://github.com/dotnet/core/blob/master/roadmap.md).
 
 Maintainers will not merge changes that have narrowly-defined benefits, due to compatibility risk. The .NET Core codebase is used by several Microsoft products (for example, ASP.NET Core, .NET Framework 4.x, Windows Universal Apps) to enable execution of managed code. Other companies are building products on top of .NET, too. We may revert changes if they are found to be breaking.
 
@@ -48,7 +48,7 @@ We use and recommend the following workflow:
     - If your change adds a new API, follow the [API Review Process](docs/project/api-review-process.md).
     - Clearly state that you are going to take on implementing it, if that's the case. You can request that the issue be assigned to you. Note: The issue filer and the implementer don't have to be the same person.
 2. Create a personal fork of the repository on GitHub (if you don't already have one).
-3. In your fork, create a branch off of master (`git checkout -b mybranch`).
+3. In your fork, create a branch off of main (`git checkout -b mybranch`).
     - Name the branch so that it clearly communicates your intentions, such as issue-123 or githubhandle-issue.
     - Branches are useful since they isolate your changes from incoming changes from upstream. They also enable you to create multiple PRs from the same fork.
 4. Make and commit your changes to your branch.
@@ -58,7 +58,7 @@ We use and recommend the following workflow:
 6. Build the repository with your changes.
     - Make sure that the builds are clean.
     - Make sure that the tests are all passing, including your new tests.
-7. Create a pull request (PR) against the dotnet/runtime repository's **master** branch.
+7. Create a pull request (PR) against the dotnet/runtime repository's **main** branch.
     - State in the description what issue or improvement your change is addressing.
     - Check if all the Continuous Integration checks are passing.
 8. Wait for feedback or approval of your changes from the [area owners](docs/area-owners.md).

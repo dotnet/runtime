@@ -19,7 +19,7 @@ if(CLR_CMAKE_HOST_WIN32)
         createdump.rc
     )
 
-    _add_executable(createdump
+    add_executable_clr(createdump
         ${CREATEDUMP_SOURCES}
     )
 
@@ -49,6 +49,9 @@ else(CLR_CMAKE_HOST_WIN32)
 
     add_definitions(-DPAL_STDCPP_COMPAT)
 
+    # This is so we can include "version.c"
+    include_directories(${CMAKE_BINARY_DIR})
+
     set(CREATEDUMP_SOURCES
         main.cpp
         dumpname.cpp
@@ -57,18 +60,21 @@ else(CLR_CMAKE_HOST_WIN32)
         threadinfo.cpp
         datatarget.cpp
         dumpwriter.cpp
+        crashreportwriter.cpp
     )
 
 if(CLR_CMAKE_HOST_OSX)
-    _add_executable(createdump
+    add_executable_clr(createdump
         crashinfomac.cpp
         threadinfomac.cpp
+        dumpwritermacho.cpp
         ${CREATEDUMP_SOURCES}
     )
 else()
-    _add_executable(createdump
+    add_executable_clr(createdump
         crashinfounix.cpp
         threadinfounix.cpp
+        dumpwriterelf.cpp
         ${CREATEDUMP_SOURCES}
         ${PAL_REDEFINES_FILE}
     )
@@ -80,10 +86,11 @@ endif(CLR_CMAKE_HOST_OSX)
         dbgutil
         # share the PAL in the dac module
         mscordaccore
+        dl
     )
 
     add_dependencies(createdump mscordaccore)
 
 endif(CLR_CMAKE_HOST_WIN32)
 
-install_clr(TARGETS createdump ADDITIONAL_DESTINATIONS sharedFramework)
+install_clr(TARGETS createdump DESTINATIONS . sharedFramework COMPONENT runtime)

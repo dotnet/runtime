@@ -1,5 +1,5 @@
 <Project>
-  <ItemGroup>
+  <ItemGroup Condition="'$(IsFrameworkSupportFacade)' == 'true'">
     <ResolvedMatchingContract Include="$(ContractAssemblyPath)" />
   </ItemGroup>
 

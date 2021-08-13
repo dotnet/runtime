@@ -111,7 +111,7 @@ namespace System.CodeDom.Compiler.Tests
             string code = GenerateCode(c, provider);
 
             Assert.Equal(
-                CoalesceWhitespace(expected), 
+                CoalesceWhitespace(LineEndingsHelper.Normalize(expected)),
                 CoalesceWhitespace(code));            
         }
 
@@ -126,7 +126,7 @@ namespace System.CodeDom.Compiler.Tests
 
             // Make sure the code matches what we expected
             Assert.Equal(
-                CoalesceWhitespace(expected, preserveNewLines: true), 
+                CoalesceWhitespace(LineEndingsHelper.Normalize(expected), preserveNewLines: true),
                 CoalesceWhitespace(code, preserveNewLines: true));
         }
 

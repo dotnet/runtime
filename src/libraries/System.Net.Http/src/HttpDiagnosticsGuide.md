@@ -1,12 +1,12 @@
 # HttpClient Diagnostic  Instrumentation Users Guide
 
-This document describes `HttpClientHandler` instrumentation with [`DiagnosticSource`](https://github.com/dotnet/runtime/blob/master/src/libraries/System.Diagnostics.DiagnosticSource/src/DiagnosticSourceUsersGuide.md).
+This document describes `HttpClientHandler` instrumentation with [`DiagnosticSource`](https://github.com/dotnet/runtime/blob/main/src/libraries/System.Diagnostics.DiagnosticSource/src/DiagnosticSourceUsersGuide.md).
 
 # Overview
 Applications typically log outgoing HTTP requests. Usually, it's done with `DelegatingHandler` implementation that logs every request. However, in an existing system, it may require extensive code changes, since `DelegatingHandler` needs to be added to the `HttpClient` pipeline every time when a new client is created.
 `DiagnosticListener` instrumentation allows to enable outgoing request tracing with a few lines of code; it also provides the context necessary to correlate logs.
 
-Context is represented as `System.Diagnostics.Activity` class. `Activity` may be started as a child of another `Activity`, and the whole operation is represented with a tree of Activities. You can find more details in the [Activity User Guide](https://github.com/dotnet/runtime/blob/master/src/libraries/System.Diagnostics.DiagnosticSource/src/ActivityUserGuide.md).
+Context is represented as `System.Diagnostics.Activity` class. `Activity` may be started as a child of another `Activity`, and the whole operation is represented with a tree of Activities. You can find more details in the [Activity User Guide](https://github.com/dotnet/runtime/blob/main/src/libraries/System.Diagnostics.DiagnosticSource/src/ActivityUserGuide.md).
 
 `Activity` carries useful properties for logging such as `Id`, `Tags`, `Baggage`, start time and parent information.
 
@@ -17,7 +17,7 @@ Instrumentation adds context into the request headers:
  * *Request-Id* header with `Activity.Id` value
  * *Correlation-Context* header with `Activity.Baggage` key-value pair list in `k1=v1, k2=v2` format
 
-See [HTTP Protocol proposal](https://github.com/dotnet/runtime/blob/master/src/libraries/System.Diagnostics.DiagnosticSource/src/HttpCorrelationProtocol.md) for more details.
+See [HTTP Protocol proposal](https://github.com/dotnet/runtime/blob/main/src/libraries/System.Diagnostics.DiagnosticSource/src/HttpCorrelationProtocol.md) for more details.
 
 ## Subscription
 Instrumentation is off by default. To enable it, consumer firstly needs to subscribe to a `DiagnosticListener` called *HttpHandlerDiagnosticListener*.

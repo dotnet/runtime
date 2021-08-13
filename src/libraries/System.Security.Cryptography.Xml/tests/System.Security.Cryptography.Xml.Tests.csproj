@@ -3,7 +3,8 @@
     <TargetFrameworks>$(NetCoreAppCurrent);net461</TargetFrameworks>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="AssemblyInfo.cs" />
+    <Compile Include="$(CommonTestPath)System\Security\Cryptography\PlatformSupport.cs"
+             Link="CommonTest\System\Security\Cryptography\PlatformSupport.cs" />
     <Compile Include="AssertCrypto.cs" />
     <Compile Include="CipherDataTests.cs" />
     <Compile Include="DataObjectTest.cs" />
@@ -68,7 +69,9 @@
   <ItemGroup>
     <ProjectReference Include="..\src\System.Security.Cryptography.Xml.csproj" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetFramework)' == 'net461'">
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">
     <Reference Include="System.Security" />
+    <!-- Manually reference the transitive dependency to make NuGet pick the package over the transitive project: https://github.com/NuGet/Home/issues/10368 -->
+    <PackageReference Include="System.Security.Principal.Windows" Version="$(SystemSecurityPrincipalWindowsVersion)" PrivateAssets="all" />
   </ItemGroup>
 </Project>

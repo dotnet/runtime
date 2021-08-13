@@ -26,6 +26,6 @@ if(NOT CLR_CMAKE_TARGET_WIN32)
     disable_pax_mprotect(${DOTNET_PROJECT_NAME})
 endif()
 
-install_with_stripped_symbols(${DOTNET_PROJECT_NAME} TARGETS corehost)
+install_with_stripped_symbols(${DOTNET_PROJECT_NAME} TARGETS corehost ${ADDITIONAL_INSTALL_ARGUMENTS})
 
 set_common_libs("exe")

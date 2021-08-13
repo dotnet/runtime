@@ -4,9 +4,9 @@
 using System;
 using System.Runtime.InteropServices;
 
-internal partial class Interop
+internal static partial class Interop
 {
-    internal partial class SspiCli
+    internal static partial class SspiCli
     {
         [StructLayout(LayoutKind.Sequential)]
         internal struct QUOTA_LIMITS

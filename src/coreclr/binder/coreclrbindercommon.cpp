@@ -10,17 +10,6 @@
 
 using namespace BINDER_SPACE;
 
-//=============================================================================
-// Init code
-//-----------------------------------------------------------------------------
-/* static */
-HRESULT CCoreCLRBinderHelper::Init()
-{
-    STATIC_CONTRACT_NOTHROW;
-
-    return AssemblyBinder::Startup();
-}
-
 HRESULT CCoreCLRBinderHelper::DefaultBinderSetupContext(DWORD dwAppDomainId,CLRPrivBinderCoreCLR **ppTPABinder)
 {
     HRESULT hr = S_OK;

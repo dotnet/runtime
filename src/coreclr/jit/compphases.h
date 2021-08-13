@@ -72,16 +72,10 @@ CompPhaseNameMacro(PHASE_BUILD_SSA_LIVENESS,     "SSA: liveness",               
 CompPhaseNameMacro(PHASE_BUILD_SSA_DF,           "SSA: DF",                        "SSA-DF",   false, PHASE_BUILD_SSA, false)
 CompPhaseNameMacro(PHASE_BUILD_SSA_INSERT_PHIS,  "SSA: insert phis",               "SSA-PHI",  false, PHASE_BUILD_SSA, false)
 CompPhaseNameMacro(PHASE_BUILD_SSA_RENAME,       "SSA: rename",                    "SSA-REN",  false, PHASE_BUILD_SSA, false)
-
 CompPhaseNameMacro(PHASE_EARLY_PROP,             "Early Value Propagation",        "ERL-PROP", false, -1, false)
 CompPhaseNameMacro(PHASE_VALUE_NUMBER,           "Do value numbering",             "VAL-NUM",  false, -1, false)
-
 CompPhaseNameMacro(PHASE_OPTIMIZE_INDEX_CHECKS,  "Optimize index checks",          "OPT-CHK",  false, -1, false)
-
-#if FEATURE_VALNUM_CSE
 CompPhaseNameMacro(PHASE_OPTIMIZE_VALNUM_CSES,   "Optimize Valnum CSEs",           "OPT-CSE",  false, -1, false)
-#endif
-
 CompPhaseNameMacro(PHASE_VN_COPY_PROP,           "VN based copy prop",             "CP-PROP",  false, -1, false)
 CompPhaseNameMacro(PHASE_OPTIMIZE_BRANCHES,      "Redundant branch opts",          "OPT-BR",   false, -1, false)
 #if ASSERTION_PROP

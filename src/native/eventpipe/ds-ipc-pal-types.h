@@ -47,7 +47,7 @@ typedef enum {
  */
 
 // The bookeeping struct used for polling on server and client structs
-#if defined(DS_INLINE_GETTER_SETTER) || defined(DS_IMPL_IPC_PAL_GETTER_SETTER) || defined(DS_IMPL_IPC_WIN32_GETTER_SETTER) || defined(DS_IMPL_IPC_POSIX_GETTER_SETTER)
+#if defined(DS_INLINE_GETTER_SETTER) || defined(DS_IMPL_IPC_PAL_GETTER_SETTER) || defined(DS_IMPL_IPC_PAL_NAMEDPIPE_GETTER_SETTER) || defined(DS_IMPL_IPC_PAL_SOCKET_GETTER_SETTER)
 struct _DiagnosticsIpcPollHandle {
 #else
 struct _DiagnosticsIpcPollHandle_Internal {
@@ -65,7 +65,7 @@ struct _DiagnosticsIpcPollHandle_Internal {
 	void *user_data;
 };
 
-#if !defined(DS_INLINE_GETTER_SETTER) && !defined(DS_IMPL_IPC_PAL_GETTER_SETTER) && !defined(DS_IMPL_IPC_WIN32_GETTER_SETTER) && !defined(DS_IMPL_IPC_POSIX_GETTER_SETTER)
+#if !defined(DS_INLINE_GETTER_SETTER) && !defined(DS_IMPL_IPC_PAL_GETTER_SETTER) && !defined(DS_IMPL_IPC_PAL_NAMEDPIPE_GETTER_SETTER) && !defined(DS_IMPL_IPC_PAL_SOCKET_GETTER_SETTER)
 struct _DiagnosticsIpcPollHandle {
 	uint8_t _internal [sizeof (struct _DiagnosticsIpcPollHandle_Internal)];
 };

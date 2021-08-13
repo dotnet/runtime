@@ -180,11 +180,11 @@ namespace System.Linq.Parallel
         // return any duplicates.
         //
 
-        private class UnionQueryOperatorEnumerator<TLeftKey, TRightKey> : QueryOperatorEnumerator<TInputOutput, int>
+        private sealed class UnionQueryOperatorEnumerator<TLeftKey, TRightKey> : QueryOperatorEnumerator<TInputOutput, int>
         {
             private QueryOperatorEnumerator<Pair<TInputOutput, NoKeyMemoizationRequired>, TLeftKey>? _leftSource; // Left data source.
             private QueryOperatorEnumerator<Pair<TInputOutput, NoKeyMemoizationRequired>, TRightKey>? _rightSource; // Right data source.
-            private Set<TInputOutput>? _hashLookup; // The hash lookup, used to produce the union.
+            private HashSet<TInputOutput>? _hashLookup; // The hash lookup, used to produce the union.
             private readonly CancellationToken _cancellationToken;
             private Shared<int>? _outputLoopCount;
             private readonly IEqualityComparer<TInputOutput>? _comparer;
@@ -216,7 +216,7 @@ namespace System.Linq.Parallel
             {
                 if (_hashLookup == null)
                 {
-                    _hashLookup = new Set<TInputOutput>(_comparer);
+                    _hashLookup = new HashSet<TInputOutput>(_comparer);
                     _outputLoopCount = new Shared<int>(0);
                 }
 
@@ -234,7 +234,7 @@ namespace System.Linq.Parallel
                     while (_leftSource.MoveNext(ref currentLeftElement, ref keyUnused))
                     {
                         if ((i++ & CancellationState.POLL_INTERVAL) == 0)
-                            _cancellationToken.ThrowIfCancellationRequested();;
+                            _cancellationToken.ThrowIfCancellationRequested();
 
                         // We ensure we never return duplicates by tracking them in our set.
                         if (_hashLookup.Add(currentLeftElement.First))
@@ -262,7 +262,7 @@ namespace System.Linq.Parallel
                     {
                         Debug.Assert(_outputLoopCount != null);
                         if ((_outputLoopCount.Value++ & CancellationState.POLL_INTERVAL) == 0)
-                            _cancellationToken.ThrowIfCancellationRequested();;
+                            _cancellationToken.ThrowIfCancellationRequested();
 
                         // We ensure we never return duplicates by tracking them in our set.
                         if (_hashLookup.Add(currentRightElement.First))
@@ -295,7 +295,7 @@ namespace System.Linq.Parallel
             }
         }
 
-        private class OrderedUnionQueryOperatorEnumerator<TLeftKey, TRightKey> : QueryOperatorEnumerator<TInputOutput, ConcatKey<TLeftKey, TRightKey>>
+        private sealed class OrderedUnionQueryOperatorEnumerator<TLeftKey, TRightKey> : QueryOperatorEnumerator<TInputOutput, ConcatKey<TLeftKey, TRightKey>>
         {
             private readonly QueryOperatorEnumerator<Pair<TInputOutput, NoKeyMemoizationRequired>, TLeftKey> _leftSource; // Left data source.
             private readonly QueryOperatorEnumerator<Pair<TInputOutput, NoKeyMemoizationRequired>, TRightKey> _rightSource; // Right data source.
@@ -357,7 +357,7 @@ namespace System.Linq.Parallel
                     while (_leftSource.MoveNext(ref elem, ref leftKey))
                     {
                         if ((i++ & CancellationState.POLL_INTERVAL) == 0)
-                            _cancellationToken.ThrowIfCancellationRequested();;
+                            _cancellationToken.ThrowIfCancellationRequested();
 
                         ConcatKey<TLeftKey, TRightKey> key =
                             ConcatKey<TLeftKey, TRightKey>.MakeLeft(_leftOrdered ? leftKey : default);
@@ -374,7 +374,7 @@ namespace System.Linq.Parallel
                     while (_rightSource.MoveNext(ref elem, ref rightKey))
                     {
                         if ((i++ & CancellationState.POLL_INTERVAL) == 0)
-                            _cancellationToken.ThrowIfCancellationRequested();;
+                            _cancellationToken.ThrowIfCancellationRequested();
 
                         ConcatKey<TLeftKey, TRightKey> key =
                             ConcatKey<TLeftKey, TRightKey>.MakeRight(_rightOrdered ? rightKey : default);

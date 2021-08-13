@@ -5,4 +5,4 @@ using System;
 using Xunit;
 
 [assembly: ActiveIssue("https://github.com/dotnet/runtime/issues/35917", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoInterpreter))]
-[assembly: SkipOnMono("System.Drawing.Common is not supported on Browser", TestPlatforms.Browser)]
+[assembly: SkipOnPlatform(TestPlatforms.Browser, "System.Drawing.Common is not supported on Browser")]

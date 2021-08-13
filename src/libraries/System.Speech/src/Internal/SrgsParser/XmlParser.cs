@@ -1018,7 +1018,7 @@ namespace System.Speech.Internal.SrgsParser
                 ThrowSrgsException(SRID.InvalidEmptyElement, "token");
             }
 
-            if (content.IndexOf('\"') >= 0)
+            if (content.Contains('\"'))
             {
                 ThrowSrgsException(SRID.InvalidTokenString);
             }
@@ -1060,7 +1060,7 @@ namespace System.Speech.Internal.SrgsParser
 
             System.Diagnostics.Debug.Assert(_parser.Grammar.TagFormat == SrgsTagFormat.KeyValuePairs);
 
-            IPropertyTag propertyTag = _parser.CreatePropertyTag(parent); ;
+            IPropertyTag propertyTag = _parser.CreatePropertyTag(parent);
             string name;
             object value;
             ParsePropertyTag(content, out name, out value);

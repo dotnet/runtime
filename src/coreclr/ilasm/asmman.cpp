@@ -10,7 +10,6 @@
 #include "assembler.h"
 #include "strongnameinternal.h"
 #include <limits.h>
-#include <fusion.h>
 
 extern WCHAR*   pwzInputFiles[];
 
@@ -354,7 +353,7 @@ void AsmMan::EmitDebuggableAttribute(mdToken tkOwner)
         pbsSig->appendInt8(ELEMENT_TYPE_VOID);
         pbsSig->append(&bsSigArg);
 
-        bsBytes->appendInt32(pAsm->m_dwIncludeDebugInfo);
+        bsBytes->appendInt32(VAL32(pAsm->m_dwIncludeDebugInfo));
     }
     bsBytes->appendInt8(0);
     bsBytes->appendInt8(0);
@@ -456,7 +455,7 @@ void    AsmMan::EndAssembly()
                     // into the public key buffer).
                     if (m_sStrongName.m_cbPublicKey >= sizeof(PublicKeyBlob) &&
                         (offsetof(PublicKeyBlob, PublicKey) +
-                         ((PublicKeyBlob*)m_sStrongName.m_pbPublicKey)->cbPublicKey) == m_sStrongName.m_cbPublicKey)
+                         VAL32(((PublicKeyBlob*)m_sStrongName.m_pbPublicKey)->cbPublicKey)) == m_sStrongName.m_cbPublicKey)
                         m_sStrongName.m_fFullSign = FALSE;
                     else
                         m_sStrongName.m_fFullSign = TRUE;
@@ -1001,8 +1000,9 @@ HRESULT AsmMan::EmitManifest()
                             m_fMResNew[m_dwMResNum] = TRUE;
                             m_dwMResNum++;
                         }
-                        CloseHandle(hFile);
                     }
+
+                    CloseHandle(hFile);
                 }
             }
             if(fOK || ((Assembler*)m_pAssembler)->OnErrGo)

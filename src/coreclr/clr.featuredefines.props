@@ -9,17 +9,19 @@
         <FeaturePerfTracing>true</FeaturePerfTracing>
         <FeatureTypeEquivalence>true</FeatureTypeEquivalence>
         <FeatureBasicFreeze>true</FeatureBasicFreeze>
+        <FeatureGenericMath>true</FeatureGenericMath>
         <ProfilingSupportedBuild>true</ProfilingSupportedBuild>
     </PropertyGroup>
 
     <PropertyGroup Condition="'$(TargetsUnix)' == 'true'">
-        <FeatureXplatEventSource Condition="'$(TargetOS)'!='OSX'">true</FeatureXplatEventSource>
+        <FeatureXplatEventSource Condition="'$(TargetOS)' == 'Linux'">true</FeatureXplatEventSource>
 
         <FeatureArrayStubAsIL>true</FeatureArrayStubAsIL>
         <FeatureMulticastStubAsIL>true</FeatureMulticastStubAsIL>
         <FeaturePortableShuffleThunks Condition="'$(Platform)' != 'x86'">true</FeaturePortableShuffleThunks>
         <FeatureInstantiatingStubAsIL>true</FeatureInstantiatingStubAsIL>
         <FeatureStubsAsIL>true</FeatureStubsAsIL>
+        <FeatureComWrappers>true</FeatureComWrappers>
     </PropertyGroup>
 
     <PropertyGroup Condition="'$(TargetsWindows)' == 'true'">
@@ -28,12 +30,15 @@
         <FeatureStubsAsIL Condition="'$(Platform)' == 'arm64'">true</FeatureStubsAsIL>
         <FeatureComWrappers>true</FeatureComWrappers>
         <FeatureCominterop>true</FeatureCominterop>
-        <FeatureCominteropUnmanagedActivation>true</FeatureCominteropUnmanagedActivation>
         <FeatureCominteropApartmentSupport>true</FeatureCominteropApartmentSupport>
         <FeatureWin32Registry>true</FeatureWin32Registry>
         <FeatureProfAttach>true</FeatureProfAttach>
         <FeaturePortableShuffleThunks Condition="'$(Platform)' != 'x86'">true</FeaturePortableShuffleThunks>
         <FeatureInstantiatingStubAsIL Condition="'$(Platform)' != 'x86'">true</FeatureInstantiatingStubAsIL>
+    </PropertyGroup>
+
+    <PropertyGroup Condition="'$(TargetsOSX)' == 'true' OR '$(TargetsMacCatalyst)' == 'true' OR '$(TargetsiOS)' == 'true' OR '$(TargetstvOS)' == 'true'">
+        <FeatureObjCMarshal>true</FeatureObjCMarshal>
     </PropertyGroup>
 
     <PropertyGroup>
@@ -45,7 +50,7 @@
         <DefineConstants Condition="'$(FeatureComWrappers)' == 'true'">$(DefineConstants);FEATURE_COMWRAPPERS</DefineConstants>
         <DefineConstants Condition="'$(FeatureCominterop)' == 'true'">$(DefineConstants);FEATURE_COMINTEROP</DefineConstants>
         <DefineConstants Condition="'$(FeatureCominteropApartmentSupport)' == 'true'">$(DefineConstants);FEATURE_COMINTEROP_APARTMENT_SUPPORT</DefineConstants>
-        <DefineConstants Condition="'$(FeatureCominteropUnmanagedActivation)' == 'true'">$(DefineConstants);FEATURE_COMINTEROP_UNMANAGED_ACTIVATION</DefineConstants>
+        <DefineConstants Condition="'$(FeatureObjCMarshal)' == 'true'">$(DefineConstants);FEATURE_OBJCMARSHAL</DefineConstants>
         <DefineConstants Condition="'$(FeatureManagedEtw)' == 'true'">$(DefineConstants);FEATURE_MANAGED_ETW</DefineConstants>
         <DefineConstants Condition="'$(FeatureManagedEtwChannels)' == 'true'">$(DefineConstants);FEATURE_MANAGED_ETW_CHANNELS</DefineConstants>
         <DefineConstants Condition="'$(FeaturePerfTracing)' == 'true'">$(DefineConstants);FEATURE_PERFTRACING</DefineConstants>
@@ -54,6 +59,8 @@
         <DefineConstants Condition="'$(FeatureTypeEquivalence)' == 'true'">$(DefineConstants);FEATURE_TYPEEQUIVALENCE</DefineConstants>
         <DefineConstants Condition="'$(FeatureBasicFreeze)' == 'true'">$(DefineConstants);FEATURE_BASICFREEZE</DefineConstants>
         <DefineConstants Condition="'$(FeaturePortableShuffleThunks)' == 'true'">$(DefineConstants);FEATURE_PORTABLE_SHUFFLE_THUNKS</DefineConstants>
+        <DefineConstants Condition="'$(FeatureICastable)' == 'true'">$(DefineConstants);FEATURE_ICASTABLE</DefineConstants>
+        <DefineConstants Condition="'$(FeatureGenericMath)' == 'true'">$(DefineConstants);FEATURE_GENERIC_MATH</DefineConstants>
 
         <DefineConstants Condition="'$(ProfilingSupportedBuild)' == 'true'">$(DefineConstants);PROFILING_SUPPORTED</DefineConstants>
         <DefineConstants Condition="'$(FeatureProfAttach)' == 'true'">$(DefineConstants);FEATURE_PROFAPI_ATTACH_DETACH</DefineConstants>

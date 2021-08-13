@@ -267,6 +267,12 @@ typedef struct _rt_coreclr_array_iterator_internal_t<EventPipeSessionID> ep_rt_s
 #undef ep_rt_method_desc_t
 typedef class MethodDesc ep_rt_method_desc_t;
 
+#undef ep_rt_execution_checkpoint_array_t
+typedef struct _rt_coreclr_array_internal_t<EventPipeExecutionCheckpoint *> ep_rt_execution_checkpoint_array_t;
+
+#undef ep_rt_execution_checkpoint_array_iterator_t
+typedef struct _rt_coreclr_array_iterator_internal_t<EventPipeExecutionCheckpoint *> ep_rt_execution_checkpoint_array_iterator_t;
+
 /*
  * PAL.
  */
@@ -325,10 +331,10 @@ typedef struct _rt_coreclr_thread_params_t {
  */
 
 #undef ep_rt_thread_sequence_number_hash_map_t
-typedef struct _rt_coreclr_table_default_internal_t<EventPipeThreadSessionState *, uint32_t> ep_rt_thread_sequence_number_hash_map_t;
+typedef struct _rt_coreclr_table_remove_internal_t<EventPipeThreadSessionState *, uint32_t> ep_rt_thread_sequence_number_hash_map_t;
 
 #undef ep_rt_thread_sequence_number_hash_map_iterator_t
-typedef class _rt_coreclr_table_default_internal_t<EventPipeThreadSessionState *, uint32_t>::table_type_t::Iterator ep_rt_thread_sequence_number_hash_map_iterator_t;
+typedef class _rt_coreclr_table_remove_internal_t<EventPipeThreadSessionState *, uint32_t>::table_type_t::Iterator ep_rt_thread_sequence_number_hash_map_iterator_t;
 
 #endif /* ENABLE_PERFTRACING */
 #endif /* __EVENTPIPE_RT_TYPES_CORECLR_H__ */

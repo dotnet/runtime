@@ -1,0 +1,162 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<xliff xmlns="urn:oasis:names:tc:xliff:document:1.2" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" version="1.2" xsi:schemaLocation="urn:oasis:names:tc:xliff:document:1.2 xliff-core-1.2-transitional.xsd">
+  <file datatype="xml" source-language="en" target-language="ko" original="../Strings.resx">
+    <body>
+      <trans-unit id="ArgumentHasNoCorrespondingTemplateMessage">
+        <source>Argument '{0}' is not referenced from the logging message</source>
+        <target state="translated">로깅 메시지에서 ‘{0}’ 인수를 참조하지 않습니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ArgumentHasNoCorrespondingTemplateTitle">
+        <source>Argument is not referenced from the logging message</source>
+        <target state="translated">로깅 메시지에서 인수를 참조하지 않음</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="GeneratingForMax6ArgumentsMessage">
+        <source>Generating more than 6 arguments is not supported</source>
+        <target state="translated">6개가 넘는 인수 생성은 지원되지 않음</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="InconsistentTemplateCasingMessage">
+        <source>Can't have the same template with different casing</source>
+        <target state="translated">동일한 템플릿을 대/소문자를 다르게 하여 사용할 수는 없음</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="InvalidLoggingMethodNameMessage">
+        <source>Logging method names cannot start with _</source>
+        <target state="translated">로깅 메서드 이름은 _로 시작할 수 없음</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="InvalidLoggingMethodParameterNameMessage">
+        <source>Logging method parameter names cannot start with _</source>
+        <target state="translated">로깅 메서드 매개 변수 이름은 _로 시작할 수 없음</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="LoggingMethodHasBodyMessage">
+        <source>Logging methods cannot have a body</source>
+        <target state="translated">로깅 메서드에는 본문을 사용할 수 없음</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="LoggingMethodIsGenericMessage">
+        <source>Logging methods cannot be generic</source>
+        <target state="translated">로깅 메서드는 제네릭일 수 없음</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="LoggingMethodMustBePartialMessage">
+        <source>Logging methods must be partial</source>
+        <target state="translated">로깅 메서드는 부분이어야 함</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="LoggingMethodMustReturnVoidMessage">
+        <source>Logging methods must return void</source>
+        <target state="translated">로깅 메서드는 void를 반환해야 함</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="LoggingMethodShouldBeStaticMessage">
+        <source>Logging methods must be static</source>
+        <target state="translated">로깅 메서드는 정적이어야 함</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="MalformedFormatStringsMessage">
+        <source>Can't have malformed format strings (like dangling {, etc)</source>
+        <target state="translated">잘못된 형식의 문자열(예: 짝이 맞지 않는 중괄호({))은 사용할 수 없음</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="MissingLogLevelMessage">
+        <source>A LogLevel value must be supplied in the LoggerMessage attribute or as a parameter to the logging method</source>
+        <target state="translated">LogLevel 값은 LoggerMessage 특성에 지정하거나 로깅 메서드에 대한 매개 변수로 제공해야 함</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="MissingLoggerArgumentMessage">
+        <source>One of the arguments to the static logging method '{0}' must implement the Microsoft.Extensions.Logging.ILogger interface</source>
+        <target state="translated">정적 로깅 메서드 ‘{0}’의 인수 중 하나가 Microsoft.Extensions.Logging.ILogger 인터페이스를 구현해야 함</target>
+        <note>{Locked="Microsoft.Extensions.Logging.ILogger"}</note>
+      </trans-unit>
+      <trans-unit id="MissingLoggerArgumentTitle">
+        <source>One of the arguments to a static logging method must implement the Microsoft.Extensions.Logging.ILogger interface</source>
+        <target state="translated">정적 로깅 메서드 인수 중 하나가 Microsoft.Extensions.Logging.ILogger 인터페이스를 구현해야 함</target>
+        <note>{Locked="Microsoft.Extensions.Logging.ILogger"}</note>
+      </trans-unit>
+      <trans-unit id="MissingLoggerFieldMessage">
+        <source>Couldn't find a field of type Microsoft.Extensions.Logging.ILogger in class {0}</source>
+        <target state="translated">{0} 클래스에서 Microsoft.Extensions.Logging.ILogger 형식의 필드를 찾을 수 없음</target>
+        <note>{Locked="Microsoft.Extensions.Logging.ILogger"}</note>
+      </trans-unit>
+      <trans-unit id="MissingLoggerFieldTitle">
+        <source>Couldn't find a field of type Microsoft.Extensions.Logging.ILogger</source>
+        <target state="translated">Microsoft.Extensions.Logging.ILogger 형식의 필드를 찾을 수 없음</target>
+        <note>{Locked="Microsoft.Extensions.Logging.ILogger"}</note>
+      </trans-unit>
+      <trans-unit id="MissingRequiredTypeMessage">
+        <source>Could not find definition for type {0}</source>
+        <target state="translated">형식 {0}에 대한 정의를 찾을 수 없음</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="MissingRequiredTypeTitle">
+        <source>Could not find a required type definition</source>
+        <target state="translated">필요한 형식 정의를 찾을 수 없음</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="MultipleLoggerFieldsMessage">
+        <source>Found multiple fields of type Microsoft.Extensions.Logging.ILogger in class {0}</source>
+        <target state="translated">{0} 클래스에 Microsoft.Extensions.Logging.ILogger 형식의 필드가 여러 개 있음</target>
+        <note>{Locked="Microsoft.Extensions.Logging.ILogger"}</note>
+      </trans-unit>
+      <trans-unit id="MultipleLoggerFieldsTitle">
+        <source>Found multiple fields of type Microsoft.Extensions.Logging.ILogger</source>
+        <target state="translated">Microsoft.Extensions.Logging.ILogger 형식의 필드가 여러 개 있음</target>
+        <note>{Locked="Microsoft.Extensions.Logging.ILogger"}</note>
+      </trans-unit>
+      <trans-unit id="RedundantQualifierInMessageMessage">
+        <source>Remove redundant qualifier (Info:, Warning:, Error:, etc) from the logging message since it is implicit in the specified log level.</source>
+        <target state="translated">중복 한정자(정보:, 경고:, 오류: 등)가 지정된 로그 수준에서 암시적이기 때문에 로깅 메시지에서 제거합니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="RedundantQualifierInMessageTitle">
+        <source>Redundant qualifier in logging message</source>
+        <target state="translated">로깅 메시지에 중복 한정자가 있음</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ShouldntMentionExceptionInMessageTitle">
+        <source>Don't include exception parameters as templates in the logging message</source>
+        <target state="translated">로깅 메시지에 템플릿으로 예외 매개 변수를 포함하지 않음</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ShouldntMentionInTemplateMessage">
+        <source>Don't include a template for {0} in the logging message since it is implicitly taken care of</source>
+        <target state="translated">{0}에 대한 템플릿은 암시적으로 처리되므로 로깅 메시지에 포함하지 않음</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ShouldntMentionLogLevelInMessageTitle">
+        <source>Don't include log level parameters as templates in the logging message</source>
+        <target state="translated">로깅 메시지에 템플릿으로 로그 수준 매개 변수를 포함하지 않음</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ShouldntMentionLoggerInMessageTitle">
+        <source>Don't include logger parameters as templates in the logging message</source>
+        <target state="translated">로깅 메시지에 템플릿으로 로거 매개 변수를 포함하지 않음</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ShouldntReuseEventIdsMessage">
+        <source>Multiple logging methods are using event id {0} in class {1}</source>
+        <target state="translated">{1} 클래스에서 여러 로깅 메서드가 이벤트 ID {0}을(를) 사용함</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ShouldntReuseEventIdsTitle">
+        <source>Multiple logging methods cannot use the same event id within a class</source>
+        <target state="translated">여러 로깅 메서드가 한 클래스 내에서 동일한 이벤트 ID를 사용할 수는 없음</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="TemplateHasNoCorrespondingArgumentMessage">
+        <source>Template '{0}' is not provided as argument to the logging method</source>
+        <target state="translated">템플릿 {0}이(가) 로깅 메서드에 인수로 제공되지 않음</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="TemplateHasNoCorrespondingArgumentTitle">
+        <source>Logging template has no corresponding method argument</source>
+        <target state="translated">로깅 템플릿에 해당 하는 메서드 인수가 없음</target>
+        <note />
+      </trans-unit>
+    </body>
+  </file>
+</xliff>

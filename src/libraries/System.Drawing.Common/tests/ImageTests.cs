@@ -1,17 +1,504 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
 using System.Collections.Generic;
 using System.Drawing.Imaging;
 using System.IO;
 using System.Linq;
+using System.Runtime.InteropServices;
+using System.Text;
 using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
+using Encoder = System.Drawing.Imaging.Encoder;
 
 namespace System.Drawing.Tests
 {
+    [ConditionalClass(typeof(PlatformDetection),nameof(PlatformDetection.IsDrawingSupported))]
     public class ImageTests
     {
+        private const int PropertyTagLuminanceTable = 0x5090;
+        private const int PropertyTagChrominanceTable = 0x5091;
+        private const int PropertyTagExifUserComment = 0x9286;
+        private const int PropertyTagTypeASCII = 2;
+        private const int PropertyTagTypeShort = 3;
+
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
+        [Fact]
+        public void PropertyIdList_GetBitmapJpg_Success()
+        {
+            using var bitmap = new Bitmap(Helpers.GetTestBitmapPath("nature24bits.jpg"));
+            Assert.Equal(new int[] { PropertyTagExifUserComment, PropertyTagChrominanceTable, PropertyTagLuminanceTable }, bitmap.PropertyIdList);
+            Assert.NotSame(bitmap.PropertyIdList, bitmap.PropertyIdList);
+        }
+
+        [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Returns new int[0] in .NET Framework.")]
+        public void PropertyIdList_GetEmptyMemoryBitmap_ReturnsExpected()
+        {
+            using var bitmap = new Bitmap(1, 1);
+            Assert.Empty(bitmap.PropertyIdList);
+            Assert.Same(bitmap.PropertyIdList, bitmap.PropertyIdList);
+        }
+
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
+        [Fact]
+        public void PropertyItems_GetBitmapJpg_Success()
+        {
+            using var bitmap = new Bitmap(Helpers.GetTestBitmapPath("nature24bits.jpg"));
+            PropertyItem[] items = bitmap.PropertyItems;
+            Assert.Equal(3, items.Length);
+            Assert.Equal(PropertyTagExifUserComment, items[0].Id);
+            Assert.Equal(29, items[0].Len);
+            Assert.Equal(PropertyTagTypeASCII, items[0].Type);
+            Assert.Equal("LEAD Technologies Inc. V1.01\0", Encoding.ASCII.GetString(items[0].Value));
+            Assert.Equal(PropertyTagChrominanceTable, items[1].Id);
+            Assert.Equal(128, items[1].Len);
+            Assert.Equal(PropertyTagTypeShort, items[1].Type);
+            Assert.Equal(new byte[]
+            {
+                0x16, 0x00, 0x17, 0x00, 0x1F, 0x00, 0x3E, 0x00, 0x82, 0x00, 0x82, 0x00, 0x82, 0x00, 0x82, 0x00, 0x17,
+                0x00, 0x1B, 0x00, 0x22, 0x00, 0x57, 0x00, 0x82, 0x00, 0x82, 0x00, 0x82, 0x00, 0x82, 0x00, 0x1F,
+                0x00, 0x22, 0x00, 0x49, 0x00, 0x82, 0x00, 0x82, 0x00, 0x82, 0x00, 0x82, 0x00, 0x82, 0x00, 0x3E,
+                0x00, 0x57, 0x00, 0x82, 0x00, 0x82, 0x00, 0x82, 0x00, 0x82, 0x00, 0x82, 0x00, 0x82, 0x00, 0x82,
+                0x00, 0x82, 0x00, 0x82, 0x00, 0x82, 0x00, 0x82, 0x00, 0x82, 0x00, 0x82, 0x00, 0x82, 0x00, 0x82,
+                0x00, 0x82, 0x00, 0x82, 0x00, 0x82, 0x00, 0x82, 0x00, 0x82, 0x00, 0x82, 0x00, 0x82, 0x00, 0x82,
+                0x00, 0x82, 0x00, 0x82, 0x00, 0x82, 0x00, 0x82, 0x00, 0x82, 0x00, 0x82, 0x00, 0x82, 0x00, 0x82,
+                0x00, 0x82, 0x00, 0x82, 0x00, 0x82, 0x00, 0x82, 0x00, 0x82, 0x00, 0x82, 0x00, 0x82, 0x00
+            }, items[1].Value);
+            Assert.Equal(PropertyTagLuminanceTable, items[2].Id);
+            Assert.Equal(128, items[2].Len);
+            Assert.Equal(PropertyTagTypeShort, items[2].Type);
+            Assert.Equal(new byte[]
+            {
+                0x15, 0x00, 0x0E, 0x00, 0x0D, 0x00, 0x15, 0x00, 0x1F, 0x00, 0x34, 0x00, 0x43, 0x00, 0x50, 0x00, 0x0F,
+                0x00, 0x0F, 0x00, 0x12, 0x00, 0x19, 0x00, 0x22, 0x00, 0x4C, 0x00, 0x4F, 0x00, 0x48, 0x00, 0x12,
+                0x00, 0x11, 0x00, 0x15, 0x00, 0x1F, 0x00, 0x34, 0x00, 0x4B, 0x00, 0x5B, 0x00, 0x49, 0x00, 0x12,
+                0x00, 0x16, 0x00, 0x1D, 0x00, 0x26, 0x00, 0x43, 0x00, 0x72, 0x00, 0x69, 0x00, 0x51, 0x00, 0x17,
+                0x00, 0x1D, 0x00, 0x30, 0x00, 0x49, 0x00, 0x59, 0x00, 0x8F, 0x00, 0x87, 0x00, 0x65, 0x00, 0x1F,
+                0x00, 0x2E, 0x00, 0x48, 0x00, 0x54, 0x00, 0x6A, 0x00, 0x89, 0x00, 0x95, 0x00, 0x79, 0x00, 0x40,
+                0x00, 0x54, 0x00, 0x66, 0x00, 0x72, 0x00, 0x87, 0x00, 0x9F, 0x00, 0x9E, 0x00, 0x85, 0x00, 0x5F,
+                0x00, 0x79, 0x00, 0x7D, 0x00, 0x81, 0x00, 0x93, 0x00, 0x84, 0x00, 0x87, 0x00, 0x82, 0x00,
+            }, items[2].Value);
+
+            Assert.NotSame(items, bitmap.PropertyItems);
+        }
+
+        [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Returns new PropertyItem[0] in .NET Framework.")]
+        public void PropertyItems_GetEmptyBitmapBmp_Success()
+        {
+            using var bitmap = new Bitmap(Helpers.GetTestBitmapPath("almogaver1bit.bmp"));
+            Assert.Empty(bitmap.PropertyItems);
+            Assert.Same(bitmap.PropertyItems, bitmap.PropertyItems);
+        }
+
+        [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Returns new PropertyItem[0] in .NET Framework.")]
+        public void PropertyItems_GetEmptyMemoryBitmap_ReturnsExpected()
+        {
+            using var bitmap = new Bitmap(1, 1);
+            Assert.Empty(bitmap.PropertyItems);
+            Assert.Same(bitmap.PropertyItems, bitmap.PropertyItems);
+        }
+
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
+        [Fact]
+        public void GetPropertyItem_InvokeExistsBitmapBmp_Success()
+        {
+            using var bitmap = new Bitmap(Helpers.GetTestBitmapPath("nature24bits.jpg"));
+            PropertyItem item = bitmap.GetPropertyItem(PropertyTagExifUserComment);
+            Assert.Equal(PropertyTagExifUserComment, item.Id);
+            Assert.Equal(29, item.Len);
+            Assert.Equal(PropertyTagTypeASCII, item.Type);
+            Assert.Equal("LEAD Technologies Inc. V1.01\0", Encoding.ASCII.GetString(item.Value));
+        }
+
+        [Theory]
+        [InlineData(0)]
+        [InlineData(1)]
+        [InlineData(-1)]
+        public void GetPropertyItem_NoSuchPropertyItemEmptyMemoryBitmap_ThrowsArgumentException(int propid)
+        {
+            using var bitmap = new Bitmap(1, 1);
+            Assert.Throws<ArgumentException>(null, () => bitmap.GetPropertyItem(propid));
+        }
+
+        [Theory]
+        [InlineData(0)]
+        [InlineData(1)]
+        [InlineData(-1)]
+        public void GetPropertyItem_NoSuchPropertyItemEmptyImageBitmapBmp_ThrowsArgumentException(int propid)
+        {
+            using var bitmap = new Bitmap(Helpers.GetTestBitmapPath("almogaver1bit.bmp"));
+            Assert.Throws<ArgumentException>(null, () => bitmap.GetPropertyItem(propid));
+        }
+
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
+        [Fact]
+        public void RemovePropertyItem_InvokeMemoryBitmap_Success()
+        {
+            using var source = new Bitmap(Helpers.GetTestBitmapPath("nature24bits.jpg"));
+            PropertyItem item1 = source.GetPropertyItem(PropertyTagExifUserComment);
+            PropertyItem item2 = source.GetPropertyItem(PropertyTagChrominanceTable);
+            PropertyItem item3 = source.GetPropertyItem(PropertyTagLuminanceTable);
+            using var bitmap = new Bitmap(1, 1);
+            bitmap.SetPropertyItem(item1);
+            bitmap.SetPropertyItem(item2);
+            bitmap.SetPropertyItem(item3);
+
+            bitmap.RemovePropertyItem(PropertyTagExifUserComment);
+            Assert.Equal(new int[] { PropertyTagChrominanceTable, PropertyTagLuminanceTable }, bitmap.PropertyIdList);
+            Assert.Throws<ArgumentException>(null, () => bitmap.GetPropertyItem(PropertyTagExifUserComment));
+            Assert.Throws<ArgumentException>(null, () => bitmap.RemovePropertyItem(PropertyTagExifUserComment));
+            
+            bitmap.RemovePropertyItem(PropertyTagLuminanceTable);
+            Assert.Equal(new int[] { PropertyTagChrominanceTable }, bitmap.PropertyIdList);
+            Assert.Throws<ArgumentException>(null, () => bitmap.GetPropertyItem(PropertyTagLuminanceTable));
+            Assert.Throws<ArgumentException>(null, () => bitmap.RemovePropertyItem(PropertyTagLuminanceTable));
+            
+            bitmap.RemovePropertyItem(PropertyTagChrominanceTable);
+            Assert.Empty(bitmap.PropertyIdList);
+            Assert.Throws<ArgumentException>(null, () => bitmap.GetPropertyItem(PropertyTagChrominanceTable));
+            Assert.Throws<ExternalException>(() => bitmap.RemovePropertyItem(PropertyTagChrominanceTable));
+        }
+
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
+        [Fact]
+        public void RemovePropertyItem_InvokeBitmapJpg_Success()
+        {
+            using var bitmap = new Bitmap(Helpers.GetTestBitmapPath("nature24bits.jpg"));
+            bitmap.RemovePropertyItem(PropertyTagExifUserComment);
+            Assert.Equal(new int[] { PropertyTagChrominanceTable, PropertyTagLuminanceTable }, bitmap.PropertyIdList);
+            Assert.Throws<ArgumentException>(null, () => bitmap.GetPropertyItem(PropertyTagExifUserComment));
+            Assert.Throws<ArgumentException>(null, () => bitmap.RemovePropertyItem(PropertyTagExifUserComment));
+            
+            bitmap.RemovePropertyItem(PropertyTagLuminanceTable);
+            Assert.Equal(new int[] { PropertyTagChrominanceTable }, bitmap.PropertyIdList);
+            Assert.Throws<ArgumentException>(null, () => bitmap.GetPropertyItem(PropertyTagLuminanceTable));
+            Assert.Throws<ArgumentException>(null, () => bitmap.RemovePropertyItem(PropertyTagLuminanceTable));
+            
+            bitmap.RemovePropertyItem(PropertyTagChrominanceTable);
+            Assert.Empty(bitmap.PropertyIdList);
+            Assert.Throws<ArgumentException>(null, () => bitmap.GetPropertyItem(PropertyTagChrominanceTable));
+            Assert.Throws<ExternalException>(() => bitmap.RemovePropertyItem(PropertyTagChrominanceTable));
+        }
+
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
+        [Theory]
+        [InlineData(0)]
+        [InlineData(1)]
+        [InlineData(-1)]
+        public void RemovePropertyItem_NoSuchPropertyItemEmptyMemoryBitmap_ThrowsExternalException(int propid)
+        {
+            using var bitmap = new Bitmap(1, 1);
+            Assert.Throws<ExternalException>(() => bitmap.RemovePropertyItem(propid));
+        }
+
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
+        [Theory]
+        [InlineData(0)]
+        [InlineData(1)]
+        [InlineData(-1)]
+        public void RemovePropertyItem_NoSuchPropertyItemEmptyImageBitmapBmp_ThrowsExternalException(int propid)
+        {
+            using var bitmap = new Bitmap(Helpers.GetTestBitmapPath("almogaver1bit.bmp"));
+            Assert.Throws<ExternalException>(() => bitmap.RemovePropertyItem(propid));
+        }
+  
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
+        [Theory]
+        [InlineData(0)]
+        [InlineData(1)]
+        [InlineData(-1)]
+        public void RemovePropertyItem_NoSuchPropertyNotEmptyMemoryBitmap_ThrowsArgumentException(int propid)
+        {
+            using var source = new Bitmap(Helpers.GetTestBitmapPath("nature24bits.jpg"));
+            PropertyItem item1 = source.GetPropertyItem(PropertyTagExifUserComment);
+            PropertyItem item2 = source.GetPropertyItem(PropertyTagChrominanceTable);
+            PropertyItem item3 = source.GetPropertyItem(PropertyTagLuminanceTable);
+            using var bitmap = new Bitmap(1, 1);
+            bitmap.SetPropertyItem(item1);
+            bitmap.SetPropertyItem(item2);
+            bitmap.SetPropertyItem(item3);
+            
+            Assert.Throws<ArgumentException>(null, () => bitmap.RemovePropertyItem(propid));
+        }
+  
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
+        [Theory]
+        [InlineData(0)]
+        [InlineData(1)]
+        [InlineData(-1)]
+        public void RemovePropertyItem_NoSuchPropertyNotEmptyBitmapJpg_ThrowsArgumentException(int propid)
+        {
+            using var bitmap = new Bitmap(Helpers.GetTestBitmapPath("nature24bits.jpg"));
+            Assert.Throws<ArgumentException>(null, () => bitmap.RemovePropertyItem(propid));
+        }
+
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
+        [Theory]
+        [InlineData(0)]
+        [InlineData(1)]
+        [InlineData(-1)]
+        public void SetPropertyItem_InvokeMemoryBitmap_Success(int propid)
+        {
+            using var source = new Bitmap(Helpers.GetTestBitmapPath("nature24bits.jpg"));
+            using var bitmap = new Bitmap(1, 1);
+
+            // Change data.
+            PropertyItem item = source.GetPropertyItem(PropertyTagExifUserComment);
+            item.Value = Encoding.ASCII.GetBytes("Hello World\0");
+            item.Len = item.Value.Length;
+
+            bitmap.SetPropertyItem(item);
+
+            Assert.Equal(new int[] { PropertyTagExifUserComment }, bitmap.PropertyIdList);
+            PropertyItem[] items = bitmap.PropertyItems;
+            Assert.Single(items);
+            Assert.Equal(PropertyTagExifUserComment, items[0].Id);
+            Assert.Equal(12, items[0].Len);
+            Assert.Equal(PropertyTagTypeASCII, items[0].Type);
+            Assert.Equal("Hello World\0", Encoding.ASCII.GetString(items[0].Value));
+
+            // New data.
+            item.Id = propid;
+            item.Value = Encoding.ASCII.GetBytes("New Value\0");
+            item.Len = item.Value.Length;
+
+            bitmap.SetPropertyItem(item);
+
+            Assert.Equal(new int[] { PropertyTagExifUserComment, propid }, bitmap.PropertyIdList);
+            items = bitmap.PropertyItems;
+            Assert.Equal(2, items.Length);
+            Assert.Equal(PropertyTagExifUserComment, items[0].Id);
+            Assert.Equal(12, items[0].Len);
+            Assert.Equal(PropertyTagTypeASCII, items[0].Type);
+            Assert.Equal("Hello World\0", Encoding.ASCII.GetString(items[0].Value));
+            Assert.Equal(propid, items[1].Id);
+            Assert.Equal(10, items[1].Len);
+            Assert.Equal(PropertyTagTypeASCII, items[1].Type);
+            Assert.Equal("New Value\0", Encoding.ASCII.GetString(items[1].Value));
+            
+            // Set same.
+            bitmap.SetPropertyItem(item);
+
+            Assert.Equal(new int[] { PropertyTagExifUserComment, propid }, bitmap.PropertyIdList);
+            items = bitmap.PropertyItems;
+            Assert.Equal(2, items.Length);
+            Assert.Equal(PropertyTagExifUserComment, items[0].Id);
+            Assert.Equal(12, items[0].Len);
+            Assert.Equal(PropertyTagTypeASCII, items[0].Type);
+            Assert.Equal("Hello World\0", Encoding.ASCII.GetString(items[0].Value));
+            Assert.Equal(propid, items[1].Id);
+            Assert.Equal(10, items[1].Len);
+            Assert.Equal(PropertyTagTypeASCII, items[1].Type);
+            Assert.Equal("New Value\0", Encoding.ASCII.GetString(items[1].Value));
+        }
+
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
+        [Theory]
+        [InlineData(0)]
+        [InlineData(1)]
+        [InlineData(-1)]
+        public void SetPropertyItem_InvokeBitmapJpg_Success(int propid)
+        {
+            using var bitmap = new Bitmap(Helpers.GetTestBitmapPath("nature24bits.jpg"));
+
+            // Change data.
+            PropertyItem item = bitmap.GetPropertyItem(PropertyTagExifUserComment);
+            item.Value = Encoding.ASCII.GetBytes("Hello World\0");
+            item.Len = item.Value.Length;
+
+            bitmap.SetPropertyItem(item);
+
+            Assert.Equal(new int[] { PropertyTagExifUserComment, PropertyTagChrominanceTable, PropertyTagLuminanceTable }, bitmap.PropertyIdList);
+            PropertyItem[] items = bitmap.PropertyItems;
+            Assert.Equal(3, items.Length);
+            Assert.Equal(PropertyTagExifUserComment, items[0].Id);
+            Assert.Equal(12, items[0].Len);
+            Assert.Equal(PropertyTagTypeASCII, items[0].Type);
+            Assert.Equal("Hello World\0", Encoding.ASCII.GetString(items[0].Value));
+            Assert.Equal(PropertyTagChrominanceTable, items[1].Id);
+            Assert.Equal(128, items[1].Len);
+            Assert.Equal(PropertyTagTypeShort, items[1].Type);
+            Assert.Equal(new byte[]
+            {
+                0x16, 0x00, 0x17, 0x00, 0x1F, 0x00, 0x3E, 0x00, 0x82, 0x00, 0x82, 0x00, 0x82, 0x00, 0x82, 0x00, 0x17, 
+                0x00, 0x1B, 0x00, 0x22, 0x00, 0x57, 0x00, 0x82, 0x00, 0x82, 0x00, 0x82, 0x00, 0x82, 0x00, 0x1F, 
+                0x00, 0x22, 0x00, 0x49, 0x00, 0x82, 0x00, 0x82, 0x00, 0x82, 0x00, 0x82, 0x00, 0x82, 0x00, 0x3E, 
+                0x00, 0x57, 0x00, 0x82, 0x00, 0x82, 0x00, 0x82, 0x00, 0x82, 0x00, 0x82, 0x00, 0x82, 0x00, 0x82, 
+                0x00, 0x82, 0x00, 0x82, 0x00, 0x82, 0x00, 0x82, 0x00, 0x82, 0x00, 0x82, 0x00, 0x82, 0x00, 0x82, 
+                0x00, 0x82, 0x00, 0x82, 0x00, 0x82, 0x00, 0x82, 0x00, 0x82, 0x00, 0x82, 0x00, 0x82, 0x00, 0x82, 
+                0x00, 0x82, 0x00, 0x82, 0x00, 0x82, 0x00, 0x82, 0x00, 0x82, 0x00, 0x82, 0x00, 0x82, 0x00, 0x82, 
+                0x00, 0x82, 0x00, 0x82, 0x00, 0x82, 0x00, 0x82, 0x00, 0x82, 0x00, 0x82, 0x00, 0x82, 0x00
+            }, items[1].Value);
+            Assert.Equal(PropertyTagLuminanceTable, items[2].Id);
+            Assert.Equal(128, items[2].Len);
+            Assert.Equal(PropertyTagTypeShort, items[2].Type);
+            Assert.Equal(new byte[]
+            {
+                0x15, 0x00, 0x0E, 0x00, 0x0D, 0x00, 0x15, 0x00, 0x1F, 0x00, 0x34, 0x00, 0x43, 0x00, 0x50, 0x00, 0x0F, 
+                0x00, 0x0F, 0x00, 0x12, 0x00, 0x19, 0x00, 0x22, 0x00, 0x4C, 0x00, 0x4F, 0x00, 0x48, 0x00, 0x12, 
+                0x00, 0x11, 0x00, 0x15, 0x00, 0x1F, 0x00, 0x34, 0x00, 0x4B, 0x00, 0x5B, 0x00, 0x49, 0x00, 0x12, 
+                0x00, 0x16, 0x00, 0x1D, 0x00, 0x26, 0x00, 0x43, 0x00, 0x72, 0x00, 0x69, 0x00, 0x51, 0x00, 0x17, 
+                0x00, 0x1D, 0x00, 0x30, 0x00, 0x49, 0x00, 0x59, 0x00, 0x8F, 0x00, 0x87, 0x00, 0x65, 0x00, 0x1F, 
+                0x00, 0x2E, 0x00, 0x48, 0x00, 0x54, 0x00, 0x6A, 0x00, 0x89, 0x00, 0x95, 0x00, 0x79, 0x00, 0x40, 
+                0x00, 0x54, 0x00, 0x66, 0x00, 0x72, 0x00, 0x87, 0x00, 0x9F, 0x00, 0x9E, 0x00, 0x85, 0x00, 0x5F, 
+                0x00, 0x79, 0x00, 0x7D, 0x00, 0x81, 0x00, 0x93, 0x00, 0x84, 0x00, 0x87, 0x00, 0x82, 0x00,
+            }, items[2].Value);
+
+            // New data.
+            item.Id = propid;
+            item.Value = Encoding.ASCII.GetBytes("New Value\0");
+            item.Len = item.Value.Length;
+
+            bitmap.SetPropertyItem(item);
+
+            Assert.Equal(new int[] { PropertyTagExifUserComment, PropertyTagChrominanceTable, PropertyTagLuminanceTable, propid }, bitmap.PropertyIdList);
+            items = bitmap.PropertyItems;
+            Assert.Equal(4, items.Length);
+            Assert.Equal(PropertyTagExifUserComment, items[0].Id);
+            Assert.Equal(12, items[0].Len);
+            Assert.Equal(PropertyTagTypeASCII, items[0].Type);
+            Assert.Equal("Hello World\0", Encoding.ASCII.GetString(items[0].Value));
+            Assert.Equal(PropertyTagChrominanceTable, items[1].Id);
+            Assert.Equal(128, items[1].Len);
+            Assert.Equal(PropertyTagTypeShort, items[1].Type);
+            Assert.Equal(new byte[]
+            {
+                0x16, 0x00, 0x17, 0x00, 0x1F, 0x00, 0x3E, 0x00, 0x82, 0x00, 0x82, 0x00, 0x82, 0x00, 0x82, 0x00, 0x17, 
+                0x00, 0x1B, 0x00, 0x22, 0x00, 0x57, 0x00, 0x82, 0x00, 0x82, 0x00, 0x82, 0x00, 0x82, 0x00, 0x1F, 
+                0x00, 0x22, 0x00, 0x49, 0x00, 0x82, 0x00, 0x82, 0x00, 0x82, 0x00, 0x82, 0x00, 0x82, 0x00, 0x3E, 
+                0x00, 0x57, 0x00, 0x82, 0x00, 0x82, 0x00, 0x82, 0x00, 0x82, 0x00, 0x82, 0x00, 0x82, 0x00, 0x82, 
+                0x00, 0x82, 0x00, 0x82, 0x00, 0x82, 0x00, 0x82, 0x00, 0x82, 0x00, 0x82, 0x00, 0x82, 0x00, 0x82, 
+                0x00, 0x82, 0x00, 0x82, 0x00, 0x82, 0x00, 0x82, 0x00, 0x82, 0x00, 0x82, 0x00, 0x82, 0x00, 0x82, 
+                0x00, 0x82, 0x00, 0x82, 0x00, 0x82, 0x00, 0x82, 0x00, 0x82, 0x00, 0x82, 0x00, 0x82, 0x00, 0x82, 
+                0x00, 0x82, 0x00, 0x82, 0x00, 0x82, 0x00, 0x82, 0x00, 0x82, 0x00, 0x82, 0x00, 0x82, 0x00
+            }, items[1].Value);
+            Assert.Equal(PropertyTagLuminanceTable, items[2].Id);
+            Assert.Equal(128, items[2].Len);
+            Assert.Equal(PropertyTagTypeShort, items[2].Type);
+            Assert.Equal(new byte[]
+            {
+                0x15, 0x00, 0x0E, 0x00, 0x0D, 0x00, 0x15, 0x00, 0x1F, 0x00, 0x34, 0x00, 0x43, 0x00, 0x50, 0x00, 0x0F, 
+                0x00, 0x0F, 0x00, 0x12, 0x00, 0x19, 0x00, 0x22, 0x00, 0x4C, 0x00, 0x4F, 0x00, 0x48, 0x00, 0x12, 
+                0x00, 0x11, 0x00, 0x15, 0x00, 0x1F, 0x00, 0x34, 0x00, 0x4B, 0x00, 0x5B, 0x00, 0x49, 0x00, 0x12, 
+                0x00, 0x16, 0x00, 0x1D, 0x00, 0x26, 0x00, 0x43, 0x00, 0x72, 0x00, 0x69, 0x00, 0x51, 0x00, 0x17, 
+                0x00, 0x1D, 0x00, 0x30, 0x00, 0x49, 0x00, 0x59, 0x00, 0x8F, 0x00, 0x87, 0x00, 0x65, 0x00, 0x1F, 
+                0x00, 0x2E, 0x00, 0x48, 0x00, 0x54, 0x00, 0x6A, 0x00, 0x89, 0x00, 0x95, 0x00, 0x79, 0x00, 0x40, 
+                0x00, 0x54, 0x00, 0x66, 0x00, 0x72, 0x00, 0x87, 0x00, 0x9F, 0x00, 0x9E, 0x00, 0x85, 0x00, 0x5F, 
+                0x00, 0x79, 0x00, 0x7D, 0x00, 0x81, 0x00, 0x93, 0x00, 0x84, 0x00, 0x87, 0x00, 0x82, 0x00,
+            }, items[2].Value);
+            Assert.Equal(propid, items[3].Id);
+            Assert.Equal(10, items[3].Len);
+            Assert.Equal(PropertyTagTypeASCII, items[3].Type);
+            Assert.Equal("New Value\0", Encoding.ASCII.GetString(items[3].Value));
+
+            // Set same.
+            bitmap.SetPropertyItem(item);
+
+            Assert.Equal(new int[] { PropertyTagExifUserComment, PropertyTagChrominanceTable, PropertyTagLuminanceTable, propid }, bitmap.PropertyIdList);
+            items = bitmap.PropertyItems;
+            Assert.Equal(4, items.Length);
+            Assert.Equal(PropertyTagExifUserComment, items[0].Id);
+            Assert.Equal(12, items[0].Len);
+            Assert.Equal(PropertyTagTypeASCII, items[0].Type);
+            Assert.Equal("Hello World\0", Encoding.ASCII.GetString(items[0].Value));
+            Assert.Equal(PropertyTagChrominanceTable, items[1].Id);
+            Assert.Equal(128, items[1].Len);
+            Assert.Equal(PropertyTagTypeShort, items[1].Type);
+            Assert.Equal(new byte[]
+            {
+                0x16, 0x00, 0x17, 0x00, 0x1F, 0x00, 0x3E, 0x00, 0x82, 0x00, 0x82, 0x00, 0x82, 0x00, 0x82, 0x00, 0x17, 
+                0x00, 0x1B, 0x00, 0x22, 0x00, 0x57, 0x00, 0x82, 0x00, 0x82, 0x00, 0x82, 0x00, 0x82, 0x00, 0x1F, 
+                0x00, 0x22, 0x00, 0x49, 0x00, 0x82, 0x00, 0x82, 0x00, 0x82, 0x00, 0x82, 0x00, 0x82, 0x00, 0x3E, 
+                0x00, 0x57, 0x00, 0x82, 0x00, 0x82, 0x00, 0x82, 0x00, 0x82, 0x00, 0x82, 0x00, 0x82, 0x00, 0x82, 
+                0x00, 0x82, 0x00, 0x82, 0x00, 0x82, 0x00, 0x82, 0x00, 0x82, 0x00, 0x82, 0x00, 0x82, 0x00, 0x82, 
+                0x00, 0x82, 0x00, 0x82, 0x00, 0x82, 0x00, 0x82, 0x00, 0x82, 0x00, 0x82, 0x00, 0x82, 0x00, 0x82, 
+                0x00, 0x82, 0x00, 0x82, 0x00, 0x82, 0x00, 0x82, 0x00, 0x82, 0x00, 0x82, 0x00, 0x82, 0x00, 0x82, 
+                0x00, 0x82, 0x00, 0x82, 0x00, 0x82, 0x00, 0x82, 0x00, 0x82, 0x00, 0x82, 0x00, 0x82, 0x00
+            }, items[1].Value);
+            Assert.Equal(PropertyTagLuminanceTable, items[2].Id);
+            Assert.Equal(128, items[2].Len);
+            Assert.Equal(PropertyTagTypeShort, items[2].Type);
+            Assert.Equal(new byte[]
+            {
+                0x15, 0x00, 0x0E, 0x00, 0x0D, 0x00, 0x15, 0x00, 0x1F, 0x00, 0x34, 0x00, 0x43, 0x00, 0x50, 0x00, 0x0F, 
+                0x00, 0x0F, 0x00, 0x12, 0x00, 0x19, 0x00, 0x22, 0x00, 0x4C, 0x00, 0x4F, 0x00, 0x48, 0x00, 0x12, 
+                0x00, 0x11, 0x00, 0x15, 0x00, 0x1F, 0x00, 0x34, 0x00, 0x4B, 0x00, 0x5B, 0x00, 0x49, 0x00, 0x12, 
+                0x00, 0x16, 0x00, 0x1D, 0x00, 0x26, 0x00, 0x43, 0x00, 0x72, 0x00, 0x69, 0x00, 0x51, 0x00, 0x17, 
+                0x00, 0x1D, 0x00, 0x30, 0x00, 0x49, 0x00, 0x59, 0x00, 0x8F, 0x00, 0x87, 0x00, 0x65, 0x00, 0x1F, 
+                0x00, 0x2E, 0x00, 0x48, 0x00, 0x54, 0x00, 0x6A, 0x00, 0x89, 0x00, 0x95, 0x00, 0x79, 0x00, 0x40, 
+                0x00, 0x54, 0x00, 0x66, 0x00, 0x72, 0x00, 0x87, 0x00, 0x9F, 0x00, 0x9E, 0x00, 0x85, 0x00, 0x5F, 
+                0x00, 0x79, 0x00, 0x7D, 0x00, 0x81, 0x00, 0x93, 0x00, 0x84, 0x00, 0x87, 0x00, 0x82, 0x00,
+            }, items[2].Value);
+            Assert.Equal(propid, items[3].Id);
+            Assert.Equal(10, items[3].Len);
+            Assert.Equal(PropertyTagTypeASCII, items[3].Type);
+            Assert.Equal("New Value\0", Encoding.ASCII.GetString(items[3].Value));
+        }
+
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
+        [Theory]
+        [InlineData(0)]
+        [InlineData(1)]
+        [InlineData(-1)]
+        public void SetPropertyItem_InvokeBitmapBmp_Success(int propid)
+        {
+            using var source = new Bitmap(Helpers.GetTestBitmapPath("nature24bits.jpg"));
+            using var bitmap = new Bitmap(Helpers.GetTestBitmapPath("almogaver1bit.bmp"));
+
+            // Change data.
+            PropertyItem item = source.GetPropertyItem(PropertyTagExifUserComment);
+            item.Value = Encoding.ASCII.GetBytes("Hello World\0");
+            item.Len = item.Value.Length;
+
+            bitmap.SetPropertyItem(item);
+
+            Assert.Equal(new int[] { PropertyTagExifUserComment }, bitmap.PropertyIdList);
+            PropertyItem[] items = bitmap.PropertyItems;
+            Assert.Single(items);
+            Assert.Equal(PropertyTagExifUserComment, items[0].Id);
+            Assert.Equal(12, items[0].Len);
+            Assert.Equal(PropertyTagTypeASCII, items[0].Type);
+            Assert.Equal("Hello World\0", Encoding.ASCII.GetString(items[0].Value));
+
+            // New data.
+            item.Id = propid;
+            item.Value = Encoding.ASCII.GetBytes("New Value\0");
+            item.Len = item.Value.Length;
+
+            bitmap.SetPropertyItem(item);
+
+            Assert.Equal(new int[] { PropertyTagExifUserComment, propid }, bitmap.PropertyIdList);
+            items = bitmap.PropertyItems;
+            Assert.Equal(2, items.Length);
+            Assert.Equal(PropertyTagExifUserComment, items[0].Id);
+            Assert.Equal(12, items[0].Len);
+            Assert.Equal(PropertyTagTypeASCII, items[0].Type);
+            Assert.Equal("Hello World\0", Encoding.ASCII.GetString(items[0].Value));
+            Assert.Equal(propid, items[1].Id);
+            Assert.Equal(10, items[1].Len);
+            Assert.Equal(PropertyTagTypeASCII, items[1].Type);
+            Assert.Equal("New Value\0", Encoding.ASCII.GetString(items[1].Value));
+            
+            // Set same.
+            bitmap.SetPropertyItem(item);
+
+            Assert.Equal(new int[] { PropertyTagExifUserComment, propid }, bitmap.PropertyIdList);
+            items = bitmap.PropertyItems;
+            Assert.Equal(2, items.Length);
+            Assert.Equal(PropertyTagExifUserComment, items[0].Id);
+            Assert.Equal(12, items[0].Len);
+            Assert.Equal(PropertyTagTypeASCII, items[0].Type);
+            Assert.Equal("Hello World\0", Encoding.ASCII.GetString(items[0].Value));
+            Assert.Equal(propid, items[1].Id);
+            Assert.Equal(10, items[1].Len);
+            Assert.Equal(PropertyTagTypeASCII, items[1].Type);
+            Assert.Equal("New Value\0", Encoding.ASCII.GetString(items[1].Value));
+        }
+
         public static IEnumerable<object[]> InvalidBytes_TestData()
         {
             // IconTests.Ctor_InvalidBytesInStream_TestData an array of 2 objects, but this test only uses the
@@ -23,7 +510,7 @@ namespace System.Drawing.Tests
         }
 
         [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
-        [ConditionalTheory(Helpers.IsDrawingSupported)]
+        [Theory]
         [MemberData(nameof(InvalidBytes_TestData))]
         public void FromFile_InvalidBytes_ThrowsOutOfMemoryException(byte[] bytes)
         {
@@ -79,7 +566,7 @@ namespace System.Drawing.Tests
 
         [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/34591", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
-        [ConditionalTheory(Helpers.IsDrawingSupported)]
+        [Theory]
         [MemberData(nameof(InvalidBytes_TestData))]
         public void FromStream_InvalidBytes_ThrowsArgumentException(byte[] bytes)
         {
@@ -201,7 +688,7 @@ namespace System.Drawing.Tests
         }
 
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, ".NET Framework throws ExternalException")]
-        [ConditionalFact(Helpers.IsDrawingSupported)]
+        [Fact]
         public void Save_InvalidDirectory_ThrowsDirectoryNotFoundException()
         {
             using (var bitmap = new Bitmap(1, 1))

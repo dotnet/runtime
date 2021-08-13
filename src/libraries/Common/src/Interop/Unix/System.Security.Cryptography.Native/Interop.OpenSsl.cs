@@ -2,19 +2,17 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
 using System.IO;
-using System.Net.Http;
+using System.Net;
 using System.Net.Security;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Security.Authentication;
 using System.Security.Authentication.ExtendedProtection;
 using System.Security.Cryptography;
-using System.Security.Cryptography.X509Certificates;
 using Microsoft.Win32.SafeHandles;
 
 internal static partial class Interop
@@ -162,7 +160,7 @@ internal static partial class Interop
                 GCHandle alpnHandle = default;
                 try
                 {
-                    if (sslAuthenticationOptions.ApplicationProtocols != null)
+                    if (sslAuthenticationOptions.ApplicationProtocols != null && sslAuthenticationOptions.ApplicationProtocols.Count != 0)
                     {
                         if (sslAuthenticationOptions.IsServer)
                         {
@@ -224,6 +222,19 @@ internal static partial class Interop
             }
 
             return context;
+        }
+
+        internal static SecurityStatusPal SslRenegotiate(SafeSslHandle sslContext, out byte[]? outputBuffer)
+        {
+            int ret = Interop.Ssl.SslRenegotiate(sslContext);
+
+            outputBuffer = Array.Empty<byte>();
+            if (ret != 1)
+            {
+                GetSslError(sslContext, ret, out Exception? exception);
+                return new SecurityStatusPal(SecurityStatusPalErrorCode.InternalError, exception);
+            }
+            return new SecurityStatusPal(SecurityStatusPalErrorCode.OK);
         }
 
         internal static bool DoSslHandshake(SafeSslHandle context, ReadOnlySpan<byte> input, out byte[]? sendBuf, out int sendCount)
@@ -298,7 +309,7 @@ internal static partial class Interop
         {
 #if DEBUG
             ulong assertNoError = Crypto.ErrPeekError();
-            Debug.Assert(assertNoError == 0, "OpenSsl error queue is not empty, run: 'openssl errstr " + assertNoError.ToString("X") + "' for original error.");
+            Debug.Assert(assertNoError == 0, $"OpenSsl error queue is not empty, run: 'openssl errstr {assertNoError:X}' for original error.");
 #endif
             errorCode = Ssl.SslErrorCode.SSL_ERROR_NONE;
 
@@ -348,61 +359,41 @@ internal static partial class Interop
             return retVal;
         }
 
-        internal static int Decrypt(SafeSslHandle context, byte[] outBuffer, int offset, int count, out Ssl.SslErrorCode errorCode)
+        internal static int Decrypt(SafeSslHandle context, Span<byte> buffer, out Ssl.SslErrorCode errorCode)
         {
 #if DEBUG
             ulong assertNoError = Crypto.ErrPeekError();
-            Debug.Assert(assertNoError == 0, "OpenSsl error queue is not empty, run: 'openssl errstr " + assertNoError.ToString("X") + "' for original error.");
+            Debug.Assert(assertNoError == 0, $"OpenSsl error queue is not empty, run: 'openssl errstr {assertNoError:X}' for original error.");
 #endif
             errorCode = Ssl.SslErrorCode.SSL_ERROR_NONE;
 
-            int retVal = BioWrite(context.InputBio!, outBuffer, offset, count);
-            Exception? innerError = null;
+            BioWrite(context.InputBio!, buffer);
 
-            if (retVal == count)
+            int retVal = Ssl.SslRead(context, ref MemoryMarshal.GetReference(buffer), buffer.Length);
+            if (retVal > 0)
             {
-                unsafe
-                {
-                    fixed (byte* fixedBuffer = outBuffer)
-                    {
-                        retVal = Ssl.SslRead(context, fixedBuffer + offset, outBuffer.Length);
-                    }
-                }
-
-                if (retVal > 0)
-                {
-                        count = retVal;
-                }
+                return retVal;
             }
 
-            if (retVal != count)
+            errorCode = GetSslError(context, retVal, out Exception? innerError);
+            switch (errorCode)
             {
-                errorCode = GetSslError(context, retVal, out innerError);
+                // indicate end-of-file
+                case Ssl.SslErrorCode.SSL_ERROR_ZERO_RETURN:
+                    break;
+
+                case Ssl.SslErrorCode.SSL_ERROR_WANT_READ:
+                    // update error code to renegotiate if renegotiate is pending, otherwise make it SSL_ERROR_WANT_READ
+                    errorCode = Ssl.IsSslRenegotiatePending(context) ?
+                                Ssl.SslErrorCode.SSL_ERROR_RENEGOTIATE :
+                                Ssl.SslErrorCode.SSL_ERROR_WANT_READ;
+                    break;
+
+                default:
+                    throw new SslException(SR.Format(SR.net_ssl_decrypt_failed, errorCode), innerError);
             }
 
-            if (retVal != count)
-            {
-                retVal = 0;
-
-                switch (errorCode)
-                {
-                    // indicate end-of-file
-                    case Ssl.SslErrorCode.SSL_ERROR_ZERO_RETURN:
-                        break;
-
-                    case Ssl.SslErrorCode.SSL_ERROR_WANT_READ:
-                        // update error code to renegotiate if renegotiate is pending, otherwise make it SSL_ERROR_WANT_READ
-                        errorCode = Ssl.IsSslRenegotiatePending(context) ?
-                                    Ssl.SslErrorCode.SSL_ERROR_RENEGOTIATE :
-                                    Ssl.SslErrorCode.SSL_ERROR_WANT_READ;
-                        break;
-
-                    default:
-                        throw new SslException(SR.Format(SR.net_ssl_decrypt_failed, errorCode), innerError);
-                }
-            }
-
-            return retVal;
+            return 0;
         }
 
         internal static SafeX509Handle GetPeerCertificate(SafeSslHandle context)
@@ -507,27 +498,13 @@ internal static partial class Interop
             return bytes;
         }
 
-        private static int BioWrite(SafeBioHandle bio, byte[] buffer, int offset, int count)
+        private static void BioWrite(SafeBioHandle bio, ReadOnlySpan<byte> buffer)
         {
-            Debug.Assert(buffer != null);
-            Debug.Assert(offset >= 0);
-            Debug.Assert(count >= 0);
-            Debug.Assert(buffer.Length >= offset + count);
-
-            int bytes;
-            unsafe
-            {
-                fixed (byte* bufPtr = buffer)
-                {
-                    bytes = Ssl.BioWrite(bio, bufPtr + offset, count);
-                }
-            }
-
-            if (bytes != count)
+            int bytes = Ssl.BioWrite(bio, ref MemoryMarshal.GetReference(buffer), buffer.Length);
+            if (bytes != buffer.Length)
             {
                 throw CreateSslException(SR.net_ssl_write_bio_failed_error);
             }
-            return bytes;
         }
 
         private static Ssl.SslErrorCode GetSslError(SafeSslHandle context, int result, out Exception? innerError)

@@ -18,6 +18,6 @@ namespace System.ComponentModel.Design
         /// types from all referenced assemblies are checked. Otherwise,
         /// only types from non-GAC referenced assemblies are checked.
         /// </summary>
-        ICollection GetTypes(Type baseType, bool excludeGlobalTypes);
+        ICollection GetTypes(Type? baseType, bool excludeGlobalTypes);
     }
 }

@@ -102,6 +102,22 @@ namespace System.Tests
             emptyDelegate.DynamicInvoke(null);
         }
 
+        private class SomeCustomConstantAttribute : CustomConstantAttribute
+        {
+            public static object Do(object o) => o;
+          
+            public override object Value => "SomeValue";
+        }
+
+        private delegate object ObjectDelegateWithSomeCustomConstantAttribute([SomeCustomConstant] object o);
+
+        [Fact]
+        [SkipOnMono("https://github.com/dotnet/runtime/issues/49806")]
+        public static void DynamicInvoke_MissingTypeForCustomConstantAttribute_Succeeds()
+        {
+            Assert.Equal("SomeValue", (string)(new ObjectDelegateWithSomeCustomConstantAttribute(SomeCustomConstantAttribute.Do).DynamicInvoke(Type.Missing)));
+        }
+
         [Fact]
         public static void DynamicInvoke_MissingTypeForDefaultParameter_Succeeds()
         {
@@ -1101,6 +1117,26 @@ namespace System.Tests
             Assert.Null(ex.InnerException);
             Assert.NotNull(ex.Message);
         }
+
+        [Fact]
+        public static void CreateDelegate10_Nullable_Method()
+        {
+            int? num = 123;
+            MethodInfo mi = typeof(int?).GetMethod("ToString");
+            NullableIntToString toString = (NullableIntToString)Delegate.CreateDelegate(
+                typeof(NullableIntToString), mi);
+            string s = toString(ref num);
+            Assert.Equal(num.ToString(), s);
+        }
+
+        [Fact]
+        public static void CreateDelegate10_Nullable_ClosedDelegate()
+        {
+            int? num = 123;
+            MethodInfo mi = typeof(int?).GetMethod("ToString");
+            AssertExtensions.Throws<ArgumentException>(
+                () => Delegate.CreateDelegate(typeof(NullableIntToString), num, mi));
+        }
         #endregion Tests
 
         #region Test Setup
@@ -1207,6 +1243,8 @@ namespace System.Tests
 
         public delegate void D(C c);
         public delegate int E(C c);
+
+        delegate string NullableIntToString(ref int? obj);
         #endregion Test Setup
     }
 }

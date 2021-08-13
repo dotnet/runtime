@@ -21,25 +21,25 @@ namespace System.DirectoryServices.ActiveDirectory
     public class ActiveDirectorySchemaProperty : IDisposable
     {
         // private variables
-        private DirectoryEntry _schemaEntry;
-        private DirectoryEntry _propertyEntry;
-        private DirectoryEntry _abstractPropertyEntry;
-        private readonly NativeComInterfaces.IAdsProperty _iadsProperty;
+        private DirectoryEntry? _schemaEntry;
+        private DirectoryEntry? _propertyEntry;
+        private DirectoryEntry? _abstractPropertyEntry;
+        private readonly NativeComInterfaces.IAdsProperty? _iadsProperty;
         private readonly DirectoryContext _context;
         internal bool isBound;
         private bool _disposed;
-        private ActiveDirectorySchema _schema;
+        private ActiveDirectorySchema? _schema;
         private bool _propertiesFromSchemaContainerInitialized;
         private bool _isDefunctOnServer;
-        private SearchResult _propertyValuesFromServer;
+        private SearchResult? _propertyValuesFromServer;
 
         // private variables for caching properties
         private readonly string _ldapDisplayName;
-        private string _commonName;
-        private string _oid;
+        private string? _commonName;
+        private string? _oid;
         private ActiveDirectorySyntax _syntax = (ActiveDirectorySyntax)(-1);
         private bool _syntaxInitialized;
-        private string _description;
+        private string? _description;
         private bool _descriptionInitialized;
         private bool _isSingleValued;
         private bool _isSingleValuedInitialized;
@@ -52,11 +52,11 @@ namespace System.DirectoryServices.ActiveDirectory
         private bool _isDefunct;
         private SearchFlags _searchFlags = SearchFlags.None;
         private bool _searchFlagsInitialized;
-        private ActiveDirectorySchemaProperty _linkedProperty;
+        private ActiveDirectorySchemaProperty? _linkedProperty;
         private bool _linkedPropertyInitialized;
         private Nullable<int> _linkId;
         private bool _linkIdInitialized;
-        private byte[] _schemaGuidBinaryForm;
+        private byte[]? _schemaGuidBinaryForm;
 
         // OMObjectClass values for the syntax
         //0x2B0C0287731C00854A
@@ -146,7 +146,7 @@ namespace System.DirectoryServices.ActiveDirectory
         }
 
         // internal constructor
-        internal ActiveDirectorySchemaProperty(DirectoryContext context, string ldapDisplayName, DirectoryEntry propertyEntry, DirectoryEntry schemaEntry)
+        internal ActiveDirectorySchemaProperty(DirectoryContext context, string ldapDisplayName, DirectoryEntry? propertyEntry, DirectoryEntry? schemaEntry)
         {
             _context = context;
             _ldapDisplayName = ldapDisplayName;
@@ -201,7 +201,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
             // names
             _commonName = commonName;
-            _ldapDisplayName = (string)GetValueFromCache(PropertyManager.LdapDisplayName, true);
+            _ldapDisplayName = (string)GetValueFromCache(PropertyManager.LdapDisplayName, true)!;
 
             // this constructor is only called for defunct classes
             _isDefunctOnServer = true;
@@ -280,7 +280,7 @@ namespace System.DirectoryServices.ActiveDirectory
         #region public methods
         public static ActiveDirectorySchemaProperty FindByName(DirectoryContext context, string ldapDisplayName)
         {
-            ActiveDirectorySchemaProperty schemaProperty = null;
+            ActiveDirectorySchemaProperty? schemaProperty = null;
 
             if (context == null)
             {
@@ -315,7 +315,7 @@ namespace System.DirectoryServices.ActiveDirectory
             context = new DirectoryContext(context);
 
             // create a schema property
-            schemaProperty = new ActiveDirectorySchemaProperty(context, ldapDisplayName, (DirectoryEntry)null, null);
+            schemaProperty = new ActiveDirectorySchemaProperty(context, ldapDisplayName, (DirectoryEntry?)null, null);
 
             return schemaProperty;
         }
@@ -407,14 +407,14 @@ namespace System.DirectoryServices.ActiveDirectory
             try
             {
                 // commit the classEntry to server
-                _propertyEntry.CommitChanges();
+                _propertyEntry!.CommitChanges();
 
                 // Refresh the schema cache on the schema role owner
                 if (_schema == null)
                 {
                     ActiveDirectorySchema schemaObject = ActiveDirectorySchema.GetSchema(_context);
                     bool alreadyUsingSchemaRoleOwnerContext = false;
-                    DirectoryServer schemaRoleOwner = null;
+                    DirectoryServer? schemaRoleOwner = null;
 
                     try
                     {
@@ -504,7 +504,7 @@ namespace System.DirectoryServices.ActiveDirectory
             }
         }
 
-        public string CommonName
+        public string? CommonName
         {
             get
             {
@@ -515,7 +515,7 @@ namespace System.DirectoryServices.ActiveDirectory
                     if (_commonName == null)
                     {
                         // get the property from the server
-                        _commonName = (string)GetValueFromCache(PropertyManager.Cn, true);
+                        _commonName = (string)GetValueFromCache(PropertyManager.Cn, true)!;
                     }
                 }
                 return _commonName;
@@ -536,7 +536,7 @@ namespace System.DirectoryServices.ActiveDirectory
             }
         }
 
-        public string Oid
+        public string? Oid
         {
             get
             {
@@ -552,7 +552,7 @@ namespace System.DirectoryServices.ActiveDirectory
                         {
                             try
                             {
-                                _oid = _iadsProperty.OID;
+                                _oid = _iadsProperty!.OID;
                             }
                             catch (COMException e)
                             {
@@ -561,7 +561,7 @@ namespace System.DirectoryServices.ActiveDirectory
                         }
                         else
                         {
-                            _oid = (string)GetValueFromCache(PropertyManager.AttributeID, true);
+                            _oid = (string)GetValueFromCache(PropertyManager.AttributeID, true)!;
                         }
                     }
                 }
@@ -593,11 +593,11 @@ namespace System.DirectoryServices.ActiveDirectory
                 {
                     if (!_syntaxInitialized)
                     {
-                        byte[] omObjectClassBinaryForm = (byte[])GetValueFromCache(PropertyManager.OMObjectClass, false);
-                        OMObjectClass omObjectClass = (omObjectClassBinaryForm != null) ? new OMObjectClass(omObjectClassBinaryForm) : null;
+                        byte[]? omObjectClassBinaryForm = (byte[]?)GetValueFromCache(PropertyManager.OMObjectClass, false);
+                        OMObjectClass? omObjectClass = (omObjectClassBinaryForm != null) ? new OMObjectClass(omObjectClassBinaryForm) : null;
 
-                        _syntax = MapSyntax((string)GetValueFromCache(PropertyManager.AttributeSyntax, true),
-                            (int)GetValueFromCache(PropertyManager.OMSyntax, true),
+                        _syntax = MapSyntax((string)GetValueFromCache(PropertyManager.AttributeSyntax, true)!,
+                            (int)GetValueFromCache(PropertyManager.OMSyntax, true)!,
                             omObjectClass);
                         _syntaxInitialized = true;
                     }
@@ -622,7 +622,7 @@ namespace System.DirectoryServices.ActiveDirectory
             }
         }
 
-        public string Description
+        public string? Description
         {
             get
             {
@@ -633,7 +633,7 @@ namespace System.DirectoryServices.ActiveDirectory
                     if (!_descriptionInitialized)
                     {
                         // get the property from the server
-                        _description = (string)GetValueFromCache(PropertyManager.Description, false);
+                        _description = (string?)GetValueFromCache(PropertyManager.Description, false);
                         _descriptionInitialized = true;
                     }
                 }
@@ -671,7 +671,7 @@ namespace System.DirectoryServices.ActiveDirectory
                         {
                             try
                             {
-                                _isSingleValued = !_iadsProperty.MultiValued;
+                                _isSingleValued = !_iadsProperty!.MultiValued;
                             }
                             catch (COMException e)
                             {
@@ -680,7 +680,7 @@ namespace System.DirectoryServices.ActiveDirectory
                         }
                         else
                         {
-                            _isSingleValued = (bool)GetValueFromCache(PropertyManager.IsSingleValued, true);
+                            _isSingleValued = (bool)GetValueFromCache(PropertyManager.IsSingleValued, true)!;
                         }
                         _isSingleValuedInitialized = true;
                     }
@@ -830,7 +830,7 @@ namespace System.DirectoryServices.ActiveDirectory
                     if (!_isInGlobalCatalogInitialized)
                     {
                         // get the property from the server
-                        object value = GetValueFromCache(PropertyManager.IsMemberOfPartialAttributeSet, false);
+                        object? value = GetValueFromCache(PropertyManager.IsMemberOfPartialAttributeSet, false);
                         _isInGlobalCatalog = (value != null) ? (bool)value : false;
                         _isInGlobalCatalogInitialized = true;
                     }
@@ -866,7 +866,7 @@ namespace System.DirectoryServices.ActiveDirectory
                     {
                         // get the property from the server
                         // if the property is not set then we will return null
-                        object value = GetValueFromCache(PropertyManager.RangeLower, false);
+                        object? value = GetValueFromCache(PropertyManager.RangeLower, false);
                         if (value == null)
                         {
                             _rangeLower = null;
@@ -919,7 +919,7 @@ namespace System.DirectoryServices.ActiveDirectory
                     {
                         // get the property from the server
                         // if the property is not set then we will return null
-                        object value = GetValueFromCache(PropertyManager.RangeUpper, false);
+                        object? value = GetValueFromCache(PropertyManager.RangeUpper, false);
                         if (value == null)
                         {
                             _rangeUpper = null;
@@ -981,7 +981,7 @@ namespace System.DirectoryServices.ActiveDirectory
             }
         }
 
-        public ActiveDirectorySchemaProperty Link
+        public ActiveDirectorySchemaProperty? Link
         {
             get
             {
@@ -991,7 +991,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 {
                     if (!_linkedPropertyInitialized)
                     {
-                        object value = GetValueFromCache(PropertyManager.LinkID, false);
+                        object? value = GetValueFromCache(PropertyManager.LinkID, false);
                         int tempLinkId = (value != null) ? (int)value : -1;
 
                         if (tempLinkId != -1)
@@ -1037,7 +1037,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 {
                     if (!_linkIdInitialized)
                     {
-                        object value = GetValueFromCache(PropertyManager.LinkID, false);
+                        object? value = GetValueFromCache(PropertyManager.LinkID, false);
                         // if the property was not set we will return null
                         if (value == null)
                         {
@@ -1090,12 +1090,12 @@ namespace System.DirectoryServices.ActiveDirectory
                     if (_schemaGuidBinaryForm == null)
                     {
                         // get the property from the server
-                        _schemaGuidBinaryForm = (byte[])GetValueFromCache(PropertyManager.SchemaIDGuid, true);
+                        _schemaGuidBinaryForm = (byte[])GetValueFromCache(PropertyManager.SchemaIDGuid, true)!;
                     }
                 }
 
                 // we cache the byte array and create a new guid each time
-                return new Guid(_schemaGuidBinaryForm);
+                return new Guid(_schemaGuidBinaryForm!);
             }
             set
             {
@@ -1128,16 +1128,16 @@ namespace System.DirectoryServices.ActiveDirectory
         // not an exception should be thrown if a value does not exist. If mustExist is true, this
         // will throw an exception is value does not exist.
         //
-        private object GetValueFromCache(string propertyName, bool mustExist)
+        private object? GetValueFromCache(string propertyName, bool mustExist)
         {
-            object value = null;
+            object? value = null;
 
             // retrieve the properties from the server if necessary
             InitializePropertiesFromSchemaContainer();
 
             Debug.Assert(_propertyValuesFromServer != null);
 
-            ResultPropertyValueCollection propertyValues = null;
+            ResultPropertyValueCollection? propertyValues = null;
             try
             {
                 propertyValues = _propertyValuesFromServer.Properties[propertyName];
@@ -1173,7 +1173,7 @@ namespace System.DirectoryServices.ActiveDirectory
                     _schemaEntry = DirectoryEntryManager.GetDirectoryEntry(_context, WellKnownDN.SchemaNamingContext);
                 }
 
-                _propertyValuesFromServer = GetPropertiesFromSchemaContainer(_context, _schemaEntry, (_isDefunctOnServer) ? _commonName : _ldapDisplayName, _isDefunctOnServer);
+                _propertyValuesFromServer = GetPropertiesFromSchemaContainer(_context, _schemaEntry, (_isDefunctOnServer) ? _commonName! : _ldapDisplayName, _isDefunctOnServer);
                 _propertiesFromSchemaContainerInitialized = true;
             }
         }
@@ -1187,7 +1187,7 @@ namespace System.DirectoryServices.ActiveDirectory
         //
         internal static SearchResult GetPropertiesFromSchemaContainer(DirectoryContext context, DirectoryEntry schemaEntry, string name, bool isDefunctOnServer)
         {
-            SearchResult propertyValuesFromServer = null;
+            SearchResult? propertyValuesFromServer = null;
 
             //
             // The properties that are loaded from the schemaContainer for non-defunct classes:
@@ -1244,7 +1244,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 str.Append("=TRUE))");
             }
 
-            string[] propertiesToLoad = null;
+            string[]? propertiesToLoad = null;
             if (!isDefunctOnServer)
             {
                 propertiesToLoad = new string[12];
@@ -1318,7 +1318,7 @@ namespace System.DirectoryServices.ActiveDirectory
             if (_propertyEntry == null)
             {
                 InitializePropertiesFromSchemaContainer();
-                _propertyEntry = DirectoryEntryManager.GetDirectoryEntry(_context, (string)GetValueFromCache(PropertyManager.DistinguishedName, true));
+                _propertyEntry = DirectoryEntryManager.GetDirectoryEntry(_context, (string)GetValueFromCache(PropertyManager.DistinguishedName, true)!);
             }
 
             return _propertyEntry;
@@ -1336,7 +1336,7 @@ namespace System.DirectoryServices.ActiveDirectory
             {
                 if (!_searchFlagsInitialized)
                 {
-                    object value = GetValueFromCache(PropertyManager.SearchFlags, false);
+                    object? value = GetValueFromCache(PropertyManager.SearchFlags, false);
 
                     if (value != null)
                     {
@@ -1385,7 +1385,7 @@ namespace System.DirectoryServices.ActiveDirectory
             }
         }
 
-        private void SetProperty(string propertyName, object value)
+        private void SetProperty(string propertyName, object? value)
         {
             // get the distinguished name to construct the directory entry
             GetSchemaPropertyDirectoryEntry();
@@ -1404,7 +1404,7 @@ namespace System.DirectoryServices.ActiveDirectory
             }
         }
 
-        private ActiveDirectorySyntax MapSyntax(string syntaxId, int oMID, OMObjectClass oMObjectClass)
+        private ActiveDirectorySyntax MapSyntax(string syntaxId, int oMID, OMObjectClass? oMObjectClass)
         {
             for (int i = 0; i < s_syntaxes.Length; i++)
             {
@@ -1429,7 +1429,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
             _propertyEntry.Properties[PropertyManager.AttributeSyntax].Value = s_syntaxes[(int)syntax].attributeSyntax;
             _propertyEntry.Properties[PropertyManager.OMSyntax].Value = s_syntaxes[(int)syntax].oMSyntax;
-            OMObjectClass oMObjectClass = s_syntaxes[(int)syntax].oMObjectClass;
+            OMObjectClass? oMObjectClass = s_syntaxes[(int)syntax].oMObjectClass;
             if (oMObjectClass != null)
             {
                 _propertyEntry.Properties[PropertyManager.OMObjectClass].Value = oMObjectClass.Data;

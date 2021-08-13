@@ -18,10 +18,10 @@ App (native or .NET Core both) which needs to use some of the other services pro
 
 ## Existing support
 * **C-style ABI in `coreclr`**
-`coreclr` exposes ABI to host the .NET runtime and run managed code already using C-style APIs. See this [header file](https://github.com/dotnet/runtime/blob/master/src/coreclr/hosts/inc/coreclrhost.h) for the exposed functions.
+`coreclr` exposes ABI to host the .NET runtime and run managed code already using C-style APIs. See this [header file](https://github.com/dotnet/runtime/blob/main/src/coreclr/hosts/inc/coreclrhost.h) for the exposed functions.
 This API requires the native host to locate the runtime and to fully specify all startup parameters for the runtime. There's no inherent interoperability between these APIs and the .NET SDK.
 * **COM-style ABI in `coreclr`**
-`coreclr` exposes COM-style ABI to host the .NET runtime and perform a wide range of operations on it. See this [header file](https://github.com/dotnet/runtime/blob/master/src/coreclr/pal/prebuilt/inc/mscoree.h) for more details.
+`coreclr` exposes COM-style ABI to host the .NET runtime and perform a wide range of operations on it. See this [header file](https://github.com/dotnet/runtime/blob/main/src/coreclr/pal/prebuilt/inc/mscoree.h) for more details.
 Similarly to the C-style ABI the COM-style ABI also requires the native host to locate the runtime and to fully specify all startup parameters.
 There's no inherent interoperability between these APIs and the .NET SDK.
 The COM-style ABI is deprecated and should not be used going forward.
@@ -34,7 +34,7 @@ The native host is still required to locate the `hostfxr` or `hostpolicy` librar
 ## Scope
 This document focuses on hosting which cooperates with the .NET SDK and consumes the artifacts produced by building the managed app/libraries directly. It completely ignores the COM-style ABI as it's hard to use from some programming languages.
 
-As such the document explicitly excludes any hosting based on directly loading `coreclr`. Instead it focuses on using the existing .NET Core hosting components in new ways. For details on the .NET Core hosting components see [this document](https://github.com/dotnet/runtime/tree/master/docs/design/features/host-components.md).
+As such the document explicitly excludes any hosting based on directly loading `coreclr`. Instead it focuses on using the existing .NET Core hosting components in new ways. For details on the .NET Core hosting components see [this document](https://github.com/dotnet/runtime/tree/main/docs/design/features/host-components.md).
 
 
 ## Longer term vision
@@ -105,7 +105,7 @@ Ideally it should be possible to combine the different types of initialization, 
 Lot of other combinations will not be allowed simply as a result of shipping decisions. There's only so much functionality we can fit into any given release, so many combinations will be explicitly disabled to reduce the work necessary to actually ship this. The document below should describe which combinations are allowed in which release.
 
 ## High-level proposal
-In .NET Core 3.0 the hosting components (see [here](https://github.com/dotnet/runtime/tree/master/docs/design/features/host-components.md)) ships with several hosts. These are binaries which act as the entry points to the .NET Core hosting components/runtime:
+In .NET Core 3.0 the hosting components (see [here](https://github.com/dotnet/runtime/tree/main/docs/design/features/host-components.md)) ships with several hosts. These are binaries which act as the entry points to the .NET Core hosting components/runtime:
 * The "muxer" (`dotnet.exe`)
 * The `apphost` (`.exe` which is part of the app)
 * The `comhost` (`.dll` which is part of the app and acts as COM server)
@@ -235,7 +235,7 @@ int hostfxr_initialize_for_dotnet_command_line(
 
 Initializes the hosting components for running a managed application.
 The command line is parsed to determine the app path. The app path will be used to locate the `.runtimeconfig.json` and the `.deps.json` which will be used to load the application and its dependent frameworks.
-* `argc` and `argv` - the command line for running a managed application. These represent the arguments which would have been passed to the muxer if the app was being run from the command line.
+* `argc` and `argv` - the command line for running a managed application. These represent the arguments which would have been passed to the muxer if the app was being run from the command line. These are the parameters which are valid for the runtime installation by itself - SDK/CLI commands are not supported. For example, the arguments could be `app.dll app_argument_1 app_argument_2`. This API specifically doesn't support the `dotnet run` SDK command.
 * `parameters` - additional parameters - see `hostfxr_initialize_parameters` for details. (Could be made optional potentially)
 * `host_context_handle` - output parameter. On success receives an opaque value which identifies the initialized host context. The handle should be closed by calling `hostfxr_close`.
 
@@ -368,9 +368,9 @@ Starts the runtime and returns a function pointer to specified functionality of 
 * `host_context_handle` - handle to the initialized host context.
 * `type` - the type of runtime functionality requested
   * `hdt_load_assembly_and_get_function_pointer` - entry point which loads an assembly (with dependencies) and returns function pointer for a specified static method. See below for details (Loading and calling managed components)
-  * `hdt_com_activation`, `hdt_com_register`, `hdt_com_unregister` - COM activation entry-points - see [COM activation](https://github.com/dotnet/runtime/tree/master/docs/design/features/COM-activation.md) for more details.
-  * `hdt_load_in_memory_assembly` - IJW entry-point - see [IJW activation](https://github.com/dotnet/runtime/tree/master/docs/design/features/IJW-activation.md) for more details.
-  * `hdt_winrt_activation` **[.NET 3.\* only]** - WinRT activation entry-point - see [WinRT activation](https://github.com/dotnet/runtime/tree/master/docs/design/features/WinRT-activation.md) for more details. The delegate is not supported for .NET 5 and above.
+  * `hdt_com_activation`, `hdt_com_register`, `hdt_com_unregister` - COM activation entry-points - see [COM activation](https://github.com/dotnet/runtime/tree/main/docs/design/features/COM-activation.md) for more details.
+  * `hdt_load_in_memory_assembly` - IJW entry-point - see [IJW activation](https://github.com/dotnet/runtime/tree/main/docs/design/features/IJW-activation.md) for more details.
+  * `hdt_winrt_activation` **[.NET 3.\* only]** - WinRT activation entry-point - see [WinRT activation](https://github.com/dotnet/runtime/tree/main/docs/design/features/WinRT-activation.md) for more details. The delegate is not supported for .NET 5 and above.
   * `hdt_get_function_pointer` **[.NET 5 and above]** - entry-point which finds a managed method and returns a function pointer to it. See below for details (Calling managed function).
 * `delegate` - when successful, the native function pointer to the requested runtime functionality.
 
@@ -488,8 +488,8 @@ One such scenario is a COM host on multiple threads. The app is not running any 
 At the same time it gives the native app (`comhost` in this case) the ability to query and modify runtime properties in between the `hostfxr_initialize...` and `hostfxr_get_runtime_delegate` calls on the `first host context`.
 
 ### API usage
-The `hostfxr` exports are defined in the [hostfxr.h](https://github.com/dotnet/runtime/blob/master/src/native/corehost/hostfxr.h) header file.
-The runtime helper and method signatures for loading managed components are defined in [coreclr_delegates.h](https://github.com/dotnet/runtime/blob/master/src/native/corehost/coreclr_delegates.h) header file.
+The `hostfxr` exports are defined in the [hostfxr.h](https://github.com/dotnet/runtime/blob/main/src/native/corehost/hostfxr.h) header file.
+The runtime helper and method signatures for loading managed components are defined in [coreclr_delegates.h](https://github.com/dotnet/runtime/blob/main/src/native/corehost/coreclr_delegates.h) header file.
 
 Currently we don't plan to ship these files, but it's possible to take them from the repo and use it.
 
@@ -537,7 +537,7 @@ params.dotnet_root = get_directory(get_directory(get_directory(hostfxr_path))); 
 hostfxr_handle host_context_handle;
 hostfxr_initialize_for_dotnet_command_line(
     _argc_,
-    _argv_,
+    _argv_,  // For example, 'app.dll app_argument_1 app_argument_2'
     &params,
     &host_context_handle);
 
@@ -592,3 +592,6 @@ hostfxr_close(host_context_handle);
 The exact impact on the `hostfxr`/`hostpolicy` interface needs to be investigated. The assumption is that new APIs will have to be added to `hostpolicy` to implement the proposed functionality.
 
 Part if this investigation will also be compatibility behavior. Currently "any" version of `hostfxr` needs to be able to use "any" version of `hostpolicy`. But the proposed functionality will need both new `hostfxr` and new `hostpolicy` to work. It is likely the proposed APIs will fail if the app resolves to a framework with old `hostpolicy` without the necessary new APIs. Part of the investigation will be if it's feasible to use the new `hostpolicy` APIs to implement existing old `hostfxr` APIs.
+
+## Incompatible with trimming
+Native hosting support on managed side is disabled by default on trimmed apps. Native hosting and trimming are incompatible since the trimmer cannot analyze methods that are called by native hosts. Native hosting support for trimming can be managed through the [feature switch](https://github.com/dotnet/runtime/blob/main/docs/workflow/trimming/feature-switches.md) settings specific to each native host.

@@ -24,7 +24,7 @@ namespace System.Threading.Tasks
     /// is ever GC'd without the holder's contents ever having been requested
     /// (e.g. by a Task.Wait, Task.get_Exception, etc).
     /// </summary>
-    internal class TaskExceptionHolder
+    internal sealed class TaskExceptionHolder
     {
         /// <summary>The task with which this holder is associated.</summary>
         private readonly Task m_task;

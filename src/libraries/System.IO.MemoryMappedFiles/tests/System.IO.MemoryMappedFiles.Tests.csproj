@@ -19,18 +19,14 @@
     <Compile Include="$(CommonTestPath)System\IO\TempFile.cs" Link="Common\System\IO\TempFile.cs" />
     <Compile Include="SafeMemoryMappedViewHandleTests.cs" />
     <Compile Include="XunitAssemblyAttributes.cs" />
-    <Compile Include="$(CommonPath)System\Threading\Tasks\TaskToApm.cs" Link="Common\System\Threading\Tasks\TaskToApm.cs" />
-    <Compile Include="$(CommonTestPath)Tests\System\IO\StreamConformanceTests.cs" Link="Common\System\IO\StreamConformanceTests.cs" />
-    <Compile Include="$(CommonTestPath)System\IO\CallTrackingStream.cs" Link="Common\System\IO\CallTrackingStream.cs" />
-    <Compile Include="$(CommonTestPath)System\IO\ConnectedStreams.cs" Link="Common\System\IO\ConnectedStreams.cs" />
-    <Compile Include="$(CommonPath)System\Net\ArrayBuffer.cs" Link="ProductionCode\Common\System\Net\ArrayBuffer.cs" />
-    <Compile Include="$(CommonPath)System\Net\MultiArrayBuffer.cs" Link="ProductionCode\Common\System\Net\MultiArrayBuffer.cs" />
-    <Compile Include="$(CommonPath)System\Net\StreamBuffer.cs" Link="ProductionCode\Common\System\Net\StreamBuffer.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Interop.BOOL.cs" Link="ProductionCode\Common\Interop\Windows\Interop.BOOL.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Interop.Libraries.cs" Link="ProductionCode\Common\Interop\Windows\Interop.Libraries.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.CreateFileMapping.cs" Link="ProductionCode\Common\Interop\Windows\Kernel32\Interop.CreateFileMapping.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.MapViewOfFile.cs" Link="ProductionCode\Common\Interop\Windows\Kernel32\Interop.MapViewOfFile.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.MemOptions.cs" Link="ProductionCode\Common\Interop\Windows\Kernel32\Interop.MemOptions.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.SECURITY_ATTRIBUTES.cs" Link="ProductionCode\Common\Interop\Windows\Kernel32\Interop.SECURITY_ATTRIBUTES.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(CommonTestPath)StreamConformanceTests\StreamConformanceTests.csproj" />
   </ItemGroup>
 </Project>

@@ -4,6 +4,10 @@ if (NOT CLR_CMAKE_TARGET_MACCATALYST AND NOT CLR_CMAKE_TARGET_IOS AND NOT CLR_CM
     add_definitions(-DHAS_CONSOLE_SIGNALS)
 endif ()
 
+if (CLR_CMAKE_TARGET_OSX)
+    add_definitions(-D_DARWIN_C_SOURCE)
+endif ()
+
 include_directories("${CLR_SRC_NATIVE_DIR}/common")
 
 set(NATIVE_SOURCES
@@ -29,19 +33,34 @@ set(NATIVE_SOURCES
     pal_sysctl.c
 )
 
+if (CLR_CMAKE_TARGET_OSX OR CLR_CMAKE_TARGET_MACCATALYST OR CLR_CMAKE_TARGET_IOS OR CLR_CMAKE_TARGET_TVOS)
+    list (APPEND NATIVE_SOURCES pal_autoreleasepool.m)
+    set_source_files_properties(pal_autoreleasepool.m PROPERTIES COMPILE_FLAGS -fno-objc-arc)
+else()
+    list (APPEND NATIVE_SOURCES pal_autoreleasepool.c)
+endif()
+
 if (CLR_CMAKE_TARGET_MACCATALYST OR CLR_CMAKE_TARGET_IOS OR CLR_CMAKE_TARGET_TVOS)
     set(NATIVE_SOURCES ${NATIVE_SOURCES}
         pal_log.m
         pal_searchpath.m)
 else ()
-    set(NATIVE_SOURCES ${NATIVE_SOURCES}
+    list (APPEND NATIVE_SOURCES
         pal_searchpath.c
         pal_console.c
         pal_log.c)
 endif ()
 
+if (CLR_CMAKE_TARGET_MACCATALYST)
+    set(NATIVE_SOURCES ${NATIVE_SOURCES}
+        pal_iossupportversion.m)
+else ()
+    list (APPEND NATIVE_SOURCES
+        pal_iossupportversion.c)
+endif ()
+
 if (NOT CLR_CMAKE_TARGET_BROWSER)
-    set(NATIVE_SOURCES ${NATIVE_SOURCES} pal_networkchange.c)
+    list (APPEND NATIVE_SOURCES pal_networkchange.c)
 endif ()
 
 include(${CMAKE_CURRENT_LIST_DIR}/extra_libs.cmake)
@@ -85,4 +104,4 @@ add_library(System.Native-Static
 
 set_target_properties(System.Native-Static PROPERTIES OUTPUT_NAME System.Native CLEAN_DIRECT_OUTPUT 1)
 
-install (TARGETS System.Native-Static DESTINATION ${STATIC_LIB_DESTINATION})
+install (TARGETS System.Native-Static DESTINATION ${STATIC_LIB_DESTINATION} COMPONENT libs)

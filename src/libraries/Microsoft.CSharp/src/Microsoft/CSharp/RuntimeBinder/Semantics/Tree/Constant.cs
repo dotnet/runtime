@@ -3,6 +3,7 @@
 
 using System;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 
 namespace Microsoft.CSharp.RuntimeBinder.Semantics
 {
@@ -47,6 +48,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
         public override object Object
         {
+            [RequiresUnreferencedCode(Binder.TrimmerWarning)]
             get
             {
                 if (Type is NullType)

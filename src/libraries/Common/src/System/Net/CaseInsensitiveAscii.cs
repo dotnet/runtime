@@ -5,7 +5,7 @@ using System.Collections;
 
 namespace System.Net
 {
-    internal class CaseInsensitiveAscii : IEqualityComparer, IComparer
+    internal sealed class CaseInsensitiveAscii : IEqualityComparer, IComparer
     {
         // ASCII char ToLower table
         internal static readonly CaseInsensitiveAscii StaticInstance = new CaseInsensitiveAscii();

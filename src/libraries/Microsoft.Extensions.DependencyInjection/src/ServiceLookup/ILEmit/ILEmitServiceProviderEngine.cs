@@ -2,23 +2,20 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Collections.Generic;
 
 namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
 {
-    internal class ILEmitServiceProviderEngine : ServiceProviderEngine
+    internal sealed class ILEmitServiceProviderEngine : ServiceProviderEngine
     {
         private readonly ILEmitResolverBuilder _expressionResolverBuilder;
-        public ILEmitServiceProviderEngine(IEnumerable<ServiceDescriptor> serviceDescriptors) : base(serviceDescriptors)
+        public ILEmitServiceProviderEngine(ServiceProvider serviceProvider)
         {
-            _expressionResolverBuilder = new ILEmitResolverBuilder(RuntimeResolver, this, Root);
+            _expressionResolverBuilder = new ILEmitResolverBuilder(serviceProvider);
         }
 
-        protected override Func<ServiceProviderEngineScope, object> RealizeService(ServiceCallSite callSite)
+        public override Func<ServiceProviderEngineScope, object> RealizeService(ServiceCallSite callSite)
         {
-            Func<ServiceProviderEngineScope, object> realizedService = _expressionResolverBuilder.Build(callSite);
-            RealizedServices[callSite.ServiceType] = realizedService;
-            return realizedService;
+            return _expressionResolverBuilder.Build(callSite);
         }
     }
 }

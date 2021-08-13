@@ -583,6 +583,7 @@ namespace System.Reflection.Emit
             return res;
         }
 
+        [RequiresUnreferencedCode("P/Invoke marshalling may dynamically access members that could be trimmed.")]
         public MethodBuilder DefinePInvokeMethod(string name, string dllName, string entryName, MethodAttributes attributes, CallingConventions callingConvention, Type? returnType, Type[]? parameterTypes, CallingConvention nativeCallConv, CharSet nativeCharSet)
         {
             return DefinePInvokeMethod(name, dllName, entryName, attributes,
@@ -590,6 +591,7 @@ namespace System.Reflection.Emit
                 null, null, nativeCallConv, nativeCharSet);
         }
 
+        [RequiresUnreferencedCode("P/Invoke marshalling may dynamically access members that could be trimmed.")]
         public MethodBuilder DefinePInvokeMethod(
                         string name,
                         string dllName,
@@ -633,6 +635,7 @@ namespace System.Reflection.Emit
             return res;
         }
 
+        [RequiresUnreferencedCode("P/Invoke marshalling may dynamically access members that could be trimmed.")]
         public MethodBuilder DefinePInvokeMethod(string name, string dllName, MethodAttributes attributes, CallingConventions callingConvention, Type? returnType, Type[]? parameterTypes, CallingConvention nativeCallConv, CharSet nativeCharSet)
         {
             return DefinePInvokeMethod(name, dllName, name, attributes, callingConvention, returnType, parameterTypes,
@@ -752,6 +755,10 @@ namespace System.Reflection.Emit
                 null);
         }
 
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2110:ReflectionToDynamicallyAccessedMembers",
+            Justification = "For instance member internal calls, the linker preserves all fields of the declaring type. " +
+            "The parent and created fields have DynamicallyAccessedMembersAttribute requirements, but creating the runtime class is safe " +
+            "because the annotations fully preserve the parent type, and the type created via Reflection.Emit is not subject to trimming.")]
         [return: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private extern TypeInfo create_runtime_class();
@@ -1083,12 +1090,15 @@ namespace System.Reflection.Emit
             return created!.GetFields(bindingAttr);
         }
 
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.Interfaces)]
+        [return: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.Interfaces)]
         public override Type? GetInterface(string name, bool ignoreCase)
         {
             check_created();
             return created!.GetInterface(name, ignoreCase);
         }
 
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.Interfaces)]
         public override Type[] GetInterfaces()
         {
             if (is_created)
@@ -1106,7 +1116,7 @@ namespace System.Reflection.Emit
             }
         }
 
-        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
+        [DynamicallyAccessedMembers(GetAllMembers)]
         public override MemberInfo[] GetMember(string name, MemberTypes type,
                                                 BindingFlags bindingAttr)
         {
@@ -1114,7 +1124,7 @@ namespace System.Reflection.Emit
             return created!.GetMember(name, type, bindingAttr);
         }
 
-        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
+        [DynamicallyAccessedMembers(GetAllMembers)]
         public override MemberInfo[] GetMembers(BindingFlags bindingAttr)
         {
             check_created();
@@ -1391,6 +1401,7 @@ namespace System.Reflection.Emit
             return new ByRefType(this);
         }
 
+        [RequiresUnreferencedCode("If some of the generic arguments are annotated (either with DynamicallyAccessedMembersAttribute, or generic constraints), trimming can't validate that the requirements of those annotations are met.")]
         public override Type MakeGenericType(params Type[] typeArguments)
         {
             //return base.MakeGenericType (typeArguments);
@@ -1648,7 +1659,7 @@ namespace System.Reflection.Emit
         }
 
         [ComVisible(true)]
-        public override InterfaceMapping GetInterfaceMap(Type interfaceType)
+        public override InterfaceMapping GetInterfaceMap([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods | DynamicallyAccessedMemberTypes.NonPublicMethods)] Type interfaceType)
         {
             if (created == null)
                 throw new NotSupportedException("This method is not implemented for incomplete types.");

@@ -220,7 +220,7 @@ namespace Microsoft.Extensions.FileSystemGlobbing.Internal.Patterns
             return pattern.Substring(beginIndex, endIndex - beginIndex);
         }
 
-        private class LinearPattern : ILinearPattern
+        private sealed class LinearPattern : ILinearPattern
         {
             public LinearPattern(List<IPathSegment> allSegments)
             {
@@ -240,7 +240,7 @@ namespace Microsoft.Extensions.FileSystemGlobbing.Internal.Patterns
             }
         }
 
-        private class RaggedPattern : IRaggedPattern
+        private sealed class RaggedPattern : IRaggedPattern
         {
             public RaggedPattern(List<IPathSegment> allSegments, IList<IPathSegment> segmentsPatternStartsWith, IList<IPathSegment> segmentsPatternEndsWith, IList<IList<IPathSegment>> segmentsPatternContains)
             {

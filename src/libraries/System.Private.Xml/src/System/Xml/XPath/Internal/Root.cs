@@ -5,7 +5,7 @@ using System.Xml.XPath;
 
 namespace MS.Internal.Xml.XPath
 {
-    internal class Root : AstNode
+    internal sealed class Root : AstNode
     {
         public Root() { }
 

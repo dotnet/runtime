@@ -15,7 +15,7 @@ Copyright (c) .NET Foundation. All rights reserved.
 Licensed under the Apache License, Version 2.0.
 
 Available at
-https://github.com/dotnet/aspnetcore/blob/master/LICENSE.txt
+https://github.com/dotnet/aspnetcore/blob/main/LICENSE.txt
 
 License notice for Slicing-by-8
 -------------------------------
@@ -669,24 +669,18 @@ ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
 THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-License notice for Xorshift RNGs
+License notice for xoshiro RNGs
 --------------------------------
 
-George Marsaglia
-2003-07-04
-Journal of Statistical Software
-License: http://creativecommons.org/licenses/by/3.0/
+Written in 2018 by David Blackman and Sebastiano Vigna (vigna@acm.org)
 
-https://www.jstatsoft.org/article/view/v008i14
-https://www.jstatsoft.org/index.php/jss/article/view/v008i14/xorshift.pdf
+To the extent possible under law, the author has dedicated all copyright
+and related and neighboring rights to this software to the public domain
+worldwide. This software is distributed without any warranty.
 
-License notice for Xorshift (Wikipedia)
----------------------------------------
+See <http://creativecommons.org/publicdomain/zero/1.0/>.
 
-https://en.wikipedia.org/wiki/Xorshift
-License: https://en.wikipedia.org/wiki/Wikipedia:Text_of_Creative_Commons_Attribution-ShareAlike_3.0_Unported_License
-
-License for fastmod (https://github.com/lemire/fastmod)
+License for fastmod (https://github.com/lemire/fastmod) and ibm-fpgen (https://github.com/nigeltao/parse-number-fxx-test-data)
 --------------------------------------
 
    Copyright 2018 Daniel Lemire
@@ -908,43 +902,38 @@ CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
 TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
 SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-License notice for Sun Microsystems
+
+License notice for "Faster Unsigned Division by Constants"
+------------------------------
+
+Reference implementations of computing and using the "magic number" approach to dividing
+by constants, including codegen instructions. The unsigned division incorporates the
+"round down" optimization per ridiculous_fish.
+
+This is free and unencumbered software. Any copyright is dedicated to the Public Domain.
+
+
+License notice for mimalloc
 -----------------------------------
 
+MIT License
 
-Copyright (c) 2002 Sun Microsystems, Inc. All  Rights Reserved.
+Copyright (c) 2019 Microsoft Corporation, Daan Leijen
 
-Redistribution  and use in  source  and binary  forms,  with or
-without modification, are permitted provided that the following
-conditions are met:
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
 
- -Redistribution of source code must retain the above copyright
-  notice, this list of conditions and the following disclaimer.
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
 
- -Redistribution  in  binary  form  must  reproduce  the  above
-  copyright notice,  this list of conditions and  the following
-  disclaimer  in  the  documentation  and/or  other   materials
-  provided with the distribution.
-
-Neither  the  name  of  Sun Microsystems, Inc.  or the names of
-contributors may be used to endorse or promote products derived
-from this  software without  specific prior written permission.
-
-This  software  is provided  "AS IS," without a warranty of any
-kind.  ALL EXPRESS  OR IMPLIED  CONDITIONS, REPRESENTATIONS AND
-WARRANTIES,  INCLUDING ANY IMPLIED WARRANTY OF MERCHANTABILITY,
-FITNESS  FOR  A  PARTICULAR  PURPOSE  OR  NON-INFRINGEMENT, ARE
-HEREBY  EXCLUDED.    SUN MICROSYSTEMS, INC.  ("SUN")   AND  ITS
-LICENSORS  SHALL  NOT  BE  LIABLE  FOR  ANY DAMAGES SUFFERED BY
-LICENSEE  AS A  RESULT OF USING, MODIFYING OR DISTRIBUTING THIS
-SOFTWARE  OR  ITS  DERIVATIVES.   IN  NO  EVENT WILL SUN OR ITS
-LICENSORS BE LIABLE  FOR  ANY LOST REVENUE,  PROFIT OR DATA, OR
-FOR DIRECT,  INDIRECT,  SPECIAL,  CONSEQUENTIAL,  INCIDENTAL OR
-PUNITIVE DAMAGES,  HOWEVER CAUSED AND  REGARDLESS OF THE THEORY
-OF LIABILITY,  ARISING  OUT  OF  THE USE OF OR INABILITY TO USE
-THIS SOFTWARE,  EVEN IF SUN HAS BEEN ADVISED OF THE POSSIBILITY
-OF SUCH DAMAGES.
-
-You acknowledge that this software is not designed, licensed or
-intended  for  use  in  the  design, construction, operation or
-maintenance of any nuclear facility.
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.

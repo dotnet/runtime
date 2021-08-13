@@ -1,13 +1,14 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Security.Cryptography.Encryption.RC2.Tests;
 using System.Text;
 using Test.Cryptography;
 using Xunit;
 
 namespace System.Security.Cryptography.Dsa.Tests
 {
-    [SkipOnMono("Not supported on Browser", TestPlatforms.Browser)]
+    [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst, "Not supported on Browser/iOS/tvOS/MacCatalyst")]
     public static class DSAKeyFileTests
     {
         public static bool SupportsFips186_3 => DSAFactory.SupportsFips186_3;
@@ -26,7 +27,7 @@ namespace System.Security.Cryptography.Dsa.Tests
 
         private static void UseAfterDispose(bool importKey)
         {
-            DSA key = importKey ? DSAFactory.Create(DSATestData.GetDSA1024Params()) : DSAFactory.Create(512);
+            DSA key = importKey ? DSAFactory.Create(DSATestData.GetDSA1024Params()) : DSAFactory.Create(1024);
 
             byte[] pkcs8Private;
             byte[] pkcs8EncryptedPrivate;
@@ -105,7 +106,7 @@ hpTvzzEtnljU3dHAHig4M/TxSeX5vUVJMEQxthvg2tcXtTjFzVL94ajmYZPonQnB
                 DSATestData.Dsa2048DeficientXParameters);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RC2Factory), nameof(RC2Factory.IsSupported))]
         public static void ReadWriteDsa512EncryptedPkcs8()
         {
             // pbeWithSHA1And40BitRC2-CBC (PKCS12-PBE)
@@ -125,7 +126,7 @@ UCouQg==",
                 DSATestData.Dsa512Parameters);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RC2Factory), nameof(RC2Factory.IsSupported))]
         public static void ReadWriteDsa576EncryptedPkcs8()
         {
             // pbeWithSHA1And128BitRC2-CBC (PKCS12-PBE)

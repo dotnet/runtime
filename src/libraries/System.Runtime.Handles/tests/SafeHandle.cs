@@ -113,7 +113,7 @@ public partial class SafeHandleTests
         SetLastError(42);
         handle.DangerousRelease();
 
-        int error = Marshal.GetLastWin32Error();
+        int error = Marshal.GetLastPInvokeError();
         Assert.Equal(42, error);
     }
 }

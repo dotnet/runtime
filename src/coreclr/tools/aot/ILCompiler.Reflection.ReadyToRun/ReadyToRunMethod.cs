@@ -84,7 +84,7 @@ namespace ILCompiler.Reflection.ReadyToRun
     /// A runtime function corresponds to a contiguous fragment of code that implements a method.
     /// </summary>
     /// <remarks>
-    /// Based on <a href="https://github.com/dotnet/runtime/blob/master/src/coreclr/pal/inc/pal.h">src/pal/inc/pal.h</a> _RUNTIME_FUNCTION
+    /// Based on <a href="https://github.com/dotnet/runtime/blob/main/src/coreclr/pal/inc/pal.h">src/pal/inc/pal.h</a> _RUNTIME_FUNCTION
     /// </remarks>
     public class RuntimeFunction
     {
@@ -305,7 +305,7 @@ namespace ILCompiler.Reflection.ReadyToRun
             if (this._runtimeFunctions == null)
             {
                 this._runtimeFunctions = new List<RuntimeFunction>();
-                this.ParseRuntimeFunctions();
+                this.ParseRuntimeFunctions(false);
             }
         }
 
@@ -474,17 +474,21 @@ namespace ILCompiler.Reflection.ReadyToRun
 
         private void EnsureInitialized()
         {
-            if (_gcInfo == null && GcInfoRva != 0)
+            if (_gcInfo == null)
             {
-                int gcInfoOffset = _readyToRunReader.CompositeReader.GetOffset(GcInfoRva);
-                if (_readyToRunReader.Machine == Machine.I386)
+                ParseRuntimeFunctions(true);
+                if (GcInfoRva != 0)
                 {
-                    _gcInfo = new x86.GcInfo(_readyToRunReader.Image, gcInfoOffset, _readyToRunReader.Machine, _readyToRunReader.ReadyToRunHeader.MajorVersion);
-                }
-                else
-                {
-                    // Arm and Arm64 use the same GcInfo format as Amd64
-                    _gcInfo = new Amd64.GcInfo(_readyToRunReader.Image, gcInfoOffset, _readyToRunReader.Machine, _readyToRunReader.ReadyToRunHeader.MajorVersion);
+                    int gcInfoOffset = _readyToRunReader.CompositeReader.GetOffset(GcInfoRva);
+                    if (_readyToRunReader.Machine == Machine.I386)
+                    {
+                        _gcInfo = new x86.GcInfo(_readyToRunReader.Image, gcInfoOffset, _readyToRunReader.Machine, _readyToRunReader.ReadyToRunHeader.MajorVersion);
+                    }
+                    else
+                    {
+                        // Arm and Arm64 use the same GcInfo format as Amd64
+                        _gcInfo = new Amd64.GcInfo(_readyToRunReader.Image, gcInfoOffset, _readyToRunReader.Machine, _readyToRunReader.ReadyToRunHeader.MajorVersion);
+                    }
                 }
             }
             if (_pgoInfo == null)
@@ -547,7 +551,7 @@ namespace ILCompiler.Reflection.ReadyToRun
         /// Get the RVAs of the runtime functions for each method
         /// based on <a href="https://github.com/dotnet/coreclr/blob/master/src/zap/zapcode.cpp">ZapUnwindInfo::Save</a>
         /// </summary>
-        private void ParseRuntimeFunctions()
+        private void ParseRuntimeFunctions(bool partial)
         {
             int runtimeFunctionId = EntryPointRuntimeFunctionId;
             int runtimeFunctionSize = _readyToRunReader.CalculateRuntimeFunctionSize();
@@ -600,6 +604,11 @@ namespace ILCompiler.Reflection.ReadyToRun
                     {
                         GcInfoRva = unwindRva + unwindInfo.Size;
                     }
+                }
+
+                if (partial)
+                {
+                    return;
                 }
 
                 RuntimeFunction rtf = new RuntimeFunction(

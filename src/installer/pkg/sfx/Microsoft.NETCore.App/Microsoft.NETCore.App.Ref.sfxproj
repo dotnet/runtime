@@ -6,6 +6,7 @@
     <UseTemplatedPlatformManifest>true</UseTemplatedPlatformManifest>
     <ArchiveName>dotnet-targeting-pack</ArchiveName>
     <InstallerName>dotnet-targeting-pack</InstallerName>
+    <OverridePackageId Condition="'$(PgoInstrument)' != ''">$(SharedFrameworkName).PGO</OverridePackageId>
     <VSInsertionShortComponentName>NetCore.TargetingPack</VSInsertionShortComponentName>
     <PackageDescription>A set of .NET APIs that are included in the default .NET application model. Contains reference assemblies, documentation, and other design-time assets.</PackageDescription>
   </PropertyGroup>
@@ -14,6 +15,8 @@
     <ItemGroup>
       <ReferencePath Include="@(LibrariesRefAssemblies)" />
       <DocFilesToPackage Include="$(ArtifactsBinDir)/docs/%(LibrariesRefAssemblies.FileName).xml" Condition="Exists('$(ArtifactsBinDir)/docs/%(LibrariesRefAssemblies.FileName).xml')"/>
+      <Analyzer Include="$(MicrosoftNetCoreAppRefPackDir)/analyzers/**/*.*" />
+      <FilesToPackage Include="@(Analyzer)" ExcludeFromValidation="true" TargetPath="analyzers/%(RecursiveDir)" />
     </ItemGroup>
   </Target>
 </Project>

@@ -267,7 +267,7 @@ namespace System.Tests
 
             Assert.Throws<ArgumentNullException>(() => Attribute.GetCustomAttribute(element, attributeType));
             attributeType = null;
-            element = typeof(AttributeGetCustomAttributes).Assembly; ;
+            element = typeof(AttributeGetCustomAttributes).Assembly;
             Assert.Throws<ArgumentNullException>(() => Attribute.GetCustomAttribute(element, attributeType));
             attributeType = typeof(myClass);
             AssertExtensions.Throws<ArgumentException>(null, () => Attribute.GetCustomAttribute(element, attributeType));
@@ -309,7 +309,7 @@ namespace System.Tests
 
             Assert.Throws<ArgumentNullException>(() => Attribute.GetCustomAttribute(element, attributeType, true));
             attributeType = null;
-            element = typeof(AttributeGetCustomAttributes).Assembly; ;
+            element = typeof(AttributeGetCustomAttributes).Assembly;
             Assert.Throws<ArgumentNullException>(() => Attribute.GetCustomAttribute(element, attributeType, false));
             attributeType = typeof(myClass);
             AssertExtensions.Throws<ArgumentException>(null, () => Attribute.GetCustomAttribute(element, attributeType, true));

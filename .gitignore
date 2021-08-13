@@ -294,11 +294,8 @@ parts/
 prime/
 stage/
 
-# CLR prebuilt generated files
-!pal/prebuilt/idl/*_i.c
-
 # Valid 'debug' folder, that contains CLR debugging code
-!debug
+!src/coreclr/debug
 
 # Ignore folders created by the CLR test build
 TestWrappers_x64_[d|D]ebug
@@ -351,9 +348,6 @@ linker
 # ln -s $(pwd)/src/libraries/Common/src src/coreclr/System.Private.CoreLib/common
 src/coreclr/System.Private.CoreLib/shared
 src/coreclr/System.Private.CoreLib/common
-
-# The debug directory should not be ignored
-!src/coreclr/debug
 
 # Exceptions to the exclusions
 !src/coreclr/.nuget/_.pdb

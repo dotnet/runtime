@@ -14,6 +14,8 @@ namespace Internal.CommandLine
         private readonly List<Argument> _options = new List<Argument>();
         private readonly List<Argument> _parameters = new List<Argument>();
 
+        private readonly List<string> _extraHelpParagraphs = new List<string>();
+
         private ArgumentParser _parser;
         private ArgumentCommand _definedCommand;
         private ArgumentCommand _activeCommand;
@@ -428,14 +430,42 @@ namespace Internal.CommandLine
             return GetParameters(ActiveCommand);
         }
 
+        private static int ConsoleWindowWidth()
+        {
+            // Console.WindowWidth will throw an exception if the output is redirected in some cases
+            // This try/catch routine is probably excessive, but it will definitely cover all the cases
+            try
+            {
+                if (!Console.IsOutputRedirected)
+                    return Console.WindowWidth;
+            }
+            catch
+            {
+            }
+            return 100;
+        }
+
         public string GetHelpText()
         {
-            return GetHelpText(Console.WindowWidth - 2);
+            return GetHelpText(ConsoleWindowWidth() - 2);
         }
 
         public string GetHelpText(int maxWidth)
         {
             return HelpTextGenerator.Generate(this, maxWidth);
+        }
+
+        public IReadOnlyList<string> ExtraHelpParagraphs
+        {
+            set
+            {
+                _extraHelpParagraphs.Clear();
+                _extraHelpParagraphs.AddRange(value);
+            }
+            get
+            {
+                return _extraHelpParagraphs.ToArray();
+            }
         }
     }
 }

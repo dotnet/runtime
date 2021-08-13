@@ -309,7 +309,7 @@ namespace System.Reflection
         }
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        [DynamicDependency("#ctor(System.Reflection.ConstructorInfo,System.Reflection.Assembly,System.IntPtr,System.UInt32)", typeof(CustomAttributeData))]
+        [DynamicDependency("#ctor(System.Reflection.ConstructorInfo,System.Reflection.Assembly,System.IntPtr,System.UInt32)", typeof(RuntimeCustomAttributeData))]
         [DynamicDependency("#ctor(System.Reflection.MemberInfo,System.Object)", typeof(CustomAttributeNamedArgument))]
         [DynamicDependency("#ctor(System.Type,System.Object)", typeof(CustomAttributeTypedArgument))]
         private static extern CustomAttributeData[] GetCustomAttributesDataInternal(ICustomAttributeProvider obj);
@@ -544,9 +544,9 @@ namespace System.Reflection
             count = 0;
 
             if ((Attributes & TypeAttributes.Serializable) != 0)
-                attrsData[count++] = new CustomAttributeData((typeof(SerializableAttribute)).GetConstructor(Type.EmptyTypes)!);
+                attrsData[count++] = new RuntimeCustomAttributeData((typeof(SerializableAttribute)).GetConstructor(Type.EmptyTypes)!);
             if ((Attributes & TypeAttributes.Import) != 0)
-                attrsData[count++] = new CustomAttributeData((typeof(ComImportAttribute)).GetConstructor(Type.EmptyTypes)!);
+                attrsData[count++] = new RuntimeCustomAttributeData((typeof(ComImportAttribute)).GetConstructor(Type.EmptyTypes)!);
 
             return attrsData;
         }
@@ -752,7 +752,7 @@ namespace System.Reflection
         private static readonly AttributeUsageAttribute DefaultAttributeUsage =
             new AttributeUsageAttribute(AttributeTargets.All);
 
-        private class AttributeInfo
+        private sealed class AttributeInfo
         {
             private AttributeUsageAttribute _usage;
             private int _inheritanceLevel;

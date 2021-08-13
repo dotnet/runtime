@@ -9,10 +9,9 @@ using Xunit;
 
 namespace System.Security.Cryptography.DeriveBytesTests
 {
-    [SkipOnMono("Not supported on Browser", TestPlatforms.Browser)]
+    [SkipOnPlatform(TestPlatforms.Browser, "Not supported on Browser")]
     public class Rfc2898Tests
     {
-        // 8 bytes is the minimum accepted value, by using it we've already assured that the minimum is acceptable.
         private static readonly byte[] s_testSalt = new byte[] { 9, 5, 5, 5, 1, 2, 1, 2 };
         private static readonly byte[] s_testSaltB = new byte[] { 0, 4, 0, 4, 1, 9, 7, 5 };
         private const string TestPassword = "PasswordGoesHere";
@@ -38,35 +37,11 @@ namespace System.Security.Cryptography.DeriveBytesTests
         }
 
         [Fact]
-        public static void Ctor_EmptySalt()
-        {
-            AssertExtensions.Throws<ArgumentException>("salt", null, () => new Rfc2898DeriveBytes(TestPassword, Array.Empty<byte>(), DefaultIterationCount));
-        }
-
-        [Fact]
-        public static void Ctor_DiminishedSalt()
-        {
-            AssertExtensions.Throws<ArgumentException>("salt", null, () => new Rfc2898DeriveBytes(TestPassword, new byte[7], DefaultIterationCount));
-        }
-
-        [Fact]
-        public static void Ctor_GenerateZeroSalt()
-        {
-            AssertExtensions.Throws<ArgumentException>("saltSize", null, () => new Rfc2898DeriveBytes(TestPassword, 0));
-        }
-
-        [Fact]
         public static void Ctor_GenerateNegativeSalt()
         {
             Assert.Throws<ArgumentOutOfRangeException>(() => new Rfc2898DeriveBytes(TestPassword, -1));
             Assert.Throws<ArgumentOutOfRangeException>(() => new Rfc2898DeriveBytes(TestPassword, int.MinValue));
             Assert.Throws<ArgumentOutOfRangeException>(() => new Rfc2898DeriveBytes(TestPassword, int.MinValue / 2));
-        }
-
-        [Fact]
-        public static void Ctor_GenerateDiminishedSalt()
-        {
-            AssertExtensions.Throws<ArgumentException>("saltSize", null, () => new Rfc2898DeriveBytes(TestPassword, 7));
         }
 
         [Fact]
@@ -83,7 +58,6 @@ namespace System.Security.Cryptography.DeriveBytesTests
             Assert.Throws<ArgumentOutOfRangeException>(() => new Rfc2898DeriveBytes(TestPassword, s_testSalt, int.MinValue / 2));
         }
 
-#if NETCOREAPP
         [Fact]
         public static void Ctor_EmptyAlgorithm()
         {
@@ -110,7 +84,6 @@ namespace System.Security.Cryptography.DeriveBytesTests
             Assert.Throws<CryptographicException>(
                 () => new Rfc2898DeriveBytes(TestPassword, s_testSalt, DefaultIterationCount, new HashAlgorithmName("PotatoLemming")));
         }
-#endif
 
         [Fact]
         public static void Ctor_SaltCopied()
@@ -144,6 +117,15 @@ namespace System.Security.Cryptography.DeriveBytesTests
         }
 
         [Fact]
+        public static void Ctor_GenerateEmptySalt()
+        {
+            using (var deriveBytes = new Rfc2898DeriveBytes(TestPassword, 0, 1))
+            {
+                Assert.Empty(deriveBytes.Salt);
+            }
+        }
+
+        [Fact]
         public static void Ctor_IterationsRespected()
         {
             using (var deriveBytes = new Rfc2898DeriveBytes(TestPassword, s_testSalt, 1))
@@ -173,13 +155,14 @@ namespace System.Security.Cryptography.DeriveBytesTests
         {
             byte[] output;
 
-            using (var deriveBytes = new Rfc2898DeriveBytes("", new byte[8], 1))
+            using (var deriveBytes = new Rfc2898DeriveBytes("", Array.Empty<byte>(), 1))
             {
                 output = deriveBytes.GetBytes(1);
+                Assert.Empty(deriveBytes.Salt);
             }
 
             Assert.Equal(1, output.Length);
-            Assert.Equal(0xA6, output[0]);
+            Assert.Equal(0x1E, output[0]);
         }
 
         [Fact]
@@ -346,7 +329,6 @@ namespace System.Security.Cryptography.DeriveBytesTests
                 });
         }
 
-#if NETCOREAPP
         [Theory]
         [MemberData(nameof(KnownValuesTestCases))]
         public static void GetBytes_KnownValues_WithAlgorithm(KnownValuesTestCase testCase)
@@ -381,14 +363,15 @@ namespace System.Security.Cryptography.DeriveBytesTests
                 Assert.Equal(hashAlgorithm, pbkdf2.HashAlgorithm);
             }
         }
-#endif
 
         [Fact]
         public static void CryptDeriveKey_NotSupported()
         {
             using (var deriveBytes = new Rfc2898DeriveBytes(TestPassword, s_testSalt))
             {
+#pragma warning disable SYSLIB0033 // Rfc2898DeriveBytes.CryptDeriveKey is obsolete
                 Assert.Throws<PlatformNotSupportedException>(() => deriveBytes.CryptDeriveKey("RC2", "SHA1", 128, new byte[8]));
+#pragma warning restore SYSLIB0033
             }
         }
 
@@ -495,6 +478,16 @@ namespace System.Security.Cryptography.DeriveBytesTests
 
             yield return new KnownValuesTestCase
             {
+                CaseName = "RFC 6070 Case 1",
+                HashAlgorithmName = "SHA1",
+                Password = "password",
+                Salt = ascii.GetBytes("salt"),
+                IterationCount = 1,
+                AnswerHex="0C60C80F961F0E71F3A9B524AF6012062FE037A6",
+            };
+
+            yield return new KnownValuesTestCase
+            {
                 CaseName = "RFC 6070 Case 5",
                 HashAlgorithmName = "SHA1",
                 Password = "passwordPASSWORDpassword",
@@ -551,47 +544,55 @@ namespace System.Security.Cryptography.DeriveBytesTests
             {
                 CaseName = "SHA256 alternate",
                 HashAlgorithmName = "SHA256",
-                // [SuppressMessage("Microsoft.Security", "CS002:SecretInNextLine", Justification="Unit test dummy credentials.")]
-                Password = "abcdefghij",
+                Password = "PLACEHOLDER",
                 Salt = ascii.GetBytes("abcdefghij"),
                 IterationCount = 1,
                 AnswerHex = (
                     // T-Block 1
-                    "9545B9CCBF915299F09BC4E8922B34B042F32689C072539FAEA739FCA4E782" +
+                    "9352784113E5E6DC21FC82ADA3A321D64962F760DF6EAA8E46CEEF4FAF6C6E" +
                     // T-Block 2
-                    "27B792394D6C13DB121CD16683CD738CB1717C69B34EF2B29E32306D24FCDF"),
+                    "EE6DB97E5852FC4C15FA7C52FACDEDE89B916BCC864028084A2CF0889F7F76"),
             };
 
             yield return new KnownValuesTestCase
             {
                 CaseName = "SHA384 alternate",
                 HashAlgorithmName = "SHA384",
-                // [SuppressMessage("Microsoft.Security", "CS002:SecretInNextLine", Justification="Unit test dummy credentials.")]
-                Password = "abcdefghij",
+                Password = "PLACEHOLDER",
                 Salt = ascii.GetBytes("abcdefghij"),
                 IterationCount = 1,
                 AnswerHex = (
                     // T-Block 1
-                    "BB8CCC844224775A66E038E59B74B232232AE27C4BF9625BBF3E50317EDD9217BE7B7E07AA5697AF7D2617" +
+                    "B9A10C6C82F36482D76C0C38C982C05F8BB21211ACBE1D1104B4F647DDEAEE179B92ACB0E00A304B791FD0" +
                     // T-Block 2
-                    "AC02F63AA2B0EC9697B1801E70BD10A6B58CE5DE83DD18F4FFD2E8D9289716510AA0A170EF1D145F4B3247"),
+                    "3C6A08364D0A47CD1F15E0E314800FF3AC9CF2E93B3F81A5EB67FE9F2FE6E86B0430B59902CCB5FD190E67"),
             };
 
             yield return new KnownValuesTestCase
             {
                 CaseName = "SHA512 alternate",
                 HashAlgorithmName = "SHA512",
-                // [SuppressMessage("Microsoft.Security", "CS002:SecretInNextLine", Justification="Unit test dummy credentials.")]
-                Password = "abcdefghij",
+                Password = "PLACEHOLDER",
                 Salt = ascii.GetBytes("abcdefghij"),
                 IterationCount = 1,
                 AnswerHex = (
                     // T-Block 1
-                    "9D6E96B14A53207C759DBB456B2F038170AF03389096E6EEB2161B3868D3E5" +
-                    "1265A25EF7D7433BF8718DB14F934B6054ACCEA283528AD11A669C7C85196F" +
+                    "AD8CE08CFA8F932CF9FEDDCDB6E4BC6417D61F0465D408C0BFE9656E2C1C47" +
+                    "1424537ADB2D9EBE4E4232F474EFEE2AF347F21A804F64CBC05474A6DCE0A5" +
                     // T-Block 2
-                    "B5DFAA2185446D6218EBC2D4030A83A4353B302E698C8521B6B69F7D5612EF" +
-                    "AF060798DF40183FE6B71F2D35C60FBE27DFE963EFEE52A5756323BA1A41F6"),
+                    "078100F813C1F8388EC233C1397D5E18C6509B5483141EF836C15A34D6DC67" +
+                    "A3C46A45798A2839CFD239749219E9F2EDAD3249EC8221AFB17C0028A4A0A5"),
+            };
+
+            // Taken from the OneShot tests, which is implemented using native platform APIs.
+            yield return new KnownValuesTestCase
+            {
+                CaseName = "SHA1 empty",
+                HashAlgorithmName = "SHA1",
+                Password = "",
+                Salt = Array.Empty<byte>(),
+                IterationCount = 1,
+                AnswerHex = "1E437A1C79D75BE61E91141DAE20",
             };
         }
 

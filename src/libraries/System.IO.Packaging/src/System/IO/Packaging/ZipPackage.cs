@@ -541,7 +541,7 @@ namespace System.IO.Packaging
         /// This is a helper class that maintains the Content Types File related to
         /// this ZipPackage.
         /// </summary>
-        private class ContentTypeHelper
+        private sealed class ContentTypeHelper
         {
             /// <summary>
             /// Initialize the object without uploading any information from the package.
@@ -851,17 +851,17 @@ namespace System.IO.Packaging
 
                 // get the required Extension and ContentType attributes
 
-                string extensionAttributeValue = reader.GetAttribute(ExtensionAttributeName);
+                string? extensionAttributeValue = reader.GetAttribute(ExtensionAttributeName);
                 ValidateXmlAttribute(ExtensionAttributeName, extensionAttributeValue, DefaultTagName, reader);
 
-                string contentTypeAttributeValue = reader.GetAttribute(ContentTypeAttributeName);
+                string? contentTypeAttributeValue = reader.GetAttribute(ContentTypeAttributeName);
                 ThrowIfXmlAttributeMissing(ContentTypeAttributeName, contentTypeAttributeValue, DefaultTagName, reader);
 
                 // The extensions are stored in the Default Dictionary in their original form , but they are compared
                 // in a normalized manner using the ExtensionComparer.
                 PackUriHelper.ValidatedPartUri temporaryUri = PackUriHelper.ValidatePartUri(
                     new Uri(TemporaryPartNameWithoutExtension + extensionAttributeValue, UriKind.Relative));
-                _defaultDictionary.Add(temporaryUri.PartUriExtension, new ContentType(contentTypeAttributeValue));
+                _defaultDictionary.Add(temporaryUri.PartUriExtension, new ContentType(contentTypeAttributeValue!));
 
                 //Skip the EndElement for Default Tag
                 if (!reader.IsEmptyElement)
@@ -878,20 +878,20 @@ namespace System.IO.Packaging
 
                 // get the required Extension and ContentType attributes
 
-                string partNameAttributeValue = reader.GetAttribute(PartNameAttributeName);
+                string? partNameAttributeValue = reader.GetAttribute(PartNameAttributeName);
                 ValidateXmlAttribute(PartNameAttributeName, partNameAttributeValue, OverrideTagName, reader);
 
-                string contentTypeAttributeValue = reader.GetAttribute(ContentTypeAttributeName);
+                string? contentTypeAttributeValue = reader.GetAttribute(ContentTypeAttributeName);
                 ThrowIfXmlAttributeMissing(ContentTypeAttributeName, contentTypeAttributeValue, OverrideTagName, reader);
 
-                PackUriHelper.ValidatedPartUri partUri = PackUriHelper.ValidatePartUri(new Uri(partNameAttributeValue, UriKind.Relative));
+                PackUriHelper.ValidatedPartUri partUri = PackUriHelper.ValidatePartUri(new Uri(partNameAttributeValue!, UriKind.Relative));
 
                 //Lazy initializing - ensure that the override dictionary has been initialized
                 EnsureOverrideDictionary();
 
                 // The part Uris are stored in the Override Dictionary in their original form , but they are compared
                 // in a normalized manner using PartUriComparer.
-                _overrideDictionary.Add(partUri, new ContentType(contentTypeAttributeValue));
+                _overrideDictionary.Add(partUri, new ContentType(contentTypeAttributeValue!));
 
                 //Skip the EndElement for Override Tag
                 if (!reader.IsEmptyElement)
@@ -957,19 +957,19 @@ namespace System.IO.Packaging
             }
 
             //Validate if the required XML attribute is present and not an empty string
-            private void ValidateXmlAttribute(string attributeName, string attributeValue, string tagName, XmlReader reader)
+            private void ValidateXmlAttribute(string attributeName, string? attributeValue, string tagName, XmlReader reader)
             {
                 ThrowIfXmlAttributeMissing(attributeName, attributeValue, tagName, reader);
 
                 //Checking for empty attribute
-                if (attributeValue.Length == 0)
+                if (attributeValue!.Length == 0)
                     throw new XmlException(SR.Format(SR.RequiredAttributeEmpty, tagName, attributeName), null, ((IXmlLineInfo)reader).LineNumber, ((IXmlLineInfo)reader).LinePosition);
             }
 
 
             //Validate if the required Content type XML attribute is present
             //Content type of a part can be empty
-            private void ThrowIfXmlAttributeMissing(string attributeName, string attributeValue, string tagName, XmlReader reader)
+            private void ThrowIfXmlAttributeMissing(string attributeName, string? attributeValue, string tagName, XmlReader reader)
             {
                 if (attributeValue == null)
                     throw new XmlException(SR.Format(SR.RequiredAttributeMissing, tagName, attributeName), null, ((IXmlLineInfo)reader).LineNumber, ((IXmlLineInfo)reader).LinePosition);

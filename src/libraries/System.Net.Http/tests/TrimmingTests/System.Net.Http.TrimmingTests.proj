@@ -1,0 +1,11 @@
+<Project DefaultTargets="Build">
+  <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.props))" />
+
+  <ItemGroup>
+    <TestConsoleAppSourceFiles Include="HttpClientTest.cs">
+      <SkipOnTestRuntimes>browser-wasm</SkipOnTestRuntimes>
+    </TestConsoleAppSourceFiles>
+  </ItemGroup>
+
+  <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.targets))" />
+</Project>

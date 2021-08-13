@@ -94,7 +94,8 @@ namespace Microsoft.VisualBasic.CompilerServices.Tests
             static object[] CreateData(string memberName, object[] arguments, Type[] typeArguments, string expectedValue) => new object[] { memberName, arguments, typeArguments, expectedValue };
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotLinqExpressionsBuiltWithIsInterpretingOnly))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/51834", typeof(PlatformDetection), nameof(PlatformDetection.IsBuiltWithAggressiveTrimming), nameof(PlatformDetection.IsBrowser))]
         [MemberData(nameof(LateCall_OptionalValues_Data))]
         public void LateCall_OptionalValues(string memberName, object[] arguments, Type[] typeArguments, string expectedValue)
         {
@@ -111,6 +112,202 @@ namespace Microsoft.VisualBasic.CompilerServices.Tests
                 CopyBack: null,
                 IgnoreReturn: true);
             Assert.Equal(expectedValue, actualValue);
+        }
+
+        private sealed class Properties_GetOnly
+        {
+            private object[] _values;
+            public Properties_GetOnly(string p, int length)
+            {
+                P = p;
+                _values = new object[length];
+            }
+            public string P { get; }
+            public object this[int i]
+            {
+                get { return _values[i]; }
+            }
+        }
+
+        [Fact]
+        public void Properties_GetOnly_01()
+        {
+            // NewLateBinding.LateSet() corresponds to a setting a member with late binding:
+            //   Dim instance = New Properties_GetOnly("A", 0)
+            //   instance.P = "B"
+            var instance = new Properties_GetOnly("A", 0);
+            Assert.Throws<MissingMemberException>(() =>
+                NewLateBinding.LateSet(
+                    Instance: instance,
+                    Type: null,
+                    MemberName: "P",
+                    Arguments: new object[] { "B" },
+                    ArgumentNames: null,
+                    TypeArguments: null));
+            Assert.Equal("A", instance.P);
+        }
+
+        [Fact]
+        public void Properties_GetOnly_02()
+        {
+            // NewLateBinding.LateSet() corresponds to a setting a member with late binding:
+            //   Dim instance = New Properties_GetOnly(Nothing, 10)
+            //   instance(3) = "3"
+            var instance = new Properties_GetOnly(null, 10);
+            Assert.Throws<MissingMemberException>(() =>
+                NewLateBinding.LateSet(
+                    Instance: instance,
+                    Type: null,
+                    MemberName: "Item",
+                    Arguments: new object[] { 3, "3" },
+                    ArgumentNames: null,
+                    TypeArguments: null));
+            Assert.Null(instance[3]);
+        }
+
+        [Fact]
+        public void Properties_GetOnly_03()
+        {
+            // NewLateBinding.LateCall() corresponds to calling the set accessor with late binding:
+            //   Dim instance = New Properties_GetOnly("A", 0)
+            //   instance.Set_P("B")
+            var instance = new Properties_GetOnly("A", 0);
+            Assert.Throws<MissingMemberException>(() =>
+                NewLateBinding.LateCall(
+                    Instance: instance,
+                    Type: null,
+                    MemberName: "Set_P",
+                    Arguments: new object[] { "B" },
+                    ArgumentNames: null,
+                    TypeArguments: null,
+                    CopyBack: null,
+                    IgnoreReturn: true));
+            Assert.Equal("A", instance.P);
+        }
+
+        private sealed class Properties_GetAndSet
+        {
+            private object[] _values;
+            public Properties_GetAndSet(string p, int length)
+            {
+                P = p;
+                _values = new object[length];
+            }
+            public string P { get; set; }
+            public object this[int i]
+            {
+                get { return _values[i]; }
+                set { _values[i] = value; }
+            }
+        }
+
+        [Fact]
+        public void Properties_GetAndSet_01()
+        {
+            var instance = new Properties_GetAndSet("A", 0);
+            NewLateBinding.LateSet(
+                Instance: instance,
+                Type: null,
+                MemberName: "P",
+                Arguments: new object[] { "B" },
+                ArgumentNames: null,
+                TypeArguments: null);
+            Assert.Equal("B", instance.P);
+        }
+
+        [Fact]
+        public void Properties_GetAndSet_02()
+        {
+            var instance = new Properties_GetAndSet(null, 10);
+            NewLateBinding.LateSet(
+                Instance: instance,
+                Type: null,
+                MemberName: "Item",
+                Arguments: new object[] { 3, "3" },
+                ArgumentNames: null,
+                TypeArguments: null);
+            Assert.Equal("3", instance[3]);
+        }
+
+        [Fact]
+        public void Properties_GetAndSet_03()
+        {
+            var instance = new Properties_GetAndSet("A", 0);
+            NewLateBinding.LateCall(
+                Instance: instance,
+                Type: null,
+                MemberName: "Set_P",
+                Arguments: new object[] { "B" },
+                ArgumentNames: null,
+                TypeArguments: null,
+                CopyBack: null,
+                IgnoreReturn: true);
+            Assert.Equal("B", instance.P);
+        }
+
+        private sealed class Properties_GetAndInit
+        {
+            private object[] _values;
+            public Properties_GetAndInit(string p, int length)
+            {
+                P = p;
+                _values = new object[length];
+            }
+            public string P { get; init; }
+            public object this[int i]
+            {
+                get { return _values[i]; }
+                init { _values[i] = value; }
+            }
+        }
+
+        [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
+        public void Properties_GetAndInit_01()
+        {
+            var instance = new Properties_GetAndInit("A", 0);
+            Assert.Throws<MissingMemberException>(() =>
+                NewLateBinding.LateSet(
+                    Instance: instance,
+                    Type: null,
+                    MemberName: "P",
+                    Arguments: new object[] { "B" },
+                    ArgumentNames: null,
+                    TypeArguments: null));
+            Assert.Equal("A", instance.P);
+        }
+
+        [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
+        public void Properties_GetAndInit_02()
+        {
+            var instance = new Properties_GetAndInit(null, 10);
+            Assert.Throws<MissingMemberException>(() =>
+                NewLateBinding.LateSet(
+                    Instance: instance,
+                    Type: null,
+                    MemberName: "Item",
+                    Arguments: new object[] { 3, "3" },
+                    ArgumentNames: null,
+                    TypeArguments: null));
+            Assert.Null(instance[3]);
+        }
+
+        // Not preventing direct call to property init accessor.
+        [Fact]
+        public void Properties_GetAndInit_03()
+        {
+            var instance = new Properties_GetAndInit("A", 0);
+            NewLateBinding.LateCall(
+                Instance: instance,
+                Type: null,
+                MemberName: "Set_P",
+                Arguments: new object[] { "B" },
+                ArgumentNames: null,
+                TypeArguments: null,
+                CopyBack: null,
+                IgnoreReturn: true);
+            Assert.Equal("B", instance.P);
         }
     }
 }

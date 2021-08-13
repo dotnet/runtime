@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<linker>
+	<assembly fullname="System.Private.CoreLib">
+		<type fullname="System.Threading.AutoreleasePool">
+			<!-- threads.c -->
+			<method name="CreateAutoreleasePool" />
+			<method name="DrainAutoreleasePool" />
+		</type>
+	</assembly>
+</linker>

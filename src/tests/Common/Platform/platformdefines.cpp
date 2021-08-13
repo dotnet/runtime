@@ -326,46 +326,6 @@ DWORD TP_GetFullPathName(LPWSTR fileName, DWORD nBufferLength, LPWSTR lpBuffer)
     return TP_slen(lpBuffer);
 #endif
 }
-DWORD TP_CreateThread(THREAD_ID* tThread, LPTHREAD_START_ROUTINE worker,  LPVOID lpParameter)
-{
-#ifdef WINDOWS
-    DWORD ret;
-    *tThread = CreateThread(
-        NULL,
-        0,
-        worker,
-        lpParameter,
-        0,
-        &ret);
-    return ret;
-#else
-    pthread_create(
-        tThread,
-        NULL,
-        (MacWorker)worker,
-        lpParameter);
-#ifdef MAC64
-    // This is a major kludge...64 bit posix threads just can't be cast into a DWORD and there just isn't
-    // a great way to get what we're using for the ID. The fact that we're casting this at all is kind of
-    // silly since we're returing the actual thread handle and everything being done to manipulate the thread
-    // is done with that. Anyhow, the only thing done with the dword returned from this method is a printf
-    // which is good since this DWORD really shouldn't be reliably used. Just in case it is though, return
-    // a value that can be traced back to here.
-    return 42;
-#else
-    return (DWORD)*tThread;
-#endif
-#endif
-}
-
-void TP_JoinThread(THREAD_ID tThread)
-{
-#ifdef WINDOWS
-    WaitForSingleObject(tThread, INFINITE);
-#else
-    pthread_join(tThread, NULL);
-#endif
-}
 
 #define INTSAFE_E_ARITHMETIC_OVERFLOW       ((HRESULT)0x80070216L)  // 0x216 = 534 = ERROR_ARITHMETIC_OVERFLOW
 #define ULONG_ERROR     (0xffffffffUL)

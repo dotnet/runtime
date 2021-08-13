@@ -16,6 +16,10 @@ namespace System.Diagnostics.CodeAnalysis
     /// When this attribute is applied to a location of type <see cref="string"/>, the assumption is
     /// that the string represents a fully qualified type name.
     ///
+    /// When this attribute is applied to a class, interface, or struct, the members specified
+    /// can be accessed dynamically on <see cref="Type"/> instances returned from calling
+    /// <see cref="object.GetType"/> on instances of that class, interface, or struct.
+    ///
     /// If the attribute is applied to a method it's treated as a special case and it implies
     /// the attribute should be applied to the "this" parameter of the method. As such the attribute
     /// should only be used on instance methods of types assignable to System.Type (or string, but no methods
@@ -23,7 +27,8 @@ namespace System.Diagnostics.CodeAnalysis
     /// </remarks>
     [AttributeUsage(
         AttributeTargets.Field | AttributeTargets.ReturnValue | AttributeTargets.GenericParameter |
-        AttributeTargets.Parameter | AttributeTargets.Property | AttributeTargets.Method,
+        AttributeTargets.Parameter | AttributeTargets.Property | AttributeTargets.Method |
+        AttributeTargets.Class | AttributeTargets.Interface | AttributeTargets.Struct,
         Inherited = false)]
 #if SYSTEM_PRIVATE_CORELIB
     public

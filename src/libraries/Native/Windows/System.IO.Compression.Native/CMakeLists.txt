@@ -10,7 +10,7 @@ if (GEN_SHARED_LIB)
     include (GenerateExportHeader)
 endif()
 
-if($ENV{__BuildArch} STREQUAL x86 OR $ENV{__BuildArch} STREQUAL x64)
+if(${CLR_CMAKE_HOST_ARCH} STREQUAL x86 OR ${CLR_CMAKE_HOST_ARCH} STREQUAL x64)
     set(NATIVECOMPRESSION_SOURCES
         zlib-intel/adler32.c
         zlib-intel/compress.c
@@ -122,4 +122,4 @@ if (GEN_SHARED_LIB)
     install (FILES $<TARGET_PDB_FILE:System.IO.Compression.Native> DESTINATION .)
 endif()
 
-install (TARGETS System.IO.Compression.Native-Static DESTINATION ${STATIC_LIB_DESTINATION})
+install (TARGETS System.IO.Compression.Native-Static DESTINATION ${STATIC_LIB_DESTINATION} COMPONENT libs)

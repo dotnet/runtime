@@ -269,7 +269,7 @@ namespace System.Globalization
                 }
                 else
                 {
-                    decimalSeparator.AsSpan().CopyTo(destination);
+                    decimalSeparator.CopyTo(destination);
                     idx += decimalSeparator.Length;
                 }
                 WriteDigits(fraction, destination.Slice(idx, fractionDigits));

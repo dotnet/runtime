@@ -1540,7 +1540,7 @@ z_streamp source;
     struct inflate_state FAR *state;
     struct inflate_state FAR *copy;
     unsigned char FAR *window;
-    unsigned wsize;
+    unsigned wsize = 0;
 
     /* check input */
     if (inflateStateCheck(source) || dest == Z_NULL)

@@ -677,7 +677,6 @@ void GCToOSInterface::YieldThread(uint32_t switchCount)
 
 // Reserve virtual memory range.
 // Parameters:
-//  address   - starting virtual address, it can be NULL to let the function choose the starting address
 //  size      - size of the virtual memory range
 //  alignment - requested memory alignment, 0 means no specific alignment requested
 //  flags     - flags to control special settings like write watching
@@ -950,58 +949,6 @@ const AffinitySet* GCToOSInterface::SetGCThreadsAffinitySet(uintptr_t configAffi
     return &g_processAffinitySet;
 }
 
-// Get number of processors assigned to the current process
-// Return:
-//  The number of processors
-uint32_t GCToOSInterface::GetCurrentProcessCpuCount()
-{
-    static int cCPUs = 0;
-
-    if (cCPUs != 0)
-        return cCPUs;
-
-    int count;
-
-    if (CanEnableGCCPUGroups())
-    {
-        count = GCToOSInterface::GetTotalProcessorCount();
-    }
-    else
-    {
-        DWORD_PTR pmask, smask;
-
-        if (!GetProcessAffinityMask(GetCurrentProcess(), &pmask, &smask))
-        {
-            count = 1;
-        }
-        else
-        {
-            count = 0;
-            pmask &= smask;
-
-            while (pmask)
-            {
-                pmask &= (pmask - 1);
-                count++;
-            }
-
-            // GetProcessAffinityMask can return pmask=0 and smask=0 on systems with more
-            // than 64 processors, which would leave us with a count of 0.  Since the GC
-            // expects there to be at least one processor to run on (and thus at least one
-            // heap), we'll return 64 here if count is 0, since there are likely a ton of
-            // processors available in that case.  The GC also cannot (currently) handle
-            // the case where there are more than 64 processors, so we will return a
-            // maximum of 64 here.
-            if (count == 0 || count > 64)
-                count = 64;
-        }
-    }
-
-    cCPUs = count;
-
-    return count;
-}
-
 // Return the size of the user-mode portion of the virtual address space of this process.
 // Return:
 //  non zero if it has succeeded, (size_t)-1 if not available
@@ -1036,6 +983,12 @@ uint64_t GCToOSInterface::GetPhysicalMemoryLimit(bool* is_restricted)
     MEMORYSTATUSEX memStatus;
     GetProcessMemoryLoad(&memStatus);
     assert(memStatus.ullTotalPhys != 0);
+
+    // For 32-bit processes the virtual address range could be smaller than the amount of physical
+    // memory on the machine/in the container, we need to restrict by the VM.
+    if (memStatus.ullTotalVirtual < memStatus.ullTotalPhys)
+        return memStatus.ullTotalVirtual;
+
     return memStatus.ullTotalPhys;
 }
 
@@ -1364,9 +1317,10 @@ static DWORD GCThreadStub(void* param)
 }
 
 // Initialize the critical section
-void CLRCriticalSection::Initialize()
+bool CLRCriticalSection::Initialize()
 {
     ::InitializeCriticalSection(&m_cs);
+    return true;
 }
 
 // Destroy the critical section

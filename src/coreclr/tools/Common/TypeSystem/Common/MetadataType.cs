@@ -60,6 +60,9 @@ namespace Internal.TypeSystem
         /// </summary>
         public abstract MetadataType MetadataBaseType { get; }
 
+        // Make sure children remember to override both MetadataBaseType and BaseType.
+        public abstract override DefType BaseType { get; }
+
         /// <summary>
         /// If true, the type cannot be used as a base type of any other type.
         /// </summary>

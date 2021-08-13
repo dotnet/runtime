@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppCurrent);net48</TargetFrameworks>
   </PropertyGroup>
@@ -12,25 +12,21 @@
     <Compile Include="JsonContentTests.netcoreapp.cs" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="$(CommonTestPath)System\Net\Capability.Security.cs"
-             Link="Common\System\Net\Capability.Security.cs" />
-    <Compile Include="$(CommonTestPath)System\Net\Configuration.cs"
-             Link="Common\System\Net\Configuration.cs" />
-    <Compile Include="$(CommonTestPath)System\Net\Configuration.Certificates.cs"
-             Link="Common\System\Net\Configuration.Certificates.cs" />
-    <Compile Include="$(CommonTestPath)System\Net\Configuration.Http.cs"
-             Link="Common\System\Net\Configuration.Http.cs" />
-    <Compile Include="$(CommonTestPath)System\Net\Configuration.Security.cs"
-             Link="Common\System\Net\Configuration.Security.cs" />
-    <Compile Include="$(CommonTestPath)System\Net\Http\HttpMessageHandlerLoopbackServer.cs"
-             Link="Common\System\Net\Http\HttpMessageHandlerLoopbackServer.cs" />
-    <Compile Include="$(CommonTestPath)System\Net\Http\GenericLoopbackServer.cs"
-             Link="Common\System\Net\Http\GenericLoopbackServer.cs" />
-    <Compile Include="$(CommonTestPath)System\Threading\Tasks\TaskTimeoutExtensions.cs"
-             Link="Common\System\Threading\Tasks\TaskTimeoutExtensions.cs" />
+    <Compile Include="$(CommonTestPath)System\Net\Capability.Security.cs" Link="Common\System\Net\Capability.Security.cs" />
+    <Compile Include="$(CommonTestPath)System\Net\Configuration.cs" Link="Common\System\Net\Configuration.cs" />
+    <Compile Include="$(CommonTestPath)System\Net\Configuration.Certificates.cs" Link="Common\System\Net\Configuration.Certificates.cs" />
+    <Compile Include="$(CommonTestPath)System\Net\Configuration.Http.cs" Link="Common\System\Net\Configuration.Http.cs" />
+    <Compile Include="$(CommonTestPath)System\Net\Configuration.Security.cs" Link="Common\System\Net\Configuration.Security.cs" />
+    <Compile Include="$(CommonTestPath)System\Net\Http\HttpMessageHandlerLoopbackServer.cs" Link="Common\System\Net\Http\HttpMessageHandlerLoopbackServer.cs" />
+    <Compile Include="$(CommonTestPath)System\Net\Http\GenericLoopbackServer.cs" Link="Common\System\Net\Http\GenericLoopbackServer.cs" />
+    <Compile Include="$(CommonTestPath)System\Security\Cryptography\PlatformSupport.cs" Link="CommonTest\System\Security\Cryptography\PlatformSupport.cs" />
+    <Compile Include="$(CommonTestPath)System\Threading\Tasks\TaskTimeoutExtensions.cs" Link="Common\System\Threading\Tasks\TaskTimeoutExtensions.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetFramework)' == 'net48'">
     <Reference Include="System.Net.Http" />
     <ProjectReference Include="..\..\src\System.Net.Http.Json.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Text.Json\gen\System.Text.Json.SourceGeneration.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
   </ItemGroup>
 </Project>

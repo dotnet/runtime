@@ -1,0 +1,59 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<linker>
+  <assembly fullname="System.Data.Odbc, Version=6.0.0.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51">
+    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
+      <argument>ILLink</argument>
+      <argument>IL2026</argument>
+      <property name="Scope">member</property>
+      <property name="Target">M:System.Data.ProviderBase.DbMetaDataFactory.#ctor(System.IO.Stream,System.String,System.String)</property>
+    </attribute>
+    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
+      <argument>ILLink</argument>
+      <argument>IL2072</argument>
+      <property name="Scope">member</property>
+      <property name="Target">M:System.Data.ProviderBase.DbMetaDataFactory.ExecuteCommand(System.Data.DataRow,System.String[],System.Data.Common.DbConnection)</property>
+    </attribute>
+    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
+      <argument>ILLink</argument>
+      <argument>IL2026</argument>
+      <property name="Scope">member</property>
+      <property name="Target">M:System.Data.Odbc.OdbcDataAdapter.#ctor()</property>
+    </attribute>
+    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
+      <argument>ILLink</argument>
+      <argument>IL2026</argument>
+      <property name="Scope">member</property>
+      <property name="Target">M:System.Data.Odbc.OdbcDataAdapter.#ctor(System.String,System.String)</property>
+    </attribute>
+    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
+      <argument>ILLink</argument>
+      <argument>IL2026</argument>
+      <property name="Scope">member</property>
+      <property name="Target">M:System.Data.Odbc.OdbcDataAdapter.#ctor(System.String,System.Data.Odbc.OdbcConnection)</property>
+    </attribute>
+    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
+      <argument>ILLink</argument>
+      <argument>IL2026</argument>
+      <property name="Scope">member</property>
+      <property name="Target">M:System.Data.Odbc.OdbcDataAdapter.#ctor(System.Data.Odbc.OdbcCommand)</property>
+    </attribute>
+    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
+      <argument>ILLink</argument>
+      <argument>IL2026</argument>
+      <property name="Scope">member</property>
+      <property name="Target">M:System.Data.Odbc.OdbcDataAdapter.#ctor(System.Data.Odbc.OdbcDataAdapter)</property>
+    </attribute>
+    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
+      <argument>ILLink</argument>
+      <argument>IL2072</argument>
+      <property name="Scope">member</property>
+      <property name="Target">M:System.Data.Odbc.OdbcMetaDataFactory.NewDataTableFromReader(System.Data.IDataReader,System.Object[]@,System.String)</property>
+    </attribute>
+    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
+      <argument>ILLink</argument>
+      <argument>IL2093</argument>
+      <property name="Scope">member</property>
+      <property name="Target">M:System.Data.Odbc.OdbcDataReader.GetFieldType(System.Int32)</property>
+    </attribute>
+  </assembly>
+</linker>

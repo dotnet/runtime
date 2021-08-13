@@ -12,6 +12,7 @@ using FluentAssertions;
 using Xunit;
 using Microsoft.NET.HostModel.AppHost;
 using Microsoft.DotNet.CoreSetup.Test;
+using System.Diagnostics;
 
 namespace Microsoft.NET.HostModel.Tests
 {
@@ -175,7 +176,7 @@ namespace Microsoft.NET.HostModel.Tests
                 string destinationFilePath = Path.Combine(testDirectory.Path, "DestinationAppHost.exe.mock");
                 string appBinaryFilePath = "Test/App/Binary/Path.dll";
 
-                chmod(sourceAppHostMock, Convert.ToInt32("444", 8)) // make it readonly: -r--r--r--
+                chmod(sourceAppHostMock, Convert.ToInt32("755", 8)) // match installed permissions: -rwxr-xr-x
                     .Should()
                     .NotBe(-1);
 
@@ -185,7 +186,7 @@ namespace Microsoft.NET.HostModel.Tests
 
                 GetFilePermissionValue(sourceAppHostMock)
                     .Should()
-                    .Be(Convert.ToInt32("444", 8));
+                    .Be(Convert.ToInt32("755", 8));
 
                 HostWriter.CreateAppHost(
                     sourceAppHostMock,
@@ -199,6 +200,128 @@ namespace Microsoft.NET.HostModel.Tests
             }
 
             int GetLastError() => Marshal.GetLastWin32Error();
+        }
+
+        [Fact]
+        public void CanCreateAppHost()
+        {
+            using (TestDirectory testDirectory = TestDirectory.Create())
+            {
+                string sourceAppHostMock = PrepareAppHostMockFile(testDirectory);
+                File.SetAttributes(sourceAppHostMock, FileAttributes.ReadOnly);
+                string destinationFilePath = Path.Combine(testDirectory.Path, "DestinationAppHost.exe.mock");
+                string appBinaryFilePath = "Test/App/Binary/Path.dll";
+                HostWriter.CreateAppHost(
+                   sourceAppHostMock,
+                   destinationFilePath,
+                   appBinaryFilePath,
+                   windowsGraphicalUserInterface: false);
+
+                File.SetAttributes(sourceAppHostMock, FileAttributes.Normal);
+            }
+        }
+
+        [Theory]
+        [PlatformSpecific(TestPlatforms.OSX)]
+        [InlineData("")]
+        [InlineData("dir with spaces")]
+        public void CanCodeSignAppHostOnMacOS(string subdir)
+        {
+            using (TestDirectory testDirectory = TestDirectory.Create(subdir))
+            {
+                string sourceAppHostMock = PrepareAppHostMockFile(testDirectory);
+                File.SetAttributes(sourceAppHostMock, FileAttributes.ReadOnly);
+                string destinationFilePath = Path.Combine(testDirectory.Path, "DestinationAppHost.exe.mock");
+                string appBinaryFilePath = "Test/App/Binary/Path.dll";
+                HostWriter.CreateAppHost(
+                   sourceAppHostMock,
+                   destinationFilePath,
+                   appBinaryFilePath,
+                   windowsGraphicalUserInterface: false,
+                   enableMacOSCodeSign: true);
+
+                const string codesign = @"/usr/bin/codesign";
+                var psi = new ProcessStartInfo()
+                {
+                    Arguments = $"-d \"{destinationFilePath}\"",
+                    FileName = codesign,
+                    RedirectStandardError = true,
+                };
+
+                using (var p = Process.Start(psi))
+                {
+                    p.Start();
+                    p.StandardError.ReadToEnd()
+                        .Should().Contain($"Executable=/private{Path.GetFullPath(destinationFilePath)}");
+                    p.WaitForExit();
+                    // Successfully signed the apphost.
+                    Assert.True(p.ExitCode == 0, $"Expected exit code was '0' but '{codesign}' returned '{p.ExitCode}' instead.");
+                }
+            }
+        }
+
+        [Fact]
+        [PlatformSpecific(TestPlatforms.OSX)]
+        public void ItDoesNotCodeSignAppHostByDefault()
+        {
+            using (TestDirectory testDirectory = TestDirectory.Create())
+            {
+                string sourceAppHostMock = PrepareAppHostMockFile(testDirectory);
+                File.SetAttributes(sourceAppHostMock, FileAttributes.ReadOnly);
+                string destinationFilePath = Path.Combine(testDirectory.Path, "DestinationAppHost.exe.mock");
+                string appBinaryFilePath = "Test/App/Binary/Path.dll";
+                HostWriter.CreateAppHost(
+                   sourceAppHostMock,
+                   destinationFilePath,
+                   appBinaryFilePath,
+                   windowsGraphicalUserInterface: false);
+
+                const string codesign = @"/usr/bin/codesign";
+                var psi = new ProcessStartInfo()
+                {
+                    Arguments = $"-d {destinationFilePath}",
+                    FileName = codesign,
+                    RedirectStandardError = true,
+                };
+
+                using (var p = Process.Start(psi))
+                {
+                    p.Start();
+                    p.StandardError.ReadToEnd()
+                        .Should().Contain($"{Path.GetFullPath(destinationFilePath)}: code object is not signed at all");
+                    p.WaitForExit();
+                }
+            }
+        }
+
+        [Fact]
+        [PlatformSpecific(TestPlatforms.OSX)]
+        public void CodeSigningFailuresThrow()
+        {
+            using (TestDirectory testDirectory = TestDirectory.Create())
+            {
+                string sourceAppHostMock = PrepareAppHostMockFile(testDirectory);
+                File.SetAttributes(sourceAppHostMock, FileAttributes.ReadOnly);
+                string destinationFilePath = Path.Combine(testDirectory.Path, "DestinationAppHost.exe.mock");
+                string appBinaryFilePath = "Test/App/Binary/Path.dll";
+                HostWriter.CreateAppHost(
+                   sourceAppHostMock,
+                   destinationFilePath,
+                   appBinaryFilePath,
+                   windowsGraphicalUserInterface: false,
+                   enableMacOSCodeSign: true);
+
+                // Run CreateAppHost again to sign the apphost a second time,
+                // causing codesign to fail.
+                var exception = Assert.Throws<AppHostSigningException>(() =>
+                    HostWriter.CreateAppHost(
+                    sourceAppHostMock,
+                    destinationFilePath,
+                    appBinaryFilePath,
+                    windowsGraphicalUserInterface: false,
+                    enableMacOSCodeSign: true));
+                Assert.Contains($"{destinationFilePath}: is already signed", exception.Message);
+            }
         }
 
         private string PrepareAppHostMockFile(TestDirectory testDirectory, Action<byte[]> customize = null)
@@ -272,12 +395,12 @@ namespace Microsoft.NET.HostModel.Tests
 
             static CoreFxFileStatusProvider()
             {
-                if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                if (!OperatingSystem.IsWindows())
                 {
                     try
                     {
                         s_fileSystem_fileStatusField = typeof(FileSystemInfo).GetField("_fileStatus", BindingFlags.NonPublic | BindingFlags.Instance);
-                        s_fileStatus_fileStatusField = s_fileSystem_fileStatusField.FieldType.GetField("_fileStatus", BindingFlags.NonPublic | BindingFlags.Instance);
+                        s_fileStatus_fileStatusField = s_fileSystem_fileStatusField.FieldType.GetField("_fileCache", BindingFlags.NonPublic | BindingFlags.Instance);
                         s_fileStatusModeField = s_fileStatus_fileStatusField.FieldType.GetField("Mode", BindingFlags.NonPublic | BindingFlags.Instance);
                     }
                     catch (Exception ex)
@@ -315,11 +438,12 @@ namespace Microsoft.NET.HostModel.Tests
                 Directory.CreateDirectory(path);
             }
 
-            public static TestDirectory Create([CallerMemberName] string callingMethod = "")
+            public static TestDirectory Create([CallerMemberName] string callingMethod = "", string subDir = "")
             {
                 string path = System.IO.Path.Combine(
                     System.IO.Path.GetTempPath(),
-                    "dotNetSdkUnitTest_" + callingMethod + (Guid.NewGuid().ToString().Substring(0, 8)));
+                    "dotNetSdkUnitTest_" + callingMethod + (Guid.NewGuid().ToString().Substring(0, 8)),
+                    subDir);
                 return new TestDirectory(path);
             }
 

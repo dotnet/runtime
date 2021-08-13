@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Text.Json.Serialization.Metadata;
 
 namespace System.Text.Json.Serialization.Converters
 {
@@ -24,7 +25,7 @@ namespace System.Text.Json.Serialization.Converters
 
         protected override void CreateCollection(ref Utf8JsonReader reader, ref ReadStack state, JsonSerializerOptions options)
         {
-            JsonClassInfo classInfo = state.Current.JsonClassInfo;
+            JsonTypeInfo typeInfo = state.Current.JsonTypeInfo;
 
             if (TypeToConvert.IsInterface || TypeToConvert.IsAbstract)
             {
@@ -37,12 +38,12 @@ namespace System.Text.Json.Serialization.Converters
             }
             else
             {
-                if (classInfo.CreateObject == null)
+                if (typeInfo.CreateObject == null)
                 {
                     ThrowHelper.ThrowNotSupportedException_DeserializeNoConstructor(TypeToConvert, ref reader, ref state);
                 }
 
-                TCollection returnValue = (TCollection)classInfo.CreateObject()!;
+                TCollection returnValue = (TCollection)typeInfo.CreateObject()!;
 
                 if (returnValue.IsReadOnly)
                 {
@@ -51,48 +52,6 @@ namespace System.Text.Json.Serialization.Converters
 
                 state.Current.ReturnValue = returnValue;
             }
-        }
-
-        protected override bool OnWriteResume(
-            Utf8JsonWriter writer,
-            TCollection value,
-            JsonSerializerOptions options,
-            ref WriteStack state)
-        {
-            IEnumerator<TElement> enumerator;
-            if (state.Current.CollectionEnumerator == null)
-            {
-                enumerator = value.GetEnumerator();
-                if (!enumerator.MoveNext())
-                {
-                    enumerator.Dispose();
-                    return true;
-                }
-            }
-            else
-            {
-                enumerator = (IEnumerator<TElement>)state.Current.CollectionEnumerator;
-            }
-
-            JsonConverter<TElement> converter = GetElementConverter(ref state);
-            do
-            {
-                if (ShouldFlush(writer, ref state))
-                {
-                    state.Current.CollectionEnumerator = enumerator;
-                    return false;
-                }
-
-                TElement element = enumerator.Current;
-                if (!converter.TryWrite(writer, element, options, ref state))
-                {
-                    state.Current.CollectionEnumerator = enumerator;
-                    return false;
-                }
-            } while (enumerator.MoveNext());
-
-            enumerator.Dispose();
-            return true;
         }
 
         internal override Type RuntimeType

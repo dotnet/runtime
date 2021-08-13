@@ -3402,6 +3402,54 @@ mono_test_marshal_variant_out_bool_false_unmanaged(VarRefFunc func)
 	return 1;
 }
 
+typedef struct _StructWithVariant {
+    VARIANT data;
+} StructWithVariant;
+typedef int (STDCALL *CheckStructWithVariantFunc) (StructWithVariant sv);
+
+LIBTEST_API int STDCALL 
+mono_test_marshal_struct_with_variant_in_unmanaged(CheckStructWithVariantFunc func)
+{
+    StructWithVariant sv;
+    sv.data.vt = VT_I4;
+    sv.data.lVal = -123;
+    return func(sv);
+}
+
+LIBTEST_API int STDCALL
+mono_test_marshal_struct_with_variant_out_unmanaged (StructWithVariant sv)
+{
+	if (sv.data.vt != VT_I4)
+		return 1;
+	if (sv.data.lVal != -123)
+		return 2;
+	return 0;
+}
+
+typedef struct _StructWithBstr {
+    gunichar2* data;
+} StructWithBstr;
+typedef int (STDCALL *CheckStructWithBstrFunc) (StructWithBstr sb);
+
+LIBTEST_API int STDCALL 
+mono_test_marshal_struct_with_bstr_in_unmanaged(CheckStructWithBstrFunc func)
+{
+    StructWithBstr sb;
+    sb.data = marshal_bstr_alloc("this is a test string");
+    return func(sb);
+}
+
+LIBTEST_API int STDCALL
+mono_test_marshal_struct_with_bstr_out_unmanaged (StructWithBstr sb)
+{
+	char *s = g_utf16_to_utf8 (sb.data, g_utf16_len (sb.data), NULL, NULL, NULL);
+	gboolean same = !strcmp (s, "this is a test string");
+	g_free (s);
+	if (!same)
+		return 1;
+	return 0;
+}
+
 typedef struct MonoComObject MonoComObject;
 typedef struct MonoDefItfObject MonoDefItfObject;
 

@@ -307,6 +307,8 @@ protected:
 
     virtual void DiagWalkHeap(walk_fn fn, void* context, int gen_number, bool walk_large_object_heap_p);
 
+    virtual void DiagGetGCSettings(EtwGCSettingsInfo* etw_settings);
+
 public:
     Object * NextObj (Object * object);
 

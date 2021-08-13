@@ -88,7 +88,7 @@ namespace System.Net.Sockets.Tests
         [InlineData(true)]
         public async Task ReceiveSent_TCP_Success(bool ipv6)
         {
-            if (ipv6 && PlatformDetection.IsOSX)
+            if (ipv6 && PlatformDetection.IsOSXLike)
             {
                 // [ActiveIssue("https://github.com/dotnet/runtime/issues/47335")]
                 // accept() will create a (seemingly) DualMode socket on Mac,
@@ -170,6 +170,7 @@ namespace System.Net.Sockets.Tests
         [Theory]
         [InlineData(true)]
         [InlineData(false)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/52124", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public async Task ClosedDuringOperation_Throws_ObjectDisposedExceptionOrSocketException(bool closeOrDispose)
         {
             if (UsesSync && PlatformDetection.IsOSX)
@@ -206,12 +207,12 @@ namespace System.Net.Sockets.Tests
                 if (DisposeDuringOperationResultsInDisposedException)
                 {
                     await Assert.ThrowsAsync<ObjectDisposedException>(() => receiveTask)
-                        .TimeoutAfter(CancellationTestTimeout);
+                        .WaitAsync(CancellationTestTimeout);
                 }
                 else
                 {
                     SocketException ex = await Assert.ThrowsAsync<SocketException>(() => receiveTask)
-                        .TimeoutAfter(CancellationTestTimeout);
+                        .WaitAsync(CancellationTestTimeout);
                     SocketError expectedError = UsesSync ? SocketError.Interrupted : SocketError.OperationAborted;
                     Assert.Equal(expectedError, ex.SocketErrorCode);
                 }
@@ -233,7 +234,7 @@ namespace System.Net.Sockets.Tests
             if (shutdown == SocketShutdown.Both) await Task.Delay(50);
 
             SocketException exception = await Assert.ThrowsAnyAsync<SocketException>(() => ReceiveFromAsync(socket, new byte[1], GetGetDummyTestEndpoint()))
-                .TimeoutAfter(CancellationTestTimeout);
+                .WaitAsync(CancellationTestTimeout);
 
             Assert.Equal(SocketError.Shutdown, exception.SocketErrorCode);
         }
@@ -309,6 +310,7 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/54418", TestPlatforms.MacCatalyst)]
         public void BeginReceiveFrom_RemoteEpIsReturnedWhenCompletedSynchronously()
         {
             EndPoint anyEp = new IPEndPoint(IPAddress.Any, 0);
@@ -359,7 +361,7 @@ namespace System.Net.Sockets.Tests
 
             OperationCanceledException ex = await Assert.ThrowsAnyAsync<OperationCanceledException>(
                 () => socket.ReceiveFromAsync(buffer, SocketFlags.None, dummy.LocalEndPoint, cts.Token).AsTask())
-                .TimeoutAfter(CancellationTestTimeout);
+                .WaitAsync(CancellationTestTimeout);
             Assert.Equal(cts.Token, ex.CancellationToken);
         }
     }

@@ -28,13 +28,14 @@
 # | x86   | Windows.10.Amd64.X86 |                                                                                                                                      |
 # | x64   | Windows.10.Amd64.X86 | Ubuntu.1804.Amd64                                                                                                                    |
 # | arm   | -                    | (Ubuntu.1804.Arm32)Ubuntu.1804.Armarch@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-18.04-helix-arm32v7-bfcd90a-20200121150440 |
-# | arm64 | Windows.10.Arm64     | (Ubuntu.1804.Arm64)Ubuntu.1804.ArmArch@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-18.04-helix-arm64v8-a45aeeb-20190620155855 |
+# | arm64 | Windows.10.Arm64     | (Ubuntu.1804.Arm64)Ubuntu.1804.ArmArch@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-18.04-helix-arm64v8-20210531091519-97d8652 |
 ################################################################################
 ################################################################################
 
 
 import argparse
 import shutil
+import stat
 import subprocess
 import tempfile
 
@@ -58,6 +59,46 @@ parser.add_argument("-max_size", help="Max size of each partition in MB")
 is_windows = platform.system() == "Windows"
 
 native_binaries_to_ignore = [
+    "api-ms-win-core-console-l1-1-0.dll",
+    "api-ms-win-core-datetime-l1-1-0.dll",
+    "api-ms-win-core-debug-l1-1-0.dll",
+    "api-ms-win-core-errorhandling-l1-1-0.dll",
+    "api-ms-win-core-file-l1-1-0.dll",
+    "api-ms-win-core-file-l1-2-0.dll",
+    "api-ms-win-core-file-l2-1-0.dll",
+    "api-ms-win-core-handle-l1-1-0.dll",
+    "api-ms-win-core-heap-l1-1-0.dll",
+    "api-ms-win-core-interlocked-l1-1-0.dll",
+    "api-ms-win-core-libraryloader-l1-1-0.dll",
+    "api-ms-win-core-localization-l1-2-0.dll",
+    "api-ms-win-core-memory-l1-1-0.dll",
+    "api-ms-win-core-namedpipe-l1-1-0.dll",
+    "api-ms-win-core-processenvironment-l1-1-0.dll",
+    "api-ms-win-core-processthreads-l1-1-0.dll",
+    "api-ms-win-core-processthreads-l1-1-1.dll",
+    "api-ms-win-core-profile-l1-1-0.dll",
+    "api-ms-win-core-rtlsupport-l1-1-0.dll",
+    "api-ms-win-core-string-l1-1-0.dll",
+    "api-ms-win-core-synch-l1-1-0.dll",
+    "api-ms-win-core-synch-l1-2-0.dll",
+    "api-ms-win-core-sysinfo-l1-1-0.dll",
+    "api-ms-win-core-timezone-l1-1-0.dll",
+    "api-ms-win-core-util-l1-1-0.dll",
+    "api-ms-win-crt-conio-l1-1-0.dll",
+    "api-ms-win-crt-convert-l1-1-0.dll",
+    "api-ms-win-crt-environment-l1-1-0.dll",
+    "api-ms-win-crt-filesystem-l1-1-0.dll",
+    "api-ms-win-crt-heap-l1-1-0.dll",
+    "api-ms-win-crt-locale-l1-1-0.dll",
+    "api-ms-win-crt-math-l1-1-0.dll",
+    "api-ms-win-crt-multibyte-l1-1-0.dll",
+    "api-ms-win-crt-private-l1-1-0.dll",
+    "api-ms-win-crt-process-l1-1-0.dll",
+    "api-ms-win-crt-runtime-l1-1-0.dll",
+    "api-ms-win-crt-stdio-l1-1-0.dll",
+    "api-ms-win-crt-string-l1-1-0.dll",
+    "api-ms-win-crt-time-l1-1-0.dll",
+    "api-ms-win-crt-utility-l1-1-0.dll",
     "clretwrc.dll",
     "clrgc.dll",
     "clrjit.dll",
@@ -67,6 +108,9 @@ native_binaries_to_ignore = [
     "clrjit_unix_arm_x86.dll",
     "clrjit_unix_arm64_arm64.dll",
     "clrjit_unix_arm64_x64.dll",
+    "clrjit_unix_armel_arm.dll",
+    "clrjit_unix_armel_arm64.dll",
+    "clrjit_unix_armel_x64.dll",
     "clrjit_unix_armel_x86.dll",
     "clrjit_unix_osx_arm64_arm64.dll",
     "clrjit_unix_osx_arm64_x64.dll",
@@ -91,6 +135,7 @@ native_binaries_to_ignore = [
     "CoreShim.dll",
     "createdump.exe",
     "crossgen.exe",
+    "crossgen2.exe",
     "dbgshim.dll",
     "ilasm.exe",
     "ildasm.exe",
@@ -107,12 +152,15 @@ native_binaries_to_ignore = [
     "mscordbi.dll",
     "mscorrc.dll",
     "msdia140.dll",
+    "R2RDump.exe",
+    "R2RTest.exe",
     "superpmi.exe",
     "superpmi-shim-collector.dll",
     "superpmi-shim-counter.dll",
     "superpmi-shim-simple.dll",
     "System.IO.Compression.Native.dll",
     "ucrtbase.dll",
+    "xunit.console.exe",
 ]
 
 MAX_FILES_COUNT = 1500
@@ -201,7 +249,9 @@ def get_files_sorted_by_size(src_directory, exclude_directories, exclude_files):
         # Credit: https://stackoverflow.com/a/19859907
         dirs[:] = [d for d in dirs if d not in exclude_directories]
         for name in files:
-            if name in exclude_files:
+            # Make the exclude check case-insensitive
+            exclude_files_lower = [filename.lower() for filename in exclude_files]
+            if name.lower() in exclude_files_lower:
                 continue
             curr_file_path = path.join(file_path, name)
 
@@ -304,13 +354,20 @@ def copy_directory(src_path, dst_path, verbose_output=True, match_func=lambda pa
         if os.path.isdir(src_item):
             copy_directory(src_item, dst_item, verbose_output, match_func)
         else:
-            if match_func(src_item):
+            try:
+                if match_func(src_item):
+                    if verbose_output:
+                        print("> copy {0} => {1}".format(src_item, dst_item))
+                    try:
+                        shutil.copy2(src_item, dst_item)
+                    except PermissionError as pe_error:
+                        print('Ignoring PermissionError: {0}'.format(pe_error))
+                else:
+                    if verbose_output:
+                        print("> skipping {0}".format(src_item))
+            except UnicodeEncodeError:
                 if verbose_output:
-                    print("> copy {0} => {1}".format(src_item, dst_item))
-                shutil.copy2(src_item, dst_item)
-            else:
-                if verbose_output:
-                    print("> skipping {0}".format(src_item))
+                    print("> Got UnicodeEncodeError")
 
 
 def copy_files(src_path, dst_path, file_names):
@@ -323,7 +380,7 @@ def copy_files(src_path, dst_path, file_names):
         file_names ([string]): List of full path file names to be copied.
     """
 
-    print('### Copying below files to {0}:'.format(dst_path))
+    print('### Copying below files from {0} to {1}:'.format(src_path, dst_path))
     print('')
     print(os.linesep.join(file_names))
     for f in file_names:
@@ -333,7 +390,10 @@ def copy_files(src_path, dst_path, file_names):
         dst_directory = path.dirname(dst_path_of_file)
         if not os.path.exists(dst_directory):
             os.makedirs(dst_directory)
-        shutil.copy2(f, dst_path_of_file)
+        try:
+            shutil.copy2(f, dst_path_of_file)
+        except PermissionError as pe_error:
+            print('Ignoring PermissionError: {0}'.format(pe_error))
 
 
 def partition_files(src_directory, dst_directory, max_size, exclude_directories=[],
@@ -381,7 +441,9 @@ def setup_microbenchmark(workitem_directory, arch):
             return
 
         run_command(
-            get_python_name() + [dotnet_install_script, "install", "--architecture", arch, "--install-dir", dotnet_directory, "--verbose"])
+            get_python_name() + [dotnet_install_script, "install", "--architecture", arch, "--install-dir",
+                                 dotnet_directory, "--verbose"])
+
 
 def get_python_name():
     """Gets the python name
@@ -430,7 +492,7 @@ def main(main_args):
         if arch == "arm":
             helix_queue = "(Ubuntu.1804.Arm32)Ubuntu.1804.Armarch@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-18.04-helix-arm32v7-bfcd90a-20200121150440"
         elif arch == "arm64":
-            helix_queue = "(Ubuntu.1804.Arm64)Ubuntu.1804.ArmArch@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-18.04-helix-arm64v8-a45aeeb-20190620155855"
+            helix_queue = "(Ubuntu.1804.Arm64)Ubuntu.1804.ArmArch@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-18.04-helix-arm64v8-20210531091519-97d8652"
         else:
             helix_queue = "Ubuntu.1804.Amd64"
 
@@ -441,11 +503,52 @@ def main(main_args):
     if is_windows:
         acceptable_copy = lambda path: any(path.endswith(extension) for extension in [".py", ".dll", ".exe", ".json"])
     else:
-        # Need to accept files without any extension, which is how executable filesnames look.
+        # Need to accept files without any extension, which is how executable file's names look.
         acceptable_copy = lambda path: (os.path.basename(path).find(".") == -1) or any(path.endswith(extension) for extension in [".py", ".dll", ".so", ".json"])
 
     print('Copying {} -> {}'.format(coreclr_args.core_root_directory, superpmi_dst_directory))
     copy_directory(coreclr_args.core_root_directory, superpmi_dst_directory, match_func=acceptable_copy)
+
+    # Copy all the test files to CORE_ROOT
+    # The reason is there are lot of dependencies with *.Tests.dll and to ensure we do not get
+    # Reflection errors, just copy everything to CORE_ROOT so for all individual partitions, the
+    # references will be present in CORE_ROOT.
+    if coreclr_args.collection_name == "libraries_tests":
+        print('Copying {} -> {}'.format(coreclr_args.input_directory, superpmi_dst_directory))
+
+        def make_readable(folder_name):
+            """Make file executable by changing the permission
+
+            Args:
+                folder_name (string): folder to mark with 744
+            """
+            if is_windows:
+                return
+
+            print("Inside make_readable")
+            run_command(["ls", "-l", folder_name])
+            for file_path, dirs, files in walk(folder_name, topdown=True):
+                for d in dirs:
+                    os.chmod(os.path.join(file_path, d),
+                    # read+write+execute for owner
+                    (stat.S_IRUSR | stat.S_IWUSR | stat.S_IXUSR) |
+                    # read for group
+                    (stat.S_IRGRP) |
+                    # read for other
+                    (stat.S_IROTH))
+
+                for f in files:
+                    os.chmod(os.path.join(file_path, f),
+                    # read+write+execute for owner
+                    (stat.S_IRUSR | stat.S_IWUSR | stat.S_IXUSR) |
+                    # read for group
+                    (stat.S_IRGRP) |
+                    # read for other
+                    (stat.S_IROTH))
+            run_command(["ls", "-l", folder_name])
+
+        make_readable(coreclr_args.input_directory)
+        copy_directory(coreclr_args.input_directory, superpmi_dst_directory, match_func=acceptable_copy)
 
     # Workitem directories
     workitem_directory = path.join(source_directory, "workitem")
@@ -492,13 +595,21 @@ def main(main_args):
         # payload
         pmiassemblies_directory = path.join(workitem_directory, "pmiAssembliesDirectory")
         input_artifacts = path.join(pmiassemblies_directory, coreclr_args.collection_name)
-        exclude_directory = ['Core_Root'] if coreclr_args.collection_name == "tests" else []
+        exclude_directory = ['Core_Root'] if coreclr_args.collection_name == "coreclr_tests" else []
         exclude_files = native_binaries_to_ignore
         if coreclr_args.collection_type == "crossgen2":
             print('Adding exclusions for crossgen2')
             # Currently, trying to crossgen2 R2RTest\Microsoft.Build.dll causes a pop-up failure, so exclude it.
-            exclude_files += [ "Microsoft.Build.dll" ]
-        partition_files(coreclr_args.input_directory, input_artifacts, coreclr_args.max_size, exclude_directory, exclude_files)
+            exclude_files += ["Microsoft.Build.dll"]
+
+        if coreclr_args.collection_name == "libraries_tests":
+            # libraries_tests artifacts contains files from core_root folder. Exclude them.
+            core_root_dir = coreclr_args.core_root_directory
+            exclude_files += [item for item in os.listdir(core_root_dir)
+                              if isfile(join(core_root_dir, item)) and (item.endswith(".dll") or item.endswith(".exe"))]
+
+        partition_files(coreclr_args.input_directory, input_artifacts, coreclr_args.max_size, exclude_directory,
+                        exclude_files)
 
     # Set variables
     print('Setting pipeline variables:')

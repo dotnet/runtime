@@ -167,6 +167,15 @@ namespace Microsoft.Extensions.Options.Tests
             Assert.Equal("Default1", factory.Create("1").Message);
         }
 
+        [Fact]
+        public void CanCreateOptionsFactory()
+        {
+            var factory = new OptionsFactory<FakeOptions>(new IConfigureOptions<FakeOptions>[0],
+                new IPostConfigureOptions<FakeOptions>[] { });
+            
+            Assert.Equal("", factory.Create("").Message);
+        }
+
         public class FakeOptionsSetupA : ConfigureOptions<FakeOptions>
         {
             public FakeOptionsSetupA() : base(o => o.Message += "A") { }
@@ -342,6 +351,7 @@ namespace Microsoft.Extensions.Options.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/50877", TestPlatforms.Android)]
         public void ConfigureOptionsThrowsWithAction()
         {
             var services = new ServiceCollection();
@@ -351,6 +361,7 @@ namespace Microsoft.Extensions.Options.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/50877", TestPlatforms.Android)]
         public void ConfigureOptionsThrowsIfNothingFound()
         {
             var services = new ServiceCollection();

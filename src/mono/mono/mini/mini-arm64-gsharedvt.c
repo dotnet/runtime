@@ -131,7 +131,7 @@ get_arg_slots (ArgInfo *ainfo, int **out_slots)
  *   See mini-x86.c for documentation.
  */
 gpointer
-mono_arch_get_gsharedvt_call_info (gpointer addr, MonoMethodSignature *normal_sig, MonoMethodSignature *gsharedvt_sig, gboolean gsharedvt_in, gint32 vcall_offset, gboolean calli)
+mono_arch_get_gsharedvt_call_info (MonoMemoryManager *mem_manager, gpointer addr, MonoMethodSignature *normal_sig, MonoMethodSignature *gsharedvt_sig, gboolean gsharedvt_in, gint32 vcall_offset, gboolean calli)
 {
 	GSharedVtCallInfo *info;
 	CallInfo *caller_cinfo, *callee_cinfo;
@@ -229,7 +229,7 @@ mono_arch_get_gsharedvt_call_info (gpointer addr, MonoMethodSignature *normal_si
 		}
 		if (ainfo2->storage == ArgVtypeByRef && ainfo2->gsharedvt) {
 			/* Pass the address of the first src slot in a reg */
-			if (ainfo->storage != ArgVtypeByRef) {
+			if (ainfo->storage != ArgVtypeByRef && ainfo->storage != ArgVtypeByRefOnStack) {
 				if (ainfo->storage == ArgHFA && ainfo->esize == 4) {
 					arg_marshal = GSHAREDVT_ARG_BYVAL_TO_BYREF_HFAR4;
 					g_assert (src [0] < 64);
@@ -244,7 +244,7 @@ mono_arch_get_gsharedvt_call_info (gpointer addr, MonoMethodSignature *normal_si
 			dst [0] = map_reg (ainfo2->reg);
 		} else if (ainfo2->storage == ArgVtypeByRefOnStack && ainfo2->gsharedvt) {
 			/* Pass the address of the first src slot in a stack slot */
-			if (ainfo->storage != ArgVtypeByRef)
+			if (ainfo->storage != ArgVtypeByRef && ainfo->storage != ArgVtypeByRefOnStack)
 				arg_marshal = GSHAREDVT_ARG_BYVAL_TO_BYREF;
 			ndst = 1;
 			dst = g_new0 (int, 1);
@@ -320,7 +320,7 @@ mono_arch_get_gsharedvt_call_info (gpointer addr, MonoMethodSignature *normal_si
 		add_to_map (map, map_reg (ARMREG_R8), map_reg (ARMREG_R8));
 	}
 
-	info = mono_domain_alloc0 (mono_domain_get (), sizeof (GSharedVtCallInfo) + (map->len * sizeof (int)));
+	info = mono_mem_manager_alloc0 (mem_manager, sizeof (GSharedVtCallInfo) + (map->len * sizeof (int)));
 	info->addr = addr;
 	info->stack_usage = callee_cinfo->stack_usage;
 	info->ret_marshal = GSHAREDVT_RET_NONE;

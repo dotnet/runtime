@@ -1,0 +1,47 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<xliff xmlns="urn:oasis:names:tc:xliff:document:1.2" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" version="1.2" xsi:schemaLocation="urn:oasis:names:tc:xliff:document:1.2 xliff-core-1.2-transitional.xsd">
+  <file datatype="xml" source-language="en" target-language="ru" original="../Strings.resx">
+    <body>
+      <trans-unit id="ContextClassesMustBePartialMessageFormat">
+        <source>Derived 'JsonSerializerContext' type '{0}' specifies JSON-serializable types. The type and all containing types must be made partial to kick off source generation.</source>
+        <target state="translated">Производный тип "JsonSerializerContext"{0}' указывает сериализуемые типы в формате JSON. Тип и все содержащие типы необходимо сделать частичными для начала генерации источника.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ContextClassesMustBePartialTitle">
+        <source>Derived 'JsonSerializerContext' types and all containing types must be partial.</source>
+        <target state="translated">Производные типы "JsonSerializerContext" и все содержащие типы должны быть частичными.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="DuplicateTypeNameMessageFormat">
+        <source>There are multiple types named {0}. Source was generated for the first one detected. Use 'JsonSerializableAttribute.TypeInfoPropertyName' to resolve this collision.</source>
+        <target state="translated">Существует несколько типов с именем {0}. Исходный код сформирован для первого обнаруженного типа. Используйте JsonSerializableAttribute.TypeInfoPropertyName для устранения этого конфликта.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="DuplicateTypeNameTitle">
+        <source>Duplicate type name.</source>
+        <target state="translated">Дублирующееся имя типа.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="MultipleJsonConstructorAttributeFormat">
+        <source>Type '{0}' has multiple constructors annotated with 'JsonConstructorAttribute'.</source>
+        <target state="new">Type '{0}' has multiple constructors annotated with 'JsonConstructorAttribute'.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="MultipleJsonConstructorAttributeTitle">
+        <source>Type has multiple constructors annotated with JsonConstructorAttribute.</source>
+        <target state="new">Type has multiple constructors annotated with JsonConstructorAttribute.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="TypeNotSupportedMessageFormat">
+        <source>Did not generate serialization metadata for type '{0}'.</source>
+        <target state="translated">Метаданные сериализации для типа "{0}" не сформированы.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="TypeNotSupportedTitle">
+        <source>Did not generate serialization metadata for type.</source>
+        <target state="translated">Метаданные сериализации для типа не сформированы.</target>
+        <note />
+      </trans-unit>
+    </body>
+  </file>
+</xliff>

@@ -378,8 +378,8 @@ namespace System.Threading.Tasks
             // been recorded, and (4) Cancellation has not been requested.
             //
             // If the reservation is successful, then set the result and finish completion processing.
-            if (AtomicStateUpdate(TASK_STATE_COMPLETION_RESERVED,
-                    TASK_STATE_COMPLETION_RESERVED | TASK_STATE_RAN_TO_COMPLETION | TASK_STATE_FAULTED | TASK_STATE_CANCELED))
+            if (AtomicStateUpdate((int)TaskStateFlags.CompletionReserved,
+                    (int)TaskStateFlags.CompletionReserved | (int)TaskStateFlags.RanToCompletion | (int)TaskStateFlags.Faulted | (int)TaskStateFlags.Canceled))
             {
                 m_result = result;
 
@@ -390,7 +390,7 @@ namespace System.Threading.Tasks
                 // However, that goes through a windy code path, involves many non-inlineable functions
                 // and which can be summarized more concisely with the following snippet from
                 // FinishStageTwo, omitting everything that doesn't pertain to TrySetResult.
-                Interlocked.Exchange(ref m_stateFlags, m_stateFlags | TASK_STATE_RAN_TO_COMPLETION);
+                Interlocked.Exchange(ref m_stateFlags, m_stateFlags | (int)TaskStateFlags.RanToCompletion);
                 ContingentProperties? props = m_contingentProperties;
                 if (props != null)
                 {
@@ -425,7 +425,7 @@ namespace System.Threading.Tasks
             else
             {
                 m_result = result;
-                m_stateFlags |= TASK_STATE_RAN_TO_COMPLETION;
+                m_stateFlags |= (int)TaskStateFlags.RanToCompletion;
             }
         }
 
@@ -532,6 +532,47 @@ namespace System.Threading.Tasks
             return new ConfiguredTaskAwaitable<TResult>(this, continueOnCapturedContext);
         }
 
+        #endregion
+
+        #region WaitAsync methods
+        /// <summary>Gets a <see cref="Task{TResult}"/> that will complete when this <see cref="Task{TResult}"/> completes or when the specified <see cref="CancellationToken"/> has cancellation requested.</summary>
+        /// <param name="cancellationToken">The <see cref="CancellationToken"/> to monitor for a cancellation request.</param>
+        /// <returns>The <see cref="Task{TResult}"/> representing the asynchronous wait.  It may or may not be the same instance as the current instance.</returns>
+        public new Task<TResult> WaitAsync(CancellationToken cancellationToken) =>
+            WaitAsync(Timeout.UnsignedInfinite, cancellationToken);
+
+        /// <summary>Gets a <see cref="Task{TResult}"/> that will complete when this <see cref="Task{TResult}"/> completes or when the specified timeout expires.</summary>
+        /// <param name="timeout">The timeout after which the <see cref="Task"/> should be faulted with a <see cref="TimeoutException"/> if it hasn't otherwise completed.</param>
+        /// <returns>The <see cref="Task{TResult}"/> representing the asynchronous wait.  It may or may not be the same instance as the current instance.</returns>
+        public new Task<TResult> WaitAsync(TimeSpan timeout) =>
+            WaitAsync(ValidateTimeout(timeout, ExceptionArgument.timeout), default);
+
+        /// <summary>Gets a <see cref="Task{TResult}"/> that will complete when this <see cref="Task{TResult}"/> completes, when the specified timeout expires, or when the specified <see cref="CancellationToken"/> has cancellation requested.</summary>
+        /// <param name="timeout">The timeout after which the <see cref="Task"/> should be faulted with a <see cref="TimeoutException"/> if it hasn't otherwise completed.</param>
+        /// <param name="cancellationToken">The <see cref="CancellationToken"/> to monitor for a cancellation request.</param>
+        /// <returns>The <see cref="Task{TResult}"/> representing the asynchronous wait.  It may or may not be the same instance as the current instance.</returns>
+        public new Task<TResult> WaitAsync(TimeSpan timeout, CancellationToken cancellationToken) =>
+            WaitAsync(ValidateTimeout(timeout, ExceptionArgument.timeout), cancellationToken);
+
+        private Task<TResult> WaitAsync(uint millisecondsTimeout, CancellationToken cancellationToken)
+        {
+            if (IsCompleted || (!cancellationToken.CanBeCanceled && millisecondsTimeout == Timeout.UnsignedInfinite))
+            {
+                return this;
+            }
+
+            if (cancellationToken.IsCancellationRequested)
+            {
+                return FromCanceled<TResult>(cancellationToken);
+            }
+
+            if (millisecondsTimeout == 0)
+            {
+                return FromException<TResult>(new TimeoutException());
+            }
+
+            return new CancellationPromise<TResult>(this, millisecondsTimeout, cancellationToken);
+        }
         #endregion
 
         #region Continuation methods
@@ -1353,7 +1394,7 @@ namespace System.Threading.Tasks
     }
 
     // Proxy class for better debugging experience
-    internal class SystemThreadingTasks_FutureDebugView<TResult>
+    internal sealed class SystemThreadingTasks_FutureDebugView<TResult>
     {
         private readonly Task<TResult> m_task;
 

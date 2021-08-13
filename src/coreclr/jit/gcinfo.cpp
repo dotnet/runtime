@@ -272,7 +272,6 @@ GCInfo::WriteBarrierForm GCInfo::gcIsWriteBarrierCandidate(GenTree* tgt, GenTree
         case GT_LEA:
             return gcWriteBarrierFormFromTargetAddress(tgt->AsAddrMode()->Base());
 
-        case GT_ARR_ELEM: /* Definitely in the managed heap */
         case GT_CLS_VAR:
             return WBF_BarrierUnchecked;
 
@@ -328,7 +327,7 @@ GCInfo::regPtrDsc* GCInfo::gcRegPtrAllocDsc()
 
     regPtrNext = new (compiler, CMK_GC) regPtrDsc;
 
-    regPtrNext->rpdIsThis = FALSE;
+    regPtrNext->rpdIsThis = false;
 
     regPtrNext->rpdOffs = 0;
     regPtrNext->rpdNext = nullptr;

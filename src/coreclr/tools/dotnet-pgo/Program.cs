@@ -15,8 +15,6 @@ using System.Reflection;
 using System.Text;
 using System.Linq;
 using System.Diagnostics;
-using System.CommandLine;
-using System.CommandLine.Invocation;
 using System.Globalization;
 using System.Threading.Tasks;
 using System.Reflection.Metadata;
@@ -27,6 +25,12 @@ using System.Diagnostics.CodeAnalysis;
 using ILCompiler.Reflection.ReadyToRun;
 using Microsoft.Diagnostics.Tools.Pgo;
 using Internal.Pgo;
+using System.Reflection.PortableExecutable;
+using ILCompiler.IBC;
+using ILCompiler;
+using System.Runtime.Serialization.Json;
+using System.Text.Json;
+using System.Text.Encodings.Web;
 
 namespace Microsoft.Diagnostics.Tools.Pgo
 {
@@ -44,27 +48,6 @@ namespace Microsoft.Diagnostics.Tools.Pgo
         showtimestamp = 2,
     }
 
-    class CommandLineOptions
-    {
-        public FileInfo TraceFile { get; set; }
-        public FileInfo OutputFileName { get; set; }
-        public int? Pid { get; set; }
-        public string ProcessName { get; set; }
-        public PgoFileType? PgoFileType { get; set; }
-        public IEnumerable<FileInfo> Reference { get; set; }
-        public int? ClrInstanceId { get; set; }
-        public bool ProcessJitEvents { get; set; }
-        public bool ProcessR2REvents { get; set; }
-        public bool DisplayProcessedEvents { get; set; }
-        public bool ValidateOutputFile { get; set; }
-        public bool GenerateCallGraph { get; set; }
-        public bool VerboseWarnings { get; set; }
-        public jittraceoptions JitTraceOptions { get; set; }
-        public double ExcludeEventsBefore { get; set; }
-        public double ExcludeEventsAfter { get; set; }
-        public bool Warnings { get; set; }
-        public bool Uncompressed { get; set; }
-    }
     class MethodChunks
     {
         public bool Done = false;
@@ -86,239 +69,99 @@ namespace Microsoft.Diagnostics.Tools.Pgo
             if (input == 0)
                 return new TypeSystemEntityOrUnknown(0);
 
-            TypeDesc type = _idParser.ResolveTypeHandle(input, false);
+            TypeDesc type = null;
+
+            try
+            {
+                type = _idParser.ResolveTypeHandle(input, false);
+            }
+            catch
+            { }
             if (type != null)
             {
                 return new TypeSystemEntityOrUnknown(type);
             }
-            return new TypeSystemEntityOrUnknown(System.HashCode.Combine(input) | 0x7F000000);
+            // Unknown type, apply unique value, but keep the upper byte zeroed so that it can be distinguished from a token
+            return new TypeSystemEntityOrUnknown(System.HashCode.Combine(input) & 0x7FFFFF | 0x800000);
+        }
+    }
+
+    struct ProcessedMethodData
+    {
+        public ProcessedMethodData(double millisecond, MethodDesc method, string reason)
+        {
+            Millisecond = millisecond;
+            Method = method;
+            Reason = reason;
+            WeightedCallData = null;
+            ExclusiveWeight = 0;
+            InstrumentationData = null;
+        }
+
+        public readonly double Millisecond;
+        public readonly MethodDesc Method;
+        public readonly string Reason;
+        public Dictionary<MethodDesc, int> WeightedCallData;
+        public int ExclusiveWeight;
+        public PgoSchemaElem[] InstrumentationData;
+
+        public override string ToString()
+        {
+            return Method.ToString();
         }
     }
 
 
     class Program
     {
-        static bool s_reachedInnerMain;
         static Logger s_logger = new Logger();
-        static int Main(string []args)
+        static int Main(string[] args)
         {
-            var rootCommand = new RootCommand(@"dotnet-pgo - A tool for generating jittrace files so that a process can gain profile guided benefits. It relies on tracefiles as might be generated from perfview collect or dotnet trace.")
+            var options = CommandLineOptions.ParseCommandLine(args);
+
+            if (options.Help)
             {
-                new Option("--trace-file")
-                {
-                    Description = "Specify the trace file to be parsed",
-                    Argument = new Argument<FileInfo>()
-                    {
-                        Arity = ArgumentArity.ExactlyOne,
-                    }
-                },
-                new Option("--output-file-name")
-                {
-                    Description = "Specify the jittrace filename to be created",
-                    Argument = new Argument<FileInfo>()
-                    {
-                        Arity = ArgumentArity.ZeroOrOne
-                    }
-                },
-                new Option("--pid")
-                {
-                    Description = "The pid within the trace of the process to examine. If this is a multi-process trace, at least one of --pid or --process-name must be specified",
-                    Argument = new Argument<int?>()
-                    {
-                        Arity = ArgumentArity.ZeroOrOne
-                    }
-                },
-                new Option("--pgo-file-type")
-                {
-                    Description = "The type of pgo file to generate. A valid value must be specified if --output-file-name is specified. Currently the only valid value is jittrace",
-                    Argument = new Argument<PgoFileType?>()
-                    {
-                        Arity = ArgumentArity.ExactlyOne
-                    }
-                },
-                new Option("--process-name")
-                {
-                    Description = "The process name within the trace of the process to examine. If this is a multi-process trace, at least one of --pid or --process-name must be specified",
-                    Argument = new Argument<string>()
-                    {
-                        Arity = ArgumentArity.ZeroOrOne
-                    }
-                },
-                new Option("--reference")
-                {
-                    Description = "If a reference is not located on disk at the same location as used in the process, it may be specified with a --reference parameter",
-                    Argument = new Argument<IEnumerable<FileInfo>>()
-                    {
-                        Arity = ArgumentArity.ZeroOrMore
-                    }
-                },
-                new Option("--clr-instance-id")
-                {
-                    Description = "If the process contains multiple .NET runtimes, the instance ID must be specified",
-                    Argument = new Argument<int?>()
-                    {
-                        Arity = ArgumentArity.ZeroOrOne
-                    }
-                },
-                new Option("--process-jit-events")
-                {
-                    Description = "Process JIT events. Defaults to true",
-                    Argument = new Argument<bool>(() => true)
-                },
-                new Option("--process-r2r-events")
-                {
-                    Description = "Process R2R events. Defaults to true",
-                    Argument = new Argument<bool>(() => true)
-                },
-                new Option("--display-processed-events")
-                {
-                    Description = "Process R2R events. Defaults to true",
-                    Argument = new Argument<bool>(() => false)
-                },
-                new Option("--warnings")
-                {
-                    Description = "Display warnings for methods which could not be processed. Defaults to true",
-                    Argument = new Argument<bool>(() => true)
-                },
-                new Option("--verbose-warnings")
-                {
-                    Description = "Display information about why jit events may be not processed. Defaults to false",
-                    Argument = new Argument<bool>(() => false)
-                },
-                new Option("--validate-output-file")
-                {
-                    Description = "Validate output file. Defaults to true. Not all output formats support validation",
-                    Argument = new Argument<bool>(() => true)
-                },
-                new Option("--jittrace-options")
-                {
-                    Description = "Jit Trace emit options (defaults to sorted) Valid options are 'none', 'sorted', 'showtimestamp', 'sorted,showtimestamp'",
-                    Argument = new Argument<jittraceoptions>(() => jittraceoptions.sorted)
-                },
-                new Option("--exclude-events-before")
-                {
-                    Description = "Exclude data from events before specified time",
-                    Argument = new Argument<double>(() => 0)
-                },
-                new Option("--exclude-events-after")
-                {
-                    Description = "Exclude data from events after specified time",
-                    Argument = new Argument<double>(() => Double.MaxValue)
-                },
-                new Option("--generate-call-graph")
-                {
-                    Description = "Generate Call Graph using sampling data",
-                    Argument = new Argument<bool>(() => true)
-                },
-                new Option("--uncompressed")
-                {
-                    Description = "Generate Mibc file in an uncompressed format",
-                    Argument = new Argument<bool>(() => false)
-                }
-            };
-
-            bool oldReachedInnerMain = s_reachedInnerMain;
-            try
-            {
-                s_reachedInnerMain = false;
-                rootCommand.Handler = CommandHandler.Create<CommandLineOptions>((CommandLineOptions options) => InnerMain(options));
-                Task<int> command = rootCommand.InvokeAsync(args);
-
-                command.Wait();
-                int result = command.Result;
-                if (!s_reachedInnerMain)
-                {
-                    // Print example tracing commands here, as the autogenerated help logic doesn't allow customizing help with newlines and such
-                    Console.WriteLine(@"
-Example tracing commands used to generate the input to this tool:
-""dotnet trace collect -p 73060 --providers Microsoft-Windows-DotNETRuntime:0x6000080018:5""
- - Capture events from process 73060 where we capture both JIT and R2R events using EventPipe tracing
-
-""dotnet trace collect -p 73060 --providers Microsoft-Windows-DotNETRuntime:0x4000080018:5""
- - Capture events from process 73060 where we capture only JIT events using EventPipe tracing
-
-""perfview collect -LogFile:logOfCollection.txt -DataFile:jittrace.etl -Zip:false -merge:false -providers:Microsoft-Windows-DotNETRuntime:0x6000080018:5""
- - Capture Jit and R2R events via perfview of all processes running using ETW tracing
-");
-                }
-                return result;
+                PrintOutput(options.HelpText);
+                return 1;
             }
-            finally
+            else
             {
-                s_reachedInnerMain = oldReachedInnerMain;
+                return InnerMain(options);
             }
         }
 
-        static void PrintUsage(string argValidationIssue)
+        static void PrintUsage(CommandLineOptions commandLineOptions, string argValidationIssue)
         {
             if (argValidationIssue != null)
             {
-                ConsoleColor oldColor = Console.ForegroundColor;
-                Console.ForegroundColor = ConsoleColor.Red;
-                Console.Error.WriteLine(argValidationIssue);
-                Console.ForegroundColor = oldColor;
+                PrintError(argValidationIssue);
             }
-            Main(new string[] { "-h" });
+            Main(commandLineOptions.HelpArgs);
         }
 
-        static void PrintWarning(string warning)
+        public static void PrintWarning(string warning)
         {
             s_logger.PrintWarning(warning);
         }
 
-        static void PrintError(string error)
+        public static void PrintError(string error)
         {
-            s_logger.PrintWarning(error);
+            s_logger.PrintError(error);
         }
 
-        struct ProcessedMethodData
+        public static void PrintMessage(string message)
         {
-            public ProcessedMethodData(double millisecond, MethodDesc method, string reason)
-            {
-                Millisecond = millisecond;
-                Method = method;
-                Reason = reason;
-                WeightedCallData = null;
-                ExclusiveWeight = 0;
-                InstrumentationData = null;
-            }
-
-            public readonly double Millisecond;
-            public readonly MethodDesc Method;
-            public readonly string Reason;
-            public Dictionary<MethodDesc, int> WeightedCallData;
-            public int ExclusiveWeight;
-            public PgoSchemaElem[] InstrumentationData;
-
-            public override string ToString()
-            {
-                return Method.ToString();
-            }
+            s_logger.PrintMessage(message);
         }
 
-        struct InstructionPointerRange : IComparable<InstructionPointerRange>
+        public static void PrintDetailedMessage(string message)
         {
-            public InstructionPointerRange(ulong startAddress, int size)
-            {
-                StartAddress = startAddress;
-                EndAddress = startAddress + (ulong)size;
-            }
+            s_logger.PrintDetailedMessage(message);
+        }
 
-            public ulong StartAddress;
-            public ulong EndAddress;
-
-            public int CompareTo(InstructionPointerRange other)
-            {
-                if (StartAddress < other.StartAddress)
-                {
-                    return -1;
-                }
-                if (StartAddress > other.StartAddress)
-                {
-                    return 1;
-                }
-                return (int)((long)EndAddress - (long)other.EndAddress);
-            }
+        public static void PrintOutput(string output)
+        {
+            s_logger.PrintOutput(output);
         }
 
         internal static void UnZipIfNecessary(ref string inputFileName, TextWriter log)
@@ -370,41 +213,633 @@ Example tracing commands used to generate the input to this tool:
 
         static int InnerMain(CommandLineOptions commandLineOptions)
         {
-            s_reachedInnerMain = true;
+            if (!commandLineOptions.BasicProgressMessages)
+                s_logger.HideMessages();
 
-            if (commandLineOptions.TraceFile == null)
+            if (!commandLineOptions.DetailedProgressMessages)
+                s_logger.HideDetailedMessages();
+
+            if (commandLineOptions.DumpMibc)
             {
-                PrintUsage("--trace-file must be specified");
+                return InnerDumpMain(commandLineOptions);
+            }
+            if (commandLineOptions.InputFilesToMerge != null)
+            {
+                return InnerMergeMain(commandLineOptions);
+            }
+            if (commandLineOptions.CompareMibc != null)
+            {
+                return InnerCompareMibcMain(commandLineOptions);
+            }
+
+            return InnerProcessTraceFileMain(commandLineOptions);
+        }
+
+        static int InnerDumpMain(CommandLineOptions commandLineOptions)
+        {
+            if ((commandLineOptions.InputFileToDump == null) || (!commandLineOptions.InputFileToDump.Exists))
+            {
+                PrintUsage(commandLineOptions, "Valid input file must be specified");
                 return -8;
             }
 
-            if (commandLineOptions.OutputFileName != null)
+            if (commandLineOptions.OutputFileName == null)
             {
-                if (!commandLineOptions.PgoFileType.HasValue)
+                PrintUsage(commandLineOptions, "Output filename must be specified");
+                return -8;
+            }
+
+            PrintDetailedMessage($"Opening {commandLineOptions.InputFileToDump}");
+            var mibcPeReader = MIbcProfileParser.OpenMibcAsPEReader(commandLineOptions.InputFileToDump.FullName);
+            var tsc = new TypeRefTypeSystem.TypeRefTypeSystemContext(new PEReader[] { mibcPeReader });
+
+            PrintDetailedMessage($"Parsing {commandLineOptions.InputFileToDump}");
+            var profileData = MIbcProfileParser.ParseMIbcFile(tsc, mibcPeReader, null, onlyDefinedInAssembly: null);
+            PrintMibcStats(profileData);
+
+            using (FileStream outputFile = new FileStream(commandLineOptions.OutputFileName.FullName, FileMode.Create, FileAccess.Write))
+            {
+                JsonWriterOptions options = new JsonWriterOptions();
+                options.Indented = true;
+                options.SkipValidation = false;
+                options.Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping;
+
+                using Utf8JsonWriter jsonWriter = new Utf8JsonWriter(outputFile, options);
+                jsonWriter.WriteStartObject();
+                jsonWriter.WriteStartArray("Methods");
+                foreach (MethodProfileData data in profileData.GetAllMethodProfileData())
                 {
-                    PrintUsage($"--pgo-file-type must be specified");
-                    return -9;
-                }
-                if ((commandLineOptions.PgoFileType.Value != PgoFileType.jittrace) && (commandLineOptions.PgoFileType != PgoFileType.mibc))
-                {
-                    PrintUsage($"Invalid output pgo type {commandLineOptions.PgoFileType} specified.");
-                    return -9;
-                }
-                if (commandLineOptions.PgoFileType == PgoFileType.jittrace)
-                {
-                    if (!commandLineOptions.OutputFileName.Name.EndsWith(".jittrace"))
+                    jsonWriter.WriteStartObject();
+                    jsonWriter.WriteString("Method", data.Method.ToString());
+                    if (data.CallWeights != null)
                     {
-                        PrintUsage($"jittrace output file name must end with .jittrace");
-                        return -9;
+                        jsonWriter.WriteStartArray("CallWeights");
+                        foreach (var callWeight in data.CallWeights)
+                        {
+                            jsonWriter.WriteString("Method", callWeight.Key.ToString());
+                            jsonWriter.WriteNumber("Weight", callWeight.Value);
+                        }
+                        jsonWriter.WriteEndArray();
+                    }
+                    if (data.ExclusiveWeight != 0)
+                    {
+                        jsonWriter.WriteNumber("ExclusiveWeight", data.ExclusiveWeight);
+                    }
+                    if (data.SchemaData != null)
+                    {
+                        jsonWriter.WriteStartArray("InstrumentationData");
+                        foreach (var schemaElem in data.SchemaData)
+                        {
+                            jsonWriter.WriteStartObject();
+                            jsonWriter.WriteNumber("ILOffset", schemaElem.ILOffset);
+                            jsonWriter.WriteString("InstrumentationKind", schemaElem.InstrumentationKind.ToString());
+                            jsonWriter.WriteNumber("Other", schemaElem.Other);
+                            if (schemaElem.DataHeldInDataLong)
+                            {
+                                jsonWriter.WriteNumber("Data", schemaElem.DataLong);
+                            }
+                            else
+                            {
+                                if (schemaElem.DataObject == null)
+                                {
+                                    // No data associated with this item
+                                }
+                                else if (schemaElem.DataObject.Length == 1)
+                                {
+                                    jsonWriter.WriteString("Data", schemaElem.DataObject.GetValue(0).ToString());
+                                }
+                                else
+                                {
+                                    jsonWriter.WriteStartArray("Data");
+                                    foreach (var dataElem in schemaElem.DataObject)
+                                    {
+                                        jsonWriter.WriteStringValue(dataElem.ToString());
+                                    }
+                                    jsonWriter.WriteEndArray();
+                                }
+                            }
+                            jsonWriter.WriteEndObject();
+                        }
+                        jsonWriter.WriteEndArray();
+                    }
+
+                    jsonWriter.WriteEndObject();
+                }
+                jsonWriter.WriteEndArray();
+                jsonWriter.WriteEndObject();
+            }
+            PrintMessage($"Generated {commandLineOptions.OutputFileName}");
+
+            return 0;
+        }
+
+
+        static int InnerMergeMain(CommandLineOptions commandLineOptions)
+        {
+            if (commandLineOptions.InputFilesToMerge.Count == 0)
+            {
+                PrintUsage(commandLineOptions, "--input must be specified");
+                return -8;
+            }
+
+            if (commandLineOptions.OutputFileName == null)
+            {
+                PrintUsage(commandLineOptions, "--output must be specified");
+                return -8;
+            }
+
+            PEReader[] mibcReaders = new PEReader[commandLineOptions.InputFilesToMerge.Count];
+            for (int i = 0; i < mibcReaders.Length; i++)
+            {
+                PrintMessage($"Opening {commandLineOptions.InputFilesToMerge[i].FullName}");
+                mibcReaders[i] = MIbcProfileParser.OpenMibcAsPEReader(commandLineOptions.InputFilesToMerge[i].FullName);
+            }
+
+            HashSet<string> assemblyNamesInBubble = null;
+            if (commandLineOptions.IncludedAssemblies.Count > 0)
+            {
+                assemblyNamesInBubble = new HashSet<string>();
+                foreach (var asmName in commandLineOptions.IncludedAssemblies)
+                {
+                    assemblyNamesInBubble.Add(asmName.Name);
+                }
+            }
+
+            try
+            {
+                var tsc = new TypeRefTypeSystem.TypeRefTypeSystemContext(mibcReaders);
+
+                bool partialNgen = false;
+                Dictionary<MethodDesc, MethodProfileData> mergedProfileData = new Dictionary<MethodDesc, MethodProfileData>();
+                for (int i = 0; i < mibcReaders.Length; i++)
+                {
+                    var peReader = mibcReaders[i];
+                    PrintDetailedMessage($"Merging {commandLineOptions.InputFilesToMerge[i].FullName}");
+                    ProfileData.MergeProfileData(ref partialNgen, mergedProfileData, MIbcProfileParser.ParseMIbcFile(tsc, peReader, assemblyNamesInBubble, onlyDefinedInAssembly: null));
+                }
+
+                int result = MibcEmitter.GenerateMibcFile(tsc, commandLineOptions.OutputFileName, mergedProfileData.Values, commandLineOptions.ValidateOutputFile, commandLineOptions.Uncompressed);
+                if (result == 0 && commandLineOptions.InheritTimestamp)
+                {
+                    commandLineOptions.OutputFileName.CreationTimeUtc = commandLineOptions.InputFilesToMerge.Max(fi => fi.CreationTimeUtc);
+                    commandLineOptions.OutputFileName.LastWriteTimeUtc = commandLineOptions.InputFilesToMerge.Max(fi => fi.LastWriteTimeUtc);
+                }
+
+                return result;
+            }
+            finally
+            {
+                foreach (var peReader in mibcReaders)
+                {
+                    peReader.Dispose();
+                }
+            }
+        }
+
+        static int InnerCompareMibcMain(CommandLineOptions options)
+        {
+            // Command line parser should require exactly 2 files
+            Trace.Assert(options.CompareMibc?.Count == 2);
+            FileInfo file1 = options.CompareMibc[0];
+            FileInfo file2 = options.CompareMibc[1];
+
+            // Look for the shortest unique names for the input files.
+            string name1 = file1.Name;
+            string name2 = file2.Name;
+            string path1 = Path.GetDirectoryName(file1.FullName);
+            string path2 = Path.GetDirectoryName(file2.FullName);
+            while (name1 == name2)
+            {
+                name1 = Path.Combine(Path.GetFileName(path1), name1);
+                name2 = Path.Combine(Path.GetFileName(path2), name2);
+                path1 = Path.GetDirectoryName(path1);
+                path2 = Path.GetDirectoryName(path2);
+            }
+
+            PEReader mibc1 = MIbcProfileParser.OpenMibcAsPEReader(file1.FullName);
+            PEReader mibc2 = MIbcProfileParser.OpenMibcAsPEReader(file2.FullName);
+            var tsc = new TypeRefTypeSystem.TypeRefTypeSystemContext(new PEReader[] { mibc1, mibc2 });
+
+            ProfileData profile1 = MIbcProfileParser.ParseMIbcFile(tsc, mibc1, null, onlyDefinedInAssembly: null);
+            ProfileData profile2 = MIbcProfileParser.ParseMIbcFile(tsc, mibc2, null, onlyDefinedInAssembly: null);
+            PrintOutput($"Comparing {name1} to {name2}");
+            PrintOutput($"Statistics for {name1}");
+            PrintMibcStats(profile1);
+            PrintOutput("");
+            PrintOutput($"Statistics for {name2}");
+            PrintMibcStats(profile2);
+
+            PrintOutput("");
+            PrintOutput("Comparison");
+            var methods1 = profile1.GetAllMethodProfileData().ToList();
+            var methods2 = profile2.GetAllMethodProfileData().ToList();
+            var profiledMethods1 = methods1.Where(m => m.SchemaData != null).ToList();
+            var profiledMethods2 = methods2.Where(m => m.SchemaData != null).ToList();
+
+            PrintOutput($"# Profiled methods in {name1} not in {name2}: {profiledMethods1.Select(m => m.Method).Except(profiledMethods2.Select(m => m.Method)).Count()}");
+            PrintOutput($"# Profiled methods in {name2} not in {name1}: {profiledMethods2.Select(m => m.Method).Except(profiledMethods1.Select(m => m.Method)).Count()}");
+            PrintOutput($"# Methods with profile data in both .mibc files: {profiledMethods1.Select(m => m.Method).Intersect(profiledMethods2.Select(m => m.Method)).Count()}");
+            var fgMatches = new List<(MethodProfileData prof1, MethodProfileData prof2)>();
+            var fgMismatches = new List<(MethodProfileData prof1, MethodProfileData prof2, List<string> mismatches)>();
+
+            foreach (MethodProfileData prof1 in profiledMethods1)
+            {
+                MethodProfileData prof2 = profile2.GetMethodProfileData(prof1.Method);
+                if (prof2?.SchemaData == null)
+                    continue;
+
+                var (blocks1, blocks2) = (GroupBlocks(prof1), GroupBlocks(prof2));
+                var (edges1, edges2) = (GroupEdges(prof1), GroupEdges(prof2));
+
+                List<string> mismatches = new List<string>();
+                if (blocks1.Count > 0 && blocks2.Count > 0)
+                {
+                    var in1 = blocks1.Keys.Where(k => !blocks2.ContainsKey(k)).ToList();
+                    var in2 = blocks2.Keys.Where(k => !blocks1.ContainsKey(k)).ToList();
+
+                    foreach (var m1 in in1)
+                        mismatches.Add($"{name1} has a block at {m1:x} not present in {name2}");
+                    foreach (var m2 in in2)
+                        mismatches.Add($"{name2} has a block at {m2:x} not present in {name1}");
+                }
+
+                if (edges1.Count > 0 && edges2.Count > 0)
+                {
+                    var in1 = edges1.Keys.Where(k => !edges2.ContainsKey(k)).ToList();
+                    var in2 = edges2.Keys.Where(k => !edges1.ContainsKey(k)).ToList();
+
+                    foreach (var (from, to) in in1)
+                        mismatches.Add($"{name1} has an edge {from:x}->{to:x} not present in {name2}");
+                    foreach (var (from, to) in in2)
+                        mismatches.Add($"{name2} has an edge {from:x}->{to:x} not present in {name1}");
+                }
+
+                if (mismatches.Count > 0)
+                    fgMismatches.Add((prof1, prof2, mismatches));
+                else
+                    fgMatches.Add((prof1, prof2));
+            }
+
+            PrintOutput($"  Of these, {fgMatches.Count} have matching flow-graphs and the remaining {fgMismatches.Count} do not");
+
+            if (fgMismatches.Count > 0)
+            {
+                PrintOutput("");
+                PrintOutput("Methods with mismatched flow-graphs:");
+                foreach ((MethodProfileData prof1, MethodProfileData prof2, List<string> mismatches) in fgMismatches)
+                {
+                    PrintOutput($"{prof1.Method}");
+                    foreach (string s in mismatches)
+                        PrintOutput($"  {s}");
+                }
+            }
+
+            if (fgMatches.Count > 0)
+            {
+                PrintOutput("");
+                PrintOutput($"Comparing methods with matching flow-graphs");
+
+                var blockOverlaps = new List<(MethodDesc Method, double Overlap)>();
+                var edgeOverlaps = new List<(MethodDesc Method, double Overlap)>();
+
+                foreach ((MethodProfileData prof1, MethodProfileData prof2) in fgMatches)
+                {
+                    var (blocks1, blocks2) = (GroupBlocks(prof1), GroupBlocks(prof2));
+                    var (edges1, edges2) = (GroupEdges(prof1), GroupEdges(prof2));
+
+                    double Overlap<TKey>(Dictionary<TKey, PgoSchemaElem> left, Dictionary<TKey, PgoSchemaElem> right)
+                    {
+                        long leftTotal = left.Values.Sum(e => e.DataLong);
+                        long rightTotal = right.Values.Sum(e => e.DataLong);
+                        Debug.Assert(left.Keys.All(k => right.ContainsKey(k)));
+                        Debug.Assert(right.Keys.All(k => left.ContainsKey(k)));
+
+                        if (leftTotal == 0 && rightTotal == 0)
+                            return 1;
+
+                        if (leftTotal == 0 || rightTotal == 0)
+                            return 0;
+
+                        var leftPW = left.ToDictionary(k => k.Key, k => k.Value.DataLong / (double)leftTotal);
+                        var rightPW = right.ToDictionary(k => k.Key, k => k.Value.DataLong / (double)rightTotal);
+
+                        double overlap = leftPW.Sum(k => Math.Min(k.Value, rightPW[k.Key]));
+                        return overlap;
+                    }
+
+                    Debug.Assert(prof1.Method == prof2.Method);
+                    if (blocks1.Count > 0 && blocks2.Count > 0)
+                        blockOverlaps.Add((prof1.Method, Overlap(blocks1, blocks2)));
+
+                    if (edges1.Count > 0 && edges2.Count > 0)
+                        edgeOverlaps.Add((prof1.Method, Overlap(edges1, edges2)));
+                }
+
+                void PrintHistogram(List<(MethodDesc Method, double Overlap)> overlaps)
+                {
+                    int maxWidth = Console.WindowWidth - 10;
+                    const int maxLabelWidth = 4; // to print "100%".
+                    int barMaxWidth = maxWidth - (maxLabelWidth + 10); // Leave 10 chars for writing other things on the line
+                    const int bucketSize = 5;
+                    int width = Console.WindowWidth - 10;
+                    var sorted = overlaps.OrderByDescending(t => t.Overlap).ToList();
+
+                    void PrintBar(string label, ref int curIndex, Func<double, bool> include, bool forcePrint)
+                    {
+                        int count = 0;
+                        while (curIndex < sorted.Count && include(sorted[curIndex].Overlap))
+                        {
+                            count++;
+                            curIndex++;
+                        }
+
+                        if (count == 0 && !forcePrint)
+                            return;
+
+                        double proportion = count / (double)sorted.Count;
+
+                        int numFullBlocks = (int)(proportion * barMaxWidth);
+                        double fractionalPart = proportion * barMaxWidth - numFullBlocks;
+
+                        const char fullBlock = '\u2588';
+                        string bar = new string(fullBlock, numFullBlocks);
+                        if ((int)(fractionalPart * 8) != 0)
+                        {
+                            // After full block comes a 7/8 block, then 6/8, then 5/8 etc.
+                            bar += (char)(fullBlock + (8 - (int)(fractionalPart * 8)));
+                        }
+
+                        // If empty, use the left one-eight block to show a line of where 0 is.
+                        if (bar == "")
+                            bar = "\u258f";
+
+                        string line = FormattableString.Invariant($"{label,-maxLabelWidth} {bar} ({proportion*100:F1}%)");
+                        PrintOutput(line);
+                    }
+
+                    // If there are any at 100%, then print those separately
+                    int curIndex = 0;
+                    PrintBar("100%", ref curIndex, d => d >= (1 - 0.000000001), false);
+                    for (int proportion = 100 - bucketSize; proportion >= 0; proportion -= bucketSize)
+                        PrintBar($">{(int)proportion,2}%", ref curIndex, d => d * 100 > proportion, true);
+                    PrintBar("0%", ref curIndex, d => true, false);
+
+                    PrintOutput(FormattableString.Invariant($"The average overlap is {sorted.Average(t => t.Overlap)*100:F2}% for the {sorted.Count} methods with matching flow graphs and profile data"));
+                    double mse = sorted.Sum(t => (100 - t.Overlap*100) * (100 - t.Overlap*100)) / sorted.Count;
+                    PrintOutput(FormattableString.Invariant($"The mean squared error is {mse:F2}"));
+                    PrintOutput(FormattableString.Invariant($"There are {sorted.Count(t => t.Overlap < 0.5)}/{sorted.Count} methods with overlaps < 50%:"));
+                    foreach (var badMethod in sorted.Where(t => t.Overlap < 0.5).OrderBy(t => t.Overlap))
+                    {
+                        PrintOutput(FormattableString.Invariant($"  {badMethod.Method} ({badMethod.Overlap * 100:F2}%)"));
                     }
                 }
-                if (commandLineOptions.PgoFileType == PgoFileType.mibc)
+
+                // Need UTF8 for the block chars.
+                Console.OutputEncoding = Encoding.UTF8;
+                if (blockOverlaps.Count > 0)
                 {
-                    if (!commandLineOptions.OutputFileName.Name.EndsWith(".mibc"))
+                    PrintOutput("The overlap of the block counts break down as follows:");
+                    PrintHistogram(blockOverlaps);
+                    PrintOutput("");
+                }
+
+                if (edgeOverlaps.Count > 0)
+                {
+                    PrintOutput("The overlap of the edge counts break down as follows:");
+                    PrintHistogram(edgeOverlaps);
+                    PrintOutput("");
+                }
+
+                var changes = new List<(MethodDesc method, int ilOffset, GetLikelyClassResult result1, GetLikelyClassResult result2)>();
+                int devirtToSame = 0;
+                int devirtToSameLikelihood100 = 0;
+                int devirtToSameLikelihood70 = 0;
+                foreach ((MethodProfileData prof1, MethodProfileData prof2) in fgMatches)
+                {
+                    List<int> typeHandleHistogramCallSites =
+                        prof1.SchemaData.Concat(prof2.SchemaData)
+                        .Where(e => e.InstrumentationKind == PgoInstrumentationKind.GetLikelyClass || e.InstrumentationKind == PgoInstrumentationKind.TypeHandleHistogramTypeHandle)
+                        .Select(e => e.ILOffset)
+                        .Distinct()
+                        .ToList();
+
+                    foreach (int callsite in typeHandleHistogramCallSites)
                     {
-                        PrintUsage($"jittrace output file name must end with .mibc");
-                        return -9;
+                        GetLikelyClassResult result1 = GetLikelyClass(prof1.SchemaData, callsite);
+                        GetLikelyClassResult result2 = GetLikelyClass(prof2.SchemaData, callsite);
+                        if (result1.Devirtualizes != result2.Devirtualizes || (result1.Devirtualizes && result2.Devirtualizes && result1.Type != result2.Type))
+                            changes.Add((prof1.Method, callsite, result1, result2));
+
+                        if (result1.Devirtualizes && result2.Devirtualizes && result1.Type == result2.Type)
+                        {
+                            devirtToSame++;
+                            devirtToSameLikelihood100 += result1.Likelihood == 100 && result2.Likelihood == 100 ? 1 : 0;
+                            devirtToSameLikelihood70 += result1.Likelihood >= 70 && result2.Likelihood >= 70 ? 1 : 0;
+                        }
                     }
+                }
+
+                PrintOutput($"There are {changes.Count(t => t.result1.Devirtualizes && !t.result2.Devirtualizes)} sites that devirtualize with {name1} but not with {name2}");
+                PrintOutput($"There are {changes.Count(t => !t.result1.Devirtualizes && t.result2.Devirtualizes)} sites that do not devirtualize with {name1} but do with {name2}");
+                PrintOutput($"There are {changes.Count(t => t.result1.Devirtualizes && t.result2.Devirtualizes && t.result1.Type != t.result2.Type)} sites that change devirtualized type");
+                PrintOutput($"There are {devirtToSame} sites that devirtualize to the same type before and after");
+                PrintOutput($"  Of these, {devirtToSameLikelihood100} have a likelihood of 100 in both .mibc files");
+                PrintOutput($"  and {devirtToSameLikelihood70} have a likelihood >= 70 in both .mibc files");
+
+                foreach (var group in changes.GroupBy(g => g.method))
+                {
+                    PrintOutput($"  In {group.Key}");
+                    foreach (var change in group)
+                    {
+                        string FormatDevirt(GetLikelyClassResult result)
+                        {
+                            if (result.Type != null)
+                                return $"{result.Type}, likelihood {result.Likelihood}{(result.Devirtualizes ? "" : " (does not devirt)")}";
+
+                            return $"(null)";
+                        }
+
+                        PrintOutput($"    At +{change.ilOffset:x}: {FormatDevirt(change.result1)} vs {FormatDevirt(change.result2)}");
+                    }
+                }
+            }
+
+            return 0;
+        }
+
+        static void PrintMibcStats(ProfileData data)
+        {
+            List<MethodProfileData> methods = data.GetAllMethodProfileData().ToList();
+            List<MethodProfileData> profiledMethods = methods.Where(spd => spd.SchemaData != null).ToList();
+            PrintOutput($"# Methods: {methods.Count}");
+            PrintOutput($"# Methods with any profile data: {profiledMethods.Count(spd => spd.SchemaData.Length > 0)}");
+            PrintOutput($"# Methods with 32-bit block counts: {profiledMethods.Count(spd => spd.SchemaData.Any(elem => elem.InstrumentationKind == PgoInstrumentationKind.BasicBlockIntCount))}");
+            PrintOutput($"# Methods with 64-bit block counts: {profiledMethods.Count(spd => spd.SchemaData.Any(elem => elem.InstrumentationKind == PgoInstrumentationKind.BasicBlockLongCount))}");
+            PrintOutput($"# Methods with 32-bit edge counts: {profiledMethods.Count(spd => spd.SchemaData.Any(elem => elem.InstrumentationKind == PgoInstrumentationKind.EdgeIntCount))}");
+            PrintOutput($"# Methods with 64-bit edge counts: {profiledMethods.Count(spd => spd.SchemaData.Any(elem => elem.InstrumentationKind == PgoInstrumentationKind.EdgeLongCount))}");
+            int numTypeHandleHistograms = profiledMethods.Sum(spd => spd.SchemaData.Count(elem => elem.InstrumentationKind == PgoInstrumentationKind.TypeHandleHistogramTypeHandle));
+            int methodsWithTypeHandleHistograms = profiledMethods.Count(spd => spd.SchemaData.Any(elem => elem.InstrumentationKind == PgoInstrumentationKind.TypeHandleHistogramTypeHandle));
+            PrintOutput($"# Type handle histograms: {numTypeHandleHistograms} in {methodsWithTypeHandleHistograms} methods");
+            int numGetLikelyClass = profiledMethods.Sum(spd => spd.SchemaData.Count(elem => elem.InstrumentationKind == PgoInstrumentationKind.GetLikelyClass));
+            int methodsWithGetLikelyClass = profiledMethods.Count(spd => spd.SchemaData.Any(elem => elem.InstrumentationKind == PgoInstrumentationKind.GetLikelyClass));
+            PrintOutput($"# GetLikelyClass data: {numGetLikelyClass} in {methodsWithGetLikelyClass} methods");
+
+            var histogramCallSites = new List<(MethodProfileData mpd, int ilOffset)>();
+            foreach (var mpd in profiledMethods)
+            {
+                var sites =
+                    mpd.SchemaData
+                    .Where(e => e.InstrumentationKind == PgoInstrumentationKind.TypeHandleHistogramTypeHandle || e.InstrumentationKind == PgoInstrumentationKind.GetLikelyClass)
+                    .Select(e => e.ILOffset)
+                    .Distinct();
+
+                histogramCallSites.AddRange(sites.Select(ilOffset => (mpd, ilOffset)));
+            }
+
+            int CountGetLikelyClass(Func<GetLikelyClassResult, bool> predicate)
+                => histogramCallSites.Count(t => predicate(GetLikelyClass(t.mpd.SchemaData, t.ilOffset)));
+
+            PrintOutput($"# Call sites where getLikelyClass is null: {CountGetLikelyClass(r => r.IsNull)}");
+            PrintOutput($"# Call sites where getLikelyClass is unknown: {CountGetLikelyClass(r => r.IsUnknown)}");
+            PrintOutput($"# Call sites where getLikelyClass returns data that devirtualizes: {CountGetLikelyClass(r => r.Devirtualizes)}");
+
+            static bool PresentAndZero(MethodProfileData mpd, PgoInstrumentationKind kind)
+                => mpd.SchemaData.Any(e => e.InstrumentationKind == kind) && mpd.SchemaData.Sum(e => e.InstrumentationKind == kind ? e.DataLong : 0) == 0;
+
+            static bool CountersSumToZero(MethodProfileData data)
+                => PresentAndZero(data, PgoInstrumentationKind.BasicBlockIntCount) ||
+                   PresentAndZero(data, PgoInstrumentationKind.BasicBlockLongCount) ||
+                   PresentAndZero(data, PgoInstrumentationKind.EdgeIntCount) ||
+                   PresentAndZero(data, PgoInstrumentationKind.EdgeLongCount);
+
+            List<MethodProfileData> methodsWithZeroCounters = profiledMethods.Where(CountersSumToZero).ToList();
+            if (methodsWithZeroCounters.Count > 0)
+            {
+                PrintOutput($"There are {methodsWithZeroCounters.Count} methods whose counters sum to 0:");
+                foreach (MethodProfileData mpd in methodsWithZeroCounters)
+                    PrintOutput($"  {mpd.Method}");
+            }
+        }
+
+        private struct GetLikelyClassResult
+        {
+            public bool IsNull;
+            public bool IsUnknown;
+            public TypeDesc Type;
+            public int Likelihood;
+            public bool Devirtualizes;
+        }
+
+        private static GetLikelyClassResult GetLikelyClass(PgoSchemaElem[] schema, int ilOffset)
+        {
+            const int UNKNOWN_TYPEHANDLE_MIN = 1;
+            const int UNKNOWN_TYPEHANDLE_MAX = 33;
+
+            static bool IsUnknownTypeHandle(int handle)
+                => handle >= UNKNOWN_TYPEHANDLE_MIN && handle <= UNKNOWN_TYPEHANDLE_MAX;
+
+            for (int i = 0; i < schema.Length; i++)
+            {
+                var elem = schema[i];
+                if (elem.InstrumentationKind == PgoInstrumentationKind.GetLikelyClass)
+                {
+                    Trace.Assert(elem.Count == 1);
+                    return new GetLikelyClassResult
+                    {
+                        IsUnknown = IsUnknownTypeHandle(((TypeSystemEntityOrUnknown[])elem.DataObject)[0].AsUnknown),
+                        Likelihood = (byte)elem.Other,
+                    };
+                }
+
+                bool isHistogramCount =
+                    elem.InstrumentationKind == PgoInstrumentationKind.TypeHandleHistogramIntCount ||
+                    elem.InstrumentationKind == PgoInstrumentationKind.TypeHandleHistogramLongCount;
+
+                if (isHistogramCount && elem.Count == 1 && i + 1 < schema.Length && schema[i + 1].InstrumentationKind == PgoInstrumentationKind.TypeHandleHistogramTypeHandle)
+                {
+                    var handles = (TypeSystemEntityOrUnknown[])schema[i + 1].DataObject;
+                    var histogram = handles.Where(e => !e.IsNull).GroupBy(e => e).ToList();
+                    if (histogram.Count == 0)
+                        return new GetLikelyClassResult { IsNull = true };
+
+                    int totalCount = histogram.Sum(g => g.Count());
+                    // The number of unknown type handles matters for the likelihood, but not for the most likely class that we pick, so we can remove them now.
+                    histogram.RemoveAll(e => IsUnknownTypeHandle(e.Key.AsUnknown));
+                    if (histogram.Count == 0)
+                        return new GetLikelyClassResult { IsUnknown = true };
+
+                    // Now return the most likely one
+                    var best = histogram.OrderByDescending(h => h.Count()).First();
+                    Trace.Assert(best.Key.AsType != null);
+                    int likelihood = best.Count() * 100 / totalCount;
+                    // The threshold is different for interfaces and classes.
+                    // A flag in the Other field of the TypeHandleHistogram*Count entry indicates which kind of call site this is.
+                    bool isInterface = (elem.Other & (uint)ClassProfileFlags.IsInterface) != 0;
+                    int threshold = isInterface ? 25 : 30;
+                    return new GetLikelyClassResult
+                    {
+                        Type = best.Key.AsType,
+                        Likelihood = likelihood,
+                        Devirtualizes = likelihood >= threshold,
+                    };
+                }
+            }
+
+            return new GetLikelyClassResult { IsNull = true };
+        }
+
+        private static Dictionary<int, PgoSchemaElem> GroupBlocks(MethodProfileData data)
+        {
+            return data.SchemaData
+               .Where(e => e.InstrumentationKind == PgoInstrumentationKind.BasicBlockIntCount || e.InstrumentationKind == PgoInstrumentationKind.BasicBlockLongCount)
+               .ToDictionary(e => e.ILOffset);
+        }
+
+        private static Dictionary<(int, int), PgoSchemaElem> GroupEdges(MethodProfileData data)
+        {
+            return data.SchemaData
+               .Where(e => e.InstrumentationKind == PgoInstrumentationKind.EdgeIntCount || e.InstrumentationKind == PgoInstrumentationKind.EdgeLongCount)
+               .ToDictionary(e => (e.ILOffset, e.Other));
+        }
+
+        static int InnerProcessTraceFileMain(CommandLineOptions commandLineOptions)
+        {
+            if (commandLineOptions.TraceFile == null)
+            {
+                PrintUsage(commandLineOptions, "--trace must be specified");
+                return -8;
+            }
+
+            if (commandLineOptions.OutputFileName == null)
+            {
+                PrintUsage(commandLineOptions, "--output must be specified");
+                return -8;
+            }
+
+            if (!commandLineOptions.FileType.HasValue)
+            {
+                PrintUsage(commandLineOptions, $"--pgo-file-type must be specified");
+                return -9;
+            }
+            if ((commandLineOptions.FileType.Value != PgoFileType.jittrace) && (commandLineOptions.FileType != PgoFileType.mibc))
+            {
+                PrintUsage(commandLineOptions, $"Invalid output pgo type {commandLineOptions.FileType} specified.");
+                return -9;
+            }
+            if (commandLineOptions.FileType == PgoFileType.jittrace)
+            {
+                if (!commandLineOptions.OutputFileName.Name.EndsWith(".jittrace"))
+                {
+                    PrintUsage(commandLineOptions, $"jittrace output file name must end with .jittrace");
+                    return -9;
+                }
+            }
+            if (commandLineOptions.FileType == PgoFileType.mibc)
+            {
+                if (!commandLineOptions.OutputFileName.Name.EndsWith(".mibc"))
+                {
+                    PrintUsage(commandLineOptions, $"mibc output file name must end with .mibc");
+                    return -9;
                 }
             }
 
@@ -413,8 +848,8 @@ Example tracing commands used to generate the input to this tool:
             {
                 if (commandLineOptions.TraceFile.FullName.EndsWith(nettraceExtension))
                 {
-                    etlFileName = commandLineOptions.TraceFile.FullName.Substring(0, commandLineOptions.TraceFile.FullName.Length - nettraceExtension.Length) + ".etlx";
-                    Console.WriteLine($"Creating ETLX file {etlFileName} from {commandLineOptions.TraceFile.FullName}");
+                    etlFileName = Path.ChangeExtension(commandLineOptions.TraceFile.FullName, ".etlx");
+                    PrintMessage($"Creating ETLX file {etlFileName} from {commandLineOptions.TraceFile.FullName}");
                     TraceLog.CreateFromEventPipeDataFile(commandLineOptions.TraceFile.FullName, etlFileName);
                 }
             }
@@ -422,23 +857,30 @@ Example tracing commands used to generate the input to this tool:
             string lttngExtension = ".trace.zip";
             if (commandLineOptions.TraceFile.FullName.EndsWith(lttngExtension))
             {
-                etlFileName = commandLineOptions.TraceFile.FullName.Substring(0, commandLineOptions.TraceFile.FullName.Length - lttngExtension.Length) + ".etlx";
-                Console.WriteLine($"Creating ETLX file {etlFileName} from {commandLineOptions.TraceFile.FullName}");
+                etlFileName = Path.ChangeExtension(commandLineOptions.TraceFile.FullName, ".etlx");
+                PrintMessage($"Creating ETLX file {etlFileName} from {commandLineOptions.TraceFile.FullName}");
                 TraceLog.CreateFromLttngTextDataFile(commandLineOptions.TraceFile.FullName, etlFileName);
             }
 
-            UnZipIfNecessary(ref etlFileName, Console.Out);
+            UnZipIfNecessary(ref etlFileName, commandLineOptions.BasicProgressMessages ? Console.Out : new StringWriter());
 
-            using (var traceLog = TraceLog.OpenOrConvert(etlFileName))
+            // For SPGO we need to be able to map raw IPs back to IL offsets in methods.
+            // Normally TraceEvent facilitates this remapping automatically and discards the IL<->IP mapping table events.
+            // However, we have found TraceEvent's remapping to be imprecise (see https://github.com/microsoft/perfview/issues/1410).
+            // Thus, when SPGO is requested, we need to keep these events.
+            // Note that we always request these events to be kept because if one switches back and forth between SPGO and non-SPGO,
+            // the cached .etlx file will not update.
+            using (var traceLog = TraceLog.OpenOrConvert(etlFileName, new TraceLogOptions { KeepAllEvents = true }))
             {
                 if ((!commandLineOptions.Pid.HasValue && commandLineOptions.ProcessName == null) && traceLog.Processes.Count != 1)
                 {
-                    Console.WriteLine("Either a pid or process name from the following list must be specified");
+                    PrintError("Trace file contains multiple processes to distinguish between");
+                    PrintOutput("Either a pid or process name from the following list must be specified");
                     foreach (TraceProcess proc in traceLog.Processes)
                     {
-                        Console.WriteLine($"Procname = {proc.Name} Pid = {proc.ProcessID}");
+                        PrintOutput($"Procname = {proc.Name} Pid = {proc.ProcessID}");
                     }
-                    return 0;
+                    return 1;
                 }
 
                 if (commandLineOptions.Pid.HasValue && (commandLineOptions.ProcessName != null))
@@ -512,14 +954,6 @@ Example tracing commands used to generate the input to this tool:
                     return -5;
                 }
 
-                if (commandLineOptions.ProcessR2REvents)
-                {
-                    if (!p.EventsInProcess.ByEventType<R2RGetEntryPointTraceData>().Any())
-                    {
-                        PrintError($"No r2r entrypoint data. This is not an error as in this case we can examine the jitted methods only\nWas the trace collected with provider at least \"Microsoft-Windows-DotNETRuntime:0x6000080018:5\"?");
-                    }
-                }
-
                 PgoTraceProcess pgoProcess = new PgoTraceProcess(p);
                 int? clrInstanceId = commandLineOptions.ClrInstanceId;
                 if (!clrInstanceId.HasValue)
@@ -565,20 +999,30 @@ Example tracing commands used to generate the input to this tool:
                 var tsc = new TraceTypeSystemContext(pgoProcess, clrInstanceId.Value, s_logger);
 
                 if (commandLineOptions.VerboseWarnings)
-                    Console.WriteLine($"{traceLog.EventsLost} Lost events");
+                    PrintWarning($"{traceLog.EventsLost} Lost events");
 
                 bool filePathError = false;
                 if (commandLineOptions.Reference != null)
                 {
                     foreach (FileInfo fileReference in commandLineOptions.Reference)
                     {
-                        if (!File.Exists(fileReference.FullName))
+                        try
                         {
-                            PrintError($"Unable to find reference '{fileReference.FullName}'");
-                            filePathError = true;
+                            if (!File.Exists(fileReference.FullName))
+                            {
+                                PrintError($"Unable to find reference '{fileReference.FullName}'");
+                                filePathError = true;
+                            }
+                            else
+                                tsc.GetModuleFromPath(fileReference.FullName);
                         }
-                        else
-                            tsc.GetModuleFromPath(fileReference.FullName);
+                        catch (Internal.TypeSystem.TypeSystemException.BadImageFormatException)
+                        {
+                            // Ignore BadImageFormat in order to allow users to use '-r *.dll'
+                            // in a folder with native dynamic libraries (which have the same extension on Windows).
+
+                            // We don't need to log a warning here - it's already logged in GetModuleFromPath
+                        }
                     }
                 }
 
@@ -666,7 +1110,7 @@ Example tracing commands used to generate the input to this tool:
 
                         if (method == null)
                         {
-                            if (!commandLineOptions.Warnings)
+                            if ((e.MethodNamespace == "dynamicClass") || !commandLineOptions.Warnings)
                                 continue;
 
                             PrintWarning($"Unable to parse {methodNameFromEventDirectly}");
@@ -678,6 +1122,21 @@ Example tracing commands used to generate the input to this tool:
                         if ((e.TimeStampRelativeMSec >= commandLineOptions.ExcludeEventsBefore) && (e.TimeStampRelativeMSec <= commandLineOptions.ExcludeEventsAfter))
                             methodsToAttemptToPrepare.Add((int)e.EventIndex, new ProcessedMethodData(e.TimeStampRelativeMSec, method, "JitStart"));
                     }
+                }
+
+                MethodMemoryMap methodMemMap = null;
+                MethodMemoryMap GetMethodMemMap()
+                {
+                    if (methodMemMap == null)
+                    {
+                        methodMemMap = new MethodMemoryMap(
+                            p,
+                            tsc,
+                            idParser,
+                            clrInstanceId.Value);
+                    }
+
+                    return methodMemMap;
                 }
 
                 Dictionary<MethodDesc, Dictionary<MethodDesc, int>> callGraph = null;
@@ -692,93 +1151,8 @@ Example tracing commands used to generate the input to this tool:
 
                     callGraph = new Dictionary<MethodDesc, Dictionary<MethodDesc, int>>();
                     exclusiveSamples = new Dictionary<MethodDesc, int>();
-                    // Capture the addresses of jitted code
-                    List<ValueTuple<InstructionPointerRange, MethodDesc>> codeLocations = new List<(InstructionPointerRange, MethodDesc)>();
-                    foreach (var e in p.EventsInProcess.ByEventType<MethodLoadUnloadTraceData>())
-                    {
-                        if (e.ClrInstanceID != clrInstanceId.Value)
-                        {
-                            continue;
-                        }
 
-                        MethodDesc method = null;
-                        try
-                        {
-                            method = idParser.ResolveMethodID(e.MethodID, commandLineOptions.VerboseWarnings);
-                        }
-                        catch (Exception)
-                        {
-                        }
-
-                        if (method != null)
-                        {
-                            codeLocations.Add((new InstructionPointerRange(e.MethodStartAddress, e.MethodSize), method));
-                        }
-                    }
-                    foreach (var e in p.EventsInProcess.ByEventType<MethodLoadUnloadVerboseTraceData>())
-                    {
-                        if (e.ClrInstanceID != clrInstanceId.Value)
-                        {
-                            continue;
-                        }
-
-                        MethodDesc method = null;
-                        try
-                        {
-                            method = idParser.ResolveMethodID(e.MethodID, commandLineOptions.VerboseWarnings);
-                        }
-                        catch (Exception)
-                        {
-                        }
-
-                        if (method != null)
-                        {
-                            codeLocations.Add((new InstructionPointerRange(e.MethodStartAddress, e.MethodSize), method));
-                        }
-                    }
-
-                    var sigProvider = new R2RSignatureTypeProvider(tsc);
-                    foreach (var module in p.LoadedModules)
-                    {
-                        if (module.FilePath == "")
-                            continue;
-
-                        if (!File.Exists(module.FilePath))
-                            continue;
-
-                        try
-                        {
-                            byte[] image = File.ReadAllBytes(module.FilePath);
-                            using (FileStream fstream = new FileStream(module.FilePath, FileMode.Open, FileAccess.Read, FileShare.Read))
-                            {
-                                var r2rCheckPEReader = new System.Reflection.PortableExecutable.PEReader(fstream, System.Reflection.PortableExecutable.PEStreamOptions.LeaveOpen);
-
-                                if (!ILCompiler.Reflection.ReadyToRun.ReadyToRunReader.IsReadyToRunImage(r2rCheckPEReader))
-                                    continue;
-                            }
-
-                            var reader = new ILCompiler.Reflection.ReadyToRun.ReadyToRunReader(tsc, module.FilePath);
-                            foreach (var methodEntry in reader.GetCustomMethodToRuntimeFunctionMapping<TypeDesc, MethodDesc, R2RSigProviderContext>(sigProvider))
-                            {
-                                foreach (var runtimeFunction in methodEntry.Value.RuntimeFunctions)
-                                {
-                                    codeLocations.Add((new InstructionPointerRange(module.ImageBase + (ulong)runtimeFunction.StartAddress, runtimeFunction.Size), methodEntry.Key));
-                                }
-                            }
-                        }
-                        catch { }
-                    }
-
-                    InstructionPointerRange[] instructionPointerRanges = new InstructionPointerRange[codeLocations.Count];
-                    MethodDesc[] methods = new MethodDesc[codeLocations.Count];
-                    for (int i = 0; i < codeLocations.Count; i++)
-                    {
-                        instructionPointerRanges[i] = codeLocations[i].Item1;
-                        methods[i] = codeLocations[i].Item2;
-                    }
-
-                    Array.Sort(instructionPointerRanges, methods);
-
+                    MethodMemoryMap mmap = GetMethodMemMap();
                     foreach (var e in p.EventsInProcess.ByEventType<SampledProfileTraceData>())
                     {
                         var callstack = e.CallStack();
@@ -786,12 +1160,12 @@ Example tracing commands used to generate the input to this tool:
                             continue;
 
                         ulong address1 = callstack.CodeAddress.Address;
-                        MethodDesc topOfStackMethod = LookupMethodByAddress(address1);
+                        MethodDesc topOfStackMethod = mmap.GetMethod(address1);
                         MethodDesc nextMethod = null;
                         if (callstack.Caller != null)
                         {
                             ulong address2 = callstack.Caller.CodeAddress.Address;
-                            nextMethod = LookupMethodByAddress(address2);
+                            nextMethod = mmap.GetMethod(address2);
                         }
 
                         if (topOfStackMethod != null)
@@ -833,45 +1207,6 @@ Example tracing commands used to generate the input to this tool:
                             {
                                 innerDictionary[topOfStackMethod] = 1;
                             }
-                        }
-                    }
-
-                    MethodDesc LookupMethodByAddress(ulong address)
-                    {
-                        int index = Array.BinarySearch(instructionPointerRanges, new InstructionPointerRange(address, 1));
-
-                        if (index >= 0)
-                        {
-                            return methods[index];
-                        }
-                        else
-                        {
-                            index = ~index;
-                            if (index >= instructionPointerRanges.Length)
-                                return null;
-
-                            if (instructionPointerRanges[index].StartAddress < address)
-                            {
-                                if (instructionPointerRanges[index].EndAddress > address)
-                                {
-                                    return methods[index];
-                                }
-                            }
-
-                            if (index == 0)
-                                return null;
-
-                            index--;
-
-                            if (instructionPointerRanges[index].StartAddress < address)
-                            {
-                                if (instructionPointerRanges[index].EndAddress > address)
-                                {
-                                    return methods[index];
-                                }
-                            }
-
-                            return null;
                         }
                     }
                 }
@@ -925,6 +1260,233 @@ Example tracing commands used to generate the input to this tool:
                     }
                 }
 
+                Dictionary<MethodDesc, SampleProfile> sampleProfiles = new Dictionary<MethodDesc, SampleProfile>();
+                if (commandLineOptions.Spgo)
+                {
+                    MethodMemoryMap mmap = GetMethodMemMap();
+                    Dictionary<MethodDesc, MethodIL> ils = new Dictionary<MethodDesc, MethodIL>();
+                    Dictionary<MethodDesc, FlowGraph> flowGraphs = new Dictionary<MethodDesc, FlowGraph>();
+
+                    MethodIL GetMethodIL(MethodDesc desc)
+                    {
+                        if (!ils.TryGetValue(desc, out MethodIL il))
+                        {
+                            il = desc switch
+                            {
+                                EcmaMethod em => EcmaMethodIL.Create(em),
+                                var m => new InstantiatedMethodIL(m, EcmaMethodIL.Create((EcmaMethod)m.GetTypicalMethodDefinition())),
+                            };
+
+                            ils.Add(desc, il);
+                        }
+
+                        return il;
+                    }
+
+                    FlowGraph GetFlowGraph(MethodDesc desc)
+                    {
+                        if (!flowGraphs.TryGetValue(desc, out FlowGraph fg))
+                        {
+                            flowGraphs.Add(desc, fg = FlowGraph.Create(GetMethodIL(desc)));
+                        }
+
+                        return fg;
+                    }
+
+                    Guid lbrGuid = Guid.Parse("99134383-5248-43fc-834b-529454e75df3");
+                    bool hasLbr = traceLog.Events.Any(e => e.TaskGuid == lbrGuid);
+
+                    if (!hasLbr)
+                    {
+                        // No LBR data, use standard IP samples. First convert each sample to a tuple of (Method, raw IP, IL offset).
+                        (MethodDesc Method, ulong IP, int Offset) GetTuple(SampledProfileTraceData e)
+                        {
+                            MemoryRegionInfo info = mmap.GetInfo(e.InstructionPointer);
+                            if (info == null)
+                                return (null, e.InstructionPointer, -1);
+
+                            int offset = info.NativeToILMap?.Lookup(checked((uint)(e.InstructionPointer - info.StartAddress))) ?? -1;
+                            return (info.Method, e.InstructionPointer, offset);
+                        }
+
+                        var samples =
+                            p.EventsInProcess.ByEventType<SampledProfileTraceData>()
+                            .Select(GetTuple)
+                            .Where(t => t.Method != null && t.Offset >= 0)
+                            .ToList();
+
+                        // Now find all samples in each method.
+                        foreach (var g in samples.GroupBy(t => t.Method))
+                        {
+                            // SPGO is quite sensitive with low counts, so check if we should not generate SPGO data for this function.
+                            if (g.Count() < commandLineOptions.SpgoMinSamples)
+                                continue;
+
+                            MethodIL il = GetMethodIL(g.Key);
+                            SampleProfile sp = SampleProfile.Create(il, GetFlowGraph(g.Key), g.Select(t => t.Offset));
+                            sampleProfiles.Add(g.Key, sp);
+                        }
+
+                        PrintOutput($"Profile is based on {samples.Count} samples");
+                    }
+                    else
+                    {
+                        // We have LBR data. We use the LBR data to collect straight-line runs that the CPU did in this process inside managed methods.
+                        // That is, if we first see a branch from A -> B followed by a branch from C -> D, then we can conclude that the CPU executed
+                        // code from B -> C. We call this a 'run' and collect each run and its multiplicity.
+                        // Later, we will find all IL offsets on this path and assign samples to the distinct basic blocks corresponding to those IL offsets.
+                        Dictionary<(ulong startRun, ulong endRun), long> runs = new Dictionary<(ulong startRun, ulong endRun), long>();
+                        List<(ulong start, ulong end)> lbrRuns = new List<(ulong start, ulong end)>();
+                        LbrEntry64[] lbr64Arr = null;
+                        long numLbrRecords = 0;
+                        foreach (var e in traceLog.Events)
+                        {
+                            if (e.TaskGuid != lbrGuid)
+                                continue;
+
+                            // Opcode is always 32 for the LBR event.
+                            if (e.Opcode != (TraceEventOpcode)32)
+                                continue;
+
+                            numLbrRecords++;
+
+                            unsafe
+                            {
+                                Span<LbrEntry64> lbr;
+                                if (traceLog.PointerSize == 4)
+                                {
+                                    // For 32-bit machines we convert the data into a 64-bit format first.
+                                    LbrTraceEventData32* data = (LbrTraceEventData32*)e.DataStart;
+                                    if (data->ProcessId != p.ProcessID)
+                                        continue;
+
+                                    Span<LbrEntry32> lbr32 = data->Entries(e.EventDataLength);
+                                    if (lbr64Arr == null || lbr64Arr.Length < lbr32.Length)
+                                        lbr64Arr = new LbrEntry64[lbr32.Length];
+
+                                    for (int i = 0; i < lbr32.Length; i++)
+                                    {
+                                        ref LbrEntry64 entry = ref lbr64Arr[i];
+                                        entry.FromAddress = lbr32[i].FromAddress;
+                                        entry.ToAddress = lbr32[i].ToAddress;
+                                        entry.Reserved = lbr32[i].Reserved;
+                                    }
+
+                                    lbr = lbr64Arr[0..lbr32.Length];
+                                }
+                                else
+                                {
+                                    Trace.Assert(traceLog.PointerSize == 8, $"Unexpected PointerSize {traceLog.PointerSize}");
+
+                                    LbrTraceEventData64* data = (LbrTraceEventData64*)e.DataStart;
+                                    // TODO: The process ID check is not sufficient as PIDs can be reused, so we need to use timestamps too,
+                                    // but we do not have access to PerfView functions to convert it. Hopefully TraceEvent will handle this
+                                    // for us in the future.
+                                    if (data->ProcessId != p.ProcessID)
+                                        continue;
+
+                                    lbr = data->Entries(e.EventDataLength);
+                                }
+
+                                // Store runs. LBR is chronological with most recent branches first.
+                                // To avoid double-counting blocks containing calls when the LBR buffer contains
+                                // both the call and the return from the call, we have to do some fancy things
+                                // when seeing cross-function branches, so we use a temporary list of runs
+                                // that we assign into the global dictionary.
+                                lbrRuns.Clear();
+                                for (int i = lbr.Length - 2; i >= 0; i--)
+                                {
+                                    ulong prevFrom = lbr[i + 1].FromAddress;
+                                    ulong prevTo = lbr[i + 1].ToAddress;
+                                    ulong curFrom = lbr[i].FromAddress;
+                                    MemoryRegionInfo prevFromMeth = methodMemMap.GetInfo(prevFrom);
+                                    MemoryRegionInfo prevToMeth = methodMemMap.GetInfo(prevTo);
+                                    MemoryRegionInfo curFromMeth = methodMemMap.GetInfo(curFrom);
+                                    // If this run is not in the same function then ignore it.
+                                    if (prevToMeth == null || prevToMeth != curFromMeth)
+                                        continue;
+
+                                    // Otherwise, if this run follows right after jumping back into the function, we might need to extend
+                                    // a previous run instead. This happens if we previously did a call out of this function and now returned back.
+                                    // TODO: Handle recursion here. The same function could return to itself and we wouldn't realize it from this check.
+                                    if (prevFromMeth != prevToMeth)
+                                    {
+                                        bool extendedPrevRun = false;
+                                        // Try to find a previous run. Iterate in reverse to simulate stack behavior of calls.
+                                        FlowGraph toFG = null;
+                                        for (int j = lbrRuns.Count - 1; j >= 0; j--)
+                                        {
+                                            MemoryRegionInfo endRunMeth = methodMemMap.GetInfo(lbrRuns[j].end);
+                                            if (endRunMeth != prevToMeth)
+                                                continue;
+
+                                            // Same function at least, check for same basic block
+                                            toFG ??= GetFlowGraph(endRunMeth.Method);
+                                            BasicBlock endRunBB = toFG.Lookup(endRunMeth.NativeToILMap.Lookup((uint)(lbrRuns[j].end - endRunMeth.StartAddress)));
+                                            BasicBlock toBB = toFG.Lookup(endRunMeth.NativeToILMap.Lookup((uint)(prevTo - endRunMeth.StartAddress)));
+                                            if (endRunBB == toBB && prevTo > lbrRuns[j].end)
+                                            {
+                                                // Same BB and the jump is to after where the previous run ends. Take that as a return to after that call and extend the previous run.
+                                                lbrRuns[j] = (lbrRuns[j].start, curFrom);
+                                                extendedPrevRun = true;
+                                                break;
+                                            }
+                                        }
+
+                                        if (extendedPrevRun)
+                                            continue;
+                                    }
+
+                                    lbrRuns.Add((prevTo, curFrom));
+                                }
+
+                                // Now insert runs.
+                                foreach (var pair in lbrRuns)
+                                {
+                                    if (runs.TryGetValue(pair, out long count))
+                                        runs[pair] = count + 1;
+                                    else
+                                        runs.Add(pair, 1);
+                                }
+                            }
+                        }
+
+                        // Group runs by memory region info, which corresponds to each .NET method.
+                        var groupedRuns =
+                            runs
+                            .Select(r => (start: r.Key.startRun, end: r.Key.endRun, count: r.Value, info: methodMemMap.GetInfo(r.Key.startRun)))
+                            .GroupBy(t => t.info);
+
+                        foreach (var g in groupedRuns)
+                        {
+                            if (g.Key == null || g.Key.NativeToILMap == null)
+                                continue;
+
+                            // Collect relative IPs of samples. Note that we cannot translate the end-points of runs from IPs to IL offsets
+                            // as we cannot assume that a straight-line execution between two IPs corresponds to a straight-line execution between
+                            // two IL offsets. SampleProfile.CreateFromLbr will be responsible for assigning samples based on the flow graph relative IPs,
+                            // the IP<->IL mapping and the flow graph.
+                            List<(uint start, uint end, long count)> samples =
+                                g
+                                .Where(t => t.end >= t.start && t.end < g.Key.EndAddress)
+                                .Select(t => ((uint)(t.start - g.Key.StartAddress), (uint)(t.end - g.Key.StartAddress), t.count))
+                                .ToList();
+
+                            if (samples.Sum(t => t.count) < commandLineOptions.SpgoMinSamples)
+                                continue;
+
+                            SampleProfile ep = SampleProfile.CreateFromLbr(
+                                GetMethodIL(g.Key.Method),
+                                GetFlowGraph(g.Key.Method),
+                                g.Key.NativeToILMap,
+                                samples);
+
+                            sampleProfiles.Add(g.Key.Method, ep);
+                        }
+
+                        PrintOutput($"Profile is based on {numLbrRecords} LBR records");
+                    }
+                }
 
                 if (commandLineOptions.DisplayProcessedEvents)
                 {
@@ -932,11 +1494,11 @@ Example tracing commands used to generate the input to this tool:
                     {
                         MethodDesc method = entry.Value.Method;
                         string reason = entry.Value.Reason;
-                        Console.WriteLine($"{entry.Value.Millisecond.ToString("F4")} {reason} {method}");
+                        PrintOutput($"{entry.Value.Millisecond.ToString("F4")} {reason} {method}");
                     }
                 }
 
-                Console.WriteLine($"Done processing input file");
+                PrintMessage($"Done processing input file");
 
                 if (commandLineOptions.OutputFileName == null)
                 {
@@ -979,442 +1541,65 @@ Example tracing commands used to generate the input to this tool:
                             var intDecompressor = new PgoProcessor.PgoEncodedCompressedIntParser(instrumentationData, 0);
                             methodData.InstrumentationData = PgoProcessor.ParsePgoData<TypeSystemEntityOrUnknown>(pgoDataLoader, intDecompressor, true).ToArray();
                         }
+                        else if (sampleProfiles.TryGetValue(methodData.Method, out SampleProfile sp))
+                        {
+                            IEnumerable<PgoSchemaElem> schema = Enumerable.Empty<PgoSchemaElem>();
+
+                            if (commandLineOptions.SpgoIncludeBlockCounts)
+                            {
+                                schema = schema.Concat(
+                                    sp.SmoothedSamples
+                                    .Select(kvp =>
+                                        new PgoSchemaElem
+                                        {
+                                            InstrumentationKind = kvp.Value > uint.MaxValue ? PgoInstrumentationKind.BasicBlockLongCount : PgoInstrumentationKind.BasicBlockIntCount,
+                                            ILOffset = kvp.Key.Start,
+                                            Count = 1,
+                                            DataLong = kvp.Value,
+                                        }));
+                            }
+
+                            if (commandLineOptions.SpgoIncludeEdgeCounts)
+                            {
+                                schema = schema.Concat(
+                                    sp.SmoothedEdgeSamples
+                                    .Select(kvp =>
+                                        new PgoSchemaElem
+                                        {
+                                            InstrumentationKind = kvp.Value > uint.MaxValue ? PgoInstrumentationKind.EdgeLongCount : PgoInstrumentationKind.EdgeIntCount,
+                                            ILOffset = kvp.Key.Item1.Start,
+                                            Other = kvp.Key.Item2.Start,
+                                            Count = 1,
+                                            DataLong = kvp.Value
+                                        }));
+                            }
+
+                            methodData.InstrumentationData = schema.ToArray();
+                        }
+
                         methodsUsedInProcess.Add(methodData);
                     }
                 }
 
-                 if (commandLineOptions.PgoFileType.Value == PgoFileType.jittrace)
+                if (commandLineOptions.FileType.Value == PgoFileType.jittrace)
                     GenerateJittraceFile(commandLineOptions.OutputFileName, methodsUsedInProcess, commandLineOptions.JitTraceOptions);
-                else if (commandLineOptions.PgoFileType.Value == PgoFileType.mibc)
-                    return GenerateMibcFile(tsc, commandLineOptions.OutputFileName, methodsUsedInProcess, commandLineOptions.ValidateOutputFile, commandLineOptions.Uncompressed);
+                else if (commandLineOptions.FileType.Value == PgoFileType.mibc)
+                {
+                    ILCompiler.MethodProfileData[] methodProfileData = new ILCompiler.MethodProfileData[methodsUsedInProcess.Count];
+                    for (int i = 0; i < methodProfileData.Length; i++)
+                    {
+                        ProcessedMethodData processedData = methodsUsedInProcess[i];
+                        methodProfileData[i] = new ILCompiler.MethodProfileData(processedData.Method, ILCompiler.MethodProfilingDataFlags.ReadMethodCode, processedData.ExclusiveWeight, processedData.WeightedCallData, 0xFFFFFFFF, processedData.InstrumentationData);
+                    }
+                    return MibcEmitter.GenerateMibcFile(tsc, commandLineOptions.OutputFileName, methodProfileData, commandLineOptions.ValidateOutputFile, commandLineOptions.Uncompressed);
+                }
             }
             return 0;
         }
 
-        class MIbcGroup : IPgoEncodedValueEmitter<TypeSystemEntityOrUnknown>
-        {
-            private static int s_emitCount = 0;
-
-            public MIbcGroup(string name, TypeSystemMetadataEmitter emitter)
-            {
-                _buffer = new BlobBuilder();
-                _il = new InstructionEncoder(_buffer);
-                _name = name;
-                _emitter = emitter;
-            }
-
-            private BlobBuilder _buffer;
-            private InstructionEncoder _il;
-            private string _name;
-            private TypeSystemMetadataEmitter _emitter;
-
-            public void AddProcessedMethodData(ProcessedMethodData processedMethodData)
-            {
-                MethodDesc method = processedMethodData.Method;
-                string reason = processedMethodData.Reason;
-
-                // Format is 
-                // ldtoken method
-                // variable amount of extra metadata about the method, Extension data is encoded via ldstr "id"
-                // pop
-
-                // Extensions generated by this emitter:
-                //
-                // ldstr "ExclusiveWeight"
-                // Any ldc.i4 or ldc.r4 or ldc.r8 instruction to indicate the exclusive weight
-                //
-                // ldstr "WeightedCallData"
-                // ldc.i4 <Count of methods called>
-                // Repeat <Count of methods called times>
-                //  ldtoken <Method called from this method>
-                //  ldc.i4 <Weight associated with calling the <Method called from this method>>
-                //
-                // ldstr "InstrumentationDataStart"
-                // Encoded ints and longs, using ldc.i4, and ldc.i8 instructions as well as ldtoken <type> instructions
-                // ldstr "InstrumentationDataEnd" as a terminator
-                try
-                {
-                    EntityHandle methodHandle = _emitter.GetMethodRef(method);
-                    _il.OpCode(ILOpCode.Ldtoken);
-                    _il.Token(methodHandle);
-                    if (processedMethodData.ExclusiveWeight != 0)
-                    {
-                        _il.LoadString(_emitter.GetUserStringHandle("ExclusiveWeight"));
-                        _il.LoadConstantI4(processedMethodData.ExclusiveWeight);
-                    }
-                    if (processedMethodData.WeightedCallData != null)
-                    {
-                        _il.LoadString(_emitter.GetUserStringHandle("WeightedCallData"));
-                        _il.LoadConstantI4(processedMethodData.WeightedCallData.Count);
-                        foreach (var entry in processedMethodData.WeightedCallData)
-                        {
-                            EntityHandle calledMethod = _emitter.GetMethodRef(entry.Key);
-                            _il.OpCode(ILOpCode.Ldtoken);
-                            _il.Token(calledMethod);
-                            _il.LoadConstantI4(entry.Value);
-                        }
-                    }
-                    if (processedMethodData.InstrumentationData != null)
-                    {
-                        _il.LoadString(_emitter.GetUserStringHandle("InstrumentationDataStart"));
-                        PgoProcessor.EncodePgoData<TypeSystemEntityOrUnknown>(processedMethodData.InstrumentationData, this, true);
-                    }
-                    _il.OpCode(ILOpCode.Pop);
-                }
-                catch (Exception ex)
-                {
-                    PrintWarning($"Exception {ex} while attempting to generate method lists");
-                }
-            }
-
-            public MethodDefinitionHandle EmitMethod()
-            {
-                s_emitCount++;
-                string basicName = "Assemblies_" + _name;
-                if (_name.Length > 200)
-                    basicName = basicName.Substring(0, 200); // Cap length of name at 200, which is reasonably small.
-
-                string methodName = basicName + "_" + s_emitCount.ToString(CultureInfo.InvariantCulture);
-                return _emitter.AddGlobalMethod(methodName, _il, 8);
-            }
-
-            bool IPgoEncodedValueEmitter<TypeSystemEntityOrUnknown>.EmitDone()
-            {
-                _il.LoadString(_emitter.GetUserStringHandle("InstrumentationDataEnd"));
-                return true;
-            }
-
-            void IPgoEncodedValueEmitter<TypeSystemEntityOrUnknown>.EmitLong(long value, long previousValue)
-            {
-                if ((value <= int.MaxValue) && (value >= int.MinValue))
-                {
-                    _il.LoadConstantI4(checked((int)value));
-                }
-                else
-                {
-                    _il.LoadConstantI8(value);
-                }
-            }
-
-            void IPgoEncodedValueEmitter<TypeSystemEntityOrUnknown>.EmitType(TypeSystemEntityOrUnknown type, TypeSystemEntityOrUnknown previousValue)
-            {
-                if (type.AsType != null)
-                {
-                    _il.OpCode(ILOpCode.Ldtoken);
-                    _il.Token(_emitter.GetTypeRef(type.AsType));
-                }
-                else
-                    _il.LoadConstantI4(type.AsUnknown);
-            }
-
-        }
-
-        private static void AddAssembliesAssociatedWithType(TypeDesc type, HashSet<string> assemblies, out string definingAssembly)
-        {
-            definingAssembly = ((MetadataType)type).Module.Assembly.GetName().Name;
-            assemblies.Add(definingAssembly);
-            AddAssembliesAssociatedWithType(type, assemblies);
-        }
-
-        private static void AddAssembliesAssociatedWithType(TypeDesc type, HashSet<string> assemblies)
-        {
-            if (type.IsPrimitive)
-                return;
-
-            if (type.Context.IsCanonicalDefinitionType(type, CanonicalFormKind.Any))
-                return;
-
-            if (type.IsParameterizedType)
-            {
-                AddAssembliesAssociatedWithType(type.GetParameterType(), assemblies);
-            }
-            else
-            {
-                assemblies.Add(((MetadataType)type).Module.Assembly.GetName().Name);
-                foreach (var instantiationType in type.Instantiation)
-                {
-                    AddAssembliesAssociatedWithType(instantiationType, assemblies);
-                }
-            }
-        }
-
-        private static void AddAssembliesAssociatedWithMethod(MethodDesc method, HashSet<string> assemblies, out string definingAssembly)
-        {
-            AddAssembliesAssociatedWithType(method.OwningType, assemblies, out definingAssembly);
-            foreach (var instantiationType in method.Instantiation)
-            {
-                AddAssembliesAssociatedWithType(instantiationType, assemblies);
-            }
-        }
-
-        static int GenerateMibcFile(TraceTypeSystemContext tsc, FileInfo outputFileName, ICollection<ProcessedMethodData> methodsToAttemptToPlaceIntoProfileData, bool validate, bool uncompressed)
-        {
-            TypeSystemMetadataEmitter emitter = new TypeSystemMetadataEmitter(new AssemblyName(outputFileName.Name), tsc);
-
-            SortedDictionary<string, MIbcGroup> groups = new SortedDictionary<string, MIbcGroup>();
-            StringBuilder mibcGroupNameBuilder = new StringBuilder();
-            HashSet<string> assembliesAssociatedWithMethod = new HashSet<string>();
-
-            foreach (var entry in methodsToAttemptToPlaceIntoProfileData)
-            {
-                MethodDesc method = entry.Method;
-                assembliesAssociatedWithMethod.Clear();
-                AddAssembliesAssociatedWithMethod(method, assembliesAssociatedWithMethod, out string definingAssembly);
-
-                string[] assemblyNames = new string[assembliesAssociatedWithMethod.Count];
-                int i = 1;
-                assemblyNames[0] = definingAssembly;
-
-                foreach (string s in assembliesAssociatedWithMethod)
-                {
-                    if (s.Equals(definingAssembly))
-                        continue;
-                    assemblyNames[i++] = s;
-                }
-
-                // Always keep the defining assembly as the first name
-                Array.Sort(assemblyNames, 1, assemblyNames.Length - 1);
-                mibcGroupNameBuilder.Clear();
-                foreach (string s in assemblyNames)
-                {
-                    mibcGroupNameBuilder.Append(s);
-                    mibcGroupNameBuilder.Append(';');
-                }
-
-                string mibcGroupName = mibcGroupNameBuilder.ToString();
-                if (!groups.TryGetValue(mibcGroupName, out MIbcGroup mibcGroup))
-                {
-                    mibcGroup = new MIbcGroup(mibcGroupName, emitter);
-                    groups.Add(mibcGroupName, mibcGroup);
-                }
-                mibcGroup.AddProcessedMethodData(entry);
-            }
-
-            var buffer = new BlobBuilder();
-            var il = new InstructionEncoder(buffer);
-
-            foreach (var entry in groups)
-            {
-                il.LoadString(emitter.GetUserStringHandle(entry.Key));
-                il.OpCode(ILOpCode.Ldtoken);
-                il.Token(entry.Value.EmitMethod());
-                il.OpCode(ILOpCode.Pop);
-            }
-
-            emitter.AddGlobalMethod("AssemblyDictionary", il, 8);
-            MemoryStream peFile = new MemoryStream();
-            emitter.SerializeToStream(peFile);
-            peFile.Position = 0;
-
-            if (outputFileName.Exists)
-            {
-                outputFileName.Delete();
-            }
-
-            if (uncompressed)
-            {
-                using (FileStream file = new FileStream(outputFileName.FullName, FileMode.Create))
-                {
-                    peFile.CopyTo(file);
-                }
-            }
-            else
-            {
-                using (ZipArchive file = ZipFile.Open(outputFileName.FullName, ZipArchiveMode.Create))
-                {
-                    var entry = file.CreateEntry(outputFileName.Name + ".dll", CompressionLevel.Optimal);
-                    using (Stream archiveStream = entry.Open())
-                    {
-                        peFile.CopyTo(archiveStream);
-                    }
-                }
-            }
-
-            Console.WriteLine($"Generated {outputFileName.FullName}");
-            if (validate)
-                return ValidateMIbcData(tsc, outputFileName, peFile.ToArray(), methodsToAttemptToPlaceIntoProfileData);
-            else
-                return 0;
-        }
-
-        struct MIbcData
-        {
-            public object MetadataObject;
-        }
-
-        static int ValidateMIbcData(TraceTypeSystemContext tsc, FileInfo outputFileName, byte[] moduleBytes, ICollection<ProcessedMethodData> methodsToAttemptToPrepare)
-        {
-            var mibcLoadedData = ReadMIbcData(tsc, outputFileName, moduleBytes).ToArray();
-            Dictionary<MethodDesc, MIbcData> mibcDict = new Dictionary<MethodDesc, MIbcData>();
-
-            foreach (var mibcData in mibcLoadedData)
-            {
-                mibcDict.Add((MethodDesc)mibcData.MetadataObject, mibcData);
-            }
-
-            bool failure = false;
-            if (methodsToAttemptToPrepare.Count != mibcLoadedData.Length)
-            {
-                PrintError($"Not same count of methods {methodsToAttemptToPrepare.Count} != {mibcLoadedData.Length}");
-                failure = true;
-            }
-
-            foreach (var entry in methodsToAttemptToPrepare)
-            {
-                MethodDesc method = entry.Method;
-                if (!mibcDict.ContainsKey(method))
-                {
-                    PrintError($"{method} not found in mibcEntryData");
-                    failure = true;
-                    continue;
-                }
-            }
-
-            if (failure)
-            {
-                return -1;
-            }
-            else
-            {
-                Console.WriteLine($"Validated {outputFileName.FullName}");
-                return 0;
-            }
-        }
-
-        static IEnumerable<MIbcData> ReadMIbcGroup(TypeSystemContext tsc, EcmaMethod method)
-        {
-            EcmaMethodIL ilBody = EcmaMethodIL.Create((EcmaMethod)method);
-            byte[] ilBytes = ilBody.GetILBytes();
-            int currentOffset = 0;
-            object metadataObject = null;
-            while (currentOffset < ilBytes.Length)
-            {
-                ILOpcode opcode = (ILOpcode)ilBytes[currentOffset];
-                if (opcode == ILOpcode.prefix1)
-                    opcode = 0x100 + (ILOpcode)ilBytes[currentOffset + 1];
-                switch (opcode)
-                {
-                    case ILOpcode.ldtoken:
-                        UInt32 token = BinaryPrimitives.ReadUInt32LittleEndian(ilBytes.AsSpan(currentOffset + 1));
-
-                        if (metadataObject == null)
-                            metadataObject = ilBody.GetObject((int)token);
-                        break;
-                    case ILOpcode.pop:
-                        MIbcData mibcData = new MIbcData();
-                        mibcData.MetadataObject = metadataObject;
-                        yield return mibcData;
-
-                        metadataObject = null;
-                        break;
-                }
-
-                // This isn't correct if there is a switch opcode, but since we won't do that, its ok
-                currentOffset += opcode.GetSize();
-            }
-        }
-
-        class CanonModule : ModuleDesc, IAssemblyDesc
-        {
-            public CanonModule(TypeSystemContext wrappedContext) : base(wrappedContext, null)
-            {
-            }
-
-            public override IEnumerable<MetadataType> GetAllTypes()
-            {
-                throw new NotImplementedException();
-            }
-
-            public override MetadataType GetGlobalModuleType()
-            {
-                throw new NotImplementedException();
-            }
-
-            public override MetadataType GetType(string nameSpace, string name, bool throwIfNotFound = true)
-            {
-                TypeSystemContext context = Context;
-
-                if (context.SupportsCanon && (nameSpace == context.CanonType.Namespace) && (name == context.CanonType.Name))
-                    return Context.CanonType;
-                if (context.SupportsUniversalCanon && (nameSpace == context.UniversalCanonType.Namespace) && (name == context.UniversalCanonType.Name))
-                    return Context.UniversalCanonType;
-                else
-                {
-                    if (throwIfNotFound)
-                    {
-                        throw new TypeLoadException($"{nameSpace}.{name}");
-                    }
-                    return null;
-                }
-            }
-
-            public AssemblyName GetName()
-            {
-                return new AssemblyName("System.Private.Canon");
-            }
-        }
-
-        class CustomCanonResolver : IModuleResolver
-        {
-            CanonModule _canonModule;
-            AssemblyName _canonModuleName;
-            IModuleResolver _wrappedResolver;
-
-            public CustomCanonResolver(TypeSystemContext wrappedContext)
-            {
-                _canonModule = new CanonModule(wrappedContext);
-                _canonModuleName = _canonModule.GetName();
-                _wrappedResolver = wrappedContext;
-            }
-
-            ModuleDesc IModuleResolver.ResolveAssembly(AssemblyName name, bool throwIfNotFound)
-            {
-                if (name.Name == _canonModuleName.Name)
-                    return _canonModule;
-                else
-                    return _wrappedResolver.ResolveAssembly(name, throwIfNotFound);
-            }
-
-            ModuleDesc IModuleResolver.ResolveModule(IAssemblyDesc referencingModule, string fileName, bool throwIfNotFound)
-            {
-                return _wrappedResolver.ResolveModule(referencingModule, fileName, throwIfNotFound);
-            }
-        }
-
-        static IEnumerable<MIbcData> ReadMIbcData(TraceTypeSystemContext tsc, FileInfo outputFileName, byte[] moduleBytes)
-        {
-            var peReader = new System.Reflection.PortableExecutable.PEReader(System.Collections.Immutable.ImmutableArray.Create<byte>(moduleBytes));
-            var module = EcmaModule.Create(tsc, peReader, null, null, new CustomCanonResolver(tsc));
-
-            var loadedMethod = (EcmaMethod)module.GetGlobalModuleType().GetMethod("AssemblyDictionary", null);
-            EcmaMethodIL ilBody = EcmaMethodIL.Create(loadedMethod);
-            byte[] ilBytes = ilBody.GetILBytes();
-            int currentOffset = 0;
-            while (currentOffset < ilBytes.Length)
-            {
-                ILOpcode opcode = (ILOpcode)ilBytes[currentOffset];
-                if (opcode == ILOpcode.prefix1)
-                    opcode = 0x100 + (ILOpcode)ilBytes[currentOffset + 1];
-                switch (opcode)
-                {
-                    case ILOpcode.ldtoken:
-                        UInt32 token = BinaryPrimitives.ReadUInt32LittleEndian(ilBytes.AsSpan(currentOffset + 1));
-                        foreach (var data in ReadMIbcGroup(tsc, (EcmaMethod)ilBody.GetObject((int)token)))
-                            yield return data;
-                        break;
-                    case ILOpcode.pop:
-                        break;
-                }
-
-                // This isn't correct if there is a switch opcode, but since we won't do that, its ok
-                currentOffset += opcode.GetSize();
-            }
-            GC.KeepAlive(peReader);
-        }
-
         static void GenerateJittraceFile(FileInfo outputFileName, IEnumerable<ProcessedMethodData> methodsToAttemptToPrepare, jittraceoptions jittraceOptions)
         {
-            s_logger.PrintMessage($"JitTrace options {jittraceOptions}");
+            PrintMessage($"JitTrace options {jittraceOptions}");
 
             List<string> methodsToPrepare = new List<string>();
             HashSet<string> prepareMethods = new HashSet<string>();
@@ -1487,7 +1672,7 @@ Example tracing commands used to generate the input to this tool:
                 }
             }
 
-            Console.WriteLine($"Generated {outputFileName.FullName}");
+            PrintMessage($"Generated {outputFileName.FullName}");
         }
 
         static string CsvEscape(string input, string separator)

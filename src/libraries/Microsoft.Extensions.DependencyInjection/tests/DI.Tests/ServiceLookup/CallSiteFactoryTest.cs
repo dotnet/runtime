@@ -3,16 +3,42 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Reflection;
+using System.Threading;
+using System.Threading.Tasks;
+using Microsoft.DotNet.RemoteExecutor;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.DependencyInjection.Specification.Fakes;
+using Microsoft.Extensions.DependencyInjection.Tests;
 using Xunit;
 
 namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
 {
     public class CallSiteFactoryTest
     {
+        [Fact]
+        public void GetService_FactoryCallSite_Transient_DoesNotFail()
+        {
+            var collection = new ServiceCollection();
+            collection.Add(ServiceDescriptor.Describe(typeof(FakeService), (sp) => new FakeService(), ServiceLifetime.Transient));
+            collection.Add(ServiceDescriptor.Describe(typeof(IFakeService), (sp) => new FakeService(), ServiceLifetime.Transient));
+
+            using ServiceProvider serviceProvider = collection.BuildServiceProvider(ServiceProviderMode.Dynamic);
+            Type expectedType = typeof(FakeService);
+
+            Assert.Equal(expectedType, serviceProvider.GetService(typeof(IFakeService)).GetType());
+            Assert.Equal(expectedType, serviceProvider.GetService(typeof(FakeService)).GetType());
+
+            for (int i = 0; i < 50; i++)
+            {
+                Assert.Equal(expectedType, serviceProvider.GetService(typeof(IFakeService)).GetType());
+                Assert.Equal(expectedType, serviceProvider.GetService(typeof(FakeService)).GetType());
+                Thread.Sleep(10); // Give the background thread time to compile
+            }
+        }
+
         [Fact]
         public void CreateCallSite_Throws_IfTypeHasNoPublicConstructors()
         {
@@ -556,6 +582,41 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
         }
 
         [Theory]
+        [InlineData(1)]
+        [InlineData(2)]
+        [InlineData(3)]
+        [InlineData(4)]
+        [InlineData(5)]
+        public void GetSlotTests(int numberOfServices)
+        {
+            var serviceDescriptors = new[] {
+                ServiceDescriptor.Singleton<ICustomService, CustomService1>(),
+                ServiceDescriptor.Singleton<ICustomService, CustomService2>(),
+                ServiceDescriptor.Singleton<ICustomService, CustomService3>(),
+                ServiceDescriptor.Singleton<ICustomService, CustomService4>(),
+                ServiceDescriptor.Singleton<ICustomService, CustomService5>()
+            };
+
+            var callsiteFactory = new CallSiteFactory(serviceDescriptors.Take(numberOfServices).ToArray());
+
+            for (int i = 0; i < numberOfServices; i++)
+            {
+                Assert.Equal(numberOfServices - i - 1, callsiteFactory.GetSlot(serviceDescriptors[i]));
+            }
+        }
+
+        interface ICustomService
+        {
+
+        }
+
+        class CustomService1 : ICustomService { }
+        class CustomService2 : ICustomService { }
+        class CustomService3 : ICustomService { }
+        class CustomService4 : ICustomService { }
+        class CustomService5 : ICustomService { }
+
+        [Theory]
         [InlineData(typeof(TypeWithMultipleParameterizedConstructors))]
         [InlineData(typeof(TypeWithSupersetConstructors))]
         public void CreateCallSite_ThrowsIfTypeHasNoConstructurWithResolvableParameters(Type type)
@@ -738,6 +799,126 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
             }
         }
 
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        public void CallSitesAreUniquePerServiceTypeAndSlot()
+        {
+            // Connected graph
+            // Class1 -> Class2 -> Class3
+            // Class4 -> Class3
+            // Class5 -> Class2 -> Class3
+            var types = new Type[] { typeof(Class1), typeof(Class2), typeof(Class3), typeof(Class4), typeof(Class5) };
+
+            for (int i = 0; i < 100; i++)
+            {
+                var factory = GetCallSiteFactory(types.Select(t => ServiceDescriptor.Transient(t, t)).ToArray());
+
+                var tasks = new Task<ServiceCallSite>[types.Length];
+                for (int j = 0; j < types.Length; j++)
+                {
+                    var type = types[j];
+                    tasks[j] = Task.Run(() => factory(type));
+                }
+
+                Task.WaitAll(tasks);
+
+                var callsites = tasks.Select(t => t.Result).Cast<ConstructorCallSite>().ToArray();
+
+                Assert.Equal(5, callsites.Length);
+                // Class1 -> Class2
+                Assert.Same(callsites[0].ParameterCallSites[0], callsites[1]);
+                // Class2 -> Class3
+                Assert.Same(callsites[1].ParameterCallSites[0], callsites[2]);
+                // Class4 -> Class3
+                Assert.Same(callsites[3].ParameterCallSites[0], callsites[2]);
+                // Class5 -> Class2
+                Assert.Same(callsites[4].ParameterCallSites[0], callsites[1]);
+            }
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        public void CallSitesAreUniquePerServiceTypeAndSlotWithOpenGenericInGraph()
+        {
+            // Connected graph
+            // ClassA -> ClassB -> ClassC<object>
+            // ClassD -> ClassC<string>
+            // ClassE -> ClassB -> ClassC<object>
+            var types = new Type[] { typeof(ClassA), typeof(ClassB), typeof(ClassC<>), typeof(ClassD), typeof(ClassE) };
+
+            for (int i = 0; i < 100; i++)
+            {
+                var factory = GetCallSiteFactory(types.Select(t => ServiceDescriptor.Transient(t, t)).ToArray());
+
+                var tasks = new Task<ServiceCallSite>[types.Length];
+                for (int j = 0; j < types.Length; j++)
+                {
+                    var type = types[j];
+                    tasks[j] = Task.Run(() => factory(type));
+                }
+
+                Task.WaitAll(tasks);
+
+                var callsites = tasks.Select(t => t.Result).Cast<ConstructorCallSite>().ToArray();
+
+                var cOfObject = factory(typeof(ClassC<object>));
+                var cOfString = factory(typeof(ClassC<string>));
+
+                Assert.Equal(5, callsites.Length);
+                // ClassA -> ClassB
+                Assert.Same(callsites[0].ParameterCallSites[0], callsites[1]);
+                // ClassB -> ClassC<object>
+                Assert.Same(callsites[1].ParameterCallSites[0], cOfObject);
+                // ClassD -> ClassC<string>
+                Assert.Same(callsites[3].ParameterCallSites[0], cOfString);
+                // ClassE -> ClassB
+                Assert.Same(callsites[4].ParameterCallSites[0], callsites[1]);
+            }
+        }
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)] // RuntimeConfigurationOptions are not supported on .NET Framework (and neither is trimming)
+        public void VerifyOpenGenericTrimmabilityChecks()
+        {
+            RemoteInvokeOptions options = new RemoteInvokeOptions();
+            options.RuntimeConfigurationOptions.Add("Microsoft.Extensions.DependencyInjection.VerifyOpenGenericServiceTrimmability", "true");
+
+            using RemoteInvokeHandle remoteHandle = RemoteExecutor.Invoke(() =>
+            {
+                (Type, Type)[] invalidTestCases = new[]
+                {
+                    (typeof(IFakeOpenGenericService<>), typeof(ClassWithNewConstraint<>)),
+                    (typeof(IServiceWithoutTrimmingAnnotations<>), typeof(ServiceWithTrimmingAnnotations<>)),
+                    (typeof(IServiceWithPublicConstructors<>), typeof(ServiceWithPublicProperties<>)),
+                    (typeof(IServiceWithTwoGenerics<,>), typeof(ServiceWithTwoGenericsInvalid<,>)),
+                };
+                foreach ((Type serviceType, Type implementationType) in invalidTestCases)
+                {
+                    ServiceDescriptor[] serviceDescriptors = new[]
+                    {
+                        new ServiceDescriptor(serviceType, implementationType, ServiceLifetime.Singleton)
+                    };
+
+                    Assert.Throws<ArgumentException>(() => new CallSiteFactory(serviceDescriptors));
+                }
+
+                (Type, Type)[] validTestCases = new[]
+                {
+                    (typeof(IFakeOpenGenericService<>), typeof(FakeOpenGenericService<>)),
+                    (typeof(IServiceWithPublicConstructors<>), typeof(ServiceWithPublicConstructors<>)),
+                    (typeof(IServiceWithTwoGenerics<,>), typeof(ServiceWithTwoGenericsValid<,>)),
+                    (typeof(IServiceWithMoreMemberTypes<>), typeof(ServiceWithLessMemberTypes<>)),
+                };
+                foreach ((Type serviceType, Type implementationType) in validTestCases)
+                {
+                    ServiceDescriptor[] serviceDescriptors = new[]
+                    {
+                        new ServiceDescriptor(serviceType, implementationType, ServiceLifetime.Singleton)
+                    };
+
+                    Assert.NotNull(new CallSiteFactory(serviceDescriptors));
+                }
+            }, options);
+        }
+
         private static Func<Type, ServiceCallSite> GetCallSiteFactory(params ServiceDescriptor[] descriptors)
         {
             var collection = new ServiceCollection();
@@ -762,5 +943,34 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
                 c => Enumerable.SequenceEqual(
                     c.GetParameters().Select(p => p.ParameterType),
                     parameterTypes));
+
+
+        private class Class1 { public Class1(Class2 c2) { } }
+        private class Class2 { public Class2(Class3 c3) { } }
+        private class Class3 { }
+        private class Class4 { public Class4(Class3 c3) { } }
+        private class Class5 { public Class5(Class2 c2) { } }
+
+        // Open generic
+        private class ClassA { public ClassA(ClassB cb) { } }
+        private class ClassB { public ClassB(ClassC<object> cc) { } }
+        private class ClassC<T> { }
+        private class ClassD { public ClassD(ClassC<string> cd) { } }
+        private class ClassE { public ClassE(ClassB cb) { } }
+
+        // Open generic with trimming annotations
+        private interface IServiceWithoutTrimmingAnnotations<T> { }
+        private class ServiceWithTrimmingAnnotations<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] T> : IServiceWithoutTrimmingAnnotations<T> { }
+
+        private interface IServiceWithPublicConstructors<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] T> { }
+        private class ServiceWithPublicProperties<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)] T>: IServiceWithPublicConstructors<T> { }
+        private class ServiceWithPublicConstructors<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] T>: IServiceWithPublicConstructors<T> { }
+
+        private interface IServiceWithTwoGenerics<T1, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] T2> { }
+        private class ServiceWithTwoGenericsInvalid<T1, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)] T2> : IServiceWithTwoGenerics<T1, T2> { }
+        private class ServiceWithTwoGenericsValid<T1, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] T2> : IServiceWithTwoGenerics<T1, T2> { }
+
+        private interface IServiceWithMoreMemberTypes<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.PublicProperties)] T> { }
+        private class ServiceWithLessMemberTypes<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)] T> : IServiceWithMoreMemberTypes<T> { }
     }
 }

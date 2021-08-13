@@ -710,12 +710,12 @@ namespace StaticTestGenerator
 
             if (literal is IntPtr ptr)
             {
-                return $"new IntPtr(0x{((long)ptr).ToString("X")})";
+                return $"new IntPtr(0x{(long)ptr:X})";
             }
 
             if (literal is UIntPtr uptr)
             {
-                return $"new UIntPtr(0x{((ulong)uptr).ToString("X")})";
+                return $"new UIntPtr(0x{(ulong)uptr:X})";
             }
 
             string? result = null;
@@ -732,34 +732,34 @@ namespace StaticTestGenerator
                         result = ((bool)literal).ToString().ToLowerInvariant();
                         break;
                     case TypeCode.Char:
-                        result = $"'\\u{((int)(char)literal).ToString("X4")}'";
+                        result = $"'\\u{(int)(char)literal:X4}'";
                         break;
                     case TypeCode.SByte:
-                        result = $"(sbyte)({literal.ToString()})";
+                        result = $"(sbyte)({literal})";
                         break;
                     case TypeCode.Byte:
-                        result = $"(byte){literal.ToString()}";
+                        result = $"(byte){literal}";
                         break;
                     case TypeCode.Int16:
-                        result = $"(short)({literal.ToString()})";
+                        result = $"(short)({literal})";
                         break;
                     case TypeCode.UInt16:
-                        result = $"(ushort){literal.ToString()}";
+                        result = $"(ushort){literal}";
                         break;
                     case TypeCode.Int32:
-                        result = $"({literal.ToString()})";
+                        result = $"({literal})";
                         break;
                     case TypeCode.UInt32:
-                        result = $"{literal.ToString()}U";
+                        result = $"{literal}U";
                         break;
                     case TypeCode.Int64:
-                        result = $"({literal.ToString()}L)";
+                        result = $"({literal}L)";
                         break;
                     case TypeCode.UInt64:
-                        result = $"{literal.ToString()}UL";
+                        result = $"{literal}UL";
                         break;
                     case TypeCode.Decimal:
-                        result = $"({literal.ToString()}M)";
+                        result = $"({literal}M)";
                         break;
                     case TypeCode.Single:
                         result =

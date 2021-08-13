@@ -429,9 +429,9 @@ public:
         m_TypeSpec = type;
 
         m_pbsBlob = new BinStr();
-        m_pbsBlob->appendInt16(VAL16(1));     // prolog 0x01 0x00
-        m_pbsBlob->appendInt32((int)action);  // 4-byte action
-        if(pbsPairs)                          // name-value pairs if any
+        m_pbsBlob->appendInt16(VAL16(1));           // prolog 0x01 0x00
+        m_pbsBlob->appendInt32(VAL32((int)action)); // 4-byte action
+        if(pbsPairs)                                // name-value pairs if any
         {
             if(pbsPairs->length() > 2)
                 m_pbsBlob->appendFrom(pbsPairs,2);
@@ -803,7 +803,6 @@ public:
     //MethodList  m_MethodList;
 
     BOOL    m_fDLL;
-    BOOL    m_fOBJ;
     BOOL    m_fEntryPointPresent;
     BOOL    m_fHaveFieldsWithRvas;
     BOOL    m_fFoldCode;
@@ -870,7 +869,6 @@ public:
     state_t CheckLocalTypeConsistancy(int instr, unsigned arg);
     state_t AddGlobalLabel(__in __nullterminated char *pszName, HCEESECTION section);
     void SetDLL(BOOL);
-    void SetOBJ(BOOL);
     void ResetForNextMethod();
     void ResetLineNumbers();
     void SetStdMapping(BOOL val = TRUE) { m_fStdMapping = val; };

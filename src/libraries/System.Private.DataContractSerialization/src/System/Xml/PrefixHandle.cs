@@ -16,7 +16,7 @@ namespace System.Xml
         Max,
     }
 
-    internal class PrefixHandle : IEquatable<PrefixHandle>
+    internal sealed class PrefixHandle : IEquatable<PrefixHandle>
     {
         private readonly XmlBufferReader _bufferReader;
         private PrefixHandleType _type;

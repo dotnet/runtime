@@ -46,7 +46,7 @@ namespace System
 
         public string? DynamicDirectory => null;
 
-        [Obsolete("AppDomain.SetDynamicBase has been deprecated. Please investigate the use of AppDomainSetup.DynamicBase instead. https://go.microsoft.com/fwlink/?linkid=14202")]
+        [Obsolete("AppDomain.SetDynamicBase has been deprecated and is not supported.")]
         public void SetDynamicBase(string? path) { }
 
         public string FriendlyName
@@ -92,6 +92,7 @@ namespace System
             return assemblyName;
         }
 
+        [Obsolete(Obsoletions.AppDomainCreateUnloadMessage, DiagnosticId = Obsoletions.AppDomainCreateUnloadDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public static AppDomain CreateDomain(string friendlyName)
         {
             if (friendlyName == null) throw new ArgumentNullException(nameof(friendlyName));
@@ -114,6 +115,7 @@ namespace System
         }
 
         [RequiresUnreferencedCode("Types and members the loaded assembly depends on might be removed")]
+        [Obsolete(Obsoletions.CodeAccessSecurityMessage, DiagnosticId = Obsoletions.CodeAccessSecurityDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public int ExecuteAssembly(string assemblyFile, string?[]? args, byte[]? hashValue, Configuration.Assemblies.AssemblyHashAlgorithm hashAlgorithm)
         {
             throw new PlatformNotSupportedException(SR.PlatformNotSupported_CAS); // This api is only meaningful for very specific partial trust/CAS scenarios
@@ -162,6 +164,7 @@ namespace System
         public override string ToString() =>
             SR.AppDomain_Name + FriendlyName + Environment.NewLineConst + SR.AppDomain_NoContextPolicies;
 
+        [Obsolete(Obsoletions.AppDomainCreateUnloadMessage, DiagnosticId = Obsoletions.AppDomainCreateUnloadDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public static void Unload(AppDomain domain)
         {
             if (domain == null)
@@ -208,27 +211,27 @@ namespace System
 
         public long MonitoringTotalAllocatedMemorySize => GC.GetTotalAllocatedBytes(precise: false);
 
-        [Obsolete("AppDomain.GetCurrentThreadId has been deprecated because it does not provide a stable Id when managed threads are running on fibers (aka lightweight threads). To get a stable identifier for a managed thread, use the ManagedThreadId property on Thread.  https://go.microsoft.com/fwlink/?linkid=14202", false)]
+        [Obsolete("AppDomain.GetCurrentThreadId has been deprecated because it does not provide a stable Id when managed threads are running on fibers (aka lightweight threads). To get a stable identifier for a managed thread, use the ManagedThreadId property on Thread instead.")]
         public static int GetCurrentThreadId() => Environment.CurrentManagedThreadId;
 
         public bool ShadowCopyFiles => false;
 
-        [Obsolete("AppDomain.AppendPrivatePath has been deprecated. Please investigate the use of AppDomainSetup.PrivateBinPath instead. https://go.microsoft.com/fwlink/?linkid=14202")]
+        [Obsolete("AppDomain.AppendPrivatePath has been deprecated and is not supported.")]
         public void AppendPrivatePath(string? path) { }
 
-        [Obsolete("AppDomain.ClearPrivatePath has been deprecated. Please investigate the use of AppDomainSetup.PrivateBinPath instead. https://go.microsoft.com/fwlink/?linkid=14202")]
+        [Obsolete("AppDomain.ClearPrivatePath has been deprecated and is not supported.")]
         public void ClearPrivatePath() { }
 
-        [Obsolete("AppDomain.ClearShadowCopyPath has been deprecated. Please investigate the use of AppDomainSetup.ShadowCopyDirectories instead. https://go.microsoft.com/fwlink/?linkid=14202")]
+        [Obsolete("AppDomain.ClearShadowCopyPath has been deprecated and is not supported.")]
         public void ClearShadowCopyPath() { }
 
-        [Obsolete("AppDomain.SetCachePath has been deprecated. Please investigate the use of AppDomainSetup.CachePath instead. https://go.microsoft.com/fwlink/?linkid=14202")]
+        [Obsolete("AppDomain.SetCachePath has been deprecated and is not supported.")]
         public void SetCachePath(string? path) { }
 
-        [Obsolete("AppDomain.SetShadowCopyFiles has been deprecated. Please investigate the use of AppDomainSetup.ShadowCopyFiles instead. https://go.microsoft.com/fwlink/?linkid=14202")]
+        [Obsolete("AppDomain.SetShadowCopyFiles has been deprecated and is not supported.")]
         public void SetShadowCopyFiles() { }
 
-        [Obsolete("AppDomain.SetShadowCopyPath has been deprecated. Please investigate the use of AppDomainSetup.ShadowCopyDirectories instead. https://go.microsoft.com/fwlink/?linkid=14202")]
+        [Obsolete("AppDomain.SetShadowCopyPath has been deprecated and is not supported.")]
         public void SetShadowCopyPath(string? path) { }
 
         public Assembly[] GetAssemblies() => AssemblyLoadContext.GetLoadedAssemblies();
@@ -399,11 +402,6 @@ namespace System
             return oh?.Unwrap();
         }
 
-        // TODO: Remove these DynamicDependencyAttributes when https://github.com/mono/linker/issues/943 is fixed.
-        [DynamicDependency("GetDefaultInstance", "System.Security.Principal.GenericPrincipal", "System.Security.Claims")]
-#if TARGET_WINDOWS
-        [DynamicDependency("GetDefaultInstance", "System.Security.Principal.WindowsPrincipal", "System.Security.Principal.Windows")]
-#endif
         internal IPrincipal? GetThreadPrincipal()
         {
             IPrincipal? principal = _defaultPrincipal;

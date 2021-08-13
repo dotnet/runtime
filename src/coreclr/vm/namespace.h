@@ -4,7 +4,7 @@
 // This file defines namespaces used by the runtime.
 //
 // Note: This file gets parsed by the Mono IL Linker (https://github.com/mono/linker/) which may throw an exception during parsing.
-// Specifically, this (https://github.com/mono/linker/blob/master/corebuild/integration/ILLink.Tasks/CreateRuntimeRootDescriptorFile.cs) will try to
+// Specifically, this (https://github.com/mono/linker/blob/main/corebuild/integration/ILLink.Tasks/CreateRuntimeRootDescriptorFile.cs) will try to
 // parse this header, and it may throw an exception while doing that. If you edit this file and get a build failure on msbuild.exe D:\repos\coreclr\build.proj
 // you might want to check out the parser linked above.
 //
@@ -32,7 +32,7 @@
 #define g_ReflectionEmitNS  g_ReflectionNS ".Emit"
 
 #define g_InteropNS         g_RuntimeNS ".InteropServices"
-#define g_InteropTCENS      g_InteropNS ".TCEAdapterGen"
+#define g_ObjectiveCNS      g_InteropNS ".ObjectiveC"
 
 #define g_IntrinsicsNS g_RuntimeNS ".Intrinsics"
 #define g_NumericsNS   g_SystemNS  ".Numerics"

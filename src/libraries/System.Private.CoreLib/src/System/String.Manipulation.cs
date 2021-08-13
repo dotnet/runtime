@@ -6,6 +6,8 @@ using System.Diagnostics;
 using System.Globalization;
 using System.Numerics;
 using System.Runtime.InteropServices;
+using System.Runtime.Intrinsics;
+using System.Runtime.Intrinsics.X86;
 using System.Text;
 using Internal.Runtime.CompilerServices;
 
@@ -578,9 +580,9 @@ namespace System
 
         public static string Join(string? separator, IEnumerable<string?> values)
         {
-            if (values is List<string?> valuesIList)
+            if (values is List<string?> valuesList)
             {
-                return JoinCore(separator.AsSpan(), CollectionsMarshal.AsSpan(valuesIList));
+                return JoinCore(separator.AsSpan(), CollectionsMarshal.AsSpan(valuesList));
             }
 
             if (values is string?[] valuesArray)
@@ -674,6 +676,19 @@ namespace System
 
         private static string JoinCore<T>(ReadOnlySpan<char> separator, IEnumerable<T> values)
         {
+            if (typeof(T) == typeof(string))
+            {
+                if (values is List<string?> valuesList)
+                {
+                    return JoinCore(separator, CollectionsMarshal.AsSpan(valuesList));
+                }
+
+                if (values is string?[] valuesArray)
+                {
+                    return JoinCore(separator, new ReadOnlySpan<string?>(valuesArray));
+                }
+            }
+
             if (values == null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.values);
@@ -874,11 +889,8 @@ namespace System
         // a remove that just takes a startindex.
         public string Remove(int startIndex)
         {
-            if (startIndex < 0)
-                throw new ArgumentOutOfRangeException(nameof(startIndex), SR.ArgumentOutOfRange_StartIndex);
-
-            if (startIndex >= Length)
-                throw new ArgumentOutOfRangeException(nameof(startIndex), SR.ArgumentOutOfRange_StartIndexLessThanLength);
+            if ((uint)startIndex > Length)
+                throw new ArgumentOutOfRangeException(nameof(startIndex), startIndex < 0 ? SR.ArgumentOutOfRange_StartIndex : SR.ArgumentOutOfRange_StartIndexLargerThanLength);
 
             return Substring(0, startIndex);
         }
@@ -1142,7 +1154,7 @@ namespace System
                 thisIdx = replacementIdx + oldValueLength;
 
                 // Copy over newValue to replace the oldValue.
-                newValue.AsSpan().CopyTo(dstSpan.Slice(dstIdx));
+                newValue.CopyTo(dstSpan.Slice(dstIdx));
                 dstIdx += newValue.Length;
             }
 
@@ -1151,6 +1163,139 @@ namespace System
             this.AsSpan(thisIdx).CopyTo(dstSpan.Slice(dstIdx));
 
             return dst;
+        }
+
+        /// <summary>
+        /// Replaces all newline sequences in the current string with <see cref="Environment.NewLine"/>.
+        /// </summary>
+        /// <returns>
+        /// A string whose contents match the current string, but with all newline sequences replaced
+        /// with <see cref="Environment.NewLine"/>.
+        /// </returns>
+        /// <remarks>
+        /// This method searches for all newline sequences within the string and canonicalizes them to match
+        /// the newline sequence for the current environment. For example, when running on Windows, all
+        /// occurrences of non-Windows newline sequences will be replaced with the sequence CRLF. When
+        /// running on Unix, all occurrences of non-Unix newline sequences will be replaced with
+        /// a single LF character.
+        ///
+        /// It is not recommended that protocol parsers utilize this API. Protocol specifications often
+        /// mandate specific newline sequences. For example, HTTP/1.1 (RFC 8615) mandates that the request
+        /// line, status line, and headers lines end with CRLF. Since this API operates over a wide range
+        /// of newline sequences, a protocol parser utilizing this API could exhibit behaviors unintended
+        /// by the protocol's authors.
+        ///
+        /// This overload is equivalent to calling <see cref="ReplaceLineEndings(string)"/>, passing
+        /// <see cref="Environment.NewLine"/> as the <em>replacementText</em> parameter.
+        ///
+        /// This method is guaranteed O(n) complexity, where <em>n</em> is the length of the input string.
+        /// </remarks>
+        public string ReplaceLineEndings() => ReplaceLineEndings(Environment.NewLineConst);
+
+        /// <summary>
+        /// Replaces all newline sequences in the current string with <paramref name="replacementText"/>.
+        /// </summary>
+        /// <returns>
+        /// A string whose contents match the current string, but with all newline sequences replaced
+        /// with <paramref name="replacementText"/>.
+        /// </returns>
+        /// <remarks>
+        /// This method searches for all newline sequences within the string and canonicalizes them to the
+        /// newline sequence provided by <paramref name="replacementText"/>. If <paramref name="replacementText"/>
+        /// is <see cref="string.Empty"/>, all newline sequences within the string will be removed.
+        ///
+        /// It is not recommended that protocol parsers utilize this API. Protocol specifications often
+        /// mandate specific newline sequences. For example, HTTP/1.1 (RFC 8615) mandates that the request
+        /// line, status line, and headers lines end with CRLF. Since this API operates over a wide range
+        /// of newline sequences, a protocol parser utilizing this API could exhibit behaviors unintended
+        /// by the protocol's authors.
+        ///
+        /// The list of recognized newline sequences is CR (U+000D), LF (U+000A), CRLF (U+000D U+000A),
+        /// NEL (U+0085), LS (U+2028), FF (U+000C), and PS (U+2029). This list is given by the Unicode
+        /// Standard, Sec. 5.8, Recommendation R4 and Table 5-2.
+        ///
+        /// This method is guaranteed O(n * r) complexity, where <em>n</em> is the length of the input string,
+        /// and where <em>r</em> is the length of <paramref name="replacementText"/>.
+        /// </remarks>
+        public string ReplaceLineEndings(string replacementText)
+        {
+            if (replacementText is null)
+            {
+                throw new ArgumentNullException(nameof(replacementText));
+            }
+
+            // Early-exit: do we need to do anything at all?
+            // If not, return this string as-is.
+
+            int idxOfFirstNewlineChar = IndexOfNewlineChar(this, out int stride);
+            if (idxOfFirstNewlineChar < 0)
+            {
+                return this;
+            }
+
+            // While writing to the builder, we don't bother memcpying the first
+            // or the last segment into the builder. We'll use the builder only
+            // for the intermediate segments, then we'll sandwich everything together
+            // with one final string.Concat call.
+
+            ReadOnlySpan<char> firstSegment = this.AsSpan(0, idxOfFirstNewlineChar);
+            ReadOnlySpan<char> remaining = this.AsSpan(idxOfFirstNewlineChar + stride);
+
+            ValueStringBuilder builder = new ValueStringBuilder(stackalloc char[256]);
+            while (true)
+            {
+                int idx = IndexOfNewlineChar(remaining, out stride);
+                if (idx < 0) { break; } // no more newline chars
+                builder.Append(replacementText);
+                builder.Append(remaining.Slice(0, idx));
+                remaining = remaining.Slice(idx + stride);
+            }
+
+            string retVal = Concat(firstSegment, builder.AsSpan(), replacementText, remaining);
+            builder.Dispose();
+            return retVal;
+        }
+
+        // Scans the input text, returning the index of the first newline char.
+        // Newline chars are given by the Unicode Standard, Sec. 5.8.
+        internal static int IndexOfNewlineChar(ReadOnlySpan<char> text, out int stride)
+        {
+            // !! IMPORTANT !!
+            //
+            // We expect this method may be called with untrusted input, which means we need to
+            // bound the worst-case runtime of this method. We rely on MemoryExtensions.IndexOfAny
+            // having worst-case runtime O(i), where i is the index of the first needle match within
+            // the haystack; or O(n) if no needle is found. This ensures that in the common case
+            // of this method being called within a loop, the worst-case runtime is O(n) rather than
+            // O(n^2), where n is the length of the input text.
+            //
+            // The Unicode Standard, Sec. 5.8, Recommendation R4 and Table 5-2 state that the CR, LF,
+            // CRLF, NEL, LS, FF, and PS sequences are considered newline functions. That section
+            // also specifically excludes VT from the list of newline functions, so we do not include
+            // it in the needle list.
+
+            const string needles = "\r\n\f\u0085\u2028\u2029";
+
+            stride = default;
+            int idx = text.IndexOfAny(needles);
+            if ((uint)idx < (uint)text.Length)
+            {
+                stride = 1; // needle found
+
+                // Did we match CR? If so, and if it's followed by LF, then we need
+                // to consume both chars as a single newline function match.
+
+                if (text[idx] == '\r')
+                {
+                    int nextCharIdx = idx + 1;
+                    if ((uint)nextCharIdx < (uint)text.Length && text[nextCharIdx] == '\n')
+                    {
+                        stride = 2;
+                    }
+                }
+            }
+
+            return idx;
         }
 
         public string[] Split(char separator, StringSplitOptions options = StringSplitOptions.None)
@@ -1494,78 +1639,137 @@ namespace System
         /// <param name="sepListBuilder"><see cref="ValueListBuilder{T}"/> to store indexes</param>
         private void MakeSeparatorList(ReadOnlySpan<char> separators, ref ValueListBuilder<int> sepListBuilder)
         {
-            char sep0, sep1, sep2;
-
-            switch (separators.Length)
+            // Special-case no separators to mean any whitespace is a separator.
+            if (separators.Length == 0)
             {
-                // Special-case no separators to mean any whitespace is a separator.
-                case 0:
-                    for (int i = 0; i < Length; i++)
+                for (int i = 0; i < Length; i++)
+                {
+                    if (char.IsWhiteSpace(this[i]))
                     {
-                        if (char.IsWhiteSpace(this[i]))
-                        {
-                            sepListBuilder.Append(i);
-                        }
+                        sepListBuilder.Append(i);
                     }
-                    break;
+                }
+            }
 
-                // Special-case the common cases of 1, 2, and 3 separators, with manual comparisons against each separator.
-                case 1:
-                    sep0 = separators[0];
-                    for (int i = 0; i < Length; i++)
+            // Special-case the common cases of 1, 2, and 3 separators, with manual comparisons against each separator.
+            else if (separators.Length <= 3)
+            {
+                char sep0, sep1, sep2;
+                sep0 = separators[0];
+                sep1 = separators.Length > 1 ? separators[1] : sep0;
+                sep2 = separators.Length > 2 ? separators[2] : sep1;
+
+                if (Length >= 16 && Sse41.IsSupported)
+                {
+                    MakeSeparatorListVectorized(ref sepListBuilder, sep0, sep1, sep2);
+                    return;
+                }
+
+                for (int i = 0; i < Length; i++)
+                {
+                    char c = this[i];
+                    if (c == sep0 || c == sep1 || c == sep2)
                     {
-                        if (this[i] == sep0)
-                        {
-                            sepListBuilder.Append(i);
-                        }
+                        sepListBuilder.Append(i);
                     }
-                    break;
-                case 2:
-                    sep0 = separators[0];
-                    sep1 = separators[1];
+                }
+            }
+
+            // Handle > 3 separators with a probabilistic map, ala IndexOfAny.
+            // This optimizes for chars being unlikely to match a separator.
+            else
+            {
+                unsafe
+                {
+                    ProbabilisticMap map = default;
+                    uint* charMap = (uint*)&map;
+                    InitializeProbabilisticMap(charMap, separators);
+
                     for (int i = 0; i < Length; i++)
                     {
                         char c = this[i];
-                        if (c == sep0 || c == sep1)
+                        if (IsCharBitSet(charMap, (byte)c) && IsCharBitSet(charMap, (byte)(c >> 8)) &&
+                            separators.Contains(c))
                         {
                             sepListBuilder.Append(i);
                         }
                     }
-                    break;
-                case 3:
-                    sep0 = separators[0];
-                    sep1 = separators[1];
-                    sep2 = separators[2];
-                    for (int i = 0; i < Length; i++)
-                    {
-                        char c = this[i];
-                        if (c == sep0 || c == sep1 || c == sep2)
-                        {
-                            sepListBuilder.Append(i);
-                        }
-                    }
-                    break;
+                }
+            }
+        }
 
-                // Handle > 3 separators with a probabilistic map, ala IndexOfAny.
-                // This optimizes for chars being unlikely to match a separator.
-                default:
-                    unsafe
-                    {
-                        ProbabilisticMap map = default;
-                        uint* charMap = (uint*)&map;
-                        InitializeProbabilisticMap(charMap, separators);
+        private void MakeSeparatorListVectorized(ref ValueListBuilder<int> sepListBuilder, char c, char c2, char c3)
+        {
+            // Redundant test so we won't prejit remainder of this method
+            // on platforms without SSE.
+            if (!Sse41.IsSupported)
+            {
+                throw new PlatformNotSupportedException();
+            }
 
-                        for (int i = 0; i < Length; i++)
-                        {
-                            char c = this[i];
-                            if (IsCharBitSet(charMap, (byte)c) && IsCharBitSet(charMap, (byte)(c >> 8)) &&
-                                separators.Contains(c))
-                            {
-                                sepListBuilder.Append(i);
-                            }
-                        }
+            // Constant that allows for the truncation of 16-bit (FFFF/0000) values within a register to 4-bit (F/0)
+            Vector128<byte> shuffleConstant = Vector128.Create(0x00, 0x02, 0x04, 0x06, 0x08, 0x0A, 0x0C, 0x0E, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF);
+
+            Vector128<ushort> v1 = Vector128.Create(c);
+            Vector128<ushort> v2 = Vector128.Create(c2);
+            Vector128<ushort> v3 = Vector128.Create(c3);
+
+            ref char c0 = ref MemoryMarshal.GetReference(this.AsSpan());
+            int cond = Length & -Vector128<ushort>.Count;
+            int i = 0;
+
+            for (; i < cond; i += Vector128<ushort>.Count)
+            {
+                Vector128<ushort> charVector = ReadVector(ref c0, i);
+                Vector128<ushort> cmp = Sse2.CompareEqual(charVector, v1);
+
+                cmp = Sse2.Or(Sse2.CompareEqual(charVector, v2), cmp);
+                cmp = Sse2.Or(Sse2.CompareEqual(charVector, v3), cmp);
+
+                if (Sse41.TestZ(cmp, cmp)) { continue; }
+
+                Vector128<byte> mask = Sse2.ShiftRightLogical(cmp.AsUInt64(), 4).AsByte();
+                mask = Ssse3.Shuffle(mask, shuffleConstant);
+
+                uint lowBits = Sse2.ConvertToUInt32(mask.AsUInt32());
+                mask = Sse2.ShiftRightLogical(mask.AsUInt64(), 32).AsByte();
+                uint highBits = Sse2.ConvertToUInt32(mask.AsUInt32());
+
+                for (int idx = i; lowBits != 0; idx++)
+                {
+                    if ((lowBits & 0xF) != 0)
+                    {
+                        sepListBuilder.Append(idx);
                     }
-                    break;
+
+                    lowBits >>= 8;
+                }
+
+                for (int idx = i + 4; highBits != 0; idx++)
+                {
+                    if ((highBits & 0xF) != 0)
+                    {
+                        sepListBuilder.Append(idx);
+                    }
+
+                    highBits >>= 8;
+                }
+            }
+
+            for (; i < Length; i++)
+            {
+                char curr = Unsafe.Add(ref c0, (IntPtr)(uint)i);
+                if (curr == c || curr == c2 || curr == c3)
+                {
+                    sepListBuilder.Append(i);
+                }
+            }
+
+            static Vector128<ushort> ReadVector(ref char c0, int offset)
+            {
+                ref char ci = ref Unsafe.Add(ref c0, (IntPtr)(uint)offset);
+                ref byte b = ref Unsafe.As<char, byte>(ref ci);
+                return Unsafe.ReadUnaligned<Vector128<ushort>>(ref b);
             }
         }
 
@@ -1689,7 +1893,7 @@ namespace System
             Buffer.Memmove(
                 elementCount: (uint)result.Length, // derefing Length now allows JIT to prove 'result' not null below
                 destination: ref result._firstChar,
-                source: ref Unsafe.Add(ref _firstChar, startIndex));
+                source: ref Unsafe.Add(ref _firstChar, (nint)(uint)startIndex /* force zero-extension */));
 
             return result;
         }

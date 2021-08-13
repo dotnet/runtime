@@ -23,7 +23,7 @@ namespace
     // This function is an API exported to the runtime via the BUNDLE_PROBE property.
     // This function used by the runtime to probe for bundled assemblies
     // This function assumes that the currently executing app is a single-file bundle.
-    bool STDMETHODCALLTYPE bundle_probe(const char* path, int64_t* offset, int64_t* size)
+    bool STDMETHODCALLTYPE bundle_probe(const char* path, int64_t* offset, int64_t* size, int64_t* compressedSize)
     {
         if (path == nullptr)
         {
@@ -40,7 +40,7 @@ namespace
             return false;
         }
 
-        return bundle::runner_t::app()->probe(file_path, offset, size);
+        return bundle::runner_t::app()->probe(file_path, offset, size, compressedSize);
     }
 
 #if defined(NATIVE_LIBS_EMBEDDED)

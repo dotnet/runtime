@@ -5,13 +5,9 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Net.WebSockets;
 using System.Reflection;
-using System.Text;
-using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
-using Microsoft.Extensions.Logging;
 using Microsoft.WebAssembly.Diagnostics;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
@@ -57,6 +53,7 @@ namespace DebuggerTests
             "/Applications/Microsoft Edge.app/Contents/MacOS/Microsoft Edge",
             "/Applications/Google Chrome Canary.app/Contents/MacOS/Google Chrome Canary",
             "/usr/bin/chromium",
+            "C:/Program Files/Google/Chrome/Application/chrome.exe",
             "/usr/bin/chromium-browser",
         };
         static string chrome_path;
@@ -80,6 +77,10 @@ namespace DebuggerTests
 
         public DebuggerTestBase(string driver = "debugger-driver.html")
         {
+            // the debugger is working in locale of the debugged application. For example Datetime.ToString()
+            // we want the test to mach it. We are also starting chrome with --lang=en-US
+            System.Globalization.CultureInfo.CurrentCulture = new System.Globalization.CultureInfo("en-US");
+
             insp = new Inspector();
             cli = insp.Client;
             scripts = SubscribeToScripts(insp);
@@ -89,19 +90,19 @@ namespace DebuggerTests
 
         public virtual async Task InitializeAsync()
         {
-           Func<InspectorClient, CancellationToken, List<(string, Task<Result>)>> fn = (client, token) =>
-            {
-                Func<string, (string, Task<Result>)> getInitCmdFn = (cmd) => (cmd, client.SendCommand(cmd, null, token));
-                var init_cmds = new List<(string, Task<Result>)>
-                {
+            Func<InspectorClient, CancellationToken, List<(string, Task<Result>)>> fn = (client, token) =>
+             {
+                 Func<string, (string, Task<Result>)> getInitCmdFn = (cmd) => (cmd, client.SendCommand(cmd, null, token));
+                 var init_cmds = new List<(string, Task<Result>)>
+                 {
                     getInitCmdFn("Profiler.enable"),
                     getInitCmdFn("Runtime.enable"),
                     getInitCmdFn("Debugger.enable"),
                     getInitCmdFn("Runtime.runIfWaitingForDebugger")
-                };
+                 };
 
-                return init_cmds;
-            };
+                 return init_cmds;
+             };
 
             await Ready();
             await insp.OpenSessionAsync(fn);
@@ -131,6 +132,9 @@ namespace DebuggerTests
                 }
                 else if (!String.IsNullOrEmpty(url))
                 {
+                    var dbgUrl = args["url"]?.Value<string>();
+                    var arrStr = dbgUrl.Split("/");
+                    dicScriptsIdToUrl[script_id] = arrStr[arrStr.Length - 1];
                     dicFileToUrl[new Uri(url).AbsolutePath] = url;
                 }
                 await Task.FromResult(0);
@@ -150,9 +154,9 @@ namespace DebuggerTests
                 function_name,
                 wait_for_event_fn: async (pause_location) =>
                {
-                       //make sure we're on the right bp
+                   //make sure we're on the right bp
 
-                       Assert.Equal(bp.Value["breakpointId"]?.ToString(), pause_location["hitBreakpoints"]?[0]?.Value<string>());
+                   Assert.Equal(bp.Value["breakpointId"]?.ToString(), pause_location["hitBreakpoints"]?[0]?.Value<string>());
 
                    var top_frame = pause_location!["callFrames"]?[0];
 
@@ -232,6 +236,20 @@ namespace DebuggerTests
             Assert.True(false, $"Could not find variable '{name}'");
         }
 
+        internal void CheckNumberAsString(JToken locals, string name, string value)
+        {
+            foreach (var l in locals)
+            {
+                if (name != l["name"]?.Value<string>())
+                    continue;
+                var val = l["value"];
+                Assert.Equal("number", val["type"]?.Value<string>());
+                Assert.Equal(value, val["value"].ToString());
+                return;
+            }
+            Assert.True(false, $"Could not find variable '{name}'");
+        }
+
         internal void CheckString(JToken locals, string name, string value)
         {
             var l = GetAndAssertObjectWithName(locals, name);
@@ -245,11 +263,18 @@ namespace DebuggerTests
             return l;
         }
 
-        internal JToken CheckObject(JToken locals, string name, string class_name, string subtype = null, bool is_null = false)
+        internal JToken Check(JToken locals, string name, JObject expected)
+        {
+            var l = GetAndAssertObjectWithName(locals, name);
+            CheckValue(l["value"], expected, name).Wait();
+            return l;
+        }
+
+        internal JToken CheckObject(JToken locals, string name, string class_name, string subtype = null, bool is_null = false, string description = null)
         {
             var l = GetAndAssertObjectWithName(locals, name);
             var val = l["value"];
-            CheckValue(val, TObject(class_name, is_null: is_null), name).Wait();
+            CheckValue(val, TObject(class_name, is_null: is_null, description: description), name).Wait();
             Assert.True(val["isValueType"] == null || !val["isValueType"].Value<bool>());
 
             return l;
@@ -313,10 +338,10 @@ namespace DebuggerTests
             Assert.Equal(value, val);
         }
 
-        internal JToken CheckValueType(JToken locals, string name, string class_name)
+        internal JToken CheckValueType(JToken locals, string name, string class_name, string description=null)
         {
             var l = GetAndAssertObjectWithName(locals, name);
-            CheckValue(l["value"], TValueType(class_name), name).Wait();
+            CheckValue(l["value"], TValueType(class_name, description: description), name).Wait();
             return l;
         }
 
@@ -390,6 +415,21 @@ namespace DebuggerTests
             return res;
         }
 
+        internal async Task<Result> SetValueOnObject(JToken obj, string property, string newvalue, string fn = "function(a, b) { this[a] = b; }", bool expect_ok = true)
+        {
+            var req = JObject.FromObject(new
+            {
+                functionDeclaration = fn,
+                objectId = obj["value"]?["objectId"]?.Value<string>(),
+                arguments = new[] { new { value = property }, new { value = newvalue } },
+                silent = true
+            });
+            var res = await cli.SendCommand("Runtime.callFunctionOn", req, token);
+            Assert.True(expect_ok == res.IsOk, $"SetValueOnObject failed for {req} with {res}");
+
+            return res;
+        }
+
         internal async Task<JObject> StepAndCheck(StepKind kind, string script_loc, int line, int column, string function_name,
             Func<JObject, Task> wait_for_event_fn = null, Action<JToken> locals_fn = null, int times = 1)
         {
@@ -430,7 +470,6 @@ namespace DebuggerTests
                 AssertEqual(function_name, wait_res["callFrames"]?[0]?["functionName"]?.Value<string>(), top_frame?.ToString());
             }
 
-            Console.WriteLine(top_frame);
             if (script_loc != null && line >= 0)
                 CheckLocation(script_loc, line, column, scripts, top_frame["location"]);
 
@@ -440,7 +479,14 @@ namespace DebuggerTests
             if (locals_fn != null)
             {
                 var locals = await GetProperties(wait_res["callFrames"][0]["callFrameId"].Value<string>());
-                locals_fn(locals);
+                try
+                {
+                    locals_fn(locals);
+                }
+                catch (System.AggregateException ex)
+                {
+                    throw new AggregateException(ex.Message + " \n" + locals.ToString(), ex);
+                }
             }
 
             return wait_res;
@@ -660,7 +706,6 @@ namespace DebuggerTests
 
                     var exp_val_str = jp.Value.Value<string>();
                     bool null_or_empty_exp_val = String.IsNullOrEmpty(exp_val_str);
-
                     var actual_field_val = actual_val?.Values<JProperty>()?.FirstOrDefault(a_jp => a_jp.Name == jp.Name);
                     var actual_field_val_str = actual_field_val?.Value?.Value<string>();
                     if (null_or_empty_exp_val && String.IsNullOrEmpty(actual_field_val_str))
@@ -670,9 +715,9 @@ namespace DebuggerTests
                     AssertEqual(exp_val_str, actual_field_val_str, $"[{label}] Value for json property named {jp.Name} didn't match.");
                 }
             }
-            catch
+            catch (Exception ex)
             {
-                Console.WriteLine($"Expected: {exp_val}. Actual: {actual_val}");
+                Console.WriteLine($"{ex.Message} \nExpected: {exp_val} \nActual: {actual_val}");
                 throw;
             }
         }
@@ -791,6 +836,16 @@ namespace DebuggerTests
             return (null, res);
         }
 
+        internal async Task<(JToken, Result)> SetVariableValueOnCallFrame(JObject parms, bool expect_ok = true)
+        {
+            var res = await cli.SendCommand("Debugger.setVariableValue", parms, token);
+            AssertEqual(expect_ok, res.IsOk, $"Debugger.setVariableValue ('{parms}') returned {res.IsOk} instead of {expect_ok}, with Result: {res}");
+            if (res.IsOk)
+                return (res.Value["result"], res);
+
+            return (null, res);
+        }
+
         internal async Task<Result> RemoveBreakpoint(string id, bool expect_ok = true)
         {
             var remove_bp = JObject.FromObject(new
@@ -804,11 +859,11 @@ namespace DebuggerTests
             return res;
         }
 
-        internal async Task<Result> SetBreakpoint(string url_key, int line, int column, bool expect_ok = true, bool use_regex = false)
+        internal async Task<Result> SetBreakpoint(string url_key, int line, int column, bool expect_ok = true, bool use_regex = false, string condition = "")
         {
             var bp1_req = !use_regex ?
-                JObject.FromObject(new { lineNumber = line, columnNumber = column, url = dicFileToUrl[url_key], }) :
-                JObject.FromObject(new { lineNumber = line, columnNumber = column, urlRegex = url_key, });
+                JObject.FromObject(new { lineNumber = line, columnNumber = column, url = dicFileToUrl[url_key], condition }) :
+                JObject.FromObject(new { lineNumber = line, columnNumber = column, urlRegex = url_key, condition });
 
             var bp1_res = await cli.SendCommand("Debugger.setBreakpointByUrl", bp1_req, token);
             Assert.True(expect_ok ? bp1_res.IsOk : bp1_res.IsErr);
@@ -822,7 +877,7 @@ namespace DebuggerTests
             return exc_res;
         }
 
-        internal async Task<Result> SetBreakpointInMethod(string assembly, string type, string method, int lineOffset = 0, int col = 0)
+        internal async Task<Result> SetBreakpointInMethod(string assembly, string type, string method, int lineOffset = 0, int col = 0, string condition = "")
         {
             var req = JObject.FromObject(new { assemblyName = assembly, typeName = type, methodName = method, lineOffset = lineOffset });
 
@@ -837,13 +892,31 @@ namespace DebuggerTests
             {
                 lineNumber = m_line + lineOffset,
                 columnNumber = col,
-                url = m_url
+                url = m_url,
+                condition
             });
 
             res = await cli.SendCommand("Debugger.setBreakpointByUrl", bp1_req, token);
             Assert.True(res.IsOk);
 
             return res;
+        }
+
+        internal async Task EvaluateOnCallFrameAndCheck(string call_frame_id, params (string expression, JObject expected)[] args)
+        {
+            foreach (var arg in args)
+            {
+                var (eval_val, _) = await EvaluateOnCallFrame(call_frame_id, arg.expression);
+                try
+                {
+                    await CheckValue(eval_val, arg.expected, arg.expression);
+                }
+                catch
+                {
+                    Console.WriteLine($"CheckValue failed for {arg.expression}. Expected: {arg.expected}, vs {eval_val}");
+                    throw;
+                }
+            }
         }
 
         internal void AssertEqual(object expected, object actual, string label)
@@ -887,6 +960,9 @@ namespace DebuggerTests
         internal static JObject TNumber(uint value) =>
             JObject.FromObject(new { type = "number", value = @value.ToString(), description = value.ToString() });
 
+        internal static JObject TNumber(string value) =>
+            JObject.FromObject(new { type = "number", value = @value.ToString(), description = value });
+
         internal static JObject TValueType(string className, string description = null, object members = null) =>
             JObject.FromObject(new { type = "object", isValueType = true, className = className, description = description ?? className });
 
@@ -928,6 +1004,108 @@ namespace DebuggerTests
             __custom_type = "datetime",
             binary = dt.ToBinary()
         });
+
+        internal async Task LoadAssemblyDynamically(string asm_file, string pdb_file)
+        {
+            // Simulate loading an assembly into the framework
+            byte[] bytes = File.ReadAllBytes(asm_file);
+            string asm_base64 = Convert.ToBase64String(bytes);
+
+            string pdb_base64 = null;
+            if (pdb_file != null)
+            {
+                bytes = File.ReadAllBytes(pdb_file);
+                pdb_base64 = Convert.ToBase64String(bytes);
+            }
+
+            var load_assemblies = JObject.FromObject(new
+            {
+                expression = $"{{ let asm_b64 = '{asm_base64}'; let pdb_b64 = '{pdb_base64}'; invoke_static_method('[debugger-test] LoadDebuggerTest:LoadLazyAssembly', asm_b64, pdb_b64); }}"
+            });
+
+            Result load_assemblies_res = await cli.SendCommand("Runtime.evaluate", load_assemblies, token);
+            Assert.True(load_assemblies_res.IsOk);
+        }
+
+        internal async Task<JObject> LoadAssemblyDynamicallyALCAndRunMethod(string asm_file, string pdb_file, string type_name, string method_name)
+        {
+            // Simulate loading an assembly into the framework
+            byte[] bytes = File.ReadAllBytes(asm_file);
+            string asm_base64 = Convert.ToBase64String(bytes);
+
+            string pdb_base64 = null;
+            if (pdb_file != null)
+            {
+                bytes = File.ReadAllBytes(pdb_file);
+                pdb_base64 = Convert.ToBase64String(bytes);
+            }
+
+            var load_assemblies = JObject.FromObject(new
+            {
+                expression = $"{{ let asm_b64 = '{asm_base64}'; let pdb_b64 = '{pdb_base64}'; invoke_static_method('[debugger-test] LoadDebuggerTestALC:LoadLazyAssemblyInALC', asm_b64, pdb_b64); }}"
+            });
+
+            Result load_assemblies_res = await cli.SendCommand("Runtime.evaluate", load_assemblies, token);
+
+            Assert.True(load_assemblies_res.IsOk);
+            Thread.Sleep(1000);
+            var run_method = JObject.FromObject(new
+            {
+                expression = "window.setTimeout(function() { invoke_static_method('[debugger-test] LoadDebuggerTestALC:RunMethodInALC', '" + type_name + "',  '" + method_name + "'); }, 1);"
+            });
+
+            await cli.SendCommand("Runtime.evaluate", run_method, token);
+            return await insp.WaitFor(Inspector.PAUSE);
+        }
+
+        internal async Task<JObject> LoadAssemblyAndTestHotReload(string asm_file, string pdb_file, string asm_file_hot_reload, string class_name, string method_name)
+        {
+            // Simulate loading an assembly into the framework
+            byte[] bytes = File.ReadAllBytes(asm_file);
+            string asm_base64 = Convert.ToBase64String(bytes);
+            bytes = File.ReadAllBytes(pdb_file);
+            string pdb_base64 = Convert.ToBase64String(bytes);
+
+            bytes = File.ReadAllBytes($"{asm_file_hot_reload}.1.dmeta");
+            string dmeta1 = Convert.ToBase64String(bytes);
+
+            bytes = File.ReadAllBytes($"{asm_file_hot_reload}.1.dil");
+            string dil1 = Convert.ToBase64String(bytes);
+
+            bytes = File.ReadAllBytes($"{asm_file_hot_reload}.1.dpdb");
+            string dpdb1 = Convert.ToBase64String(bytes);
+
+
+            bytes = File.ReadAllBytes($"{asm_file_hot_reload}.2.dmeta");
+            string dmeta2 = Convert.ToBase64String(bytes);
+
+            bytes = File.ReadAllBytes($"{asm_file_hot_reload}.2.dil");
+            string dil2 = Convert.ToBase64String(bytes);
+
+            bytes = File.ReadAllBytes($"{asm_file_hot_reload}.2.dpdb");
+            string dpdb2 = Convert.ToBase64String(bytes);
+
+            string expression = $"let asm_b64 = '{asm_base64}'; let pdb_b64 = '{pdb_base64}';";
+            expression = $"{expression} let dmeta1 = '{dmeta1}'; let dil1 = '{dil1}'; let dpdb1 = '{dpdb1}';";
+            expression = $"{expression} let dmeta2 = '{dmeta2}'; let dil2 = '{dil2}'; let dpdb2 = '{dpdb2}';";
+            expression = $"{{ {expression} invoke_static_method('[debugger-test] TestHotReload:LoadLazyHotReload', asm_b64, pdb_b64, dmeta1, dil1, dpdb1, dmeta2, dil2, dpdb2); }}";
+            var load_assemblies = JObject.FromObject(new
+            {
+                expression
+            });
+
+            Result load_assemblies_res = await cli.SendCommand("Runtime.evaluate", load_assemblies, token);
+
+            Assert.True(load_assemblies_res.IsOk);
+            Thread.Sleep(1000);
+            var run_method = JObject.FromObject(new
+            {
+                expression = "window.setTimeout(function() { invoke_static_method('[debugger-test] TestHotReload:RunMethod', '" + class_name + "', '" + method_name + "'); }, 1);"
+            });
+
+            await cli.SendCommand("Runtime.evaluate", run_method, token);
+            return await insp.WaitFor(Inspector.PAUSE);
+        }
     }
 
     class DotnetObjectId

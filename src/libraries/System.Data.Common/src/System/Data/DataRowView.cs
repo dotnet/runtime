@@ -100,13 +100,10 @@ namespace System.Data
             }
         }
 
-// TODO: Enable after System.ComponentModel.TypeConverter is annotated
-#nullable disable
         // IDataErrorInfo stuff
         string IDataErrorInfo.this[string colName] => Row.GetColumnError(colName);
 
         string IDataErrorInfo.Error => Row.RowError;
-#nullable enable
 
         /// <summary>
         /// Gets the current version description of the <see cref="DataRow"/>
@@ -232,21 +229,35 @@ namespace System.Data
         internal void RaisePropertyChangedEvent(string propName) => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propName));
 
         #region ICustomTypeDescriptor
-#nullable disable
         AttributeCollection ICustomTypeDescriptor.GetAttributes() => new AttributeCollection(null);
-        string ICustomTypeDescriptor.GetClassName() => null;
-        string ICustomTypeDescriptor.GetComponentName() => null;
-        TypeConverter ICustomTypeDescriptor.GetConverter() => null;
-        EventDescriptor ICustomTypeDescriptor.GetDefaultEvent() => null;
-        PropertyDescriptor ICustomTypeDescriptor.GetDefaultProperty() => null;
-        object ICustomTypeDescriptor.GetEditor(Type editorBaseType) => null;
+        string? ICustomTypeDescriptor.GetClassName() => null;
+        string? ICustomTypeDescriptor.GetComponentName() => null;
+
+        [RequiresUnreferencedCode("Generic TypeConverters may require the generic types to be annotated. For example, NullableConverter requires the underlying type to be DynamicallyAccessedMembers All.")]
+        TypeConverter ICustomTypeDescriptor.GetConverter() => null!;
+
+        [RequiresUnreferencedCode("The built-in EventDescriptor implementation uses Reflection which requires unreferenced code.")]
+        EventDescriptor? ICustomTypeDescriptor.GetDefaultEvent() => null;
+
+        [RequiresUnreferencedCode("PropertyDescriptor's PropertyType cannot be statically discovered.")]
+        PropertyDescriptor? ICustomTypeDescriptor.GetDefaultProperty() => null;
+
+        [RequiresUnreferencedCode("Editors registered in TypeDescriptor.AddEditorTable may be trimmed.")]
+        object? ICustomTypeDescriptor.GetEditor(Type editorBaseType) => null;
+
         EventDescriptorCollection ICustomTypeDescriptor.GetEvents() => new EventDescriptorCollection(null);
-        EventDescriptorCollection ICustomTypeDescriptor.GetEvents(Attribute[] attributes) => new EventDescriptorCollection(null);
+
+        [RequiresUnreferencedCode("The public parameterless constructor or the 'Default' static field may be trimmed from the Attribute's Type.")]
+        EventDescriptorCollection ICustomTypeDescriptor.GetEvents(Attribute[]? attributes) => new EventDescriptorCollection(null);
+
+        [RequiresUnreferencedCode("PropertyDescriptor's PropertyType cannot be statically discovered.")]
         PropertyDescriptorCollection ICustomTypeDescriptor.GetProperties() => ((ICustomTypeDescriptor)this).GetProperties(null);
-        PropertyDescriptorCollection ICustomTypeDescriptor.GetProperties(Attribute[] attributes) =>
+
+        [RequiresUnreferencedCode("PropertyDescriptor's PropertyType cannot be statically discovered. The public parameterless constructor or the 'Default' static field may be trimmed from the Attribute's Type.")]
+        PropertyDescriptorCollection ICustomTypeDescriptor.GetProperties(Attribute[]? attributes) =>
             (_dataView.Table != null ? _dataView.Table.GetPropertyDescriptorCollection(attributes) : s_zeroPropertyDescriptorCollection);
-        object ICustomTypeDescriptor.GetPropertyOwner(PropertyDescriptor pd) => this;
-#nullable enable
+
+        object ICustomTypeDescriptor.GetPropertyOwner(PropertyDescriptor? pd) => this;
         #endregion
     }
 }

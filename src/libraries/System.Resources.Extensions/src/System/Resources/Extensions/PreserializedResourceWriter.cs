@@ -8,7 +8,7 @@ using System.IO;
 
 namespace System.Resources.Extensions
 {
-    internal class UnknownType { }
+    internal sealed class UnknownType { }
 
     public partial class PreserializedResourceWriter
     {
@@ -98,7 +98,7 @@ namespace System.Resources.Extensions
                         throw new TypeLoadException(SR.Format(SR.TypeLoadException_CannotLoadConverter, primitiveType));
                     }
 
-                    object primitiveValue = converter.ConvertFromInvariantString(value);
+                    object primitiveValue = converter.ConvertFromInvariantString(value)!;
 
                     Debug.Assert(primitiveValue.GetType() == primitiveType);
 
@@ -188,7 +188,7 @@ namespace System.Resources.Extensions
             _requiresDeserializingResourceReader = true;
         }
 
-        private class ResourceDataRecord
+        private sealed class ResourceDataRecord
         {
             internal readonly SerializationFormat Format;
             internal readonly object Data;

@@ -180,7 +180,7 @@ namespace System.Collections.Generic
     // Needs to be public to support binary serialization compatibility
     public sealed partial class EnumEqualityComparer<T> : EqualityComparer<T>, ISerializable where T : struct, Enum
     {
-        internal EnumEqualityComparer() { }
+        public EnumEqualityComparer() { }
 
         // This is used by the serialization engine.
         private EnumEqualityComparer(SerializationInfo information, StreamingContext context) { }

@@ -1161,11 +1161,11 @@ namespace System.Text.RegularExpressions
 
                     if ((optionsAt & RegexOptions.RightToLeft) == 0)
                     {
-                        prev.Str += (at.Type == One) ? at.Ch.ToString() : at.Str;
+                        prev.Str = (at.Type == One) ? $"{prev.Str}{at.Ch}" : prev.Str + at.Str;
                     }
                     else
                     {
-                        prev.Str = (at.Type == One) ? at.Ch.ToString() + prev.Str : at.Str + prev.Str;
+                        prev.Str = (at.Type == One) ? $"{at.Ch}{prev.Str}" : at.Str + prev.Str;
                     }
                 }
                 else if (at.Type == Empty)
@@ -1396,12 +1396,6 @@ namespace System.Text.RegularExpressions
             while (node.Type == Capture)
             {
                 node = node.Child(0);
-            }
-
-            // If the loop's body terminates with a {one/notone/set} loop, return it.
-            if (node.Type == Oneloop || node.Type == Notoneloop || node.Type == Setloop)
-            {
-                return node;
             }
 
             // If the loop's body is a concatenate, we can skip to its last child iff that

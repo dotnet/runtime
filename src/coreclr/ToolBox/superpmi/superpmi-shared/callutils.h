@@ -28,7 +28,6 @@ public:
                                           void*                     callTarget,
                                           /*out*/ CORINFO_SIG_INFO* outSigInfo,
                                           /*out*/ char**            outCallTargetSymbol);
-    static bool HasRetBuffArg(MethodContext* mc, CORINFO_SIG_INFO args);
     static CorInfoHelpFunc GetHelperNum(CORINFO_METHOD_HANDLE method);
     static bool IsNativeMethod(CORINFO_METHOD_HANDLE method);
     static CORINFO_METHOD_HANDLE GetMethodHandleForNative(CORINFO_METHOD_HANDLE method);

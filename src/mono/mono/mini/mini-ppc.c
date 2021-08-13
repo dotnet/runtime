@@ -2692,7 +2692,7 @@ emit_thunk (guint8 *code, gconstpointer target)
 }
 
 static void
-handle_thunk (MonoCompile *cfg, MonoDomain *domain, guchar *code, const guchar *target)
+handle_thunk (MonoCompile *cfg, guchar *code, const guchar *target)
 {
 	MonoJitInfo *ji = NULL;
 	MonoThunkJitInfo *info;
@@ -2700,9 +2700,6 @@ handle_thunk (MonoCompile *cfg, MonoDomain *domain, guchar *code, const guchar *
 	int thunks_size;
 	guint8 *orig_target;
 	guint8 *target_thunk;
-
-	if (!domain)
-		domain = mono_domain_get ();
 
 	if (cfg) {
 		/*
@@ -2792,7 +2789,7 @@ patch_ins (guint8 *code, guint32 ins)
 }
 
 static void
-ppc_patch_full (MonoCompile *cfg, MonoDomain *domain, guchar *code, const guchar *target, gboolean is_fd)
+ppc_patch_full (MonoCompile *cfg, guchar *code, const guchar *target, gboolean is_fd)
 {
 	guint32 ins = *(guint32*)code;
 	guint32 prim = ins >> 26;
@@ -2832,7 +2829,7 @@ ppc_patch_full (MonoCompile *cfg, MonoDomain *domain, guchar *code, const guchar
 			}
 		}
 
-		handle_thunk (cfg, domain, code, target);
+		handle_thunk (cfg, code, target);
 		return;
 
 		g_assert_not_reached ();
@@ -2940,7 +2937,7 @@ ppc_patch_full (MonoCompile *cfg, MonoDomain *domain, guchar *code, const guchar
 void
 ppc_patch (guchar *code, const guchar *target)
 {
-	ppc_patch_full (NULL, NULL, code, target, FALSE);
+	ppc_patch_full (NULL, code, target, FALSE);
 }
 
 void
@@ -4618,7 +4615,6 @@ mono_arch_patch_code_new (MonoCompile *cfg, guint8 *code, MonoJumpInfo *ji, gpoi
 {
 	unsigned char *ip = ji->ip.i + code;
 	gboolean is_fd = FALSE;
-	MonoDomain *domain = mono_get_root_domain ();
 
 	switch (ji->type) {
 	case MONO_PATCH_INFO_IP:
@@ -4673,7 +4669,7 @@ mono_arch_patch_code_new (MonoCompile *cfg, guint8 *code, MonoJumpInfo *ji, gpoi
 		/* fall through */
 #endif
 	default:
-		ppc_patch_full (cfg, domain, ip, (const guchar*)target, is_fd);
+		ppc_patch_full (cfg, ip, (const guchar*)target, is_fd);
 		break;
 	}
 }
@@ -5478,6 +5474,7 @@ mono_arch_build_imt_trampoline (MonoVTable *vtable, MonoIMTCheckItem **imt_entri
 	int i;
 	int size = 0;
 	guint8 *code, *start;
+	MonoMemoryManager *mem_manager = m_class_get_mem_manager (vtable->klass);
 
 	for (i = 0; i < count; ++i) {
 		MonoIMTCheckItem *item = imt_entries [i];
@@ -5512,7 +5509,6 @@ mono_arch_build_imt_trampoline (MonoVTable *vtable, MonoIMTCheckItem **imt_entri
 	if (fail_tramp) {
 		code = (guint8 *)mini_alloc_generic_virtual_trampoline (vtable, size);
 	} else {
-		MonoMemoryManager *mem_manager = m_class_get_mem_manager (vtable->klass);
 		code = mono_mem_manager_code_reserve (mem_manager, size);
 	}
 	start = code;
@@ -5609,7 +5605,7 @@ mono_arch_build_imt_trampoline (MonoVTable *vtable, MonoIMTCheckItem **imt_entri
 	mono_arch_flush_icache (start, size);
 	MONO_PROFILER_RAISE (jit_code_buffer, (start, code - start, MONO_PROFILER_CODE_BUFFER_IMT_TRAMPOLINE, NULL));
 
-	mono_tramp_info_register (mono_tramp_info_create (NULL, start, code - start, NULL, NULL), NULL);
+	mono_tramp_info_register (mono_tramp_info_create (NULL, start, code - start, NULL, NULL), mem_manager);
 
 	return start;
 }
@@ -5753,6 +5749,15 @@ mono_arch_context_get_int_reg (MonoContext *ctx, int reg)
 		return (host_mgreg_t)(gsize)MONO_CONTEXT_GET_SP (ctx);
 
 	return ctx->regs [reg];
+}
+
+host_mgreg_t*
+mono_arch_context_get_int_reg_address (MonoContext *ctx, int reg)
+{
+	if (reg == ppc_r1)
+		return (host_mgreg_t)(gsize)&MONO_CONTEXT_GET_SP (ctx);
+
+	return &ctx->regs [reg];
 }
 
 guint32
@@ -5943,7 +5948,7 @@ mono_arch_skip_single_step (MonoContext *ctx)
  *   See mini-amd64.c for docs.
  */
 SeqPointInfo*
-mono_arch_get_seq_point_info (MonoDomain *domain, guint8 *code)
+mono_arch_get_seq_point_info (guint8 *code)
 {
 	NOT_IMPLEMENTED;
 	return NULL;

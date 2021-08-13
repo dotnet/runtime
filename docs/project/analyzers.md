@@ -4,11 +4,11 @@ This repo relies on [.NET Compiler Platform analyzers](https://docs.microsoft.co
 
 To add an analyzer package to the build:
 1. Select a package you want to employ, for example https://www.nuget.org/packages/SonarAnalyzer.CSharp/.  This analyzer package's name is `SonarAnalyzer.CSharp` and the latest version as of this edit is `7.15.0.8572`.
-2. Add a PackageReference entry to https://github.com/dotnet/runtime/blob/master/eng/Analyzers.props, e.g.
+2. Add a PackageReference entry to https://github.com/dotnet/runtime/blob/main/eng/Analyzers.props, e.g.
 ```XML
 <PackageReference Include="SonarAnalyzer.CSharp" Version="7.15.0.8572" />
 ```
-3. After that point, all builds will employ all rules in that analyzer package that are enabled by default.  Rules can be disabled by adding entries to the https://github.com/dotnet/runtime/blob/master/src/libraries/CodeAnalysis.ruleset file, e.g.
+3. After that point, all builds will employ all rules in that analyzer package that are enabled by default.  Rules can be disabled by adding entries to the https://github.com/dotnet/runtime/blob/main/src/libraries/CodeAnalysis.ruleset file, e.g.
 ```XML
   <Rules AnalyzerId="SonarAnalyzer.CSharp" RuleNamespace="SonarAnalyzer.CSharp">
     <Rule Id="S1006" Action="None" />

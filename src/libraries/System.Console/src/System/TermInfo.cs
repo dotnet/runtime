@@ -131,7 +131,7 @@ namespace System
                 _readAs32Bit =
                     magic == MagicLegacyNumber ? false :
                     magic == Magic32BitNumber ? true :
-                    throw new InvalidOperationException(SR.Format(SR.IO_TermInfoInvalidMagicNumber, string.Concat("O" + Convert.ToString(magic, 8)))); // magic number was not recognized. Printing the magic number in octal.
+                    throw new InvalidOperationException(SR.Format(SR.IO_TermInfoInvalidMagicNumber, "O" + Convert.ToString(magic, 8))); // magic number was not recognized. Printing the magic number in octal.
                 _sizeOfInt = (_readAs32Bit) ? 4 : 2;
 
                 _nameSectionNumBytes = ReadInt16(data, 2);
@@ -178,7 +178,8 @@ namespace System
                     "/etc/terminfo",
                     "/lib/terminfo",
                     "/usr/share/terminfo",
-                    "/usr/share/misc/terminfo"
+                    "/usr/share/misc/terminfo",
+                    "/usr/local/share/terminfo"
                 };
 
             /// <summary>Read the database for the specified terminal.</summary>
@@ -244,9 +245,10 @@ namespace System
                     return null;
                 }
 
+                Span<char> stackBuffer = stackalloc char[256];
                 SafeFileHandle? fd;
-                if (!TryOpen(directoryPath + "/" + term[0].ToString() + "/" + term, out fd) &&          // /directory/termFirstLetter/term      (Linux)
-                    !TryOpen(directoryPath + "/" + ((int)term[0]).ToString("X") + "/" + term, out fd))  // /directory/termFirstLetterAsHex/term (Mac)
+                if (!TryOpen(string.Create(null, stackBuffer, $"{directoryPath}/{term[0]}/{term}"), out fd) &&       // /directory/termFirstLetter/term      (Linux)
+                    !TryOpen(string.Create(null, stackBuffer, $"{directoryPath}/{(int)term[0]:X}/{term}"), out fd))  // /directory/termFirstLetterAsHex/term (Mac)
                 {
                     return null;
                 }

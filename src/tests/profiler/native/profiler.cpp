@@ -3,11 +3,18 @@
 
 #include "profiler.h"
 
-std::atomic<bool> ShutdownGuard::s_preventHooks;
-std::atomic<int> ShutdownGuard::s_hooksInProgress;
+#include <thread>
+
+using std::thread;
+
+Profiler *Profiler::Instance = nullptr;
+
+std::atomic<bool> ShutdownGuard::s_preventHooks(false);
+std::atomic<int> ShutdownGuard::s_hooksInProgress(0);
 
 Profiler::Profiler() : refCount(0), pCorProfilerInfo(nullptr)
 {
+    Profiler::Instance = this;
 }
 
 Profiler::~Profiler()
@@ -759,6 +766,34 @@ String Profiler::GetModuleIDName(ModuleID modId)
     }
 
     return moduleName;
+}
+
+void Profiler::SetCallback(ProfilerCallback cb)
+{
+    assert(cb != NULL);
+    callback = cb;
+    callbackSet.Signal();
+}
+
+void Profiler::NotifyManagedCodeViaCallback()
+{
+    callbackSet.Wait();
+
+    thread callbackThread([&]()
+    {
+        // The destructor will be called from the profiler detach thread, which causes
+        // some crst order asserts if we call back in to managed code. Spin up
+        // a new thread to avoid that.
+        pCorProfilerInfo->InitializeCurrentThread();
+        callback();
+    });
+
+    callbackThread.join();
+}
+
+extern "C" EXPORT void STDMETHODCALLTYPE PassCallbackToProfiler(ProfilerCallback callback)
+{
+    Profiler::Instance->SetCallback(callback);
 }
 
 #ifndef WIN32

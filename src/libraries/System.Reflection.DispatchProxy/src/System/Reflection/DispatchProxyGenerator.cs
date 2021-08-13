@@ -59,9 +59,17 @@ namespace System.Reflection
         // Proxy instances are not cached.  Their lifetime is entirely owned by the caller of DispatchProxy.Create.
         private static readonly Dictionary<Type, Dictionary<Type, GeneratedTypeInfo>> s_baseTypeAndInterfaceToGeneratedProxyType = new Dictionary<Type, Dictionary<Type, GeneratedTypeInfo>>();
         private static readonly ProxyAssembly s_proxyAssembly = new ProxyAssembly();
-        private static readonly MethodInfo s_dispatchProxyInvokeMethod = typeof(DispatchProxy).GetTypeInfo().GetDeclaredMethod("Invoke")!;
+        private static readonly MethodInfo s_dispatchProxyInvokeMethod = typeof(DispatchProxy).GetMethod("Invoke", BindingFlags.NonPublic | BindingFlags.Instance)!;
         private static readonly MethodInfo s_getTypeFromHandleMethod = typeof(Type).GetRuntimeMethod("GetTypeFromHandle", new Type[] { typeof(RuntimeTypeHandle) })!;
-        private static readonly MethodInfo s_makeGenericMethodMethod = typeof(MethodInfo).GetMethod("MakeGenericMethod", new Type[] { typeof(Type[]) })!;
+        private static readonly MethodInfo s_makeGenericMethodMethod = GetGenericMethodMethodInfo();
+
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+            Justification = "MakeGenericMethod is safe here because the user code invoking the generic method will reference " +
+            "the GenericTypes being used, which will guarantee the requirements of the generic method.")]
+        private static MethodInfo GetGenericMethodMethodInfo()
+        {
+            return typeof(MethodInfo).GetMethod("MakeGenericMethod", new Type[] { typeof(Type[]) })!;
+        }
 
         // Returns a new instance of a proxy the derives from 'baseType' and implements 'interfaceType'
         internal static object CreateProxyInstance(
@@ -145,7 +153,7 @@ namespace System.Reflection
             return generatedProxyType;
         }
 
-        private class GeneratedTypeInfo
+        private sealed class GeneratedTypeInfo
         {
             public GeneratedTypeInfo(
                 [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type generatedType,
@@ -160,7 +168,7 @@ namespace System.Reflection
             public MethodInfo[] MethodInfos { get; }
         }
 
-        private class ProxyAssembly
+        private sealed class ProxyAssembly
         {
             private readonly AssemblyBuilder _ab;
             private readonly ModuleBuilder _mb;
@@ -232,7 +240,7 @@ namespace System.Reflection
             }
         }
 
-        private class ProxyBuilder
+        private sealed class ProxyBuilder
         {
             private readonly ProxyAssembly _assembly;
             private readonly TypeBuilder _tb;
@@ -302,7 +310,7 @@ namespace System.Reflection
                 _tb.AddInterfaceImplementation(iface);
 
                 // AccessorMethods -> Metadata mappings.
-                var propertyMap = new Dictionary<MethodInfo, PropertyAccessorInfo>(MethodInfoEqualityComparer.Instance);
+                var propertyMap = new Dictionary<MethodInfo, PropertyAccessorInfo>();
                 foreach (PropertyInfo pi in iface.GetRuntimeProperties())
                 {
                     var ai = new PropertyAccessorInfo(pi.GetMethod, pi.SetMethod);
@@ -312,7 +320,7 @@ namespace System.Reflection
                         propertyMap[pi.SetMethod] = ai;
                 }
 
-                var eventMap = new Dictionary<MethodInfo, EventAccessorInfo>(MethodInfoEqualityComparer.Instance);
+                var eventMap = new Dictionary<MethodInfo, EventAccessorInfo>();
                 foreach (EventInfo ei in iface.GetRuntimeEvents())
                 {
                     var ai = new EventAccessorInfo(ei.AddMethod, ei.RemoveMethod, ei.RaiseMethod);
@@ -336,7 +344,7 @@ namespace System.Reflection
                     MethodBuilder mdb = AddMethodImpl(mi, methodInfoIndex);
                     if (propertyMap.TryGetValue(mi, out PropertyAccessorInfo? associatedProperty))
                     {
-                        if (MethodInfoEqualityComparer.Instance.Equals(associatedProperty.InterfaceGetMethod, mi))
+                        if (mi.Equals(associatedProperty.InterfaceGetMethod))
                             associatedProperty.GetMethodBuilder = mdb;
                         else
                             associatedProperty.SetMethodBuilder = mdb;
@@ -344,9 +352,9 @@ namespace System.Reflection
 
                     if (eventMap.TryGetValue(mi, out EventAccessorInfo? associatedEvent))
                     {
-                        if (MethodInfoEqualityComparer.Instance.Equals(associatedEvent.InterfaceAddMethod, mi))
+                        if (mi.Equals(associatedEvent.InterfaceAddMethod))
                             associatedEvent.AddMethodBuilder = mdb;
-                        else if (MethodInfoEqualityComparer.Instance.Equals(associatedEvent.InterfaceRemoveMethod, mi))
+                        else if (mi.Equals(associatedEvent.InterfaceRemoveMethod))
                             associatedEvent.RemoveMethodBuilder = mdb;
                         else
                             associatedEvent.RaiseMethodBuilder = mdb;
@@ -394,9 +402,19 @@ namespace System.Reflection
             private MethodBuilder AddMethodImpl(MethodInfo mi, int methodInfoIndex)
             {
                 ParameterInfo[] parameters = mi.GetParameters();
-                Type[] paramTypes = ParamTypes(parameters, false);
+                Type[] paramTypes = new Type[parameters.Length];
+                Type[][] paramReqMods = new Type[paramTypes.Length][];
 
-                MethodBuilder mdb = _tb.DefineMethod(mi.Name, MethodAttributes.Public | MethodAttributes.Virtual, mi.ReturnType, paramTypes);
+                for (int i = 0; i < parameters.Length; i++)
+                {
+                    paramTypes[i] = parameters[i].ParameterType;
+                    paramReqMods[i] = parameters[i].GetRequiredCustomModifiers();
+                }
+
+                MethodBuilder mdb = _tb.DefineMethod(mi.Name, MethodAttributes.Public | MethodAttributes.Virtual, CallingConventions.Standard,
+                    mi.ReturnType, null, null,
+                    paramTypes, paramReqMods, null);
+
                 if (mi.ContainsGenericParameters)
                 {
                     Type[] ts = mi.GetGenericArguments();
@@ -417,7 +435,7 @@ namespace System.Reflection
 
                 // object[] args = new object[paramCount];
                 il.Emit(OpCodes.Nop);
-                GenericArray<object> argsArr = new GenericArray<object>(il, ParamTypes(parameters, true).Length);
+                GenericArray<object> argsArr = new GenericArray<object>(il, parameters.Length);
 
                 for (int i = 0; i < parameters.Length; i++)
                 {
@@ -500,18 +518,6 @@ namespace System.Reflection
 
                 _tb.DefineMethodOverride(mdb, mi);
                 return mdb;
-            }
-
-            private static Type[] ParamTypes(ParameterInfo[] parms, bool noByRef)
-            {
-                Type[] types = new Type[parms.Length];
-                for (int i = 0; i < parms.Length; i++)
-                {
-                    types[i] = parms[i].ParameterType;
-                    if (noByRef && types[i].IsByRef)
-                        types[i] = types[i].GetElementType()!;
-                }
-                return types;
             }
 
             // TypeCode does not exist in ProjectK or ProjectN.
@@ -718,7 +724,7 @@ namespace System.Reflection
                 }
             }
 
-            private class ParametersArray
+            private sealed class ParametersArray
             {
                 private readonly ILGenerator _il;
                 private readonly Type[] _paramTypes;
@@ -747,7 +753,7 @@ namespace System.Reflection
                 }
             }
 
-            private class GenericArray<T>
+            private sealed class GenericArray<T>
             {
                 private readonly ILGenerator _il;
                 private readonly LocalBuilder _lb;
@@ -814,82 +820,6 @@ namespace System.Reflection
                     InterfaceAddMethod = interfaceAddMethod;
                     InterfaceRemoveMethod = interfaceRemoveMethod;
                     InterfaceRaiseMethod = interfaceRaiseMethod;
-                }
-            }
-
-            private sealed class MethodInfoEqualityComparer : EqualityComparer<MethodInfo>
-            {
-                public static readonly MethodInfoEqualityComparer Instance = new MethodInfoEqualityComparer();
-
-                private MethodInfoEqualityComparer() { }
-
-                public sealed override bool Equals(MethodInfo? left, MethodInfo? right)
-                {
-                    if (ReferenceEquals(left, right))
-                        return true;
-
-                    if (left == null)
-                        return right == null;
-                    else if (right == null)
-                        return false;
-
-                    // This assembly should work in netstandard1.3,
-                    // so we cannot use MemberInfo.MetadataToken here.
-                    // Therefore, it compares honestly referring ECMA-335 I.8.6.1.6 Signature Matching.
-                    if (!Equals(left.DeclaringType, right.DeclaringType))
-                        return false;
-
-                    if (!Equals(left.ReturnType, right.ReturnType))
-                        return false;
-
-                    if (left.CallingConvention != right.CallingConvention)
-                        return false;
-
-                    if (left.IsStatic != right.IsStatic)
-                        return false;
-
-                    if (left.Name != right.Name)
-                        return false;
-
-                    Type[] leftGenericParameters = left.GetGenericArguments();
-                    Type[] rightGenericParameters = right.GetGenericArguments();
-                    if (leftGenericParameters.Length != rightGenericParameters.Length)
-                        return false;
-
-                    for (int i = 0; i < leftGenericParameters.Length; i++)
-                    {
-                        if (!Equals(leftGenericParameters[i], rightGenericParameters[i]))
-                            return false;
-                    }
-
-                    ParameterInfo[] leftParameters = left.GetParameters();
-                    ParameterInfo[] rightParameters = right.GetParameters();
-                    if (leftParameters.Length != rightParameters.Length)
-                        return false;
-
-                    for (int i = 0; i < leftParameters.Length; i++)
-                    {
-                        if (!Equals(leftParameters[i].ParameterType, rightParameters[i].ParameterType))
-                            return false;
-                    }
-
-                    return true;
-                }
-
-                public sealed override int GetHashCode(MethodInfo obj)
-                {
-                    if (obj == null)
-                        return 0;
-
-                    Debug.Assert(obj.DeclaringType != null);
-                    int hashCode = obj.DeclaringType!.GetHashCode();
-                    hashCode ^= obj.Name.GetHashCode();
-                    foreach (ParameterInfo parameter in obj.GetParameters())
-                    {
-                        hashCode ^= parameter.ParameterType.GetHashCode();
-                    }
-
-                    return hashCode;
                 }
             }
         }

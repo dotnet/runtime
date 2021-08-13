@@ -10,7 +10,6 @@ using System.Runtime.InteropServices;
 
 namespace System.Reflection
 {
-    [StructLayout(LayoutKind.Sequential)]
     public partial class AssemblyName
     {
         public AssemblyName(string assemblyName)
@@ -110,8 +109,7 @@ namespace System.Reflection
                 var keyToken = new byte[8];
                 for (int i = 0, j = 0; i < 8; ++i)
                 {
-                    keyToken[i] = (byte)(RuntimeMarshal.AsciHexDigitValue(native->public_key_token[j++]) << 4);
-                    keyToken[i] |= (byte)RuntimeMarshal.AsciHexDigitValue(native->public_key_token[j++]);
+                    keyToken[i] = (byte)(HexConverter.FromChar(native->public_key_token[j++]) << 4 | HexConverter.FromChar(native->public_key_token[j++]));
                 }
                 _publicKeyToken = keyToken;
             }

@@ -10,15 +10,43 @@ using Microsoft.Build.Utilities;
 public class AndroidAppBuilderTask : Task
 {
     [Required]
-    public string SourceDir { get; set; } = ""!;
-
-    [Required]
     public string MonoRuntimeHeaders { get; set; } = ""!;
+
+    /// <summary>
+    /// Target directory with *dll and other content to be AOT'd and/or bundled
+    /// </summary>
+    [Required]
+    public string AppDir { get; set; } = ""!;
 
     /// <summary>
     /// This library will be used as an entry-point (e.g. TestRunner.dll)
     /// </summary>
     public string MainLibraryFileName { get; set; } = ""!;
+
+    /// <summary>
+    /// List of paths to assemblies to be included in the app. For AOT builds the 'ObjectFile' metadata key needs to point to the object file.
+    /// </summary>
+    public ITaskItem[] Assemblies { get; set; } = Array.Empty<ITaskItem>();
+
+    /// <summary>
+    /// Prefer FullAOT mode for Emulator over JIT
+    /// </summary>
+    public bool ForceAOT { get; set; }
+
+    /// <summary>
+    /// Static linked runtime
+    /// </summary>
+    public bool StaticLinkedRuntime { get; set; }
+
+    /// <summary>
+    /// List of enabled runtime components
+    /// </summary>
+    public string? RuntimeComponents { get; set; } = ""!;
+
+    /// <summary>
+    /// Diagnostic ports configuration string
+    /// </summary>
+    public string? DiagnosticPorts { get; set; } = ""!;
 
     [Required]
     public string RuntimeIdentifier { get; set; } = ""!;
@@ -26,6 +54,7 @@ public class AndroidAppBuilderTask : Task
     [Required]
     public string OutputDir { get; set; } = ""!;
 
+    [Required]
     public string? ProjectName { get; set; }
 
     public string? AndroidSdk { get; set; }
@@ -58,12 +87,11 @@ public class AndroidAppBuilderTask : Task
 
     public override bool Execute()
     {
-        Utils.Logger = Log;
-
         string abi = DetermineAbi();
 
-        var apkBuilder = new ApkBuilder();
+        var apkBuilder = new ApkBuilder(Log);
         apkBuilder.ProjectName = ProjectName;
+        apkBuilder.AppDir = AppDir;
         apkBuilder.OutputDir = OutputDir;
         apkBuilder.AndroidSdk = AndroidSdk;
         apkBuilder.AndroidNdk = AndroidNdk;
@@ -74,7 +102,12 @@ public class AndroidAppBuilderTask : Task
         apkBuilder.NativeMainSource = NativeMainSource;
         apkBuilder.KeyStorePath = KeyStorePath;
         apkBuilder.ForceInterpreter = ForceInterpreter;
-        (ApkBundlePath, ApkPackageId) = apkBuilder.BuildApk(SourceDir, abi, MainLibraryFileName, MonoRuntimeHeaders);
+        apkBuilder.ForceAOT = ForceAOT;
+        apkBuilder.StaticLinkedRuntime = StaticLinkedRuntime;
+        apkBuilder.RuntimeComponents = RuntimeComponents;
+        apkBuilder.DiagnosticPorts = DiagnosticPorts;
+        apkBuilder.Assemblies = Assemblies;
+        (ApkBundlePath, ApkPackageId) = apkBuilder.BuildApk(abi, MainLibraryFileName, MonoRuntimeHeaders);
 
         return true;
     }

@@ -3,7 +3,6 @@
 
 using System;
 using System.Text;
-using System.Globalization;
 using System.Diagnostics;
 using System.Collections.Generic;
 using Microsoft.Extensions.DependencyInjection;
@@ -81,6 +80,7 @@ namespace Microsoft.Extensions.Logging.Test
                   .Setup(p => p.Dispose());
             return disposableProvider.Object;
         }
+
 
         [Fact]
         public void Dispose_ThrowException_SwallowsException()
@@ -181,8 +181,10 @@ namespace Microsoft.Extensions.Logging.Test
 
             var logger = loggerFactory.CreateLogger("Logger");
 
-            Activity a = new Activity("ScopeActivity");
-            a.Start();
+            Activity activity = new Activity("ScopeActivity");
+            activity.AddBaggage("baggageTestKey1", "baggageTestValue");
+            activity.AddTag("tagTestKey", "tagTestValue");
+            activity.Start();
             string activity1String = GetActivityLogString(options);
             string activity2String;
 
@@ -199,10 +201,11 @@ namespace Microsoft.Extensions.Logging.Test
                 }
                 b.Stop();
             }
-            a.Stop();
+            activity.Stop();
 
             Assert.Equal(activity1String, loggerProvider.LogText[1]);
             Assert.Equal(activity2String, loggerProvider.LogText[4]);
+            Assert.Equal(7, loggerProvider.LogText.Count); // Ensure that Baggage and Tags aren't added.
         }
 
         [Fact]
@@ -211,6 +214,195 @@ namespace Microsoft.Extensions.Logging.Test
             Assert.Throws<ArgumentException>(() =>
                 LoggerFactory.Create(builder => { builder.Configure(o => o.ActivityTrackingOptions = (ActivityTrackingOptions) 0xFF00);})
             );
+        }
+
+        [Fact]
+        public void TestActivityTrackingOptions_ShouldAddBaggageItemsAsNewScope_WhenBaggageOptionIsSet()
+        {
+            var loggerProvider = new ExternalScopeLoggerProvider();
+
+            var loggerFactory = LoggerFactory.Create(builder =>
+            {
+                builder
+                    .Configure(o => o.ActivityTrackingOptions = ActivityTrackingOptions.Baggage)
+                    .AddProvider(loggerProvider);
+            });
+
+            var logger = loggerFactory.CreateLogger("Logger");
+
+            Activity activity = new Activity("ScopeActivity");
+            activity.AddBaggage("testKey1", null);
+            activity.AddBaggage("testKey2", string.Empty);
+            activity.AddBaggage("testKey3", "testValue");
+            activity.Start();
+
+            logger.LogInformation("Message1");
+
+            activity.Stop();
+
+            foreach (string s in loggerProvider.LogText)
+            {
+                System.Console.WriteLine(s);
+            }
+
+            Assert.Equal("Message1", loggerProvider.LogText[0]);
+            Assert.Equal("testKey3:testValue, testKey2:, testKey1:", loggerProvider.LogText[2]);
+        }
+
+        [Fact]
+        public void TestActivityTrackingOptions_ShouldAddTagsAsNewScope_WhenTagsOptionIsSet()
+        {
+            var loggerProvider = new ExternalScopeLoggerProvider();
+
+            var loggerFactory = LoggerFactory.Create(builder =>
+            {
+                builder
+                    .Configure(o => o.ActivityTrackingOptions = ActivityTrackingOptions.TraceId | ActivityTrackingOptions.Tags)
+                    .AddProvider(loggerProvider);
+            });
+
+            var logger = loggerFactory.CreateLogger("Logger");
+
+            Activity activity = new Activity("ScopeActivity");
+            activity.AddTag("testKey1", null);
+            activity.AddTag("testKey2", string.Empty);
+            activity.AddTag("testKey3", "testValue");
+            activity.AddTag("testKey4", new Dummy());
+            activity.Start();
+
+            logger.LogInformation("Message1");
+
+            activity.Stop();
+
+            Assert.Equal("Message1", loggerProvider.LogText[0]);
+            Assert.Equal("testKey1:, testKey2:, testKey3:testValue, testKey4:DummyToString", loggerProvider.LogText[2]);
+        }
+
+        [Fact]
+        public void TestActivityTrackingOptions_ShouldAddTagsAndBaggageAsOneScopeAndTraceIdAsOtherScope_WhenTagsBaggageAndTraceIdOptionAreSet()
+        {
+            var loggerProvider = new ExternalScopeLoggerProvider();
+
+            var loggerFactory = LoggerFactory.Create(builder =>
+            {
+                builder
+                    .Configure(o => o.ActivityTrackingOptions = ActivityTrackingOptions.TraceId | ActivityTrackingOptions.Baggage | ActivityTrackingOptions.Tags)
+                    .AddProvider(loggerProvider);
+            });
+
+            var logger = loggerFactory.CreateLogger("Logger");
+
+            Activity activity = new Activity("ScopeActivity");
+            activity.AddTag("testTagKey1", "testTagValue");
+            activity.AddBaggage("testBaggageKey1", "testBaggageValue");
+            activity.Start();
+            logger.LogInformation("Message1");
+            string traceIdActivityLogString = GetActivityLogString(ActivityTrackingOptions.TraceId);
+            activity.Stop();
+
+            Assert.Equal("Message1", loggerProvider.LogText[0]);
+            Assert.Equal(traceIdActivityLogString, loggerProvider.LogText[1]);
+            Assert.Equal("testTagKey1:testTagValue", loggerProvider.LogText[2]);
+            Assert.Equal("testBaggageKey1:testBaggageValue", loggerProvider.LogText[3]);
+        }
+
+        [Fact]
+        public void TestActivityTrackingOptions_ShouldAddNewTagAndBaggageItemsAtRuntime_WhenTagsAndBaggageOptionAreSetAndWithNestedScopes()
+        {
+            var loggerProvider = new ExternalScopeLoggerProvider();
+
+            var loggerFactory = LoggerFactory.Create(builder =>
+            {
+                builder
+                    .Configure(o => o.ActivityTrackingOptions = ActivityTrackingOptions.Baggage | ActivityTrackingOptions.Tags)
+                    .AddProvider(loggerProvider);
+            });
+
+            var logger = loggerFactory.CreateLogger("Logger");
+
+            Activity activity = new Activity("ScopeActivity");
+            activity.Start();
+
+            // Add baggage and tag items before the first log entry.
+            activity.AddTag("MyTagKey1", "1");
+            activity.AddBaggage("MyBaggageKey1", "1");
+
+            // Log a message, this should create any cached objects.
+            logger.LogInformation("Message1");
+
+            // Start the first scope, add some more items and log.
+            using (logger.BeginScope("Scope1"))
+            {
+                activity.AddTag("MyTagKey2", "2");
+                activity.AddBaggage("MyBaggageKey2", "2");
+                logger.LogInformation("Message2");
+
+                // Add two additional scopes and also replace some tag and baggage items.
+                using (logger.BeginScope("Scope2"))
+                {
+                    activity.AddTag("MyTagKey3", "3");
+                    activity.AddBaggage("MyBaggageKey3", "3");
+
+                    using (logger.BeginScope("Scope3"))
+                    {
+                        activity.SetTag("MyTagKey3", "4");
+                        activity.SetBaggage("MyBaggageKey3", "4");
+                        logger.LogInformation("Message3");
+                    }
+                }
+
+                // Along with this message we expect all baggage and tags items
+                // as well as the Scope1 but not the Scope2 and Scope3.
+                logger.LogInformation("Message4");
+
+                activity.Stop();
+            }
+
+            Assert.Equal("Message1", loggerProvider.LogText[0]);
+            Assert.Equal("MyTagKey1:1", loggerProvider.LogText[2]);
+            Assert.Equal("MyBaggageKey1:1", loggerProvider.LogText[3]);
+
+            Assert.Equal("Message2", loggerProvider.LogText[4]);
+            Assert.Equal("MyTagKey1:1, MyTagKey2:2", loggerProvider.LogText[6]);
+            Assert.Equal("MyBaggageKey2:2, MyBaggageKey1:1", loggerProvider.LogText[7]);
+            Assert.Equal("Scope1", loggerProvider.LogText[8]);
+
+            Assert.Equal("Message3", loggerProvider.LogText[9]);
+            Assert.Equal("MyTagKey1:1, MyTagKey2:2, MyTagKey3:4", loggerProvider.LogText[11]);
+            Assert.Equal("MyBaggageKey3:4, MyBaggageKey2:2, MyBaggageKey1:1", loggerProvider.LogText[12]);
+            Assert.Equal("Scope1", loggerProvider.LogText[13]);
+            Assert.Equal("Scope2", loggerProvider.LogText[14]);
+            Assert.Equal("Scope3", loggerProvider.LogText[15]);
+
+            Assert.Equal("Message4", loggerProvider.LogText[16]);
+            Assert.Equal("MyTagKey1:1, MyTagKey2:2, MyTagKey3:4", loggerProvider.LogText[18]);
+            Assert.Equal("MyBaggageKey3:4, MyBaggageKey2:2, MyBaggageKey1:1", loggerProvider.LogText[19]);
+            Assert.Equal("Scope1", loggerProvider.LogText[20]);
+        }
+
+        [Fact]
+        public void TestActivityTrackingOptions_ShouldNotAddAdditionalScope_WhenTagsBaggageOptionAreSetButTagsAndBaggageAreEmpty()
+        {
+            var loggerProvider = new ExternalScopeLoggerProvider();
+
+            var loggerFactory = LoggerFactory.Create(builder =>
+            {
+                builder
+                    .Configure(o => o.ActivityTrackingOptions = ActivityTrackingOptions.TraceId | ActivityTrackingOptions.Baggage | ActivityTrackingOptions.Tags)
+                    .AddProvider(loggerProvider);
+            });
+
+            var logger = loggerFactory.CreateLogger("Logger");
+
+            Activity activity = new Activity("ScopeActivity");
+            activity.Start();
+            logger.LogInformation("Message1");
+            string traceIdActivityLogString = GetActivityLogString(ActivityTrackingOptions.TraceId);
+            activity.Stop();
+
+            Assert.Equal("Message1", loggerProvider.LogText[0]);
+            Assert.Equal(traceIdActivityLogString, loggerProvider.LogText[1]);
+            Assert.Equal(2, loggerProvider.LogText.Count); // Ensure that the additional scopes for tags and baggage aren't added.
         }
 
         [Fact]
@@ -367,6 +559,10 @@ namespace Microsoft.Extensions.Logging.Test
             public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception exception, Func<TState, Exception, string> formatter)
             {
                 LogText.Add(formatter(state, exception));
+
+                // Notice that other ILoggers maybe not call "ToString()" on the scope but enumerate it and this isn't covered by this implementation.
+                // E.g. the SimpleConsoleFormatter calls "ToString()" like it's done here but the "JsonConsoleFormatter" enumerates a scope
+                // if the Scope is of type IEnumerable<KeyValuePair<string, object>>.
                 ScopeProvider.ForEachScope((scope, builder) => builder.Add(scope.ToString()), LogText);
             }
 
@@ -379,6 +575,14 @@ namespace Microsoft.Extensions.Logging.Test
             {
                 BeginScopeCalledTimes++;
                 return null;
+            }
+        }
+
+        private class Dummy
+        {
+            public override string ToString()
+            {
+                return "DummyToString";
             }
         }
     }

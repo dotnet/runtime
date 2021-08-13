@@ -140,7 +140,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         {
             DependencyList dependencies = new DependencyList();
 
-            if (_typeDesc.HasInstantiation && !_typeDesc.IsGenericDefinition)
+            if (_typeDesc.HasInstantiation && !_typeDesc.IsGenericDefinition && (factory.CompilationCurrentPhase == 0))
             {
                 dependencies.Add(factory.AllMethodsOnType(_typeDesc), "Methods on generic type instantiation");
             }

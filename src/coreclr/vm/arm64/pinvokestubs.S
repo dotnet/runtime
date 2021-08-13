@@ -118,7 +118,7 @@ LOCAL_LABEL(\__PInvokeStubFuncName\()_0):
         str     x9, [x19, #InlinedCallFrame__m_pCalleeSavedFP]
 
         // x0 = GetThread()
-        bl      C_FUNC(GetThread)
+        bl      C_FUNC(GetThreadHelper)
         str     x0, [x19, #InlinedCallFrame__m_pThread]
 
         // pFrame->m_Next = pThread->m_pFrame;

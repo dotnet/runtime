@@ -1,3 +1,0 @@
-TypesMustExist : Type 'System.Security.Cryptography.AesCng' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Security.Cryptography.DSACng' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Security.Cryptography.TripleDESCng' does not exist in the implementation but it does exist in the contract.

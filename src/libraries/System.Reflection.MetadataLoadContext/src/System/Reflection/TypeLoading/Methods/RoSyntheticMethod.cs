@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Reflection.TypeLoading
 {
@@ -66,7 +67,7 @@ namespace System.Reflection.TypeLoading
 
         protected sealed override MethodSig<RoType> ComputeCustomModifiers() => new MethodSig<RoType>(_parameterTypes.Length);
 
-        public sealed override bool Equals(object? obj)
+        public sealed override bool Equals([NotNullWhen(true)] object? obj)
         {
             if (!(obj is RoSyntheticMethod other))
                 return false;
@@ -85,6 +86,7 @@ namespace System.Reflection.TypeLoading
         public sealed override bool IsGenericMethodDefinition => false;
         public sealed override bool IsConstructedGenericMethod => false;
         public sealed override MethodInfo GetGenericMethodDefinition() => throw new InvalidOperationException();
+        [RequiresUnreferencedCode("If some of the generic arguments are annotated (either with DynamicallyAccessedMembersAttribute, or generic constraints), trimming can't validate that the requirements of those annotations are met.")]
         public sealed override MethodInfo MakeGenericMethod(params Type[] typeArguments) => throw new InvalidOperationException(SR.Format(SR.Arg_NotGenericMethodDefinition, this));
         protected sealed override RoType[] ComputeGenericArgumentsOrParameters() => Array.Empty<RoType>();
         internal sealed override RoType[] GetGenericTypeArgumentsNoCopy() => Array.Empty<RoType>();

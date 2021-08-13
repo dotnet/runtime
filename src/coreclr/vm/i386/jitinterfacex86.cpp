@@ -490,6 +490,12 @@ void *JIT_TrialAlloc::GenBox(Flags flags)
 
     // Do call to CopyValueClassUnchecked(object, data, pMT)
 
+#ifdef UNIX_X86_ABI
+#define STACK_ALIGN_PADDING 12
+    // Make pad to align esp
+    sl.X86EmitSubEsp(STACK_ALIGN_PADDING);
+#endif // UNIX_X86_ABI
+
     // Pass pMT (still in ECX)
     sl.X86EmitPushReg(kECX);
 
@@ -507,6 +513,11 @@ void *JIT_TrialAlloc::GenBox(Flags flags)
 
     // call CopyValueClass
     sl.X86EmitCall(sl.NewExternalCodeLabel((LPVOID) CopyValueClassUnchecked), 12);
+#ifdef UNIX_X86_ABI
+    // Make pad to align esp
+    sl.X86EmitAddEsp(STACK_ALIGN_PADDING);
+#undef STACK_ALIGN_PADDING
+#endif // UNIX_X86_ABI
 
     // Restore the address of the newly allocated object and return it.
     // mov eax,ebx
@@ -1039,10 +1050,18 @@ void InitJITHelpers1()
     {
         BYTE * pfunc = (BYTE *) JIT_WriteBarrierReg_PreGrow;
 
-        BYTE * pBuf = (BYTE *)c_rgWriteBarriers[iBarrier];
+        BYTE * pBuf = GetWriteBarrierCodeLocation((BYTE *)c_rgWriteBarriers[iBarrier]);
         int reg = c_rgWriteBarrierRegs[iBarrier];
 
-        memcpy(pBuf, pfunc, 34);
+        BYTE * pBufRW = pBuf;
+        ExecutableWriterHolder<BYTE> barrierWriterHolder;
+        if (IsWriteBarrierCopyEnabled())
+        {
+            barrierWriterHolder = ExecutableWriterHolder<BYTE>(pBuf, 34);
+            pBufRW = barrierWriterHolder.GetRW();
+        }
+
+        memcpy(pBufRW, pfunc, 34);
 
         // assert the copied code ends in a ret to make sure we got the right length
         _ASSERTE(pBuf[33] == 0xC3);
@@ -1058,24 +1077,24 @@ void InitJITHelpers1()
 
         _ASSERTE(pBuf[0] == 0x89);
         // Update the reg field (bits 3..5) of the ModR/M byte of this instruction
-        pBuf[1] &= 0xc7;
-        pBuf[1] |= reg << 3;
+        pBufRW[1] &= 0xc7;
+        pBufRW[1] |= reg << 3;
 
         // Second instruction to patch is cmp reg, imm32 (low bound)
 
         _ASSERTE(pBuf[2] == 0x81);
         // Here the lowest three bits in ModR/M field are the register
-        pBuf[3] &= 0xf8;
-        pBuf[3] |= reg;
+        pBufRW[3] &= 0xf8;
+        pBufRW[3] |= reg;
 
 #ifdef WRITE_BARRIER_CHECK
         // Don't do the fancy optimization just jump to the old one
         // Use the slow one from time to time in a debug build because
         // there are some good asserts in the unoptimized one
         if ((g_pConfig->GetHeapVerifyLevel() & EEConfig::HEAPVERIFY_BARRIERCHECK) || DEBUG_RANDOM_BARRIER_CHECK) {
-            pfunc = &pBuf[0];
+            pfunc = &pBufRW[0];
             *pfunc++ = 0xE9;                // JMP c_rgDebugWriteBarriers[iBarrier]
-            *((DWORD*) pfunc) = (BYTE*) c_rgDebugWriteBarriers[iBarrier] - (pfunc + sizeof(DWORD));
+            *((DWORD*) pfunc) = (BYTE*) c_rgDebugWriteBarriers[iBarrier] - (&pBuf[1] + sizeof(DWORD));
         }
 #endif // WRITE_BARRIER_CHECK
     }
@@ -1121,7 +1140,7 @@ void ValidateWriteBarrierHelpers()
 #endif // WRITE_BARRIER_CHECK
 
     // first validate the PreGrow helper
-    BYTE* pWriteBarrierFunc = reinterpret_cast<BYTE*>(JIT_WriteBarrierEAX);
+    BYTE* pWriteBarrierFunc = GetWriteBarrierCodeLocation(reinterpret_cast<BYTE*>(JIT_WriteBarrierEAX));
 
     // ephemeral region
     DWORD* pLocation = reinterpret_cast<DWORD*>(&pWriteBarrierFunc[AnyGrow_EphemeralLowerBound]);
@@ -1159,7 +1178,7 @@ void ValidateWriteBarrierHelpers()
 #endif //CODECOVERAGE
 /*********************************************************************/
 
-#define WriteBarrierIsPreGrow() (((BYTE *)JIT_WriteBarrierEAX)[10] == 0xc1)
+#define WriteBarrierIsPreGrow() ((GetWriteBarrierCodeLocation((BYTE *)JIT_WriteBarrierEAX))[10] == 0xc1)
 
 
 /*********************************************************************/
@@ -1177,20 +1196,28 @@ int StompWriteBarrierEphemeral(bool /* isRuntimeSuspended */)
 
 #ifdef WRITE_BARRIER_CHECK
         // Don't do the fancy optimization if we are checking write barrier
-    if (((BYTE *)JIT_WriteBarrierEAX)[0] == 0xE9)  // we are using slow write barrier
+    if ((GetWriteBarrierCodeLocation((BYTE *)JIT_WriteBarrierEAX))[0] == 0xE9)  // we are using slow write barrier
         return stompWBCompleteActions;
 #endif // WRITE_BARRIER_CHECK
 
     // Update the lower bound.
     for (int iBarrier = 0; iBarrier < NUM_WRITE_BARRIERS; iBarrier++)
     {
-        BYTE * pBuf = (BYTE *)c_rgWriteBarriers[iBarrier];
+        BYTE * pBuf = GetWriteBarrierCodeLocation((BYTE *)c_rgWriteBarriers[iBarrier]);
+
+        BYTE * pBufRW = pBuf;
+        ExecutableWriterHolder<BYTE> barrierWriterHolder;
+        if (IsWriteBarrierCopyEnabled())
+        {
+            barrierWriterHolder = ExecutableWriterHolder<BYTE>(pBuf, 42);
+            pBufRW = barrierWriterHolder.GetRW();
+        }
 
         // assert there is in fact a cmp r/m32, imm32 there
         _ASSERTE(pBuf[2] == 0x81);
 
         // Update the immediate which is the lower bound of the ephemeral generation
-        size_t *pfunc = (size_t *) &pBuf[AnyGrow_EphemeralLowerBound];
+        size_t *pfunc = (size_t *) &pBufRW[AnyGrow_EphemeralLowerBound];
         //avoid trivial self modifying code
         if (*pfunc != (size_t) g_ephemeral_low)
         {
@@ -1203,7 +1230,7 @@ int StompWriteBarrierEphemeral(bool /* isRuntimeSuspended */)
             _ASSERTE(pBuf[10] == 0x81);
 
                 // Update the upper bound if we are using the PostGrow thunk.
-            pfunc = (size_t *) &pBuf[PostGrow_EphemeralUpperBound];
+            pfunc = (size_t *) &pBufRW[PostGrow_EphemeralUpperBound];
             //avoid trivial self modifying code
             if (*pfunc != (size_t) g_ephemeral_high)
             {
@@ -1226,14 +1253,14 @@ int StompWriteBarrierResize(bool isRuntimeSuspended, bool bReqUpperBoundsCheck)
 {
     CONTRACTL {
         NOTHROW;
-        if (GetThread()) {GC_TRIGGERS;} else {GC_NOTRIGGER;}
+        if (GetThreadNULLOk()) {GC_TRIGGERS;} else {GC_NOTRIGGER;}
     } CONTRACTL_END;
 
     int stompWBCompleteActions = SWB_PASS;
 
 #ifdef WRITE_BARRIER_CHECK
         // Don't do the fancy optimization if we are checking write barrier
-    if (((BYTE *)JIT_WriteBarrierEAX)[0] == 0xE9)  // we are using slow write barrier
+    if ((GetWriteBarrierCodeLocation((BYTE *)JIT_WriteBarrierEAX))[0] == 0xE9)  // we are using slow write barrier
         return stompWBCompleteActions;
 #endif // WRITE_BARRIER_CHECK
 
@@ -1242,25 +1269,33 @@ int StompWriteBarrierResize(bool isRuntimeSuspended, bool bReqUpperBoundsCheck)
 
     for (int iBarrier = 0; iBarrier < NUM_WRITE_BARRIERS; iBarrier++)
     {
-        BYTE * pBuf = (BYTE *)c_rgWriteBarriers[iBarrier];
+        BYTE * pBuf = GetWriteBarrierCodeLocation((BYTE *)c_rgWriteBarriers[iBarrier]);
         int reg = c_rgWriteBarrierRegs[iBarrier];
 
         size_t *pfunc;
 
-    // Check if we are still using the pre-grow version of the write barrier.
+        BYTE * pBufRW = pBuf;
+        ExecutableWriterHolder<BYTE> barrierWriterHolder;
+        if (IsWriteBarrierCopyEnabled())
+        {
+            barrierWriterHolder = ExecutableWriterHolder<BYTE>(pBuf, 42);
+            pBufRW = barrierWriterHolder.GetRW();
+        }
+
+        // Check if we are still using the pre-grow version of the write barrier.
         if (bWriteBarrierIsPreGrow)
         {
             // Check if we need to use the upper bounds checking barrier stub.
             if (bReqUpperBoundsCheck)
             {
-                GCX_MAYBE_COOP_NO_THREAD_BROKEN((GetThread()!=NULL));
+                GCX_MAYBE_COOP_NO_THREAD_BROKEN((GetThreadNULLOk()!=NULL));
                 if( !isRuntimeSuspended && !(stompWBCompleteActions & SWB_EE_RESTART) ) {
                     ThreadSuspend::SuspendEE(ThreadSuspend::SUSPEND_FOR_GC_PREP);
                     stompWBCompleteActions |= SWB_EE_RESTART;
                 }
 
                 pfunc = (size_t *) JIT_WriteBarrierReg_PostGrow;
-                memcpy(pBuf, pfunc, 42);
+                memcpy(pBufRW, pfunc, 42);
 
                 // assert the copied code ends in a ret to make sure we got the right length
                 _ASSERTE(pBuf[41] == 0xC3);
@@ -1276,35 +1311,35 @@ int StompWriteBarrierResize(bool isRuntimeSuspended, bool bReqUpperBoundsCheck)
 
                 _ASSERTE(pBuf[0] == 0x89);
                 // Update the reg field (bits 3..5) of the ModR/M byte of this instruction
-                pBuf[1] &= 0xc7;
-                pBuf[1] |= reg << 3;
+                pBufRW[1] &= 0xc7;
+                pBufRW[1] |= reg << 3;
 
                 // Second instruction to patch is cmp reg, imm32 (low bound)
 
                 _ASSERTE(pBuf[2] == 0x81);
                 // Here the lowest three bits in ModR/M field are the register
-                pBuf[3] &= 0xf8;
-                pBuf[3] |= reg;
+                pBufRW[3] &= 0xf8;
+                pBufRW[3] |= reg;
 
                 // Third instruction to patch is another cmp reg, imm32 (high bound)
 
                 _ASSERTE(pBuf[10] == 0x81);
                 // Here the lowest three bits in ModR/M field are the register
-                pBuf[11] &= 0xf8;
-                pBuf[11] |= reg;
+                pBufRW[11] &= 0xf8;
+                pBufRW[11] |= reg;
 
                 bStompWriteBarrierEphemeral = true;
                 // What we're trying to update is the offset field of a
 
                 // cmp offset[edx], 0ffh instruction
                 _ASSERTE(pBuf[22] == 0x80);
-                pfunc = (size_t *) &pBuf[PostGrow_CardTableFirstLocation];
+                pfunc = (size_t *) &pBufRW[PostGrow_CardTableFirstLocation];
                *pfunc = (size_t) g_card_table;
 
                 // What we're trying to update is the offset field of a
                 // mov offset[edx], 0ffh instruction
                 _ASSERTE(pBuf[34] == 0xC6);
-                pfunc = (size_t *) &pBuf[PostGrow_CardTableSecondLocation];
+                pfunc = (size_t *) &pBufRW[PostGrow_CardTableSecondLocation];
 
             }
             else
@@ -1313,14 +1348,14 @@ int StompWriteBarrierResize(bool isRuntimeSuspended, bool bReqUpperBoundsCheck)
 
                 // cmp offset[edx], 0ffh instruction
                 _ASSERTE(pBuf[14] == 0x80);
-                pfunc = (size_t *) &pBuf[PreGrow_CardTableFirstLocation];
+                pfunc = (size_t *) &pBufRW[PreGrow_CardTableFirstLocation];
                *pfunc = (size_t) g_card_table;
 
                 // What we're trying to update is the offset field of a
 
                 // mov offset[edx], 0ffh instruction
                 _ASSERTE(pBuf[26] == 0xC6);
-                pfunc = (size_t *) &pBuf[PreGrow_CardTableSecondLocation];
+                pfunc = (size_t *) &pBufRW[PreGrow_CardTableSecondLocation];
             }
         }
         else
@@ -1329,13 +1364,13 @@ int StompWriteBarrierResize(bool isRuntimeSuspended, bool bReqUpperBoundsCheck)
 
             // cmp offset[edx], 0ffh instruction
             _ASSERTE(pBuf[22] == 0x80);
-            pfunc = (size_t *) &pBuf[PostGrow_CardTableFirstLocation];
+            pfunc = (size_t *) &pBufRW[PostGrow_CardTableFirstLocation];
            *pfunc = (size_t) g_card_table;
 
             // What we're trying to update is the offset field of a
             // mov offset[edx], 0ffh instruction
             _ASSERTE(pBuf[34] == 0xC6);
-            pfunc = (size_t *) &pBuf[PostGrow_CardTableSecondLocation];
+            pfunc = (size_t *) &pBufRW[PostGrow_CardTableSecondLocation];
         }
 
         // Stick in the adjustment value.

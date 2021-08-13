@@ -38,7 +38,7 @@ namespace System.Security.Cryptography
             {
                 if (KeyValue != null)
                 {
-                    Array.Clear(KeyValue, 0, KeyValue.Length);
+                    Array.Clear(KeyValue);
                 }
                 KeyValue = null!;
             }

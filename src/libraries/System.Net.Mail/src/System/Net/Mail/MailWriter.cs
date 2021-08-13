@@ -8,7 +8,7 @@ using System.Net.Mime;
 
 namespace System.Net.Mail
 {
-    internal class MailWriter : BaseWriter
+    internal sealed class MailWriter : BaseWriter
     {
         /// <summary>
         /// ctor.

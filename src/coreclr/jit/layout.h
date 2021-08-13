@@ -1,3 +1,6 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
 #ifndef LAYOUT_H
 #define LAYOUT_H
 
@@ -32,12 +35,6 @@ class ClassLayout
         BYTE  m_gcPtrsArray[sizeof(BYTE*)];
     };
 
-#ifdef TARGET_AMD64
-    // A layout that has its size artificially inflated to avoid stack corruption due to
-    // bugs in user code - see Compiler::compQuirkForPPP for details.
-    ClassLayout* m_pppQuirkLayout;
-#endif
-
     // Class name as reported by ICorJitInfo::getClassName
     INDEBUG(const char* m_className;)
 
@@ -53,9 +50,6 @@ class ClassLayout
 #endif
         , m_gcPtrCount(0)
         , m_gcPtrs(nullptr)
-#ifdef TARGET_AMD64
-        , m_pppQuirkLayout(nullptr)
-#endif
 #ifdef DEBUG
         , m_className("block")
 #endif
@@ -73,9 +67,6 @@ class ClassLayout
 #endif
         , m_gcPtrCount(0)
         , m_gcPtrs(nullptr)
-#ifdef TARGET_AMD64
-        , m_pppQuirkLayout(nullptr)
-#endif
 #ifdef DEBUG
         , m_className(className)
 #endif
@@ -86,11 +77,6 @@ class ClassLayout
     void InitializeGCPtrs(Compiler* compiler);
 
 public:
-#ifdef TARGET_AMD64
-    // Get the layout for the PPP quirk - see Compiler::compQuirkForPPP for details.
-    ClassLayout* GetPPPQuirkLayout(CompAllocator alloc);
-#endif
-
     CORINFO_CLASS_HANDLE GetClassHandle() const
     {
         return m_classHandle;

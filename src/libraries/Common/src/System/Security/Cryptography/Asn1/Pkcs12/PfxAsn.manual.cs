@@ -51,11 +51,11 @@ namespace System.Security.Cryptography.Asn1.Pkcs12
                 throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
             }
 
-#if NETFRAMEWORK || NETCOREAPP3_0 || NETSTANDARD
-            byte[] derived = new byte[expectedOutputSize];
-#else
+#if NET5_0_OR_GREATER
             Debug.Assert(expectedOutputSize <= 64); // SHA512 is the largest digest size we know about
             Span<byte> derived = stackalloc byte[expectedOutputSize];
+#else
+            byte[] derived = new byte[expectedOutputSize];
 #endif
 
 

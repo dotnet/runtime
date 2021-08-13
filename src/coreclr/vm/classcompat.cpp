@@ -607,9 +607,6 @@ VOID MethodTableBuilder::BuildInteropVTable_InterfaceList(
     *pcBuildingInterfaceList = 0;
     *ppBuildingInterfaceList = NULL;
 
-    // Get the thread for stacking allocator
-    Thread *pThread = GetThread();
-
     // Get the metadata for enumerating the interfaces of the class
     IMDInternalImport *pMDImport = GetModule()->GetMDImport();
 
@@ -942,7 +939,7 @@ VOID MethodTableBuilder::BuildInteropVTable_PlaceMembers(
             }
         }
 
-        if(Classification & mdcMethodImpl)
+        if (Classification & mdcMethodImpl)
         {   // If this method serves as the BODY of a MethodImpl specification, then
         // we should iterate all the MethodImpl's for this class and see just how many
         // of them this method participates in as the BODY.
@@ -1048,7 +1045,6 @@ VOID MethodTableBuilder::BuildInteropVTable_ResolveInterfaces(
 
     HRESULT hr = S_OK;
     DWORD i;
-    Thread *pThread = GetThread();
 
     // resolve unresolved interfaces, determine an upper bound on the size of the interface map,
     // and determine the size of the largest interface (in # slots)
@@ -1245,7 +1241,11 @@ VOID MethodTableBuilder::BuildInteropVTable_ExpandInterface(InterfaceInfo_t *pIn
     if (pNewInterface->GetNumInterfaces() != 0) {
         MethodTable::InterfaceMapIterator it = pNewInterface->IterateInterfaceMap();
         while (it.Next()) {
-            BuildInteropVTable_ExpandInterface(pInterfaceMap, it.GetInterface(),
+            MethodTable *pItf = it.GetInterfaceApprox();
+            if (pItf->HasInstantiation() || pItf->IsSpecialMarkerTypeForGenericCasting())
+                continue;
+            
+            BuildInteropVTable_ExpandInterface(pInterfaceMap, pItf,
                                                pwInterfaceListSize, pdwMaxInterfaceMethods, FALSE);
         }
     }
@@ -1754,7 +1754,6 @@ VOID MethodTableBuilder::BuildInteropVTable_PlaceInterfaceDeclaration(
                 // laying out the method table.
                 if(bmtInterface->pdwOriginalStart == NULL)
                 {
-                    Thread *pThread = GetThread();
                     bmtInterface->pdwOriginalStart = new (GetStackingAllocator()) DWORD[bmtInterface->dwMaxExpandedInterfaces];
                     memset(bmtInterface->pdwOriginalStart, 0, sizeof(DWORD)*bmtInterface->dwMaxExpandedInterfaces);
                 }
@@ -2812,7 +2811,7 @@ VOID    MethodTableBuilder::EnumerateClassMethods()
         // on this type so we can just compare the tok with the body token found
         // from the overrides.
         for(DWORD impls = 0; impls < bmtMethodImpl->dwNumberMethodImpls; impls++) {
-            if(bmtMethodImpl->rgMethodImplTokens[impls].methodBody == tok) {
+            if ((bmtMethodImpl->rgMethodImplTokens[impls].methodBody == tok) && !IsMdStatic(dwMemberAttrs)) {
                 Classification |= mdcMethodImpl;
                 break;
             }
@@ -3316,7 +3315,7 @@ HRESULT MethodTableBuilder::FindMethodDeclarationForMethodImpl(
             IfFailRet(pMDInternalImport->GetNameAndSigOfMemberRef(tkMethod, &pSig, &cSig, &szMember));
 
             if (isCallConv(
-                MetaSig::GetCallingConvention(NULL, Signature(pSig, cSig)),
+                MetaSig::GetCallingConvention(Signature(pSig, cSig)),
                 IMAGE_CEE_CS_CALLCONV_FIELD))
             {
                 return VLDTR_E_MR_BADCALLINGCONV;

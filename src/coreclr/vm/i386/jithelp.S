@@ -377,10 +377,29 @@ LEAF_ENTRY JIT_WriteBarrierGroup, _TEXT
     ret
 LEAF_END JIT_WriteBarrierGroup, _TEXT
 
-#ifdef FEATURE_USE_ASM_GC_WRITE_BARRIERS
-// *******************************************************************************
-//  Write barrier wrappers with fcall calling convention
-//
+    .data
+    .align 4
+    .global C_FUNC(JIT_WriteBarrierEAX_Loc)
+C_FUNC(JIT_WriteBarrierEAX_Loc):
+    .word 0
+    .text
+
+LEAF_ENTRY JIT_WriteBarrier_Callable, _TEXT
+    mov eax, edx
+    mov edx, ecx
+    push    eax
+    call    1f
+1:
+    pop     eax
+2:
+.att_syntax
+    addl     $_GLOBAL_OFFSET_TABLE_+(2b-1b), %eax
+.intel_syntax noprefix
+    mov     eax, dword ptr [eax + C_FUNC(JIT_WriteBarrierEAX_Loc)@GOT]
+    xchg    eax, dword ptr [esp]
+    ret
+LEAF_END JIT_WriteBarrier_Callable, _TEXT
+
 .macro UniversalWriteBarrierHelper name
 .align 4
 
@@ -391,6 +410,11 @@ LEAF_ENTRY JIT_\name, _TEXT
 LEAF_END JIT_\name, _TEXT
 
 .endm
+
+#ifdef FEATURE_USE_ASM_GC_WRITE_BARRIERS
+// *******************************************************************************
+//  Write barrier wrappers with fcall calling convention
+//
 
 // Only define these if we're using the ASM GC write barriers; if this flag is not defined,
 // we'll use C++ versions of these write barriers.
@@ -618,7 +642,7 @@ LEAF_END JIT_Dbl2IntSSE2, _TEXT
 // NOTE: this helper will modify a value of esp and must establish the frame pointer.
 // NOTE: On Linux we must advance the stack pointer as we probe - it is not allowed to access 65535 bytes below esp.
 //
-#define PAGE_SIZE 0x1000
+#define PROBE_PAGE_SIZE 0x1000
 NESTED_ENTRY JIT_StackProbe, _TEXT, NoHandler
     // On entry:
     //   eax - the lowest address of the stack frame being allocated (i.e. [InitialSp - FrameSize])
@@ -627,11 +651,11 @@ NESTED_ENTRY JIT_StackProbe, _TEXT, NoHandler
     PROLOG_BEG
     PROLOG_END
 
-    and     esp, -PAGE_SIZE        // esp points to the **lowest address** on the last probed page
+    and     esp, -PROBE_PAGE_SIZE  // esp points to the **lowest address** on the last probed page
                                    // This is done to make the loop end condition simpler.
 
 LOCAL_LABEL(ProbeLoop):
-    sub     esp, PAGE_SIZE         // esp points to the lowest address of the **next page** to probe
+    sub     esp, PROBE_PAGE_SIZE   // esp points to the lowest address of the **next page** to probe
     test    [esp], eax             // esp points to the lowest address on the **last probed** page
     cmp     esp, eax
     jg      LOCAL_LABEL(ProbeLoop) // if esp > eax, then we need to probe at least one more page.

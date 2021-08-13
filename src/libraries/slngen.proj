@@ -1,12 +1,10 @@
 <!--
-  Important: This project requires to be invoked from within the VS Developer Command Prompt. 
   Targets that can be executed individually even though they are sequenced into build already:
     - UpdateSolutionFile: Adds/updates solution files with slngen which includes dependencies.
     - AddNuGetConfigToSolution: Checks if the solution needs a NuGet.config file to disable restore.
 -->
 <Project Sdk="Microsoft.Build.NoTargets">
   <PropertyGroup>
-    <TargetFramework>netstandard2.0</TargetFramework>
     <ProjTemplatePath>$(RepositoryEngineeringDir)slngen.template.proj</ProjTemplatePath>
     <NuGetConfigTemplatePath>$(RepositoryEngineeringDir)slngen.nuget.config</NuGetConfigTemplatePath>
   </PropertyGroup>
@@ -26,14 +24,14 @@
           DestinationFiles="%(SolutionFile.ProjFilePath)" />
     
     <!-- Invoke slngen -->
-    <Exec Command="dotnet slngen &quot;%(SolutionFile.ProjFilePath) -p SlnGenMainProject=%(SolutionFile.Filename) --launch false --nologo&quot;" />
+    <Exec Command="dotnet slngen -p SlnGenMainProject=%(SolutionFile.Filename) --launch false --nologo &quot;%(SolutionFile.ProjFilePath)&quot;" />
 
     <!-- Delete temporary template file -->
     <Delete Files="%(SolutionFile.ProjFilePath)" />
   </Target>
 
   <Target Name="AddNuGetConfigToSolution"
-          AfterTargets="UpdateSolutionFile"
+          AfterTargets="Build"
           DependsOnTargets="GetSolutionFiles;GetSourceProjectWithDuplicateTfm"
           Inputs="@(SolutionFile)"
           Outputs="%(NuGetConfigFilePath)">

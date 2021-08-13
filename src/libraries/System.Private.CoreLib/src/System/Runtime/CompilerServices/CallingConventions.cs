@@ -30,8 +30,20 @@ namespace System.Runtime.CompilerServices
         /// </summary>
         public CallConvSuppressGCTransition() { }
     }
+
     public class CallConvThiscall
     {
         public CallConvThiscall() { }
+    }
+
+    /// <summary>
+    /// Indicates that the calling convention used is the member function variant.
+    /// </summary>
+    public class CallConvMemberFunction
+    {
+        /// <summary>
+        /// Initializes a new instance of the <see cref="CallConvMemberFunction" /> class.
+        /// </summary>
+        public CallConvMemberFunction() { }
     }
 }

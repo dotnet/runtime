@@ -195,11 +195,11 @@ namespace System.Diagnostics.Eventing.Reader
 
                             if (channelRefDisplayName == null && isImported)
                             {
-                                if (string.Compare(channelName, "Application", StringComparison.OrdinalIgnoreCase) == 0)
+                                if (string.Equals(channelName, "Application", StringComparison.OrdinalIgnoreCase))
                                     channelRefMessageId = 256;
-                                else if (string.Compare(channelName, "System", StringComparison.OrdinalIgnoreCase) == 0)
+                                else if (string.Equals(channelName, "System", StringComparison.OrdinalIgnoreCase))
                                     channelRefMessageId = 258;
-                                else if (string.Compare(channelName, "Security", StringComparison.OrdinalIgnoreCase) == 0)
+                                else if (string.Equals(channelName, "Security", StringComparison.OrdinalIgnoreCase))
                                     channelRefMessageId = 257;
                                 else
                                     channelRefMessageId = -1;

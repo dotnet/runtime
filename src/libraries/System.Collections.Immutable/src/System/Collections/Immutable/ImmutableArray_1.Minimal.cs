@@ -132,7 +132,6 @@ namespace System.Collections.Immutable
             }
         }
 
-#if !NETSTANDARD1_0
         /// <summary>
         /// Gets a read-only reference to the element at the specified index in the read-only list.
         /// </summary>
@@ -147,7 +146,6 @@ namespace System.Collections.Immutable
             // of removing array bounds checking to work.
             return ref this.array![index];
         }
-#endif
 
         /// <summary>
         /// Gets a value indicating whether this collection is empty.
@@ -217,7 +215,7 @@ namespace System.Collections.Immutable
             get
             {
                 var self = this;
-                return self.IsDefault ? "Uninitialized" : string.Format(CultureInfo.CurrentCulture, "Length = {0}", self.Length);
+                return self.IsDefault ? "Uninitialized" : $"Length = {self.Length}";
             }
         }
 
@@ -306,7 +304,7 @@ namespace System.Collections.Immutable
         /// <returns>
         ///   <c>true</c> if the specified <see cref="object"/> is equal to this instance; otherwise, <c>false</c>.
         /// </returns>
-        public override bool Equals(object? obj)
+        public override bool Equals([NotNullWhen(true)] object? obj)
         {
             return obj is IImmutableArray other && this.array == other.Array;
         }

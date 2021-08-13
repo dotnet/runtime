@@ -9,7 +9,7 @@ namespace System.Reflection.Metadata
     /// Source document in debug metadata.
     /// </summary>
     /// <remarks>
-    /// See also https://github.com/dotnet/runtime/blob/master/src/libraries/System.Reflection.Metadata/specs/PortablePdb-Metadata.md#document-table-0x30.
+    /// See also https://github.com/dotnet/runtime/blob/main/src/libraries/System.Reflection.Metadata/specs/PortablePdb-Metadata.md#document-table-0x30.
     /// </remarks>
     public readonly struct Document
     {

@@ -31,8 +31,7 @@ namespace System.Net
                 throw;
             }
 
-            if (NameResolutionTelemetry.Log.IsEnabled())
-                NameResolutionTelemetry.Log.AfterResolution(stopwatch, successful: true);
+            NameResolutionTelemetry.Log.AfterResolution(stopwatch, successful: true);
 
             if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(null, name);
             return name;
@@ -167,11 +166,11 @@ namespace System.Net
                 throw new ArgumentException(SR.net_invalid_ip_addr, nameof(address));
             }
 
-            return RunAsync(s => {
-                    IPHostEntry ipHostEntry = GetHostEntryCore((IPAddress)s, AddressFamily.Unspecified);
+            return RunAsync(static (s, stopwatch) => {
+                IPHostEntry ipHostEntry = GetHostEntryCore((IPAddress)s, AddressFamily.Unspecified, stopwatch);
                 if (NetEventSource.Log.IsEnabled()) NetEventSource.Info((IPAddress)s, $"{ipHostEntry} with {ipHostEntry.AddressList.Length} entries");
                 return ipHostEntry;
-            }, address);
+            }, address, CancellationToken.None);
         }
 
         public static IAsyncResult BeginGetHostEntry(IPAddress address, AsyncCallback? requestCallback, object? stateObject) =>
@@ -256,7 +255,7 @@ namespace System.Net
         public static IPAddress[] EndGetHostAddresses(IAsyncResult asyncResult) =>
             TaskToApm.End<IPAddress[]>(asyncResult ?? throw new ArgumentNullException(nameof(asyncResult)));
 
-        [Obsolete("GetHostByName is obsoleted for this type, please use GetHostEntry instead. https://go.microsoft.com/fwlink/?linkid=14202")]
+        [Obsolete("GetHostByName has been deprecated. Use GetHostEntry instead.")]
         public static IPHostEntry GetHostByName(string hostName)
         {
             if (hostName is null)
@@ -272,15 +271,15 @@ namespace System.Net
             return GetHostEntryCore(hostName, AddressFamily.Unspecified);
         }
 
-        [Obsolete("BeginGetHostByName is obsoleted for this type, please use BeginGetHostEntry instead. https://go.microsoft.com/fwlink/?linkid=14202")]
+        [Obsolete("BeginGetHostByName has been deprecated. Use BeginGetHostEntry instead.")]
         public static IAsyncResult BeginGetHostByName(string hostName, AsyncCallback? requestCallback, object? stateObject) =>
             TaskToApm.Begin(GetHostEntryCoreAsync(hostName, justReturnParsedIp: true, throwOnIIPAny: true, AddressFamily.Unspecified, CancellationToken.None), requestCallback, stateObject);
 
-        [Obsolete("EndGetHostByName is obsoleted for this type, please use EndGetHostEntry instead. https://go.microsoft.com/fwlink/?linkid=14202")]
+        [Obsolete("EndGetHostByName has been deprecated. Use EndGetHostEntry instead.")]
         public static IPHostEntry EndGetHostByName(IAsyncResult asyncResult) =>
             TaskToApm.End<IPHostEntry>(asyncResult ?? throw new ArgumentNullException(nameof(asyncResult)));
 
-        [Obsolete("GetHostByAddress is obsoleted for this type, please use GetHostEntry instead. https://go.microsoft.com/fwlink/?linkid=14202")]
+        [Obsolete("GetHostByAddress has been deprecated. Use GetHostEntry instead.")]
         public static IPHostEntry GetHostByAddress(string address)
         {
             if (address is null)
@@ -294,7 +293,7 @@ namespace System.Net
             return ipHostEntry;
         }
 
-        [Obsolete("GetHostByAddress is obsoleted for this type, please use GetHostEntry instead. https://go.microsoft.com/fwlink/?linkid=14202")]
+        [Obsolete("GetHostByAddress has been deprecated. Use GetHostEntry instead.")]
         public static IPHostEntry GetHostByAddress(IPAddress address)
         {
             if (address is null)
@@ -308,7 +307,7 @@ namespace System.Net
             return ipHostEntry;
         }
 
-        [Obsolete("Resolve is obsoleted for this type, please use GetHostEntry instead. https://go.microsoft.com/fwlink/?linkid=14202")]
+        [Obsolete("Resolve has been deprecated. Use GetHostEntry instead.")]
         public static IPHostEntry Resolve(string hostName)
         {
             if (hostName is null)
@@ -340,11 +339,11 @@ namespace System.Net
             return ipHostEntry;
         }
 
-        [Obsolete("BeginResolve is obsoleted for this type, please use BeginGetHostEntry instead. https://go.microsoft.com/fwlink/?linkid=14202")]
+        [Obsolete("BeginResolve has been deprecated. Use BeginGetHostEntry instead.")]
         public static IAsyncResult BeginResolve(string hostName, AsyncCallback? requestCallback, object? stateObject) =>
             TaskToApm.Begin(GetHostEntryCoreAsync(hostName, justReturnParsedIp: false, throwOnIIPAny: false, AddressFamily.Unspecified, CancellationToken.None), requestCallback, stateObject);
 
-        [Obsolete("EndResolve is obsoleted for this type, please use EndGetHostEntry instead. https://go.microsoft.com/fwlink/?linkid=14202")]
+        [Obsolete("EndResolve has been deprecated. Use EndGetHostEntry instead.")]
         public static IPHostEntry EndResolve(IAsyncResult asyncResult)
         {
             IPHostEntry ipHostEntry;
@@ -381,17 +380,20 @@ namespace System.Net
             return ipHostEntry;
         }
 
-        private static IPHostEntry GetHostEntryCore(string hostName, AddressFamily addressFamily) =>
-            (IPHostEntry)GetHostEntryOrAddressesCore(hostName, justAddresses: false, addressFamily);
+        private static IPHostEntry GetHostEntryCore(string hostName, AddressFamily addressFamily, ValueStopwatch stopwatch = default) =>
+            (IPHostEntry)GetHostEntryOrAddressesCore(hostName, justAddresses: false, addressFamily, stopwatch);
 
-        private static IPAddress[] GetHostAddressesCore(string hostName, AddressFamily addressFamily) =>
-            (IPAddress[])GetHostEntryOrAddressesCore(hostName, justAddresses: true, addressFamily);
+        private static IPAddress[] GetHostAddressesCore(string hostName, AddressFamily addressFamily, ValueStopwatch stopwatch = default) =>
+            (IPAddress[])GetHostEntryOrAddressesCore(hostName, justAddresses: true, addressFamily, stopwatch);
 
-        private static object GetHostEntryOrAddressesCore(string hostName, bool justAddresses, AddressFamily addressFamily)
+        private static object GetHostEntryOrAddressesCore(string hostName, bool justAddresses, AddressFamily addressFamily, ValueStopwatch stopwatch)
         {
             ValidateHostName(hostName);
 
-            ValueStopwatch stopwatch = NameResolutionTelemetry.Log.BeforeResolution(hostName);
+            if (!stopwatch.IsActive)
+            {
+                stopwatch = NameResolutionTelemetry.Log.BeforeResolution(hostName);
+            }
 
             object result;
             try
@@ -419,27 +421,29 @@ namespace System.Net
                 throw;
             }
 
-            if (NameResolutionTelemetry.Log.IsEnabled())
-                NameResolutionTelemetry.Log.AfterResolution(stopwatch, successful: true);
+            NameResolutionTelemetry.Log.AfterResolution(stopwatch, successful: true);
 
             return result;
         }
 
-        private static IPHostEntry GetHostEntryCore(IPAddress address, AddressFamily addressFamily) =>
-            (IPHostEntry)GetHostEntryOrAddressesCore(address, justAddresses: false, addressFamily);
+        private static IPHostEntry GetHostEntryCore(IPAddress address, AddressFamily addressFamily, ValueStopwatch stopwatch = default) =>
+            (IPHostEntry)GetHostEntryOrAddressesCore(address, justAddresses: false, addressFamily, stopwatch);
 
-        private static IPAddress[] GetHostAddressesCore(IPAddress address, AddressFamily addressFamily) =>
-            (IPAddress[])GetHostEntryOrAddressesCore(address, justAddresses: true, addressFamily);
+        private static IPAddress[] GetHostAddressesCore(IPAddress address, AddressFamily addressFamily, ValueStopwatch stopwatch) =>
+            (IPAddress[])GetHostEntryOrAddressesCore(address, justAddresses: true, addressFamily, stopwatch);
 
         // Does internal IPAddress reverse and then forward lookups (for Legacy and current public methods).
-        private static object GetHostEntryOrAddressesCore(IPAddress address, bool justAddresses, AddressFamily addressFamily)
+        private static object GetHostEntryOrAddressesCore(IPAddress address, bool justAddresses, AddressFamily addressFamily, ValueStopwatch stopwatch)
         {
             // Try to get the data for the host from its address.
             // We need to call getnameinfo first, because getaddrinfo w/ the ipaddress string
             // will only return that address and not the full list.
 
             // Do a reverse lookup to get the host name.
-            ValueStopwatch stopwatch = NameResolutionTelemetry.Log.BeforeResolution(address);
+            if (!stopwatch.IsActive)
+            {
+                stopwatch = NameResolutionTelemetry.Log.BeforeResolution(address);
+            }
 
             SocketError errorCode;
             string? name;
@@ -459,13 +463,10 @@ namespace System.Net
                 throw;
             }
 
-            if (NameResolutionTelemetry.Log.IsEnabled())
-            {
-                NameResolutionTelemetry.Log.AfterResolution(stopwatch, successful: true);
+            NameResolutionTelemetry.Log.AfterResolution(stopwatch, successful: true);
 
-                // Do the forward lookup to get the IPs for that host name
-                stopwatch = NameResolutionTelemetry.Log.BeforeResolution(name);
-            }
+            // Do the forward lookup to get the IPs for that host name
+            stopwatch = NameResolutionTelemetry.Log.BeforeResolution(name);
 
             object result;
             try
@@ -492,8 +493,7 @@ namespace System.Net
                 throw;
             }
 
-            if (NameResolutionTelemetry.Log.IsEnabled())
-                NameResolutionTelemetry.Log.AfterResolution(stopwatch, successful: true);
+            NameResolutionTelemetry.Log.AfterResolution(stopwatch, successful: true);
 
             // One of three things happened:
             // 1. Success.
@@ -547,6 +547,8 @@ namespace System.Net
             {
                 if (NameResolutionPal.SupportsGetAddrInfoAsync)
                 {
+#pragma warning disable CS0162 // Unreachable code detected -- SupportsGetAddrInfoAsync is a constant on *nix.
+
                     // If the OS supports it and 'hostName' is not an IP Address, resolve the name asynchronously
                     // instead of calling the synchronous version in the ThreadPool.
                     // If it fails, we will fall back to ThreadPool as well.
@@ -571,6 +573,7 @@ namespace System.Net
                     {
                         return t;
                     }
+#pragma warning restore CS0162
                 }
 
                 asyncState = family == AddressFamily.Unspecified ? (object)hostName : new KeyValuePair<string, AddressFamily>(hostName, family);
@@ -578,25 +581,25 @@ namespace System.Net
 
             if (justAddresses)
             {
-                return RunAsync(s => s switch
+                return RunAsync(static (s, stopwatch) => s switch
                 {
-                    string h => GetHostAddressesCore(h, AddressFamily.Unspecified),
-                    KeyValuePair<string, AddressFamily> t => GetHostAddressesCore(t.Key, t.Value),
-                    IPAddress a => GetHostAddressesCore(a, AddressFamily.Unspecified),
-                    KeyValuePair<IPAddress, AddressFamily> t => GetHostAddressesCore(t.Key, t.Value),
+                    string h => GetHostAddressesCore(h, AddressFamily.Unspecified, stopwatch),
+                    KeyValuePair<string, AddressFamily> t => GetHostAddressesCore(t.Key, t.Value, stopwatch),
+                    IPAddress a => GetHostAddressesCore(a, AddressFamily.Unspecified, stopwatch),
+                    KeyValuePair<IPAddress, AddressFamily> t => GetHostAddressesCore(t.Key, t.Value, stopwatch),
                     _ => null
-                }, asyncState);
+                }, asyncState, cancellationToken);
             }
             else
             {
-                return RunAsync(s => s switch
+                return RunAsync(static (s, stopwatch) => s switch
                 {
-                    string h => GetHostEntryCore(h, AddressFamily.Unspecified),
-                    KeyValuePair<string, AddressFamily> t => GetHostEntryCore(t.Key, t.Value),
-                    IPAddress a => GetHostEntryCore(a, AddressFamily.Unspecified),
-                    KeyValuePair<IPAddress, AddressFamily> t => GetHostEntryCore(t.Key, t.Value),
+                    string h => GetHostEntryCore(h, AddressFamily.Unspecified, stopwatch),
+                    KeyValuePair<string, AddressFamily> t => GetHostEntryCore(t.Key, t.Value, stopwatch),
+                    IPAddress a => GetHostEntryCore(a, AddressFamily.Unspecified, stopwatch),
+                    KeyValuePair<IPAddress, AddressFamily> t => GetHostEntryCore(t.Key, t.Value, stopwatch),
                     _ => null
-                }, asyncState);
+                }, asyncState, cancellationToken);
             }
         }
 
@@ -631,9 +634,6 @@ namespace System.Net
             }
         }
 
-        private static Task<TResult> RunAsync<TResult>(Func<object, TResult> func, object arg) =>
-            Task.Factory.StartNew(func!, arg, CancellationToken.None, TaskCreationOptions.DenyChildAttach, TaskScheduler.Default);
-
         private static IPHostEntry CreateHostEntryForAddress(IPAddress address) =>
             new IPHostEntry
             {
@@ -654,13 +654,78 @@ namespace System.Net
             }
         }
 
-
         private static bool LogFailure(ValueStopwatch stopwatch)
         {
-            if (NameResolutionTelemetry.Log.IsEnabled())
-                NameResolutionTelemetry.Log.AfterResolution(stopwatch, successful: false);
-
+            NameResolutionTelemetry.Log.AfterResolution(stopwatch, successful: false);
             return false;
+        }
+
+        /// <summary>Mapping from key to current task in flight for that key.</summary>
+        private static readonly Dictionary<object, Task> s_tasks = new Dictionary<object, Task>();
+
+        /// <summary>Queue the function to be invoked asynchronously.</summary>
+        /// <remarks>
+        /// Since this is doing synchronous work on a thread pool thread, we want to limit how many threads end up being
+        /// blocked.  We could employ a semaphore to limit overall usage, but a common case is that DNS requests are made
+        /// for only a handful of endpoints, and a reasonable compromise is to ensure that requests for a given host are
+        /// serialized.  Once the data for that host is cached locally by the OS, the subsequent requests should all complete
+        /// very quickly, and if the head-of-line request is taking a long time due to the connection to the server, we won't
+        /// block lots of threads all getting data for that one host.  We also still want to issue the request to the OS, rather
+        /// than having all concurrent requests for the same host share the exact same task, so that any shuffling of the results
+        /// by the OS to enable round robin is still perceived.
+        /// </remarks>
+        private static Task<TResult> RunAsync<TResult>(Func<object, ValueStopwatch, TResult> func, object key, CancellationToken cancellationToken)
+        {
+            ValueStopwatch stopwatch = NameResolutionTelemetry.Log.BeforeResolution(key);
+
+            Task<TResult>? task = null;
+
+            lock (s_tasks)
+            {
+                // Get the previous task for this key, if there is one.
+                s_tasks.TryGetValue(key, out Task? prevTask);
+                prevTask ??= Task.CompletedTask;
+
+                // Invoke the function in a queued work item when the previous task completes. Note that some callers expect the
+                // returned task to have the key as the task's AsyncState.
+                task = prevTask.ContinueWith(delegate
+                {
+                    Debug.Assert(!Monitor.IsEntered(s_tasks));
+                    try
+                    {
+                        return func(key, stopwatch);
+                    }
+                    finally
+                    {
+                        // When the work is done, remove this key/task pair from the dictionary if this is still the current task.
+                        // Because the work item is created and stored into both the local and the dictionary while the lock is
+                        // held, and since we take the same lock here, inside this lock it's guaranteed to see the changes
+                        // made by the call site.
+                        lock (s_tasks)
+                        {
+                            ((ICollection<KeyValuePair<object, Task>>)s_tasks).Remove(new KeyValuePair<object, Task>(key!, task!));
+                        }
+                    }
+                }, key, cancellationToken, TaskContinuationOptions.DenyChildAttach, TaskScheduler.Default);
+
+                // If it's possible the task may end up getting canceled, it won't have a chance to remove itself from
+                // the dictionary if it is canceled, so use a separate continuation to do so.
+                if (cancellationToken.CanBeCanceled)
+                {
+                    task.ContinueWith((task, key) =>
+                    {
+                        lock (s_tasks)
+                        {
+                            ((ICollection<KeyValuePair<object, Task>>)s_tasks).Remove(new KeyValuePair<object, Task>(key!, task));
+                        }
+                    }, key, CancellationToken.None, TaskContinuationOptions.OnlyOnCanceled | TaskContinuationOptions.ExecuteSynchronously, TaskScheduler.Default);
+                }
+
+                // Finally, store the task into the dictionary as the current task for this key.
+                s_tasks[key] = task;
+            }
+
+            return task;
         }
     }
 }

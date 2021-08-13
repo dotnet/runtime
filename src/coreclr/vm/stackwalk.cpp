@@ -713,14 +713,12 @@ UINT_PTR Thread::VirtualUnwindToFirstManagedCallFrame(T_CONTEXT* pContext)
     // get our caller's PSP, or our caller's caller's SP.
     while (!ExecutionManager::IsManagedCode(uControlPc))
     {
-#ifdef FEATURE_WRITEBARRIER_COPY
         if (IsIPInWriteBarrierCodeCopy(uControlPc))
         {
             // Pretend we were executing the barrier function at its original location so that the unwinder can unwind the frame
             uControlPc = AdjustWriteBarrierIP(uControlPc);
             SetIP(pContext, uControlPc);
         }
-#endif // FEATURE_WRITEBARRIER_COPY
 
 #ifndef TARGET_UNIX
         uControlPc = VirtualUnwindCallFrame(pContext);
@@ -946,7 +944,7 @@ StackWalkAction Thread::StackWalkFrames(PSTACKWALKFRAMESCALLBACK pCallback,
     bool fUseInitRegDisplay;
 
 #ifndef DACCESS_COMPILE
-    _ASSERTE(GetThread() == this || (flags & ALLOW_ASYNC_STACK_WALK));
+    _ASSERTE(GetThreadNULLOk() == this || (flags & ALLOW_ASYNC_STACK_WALK));
     BOOL fDebuggerHasInitialContext = (GetFilterContext() != NULL);
     BOOL fProfilerHasInitialContext = (GetProfilerFilterContext() != NULL);
 
@@ -1496,9 +1494,9 @@ BOOL StackFrameIterator::IsValid(void)
         // In particular, is thread's starting frame the same as it was when
         // we started?
         BOOL bIsRealStartFrameUnchanged =
-            (m_pStartFrame != NULL) ||
-            (m_flags & POPFRAMES) ||
-            (m_pRealStartFrame == m_pThread->GetFrame());
+            (m_pStartFrame != NULL)
+            || (m_flags & POPFRAMES)
+            || (m_pRealStartFrame == m_pThread->GetFrame());
 
 #ifdef FEATURE_HIJACK
         // In GCStress >= 4 two threads could race on triggering GC;
@@ -1508,15 +1506,17 @@ BOOL StackFrameIterator::IsValid(void)
         // In normal case (no GCStress), after p/invoke, IL_STUB will check if GC is in progress and synchronize.
         // NOTE: This condition needs to be evaluated after the previous one to prevent a subtle race condition
         // (https://github.com/dotnet/runtime/issues/11678)
-        bIsRealStartFrameUnchanged = bIsRealStartFrameUnchanged ||
-            ((GCStress<cfg_instr>::IsEnabled()) &&
-            (m_pRealStartFrame != NULL) &&
-            (m_pRealStartFrame != FRAME_TOP) &&
-            (m_pRealStartFrame->GetVTablePtr() == InlinedCallFrame::GetMethodFrameVPtr()) &&
-            (m_pThread->GetFrame() != NULL) &&
-            (m_pThread->GetFrame() != FRAME_TOP) &&
-            ((m_pThread->GetFrame()->GetVTablePtr() == ResumableFrame::GetMethodFrameVPtr()) ||
-            (m_pThread->GetFrame()->GetVTablePtr() == RedirectedThreadFrame::GetMethodFrameVPtr())));
+        if (bIsRealStartFrameUnchanged == FALSE)
+        {
+            _ASSERTE(GCStress<cfg_instr>::IsEnabled());
+            _ASSERTE(m_pRealStartFrame != NULL);
+            _ASSERTE(m_pRealStartFrame != FRAME_TOP);
+            _ASSERTE(m_pRealStartFrame->GetVTablePtr() == InlinedCallFrame::GetMethodFrameVPtr());
+            _ASSERTE(m_pThread->GetFrame() != NULL);
+            _ASSERTE(m_pThread->GetFrame() != FRAME_TOP);
+            bIsRealStartFrameUnchanged = (m_pThread->GetFrame()->GetVTablePtr() == ResumableFrame::GetMethodFrameVPtr())
+                || (m_pThread->GetFrame()->GetVTablePtr() == RedirectedThreadFrame::GetMethodFrameVPtr());
+        }
 #endif // FEATURE_HIJACK
 
         _ASSERTE(bIsRealStartFrameUnchanged);

@@ -7,7 +7,7 @@ namespace System.Reflection.Context.Virtual
     {
         protected abstract class PropertySetterBase : FuncPropertyAccessorBase
         {
-            private Type[] _parameterTypes;
+            private Type[]? _parameterTypes;
 
             protected PropertySetterBase(VirtualPropertyBase property)
                 : base(property)

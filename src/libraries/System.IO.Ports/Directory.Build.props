@@ -1,12 +1,7 @@
 ﻿<Project>
   <Import Project="..\Directory.Build.props" />
   <PropertyGroup>
-    <StrongNameKeyId>Open</StrongNameKeyId>
     <IncludePlatformAttributes>true</IncludePlatformAttributes>
-    <UnsupportedOSPlatforms>browser</UnsupportedOSPlatforms>
-    <PackageDescription>Provides classes for controlling serial ports.
-
-Commonly Used Types:
-System.IO.Ports.SerialPort</PackageDescription>
+    <UnsupportedOSPlatforms>browser;android;ios;tvos</UnsupportedOSPlatforms>
   </PropertyGroup>
 </Project>

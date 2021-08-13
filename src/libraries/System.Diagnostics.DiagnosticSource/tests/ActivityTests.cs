@@ -889,7 +889,7 @@ namespace System.Diagnostics.Tests
 
                 Activity parent = new Activity("parent").Start();
                 Activity activity = new Activity("child").Start();
-                Assert.Equal(parent.SpanId.ToHexString(), activity.ParentSpanId.ToHexString()); ;
+                Assert.Equal(parent.SpanId.ToHexString(), activity.ParentSpanId.ToHexString());
             }).Dispose();
         }
 
@@ -1604,6 +1604,36 @@ namespace System.Diagnostics.Tests
                 Assert.Equal(tags[i].Key, tagObjects[i].Key);
                 Assert.Equal(tags[i].Value, tagObjects[i].Value);
             }
+
+            // Test Deleting last tag
+            activity = new Activity("LastTagObjects");
+
+            activity.SetTag("hello1", "1");
+            activity.SetTag("hello2", "1");
+            activity.SetTag("hello2", null); // last tag get deleted
+            activity.SetTag("hello3", "2");
+            activity.SetTag("hello4", "3");
+
+            tagObjects = activity.TagObjects.ToArray();
+            Assert.Equal(3, tagObjects.Length);
+            Assert.Equal("hello1", tagObjects[0].Key);
+            Assert.Equal("1", tagObjects[0].Value);
+            Assert.Equal("hello3", tagObjects[1].Key);
+            Assert.Equal("2", tagObjects[1].Value);
+            Assert.Equal("hello4", tagObjects[2].Key);
+            Assert.Equal("3", tagObjects[2].Value);
+
+            activity = new Activity("FirstLastTagObjects");
+            activity.SetTag("hello1", "1");
+            activity.SetTag("hello1", null); // Delete the first and last tag
+            activity.SetTag("hello2", "2");
+            activity.SetTag("hello3", "3");
+            tagObjects = activity.TagObjects.ToArray();
+            Assert.Equal(2, tagObjects.Length);
+            Assert.Equal("hello2", tagObjects[0].Key);
+            Assert.Equal("2", tagObjects[0].Value);
+            Assert.Equal("hello3", tagObjects[1].Key);
+            Assert.Equal("3", tagObjects[1].Value);
         }
 
         [Fact]
@@ -1695,6 +1725,32 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
+        public void TestParentTraceFlags()
+        {
+            Activity a = new Activity("ParentFlagsA");
+            a.SetIdFormat(ActivityIdFormat.W3C);
+            a.SetParentId(ActivityTraceId.CreateFromString("0123456789abcdef0123456789abcdef".AsSpan()), ActivitySpanId.CreateFromString("0123456789abcdef".AsSpan()), ActivityTraceFlags.Recorded);
+            Assert.Equal("00-0123456789abcdef0123456789abcdef-0123456789abcdef-01", a.ParentId);
+
+            Activity b = new Activity("ParentFlagsB");
+            b.SetIdFormat(ActivityIdFormat.W3C);
+            b.SetParentId(ActivityTraceId.CreateFromString("0123456789abcdef0123456789abcdef".AsSpan()), ActivitySpanId.CreateFromString("0123456789abcdef".AsSpan()), ActivityTraceFlags.None);
+            b.ActivityTraceFlags = ActivityTraceFlags.Recorded; // Setting ActivityTraceFlags shouldn't affect the parent
+            Assert.Equal("00-0123456789abcdef0123456789abcdef-0123456789abcdef-00", b.ParentId);
+
+            using ActivitySource aSource = new ActivitySource("CheckParentTraceFlags");
+            using ActivityListener listener = new ActivityListener();
+            listener.ShouldListenTo = (activitySource) => object.ReferenceEquals(aSource, activitySource);
+            listener.Sample = (ref ActivityCreationOptions<ActivityContext> activityOptions) => ActivitySamplingResult.AllDataAndRecorded;
+            ActivitySource.AddActivityListener(listener);
+
+            ActivityContext parentContext = new ActivityContext(ActivityTraceId.CreateRandom(), ActivitySpanId.CreateRandom(), ActivityTraceFlags.Recorded);
+            a = aSource.CreateActivity("WithContext", ActivityKind.Internal, parentContext, default, default, ActivityIdFormat.W3C);
+            Assert.NotNull(a);
+            Assert.Equal("00-" + parentContext.TraceId + "-" + parentContext.SpanId + "-01", a.ParentId);
+        }
+
+        [Fact]
         public void TestStatus()
         {
             Activity a = new Activity("Status");
@@ -1737,7 +1793,7 @@ namespace System.Diagnostics.Tests
         [Fact]
         public void StructEnumerator_GenericLinkedList()
         {
-            // Note: This test verifies the presence of the struct Enumerator on LinkedList<T> used by customers dynamically to avoid allocations.
+            // Note: This test verifies the presence of the struct Enumerator on DiagLinkedList<T> used by customers dynamically to avoid allocations.
 
             Activity a = new Activity("TestActivity");
             a.AddEvent(new ActivityEvent());

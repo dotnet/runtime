@@ -25,11 +25,11 @@
 static bool blockNeedsGCPoll(BasicBlock* block)
 {
     bool blockMayNeedGCPoll = false;
-    for (Statement* stmt = block->FirstNonPhiDef(); stmt != nullptr; stmt = stmt->GetNextStmt())
+    for (Statement* const stmt : block->NonPhiStatements())
     {
         if ((stmt->GetRootNode()->gtFlags & GTF_CALL) != 0)
         {
-            for (GenTree* tree = stmt->GetTreeList(); tree != nullptr; tree = tree->gtNext)
+            for (GenTree* const tree : stmt->TreeList())
             {
                 if (tree->OperGet() == GT_CALL)
                 {
@@ -91,7 +91,7 @@ PhaseStatus Compiler::fgInsertGCPolls()
     BasicBlock* block;
 
     // Walk through the blocks and hunt for a block that needs a GC Poll
-    for (block = fgFirstBB; block; block = block->bbNext)
+    for (block = fgFirstBB; block != nullptr; block = block->bbNext)
     {
         // When optimizations are enabled, we can't rely on BBF_HAS_SUPPRESSGC_CALL flag:
         // the call could've been moved, e.g., hoisted from a loop, CSE'd, etc.
@@ -190,8 +190,9 @@ PhaseStatus Compiler::fgInsertGCPolls()
     {
         noway_assert(opts.OptimizationEnabled());
         fgReorderBlocks();
-        constexpr bool computeDoms = false;
-        fgUpdateChangedFlowGraph(computeDoms);
+        constexpr bool computePreds = true;
+        constexpr bool computeDoms  = false;
+        fgUpdateChangedFlowGraph(computePreds, computeDoms);
     }
 #ifdef DEBUG
     if (verbose)
@@ -320,7 +321,7 @@ BasicBlock* Compiler::fgCreateGCPoll(GCPollType pollType, BasicBlock* block)
         unsigned char lpIndex     = top->bbNatLoopNum;
 
         // Update block flags
-        const unsigned __int64 originalFlags = top->bbFlags | BBF_GC_SAFE_POINT;
+        const BasicBlockFlags originalFlags = top->bbFlags | BBF_GC_SAFE_POINT;
 
         // We are allowed to split loops and we need to keep a few other flags...
         //
@@ -430,7 +431,6 @@ BasicBlock* Compiler::fgCreateGCPoll(GCPollType pollType, BasicBlock* block)
 
         top->bbJumpDest = bottom;
         top->bbJumpKind = BBJ_COND;
-        bottom->bbFlags |= BBF_JMP_TARGET;
 
         // Bottom has Top and Poll as its predecessors.  Poll has just Top as a predecessor.
         fgAddRefPred(bottom, poll);
@@ -629,7 +629,7 @@ PhaseStatus Compiler::fgImport()
     // Note this includes (to some extent) the impact of importer folded
     // branches, provided the folded tree covered the entire block's IL.
     unsigned importedILSize = 0;
-    for (BasicBlock* block = fgFirstBB; block != nullptr; block = block->bbNext)
+    for (BasicBlock* const block : Blocks())
     {
         if ((block->bbFlags & BBF_IMPORTED) != 0)
         {
@@ -684,31 +684,16 @@ PhaseStatus Compiler::fgImport()
 
 bool Compiler::fgIsThrow(GenTree* tree)
 {
-    if ((tree->gtOper != GT_CALL) || (tree->AsCall()->gtCallType != CT_HELPER))
+    if (!tree->IsCall())
     {
         return false;
     }
-
-    // TODO-Throughput: Replace all these calls to eeFindHelper() with a table based lookup
-
-    if ((tree->AsCall()->gtCallMethHnd == eeFindHelper(CORINFO_HELP_OVERFLOW)) ||
-        (tree->AsCall()->gtCallMethHnd == eeFindHelper(CORINFO_HELP_VERIFICATION)) ||
-        (tree->AsCall()->gtCallMethHnd == eeFindHelper(CORINFO_HELP_RNGCHKFAIL)) ||
-        (tree->AsCall()->gtCallMethHnd == eeFindHelper(CORINFO_HELP_THROWDIVZERO)) ||
-        (tree->AsCall()->gtCallMethHnd == eeFindHelper(CORINFO_HELP_THROWNULLREF)) ||
-        (tree->AsCall()->gtCallMethHnd == eeFindHelper(CORINFO_HELP_THROW)) ||
-        (tree->AsCall()->gtCallMethHnd == eeFindHelper(CORINFO_HELP_RETHROW)) ||
-        (tree->AsCall()->gtCallMethHnd == eeFindHelper(CORINFO_HELP_THROW_TYPE_NOT_SUPPORTED)) ||
-        (tree->AsCall()->gtCallMethHnd == eeFindHelper(CORINFO_HELP_THROW_PLATFORM_NOT_SUPPORTED)))
+    GenTreeCall* call = tree->AsCall();
+    if ((call->gtCallType == CT_HELPER) && s_helperCallProperties.AlwaysThrow(eeGetHelperNum(call->gtCallMethHnd)))
     {
-        noway_assert(tree->gtFlags & GTF_CALL);
-        noway_assert(tree->gtFlags & GTF_EXCEPT);
+        noway_assert(call->gtFlags & GTF_EXCEPT);
         return true;
     }
-
-    // TODO-CQ: there are a bunch of managed methods in System.ThrowHelper
-    // that would be nice to recognize.
-
     return false;
 }
 
@@ -827,8 +812,8 @@ GenTreeLclVar* Compiler::fgIsIndirOfAddrOfLocal(GenTree* tree)
 
 GenTreeCall* Compiler::fgGetStaticsCCtorHelper(CORINFO_CLASS_HANDLE cls, CorInfoHelpFunc helper)
 {
-    bool     bNeedClassID = true;
-    unsigned callFlags    = 0;
+    bool         bNeedClassID = true;
+    GenTreeFlags callFlags    = GTF_EMPTY;
 
     var_types type = TYP_BYREF;
 
@@ -963,13 +948,12 @@ GenTreeCall* Compiler::fgGetSharedCCtor(CORINFO_CLASS_HANDLE cls)
 //------------------------------------------------------------------------------
 // fgAddrCouldBeNull : Check whether the address tree can represent null.
 //
-//
 // Arguments:
 //    addr     -  Address to check
 //
 // Return Value:
 //    True if address could be null; false otherwise
-
+//
 bool Compiler::fgAddrCouldBeNull(GenTree* addr)
 {
     addr = addr->gtEffectiveVal();
@@ -1410,8 +1394,6 @@ inline void Compiler::fgLoopCallTest(BasicBlock* srcBB, BasicBlock* dstBB)
 
 void Compiler::fgLoopCallMark()
 {
-    BasicBlock* block;
-
     /* If we've already marked all the block, bail */
 
     if (fgLoopCallMarked)
@@ -1423,7 +1405,7 @@ void Compiler::fgLoopCallMark()
 
     /* Walk the blocks, looking for backward edges */
 
-    for (block = fgFirstBB; block; block = block->bbNext)
+    for (BasicBlock* const block : Blocks())
     {
         switch (block->bbJumpKind)
         {
@@ -1435,17 +1417,10 @@ void Compiler::fgLoopCallMark()
                 break;
 
             case BBJ_SWITCH:
-
-                unsigned jumpCnt;
-                jumpCnt = block->bbJumpSwt->bbsCount;
-                BasicBlock** jumpPtr;
-                jumpPtr = block->bbJumpSwt->bbsDstTab;
-
-                do
+                for (BasicBlock* const bTarget : block->SwitchTargets())
                 {
-                    fgLoopCallTest(block, *jumpPtr);
-                } while (++jumpPtr, --jumpCnt);
-
+                    fgLoopCallTest(block, bTarget);
+                }
                 break;
 
             default:
@@ -1763,9 +1738,9 @@ void Compiler::fgAddSyncMethodEnterExit()
         // EH regions in fgFindBasicBlocks(). Note that the try has no enclosing
         // handler, and the fault has no enclosing try.
 
-        tryBegBB->bbFlags |= BBF_HAS_LABEL | BBF_DONT_REMOVE | BBF_TRY_BEG | BBF_IMPORTED;
+        tryBegBB->bbFlags |= BBF_DONT_REMOVE | BBF_TRY_BEG | BBF_IMPORTED;
 
-        faultBB->bbFlags |= BBF_HAS_LABEL | BBF_DONT_REMOVE | BBF_IMPORTED;
+        faultBB->bbFlags |= BBF_DONT_REMOVE | BBF_IMPORTED;
         faultBB->bbCatchTyp = BBCT_FAULT;
 
         tryBegBB->setTryIndex(XTnew);
@@ -1864,7 +1839,7 @@ void Compiler::fgAddSyncMethodEnterExit()
     fgCreateMonitorTree(lvaMonAcquired, lvaCopyThis, faultBB, false /*exit*/);
 
     // non-exceptional cases
-    for (BasicBlock* block = fgFirstBB; block != nullptr; block = block->bbNext)
+    for (BasicBlock* const block : Blocks())
     {
         if (block->bbJumpKind == BBJ_RETURN)
         {
@@ -2106,7 +2081,7 @@ bool Compiler::fgMoreThanOneReturnBlock()
 {
     unsigned retCnt = 0;
 
-    for (BasicBlock* block = fgFirstBB; block; block = block->bbNext)
+    for (BasicBlock* const block : Blocks())
     {
         if (block->bbJumpKind == BBJ_RETURN)
         {
@@ -2309,21 +2284,9 @@ private:
         newReturnBB->bbRefs     = 1; // bbRefs gets update later, for now it should be 1
         comp->fgReturnCount++;
 
-        newReturnBB->bbFlags |= (BBF_INTERNAL | BBF_JMP_TARGET);
-
         noway_assert(newReturnBB->bbNext == nullptr);
 
-#ifdef DEBUG
-        if (comp->verbose)
-        {
-            printf("\n newReturnBB [" FMT_BB "] created\n", newReturnBB->bbNum);
-        }
-#endif
-
-        // We have profile weight, the weight is zero, and the block is run rarely,
-        // until we prove otherwise by merging other returns into this one.
-        newReturnBB->bbFlags |= (BBF_PROF_WEIGHT | BBF_RUN_RARELY);
-        newReturnBB->bbWeight = 0;
+        JITDUMP("\n newReturnBB [" FMT_BB "] created\n", newReturnBB->bbNum);
 
         GenTree* returnExpr;
 
@@ -2342,17 +2305,10 @@ private:
 
             if (comp->compMethodReturnsNativeScalarType())
             {
-                if (!comp->compDoOldStructRetyping())
+                returnLocalDsc.lvType = genActualType(comp->info.compRetType);
+                if (varTypeIsStruct(returnLocalDsc.lvType))
                 {
-                    returnLocalDsc.lvType = genActualType(comp->info.compRetType);
-                    if (varTypeIsStruct(returnLocalDsc.lvType))
-                    {
-                        comp->lvaSetStruct(returnLocalNum, comp->info.compMethodInfo->args.retTypeClass, false);
-                    }
-                }
-                else
-                {
-                    returnLocalDsc.lvType = genActualType(comp->info.compRetNativeType);
+                    comp->lvaSetStruct(returnLocalNum, comp->info.compMethodInfo->args.retTypeClass, false);
                 }
             }
             else if (comp->compMethodReturnsRetBufAddr())
@@ -2505,6 +2461,22 @@ private:
                     // merged return block are lexically forward.
 
                     insertionPoints[index] = returnBlock;
+
+                    // Update profile information in the mergedReturnBlock to
+                    // reflect the additional flow.
+                    //
+                    if (returnBlock->hasProfileWeight())
+                    {
+                        BasicBlock::weight_t const oldWeight =
+                            mergedReturnBlock->hasProfileWeight() ? mergedReturnBlock->bbWeight : BB_ZERO_WEIGHT;
+                        BasicBlock::weight_t const newWeight = oldWeight + returnBlock->bbWeight;
+
+                        JITDUMP("merging profile weight " FMT_WT " from " FMT_BB " to const return " FMT_BB "\n",
+                                returnBlock->bbWeight, returnBlock->bbNum, mergedReturnBlock->bbNum);
+
+                        mergedReturnBlock->setBBProfileWeight(newWeight);
+                        DISPBLOCK(mergedReturnBlock);
+                    }
                 }
             }
         }
@@ -2512,6 +2484,8 @@ private:
         if (mergedReturnBlock == nullptr)
         {
             // No constant return block for this return; use the general one.
+            // We defer flow update and profile update to morph.
+            //
             mergedReturnBlock = comp->genReturnBB;
             if (mergedReturnBlock == nullptr)
             {
@@ -2528,20 +2502,6 @@ private:
 
         if (returnBlock != nullptr)
         {
-            // Propagate profile weight and related annotations to the merged block.
-            // Return weight should never exceed entry weight, so cap it to avoid nonsensical
-            // hot returns in synthetic profile settings.
-            mergedReturnBlock->bbWeight =
-                min(mergedReturnBlock->bbWeight + returnBlock->bbWeight, comp->fgFirstBB->bbWeight);
-            if (!returnBlock->hasProfileWeight())
-            {
-                mergedReturnBlock->bbFlags &= ~BBF_PROF_WEIGHT;
-            }
-            if (mergedReturnBlock->bbWeight > 0)
-            {
-                mergedReturnBlock->bbFlags &= ~BBF_RUN_RARELY;
-            }
-
             // Update fgReturnCount to reflect or anticipate that `returnBlock` will no longer
             // be a return point.
             comp->fgReturnCount--;
@@ -2642,8 +2602,8 @@ void Compiler::fgAddInternal()
     noway_assert(!compIsForInlining());
 
     // The backend requires a scratch BB into which it can safely insert a P/Invoke method prolog if one is
-    // required. Create it here.
-    if (compMethodRequiresPInvokeFrame())
+    // required. Similarly, we need a scratch BB for poisoning. Create it here.
+    if (compMethodRequiresPInvokeFrame() || compShouldPoisonFrame())
     {
         fgEnsureFirstBBisScratch();
         fgFirstBB->bbFlags |= BBF_DONT_REMOVE;
@@ -2746,13 +2706,6 @@ void Compiler::fgAddInternal()
         // will expect to find it.
         BasicBlock* mergedReturn = merger.EagerCreate();
         assert(mergedReturn == genReturnBB);
-        // Assume weight equal to entry weight for this BB.
-        mergedReturn->bbFlags &= ~BBF_PROF_WEIGHT;
-        mergedReturn->bbWeight = fgFirstBB->bbWeight;
-        if (mergedReturn->bbWeight > 0)
-        {
-            mergedReturn->bbFlags &= ~BBF_RUN_RARELY;
-        }
     }
     else
     {
@@ -2957,10 +2910,10 @@ void Compiler::fgFindOperOrder()
     /* Walk the basic blocks and for each statement determine
      * the evaluation order, cost, FP levels, etc... */
 
-    for (BasicBlock* block = fgFirstBB; block; block = block->bbNext)
+    for (BasicBlock* const block : Blocks())
     {
         compCurBB = block;
-        for (Statement* stmt : block->Statements())
+        for (Statement* const stmt : block->Statements())
         {
             /* Recursively process the statement */
 
@@ -2990,7 +2943,7 @@ void Compiler::fgSimpleLowering()
     unsigned outgoingArgSpaceSize = 0;
 #endif // FEATURE_FIXED_OUT_ARGS
 
-    for (BasicBlock* block = fgFirstBB; block; block = block->bbNext)
+    for (BasicBlock* const block : Blocks())
     {
         // Walk the statement trees in this basic block.
         compCurBB = block; // Used in fgRngChkTarget.
@@ -3189,330 +3142,6 @@ BasicBlock* Compiler::fgEndBBAfterMainFunction()
     return nullptr;
 }
 
-/*****************************************************************************
- *
- *  Function called to expand the set of rarely run blocks
- */
-
-bool Compiler::fgExpandRarelyRunBlocks()
-{
-    bool result = false;
-
-#ifdef DEBUG
-    if (verbose)
-    {
-        printf("\n*************** In fgExpandRarelyRunBlocks()\n");
-    }
-
-    const char* reason = nullptr;
-#endif
-
-    // We expand the number of rarely run blocks by observing
-    // that a block that falls into or jumps to a rarely run block,
-    // must itself be rarely run and when we have a conditional
-    // jump in which both branches go to rarely run blocks then
-    // the block must itself be rarely run
-
-    BasicBlock* block;
-    BasicBlock* bPrev;
-
-    for (bPrev = fgFirstBB, block = bPrev->bbNext; block != nullptr; bPrev = block, block = block->bbNext)
-    {
-        if (bPrev->isRunRarely())
-        {
-            continue;
-        }
-
-        /* bPrev is known to be a normal block here */
-        switch (bPrev->bbJumpKind)
-        {
-            case BBJ_ALWAYS:
-
-                /* Is the jump target rarely run? */
-                if (bPrev->bbJumpDest->isRunRarely())
-                {
-                    INDEBUG(reason = "Unconditional jump to a rarely run block";)
-                    goto NEW_RARELY_RUN;
-                }
-                break;
-
-            case BBJ_CALLFINALLY:
-
-                // Check for a BBJ_CALLFINALLY followed by a rarely run paired BBJ_ALWAYS
-                //
-                // TODO-Cleanup: How can this be hit? If bbPrev starts a CallAlwaysPair, then this
-                // block must be BBJ_ALWAYS, not BBJ_CALLFINALLY.
-                if (bPrev->isBBCallAlwaysPair())
-                {
-                    /* Is the next block rarely run? */
-                    if (block->isRunRarely())
-                    {
-                        INDEBUG(reason = "Call of finally followed by a rarely run block";)
-                        goto NEW_RARELY_RUN;
-                    }
-                }
-                break;
-
-            case BBJ_NONE:
-
-                /* is fall through target rarely run? */
-                if (block->isRunRarely())
-                {
-                    INDEBUG(reason = "Falling into a rarely run block";)
-                    goto NEW_RARELY_RUN;
-                }
-                break;
-
-            case BBJ_COND:
-
-                if (!block->isRunRarely())
-                {
-                    continue;
-                }
-
-                /* If both targets of the BBJ_COND are run rarely then don't reorder */
-                if (bPrev->bbJumpDest->isRunRarely())
-                {
-                    /* bPrev should also be marked as run rarely */
-                    if (!bPrev->isRunRarely())
-                    {
-                        INDEBUG(reason = "Both sides of a conditional jump are rarely run";)
-
-                    NEW_RARELY_RUN:
-                        /* If the weight of the block was obtained from a profile run,
-                           than it's more accurate than our static analysis */
-                        if (bPrev->hasProfileWeight())
-                        {
-                            continue;
-                        }
-                        result = true;
-
-#ifdef DEBUG
-                        assert(reason != nullptr);
-                        if (verbose)
-                        {
-                            printf("%s, marking " FMT_BB " as rarely run\n", reason, bPrev->bbNum);
-                        }
-#endif // DEBUG
-
-                        /* Must not have previously been marked */
-                        noway_assert(!bPrev->isRunRarely());
-
-                        /* Mark bPrev as a new rarely run block */
-                        bPrev->bbSetRunRarely();
-
-                        BasicBlock* bPrevPrev = nullptr;
-                        BasicBlock* tmpbb;
-
-                        if ((bPrev->bbFlags & BBF_KEEP_BBJ_ALWAYS) != 0)
-                        {
-                            // If we've got a BBJ_CALLFINALLY/BBJ_ALWAYS pair, treat the BBJ_CALLFINALLY as an
-                            // additional predecessor for the BBJ_ALWAYS block
-                            tmpbb = bPrev->bbPrev;
-                            noway_assert(tmpbb != nullptr);
-#if defined(FEATURE_EH_FUNCLETS)
-                            noway_assert(tmpbb->isBBCallAlwaysPair());
-                            bPrevPrev = tmpbb;
-#else
-                            if (tmpbb->bbJumpKind == BBJ_CALLFINALLY)
-                            {
-                                bPrevPrev = tmpbb;
-                            }
-#endif
-                        }
-
-                        /* Now go back to it's earliest predecessor to see */
-                        /* if it too should now be marked as rarely run    */
-                        flowList* pred = bPrev->bbPreds;
-
-                        if ((pred != nullptr) || (bPrevPrev != nullptr))
-                        {
-                            // bPrevPrev will be set to the lexically
-                            // earliest predecessor of bPrev.
-
-                            while (pred != nullptr)
-                            {
-                                if (bPrevPrev == nullptr)
-                                {
-                                    // Initially we select the first block in the bbPreds list
-                                    bPrevPrev = pred->getBlock();
-                                    continue;
-                                }
-
-                                // Walk the flow graph lexically forward from pred->getBlock()
-                                // if we find (block == bPrevPrev) then
-                                // pred->getBlock() is an earlier predecessor.
-                                for (tmpbb = pred->getBlock(); tmpbb != nullptr; tmpbb = tmpbb->bbNext)
-                                {
-                                    if (tmpbb == bPrevPrev)
-                                    {
-                                        /* We found an ealier predecessor */
-                                        bPrevPrev = pred->getBlock();
-                                        break;
-                                    }
-                                    else if (tmpbb == bPrev)
-                                    {
-                                        // We have reached bPrev so stop walking
-                                        // as this cannot be an earlier predecessor
-                                        break;
-                                    }
-                                }
-
-                                // Onto the next predecessor
-                                pred = pred->flNext;
-                            }
-
-                            // Walk the flow graph forward from bPrevPrev
-                            // if we don't find (tmpbb == bPrev) then our candidate
-                            // bPrevPrev is lexically after bPrev and we do not
-                            // want to select it as our new block
-
-                            for (tmpbb = bPrevPrev; tmpbb != nullptr; tmpbb = tmpbb->bbNext)
-                            {
-                                if (tmpbb == bPrev)
-                                {
-                                    // Set up block back to the lexically
-                                    // earliest predecessor of pPrev
-
-                                    block = bPrevPrev;
-                                }
-                            }
-                        }
-                    }
-                    break;
-
-                    default:
-                        break;
-                }
-        }
-    }
-
-    // Now iterate over every block to see if we can prove that a block is rarely run
-    // (i.e. when all predecessors to the block are rarely run)
-    //
-    for (bPrev = fgFirstBB, block = bPrev->bbNext; block != nullptr; bPrev = block, block = block->bbNext)
-    {
-        // If block is not run rarely, then check to make sure that it has
-        // at least one non-rarely run block.
-
-        if (!block->isRunRarely())
-        {
-            bool rare = true;
-
-            /* Make sure that block has at least one normal predecessor */
-            for (flowList* pred = block->bbPreds; pred != nullptr; pred = pred->flNext)
-            {
-                /* Find the fall through predecessor, if any */
-                if (!pred->getBlock()->isRunRarely())
-                {
-                    rare = false;
-                    break;
-                }
-            }
-
-            if (rare)
-            {
-                // If 'block' is the start of a handler or filter then we cannot make it
-                // rarely run because we may have an exceptional edge that
-                // branches here.
-                //
-                if (bbIsHandlerBeg(block))
-                {
-                    rare = false;
-                }
-            }
-
-            if (rare)
-            {
-                block->bbSetRunRarely();
-                result = true;
-
-#ifdef DEBUG
-                if (verbose)
-                {
-                    printf("All branches to " FMT_BB " are from rarely run blocks, marking as rarely run\n",
-                           block->bbNum);
-                }
-#endif // DEBUG
-
-                // When marking a BBJ_CALLFINALLY as rarely run we also mark
-                // the BBJ_ALWAYS that comes after it as rarely run
-                //
-                if (block->isBBCallAlwaysPair())
-                {
-                    BasicBlock* bNext = block->bbNext;
-                    PREFIX_ASSUME(bNext != nullptr);
-                    bNext->bbSetRunRarely();
-#ifdef DEBUG
-                    if (verbose)
-                    {
-                        printf("Also marking the BBJ_ALWAYS at " FMT_BB " as rarely run\n", bNext->bbNum);
-                    }
-#endif // DEBUG
-                }
-            }
-        }
-
-        /* COMPACT blocks if possible */
-        if (bPrev->bbJumpKind == BBJ_NONE)
-        {
-            if (fgCanCompactBlocks(bPrev, block))
-            {
-                fgCompactBlocks(bPrev, block);
-
-                block = bPrev;
-                continue;
-            }
-        }
-        //
-        // if bPrev->bbWeight is not based upon profile data we can adjust
-        // the weights of bPrev and block
-        //
-        else if (bPrev->isBBCallAlwaysPair() &&          // we must have a BBJ_CALLFINALLY and BBK_ALWAYS pair
-                 (bPrev->bbWeight != block->bbWeight) && // the weights are currently different
-                 !bPrev->hasProfileWeight())             // and the BBJ_CALLFINALLY block is not using profiled
-                                                         // weights
-        {
-            if (block->isRunRarely())
-            {
-                bPrev->bbWeight =
-                    block->bbWeight; // the BBJ_CALLFINALLY block now has the same weight as the BBJ_ALWAYS block
-                bPrev->bbFlags |= BBF_RUN_RARELY; // and is now rarely run
-#ifdef DEBUG
-                if (verbose)
-                {
-                    printf("Marking the BBJ_CALLFINALLY block at " FMT_BB " as rarely run because " FMT_BB
-                           " is rarely run\n",
-                           bPrev->bbNum, block->bbNum);
-                }
-#endif // DEBUG
-            }
-            else if (bPrev->isRunRarely())
-            {
-                block->bbWeight =
-                    bPrev->bbWeight; // the BBJ_ALWAYS block now has the same weight as the BBJ_CALLFINALLY block
-                block->bbFlags |= BBF_RUN_RARELY; // and is now rarely run
-#ifdef DEBUG
-                if (verbose)
-                {
-                    printf("Marking the BBJ_ALWAYS block at " FMT_BB " as rarely run because " FMT_BB
-                           " is rarely run\n",
-                           block->bbNum, bPrev->bbNum);
-                }
-#endif // DEBUG
-            }
-            else // Both blocks are hot, bPrev is known not to be using profiled weight
-            {
-                bPrev->bbWeight =
-                    block->bbWeight; // the BBJ_CALLFINALLY block now has the same weight as the BBJ_ALWAYS block
-            }
-            noway_assert(block->bbWeight == bPrev->bbWeight);
-        }
-    }
-
-    return result;
-}
-
 #if defined(FEATURE_EH_FUNCLETS)
 
 /*****************************************************************************
@@ -3536,10 +3165,7 @@ void Compiler::fgInsertFuncletPrologBlock(BasicBlock* block)
     /* Allocate a new basic block */
 
     BasicBlock* newHead = bbNewBasicBlock(BBJ_NONE);
-
-    // In fgComputePreds() we set the BBF_JMP_TARGET and BBF_HAS_LABEL for all of the handler entry points
-    //
-    newHead->bbFlags |= (BBF_INTERNAL | BBF_JMP_TARGET | BBF_HAS_LABEL);
+    newHead->bbFlags |= BBF_INTERNAL;
     newHead->inheritWeight(block);
     newHead->bbRefs = 0;
 
@@ -3551,9 +3177,8 @@ void Compiler::fgInsertFuncletPrologBlock(BasicBlock* block)
     // the handler go to the prolog. Edges coming from with the handler are back-edges, and
     // go to the existing 'block'.
 
-    for (flowList* pred = block->bbPreds; pred; pred = pred->flNext)
+    for (BasicBlock* const predBlock : block->PredBlocks())
     {
-        BasicBlock* predBlock = pred->getBlock();
         if (!fgIsIntraHandlerPred(predBlock, block))
         {
             // It's a jump from outside the handler; add it to the newHead preds list and remove
@@ -3580,8 +3205,7 @@ void Compiler::fgInsertFuncletPrologBlock(BasicBlock* block)
     assert(nullptr == fgGetPredForBlock(block, newHead));
     fgAddRefPred(block, newHead);
 
-    assert((newHead->bbFlags & (BBF_INTERNAL | BBF_JMP_TARGET | BBF_HAS_LABEL)) ==
-           (BBF_INTERNAL | BBF_JMP_TARGET | BBF_HAS_LABEL));
+    assert((newHead->bbFlags & BBF_INTERNAL) == BBF_INTERNAL);
 }
 
 /*****************************************************************************
@@ -3600,11 +3224,9 @@ void Compiler::fgCreateFuncletPrologBlocks()
     noway_assert(!fgDomsComputed); // this function doesn't maintain the dom sets
     assert(!fgFuncletsCreated);
 
-    bool      prologBlocksCreated = false;
-    EHblkDsc* HBtabEnd;
-    EHblkDsc* HBtab;
+    bool prologBlocksCreated = false;
 
-    for (HBtab = compHndBBtab, HBtabEnd = compHndBBtab + compHndBBtabCount; HBtab < HBtabEnd; HBtab++)
+    for (EHblkDsc* const HBtab : EHClauses(this))
     {
         BasicBlock* head = HBtab->ebdHndBeg;
 
@@ -3937,14 +3559,9 @@ void Compiler::fgDetermineFirstColdBlock()
         }
     }
 
-    if (firstColdBlock != nullptr)
+    for (block = firstColdBlock; block != nullptr; block = block->bbNext)
     {
-        firstColdBlock->bbFlags |= BBF_JMP_TARGET;
-
-        for (block = firstColdBlock; block; block = block->bbNext)
-        {
-            block->bbFlags |= BBF_COLD;
-        }
+        block->bbFlags |= BBF_COLD;
     }
 
 EXIT:;
@@ -4053,8 +3670,6 @@ BasicBlock* Compiler::fgAddCodeRef(BasicBlock* srcBlk, unsigned refData, Special
     BasicBlock* newBlk;
 
     newBlk = add->acdDstBlk = fgNewBBinRegion(jumpKinds[kind], srcBlk, /* runRarely */ true, /* insertAtEnd */ true);
-
-    add->acdDstBlk->bbFlags |= BBF_JMP_TARGET | BBF_HAS_LABEL;
 
 #ifdef DEBUG
     if (verbose)
@@ -4667,7 +4282,7 @@ void Compiler::fgSetBlockOrder()
     /* If we don't compute the doms, then we never mark blocks as loops. */
     if (fgDomsComputed)
     {
-        for (BasicBlock* block = fgFirstBB; block; block = block->bbNext)
+        for (BasicBlock* const block : Blocks())
         {
             /* If this block is a loop header, mark it appropriately */
 
@@ -4682,11 +4297,7 @@ void Compiler::fgSetBlockOrder()
         /* If we don't have the dominators, use an abbreviated test for fully interruptible.  If there are
          * any back edges, check the source and destination blocks to see if they're GC Safe.  If not, then
          * go fully interruptible. */
-
-        /* XXX Mon 1/21/2008
-         * Wouldn't it be nice to have a block iterator that can do this loop?
-         */
-        for (BasicBlock* block = fgFirstBB; block; block = block->bbNext)
+        for (BasicBlock* const block : Blocks())
         {
 // true if the edge is forward, or if it is a back edge and either the source and dest are GC safe.
 #define EDGE_IS_GC_SAFE(src, dst)                                                                                      \
@@ -4701,17 +4312,10 @@ void Compiler::fgSetBlockOrder()
                     break;
 
                 case BBJ_SWITCH:
-
-                    unsigned jumpCnt;
-                    jumpCnt = block->bbJumpSwt->bbsCount;
-                    BasicBlock** jumpPtr;
-                    jumpPtr = block->bbJumpSwt->bbsDstTab;
-
-                    do
+                    for (BasicBlock* const bTarget : block->SwitchTargets())
                     {
-                        partiallyInterruptible &= EDGE_IS_GC_SAFE(block, *jumpPtr);
-                    } while (++jumpPtr, --jumpCnt);
-
+                        partiallyInterruptible &= EDGE_IS_GC_SAFE(block, bTarget);
+                    }
                     break;
 
                 default:
@@ -4735,7 +4339,7 @@ void Compiler::fgSetBlockOrder()
         }
     }
 
-    for (BasicBlock* block = fgFirstBB; block; block = block->bbNext)
+    for (BasicBlock* const block : Blocks())
     {
 
 #if FEATURE_FASTTAILCALL
@@ -4854,7 +4458,7 @@ void Compiler::fgSetStmtSeq(Statement* stmt)
 
 void Compiler::fgSetBlockOrder(BasicBlock* block)
 {
-    for (Statement* stmt : block->Statements())
+    for (Statement* const stmt : block->Statements())
     {
         fgSetStmtSeq(stmt);
 

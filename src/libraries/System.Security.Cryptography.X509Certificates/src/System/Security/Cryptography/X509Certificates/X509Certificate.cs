@@ -4,6 +4,7 @@
 using Internal.Cryptography;
 using Internal.Cryptography.Pal;
 using Microsoft.Win32.SafeHandles;
+using System;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
@@ -44,6 +45,7 @@ namespace System.Security.Cryptography.X509Certificates
             }
         }
 
+        [Obsolete(Obsoletions.X509CertificateImmutableMessage, DiagnosticId = Obsoletions.X509CertificateImmutableDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public X509Certificate()
         {
         }
@@ -171,7 +173,9 @@ namespace System.Security.Cryptography.X509Certificates
         }
 
         [System.CLSCompliantAttribute(false)]
+#pragma warning disable SYSLIB0026
         public X509Certificate(string fileName, SecureString? password, X509KeyStorageFlags keyStorageFlags) : this()
+#pragma warning restore SYSLIB0026
         {
             if (fileName == null)
                 throw new ArgumentNullException(nameof(fileName));
@@ -195,7 +199,9 @@ namespace System.Security.Cryptography.X509Certificates
             }
         }
 
+#pragma warning disable SYSLIB0026
         public X509Certificate(SerializationInfo info, StreamingContext context) : this()
+#pragma warning restore SYSLIB0026
         {
             throw new PlatformNotSupportedException();
         }
@@ -350,10 +356,14 @@ namespace System.Security.Cryptography.X509Certificates
         public virtual byte[] GetCertHash(HashAlgorithmName hashAlgorithm)
         {
             ThrowIfInvalid();
+            return GetCertHash(hashAlgorithm, Pal!);
+        }
 
+        private static byte[] GetCertHash(HashAlgorithmName hashAlgorithm, ICertificatePalCore certPal)
+        {
             using (IncrementalHash hasher = IncrementalHash.CreateHash(hashAlgorithm))
             {
-                hasher.AppendData(Pal!.RawData);
+                hasher.AppendData(certPal.RawData);
                 return hasher.GetHashAndReset();
             }
         }
@@ -382,7 +392,12 @@ namespace System.Security.Cryptography.X509Certificates
         {
             ThrowIfInvalid();
 
-            return GetCertHash(hashAlgorithm).ToHexStringUpper();
+            return GetCertHashString(hashAlgorithm, Pal!);
+        }
+
+        internal static string GetCertHashString(HashAlgorithmName hashAlgorithm, ICertificatePalCore certPal)
+        {
+            return GetCertHash(hashAlgorithm, certPal).ToHexStringUpper();
         }
 
         // Only use for internal purposes when the returned byte[] will not be mutated
@@ -492,14 +507,14 @@ namespace System.Security.Cryptography.X509Certificates
             return _lazySerialNumber ?? (_lazySerialNumber = Pal!.SerialNumber);
         }
 
-        [Obsolete("This method has been deprecated.  Please use the Subject property instead.  https://go.microsoft.com/fwlink/?linkid=14202")]
+        [Obsolete("X509Certificate.GetName has been deprecated. Use the Subject property instead.")]
         public virtual string GetName()
         {
             ThrowIfInvalid();
             return Pal!.LegacySubject;
         }
 
-        [Obsolete("This method has been deprecated.  Please use the Issuer property instead.  https://go.microsoft.com/fwlink/?linkid=14202")]
+        [Obsolete("X509Certificate.GetIssuerName has been deprecated. Use the Issuer property instead.")]
         public virtual string GetIssuerName()
         {
             ThrowIfInvalid();
@@ -560,33 +575,39 @@ namespace System.Security.Cryptography.X509Certificates
             return sb.ToString();
         }
 
+        [Obsolete(Obsoletions.X509CertificateImmutableMessage, DiagnosticId = Obsoletions.X509CertificateImmutableDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public virtual void Import(byte[] rawData)
         {
             throw new PlatformNotSupportedException(SR.NotSupported_ImmutableX509Certificate);
         }
 
+        [Obsolete(Obsoletions.X509CertificateImmutableMessage, DiagnosticId = Obsoletions.X509CertificateImmutableDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public virtual void Import(byte[] rawData, string? password, X509KeyStorageFlags keyStorageFlags)
         {
             throw new PlatformNotSupportedException(SR.NotSupported_ImmutableX509Certificate);
         }
 
         [System.CLSCompliantAttribute(false)]
+        [Obsolete(Obsoletions.X509CertificateImmutableMessage, DiagnosticId = Obsoletions.X509CertificateImmutableDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public virtual void Import(byte[] rawData, SecureString? password, X509KeyStorageFlags keyStorageFlags)
         {
             throw new PlatformNotSupportedException(SR.NotSupported_ImmutableX509Certificate);
         }
 
+        [Obsolete(Obsoletions.X509CertificateImmutableMessage, DiagnosticId = Obsoletions.X509CertificateImmutableDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public virtual void Import(string fileName)
         {
             throw new PlatformNotSupportedException(SR.NotSupported_ImmutableX509Certificate);
         }
 
+        [Obsolete(Obsoletions.X509CertificateImmutableMessage, DiagnosticId = Obsoletions.X509CertificateImmutableDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public virtual void Import(string fileName, string? password, X509KeyStorageFlags keyStorageFlags)
         {
             throw new PlatformNotSupportedException(SR.NotSupported_ImmutableX509Certificate);
         }
 
         [System.CLSCompliantAttribute(false)]
+        [Obsolete(Obsoletions.X509CertificateImmutableMessage, DiagnosticId = Obsoletions.X509CertificateImmutableDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public virtual void Import(string fileName, SecureString? password, X509KeyStorageFlags keyStorageFlags)
         {
             throw new PlatformNotSupportedException(SR.NotSupported_ImmutableX509Certificate);

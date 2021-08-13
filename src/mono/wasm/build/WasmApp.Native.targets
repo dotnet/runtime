@@ -1,0 +1,507 @@
+<Project>
+  <!-- not really meant to be used w/o WasmApp.targets -->
+
+  <UsingTask TaskName="PInvokeTableGenerator" AssemblyFile="$(WasmAppBuilderTasksAssemblyPath)" />
+  <UsingTask TaskName="IcallTableGenerator" AssemblyFile="$(WasmAppBuilderTasksAssemblyPath)" />
+  <UsingTask TaskName="Microsoft.WebAssembly.Build.Tasks.EmccCompile" AssemblyFile="$(WasmAppBuilderTasksAssemblyPath)" />
+
+  <PropertyGroup>
+    <_WasmBuildNativeCoreDependsOn>
+      _CheckEmccIsExpectedVersion;
+      _PrepareForWasmBuildNative;
+      _GenerateDriverGenC;
+      _GeneratePInvokeTable;
+      _GenerateICallTable;
+      _WasmCompileNativeFiles;
+      _WasmLinkDotNet;
+      _CompleteWasmBuildNative
+    </_WasmBuildNativeCoreDependsOn>
+
+    <WasmBuildNativeOnlyDependsOn>
+      _InitializeCommonProperties;
+      _PrepareForWasmBuildNativeOnly;
+      _WasmBuildNativeCore;
+    </WasmBuildNativeOnlyDependsOn>
+
+    <_BeforeWasmBuildAppDependsOn>
+      $(_BeforeWasmBuildAppDependsOn);
+      _SetupEmscripten;
+      _SetWasmBuildNativeDefaults
+    </_BeforeWasmBuildAppDependsOn>
+
+    <_ExeExt Condition="$([MSBuild]::IsOSPlatform('WINDOWS'))">.exe</_ExeExt>
+    <WasmUseEMSDK_PATH Condition="'$(WasmUseEMSDK_PATH)' == '' and '$(EMSDK_PATH)' != '' and Exists('$(MSBuildThisFileDirectory)WasmApp.InTree.targets')">true</WasmUseEMSDK_PATH>
+  </PropertyGroup>
+
+  <Import Project="$(MSBuildThisFileDirectory)EmSdkRepo.Defaults.props" Condition="'$(WasmUseEMSDK_PATH)' == 'true'" />
+
+  <!-- "public" target meant for use outside the regular wasm app generation process FIXME: rename please! -->
+  <Target Name="WasmBuildNativeOnly" DependsOnTargets="$(WasmBuildNativeOnlyDependsOn)" Condition="'$(WasmBuildNative)' == 'true'" />
+
+  <Target Name="_PrepareForWasmBuildNativeOnly">
+    <ItemGroup>
+      <_WasmAssembliesInternal Remove="@(_WasmAssembliesInternal)" />
+      <_WasmAssembliesInternal Include="@(WasmAssembliesToBundle->Distinct())" />
+    </ItemGroup>
+  </Target>
+
+  <Target Name="_SetupEmscripten">
+    <PropertyGroup>
+      <_EMSDKMissingPaths Condition="'$(_EMSDKMissingPaths)' == '' and ('$(EmscriptenSdkToolsPath)' == '' or !Exists('$(EmscriptenSdkToolsPath)'))">%24(EmscriptenSdkToolsPath)=$(EmscriptenSdkToolsPath) </_EMSDKMissingPaths>
+      <_EMSDKMissingPaths Condition="'$(_EMSDKMissingPaths)' == '' and ('$(EmscriptenNodeToolsPath)' == '' or !Exists('$(EmscriptenNodeToolsPath)'))">%24(EmscriptenNodeToolsPath)=$(EmscriptenNodeToolsPath) </_EMSDKMissingPaths>
+      <_EMSDKMissingPaths Condition="'$(_EMSDKMissingPaths)' == '' and ('$(EmscriptenUpstreamBinPath)' == '' or !Exists('$(EmscriptenUpstreamBinPath)'))">%24(EmscriptenUpstreamBinPath)=$(EmscriptenUpstreamBinPath) </_EMSDKMissingPaths>
+    </PropertyGroup>
+
+    <PropertyGroup>
+      <_EMSDKMissingErrorMessage Condition="'$(EMSDK_PATH)' == '' and '$(EmscriptenSdkToolsPath)' == ''">Could not find emscripten sdk. Either set %24(EMSDK_PATH), or use workloads to get the sdk.</_EMSDKMissingErrorMessage>
+
+      <_EMSDKMissingErrorMessage Condition="'$(_EMSDKMissingErrorMessage)' == '' and '$(_UsingEMSDK_PATH)' != 'true' and '$(_EMSDKMissingPaths)' != ''">Emscripten from the workload is missing some paths: $(_EMSDKMissingPaths).</_EMSDKMissingErrorMessage>
+      <_EMSDKMissingErrorMessage Condition="'$(_EMSDKMissingErrorMessage)' == '' and '$(_UsingEMSDK_PATH)' == 'true' and !Exists($(EMSDK_PATH))">Could not find Emscripten sdk at %24(EMSDK_PATH)=$(EMSDK_PATH) .</_EMSDKMissingErrorMessage>
+      <_EMSDKMissingErrorMessage Condition="'$(_EMSDKMissingErrorMessage)' == '' and '$(_UsingEMSDK_PATH)' == 'true' and '$(_EMSDKMissingPaths)' != ''">Specified Emscripten sdk at %24(EMSDK_PATH)=$(EMSDK_PATH) is missing some paths: $(_EMSDKMissingPaths).</_EMSDKMissingErrorMessage>
+
+      <_IsEMSDKMissing Condition="'$(_EMSDKMissingErrorMessage)' != ''">true</_IsEMSDKMissing>
+    </PropertyGroup>
+
+    <PropertyGroup>
+      <EmscriptenSdkToolsPath    Condition="'$(EmscriptenSdkToolsPath)' != ''"   >$([MSBuild]::NormalizeDirectory($(EmscriptenSdkToolsPath)))</EmscriptenSdkToolsPath>
+      <EmscriptenNodeToolsPath   Condition="'$(EmscriptenNodeToolsPath)' != ''"  >$([MSBuild]::NormalizeDirectory($(EmscriptenNodeToolsPath)))</EmscriptenNodeToolsPath>
+      <EmscriptenUpstreamBinPath Condition="'$(EmscriptenUpstreamBinPath)' != ''">$([MSBuild]::NormalizeDirectory($(EmscriptenUpstreamBinPath)))</EmscriptenUpstreamBinPath>
+    </PropertyGroup>
+
+    <!-- Environment variables required for running emsdk commands like `emcc` -->
+    <ItemGroup Condition="'$(EmscriptenSdkToolsPath)' != ''">
+      <EmscriptenEnvVars Include="DOTNET_EMSCRIPTEN_LLVM_ROOT=$(EmscriptenSdkToolsPath)bin" />
+      <EmscriptenEnvVars Include="DOTNET_EMSCRIPTEN_BINARYEN_ROOT=$(EmscriptenSdkToolsPath)" />
+      <EmscriptenEnvVars Include="DOTNET_EMSCRIPTEN_NODE_JS=$([MSBuild]::NormalizePath($(EmscriptenNodeToolsPath), 'bin', 'node$(_ExeExt)'))" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <_EmscriptenPrependPATHTrimmed Include="$([MSBuild]::ValueOrDefault('%(EmscriptenPrependPATH.Identity)\', '').TrimEnd('\/'))" />
+      <EmscriptenPrependPATH Remove="@(EmscriptenPrependPATH)" />
+      <EmscriptenPrependPATH Include="@(_EmscriptenPrependPATHTrimmed)" />
+    </ItemGroup>
+
+    <PropertyGroup>
+      <!-- semicolon is a msbuild property separator. It is also the path separator on windows.
+           So, we need to escape it here, so the paths don't get split up when converting
+           to string[] for passing to Exec task -->
+      <_PathSeparator Condition="'$(OS)' == 'Windows_NT'">%3B</_PathSeparator>
+      <_PathSeparator Condition="'$(OS)' != 'Windows_NT'">:</_PathSeparator>
+
+      <_EmscriptenPrependPATHProperty>@(EmscriptenPrependPATH -> '%(Identity)', '$(_PathSeparator)')</_EmscriptenPrependPATHProperty>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <EmscriptenEnvVars Include="PATH=$(_EmscriptenPrependPATHProperty)$(_PathSeparator)$([MSBuild]::Escape($(PATH)))" />
+
+      <!--
+        Python defaults to the system charset, and thus expects the files it's reading to
+        match that. But that might not always be true. Eg. system charset=gbk, failing to read
+        utf-8 files
+
+        See https://github.com/dotnet/runtime/issues/53367 for the motivating issue
+      -->
+      <EmscriptenEnvVars Include="PYTHONUTF8=1" />
+    </ItemGroup>
+  </Target>
+
+  <Target Name="_SetWasmBuildNativeDefaults">
+    <!-- if already set, maybe by a user projects, then a missing emsdk is an error -->
+    <Error Condition="'$(WasmBuildNative)' == 'true' and '$(_IsEMSDKMissing)' == 'true'"
+           Text="$(_EMSDKMissingErrorMessage) Emscripten SDK is required for building native files." />
+
+    <Error Condition="'$(RunAOTCompilation)' == 'true' and '$(_IsEMSDKMissing)' == 'true'"
+           Text="$(_EMSDKMissingErrorMessage) Emscripten SDK is required for AOT'ing assemblies." />
+
+    <PropertyGroup>
+      <WasmBuildNative Condition="'$(RunAOTCompilation)' == 'true'">true</WasmBuildNative>
+      <WasmBuildNative Condition="'$(WasmBuildNative)' == '' and @(NativeFileReference->Count()) > 0" >true</WasmBuildNative>
+      <WasmBuildNative Condition="'$(WasmBuildNative)' == '' and '$(PublishTrimmed)' != 'true'"   >false</WasmBuildNative>
+      <WasmBuildNative Condition="'$(WasmBuildNative)' == '' and '$(Configuration)' == 'Release'" >true</WasmBuildNative>
+      <WasmBuildNative Condition="'$(WasmBuildNative)' == ''">false</WasmBuildNative>
+    </PropertyGroup>
+
+    <!-- If we want to default to true, and sdk is missing, then just warn, and set it to false -->
+    <Warning Condition="'$(WasmBuildNative)' == 'true' and '$(_IsEMSDKMissing)' == 'true'"
+             Text="$(_EMSDKMissingErrorMessage) Emscripten SDK is required for building native files." />
+
+    <PropertyGroup>
+      <WasmBuildNative Condition="'$(WasmBuildNative)' == 'true' and '$(_IsEMSDKMissing)' == 'true'">false</WasmBuildNative>
+    </PropertyGroup>
+  </Target>
+
+  <Target Name="_WasmBuildNativeCore" DependsOnTargets="$(_WasmBuildNativeCoreDependsOn)"  Condition="'$(WasmBuildNative)' == 'true'" />
+
+  <Target Name="_PrepareForWasmBuildNative">
+    <Error Condition="'$(_IsEMSDKMissing)' == 'true'"
+           Text="$(_EMSDKMissingErrorMessage) Emscripten SDK is required for building native files." />
+
+    <PropertyGroup>
+      <_MonoAotCrossCompilerPath>@(MonoAotCrossCompiler->WithMetadataValue('RuntimeIdentifier','browser-wasm'))</_MonoAotCrossCompilerPath>
+      <_EmccDefaultFlagsRsp>$([MSBuild]::NormalizePath($(_WasmRuntimePackSrcDir), 'emcc-default.rsp'))</_EmccDefaultFlagsRsp>
+      <WasmNativeStrip Condition="'$(WasmNativeStrip)' == ''">true</WasmNativeStrip>
+      <WasmNativeDebugSymbols Condition="'$(WasmNativeDebugSymbols)' == ''">true</WasmNativeDebugSymbols>
+      <WasmLinkIcalls Condition="'$(WasmLinkIcalls)' == ''">$(WasmBuildNative)</WasmLinkIcalls>
+      <_WasmICallTablePath>$(_WasmIntermediateOutputPath)icall-table.h</_WasmICallTablePath>
+      <_WasmRuntimeICallTablePath>$(_WasmIntermediateOutputPath)runtime-icall-table.h</_WasmRuntimeICallTablePath>
+      <_WasmPInvokeTablePath>$(_WasmIntermediateOutputPath)pinvoke-table.h</_WasmPInvokeTablePath>
+
+      <_EmccAssertionLevelDefault>0</_EmccAssertionLevelDefault>
+      <_EmccOptimizationFlagDefault Condition="'$(_WasmDevel)' == 'true'">-O0 -s ASSERTIONS=$(_EmccAssertionLevelDefault)</_EmccOptimizationFlagDefault>
+      <_EmccOptimizationFlagDefault Condition="'$(_EmccOptimizationFlagDefault)' == '' and '$(OS)' != 'Windows_NT' and '$(Configuration)' == 'Debug'">-Os</_EmccOptimizationFlagDefault>
+      <_EmccOptimizationFlagDefault Condition="'$(_EmccOptimizationFlagDefault)' == '' and '$(Configuration)' != 'Debug'">-Oz</_EmccOptimizationFlagDefault>
+      <_EmccOptimizationFlagDefault Condition="'$(_EmccOptimizationFlagDefault)' == ''">-Oz</_EmccOptimizationFlagDefault>
+
+      <EmccCompileOptimizationFlag Condition="'$(EmccCompileOptimizationFlag)' == ''">$(_EmccOptimizationFlagDefault)</EmccCompileOptimizationFlag>
+      <EmccLinkOptimizationFlag    Condition="'$(EmccLinkOptimizationFlag)' == ''"   >$(EmccCompileOptimizationFlag)</EmccLinkOptimizationFlag>
+
+      <_EmccCompileRsp>$(_WasmIntermediateOutputPath)emcc-compile.rsp</_EmccCompileRsp>
+      <_EmccCompileOutputMessageImportance Condition="'$(EmccVerbose)' == 'true'">Normal</_EmccCompileOutputMessageImportance>
+      <_EmccCompileOutputMessageImportance Condition="'$(EmccVerbose)' != 'true'">Low</_EmccCompileOutputMessageImportance>
+
+      <EmccTotalMemory Condition="'$(EmccTotalMemory)' == ''">536870912</EmccTotalMemory>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <_EmccCommonFlags Include="$(_DefaultEmccFlags)" />
+      <_EmccCommonFlags Include="$(EmccFlags)" />
+      <_EmccCommonFlags Include="-s DISABLE_EXCEPTION_CATCHING=0" />
+      <_EmccCommonFlags Include="-g"                                Condition="'$(WasmNativeStrip)' == 'false'" />
+      <_EmccCommonFlags Include="-v"                                Condition="'$(EmccVerbose)' != 'false'" />
+
+      <_EmccIncludePaths Include="$(_WasmIntermediateOutputPath.TrimEnd('\/'))" />
+      <_EmccIncludePaths Include="$(_WasmRuntimePackIncludeDir)mono-2.0" />
+      <_EmccIncludePaths Include="$(_WasmRuntimePackIncludeDir)wasm" />
+
+      <!-- Adding optimization flag at the top, so it gets precedence -->
+      <_EmccCFlags Include="$(EmccCompileOptimizationFlag)" />
+      <_EmccCFlags Include="@(_EmccCommonFlags)" />
+
+      <_EmccCFlags Include="-DENABLE_AOT=1"                    Condition="'$(RunAOTCompilation)' == 'true'" />
+      <_EmccCFlags Include="-DDRIVER_GEN=1"                    Condition="'$(RunAOTCompilation)' == 'true'" />
+      <_EmccCFlags Include="-DINVARIANT_GLOBALIZATION=1"       Condition="'$(InvariantGlobalization)' == 'true'" />
+      <_EmccCFlags Include="-DLINK_ICALLS=1"                   Condition="'$(WasmLinkIcalls)' == 'true'" />
+      <_EmccCFlags Include="-DCORE_BINDINGS" />
+      <_EmccCFlags Include="-DGEN_PINVOKE=1" />
+      <_EmccCFlags Include="-emit-llvm" />
+
+      <_EmccCFlags Include="&quot;-I%(_EmccIncludePaths.Identity)&quot;" />
+      <_EmccCFlags Include="-g" Condition="'$(WasmNativeDebugSymbols)' == 'true'" />
+
+      <_EmccCFlags Include="$(EmccExtraCFlags)" />
+
+      <_WasmRuntimePackSrcFile Include="$(_WasmRuntimePackSrcDir)*.c" />
+      <_WasmRuntimePackSrcFile ObjectFile="$(_WasmIntermediateOutputPath)%(FileName).o" />
+
+      <_DotnetJSSrcFile Include="$(_WasmRuntimePackSrcDir)\*.js" />
+      <_WasmNativeFileForLinking Include="@(NativeFileReference)" />
+    </ItemGroup>
+
+    <Error Text="Could not find NativeFileReference %(NativeFileReference.Identity)" Condition="'%(NativeFileReference.Identity)' != '' and !Exists(%(NativeFileReference.Identity))" />
+  </Target>
+
+  <Target Name="_GeneratePInvokeTable">
+    <ItemGroup>
+      <_WasmPInvokeModules Include="%(_WasmNativeFileForLinking.FileName)" Condition="'%(_WasmNativeFileForLinking.ScanForPInvokes)' != 'false'" />
+
+      <_WasmPInvokeModules Include="libSystem.Native" />
+      <_WasmPInvokeModules Include="libSystem.IO.Compression.Native" />
+      <_WasmPInvokeModules Include="libSystem.Globalization.Native" />
+    </ItemGroup>
+
+    <PInvokeTableGenerator
+      Modules="@(_WasmPInvokeModules)"
+      Assemblies="@(_WasmAssembliesInternal)"
+      OutputPath="$(_WasmPInvokeTablePath)" />
+  </Target>
+
+  <Target Name="_GenerateICallTable" Condition="'$(WasmLinkIcalls)' == 'true'">
+    <Error Condition="'$(_MonoAotCrossCompilerPath)' == '' or !Exists('$(_MonoAotCrossCompilerPath)')"
+           Text="Could not find AOT cross compiler at %24(_MonoAotCrossCompilerPath)=$(_MonoAotCrossCompilerPath)" />
+
+    <Exec Command='"$(_MonoAotCrossCompilerPath)" --print-icall-table > "$(_WasmRuntimeICallTablePath)"' />
+    <IcallTableGenerator
+      RuntimeIcallTableFile="$(_WasmRuntimeICallTablePath)"
+      Assemblies="@(_WasmAssembliesInternal)"
+      OutputPath="$(_WasmICallTablePath)" />
+  </Target>
+
+  <Target Name="_WasmCompileNativeFiles">
+    <ItemGroup>
+      <_WasmSourceFileToCompile Remove="@(_WasmSourceFileToCompile)" />
+      <_WasmSourceFileToCompile Include="@(_WasmRuntimePackSrcFile)" />
+    </ItemGroup>
+
+    <PropertyGroup>
+      <_EmBuilder Condition="$([MSBuild]::IsOSPlatform('WINDOWS'))">embuilder.bat</_EmBuilder>
+      <_EmBuilder Condition="!$([MSBuild]::IsOSPlatform('WINDOWS'))">embuilder.py</_EmBuilder>
+    </PropertyGroup>
+
+    <WriteLinesToFile Lines="@(_EmccCFlags)" File="$(_EmccCompileRsp)" Overwrite="true" WriteOnlyWhenDifferent="true" />
+
+    <!-- warm up the cache -->
+    <Exec Command="$(_EmBuilder) build MINIMAL" EnvironmentVariables="@(EmscriptenEnvVars)" StandardOutputImportance="Low" StandardErrorImportance="Low" />
+
+    <Message Text="Compiling native assets with emcc. This may take a while ..." Importance="High" />
+    <EmccCompile
+          SourceFiles="@(_WasmSourceFileToCompile)"
+          Arguments='"@$(_EmccDefaultFlagsRsp)" "@$(_EmccCompileRsp)"'
+          EnvironmentVariables="@(EmscriptenEnvVars)"
+          OutputMessageImportance="$(_EmccCompileOutputMessageImportance)" />
+
+    <ItemGroup>
+      <WasmNativeAsset Include="%(_WasmSourceFileToCompile.ObjectFile)" />
+    </ItemGroup>
+  </Target>
+
+  <ItemGroup Condition="'$(Configuration)' == 'Debug' and '@(_MonoComponent->Count())' == 0">
+    <_MonoComponent Include="hot_reload;debugger" />
+  </ItemGroup>
+
+  <Target Name="_WasmLinkDotNetSelectComponents"
+      Condition="'$(WasmNativeWorkload)' == true"
+      DependsOnTargets="_MonoSelectRuntimeComponents">
+  </Target>
+
+  <Target Name="_WasmLinkDotNet" DependsOnTargets="_WasmLinkDotNetSelectComponents">
+    <ItemGroup>
+      <!-- Adding optimization flag at the top, so it gets precedence -->
+      <_EmccLDFlags Include="$(EmccLinkOptimizationFlag)" />
+      <_EmccLDFlags Include="@(_EmccCommonFlags)" />
+
+      <_EmccLDFlags Include="-s TOTAL_MEMORY=$(EmccTotalMemory)" />
+      <_EmccLDFlags Include="$(EmccExtraLDFlags)" />
+    </ItemGroup>
+
+    <EmccCompile
+          Condition="@(_BitCodeFile->Count()) > 0"
+          SourceFiles="@(_BitCodeFile)"
+          Arguments="&quot;@$(_EmccDefaultFlagsRsp)&quot; @(_EmccLDFlags, ' ')"
+          EnvironmentVariables="@(EmscriptenEnvVars)"
+          OutputMessageImportance="$(_EmccCompileOutputMessageImportance)" />
+
+    <ItemGroup>
+      <!-- order seems to matter -->
+      <_WasmNativeFileForLinking Include="%(_BitcodeFile.ObjectFile)" />
+      <_WasmNativeFileForLinking Include="%(_WasmSourceFileToCompile.ObjectFile)" />
+
+      <_WasmNativeFileForLinking
+          Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)\*.a"
+          Exclude="@(_MonoRuntimeComponentDontLink->'$(MicrosoftNetCoreAppRuntimePackRidNativeDir)\%(Identity)')" />
+
+      <_WasmExtraJSFile Include="@(Content)" Condition="'%(Content.Extension)' == '.js'" />
+
+      <_EmccLinkStepArgs Include="@(_EmccLDFlags)" />
+      <_EmccLinkStepArgs Include="--js-library &quot;%(_DotnetJSSrcFile.Identity)&quot;" />
+      <_EmccLinkStepArgs Include="--js-library &quot;%(_WasmExtraJSFile.Identity)&quot;" Condition="'%(_WasmExtraJSFile.Kind)' == 'js-library'" />
+
+      <_EmccLinkStepArgs Include="--pre-js &quot;%(_WasmExtraJSFile.Identity)&quot;"     Condition="'%(_WasmExtraJSFile.Kind)' == 'pre-js'" />
+      <_EmccLinkStepArgs Include="--post-js &quot;%(_WasmExtraJSFile.Identity)&quot;"    Condition="'%(_WasmExtraJSFile.Kind)' == 'post-js'" />
+
+      <_EmccLinkStepArgs Include="&quot;%(_WasmNativeFileForLinking.Identity)&quot;" />
+      <_EmccLinkStepArgs Include="-o &quot;$(_WasmIntermediateOutputPath)dotnet.js&quot;" />
+    </ItemGroup>
+
+    <PropertyGroup>
+      <_EmccLinkRsp>$(_WasmIntermediateOutputPath)emcc-link.rsp</_EmccLinkRsp>
+    </PropertyGroup>
+
+    <WriteLinesToFile Lines="@(_EmccLinkStepArgs)" File="$(_EmccLinkRsp)" Overwrite="true" WriteOnlyWhenDifferent="true" />
+
+    <Message Text="Linking with emcc. This may take a while ..." Importance="High" />
+    <Message Text="Running emcc with @(_EmccLinkStepArgs->'%(Identity)', ' ')" Importance="Low" />
+    <Exec Command='emcc "@$(_EmccDefaultFlagsRsp)" "@$(_EmccLinkRsp)"' EnvironmentVariables="@(EmscriptenEnvVars)" StandardOutputImportance="Normal" StandardErrorImportance="Normal" />
+
+    <Exec Command='wasm-opt$(_ExeExt) --strip-dwarf "$(_WasmIntermediateOutputPath)dotnet.wasm" -o "$(_WasmIntermediateOutputPath)dotnet.wasm"' Condition="'$(WasmNativeStrip)' == 'true'" IgnoreStandardErrorWarningFormat="true" EnvironmentVariables="@(EmscriptenEnvVars)" />
+  </Target>
+
+  <Target Name="_CompleteWasmBuildNative">
+    <ItemGroup>
+      <WasmNativeAsset Include="$(_WasmIntermediateOutputPath)dotnet.wasm" />
+      <WasmNativeAsset Include="$(_WasmIntermediateOutputPath)dotnet.js" />
+    </ItemGroup>
+  </Target>
+
+  <Target Name="_GenerateDriverGenC" Condition="'$(RunAOTCompilation)' != 'true' and '$(WasmProfilers)' != ''">
+    <PropertyGroup>
+      <EmccExtraCFlags>$(EmccExtraCFlags) -DDRIVER_GEN=1</EmccExtraCFlags>
+      <InitAotProfilerCmd>
+void mono_profiler_init_aot (const char *desc)%3B
+EMSCRIPTEN_KEEPALIVE void mono_wasm_load_profiler_aot (const char *desc) { mono_profiler_init_aot (desc)%3B }
+      </InitAotProfilerCmd>
+
+      <_DriverGenCPath>$(_WasmIntermediateOutputPath)driver-gen.c</_DriverGenCPath>
+    </PropertyGroup>
+
+    <Message Text="Generating $(_DriverGenCPath)" Importance="Low" />
+    <WriteLinesToFile File="$(_DriverGenCPath)" Overwrite="true" Lines="$(InitAotProfilerCmd)" />
+
+    <ItemGroup>
+        <FileWrites Include="$(_DriverGenCPath)" />
+    </ItemGroup>
+  </Target>
+
+  <Target Name="_CheckEmccIsExpectedVersion">
+    <Error Condition="'$(_IsEMSDKMissing)' == 'true'"
+           Text="$(_EMSDKMissingErrorMessage) Emscripten SDK is required for building native files." />
+
+    <ReadEmccProps JsonFilePath="$(_WasmRuntimePackSrcDir)emcc-props.json">
+      <Output TaskParameter="EmccProperties" ItemName="_EmccPropItems" />
+    </ReadEmccProps>
+
+    <CreateProperty Value="%(_EmccPropItems.Value)">
+      <Output TaskParameter="Value" PropertyName="%(_EmccPropItems.Identity)" />
+    </CreateProperty>
+
+    <Error Condition="'$(RuntimeEmccVersionRaw)' == ''"
+           Text="%24(RuntimeEmccVersionRaw) is not set. '$(_EmccPropsPath)' should have set that."/>
+
+    <Exec Command="emcc --version" WorkingDirectory="$(_WasmIntermediateOutputPath)" EnvironmentVariables="@(EmscriptenEnvVars)" ConsoleToMsBuild="true" StandardOutputImportance="Low">
+      <Output TaskParameter="ConsoleOutput" ItemName="_VersionLines" />
+    </Exec>
+
+    <!-- we want to get the first line from the output, which has the version.
+         Rest of the lines are the license -->
+    <ItemGroup>
+      <_ReversedVersionLines Include="@(_VersionLines->Reverse())" />
+    </ItemGroup>
+    <PropertyGroup>
+      <ActualEmccVersionRaw>%(_ReversedVersionLines.Identity)</ActualEmccVersionRaw>
+    </PropertyGroup>
+
+    <Warning Condition="'$(RuntimeEmccVersionRaw)' != '$(ActualEmccVersionRaw)'"
+             Text="Emscripten version mismatch. The runtime pack in $(MicrosoftNetCoreAppRuntimePackDir) expects '$(RuntimeEmccVersionRaw)', but emcc being used has version '$(ActualEmccVersionRaw)'. This might cause build failures." />
+  </Target>
+
+  <!--
+      *******************************
+      ************ AOT **************
+      *******************************
+  -->
+
+  <Target Name="_WasmAotCompileApp" Condition="'$(RunAOTCompilation)' == 'true'">
+    <PropertyGroup>
+      <!-- FIXME: do it once -->
+      <_MonoAotCrossCompilerPath>@(MonoAotCrossCompiler->WithMetadataValue('RuntimeIdentifier','browser-wasm'))</_MonoAotCrossCompilerPath>
+    </PropertyGroup>
+
+    <Error Condition="'@(_WasmAssembliesInternal)' == ''" Text="Item _WasmAssembliesInternal is empty" />
+    <Error Condition="'$(_IsEMSDKMissing)' == 'true'"
+           Text="$(_EMSDKMissingErrorMessage) Emscripten SDK is required for AOT'ing assemblies." />
+    <Error Condition="'$(_MonoAotCrossCompilerPath)' == '' or !Exists('$(_MonoAotCrossCompilerPath)')"
+           Text="Could not find AOT cross compiler at %24(_MonoAotCrossCompilerPath)=$(_MonoAotCrossCompilerPath)" />
+
+    <ItemGroup>
+      <MonoAOTCompilerDefaultAotArguments Include="no-opt" />
+      <MonoAOTCompilerDefaultAotArguments Include="static" />
+      <MonoAOTCompilerDefaultAotArguments Include="direct-icalls" />
+      <MonoAOTCompilerDefaultAotArguments Include="deterministic" />
+    </ItemGroup>
+    <ItemGroup>
+      <_AotInputAssemblies Include="@(_WasmAssembliesInternal)" Condition="'%(_WasmAssembliesInternal._InternalForceInterpret)' != 'true'">
+        <AotArguments>@(MonoAOTCompilerDefaultAotArguments, ';')</AotArguments>
+        <ProcessArguments>@(MonoAOTCompilerDefaultProcessArguments, ';')</ProcessArguments>
+      </_AotInputAssemblies>
+
+      <_AOT_InternalForceInterpretAssemblies Include="@(_WasmAssembliesInternal->WithMetadataValue('_InternalForceInterpret', 'true'))" />
+
+      <_WasmAssembliesInternal Remove="@(_WasmAssembliesInternal)" />
+
+      <_WasmAOTSearchPaths Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)" />
+      <_WasmAOTSearchPaths Include="$(MicrosoftNetCoreAppRuntimePackRidDir)\lib\net6.0" />
+    </ItemGroup>
+
+    <PropertyGroup>
+      <!--<AOTMode Condition="'$(AOTMode)' == '' and '$(AOTProfilePath)' != ''">LLVMOnlyInterp</AOTMode>-->
+      <AOTMode Condition="'$(AOTMode)' == ''">LLVMOnlyInterp</AOTMode>
+    </PropertyGroup>
+
+    <Error Condition="'$(AOTMode)' == 'llvmonly' and @(_AOT_InternalForceInterpretAssemblies->Count()) > 0"
+           Text="Builing in AOTMode=LLVMonly, but found some assemblies marked as _InternalForceInterpret: @(_AOT_InternalForceInterpretAssemblies)" />
+
+    <Message Text="AOT'ing @(_AotInputAssemblies->Count()) assemblies" Importance="High" />
+
+    <!-- Dedup -->
+    <PropertyGroup Condition="'$(WasmDedup)' == 'true'">
+      <_WasmDedupAssembly>$(_WasmIntermediateOutputPath)\aot-instances.dll</_WasmDedupAssembly>
+    </PropertyGroup>
+    <WriteLinesToFile Condition="'$(WasmDedup)' == 'true'" File="$(_WasmIntermediateOutputPath)/aot-instances.cs" Overwrite="true" Lines="" />
+    <Csc
+      Condition="'$(WasmDedup)' == 'true'"
+      Sources="$(_WasmIntermediateOutputPath)\aot-instances.cs"
+      OutputAssembly="$(_WasmDedupAssembly)"
+      TargetType="library"
+      Deterministic="true"
+      References="@(ReferencePath)"
+      ToolExe="$(CscToolExe)"
+      ToolPath="$(CscToolPath)" />
+    <ItemGroup Condition="'$(WasmDedup)' == 'true'">
+      <_AotInputAssemblies Include="$(_WasmDedupAssembly)">
+        <AotArguments>@(MonoAOTCompilerDefaultAotArguments, ';')</AotArguments>
+        <ProcessArguments>@(MonoAOTCompilerDefaultProcessArguments, ';')</ProcessArguments>
+      </_AotInputAssemblies>
+    </ItemGroup>
+
+    <MonoAOTCompiler
+      CompilerBinaryPath="$(_MonoAotCrossCompilerPath)"
+      OutputDir="$(_WasmIntermediateOutputPath)"
+      Mode="$(AOTMode)"
+      OutputType="AsmOnly"
+      Assemblies="@(_AotInputAssemblies)"
+      AdditionalAssemblySearchPaths="@(_WasmAOTSearchPaths)"
+      UseAotDataFile="false"
+      AOTProfilePath="$(AOTProfilePath)"
+      Profilers="$(WasmProfilers)"
+      AotModulesTablePath="$(_WasmIntermediateOutputPath)driver-gen.c"
+      UseLLVM="true"
+      DisableParallelAot="$(DisableParallelAot)"
+      DedupAssembly="$(_WasmDedupAssembly)"
+      LLVMDebug="dwarfdebug"
+      LLVMPath="$(EmscriptenUpstreamBinPath)" >
+
+      <Output TaskParameter="CompiledAssemblies" ItemName="_WasmAssembliesInternal" />
+      <Output TaskParameter="FileWrites" ItemName="FileWrites" />
+    </MonoAOTCompiler>
+
+    <ItemGroup>
+      <!-- Add back the interpreter-only assemblies -->
+      <_WasmAssembliesInternal Include="@(_AOT_InternalForceInterpretAssemblies)" />
+
+      <_AOTAssemblies Include="@(_WasmAssembliesInternal)" Condition="'%(_WasmAssembliesInternal._InternalForceInterpret)' != 'true'" />
+      <_BitcodeFile Include="%(_WasmAssembliesInternal.LlvmBitcodeFile)" />
+      <_BitcodeFile ObjectFile="$(_WasmIntermediateOutputPath)%(FileName).o" />
+    </ItemGroup>
+  </Target>
+
+  <!-- '$(ArchiveTests)' != 'true' is to skip on CI for now -->
+  <Target Name="_WasmStripAOTAssemblies" Condition="'$(RunAOTCompilation)' == 'true' and '$(WasmStripAOTAssemblies)' == 'true' and '$(AOTMode)' != 'LLVMOnlyInterp' and '$(ArchiveTests)' != 'true'">
+    <PropertyGroup>
+      <_WasmStrippedAssembliesPath>$([MSBuild]::NormalizeDirectory($(_WasmIntermediateOutputPath), 'stripped-assemblies'))</_WasmStrippedAssembliesPath>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <_WasmStrippedAssemblies
+              Condition="'%(_WasmAssembliesInternal._InternalForceInterpret)' != 'true'"
+              Include="@(_WasmAssembliesInternal->'$(_WasmStrippedAssembliesPath)%(FileName)%(Extension)')"
+              OriginalPath="%(_WasmAssembliesInternal.Identity)" />
+      <_WasmInterpOnlyAssembly Include="@(_WasmAssembliesInternal->WithMetadataValue('_InternalForceInterpret', 'true'))" />
+    </ItemGroup>
+
+    <!-- Run mono-cil-strip on the assemblies -->
+    <!-- TODO: replace this with a linker task -->
+    <MakeDir Directories="$(_WasmStrippedAssembliesPath)" />
+    <Exec Command='mono-cil-strip -q "%(_WasmStrippedAssemblies.OriginalPath)" "%(_WasmStrippedAssemblies.Identity)"' />
+
+    <ItemGroup>
+      <_WasmAssembliesInternal Remove="@(_WasmAssembliesInternal)" />
+      <_WasmAssembliesInternal Include="@(_WasmStrippedAssemblies);@(_WasmInterpOnlyAssembly)" />
+    </ItemGroup>
+  </Target>
+
+  <UsingTask TaskName="ReadEmccProps" AssemblyFile="$(JsonToItemsTaskFactoryTasksAssemblyPath)"
+             TaskFactory="JsonToItemsTaskFactory.JsonToItemsTaskFactory">
+    <ParameterGroup>
+      <EmccProperties ParameterType="Microsoft.Build.Framework.ITaskItem[]" Required="false" Output="true" />
+    </ParameterGroup>
+  </UsingTask>
+</Project>

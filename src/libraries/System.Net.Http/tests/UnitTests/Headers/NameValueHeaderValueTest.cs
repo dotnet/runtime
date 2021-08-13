@@ -1,11 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Net.Http.Headers;
-using System.Text;
 
 using Xunit;
 
@@ -66,6 +62,8 @@ namespace System.Net.Http.Tests
         [InlineData("\"quoted string with \"two\" quotes\"")]
         [InlineData("\"")]
         [InlineData(" ")]
+        [InlineData("token\r")]
+        [InlineData("\"token\r\"")]
         public void Ctor_ValueInvalidFormat_ThrowFormatException(string value)
         {
             // When adding values using strongly typed objects, no leading/trailing LWS (whitespace) are allowed.
@@ -308,59 +306,31 @@ namespace System.Net.Http.Tests
             CheckInvalidParse(" ,name=\"value\"");
         }
 
-        [Fact]
-        public void TryParse_SetOfValidValueStrings_ParsedCorrectly()
-        {
-            CheckValidTryParse("  name = value    ", new NameValueHeaderValue("name", "value"));
-            CheckValidTryParse(" name", new NameValueHeaderValue("name"));
-            CheckValidTryParse(" name=\"value\"", new NameValueHeaderValue("name", "\"value\""));
-            CheckValidTryParse("name=value", new NameValueHeaderValue("name", "value"));
-        }
-
-        [Fact]
-        public void TryParse_SetOfInvalidValueStrings_ReturnsFalse()
-        {
-            CheckInvalidTryParse("name[value");
-            CheckInvalidTryParse("name=value=");
-            CheckInvalidTryParse("name=\u4F1A");
-            CheckInvalidTryParse("name==value");
-            CheckInvalidTryParse("=value");
-            CheckInvalidTryParse("name value");
-            CheckInvalidTryParse("name=,value");
-            CheckInvalidTryParse("\u4F1A");
-            CheckInvalidTryParse(null);
-            CheckInvalidTryParse(string.Empty);
-            CheckInvalidTryParse("  ");
-            CheckInvalidTryParse("  ,,");
-            CheckInvalidTryParse(" , , name = value  ,  ");
-            CheckInvalidTryParse(" name,");
-            CheckInvalidTryParse(" ,name=\"value\"");
-        }
-
         #region Helper methods
 
         private void CheckValidParse(string input, NameValueHeaderValue expectedResult)
         {
             NameValueHeaderValue result = NameValueHeaderValue.Parse(input);
             Assert.Equal(expectedResult, result);
+
+            Assert.True(NameValueHeaderValue.TryParse(input, out result));
+            Assert.Equal(expectedResult, result);
+
+            // New lines are never allowed
+            for (int i = 0; i < input.Length; i++)
+            {
+                CheckInvalidParse(input.Insert(i, "\r"));
+                CheckInvalidParse(input.Insert(i, "\n"));
+                CheckInvalidParse(input.Insert(i, "\r\n"));
+                CheckInvalidParse(input.Insert(i, "\r\n "));
+            }
         }
 
         private void CheckInvalidParse(string input)
         {
             Assert.Throws<FormatException>(() => { NameValueHeaderValue.Parse(input); });
-        }
 
-        private void CheckValidTryParse(string input, NameValueHeaderValue expectedResult)
-        {
-            NameValueHeaderValue result = null;
-            Assert.True(NameValueHeaderValue.TryParse(input, out result));
-            Assert.Equal(expectedResult, result);
-        }
-
-        private void CheckInvalidTryParse(string input)
-        {
-            NameValueHeaderValue result = null;
-            Assert.False(NameValueHeaderValue.TryParse(input, out result));
+            Assert.False(NameValueHeaderValue.TryParse(input, out NameValueHeaderValue result));
             Assert.Null(result);
         }
 

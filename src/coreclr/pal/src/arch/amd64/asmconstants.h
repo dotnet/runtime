@@ -3,6 +3,8 @@
 
 #ifdef HOST_64BIT
 
+// The arch bit is normally set in the flag constants below. Since this is already arch-specific code and the arch bit is not
+// relevant, the arch bit is excluded from the flag constants below for simpler tests.
 #define CONTEXT_AMD64   0x100000
 
 #define CONTEXT_CONTROL 1 // SegSs, Rsp, SegCs, Rip, and EFlags

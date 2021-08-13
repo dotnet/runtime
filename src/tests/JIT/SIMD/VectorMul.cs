@@ -118,6 +118,10 @@ internal partial class VectorTest
             returnVal = Fail;
         if (VectorMulTest<ulong>.VectorMul(2ul, 3ul, 2ul * 3ul, (2ul * 3ul) * (2ul * 3ul), (3ul * 3ul)) != Pass)
             returnVal = Fail;
+        if (VectorMulTest<nint>.VectorMul(2, 3, (2 * 3), (2 * 3) * (2 * 3), (3 * 3)) != Pass)
+            returnVal = Fail;
+        if (VectorMulTest<nuint>.VectorMul(2u, 3u, 2u * 3u, (2u * 3u) * (2u * 3u), (3u * 3u)) != Pass)
+            returnVal = Fail;
 
         JitLog jitLog = new JitLog();
         // Multiply is supported only for float, double, int and short

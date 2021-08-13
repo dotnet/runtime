@@ -183,7 +183,7 @@ namespace System.Drawing
 #endif
                     Gdip.GdipDeleteFont(new HandleRef(this, _nativeFont));
 #if DEBUG
-                    Debug.Assert(status == Gdip.Ok, "GDI+ returned an error status: " + status.ToString(CultureInfo.InvariantCulture));
+                    Debug.Assert(status == Gdip.Ok, $"GDI+ returned an error status: {status.ToString(CultureInfo.InvariantCulture)}");
 #endif
                 }
                 catch (Exception ex) when (!ClientUtils.IsCriticalException(ex))
@@ -254,24 +254,14 @@ namespace System.Drawing
         /// </summary>
         public override int GetHashCode()
         {
-            return unchecked((int)((((uint)_fontStyle << 13) | ((uint)_fontStyle >> 19)) ^
-                         (((uint)_fontUnit << 26) | ((uint)_fontUnit >> 6)) ^
-                         (((uint)_fontSize << 7) | ((uint)_fontSize >> 25))));
+            return HashCode.Combine(Name, Style, Size, Unit);
         }
 
         /// <summary>
         /// Returns a human-readable string representation of this <see cref='Font'/>.
         /// </summary>
-        public override string ToString()
-        {
-            return string.Format(CultureInfo.CurrentCulture, "[{0}: Name={1}, Size={2}, Units={3}, GdiCharSet={4}, GdiVerticalFont={5}]",
-                                    GetType().Name,
-                                    FontFamily.Name,
-                                    _fontSize,
-                                    (int)_fontUnit,
-                                    _gdiCharSet,
-                                    _gdiVerticalFont);
-        }
+        public override string ToString() =>
+            $"[{GetType().Name}: Name={FontFamily.Name}, Size={_fontSize}, Units={(int)_fontUnit}, GdiCharSet={_gdiCharSet}, GdiVerticalFont={_gdiVerticalFont}]";
 
         // This is used by SystemFonts when constructing a system Font objects.
         internal void SetSystemFontName(string systemFontName) => _systemFontName = systemFontName;

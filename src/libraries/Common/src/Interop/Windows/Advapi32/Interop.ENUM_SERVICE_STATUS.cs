@@ -3,12 +3,12 @@
 
 using System.Runtime.InteropServices;
 
-internal partial class Interop
+internal static partial class Interop
 {
-    internal partial class Advapi32
+    internal static partial class Advapi32
     {
         [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
-        internal class ENUM_SERVICE_STATUS
+        internal sealed class ENUM_SERVICE_STATUS
         {
             internal string? serviceName;
             internal string? displayName;

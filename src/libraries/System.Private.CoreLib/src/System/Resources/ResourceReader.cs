@@ -180,7 +180,7 @@ namespace System.Resources
 
         private unsafe int GetNameHash(int index)
         {
-            Debug.Assert(index >= 0 && index < _numResources, "Bad index into hash array.  index: " + index);
+            Debug.Assert(index >= 0 && index < _numResources, $"Bad index into hash array.  index: {index}");
 
             if (_ums == null)
             {
@@ -196,7 +196,7 @@ namespace System.Resources
 
         private unsafe int GetNamePosition(int index)
         {
-            Debug.Assert(index >= 0 && index < _numResources, "Bad index into name position array.  index: " + index);
+            Debug.Assert(index >= 0 && index < _numResources, $"Bad index into name position array.  index: {index}");
             int r;
             if (_ums == null)
             {
@@ -383,7 +383,19 @@ namespace System.Resources
                     string? s = null;
                     char* charPtr = (char*)_ums.PositionPointer;
 
-                    s = new string(charPtr, 0, byteLen / 2);
+                    if (BitConverter.IsLittleEndian)
+                    {
+                        s = new string(charPtr, 0, byteLen / 2);
+                    }
+                    else
+                    {
+                        char[] arr = new char[byteLen / 2];
+                        for (int i = 0; i < arr.Length; i++)
+                        {
+                            arr[i] = (char)BinaryPrimitives.ReverseEndianness((short)charPtr[i]);
+                        }
+                        s = new string(arr);
+                    }
 
                     _ums.Position += byteLen;
                     dataOffset = _store.ReadInt32();

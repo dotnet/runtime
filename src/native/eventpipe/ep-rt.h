@@ -177,6 +177,10 @@ static
 int64_t
 ep_rt_atomic_dec_int64_t (volatile int64_t *value);
 
+static
+size_t
+ep_rt_atomic_compare_exchange_size_t (volatile size_t *target, size_t expected, size_t value);
+
 /*
  * EventPipe.
  */
@@ -184,9 +188,16 @@ ep_rt_atomic_dec_int64_t (volatile int64_t *value);
 EP_RT_DECLARE_ARRAY (session_id_array, ep_rt_session_id_array_t, ep_rt_session_id_array_iterator_t, EventPipeSessionID)
 EP_RT_DECLARE_ARRAY_ITERATOR (session_id_array, ep_rt_session_id_array_t, ep_rt_session_id_array_iterator_t, EventPipeSessionID)
 
+EP_RT_DECLARE_ARRAY (execution_checkpoint_array, ep_rt_execution_checkpoint_array_t, ep_rt_execution_checkpoint_array_iterator_t, EventPipeExecutionCheckpoint *)
+EP_RT_DECLARE_ARRAY_ITERATOR (execution_checkpoint_array, ep_rt_execution_checkpoint_array_t, ep_rt_execution_checkpoint_array_iterator_t, EventPipeExecutionCheckpoint *)
+
 static
 void
 ep_rt_init (void);
+
+static
+void
+ep_rt_init_finish (void);
 
 static
 void
@@ -333,6 +344,11 @@ uint32_t
 ep_rt_config_value_get_circular_mb (void);
 
 static
+inline
+bool
+ep_rt_config_value_get_output_streaming (void);
+
+static
 bool
 ep_rt_config_value_get_use_portable_thread_pool (void);
 
@@ -468,7 +484,7 @@ ep_rt_is_running (void);
 
 static
 void
-ep_rt_execute_rundown (void);
+ep_rt_execute_rundown (ep_rt_execution_checkpoint_array_t *execution_checkpoints);
 
 /*
  * Objects.
@@ -584,6 +600,14 @@ static
 void
 ep_rt_os_environment_get_utf16 (ep_rt_env_array_utf16_t *env_array);
 
+static
+const ep_char8_t *
+ep_rt_entrypoint_assembly_name_get_utf8 (void);
+
+static
+const ep_char8_t *
+ep_rt_runtime_version_get_utf8 (void);
+
 /*
 * Lock
 */
@@ -672,6 +696,10 @@ ep_rt_utf8_string_dup (const ep_char8_t *str);
 
 static
 ep_char8_t *
+ep_rt_utf8_string_dup_range (const ep_char8_t *str, const ep_char8_t *strEnd);
+
+static
+ep_char8_t *
 ep_rt_utf8_string_strtok (
 	ep_char8_t *str,
 	const ep_char8_t *delimiter,
@@ -681,6 +709,14 @@ ep_rt_utf8_string_strtok (
 	str, \
 	str_len, \
 	format, ...) ep_redefine
+
+static
+inline bool
+ep_rt_utf8_string_replace (
+	ep_char8_t **str,
+	const ep_char8_t *strSearch,
+	const ep_char8_t *strReplacement
+);
 
 static
 ep_char16_t *
@@ -780,7 +816,7 @@ ep_rt_thread_set_activity_id (
  * ThreadSequenceNumberMap.
  */
 
-EP_RT_DECLARE_HASH_MAP(thread_sequence_number_map, ep_rt_thread_sequence_number_hash_map_t, EventPipeThreadSessionState *, uint32_t)
+EP_RT_DECLARE_HASH_MAP_REMOVE(thread_sequence_number_map, ep_rt_thread_sequence_number_hash_map_t, EventPipeThreadSessionState *, uint32_t)
 EP_RT_DECLARE_HASH_MAP_ITERATOR(thread_sequence_number_map, ep_rt_thread_sequence_number_hash_map_t, ep_rt_thread_sequence_number_hash_map_iterator_t, EventPipeThreadSessionState *, uint32_t)
 
 

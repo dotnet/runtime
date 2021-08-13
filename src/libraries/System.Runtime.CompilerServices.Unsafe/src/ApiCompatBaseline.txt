@@ -1,0 +1,9 @@
+CannotRemoveAttribute : Attribute 'System.Diagnostics.CodeAnalysis.AllowNullAttribute' exists on parameter 'left' on member 'System.Runtime.CompilerServices.Unsafe.AreSame<T>(T, T)' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.Diagnostics.CodeAnalysis.AllowNullAttribute' exists on parameter 'right' on member 'System.Runtime.CompilerServices.Unsafe.AreSame<T>(T, T)' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.Diagnostics.CodeAnalysis.AllowNullAttribute' exists on parameter 'origin' on member 'System.Runtime.CompilerServices.Unsafe.ByteOffset<T>(T, T)' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.Diagnostics.CodeAnalysis.AllowNullAttribute' exists on parameter 'target' on member 'System.Runtime.CompilerServices.Unsafe.ByteOffset<T>(T, T)' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.Diagnostics.CodeAnalysis.AllowNullAttribute' exists on parameter 'left' on member 'System.Runtime.CompilerServices.Unsafe.IsAddressGreaterThan<T>(T, T)' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.Diagnostics.CodeAnalysis.AllowNullAttribute' exists on parameter 'right' on member 'System.Runtime.CompilerServices.Unsafe.IsAddressGreaterThan<T>(T, T)' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.Diagnostics.CodeAnalysis.AllowNullAttribute' exists on parameter 'left' on member 'System.Runtime.CompilerServices.Unsafe.IsAddressLessThan<T>(T, T)' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.Diagnostics.CodeAnalysis.AllowNullAttribute' exists on parameter 'right' on member 'System.Runtime.CompilerServices.Unsafe.IsAddressLessThan<T>(T, T)' in the contract but not the implementation.
+Total Issues: 8

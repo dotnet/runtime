@@ -3,6 +3,7 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
     <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-Unix;net48</TargetFrameworks>
+    <IgnoreForCI Condition="'$(TargetsMobile)' == 'true'">true</IgnoreForCI>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="AssemblyInfo.cs" />
@@ -27,6 +28,7 @@
     <Compile Include="GraphicsTests.cs" />
     <Compile Include="Graphics_DrawBezierTests.cs" />
     <Compile Include="Graphics_DrawLineTests.cs" />
+    <Compile Include="Graphics_GetContextTests.cs" />
     <Compile Include="IconTests.cs" />
     <Compile Include="ImageTests.cs" />
     <Compile Include="Imaging\ImageAttributesTests.cs" />
@@ -65,6 +67,8 @@
     <Compile Include="SystemFontsTests.cs" />
     <Compile Include="SystemIconsTests.cs" />
     <Compile Include="SystemPensTest.cs" />
+    <Compile Include="System\Drawing\ImageAnimator.ManualTests.cs" />
+    <Compile Include="System\Drawing\ImageAnimatorTests.cs" />
     <Compile Include="TextureBrushTests.cs" />
     <Compile Include="ToolboxBitmapAttributeTests.cs" />
     <Compile Include="Design\CategoryNameCollectionTests.cs" />
@@ -86,15 +90,12 @@
     <Compile Include="Printing\PaperSizeTests.cs" />
     <Compile Include="Printing\PaperSourceTests.cs" />
     <Compile Include="Printing\PrinterUnitConvertTests.cs" />
-    <Compile Include="$(CommonTestPath)System\Diagnostics\DebuggerAttributes.cs"
-             Link="Common\System\Diagnostics\DebuggerAttributes.cs" />
-    <Compile Include="$(CommonTestPath)System\Drawing\Helpers.cs"
-             Link="Common\System\Drawing\Helpers.cs" />
-    <Compile Include="$(CommonTestPath)System\IO\TempFile.cs"
-             Link="Common\System\IO\TempFile.cs" />
+    <Compile Include="$(CommonTestPath)System\Diagnostics\DebuggerAttributes.cs" Link="Common\System\Diagnostics\DebuggerAttributes.cs" />
+    <Compile Include="$(CommonTestPath)System\Drawing\Helpers.cs" Link="Common\System\Drawing\Helpers.cs" />
+    <Compile Include="$(CommonTestPath)System\IO\TempFile.cs" Link="Common\System\IO\TempFile.cs" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="System.Drawing.Common.TestData" Version="$(SystemDrawingCommonTestDataVersion)" GeneratePathProperty="true" />    
+    <PackageReference Include="System.Drawing.Common.TestData" Version="$(SystemDrawingCommonTestDataVersion)" GeneratePathProperty="true" />
     <PackageReference Include="System.ComponentModel.TypeConverter.TestData" Version="$(SystemComponentModelTypeConverterTestDataVersion)" />
     <PackageReference Include="System.Windows.Extensions.TestData" Version="$(SystemWindowsExtensionsTestDataVersion)" />
     <EmbeddedResource Include="$(PkgSystem_Drawing_Common_TestData)\contentFiles\any\any\bitmaps\48x48_multiple_entries_4bit.ico">
@@ -114,9 +115,12 @@
     </EmbeddedResource>
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\src\System.Drawing.Common.csproj" />
     <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Win32.SystemEvents\src\Microsoft.Win32.SystemEvents.csproj" />
   </ItemGroup>
   <ItemGroup Condition="$(TargetFramework.StartsWith('$(NetCoreAppCurrent)'))">
-    <ProjectReference Include="..\src\System.Drawing.Common.csproj" />
+    <Compile Include="GraphicsTests.Core.cs" />
+    <Compile Include="Graphics_GetContextTests.Core.cs" />
+    <Compile Include="Drawing2D\MatrixTests.Core.cs" />
   </ItemGroup>
 </Project>

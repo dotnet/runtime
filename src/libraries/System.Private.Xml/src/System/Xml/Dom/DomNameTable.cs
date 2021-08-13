@@ -7,7 +7,7 @@ using System.Xml.Schema;
 
 namespace System.Xml
 {
-    internal class DomNameTable
+    internal sealed class DomNameTable
     {
         private XmlName[] _entries;
         private int _count;

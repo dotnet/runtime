@@ -1,10 +1,13 @@
 cmake_minimum_required(VERSION 3.6.2)
 include(CheckCCompilerFlag)
 
-if(CLR_CMAKE_TARGET_MACCATALYST OR CLR_CMAKE_TARGET_IOS OR CLR_CMAKE_TARGET_TVOS)
-     # CMake 3.14.5 contains bug fixes for iOS
-     cmake_minimum_required(VERSION 3.14.5)
- endif()
+if(CLR_CMAKE_TARGET_IOS OR CLR_CMAKE_TARGET_TVOS)
+    # CMake 3.14.5 contains bug fixes for iOS
+    cmake_minimum_required(VERSION 3.14.5)
+elseif(CLR_CMAKE_TARGET_MACCATALYST)
+    # CMake 3.18.1 properly generates MacCatalyst C and CXX compilers
+    cmake_minimum_required(VERSION 3.18.1)
+endif()
 cmake_policy(SET CMP0042 NEW)
 
 project(CoreFX C)
@@ -79,15 +82,33 @@ endif()
 if(CLR_CMAKE_TARGET_MACCATALYST)
     # -target overrides -mmacosx-version-min so suppress warning about that
     # https://gitlab.kitware.com/cmake/cmake/-/issues/20132
-    add_compile_options(-Wno-overriding-t-option)
+    set(DISABLE_OVERRIDING_MIN_VERSION_ERROR -Wno-overriding-t-option)
     add_link_options(-Wno-overriding-t-option)
     if (CLR_CMAKE_TARGET_ARCH_AMD64)
-        add_compile_options(-target x86_64-apple-ios13.5-macabi)
+        set(MACOS_VERSION_MIN_FLAGS "-target x86_64-apple-ios13.5-macabi")
         add_link_options(-target x86_64-apple-ios13.5-macabi)
     elseif (CLR_CMAKE_TARGET_ARCH_ARM64)
-        add_compile_options(-target arm64-apple-ios14.2-macabi)
+        set(MACOS_VERSION_MIN_FLAGS "-target arm64-apple-ios14.2-macabi")
         add_link_options(-target arm64-apple-ios14.2-macabi)
     endif()
+
+    # These options are intentionally set using the CMAKE_XXX_FLAGS instead of
+    # add_compile_options so that they take effect on the configuration functions
+    # in various configure.cmake files.
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${MACOS_VERSION_MIN_FLAGS} ${DISABLE_OVERRIDING_MIN_VERSION_ERROR}")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${MACOS_VERSION_MIN_FLAGS} ${DISABLE_OVERRIDING_MIN_VERSION_ERROR}")
+    set(CMAKE_ASM_FLAGS "${CMAKE_ASM_FLAGS} ${MACOS_VERSION_MIN_FLAGS} ${DISABLE_OVERRIDING_MIN_VERSION_ERROR}")
+
+endif()
+
+if(CLR_CMAKE_TARGET_TVOS)
+    # with -fembed-bitcode passing -headerpad_max_install_names is not allowed so remove it from the CMake flags
+    string(REPLACE "-Wl,-headerpad_max_install_names" "" CMAKE_C_LINK_FLAGS ${CMAKE_C_LINK_FLAGS})
+    string(REPLACE "-Wl,-headerpad_max_install_names" "" CMAKE_CXX_LINK_FLAGS ${CMAKE_CXX_LINK_FLAGS})
+    string(REPLACE "-Wl,-headerpad_max_install_names" "" CMAKE_SHARED_LIBRARY_CREATE_C_FLAGS ${CMAKE_SHARED_LIBRARY_CREATE_C_FLAGS})
+    string(REPLACE "-Wl,-headerpad_max_install_names" "" CMAKE_SHARED_LIBRARY_CREATE_CXX_FLAGS ${CMAKE_SHARED_LIBRARY_CREATE_CXX_FLAGS})
+    add_compile_options(-fembed-bitcode)
+    add_link_options(-fembed-bitcode)
 endif()
 
 if (CLR_CMAKE_TARGET_ARCH_AMD64)
@@ -106,6 +127,10 @@ elseif (CLR_CMAKE_TARGET_ARCH_ARM64)
 elseif (CLR_CMAKE_TARGET_ARCH_MIPS64)
     add_definitions(-DTARGET_64BIT=1)
     add_definitions(-DTARGET_MIPS64)
+elseif (CLR_CMAKE_TARGET_ARCH_S390X)
+    add_definitions(-DTARGET_64BIT=1)
+    add_definitions(-DTARGET_S390X)
+    add_definitions(-DBIGENDIAN=1)
 elseif (CLR_CMAKE_TARGET_ARCH_ARM)
     add_definitions(-DTARGET_32BIT=1)
     add_definitions(-DTARGET_ARM)
@@ -210,7 +235,7 @@ if(CLR_CMAKE_TARGET_UNIX)
         else()
             add_compile_options($<$<COMPILE_LANGUAGE:ASM>:-Wa,--noexecstack>)
             if(CLR_CMAKE_TARGET_SUNOS)
-                add_definitions(-D__EXTENSIONS__ -D_XPG4_2 -D_POSIX_PTHREAD_SEMANTICS)
+                add_definitions(-D__EXTENSIONS__ -D_XPG4_2 -D_POSIX_PTHREAD_SEMANTICS -DTARGET_SUNOS)
             else()
                 # -z,now is required for full relro.
                 # see https://www.redhat.com/en/blog/hardening-elf-binaries-using-relocation-read-only-relro
@@ -254,13 +279,8 @@ elseif(CLR_CMAKE_TARGET_TVOS)
     #add_subdirectory(System.Net.Security.Native) # no gssapi on tvOS, see https://developer.apple.com/documentation/gss
     # System.Security.Cryptography.Native is intentionally disabled on tvOS
     # it is only used for interacting with OpenSSL which isn't useful there
-elseif(CLR_CMAKE_TARGET_ANDROID AND NOT CROSS_ROOTFS)
-    #add_subdirectory(System.Net.Security.Native) # TODO: reenable
-    if (NOT "$ENV{ANDROID_OPENSSL_AAR}" STREQUAL "")
-        message("Using Android OpenSSL")
-        set(PREFER_OPENSSL_ANDROID 1)
-        add_subdirectory(System.Security.Cryptography.Native)
-    endif()
+elseif(CLR_CMAKE_TARGET_ANDROID)
+    add_subdirectory(System.Security.Cryptography.Native.Android)
 else()
     add_subdirectory(System.Globalization.Native)
     add_subdirectory(System.Net.Security.Native)
@@ -269,10 +289,4 @@ endif()
 
 if(CLR_CMAKE_TARGET_OSX OR CLR_CMAKE_TARGET_MACCATALYST OR CLR_CMAKE_TARGET_IOS OR CLR_CMAKE_TARGET_TVOS)
     add_subdirectory(System.Security.Cryptography.Native.Apple)
-endif()
-
-# if ANDROID_OPENSSL_AAR is not set - use Android Native Crypto (it's going to replace openssl eventually)
-if(CLR_CMAKE_TARGET_ANDROID AND NOT PREFER_OPENSSL_ANDROID)
-    message("Using Android Native Crypto")
-    add_subdirectory(System.Security.Cryptography.Native.Android)
 endif()

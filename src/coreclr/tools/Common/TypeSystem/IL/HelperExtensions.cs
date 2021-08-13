@@ -12,9 +12,17 @@ namespace Internal.IL
 {
     internal static class HelperExtensions
     {
+        private const string HelperTypesNamespace = "Internal.Runtime.CompilerHelpers";
+
         public static MetadataType GetHelperType(this TypeSystemContext context, string name)
         {
-            MetadataType helperType = context.SystemModule.GetKnownType("Internal.Runtime.CompilerHelpers", name);
+            MetadataType helperType = context.SystemModule.GetKnownType(HelperTypesNamespace, name);
+            return helperType;
+        }
+
+        public static MetadataType GetOptionalHelperType(this TypeSystemContext context, string name)
+        {
+            MetadataType helperType = context.SystemModule.GetType(HelperTypesNamespace, name, NotFoundBehavior.ReturnNull);
             return helperType;
         }
 
@@ -22,6 +30,13 @@ namespace Internal.IL
         {
             MetadataType helperType = context.GetHelperType(typeName);
             MethodDesc helperMethod = helperType.GetKnownMethod(methodName, null);
+            return helperMethod;
+        }
+
+        public static MethodDesc GetOptionalHelperEntryPoint(this TypeSystemContext context, string typeName, string methodName)
+        {
+            MetadataType helperType = context.GetOptionalHelperType(typeName);
+            MethodDesc helperMethod = helperType?.GetMethod(methodName, null);
             return helperMethod;
         }
 
@@ -96,7 +111,7 @@ namespace Internal.IL
         /// </summary>
         public static MetadataType GetKnownType(this ModuleDesc module, string @namespace, string name)
         {
-            MetadataType type = module.GetType(@namespace, name, false);
+            MetadataType type = module.GetType(@namespace, name, NotFoundBehavior.ReturnNull);
             if (type == null)
             {
                 throw new InvalidOperationException(

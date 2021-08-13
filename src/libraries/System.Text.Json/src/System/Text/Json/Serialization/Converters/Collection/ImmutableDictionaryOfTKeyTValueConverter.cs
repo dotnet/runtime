@@ -2,87 +2,34 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.Text.Json.Serialization.Metadata;
 
 namespace System.Text.Json.Serialization.Converters
 {
-    internal sealed class ImmutableDictionaryOfTKeyTValueConverter<TCollection, TKey, TValue>
-        : DictionaryDefaultConverter<TCollection, TKey, TValue>
-        where TCollection : IReadOnlyDictionary<TKey, TValue>
+    internal class ImmutableDictionaryOfTKeyTValueConverter<TDictionary, TKey, TValue>
+        : DictionaryDefaultConverter<TDictionary, TKey, TValue>
+        where TDictionary : IReadOnlyDictionary<TKey, TValue>
         where TKey : notnull
     {
-        protected override void Add(TKey key, in TValue value, JsonSerializerOptions options, ref ReadStack state)
+        protected sealed override void Add(TKey key, in TValue value, JsonSerializerOptions options, ref ReadStack state)
         {
             ((Dictionary<TKey, TValue>)state.Current.ReturnValue!)[key] = value;
         }
 
-        internal override bool CanHaveIdMetadata => false;
+        internal sealed override bool CanHaveIdMetadata => false;
 
-        protected override void CreateCollection(ref Utf8JsonReader reader, ref ReadStack state)
+        protected sealed override void CreateCollection(ref Utf8JsonReader reader, ref ReadStack state)
         {
             state.Current.ReturnValue = new Dictionary<TKey, TValue>();
         }
 
-        protected override void ConvertCollection(ref ReadStack state, JsonSerializerOptions options)
+        protected sealed override void ConvertCollection(ref ReadStack state, JsonSerializerOptions options)
         {
-            JsonClassInfo classInfo = state.Current.JsonClassInfo;
-
-            Func<IEnumerable<KeyValuePair<TKey, TValue>>, TCollection>? creator = (Func<IEnumerable<KeyValuePair<TKey, TValue>>, TCollection>?)classInfo.CreateObjectWithArgs;
-            if (creator == null)
-            {
-                creator = options.MemberAccessorStrategy.CreateImmutableDictionaryCreateRangeDelegate<TCollection, TKey, TValue>();
-                classInfo.CreateObjectWithArgs = creator;
-            }
-
+            Func<IEnumerable<KeyValuePair<TKey, TValue>>, TDictionary>? creator =
+                (Func<IEnumerable<KeyValuePair<TKey, TValue>>, TDictionary>?)state.Current.JsonTypeInfo.CreateObjectWithArgs;
+            Debug.Assert(creator != null);
             state.Current.ReturnValue = creator((Dictionary<TKey, TValue>)state.Current.ReturnValue!);
-        }
-
-        protected internal override bool OnWriteResume(Utf8JsonWriter writer, TCollection value, JsonSerializerOptions options, ref WriteStack state)
-        {
-            IEnumerator<KeyValuePair<TKey, TValue>> enumerator;
-            if (state.Current.CollectionEnumerator == null)
-            {
-                enumerator = value.GetEnumerator();
-                if (!enumerator.MoveNext())
-                {
-                    enumerator.Dispose();
-                    return true;
-                }
-            }
-            else
-            {
-                enumerator = (IEnumerator<KeyValuePair<TKey, TValue>>)state.Current.CollectionEnumerator;
-            }
-
-            JsonConverter<TKey> keyConverter = _keyConverter ??= GetKeyConverter(KeyType, options);
-            JsonConverter<TValue> valueConverter = _valueConverter ??= GetValueConverter(state.Current.JsonClassInfo.ElementClassInfo!);
-            do
-            {
-                if (ShouldFlush(writer, ref state))
-                {
-                    state.Current.CollectionEnumerator = enumerator;
-                    return false;
-                }
-
-                if (state.Current.PropertyState < StackFramePropertyState.Name)
-                {
-                    state.Current.PropertyState = StackFramePropertyState.Name;
-
-                    TKey key = enumerator.Current.Key;
-                    keyConverter.WriteWithQuotes(writer, key, options, ref state);
-                }
-
-                TValue element = enumerator.Current.Value;
-                if (!valueConverter.TryWrite(writer, element, options, ref state))
-                {
-                    state.Current.CollectionEnumerator = enumerator;
-                    return false;
-                }
-
-                state.Current.EndDictionaryElement();
-            } while (enumerator.MoveNext());
-
-            enumerator.Dispose();
-            return true;
         }
     }
 }

@@ -38,6 +38,7 @@ jobs:
     pool: ${{ parameters.pool }}
     condition: ${{ parameters.condition }}
     dependOnEvaluatePaths: ${{ parameters.dependOnEvaluatePaths }}
+    pgoType: ${{ parameters.pgoType }}
 
     # Compute job name from template parameters
     ${{ if and(ne(parameters.testGroup, 'clrTools'), eq(parameters.compilerName, 'gcc')) }}:
@@ -129,19 +130,13 @@ jobs:
       value: ''
     - ${{ if ne(parameters.testGroup, 'innerloop') }}:
       - name: clrBuildPALTestsBuildArg
-        value: '-paltests '
-
-    - name: ninjaArg
-      value: ''
-    - ${{ if eq(parameters.osGroup, 'windows') }}:
-      - name: ninjaArg
-        value: '-ninja'
+        value: '-component runtime -component alljits -component paltests '
 
     - name: pgoInstrumentArg
       value: ''
     - ${{ if eq(parameters.pgoType, 'PGO' )}}:
       - name: pgoInstrumentArg
-        value: '-pgoInstrument '
+        value: '-pgoinstrument '
 
     - name: SignType
       value: $[ coalesce(variables.OfficialSignType, 'real') ]
@@ -180,7 +175,7 @@ jobs:
         continueOnError: false
         condition: and(succeeded(), in(variables['SignType'], 'real', 'test'))
 
-    - ${{ if in(parameters.osGroup, 'OSX', 'iOS','tvOS') }}:
+    - ${{ if in(parameters.osGroup, 'OSX', 'iOS', 'tvOS') }}:
       - script: |
           du -sh $(Build.SourcesDirectory)/*
           df -h
@@ -188,18 +183,18 @@ jobs:
 
     # Build DacTableGen (Windows-only)
     - ${{ if eq(parameters.osGroup, 'windows') }}:
-      - script: $(Build.SourcesDirectory)$(dir)build$(scriptExt) -subset clr.dactools $(crossArg) -arch $(archType) $(osArg) -c $(buildConfig) $(officialBuildIdArg) -ci /bl:$(Build.SourcesDirectory)artifacts/logs/$(buildConfig)/DacTools.binlog
+      - script: $(Build.SourcesDirectory)$(dir)build$(scriptExt) -subset clr.dactools $(crossArg) -arch $(archType) $(osArg) -c $(buildConfig) $(officialBuildIdArg) -ci /bl:$(Build.SourcesDirectory)artifacts/log/$(buildConfig)/DacTools.binlog
         displayName: Build DAC utility tools
 
     # Build CoreCLR Runtime
     - ${{ if ne(parameters.osGroup, 'windows') }}:
-      - script: $(Build.SourcesDirectory)/src/coreclr/build-runtime$(scriptExt) $(buildConfig) $(archType) $(crossArg) $(osArg) -ci $(compilerArg) $(clrBuildPALTestsBuildArg) $(ninjaArg) $(officialBuildIdArg) $(clrInterpreterBuildArg)
+      - script: $(Build.SourcesDirectory)/src/coreclr/build-runtime$(scriptExt) $(buildConfig) $(archType) $(crossArg) $(osArg) -ci $(compilerArg) $(clrBuildPALTestsBuildArg) $(pgoInstrumentArg) $(officialBuildIdArg) $(clrInterpreterBuildArg)
         displayName: Build CoreCLR Runtime
     - ${{ if eq(parameters.osGroup, 'windows') }}:
-      - script: set __TestIntermediateDir=int&&$(Build.SourcesDirectory)/src/coreclr/build-runtime$(scriptExt) $(buildConfig) $(archType) -ci $(ninjaArg) $(enforcePgoArg) $(pgoInstrumentArg) $(officialBuildIdArg) $(clrInterpreterBuildArg)
+      - script: set __TestIntermediateDir=int&&$(Build.SourcesDirectory)/src/coreclr/build-runtime$(scriptExt) $(buildConfig) $(archType) -ci $(enforcePgoArg) $(pgoInstrumentArg) $(officialBuildIdArg) $(clrInterpreterBuildArg)
         displayName: Build CoreCLR Runtime
 
-    - ${{ if in(parameters.osGroup, 'OSX', 'iOS','tvOS') }}:
+    - ${{ if in(parameters.osGroup, 'OSX', 'iOS', 'tvOS') }}:
       - script: |
           du -sh $(Build.SourcesDirectory)/*
           df -h
@@ -248,6 +243,8 @@ jobs:
           /p:DiagnosticsFilesRoot="$(buildProductRootFolderPath)"
           /p:SignDiagnostics=true
           /p:DotNetSignType=$(SignType)
+          -noBl
+          /bl:$(Build.SourcesDirectory)/artifacts/log/$(buildConfig)/SignDiagnostics.binlog
           -projects $(Build.SourcesDirectory)\eng\empty.csproj
         displayName: Sign Diagnostic Binaries
 
@@ -272,7 +269,7 @@ jobs:
           artifactName: $(buildProductArtifactName)
           displayName: 'product build'
 
-    - ${{ if and(in(parameters.osGroup, 'windows', 'Linux'), ne(parameters.archType, 'x86'), ne(parameters.compilerName, 'gcc'), ne(parameters.testGroup, 'clrTools')) }}:
+    - ${{ if and(in(parameters.osGroup, 'windows', 'Linux'), ne(parameters.archType, 'x86'), ne(parameters.compilerName, 'gcc'), ne(parameters.testGroup, 'clrTools'), eq(parameters.pgoType, '')) }}:
       - template: /eng/pipelines/coreclr/templates/crossdac-build.yml
         parameters:
           archType: ${{ parameters.archType }}
@@ -281,7 +278,7 @@ jobs:
 
     - ${{ if and(ne(parameters.compilerName, 'gcc'), ne(parameters.testGroup, ''), ne(parameters.testGroup, 'clrTools')) }}:
       # Publish test native components for consumption by test execution.
-      - ${{ if ne(parameters.isOfficialBuild, true) }}:
+      - ${{ if and(ne(parameters.isOfficialBuild, true), eq(parameters.pgoType, '')) }}:
         - template: /eng/pipelines/common/upload-artifact-step.yml
           parameters:
             rootFolder: $(nativeTestArtifactRootFolderPath)
@@ -322,6 +319,6 @@ jobs:
       displayName: Publish Logs
       inputs:
         targetPath: $(Build.SourcesDirectory)/artifacts/log
-        artifactName: '$(publishLogsArtifactPrefix)_$(osGroup)$(osSubgroup)_$(archType)_$(buildConfig)'
+        artifactName: '$(publishLogsArtifactPrefix)${{ parameters.pgoType }}_$(osGroup)$(osSubgroup)_$(archType)_$(buildConfig)'
       continueOnError: true
       condition: always()

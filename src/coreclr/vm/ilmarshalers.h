@@ -2791,6 +2791,7 @@ protected:
     bool NeedsClearNative() override;
     void EmitClearNative(ILCodeStream* pslILEmit) override;
     void EmitClearNativeTemp(ILCodeStream* pslILEmit) override;
+    bool EmitExactTypeCheck(ILCodeStream* pslILEmit, ILCodeLabel* isNotMatchingTypeLabel);
 };
 
 class ILLayoutClassPtrMarshaler : public ILLayoutClassPtrMarshalerBase

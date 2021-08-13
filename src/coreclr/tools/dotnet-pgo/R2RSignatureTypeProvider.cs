@@ -97,7 +97,11 @@ namespace Microsoft.Diagnostics.Tools.Pgo
         MethodDesc IR2RSignatureTypeProvider<TypeDesc, MethodDesc, R2RSigProviderContext>.GetMethodFromMemberRef(MetadataReader reader, MemberReferenceHandle handle, TypeDesc owningTypeOverride)
         {
             var ecmaModule = (EcmaModule)_tsc.GetModuleForSimpleName(reader.GetString(reader.GetAssemblyDefinition().Name));
-            var method = (MethodDesc)ecmaModule.GetObject(handle);
+            var method = (MethodDesc)ecmaModule.GetObject(handle, NotFoundBehavior.ReturnNull);
+            if (method == null)
+            {
+                return null;
+            }
             if (owningTypeOverride != null)
             {
                 return _tsc.GetMethodForInstantiatedType(method.GetTypicalMethodDefinition(), (InstantiatedType)owningTypeOverride);
@@ -108,7 +112,11 @@ namespace Microsoft.Diagnostics.Tools.Pgo
         MethodDesc IR2RSignatureTypeProvider<TypeDesc, MethodDesc, R2RSigProviderContext>.GetMethodFromMethodDef(MetadataReader reader, MethodDefinitionHandle handle, TypeDesc owningTypeOverride)
         {
             var ecmaModule = (EcmaModule)_tsc.GetModuleForSimpleName(reader.GetString(reader.GetAssemblyDefinition().Name));
-            var method = (MethodDesc)ecmaModule.GetObject(handle);
+            var method = (MethodDesc)ecmaModule.GetObject(handle, NotFoundBehavior.ReturnNull);
+            if (method == null)
+            {
+                return null;
+            }
             if (owningTypeOverride != null)
             {
                 return _tsc.GetMethodForInstantiatedType(method.GetTypicalMethodDefinition(), (InstantiatedType)owningTypeOverride);
@@ -214,19 +222,19 @@ namespace Microsoft.Diagnostics.Tools.Pgo
         TypeDesc ISimpleTypeProvider<TypeDesc>.GetTypeFromDefinition(MetadataReader reader, TypeDefinitionHandle handle, byte rawTypeKind)
         {
             var ecmaModule = (EcmaModule)_tsc.GetModuleForSimpleName(reader.GetString(reader.GetAssemblyDefinition().Name));
-            return (TypeDesc)ecmaModule.GetObject(handle);
+            return (TypeDesc)ecmaModule.GetObject(handle, NotFoundBehavior.ReturnNull);
         }
 
         TypeDesc ISimpleTypeProvider<TypeDesc>.GetTypeFromReference(MetadataReader reader, TypeReferenceHandle handle, byte rawTypeKind)
         {
             var ecmaModule = (EcmaModule)_tsc.GetModuleForSimpleName(reader.GetString(reader.GetAssemblyDefinition().Name));
-            return (TypeDesc)ecmaModule.GetObject(handle);
+            return (TypeDesc)ecmaModule.GetObject(handle, NotFoundBehavior.ReturnNull);
         }
 
         TypeDesc ISignatureTypeProvider<TypeDesc, R2RSigProviderContext>.GetTypeFromSpecification(MetadataReader reader, R2RSigProviderContext genericContext, TypeSpecificationHandle handle, byte rawTypeKind)
         {
             var ecmaModule = (EcmaModule)_tsc.GetModuleForSimpleName(reader.GetString(reader.GetAssemblyDefinition().Name));
-            return (TypeDesc)ecmaModule.GetObject(handle);
+            return (TypeDesc)ecmaModule.GetObject(handle, NotFoundBehavior.ReturnNull);
         }
     }
 }

@@ -395,7 +395,7 @@ namespace BinderTracingTests
                 ParentActivityId = data.RelatedActivityId,
             };
             string requestingAssembly = getDataString("RequestingAssembly");
-            if (!string.IsNullOrEmpty(requestingAssembly))
+            if (!string.IsNullOrEmpty(requestingAssembly) && requestingAssembly != "NULL")
             {
                 bindOperation.RequestingAssembly = new AssemblyName(requestingAssembly);
             }
@@ -415,7 +415,7 @@ namespace BinderTracingTests
                 ErrorMessage = getDataString("ErrorMessage")
             };
             string resultName = getDataString("ResultAssemblyName");
-            if (!string.IsNullOrEmpty(resultName))
+            if (!string.IsNullOrEmpty(resultName) && resultName != "NULL")
             {
                 attempt.ResultAssemblyName = new AssemblyName(resultName);
             }
@@ -433,7 +433,7 @@ namespace BinderTracingTests
                 ResultAssemblyPath = getDataString("ResultAssemblyPath")
             };
             string resultName = getDataString("ResultAssemblyName");
-            if (!string.IsNullOrEmpty(resultName))
+            if (!string.IsNullOrEmpty(resultName) && resultName != "NULL")
             {
                 handlerInvocation.ResultAssemblyName = new AssemblyName(resultName);
             }

@@ -2054,6 +2054,16 @@ namespace System.Globalization
                     InsertHash(temp, TimeSeparator, TokenType.SEP_Time, 0);
                 }
 
+                if (_name == "fr-CA")
+                {
+                    InsertHash(temp, " h", TokenType.SEP_HourSuff, 0);
+                    InsertHash(temp, " h ", TokenType.SEP_HourSuff, 0);
+                    InsertHash(temp, " min", TokenType.SEP_MinuteSuff, 0);
+                    InsertHash(temp, " min ", TokenType.SEP_MinuteSuff, 0);
+                    InsertHash(temp, " s", TokenType.SEP_SecondSuff, 0);
+                    InsertHash(temp, " s ", TokenType.SEP_SecondSuff, 0);
+                }
+
                 InsertHash(temp, AMDesignator, TokenType.SEP_Am | TokenType.Am, 0);
                 InsertHash(temp, PMDesignator, TokenType.SEP_Pm | TokenType.Pm, 1);
 
@@ -2409,7 +2419,7 @@ namespace System.Globalization
             if (isLetter)
             {
                 ch = Culture.TextInfo.ToLower(ch);
-                if (IsHebrewChar(ch) && TokenMask == TokenType.RegularTokenMask)
+                if (!GlobalizationMode.Invariant && IsHebrewChar(ch) && TokenMask == TokenType.RegularTokenMask)
                 {
                     if (TryParseHebrewNumber(ref str, out bool badFormat, out tokenValue))
                     {
@@ -2618,7 +2628,7 @@ namespace System.Globalization
             return Culture.CompareInfo.Compare(string1, offset1, length1, string2, offset2, length2, CompareOptions.IgnoreCase) == 0;
         }
 
-        internal class TokenHashValue
+        internal sealed class TokenHashValue
         {
             internal string tokenString;
             internal TokenType tokenType;

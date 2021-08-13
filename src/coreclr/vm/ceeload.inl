@@ -453,20 +453,6 @@ inline mdAssemblyRef Module::FindAssemblyRef(Assembly *targetAssembly)
 
 #endif //DACCESS_COMPILE
 
-inline BOOL Module::IsEditAndContinueCapable()
-{
-    WRAPPER_NO_CONTRACT;
-    SUPPORTS_DAC;
-
-    BOOL isEnCCapable = IsEditAndContinueCapable(m_pAssembly, m_file);
-
-    // for now, Module::IsReflection is equivalent to m_file->IsDynamic,
-    // which is checked by IsEditAndContinueCapable(m_pAssembly, m_file)
-    _ASSERTE(!isEnCCapable || (!this->IsReflection()));
-
-    return isEnCCapable;
-}
-
 FORCEINLINE PTR_DomainLocalModule Module::GetDomainLocalModule()
 {
     WRAPPER_NO_CONTRACT;
@@ -477,21 +463,21 @@ FORCEINLINE PTR_DomainLocalModule Module::GetDomainLocalModule()
 
 #include "nibblestream.h"
 
-FORCEINLINE BOOL Module::FixupDelayList(TADDR pFixupList)
+FORCEINLINE BOOL Module::FixupDelayList(TADDR pFixupList, BOOL mayUsePrecompiledNDirectMethods)
 {
     WRAPPER_NO_CONTRACT;
 
     COUNT_T nImportSections;
     PTR_CORCOMPILE_IMPORT_SECTION pImportSections = GetImportSections(&nImportSections);
 
-    return FixupDelayListAux(pFixupList, this, &Module::FixupNativeEntry, pImportSections, nImportSections, GetNativeOrReadyToRunImage());
+    return FixupDelayListAux(pFixupList, this, &Module::FixupNativeEntry, pImportSections, nImportSections, GetNativeOrReadyToRunImage(), mayUsePrecompiledNDirectMethods);
 }
 
 template<typename Ptr, typename FixupNativeEntryCallback>
 BOOL Module::FixupDelayListAux(TADDR pFixupList,
                                Ptr pThis, FixupNativeEntryCallback pfnCB,
                                PTR_CORCOMPILE_IMPORT_SECTION pImportSections, COUNT_T nImportSections,
-                               PEDecoder * pNativeImage)
+                               PEDecoder * pNativeImage, BOOL mayUsePrecompiledNDirectMethods)
 {
     CONTRACTL
     {
@@ -581,7 +567,7 @@ BOOL Module::FixupDelayListAux(TADDR pFixupList,
         {
             CONSISTENCY_CHECK(fixupIndex * sizeof(TADDR) < cbData);
 
-            if (!(pThis->*pfnCB)(pImportSection, fixupIndex, dac_cast<PTR_SIZE_T>(pData + fixupIndex * sizeof(TADDR))))
+            if (!(pThis->*pfnCB)(pImportSection, fixupIndex, dac_cast<PTR_SIZE_T>(pData + fixupIndex * sizeof(TADDR)), mayUsePrecompiledNDirectMethods))
                 return FALSE;
 
             int delta = reader.ReadEncodedU32();

@@ -7,6 +7,7 @@ using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.ComponentModel;
 using System.IO;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.DirectoryServices.ActiveDirectory
 {
@@ -21,10 +22,10 @@ namespace System.DirectoryServices.ActiveDirectory
 
     public class DirectoryContext
     {
-        private string _name;
+        private string? _name;
         private DirectoryContextType _contextType;
         private NetworkCredential _credential;
-        internal string serverName;
+        internal string? serverName;
         internal bool usernameIsNull;
         internal bool passwordIsNull;
         private bool _validated;
@@ -42,7 +43,8 @@ namespace System.DirectoryServices.ActiveDirectory
         }
 
         // Internal Constructors
-        internal void InitializeDirectoryContext(DirectoryContextType contextType, string name, string username, string password)
+        [MemberNotNull(nameof(_credential))]
+        internal void InitializeDirectoryContext(DirectoryContextType contextType, string? name, string? username, string? password)
         {
             _name = name;
             _contextType = contextType;
@@ -57,7 +59,7 @@ namespace System.DirectoryServices.ActiveDirectory
             }
         }
 
-        internal DirectoryContext(DirectoryContextType contextType, string name, DirectoryContext context)
+        internal DirectoryContext(DirectoryContextType contextType, string? name, DirectoryContext? context)
         {
             _name = name;
             _contextType = contextType;
@@ -131,7 +133,7 @@ namespace System.DirectoryServices.ActiveDirectory
             InitializeDirectoryContext(contextType, name, null, null);
         }
 
-        public DirectoryContext(DirectoryContextType contextType, string username, string password)
+        public DirectoryContext(DirectoryContextType contextType, string? username, string? password)
         {
             //
             // this constructor can only be called for DirectoryContextType.Forest or DirectoryContextType.Domain
@@ -145,7 +147,7 @@ namespace System.DirectoryServices.ActiveDirectory
             InitializeDirectoryContext(contextType, null, username, password);
         }
 
-        public DirectoryContext(DirectoryContextType contextType, string name, string username, string password)
+        public DirectoryContext(DirectoryContextType contextType, string name, string? username, string? password)
         {
             if (contextType < DirectoryContextType.Domain || contextType > DirectoryContextType.ApplicationPartition)
             {
@@ -169,11 +171,11 @@ namespace System.DirectoryServices.ActiveDirectory
 
         #region public properties
 
-        public string Name => _name;
+        public string? Name => _name;
 
-        public string UserName => usernameIsNull ? null : _credential.UserName;
+        public string? UserName => usernameIsNull ? null : _credential.UserName;
 
-        internal string Password
+        internal string? Password
         {
             get => passwordIsNull ? null : _credential.Password;
         }
@@ -191,7 +193,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
             if ((contextType == DirectoryContextType.Domain) || ((contextType == DirectoryContextType.Forest) && (context.Name == null)))
             {
-                string tmpTarget = context.Name;
+                string? tmpTarget = context.Name;
 
                 if (tmpTarget == null)
                 {
@@ -341,9 +343,9 @@ namespace System.DirectoryServices.ActiveDirectory
                 //
                 // if the servername contains a port number, then remove that
                 //
-                string tempServerName = null;
-                string portNumber;
-                tempServerName = Utils.SplitServerNameAndPortNumber(context.Name, out portNumber);
+                string? tempServerName = null;
+                string? portNumber;
+                tempServerName = Utils.SplitServerNameAndPortNumber(context.Name!, out portNumber);
 
                 //
                 // this will validate that the name specified in the context is truely the name of a machine (and not of a domain)
@@ -484,7 +486,7 @@ namespace System.DirectoryServices.ActiveDirectory
             return ((ContextType == DirectoryContextType.DirectoryServer) || (ContextType == DirectoryContextType.ConfigurationSet));
         }
 
-        internal string GetServerName()
+        internal string? GetServerName()
         {
             if (serverName == null)
             {
@@ -549,7 +551,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
         internal static string GetLoggedOnDomain()
         {
-            string domainName = null;
+            string? domainName = null;
 
             NegotiateCallerNameRequest requestBuffer = new NegotiateCallerNameRequest();
             int requestBufferLength = (int)Marshal.SizeOf(requestBuffer);
@@ -647,7 +649,7 @@ namespace System.DirectoryServices.ActiveDirectory
             return domainName;
         }
 
-        internal static string GetDnsDomainName(string domainName)
+        internal static string? GetDnsDomainName(string? domainName)
         {
             DomainControllerInfo domainControllerInfo;
             int errorCode = 0;
@@ -680,6 +682,8 @@ namespace System.DirectoryServices.ActiveDirectory
             return domainControllerInfo.DomainName;
         }
 
+        [MemberNotNull(nameof(ADHandle))]
+        [MemberNotNull(nameof(ADAMHandle))]
         private static void GetLibraryHandle()
         {
             // first get AD handle
@@ -696,7 +700,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
             // not get the ADAM handle
             // got to the windows\adam directory
-            DirectoryInfo windowsDirectory = Directory.GetParent(systemPath);
+            DirectoryInfo windowsDirectory = Directory.GetParent(systemPath)!;
             tempHandle = UnsafeNativeMethods.LoadLibrary(windowsDirectory.FullName + "\\ADAM\\ntdsapi.dll");
             if (tempHandle == (IntPtr)0)
             {

@@ -33,7 +33,7 @@ namespace System.Reflection
 {
 
     [StructLayout(LayoutKind.Sequential)]
-    internal class RuntimeModule : Module
+    internal sealed class RuntimeModule : Module
     {
 #pragma warning disable 649
         #region Sync with object-internals.h
@@ -56,6 +56,7 @@ namespace System.Reflection
             get { return assembly; }
         }
 
+        [RequiresAssemblyFiles(UnknownStringMessageInRAF)]
         public
         override
         // Note: we do not ask for PathDiscovery because no path is returned here.
@@ -94,6 +95,7 @@ namespace System.Reflection
             }
         }
 
+        [RequiresAssemblyFiles(UnknownStringMessageInRAF)]
         public override
         string FullyQualifiedName
         {
@@ -232,7 +234,7 @@ namespace System.Reflection
 
             IntPtr handle = ResolveFieldToken(monoModule, metadataToken, ptrs_from_types(genericTypeArguments), ptrs_from_types(genericMethodArguments), out error);
             if (handle == IntPtr.Zero)
-                throw resolve_token_exception(module.Name, metadataToken, error, "Field");
+                throw resolve_token_exception(module, metadataToken, error, "Field");
             else
                 return FieldInfo.GetFieldFromHandle(new RuntimeFieldHandle(handle));
         }
@@ -251,7 +253,7 @@ namespace System.Reflection
 
             MemberInfo m = ResolveMemberToken(monoModule, metadataToken, ptrs_from_types(genericTypeArguments), ptrs_from_types(genericMethodArguments), out error);
             if (m == null)
-                throw resolve_token_exception(module.Name, metadataToken, error, "MemberInfo");
+                throw resolve_token_exception(module, metadataToken, error, "MemberInfo");
             else
                 return m;
         }
@@ -270,7 +272,7 @@ namespace System.Reflection
 
             IntPtr handle = ResolveMethodToken(monoModule, metadataToken, ptrs_from_types(genericTypeArguments), ptrs_from_types(genericMethodArguments), out error);
             if (handle == IntPtr.Zero)
-                throw resolve_token_exception(module.Name, metadataToken, error, "MethodBase");
+                throw resolve_token_exception(module, metadataToken, error, "MethodBase");
             else
                 return RuntimeMethodInfo.GetMethodFromHandleNoGenericCheck(new RuntimeMethodHandle(handle));
         }
@@ -289,7 +291,7 @@ namespace System.Reflection
 
             string s = ResolveStringToken(monoModule, metadataToken, out error);
             if (s == null)
-                throw resolve_token_exception(module.Name, metadataToken, error, "string");
+                throw resolve_token_exception(module, metadataToken, error, "string");
             else
                 return s;
         }
@@ -308,7 +310,7 @@ namespace System.Reflection
 
             IntPtr handle = ResolveTypeToken(monoModule, metadataToken, ptrs_from_types(genericTypeArguments), ptrs_from_types(genericMethodArguments), out error);
             if (handle == IntPtr.Zero)
-                throw resolve_token_exception(module.Name, metadataToken, error, "Type");
+                throw resolve_token_exception(module, metadataToken, error, "Type");
             else
                 return Type.GetTypeFromHandle(new RuntimeTypeHandle(handle));
         }
@@ -327,7 +329,7 @@ namespace System.Reflection
 
             byte[] res = ResolveSignature(monoModule, metadataToken, out error);
             if (res == null)
-                throw resolve_token_exception(module.Name, metadataToken, error, "signature");
+                throw resolve_token_exception(module, metadataToken, error, "signature");
             else
                 return res;
         }
@@ -341,7 +343,7 @@ namespace System.Reflection
 
         public override IList<CustomAttributeData> GetCustomAttributesData()
         {
-            return CustomAttributeData.GetCustomAttributes(this);
+            return RuntimeCustomAttributeData.GetCustomAttributesInternal(this);
         }
 
         internal RuntimeAssembly GetRuntimeAssembly()
@@ -363,6 +365,11 @@ namespace System.Reflection
             GetGuidInternal(_impl, guid);
             return new Guid(guid);
         }
+
+        [UnconditionalSuppressMessage("SingleFile", "IL3002:RequiresAssemblyFiles",
+            Justification = "Module Name is used only for diagnostic reporting message")]
+        internal static Exception resolve_token_exception(Module module, int metadataToken, ResolveTokenError error, string tokenType)
+            => resolve_token_exception(module.Name, metadataToken, error, tokenType);
 
         internal static Exception resolve_token_exception(string name, int metadataToken, ResolveTokenError error, string tokenType)
         {

@@ -12,7 +12,7 @@ using System.Collections.Generic;
 
 namespace System.Xml
 {
-    internal partial class XmlWellFormedWriter : XmlWriter
+    internal sealed partial class XmlWellFormedWriter : XmlWriter
     {
         //
         // Private types used by the XmlWellFormedWriter are defined in XmlWellFormedWriterHelpers.cs
@@ -2109,7 +2109,7 @@ namespace System.Xml
 
         private string GeneratePrefix()
         {
-            string genPrefix = "p" + (_nsTop - 2).ToString("d", CultureInfo.InvariantCulture);
+            string genPrefix = string.Create(CultureInfo.InvariantCulture, $"p{_nsTop - 2:d}");
             if (LookupNamespace(genPrefix) == null)
             {
                 return genPrefix;
@@ -2119,7 +2119,7 @@ namespace System.Xml
             string s;
             do
             {
-                s = string.Concat(genPrefix, i.ToString(CultureInfo.InvariantCulture));
+                s = string.Create(CultureInfo.InvariantCulture, $"{genPrefix}{i}");
                 i++;
             } while (LookupNamespace(s) != null);
             return s;

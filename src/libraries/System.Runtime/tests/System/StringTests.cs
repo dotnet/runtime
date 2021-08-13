@@ -10,7 +10,6 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
-using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
 
 namespace System.Tests
@@ -147,6 +146,22 @@ namespace System.Tests
                 }
             });
             Assert.Equal(expected, result);
+        }
+
+        [Fact]
+        public static void Create_InterpolatedString_ConstructsStringAndClearsBuilder()
+        {
+            Span<char> initialBuffer = stackalloc char[16];
+
+            DefaultInterpolatedStringHandler handler = new DefaultInterpolatedStringHandler(0, 0, CultureInfo.InvariantCulture, initialBuffer);
+            handler.AppendLiteral("hello");
+            Assert.Equal("hello", string.Create(CultureInfo.InvariantCulture, initialBuffer, ref handler));
+            Assert.Equal("", string.Create(CultureInfo.InvariantCulture, initialBuffer, ref handler));
+
+            handler = new DefaultInterpolatedStringHandler(0, 0, CultureInfo.InvariantCulture);
+            handler.AppendLiteral("hello");
+            Assert.Equal("hello", string.Create(CultureInfo.InvariantCulture, ref handler));
+            Assert.Equal("", string.Create(CultureInfo.InvariantCulture, ref handler));
         }
 
         [Theory]
@@ -506,6 +521,69 @@ namespace System.Tests
 
             int[] enumeratedValues = new string(chars).EnumerateRunes().Select(r => r.Value).ToArray();
             Assert.Equal(expected, enumeratedValues);
+        }
+
+        [Fact]
+        public static void ReplaceLineEndings_NullReplacementText_Throws()
+        {
+            Assert.Throws<ArgumentNullException>("replacementText", () => "Hello!".ReplaceLineEndings(null));
+        }
+
+        [Theory]
+        [InlineData("", new[] { "" })]
+        [InlineData("abc", new[] { "abc" })]
+        [InlineData("<CR>", new[] { "", "" })] // empty sequences before and after the CR
+        [InlineData("<CR><CR>", new[] { "", "", "" })] // empty sequences before and after the CR (CR doesn't consume CR)
+        [InlineData("<CR><LF>", new[] { "", "" })] // CR should swallow any LF which follows
+        [InlineData("a<CR><LF><LF>z", new[] { "a", "", "z" })] // CR should swallow only a single LF which follows
+        [InlineData("a<CR>b<LF>c", new[] { "a", "b", "c" })] // CR shouldn't swallow anything other than LF
+        [InlineData("aa<CR>bb<LF><CR>cc", new[] { "aa", "bb", "", "cc" })] // LF shouldn't swallow CR which follows
+        [InlineData("a<CR>b<VT>c<LF>d<NEL>e<FF>f<PS>g<LS>h", new[] { "a", "b<VT>c", "d", "e", "f", "g", "h" })] // VT not recognized as NLF
+        [InlineData("xyz<NEL>", new[] { "xyz", "" })] // sequence at end produces empty string
+        [InlineData("<NEL>xyz", new[] { "", "xyz" })] // sequence at beginning produces empty string
+        [InlineData("abc<NAK>%def", new[] { "abc<NAK>%def" })] // we don't recognize EBCDIC encodings for LF (see Unicode Standard, Sec. 5.8, Table 5-1)
+        public static void ReplaceLineEndings(string input, string[] expectedSegments)
+        {
+            input = FixupSequences(input);
+            expectedSegments = Array.ConvertAll(expectedSegments, FixupSequences);
+
+            // Try Environment.NewLine (and parameterless ctor)
+
+            string expectedEnvNewLineConcat = string.Join(Environment.NewLine, expectedSegments);
+            Assert.Equal(expectedEnvNewLineConcat, input.ReplaceLineEndings());
+            Assert.Equal(expectedEnvNewLineConcat, input.ReplaceLineEndings(Environment.NewLine));
+
+            // Try removing newlines entirely
+
+            Assert.Equal(string.Concat(expectedSegments) /* no joiner */, input.ReplaceLineEndings(""));
+
+            // And try using a custom separator
+
+            Assert.Equal(string.Join("<SEPARATOR>", expectedSegments), input.ReplaceLineEndings("<SEPARATOR>"));
+
+            if (expectedSegments.Length == 1)
+            {
+                // If no newline sequences at all, we should return the original string instance as an optimization
+                Assert.Same(input, input.ReplaceLineEndings());
+                Assert.Same(input, input.ReplaceLineEndings(Environment.NewLine));
+                Assert.Same(input, input.ReplaceLineEndings(""));
+                Assert.Same(input, input.ReplaceLineEndings("<SEPARATOR>"));
+            }
+
+            static string FixupSequences(string input)
+            {
+                // We use <XYZ> markers so that the original strings show up better in the xunit test runner
+                // <VT> is included as a negative test; we *do not* want ReplaceLineEndings to honor it
+
+                return input.Replace("<CR>", "\r")
+                    .Replace("<LF>", "\n")
+                    .Replace("<VT>", "\v")
+                    .Replace("<FF>", "\f")
+                    .Replace("<NAK>", "\u0015")
+                    .Replace("<NEL>", "\u0085")
+                    .Replace("<LS>", "\u2028")
+                    .Replace("<PS>", "\u2029");
+            }
         }
 
         [Theory]
@@ -920,32 +998,35 @@ namespace System.Tests
 
             // Finally, ensure that GetPinnableReference matches the legacy 'fixed' keyword.
 
-            DynamicMethod dynamicMethod = new DynamicMethod("tester", typeof(bool), new[] { typeof(string) });
-            ILGenerator ilGen = dynamicMethod.GetILGenerator();
-            LocalBuilder pinnedLocal = ilGen.DeclareLocal(typeof(object), pinned: true);
+            if (PlatformDetection.IsReflectionEmitSupported)
+            {
+                DynamicMethod dynamicMethod = new DynamicMethod("tester", typeof(bool), new[] { typeof(string) });
+                ILGenerator ilGen = dynamicMethod.GetILGenerator();
+                LocalBuilder pinnedLocal = ilGen.DeclareLocal(typeof(object), pinned: true);
 
-            ilGen.Emit(OpCodes.Ldarg_0); // load 'input' and pin it
-            ilGen.Emit(OpCodes.Stloc, pinnedLocal);
+                ilGen.Emit(OpCodes.Ldarg_0); // load 'input' and pin it
+                ilGen.Emit(OpCodes.Stloc, pinnedLocal);
 
-            ilGen.Emit(OpCodes.Ldloc, pinnedLocal); // get the address of field 0 from pinned 'input'
-            ilGen.Emit(OpCodes.Conv_I);
+                ilGen.Emit(OpCodes.Ldloc, pinnedLocal); // get the address of field 0 from pinned 'input'
+                ilGen.Emit(OpCodes.Conv_I);
 
-            ilGen.Emit(OpCodes.Call, typeof(RuntimeHelpers).GetProperty("OffsetToStringData").GetMethod); // get pointer to start of string data
-            ilGen.Emit(OpCodes.Add);
+                ilGen.Emit(OpCodes.Call, typeof(RuntimeHelpers).GetProperty("OffsetToStringData").GetMethod); // get pointer to start of string data
+                ilGen.Emit(OpCodes.Add);
 
-            ilGen.Emit(OpCodes.Ldarg_0); // get value of input.GetPinnableReference()
-            ilGen.Emit(OpCodes.Callvirt, typeof(string).GetMethod("GetPinnableReference"));
+                ilGen.Emit(OpCodes.Ldarg_0); // get value of input.GetPinnableReference()
+                ilGen.Emit(OpCodes.Callvirt, typeof(string).GetMethod("GetPinnableReference"));
 
-            // At this point, the top of the evaluation stack is traditional (fixed char* = input) and input.GetPinnableReference().
-            // Compare for equality and return.
+                // At this point, the top of the evaluation stack is traditional (fixed char* = input) and input.GetPinnableReference().
+                // Compare for equality and return.
 
-            ilGen.Emit(OpCodes.Ceq);
-            ilGen.Emit(OpCodes.Ret);
+                ilGen.Emit(OpCodes.Ceq);
+                ilGen.Emit(OpCodes.Ret);
 
-            Assert.True((bool)dynamicMethod.Invoke(null, new[] { input }));
+                Assert.True((bool)dynamicMethod.Invoke(null, new[] { input }));
+            }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
         public static unsafe void GetPinnableReference_WithNullInput_ThrowsNullRef()
         {
             // This test uses an explicit call instead of the normal callvirt that C# would emit.

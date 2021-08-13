@@ -24,13 +24,14 @@
 #include "mini.h"
 #include "mini-arm.h"
 #include "mini-runtime.h"
-#include "debugger-agent.h"
 #include "jit-icalls.h"
 
 #ifndef DISABLE_INTERPRETER
 #include "interp/interp.h"
 #endif
 #include "mono/utils/mono-tls-inline.h"
+
+#include <mono/metadata/components.h>
 
 void
 mono_arch_patch_callsite (guint8 *method_start, guint8 *code_ptr, guint8 *addr)
@@ -538,7 +539,7 @@ mono_arch_get_unbox_trampoline (MonoMethod *m, gpointer addr)
 	/*g_print ("unbox trampoline at %d for %s:%s\n", this_pos, m->klass->name, m->name);
 	g_print ("unbox code is at %p for method at %p\n", start, addr);*/
 
-	mono_tramp_info_register (mono_tramp_info_create (NULL, start, code - start, NULL, unwind_ops), NULL);
+	mono_tramp_info_register (mono_tramp_info_create (NULL, start, code - start, NULL, unwind_ops), mem_manager);
 
 	return start;
 }
@@ -566,7 +567,7 @@ mono_arch_get_static_rgctx_trampoline (MonoMemoryManager *mem_manager, gpointer 
 	mono_arch_flush_icache (start, code - start);
 	MONO_PROFILER_RAISE (jit_code_buffer, (start, code - start, MONO_PROFILER_CODE_BUFFER_GENERICS_TRAMPOLINE, NULL));
 
-	mono_tramp_info_register (mono_tramp_info_create (NULL, start, code - start, NULL, unwind_ops), NULL);
+	mono_tramp_info_register (mono_tramp_info_create (NULL, start, code - start, NULL, unwind_ops), mem_manager);
 
 	return start;
 }
@@ -595,7 +596,7 @@ mono_arch_get_ftnptr_arg_trampoline (MonoMemoryManager *mem_manager, gpointer ar
 	mono_arch_flush_icache (start, code - start);
 	MONO_PROFILER_RAISE (jit_code_buffer, (start, code - start, MONO_PROFILER_CODE_BUFFER_GENERICS_TRAMPOLINE, NULL));
 
-	mono_tramp_info_register (mono_tramp_info_create (NULL, start, code - start, NULL, unwind_ops), NULL);
+	mono_tramp_info_register (mono_tramp_info_create (NULL, start, code - start, NULL, unwind_ops), mem_manager);
 
 	return start;
 }
@@ -810,9 +811,9 @@ mono_arch_create_sdb_trampoline (gboolean single_step, MonoTrampInfo **info, gbo
 		ARM_LDR_IMM (code, ARMREG_IP, ARMREG_PC, 0);
 		ARM_B (code, 0);
 		if (single_step)
-			*(gpointer*)code = (gpointer)mini_get_dbg_callbacks ()->single_step_from_context;
+			*(gpointer*)code = (gpointer)mono_component_debugger ()->single_step_from_context;
 		else
-			*(gpointer*)code = (gpointer)mini_get_dbg_callbacks ()->breakpoint_from_context;
+			*(gpointer*)code = (gpointer)mono_component_debugger ()->breakpoint_from_context;
 		code += 4;
 		ARM_BLX_REG (code, ARMREG_IP);
 	}
@@ -1189,7 +1190,7 @@ mono_arch_get_gsharedvt_arg_trampoline (gpointer arg, gpointer addr)
 	mono_arch_flush_icache (buf, code - buf);
 	MONO_PROFILER_RAISE (jit_code_buffer, (buf, code - buf, MONO_PROFILER_CODE_BUFFER_GENERICS_TRAMPOLINE, NULL));
 
-	mono_tramp_info_register (mono_tramp_info_create (NULL, buf, code - buf, NULL, NULL), NULL);
+	mono_tramp_info_register (mono_tramp_info_create (NULL, buf, code - buf, NULL, NULL), mem_manager);
 
 	return buf;
 }

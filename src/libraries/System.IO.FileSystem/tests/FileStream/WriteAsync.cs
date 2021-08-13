@@ -100,11 +100,15 @@ namespace System.IO.Tests
             }
         }
 
-        [Fact]
-        public async Task WriteAsyncCancelledFile()
+        [Theory]
+        [InlineData(0, true)] // 0 == no buffering
+        [InlineData(4096, true)] // 4096 == default buffer size
+        [InlineData(0, false)]
+        [InlineData(4096, false)]
+        public async Task WriteAsyncCancelledFile(int bufferSize, bool isAsync)
         {
             const int writeSize = 1024 * 1024;
-            using (FileStream fs = new FileStream(GetTestFilePath(), FileMode.Create))
+            using (FileStream fs = new FileStream(GetTestFilePath(), FileMode.CreateNew, FileAccess.Write, FileShare.None, bufferSize, isAsync))
             {
                 byte[] buffer = new byte[writeSize];
                 CancellationTokenSource cts = new CancellationTokenSource();
@@ -119,6 +123,9 @@ namespace System.IO.Tests
                     // Ideally we'd be doing an Assert.Throws<OperationCanceledException>
                     // but since cancellation is a race condition we accept either outcome
                     Assert.Equal(cts.Token, oce.CancellationToken);
+
+                    Assert.Equal(0, fs.Length); // if write was cancelled, the file should be empty
+                    Assert.Equal(0, fs.Position); // if write was cancelled, the Position should remain unchanged
                 }
             }
         }
@@ -179,11 +186,12 @@ namespace System.IO.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))] // Browser PNSE: Cannot wait on monitors
+        [PlatformSpecific(TestPlatforms.Windows)]
         public Task ManyConcurrentWriteAsyncs()
         {
             // For inner loop, just test one case
             return ManyConcurrentWriteAsyncs_OuterLoop(
-                useAsync: OperatingSystem.IsWindows(),
+                useAsync: true,
                 presize: false,
                 exposeHandle: false,
                 cancelable: true,
@@ -193,6 +201,7 @@ namespace System.IO.Tests
         }
 
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [PlatformSpecific(TestPlatforms.Windows)] // testing undocumented feature that's legacy in the Windows implementation
         [MemberData(nameof(MemberData_FileStreamAsyncWriting))]
         [OuterLoop] // many combinations: we test just one in inner loop and the rest outer
         public async Task ManyConcurrentWriteAsyncs_OuterLoop(
@@ -222,7 +231,15 @@ namespace System.IO.Tests
                     Assert.Null(writes[i].Exception);
                     if (useAsync)
                     {
-                        Assert.Equal((i + 1) * writeSize, fs.Position);
+                        // To ensure that the buffer of a FileStream opened for async IO is flushed
+                        // by FlushAsync in asynchronous way, we aquire a lock for every buffered WriteAsync.
+                        // The side effect of this is that the Position of FileStream is not updated until
+                        // the lock is released by a previous operation.
+                        // So now all WriteAsync calls should be awaited before starting another async file operation.
+                        if (PlatformDetection.IsNet5CompatFileStreamEnabled)
+                        {
+                            Assert.Equal((i + 1) * writeSize, fs.Position);
+                        }
                     }
                 }
 
@@ -316,7 +333,7 @@ namespace System.IO.Tests
         }
     }
 
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/34583", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/34582", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
     public class FileStream_WriteAsync_AsyncWrites : FileStream_AsyncWrites
     {
         protected override Task WriteAsync(FileStream stream, byte[] buffer, int offset, int count, CancellationToken cancellationToken) =>
@@ -363,7 +380,7 @@ namespace System.IO.Tests
         }
     }
 
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/34583", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/34582", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
     public class FileStream_BeginEndWrite_AsyncWrites : FileStream_AsyncWrites
     {
         protected override Task WriteAsync(FileStream stream, byte[] buffer, int offset, int count, CancellationToken cancellationToken) =>

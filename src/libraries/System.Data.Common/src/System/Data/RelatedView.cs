@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Data
 {
@@ -62,22 +63,7 @@ namespace System.Data
 
             object[] childValues = row.GetKeyValues(_childKey, version);
 
-            bool allow = true;
-            if (childValues.Length != parentValues.Length)
-            {
-                allow = false;
-            }
-            else
-            {
-                for (int i = 0; i < childValues.Length; i++)
-                {
-                    if (!childValues[i].Equals(parentValues[i]))
-                    {
-                        allow = false;
-                        break;
-                    }
-                }
-            }
+            bool allow = childValues.AsSpan().SequenceEqual(parentValues);
 
             IFilter? baseFilter = base.GetFilter();
             if (baseFilter != null)
@@ -104,7 +90,7 @@ namespace System.Data
             Reset();
         }
 
-        public override bool Equals(DataView? dv)
+        public override bool Equals([NotNullWhen(true)] DataView? dv)
         {
             RelatedView? other = dv as RelatedView;
             if (other == null)

@@ -13,29 +13,7 @@
  */
 int32_t InitializeSignalHandlingCore(void);
 
-/**
- * Hooks up the specified callback for notifications when SIGINT or SIGQUIT is received.
- *
- * Not thread safe.  Caller must provide its owns synchronization to ensure RegisterForCtrl
- * is not called concurrently with itself or with UnregisterForCtrl.
- *
- * Should only be called when a callback is not currently registered.
- */
-PALEXPORT void SystemNative_RegisterForCtrl(CtrlCallback callback);
-
-/**
- * Unregisters the previously registered ctrlCCallback.
- *
- * Not thread safe.  Caller must provide its owns synchronization to ensure UnregisterForCtrl
- * is not called concurrently with itself or with RegisterForCtrl.
- *
- * Should only be called when a callback is currently registered. The pointer
- * previously registered must remain valid until all ctrl handling activity
- * has quiesced.
- */
-PALEXPORT void SystemNative_UnregisterForCtrl(void);
-
-typedef void (*SigChldCallback)(int reapAll);
+typedef int32_t (*SigChldCallback)(int32_t reapAll, int32_t configureConsole);
 
 /**
  * Hooks up the specified callback for notifications when SIGCHLD is received.
@@ -44,21 +22,72 @@ typedef void (*SigChldCallback)(int reapAll);
  */
 PALEXPORT void SystemNative_RegisterForSigChld(SigChldCallback callback);
 
-/**
- * Remove our handler and reissue the signal to be picked up by the previously registered handler.
- *
- * In the most common case, this will be the default handler, causing the process to be torn down.
- * It could also be a custom handler registered by other code before us.
- */
-PALEXPORT void SystemNative_RestoreAndHandleCtrl(CtrlCode ctrlCode);
-
 typedef void (*TerminalInvalidationCallback)(void);
+
+PALEXPORT void SystemNative_SetDelayedSigChildConsoleConfigurationHandler(void (*callback)(void));
 
 /**
  * Hooks up the specified callback for notifications when SIGCHLD, SIGCONT, SIGWINCH are received.
   *
  */
 PALEXPORT void SystemNative_SetTerminalInvalidationHandler(TerminalInvalidationCallback callback);
+
+typedef enum
+{
+    PosixSignalInvalid = 0,
+    PosixSignalSIGHUP = -1,
+    PosixSignalSIGINT = -2,
+    PosixSignalSIGQUIT = -3,
+    PosixSignalSIGTERM = -4,
+    PosixSignalSIGCHLD = -5,
+    PosixSignalSIGWINCH = -6,
+    PosixSignalSIGCONT = -7,
+    PosixSignalSIGTTIN = -8,
+    PosixSignalSIGTTOU = -9,
+    PosixSignalSIGTSTP = -10
+} PosixSignal;
+
+typedef int32_t (*PosixSignalHandler)(int32_t signalCode, PosixSignal signal);
+
+/**
+ * Hooks up the specified callback for handling PosixSignalRegistrations.
+ *
+ * Should only be called when a callback is not currently registered.
+ */
+PALEXPORT void SystemNative_SetPosixSignalHandler(PosixSignalHandler signalHandler);
+
+/**
+ * Converts a PosixSignal value to the platform signal number.
+ * When the signal is out of range, the function returns zero.
+ */
+PALEXPORT int32_t SystemNative_GetPlatformSignalNumber(PosixSignal signal);
+
+/**
+ * Enables calling the PosixSignalHandler for the specified signal.
+ */
+PALEXPORT int32_t SystemNative_EnablePosixSignalHandling(int signalCode);
+
+/**
+ * Disables calling the PosixSignalHandler for the specified signal.
+ */
+PALEXPORT void SystemNative_DisablePosixSignalHandling(int signalCode);
+
+/**
+ * Performs the default runtime action for a non-canceled PosixSignal.
+ */
+PALEXPORT void SystemNative_HandleNonCanceledPosixSignal(int32_t signalCode);
+
+typedef void (*ConsoleSigTtouHandler)(void);
+
+/**
+ * Hooks up callback to be called from the signal handler directly on SIGTTOU.
+ */
+void InstallTTOUHandlerForConsole(ConsoleSigTtouHandler handler);
+
+/**
+ * Uninstalls the SIGTTOU handler.
+ */
+void UninstallTTOUHandlerForConsole(void);
 
 #ifndef HAS_CONSOLE_SIGNALS
 

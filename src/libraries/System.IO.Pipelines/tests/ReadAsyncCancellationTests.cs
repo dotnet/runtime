@@ -362,12 +362,10 @@ namespace System.IO.Pipelines.Tests
         }
 
         [Fact]
-        public void ReadAsyncThrowsIfPassedCanceledCancellationToken()
+        public Task ReadAsyncThrowsIfPassedCanceledCancellationToken()
         {
-            var cancellationTokenSource = new CancellationTokenSource();
-            cancellationTokenSource.Cancel();
-
-            Assert.Throws<OperationCanceledException>(() => Pipe.Reader.ReadAsync(cancellationTokenSource.Token));
+            ValueTask<ReadResult> task = Pipe.Reader.ReadAsync(new CancellationToken(canceled: true));
+            return Assert.ThrowsAsync<TaskCanceledException>(async () => await task);
         }
 
         [Fact]

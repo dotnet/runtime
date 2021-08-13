@@ -1,6 +1,7 @@
 parameters:
   buildConfig: 'Debug'
   osGroup: ''
+  osSubGroup: ''
   platform: ''
   container: ''
   timeoutInMinutes: ''
@@ -15,6 +16,7 @@ jobs:
   parameters:
     buildConfig: ${{ parameters.buildConfig }}
     osGroup: ${{ parameters.osGroup }}
+    osSubGroup: ${{ parameters.osSubGroup }}
     helixType: 'build/product/'
     enableMicrobuild: true
     pool: ${{ parameters.pool }}
@@ -22,8 +24,8 @@ jobs:
     dependOnEvaluatePaths: ${{ parameters.dependOnEvaluatePaths }}
 
     # Compute job name from template parameters
-    name: ${{ format('mono_{0}_offsets', parameters.osGroup) }}
-    displayName: ${{ format('Mono {0} AOT offsets', parameters.osGroup) }}
+    name: ${{ format('mono_{0}{1}_offsets', parameters.osGroup, parameters.osSubGroup) }}
+    displayName: ${{ format('Mono {0}{1} AOT offsets', parameters.osGroup, parameters.osSubGroup) }}
 
     # Run all steps in the container.
     # Note that the containers are defined in platform-matrix.yml
@@ -35,6 +37,8 @@ jobs:
     variables:
     - name: osGroup
       value: ${{ parameters.osGroup }}
+    - name: osSubGroup
+      value: ${{ parameters.osSubGroup }}
     - name: officialBuildIdArg
       value: ''
     - ${{ if and(eq(variables['System.TeamProject'], 'internal'), ne(variables['Build.Reason'], 'PullRequest')) }}:
@@ -80,13 +84,13 @@ jobs:
       displayName: Upload offset files
       inputs:
         targetPath: '$(Build.SourcesDirectory)/artifacts/obj/mono/offsetfiles'
-        artifactName: 'Mono_Offsets_$(osGroup)'
+        artifactName: 'Mono_Offsets_$(osGroup)$(osSubGroup)'
 
     # Publish Logs
     - task: PublishPipelineArtifact@1
       displayName: Publish Logs
       inputs:
         targetPath: $(Build.SourcesDirectory)/artifacts/log
-        artifactName: 'BuildLogs_Mono_Offsets_$(osGroup)'
+        artifactName: 'BuildLogs_Mono_Offsets_$(osGroup)$(osSubGroup)'
       continueOnError: true
       condition: always()

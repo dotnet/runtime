@@ -7,7 +7,7 @@ using System.Security.Authentication.ExtendedProtection;
 
 namespace System.Net
 {
-    internal class HttpListenerRequestContext : TransportContext
+    internal sealed class HttpListenerRequestContext : TransportContext
     {
         private readonly HttpListenerRequest _request;
 

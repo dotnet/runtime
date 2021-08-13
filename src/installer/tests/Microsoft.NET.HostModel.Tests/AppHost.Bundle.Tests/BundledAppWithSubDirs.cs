@@ -59,7 +59,7 @@ namespace AppHost.Bundle.Tests
         public void Bundled_Self_Contained_App_Run_Succeeds(BundleOptions options)
         {
             var fixture = sharedTestState.TestSelfContainedFixture.Copy();
-            var singleFile = BundleHelper.BundleApp(fixture, options);
+            var singleFile = BundleSelfContainedApp(fixture, options);
 
             // Run the bundled app (extract files)
             RunTheApp(singleFile, fixture);
@@ -72,10 +72,80 @@ namespace AppHost.Bundle.Tests
         [InlineData(BundleOptions.BundleNativeBinaries)]
         [InlineData(BundleOptions.BundleAllContent)]
         [Theory]
+        public void Bundled_Self_Contained_NoCompression_App_Run_Succeeds(BundleOptions options)
+        {
+            var fixture = sharedTestState.TestSelfContainedFixture.Copy();
+            var singleFile = BundleSelfContainedApp(fixture, options, disableCompression: true);
+
+            // Run the bundled app (extract files)
+            RunTheApp(singleFile, fixture);
+
+            // Run the bundled app again (reuse extracted files)
+            RunTheApp(singleFile, fixture);
+        }
+
+        [InlineData(BundleOptions.None)]
+        [InlineData(BundleOptions.BundleNativeBinaries)]
+        [InlineData(BundleOptions.BundleAllContent)]
+        [Theory]
+        public void Bundled_Self_Contained_Targeting50_App_Run_Succeeds(BundleOptions options)
+        {
+            var fixture = sharedTestState.TestSelfContainedFixture.Copy();
+            var singleFile = BundleSelfContainedApp(fixture, options, new Version(5, 0));
+
+            // Run the bundled app (extract files)
+            RunTheApp(singleFile, fixture);
+
+            // Run the bundled app again (reuse extracted files)
+            RunTheApp(singleFile, fixture);
+        }
+
+        [InlineData(BundleOptions.BundleAllContent)]
+        [Theory]
+        public void Bundled_Framework_dependent_Targeting50_App_Run_Succeeds(BundleOptions options)
+        {
+            var fixture = sharedTestState.TestSelfContainedFixture.Copy();
+            UseFrameworkDependentHost(fixture);
+            var singleFile = BundleHelper.BundleApp(fixture, options, new Version(5, 0));
+
+            // Run the bundled app (extract files)
+            RunTheApp(singleFile, fixture);
+
+            // Run the bundled app again (reuse extracted files)
+            RunTheApp(singleFile, fixture);
+        }
+
+        [Fact]
+        public void Bundled_Self_Contained_Targeting50_WithCompression_Throws()
+        {
+            var fixture = sharedTestState.TestSelfContainedFixture.Copy();
+            UseSingleFileSelfContainedHost(fixture);
+            // compression must be off when targeting 5.0
+            var options = BundleOptions.EnableCompression;
+
+            Assert.Throws<ArgumentException>(()=>BundleHelper.BundleApp(fixture, options, new Version(5, 0)));
+        }
+
+        [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/54234")]
+        // NOTE: when enabling this test take a look at commented code maked by "ACTIVE ISSUE:" in SharedTestState
+        public void Bundled_Self_Contained_Composite_App_Run_Succeeds()
+        {
+            var fixture = sharedTestState.TestSelfContainedFixtureComposite.Copy();
+            var singleFile = BundleSelfContainedApp(fixture, BundleOptions.None, disableCompression: true);
+
+            // Run the app
+            RunTheApp(singleFile, fixture);
+        }
+
+        [InlineData(BundleOptions.None)]
+        [InlineData(BundleOptions.BundleNativeBinaries)]
+        [InlineData(BundleOptions.BundleAllContent)]
+        [Theory]
         public void Bundled_With_Empty_File_Succeeds(BundleOptions options)
         {
             var fixture = sharedTestState.TestAppWithEmptyFileFixture.Copy();
-            var singleFile = BundleHelper.BundleApp(fixture, options);
+            var singleFile = BundleSelfContainedApp(fixture, options);
 
             // Run the app
             RunTheApp(singleFile, fixture);
@@ -86,6 +156,7 @@ namespace AppHost.Bundle.Tests
             public TestProjectFixture TestFrameworkDependentFixture { get; set; }
             public TestProjectFixture TestSelfContainedFixture { get; set; }
             public TestProjectFixture TestAppWithEmptyFileFixture { get; set; }
+            public TestProjectFixture TestSelfContainedFixtureComposite { get; set; }
 
             public SharedTestState()
             {
@@ -111,6 +182,18 @@ namespace AppHost.Bundle.Tests
                     .EnsureRestoredForRid(TestAppWithEmptyFileFixture.CurrentRid)
                     .PublishProject(runtime: TestAppWithEmptyFileFixture.CurrentRid,
                                     outputDirectory: BundleHelper.GetPublishPath(TestAppWithEmptyFileFixture));
+
+                TestSelfContainedFixtureComposite = new TestProjectFixture("AppWithSubDirs", RepoDirectories);
+                BundleHelper.AddLongNameContentToAppWithSubDirs(TestSelfContainedFixtureComposite);
+                TestSelfContainedFixtureComposite
+                    .EnsureRestoredForRid(TestSelfContainedFixtureComposite.CurrentRid)
+                    .PublishProject(runtime: TestSelfContainedFixtureComposite.CurrentRid,
+                                    // ACTIVE ISSUE: https://github.com/dotnet/runtime/issues/54234
+                                    //               uncomment extraArgs when fixed.
+                                    outputDirectory: BundleHelper.GetPublishPath(TestSelfContainedFixtureComposite) /*,
+                                    extraArgs: new string[] {
+                                       "/p:PublishReadyToRun=true",
+                                       "/p:PublishReadyToRunComposite=true" } */);
             }
 
             public void Dispose()
@@ -118,6 +201,7 @@ namespace AppHost.Bundle.Tests
                 TestFrameworkDependentFixture.Dispose();
                 TestSelfContainedFixture.Dispose();
                 TestAppWithEmptyFileFixture.Dispose();
+                TestSelfContainedFixtureComposite.Dispose();
             }
         }
     }

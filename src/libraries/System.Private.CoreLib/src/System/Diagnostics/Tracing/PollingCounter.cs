@@ -8,6 +8,7 @@ using System;
 #if ES_BUILD_STANDALONE
 namespace Microsoft.Diagnostics.Tracing
 #else
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.Versioning;
 
 namespace System.Diagnostics.Tracing
@@ -41,11 +42,16 @@ namespace System.Diagnostics.Tracing
             Publish();
         }
 
-        public override string ToString() => $"PollingCounter '{Name}' Count 1 Mean {_lastVal.ToString("n3")}";
+        public override string ToString() => $"PollingCounter '{Name}' Count 1 Mean {_lastVal:n3}";
 
         private readonly Func<double> _metricProvider;
         private double _lastVal;
 
+#if !ES_BUILD_STANDALONE
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+            Justification = "The DynamicDependency will preserve the properties of CounterPayload")]
+        [DynamicDependency(DynamicallyAccessedMemberTypes.PublicProperties, typeof(CounterPayload))]
+#endif
         internal override void WritePayload(float intervalSec, int pollingIntervalMillisec)
         {
             lock (this)
@@ -83,7 +89,7 @@ namespace System.Diagnostics.Tracing
     /// This is the payload that is sent in the with EventSource.Write
     /// </summary>
     [EventData]
-    internal class PollingPayloadType
+    internal sealed class PollingPayloadType
     {
         public PollingPayloadType(CounterPayload payload) { Payload = payload; }
         public CounterPayload Payload { get; set; }

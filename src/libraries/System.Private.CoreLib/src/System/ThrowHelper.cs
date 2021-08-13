@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 
-// This file defines an internal class used to throw exceptions in BCL code.
+// This file defines an internal static class used to throw exceptions in BCL code.
 // The main purpose is to reduce code size.
 //
 // The old way to throw an exception generates quite a lot IL code and assembly code.
@@ -38,6 +38,7 @@ using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.IO;
 using System.Runtime.CompilerServices;
 using System.Runtime.Serialization;
 
@@ -156,6 +157,12 @@ namespace System
         }
 
         [DoesNotReturn]
+        internal static void ThrowArgumentOutOfRange_DayNumber(int dayNumber)
+        {
+            throw new ArgumentOutOfRangeException(nameof(dayNumber), dayNumber, SR.ArgumentOutOfRange_DayNumber);
+        }
+
+        [DoesNotReturn]
         internal static void ThrowArgumentOutOfRange_BadYearMonthDay()
         {
             throw new ArgumentOutOfRangeException(null, SR.ArgumentOutOfRange_BadYearMonthDay);
@@ -218,15 +225,22 @@ namespace System
             throw GetArgumentException(resource, argument);
         }
 
-        private static ArgumentNullException GetArgumentNullException(ExceptionArgument argument)
+        [DoesNotReturn]
+        internal static void ThrowArgumentException_HandleNotSync(string paramName)
         {
-            return new ArgumentNullException(GetArgumentName(argument));
+            throw new ArgumentException(SR.Arg_HandleNotSync, paramName);
+        }
+
+        [DoesNotReturn]
+        internal static void ThrowArgumentException_HandleNotAsync(string paramName)
+        {
+            throw new ArgumentException(SR.Arg_HandleNotAsync, paramName);
         }
 
         [DoesNotReturn]
         internal static void ThrowArgumentNullException(ExceptionArgument argument)
         {
-            throw GetArgumentNullException(argument);
+            throw new ArgumentNullException(GetArgumentName(argument));
         }
 
         [DoesNotReturn]
@@ -258,6 +272,15 @@ namespace System
         {
             throw GetArgumentOutOfRangeException(argument, paramNumber, resource);
         }
+
+        [DoesNotReturn]
+        internal static void ThrowEndOfFileException()
+        {
+            throw CreateEndOfFileException();
+        }
+
+        internal static Exception CreateEndOfFileException() =>
+            new EndOfStreamException(SR.IO_EOF_ReadBeyondEOF);
 
         [DoesNotReturn]
         internal static void ThrowInvalidOperationException()
@@ -308,6 +331,24 @@ namespace System
         }
 
         [DoesNotReturn]
+        internal static void ThrowNotSupportedException_UnseekableStream()
+        {
+            throw new NotSupportedException(SR.NotSupported_UnseekableStream);
+        }
+
+        [DoesNotReturn]
+        internal static void ThrowNotSupportedException_UnreadableStream()
+        {
+            throw new NotSupportedException(SR.NotSupported_UnreadableStream);
+        }
+
+        [DoesNotReturn]
+        internal static void ThrowNotSupportedException_UnwritableStream()
+        {
+            throw new NotSupportedException(SR.NotSupported_UnwritableStream);
+        }
+
+        [DoesNotReturn]
         internal static void ThrowUnauthorizedAccessException(ExceptionResource resource)
         {
             throw new UnauthorizedAccessException(GetResourceString(resource));
@@ -317,6 +358,18 @@ namespace System
         internal static void ThrowObjectDisposedException(string objectName, ExceptionResource resource)
         {
             throw new ObjectDisposedException(objectName, GetResourceString(resource));
+        }
+
+        [DoesNotReturn]
+        internal static void ThrowObjectDisposedException_StreamClosed(string? objectName)
+        {
+            throw new ObjectDisposedException(objectName, SR.ObjectDisposed_StreamClosed);
+        }
+
+        [DoesNotReturn]
+        internal static void ThrowObjectDisposedException_FileClosed()
+        {
+            throw new ObjectDisposedException(null, SR.ObjectDisposed_FileClosed);
         }
 
         [DoesNotReturn]
@@ -347,6 +400,12 @@ namespace System
         internal static void ThrowArgumentException_Argument_InvalidArrayType()
         {
             throw new ArgumentException(SR.Argument_InvalidArrayType);
+        }
+
+        [DoesNotReturn]
+        internal static void ThrowArgumentException_InvalidHandle(string? paramName)
+        {
+            throw new ArgumentException(SR.Arg_InvalidHandle, paramName);
         }
 
         [DoesNotReturn]
@@ -427,6 +486,24 @@ namespace System
             throw new ArgumentOutOfRangeException("symbol", SR.Argument_BadFormatSpecifier);
         }
 
+        [DoesNotReturn]
+        internal static void ThrowArgumentOutOfRangeException_NeedPosNum(string? paramName)
+        {
+            throw new ArgumentOutOfRangeException(paramName, SR.ArgumentOutOfRange_NeedPosNum);
+        }
+
+        [DoesNotReturn]
+        internal static void ThrowArgumentOutOfRangeException_NeedNonNegNum(string paramName)
+        {
+            throw new ArgumentOutOfRangeException(paramName, SR.ArgumentOutOfRange_NeedNonNegNum);
+        }
+
+        [DoesNotReturn]
+        internal static void ArgumentOutOfRangeException_Enum_Value()
+        {
+            throw new ArgumentOutOfRangeException("value", SR.ArgumentOutOfRange_Enum);
+        }
+
         private static Exception GetArraySegmentCtorValidationFailedException(Array? array, int offset, int count)
         {
             if (array == null)
@@ -499,11 +576,28 @@ namespace System
                 ThrowHelper.ThrowArgumentNullException(argName);
         }
 
-        // Throws if 'T' is disallowed in Vector<T> / Vector128<T> / other related types in the
-        // Numerics or Intrinsics namespaces. If 'T' is allowed, no-ops. JIT will elide the method
-        // entirely if 'T' is supported and we're on an optimized release build.
+        // Throws if 'T' is disallowed in Vector<T> in the Numerics namespace.
+        // If 'T' is allowed, no-ops. JIT will elide the method entirely if 'T'
+        // is supported and we're on an optimized release build.
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static void ThrowForUnsupportedVectorBaseType<T>() where T : struct
+        internal static void ThrowForUnsupportedNumericsVectorBaseType<T>() where T : struct
+        {
+            if (typeof(T) != typeof(byte) && typeof(T) != typeof(sbyte) &&
+                typeof(T) != typeof(short) && typeof(T) != typeof(ushort) &&
+                typeof(T) != typeof(int) && typeof(T) != typeof(uint) &&
+                typeof(T) != typeof(long) && typeof(T) != typeof(ulong) &&
+                typeof(T) != typeof(float) && typeof(T) != typeof(double) &&
+                typeof(T) != typeof(nint) && typeof(T) != typeof(nuint))
+            {
+                ThrowNotSupportedException(ExceptionResource.Arg_TypeNotSupported);
+            }
+        }
+
+        // Throws if 'T' is disallowed in Vector64/128/256<T> in the Intrinsics namespace.
+        // If 'T' is allowed, no-ops. JIT will elide the method entirely if 'T'
+        // is supported and we're on an optimized release build.
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static void ThrowForUnsupportedIntrinsicsVectorBaseType<T>() where T : struct
         {
             if (typeof(T) != typeof(byte) && typeof(T) != typeof(sbyte) &&
                 typeof(T) != typeof(short) && typeof(T) != typeof(ushort) &&
@@ -601,6 +695,8 @@ namespace System
                     return "start";
                 case ExceptionArgument.format:
                     return "format";
+                case ExceptionArgument.formats:
+                    return "formats";
                 case ExceptionArgument.culture:
                     return "culture";
                 case ExceptionArgument.comparer:
@@ -667,6 +763,8 @@ namespace System
                     return "destinationArray";
                 case ExceptionArgument.pHandle:
                     return "pHandle";
+                case ExceptionArgument.handle:
+                    return "handle";
                 case ExceptionArgument.other:
                     return "other";
                 case ExceptionArgument.newSize:
@@ -713,8 +811,12 @@ namespace System
                     return "suffix";
                 case ExceptionArgument.buffer:
                     return "buffer";
+                case ExceptionArgument.buffers:
+                    return "buffers";
                 case ExceptionArgument.offset:
                     return "offset";
+                case ExceptionArgument.stream:
+                    return "stream";
                 default:
                     Debug.Fail("The enum value is not defined, please check the ExceptionArgument Enum.");
                     return "";
@@ -817,8 +919,8 @@ namespace System
                     return SR.Task_ContinueWith_ESandLR;
                 case ExceptionResource.Task_ContinueWith_NotOnAnything:
                     return SR.Task_ContinueWith_NotOnAnything;
-                case ExceptionResource.Task_Delay_InvalidDelay:
-                    return SR.Task_Delay_InvalidDelay;
+                case ExceptionResource.Task_InvalidTimerTimeSpan:
+                    return SR.Task_InvalidTimerTimeSpan;
                 case ExceptionResource.Task_Delay_InvalidMillisecondsDelay:
                     return SR.Task_Delay_InvalidMillisecondsDelay;
                 case ExceptionResource.Task_Dispose_NotCompleted:
@@ -871,6 +973,10 @@ namespace System
                     return SR.Argument_SpansMustHaveSameLength;
                 case ExceptionResource.Argument_InvalidFlag:
                     return SR.Argument_InvalidFlag;
+                case ExceptionResource.CancellationTokenSource_Disposed:
+                    return SR.CancellationTokenSource_Disposed;
+                case ExceptionResource.Argument_AlignmentMustBePow2:
+                    return SR.Argument_AlignmentMustBePow2;
                 default:
                     Debug.Fail("The enum value is not defined, please check the ExceptionResource Enum.");
                     return "";
@@ -918,6 +1024,7 @@ namespace System
         pointer,
         start,
         format,
+        formats,
         culture,
         comparer,
         comparable,
@@ -951,6 +1058,7 @@ namespace System
         destinationIndex,
         destinationArray,
         pHandle,
+        handle,
         other,
         newSize,
         lowerBounds,
@@ -974,7 +1082,9 @@ namespace System
         prefix,
         suffix,
         buffer,
+        buffers,
         offset,
+        stream
     }
 
     //
@@ -1022,7 +1132,7 @@ namespace System
         AsyncMethodBuilder_InstanceNotInitialized,
         Task_ContinueWith_ESandLR,
         Task_ContinueWith_NotOnAnything,
-        Task_Delay_InvalidDelay,
+        Task_InvalidTimerTimeSpan,
         Task_Delay_InvalidMillisecondsDelay,
         Task_Dispose_NotCompleted,
         Task_ThrowIfDisposed,
@@ -1049,5 +1159,7 @@ namespace System
         Arg_TypeNotSupported,
         Argument_SpansMustHaveSameLength,
         Argument_InvalidFlag,
+        CancellationTokenSource_Disposed,
+        Argument_AlignmentMustBePow2,
     }
 }

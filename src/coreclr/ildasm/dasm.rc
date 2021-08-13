@@ -246,7 +246,6 @@ BEGIN
     IDS_W_CREATEDMRES       L"WARNING: managed resource file %s created"
     IDS_E_READINGMRES       L"ERROR: reading managed resource %s at offset 0x%X"
     IDS_RTL                 L"RTL_False"    // change this to RTL_True on Arabic/Hebrew system
-    IDS_E_SUPPRESSED        L"Protected module -- cannot disassemble"
     IDS_LEGALCOPYRIGHT      L"\251 Microsoft Corporation.  All rights reserved."
 END
 

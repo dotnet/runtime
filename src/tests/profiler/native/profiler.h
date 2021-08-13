@@ -25,8 +25,11 @@
 #define STRING_LENGTH  256
 #define LONG_LENGTH   1024
 
+typedef void (*ProfilerCallback) (void);
+
 class ShutdownGuard
 {
+
 private:
     static std::atomic<bool> s_preventHooks;
     static std::atomic<int> s_hooksInProgress;
@@ -85,13 +88,19 @@ class Profiler : public ICorProfilerCallback10
 {
 private:
     std::atomic<int> refCount;
+    ProfilerCallback callback;
+    ManualEvent callbackSet;
+    
 
 protected:
     String GetClassIDName(ClassID classId);
     String GetFunctionIDName(FunctionID funcId);
     String GetModuleIDName(ModuleID modId);
+    void NotifyManagedCodeViaCallback();
 
 public:
+    static Profiler *Instance;
+
     ICorProfilerInfo11* pCorProfilerInfo;
 
     Profiler();
@@ -207,4 +216,6 @@ public:
     HRESULT STDMETHODCALLTYPE QueryInterface(REFIID riid, void **ppvObject) override;
     ULONG STDMETHODCALLTYPE AddRef(void) override;
     ULONG STDMETHODCALLTYPE Release(void) override;
+
+    void SetCallback(ProfilerCallback callback);
 };

@@ -153,8 +153,10 @@ namespace Microsoft.WebAssembly.Diagnostics
                     var endpoint = new Uri($"ws://{devToolsHost.Authority}{context.Request.Path}");
                     try
                     {
-                        using ILoggerFactory loggerFactory = LoggerFactory.Create(
-                            builder => builder.AddConsole().AddFilter(null, LogLevel.Information));
+                        using ILoggerFactory loggerFactory = LoggerFactory.Create(builder =>
+                            builder.AddSimpleConsole(options => options.SingleLine = true)
+                                   .AddFilter(null, LogLevel.Information)
+                        );
 
                         context.Request.Query.TryGetValue("urlSymbolServer", out StringValues urlSymbolServerList);
                         var proxy = new DebuggerProxy(loggerFactory, urlSymbolServerList.ToList());

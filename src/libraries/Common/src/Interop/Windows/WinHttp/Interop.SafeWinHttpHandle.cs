@@ -7,9 +7,9 @@ using System.Runtime.InteropServices;
 
 using Microsoft.Win32.SafeHandles;
 
-internal partial class Interop
+internal static partial class Interop
 {
-    internal partial class WinHttp
+    internal static partial class WinHttp
     {
         internal class SafeWinHttpHandle : SafeHandleZeroOrMinusOneIsInvalid
         {

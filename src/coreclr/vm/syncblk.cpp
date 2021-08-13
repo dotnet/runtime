@@ -712,14 +712,14 @@ void    SyncBlockCache::InsertCleanupSyncBlock(SyncBlock* psb)
             continue;
     }
 
-#ifdef FEATURE_COMINTEROP
+#if defined(FEATURE_COMINTEROP) || defined(FEATURE_COMWRAPPERS)
     if (psb->m_pInteropInfo)
     {
         // called during GC
         // so do only minorcleanup
         MinorCleanupSyncBlockComData(psb->m_pInteropInfo);
     }
-#endif // FEATURE_COMINTEROP
+#endif // FEATURE_COMINTEROP || FEATURE_COMWRAPPERS
 
     // This method will be called only by the GC thread
     //<TODO>@todo add an assert for the above statement</TODO>
@@ -974,9 +974,9 @@ void SyncBlockCache::DeleteSyncBlock(SyncBlock *psb)
     // clean up comdata
     if (psb->m_pInteropInfo)
     {
-#ifdef FEATURE_COMINTEROP
+#if defined(FEATURE_COMINTEROP) || defined(FEATURE_COMWRAPPERS)
         CleanupSyncBlockComData(psb->m_pInteropInfo);
-#endif // FEATURE_COMINTEROP
+#endif // FEATURE_COMINTEROP || FEATURE_COMWRAPPERS
 
 #ifndef TARGET_UNIX
         if (g_fEEShutDown)
@@ -1692,7 +1692,7 @@ BOOL ObjHeader::LeaveObjMonitor()
 
     for (;;)
     {
-        AwareLock::LeaveHelperAction action = thisObj->GetHeader ()->LeaveObjMonitorHelper(GetThread());
+        AwareLock::LeaveHelperAction action = thisObj->GetHeader()->LeaveObjMonitorHelper(GetThread());
 
         switch(action)
         {
@@ -1923,7 +1923,7 @@ DEBUG_NOINLINE void ObjHeader::EnterSpinLock()
             __SwitchToThread(0, ++dwSwitchCount);
     }
 
-    INCONTRACT(Thread* pThread = GetThread());
+    INCONTRACT(Thread* pThread = GetThreadNULLOk());
     INCONTRACT(if (pThread != NULL) pThread->BeginNoTriggerGC(__FILE__, __LINE__));
 }
 #else
@@ -1959,7 +1959,7 @@ DEBUG_NOINLINE void ObjHeader::EnterSpinLock()
         __SwitchToThread(0, ++dwSwitchCount);
     }
 
-    INCONTRACT(Thread* pThread = GetThread());
+    INCONTRACT(Thread* pThread = GetThreadNULLOk());
     INCONTRACT(if (pThread != NULL) pThread->BeginNoTriggerGC(__FILE__, __LINE__));
 }
 #endif //MP_LOCKS
@@ -1969,7 +1969,7 @@ DEBUG_NOINLINE void ObjHeader::ReleaseSpinLock()
     SCAN_SCOPE_END;
     LIMITED_METHOD_CONTRACT;
 
-    INCONTRACT(Thread* pThread = GetThread());
+    INCONTRACT(Thread* pThread = GetThreadNULLOk());
     INCONTRACT(if (pThread != NULL) pThread->EndNoTriggerGC());
 
     FastInterlockAnd(&m_SyncBlockValue, ~BIT_SBLK_SPIN_LOCK);
@@ -2952,5 +2952,4 @@ void ObjHeader::IllegalAlignPad()
     _ASSERTE(m_alignpad == 0);
 }
 #endif // HOST_64BIT && _DEBUG
-
 

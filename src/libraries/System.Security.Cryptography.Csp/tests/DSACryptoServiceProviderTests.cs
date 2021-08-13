@@ -2,10 +2,12 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Security.Cryptography.Dsa.Tests;
+using Test.Cryptography;
 using Xunit;
 
 namespace System.Security.Cryptography.Csp.Tests
 {
+    [SkipOnPlatform(PlatformSupport.MobileAppleCrypto, "DSA is not available")]
     public class DSACryptoServiceProviderTests
     {
         const int PROV_DSS_DH = 13;
@@ -33,6 +35,7 @@ namespace System.Security.Cryptography.Csp.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/51331", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public static void PublicOnly_WithPrivateKey()
         {
             using (var dsa = new DSACryptoServiceProvider())

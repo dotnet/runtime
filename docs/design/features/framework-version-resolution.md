@@ -11,7 +11,7 @@ Each framework reference consists of these values
 * Version - for example `3.0.1`
 * Roll-forward setting - for example `Minor`
 
-*In the code the framework reference is represented by an instance of [`fx_reference_t`](https://github.com/dotnet/runtime/blob/master/src/native/corehost/fx_reference.h).*
+*In the code the framework reference is represented by an instance of [`fx_reference_t`](https://github.com/dotnet/runtime/blob/main/src/native/corehost/fx_reference.h).*
 
 In the `.runtimeconfig.json` these values are defined like this:
 ``` json

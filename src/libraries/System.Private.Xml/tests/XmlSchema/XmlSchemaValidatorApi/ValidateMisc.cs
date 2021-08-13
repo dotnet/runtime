@@ -669,7 +669,7 @@ namespace System.Xml.Tests
                 try
                 {
                     while (xmlReader.Read()) ;
-                    Assert.True(false); ;
+                    Assert.True(false);
                 }
                 catch (XmlSchemaValidationException e)
                 {

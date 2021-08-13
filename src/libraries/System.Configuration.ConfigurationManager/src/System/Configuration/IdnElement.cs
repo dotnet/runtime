@@ -36,7 +36,7 @@ namespace System.Configuration
             set { this[_enabled] = value; }
         }
 
-        private class UriIdnScopeTypeConverter : TypeConverter
+        private sealed class UriIdnScopeTypeConverter : TypeConverter
         {
             public override bool CanConvertFrom(ITypeDescriptorContext context, Type sourceType)
             {

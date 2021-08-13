@@ -27,7 +27,7 @@ namespace System.Xml.Xsl.IlGen
     /// the stack or a local variable by an iterator.  The iterator is passive, and will just wait for
     /// a caller to pull the data and/or instruct the iterator to enumerate the next value.
     /// </summary>
-    internal class XmlILVisitor : QilVisitor
+    internal sealed class XmlILVisitor : QilVisitor
     {
         private QilExpression _qil = null!;
         private GenerateHelper _helper = null!;
@@ -35,6 +35,9 @@ namespace System.Xml.Xsl.IlGen
         private IteratorDescriptor? _iterNested;
         private int _indexId;
 
+        [RequiresUnreferencedCode("Method VisitXsltInvokeEarlyBound will require code that cannot be statically analyzed.")]
+        public XmlILVisitor()
+        { }
 
         //-----------------------------------------------
         // Entry
@@ -1746,7 +1749,7 @@ namespace System.Xml.Xsl.IlGen
                     }
                     else
                     {
-                        Debug.Assert(code != XmlTypeCode.QName, "QName values do not support the " + relOp + " operation");
+                        Debug.Assert(code != XmlTypeCode.QName, $"QName values do not support the {relOp} operation");
 
                         // Push -1, 0, or 1 onto the stack depending upon the result of the comparison
                         _helper.CallCompare(code);
@@ -3597,6 +3600,9 @@ namespace System.Xml.Xsl.IlGen
         /// <summary>
         /// Generate code for QilNodeType.XsltInvokeEarlyBound.
         /// </summary>
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2072:RequiresUnreferencedCode",
+            Justification = "Supressing warning about not having the RequiresUnreferencedCode attribute since we added " +
+            "the attribute to this subclass' constructor. This allows us to not have to annotate the whole QilNode hirerarchy.")]
         protected override QilNode VisitXsltInvokeEarlyBound(QilInvokeEarlyBound ndInvoke)
         {
             QilName ndName = ndInvoke.Name;

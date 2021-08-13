@@ -76,22 +76,14 @@ namespace Internal.JitInterface
         {
             IntrinsicHashtable table = new IntrinsicHashtable();
 
-            // table.Add(CorInfoIntrinsics.CORINFO_INTRINSIC_GetChar, null, null, null); // unused
-            // table.Add(CorInfoIntrinsics.CORINFO_INTRINSIC_Array_GetDimLength, "GetLength", "System", "Array"); // not handled
             table.Add(CorInfoIntrinsics.CORINFO_INTRINSIC_Array_Get, "Get", null, null);
             table.Add(CorInfoIntrinsics.CORINFO_INTRINSIC_Array_Address, "Address", null, null);
             table.Add(CorInfoIntrinsics.CORINFO_INTRINSIC_Array_Set, "Set", null, null);
-            table.Add(CorInfoIntrinsics.CORINFO_INTRINSIC_StringGetChar, "get_Chars", "System", "String");
-            table.Add(CorInfoIntrinsics.CORINFO_INTRINSIC_StringLength, "get_Length", "System", "String");
             table.Add(CorInfoIntrinsics.CORINFO_INTRINSIC_InitializeArray, "InitializeArray", "System.Runtime.CompilerServices", "RuntimeHelpers");
-            table.Add(CorInfoIntrinsics.CORINFO_INTRINSIC_GetTypeFromHandle, "GetTypeFromHandle", "System", "Type");
             table.Add(CorInfoIntrinsics.CORINFO_INTRINSIC_RTH_GetValueInternal, "GetValueInternal", "System", "RuntimeTypeHandle");
-            table.Add(CorInfoIntrinsics.CORINFO_INTRINSIC_TypeEQ, "op_Equality", "System", "Type");
-            table.Add(CorInfoIntrinsics.CORINFO_INTRINSIC_TypeNEQ, "op_Inequality", "System", "Type");
             table.Add(CorInfoIntrinsics.CORINFO_INTRINSIC_Object_GetType, "GetType", "System", "Object");
             table.Add(CorInfoIntrinsics.CORINFO_INTRINSIC_StubHelpers_GetStubContext, "GetStubContext", "System.StubHelpers", "StubHelpers"); // interop-specific
             // table.Add(CorInfoIntrinsics.CORINFO_INTRINSIC_StubHelpers_GetStubContextAddr, "GetStubContextAddr", "System.StubHelpers", "StubHelpers"); // interop-specific
-            // table.Add(CorInfoIntrinsics.CORINFO_INTRINSIC_StubHelpers_GetNDirectTarget, "GetNDirectTarget", "System.StubHelpers", "StubHelpers"); // interop-specific
             table.Add(CorInfoIntrinsics.CORINFO_INTRINSIC_StubHelpers_NextCallReturnAddress, "NextCallReturnAddress", "System.StubHelpers", "StubHelpers");
             // table.Add(CorInfoIntrinsics.CORINFO_INTRINSIC_InterlockedAdd32, "Add", System.Threading", "Interlocked"); // unused
             // table.Add(CorInfoIntrinsics.CORINFO_INTRINSIC_InterlockedAdd64, "Add", System.Threading", "Interlocked"); // unused
@@ -105,8 +97,6 @@ namespace Internal.JitInterface
             table.Add(CorInfoIntrinsics.CORINFO_INTRINSIC_MemoryBarrierLoad, "LoadBarrier", "System.Threading", "Interlocked");
             table.Add(CorInfoIntrinsics.CORINFO_INTRINSIC_ByReference_Ctor, ".ctor", "System", "ByReference`1");
             table.Add(CorInfoIntrinsics.CORINFO_INTRINSIC_ByReference_Value, "get_Value", "System", "ByReference`1");
-            table.Add(CorInfoIntrinsics.CORINFO_INTRINSIC_Span_GetItem, "get_Item", "System", "Span`1");
-            table.Add(CorInfoIntrinsics.CORINFO_INTRINSIC_ReadOnlySpan_GetItem, "get_Item", "System", "ReadOnlySpan`1");
             table.Add(CorInfoIntrinsics.CORINFO_INTRINSIC_GetRawHandle, "EETypePtrOf", "System", "EETypePtr");
             table.Add(CorInfoIntrinsics.CORINFO_INTRINSIC_GetRawHandle, "DefaultConstructorOf", "System", "Activator");
             table.Add(CorInfoIntrinsics.CORINFO_INTRINSIC_GetRawHandle, "AllocatorOf", "System", "Activator");
@@ -187,16 +177,6 @@ namespace Internal.JitInterface
                 case CorInfoIntrinsics.CORINFO_INTRINSIC_GetRawHandle:
                     if (pMustExpand != null)
                         *pMustExpand = 1;
-                    break;
-
-                case CorInfoIntrinsics.CORINFO_INTRINSIC_Span_GetItem:
-                case CorInfoIntrinsics.CORINFO_INTRINSIC_ReadOnlySpan_GetItem:
-                    {
-                        // RyuJIT handles integer overload only
-                        var argumentTypeCategory = method.Signature[0].Category;
-                        if (argumentTypeCategory != TypeFlags.Int32)
-                            return CorInfoIntrinsics.CORINFO_INTRINSIC_Illegal;
-                    }
                     break;
 
                 default:

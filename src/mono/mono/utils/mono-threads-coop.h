@@ -20,11 +20,11 @@
 #include "mono/metadata/icalls.h"
 
 /* JIT specific interface */
-extern volatile size_t mono_polling_required;
+MONO_API_DATA volatile size_t mono_polling_required;
 
 /* Internal API */
 
-ICALL_EXTERN_C
+ICALL_EXPORT
 void
 mono_threads_state_poll (void);
 

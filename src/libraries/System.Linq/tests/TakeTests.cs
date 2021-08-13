@@ -1334,8 +1334,8 @@ namespace System.Linq.Tests
             Assert.All(Enumerable.Range(0, Math.Min(sourceCount, Math.Max(0, count))), _ => Assert.True(iterator2.MoveNext()));
             Assert.False(iterator2.MoveNext());
             // When startIndex is ^0, Take(Range) returns an empty array.
-            bool isItertorNotEmpty2 = startIndexFromEnd != 0;
-            Assert.Equal(isItertorNotEmpty2, isIteratorDisposed[2]);
+            bool isIteratorNotEmpty2 = startIndexFromEnd != 0;
+            Assert.Equal(isIteratorNotEmpty2, isIteratorDisposed[2]);
 
             IEnumerator<int> iterator3 = source[3].Take(0..^endIndexFromEnd).GetEnumerator();
             Assert.All(Enumerable.Range(0, Math.Min(sourceCount, Math.Max(0, count))), _ => Assert.True(iterator3.MoveNext()));
@@ -1347,8 +1347,50 @@ namespace System.Linq.Tests
             Assert.False(iterator4.MoveNext());
             // When startIndex is ^0,
             // or when startIndex and endIndex are both from end and startIndex <= endIndexFromEnd, Take(Range) returns an empty array.
-            bool isItertorNotEmpty4 = startIndexFromEnd != 0 && startIndexFromEnd > endIndexFromEnd;
-            Assert.Equal(isItertorNotEmpty4, isIteratorDisposed[4]);
+            bool isIteratorNotEmpty4 = startIndexFromEnd != 0 && startIndexFromEnd > endIndexFromEnd;
+            Assert.Equal(isIteratorNotEmpty4, isIteratorDisposed[4]);
+        }
+
+        [Fact]
+        public void DisposeSource_StartIndexFromEnd_ShouldDisposeOnFirstElement()
+        {
+            const int count = 5;
+            int state = 0;
+            var source = new DelegateIterator<int>(
+                moveNext: () => ++state <= count,
+                current: () => state,
+                dispose: () => state = -1);
+
+            using var e = source.Take(^3..).GetEnumerator();
+            Assert.True(e.MoveNext());
+            Assert.Equal(3, e.Current);
+
+            Assert.Equal(-1, state);
+            Assert.True(e.MoveNext());
+        }
+
+        [Fact]
+        public void DisposeSource_EndIndexFromEnd_ShouldDisposeOnCompletedEnumeration()
+        {
+            const int count = 5;
+            int state = 0;
+            var source = new DelegateIterator<int>(
+                moveNext: () => ++state <= count,
+                current: () => state,
+                dispose: () => state = -1);
+
+            using var e = source.Take(..^3).GetEnumerator();
+
+            Assert.True(e.MoveNext());
+            Assert.Equal(4, state);
+            Assert.Equal(1, e.Current);
+
+            Assert.True(e.MoveNext());
+            Assert.Equal(5, state);
+            Assert.Equal(2, e.Current);
+
+            Assert.False(e.MoveNext());
+            Assert.Equal(-1, state);
         }
 
         [Fact]

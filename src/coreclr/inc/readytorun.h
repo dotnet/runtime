@@ -16,7 +16,7 @@
 
 // Keep these in sync with src/coreclr/tools/Common/Internal/Runtime/ModuleHeaders.cs
 #define READYTORUN_MAJOR_VERSION 0x0005
-#define READYTORUN_MINOR_VERSION 0x0002
+#define READYTORUN_MINOR_VERSION 0x0004
 
 #define MINIMUM_READYTORUN_MAJOR_VERSION 0x003
 
@@ -79,7 +79,8 @@ enum class ReadyToRunSectionType : uint32_t
     InliningInfo2               = 114, // Added in V4.1
     ComponentAssemblies         = 115, // Added in V4.1
     OwnerCompositeExecutable    = 116, // Added in V4.1
-    PgoInstrumentationData      = 117, // Added in 5.2
+    PgoInstrumentationData      = 117, // Added in V5.2
+    ManifestAssemblyMvids       = 118, // Added in V5.3
 
     // If you add a new section consider whether it is a breaking or non-breaking change.
     // Usually it is non-breaking, but if it is preferable to have older runtimes fail
@@ -133,6 +134,7 @@ enum ReadyToRunMethodSigFlags
     READYTORUN_METHOD_SIG_MemberRefToken        = 0x10,
     READYTORUN_METHOD_SIG_Constrained           = 0x20,
     READYTORUN_METHOD_SIG_OwnerType             = 0x40,
+    READYTORUN_METHOD_SIG_UpdateContext         = 0x80,
 };
 
 enum ReadyToRunFieldSigFlags
@@ -149,6 +151,12 @@ enum ReadyToRunTypeLayoutFlags
     READYTORUN_LAYOUT_Alignment_Native          = 0x04,
     READYTORUN_LAYOUT_GCLayout                  = 0x08,
     READYTORUN_LAYOUT_GCLayout_Empty            = 0x10,
+};
+
+enum ReadyToRunVirtualFunctionOverrideFlags
+{
+    READYTORUN_VIRTUAL_OVERRIDE_None = 0x00,
+    READYTORUN_VIRTUAL_OVERRIDE_VirtualFunctionOverriden = 0x01,
 };
 
 //
@@ -210,6 +218,9 @@ enum ReadyToRunFixupKind
 
     READYTORUN_FIXUP_Verify_FieldOffset         = 0x31, /* Generate a runtime check to ensure that the field offset matches between compile and runtime. Unlike Check_FieldOffset, this will generate a runtime failure instead of silently dropping the method */
     READYTORUN_FIXUP_Verify_TypeLayout          = 0x32, /* Generate a runtime check to ensure that the type layout (size, alignment, HFA, reference map) matches between compile and runtime. Unlike Check_TypeLayout, this will generate a runtime failure instead of silently dropping the method */
+
+    READYTORUN_FIXUP_Check_VirtualFunctionOverride = 0x33, /* Generate a runtime check to ensure that virtual function resolution has equivalent behavior at runtime as at compile time. If not equivalent, code will not be used */
+    READYTORUN_FIXUP_Verify_VirtualFunctionOverride = 0x34, /* Generate a runtime check to ensure that virtual function resolution has equivalent behavior at runtime as at compile time. If not equivalent, generate runtime failure. */
 };
 
 //

@@ -174,6 +174,22 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
             return this;
         }
 
+        public DotNetBuilder AddMockSDK(
+            string version,
+            string MNAVersion)
+        {
+            string path = Path.Combine(_path, "sdk", version);
+            Directory.CreateDirectory(path);
+
+            using var _ = File.Create(Path.Combine(path, "dotnet.dll"));
+
+            RuntimeConfig dotnetRuntimeConfig = new RuntimeConfig(Path.Combine(path, "dotnet.runtimeconfig.json"));
+            dotnetRuntimeConfig.WithFramework(new RuntimeConfig.Framework("Microsoft.NETCore.App", MNAVersion));
+            dotnetRuntimeConfig.Save();
+
+            return this;
+        }
+
         public DotNetCli Build()
         {
             return new DotNetCli(_path);

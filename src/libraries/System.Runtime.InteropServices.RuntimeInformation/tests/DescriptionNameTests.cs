@@ -19,7 +19,7 @@ namespace System.Runtime.InteropServices.RuntimeInformationTests
         private static readonly bool s_isInHelix = Environment.GetEnvironmentVariables().Keys.Cast<string>().Where(key => key.StartsWith("HELIX")).Any();
 
         [Fact]
-        [PlatformSpecific(~TestPlatforms.Browser)] // throws PNSE when binariesLocation is not an empty string.
+        [SkipOnPlatform(TestPlatforms.Browser, "throws PNSE when binariesLocation is not an empty string.")]
         public void DumpRuntimeInformationToConsole()
         {
             if (s_dumpedRuntimeInfo || !s_isInHelix)
@@ -70,7 +70,7 @@ namespace System.Runtime.InteropServices.RuntimeInformationTests
             {
                 var sb = new StringBuilder();
                 sb.AppendLine("### PROCESS INFORMATION:");
-                sb.AppendFormat($"###\tArchitecture: {RuntimeInformation.ProcessArchitecture.ToString()}").AppendLine();
+                sb.AppendLine($"###\tArchitecture: {RuntimeInformation.ProcessArchitecture}");
                 foreach (string prop in new string[]
                 {
                         nameof(p.BasePriority),
@@ -164,7 +164,7 @@ namespace System.Runtime.InteropServices.RuntimeInformationTests
 
         [Fact]
         [OuterLoop]
-        [PlatformSpecific(~TestPlatforms.Browser)] // throws PNSE when binariesLocation is not an empty string.
+        [SkipOnPlatform(TestPlatforms.Browser, "throws PNSE when binariesLocation is not an empty string.")]
         public void DumpRuntimeInformationToConsoleOuter()
         {
             // Outer loop runs don't run inner loop tests.

@@ -22,7 +22,7 @@ namespace System.Xml
     //
     //  Dummy IncrementalReadDecoder
     //
-    internal class IncrementalReadDummyDecoder : IncrementalReadDecoder
+    internal sealed class IncrementalReadDummyDecoder : IncrementalReadDecoder
     {
         internal override int DecodedCount { get { return -1; } }
         internal override bool IsFull { get { return false; } }
@@ -35,7 +35,7 @@ namespace System.Xml
     //
     //  IncrementalReadDecoder for ReadChars
     //
-    internal class IncrementalReadCharsDecoder : IncrementalReadDecoder
+    internal sealed class IncrementalReadCharsDecoder : IncrementalReadDecoder
     {
         private char[]? _buffer;
         private int _startIndex;

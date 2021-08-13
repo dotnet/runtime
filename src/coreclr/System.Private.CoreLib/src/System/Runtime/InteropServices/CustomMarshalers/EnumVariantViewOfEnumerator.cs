@@ -6,7 +6,7 @@ using ComTypes = System.Runtime.InteropServices.ComTypes;
 
 namespace System.Runtime.InteropServices.CustomMarshalers
 {
-    internal class EnumVariantViewOfEnumerator : ComTypes.IEnumVARIANT, ICustomAdapter
+    internal sealed class EnumVariantViewOfEnumerator : ComTypes.IEnumVARIANT, ICustomAdapter
     {
         public EnumVariantViewOfEnumerator(IEnumerator enumerator)
         {

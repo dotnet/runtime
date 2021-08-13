@@ -134,6 +134,9 @@
   <data name="OpenGenericServiceRequiresOpenGenericImplementation" xml:space="preserve">
     <value>Open generic service type '{0}' requires registering an open generic implementation type.</value>
   </data>
+  <data name="ArityOfOpenGenericServiceNotEqualArityOfOpenGenericImplementation" xml:space="preserve">
+    <value>Arity of open generic service type '{0}' does not equal arity of open generic implementation type '{1}'.</value>
+  </data>
   <data name="TypeCannotBeActivated" xml:space="preserve">
     <value>Cannot instantiate implementation type '{0}' for service type '{1}'.</value>
   </data>
@@ -170,5 +173,11 @@
   </data>
   <data name="CallSiteTypeNotSupported" xml:space="preserve">
     <value>Call site type {0} is not supported</value>
+  </data>
+  <data name="TrimmingAnnotationsDoNotMatch" xml:space="preserve">
+    <value>Generic implementation type '{0}' has a DynamicallyAccessedMembers attribute applied to a generic argument type, but the service type '{1}' doesn't have a matching DynamicallyAccessedMembers attribute on its generic argument type.</value>
+  </data>
+  <data name="TrimmingAnnotationsDoNotMatch_NewConstraint" xml:space="preserve">
+    <value>Generic implementation type '{0}' has a DefaultConstructorConstraint ('new()' constraint), but the generic service type '{1}' doesn't.</value>
   </data>
 </root>

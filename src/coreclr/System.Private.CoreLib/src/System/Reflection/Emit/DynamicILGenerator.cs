@@ -8,7 +8,7 @@ using System.Diagnostics;
 
 namespace System.Reflection.Emit
 {
-    internal class DynamicILGenerator : ILGenerator
+    internal sealed class DynamicILGenerator : ILGenerator
     {
         internal DynamicScope m_scope;
         private int m_methodSigToken;
@@ -406,15 +406,6 @@ namespace System.Reflection.Emit
             throw new NotSupportedException(SR.InvalidOperation_NotAllowedInDynamicMethod);
         }
 
-        public override void MarkSequencePoint(ISymbolDocumentWriter document,
-                                               int startLine,
-                                               int startColumn,
-                                               int endLine,
-                                               int endColumn)
-        {
-            throw new NotSupportedException(SR.InvalidOperation_NotAllowedInDynamicMethod);
-        }
-
         public override void BeginScope()
         {
             throw new NotSupportedException(SR.InvalidOperation_NotAllowedInDynamicMethod);
@@ -563,7 +554,7 @@ namespace System.Reflection.Emit
 
     }
 
-    internal class DynamicResolver : Resolver
+    internal sealed class DynamicResolver : Resolver
     {
         #region Private Data Members
         private __ExceptionInfo[]? m_exceptions;
@@ -643,7 +634,7 @@ namespace System.Reflection.Emit
             scout.m_methodHandle = method.m_methodHandle.Value;
         }
 
-        private class DestroyScout
+        private sealed class DestroyScout
         {
             internal RuntimeMethodHandleInternal m_methodHandle;
 
@@ -982,7 +973,7 @@ namespace System.Reflection.Emit
         #endregion
     }
 
-    internal class DynamicScope
+    internal sealed class DynamicScope
     {
         #region Private Data Members
         internal readonly List<object?> m_tokens = new List<object?> { null };

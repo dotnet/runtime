@@ -25,6 +25,7 @@
 
 static gboolean shutting_down_inited = FALSE;
 static gboolean shutting_down = FALSE;
+static MonoAssembly *entry_assembly;
 
 /**
  * mono_runtime_set_shutting_down:
@@ -51,8 +52,9 @@ mono_runtime_is_shutting_down (void)
 }
 
 static void
-fire_process_exit_event (MonoDomain *domain, gpointer user_data)
+mono_runtime_fire_process_exit_event (void)
 {
+#ifndef MONO_CROSS_COMPILE
 	ERROR_DECL (error);
 	MonoObject *exc;
 
@@ -66,13 +68,6 @@ fire_process_exit_event (MonoDomain *domain, gpointer user_data)
 	g_assert (procexit_method);
 	
 	mono_runtime_try_invoke (procexit_method, NULL, NULL, &exc, error);
-}
-
-static void
-mono_runtime_fire_process_exit_event (void)
-{
-#ifndef MONO_CROSS_COMPILE
-	mono_domain_foreach (fire_process_exit_event, NULL);
 #endif
 }
 
@@ -125,12 +120,11 @@ mono_runtime_get_aotid_arr (void)
 {
 	int i;
 	guint8 aotid_sum = 0;
-	MonoDomain* domain = mono_domain_get ();
 
-	if (!domain->entry_assembly || !domain->entry_assembly->image)
+	if (!entry_assembly || !entry_assembly->image)
 		return NULL;
 
-	guint8 (*aotid)[16] = &domain->entry_assembly->image->aotid;
+	guint8 (*aotid)[16] = &entry_assembly->image->aotid;
 	for (i = 0; i < 16; ++i)
 		aotid_sum |= (*aotid)[i];
 
@@ -149,4 +143,17 @@ mono_runtime_get_aotid (void)
 		return NULL;
 
 	return mono_guid_to_string (aotid);
+}
+
+MonoAssembly*
+mono_runtime_get_entry_assembly (void)
+{
+	return entry_assembly;
+}
+
+void
+mono_runtime_ensure_entry_assembly (MonoAssembly *assembly)
+{
+	if (!mono_runtime_get_no_exec () && !entry_assembly && assembly)
+		entry_assembly = assembly;
 }

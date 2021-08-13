@@ -21,11 +21,6 @@ CorJitResult interceptor_ICJC::compileMethod(ICorJitInfo*                comp,  
     our_ICorJitInfo.original_ICorJitInfo = comp;
 
     auto* mc = new MethodContext();
-    if (g_ourJitHost != nullptr)
-    {
-        g_ourJitHost->setMethodContext(mc);
-    }
-
     our_ICorJitInfo.mc = mc;
     our_ICorJitInfo.mc->cr->recProcessName(GetCommandLineA());
 
@@ -73,11 +68,6 @@ CorJitResult interceptor_ICJC::compileMethod(ICorJitInfo*                comp,  
     }
 
     delete mc;
-
-    if (g_ourJitHost != nullptr)
-    {
-        g_ourJitHost->setMethodContext(g_globalContext);
-    }
 
     return temp;
 }

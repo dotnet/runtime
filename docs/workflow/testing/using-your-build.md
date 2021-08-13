@@ -16,9 +16,9 @@ assume use of a dogfood build of the .NET SDK.
 
 ## Acquire the latest nightly .NET SDK
 
-- [Win 64-bit Latest](https://dotnetcli.blob.core.windows.net/dotnet/Sdk/master/dotnet-sdk-latest-win-x64.zip)
-- [macOS 64-bit Latest](https://dotnetcli.blob.core.windows.net/dotnet/Sdk/master/dotnet-sdk-latest-osx-x64.tar.gz)
-- [Others](https://github.com/dotnet/cli/blob/master/README.md#installers-and-binaries)
+- [Win 64-bit Latest](https://aka.ms/dotnet/6.0/daily/dotnet-sdk-win-x64.zip)
+- [macOS 64-bit Latest](https://aka.ms/dotnet/6.0/daily/dotnet-sdk-osx-x64.tar.gz)
+- [Others](https://github.com/dotnet/installer#installers-and-binaries)
 
 To setup the SDK download the zip and extract it somewhere and add the root folder to your [path](../requirements/windows-requirements.md#adding-to-the-default-path-variable)
 or always fully qualify the path to dotnet in the root of this folder for all the instructions in this document.
@@ -27,7 +27,7 @@ After setting up dotnet you can verify you are using the newer version by:
 
 `dotnet --info` -- the version should be greater than 3.0.0-*
 
-For another small walkthrough see [Dogfooding .NET SDK](https://github.com/dotnet/runtime/blob/master/docs/project/dogfooding.md).
+For another small walkthrough see [Dogfooding .NET SDK](https://github.com/dotnet/runtime/blob/main/docs/project/dogfooding.md).
 
 ## Create sample self-contained application
 
@@ -73,8 +73,7 @@ dotnet publish
     <!--To inherit the global NuGet package sources remove the <clear/> line below -->
     <clear />
     <add key="nuget" value="https://api.nuget.org/v3/index.json" />
-    <add key="dotnetcore-feed" value="https://dotnetfeed.blob.core.windows.net/dotnet-core/index.json" />
-    <add key="aspnetcore" value="https://dotnetfeed.blob.core.windows.net/aspnet-aspnetcore/index.json" />
+    <add key="dotnet6" value="https://dnceng.pkgs.visualstudio.com/public/_packaging/dotnet6/nuget/v3/index.json" />
  </packageSources>
 </configuration>
 ```

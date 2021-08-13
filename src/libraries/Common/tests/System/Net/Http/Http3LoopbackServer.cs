@@ -20,27 +20,30 @@ namespace System.Net.Test.Common
 
         public override Uri Address => new Uri($"https://{_listener.ListenEndPoint}/");
 
-        public Http3LoopbackServer(QuicImplementationProvider quicImplementationProvider = null, GenericLoopbackOptions options = null)
+        public Http3LoopbackServer(QuicImplementationProvider quicImplementationProvider = null, Http3Options options = null)
         {
-            options ??= new GenericLoopbackOptions();
+            options ??= new Http3Options();
 
-            _cert = Configuration.Certificates.GetSelfSigned13ServerCertificate();
+            _cert = Configuration.Certificates.GetServerCertificate();
 
-            var sslOpts = new SslServerAuthenticationOptions
+            var listenerOptions = new QuicListenerOptions()
             {
-                EnabledSslProtocols = options.SslProtocols,
-                ApplicationProtocols = new List<SslApplicationProtocol>
+                ListenEndPoint = new IPEndPoint(options.Address, 0),
+                ServerAuthenticationOptions = new SslServerAuthenticationOptions
                 {
-                    new SslApplicationProtocol("h3-31"),
-                    new SslApplicationProtocol("h3-30"),
-                    new SslApplicationProtocol("h3-29")
+                    EnabledSslProtocols = options.SslProtocols,
+                    ApplicationProtocols = new List<SslApplicationProtocol>
+                    {
+                        new SslApplicationProtocol(options.Alpn)
+                    },
+                    ServerCertificate = _cert,
+                    ClientCertificateRequired = false
                 },
-                //ServerCertificate = _cert,
-                ClientCertificateRequired = false
+                MaxUnidirectionalStreams = options.MaxUnidirectionalStreams,
+                MaxBidirectionalStreams = options.MaxBidirectionalStreams,
             };
 
-            _listener = new QuicListener(quicImplementationProvider ?? QuicImplementationProviders.Default, new IPEndPoint(options.Address, 0), sslOpts);
-            _listener.Start();
+            _listener = new QuicListener(quicImplementationProvider ?? QuicImplementationProviders.Default, listenerOptions);
         }
 
         public override void Dispose()
@@ -52,7 +55,10 @@ namespace System.Net.Test.Common
         public override async Task<GenericLoopbackConnection> EstablishGenericConnectionAsync()
         {
             QuicConnection con = await _listener.AcceptConnectionAsync().ConfigureAwait(false);
-            return new Http3LoopbackConnection(con);
+            Http3LoopbackConnection connection = new Http3LoopbackConnection(con);
+
+            await connection.EstablishControlStreamAsync();
+            return connection;
         }
 
         public override async Task AcceptConnectionAsync(Func<GenericLoopbackConnection, Task> funcAsync)
@@ -83,20 +89,48 @@ namespace System.Net.Test.Common
 
         public override GenericLoopbackServer CreateServer(GenericLoopbackOptions options = null)
         {
-            return new Http3LoopbackServer(_quicImplementationProvider, options);
+            return new Http3LoopbackServer(_quicImplementationProvider, CreateOptions(options));
         }
 
         public override async Task CreateServerAsync(Func<GenericLoopbackServer, Uri, Task> funcAsync, int millisecondsTimeout = 60000, GenericLoopbackOptions options = null)
         {
             using GenericLoopbackServer server = CreateServer(options);
-            await funcAsync(server, server.Address).TimeoutAfter(millisecondsTimeout).ConfigureAwait(false);
+            await funcAsync(server, server.Address).WaitAsync(TimeSpan.FromMilliseconds(millisecondsTimeout));
         }
 
-        public override Task<GenericLoopbackConnection> CreateConnectionAsync(Socket socket, Stream stream, GenericLoopbackOptions options = null)
+        public override Task<GenericLoopbackConnection> CreateConnectionAsync(SocketWrapper socket, Stream stream, GenericLoopbackOptions options = null)
         {
             // TODO: make a new overload that takes a MultiplexedConnection.
             // This method is always unacceptable to call for HTTP/3.
             throw new NotImplementedException("HTTP/3 does not operate over a Socket.");
+        }
+
+        private static Http3Options CreateOptions(GenericLoopbackOptions options)
+        {
+            Http3Options http3Options = new Http3Options();
+            if (options != null)
+            {
+                http3Options.Address = options.Address;
+                http3Options.UseSsl = options.UseSsl;
+                http3Options.SslProtocols = options.SslProtocols;
+                http3Options.ListenBacklog = options.ListenBacklog;
+            }
+            return http3Options;
+        }
+    }
+    public class Http3Options : GenericLoopbackOptions
+    {
+        public int MaxUnidirectionalStreams { get; set; }
+
+        public int MaxBidirectionalStreams { get; set; }
+
+        public string Alpn { get; set; }
+
+        public Http3Options()
+        {
+            MaxUnidirectionalStreams = 100;
+            MaxBidirectionalStreams = 100;
+            Alpn = SslApplicationProtocol.Http3.ToString();
         }
     }
 }

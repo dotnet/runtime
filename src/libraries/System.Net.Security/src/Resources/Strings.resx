@@ -422,6 +422,9 @@
   <data name="net_security_sslprotocol_contiguous" xml:space="preserve">
     <value>The requested combination of SslProtocols ({0}) is not valid for this platform because it skips intermediate versions.</value>
   </data>
+  <data name="net_security_sslprotocol_notsupported" xml:space="preserve">
+    <value>The requested SslProtocols ({0}) are not supported on this platform.</value>
+  </data>
   <data name="net_encryptionpolicy_notsupported" xml:space="preserve">
     <value>The '{0}' encryption policy is not supported on this platform.</value>
   </data>
@@ -445,5 +448,23 @@
   </data>
   <data name="SystemNetSecurity_PlatformNotSupported" xml:space="preserve">
     <value>System.Net.Security is not supported on this platform.</value>
+  </data>
+  <data name="net_ssl_certificate_exist" xml:space="preserve">
+    <value>Remote certificate is already available.</value>
+  </data>
+  <data name="net_ssl_renegotiate_data" xml:space="preserve">
+    <value>Received data during renegotiation.</value>
+  </data>
+  <data name="net_ssl_renegotiate_buffer" xml:space="preserve">
+    <value>Client stream needs to be drained before renegotiation.</value>
+  </data>  
+  <data name="net_android_ssl_api_level_unsupported" xml:space="preserve">
+    <value>Setting an SNI hostname is not supported on this API level.</value>
+  </data>
+  <data name="net_ssl_trust_store" xml:space="preserve">
+    <value>Only LocalMachine stores are supported on Windows.</value>
+  </data>
+  <data name="net_ssl_trust_collection" xml:space="preserve">
+    <value>Sending trust from collection is not supported on Windows.</value>
   </data>
 </root>

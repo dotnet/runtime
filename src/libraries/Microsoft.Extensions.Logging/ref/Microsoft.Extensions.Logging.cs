@@ -23,6 +23,8 @@ namespace Microsoft.Extensions.Logging
         ParentId = 4,
         TraceState = 8,
         TraceFlags = 16,
+        Tags = 32,
+        Baggage = 64,
     }
     public static partial class FilterLoggingBuilderExtensions
     {

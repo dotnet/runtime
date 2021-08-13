@@ -755,7 +755,7 @@ namespace System.Speech.Internal.Synthesis
                                     if (paramSpeak._prompt.Exception == null)
                                     {
                                         // No lexicon yet
-                                        List<LexiconEntry> lexicons = new(); ;
+                                        List<LexiconEntry> lexicons = new();
 
                                         //--- Create a single speak info structure for all the text
                                         TTSVoice voice = _currentVoice != null ? _currentVoice : GetVoice(false);
@@ -1742,7 +1742,7 @@ namespace System.Speech.Internal.Synthesis
             SpeakText,
         }
 
-        private class Parameters
+        private sealed class Parameters
         {
             internal Parameters(Action action, object parameter)
             {
@@ -1754,7 +1754,7 @@ namespace System.Speech.Internal.Synthesis
             internal object _parameter;
         }
 
-        private class ParametersSpeak
+        private sealed class ParametersSpeak
         {
             internal ParametersSpeak(string textToSpeak, Prompt prompt, bool isXml, Uri audioFile)
             {

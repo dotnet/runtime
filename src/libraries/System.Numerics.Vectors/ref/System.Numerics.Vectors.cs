@@ -198,6 +198,9 @@ namespace System.Numerics
         public static System.Numerics.Vector<System.Int16> AsVectorInt16<T>(System.Numerics.Vector<T> value) where T : struct { throw null; }
         public static System.Numerics.Vector<System.Int32> AsVectorInt32<T>(System.Numerics.Vector<T> value) where T : struct { throw null; }
         public static System.Numerics.Vector<System.Int64> AsVectorInt64<T>(System.Numerics.Vector<T> value) where T : struct { throw null; }
+        public static System.Numerics.Vector<nint> AsVectorNInt<T>(System.Numerics.Vector<T> value) where T : struct { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static System.Numerics.Vector<nuint> AsVectorNUInt<T>(System.Numerics.Vector<T> value) where T : struct { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static System.Numerics.Vector<System.SByte> AsVectorSByte<T>(System.Numerics.Vector<T> value) where T : struct { throw null; }
         public static System.Numerics.Vector<System.Single> AsVectorSingle<T>(System.Numerics.Vector<T> value) where T : struct { throw null; }
@@ -297,6 +300,7 @@ namespace System.Numerics
         [System.CLSCompliantAttribute(false)]
         public static void Widen(System.Numerics.Vector<System.UInt32> source, out System.Numerics.Vector<System.UInt64> low, out System.Numerics.Vector<System.UInt64> high) { throw null; }
         public static System.Numerics.Vector<T> Xor<T>(System.Numerics.Vector<T> left, System.Numerics.Vector<T> right) where T : struct { throw null; }
+        public static T Sum<T>(System.Numerics.Vector<T> value) where T : struct { throw null; }
     }
     public partial struct Vector2 : System.IEquatable<System.Numerics.Vector2>, System.IFormattable
     {
@@ -304,6 +308,7 @@ namespace System.Numerics
         public float Y;
         public Vector2(float value) { throw null; }
         public Vector2(float x, float y) { throw null; }
+        public Vector2(System.ReadOnlySpan<float> values) { throw null; }
         public static System.Numerics.Vector2 One { get { throw null; } }
         public static System.Numerics.Vector2 UnitX { get { throw null; } }
         public static System.Numerics.Vector2 UnitY { get { throw null; } }
@@ -313,6 +318,8 @@ namespace System.Numerics
         public static System.Numerics.Vector2 Clamp(System.Numerics.Vector2 value1, System.Numerics.Vector2 min, System.Numerics.Vector2 max) { throw null; }
         public readonly void CopyTo(float[] array) { }
         public readonly void CopyTo(float[] array, int index) { }
+        public readonly void CopyTo(System.Span<float> destination) { }
+        public readonly bool TryCopyTo(System.Span<float> destination) { throw null; }
         public static float Distance(System.Numerics.Vector2 value1, System.Numerics.Vector2 value2) { throw null; }
         public static float DistanceSquared(System.Numerics.Vector2 value1, System.Numerics.Vector2 value2) { throw null; }
         public static System.Numerics.Vector2 Divide(System.Numerics.Vector2 left, System.Numerics.Vector2 right) { throw null; }
@@ -361,6 +368,7 @@ namespace System.Numerics
         public Vector3(System.Numerics.Vector2 value, float z) { throw null; }
         public Vector3(float value) { throw null; }
         public Vector3(float x, float y, float z) { throw null; }
+        public Vector3(System.ReadOnlySpan<float> values) { throw null; }
         public static System.Numerics.Vector3 One { get { throw null; } }
         public static System.Numerics.Vector3 UnitX { get { throw null; } }
         public static System.Numerics.Vector3 UnitY { get { throw null; } }
@@ -371,6 +379,8 @@ namespace System.Numerics
         public static System.Numerics.Vector3 Clamp(System.Numerics.Vector3 value1, System.Numerics.Vector3 min, System.Numerics.Vector3 max) { throw null; }
         public readonly void CopyTo(float[] array) { }
         public readonly void CopyTo(float[] array, int index) { }
+        public readonly void CopyTo(System.Span<float> destination) { }
+        public readonly bool TryCopyTo(System.Span<float> destination) { throw null; }
         public static System.Numerics.Vector3 Cross(System.Numerics.Vector3 vector1, System.Numerics.Vector3 vector2) { throw null; }
         public static float Distance(System.Numerics.Vector3 value1, System.Numerics.Vector3 value2) { throw null; }
         public static float DistanceSquared(System.Numerics.Vector3 value1, System.Numerics.Vector3 value2) { throw null; }
@@ -420,6 +430,7 @@ namespace System.Numerics
         public Vector4(System.Numerics.Vector3 value, float w) { throw null; }
         public Vector4(float value) { throw null; }
         public Vector4(float x, float y, float z, float w) { throw null; }
+        public Vector4(System.ReadOnlySpan<float> values) { throw null; }
         public static System.Numerics.Vector4 One { get { throw null; } }
         public static System.Numerics.Vector4 UnitW { get { throw null; } }
         public static System.Numerics.Vector4 UnitX { get { throw null; } }
@@ -431,6 +442,8 @@ namespace System.Numerics
         public static System.Numerics.Vector4 Clamp(System.Numerics.Vector4 value1, System.Numerics.Vector4 min, System.Numerics.Vector4 max) { throw null; }
         public readonly void CopyTo(float[] array) { }
         public readonly void CopyTo(float[] array, int index) { }
+        public readonly void CopyTo(System.Span<float> destination) { }
+        public readonly bool TryCopyTo(System.Span<float> destination) { throw null; }
         public static float Distance(System.Numerics.Vector4 value1, System.Numerics.Vector4 value2) { throw null; }
         public static float DistanceSquared(System.Numerics.Vector4 value1, System.Numerics.Vector4 value2) { throw null; }
         public static System.Numerics.Vector4 Divide(System.Numerics.Vector4 left, System.Numerics.Vector4 right) { throw null; }
@@ -502,6 +515,9 @@ namespace System.Numerics
         public static explicit operator System.Numerics.Vector<System.Int16> (System.Numerics.Vector<T> value) { throw null; }
         public static explicit operator System.Numerics.Vector<System.Int32> (System.Numerics.Vector<T> value) { throw null; }
         public static explicit operator System.Numerics.Vector<System.Int64> (System.Numerics.Vector<T> value) { throw null; }
+        public static explicit operator System.Numerics.Vector<nint> (System.Numerics.Vector<T> value) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static explicit operator System.Numerics.Vector<nuint> (System.Numerics.Vector<T> value) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static explicit operator System.Numerics.Vector<System.SByte> (System.Numerics.Vector<T> value) { throw null; }
         public static explicit operator System.Numerics.Vector<System.Single> (System.Numerics.Vector<T> value) { throw null; }

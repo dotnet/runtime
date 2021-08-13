@@ -4,6 +4,7 @@
 #pragma once
 
 #include "pal_compiler.h"
+#include <pal_ssl_types.h>
 #include <Security/Security.h>
 #include <Security/SecureTransport.h>
 
@@ -26,18 +27,6 @@ enum
     PAL_TlsIo_Renegotiate = 4,
 };
 typedef int32_t PAL_TlsIo;
-
-enum
-{
-    PAL_SslProtocol_None = 0,
-    PAL_SslProtocol_Ssl2 = 12,
-    PAL_SslProtocol_Ssl3 = 48,
-    PAL_SslProtocol_Tls10 = 192,
-    PAL_SslProtocol_Tls11 = 768,
-    PAL_SslProtocol_Tls12 = 3072,
-    PAL_SslProtocol_Tls13 = 12288,
-};
-typedef int32_t PAL_SslProtocol;
 
 /*
 Create an SSL context, for the Server or Client role as determined by isServer.

@@ -89,9 +89,9 @@ namespace Internal.IL
             return (clone == null) ? locals : clone;
         }
 
-        public override Object GetObject(int token)
+        public override Object GetObject(int token, NotFoundBehavior notFoundBehavior)
         {
-            Object o = _methodIL.GetObject(token);
+            Object o = _methodIL.GetObject(token, notFoundBehavior);
 
             if (o is MethodDesc)
             {

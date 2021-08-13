@@ -11,7 +11,7 @@ namespace System.Xml.Schema
 {
     // Case insensitive file name key for use in a hashtable.
 
-    internal class ChameleonKey
+    internal sealed class ChameleonKey
     {
         internal string targetNS;
         internal Uri chameleonLocation;

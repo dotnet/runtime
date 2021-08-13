@@ -1,0 +1,15 @@
+<Project DefaultTargets="Build">
+  <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.props))" />
+
+  <PropertyGroup>
+    <AdditionalProjectReferences>System.Drawing.Common</AdditionalProjectReferences>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <TestConsoleAppSourceFiles Include="IconSave.cs"
+                               TargetOS="windows"
+                               SkipOnTestRuntimes="osx-x64;linux-x64;browser-wasm" />
+  </ItemGroup>
+
+  <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.targets))" />
+</Project>

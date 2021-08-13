@@ -34,7 +34,7 @@ namespace System.Net
             _cookies = null!;
         }
 
-        [ObsoleteAttribute("Serialization is obsoleted for this type.  https://go.microsoft.com/fwlink/?linkid=14202")]
+        [ObsoleteAttribute("Serialization has been deprecated for HttpWebResponse.")]
         protected HttpWebResponse(SerializationInfo serializationInfo, StreamingContext streamingContext) : base(serializationInfo, streamingContext)
         {
             throw new PlatformNotSupportedException();
@@ -96,20 +96,7 @@ namespace System.Net
                 {
                     // In most cases, there is only one media type value as per RFC. But for completeness, we
                     // return all values in cases of overly malformed strings.
-                    var builder = new StringBuilder();
-                    int ndx = 0;
-                    foreach (string value in values)
-                    {
-                        if (ndx > 0)
-                        {
-                            builder.Append(',');
-                        }
-
-                        builder.Append(value);
-                        ndx++;
-                    }
-
-                    return builder.ToString();
+                    return string.Join(',', values);
                 }
                 else
                 {

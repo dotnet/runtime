@@ -11,7 +11,7 @@ namespace System.Security.Cryptography
 #if INTERNAL_ASYMMETRIC_IMPLEMENTATIONS
     public partial class DSA : AsymmetricAlgorithm
     {
-        public static new DSA Create()
+        private static DSA CreateCore()
         {
             return new DSAImplementation.DSAOpenSsl();
         }

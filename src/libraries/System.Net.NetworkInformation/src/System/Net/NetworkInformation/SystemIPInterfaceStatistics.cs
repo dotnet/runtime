@@ -3,7 +3,7 @@
 
 namespace System.Net.NetworkInformation
 {
-    internal class SystemIPInterfaceStatistics : IPInterfaceStatistics
+    internal sealed class SystemIPInterfaceStatistics : IPInterfaceStatistics
     {
         private readonly Interop.IpHlpApi.MibIfRow2 _ifRow;
 

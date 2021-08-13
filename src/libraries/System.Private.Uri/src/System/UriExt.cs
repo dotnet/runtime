@@ -744,11 +744,9 @@ namespace System
                 if (_string.Length == 0)
                     return string.Empty;
 
-                char[] dest = new char[_string.Length];
-                int position = 0;
-                dest = UriHelper.UnescapeString(_string, 0, _string.Length, dest, ref position, c_DummyChar,
-                    c_DummyChar, c_DummyChar, UnescapeMode.EscapeUnescape, null, false);
-                return new string(dest, 0, position);
+                var vsb = new ValueStringBuilder(stackalloc char[StackallocThreshold]);
+                UriHelper.UnescapeString(_string, ref vsb, c_DummyChar, c_DummyChar, c_DummyChar, UnescapeMode.EscapeUnescape, null, false);
+                return vsb.ToString();
             }
             else
             {

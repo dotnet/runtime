@@ -96,6 +96,18 @@ The following shows how to run tests for a specific library
     make -C src/mono/wasm/ run-browser-tests-System.AppContext
     ```
 
+### Passing arguments to xharness
+
+- `$(WasmXHarnessArgs)` - xharness command arguments
+
+    Example: `WasmXHarnessArgs="--set-web-server-http-env=DOTNET_TEST_WEBSOCKETHOST"` -> becomes `dotnet xharness wasm test --set-web-server-http-env=DOTNET_TEST_WEBSOCKETHOST`
+
+- `$(WasmXHarnessMonoArgs)` - arguments and variables for mono
+
+    Example: `WasmXHarnessMonoArgs="--runtime-arg=--trace=E --setenv=MONO_LOG_LEVEL=debug"`
+
+- `$(WasmTestAppArgs)` - arguments for the test app itself
+
 ### Running outer loop tests using Browser instance
 
 To run all tests, including "outer loop" tests (which are typically slower and in some test suites less reliable, but which are more comprehensive):
@@ -131,6 +143,27 @@ At the moment supported values are:
 - `firefox`
 
 By default, `chrome` browser is used.
+
+## AOT library tests
+
+- Building library tests with AOT, and (even) with `EnableAggressiveTrimming` takes 3-9mins on CI, and that adds up for all the assemblies, causing
+a large build time. To circumvent that on CI, we build the test assemblies on the build machine, but skip the WasmApp build part of it, since
+that includes the expensive AOT step.
+
+- Instead, we take the built test assembly+dependencies, and enough related bits to be able to run the `WasmBuildApp` target, with the original
+inputs.
+
+- To recreate a similar build+test run locally, add `/p:BuildAOTTestsOnHelix=true` to the usual command line.
+- For example, with `./dotnet.sh build /t:Test src/libraries/System.AppContext/tests /p:TargetOS=Browser /p:TargetArchitecture=wasm /p:Configuration=Release`
+
+    - AOT:  add `/p:EnableAggressiveTrimming=true /p:RunAOTCompilation=true /p:BuildAOTTestsOnHelix=true`
+    - Only trimming (helpful to isolate issues caused by trimming):
+        - add `/p:EnableAggressiveTrimming=true /p:BuildAOTTestsOnHelix=true`
+## Debugging
+
+### Getting more information
+
+- Line numbers: add `/p:DebuggerSupport=true` to the command line, for `Release` builds. It's enabled by default for `Debug` builds.
 
 ## Kicking off outer loop tests from GitHub Interface
 

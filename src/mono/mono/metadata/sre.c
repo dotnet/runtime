@@ -49,6 +49,22 @@
 #endif
 #include "icall-decl.h"
 
+/* Maps MonoMethod* to weak links to DynamicMethod objects */
+static GHashTable *method_to_dyn_method;
+static mono_mutex_t method_to_dyn_method_lock;
+
+static inline void
+dyn_methods_lock (void)
+{
+	mono_os_mutex_lock (&method_to_dyn_method_lock);
+}
+
+static inline void
+dyn_methods_unlock (void)
+{
+	mono_os_mutex_unlock (&method_to_dyn_method_lock);
+}
+
 static GENERATE_GET_CLASS_WITH_CACHE (marshal_as_attribute, "System.Runtime.InteropServices", "MarshalAsAttribute");
 #ifndef DISABLE_REFLECTION_EMIT
 static GENERATE_GET_CLASS_WITH_CACHE (module_builder, "System.Reflection.Emit", "ModuleBuilder");
@@ -63,9 +79,6 @@ static void reflection_methodbuilder_from_dynamic_method (ReflectionMethodBuilde
 static gboolean reflection_setup_internal_class (MonoReflectionTypeBuilderHandle tb, MonoError *error);
 static gboolean reflection_init_generic_class (MonoReflectionTypeBuilderHandle tb, MonoError *error);
 static gboolean reflection_setup_class_hierarchy (GHashTable *unparented, MonoError *error);
-
-
-static gpointer register_assembly (MonoDomain *domain, MonoReflectionAssembly *res, MonoAssembly *assembly);
 #endif
 
 static char*   type_get_qualified_name (MonoType *type, MonoAssembly *ass);
@@ -96,6 +109,8 @@ void
 mono_reflection_emit_init (void)
 {
 	mono_dynamic_images_init ();
+
+	mono_os_mutex_init_recursive (&method_to_dyn_method_lock);
 }
 
 char*
@@ -1184,6 +1199,18 @@ leave:
 
 #ifndef DISABLE_REFLECTION_EMIT
 
+static gpointer
+register_assembly (MonoReflectionAssembly *res, MonoAssembly *assembly)
+{
+	return CACHE_OBJECT (MonoReflectionAssembly *, mono_mem_manager_get_ambient (), assembly, &res->object, NULL);
+}
+
+static MonoReflectionModuleBuilderHandle
+register_module (MonoReflectionModuleBuilderHandle res, MonoDynamicImage *module)
+{
+	return CACHE_OBJECT_HANDLE (MonoReflectionModuleBuilder, mono_mem_manager_get_ambient (), module, MONO_HANDLE_CAST (MonoObject, res), NULL);
+}
+
 /*
  * mono_reflection_dynimage_basic_init:
  * @assembly: an assembly builder object
@@ -1196,8 +1223,7 @@ mono_reflection_dynimage_basic_init (MonoReflectionAssemblyBuilder *assemblyb, M
 {
 	MonoDynamicAssembly *assembly;
 	MonoDynamicImage *image;
-	MonoDomain *domain = mono_object_domain (assemblyb);
-	MonoAssemblyLoadContext *alc = mono_domain_default_alc (domain);
+	MonoAssemblyLoadContext *alc = mono_alc_get_default ();
 	
 	if (assemblyb->dynamic_assembly)
 		return;
@@ -1241,7 +1267,6 @@ mono_reflection_dynimage_basic_init (MonoReflectionAssemblyBuilder *assemblyb, M
 	 * they only fire AssemblyResolve events, they don't cause probing for
 	 * referenced assemblies to happen. */
 	assembly->assembly.context.kind = MONO_ASMCTX_INDIVIDUAL;
-	assembly->domain = domain;
 
 	char *assembly_name = mono_string_to_utf8_checked_internal (assemblyb->name, error);
 	return_if_nok (error);
@@ -1250,41 +1275,19 @@ mono_reflection_dynimage_basic_init (MonoReflectionAssemblyBuilder *assemblyb, M
 	assembly->assembly.aname.name = image->image.name;
 	assembly->assembly.image = &image->image;
 
-	mono_domain_assemblies_lock (domain);
-	domain->domain_assemblies = g_slist_append (domain->domain_assemblies, assembly);
-	// TODO: potentially relax the locking here?
-	mono_alc_assemblies_lock (alc);
-	alc->loaded_assemblies = g_slist_append (alc->loaded_assemblies, assembly);
-	mono_alc_assemblies_unlock (alc);
-	mono_domain_assemblies_unlock (domain);
+	mono_alc_add_assembly (alc, (MonoAssembly*)assembly);
 
-	register_assembly (mono_object_domain (assemblyb), &assemblyb->assembly, &assembly->assembly);
+	register_assembly (&assemblyb->assembly, &assembly->assembly);
 	
 	MONO_PROFILER_RAISE (assembly_loaded, (&assembly->assembly));
 	
 	mono_assembly_invoke_load_hook_internal (alc, (MonoAssembly*)assembly);
 }
 
-#endif /* !DISABLE_REFLECTION_EMIT */
-
-#ifndef DISABLE_REFLECTION_EMIT
-static gpointer
-register_assembly (MonoDomain *domain, MonoReflectionAssembly *res, MonoAssembly *assembly)
-{
-	return CACHE_OBJECT (MonoReflectionAssembly *, assembly, &res->object, NULL);
-}
-
-static MonoReflectionModuleBuilderHandle
-register_module (MonoDomain *domain, MonoReflectionModuleBuilderHandle res, MonoDynamicImage *module)
-{
-	return CACHE_OBJECT_HANDLE (MonoReflectionModuleBuilder, module, MONO_HANDLE_CAST (MonoObject, res), NULL);
-}
-
 static gboolean
 image_module_basic_init (MonoReflectionModuleBuilderHandle moduleb, MonoError *error)
 {
 	error_init (error);
-	MonoDomain *domain = MONO_HANDLE_DOMAIN (moduleb);
 	MonoDynamicImage *image = MONO_HANDLE_GETVAL (moduleb, dynamic_image);
 	MonoReflectionAssemblyBuilderHandle ab = MONO_HANDLE_NEW (MonoReflectionAssemblyBuilder, NULL);
 	MONO_HANDLE_GET (ab, moduleb, assemblyb);
@@ -1309,7 +1312,7 @@ image_module_basic_init (MonoReflectionModuleBuilderHandle moduleb, MonoError *e
 
 		MONO_HANDLE_SETVAL (MONO_HANDLE_CAST (MonoReflectionModule, moduleb), image, MonoImage*, &image->image);
 		MONO_HANDLE_SETVAL (moduleb, dynamic_image, MonoDynamicImage*, image);
-		register_module (domain, moduleb, image);
+		register_module (moduleb, image);
 
 		/* register the module with the assembly */
 		MonoImage *ass = dynamic_assembly->assembly.image;
@@ -2795,7 +2798,7 @@ mono_reflection_marshal_as_attribute_from_marshal_spec (MonoClass *klass,
 {
 	error_init (error);
 	
-	MonoAssemblyLoadContext *alc = mono_domain_ambient_alc (mono_get_root_domain ());
+	MonoAssemblyLoadContext *alc = mono_alc_get_ambient ();
 	MonoReflectionMarshalAsAttributeHandle minfo = MONO_HANDLE_CAST (MonoReflectionMarshalAsAttribute, mono_object_new_handle (mono_class_get_marshal_as_attribute_class (), error));
 	goto_if_nok (error, fail);
 	guint32 utype;
@@ -3835,21 +3838,15 @@ ves_icall_TypeBuilder_create_runtime_class (MonoReflectionTypeBuilderHandle ref_
 	reflection_setup_internal_class (ref_tb, error);
 	mono_error_assert_ok (error);
 
-	MonoDomain *domain = MONO_HANDLE_DOMAIN (ref_tb);
 	MonoType *type = MONO_HANDLE_GETVAL (MONO_HANDLE_CAST (MonoReflectionType, ref_tb), type);
 	MonoClass *klass = mono_class_from_mono_type_internal (type);
 
 	MonoArrayHandle cattrs = MONO_HANDLE_NEW_GET (MonoArray, ref_tb, cattrs);
 	mono_save_custom_attrs (klass->image, klass, MONO_HANDLE_RAW (cattrs)); /* FIXME use handles */
 
-	/* 
-	 * we need to lock the domain because the lock will be taken inside
-	 * So, we need to keep the locking order correct.
-	 */
 	mono_loader_lock ();
-	mono_domain_lock (domain);
+
 	if (klass->wastypebuilder) {
-		mono_domain_unlock (domain);
 		mono_loader_unlock ();
 
 		return mono_type_get_object_handle (m_class_get_byval_arg (klass), error);
@@ -3928,7 +3925,7 @@ ves_icall_TypeBuilder_create_runtime_class (MonoReflectionTypeBuilderHandle ref_
 	 * Together with this we must ensure the contents of all instances to match the created type.
 	 */
 	if (mono_class_is_gtd (klass)) {
-		MonoMemoryManager *memory_manager = mono_domain_ambient_memory_manager (domain);
+		MonoMemoryManager *memory_manager = mono_mem_manager_get_ambient ();
 		struct remove_instantiations_user_data data;
 		data.klass = klass;
 		data.error = error;
@@ -3939,7 +3936,6 @@ ves_icall_TypeBuilder_create_runtime_class (MonoReflectionTypeBuilderHandle ref_
 		goto_if_nok (error, failure);
 	}
 
-	mono_domain_unlock (domain);
 	mono_loader_unlock ();
 
 	if (klass->enumtype && !mono_class_is_valid_enum (klass)) {
@@ -3957,7 +3953,6 @@ ves_icall_TypeBuilder_create_runtime_class (MonoReflectionTypeBuilderHandle ref_
 failure:
 	mono_class_set_type_load_failure (klass, "TypeBuilder could not create runtime class due to: %s", mono_error_get_message (error));
 	klass->wastypebuilder = TRUE;
-	mono_domain_unlock (domain);
 	mono_loader_unlock ();
 failure_unlocked:
 	return MONO_HANDLE_CAST (MonoReflectionType, NULL_HANDLE);
@@ -3965,7 +3960,6 @@ failure_unlocked:
 
 typedef struct {
 	MonoMethod *handle;
-	MonoDomain *domain;
 } DynamicMethodReleaseData;
 
 /*
@@ -3977,18 +3971,17 @@ static void
 free_dynamic_method (void *dynamic_method)
 {
 	DynamicMethodReleaseData *data = (DynamicMethodReleaseData *)dynamic_method;
-	MonoDomain *domain = data->domain;
 	MonoMethod *method = data->handle;
 	MonoGCHandle dis_link;
 
-	mono_domain_lock (domain);
-	dis_link = g_hash_table_lookup (domain->method_to_dyn_method, method);
-	g_hash_table_remove (domain->method_to_dyn_method, method);
-	mono_domain_unlock (domain);
+	dyn_methods_lock ();
+	dis_link = g_hash_table_lookup (method_to_dyn_method, method);
+	g_hash_table_remove (method_to_dyn_method, method);
+	dyn_methods_unlock ();
 	g_assert (dis_link);
 	mono_gchandle_free_internal (dis_link);
 
-	mono_runtime_free_method (domain, method);
+	mono_runtime_free_method (method);
 	g_free (data);
 }
 
@@ -4003,7 +3996,6 @@ reflection_create_dynamic_method (MonoReflectionDynamicMethodHandle ref_mb, Mono
 	ReflectionMethodBuilder rmb;
 	MonoMethodSignature *sig;
 	MonoClass *klass;
-	MonoDomain *domain;
 	GSList *l;
 	int i;
 	gboolean ret = TRUE;
@@ -4097,7 +4089,6 @@ reflection_create_dynamic_method (MonoReflectionDynamicMethodHandle ref_mb, Mono
 
 	release_data = g_new (DynamicMethodReleaseData, 1);
 	release_data->handle = handle;
-	release_data->domain = mono_object_get_domain_internal ((MonoObject*)mb);
 	if (!mono_gc_reference_queue_add_internal (queue, (MonoObject*)mb, release_data))
 		g_free (release_data);
 
@@ -4117,12 +4108,11 @@ reflection_create_dynamic_method (MonoReflectionDynamicMethodHandle ref_mb, Mono
 	}
 	g_slist_free (mb->referenced_by);
 
-	domain = mono_domain_get ();
-	mono_domain_lock (domain);
-	if (!domain->method_to_dyn_method)
-		domain->method_to_dyn_method = g_hash_table_new (NULL, NULL);
-	g_hash_table_insert (domain->method_to_dyn_method, handle, mono_gchandle_new_weakref_internal ((MonoObject *)mb, TRUE));
-	mono_domain_unlock (domain);
+	dyn_methods_lock ();
+	if (!method_to_dyn_method)
+		method_to_dyn_method = g_hash_table_new (NULL, NULL);
+	g_hash_table_insert (method_to_dyn_method, handle, mono_gchandle_new_weakref_internal ((MonoObject *)mb, TRUE));
+	dyn_methods_unlock ();
 
 	goto exit;
 exit_false:
@@ -4475,13 +4465,6 @@ mono_reflection_type_handle_mono_type (MonoReflectionTypeHandle ref, MonoError *
 
 #endif /* DISABLE_REFLECTION_EMIT */
 
-void
-mono_sre_generic_param_table_entry_free (GenericParamTableEntry *entry)
-{
-	MONO_GC_UNREGISTER_ROOT_IF_MOVING (entry->gparam);
-	g_free (entry);
-}
-
 gint32
 ves_icall_ModuleBuilder_getToken (MonoReflectionModuleBuilderHandle mb, MonoObjectHandle obj, MonoBoolean create_open_instance, MonoError *error)
 {
@@ -4585,4 +4568,19 @@ ves_icall_ModuleBuilder_set_wrappers_type (MonoReflectionModuleBuilderHandle mod
 
 	g_assert (type);
 	image->wrappers_type = mono_class_from_mono_type_internal (type);
+}
+
+MonoGCHandle
+mono_method_to_dyn_method (MonoMethod *method)
+{
+	MonoGCHandle *handle;
+
+	if (!method_to_dyn_method)
+		return (MonoGCHandle)NULL;
+
+	dyn_methods_lock ();
+	handle = (MonoGCHandle*)g_hash_table_lookup (method_to_dyn_method, method);
+	dyn_methods_unlock ();
+
+	return handle;
 }

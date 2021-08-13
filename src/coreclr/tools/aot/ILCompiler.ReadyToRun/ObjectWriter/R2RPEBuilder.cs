@@ -489,7 +489,7 @@ namespace ILCompiler.PEWriter
                 DosHeaderSize +
                 PESignatureSize +
                 sizeof(short) +     // Machine
-                sizeof(short);      //NumberOfSections
+                sizeof(short);      // NumberOfSections
 
             outputStream.Seek(seekSize, SeekOrigin.Begin);
             outputStream.Write(patchedTimestamp, 0, patchedTimestamp.Length);
@@ -664,52 +664,28 @@ namespace ILCompiler.PEWriter
     }
     
     /// <summary>
-    /// Simple helper for filling in PE header information by either copying over
-    /// data from a pre-existing input PE header (used for single-assembly R2R files)
-    /// or by explicitly specifying the image characteristics (for composite R2R).
+    /// Simple helper for filling in PE header information.
     /// </summary>
     static class PEHeaderProvider
     {
         /// <summary>
-        /// Copy PE headers into a PEHeaderBuilder used by PEBuilder.
-        /// </summary>
-        /// <param name="peHeaders">Headers to copy</param>
-        /// <param name="target">Target architecture to set in the header</param>
-        public static PEHeaderBuilder Copy(PEHeaders peHeaders, TargetDetails target)
-        {
-            return Create(
-                peHeaders.CoffHeader.Characteristics,
-                peHeaders.PEHeader.DllCharacteristics,
-                peHeaders.PEHeader.Subsystem,
-                target);
-        }
-
-        /// <summary>
         /// Fill in PE header information into a PEHeaderBuilder used by PEBuilder.
         /// </summary>
-        /// <param name="relocsStripped">Relocs are not present in the PE executable</param>
-        /// <param name="dllCharacteristics">Extra DLL characteristics to apply</param>
         /// <param name="subsystem">Targeting subsystem</param>
         /// <param name="target">Target architecture to set in the header</param>
-        public static PEHeaderBuilder Create(Characteristics imageCharacteristics, DllCharacteristics dllCharacteristics, Subsystem subsystem, TargetDetails target)
+        public static PEHeaderBuilder Create(Subsystem subsystem, TargetDetails target)
         {
             bool is64BitTarget = target.PointerSize == sizeof(long);
 
-            imageCharacteristics &= ~(Characteristics.Bit32Machine | Characteristics.LargeAddressAware);
-            imageCharacteristics |= (is64BitTarget ? Characteristics.LargeAddressAware : Characteristics.Bit32Machine);
+            Characteristics imageCharacteristics = Characteristics.ExecutableImage | Characteristics.Dll;
+            imageCharacteristics |= is64BitTarget ? Characteristics.LargeAddressAware : Characteristics.Bit32Machine;
 
-            ulong imageBase = PE32HeaderConstants.ImageBase;
-            if (target.IsWindows && is64BitTarget && (imageBase <= uint.MaxValue))
-            {
-                // Base addresses below 4 GiB are reserved for WoW on x64 and disallowed on ARM64.
-                // If the input assembly was compiled for anycpu, its base address is 32-bit and we need to fix it.
-                imageBase = (imageCharacteristics & Characteristics.Dll) != 0 ? PE64HeaderConstants.DllImageBase : PE64HeaderConstants.ExeImageBase;
-            }
+            ulong imageBase = is64BitTarget ? PE64HeaderConstants.DllImageBase : PE32HeaderConstants.ImageBase;
 
             int fileAlignment = 0x200;
             if (!target.IsWindows && !is64BitTarget)
             {
-                // To minimize wasted VA space on 32 bit systems align file to page bounaries (presumed to be 4K).
+                // To minimize wasted VA space on 32-bit systems, align file to page boundaries (presumed to be 4K)
                 fileAlignment = 0x1000;
             }
 
@@ -721,13 +697,11 @@ namespace ILCompiler.PEWriter
                 sectionAlignment = fileAlignment;
             }
 
-            dllCharacteristics &= DllCharacteristics.AppContainer;
-
-            // In Crossgen1, this is under a debug-specific condition 'if (0 == CLRConfig::GetConfigValue(CLRConfig::INTERNAL_NoASLRForNgen))'
-            dllCharacteristics |= DllCharacteristics.DynamicBase;
-
             // Without NxCompatible the PE executable cannot execute on Windows ARM64
-            dllCharacteristics |= DllCharacteristics.NxCompatible | DllCharacteristics.TerminalServerAware;
+            DllCharacteristics dllCharacteristics =
+                DllCharacteristics.DynamicBase |
+                DllCharacteristics.NxCompatible |
+                DllCharacteristics.TerminalServerAware;
 
             if (is64BitTarget)
             {

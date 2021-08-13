@@ -71,7 +71,6 @@
 #include "../md/compiler/custattr.h"
 #include "typekey.h"
 #include "peimagelayout.inl"
-#include "ildbsymlib.h"
 
 #if defined(PROFILING_SUPPORTED)
 #include "profilermetadataemitvalidator.h"
@@ -163,10 +162,10 @@ void Module::DoInit(AllocMemTracker *pamTracker, LPCWSTR szName)
 
 #ifdef PROFILING_SUPPORTED
     {
-        BEGIN_PIN_PROFILER(CORProfilerTrackModuleLoads());
+        BEGIN_PROFILER_CALLBACK(CORProfilerTrackModuleLoads());
         GCX_COOP();
-        g_profControlBlock.pProfInterface->ModuleLoadStarted((ModuleID) this);
-        END_PIN_PROFILER();
+        (&g_profControlBlock)->ModuleLoadStarted((ModuleID) this);
+        END_PROFILER_CALLBACK();
     }
     // Need TRY/HOOK instead of holder so we can get HR of exception thrown for profiler callback
     EX_TRY
@@ -180,9 +179,9 @@ void Module::DoInit(AllocMemTracker *pamTracker, LPCWSTR szName)
     EX_HOOK
     {
         {
-            BEGIN_PIN_PROFILER(CORProfilerTrackModuleLoads());
-            g_profControlBlock.pProfInterface->ModuleLoadFinished((ModuleID) this, GET_EXCEPTION()->GetHR());
-            END_PIN_PROFILER();
+            BEGIN_PROFILER_CALLBACK(CORProfilerTrackModuleLoads());
+            (&g_profControlBlock)->ModuleLoadFinished((ModuleID) this, GET_EXCEPTION()->GetHR());
+            END_PROFILER_CALLBACK();
         }
     }
     EX_END_HOOK;
@@ -205,7 +204,7 @@ BOOL Module::SetTransientFlagInterlocked(DWORD dwFlag)
     }
 }
 
-#if PROFILING_SUPPORTED
+#if defined(PROFILING_SUPPORTED) || defined(EnC_SUPPORTED)
 void Module::UpdateNewlyAddedTypes()
 {
     CONTRACTL
@@ -219,6 +218,14 @@ void Module::UpdateNewlyAddedTypes()
     DWORD countTypesAfterProfilerUpdate = GetMDImport()->GetCountWithTokenKind(mdtTypeDef);
     DWORD countExportedTypesAfterProfilerUpdate = GetMDImport()->GetCountWithTokenKind(mdtExportedType);
     DWORD countCustomAttributeCount = GetMDImport()->GetCountWithTokenKind(mdtCustomAttribute);
+
+    if (m_dwTypeCount == countTypesAfterProfilerUpdate
+        && m_dwExportedTypeCount == countExportedTypesAfterProfilerUpdate
+        && m_dwCustomAttributeCount == countCustomAttributeCount)
+    {
+        // The profiler added no new types, do not create the in memory hashes
+        return;
+    }
 
     // R2R pre-computes an export table and tries to avoid populating a class hash at runtime. However the profiler can
     // still add new types on the fly by calling here. If that occurs we fallback to the slower path of creating the
@@ -255,7 +262,9 @@ void Module::UpdateNewlyAddedTypes()
     m_dwExportedTypeCount = countExportedTypesAfterProfilerUpdate;
     m_dwCustomAttributeCount = countCustomAttributeCount;
 }
+#endif // PROFILING_SUPPORTED || EnC_SUPPORTED
 
+#if PROFILING_SUPPORTED
 void Module::NotifyProfilerLoadFinished(HRESULT hr)
 {
     CONTRACTL
@@ -280,37 +289,40 @@ void Module::NotifyProfilerLoadFinished(HRESULT hr)
             m_dwCustomAttributeCount = GetMDImport()->GetCountWithTokenKind(mdtCustomAttribute);
         }
 
+        BOOL profilerCallbackHappened = FALSE;
         // Notify the profiler, this may cause metadata to be updated
         {
-            BEGIN_PIN_PROFILER(CORProfilerTrackModuleLoads());
+            BEGIN_PROFILER_CALLBACK(CORProfilerTrackModuleLoads());
             {
                 GCX_PREEMP();
-                g_profControlBlock.pProfInterface->ModuleLoadFinished((ModuleID) this, hr);
+                (&g_profControlBlock)->ModuleLoadFinished((ModuleID) this, hr);
 
                 if (SUCCEEDED(hr))
                 {
-                    g_profControlBlock.pProfInterface->ModuleAttachedToAssembly((ModuleID) this,
+                    (&g_profControlBlock)->ModuleAttachedToAssembly((ModuleID) this,
                                                                                 (AssemblyID)m_pAssembly);
                 }
+
+                profilerCallbackHappened = TRUE;
             }
-            END_PIN_PROFILER();
+            END_PROFILER_CALLBACK();
         }
 
         // If there are more types than before, add these new types to the
         // assembly
-        if (!IsResource())
+        if (profilerCallbackHappened && !IsResource())
         {
             UpdateNewlyAddedTypes();
         }
 
         {
-            BEGIN_PIN_PROFILER(CORProfilerTrackAssemblyLoads());
+            BEGIN_PROFILER_CALLBACK(CORProfilerTrackAssemblyLoads());
             if (IsManifest())
             {
                 GCX_COOP();
-                g_profControlBlock.pProfInterface->AssemblyLoadFinished((AssemblyID) m_pAssembly, hr);
+                (&g_profControlBlock)->AssemblyLoadFinished((AssemblyID) m_pAssembly, hr);
             }
-            END_PIN_PROFILER();
+            END_PROFILER_CALLBACK();
         }
     }
 }
@@ -402,7 +414,6 @@ Module::Module(Assembly *pAssembly, mdFile moduleRef, PEFile *file)
     {
         // Memory allocated on LoaderHeap is zero-filled. Spot-check it here.
         _ASSERTE(m_pBinder == NULL);
-        _ASSERTE(m_symbolFormat == eSymbolFormatNone);
     }
 
     file->AddRef();
@@ -685,11 +696,6 @@ void Module::Initialize(AllocMemTracker *pamTracker, LPCWSTR szName)
     {
         Module::CreateAssemblyRefByNameTable(pamTracker);
     }
-
-    // If the program has the "ForceEnc" env variable set we ensure every eligible
-    // module has EnC turned on.
-    if (g_pConfig->ForceEnc() && IsEditAndContinueCapable())
-        EnableEditAndContinue();
 
 #if defined(PROFILING_SUPPORTED) && !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
     m_pJitInlinerTrackingMap = NULL;
@@ -1078,17 +1084,13 @@ void Module::SetDebuggerInfoBits(DebuggerAssemblyControlFlags newBits)
     m_dwTransientFlags |= (newBits << DEBUGGER_INFO_SHIFT_PRIV);
 
 #ifdef DEBUGGING_SUPPORTED
-    BOOL setEnC = ((newBits & DACF_ENC_ENABLED) != 0) && IsEditAndContinueCapable();
-
-    // The only way can change Enc is through debugger override.
-    if (setEnC)
+    if (IsEditAndContinueCapable())
     {
-        EnableEditAndContinue();
-    }
-    else
-    {
-        if (!g_pConfig->ForceEnc())
-            DisableEditAndContinue();
+        BOOL setEnC = (newBits & DACF_ENC_ENABLED) != 0 || g_pConfig->ForceEnc() || (g_pConfig->DebugAssembliesModifiable() && CORDisableJITOptimizations(GetDebuggerInfoBits()));
+        if (setEnC)
+        {
+            EnableEditAndContinue();
+        }
     }
 #endif // DEBUGGING_SUPPORTED
 
@@ -1179,12 +1181,12 @@ void Module::ApplyMetaData()
     HRESULT hr = S_OK;
     ULONG ulCount;
 
-#if PROFILING_SUPPORTED
+#if defined(PROFILING_SUPPORTED) || defined(EnC_SUPPORTED)
     if (!IsResource())
     {
         UpdateNewlyAddedTypes();
     }
-#endif // PROFILING_SUPPORTED
+#endif // PROFILING_SUPPORTED || EnC_SUPPORTED
 
     // Ensure for TypeRef
     ulCount = GetMDImport()->GetCountWithTokenKind(mdtTypeRef) + 1;
@@ -1217,7 +1219,7 @@ void Module::Destruct()
     LOG((LF_EEMEM, INFO3, "Deleting module %x\n", this));
 #ifdef PROFILING_SUPPORTED
     {
-        BEGIN_PIN_PROFILER(CORProfilerTrackModuleLoads());
+        BEGIN_PROFILER_CALLBACK(CORProfilerTrackModuleLoads());
         if (!IsBeingUnloaded())
         {
             // Profiler is causing some peripheral class loads. Probably this just needs
@@ -1225,14 +1227,14 @@ void Module::Destruct()
             EX_TRY
             {
                 GCX_PREEMP();
-                g_profControlBlock.pProfInterface->ModuleUnloadStarted((ModuleID) this);
+                (&g_profControlBlock)->ModuleUnloadStarted((ModuleID) this);
             }
             EX_CATCH
             {
             }
             EX_END_CATCH(SwallowAllExceptions);
         }
-        END_PIN_PROFILER();
+        END_PROFILER_CALLBACK();
     }
 #endif // PROFILING_SUPPORTED
 
@@ -1275,19 +1277,19 @@ void Module::Destruct()
 
 #ifdef PROFILING_SUPPORTED
     {
-        BEGIN_PIN_PROFILER(CORProfilerTrackModuleLoads());
+        BEGIN_PROFILER_CALLBACK(CORProfilerTrackModuleLoads());
         // Profiler is causing some peripheral class loads. Probably this just needs
         // to be turned into a Fault_not_fatal and moved to a specific place inside the profiler.
         EX_TRY
         {
             GCX_PREEMP();
-            g_profControlBlock.pProfInterface->ModuleUnloadFinished((ModuleID) this, S_OK);
+            (&g_profControlBlock)->ModuleUnloadFinished((ModuleID) this, S_OK);
         }
         EX_CATCH
         {
         }
         EX_END_CATCH(SwallowAllExceptions);
-        END_PIN_PROFILER();
+        END_PROFILER_CALLBACK();
     }
 
     if (m_pValidatedEmitter.Load() != NULL)
@@ -2616,7 +2618,7 @@ DWORD Module::AllocateDynamicEntry(MethodTable *pMT)
 
     DWORD newId = FastInterlockExchangeAdd((LONG*)&m_cDynamicEntries, 1);
 
-    if (newId >= m_maxDynamicEntries)
+    if (newId >= VolatileLoad(&m_maxDynamicEntries))
     {
         CrstHolder ch(&m_Crst);
 
@@ -2635,7 +2637,7 @@ DWORD Module::AllocateDynamicEntry(MethodTable *pMT)
                 memcpy(pNewDynamicStaticsInfo, m_pDynamicStaticsInfo, sizeof(DynamicStaticsInfo) * m_maxDynamicEntries);
 
             m_pDynamicStaticsInfo = pNewDynamicStaticsInfo;
-            m_maxDynamicEntries = maxDynamicEntries;
+            VolatileStore(&m_maxDynamicEntries, maxDynamicEntries);
         }
     }
 
@@ -3127,7 +3129,7 @@ void Module::StartUnload()
     WRAPPER_NO_CONTRACT;
 #ifdef PROFILING_SUPPORTED
     {
-        BEGIN_PIN_PROFILER(CORProfilerTrackModuleLoads());
+        BEGIN_PROFILER_CALLBACK(CORProfilerTrackModuleLoads());
         if (!IsBeingUnloaded())
         {
             // Profiler is causing some peripheral class loads. Probably this just needs
@@ -3135,14 +3137,14 @@ void Module::StartUnload()
             EX_TRY
             {
                 GCX_PREEMP();
-                g_profControlBlock.pProfInterface->ModuleUnloadStarted((ModuleID) this);
+                (&g_profControlBlock)->ModuleUnloadStarted((ModuleID) this);
             }
             EX_CATCH
             {
             }
             EX_END_CATCH(SwallowAllExceptions);
         }
-        END_PIN_PROFILER();
+        END_PROFILER_CALLBACK();
     }
 #endif // PROFILING_SUPPORTED
 
@@ -3423,35 +3425,25 @@ ISymUnmanagedReader *Module::GetISymUnmanagedReader(void)
                             "reachable or needs to be reimplemented for CoreCLR!");
         }
 
-        if (this->GetInMemorySymbolStreamFormat() == eSymbolFormatILDB)
+        // We're going to be working with Windows PDB format symbols. Attempt to CoCreate the symbol binder.
+        // CoreCLR supports not having a symbol reader installed, so CoCreate searches the PATH env var
+        // and then tries coreclr dll location.
+        // On desktop, the framework installer is supposed to install diasymreader.dll as well
+        // and so this shouldn't happen.
+        hr = FakeCoCreateInstanceEx(CLSID_CorSymBinder_SxS, NATIVE_SYMBOL_READER_DLL, IID_ISymUnmanagedBinder, (void**)&pBinder, NULL);
+        if (FAILED(hr))
         {
-            // We've got in-memory ILDB symbols, create the ILDB symbol binder
-            // Note that in this case, we must be very careful not to use diasymreader.dll
-            // at all - we don't trust it, and shouldn't run any code in it
-            IfFailThrow(IldbSymbolsCreateInstance(CLSID_CorSymBinder_SxS, IID_ISymUnmanagedBinder, (void**)&pBinder));
-        }
-        else
-        {
-            // We're going to be working with Windows PDB format symbols. Attempt to CoCreate the symbol binder.
-            // CoreCLR supports not having a symbol reader installed, so CoCreate searches the PATH env var
-            // and then tries coreclr dll location.
-            // On desktop, the framework installer is supposed to install diasymreader.dll as well
-            // and so this shouldn't happen.
-            hr = FakeCoCreateInstanceEx(CLSID_CorSymBinder_SxS, NATIVE_SYMBOL_READER_DLL, IID_ISymUnmanagedBinder, (void**)&pBinder, NULL);
+            PathString symbolReaderPath;
+            hr = GetClrModuleDirectory(symbolReaderPath);
             if (FAILED(hr))
             {
-                PathString symbolReaderPath;
-                hr = GetClrModuleDirectory(symbolReaderPath);
-                if (FAILED(hr))
-                {
-                    RETURN (NULL);
-                }
-                symbolReaderPath.Append(NATIVE_SYMBOL_READER_DLL);
-                hr = FakeCoCreateInstanceEx(CLSID_CorSymBinder_SxS, symbolReaderPath.GetUnicode(), IID_ISymUnmanagedBinder, (void**)&pBinder, NULL);
-                if (FAILED(hr))
-                {
-                    RETURN (NULL);
-                }
+                RETURN (NULL);
+            }
+            symbolReaderPath.Append(NATIVE_SYMBOL_READER_DLL);
+            hr = FakeCoCreateInstanceEx(CLSID_CorSymBinder_SxS, symbolReaderPath.GetUnicode(), IID_ISymUnmanagedBinder, (void**)&pBinder, NULL);
+            if (FAILED(hr))
+            {
+                RETURN (NULL);
             }
         }
 
@@ -3545,14 +3537,6 @@ BOOL Module::IsSymbolReadingEnabled()
     }
     CONTRACTL_END;
 
-    // If the module has symbols in-memory (eg. RefEmit) that are in ILDB
-    // format, then there isn't any reason not to supply them.  The reader
-    // code is always available, and we trust it's security.
-    if (this->GetInMemorySymbolStreamFormat() == eSymbolFormatILDB)
-    {
-        return TRUE;
-    }
-
 #ifdef DEBUGGING_SUPPORTED
     if (!g_pDebugInterface)
     {
@@ -3584,7 +3568,7 @@ void Module::SetSymbolBytes(LPCBYTE pbSyms, DWORD cbSyms)
 
     // Make sure to set the symbol stream on the module before
     // attempting to send UpdateModuleSyms messages up for it.
-    SetInMemorySymbolStream(pStream, eSymbolFormatPDB);
+    SetInMemorySymbolStream(pStream);
 
     // This can only be called when the module is being created.  No-one should have
     // tried to use the symbols yet, and so there should not be a reader.
@@ -3605,11 +3589,11 @@ void Module::SetSymbolBytes(LPCBYTE pbSyms, DWORD cbSyms)
     IfFailThrow(HRESULT_FROM_WIN32(dwError));
 
 #if PROFILING_SUPPORTED && !defined(CROSSGEN_COMPILE)
-    BEGIN_PIN_PROFILER(CORProfilerInMemorySymbolsUpdatesEnabled());
+    BEGIN_PROFILER_CALLBACK(CORProfilerInMemorySymbolsUpdatesEnabled());
     {
-        g_profControlBlock.pProfInterface->ModuleInMemorySymbolsUpdated((ModuleID) this);
+        (&g_profControlBlock)->ModuleInMemorySymbolsUpdated((ModuleID) this);
     }
-    END_PIN_PROFILER();
+    END_PROFILER_CALLBACK();
 #endif //PROFILING_SUPPORTED && !defined(CROSSGEN_COMPILE)
 
     ETW::CodeSymbolLog::EmitCodeSymbols(this);
@@ -3711,57 +3695,6 @@ void Module::AddClass(mdTypeDef classdef)
     if (RidFromToken(classdef) == 0)
     {
         BuildClassForModule();
-    }
-
-    // Since the module is being modified, the in-memory symbol stream
-    // (if any) has probably also been modified. If we support reading the symbols
-    // then we need to commit the changes to the writer and flush any old readers
-    // However if we don't support reading then we can skip this which will give
-    // a substantial perf improvement. See DDB 671107.
-    if(IsSymbolReadingEnabled())
-    {
-        CONSISTENCY_CHECK(IsReflection());   // this is only used for dynamic modules
-        ISymUnmanagedWriter * pWriter = GetReflectionModule()->GetISymUnmanagedWriter();
-        if (pWriter != NULL)
-        {
-            // Serialize with any concurrent reader creations
-            // Specifically, if we started creating a reader on one thread, and then updated the
-            // symbols on another thread, we need to wait until the initial reader creation has
-            // completed and release it so we don't get stuck with a stale reader.
-            // Also, if we commit to the stream while we're in the process of creating a reader,
-            // the reader will get corrupted/incomplete data.
-            // Note that we must also be in co-operative mode here to ensure the debugger helper
-            // thread can't be simultaneously reading this stream while the process is synchronized
-            // (code:Debugger::GetSymbolBytes)
-            CrstHolder holder(&m_ISymUnmanagedReaderCrst);
-
-            // Flush writes to the symbol store to the symbol stream
-            // Note that we do this when finishing the addition of the class, instead of
-            // on-demand in GetISymUnmanagedReader because the writer is not thread-safe.
-            // Here, we're inside the lock of TypeBuilder.CreateType, and so it's safe to
-            // manipulate the writer.
-            SafeComHolderPreemp<ISymUnmanagedWriter3> pWriter3;
-            HRESULT thr = pWriter->QueryInterface(IID_ISymUnmanagedWriter3, (void**)&pWriter3);
-            CONSISTENCY_CHECK(SUCCEEDED(thr));
-            if (SUCCEEDED(thr))
-            {
-                thr = pWriter3->Commit();
-                if (SUCCEEDED(thr))
-                {
-                    // Flush any cached symbol reader to ensure we pick up any new symbols
-                    ReleaseISymUnmanagedReader();
-                }
-            }
-
-            // If either the QI or Commit failed
-            if (FAILED(thr))
-            {
-                // The only way we expect this might fail is out-of-memory.  In that
-                // case we silently fail to update the symbol stream with new data, but
-                // we leave the existing reader intact.
-                CONSISTENCY_CHECK(thr==E_OUTOFMEMORY);
-            }
-        }
     }
 }
 
@@ -5994,7 +5927,11 @@ static HMODULE GetIJWHostForModule(Module* module)
             if ((importNameTable[thunkIndex].u1.Ordinal & (1LL << (sizeof(importNameTable[thunkIndex].u1.Ordinal) * CHAR_BIT - 1))) == 0)
             {
                 IMAGE_IMPORT_BY_NAME* nameImport = (IMAGE_IMPORT_BY_NAME*)(baseAddress + importNameTable[thunkIndex].u1.AddressOfData);
-                if (strcmp("_CorDllMain", nameImport->Name) == 0)
+                if (strcmp("_CorDllMain", nameImport->Name) == 0
+#ifdef TARGET_X86
+                    || strcmp("__CorDllMain@12", nameImport->Name) == 0 // The MSVC compiler can and will bind to the stdcall-decorated name of _CorDllMain if it exists, even if the _CorDllMain symbol also exists.
+#endif
+                )
                 {
                     HMODULE ijwHost;
 
@@ -6327,13 +6264,16 @@ void Module::FixupVTables()
                         (UINT_PTR)&(pPointers[iMethod]), pMD->m_pszDebugMethodName, pMD));
 
                     UMEntryThunk *pUMEntryThunk = (UMEntryThunk*)(void*)(GetDllThunkHeap()->AllocAlignedMem(sizeof(UMEntryThunk), CODE_SIZE_ALIGN)); // UMEntryThunk contains code
-                    FillMemory(pUMEntryThunk, sizeof(*pUMEntryThunk), 0);
+                    ExecutableWriterHolder<UMEntryThunk> uMEntryThunkWriterHolder(pUMEntryThunk, sizeof(UMEntryThunk));
+                    FillMemory(uMEntryThunkWriterHolder.GetRW(), sizeof(UMEntryThunk), 0);
 
                     UMThunkMarshInfo *pUMThunkMarshInfo = (UMThunkMarshInfo*)(void*)(GetThunkHeap()->AllocAlignedMem(sizeof(UMThunkMarshInfo), CODE_SIZE_ALIGN));
-                    FillMemory(pUMThunkMarshInfo, sizeof(*pUMThunkMarshInfo), 0);
+                    ExecutableWriterHolder<UMThunkMarshInfo> uMThunkMarshInfoWriterHolder(pUMThunkMarshInfo, sizeof(UMThunkMarshInfo));
+                    FillMemory(uMThunkMarshInfoWriterHolder.GetRW(), sizeof(UMThunkMarshInfo), 0);
 
-                    pUMThunkMarshInfo->LoadTimeInit(pMD);
-                    pUMEntryThunk->LoadTimeInit(NULL, NULL, pUMThunkMarshInfo, pMD);
+                    uMThunkMarshInfoWriterHolder.GetRW()->LoadTimeInit(pMD);
+                    uMEntryThunkWriterHolder.GetRW()->LoadTimeInit(pUMEntryThunk, NULL, NULL, pUMThunkMarshInfo, pMD);
+
                     SetTargetForVTableEntry(hInstThis, (BYTE **)&pPointers[iMethod], (BYTE *)pUMEntryThunk->GetCode());
 
                     pData->MarkMethodFixedUp(iFixup, iMethod);
@@ -8897,8 +8837,6 @@ void Module::Fixup(DataImage *image)
 
     image->ZeroField(this, offsetof(Module, m_file), sizeof(m_file));
 
-    image->FixupPointerField(this, offsetof(Module, m_pDllMain));
-
     image->ZeroField(this, offsetof(Module, m_dwTransientFlags), sizeof(m_dwTransientFlags));
 
     image->ZeroField(this, offsetof(Module, m_pVASigCookieBlock), sizeof(m_pVASigCookieBlock));
@@ -10259,7 +10197,7 @@ PTR_BYTE Module::GetNativeDebugInfo(MethodDesc * pMD)
 
 //-----------------------------------------------------------------------------
 
-BOOL Module::FixupNativeEntry(CORCOMPILE_IMPORT_SECTION* pSection, SIZE_T fixupIndex, SIZE_T* fixupCell)
+BOOL Module::FixupNativeEntry(CORCOMPILE_IMPORT_SECTION* pSection, SIZE_T fixupIndex, SIZE_T* fixupCell, BOOL mayUsePrecompiledNDirectMethods)
 {
     CONTRACTL
     {
@@ -10277,7 +10215,7 @@ BOOL Module::FixupNativeEntry(CORCOMPILE_IMPORT_SECTION* pSection, SIZE_T fixupI
         {
             PTR_DWORD pSignatures = dac_cast<PTR_DWORD>(GetNativeOrReadyToRunImage()->GetRvaData(pSection->Signatures));
 
-            if (!LoadDynamicInfoEntry(this, pSignatures[fixupIndex], fixupCell))
+            if (!LoadDynamicInfoEntry(this, pSignatures[fixupIndex], fixupCell, mayUsePrecompiledNDirectMethods))
                 return FALSE;
 
             _ASSERTE(*fixupCell != NULL);
@@ -10288,7 +10226,7 @@ BOOL Module::FixupNativeEntry(CORCOMPILE_IMPORT_SECTION* pSection, SIZE_T fixupI
         if (CORCOMPILE_IS_FIXUP_TAGGED(fixup, pSection))
         {
             // Fixup has not been fixed up yet
-            if (!LoadDynamicInfoEntry(this, (RVA)CORCOMPILE_UNTAG_TOKEN(fixup), fixupCell))
+            if (!LoadDynamicInfoEntry(this, (RVA)CORCOMPILE_UNTAG_TOKEN(fixup), fixupCell, mayUsePrecompiledNDirectMethods))
                 return FALSE;
 
             _ASSERTE(!CORCOMPILE_IS_FIXUP_TAGGED(*fixupCell, pSection));
@@ -11853,7 +11791,7 @@ HRESULT Module::WriteMethodProfileDataLogFile(bool cleanup)
     {
         if (GetAssembly()->IsInstrumented() && (m_pProfilingBlobTable != NULL) && (m_tokenProfileData != NULL))
         {
-            ProfileEmitter * pEmitter = new ProfileEmitter();
+            NewHolder<ProfileEmitter> pEmitter(new ProfileEmitter());
 
             // Get this ahead of time - metadata access may be logged, which will
             // take the m_tokenProfileData->crst, which we take a couple lines below
@@ -12439,7 +12377,7 @@ idMethodSpec Module::LogInstantiatedMethod(const MethodDesc * md, ULONG flagNum)
 // ===========================================================================
 
 /* static */
-ReflectionModule *ReflectionModule::Create(Assembly *pAssembly, PEFile *pFile, AllocMemTracker *pamTracker, LPCWSTR szName, BOOL fIsTransient)
+ReflectionModule *ReflectionModule::Create(Assembly *pAssembly, PEFile *pFile, AllocMemTracker *pamTracker, LPCWSTR szName)
 {
     CONTRACT(ReflectionModule *)
     {
@@ -12465,9 +12403,6 @@ ReflectionModule *ReflectionModule::Create(Assembly *pAssembly, PEFile *pFile, A
 
     pModule->DoInit(pamTracker, szName);
 
-    // Set this at module creation time. The m_fIsTransient field should never change during the lifetime of this ReflectionModule.
-    pModule->SetIsTransient(fIsTransient ? true : false);
-
     RETURN pModule.Extract();
 }
 
@@ -12490,12 +12425,9 @@ ReflectionModule::ReflectionModule(Assembly *pAssembly, mdFile token, PEFile *pF
 
     m_pInMemoryWriter = NULL;
     m_sdataSection = NULL;
-    m_pISymUnmanagedWriter = NULL;
     m_pCreatingAssembly = NULL;
     m_pCeeFileGen = NULL;
     m_pDynamicMetadata = NULL;
-    m_fSuppressMetadataCapture = false;
-    m_fIsTransient = false;
 }
 
 HRESULT STDMETHODCALLTYPE CreateICeeGen(REFIID riid, void **pCeeGen);
@@ -12518,7 +12450,7 @@ void ReflectionModule::Initialize(AllocMemTracker *pamTracker, LPCWSTR szName)
 
     Module::Initialize(pamTracker);
 
-    IfFailThrow(CreateICeeGen(IID_ICeeGen, (void **)&m_pCeeFileGen));
+    IfFailThrow(CreateICeeGen(IID_ICeeGenInternal, (void **)&m_pCeeFileGen));
 
     // Collectible modules should try to limit the growth of their associate IL section, as common scenarios for collectible
     // modules include single type modules
@@ -12548,13 +12480,6 @@ void ReflectionModule::Destruct()
 
     delete m_pInMemoryWriter;
 
-    if (m_pISymUnmanagedWriter)
-    {
-        m_pISymUnmanagedWriter->Close();
-        m_pISymUnmanagedWriter->Release();
-        m_pISymUnmanagedWriter = NULL;
-    }
-
     if (m_pCeeFileGen)
         m_pCeeFileGen->Release();
 
@@ -12566,17 +12491,6 @@ void ReflectionModule::Destruct()
     m_CrstLeafLock.Destroy();
 }
 
-// Returns true iff metadata capturing is suppressed.
-//
-// Notes:
-//   This is during the window after code:ReflectionModule.SuppressMetadataCapture and before
-//   code:ReflectionModule.ResumeMetadataCapture.
-//
-//   If metadata updates are suppressed, then class-load notifications should be suppressed too.
-bool ReflectionModule::IsMetadataCaptureSuppressed()
-{
-    return m_fSuppressMetadataCapture;
-}
 //
 // Holder of changed value of MDUpdateMode via IMDInternalEmit::SetMDUpdateMode.
 // Returns back the original value on release.
@@ -12676,13 +12590,11 @@ void ReflectionModule::CaptureModuleMetaDataToMemory()
     }
     CONTRACTL_END;
 
-    // If we've suppresed metadata capture, then skip this. We'll recapture when we enable it. This allows
-    // for batching up capture.
     // If a debugger is attached, then the CLR will still send ClassLoad notifications for dynamic modules,
     // which mean we still need to keep the metadata available. This is the same as Whidbey.
     // An alternative (and better) design would be to suppress ClassLoad notifications too, but then we'd
     // need some way of sending a "catchup" notification to the debugger after we re-enable notifications.
-    if (IsMetadataCaptureSuppressed() && !CORDebuggerAttached())
+    if (!CORDebuggerAttached())
     {
         return;
     }
@@ -12730,41 +12642,6 @@ void ReflectionModule::CaptureModuleMetaDataToMemory()
     hr = hMDUpdateMode.Release(MDUpdateExtension);
     // Will be S_FALSE if someone changed the MDUpdateMode (from MDUpdateExtension) meanwhile
     _ASSERTE(hr == S_OK);
-}
-
-// Suppress the eager metadata serialization.
-//
-// Notes:
-//    This casues code:ReflectionModule.CaptureModuleMetaDataToMemory to be a nop.
-//    This is not nestable.
-//    This exists purely for performance reasons.
-//
-//    Don't call this directly. Use a SuppressMetadataCaptureHolder holder to ensure it's
-//    balanced with code:ReflectionModule.ResumeMetadataCapture
-//
-//    Types generating while eager metadata-capture is suppressed should not actually be executed until
-//    after metadata capture is restored.
-void ReflectionModule::SuppressMetadataCapture()
-{
-    LIMITED_METHOD_CONTRACT;
-    // If this fires, then you probably missed a call to ResumeMetadataCapture.
-    CONSISTENCY_CHECK_MSG(!m_fSuppressMetadataCapture, "SuppressMetadataCapture is not nestable");
-    m_fSuppressMetadataCapture = true;
-}
-
-// Resumes eager metadata serialization.
-//
-// Notes:
-//    This casues code:ReflectionModule.CaptureModuleMetaDataToMemory to resume eagerly serializing metadata.
-//    This must be called after code:ReflectionModule.SuppressMetadataCapture.
-//
-void ReflectionModule::ResumeMetadataCapture()
-{
-    WRAPPER_NO_CONTRACT;
-    _ASSERTE(m_fSuppressMetadataCapture);
-    m_fSuppressMetadataCapture = false;
-
-    CaptureModuleMetaDataToMemory();
 }
 
 #endif // !CROSSGEN_COMPILE
@@ -13841,4 +13718,3 @@ void EEConfig::DebugCheckAndForceIBCFailure(BitForMask bitForMask)
     }
 }
 #endif // defined(_DEBUG) && !defined(DACCESS_COMPILE)
-

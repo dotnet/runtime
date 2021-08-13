@@ -10,7 +10,7 @@ namespace System.Runtime.CompilerServices
     /// by C++ runtime code which manages its memory in the GC heap.
     /// </summary>
     [StructLayout(LayoutKind.Sequential)]
-    internal class GCHeapHash
+    internal sealed class GCHeapHash
     {
         private Array? _data;
         private int _count;

@@ -202,7 +202,7 @@ struct ShuffleEntry
 
     union {
         UINT16    dstofs;           //if srcofs != SENTINEL
-        UINT16    stacksizedelta;   //if dstofs == SENTINEL, difference in stack size between virtual and static sigs
+        UINT16    stacksizedelta;   //if srcofs == SENTINEL, difference in stack size between virtual and static sigs
     };
 };
 

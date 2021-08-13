@@ -12,7 +12,7 @@ namespace Internal.TypeSystem
         /// <summary>
         /// Bit flags for layout
         /// </summary>
-        private class FieldLayoutFlags
+        private static class FieldLayoutFlags
         {
             /// <summary>
             /// True if ContainsGCPointers has been computed
@@ -53,6 +53,16 @@ namespace Internal.TypeSystem
             /// True if the layout of the type is not stable for use in the ABI
             /// </summary>
             public const int ComputedInstanceLayoutAbiUnstable = 0x80;
+
+            /// <summary>
+            /// True if IsUnsafeValueType has been computed
+            /// </summary>
+            public const int ComputedIsUnsafeValueType = 0x100;
+
+            /// <summary>
+            /// True if type transitively has UnsafeValueTypeAttribute
+            /// </summary>
+            public const int IsUnsafeValueType = 0x200;
         }
 
         private class StaticBlockInfo
@@ -89,6 +99,22 @@ namespace Internal.TypeSystem
                 return _fieldLayoutFlags.HasFlags(FieldLayoutFlags.ContainsGCPointers);
             }
         }
+
+        /// <summary>
+        /// Does a type transitively have any fields which are marked with System.Runtime.CompilerServices.UnsafeValueTypeAttribute
+        /// </summary>
+        public bool IsUnsafeValueType
+        {
+            get
+            {
+                if (!_fieldLayoutFlags.HasFlags(FieldLayoutFlags.ComputedIsUnsafeValueType))
+                {
+                    ComputeIsUnsafeValueType();
+                }
+                return _fieldLayoutFlags.HasFlags(FieldLayoutFlags.IsUnsafeValueType);
+            }
+        }
+
 
         /// <summary>
         /// The number of bytes required to hold a field of this type
@@ -445,6 +471,21 @@ namespace Internal.TypeSystem
             if (this.Context.GetLayoutAlgorithmForType(this).ComputeContainsGCPointers(this))
             {
                 flagsToAdd |= FieldLayoutFlags.ContainsGCPointers;
+            }
+
+            _fieldLayoutFlags.AddFlags(flagsToAdd);
+        }
+
+        public void ComputeIsUnsafeValueType()
+        {
+            if (_fieldLayoutFlags.HasFlags(FieldLayoutFlags.ComputedIsUnsafeValueType))
+                return;
+
+            int flagsToAdd = FieldLayoutFlags.ComputedIsUnsafeValueType;
+
+            if (this.Context.GetLayoutAlgorithmForType(this).ComputeIsUnsafeValueType(this))
+            {
+                flagsToAdd |= FieldLayoutFlags.IsUnsafeValueType;
             }
 
             _fieldLayoutFlags.AddFlags(flagsToAdd);

@@ -17,7 +17,7 @@ namespace System.DirectoryServices.ActiveDirectory
             }
         }
 
-        public DomainController this[int index] => (DomainController)InnerList[index];
+        public DomainController this[int index] => (DomainController)InnerList[index]!;
 
         public bool Contains(DomainController domainController)
         {
@@ -26,7 +26,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
             for (int i = 0; i < InnerList.Count; i++)
             {
-                DomainController tmp = (DomainController)InnerList[i];
+                DomainController tmp = (DomainController)InnerList[i]!;
                 if (Utils.Compare(tmp.Name, domainController.Name) == 0)
                 {
                     return true;
@@ -42,7 +42,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
             for (int i = 0; i < InnerList.Count; i++)
             {
-                DomainController tmp = (DomainController)InnerList[i];
+                DomainController tmp = (DomainController)InnerList[i]!;
                 if (Utils.Compare(tmp.Name, domainController.Name) == 0)
                 {
                     return i;

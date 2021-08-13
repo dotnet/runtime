@@ -327,7 +327,8 @@ Given WKS GC with concurrent GC on (default case), the code flow for a backgroun
 Resources
 =========
 
-- [.NET CLR GC Implementation](https://raw.githubusercontent.com/dotnet/runtime/master/src/coreclr/gc/gc.cpp)
+- [.NET CLR GC Implementation](https://raw.githubusercontent.com/dotnet/runtime/main/src/coreclr/gc/gc.cpp)
 - [The Garbage Collection Handbook: The Art of Automatic Memory Management](http://www.amazon.com/Garbage-Collection-Handbook-Management-Algorithms/dp/1420082795)
 - [Garbage collection (Wikipedia)](http://en.wikipedia.org/wiki/Garbage_collection_(computer_science))
 - [Pro .NET Memory Management](https://prodotnetmemory.com/)
+- [.NET GC Internals video series](https://www.youtube.com/playlist?list=PLpUkQYy-K8Y-wYcDgDXKhfs6OT8fFQtVm)

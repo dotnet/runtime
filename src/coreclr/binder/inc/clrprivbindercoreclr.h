@@ -5,14 +5,11 @@
 #ifndef __CLR_PRIV_BINDER_CORECLR_H__
 #define __CLR_PRIV_BINDER_CORECLR_H__
 
-#include "coreclrbindercommon.h"
 #include "applicationcontext.hpp"
 #include "assemblyloadcontext.h"
 
-namespace BINDER_SPACE
-{
-    class AssemblyIdentityUTF8;
-};
+class PEAssembly;
+class PEImage;
 
 class CLRPrivBinderCoreCLR : public AssemblyLoadContext
 {
@@ -22,7 +19,7 @@ public:
     // ICLRPrivBinder functions
     //-------------------------------------------------------------------------
     STDMETHOD(BindAssemblyByName)(
-            /* [in] */ IAssemblyName *pIAssemblyName,
+            /* [in] */ struct AssemblyNameData *pAssemblyNameData,
             /* [retval][out] */ ICLRPrivAssembly **ppAssembly);
 
     STDMETHOD(GetLoaderAllocator)(
@@ -40,12 +37,14 @@ public:
         return &m_appContext;
     }
 
-    HRESULT Bind(SString     &assemblyDisplayName,
-                 LPCWSTR      wszCodeBase,
+    HRESULT Bind(LPCWSTR      wszCodeBase,
                  PEAssembly  *pParentAssembly,
                  BOOL         fNgenExplicitBind,
                  BOOL         fExplicitBindToNativeImage,
                  ICLRPrivAssembly **ppAssembly);
+
+    HRESULT BindUsingAssemblyName(BINDER_SPACE::AssemblyName *pAssemblyName,
+                                  ICLRPrivAssembly **ppAssembly);
 
 #if !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
     HRESULT BindUsingPEImage( /* in */ PEImage *pPEImage,

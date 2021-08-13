@@ -158,6 +158,8 @@ namespace System.Globalization
             return s_userDefaultUICulture!;
         }
 
+        private static string GetCultureNotSupportedExceptionMessage() => GlobalizationMode.Invariant ? SR.Argument_CultureNotSupportedInInvariantMode : SR.Argument_CultureNotSupported;
+
         public CultureInfo(string name) : this(name, true)
         {
         }
@@ -174,7 +176,7 @@ namespace System.Globalization
 
             if (cultureData == null)
             {
-                throw new CultureNotFoundException(nameof(name), name, SR.Argument_CultureNotSupported);
+                throw new CultureNotFoundException(nameof(name), name, GetCultureNotSupportedExceptionMessage());
             }
 
             _cultureData = cultureData;
@@ -249,7 +251,7 @@ namespace System.Globalization
             }
 
             CultureData? cultureData = CultureData.GetCultureData(cultureName, false) ??
-                throw new CultureNotFoundException(nameof(cultureName), cultureName, SR.Argument_CultureNotSupported);
+                throw new CultureNotFoundException(nameof(cultureName), cultureName, GetCultureNotSupportedExceptionMessage());
 
             _cultureData = cultureData;
 
@@ -280,7 +282,7 @@ namespace System.Globalization
         }
 
         /// <summary>
-        /// Return a specific culture. A tad irrelevent now since we always
+        /// Return a specific culture. A tad irrelevant now since we always
         /// return valid data for neutral locales.
         ///
         /// Note that there's interesting behavior that tries to find a
@@ -1060,7 +1062,7 @@ namespace System.Globalization
             }
             catch (ArgumentException)
             {
-                throw new CultureNotFoundException(nameof(culture), culture, SR.Argument_CultureNotSupported);
+                throw new CultureNotFoundException(nameof(culture), culture, GetCultureNotSupportedExceptionMessage());
             }
 
             lock (lcidTable)
@@ -1096,7 +1098,7 @@ namespace System.Globalization
             }
 
             result = CreateCultureInfoNoThrow(name, useUserOverride: false) ??
-                throw new CultureNotFoundException(nameof(name), name, SR.Argument_CultureNotSupported);
+                throw new CultureNotFoundException(nameof(name), name, GetCultureNotSupportedExceptionMessage());
             result._isReadOnly = true;
 
             // Remember our name as constructed.  Do NOT use alternate sort name versions because
@@ -1169,9 +1171,10 @@ namespace System.Globalization
 
             if (predefinedOnly && !GlobalizationMode.Invariant)
             {
-                return GlobalizationMode.UseNls ?
-                    NlsGetPredefinedCultureInfo(name) :
-                    IcuGetPredefinedCultureInfo(name);
+                if (GlobalizationMode.UseNls ? !CultureData.NlsIsEnsurePredefinedLocaleName(name): !CultureData.IcuIsEnsurePredefinedLocaleName(name))
+                {
+                    throw new CultureNotFoundException(nameof(name), name, SR.Format(SR.Argument_InvalidPredefinedCultureName, name));
+                }
             }
 
             return GetCultureInfo(name);

@@ -125,5 +125,25 @@ namespace Microsoft.Extensions.DependencyInjection
         {
             return provider.GetRequiredService<IServiceScopeFactory>().CreateScope();
         }
+
+        /// <summary>
+        /// Creates a new <see cref="AsyncServiceScope"/> that can be used to resolve scoped services.
+        /// </summary>
+        /// <param name="provider">The <see cref="IServiceProvider"/> to create the scope from.</param>
+        /// <returns>An <see cref="AsyncServiceScope"/> that can be used to resolve scoped services.</returns>
+        public static AsyncServiceScope CreateAsyncScope(this IServiceProvider provider)
+        {
+            return new AsyncServiceScope(provider.CreateScope());
+        }
+
+        /// <summary>
+        /// Creates a new <see cref="AsyncServiceScope"/> that can be used to resolve scoped services.
+        /// </summary>
+        /// <param name="serviceScopeFactory">The <see cref="IServiceScopeFactory"/> to create the scope from.</param>
+        /// <returns>An <see cref="AsyncServiceScope"/> that can be used to resolve scoped services.</returns>
+        public static AsyncServiceScope CreateAsyncScope(this IServiceScopeFactory serviceScopeFactory)
+        {
+            return new AsyncServiceScope(serviceScopeFactory.CreateScope());
+        }
     }
 }

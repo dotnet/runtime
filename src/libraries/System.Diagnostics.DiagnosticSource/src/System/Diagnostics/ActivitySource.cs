@@ -46,7 +46,7 @@ namespace System.Diagnostics
                 }, this);
             }
 
-            GC.KeepAlive(DiagnosticSourceEventSource.Logger);
+            GC.KeepAlive(DiagnosticSourceEventSource.Log);
         }
 
         /// <summary>
@@ -300,7 +300,7 @@ namespace System.Diagnostics
         /// <summary>
         /// Add a listener to the <see cref="Activity"/> starting and stopping events.
         /// </summary>
-        /// <param name="listener"> The <see cref="ActivityListener"/> object to use for listeneing to the <see cref="Activity"/> events.</param>
+        /// <param name="listener"> The <see cref="ActivityListener"/> object to use for listening to the <see cref="Activity"/> events.</param>
         public static void AddActivityListener(ActivityListener listener)
         {
             if (listener == null)
@@ -367,7 +367,7 @@ namespace System.Diagnostics
     // and allow enumerating the collection items and execute some action on the enumerated item and can detect any change in the collection
     // during the enumeration which force restarting the enumeration again.
     // Caution: We can have the action executed on the same item more than once which is ok in our scenarios.
-    internal class SynchronizedList<T>
+    internal sealed class SynchronizedList<T>
     {
         private readonly List<T> _list;
         private uint _version;

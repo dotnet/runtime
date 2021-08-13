@@ -8,7 +8,7 @@ namespace System.Threading.Tasks
     /// <seealso cref="OperationCanceledException"/>s contain the relevant <see cref="CancellationToken"/>,
     /// while also avoiding unnecessary allocations for closure captures.
     /// </summary>
-    internal class TaskCompletionSourceWithCancellation<T> : TaskCompletionSource<T>
+    internal sealed class TaskCompletionSourceWithCancellation<T> : TaskCompletionSource<T>
     {
         public TaskCompletionSourceWithCancellation() : base(TaskCreationOptions.RunContinuationsAsynchronously)
         {
@@ -20,6 +20,21 @@ namespace System.Threading.Tasks
             {
                 return await Task.ConfigureAwait(false);
             }
+        }
+
+        public T WaitWithCancellation(CancellationToken cancellationToken)
+        {
+            using (cancellationToken.UnsafeRegister(static (s, cancellationToken) => ((TaskCompletionSourceWithCancellation<T>)s!).TrySetCanceled(cancellationToken), this))
+            {
+                return Task.GetAwaiter().GetResult();
+            }
+        }
+
+        public ValueTask<T> WaitWithCancellationAsync(bool async, CancellationToken cancellationToken)
+        {
+            return async ?
+                WaitWithCancellationAsync(cancellationToken) :
+                new ValueTask<T>(WaitWithCancellation(cancellationToken));
         }
     }
 }

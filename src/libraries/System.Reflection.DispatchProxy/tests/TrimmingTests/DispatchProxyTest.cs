@@ -26,7 +26,7 @@ class Program
     }
 }
 
-interface IFoo
+public interface IFoo
 {
     public int Property1 { get; set; }
     public int UnusedProperty { get; set; }
@@ -46,7 +46,7 @@ class Foo : IFoo
     public void UnusedMethod3() { }
 }
 
-class CountingProxy : DispatchProxy
+public class CountingProxy : DispatchProxy
 {
     private IFoo _inner;
     public int InvocationCount { get; private set; }

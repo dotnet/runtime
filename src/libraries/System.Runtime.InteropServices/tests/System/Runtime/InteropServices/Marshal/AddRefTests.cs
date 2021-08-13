@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Runtime.InteropServices.Tests.Common;
 using Xunit;
 
 namespace System.Runtime.InteropServices.Tests
@@ -8,10 +9,11 @@ namespace System.Runtime.InteropServices.Tests
     public class AddRefTests
     {
         [Fact]
-        [PlatformSpecific(TestPlatforms.Windows)]
+        [SkipOnMono("ComWrappers are not supported on Mono")]
         public void AddRef_ValidPointer_Success()
         {
-            IntPtr iUnknown = Marshal.GetIUnknownForObject(new object());
+            var cw = new ComWrappersImpl();
+            IntPtr iUnknown = cw.GetOrCreateComInterfaceForObject(new object(), CreateComInterfaceFlags.None);
             try
             {
                 Assert.Equal(2, Marshal.AddRef(iUnknown));
@@ -29,14 +31,6 @@ namespace System.Runtime.InteropServices.Tests
         }
 
         [Fact]
-        [PlatformSpecific(TestPlatforms.AnyUnix)]
-        public void AddRef_Unix_ThrowsPlatformNotSupportedException()
-        {
-            Assert.Throws<PlatformNotSupportedException>(() => Marshal.AddRef(IntPtr.Zero));
-        }
-
-        [Fact]
-        [PlatformSpecific(TestPlatforms.Windows)]
         public void AddRef_ZeroPointer_ThrowsArgumentNullException()
         {
             AssertExtensions.Throws<ArgumentNullException>("pUnk", () => Marshal.AddRef(IntPtr.Zero));

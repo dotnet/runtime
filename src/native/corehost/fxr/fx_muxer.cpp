@@ -370,6 +370,7 @@ namespace
         const pal::string_t &app_candidate,
         const opt_map_t &opts,
         host_mode_t mode,
+        const bool is_sdk_command,
         /*out*/ pal::string_t &hostpolicy_dir,
         /*out*/ std::unique_ptr<corehost_init_t> &init)
     {
@@ -404,7 +405,7 @@ namespace
             auto val = roll_forward_option_from_string(roll_forward);
             if (val == roll_forward_option::__Last)
             {
-                trace::error(_X("Invalid value for command line argument '%s'"), command_line::get_option_name(known_options::roll_forward).c_str());
+                trace::error(_X("Invalid value for command line argument '%s'"), command_line::get_option_name(known_options::roll_forward));
                 return StatusCode::InvalidArgFailure;
             }
 
@@ -417,8 +418,8 @@ namespace
             if (override_settings.has_roll_forward)
             {
                 trace::error(_X("It's invalid to use both '%s' and '%s' command line options."),
-                    command_line::get_option_name(known_options::roll_forward).c_str(),
-                    command_line::get_option_name(known_options::roll_forward_on_no_candidate_fx).c_str());
+                    command_line::get_option_name(known_options::roll_forward),
+                    command_line::get_option_name(known_options::roll_forward_on_no_candidate_fx));
                 return StatusCode::InvalidArgFailure;
             }
 
@@ -473,6 +474,16 @@ namespace
             }
         }
 
+        std::vector<std::pair<pal::string_t, pal::string_t>> additional_properties;
+        if (is_sdk_command)
+        {
+            pal::string_t fxr_path;
+            pal::get_own_module_path(&fxr_path);
+
+            // We pass the loaded hostfxr path to the SDK can load it without relying on dlopen/LoadLibrary to find it.
+            additional_properties.push_back(std::make_pair(_X("HOSTFXR_PATH"), fxr_path));
+        }
+
         const known_options opts_probe_path = known_options::additional_probing_path;
         std::vector<pal::string_t> spec_probe_paths = opts.count(opts_probe_path) ? opts.find(opts_probe_path)->second : std::vector<pal::string_t>();
         std::vector<pal::string_t> probe_realpaths = get_probe_realpaths(fx_definitions, spec_probe_paths);
@@ -485,7 +496,7 @@ namespace
             return StatusCode::CoreHostLibMissingFailure;
         }
 
-        init.reset(new corehost_init_t(host_command, host_info, deps_file, additional_deps_serialized, probe_realpaths, mode, fx_definitions));
+        init.reset(new corehost_init_t(host_command, host_info, deps_file, additional_deps_serialized, probe_realpaths, mode, fx_definitions, additional_properties));
 
         return StatusCode::Success;
     }
@@ -498,6 +509,7 @@ namespace
         int new_argc,
         const pal::char_t** new_argv,
         host_mode_t mode,
+        const bool is_sdk_command,
         pal::char_t out_buffer[],
         int32_t buffer_size,
         int32_t* required_buffer_size)
@@ -510,6 +522,7 @@ namespace
             app_candidate,
             opts,
             mode,
+            is_sdk_command,
             hostpolicy_dir,
             init);
         if (rc != StatusCode::Success)
@@ -572,6 +585,7 @@ int fx_muxer_t::execute(
             argv,
             new_argoff,
             mode,
+            false /*is_sdk_command*/,
             result_buffer,
             buffer_size,
             required_buffer_size);
@@ -621,7 +635,8 @@ namespace
         }
 
         const pal::string_t additional_deps_serialized;
-        init.reset(new corehost_init_t(pal::string_t{}, host_info, deps_file, additional_deps_serialized, probe_realpaths, mode, fx_definitions));
+        const std::vector<std::pair<pal::string_t, pal::string_t>> additional_properties;
+        init.reset(new corehost_init_t(pal::string_t{}, host_info, deps_file, additional_deps_serialized, probe_realpaths, mode, fx_definitions, additional_properties));
 
         return StatusCode::Success;
     }
@@ -725,6 +740,7 @@ int fx_muxer_t::initialize_for_app(
         host_info.app_path,
         opts,
         mode,
+        false /*is_sdk_command*/,
         hostpolicy_dir,
         init);
     if (rc != StatusCode::Success)
@@ -849,7 +865,7 @@ int fx_muxer_t::run_app(host_context_t *context)
     if (!context->is_app)
         return StatusCode::InvalidArgFailure;
 
-    int argc = context->argv.size();
+    size_t argc = context->argv.size();
     std::vector<const pal::char_t*> argv;
     argv.reserve(argc);
     for (const auto& str : context->argv)
@@ -863,7 +879,7 @@ int fx_muxer_t::run_app(host_context_t *context)
         if (rc != StatusCode::Success)
             return rc;
 
-        return contract.run_app(argc, argv.data());
+        return contract.run_app((int32_t)argc, argv.data());
     }
 }
 
@@ -978,6 +994,7 @@ int fx_muxer_t::handle_exec_host_command(
     const pal::char_t* argv[],
     int argoff,
     host_mode_t mode,
+    const bool is_sdk_command,
     pal::char_t result_buffer[],
     int32_t buffer_size,
     int32_t* required_buffer_size)
@@ -992,7 +1009,7 @@ int fx_muxer_t::handle_exec_host_command(
         vec_argv.push_back(argv[0]);
         vec_argv.insert(vec_argv.end(), argv + argoff, argv + argc);
         new_argv = vec_argv.data();
-        new_argc = vec_argv.size();
+        new_argc = (int32_t)vec_argv.size();
     }
 
     trace::info(_X("Using dotnet root path [%s]"), host_info.dotnet_root.c_str());
@@ -1006,6 +1023,7 @@ int fx_muxer_t::handle_exec_host_command(
         new_argc,
         new_argv,
         mode,
+        is_sdk_command,
         result_buffer,
         buffer_size,
         required_buffer_size);
@@ -1083,7 +1101,7 @@ int fx_muxer_t::handle_cli(
     int new_argoff;
     pal::string_t sdk_app_candidate;
     opt_map_t opts;
-    int result = command_line::parse_args_for_sdk_command(host_info, new_argv.size(), new_argv.data(), &new_argoff, sdk_app_candidate, opts);
+    int result = command_line::parse_args_for_sdk_command(host_info, (int32_t)new_argv.size(), new_argv.data(), &new_argoff, sdk_app_candidate, opts);
     if (!result)
     {
         // Transform dotnet [exec] [--additionalprobingpath path] [--depsfile file] [dll] [args] -> dotnet [dll] [args]
@@ -1092,10 +1110,11 @@ int fx_muxer_t::handle_cli(
             host_info,
             sdk_app_candidate,
             opts,
-            new_argv.size(),
+            (int32_t)new_argv.size(),
             new_argv.data(),
             new_argoff,
             host_mode_t::muxer,
+            true /*is_sdk_command*/,
             nullptr /*result_buffer*/,
             0 /*buffer_size*/,
             nullptr/*required_buffer_size*/);

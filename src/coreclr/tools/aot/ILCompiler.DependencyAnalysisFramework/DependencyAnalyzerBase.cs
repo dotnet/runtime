@@ -65,6 +65,12 @@ namespace ILCompiler.DependencyAnalysisFramework
         public abstract event Action<List<DependencyNodeCore<DependencyContextType>>> ComputeDependencyRoutine;
 
         /// <summary>
+        /// This event is triggered when all of the deferred dependencies from a phase have finished, and
+        /// dependency processing is moving to the next phase.
+        /// </summary>
+        public abstract event Action<int> ComputingDependencyPhaseChange;
+
+        /// <summary>
         /// Used to walk all nodes that should be emitted to a log. Not intended for other purposes.
         /// </summary>
         /// <param name="logNodeVisitor"></param>

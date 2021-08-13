@@ -7,6 +7,20 @@
 #include "pal.h"
 #include "utils.h"
 
+#ifdef __sun
+#include <alloca.h>
+#endif
+
+#if defined(NATIVE_LIBS_EMBEDDED)
+extern "C"
+{
+#include "pal_zlib.h"
+}
+#endif
+
+// Suppress prefast warning #6255: alloca indicates failure by raising a stack overflow exception
+#pragma warning(disable:6255)
+
 using namespace bundle;
 
 pal::string_t& extractor_t::extraction_dir()
@@ -14,8 +28,8 @@ pal::string_t& extractor_t::extraction_dir()
     if (m_extraction_dir.empty())
     {
         // Compute the final extraction location as:
-        // m_extraction_dir = $DOTNET_BUNDLE_EXTRACT_BASE_DIR/<app>/<id>/...	
-        //	
+        // m_extraction_dir = $DOTNET_BUNDLE_EXTRACT_BASE_DIR/<app>/<id>/...
+        //
         // If DOTNET_BUNDLE_EXTRACT_BASE_DIR is not set in the environment, 
         // a default is choosen within the temporary directory.
 
@@ -25,7 +39,7 @@ pal::string_t& extractor_t::extraction_dir()
             {
                 trace::error(_X("Failure processing application bundle."));
                 trace::error(_X("Failed to determine location for extracting embedded files."));
-                trace::error(_X("DOTNET_BUNDLE_EXTRACT_BASE_DIR is not set, and a read-write temp-directory couldn't be created."));
+                trace::error(_X("DOTNET_BUNDLE_EXTRACT_BASE_DIR is not set, and a read-write cache directory couldn't be created."));
                 throw StatusCode::BundleExtractionFailure;
             }
         }
@@ -103,11 +117,68 @@ void extractor_t::extract(const file_entry_t &entry, reader_t &reader)
 {
     FILE* file = create_extraction_file(entry.relative_path());
     reader.set_offset(entry.offset());
-    size_t size = entry.size();
+    int64_t size = entry.size();
+    size_t cast_size = to_size_t_dbgchecked(size);
+    size_t extracted_size = 0;
 
-    if (fwrite(reader, 1, size, file) != size)
+    if (entry.compressedSize() != 0)
     {
-        trace::error(_X("Failure extracting contents of the application bundle."));
+#if defined(NATIVE_LIBS_EMBEDDED)
+        PAL_ZStream zStream;
+        zStream.nextIn = (uint8_t*)(const void*)reader;
+        zStream.availIn = entry.compressedSize();
+
+        const int Deflate_DefaultWindowBits = -15; // Legal values are 8..15 and -8..-15. 15 is the window size,
+                                                   // negative val causes deflate to produce raw deflate data (no zlib header).
+
+        int ret = CompressionNative_InflateInit2_(&zStream, Deflate_DefaultWindowBits);
+        if (ret != PAL_Z_OK)
+        {
+            trace::error(_X("Failure initializing zLib stream."));
+            throw StatusCode::BundleExtractionIOError;
+        }
+
+        const int bufSize = 4096;
+        uint8_t* buf = (uint8_t*)alloca(bufSize);
+
+        do
+        {
+            zStream.nextOut = buf;
+            zStream.availOut = bufSize;
+
+            ret = CompressionNative_Inflate(&zStream, PAL_Z_NOFLUSH);
+            if (ret < 0)
+            {
+                CompressionNative_InflateEnd(&zStream);
+                trace::error(_X("Failure inflating zLib stream. %s"), zStream.msg);
+                throw StatusCode::BundleExtractionIOError;
+            }
+
+            int produced = bufSize - zStream.availOut;
+            if (fwrite(buf, 1, produced, file) != (size_t)produced)
+            {
+                CompressionNative_InflateEnd(&zStream);
+                trace::error(_X("I/O failure when writing decompressed file."));
+                throw StatusCode::BundleExtractionIOError;
+            }
+
+            extracted_size += produced;
+        } while (zStream.availOut == 0);
+
+        CompressionNative_InflateEnd(&zStream);
+#else
+        trace::error(_X("Failure extracting contents of the application bundle. Compressed files used with a standalone (not singlefile) apphost."));
+        throw StatusCode::BundleExtractionIOError;
+#endif
+    }
+    else
+    {
+        extracted_size = fwrite(reader, 1, cast_size, file);
+    }
+
+    if (extracted_size != cast_size)
+    {
+        trace::error(_X("Failure extracting contents of the application bundle. Expected size:%d Actual size:%d"), size, extracted_size);
         trace::error(_X("I/O failure when writing extracted files."));
         throw StatusCode::BundleExtractionIOError;
     }

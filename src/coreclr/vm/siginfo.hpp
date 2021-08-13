@@ -253,7 +253,8 @@ public:
                                          ClassLoadLevel level = CLASS_LOADED,
                                          BOOL dropGenericArgumentLevel = FALSE,
                                          const Substitution *pSubst = NULL,
-                                         const ZapSig::Context *pZapSigContext = NULL) const;
+                                         const ZapSig::Context *pZapSigContext = NULL,
+                                         MethodTable *pMTInterfaceMapOwner = NULL) const;
 
 public:
         //------------------------------------------------------------------------
@@ -636,7 +637,6 @@ class MetaSig
         // defines in cor.h) - throws.
         //----------------------------------------------------------
         static BYTE GetCallingConvention(
-            Module          *pModule,
             const Signature &signature)
         {
             CONTRACTL
@@ -663,7 +663,6 @@ class MetaSig
         //----------------------------------------------------------
         __checkReturn
         static HRESULT GetCallingConvention_NoThrow(
-            Module          *pModule,
             const Signature &signature,
             BYTE            *pbCallingConvention)
         {
@@ -751,7 +750,7 @@ class MetaSig
         //----------------------------------------------------------
         // Is vararg?
         //----------------------------------------------------------
-        static BOOL IsVarArg(Module *pModule, const Signature &signature)
+        static BOOL IsVarArg(const Signature &signature)
         {
             CONTRACTL
             {
@@ -765,7 +764,7 @@ class MetaSig
             HRESULT hr;
             BYTE    nCallingConvention;
 
-            hr = GetCallingConvention_NoThrow(pModule, signature, &nCallingConvention);
+            hr = GetCallingConvention_NoThrow(signature, &nCallingConvention);
             if (FAILED(hr))
             {   // Invalid signatures are not VarArg
                 return FALSE;
@@ -778,33 +777,6 @@ class MetaSig
             LIMITED_METHOD_DAC_CONTRACT;
 
             return m_pModule;
-        }
-
-        //----------------------------------------------------------
-        // Gets the unmanaged calling convention by reading any modopts.
-        //
-        // Returns:
-        //   S_OK - Calling convention was read from modopt
-        //   S_FALSE - Calling convention was not read from modopt
-        //   COR_E_BADIMAGEFORMAT - Signature had an invalid format
-        //   COR_E_INVALIDPROGRAM - Program is considered invalid (more
-        //                          than one calling convention specified)
-        //----------------------------------------------------------
-        static HRESULT TryGetUnmanagedCallingConventionFromModOpt(
-            _In_ CORINFO_MODULE_HANDLE pModule,
-            _In_ PCCOR_SIGNATURE pSig,
-            _In_ ULONG cSig,
-            _Out_ CorInfoCallConvExtension *callConvOut,
-            _Out_ bool* suppressGCTransitionOut,
-            _Out_ UINT *errorResID);
-
-        static CorInfoCallConvExtension GetDefaultUnmanagedCallingConvention()
-        {
-#ifdef TARGET_UNIX
-            return CorInfoCallConvExtension::C;
-#else // TARGET_UNIX
-            return CorInfoCallConvExtension::Stdcall;
-#endif // !TARGET_UNIX
         }
 
         //------------------------------------------------------------------
@@ -1165,7 +1137,6 @@ public:
         BYTE            m_flags;
         BYTE            m_CallConv;
 };  // class MetaSig
-
 
 BOOL IsTypeRefOrDef(LPCSTR szClassName, Module *pModule, mdToken token);
 

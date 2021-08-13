@@ -59,7 +59,11 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
                     // OCSP/CRL to root to get intermediate statuses. It should take at least 2x the delay
                     // plus other non-network time, so we can at least ensure it took as long as
                     // the delay for each fetch.
-                    Assert.True(watch.Elapsed >= delay * 2, $"watch.Elapsed: {watch.Elapsed}");
+                    // We expect the chain to build in at least 16 seconds (2 * delay) since each fetch
+                    // should take `delay` number of seconds, and there are two fetchs that need to be
+                    // performed. We allow a small amount of leeway to account for differences between
+                    // how long the the delay is performed and the stopwatch.
+                    Assert.True(watch.Elapsed >= delay * 2 - TimeSpan.FromSeconds(1), $"watch.Elapsed: {watch.Elapsed}");
                 }
             });
         }
@@ -340,7 +344,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
         }
 
         private static X509ChainStatusFlags GetFlags(X509Chain chain, string thumbprint) =>
-            chain.ChainElements.OfType<X509ChainElement>().
+            chain.ChainElements.
                 Single(e => e.Certificate.Thumbprint == thumbprint).
                 ChainElementStatus.Aggregate((X509ChainStatusFlags)0, (a, e) => a | e.Status);
     }

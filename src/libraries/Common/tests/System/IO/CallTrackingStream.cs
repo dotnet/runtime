@@ -10,7 +10,7 @@ using System.Threading.Tasks;
 
 namespace System.IO
 {
-    public class CallTrackingStream : Stream
+    internal class CallTrackingStream : Stream
     {
         private readonly Dictionary<string, int> _callCounts; // maps names of methods -> how many times they were called
 

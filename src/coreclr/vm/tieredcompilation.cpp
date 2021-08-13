@@ -446,18 +446,7 @@ void TieredCompilationManager::BackgroundWorkerStart()
     DWORD timeoutMs = g_pConfig->TieredCompilation_BackgroundWorkerTimeoutMs();
     DWORD delayMs = g_pConfig->TieredCompilation_CallCountingDelayMs();
 
-    int processorCount;
-#ifndef TARGET_UNIX
-    CPUGroupInfo::EnsureInitialized();
-    if (CPUGroupInfo::CanEnableGCCPUGroups() && CPUGroupInfo::CanEnableThreadUseAllCpuGroups())
-    {
-        processorCount = CPUGroupInfo::GetNumActiveProcessors();
-    }
-    else
-#endif
-    {
-        processorCount = GetCurrentProcessCpuCount();
-    }
+    int processorCount = GetCurrentProcessCpuCount();
     _ASSERTE(processorCount > 0);
 
     LARGE_INTEGER li;

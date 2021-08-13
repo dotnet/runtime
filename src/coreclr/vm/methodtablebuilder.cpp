@@ -320,6 +320,11 @@ MethodTableBuilder::ExpandApproxInterface(
 {
     STANDARD_VM_CONTRACT;
 
+    if (pNewInterface->HasVirtualStaticMethods())
+    {
+        bmtProp->fHasVirtualStaticMethods = TRUE;
+    }
+
     //#ExpandingInterfaces
     // We expand the tree of inherited interfaces into a set by adding the
     // current node BEFORE expanding the parents of the current node.
@@ -407,15 +412,22 @@ MethodTableBuilder::ExpandApproxInterface(
 
     bmtInterface->dwInterfaceMapSize++;
 
-    // Make sure to pass in the substitution from the new itf type created above as
-    // these methods assume that substitutions are allocated in the stacking heap,
-    // not the stack.
-    InterfaceDeclarationScope declaredItfScope(declScope.fIsInterfaceDeclaredOnParent, false);
-    ExpandApproxDeclaredInterfaces(
-        bmtInterface,
-        bmtTypeHandle(pNewItfType),
-        declaredItfScope
-        COMMA_INDEBUG(dbg_pClassMT));
+    // Checking for further expanded interfaces isn't necessary for the system module, as we can rely on the C# compiler
+    // to have found all of the interfaces that the type implements, and to place them in the interface list itself. Also
+    // we can assume no ambiguous interfaces
+    // Code related to this is marked with #SpecialCorelibInterfaceExpansionAlgorithm
+    if (!(GetModule()->IsSystem() && IsValueClass()))
+    {
+        // Make sure to pass in the substitution from the new itf type created above as
+        // these methods assume that substitutions are allocated in the stacking heap,
+        // not the stack.
+        InterfaceDeclarationScope declaredItfScope(declScope.fIsInterfaceDeclaredOnParent, false);
+        ExpandApproxDeclaredInterfaces(
+            bmtInterface,
+            bmtTypeHandle(pNewItfType),
+            declaredItfScope
+            COMMA_INDEBUG(dbg_pClassMT));
+    }
 } // MethodTableBuilder::ExpandApproxInterface
 
 //*******************************************************************************
@@ -1181,12 +1193,29 @@ MethodTableBuilder::bmtInterfaceEntry::CreateSlotTable(
     CONSISTENCY_CHECK(m_pImplTable == NULL);
 
     SLOT_INDEX cSlots = (SLOT_INDEX)GetInterfaceType()->GetMethodTable()->GetNumVirtuals();
-    bmtInterfaceSlotImpl * pST = new (pStackingAllocator) bmtInterfaceSlotImpl[cSlots];
+    SLOT_INDEX cSlotsTotal = cSlots;
+
+    if (GetInterfaceType()->GetMethodTable()->HasVirtualStaticMethods())
+    {
+        MethodTable::MethodIterator it(GetInterfaceType()->GetMethodTable());
+        for (; it.IsValid(); it.Next())
+        {
+            MethodDesc *pDeclMD = it.GetDeclMethodDesc();
+            if (pDeclMD->IsStatic() && pDeclMD->IsVirtual())
+            {
+                cSlotsTotal++;
+            }
+        }
+    }
+
+    bmtInterfaceSlotImpl * pST = new (pStackingAllocator) bmtInterfaceSlotImpl[cSlotsTotal];
+
 
     MethodTable::MethodIterator it(GetInterfaceType()->GetMethodTable());
     for (; it.IsValid(); it.Next())
     {
-        if (!it.IsVirtual())
+        MethodDesc *pDeclMD = it.GetDeclMethodDesc();
+        if (!pDeclMD->IsVirtual())
         {
             break;
         }
@@ -1194,8 +1223,15 @@ MethodTableBuilder::bmtInterfaceEntry::CreateSlotTable(
         bmtRTMethod * pCurMethod = new (pStackingAllocator)
             bmtRTMethod(GetInterfaceType(), it.GetDeclMethodDesc());
 
-        CONSISTENCY_CHECK(m_cImplTable == it.GetSlotNumber());
-        pST[m_cImplTable++] = bmtInterfaceSlotImpl(pCurMethod, INVALID_SLOT_INDEX);
+        if (pDeclMD->IsStatic())
+        {
+            pST[cSlots + m_cImplTableStatics++] = bmtInterfaceSlotImpl(pCurMethod, INVALID_SLOT_INDEX);
+        }
+        else
+        {
+            CONSISTENCY_CHECK(m_cImplTable == it.GetSlotNumber());
+            pST[m_cImplTable++] = bmtInterfaceSlotImpl(pCurMethod, INVALID_SLOT_INDEX);
+        }
     }
 
     m_pImplTable = pST;
@@ -1506,7 +1542,7 @@ MethodTableBuilder::BuildMethodTableThrowing(
     if (IsComImport() && !IsEnum() && !IsInterface() && !IsValueClass() && !IsDelegate())
     {
 #ifdef FEATURE_COMINTEROP
-        // ComImport classes must either extend from Object
+        // ComImport classes must extend from Object
         MethodTable* pMTParent = GetParentMethodTable();
         if ((pMTParent == NULL) || (pMTParent != g_pObjectClass))
         {
@@ -1519,19 +1555,14 @@ MethodTableBuilder::BuildMethodTableThrowing(
             BuildMethodTableThrowException(IDS_CLASSLOAD_COMIMPCANNOTHAVELAYOUT);
         }
 
-        if (pMTParent == g_pObjectClass)
+        if (g_pBaseCOMObject != NULL)
         {
-            // ComImport classes ultimately extend from our __ComObject or RuntimeClass class
-            MethodTable *pCOMMT = g_pBaseCOMObject;
-
-            _ASSERTE(pCOMMT);
-
             // We could have had COM interop classes derive from System._ComObject,
             // but instead we have them derive from System.Object, have them set the
             // ComImport bit in the type attributes, and then we swap out the parent
             // type under the covers.
-            bmtInternal->pType->SetParentType(CreateTypeChain(pCOMMT, Substitution()));
-            bmtInternal->pParentMT = pCOMMT;
+            bmtInternal->pType->SetParentType(CreateTypeChain(g_pBaseCOMObject, Substitution()));
+            bmtInternal->pParentMT = g_pBaseCOMObject;
         }
 #endif
         // if the current class is imported
@@ -1972,6 +2003,33 @@ MethodTableBuilder::BuildMethodTableThrowing(
             pMT->SetIDynamicInterfaceCastable();
         }
     }
+
+#ifdef FEATURE_OBJCMARSHAL
+    // Check if this type has a finalizer and then if it is a referenced tracked type.
+    if (pMT->HasFinalizer() && !IsValueClass() && !IsInterface() && !IsDelegate())
+    {
+        BOOL isTrackedReference = FALSE;
+        if (HasParent())
+        {
+            MethodTable * pParentClass = GetParentMethodTable();
+            PREFIX_ASSUME(pParentClass != NULL);
+            isTrackedReference = pParentClass->IsTrackedReferenceWithFinalizer();
+        }
+
+        if (!isTrackedReference)
+        {
+            HRESULT hr = GetCustomAttribute(bmtInternal->pType->GetTypeDefToken(),
+                WellKnownAttribute::ObjectiveCTrackedTypeAttribute,
+                NULL,
+                NULL);
+
+            isTrackedReference = hr == S_OK ? TRUE : FALSE;
+        }
+
+        if (isTrackedReference)
+            pMT->SetIsTrackedReferenceWithFinalizer();
+    }
+#endif // FEATURE_OBJCMARSHAL
 
     // Grow the typedef ridmap in advance as we can't afford to
     // fail once we set the resolve bit
@@ -2557,7 +2615,7 @@ HRESULT MethodTableBuilder::FindMethodDeclarationForMethodImpl(
             IfFailRet(pMDInternalImport->GetNameAndSigOfMemberRef(pToken, &pSig, &cSig, &szMember));
 
             if (isCallConv(
-                MetaSig::GetCallingConvention(GetModule(), Signature(pSig, cSig)),
+                MetaSig::GetCallingConvention(Signature(pSig, cSig)),
                 IMAGE_CEE_CS_CALLCONV_FIELD))
             {
                 return VLDTR_E_MR_BADCALLINGCONV;
@@ -2693,15 +2751,7 @@ MethodTableBuilder::EnumerateClassMethods()
             BuildMethodTableThrowException(IDS_CLASSLOAD_BADFORMAT);
         }
 
-        // Signature validation
-        if (!bmtProp->fNoSanityChecks)
-        {
-            hr = validateTokenSig(tok,pMemberSignature,cMemberSignature,dwMemberAttrs,pMDInternalImport);
-            if (FAILED(hr))
-            {
-                BuildMethodTableThrowException(hr, BFA_BAD_SIGNATURE, mdMethodDefNil);
-            }
-        }
+        bool isVtblGap = false;
         if (IsMdRTSpecialName(dwMemberAttrs) || IsMdVirtual(dwMemberAttrs) || IsDelegate())
         {
             if (FAILED(pMDInternalImport->GetNameOfMethodDef(tok, (LPCSTR *)&strMethodName)))
@@ -2712,10 +2762,22 @@ MethodTableBuilder::EnumerateClassMethods()
             {
                 BuildMethodTableThrowException(BFA_METHOD_NAME_TOO_LONG);
             }
+
+            isVtblGap = IsMdRTSpecialName(dwMemberAttrs) && strncmp(strMethodName, "_VtblGap", 8) == 0;
         }
         else
         {
             strMethodName = NULL;
+        }
+
+        // Signature validation
+        if (!bmtProp->fNoSanityChecks && !isVtblGap)
+        {
+            hr = validateTokenSig(tok,pMemberSignature,cMemberSignature,dwMemberAttrs,pMDInternalImport);
+            if (FAILED(hr))
+            {
+                BuildMethodTableThrowException(hr, BFA_BAD_SIGNATURE, mdMethodDefNil);
+            }
         }
 
         DWORD numGenericMethodArgs = 0;
@@ -2789,84 +2851,77 @@ MethodTableBuilder::EnumerateClassMethods()
         // single empty slot).
         //
 
-        if (IsMdRTSpecialName(dwMemberAttrs))
+        if (isVtblGap)
         {
-            PREFIX_ASSUME(strMethodName != NULL); // if we've gotten here we've called GetNameOfMethodDef
+            //
+            // This slot doesn't really exist, don't add it to the method
+            // table. Instead it represents one or more empty slots, encoded
+            // in the method name. Locate the beginning of the count in the
+            // name. There are these points to consider:
+            //   There may be no count present at all (in which case the
+            //   count is taken as one).
+            //   There may be an additional count just after Gap but before
+            //   the '_'. We ignore this.
+            //
 
-            // The slot is special, but it might not be a vtable spacer. To
-            // determine that we must look at the name.
-            if (strncmp(strMethodName, "_VtblGap", 8) == 0)
+            LPCSTR pos = strMethodName + 8;
+
+            // Skip optional number.
+            while (IS_DIGIT(*pos))
+                pos++;
+
+            WORD n = 0;
+
+            // Check for presence of count.
+            if (*pos == '\0')
             {
-                                //
-                // This slot doesn't really exist, don't add it to the method
-                // table. Instead it represents one or more empty slots, encoded
-                // in the method name. Locate the beginning of the count in the
-                // name. There are these points to consider:
-                //   There may be no count present at all (in which case the
-                //   count is taken as one).
-                //   There may be an additional count just after Gap but before
-                //   the '_'. We ignore this.
-                                //
-
-                LPCSTR pos = strMethodName + 8;
-
-                // Skip optional number.
-                while (IS_DIGIT(*pos))
-                    pos++;
-
-                WORD n = 0;
-
-                // Check for presence of count.
-                if (*pos == '\0')
-                    n = 1;
-                else
+                n = 1;
+            }
+            else
+            {
+                if (*pos != '_')
                 {
-                    if (*pos != '_')
-                    {
-                        BuildMethodTableThrowException(COR_E_BADIMAGEFORMAT,
-                                                       IDS_CLASSLOAD_BADSPECIALMETHOD,
-                                                       tok);
-                    }
-
-                    // Skip '_'.
-                    pos++;
-
-                    // Read count.
-                    bool fReadAtLeastOneDigit = false;
-                    while (IS_DIGIT(*pos))
-                    {
-                        _ASSERTE(n < 6552);
-                        n *= 10;
-                        n += DIGIT_TO_INT(*pos);
-                        pos++;
-                        fReadAtLeastOneDigit = true;
-                    }
-
-                    // Check for end of name.
-                    if (*pos != '\0' || !fReadAtLeastOneDigit)
-                    {
-                        BuildMethodTableThrowException(COR_E_BADIMAGEFORMAT,
-                                                       IDS_CLASSLOAD_BADSPECIALMETHOD,
-                                                       tok);
-                    }
+                    BuildMethodTableThrowException(COR_E_BADIMAGEFORMAT,
+                                                    IDS_CLASSLOAD_BADSPECIALMETHOD,
+                                                    tok);
                 }
 
-#ifdef FEATURE_COMINTEROP
-                // Record vtable gap in mapping list. The map is an optional field, so ensure we've allocated
-                // these fields first.
-                EnsureOptionalFieldsAreAllocated(GetHalfBakedClass(), m_pAllocMemTracker, GetLoaderAllocator()->GetLowFrequencyHeap());
-                if (GetHalfBakedClass()->GetSparseCOMInteropVTableMap() == NULL)
-                    GetHalfBakedClass()->SetSparseCOMInteropVTableMap(new SparseVTableMap());
+                // Skip '_'.
+                pos++;
 
-                GetHalfBakedClass()->GetSparseCOMInteropVTableMap()->RecordGap((WORD)NumDeclaredMethods(), n);
+                // Read count.
+                bool fReadAtLeastOneDigit = false;
+                while (IS_DIGIT(*pos))
+                {
+                    _ASSERTE(n < 6552);
+                    n *= 10;
+                    n += DIGIT_TO_INT(*pos);
+                    pos++;
+                    fReadAtLeastOneDigit = true;
+                }
 
-                bmtProp->fSparse = true;
-#endif // FEATURE_COMINTEROP
-                continue;
+                // Check for end of name.
+                if (*pos != '\0' || !fReadAtLeastOneDigit)
+                {
+                    BuildMethodTableThrowException(COR_E_BADIMAGEFORMAT,
+                                                    IDS_CLASSLOAD_BADSPECIALMETHOD,
+                                                    tok);
+                }
             }
 
-        }
+#ifdef FEATURE_COMINTEROP
+            // Record vtable gap in mapping list. The map is an optional field, so ensure we've allocated
+            // these fields first.
+            EnsureOptionalFieldsAreAllocated(GetHalfBakedClass(), m_pAllocMemTracker, GetLoaderAllocator()->GetLowFrequencyHeap());
+            if (GetHalfBakedClass()->GetSparseCOMInteropVTableMap() == NULL)
+                GetHalfBakedClass()->SetSparseCOMInteropVTableMap(new SparseVTableMap());
 
+            GetHalfBakedClass()->GetSparseCOMInteropVTableMap()->RecordGap((WORD)NumDeclaredMethods(), n);
+
+            bmtProp->fSparse = true;
+#endif // FEATURE_COMINTEROP
+            continue;
+        }
 
         //
         // This is a real method so add it to the enumeration of methods. We now need to retrieve
@@ -2879,6 +2934,13 @@ MethodTableBuilder::EnumerateClassMethods()
                 IDS_CLASSLOAD_BADSPECIALMETHOD,
                 tok);
         }
+
+        // Check for the presence of virtual static methods
+        if (IsMdVirtual(dwMemberAttrs) && IsMdStatic(dwMemberAttrs))
+        {
+            bmtProp->fHasVirtualStaticMethods = TRUE;
+        }
+
         //
         // But first - minimal flags validity checks
         //
@@ -2945,7 +3007,11 @@ MethodTableBuilder::EnumerateClassMethods()
                 }
                 if(IsMdStatic(dwMemberAttrs))
                 {
-                    BuildMethodTableThrowException(BFA_VIRTUAL_STATIC_METHOD);
+                    if (!fIsClassInterface)
+                    {
+                        // Static virtual methods are only allowed to exist in interfaces
+                        BuildMethodTableThrowException(BFA_VIRTUAL_STATIC_METHOD);
+                    }
                 }
                 if(strMethodName && (0==strcmp(strMethodName, COR_CTOR_METHOD_NAME)))
                 {
@@ -3027,8 +3093,8 @@ MethodTableBuilder::EnumerateClassMethods()
 
             // Check the appearance of covariant and contravariant in the method signature
             // Note that variance is only supported for interfaces, and these rules are not
-            // checked for static methods as they cannot be called variantly.
-            if ((bmtGenerics->pVarianceInfo != NULL) && !IsMdStatic(dwMemberAttrs))
+            // checked for non-virtual static methods as they cannot be called variantly.
+            if ((bmtGenerics->pVarianceInfo != NULL) && (IsMdVirtual(dwMemberAttrs) || !IsMdStatic(dwMemberAttrs)))
             {
                 SigPointer sp(pMemberSignature, cMemberSignature);
                 uint32_t callConv;
@@ -4770,16 +4836,16 @@ VOID MethodTableBuilder::TestMethodImpl(
     {
         BuildMethodTableThrowException(IDS_CLASSLOAD_MI_NONVIRTUAL_DECL);
     }
-    if (!IsMdVirtual(dwImplAttrs))
+    if ((IsMdVirtual(dwImplAttrs) && IsMdStatic(dwImplAttrs)) || (!IsMdVirtual(dwImplAttrs) && !IsMdStatic(dwImplAttrs)))
     {
         BuildMethodTableThrowException(IDS_CLASSLOAD_MI_MUSTBEVIRTUAL);
     }
-    // Virtual methods cannot be static
-    if (IsMdStatic(dwDeclAttrs))
+    // Virtual methods on classes/valuetypes cannot be static
+    if (IsMdStatic(dwDeclAttrs) && !hDeclMethod.GetOwningType().IsInterface())
     {
         BuildMethodTableThrowException(IDS_CLASSLOAD_STATICVIRTUAL);
     }
-    if (IsMdStatic(dwImplAttrs))
+    if ((!!IsMdStatic(dwImplAttrs)) != (!!IsMdStatic(dwDeclAttrs)))
     {
         BuildMethodTableThrowException(IDS_CLASSLOAD_STATICVIRTUAL);
     }
@@ -5008,7 +5074,7 @@ MethodTableBuilder::ValidateMethods()
                 pMemberSignature = it.GetSig(&cMemberSignature);
             }
 
-            if (MetaSig::IsVarArg(pModule, Signature(pMemberSignature, cMemberSignature)))
+            if (MetaSig::IsVarArg(Signature(pMemberSignature, cMemberSignature)))
             {
                 BuildMethodTableThrowException(BFA_GENCODE_NOT_BE_VARARG);
             }
@@ -5021,16 +5087,21 @@ MethodTableBuilder::ValidateMethods()
 
         if (it.IsMethodImpl())
         {
-            if (!IsMdVirtual(it.Attrs()))
-            {   // Non-virtual methods cannot participate in a methodImpl pair.
+            if (!IsMdVirtual(it.Attrs()) && !IsMdStatic(it.Attrs()))
+            {
+                // Non-virtual methods may only participate in a methodImpl pair when
+                // they are static and they implement a virtual static interface method.
                 BuildMethodTableThrowException(IDS_CLASSLOAD_MI_MUSTBEVIRTUAL, it.Token());
             }
         }
 
-        // Virtual static methods are not allowed.
+        // Virtual static methods are only allowed on interfaces and they must be abstract.
         if (IsMdStatic(it.Attrs()) && IsMdVirtual(it.Attrs()))
         {
-            BuildMethodTableThrowException(IDS_CLASSLOAD_STATICVIRTUAL, it.Token());
+            if (!IsInterface() || !IsMdAbstract(it.Attrs()))
+            {
+                BuildMethodTableThrowException(IDS_CLASSLOAD_STATICVIRTUAL, it.Token());
+            }
         }
     }
 }
@@ -5297,8 +5368,8 @@ MethodTableBuilder::PlaceVirtualMethods()
     DeclaredMethodIterator it(*this);
     while (it.Next())
     {
-        if (!IsMdVirtual(it.Attrs()))
-        {   // Only processing declared virtual methods
+        if (!IsMdVirtual(it.Attrs()) || IsMdStatic(it.Attrs()))
+        {   // Only processing declared virtual instance methods
             continue;
         }
 
@@ -5378,14 +5449,14 @@ MethodTableBuilder::PlaceVirtualMethods()
 // that the name+signature corresponds to. Used by ProcessMethodImpls and ProcessInexactMethodImpls
 // Always returns the first match that it finds. Affects the ambiguities in code:#ProcessInexactMethodImpls_Ambiguities
 MethodTableBuilder::bmtMethodHandle
-MethodTableBuilder::FindDeclMethodOnInterfaceEntry(bmtInterfaceEntry *pItfEntry, MethodSignature &declSig)
+MethodTableBuilder::FindDeclMethodOnInterfaceEntry(bmtInterfaceEntry *pItfEntry, MethodSignature &declSig, bool searchForStaticMethods)
 {
     STANDARD_VM_CONTRACT;
 
     bmtMethodHandle declMethod;
 
     bmtInterfaceEntry::InterfaceSlotIterator slotIt =
-        pItfEntry->IterateInterfaceSlots(GetStackingAllocator());
+        pItfEntry->IterateInterfaceSlots(GetStackingAllocator(), searchForStaticMethods);
     // Check for exact match
     for (; !slotIt.AtEnd(); slotIt.Next())
     {
@@ -5613,12 +5684,11 @@ MethodTableBuilder::ProcessMethodImpls()
     DeclaredMethodIterator it(*this);
     while (it.Next())
     {
-        // Non-virtual methods cannot be classified as methodImpl - we should have thrown an
-        // error before reaching this point.
-        CONSISTENCY_CHECK(!(!IsMdVirtual(it.Attrs()) && it.IsMethodImpl()));
-
-        if (!IsMdVirtual(it.Attrs()))
-        {   // Only virtual methods can participate in methodImpls
+        if (!IsMdVirtual(it.Attrs()) && it.IsMethodImpl() && bmtProp->fNoSanityChecks)
+        {
+            // Non-virtual methods can only be classified as methodImpl when implementing
+            // static virtual methods.
+            CONSISTENCY_CHECK(IsMdStatic(it.Attrs()));
             continue;
         }
 
@@ -5797,7 +5867,7 @@ MethodTableBuilder::ProcessMethodImpls()
                                 }
 
                                 // 3. Find the matching method.
-                                declMethod = FindDeclMethodOnInterfaceEntry(pItfEntry, declSig);
+                                declMethod = FindDeclMethodOnInterfaceEntry(pItfEntry, declSig, !IsMdVirtual(it.Attrs())); // Search for statics when the impl is non-virtual
                             }
                             else
                             {
@@ -5830,6 +5900,14 @@ MethodTableBuilder::ProcessMethodImpls()
                     if (!IsMdVirtual(declMethod.GetDeclAttrs()))
                     {   // Make sure the decl is virtual
                         BuildMethodTableThrowException(IDS_CLASSLOAD_MI_MUSTBEVIRTUAL, it.Token());
+                    }
+
+                    if (!IsMdVirtual(it.Attrs()) && it.IsMethodImpl() && IsMdStatic(it.Attrs()))
+                    {
+                        // Non-virtual methods can only be classified as methodImpl when implementing
+                        // static virtual methods.
+                        ValidateStaticMethodImpl(declMethod, *it);//bmtMethodHandle(pCurImplMethod));
+                        continue;
                     }
 
                     if (bmtMetaData->rgMethodImplTokens[m].fRequiresCovariantReturnTypeChecking)
@@ -6263,75 +6341,80 @@ MethodTableBuilder::PlaceMethodImpls()
         // Get the declaration part of the method impl. It will either be a token
         // (declaration is on this type) or a method desc.
         bmtMethodHandle hDeclMethod = bmtMethodImpl->GetDeclarationMethod(iEntry);
-        if(hDeclMethod.IsMDMethod())
+
+        // Don't place static virtual method overrides in the vtable
+        if (!IsMdStatic(hDeclMethod.GetDeclAttrs()))
         {
-            // The declaration is on the type being built
-            bmtMDMethod * pCurDeclMethod = hDeclMethod.AsMDMethod();
+            if(hDeclMethod.IsMDMethod())
+            {
+                // The declaration is on the type being built
+                bmtMDMethod * pCurDeclMethod = hDeclMethod.AsMDMethod();
 
-            mdToken mdef = pCurDeclMethod->GetMethodSignature().GetToken();
-            if (bmtMethodImpl->IsBody(mdef))
-            {   // A method declared on this class cannot be both a decl and an impl
-                BuildMethodTableThrowException(IDS_CLASSLOAD_MI_MULTIPLEOVERRIDES, mdef);
-            }
+                mdToken mdef = pCurDeclMethod->GetMethodSignature().GetToken();
+                if (bmtMethodImpl->IsBody(mdef))
+                {   // A method declared on this class cannot be both a decl and an impl
+                    BuildMethodTableThrowException(IDS_CLASSLOAD_MI_MULTIPLEOVERRIDES, mdef);
+                }
 
-            if (IsInterface())
-            {
-                // Throws
-                PlaceInterfaceDeclarationOnInterface(
-                    hDeclMethod,
-                    pCurImplMethod,
-                    slots,              // Adds override to the slot and replaced arrays.
-                    replaced,
-                    &slotIndex,
-                    dwMaxSlotSize);     // Increments count
-            }
-            else
-            {
-                // Throws
-                PlaceLocalDeclarationOnClass(
-                    pCurDeclMethod,
-                    pCurImplMethod,
-                    slots,              // Adds override to the slot and replaced arrays.
-                    replaced,
-                    &slotIndex,
-                    dwMaxSlotSize);     // Increments count
-            }
-        }
-        else
-        {
-            bmtRTMethod * pCurDeclMethod = hDeclMethod.AsRTMethod();
-
-            if (IsInterface())
-            {
-                // Throws
-                PlaceInterfaceDeclarationOnInterface(
-                    hDeclMethod,
-                    pCurImplMethod,
-                    slots,              // Adds override to the slot and replaced arrays.
-                    replaced,
-                    &slotIndex,
-                    dwMaxSlotSize);     // Increments count
-            }
-            else
-            {
-                // Do not use pDecl->IsInterface here as that asks the method table and the MT may not yet be set up.
-                if (pCurDeclMethod->GetOwningType()->IsInterface())
+                if (IsInterface())
                 {
                     // Throws
-                    PlaceInterfaceDeclarationOnClass(
-                        pCurDeclMethod,
-                        pCurImplMethod);
+                    PlaceInterfaceDeclarationOnInterface(
+                        hDeclMethod,
+                        pCurImplMethod,
+                        slots,              // Adds override to the slot and replaced arrays.
+                        replaced,
+                        &slotIndex,
+                        dwMaxSlotSize);     // Increments count
                 }
                 else
                 {
                     // Throws
-                    PlaceParentDeclarationOnClass(
+                    PlaceLocalDeclarationOnClass(
                         pCurDeclMethod,
                         pCurImplMethod,
-                        slots,
+                        slots,              // Adds override to the slot and replaced arrays.
                         replaced,
                         &slotIndex,
-                        dwMaxSlotSize);        // Increments count
+                        dwMaxSlotSize);     // Increments count
+                }
+            }
+            else
+            {
+                bmtRTMethod * pCurDeclMethod = hDeclMethod.AsRTMethod();
+
+                if (IsInterface())
+                {
+                    // Throws
+                    PlaceInterfaceDeclarationOnInterface(
+                        hDeclMethod,
+                        pCurImplMethod,
+                        slots,              // Adds override to the slot and replaced arrays.
+                        replaced,
+                        &slotIndex,
+                        dwMaxSlotSize);     // Increments count
+                }
+                else
+                {
+                    // Do not use pDecl->IsInterface here as that asks the method table and the MT may not yet be set up.
+                    if (pCurDeclMethod->GetOwningType()->IsInterface())
+                    {
+                        // Throws
+                        PlaceInterfaceDeclarationOnClass(
+                            pCurDeclMethod,
+                            pCurImplMethod);
+                    }
+                    else
+                    {
+                        // Throws
+                        PlaceParentDeclarationOnClass(
+                            pCurDeclMethod,
+                            pCurImplMethod,
+                            slots,
+                            replaced,
+                            &slotIndex,
+                            dwMaxSlotSize);        // Increments count
+                    }
                 }
             }
         }
@@ -6696,6 +6779,30 @@ MethodTableBuilder::PlaceParentDeclarationOnClass(
     // increment the counter
     (*pSlotIndex)++;
 } // MethodTableBuilder::PlaceParentDeclarationOnClass
+
+VOID MethodTableBuilder::ValidateStaticMethodImpl(
+    bmtMethodHandle     hDecl,
+    bmtMethodHandle     hImpl)
+{
+    // While we don't want to place the static method impl declarations on the class/interface, we do 
+    // need to validate the method constraints and signature are compatible
+    if (!bmtProp->fNoSanityChecks)
+    {
+        ///////////////////////////////
+        // Verify the signatures match
+
+        MethodImplCompareSignatures(
+            hDecl,
+            hImpl,
+            FALSE /* allowCovariantReturn */,
+            IDS_CLASSLOAD_CONSTRAINT_MISMATCH_ON_INTERFACE_METHOD_IMPL);
+
+        ///////////////////////////////
+        // Validate the method impl.
+
+        TestMethodImpl(hDecl, hImpl);
+    }
+}
 
 //*******************************************************************************
 // This will validate that all interface methods that were matched during
@@ -8743,19 +8850,6 @@ MethodTableBuilder::HandleGCForExplicitLayout()
 
     MethodTable *pMT = GetHalfBakedMethodTable();
 
-#ifdef FEATURE_COLLECTIBLE_TYPES
-    if (bmtFP->NumGCPointerSeries == 0 && pMT->Collectible())
-    {
-        // For collectible types, insert empty gc series
-        CGCDescSeries *pSeries;
-
-        CGCDesc::Init( (PVOID) pMT, 1);
-        pSeries = ((CGCDesc*)pMT)->GetLowestSeries();
-        pSeries->SetSeriesSize( (size_t) (0) - (size_t) pMT->GetBaseSize());
-        pSeries->SetSeriesOffset(OBJECT_SIZE);
-    }
-    else
-#endif // FEATURE_COLLECTIBLE_TYPES
     if (bmtFP->NumGCPointerSeries != 0)
     {
         pMT->SetContainsPointers();
@@ -8932,6 +9026,18 @@ void MethodTableBuilder::CopyExactParentSlots(MethodTable *pMT, MethodTable *pAp
     }
 } // MethodTableBuilder::CopyExactParentSlots
 
+bool InstantiationIsAllTypeVariables(const Instantiation &inst)
+{
+    for (auto i = inst.GetNumArgs(); i > 0;)
+    {
+        TypeHandle th = inst[--i];
+        if (!th.IsGenericVariable())
+            return false;
+    }
+
+    return true;
+}
+
 //*******************************************************************************
 /* static */
 void
@@ -8948,7 +9054,7 @@ MethodTableBuilder::LoadExactInterfaceMap(MethodTable *pMT)
     MethodTable::InterfaceMapIterator it = pMT->IterateInterfaceMap();
     while (it.Next())
     {
-        if (it.GetInterface()->HasInstantiation())
+        if (it.GetInterfaceApprox()->HasInstantiation())
         {
             hasInstantiatedInterfaces = TRUE;
             break;
@@ -8990,41 +9096,95 @@ MethodTableBuilder::LoadExactInterfaceMap(MethodTable *pMT)
     // (e) If duplicates found then use the slow metadata-based technique code:#LoadExactInterfaceMap_Algorithm2
     DWORD nInterfacesCount = pMT->GetNumInterfaces();
     MethodTable **pExactMTs = (MethodTable**) _alloca(sizeof(MethodTable *) * nInterfacesCount);
-    DWORD nAssigned = 0;
-    BOOL duplicates = false;
-    if (pParentMT != NULL)
-    {
-        MethodTable::InterfaceMapIterator parentIt = pParentMT->IterateInterfaceMap();
-        while (parentIt.Next())
-        {
-            duplicates |= InsertMethodTable(parentIt.GetInterface(), pExactMTs, nInterfacesCount, &nAssigned);
-        }
-    }
-    InterfaceImplEnum ie(pMT->GetModule(), pMT->GetCl(), NULL);
-    while ((hr = ie.Next()) == S_OK)
-    {
-        MethodTable *pNewIntfMT = ClassLoader::LoadTypeDefOrRefOrSpecThrowing(pMT->GetModule(),
-                                                                              ie.CurrentToken(),
-                                                                              &typeContext,
-                                                                              ClassLoader::ThrowIfNotFound,
-                                                                              ClassLoader::FailIfUninstDefOrRef,
-                                                                              ClassLoader::LoadTypes,
-                                                                              CLASS_LOAD_EXACTPARENTS,
-                                                                              TRUE).GetMethodTable();
+    BOOL duplicates;
+    bool retry = false;
 
-        duplicates |= InsertMethodTable(pNewIntfMT, pExactMTs, nInterfacesCount, &nAssigned);
-        MethodTable::InterfaceMapIterator intIt = pNewIntfMT->IterateInterfaceMap();
-        while (intIt.Next())
+    // Always use exact loading behavior with classes or shared generics, as they have to deal with inheritance, and the
+    // inexact matching logic for classes would be more complex to write.
+    // Also always use the exact loading behavior with any generic that contains generic variables, as the open type is used
+    // to represent a type instantiated over its own generic variables, and the special marker type is currently the open type
+    // and we make this case distinguishable by simply disallowing the optimization in those cases.
+    bool retryWithExactInterfaces = !pMT->IsValueType() || pMT->IsSharedByGenericInstantiations() || pMT->ContainsGenericVariables();
+    
+    DWORD nAssigned = 0;
+    do
+    {
+        nAssigned = 0;
+        retry = false;
+        duplicates = false;
+        if (pParentMT != NULL)
         {
-            duplicates |= InsertMethodTable(intIt.GetInterface(), pExactMTs, nInterfacesCount, &nAssigned);
+            MethodTable::InterfaceMapIterator parentIt = pParentMT->IterateInterfaceMap();
+            while (parentIt.Next())
+            {
+                duplicates |= InsertMethodTable(parentIt.GetInterface(pParentMT, CLASS_LOAD_EXACTPARENTS), pExactMTs, nInterfacesCount, &nAssigned);
+            }
         }
-    }
+        InterfaceImplEnum ie(pMT->GetModule(), pMT->GetCl(), NULL);
+        while ((hr = ie.Next()) == S_OK)
+        {
+            MethodTable *pNewIntfMT = ClassLoader::LoadTypeDefOrRefOrSpecThrowing(pMT->GetModule(),
+                                                                                ie.CurrentToken(),
+                                                                                &typeContext,
+                                                                                ClassLoader::ThrowIfNotFound,
+                                                                                ClassLoader::FailIfUninstDefOrRef,
+                                                                                ClassLoader::LoadTypes,
+                                                                                CLASS_LOAD_EXACTPARENTS,
+                                                                                TRUE,
+                                                                                (const Substitution*)0,
+                                                                                retryWithExactInterfaces ? NULL : pMT).GetMethodTable();
+
+            bool uninstGenericCase = !retryWithExactInterfaces && pNewIntfMT->IsSpecialMarkerTypeForGenericCasting();
+
+            duplicates |= InsertMethodTable(pNewIntfMT, pExactMTs, nInterfacesCount, &nAssigned);
+
+            // We have a special algorithm for interface maps in CoreLib, which doesn't expand interfaces, and assumes no ambiguous
+            // duplicates. Code related to this is marked with #SpecialCorelibInterfaceExpansionAlgorithm
+            if (!(pMT->GetModule()->IsSystem() && pMT->IsValueType()))
+            {
+                MethodTable::InterfaceMapIterator intIt = pNewIntfMT->IterateInterfaceMap();
+                while (intIt.Next())
+                {
+                    MethodTable *pItfPossiblyApprox = intIt.GetInterfaceApprox();
+                    if (uninstGenericCase && pItfPossiblyApprox->HasInstantiation() && pItfPossiblyApprox->ContainsGenericVariables())
+                    {
+                        // We allow a limited set of interface generic shapes with type variables. In particular, we require the 
+                        // instantiations to be exactly simple type variables, and to have a relatively small number of generic arguments
+                        // so that the fallback instantiating logic works efficiently
+                        if (InstantiationIsAllTypeVariables(pItfPossiblyApprox->GetInstantiation()) && pItfPossiblyApprox->GetInstantiation().GetNumArgs() <= MethodTable::MaxGenericParametersForSpecialMarkerType)
+                        {
+                            pItfPossiblyApprox = ClassLoader::LoadTypeDefThrowing(pItfPossiblyApprox->GetModule(), pItfPossiblyApprox->GetCl(), ClassLoader::ThrowIfNotFound, ClassLoader::PermitUninstDefOrRef, 0, CLASS_LOAD_EXACTPARENTS).AsMethodTable();
+                        }
+                        else
+                        {
+                            retry = true;
+                            break;
+                        }
+                    }
+                    duplicates |= InsertMethodTable(intIt.GetInterface(pNewIntfMT, CLASS_LOAD_EXACTPARENTS), pExactMTs, nInterfacesCount, &nAssigned);
+                }
+            }
+
+            if (retry)
+                break;
+        }
+
+        if (retry)
+        {
+            retryWithExactInterfaces = true;
+        }
+    } while (retry);
+
     if (FAILED(hr))
     {
         pMT->GetAssembly()->ThrowTypeLoadException(pMT->GetMDImport(), pMT->GetCl(), IDS_CLASSLOAD_BADFORMAT);
     }
 #ifdef _DEBUG
-    duplicates |= EEConfig::GetConfigDWORD_DontUse_(CLRConfig::INTERNAL_AlwaysUseMetadataInterfaceMapLayout, FALSE);
+    if (!pMT->GetModule()->IsSystem())
+    {
+
+        duplicates |= CLRConfig::GetConfigValue(CLRConfig::INTERNAL_AlwaysUseMetadataInterfaceMapLayout);
+    }
 
     //#InjectInterfaceDuplicates_LoadExactInterfaceMap
     // If we are injecting duplicates also for non-generic interfaces in check builds, we have to use
@@ -9032,6 +9192,10 @@ MethodTableBuilder::LoadExactInterfaceMap(MethodTable *pMT)
     // Has to be in sync with code:#InjectInterfaceDuplicates_Main.
     duplicates |= pMT->Debug_HasInjectedInterfaceDuplicates();
 #endif
+    // We have a special algorithm for interface maps in CoreLib, which doesn't expand interfaces, and assumes no ambiguous
+    // duplicates. Code related to this is marked with #SpecialCorelibInterfaceExpansionAlgorithm
+    _ASSERTE(!duplicates || !(pMT->GetModule()->IsSystem() && pMT->IsValueType())); 
+
     CONSISTENCY_CHECK(duplicates || (nAssigned == pMT->GetNumInterfaces()));
     if (duplicates)
     {
@@ -9091,7 +9255,8 @@ MethodTableBuilder::LoadExactInterfaceMap(MethodTable *pMT)
                 pParentMT,
                 pParentSubstForTypeLoad,
                 pParentSubstForComparing,
-                pStackingAllocator);
+                pStackingAllocator,
+                retryWithExactInterfaces ? NULL : pMT);
         }
 #ifdef _DEBUG
         //#ExactInterfaceMap_SupersetOfParent
@@ -9114,7 +9279,7 @@ MethodTableBuilder::LoadExactInterfaceMap(MethodTable *pMT)
                 }
                 else
                 {   // It is not canonical instantiation, we can compare MethodTables
-                    _ASSERTE(parentInterfacesIterator.GetInterface() == bmtExactInterface.pExactMTs[nInterfaceIndex]);
+                    _ASSERTE(parentInterfacesIterator.GetInterfaceApprox() == bmtExactInterface.pExactMTs[nInterfaceIndex]);
                 }
                 nInterfaceIndex++;
             }
@@ -9147,7 +9312,8 @@ MethodTableBuilder::LoadExactInterfaceMap(MethodTable *pMT)
             pMT->GetCl(),
             NULL,
             NULL,
-            pStackingAllocator
+            pStackingAllocator,
+            retryWithExactInterfaces ? NULL : pMT
             COMMA_INDEBUG(pMT));
         CONSISTENCY_CHECK(bmtExactInterface.nAssigned == pMT->GetNumInterfaces());
 
@@ -9315,9 +9481,8 @@ MethodTableBuilder::LoadExactInterfaceMap(MethodTable *pMT)
     while (thisIt.Next())
     {
 #ifdef _DEBUG
-        MethodTable*pOldMT = thisIt.GetInterface();
         MethodTable *pNewMT = pExactMTs[i];
-        CONSISTENCY_CHECK(pOldMT->HasSameTypeDefAs(pNewMT));
+        CONSISTENCY_CHECK(thisIt.HasSameTypeDefAs(pNewMT));
 #endif // _DEBUG
         thisIt.SetInterface(pExactMTs[i]);
         i++;
@@ -9332,7 +9497,8 @@ MethodTableBuilder::ExpandExactInheritedInterfaces(
     MethodTable *           pMT,
     const Substitution *    pSubstForTypeLoad,
     Substitution *          pSubstForComparing,
-    StackingAllocator *     pStackingAllocator)
+    StackingAllocator *     pStackingAllocator,
+    MethodTable *           pMTInterfaceMapOwner)
 {
     STANDARD_VM_CONTRACT;
 
@@ -9359,7 +9525,8 @@ MethodTableBuilder::ExpandExactInheritedInterfaces(
             pParentMT,
             pParentSubstForTypeLoad,
             pParentSubstForComparing,
-            pStackingAllocator);
+            pStackingAllocator,
+            pMTInterfaceMapOwner);
     }
     ExpandExactDeclaredInterfaces(
         bmtInfo,
@@ -9367,7 +9534,8 @@ MethodTableBuilder::ExpandExactInheritedInterfaces(
         pMT->GetCl(),
         pSubstForTypeLoad,
         pSubstForComparing,
-        pStackingAllocator
+        pStackingAllocator,
+        pMTInterfaceMapOwner
         COMMA_INDEBUG(pMT));
 
     // Restore type's subsitution chain for comparing interfaces
@@ -9383,7 +9551,8 @@ MethodTableBuilder::ExpandExactDeclaredInterfaces(
     mdToken                     typeDef,
     const Substitution *        pSubstForTypeLoad,
     Substitution *              pSubstForComparing,
-    StackingAllocator *         pStackingAllocator
+    StackingAllocator *         pStackingAllocator,
+    MethodTable *               pMTInterfaceMapOwner
     COMMA_INDEBUG(MethodTable * dbg_pClassMT))
 {
     STANDARD_VM_CONTRACT;
@@ -9401,7 +9570,8 @@ MethodTableBuilder::ExpandExactDeclaredInterfaces(
             ClassLoader::LoadTypes,
             CLASS_LOAD_EXACTPARENTS,
             TRUE,
-            pSubstForTypeLoad).GetMethodTable();
+            pSubstForTypeLoad,
+            pMTInterfaceMapOwner).GetMethodTable();
 
         Substitution ifaceSubstForTypeLoad(ie.CurrentToken(), pModule, pSubstForTypeLoad);
         Substitution ifaceSubstForComparing(ie.CurrentToken(), pModule, pSubstForComparing);
@@ -9410,7 +9580,8 @@ MethodTableBuilder::ExpandExactDeclaredInterfaces(
             pInterface,
             &ifaceSubstForTypeLoad,
             &ifaceSubstForComparing,
-            pStackingAllocator
+            pStackingAllocator,
+            pMTInterfaceMapOwner
             COMMA_INDEBUG(dbg_pClassMT));
     }
     if (FAILED(hr))
@@ -9426,7 +9597,8 @@ MethodTableBuilder::ExpandExactInterface(
     MethodTable *               pIntf,
     const Substitution *        pSubstForTypeLoad_OnStack,   // Allocated on stack!
     const Substitution *        pSubstForComparing_OnStack,  // Allocated on stack!
-    StackingAllocator *         pStackingAllocator
+    StackingAllocator *         pStackingAllocator,
+    MethodTable *               pMTInterfaceMapOwner
     COMMA_INDEBUG(MethodTable * dbg_pClassMT))
 {
     STANDARD_VM_CONTRACT;
@@ -9473,7 +9645,8 @@ MethodTableBuilder::ExpandExactInterface(
         pIntf->GetCl(),
         pSubstForTypeLoad,
         &bmtInfo->pInterfaceSubstitution[n],
-        pStackingAllocator
+        pStackingAllocator,
+        pMTInterfaceMapOwner
         COMMA_INDEBUG(dbg_pClassMT));
 } // MethodTableBuilder::ExpandExactInterface
 
@@ -9796,7 +9969,8 @@ MethodTable * MethodTableBuilder::AllocateNewMT(
     LoaderAllocator *pAllocator,
     BOOL isInterface,
     BOOL fDynamicStatics,
-    BOOL fHasGenericsStaticsInfo
+    BOOL fHasGenericsStaticsInfo,
+    BOOL fHasVirtualStaticMethods
 #ifdef FEATURE_COMINTEROP
         , BOOL fHasDynamicInterfaceMap
 #endif
@@ -9939,6 +10113,10 @@ MethodTable * MethodTableBuilder::AllocateNewMT(
 
     // initialize the total number of slots
     pMT->SetNumVirtuals(static_cast<WORD>(dwVirtuals));
+    if (fHasVirtualStaticMethods)
+    {
+        pMT->SetHasVirtualStaticMethods();
+    }
 
     pMT->SetParentMethodTable(pMTParent);
 
@@ -10087,10 +10265,6 @@ MethodTableBuilder::SetupMethodTable2(
         cbDictAllocSize = DictionaryLayout::GetDictionarySizeFromLayout(bmtGenerics->GetNumGenericArgs(), pClass->GetDictionaryLayout(), &cbDictSlotSize);
     }
 
-#ifdef FEATURE_COLLECTIBLE_TYPES
-    BOOL fCollectible = pLoaderModule->IsCollectible();
-#endif // FEATURE_COLLECTIBLE_TYPES
-
     DWORD dwGCSize;
 
     if (bmtFP->NumGCPointerSeries > 0)
@@ -10099,12 +10273,7 @@ MethodTableBuilder::SetupMethodTable2(
     }
     else
     {
-#ifdef FEATURE_COLLECTIBLE_TYPES
-        if (fCollectible)
-            dwGCSize = (DWORD)CGCDesc::ComputeSize(1);
-        else
-#endif // FEATURE_COLLECTIBLE_TYPES
-            dwGCSize = 0;
+        dwGCSize = 0;
     }
 
     pClass->SetNumMethods(bmtVT->cTotalSlots);
@@ -10125,6 +10294,7 @@ MethodTableBuilder::SetupMethodTable2(
                                    IsInterface(),
                                    bmtProp->fDynamicStatics,
                                    bmtProp->fGenericsStatics,
+                                   bmtProp->fHasVirtualStaticMethods,
 #ifdef FEATURE_COMINTEROP
                                    fHasDynamicInterfaceMap,
 #endif
@@ -10629,7 +10799,7 @@ MethodTableBuilder::SetupMethodTable2(
         MethodTable::InterfaceMapIterator intIt = pMT->IterateInterfaceMap();
         while (intIt.Next())
         {
-            MethodTable* pIntfMT = intIt.GetInterface();
+            MethodTable* pIntfMT = intIt.GetInterface(pMT, pMT->GetLoadLevel());
             if (pIntfMT->GetNumVirtuals() != 0)
             {
                 BOOL hasComImportMethod = FALSE;
@@ -11200,19 +11370,6 @@ VOID MethodTableBuilder::HandleGCForValueClasses(MethodTable ** pByValueClassCac
 
     // Note that for value classes, the following calculation is only appropriate
     // when the instance is in its "boxed" state.
-#ifdef FEATURE_COLLECTIBLE_TYPES
-    if (bmtFP->NumGCPointerSeries == 0 && pMT->Collectible())
-    {
-        // For collectible types, insert empty gc series
-        CGCDescSeries *pSeries;
-
-        CGCDesc::Init( (PVOID) pMT, 1);
-        pSeries = ((CGCDesc*)pMT)->GetLowestSeries();
-        pSeries->SetSeriesSize( (size_t) (0) - (size_t) pMT->GetBaseSize());
-        pSeries->SetSeriesOffset(OBJECT_SIZE);
-    }
-    else
-#endif // FEATURE_COLLECTIBLE_TYPES
     if (bmtFP->NumGCPointerSeries != 0)
     {
         CGCDescSeries *pSeries;
@@ -11627,7 +11784,7 @@ MethodTableBuilder::GatherGenericsInfo(
     CONTRACTL
     {
         STANDARD_VM_CHECK;
-        PRECONDITION(GetThread() != NULL);
+        PRECONDITION(GetThreadNULLOk() != NULL);
         PRECONDITION(CheckPointer(pModule));
         PRECONDITION(CheckPointer(bmtGenericsInfo));
     }
@@ -11875,7 +12032,7 @@ ClassLoader::CreateTypeHandleForTypeDefThrowing(
     CONTRACT(TypeHandle)
     {
         STANDARD_VM_CHECK;
-        PRECONDITION(GetThread() != NULL);
+        PRECONDITION(GetThreadNULLOk() != NULL);
         PRECONDITION(CheckPointer(pModule));
         POSTCONDITION(!RETVAL.IsNull());
         POSTCONDITION(CheckPointer(RETVAL.GetMethodTable()));

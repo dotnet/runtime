@@ -144,7 +144,7 @@ namespace System.Xml
         private static char[] CreateDefaultIndentChars()
         {
             var result = new char[IndentArrayLength];
-            result.AsSpan().Fill(DefaultIndentChar);
+            Array.Fill(result, DefaultIndentChar);
             return result;
         }
 
@@ -792,7 +792,7 @@ namespace System.Xml
                     throw new ArgumentException(SR.Xml_InvalidPiChars);
                 }
 
-                if (0 == string.Compare(name, "xml", StringComparison.OrdinalIgnoreCase) && _stateTable == s_stateTableDocument)
+                if (string.Equals(name, "xml", StringComparison.OrdinalIgnoreCase) && _stateTable == s_stateTableDocument)
                 {
                     throw new ArgumentException(SR.Xml_DupXmlDecl);
                 }
@@ -1186,7 +1186,7 @@ namespace System.Xml
                 _currentState = State.Prolog;
 
                 StringBuilder bufBld = new StringBuilder(128);
-                bufBld.Append("version=" + _quoteChar + "1.0" + _quoteChar);
+                bufBld.Append($"version={_quoteChar}1.0{_quoteChar}");
                 if (_encoding != null)
                 {
                     bufBld.Append(" encoding=");

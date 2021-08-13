@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
@@ -69,6 +70,80 @@ namespace System.Numerics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [CLSCompliant(false)]
         public static bool IsPow2(ulong value) => (value & (value - 1)) == 0 && value != 0;
+
+        /// <summary>
+        /// Evaluate whether a given integral value is a power of 2.
+        /// </summary>
+        /// <param name="value">The value.</param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static bool IsPow2(nint value) => (value & (value - 1)) == 0 && value > 0;
+
+        /// <summary>
+        /// Evaluate whether a given integral value is a power of 2.
+        /// </summary>
+        /// <param name="value">The value.</param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static bool IsPow2(nuint value) => (value & (value - 1)) == 0 && value != 0;
+
+        /// <summary>Round the given integral value up to a power of 2.</summary>
+        /// <param name="value">The value.</param>
+        /// <returns>
+        /// The smallest power of 2 which is greater than or equal to <paramref name="value"/>.
+        /// If <paramref name="value"/> is 0 or the result overflows, returns 0.
+        /// </returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [CLSCompliant(false)]
+        public static uint RoundUpToPowerOf2(uint value)
+        {
+            if (Lzcnt.IsSupported || ArmBase.IsSupported || X86Base.IsSupported)
+            {
+#if TARGET_64BIT
+                return (uint)(0x1_0000_0000ul >> LeadingZeroCount(value - 1));
+#else
+                int shift = 32 - LeadingZeroCount(value - 1);
+                return (1u ^ (uint)(shift >> 5)) << shift;
+#endif
+            }
+
+            // Based on https://graphics.stanford.edu/~seander/bithacks.html#RoundUpPowerOf2
+            --value;
+            value |= value >> 1;
+            value |= value >> 2;
+            value |= value >> 4;
+            value |= value >> 8;
+            value |= value >> 16;
+            return value + 1;
+        }
+
+
+        /// <summary>
+        /// Round the given integral value up to a power of 2.
+        /// </summary>
+        /// <param name="value">The value.</param>
+        /// <returns>
+        /// The smallest power of 2 which is greater than or equal to <paramref name="value"/>.
+        /// If <paramref name="value"/> is 0 or the result overflows, returns 0.
+        /// </returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [CLSCompliant(false)]
+        public static ulong RoundUpToPowerOf2(ulong value)
+        {
+            if (Lzcnt.X64.IsSupported || ArmBase.Arm64.IsSupported)
+            {
+                int shift = 64 - LeadingZeroCount(value - 1);
+                return (1ul ^ (ulong)(shift >> 6)) << shift;
+            }
+
+            // Based on https://graphics.stanford.edu/~seander/bithacks.html#RoundUpPowerOf2
+            --value;
+            value |= value >> 1;
+            value |= value >> 2;
+            value |= value >> 4;
+            value |= value >> 8;
+            value |= value >> 16;
+            value |= value >> 32;
+            return value + 1;
+        }
 
         /// <summary>
         /// Count the number of leading zero bits in a mask.

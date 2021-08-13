@@ -105,6 +105,16 @@ namespace Internal.TypeSystem.Ecma
                 _mappedViewAccessor.Dispose();
         }
 
+        public override int GetStateMachineKickoffMethod(int methodToken)
+        {
+            var debugInformationHandle = ((MethodDefinitionHandle)MetadataTokens.EntityHandle(methodToken)).ToDebugInformationHandle();
+
+            var debugInformation = _reader.GetMethodDebugInformation(debugInformationHandle);
+
+            var kickoffMethod = debugInformation.GetStateMachineKickoffMethod();
+            return kickoffMethod.IsNil ? 0 : MetadataTokens.GetToken(kickoffMethod);
+        }
+
         public override IEnumerable<ILSequencePoint> GetSequencePointsForMethod(int methodToken)
         {
             var debugInformationHandle = ((MethodDefinitionHandle)MetadataTokens.EntityHandle(methodToken)).ToDebugInformationHandle();
@@ -113,12 +123,25 @@ namespace Internal.TypeSystem.Ecma
 
             var sequencePoints = debugInformation.GetSequencePoints();
 
+            DocumentHandle previousDocumentHandle = default;
+            string previousDocumentUrl = null;
+
             foreach (var sequencePoint in sequencePoints)
             {
-                if (sequencePoint.StartLine == 0xFEEFEE)
+                if (sequencePoint.StartLine == SequencePoint.HiddenLine)
                     continue;
 
-                var url = _reader.GetString(_reader.GetDocument(sequencePoint.Document).Name);
+                string url;
+                if (sequencePoint.Document == previousDocumentHandle)
+                {
+                    url = previousDocumentUrl;
+                }
+                else
+                {
+                    url = _reader.GetString(_reader.GetDocument(sequencePoint.Document).Name);
+                    previousDocumentHandle = sequencePoint.Document;
+                    previousDocumentUrl = url;
+                }
 
                 yield return new ILSequencePoint(sequencePoint.Offset, url, sequencePoint.StartLine);
             }

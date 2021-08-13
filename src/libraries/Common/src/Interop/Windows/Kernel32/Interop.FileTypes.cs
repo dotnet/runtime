@@ -5,7 +5,7 @@ internal static partial class Interop
 {
     internal static partial class Kernel32
     {
-        internal partial class FileTypes
+        internal static partial class FileTypes
         {
             internal const int FILE_TYPE_UNKNOWN = 0x0000;
             internal const int FILE_TYPE_DISK = 0x0001;

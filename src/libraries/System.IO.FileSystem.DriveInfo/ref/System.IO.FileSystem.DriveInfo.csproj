@@ -8,7 +8,5 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\System.Runtime\ref\System.Runtime.csproj" />
-    <ProjectReference Include="..\..\System.IO.FileSystem.Primitives\ref\System.IO.FileSystem.Primitives.csproj" />
-    <ProjectReference Include="..\..\System.IO.FileSystem\ref\System.IO.FileSystem.csproj" />
   </ItemGroup>
 </Project>

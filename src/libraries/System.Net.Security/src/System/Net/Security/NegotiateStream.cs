@@ -7,6 +7,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Runtime.CompilerServices;
 using System.Runtime.ExceptionServices;
+using System.Runtime.Versioning;
 using System.Security.Authentication;
 using System.Security.Authentication.ExtendedProtection;
 using System.Security.Principal;
@@ -18,6 +19,7 @@ namespace System.Net.Security
     /// <summary>
     /// Provides a stream that uses the Negotiate security protocol to authenticate the client, and optionally the server, in client-server communication.
     /// </summary>
+    [UnsupportedOSPlatform("tvos")]
     public partial class NegotiateStream : AuthenticatedStream
     {
         /// <summary>Set as the _exception when the instance is disposed.</summary>

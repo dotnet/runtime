@@ -44,7 +44,6 @@ namespace Internal.JitInterface
             NativeLibrary.SetDllImportResolver(typeof(CorInfoImpl).Assembly, (libName, assembly, searchPath) =>
             {
                 IntPtr libHandle = IntPtr.Zero;
-#if READYTORUN
                 if (libName == CorInfoImpl.JitLibrary)
                 {
                     if (!string.IsNullOrEmpty(jitPath))
@@ -56,9 +55,6 @@ namespace Internal.JitInterface
                         libHandle = NativeLibrary.Load("clrjit_" + GetTargetSpec(target), assembly, searchPath);
                     }
                 }
-#else
-                Debug.Assert(jitPath == null);
-#endif
                 if (libName == CorInfoImpl.JitSupportLibrary)
                 {
                     libHandle = NativeLibrary.Load("jitinterface_" + RuntimeInformation.ProcessArchitecture.ToString().ToLowerInvariant(), assembly, searchPath);
@@ -144,6 +140,11 @@ namespace Internal.JitInterface
                 TargetArchitecture.ARM64 => "arm64",
                 _ => throw new NotImplementedException(target.Architecture.ToString())
             };
+
+            if ((target.Architecture == TargetArchitecture.ARM64) && (target.OperatingSystem == TargetOS.OSX))
+            {
+                targetOSComponent = "unix_osx";
+            }
 
             return targetOSComponent + '_' + targetArchComponent + "_" + RuntimeInformation.ProcessArchitecture.ToString().ToLowerInvariant();
         }

@@ -19,7 +19,7 @@ namespace Internal.IL
                 && method.Name == "CreateInstance")
             {
                 TypeDesc type = method.Instantiation[0];
-                if (type.IsValueType && type.GetDefaultConstructor() == null)
+                if (type.IsValueType && type.GetParameterlessConstructor() == null)
                 {
                     // Replace the body with implementation that just returns "default"
                     MethodDesc createDefaultInstance = method.OwningType.GetKnownMethod("CreateDefaultInstance", method.GetTypicalMethodDefinition().Signature);

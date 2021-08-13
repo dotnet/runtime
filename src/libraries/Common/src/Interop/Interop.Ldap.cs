@@ -15,7 +15,7 @@ internal static partial class Interop
 namespace System.DirectoryServices.Protocols
 {
     [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
-    internal class Luid
+    internal sealed class Luid
     {
         private readonly int _lowPart;
         private readonly int _highPart;
@@ -99,6 +99,7 @@ namespace System.DirectoryServices.Protocols
         LDAP_OPT_SECURITY_CONTEXT = 0x99,
         LDAP_OPT_ROOTDSE_CACHE = 0x9a, // Not Supported in Linux
         LDAP_OPT_DEBUG_LEVEL = 0x5001,
+        LDAP_OPT_URI = 0x5006, // Not Supported in Windows
         LDAP_OPT_X_SASL_REALM = 0x6101,
         LDAP_OPT_X_SASL_AUTHCID = 0x6102,
         LDAP_OPT_X_SASL_AUTHZID = 0x6103

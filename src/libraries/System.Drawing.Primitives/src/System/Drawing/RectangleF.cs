@@ -3,6 +3,7 @@
 
 using System.ComponentModel;
 using System.Diagnostics.CodeAnalysis;
+using System.Numerics;
 
 namespace System.Drawing
 {
@@ -46,6 +47,33 @@ namespace System.Drawing
             width = size.Width;
             height = size.Height;
         }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref='System.Drawing.RectangleF'/> struct from the specified
+        /// <see cref="System.Numerics.Vector4"/>.
+        /// </summary>
+        public RectangleF(Vector4 vector)
+        {
+            x = vector.X;
+            y = vector.Y;
+            width = vector.Z;
+            height = vector.W;
+        }
+
+        /// <summary>
+        /// Creates a new <see cref="System.Numerics.Vector4"/> from this <see cref="System.Drawing.RectangleF"/>.
+        /// </summary>
+        public Vector4 ToVector4() => new Vector4(x, y, width, height);
+
+        /// <summary>
+        /// Converts the specified <see cref="System.Drawing.RectangleF"/> to a <see cref="System.Numerics.Vector4"/>.
+        /// </summary>
+        public static explicit operator Vector4(RectangleF rectangle) => rectangle.ToVector4();
+
+        /// <summary>
+        /// Converts the specified <see cref="System.Numerics.Vector2"/> to a <see cref="System.Drawing.RectangleF"/>.
+        /// </summary>
+        public static explicit operator RectangleF(Vector4 vector) => new RectangleF(vector);
 
         /// <summary>
         /// Creates a new <see cref='System.Drawing.RectangleF'/> with the specified location and size.
@@ -298,8 +326,6 @@ namespace System.Drawing
         /// Converts the <see cref='System.Drawing.RectangleF.Location'/> and <see cref='System.Drawing.RectangleF.Size'/>
         /// of this <see cref='System.Drawing.RectangleF'/> to a human-readable string.
         /// </summary>
-        public override readonly string ToString() =>
-            "{X=" + X.ToString() + ",Y=" + Y.ToString() +
-            ",Width=" + Width.ToString() + ",Height=" + Height.ToString() + "}";
+        public override readonly string ToString() => $"{{X={X},Y={Y},Width={Width},Height={Height}}}";
     }
 }

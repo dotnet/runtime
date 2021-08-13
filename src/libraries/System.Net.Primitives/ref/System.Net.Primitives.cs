@@ -32,7 +32,6 @@ namespace System.Net
         public bool Expired { get { throw null; } set { } }
         public System.DateTime Expires { get { throw null; } set { } }
         public bool HttpOnly { get { throw null; } set { } }
-        [System.Diagnostics.CodeAnalysis.AllowNullAttribute]
         public string Name { get { throw null; } set { } }
         [System.Diagnostics.CodeAnalysis.AllowNullAttribute]
         public string Path { get { throw null; } set { } }
@@ -43,7 +42,7 @@ namespace System.Net
         [System.Diagnostics.CodeAnalysis.AllowNullAttribute]
         public string Value { get { throw null; } set { } }
         public int Version { get { throw null; } set { } }
-        public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] object? comparand) { throw null; }
+        public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? comparand) { throw null; }
         public override int GetHashCode() { throw null; }
         public override string ToString() { throw null; }
     }
@@ -84,6 +83,7 @@ namespace System.Net
         public void Add(System.Uri uri, System.Net.CookieCollection cookies) { }
         public string GetCookieHeader(System.Uri uri) { throw null; }
         public System.Net.CookieCollection GetCookies(System.Uri uri) { throw null; }
+        public System.Net.CookieCollection GetAllCookies() { throw null; }
         public void SetCookies(System.Uri uri, string cookieHeader) { }
     }
     public partial class CookieException : System.FormatException, System.Runtime.Serialization.ISerializable
@@ -122,7 +122,7 @@ namespace System.Net
         public override System.Net.Sockets.AddressFamily AddressFamily { get { throw null; } }
         public string Host { get { throw null; } }
         public int Port { get { throw null; } }
-        public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] object? comparand) { throw null; }
+        public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? comparand) { throw null; }
         public override int GetHashCode() { throw null; }
         public override string ToString() { throw null; }
     }
@@ -232,7 +232,7 @@ namespace System.Net
         public IPAddress(long newAddress) { }
         public IPAddress(System.ReadOnlySpan<byte> address) { }
         public IPAddress(System.ReadOnlySpan<byte> address, long scopeid) { }
-        [System.ObsoleteAttribute("This property has been deprecated. It is address family dependent. Please use IPAddress.Equals method to perform comparisons. https://go.microsoft.com/fwlink/?linkid=14202")]
+        [System.ObsoleteAttribute("IPAddress.Address is address family dependent and has been deprecated. Use IPAddress.Equals to perform comparisons.")]
         public long Address { get { throw null; } set { } }
         public System.Net.Sockets.AddressFamily AddressFamily { get { throw null; } }
         public bool IsIPv4MappedToIPv6 { get { throw null; } }
@@ -240,8 +240,9 @@ namespace System.Net
         public bool IsIPv6Multicast { get { throw null; } }
         public bool IsIPv6SiteLocal { get { throw null; } }
         public bool IsIPv6Teredo { get { throw null; } }
+        public bool IsIPv6UniqueLocal { get { throw null; } }
         public long ScopeId { get { throw null; } set { } }
-        public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] object? comparand) { throw null; }
+        public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? comparand) { throw null; }
         public byte[] GetAddressBytes() { throw null; }
         public override int GetHashCode() { throw null; }
         public static short HostToNetworkOrder(short host) { throw null; }
@@ -271,7 +272,7 @@ namespace System.Net
         public override System.Net.Sockets.AddressFamily AddressFamily { get { throw null; } }
         public int Port { get { throw null; } set { } }
         public override System.Net.EndPoint Create(System.Net.SocketAddress socketAddress) { throw null; }
-        public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] object? comparand) { throw null; }
+        public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? comparand) { throw null; }
         public override int GetHashCode() { throw null; }
         public static System.Net.IPEndPoint Parse(System.ReadOnlySpan<char> s) { throw null; }
         public static System.Net.IPEndPoint Parse(string s) { throw null; }
@@ -511,12 +512,12 @@ namespace System.Security.Authentication
     public enum SslProtocols
     {
         None = 0,
-        [System.ObsoleteAttribute("This value has been deprecated.  It is no longer supported. https://go.microsoft.com/fwlink/?linkid=14202")]
+        [System.ObsoleteAttribute("SslProtocols.Ssl2 has been deprecated and is not supported.")]
         Ssl2 = 12,
-        [System.ObsoleteAttribute("This value has been deprecated.  It is no longer supported. https://go.microsoft.com/fwlink/?linkid=14202")]
+        [System.ObsoleteAttribute("SslProtocols.Ssl3 has been deprecated and is not supported.")]
         Ssl3 = 48,
         Tls = 192,
-        [System.ObsoleteAttribute("This value has been deprecated.  It is no longer supported. https://go.microsoft.com/fwlink/?linkid=14202")]
+        [System.ObsoleteAttribute("SslProtocols.Default has been deprecated and is not supported.")]
         Default = 240,
         Tls11 = 768,
         Tls12 = 3072,

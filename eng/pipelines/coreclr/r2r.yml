@@ -5,7 +5,7 @@ schedules:
   displayName: Mon through Sun at 9:00 PM (UTC-8:00)
   branches:
     include:
-    - master
+    - main
   always: true
 
 jobs:
@@ -18,6 +18,7 @@ jobs:
     - Linux_arm
     - Linux_arm64
     - Linux_x64
+    - OSX_arm64
     - windows_arm
     - windows_arm64
     - windows_x64
@@ -44,6 +45,7 @@ jobs:
     - Linux_arm
     - Linux_arm64
     - Linux_x64
+    - OSX_arm64
     - windows_arm
     - windows_arm64
     - windows_x64

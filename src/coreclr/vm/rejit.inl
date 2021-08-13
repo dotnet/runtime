@@ -68,17 +68,17 @@ inline void ReJitManager::ReportReJITError(Module* pModule, mdMethodDef methodDe
     CONTRACTL_END;
 
     {
-        BEGIN_PIN_PROFILER(CORProfilerPresent());
+        BEGIN_PROFILER_CALLBACK(CORProfilerEnableRejit());
         _ASSERTE(CORProfilerEnableRejit());
         {
             GCX_PREEMP();
-            g_profControlBlock.pProfInterface->ReJITError(
+            (&g_profControlBlock)->mainProfilerInfo.pProfInterface->ReJITError(
                 reinterpret_cast< ModuleID > (pModule),
                 methodDef,
                 reinterpret_cast< FunctionID > (pMD),
                 hrStatus);
         }
-        END_PIN_PROFILER();
+        END_PROFILER_CALLBACK();
     }
 #endif // PROFILING_SUPPORTED
 }

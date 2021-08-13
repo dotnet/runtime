@@ -86,7 +86,7 @@ namespace System.Xml.Xsl.Xslt
      */
     #endregion
 
-    internal class TemplateMatch
+    internal sealed class TemplateMatch
     {
         public static readonly TemplateMatchComparer Comparer = new TemplateMatchComparer();
 
@@ -224,7 +224,7 @@ namespace System.Xml.Xsl.Xslt
             }
         }
 
-        internal class TemplateMatchComparer : IComparer<TemplateMatch>
+        internal sealed class TemplateMatchComparer : IComparer<TemplateMatch>
         {
             // TemplateMatch x is "greater" than TemplateMatch y iff
             // * x's priority is greater than y's priority, or
@@ -258,7 +258,7 @@ namespace System.Xml.Xsl.Xslt
         }
     }
 
-    internal class PatternBag
+    internal sealed class PatternBag
     {
         public Dictionary<QilName, List<Pattern>> FixedNamePatterns = new Dictionary<QilName, List<Pattern>>();
         public List<QilName> FixedNamePatternsNames = new List<QilName>();  // Needed only to guarantee a stable order
@@ -292,7 +292,7 @@ namespace System.Xml.Xsl.Xslt
         }
     }
 
-    internal class MatcherBuilder
+    internal sealed class MatcherBuilder
     {
         private readonly XPathQilFactory _f;
         private readonly ReferenceReplacer _refReplacer;
@@ -569,7 +569,7 @@ namespace System.Xml.Xsl.Xslt
                         default                         : nodeType = null       ;  break;
                         }
 
-                        Debug.Assert(nodeType != null, "Unexpected nodeKind: " + nodeKind);
+                        Debug.Assert(nodeType != null, $"Unexpected nodeKind: {nodeKind}");
                         QilNode typeNameCheck = f.IsType(it, nodeType);
 
                         if (qname != null) {

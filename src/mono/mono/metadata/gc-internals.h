@@ -18,9 +18,7 @@
 #include <mono/metadata/threads-types.h>
 #include <mono/sgen/gc-internal-agnostic.h>
 #include <mono/metadata/icalls.h>
-
-#define mono_domain_finalizers_lock(domain) mono_os_mutex_lock (&(domain)->finalizable_objects_hash_lock);
-#define mono_domain_finalizers_unlock(domain) mono_os_mutex_unlock (&(domain)->finalizable_objects_hash_lock);
+#include <mono/utils/mono-compiler.h>
 
 /* Register a memory area as a conservatively scanned GC root */
 #define MONO_GC_REGISTER_ROOT_PINNING(x,src,key,msg) mono_gc_register_root ((char*)&(x), sizeof(x), MONO_GC_DESCRIPTOR_NULL, (src), (key), (msg))
@@ -70,8 +68,7 @@ void
 mono_object_register_finalizer_handle (MonoObjectHandle obj);
 
 extern void mono_gc_init (void);
-extern void mono_gc_base_init (void);
-extern void mono_gc_cleanup (void);
+MONO_COMPONENT_API extern void mono_gc_base_init (void);
 extern void mono_gc_base_cleanup (void);
 extern void mono_gc_init_icalls (void);
 
@@ -81,7 +78,7 @@ extern void mono_gc_init_icalls (void);
  */
 extern gboolean mono_gc_is_gc_thread (void);
 
-extern gboolean mono_gc_is_finalizer_internal_thread (MonoInternalThread *thread);
+MONO_COMPONENT_API extern gboolean mono_gc_is_finalizer_internal_thread (MonoInternalThread *thread);
 
 extern void mono_gc_set_stack_end (void *stack_end);
 
@@ -89,7 +86,7 @@ extern void mono_gc_set_stack_end (void *stack_end);
  * Not exported in public headers, but can be linked to (unsupported).
  */
 gboolean mono_object_is_alive (MonoObject* obj);
-gboolean mono_gc_is_finalizer_thread (MonoThread *thread);
+MONO_COMPONENT_API gboolean mono_gc_is_finalizer_thread (MonoThread *thread);
 
 void mono_gchandle_set_target (MonoGCHandle gchandle, MonoObject *obj);
 
@@ -124,10 +121,6 @@ MonoObject*
 mono_gc_alloc_fixed_no_descriptor (size_t size, MonoGCRootSource source, void *key, const char *msg);
 
 void  mono_gc_free_fixed             (void* addr);
-
-/* make sure the gchandle was allocated for an object in domain */
-gboolean mono_gchandle_is_in_domain (MonoGCHandle gchandle, MonoDomain *domain);
-void     mono_gchandle_free_domain  (MonoDomain *domain);
 
 typedef void (*FinalizerThreadCallback) (gpointer user_data);
 
@@ -181,7 +174,7 @@ typedef void (*MonoFinalizationProc)(gpointer, gpointer); // same as SGenFinaliz
 void  mono_gc_register_for_finalization (MonoObject *obj, MonoFinalizationProc user_data);
 void  mono_gc_add_memory_pressure (gint64 value);
 MONO_API int   mono_gc_register_root (char *start, size_t size, MonoGCDescriptor descr, MonoGCRootSource source, void *key, const char *msg);
-void  mono_gc_deregister_root (char* addr);
+MONO_COMPONENT_API void  mono_gc_deregister_root (char* addr);
 void  mono_gc_finalize_domain (MonoDomain *domain);
 void  mono_gc_run_finalize (void *obj, void *data);
 void  mono_gc_clear_domain (MonoDomain * domain);
@@ -317,7 +310,7 @@ void mono_gc_set_desktop_mode (void);
 /*
  * Return whenever this GC can move objects
  */
-gboolean mono_gc_is_moving (void);
+MONO_COMPONENT_API gboolean mono_gc_is_moving (void);
 
 typedef void* (*MonoGCLockedCallbackFunc) (void *data);
 
@@ -329,11 +322,18 @@ guint64 mono_gc_get_allocated_bytes_for_current_thread (void);
 
 guint64 mono_gc_get_total_allocated_bytes (MonoBoolean precise);
 
-void mono_gc_get_gcmemoryinfo (gint64* fragmented_bytes,
-						       gint64* heap_size_bytes,
-						       gint64* high_memory_load_threshold_bytes,
-						       gint64* memory_load_bytes,
- 						       gint64* total_available_memory_bytes);
+void mono_gc_get_gcmemoryinfo (
+	gint64 *high_memory_load_threshold_bytes,
+	gint64 *memory_load_bytes,
+	gint64 *total_available_memory_bytes,
+	gint64 *total_committed_bytes,
+	gint64 *heap_size_bytes,
+	gint64 *fragmented_bytes);
+
+void mono_gc_get_gctimeinfo (
+	guint64 *time_last_gc_100ns,
+	guint64 *time_since_last_gc_100ns,
+	guint64 *time_max_gc_100ns);
 
 guint8* mono_gc_get_card_table (int *shift_bits, gpointer *card_mask);
 guint8* mono_gc_get_target_card_table (int *shift_bits, target_mgreg_t *card_mask);
@@ -434,7 +434,7 @@ extern gchar **mono_do_not_finalize_class_names;
  * Unified runtime stop/restart world, SGEN Only.
  * Will take and release the LOCK_GC.
  */
-void mono_stop_world (MonoThreadInfoFlags flags);
-void mono_restart_world (MonoThreadInfoFlags flags);
+MONO_COMPONENT_API void mono_stop_world (MonoThreadInfoFlags flags);
+MONO_COMPONENT_API void mono_restart_world (MonoThreadInfoFlags flags);
 
 #endif /* __MONO_METADATA_GC_INTERNAL_H__ */

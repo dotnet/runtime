@@ -62,7 +62,29 @@ This attribute returns the 'failing' category, which is disabled by default.
 ```cs
 [ActiveIssue(string issue, TestPlatforms platforms, TargetFrameworkMonikers frameworks)]
 ```
+**Disable using PlatformDetection filter:**
+```cs
+[ActiveIssue(string issue, typeof(PlatformDetection), nameof(PlatformDetection.{member name}))]
+```
 Use this attribute over test methods to skip failing tests only on the specific platforms and the specific target frameworks.
+
+#### SkipOnPlatformAttribute
+This attribute is intended to disable a test permanently on a platform where an API is not available or there is an intentional difference in behavior in between the tested platform and the skipped platform.
+
+This attribute can be applied either to a test assembly/class (will disable all the tests in that assembly/class) or to a test method. It allows multiple usages on the same member.
+
+```cs
+[SkipOnPlatform(TestPlatforms platforms, string reason)]
+```
+
+Use this attribute over test methods to skip tests only on the specific target platforms. The reason parameter doesn't affect the traits but we rather always use it so that when we see this attribute we know why it is being skipped on that platform.
+
+If it needs to be skipped in multiple platforms and the reasons are different please use two attributes on the same test so that you can specify different reasons for each platform.
+
+When you add the attribute on the whole test assembly it's a good idea to also add `<IgnoreForCI Condition="'$(TargetOS)' == '...'">true</IgnoreForCI>` to the test .csproj.
+That allows the CI build to skip sending this test assembly to Helix completely since it'd run zero tests anyway.
+
+**Currently these are the [Test Platforms](https://github.com/dotnet/arcade/blob/master/src/Microsoft.DotNet.XUnitExtensions/src/TestPlatforms.cs) that we support through our test execution infrastructure**
 
 #### SkipOnTargetFrameworkAttribute
 This attribute is intended to disable a test permanently on a framework where an API is not available or there is an intentional difference in behavior in between the tested framework and the skipped framework.
@@ -76,7 +98,7 @@ Use this attribute over test methods to skip tests only on the specific target f
 
 If it needs to be skipped in multiple frameworks and the reasons are different please use two attributes on the same test so that you can specify different reasons for each framework.
 
-**Currently this are the [Framework Monikers](https://github.com/dotnet/arcade/blob/master/src/Microsoft.DotNet.XUnitExtensions/src/TargetFrameworkMonikers.cs#L23-L26) that we support through our test execution infrastructure**
+**Currently these are the [Framework Monikers](https://github.com/dotnet/arcade/blob/master/src/Microsoft.DotNet.XUnitExtensions/src/TargetFrameworkMonikers.cs#L23-L26) that we support through our test execution infrastructure**
 
 #### ConditionalFactAttribute
 Use this attribute to run the test only when a condition is `true`. This attribute is used when `ActiveIssueAttribute` or `SkipOnTargetFrameworkAttribute` are not flexible enough due to needing to run a custom logic at test time. This test behaves as a `[Fact]` test that has no test data passed in as a parameter.

@@ -239,10 +239,12 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.compoun
     // <RelatedBugs></RelatedBugs>
     // <Expects Status=success></Expects>
     // <Code>
+    using System;
 
     public class Test
     {
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/55117", typeof(PlatformDetection), nameof(PlatformDetection.IsLinqExpressionsBuiltWithIsInterpretingOnly))]
         public static void DynamicCSharpRunTest()
         {
             Assert.Equal(0, MainMethod(null));

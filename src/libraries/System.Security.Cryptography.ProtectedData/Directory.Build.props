@@ -2,11 +2,6 @@
   <Import Project="..\Directory.Build.props" />
   <PropertyGroup>
     <StrongNameKeyId>Microsoft</StrongNameKeyId>
-    <IsWindowsSpecific>true</IsWindowsSpecific>
-    <PackageDescription>Provides access to Windows Data Protection Api.
-
-Commonly Used Types:
-System.Security.Cryptography.DataProtectionScope
-System.Security.Cryptography.ProtectedData</PackageDescription>
+    <SupportedOSPlatforms>windows</SupportedOSPlatforms>
   </PropertyGroup>
 </Project>

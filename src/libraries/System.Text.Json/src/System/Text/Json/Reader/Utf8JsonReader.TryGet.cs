@@ -102,7 +102,7 @@ namespace System.Text.Json
         /// <seealso cref="TokenType" />
         /// </exception>
         /// <exception cref="FormatException">
-        /// Thrown when the JSON string contains data outside of the expected Base64 range, or if it contains invalid/more than two padding characters,
+        /// The JSON string contains data outside of the expected Base64 range, or if it contains invalid/more than two padding characters,
         /// or is incomplete (i.e. the JSON string length is not a multiple of 4).
         /// </exception>
         public byte[] GetBytesFromBase64()
@@ -1073,25 +1073,25 @@ namespace System.Text.Json
         {
             ReadOnlySpan<byte> span = stackalloc byte[0];
 
+            int maximumLength = _stringHasEscaping ? JsonConstants.MaximumEscapedDateTimeOffsetParseLength : JsonConstants.MaximumDateTimeOffsetParseLength;
+
             if (HasValueSequence)
             {
                 long sequenceLength = ValueSequence.Length;
-
-                if (!JsonHelpers.IsValidDateTimeOffsetParseLength(sequenceLength))
+                if (!JsonHelpers.IsInRangeInclusive(sequenceLength, JsonConstants.MinimumDateTimeParseLength, maximumLength))
                 {
                     value = default;
                     return false;
                 }
 
                 Debug.Assert(sequenceLength <= JsonConstants.MaximumEscapedDateTimeOffsetParseLength);
-                Span<byte> stackSpan = stackalloc byte[(int)sequenceLength];
-
+                Span<byte> stackSpan = stackalloc byte[_stringHasEscaping ? JsonConstants.MaximumEscapedDateTimeOffsetParseLength : JsonConstants.MaximumDateTimeOffsetParseLength];
                 ValueSequence.CopyTo(stackSpan);
-                span = stackSpan;
+                span = stackSpan.Slice(0, (int)sequenceLength);
             }
             else
             {
-                if (!JsonHelpers.IsValidDateTimeOffsetParseLength(ValueSpan.Length))
+                if (!JsonHelpers.IsInRangeInclusive(ValueSpan.Length, JsonConstants.MinimumDateTimeParseLength, maximumLength))
                 {
                     value = default;
                     return false;
@@ -1141,25 +1141,25 @@ namespace System.Text.Json
         {
             ReadOnlySpan<byte> span = stackalloc byte[0];
 
+            int maximumLength = _stringHasEscaping ? JsonConstants.MaximumEscapedDateTimeOffsetParseLength : JsonConstants.MaximumDateTimeOffsetParseLength;
+
             if (HasValueSequence)
             {
                 long sequenceLength = ValueSequence.Length;
-
-                if (!JsonHelpers.IsValidDateTimeOffsetParseLength(sequenceLength))
+                if (!JsonHelpers.IsInRangeInclusive(sequenceLength, JsonConstants.MinimumDateTimeParseLength, maximumLength))
                 {
                     value = default;
                     return false;
                 }
 
                 Debug.Assert(sequenceLength <= JsonConstants.MaximumEscapedDateTimeOffsetParseLength);
-                Span<byte> stackSpan = stackalloc byte[(int)sequenceLength];
-
+                Span<byte> stackSpan = stackalloc byte[_stringHasEscaping ? JsonConstants.MaximumEscapedDateTimeOffsetParseLength : JsonConstants.MaximumDateTimeOffsetParseLength];
                 ValueSequence.CopyTo(stackSpan);
-                span = stackSpan;
+                span = stackSpan.Slice(0, (int)sequenceLength);
             }
             else
             {
-                if (!JsonHelpers.IsValidDateTimeOffsetParseLength(ValueSpan.Length))
+                if (!JsonHelpers.IsInRangeInclusive(ValueSpan.Length, JsonConstants.MinimumDateTimeParseLength, maximumLength))
                 {
                     value = default;
                     return false;
@@ -1210,24 +1210,25 @@ namespace System.Text.Json
         {
             ReadOnlySpan<byte> span = stackalloc byte[0];
 
+            int maximumLength = _stringHasEscaping ? JsonConstants.MaximumEscapedGuidLength : JsonConstants.MaximumFormatGuidLength;
+
             if (HasValueSequence)
             {
                 long sequenceLength = ValueSequence.Length;
-                if (sequenceLength > JsonConstants.MaximumEscapedGuidLength)
+                if (sequenceLength > maximumLength)
                 {
                     value = default;
                     return false;
                 }
 
                 Debug.Assert(sequenceLength <= JsonConstants.MaximumEscapedGuidLength);
-                Span<byte> stackSpan = stackalloc byte[(int)sequenceLength];
-
+                Span<byte> stackSpan = stackalloc byte[_stringHasEscaping ? JsonConstants.MaximumEscapedGuidLength : JsonConstants.MaximumFormatGuidLength];
                 ValueSequence.CopyTo(stackSpan);
-                span = stackSpan;
+                span = stackSpan.Slice(0, (int)sequenceLength);
             }
             else
             {
-                if (ValueSpan.Length > JsonConstants.MaximumEscapedGuidLength)
+                if (ValueSpan.Length > maximumLength)
                 {
                     value = default;
                     return false;

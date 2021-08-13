@@ -57,42 +57,29 @@ namespace System.Drawing.Internal
 
             PointF offset = default;
 
-            Region? clipRgn = null;
-            Matrix? worldTransf = null;
-
-            if ((properties & ApplyGraphicsProperties.TranslateTransform) != 0 || (properties & ApplyGraphicsProperties.Clipping) != 0)
+            if (properties != ApplyGraphicsProperties.None)
             {
-                if (g.GetContextInfo() is object[] data && data.Length == 2)
+                Region? clip = null;
+
+                if (properties.HasFlag(ApplyGraphicsProperties.Clipping))
                 {
-                    clipRgn = data[0] as Region;
-                    worldTransf = data[1] as Matrix;
+                    g.GetContextInfo(out offset, out clip);
+                }
+                else
+                {
+                    g.GetContextInfo(out offset);
                 }
 
-                if (worldTransf != null)
+                if (clip is not null)
                 {
-                    if ((properties & ApplyGraphicsProperties.TranslateTransform) != 0)
-                    {
-                        offset = worldTransf.Offset;
-                    }
+                    // We have to create the WindowsRegion and dipose the Region object before locking the Graphics object,
+                    // in case of an unlikely exception before releasing the WindowsRegion, the finalizer will do it for us.
+                    // (no try-finally block since this method is used frequently - perf).
 
-                    worldTransf.Dispose();
-                }
+                    // If clipping has not been set (Region.IsInfinite) GetContextInfo will return a null Region.
 
-                if (clipRgn != null)
-                {
-                    if ((properties & ApplyGraphicsProperties.Clipping) != 0)
-                    {
-                        // We have to create the WindowsRegion and dipose the Region object before locking the Graphics object,
-                        // in case of an unlikely exception before releasing the WindowsRegion, the finalizer will do it for us.
-                        // (no try-finally block since this method is used frequently - perf).
-                        // If the Graphics.Clip has not been set (Region.IsInfinite) we don't need to apply it to the DC.
-                        if (!clipRgn.IsInfinite(g))
-                        {
-                            wr = WindowsRegion.FromRegion(clipRgn, g); // WindowsRegion will take ownership of the hRegion.
-                        }
-                    }
-
-                    clipRgn.Dispose(); // Disposing the Region object doesn't destroy the hRegion.
+                    wr = WindowsRegion.FromRegion(clip, g); // WindowsRegion will take ownership of the hRegion.
+                    clip.Dispose(); // Disposing the Region object doesn't destroy the hRegion.
                 }
             }
 
@@ -100,7 +87,7 @@ namespace System.Drawing.Internal
             wg._graphics = g;
 
             // Apply transform and clip
-            if (wr != null)
+            if (wr is not null)
             {
                 using (wr)
                 {

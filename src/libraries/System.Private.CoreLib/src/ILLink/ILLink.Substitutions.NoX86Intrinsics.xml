@@ -18,6 +18,12 @@
     <type fullname="System.Runtime.Intrinsics.X86.Avx2/X64">
       <method signature="System.Boolean get_IsSupported()" body="stub" value="false" />
     </type>
+    <type fullname="System.Runtime.Intrinsics.X86.AvxVnni">
+      <method signature="System.Boolean get_IsSupported()" body="stub" value="false" />
+    </type>
+    <type fullname="System.Runtime.Intrinsics.X86.AvxVnni/X64">
+      <method signature="System.Boolean get_IsSupported()" body="stub" value="false" />
+    </type>
     <type fullname="System.Runtime.Intrinsics.X86.Bmi1">
       <method signature="System.Boolean get_IsSupported()" body="stub" value="false" />
     </type>

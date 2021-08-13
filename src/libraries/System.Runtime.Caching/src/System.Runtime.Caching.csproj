@@ -1,11 +1,27 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <TargetFrameworks>netstandard2.0;netstandard2.0-windows</TargetFrameworks>
-    <IncludePlatformAttributes>true</IncludePlatformAttributes>
+    <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent);netcoreapp3.1-windows;netcoreapp3.1;netstandard2.0-windows;netstandard2.0</TargetFrameworks>
+    <IsPackable>true</IsPackable>
+    <AddNETFrameworkPlaceholderFileToPackage>true</AddNETFrameworkPlaceholderFileToPackage>
+    <AddXamarinPlaceholderFilesToPackage>true</AddXamarinPlaceholderFilesToPackage>
+    <AddNETFrameworkAssemblyReferenceToPackage>true</AddNETFrameworkAssemblyReferenceToPackage>
+    <PackageDescription>Provides classes to use caching facilities.
+
+Commonly Used Types:
+System.Runtime.Caching.CacheEntryChangeMonitor
+System.Runtime.Caching.CacheEntryRemovedArguments
+System.Runtime.Caching.CacheEntryUpdateArguments
+System.Runtime.Caching.CacheItem
+System.Runtime.Caching.CacheItemPolicy
+System.Runtime.Caching.ChangeMonitor
+System.Runtime.Caching.FileChangeMonitor
+System.Runtime.Caching.HostFileChangeMonitor
+System.Runtime.Caching.MemoryCache
+System.Runtime.Caching.ObjectCache</PackageDescription>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="System\Runtime\Caching\_shims.cs" />
+    <Compile Include="System\Runtime\Caching\Counters.cs" />
     <Compile Include="System\Runtime\Caching\CacheEntryChangeMonitor.cs" />
     <Compile Include="System\Runtime\Caching\CacheEntryRemovedArguments.cs" />
     <Compile Include="System\Runtime\Caching\CacheEntryRemovedCallback.cs" />
@@ -35,7 +51,7 @@
     <Compile Include="System\Runtime\Caching\MemoryMonitor.cs" />
     <Compile Include="System\Runtime\Caching\ObjectCache.cs" />
     <Compile Include="System\Runtime\Caching\OnChangedCallback.cs" />
-    <Compile Include="System\Runtime\Caching\PerfCounterName.cs" />
+    <Compile Include="System\Runtime\Caching\CounterName.cs" />
     <Compile Include="System\Runtime\Caching\PhysicalMemoryMonitor.cs" />
     <Compile Include="System\Runtime\Caching\SafeBitVector32.cs" />
     <Compile Include="System\Runtime\Caching\SRef.cs" />
@@ -52,15 +68,37 @@
   <ItemGroup Condition="'$(TargetsWindows)' == 'true'">
     <Compile Include="System\Runtime\Caching\MemoryMonitor.Windows.cs" />
     <Compile Include="System\Runtime\Caching\PhysicalMemoryMonitor.Windows.cs" />
-    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GlobalMemoryStatusEx.cs"
-             Link="Common\Interop\Windows\Kernel32\Interop.GlobalMemoryStatusEx.cs" />
-    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.MEMORYSTATUSEX.cs"
-             Link="Common\Interop\Windows\Kernel32\Interop.MEMORYSTATUSEX.cs" />
-    <Compile Include="$(CommonPath)Interop\Windows\Interop.Libraries.cs"
-             Link="Common\Interop\Windows\Interop.Libraries.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Interop.BOOL.cs" Link="Common\Interop\Windows\Interop.BOOL.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GlobalMemoryStatusEx.cs" Link="Common\Interop\Windows\Kernel32\Interop.GlobalMemoryStatusEx.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.MEMORYSTATUSEX.cs" Link="Common\Interop\Windows\Kernel32\Interop.MEMORYSTATUSEX.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Interop.Libraries.cs" Link="Common\Interop\Windows\Interop.Libraries.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsWindows)' != 'true'">
     <Compile Include="System\Runtime\Caching\PhysicalMemoryMonitor.Unix.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
+    <Reference Include="netstandard" Condition="$(TargetFramework.StartsWith('netcoreapp3.1'))" />
+    <Reference Include="System.Collections" />
+    <Reference Include="System.Collections.NonGeneric" />
+    <Reference Include="System.Collections.Specialized" />
+    <Reference Include="System.ComponentModel" />
+    <Reference Include="System.ComponentModel.Primitives" />
+    <Reference Include="System.ComponentModel.TypeConverter" />
+    <Reference Include="System.Data.Common" />
+    <Reference Include="System.Diagnostics.Debug" />
+    <Reference Include="System.Diagnostics.Tracing" />
+    <Reference Include="System.IO.FileSystem" />
+    <Reference Include="System.IO.FileSystem.Watcher" />
+    <Reference Include="System.ObjectModel" />
+    <Reference Include="System.Resources.ResourceManager" />
+    <Reference Include="System.Runtime" />
+    <Reference Include="System.Runtime.Extensions" />
+    <Reference Include="System.Runtime.InteropServices" />
+    <Reference Include="System.Runtime.InteropServices.RuntimeInformation" />
+    <Reference Include="System.Text.RegularExpressions" />
+    <Reference Include="System.Threading" />
+    <Reference Include="System.Threading.Thread" />
+    <Reference Include="System.Threading.Timer" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="$(LibrariesProjectRoot)System.Configuration.ConfigurationManager\src\System.Configuration.ConfigurationManager.csproj" />

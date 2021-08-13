@@ -57,7 +57,7 @@ namespace System.Linq.Expressions.Compiler
 
         private const int MaximumArity = 17;
 
-        internal class TypeInfo
+        internal sealed class TypeInfo
         {
             public Type DelegateType;
             public Dictionary<Type, TypeInfo> TypeChain;

@@ -395,7 +395,7 @@ namespace System.Reflection.Tests
                 {
                     ICustomAttributeProvider icp = mem;
                     Assert.Throws<InvalidOperationException>(() => icp.IsDefined(null, inherit: false));
-                    Assert.Throws<InvalidOperationException>(() => icp.GetCustomAttributes(null, inherit: false)); ;
+                    Assert.Throws<InvalidOperationException>(() => icp.GetCustomAttributes(null, inherit: false));
                     Assert.Throws<InvalidOperationException>(() => icp.GetCustomAttributes(inherit: false));
 
                     if (mem is MethodBase mb)

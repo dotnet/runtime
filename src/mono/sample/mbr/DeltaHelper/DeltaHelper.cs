@@ -7,48 +7,9 @@ using System.Collections.Generic;
 
 namespace MonoDelta {
     public class DeltaHelper {
-        private static Action<Assembly, byte[], byte[], byte[]> _updateMethod;
-
-        private static Action<Assembly, byte[], byte[], byte[]> UpdateMethod => _updateMethod ?? InitUpdateMethod();
-
-        private static Action<Assembly, byte[], byte[], byte[]> InitUpdateMethod ()
-        {
-            var monoType = typeof(System.Reflection.Metadata.AssemblyExtensions);
-            const string methodName = "ApplyUpdate";
-            var mi = monoType.GetMethod (methodName, BindingFlags.Public | BindingFlags.Static);
-            if (mi == null)
-                throw new Exception ($"Couldn't get {methodName} from {monoType.FullName}");
-            _updateMethod = MakeUpdateMethod (mi); //Delegate.CreateDelegate (typeof(Action<Assembly, byte[], byte[], byte[]>), mi) as Action<Assembly, byte[], byte[], byte[]>;
-            return _updateMethod;
-        }
-
-        private static Action<Assembly, byte[], byte[], byte[]> MakeUpdateMethod (MethodInfo applyUpdate)
-        {
-            // Make
-            // void ApplyUpdateArray (Assembly a, byte[] dmeta, byte[] dil, byte[] dpdb)
-            // {
-            //   ApplyUpdate (a, (ReadOnlySpan<byte>)dmeta, (ReadOnlySpan<byte>)dil, (ReadOnlySpan<byte>)dpdb);
-            // }
-            var dm = new DynamicMethod ("CallApplyUpdate", typeof(void), new Type[] { typeof(Assembly), typeof(byte[]), typeof(byte[]), typeof(byte[])}, typeof (DeltaHelper).Module);
-            var ilg = dm.GetILGenerator ();
-            var conv = typeof(ReadOnlySpan<byte>).GetMethod("op_Implicit", new Type[] {typeof(byte[])});
-
-            ilg.Emit (OpCodes.Ldarg_0);
-            ilg.Emit (OpCodes.Ldarg_1);
-            ilg.Emit (OpCodes.Call, conv);
-            ilg.Emit (OpCodes.Ldarg_2);
-            ilg.Emit (OpCodes.Call, conv);
-            ilg.Emit (OpCodes.Ldarg_3);
-            ilg.Emit (OpCodes.Call, conv);
-            ilg.Emit (OpCodes.Call, applyUpdate);
-            ilg.Emit (OpCodes.Ret);
-
-            return dm.CreateDelegate(typeof(Action<Assembly, byte[], byte[], byte[]>)) as Action<Assembly, byte[], byte[], byte[]>;
-        }
-
         private static void LoadMetadataUpdate (Assembly assm, byte[] dmeta_data, byte[] dil_data, byte[] dpdb_data)
         {
-            UpdateMethod (assm, dmeta_data, dil_data, dpdb_data);
+            System.Reflection.Metadata.MetadataUpdater.ApplyUpdate (assm, dmeta_data, dil_data, dpdb_data);
         }
 
         DeltaHelper () { }

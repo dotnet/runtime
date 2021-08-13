@@ -30,6 +30,7 @@ jobs:
       - src/libraries/System.Private.CoreLib/*
       - src/libraries/Native/Unix/System.Globalization.Native/*
       - src/libraries/Native/Unix/Common/*
+      - src/tests/BuildWasmApps/*
       exclude:
       - eng/Version.Details.xml
       - '*.md'
@@ -81,6 +82,21 @@ jobs:
       - eng/pipelines/coreclr/*
       - eng/pipelines/mono/*
       - eng/pipelines/libraries/*
+    # We have limited Apple Silicon testing capacity
+    # We want PR testing on a narrower set of changes
+    # Specifically runtime directories which are higher risk of
+    # introducing a platform specific regression
+    - subset: coreclr_AppleSilicon
+      include:
+      - src/coreclr/dlls/*
+      - src/coreclr/gc/*
+      - src/coreclr/gcinfo/*
+      - src/coreclr/inc/*
+      - src/coreclr/jit/*
+      - src/coreclr/pal/*
+      - src/coreclr/vm/*
+      exclude:
+      - '*'
 
     - ${{ if ne(parameters.extraSubsets, '') }}:
       - ${{ parameters.extraSubsets }}

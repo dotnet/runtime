@@ -12,5 +12,6 @@ namespace System.Security.Cryptography
         internal const string RsaPrivateKey = "RSA PRIVATE KEY";
         internal const string EcPrivateKey = "EC PRIVATE KEY";
         internal const string X509Certificate = "CERTIFICATE";
+        internal const string Pkcs7Certificate = "PKCS7";
     }
 }

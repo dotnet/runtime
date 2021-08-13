@@ -27,7 +27,7 @@ inline void ThrowAndLog(HRESULT hr, INDEBUG_COMMA(__in_z const char * szMsg) IND
 
     // Log failures when StressLog is on
     static ConfigDWORD g_iStressLog;
-    BOOL bLog = g_iStressLog.val_DontUse_(CLRConfig::UNSUPPORTED_StressLog, 0);
+    BOOL bLog = g_iStressLog.val(CLRConfig::UNSUPPORTED_StressLog);
     if (bLog)
     {
 #ifdef _DEBUG

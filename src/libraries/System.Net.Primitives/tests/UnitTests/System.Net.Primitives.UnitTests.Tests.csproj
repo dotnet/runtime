@@ -64,8 +64,6 @@
              Link="ProductionCode\Common\System\Net\TcpValidationHelpers.cs" />
     <Compile Include="$(CommonPath)System\Net\UriScheme.cs"
              Link="ProductionCode\Common\System\Net\UriScheme.cs" />
-    <Compile Include="$(CommonPath)System\Marvin.cs"
-             Link="Common\System\Marvin.cs" />
     <Compile Include="$(CommonPath)System\Text\StringBuilderCache.cs"
              Link="Common\System\Text\StringBuilderCache.cs" />
     <!-- Logging -->

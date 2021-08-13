@@ -4,6 +4,7 @@
 using System.ComponentModel;
 using System.Data.ProviderBase;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Data.Common
 {
@@ -64,6 +65,7 @@ namespace System.Data.Common
             return _schemaInfo[i].typeName;
         }
 
+        [return: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.PublicFields)]
         public override Type GetFieldType(int i)
         {
             return _schemaInfo[i].type;
@@ -305,56 +307,59 @@ namespace System.Data.Common
             return new AttributeCollection(null);
         }
 
-// TODO: Enable after System.ComponentModel.TypeConverter is annotated
-#nullable disable
-        string ICustomTypeDescriptor.GetClassName()
+        string? ICustomTypeDescriptor.GetClassName()
         {
             return null;
         }
 
-        string ICustomTypeDescriptor.GetComponentName()
+        string? ICustomTypeDescriptor.GetComponentName()
         {
             return null;
         }
 
+        [RequiresUnreferencedCode("Generic TypeConverters may require the generic types to be annotated. For example, NullableConverter requires the underlying type to be DynamicallyAccessedMembers All.")]
         TypeConverter ICustomTypeDescriptor.GetConverter()
         {
-            return null;
+            return null!;
         }
 
-        EventDescriptor ICustomTypeDescriptor.GetDefaultEvent()
+        [RequiresUnreferencedCode("The built-in EventDescriptor implementation uses Reflection which requires unreferenced code.")]
+        EventDescriptor? ICustomTypeDescriptor.GetDefaultEvent()
         {
             return null;
         }
 
-
-        PropertyDescriptor ICustomTypeDescriptor.GetDefaultProperty()
+        [RequiresUnreferencedCode("PropertyDescriptor's PropertyType cannot be statically discovered.")]
+        PropertyDescriptor? ICustomTypeDescriptor.GetDefaultProperty()
         {
             return null;
         }
 
-        object ICustomTypeDescriptor.GetEditor(Type editorBaseType)
+        [RequiresUnreferencedCode("Editors registered in TypeDescriptor.AddEditorTable may be trimmed.")]
+        object? ICustomTypeDescriptor.GetEditor(Type editorBaseType)
         {
             return null;
         }
-#nullable enable
 
         EventDescriptorCollection ICustomTypeDescriptor.GetEvents()
         {
             return new EventDescriptorCollection(null);
         }
 
-        EventDescriptorCollection ICustomTypeDescriptor.GetEvents(Attribute[] attributes)
+        [RequiresUnreferencedCode("The public parameterless constructor or the 'Default' static field may be trimmed from the Attribute's Type.")]
+        EventDescriptorCollection ICustomTypeDescriptor.GetEvents(Attribute[]? attributes)
         {
             return new EventDescriptorCollection(null);
         }
 
+        [RequiresUnreferencedCode("PropertyDescriptor's PropertyType cannot be statically discovered.")]
         PropertyDescriptorCollection ICustomTypeDescriptor.GetProperties()
         {
             return ((ICustomTypeDescriptor)this).GetProperties(null);
         }
 
-        PropertyDescriptorCollection ICustomTypeDescriptor.GetProperties(Attribute[] attributes)
+        [RequiresUnreferencedCode("PropertyDescriptor's PropertyType cannot be statically discovered. The public parameterless constructor or the 'Default' static field may be trimmed from the Attribute's Type.")]
+        PropertyDescriptorCollection ICustomTypeDescriptor.GetProperties(Attribute[]? attributes)
         {
             if (_propertyDescriptors == null)
             {
@@ -363,7 +368,7 @@ namespace System.Data.Common
             return _propertyDescriptors;
         }
 
-        object ICustomTypeDescriptor.GetPropertyOwner(PropertyDescriptor pd)
+        object ICustomTypeDescriptor.GetPropertyOwner(PropertyDescriptor? pd)
         {
             return this;
         }
@@ -374,6 +379,7 @@ namespace System.Data.Common
     {
         public string name;
         public string typeName;
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.PublicFields)]
         public Type type;
     }
 }

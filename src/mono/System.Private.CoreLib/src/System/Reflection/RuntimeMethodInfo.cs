@@ -139,7 +139,7 @@ namespace System.Reflection
 
 #region Sync with _MonoReflectionMethod in object-internals.h
     [StructLayout(LayoutKind.Sequential)]
-    internal class RuntimeMethodInfo : MethodInfo
+    internal sealed class RuntimeMethodInfo : MethodInfo
     {
 #pragma warning disable 649
         internal IntPtr mhandle;
@@ -154,14 +154,6 @@ namespace System.Reflection
             get
             {
                 return GetRuntimeModule();
-            }
-        }
-
-        private RuntimeType? ReflectedTypeInternal
-        {
-            get
-            {
-                return (RuntimeType?)ReflectedType;
             }
         }
 
@@ -603,7 +595,7 @@ namespace System.Reflection
             count = 0;
 
             if ((info.iattrs & MethodImplAttributes.PreserveSig) != 0)
-                attrsData[count++] = new CustomAttributeData((typeof(PreserveSigAttribute)).GetConstructor(Type.EmptyTypes)!);
+                attrsData[count++] = new RuntimeCustomAttributeData((typeof(PreserveSigAttribute)).GetConstructor(Type.EmptyTypes)!);
             if ((info.attrs & MethodAttributes.PinvokeImpl) != 0)
                 attrsData[count++] = GetDllImportAttributeData()!;
 
@@ -665,12 +657,13 @@ namespace System.Reflection
                 new CustomAttributeNamedArgument (attrType.GetField ("ThrowOnUnmappableChar")!, throwOnUnmappableChar)
             };
 
-            return new CustomAttributeData(
+            return new RuntimeCustomAttributeData(
                 attrType.GetConstructor(new[] { typeof(string) })!,
                 ctorArgs,
                 namedArgs);
         }
 
+        [RequiresUnreferencedCode("If some of the generic arguments are annotated (either with DynamicallyAccessedMembersAttribute, or generic constraints), trimming can't validate that the requirements of those annotations are met.")]
         public override MethodInfo MakeGenericMethod(Type[] methodInstantiation)
         {
             if (methodInstantiation == null)
@@ -758,14 +751,14 @@ namespace System.Reflection
 
         public override IList<CustomAttributeData> GetCustomAttributesData()
         {
-            return CustomAttributeData.GetCustomAttributes(this);
+            return RuntimeCustomAttributeData.GetCustomAttributesInternal(this);
         }
 
         public sealed override bool HasSameMetadataDefinitionAs(MemberInfo other) => HasSameMetadataDefinitionAsCore<RuntimeMethodInfo>(other);
     }
 #region Sync with _MonoReflectionMethod in object-internals.h
     [StructLayout(LayoutKind.Sequential)]
-    internal class RuntimeConstructorInfo : ConstructorInfo
+    internal sealed class RuntimeConstructorInfo : ConstructorInfo
     {
 #pragma warning disable 649
         internal IntPtr mhandle;
@@ -786,14 +779,6 @@ namespace System.Reflection
         internal RuntimeModule GetRuntimeModule()
         {
             return RuntimeTypeHandle.GetModule((RuntimeType)DeclaringType);
-        }
-
-        private RuntimeType? ReflectedTypeInternal
-        {
-            get
-            {
-                return (RuntimeType?)ReflectedType;
-            }
         }
 
         public override MethodImplAttributes GetMethodImplementationFlags()
@@ -1004,7 +989,7 @@ namespace System.Reflection
 
         public override IList<CustomAttributeData> GetCustomAttributesData()
         {
-            return CustomAttributeData.GetCustomAttributes(this);
+            return RuntimeCustomAttributeData.GetCustomAttributesInternal(this);
         }
 
         public sealed override bool HasSameMetadataDefinitionAs(MemberInfo other) => HasSameMetadataDefinitionAsCore<RuntimeConstructorInfo>(other);

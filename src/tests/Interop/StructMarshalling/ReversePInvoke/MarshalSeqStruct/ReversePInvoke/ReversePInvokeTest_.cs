@@ -1801,7 +1801,7 @@ public class MarshalStructTest
         TestMethod_DoCallBack_MarshalStructByVal_Cdecl(StructID.IncludeOuterIntergerStructSequentialId);
         TestMethod_DoCallBack_MarshalStructByVal_Cdecl(StructID.S11Id);
         // Windows X86 has a long standing X86_ONLY logic that causes 3, 5,6,7 byte structure returns to behave incorrectly.
-        if ((RuntimeInformation.ProcessArchitecture != Architecture.X86) || !RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+        if ((RuntimeInformation.ProcessArchitecture != Architecture.X86) || !OperatingSystem.IsWindows())
         {
             TestMethod_DoCallBack_MarshalStructByVal_Cdecl(StructID.ByteStruct3Byte);
         }
@@ -1824,7 +1824,7 @@ public class MarshalStructTest
         TestMethod_DoCallBack_MarshalStructByVal_StdCall(StructID.IncludeOuterIntergerStructSequentialId);
         TestMethod_DoCallBack_MarshalStructByVal_StdCall(StructID.S11Id);
         // Windows X86 has a long standing X86_ONLY logic that causes 3, 5,6,7 byte structure returns to behave incorrectly.
-        if ((RuntimeInformation.ProcessArchitecture != Architecture.X86) || !RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+        if ((RuntimeInformation.ProcessArchitecture != Architecture.X86) || !OperatingSystem.IsWindows())
         {
             TestMethod_DoCallBack_MarshalStructByVal_StdCall(StructID.ByteStruct3Byte);
         }

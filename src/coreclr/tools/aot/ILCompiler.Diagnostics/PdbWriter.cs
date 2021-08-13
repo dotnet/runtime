@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Reflection;
 using System.Reflection.PortableExecutable;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -73,6 +74,8 @@ namespace ILCompiler.Diagnostics
 
     public class PdbWriter
     {
+        private const string DiaSymReaderLibrary = "Microsoft.DiaSymReader.Native";
+
         string _pdbPath;
         PDBExtraData _pdbExtraData;
 
@@ -86,33 +89,32 @@ namespace ILCompiler.Diagnostics
         UIntPtr _pdbMod;
         ISymNGenWriter2 _ngenWriter;
 
-        private const string DiaSymReaderModuleName32 = "Microsoft.DiaSymReader.Native.x86.dll";
-        private const string DiaSymReaderModuleName64 = "Microsoft.DiaSymReader.Native.amd64.dll";
-
-        private const string CreateNGenPdbWriterFactoryName = "CreateNGenPdbWriter";
-
-        [DefaultDllImportSearchPaths(DllImportSearchPath.AssemblyDirectory | DllImportSearchPath.SafeDirectories)]
-        [DllImport(DiaSymReaderModuleName32, EntryPoint = CreateNGenPdbWriterFactoryName, PreserveSig = false)]
-        private extern static void CreateNGenPdbWriter32([MarshalAs(UnmanagedType.LPWStr)] string ngenImagePath, [MarshalAs(UnmanagedType.LPWStr)] string pdbPath, [MarshalAs(UnmanagedType.IUnknown)] out object ngenPdbWriter);
-
-        [DefaultDllImportSearchPaths(DllImportSearchPath.AssemblyDirectory | DllImportSearchPath.SafeDirectories)]
-        [DllImport(DiaSymReaderModuleName64, EntryPoint = CreateNGenPdbWriterFactoryName, PreserveSig = false)]
-        private extern static void CreateNGenPdbWriter64([MarshalAs(UnmanagedType.LPWStr)] string ngenImagePath, [MarshalAs(UnmanagedType.LPWStr)] string pdbPath, [MarshalAs(UnmanagedType.IUnknown)] out object ngenPdbWriter);
-
-        private static ISymNGenWriter2 CreateNGenWriter(string ngenImagePath, string pdbPath)
+        static PdbWriter()
         {
-            object instance;
-
-            if (IntPtr.Size == 4)
-            {
-                CreateNGenPdbWriter32(ngenImagePath, pdbPath, out instance);
-            }
-            else
-            {
-                CreateNGenPdbWriter64(ngenImagePath, pdbPath, out instance);
-            }
-            return (ISymNGenWriter2)instance;
+            NativeLibrary.SetDllImportResolver(typeof(PdbWriter).Assembly, DllImportResolver);
         }
+
+        private static IntPtr DllImportResolver(string libraryName, Assembly assembly, DllImportSearchPath? searchPath)
+        {
+            IntPtr libraryHandle = IntPtr.Zero;
+            if (libraryName == DiaSymReaderLibrary)
+            {
+                string archSuffix = RuntimeInformation.ProcessArchitecture.ToString().ToLowerInvariant();
+                if (archSuffix == "x64")
+                {
+                    archSuffix = "amd64";
+                }
+                libraryHandle = NativeLibrary.Load(DiaSymReaderLibrary + "." + archSuffix + ".dll", assembly, searchPath);
+            }
+            return libraryHandle;
+        }
+
+        [DefaultDllImportSearchPaths(DllImportSearchPath.AssemblyDirectory | DllImportSearchPath.SafeDirectories)]
+        [DllImport(DiaSymReaderLibrary, PreserveSig = false)]
+        private extern static void CreateNGenPdbWriter(
+            [MarshalAs(UnmanagedType.LPWStr)] string ngenImagePath,
+            [MarshalAs(UnmanagedType.LPWStr)] string pdbPath,
+            [MarshalAs(UnmanagedType.Interface)] out ISymNGenWriter2 ngenPdbWriter);
 
         public PdbWriter(string pdbPath, PDBExtraData pdbExtraData)
         {
@@ -209,10 +211,10 @@ namespace ILCompiler.Diagnostics
                 _pdbFilePath = Path.Combine(_pdbPath, dllNameWithoutExtension + ".ni.pdb");
             }
 
-            // Delete any preexisting PDB file upfront otherwise CreateNGenWriter silently opens it
+            // Delete any preexisting PDB file upfront, otherwise CreateNGenPdbWriter silently opens it
             File.Delete(_pdbFilePath);
 
-            _ngenWriter = CreateNGenWriter(dllPath, _pdbFilePath);
+            CreateNGenPdbWriter(dllPath, _pdbFilePath, out _ngenWriter);
 
             {
                 // PDB file is now created. Get its path and update _pdbFilePath so the PDB file

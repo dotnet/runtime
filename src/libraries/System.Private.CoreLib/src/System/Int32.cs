@@ -3,6 +3,7 @@
 
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
+using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
@@ -12,7 +13,14 @@ namespace System
     [Serializable]
     [StructLayout(LayoutKind.Sequential)]
     [TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
-    public readonly struct Int32 : IComparable, IConvertible, IFormattable, IComparable<int>, IEquatable<int>, ISpanFormattable
+    public readonly struct Int32 : IComparable, IConvertible, ISpanFormattable, IComparable<int>, IEquatable<int>
+#if FEATURE_GENERIC_MATH
+#pragma warning disable SA1001
+        , IBinaryInteger<int>,
+          IMinMaxValue<int>,
+          ISignedNumber<int>
+#pragma warning restore SA1001
+#endif // FEATURE_GENERIC_MATH
     {
         private readonly int m_value; // Do not rename (binary serialization)
 
@@ -143,7 +151,7 @@ namespace System
         }
 
         // Parses an integer from a String. Returns false rather
-        // than throwing exceptin if input is invalid
+        // than throwing an exception if input is invalid.
         //
         public static bool TryParse([NotNullWhen(true)] string? s, out int result)
         {
@@ -162,7 +170,7 @@ namespace System
         }
 
         // Parses an integer from a String in the given style. Returns false rather
-        // than throwing exceptin if input is invalid
+        // than throwing an exception if input is invalid.
         //
         public static bool TryParse([NotNullWhen(true)] string? s, NumberStyles style, IFormatProvider? provider, out int result)
         {
@@ -266,5 +274,695 @@ namespace System
         {
             return Convert.DefaultToType((IConvertible)this, type, provider);
         }
+
+#if FEATURE_GENERIC_MATH
+        //
+        // IAdditionOperators
+        //
+
+        [RequiresPreviewFeatures]
+        static int IAdditionOperators<int, int, int>.operator +(int left, int right)
+            => left + right;
+
+        // [RequiresPreviewFeatures]
+        // static checked int IAdditionOperators<int, int, int>.operator +(int left, int right)
+        //     => checked(left + right);
+
+        //
+        // IAdditiveIdentity
+        //
+
+        [RequiresPreviewFeatures]
+        static int IAdditiveIdentity<int, int>.AdditiveIdentity => 0;
+
+        //
+        // IBinaryInteger
+        //
+
+        [RequiresPreviewFeatures]
+        static int IBinaryInteger<int>.LeadingZeroCount(int value)
+            => BitOperations.LeadingZeroCount((uint)value);
+
+        [RequiresPreviewFeatures]
+        static int IBinaryInteger<int>.PopCount(int value)
+            => BitOperations.PopCount((uint)value);
+
+        [RequiresPreviewFeatures]
+        static int IBinaryInteger<int>.RotateLeft(int value, int rotateAmount)
+            => (int)BitOperations.RotateLeft((uint)value, rotateAmount);
+
+        [RequiresPreviewFeatures]
+        static int IBinaryInteger<int>.RotateRight(int value, int rotateAmount)
+            => (int)BitOperations.RotateRight((uint)value, rotateAmount);
+
+        [RequiresPreviewFeatures]
+        static int IBinaryInteger<int>.TrailingZeroCount(int value)
+            => BitOperations.TrailingZeroCount(value);
+
+        //
+        // IBinaryNumber
+        //
+
+        [RequiresPreviewFeatures]
+        static bool IBinaryNumber<int>.IsPow2(int value)
+            => BitOperations.IsPow2(value);
+
+        [RequiresPreviewFeatures]
+        static int IBinaryNumber<int>.Log2(int value)
+        {
+            if (value < 0)
+            {
+                ThrowHelper.ThrowValueArgumentOutOfRange_NeedNonNegNumException();
+            }
+            return BitOperations.Log2((uint)value);
+        }
+
+        //
+        // IBitwiseOperators
+        //
+
+        [RequiresPreviewFeatures]
+        static int IBitwiseOperators<int, int, int>.operator &(int left, int right)
+            => left & right;
+
+        [RequiresPreviewFeatures]
+        static int IBitwiseOperators<int, int, int>.operator |(int left, int right)
+            => left | right;
+
+        [RequiresPreviewFeatures]
+        static int IBitwiseOperators<int, int, int>.operator ^(int left, int right)
+            => left ^ right;
+
+        [RequiresPreviewFeatures]
+        static int IBitwiseOperators<int, int, int>.operator ~(int value)
+            => ~value;
+
+        //
+        // IComparisonOperators
+        //
+
+        [RequiresPreviewFeatures]
+        static bool IComparisonOperators<int, int>.operator <(int left, int right)
+            => left < right;
+
+        [RequiresPreviewFeatures]
+        static bool IComparisonOperators<int, int>.operator <=(int left, int right)
+            => left <= right;
+
+        [RequiresPreviewFeatures]
+        static bool IComparisonOperators<int, int>.operator >(int left, int right)
+            => left > right;
+
+        [RequiresPreviewFeatures]
+        static bool IComparisonOperators<int, int>.operator >=(int left, int right)
+            => left >= right;
+
+        //
+        // IDecrementOperators
+        //
+
+        [RequiresPreviewFeatures]
+        static int IDecrementOperators<int>.operator --(int value)
+            => --value;
+
+        // [RequiresPreviewFeatures]
+        // static checked int IDecrementOperators<int>.operator --(int value)
+        //     => checked(--value);
+
+        //
+        // IDivisionOperators
+        //
+
+        [RequiresPreviewFeatures]
+        static int IDivisionOperators<int, int, int>.operator /(int left, int right)
+            => left / right;
+
+        // [RequiresPreviewFeatures]
+        // static checked int IDivisionOperators<int, int, int>.operator /(int left, int right)
+        //     => checked(left / right);
+
+        //
+        // IEqualityOperators
+        //
+
+        [RequiresPreviewFeatures]
+        static bool IEqualityOperators<int, int>.operator ==(int left, int right)
+            => left == right;
+
+        [RequiresPreviewFeatures]
+        static bool IEqualityOperators<int, int>.operator !=(int left, int right)
+            => left != right;
+
+        //
+        // IIncrementOperators
+        //
+
+        [RequiresPreviewFeatures]
+        static int IIncrementOperators<int>.operator ++(int value)
+            => ++value;
+
+        // [RequiresPreviewFeatures]
+        // static checked int IIncrementOperators<int>.operator ++(int value)
+        //     => checked(++value);
+
+        //
+        // IMinMaxValue
+        //
+
+        [RequiresPreviewFeatures]
+        static int IMinMaxValue<int>.MinValue => MinValue;
+
+        [RequiresPreviewFeatures]
+        static int IMinMaxValue<int>.MaxValue => MaxValue;
+
+        //
+        // IModulusOperators
+        //
+
+        [RequiresPreviewFeatures]
+        static int IModulusOperators<int, int, int>.operator %(int left, int right)
+            => left % right;
+
+        // [RequiresPreviewFeatures]
+        // static checked int IModulusOperators<int, int, int>.operator %(int left, int right)
+        //     => checked(left % right);
+
+        //
+        // IMultiplicativeIdentity
+        //
+
+        [RequiresPreviewFeatures]
+        static int IMultiplicativeIdentity<int, int>.MultiplicativeIdentity => 1;
+
+        //
+        // IMultiplyOperators
+        //
+
+        [RequiresPreviewFeatures]
+        static int IMultiplyOperators<int, int, int>.operator *(int left, int right)
+            => left * right;
+
+        // [RequiresPreviewFeatures]
+        // static checked int IMultiplyOperators<int, int, int>.operator *(int left, int right)
+        //     => checked(left * right);
+
+        //
+        // INumber
+        //
+
+        [RequiresPreviewFeatures]
+        static int INumber<int>.One => 1;
+
+        [RequiresPreviewFeatures]
+        static int INumber<int>.Zero => 0;
+
+        [RequiresPreviewFeatures]
+        static int INumber<int>.Abs(int value)
+            => Math.Abs(value);
+
+        [RequiresPreviewFeatures]
+        static int INumber<int>.Clamp(int value, int min, int max)
+            => Math.Clamp(value, min, max);
+
+        [RequiresPreviewFeatures]
+        internal static int Create<TOther>(TOther value)
+            where TOther : INumber<TOther>
+        {
+            if (typeof(TOther) == typeof(byte))
+            {
+                return (byte)(object)value;
+            }
+            else if (typeof(TOther) == typeof(char))
+            {
+                return (char)(object)value;
+            }
+            else if (typeof(TOther) == typeof(decimal))
+            {
+                return checked((int)(decimal)(object)value);
+            }
+            else if (typeof(TOther) == typeof(double))
+            {
+                return checked((int)(double)(object)value);
+            }
+            else if (typeof(TOther) == typeof(short))
+            {
+                return (short)(object)value;
+            }
+            else if (typeof(TOther) == typeof(int))
+            {
+                return (int)(object)value;
+            }
+            else if (typeof(TOther) == typeof(long))
+            {
+                return checked((int)(long)(object)value);
+            }
+            else if (typeof(TOther) == typeof(nint))
+            {
+                return checked((int)(nint)(object)value);
+            }
+            else if (typeof(TOther) == typeof(sbyte))
+            {
+                return (sbyte)(object)value;
+            }
+            else if (typeof(TOther) == typeof(float))
+            {
+                return checked((int)(float)(object)value);
+            }
+            else if (typeof(TOther) == typeof(ushort))
+            {
+                return checked((int)(ushort)(object)value);
+            }
+            else if (typeof(TOther) == typeof(uint))
+            {
+                return checked((int)(uint)(object)value);
+            }
+            else if (typeof(TOther) == typeof(ulong))
+            {
+                return checked((int)(ulong)(object)value);
+            }
+            else if (typeof(TOther) == typeof(nuint))
+            {
+                return checked((int)(nuint)(object)value);
+            }
+            else
+            {
+                ThrowHelper.ThrowNotSupportedException();
+                return default;
+            }
+        }
+
+        [RequiresPreviewFeatures]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static int INumber<int>.Create<TOther>(TOther value)
+            => Create(value);
+
+        [RequiresPreviewFeatures]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static int INumber<int>.CreateSaturating<TOther>(TOther value)
+        {
+            if (typeof(TOther) == typeof(byte))
+            {
+                return (byte)(object)value;
+            }
+            else if (typeof(TOther) == typeof(char))
+            {
+                return (char)(object)value;
+            }
+            else if (typeof(TOther) == typeof(decimal))
+            {
+                var actualValue = (decimal)(object)value;
+                return (actualValue > MaxValue) ? MaxValue :
+                       (actualValue < MinValue) ? MinValue : (int)actualValue;
+            }
+            else if (typeof(TOther) == typeof(double))
+            {
+                var actualValue = (double)(object)value;
+                return (actualValue > MaxValue) ? MaxValue :
+                       (actualValue < MinValue) ? MinValue : (int)actualValue;
+            }
+            else if (typeof(TOther) == typeof(short))
+            {
+                return (short)(object)value;
+            }
+            else if (typeof(TOther) == typeof(int))
+            {
+                return (int)(object)value;
+            }
+            else if (typeof(TOther) == typeof(long))
+            {
+                var actualValue = (long)(object)value;
+                return (actualValue > MaxValue) ? MaxValue :
+                       (actualValue < MinValue) ? MinValue : (int)actualValue;
+            }
+            else if (typeof(TOther) == typeof(nint))
+            {
+                var actualValue = (nint)(object)value;
+                return (actualValue > MaxValue) ? MaxValue :
+                       (actualValue < MinValue) ? MinValue : (int)actualValue;
+            }
+            else if (typeof(TOther) == typeof(sbyte))
+            {
+                return (sbyte)(object)value;
+            }
+            else if (typeof(TOther) == typeof(float))
+            {
+                var actualValue = (float)(object)value;
+                return (actualValue > MaxValue) ? MaxValue :
+                       (actualValue < MinValue) ? MinValue : (int)actualValue;
+            }
+            else if (typeof(TOther) == typeof(ushort))
+            {
+                return (ushort)(object)value;
+            }
+            else if (typeof(TOther) == typeof(uint))
+            {
+                var actualValue = (uint)(object)value;
+                return (actualValue > MaxValue) ? MaxValue : (int)actualValue;
+            }
+            else if (typeof(TOther) == typeof(ulong))
+            {
+                var actualValue = (ulong)(object)value;
+                return (actualValue > MaxValue) ? MaxValue : (int)actualValue;
+            }
+            else if (typeof(TOther) == typeof(nuint))
+            {
+                var actualValue = (nuint)(object)value;
+                return (actualValue > MaxValue) ? MaxValue : (int)actualValue;
+            }
+            else
+            {
+                ThrowHelper.ThrowNotSupportedException();
+                return default;
+            }
+        }
+
+        [RequiresPreviewFeatures]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static int INumber<int>.CreateTruncating<TOther>(TOther value)
+        {
+            if (typeof(TOther) == typeof(byte))
+            {
+                return (byte)(object)value;
+            }
+            else if (typeof(TOther) == typeof(char))
+            {
+                return (char)(object)value;
+            }
+            else if (typeof(TOther) == typeof(decimal))
+            {
+                return (int)(decimal)(object)value;
+            }
+            else if (typeof(TOther) == typeof(double))
+            {
+                return (int)(double)(object)value;
+            }
+            else if (typeof(TOther) == typeof(short))
+            {
+                return (short)(object)value;
+            }
+            else if (typeof(TOther) == typeof(int))
+            {
+                return (int)(object)value;
+            }
+            else if (typeof(TOther) == typeof(long))
+            {
+                return (int)(long)(object)value;
+            }
+            else if (typeof(TOther) == typeof(nint))
+            {
+                return (int)(nint)(object)value;
+            }
+            else if (typeof(TOther) == typeof(sbyte))
+            {
+                return (sbyte)(object)value;
+            }
+            else if (typeof(TOther) == typeof(float))
+            {
+                return (int)(float)(object)value;
+            }
+            else if (typeof(TOther) == typeof(ushort))
+            {
+                return (ushort)(object)value;
+            }
+            else if (typeof(TOther) == typeof(uint))
+            {
+                return (int)(uint)(object)value;
+            }
+            else if (typeof(TOther) == typeof(ulong))
+            {
+                return (int)(ulong)(object)value;
+            }
+            else if (typeof(TOther) == typeof(nuint))
+            {
+                return (int)(nuint)(object)value;
+            }
+            else
+            {
+                ThrowHelper.ThrowNotSupportedException();
+                return default;
+            }
+        }
+
+        [RequiresPreviewFeatures]
+        static (int Quotient, int Remainder) INumber<int>.DivRem(int left, int right)
+            => Math.DivRem(left, right);
+
+        [RequiresPreviewFeatures]
+        static int INumber<int>.Max(int x, int y)
+            => Math.Max(x, y);
+
+        [RequiresPreviewFeatures]
+        static int INumber<int>.Min(int x, int y)
+            => Math.Min(x, y);
+
+        [RequiresPreviewFeatures]
+        static int INumber<int>.Parse(string s, NumberStyles style, IFormatProvider? provider)
+            => Parse(s, style, provider);
+
+        [RequiresPreviewFeatures]
+        static int INumber<int>.Parse(ReadOnlySpan<char> s, NumberStyles style, IFormatProvider? provider)
+            => Parse(s, style, provider);
+
+        [RequiresPreviewFeatures]
+        static int INumber<int>.Sign(int value)
+            => Math.Sign(value);
+
+        [RequiresPreviewFeatures]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static bool INumber<int>.TryCreate<TOther>(TOther value, out int result)
+        {
+            if (typeof(TOther) == typeof(byte))
+            {
+                result = (byte)(object)value;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(char))
+            {
+                result = (char)(object)value;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(decimal))
+            {
+                var actualValue = (decimal)(object)value;
+
+                if ((actualValue < MinValue) || (actualValue > MaxValue))
+                {
+                    result = default;
+                    return false;
+                }
+
+                result = (int)actualValue;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(double))
+            {
+                var actualValue = (double)(object)value;
+
+                if ((actualValue < MinValue) || (actualValue > MaxValue))
+                {
+                    result = default;
+                    return false;
+                }
+
+                result = (int)actualValue;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(short))
+            {
+                result = (short)(object)value;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(int))
+            {
+                result = (int)(object)value;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(long))
+            {
+                var actualValue = (long)(object)value;
+
+                if ((actualValue < MinValue) || (actualValue > MaxValue))
+                {
+                    result = default;
+                    return false;
+                }
+
+                result = (int)actualValue;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(nint))
+            {
+                var actualValue = (nint)(object)value;
+
+                if ((actualValue < MinValue) || (actualValue > MaxValue))
+                {
+                    result = default;
+                    return false;
+                }
+
+                result = (int)actualValue;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(sbyte))
+            {
+                result = (sbyte)(object)value;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(float))
+            {
+                var actualValue = (float)(object)value;
+
+                if ((actualValue < MinValue) || (actualValue > MaxValue))
+                {
+                    result = default;
+                    return false;
+                }
+
+                result = (int)actualValue;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(ushort))
+            {
+                result = (ushort)(object)value;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(uint))
+            {
+                var actualValue = (uint)(object)value;
+
+                if (actualValue > MaxValue)
+                {
+                    result = default;
+                    return false;
+                }
+
+                result = (int)actualValue;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(ulong))
+            {
+                var actualValue = (ulong)(object)value;
+
+                if (actualValue > MaxValue)
+                {
+                    result = default;
+                    return false;
+                }
+
+                result = (int)actualValue;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(nuint))
+            {
+                var actualValue = (nuint)(object)value;
+
+                if (actualValue > MaxValue)
+                {
+                    result = default;
+                    return false;
+                }
+
+                result = (int)actualValue;
+                return true;
+            }
+            else
+            {
+                ThrowHelper.ThrowNotSupportedException();
+                result = default;
+                return false;
+            }
+        }
+
+        [RequiresPreviewFeatures]
+        static bool INumber<int>.TryParse([NotNullWhen(true)] string? s, NumberStyles style, IFormatProvider? provider, out int result)
+            => TryParse(s, style, provider, out result);
+
+        [RequiresPreviewFeatures]
+        static bool INumber<int>.TryParse(ReadOnlySpan<char> s, NumberStyles style, IFormatProvider? provider, out int result)
+            => TryParse(s, style, provider, out result);
+
+        //
+        // IParseable
+        //
+
+        [RequiresPreviewFeatures]
+        static int IParseable<int>.Parse(string s, IFormatProvider? provider)
+            => Parse(s, provider);
+
+        [RequiresPreviewFeatures]
+        static bool IParseable<int>.TryParse([NotNullWhen(true)] string? s, IFormatProvider? provider, out int result)
+            => TryParse(s, NumberStyles.Integer, provider, out result);
+
+        //
+        // IShiftOperators
+        //
+
+        [RequiresPreviewFeatures]
+        static int IShiftOperators<int, int>.operator <<(int value, int shiftAmount)
+            => value << shiftAmount;
+
+        [RequiresPreviewFeatures]
+        static int IShiftOperators<int, int>.operator >>(int value, int shiftAmount)
+            => value >> shiftAmount;
+
+        // [RequiresPreviewFeatures]
+        // static int IShiftOperators<int, int>.operator >>>(int value, int shiftAmount)
+        //     => (int)((uint)value >> shiftAmount);
+
+        //
+        // ISignedNumber
+        //
+
+        [RequiresPreviewFeatures]
+        static int ISignedNumber<int>.NegativeOne => -1;
+
+        //
+        // ISpanParseable
+        //
+
+        [RequiresPreviewFeatures]
+        static int ISpanParseable<int>.Parse(ReadOnlySpan<char> s, IFormatProvider? provider)
+            => Parse(s, NumberStyles.Integer, provider);
+
+        [RequiresPreviewFeatures]
+        static bool ISpanParseable<int>.TryParse(ReadOnlySpan<char> s, IFormatProvider? provider, out int result)
+            => TryParse(s, NumberStyles.Integer, provider, out result);
+
+        //
+        // ISubtractionOperators
+        //
+
+        [RequiresPreviewFeatures]
+        static int ISubtractionOperators<int, int, int>.operator -(int left, int right)
+            => left - right;
+
+        // [RequiresPreviewFeatures]
+        // static checked int ISubtractionOperators<int, int, int>.operator -(int left, int right)
+        //     => checked(left - right);
+
+        //
+        // IUnaryNegationOperators
+        //
+
+        [RequiresPreviewFeatures]
+        static int IUnaryNegationOperators<int, int>.operator -(int value)
+            => -value;
+
+        // [RequiresPreviewFeatures]
+        // static checked int IUnaryNegationOperators<int, int>.operator -(int value)
+        //     => checked(-value);
+
+        //
+        // IUnaryPlusOperators
+        //
+
+        [RequiresPreviewFeatures]
+        static int IUnaryPlusOperators<int, int>.operator +(int value)
+            => +value;
+
+        // [RequiresPreviewFeatures]
+        // static checked int IUnaryPlusOperators<int, int>.operator +(int value)
+        //     => checked(+value);
+#endif // FEATURE_GENERIC_MATH
     }
 }

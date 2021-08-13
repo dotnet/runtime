@@ -1,4 +1,4 @@
-// Licensed to the .NET Foundation under one or more agreements.
+﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
@@ -42,6 +42,13 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         private readonly Dictionary<int, AssemblyName> _moduleIdToAssemblyNameMap;
 
         /// <summary>
+        /// MVIDs of the assemblies included in manifest metadata to be emitted as the
+        /// ManifestAssemblyMvid R2R header table used by the runtime to check loaded assemblies
+        /// and fail fast in case of mismatch.
+        /// </summary>
+        private readonly List<Guid> _manifestAssemblyMvids;
+
+        /// <summary>
         /// Registered signature emitters.
         /// </summary>
         private readonly List<ISignatureEmitter> _signatureEmitters;
@@ -71,6 +78,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         {
             _assemblyRefToModuleIdMap = new Dictionary<string, int>();
             _moduleIdToAssemblyNameMap = new Dictionary<int, AssemblyName>();
+            _manifestAssemblyMvids = new List<Guid>();
             _signatureEmitters = new List<ISignatureEmitter>();
             _nodeFactory = nodeFactory;
             _nextModuleId = 1;
@@ -150,6 +158,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 Debug.Assert(_nodeFactory.CompilationModuleGroup.VersionsWithModule(module));
 
                 _moduleIdToAssemblyNameMap.Add(assemblyRefIndex, assemblyName);
+                _manifestAssemblyMvids.Add(module.MetadataReader.GetGuid(module.MetadataReader.GetModuleDefinition().Mvid));
             }
             return assemblyRefIndex;
         }
@@ -180,14 +189,34 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
             MetadataBuilder metadataBuilder = new MetadataBuilder();
 
+            AssemblyHashAlgorithm hashAlgorithm = AssemblyHashAlgorithm.None;
+            BlobHandle publicKeyBlob = default(BlobHandle);
+            AssemblyFlags manifestAssemblyFlags = default(AssemblyFlags);
+            Version manifestAssemblyVersion = new Version(0, 0, 0, 0);
+
+            if ((factory.CompositeImageSettings != null) && factory.CompilationModuleGroup.IsCompositeBuildMode)
+            {
+                if (factory.CompositeImageSettings.PublicKey != null)
+                {
+                    hashAlgorithm = AssemblyHashAlgorithm.Sha1;
+                    publicKeyBlob = metadataBuilder.GetOrAddBlob(factory.CompositeImageSettings.PublicKey);
+                    manifestAssemblyFlags |= AssemblyFlags.PublicKey;
+                }
+
+                if (factory.CompositeImageSettings.AssemblyVersion != null)
+                {
+                    manifestAssemblyVersion = factory.CompositeImageSettings.AssemblyVersion;
+                }
+            }
+
             string manifestMetadataAssemblyName = "ManifestMetadata";
             metadataBuilder.AddAssembly(
                 metadataBuilder.GetOrAddString(manifestMetadataAssemblyName),
-                new Version(0, 0, 0, 0),
+                manifestAssemblyVersion,
                 culture: default(StringHandle),
-                publicKey: default(BlobHandle),
-                flags: default(AssemblyFlags),
-                hashAlgorithm: AssemblyHashAlgorithm.None);
+                publicKey: publicKeyBlob,
+                flags: manifestAssemblyFlags,
+                hashAlgorithm: hashAlgorithm);
 
             metadataBuilder.AddModule(
                 0,
@@ -240,6 +269,20 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 relocs: Array.Empty<Relocation>(),
                 alignment: 1,
                 definedSymbols: new ISymbolDefinitionNode[] { this });
+        }
+
+        private const int GuidByteSize = 16;
+
+        public int ManifestAssemblyMvidTableSize => GuidByteSize * _manifestAssemblyMvids.Count;
+
+        internal byte[] GetManifestAssemblyMvidTableData()
+        {
+            byte[] manifestAssemblyMvidTable = new byte[ManifestAssemblyMvidTableSize];
+            for (int i = 0; i < _manifestAssemblyMvids.Count; i++)
+            {
+                _manifestAssemblyMvids[i].TryWriteBytes(new Span<byte>(manifestAssemblyMvidTable, GuidByteSize * i, GuidByteSize));
+            }
+            return manifestAssemblyMvidTable;
         }
     }
 }

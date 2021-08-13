@@ -15,7 +15,6 @@
 #define __BINDER__FAILURE_CACHE_HASH_TRAITS_HPP__
 
 #include "bindertypes.hpp"
-#include "utils.hpp"
 #include "sstring.h"
 #include "shash.h"
 
@@ -66,11 +65,11 @@ namespace BINDER_SPACE
         }
         static BOOL Equals(key_t pAssemblyNameOrPath1, key_t pAssemblyNameOrPath2)
         {
-            return EqualsCaseInsensitive(pAssemblyNameOrPath1, pAssemblyNameOrPath2);
+            return pAssemblyNameOrPath1.EqualsCaseInsensitive(pAssemblyNameOrPath2);
         }
         static count_t Hash(key_t pAssemblyNameOrPath)
         {
-            return HashCaseInsensitive(pAssemblyNameOrPath);
+            return pAssemblyNameOrPath.HashCaseInsensitive();
         }
         static element_t Null()
         {

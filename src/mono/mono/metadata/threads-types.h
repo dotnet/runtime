@@ -58,7 +58,6 @@ typedef enum {
 
 #define SPECIAL_STATIC_NONE 0
 #define SPECIAL_STATIC_THREAD 1
-#define SPECIAL_STATIC_CONTEXT 2
 
 /* It's safe to access System.Threading.InternalThread from native code via a
  * raw pointer because all instances should be pinned.  But for uniformity of
@@ -74,37 +73,18 @@ void
 mono_thread_callbacks_init (void);
 
 typedef enum {
-	MONO_THREAD_CREATE_FLAGS_NONE         = 0x0,
-	MONO_THREAD_CREATE_FLAGS_THREADPOOL   = 0x1,
-	MONO_THREAD_CREATE_FLAGS_DEBUGGER     = 0x2,
-	MONO_THREAD_CREATE_FLAGS_FORCE_CREATE = 0x4,
-	MONO_THREAD_CREATE_FLAGS_SMALL_STACK  = 0x8,
+	MONO_THREAD_CREATE_FLAGS_NONE			= 0x00,
+	MONO_THREAD_CREATE_FLAGS_THREADPOOL		= 0x01,
+	MONO_THREAD_CREATE_FLAGS_DEBUGGER		= 0x02,
+	MONO_THREAD_CREATE_FLAGS_FORCE_CREATE	= 0x04,
+	MONO_THREAD_CREATE_FLAGS_SMALL_STACK	= 0x08,
 } MonoThreadCreateFlags;
 
-// FIXME func should be MonoThreadStart and remove the template
-MonoInternalThread*
-mono_thread_create_internal (MonoDomain *domain, gpointer func, gpointer arg, MonoThreadCreateFlags flags, MonoError *error);
-
-#ifdef __cplusplus
-template <typename T>
-inline MonoInternalThread*
-mono_thread_create_internal (MonoDomain *domain, T func, gpointer arg, MonoThreadCreateFlags flags, MonoError *error)
-{
-	return mono_thread_create_internal(domain, (gpointer)func, arg, flags, error);
-}
-#endif
+MONO_COMPONENT_API MonoInternalThread*
+mono_thread_create_internal (MonoThreadStart func, gpointer arg, MonoThreadCreateFlags flags, MonoError *error);
 
 MonoInternalThreadHandle
-mono_thread_create_internal_handle (MonoDomain *domain, gpointer func, gpointer arg, MonoThreadCreateFlags flags, MonoError *error);
-
-#ifdef __cplusplus
-template <typename T>
-inline MonoInternalThreadHandle
-mono_thread_create_internal_handle (MonoDomain *domain, T func, gpointer arg, MonoThreadCreateFlags flags, MonoError *error)
-{
-	return mono_thread_create_internal_handle(domain, (gpointer)func, arg, flags, error);
-}
-#endif
+mono_thread_create_internal_handle (MonoThreadStart func, gpointer arg, MonoThreadCreateFlags flags, MonoError *error);
 
 void
 mono_thread_manage_internal (void);
@@ -210,96 +190,24 @@ ICALL_EXPORT
 void ves_icall_System_Threading_Interlocked_MemoryBarrierProcessWide (void);
 
 ICALL_EXPORT
-gint8 ves_icall_System_Threading_Thread_VolatileRead1 (void *ptr);
-
-ICALL_EXPORT
-gint16 ves_icall_System_Threading_Thread_VolatileRead2 (void *ptr);
-
-ICALL_EXPORT
-gint32 ves_icall_System_Threading_Thread_VolatileRead4 (void *ptr);
-
-ICALL_EXPORT
-gint64 ves_icall_System_Threading_Thread_VolatileRead8 (void *ptr);
-
-ICALL_EXPORT
-void * ves_icall_System_Threading_Thread_VolatileReadIntPtr (void *ptr);
-
-ICALL_EXPORT
-void * ves_icall_System_Threading_Thread_VolatileReadObject (void *ptr);
-
-ICALL_EXPORT
-double ves_icall_System_Threading_Thread_VolatileReadDouble (void *ptr);
-
-ICALL_EXPORT
-float ves_icall_System_Threading_Thread_VolatileReadFloat (void *ptr);
-
-ICALL_EXPORT
-void ves_icall_System_Threading_Thread_VolatileWrite1 (void *ptr, gint8);
-
-ICALL_EXPORT
-void ves_icall_System_Threading_Thread_VolatileWrite2 (void *ptr, gint16);
-
-ICALL_EXPORT
-void ves_icall_System_Threading_Thread_VolatileWrite4 (void *ptr, gint32);
-
-ICALL_EXPORT
-void ves_icall_System_Threading_Thread_VolatileWrite8 (void *ptr, gint64);
-
-ICALL_EXPORT
-void ves_icall_System_Threading_Thread_VolatileWriteIntPtr (void *ptr, void *);
-
-ICALL_EXPORT
-void ves_icall_System_Threading_Thread_VolatileWriteObject (void *ptr, MonoObject *);
-
-ICALL_EXPORT
-void ves_icall_System_Threading_Thread_VolatileWriteFloat (void *ptr, float);
-
-ICALL_EXPORT
-void ves_icall_System_Threading_Thread_VolatileWriteDouble (void *ptr, double);
-
-ICALL_EXPORT
-gint64 ves_icall_System_Threading_Volatile_Read8 (void *ptr);
-
-ICALL_EXPORT
-guint64 ves_icall_System_Threading_Volatile_ReadU8 (void *ptr);
-
-ICALL_EXPORT
-double ves_icall_System_Threading_Volatile_ReadDouble (void *ptr);
-
-ICALL_EXPORT
-void ves_icall_System_Threading_Volatile_Write8 (void *ptr, gint64);
-
-ICALL_EXPORT
-void ves_icall_System_Threading_Volatile_WriteU8 (void *ptr, guint64);
-
-ICALL_EXPORT
-void ves_icall_System_Threading_Volatile_WriteDouble (void *ptr, double);
-
-ICALL_EXPORT
 void ves_icall_System_Threading_Thread_MemoryBarrier (void);
-
-void
-mono_threads_register_app_context (MonoAppContextHandle ctx, MonoError *error);
-void
-mono_threads_release_app_context (MonoAppContext* ctx, MonoError *error);
 
 MONO_PROFILER_API MonoInternalThread *mono_thread_internal_current (void);
 
 MonoInternalThreadHandle
 mono_thread_internal_current_handle (void);
 
-gboolean
+MONO_COMPONENT_API gboolean
 mono_thread_internal_abort (MonoInternalThread *thread);
 void mono_thread_internal_suspend_for_shutdown (MonoInternalThread *thread);
 
-void mono_thread_internal_reset_abort (MonoInternalThread *thread);
+MONO_COMPONENT_API void mono_thread_internal_reset_abort (MonoInternalThread *thread);
 
 void mono_thread_internal_unhandled_exception (MonoObject* exc);
 
 void mono_alloc_special_static_data_free (GHashTable *special_static_fields);
-gboolean mono_thread_current_check_pending_interrupt (void);
 
-void mono_thread_set_state (MonoInternalThread *thread, MonoThreadState state);
+MONO_COMPONENT_API void mono_thread_set_state (MonoInternalThread *thread, MonoThreadState state);
 void mono_thread_clr_state (MonoInternalThread *thread, MonoThreadState state);
 gboolean mono_thread_test_state (MonoInternalThread *thread, MonoThreadState test);
 gboolean mono_thread_test_and_set_state (MonoInternalThread *thread, MonoThreadState test, MonoThreadState set);
@@ -307,6 +215,12 @@ void mono_thread_clear_and_set_state (MonoInternalThread *thread, MonoThreadStat
 
 void mono_thread_init_apartment_state (void);
 void mono_thread_cleanup_apartment_state (void);
+
+/* There are some threads that need initialization that would normally
+	occur in managed code. Some threads occur prior to the runtime being
+	fully initialized so that must be done in native. For example, Main and Finalizer. */
+void mono_thread_init_from_native (void);
+void mono_thread_cleanup_from_native (void);
 
 void mono_threads_set_shutting_down (void);
 
@@ -353,7 +267,7 @@ mono_thread_set_name (MonoInternalThread *thread,
 
 gboolean mono_thread_interruption_requested (void);
 
-ICALL_EXTERN_C
+ICALL_EXPORT
 MonoException*
 mono_thread_interruption_checkpoint (void);
 
@@ -366,7 +280,7 @@ mono_thread_interruption_checkpoint_void (void);
 MonoExceptionHandle
 mono_thread_interruption_checkpoint_handle (void);
 
-ICALL_EXTERN_C
+ICALL_EXPORT
 MonoException* mono_thread_force_interruption_checkpoint_noraise (void);
 
 /**
@@ -382,27 +296,17 @@ extern gint32 mono_thread_interruption_request_flag;
 
 uint32_t mono_alloc_special_static_data (uint32_t static_type, uint32_t size, uint32_t align, uintptr_t *bitmap, int numbits);
 
-ICALL_EXTERN_C
+ICALL_EXPORT
 void*    mono_get_special_static_data   (uint32_t offset);
 
-gpointer mono_get_special_static_data_for_thread (MonoInternalThread *thread, guint32 offset);
+MONO_COMPONENT_API gpointer mono_get_special_static_data_for_thread (MonoInternalThread *thread, guint32 offset);
 
 void
 mono_thread_resume_interruption (gboolean exec);
 void mono_threads_perform_thread_dump (void);
 
-// FIXME Correct the type of func and remove the template.
 gboolean
-mono_thread_create_checked (MonoDomain *domain, gpointer func, gpointer arg, MonoError *error);
-
-#ifdef __cplusplus
-template <typename T>
-inline gboolean
-mono_thread_create_checked (MonoDomain *domain, T func, gpointer arg, MonoError *error)
-{
-	return mono_thread_create_checked (domain, (gpointer)func, arg, error);
-}
-#endif
+mono_thread_create_checked (MonoThreadStart func, gpointer arg, MonoError *error);
 
 void mono_threads_add_joinable_runtime_thread (MonoThreadInfo *thread_info);
 void mono_threads_add_joinable_thread (gpointer tid);
@@ -425,11 +329,11 @@ mono_threads_attach_coop (MonoDomain *domain, gpointer *dummy);
 MONO_API void
 mono_threads_detach_coop (gpointer cookie, gpointer *dummy);
 
-MonoDomain*
-mono_threads_attach_coop_internal (MonoDomain *domain, gpointer *cookie, MonoStackData *stackdata);
+void
+mono_threads_attach_coop_internal (gpointer *cookie, MonoStackData *stackdata);
 
 void
-mono_threads_detach_coop_internal (MonoDomain *orig_domain, gpointer cookie, MonoStackData *stackdata);
+mono_threads_detach_coop_internal (gpointer cookie, MonoStackData *stackdata);
 
 void mono_threads_begin_abort_protected_block (void);
 gboolean mono_threads_end_abort_protected_block (void);
@@ -440,7 +344,7 @@ mono_thread_internal_current_is_attached (void);
 void
 mono_thread_internal_describe (MonoInternalThread *internal, GString *str);
 
-gboolean
+MONO_COMPONENT_API gboolean
 mono_thread_internal_is_current (MonoInternalThread *internal);
 
 gboolean
@@ -562,6 +466,9 @@ mono_threads_summarize_execute (MonoContext *ctx, gchar **out, MonoStackHash *ha
 
 gboolean
 mono_threads_summarize_one (MonoThreadSummary *out, MonoContext *ctx);
+
+void
+mono_threads_exiting (void);
 
 #if SIZEOF_VOID_P == 4
 /* Spin lock for unaligned InterlockedXXX 64 bit functions on 32bit platforms. */

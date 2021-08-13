@@ -8,13 +8,13 @@ namespace System.Management
 {
     [System.ComponentModel.TypeConverter(typeof(ManagementPathConverter))]
     public partial class ManagementPath { }
-    internal class ManagementPathConverter { }
+    internal sealed class ManagementPathConverter { }
 
     [System.ComponentModel.TypeConverter(typeof(ManagementQueryConverter))]
     public abstract partial class ManagementQuery { }
-    internal class ManagementQueryConverter { }
+    internal sealed class ManagementQueryConverter { }
 
     [System.ComponentModel.TypeConverter(typeof(ManagementScopeConverter))]
     public partial class ManagementScope { }
-    internal class ManagementScopeConverter { }
+    internal sealed class ManagementScopeConverter { }
 }

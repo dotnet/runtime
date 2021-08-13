@@ -96,6 +96,16 @@ internal partial class VectorTest
         {
             return (T)(object)(sbyte)value;
         }
+        if (typeof(T) == typeof(nint))
+        {
+            nint nintValue = (nint)value;
+            return (T)(object)nintValue;
+        }
+        if (typeof(T) == typeof(nuint))
+        {
+            nuint nuintValue = (nuint)value;
+            return (T)(object)nuintValue;
+        }
         else
         {
             throw new ArgumentException();
@@ -155,6 +165,14 @@ internal partial class VectorTest
         {
             return (T)(object)(((ulong)(object)left) + ((ulong)(object)right));
         }
+        if (typeof(T) == typeof(nint))
+        {
+            return (T)(object)(((nint)(object)left) + ((nint)(object)right));
+        }
+        if (typeof(T) == typeof(nuint))
+        {
+            return (T)(object)(((nuint)(object)left) + ((nuint)(object)right));
+        }
         else
         {
             throw new ArgumentException();
@@ -201,6 +219,14 @@ internal partial class VectorTest
         if (typeof(T) == typeof(ulong))
         {
             return (T)(object)(((ulong)(object)left) * ((ulong)(object)right));
+        }
+        if (typeof(T) == typeof(nint))
+        {
+            return (T)(object)(((nint)(object)left) * ((nint)(object)right));
+        }
+        if (typeof(T) == typeof(nuint))
+        {
+            return (T)(object)(((nuint)(object)left) * ((nuint)(object)right));
         }
         else
         {

@@ -6,6 +6,7 @@ using System.ComponentModel;
 using System.Diagnostics;
 using System.Drawing;
 using System.Drawing.Imaging;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Reflection;
@@ -49,7 +50,7 @@ namespace System.Runtime.Serialization.Formatters.Tests
         [SkipOnCoreClr("Takes too long on Checked", RuntimeConfiguration.Checked)]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/34008", TestPlatforms.Linux, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/34753", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
-        [PlatformSpecific(~TestPlatforms.Browser)]
+        [SkipOnPlatform(TestPlatforms.Browser, "Takes too long on Browser.")]
         [MemberData(nameof(BasicObjectsRoundtrip_MemberData))]
         public void ValidateBasicObjectsRoundtrip(object obj, FormatterAssemblyStyle assemblyFormat, TypeFilterLevel filterLevel, FormatterTypeStyle typeFormat)
         {
@@ -93,6 +94,17 @@ namespace System.Runtime.Serialization.Formatters.Tests
             if (obj is ISerializable customSerializableObj && HasObjectTypeIntegrity(customSerializableObj))
             {
                 CheckObjectTypeIntegrity(customSerializableObj);
+            }
+
+            // TimeZoneInfo objects have three properties (DisplayName, StandardName, DaylightName)
+            // that are localized.  Since the blobs were generated from the invariant culture, they
+            // will have English strings embedded.  Thus, we can only test them against English
+            // language cultures or the invariant culture.
+            if (obj is TimeZoneInfo && (
+                CultureInfo.CurrentUICulture.TwoLetterISOLanguageName != "en" ||
+                CultureInfo.CurrentUICulture.Name.Length != 0))
+            {
+                return;
             }
 
             SanityCheckBlob(obj, blobs);
@@ -188,7 +200,7 @@ namespace System.Runtime.Serialization.Formatters.Tests
         [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/34008", TestPlatforms.Linux, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/34753", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
-        [PlatformSpecific(~TestPlatforms.Browser)]
+        [SkipOnPlatform(TestPlatforms.Browser, "Takes too long on Browser.")]
         public void RoundtripManyObjectsInOneStream()
         {
             object[][] objects = SerializableObjects_MemberData().ToArray();

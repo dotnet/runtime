@@ -34,7 +34,6 @@ namespace XPathTests.FunctionalTests.Expressions
                     HasNameTable = true,
                     Value = "XPath test"
                 });
-            ;
 
             Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
         }
@@ -59,7 +58,6 @@ namespace XPathTests.FunctionalTests.Expressions
                     HasNameTable = true,
                     Value = "This shall test XPath test"
                 });
-            ;
 
             Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
         }
@@ -84,7 +82,6 @@ namespace XPathTests.FunctionalTests.Expressions
                     HasNameTable = true,
                     Value = "XPath test"
                 });
-            ;
 
             Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
         }

@@ -237,7 +237,7 @@ namespace System.Xml.Tests
                 try
                 {
                     int nBytes = 0;
-                    switch ((int)new Random().Next(4))
+                    switch ((int)Random.Shared.Next(4))
                     {
                         case 0:
                             CError.WriteLineIgnore("Selecting RCABH");

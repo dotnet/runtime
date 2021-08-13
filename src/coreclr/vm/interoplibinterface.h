@@ -59,6 +59,11 @@ public: // COM activation
 public: // Unwrapping support
     static IUnknown* GetIdentityForObject(_In_ OBJECTREF* objectPROTECTED, _In_ REFIID riid, _Out_ INT64* wrapperId);
     static bool HasManagedObjectComWrapper(_In_ OBJECTREF object, _Out_ bool* isActive);
+
+public: // GC interaction
+    static void OnFullGCStarted();
+    static void OnFullGCFinished();
+    static void AfterRefCountedHandleCallbacks();
 };
 
 class GlobalComWrappersForMarshalling
@@ -82,7 +87,6 @@ public: // Functions operating on a registered global instance for marshalling
         _Out_ OBJECTREF* objRef);
 };
 
-
 class GlobalComWrappersForTrackerSupport
 {
 public:
@@ -105,14 +109,92 @@ public: // Functions operating on a registered global instance for tracker suppo
 
 #endif // FEATURE_COMWRAPPERS
 
+#ifdef FEATURE_OBJCMARSHAL
+
+class ObjCMarshalNative
+{
+public:
+    using BeginEndCallback = void(STDMETHODCALLTYPE *)(void);
+    using IsReferencedCallback = int(STDMETHODCALLTYPE *)(_In_ void*);
+    using EnteredFinalizationCallback = void(STDMETHODCALLTYPE *)(_In_ void*);
+
+    // See MessageSendFunction in ObjectiveCMarshal class
+    enum MessageSendFunction
+    {
+        MessageSendFunction_MsgSend = 0,
+        MessageSendFunction_MsgSendFpret = 1,
+        MessageSendFunction_MsgSendStret = 2,
+        MessageSendFunction_MsgSendSuper = 3,
+        MessageSendFunction_MsgSendSuperStret = 4,
+        Last = MessageSendFunction_MsgSendSuperStret,
+    };
+
+public: // static
+    static BOOL QCALLTYPE TryInitializeReferenceTracker(
+        _In_ BeginEndCallback beginEndCallback,
+        _In_ IsReferencedCallback isReferencedCallback,
+        _In_ EnteredFinalizationCallback trackedObjectEnteredFinalization);
+
+    static void* QCALLTYPE CreateReferenceTrackingHandle(
+        _In_ QCall::ObjectHandleOnStack obj,
+        _Out_ int* memInSizeT,
+        _Outptr_ void** mem);
+
+    static BOOL QCALLTYPE TrySetGlobalMessageSendCallback(
+        _In_ MessageSendFunction msgSendFunction,
+        _In_ void* fptr);
+
+public: // Instance inspection
+    static bool IsTrackedReference(_In_ OBJECTREF object, _Out_ bool* isReferenced);
+
+public: // Identification
+    static bool IsRuntimeMessageSendFunction(
+        _In_z_ const char* libraryName,
+        _In_z_ const char* entrypointName);
+
+public: // Exceptions
+    static void* GetPropagatingExceptionCallback(
+        _In_ EECodeInfo* codeInfo,
+        _In_ OBJECTHANDLE throwable,
+        _Outptr_ void** context);
+
+public: // GC interaction
+    static void BeforeRefCountedHandleCallbacks();
+    static void AfterRefCountedHandleCallbacks();
+    static void OnEnteredFinalizerQueue(_In_ OBJECTREF object);
+};
+
+#endif // FEATURE_OBJCMARSHAL
+
 class Interop
 {
 public:
-    // Notify when GC started
-    static void OnGCStarted(_In_ int nCondemnedGeneration);
+    // Check if pending exceptions are possible for the following native export.
+    static bool ShouldCheckForPendingException(_In_ NDirectMethodDesc* md);
 
-    // Notify when GC finished
+    // A no return callback that is designed to help propagate a managed
+    // exception going from Managed to Native.
+    using ManagedToNativeExceptionCallback = /* no return */ void(*)(_In_ void* context);
+
+    static ManagedToNativeExceptionCallback GetPropagatingExceptionCallback(
+        _In_ EECodeInfo* codeInfo,
+        _In_ OBJECTHANDLE throwable,
+        _Outptr_ void** context);
+
+    // Notify started/finished when GC is running.
+    // These methods are called in a blocking fashion when a
+    // GC of generation is started. These calls may overlap
+    // so care must be taken when taking locks.
+    static void OnGCStarted(_In_ int nCondemnedGeneration);
     static void OnGCFinished(_In_ int nCondemnedGeneration);
+
+    // Notify before/after when GC is scanning roots.
+    // Present assumption is that calls will never be nested.
+    // The input indicates if the call is from a concurrent GC
+    // thread or not. These will be nested within OnGCStarted
+    // and OnGCFinished.
+    static void OnBeforeGCScanRoots(_In_ bool isConcurrent);
+    static void OnAfterGCScanRoots(_In_ bool isConcurrent);
 };
 
 #endif // _INTEROPLIBINTERFACE_H_

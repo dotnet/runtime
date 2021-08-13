@@ -64,10 +64,11 @@ namespace System.Net.Http.Functional.Tests
 
                 Version version = Version.Parse(useVersionString);
                 using var listener = new TestEventListener("System.Net.Http", EventLevel.Verbose, eventCounterInterval: 0.1d);
+                listener.AddActivityTracking();
 
                 bool buffersResponse = false;
-                var events = new ConcurrentQueue<EventWrittenEventArgs>();
-                await listener.RunWithCallbackAsync(events.Enqueue, async () =>
+                var events = new ConcurrentQueue<(EventWrittenEventArgs Event, Guid ActivityId)>();
+                await listener.RunWithCallbackAsync(e => events.Enqueue((e, e.ActivityId)), async () =>
                 {
                     await GetFactoryForVersion(version).CreateClientAndServerAsync(
                         async uri =>
@@ -163,23 +164,17 @@ namespace System.Net.Http.Functional.Tests
                         {
                             await server.AcceptConnectionAsync(async connection =>
                             {
-                                await Task.Delay(300);
+                                await WaitForEventCountersAsync(events);
                                 await connection.ReadRequestDataAsync();
                                 await connection.SendResponseAsync(content: new string('a', ResponseContentLength));
                             });
                         });
 
-                    await Task.Delay(300);
+                    await WaitForEventCountersAsync(events);
                 });
-                Assert.DoesNotContain(events, ev => ev.EventId == 0); // errors from the EventSource itself
+                Assert.DoesNotContain(events, e => e.Event.EventId == 0); // errors from the EventSource itself
 
-                EventWrittenEventArgs start = Assert.Single(events, e => e.EventName == "RequestStart");
-                ValidateStartEventPayload(start);
-
-                EventWrittenEventArgs stop = Assert.Single(events, e => e.EventName == "RequestStop");
-                Assert.Empty(stop.Payload);
-
-                Assert.DoesNotContain(events, e => e.EventName == "RequestFailed");
+                ValidateStartFailedStopEvents(events);
 
                 ValidateConnectionEstablishedClosed(events, version);
 
@@ -189,7 +184,7 @@ namespace System.Net.Http.Functional.Tests
                     responseContentLength: buffersResponse ? ResponseContentLength : null,
                     count: 1);
 
-                VerifyEventCounters(events, requestCount: 1, shouldHaveFailures: false);
+                ValidateEventCounters(events, requestCount: 1, shouldHaveFailures: false);
             }, UseVersion.ToString(), testMethod).Dispose();
         }
 
@@ -208,9 +203,10 @@ namespace System.Net.Http.Functional.Tests
             {
                 Version version = Version.Parse(useVersionString);
                 using var listener = new TestEventListener("System.Net.Http", EventLevel.Verbose, eventCounterInterval: 0.1d);
+                listener.AddActivityTracking();
 
-                var events = new ConcurrentQueue<EventWrittenEventArgs>();
-                await listener.RunWithCallbackAsync(events.Enqueue, async () =>
+                var events = new ConcurrentQueue<(EventWrittenEventArgs Event, Guid ActivityId)>();
+                await listener.RunWithCallbackAsync(e => events.Enqueue((e, e.ActivityId)), async () =>
                 {
                     var semaphore = new SemaphoreSlim(0, 1);
                     var cts = new CancellationTokenSource();
@@ -276,28 +272,22 @@ namespace System.Net.Http.Functional.Tests
                         {
                             await server.AcceptConnectionAsync(async connection =>
                             {
-                                cts.CancelAfter(TimeSpan.FromMilliseconds(300));
-                                Assert.True(await semaphore.WaitAsync(TimeSpan.FromSeconds(5)));
-                                connection.Dispose();
+                                await connection.ReadRequestDataAsync();
+                                await WaitForEventCountersAsync(events);
+                                cts.Cancel();
+                                Assert.True(await semaphore.WaitAsync(TimeSpan.FromSeconds(30)));
                             });
                         });
 
-                    await Task.Delay(300);
+                    await WaitForEventCountersAsync(events);
                 });
-                Assert.DoesNotContain(events, ev => ev.EventId == 0); // errors from the EventSource itself
+                Assert.DoesNotContain(events, e => e.Event.EventId == 0); // errors from the EventSource itself
 
-                EventWrittenEventArgs start = Assert.Single(events, e => e.EventName == "RequestStart");
-                ValidateStartEventPayload(start);
-
-                EventWrittenEventArgs failure = Assert.Single(events, e => e.EventName == "RequestFailed");
-                Assert.Empty(failure.Payload);
-
-                EventWrittenEventArgs stop = Assert.Single(events, e => e.EventName == "RequestStop");
-                Assert.Empty(stop.Payload);
+                ValidateStartFailedStopEvents(events, shouldHaveFailures: true);
 
                 ValidateConnectionEstablishedClosed(events, version);
 
-                VerifyEventCounters(events, requestCount: 1, shouldHaveFailures: true);
+                ValidateEventCounters(events, requestCount: 1, shouldHaveFailures: true);
             }, UseVersion.ToString(), testMethod).Dispose();
         }
 
@@ -324,9 +314,10 @@ namespace System.Net.Http.Functional.Tests
 
                 Version version = Version.Parse(useVersionString);
                 using var listener = new TestEventListener("System.Net.Http", EventLevel.Verbose, eventCounterInterval: 0.1d);
+                listener.AddActivityTracking();
 
-                var events = new ConcurrentQueue<EventWrittenEventArgs>();
-                await listener.RunWithCallbackAsync(events.Enqueue, async () =>
+                var events = new ConcurrentQueue<(EventWrittenEventArgs Event, Guid ActivityId)>();
+                await listener.RunWithCallbackAsync(e => events.Enqueue((e, e.ActivityId)), async () =>
                 {
                     await GetFactoryForVersion(version).CreateClientAndServerAsync(
                         async uri =>
@@ -377,23 +368,17 @@ namespace System.Net.Http.Functional.Tests
                         {
                             await server.AcceptConnectionAsync(async connection =>
                             {
-                                await Task.Delay(300);
+                                await WaitForEventCountersAsync(events);
                                 await connection.ReadRequestDataAsync();
                                 await connection.SendResponseAsync(content: new string('a', ResponseContentLength));
                             });
                         });
 
-                    await Task.Delay(300);
+                    await WaitForEventCountersAsync(events);
                 });
-                Assert.DoesNotContain(events, ev => ev.EventId == 0); // errors from the EventSource itself
+                Assert.DoesNotContain(events, e => e.Event.EventId == 0); // errors from the EventSource itself
 
-                EventWrittenEventArgs start = Assert.Single(events, e => e.EventName == "RequestStart");
-                ValidateStartEventPayload(start);
-
-                EventWrittenEventArgs stop = Assert.Single(events, e => e.EventName == "RequestStop");
-                Assert.Empty(stop.Payload);
-
-                Assert.DoesNotContain(events, e => e.EventName == "RequestFailed");
+                ValidateStartFailedStopEvents(events);
 
                 ValidateConnectionEstablishedClosed(events, version);
 
@@ -403,27 +388,46 @@ namespace System.Net.Http.Functional.Tests
                     responseContentLength: testMethod.StartsWith("InvokerSend") ? null : ResponseContentLength,
                     count: 1);
 
-                VerifyEventCounters(events, requestCount: 1, shouldHaveFailures: false);
+                ValidateEventCounters(events, requestCount: 1, shouldHaveFailures: false);
             }, UseVersion.ToString(), testMethod).Dispose();
         }
 
-        private static void ValidateStartEventPayload(EventWrittenEventArgs startEvent)
+        private static void ValidateStartFailedStopEvents(ConcurrentQueue<(EventWrittenEventArgs Event, Guid ActivityId)> events, bool shouldHaveFailures = false, int count = 1)
         {
-            Assert.Equal("RequestStart", startEvent.EventName);
-            Assert.Equal(7, startEvent.Payload.Count);
+            (EventWrittenEventArgs Event, Guid ActivityId)[] starts = events.Where(e => e.Event.EventName == "RequestStart").ToArray();
+            foreach (EventWrittenEventArgs startEvent in starts.Select(e => e.Event))
+            {
+                Assert.Equal(7, startEvent.Payload.Count);
+                Assert.StartsWith("http", (string)startEvent.Payload[0]);
+                Assert.NotEmpty((string)startEvent.Payload[1]); // host
+                Assert.True(startEvent.Payload[2] is int port && port >= 0 && port <= 65535);
+                Assert.NotEmpty((string)startEvent.Payload[3]); // pathAndQuery
+                Assert.True(startEvent.Payload[4] is byte versionMajor && (versionMajor == 1 || versionMajor == 2));
+                Assert.True(startEvent.Payload[5] is byte versionMinor && (versionMinor == 1 || versionMinor == 0));
+                Assert.InRange((HttpVersionPolicy)startEvent.Payload[6], HttpVersionPolicy.RequestVersionOrLower, HttpVersionPolicy.RequestVersionExact);
+            }
+            Assert.Equal(count, starts.Length);
 
-            Assert.StartsWith("http", (string)startEvent.Payload[0]);
-            Assert.NotEmpty((string)startEvent.Payload[1]); // host
-            Assert.True(startEvent.Payload[2] is int port && port >= 0 && port <= 65535);
-            Assert.NotEmpty((string)startEvent.Payload[3]); // pathAndQuery
-            Assert.True(startEvent.Payload[4] is byte versionMajor && (versionMajor == 1 || versionMajor == 2));
-            Assert.True(startEvent.Payload[5] is byte versionMinor && (versionMinor == 1 || versionMinor == 0));
-            Assert.InRange((HttpVersionPolicy)startEvent.Payload[6], HttpVersionPolicy.RequestVersionOrLower, HttpVersionPolicy.RequestVersionExact);
+            (EventWrittenEventArgs Event, Guid ActivityId)[] stops = events.Where(e => e.Event.EventName == "RequestStop").ToArray();
+            Assert.All(stops, stopEvent => Assert.Empty(stopEvent.Event.Payload));
+
+            ValidateSameActivityIds(starts, stops);
+
+            (EventWrittenEventArgs Event, Guid ActivityId)[] failures = events.Where(e => e.Event.EventName == "RequestFailed").ToArray();
+            Assert.All(failures, failedEvent => Assert.Empty(failedEvent.Event.Payload));
+            if (shouldHaveFailures)
+            {
+                ValidateSameActivityIds(starts, failures);
+            }
+            else
+            {
+                Assert.Empty(failures);
+            }
         }
 
-        private static void ValidateConnectionEstablishedClosed(ConcurrentQueue<EventWrittenEventArgs> events, Version version, int count = 1)
+        private static void ValidateConnectionEstablishedClosed(ConcurrentQueue<(EventWrittenEventArgs Event, Guid ActivityId)> events, Version version, int count = 1)
         {
-            EventWrittenEventArgs[] connectionsEstablished = events.Where(e => e.EventName == "ConnectionEstablished").ToArray();
+            EventWrittenEventArgs[] connectionsEstablished = events.Select(e => e.Event).Where(e => e.EventName == "ConnectionEstablished").ToArray();
             Assert.Equal(count, connectionsEstablished.Length);
             foreach (EventWrittenEventArgs connectionEstablished in connectionsEstablished)
             {
@@ -432,7 +436,7 @@ namespace System.Net.Http.Functional.Tests
                 Assert.Equal(version.Minor, (byte)connectionEstablished.Payload[1]);
             }
 
-            EventWrittenEventArgs[] connectionsClosed = events.Where(e => e.EventName == "ConnectionClosed").ToArray();
+            EventWrittenEventArgs[] connectionsClosed = events.Select(e => e.Event).Where(e => e.EventName == "ConnectionClosed").ToArray();
             Assert.Equal(count, connectionsClosed.Length);
             foreach (EventWrittenEventArgs connectionClosed in connectionsClosed)
             {
@@ -442,49 +446,69 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        private static void ValidateRequestResponseStartStopEvents(ConcurrentQueue<EventWrittenEventArgs> events, int? requestContentLength, int? responseContentLength, int count)
+        private static void ValidateRequestResponseStartStopEvents(ConcurrentQueue<(EventWrittenEventArgs Event, Guid ActivityId)> events, int? requestContentLength, int? responseContentLength, int count)
         {
-            EventWrittenEventArgs[] requestHeadersStarts = events.Where(e => e.EventName == "RequestHeadersStart").ToArray();
+            (EventWrittenEventArgs Event, Guid ActivityId)[] requestHeadersStarts = events.Where(e => e.Event.EventName == "RequestHeadersStart").ToArray();
             Assert.Equal(count, requestHeadersStarts.Length);
-            Assert.All(requestHeadersStarts, r => Assert.Empty(r.Payload));
+            Assert.All(requestHeadersStarts, r => Assert.Empty(r.Event.Payload));
 
-            EventWrittenEventArgs[] requestHeadersStops = events.Where(e => e.EventName == "RequestHeadersStop").ToArray();
+            (EventWrittenEventArgs Event, Guid ActivityId)[] requestHeadersStops = events.Where(e => e.Event.EventName == "RequestHeadersStop").ToArray();
             Assert.Equal(count, requestHeadersStops.Length);
-            Assert.All(requestHeadersStops, r => Assert.Empty(r.Payload));
+            Assert.All(requestHeadersStops, r => Assert.Empty(r.Event.Payload));
 
-            EventWrittenEventArgs[] requestContentStarts = events.Where(e => e.EventName == "RequestContentStart").ToArray();
+            ValidateSameActivityIds(requestHeadersStarts, requestHeadersStops);
+
+            (EventWrittenEventArgs Event, Guid ActivityId)[] requestContentStarts = events.Where(e => e.Event.EventName == "RequestContentStart").ToArray();
             Assert.Equal(requestContentLength.HasValue ? count : 0, requestContentStarts.Length);
-            Assert.All(requestContentStarts, r => Assert.Empty(r.Payload));
+            Assert.All(requestContentStarts, r => Assert.Empty(r.Event.Payload));
 
-            EventWrittenEventArgs[] requestContentStops = events.Where(e => e.EventName == "RequestContentStop").ToArray();
+            (EventWrittenEventArgs Event, Guid ActivityId)[] requestContentStops = events.Where(e => e.Event.EventName == "RequestContentStop").ToArray();
             Assert.Equal(requestContentLength.HasValue ? count : 0, requestContentStops.Length);
-            foreach (EventWrittenEventArgs requestContentStop in requestContentStops)
+            foreach (EventWrittenEventArgs requestContentStop in requestContentStops.Select(e => e.Event))
             {
                 object payload = Assert.Single(requestContentStop.Payload);
                 Assert.True(payload is long);
                 Assert.Equal(requestContentLength.Value, (long)payload);
             }
 
-            EventWrittenEventArgs[] responseHeadersStarts = events.Where(e => e.EventName == "ResponseHeadersStart").ToArray();
+            ValidateSameActivityIds(requestContentStarts, requestContentStops);
+
+            (EventWrittenEventArgs Event, Guid ActivityId)[] responseHeadersStarts = events.Where(e => e.Event.EventName == "ResponseHeadersStart").ToArray();
             Assert.Equal(count, responseHeadersStarts.Length);
-            Assert.All(responseHeadersStarts, r => Assert.Empty(r.Payload));
+            Assert.All(responseHeadersStarts, r => Assert.Empty(r.Event.Payload));
 
-            EventWrittenEventArgs[] responseHeadersStops = events.Where(e => e.EventName == "ResponseHeadersStop").ToArray();
+            (EventWrittenEventArgs Event, Guid ActivityId)[] responseHeadersStops = events.Where(e => e.Event.EventName == "ResponseHeadersStop").ToArray();
             Assert.Equal(count, responseHeadersStops.Length);
-            Assert.All(responseHeadersStops, r => Assert.Empty(r.Payload));
+            Assert.All(responseHeadersStops, r => Assert.Empty(r.Event.Payload));
 
-            EventWrittenEventArgs[] responseContentStarts = events.Where(e => e.EventName == "ResponseContentStart").ToArray();
+            ValidateSameActivityIds(responseHeadersStarts, responseHeadersStops);
+
+            (EventWrittenEventArgs Event, Guid ActivityId)[] responseContentStarts = events.Where(e => e.Event.EventName == "ResponseContentStart").ToArray();
             Assert.Equal(responseContentLength.HasValue ? count : 0, responseContentStarts.Length);
-            Assert.All(responseContentStarts, r => Assert.Empty(r.Payload));
+            Assert.All(responseContentStarts, r => Assert.Empty(r.Event.Payload));
 
-            EventWrittenEventArgs[] responseContentStops = events.Where(e => e.EventName == "ResponseContentStop").ToArray();
+            (EventWrittenEventArgs Event, Guid ActivityId)[] responseContentStops = events.Where(e => e.Event.EventName == "ResponseContentStop").ToArray();
             Assert.Equal(responseContentLength.HasValue ? count : 0, responseContentStops.Length);
-            Assert.All(responseContentStops, r => Assert.Empty(r.Payload));
+            Assert.All(responseContentStops, r => Assert.Empty(r.Event.Payload));
+
+            ValidateSameActivityIds(responseContentStarts, responseContentStops);
         }
 
-        private static void VerifyEventCounters(ConcurrentQueue<EventWrittenEventArgs> events, int requestCount, bool shouldHaveFailures, int requestsLeftQueueVersion = -1)
+        private static void ValidateSameActivityIds((EventWrittenEventArgs Event, Guid ActivityId)[] a, (EventWrittenEventArgs Event, Guid ActivityId)[] b)
+        {
+            Assert.Equal(a.Length, b.Length);
+
+            for (int i = 0; i < a.Length; i++)
+            {
+                Assert.NotEqual(Guid.Empty, a[i].ActivityId);
+                Assert.Equal(a[i].ActivityId, b[i].ActivityId);
+            }
+        }
+
+        private static void ValidateEventCounters(ConcurrentQueue<(EventWrittenEventArgs Event, Guid ActivityId)> events, int requestCount, bool shouldHaveFailures, int requestsLeftQueueVersion = -1)
         {
             Dictionary<string, double[]> eventCounters = events
+                .Select(e => e.Event)
                 .Where(e => e.EventName == "EventCounters")
                 .Select(e => (IDictionary<string, object>)e.Payload.Single())
                 .GroupBy(d => (string)d["Name"], d => (double)(d.ContainsKey("Mean") ? d["Mean"] : d["Increment"]))
@@ -528,10 +552,6 @@ namespace System.Net.Http.Functional.Tests
                 Assert.Contains(http11requestQueueDurations, d => d > 0);
                 Assert.All(http11requestQueueDurations, d => Assert.True(d >= 0));
             }
-            else
-            {
-                Assert.All(http11requestQueueDurations, d => Assert.True(d == 0));
-            }
 
             Assert.True(eventCounters.TryGetValue("http20-requests-queue-duration", out double[] http20requestQueueDurations));
             Assert.Equal(0, http20requestQueueDurations[^1]);
@@ -539,10 +559,6 @@ namespace System.Net.Http.Functional.Tests
             {
                 Assert.Contains(http20requestQueueDurations, d => d > 0);
                 Assert.All(http20requestQueueDurations, d => Assert.True(d >= 0));
-            }
-            else
-            {
-                Assert.All(http20requestQueueDurations, d => Assert.True(d == 0));
             }
         }
 
@@ -554,12 +570,14 @@ namespace System.Net.Http.Functional.Tests
             {
                 Version version = Version.Parse(useVersionString);
                 using var listener = new TestEventListener("System.Net.Http", EventLevel.Verbose, eventCounterInterval: 0.1d);
+                listener.AddActivityTracking();
 
-                var events = new ConcurrentQueue<EventWrittenEventArgs>();
-                await listener.RunWithCallbackAsync(events.Enqueue, async () =>
+                var events = new ConcurrentQueue<(EventWrittenEventArgs Event, Guid ActivityId)>();
+                await listener.RunWithCallbackAsync(e => events.Enqueue((e, e.ActivityId)), async () =>
                 {
                     var firstRequestReceived = new SemaphoreSlim(0, 1);
                     var secondRequestSent = new SemaphoreSlim(0, 1);
+                    var firstRequestFinished = new SemaphoreSlim(0, 1);
 
                     await GetFactoryForVersion(version).CreateClientAndServerAsync(
                         async uri =>
@@ -580,7 +598,13 @@ namespace System.Net.Http.Functional.Tests
                             Task secondRequest = client.GetStringAsync(uri);
                             secondRequestSent.Release();
 
-                            await new[] { firstRequest, secondRequest }.WhenAllOrAnyFailed();
+                            // We are asserting that ActivityIds between Start/Stop pairs match below
+                            // We wait for the first request to finish to ensure that RequestStop events
+                            // are logged in the same order as RequestStarts
+                            await firstRequest;
+                            firstRequestFinished.Release();
+
+                            await secondRequest;
                         },
                         async server =>
                         {
@@ -605,41 +629,67 @@ namespace System.Net.Http.Functional.Tests
                                 await connection.ReadRequestDataAsync(readBody: false);
                                 firstRequestReceived.Release();
                                 Assert.True(await secondRequestSent.WaitAsync(TimeSpan.FromSeconds(10)));
-                                await Task.Delay(100);
+                                await WaitForEventCountersAsync(events);
                                 await connection.SendResponseAsync();
 
                                 // Second request
+                                Assert.True(await firstRequestFinished.WaitAsync(TimeSpan.FromSeconds(10)));
                                 await connection.ReadRequestDataAsync(readBody: false);
                                 await connection.SendResponseAsync();
                             };
                         });
 
-                    await Task.Delay(300);
+                    await WaitForEventCountersAsync(events);
                 });
-                Assert.DoesNotContain(events, ev => ev.EventId == 0); // errors from the EventSource itself
+                Assert.DoesNotContain(events, e => e.Event.EventId == 0); // errors from the EventSource itself
 
-                EventWrittenEventArgs[] starts = events.Where(e => e.EventName == "RequestStart").ToArray();
-                Assert.Equal(3, starts.Length);
-                Assert.All(starts, s => ValidateStartEventPayload(s));
-
-                EventWrittenEventArgs[] stops = events.Where(e => e.EventName == "RequestStop").ToArray();
-                Assert.Equal(3, stops.Length);
-                Assert.All(stops, s => Assert.Empty(s.Payload));
-
-                Assert.DoesNotContain(events, e => e.EventName == "RequestFailed");
+                ValidateStartFailedStopEvents(events, count: 3);
 
                 ValidateConnectionEstablishedClosed(events, version);
 
-                EventWrittenEventArgs requestLeftQueue = Assert.Single(events, e => e.EventName == "RequestLeftQueue");
-                Assert.Equal(3, requestLeftQueue.Payload.Count);
-                Assert.True((double)requestLeftQueue.Payload.Count > 0); // timeSpentOnQueue
-                Assert.Equal(version.Major, (byte)requestLeftQueue.Payload[1]);
-                Assert.Equal(version.Minor, (byte)requestLeftQueue.Payload[2]);
+                var requestLeftEvents = events.Where(e => e.Event.EventName == "RequestLeftQueue");
+                Assert.Equal(2, requestLeftEvents.Count());
+
+                foreach (var (e, _) in requestLeftEvents)
+                {
+                    Assert.Equal(3, e.Payload.Count);
+                    Assert.True((double)e.Payload[0] > 0); // timeSpentOnQueue
+                    Assert.Equal(version.Major, (byte)e.Payload[1]);
+                    Assert.Equal(version.Minor, (byte)e.Payload[2]);
+
+                }
+
+                Guid requestLeftQueueId = requestLeftEvents.Last().ActivityId;
+                Assert.Equal(requestLeftQueueId, events.Where(e => e.Event.EventName == "RequestStart").Last().ActivityId);
 
                 ValidateRequestResponseStartStopEvents(events, requestContentLength: null, responseContentLength: 0, count: 3);
 
-                VerifyEventCounters(events, requestCount: 3, shouldHaveFailures: false, requestsLeftQueueVersion: version.Major);
+                ValidateEventCounters(events, requestCount: 3, shouldHaveFailures: false, requestsLeftQueueVersion: version.Major);
             }, UseVersion.ToString()).Dispose();
+        }
+
+        private static async Task WaitForEventCountersAsync(ConcurrentQueue<(EventWrittenEventArgs Event, Guid ActivityId)> events)
+        {
+            DateTime startTime = DateTime.UtcNow;
+            int startCount = events.Count;
+
+            while (events.Skip(startCount).Count(e => IsRequestsStartedEventCounter(e.Event)) < 3)
+            {
+                if (DateTime.UtcNow.Subtract(startTime) > TimeSpan.FromSeconds(30))
+                    throw new TimeoutException($"Timed out waiting for EventCounters");
+
+                await Task.Delay(100);
+            }
+
+            static bool IsRequestsStartedEventCounter(EventWrittenEventArgs e)
+            {
+                if (e.EventName != "EventCounters")
+                    return false;
+
+                var dictionary = (IDictionary<string, object>)e.Payload.Single();
+
+                return (string)dictionary["Name"] == "requests-started";
+            }
         }
     }
 

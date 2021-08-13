@@ -15,6 +15,7 @@ namespace Internal.TypeSystem.Ecma
     {
         public abstract IEnumerable<ILSequencePoint> GetSequencePointsForMethod(int methodToken);
         public abstract IEnumerable<ILLocalVariable> GetLocalVariableNamesForMethod(int methodToken);
+        public abstract int GetStateMachineKickoffMethod(int methodToken);
         public abstract void Dispose();
     }
 }

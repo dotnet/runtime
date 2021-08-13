@@ -4,7 +4,7 @@
 namespace System.Net.NetworkInformation
 {
     /// Provides information about a network interface address.
-    internal class SystemGatewayIPAddressInformation : GatewayIPAddressInformation
+    internal sealed class SystemGatewayIPAddressInformation : GatewayIPAddressInformation
     {
         private readonly IPAddress _address;
 

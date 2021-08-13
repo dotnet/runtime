@@ -43,34 +43,36 @@ namespace System.Diagnostics
         public System.Diagnostics.ProcessModule? MainModule { get { throw null; } }
         public System.IntPtr MainWindowHandle { get { throw null; } }
         public string MainWindowTitle { get { throw null; } }
-        public System.IntPtr MaxWorkingSet { get { throw null; } [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")] [System.Runtime.Versioning.SupportedOSPlatformAttribute("macos")] [System.Runtime.Versioning.SupportedOSPlatformAttribute("freebsd")] set { } }
-        public System.IntPtr MinWorkingSet { get { throw null; } [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")] [System.Runtime.Versioning.SupportedOSPlatformAttribute("macos")] [System.Runtime.Versioning.SupportedOSPlatformAttribute("freebsd")] set { } }
+        public System.IntPtr MaxWorkingSet { [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("ios"), System.Runtime.Versioning.UnsupportedOSPlatformAttribute("tvos")] get { throw null; } [System.Runtime.Versioning.SupportedOSPlatformAttribute("freebsd"), System.Runtime.Versioning.SupportedOSPlatformAttribute("macos"), System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")] set { } }
+        public System.IntPtr MinWorkingSet { [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("ios"), System.Runtime.Versioning.UnsupportedOSPlatformAttribute("tvos")] get { throw null; } [System.Runtime.Versioning.SupportedOSPlatformAttribute("freebsd"), System.Runtime.Versioning.SupportedOSPlatformAttribute("macos"), System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")] set { } }
         public System.Diagnostics.ProcessModuleCollection Modules { get { throw null; } }
-        [System.ObsoleteAttribute("This property has been deprecated because the type of the property can't represent all valid results. Please use System.Diagnostics.Process.NonpagedSystemMemorySize64 instead.  https://go.microsoft.com/fwlink/?linkid=14202")]
+        [System.ObsoleteAttribute("Process.NonpagedSystemMemorySize has been deprecated because the type of the property can't represent all valid results. Use System.Diagnostics.Process.NonpagedSystemMemorySize64 instead.")]
         public int NonpagedSystemMemorySize { get { throw null; } }
         public long NonpagedSystemMemorySize64 { get { throw null; } }
-        [System.ObsoleteAttribute("This property has been deprecated because the type of the property can't represent all valid results. Please use System.Diagnostics.Process.PagedMemorySize64 instead.  https://go.microsoft.com/fwlink/?linkid=14202")]
+        [System.ObsoleteAttribute("Process.PagedMemorySize has been deprecated because the type of the property can't represent all valid results. Use System.Diagnostics.Process.PagedMemorySize64 instead.")]
         public int PagedMemorySize { get { throw null; } }
         public long PagedMemorySize64 { get { throw null; } }
-        [System.ObsoleteAttribute("This property has been deprecated because the type of the property can't represent all valid results. Please use System.Diagnostics.Process.PagedSystemMemorySize64 instead.  https://go.microsoft.com/fwlink/?linkid=14202")]
+        [System.ObsoleteAttribute("Process.PagedSystemMemorySize has been deprecated because the type of the property can't represent all valid results. Use System.Diagnostics.Process.PagedSystemMemorySize64 instead.")]
         public int PagedSystemMemorySize { get { throw null; } }
         public long PagedSystemMemorySize64 { get { throw null; } }
-        [System.ObsoleteAttribute("This property has been deprecated because the type of the property can't represent all valid results. Please use System.Diagnostics.Process.PeakPagedMemorySize64 instead.  https://go.microsoft.com/fwlink/?linkid=14202")]
+        [System.ObsoleteAttribute("Process.PeakPagedMemorySize has been deprecated because the type of the property can't represent all valid results. Use System.Diagnostics.Process.PeakPagedMemorySize64 instead.")]
         public int PeakPagedMemorySize { get { throw null; } }
         public long PeakPagedMemorySize64 { get { throw null; } }
-        [System.ObsoleteAttribute("This property has been deprecated because the type of the property can't represent all valid results. Please use System.Diagnostics.Process.PeakVirtualMemorySize64 instead.  https://go.microsoft.com/fwlink/?linkid=14202")]
+        [System.ObsoleteAttribute("Process.PeakVirtualMemorySize has been deprecated because the type of the property can't represent all valid results. Use System.Diagnostics.Process.PeakVirtualMemorySize64 instead.")]
         public int PeakVirtualMemorySize { get { throw null; } }
         public long PeakVirtualMemorySize64 { get { throw null; } }
-        [System.ObsoleteAttribute("This property has been deprecated because the type of the property can't represent all valid results. Please use System.Diagnostics.Process.PeakWorkingSet64 instead.  https://go.microsoft.com/fwlink/?linkid=14202")]
+        [System.ObsoleteAttribute("Process.PeakWorkingSet has been deprecated because the type of the property can't represent all valid results. Use System.Diagnostics.Process.PeakWorkingSet64 instead.")]
         public int PeakWorkingSet { get { throw null; } }
         public long PeakWorkingSet64 { get { throw null; } }
         public bool PriorityBoostEnabled { get { throw null; } set { } }
         public System.Diagnostics.ProcessPriorityClass PriorityClass { get { throw null; } set { } }
-        [System.ObsoleteAttribute("This property has been deprecated because the type of the property can't represent all valid results. Please use System.Diagnostics.Process.PrivateMemorySize64 instead.  https://go.microsoft.com/fwlink/?linkid=14202")]
+        [System.ObsoleteAttribute("Process.PrivateMemorySize has been deprecated because the type of the property can't represent all valid results. Use System.Diagnostics.Process.PrivateMemorySize64 instead.")]
         public int PrivateMemorySize { get { throw null; } }
         public long PrivateMemorySize64 { get { throw null; } }
         public System.TimeSpan PrivilegedProcessorTime { get { throw null; } }
         public string ProcessName { get { throw null; } }
+        [System.Runtime.Versioning.SupportedOSPlatform("windows")]
+        [System.Runtime.Versioning.SupportedOSPlatform("linux")]
         public System.IntPtr ProcessorAffinity { get { throw null; } set { } }
         public bool Responding { get { throw null; } }
         public Microsoft.Win32.SafeHandles.SafeProcessHandle SafeHandle { get { throw null; } }
@@ -84,10 +86,10 @@ namespace System.Diagnostics
         public System.Diagnostics.ProcessThreadCollection Threads { get { throw null; } }
         public System.TimeSpan TotalProcessorTime { get { throw null; } }
         public System.TimeSpan UserProcessorTime { get { throw null; } }
-        [System.ObsoleteAttribute("This property has been deprecated because the type of the property can't represent all valid results. Please use System.Diagnostics.Process.VirtualMemorySize64 instead.  https://go.microsoft.com/fwlink/?linkid=14202")]
+        [System.ObsoleteAttribute("Process.VirtualMemorySize has been deprecated because the type of the property can't represent all valid results. Use System.Diagnostics.Process.VirtualMemorySize64 instead.")]
         public int VirtualMemorySize { get { throw null; } }
         public long VirtualMemorySize64 { get { throw null; } }
-        [System.ObsoleteAttribute("This property has been deprecated because the type of the property can't represent all valid results. Please use System.Diagnostics.Process.WorkingSet64 instead.  https://go.microsoft.com/fwlink/?linkid=14202")]
+        [System.ObsoleteAttribute("Process.WorkingSet has been deprecated because the type of the property can't represent all valid results. Use System.Diagnostics.Process.WorkingSet64 instead.")]
         public int WorkingSet { get { throw null; } }
         public long WorkingSet64 { get { throw null; } }
         public event System.Diagnostics.DataReceivedEventHandler? ErrorDataReceived { add { } remove { } }
@@ -108,15 +110,29 @@ namespace System.Diagnostics
         public static System.Diagnostics.Process[] GetProcesses(string machineName) { throw null; }
         public static System.Diagnostics.Process[] GetProcessesByName(string? processName) { throw null; }
         public static System.Diagnostics.Process[] GetProcessesByName(string? processName, string machineName) { throw null; }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("ios")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("tvos")]
         public void Kill() { }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("ios")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("tvos")]
         public void Kill(bool entireProcessTree) { }
         public static void LeaveDebugMode() { }
         protected void OnExited() { }
         public void Refresh() { }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("ios")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("tvos")]
         public bool Start() { throw null; }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("ios")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("tvos")]
         public static System.Diagnostics.Process? Start(System.Diagnostics.ProcessStartInfo startInfo) { throw null; }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("ios")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("tvos")]
         public static System.Diagnostics.Process Start(string fileName) { throw null; }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("ios")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("tvos")]
         public static System.Diagnostics.Process Start(string fileName, string arguments) { throw null; }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("ios")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("tvos")]
         public static System.Diagnostics.Process Start(string fileName, System.Collections.Generic.IEnumerable<string> arguments) { throw null; }
         [System.CLSCompliantAttribute(false)]
         [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
@@ -167,9 +183,11 @@ namespace System.Diagnostics
         public ProcessStartInfo(string fileName) { }
         public ProcessStartInfo(string fileName, string arguments) { }
         public System.Collections.ObjectModel.Collection<string> ArgumentList { get { throw null; } }
+        [System.Diagnostics.CodeAnalysis.AllowNullAttribute]
         public string Arguments { get { throw null; } set { } }
         public bool CreateNoWindow { get { throw null; } set { } }
         [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
+        [System.Diagnostics.CodeAnalysis.AllowNullAttribute]
         public string Domain { get { throw null; } set { } }
         public System.Collections.Generic.IDictionary<string, string?> Environment { get { throw null; } }
         [System.ComponentModel.EditorAttribute("System.Diagnostics.Design.StringDictionaryEditor, System.Design, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a", "System.Drawing.Design.UITypeEditor, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a")]
@@ -177,6 +195,7 @@ namespace System.Diagnostics
         public bool ErrorDialog { get { throw null; } set { } }
         public System.IntPtr ErrorDialogParentHandle { get { throw null; } set { } }
         [System.ComponentModel.EditorAttribute("System.Diagnostics.Design.StartFileNameEditor, System.Design, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a", "System.Drawing.Design.UITypeEditor, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a")]
+        [System.Diagnostics.CodeAnalysis.AllowNullAttribute]
         public string FileName { get { throw null; } set { } }
         [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
         public bool LoadUserProfile { get { throw null; } set { } }
@@ -191,14 +210,17 @@ namespace System.Diagnostics
         public System.Text.Encoding? StandardErrorEncoding { get { throw null; } set { } }
         public System.Text.Encoding? StandardInputEncoding { get { throw null; } set { } }
         public System.Text.Encoding? StandardOutputEncoding { get { throw null; } set { } }
+        [System.Diagnostics.CodeAnalysis.AllowNullAttribute]
         public string UserName { get { throw null; } set { } }
         public bool UseShellExecute { get { throw null; } set { } }
         [System.ComponentModel.DefaultValueAttribute("")]
+        [System.Diagnostics.CodeAnalysis.AllowNullAttribute]
         public string Verb { get { throw null; } set { } }
         public string[] Verbs { get { throw null; } }
         [System.ComponentModel.DefaultValueAttribute(System.Diagnostics.ProcessWindowStyle.Normal)]
         public System.Diagnostics.ProcessWindowStyle WindowStyle { get { throw null; } set { } }
         [System.ComponentModel.EditorAttribute("System.Diagnostics.Design.WorkingDirectoryEditor, System.Design, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a", "System.Drawing.Design.UITypeEditor, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a")]
+        [System.Diagnostics.CodeAnalysis.AllowNullAttribute]
         public string WorkingDirectory { get { throw null; } set { } }
     }
     [System.ComponentModel.DesignerAttribute("System.Diagnostics.Design.ProcessThreadDesigner, System.Design, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a")]
@@ -210,11 +232,13 @@ namespace System.Diagnostics
         public int Id { get { throw null; } }
         public int IdealProcessor { set { } }
         public bool PriorityBoostEnabled { get { throw null; } set { } }
-        public System.Diagnostics.ThreadPriorityLevel PriorityLevel { get { throw null; } [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")] set { } }
+        public System.Diagnostics.ThreadPriorityLevel PriorityLevel { [System.Runtime.Versioning.SupportedOSPlatform("windows")] [System.Runtime.Versioning.SupportedOSPlatform("linux")] [System.Runtime.Versioning.SupportedOSPlatform("freebsd")] get { throw null; } [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")] set { } }
         public System.TimeSpan PrivilegedProcessorTime { get { throw null; } }
         [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
         public System.IntPtr ProcessorAffinity { set { } }
         public System.IntPtr StartAddress { get { throw null; } }
+        [System.Runtime.Versioning.SupportedOSPlatform("windows")]
+        [System.Runtime.Versioning.SupportedOSPlatform("linux")]
         public System.DateTime StartTime { get { throw null; } }
         public System.Diagnostics.ThreadState ThreadState { get { throw null; } }
         public System.TimeSpan TotalProcessorTime { get { throw null; } }

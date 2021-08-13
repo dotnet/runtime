@@ -8,6 +8,7 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Threading;
 using Internal.Runtime.CompilerServices;
+using Mono;
 
 namespace System.Runtime.Loader
 {
@@ -22,9 +23,12 @@ namespace System.Runtime.Loader
         }
 
         [DynamicDependency(nameof(_nativeAssemblyLoadContext))]
-        private static IntPtr InitializeAssemblyLoadContext(IntPtr thisHandlePtr, bool representsTPALoadContext, bool isCollectible)
+        private IntPtr InitializeAssemblyLoadContext(IntPtr thisHandlePtr, bool representsTPALoadContext, bool isCollectible)
         {
-            return InternalInitializeNativeALC(thisHandlePtr, representsTPALoadContext, isCollectible);
+            using (SafeStringMarshal handle = RuntimeMarshal.MarshalString(Name))
+            {
+                return InternalInitializeNativeALC(thisHandlePtr, handle.Value, representsTPALoadContext, isCollectible);
+            }
         }
 
         [MethodImplAttribute (MethodImplOptions.InternalCall)]
@@ -97,7 +101,7 @@ namespace System.Runtime.Loader
         private static extern Assembly InternalLoadFile(IntPtr nativeAssemblyLoadContext, string? assemblyFile, ref StackCrawlMark stackMark);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        private static extern IntPtr InternalInitializeNativeALC(IntPtr thisHandlePtr, bool representsTPALoadContext, bool isCollectible);
+        private static extern IntPtr InternalInitializeNativeALC(IntPtr thisHandlePtr, IntPtr name, bool representsTPALoadContext, bool isCollectible);
 
         [RequiresUnreferencedCode("Types and members the loaded assembly depends on might be removed")]
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
@@ -122,24 +126,14 @@ namespace System.Runtime.Loader
         // success.
         private static Assembly? MonoResolveUsingResolvingEvent(IntPtr gchALC, string assemblyName)
         {
-            AssemblyLoadContext context;
-            // This check exists because the function can be called early in startup, before the default ALC is initialized
-            if (gchALC == IntPtr.Zero)
-                context = Default;
-            else
-                context = (AssemblyLoadContext)(GCHandle.FromIntPtr(gchALC).Target)!;
+            AssemblyLoadContext context = GetAssemblyLoadContext(gchALC);
             return context.ResolveUsingEvent(new AssemblyName(assemblyName));
         }
 
         // Invoked by Mono to resolve requests to load satellite assemblies.
         private static Assembly? MonoResolveUsingResolveSatelliteAssembly(IntPtr gchALC, string assemblyName)
         {
-            AssemblyLoadContext context;
-            // This check exists because the function can be called early in startup, before the default ALC is initialized
-            if (gchALC == IntPtr.Zero)
-                context = Default;
-            else
-                context = (AssemblyLoadContext)(GCHandle.FromIntPtr(gchALC).Target)!;
+            AssemblyLoadContext context = GetAssemblyLoadContext(gchALC);
             return context.ResolveSatelliteAssembly(new AssemblyName(assemblyName));
         }
 

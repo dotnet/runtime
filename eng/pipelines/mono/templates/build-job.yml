@@ -16,6 +16,7 @@ parameters:
   dependsOn: []
   monoCrossAOTTargetOS: []
   dependOnEvaluatePaths: false
+  pgoType: ''
 
 ### Product build
 jobs:
@@ -60,6 +61,10 @@ jobs:
       value: ''
     - name: llvmParameter
       value: ''
+    - name: msCorDbi
+      value: '+mono.mscordbi'
+    - name: darwinFrameworks
+      value: ''
     - ${{ if and(eq(variables['System.TeamProject'], 'internal'), ne(variables['Build.Reason'], 'PullRequest')) }}:
       - name: officialBuildIdArg
         value: '/p:officialBuildId=$(Build.BuildNumber)'
@@ -73,9 +78,23 @@ jobs:
     - ${{ if eq(parameters.osGroup, 'tvOS') }}:
       - name: osOverride
         value: -os tvOS
+      - name: darwinFrameworks
+        value: /p:BuildDarwinFrameworks=true
+    - ${{ if eq(parameters.osGroup, 'tvOSSimulator') }}:
+      - name: osOverride
+        value: -os tvOSSimulator
+      - name: darwinFrameworks
+        value: /p:BuildDarwinFrameworks=true
     - ${{ if eq(parameters.osGroup, 'iOS') }}:
       - name: osOverride
         value: -os iOS
+      - name: darwinFrameworks
+        value: /p:BuildDarwinFrameworks=true
+    - ${{ if eq(parameters.osGroup, 'iOSSimulator') }}:
+      - name: osOverride
+        value: -os iOSSimulator
+      - name: darwinFrameworks
+        value: /p:BuildDarwinFrameworks=true
     - ${{ if eq(parameters.osGroup, 'Android') }}:
       - name: osOverride
         value: -os Android
@@ -96,11 +115,6 @@ jobs:
     - ${{ if gt(length(parameters.monoCrossAOTTargetOS),0) }}:
       - name: aotCrossParameter
         value: /p:MonoCrossAOTTargetOS=${{join('+',parameters.monoCrossAOTTargetOS)}} /p:SkipMonoCrossJitConfigure=true /p:BuildMonoAOTCrossCompilerOnly=true
-    - name: ninjaArg
-      value: ''
-    - ${{ if eq(parameters.osGroup, 'windows') }}:
-      - name: ninjaArg
-        value: '-ninja'
     - ${{ parameters.variables }}
 
     steps:
@@ -124,7 +138,7 @@ jobs:
           artifact: Mono_Offsets_${{monoCrossAOTTargetOS}}
           path: '$(Build.SourcesDirectory)/artifacts/obj/mono/offsetfiles'
 
-    - ${{ if in(parameters.osGroup, 'OSX', 'iOS','tvOS') }}:
+    - ${{ if in(parameters.osGroup, 'OSX', 'iOS', 'tvOS') }}:
       - script: |
           du -sh $(Build.SourcesDirectory)/*
           df -h
@@ -132,13 +146,13 @@ jobs:
 
     # Build
     - ${{ if ne(parameters.osGroup, 'windows') }}:
-      - script: ./build$(scriptExt) -subset mono -c $(buildConfig) -arch $(archType) $(osOverride) -ci $(officialBuildIdArg) $(aotCrossParameter) $(llvmParameter) $(ninjaArg)
+      - script: ./build$(scriptExt) -subset mono$(msCorDbi) -c $(buildConfig) -arch $(archType) $(osOverride) -ci $(officialBuildIdArg) $(aotCrossParameter) $(llvmParameter) $(darwinFrameworks)
         displayName: Build product
     - ${{ if eq(parameters.osGroup, 'windows') }}:
-      - script: build$(scriptExt) -subset mono -c $(buildConfig) -arch $(archType) $(osOverride) -ci $(officialBuildIdArg) $(aotCrossParameter) $(llvmParameter) $(ninjaArg)
+      - script: build$(scriptExt) -subset mono$(msCorDbi) -c $(buildConfig) -arch $(archType) $(osOverride) -ci $(officialBuildIdArg) $(aotCrossParameter) $(llvmParameter)
         displayName: Build product
 
-    - ${{ if in(parameters.osGroup, 'OSX', 'iOS','tvOS') }}:
+    - ${{ if in(parameters.osGroup, 'OSX', 'iOS', 'tvOS') }}:
       - script: |
           du -sh $(Build.SourcesDirectory)/*
           df -h
@@ -157,10 +171,10 @@ jobs:
 
     # Build packages
     - ${{ if ne(parameters.osGroup, 'windows') }}:
-      - script: ./build$(scriptExt) -subset mono -c $(buildConfig) -arch $(archType) $(osOverride) -ci $(officialBuildIdArg) $(aotCrossParameter) $(llvmParameter) $(ninjaArg) -pack $(OutputRidArg)
+      - script: ./build$(scriptExt) -subset mono$(msCorDbi) -c $(buildConfig) -arch $(archType) $(osOverride) -ci $(officialBuildIdArg) $(aotCrossParameter) $(llvmParameter) -pack $(OutputRidArg)
         displayName: Build nupkg
     - ${{ if eq(parameters.osGroup, 'windows') }}:
-      - script: build$(scriptExt) -subset mono -c $(buildConfig) -arch $(archType) $(osOverride) -ci $(officialBuildIdArg) $(aotCrossParameter) $(llvmParameter) $(ninjaArg) -pack $(OutputRidArg)
+      - script: build$(scriptExt) -subset mono$(msCorDbi) -c $(buildConfig) -arch $(archType) $(osOverride) -ci $(officialBuildIdArg) $(aotCrossParameter) $(llvmParameter) -pack $(OutputRidArg)
         displayName: Build nupkg
 
     # Publish official build

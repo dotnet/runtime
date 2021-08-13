@@ -183,6 +183,6 @@ As a result of disabling VSD for virtual instance method calls, every type has a
 Physical Architecture
 =====================
 
-For dispatch token and map implementation details, please see [clr/src/vm/contractImpl.h](https://github.com/dotnet/runtime/blob/master/src/coreclr/vm/contractimpl.h) and [clr/src/vm/contractImpl.cpp](https://github.com/dotnet/runtime/blob/master/src/coreclr/vm/contractimpl.cpp).
+For dispatch token and map implementation details, please see [clr/src/vm/contractImpl.h](https://github.com/dotnet/runtime/blob/main/src/coreclr/vm/contractimpl.h) and [clr/src/vm/contractImpl.cpp](https://github.com/dotnet/runtime/blob/main/src/coreclr/vm/contractimpl.cpp).
 
-For virtual stub dispatch implementation details, please see [clr/src/vm/virtualcallstub.h](https://github.com/dotnet/runtime/blob/master/src/coreclr/vm/virtualcallstub.h) and [clr/src/vm/virtualcallstub.cpp](https://github.com/dotnet/runtime/blob/master/src/coreclr/vm/virtualcallstub.cpp).
+For virtual stub dispatch implementation details, please see [clr/src/vm/virtualcallstub.h](https://github.com/dotnet/runtime/blob/main/src/coreclr/vm/virtualcallstub.h) and [clr/src/vm/virtualcallstub.cpp](https://github.com/dotnet/runtime/blob/main/src/coreclr/vm/virtualcallstub.cpp).

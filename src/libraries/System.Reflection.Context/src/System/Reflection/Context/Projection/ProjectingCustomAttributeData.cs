@@ -8,7 +8,7 @@ using System.Reflection.Context.Delegation;
 namespace System.Reflection.Context.Projection
 {
     // Recursively 'projects' any assemblies, modules, types and members returned by a given custom attribute data
-    internal class ProjectingCustomAttributeData : DelegatingCustomAttributeData
+    internal sealed class ProjectingCustomAttributeData : DelegatingCustomAttributeData
     {
         private readonly Projector _projector;
 

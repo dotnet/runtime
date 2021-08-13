@@ -3,9 +3,12 @@
 
 #include "pal_sec.h"
 
-#if !defined(TARGET_MACCATALYST) && !defined(TARGET_IOS) && !defined(TARGET_TVOS)
-CFStringRef AppleCryptoNative_SecCopyErrorMessageString(int32_t osStatus)
+CFStringRef AppleCryptoNative_SecCopyErrorMessageString(OSStatus osStatus)
 {
-    return SecCopyErrorMessageString(osStatus, NULL);
+    if (__builtin_available(iOS 11.3, tvOS 11.3, *))
+    {
+        return SecCopyErrorMessageString(osStatus, NULL);
+    }
+
+    return CFStringCreateWithFormat(NULL, NULL, CFSTR("OSStatus %d"), (int)osStatus);
 }
-#endif

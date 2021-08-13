@@ -7,7 +7,7 @@ using System.Diagnostics;
 namespace System.Configuration
 {
     [DebuggerDisplay("SectionInput {SectionXmlInfo.ConfigKey}")]
-    internal class SectionInput
+    internal sealed class SectionInput
     {
         // result can be null, so we use this object to indicate whether it has been evaluated
         private static readonly object s_unevaluated = new object();

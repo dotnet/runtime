@@ -5,17 +5,16 @@ using System.Buffers;
 
 namespace System.IO.Pipelines
 {
-    /// <summary>
-    /// The result of a <see cref="PipeReader.ReadAsync"/> call.
-    /// </summary>
+    /// <summary>Represents the result of a <see cref="System.IO.Pipelines.PipeReader.ReadAsync(System.Threading.CancellationToken)" /> call.</summary>
     public readonly struct ReadResult
     {
         internal readonly ReadOnlySequence<byte> _resultBuffer;
         internal readonly ResultFlags _resultFlags;
 
-        /// <summary>
-        /// Creates a new instance of <see cref="ReadResult"/> setting <see cref="IsCanceled"/> and <see cref="IsCompleted"/> flags.
-        /// </summary>
+        /// <summary>Creates a new instance of <see cref="System.IO.Pipelines.ReadResult" /> setting <see cref="System.IO.Pipelines.ReadResult.IsCanceled" /> and <see cref="System.IO.Pipelines.ReadResult.IsCompleted" /> flags.</summary>
+        /// <param name="buffer">The read-only sequence containing the bytes of data that were read in the <see cref="System.IO.Pipelines.PipeReader.ReadAsync(System.Threading.CancellationToken)" /> call.</param>
+        /// <param name="isCanceled">A flag that indicates if the <see cref="System.IO.Pipelines.PipeReader.ReadAsync(System.Threading.CancellationToken)" /> operation that produced this <see cref="System.IO.Pipelines.ReadResult" /> was canceled by <see cref="System.IO.Pipelines.PipeReader.CancelPendingRead" />.</param>
+        /// <param name="isCompleted">A flag that indicates whether the end of the data stream has been reached.</param>
         public ReadResult(ReadOnlySequence<byte> buffer, bool isCanceled, bool isCompleted)
         {
             _resultBuffer = buffer;
@@ -31,19 +30,16 @@ namespace System.IO.Pipelines
             }
         }
 
-        /// <summary>
-        /// The <see cref="ReadOnlySequence{Byte}"/> that was read.
-        /// </summary>
+        /// <summary>Gets the <see cref="System.Buffers.ReadOnlySequence{T}" /> that was read.</summary>
+        /// <value>A read-only sequence containing the bytes of data that were read in the <see cref="System.IO.Pipelines.PipeReader.ReadAsync(System.Threading.CancellationToken)" /> call.</value>
         public ReadOnlySequence<byte> Buffer => _resultBuffer;
 
-        /// <summary>
-        /// True if the current <see cref="PipeReader.ReadAsync"/> operation was canceled, otherwise false.
-        /// </summary>
+        /// <summary>Gets a value that indicates whether the current <see cref="System.IO.Pipelines.PipeReader.ReadAsync(System.Threading.CancellationToken)" /> operation was canceled by <see cref="System.IO.Pipelines.PipeReader.CancelPendingRead" />.</summary>
+        /// <value><see langword="true" /> if the <see cref="System.IO.Pipelines.PipeReader.ReadAsync(System.Threading.CancellationToken)" /> operation that produced this <see cref="System.IO.Pipelines.ReadResult" /> was canceled by <see cref="System.IO.Pipelines.PipeReader.CancelPendingRead" />; otherwise, <see langword="false" />.</value>
         public bool IsCanceled => (_resultFlags & ResultFlags.Canceled) != 0;
 
-        /// <summary>
-        /// True if the <see cref="PipeReader"/> is complete.
-        /// </summary>
+        /// <summary>Gets a value that indicates whether the end of the data stream has been reached.</summary>
+        /// <value><see langword="true" /> if the end of the data stream has been reached; otherwise, <see langword="false" />.</value>
         public bool IsCompleted => (_resultFlags & ResultFlags.Completed) != 0;
     }
 }

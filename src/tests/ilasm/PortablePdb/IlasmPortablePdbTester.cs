@@ -22,7 +22,7 @@ namespace IlasmPortablePdbTests
         public IlasmPortablePdbTester()
         {
             CoreRootVar = Environment.GetEnvironmentVariable(CoreRoot);
-            IsUnix = !RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
+            IsUnix = !OperatingSystem.IsWindows();
             NativeExtension = IsUnix ? string.Empty : ".exe";
             IlasmFile = IlasmFileName + NativeExtension;
         }

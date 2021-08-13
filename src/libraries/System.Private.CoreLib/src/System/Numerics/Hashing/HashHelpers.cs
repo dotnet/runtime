@@ -5,8 +5,6 @@ namespace System.Numerics.Hashing
 {
     internal static class HashHelpers
     {
-        public static readonly int RandomSeed = new Random().Next(int.MinValue, int.MaxValue);
-
         public static int Combine(int h1, int h2)
         {
             // RyuJIT optimizes this to use the ROL instruction

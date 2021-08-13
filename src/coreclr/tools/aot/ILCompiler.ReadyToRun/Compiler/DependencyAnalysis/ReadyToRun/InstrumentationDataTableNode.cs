@@ -93,7 +93,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 {
                     return computedInt;
                 }
-                if (type.AsType != null && _compilationGroup.VersionsWithType(type.AsType))
+                if (type.AsType != null && _compilationGroup.VersionsWithTypeReference(type.AsType))
                 {
                     Import typeHandleImport = (Import)_symbolFactory.CreateReadyToRunHelper(ReadyToRunHelperId.TypeHandle, type.AsType);
                     _imports.Add(typeHandleImport);
@@ -167,7 +167,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             foreach (MethodDesc method in _instrumentationDataMethods)
             {
                 pgoEmitter.Clear();
-                PgoProcessor.EncodePgoData(_profileDataManager[method].SchemaData, pgoEmitter, false);
+                PgoProcessor.EncodePgoData(CorInfoImpl.ConvertTypeHandleHistogramsToCompactTypeHistogramFormat(_profileDataManager[method].SchemaData, factory.CompilationModuleGroup), pgoEmitter, false);
 
                 // In composite R2R format, always enforce owning type to let us share generic instantiations among modules
                 EcmaMethod typicalMethod = (EcmaMethod)method.GetTypicalMethodDefinition();

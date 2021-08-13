@@ -729,14 +729,14 @@ namespace ContextualReflectionTest
         void TestDefineDynamicAssembly(bool collectibleContext, AssemblyBuilderAccess assemblyBuilderAccess)
         {
             AssemblyLoadContext assemblyLoadContext = collectibleContext ? new AssemblyLoadContext("DynamicAssembly Collectable context", true) : AssemblyLoadContext.Default;
-            AssemblyName dynamicAssemblyName = new AssemblyName("DynamicAssembly");
+            AssemblyBuilder assemblyBuilder;
 
             using (assemblyLoadContext.EnterContextualReflection())
             {
-                AssemblyBuilder assemblyBuilder = AssemblyBuilder.DefineDynamicAssembly(dynamicAssemblyName, assemblyBuilderAccess);
+                assemblyBuilder = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName($"DynamicAssembly_{Guid.NewGuid():N}"), assemblyBuilderAccess);
             }
 
-            Assert.IsTrue(assemblyLoadContext.Assemblies.Any(a => AssemblyName.ReferenceMatchesDefinition(a.GetName(), dynamicAssemblyName)));
+            Assert.IsTrue(assemblyLoadContext.Assemblies.Any(a => AssemblyName.ReferenceMatchesDefinition(a.GetName(), assemblyBuilder.GetName())));
         }
 
         void TestMockAssemblyThrows()
@@ -751,6 +751,7 @@ namespace ContextualReflectionTest
             VerifyContextualReflectionProxy();
             VerifyUsingStatementContextualReflectionUsage();
             VerifyBadContextualReflectionUsage();
+
             TestDynamicAssembly(true);
             TestDynamicAssembly(false);
 

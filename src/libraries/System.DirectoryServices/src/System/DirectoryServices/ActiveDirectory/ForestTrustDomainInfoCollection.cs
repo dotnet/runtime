@@ -11,7 +11,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
         public ForestTrustDomainInformation this[int index]
         {
-            get => (ForestTrustDomainInformation)InnerList[index];
+            get => (ForestTrustDomainInformation)InnerList[index]!;
         }
 
         public bool Contains(ForestTrustDomainInformation information)

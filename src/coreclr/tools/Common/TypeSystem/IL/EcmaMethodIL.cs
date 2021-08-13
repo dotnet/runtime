@@ -11,7 +11,10 @@ using Internal.TypeSystem.Ecma;
 
 namespace Internal.IL
 {
-    public sealed partial class EcmaMethodIL : MethodIL
+    // Marker interface implemented by EcmaMethodIL and EcmaMethodILScope
+    public interface IEcmaMethodIL { }
+
+    public sealed partial class EcmaMethodIL : MethodIL, IEcmaMethodIL
     {
         private readonly EcmaModule _module;
         private readonly EcmaMethod _method;
@@ -89,7 +92,7 @@ namespace Internal.IL
                 return Array.Empty<LocalVariableDefinition>();
             BlobReader signatureReader = metadataReader.GetBlobReader(metadataReader.GetStandaloneSignature(localSignature).Signature);
 
-            EcmaSignatureParser parser = new EcmaSignatureParser(_module, signatureReader);
+            EcmaSignatureParser parser = new EcmaSignatureParser(_module, signatureReader, NotFoundBehavior.Throw);
             LocalVariableDefinition[] locals = parser.ParseLocalsSignature();
 
             Interlocked.CompareExchange(ref _locals, locals, null);
@@ -131,13 +134,55 @@ namespace Internal.IL
             return _ilExceptionRegions;
         }
 
-        public override object GetObject(int token)
+        public override object GetObject(int token, NotFoundBehavior notFoundBehavior = NotFoundBehavior.Throw)
         {
             // UserStrings cannot be wrapped in EntityHandle
             if ((token & 0xFF000000) == 0x70000000)
                 return _module.GetUserString(MetadataTokens.UserStringHandle(token));
 
-            return _module.GetObject(MetadataTokens.EntityHandle(token));
+            return _module.GetObject(MetadataTokens.EntityHandle(token), notFoundBehavior);
+        }
+    }
+
+    public sealed partial class EcmaMethodILScope : MethodILScope, IEcmaMethodIL
+    {
+        private readonly EcmaModule _module;
+        private readonly EcmaMethod _method;
+
+        public static EcmaMethodILScope Create(EcmaMethod method)
+        {
+            return new EcmaMethodILScope(method);
+        }
+
+        private EcmaMethodILScope(EcmaMethod method)
+        {
+            _method = method;
+            _module = method.Module;
+        }
+
+        public EcmaModule Module
+        {
+            get
+            {
+                return _module;
+            }
+        }
+
+        public override MethodDesc OwningMethod
+        {
+            get
+            {
+                return _method;
+            }
+        }
+
+        public override object GetObject(int token, NotFoundBehavior notFoundBehavior = NotFoundBehavior.Throw)
+        {
+            // UserStrings cannot be wrapped in EntityHandle
+            if ((token & 0xFF000000) == 0x70000000)
+                return _module.GetUserString(MetadataTokens.UserStringHandle(token));
+
+            return _module.GetObject(MetadataTokens.EntityHandle(token), notFoundBehavior);
         }
     }
 }

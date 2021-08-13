@@ -18,15 +18,9 @@ namespace ILCompiler
 {
     public static class ReadyToRunTypeExtensions
     {
-        public static LayoutInt FieldBaseOffset(this TypeDesc type)
+        public static LayoutInt FieldBaseOffset(this MetadataType type)
         {
-            LayoutInt baseOffset = type.BaseType.InstanceByteCount;
-            if (type.RequiresAlign8())
-            {
-                baseOffset = LayoutInt.AlignUp(baseOffset, new LayoutInt(8), type.Context.Target);
-            }
-
-            return baseOffset;
+            return ((ReadyToRunCompilerContext)type.Context).CalculateFieldBaseOffset(type);
         }
     }
 
@@ -823,23 +817,19 @@ namespace ILCompiler
         /// This method decides whether the type needs aligned base offset in order to have layout resilient to 
         /// base class layout changes.
         /// </summary>
-        protected override void AlignBaseOffsetIfNecessary(MetadataType type, ref LayoutInt baseOffset, bool requiresAlign8)
+        protected override void AlignBaseOffsetIfNecessary(MetadataType type, ref LayoutInt baseOffset, bool requiresAlign8, bool requiresAlignedBase)
         {
-            DefType baseType = type.BaseType;
-            
-            if (!_compilationGroup.NeedsAlignmentBetweenBaseTypeAndDerived(baseType: (MetadataType)baseType, derivedType: type))
+            if (requiresAlignedBase || _compilationGroup.NeedsAlignmentBetweenBaseTypeAndDerived(baseType: (MetadataType)type.BaseType, derivedType: type))
             {
-                // The type is defined in the module that's currently being compiled and the type layout doesn't depend on other modules
-                return;
+                bool use8Align = (requiresAlign8 || type.BaseType.RequiresAlign8()) && type.Context.Target.Architecture != TargetArchitecture.X86;
+                LayoutInt alignment = new LayoutInt(use8Align ? 8 : type.Context.Target.PointerSize);
+                baseOffset = LayoutInt.AlignUp(baseOffset, alignment, type.Context.Target);
             }
+        }
 
-            LayoutInt alignment = new LayoutInt(type.Context.Target.PointerSize);
-
-            if (requiresAlign8)
-            {
-                alignment = new LayoutInt(8);
-            }
-            baseOffset = LayoutInt.AlignUp(baseOffset, alignment, type.Context.Target);
+        protected override bool AlignUpInstanceByteSizeForExplicitFieldLayoutCompatQuirk(TypeDesc type)
+        {
+            return MarshalUtils.IsBlittableType(type) || IsManagedSequentialType(type);
         }
 
         public static bool IsManagedSequentialType(TypeDesc type)

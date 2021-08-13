@@ -1075,7 +1075,7 @@ namespace System.Speech.Synthesis
         }
 
         [Serializable]
-        private class Element
+        private sealed class Element
         {
             internal ElementType _type;
             internal string _text;

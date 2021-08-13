@@ -61,7 +61,6 @@
 
 #include "mini.h"
 #include "mini-s390x.h"
-#include "support-s390x.h"
 #include "mini-runtime.h"
 #include "aot-runtime.h"
 #include "mono/utils/mono-tls-inline.h"
@@ -119,7 +118,7 @@ mono_arch_get_call_filter (MonoTrampInfo **info, gboolean aot)
 
 	inited = 1;
 	/* call_filter (MonoContext *ctx, unsigned long eip, gpointer exc) */
-	code = start = mono_global_codeman_reserve (512);
+	code = start = (guint8 *) mono_global_codeman_reserve (512);
 
 	mono_add_unwind_op_def_cfa (unwind_ops, code, start, STK_BASE, S390_CFA_OFFSET);
 	s390_stmg (code, s390_r6, s390_r15, STK_BASE, S390_REG_SAVE_OFFSET);
@@ -314,7 +313,7 @@ mono_arch_get_throw_exception_generic (int size, MonoTrampInfo **info, int corli
 	MonoJumpInfo *ji = NULL;
 	GSList *unwind_ops = NULL;
 
-	code = start = mono_global_codeman_reserve(size);
+	code = start = (guint8 *) mono_global_codeman_reserve(size);
 
 	mono_add_unwind_op_def_cfa (unwind_ops, code, start, STK_BASE, S390_CFA_OFFSET);
 	s390_stmg (code, s390_r6, s390_r15, STK_BASE, S390_REG_SAVE_OFFSET);
@@ -521,7 +520,7 @@ mono_arch_unwind_frame (MonoJitTlsData *jit_tls,
 		guint8 *cfa;
 		guint32 unwind_info_len;
 		guint8 *unwind_info;
-		host_mgreg_t regs[16];
+		host_mgreg_t regs[32];
 
 		if (ji->is_trampoline)
 			frame->type = FRAME_TYPE_TRAMPOLINE;
@@ -535,16 +534,18 @@ mono_arch_unwind_frame (MonoJitTlsData *jit_tls,
 		if (ji->has_arch_eh_info)
 			epilog = (guint8*)ji->code_start + ji->code_size - mono_jinfo_get_epilog_size (ji);
 
-		memcpy(&regs, &ctx->uc_mcontext.gregs, sizeof(regs));
+		memcpy (&regs[0], &ctx->uc_mcontext.gregs, 16 * sizeof(host_mgreg_t));
+		memcpy (&regs[16], &ctx->uc_mcontext.fpregs.fprs, 16 * sizeof(host_mgreg_t));
 		gboolean success = mono_unwind_frame (unwind_info, unwind_info_len, ji->code_start,
 						   (guint8 *) ji->code_start + ji->code_size,
-						   ip, epilog ? &epilog : NULL, regs, 16, save_locations,
+						   ip, epilog ? &epilog : NULL, regs, 32, save_locations,
 						   MONO_MAX_IREGS, &cfa);
 
 		if (!success)
 			return FALSE;
 
-		memcpy (&new_ctx->uc_mcontext.gregs, &regs, sizeof(regs));
+		memcpy (&new_ctx->uc_mcontext.gregs, &regs[0], 16 * sizeof(host_mgreg_t));
+		memcpy (&new_ctx->uc_mcontext.fpregs.fprs, &regs[16], 16 * sizeof(host_mgreg_t));
 		MONO_CONTEXT_SET_IP(new_ctx, regs[14] - 2);
 		MONO_CONTEXT_SET_BP(new_ctx, regs[15]);
 		MONO_CONTEXT_SET_SP(new_ctx, regs[15]);
@@ -567,7 +568,7 @@ mono_arch_unwind_frame (MonoJitTlsData *jit_tls,
 		memcpy(new_ctx->uc_mcontext.fpregs.fprs, (*lmf)->fregs, sizeof((*lmf)->fregs));
 		MONO_CONTEXT_SET_BP (new_ctx, (*lmf)->ebp);
 		MONO_CONTEXT_SET_IP (new_ctx, (*lmf)->eip - 2);
-		*lmf = (*lmf)->previous_lmf;
+		*lmf = (struct MonoLMF *) (*lmf)->previous_lmf;
 
 		return TRUE;
 	}

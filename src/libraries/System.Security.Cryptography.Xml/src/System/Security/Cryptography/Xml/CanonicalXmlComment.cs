@@ -7,7 +7,7 @@ using System.Text;
 namespace System.Security.Cryptography.Xml
 {
     // the class that provides node subset state and canonicalization function to XmlComment
-    internal class CanonicalXmlComment : XmlComment, ICanonicalizableNode
+    internal sealed class CanonicalXmlComment : XmlComment, ICanonicalizableNode
     {
         private bool _isInNodeSet;
         private readonly bool _includeComments;

@@ -5,7 +5,7 @@ using System.Xml.XPath;
 
 namespace MS.Internal.Xml.XPath
 {
-    internal class Variable : AstNode
+    internal sealed class Variable : AstNode
     {
         private readonly string _localname;
         private readonly string _prefix;

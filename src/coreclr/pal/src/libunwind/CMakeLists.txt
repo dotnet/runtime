@@ -28,6 +28,8 @@ if(CLR_CMAKE_HOST_UNIX)
       set(arch arm)
     elseif(CLR_CMAKE_HOST_ARCH_I386)
         set(arch x86)
+    elseif(CLR_CMAKE_HOST_ARCH_S390X)
+      set(arch s390x)
     endif ()
 
     # Disable warning due to incorrect format specifier in debugging printf via the Debug macro
@@ -105,6 +107,10 @@ if(CLR_CMAKE_HOST_WIN32)
       set(TARGET_ARM 1)
       set(arch arm)
       add_definitions(-D__arm__)
+    elseif(CLR_CMAKE_TARGET_ARCH_S390X)
+      set(TARGET_S390X 1)
+      set(arch s390x)
+      add_definitions(-D__s390x__)
     else ()
       message(FATAL_ERROR "Unrecognized TARGET")
     endif ()
@@ -145,8 +151,6 @@ if(CLR_CMAKE_HOST_WIN32)
     add_compile_options(-wd4311) # pointer truncation from 'unw_word_t *' to 'long'
     add_compile_options(-wd4475) # 'fprintf' : length modifier 'L' cannot be used
     add_compile_options(-wd4477) # fprintf argument type
-
-    add_compile_options(-wd9025) # overriding '/TP' with '/TC'
 endif (CLR_CMAKE_HOST_WIN32)
 
 if(CLR_CMAKE_TARGET_ARCH_ARM)

@@ -25,8 +25,7 @@ char*          g_logFilePath        = nullptr; // We *don't* leak this, hooray!
 WCHAR*         g_HomeDirectory      = nullptr;
 WCHAR*         g_DefaultRealJitPath = nullptr;
 MethodContext* g_globalContext      = nullptr;
-WCHAR*         g_debugRecStr        = nullptr;
-WCHAR*         g_debugRepStr        = nullptr;
+bool           g_initialized        = false;
 
 void SetDefaultPaths()
 {
@@ -81,25 +80,26 @@ void SetLogFilePath()
     }
 }
 
-void SetDebugVariables()
+void InitializeShim()
 {
-    if (g_debugRecStr == nullptr)
+    if (g_initialized)
     {
-        g_debugRecStr = GetEnvironmentVariableWithDefaultW(W("SuperPMIShimDebugRec"), W("0"));
-    }
-    if (g_debugRepStr == nullptr)
-    {
-        g_debugRepStr = GetEnvironmentVariableWithDefaultW(W("SuperPMIShimDebugRep"), W("0"));
+        return;
     }
 
-    if (0 == wcscmp(g_debugRecStr, W("1")))
+#ifdef HOST_UNIX
+    if (0 != PAL_InitializeDLL())
     {
-        g_debugRec = true;
+        fprintf(stderr, "Error: Fail to PAL_InitializeDLL\n");
+        exit(1);
     }
-    if (0 == wcscmp(g_debugRepStr, W("1")))
-    {
-        g_debugRep = true;
-    }
+#endif // HOST_UNIX
+
+    Logger::Initialize();
+    SetLogFilePath();
+    Logger::OpenLogFile(g_logFilePath);
+
+    g_initialized = true;
 }
 
 extern "C"
@@ -112,17 +112,7 @@ extern "C"
     switch (ul_reason_for_call)
     {
         case DLL_PROCESS_ATTACH:
-#ifdef HOST_UNIX
-            if (0 != PAL_InitializeDLL())
-            {
-                fprintf(stderr, "Error: Fail to PAL_InitializeDLL\n");
-                exit(1);
-            }
-#endif // HOST_UNIX
-
-            Logger::Initialize();
-            SetLogFilePath();
-            Logger::OpenLogFile(g_logFilePath);
+            InitializeShim();
             break;
 
         case DLL_PROCESS_DETACH:
@@ -140,11 +130,14 @@ extern "C"
     return TRUE;
 }
 
-extern "C" DLLEXPORT void __stdcall jitStartup(ICorJitHost* host)
+extern "C" DLLEXPORT void jitStartup(ICorJitHost* host)
 {
+    // crossgen2 doesn't invoke DllMain on Linux/Mac (under PAL), so optionally do initialization work here.
+    InitializeShim();
+
     SetDefaultPaths();
     SetLibName();
-    SetDebugVariables();
+    SetDebugDumpVariables();
 
     if (!LoadRealJitLib(g_hRealJit, g_realJitPath))
     {
@@ -164,7 +157,7 @@ extern "C" DLLEXPORT void __stdcall jitStartup(ICorJitHost* host)
     pnjitStartup(g_ourJitHost);
 }
 
-extern "C" DLLEXPORT ICorJitCompiler* __stdcall getJit()
+extern "C" DLLEXPORT ICorJitCompiler* getJit()
 {
     DWORD             dwRetVal = 0;
     PgetJit           pngetJit;
@@ -175,7 +168,7 @@ extern "C" DLLEXPORT ICorJitCompiler* __stdcall getJit()
     SetLibName();
     SetLogPath();
     SetLogPathName();
-    SetDebugVariables();
+    SetDebugDumpVariables();
 
     if (!LoadRealJitLib(g_hRealJit, g_realJitPath))
     {

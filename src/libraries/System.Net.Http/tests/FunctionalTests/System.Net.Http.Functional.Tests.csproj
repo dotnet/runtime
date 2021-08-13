@@ -8,6 +8,28 @@
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
     <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-Linux;$(NetCoreAppCurrent)-Browser;$(NetCoreAppCurrent)-OSX</TargetFrameworks>
   </PropertyGroup>
+
+  <ItemGroup>
+    <RuntimeHostConfigurationOption Include="System.Net.SocketsHttpHandler.Http3Support" Value="true" />
+  </ItemGroup>
+
+  <PropertyGroup Condition="'$(TargetOS)' == 'Browser'">
+    <Scenario>WasmTestOnBrowser</Scenario>
+    <TestArchiveTestsRoot>$(TestArchiveRoot)browseronly/</TestArchiveTestsRoot>
+    <TestArchiveTestsDir>$(TestArchiveTestsRoot)$(OSPlatformConfig)/</TestArchiveTestsDir>
+    <DefineConstants>$(DefineConstants);TARGET_BROWSER</DefineConstants>
+  </PropertyGroup>
+
+  <Import Condition="'$(TargetOS)' == 'Browser'" Project="$(CommonTestPath)System/Net/Prerequisites/LocalEchoServer.props" />
+
+  <!-- Browser specific files -->
+  <ItemGroup Condition="'$(TargetOS)' == 'Browser'">
+    <ProjectReference Include="$(CommonTestPath)System/Net/Prerequisites/NetCoreServer/NetCoreServer.csproj" ReferenceOutputAssembly="false"/>
+    <ProjectReference Include="$(CommonTestPath)System/Net/Prerequisites/RemoteLoopServer/RemoteLoopServer.csproj" ReferenceOutputAssembly="false"/>
+    <Compile Include="$(CommonTestPath)System\Net\WebSockets\WebSocketStream.cs"
+             Link="Common\System\Net\WebSockets\WebSocketStream.cs" />
+  </ItemGroup>
+
   <ItemGroup>
     <Compile Include="$(CommonPath)Interop\Unix\Interop.Libraries.cs" Condition="'$(TargetsUnix)' == 'true' or '$(TargetsBrowser)' == 'true'"
              Link="Common\Interop\Unix\Interop.Libraries.cs" />
@@ -25,10 +47,16 @@
              Link="Common\System\Diagnostics\Tracing\ConsoleEventListener.cs" />
     <Compile Include="$(CommonTestPath)System\IO\ByteLoggingStream.cs"
              Link="Common\System\IO\ByteLoggingStream.cs" />
+    <Compile Include="$(CommonTestPath)System\IO\DelegateDelegatingStream.cs"
+             Link="CommonTest\System\IO\DelegateDelegatingStream.cs" />
     <Compile Include="$(CommonTestPath)System\IO\DelegateStream.cs"
              Link="Common\System\IO\DelegateStream.cs" />
+    <Compile Include="$(CommonPath)System\IO\DelegatingStream.cs"
+             Link="Common\System\IO\DelegatingStream.cs" />
     <Compile Include="$(CommonTestPath)System\Net\RemoteServerQuery.cs"
              Link="Common\System\Net\RemoteServerQuery.cs" />
+    <Compile Include="$(CommonTestPath)System\Security\Cryptography\PlatformSupport.cs"
+             Link="CommonTest\System\Security\Cryptography\PlatformSupport.cs" />
     <Compile Include="$(CommonTestPath)System\Net\Configuration.Certificates.cs"
              Link="Common\System\Net\Configuration.Certificates.cs" />
     <Compile Include="$(CommonTestPath)System\Net\EventSourceTestLogging.cs"
@@ -105,7 +133,9 @@
     <Compile Include="$(CommonTestPath)System\Net\Http\HttpClientHandlerTest.DefaultProxyCredentials.cs"
              Link="Common\System\Net\Http\HttpClientHandlerTest.DefaultProxyCredentials.cs" />
     <Compile Include="HttpClientHandlerTest.AltSvc.cs" />
-    <Compile Include="HttpClientHandlerTest.Cancellation.cs" />
+    <Compile Include="SocketsHttpHandlerTest.Cancellation.cs" />
+    <Compile Include="SocketsHttpHandlerTest.Http2FlowControl.cs" />
+    <Compile Include="SocketsHttpHandlerTest.Http2KeepAlivePing.cs" />
     <Compile Include="HttpClientHandlerTest.Connect.cs" />
     <Compile Include="HttpClientHandlerTest.Finalization.cs" />
     <Compile Include="HttpClientHandlerTest.Headers.cs" />
@@ -118,6 +148,7 @@
     <Compile Include="HttpClientHandlerTest.Http3.cs" />
     <Compile Include="$(CommonTestPath)System\Net\Http\HttpClientHandlerTest.RemoteServer.cs"
              Link="Common\System\Net\Http\HttpClientHandlerTest.RemoteServer.cs" />
+    <Compile Include="HttpClientHandlerTest.RequestRetry.cs" />
     <Compile Include="HttpClientHandlerTest.ResponseDrain.cs" />
     <Compile Include="$(CommonTestPath)System\Net\Http\HttpClientHandlerTest.ServerCertificates.cs"
              Link="Common\System\Net\Http\HttpClientHandlerTest.ServerCertificates.cs" />
@@ -134,8 +165,6 @@
     <Compile Include="HttpContentTest.cs" />
     <Compile Include="HttpMessageInvokerTest.cs" />
     <Compile Include="HttpMethodTest.cs" />
-    <Compile Include="$(CommonTestPath)System\Net\Http\HttpRetryProtocolTests.cs"
-             Link="Common\System\Net\Http\HttpRetryProtocolTests.cs" />
     <Compile Include="$(CommonTestPath)System\Net\Http\IdnaProtocolTests.cs"
              Link="Common\System\Net\Http\IdnaProtocolTests.cs" />
     <Compile Include="$(CommonTestPath)System\Net\Http\HttpProtocolTests.cs"
@@ -151,17 +180,11 @@
              Link="Common\System\Net\Http\RepeatedFlushContent.cs" />
     <Compile Include="$(CommonTestPath)System\Net\Http\ResponseStreamTest.cs"
              Link="Common\System\Net\Http\ResponseStreamTest.cs" />
-    <Compile Include="$(CommonTestPath)System\Net\Http\SchSendAuxRecordHttpTest.cs"
-             Link="Common\System\Net\Http\SchSendAuxRecordHttpTest.cs" />
     <Compile Include="SyncHttpHandlerTest.cs" />
     <Compile Include="TelemetryTest.cs" />
     <Compile Include="StreamContentTest.cs" />
     <Compile Include="StringContentTest.cs" />
     <Compile Include="ResponseStreamConformanceTests.cs" />
-    <Compile Include="$(CommonTestPath)Tests\System\IO\StreamConformanceTests.cs"
-         Link="Common\System\IO\StreamConformanceTests.cs" />
-    <Compile Include="$(CommonTestPath)System\IO\CallTrackingStream.cs"
-             Link="Common\System\IO\CallTrackingStream.cs" />
     <Compile Include="$(CommonTestPath)System\Net\Http\SyncBlockingContent.cs"
              Link="Common\System\Net\Http\SyncBlockingContent.cs" />
     <Compile Include="$(CommonTestPath)System\Net\Http\DefaultCredentialsTest.cs"
@@ -229,6 +252,8 @@
              Link="Common\System\Net\Http\HuffmanDecoder.cs" />
     <Compile Include="$(CommonTestPath)System\Net\Http\HuffmanEncoder.cs"
              Link="Common\System\Net\Http\HuffmanEncoder.cs" />
+    <Compile Include="LoopbackSocksServer.cs" />
+    <Compile Include="SocksProxyTest.cs" />
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="SelectedSitesTest.txt">
@@ -238,5 +263,9 @@
   <ItemGroup>
     <PackageReference Include="System.Net.TestData" Version="$(SystemNetTestDataVersion)" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.DirectoryServices.Protocols\src\System.DirectoryServices.Protocols.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Net.Quic\src\System.Net.Quic.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(CommonTestPath)StreamConformanceTests\StreamConformanceTests.csproj" />
   </ItemGroup>
 </Project>

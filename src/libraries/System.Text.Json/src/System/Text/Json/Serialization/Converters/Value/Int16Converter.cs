@@ -21,17 +21,17 @@ namespace System.Text.Json.Serialization.Converters
             writer.WriteNumberValue((long)value);
         }
 
-        internal override short ReadWithQuotes(ref Utf8JsonReader reader)
+        internal override short ReadAsPropertyName(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
         {
             return reader.GetInt16WithQuotes();
         }
 
-        internal override void WriteWithQuotes(Utf8JsonWriter writer, short value, JsonSerializerOptions options, ref WriteStack state)
+        internal override void WriteAsPropertyName(Utf8JsonWriter writer, short value, JsonSerializerOptions options, ref WriteStack state)
         {
             writer.WritePropertyName(value);
         }
 
-        internal override short ReadNumberWithCustomHandling(ref Utf8JsonReader reader, JsonNumberHandling handling)
+        internal override short ReadNumberWithCustomHandling(ref Utf8JsonReader reader, JsonNumberHandling handling, JsonSerializerOptions options)
         {
             if (reader.TokenType == JsonTokenType.String &&
                 (JsonNumberHandling.AllowReadingFromString & handling) != 0)

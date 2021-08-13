@@ -8,7 +8,7 @@ using System.Collections.Generic;
 
 namespace System.Runtime.Serialization
 {
-    internal class HybridObjectCache
+    internal sealed class HybridObjectCache
     {
         private Dictionary<string, object?>? _objectDictionary;
         private Dictionary<string, object?>? _referencedObjectDictionary;

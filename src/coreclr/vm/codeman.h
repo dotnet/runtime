@@ -461,9 +461,9 @@ protected:
 // The number of code heaps at which we increase the size of new code heaps.
 #define CODE_HEAP_SIZE_INCREASE_THRESHOLD 5
 
-typedef DPTR(struct _HeapList) PTR_HeapList;
+typedef DPTR(struct HeapList) PTR_HeapList;
 
-typedef struct _HeapList
+struct HeapList
 {
     PTR_HeapList        hpNext;
 
@@ -478,11 +478,18 @@ typedef struct _HeapList
     size_t              maxCodeHeapSize;// Size of the entire contiguous block of memory
     size_t              reserveForJumpStubs; // Amount of memory reserved for jump stubs in this block
 
-#if defined(TARGET_AMD64)
-    BYTE        CLRPersonalityRoutine[JUMP_ALLOCATE_SIZE];                 // jump thunk to personality routine
-#elif defined(TARGET_ARM64)
-    UINT32      CLRPersonalityRoutine[JUMP_ALLOCATE_SIZE/sizeof(UINT32)];  // jump thunk to personality routine
+#if defined(TARGET_AMD64) || defined(TARGET_ARM64)
+    BYTE*               CLRPersonalityRoutine;  // jump thunk to personality routine
 #endif
+
+    TADDR GetModuleBase()
+    {
+#if defined(TARGET_AMD64) || defined(TARGET_ARM64)
+        return (TADDR)CLRPersonalityRoutine;
+ #else
+        return (TADDR)mapBase;
+#endif
+    }
 
     PTR_HeapList GetNext()
     { SUPPORTS_DAC; return hpNext; }
@@ -490,7 +497,7 @@ typedef struct _HeapList
     void SetNext(PTR_HeapList next)
     { hpNext = next; }
 
-} HeapList;
+};
 
 //-----------------------------------------------------------------------------
 // Implementation of the standard CodeHeap.
@@ -662,6 +669,7 @@ class CodeFragmentHeap : public ILoaderHeapBackout
     struct FreeBlock
     {
         DPTR(FreeBlock) m_pNext;    // Next block
+        void  *m_pBlock;
         SIZE_T m_dwSize;            // Size of this block (includes size of FreeBlock)
     };
     typedef DPTR(FreeBlock) PTR_FreeBlock;
@@ -676,7 +684,7 @@ class CodeFragmentHeap : public ILoaderHeapBackout
 
 public:
     CodeFragmentHeap(LoaderAllocator * pAllocator, StubCodeBlockKind kind);
-    virtual ~CodeFragmentHeap() {}
+    virtual ~CodeFragmentHeap();
 
     TaggedMemAllocPtr RealAllocAlignedMem(size_t  dwRequestedSize
                                          ,unsigned  dwAlignment
@@ -966,12 +974,15 @@ public:
 
     BOOL                LoadJIT();
 
-    CodeHeader*         allocCode(MethodDesc* pFD, size_t blockSize, size_t reserveForJumpStubs, CorJitAllocMemFlag flag
-#ifdef FEATURE_EH_FUNCLETS
-                                  , UINT nUnwindInfos
-                                  , TADDR * pModuleBase
+    void                allocCode(MethodDesc* pFD, size_t blockSize, size_t reserveForJumpStubs, CorJitAllocMemFlag flag, CodeHeader** ppCodeHeader, CodeHeader** ppCodeHeaderRW,
+                                  size_t* pAllocatedSize, HeapList** ppCodeHeap
+#ifdef USE_INDIRECT_CODEHEADER
+                                , BYTE** ppRealHeader
 #endif
-                                  );
+#ifdef FEATURE_EH_FUNCLETS
+                                , UINT nUnwindInfos
+#endif
+                                );
     BYTE *              allocGCInfo(CodeHeader* pCodeHeader, DWORD blockSize, size_t * pAllocationSize);
     EE_ILEXCEPTION*     allocEHInfo(CodeHeader* pCodeHeader, unsigned numClauses, size_t * pAllocationSize);
     JumpStubBlockHeader* allocJumpStubBlock(MethodDesc* pMD, DWORD numJumps,
@@ -1016,6 +1027,7 @@ public:
 #ifndef DACCESS_COMPILE
 	// Heap Management functions
     void NibbleMapSet(HeapList * pHp, TADDR pCode, BOOL bSet);
+    void NibbleMapSetUnlocked(HeapList * pHp, TADDR pCode, BOOL bSet);
 #endif  // !DACCESS_COMPILE
 
     static TADDR FindMethodCode(RangeSection * pRangeSection, PCODE currentPC);
@@ -1241,9 +1253,7 @@ public:
     static ULONG          GetCLRPersonalityRoutineValue()
     {
         LIMITED_METHOD_CONTRACT;
-        static_assert_no_msg(offsetof(HeapList, CLRPersonalityRoutine) ==
-            (size_t)((ULONG)offsetof(HeapList, CLRPersonalityRoutine)));
-        return offsetof(HeapList, CLRPersonalityRoutine);
+        return 0;
     }
 #endif // TARGET_64BIT
 

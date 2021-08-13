@@ -16,7 +16,7 @@ if (MSVC)
     add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/wd4200>)
     add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/wd4244>)
     # Host components don't try to handle asynchronous exceptions
-    add_compile_options(/EHsc)
+    add_compile_options($<$<COMPILE_LANGUAGE:CXX>:/EHsc>)
 elseif (CMAKE_CXX_COMPILER_ID MATCHES GNU)
     # Prevents libc from calling pthread_cond_destroy on static objects in
     # dlopen()'ed library which we dlclose() in pal::unload_library.
@@ -27,13 +27,12 @@ add_subdirectory(hostcommon)
 add_subdirectory(fxr)
 add_subdirectory(hostpolicy)
 
-if (NOT RUNTIME_FLAVOR STREQUAL Mono)
-    add_subdirectory(apphost)
-    add_subdirectory(dotnet)
-    add_subdirectory(nethost)
-    add_subdirectory(test_fx_ver)
-    add_subdirectory(test)
+add_subdirectory(apphost)
+add_subdirectory(dotnet)
+add_subdirectory(nethost)
+add_subdirectory(test)
 
+if (NOT RUNTIME_FLAVOR STREQUAL Mono)
     if(CLR_CMAKE_TARGET_WIN32)
         add_subdirectory(comhost)
         add_subdirectory(ijwhost)

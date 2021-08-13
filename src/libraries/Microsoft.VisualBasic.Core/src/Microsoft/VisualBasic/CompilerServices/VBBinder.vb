@@ -10,6 +10,7 @@ Imports System.Security
 Imports Microsoft.VisualBasic.CompilerServices.LateBinding
 Imports Microsoft.VisualBasic.CompilerServices.ExceptionUtils
 Imports Microsoft.VisualBasic.CompilerServices.Utils
+Imports System.Diagnostics.CodeAnalysis
 
 Namespace Microsoft.VisualBasic.CompilerServices
 
@@ -1933,6 +1934,7 @@ NextMethod8:
         Friend Function InvokeMember(ByVal name As String,
             ByVal invokeAttr As BindingFlags,
             ByVal objType As System.Type,
+            <DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)>
             ByVal objIReflect As IReflect,
             ByVal target As Object,
             ByVal args As Object(),
@@ -2047,7 +2049,12 @@ NextMethod8:
 
         End Function
 
-        Private Function GetMethodsByName(ByVal objType As System.Type, ByVal objIReflect As IReflect, ByVal name As String, ByVal invokeAttr As BindingFlags) As MethodBase()
+        Private Function GetMethodsByName(
+                ByVal objType As System.Type,
+                <DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)>
+                ByVal objIReflect As IReflect,
+                ByVal name As String,
+                ByVal invokeAttr As BindingFlags) As MethodBase()
 
             Dim mi As MemberInfo()
             Dim mb As MethodBase()

@@ -159,10 +159,10 @@ namespace Microsoft.DotNet.Build.Tasks
             string badge = Link("badge");
             string version = Link("version");
 
-            if (links.Contains(badge) && links.Contains(version))
-            {
-                sb.Append($"[![][{badge}]][{version}]");
-            }
+            // if (links.Contains(badge) && links.Contains(version))
+            // {
+            //     sb.Append($"[![][{badge}]][{version}]");
+            // }
 
             // Look for various types of links. The first parameter is the name of the link as it
             // appears in the table cell. The second parameter is how this type of link is
@@ -181,11 +181,11 @@ namespace Microsoft.DotNet.Build.Tasks
             AddLink("zip", "zip");
             AddLink("tar.gz", "targz");
 
-            AddLink("NetHost (zip)", "nethost-zip");
-            AddLink("NetHost (tar.gz)", "nethost-targz");
+            // AddLink("NetHost (zip)", "nethost-zip");
+            // AddLink("NetHost (tar.gz)", "nethost-targz");
 
-            AddLink("Symbols (zip)", "symbols-zip");
-            AddLink("Symbols (tar.gz)", "symbols-targz");
+            // AddLink("Symbols (zip)", "symbols-zip");
+            // AddLink("Symbols (tar.gz)", "symbols-targz");
 
             if (sb.Length == 0)
             {

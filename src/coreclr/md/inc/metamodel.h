@@ -594,6 +594,7 @@ public:
 
 
 protected:
+    DAC_ALIGNAS(8)
     CMiniMdSchema   m_Schema;                       // data header.
     ULONG           m_TblCount;                     // Tables in this database.
     BOOL            m_fVerifiedByTrustedSource;     // whether the data was verified by a trusted source
@@ -1368,7 +1369,7 @@ public:
             break;
         case mdtString:
         default:
-            if(REGUTIL::GetConfigDWORD_DontUse_(CLRConfig::INTERNAL_AssertOnBadImageFormat, 0))
+            if(CLRConfig::GetConfigValue(CLRConfig::INTERNAL_AssertOnBadImageFormat))
                 _ASSERTE(!"Unexpected token type in FindCustomAttributeByName");
             hr = COR_E_BADIMAGEFORMAT;
             goto ErrExit;

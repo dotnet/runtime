@@ -35,7 +35,7 @@ namespace System.ComponentModel.Design
         {
             get
             {
-                object result = Properties["Description"];
+                object? result = Properties["Description"];
                 if (result == null)
                 {
                     return string.Empty;
@@ -53,7 +53,7 @@ namespace System.ComponentModel.Design
         {
             get
             {
-                object result = Properties["Text"];
+                object? result = Properties["Text"];
                 if (result == null)
                 {
                     return string.Empty;

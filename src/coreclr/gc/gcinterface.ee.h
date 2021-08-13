@@ -4,7 +4,7 @@
 #ifndef _GCINTERFACE_EE_H_
 #define _GCINTERFACE_EE_H_
 
-enum EtwGCRootFlags
+enum EtwGCRootFlags: int32_t
 {
     kEtwGCRootFlagsPinning =            0x1,
     kEtwGCRootFlagsWeakRef =            0x2,
@@ -12,13 +12,15 @@ enum EtwGCRootFlags
     kEtwGCRootFlagsRefCounted =         0x8,
 };
 
-enum EtwGCRootKind
+enum EtwGCRootKind: int32_t
 {
     kEtwGCRootKindStack =               0,
     kEtwGCRootKindFinalizer =           1,
     kEtwGCRootKindHandle =              2,
     kEtwGCRootKindOther =               3,
 };
+
+struct StressLogMsg;
 
 // This interface provides functions that the GC can use to fire events.
 // Events fired on this interface are split into two categories: "known"
@@ -88,22 +90,29 @@ public:
     void FireGCJoin_V2(uint32_t heap, uint32_t joinTime, uint32_t joinType, uint32_t joinId) = 0;
 
     virtual
-    void FireGCGlobalHeapHistory_V3(uint64_t finalYoungestDesired,
-        int32_t numHeaps,
-        uint32_t condemnedGeneration,
-        uint32_t gen0reductionCount,
-        uint32_t reason,
-        uint32_t globalMechanisms,
-        uint32_t pauseMode,
-        uint32_t memoryPressure,
-        uint32_t condemnReasons0,
-        uint32_t condemnReasons1) = 0;
+    void FireGCGlobalHeapHistory_V4(uint64_t finalYoungestDesired,
+                                    int32_t numHeaps,
+                                    uint32_t condemnedGeneration,
+                                    uint32_t gen0reductionCount,
+                                    uint32_t reason,
+                                    uint32_t globalMechanisms,
+                                    uint32_t pauseMode,
+                                    uint32_t memoryPressure,
+                                    uint32_t condemnReasons0,
+                                    uint32_t condemnReasons1,
+                                    uint32_t count,
+                                    uint32_t valuesLen,
+                                    void *values) = 0;
 
     virtual
     void FireGCAllocationTick_V1(uint32_t allocationAmount, uint32_t allocationKind) = 0;
 
     virtual
-    void FireGCAllocationTick_V3(uint64_t allocationAmount, uint32_t allocationKind, uint32_t heapIndex, void* objectAddress) = 0;
+    void FireGCAllocationTick_V4(uint64_t allocationAmount, 
+                                 uint32_t allocationKind, 
+                                 uint32_t heapIndex, 
+                                 void* objectAddress, 
+                                 uint64_t objectSize) = 0;
 
     virtual
     void FirePinObjectAtGCTime(void* object, uint8_t** ppObject) = 0;
@@ -128,6 +137,13 @@ public:
                                  uint32_t count,
                                  uint32_t valuesLen,
                                  void *values) = 0;
+
+    virtual
+    void FireGCLOHCompact(uint16_t count, uint32_t valuesLen, void *values) = 0;
+
+    virtual
+    void FireGCFitBucketInfo(uint16_t bucketKind, size_t size, uint16_t count, uint32_t valuesLen, void *values) = 0;
+
     virtual
     void FireBGCBegin() = 0;
     virtual
@@ -195,15 +211,15 @@ public:
     virtual
     void GcStartWork(int condemned, int max_gen) = 0;
 
+    // Callback from the GC informing the EE that the scanning of roots is about
+    // to begin.
+    virtual
+    void BeforeGcScanRoots(int condemned, bool is_bgc, bool is_concurrent) = 0;
+
     // Callback from the GC informing the EE that it has completed the managed stack
     // scan. User threads are still suspended at this point.
     virtual
     void AfterGcScanRoots(int condemned, int max_gen, ScanContext* sc) = 0;
-
-    // Callback from the GC informing the EE that the background sweep phase of a BGC is
-    // about to begin.
-    virtual
-    void GcBeforeBGCSweepWork() = 0;
 
     // Callback from the GC informing the EE that a GC has completed.
     virtual
@@ -421,6 +437,12 @@ public:
 
     virtual
     void UpdateGCEventStatus(int publicLevel, int publicKeywords, int privateLEvel, int privateKeywords) = 0;
+
+    virtual
+    void LogStressMsg(unsigned level, unsigned facility, const StressLogMsg& msg) = 0;
+
+    virtual
+    uint32_t GetCurrentProcessCpuCount() = 0;
 };
 
 #endif // _GCINTERFACE_EE_H_

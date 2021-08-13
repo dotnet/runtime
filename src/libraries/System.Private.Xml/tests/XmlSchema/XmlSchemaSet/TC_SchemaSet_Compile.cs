@@ -646,6 +646,135 @@ namespace System.Xml.Tests
             Assert.Contains("length", ex.Message);
         }
 
+        #region Complex Restricton tests
+
+        [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
+        public void SequenceRestrictsChoiceValid()
+        {
+            string schema = @"<xs:schema xmlns:xs='http://www.w3.org/2001/XMLSchema' 
+		   targetNamespace='urn:gba:sqg' xmlns:ns1='urn:gba:sqg'
+		   elementFormDefault='qualified' attributeFormDefault='unqualified'>
+    <xs:complexType name='base' abstract='true'>
+      <xs:choice minOccurs='2' maxOccurs='unbounded'>
+          <xs:element name='a'/>
+          <xs:element name='b'/>
+          <xs:element name='c'/>
+       </xs:choice>
+    </xs:complexType>
+	<xs:complexType name='derived'>
+		<xs:complexContent>
+			<xs:restriction base='ns1:base'>
+				<xs:sequence>
+                    <xs:element name='b'/>
+                    <xs:element name='a'/>
+					<xs:element name='c'/>
+					<xs:element name='c'/>
+                    <xs:element name='a'/>
+				</xs:sequence>
+			</xs:restriction>
+		</xs:complexContent>
+	</xs:complexType>
+	<xs:element name='root' type='ns1:derived'>
+	</xs:element>
+</xs:schema>
+";
+            var xr = XmlReader.Create(new StringReader(schema));
+            var ss = new XmlSchemaSet();
+            ss.Add("urn:gba:sqg", xr);
+            ss.Compile();
+        }
+
+
+        [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
+        public void SequenceRestrictsChoiceComplexButValid()
+        {
+            string schema = @"<xs:schema xmlns:xs='http://www.w3.org/2001/XMLSchema' xmlns:ns1='urn:gba:sqg'
+           xmlns:xenc='http://www.w3.org/2001/04/xmlenc#'
+		   xmlns:ds='http://www.w3.org/2000/09/xmldsig#'
+		   xmlns:xi='urn:gba:sqg' targetNamespace='urn:gba:sqg'
+		   elementFormDefault='qualified' attributeFormDefault='unqualified'>
+	<xs:complexType name='base' abstract='true'>
+		<xs:choice maxOccurs='unbounded'>
+			<xs:sequence>
+				<xs:element name='a' minOccurs='0'/>
+				<xs:element name='b' minOccurs='0'/>
+			</xs:sequence>
+			<xs:sequence>
+				<xs:element name='c' minOccurs='0'/>
+				<xs:element name='d' minOccurs='0'/>
+				<xs:element name='e' minOccurs='0'/>
+			</xs:sequence>
+		</xs:choice>
+	</xs:complexType>
+	<xs:complexType name='derived'>
+		<xs:complexContent>
+			<xs:restriction base='ns1:base'>
+				<xs:sequence>
+					<xs:element name='c'/>
+					<xs:element name='d' minOccurs='0'/>
+					<xs:element name='e' minOccurs='0'/>
+				</xs:sequence>
+			</xs:restriction>
+		</xs:complexContent>
+	</xs:complexType>
+	<xs:element name='root' type='ns1:derived'>
+	</xs:element>
+</xs:schema>
+";
+            var xr = XmlReader.Create(new StringReader(schema));
+            var ss = new XmlSchemaSet();
+            ss.Add("urn:gba:sqg", xr);
+            ss.Compile();
+        }
+
+        [Fact]
+        public void SequenceRestrictsChoiceInvalid()
+        {
+            // particle "f" in derrived type has no mapping to any particle in the base type.
+            string schema = @"<xs:schema xmlns:xs='http://www.w3.org/2001/XMLSchema' 
+		   targetNamespace='urn:gba:sqg' xmlns:ns1='urn:gba:sqg'
+		   elementFormDefault='qualified' attributeFormDefault='unqualified'>
+	<xs:complexType name='base' abstract='true'>
+		<xs:choice maxOccurs='unbounded'>
+			<xs:sequence>
+				<xs:element name='a' minOccurs='0'/>
+				<xs:element name='b' minOccurs='0'/>
+			</xs:sequence>
+			<xs:sequence>
+				<xs:element name='c' minOccurs='0'/>
+				<xs:element name='d' minOccurs='0'/>
+				<xs:element name='e' minOccurs='0'/>
+			</xs:sequence>
+		</xs:choice>
+	</xs:complexType>
+	<xs:complexType name='derived'>
+		<xs:complexContent>
+			<xs:restriction base='ns1:base'>
+				<xs:sequence>
+					<xs:element name='a'/>
+					<xs:element name='c' minOccurs='0'/>
+					<xs:element name='e' minOccurs='0'/>
+					<xs:element name='f' minOccurs='0'/>
+				</xs:sequence>
+			</xs:restriction>
+		</xs:complexContent>
+	</xs:complexType>
+	<xs:element name='root' type='ns1:derived'>
+	</xs:element>
+</xs:schema>
+";
+            var xr = XmlReader.Create(new StringReader(schema));
+            var ss = new XmlSchemaSet();
+            ss.Add("urn:gba:sqg", xr);
+
+            Exception ex = Assert.Throws<XmlSchemaException>(() => ss.Compile());
+
+            Assert.Contains("Invalid particle derivation by restriction", ex.Message);
+        }
+        #endregion
+
         #region FacetBaseFixed tests
         public static IEnumerable<object[]> FacetBaseFixed_Throws_TestData
         {

@@ -7,75 +7,6 @@
 #include "iceefilegen.h"
 #include "ceefilegenwriter.h"
 
-// Deprecated
-//****************************************************************************
-    HRESULT ICeeFileGen::EmitMethod ()
-    {
-        _ASSERTE("Deprecated" && 0);
-        return (E_FAIL);
-    }
-    HRESULT ICeeFileGen::EmitSignature ()
-    {
-        _ASSERTE("Deprecated" && 0);
-        return (E_FAIL);
-    }
-    HRESULT ICeeFileGen::SetEntryClassToken ()
-    {
-        _ASSERTE("Deprecated" && 0);
-        return (E_FAIL);
-    }
-    HRESULT ICeeFileGen::GetEntryClassToken ()
-    {
-        _ASSERTE("Deprecated" && 0);
-        return (E_FAIL);
-    }
-    HRESULT ICeeFileGen::SetEntryPointDescr ()
-    {
-        _ASSERTE("Deprecated" && 0);
-        return (E_FAIL);
-    }
-    HRESULT ICeeFileGen::GetEntryPointDescr ()
-    {
-        _ASSERTE("Deprecated" && 0);
-        return (E_FAIL);
-    }
-    HRESULT ICeeFileGen::SetEntryPointFlags ()
-    {
-        _ASSERTE("Deprecated" && 0);
-        return (E_FAIL);
-    }
-    HRESULT ICeeFileGen::GetEntryPointFlags ()
-    {
-        _ASSERTE("Deprecated" && 0);
-        return (E_FAIL);
-    }
-    HRESULT ICeeFileGen::CreateSig ()
-    {
-        _ASSERTE("Deprecated" && 0);
-        return (E_FAIL);
-    }
-    HRESULT ICeeFileGen::AddSigArg ()
-    {
-        _ASSERTE("Deprecated" && 0);
-        return (E_FAIL);
-    }
-    HRESULT ICeeFileGen::SetSigReturnType ()
-    {
-        _ASSERTE("Deprecated" && 0);
-        return (E_FAIL);
-    }
-    HRESULT ICeeFileGen::SetSigCallingConvention ()
-    {
-        _ASSERTE("Deprecated" && 0);
-        return (E_FAIL);
-    }
-    HRESULT ICeeFileGen::DeleteSig ()
-    {
-        _ASSERTE("Deprecated" && 0);
-        return (E_FAIL);
-    }
-//****************************************************************************
-
 EXTERN_C HRESULT __stdcall CreateICeeFileGen(ICeeFileGen** pCeeFileGen)
 {
     if (!pCeeFileGen)
@@ -125,7 +56,7 @@ HRESULT ICeeFileGen::CreateCeeFileEx2 (HCEEFILE *ceeFile, DWORD createFlags, LPC
     return S_OK;
 }
 
-HRESULT ICeeFileGen::CreateCeeFileFromICeeGen(ICeeGen *pICeeGen, HCEEFILE *ceeFile, DWORD createFlags)
+HRESULT ICeeFileGen::CreateCeeFileFromICeeGen(ICeeGenInternal *pICeeGen, HCEEFILE *ceeFile, DWORD createFlags)
 {
     if (!ceeFile)
         return E_POINTER;
@@ -235,12 +166,6 @@ HRESULT ICeeFileGen::GetSectionBlock (HCEESECTION section, ULONG len,
     return S_OK;
 }
 
-HRESULT ICeeFileGen::TruncateSection (HCEESECTION section, ULONG len)
-{
-    _ASSERTE(!"This is an obsolete function!");
-    return E_NOTIMPL;
-}
-
 HRESULT ICeeFileGen::AddSectionReloc (HCEESECTION section, ULONG offset, HCEESECTION relativeTo, CeeSectionRelocType relocType)
 {
     TESTANDRETURNPOINTER(section);
@@ -250,37 +175,12 @@ HRESULT ICeeFileGen::AddSectionReloc (HCEESECTION section, ULONG offset, HCEESEC
 
     if (relSec)
     {
-#ifdef EMIT_FIXUPS
-        CeeFileGenWriter * gen = reinterpret_cast<CeeFileGenWriter*>(&sec->ceeFile());
-        HRESULT hr = gen->addFixup(*sec, offset, relocType, relSec);
-        if (FAILED(hr))
-        {
-           return(hr);
-        }
-#endif
         return(sec->addSectReloc(offset, *relSec, relocType));
     }
     else
     {
-#ifdef EMIT_FIXUPS
-        CeeFileGenWriter * gen = reinterpret_cast<CeeFileGenWriter*>(&sec->ceeFile());
-        HRESULT hr = gen->addFixup(*sec, offset, relocType);
-        if (FAILED(hr))
-        {
-           return(hr);
-        }
-#endif
         return(sec->addBaseReloc(offset, relocType));
     }
-}
-
-HRESULT ICeeFileGen::SetSectionDirectoryEntry(HCEESECTION section, ULONG num)
-{
-    TESTANDRETURNPOINTER(section);
-
-    printf("Warning: deprecated method. Use SetDirectoryEntry instead\n");
-    CeeSection *sec = reinterpret_cast<CeeSection*>(section);
-    return(sec->directoryEntry(num));
 }
 
 HRESULT ICeeFileGen::SetOutputFileName (HCEEFILE ceeFile, __in LPWSTR outputFileName)
@@ -368,20 +268,6 @@ HRESULT ICeeFileGen::GetIMapTokenIface(HCEEFILE ceeFile, IMetaDataEmit *emitter,
     return E_NOTIMPL;
 }
 
-HRESULT ICeeFileGen::EmitMetaData (HCEEFILE ceeFile, IMetaDataEmit *emitter,
-                                                                mdScope scopeE)
-{
-    _ASSERTE(!"This is an obsolete function!");
-    return E_NOTIMPL;
-}
-
-HRESULT ICeeFileGen::EmitLibraryName (HCEEFILE ceeFile, IMetaDataEmit *emitter,
-                                                                mdScope scopeE)
-{
-    _ASSERTE(!"This is an obsolete function!");
-    return E_NOTIMPL;
-}
-
 HRESULT ICeeFileGen::GetMethodRVA(HCEEFILE ceeFile, ULONG codeOffset, ULONG *codeRVA)
 {
     TESTANDRETURNARG(ceeFile != 0);
@@ -407,14 +293,6 @@ HRESULT ICeeFileGen::LinkCeeFile (HCEEFILE ceeFile)
     return gen->link();
 }
 
-HRESULT ICeeFileGen::FixupCeeFile (HCEEFILE ceeFile)
-{
-    TESTANDRETURNPOINTER(ceeFile);
-
-    CeeFileGenWriter *gen = reinterpret_cast<CeeFileGenWriter*>(ceeFile);
-    return gen->fixup();
-}
-
 HRESULT ICeeFileGen::GetHeaderInfo (HCEEFILE ceeFile, PIMAGE_NT_HEADERS *ppNtHeaders, PIMAGE_SECTION_HEADER *ppSections, ULONG *pNumSections)
 {
     TESTANDRETURNPOINTER(ceeFile);
@@ -430,17 +308,6 @@ HRESULT ICeeFileGen::GenerateCeeFile (HCEEFILE ceeFile)
 
     CeeFileGenWriter *gen = reinterpret_cast<CeeFileGenWriter*>(ceeFile);
     return gen->generateImage(NULL);     // NULL means don't write in-memory buffer, uses outputFileName
-}
-
-// GenerateCeeMemoryImage - returns in ppImage an in-memory PE image allocated by CoTaskMemAlloc()
-// the caller is responsible for calling CoTaskMemFree on this memory image
-HRESULT ICeeFileGen::GenerateCeeMemoryImage (HCEEFILE ceeFile, void **ppImage)
-{
-    TESTANDRETURNPOINTER(ceeFile);
-    TESTANDRETURNPOINTER(ppImage);
-
-    CeeFileGenWriter *gen = reinterpret_cast<CeeFileGenWriter*>(ceeFile);
-    return gen->generateImage(ppImage);
 }
 
 HRESULT ICeeFileGen::SetEntryPoint(HCEEFILE ceeFile, mdMethodDef method)
@@ -507,55 +374,6 @@ HRESULT ICeeFileGen::GetDllSwitch (HCEEFILE ceeFile, BOOL *dllSwitch)
     return S_OK;
 }
 
-HRESULT ICeeFileGen::SetObjSwitch (HCEEFILE ceeFile, BOOL objSwitch)
-{
-    TESTANDRETURNPOINTER(ceeFile);
-
-    CeeFileGenWriter *gen = reinterpret_cast<CeeFileGenWriter*>(ceeFile);
-    return(gen->setObjSwitch(objSwitch==TRUE));
-}
-
-HRESULT ICeeFileGen::GetObjSwitch (HCEEFILE ceeFile, BOOL *objSwitch)
-{
-    TESTANDRETURNPOINTER(ceeFile);
-
-    CeeFileGenWriter *gen = reinterpret_cast<CeeFileGenWriter*>(ceeFile);
-    TESTANDRETURNPOINTER(objSwitch);
-    *objSwitch = gen->getObjSwitch();
-    return S_OK;
-}
-
-
-HRESULT ICeeFileGen::SetLibraryName (HCEEFILE ceeFile, __in LPWSTR LibraryName)
-{
-    TESTANDRETURNPOINTER(ceeFile);
-    TESTANDRETURNPOINTER(LibraryName);
-
-    CeeFileGenWriter *gen = reinterpret_cast<CeeFileGenWriter*>(ceeFile);
-    return(gen->setLibraryName(LibraryName));
-}
-
-HRESULT ICeeFileGen::SetLibraryGuid (HCEEFILE ceeFile, __in LPWSTR LibraryGuid)
-{
-    TESTANDRETURNPOINTER(ceeFile);
-    TESTANDRETURNPOINTER(LibraryGuid);
-
-    CeeFileGenWriter *gen = reinterpret_cast<CeeFileGenWriter*>(ceeFile);
-    return(gen->setLibraryGuid(LibraryGuid));
-}
-
-__success(return == S_OK) HRESULT ICeeFileGen::GetLibraryName (HCEEFILE ceeFile, __out LPWSTR *LibraryName)
-{
-    TESTANDRETURNPOINTER(ceeFile);
-    TESTANDRETURNPOINTER(LibraryName);
-
-    CeeFileGenWriter *gen = reinterpret_cast<CeeFileGenWriter*>(ceeFile);
-    *LibraryName = gen->getLibraryName();
-    return S_OK;
-}
-
-
-
 HRESULT ICeeFileGen::EmitMetaDataEx (HCEEFILE ceeFile, IMetaDataEmit *emitter)
 {
     TESTANDRETURNPOINTER(ceeFile);
@@ -576,15 +394,6 @@ HRESULT ICeeFileGen::EmitMetaDataAt (HCEEFILE ceeFile, IMetaDataEmit *emitter, H
     return(gen->emitMetaData(emitter, sec, offset, buffer, buffLen));
 }
 
-HRESULT ICeeFileGen::EmitLibraryNameEx (HCEEFILE ceeFile, IMetaDataEmit *emitter)
-{
-    TESTANDRETURNPOINTER(ceeFile);
-    TESTANDRETURNPOINTER(emitter);
-
-    CeeFileGenWriter *gen = reinterpret_cast<CeeFileGenWriter*>(ceeFile);
-    return(gen->emitLibraryName(emitter));
-}
-
 HRESULT ICeeFileGen::GetIMapTokenIfaceEx(HCEEFILE ceeFile, IMetaDataEmit *emitter, IUnknown **pIMapToken)
 {
     TESTANDRETURNPOINTER(ceeFile);
@@ -602,14 +411,6 @@ HRESULT ICeeFileGen::AddNotificationHandler(HCEEFILE ceeFile,
 
     CeeFileGenWriter *gen = reinterpret_cast<CeeFileGenWriter*>(ceeFile);
     return gen->addNotificationHandler(pHandler);
-}
-
-HRESULT ICeeFileGen::EmitMacroDefinitions(HCEEFILE ceeFile, void *pData, DWORD cData)
-{
-    TESTANDRETURNPOINTER(ceeFile);
-
-    CeeFileGenWriter *gen = reinterpret_cast<CeeFileGenWriter*>(ceeFile);
-    return gen->EmitMacroDefinitions(pData, cData);
 }
 
 HRESULT ICeeFileGen::SetManifestEntry(HCEEFILE ceeFile, ULONG size, ULONG offset)
@@ -668,14 +469,6 @@ HRESULT ICeeFileGen::ComputeOffset(HCEEFILE ceeFile, __in char *ptr,
 		*pSection = reinterpret_cast<HCEESECTION>(section);
 
 	return hr;
-}
-
-HRESULT ICeeFileGen::SetEnCRVABase(HCEEFILE ceeFile, ULONG dataBase, ULONG rdataBase)
-{
-    TESTANDRETURNPOINTER(ceeFile);
-
-    CeeFileGenWriter *gen = reinterpret_cast<CeeFileGenWriter*>(ceeFile);
-    return gen->setEnCRvaBase(dataBase, rdataBase);
 }
 
 HRESULT ICeeFileGen::GetCorHeader(HCEEFILE ceeFile,

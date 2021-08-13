@@ -23,6 +23,9 @@ namespace System.Net.Sockets.Tests
             await Assert.ThrowsAsync<InvalidOperationException>(async () => await SocketTaskExtensions.AcceptAsync(s));
             await Assert.ThrowsAsync<InvalidOperationException>(async () => await SocketTaskExtensions.AcceptAsync(s, null));
 
+            await Assert.ThrowsAsync<InvalidOperationException>(async () => await SocketTaskExtensions.ReceiveFromAsync(s, new ArraySegment<byte>(buffer), SocketFlags.None, badEndPoint));
+            await Assert.ThrowsAsync<InvalidOperationException>(async () => await SocketTaskExtensions.ReceiveMessageFromAsync(s, new ArraySegment<byte>(buffer), SocketFlags.None, badEndPoint));
+
             await Assert.ThrowsAsync<SocketException>(async () => await SocketTaskExtensions.ConnectAsync(s, badEndPoint));
             await Assert.ThrowsAsync<SocketException>(async () => await SocketTaskExtensions.ConnectAsync(s, badEndPoint, CancellationToken.None));
             await Assert.ThrowsAsync<SocketException>(async () => await SocketTaskExtensions.ConnectAsync(s, badEndPoint.Address, badEndPoint.Port));
@@ -35,8 +38,6 @@ namespace System.Net.Sockets.Tests
             await Assert.ThrowsAsync<SocketException>(async () => await SocketTaskExtensions.ReceiveAsync(s, new ArraySegment<byte>(buffer), SocketFlags.None));
             await Assert.ThrowsAsync<SocketException>(async () => await SocketTaskExtensions.ReceiveAsync(s, buffer.AsMemory(), SocketFlags.None));
             await Assert.ThrowsAsync<SocketException>(async () => await SocketTaskExtensions.ReceiveAsync(s, new ArraySegment<byte>[] { new ArraySegment<byte>(buffer) }, SocketFlags.None));
-            await Assert.ThrowsAsync<SocketException>(async () => await SocketTaskExtensions.ReceiveFromAsync(s, new ArraySegment<byte>(buffer), SocketFlags.None, badEndPoint));
-            await Assert.ThrowsAsync<SocketException>(async () => await SocketTaskExtensions.ReceiveMessageFromAsync(s, new ArraySegment<byte>(buffer), SocketFlags.None, badEndPoint));
 
             await Assert.ThrowsAsync<SocketException>(async () => await SocketTaskExtensions.SendAsync(s, new ArraySegment<byte>(buffer), SocketFlags.None));
             await Assert.ThrowsAsync<SocketException>(async () => await SocketTaskExtensions.SendAsync(s, buffer.AsMemory(), SocketFlags.None));

@@ -18,14 +18,9 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
         }
 
         [Fact]
+        [PlatformSpecific(TestPlatforms.Windows)] // Manifests are only supported on Windows OSes.
         public void MuxerRunsPortableAppWithoutWindowsOsShims()
         {
-            if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-            {
-                // Manifests are only supported on Windows OSes.
-                return;
-            }
-
             TestProjectFixture portableAppFixture = sharedTestState.TestWindowsOsShimsAppFixture.Copy();
 
             portableAppFixture.BuiltDotnet.Exec(portableAppFixture.TestProject.AppDll)
@@ -37,13 +32,9 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
         }
 
         [Fact]
+        [PlatformSpecific(TestPlatforms.Windows)]
         public void FrameworkDependent_DLL_LongPath_Succeeds()
         {
-            if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-            {
-                return;
-            }
-
             // Long paths must also be enabled via a machine-wide setting. Only run the test if it is enabled.
             using (RegistryKey key = Registry.LocalMachine.OpenSubKey(@"SYSTEM\CurrentControlSet\Control\FileSystem"))
             {

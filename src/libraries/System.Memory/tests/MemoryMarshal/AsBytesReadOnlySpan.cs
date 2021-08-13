@@ -12,7 +12,15 @@ namespace System.SpanTests
         [Fact]
         public static void ReadOnlySpan_AsBytesUIntToByte()
         {
-            uint[] a = { 0x44332211, 0x88776655 };
+            uint[] a;
+            if (BitConverter.IsLittleEndian)
+            {
+                a = new uint[] { 0x44332211, 0x88776655 };
+            }
+            else
+            {
+                a = new uint[] { 0x11223344, 0x55667788 };
+            }
             ReadOnlySpan<uint> span = new ReadOnlySpan<uint>(a);
             ReadOnlySpan<byte> asBytes = MemoryMarshal.AsBytes<uint>(span);
 

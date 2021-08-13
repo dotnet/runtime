@@ -130,10 +130,6 @@ struct SuspendStatistics
     ///////////////////////////////////////////////////////////////////////////////////////////////
     // And there are some "failure" cases that should never or almost never occur.
 
-    // number of times we have a collision between e.g. Debugger suspension & GC suspension.
-    // In these cases, everyone yields to the GC but at some cost.
-    int cntCollideRetry;
-
     // number of times the OS or Host was unable to ::SuspendThread a thread for us.  This count should be
     // approximately 0.
     int cntFailedSuspends;
@@ -187,18 +183,20 @@ public:
     } SUSPEND_REASON;
 
 private:
-    static SUSPEND_REASON    m_suspendReason;    // This contains the reason
-                                          // that the runtime was suspended
-    static Thread* m_pThreadAttemptingSuspendForGC;
+    static SUSPEND_REASON    m_suspendReason;    // This contains the reason why the runtime is suspended
 
-    static HRESULT SuspendRuntime(ThreadSuspend::SUSPEND_REASON reason);
-    static void    ResumeRuntime(BOOL bFinishedGC, BOOL SuspendSucceded);
+    static void SuspendRuntime(ThreadSuspend::SUSPEND_REASON reason);
+    static void ResumeRuntime(BOOL bFinishedGC, BOOL SuspendSucceded);
 public:
     // Initialize thread suspension support
-    static void    Initialize();
+    static void Initialize();
 
 private:
     static CLREvent * g_pGCSuspendEvent;
+
+#if defined(TARGET_WINDOWS) && defined(TARGET_AMD64)
+    static void* g_returnAddressHijackTarget;
+#endif // TARGET_WINDOWS && TARGET_AMD64
 
     // This is true iff we're currently in the process of suspending threads.  Once the
     // threads have been suspended, this is false.  This is set via an instance of
@@ -253,15 +251,14 @@ public:
         return g_pSuspensionThread;
     }
 
-private:
-    // This is used to avoid thread starvation if non-GC threads are competing for
-    // the thread store lock when there is a real GC-thread waiting to get in.
-    // This is initialized lazily when the first non-GC thread backs out because of
-    // a waiting GC thread.  The s_hAbortEvtCache is used to store the handle when
-    // it is not being used.
-    static CLREventBase *s_hAbortEvt;
-    static CLREventBase *s_hAbortEvtCache;
+#if defined(TARGET_WINDOWS) && defined(TARGET_AMD64)
+    static void* GetReturnAddressHijackTarget()
+    {
+        return g_returnAddressHijackTarget;
+    }
+#endif // TARGET_WINDOWS && TARGET_AMD64
 
+private:
     static LONG m_DebugWillSyncCount;
 };
 

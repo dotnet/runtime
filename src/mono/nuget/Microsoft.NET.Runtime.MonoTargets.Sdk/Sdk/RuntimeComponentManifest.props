@@ -1,0 +1,14 @@
+<Project>
+  <PropertyGroup>
+    <JsonToItemsTaskFactoryTasksAssemblyPath Condition="'$(MSBuildRuntimeType)' == 'Core'">$(MSBuildThisFileDirectory)..\tasks\net6.0\JsonToItemsTaskFactory.dll</JsonToItemsTaskFactoryTasksAssemblyPath>
+    <JsonToItemsTaskFactoryTasksAssemblyPath Condition="'$(MSBuildRuntimeType)' != 'Core'">$(MSBuildThisFileDirectory)..\tasks\net472\JsonToItemsTaskFactory.dll</JsonToItemsTaskFactoryTasksAssemblyPath>
+  </PropertyGroup>
+  <UsingTask TaskName="MonoRuntimeComponentManifestReadTask" TaskFactory="JsonToItemsTaskFactory.JsonToItemsTaskFactory" AssemblyFile="$(JsonToItemsTaskFactoryTasksAssemblyPath)">
+    <ParameterGroup>
+      <_MonoRuntimeComponentSharedLibExt ParameterType="Microsoft.Build.Framework.ITaskItem[]" Required="false" Output="true" />
+      <_MonoRuntimeComponentStaticLibExt ParameterType="Microsoft.Build.Framework.ITaskItem[]" Required="false" Output="true" />
+      <_MonoRuntimeComponentLinking ParameterType="Microsoft.Build.Framework.ITaskItem[]" Required="false" Output="true" />
+      <_MonoRuntimeAvailableComponents ParameterType="Microsoft.Build.Framework.ITaskItem[]" Required="false" Output="true" />
+    </ParameterGroup>
+  </UsingTask>
+</Project>

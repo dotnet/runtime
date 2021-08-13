@@ -1,5 +1,12 @@
 <Project DefaultTargets="Build">
   <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.props))" />
 
+  <ItemGroup>
+    <TestConsoleAppSourceFiles Include="ComObjectTypeTest.cs" />
+    <TestConsoleAppSourceFiles Include="InterfaceTypeTest.cs" />
+    <TestConsoleAppSourceFiles Include="TypeConverterIsReadOnly.cs" />
+    <TestConsoleAppSourceFiles Include="TypeConverterTest.cs" />
+  </ItemGroup>
+
   <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.targets))" />
 </Project>

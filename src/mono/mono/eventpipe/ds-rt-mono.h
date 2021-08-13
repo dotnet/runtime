@@ -6,45 +6,52 @@
 
 #ifdef ENABLE_PERFTRACING
 #include "ep-rt-mono.h"
+#include <mono/utils/mono-logger-internals.h>
 
 #undef DS_LOG_ALWAYS_0
-#define DS_LOG_ALWAYS_0(msg)
+#define DS_LOG_ALWAYS_0(msg) mono_trace(G_LOG_LEVEL_MESSAGE, MONO_TRACE_DIAGNOSTICS, msg)
 
 #undef DS_LOG_ALWAYS_1
-#define DS_LOG_ALWAYS_1(msg, data1)
+#define DS_LOG_ALWAYS_1(msg, data1) mono_trace(G_LOG_LEVEL_MESSAGE, MONO_TRACE_DIAGNOSTICS, msg, data1)
 
 #undef DS_LOG_ALWAYS_2
-#define DS_LOG_ALWAYS_2(msg, data1, data2)
+#define DS_LOG_ALWAYS_2(msg, data1, data2) mono_trace(G_LOG_LEVEL_MESSAGE, MONO_TRACE_DIAGNOSTICS, msg, data1, data2)
 
 #undef DS_LOG_INFO_0
-#define DS_LOG_INFO_0(msg)
+#define DS_LOG_INFO_0(msg) mono_trace(G_LOG_LEVEL_INFO, MONO_TRACE_DIAGNOSTICS, msg)
 
 #undef DS_LOG_INFO_1
-#define DS_LOG_INFO_1(msg, data1)
+#define DS_LOG_INFO_1(msg, data1) mono_trace(G_LOG_LEVEL_INFO, MONO_TRACE_DIAGNOSTICS, msg, data1)
 
 #undef DS_LOG_INFO_2
-#define DS_LOG_INFO_2(msg, data1, data2)
+#define DS_LOG_INFO_2(msg, data1, data2) mono_trace(G_LOG_LEVEL_INFO, MONO_TRACE_DIAGNOSTICS, msg, data1, data2)
 
 #undef DS_LOG_ERROR_0
-#define DS_LOG_ERROR_0(msg)
+#define DS_LOG_ERROR_0(msg) mono_trace(G_LOG_LEVEL_CRITICAL, MONO_TRACE_DIAGNOSTICS, msg)
 
 #undef DS_LOG_ERROR_1
-#define DS_LOG_ERROR_1(msg, data1)
+#define DS_LOG_ERROR_1(msg, data1) mono_trace(G_LOG_LEVEL_CRITICAL, MONO_TRACE_DIAGNOSTICS, msg, data1)
 
 #undef DS_LOG_ERROR_2
-#define DS_LOG_ERROR_2(msg, data1, data2)
+#define DS_LOG_ERROR_2(msg, data1, data2) mono_trace(G_LOG_LEVEL_CRITICAL, MONO_TRACE_DIAGNOSTICS, msg, data1, data2)
 
 #undef DS_LOG_WARNING_0
-#define DS_LOG_WARNING_0(msg)
+#define DS_LOG_WARNING_0(msg) mono_trace(G_LOG_LEVEL_WARNING, MONO_TRACE_DIAGNOSTICS, msg)
 
 #undef DS_LOG_WARNING_1
-#define DS_LOG_WARNING_1(msg, data1)
+#define DS_LOG_WARNING_1(msg, data1) mono_trace(G_LOG_LEVEL_WARNING, MONO_TRACE_DIAGNOSTICS, msg, data1)
 
 #undef DS_LOG_WARNING_2
-#define DS_LOG_WARNING_2(msg, data1, data2)
+#define DS_LOG_WARNING_2(msg, data1, data2) mono_trace(G_LOG_LEVEL_WARNING, MONO_TRACE_DIAGNOSTICS, msg, data1, data2)
 
 #undef DS_LOG_DEBUG_0
-#define DS_LOG_DEBUG_0(msg)
+#define DS_LOG_DEBUG_0(msg) mono_trace(G_LOG_LEVEL_DEBUG, MONO_TRACE_DIAGNOSTICS, msg)
+
+#undef DS_LOG_DEBUG_1
+#define DS_LOG_DEBUG_1(msg, data1) mono_trace(G_LOG_LEVEL_DEBUG, MONO_TRACE_DIAGNOSTICS, msg, data1)
+
+#undef DS_LOG_DEBUG_2
+#define DS_LOG_DEBUG_2(msg, data1, data2) mono_trace(G_LOG_LEVEL_DEBUG, MONO_TRACE_DIAGNOSTICS, msg, data1, data2)
 
 #undef DS_ENTER_BLOCKING_PAL_SECTION
 #define DS_ENTER_BLOCKING_PAL_SECTION \
@@ -128,7 +135,9 @@ bool
 ds_rt_config_value_get_enable (void)
 {
 	bool enable = true;
-	gchar *value = g_getenv ("COMPlus_EnableDiagnostics");
+	gchar *value = g_getenv ("DOTNET_EnableDiagnostics");
+	if (!value)
+		value = g_getenv ("COMPlus_EnableDiagnostics");
 	if (value && atoi (value) == 0)
 		enable = false;
 	g_free (value);
@@ -226,6 +235,34 @@ ds_rt_profiler_attach (DiagnosticsAttachProfilerCommandPayload *payload)
 {
 	// TODO: Implement.
 	return DS_IPC_E_NOTSUPPORTED;
+}
+
+static
+inline
+uint32_t
+ds_rt_profiler_startup (DiagnosticsStartupProfilerCommandPayload *payload)
+{
+	// TODO: Implement.
+	return DS_IPC_E_NOTSUPPORTED;
+}
+
+/*
+* Environment variables
+*/
+
+static
+uint32_t
+ds_rt_set_environment_variable (const ep_char16_t *name, const ep_char16_t *value)
+{
+	gchar *nameNarrow = ep_rt_utf16_to_utf8_string (name, ep_rt_utf16_string_len (name));
+	gchar *valueNarrow = ep_rt_utf16_to_utf8_string (value, ep_rt_utf16_string_len (value));
+
+	gboolean success = g_setenv(nameNarrow, valueNarrow, true);
+
+	g_free (nameNarrow);
+	g_free (valueNarrow);
+
+	return success ? DS_IPC_S_OK : DS_IPC_E_FAIL;
 }
 
 /*

@@ -19,6 +19,8 @@ namespace ILCompiler
 {
     public sealed class ReadyToRunCodegenCompilationBuilder : CompilationBuilder
     {
+        private static bool _isJitInitialized = false;
+
         private readonly IEnumerable<string> _inputFiles;
         private readonly string _compositeRootPath;
         private bool _ibcTuning;
@@ -29,7 +31,7 @@ namespace ILCompiler
         private string _pdbPath;
         private bool _generatePerfMapFile;
         private string _perfMapPath;
-        private Guid? _perfMapMvid;
+        private int _perfMapFormatVersion;
         private bool _generateProfileFile;
         private int _parallelism;
         Func<MethodDesc, string> _printReproInstructions;
@@ -39,6 +41,7 @@ namespace ILCompiler
         private ReadyToRunFileLayoutAlgorithm _r2rFileLayoutAlgorithm;
         private int _customPESectionAlignment;
         private bool _verifyTypeAndFieldLayout;
+        private CompositeImageSettings _compositeImageSettings;
 
         private string _jitPath;
         private string _outputFile;
@@ -80,6 +83,11 @@ namespace ILCompiler
                 string value = param.Substring(indexOfEquals + 1);
 
                 builder.Add(new KeyValuePair<string, string>(name, value));
+            }
+
+            if (_context.Target.Abi == TargetAbi.CoreRTArmel)
+            {
+                builder.Add(new KeyValuePair<string, string>("JitSoftFP", "1"));
             }
 
             _ryujitOptions = builder.ToArray();
@@ -148,11 +156,11 @@ namespace ILCompiler
             return this;
         }
 
-        public ReadyToRunCodegenCompilationBuilder UsePerfMapFile(bool generatePerfMapFile, string perfMapPath, Guid? inputModuleMvid)
+        public ReadyToRunCodegenCompilationBuilder UsePerfMapFile(bool generatePerfMapFile, string perfMapPath, int perfMapFormatVersion)
         {
             _generatePerfMapFile = generatePerfMapFile;
             _perfMapPath = perfMapPath;
-            _perfMapMvid = inputModuleMvid;
+            _perfMapFormatVersion = perfMapFormatVersion;
             return this;
         }
 
@@ -198,6 +206,12 @@ namespace ILCompiler
             return this;
         }
 
+        public ReadyToRunCodegenCompilationBuilder UseCompositeImageSettings(CompositeImageSettings compositeImageSettings)
+        {
+            _compositeImageSettings = compositeImageSettings;
+            return this;
+        }
+
         public override ICompilation ToCompilation()
         {
             // TODO: only copy COR headers for single-assembly build and for composite build with embedded MSIL
@@ -234,13 +248,15 @@ namespace ILCompiler
 
             NodeFactory factory = new NodeFactory(
                 _context,
-                _compilationGroup,
+                (ReadyToRunCompilationModuleGroupBase)_compilationGroup,
                 _profileData,
                 _nameMangler,
                 corHeaderNode,
                 debugDirectoryNode,
                 win32Resources,
                 flags);
+
+            factory.CompositeImageSettings = _compositeImageSettings;
 
             IComparer<DependencyNodeCore<NodeFactory>> comparer = new SortableDependencyNode.ObjectNodeComparer(new CompilerComparer());
             DependencyAnalyzerBase<NodeFactory> graph = CreateDependencyGraph(factory, comparer);
@@ -272,7 +288,11 @@ namespace ILCompiler
             if (_ibcTuning)
                 corJitFlags.Add(CorJitFlag.CORJIT_FLAG_BBINSTR);
 
-            JitConfigProvider.Initialize(_context.Target, corJitFlags, _ryujitOptions, _jitPath);
+            if (!_isJitInitialized)
+            {
+                JitConfigProvider.Initialize(_context.Target, corJitFlags, _ryujitOptions, _jitPath);
+                _isJitInitialized = true;
+            }
 
             return new ReadyToRunCodegenCompilation(
                 graph,
@@ -292,7 +312,7 @@ namespace ILCompiler
                 pdbPath: _pdbPath,
                 generatePerfMapFile: _generatePerfMapFile,
                 perfMapPath: _perfMapPath,
-                perfMapMvid: _perfMapMvid,
+                perfMapFormatVersion: _perfMapFormatVersion,
                 generateProfileFile: _generateProfileFile,
                 _parallelism,
                 _profileData,

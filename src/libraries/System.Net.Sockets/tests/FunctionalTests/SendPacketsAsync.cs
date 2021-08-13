@@ -705,7 +705,7 @@ namespace System.Net.Sockets.Tests
                             bytesReceived += sock.Receive(contentActual, bytesReceived, bytesExpected-bytesReceived, SocketFlags.None);
                         }
                         Assert.Equal(bytesExpected, bytesReceived);
-                        Assert.Equal(contentExpected, contentActual);
+                        AssertExtensions.SequenceEqual(contentExpected, contentActual);
                     }
                 }
             }

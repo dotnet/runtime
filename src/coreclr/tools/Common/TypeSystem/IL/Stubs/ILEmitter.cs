@@ -620,7 +620,7 @@ namespace Internal.IL.Stubs
         {
             return _locals;
         }
-        public override Object GetObject(int token)
+        public override Object GetObject(int token, NotFoundBehavior notFoundBehavior)
         {
             return _tokens[(token & 0xFFFFFF) - 1];
         }

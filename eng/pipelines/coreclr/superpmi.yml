@@ -6,7 +6,7 @@ trigger:
   batch: false
   branches:
     include:
-    - master
+    - main
   paths:
     include:
     - src/coreclr/inc/jiteeversionguid.h
@@ -20,7 +20,7 @@ schedules:
   displayName: Sun at 9:00 AM (UTC-8:00)
   branches:
     include:
-    - master
+    - main
   always: true
 
 jobs:
@@ -41,6 +41,10 @@ jobs:
     - CoreClrTestBuildHost # Either OSX_x64 or Linux_x64
     jobParameters:
       testGroup: outerloop
+      # libraries test build platforms
+      testBuildPlatforms:
+      - Linux_x64
+      - windows_x64
 
 - template: /eng/pipelines/common/platform-matrix.yml
   parameters:
@@ -86,13 +90,14 @@ jobs:
     - windows_x64
     - windows_x86
     - windows_arm64
+    - CoreClrTestBuildHost # Either OSX_x64 or Linux_x64
     helixQueueGroup: ci
     helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
     jobParameters:
       testGroup: outerloop
       liveLibrariesBuildConfig: Release
-      collectionType: crossgen
-      collectionName: libraries
+      collectionType: pmi
+      collectionName: coreclr_tests
 
 - template: /eng/pipelines/common/platform-matrix.yml
   parameters:
@@ -114,7 +119,7 @@ jobs:
       testGroup: outerloop
       liveLibrariesBuildConfig: Release
       collectionType: pmi
-      collectionName: tests
+      collectionName: libraries_tests
 
 - template: /eng/pipelines/common/platform-matrix.yml
   parameters:
@@ -123,10 +128,9 @@ jobs:
     platforms:
     # Linux tests are built on the OSX machines.
     # - OSX_x64
-    # TODO: Linux crossgen2 jobs crash during collection, and need to be investigated.
-    # - Linux_arm
-    # - Linux_arm64
-    # - Linux_x64
+    - Linux_arm
+    - Linux_arm64
+    - Linux_x64
     - windows_x64
     - windows_x86
     - windows_arm64
@@ -152,7 +156,6 @@ jobs:
     - windows_x64
     - windows_x86
     - windows_arm64
-    - CoreClrTestBuildHost # Either OSX_x64 or Linux_x64
     helixQueueGroup: ci
     helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
     jobParameters:

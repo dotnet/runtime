@@ -44,7 +44,6 @@
 #include "ir-emit.h"
 #include "mini-amd64.h"
 #include "cpu-amd64.h"
-#include "debugger-agent.h"
 #include "mini-gc.h"
 #include "mini-runtime.h"
 #include "aot-runtime.h"
@@ -3391,6 +3390,13 @@ simd_type_to_comp_op (int t)
 	case MONO_TYPE_I8:
 	case MONO_TYPE_U8:
 		return OP_PCMPEQQ; // SSE 4.1
+	case MONO_TYPE_I:
+	case MONO_TYPE_U:
+#if TARGET_SIZEOF_VOID_P == 8
+		return OP_PCMPEQQ; // SSE 4.1
+#else
+		return OP_PCMPEQD;
+#endif
 	default:
 		g_assert_not_reached ();
 		return -1;
@@ -3413,6 +3419,13 @@ simd_type_to_sub_op (int t)
 	case MONO_TYPE_I8:
 	case MONO_TYPE_U8:
 		return OP_PSUBQ;
+	case MONO_TYPE_I:
+	case MONO_TYPE_U:
+#if TARGET_SIZEOF_VOID_P == 8
+		return OP_PSUBQ;
+#else
+		return OP_PSUBD;
+#endif
 	default:
 		g_assert_not_reached ();
 		return -1;
@@ -3432,6 +3445,13 @@ simd_type_to_shl_op (int t)
 	case MONO_TYPE_I8:
 	case MONO_TYPE_U8:
 		return OP_PSHLQ;
+	case MONO_TYPE_I:
+	case MONO_TYPE_U:
+#if TARGET_SIZEOF_VOID_P == 8
+		return OP_PSHLD;
+#else
+		return OP_PSHLQ;
+#endif
 	default:
 		g_assert_not_reached ();
 		return -1;
@@ -3454,6 +3474,13 @@ simd_type_to_gt_op (int t)
 	case MONO_TYPE_I8:
 	case MONO_TYPE_U8:
 		return OP_PCMPGTQ; // SSE 4.2
+	case MONO_TYPE_I:
+	case MONO_TYPE_U:
+#if TARGET_SIZEOF_VOID_P == 8
+		return OP_PCMPGTQ; // SSE 4.2
+#else
+		return OP_PCMPGTD;
+#endif
 	default:
 		g_assert_not_reached ();
 		return -1;
@@ -3472,6 +3499,13 @@ simd_type_to_max_un_op (int t)
 		return OP_PMAXD_UN; // SSE 4.1
 	//case MONO_TYPE_U8:
 	//	return OP_PMAXQ_UN; // AVX
+#if TARGET_SIZEOF_VOID_P == 8
+	//case MONO_TYPE_U:
+	//	return OP_PMAXQ_UN; // AVX
+#else
+	case MONO_TYPE_U:
+		return OP_PMAXD_UN; // SSE 4.1
+#endif
 	default:
 		g_assert_not_reached ();
 		return -1;
@@ -3494,6 +3528,13 @@ simd_type_to_add_op (int t)
 	case MONO_TYPE_I8:
 	case MONO_TYPE_U8:
 		return OP_PADDQ;
+	case MONO_TYPE_I:
+	case MONO_TYPE_U:
+#if TARGET_SIZEOF_VOID_P == 8
+		return OP_PADDQ;
+#else
+		return OP_PADDD;
+#endif
 	default:
 		g_assert_not_reached ();
 		return -1;
@@ -3518,6 +3559,15 @@ simd_type_to_min_op (int t)
 		return OP_PMIND_UN; // SSE 4.1
 	// case MONO_TYPE_I8: // AVX
 	// case MONO_TYPE_U8:
+#if TARGET_SIZEOF_VOID_P == 8
+	//case MONO_TYPE_I: // AVX
+	//case MONO_TYPE_U:
+#else
+	case MONO_TYPE_I:
+		return OP_PMIND; // SSE 4.1
+	case MONO_TYPE_U:
+		return OP_PMIND_UN; // SSE 4.1
+#endif
 	default:
 		g_assert_not_reached ();
 		return -1;
@@ -3542,6 +3592,15 @@ simd_type_to_max_op (int t)
 		return OP_PMAXD_UN; // SSE 4.1
 	// case MONO_TYPE_I8: // AVX
 	// case MONO_TYPE_U8:
+#if TARGET_SIZEOF_VOID_P == 8
+	//case MONO_TYPE_I: // AVX
+	//case MONO_TYPE_U:
+#else
+	case MONO_TYPE_I:
+		return OP_PMAXD; // SSE 4.1
+	case MONO_TYPE_U:
+		return OP_PMAXD_UN; // SSE 4.1
+#endif
 	default:
 		g_assert_not_reached ();
 		return -1;
@@ -3552,8 +3611,13 @@ static void
 emit_simd_comp_op (MonoCompile *cfg, MonoBasicBlock *bb, MonoInst *ins, int type, int dreg, int sreg1, int sreg2)
 {
 	MonoInst *temp;
+	gboolean is64BitNativeInt = FALSE;
 
-	if (!mono_hwcap_x86_has_sse42 && (ins->inst_c1 == MONO_TYPE_I8 || ins->inst_c1 == MONO_TYPE_U8)) {
+#if TARGET_SIZEOF_VOID_P == 8
+	is64BitNativeInt = ins->inst_c1 == MONO_TYPE_I || ins->inst_c1 == MONO_TYPE_U;
+#endif
+
+	if (!mono_hwcap_x86_has_sse42 && (ins->inst_c1 == MONO_TYPE_I8 || ins->inst_c1 == MONO_TYPE_U8 || is64BitNativeInt)) {
 		int temp_reg1 = mono_alloc_ireg (cfg);
 		int temp_reg2 = mono_alloc_ireg (cfg);
 
@@ -3613,6 +3677,15 @@ emit_simd_gt_un_op (MonoCompile *cfg, MonoBasicBlock *bb, MonoInst *ins, int typ
 			NEW_SIMD_INS (cfg, ins, temp, simd_type_to_sub_op (type), temp_s2, sreg2, temp_c80);
 			emit_simd_gt_op (cfg, bb, ins, type, dreg, temp_s1, temp_s2);
 			break;
+
+		case MONO_TYPE_U:
+#if TARGET_SIZEOF_VOID_P == 8
+			goto USE_SIGNED_GT;
+#else
+			if (mono_hwcap_x86_has_sse41)
+				goto USE_MAX;
+			goto USE_SIGNED_GT;
+#endif
 		}
 	}
 }
@@ -3621,8 +3694,13 @@ static void
 emit_simd_gt_op (MonoCompile *cfg, MonoBasicBlock *bb, MonoInst *ins, int type, int dreg, int sreg1, int sreg2)
 {
 	MonoInst *temp;
+	gboolean is64BitNativeInt = FALSE;
 
-	if (!mono_hwcap_x86_has_sse42 && (type == MONO_TYPE_I8 || type == MONO_TYPE_U8)) {
+#if TARGET_SIZEOF_VOID_P == 8
+	is64BitNativeInt = ins->inst_c1 == MONO_TYPE_I || ins->inst_c1 == MONO_TYPE_U;
+#endif
+
+	if (!mono_hwcap_x86_has_sse42 && (type == MONO_TYPE_I8 || type == MONO_TYPE_U8 || is64BitNativeInt)) {
 		// Decompose 64-bit greater than to 32-bit
 		//
 		// t = (v1 > v2)
@@ -3663,11 +3741,16 @@ static void
 emit_simd_min_op (MonoCompile *cfg, MonoBasicBlock *bb, MonoInst *ins, int type, int dreg, int sreg1, int sreg2)
 {
 	MonoInst *temp;
+	gboolean is64BitNativeInt = FALSE;
+
+#if TARGET_SIZEOF_VOID_P == 8
+	is64BitNativeInt = ins->inst_c1 == MONO_TYPE_I || ins->inst_c1 == MONO_TYPE_U;
+#endif
 
 	if (type == MONO_TYPE_I2 || type == MONO_TYPE_U2) {
 		// SSE2, so always available
 		NEW_SIMD_INS (cfg, ins, temp, simd_type_to_min_op (type), dreg, sreg1, sreg2);
-	} else if (!mono_hwcap_x86_has_sse41 || type == MONO_TYPE_I8 || type == MONO_TYPE_U8) {
+	} else if (!mono_hwcap_x86_has_sse41 || type == MONO_TYPE_I8 || type == MONO_TYPE_U8 || is64BitNativeInt) {
 		// Decompose to t = (s1 > s2), d = (s1 & !t) | (s2 & t)
 		int temp_t = mono_alloc_ireg (cfg);
 		int temp_d1 = mono_alloc_ireg (cfg);
@@ -3689,11 +3772,16 @@ static void
 emit_simd_max_op (MonoCompile *cfg, MonoBasicBlock *bb, MonoInst *ins, int type, int dreg, int sreg1, int sreg2)
 {
 	MonoInst *temp;
+	gboolean is64BitNativeInt = FALSE;
+
+#if TARGET_SIZEOF_VOID_P == 8
+	is64BitNativeInt = ins->inst_c1 == MONO_TYPE_I || ins->inst_c1 == MONO_TYPE_U;
+#endif
 
 	if (type == MONO_TYPE_I2 || type == MONO_TYPE_U2) {
 		// SSE2, so always available
 		NEW_SIMD_INS (cfg, ins, temp, simd_type_to_max_op (type), dreg, sreg1, sreg2);
-	} else if (!mono_hwcap_x86_has_sse41 || type == MONO_TYPE_I8 || type == MONO_TYPE_U8) {
+	} else if (!mono_hwcap_x86_has_sse41 || type == MONO_TYPE_I8 || type == MONO_TYPE_U8 || is64BitNativeInt) {
 		// Decompose to t = (s1 > s2), d = (s1 & t) | (s2 & !t)
 		int temp_t = mono_alloc_ireg (cfg);
 		int temp_d1 = mono_alloc_ireg (cfg);
@@ -3817,6 +3905,7 @@ mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 
 		case OP_XCOMPARE: {
 			int temp_reg;
+			gboolean is64BitNativeInt = FALSE;
 
 			switch (ins->inst_c0)
 			{
@@ -3867,7 +3956,11 @@ mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 				ins->sreg1 = ins->sreg2;
 				ins->sreg2 = temp_reg;
 			case CMP_GE_UN:
-				if (mono_hwcap_x86_has_sse41 && ins->inst_c1 != MONO_TYPE_U8) {
+#if TARGET_SIZEOF_VOID_P == 8
+				is64BitNativeInt = ins->inst_c1 == MONO_TYPE_U;
+#endif
+
+				if (mono_hwcap_x86_has_sse41 && ins->inst_c1 != MONO_TYPE_U8 && !is64BitNativeInt) {
 					int temp_reg1 = mono_alloc_ireg (cfg);
 
 					NEW_SIMD_INS (cfg, ins, temp, simd_type_to_max_un_op (ins->inst_c1), temp_reg1, ins->sreg1, ins->sreg2);
@@ -3982,8 +4075,8 @@ mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 
 		case OP_XEXTRACT_R4:
 		case OP_XEXTRACT_R8:
-		case OP_XEXTRACT_I32:
-		case OP_XEXTRACT_I64: {
+		case OP_XEXTRACT_I4:
+		case OP_XEXTRACT_I8: {
 			// TODO
 			g_assert_not_reached();
 			break;
@@ -7141,19 +7234,17 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			}
 			break;
 		case OP_EXTRACT_I1:
-		case OP_EXTRACT_U1:
 			amd64_movd_reg_xreg_size (code, ins->dreg, ins->sreg1, 4);
 			if (ins->inst_c0)
 				amd64_shift_reg_imm (code, X86_SHR, ins->dreg, ins->inst_c0 * 8);
-			amd64_widen_reg (code, ins->dreg, ins->dreg, ins->opcode == OP_EXTRACT_I1, FALSE);
+			amd64_widen_reg (code, ins->dreg, ins->dreg, ins->inst_c1 == MONO_TYPE_I1, FALSE);
 			break;
 		case OP_EXTRACT_I2:
-		case OP_EXTRACT_U2:
 			/*amd64_movd_reg_xreg_size (code, ins->dreg, ins->sreg1, 4);
 			if (ins->inst_c0)
 				amd64_shift_reg_imm_size (code, X86_SHR, ins->dreg, 16, 4);*/
 			amd64_sse_pextrw_reg_reg_imm (code, ins->dreg, ins->sreg1, ins->inst_c0);
-			amd64_widen_reg_size (code, ins->dreg, ins->dreg, ins->opcode == OP_EXTRACT_I2, TRUE, 4);
+			amd64_widen_reg_size (code, ins->dreg, ins->dreg, ins->inst_c1 == MONO_TYPE_I2, TRUE, 4);
 			break;
 		case OP_EXTRACT_R8:
 			if (ins->inst_c0)
@@ -7815,7 +7906,7 @@ MONO_RESTORE_WARNING
 
 				/*
 				 * Save the original location of 'this',
-				 * get_generic_info_from_stack_frame () needs this to properly look up
+				 * mono_get_generic_info_from_stack_frame () needs this to properly look up
 				 * the argument value during the handling of async exceptions.
 				 */
 				if (i == 0 && sig->hasthis) {
@@ -8325,7 +8416,7 @@ mono_arch_get_patch_offset (guint8 *code)
 }
 
 /**
- * \return TRUE if no sw breakpoint was present.
+ * \return TRUE if no sw breakpoint was present (always).
  *
  * Copy \p size bytes from \p code - \p offset to the buffer \p buf. If the debugger inserted software
  * breakpoints in the original code, they are removed in the copy.
@@ -8618,6 +8709,7 @@ mono_arch_build_imt_trampoline (MonoVTable *vtable, MonoIMTCheckItem **imt_entri
 	guint8 *code, *start;
 	gboolean vtable_is_32bit = ((gsize)(vtable) == (gsize)(int)(gsize)(vtable));
 	GSList *unwind_ops;
+	MonoMemoryManager *mem_manager = m_class_get_mem_manager (vtable->klass);
 
 	for (i = 0; i < count; ++i) {
 		MonoIMTCheckItem *item = imt_entries [i];
@@ -8666,7 +8758,6 @@ mono_arch_build_imt_trampoline (MonoVTable *vtable, MonoIMTCheckItem **imt_entri
 	if (fail_tramp) {
 		code = (guint8 *)mini_alloc_generic_virtual_trampoline (vtable, size + MONO_TRAMPOLINE_UNWINDINFO_SIZE(0));
 	} else {
-		MonoMemoryManager *mem_manager = m_class_get_mem_manager (vtable->klass);
 		code = (guint8 *)mono_mem_manager_code_reserve (mem_manager, size + MONO_TRAMPOLINE_UNWINDINFO_SIZE(0));
 	}
 	start = code;
@@ -8763,7 +8854,7 @@ mono_arch_build_imt_trampoline (MonoVTable *vtable, MonoIMTCheckItem **imt_entri
 
 	MONO_PROFILER_RAISE (jit_code_buffer, (start, code - start, MONO_PROFILER_CODE_BUFFER_IMT_TRAMPOLINE, NULL));
 
-	mono_tramp_info_register (mono_tramp_info_create (NULL, start, code - start, NULL, unwind_ops), NULL);
+	mono_tramp_info_register (mono_tramp_info_create (NULL, start, code - start, NULL, unwind_ops), mem_manager);
 
 	return start;
 }
@@ -8871,6 +8962,8 @@ mono_arch_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMetho
 				ins->inst_c1 = MONO_TYPE_R8;
 				int dreg = alloc_freg (cfg);
 				EMIT_NEW_UNALU (cfg, ins, OP_EXTRACT_R8, dreg, xreg);
+				ins->inst_c0 = 0;
+				ins->inst_c1 = MONO_TYPE_R8;
 				return ins;
 			}
 		}
@@ -8884,6 +8977,12 @@ host_mgreg_t
 mono_arch_context_get_int_reg (MonoContext *ctx, int reg)
 {
 	return ctx->gregs [reg];
+}
+
+host_mgreg_t *
+mono_arch_context_get_int_reg_address (MonoContext *ctx, int reg)
+{
+	return &ctx->gregs [reg];
 }
 
 void
@@ -8936,7 +9035,7 @@ mono_arch_set_breakpoint (MonoJitInfo *ji, guint8 *ip)
 
 	if (ji->from_aot) {
 		guint32 native_offset = ip - (guint8*)ji->code_start;
-		SeqPointInfo *info = mono_arch_get_seq_point_info (mono_domain_get (), (guint8 *)ji->code_start);
+		SeqPointInfo *info = mono_arch_get_seq_point_info ((guint8 *)ji->code_start);
 
 		g_assert (info->bp_addrs [native_offset] == 0);
 		info->bp_addrs [native_offset] = mini_get_breakpoint_trampoline ();
@@ -8960,7 +9059,7 @@ mono_arch_clear_breakpoint (MonoJitInfo *ji, guint8 *ip)
 
 	if (ji->from_aot) {
 		guint32 native_offset = ip - (guint8*)ji->code_start;
-		SeqPointInfo *info = mono_arch_get_seq_point_info (mono_domain_get (), (guint8 *)ji->code_start);
+		SeqPointInfo *info = mono_arch_get_seq_point_info ((guint8 *)ji->code_start);
 
 		info->bp_addrs [native_offset] = NULL;
 	} else {
@@ -9041,7 +9140,7 @@ mono_arch_skip_single_step (MonoContext *ctx)
  * point implementation in AOTed code.
  */
 SeqPointInfo*
-mono_arch_get_seq_point_info (MonoDomain *domain, guint8 *code)
+mono_arch_get_seq_point_info (guint8 *code)
 {
 	SeqPointInfo *info;
 	MonoJitInfo *ji;

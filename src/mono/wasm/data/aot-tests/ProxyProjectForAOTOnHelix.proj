@@ -1,0 +1,51 @@
+<Project DefaultTargets="BundleTestWasmApp">
+  <Import Project="Directory.Build.props" />
+  <PropertyGroup>
+    <TestRootDir Condition="'$(HELIX_WORKITEM_ROOT)' != ''">$(HELIX_WORKITEM_ROOT)\wasm_build\</TestRootDir>
+    <TestRootDir Condition="'$(HELIX_WORKITEM_ROOT)' == ''">$(MSBuildThisFileDirectory)..\wasm_build\</TestRootDir>
+
+    <RunAOTCompilation Condition="'$(RunAOTCompilation)' == ''">true</RunAOTCompilation>
+    <OriginalPublishDir>$(TestRootDir)..\publish\</OriginalPublishDir>
+    <ExtraFilesPath>$(OriginalPublishDir)..\extraFiles\</ExtraFilesPath>
+    <IntermediateOutputPath>$(TestRootDir)\obj\</IntermediateOutputPath>
+
+    <WasmStripAOTAssemblies>false</WasmStripAOTAssemblies>
+    <WasmNativeDebugSymbols>true</WasmNativeDebugSymbols>
+    <WasmNativeStrip>false</WasmNativeStrip>
+    <WasmBuildAppDependsOn>PrepareForWasmBuildApp;$(WasmBuildAppDependsOn)</WasmBuildAppDependsOn>
+
+    <_PropsFile>$(MSBuildThisFileDirectory)$(MSBuildThisFileName).props</_PropsFile>
+  </PropertyGroup>
+
+  <Import Project="$(_PropsFile)" />
+
+  <Target Name="BundleTestWasmApp" DependsOnTargets="WasmBuildApp" />
+
+  <Target Name="PrepareForWasmBuildApp">
+    <Message Text="** Building a proxy for the original test project, to AOT on helix. In order to do that, this recreates the original inputs for the *wasm* part of the build. See $(MSBuildThisFileFullPath), and $(_PropsFile). **"
+             Importance="High" />
+
+    <PropertyGroup>
+      <WasmAppDir>$(TestRootDir)AppBundle\</WasmAppDir>
+      <WasmMainAssemblyFileName>$(OriginalPublishDir)WasmTestRunner.dll</WasmMainAssemblyFileName>
+      <WasmMainJSPath>$(OriginalPublishDir)runtime-test.js</WasmMainJSPath>
+      <WasmGenerateRunV8Script Condition="'$(WasmGenerateRunV8Script)' == ''">true</WasmGenerateRunV8Script>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <WasmAssembliesToBundle Include="$(OriginalPublishDir)**\*.dll" />
+
+      <_ExtraFiles Include="$(ExtraFilesPath)**\*" />
+      <WasmFilesToIncludeInFileSystem Include="@(_ExtraFiles)" TargetPath="%(RecursiveDir)%(FileName)%(Extension)" />
+    </ItemGroup>
+
+    <ItemGroup Condition="'$(IncludeSatelliteAssembliesInVFS)' == 'true'">
+      <_SatelliteAssembliesForVFS Include="$(OriginalPublishDir)**\*.resources.dll" />
+      <_SatelliteAssembliesForVFS CultureName="$([System.IO.Directory]::GetParent('%(Identity)').Name)" />
+      <_SatelliteAssembliesForVFS TargetPath="%(CultureName)\%(FileName)%(Extension)" />
+
+      <WasmFilesToIncludeInFileSystem Include="@(_SatelliteAssembliesForVFS)" />
+    </ItemGroup>
+  </Target>
+  <Import Project="Directory.Build.targets" />
+</Project>

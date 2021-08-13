@@ -123,7 +123,7 @@ namespace System.Net.Sockets.Tests
         }
 
         [OuterLoop("Connects to external server")]
-        [PlatformSpecific(~(TestPlatforms.OSX | TestPlatforms.FreeBSD))] // Not supported on BSD like OSes.
+        [SkipOnPlatform(TestPlatforms.OSX | TestPlatforms.FreeBSD, "Not supported on BSD like OSes.")]
         [Theory]
         [InlineData("1.1.1.1", false)]
         [InlineData("1.1.1.1", true)]
@@ -150,7 +150,7 @@ namespace System.Net.Sockets.Tests
                 msDelay *= 2;
                 Task disposeTask = Task.Run(() => client.Dispose());
 
-                await Task.WhenAny(disposeTask, connectTask).TimeoutAfter(30000);
+                await Task.WhenAny(disposeTask, connectTask).WaitAsync(TimeSpan.FromSeconds(30));
                 await disposeTask;
 
                 SocketError? localSocketError = null;
@@ -340,5 +340,90 @@ namespace System.Net.Sockets.Tests
                 await Assert.ThrowsAnyAsync<OperationCanceledException>(async () => await t);
             }
         }
+    }
+
+    // The test class is declared non-parallel because of possible IPv4/IPv6 port-collision on Unix:
+    // When running these tests in parallel with other tests, there is some chance that the DualMode client
+    // will connect to an IPv4 server of a parallel test case.
+    [Collection(nameof(NoParallelTests))]
+    public abstract class Connect_NonParallel<T> : SocketTestHelperBase<T> where T : SocketHelperBase, new()
+    {
+        protected Connect_NonParallel(ITestOutputHelper output) : base(output)
+        {
+        }
+
+        [Fact]
+        public async Task Connect_DualMode_MultiAddressFamilyConnect_RetrievedEndPoints_Success()
+        {
+            if (!SupportsMultiConnect)
+                return;
+
+            int port;
+            using (SocketTestServer.SocketTestServerFactory(SocketImplementationType.Async, IPAddress.Loopback, out port))
+            using (Socket client = new Socket(SocketType.Stream, ProtocolType.Tcp))
+            {
+                Assert.True(client.DualMode);
+
+                await MultiConnectAsync(client, new IPAddress[] { IPAddress.IPv6Loopback, IPAddress.Loopback }, port);
+
+                CheckIsIpv6LoopbackEndPoint(client.LocalEndPoint);
+                CheckIsIpv6LoopbackEndPoint(client.RemoteEndPoint);
+            }
+        }
+
+        [Fact]
+        public async Task Connect_DualMode_DnsConnect_RetrievedEndPoints_Success()
+        {
+            var localhostAddresses = Dns.GetHostAddresses("localhost");
+            if (Array.IndexOf(localhostAddresses, IPAddress.Loopback) == -1 ||
+                Array.IndexOf(localhostAddresses, IPAddress.IPv6Loopback) == -1)
+            {
+                return;
+            }
+
+            int port;
+            using (SocketTestServer.SocketTestServerFactory(SocketImplementationType.Async, IPAddress.Loopback, out port))
+            using (Socket client = new Socket(SocketType.Stream, ProtocolType.Tcp))
+            {
+                Assert.True(client.DualMode);
+
+                await ConnectAsync(client, new DnsEndPoint("localhost", port));
+
+                CheckIsIpv6LoopbackEndPoint(client.LocalEndPoint);
+                CheckIsIpv6LoopbackEndPoint(client.RemoteEndPoint);
+            }
+        }
+
+        private static void CheckIsIpv6LoopbackEndPoint(EndPoint endPoint)
+        {
+            IPEndPoint ep = endPoint as IPEndPoint;
+            Assert.NotNull(ep);
+            Assert.True(ep.Address.Equals(IPAddress.IPv6Loopback) || ep.Address.Equals(IPAddress.Loopback.MapToIPv6()));
+        }
+    }
+
+    public sealed class ConnectSync_NonParallel : Connect_NonParallel<SocketHelperArraySync>
+    {
+        public ConnectSync_NonParallel(ITestOutputHelper output) : base(output) { }
+    }
+
+    public sealed class ConnectSyncForceNonBlocking_NonParallel : Connect_NonParallel<SocketHelperSyncForceNonBlocking>
+    {
+        public ConnectSyncForceNonBlocking_NonParallel(ITestOutputHelper output) : base(output) { }
+    }
+
+    public sealed class ConnectApm_NonParallel : Connect_NonParallel<SocketHelperApm>
+    {
+        public ConnectApm_NonParallel(ITestOutputHelper output) : base(output) { }
+    }
+
+    public sealed class ConnectTask_NonParallel : Connect_NonParallel<SocketHelperTask>
+    {
+        public ConnectTask_NonParallel(ITestOutputHelper output) : base(output) { }
+    }
+
+    public sealed class ConnectEap_NonParallel : Connect_NonParallel<SocketHelperEap>
+    {
+        public ConnectEap_NonParallel(ITestOutputHelper output) : base(output) { }
     }
 }

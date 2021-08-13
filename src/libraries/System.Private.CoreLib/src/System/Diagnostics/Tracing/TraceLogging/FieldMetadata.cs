@@ -15,7 +15,7 @@ namespace System.Diagnostics.Tracing
     /// TraceLogging: Contains the information needed to generate tracelogging
     /// metadata for an event field.
     /// </summary>
-    internal class FieldMetadata
+    internal sealed class FieldMetadata
     {
         /// <summary>
         /// Name of the field

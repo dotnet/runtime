@@ -648,7 +648,7 @@ namespace System.Formats.Asn1
             }
         }
 
-        private class ArrayIndexSetOfValueComparer : IComparer<(int, int)>
+        private sealed class ArrayIndexSetOfValueComparer : IComparer<(int, int)>
         {
             private readonly byte[] _data;
 

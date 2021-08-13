@@ -102,7 +102,7 @@ PhaseStatus Compiler::fgRemoveEmptyFinally()
         // Limit for now to finallys that contain only a GT_RETFILT.
         bool isEmpty = true;
 
-        for (Statement* stmt : firstBlock->Statements())
+        for (Statement* const stmt : firstBlock->Statements())
         {
             GenTree* stmtExpr = stmt->GetRootNode();
 
@@ -197,7 +197,7 @@ PhaseStatus Compiler::fgRemoveEmptyFinally()
         BasicBlock* const lastTryBlock  = HBtab->ebdTryLast;
         assert(firstTryBlock->getTryIndex() == XTnum);
 
-        for (BasicBlock* block = firstTryBlock; block != nullptr; block = block->bbNext)
+        for (BasicBlock* const block : Blocks(firstTryBlock))
         {
             // Look for blocks directly contained in this try, and
             // update the try region appropriately.
@@ -349,7 +349,6 @@ PhaseStatus Compiler::fgRemoveEmptyTry()
         BasicBlock* const lastTryBlock      = HBtab->ebdTryLast;
         BasicBlock* const firstHandlerBlock = HBtab->ebdHndBeg;
         BasicBlock* const lastHandlerBlock  = HBtab->ebdHndLast;
-        BasicBlock* const endHandlerBlock   = lastHandlerBlock->bbNext;
 
         assert(firstTryBlock->getTryIndex() == XTnum);
 
@@ -474,7 +473,7 @@ PhaseStatus Compiler::fgRemoveEmptyTry()
         // handler region (if any) won't change.
         //
         // Kind of overkill to loop here, but hey.
-        for (BasicBlock* block = firstTryBlock; block != nullptr; block = block->bbNext)
+        for (BasicBlock* const block : Blocks(firstTryBlock))
         {
             // Look for blocks directly contained in this try, and
             // update the try region appropriately.
@@ -511,7 +510,7 @@ PhaseStatus Compiler::fgRemoveEmptyTry()
         // remove the EH table entry.  Change handler exits to jump to
         // the continuation.  Clear catch type on handler entry.
         // Decrement nesting level of enclosed GT_END_LFINs.
-        for (BasicBlock* block = firstHandlerBlock; block != endHandlerBlock; block = block->bbNext)
+        for (BasicBlock* const block : Blocks(firstHandlerBlock, lastHandlerBlock))
         {
             if (block == firstHandlerBlock)
             {
@@ -545,7 +544,7 @@ PhaseStatus Compiler::fgRemoveEmptyTry()
             // If we're in a non-funclet model, decrement the nesting
             // level of any GT_END_LFIN we find in the handler region,
             // since we're removing the enclosing handler.
-            for (Statement* stmt : block->Statements())
+            for (Statement* const stmt : block->Statements())
             {
                 GenTree* expr = stmt->GetRootNode();
                 if (expr->gtOper == GT_END_LFIN)
@@ -733,7 +732,7 @@ PhaseStatus Compiler::fgCloneFinally()
 
             // Should we compute statement cost here, or is it
             // premature...? For now just count statements I guess.
-            for (Statement* stmt : block->Statements())
+            for (Statement* const stmt : block->Statements())
             {
                 regionStmtCount++;
             }
@@ -779,18 +778,24 @@ PhaseStatus Compiler::fgCloneFinally()
                 " %u blocks, %u statements\n",
                 XTnum, regionBBCount, regionStmtCount);
 
-        // Walk the try region backwards looking for the last block
-        // that transfers control to a callfinally.
+        // Walk the try region backwards looking for blocks
+        // that transfer control to a callfinally.
+        //
+        // For non-pgo we find the lexically last block; for
+        // pgo we find the highest-weight block.
+        //
         BasicBlock* const firstTryBlock = HBtab->ebdTryBeg;
         BasicBlock* const lastTryBlock  = HBtab->ebdTryLast;
         assert(firstTryBlock->getTryIndex() == XTnum);
         assert(bbInTryRegions(XTnum, lastTryBlock));
         BasicBlock* const beforeTryBlock = firstTryBlock->bbPrev;
 
-        BasicBlock* normalCallFinallyBlock   = nullptr;
-        BasicBlock* normalCallFinallyReturn  = nullptr;
-        BasicBlock* cloneInsertAfter         = HBtab->ebdTryLast;
-        bool        tryToRelocateCallFinally = false;
+        BasicBlock*          normalCallFinallyBlock   = nullptr;
+        BasicBlock*          normalCallFinallyReturn  = nullptr;
+        BasicBlock*          cloneInsertAfter         = HBtab->ebdTryLast;
+        bool                 tryToRelocateCallFinally = false;
+        const bool           usingProfileWeights      = fgIsUsingProfileWeights();
+        BasicBlock::weight_t currentWeight            = BB_ZERO_WEIGHT;
 
         for (BasicBlock* block = lastTryBlock; block != beforeTryBlock; block = block->bbPrev)
         {
@@ -830,12 +835,63 @@ PhaseStatus Compiler::fgCloneFinally()
             BasicBlock* const jumpDest = block;
 #endif // FEATURE_EH_CALLFINALLY_THUNKS
 
-            // Found our block.
+            // Found a block that invokes the finally.
+            //
             BasicBlock* const finallyReturnBlock  = jumpDest->bbNext;
             BasicBlock* const postTryFinallyBlock = finallyReturnBlock->bbJumpDest;
+            bool              isUpdate            = false;
 
-            normalCallFinallyBlock  = jumpDest;
-            normalCallFinallyReturn = postTryFinallyBlock;
+            // See if this is the one we want to use to inspire cloning.
+            //
+            if (normalCallFinallyBlock == nullptr)
+            {
+                normalCallFinallyBlock  = jumpDest;
+                normalCallFinallyReturn = postTryFinallyBlock;
+
+                if (usingProfileWeights)
+                {
+                    if (block->hasProfileWeight())
+                    {
+                        JITDUMP("Found profiled " FMT_BB " with weight " FMT_WT "\n", block->bbNum, block->bbWeight);
+                        currentWeight = block->bbWeight;
+                    }
+                    else
+                    {
+                        JITDUMP("Found unprofiled " FMT_BB "\n", block->bbNum);
+                    }
+                }
+            }
+            else
+            {
+                assert(usingProfileWeights);
+
+                if (!block->hasProfileWeight())
+                {
+                    // An unprofiled block in method with profile data.
+                    // We generally don't expect to see these as the
+                    // blocks in EH regions must have come from the root
+                    // method, which we know has profile data.
+                    // Just skip over them for now.
+                    //
+                    JITDUMP("Skipping past unprofiled " FMT_BB "\n", block->bbNum);
+                    continue;
+                }
+
+                if (block->bbWeight <= currentWeight)
+                {
+                    JITDUMP("Skipping past " FMT_BB " with weight " FMT_WT "\n", block->bbNum, block->bbWeight);
+                    continue;
+                }
+
+                // Prefer this block.
+                //
+                JITDUMP("Preferring " FMT_BB " since " FMT_WT " >  " FMT_WT "\n", block->bbNum, block->bbWeight,
+                        currentWeight);
+                normalCallFinallyBlock  = jumpDest;
+                normalCallFinallyReturn = postTryFinallyBlock;
+                currentWeight           = block->bbWeight;
+                isUpdate                = true;
+            }
 
 #if FEATURE_EH_CALLFINALLY_THUNKS
             // When there are callfinally thunks, we don't expect to see the
@@ -850,16 +906,24 @@ PhaseStatus Compiler::fgCloneFinally()
             // through from the try into the clone.
             tryToRelocateCallFinally = true;
 
-            JITDUMP("Chose path to clone: try block " FMT_BB " jumps to callfinally at " FMT_BB ";"
+            JITDUMP("%s path to clone: try block " FMT_BB " jumps to callfinally at " FMT_BB ";"
                     " the call returns to " FMT_BB " which jumps to " FMT_BB "\n",
-                    block->bbNum, jumpDest->bbNum, finallyReturnBlock->bbNum, postTryFinallyBlock->bbNum);
+                    isUpdate ? "Updating" : "Choosing", block->bbNum, jumpDest->bbNum, finallyReturnBlock->bbNum,
+                    postTryFinallyBlock->bbNum);
 #else
-            JITDUMP("Chose path to clone: try block " FMT_BB " is a callfinally;"
+            JITDUMP("%s path to clone: try block " FMT_BB " is a callfinally;"
                     " the call returns to " FMT_BB " which jumps to " FMT_BB "\n",
-                    block->bbNum, finallyReturnBlock->bbNum, postTryFinallyBlock->bbNum);
+                    isUpdate ? "Updating" : "Choosing", block->bbNum, finallyReturnBlock->bbNum,
+                    postTryFinallyBlock->bbNum);
 #endif // FEATURE_EH_CALLFINALLY_THUNKS
 
-            break;
+            // For non-pgo just take the first one we find.
+            // For pgo, keep searching in case we find one we like better.
+            //
+            if (!usingProfileWeights)
+            {
+                break;
+            }
         }
 
         // If there is no call to the finally, don't clone.
@@ -956,11 +1020,14 @@ PhaseStatus Compiler::fgCloneFinally()
         //
         // Clone the finally body, and splice it into the flow graph
         // within in the parent region of the try.
-        const unsigned  finallyTryIndex = firstBlock->bbTryIndex;
-        BasicBlock*     insertAfter     = nullptr;
-        BlockToBlockMap blockMap(getAllocator());
-        bool            clonedOk     = true;
-        unsigned        cloneBBCount = 0;
+        //
+        const unsigned             finallyTryIndex = firstBlock->bbTryIndex;
+        BasicBlock*                insertAfter     = nullptr;
+        BlockToBlockMap            blockMap(getAllocator());
+        bool                       clonedOk     = true;
+        unsigned                   cloneBBCount = 0;
+        BasicBlock::weight_t const originalWeight =
+            firstBlock->hasProfileWeight() ? firstBlock->bbWeight : BB_ZERO_WEIGHT;
 
         for (BasicBlock* block = firstBlock; block != nextBlock; block = block->bbNext)
         {
@@ -1067,9 +1134,10 @@ PhaseStatus Compiler::fgCloneFinally()
         // Modify the targeting call finallys to branch to the cloned
         // finally. Make a note if we see some calls that can't be
         // retargeted (since they want to return to other places).
-        BasicBlock* const firstCloneBlock    = blockMap[firstBlock];
-        bool              retargetedAllCalls = true;
-        BasicBlock*       currentBlock       = firstCallFinallyRangeBlock;
+        BasicBlock* const    firstCloneBlock    = blockMap[firstBlock];
+        bool                 retargetedAllCalls = true;
+        BasicBlock*          currentBlock       = firstCallFinallyRangeBlock;
+        BasicBlock::weight_t retargetedWeight   = BB_ZERO_WEIGHT;
 
         while (currentBlock != endCallFinallyRangeBlock)
         {
@@ -1088,6 +1156,9 @@ PhaseStatus Compiler::fgCloneFinally()
                     // by the cloned finally and by the called finally.
                     if (postTryFinallyBlock == normalCallFinallyReturn)
                     {
+                        JITDUMP("Retargeting callfinally " FMT_BB " to clone entry " FMT_BB "\n", currentBlock->bbNum,
+                                firstCloneBlock->bbNum);
+
                         // This call returns to the expected spot, so
                         // retarget it to branch to the clone.
                         currentBlock->bbJumpDest = firstCloneBlock;
@@ -1107,6 +1178,11 @@ PhaseStatus Compiler::fgCloneFinally()
 
                         // Make sure iteration isn't going off the deep end.
                         assert(leaveBlock != endCallFinallyRangeBlock);
+
+                        if (currentBlock->hasProfileWeight())
+                        {
+                            retargetedWeight += currentBlock->bbWeight;
+                        }
                     }
                     else
                     {
@@ -1144,7 +1220,53 @@ PhaseStatus Compiler::fgCloneFinally()
         // Cleanup the continuation
         fgCleanupContinuation(normalCallFinallyReturn);
 
-        // Todo -- mark cloned blocks as a cloned finally....
+        // If we have profile data, compute how the weights split,
+        // and update the weights in both the clone and the original.
+        //
+        // TODO: if original weight is zero, we probably should forgo cloning...?
+        //
+        // TODO: it will frequently be the case that the original scale is 0.0 as
+        // all the profiled flow will go to the clone.
+        //
+        // Decide if we really want to set all those counts to zero, and if so
+        // whether we should mark the original as rarely run.
+        //
+        if (usingProfileWeights && (originalWeight > BB_ZERO_WEIGHT))
+        {
+            // We can't leave the finally more often than we enter.
+            // So cap cloned scale at 1.0f
+            //
+            BasicBlock::weight_t const clonedScale =
+                retargetedWeight < originalWeight ? (retargetedWeight / originalWeight) : 1.0f;
+            BasicBlock::weight_t const originalScale = 1.0f - clonedScale;
+
+            JITDUMP("Profile scale factor (" FMT_WT "/" FMT_WT ") => clone " FMT_WT " / original " FMT_WT "\n",
+                    retargetedWeight, originalWeight, clonedScale, originalScale);
+
+            for (BasicBlock* const block : Blocks(firstBlock, lastBlock))
+            {
+                if (block->hasProfileWeight())
+                {
+                    BasicBlock::weight_t const blockWeight = block->bbWeight;
+                    block->setBBProfileWeight(blockWeight * originalScale);
+                    JITDUMP("Set weight of " FMT_BB " to " FMT_WT "\n", block->bbNum, block->bbWeight);
+
+#if HANDLER_ENTRY_MUST_BE_IN_HOT_SECTION
+                    // Handle a special case -- some handler entries can't have zero profile count.
+                    //
+                    if (bbIsHandlerBeg(block) && block->isRunRarely())
+                    {
+                        JITDUMP("Suppressing zero count for " FMT_BB " as it is a handler entry\n", block->bbNum);
+                        block->makeBlockHot();
+                    }
+#endif
+
+                    BasicBlock* const clonedBlock = blockMap[block];
+                    clonedBlock->setBBProfileWeight(blockWeight * clonedScale);
+                    JITDUMP("Set weight of " FMT_BB " to " FMT_WT "\n", clonedBlock->bbNum, clonedBlock->bbWeight);
+                }
+            }
+        }
 
         // Done!
         JITDUMP("\nDone with EH#%u\n\n", XTnum);
@@ -1200,7 +1322,6 @@ void Compiler::fgDebugCheckTryFinallyExits()
 {
     unsigned  XTnum            = 0;
     EHblkDsc* HBtab            = compHndBBtab;
-    unsigned  cloneCount       = 0;
     bool      allTryExitsValid = true;
     for (; XTnum < compHndBBtabCount; XTnum++, HBtab++)
     {
@@ -1221,10 +1342,9 @@ void Compiler::fgDebugCheckTryFinallyExits()
         BasicBlock* const lastTryBlock  = HBtab->ebdTryLast;
         assert(firstTryBlock->getTryIndex() <= XTnum);
         assert(lastTryBlock->getTryIndex() <= XTnum);
-        BasicBlock* const afterTryBlock = lastTryBlock->bbNext;
-        BasicBlock* const finallyBlock  = isFinally ? HBtab->ebdHndBeg : nullptr;
+        BasicBlock* const finallyBlock = isFinally ? HBtab->ebdHndBeg : nullptr;
 
-        for (BasicBlock* block = firstTryBlock; block != afterTryBlock; block = block->bbNext)
+        for (BasicBlock* const block : Blocks(firstTryBlock, lastTryBlock))
         {
             // Only check the directly contained blocks.
             assert(block->hasTryIndex());
@@ -1235,12 +1355,8 @@ void Compiler::fgDebugCheckTryFinallyExits()
             }
 
             // Look at each of the normal control flow possibilities.
-            const unsigned numSuccs = block->NumSucc();
-
-            for (unsigned i = 0; i < numSuccs; i++)
+            for (BasicBlock* const succBlock : block->Succs())
             {
-                BasicBlock* const succBlock = block->GetSucc(i);
-
                 if (succBlock->hasTryIndex() && succBlock->getTryIndex() <= XTnum)
                 {
                     // Successor does not exit this try region.
@@ -1392,7 +1508,7 @@ void Compiler::fgCleanupContinuation(BasicBlock* continuation)
     // Remove the GT_END_LFIN from the continuation,
     // Note we only expect to see one such statement.
     bool foundEndLFin = false;
-    for (Statement* stmt : continuation->Statements())
+    for (Statement* const stmt : continuation->Statements())
     {
         GenTree* expr = stmt->GetRootNode();
         if (expr->gtOper == GT_END_LFIN)
@@ -1444,7 +1560,7 @@ void Compiler::fgClearAllFinallyTargetBits()
     // in case bits are left over from EH clauses being deleted.
 
     // Walk all blocks, and reset the target bits.
-    for (BasicBlock* block = fgFirstBB; block != nullptr; block = block->bbNext)
+    for (BasicBlock* const block : Blocks())
     {
         block->bbFlags &= ~BBF_FINALLY_TARGET;
     }
@@ -1463,7 +1579,7 @@ void Compiler::fgAddFinallyTargetFlags()
         return;
     }
 
-    for (BasicBlock* block = fgFirstBB; block != nullptr; block = block->bbNext)
+    for (BasicBlock* const block : Blocks())
     {
         if (block->isBBCallAlwaysPair())
         {
@@ -1560,10 +1676,8 @@ PhaseStatus Compiler::fgMergeFinallyChains()
 
     // Look for finallys.
     bool hasFinally = false;
-    for (unsigned XTnum = 0; XTnum < compHndBBtabCount; XTnum++)
+    for (EHblkDsc* const HBtab : EHClauses(this))
     {
-        EHblkDsc* const HBtab = &compHndBBtab[XTnum];
-
         // Check if this is a try/finally.
         if (HBtab->HasFinallyHandler())
         {
@@ -1766,6 +1880,43 @@ bool Compiler::fgRetargetBranchesToCanonicalCallFinally(BasicBlock*      block,
     fgAddRefPred(canonicalCallFinally, block);
     assert(callFinally->bbRefs > 0);
     fgRemoveRefPred(callFinally, block);
+
+    // Update profile counts
+    //
+    if (block->hasProfileWeight())
+    {
+        // Add weight to the canonical call finally pair.
+        //
+        BasicBlock::weight_t const canonicalWeight =
+            canonicalCallFinally->hasProfileWeight() ? canonicalCallFinally->bbWeight : BB_ZERO_WEIGHT;
+        BasicBlock::weight_t const newCanonicalWeight = block->bbWeight + canonicalWeight;
+
+        canonicalCallFinally->setBBProfileWeight(newCanonicalWeight);
+
+        BasicBlock* const canonicalLeaveBlock = canonicalCallFinally->bbNext;
+
+        BasicBlock::weight_t const canonicalLeaveWeight =
+            canonicalLeaveBlock->hasProfileWeight() ? canonicalLeaveBlock->bbWeight : BB_ZERO_WEIGHT;
+        BasicBlock::weight_t const newLeaveWeight = block->bbWeight + canonicalLeaveWeight;
+
+        canonicalLeaveBlock->setBBProfileWeight(newLeaveWeight);
+
+        // Remove weight from the old call finally pair.
+        //
+        if (callFinally->hasProfileWeight())
+        {
+            BasicBlock::weight_t const newCallFinallyWeight =
+                callFinally->bbWeight > block->bbWeight ? callFinally->bbWeight - block->bbWeight : BB_ZERO_WEIGHT;
+            callFinally->setBBProfileWeight(newCallFinallyWeight);
+        }
+
+        if (leaveBlock->hasProfileWeight())
+        {
+            BasicBlock::weight_t const newLeaveWeight =
+                leaveBlock->bbWeight > block->bbWeight ? leaveBlock->bbWeight - block->bbWeight : BB_ZERO_WEIGHT;
+            leaveBlock->setBBProfileWeight(newLeaveWeight);
+        }
+    }
 
     return true;
 }
@@ -2094,8 +2245,13 @@ void Compiler::fgTailMergeThrowsFallThroughHelper(BasicBlock* predBlock,
     newBlock->bbJumpDest = canonicalBlock;
     fgAddRefPred(canonicalBlock, newBlock, predEdge);
 
-    // Note there is now a jump to the canonical block
-    canonicalBlock->bbFlags |= (BBF_JMP_TARGET | BBF_HAS_LABEL);
+    // If nonCanonicalBlock has only one pred, all its flow transfers.
+    // If it has multiple preds, then we need edge counts or likelihoods
+    // to figure things out.
+    //
+    // For now just do a minimal update.
+    //
+    newBlock->inheritWeight(nonCanonicalBlock);
 }
 
 //------------------------------------------------------------------------
@@ -2125,7 +2281,4 @@ void Compiler::fgTailMergeThrowsJumpToHelper(BasicBlock* predBlock,
     // Wire up the new flow
     predBlock->bbJumpDest = canonicalBlock;
     fgAddRefPred(canonicalBlock, predBlock, predEdge);
-
-    // Note there is now a jump to the canonical block
-    canonicalBlock->bbFlags |= (BBF_JMP_TARGET | BBF_HAS_LABEL);
 }

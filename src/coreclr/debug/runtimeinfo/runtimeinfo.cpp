@@ -17,7 +17,7 @@ DLLEXPORT
 #endif
 RuntimeInfo DotNetRuntimeInfo = {
     {
-        "DotNetRuntimeInfo"
+        RUNTIME_INFO_SIGNATURE
     },
     1,
     {

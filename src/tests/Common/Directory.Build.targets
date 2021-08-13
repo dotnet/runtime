@@ -103,17 +103,20 @@
           Include="$(CoreCLRArtifactsPath)%(RunTimeArtifactsIncludeFolders.Identity)**/*"
           Exclude="@(RunTimeArtifactsExcludeFiles -> '$(CoreCLRArtifactsPath)%(Identity)')"
           TargetDir="%(RunTimeArtifactsIncludeFolders.Identity)" />
+    </ItemGroup>
 
+    <PropertyGroup>
+      <Crossgen2Dir />
+      <Crossgen2Dir Condition="'$(TargetArchitecture)' != 'x64' and '$(BuildArchitecture)' == 'x64'">$(CoreCLRArtifactsPath)x64/crossgen2</Crossgen2Dir>
+    </PropertyGroup>
+
+    <ItemGroup Condition="'$(Crossgen2Dir)' != ''">
       <RunTimeDependencyCopyLocal
-          Condition="'$(TargetArchitecture)' != 'x64'"
-          Include="$(CoreCLRArtifactsPath)x64/crossgen2/clrjit_*"
+          Include="
+            $(Crossgen2Dir)/clrjit_*;
+            $(Crossgen2Dir)/jitinterface_*;
+            $(Crossgen2Dir)/Microsoft.DiaSymReader.Native.*.dll"
           TargetDir="crossgen2/" />
-
-      <RunTimeDependencyCopyLocal
-          Condition="'$(TargetArchitecture)' != 'x64'"
-          Include="$(CoreCLRArtifactsPath)x64/crossgen2/jitinterface_*"
-          TargetDir="crossgen2/" />
-
     </ItemGroup>
 
     <ItemGroup Condition="'$(TargetArchitecture)' == 'wasm'">
@@ -126,15 +129,25 @@
              WasmAppBuilder expects in native/-->
         <RunTimeDependencyCopyLocal
           Include="@(LibrariesRuntimeFiles)"
-          TargetDir="runtimepack/native/"/>
+          TargetDir="runtimepack/native/%(LibrariesRuntimeFiles.NativeSubDirectory)/"
+          Condition="'%(LibrariesRuntimeFiles.NativeSubDirectory)' != ''" />
 
-       <RunTimeDependencyCopyLocal
+        <RunTimeDependencyCopyLocal
+          Include="@(LibrariesRuntimeFiles)"
+          TargetDir="runtimepack/native/"
+          Condition="'%(LibrariesRuntimeFiles.NativeSubDirectory)' == ''" />
+
+        <RunTimeDependencyCopyLocal
           Include="$(ArtifactsDir)\TargetingPack\**"
           TargetDir="TargetingPack/"/>
 
         <!-- Wasm App Builder always builds in Debug -->
         <RunTimeDependencyCopyLocal
           Include="$(ArtifactsBinDir)\WasmAppBuilder\Debug\$(NetCoreAppToolCurrent)\publish\**"
+          TargetDir="WasmAppBuilder/"/>
+
+        <RunTimeDependencyCopyLocal
+          Include="$(ArtifactsBinDir)\JsonToItemsTaskFactory\Debug\$(NetCoreAppToolCurrent)\publish\**"
           TargetDir="WasmAppBuilder/"/>
 
         <RunTimeDependencyCopyLocal

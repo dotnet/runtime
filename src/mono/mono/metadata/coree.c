@@ -78,7 +78,7 @@ BOOL STDMETHODCALLTYPE _CorDllMain(HINSTANCE hInst, DWORD dwReason, LPVOID lpRes
 	MonoImage* image;
 	gchar* file_name;
 	gchar* error;
-	MonoAssemblyLoadContext *alc = mono_domain_default_alc (mono_get_root_domain ());
+	MonoAssemblyLoadContext *alc = mono_alc_get_default ();
 
 	switch (dwReason)
 	{
@@ -119,7 +119,7 @@ BOOL STDMETHODCALLTYPE _CorDllMain(HINSTANCE hInst, DWORD dwReason, LPVOID lpRes
 		 * loader trampolines should be used and assembly loading should
 		 * probably be delayed until the first call to an exported function.
 		 */
-		if (image->tables [MONO_TABLE_ASSEMBLY].rows && image->image_info->cli_cli_header.ch_vtable_fixups.rva) {
+		if (table_info_get_rows (&image->tables [MONO_TABLE_ASSEMBLY]) && image->image_info->cli_cli_header.ch_vtable_fixups.rva) {
 			MonoAssemblyOpenRequest req;
 			mono_assembly_request_prepare_open (&req, MONO_ASMCTX_DEFAULT, alc);
 			assembly = mono_assembly_request_open (file_name, &req, NULL);
@@ -173,7 +173,7 @@ __int32 STDMETHODCALLTYPE _CorExeMain(void)
 	}
 
 	MonoAssemblyOpenRequest req;
-	mono_assembly_request_prepare_open (&req, MONO_ASMCTX_DEFAULT, mono_domain_default_alc (mono_get_root_domain ()));
+	mono_assembly_request_prepare_open (&req, MONO_ASMCTX_DEFAULT, mono_alc_get_default ());
 	assembly = mono_assembly_request_open (file_name, &req, NULL);
 	mono_close_exe_image ();
 	if (!assembly) {
@@ -630,7 +630,7 @@ STDAPI MonoFixupCorEE(HMODULE ModuleHandle)
 #if defined(_M_IA64)
 			ProcRva = (DWORD)((DWORD_PTR)PLabel - (DWORD_PTR)DosHeader);
 			*(PLabel)++ = *ExportFixup->ProcAddress.PLabel;
-#elif defined(_M_AMD64)
+#elif defined(_M_X64)
 			ProcRva = (DWORD)((DWORD_PTR)Trampoline - (DWORD_PTR)DosHeader);
 			/* mov r11, ExportFixup->ProcAddress */
 			*(Trampoline)++ = 0x49;

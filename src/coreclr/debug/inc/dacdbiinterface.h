@@ -547,7 +547,6 @@ public:
     {
         kSymbolFormatNone,  // No symbols available
         kSymbolFormatPDB,   // PDB symbol format - use diasymreader.dll
-        kSymbolFormatILDB,  // ILDB symbol format - use ildbsymlib
     } SymbolFormat;
 
     //
@@ -1065,6 +1064,17 @@ public:
 
     virtual
     VMPTR_OBJECTHANDLE GetThreadObject(VMPTR_Thread vmThread) = 0;
+    
+    //
+    // Get the allocation info corresponding to the specified thread.
+    //
+    // Arguments:
+    //    vmThread - the specified thread
+    //    threadAllocInfo - the allocated bytes from SOH and UOH so far on this thread
+    //
+
+    virtual
+    void GetThreadAllocInfo(VMPTR_Thread vmThread, DacThreadAllocInfo* threadAllocInfo) = 0;
 
     //
     // Set and reset the TSNC_DebuggerUserSuspend bit on the state of the specified thread
@@ -2735,6 +2745,9 @@ public:
 
     virtual
     HRESULT IsModuleMapped(VMPTR_Module pModule, OUT BOOL *isModuleMapped) = 0;
+
+    virtual
+    bool MetadataUpdatesApplied() = 0;
 
     // The following tag tells the DD-marshalling tool to stop scanning.
     // END_MARSHAL

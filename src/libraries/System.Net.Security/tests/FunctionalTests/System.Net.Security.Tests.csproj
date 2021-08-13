@@ -2,7 +2,7 @@
   <PropertyGroup>
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-Unix;$(NetCoreAppCurrent)-Browser;$(NetCoreAppCurrent)-OSX;$(NetCoreAppCurrent)-MacCatalyst;$(NetCoreAppCurrent)-iOS</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-Unix;$(NetCoreAppCurrent)-Browser;$(NetCoreAppCurrent)-OSX;$(NetCoreAppCurrent)-iOS</TargetFrameworks>
     <Nullable>annotations</Nullable>
     <IgnoreForCI Condition="'$(TargetOS)' == 'Browser'">true</IgnoreForCI>
   </PropertyGroup>
@@ -35,8 +35,6 @@
     <Compile Include="ServiceNameCollectionTest.cs" />
     <Compile Include="NegotiateStreamKerberosTest.cs" />
     <!-- Common test files -->
-    <Compile Include="$(CommonTestPath)Tests\System\IO\StreamConformanceTests.cs"
-             Link="Common\System\IO\StreamConformanceTests.cs" />
     <Compile Include="$(CommonTestPath)System\IO\CallTrackingStream.cs"
              Link="Common\System\IO\CallTrackingStream.cs" />
     <Compile Include="$(CommonTestPath)System\IO\ConnectedStreams.cs"
@@ -51,6 +49,8 @@
              Link="Common\System\Net\Capability.Security.cs" />
     <Compile Include="$(CommonTestPath)System\Net\SslStreamCertificatePolicy.cs"
              Link="Common\System\Net\SslStreamCertificatePolicy.cs" />
+    <Compile Include="$(CommonTestPath)System\Net\RandomReadWriteSizeStream.cs"
+             Link="Common\System\Net\RandomReadWriteSizeStream.cs" />
     <Compile Include="$(CommonTestPath)System\Net\Configuration.cs"
              Link="Common\System\Net\Configuration.cs" />
     <Compile Include="$(CommonTestPath)System\Net\Configuration.Security.cs"
@@ -71,10 +71,12 @@
              Link="Common\System\Net\VerboseTestLogging.cs" />
     <Compile Include="$(CommonTestPath)System\Net\EventSourceTestLogging.cs"
              Link="Common\System\Net\EventSourceTestLogging.cs" />
+    <Compile Include="$(CommonTestPath)System\Security\Cryptography\PlatformSupport.cs"
+             Link="CommonTest\System\Security\Cryptography\PlatformSupport.cs" />
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\X509Certificates\CertificateAuthority.cs"
-             Link="CommonTest\System\Security\Cryptography\509Certificates\CertificateAuthority.cs" />
+             Link="CommonTest\System\Security\Cryptography\X509Certificates\CertificateAuthority.cs" />
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\X509Certificates\RevocationResponder.cs"
-             Link="CommonTest\System\Security\Cryptography\509Certificates\RevocationResponder.cs" />
+             Link="CommonTest\System\Security\Cryptography\X509Certificates\RevocationResponder.cs" />
     <Compile Include="$(CommonTestPath)System\Threading\Tasks\TaskTimeoutExtensions.cs"
              Link="Common\System\Threading\Tasks\TaskTimeoutExtensions.cs" />
     <Compile Include="$(CommonPath)System\Threading\Tasks\TaskToApm.cs"
@@ -98,7 +100,6 @@
     <Compile Include="SslStreamSniTest.cs" />
     <Compile Include="SslStreamEKUTest.cs" />
     <Compile Include="SslStreamNegotiatedCipherSuiteTest.cs" />
-    <Compile Include="SslStreamSchSendAuxRecordTest.cs" />
     <Compile Include="SslStreamCredentialCacheTest.cs" />
     <Compile Include="SslStreamSystemDefaultsTest.cs" />
   </ItemGroup>
@@ -125,5 +126,8 @@
   <ItemGroup>
     <PackageReference Include="System.Net.TestData" Version="$(SystemNetTestDataVersion)" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.Security.Principal.Windows\src\System.Security.Principal.Windows.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(CommonTestPath)StreamConformanceTests\StreamConformanceTests.csproj" />
   </ItemGroup>
 </Project>

@@ -852,6 +852,7 @@ namespace System.Drawing.Imaging.Tests
             }
         }
 
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/55655", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         [ConditionalFact(Helpers.IsDrawingSupported)]
         public void Ctor_IntPtrZeroIV_ThrowsArgumentException()
         {
@@ -866,6 +867,7 @@ namespace System.Drawing.Imaging.Tests
             }
         }
 
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/55655", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         [ConditionalTheory(Helpers.IsDrawingSupported)]
         [MemberData(nameof(MetafileFrameUnit_Invalid_TestData))]
         public void Ctor_InvalidFrameUnitIII_ThrowsArgumentException(MetafileFrameUnit frameUnit)
@@ -883,6 +885,7 @@ namespace System.Drawing.Imaging.Tests
             }
         }
 
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/55655", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         [ConditionalTheory(Helpers.IsDrawingSupported)]
         [MemberData(nameof(EmfType_Invalid_TestData))]
         public void Ctor_InvalidEmfTypeIII_ThrowsArgumentException(EmfType emfType)

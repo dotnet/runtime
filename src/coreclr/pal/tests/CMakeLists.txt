@@ -1,5 +1,3 @@
-cmake_minimum_required(VERSION 3.14.5)
-
 # Compile options
 add_definitions(-DLP64COMPATIBLE)
 add_definitions(-DCORECLR)

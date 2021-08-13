@@ -1085,7 +1085,7 @@ namespace System.Xml
                     {
                         string value = localNames[i];
                         if (value == null)
-                            throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull(string.Format(CultureInfo.InvariantCulture, "localNames[{0}]", i));
+                            throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull($"localNames[{i}]");
                         if (localName == value)
                         {
                             return i;
@@ -1100,7 +1100,7 @@ namespace System.Xml
                     {
                         string value = localNames[i];
                         if (value == null)
-                            throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull(string.Format(CultureInfo.InvariantCulture, "localNames[{0}]", i));
+                            throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull($"localNames[{i}]");
                         if (prefix == value)
                         {
                             return i;
@@ -1127,7 +1127,7 @@ namespace System.Xml
                     {
                         XmlDictionaryString value = localNames[i];
                         if (value == null)
-                            throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull(string.Format(CultureInfo.InvariantCulture, "localNames[{0}]", i));
+                            throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull($"localNames[{i}]");
                         if (localName == value)
                         {
                             return i;
@@ -1142,7 +1142,7 @@ namespace System.Xml
                     {
                         XmlDictionaryString value = localNames[i];
                         if (value == null)
-                            throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull(string.Format(CultureInfo.InvariantCulture, "localNames[{0}]", i));
+                            throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull($"localNames[{i}]");
                         if (prefix == value)
                         {
                             return i;
@@ -2621,7 +2621,7 @@ namespace System.Xml
             }
         }
 
-        private class AttributeSorter : IComparer
+        private sealed class AttributeSorter : IComparer
         {
             private object[]? _indeces;
             private XmlAttributeNode[]? _attributeNodes;
@@ -2719,7 +2719,7 @@ namespace System.Xml
             }
         }
 
-        private class NamespaceManager
+        private sealed class NamespaceManager
         {
             private readonly XmlBufferReader _bufferReader;
             private Namespace[]? _namespaces;
@@ -3008,7 +3008,7 @@ namespace System.Xml
                 return false;
             }
 
-            private class XmlAttribute
+            private sealed class XmlAttribute
             {
                 private XmlSpace _space;
                 private string _lang = string.Empty;

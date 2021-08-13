@@ -131,12 +131,14 @@ namespace Microsoft.Extensions.Options.Tests
         [Fact]
         public void SnapshotOptionsAreCachedPerScope()
         {
+            var config = new ConfigurationBuilder().AddInMemoryCollection().Build();
             var services = new ServiceCollection()
                 .AddOptions()
-                .AddScoped<IConfigureOptions<FakeOptions>, TestConfigure>()
+                .AddSingleton<IConfigureOptions<FakeOptions>, TestConfigure>()
+                .AddSingleton<IOptionsChangeTokenSource<FakeOptions>>(new ConfigurationChangeTokenSource<FakeOptions>(Options.DefaultName, config))
+                .AddSingleton<IOptionsChangeTokenSource<FakeOptions>>(new ConfigurationChangeTokenSource<FakeOptions>("1", config))
                 .BuildServiceProvider();
 
-            var cache = services.GetRequiredService<IOptionsMonitorCache<FakeOptions>>();
             var factory = services.GetRequiredService<IServiceScopeFactory>();
             FakeOptions options = null;
             FakeOptions namedOne = null;
@@ -148,18 +150,30 @@ namespace Microsoft.Extensions.Options.Tests
                 namedOne = scope.ServiceProvider.GetRequiredService<IOptionsSnapshot<FakeOptions>>().Get("1");
                 Assert.Equal(namedOne, scope.ServiceProvider.GetRequiredService<IOptionsSnapshot<FakeOptions>>().Get("1"));
                 Assert.Equal(2, TestConfigure.ConfigureCount);
+
+                // Reload triggers Configure for the two registered change tokens.
+                config.Reload();
+                Assert.Equal(4, TestConfigure.ConfigureCount);
+
+                // Reload should not affect current scope.
+                var options2 = scope.ServiceProvider.GetRequiredService<IOptionsSnapshot<FakeOptions>>().Value;
+                Assert.Equal(options, options2);
+                var namedOne2 = scope.ServiceProvider.GetRequiredService<IOptionsSnapshot<FakeOptions>>().Get("1");
+                Assert.Equal(namedOne, namedOne2);
             }
             Assert.Equal(1, TestConfigure.CtorCount);
+
+            // Reload should be reflected in a fresh scope.
             using (var scope = factory.CreateScope())
             {
                 var options2 = scope.ServiceProvider.GetRequiredService<IOptionsSnapshot<FakeOptions>>().Value;
                 Assert.NotEqual(options, options2);
-                Assert.Equal(3, TestConfigure.ConfigureCount);
+                Assert.Equal(4, TestConfigure.ConfigureCount);
                 var namedOne2 = scope.ServiceProvider.GetRequiredService<IOptionsSnapshot<FakeOptions>>().Get("1");
-                Assert.NotEqual(namedOne2, namedOne);
+                Assert.NotEqual(namedOne, namedOne2);
                 Assert.Equal(4, TestConfigure.ConfigureCount);
             }
-            Assert.Equal(2, TestConfigure.CtorCount);
+            Assert.Equal(1, TestConfigure.CtorCount);
         }
 
         [Fact]

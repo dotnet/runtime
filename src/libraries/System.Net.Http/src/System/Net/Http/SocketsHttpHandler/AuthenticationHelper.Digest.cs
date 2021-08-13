@@ -12,12 +12,13 @@ using System.Threading.Tasks;
 
 namespace System.Net.Http
 {
-    internal partial class AuthenticationHelper
+    internal static partial class AuthenticationHelper
     {
         // Define digest constants
         private const string Qop = "qop";
         private const string Auth = "auth";
         private const string AuthInt = "auth-int";
+        private const string Domain = "domain";
         private const string Nonce = "nonce";
         private const string NC = "nc";
         private const string Realm = "realm";
@@ -103,8 +104,7 @@ namespace System.Net.Http
             }
 
             // Add realm
-            if (realm != string.Empty)
-                sb.AppendKeyValue(Realm, realm);
+            sb.AppendKeyValue(Realm, realm);
 
             // Add nonce
             sb.AppendKeyValue(Nonce, nonce);
@@ -240,7 +240,7 @@ namespace System.Net.Http
             }
         }
 
-        internal class DigestResponse
+        internal sealed class DigestResponse
         {
             internal readonly Dictionary<string, string> Parameters = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
             internal const string NonceCount = "00000001";
@@ -402,9 +402,15 @@ namespace System.Net.Http
 
                     // Get the value.
                     string? value = GetNextValue(challenge, parsedIndex, MustValueBeQuoted(key), out parsedIndex);
+                    if (value == null)
+                        break;
+
                     // Ensure value is valid.
-                    if (string.IsNullOrEmpty(value)
-                        && (value == null || !key.Equals(Opaque, StringComparison.OrdinalIgnoreCase)))
+                    // Opaque, Domain and Realm can have empty string
+                    if (value == string.Empty &&
+                        !key.Equals(Opaque, StringComparison.OrdinalIgnoreCase) &&
+                        !key.Equals(Domain, StringComparison.OrdinalIgnoreCase) &&
+                        !key.Equals(Realm, StringComparison.OrdinalIgnoreCase))
                         break;
 
                     // Add the key-value pair to Parameters.

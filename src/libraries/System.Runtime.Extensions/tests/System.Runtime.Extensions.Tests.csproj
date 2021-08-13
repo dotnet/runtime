@@ -92,5 +92,7 @@
     <ProjectReference Include="VoidMainWithExitCodeApp\VoidMainWithExitCodeApp.csproj" />
     <ProjectReference Include="TestApp\TestApp.csproj" />
     <ProjectReference Include="TargetFrameworkNameTestApp\TargetFrameworkNameTestApp.csproj" />
+
+    <TrimmerRootDescriptor Include="$(MSBuildThisFileDirectory)ILLink.Descriptors.xml" />
   </ItemGroup>
 </Project>

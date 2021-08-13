@@ -337,30 +337,6 @@ namespace System.Numerics.Tests
             Assert.Equal(expected, actual);
         }
 
-        [Fact]
-        public static void BitOps_PopCount_Constant()
-        {
-            // PopCount returns constant for constant input
-
-            Assert.Equal(0,  BitOperations.PopCount(0U));
-            Assert.Equal(1,  BitOperations.PopCount(1U));
-            Assert.Equal(1,  BitOperations.PopCount(2U));
-            Assert.Equal(6,  BitOperations.PopCount(1111U));
-            Assert.Equal(29, BitOperations.PopCount(unchecked((uint)-101)));
-            Assert.Equal(31, BitOperations.PopCount(4294967294U));
-            Assert.Equal(32, BitOperations.PopCount(4294967295U));
-
-            Assert.Equal(0,  BitOperations.PopCount(0UL));
-            Assert.Equal(1,  BitOperations.PopCount(1UL));
-            Assert.Equal(1,  BitOperations.PopCount(2UL));
-            Assert.Equal(6,  BitOperations.PopCount(1111UL));
-            Assert.Equal(31, BitOperations.PopCount(4294967294UL));
-            Assert.Equal(32, BitOperations.PopCount(4294967295UL));
-            Assert.Equal(61, BitOperations.PopCount(unchecked((ulong)-101)));
-            Assert.Equal(63, BitOperations.PopCount(18446744073709551614UL));
-            Assert.Equal(64, BitOperations.PopCount(18446744073709551615UL));
-        }
-
         [Theory]
         [InlineData(0b00000000_00000000_00000000_00000001u, int.MaxValue, 0b10000000_00000000_00000000_00000000u)] // % 32 = 31
         [InlineData(0b01000000_00000001_00000000_00000001u, 3, 0b00000000_00001000_00000000_00001010u)]
@@ -411,6 +387,54 @@ namespace System.Numerics.Tests
             Assert.Equal(0b10101010_10101010_10101010_10101010_10101010_10101010_10101010_10101010ul, BitOperations.RotateRight(value, 3));
             Assert.Equal(value, BitOperations.RotateRight(value, int.MinValue)); // % 64 = 0
             Assert.Equal(BitOperations.RotateLeft(value, 63), BitOperations.RotateRight(value, int.MaxValue)); // % 64 = 63
+        }
+
+        [Theory]
+        [InlineData(0u, 0u)]
+        [InlineData(1u, 1u)]
+        [InlineData(2u, 2u)]
+        [InlineData(0x0096u, 0x0100u)]
+        [InlineData(0x05CDu, 0x0800u)]
+        [InlineData(0x0932u, 0x1000u)]
+        [InlineData(0x0004_C911u, 0x0008_0000u)]
+        [InlineData(0x00E0_A2E2u, 0x0100_0000u)]
+        [InlineData(0x0988_0713u, 0x1000_0000u)]
+        [InlineData(0x30A4_9649u, 0x4000_0000u)]
+        [InlineData(0x7FFF_FFFFu, 0x8000_0000u)]
+        [InlineData(0x8000_0000u, 0x8000_0000u)]
+        [InlineData(0x8000_0001u, 0ul)]
+        [InlineData(0xFFFF_FFFFu, 0ul)]
+        public static void BitOps_RoundUpToPow2_uint(uint value, uint expected)
+        {
+            Assert.Equal(expected, BitOperations.RoundUpToPowerOf2(value));
+        }
+
+        [Theory]
+        [InlineData(0ul, 0ul)]
+        [InlineData(1ul, 1ul)]
+        [InlineData(2ul, 2ul)]
+        [InlineData(0x0096ul, 0x0100ul)]
+        [InlineData(0x05cdul, 0x0800ul)]
+        [InlineData(0x0932ul, 0x1000ul)]
+        [InlineData(0x0004_c911ul, 0x0008_0000ul)]
+        [InlineData(0x00e0_a2b2ul, 0x0100_0000ul)]
+        [InlineData(0x0988_0713ul, 0x1000_0000ul)]
+        [InlineData(0x30a4_9649ul, 0x4000_0000ul)]
+        [InlineData(0x7FFF_FFFFul, 0x8000_0000ul)]
+        [InlineData(0x8000_0000ul, 0x8000_0000ul)]
+        [InlineData(0x8000_0001ul, 0x1_0000_0000ul)]
+        [InlineData(0xFFFF_FFFFul, 0x1_0000_0000ul)]
+        [InlineData(0x0000_0003_343B_0D81ul, 0x0000_0004_0000_0000ul)]
+        [InlineData(0x0000_0D87_5EE2_8F19ul, 0x0000_1000_0000_0000ul)]
+        [InlineData(0x0006_2A08_4A7A_3A2Dul, 0x0008_0000_0000_0000ul)]
+        [InlineData(0x0101_BF76_4398_F791ul, 0x0200_0000_0000_0000ul)]
+        [InlineData(0x7FFF_FFFF_FFFF_FFFFul, 0x8000_0000_0000_0000ul)]
+        [InlineData(0x8000_0000_0000_0000ul, 0x8000_0000_0000_0000ul)]
+        [InlineData(0x8000_0000_0000_0001ul, 0ul)]
+        [InlineData(0xFFFF_FFFF_FFFF_FFFFul, 0ul)]
+        public static void BitOps_RoundUpToPow2_ulong(ulong value, ulong expected)
+        {
+            Assert.Equal(expected, BitOperations.RoundUpToPowerOf2(value));
         }
     }
 }

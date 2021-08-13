@@ -101,7 +101,7 @@ emitter::code_t emitInsCode(instruction ins, insFormat fmt);
 void emitInsLoadStoreOp(instruction ins, emitAttr attr, regNumber dataReg, GenTreeIndir* indir);
 
 //  Emit the 32-bit Arm64 instruction 'code' into the 'dst'  buffer
-static unsigned emitOutput_Instr(BYTE* dst, code_t code);
+unsigned emitOutput_Instr(BYTE* dst, code_t code);
 
 // A helper method to return the natural scale for an EA 'size'
 static unsigned NaturalScale_helper(emitAttr size);
@@ -117,7 +117,8 @@ static UINT64 Replicate_helper(UINT64 value, unsigned width, emitAttr size);
 
 // Method to do check if mov is redundant with respect to the last instruction.
 // If yes, the caller of this method can choose to omit current mov instruction.
-bool IsRedundantMov(instruction ins, emitAttr size, regNumber dst, regNumber src);
+static bool IsMovInstruction(instruction ins);
+bool IsRedundantMov(instruction ins, emitAttr size, regNumber dst, regNumber src, bool canSkip);
 bool IsRedundantLdStr(instruction ins, regNumber reg1, regNumber reg2, ssize_t imm, emitAttr size, insFormat fmt);
 
 /************************************************************************
@@ -727,9 +728,16 @@ void emitIns_I(instruction ins, emitAttr attr, ssize_t imm);
 
 void emitIns_R(instruction ins, emitAttr attr, regNumber reg);
 
-void emitIns_R_I(instruction ins, emitAttr attr, regNumber reg, ssize_t imm, insOpts opt = INS_OPTS_NONE);
+void emitIns_R_I(instruction ins,
+                 emitAttr    attr,
+                 regNumber   reg,
+                 ssize_t     imm,
+                 insOpts opt = INS_OPTS_NONE DEBUGARG(GenTreeFlags gtFlags = GTF_EMPTY));
 
 void emitIns_R_F(instruction ins, emitAttr attr, regNumber reg, double immDbl, insOpts opt = INS_OPTS_NONE);
+
+void emitIns_Mov(
+    instruction ins, emitAttr attr, regNumber dstReg, regNumber srcReg, bool canSkip, insOpts opt = INS_OPTS_NONE);
 
 void emitIns_R_R(instruction ins, emitAttr attr, regNumber reg1, regNumber reg2, insOpts opt = INS_OPTS_NONE);
 
@@ -823,7 +831,7 @@ void emitIns_R_AR(instruction ins, emitAttr attr, regNumber ireg, regNumber reg,
 void emitIns_R_AI(instruction ins,
                   emitAttr    attr,
                   regNumber   ireg,
-                  ssize_t disp DEBUGARG(size_t targetHandle = 0) DEBUGARG(unsigned gtFlags = 0));
+                  ssize_t disp DEBUGARG(size_t targetHandle = 0) DEBUGARG(GenTreeFlags gtFlags = GTF_EMPTY));
 
 void emitIns_AR_R(instruction ins, emitAttr attr, regNumber ireg, regNumber reg, int offs);
 
@@ -934,5 +942,31 @@ inline bool emitIsLoadConstant(instrDesc* jmp)
     return ((jmp->idInsFmt() == IF_LS_1A) || // ldr
             (jmp->idInsFmt() == IF_LARGELDC));
 }
+
+#if defined(FEATURE_SIMD)
+//-----------------------------------------------------------------------------------
+// emitStoreSIMD12ToLclOffset: store SIMD12 value from opReg to varNum+offset.
+//
+// Arguments:
+//     varNum - the variable on the stack to use as a base;
+//     offset - the offset from the varNum;
+//     opReg  - the src reg with SIMD12 value;
+//     tmpReg - a tmp reg to use for the write, can be general or float.
+//
+void emitStoreSIMD12ToLclOffset(unsigned varNum, unsigned offset, regNumber opReg, regNumber tmpReg)
+{
+    assert(varNum != BAD_VAR_NUM);
+    assert(isVectorRegister(opReg));
+
+    // store lower 8 bytes
+    emitIns_S_R(INS_str, EA_8BYTE, opReg, varNum, offset);
+
+    // Extract upper 4-bytes from data
+    emitIns_R_R_I(INS_mov, EA_4BYTE, tmpReg, opReg, 2);
+
+    // 4-byte write
+    emitIns_S_R(INS_str, EA_4BYTE, tmpReg, varNum, offset + 8);
+}
+#endif // FEATURE_SIMD
 
 #endif // TARGET_ARM64

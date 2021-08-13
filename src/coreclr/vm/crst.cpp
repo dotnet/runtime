@@ -288,15 +288,13 @@ void CrstBase::Enter(INDEBUG(NoLevelCheckFlag noLevelCheckFlag/* = CRST_LEVEL_CH
     Thread * pThread;
     BOOL fToggle;
 
-    BEGIN_GETTHREAD_ALLOWED;
-    pThread = GetThread();
+    pThread = GetThreadNULLOk();
     fToggle = ((m_dwFlags & (CRST_UNSAFE_ANYMODE | CRST_UNSAFE_COOPGC | CRST_GC_NOTRIGGER_WHEN_TAKEN)) == 0)   // condition normally false
               && pThread &&  pThread->PreemptiveGCDisabled();
 
     if (fToggle) {
         pThread->EnablePreemptiveGC();
     }
-    END_GETTHREAD_ALLOWED;
 
 #ifdef _DEBUG
     PreEnter ();
@@ -329,9 +327,9 @@ void CrstBase::Enter(INDEBUG(NoLevelCheckFlag noLevelCheckFlag/* = CRST_LEVEL_CH
 
     if (fToggle)
     {
-        BEGIN_GETTHREAD_ALLOWED;
+        
         pThread->DisablePreemptiveGC();
-        END_GETTHREAD_ALLOWED;
+        
     }
 }
 
@@ -351,7 +349,7 @@ void CrstBase::Leave()
 #endif //_DEBUG
 
 #if defined(_DEBUG)
-    Thread * pThread = GetThread();
+    Thread * pThread = GetThreadNULLOk();
 #endif
 
     LeaveCriticalSection(&m_criticalsection);
@@ -703,14 +701,14 @@ BOOL CrstBase::IsSafeToTake()
     // If there is no thread object, we ignore the check since this thread isn't
     // coordinated with the GC.
     Thread * pThread;
-    BEGIN_GETTHREAD_ALLOWED;
-    pThread = GetThread();
+    
+    pThread = GetThreadNULLOk();
 
     _ASSERTE(pThread == NULL ||
              (pThread->PreemptiveGCDisabled() == ((m_dwFlags & CRST_UNSAFE_COOPGC) != 0)) ||
              ((m_dwFlags & (CRST_UNSAFE_ANYMODE | CRST_GC_NOTRIGGER_WHEN_TAKEN)) != 0) ||
              (GCHeapUtilities::IsGCInProgress() && pThread == ThreadSuspend::GetSuspensionThread()));
-    END_GETTHREAD_ALLOWED;
+    
 
     if (m_holderthreadid.IsCurrentThread())
     {
@@ -792,7 +790,6 @@ CrstBase::CrstAndForbidSuspendForDebuggerHolder::CrstAndForbidSuspendForDebugger
     _ASSERTE((pCrst->m_dwFlags & CRST_REENTRANCY) == 0);
 
     Thread *pThread = GetThread();
-    _ASSERTE(pThread != nullptr);
     if (pThread->IsInForbidSuspendForDebuggerRegion())
     {
         AcquireLock(pCrst);

@@ -74,10 +74,10 @@ namespace TypeSystemTests
         [InlineData("ClassWithExplicitEmptyBase")]
         [InlineData("ClassWithExplicitEmptySizeZeroBase")]
         [InlineData("ClassWithSequentialEmptyBase")]
-        public void IsBlittableType_TypeWithEmptyBase_ReturnsFalse(string className)
+        public void IsBlittableType_TypeWithEmptyBase_ReturnsTrue(string className)
         {
             TypeDesc classWithEmptyBase = _testModule.GetType("Marshalling", className);
-            Assert.False(MarshalUtils.IsBlittableType(classWithEmptyBase));
+            Assert.True(MarshalUtils.IsBlittableType(classWithEmptyBase));
         }
     }
 }

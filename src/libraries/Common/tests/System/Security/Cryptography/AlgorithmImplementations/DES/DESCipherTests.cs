@@ -9,8 +9,8 @@ using Xunit;
 
 namespace System.Security.Cryptography.Encryption.Des.Tests
 {
-    [SkipOnMono("Not supported on Browser", TestPlatforms.Browser)]
-    public static class DesCipherTests
+    [SkipOnPlatform(TestPlatforms.Browser, "Not supported on Browser")]
+    public static partial class DesCipherTests
     {
         // These are the expected output of many decryptions. Changing these values requires re-generating test input.
         private static readonly string s_multiBlockString = new ASCIIEncoding().GetBytes(
@@ -524,11 +524,14 @@ namespace System.Security.Cryptography.Encryption.Des.Tests
         {
             byte[] liveEncryptBytes;
             byte[] liveDecryptBytes;
+            byte[] liveOneShotDecryptBytes = null;
+            byte[] liveOneShotEncryptBytes = null;
 
             using (DES des = DESFactory.Create())
             {
                 des.Mode = cipherMode;
                 des.Padding = paddingMode;
+                des.Key = key;
 
                 if (feedbackSize.HasValue)
                 {
@@ -537,10 +540,39 @@ namespace System.Security.Cryptography.Encryption.Des.Tests
 
                 liveEncryptBytes = DESEncryptDirectKey(des, key, iv, plainBytes);
                 liveDecryptBytes = DESDecryptDirectKey(des, key, iv, cipherBytes);
+
+                if (DESFactory.OneShotSupported)
+                {
+                    if (cipherMode == CipherMode.ECB)
+                    {
+                        liveOneShotDecryptBytes = des.DecryptEcb(cipherBytes, paddingMode);
+                        liveOneShotEncryptBytes = des.EncryptEcb(plainBytes, paddingMode);
+                    }
+                    else if (cipherMode == CipherMode.CBC)
+                    {
+                        liveOneShotDecryptBytes = des.DecryptCbc(cipherBytes, iv, paddingMode);
+                        liveOneShotEncryptBytes = des.EncryptCbc(plainBytes, iv, paddingMode);
+                    }
+                    else if (cipherMode == CipherMode.CFB)
+                    {
+                        liveOneShotDecryptBytes = des.DecryptCfb(cipherBytes, iv, paddingMode, feedbackSizeInBits: feedbackSize.Value);
+                        liveOneShotEncryptBytes = des.EncryptCfb(plainBytes, iv, paddingMode, feedbackSizeInBits: feedbackSize.Value);
+                    }
+                }
             }
 
             Assert.Equal(cipherBytes, liveEncryptBytes);
             Assert.Equal(plainBytes, liveDecryptBytes);
+
+            if (liveOneShotDecryptBytes is not null)
+            {
+                Assert.Equal(plainBytes, liveOneShotDecryptBytes);
+            }
+
+            if (liveOneShotEncryptBytes is not null)
+            {
+                Assert.Equal(cipherBytes, liveOneShotEncryptBytes);
+            }
         }
 
         private static byte[] DESEncryptDirectKey(DES des, byte[] key, byte[] iv, byte[] plainBytes)

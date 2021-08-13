@@ -33,6 +33,7 @@ namespace System.Net.Test.Common
 
         private readonly QuicConnection _connection;
         private readonly Dictionary<int, Http3LoopbackStream> _openStreams = new Dictionary<int, Http3LoopbackStream>();
+        private Http3LoopbackStream _controlStream;     // Our outbound control stream
         private Http3LoopbackStream _currentStream;
         private bool _closed;
 
@@ -138,6 +139,13 @@ namespace System.Net.Test.Common
             }
         }
 
+        public async Task EstablishControlStreamAsync()
+        {
+            _controlStream = OpenUnidirectionalStream();
+            await _controlStream.SendUnidirectionalStreamTypeAsync(Http3LoopbackStream.ControlStream);
+            await _controlStream.SendSettingsFrameAsync();
+       }
+
         public override async Task<byte[]> ReadRequestBodyAsync()
         {
             return await _currentStream.ReadRequestBodyAsync().ConfigureAwait(false);
@@ -149,7 +157,7 @@ namespace System.Net.Test.Common
             return await stream.ReadRequestDataAsync(readBody).ConfigureAwait(false);
         }
 
-        public override Task SendResponseAsync(HttpStatusCode? statusCode = HttpStatusCode.OK, IList<HttpHeaderData> headers = null, string content = "", bool isFinal = true, int requestId = 0)
+        public override Task SendResponseAsync(HttpStatusCode statusCode = HttpStatusCode.OK, IList<HttpHeaderData> headers = null, string content = "", bool isFinal = true, int requestId = 0)
         {
             return GetOpenRequest(requestId).SendResponseAsync(statusCode, headers, content, isFinal);
         }
@@ -164,15 +172,56 @@ namespace System.Net.Test.Common
             return GetOpenRequest(requestId).SendResponseHeadersAsync(statusCode, headers);
         }
 
+        public override Task SendPartialResponseHeadersAsync(HttpStatusCode statusCode = HttpStatusCode.OK, IList<HttpHeaderData> headers = null, int requestId = 0)
+        {
+            return GetOpenRequest(requestId).SendPartialResponseHeadersAsync(statusCode, headers);
+        }
+
         public override async Task<HttpRequestData> HandleRequestAsync(HttpStatusCode statusCode = HttpStatusCode.OK, IList<HttpHeaderData> headers = null, string content = "")
         {
             Http3LoopbackStream stream = await AcceptRequestStreamAsync().ConfigureAwait(false);
-            HttpRequestData request = await stream.HandleRequestAsync(statusCode, headers, content);
 
-            // closing the connection here causes bytes written to streams to go missing.
-            //await CloseAsync(H3_NO_ERROR).ConfigureAwait(false);
+            HttpRequestData request = await stream.ReadRequestDataAsync().ConfigureAwait(false);
+
+            // We are about to close the connection, after we send the response.
+            // So, send a GOAWAY frame now so the client won't inadvertantly try to reuse the connection.
+            await _controlStream.SendGoAwayFrameAsync(stream.StreamId + 4);
+
+            await stream.SendResponseAsync(statusCode, headers, content).ConfigureAwait(false);
+
+            await WaitForClientDisconnectAsync();
 
             return request;
+        }
+
+        // Wait for the client to close the connection, e.g. after we send a GOAWAY, or after the HttpClient is disposed.
+        public async Task WaitForClientDisconnectAsync(bool refuseNewRequests = true)
+        {
+            while (true)
+            {
+                Http3LoopbackStream stream;
+
+                try
+                {
+                    stream = await AcceptRequestStreamAsync().ConfigureAwait(false);
+
+                    if (!refuseNewRequests)
+                    {
+                        throw new Exception("Unexpected request stream received while waiting for client disconnect");
+                    }
+                }
+                catch (QuicConnectionAbortedException abortException) when (abortException.ErrorCode == H3_NO_ERROR)
+                {
+                    break;
+                }
+
+                using (stream)
+                {
+                    await stream.AbortAndWaitForShutdownAsync(H3_REQUEST_REJECTED);
+                }
+            }
+
+            await CloseAsync(H3_NO_ERROR);
         }
 
         public override async Task WaitForCancellationAsync(bool ignoreIncomingData = true, int requestId = 0)

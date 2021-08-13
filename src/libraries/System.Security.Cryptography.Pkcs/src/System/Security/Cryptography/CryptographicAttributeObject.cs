@@ -29,8 +29,15 @@ namespace System.Security.Cryptography
             {
                 foreach (AsnEncodedData asn in values)
                 {
-                    if (!string.Equals(asn.Oid!.Value, oid.Value, StringComparison.Ordinal))
+                    if (asn.Oid is null)
+                    {
+                        throw new ArgumentException(SR.Argument_InvalidOidValue, nameof(values));
+                    }
+
+                    if (!string.Equals(asn.Oid.Value, oid.Value, StringComparison.Ordinal))
+                    {
                         throw new InvalidOperationException(SR.Format(SR.InvalidOperation_WrongOidInAsnCollection, oid.Value, asn.Oid.Value));
+                    }
                 }
                 Values = values;
             }

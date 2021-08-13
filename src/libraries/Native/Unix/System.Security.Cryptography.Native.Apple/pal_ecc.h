@@ -8,18 +8,15 @@
 
 #include <Security/Security.h>
 
-#if !defined(TARGET_MACCATALYST) && !defined(TARGET_IOS) && !defined(TARGET_TVOS)
 /*
 Generate an ECC keypair of the specified size.
 
-Returns 1 on success, 0 on failure. On failure, *pOSStatus should carry the OS failure code.
+Follows pal_seckey return conventions.
 */
 PALEXPORT int32_t AppleCryptoNative_EccGenerateKey(int32_t keySizeBits,
-                                                   SecKeychainRef tempKeychain,
                                                    SecKeyRef* pPublicKey,
                                                    SecKeyRef* pPrivateKey,
-                                                   int32_t* pOSStatus);
-#endif
+                                                   CFErrorRef* pErrorOut);
 
 /*
 Get the keysize, in bits, of an ECC key.

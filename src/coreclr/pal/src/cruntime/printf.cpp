@@ -303,7 +303,7 @@ static BOOL Internal_ScanfExtractFormatW(LPCWSTR *Fmt, LPSTR Out, int iOutSize, 
         {
             ERROR("atoi returned a negative value indicative of an overflow.\n");
             SetLastError(ERROR_INTERNAL_ERROR);
-            return Result;
+            goto EXIT;
         }
     }
 
@@ -401,7 +401,7 @@ static BOOL Internal_ScanfExtractFormatW(LPCWSTR *Fmt, LPSTR Out, int iOutSize, 
             {
                 ERROR("strcpy_s failed\n");
                 SetLastError(ERROR_INSUFFICIENT_BUFFER);
-                return FALSE;
+                goto EXIT;
             }
 
             Out += strlen(scanf_longlongfmt);
@@ -532,6 +532,8 @@ static BOOL Internal_ScanfExtractFormatW(LPCWSTR *Fmt, LPSTR Out, int iOutSize, 
     *Out++ = 'n';
 
     *Out = 0;  /* end the string */
+
+EXIT:
     PAL_free(TempStr);
     return Result;
 }

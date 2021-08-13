@@ -3,41 +3,35 @@
 
 #include "pal_x509.h"
 
+#include "pal_eckey.h"
+#include "pal_misc.h"
+#include "pal_rsa.h"
+
 #include <assert.h>
+#include <ctype.h>
 #include <stdbool.h>
 #include <string.h>
 
-#define INIT_LOCALS(name, ...) \
-    enum { __VA_ARGS__, count_##name }; \
-    jobject name[count_##name] = { 0 }; \
+ARGS_NON_NULL(1,2,4) static int32_t PopulateByteArray(JNIEnv* env, jbyteArray source, uint8_t* dest, int32_t* len);
 
-#define RELEASE_LOCALS(name, env) \
-{ \
-    for (int i = 0; i < count_##name; ++i) \
-    { \
-        jobject local = name[i]; \
-        if (local != NULL) \
-            (*env)->DeleteLocalRef(env, local); \
-    } \
-} \
-
-#define BUFFER_FAIL FAIL
-
-static int32_t PopulateByteArray(JNIEnv *env, jbyteArray source, uint8_t *dest, int32_t len);
-static int32_t PopulateString(JNIEnv *env, jstring source, char *dest, int32_t len);
+ARGS_NON_NULL_ALL static void FindCertStart(const uint8_t** buffer, int32_t* len);
 
 // Handles both DER and PEM formats
-jobject /*X509Certificate*/ AndroidCryptoNative_DecodeX509(const uint8_t *buf, int32_t len)
+jobject /*X509Certificate*/ AndroidCryptoNative_X509Decode(const uint8_t* buf, int32_t len)
 {
-    assert(buf != NULL && len > 0);
-    JNIEnv *env = GetJNIEnv();
+    abort_if_invalid_pointer_argument (buf);
+    abort_if_negative_integer_argument (len);
+
+    JNIEnv* env = GetJNIEnv();
 
     jobject ret = NULL;
-    INIT_LOCALS(loc, bytes, stream, certType, certFactory)
+    INIT_LOCALS(loc, bytes, stream, certType, certFactory);
+
+    FindCertStart(&buf, &len);
 
     // byte[] bytes = new byte[] { ... }
     // InputStream stream = new ByteArrayInputStream(bytes);
-    loc[bytes] = (*env)->NewByteArray(env, len);
+    loc[bytes] = make_java_byte_array(env, len);
     ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
     (*env)->SetByteArrayRegion(env, loc[bytes], 0, len, (const jbyte*)buf);
     loc[stream] = (*env)->NewObject(env, g_ByteArrayInputStreamClass, g_ByteArrayInputStreamCtor, loc[bytes]);
@@ -45,7 +39,7 @@ jobject /*X509Certificate*/ AndroidCryptoNative_DecodeX509(const uint8_t *buf, i
 
     // CertificateFactory certFactory = CertificateFactory.getInstance("X.509");
     // return (X509Certificate)certFactory.generateCertificate(stream);
-    loc[certType] = JSTRING("X.509");
+    loc[certType] = make_java_string(env, "X.509");
     ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
     loc[certFactory] = (*env)->CallStaticObjectMethod(env, g_CertFactoryClass, g_CertFactoryGetInstance, loc[certType]);
     ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
@@ -55,344 +49,301 @@ jobject /*X509Certificate*/ AndroidCryptoNative_DecodeX509(const uint8_t *buf, i
         ret = ToGRef(env, ret);
 
 cleanup:
-    RELEASE_LOCALS(loc, env)
+    RELEASE_LOCALS(loc, env);
     return ret;
 }
 
 // Encodes as DER format
-int32_t AndroidCryptoNative_EncodeX509(jobject /*X509Certificate*/ cert, uint8_t *buf, int32_t len)
+int32_t AndroidCryptoNative_X509Encode(jobject /*X509Certificate*/ cert, uint8_t* out, int32_t* outLen)
 {
-    assert(cert != NULL);
-    JNIEnv *env = GetJNIEnv();
-    int32_t ret = BUFFER_FAIL;
+    abort_if_invalid_pointer_argument (cert);
+    JNIEnv* env = GetJNIEnv();
+    int32_t ret = FAIL;
 
     // byte[] encoded = cert.getEncoded();
-    // return encoded.length
     jbyteArray encoded = (*env)->CallObjectMethod(env, cert, g_X509CertGetEncoded);
     ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
-    ret = PopulateByteArray(env, encoded, buf, len);
+    ret = PopulateByteArray(env, encoded, out, outLen);
 
 cleanup:
     (*env)->DeleteLocalRef(env, encoded);
     return ret;
 }
 
-void CryptoNative_X509Destroy(jobject /*X509Certificate*/ cert)
+int32_t AndroidCryptoNative_X509DecodeCollection(const uint8_t* buf,
+                                                 int32_t bufLen,
+                                                 jobject /*X509Certificate*/* out,
+                                                 int32_t* outLen)
 {
-    ReleaseGRef(GetJNIEnv(), cert);
-}
+    abort_if_invalid_pointer_argument (buf);
+    abort_if_negative_integer_argument (bufLen);
+    abort_if_invalid_pointer_argument (outLen);
 
-jobject /*X509Certificate*/ CryptoNative_X509UpRef(jobject /*X509Certificate*/ cert)
-{
-    return AddGRef(GetJNIEnv(), cert);
-}
+    JNIEnv* env = GetJNIEnv();
 
-bool AndroidCryptoNative_X509GetBasicInformation(jobject /*X509Certificate*/ cert, struct X509BasicInformation *info)
-{
-    assert(cert != NULL);
-    JNIEnv *env = GetJNIEnv();
+    int32_t ret = FAIL;
+    INIT_LOCALS(loc, bytes, stream, certType, certFactory, certs, iter);
 
-    bool success = false;
-    INIT_LOCALS(loc, notAfter, notBefore)
-
-    // int version = cert.getVersion();
-    jint ver = (*env)->CallIntMethod(env, cert, g_X509CertGetVersion);
-    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
-    int32_t version = (int32_t)ver;
-
-    // Date notAfter = cert.getNotAfter()
-    // long notAfterTime = notAfter.getTime()
-    loc[notAfter] = (*env)->CallObjectMethod(env, cert, g_X509CertGetNotAfter);
-    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
-    int64_t notAfterTime = (int64_t)(*env)->CallLongMethod(env, loc[notAfter], g_DateGetTime);
+    // byte[] bytes = new byte[] { ... }
+    // InputStream stream = new ByteArrayInputStream(bytes);
+    loc[bytes] = make_java_byte_array(env, bufLen);
+    (*env)->SetByteArrayRegion(env, loc[bytes], 0, bufLen, (const jbyte*)buf);
+    loc[stream] = (*env)->NewObject(env, g_ByteArrayInputStreamClass, g_ByteArrayInputStreamCtor, loc[bytes]);
     ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
 
-    // Date notBefore = cert.getNotBefore()
-    // long notBeforeTime = notBefore.getTime()
-    loc[notBefore] = (*env)->CallObjectMethod(env, cert, g_X509CertGetNotBefore);
-    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
-    int64_t notBeforeTime = (int64_t)(*env)->CallLongMethod(env, loc[notBefore], g_DateGetTime);
+    // CertificateFactory certFactory = CertificateFactory.getInstance("X.509");
+    loc[certType] = make_java_string(env, "X.509");
+    loc[certFactory] = (*env)->CallStaticObjectMethod(env, g_CertFactoryClass, g_CertFactoryGetInstance, loc[certType]);
     ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
 
-    info->Version = version;
-    info->NotAfter = notAfterTime;
-    info->NotBefore = notBeforeTime;
-    success = true;
-
-cleanup:
-    RELEASE_LOCALS(loc, env)
-    return success;
-}
-
-int32_t AndroidCryptoNative_X509GetPublicKeyAlgorithm(jobject /*X509Certificate*/ cert, char *buf, int32_t len)
-{
-    assert(cert != NULL);
-    JNIEnv *env = GetJNIEnv();
-
-    int32_t ret = BUFFER_FAIL;
-    INIT_LOCALS(loc, key, algorithm)
-
-    // PublicKey key = cert.getPublicKey();
-    // String algorithm = key.getAlgorithm();
-    // return encoded.length;
-    loc[key] = (*env)->CallObjectMethod(env, cert, g_X509CertGetPublicKey);
-    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
-    loc[algorithm] = (*env)->CallObjectMethod(env, loc[key], g_KeyGetAlgorithm);
-    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
-    ret = PopulateString(env, loc[algorithm], buf, len);
-
-cleanup:
-    RELEASE_LOCALS(loc, env)
-    return ret;
-}
-
-int32_t AndroidCryptoNative_X509GetPublicKeyBytes(jobject /*X509Certificate*/ cert, uint8_t *buf, int32_t len)
-{
-    assert(cert != NULL);
-    JNIEnv *env = GetJNIEnv();
-
-    int32_t ret = BUFFER_FAIL;
-    INIT_LOCALS(loc, key, keyInfoBytes)
-
-    // PublicKey key = cert.getPublicKey();
-    // byte[] keyInfoBytes = key.getEncoded();
-    loc[key] = (*env)->CallObjectMethod(env, cert, g_X509CertGetPublicKey);
-    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
-    loc[keyInfoBytes] = (*env)->CallObjectMethod(env, loc[key], g_KeyGetEncoded);
+    // Collection<Certificate> certs = certFactory.generateCertificates(stream);
+    loc[certs] = (*env)->CallObjectMethod(env, loc[certFactory], g_CertFactoryGenerateCertificates, loc[stream]);
     ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
 
-    // return keyInfoBytes.length;
-    ret = PopulateByteArray(env, loc[keyInfoBytes], buf, len);
+    jint certCount = (*env)->CallIntMethod(env, loc[certs], g_CollectionSize);
+    bool insufficientBuffer = *outLen < certCount;
+    *outLen = certCount;
 
-cleanup:
-    RELEASE_LOCALS(loc, env)
-    return ret;
-}
+    if (certCount == 0)
+    {
+        ret = SUCCESS;
+        goto cleanup;
+    }
 
-int32_t AndroidCryptoNative_X509GetPublicKeyParameterBytes(jobject /*X509Certificate*/ cert, uint8_t *pBuf, int32_t cBuf)
-{
-    // [TODO]
-    // PublicKey key = cert.publicKey()
-    // String algorithm = key.getAlgorithm()
-    // if (algorithm == "...") ...
-    // getParams()
-    return BUFFER_FAIL;
-}
+    if (insufficientBuffer)
+    {
+        ret = INSUFFICIENT_BUFFER;
+        goto cleanup;
+    }
 
-// Serial number as a byte array in big-endian byte-order
-int32_t AndroidCryptoNative_X509GetSerialNumber(jobject /*X509Certificate*/ cert, uint8_t *buf, int32_t len)
-{
-    assert(cert != NULL);
-    JNIEnv *env = GetJNIEnv();
-
-    int32_t ret = BUFFER_FAIL;
-    INIT_LOCALS(loc, serial, bytes)
-
-    // BigInteger serial = cert.getSerialNumber();
-    // buf = serial.toByteArray();
-    // return buf.length;
-    loc[serial] = (*env)->CallObjectMethod(env, cert, g_X509CertGetSerialNumber);
-    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
-    loc[bytes] = (*env)->CallObjectMethod(env, loc[serial], g_toByteArrayMethod);
-    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
-    ret = PopulateByteArray(env, loc[bytes], buf, len);
-
-cleanup:
-    RELEASE_LOCALS(loc, env)
-    return ret;
-}
-
-int32_t AndroidCryptoNative_X509GetSignatureAlgorithm(jobject /*X509Certificate*/ cert, char *buf, int32_t len)
-{
-    assert(cert != NULL);
-    JNIEnv *env = GetJNIEnv();
-    int32_t ret = BUFFER_FAIL;
-
-    // String oid = cert.getSigAlgOID()
-    // return oid.length;
-    jstring oid = (jstring)(*env)->CallObjectMethod(env, cert, g_X509CertGetSigAlgOID);
-    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
-    ret = PopulateString(env, oid, buf, len);
-
-cleanup:
-    (*env)->DeleteLocalRef(env, oid);
-    return ret;
-}
-
-int32_t AndroidCryptoNative_X509GetThumbprint(jobject /*X509Certificate*/ cert, uint8_t *buf, int32_t len)
-{
-    assert(cert != NULL);
-    JNIEnv *env = GetJNIEnv();
-
-    int32_t ret = BUFFER_FAIL;
-    INIT_LOCALS(loc, algorithm, md, encoded, thumbprint)
-
-    // MessageDigest md = MessageDigest.getInstance("SHA-1");
-    loc[algorithm] = JSTRING("SHA-1");
-    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
-    loc[md] = (*env)->CallStaticObjectMethod(env, g_mdClass, g_mdGetInstanceMethod, loc[algorithm]);
-    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
-
-    // byte[] encoded = cert.getEncoded();
-    loc[encoded] = (*env)->CallObjectMethod(env, cert, g_X509CertGetEncoded);
-    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
-
-    // byte[] thumbprint = md.digest(encoded);
-    // return thumbprint.length;
-    loc[thumbprint] = (*env)->CallObjectMethod(env, loc[md], g_mdDigestMethod, loc[encoded]);
-    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
-    ret = PopulateByteArray(env, loc[thumbprint], buf, len);
-
-cleanup:
-    RELEASE_LOCALS(loc, env)
-    return ret;
-}
-
-static int32_t GetNameBytes(JNIEnv *env, jobject /*X500Principal*/ name, uint8_t *buf, int32_t len)
-{
-    assert(name != NULL);
-    int32_t ret = BUFFER_FAIL;
-
-    // byte[] raw = name.getEncoded();
-    // return raw.length
-    jbyteArray encoded = (*env)->CallObjectMethod(env, name, g_X500PrincipalGetEncoded);
-    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
-    ret = PopulateByteArray(env, encoded, buf, len);
-
-cleanup:
-    (*env)->DeleteLocalRef(env, encoded);
-    return ret;
-}
-
-int32_t AndroidCryptoNative_X509GetIssuerNameBytes(jobject /*X509Certificate*/ cert, uint8_t *buf, int32_t len)
-{
-    assert(cert != NULL);
-    JNIEnv *env = GetJNIEnv();
-    int32_t ret = BUFFER_FAIL;
-
-    // X500Principal name = cert.getIssuerX500Principal()
-    jobject name = (*env)->CallObjectMethod(env, cert, g_X509CertGetIssuerX500Principal);
-    if (!CheckJNIExceptions(env) && name != NULL)
-        ret = GetNameBytes(env, name, buf, len);
-
-    (*env)->DeleteLocalRef(env, name);
-    return ret;
-}
-
-int32_t AndroidCryptoNative_X509GetSubjectNameBytes(jobject /*X509Certificate*/ cert, uint8_t *buf, int32_t len)
-{
-    assert(cert != NULL);
-    JNIEnv *env = GetJNIEnv();
-    int32_t ret = BUFFER_FAIL;
-
-    // X500Principal name = cert.getSubjectX500Principal()
-    jobject name = (*env)->CallObjectMethod(env, cert, g_X509CertGetSubjectX500Principal);
-    if (!CheckJNIExceptions(env) && name != NULL)
-        ret = GetNameBytes(env, name, buf, len);
-
-    (*env)->DeleteLocalRef(env, name);
-    return ret;
-}
-
-static void EnumExtensions(JNIEnv *env, jobject /*X509Certificate*/ cert, bool critical, EnumX509ExtensionsCallback cb, void *context)
-{
-    INIT_LOCALS(loc, exts, iter)
-
-    // Set<string> crit = critical ? cert.getCriticalExtensionOIDs() : cert.getNonCriticalExtensionOIDs();
-    loc[exts] = critical
-        ? (*env)->CallObjectMethod(env, cert, g_X509CertGetCriticalExtensionOIDs)
-        : (*env)->CallObjectMethod(env, cert, g_X509CertGetNonCriticalExtensionOIDs);
-    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
-
-    // Iterator<string> iter = collection.iterator();
+    // int i = 0;
+    // Iterator<Certificate> iter = certs.iterator();
     // while (iter.hasNext()) {
-    //     string oid = iter.next();
-    //     byte[] data = cert.getExtensionValue(oid);
-    //     cb(oid, oid.length, data, data.length, /*critical*/ true, context);
+    //     Certificate cert = iter.next();
+    //     < add global reference >
+    //     out[i] = cert;
+    //     i++;
     // }
-    loc[iter] = (*env)->CallObjectMethod(env, loc[exts], g_SetIterator);
+    int32_t i = 0;
+    loc[iter] = (*env)->CallObjectMethod(env, loc[certs], g_CollectionIterator);
     ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
     jboolean hasNext = (*env)->CallBooleanMethod(env, loc[iter], g_IteratorHasNext);
     ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
     while (hasNext)
     {
-        INIT_LOCALS(locLoop, oid, data)
-        const char *oidPtr = NULL;
-        jbyte *dataPtr = NULL;
+        jobject cert = (*env)->CallObjectMethod(env, loc[iter], g_IteratorNext);
+        ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
 
-        locLoop[oid] = (*env)->CallObjectMethod(env, loc[iter], g_IteratorNext);
-        ON_EXCEPTION_PRINT_AND_GOTO(loop_cleanup);
-        jsize oidLen = (*env)->GetStringUTFLength(env, locLoop[oid]);
-        oidPtr = (*env)->GetStringUTFChars(env, locLoop[oid], NULL);
-
-        locLoop[data] = (*env)->CallObjectMethod(env, cert, g_X509CertGetExtensionValue, locLoop[oid]);
-        ON_EXCEPTION_PRINT_AND_GOTO(loop_cleanup);
-        jsize dataLen = (*env)->GetArrayLength(env, locLoop[data]);
-        dataPtr = (*env)->GetByteArrayElements(env, locLoop[data], NULL);
-
-        // X509Certificate.getExtensionValue returns the full DER-encoded data.
-        cb(oidPtr, oidLen, (const uint8_t *)dataPtr, dataLen, critical, context);
+        out[i] = ToGRef(env, cert);
+        i++;
 
         hasNext = (*env)->CallBooleanMethod(env, loc[iter], g_IteratorHasNext);
-        if (CheckJNIExceptions(env))
-            hasNext = false;
+        ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
+    }
 
-    loop_cleanup:
-        if (oidPtr != NULL)
-            (*env)->ReleaseStringUTFChars(env, locLoop[oid], oidPtr);
+    ret = SUCCESS;
 
-        if (dataPtr != NULL)
-            (*env)->ReleaseByteArrayElements(env, locLoop[data], dataPtr, JNI_ABORT);
+cleanup:
+    RELEASE_LOCALS(loc, env);
+    return ret;
+}
 
-        RELEASE_LOCALS(locLoop, env)
+int32_t AndroidCryptoNative_X509ExportPkcs7(jobject* /*X509Certificate[]*/ certs,
+                                            int32_t certsLen,
+                                            uint8_t* out,
+                                            int32_t* outLen)
+{
+    abort_if_invalid_pointer_argument (certs);
+    abort_if_negative_integer_argument (certsLen);
+
+    JNIEnv* env = GetJNIEnv();
+
+    int32_t ret = FAIL;
+    INIT_LOCALS(loc, certList, certType, certFactory, certPath, pkcs7Type, encoded);
+
+    // ArrayList<Certificate> certList = new ArrayList<Certificate>();
+    // foreach (Certificate cert in certs)
+    //     certList.add(cert);
+    loc[certList] = (*env)->NewObject(env, g_ArrayListClass, g_ArrayListCtorWithCapacity, certsLen);
+    for (int i = 0; i < certsLen; ++i)
+    {
+        (*env)->CallBooleanMethod(env, loc[certList], g_ArrayListAdd, certs[i]);
+        ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
+    }
+
+    // CertificateFactory certFactory = CertificateFactory.getInstance("X.509");
+    loc[certType] = make_java_string(env, "X.509");
+    loc[certFactory] = (*env)->CallStaticObjectMethod(env, g_CertFactoryClass, g_CertFactoryGetInstance, loc[certType]);
+    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
+
+    // CertPath certPath = certFactory.generateCertPath(certList);
+    // byte[] encoded = certPath.getEncoded("PKCS7");
+    loc[certPath] =
+        (*env)->CallObjectMethod(env, loc[certFactory], g_CertFactoryGenerateCertPathFromList, loc[certList]);
+    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
+    loc[pkcs7Type] = make_java_string(env, "PKCS7");
+    loc[encoded] = (*env)->CallObjectMethod(env, loc[certPath], g_CertPathGetEncoded, loc[pkcs7Type]);
+    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
+
+    ret = PopulateByteArray(env, loc[encoded], out, outLen);
+
+cleanup:
+    RELEASE_LOCALS(loc, env);
+    return ret;
+}
+
+PAL_X509ContentType AndroidCryptoNative_X509GetContentType(const uint8_t* buf, int32_t len)
+{
+    abort_if_invalid_pointer_argument (buf);
+    abort_if_negative_integer_argument (len);
+
+    JNIEnv* env = GetJNIEnv();
+
+    PAL_X509ContentType ret = PAL_X509Unknown;
+    INIT_LOCALS(loc, bytes, stream, certType, certFactory, pkcs7Type, certPath, cert);
+
+    // This function checks:
+    // - PKCS7 DER/PEM
+    // - X509 DER/PEM
+    // The generateCertificate method used for the X509 DER/PEM check will succeed for some
+    // PKCS7 blobs, so it is done after the PKCS7 check.
+
+    FindCertStart(&buf, &len);
+
+    // byte[] bytes = new byte[] { ... }
+    // InputStream stream = new ByteArrayInputStream(bytes);
+    loc[bytes] = make_java_byte_array(env, len);
+    (*env)->SetByteArrayRegion(env, loc[bytes], 0, len, (const jbyte*)buf);
+    loc[stream] = (*env)->NewObject(env, g_ByteArrayInputStreamClass, g_ByteArrayInputStreamCtor, loc[bytes]);
+    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
+
+    // CertificateFactory certFactory = CertificateFactory.getInstance("X.509");
+    loc[certType] = make_java_string(env, "X.509");
+    loc[certFactory] = (*env)->CallStaticObjectMethod(env, g_CertFactoryClass, g_CertFactoryGetInstance, loc[certType]);
+    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
+
+    // CertPath certPath = certFactory.generateCertPath(stream, "PKCS7");
+    loc[pkcs7Type] = make_java_string(env, "PKCS7");
+    loc[certPath] = (*env)->CallObjectMethod(
+        env, loc[certFactory], g_CertFactoryGenerateCertPathFromStream, loc[stream], loc[pkcs7Type]);
+    if (!TryClearJNIExceptions(env))
+    {
+        ret = PAL_Pkcs7;
+        goto cleanup;
+    }
+
+    // stream.reset();
+    // Certificate cert = certFactory.generateCertificate(stream);
+    (*env)->CallVoidMethod(env, loc[stream], g_ByteArrayInputStreamReset);
+    loc[cert] = (*env)->CallObjectMethod(env, loc[certFactory], g_CertFactoryGenerateCertificate, loc[stream]);
+    if (!TryClearJNIExceptions(env))
+    {
+        ret = PAL_Certificate;
+        goto cleanup;
     }
 
 cleanup:
-    RELEASE_LOCALS(loc, env)
+    RELEASE_LOCALS(loc, env);
+    return ret;
 }
 
-int32_t AndroidCryptoNative_X509EnumExtensions(jobject /*X509Certificate*/ cert, EnumX509ExtensionsCallback cb, void *context)
+void* AndroidCryptoNative_X509PublicKey(jobject /*X509Certificate*/ cert, PAL_KeyAlgorithm algorithm)
 {
-    assert(cert != NULL);
-    JNIEnv *env = GetJNIEnv();
+    abort_if_invalid_pointer_argument (cert);
 
-    // [TODO] We're skipping over any errors - do we care to propagate?
-    EnumExtensions(env, cert, true /*critical*/, cb, context);
-    EnumExtensions(env, cert, false /*critical*/, cb, context);
-    return SUCCESS;
+    JNIEnv* env = GetJNIEnv();
+
+    void* keyHandle;
+    jobject key = (*env)->CallObjectMethod(env, cert, g_X509CertGetPublicKey);
+    if (CheckJNIExceptions(env) || !key)
+    {
+        return NULL;
+    }
+    switch (algorithm)
+    {
+        case PAL_EC:
+            keyHandle = AndroidCryptoNative_NewEcKeyFromKeys(env, key, NULL /*privateKey*/);
+            break;
+        case PAL_DSA:
+            keyHandle = AndroidCryptoNative_CreateKeyPair(env, key, NULL /*privateKey*/);
+            break;
+        case PAL_RSA:
+            keyHandle = AndroidCryptoNative_NewRsaFromKeys(env, key, NULL /*privateKey*/);
+            break;
+        default:
+            keyHandle = NULL;
+            break;
+    }
+
+    (*env)->DeleteLocalRef(env, key);
+    return keyHandle;
 }
 
-int32_t AndroidCryptoNative_X509FindExtensionData(jobject /*X509Certificate*/ cert, const char *oid, uint8_t *buf, int32_t len)
+static int32_t PopulateByteArray(JNIEnv* env, jbyteArray source, uint8_t* dest, int32_t* len)
 {
-    LOG_ERROR("Not yet implemented");
+    abort_if_invalid_pointer_argument (source);
+    abort_if_invalid_pointer_argument (len);
 
-    // byte[] data = cert.getExtensionValue(oid);
-    // return data.length;
-    return BUFFER_FAIL;
-}
-
-static int32_t PopulateByteArray(JNIEnv *env, jbyteArray source, uint8_t *dest, int32_t len)
-{
     jsize bytesLen = (*env)->GetArrayLength(env, source);
 
-    // Insufficient buffer
-    if (len < bytesLen)
-        return -bytesLen;
+    bool insufficientBuffer = *len < bytesLen;
+    *len = bytesLen;
+    if (insufficientBuffer)
+        return INSUFFICIENT_BUFFER;
 
+    if(dest == NULL)
+        return SUCCESS; // managed code calls us with `dest` == NULL if it needs to learn the buffer size, it's not an
+                        // error
     (*env)->GetByteArrayRegion(env, source, 0, bytesLen, (jbyte*)dest);
     return CheckJNIExceptions(env) ? FAIL : SUCCESS;
 }
 
-static int32_t PopulateString(JNIEnv *env, jstring source, char *dest, int32_t len)
+static void FindCertStart(const uint8_t** buffer, int32_t* len)
 {
-    // Length with null terminator
-    jsize bytesLen = (*env)->GetStringUTFLength(env, source) + 1;
+    if (iscntrl(**buffer) && !isspace(**buffer))
+    {
+        // If the character is a control character that isn't whitespace, then we're probably using a DER encoding
+        // and not using a PEM encoding in ASCII.
+        return;
+    }
 
-    // Insufficient buffer
-    if (len < bytesLen)
-        return -bytesLen;
+    const uint8_t* bufferLocal = *buffer;
+    int32_t lengthLocal = *len;
 
-    jsize strLen = (*env)->GetStringLength(env, source);
-    (*env)->GetStringUTFRegion(env, source, 0, strLen, dest);
-    return CheckJNIExceptions(env) ? FAIL : SUCCESS;
+    while (lengthLocal > 0)
+    {
+        const char pemHeader[] = "-----BEGIN ";
+        int32_t pemHeaderLength = (int32_t)(sizeof(pemHeader) - 1); // Exclude the null-terminator
+        // Skip until we see the - that could start a PEM block.
+        while (lengthLocal >= pemHeaderLength && (!iscntrl(*bufferLocal) || isspace(*bufferLocal)) &&
+               *bufferLocal != pemHeader[0])
+        {
+            bufferLocal += 1;
+            lengthLocal -= 1;
+        }
+
+        if (lengthLocal < pemHeaderLength || (iscntrl(*bufferLocal) && !isspace(*bufferLocal)))
+        {
+            // Either the buffer doesn't have enough space to contain a PEM header
+            // or we encountered a control character that isn't whitespace.
+            // In the insufficient size case, we didn't find the PEM header, so we can't skip to it.
+            // In the control character case, we know that this isn't explanatory info since that needs to
+            // all be printable or whitespace characters, not non-whitespace control characters.
+            return;
+        }
+
+        if (memcmp(bufferLocal, pemHeader, (size_t)pemHeaderLength) == 0)
+        {
+            // We found the PEM header.
+            *buffer = bufferLocal;
+            *len = lengthLocal;
+            return;
+        }
+        else
+        {
+            // This PEM header is invalid. Skip it.
+            bufferLocal += 1;
+            lengthLocal -= 1;
+        }
+    }
 }

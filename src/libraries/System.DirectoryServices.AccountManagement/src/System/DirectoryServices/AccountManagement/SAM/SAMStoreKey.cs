@@ -7,7 +7,7 @@ using System.Globalization;
 
 namespace System.DirectoryServices.AccountManagement
 {
-    internal class SAMStoreKey : StoreKey
+    internal sealed class SAMStoreKey : StoreKey
     {
         private readonly byte[] _sid;
         private readonly string _machineName;

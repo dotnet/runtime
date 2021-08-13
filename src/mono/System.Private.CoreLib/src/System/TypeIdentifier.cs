@@ -91,7 +91,7 @@ namespace System
             }
         }
 
-        private class Display : ATypeName
+        private sealed class Display : ATypeName
         {
             private readonly string displayName;
 
@@ -135,7 +135,7 @@ namespace System
             return new NoEscape(simpleName);
         }
 
-        private class Display : TypeNames.ATypeName, ITypeIdentifier
+        private sealed class Display : TypeNames.ATypeName, ITypeIdentifier
         {
             private readonly string displayName;
             private string? internal_name; //cached
@@ -158,7 +158,7 @@ namespace System
                 TypeNames.FromDisplay(DisplayName + "+" + innerName.DisplayName);
         }
 
-        private class Internal : TypeNames.ATypeName, ITypeIdentifier
+        private sealed class Internal : TypeNames.ATypeName, ITypeIdentifier
         {
             private readonly string internalName;
             private string? display_name; //cached
@@ -183,7 +183,7 @@ namespace System
                 TypeNames.FromDisplay(DisplayName + "+" + innerName.DisplayName);
         }
 
-        private class NoEscape : TypeNames.ATypeName, ITypeIdentifier
+        private sealed class NoEscape : TypeNames.ATypeName, ITypeIdentifier
         {
             private readonly string simpleName;
             internal NoEscape(string simpleName)

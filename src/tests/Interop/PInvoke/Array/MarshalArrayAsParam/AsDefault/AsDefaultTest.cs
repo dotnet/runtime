@@ -334,7 +334,7 @@ public class ArrayMarshal
 
         Assert.IsTrue(CStyle_Array_Bool(InitBoolArray(ARRAY_SIZE), ARRAY_SIZE), "CStyle_Array_Bool");
 
-        if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+        if (OperatingSystem.IsWindows())
         {
             object[] oArr = InitArray<object>(ARRAY_SIZE);
             // Test nesting null value scenario
@@ -366,7 +366,7 @@ public class ArrayMarshal
         Assert.IsTrue(CStyle_Array_LPSTR_In(strArr, ARRAY_SIZE), "CStyle_Array_LPSTR_In");
         Assert.IsTrue(CStyle_Array_Struct_In(InitStructArray(ARRAY_SIZE), ARRAY_SIZE), "CStyle_Array_Struct_In");
         Assert.IsTrue(CStyle_Array_Bool_In(InitBoolArray(ARRAY_SIZE), ARRAY_SIZE), "CStyle_Array_Bool_In");
-        if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+        if (OperatingSystem.IsWindows())
         {
             object[] oArr = InitArray<object>(ARRAY_SIZE);
             // Test nesting null value scenario
@@ -461,7 +461,7 @@ public class ArrayMarshal
         Assert.IsTrue(CStyle_Array_Bool_InOut(boolArr, ARRAY_SIZE), "CStyle_Array_Bool_InOut");
         Assert.IsTrue(Equals<bool>(boolArr, GetExpectedOutBoolArray(ARRAY_SIZE)), "CStyle_Array_Bool_InOut:Equals<bool>");
 
-        if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+        if (OperatingSystem.IsWindows())
         {
             Console.WriteLine("CStyle_Array_Object_InOut");
             object[] oArr = InitArray<object>(ARRAY_SIZE);
@@ -624,7 +624,7 @@ public class ArrayMarshal
         Assert.IsTrue(CStyle_Array_Bool_Out(boolArr, ARRAY_SIZE), "CStyle_Array_Bool_Out");
         Assert.IsTrue(Equals<bool>(boolArr, GetExpectedOutBoolArray(ARRAY_SIZE)), "CStyle_Array_Bool_Out:Equals<bool>");
 
-        if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+        if (OperatingSystem.IsWindows())
         {
             Console.WriteLine("CStyle_Array_Object_Out");
             object[] oArr = new object[ARRAY_SIZE];

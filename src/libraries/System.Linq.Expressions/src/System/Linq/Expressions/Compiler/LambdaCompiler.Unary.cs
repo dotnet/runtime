@@ -9,7 +9,7 @@ using static System.Linq.Expressions.CachedReflectionInfo;
 
 namespace System.Linq.Expressions.Compiler
 {
-    internal partial class LambdaCompiler
+    internal sealed partial class LambdaCompiler
     {
         private void EmitQuoteUnaryExpression(Expression expr)
         {
@@ -94,7 +94,7 @@ namespace System.Linq.Expressions.Compiler
                     EmitBinaryOperator(ExpressionType.SubtractChecked, nnType, nnType, nnType, liftedToNull: false);
 
                     // construct result
-                    _ilg.Emit(OpCodes.Newobj, TypeUtils.GetNullableConstructor(type, nnType));
+                    _ilg.Emit(OpCodes.Newobj, TypeUtils.GetNullableConstructor(type));
                     _ilg.Emit(OpCodes.Br_S, end);
 
                     // if null then push back on stack
@@ -164,7 +164,7 @@ namespace System.Linq.Expressions.Compiler
                         EmitUnaryOperator(op, nnOperandType, nnOperandType);
 
                         // construct result
-                        ConstructorInfo ci = TypeUtils.GetNullableConstructor(resultType, nnOperandType);
+                        ConstructorInfo ci = TypeUtils.GetNullableConstructor(resultType);
                         _ilg.Emit(OpCodes.Newobj, ci);
                         _ilg.Emit(OpCodes.Br_S, labEnd);
 

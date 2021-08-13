@@ -148,13 +148,19 @@
     <value>Method layout must be either DefaultSort or MethodOrder.</value>
   </data>
   <data name="InvalidMethodLayout" xml:space="preserve">
-    <value>Method layout must be either DefaultSort, ExclusiveWeight, HotCold, HotWarmCold, or CallFrequency.</value>
+    <value>Method layout must be either DefaultSort, ExclusiveWeight, HotCold, HotWarmCold, CallFrequency or PettisHansen.</value>
   </data>
   <data name="CompileNoMethodsOption" xml:space="preserve">
     <value>True to skip compiling methods into the R2R image (default = false)</value>
   </data>
   <data name="CompositeBuildMode" xml:space="preserve">
     <value>Emit a composite R2R image comprising a number of input assemblies</value>
+  </data>
+  <data name="CompositeKeyFile" xml:space="preserve">
+    <value>KeyFile(.snk) for specifiying a Public Key for the composite image created</value>
+  </data>
+  <data name="ErrorCompositeKeyFileNotPublicKey" xml:space="preserve">
+    <value>--CompositeKeyFile does not specify a valid public key</value>
   </data>
   <data name="InputFilesToCompile" xml:space="preserve">
     <value>Input file(s) to compile</value>
@@ -163,10 +169,7 @@
     <value>Instruction set(s) to use for compilation</value>
   </data>
   <data name="InstructionSetMustNotBe" xml:space="preserve">
-    <value>Instruction set must not be '{0}' for this architecture and operating system</value>
-  </data>
-  <data name="InstructionSetWithoutInputBubble" xml:space="preserve">
-    <value>Instruction set(s) specified without also specifying input-bubble</value>
+    <value>Instruction set '{0}' is not valid for this architecture and operating system</value>
   </data>
   <data name="InstructionSetInvalidImplication" xml:space="preserve">
     <value>Instruction set '{0}' implies support for instruction set '{1}'</value>
@@ -201,6 +204,9 @@
   <data name="OptimizeSpeedOption" xml:space="preserve">
     <value>Enable optimizations, favor code speed</value>
   </data>
+  <data name="OutNearInputOption" xml:space="preserve">
+    <value>Create output files near input files with ni.dll suffix</value>
+  </data>
   <data name="OutputFilePath" xml:space="preserve">
     <value>Output file path</value>
   </data>
@@ -216,6 +222,9 @@
   <data name="ReferenceFiles" xml:space="preserve">
     <value>Reference file(s) for compilation</value>
   </data>
+  <data name="InputBubbleReferenceFiles" xml:space="preserve">
+    <value>Input bubble reference file(s) to be added to bubble (any use of this option is unsupported!) </value>
+  </data>
   <data name="ResilientOption" xml:space="preserve">
     <value>Disable behavior where unexpected compilation failures cause overall compilation failure</value>
   </data>
@@ -227,6 +236,9 @@
   </data>
   <data name="PrintReproInstructionsOption" xml:space="preserve">
     <value>When compiling each method, print out the set of arguments needed to compile that method only</value>
+  </data>
+  <data name="SingleFileCompilationOption" xml:space="preserve">
+    <value>Compile each of the input files separately</value>
   </data>
   <data name="SingleMethodGenericArgs" xml:space="preserve">
     <value>Single method compilation: generic arguments to the method</value>
@@ -329,5 +341,20 @@
   </data>
   <data name="PerfMapFilePathOption" xml:space="preserve">
     <value>Explicit specification of the PerfMap file path</value>
+  </data>
+  <data name="PerfMapFormatVersionOption" xml:space="preserve">
+    <value>Explicitly request a particular PerfMap format version</value>
+  </data>
+  <data name="OptionPassingHelp" xml:space="preserve">
+    <value>Options may be passed on the command line, or via response file. On the command line switch values may be specified by passing the option followed by a space followed by the value of the option, or by specifying a : between option and switch value. A response file is specified by passing the @ symbol before the response file name. In a response file all options must be specified on their own lines, and only the : syntax for switches is supported.</value>
+  </data>
+  <data name="DashDashHelp" xml:space="preserve">
+    <value>Use the '--' option to disambiguate between input files that have begin with -- and options. After a '--' option, all arguments are considered to be input files. If no input files begin with '--' then this option is not necessary.</value>
+  </data>
+  <data name="SwitchWithDefaultHelp" xml:space="preserve">
+    <value>Valid switches for {0} are: '{1}'. The default value is '{2}'.</value>
+  </data>
+  <data name="InstructionSetHelp" xml:space="preserve">
+    <value>The allowable values for the --instruction-set option are described in the table below. Each architecture has a different set of valid instruction sets, and multiple instruction sets may be specified by separating the instructions sets by a ','. For example 'avx2,bmi,lzcnt'</value>
   </data>
 </root>

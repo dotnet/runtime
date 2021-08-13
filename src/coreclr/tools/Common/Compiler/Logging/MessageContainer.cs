@@ -49,7 +49,7 @@ namespace ILCompiler.Logging
         /// Create an error message.
         /// </summary>
         /// <param name="text">Humanly readable message describing the error</param>
-        /// <param name="code">Unique error ID. Please see https://github.com/mono/linker/blob/master/doc/error-codes.md
+        /// <param name="code">Unique error ID. Please see https://github.com/mono/linker/blob/main/doc/error-codes.md
         /// for the list of errors and possibly add a new one</param>
         /// <param name="subcategory">Optionally, further categorize this error</param>
         /// <param name="origin">Filename, line, and column where the error was found</param>
@@ -67,7 +67,7 @@ namespace ILCompiler.Logging
         /// </summary>
         /// <param name="context">Context with the relevant warning suppression info.</param>
         /// <param name="text">Humanly readable message describing the warning</param>
-        /// <param name="code">Unique warning ID. Please see https://github.com/mono/linker/blob/master/doc/error-codes.md
+        /// <param name="code">Unique warning ID. Please see https://github.com/mono/linker/blob/main/doc/error-codes.md
         /// for the list of warnings and possibly add a new one</param>
         /// /// <param name="origin">Filename or member where the warning is coming from</param>
         /// <param name="subcategory">Optionally, further categorize this warning</param>
@@ -76,8 +76,8 @@ namespace ILCompiler.Logging
         /// <returns>New MessageContainer of 'Warning' category</returns>
         internal static MessageContainer? CreateWarningMessage(Logger context, string text, int code, MessageOrigin origin, string subcategory = MessageSubCategory.None)
         {
-            if (!(code > 2000 && code <= 6000))
-                throw new ArgumentOutOfRangeException(nameof(code), $"The provided code '{code}' does not fall into the warning category, which is in the range of 2001 to 6000 (inclusive).");
+            //if (!(code > 2000 && code <= 6000))
+            //    throw new ArgumentOutOfRangeException(nameof(code), $"The provided code '{code}' does not fall into the warning category, which is in the range of 2001 to 6000 (inclusive).");
 
             return CreateWarningMessageContainer(context, text, code, origin, subcategory);
         }

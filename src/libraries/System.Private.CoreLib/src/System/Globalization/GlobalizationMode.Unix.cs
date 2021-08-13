@@ -5,40 +5,53 @@ namespace System.Globalization
 {
     internal static partial class GlobalizationMode
     {
-        // Order of these properties in Windows matter because GetUseIcuMode is dependent on Invariant.
-        // So we need Invariant to be initialized first.
-        internal static bool Invariant { get; } = GetGlobalizationInvariantMode();
-
-        internal static bool UseNls => false;
-
-        private static bool GetGlobalizationInvariantMode()
+        private static partial class Settings
         {
-            bool invariantEnabled = GetInvariantSwitchValue();
-            if (!invariantEnabled)
+            /// <summary>
+            /// Load ICU (when not in Invariant mode) in a static cctor to ensure it is loaded as side-effect of
+            /// the GlobalizationMode.Invariant check. Globalization P/Invokes, e.g. in CompareInfo.GetSortKey,
+            /// rely on ICU already being loaded before they are called.
+            /// </summary>
+            static Settings()
             {
-                if (TryGetAppLocalIcuSwitchValue(out string? icuSuffixAndVersion))
+                // Use GlobalizationMode.Invariant to allow ICU initialization to be trimmed when Invariant=true
+                // and PredefinedCulturesOnly is unspecified.
+                if (!GlobalizationMode.Invariant)
                 {
-                    LoadAppLocalIcu(icuSuffixAndVersion);
+                    if (TryGetAppLocalIcuSwitchValue(out string? icuSuffixAndVersion))
+                    {
+                        LoadAppLocalIcu(icuSuffixAndVersion);
+                    }
+                    else
+                    {
+                        int loaded = LoadICU();
+                        if (loaded == 0)
+                        {
+                            Environment.FailFast(GetIcuLoadFailureMessage());
+                        }
+                    }
+                }
+            }
+
+            private static string GetIcuLoadFailureMessage()
+            {
+                // These strings can't go into resources, because a resource lookup requires globalization, which requires ICU
+                if (OperatingSystem.IsBrowser() || OperatingSystem.IsAndroid() ||
+                    OperatingSystem.IsIOS() || OperatingSystem.IsTvOS() || OperatingSystem.IsWatchOS())
+                {
+                    return "Unable to load required ICU Globalization data. Please see https://aka.ms/dotnet-missing-libicu for more information";
                 }
                 else
                 {
-                    int loaded = Interop.Globalization.LoadICU();
-                    if (loaded == 0 && !OperatingSystem.IsBrowser())
-                    {
-                        // This can't go into resources, because a resource lookup requires globalization, which requires ICU
-                        string message = "Couldn't find a valid ICU package installed on the system. " +
-                                         "Please install libicu using your package manager and try again. " +
-                                         "Alternatively you can set the configuration flag System.Globalization.Invariant to true if you want to run with no globalization support. " +
-                                         "Please see https://aka.ms/dotnet-missing-libicu for more information.";
-                        Environment.FailFast(message);
-                    }
-
-                    // fallback to Invariant mode if LoadICU failed (Browser).
-                    return loaded == 0;
+                    return "Couldn't find a valid ICU package installed on the system. " +
+                        "Please install libicu using your package manager and try again. " +
+                        "Alternatively you can set the configuration flag System.Globalization.Invariant to true if you want to run with no globalization support. " +
+                        "Please see https://aka.ms/dotnet-missing-libicu for more information.";
                 }
             }
-            return invariantEnabled;
         }
+
+        internal static bool UseNls => false;
 
         private static void LoadAppLocalIcuCore(ReadOnlySpan<char> version, ReadOnlySpan<char> suffix)
         {

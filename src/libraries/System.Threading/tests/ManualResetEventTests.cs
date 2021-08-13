@@ -69,6 +69,7 @@ namespace System.Threading.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/51400", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public void PingPong()
         {
             using (ManualResetEvent mre1 = new ManualResetEvent(true), mre2 = new ManualResetEvent(false))

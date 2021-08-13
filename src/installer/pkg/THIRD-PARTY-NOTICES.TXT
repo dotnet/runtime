@@ -15,7 +15,7 @@ Copyright (c) .NET Foundation. All rights reserved.
 Licensed under the Apache License, Version 2.0.
 
 Available at
-https://github.com/dotnet/aspnetcore/blob/master/LICENSE.txt
+https://github.com/dotnet/aspnetcore/blob/main/LICENSE.txt
 
 License notice for Slicing-by-8
 -------------------------------
@@ -668,22 +668,16 @@ ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
 THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-License notice for Xorshift RNGs
+License notice for xoshiro RNGs
 --------------------------------
 
-George Marsaglia
-2003-07-04
-Journal of Statistical Software
-License: http://creativecommons.org/licenses/by/3.0/
+Written in 2018 by David Blackman and Sebastiano Vigna (vigna@acm.org)
 
-https://www.jstatsoft.org/article/view/v008i14
-https://www.jstatsoft.org/index.php/jss/article/view/v008i14/xorshift.pdf
+To the extent possible under law, the author has dedicated all copyright
+and related and neighboring rights to this software to the public domain
+worldwide. This software is distributed without any warranty.
 
-License notice for Xorshift (Wikipedia)
----------------------------------------
-
-https://en.wikipedia.org/wiki/Xorshift
-License: https://en.wikipedia.org/wiki/Wikipedia:Text_of_Creative_Commons_Attribution-ShareAlike_3.0_Unported_License
+See <http://creativecommons.org/publicdomain/zero/1.0/>.
 
 License for fastmod (https://github.com/lemire/fastmod)
 --------------------------------------

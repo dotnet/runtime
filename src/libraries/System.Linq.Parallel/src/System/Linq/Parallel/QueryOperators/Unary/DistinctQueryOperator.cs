@@ -116,10 +116,10 @@ namespace System.Linq.Parallel
         // then doesn't return elements it has already seen before.
         //
 
-        private class DistinctQueryOperatorEnumerator<TKey> : QueryOperatorEnumerator<TInputOutput, int>
+        private sealed class DistinctQueryOperatorEnumerator<TKey> : QueryOperatorEnumerator<TInputOutput, int>
         {
             private readonly QueryOperatorEnumerator<Pair<TInputOutput, NoKeyMemoizationRequired>, TKey> _source; // The data source.
-            private readonly Set<TInputOutput> _hashLookup; // The hash lookup, used to produce the distinct set.
+            private readonly HashSet<TInputOutput> _hashLookup; // The hash lookup, used to produce the distinct set.
             private readonly CancellationToken _cancellationToken;
             private Shared<int>? _outputLoopCount; // Allocated in MoveNext to avoid false sharing.
 
@@ -133,7 +133,7 @@ namespace System.Linq.Parallel
             {
                 Debug.Assert(source != null);
                 _source = source;
-                _hashLookup = new Set<TInputOutput>(comparer);
+                _hashLookup = new HashSet<TInputOutput>(comparer);
                 _cancellationToken = cancellationToken;
             }
 
@@ -156,7 +156,7 @@ namespace System.Linq.Parallel
                 while (_source.MoveNext(ref current, ref keyUnused))
                 {
                     if ((_outputLoopCount.Value++ & CancellationState.POLL_INTERVAL) == 0)
-                        _cancellationToken.ThrowIfCancellationRequested();;
+                        _cancellationToken.ThrowIfCancellationRequested();
 
                     // We ensure we never return duplicates by tracking them in our set.
                     if (_hashLookup.Add(current.First))
@@ -189,7 +189,7 @@ namespace System.Linq.Parallel
             return wrappedChild.Distinct(_comparer);
         }
 
-        private class OrderedDistinctQueryOperatorEnumerator<TKey> : QueryOperatorEnumerator<TInputOutput, TKey>
+        private sealed class OrderedDistinctQueryOperatorEnumerator<TKey> : QueryOperatorEnumerator<TInputOutput, TKey>
         {
             private readonly QueryOperatorEnumerator<Pair<TInputOutput, NoKeyMemoizationRequired>, TKey> _source; // The data source.
             private readonly Dictionary<Wrapper<TInputOutput>, TKey> _hashLookup; // The hash lookup, used to produce the distinct set.
@@ -234,7 +234,7 @@ namespace System.Linq.Parallel
                     while (_source.MoveNext(ref elem, ref orderKey))
                     {
                         if ((i++ & CancellationState.POLL_INTERVAL) == 0)
-                            _cancellationToken.ThrowIfCancellationRequested();;
+                            _cancellationToken.ThrowIfCancellationRequested();
 
                         // For each element, we track the smallest order key for that element that we saw so far
                         TKey oldEntry;

@@ -22,11 +22,14 @@ namespace System.Globalization.Tests
                 Assert.Equal(CultureInfo.CurrentCulture, newCulture);
             }
 
-            newCulture = new CultureInfo("de-DE_phoneb");
-            using (new ThreadCultureChange(newCulture))
+            if (PlatformDetection.IsNotBrowser)
             {
-                Assert.Equal(CultureInfo.CurrentCulture, newCulture);
-                Assert.Equal("de-DE_phoneb", newCulture.CompareInfo.Name);
+                newCulture = new CultureInfo("de-DE_phoneb");
+                using (new ThreadCultureChange(newCulture))
+                {
+                    Assert.Equal(CultureInfo.CurrentCulture, newCulture);
+                    Assert.Equal("de-DE_phoneb", newCulture.CompareInfo.Name);
+                }
             }
         }
 
@@ -45,11 +48,14 @@ namespace System.Globalization.Tests
                 Assert.Equal(CultureInfo.CurrentUICulture, newUICulture);
             }
 
-            newUICulture = new CultureInfo("de-DE_phoneb");
-            using (new ThreadCultureChange(null, newUICulture))
+            if (PlatformDetection.IsNotBrowser)
             {
-                Assert.Equal(CultureInfo.CurrentUICulture, newUICulture);
-                Assert.Equal("de-DE_phoneb", newUICulture.CompareInfo.Name);
+                newUICulture = new CultureInfo("de-DE_phoneb");
+                using (new ThreadCultureChange(null, newUICulture))
+                {
+                    Assert.Equal(CultureInfo.CurrentUICulture, newUICulture);
+                    Assert.Equal("de-DE_phoneb", newUICulture.CompareInfo.Name);
+                }
             }
         }
 

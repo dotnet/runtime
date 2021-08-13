@@ -22,35 +22,43 @@ git config --system core.longpaths true
 - Install [Visual Studio 2019](https://visualstudio.microsoft.com/downloads/). The Community edition is available free of charge.
 
 Visual Studio 2019 installation process:
-- It's recommended to use 'Workloads' installation approach. The following are the minimum requirements:
-  - .NET Desktop Development with all default components.
-  - Desktop Development with C++ with all default components.
-- To build for Arm32 or Arm64, make sure that you have the right architecture-specific compilers installed. In the "Individual components" window, in the "Compilers, build tools, and runtimes" section:
-  - For Arm32, check the box for "MSVC v142 - VS 2019 C++ ARM build tools (v14.23 or newer)".
-  - For Arm64, check the box for "MSVC v142 - VS 2019 C++ ARM64 build tools (v14.23 or newer)".
+- It's recommended to use **Workloads** installation approach. The following are the minimum requirements:
+  - **.NET Desktop Development** with all default components,
+  - **Desktop Development with C++** with all default components.
+- The build tools (CMake, Ninja and Python) can be downloaded and installed separately (see detailed instructions in the [section below](#build-tools)) or by selecting the following **Individual Components**:
+  - **C++ CMake tools for Windows** (includes Ninja, but might not work on ARM64 machines),
+  - **Python 3 64-bit** (3.7.4 or newer).
+- To build for Arm32 or Arm64, make sure that you have the right architecture-specific compilers installed. In the **Individual components** window, in the **Compilers, build tools, and runtimes** section:
+  - For Arm32, check the box for **MSVC v142 - VS 2019 C++ ARM build tools (Latest)** (v14.23 or newer),
+  - For Arm64, check the box for **MSVC v142 - VS 2019 C++ ARM64 build tools (Latest)** (v14.23 or newer).
 - To build the tests, you will need some additional components:
-  - Windows 10 SDK component version 10.0.18362 or newer. This component is installed by default as a part of 'Desktop Development with C++' workload.
-  - C++/CLI support for v142 build tools (v14.23 or newer)
+  - **Windows 10 SDK (10.0.19041)** or newer. This component is installed by default as a part of **Desktop Development with C++** workload.
+  - **C++/CLI support for v142 build tools (Latest)** (v14.23 or newer).
 
 A `.vsconfig` file is included in the root of the dotnet/runtime repository that includes all components needed to build the dotnet/runtime repository. You can [import `.vsconfig` in your Visual Studio installer](https://docs.microsoft.com/en-us/visualstudio/install/import-export-installation-configurations?view=vs-2019#import-a-configuration) to install all necessary components.
 
-The dotnet/runtime repository requires at least Visual Studio 2019 16.6.
+Visual Studio 2019 16.6 or later is required for building the repository. Visual Studio 2019 16.10 is required to work with the libraries projects inside the Visual Studio IDE.
 
-## CMake
+## Build Tools
 
-- Install [CMake](https://cmake.org/download) for Windows.
+These steps are required only in case the tools have not been installed as Visual Studio **Individual Components** (described above).
+
+### CMake
+
+- Install [CMake](https://cmake.org/download) for Windows. For ARM64 machines please use the `windows-i386` installer (`windows-x86_64` is not going to work).
 - Add its location (e.g. C:\Program Files (x86)\CMake\bin) to the PATH environment variable.
   The installation script has a check box to do this, but you can do it yourself after the fact following the instructions at [Adding to the Default PATH variable](#adding-to-the-default-path-variable).
 
-The dotnet/runtime repository recommends using CMake 3.16.0 or newer, but works with CMake 3.15.5.
+The dotnet/runtime repository recommends using CMake 3.16.4 or newer, but it may work with CMake 3.15.5.
 
-## Ninja (optional)
+### Ninja
 
 - Install Ninja in one of the two following ways
   - [Download the executable](https://github.com/ninja-build/ninja/releases) and add its location to [the Default PATH variable](#adding-to-the-default-path-variable).
   - [Install via a package manager](https://github.com/ninja-build/ninja/wiki/Pre-built-Ninja-packages), which should automatically add it to the PATH environment variable.
+- Since there is no official Ninja support for ARM64, you can use MSBuild instead by passing `-msbuild` to `build.cmd`.
 
-## Python
+### Python
 
 - Install [Python](https://www.python.org/downloads/) for Windows.
 - Add its location (e.g. C:\Python*\) to the PATH environment variable.
@@ -75,7 +83,7 @@ The dotnet/runtime repository requires at least Git 2.22.0.
 
 While not strictly needed to build or test this repository, having the .NET SDK installed lets you browse solution files in this repository with Visual Studio and use the dotnet.exe command to run .NET applications in the 'normal' way.
 We use this in the [Using Your Build](../testing/using-your-build.md) instructions.
-The minimum required version of the SDK is specified in the [global.json file](https://github.com/dotnet/runtime/blob/master/global.json#L3). [You can find the installers and binaries for nightly builds of .NET SDK here](https://github.com/dotnet/installer#installers-and-binaries).
+The minimum required version of the SDK is specified in the [global.json file](https://github.com/dotnet/runtime/blob/main/global.json#L3). [You can find the installers and binaries for nightly builds of .NET SDK here](https://github.com/dotnet/installer#installers-and-binaries).
 
 Alternatively, to avoid modifying your machine state, you can use the repository's locally acquired SDK by passing in the solution to load via the `-vs` switch:
 
@@ -95,3 +103,13 @@ However, the change above will only last until the command windows close.
 You can make your change to the PATH variable persistent by going to  Control Panel -> System And Security -> System -> Advanced system settings -> Environment Variables,
 and select the 'Path' variable in the 'System variables' (if you want to change it for all users) or 'User variables' (if you only want to change it for the current user).
 Simply edit the PATH variable's value and add the directory (with a semicolon separator).
+
+## ARM64
+
+- Install [CMake](https://cmake.org/download) using the `windows-i386` installer (`windows-x86_64` is not going to work, `C++ CMake tools for Windows` from VS might also not work).
+- Use MSBuild instead of Ninja (no official support for ARM64 yet).
+- Specify the architecture in explicit way.
+
+```cmd
+build.cmd -c Release -subset clr+libs+libs.tests -arch arm64 -msbuild
+```

@@ -430,11 +430,10 @@ PCODE ECall::GetFCallImpl(MethodDesc * pMD, BOOL * pfSharedOrDynamicFCallImpl /*
     // COM imported classes have special constructors
     if (pMT->IsComObjectType()
 #ifdef FEATURE_COMINTEROP
-        && pMT != g_pBaseCOMObject
+        && (g_pBaseCOMObject == NULL || pMT != g_pBaseCOMObject)
 #endif // FEATURE_COMINTEROP
     )
     {
-#ifdef FEATURE_COMINTEROP
         if (pfSharedOrDynamicFCallImpl)
             *pfSharedOrDynamicFCallImpl = TRUE;
 
@@ -443,9 +442,6 @@ PCODE ECall::GetFCallImpl(MethodDesc * pMD, BOOL * pfSharedOrDynamicFCallImpl /*
 
         // FCComCtor does not need to be in the fcall hashtable since it does not erect frame.
         return GetEEFuncEntryPoint(FCComCtor);
-#else
-        COMPlusThrow(kPlatformNotSupportedException, IDS_EE_ERROR_COM);
-#endif // FEATURE_COMINTEROP
     }
 
     if (!pMD->GetModule()->IsSystem())
@@ -566,9 +562,7 @@ BOOL ECall::IsSharedFCallImpl(PCODE pImpl)
     PCODE pNativeCode = pImpl;
 
     return
-#ifdef FEATURE_COMINTEROP
         (pNativeCode == GetEEFuncEntryPoint(FCComCtor)) ||
-#endif
         (pNativeCode == GetEEFuncEntryPoint(COMDelegate::DelegateConstruct));
 }
 
@@ -614,7 +608,12 @@ BOOL ECall::CheckUnusedECalls(SetSHash<DWORD>& usedIDs)
 }
 
 
-#if defined(FEATURE_COMINTEROP) && !defined(CROSSGEN_COMPILE)
+#if !defined(CROSSGEN_COMPILE)
+// This function is a stub implementation for the constructor of a ComImport class.
+// The actual work to implement COM Activation (and built-in COM support checks) is done as part
+// of the implementation of object allocation. As a result, the constructor itself has no extra
+// work to do once the object has been allocated. As a result, we just provide a dummy implementation
+// here since a constructor has to have an implementation.
 FCIMPL1(VOID, FCComCtor, LPVOID pV)
 {
     FCALL_CONTRACT;
@@ -622,7 +621,7 @@ FCIMPL1(VOID, FCComCtor, LPVOID pV)
     FCUnique(0x34);
 }
 FCIMPLEND
-#endif // FEATURE_COMINTEROP && !CROSSGEN_COMPILE
+#endif // !CROSSGEN_COMPILE
 
 
 
@@ -660,6 +659,13 @@ LPVOID ECall::GetQCallImpl(MethodDesc * pMD)
     if (id == 0)
     {
         id = ECall::GetIDForMethod(pMD);
+
+#ifdef _DEBUG
+        CONSISTENCY_CHECK_MSGF(id != 0,
+            ("%s::%s is not registered in ecall.cpp",
+            pMD->m_pszDebugClassName, pMD->m_pszDebugMethodName));
+#endif
+
         _ASSERTE(id != 0);
 
         // Cache the id

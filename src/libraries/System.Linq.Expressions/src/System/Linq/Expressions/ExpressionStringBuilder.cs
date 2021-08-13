@@ -381,16 +381,7 @@ namespace System.Linq.Expressions
 
         protected internal override Expression VisitDebugInfo(DebugInfoExpression node)
         {
-            string s = string.Format(
-                CultureInfo.CurrentCulture,
-                "<DebugInfo({0}: {1}, {2}, {3}, {4})>",
-                node.Document.FileName,
-                node.StartLine,
-                node.StartColumn,
-                node.EndLine,
-                node.EndColumn
-            );
-            Out(s);
+            Out($"<DebugInfo({node.Document.FileName}: {node.StartLine}, {node.StartColumn}, {node.EndLine}, {node.EndColumn})>");
             return node;
         }
 

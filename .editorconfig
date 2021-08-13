@@ -90,10 +90,7 @@ csharp_preserve_single_line_statements = false:none
 csharp_prefer_static_local_function = true:suggestion
 csharp_prefer_simple_using_statement = false:none
 csharp_style_prefer_switch_expression = true:suggestion
-
-# Code quality
 dotnet_style_readonly_field = true:suggestion
-dotnet_code_quality_unused_parameters = non_public:suggestion
 
 # Expression-level preferences
 dotnet_style_object_initializer = true:suggestion
@@ -156,11 +153,6 @@ csharp_space_between_method_declaration_name_and_open_parenthesis = false
 csharp_space_between_method_declaration_parameter_list_parentheses = false
 csharp_space_between_parentheses = false
 csharp_space_between_square_brackets = false
-
-# Analyzers
-dotnet_code_quality.ca1802.api_surface = private, internal
-dotnet_code_quality.ca1822.api_surface = private, internal
-dotnet_code_quality.ca2208.api_surface = public
 
 # License header
 file_header_template = Licensed to the .NET Foundation under one or more agreements.\nThe .NET Foundation licenses this file to you under the MIT license.

@@ -31,7 +31,7 @@ namespace System.Resources
     // belonging to that type may not be initialized. FrameworkEventSource.Log
     // is one such example.
     //
-    internal partial class ManifestBasedResourceGroveler : IResourceGroveler
+    internal sealed partial class ManifestBasedResourceGroveler : IResourceGroveler
     {
         private readonly ResourceManager.ResourceManagerMediator _mediator;
 
@@ -139,7 +139,7 @@ namespace System.Resources
             Debug.Assert(a != null, "assembly != null");
 
             NeutralResourcesLanguageAttribute? attr = a.GetCustomAttribute<NeutralResourcesLanguageAttribute>();
-            if (attr == null)
+            if (attr == null || (GlobalizationMode.Invariant && GlobalizationMode.PredefinedCulturesOnly))
             {
                 fallbackLocation = UltimateResourceFallbackLocation.MainAssembly;
                 return CultureInfo.InvariantCulture;

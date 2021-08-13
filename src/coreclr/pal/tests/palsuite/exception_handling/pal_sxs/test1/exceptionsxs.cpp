@@ -45,10 +45,10 @@ void sigsegv_handler(int code, siginfo_t *siginfo, void *context)
         _exit(FAIL);
     }
 
-    // Validate that the faulting address is correct; the contents of "p" (0x22).
-    if (siginfo->si_addr != (void *)0x33)
+    // Validate that the faulting address is correct; the contents of "p" (0x33000).
+    if (siginfo->si_addr != (void *)0x33000)
     {
-        printf("ERROR: signal handler faulting address != 0x33\n");
+        printf("ERROR: signal handler faulting address != 0x33000\n");
         _exit(FAIL);
     }
 
@@ -108,7 +108,7 @@ int main(int argc, char *argv[])
 
     bSignal = true;
 
-    volatile int* p = (volatile int *)0x33; // Invalid pointer
+    volatile int* p = (volatile int *)0x33000; // Invalid pointer
     *p = 3;                                 // Causes an access violation exception
 
     printf("ERROR: code was executed after the access violation.\n");

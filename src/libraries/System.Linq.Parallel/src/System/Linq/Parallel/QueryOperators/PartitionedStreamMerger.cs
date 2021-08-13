@@ -15,7 +15,7 @@ namespace System.Linq.Parallel
     /// <summary>
     /// Partitioned stream recipient that will merge the results.
     /// </summary>
-    internal class PartitionedStreamMerger<TOutput> : IPartitionedStreamRecipient<TOutput>
+    internal sealed class PartitionedStreamMerger<TOutput> : IPartitionedStreamRecipient<TOutput>
     {
         private readonly bool _forEffectMerge;
         private readonly ParallelMergeOptions _mergeOptions;

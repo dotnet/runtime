@@ -203,10 +203,6 @@ ASMCONSTANTS_C_ASSERT(METHODTABLE_EQUIVALENCE_FLAGS
 #define               METHODTABLE_EQUIVALENCE_FLAGS 0x0
 #endif
 
-#define               METHODTABLE_NONTRIVIALINTERFACECAST_FLAGS (0x00080000 + 0x40000000 + 0x00400000 + 0x00200000)
-ASMCONSTANTS_C_ASSERT(METHODTABLE_NONTRIVIALINTERFACECAST_FLAGS
-                    == MethodTable::enum_flag_NonTrivialInterfaceCast);
-
 #define               MethodTable__enum_flag_ContainsPointers 0x01000000
 ASMCONSTANTS_C_ASSERT(MethodTable__enum_flag_ContainsPointers
                     == MethodTable::enum_flag_ContainsPointers);
@@ -314,6 +310,14 @@ ASMCONSTANTS_C_ASSERT(OFFSETOF__VASigCookie__pNDirectILStub
 ASMCONSTANTS_C_ASSERT(SIZEOF__CONTEXT
                     == sizeof(CONTEXT));
 
+#define               OFFSETOF__CONTEXT__ContextFlags (8*6)
+ASMCONSTANTS_C_ASSERT(OFFSETOF__CONTEXT__ContextFlags
+                    == offsetof(CONTEXT, ContextFlags));
+
+#define               OFFSETOF__CONTEXT__EFlags       (8*6 + 4*2 + 2*6)
+ASMCONSTANTS_C_ASSERT(OFFSETOF__CONTEXT__EFlags
+                    == offsetof(CONTEXT, EFlags));
+
 #define               OFFSETOF__CONTEXT__Rax          (8*6 + 4*2 + 2*6 + 4 + 8*6)
 ASMCONSTANTS_C_ASSERT(OFFSETOF__CONTEXT__Rax
                     == offsetof(CONTEXT, Rax));
@@ -382,6 +386,10 @@ ASMCONSTANTS_C_ASSERT(OFFSETOF__CONTEXT__R15
 ASMCONSTANTS_C_ASSERT(OFFSETOF__CONTEXT__Rip
                     == offsetof(CONTEXT, Rip));
 
+#define               OFFSETOF__CONTEXT__FltSave      (8*6 + 4*2 + 2*6 + 4 + 8*6 + 8*16 + 8)
+ASMCONSTANTS_C_ASSERT(OFFSETOF__CONTEXT__FltSave
+                    == offsetof(CONTEXT, FltSave));
+
 #define               OFFSETOF__CONTEXT__Xmm0         (8*6 + 4*2 + 2*6 + 4 + 8*6 + 8*16 + 8 + 2*16 + 8*16)
 ASMCONSTANTS_C_ASSERT(OFFSETOF__CONTEXT__Xmm0
                     == offsetof(CONTEXT, Xmm0));
@@ -446,6 +454,10 @@ ASMCONSTANTS_C_ASSERT(OFFSETOF__CONTEXT__Xmm14
 ASMCONSTANTS_C_ASSERT(OFFSETOF__CONTEXT__Xmm15
                     == offsetof(CONTEXT, Xmm15));
 
+#define               OFFSETOF__CONTEXT__VectorRegister (8*6 + 4*2 + 2*6 + 4 + 8*6 + 8*16 + 8 + 2*16 + 8*16 + 16*16 + 96)
+ASMCONSTANTS_C_ASSERT(OFFSETOF__CONTEXT__VectorRegister
+                    == offsetof(CONTEXT, VectorRegister[0]));
+
 #define               SIZEOF__FaultingExceptionFrame  (0x20 + SIZEOF__CONTEXT)
 ASMCONSTANTS_C_ASSERT(SIZEOF__FaultingExceptionFrame
                     == sizeof(FaultingExceptionFrame));
@@ -480,6 +492,10 @@ ASMCONSTANTS_C_ASSERT(OFFSET__TEB__ThreadLocalStoragePointer == offsetof(TEB, Th
 #define REDIRECTSTUB_RBP_OFFSET_CONTEXT     0x20
 
 #define THROWSTUB_ESTABLISHER_OFFSET_FaultingExceptionFrame 0x30
+
+#ifdef FEATURE_SPECIAL_USER_MODE_APC
+#define OFFSETOF__APC_CALLBACK_DATA__ContextRecord 0x8
+#endif
 
 #define Thread__ObjectRefFlush  ?ObjectRefFlush@Thread@@SAXPEAV1@@Z
 

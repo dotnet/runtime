@@ -14,6 +14,7 @@ steps:
       downloadType: single
       downloadPath: '$(Build.SourcesDirectory)/__download__'
       artifactName: '${{ parameters.artifactName }}'
+      checkDownloadedFiles: true
 
   # Unzip artifact
   - task: ExtractFiles@1

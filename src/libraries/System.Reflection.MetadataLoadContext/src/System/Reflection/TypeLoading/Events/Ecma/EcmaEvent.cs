@@ -6,6 +6,7 @@ using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Reflection.Metadata;
 using System.Text;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Reflection.TypeLoading.Ecma
 {
@@ -36,7 +37,7 @@ namespace System.Reflection.TypeLoading.Ecma
 
         public sealed override int MetadataToken => _handle.GetToken();
 
-        public sealed override bool Equals(object? obj)
+        public sealed override bool Equals([NotNullWhen(true)] object? obj)
         {
             if (!(obj is EcmaEvent other))
                 return false;
@@ -83,12 +84,10 @@ namespace System.Reflection.TypeLoading.Ecma
             if (disposedString != null)
                 return disposedString;
 
-            StringBuilder sb = new StringBuilder();
-            string typeString = EventDefinition.Type.ToTypeString(TypeContext, Reader);
-            sb.Append(typeString);
-            sb.Append(' ');
-            sb.Append(Name);
-            return sb.ToString();
+            return
+                EventDefinition.Type.ToTypeString(TypeContext, Reader) +
+                " " +
+                Name;
         }
 
         protected sealed override RoMethod? ComputeEventAddMethod() => EventDefinition.GetAccessors().Adder.ToMethodOrNull(GetRoDeclaringType(), ReflectedType);

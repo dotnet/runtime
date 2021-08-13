@@ -33,6 +33,9 @@ public class GenerateWasmBundle : Task
         foreach (var entry in directoryInfo.EnumerateFiles("*", SearchOption.AllDirectories))
         {
             var relativePath = Path.GetRelativePath(InputDirectory!, entry.FullName);
+            if (Path.DirectorySeparatorChar != '/')
+                relativePath = relativePath.Replace(Path.DirectorySeparatorChar, '/');
+
             indices.Add(new object[] { relativePath, entry.Length });
 
             using (var readStream = entry.OpenRead())

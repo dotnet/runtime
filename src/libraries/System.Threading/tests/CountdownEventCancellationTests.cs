@@ -31,7 +31,7 @@ namespace System.Threading.Tests
             CancellationTokenSource cancellationTokenSource = new CancellationTokenSource();
             CancellationToken cancellationToken = cancellationTokenSource.Token;
 
-            CountdownEvent countdownEvent = new CountdownEvent(2); ;  // countdownEvent that will block all waiters
+            CountdownEvent countdownEvent = new CountdownEvent(2); // countdownEvent that will block all waiters
 
             Task.Run(() =>
             {

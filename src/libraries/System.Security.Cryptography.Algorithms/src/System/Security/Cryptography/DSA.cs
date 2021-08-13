@@ -35,9 +35,18 @@ namespace System.Security.Cryptography
             return (DSA?)CryptoConfig.CreateFromName(algName);
         }
 
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
+        public static new DSA Create()
+        {
+            return CreateCore();
+        }
+
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
         public static DSA Create(int keySizeInBits)
         {
-            DSA dsa = Create();
+            DSA dsa = CreateCore();
 
             try
             {
@@ -51,9 +60,11 @@ namespace System.Security.Cryptography
             }
         }
 
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
         public static DSA Create(DSAParameters parameters)
         {
-            DSA dsa = Create();
+            DSA dsa = CreateCore();
 
             try
             {

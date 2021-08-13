@@ -9,7 +9,7 @@ namespace System.ComponentModel.Composition.Primitives
     // when viewing CompositionError.Element in the watch and data tips windows, we
     // need this proxy so that the underlying object wrapped by the CompositionElement
     // placeholder is displayed by default.
-    internal class CompositionElementDebuggerProxy
+    internal sealed class CompositionElementDebuggerProxy
     {
         private readonly CompositionElement _element;
 

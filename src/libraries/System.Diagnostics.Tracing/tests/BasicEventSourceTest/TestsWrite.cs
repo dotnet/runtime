@@ -37,6 +37,7 @@ namespace BasicEventSourceTests
         /// </summary>
         [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/21564", TargetFrameworkMonikers.NetFramework)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/51382", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public void Test_Write_T_EventListener()
         {
             using (var listener = new EventListenerListener())
@@ -51,6 +52,7 @@ namespace BasicEventSourceTests
         /// </summary>
         [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/21564", TargetFrameworkMonikers.NetFramework)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/51382", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public void Test_Write_T_EventListener_UseEvents()
         {
             Test_Write_T(new EventListenerListener(true));

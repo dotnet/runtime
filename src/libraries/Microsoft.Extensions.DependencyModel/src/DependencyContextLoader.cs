@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Reflection;
 
@@ -50,6 +51,7 @@ namespace Microsoft.Extensions.DependencyModel
             return assembly.GetManifestResourceStream(name);
         }
 
+        [RequiresAssemblyFiles("DependencyContext for an assembly from a application published as single-file is not supported. The method will return null. Make sure the calling code can handle this case.")]
         public DependencyContext Load(Assembly assembly)
         {
             if (assembly == null)
@@ -103,6 +105,7 @@ namespace Microsoft.Extensions.DependencyModel
             return null;
         }
 
+        [RequiresAssemblyFiles("DependencyContext for an assembly from a application published as single-file is not supported. The method will return null. Make sure the calling code can handle this case.")]
         private DependencyContext LoadAssemblyContext(Assembly assembly, IDependencyContextReader reader)
         {
             using (Stream stream = GetResourceStream(assembly, assembly.GetName().Name + DepsJsonExtension))
@@ -125,9 +128,18 @@ namespace Microsoft.Extensions.DependencyModel
             return null;
         }
 
+        [RequiresAssemblyFiles("The use of DependencyContextLoader is not supported when publishing as single-file")]
         private string GetDepsJsonPath(Assembly assembly)
         {
-            string depsJsonFile = Path.ChangeExtension(assembly.Location, DepsJsonExtension);
+            // Assemblies loaded in memory (e.g. single file) return empty string from Location.
+            // In these cases, don't try probing next to the assembly.
+            string assemblyLocation = assembly.Location;
+            if (string.IsNullOrEmpty(assemblyLocation))
+            {
+                return null;
+            }
+
+            string depsJsonFile = Path.ChangeExtension(assemblyLocation, DepsJsonExtension);
             bool depsJsonFileExists = _fileSystem.File.Exists(depsJsonFile);
 
             if (!depsJsonFileExists)
@@ -136,7 +148,7 @@ namespace Microsoft.Extensions.DependencyModel
                 // and CodeBase will be different, so also try the CodeBase
                 string assemblyCodeBase = GetNormalizedCodeBasePath(assembly);
                 if (!string.IsNullOrEmpty(assemblyCodeBase) &&
-                    assembly.Location != assemblyCodeBase)
+                    assemblyLocation != assemblyCodeBase)
                 {
                     depsJsonFile = Path.ChangeExtension(assemblyCodeBase, DepsJsonExtension);
                     depsJsonFileExists = _fileSystem.File.Exists(depsJsonFile);

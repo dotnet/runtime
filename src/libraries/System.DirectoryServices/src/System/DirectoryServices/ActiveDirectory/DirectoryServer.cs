@@ -11,25 +11,25 @@ namespace System.DirectoryServices.ActiveDirectory
     public abstract class DirectoryServer : IDisposable
     {
         private bool _disposed;
-        internal DirectoryContext context;
-        internal string replicaName;
-        internal DirectoryEntryManager directoryEntryMgr;
+        internal DirectoryContext context = null!;
+        internal string replicaName = null!;
+        internal DirectoryEntryManager directoryEntryMgr = null!;
 
         // internal variables for the public properties
         internal bool siteInfoModified;
-        internal string cachedSiteName;
-        internal string cachedSiteObjectName;
-        internal string cachedServerObjectName;
-        internal string cachedNtdsaObjectName;
+        internal string? cachedSiteName;
+        internal string? cachedSiteObjectName;
+        internal string? cachedServerObjectName;
+        internal string? cachedNtdsaObjectName;
         internal Guid cachedNtdsaObjectGuid = Guid.Empty;
-        internal ReadOnlyStringCollection cachedPartitions;
+        internal ReadOnlyStringCollection? cachedPartitions;
 
         internal const int DS_REPSYNC_ASYNCHRONOUS_OPERATION = 0x00000001;
         internal const int DS_REPSYNC_ALL_SOURCES = 0x00000010;
         internal const int DS_REPSYNCALL_ID_SERVERS_BY_DN = 0x00000004;
         internal const int DS_REPL_NOTSUPPORTED = 50;
-        private ReplicationConnectionCollection _inbound;
-        private ReplicationConnectionCollection _outbound;
+        private ReplicationConnectionCollection? _inbound;
+        private ReplicationConnectionCollection? _outbound;
 
         #region constructors
         protected DirectoryServer()
@@ -91,7 +91,7 @@ namespace System.DirectoryServices.ActiveDirectory
             // the dc is really being moved to a different site
             if (Utils.Compare(SiteName, siteName) != 0)
             {
-                DirectoryEntry newParentEntry = null;
+                DirectoryEntry? newParentEntry = null;
                 try
                 {
                     // Bind to the target site's server container
@@ -104,7 +104,7 @@ namespace System.DirectoryServices.ActiveDirectory
                     DirectoryEntry serverEntry = directoryEntryMgr.GetCachedDirectoryEntry(serverName);
 
                     // force binding (needed otherwise S.DS throw an exception while releasing the COM interface pointer)
-                    _ = (string)PropertyManager.GetPropertyValue(context, serverEntry, PropertyManager.DistinguishedName);
+                    _ = (string?)PropertyManager.GetPropertyValue(context, serverEntry, PropertyManager.DistinguishedName);
 
                     // move the object to the servers container of the target site
                     serverEntry.MoveTo(newParentEntry);
@@ -207,11 +207,11 @@ namespace System.DirectoryServices.ActiveDirectory
 
         #region public abstract properties
 
-        public abstract string IPAddress { get; }
+        public abstract string? IPAddress { get; }
 
         public abstract string SiteName { get; }
 
-        public abstract SyncUpdateCallback SyncFromAllServersCallback { get; set; }
+        public abstract SyncUpdateCallback? SyncFromAllServersCallback { get; set; }
 
         public abstract ReplicationConnectionCollection InboundConnections { get; }
 
@@ -224,8 +224,8 @@ namespace System.DirectoryServices.ActiveDirectory
         internal ArrayList GetPartitions()
         {
             ArrayList partitionList = new ArrayList();
-            DirectoryEntry rootDSE = null;
-            DirectoryEntry serverNtdsaEntry = null;
+            DirectoryEntry? rootDSE = null;
+            DirectoryEntry? serverNtdsaEntry = null;
 
             try
             {
@@ -245,7 +245,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 ArrayList propertyNames = new ArrayList();
                 propertyNames.Add(PropertyManager.HasPartialReplicaNCs);
 
-                Hashtable values = null;
+                Hashtable? values = null;
                 try
                 {
                     values = Utils.GetValuesWithRangeRetrieval(serverNtdsaEntry, null, propertyNames, SearchScope.Base);
@@ -255,7 +255,7 @@ namespace System.DirectoryServices.ActiveDirectory
                     throw ExceptionHelper.GetExceptionFromCOMException(context, e);
                 }
 
-                ArrayList readOnlyPartitions = (ArrayList)values[PropertyManager.HasPartialReplicaNCs.ToLowerInvariant()];
+                ArrayList readOnlyPartitions = (ArrayList)values[PropertyManager.HasPartialReplicaNCs.ToLowerInvariant()]!;
 
                 Debug.Assert(readOnlyPartitions != null);
                 foreach (string readOnlyPartition in readOnlyPartitions)
@@ -308,7 +308,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 throw ExceptionHelper.GetExceptionFromErrorCode(result, Name);
         }
 
-        internal IntPtr GetReplicationInfoHelper(IntPtr dsHandle, int type, int secondaryType, string partition, ref bool advanced, int context, LoadLibrarySafeHandle libHandle)
+        internal IntPtr GetReplicationInfoHelper(IntPtr dsHandle, int type, int secondaryType, string? partition, ref bool advanced, int context, LoadLibrarySafeHandle libHandle)
         {
             IntPtr info = (IntPtr)0;
             int result = 0;
@@ -600,7 +600,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
                 // get the error information
                 IntPtr temp = syncAllUpdate.pErrInfo;
-                SyncFromAllServersOperationException exception = null;
+                SyncFromAllServersOperationException? exception = null;
 
                 if (temp != (IntPtr)0)
                 {
@@ -613,8 +613,8 @@ namespace System.DirectoryServices.ActiveDirectory
                     }
                 }
 
-                string targetName = null;
-                string sourceName = null;
+                string? targetName = null;
+                string? sourceName = null;
 
                 temp = syncAllUpdate.pSync;
                 if (temp != (IntPtr)0)
@@ -633,7 +633,7 @@ namespace System.DirectoryServices.ActiveDirectory
             }
         }
 
-        internal void SyncReplicaAllHelper(IntPtr handle, SyncReplicaFromAllServersCallback syncAllFunctionPointer, string partition, SyncFromAllServersOptions option, SyncUpdateCallback callback, LoadLibrarySafeHandle libHandle)
+        internal void SyncReplicaAllHelper(IntPtr handle, SyncReplicaFromAllServersCallback syncAllFunctionPointer, string partition, SyncFromAllServersOptions option, SyncUpdateCallback? callback, LoadLibrarySafeHandle libHandle)
         {
             IntPtr errorInfo = (IntPtr)0;
 
@@ -656,7 +656,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 // error happens during the synchronization
                 if (errorInfo != (IntPtr)0)
                 {
-                    SyncFromAllServersOperationException e = ExceptionHelper.CreateSyncAllException(errorInfo, false);
+                    SyncFromAllServersOperationException? e = ExceptionHelper.CreateSyncAllException(errorInfo, false);
                     if (e == null)
                         return;
                     else
@@ -693,13 +693,13 @@ namespace System.DirectoryServices.ActiveDirectory
             }
         }
 
-        internal void SyncReplicaHelper(IntPtr dsHandle, bool isADAM, string partition, string sourceServer, int option, LoadLibrarySafeHandle libHandle)
+        internal void SyncReplicaHelper(IntPtr dsHandle, bool isADAM, string partition, string? sourceServer, int option, LoadLibrarySafeHandle libHandle)
         {
             int structSize = Marshal.SizeOf(typeof(Guid));
             IntPtr unmanagedGuid = (IntPtr)0;
             Guid guid = Guid.Empty;
-            AdamInstance adamServer = null;
-            DomainController dcServer = null;
+            AdamInstance? adamServer = null;
+            DomainController? dcServer = null;
 
             unmanagedGuid = Marshal.AllocHGlobal(structSize);
             try
@@ -737,7 +737,7 @@ namespace System.DirectoryServices.ActiveDirectory
                     if (!Partitions.Contains(partition))
                         throw new ArgumentException(SR.ServerNotAReplica, nameof(partition));
 
-                    string serverDownName = null;
+                    string? serverDownName = null;
                     // this is the error returned when the server that we want to sync from is down
                     if (result == ExceptionHelper.RPC_S_SERVER_UNAVAILABLE)
                         serverDownName = sourceServer;
@@ -778,14 +778,14 @@ namespace System.DirectoryServices.ActiveDirectory
                                                       "(&(objectClass=nTDSConnection)(objectCategory=nTDSConnection))",
                                                       new string[] { "cn" },
                                                       SearchScope.OneLevel);
-                SearchResultCollection srchResults = null;
+                SearchResultCollection? srchResults = null;
 
                 try
                 {
                     srchResults = adSearcher.FindAll();
                     foreach (SearchResult r in srchResults)
                     {
-                        ReplicationConnection con = new ReplicationConnection(newContext, r.GetDirectoryEntry(), (string)PropertyManager.GetSearchResultPropertyValue(r, PropertyManager.Cn));
+                        ReplicationConnection con = new ReplicationConnection(newContext, r.GetDirectoryEntry(), (string)PropertyManager.GetSearchResultPropertyValue(r, PropertyManager.Cn)!);
                         _inbound.Add(con);
                     }
                 }
@@ -820,7 +820,7 @@ namespace System.DirectoryServices.ActiveDirectory
                                                                new string[] { "objectClass", "cn" },
                                                                SearchScope.Subtree);
 
-                SearchResultCollection results = null;
+                SearchResultCollection? results = null;
                 DirectoryContext newContext = Utils.GetNewDirectoryContext(Name, DirectoryContextType.DirectoryServer, context);
 
                 try
@@ -830,7 +830,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
                     foreach (SearchResult result in results)
                     {
-                        ReplicationConnection con = new ReplicationConnection(newContext, result.GetDirectoryEntry(), (string)result.Properties["cn"][0]);
+                        ReplicationConnection con = new ReplicationConnection(newContext, result.GetDirectoryEntry(), (string)result.Properties["cn"][0]!);
                         _outbound.Add(con);
                     }
                 }

@@ -118,7 +118,39 @@ namespace Mono
         public T5 Item5;
     }
 
-    internal class NullByRefReturnException : Exception
+    internal enum I8Enum : byte
+    {
+    }
+
+    internal enum UI8Enum : sbyte
+    {
+    }
+
+    internal enum I16Enum : short
+    {
+    }
+
+    internal enum UI16Enum : ushort
+    {
+    }
+
+    internal enum I32Enum : int
+    {
+    }
+
+    internal enum UI32Enum : uint
+    {
+    }
+
+    internal enum I64Enum : long
+    {
+    }
+
+    internal enum UI64Enum : ulong
+    {
+    }
+
+    internal sealed class NullByRefReturnException : Exception
     {
         public NullByRefReturnException()
         {

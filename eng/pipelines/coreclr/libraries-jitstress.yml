@@ -1,17 +1,11 @@
 trigger: none
 
 schedules:
-- cron: "0 7 * * 0,2,4,6"
-  displayName: Sun, Tue, Thu, Sat at 11:00 PM (UTC-8:00)
+- cron: "0 7 * * *"
+  displayName: Daily at 11:00 PM (UTC-8:00)
   branches:
     include:
-    - master
-  always: true
-- cron: "0 7 * * 1,3,5"
-  displayName: Mon, Wed, Fri at 11:00 PM (UTC-8:00)
-  branches:
-    include:
-    - release/*.*
+    - main
   always: true
 
 jobs:

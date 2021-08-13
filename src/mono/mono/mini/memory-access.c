@@ -498,7 +498,8 @@ mini_emit_memory_store (MonoCompile *cfg, MonoType *type, MonoInst *dest, MonoIn
 	} else if (!mini_debug_options.weak_memory_model && mini_type_is_reference (type) && cfg->method->wrapper_type != MONO_WRAPPER_WRITE_BARRIER)
 		mini_emit_memory_barrier (cfg, MONO_MEMORY_BARRIER_REL);
 
-	MONO_EMIT_NULL_CHECK (cfg, dest->dreg, FALSE);
+	if (!(ins_flag & MONO_INST_NONULLCHECK))
+		MONO_EMIT_NULL_CHECK (cfg, dest->dreg, FALSE);
 
 	if ((ins_flag & MONO_INST_UNALIGNED) && !COMPILE_LLVM (cfg)) {
 		MonoInst *addr, *mov, *tmp_var;

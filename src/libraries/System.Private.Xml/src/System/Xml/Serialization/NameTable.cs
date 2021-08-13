@@ -10,7 +10,7 @@ namespace System.Xml.Serialization
     using System.Collections;
     using System.Collections.Generic;
 
-    internal class NameKey
+    internal sealed class NameKey
     {
         private readonly string? _ns;
         private readonly string? _name;
@@ -37,7 +37,7 @@ namespace System.Xml.Serialization
     {
         object? this[string? name, string? ns] { get; set; }
     }
-    internal class NameTable : INameScope
+    internal sealed class NameTable : INameScope
     {
         private readonly Dictionary<NameKey, object?> _table = new Dictionary<NameKey, object?>();
 

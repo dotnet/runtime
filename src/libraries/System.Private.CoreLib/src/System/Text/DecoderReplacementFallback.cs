@@ -25,13 +25,13 @@ namespace System.Text
 
             // Make sure it doesn't have bad surrogate pairs
             bool bFoundHigh = false;
-            for (int i = 0; i < replacement.Length; i++)
+            foreach (char c in replacement)
             {
                 // Found a surrogate?
-                if (char.IsSurrogate(replacement, i))
+                if (char.IsSurrogate(c))
                 {
                     // High or Low?
-                    if (char.IsHighSurrogate(replacement, i))
+                    if (char.IsHighSurrogate(c))
                     {
                         // if already had a high one, stop
                         if (bFoundHigh)

@@ -1,0 +1,7 @@
+<linker>
+  <assembly fullname="AssemblyResolveTestApp" />
+  <assembly fullname="TestAppOutsideOfTPA" />
+  <assembly fullname="VoidMainWithExitCodeApp" />
+  <assembly fullname="TestApp" />
+  <assembly fullname="TargetFrameworkNameTestApp" />
+</linker>

@@ -16,7 +16,7 @@ namespace System
         // Note: CreateInstance returns null for Nullable<T>, e.g. CreateInstance(typeof(int?)) returns null.
         //
 
-        public static object? CreateInstance(Type type, BindingFlags bindingAttr, Binder? binder, object?[]? args, CultureInfo? culture, object?[]? activationAttributes)
+        public static object? CreateInstance([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.NonPublicConstructors | DynamicallyAccessedMemberTypes.PublicConstructors)] Type type, BindingFlags bindingAttr, Binder? binder, object?[]? args, CultureInfo? culture, object?[]? activationAttributes)
         {
             if (type is null)
                 throw new ArgumentNullException(nameof(type));
@@ -39,6 +39,7 @@ namespace System
         }
 
         [System.Security.DynamicSecurityMethod]
+        [RequiresUnreferencedCode("Type and its constructor could be removed")]
         public static ObjectHandle? CreateInstance(string assemblyName, string typeName)
         {
             StackCrawlMark stackMark = StackCrawlMark.LookForMyCaller;
@@ -54,6 +55,7 @@ namespace System
         }
 
         [System.Security.DynamicSecurityMethod]
+        [RequiresUnreferencedCode("Type and its constructor could be removed")]
         public static ObjectHandle? CreateInstance(string assemblyName, string typeName, bool ignoreCase, BindingFlags bindingAttr, Binder? binder, object?[]? args, CultureInfo? culture, object?[]? activationAttributes)
         {
             StackCrawlMark stackMark = StackCrawlMark.LookForMyCaller;
@@ -69,6 +71,7 @@ namespace System
         }
 
         [System.Security.DynamicSecurityMethod]
+        [RequiresUnreferencedCode("Type and its constructor could be removed")]
         public static ObjectHandle? CreateInstance(string assemblyName, string typeName, object?[]? activationAttributes)
         {
             StackCrawlMark stackMark = StackCrawlMark.LookForMyCaller;
@@ -99,8 +102,6 @@ namespace System
 
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
             Justification = "Implementation detail of Activator that linker intrinsically recognizes")]
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2057:UnrecognizedReflectionPattern",
-            Justification = "Implementation detail of Activator that linker intrinsically recognizes")]
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2072:UnrecognizedReflectionPattern",
             Justification = "Implementation detail of Activator that linker intrinsically recognizes")]
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2096:UnrecognizedReflectionPattern",
@@ -115,8 +116,7 @@ namespace System
                                                            object?[]? activationAttributes,
                                                            ref StackCrawlMark stackMark)
         {
-            Type? type = null;
-            Assembly? assembly = null;
+            Assembly assembly;
             if (assemblyString == null)
             {
                 assembly = Assembly.GetExecutingAssembly(ref stackMark);
@@ -124,23 +124,10 @@ namespace System
             else
             {
                 AssemblyName assemblyName = new AssemblyName(assemblyString);
-
-                if (assemblyName.ContentType == AssemblyContentType.WindowsRuntime)
-                {
-                    // WinRT type - we have to use Type.GetType
-                    type = Type.GetType(typeName + ", " + assemblyString, throwOnError: true, ignoreCase);
-                }
-                else
-                {
-                    // Classic managed type
-                    assembly = RuntimeAssembly.InternalLoad(assemblyName, ref stackMark, AssemblyLoadContext.CurrentContextualReflectionContext);
-                }
+                assembly = RuntimeAssembly.InternalLoad(assemblyName, ref stackMark, AssemblyLoadContext.CurrentContextualReflectionContext);
             }
 
-            if (type == null)
-            {
-                type = assembly!.GetType(typeName, throwOnError: true, ignoreCase);
-            }
+            Type? type = assembly.GetType(typeName, throwOnError: true, ignoreCase);
 
             object? o = CreateInstance(type!, bindingAttr, binder, args, culture, activationAttributes);
 

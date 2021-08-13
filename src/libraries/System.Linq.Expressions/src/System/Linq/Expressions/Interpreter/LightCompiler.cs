@@ -51,7 +51,7 @@ namespace System.Linq.Expressions.Interpreter
         public bool Matches(Type exceptionType) => _exceptionType.IsAssignableFrom(exceptionType);
 
         public override string ToString() =>
-            string.Format(CultureInfo.InvariantCulture, "catch ({0}) [{1}->{2}]", _exceptionType.Name, HandlerStartIndex, HandlerEndIndex);
+            string.Create(CultureInfo.InvariantCulture, $"catch ({_exceptionType.Name}) [{HandlerStartIndex}->{HandlerEndIndex}]");
     }
 
     internal sealed class TryCatchFinallyHandler
@@ -211,7 +211,7 @@ namespace System.Linq.Expressions.Interpreter
         public bool IsClear;
         private static readonly DebugInfoComparer s_debugComparer = new DebugInfoComparer();
 
-        private class DebugInfoComparer : IComparer<DebugInfo>
+        private sealed class DebugInfoComparer : IComparer<DebugInfo>
         {
             //We allow comparison between int and DebugInfo here
             int IComparer<DebugInfo>.Compare(DebugInfo? d1, DebugInfo? d2)
@@ -251,11 +251,11 @@ namespace System.Linq.Expressions.Interpreter
         {
             if (IsClear)
             {
-                return string.Format(CultureInfo.InvariantCulture, "{0}: clear", Index);
+                return string.Create(CultureInfo.InvariantCulture, $"{Index}: clear");
             }
             else
             {
-                return string.Format(CultureInfo.InvariantCulture, "{0}: [{1}-{2}] '{3}'", Index, StartLine, EndLine, FileName);
+                return string.Create(CultureInfo.InvariantCulture, $"{Index}: [{StartLine}-{EndLine}] '{FileName}'");
             }
         }
     }
@@ -3101,7 +3101,7 @@ namespace System.Linq.Expressions.Interpreter
                     break;
             }
             Debug.Assert(_instructions.CurrentStackDepth == startingStackDepth + (expr.Type == typeof(void) ? 0 : 1),
-                string.Format("{0} vs {1} for {2}", _instructions.CurrentStackDepth, startingStackDepth + (expr.Type == typeof(void) ? 0 : 1), expr.NodeType));
+                $"{_instructions.CurrentStackDepth} vs {startingStackDepth + (expr.Type == typeof(void) ? 0 : 1)} for {expr.NodeType}");
         }
 
         private void Compile(Expression expr)

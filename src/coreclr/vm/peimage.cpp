@@ -887,7 +887,9 @@ void PEImage::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
 
 
 PEImage::PEImage():
+    m_path(),
     m_refCount(1),
+    m_bundleFileLocation(),
     m_bIsTrustedNativeImage(FALSE),
     m_bInHashMap(FALSE),
 #ifdef METADATATRACKER_DATA

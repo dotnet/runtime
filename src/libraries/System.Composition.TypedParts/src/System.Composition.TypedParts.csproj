@@ -1,8 +1,17 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <RootNamespace>System.Composition</RootNamespace>
-    <TargetFrameworks>netstandard2.0;net461</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent);netstandard2.0;net461</TargetFrameworks>
+    <SetIsTrimmable>false</SetIsTrimmable>
+    <IsPackable>true</IsPackable>
+    <StrongNameKeyId>Microsoft</StrongNameKeyId>
+    <PackageDescription>Provides some extension methods for the Managed Extensibility Framework.
+
+Commonly Used Types:
+System.Composition.CompositionContextExtensions
+System.Composition.Hosting.ContainerConfiguration</PackageDescription>
   </PropertyGroup>
+
   <ItemGroup>
     <Compile Include="System\Composition\CompositionContextExtensions.cs" />
     <Compile Include="System\Composition\Convention\AttributedModelProviderExtensions.cs" />
@@ -28,9 +37,17 @@
     <Compile Include="$(CoreLibSharedDir)System\Numerics\Hashing\HashHelpers.cs"
              Link="Common\System\Numerics\Hashing\HashHelpers.cs" />
   </ItemGroup>
+
   <ItemGroup>
     <ProjectReference Include="$(LibrariesProjectRoot)System.Composition.AttributedModel\src\System.Composition.AttributedModel.csproj" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.Composition.Hosting\src\System.Composition.Hosting.csproj" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.Composition.Runtime\src\System.Composition.Runtime.csproj" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
+    <Reference Include="System.Collections" />
+    <Reference Include="System.Linq" />
+    <Reference Include="System.Linq.Expressions" />
+    <Reference Include="System.Runtime" />
   </ItemGroup>
 </Project>

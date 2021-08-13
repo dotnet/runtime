@@ -9,15 +9,11 @@ SET (CMAKE_C_FLAGS_RELWITHDEBINFO_INIT      "/O2 /Zi")
 SET (CMAKE_ASM_MASM_FLAGS                   "${CMAKE_ASM_MASM_FLAGS} /ZH:SHA_256")
 
 # Configuration of our libray specs and our directories
-SET (CMAKE_INSTALL_PREFIX                   $ENV{__CMakeBinDir})
 SET (CMAKE_INCLUDE_CURRENT_DIR              ON)
 SET (CMAKE_SHARED_LIBRARY_PREFIX            "")
 
 set(__SharedLinkArgs)
 set(__LinkArgs)
-if ($ENV{__LinkArgs})
-    SET (__LinkArgs $ENV{__LinkArgs})
-endif()
 
 # Force an out of source build
 if("${CMAKE_SOURCE_DIR}" STREQUAL "${CMAKE_BINARY_DIR}")
@@ -49,9 +45,8 @@ string(REPLACE "/EHsc" "" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
 add_compile_options(/EHa)         # enable C++ EH (w/ SEH exceptions)
 add_compile_options(/Zp8)         # pack structs on 8-byte boundary
 add_compile_options(/Gy)          # separate functions for linker
-add_compile_options(/Zc:wchar_t-) # C++ language conformance: wchar_t is NOT the native type, but a typedef
 add_compile_options(/Zc:forScope) # C++ language conformance: enforce Standard C++ for scoping rules
-string(REPLACE "/GR" "" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
+string(REPLACE "/GR " " " CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
 add_compile_options(/GR-)         # disable C++ RTTI
 add_compile_options(/FC)          # use full pathnames in diagnostics
 add_compile_options(/MP)          # Build with Multiple Processes (number of processes equal to the number of processors)
@@ -62,13 +57,20 @@ add_compile_options(/Zl)          # enable debugging information
 add_compile_options(/wd4960 /wd4961 /wd4603 /wd4627 /wd4838 /wd4456 /wd4457 /wd4458 /wd4459 /wd4091 /we4640)
 add_compile_options(/ZH:SHA_256) # use SHA256 for generating hashes of compiler processed source files.
 
-if ($ENV{__BuildArch} STREQUAL "x86")
+if (${CLR_CMAKE_HOST_ARCH} STREQUAL "x86")
     add_compile_options(/Gz)
 endif ()
 
 # enable control-flow-guard support for native components
 add_compile_options(/guard:cf)
-list(APPEND __SharedLinkArgs /GUARD:CF)
+list(APPEND __SharedLinkArgs /guard:cf)
+
+if (${CLR_CMAKE_HOST_ARCH} STREQUAL "x86_64" OR ${CLR_CMAKE_HOST_ARCH} STREQUAL "amd64" OR ${CLR_CMAKE_HOST_ARCH} STREQUAL "x64")
+    # Enable EH continuation table and CETCOMPAT for native components
+    add_compile_options(/guard:ehcont)
+    list(APPEND __SharedLinkArgs /guard:ehcont)
+    list(APPEND __SharedLinkArgs /CETCOMPAT)
+endif ()
 
 # Statically linked CRT (libcmt[d].lib, libvcruntime[d].lib and libucrt[d].lib) by default. This is done to avoid
 # linking in VCRUNTIME140.DLL for a simplified xcopy experience by reducing the dependency on VC REDIST.
@@ -80,7 +82,6 @@ list(APPEND __SharedLinkArgs /GUARD:CF)
 set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
 
 add_compile_options($<$<CONFIG:RELEASE>:/GL>)
-add_compile_options($<$<CONFIG:RELEASE>:/O1>)
 
 list(APPEND __LinkLibraries $<$<CONFIG:DEBUG>:libcmtd.lib>)
 list(APPEND __LinkLibraries $<$<CONFIG:RELEASE>:libcmt.lib>)
@@ -115,7 +116,7 @@ endif()
 # Debug build specific flags
 list(INSERT __SharedLinkArgs 0 $<$<OR:$<CONFIG:DEBUG>,$<CONFIG:CHECKED>>:/NOVCFEATURE>)
 
-if ($ENV{__BuildArch} STREQUAL "x86_64" OR $ENV{__BuildArch} STREQUAL "amd64")
+if (${CLR_CMAKE_HOST_ARCH} STREQUAL "x86_64" OR ${CLR_CMAKE_HOST_ARCH} STREQUAL "amd64" OR ${CLR_CMAKE_HOST_ARCH} STREQUAL "x64")
     add_definitions(-DTARGET_64BIT=1)
 endif ()
 

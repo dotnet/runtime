@@ -5,7 +5,7 @@ using Debug = System.Diagnostics.Debug;
 
 namespace System.Xml.Linq
 {
-    internal class XNodeReader : XmlReader, IXmlLineInfo
+    internal sealed class XNodeReader : XmlReader, IXmlLineInfo
     {
         private static readonly char[] s_WhitespaceChars = new char[] { ' ', '\t', '\n', '\r' };
 
@@ -1388,8 +1388,7 @@ namespace System.Xml.Linq
         /// <returns>The first attribute which is not a namespace attribute or null if the end of attributes has bean reached</returns>
         private XAttribute? GetFirstNonDuplicateNamespaceAttribute(XAttribute candidate)
         {
-            Debug.Assert(_omitDuplicateNamespaces, "This method should only be called if we're omitting duplicate namespace attribute." +
-                                                  "For perf reason it's better to test this flag in the caller method.");
+            Debug.Assert(_omitDuplicateNamespaces, "This method should only be called if we're omitting duplicate namespace attribute. For perf reason it's better to test this flag in the caller method.");
             if (!IsDuplicateNamespaceAttribute(candidate))
             {
                 return candidate;

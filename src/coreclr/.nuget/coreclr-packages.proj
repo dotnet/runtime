@@ -1,16 +1,19 @@
 <Project Sdk="Microsoft.Build.Traversal" DefaultTargets="Pack">
-  <PropertyGroup>
-    <TraversalGlobalProperties>BuildAllProjects=true</TraversalGlobalProperties>
-  </PropertyGroup>
-
   <ItemGroup Condition="'$(TargetOS)' == 'windows' or '$(DotNetBuildFromSource)' == 'true'">
     <ProjectReference Include="Microsoft.NET.Sdk.IL\Microsoft.NET.Sdk.IL.pkgproj" />
     <ProjectReference Include="Microsoft.ILVerification\Microsoft.ILVerification.pkgproj" />
     <ProjectReference Include="dotnet-ilverify\dotnet-ilverify.pkgproj" />
   </ItemGroup>
 
-  <ItemGroup>
+  <ItemGroup Condition="'$(RuntimeFlavor)' == 'CoreCLR' and '$(DotNetBuildFromSource)' != 'true'">
+    <ProjectReference Include="ILCompiler.Reflection.ReadyToRun.Experimental\ILCompiler.Reflection.ReadyToRun.Experimental.pkgproj" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(RuntimeFlavor)' == 'CoreCLR'">
     <ProjectReference Include="Microsoft.NETCore.TestHost\Microsoft.NETCore.TestHost.proj" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="Microsoft.NETCore.ILAsm\Microsoft.NETCore.ILAsm.proj" />
     <ProjectReference Include="Microsoft.NETCore.ILDAsm\Microsoft.NETCore.ILDAsm.proj" />
   </ItemGroup>

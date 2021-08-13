@@ -14,7 +14,7 @@ using System.Runtime.Versioning;
 
 namespace System.Diagnostics.Tracing
 {
-    internal class XplatEventLogger : EventListener
+    internal sealed class XplatEventLogger : EventListener
     {
         public XplatEventLogger() {}
 

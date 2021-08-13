@@ -75,11 +75,12 @@ namespace System.Diagnostics
         private string? _spanId;
 
         private byte _w3CIdFlags;
+        private byte _parentTraceFlags;
 
         private TagsLinkedList? _tags;
         private BaggageLinkedList? _baggage;
-        private LinkedList<ActivityLink>? _links;
-        private LinkedList<ActivityEvent>? _events;
+        private DiagLinkedList<ActivityLink>? _links;
+        private DiagLinkedList<ActivityEvent>? _events;
         private Dictionary<string, object>? _customProperties;
         private string? _displayName;
         private ActivityStatusCode _statusCode;
@@ -92,7 +93,7 @@ namespace System.Diagnostics
         public ActivityStatusCode Status => _statusCode;
 
         /// <summary>
-        /// Gets the status descrition of the current activity object.
+        /// Gets the status description of the current activity object.
         /// </summary>
         public string? StatusDescription => _statusDescription;
 
@@ -100,8 +101,8 @@ namespace System.Diagnostics
         /// Sets the status code and description on the current activity object.
         /// </summary>
         /// <param name="code">The status code</param>
-        /// <param name="description">The error status descrition</param>
-        /// <returns>'this' for convenient chaining</returns>
+        /// <param name="description">The error status description</param>
+        /// <returns><see langword="this" /> for convenient chaining.</returns>
         /// <remarks>
         /// When passing code value different than ActivityStatusCode.Error, the Activity.StatusDescription will reset to null value.
         /// The description paramater will be respected only when passing ActivityStatusCode.Error value.
@@ -213,6 +214,9 @@ namespace System.Diagnostics
         /// </summary>
         public string? ParentId
         {
+#if ALLOW_PARTIALLY_TRUSTED_CALLERS
+            [System.Security.SecuritySafeCriticalAttribute]
+#endif
             get
             {
                 // if we represented it as a traceId-spanId, convert it to a string.
@@ -220,7 +224,9 @@ namespace System.Diagnostics
                 {
                     if (_parentSpanId != null)
                     {
-                        string parentId = "00-" + _traceId + "-" + _parentSpanId + "-00";
+                        Span<char> flagsChars = stackalloc char[2];
+                        HexConverter.ToCharsBuffer((byte)((~ActivityTraceFlagsIsSet) & _parentTraceFlags), flagsChars, 0, HexConverter.Casing.Lower);
+                        string parentId = "00-" + _traceId + "-" + _parentSpanId + "-" + flagsChars.ToString();
                         Interlocked.CompareExchange(ref _parentId, parentId, null);
                     }
                     else if (Parent != null)
@@ -335,7 +341,7 @@ namespace System.Diagnostics
                     {
                         if (activity._baggage != null)
                         {
-                            for (LinkedListNode<KeyValuePair<string, string?>>? current = activity._baggage.First; current != null; current = current.Next)
+                            for (DiagNode<KeyValuePair<string, string?>>? current = activity._baggage.First; current != null; current = current.Next)
                             {
                                 yield return current.Value;
                             }
@@ -393,7 +399,7 @@ namespace System.Diagnostics
         /// This shows up in the <see cref="Tags"/>  enumeration. It is meant for information that
         /// is useful to log but not needed for runtime control (for the latter, <see cref="Baggage"/>)
         /// </summary>
-        /// <returns>'this' for convenient chaining</returns>
+        /// <returns><see langword="this" /> for convenient chaining.</returns>
         /// <param name="key">The tag key name</param>
         /// <param name="value">The tag value mapped to the input key</param>
         public Activity AddTag(string key, string? value) => AddTag(key, (object?) value);
@@ -403,7 +409,7 @@ namespace System.Diagnostics
         /// This shows up in the <see cref="TagObjects"/> enumeration. It is meant for information that
         /// is useful to log but not needed for runtime control (for the latter, <see cref="Baggage"/>)
         /// </summary>
-        /// <returns>'this' for convenient chaining</returns>
+        /// <returns><see langword="this" /> for convenient chaining.</returns>
         /// <param name="key">The tag key name</param>
         /// <param name="value">The tag value mapped to the input key</param>
         public Activity AddTag(string key, object? value)
@@ -429,7 +435,7 @@ namespace System.Diagnostics
         /// </summary>
         /// <param name="key">The tag key name</param>
         /// <param name="value">The tag value mapped to the input key</param>
-        /// <returns>'this' for convenient chaining</returns>
+        /// <returns><see langword="this" /> for convenient chaining.</returns>
         public Activity SetTag(string key, object? value)
         {
             KeyValuePair<string, object?> kvp = new KeyValuePair<string, object?>(key, value);
@@ -446,10 +452,10 @@ namespace System.Diagnostics
         /// Add <see cref="ActivityEvent" /> object to the <see cref="Events" /> list.
         /// </summary>
         /// <param name="e"> object of <see cref="ActivityEvent"/> to add to the attached events list.</param>
-        /// <returns>'this' for convenient chaining</returns>
+        /// <returns><see langword="this" /> for convenient chaining.</returns>
         public Activity AddEvent(ActivityEvent e)
         {
-            if (_events != null || Interlocked.CompareExchange(ref _events, new LinkedList<ActivityEvent>(e), null) != null)
+            if (_events != null || Interlocked.CompareExchange(ref _events, new DiagLinkedList<ActivityEvent>(e), null) != null)
             {
                 _events.Add(e);
             }
@@ -465,7 +471,7 @@ namespace System.Diagnostics
         /// that is simply useful to show up in the log with the activity use <see cref="Tags"/>.
         /// Returns 'this' for convenient chaining.
         /// </summary>
-        /// <returns>'this' for convenient chaining</returns>
+        /// <returns><see langword="this" /> for convenient chaining.</returns>
         public Activity AddBaggage(string key, string? value)
         {
             KeyValuePair<string, string?> kvp = new KeyValuePair<string, string?>(key, value);
@@ -489,7 +495,7 @@ namespace System.Diagnostics
         /// </summary>
         /// <param name="key">The baggage key name</param>
         /// <param name="value">The baggage value mapped to the input key</param>
-        /// <returns>'this' for convenient chaining</returns>
+        /// <returns><see langword="this" /> for convenient chaining.</returns>
         public Activity SetBaggage(string key, string? value)
         {
             KeyValuePair<string, string?> kvp = new KeyValuePair<string, string?>(key, value);
@@ -551,6 +557,7 @@ namespace System.Diagnostics
                 _traceId = traceId.ToHexString();     // The child will share the parent's traceId.
                 _parentSpanId = spanId.ToHexString();
                 ActivityTraceFlags = activityTraceFlags;
+                _parentTraceFlags = (byte) activityTraceFlags;
             }
             return this;
         }
@@ -559,7 +566,7 @@ namespace System.Diagnostics
         /// Update the Activity to set start time
         /// </summary>
         /// <param name="startTimeUtc">Activity start time in UTC (Greenwich Mean Time)</param>
-        /// <returns>'this' for convenient chaining</returns>
+        /// <returns><see langword="this" /> for convenient chaining.</returns>
         public Activity SetStartTime(DateTime startTimeUtc)
         {
             if (startTimeUtc.Kind != DateTimeKind.Utc)
@@ -579,7 +586,7 @@ namespace System.Diagnostics
         /// and <paramref name="endTimeUtc"/>.
         /// </summary>
         /// <param name="endTimeUtc">Activity stop time in UTC (Greenwich Mean Time)</param>
-        /// <returns>'this' for convenient chaining</returns>
+        /// <returns><see langword="this" /> for convenient chaining.</returns>
         public Activity SetEndTime(DateTime endTimeUtc)
         {
             if (endTimeUtc.Kind != DateTimeKind.Utc)
@@ -1023,7 +1030,7 @@ namespace System.Diagnostics
                 {
                     if (enumerator.MoveNext())
                     {
-                        activity._links = new LinkedList<ActivityLink>(enumerator);
+                        activity._links = new DiagLinkedList<ActivityLink>(enumerator);
                     }
                 }
             }
@@ -1051,13 +1058,6 @@ namespace System.Diagnostics
                 }
             }
 
-            activity.IsAllDataRequested = request == ActivitySamplingResult.AllData || request == ActivitySamplingResult.AllDataAndRecorded;
-
-            if (request == ActivitySamplingResult.AllDataAndRecorded)
-            {
-                activity.ActivityTraceFlags |= ActivityTraceFlags.Recorded;
-            }
-
             if (parentId != null)
             {
                 activity._parentId = parentId;
@@ -1072,7 +1072,15 @@ namespace System.Diagnostics
                 }
 
                 activity.ActivityTraceFlags = parentContext.TraceFlags;
+                activity._parentTraceFlags = (byte) parentContext.TraceFlags;
                 activity._traceState = parentContext.TraceState;
+            }
+
+            activity.IsAllDataRequested = request == ActivitySamplingResult.AllData || request == ActivitySamplingResult.AllDataAndRecorded;
+
+            if (request == ActivitySamplingResult.AllDataAndRecorded)
+            {
+                activity.ActivityTraceFlags |= ActivityTraceFlags.Recorded;
             }
 
             if (startTime != default)
@@ -1315,73 +1323,17 @@ namespace System.Diagnostics
             private set => _state = (_state & ~State.FormatFlags) | (State)((byte)value & (byte)State.FormatFlags);
         }
 
-        private partial class LinkedListNode<T>
+        private sealed class BaggageLinkedList : IEnumerable<KeyValuePair<string, string?>>
         {
-            public LinkedListNode(T value) => Value = value;
-            public T Value;
-            public LinkedListNode<T>? Next;
-        }
+            private DiagNode<KeyValuePair<string, string?>>? _first;
 
-        // We are not using the public LinkedList<T> because we need to ensure thread safety operation on the list.
-        private class LinkedList<T> : IEnumerable<T>
-        {
-            private LinkedListNode<T> _first;
-            private LinkedListNode<T> _last;
+            public BaggageLinkedList(KeyValuePair<string, string?> firstValue, bool set = false) => _first = ((set && firstValue.Value == null) ? null : new DiagNode<KeyValuePair<string, string?>>(firstValue));
 
-            public LinkedList(T firstValue) => _last = _first = new LinkedListNode<T>(firstValue);
-
-            public LinkedList(IEnumerator<T> e)
-            {
-                _last = _first = new LinkedListNode<T>(e.Current);
-
-                while (e.MoveNext())
-                {
-                    _last.Next = new LinkedListNode<T>(e.Current);
-                    _last = _last.Next;
-                }
-            }
-
-            public LinkedListNode<T> First => _first;
-
-            public void Add(T value)
-            {
-                LinkedListNode<T> newNode = new LinkedListNode<T>(value);
-
-                lock (this)
-                {
-                    _last.Next = newNode;
-                    _last = newNode;
-                }
-            }
-
-            public void AddFront(T value)
-            {
-                LinkedListNode<T> newNode = new LinkedListNode<T>(value);
-
-                lock (this)
-                {
-                    newNode.Next = _first;
-                    _first = newNode;
-                }
-            }
-
-            // Note: Some consumers use this GetEnumerator dynamically to avoid allocations.
-            public Enumerator<T> GetEnumerator() => new Enumerator<T>(_first);
-            IEnumerator<T> IEnumerable<T>.GetEnumerator() => GetEnumerator();
-            IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
-        }
-
-        private class BaggageLinkedList : IEnumerable<KeyValuePair<string, string?>>
-        {
-            private LinkedListNode<KeyValuePair<string, string?>>? _first;
-
-            public BaggageLinkedList(KeyValuePair<string, string?> firstValue, bool set = false) => _first = ((set && firstValue.Value == null) ? null : new LinkedListNode<KeyValuePair<string, string?>>(firstValue));
-
-            public LinkedListNode<KeyValuePair<string, string?>>? First => _first;
+            public DiagNode<KeyValuePair<string, string?>>? First => _first;
 
             public void Add(KeyValuePair<string, string?> value)
             {
-                LinkedListNode<KeyValuePair<string, string?>> newNode = new LinkedListNode<KeyValuePair<string, string?>>(value);
+                DiagNode<KeyValuePair<string, string?>> newNode = new DiagNode<KeyValuePair<string, string?>>(value);
 
                 lock (this)
                 {
@@ -1400,7 +1352,7 @@ namespace System.Diagnostics
 
                 lock (this)
                 {
-                    LinkedListNode<KeyValuePair<string, string?>>? current = _first;
+                    DiagNode<KeyValuePair<string, string?>>? current = _first;
                     while (current != null)
                     {
                         if (current.Value.Key == value.Key)
@@ -1412,7 +1364,7 @@ namespace System.Diagnostics
                         current = current.Next;
                     }
 
-                    LinkedListNode<KeyValuePair<string, string?>> newNode = new LinkedListNode<KeyValuePair<string, string?>>(value);
+                    DiagNode<KeyValuePair<string, string?>> newNode = new DiagNode<KeyValuePair<string, string?>>(value);
                     newNode.Next = _first;
                     _first = newNode;
                 }
@@ -1433,7 +1385,7 @@ namespace System.Diagnostics
                         return;
                     }
 
-                    LinkedListNode<KeyValuePair<string, string?>> previous = _first;
+                    DiagNode<KeyValuePair<string, string?>> previous = _first;
 
                     while (previous.Next != null)
                     {
@@ -1453,20 +1405,22 @@ namespace System.Diagnostics
             IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
         }
 
-        private class TagsLinkedList : IEnumerable<KeyValuePair<string, object?>>
+        private sealed class TagsLinkedList : IEnumerable<KeyValuePair<string, object?>>
         {
-            private LinkedListNode<KeyValuePair<string, object?>>? _first;
-            private LinkedListNode<KeyValuePair<string, object?>>? _last;
+            private DiagNode<KeyValuePair<string, object?>>? _first;
+            private DiagNode<KeyValuePair<string, object?>>? _last;
 
-            public TagsLinkedList(KeyValuePair<string, object?> firstValue, bool set = false) => _last = _first = ((set && firstValue.Value == null) ? null : new LinkedListNode<KeyValuePair<string, object?>>(firstValue));
+            private StringBuilder? _stringBuilder;
+
+            public TagsLinkedList(KeyValuePair<string, object?> firstValue, bool set = false) => _last = _first = ((set && firstValue.Value == null) ? null : new DiagNode<KeyValuePair<string, object?>>(firstValue));
 
             public TagsLinkedList(IEnumerator<KeyValuePair<string, object?>> e)
             {
-                _last = _first = new LinkedListNode<KeyValuePair<string, object?>>(e.Current);
+                _last = _first = new DiagNode<KeyValuePair<string, object?>>(e.Current);
 
                 while (e.MoveNext())
                 {
-                    _last.Next = new LinkedListNode<KeyValuePair<string, object?>>(e.Current);
+                    _last.Next = new DiagNode<KeyValuePair<string, object?>>(e.Current);
                     _last = _last.Next;
                 }
             }
@@ -1484,24 +1438,24 @@ namespace System.Diagnostics
 
                 if (_first == null)
                 {
-                    _last = _first = new LinkedListNode<KeyValuePair<string, object?>>(e.Current);
+                    _last = _first = new DiagNode<KeyValuePair<string, object?>>(e.Current);
                 }
                 else
                 {
-                    _last!.Next = new LinkedListNode<KeyValuePair<string, object?>>(e.Current);
+                    _last!.Next = new DiagNode<KeyValuePair<string, object?>>(e.Current);
                     _last = _last.Next;
                 }
 
                 while (e.MoveNext())
                 {
-                    _last.Next = new LinkedListNode<KeyValuePair<string, object?>>(e.Current);
+                    _last.Next = new DiagNode<KeyValuePair<string, object?>>(e.Current);
                     _last = _last.Next;
                 }
             }
 
             public void Add(KeyValuePair<string, object?> value)
             {
-                LinkedListNode<KeyValuePair<string, object?>> newNode = new LinkedListNode<KeyValuePair<string, object?>>(value);
+                DiagNode<KeyValuePair<string, object?>> newNode = new DiagNode<KeyValuePair<string, object?>>(value);
 
                 lock (this)
                 {
@@ -1521,7 +1475,7 @@ namespace System.Diagnostics
             public object? Get(string key)
             {
                 // We don't take the lock here so it is possible the Add/Remove operations mutate the list during the Get operation.
-                LinkedListNode<KeyValuePair<string, object?>>? current = _first;
+                DiagNode<KeyValuePair<string, object?>>? current = _first;
                 while (current != null)
                 {
                     if (current.Value.Key == key)
@@ -1537,7 +1491,6 @@ namespace System.Diagnostics
 
             public void Remove(string key)
             {
-
                 lock (this)
                 {
                     if (_first == null)
@@ -1547,15 +1500,23 @@ namespace System.Diagnostics
                     if (_first.Value.Key == key)
                     {
                         _first = _first.Next;
+                        if (_first is null)
+                        {
+                            _last = null;
+                        }
                         return;
                     }
 
-                    LinkedListNode<KeyValuePair<string, object?>> previous = _first;
+                    DiagNode<KeyValuePair<string, object?>> previous = _first;
 
                     while (previous.Next != null)
                     {
                         if (previous.Next.Value.Key == key)
                         {
+                            if (object.ReferenceEquals(_last, previous.Next))
+                            {
+                                _last = previous;
+                            }
                             previous.Next = previous.Next.Next;
                             return;
                         }
@@ -1574,7 +1535,7 @@ namespace System.Diagnostics
 
                 lock (this)
                 {
-                    LinkedListNode<KeyValuePair<string, object?>>? current = _first;
+                    DiagNode<KeyValuePair<string, object?>>? current = _first;
                     while (current != null)
                     {
                         if (current.Value.Key == value.Key)
@@ -1586,7 +1547,7 @@ namespace System.Diagnostics
                         current = current.Next;
                     }
 
-                    LinkedListNode<KeyValuePair<string, object?>> newNode = new LinkedListNode<KeyValuePair<string, object?>>(value);
+                    DiagNode<KeyValuePair<string, object?>> newNode = new DiagNode<KeyValuePair<string, object?>>(value);
                     if (_first == null)
                     {
                         _first = _last = newNode;
@@ -1607,7 +1568,7 @@ namespace System.Diagnostics
 
             public IEnumerable<KeyValuePair<string, string?>> EnumerateStringValues()
             {
-                LinkedListNode<KeyValuePair<string, object?>>? current = _first;
+                DiagNode<KeyValuePair<string, object?>>? current = _first;
 
                 while (current != null)
                 {
@@ -1619,41 +1580,36 @@ namespace System.Diagnostics
                     current = current.Next;
                 };
             }
-        }
 
-        // Note: Some consumers use this Enumerator dynamically to avoid allocations.
-        private struct Enumerator<T> : IEnumerator<T>
-        {
-            private LinkedListNode<T>? _nextNode;
-            [AllowNull, MaybeNull] private T _currentItem;
-
-            public Enumerator(LinkedListNode<T>? head)
+            public override string ToString()
             {
-                _nextNode = head;
-                _currentItem = default;
-            }
-
-            public T Current => _currentItem!;
-
-            object? IEnumerator.Current => Current;
-
-            public bool MoveNext()
-            {
-                if (_nextNode == null)
+                lock (this)
                 {
-                    _currentItem = default;
-                    return false;
+                    if (_first == null)
+                    {
+                        return string.Empty;
+                    }
+
+                    _stringBuilder ??= new StringBuilder();
+                    _stringBuilder.Append(_first.Value.Key);
+                    _stringBuilder.Append(':');
+                    _stringBuilder.Append(_first.Value.Value);
+
+                    DiagNode<KeyValuePair<string, object?>>? current = _first.Next;
+                    while (current != null)
+                    {
+                        _stringBuilder.Append(", ");
+                        _stringBuilder.Append(current.Value.Key);
+                        _stringBuilder.Append(':');
+                        _stringBuilder.Append(current.Value.Value);
+
+                        current = current.Next;
+                    }
+
+                    string result = _stringBuilder.ToString();
+                    _stringBuilder.Clear();
+                    return result;
                 }
-
-                _currentItem = _nextNode.Value;
-                _nextNode = _nextNode.Next;
-                return true;
-            }
-
-            public void Reset() => throw new NotSupportedException();
-
-            public void Dispose()
-            {
             }
         }
 

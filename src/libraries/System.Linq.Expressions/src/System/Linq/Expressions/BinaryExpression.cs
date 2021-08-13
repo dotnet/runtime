@@ -493,7 +493,7 @@ namespace System.Linq.Expressions
         public sealed override ExpressionType NodeType => ExpressionType.Assign;
     }
 
-    internal class ByRefAssignBinaryExpression : AssignBinaryExpression
+    internal sealed class ByRefAssignBinaryExpression : AssignBinaryExpression
     {
         internal ByRefAssignBinaryExpression(Expression left, Expression right)
             : base(left, right)
@@ -710,6 +710,8 @@ namespace System.Linq.Expressions
             return b;
         }
 
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2072:UnrecognizedReflectionPattern",
+            Justification = "The trimmer doesn't remove operators when System.Linq.Expressions is used. See https://github.com/mono/linker/pull/2125.")]
         private static MethodInfo? GetUserDefinedBinaryOperator(ExpressionType binaryType, Type leftType, Type rightType, string name)
         {
             // This algorithm is wrong, we should be checking for uniqueness and erroring if

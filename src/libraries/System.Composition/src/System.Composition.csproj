@@ -1,6 +1,28 @@
 <Project Sdk="Microsoft.Build.NoTargets">
-  <!-- These are wrapper project files for packaging.-->
   <PropertyGroup>
-    <TargetFrameworks>netstandard2.0</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent);netstandard2.0;net461</TargetFrameworks>
+    <IsPackable>true</IsPackable>
+    <StrongNameKeyId>Microsoft</StrongNameKeyId>
+    <!-- A meta package doesn't have any artifacts per TargetFramework. -->
+    <NoWarn>$(NoWarn);NU5128</NoWarn>
+    <!-- Reference dependencies to persiste them in the project's project.assets.json file which is used to calculate package dependencies. -->
+    <NoTargetsDoNotReferenceOutputAssemblies>false</NoTargetsDoNotReferenceOutputAssemblies>
+    <PackageDescription>This packages provides a version of the Managed Extensibility Framework (MEF) that is lightweight and specifically optimized for high throughput scenarios, such as the web.
+
+Commonly Used Types:
+System.Composition.ExportAttribute
+System.Composition.ImportAttribute
+System.Composition.Convention.ConventionBuilder
+System.Composition.Hosting.CompositionHost
+System.Composition.CompositionContext
+System.Composition.CompositionContextExtensions</PackageDescription>
   </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Composition.AttributedModel\src\System.Composition.AttributedModel.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Composition.Convention\src\System.Composition.Convention.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Composition.Hosting\src\System.Composition.Hosting.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Composition.Runtime\src\System.Composition.Runtime.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Composition.TypedParts\src\System.Composition.TypedParts.csproj" />
+  </ItemGroup>
 </Project>

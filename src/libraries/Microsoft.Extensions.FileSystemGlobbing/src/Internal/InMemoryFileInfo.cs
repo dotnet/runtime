@@ -6,7 +6,7 @@ using Microsoft.Extensions.FileSystemGlobbing.Abstractions;
 
 namespace Microsoft.Extensions.FileSystemGlobbing.Internal
 {
-    internal class InMemoryFileInfo : FileInfoBase
+    internal sealed class InMemoryFileInfo : FileInfoBase
     {
         private InMemoryDirectoryInfo _parent;
 

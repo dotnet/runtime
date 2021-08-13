@@ -53,7 +53,7 @@ namespace Microsoft.Extensions.Primitives
             return new ChangeTokenRegistration<TState>(changeTokenProducer, changeTokenConsumer, state);
         }
 
-        private class ChangeTokenRegistration<TState> : IDisposable
+        private sealed class ChangeTokenRegistration<TState> : IDisposable
         {
             private readonly Func<IChangeToken> _changeTokenProducer;
             private readonly Action<TState> _changeTokenConsumer;
@@ -145,7 +145,7 @@ namespace Microsoft.Extensions.Primitives
                 Interlocked.Exchange(ref _disposable, _disposedSentinel).Dispose();
             }
 
-            private class NoopDisposable : IDisposable
+            private sealed class NoopDisposable : IDisposable
             {
                 public void Dispose()
                 {

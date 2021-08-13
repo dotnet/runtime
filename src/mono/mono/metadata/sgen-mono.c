@@ -2593,6 +2593,19 @@ mono_gc_collection_count (int generation)
 }
 
 int64_t
+mono_gc_get_generation_size (int generation)
+{
+	if (generation == GENERATION_NURSERY)
+		return (int64_t)sgen_gc_info.total_nursery_size_bytes;
+	else if (generation == GENERATION_OLD)
+		return (int64_t)sgen_gc_info.total_major_size_bytes;
+	else if (generation == 3)
+		return (int64_t)sgen_gc_info.total_los_size_bytes;
+	else
+		return 0;
+}
+
+int64_t
 mono_gc_get_used_size (void)
 {
 	return (int64_t)sgen_gc_get_used_size ();
@@ -2605,20 +2618,31 @@ mono_gc_get_heap_size (void)
 }
 
 void
-mono_gc_get_gcmemoryinfo (gint64* high_memory_load_threshold_bytes,
-						  gint64* memory_load_bytes,
-						  gint64* total_available_memory_bytes,
-						  gint64* heap_size_bytes,
-						  gint64* fragmented_bytes)
+mono_gc_get_gcmemoryinfo (
+	gint64 *high_memory_load_threshold_bytes,
+	gint64 *memory_load_bytes,
+	gint64 *total_available_memory_bytes,
+	gint64 *total_committed_bytes,
+	gint64 *heap_size_bytes,
+	gint64 *fragmented_bytes)
 {
 	*high_memory_load_threshold_bytes = sgen_gc_info.high_memory_load_threshold_bytes;
 	*fragmented_bytes = sgen_gc_info.fragmented_bytes;
-	
+
 	*heap_size_bytes = sgen_gc_info.heap_size_bytes;
 
 	*memory_load_bytes = sgen_gc_info.memory_load_bytes;
 	*total_available_memory_bytes = sgen_gc_info.total_available_memory_bytes;
-}	
+	*total_committed_bytes = sgen_gc_info.total_committed_bytes;
+}
+
+void mono_gc_get_gctimeinfo (
+	guint64 *time_last_gc_100ns,
+	guint64 *time_since_last_gc_100ns,
+	guint64 *time_max_gc_100ns)
+{
+	sgen_gc_get_gctimeinfo (time_last_gc_100ns, time_since_last_gc_100ns, time_max_gc_100ns);
+}
 
 MonoGCDescriptor
 mono_gc_make_root_descr_user (MonoGCRootMarkFunc marker)
@@ -2729,19 +2753,6 @@ mono_gchandle_new_weakref_internal (GCObject *obj, gboolean track_resurrection)
 }
 
 /**
- * mono_gchandle_is_in_domain:
- * \param gchandle a GCHandle's handle.
- * \param domain An application domain.
- * \returns TRUE if the object wrapped by the \p gchandle belongs to the specific \p domain.
- */
-gboolean
-mono_gchandle_is_in_domain (MonoGCHandle gchandle, MonoDomain *domain)
-{
-	MonoDomain *gchandle_domain = (MonoDomain *)sgen_gchandle_get_metadata (MONO_GC_HANDLE_TO_UINT (gchandle));
-	return domain->domain_id == gchandle_domain->domain_id;
-}
-
-/**
  * mono_gchandle_free_internal:
  * \param gchandle a GCHandle's handle.
  *
@@ -2753,18 +2764,6 @@ void
 mono_gchandle_free_internal (MonoGCHandle gchandle)
 {
 	sgen_gchandle_free (MONO_GC_HANDLE_TO_UINT (gchandle));
-}
-
-/**
- * mono_gchandle_free_domain:
- * \param unloading domain that is unloading
- *
- * Function used internally to cleanup any GC handle for objects belonging
- * to the specified domain during appdomain unload.
- */
-void
-mono_gchandle_free_domain (MonoDomain *unloading)
-{
 }
 
 /**
@@ -2849,7 +2848,7 @@ sgen_client_ensure_weak_gchandles_accessible (void)
 	 * should wait for bridge processing but would fail to do so.
 	 */
 	if (G_UNLIKELY (mono_bridge_processing_in_progress))
-		mono_gc_wait_for_bridge_processing ();
+		mono_gc_wait_for_bridge_processing_internal ();
 }
 
 void*

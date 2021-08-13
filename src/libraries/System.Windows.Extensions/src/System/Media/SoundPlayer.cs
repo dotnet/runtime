@@ -259,7 +259,7 @@ namespace System.Media
             // setup the http stream
             if (_uri != null && !_uri.IsFile && _stream == null)
             {
-#pragma warning disable SYSLIB0014
+#pragma warning disable SYSLIB0014 // WebRequest, HttpWebRequest, ServicePoint, and WebClient are obsolete. Use HttpClient instead.
                 WebRequest webRequest = WebRequest.Create(_uri);
 #pragma warning restore SYSLIB0014
                 webRequest.Timeout = LoadTimeout;
@@ -481,7 +481,7 @@ namespace System.Media
                 // setup the http stream
                 if (_uri != null && !_uri.IsFile && _stream == null)
                 {
-#pragma warning disable SYSLIB0014
+#pragma warning disable SYSLIB0014 // WebRequest, HttpWebRequest, ServicePoint, and WebClient are obsolete. Use HttpClient instead.
                     WebRequest webRequest = WebRequest.Create(_uri);
 #pragma warning restore SYSLIB0014
                     using (cancellationToken.Register(r => ((WebRequest)r).Abort(), webRequest))

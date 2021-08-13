@@ -72,13 +72,14 @@ inline HRESULT HRESULT_FROM_WIN32(unsigned long x)
     return (HRESULT)(x) <= 0 ? (HRESULT)(x) : (HRESULT) (((x) & 0x0000FFFF) | (7 << 16) | 0x80000000);
 }
 
-#define S_OK                    0x0
-#define E_FAIL                  0x80004005
-#define E_OUTOFMEMORY           0x8007000E
-#define E_INVALIDARG            0x80070057
-#define COR_E_EXECUTIONENGINE   0x80131506
-#define CLR_E_GC_BAD_AFFINITY_CONFIG 0x8013200A
-#define CLR_E_GC_BAD_AFFINITY_CONFIG_FORMAT 0x8013200B
+#define S_OK                                   0x0
+#define E_FAIL                                 0x80004005
+#define E_OUTOFMEMORY                          0x8007000E
+#define COR_E_EXECUTIONENGINE                  0x80131506
+#define CLR_E_GC_BAD_AFFINITY_CONFIG           0x8013200A
+#define CLR_E_GC_BAD_AFFINITY_CONFIG_FORMAT    0x8013200B
+#define CLR_E_GC_BAD_HARD_LIMIT                0x8013200D
+#define CLR_E_GC_LARGE_PAGE_MISSING_HARD_LIMIT 0x8013200E
 
 #define NOERROR                 0x0
 #define ERROR_TIMEOUT           1460
@@ -226,15 +227,10 @@ typedef DWORD (WINAPI *PTHREAD_START_ROUTINE)(void* lpThreadParameter);
 
 #endif // defined(__i386__) || defined(__x86_64__)
 
-#ifdef __aarch64__
+#if defined(__arm__) || defined(__aarch64__)
  #define YieldProcessor() asm volatile ("yield")
  #define MemoryBarrier __sync_synchronize
-#endif // __aarch64__
-
-#ifdef __arm__
- #define YieldProcessor()
- #define MemoryBarrier __sync_synchronize
-#endif // __arm__
+#endif // __arm__ || __aarch64__
 
 #endif // _MSC_VER
 
@@ -533,7 +529,11 @@ namespace ETW
         GC_ROOT_HANDLES = 2,
         GC_ROOT_OLDER = 3,
         GC_ROOT_SIZEDREF = 4,
-        GC_ROOT_OVERFLOW = 5
+        GC_ROOT_OVERFLOW = 5,
+        GC_ROOT_DH_HANDLES = 6,
+        GC_ROOT_NEW_FQ = 7,
+        GC_ROOT_STEAL = 8,
+        GC_ROOT_BGC = 9
     } GC_ROOT_KIND;
 };
 

@@ -1,16 +1,41 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFrameworks>net461;netstandard2.0</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent);netstandard2.0;net461</TargetFrameworks>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <Nullable>enable</Nullable>
+    <IsPackable>true</IsPackable>
+    <!--- TODO: Remove after this package shipped with NET6. -->
+    <PackageValidationBaselineVersion>1.0.2</PackageValidationBaselineVersion>
+    <PackageDescription>A lightweight abstraction for a payload of bytes. Provides methods for converting between strings, streams, JSON, and bytes.
+
+Commonly Used Types:
+System.BinaryData</PackageDescription>
   </PropertyGroup>
+
   <ItemGroup>
     <Compile Include="System\BinaryData.cs" />
-    <Compile Include="$(CommonPath)System\IO\ReadOnlyMemoryStream.cs" Link="Common\System\IO\ReadOnlyMemoryStream.cs" />
-    <Compile Include="$(CommonPath)System\Threading\Tasks\TaskToApm.cs" Link="Common\System\Threading\Tasks\TaskToApm.cs" />
+    <Compile Include="$(CommonPath)System\IO\ReadOnlyMemoryStream.cs"
+             Link="Common\System\IO\ReadOnlyMemoryStream.cs" />
+    <Compile Include="$(CommonPath)System\Threading\Tasks\TaskToApm.cs"
+             Link="Common\System\Threading\Tasks\TaskToApm.cs" />
   </ItemGroup>
+
+  <ItemGroup Condition="!$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net5.0'))">
+    <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\RequiresUnreferencedCodeAttribute.cs" />
+  </ItemGroup>
+
   <ItemGroup>
-    <PackageReference Include="System.Memory" Version="$(SystemMemoryVersion)" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.Text.Json\src\System.Text.Json.csproj" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
+    <Reference Include="System.Memory" />
+    <Reference Include="System.Runtime" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">
+    <PackageReference Include="System.Memory" Version="$(SystemMemoryVersion)" />
+    <!-- S.R.C.Unsafe isn't a primary but transitive dependency and this P2P makes sure that the live version is used. -->
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime.CompilerServices.Unsafe\src\System.Runtime.CompilerServices.Unsafe.ilproj" PrivateAssets="all" />
   </ItemGroup>
 </Project>

@@ -43,6 +43,7 @@ jobs:
     inputs:
       artifactName: IntermediateArtifacts
       downloadPath: $(Build.SourcesDirectory)\artifacts\PackageDownload
+      checkDownloadedFiles: true
 
   - script: >-
       build.cmd -ci

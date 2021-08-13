@@ -5,6 +5,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Threading.Tasks;
 using System.Runtime.Versioning;
+using Microsoft.Win32.SafeHandles;
 
 namespace System.Net.Sockets
 {
@@ -25,26 +26,6 @@ namespace System.Net.Sockets
             // requires Unix Domain Sockets. The programming model is fundamentally different,
             // and incompatible with the design of SocketInformation-related methods.
             throw new PlatformNotSupportedException(SR.net_sockets_duplicateandclose_notsupported);
-        }
-
-        public IAsyncResult BeginAccept(int receiveSize, AsyncCallback? callback, object? state)
-        {
-            throw new PlatformNotSupportedException(SR.net_sockets_accept_receive_apm_notsupported);
-        }
-
-        public IAsyncResult BeginAccept(Socket? acceptSocket, int receiveSize, AsyncCallback? callback, object? state)
-        {
-            throw new PlatformNotSupportedException(SR.net_sockets_accept_receive_apm_notsupported);
-        }
-
-        public Socket EndAccept(out byte[] buffer, IAsyncResult asyncResult)
-        {
-            throw new PlatformNotSupportedException(SR.net_sockets_accept_receive_apm_notsupported);
-        }
-
-        public Socket EndAccept(out byte[] buffer, out int bytesTransferred, IAsyncResult asyncResult)
-        {
-            throw new PlatformNotSupportedException(SR.net_sockets_accept_receive_apm_notsupported);
         }
 
         internal bool PreferInlineCompletions
@@ -75,21 +56,32 @@ namespace System.Net.Sockets
         }
 
         private static unsafe void LoadSocketTypeFromHandle(
-            SafeSocketHandle handle, out AddressFamily addressFamily, out SocketType socketType, out ProtocolType protocolType, out bool blocking, out bool isListening)
+            SafeSocketHandle handle, out AddressFamily addressFamily, out SocketType socketType, out ProtocolType protocolType, out bool blocking, out bool isListening, out bool isSocket)
         {
-            // Validate that the supplied handle is indeed a socket.
-            if (Interop.Sys.FStat(handle, out Interop.Sys.FileStatus stat) == -1 ||
-                (stat.Mode & Interop.Sys.FileTypes.S_IFSOCK) != Interop.Sys.FileTypes.S_IFSOCK)
+            if (Interop.Sys.FStat(handle, out Interop.Sys.FileStatus stat) == -1)
             {
                 throw new SocketException((int)SocketError.NotSocket);
             }
+            isSocket = (stat.Mode & Interop.Sys.FileTypes.S_IFSOCK) == Interop.Sys.FileTypes.S_IFSOCK;
 
-            // On Linux, GetSocketType will be able to query SO_DOMAIN, SO_TYPE, and SO_PROTOCOL to get the
-            // address family, socket type, and protocol type, respectively.  On macOS, this will only succeed
-            // in getting the socket type, and the others will be unknown.  Subsequently the Socket ctor
-            // can use getsockname to retrieve the address family as part of trying to get the local end point.
-            Interop.Error e = Interop.Sys.GetSocketType(handle, out addressFamily, out socketType, out protocolType, out isListening);
-            Debug.Assert(e == Interop.Error.SUCCESS, e.ToString());
+            handle.IsSocket = isSocket;
+
+            if (isSocket)
+            {
+                // On Linux, GetSocketType will be able to query SO_DOMAIN, SO_TYPE, and SO_PROTOCOL to get the
+                // address family, socket type, and protocol type, respectively.  On macOS, this will only succeed
+                // in getting the socket type, and the others will be unknown.  Subsequently the Socket ctor
+                // can use getsockname to retrieve the address family as part of trying to get the local end point.
+                Interop.Error e = Interop.Sys.GetSocketType(handle, out addressFamily, out socketType, out protocolType, out isListening);
+                Debug.Assert(e == Interop.Error.SUCCESS, e.ToString());
+            }
+            else
+            {
+                addressFamily = AddressFamily.Unknown;
+                socketType = SocketType.Unknown;
+                protocolType = ProtocolType.Unknown;
+                isListening = false;
+            }
 
             // Get whether the socket is in non-blocking mode.  On Unix, we automatically put the underlying
             // Socket into non-blocking mode whenever an async method is first invoked on the instance, but we
@@ -101,7 +93,7 @@ namespace System.Net.Sockets
             bool nonBlocking;
             int rv = Interop.Sys.Fcntl.GetIsNonBlocking(handle, out nonBlocking);
             blocking = !nonBlocking;
-            Debug.Assert(rv == 0 || blocking, e.ToString()); // ignore failures
+            Debug.Assert(rv == 0 || blocking); // ignore failures
         }
 
         internal void ReplaceHandleIfNecessaryAfterFailedConnect()
@@ -199,12 +191,11 @@ namespace System.Net.Sockets
         {
             CheckTransmitFileOptions(flags);
 
+            SocketError errorCode = SocketError.Success;
+
             // Open the file, if any
             // Open it before we send the preBuffer so that any exception happens first
-            FileStream? fileStream = OpenFile(fileName);
-
-            SocketError errorCode = SocketError.Success;
-            using (fileStream)
+            using (SafeFileHandle? fileHandle = OpenFileHandle(fileName))
             {
                 // Send the preBuffer, if any
                 // This will throw on error
@@ -214,10 +205,10 @@ namespace System.Net.Sockets
                 }
 
                 // Send the file, if any
-                if (fileStream != null)
+                if (fileHandle != null)
                 {
                     // This can throw ObjectDisposedException.
-                    errorCode = SocketPal.SendFile(_handle, fileStream);
+                    errorCode = SocketPal.SendFile(_handle, fileHandle);
                 }
             }
 
@@ -234,62 +225,6 @@ namespace System.Net.Sockets
             {
                 Send(postBuffer);
             }
-        }
-
-        private async Task SendFileInternalAsync(FileStream? fileStream, byte[]? preBuffer, byte[]? postBuffer)
-        {
-            SocketError errorCode = SocketError.Success;
-            using (fileStream)
-            {
-                // Send the preBuffer, if any
-                // This will throw on error
-                if (preBuffer != null && preBuffer.Length > 0)
-                {
-                    // Using "this." makes the extension method kick in
-                    await this.SendAsync(new ArraySegment<byte>(preBuffer), SocketFlags.None).ConfigureAwait(false);
-                }
-
-                // Send the file, if any
-                if (fileStream != null)
-                {
-                    var tcs = new TaskCompletionSource<SocketError>();
-                    errorCode = SocketPal.SendFileAsync(_handle, fileStream, (_, socketError) => tcs.SetResult(socketError));
-                    if (errorCode == SocketError.IOPending)
-                    {
-                        errorCode = await tcs.Task.ConfigureAwait(false);
-                    }
-                }
-            }
-
-            if (errorCode != SocketError.Success)
-            {
-                UpdateSendSocketErrorForDisposed(ref errorCode);
-                UpdateStatusAfterSocketErrorAndThrowException(errorCode);
-            }
-
-            // Send the postBuffer, if any
-            // This will throw on error
-            if (postBuffer != null && postBuffer.Length > 0)
-            {
-                // Using "this." makes the extension method kick in
-                await this.SendAsync(new ArraySegment<byte>(postBuffer), SocketFlags.None).ConfigureAwait(false);
-            }
-        }
-
-        private IAsyncResult BeginSendFileInternal(string? fileName, byte[]? preBuffer, byte[]? postBuffer, TransmitFileOptions flags, AsyncCallback? callback, object? state)
-        {
-            CheckTransmitFileOptions(flags);
-
-            // Open the file, if any
-            // Open it before we send the preBuffer so that any exception happens first
-            FileStream? fileStream = OpenFile(fileName);
-
-            return TaskToApm.Begin(SendFileInternalAsync(fileStream, preBuffer, postBuffer), callback, state);
-        }
-
-        private void EndSendFileInternal(IAsyncResult asyncResult)
-        {
-            TaskToApm.End(asyncResult);
         }
     }
 }

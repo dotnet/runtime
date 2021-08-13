@@ -8,6 +8,7 @@ using System.Diagnostics;
 using System.Formats.Asn1;
 using System.IO;
 using System.Runtime.Serialization;
+using System.Runtime.Versioning;
 using System.Security;
 using System.Security.Cryptography.X509Certificates.Asn1;
 using System.Text;
@@ -42,6 +43,7 @@ namespace System.Security.Cryptography.X509Certificates
             base.Reset();
         }
 
+        [Obsolete(Obsoletions.X509CertificateImmutableMessage, DiagnosticId = Obsoletions.X509CertificateImmutableDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public X509Certificate2()
             : base()
         {
@@ -170,6 +172,7 @@ namespace System.Security.Cryptography.X509Certificates
                 return Pal.Archived;
             }
 
+            [SupportedOSPlatform("windows")]
             set
             {
                 ThrowIfInvalid();
@@ -216,6 +219,7 @@ namespace System.Security.Cryptography.X509Certificates
                 return Pal.FriendlyName;
             }
 
+            [SupportedOSPlatform("windows")]
             set
             {
                 ThrowIfInvalid();
@@ -234,6 +238,7 @@ namespace System.Security.Cryptography.X509Certificates
             }
         }
 
+        [Obsolete(Obsoletions.X509CertificatePrivateKeyMessage, DiagnosticId = Obsoletions.X509CertificatePrivateKeyDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public AsymmetricAlgorithm? PrivateKey
         {
             get
@@ -630,33 +635,39 @@ namespace System.Security.Cryptography.X509Certificates
             return sb.ToString();
         }
 
+        [Obsolete(Obsoletions.X509CertificateImmutableMessage, DiagnosticId = Obsoletions.X509CertificateImmutableDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public override void Import(byte[] rawData)
         {
             base.Import(rawData);
         }
 
+        [Obsolete(Obsoletions.X509CertificateImmutableMessage, DiagnosticId = Obsoletions.X509CertificateImmutableDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public override void Import(byte[] rawData, string? password, X509KeyStorageFlags keyStorageFlags)
         {
             base.Import(rawData, password, keyStorageFlags);
         }
 
         [System.CLSCompliantAttribute(false)]
+        [Obsolete(Obsoletions.X509CertificateImmutableMessage, DiagnosticId = Obsoletions.X509CertificateImmutableDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public override void Import(byte[] rawData, SecureString? password, X509KeyStorageFlags keyStorageFlags)
         {
             base.Import(rawData, password, keyStorageFlags);
         }
 
+        [Obsolete(Obsoletions.X509CertificateImmutableMessage, DiagnosticId = Obsoletions.X509CertificateImmutableDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public override void Import(string fileName)
         {
             base.Import(fileName);
         }
 
+        [Obsolete(Obsoletions.X509CertificateImmutableMessage, DiagnosticId = Obsoletions.X509CertificateImmutableDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public override void Import(string fileName, string? password, X509KeyStorageFlags keyStorageFlags)
         {
             base.Import(fileName, password, keyStorageFlags);
         }
 
         [System.CLSCompliantAttribute(false)]
+        [Obsolete(Obsoletions.X509CertificateImmutableMessage, DiagnosticId = Obsoletions.X509CertificateImmutableDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public override void Import(string fileName, SecureString? password, X509KeyStorageFlags keyStorageFlags)
         {
             base.Import(fileName, password, keyStorageFlags);
@@ -943,7 +954,7 @@ namespace System.Security.Cryptography.X509Certificates
                 return keyAlgorithm switch
                 {
                     Oids.Rsa => ExtractKeyFromPem<RSA>(keyPem, s_RsaPublicKeyPrivateKeyLabels, RSA.Create, certificate.CopyWithPrivateKey),
-                    Oids.Dsa => ExtractKeyFromPem<DSA>(keyPem, s_DsaPublicKeyPrivateKeyLabels, DSA.Create, certificate.CopyWithPrivateKey),
+                    Oids.Dsa when Helpers.IsDSASupported => ExtractKeyFromPem<DSA>(keyPem, s_DsaPublicKeyPrivateKeyLabels, DSA.Create, certificate.CopyWithPrivateKey),
                     Oids.EcPublicKey when IsECDsa(certificate) =>
                         ExtractKeyFromPem<ECDsa>(
                             keyPem,
@@ -1013,7 +1024,7 @@ namespace System.Security.Cryptography.X509Certificates
                 return keyAlgorithm switch
                 {
                     Oids.Rsa => ExtractKeyFromEncryptedPem<RSA>(keyPem, password, RSA.Create, certificate.CopyWithPrivateKey),
-                    Oids.Dsa => ExtractKeyFromEncryptedPem<DSA>(keyPem, password, DSA.Create, certificate.CopyWithPrivateKey),
+                    Oids.Dsa when Helpers.IsDSASupported => ExtractKeyFromEncryptedPem<DSA>(keyPem, password, DSA.Create, certificate.CopyWithPrivateKey),
                     Oids.EcPublicKey when IsECDsa(certificate) =>
                         ExtractKeyFromEncryptedPem<ECDsa>(
                             keyPem,

@@ -19,7 +19,7 @@ namespace System.DirectoryServices
         {
             get
             {
-                object returnValue = InnerList[index];
+                object returnValue = InnerList[index]!;
                 if (returnValue is Exception)
                     throw (Exception)returnValue;
                 else
@@ -27,10 +27,10 @@ namespace System.DirectoryServices
             }
         }
 
-        public bool Contains(object value) => InnerList.Contains(value);
+        public bool Contains(object? value) => InnerList.Contains(value);
 
-        public int IndexOf(object value) => InnerList.IndexOf(value);
+        public int IndexOf(object? value) => InnerList.IndexOf(value);
 
-        public void CopyTo(object[] values, int index) => InnerList.CopyTo(values, index);
+        public void CopyTo(object?[] values, int index) => InnerList.CopyTo(values, index);
     }
 }

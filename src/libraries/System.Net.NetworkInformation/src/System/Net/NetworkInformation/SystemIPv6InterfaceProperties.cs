@@ -3,7 +3,7 @@
 
 namespace System.Net.NetworkInformation
 {
-    internal class SystemIPv6InterfaceProperties : IPv6InterfaceProperties
+    internal sealed class SystemIPv6InterfaceProperties : IPv6InterfaceProperties
     {
         private readonly uint _index;
         private readonly uint _mtu;

@@ -414,23 +414,44 @@ Statement* Compiler::fgNewStmtFromTree(GenTree* tree, IL_OFFSETX offs)
     return fgNewStmtFromTree(tree, nullptr, offs);
 }
 
-/*****************************************************************************
- *
- * Remove a useless statement from a basic block.
- *
- */
+//------------------------------------------------------------------------
+// fgUnlinkStmt: unlink a statement from a block's statement list
+//
+// Arguments:
+//   block - the block from which 'stmt' will be unlinked
+//   stmt  - the statement to be unlinked
+//
+// Notes:
+//   next and previous links are nulled out, in anticipation
+//   of this statement being re-inserted somewhere else.
+//
+void Compiler::fgUnlinkStmt(BasicBlock* block, Statement* stmt)
+{
+    constexpr bool isUnlink = true;
+    fgRemoveStmt(block, stmt DEBUGARG(isUnlink));
+    stmt->SetNextStmt(nullptr);
+    stmt->SetPrevStmt(nullptr);
+}
 
-void Compiler::fgRemoveStmt(BasicBlock* block, Statement* stmt)
+//------------------------------------------------------------------------
+// fgRemoveStmt: remove a statement from a block's statement list
+//
+// Arguments:
+//   block - the block from which 'stmt' will be removed
+//   stmt  - the statement to be removed
+//   isUnlink - ultimate plan is to move the statement, not delete it
+//
+void Compiler::fgRemoveStmt(BasicBlock* block, Statement* stmt DEBUGARG(bool isUnlink))
 {
     assert(fgOrder == FGOrderTree);
 
 #ifdef DEBUG
-    if (verbose &&
-        stmt->GetRootNode()->gtOper != GT_NOP) // Don't print if it is a GT_NOP. Too much noise from the inliner.
+    // Don't print if it is a GT_NOP. Too much noise from the inliner.
+    if (verbose && (stmt->GetRootNode()->gtOper != GT_NOP))
     {
-        printf("\nRemoving statement ");
+        printf("\n%s ", isUnlink ? "unlinking" : "removing useless");
         gtDispStmt(stmt);
-        printf(" in " FMT_BB " as useless:\n", block->bbNum);
+        printf(" from " FMT_BB "\n", block->bbNum);
     }
 #endif // DEBUG
 
@@ -480,9 +501,8 @@ void Compiler::fgRemoveStmt(BasicBlock* block, Statement* stmt)
     {
         if (block->bbStmtList == nullptr)
         {
-            printf("\n" FMT_BB " becomes empty", block->bbNum);
+            printf("\n" FMT_BB " becomes empty\n", block->bbNum);
         }
-        printf("\n");
     }
 #endif // DEBUG
 }

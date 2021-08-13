@@ -60,7 +60,7 @@ namespace BundleTests.Helpers
 
         public static string[] GetExtractedFiles(TestProjectFixture fixture, BundleOptions bundleOptions)
         {
-            switch (bundleOptions)
+            switch (bundleOptions & ~BundleOptions.EnableCompression)
             {
                 case BundleOptions.None:
                 case BundleOptions.BundleOtherFiles:

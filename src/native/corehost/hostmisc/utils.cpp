@@ -161,7 +161,7 @@ void remove_trailing_dir_seperator(pal::string_t* dir)
 
 void replace_char(pal::string_t* path, pal::char_t match, pal::char_t repl)
 {
-	size_t pos = 0;
+    size_t pos = 0;
     while ((pos = path->find(match, pos)) != pal::string_t::npos)
     {
         (*path)[pos] = repl;
@@ -170,7 +170,7 @@ void replace_char(pal::string_t* path, pal::char_t match, pal::char_t repl)
 
 pal::string_t get_replaced_char(const pal::string_t& path, pal::char_t match, pal::char_t repl)
 {
-	size_t pos = path.find(match);
+    size_t pos = path.find(match);
     if (pos == pal::string_t::npos)
     {
         return path;
@@ -195,6 +195,8 @@ const pal::char_t* get_arch()
     return _X("arm");
 #elif defined(TARGET_ARM64)
     return _X("arm64");
+#elif defined(TARGET_S390X)
+    return _X("s390x");
 #else
 #error "Unknown target"
 #endif
@@ -241,7 +243,7 @@ bool get_env_shared_store_dirs(std::vector<pal::string_t>* dirs, const pal::stri
     return true;
 }
 
-bool get_global_shared_store_dirs(std::vector<pal::string_t>*  dirs, const pal::string_t& arch, const pal::string_t& tfm)
+bool get_global_shared_store_dirs(std::vector<pal::string_t>* dirs, const pal::string_t& arch, const pal::string_t& tfm)
 {
     std::vector<pal::string_t> global_dirs;
     if (!pal::get_global_dotnet_dirs(&global_dirs))
@@ -329,7 +331,7 @@ bool get_file_path_from_env(const pal::char_t* env_key, pal::string_t* recv)
     return false;
 }
 
-size_t index_of_non_numeric(const pal::string_t& str, unsigned i)
+size_t index_of_non_numeric(const pal::string_t& str, size_t i)
 {
     return str.find_first_not_of(_X("0123456789"), i);
 }
@@ -340,7 +342,7 @@ bool try_stou(const pal::string_t& str, unsigned* num)
     {
         return false;
     }
-    if (index_of_non_numeric(str, 0) != pal::string_t::npos)
+    if (index_of_non_numeric(str, 0u) != pal::string_t::npos)
     {
         return false;
     }
@@ -348,14 +350,26 @@ bool try_stou(const pal::string_t& str, unsigned* num)
     return true;
 }
 
-pal::string_t get_dotnet_root_env_var_name()
+bool get_dotnet_root_from_env(pal::string_t* dotnet_root_env_var_name, pal::string_t* recv)
 {
+    *dotnet_root_env_var_name = _X("DOTNET_ROOT_");
+    dotnet_root_env_var_name->append(to_upper(get_arch()));
+    if (get_file_path_from_env(dotnet_root_env_var_name->c_str(), recv))
+        return true;
+
+#if defined(WIN32)
     if (pal::is_running_in_wow64())
     {
-        return pal::string_t(_X("DOTNET_ROOT(x86)"));
+        *dotnet_root_env_var_name = _X("DOTNET_ROOT(x86)");
+        if (get_file_path_from_env(dotnet_root_env_var_name->c_str(), recv))
+            return true;
     }
+#endif
 
-    return pal::string_t(_X("DOTNET_ROOT"));
+    // If no architecture-specific environment variable was set
+    // fallback to the default DOTNET_ROOT.
+    *dotnet_root_env_var_name = _X("DOTNET_ROOT");
+    return get_file_path_from_env(dotnet_root_env_var_name->c_str(), recv);
 }
 
 /**
@@ -402,7 +416,7 @@ void get_runtime_config_paths(const pal::string_t& path, const pal::string_t& na
     trace::verbose(_X("Runtime config is cfg=%s dev=%s"), cfg->c_str(), dev_cfg->c_str());
 }
 
-pal::string_t get_dotnet_root_from_fxr_path(const pal::string_t &fxr_path)
+pal::string_t get_dotnet_root_from_fxr_path(const pal::string_t& fxr_path)
 {
     // If coreclr exists next to hostfxr, assume everything is local (e.g. self-contained)
     pal::string_t fxr_dir = get_directory(fxr_path);
@@ -414,7 +428,7 @@ pal::string_t get_dotnet_root_from_fxr_path(const pal::string_t &fxr_path)
     return get_directory(get_directory(fxr_root));
 }
 
-pal::string_t get_download_url(const pal::char_t *framework_name, const pal::char_t *framework_version)
+pal::string_t get_download_url(const pal::char_t* framework_name, const pal::char_t* framework_version)
 {
     pal::string_t url = DOTNET_CORE_APPLAUNCH_URL _X("?");
     if (framework_name != nullptr && pal::strlen(framework_name) > 0)
@@ -439,6 +453,18 @@ pal::string_t get_download_url(const pal::char_t *framework_name, const pal::cha
     url.append(rid);
 
     return url;
+}
+
+pal::string_t to_lower(const pal::char_t* in) {
+    pal::string_t ret = in;
+    std::transform(ret.begin(), ret.end(), ret.begin(), ::tolower);
+    return ret;
+}
+
+pal::string_t to_upper(const pal::char_t* in) {
+    pal::string_t ret = in;
+    std::transform(ret.begin(), ret.end(), ret.begin(), ::toupper);
+    return ret;
 }
 
 #define TEST_ONLY_MARKER "d38cc827-e34f-4453-9df4-1e796e9f1d07"

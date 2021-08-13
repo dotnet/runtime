@@ -1,18 +1,6 @@
 ﻿<Project>
   <Import Project="..\Directory.Build.props" />
   <PropertyGroup>
-    <StrongNameKeyId>Open</StrongNameKeyId>
-    <IsAspNetCoreApp>true</IsAspNetCoreApp>
-    <IncludePlatformAttributes>true</IncludePlatformAttributes>
-    <UnsupportedOSPlatforms>browser</UnsupportedOSPlatforms>
-    <PackageDescription>Provides access to GDI+ graphics functionality.
-
-Commonly Used Types:
-System.Drawing.Bitmap
-System.Drawing.BitmapData
-System.Drawing.Brush
-System.Drawing.Font
-System.Drawing.Graphics
-System.Drawing.Icon</PackageDescription>
+    <SupportedOSPlatforms>windows</SupportedOSPlatforms>
   </PropertyGroup>
 </Project>

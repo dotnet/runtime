@@ -1,0 +1,83 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<linker>
+  <assembly fullname="System.ServiceModel.Syndication, Version=6.0.0.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51">
+    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
+      <argument>ILLink</argument>
+      <argument>IL2026</argument>
+      <property name="Scope">member</property>
+      <property name="Target">M:System.ServiceModel.Syndication.SyndicationElementExtension.#ctor(System.Object,System.Xml.Serialization.XmlSerializer)</property>
+    </attribute>
+    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
+      <argument>ILLink</argument>
+      <argument>IL2026</argument>
+      <property name="Scope">member</property>
+      <property name="Target">M:System.ServiceModel.Syndication.SyndicationElementExtension.ExtensionDataWriter.ComputeOuterNameAndNs(System.String@,System.String@)</property>
+    </attribute>
+    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
+      <argument>ILLink</argument>
+      <argument>IL2026</argument>
+      <property name="Scope">member</property>
+      <property name="Target">M:System.ServiceModel.Syndication.SyndicationElementExtension.ExtensionDataWriter.WriteTo(System.Xml.XmlWriter)</property>
+    </attribute>
+    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
+      <argument>ILLink</argument>
+      <argument>IL2026</argument>
+      <property name="Scope">member</property>
+      <property name="Target">M:System.ServiceModel.Syndication.SyndicationElementExtension.GetObject``1(System.Runtime.Serialization.XmlObjectSerializer)</property>
+    </attribute>
+    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
+      <argument>ILLink</argument>
+      <argument>IL2026</argument>
+      <property name="Scope">member</property>
+      <property name="Target">M:System.ServiceModel.Syndication.SyndicationElementExtension.GetObject``1(System.Xml.Serialization.XmlSerializer)</property>
+    </attribute>
+    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
+      <argument>ILLink</argument>
+      <argument>IL2026</argument>
+      <property name="Scope">member</property>
+      <property name="Target">M:System.ServiceModel.Syndication.SyndicationElementExtensionCollection.Add(System.Object,System.Xml.Serialization.XmlSerializer)</property>
+    </attribute>
+    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
+      <argument>ILLink</argument>
+      <argument>IL2026</argument>
+      <property name="Scope">member</property>
+      <property name="Target">M:System.ServiceModel.Syndication.XmlSyndicationContent.ReadContent``1(System.Runtime.Serialization.XmlObjectSerializer)</property>
+    </attribute>
+    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
+      <argument>ILLink</argument>
+      <argument>IL2026</argument>
+      <property name="Scope">member</property>
+      <property name="Target">M:System.ServiceModel.Syndication.XmlSyndicationContent.ReadContent``1(System.Xml.Serialization.XmlSerializer)</property>
+    </attribute>
+    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
+      <argument>ILLink</argument>
+      <argument>IL2067</argument>
+      <property name="Scope">member</property>
+      <property name="Target">M:System.ServiceModel.Syndication.SyndicationFeedFormatter.CreateFeedInstance(System.Type)</property>
+    </attribute>
+    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
+      <argument>ILLink</argument>
+      <argument>IL2067</argument>
+      <property name="Scope">member</property>
+      <property name="Target">M:System.ServiceModel.Syndication.SyndicationItemFormatter.CreateItemInstance(System.Type)</property>
+    </attribute>
+    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
+      <argument>ILLink</argument>
+      <argument>IL2077</argument>
+      <property name="Scope">member</property>
+      <property name="Target">M:System.ServiceModel.Syndication.AtomPub10CategoriesDocumentFormatter.CreateInlineCategoriesDocument</property>
+    </attribute>
+    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
+      <argument>ILLink</argument>
+      <argument>IL2077</argument>
+      <property name="Scope">member</property>
+      <property name="Target">M:System.ServiceModel.Syndication.AtomPub10CategoriesDocumentFormatter.CreateReferencedCategoriesDocument</property>
+    </attribute>
+    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
+      <argument>ILLink</argument>
+      <argument>IL2077</argument>
+      <property name="Scope">member</property>
+      <property name="Target">M:System.ServiceModel.Syndication.AtomPub10ServiceDocumentFormatter.CreateDocumentInstance</property>
+    </attribute>
+  </assembly>
+</linker>

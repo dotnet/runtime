@@ -6,7 +6,7 @@ using System.Runtime;
 
 namespace System.Text
 {
-    internal class BinHexEncoding : Encoding
+    internal sealed class BinHexEncoding : Encoding
     {
         public override int GetMaxByteCount(int charCount)
         {

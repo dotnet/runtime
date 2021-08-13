@@ -284,7 +284,7 @@ namespace System.Threading.Tests
                                }));
         }
 
-        [PlatformSpecific(~TestPlatforms.OSX & ~TestPlatforms.Browser)] // macOS and Browser in CI appears to have a lot more variation
+        [SkipOnPlatform(TestPlatforms.OSX | TestPlatforms.Browser, "macOS and Browser in CI appears to have a lot more variation")]
         [OuterLoop("Takes several seconds")]
         [Theory] // selection based on 333ms threshold used by implementation
         [InlineData(new int[] { 15 })]
@@ -339,12 +339,11 @@ namespace System.Threading.Tests
                             select groupedByDueTime;
 
                         var sb = new StringBuilder();
-                        sb.AppendFormat("{0}% out of {1} timer firings were off by more than {2}ms",
-                            percOutOfRange, totalTimers, MillisecondsPadding);
+                        sb.Append($"{percOutOfRange}% out of {totalTimers} timer firings were off by more than {MillisecondsPadding}ms");
                         foreach (IGrouping<int, KeyValuePair<int, long>> result in results)
                         {
                             sb.AppendLine();
-                            sb.AppendFormat("Expected: {0}, Actuals: {1}", result.Key, string.Join(", ", result.Select(k => k.Value)));
+                            sb.Append($"Expected: {result.Key}, Actuals: {string.Join(", ", result.Select(k => k.Value))}");
                         }
 
                         Assert.True(false, sb.ToString());

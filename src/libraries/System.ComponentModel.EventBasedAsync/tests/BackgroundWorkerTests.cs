@@ -84,8 +84,7 @@ namespace System.ComponentModel.EventBasedAsync.Tests
 
             backgroundWorker.RunWorkerAsync();
 
-            await Task.WhenAny(tcs.Task, Task.Delay(TimeSpan.FromSeconds(10))); // Usually takes 100th of a sec
-            Assert.True(tcs.Task.IsCompleted);
+            await tcs.Task.WaitAsync(TimeSpan.FromSeconds(10)); // Usually takes 100th of a sec
         }
 
         #region TestCancelAsync

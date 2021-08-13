@@ -20,6 +20,16 @@ namespace Microsoft.Extensions.Configuration.Xml.Test
             // Disabled test due to XML handling of empty section.
         }
 
+        public override void Load_from_single_provider_with_duplicates_throws()
+        {
+            // Disabled test due to XML handling of duplicate keys section.
+        }
+
+        public override void Load_from_single_provider_with_differing_case_duplicates_throws()
+        {
+            // Disabled test due to XML handling of duplicate keys section.
+        }
+
         public override void Has_debug_view()
         {
             var configRoot = BuildConfigRoot(LoadThroughProvider(TestSection.TestConfig));
@@ -33,11 +43,8 @@ Section1:
     Key3=Value123 ({providerTag})
     Key3a:
       0=ArrayValue0 ({providerTag})
-        Name=0 ({providerTag})
       1=ArrayValue1 ({providerTag})
-        Name=1 ({providerTag})
       2=ArrayValue2 ({providerTag})
-        Name=2 ({providerTag})
 Section3:
   Section4:
     Key4=Value344 ({providerTag})
@@ -75,7 +82,7 @@ Section3:
                 {
                     for (var i = 0; i < tuple.Value.AsArray.Length; i++)
                     {
-                        xmlBuilder.AppendLine($"<{tuple.Key} Name=\"{i}\">{tuple.Value.AsArray[i]}</{tuple.Key}>");
+                        xmlBuilder.AppendLine($"<{tuple.Key}>{tuple.Value.AsArray[i]}</{tuple.Key}>");
                     }
                 }
             }

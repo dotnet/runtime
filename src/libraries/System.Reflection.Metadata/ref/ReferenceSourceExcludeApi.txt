@@ -1,5 +1,0 @@
-﻿// exclusions to work around netstandard1.1 builds, c.f. System.Reflection.Metadata.Manual.cs
-
-M:System.Reflection.Metadata.AssemblyDefinition.GetAssemblyName
-M:System.Reflection.Metadata.AssemblyReference.GetAssemblyName
-M:System.Reflection.Metadata.ImageFormatLimitationException.#ctor(System.Runtime.Serialization.SerializationInfo,System.Runtime.Serialization.StreamingContext)

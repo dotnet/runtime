@@ -549,7 +549,8 @@ namespace System.Reflection.PortableExecutable
 
                     while (ptr < end)
                     {
-                        checksum = AggregateChecksum(checksum, *(ushort*)ptr);
+                        // little-endian encoding:
+                        checksum = AggregateChecksum(checksum, (ushort)(ptr[1] << 8 | ptr[0]));
                         ptr += sizeof(ushort);
                     }
                 }

@@ -87,6 +87,18 @@ namespace System.Security.Cryptography
         // Well known NCrypt KSPs
         //
 
+        /// <summary>
+        /// Gets a <see cref="CngProvider" /> object that specifies the Microsoft Platform Crypto Storage Provider.
+        /// </summary>
+        /// <value>An object that specifies the Microsoft Platform Crypto Storage Provider.</value>
+        public static CngProvider MicrosoftPlatformCryptoProvider
+        {
+            get
+            {
+                return s_msPlatformKsp ?? (s_msPlatformKsp = new CngProvider("Microsoft Platform Crypto Provider")); // MS_PLATFORM_CRYPTO_PROVIDER
+            }
+        }
+
         public static CngProvider MicrosoftSmartCardKeyStorageProvider
         {
             get
@@ -103,6 +115,7 @@ namespace System.Security.Cryptography
             }
         }
 
+        private static CngProvider? s_msPlatformKsp;
         private static CngProvider? s_msSmartCardKsp;
         private static CngProvider? s_msSoftwareKsp;
 

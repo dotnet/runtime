@@ -3,12 +3,12 @@
 
 using System.Runtime.CompilerServices;
 
-#if FEATURE_PERFTRACING
-
 namespace System.Diagnostics.Tracing
 {
+
     internal static partial class EventPipeInternal
     {
+#if FEATURE_PERFTRACING
         // These ICalls are used by the configuration APIs to interact with EventPipe.
         //
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
@@ -58,7 +58,36 @@ namespace System.Diagnostics.Tracing
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         internal static extern unsafe IntPtr GetWaitHandle(ulong sessionID);
+#endif // FEATURE_PERFTRACING
+
+        //
+        // This ICall are used as part of getting runtime implemented counter values.
+        //
+
+        //
+        // NOTE, keep in sync with icall-eventpipe.c, EventPipeRuntimeCounters.
+        //
+        internal enum RuntimeCounters
+        {
+            ASSEMBLY_COUNT,
+            EXCEPTION_COUNT,
+            GC_NURSERY_SIZE_BYTES,
+            GC_MAJOR_SIZE_BYTES,
+            GC_LARGE_OBJECT_SIZE_BYTES,
+            GC_LAST_PERCENT_TIME_IN_GC,
+            JIT_IL_BYTES_JITTED,
+            JIT_METHODS_JITTED,
+            JIT_TICKS_IN_JIT
+        }
+
+#if FEATURE_PERFTRACING
+        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        internal static extern ulong GetRuntimeCounterValue(RuntimeCounters counterID);
+#else
+        internal static ulong GetRuntimeCounterValue(RuntimeCounters counterID)
+        {
+            return 0;
+        }
+#endif
     }
 }
-
-#endif // FEATURE_PERFTRACING

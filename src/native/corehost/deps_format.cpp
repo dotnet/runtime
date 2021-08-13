@@ -45,7 +45,7 @@ void deps_json_t::reconcile_libraries_with_targets(
     const pal::string_t& deps_path,
     const json_parser_t::value_t& json,
     const std::function<bool(const pal::string_t&)>& library_exists_fn,
-    const std::function<const vec_asset_t&(const pal::string_t&, int, bool*)>& get_assets_fn)
+    const std::function<const vec_asset_t&(const pal::string_t&, size_t, bool*)>& get_assets_fn)
 {
     pal::string_t deps_file = get_filename(deps_path);
 
@@ -70,7 +70,9 @@ void deps_json_t::reconcile_libraries_with_targets(
         for (size_t i = 0; i < deps_entry_t::s_known_asset_types.size(); ++i)
         {
             bool rid_specific = false;
-            for (const auto& asset : get_assets_fn(library.name.GetString(), i, &rid_specific))
+            const vec_asset_t& assets = get_assets_fn(lib_name, i, &rid_specific);
+            m_deps_entries[i].reserve(assets.size());
+            for (const auto& asset : assets)
             {
                 auto asset_name = asset.name;
                 if (ends_with(asset_name, _X(".ni"), false))
@@ -82,7 +84,7 @@ void deps_json_t::reconcile_libraries_with_targets(
                 size_t pos = lib_name.find(_X("/"));
                 entry.library_name = lib_name.substr(0, pos);
                 entry.library_version = lib_name.substr(pos + 1);
-                entry.library_type = pal::to_lower(library.value[_X("type")].GetString());
+                entry.library_type = to_lower(library.value[_X("type")].GetString());
                 entry.library_hash = hash;
                 entry.library_path = library_path;
                 entry.library_hash_path = library_hash_path;
@@ -139,7 +141,7 @@ pal::string_t deps_json_t::get_current_rid(const rid_fallback_graph_t& rid_fallb
 bool deps_json_t::perform_rid_fallback(rid_specific_assets_t* portable_assets, const rid_fallback_graph_t& rid_fallback_graph)
 {
     pal::string_t host_rid = get_current_rid(rid_fallback_graph);
-    
+
     for (auto& package : portable_assets->libs)
     {
         for (size_t asset_type_index = 0; asset_type_index < deps_entry_t::asset_types::count; asset_type_index++)
@@ -235,13 +237,16 @@ bool deps_json_t::process_runtime_targets(const json_parser_t::value_t& json, co
 
                 const auto& rid = file.value[_X("rid")].GetString();
 
-                trace::info(_X("Adding runtimeTargets %s asset %s rid=%s assemblyVersion=%s fileVersion=%s from %s"),
-                    deps_entry_t::s_known_asset_types[asset_type_index],
-                    asset.relative_path.c_str(),
-                    rid,
-                    asset.assembly_version.as_str().c_str(),
-                    asset.file_version.as_str().c_str(),
-                    package.name.GetString());
+                if (trace::is_enabled())
+                {
+                    trace::info(_X("Adding runtimeTargets %s asset %s rid=%s assemblyVersion=%s fileVersion=%s from %s"),
+                        deps_entry_t::s_known_asset_types[asset_type_index],
+                        asset.relative_path.c_str(),
+                        rid,
+                        asset.assembly_version.as_str().c_str(),
+                        asset.file_version.as_str().c_str(),
+                        package.name.GetString());
+                }
 
                 assets.libs[package.name.GetString()][asset_type_index].rid_assets[rid].push_back(asset);
             }
@@ -270,7 +275,10 @@ bool deps_json_t::process_targets(const json_parser_t::value_t& json, const pal:
                 continue;
             }
 
-            for (const auto& file : iter->value.GetObject())
+            const auto& files = iter->value.GetObject();
+            vec_asset_t& asset_files = assets.libs[package.name.GetString()][i];
+            asset_files.reserve(files.MemberCount());
+            for (const auto& file : files)
             {
                 version_t assembly_version, file_version;
 
@@ -289,14 +297,17 @@ bool deps_json_t::process_targets(const json_parser_t::value_t& json, const pal:
                 pal::string_t file_name{file.name.GetString()};
                 deps_asset_t asset(get_filename_without_ext(file_name), file_name, assembly_version, file_version);
 
-                trace::info(_X("Adding %s asset %s assemblyVersion=%s fileVersion=%s from %s"),
-                    deps_entry_t::s_known_asset_types[i],
-                    asset.relative_path.c_str(),
-                    asset.assembly_version.as_str().c_str(),
-                    asset.file_version.as_str().c_str(),
-                    package.name.GetString());
+                if (trace::is_enabled())
+                {
+                    trace::info(_X("Adding %s asset %s assemblyVersion=%s fileVersion=%s from %s"),
+                        deps_entry_t::s_known_asset_types[i],
+                        asset.relative_path.c_str(),
+                        asset.assembly_version.as_str().c_str(),
+                        asset.file_version.as_str().c_str(),
+                        package.name.GetString());
+                }
 
-                assets.libs[package.name.GetString()][i].push_back(asset);
+                asset_files.push_back(asset);
             }
         }
     }
@@ -320,7 +331,7 @@ bool deps_json_t::load_framework_dependent(const pal::string_t& deps_path, const
     };
 
     const vec_asset_t empty;
-    auto get_relpaths = [&](const pal::string_t& package, int asset_type_index, bool* rid_specific) -> const vec_asset_t& {
+    auto get_relpaths = [&](const pal::string_t& package, size_t asset_type_index, bool* rid_specific) -> const vec_asset_t& {
 
         *rid_specific = false;
 
@@ -361,7 +372,7 @@ bool deps_json_t::load_self_contained(const pal::string_t& deps_path, const json
         return m_assets.libs.count(package);
     };
 
-    auto get_relpaths = [&](const pal::string_t& package, int type_index, bool* rid_specific) -> const vec_asset_t& {
+    auto get_relpaths = [&](const pal::string_t& package, size_t type_index, bool* rid_specific) -> const vec_asset_t& {
         *rid_specific = false;
         return m_assets.libs[package][type_index];
     };
@@ -374,7 +385,9 @@ bool deps_json_t::load_self_contained(const pal::string_t& deps_path, const json
         for (const auto& rid : json[_X("runtimes")].GetObject())
         {
             auto& vec = m_rid_fallback_graph[rid.name.GetString()];
-            for (const auto& fallback : rid.value.GetArray())
+            const auto& fallback_array = rid.value.GetArray();
+            vec.reserve(fallback_array.Size());
+            for (const auto& fallback : fallback_array)
             {
                 vec.push_back(fallback.GetString());
             }
@@ -403,7 +416,7 @@ bool deps_json_t::has_package(const pal::string_t& name, const pal::string_t& ve
     pal::string_t pv = name;
     pv.push_back(_X('/'));
     pv.append(ver);
-    
+
     auto iter = m_rid_assets.libs.find(pv);
     if (iter != m_rid_assets.libs.end())
     {
@@ -415,7 +428,7 @@ bool deps_json_t::has_package(const pal::string_t& name, const pal::string_t& ve
             }
         }
     }
-    
+
     return m_assets.libs.count(pv);
 }
 
@@ -426,7 +439,7 @@ bool deps_json_t::has_package(const pal::string_t& name, const pal::string_t& ve
 bool deps_json_t::load(bool is_framework_dependent, const pal::string_t& deps_path, const rid_fallback_graph_t& rid_fallback_graph)
 {
     m_deps_file = deps_path;
-    m_file_exists = bundle::info_t::config_t::probe(deps_path) || pal::file_exists(deps_path);
+    m_file_exists = bundle::info_t::config_t::probe(deps_path) || pal::realpath(&m_deps_file, true);
 
     json_parser_t json;
     if (!m_file_exists)
@@ -436,7 +449,7 @@ bool deps_json_t::load(bool is_framework_dependent, const pal::string_t& deps_pa
         return true;
     }
 
-    if (!json.parse_file(deps_path))
+    if (!json.parse_file(m_deps_file))
     {
         return false;
     }

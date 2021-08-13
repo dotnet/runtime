@@ -86,7 +86,7 @@ Crst ArgBasedStubCache
 End
 
 Crst AssemblyLoader
-    AcquiredBefore DeadlockDetection UniqueStack
+    AcquiredBefore DeadlockDetection UniqueStack DebuggerMutex
 End
 
 Crst AvailableClass
@@ -199,6 +199,10 @@ Crst EventStore
 End
 
 Crst Exception
+End
+
+Crst ExecutableAllocatorLock
+    AcquiredAfter LoaderHeap ArgBasedStubCache UMEntryThunkFreeListLock
 End
 
 Crst ExecuteManRangeLock
@@ -433,7 +437,7 @@ Crst SingleUseLock
 End
 
 Crst UnwindInfoTableLock
-	AcquiredAfter StubUnwindInfoHeapSegments SingleUseLock
+    AcquiredAfter StubUnwindInfoHeapSegments SingleUseLock
     AcquiredBefore StressLog
 End
 
@@ -503,6 +507,9 @@ End
 
 Crst TypeEquivalenceMap
     AcquiredBefore LoaderHeap
+End
+
+Crst UMEntryThunkFreeListLock
 End
 
 Crst UniqueStack

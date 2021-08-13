@@ -1,7 +1,0 @@
-﻿<Project>
-  <Import Project="..\Directory.Build.props" />
-  <PropertyGroup>
-    <PackageDescription>Debug output logger provider implementation for Microsoft.Extensions.Logging. This logger logs messages to a debugger monitor by writing messages with System.Diagnostics.Debug.WriteLine().</PackageDescription>
-    <IsAspNetCoreApp>true</IsAspNetCoreApp>
-  </PropertyGroup>
-</Project>

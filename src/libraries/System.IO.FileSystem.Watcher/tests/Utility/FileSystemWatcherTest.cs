@@ -430,63 +430,6 @@ namespace System.IO.Tests
             return result;
         }
 
-        /// <summary>
-        /// In some cases (such as when running without elevated privileges),
-        /// the symbolic link may fail to create. Only run this test if it creates
-        /// links successfully.
-        /// </summary>
-        protected static bool CanCreateSymbolicLinks
-        {
-            get
-            {
-                bool success = true;
-
-                // Verify file symlink creation
-                string path = Path.GetTempFileName();
-                string linkPath = path + ".link";
-                success = CreateSymLink(path, linkPath, isDirectory: false);
-                try { File.Delete(path); } catch { }
-                try { File.Delete(linkPath); } catch { }
-
-                // Verify directory symlink creation
-                path = Path.GetTempFileName();
-                linkPath = path + ".link";
-                success = success && CreateSymLink(path, linkPath, isDirectory: true);
-                try { Directory.Delete(path); } catch { }
-                try { Directory.Delete(linkPath); } catch { }
-
-                return success;
-            }
-        }
-
-        public static bool CreateSymLink(string targetPath, string linkPath, bool isDirectory)
-        {
-            Process symLinkProcess = new Process();
-            if (OperatingSystem.IsWindows())
-            {
-                symLinkProcess.StartInfo.FileName = "cmd";
-                symLinkProcess.StartInfo.Arguments = string.Format("/c mklink{0} \"{1}\" \"{2}\"", isDirectory ? " /D" : "", Path.GetFullPath(linkPath), Path.GetFullPath(targetPath));
-            }
-            else
-            {
-                symLinkProcess.StartInfo.FileName = "/bin/ln";
-                symLinkProcess.StartInfo.Arguments = string.Format("-s \"{0}\" \"{1}\"", Path.GetFullPath(targetPath), Path.GetFullPath(linkPath));
-            }
-            symLinkProcess.StartInfo.RedirectStandardOutput = true;
-            symLinkProcess.Start();
-
-            if (symLinkProcess != null)
-            {
-                symLinkProcess.WaitForExit();
-                return (0 == symLinkProcess.ExitCode);
-            }
-            else
-            {
-                return false;
-            }
-        }
-
-
         public static IEnumerable<object[]> FilterTypes()
         {
             foreach (NotifyFilters filter in Enum.GetValues(typeof(NotifyFilters)))

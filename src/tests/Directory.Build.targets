@@ -114,52 +114,66 @@
   </PropertyGroup>
 
   <Target Name="CopyNativeProjectBinaries" Condition="'$(_CopyNativeProjectBinaries)' == 'true'">
+    <ItemGroup Condition="'$(UseVisualStudioNativeBinariesLayout)' == 'true'">
+      <NativeProjectBinaries Include="$(NativeProjectOutputFolder)\*.*" />
+    </ItemGroup>
+    <ItemGroup Condition="'$(UseVisualStudioNativeBinariesLayout)' != 'true'">
+      <!-- ############################################################### -->
+      <!-- The following is required because the single configuration      -->
+      <!-- generators, unlike multi-configuration generators,              -->
+      <!-- do not place the binaries built into a separate                 -->
+      <!-- Debug/Checked/Release directory. Therefore we must filter       -->
+      <!-- the folder to only include dynamic libraries, static libraries  -->
+      <!--  and executables.                                               -->
+      <!--                                                                 -->
+      <!-- Please take care when modifying the following lines of code.    -->
+      <!-- ############################################################### -->
 
-     <ItemGroup>
-        <NativeProjectBinaries Condition="'$(RunningOnUnix)' != 'true'" Include="$(NativeProjectOutputFolder)\**\*.*" />
+      <!-- Include everything and then filter. -->
+      <NativeProjectBinariesMatched Include="$(NativeProjectOutputFolder)\**\*.*" />
 
-        <!-- ############################################################### -->
-        <!-- The following is unix only. It is required because the unix test-->
-        <!-- build, unlike the windows test build, do not place the binaries -->
-        <!-- built into a separate Debug/Checked/Release directory. Therefore-->
-        <!-- we must filter the folder to only include dynamic libraries,    -->
-        <!-- static libraries and executables.                               -->
-        <!--                                                                 -->
-        <!-- Please take care when modifying the following lines of code.    -->
-        <!-- At a minimum to test any changes to the below, please run a     -->
-        <!-- pri1 test build.                                                -->
-        <!-- ############################################################### -->
+      <!-- Filter executables on unix -->
+      <NativeProjectBinariesExeFilter Condition="'%(Extension)' == ''" Include="@(NativeProjectBinariesMatched)" />
 
-        <!-- Include everything and then filter. -->
-        <NativeProjectBinariesMatched Condition="'$(RunningOnUnix)' == 'true'" Include="$(NativeProjectOutputFolder)\**\*.*" />
+      <!-- Filter executables on Windows -->
+      <NativeProjectBinariesExeFilter Condition="'%(Extension)' == '.exe'" Include="@(NativeProjectBinariesMatched)" />
 
-        <!-- Filter executables on unix -->
-        <NativeProjectBinariesExeFilter Condition="'$(RunningOnUnix)' == 'true' and $([System.Text.RegularExpressions.Regex]::IsMatch(['%(Identity)', `(.*\/)([^.]+)$`))" Include="@(NativeProjectBinariesMatched)" />
-        <!-- Filter out the *Make* files -->
-        <NativeProjectBinariesExeFilterRemovedMakeFile Condition="'$(RunningOnUnix)' == 'true' and !$([System.Text.RegularExpressions.Regex]::IsMatch(['%(Identity)', `.*Makefile.*`))" Include="@(NativeProjectBinariesExeFilter)" />
+      <!-- Filter manifest/data files on Windows -->
+      <NativeProjectBinariesManifestFilter Condition="'%(Extension)' == '.manifest'" Include="@(NativeProjectBinariesMatched)" />
+      <NativeProjectBinariesManifestFilter Condition="'%(Extension)' == '.tlb'" Include="@(NativeProjectBinariesMatched)" />
 
-        <!-- Filter out the CMakeFiles files -->
-        <NativeProjectBinariesExeFilterRemovedCMakeFile Condition="'$(RunningOnUnix)' == 'true' and !$([System.Text.RegularExpressions.Regex]::IsMatch(['%(Identity)', `.*CMakeFiles.*`))" Include="@(NativeProjectBinariesExeFilterRemovedMakeFile)" />
+      <!-- Filter out the *Make* files -->
+      <NativeProjectBinariesExeFilterRemovedMakeFile Condition="'%(FileName)' != 'Makefile'" Include="@(NativeProjectBinariesExeFilter)" />
 
-        <!-- Filter .dylib files on OSX -->
-        <NativeProjectBinariesDyLibFilter Condition="'$(TargetOS)' == 'OSX' and $([System.Text.RegularExpressions.Regex]::IsMatch(['%(Identity)', `(.*\/).*\.dylib`))" Include="@(NativeProjectBinariesMatched)" />
+      <!-- Filter .dylib files for OSX -->
+      <NativeProjectBinariesDyLibFilter Condition="'%(Extension)' == '.dylib'" Include="@(NativeProjectBinariesMatched)" />
 
-        <!-- Filter .so files on non-OSX Unix -->
-        <NativeProjectBinariesDyLibFilter Condition="'$(RunningOnUnix)' == 'true' and '$(TargetOS)' != 'OSX' and $([System.Text.RegularExpressions.Regex]::IsMatch(['%(Identity)', `(.*\/).*\.so`))" Include="@(NativeProjectBinariesMatched)" />
+      <!-- Filter .so files for Linux -->
+      <NativeProjectBinariesDyLibFilter Condition="'%(Extension)' == '.so'" Include="@(NativeProjectBinariesMatched)" />
 
-        <!-- Filter static lib files on Unix -->
-        <NativeProjectBinariesStaticLibFilter Condition="'$(RunningOnUnix)' == 'true' and $([System.Text.RegularExpressions.Regex]::IsMatch(['%(Identity)', `(.*\/).*\.a`))" Include="@(NativeProjectBinariesMatched)" />
+      <!-- Filter static lib files for Unix -->
+      <NativeProjectBinariesStaticLibFilter Condition="'%(Extension)' == '.a'" Include="@(NativeProjectBinariesMatched)" />
 
-        <!-- Merge the filtered lists -->
-        <NativeProjectBinaries Condition="'$(RunningOnUnix)' == 'true'" Include="@(NativeProjectBinariesExeFilterRemovedCMakeFile)" />
-        <NativeProjectBinaries Condition="'$(RunningOnUnix)' == 'true'" Include="@(NativeProjectBinariesDyLibFilter)" />
-        <NativeProjectBinaries Condition="'$(RunningOnUnix)' == 'true'" Include="@(NativeProjectBinariesStaticLibFilter)" />
+      <!-- Filter dynamic lib files for Windows -->
+      <NativeProjectBinariesDyLibFilter Condition="'%(Extension)' == '.dll'" Include="@(NativeProjectBinariesMatched)" />
 
-     </ItemGroup>
+      <!-- Filter symbol files for Windows -->
+      <NativeProjectsBinariesSymbolsFilter Condition="'%(Extension)' == '.pdb'" Include="@(NativeProjectBinariesMatched)" />
+
+      <!-- Filter static lib files for Windows -->
+      <NativeProjectBinariesStaticLibFilter Condition="'%(Extension)' == '.lib'" Include="@(NativeProjectBinariesMatched)" />
+
+      <!-- Merge the filtered lists -->
+      <NativeProjectBinaries Include="@(NativeProjectBinariesExeFilterRemovedMakeFile)" />
+      <NativeProjectBinaries Include="@(NativeProjectBinariesDyLibFilter)" />
+      <NativeProjectBinaries Include="@(NativeProjectBinariesStaticLibFilter)" />
+      <NativeProjectBinaries Include="@(NativeProjectsBinariesSymbolsFilter)" />
+      <NativeProjectBinaries Include="@(NativeProjectBinariesManifestFilter)" />
+    </ItemGroup>
 
      <!-- There are currently no native project binaries on wasm or Android -->
      <Error  Text="The native project files are missing in $(NativeProjectOutputFolder) please run build from the root of the repo at least once"
-             Condition="'@(NativeProjectBinaries)' == '' And '$(TargetOS)' != 'Browser' And '$(TargetOS)' != 'Android'"/>
+             Condition="'@(NativeProjectBinaries)' == '' And '$(TargetOS)' != 'Browser' And '$(TargetOS)' != 'Android' And '$(TargetOS)' != 'iOS' And '$(TargetOS)' != 'iOSSimulator'"/>
 
      <Copy
         SourceFiles="@(NativeProjectBinaries)"
@@ -187,8 +201,8 @@
           Condition="'$(_CopyNativeProjectBinaries)' == 'true'"
           BeforeTargets="Build" >
      <ItemGroup Condition="'@(NativeProjectReferenceNormalized)' != ''">
-        <NativeProjectOutputFoldersToCopy Include="$([System.String]::Copy('%(NativeProjectReferenceNormalized.RelativeDir)').Replace($(TestSourceDir),$(__NativeTestIntermediatesDir)\))" Condition="'$(RunningOnUnix)' == 'true'" />
-        <NativeProjectOutputFoldersToCopy Include="$([System.String]::Copy('%(NativeProjectReferenceNormalized.RelativeDir)').Replace($(TestSourceDir),$(__NativeTestIntermediatesDir)\))$(Configuration)\" Condition="'$(RunningOnUnix)' != 'true'" />
+        <NativeProjectOutputFoldersToCopy Include="$([System.String]::Copy('%(NativeProjectReferenceNormalized.RelativeDir)').Replace($(TestSourceDir),$(__NativeTestIntermediatesDir)\))" Condition="'$(UseVisualStudioNativeBinariesLayout)' != 'true'" />
+        <NativeProjectOutputFoldersToCopy Include="$([System.String]::Copy('%(NativeProjectReferenceNormalized.RelativeDir)').Replace($(TestSourceDir),$(__NativeTestIntermediatesDir)\))$(Configuration)\" Condition="'$(UseVisualStudioNativeBinariesLayout)' == 'true'" />
      </ItemGroup>
 
     <Message Text= "Full native project references are :%(NativeProjectReferenceNormalized.Identity)" />
@@ -251,7 +265,6 @@
 
   <PropertyGroup>
     <IncludeOOBLibraries>true</IncludeOOBLibraries>
-    <LibrariesConfiguration>Release</LibrariesConfiguration>
   </PropertyGroup>
 
   <ItemGroup>
@@ -271,7 +284,7 @@
       <AllResolvedRuntimeDependencies Include="@(RuntimeCopyLocalItems -> '%(FileName)%(Extension)');@(NativeCopyLocalItems -> '%(FileName)%(Extension)')">
         <File>%(Identity)</File>
       </AllResolvedRuntimeDependencies>
-      
+
       <RunTimeDependencyCopyLocalFile Include="@(AllResolvedRuntimeDependencies)"  Exclude="@(RunTimeDependencyExcludeFiles)"/>
       <RunTimeDependencyCopyLocal Include="@(RunTimeDependencyCopyLocalFile -> '%(File)')"  />
       <RunTimeDependencyCopyLocal Include="$(TargetingPackPath)/*" />
@@ -365,9 +378,18 @@
           TargetDir="MonoAOTCompiler/"/>
 
         <RunTimeDependencyCopyLocal
+          Include="$(ArtifactsBinDir)\JsonToItemsTaskFactory\Debug\$(NetCoreAppToolCurrent)\**"
+          TargetDir="JsonToItemsTaskFactory/"/>
+
+        <!-- RuntimeConfigParser always builds in Debug -->
+        <RunTimeDependencyCopyLocal
+          Include="$(ArtifactsBinDir)\RuntimeConfigParser\Debug\$(NetCoreAppToolCurrent)\**"
+          TargetDir="RuntimeConfigParser/"/>
+
+        <RunTimeDependencyCopyLocal
           Include="$(RepoRoot)\src\tests\Common\wasm-test-runner\WasmTestRunner.proj"
           TargetDir="wasm-test-runner/"/>
-  
+
         <RunTimeDependencyCopyLocal
           Include="$(MonoProjectRoot)\wasm\runtime-test.js"
           TargetDir="runtime-test/"/>

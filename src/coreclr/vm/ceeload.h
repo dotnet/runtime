@@ -100,9 +100,7 @@ extern VerboseLevel g_CorCompileVerboseLevel;
 #elif defined(HOST_ARM)
 #define NATIVE_SYMBOL_READER_DLL W("Microsoft.DiaSymReader.Native.arm.dll")
 #elif defined(HOST_ARM64)
-// Use diasymreader until the package has an arm64 version - issue #7360
-//#define NATIVE_SYMBOL_READER_DLL W("Microsoft.DiaSymReader.Native.arm64.dll")
-#define NATIVE_SYMBOL_READER_DLL W("diasymreader.dll")
+#define NATIVE_SYMBOL_READER_DLL W("Microsoft.DiaSymReader.Native.arm64.dll")
 #endif
 
 typedef DPTR(PersistentInlineTrackingMapNGen) PTR_PersistentInlineTrackingMapNGen;
@@ -1095,15 +1093,6 @@ typedef SHash<DynamicILBlobTraits> DynamicILBlobTable;
 typedef DPTR(DynamicILBlobTable) PTR_DynamicILBlobTable;
 
 
-// ESymbolFormat specified the format used by a symbol stream
-typedef enum
-{
-    eSymbolFormatNone,      /* symbol format to use not yet determined */
-    eSymbolFormatPDB,       /* PDB format from diasymreader.dll - only safe for trusted scenarios */
-    eSymbolFormatILDB       /* ILDB format from ildbsymbols.dll */
-}ESymbolFormat;
-
-
 #ifdef FEATURE_COMINTEROP
 
 //---------------------------------------------------------------------------------------
@@ -1332,8 +1321,6 @@ private:
 
     PTR_PEFile              m_file;
 
-    MethodDesc              *m_pDllMain;
-
     enum {
         // These are the values set in m_dwTransientFlags.
         // Note that none of these flags survive a prejit save/restore.
@@ -1437,9 +1424,6 @@ private:
     // Storage for the in-memory symbol stream if any
     // Debugger may retrieve this from out-of-process.
     PTR_CGrowableStream     m_pIStreamSym;
-
-    // Format the above stream is in (if any)
-    ESymbolFormat           m_symbolFormat;
 
     // For protecting additions to the heap
     CrstExplicitInit        m_LookupTableCrst;
@@ -1769,7 +1753,6 @@ protected:
         return m_moduleRef;
     }
 
-
     BOOL IsResource() const { WRAPPER_NO_CONTRACT; SUPPORTS_DAC; return GetFile()->IsResource(); }
     BOOL IsPEFile() const { WRAPPER_NO_CONTRACT; return !GetFile()->IsDynamic(); }
     BOOL IsReflection() const { WRAPPER_NO_CONTRACT; SUPPORTS_DAC; return GetFile()->IsDynamic(); }
@@ -1777,19 +1760,15 @@ protected:
     // Returns true iff the debugger can see this module.
     BOOL IsVisibleToDebugger();
 
-
     BOOL IsEditAndContinueEnabled()
     {
         LIMITED_METHOD_CONTRACT;
         SUPPORTS_DAC;
-        // We are seeing cases where this flag is set for a module that is not an EditAndContinueModule.  This should
-        // never happen unless the module is EditAndContinueCapable, in which case we would have created an EditAndContinueModule
-        // not a Module.
-        //_ASSERTE((m_dwTransientFlags & IS_EDIT_AND_CONTINUE) == 0 || IsEditAndContinueCapable());
-        return (IsEditAndContinueCapable()) && ((m_dwTransientFlags & IS_EDIT_AND_CONTINUE) != 0);
+        _ASSERTE((m_dwTransientFlags & IS_EDIT_AND_CONTINUE) == 0 || IsEditAndContinueCapable());
+        return (m_dwTransientFlags & IS_EDIT_AND_CONTINUE) != 0;
     }
 
-    BOOL IsEditAndContinueCapable();
+    virtual BOOL IsEditAndContinueCapable() const { return FALSE; }
 
     BOOL IsIStream() { LIMITED_METHOD_CONTRACT; return GetFile()->IsIStream(); }
 
@@ -1801,18 +1780,9 @@ protected:
     {
         LIMITED_METHOD_CONTRACT;
         SUPPORTS_DAC;
-        // _ASSERTE(IsEditAndContinueCapable());
+        _ASSERTE(IsEditAndContinueCapable());
         LOG((LF_ENC, LL_INFO100, "EnableEditAndContinue: this:0x%x, %s\n", this, GetDebugName()));
         m_dwTransientFlags |= IS_EDIT_AND_CONTINUE;
-    }
-
-    void DisableEditAndContinue()
-    {
-        LIMITED_METHOD_CONTRACT;
-        SUPPORTS_DAC;
-        // don't _ASSERTE(IsEditAndContinueCapable());
-        LOG((LF_ENC, LL_INFO100, "DisableEditAndContinue: this:0x%x, %s\n", this, GetDebugName()));
-        m_dwTransientFlags = m_dwTransientFlags.Load() & (~IS_EDIT_AND_CONTINUE);
     }
 
     BOOL IsTenured()
@@ -1958,54 +1928,29 @@ protected:
 
     // Get the in-memory symbol stream for this module, if any.
     // If none, this will return null.  This is used by modules loaded in-memory (eg. from a byte-array)
-    // and by dynamic modules.  Callers that actually do anything with the return value will almost
-    // certainly want to check GetInMemorySymbolStreamFormat to know how to interpret the bytes
-    // in the stream.
+    // and by dynamic modules.
     PTR_CGrowableStream GetInMemorySymbolStream()
     {
         LIMITED_METHOD_CONTRACT;
         SUPPORTS_DAC;
 
-        // Symbol format should be "none" if-and-only-if our stream is null
-        // If this fails, it may mean somebody is trying to examine this module after
-        // code:Module::Destruct has been called.
-        _ASSERTE( (m_symbolFormat == eSymbolFormatNone) == (m_pIStreamSym == NULL) );
-
         return m_pIStreamSym;
-    }
-
-    // Get the format of the in-memory symbol stream for this module, or
-    // eSymbolFormatNone if no in-memory symbols.
-    ESymbolFormat GetInMemorySymbolStreamFormat()
-    {
-        LIMITED_METHOD_CONTRACT;
-        SUPPORTS_DAC;
-
-        // Symbol format should be "none" if-and-only-if our stream is null
-        // If this fails, it may mean somebody is trying to examine this module after
-        // code:Module::Destruct has been called.
-        _ASSERTE( (m_symbolFormat == eSymbolFormatNone) == (m_pIStreamSym == NULL) );
-
-        return m_symbolFormat;
     }
 
 #ifndef DACCESS_COMPILE
     // Set the in-memory stream for debug symbols
     // This must only be called when there is no existing stream.
     // This takes an AddRef on the supplied stream.
-    void SetInMemorySymbolStream(CGrowableStream *pStream, ESymbolFormat symbolFormat)
+    void SetInMemorySymbolStream(CGrowableStream *pStream)
     {
         LIMITED_METHOD_CONTRACT;
 
         // Must have provided valid stream data
         CONSISTENCY_CHECK(pStream != NULL);
-        CONSISTENCY_CHECK(symbolFormat != eSymbolFormatNone);
 
         // we expect set to only be called once
         CONSISTENCY_CHECK(m_pIStreamSym == NULL);
-        CONSISTENCY_CHECK(m_symbolFormat == eSymbolFormatNone);
 
-        m_symbolFormat = symbolFormat;
         m_pIStreamSym = pStream;
         m_pIStreamSym->AddRef();
     }
@@ -2018,10 +1963,6 @@ protected:
         {
             m_pIStreamSym->Release();
             m_pIStreamSym = NULL;
-            // We could set m_symbolFormat to eSymbolFormatNone to be consistent with not having
-            // a stream, but no-one should be trying to look at it after destruct time, so it's
-            // better to leave it inconsistent and get an ASSERT if someone tries to examine the
-            // module's sybmol stream after the module was destructed.
         }
     }
 
@@ -2519,18 +2460,6 @@ public:
     // Enregisters a VASig.
     VASigCookie *GetVASigCookie(Signature vaSignature);
 
-    // DLL entry point
-    MethodDesc *GetDllEntryPoint()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return m_pDllMain;
-    }
-    void SetDllEntryPoint(MethodDesc *pMD)
-    {
-        LIMITED_METHOD_CONTRACT;
-        m_pDllMain = pMD;
-    }
-
 #ifdef FEATURE_PREJIT
     // This data is only valid for NGEN'd modules, and for modules we're creating at NGEN time.
     ModuleCtorInfo* GetZapModuleCtorInfo()
@@ -2541,10 +2470,7 @@ public:
     }
 #endif
 
- private:
-
-
- public:
+public:
 #ifndef DACCESS_COMPILE
     BOOL Equals(Module *pModule) { WRAPPER_NO_CONTRACT; return m_file->Equals(pModule->m_file); }
     BOOL Equals(PEFile *pFile) { WRAPPER_NO_CONTRACT; return m_file->Equals(pFile); }
@@ -2712,17 +2638,17 @@ public:
     IMDInternalImport *GetNativeAssemblyImport(BOOL loadAllowed = TRUE);
     IMDInternalImport *GetNativeAssemblyImportIfLoaded();
 
-    BOOL FixupNativeEntry(CORCOMPILE_IMPORT_SECTION * pSection, SIZE_T fixupIndex, SIZE_T *fixup);
+    BOOL FixupNativeEntry(CORCOMPILE_IMPORT_SECTION * pSection, SIZE_T fixupIndex, SIZE_T *fixup, BOOL mayUsePrecompiledNDirectMethods = TRUE);
 
     //this split exists to support new CLR Dump functionality in DAC.  The
     //template removes any indirections.
-    BOOL FixupDelayList(TADDR pFixupList);
+    BOOL FixupDelayList(TADDR pFixupList, BOOL mayUsePrecompiledNDirectMethods = TRUE);
 
     template<typename Ptr, typename FixupNativeEntryCallback>
     BOOL FixupDelayListAux(TADDR pFixupList,
                            Ptr pThis, FixupNativeEntryCallback pfnCB,
                            PTR_CORCOMPILE_IMPORT_SECTION pImportSections, COUNT_T nImportSections,
-                           PEDecoder * pNativeImage);
+                           PEDecoder * pNativeImage, BOOL mayUsePrecompiledNDirectMethods = TRUE);
     void RunEagerFixups();
     void RunEagerFixupsUnlocked();
 
@@ -3224,10 +3150,9 @@ class ReflectionModule : public Module
     HCEESECTION m_sdataSection;
 
  protected:
-    ICeeGen * m_pCeeFileGen;
+    ICeeGenInternal * m_pCeeFileGen;
 private:
     Assembly             *m_pCreatingAssembly;
-    ISymUnmanagedWriter  *m_pISymUnmanagedWriter;
     RefClassWriter       *m_pInMemoryWriter;
 
 
@@ -3243,29 +3168,7 @@ private:
     // This is used to allow bulk emitting types without re-emitting the metadata between each type.
     bool m_fSuppressMetadataCapture;
 
-    // If true, then only other transient modules can depend on this module.
-    bool m_fIsTransient;
-
 #if !defined DACCESS_COMPILE && !defined CROSSGEN_COMPILE
-    // Returns true iff metadata capturing is suppressed
-    bool IsMetadataCaptureSuppressed();
-
-    // Toggle whether CaptureModuleMetaDataToMemory should do antyhing. This can be an important perf win to
-    // allow batching up metadata capture. Use SuppressMetadataCaptureHolder to ensure they're balanced.
-    // These are not nestable.
-    void SuppressMetadataCapture();
-    void ResumeMetadataCapture();
-
-    // Glue functions for holders.
-    static void SuppressCaptureWrapper(ReflectionModule * pModule)
-    {
-        pModule->SuppressMetadataCapture();
-    }
-    static void ResumeCaptureWrapper(ReflectionModule * pModule)
-    {
-        pModule->ResumeMetadataCapture();
-    }
-
     ReflectionModule(Assembly *pAssembly, mdFile token, PEFile *pFile);
 #endif // !DACCESS_COMPILE && !CROSSGEN_COMPILE
 
@@ -3277,7 +3180,7 @@ public:
 #endif
 
 #if !defined DACCESS_COMPILE && !defined CROSSGEN_COMPILE
-    static ReflectionModule *Create(Assembly *pAssembly, PEFile *pFile, AllocMemTracker *pamTracker, LPCWSTR szName, BOOL fIsTransient);
+    static ReflectionModule *Create(Assembly *pAssembly, PEFile *pFile, AllocMemTracker *pamTracker, LPCWSTR szName);
     void Initialize(AllocMemTracker *pamTracker, LPCWSTR szName);
     void Destruct();
 #endif // !DACCESS_COMPILE && !CROSSGEN_COMPILE
@@ -3300,7 +3203,7 @@ public:
         m_pCreatingAssembly = assembly;
     }
 
-    ICeeGen *GetCeeGen() {LIMITED_METHOD_CONTRACT;  return m_pCeeFileGen; }
+    ICeeGenInternal *GetCeeGen() {LIMITED_METHOD_CONTRACT;  return m_pCeeFileGen; }
 
     RefClassWriter *GetClassWriter()
     {
@@ -3308,78 +3211,6 @@ public:
 
         return m_pInMemoryWriter;
     }
-
-    ISymUnmanagedWriter *GetISymUnmanagedWriter()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return m_pISymUnmanagedWriter;
-    }
-
-    // Note: we now use the same writer instance for the life of a module,
-    // so there should no longer be any need for the extra indirection.
-    ISymUnmanagedWriter **GetISymUnmanagedWriterAddr()
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        // We must have setup the writer before trying to get
-        // the address for it. Any calls to this before a
-        // SetISymUnmanagedWriter are very incorrect.
-        _ASSERTE(m_pISymUnmanagedWriter != NULL);
-
-        return &m_pISymUnmanagedWriter;
-    }
-
-    bool IsTransient()
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        return m_fIsTransient;
-    }
-
-    void SetIsTransient(bool fIsTransient)
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        m_fIsTransient = fIsTransient;
-    }
-
-#ifndef DACCESS_COMPILE
-#ifndef CROSSGEN_COMPILE
-
-    typedef Wrapper<
-        ReflectionModule*,
-        ReflectionModule::SuppressCaptureWrapper,
-        ReflectionModule::ResumeCaptureWrapper> SuppressMetadataCaptureHolder;
-#endif // !CROSSGEN_COMPILE
-
-    HRESULT SetISymUnmanagedWriter(ISymUnmanagedWriter *pWriter)
-    {
-        CONTRACTL
-        {
-            NOTHROW;
-            GC_NOTRIGGER;
-            INJECT_FAULT(return E_OUTOFMEMORY;);
-        }
-        CONTRACTL_END
-
-
-        // Setting to NULL when we've never set a writer before should
-        // do nothing.
-        if ((pWriter == NULL) && (m_pISymUnmanagedWriter == NULL))
-            return S_OK;
-
-        if (m_pISymUnmanagedWriter != NULL)
-        {
-            // We shouldn't be trying to replace an existing writer anymore
-            _ASSERTE( pWriter == NULL );
-
-            m_pISymUnmanagedWriter->Release();
-        }
-
-        m_pISymUnmanagedWriter = pWriter;
-        return S_OK;
-    }
-#endif // !DACCESS_COMPILE
 
     // Eagerly serialize the metadata to a buffer that the debugger can retrieve.
     void CaptureModuleMetaDataToMemory();

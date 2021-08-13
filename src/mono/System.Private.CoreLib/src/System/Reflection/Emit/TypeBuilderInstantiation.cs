@@ -50,12 +50,12 @@ namespace System.Reflection.Emit
     internal sealed class TypeBuilderInstantiation :
         TypeInfo
     {
-        #region Keep in sync with object-internals.h MonoReflectionGenericClass
+#region Keep in sync with object-internals.h MonoReflectionGenericClass
 #pragma warning disable 649
         internal Type generic_type;
         private Type[] type_arguments;
 #pragma warning restore 649
-        #endregion
+#endregion
 
         private Dictionary<FieldInfo, FieldInfo>? fields;
         private Dictionary<ConstructorInfo, ConstructorInfo>? ctors;
@@ -164,6 +164,7 @@ namespace System.Reflection.Emit
             get { return generic_type.BaseType; }
         }
 
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.Interfaces)]
         public override Type[] GetInterfaces()
         {
             throw new NotSupportedException();
@@ -439,6 +440,10 @@ namespace System.Reflection.Emit
         }
 
         //stuff that throws
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.Interfaces)]
+        [return: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.Interfaces)]
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2063:UnrecognizedReflectionPattern",
+            Justification = "Linker doesn't recognize always throwing method. https://github.com/mono/linker/issues/2025")]
         public override Type GetInterface(string name, bool ignoreCase)
         {
             throw new NotSupportedException();
@@ -456,7 +461,7 @@ namespace System.Reflection.Emit
             throw new NotSupportedException();
         }
 
-        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
+        [DynamicallyAccessedMembers(GetAllMembers)]
         public override MemberInfo[] GetMembers(BindingFlags bindingAttr)
         {
             throw new NotSupportedException();

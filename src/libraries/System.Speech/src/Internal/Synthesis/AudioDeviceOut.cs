@@ -294,7 +294,7 @@ namespace System.Speech.Internal.Synthesis
             for (int iDevice = 0; iDevice < NumDevices(); iDevice++)
             {
                 string device;
-                if (GetDeviceName(iDevice, out device) == MMSYSERR.NOERROR && string.Compare(device, name, StringComparison.OrdinalIgnoreCase) == 0)
+                if (GetDeviceName(iDevice, out device) == MMSYSERR.NOERROR && string.Equals(device, name, StringComparison.OrdinalIgnoreCase))
                 {
                     return iDevice;
                 }
@@ -445,7 +445,7 @@ namespace System.Speech.Internal.Synthesis
         /// so that the pinned buffer containing the data is not
         /// released before it is finished being played
         /// </summary>
-        private class InItem : IDisposable
+        private sealed class InItem : IDisposable
         {
             internal InItem(WaveHeader waveHeader)
             {

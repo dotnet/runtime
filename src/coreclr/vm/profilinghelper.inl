@@ -18,8 +18,7 @@ FORCEINLINE SetCallbackStateFlagsHolder::SetCallbackStateFlagsHolder(DWORD dwFla
 {
     // This is called before entering a profiler.  We set the specified dwFlags on
     // the Thread object, and remember the previous flags for later.
-    BEGIN_GETTHREAD_ALLOWED_IN_NO_THROW_REGION;
-    m_pThread = GetThread();
+    m_pThread = GetThreadNULLOk();
     if (m_pThread != NULL)
     {
         m_dwOriginalFullState = m_pThread->SetProfilerCallbackStateFlags(dwFlags);
@@ -28,7 +27,6 @@ FORCEINLINE SetCallbackStateFlagsHolder::SetCallbackStateFlagsHolder(DWORD dwFla
     {
         m_dwOriginalFullState = 0;
     }
-    END_GETTHREAD_ALLOWED_IN_NO_THROW_REGION;
 }
 
 FORCEINLINE SetCallbackStateFlagsHolder::~SetCallbackStateFlagsHolder()
@@ -44,9 +42,7 @@ FORCEINLINE SetCallbackStateFlagsHolder::~SetCallbackStateFlagsHolder()
     // original flag set here.
     if (m_pThread != NULL)
     {
-        BEGIN_GETTHREAD_ALLOWED_IN_NO_THROW_REGION;
         m_pThread->SetProfilerCallbackFullState(m_dwOriginalFullState);
-        END_GETTHREAD_ALLOWED_IN_NO_THROW_REGION;
     }
 }
 

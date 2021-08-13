@@ -8,7 +8,7 @@ using System.Collections.Generic;
 
 namespace System.DirectoryServices.AccountManagement
 {
-    internal class ValueCollectionEnumerator<T> : IEnumerator<T>, IEnumerator
+    internal sealed class ValueCollectionEnumerator<T> : IEnumerator<T>, IEnumerator
     // T must be a ValueType
     {
         //

@@ -3,6 +3,7 @@
 
 Imports System
 Imports System.Diagnostics
+Imports System.Diagnostics.CodeAnalysis
 Imports System.Globalization
 Imports System.IO
 Imports System.Runtime.Versioning
@@ -35,7 +36,8 @@ Namespace Microsoft.VisualBasic
         Friend Const sTimeFormat As String = "T"
         Friend Const sDateFormat As String = "d"
         Friend Const sDateTimeFormat As String = "F"
-
+        Private Const FileSystemTargetObjectTrimmerMessage As String = "The target object type could not be statically analyzed and may be trimmed"
+        Private Const FileSystemOriginObjectTrimmerMessage As String = "The origin object type could not be statically analyzed and may be trimmed"
         Friend ReadOnly m_WriteDateFormatInfo As DateTimeFormatInfo = InitializeWriteDateFormatInfo() ' Call static initializer due to FxCop InitializeReferenceTypeStaticFieldsInline.
         Private Function InitializeWriteDateFormatInfo() As DateTimeFormatInfo
             Dim dfi As New DateTimeFormatInfo
@@ -568,6 +570,7 @@ Namespace Microsoft.VisualBasic
             End If
         End Sub
 
+        <RequiresUnreferencedCode(FileSystemTargetObjectTrimmerMessage)>
         Public Sub FileGetObject(ByVal FileNumber As Integer, ByRef Value As Object, Optional ByVal RecordNumber As Long = -1)
             Try
                 ValidateGetPutRecordNumber(RecordNumber)
@@ -578,6 +581,7 @@ Namespace Microsoft.VisualBasic
             End Try
         End Sub
 
+        <RequiresUnreferencedCode(FileSystemTargetObjectTrimmerMessage)>
         Public Sub FileGet(ByVal FileNumber As Integer, ByRef Value As ValueType, Optional ByVal RecordNumber As Long = -1)
             Try
                 ValidateGetPutRecordNumber(RecordNumber)
@@ -588,6 +592,7 @@ Namespace Microsoft.VisualBasic
             End Try
         End Sub
 
+        <RequiresUnreferencedCode(FileSystemTargetObjectTrimmerMessage)>
         Public Sub FileGet(ByVal FileNumber As Integer, ByRef Value As System.Array, Optional ByVal RecordNumber As Long = -1,
             Optional ByVal ArrayIsDynamic As Boolean = False, Optional ByVal StringIsFixedLength As Boolean = False)
             Try
@@ -709,6 +714,7 @@ Namespace Microsoft.VisualBasic
             End Try
         End Sub
 
+        <RequiresUnreferencedCode(FileSystemOriginObjectTrimmerMessage)>
         Public Sub FilePutObject(ByVal FileNumber As Integer, ByVal Value As Object, Optional ByVal RecordNumber As Long = -1)
             Try
                 ValidateGetPutRecordNumber(RecordNumber)
@@ -719,11 +725,12 @@ Namespace Microsoft.VisualBasic
             End Try
         End Sub
 
-        <ObsoleteAttribute("This member has been deprecated. Please use FilePutObject to write Object types, or coerce FileNumber and RecordNumber to Integer for writing non-Object types. https://go.microsoft.com/fwlink/?linkid=14202")>
+        <ObsoleteAttribute("FileSystem.FilePut has been deprecated. Use FilePutObject to write Object types, or coerce FileNumber and RecordNumber to Integer for writing non-Object types.")>
         Public Sub FilePut(ByVal FileNumber As Object, ByVal Value As Object, Optional ByVal RecordNumber As Object = -1)
             Throw New ArgumentException(SR.UseFilePutObject)
         End Sub
 
+        <RequiresUnreferencedCode(FileSystemOriginObjectTrimmerMessage)>
         Public Sub FilePut(ByVal FileNumber As Integer, ByVal Value As ValueType, Optional ByVal RecordNumber As Long = -1)
             Try
                 ValidateGetPutRecordNumber(RecordNumber)
@@ -734,6 +741,7 @@ Namespace Microsoft.VisualBasic
             End Try
         End Sub
 
+        <RequiresUnreferencedCode(FileSystemOriginObjectTrimmerMessage)>
         Public Sub FilePut(ByVal FileNumber As Integer, ByVal Value As System.Array, Optional ByVal RecordNumber As Long = -1,
             Optional ByVal ArrayIsDynamic As Boolean = False, Optional ByVal StringIsFixedLength As Boolean = False)
 
@@ -874,6 +882,7 @@ Namespace Microsoft.VisualBasic
             End Try
         End Sub
 
+        <RequiresUnreferencedCode(FileSystemTargetObjectTrimmerMessage)>
         Public Sub Input(ByVal FileNumber As Integer, ByRef Value As Object)
             Try
                 Dim assem As System.Reflection.Assembly = System.Reflection.Assembly.GetCallingAssembly()
@@ -1000,7 +1009,9 @@ Namespace Microsoft.VisualBasic
             End Try
         End Sub
 
-        <UnsupportedOSPlatform("macos")> 
+        <UnsupportedOSPlatform("ios")>
+        <UnsupportedOSPlatform("macos")>
+        <UnsupportedOSPlatform("tvos")>
         Public Function InputString(ByVal FileNumber As Integer, ByVal CharCount As Integer) As String
             Try
                 Dim oFile As VB6File
@@ -1038,37 +1049,49 @@ Namespace Microsoft.VisualBasic
             Return oFile.LineInput()
         End Function
 
-        <UnsupportedOSPlatform("macos")> 
+        <UnsupportedOSPlatform("ios")>
+        <UnsupportedOSPlatform("macos")>
+        <UnsupportedOSPlatform("tvos")>
         Public Sub Lock(ByVal FileNumber As Integer)
             Dim assem As System.Reflection.Assembly = System.Reflection.Assembly.GetCallingAssembly()
             GetStream(assem, FileNumber).Lock()
         End Sub
 
-        <UnsupportedOSPlatform("macos")> 
+        <UnsupportedOSPlatform("ios")>
+        <UnsupportedOSPlatform("macos")>
+        <UnsupportedOSPlatform("tvos")>
         Public Sub Lock(ByVal FileNumber As Integer, ByVal Record As Long)
             Dim assem As System.Reflection.Assembly = System.Reflection.Assembly.GetCallingAssembly()
             GetStream(assem, FileNumber).Lock(Record)
         End Sub
 
-        <UnsupportedOSPlatform("macos")> 
+        <UnsupportedOSPlatform("ios")>
+        <UnsupportedOSPlatform("macos")>
+        <UnsupportedOSPlatform("tvos")>
         Public Sub Lock(ByVal FileNumber As Integer, ByVal FromRecord As Long, ByVal ToRecord As Long)
             Dim assem As System.Reflection.Assembly = System.Reflection.Assembly.GetCallingAssembly()
             GetStream(assem, FileNumber).Lock(FromRecord, ToRecord)
         End Sub
 
-        <UnsupportedOSPlatform("macos")> 
+        <UnsupportedOSPlatform("ios")>
+        <UnsupportedOSPlatform("macos")>
+        <UnsupportedOSPlatform("tvos")>
         Public Sub Unlock(ByVal FileNumber As Integer)
             Dim assem As System.Reflection.Assembly = System.Reflection.Assembly.GetCallingAssembly()
             GetStream(assem, FileNumber).Unlock()
         End Sub
 
-        <UnsupportedOSPlatform("macos")> 
+        <UnsupportedOSPlatform("ios")>
+        <UnsupportedOSPlatform("macos")>
+        <UnsupportedOSPlatform("tvos")>
         Public Sub Unlock(ByVal FileNumber As Integer, ByVal Record As Long)
             Dim assem As System.Reflection.Assembly = System.Reflection.Assembly.GetCallingAssembly()
             GetStream(assem, FileNumber).Unlock(Record)
         End Sub
 
-        <UnsupportedOSPlatform("macos")> 
+        <UnsupportedOSPlatform("ios")>
+        <UnsupportedOSPlatform("macos")>
+        <UnsupportedOSPlatform("tvos")>
         Public Sub Unlock(ByVal FileNumber As Integer, ByVal FromRecord As Long, ByVal ToRecord As Long)
             Dim assem As System.Reflection.Assembly = System.Reflection.Assembly.GetCallingAssembly()
             GetStream(assem, FileNumber).Unlock(FromRecord, ToRecord)
@@ -1325,7 +1348,7 @@ Namespace Microsoft.VisualBasic
                     ' compare the filename with the input string case insensitive 
                     ' exit loop if match occurs and both files are not sequential input 
                     ' and not random/binary.
-                    If System.String.Compare(sPath, oFile.GetAbsolutePath(), StringComparison.OrdinalIgnoreCase) = 0 Then
+                    If System.String.Equals(sPath, oFile.GetAbsolutePath(), StringComparison.OrdinalIgnoreCase) Then
                         ' If path is the same, then verify
                         ' that neither file is open for sequential input
                         ' and that both are open for the same mode (either Binary or Random)

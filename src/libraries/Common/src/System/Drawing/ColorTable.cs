@@ -22,7 +22,7 @@ namespace System.Drawing
 
         private static void FillWithProperties(
             Dictionary<string, Color> dictionary,
-            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.NonPublicProperties)] Type typeWithColors) // can remove NonPublicProperties once https://github.com/mono/linker/issues/1724 is fixed
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)] Type typeWithColors)
         {
             foreach (PropertyInfo prop in typeWithColors.GetProperties(BindingFlags.Public | BindingFlags.Static))
             {

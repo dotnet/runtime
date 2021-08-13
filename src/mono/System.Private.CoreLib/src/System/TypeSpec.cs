@@ -42,7 +42,7 @@ namespace System
         Type Resolve(Type type);
         Text.StringBuilder Append(Text.StringBuilder sb);
     }
-    internal class IArraySpec : IModifierSpec
+    internal sealed class IArraySpec : IModifierSpec
     {
         // dimensions == 1 and bound, or dimensions > 1 and !bound
         private readonly int dimensions;
@@ -94,7 +94,7 @@ namespace System
         }
     }
 
-    internal class PointerSpec : IModifierSpec
+    internal sealed class PointerSpec : IModifierSpec
     {
         private readonly int pointer_level;
 
@@ -122,7 +122,7 @@ namespace System
 
     }
 
-    internal class TypeSpec
+    internal sealed class TypeSpec
     {
         private ITypeIdentifier? name;
         private string? assembly_name;
@@ -330,7 +330,7 @@ namespace System
         {
             Assembly? asm = null;
             if (assemblyResolver == null && typeResolver == null)
-                return RuntimeType.GetType(DisplayFullName, throwOnError, ignoreCase, false, ref stackMark);
+                return RuntimeType.GetType(DisplayFullName, throwOnError, ignoreCase, ref stackMark);
 
             if (assembly_name != null)
             {
@@ -652,7 +652,7 @@ namespace System
             get { return new TypeSpecTypeName(this, true); }
         }
 
-        private class TypeSpecTypeName : TypeNames.ATypeName, ITypeName
+        private sealed class TypeSpecTypeName : TypeNames.ATypeName, ITypeName
         {
             private readonly TypeSpec ts;
             private readonly bool want_modifiers;

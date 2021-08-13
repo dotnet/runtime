@@ -4,13 +4,20 @@
   <ItemGroup>
     <TestConsoleAppSourceFiles Include="AppDomainGetThreadGenericPrincipalTest.cs" />
     <TestConsoleAppSourceFiles Include="AppDomainGetThreadWindowsPrincipalTest.cs">
-      <SkipOnTestRuntimes>osx-x64;linux-x64</SkipOnTestRuntimes>
+      <SkipOnTestRuntimes>osx-x64;linux-x64;browser-wasm</SkipOnTestRuntimes>
     </TestConsoleAppSourceFiles>
     <TestConsoleAppSourceFiles Include="DebuggerTypeProxyAttributeTests.cs" />
+    <TestConsoleAppSourceFiles Include="DebuggerVisualizerAttributeTests.cs" />
     <TestConsoleAppSourceFiles Include="DefaultValueAttributeCtorTest.cs" />
     <TestConsoleAppSourceFiles Include="GenericArraySortHelperTest.cs" />
     <TestConsoleAppSourceFiles Include="InheritedAttributeTests.cs" />
     <TestConsoleAppSourceFiles Include="InterfacesOnArrays.cs" />
+    <TestConsoleAppSourceFiles Include="InvariantGlobalizationFalse.cs">
+      <DisabledFeatureSwitches>System.Globalization.Invariant</DisabledFeatureSwitches>
+    </TestConsoleAppSourceFiles>
+    <TestConsoleAppSourceFiles Include="InvariantGlobalizationTrue.cs">
+      <EnabledFeatureSwitches>System.Globalization.Invariant;System.Globalization.PredefinedCulturesOnly</EnabledFeatureSwitches>
+    </TestConsoleAppSourceFiles>
     <TestConsoleAppSourceFiles Include="StackFrameHelperTest.cs">
       <!-- There is a bug with the linker where it is corrupting the pdbs while trimming
       causing the framework to not be able to get source line info any longer. This
@@ -18,11 +25,25 @@
       as a workaround while the linker bug is fixed. This bug has been logged in the
       linker repo here: https://github.com/mono/linker/issues/1285 -->
       <AdditionalArgs>/p:DebugType=Embedded</AdditionalArgs>
+      <!-- Justification: The implementation of StackFrame for Mono doesn't use
+       StackFrameHelper to get line information which is what is being annotated
+       and tested with this test. Issue https://github.com/dotnet/runtime/issues/48849 is
+       tracking investigation on why this test is failing if not skipped. -->
+      <SkipOnTestRuntimes>browser-wasm</SkipOnTestRuntimes>
     </TestConsoleAppSourceFiles>
     <TestConsoleAppSourceFiles Include="VerifyResourcesGetTrimmedTest.cs">
       <!-- Setting the Trimming feature switch to make sure that the Resources get trimmed by the linker
       as this test will ensure exceptions are using Resource keys -->
-      <ExtraTrimmerArgs>--feature System.Resources.UseSystemResourceKeys true</ExtraTrimmerArgs>
+      <EnabledFeatureSwitches>System.Resources.UseSystemResourceKeys</EnabledFeatureSwitches>
+    </TestConsoleAppSourceFiles>
+    <TestConsoleAppSourceFiles Include="TypeBuilderComDisabled.cs">
+      <DisabledFeatureSwitches>System.Runtime.InteropServices.BuiltInComInterop.IsSupported</DisabledFeatureSwitches>
+    </TestConsoleAppSourceFiles>
+    <TestConsoleAppSourceFiles Include="NullabilityInfoContextSupportFalse.cs">
+      <DisabledFeatureSwitches>System.Reflection.NullabilityInfoContext.IsSupported</DisabledFeatureSwitches>
+    </TestConsoleAppSourceFiles>
+    <TestConsoleAppSourceFiles Include="NullabilityInfoContextSupportTrue.cs">
+      <EnabledFeatureSwitches>System.Reflection.NullabilityInfoContext.IsSupported</EnabledFeatureSwitches>
     </TestConsoleAppSourceFiles>
   </ItemGroup>
 

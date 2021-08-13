@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
-    <LangVersion>latest</LangVersion>
+    <LangVersion>10.0</LangVersion>
     <Nullable>enable</Nullable>
     <ILLinkTrimAssembly>false</ILLinkTrimAssembly>
     <NoWarn>$(NoWarn);CS3001</NoWarn>
@@ -10,10 +10,11 @@
   <ItemGroup>
     <PackageReference Include="Microsoft.CodeAnalysis.CSharp" PrivateAssets="all" Version="$(MicrosoftCodeAnalysisCSharpVersion)" />
   </ItemGroup>
-  
+
   <ItemGroup>
     <Compile Include="$(LibrariesProjectRoot)\System.Private.CoreLib\generators\EventSourceGenerator.cs" />
     <Compile Include="$(LibrariesProjectRoot)\System.Private.CoreLib\generators\EventSourceGenerator.Emitter.cs" />
     <Compile Include="$(LibrariesProjectRoot)\System.Private.CoreLib\generators\EventSourceGenerator.Parser.cs" />
+    <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\UnconditionalSuppressMessageAttribute.cs" />
   </ItemGroup>
 </Project>

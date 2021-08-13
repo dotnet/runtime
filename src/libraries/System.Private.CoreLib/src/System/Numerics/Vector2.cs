@@ -4,7 +4,9 @@
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Text;
+using Internal.Runtime.CompilerServices;
 
 namespace System.Numerics
 {
@@ -37,6 +39,18 @@ namespace System.Numerics
         {
             X = x;
             Y = y;
+        }
+
+        /// <summary>Constructs a vector from the given <see cref="ReadOnlySpan{Single}" />. The span must contain at least 2 elements.</summary>
+        /// <param name="values">The span of elements to assign to the vector.</param>
+        public Vector2(ReadOnlySpan<float> values)
+        {
+            if (values.Length < 2)
+            {
+                Vector.ThrowInsufficientNumberOfElementsException(2);
+            }
+
+            this = Unsafe.ReadUnaligned<Vector2>(ref Unsafe.As<float, byte>(ref MemoryMarshal.GetReference(values)));
         }
 
         /// <summary>Returns a vector whose 2 elements are equal to zero.</summary>
@@ -528,6 +542,34 @@ namespace System.Numerics
 
             array[index] = X;
             array[index + 1] = Y;
+        }
+
+        /// <summary>Copies the vector to the given <see cref="Span{T}" />.The length of the destination span must be at least 2.</summary>
+        /// <param name="destination">The destination span which the values are copied into.</param>
+        /// <exception cref="System.ArgumentException">If number of elements in source vector is greater than those available in destination span.</exception>
+        public readonly void CopyTo(Span<float> destination)
+        {
+            if (destination.Length < 2)
+            {
+                ThrowHelper.ThrowArgumentException_DestinationTooShort();
+            }
+
+            Unsafe.WriteUnaligned(ref Unsafe.As<float, byte>(ref MemoryMarshal.GetReference(destination)), this);
+        }
+
+        /// <summary>Attempts to copy the vector to the given <see cref="Span{Single}" />. The length of the destination span must be at least 2.</summary>
+        /// <param name="destination">The destination span which the values are copied into.</param>
+        /// <returns><see langword="true" /> if the source vector was successfully copied to <paramref name="destination" />. <see langword="false" /> if <paramref name="destination" /> is not large enough to hold the source vector.</returns>
+        public readonly bool TryCopyTo(Span<float> destination)
+        {
+            if (destination.Length < 2)
+            {
+                return false;
+            }
+
+            Unsafe.WriteUnaligned(ref Unsafe.As<float, byte>(ref MemoryMarshal.GetReference(destination)), this);
+
+            return true;
         }
 
         /// <summary>Returns a value that indicates whether this instance and a specified object are equal.</summary>

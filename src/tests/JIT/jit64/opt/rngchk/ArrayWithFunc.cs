@@ -94,7 +94,7 @@ namespace ArrayWithFunc
         [MethodImplAttribute(MethodImplOptions.NoInlining)]
         public static void Test2()
         {
-            int[] numbers = new int[100]; ;
+            int[] numbers = new int[100];
             int index = 0;
             int upper = numbers.Length - 1;
             for (index = 0; index < upper; index++)

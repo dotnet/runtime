@@ -1824,12 +1824,7 @@ namespace System.DirectoryServices.AccountManagement
 
             try
             {
-                string path = string.Format(
-                    CultureInfo.InvariantCulture,
-                    "LDAP://{0}/{1}",
-                    string.IsNullOrEmpty(this.UserSuppliedServerName) ? this.DnsHostName : this.UserSuppliedServerName,
-                    this.ContextBasePartitionDN
-                    );
+                string path = $"LDAP://{(string.IsNullOrEmpty(this.UserSuppliedServerName) ? this.DnsHostName : this.UserSuppliedServerName)}/{this.ContextBasePartitionDN}";
 
                 defaultNCDirEntry = SDSUtils.BuildDirectoryEntry(path, this.credentials, this.authTypes);
 

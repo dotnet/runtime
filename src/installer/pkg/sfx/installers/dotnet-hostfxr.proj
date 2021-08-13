@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.Build.NoTargets">
   <PropertyGroup>
-    <SkipBuild Condition="'$(RuntimeFlavor)' == 'Mono'">true</SkipBuild>
+    <SkipBuild Condition="'$(RuntimeFlavor)' != '$(PrimaryRuntimeFlavor)'">true</SkipBuild>
     <GenerateInstallers>true</GenerateInstallers>
     <ArchiveName>dotnet-hostfxr-internal</ArchiveName>
     <InstallerName>dotnet-hostfxr</InstallerName>
@@ -48,9 +48,9 @@
   <Target Name="AddLinuxPackageInformation" BeforeTargets="GetDebInstallerJsonProperties;GetRpmInstallerJsonProperties">
     <ItemGroup Condition="'$(GenerateDeb)' == 'true'">
       <LinuxPackageDependency Include="libc6;libgcc1;libstdc++6" />
-      <LinuxPackageDependency Include="dotnet-host" Version="$(InstallerPackageVersion)" />
     </ItemGroup>
     <ItemGroup>
+      <LinuxPackageDependency Include="dotnet-host" Version="$(InstallerPackageVersion)" />
       <RpmJsonProperty Include="directories" Object="[ &quot;/usr/share/dotnet&quot;, &quot;/usr/share/doc/$(VersionedInstallerName)&quot; ]" />
     </ItemGroup>
   </Target>

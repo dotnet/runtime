@@ -422,6 +422,10 @@ namespace System.Tests
         [ActiveIssue("https://github.com/dotnet/runtime/issues/31657", TestRuntimes.Mono)]
         [InlineData(GCLatencyMode.Batch)]
         [InlineData(GCLatencyMode.Interactive)]
+        // LowLatency does not roundtrip for server GC
+        // [InlineData(GCLatencyMode.LowLatency)]
+        // SustainedLowLatency does not roundtrip without background GC
+        // [InlineData(GCLatencyMode.SustainedLowLatency)]
         public static void LatencyRoundtrips(GCLatencyMode value)
         {
             GCLatencyMode orig = GCSettings.LatencyMode;
@@ -436,13 +440,6 @@ namespace System.Tests
                 Assert.Equal(orig, GCSettings.LatencyMode);
             }
         }
-
-        [Theory]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/31657", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
-        [PlatformSpecific(TestPlatforms.Windows)] //Concurrent GC is not enabled on Unix. Recombine to TestLatencyRoundTrips once addressed.
-        [InlineData(GCLatencyMode.LowLatency)]
-        [InlineData(GCLatencyMode.SustainedLowLatency)]
-        public static void LatencyRoundtrips_LowLatency(GCLatencyMode value) => LatencyRoundtrips(value);
     }
 
     public class GCExtendedTests
@@ -816,11 +813,13 @@ namespace System.Tests
 
                 GCMemoryInfo memoryInfo1 = GC.GetGCMemoryInfo();
 
-                Assert.InRange(memoryInfo1.HighMemoryLoadThresholdBytes, 1, long.MaxValue);
-                Assert.InRange(memoryInfo1.MemoryLoadBytes, 1, long.MaxValue);
-                Assert.InRange(memoryInfo1.TotalAvailableMemoryBytes, 1, long.MaxValue);
-                Assert.InRange(memoryInfo1.HeapSizeBytes, 1, long.MaxValue);
-                Assert.InRange(memoryInfo1.FragmentedBytes, 0, long.MaxValue);
+                long maxVirtualSpaceSize = (IntPtr.Size == 4) ? uint.MaxValue : long.MaxValue;
+
+                Assert.InRange(memoryInfo1.HighMemoryLoadThresholdBytes, 1, maxVirtualSpaceSize);
+                Assert.InRange(memoryInfo1.MemoryLoadBytes, 1, maxVirtualSpaceSize);
+                Assert.InRange(memoryInfo1.TotalAvailableMemoryBytes, 1, maxVirtualSpaceSize);
+                Assert.InRange(memoryInfo1.HeapSizeBytes, 1, maxVirtualSpaceSize);
+                Assert.InRange(memoryInfo1.FragmentedBytes, 0, maxVirtualSpaceSize);
 
                 GCHandle[] gch = new GCHandle[64 * 1024];
                 for (int i = 0; i < gch.Length * 2; ++i)
@@ -852,10 +851,10 @@ namespace System.Tests
                     Assert.Equal(memoryInfo2.TotalAvailableMemoryBytes, memoryInfo1.TotalAvailableMemoryBytes);
 
                     scenario = nameof(memoryInfo2.HeapSizeBytes);
-                    Assert.InRange(memoryInfo2.HeapSizeBytes, memoryInfo1.HeapSizeBytes + 1, long.MaxValue);
+                    Assert.InRange(memoryInfo2.HeapSizeBytes, memoryInfo1.HeapSizeBytes + 1, maxVirtualSpaceSize);
 
                     scenario = nameof(memoryInfo2.FragmentedBytes);
-                    Assert.InRange(memoryInfo2.FragmentedBytes, memoryInfo1.FragmentedBytes + 1, long.MaxValue);
+                    Assert.InRange(memoryInfo2.FragmentedBytes, memoryInfo1.FragmentedBytes + 1, maxVirtualSpaceSize);
 
                     scenario = null;
                 }

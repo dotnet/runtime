@@ -150,7 +150,7 @@ namespace System.Data.Common
                 {
                     if ((0 < keyValue.Length) &&
                         // string.Contains(char) is .NetCore2.1+ specific
-                        (('{' == keyValue[0]) || (0 <= keyValue.IndexOf(';')) || (0 == string.Compare(DbConnectionStringKeywords.Driver, keyName, StringComparison.OrdinalIgnoreCase))) &&
+                        (('{' == keyValue[0]) || (0 <= keyValue.IndexOf(';')) || (string.Equals(DbConnectionStringKeywords.Driver, keyName, StringComparison.OrdinalIgnoreCase))) &&
                         !s_connectionStringQuoteOdbcValueRegex.IsMatch(keyValue))
                     {
                         // always quote Driver value (required for ODBC Version 2.65 and earlier)

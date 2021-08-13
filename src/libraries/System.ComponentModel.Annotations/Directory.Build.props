@@ -2,18 +2,5 @@
   <Import Project="..\Directory.Build.props" />
   <PropertyGroup>
     <StrongNameKeyId>Microsoft</StrongNameKeyId>
-    <PackageDescription>Provides attributes that are used to define metadata for objects used as data sources.
-
-Commonly Used Types:
-System.ComponentModel.DataAnnotations.ValidationResult
-System.ComponentModel.DataAnnotations.IValidatableObject
-System.ComponentModel.DataAnnotations.ValidationAttribute
-System.ComponentModel.DataAnnotations.RequiredAttribute
-System.ComponentModel.DataAnnotations.StringLengthAttribute
-System.ComponentModel.DataAnnotations.DisplayAttribute
-System.ComponentModel.DataAnnotations.RegularExpressionAttribute
-System.ComponentModel.DataAnnotations.DataTypeAttribute
-System.ComponentModel.DataAnnotations.RangeAttribute
-System.ComponentModel.DataAnnotations.KeyAttribute</PackageDescription>
   </PropertyGroup>
 </Project>

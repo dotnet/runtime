@@ -2098,7 +2098,7 @@ int GetRandomInt(int maxVal)
 {
 #ifndef CROSSGEN_COMPILE
     // Use the thread-local Random instance if possible
-    Thread* pThread = GetThread();
+    Thread* pThread = GetThreadNULLOk();
     if (pThread)
         return pThread->GetRandom()->Next(maxVal);
 #endif
@@ -2271,5 +2271,7 @@ HRESULT GetFileVersion(                     // S_OK or error
     return S_OK;
 }
 #endif // !TARGET_UNIX
+
+Volatile<double> NormalizedTimer::s_frequency = -1.0;
 
 #endif // !DACCESS_COMPILE

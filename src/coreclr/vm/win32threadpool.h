@@ -276,8 +276,6 @@ public:
         return GlobalCompletionPort != NULL;
     }
 
-    static BOOL DrainCompletionPortQueue();
-
     static BOOL RegisterWaitForSingleObject(PHANDLE phNewWaitObject,
                                             HANDLE hWaitObject,
                                             WAITORTIMERCALLBACK Callback,
@@ -303,17 +301,6 @@ public:
                                                        LPOVERLAPPED lpOverlapped);
 #endif
 
-    static VOID WINAPI CallbackForInitiateDrainageOfCompletionPortQueue(
-        DWORD dwErrorCode,
-        DWORD dwNumberOfBytesTransfered,
-        LPOVERLAPPED lpOverlapped
-    );
-
-    static VOID WINAPI CallbackForContinueDrainageOfCompletionPortQueue(
-        DWORD dwErrorCode,
-        DWORD dwNumberOfBytesTransfered,
-        LPOVERLAPPED lpOverlapped
-    );
 
     static BOOL SetAppDomainRequestsActive(BOOL UnmanagedTP = FALSE);
     static void ClearAppDomainRequestsActive(BOOL UnmanagedTP = FALSE,  LONG index = -1);
@@ -359,11 +346,8 @@ public:
 
     static FORCEINLINE BOOL AreEtwIOQueueEventsSpeciallyHandled(LPOVERLAPPED_COMPLETION_ROUTINE Function)
     {
-        // We ignore drainage events b/c they are uninteresting
         // We handle registered waits at a higher abstraction level
-        return (Function == ThreadpoolMgr::CallbackForInitiateDrainageOfCompletionPortQueue
-                || Function == ThreadpoolMgr::CallbackForContinueDrainageOfCompletionPortQueue
-                || Function == ThreadpoolMgr::WaitIOCompletionCallback
+        return (Function == ThreadpoolMgr::WaitIOCompletionCallback
 #ifdef TARGET_WINDOWS // the IO completion thread pool is currently only available on Windows
                 || Function == ThreadpoolMgr::ManagedWaitIOCompletionCallback
 #endif
@@ -767,7 +751,7 @@ public:
             DWORD processorNumber = 0;
 
 #ifndef TARGET_UNIX
-	        if (CPUGroupInfo::CanEnableGCCPUGroups() && CPUGroupInfo::CanEnableThreadUseAllCpuGroups())
+            if (CPUGroupInfo::CanEnableThreadUseAllCpuGroups())
                 processorNumber = CPUGroupInfo::CalculateCurrentProcessorNumber();
             else
                 // Turns out GetCurrentProcessorNumber can return a value greater than the number of processors reported by
@@ -875,7 +859,7 @@ public:
         WRAPPER_NO_CONTRACT;
         _ASSERTE(!UsePortableThreadPool());
 
-        Thread::IncrementWorkerThreadPoolCompletionCount(GetThread());
+        Thread::IncrementWorkerThreadPoolCompletionCount(GetThreadNULLOk());
         UpdateLastDequeueTime();
     }
 
@@ -1119,8 +1103,6 @@ private:
     SVAL_DECL(LONG,MaxFreeCPThreads);                   // = MaxFreeCPThreadsPerCPU * Number of CPUS
 
     DECLSPEC_ALIGN(MAX_CACHE_LINE_SIZE) static LONG GateThreadStatus;    // See GateThreadStatus enumeration
-
-    static Volatile<LONG> NumCPInfrastructureThreads;   // number of threads currently busy handling draining cycle
 
     SVAL_DECL(LONG,cpuUtilization);
 

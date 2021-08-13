@@ -4,6 +4,7 @@
     <RootNamespace>Microsoft.Extensions.FileProviders</RootNamespace>
     <TargetFrameworks>netstandard2.0;net461</TargetFrameworks>
     <EnableDefaultItems>true</EnableDefaultItems>
+    <PackageDescription>Composite file and directory providers for Microsoft.Extensions.FileProviders.</PackageDescription>
   </PropertyGroup>
 
   <ItemGroup>

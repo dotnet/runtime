@@ -15,8 +15,6 @@ CrashInfo::Initialize()
         fprintf(stderr, "task_for_pid(%d) FAILED %x %s\n", m_pid, result, mach_error_string(result));
         return false;
     }
-    m_auxvEntries.push_back(elf_aux_entry { AT_BASE, { 0 } });
-    m_auxvEntries.push_back(elf_aux_entry { AT_NULL, { 0 } });
     return true;
 }
 
@@ -110,7 +108,7 @@ CrashInfo::EnumerateMemoryRegions()
             TRACE("mach_vm_region_recurse for address %016llx %08llx FAILED %x %s\n", address, size, result, mach_error_string(result));
             break;
         }
-        TRACE("%016llx - %016llx (%06llx) %08llx %s %d %d %d %c%c%c %02x\n",
+        TRACE_VERBOSE("%016llx - %016llx (%06llx) %08llx %s %d %d %d %c%c%c %02x\n",
             address,
             address + size,
             size / PAGE_SIZE,
@@ -173,7 +171,7 @@ CrashInfo::EnumerateMemoryRegions()
                 {
                     if (region.Contains(*found))
                     {
-                        MemoryRegion gap(region.Flags(), previousEndAddress, found->StartAddress(), region.Offset(), std::string());
+                        MemoryRegion gap(region.Flags(), previousEndAddress, found->StartAddress(), region.Offset());
                         if (gap.Size() > 0)
                         {
                             TRACE("     Gap: ");
@@ -184,7 +182,7 @@ CrashInfo::EnumerateMemoryRegions()
                     }
                 }
 
-                MemoryRegion endgap(region.Flags(), previousEndAddress, region.EndAddress(), region.Offset(), std::string());
+                MemoryRegion endgap(region.Flags(), previousEndAddress, region.EndAddress(), region.Offset());
                 if (endgap.Size() > 0)
                 {
                     TRACE("   EndGap:");
@@ -239,24 +237,25 @@ CrashInfo::TryFindDyLinker(mach_vm_address_t address, mach_vm_size_t size, bool*
 
 void CrashInfo::VisitModule(MachOModule& module)
 {
+    AddModuleInfo(false, module.BaseAddress(), nullptr, module.Name());
+
     // Get the process name from the executable module file type
     if (m_name.empty() && module.Header().filetype == MH_EXECUTE)
     {
-        size_t last = module.Name().rfind(DIRECTORY_SEPARATOR_STR_A);
-        if (last != std::string::npos) {
-            last++;
-        }
-        else {
-            last = 0;
-        }
-        m_name = module.Name().substr(last);
+        m_name = GetFileName(module.Name());
     }
     // Save the runtime module path
     if (m_coreclrPath.empty())
     {
-        size_t last = module.Name().rfind(MAKEDLLNAME_A("coreclr"));
+        size_t last = module.Name().rfind(DIRECTORY_SEPARATOR_STR_A MAKEDLLNAME_A("coreclr"));
         if (last != std::string::npos) {
-            m_coreclrPath = module.Name().substr(0, last);
+            m_coreclrPath = module.Name().substr(0, last + 1);
+
+            uint64_t symbolOffset;
+            if (!module.TryLookupSymbol("g_dacTable", &symbolOffset))
+            {
+                TRACE("TryLookupSymbol(g_dacTable) FAILED\n");
+            }
         }
     }
     // VisitSegment is called for each segment of the module
@@ -287,19 +286,20 @@ void CrashInfo::VisitSegment(MachOModule& module, const segment_command_64& segm
             _ASSERTE(end > 0);
 
             // Add module memory region if not already on the list
-            MemoryRegion moduleRegion(regionFlags, start, end, offset, module.Name());
+            MemoryRegion moduleRegion(regionFlags, start, end, offset);
             const auto& found = m_moduleMappings.find(moduleRegion);
             if (found == m_moduleMappings.end())
             {
-                TRACE("VisitSegment: ");
-                moduleRegion.Trace();
-
+                if (g_diagnosticsVerbose)
+                {
+                    TRACE_VERBOSE("VisitSegment: ");
+                    moduleRegion.Trace();
+                }
                 // Add this module segment to the module mappings list
                 m_moduleMappings.insert(moduleRegion);
 
-                // Add module segment ip to base address lookup
-                MemoryRegion addressRegion(0, start, end, module.BaseAddress());
-                m_moduleAddresses.insert(addressRegion);
+                // Add this module segment to the set used by the thread unwinding to lookup the module base address for an ip.
+                AddModuleAddressRange(start, end, module.BaseAddress());
             }
             else
             {
@@ -381,8 +381,38 @@ CrashInfo::ReadProcessMemory(void* address, void* buffer, size_t size, size_t* r
     return size == 0 || numberOfBytesRead > 0;
 }
 
-// For src/inc/llvm/ELF.h
-Elf64_Ehdr::Elf64_Ehdr()
-{
-}
+const struct dyld_all_image_infos* g_image_infos = nullptr;
 
+void
+ModuleInfo::LoadModule()
+{
+    if (m_module == nullptr)
+    {
+        m_module = dlopen(m_moduleName.c_str(), RTLD_LAZY);
+        if (m_module != nullptr)
+        {
+            if (g_image_infos == nullptr)
+            {
+                struct task_dyld_info dyld_info;
+                mach_msg_type_number_t count = TASK_DYLD_INFO_COUNT;
+                kern_return_t result = task_info(mach_task_self_, TASK_DYLD_INFO, (task_info_t)&dyld_info, &count);
+                if (result == KERN_SUCCESS)
+                {
+                    g_image_infos = (const struct dyld_all_image_infos*)dyld_info.all_image_info_addr;
+                }
+            }
+            if (g_image_infos != nullptr)
+            {
+                for (int i = 0; i < g_image_infos->infoArrayCount; ++i)
+                {
+                    const struct dyld_image_info* image = g_image_infos->infoArray + i;
+                    if (strcasecmp(image->imageFilePath, m_moduleName.c_str()) == 0)
+                    {
+                        m_localBaseAddress = (uint64_t)image->imageLoadAddress;
+                        break;
+                    }
+                }
+            }
+        }
+    }
+}

@@ -119,7 +119,6 @@ Assembly::Assembly(BaseDomain *pDomain, PEAssembly* pFile, DebuggerAssemblyContr
 #endif
     m_nextAvailableModuleIndex(1),
     m_pLoaderAllocator(NULL),
-    m_isDisabledPrivateReflection(0),
 #ifdef FEATURE_COMINTEROP
     m_pITypeLib(NULL),
 #endif // FEATURE_COMINTEROP
@@ -177,7 +176,7 @@ void Assembly::Init(AllocMemTracker *pamTracker, LoaderAllocator *pLoaderAllocat
 #ifndef CROSSGEN_COMPILE
     if (GetManifestFile()->IsDynamic())
         // manifest modules of dynamic assemblies are always transient
-        m_pManifest = ReflectionModule::Create(this, GetManifestFile(), pamTracker, REFEMIT_MANIFEST_MODULE_NAME, TRUE);
+        m_pManifest = ReflectionModule::Create(this, GetManifestFile(), pamTracker, REFEMIT_MANIFEST_MODULE_NAME);
     else
 #endif
         m_pManifest = Module::Create(this, mdFileNil, GetManifestFile(), pamTracker);
@@ -217,34 +216,6 @@ void Assembly::Init(AllocMemTracker *pamTracker, LoaderAllocator *pLoaderAllocat
 
         return;  // Explicit return to let you know you are NOT welcome to add code after the CANNOTTHROW/FAULT_FORBID expires
     }
-}
-
-BOOL Assembly::IsDisabledPrivateReflection()
-{
-    CONTRACTL
-    {
-        THROWS;
-    }
-    CONTRACTL_END;
-
-    enum { UNINITIALIZED, ENABLED, DISABLED};
-
-    if (m_isDisabledPrivateReflection == UNINITIALIZED)
-    {
-        HRESULT hr = GetManifestModule()->GetCustomAttribute(GetManifestToken(), WellKnownAttribute::DisablePrivateReflectionType, NULL, 0);
-        IfFailThrow(hr);
-
-        if (hr == S_OK)
-        {
-            m_isDisabledPrivateReflection = DISABLED;
-        }
-        else
-        {
-            m_isDisabledPrivateReflection = ENABLED;
-        }
-    }
-
-    return m_isDisabledPrivateReflection == DISABLED;
 }
 
 #ifndef CROSSGEN_COMPILE
@@ -299,10 +270,10 @@ void ProfilerCallAssemblyUnloadStarted(Assembly* assemblyUnloaded)
 {
     WRAPPER_NO_CONTRACT;
     {
-        BEGIN_PIN_PROFILER(CORProfilerPresent());
+        BEGIN_PROFILER_CALLBACK(CORProfilerPresent());
         GCX_PREEMP();
-        g_profControlBlock.pProfInterface->AssemblyUnloadStarted((AssemblyID)assemblyUnloaded);
-        END_PIN_PROFILER();
+        (&g_profControlBlock)->AssemblyUnloadStarted((AssemblyID)assemblyUnloaded);
+        END_PROFILER_CALLBACK();
     }
 }
 
@@ -310,10 +281,10 @@ void ProfilerCallAssemblyUnloadFinished(Assembly* assemblyUnloaded)
 {
     WRAPPER_NO_CONTRACT;
     {
-        BEGIN_PIN_PROFILER(CORProfilerPresent());
+        BEGIN_PROFILER_CALLBACK(CORProfilerPresent());
         GCX_PREEMP();
-        g_profControlBlock.pProfInterface->AssemblyUnloadFinished((AssemblyID) assemblyUnloaded, S_OK);
-        END_PIN_PROFILER();
+        (&g_profControlBlock)->AssemblyUnloadFinished((AssemblyID) assemblyUnloaded, S_OK);
+        END_PROFILER_CALLBACK();
     }
 }
 #endif
@@ -376,10 +347,10 @@ Assembly * Assembly::Create(
 
 #ifdef PROFILING_SUPPORTED
     {
-        BEGIN_PIN_PROFILER(CORProfilerTrackAssemblyLoads());
+        BEGIN_PROFILER_CALLBACK(CORProfilerTrackAssemblyLoads());
         GCX_COOP();
-        g_profControlBlock.pProfInterface->AssemblyLoadStarted((AssemblyID)(Assembly *) pAssembly);
-        END_PIN_PROFILER();
+        (&g_profControlBlock)->AssemblyLoadStarted((AssemblyID)(Assembly *) pAssembly);
+        END_PROFILER_CALLBACK();
     }
 
     // Need TRY/HOOK instead of holder so we can get HR of exception thrown for profiler callback
@@ -392,11 +363,11 @@ Assembly * Assembly::Create(
     EX_HOOK
     {
         {
-            BEGIN_PIN_PROFILER(CORProfilerTrackAssemblyLoads());
+            BEGIN_PROFILER_CALLBACK(CORProfilerTrackAssemblyLoads());
             GCX_COOP();
-            g_profControlBlock.pProfInterface->AssemblyLoadFinished((AssemblyID)(Assembly *) pAssembly,
+            (&g_profControlBlock)->AssemblyLoadFinished((AssemblyID)(Assembly *) pAssembly,
                                                                     GET_EXCEPTION()->GetHR());
-            END_PIN_PROFILER();
+            END_PROFILER_CALLBACK();
         }
     }
     EX_END_HOOK;
@@ -608,6 +579,13 @@ Assembly *Assembly::CreateDynamic(AppDomain *pDomain, ICLRPrivBinder* pBinderCon
     {
         GCX_PREEMP();
 
+        AssemblyLoaderAllocator* pBinderAssemblyLoaderAllocator = nullptr;
+
+        if (pBinderContext != nullptr)
+        {
+            pBinderContext->GetLoaderAllocator((LPVOID*)&pBinderAssemblyLoaderAllocator);
+        }
+
         // Create a new LoaderAllocator if appropriate
         if ((args->access & ASSEMBLY_ACCESS_COLLECT) != 0)
         {
@@ -624,17 +602,15 @@ Assembly *Assembly::CreateDynamic(AppDomain *pDomain, ICLRPrivBinder* pBinderCon
             // atomically transfered by call to LoaderAllocator::ActivateManagedTracking().
             pAssemblyLoaderAllocator->SetupManagedTracking(&args->loaderAllocator);
             createdNewAssemblyLoaderAllocator = TRUE;
+
+            if(pBinderAssemblyLoaderAllocator != nullptr)
+            {
+                pAssemblyLoaderAllocator->EnsureReference(pBinderAssemblyLoaderAllocator);
+            }
         }
         else
         {
-            AssemblyLoaderAllocator* pAssemblyLoaderAllocator = nullptr;
-
-            if (pBinderContext != nullptr)
-            {
-                pBinderContext->GetLoaderAllocator((LPVOID*)&pAssemblyLoaderAllocator);
-            }
-
-            pLoaderAllocator = pAssemblyLoaderAllocator == nullptr ? pDomain->GetLoaderAllocator() : pAssemblyLoaderAllocator;
+            pLoaderAllocator = pBinderAssemblyLoaderAllocator == nullptr ? pDomain->GetLoaderAllocator() : pBinderAssemblyLoaderAllocator;
         }
 
         if (!createdNewAssemblyLoaderAllocator)
@@ -1280,7 +1256,7 @@ void Assembly::UpdateCachedFriendAssemblyInfo()
     CONTRACTL_END
 
     ReleaseHolder<FriendAssemblyDescriptor> pOldFriendAssemblyDescriptor;
-    
+
     {
         CrstHolder friendDescriptorLock(&g_friendAssembliesCrst);
         if (m_pFriendAssemblyDescriptor != NULL)
@@ -1361,11 +1337,6 @@ bool Assembly::IgnoresAccessChecksTo(Assembly *pAccessedAssembly)
         PRECONDITION(CheckPointer(pAccessedAssembly));
     }
     CONTRACTL_END;
-
-    if (pAccessedAssembly->IsDisabledPrivateReflection())
-    {
-        return false;
-    }
 
     return GetFriendAssemblyInfo()->IgnoresAccessChecksTo(pAccessedAssembly);
 }
@@ -1593,7 +1564,7 @@ static void RunMainPre()
 {
     LIMITED_METHOD_CONTRACT;
 
-    _ASSERTE(GetThread() != 0);
+    _ASSERTE(GetThreadNULLOk() != 0);
     g_fWeControlLifetime = TRUE;
 }
 
@@ -1605,7 +1576,7 @@ static void RunMainPost()
         GC_TRIGGERS;
         MODE_ANY;
         INJECT_FAULT(COMPlusThrowOM(););
-        PRECONDITION(CheckPointer(GetThread()));
+        PRECONDITION(CheckPointer(GetThreadNULLOk()));
     }
     CONTRACTL_END
 
@@ -1690,9 +1661,17 @@ INT32 Assembly::ExecuteMainMethod(PTRARRAYREF *stringArgs, BOOL waitForOtherThre
             AppDomain * pDomain = pThread->GetDomain();
             pDomain->SetRootAssembly(pMeth->GetAssembly());
 
+            // Perform additional managed thread initialization.
+            // This would is normally done in the runtime when a managed
+            // thread is started, but is done here instead since the
+            // Main thread wasn't started by the runtime.
+            Thread::InitializationForManagedThreadInNative(pThread);
+
             RunStartupHooks();
 
             hr = RunMain(pMeth, 1, &iRetVal, stringArgs);
+
+            Thread::CleanUpForManagedThreadInNative(pThread);
         }
     }
 
@@ -2020,7 +1999,7 @@ bool Assembly::TrySetTypeLib(_In_ ITypeLib *pNew)
 // Add an assembly to the assemblyref list. pAssemEmitter specifies where
 // the AssemblyRef is emitted to.
 //***********************************************************
-mdAssemblyRef Assembly::AddAssemblyRef(Assembly *refedAssembly, IMetaDataAssemblyEmit *pAssemEmitter, BOOL fUsePublicKeyToken)
+mdAssemblyRef Assembly::AddAssemblyRef(Assembly *refedAssembly, IMetaDataAssemblyEmit *pAssemEmitter)
 {
     CONTRACT(mdAssemblyRef)
     {
@@ -2048,7 +2027,7 @@ mdAssemblyRef Assembly::AddAssemblyRef(Assembly *refedAssembly, IMetaDataAssembl
     }
 
     mdAssemblyRef ar;
-    IfFailThrow(spec.EmitToken(pAssemEmitter, &ar, fUsePublicKeyToken));
+    IfFailThrow(spec.EmitToken(pAssemEmitter, &ar));
 
     RETURN ar;
 }   // Assembly::AddAssemblyRef

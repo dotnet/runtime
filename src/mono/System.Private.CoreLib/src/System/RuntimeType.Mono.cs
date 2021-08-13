@@ -7,7 +7,6 @@ using System.Threading;
 using System.Collections.Generic;
 using System.Runtime.Serialization;
 using System.Runtime.CompilerServices;
-using System.Diagnostics.Contracts;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 using System.Diagnostics;
@@ -36,14 +35,6 @@ namespace System
         FormatSerialization = FormatNamespace |
                               FormatGenericParam |
                               FormatFullInst
-    }
-
-    internal enum TypeNameKind
-    {
-        Name,
-        ToString,
-        SerializationName,
-        FullName,
     }
 
     internal partial class RuntimeType
@@ -153,14 +144,14 @@ namespace System
         #region Internal
 
         [RequiresUnreferencedCode("Types might be removed")]
-        internal static RuntimeType? GetType(string typeName, bool throwOnError, bool ignoreCase, bool reflectionOnly,
+        internal static RuntimeType? GetType(string typeName, bool throwOnError, bool ignoreCase,
             ref StackCrawlMark stackMark)
         {
             if (typeName == null)
                 throw new ArgumentNullException(nameof(typeName));
 
             return RuntimeTypeHandle.GetTypeByName(
-                typeName, throwOnError, ignoreCase, reflectionOnly, ref stackMark, false);
+                typeName, throwOnError, ignoreCase, ref stackMark, false);
         }
 
         private static void SplitName(string? fullname, out string? name, out string? ns)
@@ -747,7 +738,7 @@ namespace System
             return GetNestedTypeCandidates(null, bindingAttr, false).ToArray();
         }
 
-        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
+        [DynamicallyAccessedMembers(GetAllMembers)]
         public override MemberInfo[] GetMembers(BindingFlags bindingAttr)
         {
             ListBuilder<MethodInfo> methods = GetMethodCandidates(null, bindingAttr, CallingConventions.Any, null, -1, false);
@@ -961,6 +952,8 @@ namespace System
             return match;
         }
 
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.Interfaces)]
+        [return: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.Interfaces)]
         public override Type? GetInterface(string fullname, bool ignoreCase)
         {
             if (fullname == null) throw new ArgumentNullException(nameof(fullname));
@@ -1043,7 +1036,7 @@ namespace System
             return match;
         }
 
-        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
+        [DynamicallyAccessedMembers(GetAllMembers)]
         public override MemberInfo[] GetMember(string name, MemberTypes type, BindingFlags bindingAttr)
         {
             if (name == null) throw new ArgumentNullException(nameof(name));
@@ -1125,8 +1118,135 @@ namespace System
 
             return compressMembers;
         }
-        #endregion
 
+        public override MemberInfo GetMemberWithSameMetadataDefinitionAs(MemberInfo member)
+        {
+            if (member is null) throw new ArgumentNullException(nameof(member));
+
+            RuntimeType? runtimeType = this;
+            while (runtimeType != null)
+            {
+                MemberInfo? result = member.MemberType switch
+                {
+                    MemberTypes.Method => GetMethodWithSameMetadataDefinitionAs(runtimeType, member),
+                    MemberTypes.Constructor => GetConstructorWithSameMetadataDefinitionAs(runtimeType, member),
+                    MemberTypes.Property => GetPropertyWithSameMetadataDefinitionAs(runtimeType, member),
+                    MemberTypes.Field => GetFieldWithSameMetadataDefinitionAs(runtimeType, member),
+                    MemberTypes.Event => GetEventWithSameMetadataDefinitionAs(runtimeType, member),
+                    MemberTypes.NestedType => GetNestedTypeWithSameMetadataDefinitionAs(runtimeType, member),
+                    _ => null
+                };
+
+                if (result != null)
+                {
+                    return result;
+                }
+
+                runtimeType = runtimeType.GetBaseType();
+            }
+
+            throw CreateGetMemberWithSameMetadataDefinitionAsNotFoundException(member);
+        }
+
+        private const BindingFlags GetMemberWithSameMetadataDefinitionAsBindingFlags =
+            BindingFlags.DeclaredOnly | BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic;
+
+        private static MemberInfo? GetMethodWithSameMetadataDefinitionAs(RuntimeType runtimeType, MemberInfo methodInfo)
+        {
+            ListBuilder<MethodInfo> methods = runtimeType.GetMethodCandidates(methodInfo.Name, GetMemberWithSameMetadataDefinitionAsBindingFlags, CallingConventions.Any, null, -1, allowPrefixLookup: false);
+
+            for (int i = 0; i < methods.Count; i++)
+            {
+                MethodInfo candidate = methods[i];
+                if (candidate.HasSameMetadataDefinitionAs(methodInfo))
+                {
+                    return candidate;
+                }
+            }
+
+            return null;
+        }
+
+        private static MemberInfo? GetConstructorWithSameMetadataDefinitionAs(RuntimeType runtimeType, MemberInfo constructorInfo)
+        {
+            ListBuilder<ConstructorInfo> ctors = runtimeType.GetConstructorCandidates(null, GetMemberWithSameMetadataDefinitionAsBindingFlags, CallingConventions.Any, null, allowPrefixLookup: false);
+
+            for (int i = 0; i < ctors.Count; i++)
+            {
+                ConstructorInfo candidate = ctors[i];
+                if (candidate.HasSameMetadataDefinitionAs(constructorInfo))
+                {
+                    return candidate;
+                }
+            }
+
+            return null;
+        }
+
+        private static MemberInfo? GetPropertyWithSameMetadataDefinitionAs(RuntimeType runtimeType, MemberInfo propertyInfo)
+        {
+            ListBuilder<PropertyInfo> properties = runtimeType.GetPropertyCandidates(propertyInfo.Name, GetMemberWithSameMetadataDefinitionAsBindingFlags, null, allowPrefixLookup: false);
+
+            for (int i = 0; i < properties.Count; i++)
+            {
+                PropertyInfo candidate = properties[i];
+                if (candidate.HasSameMetadataDefinitionAs(propertyInfo))
+                {
+                    return candidate;
+                }
+            }
+
+            return null;
+        }
+
+        private static MemberInfo? GetFieldWithSameMetadataDefinitionAs(RuntimeType runtimeType, MemberInfo fieldInfo)
+        {
+            ListBuilder<FieldInfo> fields = runtimeType.GetFieldCandidates(fieldInfo.Name, GetMemberWithSameMetadataDefinitionAsBindingFlags, allowPrefixLookup: false);
+
+            for (int i = 0; i < fields.Count; i++)
+            {
+                FieldInfo candidate = fields[i];
+                if (candidate.HasSameMetadataDefinitionAs(fieldInfo))
+                {
+                    return candidate;
+                }
+            }
+
+            return null;
+        }
+
+        private static MemberInfo? GetEventWithSameMetadataDefinitionAs(RuntimeType runtimeType, MemberInfo eventInfo)
+        {
+            ListBuilder<EventInfo> events = runtimeType.GetEventCandidates(null, GetMemberWithSameMetadataDefinitionAsBindingFlags, allowPrefixLookup: false);
+
+            for (int i = 0; i < events.Count; i++)
+            {
+                EventInfo candidate = events[i];
+                if (candidate.HasSameMetadataDefinitionAs(eventInfo))
+                {
+                    return candidate;
+                }
+            }
+
+            return null;
+        }
+
+        private static MemberInfo? GetNestedTypeWithSameMetadataDefinitionAs(RuntimeType runtimeType, MemberInfo nestedType)
+        {
+            ListBuilder<Type> nestedTypes = runtimeType.GetNestedTypeCandidates(nestedType.Name, GetMemberWithSameMetadataDefinitionAsBindingFlags, allowPrefixLookup: false);
+
+            for (int i = 0; i < nestedTypes.Count; i++)
+            {
+                Type candidate = nestedTypes[i];
+                if (candidate.HasSameMetadataDefinitionAs(nestedType))
+                {
+                    return candidate;
+                }
+            }
+
+            return null;
+        }
+        #endregion
 
         #region Hierarchy
 
@@ -1186,6 +1306,7 @@ namespace System
             return types;
         }
 
+        [RequiresUnreferencedCode("If some of the generic arguments are annotated (either with DynamicallyAccessedMembersAttribute, or generic constraints), trimming can't validate that the requirements of those annotations are met.")]
         public override Type MakeGenericType(Type[] instantiation)
         {
             if (instantiation == null)
@@ -1835,11 +1956,15 @@ namespace System
             return constraints ?? Type.EmptyTypes;
         }
 
-        internal static object CreateInstanceForAnotherGenericParameter([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor | DynamicallyAccessedMemberTypes.NonPublicConstructors)] Type genericType, RuntimeType genericArgument)
+        internal static object CreateInstanceForAnotherGenericParameter(
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] Type genericType,
+            RuntimeType genericArgument)
         {
             var gt = (RuntimeType)MakeGenericType(genericType, new Type[] { genericArgument });
             RuntimeConstructorInfo? ctor = gt.GetDefaultConstructor();
-            if (ctor is null)
+
+            // CreateInstanceForAnotherGenericParameter requires type to have a public parameterless constructor so it can be annotated for trimming without preserving private constructors.
+            if (ctor is null || !ctor.IsPublic)
                 throw new MissingMethodException(SR.Format(SR.Arg_NoDefCTor, gt));
 
             return ctor.InternalInvoke(null, null, wrapExceptions: true)!;
@@ -1907,7 +2032,7 @@ namespace System
             }
         }
 
-        public override InterfaceMapping GetInterfaceMap(Type ifaceType)
+        public override InterfaceMapping GetInterfaceMap([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods | DynamicallyAccessedMemberTypes.NonPublicMethods)] Type ifaceType)
         {
             if (IsGenericParameter)
                 throw new InvalidOperationException(SR.Arg_GenericParameter);
@@ -2019,6 +2144,7 @@ namespace System
             }
         }
 
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.Interfaces)]
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         public extern override Type[] GetInterfaces();
 

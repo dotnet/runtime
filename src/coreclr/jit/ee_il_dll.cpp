@@ -810,11 +810,11 @@ void Compiler::eeDispVar(ICorDebugInfo::NativeVarInfo* var)
             }
             break;
 
-#ifndef TARGET_AMD64
         case CodeGenInterface::VLT_REG_REG:
             printf("%s-%s", getRegName(var->loc.vlRegReg.vlrrReg1), getRegName(var->loc.vlRegReg.vlrrReg2));
             break;
 
+#ifndef TARGET_AMD64
         case CodeGenInterface::VLT_REG_STK:
             if ((int)var->loc.vlRegStk.vlrsStk.vlrssBaseReg != (int)ICorDebugInfo::REGNUM_AMBIENT_SP)
             {
@@ -861,6 +861,8 @@ void Compiler::eeDispVar(ICorDebugInfo::NativeVarInfo* var)
 // Same parameters as ICorStaticInfo::setVars().
 void Compiler::eeDispVars(CORINFO_METHOD_HANDLE ftn, ULONG32 cVars, ICorDebugInfo::NativeVarInfo* vars)
 {
+    // Estimate number of unique vars with debug info
+    //
     ALLVARSET_TP uniqueVars(AllVarSetOps::MakeEmpty(this));
     for (unsigned i = 0; i < cVars; i++)
     {
@@ -870,7 +872,8 @@ void Compiler::eeDispVars(CORINFO_METHOD_HANDLE ftn, ULONG32 cVars, ICorDebugInf
             AllVarSetOps::AddElemD(this, uniqueVars, vars[i].varNumber);
         }
     }
-    printf("; Variable debug info: %d live range(s), %d var(s) for method %s\n", cVars,
+
+    printf("; Variable debug info: %d live ranges, %d vars for method %s\n", cVars,
            AllVarSetOps::Count(this, uniqueVars), info.compFullName);
 
     for (unsigned i = 0; i < cVars; i++)
@@ -1012,13 +1015,13 @@ void Compiler::eeDispLineInfos()
  * (e.g., host AMD64, target ARM64), then VM will get confused anyway.
  */
 
-void Compiler::eeReserveUnwindInfo(BOOL isFunclet, BOOL isColdCode, ULONG unwindSize)
+void Compiler::eeReserveUnwindInfo(bool isFunclet, bool isColdCode, ULONG unwindSize)
 {
 #ifdef DEBUG
     if (verbose)
     {
-        printf("reserveUnwindInfo(isFunclet=%s, isColdCode=%s, unwindSize=0x%x)\n", isFunclet ? "TRUE" : "FALSE",
-               isColdCode ? "TRUE" : "FALSE", unwindSize);
+        printf("reserveUnwindInfo(isFunclet=%s, isColdCode=%s, unwindSize=0x%x)\n", isFunclet ? "true" : "false",
+               isColdCode ? "true" : "false", unwindSize);
     }
 #endif // DEBUG
 
@@ -1232,6 +1235,11 @@ bool Compiler::eeRunWithErrorTrapImp(void (*function)(void*), void* param)
     return info.compCompHnd->runWithErrorTrap(function, param);
 }
 
+bool Compiler::eeRunWithSPMIErrorTrapImp(void (*function)(void*), void* param)
+{
+    return info.compCompHnd->runWithSPMIErrorTrap(function, param);
+}
+
 /*****************************************************************************
  *
  *                      Utility functions
@@ -1265,19 +1273,6 @@ struct FilterSuperPMIExceptionsParam_ee_il
     const char*           fieldOrMethodOrClassNamePtr;
     EXCEPTION_POINTERS    exceptionPointers;
 };
-
-static LONG FilterSuperPMIExceptions_ee_il(PEXCEPTION_POINTERS pExceptionPointers, LPVOID lpvParam)
-{
-    FilterSuperPMIExceptionsParam_ee_il* pSPMIEParam = (FilterSuperPMIExceptionsParam_ee_il*)lpvParam;
-    pSPMIEParam->exceptionPointers                   = *pExceptionPointers;
-
-    if (pSPMIEParam->pThis->IsSuperPMIException(pExceptionPointers->ExceptionRecord->ExceptionCode))
-    {
-        return EXCEPTION_EXECUTE_HANDLER;
-    }
-
-    return EXCEPTION_CONTINUE_SEARCH;
-}
 
 const char* Compiler::eeGetMethodName(CORINFO_METHOD_HANDLE method, const char** classNamePtr)
 {
@@ -1317,12 +1312,14 @@ const char* Compiler::eeGetMethodName(CORINFO_METHOD_HANDLE method, const char**
     param.method       = method;
     param.classNamePtr = classNamePtr;
 
-    PAL_TRY(FilterSuperPMIExceptionsParam_ee_il*, pParam, &param)
-    {
-        pParam->fieldOrMethodOrClassNamePtr =
-            pParam->pJitInfo->compCompHnd->getMethodName(pParam->method, pParam->classNamePtr);
-    }
-    PAL_EXCEPT_FILTER(FilterSuperPMIExceptions_ee_il)
+    bool success = eeRunWithSPMIErrorTrap<FilterSuperPMIExceptionsParam_ee_il>(
+        [](FilterSuperPMIExceptionsParam_ee_il* pParam) {
+            pParam->fieldOrMethodOrClassNamePtr =
+                pParam->pJitInfo->compCompHnd->getMethodName(pParam->method, pParam->classNamePtr);
+        },
+        &param);
+
+    if (!success)
     {
         if (param.classNamePtr != nullptr)
         {
@@ -1331,7 +1328,6 @@ const char* Compiler::eeGetMethodName(CORINFO_METHOD_HANDLE method, const char**
 
         param.fieldOrMethodOrClassNamePtr = "hackishMethodName";
     }
-    PAL_ENDTRY
 
     return param.fieldOrMethodOrClassNamePtr;
 }
@@ -1345,16 +1341,17 @@ const char* Compiler::eeGetFieldName(CORINFO_FIELD_HANDLE field, const char** cl
     param.field        = field;
     param.classNamePtr = classNamePtr;
 
-    PAL_TRY(FilterSuperPMIExceptionsParam_ee_il*, pParam, &param)
-    {
-        pParam->fieldOrMethodOrClassNamePtr =
-            pParam->pJitInfo->compCompHnd->getFieldName(pParam->field, pParam->classNamePtr);
-    }
-    PAL_EXCEPT_FILTER(FilterSuperPMIExceptions_ee_il)
+    bool success = eeRunWithSPMIErrorTrap<FilterSuperPMIExceptionsParam_ee_il>(
+        [](FilterSuperPMIExceptionsParam_ee_il* pParam) {
+            pParam->fieldOrMethodOrClassNamePtr =
+                pParam->pJitInfo->compCompHnd->getFieldName(pParam->field, pParam->classNamePtr);
+        },
+        &param);
+
+    if (!success)
     {
         param.fieldOrMethodOrClassNamePtr = "hackishFieldName";
     }
-    PAL_ENDTRY
 
     return param.fieldOrMethodOrClassNamePtr;
 }
@@ -1367,15 +1364,16 @@ const char* Compiler::eeGetClassName(CORINFO_CLASS_HANDLE clsHnd)
     param.pJitInfo = &info;
     param.clazz    = clsHnd;
 
-    PAL_TRY(FilterSuperPMIExceptionsParam_ee_il*, pParam, &param)
-    {
-        pParam->fieldOrMethodOrClassNamePtr = pParam->pJitInfo->compCompHnd->getClassName(pParam->clazz);
-    }
-    PAL_EXCEPT_FILTER(FilterSuperPMIExceptions_ee_il)
+    bool success = eeRunWithSPMIErrorTrap<FilterSuperPMIExceptionsParam_ee_il>(
+        [](FilterSuperPMIExceptionsParam_ee_il* pParam) {
+            pParam->fieldOrMethodOrClassNamePtr = pParam->pJitInfo->compCompHnd->getClassName(pParam->clazz);
+        },
+        &param);
+
+    if (!success)
     {
         param.fieldOrMethodOrClassNamePtr = "hackishClassName";
     }
-    PAL_ENDTRY
     return param.fieldOrMethodOrClassNamePtr;
 }
 
@@ -1408,7 +1406,7 @@ const WCHAR* Compiler::eeGetCPString(size_t strHandle)
         return nullptr;
     }
 
-    return (asString->chars);
+    return (WCHAR*)(asString->chars);
 #endif // HOST_UNIX
 }
 

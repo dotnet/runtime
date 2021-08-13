@@ -17,12 +17,14 @@
 #include "mono-config-internals.h"
 #include "object-internals.h"
 #include "class-init.h"
+#include "assembly.h"
 #include "marshal.h"
 #include "object.h"
 #include "assembly-internals.h"
 #include "external-only.h"
 #include "threads.h"
 #include "threads-types.h"
+#include "jit-info.h"
 
 /**
  * mono_gchandle_new:
@@ -370,4 +372,327 @@ void
 mono_thread_manage (void)
 {
 	MONO_EXTERNAL_ONLY_GC_UNSAFE_VOID (mono_thread_manage_internal ());
+}
+
+void
+mono_register_config_for_assembly (const char* assembly_name, const char* config_xml)
+{
+}
+
+/**
+ * mono_domain_free:
+ * \param domain the domain to release
+ * \param force if TRUE, it allows the root domain to be released (used at shutdown only).
+ *
+ * This releases the resources associated with the specific domain.
+ * This is a low-level function that is invoked by the AppDomain infrastructure
+ * when necessary.
+ *
+ * In theory, this is dead code on netcore and thus does not need to be ALC-aware.
+ */
+void
+mono_domain_free (MonoDomain *domain, gboolean force)
+{
+	g_assert_not_reached ();
+}
+
+/**
+ * mono_domain_get_id:
+ *
+ * A domain ID is guaranteed to be unique for as long as the domain
+ * using it is alive. It may be reused later once the domain has been
+ * unloaded.
+ *
+ * \returns The unique ID for \p domain.
+ */
+gint32
+mono_domain_get_id (MonoDomain *domain)
+{
+	return domain->domain_id;
+}
+
+/**
+ * mono_domain_get_friendly_name:
+ *
+ * The returned string's lifetime is the same as \p domain's. Consider
+ * copying it if you need to store it somewhere.
+ *
+ * \returns The friendly name of \p domain. Can be NULL if not yet set.
+ */
+const char *
+mono_domain_get_friendly_name (MonoDomain *domain)
+{
+	return domain->friendly_name;
+}
+
+/**
+ * mono_domain_is_unloading:
+ */
+gboolean
+mono_domain_is_unloading (MonoDomain *domain)
+{
+	return FALSE;
+}
+
+/**
+ * mono_domain_from_appdomain:
+ */
+MonoDomain *
+mono_domain_from_appdomain (MonoAppDomain *appdomain_raw)
+{
+	return mono_get_root_domain ();
+}
+
+/**
+ * mono_context_set:
+ */
+void
+mono_context_set (MonoAppContext * new_context)
+{
+}
+
+/**
+ * mono_context_get:
+ *
+ * Returns: the current Mono Application Context.
+ */
+MonoAppContext *
+mono_context_get (void)
+{
+	return NULL;
+}
+
+/**
+ * mono_context_get_id:
+ * \param context the context to operate on.
+ *
+ * Context IDs are guaranteed to be unique for the duration of a Mono
+ * process; they are never reused.
+ *
+ * \returns The unique ID for \p context.
+ */
+gint32
+mono_context_get_id (MonoAppContext *context)
+{
+	return context->context_id;
+}
+
+/**
+ * mono_context_get_domain_id:
+ * \param context the context to operate on.
+ * \returns The ID of the domain that \p context was created in.
+ */
+gint32
+mono_context_get_domain_id (MonoAppContext *context)
+{
+	return context->domain_id;
+}
+
+/**
+ * mono_string_equal:
+ * \param s1 First string to compare
+ * \param s2 Second string to compare
+ *
+ * Compares two \c MonoString* instances ordinally for equality.
+ *
+ * \returns FALSE if the strings differ.
+ */
+gboolean
+mono_string_equal (MonoString *s1, MonoString *s2)
+{
+	MONO_EXTERNAL_ONLY (gboolean, mono_string_equal_internal (s1, s2));
+}
+
+/**
+ * mono_string_hash:
+ * \param s the string to hash
+ *
+ * Compute the hash for a \c MonoString*
+ * \returns the hash for the string.
+ */
+guint
+mono_string_hash (MonoString *s)
+{
+	MONO_EXTERNAL_ONLY (guint, mono_string_hash_internal (s));
+}
+
+/**
+ * mono_domain_create:
+ *
+ * Creates a new application domain, the unmanaged representation
+ * of the actual domain.
+ *
+ * Application domains provide an isolation facilty for assemblies.   You
+ * can load assemblies and execute code in them that will not be visible
+ * to other application domains. This is a runtime-based virtualization
+ * technology.
+ *
+ * It is possible to unload domains, which unloads the assemblies and
+ * data that was allocated in that domain.
+ *
+ * When a domain is created a mempool is allocated for domain-specific
+ * structures, along a dedicated code manager to hold code that is
+ * associated with the domain.
+ *
+ * \returns New initialized \c MonoDomain, with no configuration or assemblies
+ * loaded into it.
+ */
+MonoDomain *
+mono_domain_create (void)
+{
+	g_assert_not_reached ();
+}
+
+/**
+ * mono_domain_get_by_id:
+ * \param domainid the ID
+ * \returns the domain for a specific domain id.
+ */
+MonoDomain *
+mono_domain_get_by_id (gint32 domainid)
+{
+	MonoDomain * domain = mono_get_root_domain ();
+
+	if (domain->domain_id == domainid)
+		return domain;
+	else
+		return NULL;
+}
+
+/**
+ * mono_domain_assembly_open:
+ * \param domain the application domain
+ * \param name file name of the assembly
+ */
+MonoAssembly *
+mono_domain_assembly_open (MonoDomain *domain, const char *name)
+{
+	MonoAssembly *result;
+	MONO_ENTER_GC_UNSAFE;
+	result = mono_domain_assembly_open_internal (mono_alc_get_default (), name);
+	MONO_EXIT_GC_UNSAFE;
+	return result;
+}
+
+void
+mono_domain_ensure_entry_assembly (MonoDomain *domain, MonoAssembly *assembly)
+{
+	mono_runtime_ensure_entry_assembly (assembly);
+}
+
+/**
+ * mono_domain_foreach:
+ * \param func function to invoke with the domain data
+ * \param user_data user-defined pointer that is passed to the supplied \p func fo reach domain
+ *
+ * Use this method to safely iterate over all the loaded application
+ * domains in the current runtime.   The provided \p func is invoked with a
+ * pointer to the \c MonoDomain and is given the value of the \p user_data
+ * parameter which can be used to pass state to your called routine.
+ */
+void
+mono_domain_foreach (MonoDomainFunc func, gpointer user_data)
+{
+	MONO_ENTER_GC_UNSAFE;
+
+	func (mono_get_root_domain (), user_data);
+
+	MONO_EXIT_GC_UNSAFE;
+}
+
+/**
+ * mono_context_init:
+ * \param domain The domain where the \c System.Runtime.Remoting.Context.Context is initialized
+ * Initializes the \p domain's default \c System.Runtime.Remoting 's Context.
+ */
+void
+mono_context_init (MonoDomain *domain)
+{
+}
+
+/**
+ * mono_domain_set_config:
+ * \param domain \c MonoDomain initialized with the appdomain we want to change
+ * \param base_dir new base directory for the appdomain
+ * \param config_file_name path to the new configuration for the app domain
+ *
+ * Used to set the system configuration for an appdomain
+ *
+ * Without using this, embedded builds will get 'System.Configuration.ConfigurationErrorsException: 
+ * Error Initializing the configuration system. ---> System.ArgumentException: 
+ * The 'ExeConfigFilename' argument cannot be null.' for some managed calls.
+ */
+void
+mono_domain_set_config (MonoDomain *domain, const char *base_dir, const char *config_file_name)
+{
+	g_assert_not_reached ();
+}
+
+/**
+ * mono_domain_try_type_resolve:
+ * \param domain application domain in which to resolve the type
+ * \param name the name of the type to resolve or NULL.
+ * \param typebuilder A \c System.Reflection.Emit.TypeBuilder, used if name is NULL.
+ *
+ * This routine invokes the internal \c System.AppDomain.DoTypeResolve and returns
+ * the assembly that matches name, or ((TypeBuilder)typebuilder).FullName.
+ *
+ * \returns A \c MonoReflectionAssembly or NULL if not found
+ */
+MonoReflectionAssembly *
+mono_domain_try_type_resolve (MonoDomain *domain, char *name, MonoObject *typebuilder_raw)
+{
+	HANDLE_FUNCTION_ENTER ();
+
+	g_assert (domain);
+	g_assert (name || typebuilder_raw);
+
+	ERROR_DECL (error);
+
+	MonoReflectionAssemblyHandle ret = NULL_HANDLE_INIT;
+
+	// This will not work correctly on netcore
+	if (name) {
+		MonoStringHandle name_handle = mono_string_new_handle (name, error);
+		goto_if_nok (error, exit);
+		ret = mono_domain_try_type_resolve_name (NULL, name_handle, error);
+	} else {
+		// TODO: make this work on netcore when working on SRE.TypeBuilder
+		g_assert_not_reached ();
+	}
+
+exit:
+	mono_error_cleanup (error);
+	HANDLE_FUNCTION_RETURN_OBJ (ret);
+}
+
+/**
+ * mono_jit_info_table_find:
+ * \param domain Domain that you want to look up
+ * \param addr Points to an address with JITed code.
+ *
+ * Use this function to obtain a \c MonoJitInfo* object that can be used to get
+ * some statistics. You should provide both the \p domain on which you will be
+ * performing the probe, and an address. Since application domains can share code
+ * the same address can be in use by multiple domains at once.
+ *
+ * This does not return any results for trampolines.
+ *
+ * \returns NULL if the address does not belong to JITed code (it might be native
+ * code or a trampoline) or a valid pointer to a \c MonoJitInfo* .
+ */
+MonoJitInfo*
+mono_jit_info_table_find (MonoDomain *domain, gpointer addr)
+{
+	return mono_jit_info_table_find_internal (addr, TRUE, FALSE);
+}
+
+/**
+ * mono_domain_owns_vtable_slot:
+ * \returns Whether \p vtable_slot is inside a vtable which belongs to \p domain.
+ */
+gboolean
+mono_domain_owns_vtable_slot (MonoDomain *domain, gpointer vtable_slot)
+{
+	return mono_mem_manager_mp_contains_addr (mono_mem_manager_get_ambient (), vtable_slot);
 }

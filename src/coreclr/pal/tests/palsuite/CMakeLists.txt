@@ -32,14 +32,8 @@ if(FEATURE_EVENT_TRACE)
   add_subdirectory(eventprovider)
 endif(FEATURE_EVENT_TRACE)
 
-if (CLR_CMAKE_TARGET_OSX OR (CLR_CMAKE_TARGET_LINUX AND NOT CLR_CMAKE_TARGET_ALPINE_LINUX))
-   set(PALSUITE_THREAD_NAME_SOURCES
-     threading/SetThreadDescription/test1/pthread_helpers.cpp
-     threading/SetThreadDescription/test1/test1.cpp
-   )
- endif()
-
-_add_executable(paltests
+add_executable_clr(paltests
+  EXCLUDE_FROM_ALL
   paltests.cpp
   common/palsuite.cpp
   #composite/object_management/event/nonshared/event.cpp
@@ -925,7 +919,6 @@ _add_executable(paltests
   threading/WaitForSingleObject/WFSOSemaphoreTest/WFSOSemaphoreTest.cpp
   threading/WaitForSingleObject/WFSOThreadTest/WFSOThreadTest.cpp
   threading/YieldProcessor/test1/test1.cpp
-  ${PALSUITE_THREAD_NAME_SOURCES}
 )
 
 add_dependencies(paltests coreclrpal)
@@ -934,5 +927,6 @@ target_link_libraries(paltests
   ${COMMON_TEST_LIBRARIES}
 )
 
-_install (TARGETS paltests DESTINATION paltests)
-_install (PROGRAMS runpaltests.sh runpaltestshelix.sh DESTINATION paltests)
+install (TARGETS paltests DESTINATION paltests COMPONENT paltests EXCLUDE_FROM_ALL)
+add_dependencies(paltests_install paltests)
+install (PROGRAMS runpaltests.sh runpaltestshelix.sh DESTINATION paltests COMPONENT paltests EXCLUDE_FROM_ALL)

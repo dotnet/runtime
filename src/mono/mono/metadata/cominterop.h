@@ -18,9 +18,6 @@ void
 mono_cominterop_init (void);
 
 void
-mono_cominterop_cleanup (void);
-
-void
 mono_mb_emit_cominterop_get_function_pointer (MonoMethodBuilder *mb, MonoMethod* method);
 
 void

@@ -51,37 +51,6 @@ endif
 
 extern JIT_InternalThrow:proc
 
-; There is an even more optimized version of these helpers possible which takes
-; advantage of knowledge of which way the ephemeral heap is growing to only do 1/2
-; that check (this is more significant in the JIT_WriteBarrier case).
-;
-; Additionally we can look into providing helpers which will take the src/dest from
-; specific registers (like x86) which _could_ (??) make for easier register allocation
-; for the JIT64, however it might lead to having to have some nasty code that treats
-; these guys really special like... :(.
-;
-; Version that does the move, checks whether or not it's in the GC and whether or not
-; it needs to have it's card updated
-;
-; void JIT_CheckedWriteBarrier(Object** dst, Object* src)
-LEAF_ENTRY JIT_CheckedWriteBarrier, _TEXT
-
-        ; When WRITE_BARRIER_CHECK is defined _NotInHeap will write the reference
-        ; but if it isn't then it will just return.
-        ;
-        ; See if this is in GCHeap
-        cmp     rcx, [g_lowest_address]
-        jb      NotInHeap
-        cmp     rcx, [g_highest_address]
-        jnb     NotInHeap
-
-        jmp     JIT_WriteBarrier
-
-    NotInHeap:
-        ; See comment above about possible AV
-        mov     [rcx], rdx
-        ret
-LEAF_END_MARKED JIT_CheckedWriteBarrier, _TEXT
 
 ; Mark start of the code region that we patch at runtime
 LEAF_ENTRY JIT_PatchedCodeStart, _TEXT
@@ -99,7 +68,8 @@ LEAF_ENTRY JIT_WriteBarrier, _TEXT
 
 ifdef _DEBUG
         ; In debug builds, this just contains jump to the debug version of the write barrier by default
-        jmp     JIT_WriteBarrier_Debug
+        mov     rax, JIT_WriteBarrier_Debug
+        jmp     rax
 endif
 
 ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
@@ -388,6 +358,51 @@ endif
         ret
 LEAF_END_MARKED JIT_ByRefWriteBarrier, _TEXT
 
+Section segment para 'DATA'
+
+        align   16
+
+        public  JIT_WriteBarrier_Loc
+JIT_WriteBarrier_Loc:
+        dq 0
+
+LEAF_ENTRY  JIT_WriteBarrier_Callable, _TEXT
+        ; JIT_WriteBarrier(Object** dst, Object* src)
+        jmp     QWORD PTR [JIT_WriteBarrier_Loc]
+LEAF_END JIT_WriteBarrier_Callable, _TEXT
+
+; There is an even more optimized version of these helpers possible which takes
+; advantage of knowledge of which way the ephemeral heap is growing to only do 1/2
+; that check (this is more significant in the JIT_WriteBarrier case).
+;
+; Additionally we can look into providing helpers which will take the src/dest from
+; specific registers (like x86) which _could_ (??) make for easier register allocation
+; for the JIT64, however it might lead to having to have some nasty code that treats
+; these guys really special like... :(.
+;
+; Version that does the move, checks whether or not it's in the GC and whether or not
+; it needs to have it's card updated
+;
+; void JIT_CheckedWriteBarrier(Object** dst, Object* src)
+LEAF_ENTRY JIT_CheckedWriteBarrier, _TEXT
+
+        ; When WRITE_BARRIER_CHECK is defined _NotInHeap will write the reference
+        ; but if it isn't then it will just return.
+        ;
+        ; See if this is in GCHeap
+        cmp     rcx, [g_lowest_address]
+        jb      NotInHeap
+        cmp     rcx, [g_highest_address]
+        jnb     NotInHeap
+
+        jmp     QWORD PTR [JIT_WriteBarrier_Loc]
+
+    NotInHeap:
+        ; See comment above about possible AV
+        mov     [rcx], rdx
+        ret
+LEAF_END_MARKED JIT_CheckedWriteBarrier, _TEXT
+
 ; The following helper will access ("probe") a word on each page of the stack
 ; starting with the page right beneath rsp down to the one pointed to by r11.
 ; The procedure is needed to make sure that the "guard" page is pushed down below the allocated stack frame.
@@ -395,7 +410,7 @@ LEAF_END_MARKED JIT_ByRefWriteBarrier, _TEXT
 ;
 ; NOTE: this helper will NOT modify a value of rsp and can be defined as a leaf function.
 
-PAGE_SIZE equ 1000h
+PROBE_PAGE_SIZE equ 1000h
 
 LEAF_ENTRY JIT_StackProbe, _TEXT
         ; On entry:
@@ -408,11 +423,11 @@ LEAF_ENTRY JIT_StackProbe, _TEXT
         ; NOTE: this helper will probe at least one page below the one pointed by rsp.
 
         mov     rax, rsp               ; rax points to some byte on the last probed page
-        and     rax, -PAGE_SIZE        ; rax points to the **lowest address** on the last probed page
+        and     rax, -PROBE_PAGE_SIZE  ; rax points to the **lowest address** on the last probed page
                                        ; This is done to make the following loop end condition simpler.
 
 ProbeLoop:
-        sub     rax, PAGE_SIZE         ; rax points to the lowest address of the **next page** to probe
+        sub     rax, PROBE_PAGE_SIZE   ; rax points to the lowest address of the **next page** to probe
         test    dword ptr [rax], eax   ; rax points to the lowest address on the **last probed** page
         cmp     rax, r11
         jg      ProbeLoop              ; If (rax > r11), then we need to probe at least one more page.
