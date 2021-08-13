@@ -286,11 +286,31 @@
 
     <ItemGroup Condition="'$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'tvOS' or '$(TargetOS)' == 'iOSSimulator' or '$(TargetOS)' == 'tvOSSimulator' or '$(TargetOS)' == 'MacCatalyst'">
       <!-- Create work items for test apps -->
-      <XHarnessAppBundleToTest Include="$([System.IO.Directory]::GetDirectories('$(TestArchiveTestsRoot)', '*.app', System.IO.SearchOption.AllDirectories))">
+      <XHarnessAppBundleToTest 
+        Include="$([System.IO.Directory]::GetDirectories('$(TestArchiveTestsRoot)', '*.app', System.IO.SearchOption.AllDirectories))">
         <TestTarget>$(AppleTestTarget)</TestTarget>
       </XHarnessAppBundleToTest>
+      
+      <!-- To save on overall size, we compress each app after building. -->
+      <XHarnessAppBundleToTest 
+        Include="$([System.IO.Directory]::GetFiles('$(TestArchiveTestsRoot)', '*.zip', System.IO.SearchOption.AllDirectories))"
+        Exclude="$([System.IO.Directory]::GetFiles('$(TestArchiveRoot)', 'xharness-app-payload*', System.IO.SearchOption.AllDirectories))">
+        <TestTarget>$(AppleTestTarget)</TestTarget>
+      </XHarnessAppBundleToTest>
+
       <!-- Create work items for run-only apps -->
       <XHarnessAppBundleToTest Condition="Exists('$(TestArchiveRoot)runonly')" Include="$([System.IO.Directory]::GetDirectories('$(TestArchiveRoot)runonly', '*.app', System.IO.SearchOption.AllDirectories))" >
+        <!-- The sample app doesn't need test runner -->
+        <IncludesTestRunner>false</IncludesTestRunner>
+        <!-- The sample's C# Main method returns 42 so it should be considered by xharness as a success -->
+        <ExpectedExitCode>42</ExpectedExitCode>
+        <TestTarget>$(AppleTestTarget)</TestTarget>
+      </XHarnessAppBundleToTest>
+
+      <!-- To save on overall size, we compress each app after building. -->
+      <XHarnessAppBundleToTest Condition="Exists('$(TestArchiveRoot)runonly')" 
+        Include="$([System.IO.Directory]::GetFiles('$(TestArchiveRoot)runonly', '*.zip', System.IO.SearchOption.AllDirectories))" 
+        Exclude="$([System.IO.Directory]::GetFiles('$(TestArchiveRoot)runonly', 'xharness-app-payload*', System.IO.SearchOption.AllDirectories))">
         <!-- The sample app doesn't need test runner -->
         <IncludesTestRunner>false</IncludesTestRunner>
         <!-- The sample's C# Main method returns 42 so it should be considered by xharness as a success -->
