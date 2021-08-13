@@ -25,6 +25,7 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			// Reference to the derived type should apply base annotations
 			var t1 = typeof (DerivedFromAnnotatedBase);
 			var t2 = typeof (AnnotatedDerivedFromAnnotatedBase);
+			var t3 = typeof (AnnotatedAllDerivedFromAnnotatedBase);
 			annotatedDerivedFromBase.GetType ().RequiresPublicMethods ();
 			annotatedPublicNestedTypes.GetType ().RequiresPublicNestedTypes ();
 			derivedFromAnnotatedDerivedFromBase.GetType ().RequiresPublicFields ();
@@ -34,9 +35,12 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			annotatedPublicEvents.GetType ().RequiresPublicEvents ();
 			annotatedPublicNestedTypes.GetType ().RequiresPublicNestedTypes ();
 			annotatedInterfaces.GetType ().RequiresInterfaces ();
+			annotatedPublicParameterlessConstructor.GetType ().RequiresPublicParameterlessConstructor ();
 			annotatedAll.GetType ().RequiresAll ();
-			var t3 = typeof (DerivedFromAnnotatedAll1);
-			var t4 = typeof (DerivedFromAnnotatedAll2);
+			var t4 = typeof (DerivedFromAnnotatedAll1);
+			var t5 = typeof (DerivedFromAnnotatedAll2);
+			var t6 = typeof (DerivedFromAnnotatedAllWithInterface);
+			var t7 = typeof (DerivedFromAnnotatedPublicParameterlessConstructor);
 			annotatedRUCPublicMethods.GetType ().RequiresPublicMethods ();
 
 			// Instantiate this type just so its property getters are considered reachable
@@ -59,6 +63,8 @@ namespace Mono.Linker.Tests.Cases.Reflection
 		static AnnotatedPublicEvents annotatedPublicEvents;
 		[Kept]
 		static AnnotatedInterfaces annotatedInterfaces;
+		[Kept]
+		static AnnotatedPublicParameterlessConstructor annotatedPublicParameterlessConstructor;
 		[Kept]
 		static AnnotatedBase annotatedBase;
 		[Kept]
@@ -111,6 +117,22 @@ namespace Mono.Linker.Tests.Cases.Reflection
 		[KeptMember (".ctor()")]
 		[KeptBaseType (typeof (AnnotatedAll))]
 		class DerivedFromAnnotatedAll2 : AnnotatedAll
+		{
+		}
+
+		interface InterfaceImplementedByDerived
+		{
+			[Kept]
+			[KeptAttributeAttribute (typeof (RequiresUnreferencedCodeAttribute))]
+			[RequiresUnreferencedCode ("--RUC on InterfaceImplementedByDerived.RUCMethod--")]
+			void RUCInterfaceMethod () { }
+		}
+
+		[KeptMember (".ctor()")]
+		[KeptBaseType (typeof (AnnotatedAll))]
+		[KeptInterface (typeof (InterfaceImplementedByDerived))]
+		[ExpectedWarning ("IL2113", "--RUC on InterfaceImplementedByDerived.RUCMethod--")]
+		class DerivedFromAnnotatedAllWithInterface : AnnotatedAll, InterfaceImplementedByDerived
 		{
 		}
 
@@ -251,6 +273,46 @@ namespace Mono.Linker.Tests.Cases.Reflection
 		}
 
 		[KeptAttributeAttribute (typeof (DynamicallyAccessedMembersAttribute))]
+		[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]
+		class AnnotatedPublicParameterlessConstructor
+		{
+			[Kept]
+			[KeptAttributeAttribute (typeof (RequiresUnreferencedCodeAttribute))]
+			[ExpectedWarning ("IL2112", "--RUC on AnnotatedPublicParameterlessConstructor()--")]
+			[RequiresUnreferencedCode ("--RUC on AnnotatedPublicParameterlessConstructor()--")]
+			public AnnotatedPublicParameterlessConstructor () { }
+
+			[Kept]
+			[KeptAttributeAttribute (typeof (RequiresUnreferencedCodeAttribute))]
+			[RequiresUnreferencedCode ("--RUC on AnnotatedPublicParameterlessConstructor(int)--")]
+			public AnnotatedPublicParameterlessConstructor (int i) { }
+		}
+
+		[KeptMember (".ctor()")]
+		[KeptBaseType (typeof (AnnotatedPublicParameterlessConstructor))]
+		[KeptAttributeAttribute (typeof (DynamicallyAccessedMembersAttribute))]
+		[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicConstructors)]
+		[ExpectedWarning ("IL2113", "--RUC on AnnotatedPublicParameterlessConstructor(int)--")]
+		// This warning is redundant because the base type already has DAMT.PublicParameterlessConstructors,
+		// but we produce it anyway due to implementation difficulties in the case of DAMT.PublicConstructors.
+		[ExpectedWarning ("IL2113", "--RUC on AnnotatedPublicParameterlessConstructor()--")]
+		class DerivedFromAnnotatedPublicParameterlessConstructor : AnnotatedPublicParameterlessConstructor
+		{
+			[Kept]
+			[KeptAttributeAttribute (typeof (RequiresUnreferencedCodeAttribute))]
+			[ExpectedWarning ("IL2112", "--RUC on DerivedFromAnnotatedPublicParameterlessConstructor()--")]
+			[RequiresUnreferencedCode ("--RUC on DerivedFromAnnotatedPublicParameterlessConstructor()--")]
+			public DerivedFromAnnotatedPublicParameterlessConstructor () { }
+
+			[Kept]
+			[KeptAttributeAttribute (typeof (RequiresUnreferencedCodeAttribute))]
+			[ExpectedWarning ("IL2112", "--RUC on DerivedFromAnnotatedPublicParameterlessConstructor(int)--")]
+			[RequiresUnreferencedCode ("--RUC on DerivedFromAnnotatedPublicParameterlessConstructor(int)--")]
+			public DerivedFromAnnotatedPublicParameterlessConstructor (int i) { }
+		}
+
+		[KeptMember (".ctor()")]
+		[KeptAttributeAttribute (typeof (DynamicallyAccessedMembersAttribute))]
 		[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)]
 		class AnnotatedBase
 		{
@@ -279,10 +341,8 @@ namespace Mono.Linker.Tests.Cases.Reflection
 		[KeptAttributeAttribute (typeof (DynamicallyAccessedMembersAttribute))]
 		[KeptBaseType (typeof (AnnotatedBase))]
 		[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods | DynamicallyAccessedMemberTypes.PublicFields)]
-		// In theory we could avoid warning for public methods on base types because that
-		// annotation is already inherited from the base type, but currently we warn on base
-		// members whenever a type has an explicit annotation.
-		[ExpectedWarning ("IL2113", nameof (AnnotatedBase), nameof (AnnotatedBase.RUCMethod))]
+		// No warning for public methods on base type because that annotation is already
+		// inherited from the base type.
 		[ExpectedWarning ("IL2115", nameof (AnnotatedBase), nameof (AnnotatedBase.DAMField1))]
 		class AnnotatedDerivedFromAnnotatedBase : AnnotatedBase
 		{
@@ -297,6 +357,18 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			[ExpectedWarning ("IL2114", nameof (AnnotatedDerivedFromAnnotatedBase), nameof (DAMField2))]
 			[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.NonPublicMethods)]
 			public string DAMField2;
+		}
+
+		[KeptMember (".ctor()")]
+		[KeptAttributeAttribute (typeof (DynamicallyAccessedMembersAttribute))]
+		[KeptBaseType (typeof (AnnotatedBase))]
+		[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.All)]
+		// This warning is redundant because the base type already has DAMT.PublicMethods,
+		// but we produce it anyway due to implementation difficulties in the case of DAMT.All.
+		[ExpectedWarning ("IL2113", "--RUC on AnnotatedBase--")]
+		[ExpectedWarning ("IL2115", nameof (AnnotatedBase), nameof (AnnotatedBase.DAMField1))]
+		class AnnotatedAllDerivedFromAnnotatedBase : AnnotatedBase
+		{
 		}
 
 		[KeptMember (".ctor()")]

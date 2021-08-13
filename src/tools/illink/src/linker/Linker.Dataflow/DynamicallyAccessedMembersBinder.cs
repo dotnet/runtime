@@ -24,7 +24,8 @@ namespace Mono.Linker
 		// DynamicallyAccessedMemberTypes.PublicNestedTypes and NonPublicNestedTypes do the same for members of the selected nested types.
 		public static IEnumerable<IMetadataTokenProvider> GetDynamicallyAccessedMembers (this TypeDefinition typeDefinition, LinkContext context, DynamicallyAccessedMemberTypes memberTypes, bool declaredOnly = false)
 		{
-			var declaredOnlyFlags = declaredOnly ? BindingFlags.DeclaredOnly : BindingFlags.Default;
+			if (memberTypes == DynamicallyAccessedMemberTypes.None)
+				yield break;
 
 			if (memberTypes == DynamicallyAccessedMemberTypes.All) {
 				var members = new List<IMetadataTokenProvider> ();
@@ -33,6 +34,8 @@ namespace Mono.Linker
 					yield return m;
 				yield break;
 			}
+
+			var declaredOnlyFlags = declaredOnly ? BindingFlags.DeclaredOnly : BindingFlags.Default;
 
 			if (memberTypes.HasFlag (DynamicallyAccessedMemberTypes.NonPublicConstructors)) {
 				foreach (var c in typeDefinition.GetConstructorsOnType (filter: null, bindingFlags: BindingFlags.NonPublic))
@@ -338,18 +341,19 @@ namespace Mono.Linker
 			}
 		}
 
+		// declaredOnly will cause this to retrieve interfaces recursively required by the type, but doesn't necessarily
+		// include interfaces required by any base types.
 		public static IEnumerable<InterfaceImplementation> GetAllInterfaceImplementations (this TypeDefinition type, LinkContext context, bool declaredOnly)
 		{
 			while (type != null) {
 				foreach (var i in type.Interfaces) {
 					yield return i;
 
-					if (!declaredOnly) {
-						TypeDefinition interfaceType = context.TryResolve (i.InterfaceType);
-						if (interfaceType != null) {
-							foreach (var innerInterface in interfaceType.GetAllInterfaceImplementations (context, declaredOnly: false))
-								yield return innerInterface;
-						}
+					TypeDefinition interfaceType = context.TryResolve (i.InterfaceType);
+					if (interfaceType != null) {
+						// declaredOnly here doesn't matter since interfaces don't have base types
+						foreach (var innerInterface in interfaceType.GetAllInterfaceImplementations (context, declaredOnly: true))
+							yield return innerInterface;
 					}
 				}
 
@@ -360,6 +364,8 @@ namespace Mono.Linker
 			}
 		}
 
+		// declaredOnly will cause this to retrieve only members of the type, not of its base types. This includes interfaces recursively
+		// required by this type (but not members of these interfaces, or interfaces required only by base types).
 		public static void GetAllOnType (this TypeDefinition type, LinkContext context, bool declaredOnly, List<IMetadataTokenProvider> members) => GetAllOnType (type, context, declaredOnly, members, new HashSet<TypeDefinition> ());
 
 		static void GetAllOnType (TypeDefinition type, LinkContext context, bool declaredOnly, List<IMetadataTokenProvider> members, HashSet<TypeDefinition> types)
@@ -381,11 +387,18 @@ namespace Mono.Linker
 					GetAllOnType (baseType, context, declaredOnly: false, members, types);
 			}
 
-			if (!declaredOnly && type.HasInterfaces) {
-				foreach (var iface in type.Interfaces) {
-					members.Add (iface);
-					var interfaceType = context.TryResolve (iface.InterfaceType);
-					GetAllOnType (interfaceType, context, declaredOnly: false, members, types);
+			if (type.HasInterfaces) {
+				if (declaredOnly) {
+					foreach (var iface in type.GetAllInterfaceImplementations (context, declaredOnly: true))
+						members.Add (iface);
+				} else {
+					foreach (var iface in type.Interfaces) {
+						members.Add (iface);
+						var interfaceType = context.TryResolve (iface.InterfaceType);
+						if (interfaceType == null)
+							continue;
+						GetAllOnType (interfaceType, context, declaredOnly: false, members, types);
+					}
 				}
 			}
 
