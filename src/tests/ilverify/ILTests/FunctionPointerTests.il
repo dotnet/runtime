@@ -51,7 +51,20 @@
         ret
     }
 
-    .method public hidebysig specialname rtspecialname instance void .ctor () cil managed 
+    .method private hidebysig instance void ReceiverOfPrivateType(method class D/D_Private *(int32) ptr) cil managed
+    {
+        ret
+    }
+
+    .method public hidebysig instance void Call.SendFunctionPointerWithInaccessibleReturnType_Invalid_MethodAccess_MethodAccess() cil managed
+    {
+        newobj instance void C::.ctor()
+        ldftn class D/D_Private D::StaticMethodReturningPrivateTypeInstance(int32)
+        call instance void C::ReceiverOfPrivateType(method class D/D_Private *(int32))
+        ret
+    }
+
+    .method public hidebysig specialname rtspecialname instance void .ctor() cil managed
     {
         ldarg.0
         call instance void [System.Runtime]System.Object::.ctor()
@@ -69,5 +82,22 @@
         add
         starg.s x
         ret
+    }
+
+    .method public hidebysig static class D/D_Private StaticMethodReturningPrivateTypeInstance(int32 x) cil managed
+    {
+        newobj instance void D/D_Private::.ctor()
+        ret
+    }
+
+    .class nested private auto ansi beforefieldinit D_Private
+        extends [System.Runtime]System.Object
+    {
+        .method public hidebysig specialname rtspecialname instance void .ctor() cil managed
+        {
+            ldarg.0
+            call instance void [System.Runtime]System.Object::.ctor()
+            ret
+        }
     }
 }
