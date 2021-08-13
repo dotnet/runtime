@@ -166,13 +166,15 @@ namespace Internal.Cryptography.Pal.AnyOS
 
             switch (algorithmIdentifier)
             {
-                case Oids.Rc2Cbc when Helpers.IsRC2Supported:
+                case Oids.Rc2Cbc:
+                    if (!Helpers.IsRC2Supported)
+                    {
+                        throw new PlatformNotSupportedException(SR.Format(SR.Cryptography_AlgorithmNotSupported, nameof(RC2)));
+                    }
 #pragma warning disable CA5351
                     alg = RC2.Create();
 #pragma warning restore CA5351
                     break;
-                case Oids.Rc2Cbc:
-                    throw new PlatformNotSupportedException(SR.Format(SR.Cryptography_AlgorithmNotSupported, nameof(RC2)));
                 case Oids.DesCbc:
 #pragma warning disable CA5351
                     alg = DES.Create();
