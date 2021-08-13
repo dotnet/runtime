@@ -39,6 +39,7 @@
     <Compile Include="..\Common\ReflectionExtensions.cs" Link="Common\System\Text\Json\Serialization\ReflectionExtensions.cs" />
     <Compile Include="ClassType.cs" />
     <Compile Include="CollectionType.cs" />
+    <Compile Include="JsonConstants.cs" />
     <Compile Include="JsonSourceGenerator.cs" />
     <Compile Include="JsonSourceGenerator.Emitter.cs" />
     <Compile Include="JsonSourceGenerator.Parser.cs" />

@@ -224,7 +224,6 @@ namespace System.Text.Json
 
                 if (s_defaultSimpleConverters.TryGetValue(typeToConvert, out JsonConverter? foundConverter))
                 {
-                    Debug.Assert(foundConverter != null);
                     converter = foundConverter;
                 }
                 else
@@ -316,6 +315,21 @@ namespace System.Text.Json
             }
 
             return converter;
+        }
+
+        internal bool TryGetDefaultSimpleConverter(Type typeToConvert, [NotNullWhen(true)] out JsonConverter? converter)
+        {
+            if (_context == null && // For consistency do not return any default converters for
+                                    // options instances linked to a JsonSerializerContext,
+                                    // even if the default converters might have been rooted.
+                s_defaultSimpleConverters != null &&
+                s_defaultSimpleConverters.TryGetValue(typeToConvert, out converter))
+            {
+                return true;
+            }
+
+            converter = null;
+            return false;
         }
 
         private static Attribute? GetAttributeThatCanHaveMultiple(Type classType, Type attributeType, MemberInfo memberInfo)

@@ -119,7 +119,7 @@ namespace System.Text.Json.Serialization
             throw new InvalidOperationException();
         }
 
-        internal sealed override void WriteWithQuotesAsObject(
+        internal sealed override void WriteAsPropertyNameAsObject(
             Utf8JsonWriter writer, object value,
             JsonSerializerOptions options,
             ref WriteStack state)

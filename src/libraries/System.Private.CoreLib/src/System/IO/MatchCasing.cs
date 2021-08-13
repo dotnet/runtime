@@ -7,21 +7,16 @@ namespace Microsoft.IO
 namespace System.IO
 #endif
 {
+    /// <summary>Specifies the type of character casing to match.</summary>
     public enum MatchCasing
     {
-        /// <summary>
-        /// Match the default casing for the given platform
-        /// </summary>
+        /// <summary>Matches using the default casing for the given platform.</summary>
         PlatformDefault,
 
-        /// <summary>
-        /// Match respecting character casing
-        /// </summary>
+        /// <summary>Matches respecting character casing.</summary>
         CaseSensitive,
 
-        /// <summary>
-        /// Match ignoring character casing
-        /// </summary>
+        /// <summary>Matches ignoring character casing.</summary>
         CaseInsensitive
     }
 }
