@@ -11,17 +11,20 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Runtime.InteropServices;
 using System.Buffers;
+using Microsoft.Extensions.ObjectPool;
 
 namespace HttpStress
 {
     public sealed class LogHttpEventListener : EventListener
     {
+        public const string LogDirectory = "logs";
+
         private int _lastLogNumber = 0;
         private FileStream _log;
         private Channel<string> _messagesChannel = Channel.CreateUnbounded<string>();
         private Task _processMessages;
         private CancellationTokenSource _stopProcessing = new CancellationTokenSource();
-        private const string LogDirectory = "./clientlog";
+        private ObjectPool<StringBuilder> _stringBuilderPool = new DefaultObjectPool<StringBuilder>(new StringBuilderPooledObjectPolicy());
 
         private FileStream CreateNextLogFileStream()
         {
@@ -54,7 +57,8 @@ namespace HttpStress
 
         protected override void OnEventSourceCreated(EventSource eventSource)
         {
-            if (eventSource.Name == "Private.InternalDiagnostics.System.Net.Http")
+            if (eventSource.Name == "Private.InternalDiagnostics.System.Net.Http" ||
+                eventSource.Name == "Private.InternalDiagnostics.System.Net.Quic")
             {
                 EnableEvents(eventSource, EventLevel.LogAlways);
             }
@@ -80,7 +84,7 @@ namespace HttpStress
                         buffer = new byte[maxLen];
                     }
                     int byteCount = encoding.GetBytes(message, buffer);
-                                        
+
                     await _log.WriteAsync(buffer.AsMemory(0, byteCount), _stopProcessing.Token);
                 }
             }
@@ -101,11 +105,9 @@ namespace HttpStress
             }
         }
 
-        private StringBuilder? _cachedStringBuilder;
-
         protected override async void OnEventWritten(EventWrittenEventArgs eventData)
         {
-            StringBuilder sb = Interlocked.Exchange(ref _cachedStringBuilder, null) ?? new StringBuilder();
+            StringBuilder sb = _stringBuilderPool.Get();
             sb.Append($"{eventData.TimeStamp:HH:mm:ss.fffffff}[{eventData.EventName}] ");
             for (int i = 0; i < eventData.Payload?.Count; i++)
             {
@@ -116,10 +118,8 @@ namespace HttpStress
                 sb.Append(eventData.PayloadNames?[i]).Append(": ").Append(eventData.Payload[i]);
             }
             sb.Append(Environment.NewLine);
-            string s = sb.ToString();
-            sb.Clear();
-            Interlocked.Exchange(ref _cachedStringBuilder, sb);
-            await _messagesChannel.Writer.WriteAsync(s, _stopProcessing.Token);
+            await _messagesChannel.Writer.WriteAsync(sb.ToString(), _stopProcessing.Token);
+            _stringBuilderPool.Return(sb);
         }
 
         public override void Dispose()
