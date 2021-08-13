@@ -97,7 +97,11 @@ namespace System
 #if NETCOREAPP
                 if (!IsWindows)
                 {
-                    if (IsOSX)
+                    if (IsMobile)
+                    {
+                        return false;
+                    }
+                    else if (IsOSX)
                     {
                         return NativeLibrary.TryLoad("libgdiplus.dylib", out _);
                     }
@@ -286,9 +290,11 @@ namespace System
                               version & 0xFF);
         }
 
-        private static readonly Lazy<bool> _net5CompatFileStream = new Lazy<bool>(() => GetStaticNonPublicBooleanPropertyValue("System.IO.FileStreamHelpers", "UseNet5CompatStrategy"));
+        private static readonly Lazy<bool> _net5CompatFileStream = new Lazy<bool>(() => GetStaticNonPublicBooleanPropertyValue("System.IO.Strategies.FileStreamHelpers", "UseNet5CompatStrategy"));
 
         public static bool IsNet5CompatFileStreamEnabled => _net5CompatFileStream.Value;
+
+        public static bool IsNet5CompatFileStreamDisabled => !IsNet5CompatFileStreamEnabled;
 
         private static readonly Lazy<bool> s_fileLockingDisabled = new Lazy<bool>(() => GetStaticNonPublicBooleanPropertyValue("Microsoft.Win32.SafeHandles.SafeFileHandle", "DisableFileLocking"));
 

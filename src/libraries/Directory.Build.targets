@@ -97,13 +97,6 @@
                                 '$(BinPlaceRuntime)' == 'true' and
                                 '$(ILLinkTrimAssembly)' == ''">ILLinkTrimAssembly=true</SetProperties>
     </BinPlaceTargetFrameworks>
-    <BinPlaceTargetFrameworks Include="$(NetCoreAppCurrent)"
-                              Condition="'$(IsAspNetCoreApp)' == 'true'">
-      <RuntimePath>$(ASPNETCoreAppPackageRuntimePath)</RuntimePath>
-      <RefPath>$(ASPNETCoreAppPackageRefPath)</RefPath>
-    </BinPlaceTargetFrameworks>
-    <BinPlaceDir Include="$(ASPNETCoreAppPackageRootPath)\analyzers\dotnet\$(AnalyzerLanguage)"
-                 Condition="'$(IsAspNetCoreAppAnalyzer)' == 'true'" />
     <BinPlaceDir Include="$(MicrosoftNetCoreAppRefPackDir)analyzers\dotnet\$(AnalyzerLanguage)"
                  Condition="'$(IsNETCoreAppAnalyzer)' == 'true'" />
 

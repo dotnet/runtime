@@ -147,13 +147,10 @@ namespace System.Net.Http
                     // Ideally, headers will be sent out in a gathered write inside of SendContentAsync().
                     // If we don't have content, or we are doing Expect 100 Continue, then we can't rely on
                     // this and must send our headers immediately.
-                    await FlushSendBufferAsync(requestCancellationSource.Token).ConfigureAwait(false);
 
-                    // End the stream writing if there's no content to send.
-                    if (_request.Content == null)
-                    {
-                        _stream.Shutdown();
-                    }
+                    // End the stream writing if there's no content to send, do it as part of the write so that the FIN flag isn't send in an empty QUIC frame.
+                    // Note that there's no need to call Shutdown separately since the FIN flag in the last write is the same thing.
+                    await FlushSendBufferAsync(endStream: _request.Content == null, requestCancellationSource.Token).ConfigureAwait(false);
                 }
 
                 // If using duplex content, the content will continue sending after this method completes.
@@ -370,12 +367,15 @@ namespace System.Net.Http
 
             if (_sendBuffer.ActiveLength != 0)
             {
-                // Our initial send buffer, which has our headers, are normally sent out on the first write to the Http3WriteStream.
+                // Our initial send buffer, which has our headers, is normally sent out on the first write to the Http3WriteStream.
                 // If we get here, it means the content didn't actually do any writing. Send out the headers now.
-                await FlushSendBufferAsync(cancellationToken).ConfigureAwait(false);
+                // Also send the FIN flag, since this is the last write. No need to call Shutdown separately.
+                await FlushSendBufferAsync(endStream: true, cancellationToken).ConfigureAwait(false);
             }
-
-            _stream.Shutdown();
+            else
+            {
+                _stream.Shutdown();
+            }
         }
 
         private async ValueTask WriteRequestContentAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken)
@@ -432,9 +432,9 @@ namespace System.Net.Http
             }
         }
 
-        private async ValueTask FlushSendBufferAsync(CancellationToken cancellationToken)
+        private async ValueTask FlushSendBufferAsync(bool endStream, CancellationToken cancellationToken)
         {
-            await _stream.WriteAsync(_sendBuffer.ActiveMemory, cancellationToken).ConfigureAwait(false);
+            await _stream.WriteAsync(_sendBuffer.ActiveMemory, endStream, cancellationToken).ConfigureAwait(false);
             _sendBuffer.Discard(_sendBuffer.ActiveLength);
 
             await _stream.FlushAsync(cancellationToken).ConfigureAwait(false);
@@ -1348,7 +1348,7 @@ namespace System.Net.Http
                     return Task.FromException(new ObjectDisposedException(nameof(Http3WriteStream)));
                 }
 
-                return _stream.FlushSendBufferAsync(cancellationToken).AsTask();
+                return _stream.FlushSendBufferAsync(endStream: false, cancellationToken).AsTask();
             }
         }
 
