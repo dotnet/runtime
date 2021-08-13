@@ -48,8 +48,8 @@ namespace System.Text.Json
         [RequiresUnreferencedCode(SerializationUnreferencedCodeMessage)]
         public static JsonElement SerializeToElement(object? value, Type inputType, JsonSerializerOptions? options = null)
         {
-            Type type = GetRuntimeTypeAndValidateInputType(value, inputType);
-            JsonTypeInfo jsonTypeInfo = GetTypeInfo(options, type);
+            Type runtimeType = GetRuntimeTypeAndValidateInputType(value, inputType);
+            JsonTypeInfo jsonTypeInfo = GetTypeInfo(options, runtimeType);
             return WriteElementUsingSerializer(value, jsonTypeInfo);
         }
 

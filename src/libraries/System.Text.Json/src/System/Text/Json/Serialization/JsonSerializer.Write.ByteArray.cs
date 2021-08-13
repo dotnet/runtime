@@ -24,7 +24,8 @@ namespace System.Text.Json
             TValue value,
             JsonSerializerOptions? options = null)
         {
-            JsonTypeInfo jsonTypeInfo = GetTypeInfo(options, typeof(TValue));
+            Type runtimeType = GetRuntimeType(value);
+            JsonTypeInfo jsonTypeInfo = GetTypeInfo(options, runtimeType);
             return WriteBytesUsingSerializer(value, jsonTypeInfo);
         }
 

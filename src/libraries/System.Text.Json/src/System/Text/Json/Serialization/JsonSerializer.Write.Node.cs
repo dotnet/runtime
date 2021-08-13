@@ -102,8 +102,8 @@ namespace System.Text.Json
                 throw new ArgumentNullException(nameof(context));
             }
 
-            Type type = GetRuntimeTypeAndValidateInputType(value, inputType);
-            return WriteNodeUsingGeneratedSerializer(value, GetTypeInfo(context, type));
+            Type runtimeType = GetRuntimeTypeAndValidateInputType(value, inputType);
+            return WriteNodeUsingGeneratedSerializer(value, GetTypeInfo(context, runtimeType));
         }
 
         private static JsonNode? WriteNodeUsingGeneratedSerializer<TValue>(in TValue value, JsonTypeInfo jsonTypeInfo)
