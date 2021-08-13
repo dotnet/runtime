@@ -46,8 +46,7 @@ namespace System.Net.Http
                     return;
                 }
 
-                // The connection might be disposed because of cancellation. We should not drain the response in this case.
-                if (disposing && NeedsDrain && _connection?._disposed != Status_Disposed)
+                if (disposing && NeedsDrain)
                 {
                     // Start the asynchronous drain.
                     // It may complete synchronously, in which case the connection will be put back in the pool synchronously.
