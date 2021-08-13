@@ -39,8 +39,6 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         [Theory]
         [InlineData(0)]
         [InlineData(1)]
-        [InlineData(2)]
-        [InlineData(5)]
         [InlineData(32)]
         [InlineData(250)]
         public static void ParallelFor(int count)
@@ -49,6 +47,23 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             for (int i = 0; i < count; i++)
                 expected += i;
             Parallel.For(0, count, (i) => { sum += i; });
+            Assert.Equal(expected, sum);
+        }
+
+        [Theory]
+        [InlineData(0)]
+        [InlineData(1)]
+        [InlineData(32)]
+        [InlineData(250)]
+        public static void ParallelForEach(int count)
+        {
+            int sum = 0, expected = 0;
+            var items = new List<int>();
+            for (int i = 0; i < count; i++) {
+                items.Add(i);
+                expected += i;
+            }
+            Parallel.ForEach(items, (i) => { sum += i; });
             Assert.Equal(expected, sum);
         }
     }
