@@ -146,6 +146,10 @@
           Include="$(ArtifactsBinDir)\WasmAppBuilder\Debug\$(NetCoreAppToolCurrent)\**"
           TargetDir="WasmAppBuilder/"/>
 
+	      <RunTimeDependencyCopyLocal
+	        Include="$(ArtifactsBinDir)\MonoAOTCompiler\Debug\$(NetCoreAppToolCurrent)\**"
+	        TargetDir="MonoAOTCompiler/" />
+
         <RunTimeDependencyCopyLocal
           Include="$(ArtifactsBinDir)\MonoTargetsTasks\Debug\$(NetCoreAppToolCurrent)\publish\**"
           TargetDir="WasmAppBuilder/"/>
@@ -161,6 +165,10 @@
         <RunTimeDependencyCopyLocal
           Include="$(MonoProjectRoot)\wasm\build\*"
           TargetDir="build/"/>
+
+        <RunTimeDependencyCopyLocal
+          Include="@(MonoCrossFiles)"
+          TargetDir="runtimepack/native/cross/"/>
     </ItemGroup>
 
     <ItemGroup>
