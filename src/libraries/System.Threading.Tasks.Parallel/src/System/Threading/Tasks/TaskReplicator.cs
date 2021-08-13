@@ -132,14 +132,16 @@ namespace System.Threading.Tasks
 
         public static void Run<TState>(ReplicatableUserAction<TState> action, ParallelOptions options, bool stopOnFirstFailure)
         {
-#pragma warning disable CS0162
-            if (System.Threading.Tasks.Parallel.IsSingleThreadedHost) {
-                var timeout = GenerateCooperativeMultitaskingTaskTimeout();
+            // Browser hosts do not support synchronous Wait so we want to run the
+            //  replicated task directly instead of going through Task infrastructure
+            if (OperatingSystem.IsBrowser()) {
+                // Since we are running on a single thread, we don't want the action to time out
+                var timeout = int.MaxValue - 1;
                 var state = default(TState)!;
 
                 action(ref state, timeout, out bool yieldedBeforeCompletion);
                 if (yieldedBeforeCompletion)
-                    throw new Exception("Replicated tasks cannot yield in this single-threaded environment");
+                    throw new Exception("Replicated tasks cannot yield in this single-threaded browser environment");
             } else {
                 int maxConcurrencyLevel = (options.EffectiveMaxConcurrencyLevel > 0) ? options.EffectiveMaxConcurrencyLevel : int.MaxValue;
 
