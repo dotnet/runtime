@@ -8254,6 +8254,42 @@ cprop_sreg (TransformData *td, InterpInst *ins, int *psreg, LocalValue *local_de
 }
 
 static void
+foreach_local_var (TransformData *td, InterpInst *ins, gpointer data, void (*callback)(TransformData*, int, gpointer))
+{
+	int opcode = ins->opcode;
+	if (mono_interp_op_sregs [opcode]) {
+		for (int i = 0; i < mono_interp_op_sregs [opcode]; i++) {
+			int sreg = ins->sregs [i];
+
+			if (sreg == MINT_CALL_ARGS_SREG) {
+				int *call_args = ins->info.call_args;
+				if (call_args) {
+					int var = *call_args;
+					while (var != -1) {
+						callback (td, var, data);
+						call_args++;
+						var = *call_args;
+					}
+				}
+			} else {
+				callback (td, sreg, data);
+			}
+		}
+	}
+
+	if (mono_interp_op_dregs [opcode])
+		callback (td, ins->dreg, data);
+}
+
+static void
+clear_local_defs (TransformData *td, int var, void *data)
+{
+	LocalValue *local_defs = (LocalValue*) data;
+	local_defs [var].type = LOCAL_VALUE_NONE;
+	local_defs [var].ins = NULL;
+}
+
+static void
 interp_cprop (TransformData *td)
 {
 	LocalValue *local_defs = (LocalValue*) g_malloc (td->locals_size * sizeof (LocalValue));
@@ -8277,8 +8313,8 @@ retry:
 		// Set cbb since we do some instruction inserting below
 		td->cbb = bb;
 
-		// FIXME This is excessive. Remove this once we have SSA
-		memset (local_defs, 0, td->locals_size * sizeof (LocalValue));
+		for (ins = bb->first_ins; ins != NULL; ins = ins->next)
+			foreach_local_var (td, ins, local_defs, clear_local_defs);
 
 		if (td->verbose_level)
 			g_print ("BB%d\n", bb->index);
@@ -8909,34 +8945,6 @@ interp_optimize_code (TransformData *td)
 }
 
 static void
-foreach_local_var (TransformData *td, InterpInst *ins, int data, void (*callback)(TransformData*, int, int))
-{
-	int opcode = ins->opcode;
-	if (mono_interp_op_sregs [opcode]) {
-		for (int i = 0; i < mono_interp_op_sregs [opcode]; i++) {
-			int sreg = ins->sregs [i];
-
-			if (sreg == MINT_CALL_ARGS_SREG) {
-				int *call_args = ins->info.call_args;
-				if (call_args) {
-					int var = *call_args;
-					while (var != -1) {
-						callback (td, var, data);
-						call_args++;
-						var = *call_args;
-					}
-				}
-			} else {
-				callback (td, sreg, data);
-			}
-		}
-	}
-
-	if (mono_interp_op_dregs [opcode])
-		callback (td, ins->dreg, data);
-}
-
-static void
 set_var_live_range (TransformData *td, int var, int ins_index)
 {
 	// We don't track liveness yet for global vars
@@ -8945,6 +8953,12 @@ set_var_live_range (TransformData *td, int var, int ins_index)
 	if (td->locals [var].live_start == -1)
 		td->locals [var].live_start = ins_index;
 	td->locals [var].live_end = ins_index;
+}
+
+static void
+set_var_live_range_cb (TransformData *td, int var, gpointer data)
+{
+	set_var_live_range (td, var, (int)(gsize)data);
 }
 
 static void
@@ -8963,6 +8977,12 @@ initialize_global_var (TransformData *td, int var, int bb_index)
 		alloc_global_var_offset (td, var);
 		td->locals [var].flags |= INTERP_LOCAL_FLAG_GLOBAL;
 	}
+}
+
+static void
+initialize_global_var_cb (TransformData *td, int var, gpointer data)
+{
+	initialize_global_var (td, var, (int)(gsize)data);
 } 
 
 static void
@@ -8987,7 +9007,7 @@ initialize_global_vars (TransformData *td)
 					td->locals [var].flags |= INTERP_LOCAL_FLAG_GLOBAL;
 				}
 			}
-			foreach_local_var (td, ins, bb->index, initialize_global_var);
+			foreach_local_var (td, ins, (gpointer)(gsize)bb->index, initialize_global_var_cb);
 		}
 	}
 }
@@ -9257,7 +9277,7 @@ interp_alloc_offsets (TransformData *td)
 								// The arg of the call is no longer global
 								*call_args = new_var;
 								// Also update liveness for this instruction
-								foreach_local_var (td, new_inst, ins_index, set_var_live_range);
+								foreach_local_var (td, new_inst, (gpointer)(gsize)ins_index, set_var_live_range_cb);
 								ins_index++;
 							}
 						} else {
@@ -9295,7 +9315,7 @@ interp_alloc_offsets (TransformData *td)
 				}
 			}
 			// Set live_start and live_end for every referenced local that is not global
-			foreach_local_var (td, ins, ins_index, set_var_live_range);
+			foreach_local_var (td, ins, (gpointer)(gsize)ins_index, set_var_live_range_cb);
 			ins_index++;
 		}
 		gint32 current_offset = td->total_locals_size;
