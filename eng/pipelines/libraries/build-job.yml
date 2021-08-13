@@ -141,7 +141,7 @@ jobs:
             - template: /eng/pipelines/common/upload-intermediate-artifacts-step.yml
               parameters:
                 name: Libraries_AllConfigurations
-                condition: >-
+                publishPackagesCondition: >-
                   or(
                      eq(variables['_librariesBuildProducedPackages'], true),
                      eq(variables['Build.SourceBranchName'], 'main'),
@@ -161,4 +161,8 @@ jobs:
               testRunNamePrefixSuffix: $(_testRunNamePrefixSuffix)
               extraHelixArguments: $(_extraHelixArguments)
               ${{ if eq(parameters.framework, 'allConfigurations') }}:
-                condition: eq(variables['_librariesBuildProducedPackages'], true)
+                publishPackagesCondition: >-
+                  or(
+                     eq(variables['_librariesBuildProducedPackages'], true),
+                     eq(variables['Build.SourceBranchName'], 'main'),
+                     eq(variables['System.PullRequest.TargetBranch'], 'main')) 
