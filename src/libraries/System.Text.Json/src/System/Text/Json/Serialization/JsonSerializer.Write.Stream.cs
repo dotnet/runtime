@@ -184,7 +184,7 @@ namespace System.Text.Json
                 throw new ArgumentNullException(nameof(jsonTypeInfo));
             }
 
-            return WriteAsyncCore(utf8Json, value, jsonTypeInfo, cancellationToken);
+            return WriteStreamAsync(utf8Json, value, jsonTypeInfo, cancellationToken);
         }
 
         /// <summary>
