@@ -4205,7 +4205,7 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
     DONE_OP1_AFTER_COST:
 
         bool bReverseInAssignment = false;
-        if (oper == GT_ASG)
+        if (oper == GT_ASG && (!optValnumCSE_phase || optCSE_canSwap(op1, op2)))
         {
             GenTree* op1Val = op1;
 
