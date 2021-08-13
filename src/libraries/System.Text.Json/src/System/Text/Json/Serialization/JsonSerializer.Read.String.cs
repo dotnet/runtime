@@ -49,7 +49,7 @@ namespace System.Text.Json
             }
 
             JsonTypeInfo jsonTypeInfo = GetTypeInfo(options, typeof(TValue));
-            return ReadSpan<TValue>(json.AsSpan(), jsonTypeInfo);
+            return ReadFromSpan<TValue>(json.AsSpan(), jsonTypeInfo);
         }
 
         /// <summary>
@@ -81,7 +81,7 @@ namespace System.Text.Json
             // default/null span is treated as empty
 
             JsonTypeInfo jsonTypeInfo = GetTypeInfo(options, typeof(TValue));
-            return ReadSpan<TValue>(json, jsonTypeInfo);
+            return ReadFromSpan<TValue>(json, jsonTypeInfo);
         }
 
         /// <summary>
@@ -125,7 +125,7 @@ namespace System.Text.Json
             }
 
             JsonTypeInfo jsonTypeInfo = GetTypeInfo(options, returnType);
-            return ReadSpan<object?>(json.AsSpan(), jsonTypeInfo)!;
+            return ReadFromSpan<object?>(json.AsSpan(), jsonTypeInfo)!;
         }
 
         /// <summary>
@@ -171,7 +171,7 @@ namespace System.Text.Json
             }
 
             JsonTypeInfo jsonTypeInfo = GetTypeInfo(options, returnType);
-            return ReadSpan<object?>(json, jsonTypeInfo)!;
+            return ReadFromSpan<object?>(json, jsonTypeInfo)!;
         }
 
         /// <summary>
@@ -218,7 +218,7 @@ namespace System.Text.Json
                 throw new ArgumentNullException(nameof(jsonTypeInfo));
             }
 
-            return ReadSpan<TValue?>(json.AsSpan(), jsonTypeInfo);
+            return ReadFromSpan<TValue?>(json.AsSpan(), jsonTypeInfo);
         }
 
         /// <summary>
@@ -260,7 +260,7 @@ namespace System.Text.Json
                 throw new ArgumentNullException(nameof(jsonTypeInfo));
             }
 
-            return ReadSpan<TValue?>(json, jsonTypeInfo);
+            return ReadFromSpan<TValue?>(json, jsonTypeInfo);
         }
 
         /// <summary>
@@ -316,7 +316,7 @@ namespace System.Text.Json
             }
 
             JsonTypeInfo jsonTypeInfo = GetTypeInfo(context, returnType);
-            return ReadSpan<object?>(json.AsSpan(), jsonTypeInfo);
+            return ReadFromSpan<object?>(json.AsSpan(), jsonTypeInfo);
         }
 
         /// <summary>
@@ -367,10 +367,10 @@ namespace System.Text.Json
             }
 
             JsonTypeInfo jsonTypeInfo = GetTypeInfo(context, returnType);
-            return ReadSpan<object?>(json, jsonTypeInfo);
+            return ReadFromSpan<object?>(json, jsonTypeInfo);
         }
 
-        private static TValue? ReadSpan<TValue>(ReadOnlySpan<char> json, JsonTypeInfo jsonTypeInfo)
+        private static TValue? ReadFromSpan<TValue>(ReadOnlySpan<char> json, JsonTypeInfo jsonTypeInfo)
         {
             byte[]? tempArray = null;
 

@@ -37,6 +37,8 @@ namespace System.Text.Json
 
         private static void WriteUsingGeneratedSerializer<TValue>(Utf8JsonWriter writer, in TValue value, JsonTypeInfo jsonTypeInfo)
         {
+            Debug.Assert(writer != null);
+
             if (jsonTypeInfo.HasSerialize &&
                 jsonTypeInfo is JsonTypeInfo<TValue> typedInfo &&
                 typedInfo.Options._context?.CanUseSerializationLogic == true)
@@ -53,7 +55,10 @@ namespace System.Text.Json
 
         private static void WriteUsingSerializer<TValue>(Utf8JsonWriter writer, in TValue value, JsonTypeInfo jsonTypeInfo)
         {
-            Debug.Assert(jsonTypeInfo is not JsonTypeInfo<TValue>, "Incorrect method called.");
+            Debug.Assert(writer != null);
+
+            Debug.Assert(!jsonTypeInfo.HasSerialize ||
+                jsonTypeInfo is not JsonTypeInfo<TValue>, "Incorrect method called.");
 
             WriteStack state = default;
             state.Initialize(jsonTypeInfo, supportContinuation: false);

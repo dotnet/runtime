@@ -24,7 +24,8 @@ namespace System.Text.Json
             TValue value,
             JsonSerializerOptions? options = null)
         {
-            return WriteCoreBytes(value, GetRuntimeType(value), options);
+            JsonTypeInfo jsonTypeInfo = GetTypeInfo(options, typeof(TValue));
+            return WriteBytesUsingSerializer(value, jsonTypeInfo);
         }
 
         /// <summary>
@@ -50,10 +51,9 @@ namespace System.Text.Json
             Type inputType,
             JsonSerializerOptions? options = null)
         {
-            return WriteCoreBytes(
-                value!,
-                GetRuntimeTypeAndValidateInputType(value, inputType),
-                options);
+            Type runtimeType = GetRuntimeTypeAndValidateInputType(value, inputType);
+            JsonTypeInfo jsonTypeInfo = GetTypeInfo(options, runtimeType);
+            return WriteBytesUsingSerializer(value, jsonTypeInfo);
         }
 
         /// <summary>
@@ -108,14 +108,8 @@ namespace System.Text.Json
             }
 
             Type runtimeType = GetRuntimeTypeAndValidateInputType(value, inputType);
-            return WriteBytesUsingGeneratedSerializer(value!, GetTypeInfo(context, runtimeType));
-        }
-
-        [RequiresUnreferencedCode(SerializationUnreferencedCodeMessage)]
-        private static byte[] WriteCoreBytes<TValue>(in TValue value, Type runtimeType, JsonSerializerOptions? options)
-        {
-            JsonTypeInfo jsonTypeInfo = GetTypeInfo(options, runtimeType);
-            return WriteBytesUsingSerializer(value, jsonTypeInfo);
+            JsonTypeInfo jsonTypeInfo = GetTypeInfo(context, runtimeType);
+            return WriteBytesUsingGeneratedSerializer(value!, jsonTypeInfo);
         }
 
         private static byte[] WriteBytesUsingGeneratedSerializer<TValue>(in TValue value, JsonTypeInfo jsonTypeInfo)

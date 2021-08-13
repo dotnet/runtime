@@ -30,12 +30,6 @@ namespace System.Text.Json.Serialization
                 HandleNullOnRead = true;
                 HandleNullOnWrite = true;
             }
-            else
-            {
-                _autoWriteNulls = CanBeNull;
-            }
-
-            _isNullableOfT = IsNullableOfT();
 
             // For the HandleNull == false case, either:
             // 1) The default values are assigned in this type's virtual HandleNull property
@@ -45,17 +39,6 @@ namespace System.Text.Json.Serialization
 
             CanUseDirectReadOrWrite = !CanBePolymorphic && IsInternalConverter && ConverterStrategy == ConverterStrategy.Value;
         }
-
-        // <summary>
-        // Optimized check for 'CanBeNull && !HandleNullOnWrite'
-        // </summary>
-        private bool _autoWriteNulls;
-
-
-        // <summary>
-        // Optimized check to check if converter is for Nullable<T>
-        // </summary>
-        private bool _isNullableOfT;
 
         /// <summary>
         /// Determines whether the type can be converted.
@@ -331,16 +314,9 @@ namespace System.Text.Json.Serialization
         }
 
         /// <summary>
-        /// Performance optimization. Overridden by the nullable converter to prevent boxing of values by the JIT.
-        /// Although the JIT added support to detect this IL pattern (box+isinst+br), it still manifests in TryWrite().
+        /// Performance optimization. The 'in' modifier in TryWrite(in T Value) will cause boxing, so this helper method avoids that.
         /// </summary>
-        internal virtual bool IsNull(in T value) => value is null;
-
-        /// <summary>
-        /// Performance optimization to determine if IsNull() above should be called.
-        /// </summary>
-        /// <returns></returns>
-        internal virtual bool IsNullableOfT() => false;
+        internal bool IsNull(T value) => value is null;
 
 #if NET6_0_OR_GREATER
         [MethodImpl(MethodImplOptions.AggressiveOptimization)]
@@ -352,24 +328,12 @@ namespace System.Text.Json.Serialization
                 ThrowHelper.ThrowJsonException_SerializerCycleDetected(options.EffectiveMaxDepth);
             }
 
-            // We do not pass null values to converters unless HandleNullOnWrite is true. Null values for properties were
-            // already handled in GetMemberAndWriteJson() so we don't need to check for IgnoreNullValues here.
-            if (_autoWriteNulls)
+            if (default(T) is null && !HandleNullOnWrite && IsNull(value))
             {
-                // Optimized check to see if 'IsNull()' or 'is null' should be used.
-                if (_isNullableOfT)
-                {
-                    if (IsNull(value))
-                    {
-                        writer.WriteNullValue();
-                        return true;
-                    }
-                }
-                else if (value is null)
-                {
-                    writer.WriteNullValue();
-                    return true;
-                }
+                // We do not pass null values to converters unless HandleNullOnWrite is true. Null values for properties were
+                // already handled in GetMemberAndWriteJson() so we don't need to check for IgnoreNullValues here.
+                writer.WriteNullValue();
+                return true;
             }
 
             bool ignoreCyclesPopReference = false;
