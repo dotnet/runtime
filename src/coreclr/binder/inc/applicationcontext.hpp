@@ -80,12 +80,8 @@ namespace BINDER_SPACE
     typedef SHash<SimpleNameToFileNameMapTraits> SimpleNameToFileNameMap;
 
     class ApplicationContext
-        : public IUnknown
     {
     public:
-        // IUnknown methods
-        STDMETHOD(QueryInterface)(REFIID   riid,
-                                  void   **ppv);
         STDMETHOD_(ULONG, AddRef)();
         STDMETHOD_(ULONG, Release)();
 

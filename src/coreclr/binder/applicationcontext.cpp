@@ -23,32 +23,6 @@ using namespace clr::fs;
 
 namespace BINDER_SPACE
 {
-    STDMETHODIMP ApplicationContext::QueryInterface(REFIID   riid,
-                                                    void   **ppv)
-    {
-        HRESULT hr = S_OK;
-
-        if (ppv == NULL)
-        {
-            hr = E_POINTER;
-        }
-        else
-        {
-            if (IsEqualIID(riid, IID_IUnknown))
-            {
-                AddRef();
-                *ppv = static_cast<IUnknown *>(this);
-            }
-            else
-            {
-                *ppv = NULL;
-                hr = E_NOINTERFACE;
-            }
-        }
-
-        return hr;
-    }
-
     STDMETHODIMP_(ULONG) ApplicationContext::AddRef()
     {
         return InterlockedIncrement(&m_cRef);
