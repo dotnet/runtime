@@ -91,8 +91,6 @@ namespace BINDER_SPACE
         HRESULT Init(UINT_PTR binderID);
 
         inline SString &GetApplicationName();
-        inline DWORD GetAppDomainId();
-        inline void SetAppDomainId(DWORD dwAppDomainId);
 
         HRESULT SetupBindingPaths(/* in */ SString &sTrustedPlatformAssemblies,
                                   /* in */ SString &sPlatformResourceRoots,
@@ -125,7 +123,6 @@ namespace BINDER_SPACE
         LONG               m_cRef;
         Volatile<LONG>     m_cVersion;
         SString            m_applicationName;
-        DWORD              m_dwAppDomainId;
         ExecutionContext  *m_pExecutionContext;
         FailureCache      *m_pFailureCache;
         CRITSEC_COOKIE     m_contextCS;

@@ -43,7 +43,6 @@ namespace BINDER_SPACE
     ApplicationContext::ApplicationContext()
     {
         m_cRef = 1;
-        m_dwAppDomainId = 0;
         m_pExecutionContext = NULL;
         m_pFailureCache = NULL;
         m_contextCS = NULL;

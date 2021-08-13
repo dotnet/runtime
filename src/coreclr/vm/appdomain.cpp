@@ -4337,7 +4337,7 @@ CLRPrivBinderCoreCLR *AppDomain::CreateBinderContext()
         GCX_PREEMP();
 
         // Initialize the assembly binder for the default context loads for CoreCLR.
-        IfFailThrow(CCoreCLRBinderHelper::DefaultBinderSetupContext(DefaultADID, &m_pTPABinderContext));
+        IfFailThrow(CCoreCLRBinderHelper::DefaultBinderSetupContext(&m_pTPABinderContext));
     }
 
     RETURN m_pTPABinderContext;

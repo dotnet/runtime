@@ -19,8 +19,7 @@ class CLRPrivBinderCoreCLR;
 class CCoreCLRBinderHelper
 {
 public:
-    static HRESULT DefaultBinderSetupContext(DWORD      dwAppDomainId,
-                                             CLRPrivBinderCoreCLR **ppTPABinder);
+    static HRESULT DefaultBinderSetupContext(CLRPrivBinderCoreCLR **ppTPABinder);
 
     // ABHI-TODO: The call indicates that this can come from a case where
     // pDomain->GetFusionContext() is null, hence this is static function

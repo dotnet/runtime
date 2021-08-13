@@ -32,8 +32,7 @@ public:
     // Class functions
     //-------------------------------------------------------------------------
 
-    static HRESULT SetupContext(DWORD      dwAppDomainId,
-                                CLRPrivBinderCoreCLR *pTPABinder,
+    static HRESULT SetupContext(CLRPrivBinderCoreCLR *pTPABinder,
                                 LoaderAllocator* pLoaderAllocator,
                                 void* loaderAllocatorHandle,
                                 UINT_PTR ptrAssemblyLoadContext,

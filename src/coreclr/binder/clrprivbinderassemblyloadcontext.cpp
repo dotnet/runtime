@@ -183,12 +183,11 @@ HRESULT CLRPrivBinderAssemblyLoadContext::GetLoaderAllocator(LPVOID* pLoaderAllo
 // managed AssemblyLoadContext type.
 //=============================================================================
 /* static */
-HRESULT CLRPrivBinderAssemblyLoadContext::SetupContext(DWORD      dwAppDomainId,
-                                            CLRPrivBinderCoreCLR *pTPABinder,
-                                            LoaderAllocator* pLoaderAllocator,
-                                            void* loaderAllocatorHandle,
-                                            UINT_PTR ptrAssemblyLoadContext,
-                                            CLRPrivBinderAssemblyLoadContext **ppBindContext)
+HRESULT CLRPrivBinderAssemblyLoadContext::SetupContext(CLRPrivBinderCoreCLR *pTPABinder,
+                                                       LoaderAllocator* pLoaderAllocator,
+                                                       void* loaderAllocatorHandle,
+                                                       UINT_PTR ptrAssemblyLoadContext,
+                                                       CLRPrivBinderAssemblyLoadContext **ppBindContext)
 {
     HRESULT hr = E_FAIL;
     EX_TRY
@@ -203,9 +202,6 @@ HRESULT CLRPrivBinderAssemblyLoadContext::SetupContext(DWORD      dwAppDomainId,
             hr = pBinder->m_appContext.Init(binderId);
             if(SUCCEEDED(hr))
             {
-                // Save the reference to the AppDomain in which the binder lives
-                pBinder->m_appContext.SetAppDomainId(dwAppDomainId);
-
                 // Save reference to the TPABinder that is required to be present.
                 _ASSERTE(pTPABinder != NULL);
                 pBinder->m_pTPABinder = pTPABinder;

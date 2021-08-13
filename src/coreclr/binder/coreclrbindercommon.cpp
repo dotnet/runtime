@@ -10,7 +10,7 @@
 
 using namespace BINDER_SPACE;
 
-HRESULT CCoreCLRBinderHelper::DefaultBinderSetupContext(DWORD dwAppDomainId,CLRPrivBinderCoreCLR **ppTPABinder)
+HRESULT CCoreCLRBinderHelper::DefaultBinderSetupContext(CLRPrivBinderCoreCLR **ppTPABinder)
 {
     HRESULT hr = S_OK;
     EX_TRY
@@ -26,7 +26,6 @@ HRESULT CCoreCLRBinderHelper::DefaultBinderSetupContext(DWORD dwAppDomainId,CLRP
             hr = pApplicationContext->Init(binderId);
             if(SUCCEEDED(hr))
             {
-                pApplicationContext->SetAppDomainId(dwAppDomainId);
                 pBinder->SetManagedAssemblyLoadContext(NULL);
                 *ppTPABinder = clr::SafeAddRef(pBinder.Extract());
             }
