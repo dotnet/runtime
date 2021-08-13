@@ -719,7 +719,7 @@ namespace System.Net.Http.Functional.Tests
                 Exception ex = await Assert.ThrowsAnyAsync<Exception>(() => stream.ReadAsync(new byte[1024], cancellationToken: cts.Token).AsTask());
 
                 // exact exception depends on who won the race
-                if (ex is not OperationCanceledException and not ObjectDisposedException)
+                if (ex is not OperationCanceledException)
                 {
                     var ioe = Assert.IsType<IOException>(ex);
                     var hre = Assert.IsType<HttpRequestException>(ioe.InnerException);
