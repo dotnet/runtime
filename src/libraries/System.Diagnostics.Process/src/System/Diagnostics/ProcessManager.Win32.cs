@@ -131,13 +131,13 @@ namespace System.Diagnostics
 
                 var modules = new ProcessModuleCollection(firstModuleOnly ? 1 : modulesCount);
 
-                int minimumLength =
+                const int startLength =
 #if DEBUG
                     1; // in debug, validate ArrayPool growth
 #else
                     Interop.Kernel32.MAX_PATH;
 #endif
-                char[]? chars = ArrayPool<char>.Shared.Rent(minimumLength);
+                char[]? chars = ArrayPool<char>.Shared.Rent(startLength);
                 try
                 {
                     for (int i = 0; i < modulesCount; i++)
@@ -157,7 +157,7 @@ namespace System.Diagnostics
                         Interop.Kernel32.NtModuleInfo ntModuleInfo;
                         if (!Interop.Kernel32.GetModuleInformation(processHandle, moduleHandle, out ntModuleInfo))
                         {
-                            HandleLastWin32Error();
+                            HandleLastWin32Error(null);
                             continue;
                         }
 
@@ -168,39 +168,40 @@ namespace System.Diagnostics
                             BaseAddress = ntModuleInfo.BaseOfDll
                         };
 
-                        int length = Interop.Kernel32.GetModuleBaseName(processHandle, moduleHandle, chars, chars.Length);
+                        int length = 0;
+                        while ((length = Interop.Kernel32.GetModuleBaseName(processHandle, moduleHandle, chars, chars.Length)) == chars.Length)
+                        {
+                            ArrayPool<char>.Shared.Return(chars);
+                            chars = ArrayPool<char>.Shared.Rent(length * 2);
+                        }
+
                         if (length == 0)
                         {
-                            HandleLastWin32Error();
+                            HandleLastWin32Error(module);
                             continue;
                         }
 
                         module.ModuleName = new string(chars, 0, length);
 
-                        while (true)
+                        while ((length = Interop.Kernel32.GetModuleFileNameEx(processHandle, moduleHandle, chars, chars.Length)) == chars.Length)
                         {
-                            length = Interop.Kernel32.GetModuleFileNameEx(processHandle, moduleHandle, chars, chars.Length);
-                            if (length == chars.Length)
-                            {
-                                minimumLength = chars.Length * 2;
-                                char[] toReturn = chars;
-                                chars = ArrayPool<char>.Shared.Rent(minimumLength);
-                                ArrayPool<char>.Shared.Return(toReturn);
-                                continue;
-                            }
-
-                            break;
+                            ArrayPool<char>.Shared.Return(chars);
+                            chars = ArrayPool<char>.Shared.Rent(length * 2);
                         }
 
                         if (length == 0)
                         {
-                            HandleLastWin32Error();
+                            HandleLastWin32Error(module);
                             continue;
                         }
 
-                        module.FileName = chars.AsSpan().StartsWith(@"\\?\") ?
-                            new string(chars, 4, length - 4) :
-                            new string(chars, 0, length);
+                        const string NtPathPrefix = @"\\?\";
+                        ReadOnlySpan<char> charsSpan = chars.AsSpan(0, length);
+                        if (charsSpan.StartsWith(NtPathPrefix))
+                        {
+                            charsSpan = charsSpan.Slice(NtPathPrefix.Length);
+                        }
+                        module.FileName = charsSpan.ToString();
 
                         modules.Add(module);
                     }
@@ -243,7 +244,7 @@ namespace System.Diagnostics
             }
         }
 
-        private static void HandleLastWin32Error()
+        private static void HandleLastWin32Error(ProcessModule? processModule)
         {
             int lastError = Marshal.GetLastWin32Error();
             switch (lastError)
@@ -255,6 +256,7 @@ namespace System.Diagnostics
                     // move on.
                     break;
                 default:
+                    processModule?.Dispose();
                     throw new Win32Exception(lastError);
             }
         }
