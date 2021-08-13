@@ -332,7 +332,7 @@ namespace System.Data.OleDb
 
             DataColumn dataType = GetSystemTypeDataColumn();
 
-            [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2110",
+            [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2111",
                 Justification = "The problem is Type.TypeInitializer which requires static .ctor on the type" +
                     "which in this case is System.Type itself. System.Type.cctor will always be preserved anyway.")]
             static DataColumn GetSystemTypeDataColumn() =>
