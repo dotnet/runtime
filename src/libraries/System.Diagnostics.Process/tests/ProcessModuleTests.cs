@@ -123,8 +123,8 @@ namespace System.Diagnostics.Tests
             Assembly loaded = Assembly.LoadFile(longNamePath);
             Assert.Equal(longNamePath, loaded.Location);
 
-            ProcessModule[] longPathModules = Process.GetCurrentProcess().Modules.Cast<ProcessModule>().Where(module => module.FileName.Contains(libraryName)).ToArray();
-            Assert.Contains(longPathModules, module => module.FileName == longNamePath);
+            string[] modulePaths = Process.GetCurrentProcess().Modules.Cast<ProcessModule>().Select(module => module.FileName).ToArray();
+            Assert.Contains(longNamePath, modulePaths);
         }
     }
 }
