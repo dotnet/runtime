@@ -3,6 +3,6 @@
   "defaultOnFailure": "fail",
   "localRerunCount": 2,
   "retryOnRules": [
-    {"testAssembly": {"wildcard": "System.Net.*"}}
+    { "testAssembly": { "wildcard": "System.Net.*" } }
   ]
 }
