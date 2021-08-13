@@ -190,9 +190,7 @@ namespace System.Net.Http
                 return connectionBuffer.Slice(0, bytesToConsume);
             }
 
-            // _connection == null typically means that we have finished reading the response.
-            // Cancellation may lead to a state where a disposed _connection is not null.
-            public override bool NeedsDrain => _connection != null && _connection._disposed != Status_Disposed;
+            public override bool NeedsDrain => IsConnectionAlive;
 
             public override async ValueTask<bool> DrainAsync(int maxDrainBytes)
             {
