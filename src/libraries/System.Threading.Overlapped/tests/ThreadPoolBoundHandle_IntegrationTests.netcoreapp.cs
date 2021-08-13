@@ -13,7 +13,7 @@ public partial class ThreadPoolBoundHandleTests
     public unsafe void MultipleOperationsOverSingleHandle_CompletedWorkItemCountTest()
     {
         long initialCompletedWorkItemCount = ThreadPool.CompletedWorkItemCount;
-        MultipleOperationsOverSingleHandle(nameof(MultipleOperationsOverSingleHandle_CompletedWorkItemCountTest));
+        MultipleOperationsOverSingleHandle();
         long changeInCompletedWorkItemCount = 0;
         try
         {
