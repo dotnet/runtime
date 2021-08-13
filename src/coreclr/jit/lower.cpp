@@ -5261,7 +5261,7 @@ bool Lowering::LowerUnsignedDivOrMod(GenTreeOp* divMod)
 #ifdef TARGET_ARM64
                  && !simpleMul
 #endif
-        )
+                )
         {
             adjustedDividend = comp->gtNewCastNode(TYP_I_IMPL, adjustedDividend, true, TYP_U_IMPL);
             BlockRange().InsertBefore(divMod, adjustedDividend);
@@ -5290,6 +5290,7 @@ bool Lowering::LowerUnsignedDivOrMod(GenTreeOp* divMod)
             // The existing node will later be transformed into a GT_RSZ/GT_SUB that
             // computes the final result. This way don't need to find and change the use
             // of the existing node.
+
 #ifdef TARGET_ARM64
             genTreeOps mulOp = simpleMul ? GT_MULWIDE : GT_MULHI; // 64-bit MUL is more expensive than UMULL on ARM64
 #else
