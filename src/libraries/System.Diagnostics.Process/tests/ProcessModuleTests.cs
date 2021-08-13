@@ -92,9 +92,12 @@ namespace System.Diagnostics.Tests
             Assert.Equal(expectedCount, disposedCount);
         }
 
-        [SkipOnMono("Assembly.LoadFile used the way this test is implemented fails on Mono")]
-        [ConditionalFact(typeof(PathFeatures), nameof(PathFeatures.AreAllLongPathsAvailable))]
-        [PlatformSpecific(TestPlatforms.Windows)]
+        public static bool Is_LongModuleFileNamesAreSupported_TestEnabled
+            => PathFeatures.AreAllLongPathsAvailable() // we want to test long paths
+            && !PlatformDetection.IsMonoRuntime // Assembly.LoadFile used the way this test is implemented fails on Mono
+            && OperatingSystem.IsWindowsVersionAtLeast(8); // it's specific to Windows and does not work on Windows 7
+
+        [ConditionalFact(typeof(ProcessModuleTests), nameof(Is_LongModuleFileNamesAreSupported_TestEnabled))]
         public void LongModuleFileNamesAreSupported()
         {
             // To be able to test Long Path support for ProcessModule.FileName we need a .dll that has a path > 260 chars.
