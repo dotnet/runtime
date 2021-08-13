@@ -9,8 +9,9 @@
              Exclude="@(ProjectExclusions);
                       $(MSBuildThisFileDirectory)*\src\**\*.shproj" />
     <!-- Build these packages which reference many other projects in the allconfigurations leg only. -->
-    <_allSrc Remove="$(MSBuildThisFileDirectory)Microsoft.Windows.Compatibility\src\Microsoft.Windows.Compatibility.csproj;
-                     $(MSBuildThisFileDirectory)Microsoft.AspNetCore.Internal.Transport\src\Microsoft.AspNetCore.Internal.Transport.proj"
+    <_allSrc Remove="Microsoft.AspNetCore.Internal.Transport\src\Microsoft.AspNetCore.Internal.Transport.proj;
+                     Microsoft.Windows.Compatibility\src\Microsoft.Windows.Compatibility.csproj;
+                     Microsoft.WindowsDesktop.Internal.Transport\src\Microsoft.WindowsDesktop.Internal.Transport.proj"
              Condition="'$(BuildAllConfigurations)' != 'true'" />
 
     <NonNetCoreAppProject Include="@(_allSrc)"
