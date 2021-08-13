@@ -325,6 +325,9 @@ namespace ILCompiler
             if (_commandLineOptions.OutputFilePath == null && !_commandLineOptions.OutNearInput)
                 throw new CommandLineException(SR.MissingOutputFile);
 
+            if (_commandLineOptions.SingleFileCompilation && !_commandLineOptions.OutNearInput)
+                throw new CommandLineException(SR.MissingOutNearInput);
+
             ConfigureTarget();
             InstructionSetSupport instructionSetSupport = ConfigureInstructionSetSupport();
 
