@@ -18,7 +18,7 @@ namespace System.ComponentModel
         ///    <para>Gets a value indicating whether this converter can convert an object in the
         ///       given source type to a Version.</para>
         /// </summary>
-        public override bool CanConvertFrom(ITypeDescriptorContext context, Type sourceType)
+        public override bool CanConvertFrom(ITypeDescriptorContext? context, Type sourceType)
         {
             return sourceType == typeof(string) || sourceType == typeof(Version) || base.CanConvertFrom(context, sourceType);
         }
@@ -27,7 +27,7 @@ namespace System.ComponentModel
         ///    <para>Gets a value indicating whether this converter can
         ///       convert an object to the given destination type using the context.</para>
         /// </summary>
-        public override bool CanConvertTo(ITypeDescriptorContext context, Type destinationType)
+        public override bool CanConvertTo(ITypeDescriptorContext? context, Type? destinationType)
         {
             return destinationType == typeof(Version) || destinationType == typeof(InstanceDescriptor) || base.CanConvertTo(context, destinationType);
         }
@@ -36,7 +36,7 @@ namespace System.ComponentModel
         ///    <para>Converts the given object to a Version.</para>
         /// </summary>
         /// <exception cref="FormatException"><paramref name="value"/> is not a valid version string</exception>
-        public override object ConvertFrom(ITypeDescriptorContext context, CultureInfo culture, object value)
+        public override object? ConvertFrom(ITypeDescriptorContext? context, CultureInfo? culture, object value)
         {
             if (value is string versionString)
             {
@@ -62,7 +62,7 @@ namespace System.ComponentModel
         ///    <para>Converts the given value object to
         ///       the specified destination type using the specified context and arguments.</para>
         /// </summary>
-        public override object ConvertTo(ITypeDescriptorContext context, CultureInfo culture, object value, Type destinationType)
+        public override object? ConvertTo(ITypeDescriptorContext? context, CultureInfo? culture, object? value, Type destinationType)
         {
             if (destinationType == null)
             {
@@ -73,7 +73,7 @@ namespace System.ComponentModel
             {
                 if (destinationType == typeof(InstanceDescriptor))
                 {
-                    ConstructorInfo ctor = typeof(Version).GetConstructor(BindingFlags.Public | BindingFlags.Instance, null, new Type[] { typeof(int), typeof(int), typeof(int), typeof(int) }, null);
+                    ConstructorInfo? ctor = typeof(Version).GetConstructor(BindingFlags.Public | BindingFlags.Instance, null, new Type[] { typeof(int), typeof(int), typeof(int), typeof(int) }, null);
                     Debug.Assert(ctor != null, "Couldn't find constructor");
                     return new InstanceDescriptor(ctor, new object[] { version.Major, version.Minor, version.Build, version.Revision });
                 }
@@ -92,7 +92,7 @@ namespace System.ComponentModel
             return base.ConvertTo(context, culture, value, destinationType);
         }
 
-        public override bool IsValid(ITypeDescriptorContext context, object value)
+        public override bool IsValid(ITypeDescriptorContext? context, object? value)
         {
             if (value is string version)
             {

@@ -325,5 +325,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         public int Offset => 0;
         public override bool IsShareable => throw new NotImplementedException();
         public override bool ShouldSkipEmittingObjectNode(NodeFactory factory) => IsEmpty;
+
+        public override string ToString() => _method.ToString();
     }
 }

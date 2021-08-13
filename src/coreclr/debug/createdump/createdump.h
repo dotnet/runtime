@@ -23,6 +23,11 @@ extern bool g_diagnosticsVerbose;
 #define TRACE_VERBOSE(args, ...)
 #endif
 
+#ifdef HOST_64BIT
+#define PRIA "016"
+#else
+#define PRIA "08"
+#endif
 
 #ifdef HOST_UNIX
 #include "config.h"
@@ -66,6 +71,8 @@ typedef int T_CONTEXT;
 #endif
 #include <dirent.h>
 #include <fcntl.h>
+#include <dlfcn.h>
+#include <cxxabi.h>
 #ifdef __APPLE__
 #include <ELF.h>
 #else
@@ -87,10 +94,13 @@ typedef int T_CONTEXT;
 #include <mach/mach.h>
 #include <mach/mach_vm.h>
 #endif
+#include "moduleinfo.h"
 #include "datatarget.h"
+#include "stackframe.h"
 #include "threadinfo.h"
 #include "memoryregion.h"
 #include "crashinfo.h"
+#include "crashreportwriter.h"
 #include "dumpwriter.h"
 #endif
 
@@ -99,5 +109,5 @@ typedef int T_CONTEXT;
 #endif
 
 bool FormatDumpName(std::string& name, const char* pattern, const char* exename, int pid);
-bool CreateDump(const char* dumpPathTemplate, int pid, const char* dumpType, MINIDUMP_TYPE minidumpType);
+bool CreateDump(const char* dumpPathTemplate, int pid, const char* dumpType, MINIDUMP_TYPE minidumpType, bool crashReport, int crashThread, int signal);
 

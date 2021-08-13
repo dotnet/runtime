@@ -1137,7 +1137,7 @@ void LoaderAllocator::Init(BaseDomain *pDomain, BYTE *pExecutableHeapMemory)
     _ASSERTE(dwTotalReserveMemSize <= VIRTUAL_ALLOC_RESERVE_GRANULARITY);
 #endif
 
-    BYTE * initReservedMem = ClrVirtualAllocExecutable(dwTotalReserveMemSize, MEM_RESERVE, PAGE_NOACCESS);
+    BYTE * initReservedMem = (BYTE*)ExecutableAllocator::Instance()->Reserve(dwTotalReserveMemSize);
 
     m_InitialReservedMemForLoaderHeaps = initReservedMem;
 
@@ -1414,7 +1414,7 @@ void LoaderAllocator::Terminate()
     // This was the block reserved by BaseDomain::Init for the loaderheaps.
     if (m_InitialReservedMemForLoaderHeaps)
     {
-        ClrVirtualFree (m_InitialReservedMemForLoaderHeaps, 0, MEM_RELEASE);
+        ExecutableAllocator::Instance()->Release(m_InitialReservedMemForLoaderHeaps);
         m_InitialReservedMemForLoaderHeaps=NULL;
     }
 
@@ -1672,17 +1672,28 @@ void AssemblyLoaderAllocator::SetCollectible()
 {
     CONTRACTL
     {
-        THROWS;
+        NOTHROW;
     }
     CONTRACTL_END;
 
     m_IsCollectible = true;
-#ifndef DACCESS_COMPILE
-    m_pShuffleThunkCache = new ShuffleThunkCache(m_pStubHeap);
-#endif
 }
 
 #ifndef DACCESS_COMPILE
+
+void AssemblyLoaderAllocator::Init(AppDomain* pAppDomain)
+{
+    m_Id.Init();
+    LoaderAllocator::Init((BaseDomain *)pAppDomain);
+    if (IsCollectible())
+    {
+        // TODO: the ShuffleThunkCache should really be using the m_pStubHeap, however the unloadability support
+        // doesn't track the stubs or the related delegate classes and so we get crashes when a stub is used after
+        // the AssemblyLoaderAllocator is gone (the stub memory is unmapped).
+        // https://github.com/dotnet/runtime/issues/55697 tracks this issue.
+        m_pShuffleThunkCache = new ShuffleThunkCache(SystemDomain::GetGlobalLoaderAllocator()->GetExecutableHeap());
+    }
+}
 
 #ifndef CROSSGEN_COMPILE
 

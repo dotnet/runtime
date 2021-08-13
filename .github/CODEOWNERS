@@ -4,7 +4,7 @@
 /src/libraries/Common/src/Interop/                                  @dotnet/platform-deps-team
 /src/libraries/Common/src/System/Net/Http/aspnetcore/               @dotnet/http
 /src/libraries/Common/tests/Tests/System/Net/aspnetcore/            @dotnet/http
-/src/libraries/System.Text.Json/                                    @steveharter @layomia @Jozkee @eiriktsarpalis
+/src/libraries/System.Text.Json/                                    @steveharter @layomia @eiriktsarpalis
 
 # CoreCLR Code Owners
 

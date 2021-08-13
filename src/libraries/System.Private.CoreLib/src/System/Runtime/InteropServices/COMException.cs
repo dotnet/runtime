@@ -48,8 +48,7 @@ namespace System.Runtime.InteropServices
         {
             StringBuilder s = new StringBuilder();
 
-            string className = GetType().ToString();
-            s.Append(className).Append(" (0x").Append(HResult.ToString("X8", CultureInfo.InvariantCulture)).Append(')');
+            s.Append($"{GetType()} (0x{HResult:X8})");
 
             string message = Message;
             if (!string.IsNullOrEmpty(message))

@@ -98,7 +98,7 @@ MonoGCDescriptor mono_gc_make_descr_from_bitmap (gsize *bitmap, int numbits)
 MonoGCDescriptor mono_gc_make_vector_descr (void);
 
 /* Return a root descriptor for a root with all refs */
-MonoGCDescriptor mono_gc_make_root_descr_all_refs (int numbits)
+MONO_COMPONENT_API MonoGCDescriptor mono_gc_make_root_descr_all_refs (int numbits)
     MONO_PERMIT (need (sgen_lock_gc));
 
 /* Return the bitmap encoded by a descriptor */
@@ -110,7 +110,7 @@ word aligned or size is not a multiple of word size.
 */
 void mono_gc_bzero_atomic (void *dest, size_t size);
 void mono_gc_bzero_aligned (void *dest, size_t size);
-void mono_gc_memmove_atomic (void *dest, const void *src, size_t size);
+MONO_COMPONENT_API void mono_gc_memmove_atomic (void *dest, const void *src, size_t size);
 void mono_gc_memmove_aligned (void *dest, const void *src, size_t size);
 
 FILE *mono_gc_get_logfile (void);

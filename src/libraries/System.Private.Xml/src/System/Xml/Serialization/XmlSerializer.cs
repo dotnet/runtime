@@ -9,6 +9,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.IO;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Runtime.Versioning;
 using System.Security;
 using System.Text;
@@ -109,7 +110,13 @@ namespace System.Xml.Serialization
 
     public class XmlSerializer
     {
-        internal static SerializationMode Mode { get; set; } = SerializationMode.ReflectionAsBackup;
+        private static SerializationMode s_mode = SerializationMode.ReflectionAsBackup;
+
+        internal static SerializationMode Mode
+        {
+            get => RuntimeFeature.IsDynamicCodeSupported ? s_mode : SerializationMode.ReflectionOnly;
+            set => s_mode = value;
+        }
 
         private static bool ReflectionMethodEnabled
         {
@@ -317,9 +324,7 @@ namespace System.Xml.Serialization
         [RequiresUnreferencedCode(TrimSerializationWarning)]
         public void Serialize(TextWriter textWriter, object? o, XmlSerializerNamespaces? namespaces)
         {
-            XmlTextWriter xmlWriter = new XmlTextWriter(textWriter);
-            xmlWriter.Formatting = Formatting.Indented;
-            xmlWriter.Indentation = 2;
+            XmlWriter xmlWriter = XmlWriter.Create(textWriter);
             Serialize(xmlWriter, o, namespaces);
         }
 
@@ -332,9 +337,7 @@ namespace System.Xml.Serialization
         [RequiresUnreferencedCode(TrimSerializationWarning)]
         public void Serialize(Stream stream, object? o, XmlSerializerNamespaces? namespaces)
         {
-            XmlTextWriter xmlWriter = new XmlTextWriter(stream, null);
-            xmlWriter.Formatting = Formatting.Indented;
-            xmlWriter.Indentation = 2;
+            XmlWriter xmlWriter = XmlWriter.Create(stream);
             Serialize(xmlWriter, o, namespaces);
         }
 
@@ -421,10 +424,7 @@ namespace System.Xml.Serialization
         [RequiresUnreferencedCode(TrimDeserializationWarning)]
         public object? Deserialize(Stream stream)
         {
-            XmlTextReader xmlReader = new XmlTextReader(stream);
-            xmlReader.WhitespaceHandling = WhitespaceHandling.Significant;
-            xmlReader.Normalization = true;
-            xmlReader.XmlResolver = null;
+            XmlReader xmlReader = XmlReader.Create(stream, new XmlReaderSettings() { IgnoreWhitespace = true });
             return Deserialize(xmlReader, null);
         }
 
@@ -900,6 +900,10 @@ namespace System.Xml.Serialization
                     {
                         writer.Write_TimeSpan(o);
                     }
+                    else if (_primitiveType == typeof(DateTimeOffset))
+                    {
+                        writer.Write_dateTimeOffset(o);
+                    }
                     else
                     {
                         throw new InvalidOperationException(SR.Format(SR.XmlUnxpectedType, _primitiveType!.FullName));
@@ -977,6 +981,10 @@ namespace System.Xml.Serialization
                     else if (_primitiveType == typeof(TimeSpan))
                     {
                         o = reader.Read_TimeSpan();
+                    }
+                    else if (_primitiveType == typeof(DateTimeOffset))
+                    {
+                        o = reader.Read_dateTimeOffset();
                     }
                     else
                     {

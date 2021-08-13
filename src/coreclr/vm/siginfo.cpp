@@ -1417,11 +1417,13 @@ TypeHandle SigPointer::GetTypeHandleThrowing(
 
             Instantiation genericLoadInst(thisinst, ntypars);
 
+#ifndef FEATURE_PREJIT // PREJIT doesn't support the volatile update semantics in the interface map that this requires
             if (pMTInterfaceMapOwner != NULL && genericLoadInst.ContainsAllOneType(pMTInterfaceMapOwner))
             {
                 thRet = ClassLoader::LoadTypeDefThrowing(pGenericTypeModule, tkGenericType, ClassLoader::ThrowIfNotFound, ClassLoader::PermitUninstDefOrRef, 0, level);
             }
             else
+#endif // FEATURE_PREJIT
             {
                 // Group together the current signature type context and substitution chain, which
                 // we may later use to instantiate constraints of type arguments that turn out to be

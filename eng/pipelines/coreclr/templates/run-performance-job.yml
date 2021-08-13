@@ -23,7 +23,6 @@ parameters:
   runKind: ''                     # required -- test category
   logicalMachine: ''              # required -- Used to specify a which pool of machines the test should run against
   javascriptEngine: 'NoJS'
-  iosLlvmBuild: 'False'
   
 jobs:
 - template: xplat-pipeline-job.yml
@@ -143,6 +142,6 @@ jobs:
       displayName: Publish Logs
       inputs:
         targetPath: $(Build.SourcesDirectory)/artifacts/log
-        artifactName: 'Performance_Run_$(osGroup)$(osSubgroup)_$(archType)_$(buildConfig)_${{ parameters.runtimeType }}_${{ parameters.codeGenType }}_${{ parameters.runKind }}_${{ parameters.logicalMachine }}_${{ parameters.javascriptEngine }}_${{ parameters.pgoRunType }}_${{ parameters.iosLlvmBuild }}'
+        artifactName: 'Performance_Run_$(osGroup)$(osSubgroup)_$(archType)_$(buildConfig)_${{ parameters.runtimeType }}_${{ parameters.codeGenType }}_${{ parameters.runKind }}_${{ parameters.logicalMachine }}_${{ parameters.javascriptEngine }}_${{ parameters.pgoRunType }}'
       continueOnError: true
       condition: always()

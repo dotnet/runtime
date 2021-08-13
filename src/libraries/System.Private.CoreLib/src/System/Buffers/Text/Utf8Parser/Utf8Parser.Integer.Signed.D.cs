@@ -336,107 +336,121 @@ namespace System.Buffers.Text
 
         private static bool TryParseInt64D(ReadOnlySpan<byte> source, out long value, out int bytesConsumed)
         {
-            if (source.Length < 1)
-            {
-                bytesConsumed = 0;
-                value = default;
-                return false;
-            }
+            long sign = 0; // 0 if the value is positive, -1 if the value is negative
+            int idx = 0;
 
-            int indexOfFirstDigit = 0;
-            int sign = 1;
-            if (source[0] == '-')
-            {
-                indexOfFirstDigit = 1;
-                sign = -1;
+            // We use 'nuint' for the firstChar and nextChar data types in this method because
+            // it gives us a free early zero-extension to 64 bits when running on a 64-bit platform.
 
-                if (source.Length <= indexOfFirstDigit)
+            nuint firstChar;
+            while (true)
+            {
+                if ((uint)idx >= (uint)source.Length) { goto FalseExit; }
+                firstChar = (uint)source[idx] - '0';
+                if ((uint)firstChar <= 9) { break; }
+
+                // We saw something that wasn't a digit. If it's a '+' or a '-',
+                // we'll set the 'sign' value appropriately and resume the "read
+                // first char" loop from the next index. If this loops more than
+                // once (idx != 0), it means we saw a sign character followed by
+                // a non-digit character, which should be considered an error.
+
+                if (idx != 0)
                 {
-                    bytesConsumed = 0;
-                    value = default;
-                    return false;
+                    goto FalseExit;
+                }
+
+                idx++;
+
+                if ((uint)firstChar == unchecked((uint)('-' - '0')))
+                {
+                    sign--; // set to -1
+                }
+                else if ((uint)firstChar != unchecked((uint)('+' - '0')))
+                {
+                    goto FalseExit; // not a digit, not '-', and not '+'; fail
                 }
             }
-            else if (source[0] == '+')
-            {
-                indexOfFirstDigit = 1;
 
-                if (source.Length <= indexOfFirstDigit)
-                {
-                    bytesConsumed = 0;
-                    value = default;
-                    return false;
-                }
-            }
+            ulong parsedValue = firstChar;
+            int overflowLength = ParserHelpers.Int64OverflowLength + idx; // +idx to account for any sign char we read
+            idx++;
 
-            int overflowLength = ParserHelpers.Int64OverflowLength + indexOfFirstDigit;
-
-            // Parse the first digit separately. If invalid here, we need to return false.
-            long firstDigit = source[indexOfFirstDigit] - 48; // '0'
-            if (firstDigit < 0 || firstDigit > 9)
-            {
-                bytesConsumed = 0;
-                value = default;
-                return false;
-            }
-            ulong parsedValue = (ulong)firstDigit;
+            // At this point, we successfully read a single digit character.
+            // The only failure condition from here on out is integer overflow.
 
             if (source.Length < overflowLength)
             {
-                // Length is less than Parsers.Int64OverflowLength; overflow is not possible
-                for (int index = indexOfFirstDigit + 1; index < source.Length; index++)
+                // If the input span is short enough such that integer overflow isn't an issue,
+                // don't bother performing overflow checks. Just keep shifting in new digits
+                // until we see a non-digit character or until we've exhausted our input buffer.
+
+                while (true)
                 {
-                    long nextDigit = source[index] - 48; // '0'
-                    if (nextDigit < 0 || nextDigit > 9)
-                    {
-                        bytesConsumed = index;
-                        value = ((long)parsedValue) * sign;
-                        return true;
-                    }
-                    parsedValue = parsedValue * 10 + (ulong)nextDigit;
+                    if ((uint)idx >= (uint)source.Length) { break; } // EOF
+                    nuint nextChar = (uint)source[idx] - '0';
+                    if ((uint)nextChar > 9) { break; } // not a digit
+                    parsedValue = parsedValue * 10 + nextChar;
+                    idx++;
                 }
             }
             else
             {
-                // Length is greater than Parsers.Int64OverflowLength; overflow is only possible after Parsers.Int64OverflowLength
-                // digits. There may be no overflow after Parsers.Int64OverflowLength if there are leading zeroes.
-                for (int index = indexOfFirstDigit + 1; index < overflowLength - 1; index++)
+                while (true)
                 {
-                    long nextDigit = source[index] - 48; // '0'
-                    if (nextDigit < 0 || nextDigit > 9)
+                    if ((uint)idx >= (uint)source.Length) { break; } // EOF
+                    nuint nextChar = (uint)source[idx] - '0';
+                    if ((uint)nextChar > 9) { break; } // not a digit
+                    idx++;
+
+                    // The const below is the smallest unsigned x for which "x * 10 + 9"
+                    // might overflow long.MaxValue. If the current accumulator is below
+                    // this const, there's no risk of overflowing.
+
+                    const ulong OverflowRisk = 0x0CCC_CCCC_CCCC_CCCCul;
+
+                    if (parsedValue < OverflowRisk)
                     {
-                        bytesConsumed = index;
-                        value = ((long)parsedValue) * sign;
-                        return true;
+                        parsedValue = parsedValue * 10 + nextChar;
+                        continue;
                     }
-                    parsedValue = parsedValue * 10 + (ulong)nextDigit;
-                }
-                for (int index = overflowLength - 1; index < source.Length; index++)
-                {
-                    long nextDigit = source[index] - 48; // '0'
-                    if (nextDigit < 0 || nextDigit > 9)
+
+                    // If the current accumulator is exactly equal to the const above,
+                    // then "accumulator * 10 + 7" is the highest we can go without overflowing
+                    // long.MaxValue. (If we know the value is negative, we can instead allow
+                    // +8, since the range of negative numbers is one higher than the range of
+                    // positive numbers.) This also implies that if the current accumulator
+                    // is higher than the const above, there's no hope that we'll succeed,
+                    // so we may as well just fail now.
+                    //
+                    // The (nextChar + sign) trick below works because sign is 0 or -1,
+                    // so if sign is -1 then this actually checks that nextChar > 8.
+                    // n.b. signed arithmetic below because nextChar may be 0.
+
+                    if (parsedValue != OverflowRisk || (int)nextChar + (int)sign > 7)
                     {
-                        bytesConsumed = index;
-                        value = ((long)parsedValue) * sign;
-                        return true;
+                        goto FalseExit;
                     }
-                    // If parsedValue > (long.MaxValue / 10), any more appended digits will cause overflow.
-                    // if parsedValue == (long.MaxValue / 10), any nextDigit greater than 7 or 8 (depending on sign) implies overflow.
-                    bool positive = sign > 0;
-                    bool nextDigitTooLarge = nextDigit > 8 || (positive && nextDigit > 7);
-                    if (parsedValue > long.MaxValue / 10 || parsedValue == long.MaxValue / 10 && nextDigitTooLarge)
-                    {
-                        bytesConsumed = 0;
-                        value = default;
-                        return false;
-                    }
-                    parsedValue = parsedValue * 10 + (ulong)nextDigit;
+
+                    parsedValue = OverflowRisk * 10 + nextChar;
                 }
             }
 
-            bytesConsumed = source.Length;
-            value = ((long)parsedValue) * sign;
+            // 'sign' is 0 for non-negative and -1 for negative. This allows us to perform
+            // cheap arithmetic + bitwise operations to mimic a multiplication by 1 or -1
+            // without incurring the cost of an actual multiplication operation.
+            //
+            // If sign = 0,  this becomes value = (parsedValue ^  0) -   0  = parsedValue
+            // If sign = -1, this becomes value = (parsedValue ^ -1) - (-1) = ~parsedValue + 1 = -parsedValue
+
+            bytesConsumed = idx;
+            value = ((long)parsedValue ^ sign) - sign;
             return true;
+
+        FalseExit:
+            bytesConsumed = 0;
+            value = default;
+            return false;
         }
     }
 }

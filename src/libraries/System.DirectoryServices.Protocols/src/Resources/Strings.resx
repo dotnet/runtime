@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <root>
   <!-- 
     Microsoft ResX Schema 
@@ -491,5 +491,8 @@
   </data>
   <data name="QuotaControlNotSupported" xml:space="preserve">
     <value>System.DirectoryServices.Protocols.QuotaControl is not supported on this platform.</value>
+  </data>
+  <data name="ReferralChasingOptionsNotSupported" xml:space="preserve">
+    <value>Only ReferralChasingOptions.None and ReferralChasingOptions.All are supported on Linux.</value>
   </data>
 </root>

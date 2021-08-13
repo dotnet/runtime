@@ -19,24 +19,40 @@ PhaseStatus Compiler::optRedundantBranches()
     }
 #endif // DEBUG
 
-    bool madeChanges = false;
-
-    for (BasicBlock* const block : Blocks())
+    class OptRedundantBranchesDomTreeVisitor : public DomTreeVisitor<OptRedundantBranchesDomTreeVisitor>
     {
-        // Skip over any removed blocks.
-        //
-        if ((block->bbFlags & BBF_REMOVED) != 0)
+    public:
+        bool madeChanges;
+
+        OptRedundantBranchesDomTreeVisitor(Compiler* compiler)
+            : DomTreeVisitor(compiler, compiler->fgSsaDomTree), madeChanges(false)
         {
-            continue;
         }
 
-        // We currently can optimize some BBJ_CONDs.
-        //
-        if (block->bbJumpKind == BBJ_COND)
+        void PreOrderVisit(BasicBlock* block)
         {
-            madeChanges |= optRedundantBranch(block);
         }
-    }
+
+        void PostOrderVisit(BasicBlock* block)
+        {
+            // Skip over any removed blocks.
+            //
+            if ((block->bbFlags & BBF_REMOVED) != 0)
+            {
+                return;
+            }
+
+            // We currently can optimize some BBJ_CONDs.
+            //
+            if (block->bbJumpKind == BBJ_COND)
+            {
+                madeChanges |= m_compiler->optRedundantBranch(block);
+            }
+        }
+    };
+
+    OptRedundantBranchesDomTreeVisitor visitor(this);
+    visitor.WalkTree();
 
     // Reset visited flags, in case we set any.
     //
@@ -46,13 +62,13 @@ PhaseStatus Compiler::optRedundantBranches()
     }
 
 #if DEBUG
-    if (verbose && madeChanges)
+    if (verbose && visitor.madeChanges)
     {
         fgDispBasicBlocks(verboseTrees);
     }
 #endif // DEBUG
 
-    return madeChanges ? PhaseStatus::MODIFIED_EVERYTHING : PhaseStatus::MODIFIED_NOTHING;
+    return visitor.madeChanges ? PhaseStatus::MODIFIED_EVERYTHING : PhaseStatus::MODIFIED_NOTHING;
 }
 
 //------------------------------------------------------------------------
@@ -296,6 +312,13 @@ bool Compiler::optJumpThread(BasicBlock* const block, BasicBlock* const domBlock
 
     JITDUMP("Both successors of %sdom " FMT_BB " reach " FMT_BB " -- attempting jump threading\n", isIDom ? "i" : "",
             domBlock->bbNum, block->bbNum);
+
+    // If the block is the first block of try-region, then skip jump threading
+    if (bbIsTryBeg(block))
+    {
+        JITDUMP(FMT_BB " is first block of try-region; no threading\n", block->bbNum);
+        return false;
+    }
 
     // Since flow is going to bypass block, make sure there
     // is nothing in block that can cause a side effect.

@@ -53,7 +53,11 @@ namespace ETW
         GC_ROOT_HANDLES = 2,
         GC_ROOT_OLDER = 3,
         GC_ROOT_SIZEDREF = 4,
-        GC_ROOT_OVERFLOW = 5
+        GC_ROOT_OVERFLOW = 5,
+        GC_ROOT_DH_HANDLES = 6,
+        GC_ROOT_NEW_FQ = 7,
+        GC_ROOT_STEAL = 8,
+        GC_ROOT_BGC = 9
     } GC_ROOT_KIND;
 };
 

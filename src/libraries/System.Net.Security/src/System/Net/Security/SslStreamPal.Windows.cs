@@ -4,11 +4,13 @@
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Security.Authentication;
 using System.Security.Authentication.ExtendedProtection;
 using System.Security.Cryptography.X509Certificates;
 using System.Security.Principal;
+using System.Text;
 using Microsoft.Win32.SafeHandles;
 
 namespace System.Net.Security
@@ -121,14 +123,41 @@ namespace System.Net.Security
         public static SafeFreeCredentials AcquireCredentialsHandle(SslStreamCertificateContext? certificateContext, SslProtocols protocols, EncryptionPolicy policy, bool isServer)
         {
             // New crypto API supports TLS1.3 but it does not allow to force NULL encryption.
-            return !UseNewCryptoApi || policy == EncryptionPolicy.NoEncryption ?
+            SafeFreeCredentials cred = !UseNewCryptoApi || policy == EncryptionPolicy.NoEncryption ?
                         AcquireCredentialsHandleSchannelCred(certificateContext?.Certificate, protocols, policy, isServer) :
                         AcquireCredentialsHandleSchCredentials(certificateContext?.Certificate, protocols, policy, isServer);
+            if (certificateContext != null && certificateContext.Trust != null && certificateContext.Trust._sendTrustInHandshake)
+            {
+                AttachCertificateStore(cred, certificateContext.Trust._store!);
+            }
+
+            return cred;
+        }
+
+        private static unsafe void AttachCertificateStore(SafeFreeCredentials cred, X509Store store)
+        {
+            Interop.SspiCli.SecPkgCred_ClientCertPolicy clientCertPolicy = default;
+            fixed (char* ptr = store.Name)
+            {
+                clientCertPolicy.pwszSslCtlStoreName = ptr;
+                Interop.SECURITY_STATUS errorCode = Interop.SspiCli.SetCredentialsAttributesW(
+                            ref cred._handle,
+                            (long)Interop.SspiCli.ContextAttribute.SECPKG_ATTR_CLIENT_CERT_POLICY,
+                            ref clientCertPolicy,
+                            sizeof(Interop.SspiCli.SecPkgCred_ClientCertPolicy));
+
+                if (errorCode != Interop.SECURITY_STATUS.OK)
+                {
+                    throw new Win32Exception((int)errorCode);
+                }
+            }
+
+            return;
         }
 
         // This is legacy crypto API used on .NET Framework and older Windows versions.
         // It only supports TLS up to 1.2
-        public static unsafe SafeFreeCredentials AcquireCredentialsHandleSchannelCred(X509Certificate? certificate, SslProtocols protocols, EncryptionPolicy policy, bool isServer)
+        public static unsafe SafeFreeCredentials AcquireCredentialsHandleSchannelCred(X509Certificate2? certificate, SslProtocols protocols, EncryptionPolicy policy, bool isServer)
         {
             int protocolFlags = GetProtocolFlagsFromSslProtocols(protocols, isServer);
             Interop.SspiCli.SCHANNEL_CRED.Flags flags;
@@ -174,12 +203,11 @@ namespace System.Net.Security
         }
 
         // This function uses new crypto API to support TLS 1.3 and beyond.
-        public static unsafe SafeFreeCredentials AcquireCredentialsHandleSchCredentials(X509Certificate? certificate, SslProtocols protocols, EncryptionPolicy policy, bool isServer)
+        public static unsafe SafeFreeCredentials AcquireCredentialsHandleSchCredentials(X509Certificate2? certificate, SslProtocols protocols, EncryptionPolicy policy, bool isServer)
         {
             int protocolFlags = GetProtocolFlagsFromSslProtocols(protocols, isServer);
             Interop.SspiCli.SCH_CREDENTIALS.Flags flags;
             Interop.SspiCli.CredentialUse direction;
-
             if (isServer)
             {
                 direction = Interop.SspiCli.CredentialUse.SECPKG_CRED_INBOUND;
@@ -215,7 +243,6 @@ namespace System.Net.Security
             Interop.SspiCli.SCH_CREDENTIALS credential = default;
             credential.dwVersion = Interop.SspiCli.SCH_CREDENTIALS.CurrentVersion;
             credential.dwFlags = flags;
-
             Interop.Crypt32.CERT_CONTEXT *certificateHandle = null;
             if (certificate != null)
             {

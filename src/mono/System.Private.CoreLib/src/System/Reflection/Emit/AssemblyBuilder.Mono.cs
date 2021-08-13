@@ -254,9 +254,7 @@ namespace System.Reflection.Emit
             return ab;
         }
 
-        public ModuleBuilder DefineDynamicModule(string name) => DefineDynamicModule(name, false);
-
-        public ModuleBuilder DefineDynamicModule(string name, bool emitSymbolInfo)
+        public ModuleBuilder DefineDynamicModule(string name)
         {
             if (name == null)
                 throw new ArgumentNullException(nameof(name));
@@ -360,7 +358,12 @@ namespace System.Reflection.Emit
             return null;
         }
 
-        public override Module[] GetModules(bool getResourceModules) => (Module[])modules.Clone();
+        public override Module[] GetModules(bool getResourceModules)
+        {
+            if (modules == null)
+                return Array.Empty<Module>();
+            return (Module[])modules.Clone();
+        }
 
         public override AssemblyName GetName(bool copiedName) => AssemblyName.Create(_mono_assembly, null);
 

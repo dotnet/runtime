@@ -71,12 +71,6 @@
 /* Define to the home page for this package. */
 #cmakedefine PACKAGE_URL 1
 
-/* Version of the corlib-runtime interface */
-#cmakedefine MONO_CORLIB_VERSION "@MONO_CORLIB_VERSION@"
-
-/* Disables the IO portability layer */
-#cmakedefine DISABLE_PORTABILITY 1
-
 /* This platform does not support symlinks */
 #cmakedefine HOST_NO_SYMLINKS 1
 
@@ -1072,6 +1066,9 @@
 
 /* Enable static linking of mono runtime components */
 #cmakedefine STATIC_COMPONENTS
+
+/* Enable perf jit dump support */
+#cmakedefine ENABLE_JIT_DUMP 1
 
 #if defined(ENABLE_LLVM) && defined(HOST_WIN32) && defined(TARGET_WIN32) && (!defined(TARGET_AMD64) || !defined(_MSC_VER))
 #error LLVM for host=Windows and target=Windows is only supported on x64 MSVC build.

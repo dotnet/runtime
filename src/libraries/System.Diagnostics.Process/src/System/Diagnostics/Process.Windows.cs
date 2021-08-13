@@ -90,7 +90,6 @@ namespace System.Diagnostics
 
         /// <summary>Terminates the associated process immediately.</summary>
         [UnsupportedOSPlatform("ios")]
-        [UnsupportedOSPlatform("maccatalyst")]
         [UnsupportedOSPlatform("tvos")]
         public void Kill()
         {
@@ -619,11 +618,11 @@ namespace System.Diagnostics
 
                     if (!retVal)
                     {
-                        if (errorCode == Interop.Errors.ERROR_BAD_EXE_FORMAT || errorCode == Interop.Errors.ERROR_EXE_MACHINE_TYPE_MISMATCH)
-                        {
-                            throw new Win32Exception(errorCode, SR.InvalidApplication);
-                        }
-                        throw new Win32Exception(errorCode);
+                        string nativeErrorMessage = errorCode == Interop.Errors.ERROR_BAD_EXE_FORMAT || errorCode == Interop.Errors.ERROR_EXE_MACHINE_TYPE_MISMATCH
+                            ? SR.InvalidApplication
+                            : GetErrorMessage(errorCode);
+
+                        throw CreateExceptionForErrorStartingProcess(nativeErrorMessage, errorCode, startInfo.FileName, workingDirectory);
                     }
                 }
                 finally
@@ -884,5 +883,7 @@ namespace System.Diagnostics
 
             return result.ToString();
         }
+
+        private static string GetErrorMessage(int error) => Interop.Kernel32.GetMessage(error);
     }
 }

@@ -7,5 +7,5 @@ namespace System.ComponentModel
     /// Represents the method that will handle the AddingNew event on a list,
     /// and provide the new object to be added to the list.
     /// </summary>
-    public delegate void AddingNewEventHandler(object sender, AddingNewEventArgs e);
+    public delegate void AddingNewEventHandler(object? sender, AddingNewEventArgs e);
 }

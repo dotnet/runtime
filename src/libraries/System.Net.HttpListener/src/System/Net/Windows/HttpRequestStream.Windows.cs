@@ -306,7 +306,7 @@ namespace System.Net
 
             private static void IOCompleted(HttpRequestStreamAsyncResult asyncResult, uint errorCode, uint numBytes)
             {
-                if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(null, $"asyncResult: {asyncResult} errorCode:0x {errorCode.ToString("x8")} numBytes: {numBytes}");
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(null, $"asyncResult: {asyncResult} errorCode:0x {errorCode:x8} numBytes: {numBytes}");
                 object? result = null;
                 try
                 {
@@ -333,7 +333,7 @@ namespace System.Net
             {
                 HttpRequestStreamAsyncResult asyncResult = (HttpRequestStreamAsyncResult)ThreadPoolBoundHandle.GetNativeOverlappedState(nativeOverlapped)!;
 
-                if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(null, $"asyncResult: {asyncResult} errorCode:0x {errorCode.ToString("x8")} numBytes: {numBytes} nativeOverlapped:0x {((IntPtr)nativeOverlapped).ToString("x8")}");
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(null, $"asyncResult: {asyncResult} errorCode:0x {errorCode:x8} numBytes: {numBytes} nativeOverlapped:0x{(IntPtr)nativeOverlapped:x8}");
 
                 IOCompleted(asyncResult, errorCode, numBytes);
             }

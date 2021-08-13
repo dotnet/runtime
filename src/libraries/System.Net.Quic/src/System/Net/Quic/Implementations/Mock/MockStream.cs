@@ -42,6 +42,20 @@ namespace System.Net.Quic.Implementations.Mock
 
         private StreamBuffer? ReadStreamBuffer => _isInitiator ? _streamState._inboundStreamBuffer : _streamState._outboundStreamBuffer;
 
+        internal override bool CanTimeout => false;
+
+        internal override int ReadTimeout
+        {
+            get => throw new InvalidOperationException();
+            set => throw new InvalidOperationException();
+        }
+
+        internal override int WriteTimeout
+        {
+            get => throw new InvalidOperationException();
+            set => throw new InvalidOperationException();
+        }
+
         internal override bool CanRead => !_disposed && ReadStreamBuffer is not null;
 
         internal override int Read(Span<byte> buffer)
@@ -70,10 +84,10 @@ namespace System.Net.Quic.Implementations.Mock
             int bytesRead = await streamBuffer.ReadAsync(buffer, cancellationToken).ConfigureAwait(false);
             if (bytesRead == 0)
             {
-                long errorCode = _isInitiator ? _streamState._inboundErrorCode : _streamState._outboundErrorCode;
+                long errorCode = _isInitiator ? _streamState._inboundReadErrorCode : _streamState._outboundReadErrorCode;
                 if (errorCode != 0)
                 {
-                    throw new QuicStreamAbortedException(errorCode);
+                    throw (errorCode == -1) ? new QuicOperationAbortedException() : new QuicStreamAbortedException(errorCode);
                 }
             }
 
@@ -119,6 +133,12 @@ namespace System.Net.Quic.Implementations.Mock
             if (streamBuffer is null)
             {
                 throw new NotSupportedException();
+            }
+
+            long errorCode = _isInitiator ? _streamState._inboundWriteErrorCode : _streamState._outboundWriteErrorCode;
+            if (errorCode != 0)
+            {
+                throw new QuicStreamAbortedException(errorCode);
             }
 
             using var registration = cancellationToken.UnsafeRegister(static s =>
@@ -171,30 +191,31 @@ namespace System.Net.Quic.Implementations.Mock
 
         internal override void AbortRead(long errorCode)
         {
-            throw new NotImplementedException();
+            if (_isInitiator)
+            {
+                _streamState._outboundWriteErrorCode = errorCode;
+            }
+            else
+            {
+                _streamState._inboundWriteErrorCode = errorCode;
+            }
+
+            ReadStreamBuffer?.AbortRead();
         }
 
         internal override void AbortWrite(long errorCode)
         {
             if (_isInitiator)
             {
-                _streamState._outboundErrorCode = errorCode;
+                _streamState._outboundReadErrorCode = errorCode;
             }
             else
             {
-                _streamState._inboundErrorCode = errorCode;
+                _streamState._inboundReadErrorCode = errorCode;
             }
 
             WriteStreamBuffer?.EndWrite();
         }
-
-        internal override ValueTask ShutdownWriteCompleted(CancellationToken cancellationToken = default)
-        {
-            CheckDisposed();
-
-            return default;
-        }
-
 
         internal override ValueTask ShutdownCompleted(CancellationToken cancellationToken = default)
         {
@@ -255,8 +276,10 @@ namespace System.Net.Quic.Implementations.Mock
             public readonly long _streamId;
             public StreamBuffer _outboundStreamBuffer;
             public StreamBuffer? _inboundStreamBuffer;
-            public long _outboundErrorCode;
-            public long _inboundErrorCode;
+            public long _outboundReadErrorCode;
+            public long _inboundReadErrorCode;
+            public long _outboundWriteErrorCode;
+            public long _inboundWriteErrorCode;
 
             private const int InitialBufferSize =
 #if DEBUG

@@ -56,8 +56,4 @@
     <Reference Include="System.Runtime" />
   </ItemGroup>
 
-  <ItemGroup>
-    <NETStandardCompatError Include="netcoreapp2.0" Supported="netcoreapp3.1" />
-  </ItemGroup>
-
 </Project>

@@ -247,6 +247,11 @@ struct insGroup
     double               igPerfScore; // The PerfScore for this insGroup
 #endif
 
+#ifdef DEBUG
+    BasicBlock*               lastGeneratedBlock; // The last block that generated code into this insGroup.
+    jitstd::list<BasicBlock*> igBlocks;           // All the blocks that generated code into this insGroup.
+#endif
+
     UNATIVE_OFFSET igNum;     // for ordering (and display) purposes
     UNATIVE_OFFSET igOffs;    // offset of this group within method
     unsigned int   igFuncIdx; // Which function/funclet does this belong to? (Index into Compiler::compFuncInfos array.)
@@ -505,6 +510,8 @@ protected:
 
     void emitRecomputeIGoffsets();
 
+    void emitDispCommentForHandle(size_t handle, GenTreeFlags flags);
+
     /************************************************************************/
     /*          The following describes a single instruction                */
     /************************************************************************/
@@ -540,7 +547,7 @@ protected:
         size_t            idSize;        // size of the instruction descriptor
         unsigned          idVarRefOffs;  // IL offset for LclVar reference
         size_t            idMemCookie;   // for display of method name  (also used by switch table)
-        unsigned          idFlags;       // for determining type of handle in idMemCookie
+        GenTreeFlags      idFlags;       // for determining type of handle in idMemCookie
         bool              idFinallyCall; // Branch instruction is a call to finally
         bool              idCatchRet;    // Instruction is for a catch 'return'
         CORINFO_SIG_INFO* idCallSig;     // Used to report native call site signatures to the EE
@@ -1229,6 +1236,8 @@ protected:
 
 #define PERFSCORE_THROUGHPUT_ILLEGAL -1024.0f
 
+#define PERFSCORE_THROUGHPUT_ZERO 0.0f // Only used for pseudo-instructions that don't generate code
+
 #define PERFSCORE_THROUGHPUT_6X (1.0f / 6.0f) // Hextuple issue
 #define PERFSCORE_THROUGHPUT_5X 0.20f         // Pentuple issue
 #define PERFSCORE_THROUGHPUT_4X 0.25f         // Quad issue
@@ -1762,12 +1771,12 @@ private:
     void          emitJumpDistBind(); // Bind all the local jumps in method
 
 #if FEATURE_LOOP_ALIGN
-    instrDescAlign* emitCurIGAlignList;          // list of align instructions in current IG
-    unsigned        emitLastInnerLoopStartIgNum; // Start IG of last inner loop
-    unsigned        emitLastInnerLoopEndIgNum;   // End IG of last inner loop
-    unsigned        emitLastAlignedIgNum;        // last IG that has align instruction
-    instrDescAlign* emitAlignList;               // list of local align instructions in method
-    instrDescAlign* emitAlignLast;               // last align instruction in method
+    instrDescAlign* emitCurIGAlignList;   // list of align instructions in current IG
+    unsigned        emitLastLoopStart;    // Start IG of last inner loop
+    unsigned        emitLastLoopEnd;      // End IG of last inner loop
+    unsigned        emitLastAlignedIgNum; // last IG that has align instruction
+    instrDescAlign* emitAlignList;        // list of local align instructions in method
+    instrDescAlign* emitAlignLast;        // last align instruction in method
     unsigned getLoopSize(insGroup* igLoopHeader,
                          unsigned maxLoopSize DEBUG_ARG(bool isAlignAdjusted)); // Get the smallest loop size
     void emitLoopAlignment();
@@ -1902,12 +1911,17 @@ private:
     void* emitAddLabel(VARSET_VALARG_TP GCvars,
                        regMaskTP        gcrefRegs,
                        regMaskTP        byrefRegs,
-                       bool isFinallyTarget = false DEBUG_ARG(unsigned bbNum = 0));
+                       bool             isFinallyTarget = false DEBUG_ARG(BasicBlock* block = nullptr));
 
     // Same as above, except the label is added and is conceptually "inline" in
     // the current block. Thus it extends the previous block and the emitter
     // continues to track GC info as if there was no label.
     void* emitAddInlineLabel();
+
+#ifdef DEBUG
+    void emitPrintLabel(insGroup* ig);
+    const char* emitLabelString(insGroup* ig);
+#endif
 
 #ifdef TARGET_ARMARCH
 

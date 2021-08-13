@@ -41,14 +41,22 @@ namespace System.Globalization.Tests
 
             // Slovak
             yield return new object[] { s_slovakCompare, "ch", "h", 0, 2, CompareOptions.None, -1, 0 };
-            yield return new object[] { s_slovakCompare, "chodit hore", "HO", 0, 11, CompareOptions.IgnoreCase, 7, 2 };
+            // Android has its own ICU, which doesn't work well with slovak
+            if (!PlatformDetection.IsAndroid)
+            {
+                yield return new object[] { s_slovakCompare, "chodit hore", "HO", 0, 11, CompareOptions.IgnoreCase, 7, 2 };
+            }
             yield return new object[] { s_slovakCompare, "chh", "h", 0, 3, CompareOptions.None, 2, 1 };
 
             // Turkish
+            // Android has its own ICU, which doesn't work well with tr
+            if (!PlatformDetection.IsAndroid)
+            {
+                yield return new object[] { s_turkishCompare, "Hi", "I", 0, 2, CompareOptions.IgnoreCase, -1, 0 };
+                yield return new object[] { s_turkishCompare, "Hi", "\u0130", 0, 2, CompareOptions.IgnoreCase, 1, 1 };
+            }
             yield return new object[] { s_turkishCompare, "Hi", "I", 0, 2, CompareOptions.None, -1, 0 };
-            yield return new object[] { s_turkishCompare, "Hi", "I", 0, 2, CompareOptions.IgnoreCase, -1, 0 };
             yield return new object[] { s_turkishCompare, "Hi", "\u0130", 0, 2, CompareOptions.None, -1, 0 };
-            yield return new object[] { s_turkishCompare, "Hi", "\u0130", 0, 2, CompareOptions.IgnoreCase, 1, 1 };
             yield return new object[] { s_invariantCompare, "Hi", "I", 0, 2, CompareOptions.None, -1, 0 };
             yield return new object[] { s_invariantCompare, "Hi", "I", 0, 2, CompareOptions.IgnoreCase, 1, 1 };
             yield return new object[] { s_invariantCompare, "Hi", "\u0130", 0, 2, CompareOptions.IgnoreCase, -1, 0 };
@@ -174,7 +182,6 @@ namespace System.Globalization.Tests
         [MemberData(nameof(IndexOf_TestData))]
         [MemberData(nameof(IndexOf_Aesc_Ligature_TestData))]
         [MemberData(nameof(IndexOf_U_WithDiaeresis_TestData))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/36672", TestPlatforms.Android)]
         public void IndexOf_String(CompareInfo compareInfo, string source, string value, int startIndex, int count, CompareOptions options, int expected, int expectedMatchLength)
         {
             if (value.Length == 1)

@@ -4,6 +4,7 @@
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
+using System.Linq;
 using Xunit;
 
 #pragma warning disable xUnit1025 // reporting duplicate test cases due to not distinguishing 0.0 from -0.0, NaN from -NaN
@@ -38,6 +39,10 @@ namespace System.Tests
         [InlineData(double.NegativeInfinity, double.MinValue, -1)]
         [InlineData(-0d, double.NegativeInfinity, 1)]
         [InlineData(double.NegativeInfinity, -0d, -1)]
+        [InlineData(double.NegativeInfinity, double.NegativeInfinity, 0)]
+        [InlineData(double.NegativeInfinity, double.PositiveInfinity, -1)]
+        [InlineData(double.PositiveInfinity, double.PositiveInfinity, 0)]
+        [InlineData(double.PositiveInfinity, double.NegativeInfinity, 1)]
         public static void CompareTo_Other_ReturnsExpected(double d1, object value, int expected)
         {
             if (value is double d2)
@@ -349,15 +354,12 @@ namespace System.Tests
 
         internal static string SplitPairs(string input)
         {
-            string[] splitPairs = input.Split('-');
-            string ret = "";
-            foreach (var pair in splitPairs)
+            if (!BitConverter.IsLittleEndian)
             {
-                string reversedPair = Reverse(pair);
-                ret += reversedPair;
+                return input.Replace("-", "");
             }
 
-            return ret;
+            return string.Concat(input.Split('-').Select(pair => Reverse(pair)));
         }
 
         internal static string Reverse(string s)

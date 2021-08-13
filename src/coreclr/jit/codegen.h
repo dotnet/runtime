@@ -216,6 +216,7 @@ protected:
     unsigned genCurDispOffset;
 
     static const char* genInsName(instruction ins);
+    const char* genInsDisplayName(emitter::instrDesc* id);
 #endif // DEBUG
 
     //-------------------------------------------------------------------------
@@ -347,6 +348,8 @@ protected:
 #endif
 
     void genAllocLclFrame(unsigned frameSize, regNumber initReg, bool* pInitRegZeroed, regMaskTP maskArgRegsLiveIn);
+
+    void genPoisonFrame(regMaskTP bbRegLiveIn);
 
 #if defined(TARGET_ARM)
 
@@ -863,10 +866,8 @@ protected:
     // Generate code for a GT_BITCAST that is not contained.
     void genCodeForBitCast(GenTreeOp* treeNode);
 
-#if defined(TARGET_XARCH)
     // Generate the instruction to move a value between register files
     void genBitCast(var_types targetType, regNumber targetReg, var_types srcType, regNumber srcReg);
-#endif // TARGET_XARCH
 
     struct GenIntCastDesc
     {
@@ -1154,7 +1155,10 @@ protected:
     void genConsumeHWIntrinsicOperands(GenTreeHWIntrinsic* tree);
 #endif // FEATURE_HW_INTRINSICS
     void genEmitGSCookieCheck(bool pushReg);
-    void genSetRegToIcon(regNumber reg, ssize_t val, var_types type = TYP_INT, insFlags flags = INS_FLAGS_DONT_CARE);
+    void genSetRegToIcon(regNumber reg,
+                         ssize_t   val,
+                         var_types type = TYP_INT,
+                         insFlags flags = INS_FLAGS_DONT_CARE DEBUGARG(GenTreeFlags gtFlags = GTF_EMPTY));
     void genCodeForShift(GenTree* tree);
 
 #if defined(TARGET_X86) || defined(TARGET_ARM)
@@ -1489,7 +1493,7 @@ public:
                                 regNumber reg,
                                 ssize_t   imm,
                                 insFlags flags = INS_FLAGS_DONT_CARE DEBUGARG(size_t targetHandle = 0)
-                                    DEBUGARG(unsigned gtFlags = 0));
+                                    DEBUGARG(GenTreeFlags gtFlags = GTF_EMPTY));
 
     void instGen_Compare_Reg_To_Zero(emitAttr size, regNumber reg);
 
@@ -1500,10 +1504,6 @@ public:
     void instGen_Load_Reg_From_Lcl(var_types srcType, regNumber dstReg, int varNum, int offs);
 
     void instGen_Store_Reg_Into_Lcl(var_types dstType, regNumber srcReg, int varNum, int offs);
-
-#ifdef DEBUG
-    void __cdecl instDisp(instruction ins, bool noNL, const char* fmt, ...);
-#endif
 
 #ifdef TARGET_XARCH
     instruction genMapShiftInsToShiftByConstantIns(instruction ins, int shiftByValue);

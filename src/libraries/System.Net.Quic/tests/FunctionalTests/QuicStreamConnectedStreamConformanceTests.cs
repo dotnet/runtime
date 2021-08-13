@@ -4,11 +4,14 @@
 using System.Collections.Generic;
 using System.IO;
 using System.IO.Tests;
+using System.Net.Sockets;
 using System.Net.Quic.Implementations;
 using System.Net.Security;
 using System.Security.Cryptography.X509Certificates;
+using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
+using Xunit.Abstractions;
 
 namespace System.Net.Quic.Tests
 {
@@ -18,36 +21,24 @@ namespace System.Net.Quic.Tests
     }
 
     [ConditionalClass(typeof(QuicTestBase<MsQuicProviderFactory>), nameof(QuicTestBase<MsQuicProviderFactory>.IsSupported))]
+    [Collection("NoParallelTests")]
     public sealed class MsQuicQuicStreamConformanceTests : QuicStreamConformanceTests
     {
         protected override QuicImplementationProvider Provider => QuicImplementationProviders.MsQuic;
         protected override bool UsableAfterCanceledReads => false;
         protected override bool BlocksOnZeroByteReads => true;
+        protected override bool CanTimeout => true;
 
-        // TODO: These are all hanging, likely due to Stream close behavior.
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/756")]
-        public override Task Read_Eof_Returns0(ReadWriteMode mode, bool dataAvailableFirst) => base.Read_Eof_Returns0(mode, dataAvailableFirst);
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/756")]
-        public override Task CopyToAsync_AllDataCopied(int byteCount, bool useAsync) => base.CopyToAsync_AllDataCopied(byteCount, useAsync);
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/756")]
-        public override Task CopyToAsync_AllDataCopied_Large(bool useAsync) => base.CopyToAsync_AllDataCopied_Large(useAsync);
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/756")]
-        public override Task Dispose_ClosesStream(int disposeMode) => base.Dispose_ClosesStream(disposeMode);
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/756")]
-        public override Task Write_DataReadFromDesiredOffset(ReadWriteMode mode) => base.Write_DataReadFromDesiredOffset(mode);
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/756")]
-        public override Task Parallel_ReadWriteMultipleStreamsConcurrently() => base.Parallel_ReadWriteMultipleStreamsConcurrently();
-
-        // TODO: new additions, find out the actual reason for hanging
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/49157")]
-        public override Task Read_DataStoredAtDesiredOffset(ReadWriteMode mode) => base.Read_DataStoredAtDesiredOffset(mode);
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/49157")]
-        public override Task ReadAsync_DuringReadAsync_ThrowsIfUnsupported() => base.ReadAsync_DuringReadAsync_ThrowsIfUnsupported();
+        public MsQuicQuicStreamConformanceTests(ITestOutputHelper output)
+        {
+            _output = output;
+        }
     }
 
     public abstract class QuicStreamConformanceTests : ConnectedStreamConformanceTests
     {
         public X509Certificate2 ServerCertificate = System.Net.Test.Common.Configuration.Certificates.GetServerCertificate();
+        public ITestOutputHelper _output;
 
         public bool RemoteCertificateValidationCallback(object sender, X509Certificate? certificate, X509Chain? chain, SslPolicyErrors sslPolicyErrors)
         {
@@ -95,21 +86,31 @@ namespace System.Net.Quic.Tests
                 }),
                 Task.Run(async () =>
                 {
-                    connection2 = new QuicConnection(
-                        provider,
-                        listener.ListenEndPoint,
-                        GetSslClientAuthenticationOptions());
-                    await connection2.ConnectAsync();
-                    stream2 = connection2.OpenBidirectionalStream();
-                    // OpenBidirectionalStream only allocates ID. We will force stream opening
-                    // by Writing there and receiving data on the other side.
-                    await stream2.WriteAsync(buffer);
+                    try
+                    {
+                        connection2 = new QuicConnection(
+                            provider,
+                            listener.ListenEndPoint,
+                            GetSslClientAuthenticationOptions());
+                        await connection2.ConnectAsync();
+                        stream2 = connection2.OpenBidirectionalStream();
+                        // OpenBidirectionalStream only allocates ID. We will force stream opening
+                        // by Writing there and receiving data on the other side.
+                        await stream2.WriteAsync(buffer);
+                    }
+                    catch (Exception ex)
+                    {
+                        _output?.WriteLine($"Failed to {ex.Message}");
+                        throw;
+                    }
                 }));
+
+            // No need to keep the listener once we have connected connection and streams
+            listener.Dispose();
 
             var result = new StreamPairWithOtherDisposables(stream1, stream2);
             result.Disposables.Add(connection1);
             result.Disposables.Add(connection2);
-            result.Disposables.Add(listener);
 
             return result;
         }

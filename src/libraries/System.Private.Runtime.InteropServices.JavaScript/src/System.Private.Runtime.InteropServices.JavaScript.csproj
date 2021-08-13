@@ -3,6 +3,7 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <Nullable>enable</Nullable>
     <TargetFrameworks>$(NetCoreAppCurrent)-Browser</TargetFrameworks>
+    <NoWarn>$(NoWarn);CA1419</NoWarn> <!-- // TODO https://github.com/dotnet/roslyn-analyzers/issues/5232: not intended for use with P/Invoke -->
   </PropertyGroup>
   <ItemGroup Condition="'$(TargetsBrowser)' == 'true'">
     <Compile Include="$(CommonPath)Interop\Browser\Interop.Runtime.cs" Link="Common\Interop\Browser\Interop.Runtime.cs" />

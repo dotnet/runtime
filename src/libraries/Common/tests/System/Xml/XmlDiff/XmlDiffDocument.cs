@@ -1594,7 +1594,7 @@ namespace System.Xml.XmlDiff
                     w.WriteString(Value);
                     break;
                 default:
-                    Debug.Assert(false, "Wrong type for text-like node : " + this._nodetype.ToString());
+                    Debug.Assert(false, $"Wrong type for text-like node : {this._nodetype}");
                     break;
             }
         }

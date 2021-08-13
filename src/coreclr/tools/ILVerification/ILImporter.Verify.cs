@@ -535,7 +535,8 @@ again:
             var args = new ErrorArgument[]
             {
                 new ErrorArgument("Offset", _currentInstructionOffset),
-                new ErrorArgument("Found", found.ToString())
+                new ErrorArgument("Found", found.ToString()),
+                new ErrorArgument("Expected", expected.ToString())
             };
             ReportVerificationError(args, error);
         }

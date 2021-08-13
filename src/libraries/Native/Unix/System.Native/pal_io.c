@@ -35,13 +35,22 @@
 #if HAVE_INOTIFY
 #include <sys/inotify.h>
 #endif
+#if HAVE_STATFS_VFS // Linux
+#include <sys/vfs.h>
+#elif HAVE_STATFS_MOUNT // BSD
+#include <sys/mount.h>
+#elif !HAVE_NON_LEGACY_STATFS // SunOS
+#include <sys/types.h>
+#include <sys/statvfs.h>
+#include <sys/vfs.h>
+#endif
 
 #ifdef _AIX
 #include <alloca.h>
 // Somehow, AIX mangles the definition for this behind a C++ def
 // Redeclare it here
 extern int     getpeereid(int, uid_t *__restrict__, gid_t *__restrict__);
-#elif defined(__sun)
+#elif defined(TARGET_SUNOS)
 #ifndef _KERNEL
 #define _KERNEL
 #define UNDEF_KERNEL
@@ -715,6 +724,13 @@ int32_t SystemNative_Link(const char* source, const char* linkTarget)
     return result;
 }
 
+int32_t SystemNative_SymLink(const char* target, const char* linkPath)
+{
+    int32_t result;
+    while ((result = symlink(target, linkPath)) < 0 && errno == EINTR);
+    return result;
+}
+
 intptr_t SystemNative_MksTemps(char* pathTemplate, int32_t suffixLength)
 {
     intptr_t result;
@@ -1196,41 +1212,46 @@ int32_t SystemNative_CopyFile(intptr_t sourceFd, intptr_t destinationFd)
         return -1;
     }
 
-
     // On 32-bit, if you use 64-bit offsets, the last argument of `sendfile' will be a
     // `size_t' a 32-bit integer while the `st_size' field of the stat structure will be off64_t.
     // So `size' will have to be `uint64_t'. In all other cases, it will be `size_t'.
     uint64_t size = (uint64_t)sourceStat.st_size;
-
-    // Note that per man page for large files, you have to iterate until the
-    // whole file is copied (Linux has a limit of 0x7ffff000 bytes copied).
-    while (size > 0)
+    if (size != 0)
     {
-        ssize_t sent = sendfile(outFd, inFd, NULL, (size >= SSIZE_MAX ? SSIZE_MAX : (size_t)size));
-        if (sent < 0)
+        // Note that per man page for large files, you have to iterate until the
+        // whole file is copied (Linux has a limit of 0x7ffff000 bytes copied).
+        while (size > 0)
         {
-            if (errno != EINVAL && errno != ENOSYS)
+            ssize_t sent = sendfile(outFd, inFd, NULL, (size >= SSIZE_MAX ? SSIZE_MAX : (size_t)size));
+            if (sent < 0)
             {
-                return -1;
+                if (errno != EINVAL && errno != ENOSYS)
+                {
+                    return -1;
+                }
+                else
+                {
+                    break;
+                }
             }
             else
             {
-                break;
+                assert((size_t)sent <= size);
+                size -= (size_t)sent;
             }
         }
-        else
+
+        if (size == 0)
         {
-            assert((size_t)sent <= size);
-            size -= (size_t)sent;
+            copied = true;
         }
     }
-    if (size == 0)
-    {
-        copied = true;
-    }
+
     // sendfile couldn't be used; fall back to a manual copy below. This could happen
     // if we're on an old kernel, for example, where sendfile could only be used
-    // with sockets and not regular files.
+    // with sockets and not regular files.  Additionally, certain files (e.g. procfs)
+    // may return a size of 0 even though reading from then will produce data.  As such,
+    // we avoid using sendfile with the queried size if the size is reported as 0.
 #endif // HAVE_SENDFILE_4
 
     // Manually read all data from the source and write it to the destination.
@@ -1377,6 +1398,151 @@ static int16_t ConvertLockType(int16_t managedLockType)
             assert_msg(managedLockType == 2, "Unknown Lock Type", (int)managedLockType);
             return F_UNLCK;
     }
+}
+
+int64_t SystemNative_GetFileSystemType(intptr_t fd)
+{
+#if HAVE_STATFS_VFS || HAVE_STATFS_MOUNT
+    int statfsRes;
+    struct statfs statfsArgs;
+    // for our needs (get file system type) statfs is always enough and there is no need to use statfs64
+    // which got deprecated in macOS 10.6, in favor of statfs
+    while ((statfsRes = fstatfs(ToFileDescriptor(fd), &statfsArgs)) == -1 && errno == EINTR) ;
+    return statfsRes == -1 ? (int64_t)-1 : (int64_t)statfsArgs.f_type;
+#elif !HAVE_NON_LEGACY_STATFS
+    int statfsRes;
+    struct statvfs statfsArgs;
+    while ((statfsRes = fstatvfs(ToFileDescriptor(fd), &statfsArgs)) == -1 && errno == EINTR) ;
+    if (statfsRes == -1) return (int64_t)-1;
+
+    int64_t result = -1;
+
+    if (strcmp(statfsArgs.f_basetype, "adfs") == 0) result = 0xADF5;
+    else if (strcmp(statfsArgs.f_basetype, "affs") == 0) result = 0xADFF;
+    else if (strcmp(statfsArgs.f_basetype, "afs") == 0) result = 0x5346414F;
+    else if (strcmp(statfsArgs.f_basetype, "anoninode") == 0) result = 0x09041934;
+    else if (strcmp(statfsArgs.f_basetype, "aufs") == 0) result = 0x61756673;
+    else if (strcmp(statfsArgs.f_basetype, "autofs") == 0) result = 0x0187;
+    else if (strcmp(statfsArgs.f_basetype, "autofs4") == 0) result = 0x6D4A556D;
+    else if (strcmp(statfsArgs.f_basetype, "befs") == 0) result = 0x42465331;
+    else if (strcmp(statfsArgs.f_basetype, "bdevfs") == 0) result = 0x62646576;
+    else if (strcmp(statfsArgs.f_basetype, "bfs") == 0) result = 0x1BADFACE;
+    else if (strcmp(statfsArgs.f_basetype, "binfmt_misc") == 0) result = 0x42494E4D;
+    else if (strcmp(statfsArgs.f_basetype, "bootfs") == 0) result = 0xA56D3FF9;
+    else if (strcmp(statfsArgs.f_basetype, "btrfs") == 0) result = 0x9123683E;
+    else if (strcmp(statfsArgs.f_basetype, "ceph") == 0) result = 0x00C36400;
+    else if (strcmp(statfsArgs.f_basetype, "cgroupfs") == 0) result = 0x0027E0EB;
+    else if (strcmp(statfsArgs.f_basetype, "cgroup2fs") == 0) result = 0x63677270;
+    else if (strcmp(statfsArgs.f_basetype, "cifs") == 0) result = 0xFF534D42;
+    else if (strcmp(statfsArgs.f_basetype, "coda") == 0) result = 0x73757245;
+    else if (strcmp(statfsArgs.f_basetype, "coherent") == 0) result = 0x012FF7B7;
+    else if (strcmp(statfsArgs.f_basetype, "configfs") == 0) result = 0x62656570;
+    else if (strcmp(statfsArgs.f_basetype, "cpuset") == 0) result = 0x01021994;
+    else if (strcmp(statfsArgs.f_basetype, "cramfs") == 0) result = 0x28CD3D45;
+    else if (strcmp(statfsArgs.f_basetype, "ctfs") == 0) result = 0x01021994;
+    else if (strcmp(statfsArgs.f_basetype, "debugfs") == 0) result = 0x64626720;
+    else if (strcmp(statfsArgs.f_basetype, "dev") == 0) result = 0x1373;
+    else if (strcmp(statfsArgs.f_basetype, "devfs") == 0) result = 0x1373;
+    else if (strcmp(statfsArgs.f_basetype, "devpts") == 0) result = 0x1CD1;
+    else if (strcmp(statfsArgs.f_basetype, "ecryptfs") == 0) result = 0xF15F;
+    else if (strcmp(statfsArgs.f_basetype, "efs") == 0) result = 0x00414A53;
+    else if (strcmp(statfsArgs.f_basetype, "exofs") == 0) result = 0x5DF5;
+    else if (strcmp(statfsArgs.f_basetype, "ext") == 0) result = 0x137D;
+    else if (strcmp(statfsArgs.f_basetype, "ext2_old") == 0) result = 0xEF51;
+    else if (strcmp(statfsArgs.f_basetype, "ext2") == 0) result = 0xEF53;
+    else if (strcmp(statfsArgs.f_basetype, "ext3") == 0) result = 0xEF53;
+    else if (strcmp(statfsArgs.f_basetype, "ext4") == 0) result = 0xEF53;
+    else if (strcmp(statfsArgs.f_basetype, "fat") == 0) result = 0x4006;
+    else if (strcmp(statfsArgs.f_basetype, "fd") == 0) result = 0xF00D1E;
+    else if (strcmp(statfsArgs.f_basetype, "fhgfs") == 0) result = 0x19830326;
+    else if (strcmp(statfsArgs.f_basetype, "fuse") == 0) result = 0x65735546;
+    else if (strcmp(statfsArgs.f_basetype, "fuseblk") == 0) result = 0x65735546;
+    else if (strcmp(statfsArgs.f_basetype, "fusectl") == 0) result = 0x65735543;
+    else if (strcmp(statfsArgs.f_basetype, "futexfs") == 0) result = 0x0BAD1DEA;
+    else if (strcmp(statfsArgs.f_basetype, "gfsgfs2") == 0) result = 0x1161970;
+    else if (strcmp(statfsArgs.f_basetype, "gfs2") == 0) result = 0x01161970;
+    else if (strcmp(statfsArgs.f_basetype, "gpfs") == 0) result = 0x47504653;
+    else if (strcmp(statfsArgs.f_basetype, "hfs") == 0) result = 0x4244;
+    else if (strcmp(statfsArgs.f_basetype, "hfsplus") == 0) result = 0x482B;
+    else if (strcmp(statfsArgs.f_basetype, "hpfs") == 0) result = 0xF995E849;
+    else if (strcmp(statfsArgs.f_basetype, "hugetlbfs") == 0) result = 0x958458F6;
+    else if (strcmp(statfsArgs.f_basetype, "inodefs") == 0) result = 0x11307854;
+    else if (strcmp(statfsArgs.f_basetype, "inotifyfs") == 0) result = 0x2BAD1DEA;
+    else if (strcmp(statfsArgs.f_basetype, "isofs") == 0) result = 0x9660;
+    else if (strcmp(statfsArgs.f_basetype, "jffs") == 0) result = 0x07C0;
+    else if (strcmp(statfsArgs.f_basetype, "jffs2") == 0) result = 0x72B6;
+    else if (strcmp(statfsArgs.f_basetype, "jfs") == 0) result = 0x3153464A;
+    else if (strcmp(statfsArgs.f_basetype, "kafs") == 0) result = 0x6B414653;
+    else if (strcmp(statfsArgs.f_basetype, "lofs") == 0) result = 0xEF53;
+    else if (strcmp(statfsArgs.f_basetype, "logfs") == 0) result = 0xC97E8168;
+    else if (strcmp(statfsArgs.f_basetype, "lustre") == 0) result = 0x0BD00BD0;
+    else if (strcmp(statfsArgs.f_basetype, "minix_old") == 0) result = 0x137F;
+    else if (strcmp(statfsArgs.f_basetype, "minix") == 0) result = 0x138F;
+    else if (strcmp(statfsArgs.f_basetype, "minix2") == 0) result = 0x2468;
+    else if (strcmp(statfsArgs.f_basetype, "minix2v2") == 0) result = 0x2478;
+    else if (strcmp(statfsArgs.f_basetype, "minix3") == 0) result = 0x4D5A;
+    else if (strcmp(statfsArgs.f_basetype, "mntfs") == 0) result = 0x01021994;
+    else if (strcmp(statfsArgs.f_basetype, "mqueue") == 0) result = 0x19800202;
+    else if (strcmp(statfsArgs.f_basetype, "msdos") == 0) result = 0x4D44;
+    else if (strcmp(statfsArgs.f_basetype, "nfs") == 0) result = 0x6969;
+    else if (strcmp(statfsArgs.f_basetype, "nfsd") == 0) result = 0x6E667364;
+    else if (strcmp(statfsArgs.f_basetype, "nilfs") == 0) result = 0x3434;
+    else if (strcmp(statfsArgs.f_basetype, "novell") == 0) result = 0x564C;
+    else if (strcmp(statfsArgs.f_basetype, "ntfs") == 0) result = 0x5346544E;
+    else if (strcmp(statfsArgs.f_basetype, "objfs") == 0) result = 0x01021994;
+    else if (strcmp(statfsArgs.f_basetype, "ocfs2") == 0) result = 0x7461636F;
+    else if (strcmp(statfsArgs.f_basetype, "openprom") == 0) result = 0x9FA1;
+    else if (strcmp(statfsArgs.f_basetype, "omfs") == 0) result = 0xC2993D87;
+    else if (strcmp(statfsArgs.f_basetype, "overlay") == 0) result = 0x794C7630;
+    else if (strcmp(statfsArgs.f_basetype, "overlayfs") == 0) result = 0x794C764F;
+    else if (strcmp(statfsArgs.f_basetype, "panfs") == 0) result = 0xAAD7AAEA;
+    else if (strcmp(statfsArgs.f_basetype, "pipefs") == 0) result = 0x50495045;
+    else if (strcmp(statfsArgs.f_basetype, "proc") == 0) result = 0x9FA0;
+    else if (strcmp(statfsArgs.f_basetype, "pstorefs") == 0) result = 0x6165676C;
+    else if (strcmp(statfsArgs.f_basetype, "qnx4") == 0) result = 0x002F;
+    else if (strcmp(statfsArgs.f_basetype, "qnx6") == 0) result = 0x68191122;
+    else if (strcmp(statfsArgs.f_basetype, "ramfs") == 0) result = 0x858458F6;
+    else if (strcmp(statfsArgs.f_basetype, "reiserfs") == 0) result = 0x52654973;
+    else if (strcmp(statfsArgs.f_basetype, "romfs") == 0) result = 0x7275;
+    else if (strcmp(statfsArgs.f_basetype, "rootfs") == 0) result = 0x53464846;
+    else if (strcmp(statfsArgs.f_basetype, "rpc_pipefs") == 0) result = 0x67596969;
+    else if (strcmp(statfsArgs.f_basetype, "samba") == 0) result = 0x517B;
+    else if (strcmp(statfsArgs.f_basetype, "securityfs") == 0) result = 0x73636673;
+    else if (strcmp(statfsArgs.f_basetype, "selinux") == 0) result = 0xF97CFF8C;
+    else if (strcmp(statfsArgs.f_basetype, "sffs") == 0) result = 0x786F4256;
+    else if (strcmp(statfsArgs.f_basetype, "sharefs") == 0) result = 0x01021994;
+    else if (strcmp(statfsArgs.f_basetype, "smb") == 0) result = 0x517B;
+    else if (strcmp(statfsArgs.f_basetype, "smb2") == 0) result = 0xFE534D42;
+    else if (strcmp(statfsArgs.f_basetype, "sockfs") == 0) result = 0x534F434B;
+    else if (strcmp(statfsArgs.f_basetype, "squashfs") == 0) result = 0x73717368;
+    else if (strcmp(statfsArgs.f_basetype, "sysfs") == 0) result = 0x62656572;
+    else if (strcmp(statfsArgs.f_basetype, "sysv2") == 0) result = 0x012FF7B6;
+    else if (strcmp(statfsArgs.f_basetype, "sysv4") == 0) result = 0x012FF7B5;
+    else if (strcmp(statfsArgs.f_basetype, "tmpfs") == 0) result = 0x01021994;
+    else if (strcmp(statfsArgs.f_basetype, "ubifs") == 0) result = 0x24051905;
+    else if (strcmp(statfsArgs.f_basetype, "udf") == 0) result = 0x15013346;
+    else if (strcmp(statfsArgs.f_basetype, "ufs") == 0) result = 0x00011954;
+    else if (strcmp(statfsArgs.f_basetype, "ufscigam") == 0) result = 0x54190100;
+    else if (strcmp(statfsArgs.f_basetype, "ufs2") == 0) result = 0x19540119;
+    else if (strcmp(statfsArgs.f_basetype, "usbdevice") == 0) result = 0x9FA2;
+    else if (strcmp(statfsArgs.f_basetype, "v9fs") == 0) result = 0x01021997;
+    else if (strcmp(statfsArgs.f_basetype, "vagrant") == 0) result = 0x786F4256;
+    else if (strcmp(statfsArgs.f_basetype, "vboxfs") == 0) result = 0x786F4256;
+    else if (strcmp(statfsArgs.f_basetype, "vmhgfs") == 0) result = 0xBACBACBC;
+    else if (strcmp(statfsArgs.f_basetype, "vxfs") == 0) result = 0xA501FCF5;
+    else if (strcmp(statfsArgs.f_basetype, "vzfs") == 0) result = 0x565A4653;
+    else if (strcmp(statfsArgs.f_basetype, "xenfs") == 0) result = 0xABBA1974;
+    else if (strcmp(statfsArgs.f_basetype, "xenix") == 0) result = 0x012FF7B4;
+    else if (strcmp(statfsArgs.f_basetype, "xfs") == 0) result = 0x58465342;
+    else if (strcmp(statfsArgs.f_basetype, "xia") == 0) result = 0x012FD16D;
+    else if (strcmp(statfsArgs.f_basetype, "udev") == 0) result = 0x01021994;
+    else if (strcmp(statfsArgs.f_basetype, "zfs") == 0) result = 0x2FC12FC1;
+
+    assert(result != -1);
+    return result;
+#else
+    #error "Platform doesn't support fstatfs or fstatvfs"
+#endif
 }
 
 int32_t SystemNative_LockFileRegion(intptr_t fd, int64_t offset, int64_t length, int16_t lockType)

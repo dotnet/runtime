@@ -7,15 +7,16 @@
       <SkipOnTestRuntimes>osx-x64;linux-x64;browser-wasm</SkipOnTestRuntimes>
     </TestConsoleAppSourceFiles>
     <TestConsoleAppSourceFiles Include="DebuggerTypeProxyAttributeTests.cs" />
+    <TestConsoleAppSourceFiles Include="DebuggerVisualizerAttributeTests.cs" />
     <TestConsoleAppSourceFiles Include="DefaultValueAttributeCtorTest.cs" />
     <TestConsoleAppSourceFiles Include="GenericArraySortHelperTest.cs" />
     <TestConsoleAppSourceFiles Include="InheritedAttributeTests.cs" />
     <TestConsoleAppSourceFiles Include="InterfacesOnArrays.cs" />
     <TestConsoleAppSourceFiles Include="InvariantGlobalizationFalse.cs">
-      <ExtraTrimmerArgs>--feature System.Globalization.Invariant false</ExtraTrimmerArgs>
+      <DisabledFeatureSwitches>System.Globalization.Invariant</DisabledFeatureSwitches>
     </TestConsoleAppSourceFiles>
     <TestConsoleAppSourceFiles Include="InvariantGlobalizationTrue.cs">
-      <ExtraTrimmerArgs>--feature System.Globalization.Invariant true</ExtraTrimmerArgs>
+      <EnabledFeatureSwitches>System.Globalization.Invariant;System.Globalization.PredefinedCulturesOnly</EnabledFeatureSwitches>
     </TestConsoleAppSourceFiles>
     <TestConsoleAppSourceFiles Include="StackFrameHelperTest.cs">
       <!-- There is a bug with the linker where it is corrupting the pdbs while trimming
@@ -33,7 +34,16 @@
     <TestConsoleAppSourceFiles Include="VerifyResourcesGetTrimmedTest.cs">
       <!-- Setting the Trimming feature switch to make sure that the Resources get trimmed by the linker
       as this test will ensure exceptions are using Resource keys -->
-      <ExtraTrimmerArgs>--feature System.Resources.UseSystemResourceKeys true</ExtraTrimmerArgs>
+      <EnabledFeatureSwitches>System.Resources.UseSystemResourceKeys</EnabledFeatureSwitches>
+    </TestConsoleAppSourceFiles>
+    <TestConsoleAppSourceFiles Include="TypeBuilderComDisabled.cs">
+      <DisabledFeatureSwitches>System.Runtime.InteropServices.BuiltInComInterop.IsSupported</DisabledFeatureSwitches>
+    </TestConsoleAppSourceFiles>
+    <TestConsoleAppSourceFiles Include="NullabilityInfoContextSupportFalse.cs">
+      <DisabledFeatureSwitches>System.Reflection.NullabilityInfoContext.IsSupported</DisabledFeatureSwitches>
+    </TestConsoleAppSourceFiles>
+    <TestConsoleAppSourceFiles Include="NullabilityInfoContextSupportTrue.cs">
+      <EnabledFeatureSwitches>System.Reflection.NullabilityInfoContext.IsSupported</EnabledFeatureSwitches>
     </TestConsoleAppSourceFiles>
   </ItemGroup>
 

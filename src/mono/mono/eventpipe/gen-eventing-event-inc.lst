@@ -45,3 +45,4 @@ ThreadPoolWorkingThreadCount
 ThreadTerminated
 TypeLoadStart
 TypeLoadStop
+Microsoft-DotNETRuntimeMonoProfiler:*

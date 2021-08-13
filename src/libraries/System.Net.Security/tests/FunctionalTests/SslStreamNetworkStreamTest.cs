@@ -42,6 +42,8 @@ namespace System.Net.Security.Tests
 
     public class SslStreamNetworkStreamTest : IClassFixture<CertificateSetup>
     {
+        private static bool SupportsRenegotiation => TestConfiguration.SupportsRenegotiation;
+
         readonly ITestOutputHelper _output;
         readonly CertificateSetup certificates;
 
@@ -172,10 +174,10 @@ namespace System.Net.Security.Tests
             }
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindows7))]
+        [ConditionalTheory(nameof(SupportsRenegotiation))]
         [InlineData(true)]
         [InlineData(false)]
-        [PlatformSpecific(TestPlatforms.Windows)]
+        [PlatformSpecific(TestPlatforms.Windows | TestPlatforms.Linux)]
         public async Task SslStream_NegotiateClientCertificateAsync_Succeeds(bool sendClientCertificate)
         {
             bool negotiateClientCertificateCalled = false;
@@ -214,6 +216,7 @@ namespace System.Net.Security.Tests
                     return true;
                 };
 
+
                 await TestConfiguration.WhenAllOrAnyFailedWithTimeout(
                                 client.AuthenticateAsClientAsync(clientOptions, cts.Token),
                                 server.AuthenticateAsServerAsync(serverOptions, cts.Token));
@@ -234,19 +237,21 @@ namespace System.Net.Security.Tests
                 {
                     Assert.Null(server.RemoteCertificate);
                 }
+
                 // Finish the client's read
                 await server.WriteAsync(TestHelper.s_ping, cts.Token);
                 await t;
+
                 // verify that the session is usable with or without client's certificate
                 await TestHelper.PingPong(client, server, cts.Token);
                 await TestHelper.PingPong(server, client, cts.Token);
             }
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindows7))]
+        [ConditionalTheory(nameof(SupportsRenegotiation))]
         [InlineData(true)]
         [InlineData(false)]
-        [PlatformSpecific(TestPlatforms.Windows)]
+        [PlatformSpecific(TestPlatforms.Windows | TestPlatforms.Linux)]
         public async Task SslStream_NegotiateClientCertificateAsyncNoRenego_Succeeds(bool sendClientCertificate)
         {
             bool negotiateClientCertificateCalled = false;
@@ -314,6 +319,93 @@ namespace System.Net.Security.Tests
                 await TestHelper.PingPong(server, client, cts.Token);
             }
         }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindows7))]
+        [PlatformSpecific(TestPlatforms.Windows | TestPlatforms.Linux)]
+        public async Task SslStream_NegotiateClientCertificateAsync_ClientWriteData()
+        {
+            using CancellationTokenSource cts = new CancellationTokenSource();
+            cts.CancelAfter(TestConfiguration.PassingTestTimeout);
+
+            (SslStream client, SslStream server) = TestHelper.GetConnectedSslStreams();
+            using (client)
+            using (server)
+            {
+                using X509Certificate2 serverCertificate = Configuration.Certificates.GetServerCertificate();
+
+                SslClientAuthenticationOptions clientOptions = new SslClientAuthenticationOptions()
+                {
+                    TargetHost = Guid.NewGuid().ToString("N"),
+                    EnabledSslProtocols = SslProtocols.Tls | SslProtocols.Tls11 | SslProtocols.Tls12,
+                };
+                clientOptions.RemoteCertificateValidationCallback = (sender, certificate, chain, sslPolicyErrors) => true;
+
+                SslServerAuthenticationOptions serverOptions = new SslServerAuthenticationOptions() { ServerCertificate = serverCertificate };
+
+                await TestConfiguration.WhenAllOrAnyFailedWithTimeout(
+                                client.AuthenticateAsClientAsync(clientOptions, cts.Token),
+                                server.AuthenticateAsServerAsync(serverOptions, cts.Token));
+
+                Assert.Null(server.RemoteCertificate);
+
+                var t = server.NegotiateClientCertificateAsync(cts.Token);
+
+                // Send application data instead of Client hello.
+                await client.WriteAsync(new byte[500], cts.Token);
+                // Fail as it is not allowed to receive non hnadshake frames during handshake.
+                await Assert.ThrowsAsync<InvalidOperationException>(()=> t);
+            }
+        }
+
+        [ConditionalFact(nameof(SupportsRenegotiation))]
+        [PlatformSpecific(TestPlatforms.Windows | TestPlatforms.Linux)]
+        public async Task SslStream_NegotiateClientCertificateAsync_ServerDontDrainClientData()
+        {
+            using CancellationTokenSource cts = new CancellationTokenSource();
+            cts.CancelAfter(TestConfiguration.PassingTestTimeout);
+
+            (SslStream client, SslStream server) = TestHelper.GetConnectedSslStreams();
+            using (client)
+            using (server)
+            {
+                using X509Certificate2 serverCertificate = Configuration.Certificates.GetServerCertificate();
+                using X509Certificate2 clientCertificate = Configuration.Certificates.GetClientCertificate();
+
+                SslClientAuthenticationOptions clientOptions = new SslClientAuthenticationOptions()
+                {
+                    TargetHost = Guid.NewGuid().ToString("N"),
+                    EnabledSslProtocols = SslProtocols.Tls | SslProtocols.Tls11 | SslProtocols.Tls12,
+                };
+                clientOptions.RemoteCertificateValidationCallback = (sender, certificate, chain, sslPolicyErrors) => true;
+                clientOptions.LocalCertificateSelectionCallback = (sender, targetHost, localCertificates, remoteCertificate, acceptableIssuers) =>
+                {
+                    return clientCertificate;
+                };
+                SslServerAuthenticationOptions serverOptions = new SslServerAuthenticationOptions() { ServerCertificate = serverCertificate };
+                serverOptions.RemoteCertificateValidationCallback = (sender, certificate, chain, sslPolicyErrors) => true;
+                await TestConfiguration.WhenAllOrAnyFailedWithTimeout(
+                                client.AuthenticateAsClientAsync(clientOptions, cts.Token),
+                                server.AuthenticateAsServerAsync(serverOptions, cts.Token));
+
+                Assert.Null(server.RemoteCertificate);
+
+                // Send application data instead of Client hello.
+                await client.WriteAsync(new byte[500], cts.Token);
+                // Server don't drain the client data
+                await server.ReadAsync(new byte[1]);
+                // Fail as it is not allowed to receive non hnadshake frames during handshake.
+                await Assert.ThrowsAsync<InvalidOperationException>(()=>
+                    server.NegotiateClientCertificateAsync(cts.Token)
+                );
+
+                // Drain client data.
+                await server.ReadAsync(new byte[499]);
+                // Verify that the session is usable even renego request failed.
+                await TestHelper.PingPong(client, server, cts.Token);
+                await TestHelper.PingPong(server, client, cts.Token);
+            }
+        }
+
 
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.SupportsTls13))]
         [InlineData(true)]

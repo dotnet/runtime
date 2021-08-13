@@ -90,22 +90,29 @@ public:
     void FireGCJoin_V2(uint32_t heap, uint32_t joinTime, uint32_t joinType, uint32_t joinId) = 0;
 
     virtual
-    void FireGCGlobalHeapHistory_V3(uint64_t finalYoungestDesired,
-        int32_t numHeaps,
-        uint32_t condemnedGeneration,
-        uint32_t gen0reductionCount,
-        uint32_t reason,
-        uint32_t globalMechanisms,
-        uint32_t pauseMode,
-        uint32_t memoryPressure,
-        uint32_t condemnReasons0,
-        uint32_t condemnReasons1) = 0;
+    void FireGCGlobalHeapHistory_V4(uint64_t finalYoungestDesired,
+                                    int32_t numHeaps,
+                                    uint32_t condemnedGeneration,
+                                    uint32_t gen0reductionCount,
+                                    uint32_t reason,
+                                    uint32_t globalMechanisms,
+                                    uint32_t pauseMode,
+                                    uint32_t memoryPressure,
+                                    uint32_t condemnReasons0,
+                                    uint32_t condemnReasons1,
+                                    uint32_t count,
+                                    uint32_t valuesLen,
+                                    void *values) = 0;
 
     virtual
     void FireGCAllocationTick_V1(uint32_t allocationAmount, uint32_t allocationKind) = 0;
 
     virtual
-    void FireGCAllocationTick_V3(uint64_t allocationAmount, uint32_t allocationKind, uint32_t heapIndex, void* objectAddress) = 0;
+    void FireGCAllocationTick_V4(uint64_t allocationAmount, 
+                                 uint32_t allocationKind, 
+                                 uint32_t heapIndex, 
+                                 void* objectAddress, 
+                                 uint64_t objectSize) = 0;
 
     virtual
     void FirePinObjectAtGCTime(void* object, uint8_t** ppObject) = 0;
@@ -130,6 +137,13 @@ public:
                                  uint32_t count,
                                  uint32_t valuesLen,
                                  void *values) = 0;
+
+    virtual
+    void FireGCLOHCompact(uint16_t count, uint32_t valuesLen, void *values) = 0;
+
+    virtual
+    void FireGCFitBucketInfo(uint16_t bucketKind, size_t size, uint16_t count, uint32_t valuesLen, void *values) = 0;
+
     virtual
     void FireBGCBegin() = 0;
     virtual

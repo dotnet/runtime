@@ -9,210 +9,6 @@ namespace System.Globalization
 {
     public partial class CompareInfo
     {
-        internal static unsafe int InvariantIndexOf(string source, string value, int startIndex, int count, bool ignoreCase)
-        {
-            Debug.Assert(source != null);
-            Debug.Assert(value != null);
-            Debug.Assert(startIndex >= 0 && startIndex < source.Length);
-
-            fixed (char* pSource = source) fixed (char* pValue = value)
-            {
-                char* pSrc = &pSource[startIndex];
-                int index = InvariantFindString(pSrc, count, pValue, value.Length, ignoreCase, fromBeginning: true);
-                if (index >= 0)
-                {
-                    return index + startIndex;
-                }
-                return -1;
-            }
-        }
-
-        internal static unsafe int InvariantIndexOf(ReadOnlySpan<char> source, ReadOnlySpan<char> value, bool ignoreCase, bool fromBeginning = true)
-        {
-            Debug.Assert(source.Length != 0);
-            Debug.Assert(value.Length != 0);
-
-            fixed (char* pSource = &MemoryMarshal.GetReference(source))
-            fixed (char* pValue = &MemoryMarshal.GetReference(value))
-            {
-                return InvariantFindString(pSource, source.Length, pValue, value.Length, ignoreCase, fromBeginning);
-            }
-        }
-
-        internal static unsafe int InvariantLastIndexOf(string source, string value, int startIndex, int count, bool ignoreCase)
-        {
-            Debug.Assert(!string.IsNullOrEmpty(source));
-            Debug.Assert(value != null);
-            Debug.Assert(startIndex >= 0 && startIndex < source.Length);
-
-            fixed (char* pSource = source) fixed (char* pValue = value)
-            {
-                char* pSrc = &pSource[startIndex - count + 1];
-                int index = InvariantFindString(pSrc, count, pValue, value.Length, ignoreCase, fromBeginning: false);
-                if (index >= 0)
-                {
-                    return index + startIndex - count + 1;
-                }
-                return -1;
-            }
-        }
-
-        private static unsafe int InvariantFindString(char* source, int sourceCount, char* value, int valueCount, bool ignoreCase, bool fromBeginning)
-        {
-            int ctrSource = 0;  // index value into source
-            int ctrValue = 0;   // index value into value
-            char sourceChar;    // Character for case lookup in source
-            char valueChar;     // Character for case lookup in value
-            int lastSourceStart;
-
-            Debug.Assert(source != null);
-            Debug.Assert(value != null);
-            Debug.Assert(sourceCount >= 0);
-            Debug.Assert(valueCount >= 0);
-
-            if (valueCount == 0)
-            {
-                return fromBeginning ? 0 : sourceCount;
-            }
-
-            if (sourceCount < valueCount)
-            {
-                return -1;
-            }
-
-            if (fromBeginning)
-            {
-                lastSourceStart = sourceCount - valueCount;
-                if (ignoreCase)
-                {
-                    char firstValueChar = InvariantCaseFold(value[0]);
-                    for (ctrSource = 0; ctrSource <= lastSourceStart; ctrSource++)
-                    {
-                        sourceChar = InvariantCaseFold(source[ctrSource]);
-                        if (sourceChar != firstValueChar)
-                        {
-                            continue;
-                        }
-
-                        for (ctrValue = 1; ctrValue < valueCount; ctrValue++)
-                        {
-                            sourceChar = InvariantCaseFold(source[ctrSource + ctrValue]);
-                            valueChar = InvariantCaseFold(value[ctrValue]);
-
-                            if (sourceChar != valueChar)
-                            {
-                                break;
-                            }
-                        }
-
-                        if (ctrValue == valueCount)
-                        {
-                            return ctrSource;
-                        }
-                    }
-                }
-                else
-                {
-                    char firstValueChar = value[0];
-                    for (ctrSource = 0; ctrSource <= lastSourceStart; ctrSource++)
-                    {
-                        sourceChar = source[ctrSource];
-                        if (sourceChar != firstValueChar)
-                        {
-                            continue;
-                        }
-
-                        for (ctrValue = 1; ctrValue < valueCount; ctrValue++)
-                        {
-                            sourceChar = source[ctrSource + ctrValue];
-                            valueChar = value[ctrValue];
-
-                            if (sourceChar != valueChar)
-                            {
-                                break;
-                            }
-                        }
-
-                        if (ctrValue == valueCount)
-                        {
-                            return ctrSource;
-                        }
-                    }
-                }
-            }
-            else
-            {
-                lastSourceStart = sourceCount - valueCount;
-                if (ignoreCase)
-                {
-                    char firstValueChar = InvariantCaseFold(value[0]);
-                    for (ctrSource = lastSourceStart; ctrSource >= 0; ctrSource--)
-                    {
-                        sourceChar = InvariantCaseFold(source[ctrSource]);
-                        if (sourceChar != firstValueChar)
-                        {
-                            continue;
-                        }
-                        for (ctrValue = 1; ctrValue < valueCount; ctrValue++)
-                        {
-                            sourceChar = InvariantCaseFold(source[ctrSource + ctrValue]);
-                            valueChar = InvariantCaseFold(value[ctrValue]);
-
-                            if (sourceChar != valueChar)
-                            {
-                                break;
-                            }
-                        }
-
-                        if (ctrValue == valueCount)
-                        {
-                            return ctrSource;
-                        }
-                    }
-                }
-                else
-                {
-                    char firstValueChar = value[0];
-                    for (ctrSource = lastSourceStart; ctrSource >= 0; ctrSource--)
-                    {
-                        sourceChar = source[ctrSource];
-                        if (sourceChar != firstValueChar)
-                        {
-                            continue;
-                        }
-
-                        for (ctrValue = 1; ctrValue < valueCount; ctrValue++)
-                        {
-                            sourceChar = source[ctrSource + ctrValue];
-                            valueChar = value[ctrValue];
-
-                            if (sourceChar != valueChar)
-                            {
-                                break;
-                            }
-                        }
-
-                        if (ctrValue == valueCount)
-                        {
-                            return ctrSource;
-                        }
-                    }
-                }
-            }
-
-            return -1;
-        }
-
-        private static char InvariantCaseFold(char c)
-        {
-            // If we ever make Invariant mode support more than just simple ASCII-range case folding,
-            // then we should update this method to perform proper case folding instead of an
-            // uppercase conversion. For now it only understands the ASCII range and reflects all
-            // non-ASCII values unchanged.
-
-            return (uint)(c - 'a') <= (uint)('z' - 'a') ? (char)(c - 0x20) : c;
-        }
-
         private SortKey InvariantCreateSortKey(string source, CompareOptions options)
         {
             if (source == null) { throw new ArgumentNullException(nameof(source)); }
@@ -263,8 +59,23 @@ namespace System.Globalization
 
             for (int i = 0; i < source.Length; i++)
             {
+                char c = source[i];
+                if (char.IsHighSurrogate(c) && i < source.Length - 1)
+                {
+                    char cl = source[i + 1];
+                    if (char.IsLowSurrogate(cl))
+                    {
+                        SurrogateCasing.ToUpper(c, cl, out char hr, out char lr);
+                        BinaryPrimitives.WriteUInt16BigEndian(sortKey, hr);
+                        BinaryPrimitives.WriteUInt16BigEndian(sortKey, lr);
+                        i++;
+                        sortKey = sortKey.Slice(2 * sizeof(ushort));
+                        continue;
+                    }
+                }
+
                 // convert machine-endian to big-endian
-                BinaryPrimitives.WriteUInt16BigEndian(sortKey, (ushort)InvariantCaseFold(source[i]));
+                BinaryPrimitives.WriteUInt16BigEndian(sortKey, (ushort)InvariantModeCasing.ToUpper(c));
                 sortKey = sortKey.Slice(sizeof(ushort));
             }
         }

@@ -623,13 +623,13 @@ void MethodTable::SetIsTrackedReferenceWithFinalizer()
     SetFlag(enum_flag_IsTrackedReferenceWithFinalizer);
 }
 
+#endif // !DACCESS_COMPILE
+
 BOOL MethodTable::IsTrackedReferenceWithFinalizer()
 {
     LIMITED_METHOD_DAC_CONTRACT;
     return GetFlag(enum_flag_IsTrackedReferenceWithFinalizer);
 }
-
-#endif // !DACCESS_COMPILE
 
 //==========================================================================================
 WORD MethodTable::GetNumMethods()
@@ -713,8 +713,10 @@ PTR_MethodTable InterfaceInfo_t::GetApproxMethodTable(Module * pContainingModule
 
         return pItfMT;
     }
-#endif
     MethodTable * pItfMT = m_pMethodTable.GetValue();
+#else
+    MethodTable * pItfMT = GetMethodTable();
+#endif
     ClassLoader::EnsureLoaded(TypeHandle(pItfMT), CLASS_LOAD_APPROXPARENTS);
     return pItfMT;
 }
@@ -1575,6 +1577,7 @@ BOOL MethodTable::CanCastByVarianceToInterfaceOrDelegate(MethodTable *pTargetMT,
 
     // Shortcut for generic approx type scenario
     if (pMTInterfaceMapOwner != NULL &&
+        !pMTInterfaceMapOwner->ContainsGenericVariables() &&
         IsSpecialMarkerTypeForGenericCasting() &&
         GetTypeDefRid() == pTargetMT->GetTypeDefRid() &&
         GetModule() == pTargetMT->GetModule() &&
@@ -1601,7 +1604,7 @@ BOOL MethodTable::CanCastByVarianceToInterfaceOrDelegate(MethodTable *pTargetMT,
         for (DWORD i = 0; i < inst.GetNumArgs(); i++)
         {
             TypeHandle thArg = inst[i];
-            if (IsSpecialMarkerTypeForGenericCasting() && pMTInterfaceMapOwner)
+            if (IsSpecialMarkerTypeForGenericCasting() && pMTInterfaceMapOwner && !pMTInterfaceMapOwner->ContainsGenericVariables())
             {
                 thArg = pMTInterfaceMapOwner;
             }
@@ -7947,7 +7950,8 @@ MethodTable::MethodData::ProcessMap(
     UINT32                    cTypeIDs,
     MethodTable *             pMT,
     UINT32                    iCurrentChainDepth,
-    MethodDataEntry *         rgWorkingData)
+    MethodDataEntry *         rgWorkingData,
+    size_t                    cWorkingData)
 {
     LIMITED_METHOD_CONTRACT;
 
@@ -7958,10 +7962,8 @@ MethodTable::MethodData::ProcessMap(
             if (it.Entry()->GetTypeID() == rgTypeIDs[nTypeIDIndex])
             {
                 UINT32 curSlot = it.Entry()->GetSlotNumber();
-                // If we're processing an interface, or it's for a virtual, or it's for a non-virtual
-                // for the most derived type, we want to process the entry. In other words, we
-                // want to ignore non-virtuals for parent classes.
-                if ((curSlot < pMT->GetNumVirtuals()) || (iCurrentChainDepth == 0))
+                // This if check is defensive, and should never fail
+                if (curSlot < cWorkingData)
                 {
                     MethodDataEntry * pCurEntry = &rgWorkingData[curSlot];
                     if (!pCurEntry->IsDeclInit() && !pCurEntry->IsImplInit())
@@ -8328,7 +8330,7 @@ MethodTable::MethodDataInterfaceImpl::PopulateNextLevel()
 
     if (m_cDeclTypeIDs != 0)
     {   // We got the TypeIDs from TypeLoader, use them
-        ProcessMap(m_rgDeclTypeIDs, m_cDeclTypeIDs, pMTCur, iChainDepth, GetEntryData());
+        ProcessMap(m_rgDeclTypeIDs, m_cDeclTypeIDs, pMTCur, iChainDepth, GetEntryData(), GetNumVirtuals());
     }
     else
     {   // We should decode all interface duplicates of code:m_pDecl
@@ -8345,7 +8347,7 @@ MethodTable::MethodDataInterfaceImpl::PopulateNextLevel()
                 INDEBUG(dbg_fInterfaceFound = TRUE);
                 DispatchMapTypeID declTypeID = DispatchMapTypeID::InterfaceClassID(it.GetIndex());
 
-                ProcessMap(&declTypeID, 1, pMTCur, iChainDepth, GetEntryData());
+                ProcessMap(&declTypeID, 1, pMTCur, iChainDepth, GetEntryData(), GetNumVirtuals());
             }
         }
         // The interface code:m_Decl should be found at least once in the interface map of code:m_pImpl,
@@ -9269,7 +9271,7 @@ MethodTable::ResolveVirtualStaticMethod(MethodTable* pInterfaceType, MethodDesc*
                     {
                         if (it.CurrentInterfaceMatches(this, pInterfaceType))
                         {
-                            // This is the variant interface check logic, skip the 
+                            // This is the variant interface check logic, skip the exact matches as they were handled above
                             continue;
                         }
 
@@ -9818,7 +9820,7 @@ PTR_MethodTable MethodTable::InterfaceMapIterator::GetInterface(MethodTable* pMT
     CONTRACT_END;
 
     MethodTable *pResult = m_pMap->GetMethodTable();
-    if (pResult->IsSpecialMarkerTypeForGenericCasting())
+    if (pResult->IsSpecialMarkerTypeForGenericCasting() && !pMTOwner->ContainsGenericVariables())
     {
         TypeHandle ownerAsInst[MaxGenericParametersForSpecialMarkerType];
         for (DWORD i = 0; i < MaxGenericParametersForSpecialMarkerType; i++)

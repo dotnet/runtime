@@ -86,6 +86,7 @@ namespace System.Runtime.InteropServices.JavaScript
 
                 if (exception != 0)
                     throw new JSException((string)indexValue);
+                Interop.Runtime.ReleaseInFlight(indexValue);
                 return indexValue;
             }
             set

@@ -16,7 +16,7 @@ namespace System.Reflection.Context.Delegation
             _clause = clause;
         }
 
-        public override Type CatchType
+        public override Type? CatchType
         {
             get { return _clause.CatchType; }
         }

@@ -928,8 +928,9 @@ LOCAL_LABEL(CallCppHelper3):
     .endm
 
     .macro JIT_WRITEBARRIER_DESCRIPTOR name
-        .word \name
-        .word \name\()_End
+1:
+        .word \name-1b
+        .word \name\()_End-1b
         .word __\name\()__g_lowest_address_offset
         .word __\name\()__g_highest_address_offset
         .word __\name\()__g_ephemeral_low_offset
@@ -977,6 +978,18 @@ g_rgWriteBarrierDescriptors:
 //    .text
 
     .global g_rgWriteBarrierDescriptors
+
+// ------------------------------------------------------------------
+// __declspec(naked) void F_CALL_CONV JIT_WriteBarrier_Callable(Object **dst, Object* val)
+    LEAF_ENTRY JIT_WriteBarrier_Callable
+
+    // Branch to the write barrier
+    ldr     r2, =JIT_WriteBarrier_Loc-(1f+4) // or R3? See targetarm.h
+1:
+    add     r2, pc
+    ldr     pc, [r2]
+
+    LEAF_END JIT_WriteBarrier_Callable
 
 #ifdef FEATURE_READYTORUN
 

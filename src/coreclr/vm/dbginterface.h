@@ -363,7 +363,7 @@ public:
                                          SIZE_T                     *rgVal2,
                                          BYTE                      **rgpVCs) = 0;
 
-    virtual BOOL IsThreadContextInvalid(Thread *pThread) = 0;
+    virtual BOOL IsThreadContextInvalid(Thread *pThread, CONTEXT *pCtx) = 0;
 
     // For Just-My-Code (aka Just-User-Code).
     // The jit inserts probes that look like.

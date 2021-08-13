@@ -79,6 +79,8 @@
     <Compile Include="System\IO\FileSystemWatcher.OSX.cs" />
     <Compile Include="$(CoreLibSharedDir)System\IO\FileSystem.Exists.Unix.cs"
              Link="System\IO\FileSystem.Exists.Unix.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\Interop.DefaultPathBufferSize.cs"
+             Link="Common\Interop\Unix\Interop.DefaultPathBufferSize.cs" />
     <Compile Include="$(CommonPath)Interop\OSX\Interop.EventStream.cs"
              Link="Common\Interop\OSX\Interop.EventStream.cs" />
     <Compile Include="$(CommonPath)Interop\OSX\Interop.CoreFoundation.cs"

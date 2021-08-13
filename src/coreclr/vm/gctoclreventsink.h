@@ -35,7 +35,7 @@ public:
     void FireGCTriggered(uint32_t reason);
     void FireGCMarkWithType(uint32_t heapNum, uint32_t type, uint64_t bytes);
     void FireGCJoin_V2(uint32_t heap, uint32_t joinTime, uint32_t joinType, uint32_t joinId);
-    void FireGCGlobalHeapHistory_V3(uint64_t finalYoungestDesired,
+    void FireGCGlobalHeapHistory_V4(uint64_t finalYoungestDesired,
                                     int32_t numHeaps,
                                     uint32_t condemnedGeneration,
                                     uint32_t gen0reductionCount,
@@ -44,9 +44,17 @@ public:
                                     uint32_t pauseMode,
                                     uint32_t memoryPressure,
                                     uint32_t condemnReasons0,
-                                    uint32_t condemnReasons1);
+                                    uint32_t condemnReasons1,
+                                    uint32_t count,
+                                    uint32_t valuesLen,
+                                    void *values);
+
     void FireGCAllocationTick_V1(uint32_t allocationAmount, uint32_t allocationKind);
-    void FireGCAllocationTick_V3(uint64_t allocationAmount, uint32_t allocationKind, uint32_t heapIndex, void* objectAddress);
+    void FireGCAllocationTick_V4(uint64_t allocationAmount, 
+                                 uint32_t allocationKind, 
+                                 uint32_t heapIndex, 
+                                 void* objectAddress, 
+                                 uint64_t objectSize);
     void FirePinObjectAtGCTime(void* object, uint8_t** ppObject);
     void FirePinPlugAtGCTime(uint8_t* plug_start, uint8_t* plug_end, uint8_t* gapBeforeSize);
     void FireGCPerHeapHistory_V3(void *freeListAllocated,
@@ -65,6 +73,8 @@ public:
                                  uint32_t count,
                                  uint32_t valuesLen,
                                  void *values);
+    void FireGCLOHCompact(uint16_t count, uint32_t valuesLen, void *values);
+    void FireGCFitBucketInfo(uint16_t bucketKind, size_t size, uint16_t count, uint32_t valuesLen, void *values);
     void FireBGCBegin();
     void FireBGC1stNonConEnd();
     void FireBGC1stConEnd();

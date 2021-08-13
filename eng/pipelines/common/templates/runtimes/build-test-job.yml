@@ -98,6 +98,13 @@ jobs:
         - name: compilerArg
           value: ''
 
+      - name: runtimeFlavorArgs
+        value: ''
+
+      - ${{ if eq(parameters.runtimeFlavor, 'mono') }}:
+        - name: runtimeFlavorArgs
+          value: '-excludemonofailures'
+
     steps:
 
     # Install test build dependencies
@@ -120,7 +127,7 @@ jobs:
         displayName: Disk Usage before Build
 
     # Build managed test components
-    - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) allTargets skipnative skipgeneratelayout skiptestwrappers $(buildConfig) $(archType) $(crossArg) $(priorityArg) ci $(librariesOverrideArg)
+    - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) allTargets skipnative skipgeneratelayout skiptestwrappers $(buildConfig) $(archType) $(runtimeFlavorArgs) $(crossArg) $(priorityArg) ci $(librariesOverrideArg)
       displayName: Build managed test components
 
     - ${{ if in(parameters.osGroup, 'OSX', 'iOS', 'tvOS') }}:

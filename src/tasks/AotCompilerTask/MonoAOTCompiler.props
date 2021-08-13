@@ -5,7 +5,6 @@
     <MonoAOTCompilerDefaultAotArguments Condition="'$(TargetArchitecture)' == 'x64'" Include="mtriple=x86_64-ios" />
     <MonoAOTCompilerDefaultAotArguments Condition="'$(TargetArchitecture)' == 'x86'" Include="mtriple=i386-ios" />
     <MonoAOTCompilerDefaultAotArguments Include="static" />
-    <MonoAOTCompilerDefaultAotArguments Include="direct-icalls" />
     <MonoAOTCompilerDefaultAotArguments Include="dwarfdebug" />
     <MonoAOTCompilerDefaultAotArguments Condition="'$(TargetArchitecture)' == 'arm64' or '$(TargetArchitecture)' == 'arm'" Include="mattr=+crc" /> <!-- enable System.Runtime.Intrinsics.Arm (Crc32 and ArmBase for now) -->
     <!--<MonoAOTCompilerDefaultAotArguments Include="direct-pinvoke" />--> <!-- TODO: enable direct-pinvokes (to get rid of -force_loads)-->
@@ -13,12 +12,15 @@
   <ItemGroup Condition="'$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'iOSSimulator' or '$(TargetOS)' == 'tvOS' or '$(TargetOS)' == 'tvOSSimulator' or '$(TargetOS)' == 'MacCatalyst'">
     <MonoAOTCompilerDefaultProcessArguments Include="-O=gsharedvt" />
   </ItemGroup>
+  <ItemGroup Condition="'$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'tvOS' or '$(TargetOS)' == 'MacCatalyst'">
+    <MonoAOTCompilerDefaultAotArguments Include="direct-icalls" />
+  </ItemGroup>
   <ItemGroup Condition="'$(TargetOS)' == 'Android'">
     <MonoAOTCompilerDefaultAotArguments Condition="'$(TargetArchitecture)' == 'arm'" Include="mtriple=armv7-linux-gnueabi" />
     <MonoAOTCompilerDefaultAotArguments Condition="'$(TargetArchitecture)' == 'arm64'" Include="mtriple=aarch64-linux-android" />
     <MonoAOTCompilerDefaultAotArguments Condition="'$(TargetArchitecture)' == 'x86'" Include="mtriple=i686-linux-android" />
     <MonoAOTCompilerDefaultAotArguments Condition="'$(TargetArchitecture)' == 'x64'" Include="mtriple=x86_64-linux-android" />
-    <MonoAOTCompilerDefaultAotArguments Include="static" />
+
     <!-- Default trampolines run out for libraries tests -->
     <MonoAOTCompilerDefaultAotArguments Include="nimt-trampolines=2000" />
     <MonoAOTCompilerDefaultAotArguments Include="ntrampolines=10000" />

@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-var Module = { 
+var Module = {
     config: null,
 
     preInit: async function() {
@@ -27,6 +27,10 @@ var Module = {
 		MONO.mono_wasm_setenv ("MONO_LOG_LEVEL", "debug");
 		MONO.mono_wasm_setenv ("MONO_LOG_MASK", "all");
 		*/
+
+		Module.config.environment_variables = {
+			"DOTNET_MODIFIABLE_ASSEMBLIES": "debug"
+		};
 		MONO.mono_load_runtime_and_bcl_args (Module.config)
 	},
 };

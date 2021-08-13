@@ -1,6 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppCurrent)</TargetFrameworks>
+    <!-- Disable nullable attributes explicitly as some tests depend on them not being present. -->
     <Nullable>disable</Nullable>
   </PropertyGroup>
   <ItemGroup>

@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Reflection;
 using System.Reflection.Emit;
+using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
 
 namespace System.Runtime.InteropServices.Tests
@@ -33,7 +34,7 @@ namespace System.Runtime.InteropServices.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/49872", TestPlatforms.Android)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/49872", typeof(PlatformDetection), nameof(PlatformDetection.IsAndroid), nameof(PlatformDetection.Is32BitProcess))]
         public void OffsetOf_ExplicitLayout_ReturnsExpected()
         {
             Type t = typeof(ExplicitLayoutTest);
@@ -106,7 +107,7 @@ namespace System.Runtime.InteropServices.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/49872", TestPlatforms.Android)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/49872", typeof(PlatformDetection), nameof(PlatformDetection.IsAndroid), nameof(PlatformDetection.Is32BitProcess))]
         public void OffsetOf_Decimal_ReturnsExpected()
         {
             Type t = typeof(FieldAlignmentTest_Decimal);
@@ -222,6 +223,34 @@ namespace System.Runtime.InteropServices.Tests
         {
             AssertExtensions.Throws<ArgumentException>(null, () => Marshal.OffsetOf(typeof(NoLayoutPoint), nameof(NoLayoutPoint.x)));
             AssertExtensions.Throws<ArgumentException>(null, () => Marshal.OffsetOf<NoLayoutPoint>(nameof(NoLayoutPoint.x)));
+        }
+
+        [Fact]
+        public void OffsetOf_Field_ValueType_Generic()
+        {
+            Assert.Equal((IntPtr)4, Marshal.OffsetOf<Point2<int>>(nameof(Point2<int>.y)));
+            Assert.Equal((IntPtr)8, Marshal.OffsetOf<Point2<ulong>>(nameof(Point2<int>.y)));
+            Assert.Equal((IntPtr)4, Marshal.OffsetOf<Point2<float>>(nameof(Point2<int>.y)));
+            Assert.Equal((IntPtr)8, Marshal.OffsetOf<Point2<double>>(nameof(Point2<int>.y)));
+
+            // [COMPAT] Non-blittable generic types with value-type generic arguments are supported in OffsetOf since they've always been allowed
+            // and it likely doesn't meet the bar to break back-compat.
+            Assert.Equal((IntPtr)1, Marshal.OffsetOf<Point2<char>>(nameof(Point2<int>.y)));
+            Assert.Equal((IntPtr)1, Marshal.OffsetOf<Point2<byte>>(nameof(Point2<int>.y)));
+        }
+
+        [Fact]
+        public void OffsetOf_Field_ReferenceType_Generic()
+        {
+            // [COMPAT] Generic types with value-type generic arguments are supported in OffsetOf since they've always been allowed
+            // and it likely doesn't meet the bar to break back-compat.
+            Assert.Equal((IntPtr)4, Marshal.OffsetOf<Point2Class<int>>(nameof(Point2Class<int>.y)));
+            Assert.Equal((IntPtr)8, Marshal.OffsetOf<Point2Class<ulong>>(nameof(Point2Class<int>.y)));
+            Assert.Equal((IntPtr)4, Marshal.OffsetOf<Point2Class<float>>(nameof(Point2Class<int>.y)));
+            Assert.Equal((IntPtr)8, Marshal.OffsetOf<Point2Class<double>>(nameof(Point2Class<int>.y)));
+
+            Assert.Equal((IntPtr)1, Marshal.OffsetOf<Point2Class<char>>(nameof(Point2Class<int>.y)));
+            Assert.Equal((IntPtr)1, Marshal.OffsetOf<Point2Class<byte>>(nameof(Point2Class<int>.y)));
         }
 
         public class NonRuntimeType : Type
@@ -495,6 +524,19 @@ namespace System.Runtime.InteropServices.Tests
 
         public short s; // 2 bytes
                         // 6 bytes of padding
-    };
+    }
+
+    struct Point2<T>
+    {
+        public T x;
+        public T y;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    class Point2Class<T>
+    {
+        public T x;
+        public T y;
+    }
 #pragma warning restore 169, 649, 618
 }

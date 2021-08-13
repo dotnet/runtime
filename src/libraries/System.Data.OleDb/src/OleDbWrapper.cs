@@ -7,6 +7,8 @@ using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
+#pragma warning disable CA1419 // TODO https://github.com/dotnet/roslyn-analyzers/issues/5232: not intended for use with P/Invoke
+
 namespace System.Data.OleDb
 {
     // SafeHandle wrapper around 'DataLinks' object which pools the native OLE DB providers.
@@ -92,7 +94,7 @@ namespace System.Data.OleDb
         // we expect to store IDBInitialize instance pointer in base.handle
 
         // construct a DataSourceWrapper and used as a ref parameter to GetDataSource
-        internal DataSourceWrapper() : base()
+        public DataSourceWrapper() : base()
         {
         }
 
@@ -229,7 +231,7 @@ namespace System.Data.OleDb
         // since we maintain an AddRef on IDBCreateCommand it is safe to use the delegate without rechecking its function pointer
         private UnsafeNativeMethods.IDBCreateCommandCreateCommand? DangerousIDBCreateCommandCreateCommand;
 
-        internal SessionWrapper() : base()
+        public SessionWrapper() : base()
         {
         }
 

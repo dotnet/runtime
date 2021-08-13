@@ -2,13 +2,14 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Text;
 
 namespace System.Reflection.Context.Virtual
 {
     internal abstract class VirtualMethodBase : MethodInfo
     {
-        private ParameterInfo _returnParameter;
+        private ParameterInfo? _returnParameter;
 
         protected abstract Type[] GetParameterTypes();
 
@@ -44,10 +45,10 @@ namespace System.Reflection.Context.Virtual
 
         public override sealed Module Module
         {
-            get { return DeclaringType.Module; }
+            get { return DeclaringType!.Module; }
         }
 
-        public override sealed Type ReflectedType
+        public override sealed Type? ReflectedType
         {
             get { return DeclaringType; }
         }
@@ -87,6 +88,7 @@ namespace System.Reflection.Context.Virtual
             return CollectionServices.Empty<ParameterInfo>();
         }
 
+        [RequiresUnreferencedCode("If some of the generic arguments are annotated (either with DynamicallyAccessedMembersAttribute, or generic constraints), trimming can't validate that the requirements of those annotations are met.")]
         public override sealed MethodInfo MakeGenericMethod(params Type[] typeArguments)
         {
             throw new InvalidOperationException(SR.Format(SR.InvalidOperation_NotGenericMethodDefinition, this));
@@ -112,20 +114,20 @@ namespace System.Reflection.Context.Virtual
             return false;
         }
 
-        public override bool Equals(object obj)
+        public override bool Equals(object? obj)
         {
             // We don't need to compare the invokees
             // But do we need to compare the contexts and return types?
             return obj is VirtualMethodBase other &&
                 Name == other.Name &&
-                DeclaringType.Equals(other.DeclaringType) &&
+                DeclaringType!.Equals(other.DeclaringType) &&
                 CollectionServices.CompareArrays(GetParameterTypes(), other.GetParameterTypes());
         }
 
         public override int GetHashCode()
         {
             return Name.GetHashCode() ^
-                DeclaringType.GetHashCode() ^
+                DeclaringType!.GetHashCode() ^
                 CollectionServices.GetArrayHashCode(GetParameterTypes());
         }
 

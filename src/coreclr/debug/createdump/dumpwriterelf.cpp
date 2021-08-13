@@ -32,12 +32,10 @@ DumpWriter::WriteDump()
     ehdr.e_type = ET_CORE;
     ehdr.e_machine = ELF_ARCH;
     ehdr.e_version = EV_CURRENT;
-    ehdr.e_shoff = sizeof(Ehdr);
-    ehdr.e_phoff = sizeof(Ehdr) + sizeof(Shdr);
+    ehdr.e_phoff = sizeof(Ehdr);
 
     ehdr.e_ehsize = sizeof(Ehdr);
     ehdr.e_phentsize = sizeof(Phdr);
-    ehdr.e_shentsize = sizeof(Shdr);
 
     // The ELF header only allows UINT16 for the number of program
     // headers. In a core dump this equates to PT_NODE and PT_LOAD.
@@ -60,26 +58,33 @@ DumpWriter::WriteDump()
     }
     else {
         ehdr.e_phnum = PH_HDR_CANARY;
+        ehdr.e_phoff = sizeof(Ehdr) + sizeof(Shdr);
+        ehdr.e_shnum = 1;
+        ehdr.e_shoff = sizeof(Ehdr);
+        ehdr.e_shentsize = sizeof(Shdr);
     }
 
     if (!WriteData(&ehdr, sizeof(Ehdr))) {
         return false;
     }
 
-    size_t offset = sizeof(Ehdr) + sizeof(Shdr) + (phnum * sizeof(Phdr));
+    size_t offset = sizeof(Ehdr) + (phnum * sizeof(Phdr));
     size_t filesz = GetProcessInfoSize() + GetAuxvInfoSize() + GetThreadInfoSize() + GetNTFileInfoSize();
 
-    // Add single section containing the actual count
-    // of the program headers to be written.
-    Shdr shdr;
-    memset(&shdr, 0, sizeof(shdr));
-    shdr.sh_info = phnum;
-    // When section header offset is present but ehdr section num = 0
-    // then is is expected that the sh_size indicates the size of the
-    // section array or 1 in our case.
-    shdr.sh_size = 1;
-    if (!WriteData(&shdr, sizeof(shdr))) {
-        return false;
+    if (ehdr.e_phnum == PH_HDR_CANARY)
+    {
+        // Add single section containing the actual count of the program headers to be written.
+        Shdr shdr;
+        memset(&shdr, 0, sizeof(shdr));
+        shdr.sh_info = phnum;
+        shdr.sh_size = 1;
+        offset += sizeof(Shdr);
+
+        // When section header offset is present but ehdr section num = 0 then is is expected that
+        // the sh_size indicates the size of the section array or 1 in our case.
+        if (!WriteData(&shdr, sizeof(shdr))) {
+            return false;
+        }
     }
 
     // PT_NOTE header

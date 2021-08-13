@@ -98,7 +98,7 @@ if [[ "$build_arch" == "wasm" ]]; then
 fi
 
 cmake_args_to_cache="$scan_build\n$SCAN_BUILD_COMMAND\n$generator\n$__UnprocessedCMakeArgs"
-cmake_args_cache_file="$__CMakeBinDir/cmake_cmd_line.txt"
+cmake_args_cache_file="$2/cmake_cmd_line.txt"
 if [[ -z "$__ConfigureOnly" ]]; then
     if [[ -e "$cmake_args_cache_file" ]]; then
         cmake_args_cache=$(<"$cmake_args_cache_file")

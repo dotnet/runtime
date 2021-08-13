@@ -90,7 +90,8 @@ load_buffer_with_events_init (
 			1,
 			current_provider_config,
 			1,
-			false);
+			NULL,
+			NULL);
 	EP_LOCK_EXIT (section1)
 
 	ep_raise_error_if_nok (*session != NULL);

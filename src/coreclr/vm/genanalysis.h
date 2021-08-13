@@ -18,7 +18,8 @@ enum GcGenAnalysisState
     Done = 3,
 };
 
-#define GENAWARE_FILE_NAME W("gcgenaware.nettrace")
+#define GENAWARE_TRACE_FILE_NAME W("gcgenaware.nettrace")
+#define GENAWARE_DUMP_FILE_NAME W("gcgenaware.dmp")
 #define GENAWARE_COMPLETION_FILE_NAME "gcgenaware.nettrace.completed"
 
 extern bool s_forcedGCInProgress;
@@ -29,6 +30,8 @@ extern GcGenAnalysisState gcGenAnalysisConfigured;
 extern int64_t gcGenAnalysisGen;
 extern int64_t gcGenAnalysisBytes;
 extern int64_t gcGenAnalysisIndex;
+extern bool gcGenAnalysisTrace;
+extern bool gcGenAnalysisDump;
 
 class GenAnalysis
 {

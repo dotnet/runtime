@@ -1,11 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Net.Http.Headers;
-using System.Text;
 
 using Xunit;
 
@@ -189,61 +185,22 @@ namespace System.Net.Http.Tests
             CheckInvalidParse("\t");
         }
 
-        [Fact]
-        public void TryParse_SetOfValidValueStrings_ParsedCorrectly()
-        {
-            CheckValidTryParse("product", new ProductInfoHeaderValue("product", null));
-            CheckValidTryParse(" product ", new ProductInfoHeaderValue("product", null));
-
-            CheckValidTryParse(" (comment)   ", new ProductInfoHeaderValue("(comment)"));
-
-            CheckValidTryParse(" Mozilla/5.0 ", new ProductInfoHeaderValue("Mozilla", "5.0"));
-            CheckValidTryParse(" (compatible; MSIE 9.0; Windows NT 6.1; WOW64; Trident/5.0) ",
-                new ProductInfoHeaderValue("(compatible; MSIE 9.0; Windows NT 6.1; WOW64; Trident/5.0)"));
-        }
-
-        [Fact]
-        public void TryParse_SetOfInvalidValueStrings_ReturnsFalse()
-        {
-            CheckInvalidTryParse("p/1.0,");
-            CheckInvalidTryParse("p/1.0\r\n"); // for \r\n to be a valid whitespace, it must be followed by space/tab
-            CheckInvalidTryParse("p/1.0(comment)");
-            CheckInvalidTryParse("(comment)[");
-
-            CheckInvalidTryParse(" Mozilla/5.0 (compatible; MSIE 9.0; Windows NT 6.1; WOW64; Trident/5.0) ");
-            CheckInvalidTryParse("p/1.0 =");
-
-            // "User-Agent" and "Server" don't allow empty values (unlike most other headers supporting lists of values)
-            CheckInvalidTryParse(null);
-            CheckInvalidTryParse(string.Empty);
-            CheckInvalidTryParse("  ");
-            CheckInvalidTryParse("\t");
-        }
-
         #region Helper methods
 
         private void CheckValidParse(string input, ProductInfoHeaderValue expectedResult)
         {
             ProductInfoHeaderValue result = ProductInfoHeaderValue.Parse(input);
             Assert.Equal(expectedResult, result);
+
+            Assert.True(ProductInfoHeaderValue.TryParse(input, out result));
+            Assert.Equal(expectedResult, result);
         }
 
         private void CheckInvalidParse(string input)
         {
             Assert.Throws<FormatException>(() => { ProductInfoHeaderValue.Parse(input); });
-        }
 
-        private void CheckValidTryParse(string input, ProductInfoHeaderValue expectedResult)
-        {
-            ProductInfoHeaderValue result = null;
-            Assert.True(ProductInfoHeaderValue.TryParse(input, out result));
-            Assert.Equal(expectedResult, result);
-        }
-
-        private void CheckInvalidTryParse(string input)
-        {
-            ProductInfoHeaderValue result = null;
-            Assert.False(ProductInfoHeaderValue.TryParse(input, out result));
+            Assert.False(ProductInfoHeaderValue.TryParse(input, out ProductInfoHeaderValue result));
             Assert.Null(result);
         }
 

@@ -1135,6 +1135,19 @@ namespace Microsoft.Extensions.Primitives
         }
 
         [Fact]
+        public void IndexOf_ReturnsMinusOne_OnDefaultStringSegment()
+        {
+            // Arrange
+            StringSegment segment = default;
+
+            // Act
+            int result = segment.IndexOf(',');
+
+            // Assert
+            Assert.Equal(-1, result);
+        }
+
+        [Fact]
         public void IndexOf_SkipsANumberOfCaracters_IfStartIsProvided()
         {
             // Arrange
@@ -1212,6 +1225,19 @@ namespace Microsoft.Extensions.Primitives
         }
 
         [Fact]
+        public void IndexOfAny_ReturnsMinusOne_OnDefaultStringSegment()
+        {
+            // Arrange
+            StringSegment segment = default;
+
+            // Act
+            int result = segment.IndexOfAny(new[] { ',' });
+
+            // Assert
+            Assert.Equal(-1, result);
+        }
+
+        [Fact]
         public void IndexOfAny_SkipsANumberOfCaracters_IfStartIsProvided()
         {
             // Arrange
@@ -1240,6 +1266,17 @@ namespace Microsoft.Extensions.Primitives
         }
 
         [Fact]
+        public void IndexOfAny_StartOverflowsWithOffset_OutOfRangeThrows()
+        {
+            // Arrange
+            StringSegment segment = new StringSegment("12345", 0, 1);
+
+            // Act & Assert
+            ArgumentOutOfRangeException exception = Assert.Throws<ArgumentOutOfRangeException>(() => segment.IndexOfAny(new []{ '5' }, 2, 3));
+            Assert.Equal("start", exception.ParamName);
+        }
+
+        [Fact]
         public void LastIndexOf_ComputesIndex_RelativeToTheCurrentSegment()
         {
             // Arrange
@@ -1257,6 +1294,19 @@ namespace Microsoft.Extensions.Primitives
         {
             // Arrange
             var segment = new StringSegment("Hello, World!", 1, 3);
+
+            // Act
+            int result = segment.LastIndexOf(',');
+
+            // Assert
+            Assert.Equal(-1, result);
+        }
+
+        [Fact]
+        public void LastIndexOf_ReturnsMinusOne_OnDefaultStringSegment()
+        {
+            // Arrange
+            StringSegment segment = default;
 
             // Act
             int result = segment.LastIndexOf(',');

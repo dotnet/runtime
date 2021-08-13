@@ -607,6 +607,11 @@ void EESocketCleanupHelper(bool isExecutingOnAltStack)
 #endif // TARGET_UNIX
 #endif // CROSSGEN_COMPILE
 
+void FatalErrorHandler(UINT errorCode, LPCWSTR pszMessage)
+{
+    EEPOLICY_HANDLE_FATAL_ERROR_WITH_MESSAGE(errorCode, pszMessage);
+}
+
 void EEStartupHelper()
 {
     CONTRACTL
@@ -670,6 +675,9 @@ void EEStartupHelper()
         // This needs to be done before the EE has started
         InitializeStartupFlags();
 
+        IfFailGo(ExecutableAllocator::StaticInitialize(FatalErrorHandler));
+
+        Thread::StaticInitialize();
         ThreadpoolMgr::StaticInitialize();
 
         MethodDescBackpatchInfoTracker::StaticInitialize();
@@ -824,7 +832,7 @@ void EEStartupHelper()
 
             g_runtimeLoadedBaseAddress = (SIZE_T)pe.GetBase();
             g_runtimeVirtualSize = (SIZE_T)pe.GetVirtualSize();
-            InitCodeAllocHint(g_runtimeLoadedBaseAddress, g_runtimeVirtualSize, GetRandomInt(64));
+            ExecutableAllocator::InitCodeAllocHint(g_runtimeLoadedBaseAddress, g_runtimeVirtualSize, GetRandomInt(64));
         }
 #endif // !TARGET_UNIX
 

@@ -68,12 +68,6 @@ typedef BitSetOps</*BitSetType*/ BitSetShortLongRep,
 
 typedef BitSetShortLongRep VARSET_TP;
 
-// Tested various sizes for max tracked locals. The largest value for which no throughput regression
-// could be measured was 512. Going to 1024 showed the first throughput regressions.
-// We anticipate the larger size will be needed to support better inlining.
-
-const unsigned       lclMAX_TRACKED = 512;
-
 #define VARSET_REP_IS_CLASS 0
 
 #elif VARSET_REP == BSUInt64Class
@@ -114,7 +108,7 @@ typedef BitSetOpsWithCounter<VARSET_TP,
                              VarSetOpsRaw::Iter>
     VarSetOps;
 #else
-typedef VarSetOpsRaw VarSetOps;
+typedef VarSetOpsRaw       VarSetOps;
 #endif
 
 #define ALLVARSET_REP BSUInt64

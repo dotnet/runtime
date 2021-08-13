@@ -12,10 +12,6 @@
 #ifndef PRIMITIVES_H_
 #define PRIMITIVES_H_
 
-#if !defined(DBI_COMPILE) && !defined(DACCESS_COMPILE)
-#include "executableallocator.h"
-#endif
-
 #ifndef CORDB_ADDRESS_TYPE
 typedef const BYTE                  CORDB_ADDRESS_TYPE;
 typedef DPTR(CORDB_ADDRESS_TYPE)    PTR_CORDB_ADDRESS_TYPE;
@@ -191,14 +187,7 @@ inline void CORDbgInsertBreakpoint(UNALIGNED CORDB_ADDRESS_TYPE *address)
 {
     LIMITED_METHOD_CONTRACT;
 
-#if !defined(DBI_COMPILE) && !defined(DACCESS_COMPILE)
-    ExecutableWriterHolder<CORDB_ADDRESS_TYPE> breakpointWriterHolder(address, CORDbg_BREAK_INSTRUCTION_SIZE);
-    UNALIGNED CORDB_ADDRESS_TYPE* addressRW = breakpointWriterHolder.GetRW();
-#else // !DBI_COMPILE && !DACCESS_COMPILE
-    UNALIGNED CORDB_ADDRESS_TYPE* addressRW = address;
-#endif // !DBI_COMPILE && !DACCESS_COMPILE
-
-    *((unsigned char*)addressRW) = 0xCC; // int 3 (single byte patch)
+    *((unsigned char*)address) = 0xCC; // int 3 (single byte patch)
     FlushInstructionCache(GetCurrentProcess(), address, 1);
 
 }
@@ -209,14 +198,7 @@ inline void CORDbgSetInstruction(UNALIGNED CORDB_ADDRESS_TYPE* address,
     // In a DAC build, this function assumes the input is an host address.
     LIMITED_METHOD_DAC_CONTRACT;
 
-#if !defined(DBI_COMPILE) && !defined(DACCESS_COMPILE)
-    ExecutableWriterHolder<CORDB_ADDRESS_TYPE> instructionWriterHolder(address, sizeof(unsigned char));
-    UNALIGNED CORDB_ADDRESS_TYPE* addressRW = instructionWriterHolder.GetRW();
-#else // !DBI_COMPILE && !DACCESS_COMPILE
-    UNALIGNED CORDB_ADDRESS_TYPE* addressRW = address;
-#endif // !DBI_COMPILE && !DACCESS_COMPILE
-
-    *((unsigned char*)addressRW) =
+    *((unsigned char*)address) =
         (unsigned char) instruction;    // setting one byte is important
     FlushInstructionCache(GetCurrentProcess(), address, 1);
 

@@ -97,7 +97,6 @@ namespace System.Text.RegularExpressions.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsBinaryFormatterSupported))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/50942", TestPlatforms.Android)]
         public void RegexParseException_Serializes()
         {
 #pragma warning disable RE0001 // Regex issue: Not enough )'s
@@ -141,7 +140,7 @@ namespace System.Text.RegularExpressions.Tests
                 throw new XunitException($"Expected RegexParseException with error: ({error}) -> Actual error: {regexParseError})");
             }
             catch (Exception e)
-            { 
+            {
                 throw new XunitException($"Expected RegexParseException -> Actual: ({e})");
             }
 

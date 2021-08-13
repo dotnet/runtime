@@ -58,7 +58,7 @@ namespace System.Data
             _found = true;
 
             // add column to the dependency list, do not add duplicate columns
-            Debug.Assert(_column != null, "Failed to bind column " + _name);
+            Debug.Assert(_column != null, $"Failed to bind column {_name}");
 
             int i;
             for (i = 0; i < list.Count; i++)

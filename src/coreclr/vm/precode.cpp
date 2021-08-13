@@ -480,7 +480,9 @@ void Precode::Reset()
 #ifdef HAS_FIXUP_PRECODE_CHUNKS
     if (t == PRECODE_FIXUP)
     {
-        size = sizeof(FixupPrecode) + sizeof(PTR_MethodDesc);
+        // The writeable size the Init method accesses is dynamic depending on
+        // the FixupPrecode members.
+        size = ((FixupPrecode*)this)->GetSizeRW();
     }
     else
 #endif

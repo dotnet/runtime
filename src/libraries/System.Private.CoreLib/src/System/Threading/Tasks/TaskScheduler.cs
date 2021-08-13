@@ -166,7 +166,7 @@ namespace System.Threading.Tasks
         {
             // Do not inline unstarted tasks (i.e., task.ExecutingTaskScheduler == null).
             // Do not inline TaskCompletionSource-style (a.k.a. "promise") tasks.
-            // No need to attempt inlining if the task body was already run (i.e. either TASK_STATE_DELEGATE_INVOKED or TASK_STATE_CANCELED bits set)
+            // No need to attempt inlining if the task body was already run (i.e. either TaskStateFlags.DelegateInvoked or TaskStateFlags.Canceled bits set)
             TaskScheduler? ets = task.ExecutingTaskScheduler;
 
             // Delegate cross-scheduler inlining requests to target scheduler
@@ -189,7 +189,7 @@ namespace System.Threading.Tasks
 
             bool inlined = TryExecuteTaskInline(task, taskWasPreviouslyQueued);
 
-            // If the custom scheduler returned true, we should either have the TASK_STATE_DELEGATE_INVOKED or TASK_STATE_CANCELED bit set
+            // If the custom scheduler returned true, we should either have the TaskStateFlags.DelegateInvoked or TaskStateFlags.Canceled bit set
             // Otherwise the scheduler is buggy
             if (inlined && !(task.IsDelegateInvoked || task.IsCanceled))
             {
@@ -529,10 +529,32 @@ namespace System.Threading.Tasks
             // returns the scheduler's GetScheduledTasks
             public IEnumerable<Task>? ScheduledTasks => m_taskScheduler.GetScheduledTasks();
         }
+
+        // TODO https://github.com/dotnet/runtime/issues/20025: Consider exposing publicly.
+        /// <summary>Gets an awaiter used to queue a continuation to this TaskScheduler.</summary>
+        internal TaskSchedulerAwaiter GetAwaiter() => new TaskSchedulerAwaiter(this);
+
+        /// <summary>Awaiter used to queue a continuation to a specified task scheduler.</summary>
+        internal readonly struct TaskSchedulerAwaiter : ICriticalNotifyCompletion
+        {
+            private readonly TaskScheduler _scheduler;
+            public TaskSchedulerAwaiter(TaskScheduler scheduler) => _scheduler = scheduler;
+            public bool IsCompleted => false;
+            public void GetResult() { }
+            public void OnCompleted(Action continuation) => Task.Factory.StartNew(continuation, CancellationToken.None, TaskCreationOptions.DenyChildAttach, _scheduler);
+            public void UnsafeOnCompleted(Action continuation)
+            {
+                if (ReferenceEquals(_scheduler, Default))
+                {
+                    ThreadPool.UnsafeQueueUserWorkItem(s => s(), continuation, preferLocal: true);
+                }
+                else
+                {
+                    OnCompleted(continuation);
+                }
+            }
+        }
     }
-
-
-
 
     /// <summary>
     /// A TaskScheduler implementation that executes all tasks queued to it through a call to

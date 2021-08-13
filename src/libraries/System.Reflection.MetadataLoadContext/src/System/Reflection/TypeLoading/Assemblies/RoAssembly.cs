@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.IO;
 using System.Runtime.Serialization;
@@ -39,14 +40,18 @@ namespace System.Reflection.TypeLoading
         public sealed override string FullName => _lazyFullName ?? (_lazyFullName = GetName().FullName);
         private volatile string? _lazyFullName;
 
+        internal const string ThrowingMessageInRAF = "This member throws an exception for assemblies embedded in a single-file app";
+
         // Location and codebase
         public abstract override string Location { get; }
 #if NET5_0_OR_GREATER
         [Obsolete(Obsoletions.CodeBaseMessage, DiagnosticId = Obsoletions.CodeBaseDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        [RequiresAssemblyFiles(ThrowingMessageInRAF)]
 #endif
         public sealed override string CodeBase => throw new NotSupportedException(SR.NotSupported_AssemblyCodeBase);
 #if NET5_0_OR_GREATER
         [Obsolete(Obsoletions.CodeBaseMessage, DiagnosticId = Obsoletions.CodeBaseDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        [RequiresAssemblyFiles(ThrowingMessageInRAF)]
 #endif
         public sealed override string EscapedCodeBase => throw new NotSupportedException(SR.NotSupported_AssemblyCodeBase);
 
@@ -161,7 +166,7 @@ namespace System.Reflection.TypeLoading
         public abstract override MethodInfo? EntryPoint { get; }
 
         // Manifest resource support.
-        public abstract override ManifestResourceInfo GetManifestResourceInfo(string resourceName);
+        public abstract override ManifestResourceInfo? GetManifestResourceInfo(string resourceName);
         public abstract override string[] GetManifestResourceNames();
         public abstract override Stream? GetManifestResourceStream(string name);
         public sealed override Stream? GetManifestResourceStream(Type type, string name)

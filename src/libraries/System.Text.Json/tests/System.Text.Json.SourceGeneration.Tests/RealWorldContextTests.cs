@@ -4,7 +4,6 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Reflection;
 using System.Text.Json.Serialization;
 using System.Text.Json.Serialization.Metadata;
 using Xunit;
@@ -33,6 +32,17 @@ namespace System.Text.Json.SourceGeneration.Tests
             Location obj = JsonSerializer.Deserialize(json, DefaultContext.Location);
             VerifyLocation(expected, obj);
         }
+
+        [Fact]
+        public virtual void RoundTripNumberTypes()
+        {
+            NumberTypes expected = CreateNumberTypes();
+
+            string json = JsonSerializer.Serialize(expected, DefaultContext.NumberTypes);
+            NumberTypes obj = JsonSerializer.Deserialize(json, DefaultContext.NumberTypes);
+            VerifyNumberTypes(expected, obj);
+        }
+
 
         [Fact]
         public virtual void RoundTripIndexViewModel()
@@ -126,6 +136,39 @@ namespace System.Text.Json.SourceGeneration.Tests
             Assert.Equal(expected.Name, obj.Name);
             Assert.Equal(expected.PhoneNumber, obj.PhoneNumber);
             Assert.Equal(expected.Country, obj.Country);
+        }
+
+        protected static NumberTypes CreateNumberTypes()
+        {
+            return new NumberTypes
+            {
+                Single = 1.1f,
+                Double = 2.2d,
+                Decimal = 3.3m,
+                SByte = -1,
+                Byte = 1,
+                UShort = 2,
+                Short = -2,
+                UInt = 3,
+                Int = -3,
+                ULong = 4,
+                Long = -4,
+            };
+        }
+
+        protected static void VerifyNumberTypes(NumberTypes expected, NumberTypes obj)
+        {
+            Assert.Equal(expected.Single, obj.Single);
+            Assert.Equal(expected.Double, obj.Double);
+            Assert.Equal(expected.Decimal, obj.Decimal);
+            Assert.Equal(expected.SByte, obj.SByte);
+            Assert.Equal(expected.Byte, obj.Byte);
+            Assert.Equal(expected.UShort, obj.UShort);
+            Assert.Equal(expected.Short, obj.Short);
+            Assert.Equal(expected.UInt, obj.UInt);
+            Assert.Equal(expected.Int, obj.Int);
+            Assert.Equal(expected.ULong, obj.ULong);
+            Assert.Equal(expected.Long, obj.Long);
         }
 
         protected static ActiveOrUpcomingEvent CreateActiveOrUpcomingEvent()
@@ -448,8 +491,9 @@ namespace System.Text.Json.SourceGeneration.Tests
             Assert.Contains(@"""High"":1", json);
             Assert.Contains(@"""Low"":2", json);
 
-            // Deserialization not supported for now.
-            Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize(json, DefaultContext.HighLowTempsImmutable));
+            HighLowTempsImmutable obj = JsonSerializer.Deserialize(json, DefaultContext.HighLowTempsImmutable);
+            Assert.Equal(1, obj.High);
+            Assert.Equal(2, obj.Low);
         }
 
         [Fact]
@@ -473,41 +517,6 @@ namespace System.Text.Json.SourceGeneration.Tests
             public DayOfWeek? NullableDay { get; set; }
         }
 
-        [Fact]
-        public void Converters_AndTypeInfoCreator_NotRooted_WhenMetadataNotPresent()
-        {
-            object[] objArr = new object[] { new MyStruct() };
-
-            // Metadata not generated for MyStruct without JsonSerializableAttribute.
-            NotSupportedException ex = Assert.Throws<NotSupportedException>(
-                () => JsonSerializer.Serialize(objArr, DefaultContext.ObjectArray));
-            string exAsStr = ex.ToString();
-            Assert.Contains(typeof(MyStruct).ToString(), exAsStr);
-            Assert.Contains("JsonSerializerOptions", exAsStr);
-
-            // This test uses reflection to:
-            // - Access JsonSerializerOptions.s_defaultSimpleConverters
-            // - Access JsonSerializerOptions.s_defaultFactoryConverters
-            // - Access JsonSerializerOptions._typeInfoCreationFunc
-            //
-            // If any of them changes, this test will need to be kept in sync.
-
-            // Confirm built-in converters not set.
-            AssertFieldNull("s_defaultSimpleConverters", optionsInstance: null);
-            AssertFieldNull("s_defaultFactoryConverters", optionsInstance: null);
-
-            // Confirm type info dynamic creator not set.
-            AssertFieldNull("_typeInfoCreationFunc", ((JsonSerializerContext)DefaultContext).Options);
-
-            static void AssertFieldNull(string fieldName, JsonSerializerOptions? optionsInstance)
-            {
-                BindingFlags bindingFlags = BindingFlags.NonPublic | (optionsInstance == null ? BindingFlags.Static : BindingFlags.Instance);
-                FieldInfo fieldInfo = typeof(JsonSerializerOptions).GetField(fieldName, bindingFlags);
-                Assert.NotNull(fieldInfo);
-                Assert.Null(fieldInfo.GetValue(optionsInstance));
-            }
-        }
-
         private const string ExceptionMessageFromCustomContext = "Exception thrown from custom context.";
 
         [Fact]
@@ -528,8 +537,6 @@ namespace System.Text.Json.SourceGeneration.Tests
             ex = Assert.Throws<InvalidOperationException>(() => JsonSerializer.Serialize(objArr, typeof(object[]), context));
             Assert.Contains(ExceptionMessageFromCustomContext, ex.ToString());
         }
-
-        internal struct MyStruct { }
 
         internal class CustomContext : JsonSerializerContext
         {
@@ -560,6 +567,14 @@ namespace System.Text.Json.SourceGeneration.Tests
             writer.Flush();
 
             JsonTestHelper.AssertJsonEqual(expectedJson, Encoding.UTF8.GetString(ms.ToArray()));
+        }
+
+        [Fact]
+        public void PropertyOrdering()
+        {
+            MyTypeWithPropertyOrdering obj = new();
+            string json = JsonSerializer.Serialize(obj, DefaultContext.MyTypeWithPropertyOrdering);
+            Assert.Equal("{\"C\":0,\"B\":0,\"A\":0}", json);
         }
     }
 }

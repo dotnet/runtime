@@ -227,11 +227,15 @@ namespace System.Data
 
         // Deserialize all the tables schema and data of the dataset from binary/xml stream.
         [RequiresUnreferencedCode(RequiresUnreferencedCodeMessage)]
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2112:ReflectionToRequiresUnreferencedCode",
+            Justification = "CreateInstanceOfThisType's use of GetType uses only the parameterless constructor, but the annotations preserve all non-public constructors causing a warning for the serialization constructors. Those constructors won't be used here.")]
         protected DataSet(SerializationInfo info, StreamingContext context) : this(info, context, true)
         {
         }
 
         [RequiresUnreferencedCode(RequiresUnreferencedCodeMessage)]
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2112:ReflectionToRequiresUnreferencedCode",
+            Justification = "CreateInstanceOfThisType's use of GetType uses only the parameterless constructor, but the annotations preserve all non-public constructors causing a warning for the serialization constructors. Those constructors won't be used here.")]
         protected DataSet(SerializationInfo info, StreamingContext context, bool ConstructSchema) : this()
         {
             SerializationFormat remotingFormat = SerializationFormat.Xml;
@@ -268,6 +272,8 @@ namespace System.Data
             DeserializeDataSet(info, context, remotingFormat, schemaSerializationMode);
         }
 
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+            Justification = "Binary serialization is unsafe in general and is planned to be obsoleted. We do not want to mark interface or ctors of this class as unsafe as that would show many unnecessary warnings elsewhere.")]
         public virtual void GetObjectData(SerializationInfo info, StreamingContext context)
         {
             SerializationFormat remotingFormat = RemotingFormat;
@@ -602,10 +608,7 @@ namespace System.Data
             }
         }
 
-// TODO: Enable after System.ComponentModel.TypeConverter is annotated
-#nullable disable
         bool IListSource.ContainsListCollection => true;
-#nullable enable
 
         /// <summary>
         /// Gets a custom view of the data contained by the <see cref='System.Data.DataSet'/> , one
@@ -949,19 +952,17 @@ namespace System.Data
             return _cultureUserSet;
         }
 
-// TODO: Enable after System.ComponentModel.TypeConverter is annotated
-#nullable disable
         [Browsable(false)]
         [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
-        public override ISite Site
+        public override ISite? Site
         {
             get { return base.Site; }
             set
             {
-                ISite oldSite = Site;
+                ISite? oldSite = Site;
                 if (value == null && oldSite != null)
                 {
-                    IContainer cont = oldSite.Container;
+                    IContainer? cont = oldSite.Container;
 
                     if (cont != null)
                     {
@@ -977,7 +978,6 @@ namespace System.Data
                 base.Site = value;
             }
         }
-#nullable enable
 
         /// <summary>
         /// Get the collection of relations that link tables and
@@ -1097,8 +1097,6 @@ namespace System.Data
             }
         }
 
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
-            Justification = "Only parameterless constructors are used here but since nonPublic=true, all non-public constructors are being preserved causing a warning for the serialization constructors. Those constructors won't be used here.")]
         private DataSet CreateInstanceOfThisType()
         {
             return (DataSet)Activator.CreateInstance(GetType(), true)!;
@@ -1411,10 +1409,7 @@ namespace System.Data
             }
         }
 
-        // TODO: Enable after System.ComponentModel.TypeConverter is annotated
-#nullable disable
         IList IListSource.GetList() => DefaultViewManager;
-#nullable enable
 
         [RequiresUnreferencedCode(RequiresUnreferencedCodeMessage)]
         internal string GetRemotingDiffGram(DataTable table)
@@ -3451,7 +3446,6 @@ namespace System.Data
 
         private static bool PublishLegacyWSDL() => false;
 
-#pragma warning disable 8632
         XmlSchema? IXmlSerializable.GetSchema()
         {
             if (GetType() == typeof(DataSet))
@@ -3464,10 +3458,16 @@ namespace System.Data
             XmlWriter writer = new XmlTextWriter(stream, null);
             if (writer != null)
             {
-                (new XmlTreeGen(SchemaFormat.WebService)).Save(this, writer);
+                WriteXmlSchema(this, writer);
             }
             stream.Position = 0;
             return XmlSchema.Read(new XmlTextReader(stream), null);
+        }
+
+        [RequiresUnreferencedCode("DataSet.GetSchema uses TypeDescriptor and XmlSerialization underneath which are not trimming safe. Members from serialized types may be trimmed if not referenced directly.")]
+        private static void WriteXmlSchema(DataSet ds, XmlWriter writer)
+        {
+            (new XmlTreeGen(SchemaFormat.WebService)).Save(ds, writer);
         }
 
         void IXmlSerializable.ReadXml(XmlReader reader)
@@ -3490,7 +3490,7 @@ namespace System.Data
                 }
             }
 
-            ReadXmlSerializable(reader);
+            ReadXmlSerializableInternal(reader);
 
             if (xmlTextParser != null)
             {
@@ -3502,13 +3502,25 @@ namespace System.Data
             }
         }
 
+        [RequiresUnreferencedCode("DataSet.ReadXml uses XmlSerialization underneath which is not trimming safe. Members from serialized types may be trimmed if not referenced directly.")]
+        private void ReadXmlSerializableInternal(XmlReader reader)
+        {
+            ReadXmlSerializable(reader);
+        }
+
         void IXmlSerializable.WriteXml(XmlWriter writer)
+        {
+            WriteXmlInternal(writer);
+        }
+
+        [RequiresUnreferencedCode("DataSet.WriteXml uses XmlSerialization underneath which is not trimming safe. Members from serialized types may be trimmed if not referenced directly.")]
+        private void WriteXmlInternal(XmlWriter writer)
         {
             WriteXmlSchema(writer, SchemaFormat.WebService, null);
             WriteXml(writer, XmlWriteMode.DiffGram);
         }
-#pragma warning restore 8632
 
+        [RequiresUnreferencedCode("Using LoadOption may cause members from types used in the expression column to be trimmed if not referenced directly.")]
         public virtual void Load(IDataReader reader, LoadOption loadOption, FillErrorEventHandler? errorHandler, params DataTable[] tables)
         {
             long logScopeId = DataCommonEventSource.Log.EnterScope("<ds.DataSet.Load|API> reader, loadOption={0}", loadOption);
@@ -3543,9 +3555,11 @@ namespace System.Data
             }
         }
 
+        [RequiresUnreferencedCode("Using LoadOption may cause members from types used in the expression column to be trimmed if not referenced directly.")]
         public void Load(IDataReader reader, LoadOption loadOption, params DataTable[] tables) =>
             Load(reader, loadOption, null, tables);
 
+        [RequiresUnreferencedCode("Using LoadOption may cause members from types used in the expression column to be trimmed if not referenced directly.")]
         public void Load(IDataReader reader, LoadOption loadOption, params string[] tables)
         {
             ADP.CheckArgumentNull(tables, nameof(tables));

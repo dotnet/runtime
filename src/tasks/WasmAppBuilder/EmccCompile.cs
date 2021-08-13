@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
+using System.Text;
 using System.Threading.Tasks;
 using Microsoft.Build.Framework;
 using Microsoft.Build.Utilities;
@@ -32,6 +33,7 @@ namespace Microsoft.WebAssembly.Build.Tasks
         public bool         DisableParallelCompile { get; set; }
         public string       Arguments              { get; set; } = string.Empty;
         public string?      WorkingDirectory       { get; set; }
+        public string       OutputMessageImportance{ get; set; } = "Low";
 
         [Output]
         public ITaskItem[]? OutputFiles            { get; private set; }
@@ -50,6 +52,12 @@ namespace Microsoft.WebAssembly.Build.Tasks
             if (badItem != null)
             {
                 Log.LogError($"Source file {badItem.ItemSpec} is missing ObjectFile metadata.");
+                return false;
+            }
+
+            if (!Enum.TryParse(OutputMessageImportance, ignoreCase: true, out MessageImportance messageImportance))
+            {
+                Log.LogError($"Invalid value for OutputMessageImportance={OutputMessageImportance}. Valid values: {string.Join(", ", Enum.GetNames(typeof(MessageImportance)))}");
                 return false;
             }
 
@@ -111,12 +119,25 @@ namespace Microsoft.WebAssembly.Build.Tasks
 
                 try
                 {
-                    string command = $"emcc {Arguments} -c -o {objFile} {srcFile}";
-                    (int exitCode, string output) = Utils.RunShellCommand(command, envVarsDict, workingDir: Environment.CurrentDirectory);
+                    string command = $"emcc {Arguments} -c -o \"{objFile}\" \"{srcFile}\"";
+
+                    // Log the command in a compact format which can be copy pasted
+                    StringBuilder envStr = new StringBuilder(string.Empty);
+                    foreach (var key in envVarsDict.Keys)
+                        envStr.Append($"{key}={envVarsDict[key]} ");
+                    Log.LogMessage(MessageImportance.Low, $"Exec: {envStr}{command}");
+                    (int exitCode, string output) = Utils.RunShellCommand(
+                                                            Log,
+                                                            command,
+                                                            envVarsDict,
+                                                            workingDir: Environment.CurrentDirectory,
+                                                            logStdErrAsMessage: true,
+                                                            debugMessageImportance: messageImportance,
+                                                            label: Path.GetFileName(srcFile));
 
                     if (exitCode != 0)
                     {
-                        Log.LogError($"Failed to compile {srcFile} -> {objFile}: {output}");
+                        Log.LogError($"Failed to compile {srcFile} -> {objFile}");
                         return false;
                     }
 
@@ -124,11 +145,11 @@ namespace Microsoft.WebAssembly.Build.Tasks
                     newItem.SetMetadata("SourceFile", srcFile);
                     outputItems.Add(newItem);
 
-                    return true;
+                    return !Log.HasLoggedErrors;
                 }
                 catch (Exception ex)
                 {
-                    Log.LogError($"Failed to compile {srcFile} -> {objFile}: {ex.Message}");
+                    Log.LogError($"Failed to compile {srcFile} -> {objFile}{Environment.NewLine}{ex.Message}");
                     return false;
                 }
             }

@@ -75,7 +75,6 @@ namespace System.IO.MemoryMappedFiles.Tests
         [InlineData(MemoryMappedFileAccess.ReadWrite, MemoryMappedFileAccess.CopyOnWrite)]
         [InlineData(MemoryMappedFileAccess.Read, MemoryMappedFileAccess.Read)]
         [InlineData(MemoryMappedFileAccess.Read, MemoryMappedFileAccess.CopyOnWrite)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/53601", runtimes: TestRuntimes.Mono, platforms: TestPlatforms.MacCatalyst)]
         public void ValidAccessLevelCombinations(MemoryMappedFileAccess mapAccess, MemoryMappedFileAccess viewAccess)
         {
             const int Capacity = 4096;
@@ -92,7 +91,7 @@ namespace System.IO.MemoryMappedFiles.Tests
                 }
                 catch (UnauthorizedAccessException)
                 {
-                    if ((OperatingSystem.IsMacOS() || PlatformDetection.IsInContainer) &&
+                    if ((OperatingSystem.IsMacOS() || OperatingSystem.IsMacCatalyst() || PlatformDetection.IsInContainer) &&
                        (viewAccess == MemoryMappedFileAccess.ReadExecute || viewAccess == MemoryMappedFileAccess.ReadWriteExecute))
                     {
                         // Containers and OSX with SIP enabled do not have execute permissions by default.

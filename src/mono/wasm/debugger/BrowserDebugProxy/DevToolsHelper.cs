@@ -301,13 +301,13 @@ namespace Microsoft.WebAssembly.Diagnostics
             }
         }
 
-        public PerScopeCache GetCacheForScope(int scope_id)
+        public PerScopeCache GetCacheForScope(int scopeId)
         {
-            if (perScopeCaches.TryGetValue(scope_id, out PerScopeCache cache))
+            if (perScopeCaches.TryGetValue(scopeId, out PerScopeCache cache))
                 return cache;
 
             cache = new PerScopeCache();
-            perScopeCaches[scope_id] = cache;
+            perScopeCaches[scopeId] = cache;
             return cache;
         }
 
@@ -322,5 +322,16 @@ namespace Microsoft.WebAssembly.Diagnostics
     {
         public Dictionary<string, JObject> Locals { get; } = new Dictionary<string, JObject>();
         public Dictionary<string, JObject> MemberReferences { get; } = new Dictionary<string, JObject>();
+        public Dictionary<string, JObject> ObjectFields { get; } = new Dictionary<string, JObject>();
+        public PerScopeCache(JArray objectValues)
+        {
+            foreach (var objectValue in objectValues)
+            {
+                ObjectFields[objectValue["name"].Value<string>()] = objectValue.Value<JObject>();
+            }
+        }
+        public PerScopeCache()
+        {
+        }
     }
 }

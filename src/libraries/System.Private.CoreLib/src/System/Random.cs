@@ -201,28 +201,18 @@ namespace System
         {
             if (maxExclusive > minInclusive)
             {
-                if (result < minInclusive || result >= maxExclusive)
-                {
-                    Debug.Fail($"Expected {minInclusive} <= {result} < {maxExclusive}");
-                }
+                Debug.Assert(result >= minInclusive && result < maxExclusive, $"Expected {minInclusive} <= {result} < {maxExclusive}");
             }
             else
             {
-                if (result != minInclusive)
-                {
-                    Debug.Fail($"Expected {minInclusive} == {result}");
-                }
+                Debug.Assert(result == minInclusive, $"Expected {minInclusive} == {result}");
             }
         }
 
         [Conditional("DEBUG")]
         private static void AssertInRange(double result)
         {
-            if (result < 0.0 || result >= 1.0)
-            {
-                // Avoid calling result.ToString() when the Assert condition is not met
-                Debug.Fail($"Expected 0.0 <= {result} < 1.0");
-            }
+            Debug.Assert(result >= 0.0 && result < 1.0, $"Expected 0.0 <= {result} < 1.0");
         }
 
         /// <summary>Random implementation that delegates all calls to a ThreadStatic Impl instance.</summary>

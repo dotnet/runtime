@@ -10,6 +10,7 @@ namespace System.Text.Json.SourceGeneration.Tests
     public interface ITestContext
     {
         public JsonTypeInfo<Location> Location { get; }
+        public JsonTypeInfo<NumberTypes> NumberTypes { get; }
         public JsonTypeInfo<RepeatedTypes.Location> RepeatedLocation { get; }
         public JsonTypeInfo<ActiveOrUpcomingEvent> ActiveOrUpcomingEvent { get; }
         public JsonTypeInfo<CampaignSummaryViewModel> CampaignSummaryViewModel { get; }
@@ -19,6 +20,8 @@ namespace System.Text.Json.SourceGeneration.Tests
         public JsonTypeInfo<HighLowTemps> HighLowTemps { get; }
         public JsonTypeInfo<MyType> MyType { get; }
         public JsonTypeInfo<MyType2> MyType2 { get; }
+        public JsonTypeInfo<MyTypeWithCallbacks> MyTypeWithCallbacks { get; }
+        public JsonTypeInfo<MyTypeWithPropertyOrdering> MyTypeWithPropertyOrdering { get; }
         public JsonTypeInfo<MyIntermediateType> MyIntermediateType { get; }
         public JsonTypeInfo<HighLowTempsImmutable> HighLowTempsImmutable { get; }
         public JsonTypeInfo<RealWorldContextTests.MyNestedClass> MyNestedClass { get; }
@@ -64,14 +67,13 @@ namespace System.Text.Json.SourceGeneration.Tests
             {
                 if (_JsonMessage == null)
                 {
-                    JsonTypeInfo<JsonMessage> objectInfo = JsonMetadataServices.CreateObjectInfo<JsonMessage>(
-                        Options,
-                        createObjectFunc: static () => new JsonMessage(),
-                        propInitFunc: null,
-                        default,
-                        serializeFunc: JsonMessageSerialize);
+                    JsonObjectInfoValues<JsonMessage> objectInfo = new()
+                    {
+                        ObjectCreator = static () => new JsonMessage(),
+                        SerializeHandler = JsonMessageSerialize
+                    };
 
-                    _JsonMessage = objectInfo;
+                    _JsonMessage = JsonMetadataServices.CreateObjectInfo<JsonMessage>(Options, objectInfo);
                 }
 
                 return _JsonMessage;

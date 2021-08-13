@@ -7,6 +7,19 @@
     <IsPartialFacadeAssembly>true</IsPartialFacadeAssembly>
     <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-Unix;$(NetCoreAppCurrent);netcoreapp3.1-windows;netcoreapp3.1-Unix;netcoreapp3.1;netstandard2.0;net461</TargetFrameworks>
     <Nullable>enable</Nullable>
+    <IsPackable>true</IsPackable>
+    <AddXamarinPlaceholderFilesToPackage>true</AddXamarinPlaceholderFilesToPackage>
+    <PackageDescription>Provides access to GDI+ graphics functionality.
+
+Commonly Used Types:
+System.Drawing.Bitmap
+System.Drawing.BitmapData
+System.Drawing.Brush
+System.Drawing.Font
+System.Drawing.Graphics
+System.Drawing.Icon
+
+Unix support is disabled by default. See https://aka.ms/systemdrawingnonwindows for more information.</PackageDescription>
   </PropertyGroup>
   <!-- DesignTimeBuild requires all the TargetFramework Derived Properties to not be present in the first property group. -->
   <PropertyGroup>
@@ -170,6 +183,8 @@
              Link="Common\Interop\Windows\User32\Interop.LOGFONT.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Gdi32\Interop.RasterOp.cs"
              Link="Common\Interop\Windows\Gdi32\Interop.RasterOp.cs" />
+    <Compile Include="$(CommonPath)System\LocalAppContextSwitches.Common.cs"
+             Link="System\LocalAppContextSwitches.Common.cs" />
     <Compile Include="$(CommonPath)System\Text\ValueStringBuilder.cs"
              Link="Common\System\Text\ValueStringBuilder.cs" />
     <Compile Include="$(CommonPath)System\Obsoletions.cs"
@@ -192,6 +207,7 @@
     <Compile Include="System\Drawing\BufferedGraphicsManager.Windows.cs" />
     <Compile Include="System\Drawing\Drawing2D\CustomLineCap.Windows.cs" />
     <Compile Include="System\Drawing\Drawing2D\GraphicsPath.Windows.cs" />
+    <Compile Include="System\Drawing\DrawingCom.cs" />
     <Compile Include="System\Drawing\Font.Windows.cs" />
     <Compile Include="System\Drawing\FontFamily.Windows.cs" />
     <Compile Include="System\Drawing\GdiplusNative.Windows.cs" />
@@ -206,7 +222,7 @@
     <Compile Include="System\Drawing\Internal\GpPathData.cs" />
     <Compile Include="System\Drawing\Internal\GPStream.cs" />
     <Compile Include="System\Drawing\Internal\SystemColorTracker.cs" />
-    <Compile Include="System\Drawing\LocalAppContextSwitches.cs" />
+    <Compile Include="System\Drawing\LocalAppContextSwitches.Windows.cs" />
     <Compile Include="System\Drawing\Pen.Windows.cs" />
     <Compile Include="System\Drawing\Printing\DefaultPrintController.cs" />
     <Compile Include="System\Drawing\Printing\ModeField.cs" />
@@ -242,8 +258,6 @@
     <Compile Include="Interop\Windows\Interop.Shell32.cs" />
     <Compile Include="Interop\Windows\Interop.User32.cs" />
     <Compile Include="Interop\Windows\Interop.Winspool.cs" />
-    <Compile Include="$(CommonPath)System\LocalAppContextSwitches.Common.cs"
-             Link="System\LocalAppContextSwitches.Common.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Interop.Libraries.cs"
              Link="Common\Interop\Windows\Interop.Libraries.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Gdi32\Interop.CombineRgn.cs"
@@ -294,8 +308,6 @@
              Link="Common\Interop\Windows\Kernel32\Interop.GlobalLock.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Gdi32\Interop.BitBlt.cs"
              Link="Common\Interop\Windows\Gdi32\Interop.BitBlt.cs" />
-    <Compile Include="$(CommonPath)Interop\Windows\Ole32\Interop.IStream.cs"
-             Link="Common\Interop\Windows\Ole32\Interop.IStream.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Ole32\Interop.STATSTG.cs"
              Link="Common\Interop\Windows\Ole32\Interop.STATSTG.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Ole32\Interop.STGTY.cs"
@@ -318,11 +330,18 @@
              Link="Common\Interop\Windows\Interop.HRESULT.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsWindows)' == 'true' and $([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net5.0'))">
+    <Compile Include="$(CommonPath)Interop\Windows\Ole32\Interop.IStream.COMWrappers.cs"
+             Link="Common\Interop\Windows\Ole32\Interop.IStream.COMWrappers.cs" />
+    <Compile Include="System\Drawing\DrawingCom.COMWrappers.cs" />
     <Compile Include="System\Drawing\Icon.Windows.COMWrappers.cs" />
-    <Compile Include="System\Drawing\DrawingComWrappers.cs" />
+    <Compile Include="System\Drawing\Internal\GPStream.COMWrappers.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsWindows)' == 'true' and !$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net5.0'))">
+    <Compile Include="$(CommonPath)Interop\Windows\Ole32\Interop.IStream.NoCOMWrappers.cs"
+             Link="Common\Interop\Windows\Ole32\Interop.IStream.NoCOMWrappers.cs" />
+    <Compile Include="System\Drawing\DrawingCom.NoCOMWrappers.cs" />
     <Compile Include="System\Drawing\Icon.Windows.NoCOMWrappers.cs" />
+    <Compile Include="System\Drawing\Internal\GPStream.NoCOMWrappers.cs" />
   </ItemGroup>
   <!-- Unix specific -->
   <ItemGroup Condition="'$(TargetsUnix)' == 'true'">
@@ -353,6 +372,7 @@
     <Compile Include="System\Drawing\GdiplusNative.Unix.cs" />
     <Compile Include="System\Drawing\GdiPlusStreamHelper.Unix.cs" />
     <Compile Include="System\Drawing\LibX11Functions.cs" />
+    <Compile Include="System\Drawing\LocalAppContextSwitches.Unix.cs" />
     <Compile Include="System\Drawing\MarshallingHelpers.cs" />
     <Compile Include="System\Drawing\Image.Unix.cs" />
     <Compile Include="System\Drawing\Pen.Unix.cs" />

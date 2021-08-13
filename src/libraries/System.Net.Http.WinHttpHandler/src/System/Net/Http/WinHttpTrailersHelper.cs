@@ -11,7 +11,7 @@ namespace System.Net.Http
     internal static class WinHttpTrailersHelper
     {
         // UNITTEST is true when building against WinHttpHandler.Unit.Tests, which includes the source file.
-#if !NETSTANDARD2_1 && !UNITTEST
+#if !NETSTANDARD2_1 && !NETCOREAPP && !UNITTEST
         // Trailer property name was chosen to be descriptive and be unlikely to collide with a user set property.
         // Apps and libraries will use this key so it shouldn't change.
         private const string RequestMessagePropertyName = "__ResponseTrailers";
@@ -24,7 +24,7 @@ namespace System.Net.Http
 
         public static HttpHeaders GetResponseTrailers(HttpResponseMessage response)
         {
-#if NETSTANDARD2_1 || UNITTEST
+#if NETSTANDARD2_1 || NETCOREAPP || UNITTEST
             return response.TrailingHeaders;
 #else
             HttpResponseTrailers responseTrailers = new HttpResponseTrailers();

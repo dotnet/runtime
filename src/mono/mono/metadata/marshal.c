@@ -3443,7 +3443,7 @@ mono_marshal_get_native_func_wrapper (MonoImage *image, MonoMethodSignature *sig
 									  MonoMethodPInvoke *piinfo, MonoMarshalSpec **mspecs, gpointer func)
 {
 	MonoMethodSignature *csig;
-
+	WrapperInfo *info;
 	SignaturePointerPair key, *new_key;
 	MonoMethodBuilder *mb;
 	MonoMethod *res;
@@ -3474,13 +3474,13 @@ mono_marshal_get_native_func_wrapper (MonoImage *image, MonoMethodSignature *sig
 	new_key->sig = csig;
 	new_key->pointer = func;
 
-	res = mono_mb_create_and_cache_full (cache, new_key, mb, csig, csig->param_count + 16, NULL, &found);
+	info = mono_wrapper_info_create (mb, WRAPPER_SUBTYPE_NATIVE_FUNC);
+
+	res = mono_mb_create_and_cache_full (cache, new_key, mb, csig, csig->param_count + 16, info, &found);
 	if (found)
 		g_free (new_key);
 
 	mono_mb_free (mb);
-
-	mono_marshal_set_wrapper_info (res, NULL);
 
 	return res;
 }

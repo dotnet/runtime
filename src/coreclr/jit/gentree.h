@@ -494,6 +494,7 @@ enum GenTreeFlags : unsigned int
 
     GTF_INX_RNGCHK              = 0x80000000, // GT_INDEX/GT_INDEX_ADDR -- the array reference should be range-checked.
     GTF_INX_STRING_LAYOUT       = 0x40000000, // GT_INDEX -- this uses the special string array layout
+    GTF_INX_NOFAULT             = 0x20000000, // GT_INDEX -- the INDEX does not throw an exception (morph to GTF_IND_NONFAULTING)
 
     GTF_IND_TGT_NOT_HEAP        = 0x80000000, // GT_IND   -- the target is not on the heap
     GTF_IND_VOLATILE            = 0x40000000, // GT_IND   -- the load or store must use volatile sematics (this is a nop on X86)
@@ -1250,7 +1251,7 @@ public:
         return OperIsInitVal(OperGet());
     }
 
-    bool IsConstInitVal()
+    bool IsConstInitVal() const
     {
         return (gtOper == GT_CNS_INT) || (OperIsInitVal() && (gtGetOp1()->gtOper == GT_CNS_INT));
     }
@@ -5368,9 +5369,9 @@ struct GenTreeBoundsChk : public GenTree
     }
 };
 
-// gtArrElem -- general array element (GT_ARR_ELEM), for non "SZ_ARRAYS"
-//              -- multidimensional arrays, or 1-d arrays with non-zero lower bounds.
-
+// GenTreeArrElem - bounds checked address (byref) of a general array element,
+//    for multidimensional arrays, or 1-d arrays with non-zero lower bounds.
+//
 struct GenTreeArrElem : public GenTree
 {
     GenTree* gtArrObj;
@@ -5386,7 +5387,7 @@ struct GenTreeArrElem : public GenTree
                                  // This has caused VSW 571394.
     var_types gtArrElemType;     // The array element type
 
-    // Requires that "inds" is a pointer to an array of "rank" GenTreePtrs for the indices.
+    // Requires that "inds" is a pointer to an array of "rank" nodes for the indices.
     GenTreeArrElem(
         var_types type, GenTree* arr, unsigned char rank, unsigned char elemSize, var_types elemType, GenTree** inds)
         : GenTree(GT_ARR_ELEM, type), gtArrObj(arr), gtArrRank(rank), gtArrElemSize(elemSize), gtArrElemType(elemType)
@@ -6802,6 +6803,7 @@ struct GenTreeCopyOrReload : public GenTreeUnOp
 
     GenTreeCopyOrReload(genTreeOps oper, var_types type, GenTree* op1) : GenTreeUnOp(oper, type, op1)
     {
+        assert(type != TYP_STRUCT || op1->IsMultiRegNode());
         SetRegNum(REG_NA);
         ClearOtherRegs();
     }

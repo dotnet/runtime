@@ -302,6 +302,7 @@ namespace System.Data.Common
 
         internal Type? DataType
         {
+            [RequiresUnreferencedCode("DataRow's DataType cannot be statically analyzed")]
             get
             {
                 if (null != _schemaTable.DataType)

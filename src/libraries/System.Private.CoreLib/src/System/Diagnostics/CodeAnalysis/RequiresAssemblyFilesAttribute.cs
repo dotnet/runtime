@@ -25,10 +25,21 @@ namespace System.Diagnostics.CodeAnalysis
         public RequiresAssemblyFilesAttribute() { }
 
         /// <summary>
-        /// Gets or sets an optional message that contains information about the need for
+        /// Initializes a new instance of the <see cref="RequiresAssemblyFilesAttribute"/> class.
+        /// </summary>
+        /// <param name="message">
+        /// A message that contains information about the need for assembly files to be on disk.
+        /// </param>
+        public RequiresAssemblyFilesAttribute(string message)
+        {
+            Message = message;
+        }
+
+        /// <summary>
+        /// Gets an optional message that contains information about the need for
         /// assembly files to be on disk.
         /// </summary>
-        public string? Message { get; set; }
+        public string? Message { get; }
 
         /// <summary>
         /// Gets or sets an optional URL that contains more information about the member,

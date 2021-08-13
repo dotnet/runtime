@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Reflection.Context.Delegation;
 
 namespace System.Reflection.Context.Projection
@@ -20,7 +21,7 @@ namespace System.Reflection.Context.Projection
 
         public Projector Projector { get; }
 
-        public override Type DeclaringType
+        public override Type? DeclaringType
         {
             get { return Projector.ProjectType(base.DeclaringType); }
         }
@@ -30,7 +31,7 @@ namespace System.Reflection.Context.Projection
             get { return Projector.ProjectModule(base.Module); }
         }
 
-        public override Type ReflectedType
+        public override Type? ReflectedType
         {
             get { return Projector.ProjectType(base.ReflectedType); }
         }
@@ -93,7 +94,7 @@ namespace System.Reflection.Context.Projection
             return Projector.ProjectMethod(base.GetGenericMethodDefinition());
         }
 
-        public override MethodBody GetMethodBody()
+        public override MethodBody? GetMethodBody()
         {
             return Projector.ProjectMethodBody(base.GetMethodBody());
         }
@@ -103,6 +104,7 @@ namespace System.Reflection.Context.Projection
             return Projector.Project(base.GetParameters(), Projector.ProjectParameter);
         }
 
+        [RequiresUnreferencedCode("If some of the generic arguments are annotated (either with DynamicallyAccessedMembersAttribute, or generic constraints), trimming can't validate that the requirements of those annotations are met.")]
         public override MethodInfo MakeGenericMethod(params Type[] typeArguments)
         {
             return Projector.ProjectMethod(base.MakeGenericMethod(Projector.Unproject(typeArguments)));
@@ -113,16 +115,14 @@ namespace System.Reflection.Context.Projection
             return base.CreateDelegate(Projector.Unproject(delegateType));
         }
 
-        public override Delegate CreateDelegate(Type delegateType, object target)
+        public override Delegate CreateDelegate(Type delegateType, object? target)
         {
             return base.CreateDelegate(Projector.Unproject(delegateType), target);
         }
 
-        public override bool Equals(object o)
+        public override bool Equals([NotNullWhen(true)] object? o)
         {
-            var other = o as ProjectingMethodInfo;
-
-            return other != null &&
+            return o is ProjectingMethodInfo other &&
                    Projector == other.Projector &&
                    UnderlyingMethod.Equals(other.UnderlyingMethod);
         }

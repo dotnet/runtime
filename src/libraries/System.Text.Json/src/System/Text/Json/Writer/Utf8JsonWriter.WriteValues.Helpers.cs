@@ -39,8 +39,8 @@ namespace System.Text.Json
         {
             byte[]? outputText = null;
 
-            Span<byte> encodedBytes = encodingLength <= JsonConstants.StackallocThreshold ?
-                stackalloc byte[encodingLength] :
+            Span<byte> encodedBytes = encodingLength <= JsonConstants.StackallocByteThreshold ?
+                stackalloc byte[JsonConstants.StackallocByteThreshold] :
                 (outputText = ArrayPool<byte>.Shared.Rent(encodingLength));
 
             OperationStatus status = Base64.EncodeToUtf8(bytes, encodedBytes, out int consumed, out int written);

@@ -1240,19 +1240,21 @@ namespace System.Text.RegularExpressions
                             {
                                 Stloc(newlinePos);
 
-                                // if (newlinePos == -1)
+                                // if (newlinePos == -1 || newlinePos + 1 > runtextend)
                                 // {
                                 //     runtextpos = runtextend;
                                 //     return false;
                                 // }
-                                Label foundNextLine = DefineLabel();
                                 Ldloc(newlinePos);
                                 Ldc(-1);
-                                Bne(foundNextLine);
-                                BrFar(returnFalse);
+                                Beq(returnFalse);
+                                Ldloc(newlinePos);
+                                Ldc(1);
+                                Add();
+                                Ldloc(_runtextendLocal);
+                                Bgt(returnFalse);
 
                                 // runtextpos = newlinePos + 1;
-                                MarkLabel(foundNextLine);
                                 Ldloc(newlinePos);
                                 Ldc(1);
                                 Add();
@@ -5365,7 +5367,7 @@ namespace System.Text.RegularExpressions
             var sb = new StringBuilder();
             if (_backpos > 0)
             {
-                sb.AppendFormat("{0:D6} ", _backpos);
+                sb.Append($"{_backpos:D6} ");
             }
             else
             {

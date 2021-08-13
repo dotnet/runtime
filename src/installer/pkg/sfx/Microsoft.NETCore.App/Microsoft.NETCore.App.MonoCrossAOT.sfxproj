@@ -18,14 +18,20 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <_ToolFile Include="$(MonoAotCrossDir)$(TargetCrossRid)\**" />
-    <NativeRuntimeAsset Include="@(_ToolFile)" TargetPath="tools/" />
-    <NativeRuntimeAsset Include="$(MonoAotCrossDir)$(TargetCrossRid).Sdk.props" TargetPath="Sdk/Sdk.props" />
-    <NativeRuntimeAsset Condition="!$([MSBuild]::IsOsPlatform('Windows'))" Include="$(MonoAotCrossDir)Microsoft.NETCore.App.MonoCrossAOT.UnixFilePermissions.xml" TargetPath="data/UnixFilePermissions.xml" />
+    <NativeRuntimeAsset Include="$(IntermediateOutputPath)$(TargetCrossRid).Sdk.props" TargetPath="Sdk/Sdk.props" />
+    <NativeRuntimeAsset Condition="!$([MSBuild]::IsOsPlatform('Windows'))" Include="$(IntermediateOutputPath)Microsoft.NETCore.App.MonoCrossAOT.UnixFilePermissions.xml" TargetPath="data/UnixFilePermissions.xml" />
   </ItemGroup>
 
   <Target Name="WriteTemplateFiles" BeforeTargets="ValidateProperties">
+    <PropertyGroup>
+      <AotCompilerPath Condition="'$(TestingWorkloads)' == 'true'">$(MonoAotCrossDir)</AotCompilerPath>
+      <AotCompilerPath Condition="'$(TestingWorkloads)' != 'true'">$(MonoAotCrossDir)$(TargetCrossRid)\</AotCompilerPath>
+    </PropertyGroup>
+
     <ItemGroup>
+      <_ToolFile Include="$(AotCompilerPath)**" />
+      <NativeRuntimeAsset Include="@(_ToolFile)" TargetPath="tools/" />
+
       <_SdkPropsProperties Condition="!$([MSBuild]::IsOsPlatform('Windows'))" Include="ExeSuffix" Value="" />
       <_SdkPropsProperties Condition="$([MSBuild]::IsOsPlatform('Windows'))" Include="ExeSuffix" Value=".exe" />
       <_SdkPropsProperties Include="TargetRid" Value="$(TargetCrossRid)" />
@@ -36,19 +42,20 @@
     <ItemGroup>
       <_PermissionsProperties Include="PermissionsProperties" Value="$(_PermissionsFiles)" />
     </ItemGroup>
+
     <GenerateFileFromTemplate
       Condition="!$([MSBuild]::IsOsPlatform('Windows'))"
       TemplateFile="Microsoft.NETCore.App.MonoCrossAOT.UnixFilePermissions.xml.in"
       Properties="@(_PermissionsProperties)"
-      OutputPath="$(MonoAotCrossDir)Microsoft.NETCore.App.MonoCrossAOT.UnixFilePermissions.xml" />
+      OutputPath="$(IntermediateOutputPath)Microsoft.NETCore.App.MonoCrossAOT.UnixFilePermissions.xml" />
     <GenerateFileFromTemplate
       TemplateFile="Microsoft.NETCore.App.MonoCrossAOT.Sdk.props.in"
       Properties="@(_SdkPropsProperties)"
-      OutputPath="$(MonoAotCrossDir)$(TargetCrossRid).Sdk.props" />
+      OutputPath="$(IntermediateOutputPath)$(TargetCrossRid).Sdk.props" />
   </Target>
 
-  <Target Name="ValidateProperties" BeforeTargets="GenerateNuspec">
+  <Target Name="ValidateProperties" BeforeTargets="GetFilesToPackage">
     <Error Condition="'$(TargetCrossRid)' == ''" Text="TargetCrossRid not set" />
-    <Error Condition="!Exists('$(MonoAotCrossDir)$(TargetCrossRid)\$(AotCompilerFileName)')" Text="Cross compiler not found in $(MonoAotCrossDir)$(TargetCrossRid)" />
+    <Error Condition="!Exists('$(AotCompilerPath)$(AotCompilerFileName)')" Text="Cross compiler not found in $(AotCompilerPath). MonoAotCrossDir=$(MonoAotCrossDir)" />
   </Target>
 </Project>

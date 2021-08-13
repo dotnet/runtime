@@ -4,6 +4,7 @@
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
+using System.Reflection;
 using Microsoft.CodeAnalysis;
 using Xunit;
 
@@ -388,6 +389,65 @@ namespace System.Text.Json.Serialization
             CheckCompilationDiagnosticsErrors(newCompilation.GetDiagnostics());
         }
 
+        [Fact]
+        public void ContextTypeNotInNamespace()
+        {
+            string source = @"
+            using System.Text.Json.Serialization;
+
+            [JsonSerializable(typeof(MyType))]
+            internal partial class JsonContext : JsonSerializerContext
+            {
+            }
+
+            public class MyType
+            {
+                public int PublicPropertyInt { get; set; }
+                public string PublicPropertyString { get; set; }
+                private int PrivatePropertyInt { get; set; }
+                private string PrivatePropertyString { get; set; }
+
+                public double PublicDouble;
+                public char PublicChar;
+                private double PrivateDouble;
+                private char PrivateChar;
+
+                public void MyMethod() { }
+                public void MySecondMethod() { }
+
+                public void UsePrivates()
+                {
+                    PrivateDouble = 0;
+                    PrivateChar = ' ';
+                    double d = PrivateDouble;
+                    char c = PrivateChar;
+                }
+            }";
+
+            Compilation compilation = CompilationHelper.CreateCompilation(source);
+
+            JsonSourceGenerator generator = new JsonSourceGenerator();
+
+            Compilation newCompilation = CompilationHelper.RunGenerators(compilation, out ImmutableArray<Diagnostic> generatorDiags, generator);
+
+            // Make sure compilation was successful.
+            CheckCompilationDiagnosticsErrors(generatorDiags);
+            CheckCompilationDiagnosticsErrors(newCompilation.GetDiagnostics());
+
+            Dictionary<string, Type> types = generator.GetSerializableTypes();
+
+            // Check base functionality of found types.
+            Assert.Equal(1, types.Count);
+            Type myType = types["MyType"];
+            Assert.Equal("MyType", myType.FullName);
+
+            // Check for received fields, properties and methods in created type.
+            string[] expectedPropertyNames = { "PublicPropertyInt", "PublicPropertyString", };
+            string[] expectedFieldNames = { "PublicChar", "PublicDouble" };
+            string[] expectedMethodNames = { "get_PrivatePropertyInt", "get_PrivatePropertyString", "get_PublicPropertyInt", "get_PublicPropertyString", "MyMethod", "MySecondMethod", "set_PrivatePropertyInt", "set_PrivatePropertyString", "set_PublicPropertyInt", "set_PublicPropertyString", "UsePrivates" };
+            CheckFieldsPropertiesMethods(myType, expectedFieldNames, expectedPropertyNames, expectedMethodNames);
+        }
+
         private void CheckCompilationDiagnosticsErrors(ImmutableArray<Diagnostic> diagnostics)
         {
             Assert.Empty(diagnostics.Where(diagnostic => diagnostic.Severity == DiagnosticSeverity.Error));
@@ -395,8 +455,10 @@ namespace System.Text.Json.Serialization
 
         private void CheckFieldsPropertiesMethods(Type type, string[] expectedFields, string[] expectedProperties, string[] expectedMethods)
         {
-            string[] receivedFields = type.GetFields().Select(field => field.Name).OrderBy(s => s).ToArray();
-            string[] receivedProperties = type.GetProperties().Select(property => property.Name).OrderBy(s => s).ToArray();
+            BindingFlags bindingFlags = BindingFlags.Public | BindingFlags.Instance;
+
+            string[] receivedFields = type.GetFields(bindingFlags).Select(field => field.Name).OrderBy(s => s).ToArray();
+            string[] receivedProperties = type.GetProperties(bindingFlags).Select(property => property.Name).OrderBy(s => s).ToArray();
             string[] receivedMethods = type.GetMethods().Select(method => method.Name).OrderBy(s => s).ToArray();
 
             Assert.Equal(expectedFields, receivedFields);

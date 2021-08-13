@@ -8,10 +8,9 @@ using Microsoft.Win32.SafeHandles;
 
 namespace System.IO.Strategies
 {
-    internal sealed partial class AsyncWindowsFileStreamStrategy : WindowsFileStreamStrategy
+    internal sealed partial class AsyncWindowsFileStreamStrategy : OSFileStreamStrategy
     {
-        internal AsyncWindowsFileStreamStrategy(SafeFileHandle handle, FileAccess access, FileShare share)
-            : base(handle, access, share)
+        internal AsyncWindowsFileStreamStrategy(SafeFileHandle handle, FileAccess access) : base(handle, access)
         {
         }
 
@@ -22,99 +21,8 @@ namespace System.IO.Strategies
 
         internal override bool IsAsync => true;
 
-        public override int Read(byte[] buffer, int offset, int count)
-        {
-            ValueTask<int> vt = ReadAsyncInternal(new Memory<byte>(buffer, offset, count), CancellationToken.None);
-            return vt.IsCompleted ?
-                vt.Result :
-                vt.AsTask().GetAwaiter().GetResult();
-        }
-
-        public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
-            => ReadAsyncInternal(new Memory<byte>(buffer, offset, count), cancellationToken).AsTask();
-
-        public override ValueTask<int> ReadAsync(Memory<byte> destination, CancellationToken cancellationToken = default)
-            => ReadAsyncInternal(destination, cancellationToken);
-
-        private unsafe ValueTask<int> ReadAsyncInternal(Memory<byte> destination, CancellationToken cancellationToken = default)
-        {
-            if (!CanRead)
-            {
-                ThrowHelper.ThrowNotSupportedException_UnreadableStream();
-            }
-
-            long positionBefore = _filePosition;
-            if (CanSeek)
-            {
-                long len = Length;
-                if (positionBefore + destination.Length > len)
-                {
-                    destination = positionBefore <= len ?
-                        destination.Slice(0, (int)(len - positionBefore)) :
-                        default;
-                }
-
-                // When using overlapped IO, the OS is not supposed to
-                // touch the file pointer location at all.  We will adjust it
-                // ourselves, but only in memory. This isn't threadsafe.
-                _filePosition += destination.Length;
-            }
-
-            (SafeFileHandle.ValueTaskSource? vts, int errorCode) = RandomAccess.QueueAsyncReadFile(_fileHandle, destination, positionBefore, cancellationToken);
-            return vts != null
-                ? new ValueTask<int>(vts, vts.Version)
-                : (errorCode == 0) ? ValueTask.FromResult(0) : ValueTask.FromException<int>(HandleIOError(positionBefore, errorCode));
-        }
-
-        public override void Write(byte[] buffer, int offset, int count)
-            => WriteAsyncInternal(new ReadOnlyMemory<byte>(buffer, offset, count), CancellationToken.None).AsTask().GetAwaiter().GetResult();
-
-        public override Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
-            => WriteAsyncInternal(new ReadOnlyMemory<byte>(buffer, offset, count), cancellationToken).AsTask();
-
-        public override ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default)
-            => WriteAsyncInternal(buffer, cancellationToken);
-
-        private unsafe ValueTask WriteAsyncInternal(ReadOnlyMemory<byte> source, CancellationToken cancellationToken)
-        {
-            if (!CanWrite)
-            {
-                ThrowHelper.ThrowNotSupportedException_UnwritableStream();
-            }
-
-            long positionBefore = _filePosition;
-            if (CanSeek)
-            {
-                // When using overlapped IO, the OS is not supposed to
-                // touch the file pointer location at all.  We will adjust it
-                // ourselves, but only in memory.  This isn't threadsafe.
-                _filePosition += source.Length;
-                UpdateLengthOnChangePosition();
-            }
-
-            (SafeFileHandle.ValueTaskSource? vts, int errorCode) = RandomAccess.QueueAsyncWriteFile(_fileHandle, source, positionBefore, cancellationToken);
-            return vts != null
-                ? new ValueTask(vts, vts.Version)
-                : (errorCode == 0) ? ValueTask.CompletedTask : ValueTask.FromException(HandleIOError(positionBefore, errorCode));
-        }
-
-        private Exception HandleIOError(long positionBefore, int errorCode)
-        {
-            if (!_fileHandle.IsClosed && CanSeek)
-            {
-                // Update Position... it could be anywhere.
-                _filePosition = positionBefore;
-            }
-
-            return SafeFileHandle.ValueTaskSource.GetIOError(errorCode, _path);
-        }
-
-        public override Task FlushAsync(CancellationToken cancellationToken) => Task.CompletedTask; // no buffering = nothing to flush
-
         public override Task CopyToAsync(Stream destination, int bufferSize, CancellationToken cancellationToken)
         {
-            ValidateCopyToArguments(destination, bufferSize);
-
             // Fail if the file was closed
             if (_fileHandle.IsClosed)
             {
@@ -142,7 +50,7 @@ namespace System.IO.Strategies
             try
             {
                 await FileStreamHelpers
-                    .AsyncModeCopyToAsync(_fileHandle, _path, CanSeek, _filePosition, destination, bufferSize, cancellationToken)
+                    .AsyncModeCopyToAsync(_fileHandle, CanSeek, _filePosition, destination, bufferSize, cancellationToken)
                     .ConfigureAwait(false);
             }
             finally

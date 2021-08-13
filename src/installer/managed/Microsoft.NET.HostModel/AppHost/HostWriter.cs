@@ -251,6 +251,7 @@ namespace Microsoft.NET.HostModel.AppHost
                 Arguments = $"-s - \"{appHostPath}\"",
                 FileName = codesign,
                 RedirectStandardError = true,
+                UseShellExecute = false,
             };
 
             using (var p = Process.Start(psi))

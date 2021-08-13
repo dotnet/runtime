@@ -250,7 +250,7 @@ typedef BOOL(*UnwindReadMemoryCallback)(PVOID address, PVOID buffer, SIZE_T size
 
 extern
 BOOL
-PAL_VirtualUnwindOutOfProc(PT_CONTEXT context, PT_KNONVOLATILE_CONTEXT_POINTERS contextPointers, SIZE_T baseAddress, UnwindReadMemoryCallback readMemoryCallback);
+PAL_VirtualUnwindOutOfProc(PT_CONTEXT context, PT_KNONVOLATILE_CONTEXT_POINTERS contextPointers, PULONG64 functionStart, SIZE_T baseAddress, UnwindReadMemoryCallback readMemoryCallback);
 #endif
 
 HRESULT
@@ -284,7 +284,7 @@ DacVirtualUnwind(ULONG32 threadId, PT_CONTEXT context, PT_KNONVOLATILE_CONTEXT_P
         hr = S_OK;
 
         SIZE_T baseAddress = DacGlobalBase();
-        if (baseAddress == 0 || !PAL_VirtualUnwindOutOfProc(context, contextPointers, baseAddress, DacReadAllAdapter))
+        if (baseAddress == 0 || !PAL_VirtualUnwindOutOfProc(context, contextPointers, nullptr, baseAddress, DacReadAllAdapter))
         {
             hr = E_FAIL;
         }

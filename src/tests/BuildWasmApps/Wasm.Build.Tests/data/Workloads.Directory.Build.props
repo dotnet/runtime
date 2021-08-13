@@ -1,0 +1,7 @@
+<Project>
+  <PropertyGroup>
+    <RuntimeIdentifier>browser-wasm</RuntimeIdentifier>
+    <WasmNativeWorkload>true</WasmNativeWorkload>
+    <PublishTrimmed>true</PublishTrimmed>
+  </PropertyGroup>
+</Project>

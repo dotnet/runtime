@@ -455,7 +455,16 @@
   <data name="net_ssl_renegotiate_data" xml:space="preserve">
     <value>Received data during renegotiation.</value>
   </data>
+  <data name="net_ssl_renegotiate_buffer" xml:space="preserve">
+    <value>Client stream needs to be drained before renegotiation.</value>
+  </data>  
   <data name="net_android_ssl_api_level_unsupported" xml:space="preserve">
     <value>Setting an SNI hostname is not supported on this API level.</value>
+  </data>
+  <data name="net_ssl_trust_store" xml:space="preserve">
+    <value>Only LocalMachine stores are supported on Windows.</value>
+  </data>
+  <data name="net_ssl_trust_collection" xml:space="preserve">
+    <value>Sending trust from collection is not supported on Windows.</value>
   </data>
 </root>

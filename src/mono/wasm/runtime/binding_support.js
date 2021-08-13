@@ -6,7 +6,7 @@ var BindingSupportLib = {
 	$BINDING: {
 		BINDING_ASM: "[System.Private.Runtime.InteropServices.JavaScript]System.Runtime.InteropServices.JavaScript.Runtime",
 		mono_wasm_object_registry: [],
-		mono_wasm_ref_counter: 0,
+		mono_wasm_ref_counter: 1,
 		mono_wasm_free_list: [],
 		mono_wasm_owned_objects_frames: [],
 		mono_wasm_owned_objects_LMF: [],
@@ -123,18 +123,18 @@ var BindingSupportLib = {
 
 			this._bind_js_obj = bind_runtime_method ("BindJSObject", "iii");
 			this._bind_core_clr_obj = bind_runtime_method ("BindCoreCLRObject", "ii");
-			this._bind_existing_obj = bind_runtime_method ("BindExistingObject", "mi");
-			this._unbind_raw_obj_and_free = bind_runtime_method ("UnBindRawJSObjectAndFree", "ii");
+			this._get_js_owned_object_gc_handle = bind_runtime_method ("GetJSOwnedObjectGCHandle", "m");
 			this._get_js_id = bind_runtime_method ("GetJSObjectId", "m");
-			this._get_raw_mono_obj = bind_runtime_method ("GetDotNetObject", "i!");
+			this._get_raw_mono_obj = bind_runtime_method ("GetDotNetObject", "ii!");
 
 			this._is_simple_array = bind_runtime_method ("IsSimpleArray", "m");
 			this.setup_js_cont = get_method ("SetupJSContinuation");
 
-			this.create_tcs = get_method ("CreateTaskSource");
-			this.set_tcs_result = get_method ("SetTaskSourceResult");
-			this.set_tcs_failure = get_method ("SetTaskSourceFailure");
-			this.tcs_get_task_and_bind = get_method ("GetTaskAndBind");
+			this.create_tcs = bind_runtime_method ("CreateTaskSource","");
+			this.set_tcs_result = bind_runtime_method ("SetTaskSourceResult","io");
+			this.set_tcs_failure = bind_runtime_method ("SetTaskSourceFailure","is");
+			this.get_tcs_task = bind_runtime_method ("GetTaskSourceTask","i!");
+			
 			this.get_call_sig = get_method ("GetCallSignature");
 
 			this._object_to_string = bind_runtime_method ("ObjectToString", "m");
@@ -142,10 +142,9 @@ var BindingSupportLib = {
 			this.create_date_time = get_method ("CreateDateTime");
 			this.create_uri = get_method ("CreateUri");
 
-			this.safehandle_addref = get_method ("SafeHandleAddRef");
-			this.safehandle_release = get_method ("SafeHandleRelease");
 			this.safehandle_get_handle = get_method ("SafeHandleGetHandle");
 			this.safehandle_release_by_handle = get_method ("SafeHandleReleaseByHandle");
+			this.release_js_owned_object_by_handle = bind_runtime_method ("ReleaseJSOwnedObjectByHandle", "i");
 
 			this._are_promises_supported = ((typeof Promise === "object") || (typeof Promise === "function")) && (typeof Promise.resolve === "function");
 
@@ -155,6 +154,189 @@ var BindingSupportLib = {
 			this._interned_string_current_root_buffer = null;
 			this._interned_string_current_root_buffer_count = 0;
 			this._interned_js_string_table = new Map ();
+
+			this._js_owned_object_table = new Map ();
+			this._js_owned_object_registry = new FinalizationRegistry(this._js_owned_object_finalized.bind(this));
+		},
+
+		_js_owned_object_finalized: function (gc_handle) {
+			// The JS object associated with this gc_handle has been collected by the JS GC.
+			// As such, it's not possible for this gc_handle to be invoked by JS anymore, so
+			//  we can release the tracking weakref (it's null now, by definition),
+			//  and tell the C# side to stop holding a reference to the managed object.
+			this._js_owned_object_table.delete(gc_handle);
+			this.release_js_owned_object_by_handle(gc_handle);
+		},
+
+		_lookup_js_owned_object: function (gc_handle) {
+			if (!gc_handle)
+				return null;
+			var wr = this._js_owned_object_table.get(gc_handle);
+			if (wr) {
+				return wr.deref();
+				// TODO: could this be null before _js_owned_object_finalized was called ?
+				// TODO: are there race condition consequences ?
+			}
+			return null;
+		},
+
+		_wrap_js_thenable_as_task: function (thenable) {
+			this.bindings_lazy_init ();
+			if (!thenable)
+				return null;
+
+			// hold strong JS reference to thenable while in flight
+			// ideally, this should be hold alive by lifespan of the resulting C# Task, but this is good cheap aproximation
+			var thenable_js_handle = BINDING.mono_wasm_get_js_handle(thenable);
+
+			// Note that we do not implement promise/task roundtrip. 
+			// With more complexity we could recover original instance when this Task is marshaled back to JS.
+			// TODO optimization: return the tcs.Task on this same call instead of get_tcs_task
+			const tcs_gc_handle = this.create_tcs();
+			thenable.then ((result) => {
+				this.set_tcs_result(tcs_gc_handle, result);
+				// let go of the thenable reference
+				this._mono_wasm_release_js_handle(thenable_js_handle);
+			}, (reason) => {
+				this.set_tcs_failure(tcs_gc_handle, reason ? reason.toString() : "");
+				// let go of the thenable reference
+				this._mono_wasm_release_js_handle(thenable_js_handle);
+			});
+
+			// collect the TaskCompletionSource with its Task after js doesn't hold the thenable anymore
+			this._js_owned_object_registry.register(thenable, tcs_gc_handle);
+
+			// returns raw pointer to tcs.Task
+			return this.get_tcs_task(tcs_gc_handle);
+		},
+
+		_unbox_task_root_as_promise: function (root) {
+			this.bindings_lazy_init ();
+			if (root.value === 0)
+				return null;
+
+			if (!this._are_promises_supported)
+				throw new Error ("Promises are not supported thus 'System.Threading.Tasks.Task' can not work in this context.");
+
+			// get strong reference to Task
+			const gc_handle = this._get_js_owned_object_gc_handle(root.value);
+
+			// see if we have js owned instance for this gc_handle already
+			var result = this._lookup_js_owned_object(gc_handle);
+
+			// If the promise for this gc_handle was already collected (or was never created)
+			if (!result) {
+
+				var cont_obj = null;
+				// note that we do not implement promise/task roundtrip
+				// With more complexity we could recover original instance when this promise is marshaled back to C#.
+				var result = new Promise (function (resolve, reject) {
+					cont_obj = {
+						resolve: resolve,
+						reject: reject
+					};
+				});
+
+				// register C# side of the continuation
+				this.call_method (this.setup_js_cont, null, "mo", [ root.value, cont_obj ]);
+				
+				// register for GC of the Task after the JS side is done with the promise
+				this._js_owned_object_registry.register(result, gc_handle);
+
+				// register for instance reuse
+				this._js_owned_object_table.set(gc_handle, new WeakRef(result));
+			}
+
+			return result;
+		},
+
+		_unbox_ref_type_root_as_object: function (root) {
+			this.bindings_lazy_init ();
+			if (root.value === 0)
+				return null;
+
+			// this could be JSObject proxy of a js native object
+			var js_handle = this._get_js_id (root.value);
+			if (js_handle > 0)
+				return this.mono_wasm_get_jsobj_from_js_handle(js_handle);
+			// otherwise this is C# only object
+	
+			// get strong reference to Object
+			const gc_handle = this._get_js_owned_object_gc_handle(root.value);
+
+			// see if we have js owned instance for this gc_handle already
+			var result = this._lookup_js_owned_object(gc_handle);
+
+			// If the JS object for this gc_handle was already collected (or was never created)
+			if (!result) {
+				result = {
+					// keep the gc_handle so that we could easily convert it back to original C# object for roundtrip
+					__js_owned_gc_handle__ : gc_handle
+				}
+	
+				// register for GC of the C# object after the JS side is done with the object
+				this._js_owned_object_registry.register(result, gc_handle);
+
+				// register for instance reuse
+				this._js_owned_object_table.set(gc_handle, new WeakRef(result));
+			}
+
+			return result;
+		},
+
+		_wrap_delegate_root_as_function: function (root) {
+			this.bindings_lazy_init ();
+			if (root.value === 0)
+				return null;
+
+			// get strong reference to the Delegate
+			const gc_handle = this._get_js_owned_object_gc_handle(root.value);
+			return this._wrap_delegate_gc_handle_as_function(gc_handle);
+		},
+
+		_wrap_delegate_gc_handle_as_function: function (gc_handle) {
+			this.bindings_lazy_init ();
+
+			// see if we have js owned instance for this gc_handle already
+			var result = this._lookup_js_owned_object(gc_handle);
+
+			// If the function for this gc_handle was already collected (or was never created)
+			if (!result) {
+				// note that we do not implement function/delegate roundtrip
+				result = function() {
+					const delegateRoot = MONO.mono_wasm_new_root (BINDING.wasm_get_raw_obj(gc_handle, false));
+					try {
+						return BINDING.call_method (result.__mono_delegate_invoke__, delegateRoot.value, result.__mono_delegate_invoke_sig__, arguments);
+					} finally {
+						delegateRoot.release();
+					}
+				};
+
+				// bind the method
+				const delegateRoot = MONO.mono_wasm_new_root (BINDING.wasm_get_raw_obj(gc_handle, false));
+				try {
+					if (typeof result.__mono_delegate_invoke__ === "undefined"){
+						result.__mono_delegate_invoke__ = BINDING.mono_wasm_get_delegate_invoke(delegateRoot.value);
+						if (!result.__mono_delegate_invoke__){
+							throw new Error("System.Delegate Invoke method can not be resolved.");
+						}
+					}
+
+					if (typeof result.__mono_delegate_invoke_sig__ === "undefined"){
+						result.__mono_delegate_invoke_sig__ = Module.mono_method_get_call_signature (result.__mono_delegate_invoke__, delegateRoot.value);
+					}
+				} finally {
+					delegateRoot.release();
+				}
+
+				// register for GC of the deleate after the JS side is done with the function
+				this._js_owned_object_registry.register(result, gc_handle);
+
+				// register for instance reuse
+				this._js_owned_object_table.set(gc_handle, new WeakRef(result));
+			}
+
+			return result;
 		},
 
 		// Ensures the string is already interned on both the managed and JavaScript sides,
@@ -233,7 +415,7 @@ var BindingSupportLib = {
 			else if (typeof (string) === "symbol")
 				return this.js_string_to_mono_string_interned (string);
 			else if (typeof (string) !== "string")
-				throw new Error ("Expected string argument");
+				throw new Error ("Expected string argument, got "+ typeof (string));
 
 			// Always use an interned pointer for empty strings
 			if (string.length === 0)
@@ -275,7 +457,7 @@ var BindingSupportLib = {
 
 		get_js_obj: function (js_handle) {
 			if (js_handle > 0)
-				return this.mono_wasm_require_handle(js_handle);
+				return this.mono_wasm_get_jsobj_from_js_handle(js_handle);
 			return null;
 		},
 
@@ -350,6 +532,7 @@ var BindingSupportLib = {
 			}
 		},
 
+		// this is only used from Blazor
 		unbox_mono_obj: function (mono_obj) {
 			if (mono_obj === 0)
 				return undefined;
@@ -362,39 +545,10 @@ var BindingSupportLib = {
 			}
 		},
 
-		_unbox_delegate_rooted: function (mono_obj) {
-			var obj = this.extract_js_obj (mono_obj);
-			obj.__mono_delegate_alive__ = true;
-			// FIXME: Should we root the object as long as this function has not been GCd?
-			return function () {
-				// TODO: Just use Function.bind
-				return BINDING.invoke_delegate (obj, arguments);
-			};
-		},
-
-		_unbox_task_rooted: function (mono_obj) {
-			if (!this._are_promises_supported)
-				throw new Error ("Promises are not supported thus 'System.Threading.Tasks.Task' can not work in this context.");
-
-			var obj = this.extract_js_obj (mono_obj);
-			var cont_obj = null;
-			var promise = new Promise (function (resolve, reject) {
-				cont_obj = {
-					resolve: resolve,
-					reject: reject
-				};
-			});
-
-			this.call_method (this.setup_js_cont, null, "mo", [ mono_obj, cont_obj ]);
-			obj.__mono_js_cont__ = cont_obj.__mono_gchandle__;
-			cont_obj.__mono_js_task__ = obj.__mono_gchandle__;
-			return promise;
-		},
-
-		_unbox_safehandle_rooted: function (mono_obj) {
+		_unbox_safehandle_root: function (root) {
 			var addRef = true;
-			var js_handle = this.call_method(this.safehandle_get_handle, null, "mi", [ mono_obj, addRef ]);
-			var requiredObject = BINDING.mono_wasm_require_handle (js_handle);
+			var js_handle = this.call_method(this.safehandle_get_handle, null, "mi", [ root.value, addRef ]);
+			var js_obj = BINDING.mono_wasm_get_jsobj_from_js_handle (js_handle);
 			if (addRef)
 			{
 				if (typeof this.mono_wasm_owned_objects_LMF === "undefined")
@@ -402,10 +556,13 @@ var BindingSupportLib = {
 
 				this.mono_wasm_owned_objects_LMF.push(js_handle);
 			}
-			return requiredObject;
+			return js_obj;
 		},
 
-		_unbox_mono_obj_rooted_with_known_nonprimitive_type: function (mono_obj, type) {
+		_unbox_mono_obj_root_with_known_nonprimitive_type: function (root, type) {
+			if (root.value === undefined)
+				throw new Error(`Expected a root but got ${root}`);
+			
 			//See MARSHAL_TYPE_ defines in driver.c
 			switch (type) {
 				case 26: // int64
@@ -414,15 +571,15 @@ var BindingSupportLib = {
 					throw new Error ("int64 not available");
 				case 3: // string
 				case 29: // interned string
-					return this.conv_string (mono_obj);
+					return this.conv_string (root.value);
 				case 4: //vts
 					throw new Error ("no idea on how to unbox value types");
 				case 5: // delegate
-					return this._unbox_delegate_rooted (mono_obj);
+					return this._wrap_delegate_root_as_function (root);
 				case 6: // Task
-					return this._unbox_task_rooted (mono_obj);
+					return this._unbox_task_root_as_promise (root);
 				case 7: // ref type
-					return this.extract_js_obj (mono_obj);
+					return this._unbox_ref_type_root_as_object (root);
 				case 10: // arrays
 				case 11:
 				case 12:
@@ -434,29 +591,28 @@ var BindingSupportLib = {
 				case 18:
 					throw new Error ("Marshalling of primitive arrays are not supported.  Use the corresponding TypedArray instead.");
 				case 20: // clr .NET DateTime
-					var dateValue = this.call_method(this.get_date_value, null, "m", [ mono_obj ]);
+					var dateValue = this.call_method(this.get_date_value, null, "m", [ root.value ]);
 					return new Date(dateValue);
 				case 21: // clr .NET DateTimeOffset
-					var dateoffsetValue = this._object_to_string (mono_obj);
+					var dateoffsetValue = this._object_to_string (root.value);
 					return dateoffsetValue;
 				case 22: // clr .NET Uri
-					var uriValue = this._object_to_string (mono_obj);
+					var uriValue = this._object_to_string (root.value);
 					return uriValue;
 				case 23: // clr .NET SafeHandle
-					return this._unbox_safehandle_rooted (mono_obj);
+					return this._unbox_safehandle_root (root);
 				case 30:
 					return undefined;
 				default:
-					throw new Error ("no idea on how to unbox object kind " + type + " at offset " + mono_obj);
+					throw new Error (`no idea on how to unbox object kind ${type} at offset ${root.value} (root address is ${root.get_address()})`);
 			}
 		},
 
 		_unbox_mono_obj_root: function (root) {
-			var mono_obj = root.value;
-			if (mono_obj === 0)
+			if (root.value === 0)
 				return undefined;
 
-			var type = this.mono_wasm_try_unbox_primitive_and_get_type (mono_obj, this._unbox_buffer);
+			var type = this.mono_wasm_try_unbox_primitive_and_get_type (root.value, this._unbox_buffer);
 			switch (type) {
 				case 1: // int
 					return Module.HEAP32[this._unbox_buffer / 4];
@@ -471,26 +627,8 @@ var BindingSupportLib = {
 				case 28: // char
 					return String.fromCharCode(Module.HEAP32[this._unbox_buffer / 4]);
 				default:
-					return this._unbox_mono_obj_rooted_with_known_nonprimitive_type (mono_obj, type);
+					return this._unbox_mono_obj_root_with_known_nonprimitive_type (root, type);
 			}
-		},
-
-		create_task_completion_source: function () {
-			return this.call_method (this.create_tcs, null, "i", [ -1 ]);
-		},
-
-		set_task_result: function (tcs, result) {
-			tcs.is_mono_tcs_result_set = true;
-			this.call_method (this.set_tcs_result, null, "oo", [ tcs, result ]);
-			if (tcs.is_mono_tcs_task_bound)
-				this.free_task_completion_source(tcs);
-		},
-
-		set_task_failure: function (tcs, reason) {
-			tcs.is_mono_tcs_result_set = true;
-			this.call_method (this.set_tcs_failure, null, "os", [ tcs, reason.toString () ]);
-			if (tcs.is_mono_tcs_task_bound)
-				this.free_task_completion_source(tcs);
 		},
 
 		// https://github.com/Planeshifter/emscripten-examples/blob/master/01_PassingArrays/sum_post.js
@@ -561,18 +699,7 @@ var BindingSupportLib = {
 				case typeof js_obj === "boolean":
 					return this._box_js_bool (js_obj);
 				case isThenable() === true:
-					var the_task = this.try_extract_mono_obj (js_obj);
-					if (the_task)
-						return the_task;
-					// FIXME: We need to root tcs for an appropriate timespan, at least until the Task
-					//  is resolved
-					var tcs = this.create_task_completion_source ();
-					js_obj.then (function (result) {
-						BINDING.set_task_result (tcs, result);
-					}, function (reason) {
-						BINDING.set_task_failure (tcs, reason);
-					})
-					return this.get_task_and_bind (tcs, js_obj);
+					return this._wrap_js_thenable_as_task (js_obj);
 				case js_obj.constructor.name === "Date":
 					// We may need to take into account the TimeZone Offset
 					return this.call_method(this.create_date_time, null, "d!", [ js_obj.getTime() ]);
@@ -580,6 +707,7 @@ var BindingSupportLib = {
 					return this.extract_mono_obj (js_obj);
 			}
 		},
+
 		js_to_mono_uri: function (js_obj) {
 			this.bindings_lazy_init ();
 
@@ -594,6 +722,7 @@ var BindingSupportLib = {
 					return this.extract_mono_obj (js_obj);
 			}
 		},
+		
 		has_backing_array_buffer: function (js_obj) {
 			return typeof SharedArrayBuffer !== 'undefined'
 				? js_obj.buffer instanceof ArrayBuffer || js_obj.buffer instanceof SharedArrayBuffer
@@ -749,6 +878,7 @@ var BindingSupportLib = {
 			this.typedarray_copy_from(newTypedArray, pinned_array, begin, end, bytes_per_element);
 			return newTypedArray;
 		},
+
 		js_to_mono_enum: function (js_obj, method, parmIdx) {
 			this.bindings_lazy_init ();
 
@@ -757,62 +887,41 @@ var BindingSupportLib = {
 
 			return js_obj | 0;
 		},
-		wasm_binding_obj_new: function (js_obj_id, ownsHandle, type)
+
+		wasm_bind_core_clr_obj: function (js_handle, gc_handle)
 		{
-			return this._bind_js_obj (js_obj_id, ownsHandle, type);
-		},
-		wasm_bind_existing: function (mono_obj, js_id)
-		{
-			return this._bind_existing_obj (mono_obj, js_id);
+			return this._bind_core_clr_obj (js_handle, gc_handle);
 		},
 
-		wasm_bind_core_clr_obj: function (js_id, gc_handle)
+		// when should_add_in_flight === true, the JSObject would be temporarily hold by Normal gc_handle, so that it would not get collected during transition to the managed stack.
+		// its InFlight gc_handle would be freed when the instance arrives to managed side via Interop.Runtime.ReleaseInFlight
+		wasm_get_raw_obj: function (gc_handle, should_add_in_flight)
 		{
-			return this._bind_core_clr_obj (js_id, gc_handle);
-		},
+			if(!gc_handle){
+				return 0;
+			}
 
-		wasm_get_js_id: function (mono_obj)
-		{
-			return this._get_js_id (mono_obj);
-		},
-
-		wasm_get_raw_obj: function (gchandle)
-		{
-			return this._get_raw_mono_obj (gchandle);
+			return this._get_raw_mono_obj (gc_handle, should_add_in_flight ? 1 : 0);
 		},
 
 		try_extract_mono_obj:function (js_obj) {
-			if (js_obj === null || typeof js_obj === "undefined" || typeof js_obj.__mono_gchandle__ === "undefined")
+			if (js_obj === null || typeof js_obj === "undefined")
 				return 0;
-			return this.wasm_get_raw_obj (js_obj.__mono_gchandle__);
+			if(js_obj.__js_owned_gc_handle__)
+				return this.wasm_get_raw_obj (js_obj.__js_owned_gc_handle__, true);
+			if(js_obj.__mono_gc_handle__)
+				return this.wasm_get_raw_obj (js_obj.__mono_gc_handle__, true);
+			return 0;
 		},
 
 		mono_method_get_call_signature: function(method, mono_obj) {
-			this.bindings_lazy_init ();
+			let instanceRoot = MONO.mono_wasm_new_root (mono_obj);
+			try {
+				this.bindings_lazy_init ();
 
-			return this.call_method (this.get_call_sig, null, "im", [ method, mono_obj ]);
-		},
-
-		get_task_and_bind: function (tcs, js_obj) {
-			var gc_handle = this.mono_wasm_free_list.length ? this.mono_wasm_free_list.pop() : this.mono_wasm_ref_counter++;
-			var task_gchandle = this.call_method (this.tcs_get_task_and_bind, null, "oi", [ tcs, gc_handle + 1 ]);
-			js_obj.__mono_gchandle__ = task_gchandle;
-			this.mono_wasm_object_registry[gc_handle] = js_obj;
-			this.free_task_completion_source(tcs);
-			tcs.is_mono_tcs_task_bound = true;
-			js_obj.__mono_bound_tcs__ = tcs.__mono_gchandle__;
-			tcs.__mono_bound_task__ = js_obj.__mono_gchandle__;
-			return this.wasm_get_raw_obj (js_obj.__mono_gchandle__);
-		},
-
-		free_task_completion_source: function (tcs) {
-			if (tcs.is_mono_tcs_result_set)
-			{
-				this._unbind_raw_obj_and_free (tcs.__mono_gchandle__);
-			}
-			if (tcs.__mono_bound_task__)
-			{
-				this._unbind_raw_obj_and_free (tcs.__mono_bound_task__);
+				return this.call_method (this.get_call_sig, null, "im", [ method, instanceRoot.value ]);
+			} finally {
+				instanceRoot.release();
 			}
 		},
 
@@ -821,42 +930,27 @@ var BindingSupportLib = {
 				return 0;
 
 			var result = null;
-			var gc_handle = js_obj.__mono_gchandle__;
-			if (gc_handle) {
-				result = this.wasm_get_raw_obj (gc_handle);
+			if (js_obj.__js_owned_gc_handle__) {
+				// for __js_owned_gc_handle__ we don't want to create new proxy
+				result = this.wasm_get_raw_obj (js_obj.__js_owned_gc_handle__, true);
+				return result;
+			}
+			if (js_obj.__mono_gc_handle__) {
+				result = this.wasm_get_raw_obj (js_obj.__mono_gc_handle__, true);
 
 				// It's possible the managed object corresponding to this JS object was collected,
 				//  in which case we need to make a new one.
 				if (!result) {
-					delete js_obj.__mono_gchandle__;
-					delete js_obj.is_mono_bridged_obj;
+					delete js_obj.__mono_gc_handle__;
 				}
 			}
 
 			if (!result) {
-				gc_handle = this.mono_wasm_register_obj(js_obj);
-				result = this.wasm_get_raw_obj (gc_handle);
+				var { gc_handle: new_gc_handle, should_add_in_flight } = this.mono_wasm_register_obj(js_obj);
+				result = this.wasm_get_raw_obj (new_gc_handle, should_add_in_flight);
 			}
 
 			return result;
-		},
-
-		extract_js_obj: function (mono_obj) {
-			if (mono_obj == 0)
-				return null;
-
-			var js_id = this.wasm_get_js_id (mono_obj);
-			if (js_id > 0)
-				return this.mono_wasm_require_handle(js_id);
-
-			var gcHandle = this.mono_wasm_free_list.length ? this.mono_wasm_free_list.pop() : this.mono_wasm_ref_counter++;
-			var js_obj = {
-				__mono_gchandle__: this.wasm_bind_existing(mono_obj, gcHandle + 1),
-				is_mono_bridged_obj: true
-			};
-
-			this.mono_wasm_object_registry[gcHandle] = js_obj;
-			return js_obj;
 		},
 
 		_create_named_function: function (name, argumentNames, body, closure) {
@@ -1278,7 +1372,6 @@ var BindingSupportLib = {
 
 				buffer = converter.compiled_variadic_function (scratchBuffer, argsRootBuffer, method, args);
 			}
-
 			return this._call_method_with_converted_args (method, this_arg, converter, buffer, is_result_marshaled, argsRootBuffer);
 		},
 
@@ -1396,7 +1489,7 @@ var BindingSupportLib = {
 			}
 
 			// We inline a bunch of the invoke and marshaling logic here in order to eliminate the GC pressure normally
-			//  created by the unboxing part of the call process. Because unbox_mono_obj(_rooted) can return non-numeric
+			//  created by the unboxing part of the call process. Because unbox_mono_obj(_root) can return non-numeric
 			//  types, v8 and spidermonkey allocate and store its result on the heap (in the nursery, to be fair).
 			// For a bound method however, we know the result will always be the same type because C# methods have known
 			//  return types. Inlining the invoke and marshaling logic means that even though the bound method has logic
@@ -1409,15 +1502,15 @@ var BindingSupportLib = {
 				"resultRoot.value = binding_support.invoke_method (method, this_arg, buffer, exceptionRoot.get_address ());",
 				`binding_support._handle_exception_for_call (${converterKey}, buffer, resultRoot, exceptionRoot, argsRootBuffer);`,
 				"",
-				"var resultPtr = resultRoot.value, result = undefined;",
+				"var result = undefined;",
 				"if (!is_result_marshaled) ",
-				"    result = resultPtr;",
-				"else if (resultPtr !== 0) {",
+				"    result = resultRoot.value;",
+				"else if (resultRoot.value !== 0) {",
 				// For the common scenario where the return type is a primitive, we want to try and unbox it directly
 				//  into our existing heap allocation and then read it out of the heap. Doing this all in one operation
 				//  means that we only need to enter a gc safe region twice (instead of 3+ times with the normal,
 				//  slower check-type-and-then-unbox flow which has extra checks since unbox verifies the type).
-				"    var resultType = binding_support.mono_wasm_try_unbox_primitive_and_get_type (resultPtr, buffer);",
+				"    var resultType = binding_support.mono_wasm_try_unbox_primitive_and_get_type (resultRoot.value, buffer);",
 				"    switch (resultType) {",
 				"    case 1:", // int
 				"        result = Module.HEAP32[buffer / 4]; break;",
@@ -1432,7 +1525,7 @@ var BindingSupportLib = {
 				"    case 28:", // char
 				"        result = String.fromCharCode(Module.HEAP32[buffer / 4]); break;",
 				"    default:",
-				"        result = binding_support._unbox_mono_obj_rooted_with_known_nonprimitive_type (resultPtr, resultType); break;",
+				"        result = binding_support._unbox_mono_obj_root_with_known_nonprimitive_type (resultRoot, resultType); break;",
 				"    }",
 				"}",
 				"",
@@ -1453,31 +1546,6 @@ var BindingSupportLib = {
 				displayName += "_with_this_" + this_arg;
 
 			return this._create_named_function(displayName, argumentNames, bodyJs, closure);
-		},
-
-		invoke_delegate: function (delegate_obj, js_args) {
-			this.bindings_lazy_init ();
-
-			// Check to make sure the delegate is still alive on the CLR side of things.
-			if (typeof delegate_obj.__mono_delegate_alive__ !== "undefined") {
-				if (!delegate_obj.__mono_delegate_alive__)
-					throw new Error("The delegate target that is being invoked is no longer available.  Please check if it has been prematurely GC'd.");
-			}
-
-			var [delegateRoot] = MONO.mono_wasm_new_roots ([this.extract_mono_obj (delegate_obj)]);
-			try {
-				if (typeof delegate_obj.__mono_delegate_invoke__ === "undefined")
-					delegate_obj.__mono_delegate_invoke__ = this.mono_wasm_get_delegate_invoke(delegateRoot.value);
-				if (!delegate_obj.__mono_delegate_invoke__)
-					throw new Error("System.Delegate Invoke method can not be resolved.");
-
-				if (typeof delegate_obj.__mono_delegate_invoke_sig__ === "undefined")
-					delegate_obj.__mono_delegate_invoke_sig__ = Module.mono_method_get_call_signature (delegate_obj.__mono_delegate_invoke__, delegateRoot.value);
-
-				return this.call_method (delegate_obj.__mono_delegate_invoke__, delegateRoot.value, delegate_obj.__mono_delegate_invoke_sig__, js_args);
-			} finally {
-				MONO.mono_wasm_release_roots (delegateRoot);
-			}
 		},
 
 		resolve_method_fqn: function (fqn) {
@@ -1572,83 +1640,60 @@ var BindingSupportLib = {
 		},
 		// Object wrapping helper functions to handle reference handles that will
 		// be used in managed code.
-		mono_wasm_register_obj: function(obj) {
-
+		mono_wasm_register_obj: function(js_obj) {
 			var gc_handle = undefined;
-			if (obj !== null && typeof obj !== "undefined")
+			if (js_obj !== null && typeof js_obj !== "undefined")
 			{
-				gc_handle = obj.__mono_gchandle__;
+				gc_handle = js_obj.__mono_gc_handle__;
 
 				if (typeof gc_handle === "undefined") {
-					var handle = this.mono_wasm_free_list.length ?
-								this.mono_wasm_free_list.pop() : this.mono_wasm_ref_counter++;
-					obj.__mono_jshandle__ = handle;
 					// Obtain the JS -> C# type mapping.
-					var wasm_type = obj[Symbol.for("wasm type")];
-					obj.__owns_handle__ = true;
-					gc_handle = obj.__mono_gchandle__ = this.wasm_binding_obj_new(handle + 1, obj.__owns_handle__, typeof wasm_type === "undefined" ? -1 : wasm_type);
-					this.mono_wasm_object_registry[handle] = obj;
+					var wasm_type = js_obj[Symbol.for("wasm type")];
 
+					var js_handle = BINDING.mono_wasm_get_js_handle(js_obj);
+					gc_handle = js_obj.__mono_gc_handle__ = this._bind_js_obj(js_handle, true, typeof wasm_type === "undefined" ? -1 : wasm_type);
+					// as this instance was just created, it was already created with Inflight strong gc_handle, so we do not have to do it again
+					return { gc_handle, should_add_in_flight: false };
 				}
 			}
-			return gc_handle;
+			// this is pre-existing instance, we need to add Inflight strong gc_handle before passing it to managed
+			return { gc_handle, should_add_in_flight: true };
 		},
-		mono_wasm_require_handle: function(handle) {
-			if (handle > 0)
-				return this.mono_wasm_object_registry[handle - 1];
+		mono_wasm_get_jsobj_from_js_handle: function(js_handle) {
+			if (js_handle > 0)
+				return this.mono_wasm_object_registry[js_handle];
 			return null;
 		},
-		mono_wasm_unregister_obj: function(js_id) {
-			var obj = this.mono_wasm_object_registry[js_id - 1];
+		mono_wasm_get_js_handle: function(js_obj) {
+			if(js_obj.__mono_js_handle__){
+				return js_obj.__mono_js_handle__;
+			}
+			var js_handle = this.mono_wasm_free_list.length ? this.mono_wasm_free_list.pop() : this.mono_wasm_ref_counter++;
+			// note mono_wasm_object_registry is list, not Map. That's why we maintain mono_wasm_free_list.
+			this.mono_wasm_object_registry[js_handle] = js_obj;
+			js_obj.__mono_js_handle__ = js_handle;
+			return js_handle;
+		},
+		_mono_wasm_release_js_handle: function(js_handle) {
+			var obj = BINDING.mono_wasm_object_registry[js_handle];
 			if (typeof obj  !== "undefined" && obj !== null) {
 				// if this is the global object then do not
 				// unregister it.
 				if (globalThis === obj)
 					return obj;
 
-				var gc_handle = obj.__mono_gchandle__;
-				if (typeof gc_handle  !== "undefined") {
-
-					obj.__mono_gchandle__ = undefined;
-					obj.__mono_jshandle__ = undefined;
-
-					// If we are unregistering a delegate then mark it as not being alive
-					// this will be checked in the delegate invoke and throw an appropriate
-					// error.
-					if (typeof obj.__mono_delegate_alive__ !== "undefined")
-						obj.__mono_delegate_alive__ = false;
-
-					this.mono_wasm_object_registry[js_id - 1] = undefined;
-					this.mono_wasm_free_list.push(js_id - 1);
+				if (typeof obj.__mono_js_handle__  !== "undefined") {
+					obj.__mono_gc_handle__ = undefined;
+					obj.__mono_js_handle__ = undefined;
 				}
+
+				BINDING.mono_wasm_object_registry[js_handle] = undefined;
+				BINDING.mono_wasm_free_list.push(js_handle);
 			}
 			return obj;
 		},
-		mono_wasm_free_handle: function(handle) {
-			this.mono_wasm_unregister_obj(handle);
-		},
-		mono_wasm_free_raw_object: function(js_id) {
-			var obj = this.mono_wasm_object_registry[js_id - 1];
-			if (typeof obj  !== "undefined" && obj !== null) {
-				// if this is the global object then do not
-				// unregister it.
-				if (globalThis === obj)
-					return obj;
-
-				var gc_handle = obj.__mono_gchandle__;
-				if (typeof gc_handle  !== "undefined") {
-
-					obj.__mono_gchandle__ = undefined;
-					obj.__mono_jshandle__ = undefined;
-
-					this.mono_wasm_object_registry[js_id - 1] = undefined;
-					this.mono_wasm_free_list.push(js_id - 1);
-				}
-			}
-			return obj;
-		},
-		mono_wasm_parse_args : function (args) {
-			var js_args = this.mono_array_to_js_array(args);
+		mono_wasm_parse_args_root : function (argsRoot) {
+			var js_args = this._mono_array_root_to_js_array(argsRoot);
 			this.mono_wasm_save_LMF();
 			return js_args;
 		},
@@ -1662,7 +1707,7 @@ var BindingSupportLib = {
 			// Release all managed objects that are loaded into the LMF
 			if (typeof __owned_objects__ !== "undefined")
 			{
-				// Look into passing the array of owned object handles in one pass.
+				// TODO: Look into passing the array of owned object handles in one pass.
 				var refidx;
 				for (refidx = 0; refidx < __owned_objects__.length; refidx++)
 				{
@@ -1678,125 +1723,139 @@ var BindingSupportLib = {
 			return this.js_to_mono_obj (ret);
 		},
 	},
-
 	mono_wasm_invoke_js_with_args: function(js_handle, method_name, args, is_exception) {
-		BINDING.bindings_lazy_init ();
-
-		var obj = BINDING.get_js_obj (js_handle);
-		if (!obj) {
-			setValue (is_exception, 1, "i32");
-			return BINDING.js_string_to_mono_string ("Invalid JS object handle '" + js_handle + "'");
-		}
-
-		var js_name = BINDING.unbox_mono_obj (method_name);
-		if (!js_name || (typeof(js_name) !== "string")) {
-			setValue (is_exception, 1, "i32");
-			return BINDING.js_string_to_mono_string ("Invalid method name object '" + method_name + "'");
-		}
-
-		var js_args = BINDING.mono_wasm_parse_args(args);
-
-		var res;
+		let argsRoot = MONO.mono_wasm_new_root (args), nameRoot = MONO.mono_wasm_new_root (method_name);
 		try {
-			var m = obj [js_name];
-			if (typeof m === "undefined")
-				throw new Error("Method: '" + js_name + "' not found for: '" + Object.prototype.toString.call(obj) + "'");
-			var res = m.apply (obj, js_args);
-			return BINDING.mono_wasm_convert_return_value(res);
-		} catch (e) {
-			// make sure we release object reference counts on errors.
-			BINDING.mono_wasm_unwind_LMF();
-			var res = e.toString ();
-			setValue (is_exception, 1, "i32");
-			if (res === null || res === undefined)
-				res = "unknown exception";
-			return BINDING.js_string_to_mono_string (res);
+			BINDING.bindings_lazy_init ();
+
+			var js_name = BINDING.conv_string (nameRoot.value);
+			if (!js_name || (typeof(js_name) !== "string")) {
+				setValue (is_exception, 1, "i32");
+				return BINDING.js_string_to_mono_string ("ERR12: Invalid method name object '" + nameRoot.value + "'");
+			}
+
+			var obj = BINDING.get_js_obj (js_handle);
+			if (!obj) {
+				setValue (is_exception, 1, "i32");
+				return BINDING.js_string_to_mono_string ("ERR13: Invalid JS object handle '" + js_handle + "' while invoking '"+js_name+"'");
+			}
+
+			var js_args = BINDING.mono_wasm_parse_args_root(argsRoot);
+
+			var res;
+			try {
+				var m = obj [js_name];
+				if (typeof m === "undefined")
+					throw new Error("Method: '" + js_name + "' not found for: '" + Object.prototype.toString.call(obj) + "'");
+				var res = m.apply (obj, js_args);
+				return BINDING.mono_wasm_convert_return_value(res);
+			} catch (e) {
+				// make sure we release object reference counts on errors.
+				BINDING.mono_wasm_unwind_LMF();
+				var res = e.toString ();
+				setValue (is_exception, 1, "i32");
+				if (res === null || res === undefined)
+					res = "unknown exception";
+				return BINDING.js_string_to_mono_string (res);
+			}
+		} finally {
+			argsRoot.release();
+			nameRoot.release();
 		}
 	},
 	mono_wasm_get_object_property: function(js_handle, property_name, is_exception) {
 		BINDING.bindings_lazy_init ();
 
-		var obj = BINDING.mono_wasm_require_handle (js_handle);
-		if (!obj) {
-			setValue (is_exception, 1, "i32");
-			return BINDING.js_string_to_mono_string ("Invalid JS object handle '" + js_handle + "'");
-		}
-
-		var js_name = BINDING.conv_string (property_name);
-		if (!js_name) {
-			setValue (is_exception, 1, "i32");
-			return BINDING.js_string_to_mono_string ("Invalid property name object '" + js_name + "'");
-		}
-
-		var res;
+		var nameRoot = MONO.mono_wasm_new_root (property_name);
 		try {
-			var m = obj [js_name];
-			if (m === Object(m) && obj.__is_mono_proxied__)
-				m.__is_mono_proxied__ = true;
+			var js_name = BINDING.conv_string (nameRoot.value);
+			if (!js_name) {
+				setValue (is_exception, 1, "i32");
+				return BINDING.js_string_to_mono_string ("Invalid property name object '" + nameRoot.value + "'");
+			}
 
-			return BINDING.js_to_mono_obj (m);
-		} catch (e) {
-			var res = e.toString ();
-			setValue (is_exception, 1, "i32");
-			if (res === null || typeof res === "undefined")
-				res = "unknown exception";
-			return BINDING.js_string_to_mono_string (res);
+			var obj = BINDING.mono_wasm_get_jsobj_from_js_handle (js_handle);
+			if (!obj) {
+				setValue (is_exception, 1, "i32");
+				return BINDING.js_string_to_mono_string ("ERR01: Invalid JS object handle '" + js_handle + "' while geting '"+js_name+"'");
+			}
+
+			var res;
+			try {
+				var m = obj [js_name];
+				if (m === Object(m) && obj.__is_mono_proxied__)
+					m.__is_mono_proxied__ = true;
+
+				return BINDING.js_to_mono_obj (m);
+			} catch (e) {
+				var res = e.toString ();
+				setValue (is_exception, 1, "i32");
+				if (res === null || typeof res === "undefined")
+					res = "unknown exception";
+				return BINDING.js_string_to_mono_string (res);
+			}
+		} finally {
+			nameRoot.release();
 		}
 	},
     mono_wasm_set_object_property: function (js_handle, property_name, value, createIfNotExist, hasOwnProperty, is_exception) {
-
-		BINDING.bindings_lazy_init ();
-
-		var requireObject = BINDING.mono_wasm_require_handle (js_handle);
-		if (!requireObject) {
-			setValue (is_exception, 1, "i32");
-			return BINDING.js_string_to_mono_string ("Invalid JS object handle '" + js_handle + "'");
-		}
-
-		var property = BINDING.conv_string (property_name);
-		if (!property) {
-			setValue (is_exception, 1, "i32");
-			return BINDING.js_string_to_mono_string ("Invalid property name object '" + property_name + "'");
-		}
-
-        var result = false;
-
-		var js_value = BINDING.unbox_mono_obj(value);
-		BINDING.mono_wasm_save_LMF();
-
-        if (createIfNotExist) {
-            requireObject[property] = js_value;
-            result = true;
-        }
-        else {
-			result = false;
-			if (!createIfNotExist)
-			{
-				if (!requireObject.hasOwnProperty(property))
-					return false;
+		var valueRoot = MONO.mono_wasm_new_root (value), nameRoot = MONO.mono_wasm_new_root (property_name);
+		try {
+			BINDING.bindings_lazy_init ();
+			var property = BINDING.conv_string (nameRoot.value);
+			if (!property) {
+				setValue (is_exception, 1, "i32");
+				return BINDING.js_string_to_mono_string ("Invalid property name object '" + property_name + "'");
 			}
-            if (hasOwnProperty === true) {
-                if (requireObject.hasOwnProperty(property)) {
-                    requireObject[property] = js_value;
-                    result = true;
-                }
-            }
-            else {
-                requireObject[property] = js_value;
-                result = true;
-            }
 
+			var js_obj = BINDING.mono_wasm_get_jsobj_from_js_handle (js_handle);
+			if (!js_obj) {
+				setValue (is_exception, 1, "i32");
+				return BINDING.js_string_to_mono_string ("ERR02: Invalid JS object handle '" + js_handle + "' while setting '"+property+"'");
+			}
+
+			var result = false;
+
+			var js_value = BINDING._unbox_mono_obj_root(valueRoot);
+			BINDING.mono_wasm_save_LMF();
+
+			if (createIfNotExist) {
+				js_obj[property] = js_value;
+				result = true;
+			}
+			else {
+				result = false;
+				if (!createIfNotExist)
+				{
+					if (!js_obj.hasOwnProperty(property))
+						return false;
+				}
+				if (hasOwnProperty === true) {
+					if (js_obj.hasOwnProperty(property)) {
+						js_obj[property] = js_value;
+						result = true;
+					}
+				}
+				else {
+					js_obj[property] = js_value;
+					result = true;
+				}
+
+			}
+			BINDING.mono_wasm_unwind_LMF();
+			return BINDING._box_js_bool (result);
+		} finally {
+			nameRoot.release();
+			valueRoot.release();
 		}
-		BINDING.mono_wasm_unwind_LMF();
-        return BINDING._box_js_bool (result);
 	},
 	mono_wasm_get_by_index: function(js_handle, property_index, is_exception) {
 		BINDING.bindings_lazy_init ();
 
-		var obj = BINDING.mono_wasm_require_handle (js_handle);
+		var obj = BINDING.mono_wasm_get_jsobj_from_js_handle (js_handle);
 		if (!obj) {
 			setValue (is_exception, 1, "i32");
-			return BINDING.js_string_to_mono_string ("Invalid JS object handle '" + js_handle + "'");
+			return BINDING.js_string_to_mono_string ("ERR03: Invalid JS object handle '" + js_handle + "' while getting ["+property_index+"]");
 		}
 
 		try {
@@ -1811,155 +1870,149 @@ var BindingSupportLib = {
 		}
 	},
 	mono_wasm_set_by_index: function(js_handle, property_index, value, is_exception) {
-		BINDING.bindings_lazy_init ();
-
-		var obj = BINDING.mono_wasm_require_handle (js_handle);
-		if (!obj) {
-			setValue (is_exception, 1, "i32");
-			return BINDING.js_string_to_mono_string ("Invalid JS object handle '" + js_handle + "'");
-		}
-
-		var js_value = BINDING.unbox_mono_obj(value);
-		BINDING.mono_wasm_save_LMF();
-
+		var valueRoot = MONO.mono_wasm_new_root (value);
 		try {
-			obj [property_index] = js_value;
-			BINDING.mono_wasm_unwind_LMF();
-			return true;
-		} catch (e) {
-			var res = e.toString ();
-			setValue (is_exception, 1, "i32");
-			if (res === null || typeof res === "undefined")
-				res = "unknown exception";
-			return BINDING.js_string_to_mono_string (res);
+			BINDING.bindings_lazy_init ();
+
+			var obj = BINDING.mono_wasm_get_jsobj_from_js_handle (js_handle);
+			if (!obj) {
+				setValue (is_exception, 1, "i32");
+				return BINDING.js_string_to_mono_string ("ERR04: Invalid JS object handle '" + js_handle + "' while setting ["+property_index+"]");
+			}
+
+			var js_value = BINDING._unbox_mono_obj_root(valueRoot);
+			BINDING.mono_wasm_save_LMF();
+
+			try {
+				obj [property_index] = js_value;
+				BINDING.mono_wasm_unwind_LMF();
+				return true;
+			} catch (e) {
+				var res = e.toString ();
+				setValue (is_exception, 1, "i32");
+				if (res === null || typeof res === "undefined")
+					res = "unknown exception";
+				return BINDING.js_string_to_mono_string (res);
+			}
+		} finally {
+			valueRoot.release();
 		}
 	},
 	mono_wasm_get_global_object: function(global_name, is_exception) {
-		BINDING.bindings_lazy_init ();
+		var nameRoot = MONO.mono_wasm_new_root (global_name);
+		try {
+			BINDING.bindings_lazy_init ();
 
-		var js_name = BINDING.conv_string (global_name);
+			var js_name = BINDING.conv_string (nameRoot.value);
 
-		var globalObj;
+			var globalObj;
 
-		if (!js_name) {
-			globalObj = globalThis;
+			if (!js_name) {
+				globalObj = globalThis;
+			}
+			else {
+				globalObj = globalThis[js_name];
+			}
+
+			if (globalObj === null || typeof globalObj === undefined) {
+				setValue (is_exception, 1, "i32");
+				return BINDING.js_string_to_mono_string ("Global object '" + js_name + "' not found.");
+			}
+
+			return BINDING.js_to_mono_obj (globalObj);
+		} finally {
+			nameRoot.release();
 		}
-		else {
-			globalObj = globalThis[js_name];
-		}
-
-		if (globalObj === null || typeof globalObj === undefined) {
-			setValue (is_exception, 1, "i32");
-			return BINDING.js_string_to_mono_string ("Global object '" + js_name + "' not found.");
-		}
-
-		return BINDING.js_to_mono_obj (globalObj);
 	},
 	mono_wasm_release_handle: function(js_handle, is_exception) {
 		BINDING.bindings_lazy_init ();
-
-		BINDING.mono_wasm_free_handle(js_handle);
-	},
-	mono_wasm_release_object: function(js_handle, is_exception) {
-		BINDING.bindings_lazy_init ();
-
-		BINDING.mono_wasm_free_raw_object(js_handle);
+		BINDING._mono_wasm_release_js_handle(js_handle);
 	},
 	mono_wasm_bind_core_object: function(js_handle, gc_handle, is_exception) {
 		BINDING.bindings_lazy_init ();
 
-		var requireObject = BINDING.mono_wasm_require_handle (js_handle);
-		if (!requireObject) {
+		var js_obj = BINDING.mono_wasm_get_jsobj_from_js_handle (js_handle);
+		if (!js_obj) {
 			setValue (is_exception, 1, "i32");
-			return BINDING.js_string_to_mono_string ("Invalid JS object handle '" + js_handle + "'");
+			return BINDING.js_string_to_mono_string ("ERR05: Invalid JS object handle '" + js_handle + "'");
 		}
 
 		BINDING.wasm_bind_core_clr_obj(js_handle, gc_handle );
-		requireObject.__mono_gchandle__ = gc_handle;
-		requireObject.__js_handle__ = js_handle;
-		return gc_handle;
-	},
-	mono_wasm_bind_host_object: function(js_handle, gc_handle, is_exception) {
-		BINDING.bindings_lazy_init ();
-
-		var requireObject = BINDING.mono_wasm_require_handle (js_handle);
-		if (!requireObject) {
-			setValue (is_exception, 1, "i32");
-			return BINDING.js_string_to_mono_string ("Invalid JS object handle '" + js_handle + "'");
-		}
-
-		BINDING.wasm_bind_core_clr_obj(js_handle, gc_handle );
-		requireObject.__mono_gchandle__ = gc_handle;
+		js_obj.__mono_gc_handle__ = gc_handle;
+		js_obj.__mono_js_handle__ = js_handle;
 		return gc_handle;
 	},
 	mono_wasm_new: function (core_name, args, is_exception) {
-		BINDING.bindings_lazy_init ();
-
-		var js_name = BINDING.conv_string (core_name);
-
-		if (!js_name) {
-			setValue (is_exception, 1, "i32");
-			return BINDING.js_string_to_mono_string ("Core object '" + js_name + "' not found.");
-		}
-
-		var coreObj = globalThis[js_name];
-
-		if (coreObj === null || typeof coreObj === "undefined") {
-			setValue (is_exception, 1, "i32");
-			return BINDING.js_string_to_mono_string ("JavaScript host object '" + js_name + "' not found.");
-		}
-
-		var js_args = BINDING.mono_wasm_parse_args(args);
-
+		var argsRoot = MONO.mono_wasm_new_root (args), nameRoot = MONO.mono_wasm_new_root (core_name);
 		try {
+			BINDING.bindings_lazy_init ();
 
-			// This is all experimental !!!!!!
-			var allocator = function(constructor, js_args) {
-				// Not sure if we should be checking for anything here
-				var argsList = new Array();
-				argsList[0] = constructor;
-				if (js_args)
-					argsList = argsList.concat (js_args);
-				var tempCtor = constructor.bind.apply (constructor, argsList);
-				var obj = new tempCtor ();
-				return obj;
-			};
+			var js_name = BINDING.conv_string (nameRoot.value);
 
-			var res = allocator(coreObj, js_args);
-			var gc_handle = BINDING.mono_wasm_free_list.length ? BINDING.mono_wasm_free_list.pop() : BINDING.mono_wasm_ref_counter++;
-			BINDING.mono_wasm_object_registry[gc_handle] = res;
-			return BINDING.mono_wasm_convert_return_value(gc_handle + 1);
-		} catch (e) {
-			var res = e.toString ();
-			setValue (is_exception, 1, "i32");
-			if (res === null || res === undefined)
-				res = "Error allocating object.";
-			return BINDING.js_string_to_mono_string (res);
+			if (!js_name) {
+				setValue (is_exception, 1, "i32");
+				return BINDING.js_string_to_mono_string ("Invalid name @" + nameRoot.value);
+			}
+
+			var coreObj = globalThis[js_name];
+
+			if (coreObj === null || typeof coreObj === "undefined") {
+				setValue (is_exception, 1, "i32");
+				return BINDING.js_string_to_mono_string ("JavaScript host object '" + js_name + "' not found.");
+			}
+
+			var js_args = BINDING.mono_wasm_parse_args_root(argsRoot);
+
+			try {
+
+				// This is all experimental !!!!!!
+				var allocator = function(constructor, js_args) {
+					// Not sure if we should be checking for anything here
+					var argsList = new Array();
+					argsList[0] = constructor;
+					if (js_args)
+						argsList = argsList.concat (js_args);
+					var tempCtor = constructor.bind.apply (constructor, argsList);
+					var obj = new tempCtor ();
+					return obj;
+				};
+
+				var res = allocator(coreObj, js_args);
+				var js_handle = BINDING.mono_wasm_get_js_handle(res);
+				return BINDING.mono_wasm_convert_return_value(js_handle);
+			} catch (e) {
+				var res = e.toString ();
+				setValue (is_exception, 1, "i32");
+				if (res === null || res === undefined)
+					res = "Error allocating object.";
+				return BINDING.js_string_to_mono_string (res);
+			}
+		} finally {
+			argsRoot.release();
+			nameRoot.release();
 		}
-
 	},
-
 	mono_wasm_typed_array_to_array: function(js_handle, is_exception) {
 		BINDING.bindings_lazy_init ();
 
-		var requireObject = BINDING.mono_wasm_require_handle (js_handle);
-		if (!requireObject) {
+		var js_obj = BINDING.mono_wasm_get_jsobj_from_js_handle (js_handle);
+		if (!js_obj) {
 			setValue (is_exception, 1, "i32");
-			return BINDING.js_string_to_mono_string ("Invalid JS object handle '" + js_handle + "'");
+			return BINDING.js_string_to_mono_string ("ERR06: Invalid JS object handle '" + js_handle + "'");
 		}
 
-		return BINDING.js_typed_array_to_array(requireObject);
+		return BINDING.js_typed_array_to_array(js_obj);
 	},
 	mono_wasm_typed_array_copy_to: function(js_handle, pinned_array, begin, end, bytes_per_element, is_exception) {
 		BINDING.bindings_lazy_init ();
 
-		var requireObject = BINDING.mono_wasm_require_handle (js_handle);
-		if (!requireObject) {
+		var js_obj = BINDING.mono_wasm_get_jsobj_from_js_handle (js_handle);
+		if (!js_obj) {
 			setValue (is_exception, 1, "i32");
-			return BINDING.js_string_to_mono_string ("Invalid JS object handle '" + js_handle + "'");
+			return BINDING.js_string_to_mono_string ("ERR07: Invalid JS object handle '" + js_handle + "'");
 		}
 
-		var res = BINDING.typedarray_copy_to(requireObject, pinned_array, begin, end, bytes_per_element);
+		var res = BINDING.typedarray_copy_to(js_obj, pinned_array, begin, end, bytes_per_element);
 		return BINDING.js_to_mono_obj (res)
 	},
 	mono_wasm_typed_array_from: function(pinned_array, begin, end, bytes_per_element, type, is_exception) {
@@ -1970,16 +2023,68 @@ var BindingSupportLib = {
 	mono_wasm_typed_array_copy_from: function(js_handle, pinned_array, begin, end, bytes_per_element, is_exception) {
 		BINDING.bindings_lazy_init ();
 
-		var requireObject = BINDING.mono_wasm_require_handle (js_handle);
-		if (!requireObject) {
+		var js_obj = BINDING.mono_wasm_get_jsobj_from_js_handle (js_handle);
+		if (!js_obj) {
 			setValue (is_exception, 1, "i32");
-			return BINDING.js_string_to_mono_string ("Invalid JS object handle '" + js_handle + "'");
+			return BINDING.js_string_to_mono_string ("ERR08: Invalid JS object handle '" + js_handle + "'");
 		}
 
-		var res = BINDING.typedarray_copy_from(requireObject, pinned_array, begin, end, bytes_per_element);
+		var res = BINDING.typedarray_copy_from(js_obj, pinned_array, begin, end, bytes_per_element);
 		return BINDING.js_to_mono_obj (res)
 	},
+	mono_wasm_add_event_listener: function (objHandle, name, listener_gc_handle, optionsHandle) {
+		var nameRoot = MONO.mono_wasm_new_root (name);
+		try {
+			BINDING.bindings_lazy_init ();
+			var sName = BINDING.conv_string(nameRoot.value);
 
+			var obj = BINDING.mono_wasm_get_jsobj_from_js_handle(objHandle);
+			if (!obj)
+				throw new Error("ERR09: Invalid JS object handle for '"+sName+"'");
+			var listener = BINDING._wrap_delegate_gc_handle_as_function(listener_gc_handle);
+			if (!listener)
+				throw new Error("ERR10: Invalid listener gc_handle");
+
+			var options = optionsHandle
+				? BINDING.mono_wasm_get_jsobj_from_js_handle(optionsHandle)
+				: null;
+
+			if (options)
+				obj.addEventListener(sName, listener, options);
+			else
+				obj.addEventListener(sName, listener);
+			return 0;
+		} catch (exc) {
+			return BINDING.js_string_to_mono_string(exc.message);
+		} finally {
+			nameRoot.release();
+		}
+	},
+	mono_wasm_remove_event_listener: function (objHandle, name, listener_gc_handle, capture) {
+		var nameRoot = MONO.mono_wasm_new_root (name);
+		try {
+			BINDING.bindings_lazy_init ();
+			var obj = BINDING.mono_wasm_get_jsobj_from_js_handle(objHandle);
+			if (!obj)
+				throw new Error("ERR11: Invalid JS object handle");
+			var listener = BINDING._wrap_delegate_gc_handle_as_function(listener_gc_handle);
+			// Removing a nonexistent listener should not be treated as an error
+			if (!listener)
+				return;
+			var sName = BINDING.conv_string(nameRoot.value);
+
+			obj.removeEventListener(sName, listener, !!capture);
+			// We do not manually remove the listener from the delegate registry here,
+			//  because that same delegate may have been used as an event listener for
+			//  other events or event targets. The GC will automatically clean it up
+			//  and trigger the FinalizationRegistry handler if it's unused
+			return 0;
+		} catch (exc) {
+			return BINDING.js_string_to_mono_string(exc.message);
+		} finally {
+			nameRoot.release();
+		}
+	},
 
 };
 

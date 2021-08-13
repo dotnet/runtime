@@ -12,8 +12,6 @@ namespace System.Buffers
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static int SelectBucketIndex(int bufferSize)
         {
-            Debug.Assert(bufferSize >= 0);
-
             // Buffers are bucketed so that a request between 2^(n-1) + 1 and 2^n is given a buffer of 2^n
             // Bucket index is log2(bufferSize - 1) with the exception that buffers between 1 and 16 bytes
             // are combined, and the index is slid down by 3 to compensate.
@@ -28,6 +26,33 @@ namespace System.Buffers
             int maxSize = 16 << binIndex;
             Debug.Assert(maxSize >= 0);
             return maxSize;
+        }
+
+        internal enum MemoryPressure
+        {
+            Low,
+            Medium,
+            High
+        }
+
+        internal static MemoryPressure GetMemoryPressure()
+        {
+            const double HighPressureThreshold = .90;       // Percent of GC memory pressure threshold we consider "high"
+            const double MediumPressureThreshold = .70;     // Percent of GC memory pressure threshold we consider "medium"
+
+            GCMemoryInfo memoryInfo = GC.GetGCMemoryInfo();
+
+            if (memoryInfo.MemoryLoadBytes >= memoryInfo.HighMemoryLoadThresholdBytes * HighPressureThreshold)
+            {
+                return MemoryPressure.High;
+            }
+
+            if (memoryInfo.MemoryLoadBytes >= memoryInfo.HighMemoryLoadThresholdBytes * MediumPressureThreshold)
+            {
+                return MemoryPressure.Medium;
+            }
+
+            return MemoryPressure.Low;
         }
     }
 }

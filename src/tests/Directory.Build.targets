@@ -173,7 +173,7 @@
 
      <!-- There are currently no native project binaries on wasm or Android -->
      <Error  Text="The native project files are missing in $(NativeProjectOutputFolder) please run build from the root of the repo at least once"
-             Condition="'@(NativeProjectBinaries)' == '' And '$(TargetOS)' != 'Browser' And '$(TargetOS)' != 'Android'"/>
+             Condition="'@(NativeProjectBinaries)' == '' And '$(TargetOS)' != 'Browser' And '$(TargetOS)' != 'Android' And '$(TargetOS)' != 'iOS' And '$(TargetOS)' != 'iOSSimulator'"/>
 
      <Copy
         SourceFiles="@(NativeProjectBinaries)"
@@ -265,7 +265,6 @@
 
   <PropertyGroup>
     <IncludeOOBLibraries>true</IncludeOOBLibraries>
-    <LibrariesConfiguration>Release</LibrariesConfiguration>
   </PropertyGroup>
 
   <ItemGroup>
@@ -377,6 +376,15 @@
         <RunTimeDependencyCopyLocal
           Include="$(ArtifactsBinDir)\MonoAOTCompiler\Debug\$(NetCoreAppToolCurrent)\**"
           TargetDir="MonoAOTCompiler/"/>
+
+        <RunTimeDependencyCopyLocal
+          Include="$(ArtifactsBinDir)\JsonToItemsTaskFactory\Debug\$(NetCoreAppToolCurrent)\**"
+          TargetDir="JsonToItemsTaskFactory/"/>
+
+        <!-- RuntimeConfigParser always builds in Debug -->
+        <RunTimeDependencyCopyLocal
+          Include="$(ArtifactsBinDir)\RuntimeConfigParser\Debug\$(NetCoreAppToolCurrent)\**"
+          TargetDir="RuntimeConfigParser/"/>
 
         <RunTimeDependencyCopyLocal
           Include="$(RepoRoot)\src\tests\Common\wasm-test-runner\WasmTestRunner.proj"

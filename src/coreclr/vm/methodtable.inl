@@ -1571,14 +1571,23 @@ FORCEINLINE BOOL MethodTable::ImplementsInterfaceInline(MethodTable *pInterface)
     while (--numInterfaces);
 
     // Second scan, looking for the curiously recurring generic scenario
-    if (pInterface->HasInstantiation() && pInterface->GetInstantiation().ContainsAllOneType(this))
+    if (pInterface->HasInstantiation() && !ContainsGenericVariables() && pInterface->GetInstantiation().ContainsAllOneType(this))
     {
         numInterfaces = GetNumInterfaces();
         pInfo = GetInterfaceMap();
 
         do
         {
-            if (pInfo->GetMethodTable()->HasSameTypeDefAs(pInterface) && pInfo->GetMethodTable()->IsSpecialMarkerTypeForGenericCasting())
+            MethodTable *pInterfaceInMap = pInfo->GetMethodTable();
+            if (pInterfaceInMap == pInterface)
+            {
+                // Since there is no locking on updating the interface with an exact match
+                // It is possible to reach here for a match which would ideally have been handled above
+                // GetMethodTable uses a VolatileLoadWithoutBarrier to prevent compiler optimizations
+                // from interfering with this check
+                return TRUE;
+            }
+            if (pInterfaceInMap->HasSameTypeDefAs(pInterface) && pInterfaceInMap->IsSpecialMarkerTypeForGenericCasting())
             {
                 // Extensible RCW's need to be handled specially because they can have interfaces
                 // in their map that are added at runtime. These interfaces will have a start offset

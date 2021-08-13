@@ -1860,6 +1860,21 @@ inline BOOL CORProfilerTrackLargeAllocations()
             (&g_profControlBlock)->globalEventMask.IsEventMaskHighSet(COR_PRF_HIGH_MONITOR_LARGEOBJECT_ALLOCATED));
 }
 
+inline BOOL CORProfilerTrackPinnedAllocations()
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+        CANNOT_TAKE_LOCK;
+    }
+    CONTRACTL_END;
+
+    return
+            (CORProfilerPresent() &&
+            (&g_profControlBlock)->globalEventMask.IsEventMaskHighSet(COR_PRF_HIGH_MONITOR_PINNEDOBJECT_ALLOCATED));
+}
+
 inline BOOL CORProfilerEnableRejit()
 {
     CONTRACTL

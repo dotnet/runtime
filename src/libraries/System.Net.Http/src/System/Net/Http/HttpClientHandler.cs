@@ -9,6 +9,7 @@ using System.Security.Authentication;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Diagnostics;
 #if TARGET_BROWSER
 using HttpHandlerType = System.Net.Http.BrowserHttpHandler;
 #else
@@ -20,18 +21,30 @@ namespace System.Net.Http
     public partial class HttpClientHandler : HttpMessageHandler
     {
         private readonly HttpHandlerType _underlyingHandler;
-        private readonly HttpMessageHandler _handler;
+
+        private HttpMessageHandler Handler
+#if TARGET_BROWSER
+            { get; }
+#else
+            => _underlyingHandler;
+#endif
+
         private ClientCertificateOption _clientCertificateOptions;
 
         private volatile bool _disposed;
 
         public HttpClientHandler()
         {
-            _handler = _underlyingHandler = new HttpHandlerType();
-            if (DiagnosticsHandler.IsGloballyEnabled)
+            _underlyingHandler = new HttpHandlerType();
+
+#if TARGET_BROWSER
+            Handler = _underlyingHandler;
+            if (DiagnosticsHandler.IsGloballyEnabled())
             {
-                _handler = new DiagnosticsHandler(_handler);
+                Handler = new DiagnosticsHandler(Handler, DistributedContextPropagator.Current);
             }
+#endif
+
             ClientCertificateOptions = ClientCertificateOption.Manual;
         }
 
@@ -73,6 +86,8 @@ namespace System.Net.Http
         }
 
         [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
         public DecompressionMethods AutomaticDecompression
         {
             get => _underlyingHandler.AutomaticDecompression;
@@ -80,6 +95,8 @@ namespace System.Net.Http
         }
 
         [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
         public bool UseProxy
         {
             get => _underlyingHandler.UseProxy;
@@ -87,13 +104,18 @@ namespace System.Net.Http
         }
 
         [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
         public IWebProxy? Proxy
         {
             get => _underlyingHandler.Proxy;
             set => _underlyingHandler.Proxy = value;
         }
 
+        [UnsupportedOSPlatform("android")]
         [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
         public ICredentials? DefaultProxyCredentials
         {
             get => _underlyingHandler.DefaultProxyCredentials;
@@ -101,6 +123,8 @@ namespace System.Net.Http
         }
 
         [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
         public bool PreAuthenticate
         {
             get => _underlyingHandler.PreAuthenticate;
@@ -144,13 +168,18 @@ namespace System.Net.Http
         }
 
         [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
         public int MaxAutomaticRedirections
         {
             get => _underlyingHandler.MaxAutomaticRedirections;
             set => _underlyingHandler.MaxAutomaticRedirections = value;
         }
 
+        [UnsupportedOSPlatform("android")]
         [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
         public int MaxConnectionsPerServer
         {
             get => _underlyingHandler.MaxConnectionsPerServer;
@@ -190,13 +219,19 @@ namespace System.Net.Http
             }
         }
 
+        [UnsupportedOSPlatform("android")]
         [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
         public int MaxResponseHeadersLength
         {
             get => _underlyingHandler.MaxResponseHeadersLength;
             set => _underlyingHandler.MaxResponseHeadersLength = value;
         }
 
+        [UnsupportedOSPlatform("android")]
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
         public ClientCertificateOption ClientCertificateOptions
         {
             get => _clientCertificateOptions;
@@ -230,7 +265,10 @@ namespace System.Net.Http
             }
         }
 
+        [UnsupportedOSPlatform("android")]
         [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
         public X509CertificateCollection ClientCertificates
         {
             get
@@ -245,7 +283,10 @@ namespace System.Net.Http
             }
         }
 
+        [UnsupportedOSPlatform("android")]
         [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
         public Func<HttpRequestMessage, X509Certificate2?, X509Chain?, SslPolicyErrors, bool>? ServerCertificateCustomValidationCallback
         {
 #if TARGET_BROWSER
@@ -263,7 +304,10 @@ namespace System.Net.Http
 #endif
         }
 
+        [UnsupportedOSPlatform("android")]
         [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
         public bool CheckCertificateRevocationList
         {
             get => _underlyingHandler.SslOptions.CertificateRevocationCheckMode == X509RevocationMode.Online;
@@ -274,7 +318,10 @@ namespace System.Net.Http
             }
         }
 
+        [UnsupportedOSPlatform("android")]
         [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
         public SslProtocols SslProtocols
         {
             get => _underlyingHandler.SslOptions.EnabledSslProtocols;
@@ -285,18 +332,31 @@ namespace System.Net.Http
             }
         }
 
+        [UnsupportedOSPlatform("android")]
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
         public IDictionary<string, object?> Properties => _underlyingHandler.Properties;
 
+        //
+        // Attributes are commented out due to https://github.com/dotnet/arcade/issues/7585
+        // API compat will fail until this is fixed
+        //
+        //[UnsupportedOSPlatform("android")]
         [UnsupportedOSPlatform("browser")]
+        //[UnsupportedOSPlatform("ios")]
+        //[UnsupportedOSPlatform("tvos")]
         protected internal override HttpResponseMessage Send(HttpRequestMessage request, CancellationToken cancellationToken) =>
-            _handler.Send(request, cancellationToken);
+            Handler.Send(request, cancellationToken);
 
         protected internal override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken) =>
-            _handler.SendAsync(request, cancellationToken);
+            Handler.SendAsync(request, cancellationToken);
 
         // lazy-load the validator func so it can be trimmed by the ILLinker if it isn't used.
         private static Func<HttpRequestMessage, X509Certificate2?, X509Chain?, SslPolicyErrors, bool>? s_dangerousAcceptAnyServerCertificateValidator;
+        [UnsupportedOSPlatform("android")]
         [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
         public static Func<HttpRequestMessage, X509Certificate2?, X509Chain?, SslPolicyErrors, bool> DangerousAcceptAnyServerCertificateValidator =>
             Volatile.Read(ref s_dangerousAcceptAnyServerCertificateValidator) ??
             Interlocked.CompareExchange(ref s_dangerousAcceptAnyServerCertificateValidator, delegate { return true; }, null) ??

@@ -8,15 +8,15 @@
 #include "mono/utils/mono-compiler.h"
 #include "mono/metadata/icalls.h"
 
-ICALL_EXTERN_C
+ICALL_EXPORT
 void
 mono_trace_enter_method (MonoMethod *method, MonoJitInfo *ji, MonoProfilerCallContext *ctx);
 
-ICALL_EXTERN_C
+ICALL_EXPORT
 void 
 mono_trace_leave_method (MonoMethod *method, MonoJitInfo *ji, MonoProfilerCallContext *ctx);
 
-ICALL_EXTERN_C
+ICALL_EXPORT
 void 
 mono_trace_tail_method (MonoMethod *method, MonoJitInfo *ji, MonoMethod *target);
 

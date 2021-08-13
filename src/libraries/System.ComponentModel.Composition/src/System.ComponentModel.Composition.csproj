@@ -3,6 +3,27 @@
     <TargetFrameworks>$(NetCoreAppCurrent);netcoreapp3.1;netstandard2.0</TargetFrameworks>
     <Nullable>enable</Nullable>
     <SetIsTrimmable>false</SetIsTrimmable>
+    <IsPackable>true</IsPackable>
+    <AddNETFrameworkPlaceholderFileToPackage>true</AddNETFrameworkPlaceholderFileToPackage>
+    <AddNETFrameworkAssemblyReferenceToPackage>true</AddNETFrameworkAssemblyReferenceToPackage>
+    <PackageDescription>This namespace provides classes that constitute the core of the Managed Extensibility Framework, or MEF.
+
+Commonly Used Types:
+System.ComponentModel.Composition.ChangeRejectedException
+System.ComponentModel.Composition.CompositionContractMismatchException
+System.ComponentModel.Composition.CompositionError
+System.ComponentModel.Composition.CompositionException
+System.ComponentModel.Composition.ExportAttribute
+System.ComponentModel.Composition.ImportAttribute
+System.ComponentModel.Composition.ImportCardinalityMismatchException
+System.ComponentModel.Composition.Hosting.AggregateCatalog
+System.ComponentModel.Composition.Hosting.ApplicationCatalog
+System.ComponentModel.Composition.Hosting.AssemblyCatalog
+System.ComponentModel.Composition.Hosting.CompositionContainer
+System.ComponentModel.Composition.Primitives.ComposablePartException
+System.ComponentModel.Composition.Primitives.ExportDefinition
+System.ComponentModel.Composition.Primitives.ImportDefinition
+System.ComponentModel.Composition.ReflectionModel.ReflectionModelServices</PackageDescription>
   </PropertyGroup>
   <!-- DesignTimeBuild requires all the TargetFramework Derived Properties to not be present in the first property group. -->
   <PropertyGroup>

@@ -1,17 +1,23 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <DefineConstants>$(DefineConstants);NOSPAN;SERIAL_PORTS</DefineConstants>
+    <DefineConstants>$(DefineConstants);SERIAL_PORTS</DefineConstants>
     <IncludeDllSafeSearchPathAttribute>true</IncludeDllSafeSearchPathAttribute>
     <Nullable>annotations</Nullable>
-    <TargetFrameworks>netstandard2.0-windows;netstandard2.0-Linux;netstandard2.0-OSX;netstandard2.0-FreeBSD;netstandard2.0;net461-windows</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-Unix;$(NetCoreAppCurrent);netstandard2.0-windows;netstandard2.0-Unix;netstandard2.0;net461-windows</TargetFrameworks>
+    <IsPackable>true</IsPackable>
+    <PackageDescription>Provides classes for controlling serial ports.
+
+Commonly Used Types:
+System.IO.Ports.SerialPort</PackageDescription>
   </PropertyGroup>
+
   <!-- DesignTimeBuild requires all the TargetFramework Derived Properties to not be present in the first property group. -->
   <PropertyGroup>
     <IsPartialFacadeAssembly Condition="$([MSBuild]::GetTargetFrameworkIdentifier('$(TargetFramework)')) == '.NETFramework'">true</IsPartialFacadeAssembly>
     <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(IsPartialFacadeAssembly)' != 'true' and '$(TargetsAnyOS)' == 'true'">SR.PlatformNotSupported_IOPorts</GeneratePlatformNotSupportedAssemblyMessage>
-    <ExcludeFromPackage Condition="'$(TargetFramework)' == 'netstandard2.0' AND '$(TargetsFreeBSD)' == 'true'">true</ExcludeFromPackage>
   </PropertyGroup>
+
   <ItemGroup Condition="'$(IsPartialFacadeAssembly)' != 'true' and '$(TargetsAnyOS)' != 'true'">
     <Compile Include="System\IO\Ports\Handshake.cs" />
     <Compile Include="System\IO\Ports\InternalResources.cs" />
@@ -29,6 +35,7 @@
     <Compile Include="System\IO\Ports\SerialStream.cs" />
     <Compile Include="System\IO\Ports\StopBits.cs" />
   </ItemGroup>
+
   <ItemGroup Condition="'$(IsPartialFacadeAssembly)' != 'true' and '$(TargetsWindows)' == 'true'">
     <Compile Include="System\IO\Ports\SerialStream.Windows.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.DCB.cs"
@@ -106,17 +113,10 @@
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.FileOperations.cs"
              Link="Common\Interop\Windows\Kernel32\Interop.FileOperations.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsLinux)' == 'true'">
-    <Compile Include="System\IO\Ports\SerialPort.Linux.cs" />
-  </ItemGroup>
-  <ItemGroup Condition=" '$(TargetsOSX)' == 'true' ">
-    <Compile Include="System\IO\Ports\SerialPort.OSX.cs" />
-  </ItemGroup>
-  <ItemGroup Condition=" '$(TargetsFreeBSD)' == 'true' ">
-    <Compile Include="System\IO\Ports\SerialPort.FreeBSD.cs" />
-  </ItemGroup>
-  <ItemGroup Condition="'$(TargetsLinux)' == 'true' or '$(TargetsOSX)' == 'true' or '$(TargetsFreeBSD)' == 'true'">
+
+  <ItemGroup Condition="'$(TargetsUnix)' == 'true'">
     <Compile Include="System\IO\Ports\SafeSerialDeviceHandle.Unix.cs" />
+    <Compile Include="System\IO\Ports\SerialPort.Unix.cs" />
     <Compile Include="System\IO\Ports\SerialStream.Unix.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.IO.Ports.Native\Interop.Termios.cs"
              Link="Common\Interop\Unix\System.IO.Ports.Native\Interop.Termios.cs"/>
@@ -133,9 +133,36 @@
     <Compile Include="$(CommonPath)System\Threading\Tasks\TaskToApm.cs"
              Link="Common\System\Threading\Tasks\TaskToApm.cs" />
   </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
+    <Reference Include="Microsoft.Win32.Primitives" />
+    <Reference Include="Microsoft.Win32.Registry" Condition="'$(TargetPlatformIdentifier)' == 'windows'" />
+    <Reference Include="System.Collections" />
+    <Reference Include="System.Collections.Concurrent" Condition="'$(TargetPlatformIdentifier)' == 'unix'" />
+    <Reference Include="System.ComponentModel.Primitives" />
+    <Reference Include="System.Net.Primitives" />
+    <Reference Include="System.Net.Sockets" Condition="'$(TargetPlatformIdentifier)' == 'unix'" />
+    <Reference Include="System.Runtime" />
+    <Reference Include="System.Runtime.InteropServices" />
+    <Reference Include="System.Runtime.InteropServices.RuntimeInformation" Condition="'$(TargetPlatformIdentifier)' == 'unix'" />
+    <Reference Include="System.Text.Encoding.Extensions" />
+    <Reference Include="System.Threading" />
+    <Reference Include="System.Threading.Thread" />
+    <Reference Include="System.Threading.Overlapped" />
+    <Reference Include="System.Threading.ThreadPool" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(IsPartialFacadeAssembly)' != 'true'">
+    <!-- Just reference the runtime packages but don't build them in order to avoid unintentional Build/Pack invocations. -->
+    <ProjectReference Include="..\pkg\runtime.native.$(MSBuildProjectName).proj" BuildReference="false" />
+    <!-- Make the runtime specific packages non transitive so that they aren't flowing into other projects. -->
+    <ProjectReference Include="..\pkg\runtime.*.runtime.native.$(MSBuildProjectName).proj" BuildReference="false" PrivateAssets="all" />
+  </ItemGroup>
+
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETStandard'">
     <PackageReference Include="System.Memory" Version="$(SystemMemoryVersion)" />
     <PackageReference Include="Microsoft.Win32.Registry" Version="$(MicrosoftWin32RegistryVersion)" />
-    <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime.CompilerServices.Unsafe\src\System.Runtime.CompilerServices.Unsafe.ilproj" />
+    <!-- S.R.C.Unsafe isn't a primary but transitive dependency and this P2P makes sure that the live version is used. -->
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime.CompilerServices.Unsafe\src\System.Runtime.CompilerServices.Unsafe.ilproj" PrivateAssets="all" />
   </ItemGroup>
 </Project>

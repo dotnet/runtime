@@ -56,15 +56,18 @@ namespace System.IO.Tests
             }
         }
 
-        // Unix doesn't directly support DeleteOnClose
-        // For FileStream created out of path, we mimic it by closing the handle first
-        // and then unlinking the path
-        // Since SafeFileHandle does not always have the path and we can't find path for given file descriptor on Unix
-        // this test runs only on Windows
-        [PlatformSpecific(TestPlatforms.Windows)]
         [Theory]
         [InlineData(FileOptions.DeleteOnClose)]
         [InlineData(FileOptions.DeleteOnClose | FileOptions.Asynchronous)]
-        public override void DeleteOnClose_FileDeletedAfterClose(FileOptions options) => base.DeleteOnClose_FileDeletedAfterClose(options);
+        public void DeleteOnClose_FileDeletedAfterSafeHandleDispose(FileOptions options)
+        {
+            string path = GetTestFilePath();
+            Assert.False(File.Exists(path));
+            using (SafeFileHandle sfh = File.OpenHandle(path, FileMode.Create, FileAccess.ReadWrite, FileShare.None, options))
+            {
+                Assert.True(File.Exists(path));
+            }
+            Assert.False(File.Exists(path));
+        }
     }
 }

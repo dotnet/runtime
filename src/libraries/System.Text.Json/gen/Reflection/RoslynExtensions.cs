@@ -5,7 +5,7 @@ using System.Collections.Generic;
 using System.Reflection;
 using Microsoft.CodeAnalysis;
 
-namespace System.Text.Json.SourceGeneration.Reflection
+namespace System.Text.Json.Reflection
 {
     internal static class RoslynExtensions
     {
@@ -29,6 +29,41 @@ namespace System.Text.Json.SourceGeneration.Reflection
                 yield return t;
                 t = t.BaseType;
             }
+        }
+
+        public static MethodAttributes GetMethodAttributes(this IMethodSymbol methodSymbol)
+        {
+            MethodAttributes attributes = default(MethodAttributes);
+
+            if (methodSymbol.IsAbstract)
+            {
+                attributes |= MethodAttributes.Abstract;
+            }
+
+            if (methodSymbol.IsStatic)
+            {
+                attributes |= MethodAttributes.Static;
+            }
+
+            if (methodSymbol.IsVirtual || methodSymbol.IsOverride)
+            {
+                attributes |= MethodAttributes.Virtual;
+            }
+
+            switch (methodSymbol.DeclaredAccessibility)
+            {
+                case Accessibility.Public:
+                    attributes |= MethodAttributes.Public;
+                    break;
+                case Accessibility.Private:
+                    attributes |= MethodAttributes.Private;
+                    break;
+                case Accessibility.Internal:
+                    attributes |= MethodAttributes.Assembly;
+                    break;
+            }
+
+            return attributes;
         }
     }
 }

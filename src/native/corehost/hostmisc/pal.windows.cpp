@@ -645,11 +645,15 @@ bool pal::clr_palstring(const char* cstr, pal::string_t* out)
 // Return if path is valid and file exists, return true and adjust path as appropriate.
 bool pal::realpath(string_t* path, bool skip_error_logging)
 {
+    if (path->empty())
+    {
+        return false;
+    }
+
     if (LongFile::IsNormalized(*path))
     {
         WIN32_FILE_ATTRIBUTE_DATA data;
-        if (path->empty() // An empty path doesn't exist
-            || GetFileAttributesExW(path->c_str(), GetFileExInfoStandard, &data) != 0)
+        if (GetFileAttributesExW(path->c_str(), GetFileExInfoStandard, &data) != 0)
         {
             return true;
         }
@@ -713,11 +717,6 @@ bool pal::realpath(string_t* path, bool skip_error_logging)
 
 bool pal::file_exists(const string_t& path)
 {
-    if (path.empty())
-    {
-        return false;
-    }
-
     string_t tmp(path);
     return pal::realpath(&tmp, true);
 }

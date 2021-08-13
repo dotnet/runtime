@@ -948,13 +948,12 @@ GenTreeCall* Compiler::fgGetSharedCCtor(CORINFO_CLASS_HANDLE cls)
 //------------------------------------------------------------------------------
 // fgAddrCouldBeNull : Check whether the address tree can represent null.
 //
-//
 // Arguments:
 //    addr     -  Address to check
 //
 // Return Value:
 //    True if address could be null; false otherwise
-
+//
 bool Compiler::fgAddrCouldBeNull(GenTree* addr)
 {
     addr = addr->gtEffectiveVal();
@@ -2603,8 +2602,8 @@ void Compiler::fgAddInternal()
     noway_assert(!compIsForInlining());
 
     // The backend requires a scratch BB into which it can safely insert a P/Invoke method prolog if one is
-    // required. Create it here.
-    if (compMethodRequiresPInvokeFrame())
+    // required. Similarly, we need a scratch BB for poisoning. Create it here.
+    if (compMethodRequiresPInvokeFrame() || compShouldPoisonFrame())
     {
         fgEnsureFirstBBisScratch();
         fgFirstBB->bbFlags |= BBF_DONT_REMOVE;

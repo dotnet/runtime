@@ -10,7 +10,6 @@ namespace System.Linq.Expressions.Tests
         #region Test methods
 
         [Theory, ClassData(typeof(CompilationTypes))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/51952", TestPlatforms.tvOS)]
         public static void CheckUnaryUnboxTest(bool useInterpreter)
         {
             VerifyUnbox(42, typeof(int), false, useInterpreter);

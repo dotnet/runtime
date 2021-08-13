@@ -1,0 +1,48 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <FeatureGenericMath>true</FeatureGenericMath>
+    <NoWarn>$(NoWarn),1718,SYSLIB0013</NoWarn>
+    <TestRuntime>true</TestRuntime>
+    <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
+    <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-Unix;$(NetCoreAppCurrent)-Browser</TargetFrameworks>
+    <Nullable>disable</Nullable>
+    <!-- Disable nullability public only feature for NullabilityInfoContextTests -->
+    <Features>$(Features.Replace('nullablePublicOnly', '')</Features>
+  </PropertyGroup>
+  <PropertyGroup>
+    <DefineConstants Condition="'$(FeatureGenericMath)' == 'true'">$(DefineConstants);FEATURE_GENERIC_MATH</DefineConstants>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="$(LibrariesProjectRoot)System.Runtime\tests\System\ByteTests.cs" />
+    <Compile Include="$(LibrariesProjectRoot)System.Runtime\tests\System\CharTests.cs" />
+    <Compile Include="$(LibrariesProjectRoot)System.Runtime\tests\System\Int16Tests.cs" />
+    <Compile Include="$(LibrariesProjectRoot)System.Runtime\tests\System\Int32Tests.cs" />
+    <Compile Include="$(LibrariesProjectRoot)System.Runtime\tests\System\Int64Tests.cs" />
+    <Compile Include="$(LibrariesProjectRoot)System.Runtime\tests\System\IntPtrTests.cs" />
+    <Compile Include="$(LibrariesProjectRoot)System.Runtime\tests\System\SByteTests.cs" />
+    <Compile Include="$(LibrariesProjectRoot)System.Runtime\tests\System\UInt16Tests.cs" />
+    <Compile Include="$(LibrariesProjectRoot)System.Runtime\tests\System\UInt32Tests.cs" />
+    <Compile Include="$(LibrariesProjectRoot)System.Runtime\tests\System\UInt64Tests.cs" />
+    <Compile Include="$(LibrariesProjectRoot)System.Runtime\tests\System\UIntPtrTests.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(FeatureGenericMath)' == 'true'">
+    <Compile Include="$(LibrariesProjectRoot)System.Runtime\tests\System\ByteTests.GenericMath.cs" />
+    <Compile Include="$(LibrariesProjectRoot)System.Runtime\tests\System\CharTests.GenericMath.cs" />
+    <Compile Include="$(LibrariesProjectRoot)System.Runtime\tests\System\GenericMathHelpers.cs" />
+    <Compile Include="$(LibrariesProjectRoot)System.Runtime\tests\System\Int16Tests.GenericMath.cs" />
+    <Compile Include="$(LibrariesProjectRoot)System.Runtime\tests\System\Int32Tests.GenericMath.cs" />
+    <Compile Include="$(LibrariesProjectRoot)System.Runtime\tests\System\Int64Tests.GenericMath.cs" />
+    <Compile Include="$(LibrariesProjectRoot)System.Runtime\tests\System\IntPtrTests.GenericMath.cs" />
+    <Compile Include="$(LibrariesProjectRoot)System.Runtime\tests\System\SByteTests.GenericMath.cs" />
+    <Compile Include="$(LibrariesProjectRoot)System.Runtime\tests\System\UInt16Tests.GenericMath.cs" />
+    <Compile Include="$(LibrariesProjectRoot)System.Runtime\tests\System\UInt32Tests.GenericMath.cs" />
+    <Compile Include="$(LibrariesProjectRoot)System.Runtime\tests\System\UInt64Tests.GenericMath.cs" />
+    <Compile Include="$(LibrariesProjectRoot)System.Runtime\tests\System\UIntPtrTests.GenericMath.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <!-- it's a reference assembly, but the project system doesn't know that - include it during compilation, but don't publish it -->
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime.Experimental\ref\System.Runtime.Experimental.csproj" IncludeAssets="compile" Private="false" />
+    <ProjectReference Include="$(CommonTestPath)TestUtilities.Unicode\TestUtilities.Unicode.csproj" />
+  </ItemGroup>
+</Project>

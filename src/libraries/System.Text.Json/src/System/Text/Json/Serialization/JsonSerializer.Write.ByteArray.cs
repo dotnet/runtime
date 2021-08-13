@@ -10,7 +10,7 @@ namespace System.Text.Json
     public static partial class JsonSerializer
     {
         /// <summary>
-        /// Convert the provided value into a <see cref="byte"/> array.
+        /// Converts the provided value into a <see cref="byte"/> array.
         /// </summary>
         /// <returns>A UTF-8 representation of the value.</returns>
         /// <param name="value">The value to convert.</param>
@@ -28,7 +28,7 @@ namespace System.Text.Json
         }
 
         /// <summary>
-        /// Convert the provided value into a <see cref="byte"/> array.
+        /// Converts the provided value into a <see cref="byte"/> array.
         /// </summary>
         /// <returns>A UTF-8 representation of the value.</returns>
         /// <param name="value">The value to convert.</param>
@@ -57,7 +57,7 @@ namespace System.Text.Json
         }
 
         /// <summary>
-        /// Convert the provided value into a <see cref="byte"/> array.
+        /// Converts the provided value into a <see cref="byte"/> array.
         /// </summary>
         /// <returns>A UTF-8 representation of the value.</returns>
         /// <param name="value">The value to convert.</param>
@@ -80,7 +80,7 @@ namespace System.Text.Json
         }
 
         /// <summary>
-        /// Convert the provided value into a <see cref="byte"/> array.
+        /// Converts the provided value into a <see cref="byte"/> array.
         /// </summary>
         /// <returns>A UTF-8 representation of the value.</returns>
         /// <param name="value">The value to convert.</param>
@@ -122,15 +122,13 @@ namespace System.Text.Json
         {
             JsonSerializerOptions options = jsonTypeInfo.Options;
 
-            using (var output = new PooledByteBufferWriter(options.DefaultBufferSize))
+            using var output = new PooledByteBufferWriter(options.DefaultBufferSize);
+            using (var writer = new Utf8JsonWriter(output, options.GetWriterOptions()))
             {
-                using (var writer = new Utf8JsonWriter(output, options.GetWriterOptions()))
-                {
-                    WriteUsingMetadata(writer, value, jsonTypeInfo);
-                }
-
-                return output.WrittenMemory.ToArray();
+                WriteUsingMetadata(writer, value, jsonTypeInfo);
             }
+
+            return output.WrittenMemory.ToArray();
         }
     }
 }

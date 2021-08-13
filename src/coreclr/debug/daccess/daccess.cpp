@@ -3291,6 +3291,10 @@ ClrDataAccess::QueryInterface(THIS_
     {
         ifaceRet = static_cast<ISOSDacInterface10*>(this);
     }
+    else if (IsEqualIID(interfaceId, __uuidof(ISOSDacInterface11)))
+    {
+        ifaceRet = static_cast<ISOSDacInterface11*>(this);
+    }
     else
     {
         *iface = NULL;
@@ -6074,8 +6078,14 @@ ClrDataAccess::GetMethodVarInfo(MethodDesc* methodDesc,
     COUNT_T countNativeVarInfo;
     NewHolder<ICorDebugInfo::NativeVarInfo> nativeVars(NULL);
 
+    NativeCodeVersion requestedNativeCodeVersion = ExecutionManager::GetNativeCodeVersion(address);
+    if (requestedNativeCodeVersion.IsNull() || requestedNativeCodeVersion.GetNativeCode() == NULL)
+    {
+        return E_INVALIDARG;
+    }
+    TADDR nativeCodeStartAddr = PCODEToPINSTR(requestedNativeCodeVersion.GetNativeCode());
+
     DebugInfoRequest request;
-    TADDR  nativeCodeStartAddr = PCODEToPINSTR(methodDesc->GetNativeCode());
     request.InitFromStartingAddr(methodDesc, nativeCodeStartAddr);
 
     BOOL success = DebugInfoManager::GetBoundariesAndVars(
@@ -6083,7 +6093,6 @@ ClrDataAccess::GetMethodVarInfo(MethodDesc* methodDesc,
         DebugInfoStoreNew, NULL, // allocator
         NULL, NULL,
         &countNativeVarInfo, &nativeVars);
-
 
     if (!success)
     {
@@ -6101,8 +6110,7 @@ ClrDataAccess::GetMethodVarInfo(MethodDesc* methodDesc,
 
     if (codeOffset)
     {
-        *codeOffset = (ULONG32)
-            (address - nativeCodeStartAddr);
+        *codeOffset = (ULONG32)(address - nativeCodeStartAddr);
     }
     return S_OK;
 }
@@ -6121,10 +6129,15 @@ ClrDataAccess::GetMethodNativeMap(MethodDesc* methodDesc,
     // Use the DebugInfoStore to get IL->Native maps.
     // It doesn't matter whether we're jitted, ngenned etc.
 
-    DebugInfoRequest request;
-    TADDR  nativeCodeStartAddr = PCODEToPINSTR(methodDesc->GetNativeCode());
-    request.InitFromStartingAddr(methodDesc, nativeCodeStartAddr);
+    NativeCodeVersion requestedNativeCodeVersion = ExecutionManager::GetNativeCodeVersion(address);
+    if (requestedNativeCodeVersion.IsNull() || requestedNativeCodeVersion.GetNativeCode() == NULL)
+    {
+        return E_INVALIDARG;
+    }
+    TADDR nativeCodeStartAddr = PCODEToPINSTR(requestedNativeCodeVersion.GetNativeCode());
 
+    DebugInfoRequest request;
+    request.InitFromStartingAddr(methodDesc, nativeCodeStartAddr);
 
     // Bounds info.
     ULONG32 countMapCopy;
@@ -6140,7 +6153,6 @@ ClrDataAccess::GetMethodNativeMap(MethodDesc* methodDesc,
     {
         return E_FAIL;
     }
-
 
     // Need to convert map formats.
     *numMap = countMapCopy;
@@ -6175,8 +6187,7 @@ ClrDataAccess::GetMethodNativeMap(MethodDesc* methodDesc,
     }
     if (codeOffset)
     {
-        *codeOffset = (ULONG32)
-            (address - nativeCodeStartAddr);
+        *codeOffset = (ULONG32)(address - nativeCodeStartAddr);
     }
 
     *mapAllocated = true;

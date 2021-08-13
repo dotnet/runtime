@@ -51,37 +51,6 @@ endif
 
 extern JIT_InternalThrow:proc
 
-; There is an even more optimized version of these helpers possible which takes
-; advantage of knowledge of which way the ephemeral heap is growing to only do 1/2
-; that check (this is more significant in the JIT_WriteBarrier case).
-;
-; Additionally we can look into providing helpers which will take the src/dest from
-; specific registers (like x86) which _could_ (??) make for easier register allocation
-; for the JIT64, however it might lead to having to have some nasty code that treats
-; these guys really special like... :(.
-;
-; Version that does the move, checks whether or not it's in the GC and whether or not
-; it needs to have it's card updated
-;
-; void JIT_CheckedWriteBarrier(Object** dst, Object* src)
-LEAF_ENTRY JIT_CheckedWriteBarrier, _TEXT
-
-        ; When WRITE_BARRIER_CHECK is defined _NotInHeap will write the reference
-        ; but if it isn't then it will just return.
-        ;
-        ; See if this is in GCHeap
-        cmp     rcx, [g_lowest_address]
-        jb      NotInHeap
-        cmp     rcx, [g_highest_address]
-        jnb     NotInHeap
-
-        jmp     JIT_WriteBarrier
-
-    NotInHeap:
-        ; See comment above about possible AV
-        mov     [rcx], rdx
-        ret
-LEAF_END_MARKED JIT_CheckedWriteBarrier, _TEXT
 
 ; Mark start of the code region that we patch at runtime
 LEAF_ENTRY JIT_PatchedCodeStart, _TEXT
@@ -99,7 +68,8 @@ LEAF_ENTRY JIT_WriteBarrier, _TEXT
 
 ifdef _DEBUG
         ; In debug builds, this just contains jump to the debug version of the write barrier by default
-        jmp     JIT_WriteBarrier_Debug
+        mov     rax, JIT_WriteBarrier_Debug
+        jmp     rax
 endif
 
 ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
@@ -387,6 +357,51 @@ endif
         add     rsi, 8h
         ret
 LEAF_END_MARKED JIT_ByRefWriteBarrier, _TEXT
+
+Section segment para 'DATA'
+
+        align   16
+
+        public  JIT_WriteBarrier_Loc
+JIT_WriteBarrier_Loc:
+        dq 0
+
+LEAF_ENTRY  JIT_WriteBarrier_Callable, _TEXT
+        ; JIT_WriteBarrier(Object** dst, Object* src)
+        jmp     QWORD PTR [JIT_WriteBarrier_Loc]
+LEAF_END JIT_WriteBarrier_Callable, _TEXT
+
+; There is an even more optimized version of these helpers possible which takes
+; advantage of knowledge of which way the ephemeral heap is growing to only do 1/2
+; that check (this is more significant in the JIT_WriteBarrier case).
+;
+; Additionally we can look into providing helpers which will take the src/dest from
+; specific registers (like x86) which _could_ (??) make for easier register allocation
+; for the JIT64, however it might lead to having to have some nasty code that treats
+; these guys really special like... :(.
+;
+; Version that does the move, checks whether or not it's in the GC and whether or not
+; it needs to have it's card updated
+;
+; void JIT_CheckedWriteBarrier(Object** dst, Object* src)
+LEAF_ENTRY JIT_CheckedWriteBarrier, _TEXT
+
+        ; When WRITE_BARRIER_CHECK is defined _NotInHeap will write the reference
+        ; but if it isn't then it will just return.
+        ;
+        ; See if this is in GCHeap
+        cmp     rcx, [g_lowest_address]
+        jb      NotInHeap
+        cmp     rcx, [g_highest_address]
+        jnb     NotInHeap
+
+        jmp     QWORD PTR [JIT_WriteBarrier_Loc]
+
+    NotInHeap:
+        ; See comment above about possible AV
+        mov     [rcx], rdx
+        ret
+LEAF_END_MARKED JIT_CheckedWriteBarrier, _TEXT
 
 ; The following helper will access ("probe") a word on each page of the stack
 ; starting with the page right beneath rsp down to the one pointed to by r11.

@@ -9,6 +9,8 @@ using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
 using static System.Data.Common.UnsafeNativeMethods;
 
+#pragma warning disable CA1419 // TODO https://github.com/dotnet/roslyn-analyzers/issues/5232: not intended for use with P/Invoke
+
 namespace System.Data.OleDb
 {
     internal sealed class DualCoTaskMem : SafeHandle

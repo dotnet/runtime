@@ -191,7 +191,7 @@ namespace System.Xml.Schema
 
                 default:
                     {
-                        Debug.Assert(dateTime.Kind == DateTimeKind.Local, "Unknown DateTimeKind: " + dateTime.Kind);
+                        Debug.Assert(dateTime.Kind == DateTimeKind.Local, $"Unknown DateTimeKind: {dateTime.Kind}");
                         TimeSpan utcOffset = TimeZoneInfo.Local.GetUtcOffset(dateTime);
 
                         if (utcOffset.Ticks < 0)
