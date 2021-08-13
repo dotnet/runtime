@@ -1470,7 +1470,6 @@ GenTree* DecomposeLongs::DecomposeRotate(LIR::Use& use)
             hiOp1 = gtLong->gtGetOp1();
             loOp1 = gtLong->gtGetOp2();
 
-            Range().Remove(gtLong);
             loOp1 = RepresentOpAsLocalVar(loOp1, gtLong, &gtLong->AsOp()->gtOp2);
             hiOp1 = RepresentOpAsLocalVar(hiOp1, gtLong, &gtLong->AsOp()->gtOp1);
 
@@ -1481,10 +1480,11 @@ GenTree* DecomposeLongs::DecomposeRotate(LIR::Use& use)
             loOp1 = gtLong->gtGetOp1();
             hiOp1 = gtLong->gtGetOp2();
 
-            Range().Remove(gtLong);
             loOp1 = RepresentOpAsLocalVar(loOp1, gtLong, &gtLong->AsOp()->gtOp1);
             hiOp1 = RepresentOpAsLocalVar(hiOp1, gtLong, &gtLong->AsOp()->gtOp2);
         }
+
+        Range().Remove(gtLong);
 
         unsigned loOp1LclNum = loOp1->AsLclVarCommon()->GetLclNum();
         unsigned hiOp1LclNum = hiOp1->AsLclVarCommon()->GetLclNum();
