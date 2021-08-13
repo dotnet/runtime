@@ -14,6 +14,11 @@ namespace System.Diagnostics.Tracing
     {
         internal const string EventSourceName = "System.Runtime";
 
+        public static class Keywords
+        {
+            public const EventKeywords AppContext = (EventKeywords)0x1;
+        }
+
         private static RuntimeEventSource? s_RuntimeEventSource;
         private PollingCounter? _gcHeapSizeCounter;
         private IncrementingPollingCounter? _gen0GCCounter;
@@ -55,7 +60,7 @@ namespace System.Diagnostics.Tracing
             AppContextSwitch = 1
         }
 
-        [Event((int)EventId.AppContextSwitch, Level = EventLevel.Informational)]
+        [Event((int)EventId.AppContextSwitch, Level = EventLevel.Informational, Keywords = Keywords.AppContext)]
         internal void LogAppContextSwitch(string switchName, int value)
         {
             base.WriteEvent((int)EventId.AppContextSwitch, switchName, value);

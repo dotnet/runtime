@@ -135,7 +135,6 @@ namespace System
             }
         }
 
-#if NETCOREAPP
         internal static void LogSwitchValues(RuntimeEventSource ev)
         {
             if (s_switches is not null)
@@ -164,7 +163,6 @@ namespace System
                 }
             }
         }
-#endif
 
 #if !CORERT
         internal static unsafe void Setup(char** pNames, char** pValues, int count)
