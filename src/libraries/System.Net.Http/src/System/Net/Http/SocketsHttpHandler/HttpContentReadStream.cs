@@ -28,7 +28,7 @@ namespace System.Net.Http
 
             protected bool IsDisposed => _disposed == 1;
 
-            protected bool IsConnectionAlive
+            protected bool CanReadFromConnection
             {
                 get
                 {
