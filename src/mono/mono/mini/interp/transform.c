@@ -2777,6 +2777,9 @@ interp_method_check_inlining (TransformData *td, MonoMethod *method, MonoMethodS
 {
 	MonoMethodHeaderSummary header;
 
+	if (td->disable_inlining)
+		return FALSE;
+
 	if (method->flags & METHOD_ATTRIBUTE_REQSECOBJ)
 		/* Used to mark methods containing StackCrawlMark locals */
 		return FALSE;
@@ -9406,6 +9409,7 @@ generate (MonoMethod *method, MonoMethodHeader *header, InterpMethod *rtm, MonoG
 	int i;
 	TransformData transform_data;
 	TransformData *td;
+	gboolean retry_compilation = FALSE;
 	static gboolean verbose_method_inited;
 	static char* verbose_method_name;
 
@@ -9414,6 +9418,7 @@ generate (MonoMethod *method, MonoMethodHeader *header, InterpMethod *rtm, MonoG
 		verbose_method_inited = TRUE;
 	}
 
+retry:
 	memset (&transform_data, 0, sizeof(transform_data));
 	td = &transform_data;
 
@@ -9437,6 +9442,8 @@ generate (MonoMethod *method, MonoMethodHeader *header, InterpMethod *rtm, MonoG
 	td->seq_points = g_ptr_array_new ();
 	td->verbose_level = mono_interp_traceopt;
 	td->prof_coverage = mono_profiler_coverage_instrumentation_enabled (method);
+	if (retry_compilation)
+		td->disable_inlining = TRUE;
 	rtm->data_items = td->data_items;
 
 	if (td->prof_coverage)
@@ -9484,12 +9491,21 @@ generate (MonoMethod *method, MonoMethodHeader *header, InterpMethod *rtm, MonoG
 	generate_compacted_code (td);
 
 	if (td->total_locals_size >= G_MAXUINT16) {
-		char *name = mono_method_get_full_name (method);
-		char *msg = g_strdup_printf ("Unable to run method '%s': locals size too big.", name);
-		g_free (name);
-		mono_error_set_generic_error (error, "System", "InvalidProgramException", "%s", msg);
-		g_free (msg);
-		goto exit;
+		if (td->disable_inlining) {
+			char *name = mono_method_get_full_name (method);
+			char *msg = g_strdup_printf ("Unable to run method '%s': locals size too big.", name);
+			g_free (name);
+			mono_error_set_generic_error (error, "System", "InvalidProgramException", "%s", msg);
+			g_free (msg);
+			retry_compilation = FALSE;
+			goto exit;
+		} else {
+			// We give the method another chance to compile with inlining disabled
+			retry_compilation = TRUE;
+			goto exit;
+		}
+	} else {
+		retry_compilation = FALSE;
 	}
 
 	if (td->verbose_level) {
@@ -9580,6 +9596,8 @@ exit:
 	if (td->line_numbers)
 		g_array_free (td->line_numbers, TRUE);
 	mono_mempool_destroy (td->mempool);
+	if (retry_compilation)
+		goto retry;
 }
 
 gboolean
