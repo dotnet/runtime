@@ -185,6 +185,8 @@
       System.Security.Cryptography.Xml;
     </AspNetCoreAppLibrary>
     <WindowsDesktopCoreAppLibrary>
+      Microsoft.Win32.Registry.AccessControl;
+      Microsoft.Win32.SystemEvents;
       System.CodeDom;
       System.Configuration.ConfigurationManager;
       System.Diagnostics.EventLog;
