@@ -131,12 +131,11 @@ namespace System.Diagnostics
 
                 var modules = new ProcessModuleCollection(firstModuleOnly ? 1 : modulesCount);
 
-#if RELEASE
-                int minimumLength = Interop.Kernel32.MAX_PATH;
+                int minimumLength =
+#if DEBUG
+                    1; // in debug, validate ArrayPool growth
 #else
-                // use a smaller value to ensure that at least for DEBUG builds
-                // we test the code path that rents a bigger array from ArrayPool
-                int minimumLength = Interop.Kernel32.MAX_PATH / 4;
+                    Interop.Kernel32.MAX_PATH;
 #endif
                 char[]? chars = ArrayPool<char>.Shared.Rent(minimumLength);
                 try
@@ -185,9 +184,8 @@ namespace System.Diagnostics
                             {
                                 minimumLength = chars.Length * 2;
                                 char[] toReturn = chars;
-                                chars = null;
-                                ArrayPool<char>.Shared.Return(toReturn);
                                 chars = ArrayPool<char>.Shared.Rent(minimumLength);
+                                ArrayPool<char>.Shared.Return(toReturn);
                                 continue;
                             }
 
@@ -209,10 +207,7 @@ namespace System.Diagnostics
                 }
                 finally
                 {
-                    if (chars != null)
-                    {
-                        ArrayPool<char>.Shared.Return(chars);
-                    }
+                    ArrayPool<char>.Shared.Return(chars);
                 }
 
                 return modules;
