@@ -133,6 +133,9 @@ GTNODE(RSZ              , GenTreeOp          ,0,GTK_BINOP)
 GTNODE(ROL              , GenTreeOp          ,0,GTK_BINOP)
 GTNODE(ROR              , GenTreeOp          ,0,GTK_BINOP)
 GTNODE(INC_SATURATE     , GenTreeOp          ,0,GTK_UNOP) // saturating increment, used in division by a constant (LowerUnsignedDivOrMod)
+#ifdef TARGET_ARM64
+GTNODE(MULWIDE          , GenTreeOp          ,1,GTK_BINOP) // widening multiply, used in division by a constant on ARM64 (LowerUnsignedDivOrMod)
+#endif
 GTNODE(MULHI            , GenTreeOp          ,1,GTK_BINOP) // returns high bits (top N bits of the 2N bit result of an NxN multiply)
                                                            // GT_MULHI is used in division by a constant (fgMorphDivByConst). We turn
                                                            // the div into a MULHI + some adjustments. In codegen, we only use the

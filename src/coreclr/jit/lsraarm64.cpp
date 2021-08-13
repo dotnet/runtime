@@ -308,6 +308,7 @@ int LinearScan::BuildNode(GenTree* tree)
 
         case GT_DIV:
         case GT_MULHI:
+        case GT_MULWIDE:
         case GT_UDIV:
         {
             srcCount = BuildBinaryUses(tree->AsOp());

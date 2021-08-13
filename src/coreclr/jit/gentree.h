@@ -1435,6 +1435,9 @@ public:
     static bool OperIsMul(genTreeOps gtOper)
     {
         return (gtOper == GT_MUL) || (gtOper == GT_MULHI)
+#ifdef TARGET_ARM64
+               || (gtOper == GT_MULWIDE)
+#endif
 #if !defined(TARGET_64BIT)
                || (gtOper == GT_MUL_LONG)
 #endif

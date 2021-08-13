@@ -5270,7 +5270,10 @@ Compiler::fgWalkResult Compiler::optVNConstantPropCurStmt(BasicBlock* block, Sta
 
         case GT_INC_SATURATE:
         case GT_MULHI:
-            assert(false && "Unexpected GT_INC_SATURATE/GT_MULHI node encountered before lowering");
+#ifdef TARGET_ARM64
+        case GT_MULWIDE:
+#endif
+            assert(false && "Unexpected GT_INC_SATURATE/GT_MULHI/GT_MULWIDE node encountered before lowering");
             break;
 
         case GT_JTRUE:

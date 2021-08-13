@@ -1817,6 +1817,26 @@ void CodeGen::genCodeForMulHi(GenTreeOp* treeNode)
     genProduceReg(treeNode);
 }
 
+// Generate code to get the 64-bits of a 32*32 bit multiplication result
+void CodeGen::genCodeForMulWide(GenTreeOp* treeNode)
+{
+    assert(!treeNode->gtOverflowEx());
+    assert(!varTypeIsFloating(treeNode->TypeGet()));
+
+    genConsumeOperands(treeNode);
+
+    // The arithmetic node must be sitting in a register (since it's not contained)
+    regNumber targetReg = treeNode->GetRegNum();
+    assert(targetReg != REG_NA);
+
+    assert(EA_SIZE(emitActualTypeSize(treeNode)) == EA_8BYTE);
+    instruction ins = (treeNode->gtFlags & GTF_UNSIGNED) ? INS_umull : INS_smull;
+    regNumber   r   = GetEmitter()->emitInsTernary(ins, EA_4BYTE, treeNode, treeNode->gtGetOp1(), treeNode->gtGetOp2());
+    assert(r == targetReg);
+
+    genProduceReg(treeNode);
+}
+
 // Generate code for ADD, SUB, MUL, DIV, UDIV, AND, OR and XOR
 // This method is expected to have called genConsumeOperands() before calling it.
 void CodeGen::genCodeForBinary(GenTreeOp* treeNode)

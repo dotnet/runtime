@@ -311,6 +311,10 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             genCodeForMulHi(treeNode->AsOp());
             break;
 
+        case GT_MULWIDE:
+            genCodeForMulWide(treeNode->AsOp());
+            break;
+
         case GT_SWAP:
             genCodeForSwap(treeNode->AsOp());
             break;

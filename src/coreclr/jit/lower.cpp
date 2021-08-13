@@ -144,6 +144,9 @@ GenTree* Lowering::LowerNode(GenTree* node)
 
         case GT_MUL:
         case GT_MULHI:
+#ifdef TARGET_ARM64
+        case GT_MULWIDE:
+#endif
 #if defined(TARGET_X86)
         case GT_MUL_LONG:
 #endif
@@ -5254,7 +5257,11 @@ bool Lowering::LowerUnsignedDivOrMod(GenTreeOp* divMod)
             BlockRange().InsertBefore(divMod, preShiftBy, adjustedDividend);
             firstNode = preShiftBy;
         }
-        else if (type != TYP_I_IMPL)
+        else if (type != TYP_I_IMPL
+#ifdef TARGET_ARM64
+                 && !simpleMul
+#endif
+        )
         {
             adjustedDividend = comp->gtNewCastNode(TYP_I_IMPL, adjustedDividend, true, TYP_U_IMPL);
             BlockRange().InsertBefore(divMod, adjustedDividend);
@@ -5268,7 +5275,7 @@ bool Lowering::LowerUnsignedDivOrMod(GenTreeOp* divMod)
             adjustedDividend->SetRegNum(REG_RAX);
 #endif
 
-        divisor->gtType = TYP_I_IMPL;
+        divisor->gtType = simpleMul ? TYP_INT : TYP_I_IMPL;
         divisor->AsIntCon()->SetIconValue(magic);
 
         if (isDiv && !postShift && type == TYP_I_IMPL)
@@ -5283,7 +5290,12 @@ bool Lowering::LowerUnsignedDivOrMod(GenTreeOp* divMod)
             // The existing node will later be transformed into a GT_RSZ/GT_SUB that
             // computes the final result. This way don't need to find and change the use
             // of the existing node.
-            GenTree* mulhi = comp->gtNewOperNode(simpleMul ? GT_MUL : GT_MULHI, TYP_I_IMPL, adjustedDividend, divisor);
+#ifdef TARGET_ARM64
+            genTreeOps mulOp = simpleMul ? GT_MULWIDE : GT_MULHI; // 64-bit MUL is more expensive than UMULL on ARM64
+#else
+            genTreeOps mulOp = simpleMul ? GT_MUL : GT_MULHI; // 64-bit IMUL is less expensive than MUL eax:edx on x64
+#endif
+            GenTree* mulhi = comp->gtNewOperNode(mulOp, TYP_I_IMPL, adjustedDividend, divisor);
             mulhi->gtFlags |= GTF_UNSIGNED;
             BlockRange().InsertBefore(divMod, mulhi);
             if (!firstNode)
@@ -5322,7 +5334,7 @@ bool Lowering::LowerUnsignedDivOrMod(GenTreeOp* divMod)
             }
             else if (type != TYP_I_IMPL)
             {
-#ifdef TARGET_ARMARCH
+#ifdef TARGET_ARM64
                 divMod->SetOper(GT_CAST);
                 divMod->gtFlags |= GTF_UNSIGNED;
                 divMod->AsCast()->gtCastType = TYP_UINT;
@@ -6394,6 +6406,9 @@ void Lowering::ContainCheckNode(GenTree* node)
 #endif
         case GT_MUL:
         case GT_MULHI:
+#ifdef TARGET_ARM64
+        case GT_MULWIDE:
+#endif
             ContainCheckMul(node->AsOp());
             break;
         case GT_DIV:
