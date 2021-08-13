@@ -29,11 +29,7 @@ namespace System.Threading
         {
             var node = new ThreadLocalNode(this);
 
-            List<ThreadLocalNodeFinalizationHelper>? nodeFinalizationHelpers = t_nodeFinalizationHelpers;
-            if (nodeFinalizationHelpers == null)
-            {
-                t_nodeFinalizationHelpers = nodeFinalizationHelpers = new List<ThreadLocalNodeFinalizationHelper>(1);
-            }
+            List<ThreadLocalNodeFinalizationHelper>? nodeFinalizationHelpers = t_nodeFinalizationHelpers ??= new List<ThreadLocalNodeFinalizationHelper>(1);
             nodeFinalizationHelpers.Add(new ThreadLocalNodeFinalizationHelper(node));
 
             s_lock.Acquire();
