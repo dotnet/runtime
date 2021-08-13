@@ -330,14 +330,7 @@ namespace System.Data.OleDb
             DataColumn precision = new DataColumn("NumericPrecision", typeof(short));
             DataColumn scale = new DataColumn("NumericScale", typeof(short));
 
-            DataColumn dataType = GetSystemTypeDataColumn();
-
-            [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2111",
-                Justification = "The problem is Type.TypeInitializer which requires static .ctor on the type" +
-                    "which in this case is System.Type itself. System.Type.cctor will always be preserved anyway.")]
-            static DataColumn GetSystemTypeDataColumn() =>
-                new DataColumn(SchemaTableColumn.DataType, typeof(Type));
-
+            DataColumn dataType = new DataColumn(SchemaTableColumn.DataType, typeof(Type));
             DataColumn providerType = new DataColumn("ProviderType", typeof(int));
 
             DataColumn isLong = new DataColumn("IsLong", typeof(bool));
