@@ -120,7 +120,6 @@ namespace HttpStress
             sb.Clear();
             Interlocked.Exchange(ref _cachedStringBuilder, sb);
             await _messagesChannel.Writer.WriteAsync(s, _stopProcessing.Token);
-
         }
 
         public override void Dispose()
