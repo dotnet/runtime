@@ -51,11 +51,26 @@ namespace System.Numerics
             W = scalarPart;
         }
 
+        /// <summary>Gets a quaternion that represents a zero.</summary>
+        /// <value>A quaternion whose values are <c>(0, 0, 0, 0)</c>.</value>
+        public static Quaternion Zero
+        {
+            get => default;
+        }
+
         /// <summary>Gets a quaternion that represents no rotation.</summary>
         /// <value>A quaternion whose values are <c>(0, 0, 0, 1)</c>.</value>
         public static Quaternion Identity
         {
             get => new Quaternion(0, 0, 0, 1);
+        }
+
+        /// <summary>Gets a value that indicates whether the current instance is the zero quaternion.</summary>
+        /// <value><see langword="true" /> if the current instance is the zero quaternion; otherwise, <see langword="false" />.</value>
+        /// <altmember cref="System.Numerics.Quaternion.Zero"/>
+        public readonly bool IsZero
+        {
+            get => this == Zero;
         }
 
         /// <summary>Gets a value that indicates whether the current instance is the identity quaternion.</summary>
