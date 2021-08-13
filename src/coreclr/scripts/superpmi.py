@@ -2563,8 +2563,9 @@ def process_local_mch_files(coreclr_args, mch_files, mch_cache_dir):
     urls = [url for url in urls if filter_local_path(url)]
 
     # Download all the urls at once, and add the local cache filenames to our accumulated list of local file names.
+    skip_progress = hasattr(coreclr_args, 'no_progress') and coreclr_args.no_progress
     if len(urls) != 0:
-        local_mch_files += download_files(urls, mch_cache_dir, display_progress=not coreclr_args.no_progress)
+        local_mch_files += download_files(urls, mch_cache_dir, display_progress=not skip_progress)
 
     # Special case: walk the URLs list and for every ".mch" or ".mch.zip" file, check to see that either the associated ".mct" file is already
     # in the list, or add it to a new list to attempt to download (but don't fail the download if it doesn't exist).
@@ -2575,7 +2576,7 @@ def process_local_mch_files(coreclr_args, mch_files, mch_cache_dir):
             if mct_url not in urls:
                 mct_urls.append(mct_url)
     if len(mct_urls) != 0:
-        local_mch_files += download_files(mct_urls, mch_cache_dir, fail_if_not_found=False, display_progress=not coreclr_args.no_progress)
+        local_mch_files += download_files(mct_urls, mch_cache_dir, fail_if_not_found=False, display_progress=not skip_progress)
 
     # Even though we might have downloaded MCT files, only return the set of MCH files.
     local_mch_files = [file for file in local_mch_files if any(file.lower().endswith(extension) for extension in [".mch"])]
@@ -2670,8 +2671,8 @@ def download_mch_from_azure(coreclr_args, target_dir):
     blob_url_prefix = "{}/{}/".format(az_blob_storage_superpmi_container_uri, az_collections_root_folder)
     urls = [blob_url_prefix + path for path in paths]
 
-    return download_files(urls, target_dir, display_progress=not coreclr_args.no_progress)
-
+    skip_progress = hasattr(coreclr_args, 'no_progress') and coreclr_args.no_progress
+    return download_files(urls, target_dir, display_progress=not skip_progress)
 
 def download_files(paths, target_dir, verbose=True, fail_if_not_found=True, display_progress=True):
     """ Download a set of files, specified as URLs or paths (such as Windows UNC paths),
