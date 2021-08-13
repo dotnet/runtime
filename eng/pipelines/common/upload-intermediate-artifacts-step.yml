@@ -5,7 +5,7 @@ parameters:
 steps:
 - task: CopyFiles@2
   displayName: Prepare job-specific intermediate artifacts subdirectory
-  publishPackagesCondition: and(succeeded(), ${{ parameters.publishPackagesCondition }})
+  condition: and(succeeded(), ${{ parameters.publishPackagesCondition }})
   inputs:
     SourceFolder: '$(Build.SourcesDirectory)/artifacts/packages/$(_BuildConfig)'
     Contents: |
