@@ -97,7 +97,11 @@ namespace System
 #if NETCOREAPP
                 if (!IsWindows)
                 {
-                    if (IsOSX)
+                    if (IsMobile)
+                    {
+                        return false;
+                    }
+                    else if (IsOSX)
                     {
                         return NativeLibrary.TryLoad("libgdiplus.dylib", out _);
                     }
