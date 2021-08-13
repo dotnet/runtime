@@ -4,6 +4,7 @@
 using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.Tracing;
 using System.Linq;
 using System.Net.Security;
 using System.Net.Sockets;
@@ -855,6 +856,150 @@ namespace System.Net.Quic.Tests
                     Assert.Equal(expected, actual);
                 }
             }
+        }
+
+        internal sealed class LogEventListener : EventListener
+        {
+            protected override void OnEventSourceCreated(EventSource eventSource)
+            {
+                if (eventSource.Name == "Private.InternalDiagnostics.System.Net.Quic")
+                    EnableEvents(eventSource, EventLevel.LogAlways);
+            }
+
+            protected override void OnEventWritten(EventWrittenEventArgs eventData)
+            {
+                var sb = new StringBuilder().Append($"{eventData.TimeStamp:HH:mm:ss.fffffff}[{eventData.EventName}] ");
+                for (int i = 0; i < eventData.Payload?.Count; i++)
+                {
+                    if (i > 0)
+                        sb.Append(", ");
+                    sb.Append(eventData.PayloadNames?[i]).Append(": ").Append(eventData.Payload[i]);
+                }
+                Console.WriteLine(sb.ToString());
+            }
+        }
+
+        [Fact]
+        public async Task BasicTest_WithReadsCompletedCheck()
+        {
+            QuicStream clientStream = null;
+            QuicStream serverStream = null;
+            using var log = new LogEventListener();
+            await RunClientServer(
+                iterations: 1,//100,
+                serverFunction: async connection =>
+                {
+                    QuicStream stream = await connection.AcceptStreamAsync();
+                    serverStream = stream;
+                    ////Assert.False(stream.ReadsCompleted);
+
+                    byte[] buffer = new byte[s_data.Length];
+                    int bytesRead = await ReadAll(stream, buffer);
+
+                   // Assert.True(stream.ReadsCompleted);
+                    Assert.Equal(s_data.Length, bytesRead);
+                    Assert.Equal(s_data, buffer);
+
+                    await stream.WriteAsync(s_data, endStream: true);
+                    await stream.ShutdownCompleted();
+                },
+                clientFunction: async connection =>
+                {
+                    QuicStream stream = connection.OpenBidirectionalStream();
+                    clientStream = stream;
+                    //Assert.False(stream.ReadsCompleted);
+
+                    await stream.WriteAsync(s_data, endStream: true);
+
+                    byte[] buffer = new byte[s_data.Length];
+                    int bytesRead = await ReadAll(stream, buffer);
+
+                    //Assert.True(stream.ReadsCompleted);
+                    Assert.Equal(s_data.Length, bytesRead);
+                    Assert.Equal(s_data, buffer);
+
+                    await stream.ShutdownCompleted();
+                }
+            );
+
+            clientStream.Dispose();
+            serverStream.Dispose();
+        }
+
+        [Fact]
+        public async Task Read_ReadsCompleted_ReportedBeforeReturning0()
+        {
+            var sem = new SemaphoreSlim(0);
+
+            await RunBidirectionalClientServer(
+                async clientStream =>
+                {
+                    await sem.WaitAsync();
+                    await clientStream.WriteAsync(new byte[1], endStream: true);
+                },
+                async serverStream =>
+                {
+                    Assert.False(serverStream.ReadsCompleted);
+                    sem.Release();
+
+                    var received = await serverStream.ReadAsync(new byte[1]);
+                    Assert.Equal(1, received);
+                    Assert.True(serverStream.ReadsCompleted);
+
+                    var task = serverStream.ReadAsync(new byte[1]);
+                    Assert.True(task.IsCompleted);
+
+                    received = await task;
+                    Assert.Equal(0, received);
+                    Assert.True(serverStream.ReadsCompleted);
+                });
+        }
+
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task ReadsCompleted_WithoutPeerWriting_ReturnsTrueWithoutExplicitRead(bool bidirectional)
+        {
+            await RunClientServer(
+                clientFunction: connection =>
+                {
+                    using QuicStream stream = bidirectional 
+                        ? connection.OpenBidirectionalStream() 
+                        : connection.OpenUnidirectionalStream();
+
+                    // gracefully close Write side
+                    stream.Shutdown();
+
+                    if (bidirectional)
+                    {
+                        stream.AbortRead(0);
+                    }
+
+                    return Task.CompletedTask;
+                },
+                serverFunction: async connection =>
+                {
+                    await using QuicStream stream = await connection.AcceptStreamAsync();
+
+                    // Should be true without needing to issue a receive (but need to wait for event to arrive)
+                    await SpinUntilReadsCompleted().WaitAsync(PassingTestTimeoutMilliseconds);
+
+                    async Task SpinUntilReadsCompleted()
+                    {
+                        while (true)
+                        {
+                            if (stream.ReadsCompleted)
+                            {
+                                break;
+                            }
+                            await Task.Delay(10);
+                        }
+                    }
+
+                    // client shuts down both sides of the stream, so we will receive the final event
+                    await stream.ShutdownCompleted();
+                }
+            );
         }
     }
 }

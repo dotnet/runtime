@@ -44,7 +44,7 @@ namespace System.Net.Quic.Implementations.Mock
 
         internal override bool CanRead => !_disposed && ReadStreamBuffer is not null;
 
-        internal override bool ReadsCompleted => ReadStreamBuffer?.IsComplete ?? true;
+        internal override bool ReadsCompleted => ReadStreamBuffer?.IsComplete ?? false;
 
         internal override int Read(Span<byte> buffer)
         {
