@@ -132,6 +132,9 @@
   <data name="EmittingPEFile" xml:space="preserve">
     <value>Emitting R2R PE file: {0}</value>
   </data>
+  <data name="MovingPEFile" xml:space="preserve">
+    <value>Moving R2R PE file: {0} to {1}</value>
+  </data>
   <data name="EnableOptimizationsOption" xml:space="preserve">
     <value>Enable optimizations</value>
   </data>
