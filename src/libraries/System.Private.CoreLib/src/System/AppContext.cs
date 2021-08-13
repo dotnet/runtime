@@ -135,6 +135,7 @@ namespace System
             }
         }
 
+#if NETCOREAPP
         internal static void LogSwitchValues(RuntimeEventSource ev)
         {
             if (s_switches is not null)
@@ -155,14 +156,15 @@ namespace System
                 {
                     foreach (var (k, v) in s_dataStore)
                     {
-                        if (v is bool b)
+                        if (bool.TryParse(v, out bool isEnabled))
                         {
-                            ev.LogAppContextSwitch(k, b ? 0 : 1);
+                            ev.LogAppContextSwitch(k, isEnabled ? 0 : 1);
                         }
                     }
                 }
             }
         }
+#endif
 
 #if !CORERT
         internal static unsafe void Setup(char** pNames, char** pValues, int count)
