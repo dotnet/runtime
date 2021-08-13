@@ -30,5 +30,34 @@ namespace System
 
             return directory;
         }
+
+        internal static void LogSwitchValues(RuntimeEventSource ev)
+        {
+            if (s_switches is not null)
+            {
+                lock (s_switches)
+                {
+                    foreach (var (k, v) in s_switches)
+                    {
+                        // Convert bool to int because it's cheaper to log (no boxing)
+                        ev.LogAppContextSwitch(k, v ? 0 : 1);
+                    }
+                }
+            }
+
+            if (s_dataStore is not null)
+            {
+                lock (s_dataStore)
+                {
+                    foreach (var (k, v) in s_dataStore)
+                    {
+                        if (v is string s && bool.TryParse(s, out bool isEnabled))
+                        {
+                            ev.LogAppContextSwitch(k, isEnabled ? 0 : 1);
+                        }
+                    }
+                }
+            }
+        }
     }
 }
