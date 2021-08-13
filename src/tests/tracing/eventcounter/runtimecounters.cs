@@ -16,7 +16,7 @@ namespace RuntimeEventCounterTests
 {
     public class RuntimeCounterListener : EventListener
     {
-        private Dictionary<string, bool> observedEvents = new Dictionary<string, bool>() {
+        private readonly Dictionary<string, bool> observedEvents = new Dictionary<string, bool>() {
             { "cpu-usage" , false },
             { "working-set", false },
             { "gc-heap-size", false },
@@ -44,7 +44,12 @@ namespace RuntimeEventCounterTests
             { "time-in-jit", false },
             // These are AppContext switches, not counters
             { "appContextSwitch", false },
-            { "appContextData", false }
+            { "appContextBoolAsStringData", false },
+        };
+
+        private static readonly string[] s_unexpectedEvents = new[] {
+            "appContextBoolData",
+            "appContextStringData",
         };
 
         protected override void OnEventSourceCreated(EventSource source)
@@ -62,8 +67,7 @@ namespace RuntimeEventCounterTests
             // Check AppContext switches
             if (eventData is { EventName: "LogAppContextSwitch",
                                Payload: { Count: 2 } } &&
-                eventData.Payload[0] is string switchName &&
-                observedEvents.ContainsKey(switchName))
+                eventData.Payload[0] is string switchName)
             {
                 observedEvents[switchName] = true;
                 return;
@@ -97,6 +101,15 @@ namespace RuntimeEventCounterTests
                     Console.WriteLine($"Saw {counterName}");
                 }
             }
+
+            foreach (var key in s_unexpectedEvents)
+            {
+                if (observedEvents.ContainsKey(key))
+                {
+                    Console.WriteLine($"Should not have seen appContextStringData");
+                    return false;
+                }
+            }
             return true;
         }
     }
@@ -106,7 +119,9 @@ namespace RuntimeEventCounterTests
         public static int Main(string[] args)
         {
             AppContext.SetSwitch("appContextSwitch", true);
-            AppDomain.CurrentDomain.SetData("appContextData", true);
+            AppDomain.CurrentDomain.SetData("appContextBoolData", true);
+            AppDomain.CurrentDomain.SetData("appContextBoolAsStringData", "true");
+            AppDomain.CurrentDomain.SetData("appContextStringData", "myString");
 
             // Create an EventListener.
             using (RuntimeCounterListener myListener = new RuntimeCounterListener())

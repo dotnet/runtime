@@ -155,7 +155,7 @@ namespace System
                 {
                     foreach (var (k, v) in s_dataStore)
                     {
-                        if (bool.TryParse(v, out bool isEnabled))
+                        if (v is string s && bool.TryParse(s, out bool isEnabled))
                         {
                             ev.LogAppContextSwitch(k, isEnabled ? 0 : 1);
                         }
