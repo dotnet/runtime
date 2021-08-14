@@ -4,6 +4,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Threading;
 using Microsoft.Extensions.Primitives;
@@ -39,7 +40,7 @@ namespace Microsoft.Extensions.Configuration
         }
 
         /// <inheritdoc/>
-        public string this[string key]
+        public string? this[string key]
         {
             get
             {
@@ -339,7 +340,7 @@ namespace Microsoft.Extensions.Configuration
                 return wasRemoved;
             }
 
-            public bool TryGetValue(string key, out object value)
+            public bool TryGetValue(string key, [MaybeNullWhen(false)] out object value)
             {
                 return _properties.TryGetValue(key, out value);
             }

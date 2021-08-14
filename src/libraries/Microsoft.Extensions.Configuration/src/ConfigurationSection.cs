@@ -14,7 +14,7 @@ namespace Microsoft.Extensions.Configuration
     {
         private readonly IConfigurationRoot _root;
         private readonly string _path;
-        private string _key;
+        private string? _key;
 
         /// <summary>
         /// Initializes a new instance.
@@ -47,30 +47,17 @@ namespace Microsoft.Extensions.Configuration
         /// </summary>
         public string Key
         {
-            get
-            {
-                if (_key == null)
-                {
-                    // Key is calculated lazily as last portion of Path
-                    _key = ConfigurationPath.GetSectionKey(_path);
-                }
-                return _key;
-            }
+            // Key is calculated lazily as last portion of Path
+            get => _key ??= ConfigurationPath.GetSectionKey(_path);
         }
 
         /// <summary>
         /// Gets or sets the section value.
         /// </summary>
-        public string Value
+        public string? Value
         {
-            get
-            {
-                return _root[Path];
-            }
-            set
-            {
-                _root[Path] = value;
-            }
+            get => _root[Path];
+            set => _root[Path] = value;
         }
 
         /// <summary>
@@ -78,17 +65,10 @@ namespace Microsoft.Extensions.Configuration
         /// </summary>
         /// <param name="key">The configuration key.</param>
         /// <returns>The configuration value.</returns>
-        public string this[string key]
+        public string? this[string key]
         {
-            get
-            {
-                return _root[ConfigurationPath.Combine(Path, key)];
-            }
-
-            set
-            {
-                _root[ConfigurationPath.Combine(Path, key)] = value;
-            }
+            get => _root[ConfigurationPath.Combine(Path, key)];
+            set => _root[ConfigurationPath.Combine(Path, key)] = value;
         }
 
         /// <summary>

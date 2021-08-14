@@ -11,7 +11,7 @@ namespace Microsoft.Extensions.Configuration
         /// <summary>
         /// The chained configuration.
         /// </summary>
-        public IConfiguration Configuration { get; set; }
+        public IConfiguration? Configuration { get; set; }
 
         /// <summary>
         /// Whether the chained configuration should be disposed when the

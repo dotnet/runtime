@@ -36,7 +36,7 @@ namespace Microsoft.Extensions.Configuration
         /// <returns>The <see cref="IConfigurationBuilder"/>.</returns>
         public static IConfigurationBuilder AddInMemoryCollection(
             this IConfigurationBuilder configurationBuilder,
-            IEnumerable<KeyValuePair<string, string>> initialData)
+            IEnumerable<KeyValuePair<string, string?>>? initialData)
         {
             if (configurationBuilder == null)
             {

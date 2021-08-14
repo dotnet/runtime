@@ -13,7 +13,7 @@ namespace Microsoft.Extensions.Configuration
         /// <summary>
         /// The stream containing the configuration data.
         /// </summary>
-        public Stream Stream { get; set; }
+        public Stream? Stream { get; set; }
 
         /// <summary>
         /// Builds the <see cref="StreamConfigurationProvider"/> for this source.
