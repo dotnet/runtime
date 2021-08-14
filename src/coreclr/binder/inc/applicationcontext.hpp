@@ -82,12 +82,9 @@ namespace BINDER_SPACE
     class ApplicationContext
     {
     public:
-        STDMETHOD_(ULONG, AddRef)();
-        STDMETHOD_(ULONG, Release)();
-
         // ApplicationContext methods
         ApplicationContext();
-        virtual ~ApplicationContext();
+        ~ApplicationContext();
         HRESULT Init(UINT_PTR binderID);
 
         inline SString &GetApplicationName();
@@ -120,7 +117,6 @@ namespace BINDER_SPACE
         UINT_PTR GetBinderID() { return m_binderID; }
 
     private:
-        LONG               m_cRef;
         Volatile<LONG>     m_cVersion;
         SString            m_applicationName;
         ExecutionContext  *m_pExecutionContext;

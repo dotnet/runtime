@@ -23,26 +23,8 @@ using namespace clr::fs;
 
 namespace BINDER_SPACE
 {
-    STDMETHODIMP_(ULONG) ApplicationContext::AddRef()
-    {
-        return InterlockedIncrement(&m_cRef);
-    }
-
-    STDMETHODIMP_(ULONG) ApplicationContext::Release()
-    {
-        ULONG ulRef = InterlockedDecrement(&m_cRef);
-
-        if (ulRef == 0)
-        {
-            delete this;
-        }
-
-        return ulRef;
-    }
-
     ApplicationContext::ApplicationContext()
     {
-        m_cRef = 1;
         m_pExecutionContext = NULL;
         m_pFailureCache = NULL;
         m_contextCS = NULL;
