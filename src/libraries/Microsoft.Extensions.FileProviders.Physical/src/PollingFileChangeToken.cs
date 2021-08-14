@@ -112,7 +112,7 @@ namespace Microsoft.Extensions.FileProviders.Physical
                 }
 
                 DateTime? lastWriteTimeUtc = GetLastWriteTimeUtc();
-                if (_previousWriteTimeUtc != null && _previousWriteTimeUtc != lastWriteTimeUtc)
+                if (lastWriteTimeUtc != null && _previousWriteTimeUtc != lastWriteTimeUtc)
                 {
                     _previousWriteTimeUtc = lastWriteTimeUtc;
                     _hasChanged = true;
