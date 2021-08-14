@@ -6015,6 +6015,8 @@ bool Compiler::optIsProfitableToHoistableTree(GenTree* tree, unsigned lnum)
         // Don't hoist expressions that are not heavy: tree->GetCostEx() < (2*IND_COST_EX)
         if (tree->GetCostEx() < (2 * IND_COST_EX))
         {
+            // Since this simple expression is not hoistable we better skip CSE for it as well.
+            tree->gtFlags |= GTF_DONT_CSE;
             return false;
         }
     }
