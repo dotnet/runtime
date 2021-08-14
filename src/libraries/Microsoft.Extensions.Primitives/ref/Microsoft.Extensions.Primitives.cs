@@ -4,8 +4,6 @@
 // Changes to this file must follow the https://aka.ms/api-review process.
 // ------------------------------------------------------------------------------
 
-using System.Diagnostics.CodeAnalysis;
-
 namespace Microsoft.Extensions.Primitives
 {
     public partial class CancellationChangeToken : Microsoft.Extensions.Primitives.IChangeToken
@@ -46,7 +44,7 @@ namespace Microsoft.Extensions.Primitives
         public StringSegment(string buffer) { throw null; }
         public StringSegment(string buffer, int offset, int length) { throw null; }
         public string Buffer { get { throw null; } }
-        [MemberNotNullWhen(true, nameof(Buffer))]
+        [System.Diagnostics.CodeAnalysis.MemberNotNullWhen(true, nameof(Buffer))]
         public bool HasValue { get { throw null; } }
         public char this[int index] { get { throw null; } }
         public int Length { get { throw null; } }
