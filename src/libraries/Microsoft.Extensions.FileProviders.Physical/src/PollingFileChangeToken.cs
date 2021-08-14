@@ -25,7 +25,7 @@ namespace Microsoft.Extensions.FileProviders.Physical
     public class PollingFileChangeToken : IPollingChangeToken
     {
         private readonly FileInfo _fileInfo;
-        private DateTime? _previousWriteTimeUtc;
+        private DateTime _previousWriteTimeUtc;
         private DateTime _lastCheckedTimeUtc;
         private bool _hasChanged;
         private CancellationTokenSource _tokenSource;
@@ -45,7 +45,7 @@ namespace Microsoft.Extensions.FileProviders.Physical
         // Internal for unit testing
         internal static TimeSpan PollingInterval { get; set; } = PhysicalFilesWatcher.DefaultPollingInterval;
 
-        private DateTime? GetLastWriteTimeUtc()
+        private DateTime GetLastWriteTimeUtc()
         {
             _fileInfo.Refresh();
 
@@ -65,7 +65,7 @@ namespace Microsoft.Extensions.FileProviders.Physical
                 catch (IOException) { } // https://github.com/dotnet/runtime/issues/57221
             }
 
-            return lastWriteTimeUtc;
+            return lastWriteTimeUtc ?? DateTime.MinValue;
         }
 
         /// <summary>
@@ -109,8 +109,8 @@ namespace Microsoft.Extensions.FileProviders.Physical
                     return _hasChanged;
                 }
 
-                DateTime? lastWriteTimeUtc = GetLastWriteTimeUtc();
-                if (lastWriteTimeUtc != null && _previousWriteTimeUtc != lastWriteTimeUtc)
+                DateTime lastWriteTimeUtc = GetLastWriteTimeUtc();
+                if (_previousWriteTimeUtc != lastWriteTimeUtc)
                 {
                     _previousWriteTimeUtc = lastWriteTimeUtc;
                     _hasChanged = true;
