@@ -95,13 +95,13 @@ namespace Microsoft.Extensions.Configuration.Test
 
         public class ChangeToken : IChangeToken
         {
-            public List<(Action<object>, object)> Callbacks { get; } = new List<(Action<object>, object)>();
+            public List<(Action<object?>, object?)> Callbacks { get; } = new List<(Action<object?>, object?)>();
 
             public bool HasChanged => false;
 
             public bool ActiveChangeCallbacks => true;
 
-            public IDisposable RegisterChangeCallback(Action<object> callback, object state)
+            public IDisposable RegisterChangeCallback(Action<object?> callback, object? state)
             {
                 var item = (callback, state);
                 Callbacks.Add(item);
@@ -110,9 +110,9 @@ namespace Microsoft.Extensions.Configuration.Test
 
             private class DisposableAction : IDisposable
             {
-                private Action _action;
+                private Action? _action;
 
-                public DisposableAction(Action action)
+                public DisposableAction(Action? action)
                 {
                     _action = action;
                 }
