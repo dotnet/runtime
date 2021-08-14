@@ -5254,7 +5254,11 @@ bool Lowering::LowerUnsignedDivOrMod(GenTreeOp* divMod)
             BlockRange().InsertBefore(divMod, preShiftBy, adjustedDividend);
             firstNode = preShiftBy;
         }
-        else if (type != TYP_I_IMPL)
+        else if (type != TYP_I_IMPL
+#ifdef TARGET_ARM64
+                 && !simpleMul
+#endif
+                 )
         {
             adjustedDividend = comp->gtNewCastNode(TYP_I_IMPL, adjustedDividend, true, TYP_U_IMPL);
             BlockRange().InsertBefore(divMod, adjustedDividend);
@@ -5268,7 +5272,7 @@ bool Lowering::LowerUnsignedDivOrMod(GenTreeOp* divMod)
             adjustedDividend->SetRegNum(REG_RAX);
 #endif
 
-        divisor->gtType = TYP_I_IMPL;
+        divisor->gtType = simpleMul ? TYP_INT : TYP_I_IMPL;
         divisor->AsIntCon()->SetIconValue(magic);
 
         if (isDiv && !postShift && type == TYP_I_IMPL)

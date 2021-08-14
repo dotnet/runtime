@@ -1853,8 +1853,17 @@ void CodeGen::genCodeForBinary(GenTreeOp* treeNode)
 
     // The arithmetic node must be sitting in a register (since it's not contained)
     assert(targetReg != REG_NA);
+    emitAttr attr = emitActualTypeSize(treeNode);
 
-    regNumber r = emit->emitInsTernary(ins, emitActualTypeSize(treeNode), treeNode, op1, op2);
+    // UMULL/SMULL is twice as fast for 32*32->64bit MUL
+    if (oper == GT_MUL && EA_SIZE(attr) == EA_8BYTE && !varTypeIsFloating(treeNode->TypeGet()) &&
+        EA_SIZE(emitActualTypeSize(op1)) == EA_4BYTE && EA_SIZE(emitActualTypeSize(op2)) == EA_4BYTE)
+    {
+        ins  = (treeNode->gtFlags & GTF_UNSIGNED) ? INS_umull : INS_smull;
+        attr = EA_4BYTE;
+    }
+
+    regNumber r = emit->emitInsTernary(ins, attr, treeNode, op1, op2);
     assert(r == targetReg);
 
     genProduceReg(treeNode);
