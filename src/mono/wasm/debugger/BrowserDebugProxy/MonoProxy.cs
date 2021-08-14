@@ -18,7 +18,7 @@ namespace Microsoft.WebAssembly.Diagnostics
 {
     internal class MonoProxy : DevToolsProxy
     {
-        internal MonoSDBHelper SdbHelper { get; }
+        internal MonoSDBHelper SdbHelper { get; set; }
         private IList<string> urlSymbolServerList;
         private static HttpClient client = new HttpClient();
         private HashSet<SessionId> sessions = new HashSet<SessionId>();
@@ -29,7 +29,6 @@ namespace Microsoft.WebAssembly.Diagnostics
         public MonoProxy(ILoggerFactory loggerFactory, IList<string> urlSymbolServerList) : base(loggerFactory)
         {
             this.urlSymbolServerList = urlSymbolServerList ?? new List<string>();
-            SdbHelper = new MonoSDBHelper(this, logger);
         }
 
         internal ExecutionContext GetContext(SessionId sessionId)
@@ -600,7 +599,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             Frame scope = ctx.CallStack.FirstOrDefault(s => s.Id == scopeId);
             if (scope == null)
                 return false;
-            var varIds = scope.Method.GetLiveVarsAt(scope.Location.CliLocation.Offset);
+            var varIds = scope.Method.MethodInfo.GetLiveVarsAt(scope.Location.CliLocation.Offset);
             if (varIds == null)
                 return false;
             var varToSetValue = varIds.FirstOrDefault(v => v.Name == varName);
@@ -708,30 +707,15 @@ namespace Microsoft.WebAssembly.Diagnostics
 
         private async Task<bool> SendBreakpointsOfMethodUpdated(SessionId sessionId, ExecutionContext context, MonoBinaryReader retDebuggerCmdReader, CancellationToken token)
         {
-            var method_id = retDebuggerCmdReader.ReadInt32();
-            var method_token = await SdbHelper.GetMethodToken(sessionId, method_id, token);
-            var assembly_id = await SdbHelper.GetAssemblyIdFromMethod(sessionId, method_id, token);
-            var assembly_name = await SdbHelper.GetAssemblyName(sessionId, assembly_id, token);
-            var method_name = await SdbHelper.GetMethodName(sessionId, method_id, token);
-            DebugStore store = await LoadStore(sessionId, token);
-            AssemblyInfo asm = store.GetAssemblyByName(assembly_name);
-            if (asm == null)
-            {
-                assembly_name = await SdbHelper.GetAssemblyNameFull(sessionId, assembly_id, token);
-                asm = store.GetAssemblyByName(assembly_name);
-                if (asm == null)
-                {
-                    return true;
-                }
-            }
-            MethodInfo method = asm.GetMethodByToken(method_token);
+            var methodId = retDebuggerCmdReader.ReadInt32();
+            var method = await SdbHelper.GetMethodInfo(sessionId, methodId, token);
             if (method == null)
             {
                 return true;
             }
             foreach (var req in context.BreakpointRequests.Values)
             {
-                if (req.Method != null && req.Method.Assembly.Id == method.Assembly.Id && req.Method.Token == method.Token)
+                if (req.Method != null && req.Method.Assembly.Id == method.MethodInfo.Assembly.Id && req.Method.Token == method.MethodInfo.Token)
                 {
                     await SetBreakpoint(sessionId, context.store, req, true, token);
                 }
@@ -756,47 +740,10 @@ namespace Microsoft.WebAssembly.Diagnostics
                 var methodId = retDebuggerCmdReader.ReadInt32();
                 var il_pos = retDebuggerCmdReader.ReadInt32();
                 var flags = retDebuggerCmdReader.ReadByte();
-                var method_token = await SdbHelper.GetMethodToken(sessionId, methodId, token);
-                var assembly_id = await SdbHelper.GetAssemblyIdFromMethod(sessionId, methodId, token);
-                var assembly_name = await SdbHelper.GetAssemblyName(sessionId, assembly_id, token);
-                var method_name = await SdbHelper.GetMethodName(sessionId, methodId, token);
                 DebugStore store = await LoadStore(sessionId, token);
-                AssemblyInfo asm = store.GetAssemblyByName(assembly_name);
-                if (asm == null)
-                {
-                    assembly_name = await SdbHelper.GetAssemblyNameFull(sessionId, assembly_id, token); //maybe is a lazy loaded assembly
-                    asm = store.GetAssemblyByName(assembly_name);
-                    if (asm == null)
-                    {
-                        Log("debug", $"Unable to find assembly: {assembly_name}");
-                        continue;
-                    }
-                }
+                var method = await SdbHelper.GetMethodInfo(sessionId, methodId, token);
 
-                MethodInfo method = asm.GetMethodByToken(method_token);
-
-                if (method == null && !asm.HasSymbols)
-                {
-                    try
-                    {
-                        method = await LoadSymbolsOnDemand(asm, method_token, sessionId, token);
-                    }
-                    catch (Exception e)
-                    {
-                        Log("info", $"Unable to find il offset: {il_pos} in method token: {method_token} assembly name: {assembly_name} exception: {e}");
-                        continue;
-                    }
-                }
-
-                if (method == null)
-                {
-                    Log("debug", $"Unable to find il offset: {il_pos} in method token: {method_token} assembly name: {assembly_name}");
-                    continue;
-                }
-
-                method.DebuggerId = methodId;
-
-                SourceLocation location = method?.GetLocationByIl(il_pos);
+                SourceLocation location = method?.MethodInfo.GetLocationByIl(il_pos);
 
                 // When hitting a breakpoint on the "IncrementCount" method in the standard
                 // Blazor project template, one of the stack frames is inside mscorlib.dll
@@ -807,15 +754,15 @@ namespace Microsoft.WebAssembly.Diagnostics
                     continue;
                 }
 
-                Log("debug", $"frame il offset: {il_pos} method token: {method_token} assembly name: {assembly_name}");
-                Log("debug", $"\tmethod {method_name} location: {location}");
+                Log("debug", $"frame il offset: {il_pos} method token: {method.MethodInfo.Token} assembly name: {method.MethodInfo.Assembly.Name}");
+                Log("debug", $"\tmethod {method.Name} location: {location}");
                 frames.Add(new Frame(method, location, frame_id));
 
                 callFrames.Add(new
                 {
-                    functionName = method_name,
+                    functionName = method.Name,
                     callFrameId = $"dotnet:scope:{frame_id}",
-                    functionLocation = method.StartLocation.AsLocation(),
+                    functionLocation = method.MethodInfo.StartLocation.AsLocation(),
 
                     location = location.AsLocation(),
 
@@ -833,9 +780,9 @@ namespace Microsoft.WebAssembly.Diagnostics
                                             description = "Object",
                                             objectId = $"dotnet:scope:{frame_id}",
                                     },
-                                    name = method_name,
-                                    startLocation = method.StartLocation.AsLocation(),
-                                    endLocation = method.EndLocation.AsLocation(),
+                                    name = method.Name,
+                                    startLocation = method.MethodInfo.StartLocation.AsLocation(),
+                                    endLocation = method.MethodInfo.EndLocation.AsLocation(),
                             }
                         }
                 });
@@ -943,7 +890,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             return false;
         }
 
-        private async Task<MethodInfo> LoadSymbolsOnDemand(AssemblyInfo asm, int method_token, SessionId sessionId, CancellationToken token)
+        internal async Task<MethodInfo> LoadSymbolsOnDemand(AssemblyInfo asm, int method_token, SessionId sessionId, CancellationToken token)
         {
             ExecutionContext context = GetContext(sessionId);
             if (urlSymbolServerList.Count == 0)
@@ -1160,7 +1107,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                 if (scope == null)
                     return Result.Err(JObject.FromObject(new { message = $"Could not find scope with id #{scopeId}" }));
 
-                VarInfo[] varIds = scope.Method.GetLiveVarsAt(scope.Location.CliLocation.Offset);
+                VarInfo[] varIds = scope.Method.MethodInfo.GetLiveVarsAt(scope.Location.CliLocation.Offset);
 
                 var values = await SdbHelper.StackFrameGetValues(msg_id, scope.Method, ctx.ThreadId, scopeId, varIds, token);
                 if (values != null)
@@ -1258,6 +1205,13 @@ namespace Microsoft.WebAssembly.Diagnostics
             if (Interlocked.CompareExchange(ref context.ready, new TaskCompletionSource<DebugStore>(), null) != null)
                 return await context.ready.Task;
 
+
+            DebugStore store = await LoadStore(sessionId, token);
+            context.ready.SetResult(store);
+            SendEvent(sessionId, "Mono.runtimeReady", new JObject(), token);
+
+            SdbHelper = new MonoSDBHelper(this, store, logger);
+
             var commandParams = new MemoryStream();
             var retDebuggerCmdReader = await SdbHelper.SendDebuggerAgentCommand<CmdEventRequest>(sessionId, CmdEventRequest.ClearAllBreakpoints, commandParams, token);
             if (retDebuggerCmdReader == null)
@@ -1275,10 +1229,6 @@ namespace Microsoft.WebAssembly.Diagnostics
             await SdbHelper.EnableReceiveRequests(sessionId, EventKind.EnC, token);
             await SdbHelper.EnableReceiveRequests(sessionId, EventKind.MethodUpdate, token);
 
-            DebugStore store = await LoadStore(sessionId, token);
-
-            context.ready.SetResult(store);
-            SendEvent(sessionId, "Mono.runtimeReady", new JObject(), token);
             return store;
         }
 
