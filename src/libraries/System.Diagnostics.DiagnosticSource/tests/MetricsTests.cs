@@ -807,6 +807,94 @@ namespace System.Diagnostics.Metrics.Tests
             }).Dispose();
         }
 
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public void TestRecordingMeasurementsWithTagList()
+        {
+            RemoteExecutor.Invoke(() => {
+
+                Meter meter = new Meter("RecordingMeasurementsWithTagList");
+
+                using (MeterListener listener = new MeterListener())
+                {
+                    Counter<int> counter = meter.CreateCounter<int>("Counter");
+                    Histogram<int> histogram = meter.CreateHistogram<int>("histogram");
+
+                    listener.EnableMeasurementEvents(counter, counter);
+                    listener.EnableMeasurementEvents(histogram, histogram);
+
+                    KeyValuePair<string, object?>[] expectedTags = null;
+
+                    listener.SetMeasurementEventCallback<int>((inst, measurement, tags, state) => {
+                        for (int i = 0; i < expectedTags.Length; i++)
+                        {
+                            Assert.Equal(expectedTags[i], tags[i]);
+                        }
+                    });
+
+                    // 0 Tags
+
+                    expectedTags = new KeyValuePair<string, object?>[0];
+                    counter.Add(10, new TagList());
+                    histogram.Record(10, new TagList());
+
+                    // 1 Tags
+                    expectedTags = new KeyValuePair<string, object?>[] { new KeyValuePair<string, object?>("Key1", "Value1") };
+                    counter.Add(10, new TagList() { expectedTags[0] });
+                    histogram.Record(10, new TagList() { new KeyValuePair<string, object?>("Key1", "Value1") });
+
+                    // 2 Tags
+                    expectedTags = new KeyValuePair<string, object?>[]
+                    {
+                         new KeyValuePair<string, object?>("Key1", "Value1"),
+                         new KeyValuePair<string, object?>("Key2", "Value2")
+                    };
+
+                    counter.Add(10, new TagList() { expectedTags[0], expectedTags[1] });
+                    histogram.Record(10, new TagList() { expectedTags[0], expectedTags[1] });
+
+                    // 8 Tags
+                    expectedTags = new KeyValuePair<string, object?>[]
+                    {
+                         new KeyValuePair<string, object?>("Key1", "Value1"),
+                         new KeyValuePair<string, object?>("Key2", "Value2"),
+                         new KeyValuePair<string, object?>("Key3", "Value3"),
+                         new KeyValuePair<string, object?>("Key4", "Value4"),
+                         new KeyValuePair<string, object?>("Key5", "Value5"),
+                         new KeyValuePair<string, object?>("Key6", "Value6"),
+                         new KeyValuePair<string, object?>("Key7", "Value7"),
+                         new KeyValuePair<string, object?>("Key8", "Value8"),
+                    };
+
+                    counter.Add(10, new TagList() { expectedTags[0], expectedTags[1], expectedTags[2], expectedTags[3], expectedTags[4], expectedTags[5], expectedTags[6], expectedTags[7] });
+                    histogram.Record(10, new TagList() { expectedTags[0], expectedTags[1], expectedTags[2], expectedTags[3], expectedTags[4], expectedTags[5], expectedTags[6], expectedTags[7] });
+
+                    // 13 Tags
+                    expectedTags = new KeyValuePair<string, object?>[]
+                    {
+                         new KeyValuePair<string, object?>("Key1", "Value1"),
+                         new KeyValuePair<string, object?>("Key2", "Value2"),
+                         new KeyValuePair<string, object?>("Key3", "Value3"),
+                         new KeyValuePair<string, object?>("Key4", "Value4"),
+                         new KeyValuePair<string, object?>("Key5", "Value5"),
+                         new KeyValuePair<string, object?>("Key6", "Value6"),
+                         new KeyValuePair<string, object?>("Key7", "Value7"),
+                         new KeyValuePair<string, object?>("Key8", "Value8"),
+                         new KeyValuePair<string, object?>("Key9", "Value8"),
+                         new KeyValuePair<string, object?>("Key10", "Value10"),
+                         new KeyValuePair<string, object?>("Key11", "Value11"),
+                         new KeyValuePair<string, object?>("Key12", "Value12"),
+                         new KeyValuePair<string, object?>("Key13", "Value12"),
+                    };
+
+                    counter.Add(10, new TagList() { expectedTags[0], expectedTags[1], expectedTags[2], expectedTags[3], expectedTags[4], expectedTags[5], expectedTags[6], expectedTags[7],
+                                                     expectedTags[8], expectedTags[9], expectedTags[10], expectedTags[11], expectedTags[12] });
+                    histogram.Record(10, new TagList() { expectedTags[0], expectedTags[1], expectedTags[2], expectedTags[3], expectedTags[4], expectedTags[5], expectedTags[6], expectedTags[7],
+                                                     expectedTags[8], expectedTags[9], expectedTags[10], expectedTags[11], expectedTags[12] });
+                }
+
+            }).Dispose();
+        }
+
         private void PublishCounterMeasurement<T>(Counter<T> counter, T value, KeyValuePair<string, object?>[] tags) where T : struct
         {
             switch (tags.Length)

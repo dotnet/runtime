@@ -47,110 +47,6 @@ namespace System.Diagnostics.Metrics
         }
     }
 
-    [StructLayout(LayoutKind.Sequential)]
-    internal struct FourTagsBag
-    {
-        internal KeyValuePair<string, object?> Tag1;
-        internal KeyValuePair<string, object?> Tag2;
-        internal KeyValuePair<string, object?> Tag3;
-        internal KeyValuePair<string, object?> Tag4;
-        internal FourTagsBag(KeyValuePair<string, object?> tag1, KeyValuePair<string, object?> tag2, KeyValuePair<string, object?> tag3, KeyValuePair<string, object?> tag4)
-        {
-            Tag1 = tag1;
-            Tag2 = tag2;
-            Tag3 = tag3;
-            Tag4 = tag4;
-        }
-    }
-
-    [StructLayout(LayoutKind.Sequential)]
-    internal struct FiveTagsBag
-    {
-        internal KeyValuePair<string, object?> Tag1;
-        internal KeyValuePair<string, object?> Tag2;
-        internal KeyValuePair<string, object?> Tag3;
-        internal KeyValuePair<string, object?> Tag4;
-        internal KeyValuePair<string, object?> Tag5;
-        internal FiveTagsBag(KeyValuePair<string, object?> tag1, KeyValuePair<string, object?> tag2, KeyValuePair<string, object?> tag3, KeyValuePair<string, object?> tag4,
-                             KeyValuePair<string, object?> tag5)
-        {
-            Tag1 = tag1;
-            Tag2 = tag2;
-            Tag3 = tag3;
-            Tag4 = tag4;
-            Tag5 = tag5;
-        }
-    }
-
-    [StructLayout(LayoutKind.Sequential)]
-    internal struct SixTagsBag
-    {
-        internal KeyValuePair<string, object?> Tag1;
-        internal KeyValuePair<string, object?> Tag2;
-        internal KeyValuePair<string, object?> Tag3;
-        internal KeyValuePair<string, object?> Tag4;
-        internal KeyValuePair<string, object?> Tag5;
-        internal KeyValuePair<string, object?> Tag6;
-        internal SixTagsBag(KeyValuePair<string, object?> tag1, KeyValuePair<string, object?> tag2, KeyValuePair<string, object?> tag3, KeyValuePair<string, object?> tag4,
-                            KeyValuePair<string, object?> tag5, KeyValuePair<string, object?> tag6)
-        {
-            Tag1 = tag1;
-            Tag2 = tag2;
-            Tag3 = tag3;
-            Tag4 = tag4;
-            Tag5 = tag5;
-            Tag6 = tag6;
-        }
-    }
-
-    [StructLayout(LayoutKind.Sequential)]
-    internal struct SevenTagsBag
-    {
-        internal KeyValuePair<string, object?> Tag1;
-        internal KeyValuePair<string, object?> Tag2;
-        internal KeyValuePair<string, object?> Tag3;
-        internal KeyValuePair<string, object?> Tag4;
-        internal KeyValuePair<string, object?> Tag5;
-        internal KeyValuePair<string, object?> Tag6;
-        internal KeyValuePair<string, object?> Tag7;
-        internal SevenTagsBag(KeyValuePair<string, object?> tag1, KeyValuePair<string, object?> tag2, KeyValuePair<string, object?> tag3, KeyValuePair<string, object?> tag4,
-                              KeyValuePair<string, object?> tag5, KeyValuePair<string, object?> tag6, KeyValuePair<string, object?> tag7)
-        {
-            Tag1 = tag1;
-            Tag2 = tag2;
-            Tag3 = tag3;
-            Tag4 = tag4;
-            Tag5 = tag5;
-            Tag6 = tag6;
-            Tag7 = tag7;
-        }
-    }
-
-    [StructLayout(LayoutKind.Sequential)]
-    internal struct EightTagsBag
-    {
-        internal KeyValuePair<string, object?> Tag1;
-        internal KeyValuePair<string, object?> Tag2;
-        internal KeyValuePair<string, object?> Tag3;
-        internal KeyValuePair<string, object?> Tag4;
-        internal KeyValuePair<string, object?> Tag5;
-        internal KeyValuePair<string, object?> Tag6;
-        internal KeyValuePair<string, object?> Tag7;
-        internal KeyValuePair<string, object?> Tag8;
-        internal EightTagsBag(KeyValuePair<string, object?> tag1, KeyValuePair<string, object?> tag2, KeyValuePair<string, object?> tag3, KeyValuePair<string, object?> tag4,
-                              KeyValuePair<string, object?> tag5, KeyValuePair<string, object?> tag6, KeyValuePair<string, object?> tag7, KeyValuePair<string, object?> tag8)
-        {
-            Tag1 = tag1;
-            Tag2 = tag2;
-            Tag3 = tag3;
-            Tag4 = tag4;
-            Tag5 = tag5;
-            Tag6 = tag6;
-            Tag7 = tag7;
-            Tag8 = tag8;
-        }
-    }
-
     /// <summary>
     /// Instrument{T} is the base class from which all non-observable instruments will inherit from.
     /// </summary>
@@ -202,88 +98,17 @@ namespace System.Diagnostics.Metrics
         /// Record the measurement by notifying all <see cref="MeterListener" /> objects which listening to this instrument.
         /// </summary>
         /// <param name="measurement">The measurement value.</param>
-        /// <param name="tag1">A first key-value pair tag associated with the measurement.</param>
-        /// <param name="tag2">A second key-value pair tag associated with the measurement.</param>
-        /// <param name="tag3">A third key-value pair tag associated with the measurement.</param>
-        /// <param name="tag4">A fourth key-value pair tag associated with the measurement.</param>
-        protected void RecordMeasurement(T measurement, KeyValuePair<string, object?> tag1, KeyValuePair<string, object?> tag2, KeyValuePair<string, object?> tag3, KeyValuePair<string, object?> tag4)
+        /// <param name="tagList">A <see cref="T:System.Diagnostics.TagList" /> of tags associated with the measurement.</param>
+        protected void RecordMeasurement(T measurement, in TagList tagList)
         {
-            FourTagsBag tags = new FourTagsBag(tag1, tag2, tag3, tag4);
+            KeyValuePair<string, object?>[]? tags = tagList.Tags;
+            if (tags is not null)
+            {
+                RecordMeasurement(measurement, tags.AsSpan().Slice(0, tagList.Count));
+                return;
+            }
 
-            RecordMeasurement(measurement, MemoryMarshal.CreateReadOnlySpan(ref tags.Tag1, 4));
-        }
-
-        /// <summary>
-        /// Record the measurement by notifying all <see cref="MeterListener" /> objects which listening to this instrument.
-        /// </summary>
-        /// <param name="measurement">The measurement value.</param>
-        /// <param name="tag1">A first key-value pair tag associated with the measurement.</param>
-        /// <param name="tag2">A second key-value pair tag associated with the measurement.</param>
-        /// <param name="tag3">A third key-value pair tag associated with the measurement.</param>
-        /// <param name="tag4">A fourth key-value pair tag associated with the measurement.</param>
-        /// <param name="tag5">A fifth key-value pair tag associated with the measurement.</param>
-        protected void RecordMeasurement(T measurement, KeyValuePair<string, object?> tag1, KeyValuePair<string, object?> tag2, KeyValuePair<string, object?> tag3, KeyValuePair<string, object?> tag4,
-                                        KeyValuePair<string, object?> tag5)
-        {
-            FiveTagsBag tags = new FiveTagsBag(tag1, tag2, tag3, tag4, tag5);
-
-            RecordMeasurement(measurement, MemoryMarshal.CreateReadOnlySpan(ref tags.Tag1, 5));
-        }
-        /// <summary>
-        /// Record the measurement by notifying all <see cref="MeterListener" /> objects which listening to this instrument.
-        /// </summary>
-        /// <param name="measurement">The measurement value.</param>
-        /// <param name="tag1">A first key-value pair tag associated with the measurement.</param>
-        /// <param name="tag2">A second key-value pair tag associated with the measurement.</param>
-        /// <param name="tag3">A third key-value pair tag associated with the measurement.</param>
-        /// <param name="tag4">A fourth key-value pair tag associated with the measurement.</param>
-        /// <param name="tag5">A fifth key-value pair tag associated with the measurement.</param>
-        /// <param name="tag6">A sixth key-value pair tag associated with the measurement.</param>
-        protected void RecordMeasurement(T measurement, KeyValuePair<string, object?> tag1, KeyValuePair<string, object?> tag2, KeyValuePair<string, object?> tag3, KeyValuePair<string, object?> tag4,
-                                        KeyValuePair<string, object?> tag5, KeyValuePair<string, object?> tag6)
-        {
-            SixTagsBag tags = new SixTagsBag(tag1, tag2, tag3, tag4, tag5, tag6);
-
-            RecordMeasurement(measurement, MemoryMarshal.CreateReadOnlySpan(ref tags.Tag1, 6));
-        }
-
-        /// <summary>
-        /// Record the measurement by notifying all <see cref="MeterListener" /> objects which listening to this instrument.
-        /// </summary>
-        /// <param name="measurement">The measurement value.</param>
-        /// <param name="tag1">A first key-value pair tag associated with the measurement.</param>
-        /// <param name="tag2">A second key-value pair tag associated with the measurement.</param>
-        /// <param name="tag3">A third key-value pair tag associated with the measurement.</param>
-        /// <param name="tag4">A fourth key-value pair tag associated with the measurement.</param>
-        /// <param name="tag5">A fifth key-value pair tag associated with the measurement.</param>
-        /// <param name="tag6">A sixth key-value pair tag associated with the measurement.</param>
-        /// <param name="tag7">A seventh key-value pair tag associated with the measurement.</param>
-        protected void RecordMeasurement(T measurement, KeyValuePair<string, object?> tag1, KeyValuePair<string, object?> tag2, KeyValuePair<string, object?> tag3, KeyValuePair<string, object?> tag4,
-                                        KeyValuePair<string, object?> tag5, KeyValuePair<string, object?> tag6, KeyValuePair<string, object?> tag7)
-        {
-            SevenTagsBag tags = new SevenTagsBag(tag1, tag2, tag3, tag4, tag5, tag6, tag7);
-
-            RecordMeasurement(measurement, MemoryMarshal.CreateReadOnlySpan(ref tags.Tag1, 7));
-        }
-
-        /// <summary>
-        /// Record the measurement by notifying all <see cref="MeterListener" /> objects which listening to this instrument.
-        /// </summary>
-        /// <param name="measurement">The measurement value.</param>
-        /// <param name="tag1">A first key-value pair tag associated with the measurement.</param>
-        /// <param name="tag2">A second key-value pair tag associated with the measurement.</param>
-        /// <param name="tag3">A third key-value pair tag associated with the measurement.</param>
-        /// <param name="tag4">A fourth key-value pair tag associated with the measurement.</param>
-        /// <param name="tag5">A fifth key-value pair tag associated with the measurement.</param>
-        /// <param name="tag6">A sixth key-value pair tag associated with the measurement.</param>
-        /// <param name="tag7">A seventh key-value pair tag associated with the measurement.</param>
-        /// <param name="tag8">An eighth key-value pair tag associated with the measurement.</param>
-        protected void RecordMeasurement(T measurement, KeyValuePair<string, object?> tag1, KeyValuePair<string, object?> tag2, KeyValuePair<string, object?> tag3, KeyValuePair<string, object?> tag4,
-                                        KeyValuePair<string, object?> tag5, KeyValuePair<string, object?> tag6, KeyValuePair<string, object?> tag7, KeyValuePair<string, object?> tag8)
-        {
-            EightTagsBag tags = new EightTagsBag(tag1, tag2, tag3, tag4, tag5, tag6, tag7, tag8);
-
-            RecordMeasurement(measurement, MemoryMarshal.CreateReadOnlySpan(ref tags.Tag1, 8));
-        }
+            RecordMeasurement(measurement, MemoryMarshal.CreateReadOnlySpan(ref Unsafe.AsRef(in tagList.Tag1), tagList.Count));
+       }
     }
 }

@@ -69,127 +69,42 @@ namespace System.Diagnostics.Metrics
             ts_tags = tags;
         }
 
-        /// <summary>
+         /// <summary>
         /// Record the measurement by notifying all <see cref="MeterListener" /> objects which listening to this instrument.
         /// </summary>
         /// <param name="measurement">The measurement value.</param>
-        /// <param name="tag1">A first key-value pair tag associated with the measurement.</param>
-        /// <param name="tag2">A second key-value pair tag associated with the measurement.</param>
-        /// <param name="tag3">A third key-value pair tag associated with the measurement.</param>
-        /// <param name="tag4">A fourth key-value pair tag associated with the measurement.</param>
-        protected void RecordMeasurement(T measurement, KeyValuePair<string, object?> tag1, KeyValuePair<string, object?> tag2, KeyValuePair<string, object?> tag3, KeyValuePair<string, object?> tag4)
+        /// <param name="tagList">A <see cref="T:System.Diagnostics.TagList" /> of tags associated with the measurement.</param>
+       protected void RecordMeasurement(T measurement, in TagList tagList)
         {
-            var tags = ts_tags ?? new KeyValuePair<string, object?>[MaxTagsCount];
-            ts_tags = null;
-            tags[0] = tag1;
-            tags[1] = tag2;
-            tags[2] = tag3;
-            tags[3] = tag4;
-            RecordMeasurement(measurement, tags.AsSpan().Slice(0, 4));
-            ts_tags = tags;
-        }
+            KeyValuePair<string, object?>[]? tags = tagList.Tags;
+            if (tags is not null)
+            {
+                RecordMeasurement(measurement, tags.AsSpan().Slice(0, tagList.Count));
+                return;
+            }
 
-        /// <summary>
-        /// Record the measurement by notifying all <see cref="MeterListener" /> objects which listening to this instrument.
-        /// </summary>
-        /// <param name="measurement">The measurement value.</param>
-        /// <param name="tag1">A first key-value pair tag associated with the measurement.</param>
-        /// <param name="tag2">A second key-value pair tag associated with the measurement.</param>
-        /// <param name="tag3">A third key-value pair tag associated with the measurement.</param>
-        /// <param name="tag4">A fourth key-value pair tag associated with the measurement.</param>
-        /// <param name="tag5">A fifth key-value pair tag associated with the measurement.</param>
-        protected void RecordMeasurement(T measurement, KeyValuePair<string, object?> tag1, KeyValuePair<string, object?> tag2, KeyValuePair<string, object?> tag3, KeyValuePair<string, object?> tag4,
-                                         KeyValuePair<string, object?> tag5)
-        {
-            var tags = ts_tags ?? new KeyValuePair<string, object?>[MaxTagsCount];
-            ts_tags = null;
-            tags[0] = tag1;
-            tags[1] = tag2;
-            tags[2] = tag3;
-            tags[3] = tag4;
-            tags[4] = tag5;
-            RecordMeasurement(measurement, tags.AsSpan().Slice(0, 5));
-            ts_tags = tags;
-        }
+            tags = ts_tags ?? new KeyValuePair<string, object?>[MaxTagsCount];
+            Debug.Assert(tagList.Count <= MaxTagsCount);
+            switch (tagList.Count)
+            {
+                case 8: tags[7] = tagList.Tag8; goto case 7;
+                case 7: tags[6] = tagList.Tag7; goto case 6;
+                case 6: tags[5] = tagList.Tag6; goto case 5;
+                case 5: tags[4] = tagList.Tag5; goto case 4;
+                case 4: tags[3] = tagList.Tag4; goto case 3;
+                case 3: tags[2] = tagList.Tag3; goto case 2;
+                case 2: tags[1] = tagList.Tag2; goto case 1;
+                case 1: tags[0] = tagList.Tag1; break;
+                case 0: return; // no need to report anything
+                default:
+                    Debug.Assert(false);
+                    return;
+            }
 
-        /// <summary>
-        /// Record the measurement by notifying all <see cref="MeterListener" /> objects which listening to this instrument.
-        /// </summary>
-        /// <param name="measurement">The measurement value.</param>
-        /// <param name="tag1">A first key-value pair tag associated with the measurement.</param>
-        /// <param name="tag2">A second key-value pair tag associated with the measurement.</param>
-        /// <param name="tag3">A third key-value pair tag associated with the measurement.</param>
-        /// <param name="tag4">A fourth key-value pair tag associated with the measurement.</param>
-        /// <param name="tag5">A fifth key-value pair tag associated with the measurement.</param>
-        /// <param name="tag6">A sixth key-value pair tag associated with the measurement.</param>
-        protected void RecordMeasurement(T measurement, KeyValuePair<string, object?> tag1, KeyValuePair<string, object?> tag2, KeyValuePair<string, object?> tag3, KeyValuePair<string, object?> tag4,
-                                         KeyValuePair<string, object?> tag5, KeyValuePair<string, object?> tag6)
-        {
-            var tags = ts_tags ?? new KeyValuePair<string, object?>[MaxTagsCount];
             ts_tags = null;
-            tags[0] = tag1;
-            tags[1] = tag2;
-            tags[2] = tag3;
-            tags[3] = tag4;
-            tags[4] = tag5;
-            tags[5] = tag6;
-            RecordMeasurement(measurement, tags.AsSpan().Slice(0, 6));
-            ts_tags = tags;
-        }
 
-        /// <summary>
-        /// Record the measurement by notifying all <see cref="MeterListener" /> objects which listening to this instrument.
-        /// </summary>
-        /// <param name="measurement">The measurement value.</param>
-        /// <param name="tag1">A first key-value pair tag associated with the measurement.</param>
-        /// <param name="tag2">A second key-value pair tag associated with the measurement.</param>
-        /// <param name="tag3">A third key-value pair tag associated with the measurement.</param>
-        /// <param name="tag4">A fourth key-value pair tag associated with the measurement.</param>
-        /// <param name="tag5">A fifth key-value pair tag associated with the measurement.</param>
-        /// <param name="tag6">A sixth key-value pair tag associated with the measurement.</param>
-        /// <param name="tag7">A seventh key-value pair tag associated with the measurement.</param>
-        protected void RecordMeasurement(T measurement, KeyValuePair<string, object?> tag1, KeyValuePair<string, object?> tag2, KeyValuePair<string, object?> tag3, KeyValuePair<string, object?> tag4,
-                                         KeyValuePair<string, object?> tag5, KeyValuePair<string, object?> tag6, KeyValuePair<string, object?> tag7)
-        {
-            var tags = ts_tags ?? new KeyValuePair<string, object?>[MaxTagsCount];
-            ts_tags = null;
-            tags[0] = tag1;
-            tags[1] = tag2;
-            tags[2] = tag3;
-            tags[3] = tag4;
-            tags[4] = tag5;
-            tags[5] = tag6;
-            tags[6] = tag7;
-            RecordMeasurement(measurement, tags.AsSpan().Slice(0, 7));
-            ts_tags = tags;
-        }
+            RecordMeasurement(measurement, tags.AsSpan().Slice(0, tagList.Count));
 
-        /// <summary>
-        /// Record the measurement by notifying all <see cref="MeterListener" /> objects which listening to this instrument.
-        /// </summary>
-        /// <param name="measurement">The measurement value.</param>
-        /// <param name="tag1">A first key-value pair tag associated with the measurement.</param>
-        /// <param name="tag2">A second key-value pair tag associated with the measurement.</param>
-        /// <param name="tag3">A third key-value pair tag associated with the measurement.</param>
-        /// <param name="tag4">A fourth key-value pair tag associated with the measurement.</param>
-        /// <param name="tag5">A fifth key-value pair tag associated with the measurement.</param>
-        /// <param name="tag6">A sixth key-value pair tag associated with the measurement.</param>
-        /// <param name="tag7">A seventh key-value pair tag associated with the measurement.</param>
-        /// <param name="tag8">An eighth key-value pair tag associated with the measurement.</param>
-        protected void RecordMeasurement(T measurement, KeyValuePair<string, object?> tag1, KeyValuePair<string, object?> tag2, KeyValuePair<string, object?> tag3, KeyValuePair<string, object?> tag4,
-                                         KeyValuePair<string, object?> tag5, KeyValuePair<string, object?> tag6, KeyValuePair<string, object?> tag7, KeyValuePair<string, object?> tag8)
-        {
-            var tags = ts_tags ?? new KeyValuePair<string, object?>[MaxTagsCount];
-            ts_tags = null;
-            tags[0] = tag1;
-            tags[1] = tag2;
-            tags[2] = tag3;
-            tags[3] = tag4;
-            tags[4] = tag5;
-            tags[5] = tag6;
-            tags[6] = tag7;
-            tags[7] = tag8;
-            RecordMeasurement(measurement, tags.AsSpan().Slice(0, 8));
             ts_tags = tags;
         }
     }

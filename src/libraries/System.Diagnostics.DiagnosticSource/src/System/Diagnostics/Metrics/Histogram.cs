@@ -57,73 +57,6 @@ namespace System.Diagnostics.Metrics
         /// Record a measurement value.
         /// </summary>
         /// <param name="value">The measurement value.</param>
-        /// <param name="tag1">A first key-value pair tag associated with the measurement.</param>
-        /// <param name="tag2">A second key-value pair tag associated with the measurement.</param>
-        /// <param name="tag3">A third key-value pair tag associated with the measurement.</param>
-        /// <param name="tag4">A fourth key-value pair tag associated with the measurement.</param>
-        public void Record(T value, KeyValuePair<string, object?> tag1, KeyValuePair<string, object?> tag2, KeyValuePair<string, object?> tag3, KeyValuePair<string, object?> tag4)
-                            => RecordMeasurement(value, tag1, tag2, tag3, tag4);
-
-        /// <summary>
-        /// Record a measurement value.
-        /// </summary>
-        /// <param name="value">The measurement value.</param>
-        /// <param name="tag1">A first key-value pair tag associated with the measurement.</param>
-        /// <param name="tag2">A second key-value pair tag associated with the measurement.</param>
-        /// <param name="tag3">A third key-value pair tag associated with the measurement.</param>
-        /// <param name="tag4">A fourth key-value pair tag associated with the measurement.</param>
-        /// <param name="tag5">A fifth key-value pair tag associated with the measurement.</param>
-        public void Record(T value, KeyValuePair<string, object?> tag1, KeyValuePair<string, object?> tag2, KeyValuePair<string, object?> tag3, KeyValuePair<string, object?> tag4,
-                            KeyValuePair<string, object?> tag5) => RecordMeasurement(value, tag1, tag2, tag3, tag4, tag5);
-
-        /// <summary>
-        /// Record a measurement value.
-        /// </summary>
-        /// <param name="value">The measurement value.</param>
-        /// <param name="tag1">A first key-value pair tag associated with the measurement.</param>
-        /// <param name="tag2">A second key-value pair tag associated with the measurement.</param>
-        /// <param name="tag3">A third key-value pair tag associated with the measurement.</param>
-        /// <param name="tag4">A fourth key-value pair tag associated with the measurement.</param>
-        /// <param name="tag5">A fifth key-value pair tag associated with the measurement.</param>
-        /// <param name="tag6">A sixth key-value pair tag associated with the measurement.</param>
-        public void Record(T value, KeyValuePair<string, object?> tag1, KeyValuePair<string, object?> tag2, KeyValuePair<string, object?> tag3, KeyValuePair<string, object?> tag4,
-                            KeyValuePair<string, object?> tag5, KeyValuePair<string, object?> tag6) => RecordMeasurement(value, tag1, tag2, tag3, tag4, tag5, tag6);
-
-        /// <summary>
-        /// Record a measurement value.
-        /// </summary>
-        /// <param name="value">The measurement value.</param>
-        /// <param name="tag1">A first key-value pair tag associated with the measurement.</param>
-        /// <param name="tag2">A second key-value pair tag associated with the measurement.</param>
-        /// <param name="tag3">A third key-value pair tag associated with the measurement.</param>
-        /// <param name="tag4">A fourth key-value pair tag associated with the measurement.</param>
-        /// <param name="tag5">A fifth key-value pair tag associated with the measurement.</param>
-        /// <param name="tag6">A sixth key-value pair tag associated with the measurement.</param>
-        /// <param name="tag7">A seventh key-value pair tag associated with the measurement.</param>
-        public void Record(T value, KeyValuePair<string, object?> tag1, KeyValuePair<string, object?> tag2, KeyValuePair<string, object?> tag3, KeyValuePair<string, object?> tag4,
-                            KeyValuePair<string, object?> tag5, KeyValuePair<string, object?> tag6, KeyValuePair<string, object?> tag7) => RecordMeasurement(value, tag1, tag2, tag3, tag4, tag5, tag6, tag7);
-
-        /// <summary>
-        /// Record a measurement value.
-        /// </summary>
-        /// <param name="value">The measurement value.</param>
-        /// <param name="tag1">A first key-value pair tag associated with the measurement.</param>
-        /// <param name="tag2">A second key-value pair tag associated with the measurement.</param>
-        /// <param name="tag3">A third key-value pair tag associated with the measurement.</param>
-        /// <param name="tag4">A fourth key-value pair tag associated with the measurement.</param>
-        /// <param name="tag5">A fifth key-value pair tag associated with the measurement.</param>
-        /// <param name="tag6">A sixth key-value pair tag associated with the measurement.</param>
-        /// <param name="tag7">A seventh key-value pair tag associated with the measurement.</param>
-        /// <param name="tag8">An eighth key-value pair tag associated with the measurement.</param>
-        public void Record(T value, KeyValuePair<string, object?> tag1, KeyValuePair<string, object?> tag2, KeyValuePair<string, object?> tag3,
-                            KeyValuePair<string, object?> tag4, KeyValuePair<string, object?> tag5, KeyValuePair<string, object?> tag6, KeyValuePair<string, object?> tag7, KeyValuePair<string, object?> tag8)
-                            => RecordMeasurement(value, tag1, tag2, tag3, tag4, tag5, tag6, tag7, tag8);
-
-
-        /// <summary>
-        /// Record a measurement value.
-        /// </summary>
-        /// <param name="value">The measurement value.</param>
         /// <param name="tags">A span of key-value pair tags associated with the measurement.</param>
         public void Record(T value, ReadOnlySpan<KeyValuePair<string, object?>> tags) => RecordMeasurement(value, tags);
 
@@ -133,5 +66,12 @@ namespace System.Diagnostics.Metrics
         /// <param name="value">The measurement value.</param>
         /// <param name="tags">A list of key-value pair tags associated with the measurement.</param>
         public void Record(T value, params KeyValuePair<string, object?>[] tags) => RecordMeasurement(value, tags.AsSpan());
+
+        /// <summary>
+        /// Record a measurement value.
+        /// </summary>
+        /// <param name="value">The measurement value.</param>
+        /// <param name="tagList">A <see cref="T:System.Diagnostics.TagList" /> of tags associated with the measurement.</param>
+        public void Record(T value, in TagList tagList) => RecordMeasurement(value, in tagList);
     }
 }
