@@ -60,13 +60,7 @@ namespace BINDER_SPACE
         ULONG Release();
 
         LPCWSTR GetSimpleName();
-
-        STDMETHOD(BindAssemblyByName)(
-            /* [in] */ AssemblyNameData *pAssemblyNameData,
-            /* [retval][out] */ BINDER_SPACE::Assembly **ppAssembly);
-
         STDMETHOD(GetBinderID)(UINT_PTR *pBinderId);
-
         STDMETHOD(GetLoaderAllocator)(LPVOID* pLoaderAllocator);
 
         // --------------------------------------------------------------------
