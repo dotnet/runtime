@@ -1171,8 +1171,9 @@ void CodeGen::genPutArgSplit(GenTreePutArgSplit* treeNode)
             if (regIndex >= treeNode->gtNumRegs)
             {
                 if (firstOnStackOffs == UINT_MAX)
+                {
                     firstOnStackOffs = use.GetOffset();
-
+                }
                 var_types type = nextArgNode->TypeGet();
                 emitAttr  attr = emitTypeSize(type);
 
