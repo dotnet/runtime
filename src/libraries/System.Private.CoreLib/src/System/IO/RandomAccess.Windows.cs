@@ -432,7 +432,7 @@ namespace System.IO
             }
 
             if (CanUseScatterGatherWindowsAPIs(handle)
-                && TryPrepareBuffersForScatterGatherWindowsAPIs(buffers, default(MemoryHandler), out MemoryHandle[]? pinnedBuffers, out int totalBytes))
+                && TryPrepareScatterGatherBuffers(buffers, default(MemoryHandler), out MemoryHandle[]? pinnedBuffers, out int totalBytes))
             {
                 try
                 {
@@ -490,9 +490,9 @@ namespace System.IO
         // 2. exactly one page long each (our own requirement to prevent partial reads)
         // 3. not bigger than 2^32 - 1 in total
         // This function is also responsible for pinning the buffers if they
-        // are suitable and they must be unpinned after the I/O operation.
+        // are suitable and they must be unpinned after the I/O operation completes.
         // The total size of the buffers is also returned.
-        private static bool TryPrepareBuffersForScatterGatherWindowsAPIs<T, THandler>(IReadOnlyList<T> buffers,
+        private static bool TryPrepareScatterGatherBuffers<T, THandler>(IReadOnlyList<T> buffers,
             THandler handler, [NotNullWhen(true)] out MemoryHandle[]? pinnedBuffers, out int totalBytes)
             where THandler: struct, IMemoryHandler<T>
         {
@@ -676,7 +676,7 @@ namespace System.IO
             }
 
             if (CanUseScatterGatherWindowsAPIs(handle)
-                && TryPrepareBuffersForScatterGatherWindowsAPIs(buffers, default(ReadOnlyMemoryHandler), out MemoryHandle[]? pinnedBuffers, out int totalBytes))
+                && TryPrepareScatterGatherBuffers(buffers, default(ReadOnlyMemoryHandler), out MemoryHandle[]? pinnedBuffers, out int totalBytes))
             {
                 try
                 {
