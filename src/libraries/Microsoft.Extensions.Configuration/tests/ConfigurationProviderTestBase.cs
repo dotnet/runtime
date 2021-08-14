@@ -111,7 +111,7 @@ Section3:
 
         private void AssertFormatOrArgumentException(Action test)
         {
-            Exception caught = null;
+            Exception? caught = null;
             try
             {
                 test();
@@ -133,41 +133,41 @@ Section3:
             var options = configuration.Get<AsOptions>();
 
             Assert.Equal("Value1", options.Key1);
-            Assert.Equal("Value12", options.Section1.Key2);
-            Assert.Equal("Value123", options.Section1.Section2.Key3);
-            Assert.Equal("Value344", options.Section3.Section4.Key4);
-            Assert.Equal(new[] { "ArrayValue0", "ArrayValue1", "ArrayValue2" }, options.Section1.Section2.Key3a);
+            Assert.Equal("Value12", options.Section1?.Key2);
+            Assert.Equal("Value123", options.Section1?.Section2?.Key3);
+            Assert.Equal("Value344", options.Section3?.Section4?.Key4);
+            Assert.Equal(new[] { "ArrayValue0", "ArrayValue1", "ArrayValue2" }, options.Section1?.Section2?.Key3a);
         }
 
         public class AsOptions
         {
-            public string Key1 { get; set; }
+            public string? Key1 { get; set; }
 
-            public Section1AsOptions Section1 { get; set; }
-            public Section3AsOptions Section3 { get; set; }
+            public Section1AsOptions? Section1 { get; set; }
+            public Section3AsOptions? Section3 { get; set; }
         }
 
         public class Section1AsOptions
         {
-            public string Key2 { get; set; }
+            public string? Key2 { get; set; }
 
-            public Section2AsOptions Section2 { get; set; }
+            public Section2AsOptions? Section2 { get; set; }
         }
 
         public class Section2AsOptions
         {
-            public string Key3 { get; set; }
-            public string[] Key3a { get; set; }
+            public string? Key3 { get; set; }
+            public string[]? Key3a { get; set; }
         }
 
         public class Section3AsOptions
         {
-            public Section4AsOptions Section4 { get; set; }
+            public Section4AsOptions? Section4 { get; set; }
         }
 
         public class Section4AsOptions
         {
-            public string Key4 { get; set; }
+            public string? Key4 { get; set; }
         }
 
         protected virtual void AssertDebugView(
@@ -186,7 +186,7 @@ Section3:
         protected virtual void AssertConfig(
             IConfigurationRoot config,
             bool expectNulls = false,
-            string nullValue = null)
+            string? nullValue = null)
         {
             var value1 = expectNulls ? nullValue : "Value1";
             var value12 = expectNulls ? nullValue : "Value12";
@@ -239,7 +239,7 @@ Section3:
             var section3 = config.GetSection("Section3");
             Assert.Equal("Section3", section3.Path, StringComparer.InvariantCultureIgnoreCase);
             Assert.Null(section3.Value);
-            
+
             var section4 = config.GetSection("Section3:Section4");
             Assert.Equal(value344, section4["Key4"], StringComparer.InvariantCultureIgnoreCase);
             Assert.Equal("Section3:Section4", section4.Path, StringComparer.InvariantCultureIgnoreCase);
@@ -340,7 +340,7 @@ Section3:
 
         protected static (IConfigurationProvider Provider, Action Initializer) LoadUsingMemoryProvider(TestSection testConfig)
         {
-            var values = new List<KeyValuePair<string, string>>();
+            var values = new List<KeyValuePair<string, string?>>();
             SectionToValues(testConfig, "", values);
 
             return (new MemoryConfigurationProvider(
@@ -348,17 +348,18 @@ Section3:
                     {
                         InitialData = values
                     }),
-                () => { });
+                () => { }
+            );
         }
 
         protected static void SectionToValues(
             TestSection section,
             string sectionName,
-            IList<KeyValuePair<string, string>> values)
+            IList<KeyValuePair<string, string?>> values)
         {
             foreach (var tuple in section.Values.SelectMany(e => e.Value.Expand(e.Key)))
             {
-                values.Add(new KeyValuePair<string, string>(sectionName + tuple.Key, tuple.Value));
+                values.Add(new KeyValuePair<string, string?>(sectionName + tuple.Key, tuple.Value));
             }
 
             foreach (var tuple in section.Sections)
@@ -372,26 +373,26 @@ Section3:
 
         protected class TestKeyValue
         {
-            public object Value { get; }
+            public object? Value { get; }
 
-            public TestKeyValue(string value)
+            public TestKeyValue(string? value)
             {
                 Value = value;
             }
 
-            public TestKeyValue(string[] values)
+            public TestKeyValue(string?[]? values)
             {
                 Value = values;
             }
 
-            public static implicit operator TestKeyValue(string value) => new TestKeyValue(value);
-            public static implicit operator TestKeyValue(string[] values) => new TestKeyValue(values);
+            public static implicit operator TestKeyValue(string? value) => new TestKeyValue(value);
+            public static implicit operator TestKeyValue(string?[]? values) => new TestKeyValue(values);
 
-            public string[] AsArray => Value as string[];
+            public string[]? AsArray => Value as string[];
 
-            public string AsString => Value as string;
+            public string? AsString => Value as string;
 
-            public IEnumerable<(string Key, string Value)> Expand(string key)
+            public IEnumerable<(string Key, string? Value)> Expand(string key)
             {
                 if (AsArray == null)
                 {
@@ -673,20 +674,20 @@ Section3:
             public static TestSection NullsTestConfig { get; }
                 = new TestSection
                 {
-                    Values = new[] { ("Key1", new TestKeyValue((string)null)) },
+                    Values = new[] { ("Key1", new TestKeyValue((string?)null)) },
                     Sections = new[]
                     {
                         ("Section1", new TestSection
                         {
-                            Values = new[] {("Key2", new TestKeyValue((string)null))},
+                            Values = new[] {("Key2", new TestKeyValue((string?)null))},
                             Sections = new[]
                             {
                                 ("Section2", new TestSection
                                 {
                                     Values = new[]
                                     {
-                                        ("Key3", new TestKeyValue((string)null)),
-                                        ("Key3a", (TestKeyValue)new string[] {null, null, null})
+                                        ("Key3", new TestKeyValue((string?)null)),
+                                        ("Key3a", (TestKeyValue)new string?[] {null, null, null})
                                     },
                                 })
                             }
@@ -697,7 +698,7 @@ Section3:
                             {
                                 ("Section4", new TestSection
                                 {
-                                    Values = new[] {("Key4", new TestKeyValue((string)null))}
+                                    Values = new[] {("Key4", new TestKeyValue((string?)null))}
                                 })
                             }
                         })

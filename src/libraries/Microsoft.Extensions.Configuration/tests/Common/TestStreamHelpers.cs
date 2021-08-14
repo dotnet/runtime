@@ -12,7 +12,7 @@ namespace Microsoft.Extensions.Configuration.Test
     {
         public static readonly string ArbitraryFilePath = "Unit tests do not touch file system";
 
-        public static IFileProvider StringToFileProvider(string str)
+        public static IFileProvider StringToFileProvider(string? str)
         {
             return new TestFileProvider(str);
 
@@ -20,60 +20,24 @@ namespace Microsoft.Extensions.Configuration.Test
 
         private class TestFile : IFileInfo
         {
-            private readonly string _data;
+            private readonly string? _data;
 
-            public TestFile(string str)
+            public TestFile(string? str)
             {
                 _data = str;
             }
 
-            public bool Exists
-            {
-                get
-                {
-                    return true;
-                }
-            }
+            public bool Exists => true;
 
-            public bool IsDirectory
-            {
-                get
-                {
-                    return false;
-                }
-            }
+            public bool IsDirectory => false;
 
-            public DateTimeOffset LastModified
-            {
-                get
-                {
-                    throw new NotImplementedException();
-                }
-            }
+            public DateTimeOffset LastModified => throw new NotImplementedException();
 
-            public long Length
-            {
-                get
-                {
-                    return 0;
-                }
-            }
+            public long Length => 0;
 
-            public string Name
-            {
-                get
-                {
-                    return null;
-                }
-            }
+            public string Name => string.Empty;
 
-            public string PhysicalPath
-            {
-                get
-                {
-                    return null;
-                }
-            }
+            public string? PhysicalPath => null;
 
             public Stream CreateReadStream()
             {
@@ -83,13 +47,13 @@ namespace Microsoft.Extensions.Configuration.Test
 
         private class TestFileProvider : IFileProvider
         {
-            private string _data;
-            public TestFileProvider(string str)
+            private string? _data;
+            public TestFileProvider(string? str)
             {
                 _data = str;
             }
 
-            public IDirectoryContents GetDirectoryContents(string subpath)
+            public IDirectoryContents GetDirectoryContents(string? subpath)
             {
                 throw new NotImplementedException();
             }
@@ -99,13 +63,13 @@ namespace Microsoft.Extensions.Configuration.Test
                 return new TestFile(_data);
             }
 
-            public IChangeToken Watch(string filter)
+            public IChangeToken Watch(string? filter)
             {
                 throw new NotImplementedException();
             }
         }
 
-        public static Stream StringToStream(string str)
+        public static Stream StringToStream(string? str)
         {
             var memStream = new MemoryStream();
             var textWriter = new StreamWriter(memStream);

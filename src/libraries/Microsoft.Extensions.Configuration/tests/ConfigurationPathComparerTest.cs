@@ -127,7 +127,7 @@ namespace Microsoft.Extensions.Configuration.Test
             ComparerTest("abc:def:22:jkl", "abc:def:10:jkl", 1);
         }
 
-        private static void ComparerTest(string a, string b, int expectedSign)
+        private static void ComparerTest(string? a, string? b, int expectedSign)
         {
             var result = ConfigurationKeyComparer.Instance.Compare(a, b);
             Assert.Equal(expectedSign, Math.Sign(result));
