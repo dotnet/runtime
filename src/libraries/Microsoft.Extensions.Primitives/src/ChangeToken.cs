@@ -141,7 +141,7 @@ namespace Microsoft.Extensions.Primitives
             public void Dispose()
             {
                 // If the previous value is disposable then dispose it, otherwise,
-                // now we've set the disposed sentinel 
+                // now we've set the disposed sentinel
                 Interlocked.Exchange(ref _disposable, _disposedSentinel)?.Dispose();
             }
 
