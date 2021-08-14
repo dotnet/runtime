@@ -35,5 +35,8 @@ namespace Microsoft.Extensions.Logging.Generators.Tests.TestClasses
 
         [LoggerMessage(EventId = 6, Message = "")]
         public static partial void M6(ILogger logger, LogLevel level);
+
+        [LoggerMessage(EventId = 7, Message = "\"{Value1}\" -> \"{Value2}\"")]
+        public static partial void M7(ILogger logger, LogLevel logLevel, string value1, string value2);
     }
 }
