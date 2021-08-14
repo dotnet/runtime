@@ -58,7 +58,7 @@ namespace Microsoft.Extensions.Primitives
             private readonly Func<IChangeToken> _changeTokenProducer;
             private readonly Action<TState> _changeTokenConsumer;
             private readonly TState _state;
-            private IDisposable _disposable;
+            private IDisposable? _disposable;
 
             private static readonly NoopDisposable _disposedSentinel = new NoopDisposable();
 
@@ -100,7 +100,7 @@ namespace Microsoft.Extensions.Primitives
                     return;
                 }
 
-                IDisposable registraton = token.RegisterChangeCallback(s => ((ChangeTokenRegistration<TState>)s).OnChangeTokenFired(), this);
+                IDisposable registraton = token.RegisterChangeCallback(s => ((ChangeTokenRegistration<TState>?)s)?.OnChangeTokenFired(), this);
 
                 SetDisposable(registraton);
             }
@@ -110,7 +110,7 @@ namespace Microsoft.Extensions.Primitives
                 // We don't want to transition from _disposedSentinel => anything since it's terminal
                 // but we want to allow going from previously assigned disposable, to another
                 // disposable.
-                IDisposable current = Volatile.Read(ref _disposable);
+                IDisposable? current = Volatile.Read(ref _disposable);
 
                 // If Dispose was called, then immediately dispose the disposable
                 if (current == _disposedSentinel)
@@ -120,7 +120,7 @@ namespace Microsoft.Extensions.Primitives
                 }
 
                 // Otherwise, try to update the disposable
-                IDisposable previous = Interlocked.CompareExchange(ref _disposable, disposable, current);
+                IDisposable? previous = Interlocked.CompareExchange(ref _disposable, disposable, current);
 
                 if (previous == _disposedSentinel)
                 {
@@ -129,7 +129,7 @@ namespace Microsoft.Extensions.Primitives
                 }
                 else if (previous == current)
                 {
-                    // We successfuly assigned the _disposable field to disposable
+                    // We successfully assigned the _disposable field to disposable
                 }
                 else
                 {
@@ -142,7 +142,7 @@ namespace Microsoft.Extensions.Primitives
             {
                 // If the previous value is disposable then dispose it, otherwise,
                 // now we've set the disposed sentinel
-                Interlocked.Exchange(ref _disposable, _disposedSentinel).Dispose();
+                Interlocked.Exchange(ref _disposable, _disposedSentinel)?.Dispose();
             }
 
             private sealed class NoopDisposable : IDisposable
