@@ -621,7 +621,7 @@ namespace Microsoft.Extensions.Primitives
         {
             if (other == null)
             {
-                throw new ArgumentNullException(nameof(other)); 
+                throw new ArgumentNullException(nameof(other));
             }
 
             return Equals(this, new StringValues(other));
