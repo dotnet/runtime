@@ -22,7 +22,7 @@ namespace Microsoft.Extensions.FileProviders
         /// </summary>
         /// <param name="subpath">A path under the root directory.</param>
         /// <returns>A <see cref="IFileInfo"/> representing a non-existent file at the given path.</returns>
-        public IFileInfo GetFileInfo(string? subpath) => new NotFoundFileInfo(subpath);
+        public IFileInfo GetFileInfo(string subpath) => new NotFoundFileInfo(subpath);
 
         /// <summary>
         /// Returns a <see cref="IChangeToken"/> that monitors nothing.

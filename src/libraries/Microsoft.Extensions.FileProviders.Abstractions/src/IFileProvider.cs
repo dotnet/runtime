@@ -15,7 +15,7 @@ namespace Microsoft.Extensions.FileProviders
         /// </summary>
         /// <param name="subpath">Relative path that identifies the file.</param>
         /// <returns>The file information. Caller must check Exists property.</returns>
-        IFileInfo GetFileInfo(string? subpath);
+        IFileInfo GetFileInfo(string subpath);
 
         /// <summary>
         /// Enumerate a directory at the given path, if any.
