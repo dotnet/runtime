@@ -190,7 +190,7 @@ namespace Microsoft.Extensions.Primitives
         /// </summary>
         /// <param name="obj">An object to compare with this object.</param>
         /// <returns><see langword="true" /> if the current object is equal to the other parameter; otherwise, <see langword="false" />.</returns>
-        public override bool Equals(object? obj)
+        public override bool Equals([NotNullWhen(true)] object? obj)
         {
             return obj is StringSegment segment && Equals(segment);
         }

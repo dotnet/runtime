@@ -617,7 +617,7 @@ namespace Microsoft.Extensions.Primitives
         /// </summary>
         /// <param name="other">The string array to compare to this instance.</param>
         /// <returns><c>true</c> if the value of <paramref name="other"/> is the same as this instance; otherwise, <c>false</c>.</returns>
-        public bool Equals(string?[]? other) => other != null && Equals(this, new StringValues(other));
+        public bool Equals([NotNullWhen(true)] string?[]? other) => other != null && Equals(this, new StringValues(other));
 
         /// <inheritdoc cref="Equals(StringValues, string)" />
         public static bool operator ==(StringValues left, string? right) => Equals(left, new StringValues(right));
