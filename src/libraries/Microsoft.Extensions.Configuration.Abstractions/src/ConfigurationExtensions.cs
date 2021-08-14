@@ -74,7 +74,7 @@ namespace Microsoft.Extensions.Configuration
         /// Determines whether the section has a <see cref="IConfigurationSection.Value"/> or has children
         /// </summary>
         /// <param name="section">The <see cref="IConfigurationSection"/> to enumerate.</param>
-        /// <returns>A flag to indicate whether the section has values or not.</returns>
+        /// <returns><see langword="true" /> if the section has values or children; otherwise, <see langword="false" />.</returns>
         public static bool Exists(this IConfigurationSection section)
         {
             if (section == null)
