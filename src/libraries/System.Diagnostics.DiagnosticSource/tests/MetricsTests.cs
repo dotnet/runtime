@@ -879,11 +879,11 @@ namespace System.Diagnostics.Metrics.Tests
                          new KeyValuePair<string, object?>("Key6", "Value6"),
                          new KeyValuePair<string, object?>("Key7", "Value7"),
                          new KeyValuePair<string, object?>("Key8", "Value8"),
-                         new KeyValuePair<string, object?>("Key9", "Value8"),
+                         new KeyValuePair<string, object?>("Key9", "Value9"),
                          new KeyValuePair<string, object?>("Key10", "Value10"),
                          new KeyValuePair<string, object?>("Key11", "Value11"),
                          new KeyValuePair<string, object?>("Key12", "Value12"),
-                         new KeyValuePair<string, object?>("Key13", "Value12"),
+                         new KeyValuePair<string, object?>("Key13", "Value13"),
                     };
 
                     counter.Add(10, new TagList() { expectedTags[0], expectedTags[1], expectedTags[2], expectedTags[3], expectedTags[4], expectedTags[5], expectedTags[6], expectedTags[7],
