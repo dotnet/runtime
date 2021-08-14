@@ -54,7 +54,18 @@ namespace Microsoft.Extensions.FileProviders.Physical
                 return DateTime.MinValue;
             }
 
-            return FileSystemInfoHelper.GetFileLinkTargetLastWriteTimeUtc(_fileInfo) ?? _fileInfo.LastWriteTimeUtc;
+            DateTime? lastWriteTimeUtc = FileSystemInfoHelper.GetFileLinkTargetLastWriteTimeUtc(_fileInfo);
+
+            if (lastWriteTimeUtc == null)
+            {
+                try
+                {
+                    lastWriteTimeUtc = _fileInfo.LastWriteTimeUtc;
+                }
+                catch (IOException) { } // https://github.com/dotnet/runtime/issues/57221
+            }
+
+            return lastWriteTimeUtc.Value;
         }
 
         /// <summary>
