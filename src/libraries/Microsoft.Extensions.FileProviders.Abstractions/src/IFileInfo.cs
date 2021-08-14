@@ -12,7 +12,7 @@ namespace Microsoft.Extensions.FileProviders
     public interface IFileInfo
     {
         /// <summary>
-        /// True if resource exists in the underlying storage system.
+        /// True if resource exists in the underlying storage system
         /// </summary>
         bool Exists { get; }
 
