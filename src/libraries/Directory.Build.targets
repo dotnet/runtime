@@ -45,8 +45,6 @@
     <IsNETCoreAppRef Condition="'$(IsNETCoreAppRef)' == '' and
                                 '$(IsReferenceAssembly)' == 'true' and
                                 $(NetCoreAppLibrary.Contains('$(AssemblyName);'))">true</IsNETCoreAppRef>
-    <IsAspNetCoreApp Condition="$(AspNetCoreAppLibrary.Contains('$(AssemblyName);'))">true</IsAspNetCoreApp>
-
     <!-- By default, disable implicit framework references for NetCoreAppCurrent libraries. -->
     <DisableImplicitFrameworkReferences Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp' and
                                                    $([MSBuild]::VersionGreaterThanOrEquals($(TargetFrameworkVersion), '$(NETCoreAppCurrentVersion)')) and

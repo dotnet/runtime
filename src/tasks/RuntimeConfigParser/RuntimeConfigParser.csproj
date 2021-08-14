@@ -26,7 +26,7 @@
     <Compile Include="$(RepoRoot)src\libraries\System.Private.CoreLib\src\System\Diagnostics\CodeAnalysis\NullableAttributes.cs" Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'" />
   </ItemGroup>
 
-  <!-- GetFilesToPackage assists to place `RuntimeConfigParser.dll` in a NuGet package in Microsoft.NET.Runtime.RuntimeConfigParser.Task.pkgproj for external use -->
+  <!-- GetFilesToPackage assists to place `RuntimeConfigParser.dll` in a NuGet package in Microsoft.NET.Runtime.MonoTargets.Sdk.pkgproj for external use -->
   <Target Name="GetFilesToPackage" Returns="@(FilesToPackage)">
     <ItemGroup>
       <_PublishFramework Remove="@(_PublishFramework)" />
