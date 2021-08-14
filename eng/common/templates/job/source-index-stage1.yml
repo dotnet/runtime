@@ -35,14 +35,19 @@ jobs:
       packageType: sdk
       version: 3.1.x
 
-  - script: ${{ parameters.sourceIndexBuildCommand }}
-    displayName: Build Repository
+  - task: UseDotNet@2
+    displayName: Use .NET Core sdk
+    inputs:
+      useGlobalJson: true
 
   - script: |
       dotnet tool install BinLogToSln --version $(SourceIndexPackageVersion) --add-source $(SourceIndexPackageSource) --tool-path .source-index/tools
       dotnet tool install UploadIndexStage1 --version $(SourceIndexPackageVersion) --add-source $(SourceIndexPackageSource) --tool-path .source-index/tools
       echo ##vso[task.prependpath]$(Build.SourcesDirectory)/.source-index/tools
     displayName: Download Tools
+
+  - script: ${{ parameters.sourceIndexBuildCommand }}
+    displayName: Build Repository
 
   - script: BinLogToSln -i $(BinlogPath) -r $(Build.SourcesDirectory) -n $(Build.Repository.Name) -o .source-index/stage1output
     displayName: Process Binlog into indexable sln
