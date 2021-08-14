@@ -29,8 +29,8 @@ namespace Microsoft.Extensions.Configuration
         /// <param name="configuration">The configuration instance to bind.</param>
         /// <returns>The new instance of T if successful, default(T) otherwise.</returns>
         [RequiresUnreferencedCode(TrimmingWarningMessage)]
-        public static T Get<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] T>(this IConfiguration configuration)
-            => configuration.Get<T>(_ => { });
+        public static T? Get<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] T>(this IConfiguration configuration)
+            => configuration.Get<T>(null);
 
         /// <summary>
         /// Attempts to bind the configuration instance to a new instance of type T.
@@ -42,14 +42,14 @@ namespace Microsoft.Extensions.Configuration
         /// <param name="configureOptions">Configures the binder options.</param>
         /// <returns>The new instance of T if successful, default(T) otherwise.</returns>
         [RequiresUnreferencedCode(TrimmingWarningMessage)]
-        public static T Get<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] T>(this IConfiguration configuration, Action<BinderOptions> configureOptions)
+        public static T? Get<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] T>(this IConfiguration configuration, Action<BinderOptions>? configureOptions)
         {
             if (configuration == null)
             {
                 throw new ArgumentNullException(nameof(configuration));
             }
 
-            object result = configuration.Get(typeof(T), configureOptions);
+            object? result = configuration.Get(typeof(T), configureOptions);
             if (result == null)
             {
                 return default(T);
@@ -66,8 +66,8 @@ namespace Microsoft.Extensions.Configuration
         /// <param name="type">The type of the new instance to bind.</param>
         /// <returns>The new instance if successful, null otherwise.</returns>
         [RequiresUnreferencedCode(TrimmingWarningMessage)]
-        public static object Get(this IConfiguration configuration, Type type)
-            => configuration.Get(type, _ => { });
+        public static object? Get(this IConfiguration configuration, Type type)
+            => configuration.Get(type, null);
 
         /// <summary>
         /// Attempts to bind the configuration instance to a new instance of type T.
@@ -79,11 +79,11 @@ namespace Microsoft.Extensions.Configuration
         /// <param name="configureOptions">Configures the binder options.</param>
         /// <returns>The new instance if successful, null otherwise.</returns>
         [RequiresUnreferencedCode(TrimmingWarningMessage)]
-        public static object Get(
+        public static object? Get(
             this IConfiguration configuration,
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
             Type type,
-            Action<BinderOptions> configureOptions)
+            Action<BinderOptions>? configureOptions)
         {
             if (configuration == null)
             {
@@ -102,7 +102,7 @@ namespace Microsoft.Extensions.Configuration
         /// <param name="key">The key of the configuration section to bind.</param>
         /// <param name="instance">The object to bind.</param>
         [RequiresUnreferencedCode(InstanceGetTypeTrimmingWarningMessage)]
-        public static void Bind(this IConfiguration configuration, string key, object instance)
+        public static void Bind(this IConfiguration configuration, string key, object? instance)
             => configuration.GetSection(key).Bind(instance);
 
         /// <summary>
@@ -111,8 +111,8 @@ namespace Microsoft.Extensions.Configuration
         /// <param name="configuration">The configuration instance to bind.</param>
         /// <param name="instance">The object to bind.</param>
         [RequiresUnreferencedCode(InstanceGetTypeTrimmingWarningMessage)]
-        public static void Bind(this IConfiguration configuration, object instance)
-            => configuration.Bind(instance, o => { });
+        public static void Bind(this IConfiguration configuration, object? instance)
+            => configuration.Bind(instance, null);
 
         /// <summary>
         /// Attempts to bind the given object instance to configuration values by matching property names against configuration keys recursively.
@@ -121,7 +121,7 @@ namespace Microsoft.Extensions.Configuration
         /// <param name="instance">The object to bind.</param>
         /// <param name="configureOptions">Configures the binder options.</param>
         [RequiresUnreferencedCode(InstanceGetTypeTrimmingWarningMessage)]
-        public static void Bind(this IConfiguration configuration, object instance, Action<BinderOptions> configureOptions)
+        public static void Bind(this IConfiguration configuration, object? instance, Action<BinderOptions>? configureOptions)
         {
             if (configuration == null)
             {
@@ -144,7 +144,7 @@ namespace Microsoft.Extensions.Configuration
         /// <param name="key">The key of the configuration section's value to convert.</param>
         /// <returns>The converted value.</returns>
         [RequiresUnreferencedCode(TrimmingWarningMessage)]
-        public static T GetValue<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] T>(this IConfiguration configuration, string key)
+        public static T? GetValue<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] T>(this IConfiguration configuration, string key)
         {
             return GetValue(configuration, key, default(T));
         }
@@ -158,9 +158,9 @@ namespace Microsoft.Extensions.Configuration
         /// <param name="defaultValue">The default value to use if no value is found.</param>
         /// <returns>The converted value.</returns>
         [RequiresUnreferencedCode(TrimmingWarningMessage)]
-        public static T GetValue<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] T>(this IConfiguration configuration, string key, T defaultValue)
+        public static T? GetValue<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] T>(this IConfiguration configuration, string key, T defaultValue)
         {
-            return (T)GetValue(configuration, typeof(T), key, defaultValue);
+            return (T?)GetValue(configuration, typeof(T), key, defaultValue);
         }
 
         /// <summary>
@@ -171,7 +171,7 @@ namespace Microsoft.Extensions.Configuration
         /// <param name="key">The key of the configuration section's value to convert.</param>
         /// <returns>The converted value.</returns>
         [RequiresUnreferencedCode(TrimmingWarningMessage)]
-        public static object GetValue(
+        public static object? GetValue(
             this IConfiguration configuration,
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
             Type type,
@@ -189,14 +189,14 @@ namespace Microsoft.Extensions.Configuration
         /// <param name="defaultValue">The default value to use if no value is found.</param>
         /// <returns>The converted value.</returns>
         [RequiresUnreferencedCode(TrimmingWarningMessage)]
-        public static object GetValue(
+        public static object? GetValue(
             this IConfiguration configuration,
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
             Type type, string key,
-            object defaultValue)
+            object? defaultValue)
         {
             IConfigurationSection section = configuration.GetSection(key);
-            string value = section.Value;
+            string? value = section.Value;
             if (value != null)
             {
                 return ConvertValue(type, value, section.Path);
@@ -205,35 +205,37 @@ namespace Microsoft.Extensions.Configuration
         }
 
         [RequiresUnreferencedCode(PropertyTrimmingWarningMessage)]
-        private static void BindNonScalar(this IConfiguration configuration, object instance, BinderOptions options)
+        private static void BindNonScalar(this IConfiguration configuration, object? instance, BinderOptions options)
         {
-            if (instance != null)
+            if (instance == null)
             {
-                List<PropertyInfo> modelProperties = GetAllProperties(instance.GetType());
+                return;
+            }
 
-                if (options.ErrorOnUnknownConfiguration)
+            List<PropertyInfo> modelProperties = GetAllProperties(instance.GetType());
+
+            if (options.ErrorOnUnknownConfiguration)
+            {
+                HashSet<string> propertyNames = new(modelProperties.Select(mp => mp.Name),
+                    StringComparer.OrdinalIgnoreCase);
+
+                IEnumerable<IConfigurationSection> configurationSections = configuration.GetChildren();
+                List<string> missingPropertyNames = configurationSections
+                    .Where(cs => !propertyNames.Contains(cs.Key))
+                    .Select(mp => $"'{mp.Key}'")
+                    .ToList();
+
+                if (missingPropertyNames.Count > 0)
                 {
-                    HashSet<string> propertyNames = new(modelProperties.Select(mp => mp.Name),
-                        StringComparer.OrdinalIgnoreCase);
-
-                    IEnumerable<IConfigurationSection> configurationSections = configuration.GetChildren();
-                    List<string> missingPropertyNames = configurationSections
-                        .Where(cs => !propertyNames.Contains(cs.Key))
-                        .Select(mp => $"'{mp.Key}'")
-                        .ToList();
-
-                    if (missingPropertyNames.Count > 0)
-                    {
-                        throw new InvalidOperationException(SR.Format(SR.Error_MissingConfig,
-                            nameof(options.ErrorOnUnknownConfiguration), nameof(BinderOptions), instance.GetType(),
-                            string.Join(", ", missingPropertyNames)));
-                    }
+                    throw new InvalidOperationException(SR.Format(SR.Error_MissingConfig,
+                        nameof(options.ErrorOnUnknownConfiguration), nameof(BinderOptions), instance.GetType(),
+                        string.Join(", ", missingPropertyNames)));
                 }
+            }
 
-                foreach (PropertyInfo property in modelProperties)
-                {
-                    BindProperty(property, instance, configuration, options);
-                }
+            foreach (PropertyInfo property in modelProperties)
+            {
+                BindProperty(property, instance, configuration, options);
             }
         }
 
@@ -248,7 +250,7 @@ namespace Microsoft.Extensions.Configuration
                 return;
             }
 
-            object propertyValue = property.GetValue(instance);
+            object? propertyValue = property.GetValue(instance);
             bool hasSetter = property.SetMethod != null && (property.SetMethod.IsPublic || options.BindNonPublicProperties);
 
             if (propertyValue == null && !hasSetter)
@@ -267,17 +269,17 @@ namespace Microsoft.Extensions.Configuration
         }
 
         [RequiresUnreferencedCode("Cannot statically analyze what the element type is of the object collection in type so its members may be trimmed.")]
-        private static object BindToCollection(Type type, IConfiguration config, BinderOptions options)
+        private static object? BindToCollection(Type type, IConfiguration config, BinderOptions options)
         {
             Type genericType = typeof(List<>).MakeGenericType(type.GenericTypeArguments[0]);
-            object instance = Activator.CreateInstance(genericType);
+            object? instance = Activator.CreateInstance(genericType);
             BindCollection(instance, genericType, config, options);
             return instance;
         }
 
         // Try to create an array/dictionary instance to back various collection interfaces
         [RequiresUnreferencedCode("In case type is a Dictionary, cannot statically analyze what the element type is of the value objects in the dictionary so its members may be trimmed.")]
-        private static object AttemptBindToCollectionInterfaces(
+        private static object? AttemptBindToCollectionInterfaces(
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
             Type type,
             IConfiguration config, BinderOptions options)
@@ -287,7 +289,7 @@ namespace Microsoft.Extensions.Configuration
                 return null;
             }
 
-            Type collectionInterface = FindOpenGenericInterface(typeof(IReadOnlyList<>), type);
+            Type? collectionInterface = FindOpenGenericInterface(typeof(IReadOnlyList<>), type);
             if (collectionInterface != null)
             {
                 // IEnumerable<T> is guaranteed to have exactly one parameter
@@ -298,7 +300,7 @@ namespace Microsoft.Extensions.Configuration
             if (collectionInterface != null)
             {
                 Type dictionaryType = typeof(Dictionary<,>).MakeGenericType(type.GenericTypeArguments[0], type.GenericTypeArguments[1]);
-                object instance = Activator.CreateInstance(dictionaryType);
+                object? instance = Activator.CreateInstance(dictionaryType);
                 BindDictionary(instance, dictionaryType, config, options);
                 return instance;
             }
@@ -306,7 +308,7 @@ namespace Microsoft.Extensions.Configuration
             collectionInterface = FindOpenGenericInterface(typeof(IDictionary<,>), type);
             if (collectionInterface != null)
             {
-                object instance = Activator.CreateInstance(typeof(Dictionary<,>).MakeGenericType(type.GenericTypeArguments[0], type.GenericTypeArguments[1]));
+                object? instance = Activator.CreateInstance(typeof(Dictionary<,>).MakeGenericType(type.GenericTypeArguments[0], type.GenericTypeArguments[1]));
                 BindDictionary(instance, collectionInterface, config, options);
                 return instance;
             }
@@ -336,10 +338,10 @@ namespace Microsoft.Extensions.Configuration
         }
 
         [RequiresUnreferencedCode(TrimmingWarningMessage)]
-        private static object BindInstance(
+        private static object? BindInstance(
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
             Type type,
-            object instance, IConfiguration config, BinderOptions options)
+            object? instance, IConfiguration config, BinderOptions options)
         {
             // if binding IConfigurationSection, break early
             if (type == typeof(IConfigurationSection))
@@ -348,10 +350,8 @@ namespace Microsoft.Extensions.Configuration
             }
 
             var section = config as IConfigurationSection;
-            string configValue = section?.Value;
-            object convertedValue;
-            Exception error;
-            if (configValue != null && TryConvertValue(type, configValue, section.Path, out convertedValue, out error))
+            string? configValue = section?.Value;
+            if (configValue != null && TryConvertValue(type, configValue, section?.Path, out object? convertedValue, out Exception? error))
             {
                 if (error != null)
                 {
@@ -378,7 +378,7 @@ namespace Microsoft.Extensions.Configuration
                 }
 
                 // See if its a Dictionary
-                Type collectionInterface = FindOpenGenericInterface(typeof(IDictionary<,>), type);
+                Type? collectionInterface = FindOpenGenericInterface(typeof(IDictionary<,>), type);
                 if (collectionInterface != null)
                 {
                     BindDictionary(instance, collectionInterface, config, options);
@@ -420,7 +420,7 @@ namespace Microsoft.Extensions.Configuration
                     throw new InvalidOperationException(SR.Format(SR.Error_UnsupportedMultidimensionalArray, type));
                 }
 
-                return Array.CreateInstance(type.GetElementType(), 0);
+                return Array.CreateInstance(type.GetElementType()!, 0);
             }
 
             if (!type.IsValueType)
@@ -432,19 +432,22 @@ namespace Microsoft.Extensions.Configuration
                 }
             }
 
+            object? instance;
             try
             {
-                return Activator.CreateInstance(type);
+                instance = Activator.CreateInstance(type);
             }
             catch (Exception ex)
             {
                 throw new InvalidOperationException(SR.Format(SR.Error_FailedToActivate, type), ex);
             }
+
+            return instance ?? throw new InvalidOperationException(SR.Format(SR.Error_FailedToActivate, type));
         }
 
         [RequiresUnreferencedCode("Cannot statically analyze what the element type is of the value objects in the dictionary so its members may be trimmed.")]
         private static void BindDictionary(
-            object dictionary,
+            object? dictionary,
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.NonPublicProperties)]
             Type dictionaryType,
             IConfiguration config, BinderOptions options)
@@ -460,10 +463,10 @@ namespace Microsoft.Extensions.Configuration
                 return;
             }
 
-            PropertyInfo setter = dictionaryType.GetProperty("Item", DeclaredOnlyLookup);
+            PropertyInfo setter = dictionaryType.GetProperty("Item", DeclaredOnlyLookup)!;
             foreach (IConfigurationSection child in config.GetChildren())
             {
-                object item = BindInstance(
+                object? item = BindInstance(
                     type: valueType,
                     instance: null,
                     config: child,
@@ -486,27 +489,27 @@ namespace Microsoft.Extensions.Configuration
 
         [RequiresUnreferencedCode("Cannot statically analyze what the element type is of the object collection so its members may be trimmed.")]
         private static void BindCollection(
-            object collection,
+            object? collection,
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods | DynamicallyAccessedMemberTypes.NonPublicMethods)]
             Type collectionType,
             IConfiguration config, BinderOptions options)
         {
             // ICollection<T> is guaranteed to have exactly one parameter
             Type itemType = collectionType.GenericTypeArguments[0];
-            MethodInfo addMethod = collectionType.GetMethod("Add", DeclaredOnlyLookup);
+            MethodInfo? addMethod = collectionType.GetMethod("Add", DeclaredOnlyLookup);
 
             foreach (IConfigurationSection section in config.GetChildren())
             {
                 try
                 {
-                    object item = BindInstance(
+                    object? item = BindInstance(
                         type: itemType,
                         instance: null,
                         config: section,
                         options: options);
                     if (item != null)
                     {
-                        addMethod.Invoke(collection, new[] { item });
+                        addMethod?.Invoke(collection, new[] { item });
                     }
                 }
                 catch
@@ -520,7 +523,7 @@ namespace Microsoft.Extensions.Configuration
         {
             IConfigurationSection[] children = config.GetChildren().ToArray();
             int arrayLength = source.Length;
-            Type elementType = source.GetType().GetElementType();
+            Type? elementType = source.GetType().GetElementType()!;
             var newArray = Array.CreateInstance(elementType, arrayLength + children.Length);
 
             // binding to array has to preserve already initialized arrays with values
@@ -533,7 +536,7 @@ namespace Microsoft.Extensions.Configuration
             {
                 try
                 {
-                    object item = BindInstance(
+                    object? item = BindInstance(
                         type: elementType,
                         instance: null,
                         config: children[i],
@@ -555,7 +558,7 @@ namespace Microsoft.Extensions.Configuration
         private static bool TryConvertValue(
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
             Type type,
-            string value, string path, out object result, out Exception error)
+            string value, string? path, out object? result, out Exception? error)
         {
             error = null;
             result = null;
@@ -571,7 +574,7 @@ namespace Microsoft.Extensions.Configuration
                 {
                     return true;
                 }
-                return TryConvertValue(Nullable.GetUnderlyingType(type), value, path, out result, out error);
+                return TryConvertValue(Nullable.GetUnderlyingType(type)!, value, path, out result, out error);
             }
 
             TypeConverter converter = TypeDescriptor.GetConverter(type);
@@ -605,14 +608,12 @@ namespace Microsoft.Extensions.Configuration
         }
 
         [RequiresUnreferencedCode(TrimmingWarningMessage)]
-        private static object ConvertValue(
+        private static object? ConvertValue(
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
             Type type,
-            string value, string path)
+            string value, string? path)
         {
-            object result;
-            Exception error;
-            TryConvertValue(type, value, path, out result, out error);
+            TryConvertValue(type, value, path, out object? result, out Exception? error);
             if (error != null)
             {
                 throw error;
@@ -620,7 +621,7 @@ namespace Microsoft.Extensions.Configuration
             return result;
         }
 
-        private static Type FindOpenGenericInterface(
+        private static Type? FindOpenGenericInterface(
             Type expected,
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.Interfaces)]
             Type actual)
@@ -645,22 +646,21 @@ namespace Microsoft.Extensions.Configuration
 
         private static List<PropertyInfo> GetAllProperties(
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
-            Type type)
+            Type? type)
         {
             var allProperties = new List<PropertyInfo>();
 
-            do
+            while (type != null && type != typeof(object))
             {
                 allProperties.AddRange(type.GetProperties(DeclaredOnlyLookup));
                 type = type.BaseType;
             }
-            while (type != typeof(object));
 
             return allProperties;
         }
 
         [RequiresUnreferencedCode(PropertyTrimmingWarningMessage)]
-        private static object GetPropertyValue(PropertyInfo property, object instance, IConfiguration config, BinderOptions options)
+        private static object? GetPropertyValue(PropertyInfo property, object instance, IConfiguration config, BinderOptions options)
         {
             string propertyName = GetPropertyName(property);
             return BindInstance(
@@ -692,7 +692,7 @@ namespace Microsoft.Extensions.Configuration
                 }
 
                 // Assumes ConfigurationKeyName constructor first arg is the string key name
-                string name = attributeData
+                string? name = attributeData
                     .ConstructorArguments[0]
                     .Value?
                     .ToString();
