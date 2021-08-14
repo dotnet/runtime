@@ -11,7 +11,7 @@ namespace Microsoft.Extensions.Options.ConfigurationExtensions.Tests
         public FakeConfigurationProvider(MemoryConfigurationSource source)
             : base(source) { }
 
-        public new void Set(string key, string value)
+        public new void Set(string key, string? value)
         {
             base.Set(key, value);
             OnReload();
