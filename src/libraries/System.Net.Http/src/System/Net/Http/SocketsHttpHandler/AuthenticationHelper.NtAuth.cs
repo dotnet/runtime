@@ -16,26 +16,33 @@ namespace System.Net.Http
         private const string UsePortInSpnCtxSwitch = "System.Net.Http.UsePortInSpn";
         private const string UsePortInSpnEnvironmentVariable = "DOTNET_SYSTEM_NET_HTTP_USEPORTINSPN";
 
-        private static bool UsePortInSpn => s_UsePortInSpn.Value;
-        private static readonly Lazy<bool> s_UsePortInSpn = new Lazy<bool>(GetUsePortInSpn);
+        private static volatile int s_usePortInSpn = -1;
 
-        private static bool GetUsePortInSpn()
+        private static bool UsePortInSpn
         {
-            // First check for the AppContext switch, giving it priority over the environment variable.
-            if (AppContext.TryGetSwitch(UsePortInSpnCtxSwitch, out bool disabled))
+            get
             {
-                return disabled;
+                int usePortInSpn = s_usePortInSpn;
+                if (usePortInSpn != -1)
+                {
+                    return usePortInSpn != 0;
+                }
+                
+                // First check for the AppContext switch, giving it priority over the environment variable.
+                if (AppContext.TryGetSwitch(UsePortInSpnCtxSwitch, out bool disabled))
+                {
+                    s_usePortInSpn = disabled;
+                }
+                else
+                {
+                    // AppContext switch wasn't used. Check the environment variable.
+                   s_usePortInSpn =
+                       Environment.GetEnvironmentVariable(UsePortInSpnEnvironmentVariable) is string envVar &&
+                       (envVar == "1" || envVar.Equals("true", StringComparison.OrdinalIgnoreCase);
+                }
+                
+                return s_usePortInSpn != 0;
             }
-
-            // AppContext switch wasn't used. Check the environment variable.
-            string? envVar = Environment.GetEnvironmentVariable(UsePortInSpnEnvironmentVariable);
-
-            if (envVar is not null)
-            {
-                return envVar == "1" || envVar.Equals("true", StringComparison.OrdinalIgnoreCase);
-            }
-
-            return false;
         }
 
         private static Task<HttpResponseMessage> InnerSendAsync(HttpRequestMessage request, bool async, bool isProxyAuth, HttpConnectionPool pool, HttpConnection connection, CancellationToken cancellationToken)
