@@ -255,7 +255,7 @@ public class WasmAppBuilder : Task
             sw.Write(json);
         }
         string monoConfigPath = Path.Combine(AppDir, "mono-config.json");
-        Utils.CopyIfDifferent(tmpMonoConfigPath, monoConfigPath);
+        Utils.CopyIfDifferent(tmpMonoConfigPath, monoConfigPath, useHash: false);
         _fileWrites.Add(monoConfigPath);
 
         if (ExtraFilesToDeploy != null)

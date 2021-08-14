@@ -54,7 +54,7 @@ public class IcallTableGenerator : Task
         using (var w = File.CreateText(tmpFileName))
             EmitTable (w);
 
-        if (Utils.CopyIfDifferent(tmpFileName, OutputPath))
+        if (Utils.CopyIfDifferent(tmpFileName, OutputPath, useHash: false))
             Log.LogMessage(MessageImportance.Low, $"Generating icall table to '{OutputPath}'.");
         else
             Log.LogMessage(MessageImportance.Low, $"Icall table in {OutputPath} is unchanged.");

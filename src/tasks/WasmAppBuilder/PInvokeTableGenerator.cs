@@ -57,7 +57,7 @@ public class PInvokeTableGenerator : Task
             EmitNativeToInterp(w, callbacks);
         }
 
-        if (Utils.CopyIfDifferent(tmpFileName, OutputPath))
+        if (Utils.CopyIfDifferent(tmpFileName, OutputPath, useHash: false))
             Log.LogMessage(MessageImportance.Low, $"Generating pinvoke table to '{OutputPath}'.");
         else
             Log.LogMessage(MessageImportance.Low, $"PInvoke table in {OutputPath} is unchanged.");

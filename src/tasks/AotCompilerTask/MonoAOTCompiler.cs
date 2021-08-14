@@ -203,9 +203,7 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
     private MonoAotLibraryFormat parsedLibraryFormat;
     private MonoAotModulesTableLanguage parsedAotModulesTableLanguage;
 
-    private CompilerCache? _newCache;
-    private CompilerCache? _oldCache;
-    private bool _useCache => _newCache != null && _oldCache != null;
+    private FileCache? _cache;
     private int _numCompiled;
     private int _totalNumAssemblies;
 
@@ -327,7 +325,7 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
         if (AdditionalAssemblySearchPaths != null)
             monoPaths = string.Join(Path.PathSeparator.ToString(), AdditionalAssemblySearchPaths);
 
-        InitCache();
+        _cache = new FileCache(CacheFilePath, Log);
 
         //FIXME: check the nothing changed at all case
 
@@ -364,12 +362,8 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
         if (numUnchanged > 0 && numUnchanged != _totalNumAssemblies)
             Log.LogMessage(MessageImportance.High, $"[{numUnchanged}/{_totalNumAssemblies}] skipped unchanged assemblies.");
 
-        if (_useCache)
-        {
-            var json = JsonSerializer.Serialize (_newCache, new JsonSerializerOptions { WriteIndented = true });
-            File.WriteAllText(CacheFilePath!, json);
+        if (_cache.Save(CacheFilePath!))
             _fileWrites.Add(CacheFilePath!);
-        }
 
         CompiledAssemblies = ConvertAssembliesDictToOrderedList(compiledAssemblies, Assemblies).ToArray();
         FileWrites = _fileWrites.ToArray();
@@ -454,7 +448,7 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
             aotArgs.Add("llvmonly");
 
             string llvmBitcodeFile = Path.Combine(OutputDir, Path.ChangeExtension(assemblyFilename, ".dll.bc"));
-            ProxyFile proxyFile = new(llvmBitcodeFile);
+            ProxyFile proxyFile = _cache!.NewFile(llvmBitcodeFile);
             proxyFiles.Add(proxyFile);
             aotAssembly.SetMetadata("LlvmBitcodeFile", proxyFile.TargetFile);
 
@@ -495,7 +489,7 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
                 case MonoAotOutputType.ObjectFile:
                 {
                     string objectFile = Path.Combine(OutputDir, Path.ChangeExtension(assemblyFilename, ".dll.o"));
-                    ProxyFile proxyFile = new(objectFile);
+                    ProxyFile proxyFile = _cache!.NewFile(objectFile);
                     proxyFiles.Add((proxyFile));
                     aotArgs.Add($"outfile={proxyFile.TempFile}");
                     aotAssembly.SetMetadata("ObjectFile", proxyFile.TargetFile);
@@ -507,7 +501,7 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
                     aotArgs.Add("asmonly");
 
                     string assemblerFile = Path.Combine(OutputDir, Path.ChangeExtension(assemblyFilename, ".dll.s"));
-                    ProxyFile proxyFile = new(assemblerFile);
+                    ProxyFile proxyFile = _cache!.NewFile(assemblerFile);
                     proxyFiles.Add(proxyFile);
                     aotArgs.Add($"outfile={proxyFile.TempFile}");
                     aotAssembly.SetMetadata("AssemblerFile", proxyFile.TargetFile);
@@ -524,7 +518,7 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
                     };
                     string libraryFileName = $"{LibraryFilePrefix}{assemblyFilename}{extension}";
                     string libraryFilePath = Path.Combine(OutputDir, libraryFileName);
-                    ProxyFile proxyFile = new(libraryFilePath);
+                    ProxyFile proxyFile = _cache!.NewFile(libraryFilePath);
                     proxyFiles.Add(proxyFile);
 
                     aotArgs.Add($"outfile={proxyFile.TempFile}");
@@ -539,7 +533,7 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
             if (UseLLVM)
             {
                 string llvmObjectFile = Path.Combine(OutputDir, Path.ChangeExtension(assemblyFilename, ".dll-llvm.o"));
-                ProxyFile proxyFile = new(llvmObjectFile);
+                ProxyFile proxyFile = _cache.NewFile(llvmObjectFile);
                 proxyFiles.Add(proxyFile);
                 aotArgs.Add($"llvm-outfile={proxyFile.TempFile}");
                 aotAssembly.SetMetadata("LlvmObjectFile", proxyFile.TargetFile);
@@ -663,8 +657,8 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
                 return false;
             }
 
-            copied |= CopyOutputFileIfChanged(proxyFile);
-            File.Delete(proxyFile.TempFile);
+            copied |= proxyFile.CopyOutputFileIfChanged();
+            _fileWrites.Add(proxyFile.TargetFile);
         }
 
         if (copied)
@@ -675,7 +669,6 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
         }
 
         File.Delete(responseFilePath);
-
         compiledAssemblies.GetOrAdd(aotAssembly.ItemSpec, aotAssembly);
         return true;
     }
@@ -716,57 +709,6 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
         }
     }
 
-    private bool CopyOutputFileIfChanged(ProxyFile proxyFile)
-    {
-        if (!ShouldCopy(out string? cause))
-        {
-            Log.LogMessage(MessageImportance.Low, $"Skipping copying over {proxyFile.TargetFile} as the contents are unchanged");
-            return false;
-        }
-
-        if (File.Exists(proxyFile.TargetFile))
-            File.Delete(proxyFile.TargetFile);
-
-        File.Copy(proxyFile.TempFile, proxyFile.TargetFile);
-
-        Log.LogMessage(MessageImportance.Low, $"Copying {proxyFile.TempFile} to {proxyFile.TargetFile} because {cause}");
-        _fileWrites.Add(proxyFile.TargetFile);
-        return true;
-
-        bool ShouldCopy([NotNullWhen(true)] out string? cause)
-        {
-            cause = null;
-
-            if (!_useCache)
-            {
-                // cache disabled
-                cause = "cache is disabled";
-                return true;
-            }
-
-            string newHash = Utils.ComputeHash(proxyFile.TempFile);
-            _newCache!.FileHashes[proxyFile.TargetFile] = newHash;
-
-            if (!File.Exists(proxyFile.TargetFile))
-            {
-                cause = $"the output file didn't exist";
-                return true;
-            }
-
-            string? oldHash;
-            if (!_oldCache!.FileHashes.TryGetValue(proxyFile.TargetFile, out oldHash))
-                oldHash = Utils.ComputeHash(proxyFile.TargetFile);
-
-            if (oldHash != newHash)
-            {
-                cause = $"hash for the file changed";
-                return true;
-            }
-
-            return false;
-        }
-    }
-
     private bool GenerateAotModulesTable(ITaskItem[] assemblies, string[]? profilers, string outputFile)
     {
         var symbols = new List<string>();
@@ -782,7 +724,7 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
             if (!TryGetAssemblyName(asmPath, out string? assemblyName))
                 return false;
 
-            string symbolName = assemblyName.Replace ('.', '_').Replace ('-', '_');
+            string symbolName = assemblyName.Replace ('.', '_').Replace ('-', '_').Replace(' ', '_');
             symbols.Add($"mono_aot_module_{symbolName}_info");
         }
 
@@ -850,32 +792,12 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
             }
         }
 
-        if (Utils.CopyIfDifferent(tmpAotModulesTablePath, outputFile))
+        if (Utils.CopyIfDifferent(tmpAotModulesTablePath, outputFile, useHash: false))
         {
             _fileWrites.Add(outputFile);
             Log.LogMessage(MessageImportance.Low, $"Generated {outputFile}");
         }
 
-        return true;
-    }
-
-    private bool InitCache()
-    {
-        if (string.IsNullOrEmpty(CacheFilePath))
-        {
-            Log.LogMessage(MessageImportance.Low, $"Disabling cache, because {nameof(CacheFilePath)} is not set");
-            return false;
-        }
-
-        if (File.Exists(CacheFilePath))
-        {
-            _oldCache = (CompilerCache?)JsonSerializer.Deserialize(File.ReadAllText(CacheFilePath!),
-                                                                    typeof(CompilerCache),
-                                                                    new JsonSerializerOptions());
-        }
-
-        _oldCache ??= new();
-        _newCache = new();
         return true;
     }
 
@@ -917,17 +839,108 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
         }
         return outItems;
     }
+}
 
-    internal class ProxyFile
+internal class FileCache
+{
+    private CompilerCache? _newCache;
+    private CompilerCache? _oldCache;
+
+    public bool Enabled { get; }
+    public TaskLoggingHelper Log { get; }
+
+    public FileCache(string? cacheFilePath, TaskLoggingHelper log)
     {
-        public ProxyFile(string targetFile)
+        Log = log;
+        if (string.IsNullOrEmpty(cacheFilePath))
         {
-            this.TargetFile = targetFile;
-            this.TempFile = targetFile + ".tmp";
+            Log.LogMessage(MessageImportance.Low, $"Disabling cache, because CacheFilePath is not set");
+            return;
         }
 
-        public string TargetFile { get; }
-        public string TempFile   { get; }
+        Enabled = true;
+        if (File.Exists(cacheFilePath))
+        {
+            _oldCache = (CompilerCache?)JsonSerializer.Deserialize(File.ReadAllText(cacheFilePath),
+                                                                    typeof(CompilerCache),
+                                                                    new JsonSerializerOptions());
+        }
+
+        _oldCache ??= new();
+        _newCache = new();
+    }
+
+    public bool ShouldCopy(ProxyFile proxyFile, [NotNullWhen(true)] out string? cause)
+    {
+        cause = null;
+
+        string newHash = Utils.ComputeHash(proxyFile.TempFile);
+        _newCache!.FileHashes[proxyFile.TargetFile] = newHash;
+
+        if (!File.Exists(proxyFile.TargetFile))
+        {
+            cause = $"the output file didn't exist";
+            return true;
+        }
+
+        string? oldHash;
+        if (!_oldCache!.FileHashes.TryGetValue(proxyFile.TargetFile, out oldHash))
+            oldHash = Utils.ComputeHash(proxyFile.TargetFile);
+
+        if (oldHash != newHash)
+        {
+            cause = $"hash for the file changed";
+            return true;
+        }
+
+        return false;
+    }
+
+    public bool Save(string? cacheFilePath)
+    {
+        if (!Enabled || string.IsNullOrEmpty(cacheFilePath))
+            return false;
+
+        var json = JsonSerializer.Serialize (_newCache, new JsonSerializerOptions { WriteIndented = true });
+        File.WriteAllText(cacheFilePath!, json);
+        return true;
+    }
+
+    public ProxyFile NewFile(string targetFile) => new ProxyFile(targetFile, this);
+}
+
+internal class ProxyFile
+{
+    public string TargetFile { get; }
+    public string TempFile   { get; }
+    private FileCache _cache;
+
+    public ProxyFile(string targetFile, FileCache cache)
+    {
+        _cache = cache;
+        this.TargetFile = targetFile;
+        this.TempFile = _cache.Enabled ? targetFile + ".tmp" : targetFile;
+    }
+
+    public bool CopyOutputFileIfChanged()
+    {
+        if (!_cache.Enabled)
+            return true;
+
+        if (!_cache.ShouldCopy(this, out string? cause))
+        {
+            _cache.Log.LogMessage(MessageImportance.Low, $"Skipping copying over {TargetFile} as the contents are unchanged");
+            return false;
+        }
+
+        if (File.Exists(TargetFile))
+            File.Delete(TargetFile);
+
+        File.Copy(TempFile, TargetFile);
+        File.Delete(TempFile);
+
+        _cache.Log.LogMessage(MessageImportance.Low, $"Copying {TempFile} to {TargetFile} because {cause}");
+        return true;
     }
 }
 

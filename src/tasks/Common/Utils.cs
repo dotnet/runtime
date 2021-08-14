@@ -206,7 +206,7 @@ internal static class Utils
         return file;
     }
 
-    public static bool CopyIfDifferent(string src, string dst, bool useHash=false)
+    public static bool CopyIfDifferent(string src, string dst, bool useHash)
     {
         if (!File.Exists(src))
             throw new ArgumentException($"Cannot find {src} file to copy", nameof(src));
