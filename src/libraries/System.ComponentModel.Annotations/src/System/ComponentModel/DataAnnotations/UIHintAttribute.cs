@@ -219,7 +219,6 @@ namespace System.ComponentModel.DataAnnotations
 
                 return true;
             }
-
         }
     }
 }
