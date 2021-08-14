@@ -61,7 +61,7 @@ namespace System.ComponentModel.Tests
             yield return new object[] { new TypeConverterAttribute("typeName"), null, false };
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMonoAOT))]
         [MemberData(nameof(Equals_TestData))]
         public void Equal_Invoke_ReturnsExpected(TypeConverterAttribute attribute, object other, bool expected)
         {
@@ -69,6 +69,7 @@ namespace System.ComponentModel.Tests
         }
 
         [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMonoAOT))]
         public void GetHashCode_Invoke_ReturnsExpected()
         {
             var attribute = new TypeConverterAttribute("typeName");
