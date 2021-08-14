@@ -522,6 +522,10 @@ namespace System.Text.Json.Serialization.Tests
             RunTest<SerializationInfo>(json);
             RunTest<IntPtr>(json);
             RunTest<UIntPtr>(json);
+#if NETCOREAPP
+            RunTest<DateOnly>(json);
+            RunTest<TimeOnly>(json);
+#endif
 
             void RunTest<T>(string json)
             {
@@ -553,10 +557,14 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public static void SerializeUnsupportedType()
         {
-            RunTest<Type>(typeof(int));
-            RunTest<SerializationInfo>(new SerializationInfo(typeof(Type), new FormatterConverter()));
-            RunTest<IntPtr>((IntPtr)123);
-            RunTest<UIntPtr>((UIntPtr)123);
+            RunTest(typeof(int));
+            RunTest(new SerializationInfo(typeof(Type), new FormatterConverter()));
+            RunTest((IntPtr)123);
+            RunTest((UIntPtr)123);
+#if NETCOREAPP
+            RunTest(DateOnly.MaxValue);
+            RunTest(TimeOnly.MinValue);
+#endif
 
             void RunTest<T>(T value)
             {

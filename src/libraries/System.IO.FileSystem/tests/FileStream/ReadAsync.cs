@@ -101,7 +101,7 @@ namespace System.IO.Tests
             }
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported), nameof(PlatformDetection.IsNet5CompatFileStreamDisabled))]
         [InlineData(FileShare.None, FileOptions.Asynchronous)] // FileShare.None: exclusive access
         [InlineData(FileShare.ReadWrite, FileOptions.Asynchronous)] // FileShare.ReadWrite: others can write to the file, the length can't be cached
         [InlineData(FileShare.None, FileOptions.None)]
@@ -113,7 +113,7 @@ namespace System.IO.Tests
             byte[] content = RandomNumberGenerator.GetBytes(fileSize);
             File.WriteAllBytes(filePath, content);
 
-            byte[][] buffers = Enumerable.Repeat(Enumerable.Repeat(byte.MaxValue, fileSize * 2).ToArray(), 10).ToArray();
+            byte[][] buffers = Enumerable.Range(0, 10).Select(_ => new byte[fileSize * 2]).ToArray();
 
             using (FileStream fs = new FileStream(filePath, FileMode.Open, FileAccess.Read, fileShare, bufferSize: 0, options))
             {

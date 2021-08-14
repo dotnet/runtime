@@ -201,6 +201,33 @@ namespace System.Net.Quic.Tests
         }
 
         [Fact]
+        public async Task ConnectWithIpSetsSni()
+        {
+            X509Certificate2 certificate = System.Net.Test.Common.Configuration.Certificates.GetServerCertificate();
+            string expectedName = "foobar";
+            string? receivedHostName = null;
+
+            var listenerOptions = CreateQuicListenerOptions();
+            listenerOptions.ServerAuthenticationOptions.ServerCertificate = null;
+            listenerOptions.ServerAuthenticationOptions.ServerCertificateSelectionCallback = (sender, hostName) =>
+            {
+                receivedHostName = hostName;
+                return certificate;
+            };
+
+            using QuicListener listener = new QuicListener(QuicImplementationProviders.MsQuic, listenerOptions);
+
+            QuicClientConnectionOptions clientOptions = CreateQuicClientOptions();
+            clientOptions.ClientAuthenticationOptions.TargetHost = expectedName;
+            clientOptions.RemoteEndPoint = new DnsEndPoint("127.0.0.1", listener.ListenEndPoint.Port);
+
+            (QuicConnection clientConnection, QuicConnection serverConnection) = await CreateConnectedQuicConnection(clientOptions, listener);
+            Assert.Equal(expectedName, receivedHostName);
+            clientConnection.Dispose();
+            serverConnection.Dispose();
+        }
+
+        [Fact]
         public async Task ConnectWithCertificateForDifferentName_Throws()
         {
             (X509Certificate2 certificate, _) = System.Net.Security.Tests.TestHelper.GenerateCertificates("localhost");
