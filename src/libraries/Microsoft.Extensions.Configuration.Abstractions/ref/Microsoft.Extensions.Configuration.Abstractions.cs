@@ -4,8 +4,6 @@
 // Changes to this file must follow the https://aka.ms/api-review process.
 // ------------------------------------------------------------------------------
 
-using System.Diagnostics.CodeAnalysis;
-
 namespace Microsoft.Extensions.Configuration
 {
     public static partial class ConfigurationExtensions
@@ -13,7 +11,7 @@ namespace Microsoft.Extensions.Configuration
         public static Microsoft.Extensions.Configuration.IConfigurationBuilder Add<TSource>(this Microsoft.Extensions.Configuration.IConfigurationBuilder builder, System.Action<TSource>? configureSource) where TSource : Microsoft.Extensions.Configuration.IConfigurationSource, new() { throw null; }
         public static System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, string?>> AsEnumerable(this Microsoft.Extensions.Configuration.IConfiguration configuration) { throw null; }
         public static System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, string?>> AsEnumerable(this Microsoft.Extensions.Configuration.IConfiguration configuration, bool makePathsRelative) { throw null; }
-        public static bool Exists([NotNullWhen(true)] this Microsoft.Extensions.Configuration.IConfigurationSection? section) { throw null; }
+        public static bool Exists([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] this Microsoft.Extensions.Configuration.IConfigurationSection? section) { throw null; }
         public static string? GetConnectionString(this Microsoft.Extensions.Configuration.IConfiguration configuration, string name) { throw null; }
         public static Microsoft.Extensions.Configuration.IConfigurationSection GetRequiredSection(this Microsoft.Extensions.Configuration.IConfiguration configuration, string key) { throw null; }
     }
@@ -29,7 +27,7 @@ namespace Microsoft.Extensions.Configuration
         public static string Combine(System.Collections.Generic.IEnumerable<string> pathSegments) { throw null; }
         public static string Combine(params string[] pathSegments) { throw null; }
         public static string? GetParentPath(string? path) { throw null; }
-        [return: NotNullIfNotNull("path")]
+        [return: System.Diagnostics.CodeAnalysis.NotNullIfNotNull("path")]
         public static string? GetSectionKey(string? path) { throw null; }
     }
     public static partial class ConfigurationRootExtensions
@@ -56,7 +54,7 @@ namespace Microsoft.Extensions.Configuration
         Microsoft.Extensions.Primitives.IChangeToken GetReloadToken();
         void Load();
         void Set(string key, string? value);
-        bool TryGet(string key, [MaybeNullWhen(false)] out string value);
+        bool TryGet(string key, [System.Diagnostics.CodeAnalysis.MaybeNullWhen(false)] out string value);
     }
     public partial interface IConfigurationRoot : Microsoft.Extensions.Configuration.IConfiguration
     {
