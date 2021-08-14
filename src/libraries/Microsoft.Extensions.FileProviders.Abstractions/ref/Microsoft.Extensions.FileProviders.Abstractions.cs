@@ -43,6 +43,7 @@ namespace Microsoft.Extensions.FileProviders
         public long Length { get { throw null; } }
         public string Name { get { throw null; } }
         public string? PhysicalPath { get { throw null; } }
+        [System.Diagnostics.CodeAnalysis.DoesNotReturn]
         public System.IO.Stream CreateReadStream() { throw null; }
     }
     public partial class NullChangeToken : Microsoft.Extensions.Primitives.IChangeToken
