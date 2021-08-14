@@ -146,6 +146,7 @@ namespace System.Diagnostics
                 {
                     Debug.Assert(index < _overflowTags.Length);
                     _overflowTags[index] = value;
+                    return;
                 }
 
                 switch (index)
