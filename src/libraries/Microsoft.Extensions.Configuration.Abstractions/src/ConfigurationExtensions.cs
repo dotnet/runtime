@@ -28,7 +28,7 @@ namespace Microsoft.Extensions.Configuration
         /// <summary>
         /// Shorthand for GetSection("ConnectionStrings")[name].
         /// </summary>
-        /// <param name="configuration">The <see cref="IConfiguration"/> to enumerate.</param>
+        /// <param name="configuration">The configuration to enumerate.</param>
         /// <param name="name">The connection string key.</param>
         /// <returns>The connection string.</returns>
         public static string GetConnectionString(this IConfiguration configuration, string name)
