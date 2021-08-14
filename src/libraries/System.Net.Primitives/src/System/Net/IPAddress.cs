@@ -26,7 +26,7 @@ namespace System.Net
 
         public static readonly IPAddress IPv6Any = new IPAddress((ReadOnlySpan<byte>) new byte[] { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 }, 0);
         public static readonly IPAddress IPv6Loopback = new IPAddress((ReadOnlySpan<byte>) new byte[] { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1 }, 0);
-        public static readonly IPAddress IPv6None = new IPAddress((ReadOnlySpan<byte>) new byte[] { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 }, 0);
+        public static readonly IPAddress IPv6None = IPv6Any;
 
         private static readonly IPAddress s_loopbackMappedToIPv6 = new IPAddress((ReadOnlySpan<byte>) new byte[] { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 255, 255, 127, 0, 0, 1 }, 0);
 
