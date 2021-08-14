@@ -44,9 +44,9 @@ namespace Microsoft.Extensions.FileSystemGlobbing.Internal.Patterns
             var allSegments = new List<IPathSegment>();
             bool isParentSegmentLegal = true;
 
-            IList<IPathSegment> segmentsPatternStartsWith = null;
-            IList<IList<IPathSegment>> segmentsPatternContains = null;
-            IList<IPathSegment> segmentsPatternEndsWith = null;
+            IList<IPathSegment>? segmentsPatternStartsWith = null;
+            IList<IList<IPathSegment>>? segmentsPatternContains = null;
+            IList<IPathSegment>? segmentsPatternEndsWith = null;
 
             int endPattern = pattern.Length;
             for (int scanPattern = 0; scanPattern < endPattern;)
@@ -54,7 +54,7 @@ namespace Microsoft.Extensions.FileSystemGlobbing.Internal.Patterns
                 int beginSegment = scanPattern;
                 int endSegment = NextIndex(pattern, _slashes, scanPattern, endPattern);
 
-                IPathSegment segment = null;
+                IPathSegment? segment = null;
 
                 if (segment == null && endSegment - beginSegment == 3)
                 {
@@ -163,7 +163,7 @@ namespace Microsoft.Extensions.FileSystemGlobbing.Internal.Patterns
                     }
                 }
 
-                if (!(segment is ParentPathSegment))
+                if (segment is not ParentPathSegment)
                 {
                     isParentSegmentLegal = false;
                 }
@@ -176,7 +176,7 @@ namespace Microsoft.Extensions.FileSystemGlobbing.Internal.Patterns
                 {
                     if (segment is RecursiveWildcardSegment)
                     {
-                        if (segmentsPatternStartsWith == null)
+                        if (segmentsPatternStartsWith == null || segmentsPatternEndsWith == null || segmentsPatternContains == null)
                         {
                             segmentsPatternStartsWith = new List<IPathSegment>(allSegments);
                             segmentsPatternEndsWith = new List<IPathSegment>();
@@ -199,7 +199,7 @@ namespace Microsoft.Extensions.FileSystemGlobbing.Internal.Patterns
                 scanPattern = endSegment + 1;
             }
 
-            if (segmentsPatternStartsWith == null)
+            if (segmentsPatternStartsWith == null || segmentsPatternEndsWith == null || segmentsPatternContains == null)
             {
                 return new LinearPattern(allSegments);
             }

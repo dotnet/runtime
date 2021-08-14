@@ -14,12 +14,7 @@ namespace Microsoft.Extensions.FileSystemGlobbing.Internal.PathSegments
 
         public LiteralPathSegment(string value, StringComparison comparisonType)
         {
-            if (value == null)
-            {
-                throw new ArgumentNullException(nameof(value));
-            }
-
-            Value = value;
+            Value = value ?? throw new ArgumentNullException(nameof(value));
 
             _comparisonType = comparisonType;
         }
@@ -31,11 +26,9 @@ namespace Microsoft.Extensions.FileSystemGlobbing.Internal.PathSegments
             return string.Equals(Value, value, _comparisonType);
         }
 
-        public override bool Equals(object obj)
+        public override bool Equals(object? obj)
         {
-            var other = obj as LiteralPathSegment;
-
-            return other != null &&
+            return obj is LiteralPathSegment other &&
                 _comparisonType == other._comparisonType &&
                 string.Equals(other.Value, Value, _comparisonType);
         }

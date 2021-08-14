@@ -69,15 +69,9 @@ namespace Microsoft.Extensions.FileSystemGlobbing.Internal.PatternContexts
             public bool InStem;
             private IList<string> _stemItems;
 
-            public IList<string> StemItems
-            {
-                get { return _stemItems ?? (_stemItems = new List<string>()); }
-            }
+            public IList<string> StemItems => _stemItems ??= new List<string>();
 
-            public string Stem
-            {
-                get { return _stemItems == null ? null : string.Join("/", _stemItems); }
-            }
+            public string? Stem => _stemItems == null ? null : string.Join("/", _stemItems);
         }
 
         protected ILinearPattern Pattern { get; }
