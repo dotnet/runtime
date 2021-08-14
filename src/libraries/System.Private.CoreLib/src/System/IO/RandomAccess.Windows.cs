@@ -4,7 +4,9 @@
 using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.IO.Strategies;
+using System.Numerics;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
@@ -439,10 +441,102 @@ namespace System.IO
             return ReadScatterAtOffsetMultipleSyscallsAsync(handle, buffers, fileOffset, cancellationToken);
         }
 
+        // Abstracts away the type signature incompatibility between Memory and ReadOnlyMemory.
+        private interface IMemoryHandler<T>
+        {
+            int GetLength(in T memory);
+            MemoryHandle Pin(in T memory);
+        }
+
+        private struct MemoryHandler : IMemoryHandler<Memory<byte>>
+        {
+            public int GetLength(in Memory<byte> memory) => memory.Length;
+            public MemoryHandle Pin(in Memory<byte> memory) => memory.Pin();
+        }
+
+        private struct ReadOnlyMemoryHandler : IMemoryHandler<ReadOnlyMemory<byte>>
+        {
+            public int GetLength(in ReadOnlyMemory<byte> memory) => memory.Length;
+            public MemoryHandle Pin(in ReadOnlyMemory<byte> memory) => memory.Pin();
+        }
+
         // From https://docs.microsoft.com/en-us/windows/win32/api/fileapi/nf-fileapi-readfilescatter:
-        // "The file handle must be created with the GENERIC_READ right, and the FILE_FLAG_OVERLAPPED and FILE_FLAG_NO_BUFFERING flags."
+        // "The file handle must be created with [...] the FILE_FLAG_OVERLAPPED and FILE_FLAG_NO_BUFFERING flags."
         private static bool CanUseScatterGatherWindowsAPIs(SafeFileHandle handle)
             => handle.IsAsync && ((handle.GetFileOptions() & SafeFileHandle.NoBuffering) != 0);
+
+        // From the same source:
+        // "Each buffer must be at least the size of a system memory page and must be aligned on a system
+        // memory page size boundary. The system reads/writes one system memory page of data into/from each buffer."
+        // This method returns true if the buffers can be used by
+        // the Windows scatter/gather API, which happens when they are:
+        // 1. aligned at page size boundaries
+        // 2. exactly one page long each (our own requirement to prevent partial reads)
+        // 3. not bigger than 2^32 - 1 in total
+        // This function is also responsible for pinning the buffers if they
+        // are suitable and they must be unpinned after the I/O operation.
+        // The total size of the buffers is also returned.
+        private static bool TryPrepareBuffersForScatterGatherWindowsAPIs<T, THandler>(IReadOnlyList<T> buffers,
+            THandler handler, [NotNullWhen(true)] out MemoryHandle[]? pinnedBuffers, out int totalBytes)
+            where THandler: struct, IMemoryHandler<T>
+        {
+            int pageSize = Environment.SystemPageSize;
+            Debug.Assert(BitOperations.IsPow2(pageSize), "Page size is not a power of two.");
+            // We take advantage of the fact that the page size is
+            // a power of two to avoid an expensive modulo operation.
+            long alignedAtPageSizeMask = pageSize - 1;
+            int buffersCount = buffers.Count;
+            pinnedBuffers = new MemoryHandle[buffersCount];
+
+            try
+            {
+                long totalBytes64 = 0;
+                for (int i = 0; i < buffersCount; i++)
+                {
+                    T buffer = buffers[i];
+                    int length = handler.GetLength(in buffer);
+                    totalBytes64 += length;
+                    if (length != pageSize || totalBytes64 > int.MaxValue)
+                    {
+                        goto Failure;
+                    }
+
+                    MemoryHandle handle = pinnedBuffers[i] = handler.Pin(in buffer);
+                    unsafe
+                    {
+                        if (((long)handle.Pointer & alignedAtPageSizeMask) != 0)
+                        {
+                            goto Failure;
+                        }
+                    }
+                }
+
+                totalBytes = (int)totalBytes64;
+                return true;
+
+                Failure:
+                foreach (MemoryHandle handle in pinnedBuffers)
+                {
+                    handle.Dispose();
+                }
+
+                pinnedBuffers = null;
+                totalBytes = 0;
+                return false;
+            }
+            catch
+            {
+                if (pinnedBuffers != null)
+                {
+                    foreach (MemoryHandle handle in pinnedBuffers)
+                    {
+                        handle.Dispose();
+                    }
+                }
+
+                throw;
+            }
+        }
 
         private static async ValueTask<long> ReadScatterAtOffsetSingleSyscallAsync(SafeFileHandle handle, IReadOnlyList<Memory<byte>> buffers, long fileOffset, int totalBytes, CancellationToken cancellationToken)
         {
