@@ -60,8 +60,8 @@ namespace BINDER_SPACE
         ULONG Release();
 
         LPCWSTR GetSimpleName();
-        STDMETHOD(GetBinderID)(UINT_PTR *pBinderId);
-        STDMETHOD(GetLoaderAllocator)(LPVOID* pLoaderAllocator);
+        UINT_PTR GetBinderID();
+        AssemblyLoaderAllocator* GetLoaderAllocator();
 
         // --------------------------------------------------------------------
         // Assembly methods
@@ -95,9 +95,7 @@ namespace BINDER_SPACE
             return m_pBinder;
         }
 
-#ifndef CROSSGEN_COMPILE
-    protected:
-#endif
+    private:
         // Assembly Flags
         enum
         {

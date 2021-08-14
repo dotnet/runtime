@@ -678,33 +678,6 @@ Assembly *AssemblySpec::LoadAssembly(FileLoadLevel targetLevel, BOOL fThrowOnFil
     return pDomainAssembly->GetAssembly();
 }
 
-// Returns a BOOL indicating if the two Binder references point to the same
-// binder instance.
-BOOL AreSameBinderInstance(ICLRPrivBinder *pBinderA, ICLRPrivBinder *pBinderB)
-{
-    LIMITED_METHOD_CONTRACT;
-
-    BOOL fIsSameInstance = (pBinderA == pBinderB);
-
-    if (!fIsSameInstance && (pBinderA != NULL) && (pBinderB != NULL))
-    {
-        // Get the ID for the first binder
-        UINT_PTR binderIDA = 0, binderIDB = 0;
-        HRESULT hr = pBinderA->GetBinderID(&binderIDA);
-        if (SUCCEEDED(hr))
-        {
-            // Get the ID for the second binder
-            hr = pBinderB->GetBinderID(&binderIDB);
-            if (SUCCEEDED(hr))
-            {
-                fIsSameInstance = (binderIDA == binderIDB);
-            }
-        }
-    }
-
-    return fIsSameInstance;
-}
-
 ICLRPrivBinder* AssemblySpec::GetBindingContextFromParentAssembly(AppDomain *pDomain)
 {
     CONTRACTL
@@ -754,7 +727,7 @@ ICLRPrivBinder* AssemblySpec::GetBindingContextFromParentAssembly(AppDomain *pDo
     if (pParentAssemblyBinder != NULL)
     {
         CLRPrivBinderCoreCLR *pTPABinder = pDomain->GetTPABinderContext();
-        if (AreSameBinderInstance(pTPABinder, pParentAssemblyBinder))
+        if (pTPABinder == pParentAssemblyBinder)
         {
             // If the parent assembly is a platform (TPA) assembly, then its binding context will always be the TPABinder context. In
             // such case, we will return the default context for binding to allow the bind to go
@@ -1071,9 +1044,7 @@ AssemblySpecBindingCache::AssemblyBinding* AssemblySpecBindingCache::LookupInter
 
     if (pBinderContextForLookup)
     {
-        UINT_PTR binderID = 0;
-        HRESULT hr = pBinderContextForLookup->GetBinderID(&binderID);
-        _ASSERTE(SUCCEEDED(hr));
+        UINT_PTR binderID = pBinderContextForLookup->GetBinderID();
         lookupKey = key^binderID;
     }
 
@@ -1289,9 +1260,7 @@ BOOL AssemblySpecBindingCache::StoreAssembly(AssemblySpec *pSpec, DomainAssembly
     _ASSERTE(pBinderContextForLookup || pAssembly->GetFile()->IsSystem());
     if (pBinderContextForLookup)
     {
-        UINT_PTR binderID = 0;
-        HRESULT hr = pBinderContextForLookup->GetBinderID(&binderID);
-        _ASSERTE(SUCCEEDED(hr));
+        UINT_PTR binderID = pBinderContextForLookup->GetBinderID();
         key = key^binderID;
 
         if (!pSpec->GetBindingContext())
@@ -1374,9 +1343,7 @@ BOOL AssemblySpecBindingCache::StoreFile(AssemblySpec *pSpec, PEAssembly *pFile)
     _ASSERTE(pBinderContextForLookup || pFile->IsSystem());
     if (pBinderContextForLookup)
     {
-        UINT_PTR binderID = 0;
-        HRESULT hr = pBinderContextForLookup->GetBinderID(&binderID);
-        _ASSERTE(SUCCEEDED(hr));
+        UINT_PTR binderID = pBinderContextForLookup->GetBinderID();
         key = key^binderID;
 
         if (!pSpec->GetBindingContext())
@@ -1396,13 +1363,12 @@ BOOL AssemblySpecBindingCache::StoreFile(AssemblySpec *pSpec, PEAssembly *pFile)
 #ifndef CROSSGEN_COMPILE
         if (pBinderContextForLookup != NULL)
         {
-            LoaderAllocator* pLoaderAllocator = NULL;
+            LoaderAllocator* pLoaderAllocator = pBinderContextForLookup->GetLoaderAllocator();
 
             // Assemblies loaded with AssemblyLoadContext need to use a different heap if
             // marked as collectible
-            if (SUCCEEDED(pBinderContextForLookup->GetLoaderAllocator((LPVOID*)&pLoaderAllocator)))
+            if (pLoaderAllocator)
             {
-                _ASSERTE(pLoaderAllocator != NULL);
                 pHeap = pLoaderAllocator->GetHighFrequencyHeap();
             }
         }
@@ -1470,9 +1436,7 @@ BOOL AssemblySpecBindingCache::StoreException(AssemblySpec *pSpec, Exception* pE
             if (!pSpec->IsAssemblySpecForCoreLib())
             {
                 pBinderToSaveException = pSpec->GetBindingContextFromParentAssembly(pSpec->GetAppDomain());
-                UINT_PTR binderID = 0;
-                HRESULT hr = pBinderToSaveException->GetBinderID(&binderID);
-                _ASSERTE(SUCCEEDED(hr));
+                UINT_PTR binderID = pBinderToSaveException->GetBinderID();
                 key = key^binderID;
             }
         }

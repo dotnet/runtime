@@ -10,7 +10,7 @@
 
 #if !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
 
-class LoaderAllocator;
+class AssemblyLoaderAllocator;
 class PEImage;
 
 class CLRPrivBinderAssemblyLoadContext : public AssemblyLoadContext
@@ -24,8 +24,7 @@ public:
             /* [in] */ struct AssemblyNameData *pAssemblyNameData,
             /* [retval][out] */ BINDER_SPACE::Assembly **ppAssembly);
 
-    STDMETHOD(GetLoaderAllocator)(
-        /* [retval][out] */ LPVOID *pLoaderAllocator);
+    AssemblyLoaderAllocator* GetLoaderAllocator();
 
 public:
     //=========================================================================
@@ -33,7 +32,7 @@ public:
     //-------------------------------------------------------------------------
 
     static HRESULT SetupContext(CLRPrivBinderCoreCLR *pTPABinder,
-                                LoaderAllocator* pLoaderAllocator,
+                                AssemblyLoaderAllocator* pLoaderAllocator,
                                 void* loaderAllocatorHandle,
                                 UINT_PTR ptrAssemblyLoadContext,
                                 CLRPrivBinderAssemblyLoadContext **ppBindContext);
@@ -68,7 +67,7 @@ private:
     // to refer to it during the whole lifetime of the AssemblyLoadContext.
     INT_PTR m_ptrManagedStrongAssemblyLoadContext;
 
-    LoaderAllocator* m_pAssemblyLoaderAllocator;
+    AssemblyLoaderAllocator* m_pAssemblyLoaderAllocator;
     void* m_loaderAllocatorHandle;
 };
 

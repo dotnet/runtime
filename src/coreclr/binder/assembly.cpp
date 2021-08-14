@@ -139,14 +139,14 @@ namespace BINDER_SPACE
         return (pAsmName == nullptr ? nullptr : (LPCWSTR)pAsmName->GetSimpleName());
     }
 
-    HRESULT Assembly::GetBinderID(UINT_PTR *pBinderId)
+    UINT_PTR Assembly::GetBinderID()
     {
-        return (m_pBinder == NULL) ? E_FAIL : m_pBinder->GetBinderID(pBinderId);
+        return m_pBinder ? m_pBinder->GetBinderID() : 0;
     }
 
-    HRESULT Assembly::GetLoaderAllocator(LPVOID* pLoaderAllocator)
+    AssemblyLoaderAllocator* Assembly::GetLoaderAllocator()
     {
-        return (m_pBinder == NULL) ? E_FAIL : m_pBinder->GetLoaderAllocator(pLoaderAllocator);
+        return m_pBinder ? m_pBinder->GetLoaderAllocator() : NULL;
     }
 }
 

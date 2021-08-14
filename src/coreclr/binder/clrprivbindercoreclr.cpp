@@ -255,8 +255,8 @@ HRESULT CLRPrivBinderCoreCLR::Bind(LPCWSTR            wszCodeBase,
     return hr;
 }
 
-HRESULT CLRPrivBinderCoreCLR::GetLoaderAllocator(LPVOID* pLoaderAllocator)
+AssemblyLoaderAllocator* CLRPrivBinderCoreCLR::GetLoaderAllocator()
 {
     // Not supported by this binder
-    return E_FAIL;
+    return NULL;
 }

@@ -8,13 +8,6 @@ AssemblyLoadContext::AssemblyLoadContext()
 {
 }
 
-HRESULT AssemblyLoadContext::GetBinderID(
-    UINT_PTR* pBinderId)
-{
-    *pBinderId = reinterpret_cast<UINT_PTR>(this);
-    return S_OK;
-}
-
 #ifndef DACCESS_COMPILE
 NativeImage *AssemblyLoadContext::LoadNativeImage(Module *componentModule, LPCUTF8 nativeImageName)
 {

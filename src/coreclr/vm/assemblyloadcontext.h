@@ -12,6 +12,7 @@
 class NativeImage;
 class Module;
 class Assembly;
+class AssemblyLoaderAllocator;
 
 /**************************************************************************************
  ** Some things to keep in mind:
@@ -36,24 +37,23 @@ public:
         /* [retval][out] */ BINDER_SPACE::Assembly * *ppAssembly) = 0;
 
     /**********************************************************************************
+     ** GetLoaderAllocator
+     ** Get LoaderAllocator for binders that contain it. For other binders, return NULL.
+     **
+     **********************************************************************************/
+    virtual AssemblyLoaderAllocator* GetLoaderAllocator() = 0;
+
+    /**********************************************************************************
      ** GetBinderID
      **  pBinderId, pointer to binder id. The binder id has the following properties
      **        It is a pointer that does not change over the lifetime of a binder object
      **        It points at an object in memory that will remain allocated for the lifetime of the binder.
      **        This value should be the same for a set of binder objects that represent the same binder behavior.
      **********************************************************************************/
-    virtual HRESULT STDMETHODCALLTYPE GetBinderID(
-        /* [retval][out] */ UINT_PTR* pBinderId) = 0;
-
-    /**********************************************************************************
-     ** GetLoaderAllocator
-     ** Get LoaderAllocator for binders that contain it. For other binders, return
-     ** E_FAIL
-     **
-     **  pLoaderAllocator - when successful, constains the returned LoaderAllocator
-     **********************************************************************************/
-    virtual HRESULT STDMETHODCALLTYPE GetLoaderAllocator(
-        /* [retval][out] */ LPVOID* pLoaderAllocator) = 0;
+    UINT_PTR GetBinderID()
+    {
+        return reinterpret_cast<UINT_PTR>(this);
+    }
 
     // Add a virtual destructor to force derived types to also have virtual destructors.
     virtual ~ICLRPrivBinder()
@@ -89,9 +89,6 @@ class AssemblyLoadContext : public ICLRPrivBinder
 {
 public:
     AssemblyLoadContext();
-
-    STDMETHOD(GetBinderID)(
-        /* [retval][out] */ UINT_PTR* pBinderId);
 
     NativeImage *LoadNativeImage(Module *componentModule, LPCUTF8 nativeImageName);
 

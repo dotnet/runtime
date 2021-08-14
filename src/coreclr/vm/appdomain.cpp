@@ -2924,8 +2924,6 @@ Assembly *AppDomain::LoadAssembly(AssemblySpec* pIdentity,
     RETURN pAssembly->GetAssembly();
 }
 
-extern BOOL AreSameBinderInstance(ICLRPrivBinder *pBinderA, ICLRPrivBinder *pBinderB);
-
 DomainAssembly* AppDomain::LoadDomainAssembly(AssemblySpec* pSpec,
                                               PEAssembly *pFile,
                                               FileLoadLevel targetLevel)
@@ -2963,7 +2961,7 @@ DomainAssembly* AppDomain::LoadDomainAssembly(AssemblySpec* pSpec,
             else
             {
                 // Binding context in the spec should be the same as the binding context in the PEAssembly
-                _ASSERTE(AreSameBinderInstance(pCurrentBindingContext, pBindingContextFromPEAssembly));
+                _ASSERTE(pCurrentBindingContext == pBindingContextFromPEAssembly);
             }
 #endif // _DEBUG
 
@@ -3023,7 +3021,7 @@ DomainAssembly *AppDomain::LoadDomainAssemblyInternal(AssemblySpec* pIdentity,
         {
             // Assemblies loaded with AssemblyLoadContext need to use a different LoaderAllocator if
             // marked as collectible
-            pFileBinder->GetLoaderAllocator((LPVOID*)&pLoaderAllocator);
+            pLoaderAllocator = pFileBinder->GetLoaderAllocator();
         }
 #endif // !CROSSGEN_COMPILE
 

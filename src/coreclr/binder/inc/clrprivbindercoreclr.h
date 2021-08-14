@@ -21,8 +21,7 @@ public:
             /* [in] */ struct AssemblyNameData *pAssemblyNameData,
             /* [retval][out] */ BINDER_SPACE::Assembly **ppAssembly);
 
-    STDMETHOD(GetLoaderAllocator)(
-        /* [retval][out] */ LPVOID *pLoaderAllocator);
+    AssemblyLoaderAllocator* GetLoaderAllocator();
 
 public:
 

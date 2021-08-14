@@ -181,7 +181,7 @@ Assembly* AssemblyNative::LoadFromPEImage(ICLRPrivBinder* pBinderContext, PEImag
     HRESULT hr = S_OK;
     PTR_AppDomain pCurDomain = GetAppDomain();
     CLRPrivBinderCoreCLR *pTPABinder = pCurDomain->GetTPABinderContext();
-    if (!AreSameBinderInstance(pTPABinder, pBinderContext))
+    if (pTPABinder != pBinderContext)
     {
         // We are working with custom Assembly Load Context so bind the assembly using it.
         CLRPrivBinderAssemblyLoadContext *pBinder = reinterpret_cast<CLRPrivBinderAssemblyLoadContext *>(pBinderContext);
@@ -240,8 +240,8 @@ void QCALLTYPE AssemblyNative::LoadFromPath(INT_PTR ptrNativeAssemblyLoadContext
         if (!pILImage->CheckILFormat())
             THROW_BAD_FORMAT(BFA_BAD_IL, pILImage.GetValue());
 
-        LoaderAllocator* pLoaderAllocator = NULL;
-        if (SUCCEEDED(pBinderContext->GetLoaderAllocator((LPVOID*)&pLoaderAllocator)) && pLoaderAllocator->IsCollectible() && !pILImage->IsILOnly())
+        LoaderAllocator* pLoaderAllocator = pBinderContext->GetLoaderAllocator();
+        if (pLoaderAllocator && pLoaderAllocator->IsCollectible() && !pILImage->IsILOnly())
         {
             // Loading IJW assemblies into a collectible AssemblyLoadContext is not allowed
             THROW_BAD_FORMAT(BFA_IJW_IN_COLLECTIBLE_ALC, pILImage.GetValue());
@@ -314,8 +314,8 @@ void QCALLTYPE AssemblyNative::LoadFromStream(INT_PTR ptrNativeAssemblyLoadConte
     // Get the binder context in which the assembly will be loaded
     ICLRPrivBinder *pBinderContext = reinterpret_cast<ICLRPrivBinder*>(ptrNativeAssemblyLoadContext);
 
-    LoaderAllocator* pLoaderAllocator = NULL;
-    if (SUCCEEDED(pBinderContext->GetLoaderAllocator((LPVOID*)&pLoaderAllocator)) && pLoaderAllocator->IsCollectible() && !pILImage->IsILOnly())
+    LoaderAllocator* pLoaderAllocator = pBinderContext->GetLoaderAllocator();
+    if (pLoaderAllocator && pLoaderAllocator->IsCollectible() && !pILImage->IsILOnly())
     {
         // Loading IJW assemblies into a collectible AssemblyLoadContext is not allowed
         ThrowHR(COR_E_BADIMAGEFORMAT, BFA_IJW_IN_COLLECTIBLE_ALC);

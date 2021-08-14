@@ -548,9 +548,7 @@ Assembly *Assembly::CreateDynamic(AppDomain *pDomain, ICLRPrivBinder* pBinderCon
                     PTR_BINDER_SPACE_Assembly pCallerAssemblyHostAssembly = pCallerAssemblyManifestFile->GetHostAssembly();
                     _ASSERTE(pCallerAssemblyHostAssembly != nullptr);
 
-                    UINT_PTR assemblyBinderID = 0;
-                    IfFailThrow(pCallerAssemblyHostAssembly->GetBinderID(&assemblyBinderID));
-                    pFallbackLoadContextBinder = reinterpret_cast<ICLRPrivBinder*>(assemblyBinderID);
+                    pFallbackLoadContextBinder = pCallerAssemblyHostAssembly->GetBinder();
                 }
             }
             else
@@ -575,10 +573,9 @@ Assembly *Assembly::CreateDynamic(AppDomain *pDomain, ICLRPrivBinder* pBinderCon
         GCX_PREEMP();
 
         AssemblyLoaderAllocator* pBinderAssemblyLoaderAllocator = nullptr;
-
         if (pBinderContext != nullptr)
         {
-            pBinderContext->GetLoaderAllocator((LPVOID*)&pBinderAssemblyLoaderAllocator);
+            pBinderAssemblyLoaderAllocator = pBinderContext->GetLoaderAllocator();
         }
 
         // Create a new LoaderAllocator if appropriate

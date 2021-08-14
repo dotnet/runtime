@@ -164,16 +164,9 @@ Exit:;
     return hr;
 }
 
-HRESULT CLRPrivBinderAssemblyLoadContext::GetLoaderAllocator(LPVOID* pLoaderAllocator)
+AssemblyLoaderAllocator* CLRPrivBinderAssemblyLoadContext::GetLoaderAllocator()
 {
-    _ASSERTE(pLoaderAllocator != NULL);
-    if (m_pAssemblyLoaderAllocator == NULL)
-    {
-        return E_FAIL;
-    }
-
-    *pLoaderAllocator = m_pAssemblyLoaderAllocator;
-    return S_OK;
+    return m_pAssemblyLoaderAllocator;
 }
 
 //=============================================================================
@@ -184,7 +177,7 @@ HRESULT CLRPrivBinderAssemblyLoadContext::GetLoaderAllocator(LPVOID* pLoaderAllo
 //=============================================================================
 /* static */
 HRESULT CLRPrivBinderAssemblyLoadContext::SetupContext(CLRPrivBinderCoreCLR *pTPABinder,
-                                                       LoaderAllocator* pLoaderAllocator,
+                                                       AssemblyLoaderAllocator* pLoaderAllocator,
                                                        void* loaderAllocatorHandle,
                                                        UINT_PTR ptrAssemblyLoadContext,
                                                        CLRPrivBinderAssemblyLoadContext **ppBindContext)
@@ -197,8 +190,7 @@ HRESULT CLRPrivBinderAssemblyLoadContext::SetupContext(CLRPrivBinderCoreCLR *pTP
             ReleaseHolder<CLRPrivBinderAssemblyLoadContext> pBinder;
 
             SAFE_NEW(pBinder, CLRPrivBinderAssemblyLoadContext);
-            UINT_PTR binderId;
-            pBinder->GetBinderID(&binderId);
+            UINT_PTR binderId = pBinder->GetBinderID();
             hr = pBinder->m_appContext.Init(binderId);
             if(SUCCEEDED(hr))
             {

@@ -114,7 +114,7 @@ namespace
     void GetAssemblyLoadContextNameFromBinderID(UINT_PTR binderID, AppDomain *domain, /*out*/ SString &alcName)
     {
         ICLRPrivBinder *binder = reinterpret_cast<ICLRPrivBinder *>(binderID);
-        if (AreSameBinderInstance(binder, domain->GetTPABinderContext()))
+        if (binder == domain->GetTPABinderContext())
         {
             alcName.Set(W("Default"));
         }
@@ -134,11 +134,8 @@ namespace
     {
         _ASSERTE(bindContext != nullptr);
 
-        UINT_PTR binderID = 0;
-        HRESULT hr = bindContext->GetBinderID(&binderID);
-        _ASSERTE(SUCCEEDED(hr));
-        if (SUCCEEDED(hr))
-            GetAssemblyLoadContextNameFromBinderID(binderID, domain, alcName);
+        UINT_PTR binderID = bindContext->GetBinderID();
+        GetAssemblyLoadContextNameFromBinderID(binderID, domain, alcName);
     }
 
     void GetAssemblyLoadContextNameFromSpec(AssemblySpec *spec, /*out*/ SString &alcName)

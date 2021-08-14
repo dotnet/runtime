@@ -402,17 +402,11 @@ BOOL PEFile::Equals(PEFile *pFile)
     // because another thread beats it; the losing thread will pick up the PEAssembly in the cache.
     if (pFile->HasHostAssembly() && this->HasHostAssembly())
     {
-        UINT_PTR fileBinderId = 0;
-        if (FAILED(pFile->GetHostAssembly()->GetBinderID(&fileBinderId)))
-            return FALSE;
+        UINT_PTR fileBinderId = pFile->GetHostAssembly()->GetBinderID();
+        UINT_PTR thisBinderId = this->GetHostAssembly()->GetBinderID();
 
-        UINT_PTR thisBinderId = 0;
-        if (FAILED(this->GetHostAssembly()->GetBinderID(&thisBinderId)))
+        if (fileBinderId != thisBinderId || fileBinderId == 0)
             return FALSE;
-
-        if (fileBinderId != thisBinderId)
-            return FALSE;
-
     }
 
     // Same identity is equal
@@ -2269,18 +2263,9 @@ void PEFile::EnsureImageOpened()
 void PEFile::SetupAssemblyLoadContext()
 {
     PTR_ICLRPrivBinder pBindingContext = GetBindingContext();
-    ICLRPrivBinder* pOpaqueBinder = NULL;
 
-    if (pBindingContext != NULL)
-    {
-        UINT_PTR assemblyBinderID = 0;
-        IfFailThrow(pBindingContext->GetBinderID(&assemblyBinderID));
-
-        pOpaqueBinder = reinterpret_cast<ICLRPrivBinder*>(assemblyBinderID);
-    }
-
-    m_pAssemblyLoadContext = (pOpaqueBinder != NULL) ?
-        (AssemblyLoadContext*)pOpaqueBinder :
+    m_pAssemblyLoadContext = (pBindingContext != NULL) ?
+        (AssemblyLoadContext*)pBindingContext :
         AppDomain::GetCurrentDomain()->CreateBinderContext();
 }
 
