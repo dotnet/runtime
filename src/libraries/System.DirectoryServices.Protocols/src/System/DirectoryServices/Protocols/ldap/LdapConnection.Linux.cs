@@ -13,8 +13,6 @@ namespace System.DirectoryServices.Protocols
     {
         // Linux doesn't support setting FQDN so we mark the flag as if it is already set so we don't make a call to set it again.
         private bool _setFQDNDone = true;
-        internal bool _startTls;
-        internal DirectoryControlCollection _startTlsControls;
 
         private void InternalInitConnectionHandle(string hostname)
         {
@@ -77,12 +75,6 @@ namespace System.DirectoryServices.Protocols
             }
 
             int error = LdapPal.SetStringOption(_ldapHandle, LdapOption.LDAP_OPT_URI, uris);
-
-            // LdapPal.StartTls() must be called after setting the URI.
-            if (error == 0 && _startTls)
-            {
-                error = StartTls();
-            }
             return error;
         }
 
@@ -137,151 +129,6 @@ namespace System.DirectoryServices.Protocols
                 defaults.authzid = Marshal.PtrToStringAnsi(outValue);
             }
             return defaults;
-        }
-
-        private unsafe int StartTls()
-        {
-
-            IntPtr serverControlArray = IntPtr.Zero;
-            LdapControl[] managedServerControls = null;
-            IntPtr clientControlArray = IntPtr.Zero;
-            LdapControl[] managedClientControls = null;
-            IntPtr referral = IntPtr.Zero;
-
-
-            try
-            {
-                IntPtr tempPtr = IntPtr.Zero;
-
-                // build server control
-                managedServerControls = BuildControlArray(_startTlsControls, true);
-                int structSize = Marshal.SizeOf(typeof(LdapControl));
-                if (managedServerControls != null)
-                {
-                    serverControlArray = Utility.AllocHGlobalIntPtrArray(managedServerControls.Length + 1);
-                    for (int i = 0; i < managedServerControls.Length; i++)
-                    {
-                        IntPtr controlPtr = Marshal.AllocHGlobal(structSize);
-                        Marshal.StructureToPtr(managedServerControls[i], controlPtr, false);
-                        tempPtr = (IntPtr)((long)serverControlArray + IntPtr.Size * i);
-                        Marshal.WriteIntPtr(tempPtr, controlPtr);
-                    }
-
-                    tempPtr = (IntPtr)((long)serverControlArray + IntPtr.Size * managedServerControls.Length);
-                    Marshal.WriteIntPtr(tempPtr, IntPtr.Zero);
-                }
-
-                // Build client control.
-                managedClientControls = BuildControlArray(_startTlsControls, false);
-                if (managedClientControls != null)
-                {
-                    clientControlArray = Utility.AllocHGlobalIntPtrArray(managedClientControls.Length + 1);
-                    for (int i = 0; i < managedClientControls.Length; i++)
-                    {
-                        IntPtr controlPtr = Marshal.AllocHGlobal(structSize);
-                        Marshal.StructureToPtr(managedClientControls[i], controlPtr, false);
-                        tempPtr = (IntPtr)((long)clientControlArray + IntPtr.Size * i);
-                        Marshal.WriteIntPtr(tempPtr, controlPtr);
-                    }
-
-                    tempPtr = (IntPtr)((long)clientControlArray + IntPtr.Size * managedClientControls.Length);
-                    Marshal.WriteIntPtr(tempPtr, IntPtr.Zero);
-                }
-
-                int error = LdapPal.StartTls(_ldapHandle, serverControlArray, clientControlArray);
-                if (error != (int)ResultCode.Success)
-                {
-                    if (Utility.IsResultCode((ResultCode)error))
-                    {
-                        // Parse the referral.
-                        Uri[] responseReferral = null;
-
-                        string errorMessage = OperationErrorMappings.MapResultCode(error);
-                        ExtendedResponse response = new ExtendedResponse(null, null, (ResultCode)error, errorMessage, responseReferral);
-                        response.ResponseName = "1.3.6.1.4.1.1466.20037";
-                        throw new TlsOperationException(response);
-                    }
-                    else if (LdapErrorMappings.IsLdapError(error))
-                    {
-                        string errorMessage = LdapErrorMappings.MapResultCode(error);
-                        throw new LdapException(error, errorMessage);
-                    }
-                }
-
-                return error;
-            }
-            finally
-            {
-                if (serverControlArray != IntPtr.Zero)
-                {
-                    // Release the memory from the heap.
-                    for (int i = 0; i < managedServerControls.Length; i++)
-                    {
-                        IntPtr tempPtr = Marshal.ReadIntPtr(serverControlArray, IntPtr.Size * i);
-                        if (tempPtr != IntPtr.Zero)
-                        {
-                            Marshal.FreeHGlobal(tempPtr);
-                        }
-                    }
-                    Marshal.FreeHGlobal(serverControlArray);
-                }
-
-                if (managedServerControls != null)
-                {
-                    for (int i = 0; i < managedServerControls.Length; i++)
-                    {
-                        if (managedServerControls[i].ldctl_oid != IntPtr.Zero)
-                        {
-                            Marshal.FreeHGlobal(managedServerControls[i].ldctl_oid);
-                        }
-
-                        if (managedServerControls[i].ldctl_value != null)
-                        {
-                            if (managedServerControls[i].ldctl_value.bv_val != IntPtr.Zero)
-                            {
-                                Marshal.FreeHGlobal(managedServerControls[i].ldctl_value.bv_val);
-                            }
-                        }
-                    }
-                }
-
-                if (clientControlArray != IntPtr.Zero)
-                {
-                    // Release the memory from the heap.
-                    for (int i = 0; i < managedClientControls.Length; i++)
-                    {
-                        IntPtr tempPtr = Marshal.ReadIntPtr(clientControlArray, IntPtr.Size * i);
-                        if (tempPtr != IntPtr.Zero)
-                        {
-                            Marshal.FreeHGlobal(tempPtr);
-                        }
-                    }
-
-                    Marshal.FreeHGlobal(clientControlArray);
-                }
-
-                if (managedClientControls != null)
-                {
-                    for (int i = 0; i < managedClientControls.Length; i++)
-                    {
-                        if (managedClientControls[i].ldctl_oid != IntPtr.Zero)
-                        {
-                            Marshal.FreeHGlobal(managedClientControls[i].ldctl_oid);
-                        }
-
-                        if (managedClientControls[i].ldctl_value != null)
-                        {
-                            if (managedClientControls[i].ldctl_value.bv_val != IntPtr.Zero)
-                                Marshal.FreeHGlobal(managedClientControls[i].ldctl_value.bv_val);
-                        }
-                    }
-                }
-
-                if (referral != IntPtr.Zero)
-                {
-                    LdapPal.FreeValue(referral);
-                }
-            }
         }
     }
 }

@@ -4,7 +4,6 @@
 using System.Collections;
 using System.ComponentModel;
 using System.Runtime.InteropServices;
-using System.Runtime.Versioning;
 
 namespace System.DirectoryServices.Protocols
 {

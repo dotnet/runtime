@@ -48,7 +48,7 @@ namespace System.DirectoryServices.Protocols
         internal bool _disposed;
         private bool _bounded;
         private bool _needRebind;
-        private bool _connected;
+        internal bool _connected;
         internal QUERYCLIENTCERT _clientCertificateRoutine;
 
         public LdapConnection(string server) : this(new LdapDirectoryIdentifier(server))
@@ -973,7 +973,7 @@ namespace System.DirectoryServices.Protocols
             return false;
         }
 
-        private void Connect()
+        internal void Connect()
         {
             //Ccurrently ldap does not accept more than one certificate.
             if (ClientCertificates.Count > 1)

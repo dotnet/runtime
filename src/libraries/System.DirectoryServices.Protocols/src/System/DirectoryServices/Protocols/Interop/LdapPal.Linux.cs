@@ -123,7 +123,7 @@ namespace System.DirectoryServices.Protocols
             }
         }
 
-        internal static int StartTls(ConnectionHandle ldapHandle, IntPtr serverControls, IntPtr clientControls) => Interop.Ldap.ldap_start_tls(ldapHandle, serverControls, clientControls);
+        internal static int StartTls(ConnectionHandle ldapHandle, ref int serverReturnValue, ref IntPtr message, IntPtr serverControls, IntPtr clientControls) => Interop.Ldap.ldap_start_tls(ldapHandle, serverControls, clientControls);
 
         // openldap doesn't have a ldap_stop_tls function. Returning true as no-op for Linux.
         internal static byte StopTls(ConnectionHandle ldapHandle) => 1;
