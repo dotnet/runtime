@@ -5476,33 +5476,45 @@ MINT_IN_CASE(MINT_BRTRUE_I8_SP) ZEROP_SP(gint64, !=); MINT_IN_BREAK;
 		}
 		MINT_IN_CASE(MINT_CONV_OVF_U8_R4) {
 			float val = LOCAL_VAR (ip [2], float);
-			if (mono_isnan (val) || mono_trunc (val) != (guint64)val)
+			double val_r8 = val;
+			const double two64  = 4294967296.0 * 4294967296.0;
+			if (val_r8 > -1.0 && val_r8 < two64)
+				LOCAL_VAR (ip [1], guint64) = (guint64)val;
+			else
 				THROW_EX (mono_get_exception_overflow (), ip);
-			LOCAL_VAR (ip [1], guint64) = (guint64)val;
 			ip += 3;
 			MINT_IN_BREAK;
 		}
 		MINT_IN_CASE(MINT_CONV_OVF_U8_R8) {
 			double val = LOCAL_VAR (ip [2], double);
-			if (mono_isnan (val) || mono_trunc (val) != (guint64)val)
+			const double two64  = 4294967296.0 * 4294967296.0;
+			if (val > -1.0 && val < two64)
+				LOCAL_VAR (ip [1], guint64) = (guint64)val;
+			else
 				THROW_EX (mono_get_exception_overflow (), ip);
-			LOCAL_VAR (ip [1], guint64) = (guint64)val;
 			ip += 3;
 			MINT_IN_BREAK;
 		}
 		MINT_IN_CASE(MINT_CONV_OVF_I8_R4) {
 			float val = LOCAL_VAR (ip [2], float);
-			if (mono_isnan (val) || mono_trunc (val) != (gint64)val)
+			double val_r8 = val;
+			const double two63  = 2147483648.0 * 4294967296.0;
+			// 0x402 is epsilon used to get us to the next value
+			if (val_r8 > (-two63 - 0x402) && val_r8 < two63)
+				LOCAL_VAR (ip [1], gint64) = (gint64)val;
+			else
 				THROW_EX (mono_get_exception_overflow (), ip);
-			LOCAL_VAR (ip [1], gint64) = (gint64)val;
 			ip += 3;
 			MINT_IN_BREAK;
 		}
 		MINT_IN_CASE(MINT_CONV_OVF_I8_R8) {
 			double val = LOCAL_VAR (ip [2], double);
-			if (mono_isnan (val) || mono_trunc (val) != (gint64)val)
+			const double two63  = 2147483648.0 * 4294967296.0;
+			// 0x402 is epsilon used to get us to the next value
+			if (val > (-two63 - 0x402) && val < two63)
+				LOCAL_VAR (ip [1], gint64) = (gint64)val;
+			else
 				THROW_EX (mono_get_exception_overflow (), ip);
-			LOCAL_VAR (ip [1], gint64) = (gint64)val;
 			ip += 3;
 			MINT_IN_BREAK;
 		}
@@ -5804,17 +5816,20 @@ MINT_IN_CASE(MINT_BRTRUE_I8_SP) ZEROP_SP(gint64, !=); MINT_IN_BREAK;
 		}
 		MINT_IN_CASE(MINT_CONV_OVF_I4_R4) {
 			float val = LOCAL_VAR (ip [2], float);
-			if (mono_isnan (val) || mono_trunc (val) != (gint32)val)
+			double val_r8 = (double)val;
+			if (val_r8 > ((double)G_MININT32 - 1) && val_r8 < ((double)G_MAXINT32 + 1))
+				LOCAL_VAR (ip [1], gint32) = (gint32) val;
+			else
 				THROW_EX (mono_get_exception_overflow (), ip);
-			LOCAL_VAR (ip [1], gint32) = (gint32) val;
 			ip += 3;
 			MINT_IN_BREAK;
 		}
 		MINT_IN_CASE(MINT_CONV_OVF_I4_R8) {
 			double val = LOCAL_VAR (ip [2], double);
-			if (val < G_MININT32 || val > G_MAXINT32 || isnan (val))
+			if (val > ((double)G_MININT32 - 1) && val < ((double)G_MAXINT32 + 1))
+				LOCAL_VAR (ip [1], gint32) = (gint32) val;
+			else
 				THROW_EX (mono_get_exception_overflow (), ip);
-			LOCAL_VAR (ip [1], gint32) = (gint32)val;
 			ip += 3;
 			MINT_IN_BREAK;
 		}
@@ -5836,17 +5851,20 @@ MINT_IN_CASE(MINT_BRTRUE_I8_SP) ZEROP_SP(gint64, !=); MINT_IN_BREAK;
 		}
 		MINT_IN_CASE(MINT_CONV_OVF_U4_R4) {
 			float val = LOCAL_VAR (ip [2], float);
-			if (mono_isnan (val) || mono_trunc (val) != (guint32)val)
+			double val_r8 = val;
+			if (val_r8 > -1.0 && val_r8 < ((double)G_MAXUINT32 + 1))
+				LOCAL_VAR (ip [1], gint32) = (guint32)val;
+			else
 				THROW_EX (mono_get_exception_overflow (), ip);
-			LOCAL_VAR (ip [1], gint32) = (guint32)val;
 			ip += 3;
 			MINT_IN_BREAK;
 		}
 		MINT_IN_CASE(MINT_CONV_OVF_U4_R8) {
 			double val = LOCAL_VAR (ip [2], double);
-			if (val < 0 || val > G_MAXUINT32 || isnan (val))
+			if (val > -1.0 && val < ((double)G_MAXUINT32 + 1))
+				LOCAL_VAR (ip [1], gint32) = (guint32)val;
+			else
 				THROW_EX (mono_get_exception_overflow (), ip);
-			LOCAL_VAR (ip [1], gint32) = (guint32) val;
 			ip += 3;
 			MINT_IN_BREAK;
 		}
@@ -5884,17 +5902,19 @@ MINT_IN_CASE(MINT_BRTRUE_I8_SP) ZEROP_SP(gint64, !=); MINT_IN_BREAK;
 		}
 		MINT_IN_CASE(MINT_CONV_OVF_I2_R4) {
 			float val = LOCAL_VAR (ip [2], float);
-			if (val < G_MININT16 || val > G_MAXINT16 || isnan (val))
+			if (val > (G_MININT16 - 1) && val < (G_MAXINT16 + 1))
+				LOCAL_VAR (ip [1], gint32) = (gint16) val;
+			else
 				THROW_EX (mono_get_exception_overflow (), ip);
-			LOCAL_VAR (ip [1], gint32) = (gint16) val;
 			ip += 3;
 			MINT_IN_BREAK;
 		}
 		MINT_IN_CASE(MINT_CONV_OVF_I2_R8) {
 			double val = LOCAL_VAR (ip [2], double);
-			if (val < G_MININT16 || val > G_MAXINT16 || isnan (val))
+			if (val > (G_MININT16 - 1) && val < (G_MAXINT16 + 1))
+				LOCAL_VAR (ip [1], gint32) = (gint16) val;
+			else
 				THROW_EX (mono_get_exception_overflow (), ip);
-			LOCAL_VAR (ip [1], gint32) = (gint16) val;
 			ip += 3;
 			MINT_IN_BREAK;
 		}
@@ -5916,17 +5936,19 @@ MINT_IN_CASE(MINT_BRTRUE_I8_SP) ZEROP_SP(gint64, !=); MINT_IN_BREAK;
 		}
 		MINT_IN_CASE(MINT_CONV_OVF_U2_R4) {
 			float val = LOCAL_VAR (ip [2], float);
-			if (val < 0 || val > G_MAXUINT16 || isnan (val))
+			if (val > -1.0f && val < (G_MAXUINT16 + 1))
+				LOCAL_VAR (ip [1], gint32) = (guint16) val;
+			else
 				THROW_EX (mono_get_exception_overflow (), ip);
-			LOCAL_VAR (ip [1], gint32) = (guint16) val;
 			ip += 3;
 			MINT_IN_BREAK;
 		}
 		MINT_IN_CASE(MINT_CONV_OVF_U2_R8) {
 			double val = LOCAL_VAR (ip [2], double);
-			if (val < 0 || val > G_MAXUINT16 || isnan (val))
+			if (val > -1.0 && val < (G_MAXUINT16 + 1))
+				LOCAL_VAR (ip [1], gint32) = (guint16) val;
+			else
 				THROW_EX (mono_get_exception_overflow (), ip);
-			LOCAL_VAR (ip [1], gint32) = (guint16) val;
 			ip += 3;
 			MINT_IN_BREAK;
 		}
@@ -5964,17 +5986,19 @@ MINT_IN_CASE(MINT_BRTRUE_I8_SP) ZEROP_SP(gint64, !=); MINT_IN_BREAK;
 		}
 		MINT_IN_CASE(MINT_CONV_OVF_I1_R4) {
 			float val = LOCAL_VAR (ip [2], float);
-			if (val < G_MININT8 || val > G_MAXINT8 || isnan (val))
+			if (val > (G_MININT8 - 1) && val < (G_MAXINT8 + 1))
+				LOCAL_VAR (ip [1], gint32) = (gint8) val;
+			else
 				THROW_EX (mono_get_exception_overflow (), ip);
-			LOCAL_VAR (ip [1], gint32) = (gint8) val;
 			ip += 3;
 			MINT_IN_BREAK;
 		}
 		MINT_IN_CASE(MINT_CONV_OVF_I1_R8) {
 			double val = LOCAL_VAR (ip [2], double);
-			if (val < G_MININT8 || val > G_MAXINT8 || isnan (val))
+			if (val > (G_MININT8 - 1) && val < (G_MAXINT8 + 1))
+				LOCAL_VAR (ip [1], gint32) = (gint8) val;
+			else
 				THROW_EX (mono_get_exception_overflow (), ip);
-			LOCAL_VAR (ip [1], gint32) = (gint8) val;
 			ip += 3;
 			MINT_IN_BREAK;
 		}
@@ -5996,17 +6020,19 @@ MINT_IN_CASE(MINT_BRTRUE_I8_SP) ZEROP_SP(gint64, !=); MINT_IN_BREAK;
 		}
 		MINT_IN_CASE(MINT_CONV_OVF_U1_R4) {
 			float val = LOCAL_VAR (ip [2], float);
-			if (val < 0 || val > G_MAXUINT8 || isnan (val))
+			if (val > -1.0f && val < (G_MAXUINT8 + 1))
+				LOCAL_VAR (ip [1], gint32) = (guint8)val;
+			else
 				THROW_EX (mono_get_exception_overflow (), ip);
-			LOCAL_VAR (ip [1], gint32) = (guint8) val;
 			ip += 3;
 			MINT_IN_BREAK;
 		}
 		MINT_IN_CASE(MINT_CONV_OVF_U1_R8) {
 			double val = LOCAL_VAR (ip [2], double);
-			if (val < 0 || val > G_MAXUINT8 || isnan (val))
+			if (val > -1.0 && val < (G_MAXUINT8 + 1))
+				LOCAL_VAR (ip [1], gint32) = (guint8)val;
+			else
 				THROW_EX (mono_get_exception_overflow (), ip);
-			LOCAL_VAR (ip [1], gint32) = (guint8) val;
 			ip += 3;
 			MINT_IN_BREAK;
 		}
