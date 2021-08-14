@@ -3,8 +3,6 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Globalization;
-using System.Linq;
 using System.Diagnostics.CodeAnalysis;
 
 namespace System.ComponentModel.DataAnnotations
@@ -72,7 +70,7 @@ namespace System.ComponentModel.DataAnnotations
         internal sealed class UIHintImplementation
         {
             private readonly object?[]? _inputControlParameters;
-            private IDictionary<string, object?>? _controlParameters;
+            private Dictionary<string, object?>? _controlParameters;
 
             public UIHintImplementation(string uiHint, string? presentationLayer, params object?[]? controlParameters)
             {
@@ -98,7 +96,7 @@ namespace System.ComponentModel.DataAnnotations
             // Lazy load the dictionary. It's fine if this method executes multiple times in stress scenarios.
             // If the method throws (indicating that the input params are invalid) this property will throw
             // every time it's accessed.
-            public IDictionary<string, object?> ControlParameters =>
+            public Dictionary<string, object?> ControlParameters =>
                 _controlParameters ?? (_controlParameters = BuildControlParametersDictionary());
 
             /// <summary>
@@ -130,8 +128,8 @@ namespace System.ComponentModel.DataAnnotations
                     return false;
                 }
 
-                IDictionary<string, object?> leftParams;
-                IDictionary<string, object?> rightParams;
+                Dictionary<string, object?> leftParams;
+                Dictionary<string, object?> rightParams;
 
                 try
                 {
@@ -145,11 +143,8 @@ namespace System.ComponentModel.DataAnnotations
 
                 Debug.Assert(leftParams != null, "leftParams shouldn't be null");
                 Debug.Assert(rightParams != null, "rightParams shouldn't be null");
-                if (leftParams.Count != rightParams.Count)
-                {
-                    return false;
-                }
-                return leftParams.OrderBy(p => p.Key).SequenceEqual(rightParams.OrderBy(p => p.Key));
+
+                return ControlParametersAreEqual(leftParams, rightParams);
             }
 
 
@@ -159,21 +154,20 @@ namespace System.ComponentModel.DataAnnotations
             /// <returns>
             ///     Dictionary of control parameters.
             /// </returns>
-            private IDictionary<string, object?> BuildControlParametersDictionary()
+            private Dictionary<string, object?> BuildControlParametersDictionary()
             {
-                IDictionary<string, object?> controlParameters = new Dictionary<string, object?>();
-
                 object?[]? inputControlParameters = _inputControlParameters;
 
                 if (inputControlParameters == null || inputControlParameters.Length == 0)
                 {
-                    return controlParameters;
+                    return new Dictionary<string, object?>();
                 }
                 if (inputControlParameters.Length % 2 != 0)
                 {
                     throw new InvalidOperationException(SR.UIHintImplementation_NeedEvenNumberOfControlParameters);
                 }
 
+                Dictionary<string, object?> controlParameters = new Dictionary<string, object?>(inputControlParameters.Length / 2);
                 for (int i = 0; i < inputControlParameters.Length; i += 2)
                 {
                     object? key = inputControlParameters[i];
@@ -187,21 +181,45 @@ namespace System.ComponentModel.DataAnnotations
                     {
                         throw new InvalidOperationException(SR.Format(SR.UIHintImplementation_ControlParameterKeyIsNotAString,
                                                             i,
-                                                            inputControlParameters[i]!.ToString()));
+                                                            key.ToString()));
                     }
 
-                    if (controlParameters.ContainsKey(keyString))
+                    if (!controlParameters.TryAdd(keyString, value))
                     {
                         throw new InvalidOperationException(SR.Format(SR.UIHintImplementation_ControlParameterKeyOccursMoreThanOnce,
                                                             i,
                                                             keyString));
                     }
-
-                    controlParameters[keyString] = value;
                 }
 
                 return controlParameters;
             }
+
+            private static bool ControlParametersAreEqual(Dictionary<string, object?> left, Dictionary<string, object?> right)
+            {
+                if (left.Count != right.Count)
+                {
+                    return false;
+                }
+
+                var comparer = EqualityComparer<object?>.Default;
+
+                foreach (var leftEntry in left)
+                {
+                    if (!right.TryGetValue(leftEntry.Key, out object? rightValue))
+                    {
+                        return false;
+                    }
+
+                    if (!comparer.Equals(leftEntry.Value, rightValue))
+                    {
+                        return false;
+                    }
+                }
+
+                return true;
+            }
+
         }
     }
 }
