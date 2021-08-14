@@ -10975,31 +10975,39 @@ GenTree* Compiler::fgMorphCommutative(GenTreeOp* tree)
     GenTreeIntCon* cns1 = op1->gtGetOp2()->AsIntCon();
     GenTreeIntCon* cns2 = tree->gtGetOp2()->AsIntCon();
 
-    if (!varTypeIsIntegralOrI(tree->TypeGet()) || cns1->TypeIs(TYP_REF) || !cns1->TypeIs(cns2->TypeGet()))
+    if (!varTypeIsIntegralOrI(tree->TypeGet()) || cns1->TypeIs(TYP_REF) || !cns1->TypeIs(cns2->TypeGet()) ||
+        gtIsActiveCSE_Candidate(cns1) || gtIsActiveCSE_Candidate(cns2))
     {
         return nullptr;
     }
 
-    GenTree* foldedCns = gtFoldExprConst(gtNewOperNode(oper, cns1->TypeGet(), cns1, cns2));
-    if (!foldedCns->IsCnsIntOrI())
+    GenTree* folded = gtFoldExprConst(gtNewOperNode(oper, cns1->TypeGet(), cns1, cns2));
+
+    if (!folded->IsCnsIntOrI())
     {
         // Give up if we can't fold "C1 op C2"
         return nullptr;
     }
 
-    cns1->gtIconVal = foldedCns->AsIntCon()->IconValue();
+    auto foldedCns = folded->AsIntCon();
+
+    cns1->SetIconValue(foldedCns->gtIconVal);
+    cns1->SetVNsFromNode(foldedCns);
+
     if (oper == GT_ADD)
     {
-        cns1->AsIntCon()->gtFieldSeq =
-            GetFieldSeqStore()->Append(cns1->AsIntCon()->gtFieldSeq, cns2->AsIntCon()->gtFieldSeq);
+        cns1->gtFieldSeq = GetFieldSeqStore()->Append(cns1->gtFieldSeq, cns2->gtFieldSeq);
     }
 
-    GenTreeOp* newTree = tree->gtGetOp1()->AsOp();
+    op1 = tree->gtGetOp1();
+    op1->SetVNsFromNode(tree);
+
     DEBUG_DESTROY_NODE(tree);
     DEBUG_DESTROY_NODE(cns2);
     DEBUG_DESTROY_NODE(foldedCns);
-    INDEBUG(newTree->gtOp2->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED);
-    return newTree;
+    INDEBUG(cns1->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED);
+
+    return op1;
 }
 
 /*****************************************************************************
@@ -13093,8 +13101,7 @@ DONE_MORPHING_CHILDREN:
                 op2  = tree->AsOp()->gtOp2;
             }
 
-            if (varTypeIsIntegralOrI(tree->TypeGet()) && tree->OperIs(GT_ADD, GT_MUL, GT_AND, GT_OR, GT_XOR) &&
-                !optValnumCSE_phase)
+            if (varTypeIsIntegralOrI(tree->TypeGet()) && tree->OperIs(GT_ADD, GT_MUL, GT_AND, GT_OR, GT_XOR))
             {
                 GenTree* foldedTree = fgMorphCommutative(tree->AsOp());
                 if (foldedTree != nullptr)
