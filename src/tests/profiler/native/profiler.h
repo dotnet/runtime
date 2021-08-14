@@ -84,7 +84,7 @@ public:
         return;                                 \
     }
 
-class Profiler : public ICorProfilerCallback10
+class Profiler : public ICorProfilerCallback11
 {
 private:
     std::atomic<int> refCount;
@@ -105,7 +105,6 @@ public:
 
     Profiler();
     virtual ~Profiler();
-	virtual GUID GetClsid() = 0;
     HRESULT STDMETHODCALLTYPE Initialize(IUnknown* pICorProfilerInfoUnk) override;
     HRESULT STDMETHODCALLTYPE Shutdown() override;
     HRESULT STDMETHODCALLTYPE AppDomainCreationStarted(AppDomainID appDomainId) override;
@@ -212,6 +211,7 @@ public:
         ULONG numStackFrames,
         UINT_PTR stackFrames[]) override;
     HRESULT STDMETHODCALLTYPE EventPipeProviderCreated(EVENTPIPE_PROVIDER provider) override;
+    HRESULT STDMETHODCALLTYPE LoadAsNotficationOnly(BOOL *pbNotificationOnly) override;
 
     HRESULT STDMETHODCALLTYPE QueryInterface(REFIID riid, void **ppvObject) override;
     ULONG STDMETHODCALLTYPE AddRef(void) override;

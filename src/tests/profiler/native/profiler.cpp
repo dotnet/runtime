@@ -532,6 +532,12 @@ HRESULT STDMETHODCALLTYPE Profiler::EventPipeProviderCreated(EVENTPIPE_PROVIDER 
     return S_OK;
 }
 
+HRESULT STDMETHODCALLTYPE Profiler::LoadAsNotficationOnly(BOOL *pbNotificationOnly)
+{
+    *pbNotificationOnly = FALSE;
+    return S_OK;
+}
+
 HRESULT STDMETHODCALLTYPE Profiler::QueryInterface(REFIID riid, void **ppvObject)
 {
     if (riid == __uuidof(ICorProfilerCallback10) ||
