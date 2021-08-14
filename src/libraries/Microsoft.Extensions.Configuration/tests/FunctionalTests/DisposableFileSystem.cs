@@ -73,7 +73,10 @@ namespace Microsoft.Extensions.Configuration.Test
             {
                 var fullPath = Path.Combine(RootPath, path);
                 var dirName = Path.GetDirectoryName(fullPath);
-                Directory.CreateDirectory(dirName);
+                if (dirName != null)
+                {
+                    Directory.CreateDirectory(dirName);
+                }
 
                 WaitForFileSystem(
                     () => Directory.Exists(dirName),
@@ -102,9 +105,9 @@ namespace Microsoft.Extensions.Configuration.Test
         private void WaitForFileSystem(
             Func<bool> test,
             string failureMessage,
-            Action retry = null)
+            Action? retry = null)
         {
-            Exception failure = null;
+            Exception? failure = null;
 
             Func<bool> nonThrowingTest = () =>
             {

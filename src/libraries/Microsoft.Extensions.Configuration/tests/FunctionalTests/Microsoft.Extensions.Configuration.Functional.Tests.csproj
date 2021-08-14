@@ -3,6 +3,7 @@
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppCurrent);net461</TargetFrameworks>
     <EnableDefaultItems>true</EnableDefaultItems>
+    <Nullable>enable</Nullable>
   </PropertyGroup>
 
   <ItemGroup>

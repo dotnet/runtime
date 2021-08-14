@@ -68,7 +68,7 @@ CommonKey3:CommonKey4=IniValue6";
     }
   }
 }";
-        private static readonly Dictionary<string, string> _memConfigContent = new Dictionary<string, string>
+        private static readonly Dictionary<string, string?> _memConfigContent = new Dictionary<string, string?>
             {
                 { "MemKey1", "MemValue1" },
                 { "MemKey2:MemKey3", "MemValue2" },
@@ -100,7 +100,7 @@ CommonKey3:CommonKey4=IniValue6";
 
             Assert.Throws<FileNotFoundException>(() => configurationBuilder.Build());
         }
-        
+
         [Fact]
         public void CanHandleExceptionIfFileNotFound()
         {
@@ -137,9 +137,9 @@ CommonKey3:CommonKey4=IniValue6";
 
         private class NotVeryGoodFileProvider : IFileProvider
         {
-            public IDirectoryContents GetDirectoryContents(string subpath) => null;
-            public IFileInfo GetFileInfo(string subpath) => null;
-            public IChangeToken Watch(string filter) => null;
+            public IDirectoryContents GetDirectoryContents(string? subpath) => null!;
+            public IFileInfo GetFileInfo(string subpath) => null!;
+            public IChangeToken Watch(string? filter) => null!;
         }
 
         private class MissingFile : IFileInfo
@@ -155,9 +155,9 @@ CommonKey3:CommonKey4=IniValue6";
 
         private class AlwaysMissingFileProvider : IFileProvider
         {
-            public IDirectoryContents GetDirectoryContents(string subpath) => null;
-            public IFileInfo GetFileInfo(string subpath) => null;
-            public IChangeToken Watch(string filter) => null;
+            public IDirectoryContents GetDirectoryContents(string? subpath) => null!;
+            public IFileInfo GetFileInfo(string subpath) => null!;
+            public IChangeToken Watch(string? filter) => null!;
         }
 
         private void WriteTestFiles()
@@ -366,8 +366,8 @@ CommonKey3:CommonKey4=IniValue6";
         {
             _fileSystem.WriteFile(Path.Combine(_basePath, "error.json"), @"{""JsonKey1"": ", absolute: true);
 
-            FileConfigurationProvider provider = null;
-            Exception jsonError = null;
+            FileConfigurationProvider? provider = null;
+            Exception? jsonError = null;
             Action<FileLoadExceptionContext> jsonLoadError = c =>
             {
                 jsonError = c.Exception;
@@ -395,8 +395,8 @@ CommonKey3:CommonKey4=IniValue6";
         {
             _fileSystem.WriteFile("error.xml", @"gobblygook");
 
-            FileConfigurationProvider provider = null;
-            Exception error = null;
+            FileConfigurationProvider? provider = null;
+            Exception? error = null;
             Action<FileLoadExceptionContext> loadError = c =>
             {
                 error = c.Exception;
@@ -425,7 +425,7 @@ CommonKey3:CommonKey4=IniValue6";
 IniKey1=IniValue2");
 
             FileConfigurationProvider provider = null;
-            Exception error = null;
+            Exception? error = null;
             Action<FileLoadExceptionContext> loadError = c =>
             {
                 error = c.Exception;
@@ -695,7 +695,7 @@ IniKey1=IniValue2");
             Assert.Equal("IniValue1", config["Key"]);
             Assert.True(token.HasChanged);
         }
-        
+
         [Theory]
         [ActiveIssue("File watching is flaky (particularly on non windows. https://github.com/dotnet/runtime/issues/33992")]
         [InlineData(false)]
@@ -925,7 +925,7 @@ IniKey1=IniValue2");
         {
             string userSecretsId = "Test";
             var userSecretsPath = PathHelper.GetSecretsPathFromSecretsId(userSecretsId);
-            var userSecretsFolder = Path.GetDirectoryName(userSecretsPath);
+            var userSecretsFolder = Path.GetDirectoryName(userSecretsPath)!;
 
             _fileSystem.CreateFolder(userSecretsFolder);
             _fileSystem.WriteFile(userSecretsPath, @"{""UserSecretKey1"": ""UserSecretValue1""}");
@@ -977,18 +977,18 @@ IniKey1=IniValue2");
 
                 _ = Task.Run(ReloadLoop);
 
-                MyOptions options = null;
+                MyOptions? options = null;
 
                 while (!cts.IsCancellationRequested)
                 {
                     options = config.Get<MyOptions>();
                 }
 
-                Assert.Equal("CmdValue1", options.CmdKey1);
-                Assert.Equal("IniValue1", options.IniKey1);
-                Assert.Equal("JsonValue1", options.JsonKey1);
-                Assert.Equal("MemValue1", options.MemKey1);
-                Assert.Equal("XmlValue1", options.XmlKey1);
+                Assert.Equal("CmdValue1", options?.CmdKey1);
+                Assert.Equal("IniValue1", options?.IniKey1);
+                Assert.Equal("JsonValue1", options?.JsonKey1);
+                Assert.Equal("MemValue1", options?.MemKey1);
+                Assert.Equal("XmlValue1", options?.XmlKey1);
             }
         }
 
@@ -1017,15 +1017,15 @@ IniKey1=IniValue2");
 
         private sealed class MyOptions
         {
-            public string CmdKey1 { get; set; }
+            public string? CmdKey1 { get; set; }
 
-            public string IniKey1 { get; set; }
+            public string? IniKey1 { get; set; }
 
-            public string JsonKey1 { get; set; }
+            public string? JsonKey1 { get; set; }
 
-            public string MemKey1 { get; set; }
+            public string? MemKey1 { get; set; }
 
-            public string XmlKey1 { get; set; }
+            public string? XmlKey1 { get; set; }
         }
     }
 }
