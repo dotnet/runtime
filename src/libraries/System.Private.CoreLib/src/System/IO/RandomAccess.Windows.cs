@@ -433,22 +433,9 @@ namespace System.IO
             }
 
             if (CanUseScatterGatherWindowsAPIs(handle)
-                && TryPrepareScatterGatherBuffers(buffers, default(MemoryHandler), out MemoryHandle[]? pinnedBuffers, out int totalBytes))
+                && TryPrepareScatterGatherBuffers(buffers, default(MemoryHandler), out MemoryHandle[] handlesToDispose, out IntPtr segmentsPtr, out int totalBytes))
             {
-                try
-                {
-                    return ReadScatterAtOffsetSingleSyscallAsync(handle, pinnedBuffers, fileOffset, totalBytes,
-                        cancellationToken);
-                }
-                catch
-                {
-                    foreach (MemoryHandle memoryHandle in pinnedBuffers)
-                    {
-                        memoryHandle.Dispose();
-                    }
-
-                    throw;
-                }
+                return ReadScatterAtOffsetSingleSyscallAsync(handle, handlesToDispose, segmentsPtr, fileOffset, totalBytes, cancellationToken);
             }
 
             return ReadScatterAtOffsetMultipleSyscallsAsync(handle, buffers, fileOffset, cancellationToken);
@@ -477,11 +464,6 @@ namespace System.IO
             public MemoryHandle Pin(in ReadOnlyMemory<byte> memory) => memory.Pin();
         }
 
-        // GCHandle.AddrOfPinnedObject performs some checks that are not
-        // necessary since we know we have pinned a specific SZArray.
-        private static unsafe IntPtr AddrOfPinnedArray<T>(T[] array) =>
-            (IntPtr) Unsafe.AsPointer(ref MemoryMarshal.GetArrayDataReference(array));
-
         // From https://docs.microsoft.com/en-us/windows/win32/api/fileapi/nf-fileapi-readfilescatter:
         // "The file handle must be created with [...] the FILE_FLAG_OVERLAPPED and FILE_FLAG_NO_BUFFERING flags."
         private static bool CanUseScatterGatherWindowsAPIs(SafeFileHandle handle)
@@ -497,9 +479,10 @@ namespace System.IO
         // 3. not bigger than 2^32 - 1 in total
         // This function is also responsible for pinning the buffers if they
         // are suitable and they must be unpinned after the I/O operation completes.
-        // The total size of the buffers is also returned.
-        private static bool TryPrepareScatterGatherBuffers<T, THandler>(IReadOnlyList<T> buffers,
-            THandler handler, [NotNullWhen(true)] out MemoryHandle[]? pinnedBuffers, out int totalBytes)
+        // It also returns a pointer with the segments to be passed to the Windows API and to be
+        // freed by NativeMemory.Free, and the total size of the buffers that is needed as well.
+        private static unsafe bool TryPrepareScatterGatherBuffers<T, THandler>(IReadOnlyList<T> buffers,
+            THandler handler, out MemoryHandle[] handlesToDispose, out IntPtr segmentsPtr, out int totalBytes)
             where THandler: struct, IMemoryHandler<T>
         {
             int pageSize = Environment.SystemPageSize;
@@ -507,9 +490,15 @@ namespace System.IO
             // We take advantage of the fact that the page size is
             // a power of two to avoid an expensive modulo operation.
             long alignedAtPageSizeMask = pageSize - 1;
+
             int buffersCount = buffers.Count;
-            pinnedBuffers = new MemoryHandle[buffersCount];
+            handlesToDispose = new MemoryHandle[buffersCount];
+            segmentsPtr = IntPtr.Zero;
             totalBytes = 0;
+
+            // "The array must contain enough elements to store nNumberOfBytesToWrite bytes of data, and one element for the terminating NULL. "
+            long* segmentsArray = (long*) NativeMemory.Alloc((nuint)(buffersCount + 1), sizeof(long));
+            segmentsArray[buffersCount] = 0;
 
             bool success = false;
             try
@@ -525,16 +514,15 @@ namespace System.IO
                         return false;
                     }
 
-                    MemoryHandle handle = pinnedBuffers[i] = handler.Pin(in buffer);
-                    unsafe
+                    MemoryHandle handle = handlesToDispose[i] = handler.Pin(in buffer);
+                    long ptr = segmentsArray[i] = (long)handle.Pointer;
+                    if ((ptr & alignedAtPageSizeMask) != 0)
                     {
-                        if (((long)handle.Pointer & alignedAtPageSizeMask) != 0)
-                        {
-                            return false;
-                        }
+                        return false;
                     }
                 }
 
+                segmentsPtr = (IntPtr)segmentsArray;
                 totalBytes = (int)totalBytes64;
                 success = true;
                 return true;
@@ -543,47 +531,32 @@ namespace System.IO
             {
                 if (!success)
                 {
-                    foreach (MemoryHandle handle in pinnedBuffers)
+                    foreach (MemoryHandle handle in handlesToDispose)
                     {
                         handle.Dispose();
                     }
+
+                    NativeMemory.Free(segmentsArray);
                 }
             }
         }
 
-        private static async ValueTask<long> ReadScatterAtOffsetSingleSyscallAsync(SafeFileHandle handle, MemoryHandle[] pinnedBuffers, long fileOffset, int totalBytes, CancellationToken cancellationToken)
+        private static async ValueTask<long> ReadScatterAtOffsetSingleSyscallAsync(SafeFileHandle handle, MemoryHandle[] handlesToDispose, IntPtr segmentsPtr, long fileOffset, int totalBytes, CancellationToken cancellationToken)
         {
-            int buffersCount = pinnedBuffers.Length;
-            // "The array must contain enough elements to store nNumberOfBytesToWrite bytes of data, and one element for the terminating NULL. "
-            long[] fileSegments = new long[buffersCount + 1];
-            fileSegments[buffersCount] = 0;
-
-            GCHandle pinnedSegments = default;
-
             try
             {
-                pinnedSegments = GCHandle.Alloc(fileSegments, GCHandleType.Pinned);
-
-                for (int i = 0; i < buffersCount; i++)
-                {
-                    unsafe // awaits can't be in an unsafe context
-                    {
-                        fileSegments[i] = new IntPtr(pinnedBuffers[i].Pointer).ToInt64();
-                    }
-                }
-
-                return await ReadFileScatterAsync(handle, AddrOfPinnedArray(fileSegments), totalBytes, fileOffset, cancellationToken).ConfigureAwait(false);
+                return await ReadFileScatterAsync(handle, segmentsPtr, totalBytes, fileOffset, cancellationToken).ConfigureAwait(false);
             }
             finally
             {
-                foreach (MemoryHandle memoryHandle in pinnedBuffers)
+                foreach (MemoryHandle memoryHandle in handlesToDispose)
                 {
                     memoryHandle.Dispose();
                 }
 
-                if (pinnedSegments.IsAllocated)
+                unsafe
                 {
-                    pinnedSegments.Free();
+                    NativeMemory.Free(segmentsPtr.ToPointer());
                 }
             }
         }
@@ -673,22 +646,9 @@ namespace System.IO
             }
 
             if (CanUseScatterGatherWindowsAPIs(handle)
-                && TryPrepareScatterGatherBuffers(buffers, default(ReadOnlyMemoryHandler), out MemoryHandle[]? pinnedBuffers, out int totalBytes))
+                && TryPrepareScatterGatherBuffers(buffers, default(ReadOnlyMemoryHandler), out MemoryHandle[] handlesToDispose, out IntPtr segmentsPtr, out int totalBytes))
             {
-                try
-                {
-                    return WriteGatherAtOffsetSingleSyscallAsync(handle, pinnedBuffers, fileOffset, totalBytes,
-                        cancellationToken);
-                }
-                catch
-                {
-                    foreach (MemoryHandle memoryHandle in pinnedBuffers)
-                    {
-                        memoryHandle.Dispose();
-                    }
-
-                    throw;
-                }
+                return WriteGatherAtOffsetSingleSyscallAsync(handle, handlesToDispose, segmentsPtr, fileOffset, totalBytes, cancellationToken);
             }
 
             return WriteGatherAtOffsetMultipleSyscallsAsync(handle, buffers, fileOffset, cancellationToken);
@@ -706,39 +666,22 @@ namespace System.IO
             }
         }
 
-        private static async ValueTask WriteGatherAtOffsetSingleSyscallAsync(SafeFileHandle handle, MemoryHandle[] pinnedBuffers, long fileOffset, int totalBytes, CancellationToken cancellationToken)
+        private static async ValueTask WriteGatherAtOffsetSingleSyscallAsync(SafeFileHandle handle, MemoryHandle[] handlesToDispose, IntPtr segmentsPtr, long fileOffset, int totalBytes, CancellationToken cancellationToken)
         {
-            // "The array must contain enough elements to store nNumberOfBytesToWrite bytes of data, and one element for the terminating NULL. "
-            int buffersCount = pinnedBuffers.Length;
-            long[] fileSegments = new long[buffersCount + 1];
-            fileSegments[buffersCount] = 0;
-
-            GCHandle pinnedSegments = default;
-
             try
             {
-                pinnedSegments = GCHandle.Alloc(fileSegments, GCHandleType.Pinned);
-
-                for (int i = 0; i < buffersCount; i++)
-                {
-                    unsafe // awaits can't be in an unsafe context
-                    {
-                        fileSegments[i] = new IntPtr(pinnedBuffers[i].Pointer).ToInt64();
-                    }
-                }
-
-                await WriteFileGatherAsync(handle, AddrOfPinnedArray(fileSegments), totalBytes, fileOffset, cancellationToken).ConfigureAwait(false);
+                await WriteFileGatherAsync(handle, segmentsPtr, totalBytes, fileOffset, cancellationToken).ConfigureAwait(false);
             }
             finally
             {
-                foreach (MemoryHandle memoryHandle in pinnedBuffers)
+                foreach (MemoryHandle memoryHandle in handlesToDispose)
                 {
                     memoryHandle.Dispose();
                 }
 
-                if (pinnedSegments.IsAllocated)
+                unsafe
                 {
-                    pinnedSegments.Free();
+                    NativeMemory.Free(segmentsPtr.ToPointer());
                 }
             }
         }
