@@ -71,7 +71,7 @@ namespace Microsoft.Extensions.Configuration.Test
 
             Assert.False(provider.IsDisposed);
 
-            (config as IDisposable).Dispose();
+            (config as IDisposable)?.Dispose();
 
             Assert.Equal(shouldDispose, provider.IsDisposed);
         }

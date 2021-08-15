@@ -698,9 +698,9 @@ namespace Microsoft.Extensions.Configuration.Test
 
             // Assert
             Assert.Equal(2, configSections.Count());
-            Assert.Equal("MemVal1", configSections.FirstOrDefault(c => c.Key == "DB1")["Connection1"]);
-            Assert.Equal("MemVal2", configSections.FirstOrDefault(c => c.Key == "DB1")["Connection2"]);
-            Assert.Equal("MemVal3", configSections.FirstOrDefault(c => c.Key == "DB2Connection").Value);
+            Assert.Equal("MemVal1", configSections.First(c => c.Key == "DB1")["Connection1"]);
+            Assert.Equal("MemVal2", configSections.First(c => c.Key == "DB1")["Connection2"]);
+            Assert.Equal("MemVal3", configSections.First(c => c.Key == "DB2Connection").Value);
             Assert.False(configSections.Exists(c => c.Key == "DB3"));
             Assert.False(configSections.Exists(c => c.Key == "DB3"));
         }
@@ -1191,7 +1191,7 @@ namespace Microsoft.Extensions.Configuration.Test
         private class NullReloadTokenConfigSource : IConfigurationSource, IConfigurationProvider
         {
             public IEnumerable<string> GetChildKeys(IEnumerable<string> earlierKeys, string? parentPath) => throw new NotImplementedException();
-            public IChangeToken GetReloadToken() => null;
+            public IChangeToken GetReloadToken() => null!;
             public void Load() { }
             public void Set(string key, string? value) => throw new NotImplementedException();
             public bool TryGet(string key, [MaybeNullWhen(false)] out string value) => throw new NotImplementedException();
