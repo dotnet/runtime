@@ -88,18 +88,20 @@ class Profiler : public ICorProfilerCallback11
 {
 private:
     std::atomic<int> refCount;
-    ProfilerCallback callback;
-    ManualEvent callbackSet;
+    static ProfilerCallback s_callback;
+    static ManualEvent s_callbackSet;
     
 
 protected:
+    static void NotifyManagedCodeViaCallback(ICorProfilerInfo11 *pCorProfilerInfo);
+
     String GetClassIDName(ClassID classId);
     String GetFunctionIDName(FunctionID funcId);
     String GetModuleIDName(ModuleID modId);
-    void NotifyManagedCodeViaCallback();
 
 public:
     static Profiler *Instance;
+    static void SetCallback(ProfilerCallback callback);
 
     ICorProfilerInfo11* pCorProfilerInfo;
 
@@ -216,6 +218,4 @@ public:
     HRESULT STDMETHODCALLTYPE QueryInterface(REFIID riid, void **ppvObject) override;
     ULONG STDMETHODCALLTYPE AddRef(void) override;
     ULONG STDMETHODCALLTYPE Release(void) override;
-
-    void SetCallback(ProfilerCallback callback);
 };

@@ -10,6 +10,8 @@ using System.Threading.Tasks;
 
 namespace Profiler.Tests
 {
+    public delegate void ProfilerCallback();
+
     [Flags]
     public enum ProfileeOptions
     {
@@ -54,7 +56,9 @@ namespace Profiler.Tests
                     {
                         builder.Append(profilerPath);
                         builder.Append("=");
+                        builder.Append("{");
                         builder.Append(profilerClsid.ToString());
+                        builder.Append("}");
                         builder.Append(";");
                     }
 

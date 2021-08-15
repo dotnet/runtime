@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Threading;
 
 namespace Profiler.Tests
@@ -10,6 +12,9 @@ namespace Profiler.Tests
     {
         static readonly Guid MultipleProfilerGuid = new Guid("BFA8EF13-E144-49B9-B95C-FC1C150C7651");
         static readonly string ProfilerPath = ProfilerTestRunner.GetProfilerPath();
+
+        [DllImport("Profiler")]
+        private static extern void PassCallbackToProfiler(ProfilerCallback callback);
 
         public static int RunTest(String[] args) 
         {
@@ -25,6 +30,13 @@ namespace Profiler.Tests
             catch
             {
                 // intentionally swallow the exception
+            }
+
+            ManualResetEvent _profilerDone = new ManualResetEvent(false);
+            PassCallbackToProfiler(() => _profilerDone.Set());
+            if (!_profilerDone.WaitOne(TimeSpan.FromMinutes(5)))
+            {
+                Console.WriteLine("Profiler did not set the callback, test will fail.");
             }
 
             return 100;
