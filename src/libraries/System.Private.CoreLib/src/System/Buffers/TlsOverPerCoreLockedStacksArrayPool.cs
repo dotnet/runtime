@@ -211,7 +211,6 @@ namespace System.Buffers
             // Under high pressure, release all thread locals.
             if (pressure == Utilities.MemoryPressure.High)
             {
-#if !MONO // TODO https://github.com/mono/linker/issues/2181: Remove !MONO ifdefs in this method once  is fixed
                 if (log.IsEnabled())
                 {
                     foreach (KeyValuePair<ThreadLocalArray[], object?> tlsBuckets in _allTlsBuckets)
@@ -227,7 +226,6 @@ namespace System.Buffers
                     }
                 }
                 else
-#endif
                 {
                     foreach (KeyValuePair<ThreadLocalArray[], object?> tlsBuckets in _allTlsBuckets)
                     {
@@ -270,12 +268,10 @@ namespace System.Buffers
                             // Clear out the array, and log its being trimmed if desired.
                             if (Interlocked.Exchange(ref buckets[i].Array, null) is T[] buffer)
                             {
-#if !MONO
                                 if (log.IsEnabled())
                                 {
                                     log.BufferTrimmed(buffer.GetHashCode(), buffer.Length, Id);
                                 }
-#endif
                             }
                         }
                     }
