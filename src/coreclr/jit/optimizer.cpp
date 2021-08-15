@@ -6016,7 +6016,12 @@ bool Compiler::optIsProfitableToHoistableTree(GenTree* tree, unsigned lnum)
         if (tree->GetCostEx() < (2 * IND_COST_EX))
         {
             // Since this simple expression is not hoistable we better skip CSE for it as well.
-            tree->gtFlags |= GTF_DONT_CSE;
+            // Only for floating-points for now in order to fix https://github.com/dotnet/runtime/issues/57087
+            // A better fix would allow CSE for values in-between calls.
+            if (varTypeIsFloating(tree->TypeGet()))
+            {
+                tree->gtFlags |= GTF_DONT_CSE;
+            }
             return false;
         }
     }
