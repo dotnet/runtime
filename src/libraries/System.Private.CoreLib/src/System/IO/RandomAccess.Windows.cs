@@ -509,7 +509,9 @@ namespace System.IO
             long alignedAtPageSizeMask = pageSize - 1;
             int buffersCount = buffers.Count;
             pinnedBuffers = new MemoryHandle[buffersCount];
+            totalBytes = 0;
 
+            bool success = false;
             try
             {
                 long totalBytes64 = 0;
@@ -520,7 +522,7 @@ namespace System.IO
                     totalBytes64 += length;
                     if (length != pageSize || totalBytes64 > int.MaxValue)
                     {
-                        goto Failure;
+                        return false;
                     }
 
                     MemoryHandle handle = pinnedBuffers[i] = handler.Pin(in buffer);
@@ -528,35 +530,24 @@ namespace System.IO
                     {
                         if (((long)handle.Pointer & alignedAtPageSizeMask) != 0)
                         {
-                            goto Failure;
+                            return false;
                         }
                     }
                 }
 
                 totalBytes = (int)totalBytes64;
+                success = true;
                 return true;
-
-                Failure:
-                foreach (MemoryHandle handle in pinnedBuffers)
-                {
-                    handle.Dispose();
-                }
-
-                pinnedBuffers = null;
-                totalBytes = 0;
-                return false;
             }
-            catch
+            finally
             {
-                if (pinnedBuffers != null)
+                if (!success)
                 {
                     foreach (MemoryHandle handle in pinnedBuffers)
                     {
                         handle.Dispose();
                     }
                 }
-
-                throw;
             }
         }
 
