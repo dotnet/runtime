@@ -884,16 +884,6 @@ protected:
         }
         void idCodeSize(unsigned sz)
         {
-            if (sz > 15)
-            {
-                // This is a temporary workaround for non-precise instr size
-                // estimator on XARCH. It often overestimates sizes and can
-                // return value more than 15 that doesn't fit in 4 bits _idCodeSize.
-                // If somehow we generate instruction that needs more than 15 bytes we
-                // will fail on another assert in emit.cpp: noway_assert(id->idCodeSize() >= csz).
-                // Issue https://github.com/dotnet/runtime/issues/12840.
-                sz = 15;
-            }
             assert(sz <= 15); // Intel decoder limit.
             _idCodeSize = sz;
             assert(sz == _idCodeSize);

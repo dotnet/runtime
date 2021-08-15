@@ -44,6 +44,7 @@ namespace System.Net.Quic
     {
         public QuicException(string? message) { }
         public QuicException(string? message, System.Exception? innerException) { }
+        public QuicException(string? message, System.Exception? innerException, int result) { }
     }
     public static partial class QuicImplementationProviders
     {

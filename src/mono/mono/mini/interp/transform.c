@@ -2779,6 +2779,9 @@ interp_method_check_inlining (TransformData *td, MonoMethod *method, MonoMethodS
 {
 	MonoMethodHeaderSummary header;
 
+	if (td->disable_inlining)
+		return FALSE;
+
 	if (method->flags & METHOD_ATTRIBUTE_REQSECOBJ)
 		/* Used to mark methods containing StackCrawlMark locals */
 		return FALSE;
@@ -8293,6 +8296,42 @@ cprop_sreg (TransformData *td, InterpInst *ins, int *psreg, LocalValue *local_de
 }
 
 static void
+foreach_local_var (TransformData *td, InterpInst *ins, gpointer data, void (*callback)(TransformData*, int, gpointer))
+{
+	int opcode = ins->opcode;
+	if (mono_interp_op_sregs [opcode]) {
+		for (int i = 0; i < mono_interp_op_sregs [opcode]; i++) {
+			int sreg = ins->sregs [i];
+
+			if (sreg == MINT_CALL_ARGS_SREG) {
+				int *call_args = ins->info.call_args;
+				if (call_args) {
+					int var = *call_args;
+					while (var != -1) {
+						callback (td, var, data);
+						call_args++;
+						var = *call_args;
+					}
+				}
+			} else {
+				callback (td, sreg, data);
+			}
+		}
+	}
+
+	if (mono_interp_op_dregs [opcode])
+		callback (td, ins->dreg, data);
+}
+
+static void
+clear_local_defs (TransformData *td, int var, void *data)
+{
+	LocalValue *local_defs = (LocalValue*) data;
+	local_defs [var].type = LOCAL_VALUE_NONE;
+	local_defs [var].ins = NULL;
+}
+
+static void
 interp_cprop (TransformData *td)
 {
 	LocalValue *local_defs = (LocalValue*) g_malloc (td->locals_size * sizeof (LocalValue));
@@ -8316,8 +8355,8 @@ retry:
 		// Set cbb since we do some instruction inserting below
 		td->cbb = bb;
 
-		// FIXME This is excessive. Remove this once we have SSA
-		memset (local_defs, 0, td->locals_size * sizeof (LocalValue));
+		for (ins = bb->first_ins; ins != NULL; ins = ins->next)
+			foreach_local_var (td, ins, local_defs, clear_local_defs);
 
 		if (td->verbose_level)
 			g_print ("BB%d\n", bb->index);
@@ -8948,34 +8987,6 @@ interp_optimize_code (TransformData *td)
 }
 
 static void
-foreach_local_var (TransformData *td, InterpInst *ins, int data, void (*callback)(TransformData*, int, int))
-{
-	int opcode = ins->opcode;
-	if (mono_interp_op_sregs [opcode]) {
-		for (int i = 0; i < mono_interp_op_sregs [opcode]; i++) {
-			int sreg = ins->sregs [i];
-
-			if (sreg == MINT_CALL_ARGS_SREG) {
-				int *call_args = ins->info.call_args;
-				if (call_args) {
-					int var = *call_args;
-					while (var != -1) {
-						callback (td, var, data);
-						call_args++;
-						var = *call_args;
-					}
-				}
-			} else {
-				callback (td, sreg, data);
-			}
-		}
-	}
-
-	if (mono_interp_op_dregs [opcode])
-		callback (td, ins->dreg, data);
-}
-
-static void
 set_var_live_range (TransformData *td, int var, int ins_index)
 {
 	// We don't track liveness yet for global vars
@@ -8984,6 +8995,12 @@ set_var_live_range (TransformData *td, int var, int ins_index)
 	if (td->locals [var].live_start == -1)
 		td->locals [var].live_start = ins_index;
 	td->locals [var].live_end = ins_index;
+}
+
+static void
+set_var_live_range_cb (TransformData *td, int var, gpointer data)
+{
+	set_var_live_range (td, var, (int)(gsize)data);
 }
 
 static void
@@ -9002,6 +9019,12 @@ initialize_global_var (TransformData *td, int var, int bb_index)
 		alloc_global_var_offset (td, var);
 		td->locals [var].flags |= INTERP_LOCAL_FLAG_GLOBAL;
 	}
+}
+
+static void
+initialize_global_var_cb (TransformData *td, int var, gpointer data)
+{
+	initialize_global_var (td, var, (int)(gsize)data);
 } 
 
 static void
@@ -9026,7 +9049,7 @@ initialize_global_vars (TransformData *td)
 					td->locals [var].flags |= INTERP_LOCAL_FLAG_GLOBAL;
 				}
 			}
-			foreach_local_var (td, ins, bb->index, initialize_global_var);
+			foreach_local_var (td, ins, (gpointer)(gsize)bb->index, initialize_global_var_cb);
 		}
 	}
 }
@@ -9296,7 +9319,7 @@ interp_alloc_offsets (TransformData *td)
 								// The arg of the call is no longer global
 								*call_args = new_var;
 								// Also update liveness for this instruction
-								foreach_local_var (td, new_inst, ins_index, set_var_live_range);
+								foreach_local_var (td, new_inst, (gpointer)(gsize)ins_index, set_var_live_range_cb);
 								ins_index++;
 							}
 						} else {
@@ -9334,7 +9357,7 @@ interp_alloc_offsets (TransformData *td)
 				}
 			}
 			// Set live_start and live_end for every referenced local that is not global
-			foreach_local_var (td, ins, ins_index, set_var_live_range);
+			foreach_local_var (td, ins, (gpointer)(gsize)ins_index, set_var_live_range_cb);
 			ins_index++;
 		}
 		gint32 current_offset = td->total_locals_size;
@@ -9448,6 +9471,7 @@ generate (MonoMethod *method, MonoMethodHeader *header, InterpMethod *rtm, MonoG
 	int i;
 	TransformData transform_data;
 	TransformData *td;
+	gboolean retry_compilation = FALSE;
 	static gboolean verbose_method_inited;
 	static char* verbose_method_name;
 
@@ -9456,6 +9480,7 @@ generate (MonoMethod *method, MonoMethodHeader *header, InterpMethod *rtm, MonoG
 		verbose_method_inited = TRUE;
 	}
 
+retry:
 	memset (&transform_data, 0, sizeof(transform_data));
 	td = &transform_data;
 
@@ -9480,6 +9505,8 @@ generate (MonoMethod *method, MonoMethodHeader *header, InterpMethod *rtm, MonoG
 	td->seq_points = g_ptr_array_new ();
 	td->verbose_level = mono_interp_traceopt;
 	td->prof_coverage = mono_profiler_coverage_instrumentation_enabled (method);
+	if (retry_compilation)
+		td->disable_inlining = TRUE;
 	rtm->data_items = td->data_items;
 
 	if (td->prof_coverage)
@@ -9527,12 +9554,21 @@ generate (MonoMethod *method, MonoMethodHeader *header, InterpMethod *rtm, MonoG
 	generate_compacted_code (td);
 
 	if (td->total_locals_size >= G_MAXUINT16) {
-		char *name = mono_method_get_full_name (method);
-		char *msg = g_strdup_printf ("Unable to run method '%s': locals size too big.", name);
-		g_free (name);
-		mono_error_set_generic_error (error, "System", "InvalidProgramException", "%s", msg);
-		g_free (msg);
-		goto exit;
+		if (td->disable_inlining) {
+			char *name = mono_method_get_full_name (method);
+			char *msg = g_strdup_printf ("Unable to run method '%s': locals size too big.", name);
+			g_free (name);
+			mono_error_set_generic_error (error, "System", "InvalidProgramException", "%s", msg);
+			g_free (msg);
+			retry_compilation = FALSE;
+			goto exit;
+		} else {
+			// We give the method another chance to compile with inlining disabled
+			retry_compilation = TRUE;
+			goto exit;
+		}
+	} else {
+		retry_compilation = FALSE;
 	}
 
 	if (td->verbose_level) {
@@ -9623,6 +9659,8 @@ exit:
 	if (td->line_numbers)
 		g_array_free (td->line_numbers, TRUE);
 	mono_mempool_destroy (td->mempool);
+	if (retry_compilation)
+		goto retry;
 }
 
 gboolean

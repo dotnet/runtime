@@ -567,6 +567,7 @@ const char*mono_ji_type_to_string           (MonoJumpInfoType type);
 void      mono_print_ji                     (const MonoJumpInfo *ji);
 MONO_API void      mono_print_method_from_ip         (void *ip);
 MONO_API char     *mono_pmip                         (void *ip);
+MONO_API char     *mono_pmip_u                       (void *ip);
 MONO_API int mono_ee_api_version (void);
 gboolean  mono_debug_count                  (void);
 

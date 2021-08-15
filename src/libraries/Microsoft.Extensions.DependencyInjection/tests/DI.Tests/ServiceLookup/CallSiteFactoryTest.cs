@@ -6,16 +6,39 @@ using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Reflection;
+using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.DotNet.RemoteExecutor;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.DependencyInjection.Specification.Fakes;
+using Microsoft.Extensions.DependencyInjection.Tests;
 using Xunit;
 
 namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
 {
     public class CallSiteFactoryTest
     {
+        [Fact]
+        public void GetService_FactoryCallSite_Transient_DoesNotFail()
+        {
+            var collection = new ServiceCollection();
+            collection.Add(ServiceDescriptor.Describe(typeof(FakeService), (sp) => new FakeService(), ServiceLifetime.Transient));
+            collection.Add(ServiceDescriptor.Describe(typeof(IFakeService), (sp) => new FakeService(), ServiceLifetime.Transient));
+
+            using ServiceProvider serviceProvider = collection.BuildServiceProvider(ServiceProviderMode.Dynamic);
+            Type expectedType = typeof(FakeService);
+
+            Assert.Equal(expectedType, serviceProvider.GetService(typeof(IFakeService)).GetType());
+            Assert.Equal(expectedType, serviceProvider.GetService(typeof(FakeService)).GetType());
+
+            for (int i = 0; i < 50; i++)
+            {
+                Assert.Equal(expectedType, serviceProvider.GetService(typeof(IFakeService)).GetType());
+                Assert.Equal(expectedType, serviceProvider.GetService(typeof(FakeService)).GetType());
+                Thread.Sleep(10); // Give the background thread time to compile
+            }
+        }
+
         [Fact]
         public void CreateCallSite_Throws_IfTypeHasNoPublicConstructors()
         {

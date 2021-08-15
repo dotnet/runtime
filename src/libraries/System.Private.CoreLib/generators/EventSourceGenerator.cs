@@ -66,7 +66,7 @@ namespace Generators
                 const string EventSourceAttribute = "EventSourceAutoGenerateAttribute";
                 const string EventSourceAttributeShort = "EventSourceAutoGenerate";
 
-                // Only clasess
+                // Only classes
                 if (syntaxNode is ClassDeclarationSyntax classDeclaration)
                 {
                     // Check if has EventSource attribute before adding to candidates

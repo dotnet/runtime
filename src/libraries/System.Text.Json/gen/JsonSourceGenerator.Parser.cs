@@ -84,7 +84,7 @@ namespace System.Text.Json.SourceGeneration
                 id: "SYSLIB1032",
                 title: new LocalizableResourceString(nameof(SR.ContextClassesMustBePartialTitle), SR.ResourceManager, typeof(FxResources.System.Text.Json.SourceGeneration.SR)),
                 messageFormat: new LocalizableResourceString(nameof(SR.ContextClassesMustBePartialMessageFormat), SR.ResourceManager, typeof(FxResources.System.Text.Json.SourceGeneration.SR)),
-                category: SystemTextJsonSourceGenerationName,
+                category: JsonConstants.SystemTextJsonSourceGenerationName,
                 defaultSeverity: DiagnosticSeverity.Warning,
                 isEnabledByDefault: true);
 
@@ -92,7 +92,7 @@ namespace System.Text.Json.SourceGeneration
                 id: "SYSLIB1033",
                 title: new LocalizableResourceString(nameof(SR.MultipleJsonConstructorAttributeTitle), SR.ResourceManager, typeof(FxResources.System.Text.Json.SourceGeneration.SR)),
                 messageFormat: new LocalizableResourceString(nameof(SR.MultipleJsonConstructorAttributeFormat), SR.ResourceManager, typeof(FxResources.System.Text.Json.SourceGeneration.SR)),
-                category: SystemTextJsonSourceGenerationName,
+                category: JsonConstants.SystemTextJsonSourceGenerationName,
                 defaultSeverity: DiagnosticSeverity.Error,
                 isEnabledByDefault: true);
 
@@ -385,14 +385,6 @@ namespace System.Text.Json.SourceGeneration
                 }
 
                 Type type = typeSymbol.AsType(_metadataLoadContext);
-                if (type.Namespace == "<global namespace>")
-                {
-                    // typeof() reference where the type's name isn't fully qualified.
-                    // The compilation is not valid and the user needs to fix their code.
-                    // The compiler will notify the user so we don't have to.
-                    return null;
-                }
-
                 TypeGenerationSpec typeGenerationSpec = GetOrAddTypeGenerationSpec(type, generationMode);
 
                 if (typeInfoPropertyName != null)
@@ -775,8 +767,8 @@ namespace System.Text.Json.SourceGeneration
 
                         // GetInterface() is currently not implemented, so we use GetInterfaces().
                         IEnumerable<string> interfaces = type.GetInterfaces().Select(interfaceType => interfaceType.FullName!);
-                        implementsIJsonOnSerialized = interfaces.FirstOrDefault(interfaceName => interfaceName == IJsonOnSerializedFullName) != null;
-                        implementsIJsonOnSerializing = interfaces.FirstOrDefault(interfaceName => interfaceName == IJsonOnSerializingFullName) != null;
+                        implementsIJsonOnSerialized = interfaces.FirstOrDefault(interfaceName => interfaceName == JsonConstants.IJsonOnSerializedFullName) != null;
+                        implementsIJsonOnSerializing = interfaces.FirstOrDefault(interfaceName => interfaceName == JsonConstants.IJsonOnSerializingFullName) != null;
 
                         propGenSpecList = new List<PropertyGenerationSpec>();
                         Dictionary<string, PropertyGenerationSpec>? ignoredMembers = null;

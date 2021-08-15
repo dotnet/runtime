@@ -18,6 +18,13 @@ namespace Internal.Cryptography
         public static bool IsDSASupported => true;
 #endif
 
+#if NET5_0_OR_GREATER
+        [UnsupportedOSPlatformGuard("android")]
+        public static bool IsRC2Supported => !OperatingSystem.IsAndroid();
+#else
+        public static bool IsRC2Supported => true;
+#endif
+
         [return: NotNullIfNotNull("src")]
         public static byte[]? CloneByteArray(this byte[]? src)
         {
