@@ -152,7 +152,7 @@ namespace Microsoft.Extensions.Configuration
         public static IConfigurationBuilder AddCommandLine(
             this IConfigurationBuilder configurationBuilder,
             string[] args,
-            IDictionary<string, string> switchMappings)
+            IDictionary<string, string>? switchMappings)
         {
             configurationBuilder.Add(new CommandLineConfigurationSource { Args = args, SwitchMappings = switchMappings });
             return configurationBuilder;
