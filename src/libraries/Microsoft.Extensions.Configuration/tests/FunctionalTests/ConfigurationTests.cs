@@ -424,7 +424,7 @@ CommonKey3:CommonKey4=IniValue6";
             _fileSystem.WriteFile("error.ini", @"IniKey1=IniValue1
 IniKey1=IniValue2");
 
-            FileConfigurationProvider provider = null;
+            FileConfigurationProvider? provider = null;
             Exception? error = null;
             Action<FileLoadExceptionContext> loadError = c =>
             {
@@ -452,7 +452,7 @@ IniKey1=IniValue2");
         {
             _fileSystem.WriteFile("error.json", @"{""JsonKey1"": ");
 
-            FileConfigurationProvider provider = null;
+            FileConfigurationProvider? provider = null;
             Action<FileLoadExceptionContext> jsonLoadError = c =>
             {
                 provider = c.Provider;
@@ -490,7 +490,7 @@ IniKey1=IniValue2");
             foreach (var provider in configurationBuilder.Sources)
             {
                 Assert.Equal("NewValue",
-                    (provider as FileConfigurationProvider).Get("CommonKey1:CommonKey2:CommonKey3:CommonKey4"));
+                    (provider as FileConfigurationProvider)?.Get("CommonKey1:CommonKey2:CommonKey3:CommonKey4"));
             }
 
             // Recover values by reloading
@@ -505,7 +505,7 @@ IniKey1=IniValue2");
             foreach (var provider in configurationBuilder.Sources)
             {
                 Assert.Equal("NewValue",
-                    (provider as FileConfigurationProvider).Get("CommonKey1:CommonKey2:CommonKey3:CommonKey4"));
+                    (provider as FileConfigurationProvider)?.Get("CommonKey1:CommonKey2:CommonKey3:CommonKey4"));
             }
 
             // Recover values by reloading
@@ -834,7 +834,7 @@ IniKey1=IniValue2");
             _fileSystem.WriteFile(_jsonFile, json);
 
             var exception = Assert.Throws<InvalidDataException>(() => CreateBuilder().AddJsonFile(_jsonFile).Build());
-            Assert.Contains("Could not parse the JSON file.", exception.InnerException.Message);
+            Assert.Contains("Could not parse the JSON file.", exception.InnerException?.Message);
         }
 
         [Fact]
