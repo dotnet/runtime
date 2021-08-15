@@ -3,7 +3,6 @@
 
 using System.Collections.Generic;
 using System.Linq;
-using System.Runtime.InteropServices;
 using Xunit;
 
 namespace System.Reflection.Emit.Tests
@@ -424,7 +423,17 @@ namespace System.Reflection.Emit.Tests
 	    Assert.Throws<MethodAccessException>(() => d ());
 	}
 
-
+    [Fact]
+    public void DefineDynamicAssembly_InternalAssemblyLocationIsEmpty()
+    {
+        AssemblyBuilder assembly = Helpers.DynamicAssembly();
+        object internalAssemblyBuilder = assembly.GetType()
+                .GetProperty("InternalAssembly", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(assembly);
+        object locationObj = internalAssemblyBuilder.GetType().GetProperty("Location", BindingFlags.Public | BindingFlags.Instance)
+                .GetValue(internalAssemblyBuilder);
+        string location = Assert.IsType<string>(locationObj);
+        Assert.Empty(location);
+    }
 
     }
 }
