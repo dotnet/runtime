@@ -363,7 +363,7 @@ namespace System.Security.Cryptography
                 }
             }
 
-            private static partial void ThrowIfNotSupported();
+            static partial void ThrowIfNotSupported();
         }
 #if INTERNAL_ASYMMETRIC_IMPLEMENTATIONS
     }

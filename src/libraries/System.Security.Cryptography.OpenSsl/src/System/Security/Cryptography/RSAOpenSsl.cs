@@ -74,7 +74,7 @@ namespace System.Security.Cryptography
             return Interop.Crypto.EvpPKeyDuplicate(GetKey(), Interop.Crypto.EvpAlgorithmId.RSA);
         }
 
-        private static partial void ThrowIfNotSupported()
+        static partial void ThrowIfNotSupported()
         {
             if (!Interop.OpenSslNoInit.OpenSslIsAvailable)
             {

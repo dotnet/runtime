@@ -417,7 +417,7 @@ namespace System.Security.Cryptography
                 _key = new Lazy<SafeDsaHandle>(newKey);
             }
 
-            private static partial void ThrowIfNotSupported();
+            static partial void ThrowIfNotSupported();
 
             private static readonly KeySizes[] s_legalKeySizes = new KeySizes[] { new KeySizes(minSize: 512, maxSize: 3072, skipSize: 64) };
         }
