@@ -3,9 +3,8 @@
 
 #include "multiple.h"
 #include <thread>
-#include <random>
 
-#define MAX_PROFILERS 32
+#define MAX_PROFILERS 8
 
 using std::thread;
 
