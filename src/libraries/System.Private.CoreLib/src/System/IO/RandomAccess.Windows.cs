@@ -446,6 +446,7 @@ namespace System.IO
         }
 
         // Abstracts away the type signature incompatibility between Memory and ReadOnlyMemory.
+        // TODO: Use abstract static methods when they become stable.
         private interface IMemoryHandler<T>
         {
             int GetLength(in T memory);
@@ -469,6 +470,9 @@ namespace System.IO
         private static bool CanUseScatterGatherWindowsAPIs(SafeFileHandle handle)
             => handle.IsAsync && ((handle.GetFileOptions() & SafeFileHandle.NoBuffering) != 0);
 
+        // TODO: Use SystemPageSize directly when #57442 is fixed.
+        private static readonly int s_cachedPageSize = Environment.SystemPageSize;
+
         // From the same source:
         // "Each buffer must be at least the size of a system memory page and must be aligned on a system
         // memory page size boundary. The system reads/writes one system memory page of data into/from each buffer."
@@ -485,7 +489,7 @@ namespace System.IO
             THandler handler, out MemoryHandle[] handlesToDispose, out IntPtr segmentsPtr, out int totalBytes)
             where THandler: struct, IMemoryHandler<T>
         {
-            int pageSize = Environment.SystemPageSize;
+            int pageSize = s_cachedPageSize;
             Debug.Assert(BitOperations.IsPow2(pageSize), "Page size is not a power of two.");
             // We take advantage of the fact that the page size is
             // a power of two to avoid an expensive modulo operation.
