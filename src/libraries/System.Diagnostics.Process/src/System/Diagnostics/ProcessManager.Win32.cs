@@ -131,13 +131,13 @@ namespace System.Diagnostics
 
                 var modules = new ProcessModuleCollection(firstModuleOnly ? 1 : modulesCount);
 
-                const int startLength =
+                const int StartLength =
 #if DEBUG
                     1; // in debug, validate ArrayPool growth
 #else
                     Interop.Kernel32.MAX_PATH;
 #endif
-                char[]? chars = ArrayPool<char>.Shared.Rent(startLength);
+                char[]? chars = ArrayPool<char>.Shared.Rent(StartLength);
                 try
                 {
                     for (int i = 0; i < modulesCount; i++)
@@ -157,7 +157,7 @@ namespace System.Diagnostics
                         Interop.Kernel32.NtModuleInfo ntModuleInfo;
                         if (!Interop.Kernel32.GetModuleInformation(processHandle, moduleHandle, out ntModuleInfo))
                         {
-                            HandleLastWin32Error(null);
+                            HandleLastWin32Error();
                             continue;
                         }
 
@@ -178,7 +178,8 @@ namespace System.Diagnostics
 
                         if (length == 0)
                         {
-                            HandleLastWin32Error(module);
+                            module.Dispose();
+                            HandleLastWin32Error();
                             continue;
                         }
 
@@ -193,7 +194,8 @@ namespace System.Diagnostics
 
                         if (length == 0)
                         {
-                            HandleLastWin32Error(module);
+                            module.Dispose();
+                            HandleLastWin32Error();
                             continue;
                         }
 
@@ -246,7 +248,7 @@ namespace System.Diagnostics
             }
         }
 
-        private static void HandleLastWin32Error(ProcessModule? processModule)
+        private static void HandleLastWin32Error()
         {
             int lastError = Marshal.GetLastWin32Error();
             switch (lastError)
@@ -258,7 +260,6 @@ namespace System.Diagnostics
                     // move on.
                     break;
                 default:
-                    processModule?.Dispose();
                     throw new Win32Exception(lastError);
             }
         }
