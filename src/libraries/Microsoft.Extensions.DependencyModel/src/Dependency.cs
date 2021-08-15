@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Numerics.Hashing;
 
 namespace Microsoft.Extensions.DependencyModel
@@ -30,10 +31,9 @@ namespace Microsoft.Extensions.DependencyModel
             return string.Equals(Name, other.Name) && string.Equals(Version, other.Version);
         }
 
-        public override bool Equals(object obj)
+        public override bool Equals([NotNullWhen(true)] object? obj)
         {
-            if (obj is null) return false;
-            return obj is Dependency && Equals((Dependency) obj);
+            return obj is Dependency dependency && Equals(dependency);
         }
 
         public override int GetHashCode() =>

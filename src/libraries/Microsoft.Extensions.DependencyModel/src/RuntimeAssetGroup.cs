@@ -8,8 +8,8 @@ namespace Microsoft.Extensions.DependencyModel
 {
     public class RuntimeAssetGroup
     {
-        private IReadOnlyList<string> _assetPaths;
-        private IReadOnlyList<RuntimeFile> _runtimeFiles;
+        private IReadOnlyList<string>? _assetPaths;
+        private IReadOnlyList<RuntimeFile>? _runtimeFiles;
 
         public RuntimeAssetGroup(string runtime, params string[] assetPaths) : this(runtime, (IEnumerable<string>)assetPaths) { }
 
@@ -42,7 +42,7 @@ namespace Microsoft.Extensions.DependencyModel
                     return _assetPaths;
                 }
 
-                return _runtimeFiles.Select(file => file.Path).ToArray();
+                return _runtimeFiles!.Select(file => file.Path).ToArray();
             }
         }
 
@@ -58,7 +58,7 @@ namespace Microsoft.Extensions.DependencyModel
                     return _runtimeFiles;
                 }
 
-                return _assetPaths.Select(path => new RuntimeFile(path, null, null)).ToArray();
+                return _assetPaths!.Select(path => new RuntimeFile(path, null, null)).ToArray();
             }
         }
     }

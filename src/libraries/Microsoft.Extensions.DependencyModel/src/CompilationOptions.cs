@@ -11,9 +11,9 @@ namespace Microsoft.Extensions.DependencyModel
     {
         public IReadOnlyList<string> Defines { get; }
 
-        public string LanguageVersion { get; }
+        public string? LanguageVersion { get; }
 
-        public string Platform { get; }
+        public string? Platform { get; }
 
         public bool? AllowUnsafe { get; }
 
@@ -21,13 +21,13 @@ namespace Microsoft.Extensions.DependencyModel
 
         public bool? Optimize { get; }
 
-        public string KeyFile { get; }
+        public string? KeyFile { get; }
 
         public bool? DelaySign { get; }
 
         public bool? PublicSign { get; }
 
-        public string DebugType { get; }
+        public string? DebugType { get; }
 
         public bool? EmitEntryPoint { get; }
 
@@ -48,15 +48,15 @@ namespace Microsoft.Extensions.DependencyModel
             generateXmlDocumentation: null);
 
         public CompilationOptions(IEnumerable<string> defines,
-            string languageVersion,
-            string platform,
+            string? languageVersion,
+            string? platform,
             bool? allowUnsafe,
             bool? warningsAsErrors,
             bool? optimize,
-            string keyFile,
+            string? keyFile,
             bool? delaySign,
             bool? publicSign,
-            string debugType,
+            string? debugType,
             bool? emitEntryPoint,
             bool? generateXmlDocumentation)
         {

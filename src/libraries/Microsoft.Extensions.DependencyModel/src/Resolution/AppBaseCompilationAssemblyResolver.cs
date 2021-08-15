@@ -71,10 +71,10 @@ namespace Microsoft.Extensions.DependencyModel.Resolution
             }
 
             // Only packages can come from shared runtime
-            string sharedPath = _dependencyContextPaths.SharedRuntime;
+            string? sharedPath = _dependencyContextPaths.SharedRuntime;
             if (isPublished && isPackage && !string.IsNullOrEmpty(sharedPath))
             {
-                string sharedDirectory = Path.GetDirectoryName(sharedPath);
+                string sharedDirectory = Path.GetDirectoryName(sharedPath)!;
                 string sharedRefs = Path.Combine(sharedDirectory, RefsDirectoryName);
                 if (_fileSystem.Directory.Exists(sharedRefs))
                 {

@@ -103,7 +103,7 @@ namespace Microsoft.Extensions.DependencyModel
             jsonWriter.WriteEndObject();
         }
 
-        private void AddStringPropertyIfNotNull(string name, string value, Utf8JsonWriter jsonWriter)
+        private void AddStringPropertyIfNotNull(string name, string? value, Utf8JsonWriter jsonWriter)
         {
             if (value != null)
             {
@@ -156,9 +156,9 @@ namespace Microsoft.Extensions.DependencyModel
 
             foreach (string packageName in runtimeLookup.Keys.Concat(compileLookup.Keys).Distinct())
             {
-                runtimeLookup.TryGetValue(packageName, out RuntimeLibrary runtimeLibrary);
+                runtimeLookup.TryGetValue(packageName, out RuntimeLibrary? runtimeLibrary);
 
-                compileLookup.TryGetValue(packageName, out CompilationLibrary compilationLibrary);
+                compileLookup.TryGetValue(packageName, out CompilationLibrary? compilationLibrary);
 
                 if (compilationLibrary != null && runtimeLibrary != null)
                 {
@@ -171,9 +171,9 @@ namespace Microsoft.Extensions.DependencyModel
                     Debug.Assert(compilationLibrary.RuntimeStoreManifestName == null);
                 }
 
-                Library library = (Library)compilationLibrary ?? (Library)runtimeLibrary;
+                Library? library = (Library?)compilationLibrary ?? runtimeLibrary;
 
-                WritePortableTargetLibrary(library.Name + DependencyContextStrings.VersionSeparator + library.Version,
+                WritePortableTargetLibrary(library?.Name + DependencyContextStrings.VersionSeparator + library?.Version,
                     runtimeLibrary, compilationLibrary, jsonWriter);
             }
             jsonWriter.WriteEndObject();
@@ -189,7 +189,7 @@ namespace Microsoft.Extensions.DependencyModel
             WriteAssetList(DependencyContextStrings.CompileTimeAssembliesKey, compilationAssemblies, jsonWriter);
         }
 
-        private void AddAssets(string key, RuntimeAssetGroup group, Utf8JsonWriter jsonWriter)
+        private void AddAssets(string key, RuntimeAssetGroup? group, Utf8JsonWriter jsonWriter)
         {
             if (group == null || !group.RuntimeFiles.Any())
             {
@@ -259,7 +259,7 @@ namespace Microsoft.Extensions.DependencyModel
             }
         }
 
-        private void WritePortableTargetLibrary(string key, RuntimeLibrary runtimeLibrary, CompilationLibrary compilationLibrary, Utf8JsonWriter jsonWriter)
+        private void WritePortableTargetLibrary(string key, RuntimeLibrary? runtimeLibrary, CompilationLibrary? compilationLibrary, Utf8JsonWriter jsonWriter)
         {
             jsonWriter.WriteStartObject(key);
 
@@ -339,7 +339,7 @@ namespace Microsoft.Extensions.DependencyModel
             return wroteObjectStart;
         }
 
-        private void AddRuntimeSpecificAssets(IEnumerable<RuntimeFile> assets, string runtime, string assetType, Utf8JsonWriter jsonWriter)
+        private void AddRuntimeSpecificAssets(IEnumerable<RuntimeFile> assets, string? runtime, string? assetType, Utf8JsonWriter jsonWriter)
         {
             foreach (RuntimeFile asset in assets)
             {
