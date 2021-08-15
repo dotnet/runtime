@@ -103,7 +103,8 @@ namespace System.Text.Json
             }
 
             Type runtimeType = GetRuntimeTypeAndValidateInputType(value, inputType);
-            return WriteNodeUsingGeneratedSerializer(value, GetTypeInfo(context, runtimeType));
+            JsonTypeInfo jsonTypeInfo = GetTypeInfo(context, runtimeType);
+            return WriteNodeUsingGeneratedSerializer(value, jsonTypeInfo);
         }
 
         private static JsonNode? WriteNodeUsingGeneratedSerializer<TValue>(in TValue value, JsonTypeInfo jsonTypeInfo)

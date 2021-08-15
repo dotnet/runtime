@@ -247,8 +247,6 @@ namespace System.Text.Json
             }
         }
 
-        internal bool IsInitializedForReflectionSerializer { get; set; }
-
         /// <summary>
         /// Determines whether null values are ignored during serialization and deserialization.
         /// The default value is false.
@@ -577,6 +575,15 @@ namespace System.Text.Json
             }
         }
 
+        /// <summary>
+        /// Whether <see cref="InitializeForReflectionSerializer()"/> needs to be called.
+        /// </summary>
+        internal bool IsInitializedForReflectionSerializer { get; set; }
+
+        /// <summary>
+        /// Initializes the converters for the reflection-based serializer.
+        /// <seealso cref="InitializeForReflectionSerializer"/> must be checked before calling.
+        /// </summary>
         [RequiresUnreferencedCode(JsonSerializer.SerializationUnreferencedCodeMessage)]
         internal void InitializeForReflectionSerializer()
         {
@@ -624,6 +631,7 @@ namespace System.Text.Json
         /// Return the TypeInfo for root API calls.
         /// This has a LRU cache that is intended only for public API calls that specify the root type.
         /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal JsonTypeInfo GetOrAddClassForRootType(Type type)
         {
             JsonTypeInfo? jsonTypeInfo = _lastClass;

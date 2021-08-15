@@ -98,12 +98,12 @@ namespace System.Text.Json
 
         private static Type GetRuntimeTypeAndValidateInputType(object? value, Type inputType)
         {
-            if (inputType == null)
+            if (inputType is null)
             {
                 throw new ArgumentNullException(nameof(inputType));
             }
 
-            if (value != null)
+            if (value is not null)
             {
                 Type runtimeType = value.GetType();
                 if (!inputType.IsAssignableFrom(runtimeType))

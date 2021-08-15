@@ -23,7 +23,7 @@ namespace System.Text.Json
             return (TValue?)value;
         }
 
-        private static TValue? ReadSpan<TValue>(ReadOnlySpan<byte> utf8Json, JsonTypeInfo jsonTypeInfo, int? actualByteCount = null)
+        private static TValue? ReadFromSpan<TValue>(ReadOnlySpan<byte> utf8Json, JsonTypeInfo jsonTypeInfo, int? actualByteCount = null)
         {
             JsonSerializerOptions options = jsonTypeInfo.Options;
 

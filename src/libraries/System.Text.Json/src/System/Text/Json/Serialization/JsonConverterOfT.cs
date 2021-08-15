@@ -314,9 +314,11 @@ namespace System.Text.Json.Serialization
         }
 
         /// <summary>
-        /// Performance optimization. The 'in' modifier in TryWrite(in T Value) will cause boxing, so this helper method avoids that.
+        /// Performance optimization.
+        /// The 'in' modifier in 'TryWrite(in T Value)' causes boxing for Nullable{T}, so this helper avoids that.
+        /// TODO: Remove this work-around once #50915 is addressed.
         /// </summary>
-        internal bool IsNull(T value) => value is null;
+        private static bool IsNull(T value) => value is null;
 
 #if NET6_0_OR_GREATER
         [MethodImpl(MethodImplOptions.AggressiveOptimization)]

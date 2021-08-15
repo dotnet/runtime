@@ -15,6 +15,8 @@ namespace System.Text.Json
         [RequiresUnreferencedCode(SerializationUnreferencedCodeMessage)]
         private static JsonTypeInfo GetTypeInfo(JsonSerializerOptions? options, Type runtimeType)
         {
+            Debug.Assert(runtimeType != null);
+
             options ??= JsonSerializerOptions.s_defaultOptions;
             if (!options.IsInitializedForReflectionSerializer)
             {
@@ -30,7 +32,7 @@ namespace System.Text.Json
             Debug.Assert(type != null);
 
             JsonTypeInfo? info = context.GetTypeInfo(type);
-            if (info == null)
+            if (info is null)
             {
                 ThrowHelper.ThrowInvalidOperationException_NoMetadataForType(type);
             }
