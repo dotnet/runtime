@@ -2604,7 +2604,13 @@ public:
             // If we don't have a lot of variables to enregister or we have a floating point type
             // then we will likely need to spill an additional caller save register.
             //
-            if ((enregCount < (CNT_CALLEE_ENREG * 3 / 2)) || varTypeIsFloating(candidate->Expr()->TypeGet()))
+            if (varTypeIsFloating(candidate->Expr()))
+            {
+                // Do not make CSE for live-across-call floating point numbers
+                return false;
+            }
+
+            if (enregCount < (CNT_CALLEE_ENREG * 3 / 2))
             {
                 // Extra cost in case we have to spill/restore a caller saved register
                 extra_yes_cost = BB_UNITY_WEIGHT_UNSIGNED;
