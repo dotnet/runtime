@@ -29,7 +29,7 @@ namespace Microsoft.Extensions.Configuration.EnvironmentVariables
         /// Initializes a new instance with the specified prefix.
         /// </summary>
         /// <param name="prefix">A prefix used to filter the environment variables.</param>
-        public EnvironmentVariablesConfigurationProvider(string prefix) =>
+        public EnvironmentVariablesConfigurationProvider(string? prefix) =>
             _prefix = prefix ?? string.Empty;
 
         /// <summary>
@@ -47,7 +47,7 @@ namespace Microsoft.Extensions.Configuration.EnvironmentVariables
 
         internal void Load(IDictionary envVariables)
         {
-            var data = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+            var data = new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase);
 
             IDictionaryEnumerator e = envVariables.GetEnumerator();
             try
@@ -56,7 +56,7 @@ namespace Microsoft.Extensions.Configuration.EnvironmentVariables
                 {
                     DictionaryEntry entry = e.Entry;
                     string key = (string)entry.Key;
-                    string provider = null;
+                    string? provider = null;
                     string prefix;
 
                     if (key.StartsWith(MySqlServerPrefix, StringComparison.OrdinalIgnoreCase))
@@ -94,7 +94,7 @@ namespace Microsoft.Extensions.Configuration.EnvironmentVariables
 
                     // Add the key-value pair for connection string, and optionally provider name
                     key = NormalizeKey(key.Substring(prefix.Length));
-                    AddIfPrefixed(data, $"ConnectionStrings:{key}", (string)entry.Value);
+                    AddIfPrefixed(data, $"ConnectionStrings:{key}", (string?)entry.Value);
                     if (provider != null)
                     {
                         AddIfPrefixed(data, $"ConnectionStrings:{key}_ProviderName", provider);
@@ -109,7 +109,7 @@ namespace Microsoft.Extensions.Configuration.EnvironmentVariables
             Data = data;
         }
 
-        private void AddIfPrefixed(Dictionary<string, string> data, string key, string value)
+        private void AddIfPrefixed(Dictionary<string, string?> data, string key, string? value)
         {
             if (key.StartsWith(_prefix, StringComparison.OrdinalIgnoreCase))
             {

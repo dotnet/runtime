@@ -11,7 +11,7 @@ namespace Microsoft.Extensions.Configuration.EnvironmentVariables
         /// <summary>
         /// A prefix used to filter environment variables.
         /// </summary>
-        public string Prefix { get; set; }
+        public string? Prefix { get; set; }
 
         /// <summary>
         /// Builds the <see cref="EnvironmentVariablesConfigurationProvider"/> for this source.
