@@ -171,8 +171,9 @@ namespace System.Diagnostics
                         int length = 0;
                         while ((length = Interop.Kernel32.GetModuleBaseName(processHandle, moduleHandle, chars, chars.Length)) == chars.Length)
                         {
-                            ArrayPool<char>.Shared.Return(chars);
+                            char[] toReturn = chars;
                             chars = ArrayPool<char>.Shared.Rent(length * 2);
+                            ArrayPool<char>.Shared.Return(toReturn);
                         }
 
                         if (length == 0)
@@ -185,8 +186,9 @@ namespace System.Diagnostics
 
                         while ((length = Interop.Kernel32.GetModuleFileNameEx(processHandle, moduleHandle, chars, chars.Length)) == chars.Length)
                         {
-                            ArrayPool<char>.Shared.Return(chars);
+                            char[] toReturn = chars;
                             chars = ArrayPool<char>.Shared.Rent(length * 2);
+                            ArrayPool<char>.Shared.Return(toReturn);
                         }
 
                         if (length == 0)
