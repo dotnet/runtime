@@ -18,6 +18,9 @@ namespace Profiler.Tests
 
         public static int RunTest(String[] args) 
         {
+            ManualResetEvent _profilerDone = new ManualResetEvent(false);
+            PassCallbackToProfiler(() => _profilerDone.Set());
+
             for (int i = 0; i < 16; ++i)
             {
                 ProfilerControlHelpers.AttachProfilerToSelf(MultipleProfilerGuid, ProfilerPath);
@@ -25,15 +28,16 @@ namespace Profiler.Tests
 
             try
             {
+                Console.WriteLine("Throwing exception");
                 throw new Exception("Test exception!");
             }
             catch
             {
                 // intentionally swallow the exception
+                Console.WriteLine("Exception caught");
             }
 
-            ManualResetEvent _profilerDone = new ManualResetEvent(false);
-            PassCallbackToProfiler(() => _profilerDone.Set());
+            Console.WriteLine("Waiting for profilers to all detach");
             if (!_profilerDone.WaitOne(TimeSpan.FromMinutes(5)))
             {
                 Console.WriteLine("Profiler did not set the callback, test will fail.");

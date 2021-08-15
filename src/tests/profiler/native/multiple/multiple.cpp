@@ -9,6 +9,10 @@
 
 using std::thread;
 
+std::atomic<int> MultiplyLoaded::_exceptionThrownSeenCount(0);
+std::atomic<int> MultiplyLoaded::_detachCount(0);
+std::atomic<int> MultiplyLoaded::_failures(0);
+
 GUID MultiplyLoaded::GetClsid()
 {
     // {BFA8EF13-E144-49B9-B95C-FC1C150C7651}
@@ -21,6 +25,7 @@ HRESULT MultiplyLoaded::InitializeCommon(IUnknown* pICorProfilerInfoUnk)
     Profiler::Initialize(pICorProfilerInfoUnk);
 
     HRESULT hr = S_OK;
+    printf("Setting exception mask\n");
     if (FAILED(hr = pCorProfilerInfo->SetEventMask2(COR_PRF_MONITOR_EXCEPTIONS, 0)))
     {
         _failures++;
@@ -65,7 +70,9 @@ HRESULT MultiplyLoaded::ProfilerDetachSucceeded()
 
 HRESULT MultiplyLoaded::ExceptionThrown(ObjectID thrownObjectId)
 {
-    _exceptionThrownSeenCount++;
+    int seen = _exceptionThrownSeenCount++;
+
+    printf("MultiplyLoaded::ExceptionThrown, number seen = %d\n", seen);
 
     thread detachThread([&]()
         {

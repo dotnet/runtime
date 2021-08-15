@@ -8,10 +8,7 @@
 class MultiplyLoaded : public Profiler
 {
 public:
-    MultiplyLoaded() : Profiler(),
-        _exceptionThrownSeenCount(0),
-        _detachCount(0),
-        _failures(0)
+    MultiplyLoaded() : Profiler()
     {}
 
     static GUID GetClsid();
@@ -24,9 +21,9 @@ public:
     virtual HRESULT STDMETHODCALLTYPE ExceptionThrown(ObjectID thrownObjectId);
 
 private:
-    std::atomic<int> _exceptionThrownSeenCount;
-    std::atomic<int> _detachCount;
-    std::atomic<int> _failures;
+    static std::atomic<int> _exceptionThrownSeenCount;
+    static std::atomic<int> _detachCount;
+    static std::atomic<int> _failures;
 
     HRESULT InitializeCommon(IUnknown* pCorProfilerInfoUnk);
 };
