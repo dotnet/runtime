@@ -10,6 +10,7 @@ using System.Numerics;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
+using Internal.Runtime.CompilerServices;
 using Microsoft.Win32.SafeHandles;
 
 namespace System.IO
@@ -476,6 +477,11 @@ namespace System.IO
             public MemoryHandle Pin(in ReadOnlyMemory<byte> memory) => memory.Pin();
         }
 
+        // GCHandle.AddrOfPinnedObject performs some checks that are not
+        // necessary since we know we have pinned a specific SZArray.
+        private static unsafe IntPtr AddrOfPinnedArray<T>(T[] array) =>
+            (IntPtr) Unsafe.AsPointer(ref MemoryMarshal.GetArrayDataReference(array));
+
         // From https://docs.microsoft.com/en-us/windows/win32/api/fileapi/nf-fileapi-readfilescatter:
         // "The file handle must be created with [...] the FILE_FLAG_OVERLAPPED and FILE_FLAG_NO_BUFFERING flags."
         private static bool CanUseScatterGatherWindowsAPIs(SafeFileHandle handle)
@@ -575,7 +581,7 @@ namespace System.IO
                     }
                 }
 
-                return await ReadFileScatterAsync(handle, pinnedSegments.AddrOfPinnedObject(), totalBytes, fileOffset, cancellationToken).ConfigureAwait(false);
+                return await ReadFileScatterAsync(handle, AddrOfPinnedArray(fileSegments), totalBytes, fileOffset, cancellationToken).ConfigureAwait(false);
             }
             finally
             {
@@ -730,7 +736,7 @@ namespace System.IO
                     }
                 }
 
-                await WriteFileGatherAsync(handle, pinnedSegments.AddrOfPinnedObject(), totalBytes, fileOffset, cancellationToken).ConfigureAwait(false);
+                await WriteFileGatherAsync(handle, AddrOfPinnedArray(fileSegments), totalBytes, fileOffset, cancellationToken).ConfigureAwait(false);
             }
             finally
             {
