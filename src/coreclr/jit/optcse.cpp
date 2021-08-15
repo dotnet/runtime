@@ -2383,9 +2383,11 @@ public:
             // because it doesn't take into account that we might use a vector register for struct copies.
             slotCount = (size + TARGET_POINTER_SIZE - 1) / TARGET_POINTER_SIZE;
         }
-        else if (varTypeIsFloating(candidate->Expr()) && (CNT_CALLEE_SAVED_FLOAT == 0) && candidate->LiveAcrossCall())
+        else if (varTypeIsFloating(candidate->Expr()) && (CNT_CALLEE_SAVED_FLOAT == 0) &&
+                 candidate->LiveAcrossCall())
         {
-            // We won't be able to enregister a float if it's live-across-call on ABIs without callee-saved XMMs
+            // We won't be able to enregister a float if it's live-across-call
+            // on ABIs without callee-saved XMMs
             canEnregister = false;
         }
 
