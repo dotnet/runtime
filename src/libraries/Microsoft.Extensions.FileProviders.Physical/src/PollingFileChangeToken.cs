@@ -65,7 +65,7 @@ namespace Microsoft.Extensions.FileProviders.Physical
                 catch (IOException) { } // https://github.com/dotnet/runtime/issues/57221
             }
 
-            return lastWriteTimeUtc.Value;
+            return lastWriteTimeUtc ?? DateTime.MinValue;
         }
 
         /// <summary>
