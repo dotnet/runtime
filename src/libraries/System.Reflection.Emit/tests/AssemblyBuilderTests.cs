@@ -427,7 +427,7 @@ namespace System.Reflection.Emit.Tests
     [Fact]
     public void DefineDynamicAssembly_InternalAssemblyLocationIsEmpty()
     {
-        AssemblyBuilder assembly = Helpers.DynamicAssembly();
+        AssemblyBuilder assembly = Helpers.DynamicAssembly(nameof(DefineDynamicAssembly_InternalAssemblyLocationIsEmpty));
         Assembly internalAssemblyBuilder  = AssemblyLoadContext.Default.Assemblies
                 .FirstOrDefault(_ => _.FullName == assembly.FullName);
 
