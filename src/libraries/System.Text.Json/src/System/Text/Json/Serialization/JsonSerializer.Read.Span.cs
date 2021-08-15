@@ -28,7 +28,7 @@ namespace System.Text.Json
         public static TValue? Deserialize<TValue>(ReadOnlySpan<byte> utf8Json, JsonSerializerOptions? options = null)
         {
             JsonTypeInfo jsonTypeInfo = GetTypeInfo(options, typeof(TValue));
-            return ReadSpan<TValue>(utf8Json, jsonTypeInfo);
+            return ReadFromSpan<TValue>(utf8Json, jsonTypeInfo);
         }
 
         /// <summary>
@@ -59,7 +59,7 @@ namespace System.Text.Json
             }
 
             JsonTypeInfo jsonTypeInfo = GetTypeInfo(options, returnType);
-            return ReadSpan<object>(utf8Json, jsonTypeInfo);
+            return ReadFromSpan<object>(utf8Json, jsonTypeInfo);
         }
 
         /// <summary>
@@ -84,7 +84,7 @@ namespace System.Text.Json
                 throw new ArgumentNullException(nameof(jsonTypeInfo));
             }
 
-            return ReadSpan<TValue>(utf8Json, jsonTypeInfo);
+            return ReadFromSpan<TValue>(utf8Json, jsonTypeInfo);
         }
 
         /// <summary>
@@ -122,7 +122,7 @@ namespace System.Text.Json
                 throw new ArgumentNullException(nameof(context));
             }
 
-            return ReadSpan<object?>(utf8Json, GetTypeInfo(context, returnType));
+            return ReadFromSpan<object?>(utf8Json, GetTypeInfo(context, returnType));
         }
     }
 }

@@ -166,7 +166,7 @@ namespace System.Text.Json
         private static TValue? ReadDocument<TValue>(JsonDocument document, JsonTypeInfo jsonTypeInfo)
         {
             ReadOnlySpan<byte> utf8Json = document.GetRootRawValue().Span;
-            return ReadSpan<TValue>(utf8Json, jsonTypeInfo);
+            return ReadFromSpan<TValue>(utf8Json, jsonTypeInfo);
         }
     }
 }

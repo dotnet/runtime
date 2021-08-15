@@ -386,7 +386,7 @@ namespace System.Text.Json
             {
                 int actualByteCount = JsonReaderHelper.GetUtf8FromText(json, utf8);
                 utf8 = utf8.Slice(0, actualByteCount);
-                return ReadSpan<TValue>(utf8, jsonTypeInfo, actualByteCount);
+                return ReadFromSpan<TValue>(utf8, jsonTypeInfo, actualByteCount);
             }
             finally
             {

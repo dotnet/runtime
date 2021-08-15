@@ -149,7 +149,7 @@ namespace System.Text.Json
                 }
             }
 
-            return ReadSpan<TValue>(output.WrittenMemory.Span, jsonTypeInfo);
+            return ReadFromSpan<TValue>(output.WrittenMemory.Span, jsonTypeInfo);
         }
     }
 }
