@@ -57,8 +57,8 @@ HRESULT MultiplyLoaded::ProfilerDetachSucceeded()
     ++_detachCount;
 
     printf("ProfilerDetachSucceeded _detachCount=%d\n", _detachCount.load());
-    if (_detachCount == MAX_PROFILERS
-        &&  _exceptionThrownSeenCount >= MAX_PROFILERS
+    if (_detachCount == (MAX_PROFILERS - 1)
+        &&  _exceptionThrownSeenCount >= (MAX_PROFILERS - 1)
         &&  _failures == 0)
     {
         printf("PROFILER TEST PASSES\n");
