@@ -2367,7 +2367,7 @@ public:
 
         bool     canEnregister = true;
         unsigned slotCount     = 1;
-        if (candidate->Expr()->TypeGet() == TYP_STRUCT)
+        if (candidate->Expr()->TypeIs(TYP_STRUCT))
         {
             // This is a non-enregisterable struct.
             canEnregister                  = false;
@@ -2382,6 +2382,11 @@ public:
             // Note that the slotCount is used to estimate the reference cost, but it may overestimate this
             // because it doesn't take into account that we might use a vector register for struct copies.
             slotCount = (size + TARGET_POINTER_SIZE - 1) / TARGET_POINTER_SIZE;
+        }
+        else if (varTypeIsFloating(candidate->Expr()) && (CNT_CALLEE_SAVED_FLOAT == 0) && candidate->LiveAcrossCall())
+        {
+            // We won't be able to enregister a float if it's live-across-call on ABIs without callee-saved XMMs
+            canEnregister = false;
         }
 
         if (CodeOptKind() == Compiler::SMALL_CODE)
@@ -2604,13 +2609,7 @@ public:
             // If we don't have a lot of variables to enregister or we have a floating point type
             // then we will likely need to spill an additional caller save register.
             //
-            if (varTypeIsFloating(candidate->Expr()))
-            {
-                // Do not make CSE for live-across-call floating point numbers
-                return false;
-            }
-
-            if (enregCount < (CNT_CALLEE_ENREG * 3 / 2))
+            if ((enregCount < (CNT_CALLEE_ENREG * 3 / 2)) || varTypeIsFloating(candidate->Expr()))
             {
                 // Extra cost in case we have to spill/restore a caller saved register
                 extra_yes_cost = BB_UNITY_WEIGHT_UNSIGNED;
