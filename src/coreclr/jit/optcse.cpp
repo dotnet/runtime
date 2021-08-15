@@ -2383,13 +2383,6 @@ public:
             // because it doesn't take into account that we might use a vector register for struct copies.
             slotCount = (size + TARGET_POINTER_SIZE - 1) / TARGET_POINTER_SIZE;
         }
-        else if (varTypeIsFloating(candidate->Expr()) && (CNT_CALLEE_SAVED_FLOAT == 0) &&
-                 candidate->LiveAcrossCall())
-        {
-            // We won't be able to enregister a float if it's live-across-call
-            // on ABIs without callee-saved XMMs
-            canEnregister = false;
-        }
 
         if (CodeOptKind() == Compiler::SMALL_CODE)
         {
@@ -2608,6 +2601,13 @@ public:
         //
         if (candidate->LiveAcrossCall())
         {
+            if (candidate->Expr()->IsCnsFltOrDbl() && (CNT_CALLEE_SAVED_FLOAT == 0))
+            {
+                // We should do CSE for fp constants in case of LiveAcrossCall only when absolutely necessary
+                // on ABIs without callee-saved registers.
+                cse_use_cost += 2;
+            }
+
             // If we don't have a lot of variables to enregister or we have a floating point type
             // then we will likely need to spill an additional caller save register.
             //
