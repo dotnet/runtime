@@ -134,7 +134,7 @@ ClrDataAccess::ServerGCHeapDetails(CLRDATA_ADDRESS heapAddr, DacpGcHeapDetails *
     if (pHeap->saved_sweep_ephemeral_seg.IsValid())
     {
         detailsData->saved_sweep_ephemeral_seg = (CLRDATA_ADDRESS)dac_cast<TADDR>(pHeap->saved_sweep_ephemeral_seg);
-        detailsData->saved_sweep_ephemeral_start = (CLRDATA_ADDRESS)*pHeap->saved_sweep_ephemeral_start;
+        detailsData->saved_sweep_ephemeral_start = (CLRDATA_ADDRESS)pHeap->saved_sweep_ephemeral_start;
     }
     else
     {

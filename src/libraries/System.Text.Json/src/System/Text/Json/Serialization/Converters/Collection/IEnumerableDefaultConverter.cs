@@ -12,6 +12,8 @@ namespace System.Text.Json.Serialization.Converters
     internal abstract class IEnumerableDefaultConverter<TCollection, TElement> : JsonCollectionConverter<TCollection, TElement>
         where TCollection : IEnumerable<TElement>
     {
+        internal override bool CanHaveIdMetadata => true;
+
         protected override bool OnWriteResume(Utf8JsonWriter writer, TCollection value, JsonSerializerOptions options, ref WriteStack state)
         {
             Debug.Assert(value is not null);

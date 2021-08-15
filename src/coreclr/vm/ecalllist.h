@@ -328,7 +328,6 @@ FCFuncStart(gCOMModuleFuncs)
 FCFuncEnd()
 
 FCFuncStart(gCOMModuleBuilderFuncs)
-    FCFuncElement("nCreateISymWriterForDynamicModule", COMModule::nCreateISymWriterForDynamicModule)
     QCFuncElement("GetStringConstant", COMModule::GetStringConstant)
     QCFuncElement("GetTypeRef", COMModule::GetTypeRef)
     QCFuncElement("GetTokenFromTypeSpec", COMModule::GetTokenFromTypeSpec)

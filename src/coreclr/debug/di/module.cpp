@@ -15,7 +15,6 @@
 #include "winbase.h"
 #include "corpriv.h"
 #include "corsym.h"
-#include "ildbsymlib.h"
 
 #include "pedecoder.h"
 #include "stgpool.h"
@@ -2576,13 +2575,6 @@ HRESULT CordbModule::CreateReaderForInMemorySymbols(REFIID riid, void** ppObj)
                                              IID_ISymUnmanagedBinder,
                                              (void**)&pBinder));
 #endif
-        }
-        else if (symFormat == IDacDbiInterface::kSymbolFormatILDB)
-        {
-            // ILDB format - use statically linked-in ildbsymlib
-            IfFailThrow(IldbSymbolsCreateInstance(CLSID_CorSymBinder_SxS,
-                                                IID_ISymUnmanagedBinder,
-                                                (void**)&pBinder));
         }
         else
         {

@@ -10,7 +10,7 @@ namespace System.Text.Json
     public static partial class JsonSerializer
     {
         /// <summary>
-        /// Write one JSON value (including objects or arrays) to the provided writer.
+        /// Writes one JSON value (including objects or arrays) to the provided writer.
         /// </summary>
         /// <param name="writer">The writer to write.</param>
         /// <param name="value">The value to convert and write.</param>
@@ -32,7 +32,7 @@ namespace System.Text.Json
         }
 
         /// <summary>
-        /// Write one JSON value (including objects or arrays) to the provided writer.
+        /// Writes one JSON value (including objects or arrays) to the provided writer.
         /// </summary>
         /// <param name="writer"></param>
         /// <param name="value">The value to convert and write.</param>
@@ -63,7 +63,7 @@ namespace System.Text.Json
         }
 
         /// <summary>
-        /// Write one JSON value (including objects or arrays) to the provided writer.
+        /// Writes one JSON value (including objects or arrays) to the provided writer.
         /// </summary>
         /// <param name="writer">The writer to write.</param>
         /// <param name="value">The value to convert and write.</param>
@@ -91,7 +91,7 @@ namespace System.Text.Json
         }
 
         /// <summary>
-        /// Write one JSON value (including objects or arrays) to the provided writer.
+        /// Writes one JSON value (including objects or arrays) to the provided writer.
         /// </summary>
         /// <param name="writer"></param>
         /// <param name="value">The value to convert and write.</param>

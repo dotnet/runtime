@@ -30,6 +30,8 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
             Populate();
         }
 
+        internal ServiceDescriptor[] Descriptors => _descriptors;
+
         private void Populate()
         {
             foreach (ServiceDescriptor descriptor in _descriptors)

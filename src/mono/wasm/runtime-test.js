@@ -23,7 +23,13 @@ function proxyMethod (prefix, func, asJson) {
 		if(payload === undefined) payload = 'undefined';
 		else if(payload === null) payload = 'null';
 		else if(typeof payload === 'function') payload = payload.toString();
-		else if(typeof payload !== 'string') payload = JSON.stringify(payload);
+		else if(typeof payload !== 'string') {
+			try{
+				payload = JSON.stringify(payload);
+			}catch(e){
+				payload = payload.toString();
+			}
+		}
 
 		if (asJson) {
 			func (JSON.stringify({

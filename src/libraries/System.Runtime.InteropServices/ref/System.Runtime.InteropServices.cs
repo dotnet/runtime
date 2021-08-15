@@ -828,7 +828,6 @@ namespace System.Runtime.InteropServices
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("android")]
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("ios")]
-        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("maccatalyst")]
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("tvos")]
         public static System.Runtime.InteropServices.PosixSignalRegistration Create(System.Runtime.InteropServices.PosixSignal signal, System.Action<System.Runtime.InteropServices.PosixSignalContext> handler) { throw null; }
         public void Dispose() { }
@@ -1128,7 +1127,6 @@ namespace System.Runtime.InteropServices
     [System.Runtime.Versioning.UnsupportedOSPlatform("android")]
     [System.Runtime.Versioning.UnsupportedOSPlatform("browser")]
     [System.Runtime.Versioning.UnsupportedOSPlatform("ios")]
-    [System.Runtime.Versioning.UnsupportedOSPlatform("maccatalyst")]
     [System.Runtime.Versioning.UnsupportedOSPlatform("tvos")]
     [System.CLSCompliantAttribute(false)]
     public abstract class ComWrappers
