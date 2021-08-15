@@ -239,6 +239,13 @@
                   Overwrite="true" />
 
     <RemoveDir Condition="'$(ArchiveTests)' == 'true' and '$(IgnoreForCI)' != 'true'" Directories="$(OutDir)" />
+  
+    <Message Importance="High" Text="Archived Tests at $(TestArchiveTestsDir): $([System.IO.Directory]::GetFiles('$(TestArchiveTestsDir)', '*', System.IO.SearchOption.TopDirectoryOnly).Length.ToString())" />
+    <Exec Command="df -h"
+          ContinueOnError="true"
+          IgnoreExitCode="true"
+          IgnoreStandardErrorWarningFormat="true" />
+  
   </Target>
 
   <!-- This .targets file is also imported by the runtime Trimming tests, and we want to be able to manually configure trimming in them so this
