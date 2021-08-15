@@ -4,7 +4,7 @@
 #include "multiple.h"
 #include <thread>
 
-#define MAX_PROFILERS 8
+#define MAX_PROFILERS 3
 
 using std::thread;
 

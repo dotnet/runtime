@@ -21,10 +21,7 @@ namespace Profiler.Tests
             ManualResetEvent _profilerDone = new ManualResetEvent(false);
             PassCallbackToProfiler(() => _profilerDone.Set());
 
-            for (int i = 0; i < 4; ++i)
-            {
-                ProfilerControlHelpers.AttachProfilerToSelf(MultipleProfilerGuid, ProfilerPath);
-            }
+            ProfilerControlHelpers.AttachProfilerToSelf(MultipleProfilerGuid, ProfilerPath);
 
             try
             {
@@ -57,7 +54,7 @@ namespace Profiler.Tests
                                           testName: "MultiplyLoaded",
                                           profilerClsid: MultipleProfilerGuid,
                                           loadAsNotification: true,
-                                          notificationCopies: 4);
+                                          notificationCopies: 2);
         }
     }
 }
