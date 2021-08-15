@@ -9,7 +9,7 @@ namespace System.IO.Compression
         public const int WindowBits_Default = 22;
         public const int WindowBits_Max = 24;
         public const int Quality_Min = 0;
-        public const int Quality_Default = 11;
+        public const int Quality_Default = 6;
         public const int Quality_Max = 11;
         public const int MaxInputSize = int.MaxValue - 515; // 515 is the max compressed extra bytes
 
