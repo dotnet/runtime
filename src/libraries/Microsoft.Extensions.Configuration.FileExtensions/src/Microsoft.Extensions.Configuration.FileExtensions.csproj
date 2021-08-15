@@ -1,7 +1,8 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>netstandard2.0;net461</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent);netstandard2.0;net461</TargetFrameworks>
+    <Nullable>enable</Nullable>
     <EnableDefaultItems>true</EnableDefaultItems>
     <PackageDescription>Extension methods for configuring file-based configuration providers for Microsoft.Extensions.Configuration.</PackageDescription>
   </PropertyGroup>
@@ -12,6 +13,14 @@
     <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Extensions.FileProviders.Abstractions\src\Microsoft.Extensions.FileProviders.Abstractions.csproj" />
     <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Extensions.FileProviders.Physical\src\Microsoft.Extensions.FileProviders.Physical.csproj" />
     <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Extensions.Primitives\src\Microsoft.Extensions.Primitives.csproj" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
+    <Reference Include="System.Collections" />
+    <Reference Include="System.Linq" />
+    <Reference Include="System.Runtime" />
+    <Reference Include="System.Reflection" />
+    <Reference Include="System.Threading.Thread" />
   </ItemGroup>
 
 </Project>
