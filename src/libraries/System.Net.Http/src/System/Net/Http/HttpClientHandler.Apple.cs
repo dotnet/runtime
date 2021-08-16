@@ -15,7 +15,6 @@ namespace System.Net.Http
         [UnsupportedOSPlatform("browser")]
         [UnsupportedOSPlatform("ios")]
         [UnsupportedOSPlatform("tvos")]
-        [UnsupportedOSPlatform("maccatalyst")]
         public DecompressionMethods AutomaticDecompression
         {
             get => throw new PlatformNotSupportedException();
@@ -25,7 +24,6 @@ namespace System.Net.Http
         [UnsupportedOSPlatform("browser")]
         [UnsupportedOSPlatform("ios")]
         [UnsupportedOSPlatform("tvos")]
-        [UnsupportedOSPlatform("maccatalyst")]
         public bool UseProxy
         {
             get => throw new PlatformNotSupportedException();
@@ -35,7 +33,6 @@ namespace System.Net.Http
         [UnsupportedOSPlatform("browser")]
         [UnsupportedOSPlatform("ios")]
         [UnsupportedOSPlatform("tvos")]
-        [UnsupportedOSPlatform("maccatalyst")]
         public IWebProxy? Proxy
         {
             get => throw new PlatformNotSupportedException();
@@ -45,7 +42,6 @@ namespace System.Net.Http
         [UnsupportedOSPlatform("browser")]
         [UnsupportedOSPlatform("ios")]
         [UnsupportedOSPlatform("tvos")]
-        [UnsupportedOSPlatform("maccatalyst")]
         public int MaxAutomaticRedirections
         {
             get => throw new PlatformNotSupportedException();
@@ -55,7 +51,6 @@ namespace System.Net.Http
         [UnsupportedOSPlatform("browser")]
         [UnsupportedOSPlatform("ios")]
         [UnsupportedOSPlatform("tvos")]
-        [UnsupportedOSPlatform("maccatalyst")]
         public bool PreAuthenticate
         {
             get => throw new PlatformNotSupportedException();

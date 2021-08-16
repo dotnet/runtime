@@ -259,8 +259,4 @@ System.Speech.Recognition.SpeechRecognizer</PackageDescription>
     <Reference Include="System.Threading.ThreadPool" />
     <Reference Include="System.Xml.ReaderWriter" />
   </ItemGroup>
-
-  <ItemGroup>
-    <NETStandardCompatError Include="netcoreapp2.0" Supported="$(NetCoreAppMinimum)" />
-  </ItemGroup>
 </Project>

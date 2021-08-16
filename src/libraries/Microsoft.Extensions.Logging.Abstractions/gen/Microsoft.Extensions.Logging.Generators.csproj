@@ -8,7 +8,6 @@
     <UsingToolXliff>true</UsingToolXliff>
     <CLSCompliant>false</CLSCompliant>
     <IsPackable>false</IsPackable>
-    <IsAspNetCoreAppAnalyzer>true</IsAspNetCoreAppAnalyzer>
     <AnalyzerLanguage>cs</AnalyzerLanguage>
   </PropertyGroup>
 

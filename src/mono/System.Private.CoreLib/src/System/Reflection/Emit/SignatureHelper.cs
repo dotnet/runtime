@@ -95,7 +95,7 @@ namespace System.Reflection.Emit
             return GetMethodSigHelper(null, callingConvention, (CallingConvention)0, returnType, null);
         }
 
-        public static SignatureHelper GetMethodSigHelper(CallingConvention unmanagedCallingConvention, Type? returnType)
+        internal static SignatureHelper GetMethodSigHelper(CallingConvention unmanagedCallingConvention, Type? returnType)
         {
             return GetMethodSigHelper(null, CallingConventions.Standard, unmanagedCallingConvention, returnType, null);
         }
@@ -105,7 +105,7 @@ namespace System.Reflection.Emit
             return GetMethodSigHelper(mod, callingConvention, (CallingConvention)0, returnType, null);
         }
 
-        public static SignatureHelper GetMethodSigHelper(Module? mod, CallingConvention unmanagedCallConv, Type? returnType)
+        internal static SignatureHelper GetMethodSigHelper(Module? mod, CallingConvention unmanagedCallConv, Type? returnType)
         {
             return GetMethodSigHelper(mod, CallingConventions.Standard, unmanagedCallConv, returnType, null);
         }

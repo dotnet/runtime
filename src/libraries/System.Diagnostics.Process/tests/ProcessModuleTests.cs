@@ -92,32 +92,39 @@ namespace System.Diagnostics.Tests
             Assert.Equal(expectedCount, disposedCount);
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtime/pull/335059")]
-        [ConditionalFact(typeof(PathFeatures), nameof(PathFeatures.AreAllLongPathsAvailable))]
-        [PlatformSpecific(TestPlatforms.Windows)]
+        public static bool Is_LongModuleFileNamesAreSupported_TestEnabled
+            => PathFeatures.AreAllLongPathsAvailable() // we want to test long paths
+            && !PlatformDetection.IsMonoRuntime // Assembly.LoadFile used the way this test is implemented fails on Mono
+            && OperatingSystem.IsWindowsVersionAtLeast(8); // it's specific to Windows and does not work on Windows 7
+
+        [ConditionalFact(typeof(ProcessModuleTests), nameof(Is_LongModuleFileNamesAreSupported_TestEnabled))]
         public void LongModuleFileNamesAreSupported()
         {
-            // To be able to test Long Path support for ProcessModule.FileName we need a .dll that has a path >= 260 chars.
+            // To be able to test Long Path support for ProcessModule.FileName we need a .dll that has a path > 260 chars.
             // Since Long Paths support can be disabled (see the ConditionalFact attribute usage above),
             // we just copy "LongName.dll" from bin to a temp directory with a long name and load it from there.
             // Loading from new path is possible because the type exposed by the assembly is not referenced in any explicit way.
             const string libraryName = "LongPath.dll";
+            const int minPathLength = 261;
 
             string testBinPath = Path.GetDirectoryName(typeof(ProcessModuleTests).Assembly.Location);
             string libraryToCopy = Path.Combine(testBinPath, libraryName);
             Assert.True(File.Exists(libraryToCopy), $"{libraryName} was not present in bin folder '{testBinPath}'");
 
-            string directoryWithLongName = Path.Combine(TestDirectory, new string('a', Math.Max(1, 261 - TestDirectory.Length)));
+            string directoryWithLongName = Path.Combine(TestDirectory, new string('a', Math.Max(1, minPathLength - TestDirectory.Length)));
             Directory.CreateDirectory(directoryWithLongName);
 
             string longNamePath = Path.Combine(directoryWithLongName, libraryName);
-            Assert.True(longNamePath.Length > 260);
+            Assert.True(longNamePath.Length > minPathLength);
 
             File.Copy(libraryToCopy, longNamePath);
+            Assert.True(File.Exists(longNamePath));
 
             Assembly loaded = Assembly.LoadFile(longNamePath);
+            Assert.Equal(longNamePath, loaded.Location);
 
-            Assert.Contains(Process.GetCurrentProcess().Modules.Cast<ProcessModule>(), module => module.FileName == longNamePath);
+            string[] modulePaths = Process.GetCurrentProcess().Modules.Cast<ProcessModule>().Select(module => module.FileName).ToArray();
+            Assert.Contains(longNamePath, modulePaths);
         }
     }
 }

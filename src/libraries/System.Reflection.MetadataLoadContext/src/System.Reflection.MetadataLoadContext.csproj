@@ -146,8 +146,10 @@ System.Reflection.MetadataAssemblyResolver</PackageDescription>
     <Compile Include="System\Reflection\TypeLoading\Types\RoType.TypeClassification.cs" />
     <Compile Include="System\Reflection\TypeLoading\Types\RoWrappedType.cs" />
     <Compile Include="$(CommonPath)System\Obsoletions.cs" Link="Common\System\Obsoletions.cs" />
-    <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\UnconditionalSuppressMessageAttribute.cs"
-             Condition="!$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net5.0'))" />
+  </ItemGroup>
+  <ItemGroup Condition="!$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net5.0'))">
+    <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\UnconditionalSuppressMessageAttribute.cs" />
+    <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\RequiresUnreferencedCodeAttribute.cs" />
   </ItemGroup>
   <ItemGroup>
     <!-- Application tfms (.NETCoreApp, .NETFramework) need to use the same or higher version of .NETStandard's dependencies. -->
@@ -172,8 +174,5 @@ System.Reflection.MetadataAssemblyResolver</PackageDescription>
     <PackageReference Include="System.Memory" Version="$(SystemMemoryVersion)" />
     <!-- S.R.C.Unsafe isn't a primary but transitive dependency and this P2P makes sure that the live version is used. -->
     <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime.CompilerServices.Unsafe\src\System.Runtime.CompilerServices.Unsafe.ilproj" PrivateAssets="all" />
-  </ItemGroup>
-  <ItemGroup>
-    <NETStandardCompatError Include="netcoreapp2.0" Supported="$(NetCoreAppMinimum)" />
   </ItemGroup>
 </Project>

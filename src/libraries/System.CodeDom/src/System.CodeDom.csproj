@@ -152,7 +152,4 @@ Microsoft.VisualBasic.VBCodeProvider</PackageDescription>
     <Reference Include="System.Runtime.Extensions" />
     <Reference Include="System.Threading" />
   </ItemGroup>
-  <ItemGroup>
-    <NETStandardCompatError Include="netcoreapp2.0" Supported="$(NetCoreAppMinimum)" />
-  </ItemGroup>
 </Project>

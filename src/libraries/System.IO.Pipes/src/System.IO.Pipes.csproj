@@ -94,18 +94,16 @@
     <Compile Include="Microsoft\Win32\SafeHandles\SafePipeHandle.Windows.cs" />
     <Compile Include="System\IO\Pipes\AnonymousPipeServerStreamAcl.cs" />
     <Compile Include="System\IO\Pipes\AnonymousPipeServerStream.Windows.cs" />
-    <Compile Include="System\IO\Pipes\ConnectionCompletionSource.cs" />
     <Compile Include="System\IO\Pipes\NamedPipeServerStreamAcl.cs" />
     <Compile Include="System\IO\Pipes\NamedPipeClientStream.Windows.cs" />
     <Compile Include="System\IO\Pipes\NamedPipeServerStream.Windows.cs" />
     <Compile Include="System\IO\Pipes\PipeAccessRights.cs" />
     <Compile Include="System\IO\Pipes\PipeAccessRule.cs" />
     <Compile Include="System\IO\Pipes\PipeAuditRule.cs" />
-    <Compile Include="System\IO\Pipes\PipeCompletionSource.cs" />
     <Compile Include="System\IO\Pipes\PipesAclExtensions.cs" />
     <Compile Include="System\IO\Pipes\PipeSecurity.cs" />
+    <Compile Include="System\IO\Pipes\PipeStream.ValueTaskSource.cs" />
     <Compile Include="System\IO\Pipes\PipeStream.Windows.cs" />
-    <Compile Include="System\IO\Pipes\ReadWriteCompletionSource.cs" />
   </ItemGroup>
   <!-- Windows : Win32 only -->
   <ItemGroup Condition="'$(TargetsWindows)' == 'true'">

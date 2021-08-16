@@ -895,7 +895,7 @@ SimpleComCallWrapper::~SimpleComCallWrapper()
 // and the main ComCallWrapper if the interface needs it
 //--------------------------------------------------------------------------
 void SimpleComCallWrapper::InitNew(OBJECTREF oref, ComCallWrapperCache *pWrapperCache, ComCallWrapper* pWrap,
-                                ComCallWrapper *pClassWrap, SyncBlock *pSyncBlock,
+                                SyncBlock *pSyncBlock,
                                 ComCallWrapperTemplate* pTemplate)
 {
     CONTRACTL
@@ -919,7 +919,6 @@ void SimpleComCallWrapper::InitNew(OBJECTREF oref, ComCallWrapperCache *pWrapper
 
     m_pMT = pMT;
     m_pWrap = pWrap;
-    m_pClassWrap = pClassWrap;
     m_pWrapperCache = pWrapperCache;
     m_pTemplate = pTemplate;
     m_pTemplate->AddRef();
@@ -1510,12 +1509,6 @@ IUnknown* SimpleComCallWrapper::GetOuter()
         POSTCONDITION(CheckPointer(RETVAL, NULL_OK));
     }
     CONTRACT_END;
-
-    if (m_pClassWrap)
-    {
-        // Forward to the real wrapper if this CCW represents a variant interface
-        RETURN m_pClassWrap->GetSimpleWrapper()->GetOuter();
-    }
 
     RETURN m_pOuter;
 }
@@ -2154,11 +2147,11 @@ void ComCallWrapper::FreeWrapper(ComCallWrapperCache *pWrapperCache)
 }
 
 //--------------------------------------------------------------------------
-//ComCallWrapper* ComCallWrapper::CreateWrapper(OBJECTREF* ppObj, ComCallWrapperTemplate *pTemplate, ComCallWrapper *pClassCCW)
+//ComCallWrapper* ComCallWrapper::CreateWrapper(OBJECTREF* ppObj)
 // this function should be called only with pre-emptive GC disabled
 // GCProtect the object ref being passed in, as this code could enable gc
 //--------------------------------------------------------------------------
-ComCallWrapper* ComCallWrapper::CreateWrapper(OBJECTREF* ppObj, ComCallWrapperTemplate *pTemplate, ComCallWrapper *pClassCCW)
+ComCallWrapper* ComCallWrapper::CreateWrapper(OBJECTREF* ppObj)
 {
     CONTRACT(ComCallWrapper *)
     {
@@ -2166,9 +2159,6 @@ ComCallWrapper* ComCallWrapper::CreateWrapper(OBJECTREF* ppObj, ComCallWrapperTe
         GC_TRIGGERS;
         MODE_COOPERATIVE;
         PRECONDITION(ppObj != NULL);
-        PRECONDITION(CheckPointer(pTemplate, NULL_OK));
-        PRECONDITION(CheckPointer(pClassCCW, NULL_OK));
-        PRECONDITION(pTemplate == NULL || !pTemplate->RepresentsVariantInterface() || pClassCCW != NULL);
         POSTCONDITION(CheckPointer(RETVAL));
     }
     CONTRACT_END;
@@ -2195,15 +2185,12 @@ ComCallWrapper* ComCallWrapper::CreateWrapper(OBJECTREF* ppObj, ComCallWrapperTe
 
     {
         // check if somebody beat us to it
-        pStartWrapper = GetWrapperForObject(pServer, pTemplate);
+        pStartWrapper = GetWrapperForObject(pServer);
 
         if (pStartWrapper == NULL)
         {
-            if (pTemplate == NULL)
-            {
-                // get the wrapper template from object's type if it was not passed explicitly
-                pTemplate = ComCallWrapperTemplate::GetTemplate(thClass);
-            }
+            // get the wrapper template from object's type
+            ComCallWrapperTemplate* pTemplate = ComCallWrapperTemplate::GetTemplate(thClass);
 
             // Make sure the CCW will be destroyed when exception happens
             // Also keep pWrapperCache alive within this scope
@@ -2241,7 +2228,7 @@ ComCallWrapper* ComCallWrapper::CreateWrapper(OBJECTREF* ppObj, ComCallWrapperTe
 
                     NewHolder<SimpleComCallWrapper> pSimpleWrap = new SimpleComCallWrapper();
 
-                    pSimpleWrap->InitNew(pServer, pWrapperCache, pNewCCW, pClassCCW, pSyncBlock, pTemplate);
+                    pSimpleWrap->InitNew(pServer, pWrapperCache, pNewCCW, pSyncBlock, pTemplate);
 
                     InitSimpleWrapper(pNewCCW, pSimpleWrap);
 

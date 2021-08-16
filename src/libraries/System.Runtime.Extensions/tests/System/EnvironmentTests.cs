@@ -161,7 +161,7 @@ namespace System.Tests
 
         // On non-OSX Unix, we must parse the version from uname -r
         [Theory]
-        [PlatformSpecific(TestPlatforms.AnyUnix & ~TestPlatforms.OSX & ~TestPlatforms.Browser)]
+        [PlatformSpecific(TestPlatforms.AnyUnix & ~TestPlatforms.OSX & ~TestPlatforms.Browser & ~TestPlatforms.iOS & ~TestPlatforms.tvOS & ~TestPlatforms.MacCatalyst)]
         [InlineData("2.6.19-1.2895.fc6", 2, 6, 19, 1)]
         [InlineData("xxx1yyy2zzz3aaa4bbb", 1, 2, 3, 4)]
         [InlineData("2147483647.2147483647.2147483647.2147483647", int.MaxValue, int.MaxValue, int.MaxValue, int.MaxValue)]
@@ -171,7 +171,6 @@ namespace System.Tests
         [InlineData("nelknet 4.15.0-24201807041620-generic", 4, 15, 0, int.MaxValue)] // integer overflow
         [InlineData("", 0, 0, 0, 0)]
         [InlineData("1abc", 1, 0, 0, 0)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/36896", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public void OSVersion_ParseVersion(string input, int major, int minor, int build, int revision)
         {
             var getOSMethod = typeof(Environment).GetMethod("GetOperatingSystem", BindingFlags.Static | BindingFlags.NonPublic);
@@ -333,11 +332,13 @@ namespace System.Tests
 
         [Fact]
         [PlatformSpecific(TestPlatforms.AnyUnix | TestPlatforms.Browser)]  // Tests OS-specific environment
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/36896", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public void GetFolderPath_Unix_PersonalIsHomeAndUserProfile()
         {
-            Assert.Equal(Environment.GetEnvironmentVariable("HOME"), Environment.GetFolderPath(Environment.SpecialFolder.Personal));
-            Assert.Equal(Environment.GetEnvironmentVariable("HOME"), Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments));
+            if (!PlatformDetection.IsiOS && !PlatformDetection.IstvOS && !PlatformDetection.IsMacCatalyst)
+            {
+                Assert.Equal(Environment.GetEnvironmentVariable("HOME"), Environment.GetFolderPath(Environment.SpecialFolder.Personal));
+                Assert.Equal(Environment.GetEnvironmentVariable("HOME"), Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments));
+            }
             Assert.Equal(Environment.GetEnvironmentVariable("HOME"), Environment.GetFolderPath(Environment.SpecialFolder.UserProfile));
         }
 

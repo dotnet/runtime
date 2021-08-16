@@ -33,6 +33,9 @@ namespace System.Text.Json.Serialization.Metadata
         // If enumerable or dictionary, the JsonTypeInfo for the element type.
         private JsonTypeInfo? _elementTypeInfo;
 
+        // Avoids having to perform an expensive cast to JsonTypeInfo<T> to check if there is a Serialize method.
+        internal bool HasSerialize { get; set; }
+
         /// <summary>
         /// Return the JsonTypeInfo for the element type, or null if the type is not an enumerable or dictionary.
         /// </summary>

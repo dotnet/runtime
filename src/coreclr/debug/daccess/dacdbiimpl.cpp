@@ -4383,23 +4383,7 @@ void DacDbiInterfaceImpl::GetSymbolsBuffer(VMPTR_Module vmModule, TargetBuffer *
     }
     InitTargetBufferFromMemoryRange(m, pTargetBuffer);
 
-    // Set the symbol format appropriately
-    ESymbolFormat symFormat = pModule->GetInMemorySymbolStreamFormat();
-    switch (symFormat)
-    {
-    case eSymbolFormatPDB:
-        *pSymbolFormat = kSymbolFormatPDB;
-        break;
-
-    case eSymbolFormatILDB:
-        *pSymbolFormat = kSymbolFormatILDB;
-        break;
-
-    default:
-        CONSISTENCY_CHECK_MSGF(false, "Unexpected symbol format");
-        pTargetBuffer->Clear();
-        ThrowHR(E_UNEXPECTED);
-    }
+    *pSymbolFormat = kSymbolFormatPDB;
 }
 
 
