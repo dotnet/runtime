@@ -187,7 +187,7 @@ HRESULT CLRPrivBinderAssemblyLoadContext::SetupContext(CLRPrivBinderCoreCLR *pTP
     {
         if(ppBindContext != NULL)
         {
-            ReleaseHolder<CLRPrivBinderAssemblyLoadContext> pBinder;
+            NewHolder<CLRPrivBinderAssemblyLoadContext> pBinder;
 
             SAFE_NEW(pBinder, CLRPrivBinderAssemblyLoadContext);
             hr = pBinder->GetAppContext()->Init();
@@ -216,7 +216,7 @@ HRESULT CLRPrivBinderAssemblyLoadContext::SetupContext(CLRPrivBinderCoreCLR *pTP
                 }
 #endif
                 // Return reference to the allocated Binder instance
-                *ppBindContext = clr::SafeAddRef(pBinder.Extract());
+                *ppBindContext = pBinder.Extract();
             }
         }
     }

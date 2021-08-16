@@ -20,9 +20,9 @@ public:
     //=========================================================================
     // ICLRPrivBinder functions
     //-------------------------------------------------------------------------
-    STDMETHOD(BindAssemblyByName)(
-            /* [in] */ struct AssemblyNameData *pAssemblyNameData,
-            /* [retval][out] */ BINDER_SPACE::Assembly **ppAssembly);
+    HRESULT BindAssemblyByName(
+        AssemblyNameData* pAssemblyNameData,
+        BINDER_SPACE::Assembly** ppAssembly);
 
     AssemblyLoaderAllocator* GetLoaderAllocator();
 

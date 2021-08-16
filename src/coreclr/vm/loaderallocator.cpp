@@ -1701,7 +1701,7 @@ AssemblyLoaderAllocator::~AssemblyLoaderAllocator()
 {
     if (m_binderToRelease != NULL)
     {
-        VERIFY(m_binderToRelease->Release() == 0);
+        delete m_binderToRelease;
         m_binderToRelease = NULL;
     }
 

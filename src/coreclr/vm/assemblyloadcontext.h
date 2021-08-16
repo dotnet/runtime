@@ -32,9 +32,9 @@ public:
      ** pAssemblyFullName - name of the assembly for which a bind is being requested.
      ** ppAssembly - upon success, receives the bound assembly.
      **********************************************************************************/
-    virtual HRESULT STDMETHODCALLTYPE BindAssemblyByName(
-        /* [in] */ struct AssemblyNameData* pAssemblyNameData,
-        /* [retval][out] */ BINDER_SPACE::Assembly * *ppAssembly) = 0;
+    virtual HRESULT BindAssemblyByName(
+        AssemblyNameData* pAssemblyNameData,
+        BINDER_SPACE::Assembly **ppAssembly) = 0;
 
     /**********************************************************************************
      ** GetLoaderAllocator
@@ -51,23 +51,6 @@ public:
     // Add a virtual destructor to force derived types to also have virtual destructors.
     virtual ~ICLRPrivBinder()
     {
-    }
-
-    ULONG AddRef()
-    {
-        return InterlockedIncrement(&m_cRef);
-    }
-
-    ULONG Release()
-    {
-        _ASSERTE(m_cRef > 0);
-
-        ULONG cRef = InterlockedDecrement(&m_cRef);
-
-        if (cRef == 0)
-            delete this; // Relies on virtual dtor to work properly.
-
-        return cRef;
     }
 
 private:

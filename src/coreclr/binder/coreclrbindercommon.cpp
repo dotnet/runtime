@@ -17,7 +17,7 @@ HRESULT CCoreCLRBinderHelper::DefaultBinderSetupContext(CLRPrivBinderCoreCLR **p
     {
         if(ppTPABinder != NULL)
         {
-            ReleaseHolder<CLRPrivBinderCoreCLR> pBinder;
+            NewHolder<CLRPrivBinderCoreCLR> pBinder;
             SAFE_NEW(pBinder, CLRPrivBinderCoreCLR);
 
             BINDER_SPACE::ApplicationContext *pApplicationContext = pBinder->GetAppContext();
@@ -25,7 +25,7 @@ HRESULT CCoreCLRBinderHelper::DefaultBinderSetupContext(CLRPrivBinderCoreCLR **p
             if(SUCCEEDED(hr))
             {
                 pBinder->SetManagedAssemblyLoadContext(NULL);
-                *ppTPABinder = clr::SafeAddRef(pBinder.Extract());
+                *ppTPABinder = pBinder.Extract();
             }
         }
     }

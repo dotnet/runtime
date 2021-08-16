@@ -33,7 +33,7 @@ namespace BINDER_SPACE
 
     ApplicationContext::~ApplicationContext()
     {
-        SAFE_RELEASE(m_pExecutionContext);
+        SAFE_DELETE(m_pExecutionContext);
         SAFE_DELETE(m_pFailureCache);
 
         if (m_contextCS != NULL)
@@ -51,7 +51,7 @@ namespace BINDER_SPACE
     {
         HRESULT hr = S_OK;
 
-        ReleaseHolder<ExecutionContext> pExecutionContext;
+        NewHolder<ExecutionContext> pExecutionContext;
 
         FailureCache *pFailureCache = NULL;
 

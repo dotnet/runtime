@@ -745,8 +745,9 @@ void BaseDomain::ClearBinderContext()
     }
     CONTRACTL_END;
 
-    if (m_pTPABinderContext) {
-        m_pTPABinderContext->Release();
+    if (m_pTPABinderContext)
+    {
+        delete m_pTPABinderContext;
         m_pTPABinderContext = NULL;
     }
 }
