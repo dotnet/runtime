@@ -34,7 +34,12 @@ namespace System.Diagnostics.Tests
             Assert.True(File.Exists(longNamePath));
 
             IntPtr moduleHandle = Interop.Kernel32.LoadLibrary(longNamePath);
-            Assert.False(moduleHandle == IntPtr.Zero, $"LoadLibrary failed with {Marshal.GetLastWin32Error()}");
+            if (moduleHandle == IntPtr.Zero)
+            {
+                Assert.Equal(126, Marshal.GetLastWin32Error()); // ERROR_MOD_NOT_FOUND
+                Assert.Equal(Architecture.X86, RuntimeInformation.ProcessArchitecture);
+                return; // we have failed to load the module on x86, we skip the rest of the test (it's best effort)
+            }
 
             try
             {
