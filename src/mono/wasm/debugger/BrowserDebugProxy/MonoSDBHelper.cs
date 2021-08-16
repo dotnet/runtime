@@ -643,9 +643,9 @@ namespace Microsoft.WebAssembly.Diagnostics
     }
     internal class MonoSDBHelper
     {
-        private Dictionary<int, MethodInfoWithDebugInformation> methods = new Dictionary<int, MethodInfoWithDebugInformation>();
-        private Dictionary<int, AssemblyInfo> assemblies = new Dictionary<int, AssemblyInfo>();
-        private Dictionary<int, TypeInfoWithDebugInformation> types = new Dictionary<int, TypeInfoWithDebugInformation>();
+        private Dictionary<int, MethodInfoWithDebugInformation> methods = new();
+        private Dictionary<int, AssemblyInfo> assemblies = new();
+        private Dictionary<int, TypeInfoWithDebugInformation> types = new();
 
         internal Dictionary<int, ValueTypeClass> valueTypes = new Dictionary<int, ValueTypeClass>();
         internal Dictionary<int, PointerValue> pointerValues = new Dictionary<int, PointerValue>();
@@ -733,18 +733,17 @@ namespace Microsoft.WebAssembly.Diagnostics
 
         public async Task<TypeInfoWithDebugInformation> GetTypeInfo(SessionId sessionId, int typeId, CancellationToken token)
         {
-            TypeInfoWithDebugInformation typeDebugInfo = null;
-            TypeInfo type = null;
-            if (types.TryGetValue(typeId, out typeDebugInfo))
+            if (types.TryGetValue(typeId, out TypeInfoWithDebugInformation? typeDebugInfo))
             {
                 return typeDebugInfo;
             }
+            TypeInfo type = null;
 
             var typeToken = await GetTypeToken(sessionId, typeId, token);
             var typeName = await GetTypeName(sessionId, typeId, token);
             var assemblyId = await GetAssemblyFromType(sessionId, typeId, token);
             var asm = await GetAssemblyInfo(sessionId, assemblyId, token);
-            asm.TypesByToken.TryGetValue(typeToken, out type);
+            asm.TypesByToken.TryGetValue(typeToken, out TypeInfo? type);
 
             if (type == null)
             {
@@ -1108,9 +1107,8 @@ namespace Microsoft.WebAssembly.Diagnostics
             var commandParamsWriter = new MonoBinaryWriter(commandParams);
             commandParamsWriter.Write(typeId);
 
-            var retDebuggerCmdReader = await SendDebuggerAgentCommand<CmdType>(sessionId, CmdType.GetProperties, commandParams, token);
-            typeInfo.PropertiesBinaryReader = retDebuggerCmdReader;
-            return retDebuggerCmdReader;
+            typeInfo.PropertiesBinaryReader = await SendDebuggerAgentCommand<CmdType>(sessionId, CmdType.GetProperties, commandParams, token);
+            return typeInfo.PropertiesBinaryReader;
         }
 
         public async Task<List<FieldTypeClass>> GetTypeFields(SessionId sessionId, int typeId, CancellationToken token)
