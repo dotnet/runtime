@@ -298,7 +298,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="$(MSBuildThisFileDirectory)*\tests\**\*.Tests.csproj"
+    <ProjectReference Include="$(MSBuildThisFileDirectory)*\tests\**\System.Runtime.Extensions.Tests.csproj"
                       Exclude="@(ProjectExclusions)"
                       Condition="'$(TestAssemblies)' == 'true'" />
     <ProjectReference Include="$(MSBuildThisFileDirectory)testPackages\testPackages.proj"
