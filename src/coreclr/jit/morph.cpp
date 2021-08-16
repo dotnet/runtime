@@ -13117,10 +13117,13 @@ DONE_MORPHING_CHILDREN:
             // Consider for example the following expression: NEG(NEG(OP)), where the top-level
             // NEG is a CSE candidate. Were we to morph this to just OP, CSE would fail to find
             // the original NEG in the statement.
-            if (op1->OperIs(oper) && opts.OptimizationEnabled() && !gtIsActiveCSE_Candidate(tree))
+            if (op1->OperIs(oper) && opts.OptimizationEnabled() && !gtIsActiveCSE_Candidate(tree) &&
+                !gtIsActiveCSE_Candidate(op1))
             {
-                GenTree* child = op1->AsOp()->gtGetOp1();
-                return child;
+                GenTree* op1op1 = op1->gtGetOp1();
+                DEBUG_DESTROY_NODE(tree);
+                DEBUG_DESTROY_NODE(op1);
+                return op1op1;
             }
 
             // Distribute negation over simple multiplication/division expressions
