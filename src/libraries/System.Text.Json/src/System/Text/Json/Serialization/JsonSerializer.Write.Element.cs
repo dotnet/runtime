@@ -21,8 +21,12 @@ namespace System.Text.Json
         /// for <typeparamref name="TValue"/> or its serializable members.
         /// </exception>
         [RequiresUnreferencedCode(SerializationUnreferencedCodeMessage)]
-        public static JsonElement SerializeToElement<TValue>(TValue value, JsonSerializerOptions? options = null) =>
-            WriteElement(value, GetRuntimeType(value), options);
+        public static JsonElement SerializeToElement<TValue>(TValue value, JsonSerializerOptions? options = null)
+        {
+            Type runtimeType = GetRuntimeType(value);
+            JsonTypeInfo jsonTypeInfo = GetTypeInfo(options, runtimeType);
+            return WriteElementUsingSerializer(value, jsonTypeInfo);
+        }
 
         /// <summary>
         /// Converts the provided value into a <see cref="JsonDocument"/>.
@@ -42,11 +46,12 @@ namespace System.Text.Json
         /// for <paramref name="inputType"/>  or its serializable members.
         /// </exception>
         [RequiresUnreferencedCode(SerializationUnreferencedCodeMessage)]
-        public static JsonElement SerializeToElement(object? value, Type inputType, JsonSerializerOptions? options = null) =>
-            WriteElement(
-                value,
-                GetRuntimeTypeAndValidateInputType(value, inputType),
-                options);
+        public static JsonElement SerializeToElement(object? value, Type inputType, JsonSerializerOptions? options = null)
+        {
+            Type runtimeType = GetRuntimeTypeAndValidateInputType(value, inputType);
+            JsonTypeInfo jsonTypeInfo = GetTypeInfo(options, runtimeType);
+            return WriteElementUsingSerializer(value, jsonTypeInfo);
+        }
 
         /// <summary>
         /// Converts the provided value into a <see cref="JsonDocument"/>.
@@ -68,7 +73,7 @@ namespace System.Text.Json
                 throw new ArgumentNullException(nameof(jsonTypeInfo));
             }
 
-            return WriteElement(value, jsonTypeInfo);
+            return WriteElementUsingGeneratedSerializer(value, jsonTypeInfo);
         }
 
         /// <summary>
@@ -96,18 +101,12 @@ namespace System.Text.Json
                 throw new ArgumentNullException(nameof(context));
             }
 
-            Type runtimeType = GetRuntimeTypeAndValidateInputType(value, inputType);
-            return WriteElement(value, GetTypeInfo(context, runtimeType));
+            Type type = GetRuntimeTypeAndValidateInputType(value, inputType);
+            JsonTypeInfo typeInfo = GetTypeInfo(context, type);
+            return WriteElementUsingGeneratedSerializer(value, typeInfo);
         }
 
-        [RequiresUnreferencedCode(SerializationUnreferencedCodeMessage)]
-        private static JsonElement WriteElement<TValue>(in TValue value, Type runtimeType, JsonSerializerOptions? options)
-        {
-            JsonTypeInfo typeInfo = GetTypeInfo(runtimeType, options);
-            return WriteElement(value, typeInfo);
-        }
-
-        private static JsonElement WriteElement<TValue>(in TValue value, JsonTypeInfo jsonTypeInfo)
+        private static JsonElement WriteElementUsingGeneratedSerializer<TValue>(in TValue value, JsonTypeInfo jsonTypeInfo)
         {
             JsonSerializerOptions options = jsonTypeInfo.Options;
             Debug.Assert(options != null);
@@ -116,7 +115,22 @@ namespace System.Text.Json
             using var output = new PooledByteBufferWriter(options.DefaultBufferSize);
             using (var writer = new Utf8JsonWriter(output, options.GetWriterOptions()))
             {
-                WriteUsingMetadata(writer, value, jsonTypeInfo);
+                WriteUsingGeneratedSerializer(writer, value, jsonTypeInfo);
+            }
+
+            return JsonElement.ParseValue(output.WrittenMemory.Span, options.GetDocumentOptions());
+        }
+
+        private static JsonElement WriteElementUsingSerializer<TValue>(in TValue value, JsonTypeInfo jsonTypeInfo)
+        {
+            JsonSerializerOptions options = jsonTypeInfo.Options;
+            Debug.Assert(options != null);
+
+            // For performance, share the same buffer across serialization and deserialization.
+            using var output = new PooledByteBufferWriter(options.DefaultBufferSize);
+            using (var writer = new Utf8JsonWriter(output, options.GetWriterOptions()))
+            {
+                WriteUsingSerializer(writer, value, jsonTypeInfo);
             }
 
             return JsonElement.ParseValue(output.WrittenMemory.Span, options.GetDocumentOptions());

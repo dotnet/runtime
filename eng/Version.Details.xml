@@ -8,9 +8,9 @@
       <Uri>https://github.com/dotnet/msquic</Uri>
       <Sha>73d128a9c0beb6d6d92ef2b0c09ada8433754a11</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.NET.Workload.Emscripten.Manifest-6.0.100" Version="6.0.0-rc.1.21409.2">
+    <Dependency Name="Microsoft.NET.Workload.Emscripten.Manifest-6.0.100" Version="6.0.0-rc.1.21415.1">
       <Uri>https://github.com/dotnet/emsdk</Uri>
-      <Sha>ed9e9cb80e2f31ad23939f7065e766c130527f65</Sha>
+      <Sha>e33d37f3ca283571a7e142c766596e08f19a5bf4</Sha>
     </Dependency>
   </ProductDependencies>
   <ToolsetDependencies>
@@ -190,9 +190,9 @@
       <Uri>https://github.com/dotnet/runtime</Uri>
       <Sha>85441ce69b81dfd5bf57b9d00ba525440b7bb25d</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.NET.ILLink.Tasks" Version="6.0.100-preview.6.21411.3">
+    <Dependency Name="Microsoft.NET.ILLink.Tasks" Version="6.0.100-preview.6.21413.1">
       <Uri>https://github.com/mono/linker</Uri>
-      <Sha>5d376b1f8963c5c0013482ec63d857d359658809</Sha>
+      <Sha>c321df28835445093009af394ddf3c31e9b1fc91</Sha>
     </Dependency>
     <Dependency Name="Microsoft.DotNet.XHarness.TestRunners.Xunit" Version="1.0.0-prerelease.21404.1">
       <Uri>https://github.com/dotnet/xharness</Uri>
