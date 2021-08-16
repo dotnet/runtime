@@ -218,6 +218,8 @@ namespace System.Runtime.Serialization.Json
                     }
                 }
             }
+
+            base.Close();
         }
 
         public override void Flush()
