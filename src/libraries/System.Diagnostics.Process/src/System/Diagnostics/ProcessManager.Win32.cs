@@ -273,9 +273,6 @@ namespace System.Diagnostics
 #else
         private const int DefaultCachedBufferSize = 1024 * 1024;
 #endif
-        // use DefaultCachedBufferSize to ensure we test the unmanaged memory code path path at least in Debug builds
-        private const int RentSizeLimit = DefaultCachedBufferSize + 1;
-
         private static int MostRecentSize = DefaultCachedBufferSize;
 
         internal static ProcessInfo[] GetProcessInfos(int? processIdFilter = null)
@@ -285,18 +282,12 @@ namespace System.Diagnostics
 
             while (true)
             {
-                (byte[]? managed, IntPtr unmanaged) = bufferSize < RentSizeLimit
-                    ? (ArrayPool<byte>.Shared.Rent(bufferSize), IntPtr.Zero)
-                    : (null, Marshal.AllocHGlobal(bufferSize));
-
-                Debug.Assert((managed != null && unmanaged == IntPtr.Zero) || (managed == null && unmanaged != IntPtr.Zero));
+                byte[] buffer = ArrayPool<byte>.Shared.Rent(bufferSize);
 
                 try
                 {
                     unsafe
                     {
-                        Span<byte> buffer = managed != null ? managed : new Span<byte>(unmanaged.ToPointer(), bufferSize);
-
                         // Note that the buffer will contain pointers to itself and it needs to be pinned while it is being processed
                         // by GetProcessInfos below
                         fixed (byte* bufferPtr = buffer)
@@ -325,7 +316,7 @@ namespace System.Diagnostics
 
                                 MostRecentSize = buffer.Length;
                                 // Parse the data block to get process information
-                                return GetProcessInfos(buffer.Slice(firstAlignedElementIndex), processIdFilter);
+                                return GetProcessInfos(buffer.AsSpan(firstAlignedElementIndex), processIdFilter);
                             }
 
                             bufferSize = GetNewBufferSize(bufferSize, (int)requiredSize);
@@ -334,14 +325,7 @@ namespace System.Diagnostics
                 }
                 finally
                 {
-                    if (managed != null)
-                    {
-                        ArrayPool<byte>.Shared.Return(managed);
-                    }
-                    else
-                    {
-                        Marshal.FreeHGlobal(unmanaged);
-                    }
+                    ArrayPool<byte>.Shared.Return(buffer);
                 }
             }
         }
