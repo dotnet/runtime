@@ -322,7 +322,7 @@ namespace
         DefaultAssemblyBinder *pTPABinder = pDomain->GetTPABinderContext();
 
         PEFile *pManifestFile = pAssembly->GetManifestFile();
-        PTR_ICLRPrivBinder pBindingContext = pManifestFile->GetBindingContext();
+        PTR_AssemblyBinder pBindingContext = pManifestFile->GetBindingContext();
 
         //Step 0: Check if  the assembly was bound using TPA.
         //        The Binding Context can be null or an overridden TPA context
@@ -373,7 +373,7 @@ namespace
     {
         STANDARD_VM_CONTRACT;
 
-        PTR_ICLRPrivBinder pBindingContext = pAssembly->GetManifestFile()->GetBindingContext();
+        PTR_AssemblyBinder pBindingContext = pAssembly->GetManifestFile()->GetBindingContext();
         if (pBindingContext == NULL)
         {
             // GetBindingContext() returns NULL for System.Private.CoreLib

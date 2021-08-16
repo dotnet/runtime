@@ -548,7 +548,7 @@ protected:
     // To enable this, we maintain a concept of "Fallback LoadContext", which will be set to the Binder of the
     // assembly that created the dynamic assembly. If the creator assembly is dynamic itself, then its fallback
     // load context would be propagated to the assembly being dynamically generated.
-    PTR_ICLRPrivBinder m_pFallbackLoadContextBinder;
+    PTR_AssemblyBinder m_pFallbackLoadContextBinder;
 
 protected:
 
@@ -566,12 +566,12 @@ public:
     }
 
     // Returns the AssemblyBinder* instance associated with the PEFile
-    PTR_ICLRPrivBinder GetBindingContext();
+    PTR_AssemblyBinder GetBindingContext();
 
 #ifndef DACCESS_COMPILE
     void SetupAssemblyLoadContext();
 
-    void SetFallbackLoadContextBinder(PTR_ICLRPrivBinder pFallbackLoadContextBinder)
+    void SetFallbackLoadContextBinder(PTR_AssemblyBinder pFallbackLoadContextBinder)
     {
         LIMITED_METHOD_CONTRACT;
         m_pFallbackLoadContextBinder = pFallbackLoadContextBinder;
@@ -592,7 +592,7 @@ public:
     bool HasHostAssembly()
     { STATIC_CONTRACT_WRAPPER; return GetHostAssembly() != nullptr; }
 
-    PTR_ICLRPrivBinder GetFallbackLoadContextBinder()
+    PTR_AssemblyBinder GetFallbackLoadContextBinder()
     {
         LIMITED_METHOD_CONTRACT;
 

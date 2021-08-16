@@ -2262,7 +2262,7 @@ void PEFile::EnsureImageOpened()
 
 void PEFile::SetupAssemblyLoadContext()
 {
-    PTR_ICLRPrivBinder pBindingContext = GetBindingContext();
+    PTR_AssemblyBinder pBindingContext = GetBindingContext();
 
     m_pAssemblyLoadContext = (pBindingContext != NULL) ?
         (AssemblyLoadContext*)pBindingContext :
@@ -2375,11 +2375,11 @@ TADDR PEFile::GetMDInternalRWAddress()
 #endif
 
 // Returns the AssemblyBinder* instance associated with the PEFile
-PTR_ICLRPrivBinder PEFile::GetBindingContext()
+PTR_AssemblyBinder PEFile::GetBindingContext()
 {
     LIMITED_METHOD_CONTRACT;
 
-    PTR_ICLRPrivBinder pBindingContext = NULL;
+    PTR_AssemblyBinder pBindingContext = NULL;
 
     // CoreLibrary is always bound in context of the TPA Binder. However, since it gets loaded and published
     // during EEStartup *before* DefaultContext Binder (aka TPAbinder) is initialized, we dont have a binding context to publish against.
@@ -2388,7 +2388,7 @@ PTR_ICLRPrivBinder PEFile::GetBindingContext()
         BINDER_SPACE::Assembly* pHostAssembly = GetHostAssembly();
         if (pHostAssembly)
         {
-            pBindingContext = dac_cast<PTR_ICLRPrivBinder>(pHostAssembly->GetBinder());
+            pBindingContext = dac_cast<PTR_AssemblyBinder>(pHostAssembly->GetBinder());
         }
         else
         {
