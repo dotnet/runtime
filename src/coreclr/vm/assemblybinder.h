@@ -4,14 +4,7 @@
 #ifndef _ASSEMBLYBINDER_H
 #define _ASSEMBLYBINDER_H
 
-#include "crst.h"
-#include <sarray.h>
-
-
-class NativeImage;
 class PEImage;
-class Module;
-class Assembly;
 class AssemblyLoaderAllocator;
 
 class AssemblyBinder

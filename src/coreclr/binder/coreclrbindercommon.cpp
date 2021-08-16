@@ -3,7 +3,7 @@
 
 
 #include "common.h"
-#include "assemblybinder.hpp"
+#include "assemblybindercommon.hpp"
 #include "coreclrbindercommon.h"
 #include "clrprivbindercoreclr.h"
 #include "bundle.h"
@@ -89,7 +89,7 @@ HRESULT CCoreCLRBinderHelper::BindToSystem(BINDER_SPACE::Assembly **ppSystemAsse
     {
         ReleaseHolder<BINDER_SPACE::Assembly> pAsm;
         StackSString systemPath(SystemDomain::System()->SystemDirectory());
-        hr = BINDER_SPACE::AssemblyBinder::BindToSystem(systemPath, &pAsm, fBindToNativeImage);
+        hr = AssemblyBinderCommon::BindToSystem(systemPath, &pAsm, fBindToNativeImage);
         if(SUCCEEDED(hr))
         {
             _ASSERTE(pAsm != NULL);
@@ -112,7 +112,7 @@ HRESULT CCoreCLRBinderHelper::BindToSystemSatellite(SString            &systemPa
     EX_TRY
     {
         ReleaseHolder<BINDER_SPACE::Assembly> pAsm;
-        hr = BINDER_SPACE::AssemblyBinder::BindToSystemSatellite(systemPath, sSimpleName, sCultureName, &pAsm);
+        hr = AssemblyBinderCommon::BindToSystemSatellite(systemPath, sSimpleName, sCultureName, &pAsm);
         if(SUCCEEDED(hr))
         {
             _ASSERTE(pAsm != NULL);

@@ -6,7 +6,7 @@ include_directories(BEFORE "inc")
 set(BINDER_COMMON_SOURCES
     applicationcontext.cpp
     assembly.cpp
-    assemblybinder.cpp
+    assemblybindercommon.cpp
     assemblyidentitycache.cpp
     assemblyname.cpp
     bindertracing.cpp
@@ -23,7 +23,7 @@ set(BINDER_COMMON_HEADERS
     inc/applicationcontext.inl
     inc/assembly.hpp
     inc/assembly.inl
-    inc/assemblybinder.hpp
+    inc/assemblybindercommon.hpp
     inc/assemblyentry.hpp
     inc/assemblyhashtraits.hpp
     inc/assemblyidentity.hpp

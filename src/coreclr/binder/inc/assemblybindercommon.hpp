@@ -11,8 +11,8 @@
 //
 // ============================================================
 
-#ifndef __BINDER__ASSEMBLY_BINDER_HPP__
-#define __BINDER__ASSEMBLY_BINDER_HPP__
+#ifndef __BINDER__ASSEMBLY_BINDER_COMMON_HPP__
+#define __BINDER__ASSEMBLY_BINDER_COMMON_HPP__
 
 #include "bindertypes.hpp"
 #include "bindresult.hpp"
@@ -25,13 +25,13 @@ class PEImage;
 
 namespace BINDER_SPACE
 {
-    class AssemblyBinder
+    class AssemblyBinderCommon
     {
     public:
         // See code:BINDER_SPACE::AssemblyBinder::GetAssembly for info on fNgenExplicitBind
         // and fExplicitBindToNativeImage, and see code:CEECompileInfo::LoadAssemblyByPath
         // for an example of how they're used.
-        static HRESULT BindAssembly(/* in */  ::AssemblyBinder      *pBinder, 
+        static HRESULT BindAssembly(/* in */  AssemblyBinder      *pBinder, 
                                     /* in */  AssemblyName        *pAssemblyName,
                                     /* in */  LPCWSTR              szCodeBase,
                                     /* in */  PEAssembly          *pParentAssembly,
@@ -62,7 +62,7 @@ namespace BINDER_SPACE
                                                       /* in */ CLRPrivBinderCoreCLR *pTPABinder,
                                                       /* out */ Assembly           **ppAssembly);
 
-        static HRESULT BindUsingPEImage(/* in */  ::AssemblyBinder     *pBinder,
+        static HRESULT BindUsingPEImage(/* in */  AssemblyBinder     *pBinder,
                                         /* in */  BINDER_SPACE::AssemblyName *pAssemblyName,
                                         /* in */  PEImage            *pPEImage,
                                         /* in */  PEKIND              peKind,
