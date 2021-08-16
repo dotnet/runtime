@@ -41,7 +41,11 @@ namespace System.Memory.Tests
         {
             public override ReadOnlySequence<T> CreateOfSize(int size)
             {
-                return CreateWithContent(new T[size]);
+#if DEBUG
+                return new ReadOnlySequence<T>(new ReadOnlyMemory<T>(new T[size + 1]).Slice(1)); // #57472
+#else
+                return new ReadOnlySequence<T>(new ReadOnlyMemory<T>(new T[size]));
+#endif
             }
 
             public override ReadOnlySequence<T> CreateWithContent(T[] data)
