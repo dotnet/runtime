@@ -16117,11 +16117,13 @@ BOOL gc_heap::soh_try_fit (int gen_number,
                 fix_youngest_allocation_area();
 
                 heap_segment* next_seg = heap_segment_next (ephemeral_heap_segment);
+                bool new_seg = false;
 
                 if (!next_seg)
                 {
                     assert (ephemeral_heap_segment == generation_tail_region (generation_of (gen_number)));
                     next_seg = get_new_region (gen_number);
+                    new_seg = true;
                 }
 
                 if (next_seg)
@@ -16129,6 +16131,15 @@ BOOL gc_heap::soh_try_fit (int gen_number,
                     dprintf (REGIONS_LOG, ("eph seg %Ix -> next %Ix", 
                         heap_segment_mem (ephemeral_heap_segment), heap_segment_mem (next_seg)));
                     ephemeral_heap_segment = next_seg;
+                    if (new_seg)
+                    {
+                        GCToEEInterface::DiagAddNewRegion(
+                            heap_segment_gen_num (next_seg),
+                            heap_segment_mem (next_seg),
+                            heap_segment_allocated (next_seg),
+                            heap_segment_reserved (next_seg)
+                        );
+                    }
                 }
                 else
                 {

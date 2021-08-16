@@ -723,7 +723,8 @@ struct GenerationTable
 {
     ULONG count;
     ULONG capacity;
-    static const ULONG defaultCapacity = 5; // that's the minimum for Gen0-2 + LOH + POH
+    // Bad code - make it easy to add a record without worry
+    static const ULONG defaultCapacity = 50000; // that's the minimum for Gen0-2 + LOH + POH
     GenerationTable *prev;
     GenerationDesc *genDescTable;
 #ifdef  _DEBUG
@@ -898,6 +899,37 @@ void __stdcall UpdateGenerationBounds()
             newGenerationTable->prev = oldGenerationTable;
         }
         FastInterlockDecrement(&s_generationTableLock);
+    }
+#endif // PROFILING_SUPPORTED
+    RETURN;
+}
+
+void __stdcall ProfAddNewRegion(int generation, uint8_t* rangeStart, uint8_t* rangeEnd, uint8_t* rangeEndReserved)
+{
+    CONTRACT_VOID
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+        MODE_ANY; // can be called even on GC threads
+    } CONTRACT_END;
+#ifdef PROFILING_SUPPORTED
+    if (CORProfilerTrackGC() || CORProfilerTrackBasicGC())
+    {
+        ULONG count = s_currentGenerationTable->count;
+        if (count < s_currentGenerationTable->capacity)
+        {
+            // Bad code - this needs to be thread safe
+            s_currentGenerationTable->genDescTable[count].generation = generation;
+            s_currentGenerationTable->genDescTable[count].rangeStart = rangeStart;
+            s_currentGenerationTable->genDescTable[count].rangeEnd = rangeEnd;
+            s_currentGenerationTable->genDescTable[count].rangeEndReserved = rangeEndReserved;
+            s_currentGenerationTable->count = count + 1;
+        }
+        else
+        {
+            // Bad code - this could happen
+            assert (false);
+        }
     }
 #endif // PROFILING_SUPPORTED
     RETURN;
@@ -8858,6 +8890,8 @@ HRESULT ProfToEEInterfaceImpl::GetGenerationBounds(ULONG cObjectRanges,
 
     _ASSERTE(generationTable->magic == GENERATION_TABLE_MAGIC);
 
+    // For a large application, we could have lots of regions
+    // We might be able to optimize if we could merge adjacent regions of the same generation
     GenerationDesc *genDescTable = generationTable->genDescTable;
     ULONG count = min(generationTable->count, cObjectRanges);
     for (ULONG i = 0; i < count; i++)
@@ -8994,6 +9028,8 @@ HRESULT ProfToEEInterfaceImpl::GetObjectGeneration(ObjectID objectId,
 
     GenerationDesc *genDescTable = generationTable->genDescTable;
     ULONG count = generationTable->count;
+    // For a large application, we could have lots of regions
+    // Searching sequentially could be slow.
     for (ULONG i = 0; i < count; i++)
     {
         if (genDescTable[i].rangeStart <= (BYTE *)objectId && (BYTE *)objectId < genDescTable[i].rangeEndReserved)
