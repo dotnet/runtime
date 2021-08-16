@@ -726,7 +726,7 @@ AssemblyBinder* AssemblySpec::GetBindingContextFromParentAssembly(AppDomain *pDo
 
     if (pParentAssemblyBinder != NULL)
     {
-        CLRPrivBinderCoreCLR *pTPABinder = pDomain->GetTPABinderContext();
+        DefaultAssemblyBinder *pTPABinder = pDomain->GetTPABinderContext();
         if (pTPABinder == pParentAssemblyBinder)
         {
             // If the parent assembly is a platform (TPA) assembly, then its binding context will always be the TPABinder context. In

@@ -3,7 +3,7 @@
 
 #include "common.h"
 #include "assemblybindercommon.hpp"
-#include "clrprivbindercoreclr.h"
+#include "defaultassemblybinder.h"
 
 using namespace BINDER_SPACE;
 
@@ -11,7 +11,7 @@ using namespace BINDER_SPACE;
 // Helper functions
 //-----------------------------------------------------------------------------
 
-HRESULT CLRPrivBinderCoreCLR::BindAssemblyByNameWorker(BINDER_SPACE::AssemblyName *pAssemblyName,
+HRESULT DefaultAssemblyBinder::BindAssemblyByNameWorker(BINDER_SPACE::AssemblyName *pAssemblyName,
                                                        BINDER_SPACE::Assembly **ppCoreCLRFoundAssembly,
                                                        bool excludeAppPaths)
 {
@@ -40,9 +40,9 @@ HRESULT CLRPrivBinderCoreCLR::BindAssemblyByNameWorker(BINDER_SPACE::AssemblyNam
 }
 
 // ============================================================================
-// CLRPrivBinderCoreCLR implementation
+// DefaultAssemblyBinder implementation
 // ============================================================================
-HRESULT CLRPrivBinderCoreCLR::BindUsingAssemblyName(BINDER_SPACE::AssemblyName *pAssemblyName,
+HRESULT DefaultAssemblyBinder::BindUsingAssemblyName(BINDER_SPACE::AssemblyName *pAssemblyName,
                                                     BINDER_SPACE::Assembly **ppAssembly)
 {
     HRESULT hr = S_OK;
@@ -114,7 +114,7 @@ Exit:;
 }
 
 #if !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
-HRESULT CLRPrivBinderCoreCLR::BindUsingPEImage( /* in */ PEImage *pPEImage,
+HRESULT DefaultAssemblyBinder::BindUsingPEImage( /* in */ PEImage *pPEImage,
                                                 /* in */ BOOL fIsNativeImage,
                                                 /* [retval][out] */ BINDER_SPACE::Assembly **ppAssembly)
 {
@@ -187,7 +187,7 @@ Exit:;
 }
 #endif // !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
 
-HRESULT CLRPrivBinderCoreCLR::SetupBindingPaths(SString  &sTrustedPlatformAssemblies,
+HRESULT DefaultAssemblyBinder::SetupBindingPaths(SString  &sTrustedPlatformAssemblies,
                                                 SString  &sPlatformResourceRoots,
                                                 SString  &sAppPaths,
                                                 SString  &sAppNiPaths)
@@ -205,7 +205,7 @@ HRESULT CLRPrivBinderCoreCLR::SetupBindingPaths(SString  &sTrustedPlatformAssemb
 // See code:BINDER_SPACE::AssemblyBinderCommon::GetAssembly for info on fNgenExplicitBind
 // and fExplicitBindToNativeImage, and see code:CEECompileInfo::LoadAssemblyByPath
 // for an example of how they're used.
-HRESULT CLRPrivBinderCoreCLR::Bind(LPCWSTR            wszCodeBase,
+HRESULT DefaultAssemblyBinder::Bind(LPCWSTR            wszCodeBase,
                                    PEAssembly        *pParentAssembly,
                                    BOOL               fNgenExplicitBind,
                                    BOOL               fExplicitBindToNativeImage,

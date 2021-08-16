@@ -29,11 +29,11 @@
 #endif
 
 #if !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
-#include "clrprivbindercoreclr.h"
+#include "defaultassemblybinder.h"
 // Helper function in the VM, invoked by the Binder, to invoke the host assembly resolver
 extern HRESULT RuntimeInvokeHostAssemblyResolver(INT_PTR pManagedAssemblyLoadContextToBindWithin,
                                                  BINDER_SPACE::AssemblyName *pAssemblyName,
-                                                 CLRPrivBinderCoreCLR *pTPABinder,
+                                                 DefaultAssemblyBinder *pTPABinder,
                                                  BINDER_SPACE::Assembly **ppLoadedAssembly);
 
 #endif // !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
@@ -1431,7 +1431,7 @@ namespace BINDER_SPACE
 #if !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
 HRESULT AssemblyBinderCommon::BindUsingHostAssemblyResolver(/* in */ INT_PTR pManagedAssemblyLoadContextToBindWithin,
                                                       /* in */ AssemblyName       *pAssemblyName,
-                                                      /* in */ CLRPrivBinderCoreCLR *pTPABinder,
+                                                      /* in */ DefaultAssemblyBinder *pTPABinder,
                                                       /* out */ Assembly           **ppAssembly)
 {
     HRESULT hr = E_FAIL;
@@ -1566,15 +1566,15 @@ Exit:
     return hr;
 }
 
-HRESULT AssemblyBinderCommon::DefaultBinderSetupContext(CLRPrivBinderCoreCLR** ppTPABinder)
+HRESULT AssemblyBinderCommon::DefaultBinderSetupContext(DefaultAssemblyBinder** ppTPABinder)
 {
     HRESULT hr = S_OK;
     EX_TRY
     {
         if (ppTPABinder != NULL)
         {
-            NewHolder<CLRPrivBinderCoreCLR> pBinder;
-            SAFE_NEW(pBinder, CLRPrivBinderCoreCLR);
+            NewHolder<DefaultAssemblyBinder> pBinder;
+            SAFE_NEW(pBinder, DefaultAssemblyBinder);
 
             BINDER_SPACE::ApplicationContext* pApplicationContext = pBinder->GetAppContext();
             hr = pApplicationContext->Init();

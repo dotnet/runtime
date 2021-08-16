@@ -96,7 +96,7 @@ VOID  AssemblySpec::Bind(AppDomain      *pAppDomain,
     AssemblyBinder *pBinder = GetBindingContextFromParentAssembly(pAppDomain);
 
     // Get the reference to the TPABinder context
-    CLRPrivBinderCoreCLR *pTPABinder = pAppDomain->GetTPABinderContext();
+    DefaultAssemblyBinder *pTPABinder = pAppDomain->GetTPABinderContext();
 
     ReleaseHolder<BINDER_SPACE::Assembly> pPrivAsm;
     _ASSERTE(pBinder != NULL);
@@ -308,7 +308,7 @@ HRESULT BaseAssemblySpec::ParseName()
         _ASSERTE(pDomain);
 
         BINDER_SPACE::ApplicationContext *pAppContext = NULL;
-        CLRPrivBinderCoreCLR *pBinder = pDomain->GetTPABinderContext();
+        DefaultAssemblyBinder *pBinder = pDomain->GetTPABinderContext();
         if (pBinder != NULL)
         {
             pAppContext = pBinder->GetAppContext();

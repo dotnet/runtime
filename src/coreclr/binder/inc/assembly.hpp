@@ -19,7 +19,7 @@
 
 #include "corpriv.h"
 
-#include "clrprivbindercoreclr.h"
+#include "defaultassemblybinder.h"
 
 #if !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
 #include "clrprivbinderassemblyloadcontext.h"
@@ -129,7 +129,7 @@ namespace BINDER_SPACE
             m_pBinder = pBinder;
         }
 
-        friend class ::CLRPrivBinderCoreCLR;
+        friend class ::DefaultAssemblyBinder;
 
 #if !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
         friend class ::CLRPrivBinderAssemblyLoadContext;

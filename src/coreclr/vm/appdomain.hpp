@@ -1103,7 +1103,7 @@ public:
 
 #endif // DACCESS_COMPILE && !CROSSGEN_COMPILE
 
-    CLRPrivBinderCoreCLR *GetTPABinderContext() {LIMITED_METHOD_CONTRACT;  return m_pTPABinderContext; }
+    DefaultAssemblyBinder *GetTPABinderContext() {LIMITED_METHOD_CONTRACT;  return m_pTPABinderContext; }
 
     CrstExplicitInit * GetLoaderAllocatorReferencesLock()
     {
@@ -1134,7 +1134,7 @@ protected:
     ListLock         m_ILStubGenLock;
     ListLock         m_NativeTypeLoadLock;
 
-    CLRPrivBinderCoreCLR *m_pTPABinderContext; // Reference to the binding context that holds TPA list details
+    DefaultAssemblyBinder *m_pTPABinderContext; // Reference to the binding context that holds TPA list details
 
     IGCHandleStore* m_handleStore;
 
@@ -1987,7 +1987,7 @@ public:
         return m_tpIndex;
     }
 
-    CLRPrivBinderCoreCLR *CreateBinderContext();
+    DefaultAssemblyBinder *CreateBinderContext();
 
     void SetIgnoreUnhandledExceptions()
     {

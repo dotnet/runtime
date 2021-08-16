@@ -30,7 +30,7 @@
 
 #include "appdomainnative.hpp"
 #include "../binder/inc/bindertracing.h"
-#include "../binder/inc/clrprivbindercoreclr.h"
+#include "../binder/inc/defaultassemblybinder.h"
 
 /* static */
 void QCALLTYPE AssemblyNative::InternalLoad(QCall::ObjectHandleOnStack assemblyName,
@@ -180,7 +180,7 @@ Assembly* AssemblyNative::LoadFromPEImage(AssemblyBinder* pBinderContext, PEImag
 
     HRESULT hr = S_OK;
     PTR_AppDomain pCurDomain = GetAppDomain();
-    CLRPrivBinderCoreCLR *pTPABinder = pCurDomain->GetTPABinderContext();
+    DefaultAssemblyBinder *pTPABinder = pCurDomain->GetTPABinderContext();
     hr = pBinderContext->BindUsingPEImage(pImage, fIsNativeImage, &pAssembly);
 
     if (hr != S_OK)
@@ -1204,7 +1204,7 @@ INT_PTR QCALLTYPE AssemblyNative::InitializeAssemblyLoadContext(INT_PTR ptrManag
 
     // Initialize the assembly binder instance in the VM
     PTR_AppDomain pCurDomain = AppDomain::GetCurrentDomain();
-    CLRPrivBinderCoreCLR *pTPABinderContext = pCurDomain->GetTPABinderContext();
+    DefaultAssemblyBinder *pTPABinderContext = pCurDomain->GetTPABinderContext();
     if (!fRepresentsTPALoadContext)
     {
         // Initialize a custom Assembly Load Context

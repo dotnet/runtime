@@ -319,7 +319,7 @@ namespace
 
         NATIVE_LIBRARY_HANDLE hmod = NULL;
         AppDomain* pDomain = GetAppDomain();
-        CLRPrivBinderCoreCLR *pTPABinder = pDomain->GetTPABinderContext();
+        DefaultAssemblyBinder *pTPABinder = pDomain->GetTPABinderContext();
 
         PEFile *pManifestFile = pAssembly->GetManifestFile();
         PTR_ICLRPrivBinder pBindingContext = pManifestFile->GetBindingContext();

@@ -10,7 +10,7 @@
 #include "eeconfig.h"
 #include "appdomain.inl"
 #include "eventtrace.h"
-#include "../binder/inc/clrprivbindercoreclr.h"
+#include "../binder/inc/defaultassemblybinder.h"
 
 #include "clr/fs/path.h"
 using namespace clr::fs;

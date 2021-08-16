@@ -3,7 +3,7 @@
 
 #include "common.h"
 #include "assemblybindercommon.hpp"
-#include "clrprivbindercoreclr.h"
+#include "defaultassemblybinder.h"
 #include "clrprivbinderassemblyloadcontext.h"
 
 #if !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
@@ -168,7 +168,7 @@ AssemblyLoaderAllocator* CLRPrivBinderAssemblyLoadContext::GetLoaderAllocator()
 // managed AssemblyLoadContext type.
 //=============================================================================
 /* static */
-HRESULT CLRPrivBinderAssemblyLoadContext::SetupContext(CLRPrivBinderCoreCLR *pTPABinder,
+HRESULT CLRPrivBinderAssemblyLoadContext::SetupContext(DefaultAssemblyBinder *pTPABinder,
                                                        AssemblyLoaderAllocator* pLoaderAllocator,
                                                        void* loaderAllocatorHandle,
                                                        UINT_PTR ptrAssemblyLoadContext,

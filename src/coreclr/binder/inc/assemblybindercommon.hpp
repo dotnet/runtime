@@ -19,7 +19,7 @@
 #include "bundle.h"
 
 class AssemblyBinder;
-class CLRPrivBinderCoreCLR;
+class DefaultAssemblyBinder;
 class PEAssembly;
 class PEImage;
 
@@ -63,7 +63,7 @@ namespace BINDER_SPACE
 #if !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
         static HRESULT BindUsingHostAssemblyResolver (/* in */ INT_PTR pManagedAssemblyLoadContextToBindWithin,
                                                       /* in */ AssemblyName       *pAssemblyName,
-                                                      /* in */ CLRPrivBinderCoreCLR *pTPABinder,
+                                                      /* in */ DefaultAssemblyBinder *pTPABinder,
                                                       /* out */ Assembly           **ppAssembly);
 
         static HRESULT BindUsingPEImage(/* in */  AssemblyBinder     *pBinder,
@@ -76,7 +76,7 @@ namespace BINDER_SPACE
 
         static HRESULT TranslatePEToArchitectureType(DWORD  *pdwPAFlags, PEKIND *PeKind);
 
-        static HRESULT DefaultBinderSetupContext(CLRPrivBinderCoreCLR** ppTPABinder);
+        static HRESULT DefaultBinderSetupContext(DefaultAssemblyBinder** ppTPABinder);
 
         // TODO: The call indicates that this can come from a case where
         // pDomain->GetFusionContext() is null, hence this is static function

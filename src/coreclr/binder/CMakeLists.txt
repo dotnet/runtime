@@ -10,7 +10,7 @@ set(BINDER_COMMON_SOURCES
     assemblyidentitycache.cpp
     assemblyname.cpp
     bindertracing.cpp
-    clrprivbindercoreclr.cpp
+    defaultassemblybinder.cpp
     failurecache.cpp
     stringlexer.cpp
     textualidentityparser.cpp
@@ -35,7 +35,7 @@ set(BINDER_COMMON_HEADERS
     inc/bindertracing.h
     inc/bindresult.hpp
     inc/bindresult.inl
-    inc/clrprivbindercoreclr.h
+    inc/defaultassemblybinder.h
     inc/failurecache.hpp
     inc/failurecachehashtraits.hpp
     inc/loadcontext.hpp

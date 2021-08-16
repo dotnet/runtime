@@ -2,8 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 
-#ifndef __CLR_PRIV_BINDER_CORECLR_H__
-#define __CLR_PRIV_BINDER_CORECLR_H__
+#ifndef __CLR_DEFAULT_ASSEMBLY_BINDER_H__
+#define __CLR_DEFAULT_ASSEMBLY_BINDER_H__
 
 #include "applicationcontext.hpp"
 #include "assemblyloadcontext.h"
@@ -11,7 +11,7 @@
 class PEAssembly;
 class PEImage;
 
-class CLRPrivBinderCoreCLR : public AssemblyLoadContext
+class DefaultAssemblyBinder : public AssemblyLoadContext
 {
 public:
     //=========================================================================
