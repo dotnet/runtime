@@ -164,7 +164,18 @@ var BindingSupportLib = {
 			this._interned_js_string_table = new Map ();
 
 			this._js_owned_object_table = new Map ();
-			this._js_owned_object_registry = new FinalizationRegistry(this._js_owned_object_finalized.bind(this));
+			// NOTE: FinalizationRegistry and WeakRef are missing on Safari below 14.1
+			if (typeof globalThis.FinalizationRegistry !== "undefined") {
+				this._js_owned_object_registry = new globalThis.FinalizationRegistry(this._js_owned_object_finalized.bind(this));
+			}
+			if (typeof globalThis.WeakRef === "undefined") {
+				// this is trivial WeakRef polyfill, which holds strong refrence, instead of weak one
+				globalThis.WeakRef = function WeakRef(targetObject) {
+					this.deref = () => {
+						return targetObject;
+					}
+				}
+			}
 		},
 
 		_js_owned_object_finalized: function (gc_handle) {
@@ -205,14 +216,26 @@ var BindingSupportLib = {
 				this._set_tcs_result(tcs_gc_handle, result);
 				// let go of the thenable reference
 				this._mono_wasm_release_js_handle(thenable_js_handle);
+
+				// when FinalizationRegistry is not supported by this browser, we will do immediate cleanup after use
+				if (!this._js_owned_object_registry) {
+					this._release_js_owned_object_by_gc_handle(tcs_gc_handle);
+				}
 			}, (reason) => {
 				this._set_tcs_failure(tcs_gc_handle, reason ? reason.toString() : "");
 				// let go of the thenable reference
 				this._mono_wasm_release_js_handle(thenable_js_handle);
+
+				// when FinalizationRegistry is not supported by this browser, we will do immediate cleanup after use
+				if (!this._js_owned_object_registry) {
+					this._release_js_owned_object_by_gc_handle(tcs_gc_handle);
+				}
 			});
 
 			// collect the TaskCompletionSource with its Task after js doesn't hold the thenable anymore
-			this._js_owned_object_registry.register(thenable, tcs_gc_handle);
+			if (this._js_owned_object_registry) {
+				this._js_owned_object_registry.register(thenable, tcs_gc_handle);
+			}
 
 			// returns raw pointer to tcs.Task
 			return this._get_tcs_task(tcs_gc_handle);
@@ -220,6 +243,7 @@ var BindingSupportLib = {
 
 		_unbox_task_root_as_promise: function (root) {
 			this.bindings_lazy_init ();
+			const self = this;
 			if (root.value === 0)
 				return null;
 
@@ -238,18 +262,38 @@ var BindingSupportLib = {
 				var cont_obj = null;
 				// note that we do not implement promise/task roundtrip
 				// With more complexity we could recover original instance when this promise is marshaled back to C#.
-				var result = new Promise (function (resolve, reject) {
-					cont_obj = {
-						resolve: resolve,
-						reject: reject
-					};
+				var result = new Promise(function (resolve, reject) {
+					if (self._js_owned_object_registry) {
+						cont_obj = {
+							resolve: resolve,
+							reject: reject
+						};
+					} else {
+						// when FinalizationRegistry is not supported by this browser, we will do immediate cleanup after use
+						cont_obj = {
+							resolve: function () {
+								const res = resolve.apply(null, arguments);
+								self._js_owned_object_table.delete(gc_handle);
+								self._release_js_owned_object_by_gc_handle(gc_handle);
+								return res;
+							},
+							reject: function () {
+								const res = reject.apply(null, arguments);
+								self._js_owned_object_table.delete(gc_handle);
+								self._release_js_owned_object_by_gc_handle(gc_handle);
+								return res;
+							}
+						};
+					}
 				});
 
 				// register C# side of the continuation
 				this._setup_js_cont (root.value, cont_obj );
 				
 				// register for GC of the Task after the JS side is done with the promise
-				this._js_owned_object_registry.register(result, gc_handle);
+				if (this._js_owned_object_registry) {
+					this._js_owned_object_registry.register(result, gc_handle);
+				}
 
 				// register for instance reuse
 				this._js_owned_object_table.set(gc_handle, new WeakRef(result));
@@ -286,11 +330,15 @@ var BindingSupportLib = {
 					// keep the gc_handle so that we could easily convert it back to original C# object for roundtrip
 					__js_owned_gc_handle__ : gc_handle
 				}
-	
-				// register for GC of the C# object after the JS side is done with the object
-				this._js_owned_object_registry.register(result, gc_handle);
+
+				// NOTE: this would be leaking C# objects when the browser doesn't support FinalizationRegistry/WeakRef
+				if (this._js_owned_object_registry) {
+					// register for GC of the C# object after the JS side is done with the object
+					this._js_owned_object_registry.register(result, gc_handle);
+				}
 
 				// register for instance reuse
+				// NOTE: this would be leaking C# objects when the browser doesn't support FinalizationRegistry/WeakRef
 				this._js_owned_object_table.set(gc_handle, new WeakRef(result));
 			}
 
@@ -342,10 +390,14 @@ var BindingSupportLib = {
 					delegateRoot.release();
 				}
 
-				// register for GC of the deleate after the JS side is done with the function
-				this._js_owned_object_registry.register(result, gc_handle);
+				// NOTE: this would be leaking C# objects when the browser doesn't support FinalizationRegistry. Except in case of EventListener where we cleanup after unregistration.
+				if (this._js_owned_object_registry) {
+					// register for GC of the deleate after the JS side is done with the function
+					this._js_owned_object_registry.register(result, gc_handle);
+				}
 
 				// register for instance reuse
+				// NOTE: this would be leaking C# objects when the browser doesn't support FinalizationRegistry/WeakRef. Except in case of EventListener where we cleanup after unregistration.
 				this._js_owned_object_table.set(gc_handle, new WeakRef(result));
 			}
 
@@ -1981,6 +2033,11 @@ var BindingSupportLib = {
 				? BINDING.mono_wasm_get_jsobj_from_js_handle(optionsHandle)
 				: null;
 
+			if(!BINDING._js_owned_object_registry){
+				// we are counting registrations because same delegate could be registered into multiple sources
+				listener.__registration_count__ = listener.__registration_count__ ? listener.__registration_count__ + 1 : 1;
+			}
+
 			if (options)
 				obj.addEventListener(sName, listener, options);
 			else
@@ -1999,7 +2056,7 @@ var BindingSupportLib = {
 			var obj = BINDING.mono_wasm_get_jsobj_from_js_handle(objHandle);
 			if (!obj)
 				throw new Error("ERR11: Invalid JS object handle");
-			var listener = BINDING._wrap_delegate_gc_handle_as_function(listener_gc_handle);
+			var listener = BINDING._lookup_js_owned_object(listener_gc_handle);
 			// Removing a nonexistent listener should not be treated as an error
 			if (!listener)
 				return;
@@ -2010,6 +2067,16 @@ var BindingSupportLib = {
 			//  because that same delegate may have been used as an event listener for
 			//  other events or event targets. The GC will automatically clean it up
 			//  and trigger the FinalizationRegistry handler if it's unused
+
+			// When FinalizationRegistry is not supported by this browser, we cleanup manuall after unregistration
+			if (!BINDING._js_owned_object_registry) {
+				listener.__registration_count__--;
+				if (listener.__registration_count__ === 0) {
+					BINDING._js_owned_object_table.delete(listener_gc_handle);
+					BINDING._release_js_owned_object_by_gc_handle(listener_gc_handle);
+				}
+			}
+
 			return 0;
 		} catch (exc) {
 			return BINDING.js_string_to_mono_string(exc.message);
