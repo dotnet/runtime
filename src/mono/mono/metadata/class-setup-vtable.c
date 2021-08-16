@@ -455,6 +455,28 @@ enum MonoInterfaceMethodOverrideFlags {
 };
 
 static gboolean
+signature_is_subsumed (MonoMethod *impl_method, MonoMethod *decl_method, MonoError *error);
+
+/*
+ * Returns TRUE if the signature of \c decl is assignable from the signature of \c impl.  That is, if \c sig_impl is more
+ * specific than \c sig_decl.
+ */
+static gboolean
+signature_assignable_from (MonoMethod *decl, MonoMethod *impl)
+{
+	ERROR_DECL (error);
+	/* FIXME: the "signature_is_subsumed" check for covariant returns is not good enough:
+	 * 1. It doesn't check that the arguments are contravariant.
+	 * 2. it's too general: we don't want  Foo SomeMethod() to be subsumed by Bar SomeMethod() unless
+	 *    at least of Foo or Bar was a generic parameter.
+	 */
+	if (signature_is_subsumed (impl, decl, error))
+		return TRUE;
+	mono_error_cleanup (error);
+	return FALSE;
+}
+
+static gboolean
 check_interface_method_override (MonoClass *klass, MonoMethod *im, MonoMethod *cm, int flags)
 {
 	gboolean require_newslot = (flags & MONO_ITF_OVERRIDE_REQUIRE_NEWSLOT) != 0;
@@ -500,7 +522,7 @@ check_interface_method_override (MonoClass *klass, MonoMethod *im, MonoMethod *c
 		 * In this case, there's an explicit newslot but we want to match up 'Bar BarFactory:Get ()'
 		 * with 'Foo IFactory<Foo>:Get ()'.
 		 */
-		if (! mono_metadata_signature_equal (cmsig, imsig) && !(require_newslot && variant_itf) ) {
+		if (! mono_metadata_signature_equal (cmsig, imsig) && !(variant_itf && signature_assignable_from (im, cm))) {
 			TRACE_INTERFACE_VTABLE (printf ("[SIGNATURE CHECK FAILED  "));
 			TRACE_INTERFACE_VTABLE (print_method_signatures (im, cm));
 			TRACE_INTERFACE_VTABLE (printf ("]"));
