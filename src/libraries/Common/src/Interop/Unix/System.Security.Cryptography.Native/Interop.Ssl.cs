@@ -150,6 +150,9 @@ internal static partial class Interop
         [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslSetData")]
         internal static extern int SslSetData(SafeSslHandle ssl, IntPtr data);
 
+        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslSetData")]
+        internal static extern int SslSetData(IntPtr ssl, IntPtr data);
+
         internal static unsafe int SslSetAlpnProtos(SafeSslHandle ssl, List<SslApplicationProtocol> protocols)
         {
             byte[] buffer = ConvertAlpnProtocolListToByteArray(protocols);

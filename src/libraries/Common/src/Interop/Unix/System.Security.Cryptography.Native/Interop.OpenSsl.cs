@@ -18,6 +18,8 @@ internal static partial class Interop
 {
     internal static partial class OpenSsl
     {
+        private const string DisableTlsResumeCtxSwitch = "System.Net.Security.DisableTlsResume";
+        private const string DisableTlsResumeEnvironmentVariable = "DOTNET_SYSTEM_NET_SECURITY_DISABLETLSRESUME";
         private static readonly IdnMapping s_idnMapping = new IdnMapping();
 
         #region internal methods
@@ -44,10 +46,38 @@ internal static partial class Interop
             return bindingHandle;
         }
 
+         private static volatile int s_disableTlsResume = -1;
+
+         private static bool DisableTlsResume
+         {
+             get
+             {
+                 int disableTlsResume = s_disableTlsResume;
+                 if (disableTlsResume != -1)
+                 {
+                     return disableTlsResume != 0;
+                 }
+
+                 // First check for the AppContext switch, giving it priority over the environment variable.
+                 if (AppContext.TryGetSwitch(DisableTlsResumeCtxSwitch, out bool value))
+                 {
+                     s_disableTlsResume = value ? 1 : 0;
+                 }
+                 else
+                 {
+                     // AppContext switch wasn't used. Check the environment variable.
+                    s_disableTlsResume =
+                        Environment.GetEnvironmentVariable(DisableTlsResumeEnvironmentVariable) is string envVar &&
+                        (envVar == "1" || envVar.Equals("true", StringComparison.OrdinalIgnoreCase)) ? 1 : 0;
+                 }
+
+                 return s_disableTlsResume != 0;
+             }
+         }
+
         // This essentially wraps SSL_CTX* aka SSL_CTX_new + setting
-        internal static SafeSslContextHandle AllocateSslContext(SafeFreeSslCredentials credential, SslAuthenticationOptions sslAuthenticationOptions)
+        internal static SafeSslContextHandle AllocateSslContext(SafeFreeSslCredentials credential, SslAuthenticationOptions sslAuthenticationOptions, SslProtocols protocols)
         {
-            SslProtocols protocols = sslAuthenticationOptions.EnabledSslProtocols;
             SafeX509Handle? certHandle = credential.CertHandle;
             SafeEvpPKeyHandle? certKeyHandle = credential.CertKeyHandle;
 
@@ -61,44 +91,6 @@ internal static partial class Interop
                 if (innerContext.IsInvalid)
                 {
                     throw CreateSslException(SR.net_allocate_ssl_context_failed);
-                }
-
-                if (!Interop.Ssl.Tls13Supported)
-                {
-                    if (sslAuthenticationOptions.EnabledSslProtocols != SslProtocols.None &&
-                        CipherSuitesPolicyPal.WantsTls13(protocols))
-                    {
-                        protocols = protocols & (~SslProtocols.Tls13);
-                    }
-                }
-                else if (CipherSuitesPolicyPal.WantsTls13(protocols) &&
-                    CipherSuitesPolicyPal.ShouldOptOutOfTls13(sslAuthenticationOptions.CipherSuitesPolicy, sslAuthenticationOptions.EncryptionPolicy))
-                {
-                    if (protocols == SslProtocols.None)
-                    {
-                        // we are using default settings but cipher suites policy says that TLS 1.3
-                        // is not compatible with our settings (i.e. we requested no encryption or disabled
-                        // all TLS 1.3 cipher suites)
-                        protocols = SslProtocols.Tls | SslProtocols.Tls11 | SslProtocols.Tls12;
-                    }
-                    else
-                    {
-                        // user explicitly asks for TLS 1.3 but their policy is not compatible with TLS 1.3
-                        throw new SslException(
-                            SR.Format(SR.net_ssl_encryptionpolicy_notsupported, sslAuthenticationOptions.EncryptionPolicy));
-                    }
-                }
-
-                if (CipherSuitesPolicyPal.ShouldOptOutOfLowerThanTls13(sslAuthenticationOptions.CipherSuitesPolicy, sslAuthenticationOptions.EncryptionPolicy))
-                {
-                    if (!CipherSuitesPolicyPal.WantsTls13(protocols))
-                    {
-                        // We cannot provide neither TLS 1.3 or non TLS 1.3, user disabled all cipher suites
-                        throw new SslException(
-                            SR.Format(SR.net_ssl_encryptionpolicy_notsupported, sslAuthenticationOptions.EncryptionPolicy));
-                    }
-
-                    protocols = SslProtocols.Tls13;
                 }
 
                 // Configure allowed protocols. It's ok to use DangerousGetHandle here without AddRef/Release as we just
@@ -157,18 +149,57 @@ internal static partial class Interop
             SafeSslContextHandle? sslCtx = null;
             SafeSslContextHandle? innerContext = null;
             SslProtocols protocols = sslAuthenticationOptions.EnabledSslProtocols;
-            bool cacheSslContext = sslAuthenticationOptions.EncryptionPolicy == EncryptionPolicy.RequireEncryption &&
-                    (!sslAuthenticationOptions.IsServer || (sslAuthenticationOptions.ApplicationProtocols != null && sslAuthenticationOptions.ApplicationProtocols.Count != 0));
+            bool cacheSslContext = !DisableTlsResume && sslAuthenticationOptions.EncryptionPolicy == EncryptionPolicy.RequireEncryption &&
+                    (!sslAuthenticationOptions.IsServer ||
+                    (sslAuthenticationOptions.ApplicationProtocols != null && sslAuthenticationOptions.ApplicationProtocols.Count != 0));
+
+            if (!Interop.Ssl.Tls13Supported)
+            {
+                if (protocols != SslProtocols.None &&
+                    CipherSuitesPolicyPal.WantsTls13(protocols))
+                {
+                    protocols = protocols & (~SslProtocols.Tls13);
+                }
+            }
+            else if (CipherSuitesPolicyPal.WantsTls13(protocols) &&
+                        CipherSuitesPolicyPal.ShouldOptOutOfTls13(sslAuthenticationOptions.CipherSuitesPolicy, sslAuthenticationOptions.EncryptionPolicy))
+            {
+                if (protocols == SslProtocols.None)
+                {
+                    // we are using default settings but cipher suites policy says that TLS 1.3
+                    // is not compatible with our settings (i.e. we requested no encryption or disabled
+                    // all TLS 1.3 cipher suites)
+                    protocols = SslProtocols.Tls | SslProtocols.Tls11 | SslProtocols.Tls12;
+                }
+                else
+                {
+                    // user explicitly asks for TLS 1.3 but their policy is not compatible with TLS 1.3
+                    throw new SslException(
+                        SR.Format(SR.net_ssl_encryptionpolicy_notsupported, sslAuthenticationOptions.EncryptionPolicy));
+                }
+            }
+
+            if (CipherSuitesPolicyPal.ShouldOptOutOfLowerThanTls13(sslAuthenticationOptions.CipherSuitesPolicy, sslAuthenticationOptions.EncryptionPolicy))
+            {
+                if (!CipherSuitesPolicyPal.WantsTls13(protocols))
+                {
+                    // We cannot provide neither TLS 1.3 or non TLS 1.3, user disabled all cipher suites
+                    throw new SslException(
+                        SR.Format(SR.net_ssl_encryptionpolicy_notsupported, sslAuthenticationOptions.EncryptionPolicy));
+                }
+
+                protocols = SslProtocols.Tls13;
+            }
 
             if (sslAuthenticationOptions.CertificateContext != null && cacheSslContext)
             {
-               sslAuthenticationOptions.CertificateContext.contexts.TryGetValue((int)sslAuthenticationOptions.EnabledSslProtocols, out sslCtx);
+               sslAuthenticationOptions.CertificateContext.SslContexts.TryGetValue(sslAuthenticationOptions.EnabledSslProtocols, out sslCtx);
             }
 
             if (sslCtx == null)
             {
                 // We did not get SslContext from cache
-                sslCtx = innerContext = AllocateSslContext(credential, sslAuthenticationOptions);
+                sslCtx = innerContext = AllocateSslContext(credential, sslAuthenticationOptions, protocols);
             }
 
             try
@@ -278,8 +309,8 @@ internal static partial class Interop
                 if (innerContext != null && cacheSslContext)
                 {
                     // We allocated new context
-                    if (sslAuthenticationOptions.CertificateContext?.contexts == null ||
-                        !sslAuthenticationOptions.CertificateContext.contexts.TryAdd((int)sslAuthenticationOptions.EnabledSslProtocols, innerContext))
+                    if (sslAuthenticationOptions.CertificateContext?.SslContexts == null ||
+                        !sslAuthenticationOptions.CertificateContext.SslContexts.TryAdd(sslAuthenticationOptions.EnabledSslProtocols, innerContext))
                     {
                         innerContext.Dispose();
                     }
@@ -507,6 +538,9 @@ internal static partial class Interop
             *outp = null;
             *outlen = 0;
             IntPtr sslData =  Ssl.SslGetData(ssl);
+
+            // reset application data to avoid dangling pointer.
+            Ssl.SslSetData(ssl, IntPtr.Zero);
 
             GCHandle protocolHandle = GCHandle.FromIntPtr(sslData);
             if (!(protocolHandle.Target is List<SslApplicationProtocol> protocolList))
