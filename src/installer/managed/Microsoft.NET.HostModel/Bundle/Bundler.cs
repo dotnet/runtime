@@ -32,6 +32,7 @@ namespace Microsoft.NET.HostModel.Bundle
         public readonly Manifest BundleManifest;
         private readonly TargetInfo Target;
         private readonly BundleOptions Options;
+        private readonly bool _macosCodesign;
 
         public Bundler(string hostName,
                        string outputDir,
@@ -40,7 +41,8 @@ namespace Microsoft.NET.HostModel.Bundle
                        Architecture? targetArch = null,
                        Version targetFrameworkVersion = null,
                        bool diagnosticOutput = false,
-                       string appAssemblyName = null)
+                       string appAssemblyName = null,
+                       bool macosCodesign = false)
         {
             Tracer = new Trace(diagnosticOutput);
 
@@ -61,6 +63,7 @@ namespace Microsoft.NET.HostModel.Bundle
 
             BundleManifest = new Manifest(Target.BundleMajorVersion, netcoreapp3CompatMode: options.HasFlag(BundleOptions.BundleAllContent));
             Options = Target.DefaultOptions | options;
+            _macosCodesign = macosCodesign;
         }
 
         private bool ShouldCompress(FileType type)
@@ -268,6 +271,11 @@ namespace Microsoft.NET.HostModel.Bundle
 
             BinaryUtils.CopyFile(hostSource, bundlePath);
 
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX) && HostModelUtils.IsCodesignAvailable())
+            {
+                RemoveCodesignIfNecessary(bundlePath);
+            }
+
             // Note: We're comparing file paths both on the OS we're running on as well as on the target OS for the app
             // We can't really make assumptions about the file systems (even on Linux there can be case insensitive file systems
             // and vice versa for Windows). So it's safer to do case sensitive comparison everywhere.
@@ -336,7 +344,34 @@ namespace Microsoft.NET.HostModel.Bundle
 
             HostWriter.SetAsBundle(bundlePath, headerOffset);
 
+            // Sign the bundle if requested
+            if (_macosCodesign && RuntimeInformation.IsOSPlatform(OSPlatform.OSX) && HostModelUtils.IsCodesignAvailable())
+            {
+                var (exitCode, stdErr) = HostModelUtils.RunCodesign("-s -", bundlePath);
+                if (exitCode != 0)
+                {
+                    throw new InvalidOperationException($"Failed to codesign '{bundlePath}': {stdErr}");
+                }
+            }
+
             return bundlePath;
+
+            // Remove mac code signature if applied before bundling
+            static void RemoveCodesignIfNecessary(string bundlePath)
+            {
+                Debug.Assert(RuntimeInformation.IsOSPlatform(OSPlatform.OSX));
+                Debug.Assert(HostModelUtils.IsCodesignAvailable());
+
+                // `codesign -v` returns 0 if app is signed
+                if (HostModelUtils.RunCodesign("-v", bundlePath).ExitCode == 0)
+                {
+                    var (exitCode, stdErr) = HostModelUtils.RunCodesign("--remove-signature", bundlePath);
+                    if (exitCode != 0)
+                    {
+                        throw new InvalidOperationException($"Removing codesign from '{bundlePath}' failed: {stdErr}");
+                    }
+                }
+            }
         }
     }
 }
