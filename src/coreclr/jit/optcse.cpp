@@ -2601,11 +2601,13 @@ public:
         //
         if (candidate->LiveAcrossCall())
         {
-            if (candidate->Expr()->IsCnsFltOrDbl() && (CNT_CALLEE_SAVED_FLOAT == 0))
+            if (candidate->Expr()->IsCnsFltOrDbl() && (CNT_CALLEE_SAVED_FLOAT == 0) &&
+                (candidate->CseDsc()->csdUseWtCnt <= 4))
             {
-                // We should do CSE for fp constants in case of LiveAcrossCall only when absolutely necessary
-                // on ABIs without callee-saved registers.
-                cse_use_cost += 2;
+                // Floating point constants are expected to be contained, so unless there are more than 4 uses
+                // we better not to CSE them, especially on platforms without callee-saved registers
+                // for values living across calls
+                return false;
             }
 
             // If we don't have a lot of variables to enregister or we have a floating point type
