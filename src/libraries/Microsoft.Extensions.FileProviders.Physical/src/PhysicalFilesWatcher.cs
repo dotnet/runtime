@@ -25,23 +25,21 @@ namespace Microsoft.Extensions.FileProviders.Physical
     /// </summary>
     public class PhysicalFilesWatcher : IDisposable
     {
-        private static readonly Action<object?> _cancelTokenSource = state => ((CancellationTokenSource?)state)?.Cancel();
+        private static readonly Action<object?> _cancelTokenSource = state => ((CancellationTokenSource?)state)!.Cancel();
 
         internal static TimeSpan DefaultPollingInterval = TimeSpan.FromSeconds(4);
 
-        private readonly ConcurrentDictionary<string, ChangeTokenInfo> _filePathTokenLookup =
-            new ConcurrentDictionary<string, ChangeTokenInfo>(StringComparer.OrdinalIgnoreCase);
-        private readonly ConcurrentDictionary<string, ChangeTokenInfo> _wildcardTokenLookup =
-            new ConcurrentDictionary<string, ChangeTokenInfo>(StringComparer.OrdinalIgnoreCase);
+        private readonly ConcurrentDictionary<string, ChangeTokenInfo> _filePathTokenLookup = new(StringComparer.OrdinalIgnoreCase);
+        private readonly ConcurrentDictionary<string, ChangeTokenInfo> _wildcardTokenLookup = new(StringComparer.OrdinalIgnoreCase);
 
         private readonly FileSystemWatcher? _fileWatcher;
-        private readonly object _fileWatcherLock = new object();
+        private readonly object _fileWatcherLock = new();
         private readonly string _root;
         private readonly ExclusionFilters _filters;
 
         private Timer? _timer;
         private bool _timerInitialzed;
-        private object _timerLock = new object();
+        private object _timerLock = new();
         private Func<Timer> _timerFactory;
         private bool _disposed;
 
@@ -369,9 +367,8 @@ namespace Microsoft.Extensions.FileProviders.Physical
 
             foreach (System.Collections.Generic.KeyValuePair<string, ChangeTokenInfo> wildCardEntry in _wildcardTokenLookup)
             {
-                PatternMatchingResult? matchResult = wildCardEntry.Value.Matcher?.Match(path);
-                if (matchResult != null &&
-                    matchResult.HasMatches &&
+                PatternMatchingResult matchResult = wildCardEntry.Value.Matcher!.Match(path);
+                if (matchResult.HasMatches &&
                     _wildcardTokenLookup.TryRemove(wildCardEntry.Key, out matchInfo))
                 {
                     CancelToken(matchInfo);
@@ -446,14 +443,9 @@ namespace Microsoft.Extensions.FileProviders.Physical
 
         internal static void RaiseChangeEvents(object? state)
         {
-            if (state == null)
-            {
-                throw new ArgumentNullException(nameof(state));
-            }
-
             // Iterating over a concurrent bag gives us a point in time snapshot making it safe
             // to remove items from it.
-            var changeTokens = (ConcurrentDictionary<IPollingChangeToken, IPollingChangeToken>)state;
+            var changeTokens = (ConcurrentDictionary<IPollingChangeToken, IPollingChangeToken>)state!;
             foreach (System.Collections.Generic.KeyValuePair<IPollingChangeToken, IPollingChangeToken> item in changeTokens)
             {
                 IPollingChangeToken token = item.Key;
@@ -472,7 +464,7 @@ namespace Microsoft.Extensions.FileProviders.Physical
                 // We're already on a background thread, don't need to spawn a background Task to cancel the CTS
                 try
                 {
-                    token.CancellationTokenSource?.Cancel();
+                    token.CancellationTokenSource!.Cancel();
                 }
                 catch
                 {

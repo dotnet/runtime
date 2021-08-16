@@ -195,12 +195,12 @@ namespace Microsoft.Extensions.FileProviders.Physical
 
         IDisposable IChangeToken.RegisterChangeCallback(Action<object?> callback, object? state)
         {
-            if (!ActiveChangeCallbacks || _changeToken == null)
+            if (!ActiveChangeCallbacks)
             {
                 return EmptyDisposable.Instance;
             }
 
-            return _changeToken.RegisterChangeCallback(callback, state);
+            return _changeToken!.RegisterChangeCallback(callback, state);
         }
     }
 }

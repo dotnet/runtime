@@ -31,7 +31,7 @@ namespace Microsoft.Extensions.FileProviders
         private readonly Func<PhysicalFilesWatcher> _fileWatcherFactory;
         private PhysicalFilesWatcher? _fileWatcher;
         private bool _fileWatcherInitialized;
-        private object _fileWatcherLock = new object();
+        private object _fileWatcherLock = new();
 
         private bool? _usePollingFileWatcher;
         private bool? _useActivePolling;
@@ -146,7 +146,7 @@ namespace Microsoft.Extensions.FileProviders
                     ref _fileWatcher,
                     ref _fileWatcherInitialized,
                     ref _fileWatcherLock,
-                    _fileWatcherFactory) ?? throw new NullReferenceException(nameof(_fileWatcher));
+                    _fileWatcherFactory)!;
             }
             set
             {
@@ -300,7 +300,7 @@ namespace Microsoft.Extensions.FileProviders
         /// <paramref name="subpath" /> is absolute, if the directory does not exist, or <paramref name="subpath" /> has invalid
         /// characters.
         /// </returns>
-        public IDirectoryContents GetDirectoryContents(string? subpath)
+        public IDirectoryContents GetDirectoryContents(string subpath)
         {
             try
             {
@@ -349,7 +349,7 @@ namespace Microsoft.Extensions.FileProviders
         /// characters or if <paramref name="filter" /> is an absolute path or outside the root directory specified in the
         /// constructor <seealso cref="PhysicalFileProvider(string)" />.
         /// </returns>
-        public IChangeToken Watch(string? filter)
+        public IChangeToken Watch(string filter)
         {
             if (filter == null || PathUtils.HasInvalidFilterChars(filter))
             {

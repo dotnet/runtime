@@ -131,12 +131,12 @@ namespace Microsoft.Extensions.FileProviders.Physical
         /// <returns>A disposable object that noops when disposed</returns>
         public IDisposable RegisterChangeCallback(Action<object?> callback, object? state)
         {
-            if (!ActiveChangeCallbacks || _changeToken == null)
+            if (!ActiveChangeCallbacks)
             {
                 return EmptyDisposable.Instance;
             }
 
-            return _changeToken.RegisterChangeCallback(callback, state);
+            return _changeToken!.RegisterChangeCallback(callback, state);
         }
     }
 }
