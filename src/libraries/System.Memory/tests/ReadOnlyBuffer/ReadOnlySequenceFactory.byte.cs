@@ -4,6 +4,9 @@
 using System.Buffers;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using System.Threading;
 
 namespace System.Memory.Tests
 {
@@ -11,6 +14,7 @@ namespace System.Memory.Tests
     {
         public static ReadOnlySequenceFactory<T> ArrayFactory { get; } = new ArrayTestSequenceFactory();
         public static ReadOnlySequenceFactory<T> MemoryFactory { get; } = new MemoryTestSequenceFactory();
+        public static ReadOnlySequenceFactory<byte> MemoryManagerFactory { get; } = new MemoryManagerTestSequenceFactory();
         public static ReadOnlySequenceFactory<T> SingleSegmentFactory { get; } = new SingleSegmentTestSequenceFactory();
         public static ReadOnlySequenceFactory<T> SegmentPerItemFactory { get; } = new BytePerSegmentTestSequenceFactory();
         public static ReadOnlySequenceFactory<T> SplitInThree { get; } = new SegmentsTestSequenceFactory(3);
@@ -109,6 +113,64 @@ namespace System.Memory.Tests
                 }
 
                 return CreateSegments(segments.ToArray());
+            }
+        }
+
+        internal class MemoryManagerTestSequenceFactory : ReadOnlySequenceFactory<byte>
+        {
+            public override ReadOnlySequence<byte> CreateOfSize(int size)
+            {
+#if DEBUG
+                return new ReadOnlySequence<byte>(new CustomMemoryManager(size + 1).Memory.Slice(1)); // #57472
+#else
+                return new ReadOnlySequence<byte>(new CustomMemoryManager(size).Memory);
+#endif
+            }
+
+            public override ReadOnlySequence<byte> CreateWithContent(byte[] data)
+            {
+                return new ReadOnlySequence<byte>(new CustomMemoryManager(data).Memory);
+            }
+
+            private unsafe class CustomMemoryManager : MemoryManager<byte>
+            {
+                private readonly int _size;
+                private IntPtr _pointer;
+                private long _referenceCount;
+
+                public CustomMemoryManager(int size) => _pointer = Marshal.AllocHGlobal(_size = size);
+
+                public CustomMemoryManager(byte[] content)
+                {
+                    _pointer = Marshal.AllocHGlobal(_size = content.Length);
+                    content.AsSpan().CopyTo(new Span<byte>(_pointer.ToPointer(), _size));
+                }
+
+                public unsafe override Span<byte> GetSpan() => new Span<byte>(_pointer.ToPointer(), _size);
+
+                public override unsafe MemoryHandle Pin(int elementIndex = 0)
+                {
+                    if ((uint)elementIndex > (uint)_size)
+                    {
+                        throw new ArgumentOutOfRangeException(nameof(elementIndex));
+                    }
+
+                    Interlocked.Increment(ref _referenceCount);
+
+                    return default; // there is no need to pin anything, it's unmanaged memory
+                }
+
+                public override void Unpin() => Interlocked.Decrement(ref _referenceCount);
+
+                protected override void Dispose(bool disposing)
+                {
+                    if (Interlocked.Read(ref _referenceCount) == 0)
+                    {
+                        // this code is not thread safe, don't copy and reuse it!
+                        IntPtr pointer = Interlocked.Exchange(ref _pointer, IntPtr.Zero);
+                        Marshal.FreeHGlobal(pointer);
+                    }
+                }
             }
         }
 
