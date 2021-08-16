@@ -97,7 +97,7 @@ namespace System.ComponentModel.DataAnnotations
             // If the method throws (indicating that the input params are invalid) this property will throw
             // every time it's accessed.
             public Dictionary<string, object?> ControlParameters =>
-                _controlParameters ?? (_controlParameters = BuildControlParametersDictionary());
+                _controlParameters ??= BuildControlParametersDictionary();
 
             /// <summary>
             ///     Returns the hash code for this UIHintAttribute.
@@ -156,18 +156,19 @@ namespace System.ComponentModel.DataAnnotations
             /// </returns>
             private Dictionary<string, object?> BuildControlParametersDictionary()
             {
+                Dictionary<string, object?> controlParameters = new Dictionary<string, object?>();
+
                 object?[]? inputControlParameters = _inputControlParameters;
 
                 if (inputControlParameters == null || inputControlParameters.Length == 0)
                 {
-                    return new Dictionary<string, object?>();
+                    return controlParameters;
                 }
                 if (inputControlParameters.Length % 2 != 0)
                 {
                     throw new InvalidOperationException(SR.UIHintImplementation_NeedEvenNumberOfControlParameters);
                 }
 
-                Dictionary<string, object?> controlParameters = new Dictionary<string, object?>(inputControlParameters.Length / 2);
                 for (int i = 0; i < inputControlParameters.Length; i += 2)
                 {
                     object? key = inputControlParameters[i];
@@ -202,16 +203,12 @@ namespace System.ComponentModel.DataAnnotations
                     return false;
                 }
 
-                var comparer = EqualityComparer<object?>.Default;
+                EqualityComparer<object?> comparer = EqualityComparer<object?>.Default;
 
-                foreach (var leftEntry in left)
+                foreach (KeyValuePair<string, object?> leftEntry in left)
                 {
-                    if (!right.TryGetValue(leftEntry.Key, out object? rightValue))
-                    {
-                        return false;
-                    }
-
-                    if (!comparer.Equals(leftEntry.Value, rightValue))
+                    if (!right.TryGetValue(leftEntry.Key, out object? rightValue) ||
+                        !comparer.Equals(leftEntry.Value, rightValue))
                     {
                         return false;
                     }
