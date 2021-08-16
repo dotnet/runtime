@@ -528,7 +528,7 @@ namespace System.Text.Json.Serialization
                 state.Current.OriginalDepth = writer.CurrentDepth;
             }
 
-            // Exception data properties change how dictionary key naming policies are applied.
+            // Extension data properties change how dictionary key naming policies are applied.
             state.Current.IsWritingExtensionDataProperty = true;
             state.Current.DeclaredJsonPropertyInfo = state.Current.JsonTypeInfo.ElementTypeInfo!.PropertyInfoForTypeInfo;
 
@@ -622,12 +622,13 @@ namespace System.Text.Json.Serialization
             JsonSerializerOptions options);
 
         /// <summary>
-        /// Reads a value from a JSON property name.
+        /// Reads a dictionary key from a JSON property name.
         /// </summary>
         /// <param name="reader">The <see cref="Utf8JsonReader"/> to read from.</param>
         /// <param name="typeToConvert">The <see cref="Type"/> being converted.</param>
         /// <param name="options">The <see cref="JsonSerializerOptions"/> being used.</param>
         /// <returns>The value that was converted.</returns>
+        /// <remarks>Method should be overridden in custom converters of types used in deserialized dictionary keys.</remarks>
         public virtual T ReadAsPropertyName(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
         {
             if (!IsInternalConverter && options.TryGetDefaultSimpleConverter(TypeToConvert, out JsonConverter? defaultConverter))
@@ -656,11 +657,12 @@ namespace System.Text.Json.Serialization
         }
 
         /// <summary>
-        /// Writes a value as a JSON property name.
+        /// Writes a dictionary key as a JSON property name.
         /// </summary>
         /// <param name="writer">The <see cref="Utf8JsonWriter"/> to write to.</param>
         /// <param name="value">The value to convert. Note that the value of <seealso cref="HandleNull"/> determines if the converter handles <see langword="null" /> values.</param>
         /// <param name="options">The <see cref="JsonSerializerOptions"/> being used.</param>
+        /// <remarks>Method should be overridden in custom converters of types used in serialized dictionary keys.</remarks>
         public virtual void WriteAsPropertyName(Utf8JsonWriter writer, T value, JsonSerializerOptions options)
         {
             if (!IsInternalConverter && options.TryGetDefaultSimpleConverter(TypeToConvert, out JsonConverter? defaultConverter))
@@ -678,10 +680,8 @@ namespace System.Text.Json.Serialization
         {
             if (isWritingExtensionDataProperty)
             {
-                // Since we can't pass isWritingExtensionDataProperty information to the public WriteAsPropertyName method,
-                // err on the side of backward compatibility and hardcode the default string property name write semantics.
-                // This implies that any custom WriteAsPropertyName implementations _will not be consulted_ when serializing
-                // extension data properties.
+                // Extension data is meant as mechanism to gather unused JSON properties;
+                // do not apply any custom key conversions and hardcode the default behavior.
                 Debug.Assert(!IsInternalConverter && TypeToConvert == typeof(string));
                 writer.WritePropertyName((string)(object)value!);
                 return;
