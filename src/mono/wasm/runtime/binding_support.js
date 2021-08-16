@@ -165,10 +165,10 @@ var BindingSupportLib = {
 
 			this._js_owned_object_table = new Map ();
 			// NOTE: FinalizationRegistry and WeakRef are missing on Safari below 14.1
-			if (typeof globalThis.FinalizationRegistry !== "undefined") {
+			if (typeof globalThis.FinalizationRegistry === "function") {
 				this._js_owned_object_registry = new globalThis.FinalizationRegistry(this._js_owned_object_finalized.bind(this));
 			}
-			if (typeof globalThis.WeakRef === "undefined") {
+			if (typeof globalThis.WeakRef !== "function") {
 				// this is trivial WeakRef polyfill, which holds strong refrence, instead of weak one
 				globalThis.WeakRef = function WeakRef(targetObject) {
 					this.deref = () => {
