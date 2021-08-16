@@ -30,7 +30,7 @@ namespace BINDER_SPACE
     class AssemblyBinderCommon
     {
     public:
-        // See code:BINDER_SPACE::AssemblyBinder::GetAssembly for info on fNgenExplicitBind
+        // See code:BINDER_SPACE::AssemblyBinderCommon::GetAssembly for info on fNgenExplicitBind
         // and fExplicitBindToNativeImage, and see code:CEECompileInfo::LoadAssemblyByPath
         // for an example of how they're used.
         static HRESULT BindAssembly(/* in */  AssemblyBinder      *pBinder, 
@@ -93,7 +93,7 @@ namespace BINDER_SPACE
                                   /* in */  bool                excludeAppPaths,
                                   /* out */ BindResult         *pBindResult);
 
-        // See code:BINDER_SPACE::AssemblyBinder::GetAssembly for info on fNgenExplicitBind
+        // See code:BINDER_SPACE::AssemblyBinderCommon::GetAssembly for info on fNgenExplicitBind
         // and fExplicitBindToNativeImage, and see code:CEECompileInfo::LoadAssemblyByPath
         // for an example of how they're used.
         static HRESULT BindWhereRef(/* in */  ApplicationContext *pApplicationContext,

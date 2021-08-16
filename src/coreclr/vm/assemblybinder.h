@@ -32,11 +32,6 @@ public:
         return &m_appContext;
     }
 
-    // Add a virtual destructor to force derived types to also have virtual destructors.
-    virtual ~AssemblyBinder()
-    {
-    }
-
 private:
     BINDER_SPACE::ApplicationContext m_appContext;
 };

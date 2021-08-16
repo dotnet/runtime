@@ -11,7 +11,7 @@
 class PEAssembly;
 class PEImage;
 
-class DefaultAssemblyBinder : public AssemblyLoadContext
+class DefaultAssemblyBinder final : public AssemblyLoadContext
 {
 public:
     //=========================================================================

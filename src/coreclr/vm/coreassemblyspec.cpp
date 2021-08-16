@@ -68,7 +68,7 @@ static VOID ThrowLoadError(AssemblySpec * pSpec, HRESULT hr)
     EEFileLoadException::Throw(name, hr);
 }
 
-// See code:BINDER_SPACE::AssemblyBinder::GetAssembly for info on fNgenExplicitBind
+// See code:BINDER_SPACE::AssemblyBinderCommon::GetAssembly for info on fNgenExplicitBind
 // and fExplicitBindToNativeImage, and see code:CEECompileInfo::LoadAssemblyByPath
 // for an example of how they're used.
 VOID  AssemblySpec::Bind(AppDomain      *pAppDomain,
