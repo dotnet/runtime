@@ -100,7 +100,7 @@ namespace Microsoft.Extensions.Primitives
                     return;
                 }
 
-                IDisposable registraton = token.RegisterChangeCallback(s => ((ChangeTokenRegistration<TState>?)s)?.OnChangeTokenFired(), this);
+                IDisposable registraton = token.RegisterChangeCallback(s => ((ChangeTokenRegistration<TState>?)s)!.OnChangeTokenFired(), this);
 
                 SetDisposable(registraton);
             }
@@ -142,7 +142,7 @@ namespace Microsoft.Extensions.Primitives
             {
                 // If the previous value is disposable then dispose it, otherwise,
                 // now we've set the disposed sentinel
-                Interlocked.Exchange(ref _disposable, _disposedSentinel)?.Dispose();
+                Interlocked.Exchange(ref _disposable, _disposedSentinel)!.Dispose();
             }
 
             private sealed class NoopDisposable : IDisposable
