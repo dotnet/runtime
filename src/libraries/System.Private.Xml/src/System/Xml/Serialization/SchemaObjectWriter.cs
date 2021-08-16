@@ -13,7 +13,7 @@ namespace System.Xml.Serialization
     using System.Collections.Specialized;
     using System.Diagnostics.CodeAnalysis;
 
-    internal class XmlAttributeComparer : IComparer
+    internal sealed class XmlAttributeComparer : IComparer
     {
         public int Compare(object? o1, object? o2)
         {
@@ -28,7 +28,7 @@ namespace System.Xml.Serialization
         }
     }
 
-    internal class XmlFacetComparer : IComparer
+    internal sealed class XmlFacetComparer : IComparer
     {
         public int Compare(object? o1, object? o2)
         {
@@ -38,7 +38,7 @@ namespace System.Xml.Serialization
         }
     }
 
-    internal class QNameComparer : IComparer
+    internal sealed class QNameComparer : IComparer
     {
         public int Compare(object? o1, object? o2)
         {
@@ -53,7 +53,7 @@ namespace System.Xml.Serialization
         }
     }
 
-    internal class XmlSchemaObjectComparer : IComparer
+    internal sealed class XmlSchemaObjectComparer : IComparer
     {
         private readonly QNameComparer _comparer = new QNameComparer();
         public int Compare(object? o1, object? o2)
@@ -149,7 +149,7 @@ namespace System.Xml.Serialization
         }
     }
 
-    internal class SchemaObjectWriter
+    internal sealed class SchemaObjectWriter
     {
         private readonly StringBuilder _w = new StringBuilder();
         private int _indentLevel = -1;
@@ -161,7 +161,7 @@ namespace System.Xml.Serialization
                 _w.Append(' ');
             }
         }
-        protected void WriteAttribute(string localName, string ns, string? value)
+        private void WriteAttribute(string localName, string ns, string? value)
         {
             if (value == null || value.Length == 0)
                 return;
@@ -173,32 +173,32 @@ namespace System.Xml.Serialization
             _w.Append('=');
             _w.Append(value);
         }
-        protected void WriteAttribute(string localName, string ns, XmlQualifiedName value)
+        private void WriteAttribute(string localName, string ns, XmlQualifiedName value)
         {
             if (value.IsEmpty)
                 return;
             WriteAttribute(localName, ns, value.ToString());
         }
 
-        protected void WriteStartElement(string name)
+        private void WriteStartElement(string name)
         {
             NewLine();
             _indentLevel++;
             _w.Append('[');
             _w.Append(name);
         }
-        protected void WriteEndElement()
+        private void WriteEndElement()
         {
             _w.Append(']');
             _indentLevel--;
         }
-        protected void NewLine()
+        private void NewLine()
         {
             _w.Append(Environment.NewLine);
             WriteIndent();
         }
 
-        protected string GetString()
+        private string GetString()
         {
             return _w.ToString();
         }

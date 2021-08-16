@@ -19,7 +19,7 @@ using System.Globalization;
 
 namespace System.Resources
 {
-    internal class ResourceFallbackManager : IEnumerable<CultureInfo>
+    internal sealed class ResourceFallbackManager : IEnumerable<CultureInfo>
     {
         private readonly CultureInfo m_startingCulture;
         private readonly CultureInfo? m_neutralResourcesCulture;

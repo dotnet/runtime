@@ -537,6 +537,18 @@ namespace System.Security.Cryptography.Pkcs.EnvelopedCmsTests.Tests
         }
 
         [Fact]
+        public static void CryptographicAttributeObjectAsnOidNull()
+        {
+            var oid = new Oid(Oids.Sha1);
+            var asnEncodedData = new AsnEncodedData(new byte[] { 1, 2, 3 });
+
+            AssertExtensions.Throws<ArgumentException, NullReferenceException>("values", () =>
+            {
+                new CryptographicAttributeObject(oid, new AsnEncodedDataCollection(asnEncodedData));
+            });
+        }
+
+        [Fact]
         public static void CryptographicAttributeObjectPassNullValuesToCtor()
         {
             Oid oid = new Oid(Oids.DocumentDescription);

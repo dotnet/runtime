@@ -1,11 +1,11 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using Microsoft.Test.ModuleCore;
 using System;
 using System.Collections.Generic;
 using System.Xml;
 using System.Xml.Linq;
+using Microsoft.Test.ModuleCore;
 
 namespace CoreXml.Test.XLinq
 {
@@ -15,44 +15,6 @@ namespace CoreXml.Test.XLinq
         {
             public partial class ErrorConditions : BridgeHelpers
             {
-                //[Variation(Desc = "Move to Attribute using []")]
-                public void Variation1()
-                {
-                    foreach (XNode n in GetXNodeR())
-                    {
-                        using (XmlReader r = n.CreateReader())
-                        {
-                            TestLog.Compare(r[-100000], null, "Error");
-                            TestLog.Compare(r[-1], null, "Error");
-                            TestLog.Compare(r[0], null, "Error");
-                            TestLog.Compare(r[100000], null, "Error");
-                            TestLog.Compare(r[null], null, "Error");
-                            TestLog.Compare(r[null, null], null, "Error");
-                            TestLog.Compare(r[""], null, "Error");
-                            TestLog.Compare(r["", ""], null, "Error");
-                        }
-                    }
-                }
-
-                //[Variation(Desc = "GetAttribute")]
-                public void Variation2()
-                {
-                    foreach (XNode n in GetXNodeR())
-                    {
-                        using (XmlReader r = n.CreateReader())
-                        {
-                            TestLog.Compare(r.GetAttribute(-100000), null, "Error");
-                            TestLog.Compare(r.GetAttribute(-1), null, "Error");
-                            TestLog.Compare(r.GetAttribute(0), null, "Error");
-                            TestLog.Compare(r.GetAttribute(100000), null, "Error");
-                            TestLog.Compare(r.GetAttribute(null), null, "Error");
-                            TestLog.Compare(r.GetAttribute(null, null), null, "Error");
-                            TestLog.Compare(r.GetAttribute(""), null, "Error");
-                            TestLog.Compare(r.GetAttribute("", ""), null, "Error");
-                        }
-                    }
-                }
-
                 //[Variation(Desc = "IsStartElement")]
                 public void Variation3()
                 {

@@ -52,7 +52,7 @@ namespace System.Xml.Xsl.IlGen
     /// As the Qil graph is traversed, patterns are identified.  Subtrees that match these patterns are
     /// annotated with this class, which identifies the matching patterns and their arguments.
     /// </summary>
-    internal class OptimizerPatterns : IQilAnnotation
+    internal sealed class OptimizerPatterns : IQilAnnotation
     {
         private static readonly int s_patternCount = Enum.GetValues(typeof(OptimizerPatternName)).Length;
 
@@ -233,7 +233,7 @@ namespace System.Xml.Xsl.IlGen
                 case 2: arg = _arg2; break;
             }
 
-            Debug.Assert(arg != null, "There is no '" + argNum + "' argument.");
+            Debug.Assert(arg != null, $"There is no '{argNum}' argument.");
             return arg;
         }
 
@@ -260,7 +260,7 @@ namespace System.Xml.Xsl.IlGen
         /// <summary>
         /// Return name of this annotation.
         /// </summary>
-        public virtual string Name
+        public string Name
         {
             get { return "Patterns"; }
         }

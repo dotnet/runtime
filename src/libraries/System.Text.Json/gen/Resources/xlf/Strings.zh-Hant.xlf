@@ -1,0 +1,47 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<xliff xmlns="urn:oasis:names:tc:xliff:document:1.2" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" version="1.2" xsi:schemaLocation="urn:oasis:names:tc:xliff:document:1.2 xliff-core-1.2-transitional.xsd">
+  <file datatype="xml" source-language="en" target-language="zh-Hant" original="../Strings.resx">
+    <body>
+      <trans-unit id="ContextClassesMustBePartialMessageFormat">
+        <source>Derived 'JsonSerializerContext' type '{0}' specifies JSON-serializable types. The type and all containing types must be made partial to kick off source generation.</source>
+        <target state="translated">衍生的 'JsonSerializerContext' 型別 '{0}' 指定了 JSON 可序列化類型。類型和所有包含類型必須設為部份，才可開始產生原始檔。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ContextClassesMustBePartialTitle">
+        <source>Derived 'JsonSerializerContext' types and all containing types must be partial.</source>
+        <target state="translated">衍生的 'JsonSerializerContext' 類型和所有包含類型必須是部份。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="DuplicateTypeNameMessageFormat">
+        <source>There are multiple types named {0}. Source was generated for the first one detected. Use 'JsonSerializableAttribute.TypeInfoPropertyName' to resolve this collision.</source>
+        <target state="translated">有多個名為 {0} 的類型。已為偵測到的第一個項目產生來源。請使用 'JsonSerializableAttribute.TypeInfoPropertyName' 解決此衝突。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="DuplicateTypeNameTitle">
+        <source>Duplicate type name.</source>
+        <target state="translated">重複類型名稱。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="MultipleJsonConstructorAttributeFormat">
+        <source>Type '{0}' has multiple constructors annotated with 'JsonConstructorAttribute'.</source>
+        <target state="new">Type '{0}' has multiple constructors annotated with 'JsonConstructorAttribute'.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="MultipleJsonConstructorAttributeTitle">
+        <source>Type has multiple constructors annotated with JsonConstructorAttribute.</source>
+        <target state="new">Type has multiple constructors annotated with JsonConstructorAttribute.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="TypeNotSupportedMessageFormat">
+        <source>Did not generate serialization metadata for type '{0}'.</source>
+        <target state="translated">未產生類型 '{0}' 的序列化中繼資料。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="TypeNotSupportedTitle">
+        <source>Did not generate serialization metadata for type.</source>
+        <target state="translated">未產生類型的序列化中繼資料。</target>
+        <note />
+      </trans-unit>
+    </body>
+  </file>
+</xliff>

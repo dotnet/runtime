@@ -11,7 +11,7 @@ using Internal.Cryptography;
 
 namespace System.Security.Cryptography.X509Certificates
 {
-    internal class Pkcs10CertificationRequestInfo
+    internal sealed class Pkcs10CertificationRequestInfo
     {
         internal X500DistinguishedName Subject { get; set; }
         internal PublicKey PublicKey { get; set; }

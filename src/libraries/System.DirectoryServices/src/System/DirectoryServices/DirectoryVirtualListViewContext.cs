@@ -11,7 +11,7 @@ namespace System.DirectoryServices
         {
         }
 
-        internal DirectoryVirtualListViewContext(byte[] context)
+        internal DirectoryVirtualListViewContext(byte[]? context)
         {
             if (context == null)
             {

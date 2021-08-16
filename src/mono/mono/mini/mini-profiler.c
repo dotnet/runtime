@@ -356,7 +356,11 @@ mini_profiler_context_get_local (MonoProfilerCallContext *ctx, guint32 pos)
 	if (!info)
 		return NULL;
 
-	return get_variable_buffer (info, &info->locals [pos], &ctx->context);
+	gpointer variable_buffer = get_variable_buffer (info, &info->locals [pos], &ctx->context);
+
+	mono_debug_free_method_jit_info (info);
+
+	return variable_buffer;
 }
 
 gpointer

@@ -71,26 +71,26 @@ namespace System.Diagnostics
             TraceEvent(null, SR.TraceAsTraceSource, TraceEventType.Error, 0, string.Create(length, (message, detailMessage),
             (dst, v) =>
             {
-                ReadOnlySpan<char> prefix = v.message;
+                string prefix = v.message;
                 prefix.CopyTo(dst);
 
                 if (v.detailMessage != null)
                 {
                     dst[prefix.Length] = ' ';
 
-                    ReadOnlySpan<char> detail = v.detailMessage;
+                    string detail = v.detailMessage;
                     detail.CopyTo(dst.Slice(prefix.Length + 1, detail.Length));
                 }
             }));
         }
 
-        public override void TraceEvent(TraceEventCache? eventCache, string source, TraceEventType eventType, int id, string format, params object?[]? args)
+        public override void TraceEvent(TraceEventCache? eventCache, string source, TraceEventType eventType, int id, string? format, params object?[]? args)
         {
             if (Filter != null && !Filter.ShouldTrace(eventCache, source, eventType, id, format, args, null, null))
                 return;
 
             WriteHeader(source, eventType, id, eventCache);
-            WriteEscaped(args != null && args.Length != 0 ? string.Format(CultureInfo.InvariantCulture, format, args) : format);
+            WriteEscaped(args != null && args.Length != 0 ? string.Format(CultureInfo.InvariantCulture, format!, args) : format);
             WriteFooter(eventCache);
         }
 

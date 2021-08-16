@@ -49,7 +49,33 @@ namespace System.Drawing
             EnsureSave(this, filename, null);
         }
 
-        public Bitmap(Stream stream) : this(stream, false) { }
+        public Bitmap(Stream stream) : this(stream, false)
+        {
+        }
+
+        public Bitmap(Type type, string resource) : this(GetResourceStream(type, resource))
+        {
+        }
+
+        private static Stream GetResourceStream(Type type, string resource)
+        {
+            if (type == null)
+            {
+                throw new ArgumentNullException(nameof(type));
+            }
+            if (resource == null)
+            {
+                throw new ArgumentNullException(nameof(resource));
+            }
+
+            Stream? stream = type.Module.Assembly.GetManifestResourceStream(type, resource);
+            if (stream == null)
+            {
+                throw new ArgumentException(SR.Format(SR.ResourceNotFound, type, resource));
+            }
+
+            return stream;
+        }
 
         public Bitmap(int width, int height) : this(width, height, PixelFormat.Format32bppArgb)
         {

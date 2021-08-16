@@ -21,7 +21,22 @@ namespace System.Text.Json.Serialization.Converters
                 // Explicitly disallowing this type provides a clear exception when ctors with
                 // .ctor(SerializationInfo, StreamingContext) signatures are attempted to be used for deserialization.
                 // Invoking such ctors is not safe when used with untrusted user input.
-                type == typeof(SerializationInfo);
+                type == typeof(SerializationInfo) ||
+                type == typeof(IntPtr) ||
+                type == typeof(UIntPtr) ||
+                // DateOnly/TimeOnly support to be added in future releases;
+                // guard against invalid object-based serializations for now.
+                // cf. https://github.com/dotnet/runtime/issues/53539
+                //
+                // For simplicity we elide equivalent checks for targets
+                // that are older than net6.0, since they do not include
+                // DateOnly or TimeOnly.
+#if NET6_0_OR_GREATER
+                type == typeof(DateOnly) ||
+                type == typeof(TimeOnly);
+#else
+                false;
+#endif
         }
 
         public override JsonConverter CreateConverter(Type type, JsonSerializerOptions options)

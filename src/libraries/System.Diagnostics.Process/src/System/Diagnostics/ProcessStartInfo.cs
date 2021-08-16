@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Collections.Specialized;
 using System.ComponentModel;
+using System.Diagnostics.CodeAnalysis;
 using System.Text;
 
 namespace System.Diagnostics
@@ -57,6 +58,7 @@ namespace System.Diagnostics
         /// <devdoc>
         ///     Specifies the set of command line arguments to use when starting the application.
         /// </devdoc>
+        [AllowNull]
         public string Arguments
         {
             get => _arguments ?? string.Empty;
@@ -81,11 +83,9 @@ namespace System.Diagnostics
                 {
                     IDictionary envVars = System.Environment.GetEnvironmentVariables();
 
-#pragma warning disable 0429 // CaseSensitiveEnvironmentVaribles is constant but varies depending on if we build for Unix or Windows
                     _environmentVariables = new DictionaryWrapper(new Dictionary<string, string?>(
                         envVars.Count,
-                        CaseSensitiveEnvironmentVariables ? StringComparer.Ordinal : StringComparer.OrdinalIgnoreCase));
-#pragma warning restore 0429
+                        OperatingSystem.IsWindows() ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal));
 
                     // Manual use of IDictionaryEnumerator instead of foreach to avoid DictionaryEntry box allocations.
                     IDictionaryEnumerator e = envVars.GetEnumerator();
@@ -117,6 +117,7 @@ namespace System.Diagnostics
         /// </devdoc>
         [Editor("System.Diagnostics.Design.StartFileNameEditor, System.Design, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a",
                 "System.Drawing.Design.UITypeEditor, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a")]
+        [AllowNull]
         public string FileName
         {
             get => _fileName ?? string.Empty;
@@ -129,6 +130,7 @@ namespace System.Diagnostics
         /// </devdoc>
         [Editor("System.Diagnostics.Design.WorkingDirectoryEditor, System.Design, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a",
                 "System.Drawing.Design.UITypeEditor, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a")]
+        [AllowNull]
         public string WorkingDirectory
         {
             get => _directory ?? string.Empty;
@@ -138,6 +140,7 @@ namespace System.Diagnostics
         public bool ErrorDialog { get; set; }
         public IntPtr ErrorDialogParentHandle { get; set; }
 
+        [AllowNull]
         public string UserName
         {
             get => _userName ?? string.Empty;
@@ -145,6 +148,7 @@ namespace System.Diagnostics
         }
 
         [DefaultValue("")]
+        [AllowNull]
         public string Verb
         {
             get => _verb ?? string.Empty;

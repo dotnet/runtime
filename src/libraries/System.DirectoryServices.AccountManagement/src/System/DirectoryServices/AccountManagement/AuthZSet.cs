@@ -13,7 +13,7 @@ using System.Runtime.CompilerServices;
 
 namespace System.DirectoryServices.AccountManagement
 {
-    internal class AuthZSet : ResultSet
+    internal sealed class AuthZSet : ResultSet
     {
         internal AuthZSet(
                     byte[] userSid,
@@ -566,8 +566,9 @@ namespace System.DirectoryServices.AccountManagement
         //
         private sealed class SafeMemoryPtr : SafeHandle
         {
-            private SafeMemoryPtr() : base(IntPtr.Zero, true)
-            { }
+            public SafeMemoryPtr() : base(IntPtr.Zero, true)
+            {
+            }
 
             internal SafeMemoryPtr(IntPtr handle) : base(IntPtr.Zero, true)
             {

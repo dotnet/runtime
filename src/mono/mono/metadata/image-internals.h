@@ -9,11 +9,8 @@
 #include <mono/metadata/image.h>
 #include <mono/metadata/loader-internals.h>
 
-char *
-mono_image_get_name_with_culture_if_needed (MonoImage *image);
-
 MonoImage*
-mono_image_loaded_internal (MonoAssemblyLoadContext *alc, const char *name, mono_bool refonly);
+mono_image_loaded_internal (MonoAssemblyLoadContext *alc, const char *name);
 
 MonoImage*
 mono_image_load_file_for_image_checked (MonoImage *image, int fileidx, MonoError *error);
@@ -22,12 +19,6 @@ MonoImage*
 mono_image_load_module_checked (MonoImage *image, int idx, MonoError *error);
 
 MonoImage *
-mono_image_open_a_lot (MonoAssemblyLoadContext *alc, const char *fname, MonoImageOpenStatus *status, gboolean refonly, gboolean load_from_context);
-
-gboolean
-mono_is_problematic_image (MonoImage *image);
-
-gboolean
-mono_is_problematic_file (const char *fname);
+mono_image_open_a_lot (MonoAssemblyLoadContext *alc, const char *fname, MonoImageOpenStatus *status, gboolean load_from_context);
 
 #endif /* __MONO_METADATA_IMAGE_INTERNALS_H__ */

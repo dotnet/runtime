@@ -10,7 +10,7 @@ namespace System.DirectoryServices.AccountManagement
 #if TESTHOOK
     public class PasswordInfo
 #else
-    internal class PasswordInfo
+    internal sealed class PasswordInfo
 #endif
     {
         //

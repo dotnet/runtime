@@ -18,44 +18,55 @@ public class SharedExceptions
 
     public void RunTest()
     {
-        CreateAndThrow();        
+        CreateAndThrow();
     }
 
     public void CreateAndThrow()
     {
-    	string currStack;
-		
+        string currStack;
+
         try
         {
-        	throw new Exception();
+            throw new Exception();
         }
-	catch(Exception e)
-	{
-		currStack = e.StackTrace;
-	}
-	
+        catch(Exception e)
+        {
+            currStack = e.StackTrace;
+        }
+
         try
-        {            
+        {
             Guid[] g = new Guid[Int32.MaxValue];
         }
         catch(OutOfMemoryException e)
         {
             retVal = 100;
-			
-            Console.WriteLine("Caught OOM");     
 
-            if(e.StackTrace.ToString().Substring(0, e.StackTrace.Length - 8) != currStack.Substring(0, currStack.Length - 8))
-            {	
-            	Console.WriteLine("Actual Exception Stack Trace:");
+            Console.WriteLine("Caught OOM");
+
+            string oomStack = e.StackTrace;
+            string expectedStack = currStack;
+
+            if (oomStack.IndexOf(':') != -1)
+            {
+                oomStack = oomStack.Substring(0, oomStack.IndexOf(':') - 1);
+            }
+
+            if (expectedStack.IndexOf(':') != -1)
+            {
+                expectedStack = expectedStack.Substring(0, expectedStack.IndexOf(':') - 1);
+            }
+
+            if (oomStack != expectedStack)
+            {
+                Console.WriteLine("Actual Exception Stack Trace:");
                 Console.WriteLine(e.StackTrace);
                 Console.WriteLine();				
-            	Console.WriteLine("Expected Stack Trace:");
-		        Console.WriteLine(currStack.ToString());
+                Console.WriteLine("Expected Stack Trace:");
+                Console.WriteLine(currStack.ToString());
                 retVal = 50;
             }
         }
-            
     }
-
 }
 

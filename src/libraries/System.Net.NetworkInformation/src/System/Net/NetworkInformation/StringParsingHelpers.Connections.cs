@@ -249,12 +249,11 @@ namespace System.Net.NetworkInformation
                 throw ExceptionHelper.CreateForParseFailure();
             }
 
-            string remoteAddressString = localAddressAndPort.Substring(0, indexOfColon);
-            IPAddress localIPAddress = ParseHexIPAddress(remoteAddressString);
+            IPAddress localIPAddress = ParseHexIPAddress(localAddressAndPort.AsSpan(0, indexOfColon));
 
-            string portString = localAddressAndPort.Substring(indexOfColon + 1, localAddressAndPort.Length - (indexOfColon + 1));
+            ReadOnlySpan<char> portSpan = localAddressAndPort.AsSpan(indexOfColon + 1, localAddressAndPort.Length - (indexOfColon + 1));
             int localPort;
-            if (!int.TryParse(portString, NumberStyles.HexNumber, CultureInfo.InvariantCulture, out localPort))
+            if (!int.TryParse(portSpan, NumberStyles.HexNumber, CultureInfo.InvariantCulture, out localPort))
             {
                 throw ExceptionHelper.CreateForParseFailure();
             }
@@ -270,12 +269,11 @@ namespace System.Net.NetworkInformation
                 throw ExceptionHelper.CreateForParseFailure();
             }
 
-            string remoteAddressString = colonSeparatedAddress.Substring(0, indexOfColon);
-            IPAddress ipAddress = ParseHexIPAddress(remoteAddressString);
+            IPAddress ipAddress = ParseHexIPAddress(colonSeparatedAddress.AsSpan(0, indexOfColon));
 
-            string portString = colonSeparatedAddress.Substring(indexOfColon + 1, colonSeparatedAddress.Length - (indexOfColon + 1));
+            ReadOnlySpan<char> portSpan = colonSeparatedAddress.AsSpan(indexOfColon + 1, colonSeparatedAddress.Length - (indexOfColon + 1));
             int port;
-            if (!int.TryParse(portString, NumberStyles.HexNumber, CultureInfo.InvariantCulture, out port))
+            if (!int.TryParse(portSpan, NumberStyles.HexNumber, CultureInfo.InvariantCulture, out port))
             {
                 throw ExceptionHelper.CreateForParseFailure();
             }
@@ -289,7 +287,7 @@ namespace System.Net.NetworkInformation
             return Interop.Sys.MapTcpState((int)state);
         }
 
-        internal static IPAddress ParseHexIPAddress(string remoteAddressString)
+        internal static IPAddress ParseHexIPAddress(ReadOnlySpan<char> remoteAddressString)
         {
             if (remoteAddressString.Length <= 8) // IPv4 Address
             {
@@ -307,7 +305,7 @@ namespace System.Net.NetworkInformation
 
         // Simply converts the hex string into a long and uses the IPAddress(long) constructor.
         // Strings passed to this method must be 8 or less characters in length (32-bit address).
-        private static IPAddress ParseIPv4HexString(string hexAddress)
+        private static IPAddress ParseIPv4HexString(ReadOnlySpan<char> hexAddress)
         {
             IPAddress ipAddress;
             long addressValue;
@@ -328,11 +326,11 @@ namespace System.Net.NetworkInformation
         //      It's represenation in /proc/net/tcp6: 00-00-80-FE  00-00-00-00  FF-5D-15-02  02-04-00-FE
         //                                             (dashes and spaces added above for readability)
         // Strings passed to this must be 32 characters in length.
-        private static IPAddress ParseIPv6HexString(string hexAddress, bool isNetworkOrder = false)
+        private static IPAddress ParseIPv6HexString(ReadOnlySpan<char> hexAddress, bool isNetworkOrder = false)
         {
             Debug.Assert(hexAddress.Length == 32);
-            byte[] addressBytes = new byte[16];
-            if (isNetworkOrder)
+            Span<byte> addressBytes = stackalloc byte[16];
+            if (isNetworkOrder || !BitConverter.IsLittleEndian)
             {
                 for (int i = 0; i < 16; i++)
                 {

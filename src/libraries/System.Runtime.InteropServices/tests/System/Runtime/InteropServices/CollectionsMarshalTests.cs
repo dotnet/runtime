@@ -4,6 +4,8 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.CompilerServices;
+
 using Xunit;
 
 namespace System.Runtime.InteropServices.Tests
@@ -142,9 +144,366 @@ namespace System.Runtime.InteropServices.Tests
             }
         }
 
+        [Fact]
+        public void GetValueRefOrNullRefValueType()
+        {
+            var dict = new Dictionary<int, Struct>
+            {
+                {  1, default },
+                {  2, default }
+            };
+
+            Assert.Equal(2, dict.Count);
+
+            Assert.Equal(0, dict[1].Value);
+            Assert.Equal(0, dict[1].Property);
+
+            var itemVal = dict[1];
+            itemVal.Value = 1;
+            itemVal.Property = 2;
+
+            // Does not change values in dictionary
+            Assert.Equal(0, dict[1].Value);
+            Assert.Equal(0, dict[1].Property);
+
+            CollectionsMarshal.GetValueRefOrNullRef(dict, 1).Value = 3;
+            CollectionsMarshal.GetValueRefOrNullRef(dict, 1).Property = 4;
+
+            Assert.Equal(3, dict[1].Value);
+            Assert.Equal(4, dict[1].Property);
+
+            ref var itemRef = ref CollectionsMarshal.GetValueRefOrNullRef(dict, 2);
+
+            Assert.Equal(0, itemRef.Value);
+            Assert.Equal(0, itemRef.Property);
+
+            itemRef.Value = 5;
+            itemRef.Property = 6;
+
+            Assert.Equal(5, itemRef.Value);
+            Assert.Equal(6, itemRef.Property);
+            Assert.Equal(dict[2].Value, itemRef.Value);
+            Assert.Equal(dict[2].Property, itemRef.Property);
+
+            itemRef = new() { Value = 7, Property = 8 };
+
+            Assert.Equal(7, itemRef.Value);
+            Assert.Equal(8, itemRef.Property);
+            Assert.Equal(dict[2].Value, itemRef.Value);
+            Assert.Equal(dict[2].Property, itemRef.Property);
+
+            // Check for null refs
+
+            Assert.True(Unsafe.IsNullRef(ref CollectionsMarshal.GetValueRefOrNullRef(dict, 3)));
+            Assert.Throws<NullReferenceException>(() => CollectionsMarshal.GetValueRefOrNullRef(dict, 3).Value = 9);
+
+            Assert.Equal(2, dict.Count);
+        }
+
+        [Fact]
+        public void GetValueRefOrNullRefClass()
+        {
+            var dict = new Dictionary<int, IntAsObject>
+            {
+                {  1, new() },
+                {  2, new() }
+            };
+
+            Assert.Equal(2, dict.Count);
+
+            Assert.Equal(0, dict[1].Value);
+            Assert.Equal(0, dict[1].Property);
+
+            var itemVal = dict[1];
+            itemVal.Value = 1;
+            itemVal.Property = 2;
+
+            // Does change values in dictionary
+            Assert.Equal(1, dict[1].Value);
+            Assert.Equal(2, dict[1].Property);
+
+            CollectionsMarshal.GetValueRefOrNullRef(dict, 1).Value = 3;
+            CollectionsMarshal.GetValueRefOrNullRef(dict, 1).Property = 4;
+
+            Assert.Equal(3, dict[1].Value);
+            Assert.Equal(4, dict[1].Property);
+
+            ref var itemRef = ref CollectionsMarshal.GetValueRefOrNullRef(dict, 2);
+
+            Assert.Equal(0, itemRef.Value);
+            Assert.Equal(0, itemRef.Property);
+
+            itemRef.Value = 5;
+            itemRef.Property = 6;
+
+            Assert.Equal(5, itemRef.Value);
+            Assert.Equal(6, itemRef.Property);
+            Assert.Equal(dict[2].Value, itemRef.Value);
+            Assert.Equal(dict[2].Property, itemRef.Property);
+
+            itemRef = new() { Value = 7, Property = 8 };
+
+            Assert.Equal(7, itemRef.Value);
+            Assert.Equal(8, itemRef.Property);
+            Assert.Equal(dict[2].Value, itemRef.Value);
+            Assert.Equal(dict[2].Property, itemRef.Property);
+
+            // Check for null refs
+
+            Assert.True(Unsafe.IsNullRef(ref CollectionsMarshal.GetValueRefOrNullRef(dict, 3)));
+            Assert.Throws<NullReferenceException>(() => CollectionsMarshal.GetValueRefOrNullRef(dict, 3).Value = 9);
+
+            Assert.Equal(2, dict.Count);
+        }
+
+        [Fact]
+        public void GetValueRefOrNullRefLinkBreaksOnResize()
+        {
+            var dict = new Dictionary<int, Struct>
+            {
+                {  1, new() }
+            };
+
+            Assert.Equal(1, dict.Count);
+
+            ref var itemRef = ref CollectionsMarshal.GetValueRefOrNullRef(dict, 1);
+
+            Assert.Equal(0, itemRef.Value);
+            Assert.Equal(0, itemRef.Property);
+
+            itemRef.Value = 1;
+            itemRef.Property = 2;
+
+            Assert.Equal(1, itemRef.Value);
+            Assert.Equal(2, itemRef.Property);
+            Assert.Equal(dict[1].Value, itemRef.Value);
+            Assert.Equal(dict[1].Property, itemRef.Property);
+
+            // Resize
+            dict.EnsureCapacity(100);
+            for (int i = 2; i <= 50; i++)
+            {
+                dict.Add(i, new());
+            }
+
+            itemRef.Value = 3;
+            itemRef.Property = 4;
+
+            Assert.Equal(3, itemRef.Value);
+            Assert.Equal(4, itemRef.Property);
+
+            // Check connection broken
+            Assert.NotEqual(dict[1].Value, itemRef.Value);
+            Assert.NotEqual(dict[1].Property, itemRef.Property);
+
+            Assert.Equal(50, dict.Count);
+        }
+
+        [Fact]
+        public void GetValueRefOrAddDefaultValueType()
+        {
+            // This test is the same as the one for GetValueRefOrNullRef, but it uses
+            // GetValueRefOrAddDefault instead, and also checks for incorrect additions.
+            // The two APIs should behave the same when values already exist.
+            var dict = new Dictionary<int, Struct>
+            {
+                {  1, default },
+                {  2, default }
+            };
+
+            Assert.Equal(2, dict.Count);
+
+            Assert.Equal(0, dict[1].Value);
+            Assert.Equal(0, dict[1].Property);
+
+            var itemVal = dict[1];
+            itemVal.Value = 1;
+            itemVal.Property = 2;
+
+            // Does not change values in dictionary
+            Assert.Equal(0, dict[1].Value);
+            Assert.Equal(0, dict[1].Property);
+
+            CollectionsMarshal.GetValueRefOrAddDefault(dict, 1, out bool exists).Value = 3;
+
+            Assert.True(exists);
+            Assert.Equal(2, dict.Count);
+
+            CollectionsMarshal.GetValueRefOrAddDefault(dict, 1, out exists).Property = 4;
+
+            Assert.True(exists);
+            Assert.Equal(2, dict.Count);
+            Assert.Equal(3, dict[1].Value);
+            Assert.Equal(4, dict[1].Property);
+
+            ref var itemRef = ref CollectionsMarshal.GetValueRefOrAddDefault(dict, 2, out exists);
+
+            Assert.True(exists);
+            Assert.Equal(2, dict.Count);
+            Assert.Equal(0, itemRef.Value);
+            Assert.Equal(0, itemRef.Property);
+
+            itemRef.Value = 5;
+            itemRef.Property = 6;
+
+            Assert.Equal(5, itemRef.Value);
+            Assert.Equal(6, itemRef.Property);
+            Assert.Equal(dict[2].Value, itemRef.Value);
+            Assert.Equal(dict[2].Property, itemRef.Property);
+
+            itemRef = new() { Value = 7, Property = 8 };
+
+            Assert.Equal(7, itemRef.Value);
+            Assert.Equal(8, itemRef.Property);
+            Assert.Equal(dict[2].Value, itemRef.Value);
+            Assert.Equal(dict[2].Property, itemRef.Property);
+
+            // Check for correct additions
+
+            ref var entry3Ref = ref CollectionsMarshal.GetValueRefOrAddDefault(dict, 3, out exists);
+
+            Assert.False(exists);
+            Assert.Equal(3, dict.Count);
+            Assert.False(Unsafe.IsNullRef(ref entry3Ref));
+            Assert.True(EqualityComparer<Struct>.Default.Equals(entry3Ref, default));
+
+            entry3Ref.Property = 42;
+            entry3Ref.Value = 12345;
+
+            var value3 = dict[3];
+
+            Assert.Equal(42, value3.Property);
+            Assert.Equal(12345, value3.Value);
+        }
+
+        [Fact]
+        public void GetValueRefOrAddDefaultClass()
+        {
+            var dict = new Dictionary<int, IntAsObject>
+            {
+                {  1, new() },
+                {  2, new() }
+            };
+
+            Assert.Equal(2, dict.Count);
+
+            Assert.Equal(0, dict[1].Value);
+            Assert.Equal(0, dict[1].Property);
+
+            var itemVal = dict[1];
+            itemVal.Value = 1;
+            itemVal.Property = 2;
+
+            // Does change values in dictionary
+            Assert.Equal(1, dict[1].Value);
+            Assert.Equal(2, dict[1].Property);
+
+            CollectionsMarshal.GetValueRefOrAddDefault(dict, 1, out bool exists).Value = 3;
+
+            Assert.True(exists);
+            Assert.Equal(2, dict.Count);
+
+            CollectionsMarshal.GetValueRefOrAddDefault(dict, 1, out exists).Property = 4;
+
+            Assert.True(exists);
+            Assert.Equal(2, dict.Count);
+            Assert.Equal(3, dict[1].Value);
+            Assert.Equal(4, dict[1].Property);
+
+            ref var itemRef = ref CollectionsMarshal.GetValueRefOrAddDefault(dict, 2, out exists);
+
+            Assert.True(exists);
+            Assert.Equal(2, dict.Count);
+            Assert.Equal(0, itemRef.Value);
+            Assert.Equal(0, itemRef.Property);
+
+            itemRef.Value = 5;
+            itemRef.Property = 6;
+
+            Assert.Equal(5, itemRef.Value);
+            Assert.Equal(6, itemRef.Property);
+            Assert.Equal(dict[2].Value, itemRef.Value);
+            Assert.Equal(dict[2].Property, itemRef.Property);
+
+            itemRef = new() { Value = 7, Property = 8 };
+
+            Assert.Equal(7, itemRef.Value);
+            Assert.Equal(8, itemRef.Property);
+            Assert.Equal(dict[2].Value, itemRef.Value);
+            Assert.Equal(dict[2].Property, itemRef.Property);
+
+            // Check for correct additions
+
+            ref var entry3Ref = ref CollectionsMarshal.GetValueRefOrAddDefault(dict, 3, out exists);
+
+            Assert.False(exists);
+            Assert.Equal(3, dict.Count);
+            Assert.False(Unsafe.IsNullRef(ref entry3Ref));
+            Assert.Null(entry3Ref);
+
+            entry3Ref = new() { Value = 12345, Property = 42 };
+
+            var value3 = dict[3];
+
+            Assert.Equal(42, value3.Property);
+            Assert.Equal(12345, value3.Value);
+        }
+
+        [Fact]
+        public void GetValueRefOrAddDefaultLinkBreaksOnResize()
+        {
+            var dict = new Dictionary<int, Struct>
+            {
+                {  1, new() }
+            };
+
+            Assert.Equal(1, dict.Count);
+
+            ref var itemRef = ref CollectionsMarshal.GetValueRefOrAddDefault(dict, 1, out bool exists);
+
+            Assert.True(exists);
+            Assert.Equal(1, dict.Count);
+            Assert.Equal(0, itemRef.Value);
+            Assert.Equal(0, itemRef.Property);
+
+            itemRef.Value = 1;
+            itemRef.Property = 2;
+
+            Assert.Equal(1, itemRef.Value);
+            Assert.Equal(2, itemRef.Property);
+            Assert.Equal(dict[1].Value, itemRef.Value);
+            Assert.Equal(dict[1].Property, itemRef.Property);
+
+            // Resize
+            dict.EnsureCapacity(100);
+            for (int i = 2; i <= 50; i++)
+            {
+                dict.Add(i, new());
+            }
+
+            itemRef.Value = 3;
+            itemRef.Property = 4;
+
+            Assert.Equal(3, itemRef.Value);
+            Assert.Equal(4, itemRef.Property);
+
+            // Check connection broken
+            Assert.NotEqual(dict[1].Value, itemRef.Value);
+            Assert.NotEqual(dict[1].Property, itemRef.Property);
+
+            Assert.Equal(50, dict.Count);
+        }
+
+        private struct Struct
+        {
+            public int Value;
+            public int Property { get; set; }
+        }
+
         private class IntAsObject
         {
             public int Value;
+            public int Property { get; set; }
         }
     }
 }

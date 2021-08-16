@@ -4,16 +4,11 @@
 using System.Buffers;
 using System.ComponentModel;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text.Unicode;
-
-#if NETCOREAPP
-using System.Runtime.Intrinsics;
-using System.Runtime.Intrinsics.X86;
-using System.Runtime.Intrinsics.Arm;
-#endif
 
 namespace System.Text.Encodings.Web
 {
@@ -26,27 +21,7 @@ namespace System.Text.Encodings.Web
     /// </remarks>
     public abstract class TextEncoder
     {
-        // Fast cache for Ascii
-        private readonly byte[][] _asciiEscape = new byte[0x80][];
-
-        private volatile bool _isAsciiCacheInitialized;
-        private AsciiNeedsEscapingData _asciiNeedsEscaping;
-
-#if NETCOREAPP
-        private Vector128<sbyte> _bitMaskLookupAsciiNeedsEscaping;
-#endif
-
-        // Keep a reference to Array.Empty<byte> as this is used as a singleton for comparisons
-        // and there is no guarantee that Array.Empty<byte>() will always be the same instance.
-        private static readonly byte[] s_noEscape = Array.Empty<byte>();
-
-        // The following pragma disables a warning complaining about non-CLS compliant members being abstract,
-        // and wants me to mark the type as non-CLS compliant.
-        // It is true that this type cannot be extended by all CLS compliant languages.
-        // Having said that, if I marked the type as non-CLS all methods that take it as parameter will now have to be marked CLSCompliant(false),
-        // yet consumption of concrete encoders is totally CLS compliant,
-        // as it?s mainly to be done by calling helper methods in TextEncoderExtensions class,
-        // and so I think the warning is a bit too aggressive.
+        private const int EncodeStartingOutputBufferSize = 1024; // bytes or chars, depending
 
         /// <summary>
         /// Encodes a Unicode scalar into a buffer.
@@ -59,10 +34,62 @@ namespace System.Text.Encodings.Web
         /// <remarks>This method is seldom called directly. One of the TextEncoder.Encode overloads should be used instead.
         /// Implementations of <see cref="TextEncoder"/> need to be thread safe and stateless.
         /// </remarks>
-#pragma warning disable 3011
         [CLSCompliant(false)]
         [EditorBrowsable(EditorBrowsableState.Never)]
         public unsafe abstract bool TryEncodeUnicodeScalar(int unicodeScalar, char* buffer, int bufferLength, out int numberOfCharactersWritten);
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private unsafe bool TryEncodeUnicodeScalar(uint unicodeScalar, Span<char> buffer, out int charsWritten)
+        {
+            fixed (char* pBuffer = &MemoryMarshal.GetReference(buffer))
+            {
+                return TryEncodeUnicodeScalar((int)unicodeScalar, pBuffer, buffer.Length, out charsWritten);
+            }
+        }
+
+        private bool TryEncodeUnicodeScalarUtf8(uint unicodeScalar, Span<char> utf16ScratchBuffer, Span<byte> utf8Destination, out int bytesWritten)
+        {
+            if (!TryEncodeUnicodeScalar(unicodeScalar, utf16ScratchBuffer, out int charsWritten))
+            {
+                // We really don't expect any encoder to exceed 24 escaped chars per input scalar.
+                // If this happens, throw an exception and we can figure out if we want to support it
+                // in the future.
+                ThrowArgumentException_MaxOutputCharsPerInputChar();
+            }
+
+            // Transcode chars -> bytes one at a time.
+
+            utf16ScratchBuffer = utf16ScratchBuffer.Slice(0, charsWritten);
+            int dstIdx = 0;
+
+            while (!utf16ScratchBuffer.IsEmpty)
+            {
+                if (Rune.DecodeFromUtf16(utf16ScratchBuffer, out Rune nextScalarValue, out int scalarUtf16CodeUnitCount) != OperationStatus.Done)
+                {
+                    // Wrote bad UTF-16 data, we cannot transcode to UTF-8.
+                    ThrowArgumentException_MaxOutputCharsPerInputChar();
+                }
+
+                uint utf8lsb = (uint)UnicodeHelpers.GetUtf8RepresentationForScalarValue((uint)nextScalarValue.Value);
+                do
+                {
+                    if (SpanUtility.IsValidIndex(utf8Destination, dstIdx))
+                    {
+                        utf8Destination[dstIdx++] = (byte)utf8lsb;
+                    }
+                    else
+                    {
+                        bytesWritten = 0; // ran out of space in the destination
+                        return false;
+                    }
+                } while ((utf8lsb >>= 8) != 0);
+
+                utf16ScratchBuffer = utf16ScratchBuffer.Slice(scalarUtf16CodeUnitCount);
+            }
+
+            bytesWritten = dstIdx;
+            return true;
+        }
 
         // all subclasses have the same implementation of this method.
         // but this cannot be made virtual, because it will cause a virtual call to Encodes, and it destroys perf, i.e. makes common scenario 2x slower
@@ -77,7 +104,6 @@ namespace System.Text.Encodings.Web
         [CLSCompliant(false)]
         [EditorBrowsable(EditorBrowsableState.Never)]
         public unsafe abstract int FindFirstCharacterToEncode(char* text, int textLength);
-#pragma warning restore
 
         /// <summary>
         /// Determines if a given Unicode scalar will be encoded.
@@ -102,159 +128,60 @@ namespace System.Text.Encodings.Web
         /// <returns>Encoded string.</returns>
         public virtual string Encode(string value)
         {
-            if (value == null)
+            if (value is null)
             {
-                throw new ArgumentNullException(nameof(value));
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.value);
             }
 
-            unsafe
+            int indexOfFirstCharToEncode = FindFirstCharacterToEncode(value.AsSpan());
+            if (indexOfFirstCharToEncode < 0)
             {
-                fixed (char* valuePointer = value)
-                {
-                    int firstCharacterToEncode = FindFirstCharacterToEncode(valuePointer, value.Length);
-
-                    if (firstCharacterToEncode == -1)
-                    {
-                        return value;
-                    }
-
-                    int bufferSize = MaxOutputCharactersPerInputCharacter * value.Length;
-
-                    string result;
-                    if (bufferSize < 1024)
-                    {
-                        char* wholebuffer = stackalloc char[bufferSize];
-                        OperationStatus status = EncodeIntoBuffer(wholebuffer, bufferSize, valuePointer, value.Length, out int _, out int totalWritten, firstCharacterToEncode);
-                        if (status != OperationStatus.Done)
-                        {
-                            ThrowArgumentException_MaxOutputCharsPerInputChar();
-                        }
-
-                        result = new string(wholebuffer, 0, totalWritten);
-                    }
-                    else
-                    {
-                        char[] wholebuffer = new char[bufferSize];
-                        fixed (char* buffer = &wholebuffer[0])
-                        {
-                            OperationStatus status = EncodeIntoBuffer(buffer, bufferSize, valuePointer, value.Length, out int _, out int totalWritten, firstCharacterToEncode);
-                            if (status != OperationStatus.Done)
-                            {
-                                ThrowArgumentException_MaxOutputCharsPerInputChar();
-                            }
-
-                            result = new string(wholebuffer, 0, totalWritten);
-                        }
-                    }
-
-                    return result;
-                }
+                return value; // shortcut: there's no work to perform
             }
+
+            // We optimize for the data having no "requires encoding" chars, so keep the
+            // real encoding logic out of the fast path.
+
+            return EncodeToNewString(value.AsSpan(), indexOfFirstCharToEncode);
         }
 
-        private unsafe OperationStatus EncodeIntoBuffer(
-            char* buffer,
-            int bufferLength,
-            char* value,
-            int valueLength,
-            out int charsConsumed,
-            out int charsWritten,
-            int firstCharacterToEncode,
-            bool isFinalBlock = true)
+        private string EncodeToNewString(ReadOnlySpan<char> value, int indexOfFirstCharToEncode)
         {
-            Debug.Assert(value != null);
-            Debug.Assert(firstCharacterToEncode >= 0);
+            ReadOnlySpan<char> remainingInput = value.Slice(indexOfFirstCharToEncode);
+            ValueStringBuilder stringBuilder = new ValueStringBuilder(stackalloc char[EncodeStartingOutputBufferSize]);
 
-            char* originalBuffer = buffer;
-            charsWritten = 0;
+#if !NETCOREAPP
+            // Can't call string.Concat later in the method, so memcpy now.
+            stringBuilder.Append(value.Slice(0, indexOfFirstCharToEncode));
+#endif
 
-            if (firstCharacterToEncode > 0)
+            // On each iteration of the main loop, we'll make sure we have at least this many chars left in the
+            // destination buffer. This should prevent us from making very chatty calls where we only make progress
+            // one char at a time.
+            int minBufferBumpEachIteration = Math.Max(MaxOutputCharactersPerInputCharacter, EncodeStartingOutputBufferSize);
+
+            do
             {
-                Debug.Assert(firstCharacterToEncode <= valueLength);
-                Buffer.MemoryCopy(source: value,
-                    destination: buffer,
-                    destinationSizeInBytes: sizeof(char) * bufferLength,
-                    sourceBytesToCopy: sizeof(char) * firstCharacterToEncode);
-
-                charsWritten += firstCharacterToEncode;
-                bufferLength -= firstCharacterToEncode;
-                buffer += firstCharacterToEncode;
-            }
-
-            int valueIndex = firstCharacterToEncode;
-
-            char firstChar = value[valueIndex];
-            char secondChar = firstChar;
-            bool wasSurrogatePair = false;
-
-            // this loop processes character pairs (in case they are surrogates).
-            // there is an if block below to process single last character.
-            int secondCharIndex;
-            for (secondCharIndex = valueIndex + 1; secondCharIndex < valueLength; secondCharIndex++)
-            {
-                if (!wasSurrogatePair)
+                // AppendSpan mutates the VSB length to include the newly-added span. This potentially overallocates.
+                Span<char> destBuffer = stringBuilder.AppendSpan(Math.Max(remainingInput.Length, minBufferBumpEachIteration));
+                EncodeCore(remainingInput, destBuffer, out int charsConsumedJustNow, out int charsWrittenJustNow, isFinalBlock: true);
+                if (charsWrittenJustNow == 0 || (uint)charsWrittenJustNow > (uint)destBuffer.Length)
                 {
-                    firstChar = secondChar;
+                    ThrowArgumentException_MaxOutputCharsPerInputChar(); // couldn't make forward progress or returned bogus data
                 }
-                else
-                {
-                    firstChar = value[secondCharIndex - 1];
-                }
+                remainingInput = remainingInput.Slice(charsConsumedJustNow);
+                // It's likely we didn't populate the entire span. If this is the case, adjust the VSB length
+                // to reflect that there's unused buffer at the end of the VSB instance.
+                stringBuilder.Length -= destBuffer.Length - charsWrittenJustNow;
+            } while (!remainingInput.IsEmpty);
 
-                secondChar = value[secondCharIndex];
-
-                if (!WillEncode(firstChar))
-                {
-                    wasSurrogatePair = false;
-                    *buffer = firstChar;
-                    buffer++;
-                    bufferLength--;
-                    charsWritten++;
-                }
-                else
-                {
-                    int nextScalar = UnicodeHelpers.GetScalarValueFromUtf16(firstChar, secondChar, out wasSurrogatePair, out bool _);
-                    if (!TryEncodeUnicodeScalar(nextScalar, buffer, bufferLength, out int charsWrittenThisTime))
-                    {
-                        charsConsumed = (int)(originalBuffer - buffer);
-                        return OperationStatus.DestinationTooSmall;
-                    }
-
-                    if (wasSurrogatePair)
-                    {
-                        secondCharIndex++;
-                    }
-
-                    buffer += charsWrittenThisTime;
-                    bufferLength -= charsWrittenThisTime;
-                    charsWritten += charsWrittenThisTime;
-                }
-            }
-
-            if (secondCharIndex == valueLength)
-            {
-                firstChar = value[valueLength - 1];
-                int nextScalar = UnicodeHelpers.GetScalarValueFromUtf16(firstChar, null, out wasSurrogatePair, out bool needMoreData);
-                if (!isFinalBlock && needMoreData)
-                {
-                    Debug.Assert(wasSurrogatePair == false);
-                    charsConsumed = (int)(buffer - originalBuffer);
-                    return OperationStatus.NeedMoreData;
-                }
-
-                if (!TryEncodeUnicodeScalar(nextScalar, buffer, bufferLength, out int charsWrittenThisTime))
-                {
-                    charsConsumed = (int)(buffer - originalBuffer);
-                    return OperationStatus.DestinationTooSmall;
-                }
-
-                buffer += charsWrittenThisTime;
-                bufferLength -= charsWrittenThisTime;
-                charsWritten += charsWrittenThisTime;
-            }
-
-            charsConsumed = valueLength;
-            return OperationStatus.Done;
+#if NETCOREAPP
+            string retVal = string.Concat(value.Slice(0, indexOfFirstCharToEncode), stringBuilder.AsSpan());
+            stringBuilder.Dispose();
+            return retVal;
+#else
+            return stringBuilder.ToString();
+#endif
         }
 
         /// <summary>
@@ -286,37 +213,18 @@ namespace System.Text.Encodings.Web
             }
             ValidateRanges(startIndex, characterCount, actualInputLength: value.Length);
 
-            unsafe
+            int indexOfFirstCharToEncode = FindFirstCharacterToEncode(value.AsSpan(startIndex, characterCount));
+            if (indexOfFirstCharToEncode < 0)
             {
-                fixed (char* valuePointer = value)
-                {
-                    char* substring = valuePointer + startIndex;
-                    int firstIndexToEncode = FindFirstCharacterToEncode(substring, characterCount);
+                indexOfFirstCharToEncode = characterCount;
+            }
 
-                    if (firstIndexToEncode == -1) // nothing to encode;
-                    {
-                        if (startIndex == 0 && characterCount == value.Length) // write whole string
-                        {
-                            output.Write(value);
-                            return;
-                        }
-                        for (int i = 0; i < characterCount; i++) // write substring
-                        {
-                            output.Write(*substring);
-                            substring++;
-                        }
-                        return;
-                    }
+            // memcpy all characters that don't require encoding, then encode any remaining chars
 
-                    // write prefix, then encode
-                    for (int i = 0; i < firstIndexToEncode; i++)
-                    {
-                        output.Write(*substring);
-                        substring++;
-                    }
-
-                    EncodeCore(output, substring, characterCount - firstIndexToEncode);
-                }
+            output.WritePartialString(value, startIndex, indexOfFirstCharToEncode);
+            if (indexOfFirstCharToEncode != characterCount)
+            {
+                EncodeCore(output, value.AsSpan(startIndex + indexOfFirstCharToEncode, characterCount - indexOfFirstCharToEncode));
             }
         }
 
@@ -339,37 +247,16 @@ namespace System.Text.Encodings.Web
             }
             ValidateRanges(startIndex, characterCount, actualInputLength: value.Length);
 
-            unsafe
+            int indexOfFirstCharToEncode = FindFirstCharacterToEncode(value.AsSpan(startIndex, characterCount));
+            if (indexOfFirstCharToEncode < 0)
             {
-                fixed (char* valuePointer = value)
-                {
-                    char* substring = valuePointer + startIndex;
-                    int firstIndexToEncode = FindFirstCharacterToEncode(substring, characterCount);
+                indexOfFirstCharToEncode = characterCount;
+            }
+            output.Write(value, startIndex, indexOfFirstCharToEncode);
 
-                    if (firstIndexToEncode == -1) // nothing to encode;
-                    {
-                        if (startIndex == 0 && characterCount == value.Length) // write whole string
-                        {
-                            output.Write(value);
-                            return;
-                        }
-                        for (int i = 0; i < characterCount; i++) // write substring
-                        {
-                            output.Write(*substring);
-                            substring++;
-                        }
-                        return;
-                    }
-
-                    // write prefix, then encode
-                    for (int i = 0; i < firstIndexToEncode; i++)
-                    {
-                        output.Write(*substring);
-                        substring++;
-                    }
-
-                    EncodeCore(output, substring, characterCount - firstIndexToEncode);
-                }
+            if (indexOfFirstCharToEncode != characterCount)
+            {
+                EncodeCore(output, value.AsSpan(startIndex + indexOfFirstCharToEncode, characterCount - indexOfFirstCharToEncode));
             }
         }
 
@@ -385,184 +272,122 @@ namespace System.Text.Encodings.Web
         /// <see langword="false"/> if there is no further source data that needs to be encoded.</param>
         /// <returns>An <see cref="OperationStatus"/> describing the result of the encoding operation.</returns>
         /// <remarks>The buffers <paramref name="utf8Source"/> and <paramref name="utf8Destination"/> must not overlap.</remarks>
-        public unsafe virtual OperationStatus EncodeUtf8(
+        public virtual OperationStatus EncodeUtf8(
             ReadOnlySpan<byte> utf8Source,
             Span<byte> utf8Destination,
             out int bytesConsumed,
             out int bytesWritten,
             bool isFinalBlock = true)
         {
+            // The Encode method is intended to be called in a loop, potentially where the source buffer
+            // is much larger than the destination buffer. We don't want to walk the entire source buffer
+            // on each invocation of this method, so we'll slice the source buffer to be no larger than
+            // the destination buffer to avoid performing unnecessary work. The potential exists for us to
+            // split the source in the middle of a UTF-8 multi-byte sequence. If this happens,
+            // FindFirstCharacterToEncodeUtf8 will report the split bytes as "needs encoding", we'll fall
+            // back down the slow path, and the slow path will handle the scenario appropriately.
+
+            ReadOnlySpan<byte> sourceSearchSpace = utf8Source;
+            if (utf8Destination.Length < utf8Source.Length)
+            {
+                sourceSearchSpace = utf8Source.Slice(0, utf8Destination.Length);
+            }
+
+            int idxOfFirstByteToEncode = FindFirstCharacterToEncodeUtf8(sourceSearchSpace);
+            if (idxOfFirstByteToEncode < 0)
+            {
+                idxOfFirstByteToEncode = sourceSearchSpace.Length;
+            }
+
+            utf8Source.Slice(0, idxOfFirstByteToEncode).CopyTo(utf8Destination); // memcpy data that doesn't need to be encoded
+            if (idxOfFirstByteToEncode == utf8Source.Length)
+            {
+                bytesConsumed = utf8Source.Length;
+                bytesWritten = utf8Source.Length;
+                return OperationStatus.Done; // memcopied all bytes, nothing more to do
+            }
+
+            // If we got to this point, we couldn't memcpy the entire source buffer into the destination.
+            // Either the destination was too short or we found data that needs to be encoded.
+
+            OperationStatus status = EncodeUtf8Core(utf8Source.Slice(idxOfFirstByteToEncode), utf8Destination.Slice(idxOfFirstByteToEncode), out int innerBytesConsumed, out int innerBytesWritten, isFinalBlock);
+            bytesConsumed = idxOfFirstByteToEncode + innerBytesConsumed;
+            bytesWritten = idxOfFirstByteToEncode + innerBytesWritten;
+            return status;
+        }
+
+        // skips the call to FindFirstCharacterToEncodeUtf8
+        private protected virtual OperationStatus EncodeUtf8Core(
+            ReadOnlySpan<byte> utf8Source,
+            Span<byte> utf8Destination,
+            out int bytesConsumed,
+            out int bytesWritten,
+            bool isFinalBlock)
+        {
             int originalUtf8SourceLength = utf8Source.Length;
             int originalUtf8DestinationLength = utf8Destination.Length;
 
             const int TempUtf16CharBufferLength = 24; // arbitrarily chosen, but sufficient for any reasonable implementation
-            char* pTempCharBuffer = stackalloc char[TempUtf16CharBufferLength];
-
-            const int TempUtf8ByteBufferLength = TempUtf16CharBufferLength * 3 /* max UTF-8 output code units per UTF-16 input code unit */;
-            byte* pTempUtf8Buffer = stackalloc byte[TempUtf8ByteBufferLength];
-
-            uint nextScalarValue;
-            int utf8BytesConsumedForScalar = 0;
-            int nonEscapedByteCount = 0;
-            OperationStatus opStatus = OperationStatus.Done;
+            Span<char> utf16ScratchBuffer = stackalloc char[TempUtf16CharBufferLength];
 
             while (!utf8Source.IsEmpty)
             {
-                // For performance, read until we require escaping.
-                do
+                OperationStatus opStatus = Rune.DecodeFromUtf8(utf8Source, out Rune scalarValue, out int bytesConsumedJustNow);
+                if (opStatus != OperationStatus.Done)
                 {
-                    nextScalarValue = utf8Source[nonEscapedByteCount];
-                    if (UnicodeUtility.IsAsciiCodePoint(nextScalarValue))
+                    if (!isFinalBlock && opStatus == OperationStatus.NeedMoreData)
                     {
-                        // Check Ascii cache.
-                        byte[]? encodedBytes = GetAsciiEncoding((byte)nextScalarValue);
-
-                        if (ReferenceEquals(encodedBytes, s_noEscape))
-                        {
-                            if (++nonEscapedByteCount <= utf8Destination.Length)
-                            {
-                                // Source data can be copied as-is.
-                                continue;
-                            }
-
-                            --nonEscapedByteCount;
-                            opStatus = OperationStatus.DestinationTooSmall;
-                            break;
-                        }
-
-                        if (encodedBytes == null)
-                        {
-                            // We need to escape and update the cache, so break out of this loop.
-                            opStatus = OperationStatus.Done;
-                            utf8BytesConsumedForScalar = 1;
-                            break;
-                        }
-
-                        // For performance, handle the non-escaped bytes and encoding here instead of breaking out of the loop.
-                        if (nonEscapedByteCount > 0)
-                        {
-                            // We previously verified the destination size.
-                            Debug.Assert(nonEscapedByteCount <= utf8Destination.Length);
-
-                            utf8Source.Slice(0, nonEscapedByteCount).CopyTo(utf8Destination);
-                            utf8Source = utf8Source.Slice(nonEscapedByteCount);
-                            utf8Destination = utf8Destination.Slice(nonEscapedByteCount);
-                            nonEscapedByteCount = 0;
-                        }
-
-                        if (!((ReadOnlySpan<byte>)encodedBytes).TryCopyTo(utf8Destination))
-                        {
-                            opStatus = OperationStatus.DestinationTooSmall;
-                            break;
-                        }
-
-                        utf8Destination = utf8Destination.Slice(encodedBytes.Length);
-                        utf8Source = utf8Source.Slice(1);
-                        continue;
+                        goto NeedMoreData;
                     }
 
-                    // Code path for non-Ascii.
-                    opStatus = UnicodeHelpers.DecodeScalarValueFromUtf8(utf8Source.Slice(nonEscapedByteCount), out nextScalarValue, out utf8BytesConsumedForScalar);
-                    if (opStatus == OperationStatus.Done)
-                    {
-                        if (!WillEncode((int)nextScalarValue))
-                        {
-                            nonEscapedByteCount += utf8BytesConsumedForScalar;
-                            if (nonEscapedByteCount <= utf8Destination.Length)
-                            {
-                                // Source data can be copied as-is.
-                                continue;
-                            }
-
-                            nonEscapedByteCount -= utf8BytesConsumedForScalar;
-                            opStatus = OperationStatus.DestinationTooSmall;
-                        }
-                    }
-
-                    // We need to escape.
-                    break;
-                } while (nonEscapedByteCount < utf8Source.Length);
-
-                if (nonEscapedByteCount > 0)
-                {
-                    // We previously verified the destination size.
-                    Debug.Assert(nonEscapedByteCount <= utf8Destination.Length);
-
-                    utf8Source.Slice(0, nonEscapedByteCount).CopyTo(utf8Destination);
-                    utf8Source = utf8Source.Slice(nonEscapedByteCount);
-                    utf8Destination = utf8Destination.Slice(nonEscapedByteCount);
-                    nonEscapedByteCount = 0;
+                    Debug.Assert(scalarValue == Rune.ReplacementChar); // DecodeFromUtf8 should've performed substitution
+                    goto MustEncode;
                 }
 
-                if (utf8Source.IsEmpty)
+                if (!WillEncode(scalarValue.Value))
                 {
-                    goto Done;
-                }
-
-                // This code path is hit for ill-formed input data (where decoding has replaced it with U+FFFD)
-                // and for well-formed input data that must be escaped.
-
-                if (opStatus != OperationStatus.Done) // Optimize happy path.
-                {
-                    if (opStatus == OperationStatus.NeedMoreData)
+                    uint utf8lsb = (uint)UnicodeHelpers.GetUtf8RepresentationForScalarValue((uint)scalarValue.Value);
+                    int dstIdxTemp = 0;
+                    do
                     {
-                        if (!isFinalBlock)
+                        if ((uint)dstIdxTemp >= (uint)utf8Destination.Length)
                         {
-                            bytesConsumed = originalUtf8SourceLength - utf8Source.Length;
-                            bytesWritten = originalUtf8DestinationLength - utf8Destination.Length;
-                            return OperationStatus.NeedMoreData;
+                            goto DestinationTooSmall;
                         }
-                        // else treat this as a normal invalid subsequence.
-                    }
-                    else if (opStatus == OperationStatus.DestinationTooSmall)
-                    {
-                        goto ReturnDestinationTooSmall;
-                    }
+                        utf8Destination[dstIdxTemp++] = (byte)utf8lsb;
+                    } while ((utf8lsb >>= 8) != 0);
+                    utf8Source = utf8Source.Slice(bytesConsumedJustNow);
+                    utf8Destination = utf8Destination.Slice(dstIdxTemp);
+                    continue;
                 }
 
-                if (TryEncodeUnicodeScalar((int)nextScalarValue, pTempCharBuffer, TempUtf16CharBufferLength, out int charsWrittenJustNow))
+            MustEncode:
+
+                if (!TryEncodeUnicodeScalarUtf8((uint)scalarValue.Value, utf16ScratchBuffer, utf8Destination, out int bytesWrittenJustNow))
                 {
-                    // Now that we have it as UTF-16, transcode it to UTF-8.
-                    // Need to copy it to a temporary buffer first, otherwise GetBytes might throw an exception
-                    // due to lack of output space.
-
-                    int transcodedByteCountThisIteration = Encoding.UTF8.GetBytes(pTempCharBuffer, charsWrittenJustNow, pTempUtf8Buffer, TempUtf8ByteBufferLength);
-                    ReadOnlySpan<byte> transcodedUtf8BytesThisIteration = new ReadOnlySpan<byte>(pTempUtf8Buffer, transcodedByteCountThisIteration);
-
-                    // Update cache for Ascii
-                    if (UnicodeUtility.IsAsciiCodePoint(nextScalarValue))
-                    {
-                        _asciiEscape[nextScalarValue] = transcodedUtf8BytesThisIteration.ToArray();
-                    }
-
-                    if (!transcodedUtf8BytesThisIteration.TryCopyTo(utf8Destination))
-                    {
-                        goto ReturnDestinationTooSmall;
-                    }
-
-                    utf8Destination = utf8Destination.Slice(transcodedByteCountThisIteration);
-                }
-                else
-                {
-                    // We really don't expect this to fail. If that happens we'll report an error to our caller.
-                    bytesConsumed = originalUtf8SourceLength - utf8Source.Length;
-                    bytesWritten = originalUtf8DestinationLength - utf8Destination.Length;
-                    return OperationStatus.InvalidData;
+                    goto DestinationTooSmall;
                 }
 
-                utf8Source = utf8Source.Slice(utf8BytesConsumedForScalar);
+                utf8Source = utf8Source.Slice(bytesConsumedJustNow);
+                utf8Destination = utf8Destination.Slice(bytesWrittenJustNow);
             }
 
-        Done:
-            // Input buffer has been fully processed!
-            bytesConsumed = originalUtf8SourceLength;
-            bytesWritten = originalUtf8DestinationLength - utf8Destination.Length;
-            return OperationStatus.Done;
+            // And we're finished!
 
-        ReturnDestinationTooSmall:
+            OperationStatus retVal = OperationStatus.Done;
+
+        ReturnCommon:
             bytesConsumed = originalUtf8SourceLength - utf8Source.Length;
             bytesWritten = originalUtf8DestinationLength - utf8Destination.Length;
-            return OperationStatus.DestinationTooSmall;
+            return retVal;
+
+        NeedMoreData:
+            retVal = OperationStatus.NeedMoreData;
+            goto ReturnCommon;
+
+        DestinationTooSmall:
+            retVal = OperationStatus.DestinationTooSmall;
+            goto ReturnCommon;
         }
 
         /// <summary>
@@ -584,103 +409,135 @@ namespace System.Text.Encodings.Web
             out int charsWritten,
             bool isFinalBlock = true)
         {
-            unsafe
+            // The Encode method is intended to be called in a loop, potentially where the source buffer
+            // is much larger than the destination buffer. We don't want to walk the entire source buffer
+            // on each invocation of this method, so we'll slice the source buffer to be no larger than
+            // the destination buffer to avoid performing unnecessary work. The potential exists for us to
+            // split the source in the middle of a UTF-16 surrogate pair. If this happens,
+            // FindFirstCharacterToEncode will report the split surrogate as "needs encoding", we'll fall
+            // back down the slow path, and the slow path will handle the surrogate appropriately.
+
+            ReadOnlySpan<char> sourceSearchSpace = source;
+            if (destination.Length < source.Length)
             {
-                fixed (char* sourcePtr = source)
-                {
-                    int firstCharacterToEncode;
-                    if (source.IsEmpty || (firstCharacterToEncode = FindFirstCharacterToEncode(sourcePtr, source.Length)) == -1)
-                    {
-                        if (source.TryCopyTo(destination))
-                        {
-                            charsConsumed = source.Length;
-                            charsWritten = source.Length;
-                            return OperationStatus.Done;
-                        }
-
-                        charsConsumed = 0;
-                        charsWritten = 0;
-                        return OperationStatus.DestinationTooSmall;
-                    }
-                    else if (destination.IsEmpty)
-                    {
-                        // Guards against passing a null destinationPtr to EncodeIntoBuffer (pinning an empty Span will return a null pointer).
-                        charsConsumed = 0;
-                        charsWritten = 0;
-                        return OperationStatus.DestinationTooSmall;
-                    }
-
-                    fixed (char* destinationPtr = destination)
-                    {
-                        return EncodeIntoBuffer(destinationPtr, destination.Length, sourcePtr, source.Length, out charsConsumed, out charsWritten, firstCharacterToEncode, isFinalBlock);
-                    }
-                }
+                sourceSearchSpace = source.Slice(0, destination.Length);
             }
+
+            int idxOfFirstCharToEncode = FindFirstCharacterToEncode(sourceSearchSpace);
+            if (idxOfFirstCharToEncode < 0)
+            {
+                idxOfFirstCharToEncode = sourceSearchSpace.Length;
+            }
+
+            source.Slice(0, idxOfFirstCharToEncode).CopyTo(destination); // memcpy data that doesn't need to be encoded
+            if (idxOfFirstCharToEncode == source.Length)
+            {
+                charsConsumed = source.Length;
+                charsWritten = source.Length;
+                return OperationStatus.Done; // memcopied all chars, nothing more to do
+            }
+
+            // If we got to this point, we couldn't memcpy the entire source buffer into the destination.
+            // Either the destination was too short or we found data that needs to be encoded.
+
+            OperationStatus status = EncodeCore(source.Slice(idxOfFirstCharToEncode), destination.Slice(idxOfFirstCharToEncode), out int innerCharsConsumed, out int innerCharsWritten, isFinalBlock);
+            charsConsumed = idxOfFirstCharToEncode + innerCharsConsumed;
+            charsWritten = idxOfFirstCharToEncode + innerCharsWritten;
+            return status;
         }
 
-        private unsafe void EncodeCore(TextWriter output, char* value, int valueLength)
+        // skips the call to FindFirstCharacterToEncode
+        private protected virtual OperationStatus EncodeCore(ReadOnlySpan<char> source, Span<char> destination, out int charsConsumed, out int charsWritten, bool isFinalBlock)
         {
-            Debug.Assert(value != null && output != null);
-            Debug.Assert(valueLength >= 0);
+            int originalSourceLength = source.Length;
+            int originalDestinationLength = destination.Length;
 
-            int bufferLength = MaxOutputCharactersPerInputCharacter;
-            char* buffer = stackalloc char[bufferLength];
-
-            char firstChar = *value;
-            char secondChar = firstChar;
-            bool wasSurrogatePair = false;
-            int charsWritten;
-
-            // this loop processes character pairs (in case they are surrogates).
-            // there is an if block below to process single last character.
-            int secondCharIndex;
-            for (secondCharIndex = 1; secondCharIndex < valueLength; secondCharIndex++)
+            while (!source.IsEmpty)
             {
-                if (!wasSurrogatePair)
+                OperationStatus status = Rune.DecodeFromUtf16(source, out Rune scalarValue, out int charsConsumedJustNow);
+                if (status != OperationStatus.Done)
                 {
-                    firstChar = secondChar;
-                }
-                else
-                {
-                    firstChar = value[secondCharIndex - 1];
-                }
-                secondChar = value[secondCharIndex];
-
-                if (!WillEncode(firstChar))
-                {
-                    wasSurrogatePair = false;
-                    output.Write(firstChar);
-                }
-                else
-                {
-                    int nextScalar = UnicodeHelpers.GetScalarValueFromUtf16(firstChar, secondChar, out wasSurrogatePair, out bool _);
-                    if (!TryEncodeUnicodeScalar(nextScalar, buffer, bufferLength, out charsWritten))
+                    if (!isFinalBlock && status == OperationStatus.NeedMoreData)
                     {
-                        ThrowArgumentException_MaxOutputCharsPerInputChar();
+                        goto NeedMoreData;
                     }
-                    Write(output, buffer, charsWritten);
 
-                    if (wasSurrogatePair)
-                    {
-                        secondCharIndex++;
-                    }
+                    Debug.Assert(scalarValue == Rune.ReplacementChar); // should be replacement char
+                    goto MustEncode;
                 }
+
+                if (!WillEncode(scalarValue.Value))
+                {
+                    if (!scalarValue.TryEncodeToUtf16(destination, out _))
+                    {
+                        goto DestinationTooSmall;
+                    }
+                    source = source.Slice(charsConsumedJustNow);
+                    destination = destination.Slice(charsConsumedJustNow); // reflecting input directly to the output, same # of chars written
+                    continue;
+                }
+
+            MustEncode:
+
+                if (!TryEncodeUnicodeScalar((uint)scalarValue.Value, destination, out int charsWrittenJustNow))
+                {
+                    goto DestinationTooSmall;
+                }
+
+                source = source.Slice(charsConsumedJustNow);
+                destination = destination.Slice(charsWrittenJustNow);
             }
 
-            if (!wasSurrogatePair || (secondCharIndex == valueLength))
-            {
-                firstChar = value[valueLength - 1];
-                int nextScalar = UnicodeHelpers.GetScalarValueFromUtf16(firstChar, null, out wasSurrogatePair, out bool _);
-                if (!TryEncodeUnicodeScalar(nextScalar, buffer, bufferLength, out charsWritten))
-                {
-                    ThrowArgumentException_MaxOutputCharsPerInputChar();
-                }
-                Write(output, buffer, charsWritten);
-            }
+            // And we're finished!
+
+            OperationStatus retVal = OperationStatus.Done;
+
+        ReturnCommon:
+            charsConsumed = originalSourceLength - source.Length;
+            charsWritten = originalDestinationLength - destination.Length;
+            return retVal;
+
+        NeedMoreData:
+            retVal = OperationStatus.NeedMoreData;
+            goto ReturnCommon;
+
+        DestinationTooSmall:
+            retVal = OperationStatus.DestinationTooSmall;
+            goto ReturnCommon;
         }
 
-        private unsafe int FindFirstCharacterToEncode(ReadOnlySpan<char> text)
+        // skips call to FindFirstCharacterToEncode
+        private void EncodeCore(TextWriter output, ReadOnlySpan<char> value)
         {
+            Debug.Assert(output != null);
+            Debug.Assert(!value.IsEmpty, "Caller should've special-cased 'no encoding needed'.");
+
+            // On each iteration of the main loop, we'll make sure we have at least this many chars left in the
+            // destination buffer. This should prevent us from making very chatty calls where we only make progress
+            // one char at a time.
+            int minBufferBumpEachIteration = Math.Max(MaxOutputCharactersPerInputCharacter, EncodeStartingOutputBufferSize);
+            char[] rentedArray = ArrayPool<char>.Shared.Rent(Math.Max(value.Length, minBufferBumpEachIteration));
+            Span<char> scratchBuffer = rentedArray;
+
+            do
+            {
+                EncodeCore(value, scratchBuffer, out int charsConsumedJustNow, out int charsWrittenJustNow, isFinalBlock: true);
+                if (charsWrittenJustNow == 0 || (uint)charsWrittenJustNow > (uint)scratchBuffer.Length)
+                {
+                    ThrowArgumentException_MaxOutputCharsPerInputChar(); // couldn't make forward progress or returned bogus data
+                }
+
+                output.Write(rentedArray, 0, charsWrittenJustNow); // write char[], not Span<char>, for best compat & performance
+                value = value.Slice(charsConsumedJustNow);
+            } while (!value.IsEmpty);
+
+            ArrayPool<char>.Shared.Return(rentedArray);
+        }
+
+        private protected virtual unsafe int FindFirstCharacterToEncode(ReadOnlySpan<char> text)
+        {
+            // Default implementation calls the unsafe overload
+
             fixed (char* pText = &MemoryMarshal.GetReference(text))
             {
                 return FindFirstCharacterToEncode(pText, text.Length);
@@ -697,212 +554,28 @@ namespace System.Text.Encodings.Web
         /// current encoder instance, or -1 if no data in <paramref name="utf8Text"/> requires escaping.
         /// </returns>
         [EditorBrowsable(EditorBrowsableState.Never)]
-        public virtual unsafe int FindFirstCharacterToEncodeUtf8(ReadOnlySpan<byte> utf8Text)
+        public virtual int FindFirstCharacterToEncodeUtf8(ReadOnlySpan<byte> utf8Text)
         {
-            if (!_isAsciiCacheInitialized)
+            int utf8TextOriginalLength = utf8Text.Length;
+
+            while (!utf8Text.IsEmpty)
             {
-                InitializeAsciiCache();
+                OperationStatus opStatus = Rune.DecodeFromUtf8(utf8Text, out Rune scalarValue, out int bytesConsumed);
+                if (opStatus != OperationStatus.Done || WillEncode(scalarValue.Value))
+                {
+                    break;
+                }
+                utf8Text = utf8Text.Slice(bytesConsumed);
             }
 
-            // Loop through the input text, terminating when we see ill-formed UTF-8 or when we decode a scalar value
-            // that must be encoded. If we see either of these things then we'll return its index in the original
-            // input sequence. If we consume the entire text without seeing either of these, return -1 to indicate
-            // that the text can be copied as-is without escaping.
-
-            fixed (byte* ptr = utf8Text)
-            {
-                int idx = 0;
-
-#if NETCOREAPP
-                if ((Sse2.IsSupported || AdvSimd.Arm64.IsSupported) && utf8Text.Length - 16 >= idx)
-                {
-                    // Hoist these outside the loop, as the JIT won't do it.
-                    Vector128<sbyte> bitMaskLookupAsciiNeedsEscaping = _bitMaskLookupAsciiNeedsEscaping;
-                    Vector128<sbyte> bitPosLookup = Ssse3Helper.s_bitPosLookup;
-                    Vector128<sbyte> nibbleMaskSByte = Ssse3Helper.s_nibbleMaskSByte;
-                    Vector128<sbyte> nullMaskSByte = Ssse3Helper.s_nullMaskSByte;
-
-                    sbyte* startingAddress = (sbyte*)ptr;
-                    do
-                    {
-                        Debug.Assert(startingAddress >= ptr && startingAddress <= (ptr + utf8Text.Length - 16));
-
-                        // Load the next 16 bytes.
-                        Vector128<sbyte> sourceValue;
-                        bool containsNonAsciiBytes;
-
-                        // Check for ASCII text. Any byte that's not in the ASCII range will already be negative when
-                        // casted to signed byte.
-                        if (Sse2.IsSupported)
-                        {
-                            sourceValue = Sse2.LoadVector128(startingAddress);
-                            containsNonAsciiBytes = Sse2Helper.ContainsNonAsciiByte(sourceValue);
-                        }
-                        else if (AdvSimd.Arm64.IsSupported)
-                        {
-                            sourceValue = AdvSimd.LoadVector128(startingAddress);
-                            containsNonAsciiBytes = AdvSimdHelper.ContainsNonAsciiByte(sourceValue);
-                        }
-                        else
-                        {
-                            throw new PlatformNotSupportedException();
-                        }
-
-                        if (!containsNonAsciiBytes)
-                        {
-                            // All of the following 16 bytes is ASCII.
-                            // TODO AdvSimd: optimization maybe achievable using VectorTableLookup and/or VectorTableLookupExtension
-
-                            if (Ssse3.IsSupported)
-                            {
-                                Vector128<sbyte> mask = Ssse3Helper.CreateEscapingMask(sourceValue, bitMaskLookupAsciiNeedsEscaping, bitPosLookup, nibbleMaskSByte, nullMaskSByte);
-                                int index = Sse2Helper.GetIndexOfFirstNonAsciiByte(mask.AsByte());
-
-                                if (index < 16)
-                                {
-                                    idx += index;
-                                    goto Return;
-                                }
-                            }
-                            else
-                            {
-                                byte* p = (byte*)startingAddress;
-                                if (DoesAsciiNeedEncoding(p[0])) goto Return;
-                                if (DoesAsciiNeedEncoding(p[1])) goto Return1;
-                                if (DoesAsciiNeedEncoding(p[2])) goto Return2;
-                                if (DoesAsciiNeedEncoding(p[3])) goto Return3;
-                                if (DoesAsciiNeedEncoding(p[4])) goto Return4;
-                                if (DoesAsciiNeedEncoding(p[5])) goto Return5;
-                                if (DoesAsciiNeedEncoding(p[6])) goto Return6;
-                                if (DoesAsciiNeedEncoding(p[7])) goto Return7;
-                                if (DoesAsciiNeedEncoding(p[8])) goto Return8;
-                                if (DoesAsciiNeedEncoding(p[9])) goto Return9;
-                                if (DoesAsciiNeedEncoding(p[10])) goto Return10;
-                                if (DoesAsciiNeedEncoding(p[11])) goto Return11;
-                                if (DoesAsciiNeedEncoding(p[12])) goto Return12;
-                                if (DoesAsciiNeedEncoding(p[13])) goto Return13;
-                                if (DoesAsciiNeedEncoding(p[14])) goto Return14;
-                                if (DoesAsciiNeedEncoding(p[15])) goto Return15;
-                            }
-
-                            idx += 16;
-                        }
-                        else
-                        {
-                            // At least one of the following 16 bytes is non-ASCII.
-
-                            int processNextSixteen = idx + 16;
-                            Debug.Assert(processNextSixteen <= utf8Text.Length);
-
-                            while (idx < processNextSixteen)
-                            {
-                                Debug.Assert((ptr + idx) <= (ptr + utf8Text.Length));
-
-                                if (UnicodeUtility.IsAsciiCodePoint(ptr[idx]))
-                                {
-                                    if (DoesAsciiNeedEncoding(ptr[idx]))
-                                    {
-                                        goto Return;
-                                    }
-                                    idx++;
-                                }
-                                else
-                                {
-                                    OperationStatus opStatus = UnicodeHelpers.DecodeScalarValueFromUtf8(utf8Text.Slice(idx), out uint nextScalarValue, out int utf8BytesConsumedForScalar);
-
-                                    Debug.Assert(nextScalarValue <= int.MaxValue);
-                                    if (opStatus != OperationStatus.Done || WillEncode((int)nextScalarValue))
-                                    {
-                                        goto Return;
-                                    }
-
-                                    Debug.Assert(opStatus == OperationStatus.Done);
-                                    idx += utf8BytesConsumedForScalar;
-                                }
-                            }
-                        }
-                        startingAddress = (sbyte*)ptr + idx;
-                    }
-                    while (utf8Text.Length - 16 >= idx);
-
-                    // Process the remaining bytes.
-                    Debug.Assert(utf8Text.Length - idx < 16);
-                }
-#endif
-
-                while (idx < utf8Text.Length)
-                {
-                    Debug.Assert((ptr + idx) <= (ptr + utf8Text.Length));
-
-                    if (UnicodeUtility.IsAsciiCodePoint(ptr[idx]))
-                    {
-                        if (DoesAsciiNeedEncoding(ptr[idx]))
-                        {
-                            goto Return;
-                        }
-                        idx++;
-                    }
-                    else
-                    {
-                        OperationStatus opStatus = UnicodeHelpers.DecodeScalarValueFromUtf8(utf8Text.Slice(idx), out uint nextScalarValue, out int utf8BytesConsumedForScalar);
-
-                        Debug.Assert(nextScalarValue <= int.MaxValue);
-                        if (opStatus != OperationStatus.Done || WillEncode((int)nextScalarValue))
-                        {
-                            goto Return;
-                        }
-
-                        Debug.Assert(opStatus == OperationStatus.Done);
-                        idx += utf8BytesConsumedForScalar;
-                    }
-                }
-                Debug.Assert(idx == utf8Text.Length);
-
-                idx = -1; // All bytes are allowed.
-                goto Return;
-
-#if NETCOREAPP
-            Return15:
-                return idx + 15;
-            Return14:
-                return idx + 14;
-            Return13:
-                return idx + 13;
-            Return12:
-                return idx + 12;
-            Return11:
-                return idx + 11;
-            Return10:
-                return idx + 10;
-            Return9:
-                return idx + 9;
-            Return8:
-                return idx + 8;
-            Return7:
-                return idx + 7;
-            Return6:
-                return idx + 6;
-            Return5:
-                return idx + 5;
-            Return4:
-                return idx + 4;
-            Return3:
-                return idx + 3;
-            Return2:
-                return idx + 2;
-            Return1:
-                return idx + 1;
-#endif
-            Return:
-                return idx;
-            }
+            return (utf8Text.IsEmpty) ? -1 : utf8TextOriginalLength - utf8Text.Length;
         }
 
-        internal static unsafe bool TryCopyCharacters(char[] source, char* destination, int destinationLength, out int numberOfCharactersWritten)
+        internal static bool TryCopyCharacters(string source, Span<char> destination, out int numberOfCharactersWritten)
         {
-            Debug.Assert(source != null && destination != null && destinationLength >= 0);
+            Debug.Assert(!string.IsNullOrEmpty(source));
 
-            if (destinationLength < source.Length)
+            if (destination.Length < source.Length)
             {
                 numberOfCharactersWritten = 0;
                 return false;
@@ -918,17 +591,15 @@ namespace System.Text.Encodings.Web
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static unsafe bool TryWriteScalarAsChar(int unicodeScalar, char* destination, int destinationLength, out int numberOfCharactersWritten)
+        internal static bool TryWriteScalarAsChar(int unicodeScalar, Span<char> destination, out int numberOfCharactersWritten)
         {
-            Debug.Assert(destination != null && destinationLength >= 0);
-
             Debug.Assert(unicodeScalar < ushort.MaxValue);
-            if (destinationLength < 1)
+            if (destination.IsEmpty)
             {
                 numberOfCharactersWritten = 0;
                 return false;
             }
-            *destination = (char)unicodeScalar;
+            destination[0] = (char)unicodeScalar;
             numberOfCharactersWritten = 1;
             return true;
         }
@@ -945,80 +616,7 @@ namespace System.Text.Encodings.Web
             }
         }
 
-        private static unsafe void Write(TextWriter output, char* input, int inputLength)
-        {
-            Debug.Assert(output != null && input != null && inputLength >= 0);
-
-            while (inputLength-- > 0)
-            {
-                output.Write(*input);
-                input++;
-            }
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private byte[]? GetAsciiEncoding(byte value)
-        {
-            byte[] encoding = _asciiEscape[value];
-            if (encoding == null)
-            {
-                if (!WillEncode(value))
-                {
-                    encoding = s_noEscape;
-                    _asciiEscape[value] = encoding;
-                }
-            }
-            return encoding;
-        }
-
-        [MethodImpl(MethodImplOptions.NoInlining)]
-        private unsafe void InitializeAsciiCache()
-        {
-#if NETCOREAPP
-            if (Ssse3.IsSupported)
-            {
-                Vector128<sbyte> vector = Vector128<sbyte>.Zero;
-                sbyte* tmp = (sbyte*)&vector;
-
-                for (int i = 0; i < 0x80; i++)
-                {
-                    bool willEncode = WillEncode(i);
-                    _asciiNeedsEscaping.Data[i] = willEncode;
-
-                    if (willEncode)
-                    {
-                        int highNibble = i >> 4;
-                        int lowNibble = i & 0xF;
-
-                        tmp[lowNibble] |= (sbyte)(1 << highNibble);
-                    }
-                }
-
-                _bitMaskLookupAsciiNeedsEscaping = vector;
-                return;
-            }
-#endif
-            for (int i = 0; i < 0x80; i++)
-            {
-                _asciiNeedsEscaping.Data[i] = WillEncode(i);
-            }
-
-            _isAsciiCacheInitialized = true;
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private unsafe bool DoesAsciiNeedEncoding(uint value)
-        {
-            Debug.Assert(value <= 0x7F);
-
-            return _asciiNeedsEscaping.Data[value];
-        }
-
-        private unsafe struct AsciiNeedsEscapingData
-        {
-            public fixed bool Data[0x80];
-        }
-
+        [DoesNotReturn]
         private static void ThrowArgumentException_MaxOutputCharsPerInputChar()
         {
             throw new ArgumentException(SR.TextEncoderDoesNotImplementMaxOutputCharsPerInputChar);

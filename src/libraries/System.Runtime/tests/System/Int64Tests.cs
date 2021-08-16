@@ -119,7 +119,18 @@ namespace System.Tests
                 yield return new object[] { (long)0x2468, "x", defaultFormat, "2468" };
                 yield return new object[] { (long)-0x2468, "x", defaultFormat, "ffffffffffffdb98" };
                 yield return new object[] { (long)2468, "N", defaultFormat, string.Format("{0:N}", 2468.00) };
+
+
             }
+
+            NumberFormatInfo invariantFormat = NumberFormatInfo.InvariantInfo;
+            yield return new object[] { (long)32, "C100", invariantFormat, "¤32.0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000" };
+            yield return new object[] { (long)32, "P100", invariantFormat, "3,200.0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000 %" };
+            yield return new object[] { (long)32, "D100", invariantFormat, "0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000032" };
+            yield return new object[] { (long)32, "E100", invariantFormat, "3.2000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000E+001" };
+            yield return new object[] { (long)32, "F100", invariantFormat, "32.0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000" };
+            yield return new object[] { (long)32, "N100", invariantFormat, "32.0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000" };
+            yield return new object[] { (long)32, "X100", invariantFormat, "0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000020" };
 
             var customFormat = new NumberFormatInfo()
             {
@@ -427,6 +438,14 @@ namespace System.Tests
                 Assert.Equal(expected.Length, charsWritten);
                 Assert.Equal(expected.ToLowerInvariant(), new string(actual));
             }
+        }
+
+        [Fact]
+        public static void TestNegativeNumberParsingWithHyphen()
+        {
+            // CLDR data for Swedish culture has negative sign U+2212. This test ensure parsing with the hyphen with such cultures will succeed.
+            CultureInfo ci = CultureInfo.GetCultureInfo("sv-SE");
+            Assert.Equal(-15868, long.Parse("-15868", NumberStyles.Number, ci));
         }
     }
 }

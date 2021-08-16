@@ -22,6 +22,9 @@ namespace System.Net.Sockets
         // Used by the class to indicate that the stream is writable.
         private bool _writeable;
 
+        // Whether Dispose has been called. 0 == false, 1 == true
+        private int _disposed;
+
         // Creates a new instance of the System.Net.Sockets.NetworkStream class for the specified System.Net.Sockets.Socket.
         public NetworkStream(Socket socket)
             : this(socket, FileAccess.ReadWrite, ownsSocket: false)
@@ -337,13 +340,15 @@ namespace System.Net.Sockets
             _closeTimeout = timeout;
             Dispose();
         }
-        private volatile bool _disposed;
+
         protected override void Dispose(bool disposing)
         {
-            // Mark this as disposed before changing anything else.
-            bool disposed = _disposed;
-            _disposed = true;
-            if (!disposed && disposing)
+            if (Interlocked.Exchange(ref _disposed, 1) != 0)
+            {
+                return;
+            }
+
+            if (disposing)
             {
                 // The only resource we need to free is the network stream, since this
                 // is based on the client socket, closing the stream will cause us
@@ -664,7 +669,7 @@ namespace System.Net.Sockets
 
         private void ThrowIfDisposed()
         {
-            if (_disposed)
+            if (_disposed != 0)
             {
                 ThrowObjectDisposedException();
             }

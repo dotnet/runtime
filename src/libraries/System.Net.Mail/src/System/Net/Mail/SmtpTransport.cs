@@ -10,7 +10,7 @@ using System.Threading;
 
 namespace System.Net.Mail
 {
-    internal class SmtpTransport
+    internal sealed class SmtpTransport
     {
         internal const int DefaultPort = 25;
 
@@ -253,7 +253,7 @@ namespace System.Net.Mail
         }
     }
 
-    internal class SendMailAsyncResult : LazyAsyncResult
+    internal sealed class SendMailAsyncResult : LazyAsyncResult
     {
         private readonly SmtpConnection _connection;
         private readonly MailAddress _from;

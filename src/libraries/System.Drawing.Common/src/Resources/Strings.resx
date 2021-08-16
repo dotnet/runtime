@@ -281,9 +281,6 @@
   <data name="InvalidEx2BoundArgument" xml:space="preserve">
     <value>Value of '{1}' is not valid for '{0}'. '{0}' should be greater than or equal to {2} and less than or equal to {3}.</value>
   </data>
-  <data name="InvalidFrame" xml:space="preserve">
-    <value>Frame is not valid. Frame must be between 0 and FrameCount.</value>
-  </data>
   <data name="InvalidGDIHandle" xml:space="preserve">
     <value>Win32 handle that was passed to {0} is not valid or is the wrong type.</value>
   </data>
@@ -355,6 +352,9 @@
   </data>
   <data name="PlatformNotSupported_Drawing" xml:space="preserve">
     <value>System.Drawing is not supported on this platform.</value>
+  </data>
+  <data name="PlatformNotSupported_Unix" xml:space="preserve">
+    <value>System.Drawing.Common is not supported on non-Windows platforms. See https://aka.ms/systemdrawingnonwindows for more information.</value>
   </data>
   <data name="PrintDocumentDesc" xml:space="preserve">
     <value>Defines an object that sends output to a printer.</value>

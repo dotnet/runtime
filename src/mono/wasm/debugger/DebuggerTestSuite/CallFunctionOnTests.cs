@@ -30,12 +30,12 @@ namespace DebuggerTests
                {
 
                    var is_js = bp_loc.EndsWith(".js", StringComparison.Ordinal);
-                   var obj_accessors = await ctx.cli.SendCommand("Runtime.getProperties", JObject.FromObject(new
+                   var obj_accessors = await cli.SendCommand("Runtime.getProperties", JObject.FromObject(new
                    {
                        objectId = result.Value["result"]["objectId"].Value<string>(),
                        accessorPropertiesOnly = true,
                        ownProperties = false
-                   }), ctx.token);
+                   }), token);
                    if (is_js)
                        await CheckProps(obj_accessors.Value["result"], new { __proto__ = TIgnore() }, "obj_accessors");
                    else
@@ -43,18 +43,18 @@ namespace DebuggerTests
 
                    // Check for a __proto__ object
                    // isOwn = true, accessorPropertiesOnly = false
-                   var obj_own = await ctx.cli.SendCommand("Runtime.getProperties", JObject.FromObject(new
+                   var obj_own = await cli.SendCommand("Runtime.getProperties", JObject.FromObject(new
                    {
                        objectId = result.Value["result"]["objectId"].Value<string>(),
                        accessorPropertiesOnly = false,
                        ownProperties = true
-                   }), ctx.token);
+                   }), token);
 
                    await CheckProps(obj_own.Value["result"], new
                    {
                        length = TNumber(len),
                        // __proto__ = TArray (type, 0) // Is this one really required?
-                   }, $"obj_own", num_fields: is_js ? 2 : 1);
+                   }, $"obj_own");
 
                });
         }
@@ -85,42 +85,38 @@ namespace DebuggerTests
                     new { @value = num_elems_fetch }
                 }),
                 test_fn: async (result) =>
-               {
+                {
 
-                   var is_js = bp_loc.EndsWith(".js", StringComparison.Ordinal);
+                    var is_js = bp_loc.EndsWith(".js", StringComparison.Ordinal);
 
-                   // isOwn = false, accessorPropertiesOnly = true
-                   var obj_accessors = await ctx.cli.SendCommand("Runtime.getProperties", JObject.FromObject(new
-                   {
-                       objectId = result.Value["result"]["objectId"].Value<string>(),
-                       accessorPropertiesOnly = true,
-                       ownProperties = false
-                   }), ctx.token);
-                   if (is_js)
+                    // isOwn = false, accessorPropertiesOnly = true
+                    var obj_accessors = await cli.SendCommand("Runtime.getProperties", JObject.FromObject(new
+                    {
+                        objectId = result.Value["result"]["objectId"].Value<string>(),
+                        accessorPropertiesOnly = true,
+                        ownProperties = false
+                    }), token);
+
+                    if (is_js)
                        await CheckProps(obj_accessors.Value["result"], new { __proto__ = TIgnore() }, "obj_accessors");
-                   else
-                       AssertEqual(0, obj_accessors.Value["result"]?.Count(), "obj_accessors-count");
+                    else
+                        AssertEqual(0, obj_accessors.Value["result"]?.Count(), "obj_accessors-count");
 
-                   // Ignoring the __proto__ property
+                    // isOwn = true, accessorPropertiesOnly = false
+                    var obj_own = await cli.SendCommand("Runtime.getProperties", JObject.FromObject(new
+                    {
+                        objectId = result.Value["result"]["objectId"].Value<string>(),
+                        accessorPropertiesOnly = false,
+                        ownProperties = true
+                    }), token);
 
-                   // isOwn = true, accessorPropertiesOnly = false
-                   var obj_own = await ctx.cli.SendCommand("Runtime.getProperties", JObject.FromObject(new
-                   {
-                       objectId = result.Value["result"]["objectId"].Value<string>(),
-                       accessorPropertiesOnly = false,
-                       ownProperties = true
-                   }), ctx.token);
+                    var obj_own_val = obj_own.Value["result"];
+                    var num_elems_recd = len == 0 ? 0 : num_elems_fetch;
+                    AssertEqual(num_elems_recd, obj_own_val.Count(), $"obj_own-count");
 
-                   var obj_own_val = obj_own.Value["result"];
-                   var num_elems_recd = len == 0 ? 0 : num_elems_fetch;
-                   AssertEqual(is_js ? num_elems_recd + 1 : num_elems_recd, obj_own_val.Count(), $"obj_own-count");
-
-                   if (is_js)
-                       CheckObject(obj_own_val, "__proto__", "Object");
-
-                   for (int i = fetch_start_idx; i < fetch_start_idx + num_elems_recd; i++)
-                       CheckNumber(obj_own_val, i.ToString(), 1000 + i);
-               });
+                    for (int i = fetch_start_idx; i < fetch_start_idx + num_elems_recd; i++)
+                        CheckNumber(obj_own_val, i.ToString(), 1000 + i);
+                });
         }
 
         [Theory]
@@ -142,30 +138,29 @@ namespace DebuggerTests
                    var is_js = bp_loc.EndsWith(".js", StringComparison.Ordinal);
 
                    // getProperties (isOwn = false, accessorPropertiesOnly = true)
-                   var obj_accessors = await ctx.cli.SendCommand("Runtime.getProperties", JObject.FromObject(new
+                   var obj_accessors = await cli.SendCommand("Runtime.getProperties", JObject.FromObject(new
                    {
                        objectId = result.Value["result"]["objectId"].Value<string>(),
                        accessorPropertiesOnly = true,
                        ownProperties = false
-                   }), ctx.token);
+                   }), token);
                    if (is_js)
                        await CheckProps(obj_accessors.Value["result"], new { __proto__ = TIgnore() }, "obj_accessors");
                    else
                        AssertEqual(0, obj_accessors.Value["result"]?.Count(), "obj_accessors-count");
 
                    // getProperties (isOwn = true, accessorPropertiesOnly = false)
-                   var obj_own = await ctx.cli.SendCommand("Runtime.getProperties", JObject.FromObject(new
+                   var obj_own = await cli.SendCommand("Runtime.getProperties", JObject.FromObject(new
                    {
                        objectId = result.Value["result"]["objectId"].Value<string>(),
                        accessorPropertiesOnly = false,
                        ownProperties = true
-                   }), ctx.token);
+                   }), token);
 
                    await CheckProps(obj_own.Value["result"], new
                    {
                        length = TNumber(ret_len),
-                       // __proto__ returned by js
-                   }, $"obj_own", num_fields: is_js ? 2 : 1);
+                   }, $"obj_own");
                });
         }
 
@@ -188,12 +183,12 @@ namespace DebuggerTests
                    var is_js = bp_loc.EndsWith(".js");
 
                    // getProperties (own=false)
-                   var obj_accessors = await ctx.cli.SendCommand("Runtime.getProperties", JObject.FromObject(new
+                   var obj_accessors = await cli.SendCommand("Runtime.getProperties", JObject.FromObject(new
                    {
                        objectId = result.Value["result"]["objectId"].Value<string>(),
                        accessorPropertiesOnly = true,
                        ownProperties = false
-                   }), ctx.token);
+                   }), token);
 
                    if (is_js)
                        await CheckProps(obj_accessors.Value["result"], new { __proto__ = TIgnore() }, "obj_accessors");
@@ -202,12 +197,12 @@ namespace DebuggerTests
 
                    // getProperties (own=true)
                    // isOwn = true, accessorPropertiesOnly = false
-                   var obj_own = await ctx.cli.SendCommand("Runtime.getProperties", JObject.FromObject(new
+                   var obj_own = await cli.SendCommand("Runtime.getProperties", JObject.FromObject(new
                    {
                        objectId = result.Value["result"]["objectId"].Value<string>(),
                        accessorPropertiesOnly = false,
                        ownProperties = true
-                   }), ctx.token);
+                   }), token);
 
                    // AssertEqual (2, obj_own.Value ["result"].Count (), $"{label}-obj_own.count");
 
@@ -215,8 +210,7 @@ namespace DebuggerTests
                    await CheckProps(obj_own_val, new
                    {
                        length = TNumber(ret_len),
-                       // __proto__ returned by JS
-                   }, $"obj_own", num_fields: (is_js ? ret_len + 2 : ret_len + 1));
+                   }, $"obj_own", num_fields: (ret_len + 1));
 
                    for (int i = 0; i < ret_len; i++)
                        CheckNumber(obj_own_val, i.ToString(), i * 2 + 1000);
@@ -239,23 +233,23 @@ namespace DebuggerTests
                var ret_len = 5;
 
                // getProperties (own=false)
-               var obj_accessors = await ctx.cli.SendCommand("Runtime.getProperties", JObject.FromObject(new
+               var obj_accessors = await cli.SendCommand("Runtime.getProperties", JObject.FromObject(new
                {
                    objectId = result.Value["result"]["objectId"].Value<string>(),
                    accessorPropertiesOnly = true,
                    ownProperties = false
-               }), ctx.token);
+               }), token);
 
                AssertEqual(0, obj_accessors.Value["result"]?.Count(), "obj_accessors-count");
 
                // getProperties (own=true)
                // isOwn = true, accessorPropertiesOnly = false
-               var obj_own = await ctx.cli.SendCommand("Runtime.getProperties", JObject.FromObject(new
+               var obj_own = await cli.SendCommand("Runtime.getProperties", JObject.FromObject(new
                {
                    objectId = result.Value["result"]["objectId"].Value<string>(),
                    accessorPropertiesOnly = false,
                    ownProperties = true
-               }), ctx.token);
+               }), token);
 
                var obj_own_val = obj_own.Value["result"];
                await CheckProps(obj_own_val, new
@@ -299,22 +293,22 @@ namespace DebuggerTests
            {
 
                // getProperties (own=false)
-               var obj_accessors = await ctx.cli.SendCommand("Runtime.getProperties", JObject.FromObject(new
+               var obj_accessors = await cli.SendCommand("Runtime.getProperties", JObject.FromObject(new
                {
                    objectId = result.Value["result"]["objectId"].Value<string>(),
                    accessorPropertiesOnly = true,
                    ownProperties = false
-               }), ctx.token);
+               }), token);
                AssertEqual(0, obj_accessors.Value["result"].Count(), "obj_accessors-count");
 
                // getProperties (own=true)
                // isOwn = true, accessorPropertiesOnly = false
-               var obj_own = await ctx.cli.SendCommand("Runtime.getProperties", JObject.FromObject(new
+               var obj_own = await cli.SendCommand("Runtime.getProperties", JObject.FromObject(new
                {
                    objectId = result.Value["result"]["objectId"].Value<string>(),
                    accessorPropertiesOnly = false,
                    ownProperties = true
-               }), ctx.token);
+               }), token);
 
                var obj_own_val = obj_own.Value["result"];
                var dt = new DateTime(2020, 1, 2, 3, 4, 5);
@@ -345,30 +339,30 @@ namespace DebuggerTests
            {
 
                // getProperties (own=false)
-               var obj_accessors = await ctx.cli.SendCommand("Runtime.getProperties", JObject.FromObject(new
+               var obj_accessors = await cli.SendCommand("Runtime.getProperties", JObject.FromObject(new
                {
                    objectId = result.Value["result"]["objectId"].Value<string>(),
                    accessorPropertiesOnly = true,
                    ownProperties = false
-               }), ctx.token);
+               }), token);
 
                await CheckProps(obj_accessors.Value["result"], new { __proto__ = TIgnore() }, "obj_accessors");
 
                // getProperties (own=true)
                // isOwn = true, accessorPropertiesOnly = false
-               var obj_own = await ctx.cli.SendCommand("Runtime.getProperties", JObject.FromObject(new
+               var obj_own = await cli.SendCommand("Runtime.getProperties", JObject.FromObject(new
                {
                    objectId = result.Value["result"]["objectId"].Value<string>(),
                    accessorPropertiesOnly = false,
                    ownProperties = true
-               }), ctx.token);
+               }), token);
 
                var obj_own_val = obj_own.Value["result"];
                await CheckProps(obj_own_val, new
                {
                    a_obj = TObject("Object"),
                    b_arr = TArray("Array", 2)
-               }, "obj_own", num_fields: 3);
+               }, "obj_own");
            });
 
         [Theory]
@@ -442,74 +436,65 @@ namespace DebuggerTests
         [InlineData("invoke_static_method ('[debugger-test] DebuggerTests.CallFunctionOnTest:LocalsTest', 10);", "dotnet://debugger-test.dll/debugger-cfo-test.cs", 23, 12, true)]
         public async Task RunOnArrayReturnPrimitive(string eval_fn, string bp_loc, int line, int col, bool return_by_val)
         {
-            var insp = new Inspector();
-            //Collect events
-            var scripts = SubscribeToScripts(insp);
+            await SetBreakpoint(bp_loc, line, col);
 
-            await Ready();
-            await insp.Ready(async (cli, token) =>
+            // callFunctionOn
+            var eval_expr = $"window.setTimeout(function() {{ {eval_fn} }}, 1);";
+            var result = await cli.SendCommand("Runtime.evaluate", JObject.FromObject(new { expression = eval_expr }), token);
+            var pause_location = await insp.WaitFor(Inspector.PAUSE);
+
+            // Um for js we get "scriptId": "6"
+            // CheckLocation (bp_loc, line, col, scripts, pause_location ["callFrames"][0]["location"]);
+
+            // Check the object at the bp
+            var frame_locals = await GetProperties(pause_location["callFrames"][0]["scopeChain"][0]["object"]["objectId"].Value<string>());
+            var obj = GetAndAssertObjectWithName(frame_locals, "big");
+            var obj_id = obj["value"]["objectId"].Value<string>();
+
+            var cfo_args = JObject.FromObject(new
             {
-                ctx = new DebugTestContext(cli, insp, token, scripts);
-                await SetBreakpoint(bp_loc, line, col);
-
-                // callFunctionOn
-                var eval_expr = $"window.setTimeout(function() {{ {eval_fn} }}, 1);";
-                var result = await ctx.cli.SendCommand("Runtime.evaluate", JObject.FromObject(new { expression = eval_expr }), ctx.token);
-                var pause_location = await ctx.insp.WaitFor(Inspector.PAUSE);
-
-                // Um for js we get "scriptId": "6"
-                // CheckLocation (bp_loc, line, col, ctx.scripts, pause_location ["callFrames"][0]["location"]);
-
-                // Check the object at the bp
-                var frame_locals = await GetProperties(pause_location["callFrames"][0]["scopeChain"][0]["object"]["objectId"].Value<string>());
-                var obj = GetAndAssertObjectWithName(frame_locals, "big");
-                var obj_id = obj["value"]["objectId"].Value<string>();
-
-                var cfo_args = JObject.FromObject(new
-                {
-                    functionDeclaration = "function () { return 5; }",
-                    objectId = obj_id
-                });
-
-                // value of @returnByValue doesn't matter, as the returned value
-                // is a primitive
-                if (return_by_val)
-                    cfo_args["returnByValue"] = return_by_val;
-
-                // callFunctionOn
-                result = await ctx.cli.SendCommand("Runtime.callFunctionOn", cfo_args, ctx.token);
-                await CheckValue(result.Value["result"], TNumber(5), "cfo-res");
-
-                cfo_args = JObject.FromObject(new
-                {
-                    functionDeclaration = "function () { return 'test value'; }",
-                    objectId = obj_id
-                });
-
-                // value of @returnByValue doesn't matter, as the returned value
-                // is a primitive
-                if (return_by_val)
-                    cfo_args["returnByValue"] = return_by_val;
-
-                // callFunctionOn
-                result = await ctx.cli.SendCommand("Runtime.callFunctionOn", cfo_args, ctx.token);
-                await CheckValue(result.Value["result"], JObject.FromObject(new { type = "string", value = "test value" }), "cfo-res");
-
-                cfo_args = JObject.FromObject(new
-                {
-                    functionDeclaration = "function () { return null; }",
-                    objectId = obj_id
-                });
-
-                // value of @returnByValue doesn't matter, as the returned value
-                // is a primitive
-                if (return_by_val)
-                    cfo_args["returnByValue"] = return_by_val;
-
-                // callFunctionOn
-                result = await ctx.cli.SendCommand("Runtime.callFunctionOn", cfo_args, ctx.token);
-                await CheckValue(result.Value["result"], JObject.Parse("{ type: 'object', subtype: 'null', value: null }"), "cfo-res");
+                functionDeclaration = "function () { return 5; }",
+                objectId = obj_id
             });
+
+            // value of @returnByValue doesn't matter, as the returned value
+            // is a primitive
+            if (return_by_val)
+                cfo_args["returnByValue"] = return_by_val;
+
+            // callFunctionOn
+            result = await cli.SendCommand("Runtime.callFunctionOn", cfo_args, token);
+            await CheckValue(result.Value["result"], TNumber(5), "cfo-res");
+
+            cfo_args = JObject.FromObject(new
+            {
+                functionDeclaration = "function () { return 'test value'; }",
+                objectId = obj_id
+            });
+
+            // value of @returnByValue doesn't matter, as the returned value
+            // is a primitive
+            if (return_by_val)
+                cfo_args["returnByValue"] = return_by_val;
+
+            // callFunctionOn
+            result = await cli.SendCommand("Runtime.callFunctionOn", cfo_args, token);
+            await CheckValue(result.Value["result"], JObject.FromObject(new { type = "string", value = "test value" }), "cfo-res");
+
+            cfo_args = JObject.FromObject(new
+            {
+                functionDeclaration = "function () { return null; }",
+                objectId = obj_id
+            });
+
+            // value of @returnByValue doesn't matter, as the returned value
+            // is a primitive
+            if (return_by_val)
+                cfo_args["returnByValue"] = return_by_val;
+
+            // callFunctionOn
+            result = await cli.SendCommand("Runtime.callFunctionOn", cfo_args, token);
+            await CheckValue(result.Value["result"], JObject.Parse("{ type: 'object', subtype: 'null', value: null }"), "cfo-res");
         }
 
         public static TheoryData<string, string, int, int, bool?> SilentErrorsTestData(bool? silent) => new TheoryData<string, string, int, int, bool?>
@@ -523,45 +508,36 @@ namespace DebuggerTests
         [MemberData(nameof(SilentErrorsTestData), true)]
         public async Task CFOWithSilentReturnsErrors(string eval_fn, string bp_loc, int line, int col, bool? silent)
         {
-            var insp = new Inspector();
-            //Collect events
-            var scripts = SubscribeToScripts(insp);
+            await SetBreakpoint(bp_loc, line, col);
 
-            await Ready();
-            await insp.Ready(async (cli, token) =>
+            // callFunctionOn
+            var eval_expr = "window.setTimeout(function() { " + eval_fn + " }, 1);";
+            var result = await cli.SendCommand("Runtime.evaluate", JObject.FromObject(new { expression = eval_expr }), token);
+            var pause_location = await insp.WaitFor(Inspector.PAUSE);
+
+            var frame_locals = await GetProperties(pause_location["callFrames"][0]["scopeChain"][0]["object"]["objectId"].Value<string>());
+            var obj = GetAndAssertObjectWithName(frame_locals, "big");
+            var big_obj_id = obj["value"]["objectId"].Value<string>();
+            var error_msg = "#This is an error message#";
+
+            // Check the object at the bp
+            var cfo_args = JObject.FromObject(new
             {
-                ctx = new DebugTestContext(cli, insp, token, scripts);
-                await SetBreakpoint(bp_loc, line, col);
-
-                // callFunctionOn
-                var eval_expr = "window.setTimeout(function() { " + eval_fn + " }, 1);";
-                var result = await ctx.cli.SendCommand("Runtime.evaluate", JObject.FromObject(new { expression = eval_expr }), ctx.token);
-                var pause_location = await ctx.insp.WaitFor(Inspector.PAUSE);
-
-                var frame_locals = await GetProperties(pause_location["callFrames"][0]["scopeChain"][0]["object"]["objectId"].Value<string>());
-                var obj = GetAndAssertObjectWithName(frame_locals, "big");
-                var big_obj_id = obj["value"]["objectId"].Value<string>();
-                var error_msg = "#This is an error message#";
-
-                // Check the object at the bp
-                var cfo_args = JObject.FromObject(new
-                {
-                    functionDeclaration = $"function () {{ throw Error ('{error_msg}'); }}",
-                    objectId = big_obj_id
-                });
-
-                if (silent.HasValue)
-                    cfo_args["silent"] = silent;
-
-                // callFunctionOn, Silent does not change the result, except that the error
-                // doesn't get reported, and the execution is NOT paused even with setPauseOnException=true
-                result = await ctx.cli.SendCommand("Runtime.callFunctionOn", cfo_args, ctx.token);
-                Assert.False(result.IsOk, "result.IsOk");
-                Assert.True(result.IsErr, "result.IsErr");
-
-                var hasErrorMessage = result.Error["exceptionDetails"]?["exception"]?["description"]?.Value<string>()?.Contains(error_msg);
-                Assert.True((hasErrorMessage ?? false), "Exception message not found");
+                functionDeclaration = $"function () {{ throw Error ('{error_msg}'); }}",
+                objectId = big_obj_id
             });
+
+            if (silent.HasValue)
+                cfo_args["silent"] = silent;
+
+            // callFunctionOn, Silent does not change the result, except that the error
+            // doesn't get reported, and the execution is NOT paused even with setPauseOnException=true
+            result = await cli.SendCommand("Runtime.callFunctionOn", cfo_args, token);
+            Assert.False(result.IsOk, "result.IsOk");
+            Assert.True(result.IsErr, "result.IsErr");
+
+            var hasErrorMessage = result.Error["exceptionDetails"]?["exception"]?["description"]?.Value<string>()?.Contains(error_msg);
+            Assert.True((hasErrorMessage ?? false), "Exception message not found");
         }
 
         public static TheoryData<string, string, int, int, string, Func<string[], object>, string, bool> GettersTestData(string local_name, bool use_cfo) => new TheoryData<string, string, int, int, string, Func<string[], object>, string, bool>
@@ -756,7 +732,7 @@ namespace DebuggerTests
                        accessorPropertiesOnly = true
                    });
 
-                   var res = await GetPropertiesAndCheckAccessors(get_prop_req, is_js ? 6 : 5); // js returns extra `__proto__` member also
+                   var res = await GetPropertiesAndCheckAccessors(get_prop_req, 5);
                    Assert.False(res.Value["result"].Any(jt => jt["name"]?.Value<string>() == "StringField"), "StringField shouldn't be returned for `accessorPropertiesOnly`");
 
                    // Check with `accessorPropertiesOnly` unset, == false
@@ -765,13 +741,13 @@ namespace DebuggerTests
                        objectId = id,
                    });
 
-                   res = await GetPropertiesAndCheckAccessors(get_prop_req, is_js ? 8 : 7); // js returns a `__proto__` member also
+                   res = await GetPropertiesAndCheckAccessors(get_prop_req, 7);
                    Assert.True(res.Value["result"].Any(jt => jt["name"]?.Value<string>() == "StringField"), "StringField should be returned for `accessorPropertiesOnly=false`");
                });
 
             async Task<Result> GetPropertiesAndCheckAccessors(JObject get_prop_req, int num_fields)
             {
-                var res = await ctx.cli.SendCommand("Runtime.getProperties", get_prop_req, ctx.token);
+                var res = await cli.SendCommand("Runtime.getProperties", get_prop_req, token);
                 if (!res.IsOk)
                     Assert.True(false, $"Runtime.getProperties failed for {get_prop_req.ToString()}, with Result: {res}");
 
@@ -808,7 +784,7 @@ namespace DebuggerTests
                    objectId = ptd_id + "_invalid"
                });
 
-               var res = await ctx.cli.SendCommand("Runtime.callFunctionOn", cfo_args, ctx.token);
+               var res = await cli.SendCommand("Runtime.callFunctionOn", cfo_args, token);
                Assert.True(res.IsErr);
            });
 
@@ -816,35 +792,26 @@ namespace DebuggerTests
         [MemberData(nameof(NegativeTestsData), false)]
         public async Task RunOnInvalidThirdSegmentOfObjectId(string eval_fn, string bp_loc, int line, int col, bool use_cfo)
         {
-            var insp = new Inspector();
-            //Collect events
-            var scripts = SubscribeToScripts(insp);
+            UseCallFunctionOnBeforeGetProperties = use_cfo;
+            await SetBreakpoint(bp_loc, line, col);
 
-            await Ready();
-            await insp.Ready(async (cli, token) =>
+            // callFunctionOn
+            var eval_expr = $"window.setTimeout(function() {{ {eval_fn} }}, 1);";
+            var result = await cli.SendCommand("Runtime.evaluate", JObject.FromObject(new { expression = eval_expr }), token);
+            var pause_location = await insp.WaitFor(Inspector.PAUSE);
+
+            var frame_locals = await GetProperties(pause_location["callFrames"][0]["scopeChain"][0]["object"]["objectId"].Value<string>());
+            var ptd = GetAndAssertObjectWithName(frame_locals, "ptd");
+            var ptd_id = ptd["value"]["objectId"].Value<string>();
+
+            var cfo_args = JObject.FromObject(new
             {
-                ctx = new DebugTestContext(cli, insp, token, scripts);
-                ctx.UseCallFunctionOnBeforeGetProperties = use_cfo;
-                await SetBreakpoint(bp_loc, line, col);
-
-                // callFunctionOn
-                var eval_expr = $"window.setTimeout(function() {{ {eval_fn} }}, 1);";
-                var result = await ctx.cli.SendCommand("Runtime.evaluate", JObject.FromObject(new { expression = eval_expr }), ctx.token);
-                var pause_location = await ctx.insp.WaitFor(Inspector.PAUSE);
-
-                var frame_locals = await GetProperties(pause_location["callFrames"][0]["scopeChain"][0]["object"]["objectId"].Value<string>());
-                var ptd = GetAndAssertObjectWithName(frame_locals, "ptd");
-                var ptd_id = ptd["value"]["objectId"].Value<string>();
-
-                var cfo_args = JObject.FromObject(new
-                {
-                    functionDeclaration = "function () { return 0; }",
-                    objectId = ptd_id + "_invalid"
-                });
-
-                var res = await ctx.cli.SendCommand("Runtime.callFunctionOn", cfo_args, ctx.token);
-                Assert.True(res.IsErr);
+                functionDeclaration = "function () { return 0; }",
+                objectId = ptd_id + "_invalid"
             });
+
+            var res = await cli.SendCommand("Runtime.callFunctionOn", cfo_args, token);
+            Assert.True(res.IsErr);
         }
 
         [Theory]
@@ -852,33 +819,24 @@ namespace DebuggerTests
         [MemberData(nameof(NegativeTestsData), true)]
         public async Task InvalidPropertyGetters(string eval_fn, string bp_loc, int line, int col, bool use_cfo)
         {
-            var insp = new Inspector();
-            //Collect events
-            var scripts = SubscribeToScripts(insp);
+            await SetBreakpoint(bp_loc, line, col);
+            UseCallFunctionOnBeforeGetProperties = use_cfo;
 
-            await Ready();
-            await insp.Ready(async (cli, token) =>
+            // callFunctionOn
+            var eval_expr = $"window.setTimeout(function() {{ {eval_fn} }}, 1);";
+            await SendCommand("Runtime.evaluate", JObject.FromObject(new { expression = eval_expr }));
+            var pause_location = await insp.WaitFor(Inspector.PAUSE);
+
+            var frame_locals = await GetProperties(pause_location["callFrames"][0]["scopeChain"][0]["object"]["objectId"].Value<string>());
+            var ptd = GetAndAssertObjectWithName(frame_locals, "ptd");
+            var ptd_id = ptd["value"]["objectId"].Value<string>();
+
+            var invalid_args = new object[] { "NonExistant", String.Empty, null, 12310 };
+            foreach (var invalid_arg in invalid_args)
             {
-                ctx = new DebugTestContext(cli, insp, token, scripts);
-                await SetBreakpoint(bp_loc, line, col);
-                ctx.UseCallFunctionOnBeforeGetProperties = use_cfo;
-
-                // callFunctionOn
-                var eval_expr = $"window.setTimeout(function() {{ {eval_fn} }}, 1);";
-                await SendCommand("Runtime.evaluate", JObject.FromObject(new { expression = eval_expr }));
-                var pause_location = await ctx.insp.WaitFor(Inspector.PAUSE);
-
-                var frame_locals = await GetProperties(pause_location["callFrames"][0]["scopeChain"][0]["object"]["objectId"].Value<string>());
-                var ptd = GetAndAssertObjectWithName(frame_locals, "ptd");
-                var ptd_id = ptd["value"]["objectId"].Value<string>();
-
-                var invalid_args = new object[] { "NonExistant", String.Empty, null, 12310 };
-                foreach (var invalid_arg in invalid_args)
-                {
-                    var getter_res = await InvokeGetter(JObject.FromObject(new { value = new { objectId = ptd_id } }), invalid_arg);
-                    AssertEqual("undefined", getter_res.Value["result"]?["type"]?.ToString(), $"Expected to get undefined result for non-existant accessor - {invalid_arg}");
-                }
-            });
+                var getter_res = await InvokeGetter(JObject.FromObject(new { value = new { objectId = ptd_id } }), invalid_arg);
+                AssertEqual("undefined", getter_res.Value["result"]?["type"]?.ToString(), $"Expected to get undefined result for non-existant accessor - {invalid_arg}");
+            }
         }
 
         [Theory]
@@ -922,81 +880,72 @@ namespace DebuggerTests
         async Task RunCallFunctionOn(string eval_fn, string fn_decl, string local_name, string bp_loc, int line, int col, int res_array_len = -1,
             Func<Result, Task> test_fn = null, bool returnByValue = false, JArray fn_args = null, bool roundtrip = false)
         {
-            var insp = new Inspector();
-            //Collect events
-            var scripts = SubscribeToScripts(insp);
+            await SetBreakpoint(bp_loc, line, col);
 
-            await Ready();
-            await insp.Ready(async (cli, token) =>
+            // callFunctionOn
+            var eval_expr = $"window.setTimeout(function() {{ {eval_fn} }}, 1);";
+            var result = await cli.SendCommand("Runtime.evaluate", JObject.FromObject(new { expression = eval_expr }), token);
+            var pause_location = await insp.WaitFor(Inspector.PAUSE);
+
+            // Um for js we get "scriptId": "6"
+            // CheckLocation (bp_loc, line, col, scripts, pause_location ["callFrames"][0]["location"]);
+
+            // Check the object at the bp
+            var frame_locals = await GetProperties(pause_location["callFrames"][0]["scopeChain"][0]["object"]["objectId"].Value<string>());
+            var obj = GetAndAssertObjectWithName(frame_locals, local_name);
+            var obj_id = obj["value"]["objectId"].Value<string>();
+
+            var cfo_args = JObject.FromObject(new
             {
-                ctx = new DebugTestContext(cli, insp, token, scripts);
-                await SetBreakpoint(bp_loc, line, col);
+                functionDeclaration = fn_decl,
+                objectId = obj_id
+            });
 
-                // callFunctionOn
-                var eval_expr = $"window.setTimeout(function() {{ {eval_fn} }}, 1);";
-                var result = await ctx.cli.SendCommand("Runtime.evaluate", JObject.FromObject(new { expression = eval_expr }), ctx.token);
-                var pause_location = await ctx.insp.WaitFor(Inspector.PAUSE);
+            if (fn_args != null)
+                cfo_args["arguments"] = fn_args;
 
-                // Um for js we get "scriptId": "6"
-                // CheckLocation (bp_loc, line, col, ctx.scripts, pause_location ["callFrames"][0]["location"]);
+            if (returnByValue)
+                cfo_args["returnByValue"] = returnByValue;
 
-                // Check the object at the bp
-                var frame_locals = await GetProperties(pause_location["callFrames"][0]["scopeChain"][0]["object"]["objectId"].Value<string>());
-                var obj = GetAndAssertObjectWithName(frame_locals, local_name);
-                var obj_id = obj["value"]["objectId"].Value<string>();
+            // callFunctionOn
+            result = await cli.SendCommand("Runtime.callFunctionOn", cfo_args, token);
+            await CheckCFOResult(result);
 
-                var cfo_args = JObject.FromObject(new
+            // If it wasn't `returnByValue`, then try to run a new function
+            // on that *returned* object
+            // This second function, just returns the object as-is, so the same
+            // test_fn is re-usable.
+            if (!returnByValue && roundtrip)
+            {
+                cfo_args = JObject.FromObject(new
                 {
-                    functionDeclaration = fn_decl,
-                    objectId = obj_id
+                    functionDeclaration = "function () { return this; }",
+                    objectId = result.Value["result"]["objectId"]?.Value<string>()
                 });
 
                 if (fn_args != null)
                     cfo_args["arguments"] = fn_args;
 
-                if (returnByValue)
-                    cfo_args["returnByValue"] = returnByValue;
+                result = await cli.SendCommand("Runtime.callFunctionOn", cfo_args, token);
 
-                // callFunctionOn
-                result = await ctx.cli.SendCommand("Runtime.callFunctionOn", cfo_args, ctx.token);
                 await CheckCFOResult(result);
+            }
 
-                // If it wasn't `returnByValue`, then try to run a new function
-                // on that *returned* object
-                // This second function, just returns the object as-is, so the same
-                // test_fn is re-usable.
-                if (!returnByValue && roundtrip)
-                {
-                    cfo_args = JObject.FromObject(new
-                    {
-                        functionDeclaration = "function () { return this; }",
-                        objectId = result.Value["result"]["objectId"]?.Value<string>()
-                    });
+            if (test_fn != null)
+                await test_fn(result);
 
-                    if (fn_args != null)
-                        cfo_args["arguments"] = fn_args;
+            return;
 
-                    result = await ctx.cli.SendCommand("Runtime.callFunctionOn", cfo_args, ctx.token);
+            async Task CheckCFOResult(Result result)
+            {
+                if (returnByValue)
+                    return;
 
-                    await CheckCFOResult(result);
-                }
-
-                if (test_fn != null)
-                    await test_fn(result);
-
-                return;
-
-                async Task CheckCFOResult(Result result)
-                {
-                    if (returnByValue)
-                        return;
-
-                    if (res_array_len < 0)
-                        await CheckValue(result.Value["result"], TObject("Object"), $"cfo-res");
-                    else
-                        await CheckValue(result.Value["result"], TArray("Array", res_array_len), $"cfo-res");
-                }
-            });
+                if (res_array_len < 0)
+                    await CheckValue(result.Value["result"], TObject("Object"), $"cfo-res");
+                else
+                    await CheckValue(result.Value["result"], TArray("Array", res_array_len), $"cfo-res");
+            }
         }
     }
 

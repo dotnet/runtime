@@ -300,12 +300,10 @@ namespace System.Globalization
             return retVal;
         }
 
-        internal int CompareOptionIgnoreCase(ReadOnlySpan<char> string1, ReadOnlySpan<char> string2)
-        {
-            return GlobalizationMode.Invariant ?
-                Ordinal.CompareIgnoreCaseInvariantMode(ref MemoryMarshal.GetReference(string1), string1.Length, ref MemoryMarshal.GetReference(string2), string2.Length) :
+        internal int CompareOptionIgnoreCase(ReadOnlySpan<char> string1, ReadOnlySpan<char> string2) =>
+             GlobalizationMode.Invariant ?
+                InvariantModeCasing.CompareStringIgnoreCase(ref MemoryMarshal.GetReference(string1), string1.Length, ref MemoryMarshal.GetReference(string2), string2.Length) :
                 CompareStringCore(string1, string2, CompareOptions.IgnoreCase);
-        }
 
         /// <summary>
         /// Compares the specified regions of the two strings with the given
@@ -1516,7 +1514,7 @@ namespace System.Globalization
               NlsGetSortKeyLength(source, options) :
               IcuGetSortKeyLength(source, options);
 
-        public override bool Equals(object? value)
+        public override bool Equals([NotNullWhen(true)] object? value)
         {
             return value is CompareInfo otherCompareInfo
                 && Name == otherCompareInfo.Name;

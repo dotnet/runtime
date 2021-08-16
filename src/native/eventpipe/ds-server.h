@@ -1,10 +1,9 @@
 #ifndef __DIAGNOSTICS_SERVER_H__
 #define __DIAGNOSTICS_SERVER_H__
 
-#include <config.h>
+#include "ds-rt-config.h"
 
 #ifdef ENABLE_PERFTRACING
-#include "ds-rt-config.h"
 #include "ds-types.h"
 #include "ds-rt.h"
 
@@ -34,6 +33,9 @@ ds_server_pause_for_diagnostics_monitor (void);
 // This is a no-op if not configured to pause or runtime has already resumed
 void
 ds_server_resume_runtime_startup (void);
+
+bool
+ds_server_is_paused_in_startup (void);
 
 #endif /* ENABLE_PERFTRACING */
 #endif /* __DIAGNOSTICS_SERVER_H__ */

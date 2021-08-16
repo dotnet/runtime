@@ -6,7 +6,7 @@ using System.Diagnostics;
 
 namespace System.Xml.Linq
 {
-    internal class XNodeBuilder : XmlWriter
+    internal sealed class XNodeBuilder : XmlWriter
     {
         private List<object>? _content;
         private XContainer? _parent;

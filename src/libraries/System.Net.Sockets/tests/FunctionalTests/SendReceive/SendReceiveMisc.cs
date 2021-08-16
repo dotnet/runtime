@@ -76,7 +76,7 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // [ActiveIssue("https://github.com/dotnet/runtime/issues/18258")]
+        [Fact]
         public void SendIovMaxUdp_SuccessOrMessageSize()
         {
             // sending more than IOV_MAX segments causes EMSGSIZE on some platforms.
@@ -117,7 +117,7 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // [ActiveIssue("https://github.com/dotnet/runtime/issues/18258")]
+        [Fact]
         public async Task ReceiveIovMaxUdp_SuccessOrMessageSize()
         {
             // receiving more than IOV_MAX segments causes EMSGSIZE on some platforms.
@@ -177,11 +177,12 @@ namespace System.Net.Sockets.Tests
                 {
                     int bytesSent = sender.Send(sendBuffer);
                     Assert.Equal(SegmentCount, bytesSent);
-                    await Task.WhenAny(receiveTask, Task.Delay(3));
-                    if (receiveTask.IsCompleted)
+                    try
                     {
+                        await receiveTask.WaitAsync(TimeSpan.FromMilliseconds(3));
                         break;
                     }
+                    catch (TimeoutException) { }
                 }
             }
 
@@ -189,8 +190,8 @@ namespace System.Net.Sockets.Tests
             await receiveTask;
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // [ActiveIssue("https://github.com/dotnet/runtime/issues/18258")]
-        [PlatformSpecific(~TestPlatforms.Windows)] // All data is sent, even when very large (100M).
+        [Fact]
+        [SkipOnPlatform(TestPlatforms.Windows, "All data is sent, even when very large (100M).")]
         public void SocketSendWouldBlock_ReturnsBytesSent()
         {
             using (var server = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
@@ -218,7 +219,7 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // [ActiveIssue("https://github.com/dotnet/runtime/issues/18258")]
+        [Fact]
         [PlatformSpecific(TestPlatforms.AnyUnix)]
         public async Task Socket_ReceiveFlags_Success()
         {
@@ -239,44 +240,44 @@ namespace System.Net.Sockets.Tests
                 var tcs = new TaskCompletionSource();
                 SocketAsyncEventArgs args = new SocketAsyncEventArgs();
 
-                var receiveBufer = new byte[600];
-                receiveBufer[0] = data[499] = 0;
+                var receiveBuffer = new byte[600];
+                receiveBuffer[0] = data[499] = 0;
 
-                args.SetBuffer(receiveBufer, 0, receiveBufer.Length);
+                args.SetBuffer(receiveBuffer, 0, receiveBuffer.Length);
                 args.Completed += delegate { tcs.SetResult(); };
 
                 // First peek at the message.
                 args.SocketFlags = SocketFlags.Peek;
                 if (receiver.ReceiveAsync(args))
                 {
-                    await tcs.Task.TimeoutAfter(TestSettings.PassingTestTimeout);
+                    await tcs.Task.WaitAsync(TimeSpan.FromMilliseconds(TestSettings.PassingTestTimeout));
                 }
                 Assert.Equal(SocketFlags.None, args.SocketFlags);
-                Assert.Equal(1, receiveBufer[0]);
-                Assert.Equal(1, receiveBufer[499]);
-                receiveBufer[0] = receiveBufer[499] = 0;
+                Assert.Equal(1, receiveBuffer[0]);
+                Assert.Equal(1, receiveBuffer[499]);
+                receiveBuffer[0] = receiveBuffer[499] = 0;
 
                 // Now, we should be able to get same message again.
                 tcs = new TaskCompletionSource();
                 args.SocketFlags = SocketFlags.None;
                 if (receiver.ReceiveAsync(args))
                 {
-                    await tcs.Task.TimeoutAfter(TestSettings.PassingTestTimeout);
+                    await tcs.Task.WaitAsync(TimeSpan.FromMilliseconds(TestSettings.PassingTestTimeout));
                 }
                 Assert.Equal(SocketFlags.None, args.SocketFlags);
-                Assert.Equal(1, receiveBufer[0]);
-                Assert.Equal(1, receiveBufer[499]);
-                receiveBufer[0] = receiveBufer[499] = 0;
+                Assert.Equal(1, receiveBuffer[0]);
+                Assert.Equal(1, receiveBuffer[499]);
+                receiveBuffer[0] = receiveBuffer[499] = 0;
 
                 // Set buffer smaller than message.
                 tcs = new TaskCompletionSource();
-                args.SetBuffer(receiveBufer, 0, 100);
+                args.SetBuffer(receiveBuffer, 0, 100);
                 if (receiver.ReceiveAsync(args))
                 {
-                    await tcs.Task.TimeoutAfter(TestSettings.PassingTestTimeout);
+                    await tcs.Task.WaitAsync(TimeSpan.FromMilliseconds(TestSettings.PassingTestTimeout));
                 }
                 Assert.Equal(SocketFlags.Truncated, args.SocketFlags);
-                Assert.Equal(2, receiveBufer[0]);
+                Assert.Equal(2, receiveBuffer[0]);
 
                 // There should be no more data.
                 Assert.Equal(0, receiver.Available);

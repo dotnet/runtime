@@ -163,7 +163,7 @@ namespace System.Threading.Tasks.Dataflow
         public DataflowMessageHeader(long id) { throw null; }
         public long Id { get { throw null; } }
         public bool IsValid { get { throw null; } }
-        public override bool Equals(object? obj) { throw null; }
+        public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? obj) { throw null; }
         public bool Equals(System.Threading.Tasks.Dataflow.DataflowMessageHeader other) { throw null; }
         public override int GetHashCode() { throw null; }
         public static bool operator ==(System.Threading.Tasks.Dataflow.DataflowMessageHeader left, System.Threading.Tasks.Dataflow.DataflowMessageHeader right) { throw null; }

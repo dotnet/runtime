@@ -3,11 +3,14 @@
 
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Runtime.Versioning;
 
 namespace System.Diagnostics
 {
     public partial class Process : IDisposable
     {
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
         public void Kill(bool entireProcessTree)
         {
             if (!entireProcessTree)
@@ -30,7 +33,7 @@ namespace System.Diagnostics
 
         private bool IsSelfOrDescendantOf(Process processOfInterest)
         {
-            if (SafePredicateTest(() => Equals(processOfInterest)))
+            if (Equals(processOfInterest))
                 return true;
 
             Process[] allProcesses = GetProcesses();
@@ -44,7 +47,7 @@ namespace System.Diagnostics
                 {
                     foreach (Process candidate in current.GetChildProcesses(allProcesses))
                     {
-                        if (SafePredicateTest(() => processOfInterest.Equals(candidate)))
+                        if (processOfInterest.Equals(candidate))
                             return true;
 
                         descendantProcesses.Enqueue(candidate);
@@ -79,7 +82,7 @@ namespace System.Diagnostics
 
                 try
                 {
-                    if (SafePredicateTest(() => IsParentOf(possibleChildProcess)))
+                    if (IsParentOf(possibleChildProcess))
                     {
                         childProcesses.Add(possibleChildProcess);
                         dispose = false;
@@ -95,19 +98,10 @@ namespace System.Diagnostics
             return childProcesses;
         }
 
-        private bool SafePredicateTest(Func<bool> predicate)
-        {
-            try
-            {
-                return predicate();
-            }
-            catch (Exception e) when (e is InvalidOperationException || e is Win32Exception)
-            {
-                // InvalidOperationException signifies conditions such as the process already being dead.
-                // Win32Exception signifies issues such as insufficient permissions to get details on the process.
-                // In either case, the predicate couldn't be applied so return the fallback result.
-                return false;
-            }
-        }
+        private static bool IsProcessInvalidException(Exception e) =>
+            // InvalidOperationException signifies conditions such as the process already being dead.
+            // Win32Exception signifies issues such as insufficient permissions to get details on the process.
+            // In either case, the predicate couldn't be applied so return the fallback result.
+            e is InvalidOperationException || e is Win32Exception;
     }
 }

@@ -18,7 +18,7 @@ namespace System.ComponentModel.Composition.Hosting
 {
     public partial class CatalogExportProvider : ExportProvider, IDisposable
     {
-        private class InnerCatalogExportProvider : ExportProvider
+        private sealed class InnerCatalogExportProvider : ExportProvider
         {
             private readonly CatalogExportProvider _outerExportProvider;
 
@@ -1012,7 +1012,7 @@ namespace System.ComponentModel.Composition.Hosting
             }
         }
 
-        private class PartEqualsQueryStateNode : PartQueryStateNode
+        private sealed class PartEqualsQueryStateNode : PartQueryStateNode
         {
             private readonly ComposablePartDefinition _part;
             private readonly int _hashCode;
@@ -1033,7 +1033,7 @@ namespace System.ComponentModel.Composition.Hosting
             }
         }
 
-        private class PartInHashSetQueryStateNode : PartQueryStateNode
+        private sealed class PartInHashSetQueryStateNode : PartQueryStateNode
         {
             private readonly HashSet<ComposablePartDefinition> _parts;
             public PartInHashSetQueryStateNode(HashSet<ComposablePartDefinition> parts, PartQueryStateNode? previousNode, AtomicCompositionQueryState state) :
@@ -1048,7 +1048,7 @@ namespace System.ComponentModel.Composition.Hosting
             }
         }
 
-        private class CatalogPart
+        private sealed class CatalogPart
         {
             private volatile bool _importsSatisfied;
             public CatalogPart(ComposablePart part)

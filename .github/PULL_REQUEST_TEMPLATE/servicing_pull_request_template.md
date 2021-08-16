@@ -1,6 +1,6 @@
 Fixes Issue <!-- Issue Number -->
 
-Master PR <!-- Link to PR if any that fixed this in the master branch. -->
+main PR <!-- Link to PR if any that fixed this in the main branch. -->
 
 # Description
 

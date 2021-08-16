@@ -344,5 +344,19 @@ namespace System.Numerics.Tests
             Vector<bool> vector = default;
             Assert.Throws<NotSupportedException>(() => (Vector<double>)vector);
         }
+
+        [Fact]
+        public void AsFromTest()
+        {
+            Vector<bool> vector = default;
+            Assert.Throws<NotSupportedException>(() => vector.As<bool, int>());
+        }
+
+        [Fact]
+        public void AsToTest()
+        {
+            Vector<int> vector = default;
+            Assert.Throws<NotSupportedException>(() => vector.As<int, bool>());
+        }
     }
 }

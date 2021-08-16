@@ -1,16 +1,21 @@
 <Project>
-  
+
   <PropertyGroup>
     <TargetPlatformSupported>true</TargetPlatformSupported>
     <TargetPlatformVersionSupported>true</TargetPlatformVersionSupported>
+
+    <!-- Value of 0.0 produces versionless SupportedOSPlatform attribute.
+         This is required for platforms not expected to have a version,
+         and we currently omit the version for all platforms. -->
+    <SupportedOSPlatformVersion>0.0</SupportedOSPlatformVersion>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(TargetFrameworkSuffix)' != '' and '$(TargetFrameworkSuffix)' != 'windows'">
     <TargetPlatformIdentifier>$(TargetFrameworkSuffix)</TargetPlatformIdentifier>
-    <TargetPlatformVersion>0.0</TargetPlatformVersion>
+    <TargetPlatformVersion>1.0</TargetPlatformVersion>
     <TargetPlatformMoniker>$(TargetFrameworkSuffix),Version=$(TargetPlatformVersion)</TargetPlatformMoniker>
   </PropertyGroup>
-  
+
   <Choose>
     <When Condition="'$(TargetFrameworkSuffix)' == 'windows'">
       <PropertyGroup>
@@ -44,6 +49,13 @@
         <TargetsUnix>true</TargetsUnix>
         <TargetsOSX>true</TargetsOSX>
         <PackageTargetRuntime>osx</PackageTargetRuntime>
+      </PropertyGroup>
+    </When>
+    <When Condition="'$(TargetFrameworkSuffix)' == 'MacCatalyst'">
+      <PropertyGroup>
+        <TargetsUnix>true</TargetsUnix>
+        <TargetsMacCatalyst>true</TargetsMacCatalyst>
+        <PackageTargetRuntime>maccatalyst</PackageTargetRuntime>
       </PropertyGroup>
     </When>
     <When Condition="'$(TargetFrameworkSuffix)' == 'tvOS'">

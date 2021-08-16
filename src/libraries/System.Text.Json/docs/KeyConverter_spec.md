@@ -7,7 +7,7 @@ Most of our users that serialize dictionary use `Dictionary<string, TKey>`; howe
 * 80%+ of dictionaries with non-string keys work out of the box, especially if they can round-trip.
 * Remain high performance.
 
-# Non-goals 
+# Non-goals
 * Complete parity with `Newtonsoft.Json` capabilities, especially in how string support is extended; any extension point can be through `JsonConverter<MyDictionary<non-string, TValue>>`.
 
 # Sample
@@ -24,7 +24,7 @@ string json = JsonSerializer.Serialize(root);
 
 Dictionary<int, string> rootCopy = JsonSerializer.Deserialize<Dictionary<int, string>>(json);
 Console.WriteLine(rootCopy[1]);
- // Prints 
+ // Prints
  // value
 ```
 
@@ -77,7 +77,7 @@ The custom `KeyConverter` that calls Utf8Parser underneath performs slightly fas
 
 `Dictionary<String, TValue>` results show the same numbers across branches since that still uses `DictionaryOfStringTValueConverter`.
 
-**master:**
+**main:**
 |                                       Type |                      Method |     Mean |     Error |    StdDev |   Median |      Min |       Max |  Gen 0 | Gen 1 | Gen 2 | Allocated |
 |------------------------------------------- |---------------------------- |---------:|----------:|----------:|---------:|---------:|----------:|-------:|------:|------:|----------:|
 | WriteDictionary<Dictionary<String, Int32>> |        SerializeToUtf8Bytes | 8.737 us | 0.1760 us | 0.1883 us | 8.743 us | 8.487 us |  9.030 us | 0.8867 |     - |     - |    3760 B |
@@ -106,7 +106,7 @@ The custom `KeyConverter` that calls Utf8Parser underneath performs slightly fas
 
 ## Deserialize/Read
 
-**master:**
+**main:**
 |                                      Type |                   Method |     Mean |    Error |   StdDev |   Median |      Min |      Max |  Gen 0 | Gen 1 | Gen 2 | Allocated |
 |------------------------------------------ |------------------------- |---------:|---------:|---------:|---------:|---------:|---------:|-------:|------:|------:|----------:|
 | ReadDictionary<Dictionary<String, Int32>> | DeserializeFromUtf8Bytes | 22.05 us | 0.439 us | 0.470 us | 22.10 us | 21.23 us | 23.16 us | 4.0872 |     - |     - |   17176 B |
@@ -129,7 +129,7 @@ The custom `KeyConverter` that calls Utf8Parser underneath performs slightly fas
 
 # Prior-art
 ## Newtonsoft.Json
- 
+
 ### On write:
 
 * if the `TKey` is a concrete primitive type*:
@@ -140,16 +140,16 @@ The custom `KeyConverter` that calls Utf8Parser underneath performs slightly fas
     * Double (uses `double.ToString("R")`) // 'R' stands for round-trip
     * Single
     * Enum (uses an internal helper method)
- 
+
 * If the `TKey` is `object` or non-primitive.
   * it calls the `TypeConverter` of the `TKey` runtime type.
   Except for :
     * `Type`, which returns the `AssemblyQualifiedName`.
   * If the type does not have a `TypeConverter`, it calls `ToString()` on the `TKey` instance.
 
- 
-\* A *primitive type* is a value cataloged as such by Json.Net from [this list](https://github.com/JamesNK/Newtonsoft.Json/blob/a31156e90a14038872f54eb60ff0e9676ca4a0d8/Src/Newtonsoft.Json/Utilities/ConvertUtils.cs#L119-L168). 
-  
+
+\* A *primitive type* is a value cataloged as such by Json.Net from [this list](https://github.com/JamesNK/Newtonsoft.Json/blob/a31156e90a14038872f54eb60ff0e9676ca4a0d8/Src/Newtonsoft.Json/Utilities/ConvertUtils.cs#L119-L168).
+
 ### On read:
 
 * If the `TKey` is a concrete type.
@@ -181,5 +181,5 @@ Supported types:
 1. `DictionaryKeyPolicy` will apply to the resulting string of the non-string types.
 1. Should we provide a way to allow users to customize the `EnumKeyConverter` behavior, as it is done in `JsonStringEnumConverter`?
 As of now `KeyConverter`s are meant to be internal types, to enable the previously described behavior we either pass the options through `JsonSerializerOptions` or through an attribute.
-1. Discuss support for `object` as the `TKey` type on deserialization, should we support it in this enhancement? `object` is treated as a `JsonElement` on deserialization and is not part of the supported types on the `Utf8Parser/Formatter`. 
+1. Discuss support for `object` as the `TKey` type on deserialization, should we support it in this enhancement? `object` is treated as a `JsonElement` on deserialization and is not part of the supported types on the `Utf8Parser/Formatter`.
 Consider to defer it when we add support for intuitive types (parse keys as string, etc. instead of JsonElement).

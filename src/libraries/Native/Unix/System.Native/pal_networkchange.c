@@ -17,9 +17,11 @@
 #if HAVE_LINUX_RTNETLINK_H
 #include <linux/rtnetlink.h>
 #elif HAVE_RT_MSGHDR
-#include <net/route.h>
+#if HAVE_IOS_NET_ROUTE_H
+#include "ios/net/route.h"
 #else
-#error System must have linux/rtnetlink.h or net/route.h.
+#include <net/route.h>
+#endif
 #endif
 
 #pragma clang diagnostic ignored "-Wcast-align" // NLMSG_* macros trigger this
@@ -161,5 +163,13 @@ void SystemNative_ReadEvents(int32_t sock, NetworkChangeEvent onNetworkChange)
                 break;
         }
     }
+}
+#else
+void SystemNative_ReadEvents(int32_t sock, NetworkChangeEvent onNetworkChange)
+{
+    (void)sock;
+    (void)onNetworkChange;
+    // unreachable
+    abort();
 }
 #endif

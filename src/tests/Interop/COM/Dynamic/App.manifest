@@ -1,13 +1,22 @@
 <?xml version="1.0" encoding="utf-8"?>
 <assembly manifestVersion="1.0" xmlns="urn:schemas-microsoft-com:asm.v1">
   <assemblyIdentity
-    type="win32" 
+    type="win32"
     name="COMDynamicTest"
     version="1.0.0.0" />
 
   <dependency>
     <dependentAssembly>
-      <!-- RegFree COM -->
+      <!-- RegFree COM to activate managed server -->
+      <assemblyIdentity
+          type="win32"
+          name="CoreShim.X"
+          version="1.0.0.0"/>
+    </dependentAssembly>
+  </dependency>
+  <dependency>
+    <dependentAssembly>
+      <!-- RegFree COM to activate native server-->
       <assemblyIdentity
           type="win32"
           name="DynamicTestServer.X"

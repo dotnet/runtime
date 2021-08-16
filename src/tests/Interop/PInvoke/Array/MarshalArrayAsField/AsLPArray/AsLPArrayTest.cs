@@ -218,7 +218,7 @@ class Test
         s12.arr = InitArray<string>(ARRAY_SIZE);
         Assert.Throws<TypeLoadException>(() => TakeLPCSTRArraySeqStructByVal(s12, ARRAY_SIZE), "TakeLPCSTRArraySeqStructByVal");
 
-        if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+        if (OperatingSystem.IsWindows())
         {
             S_BSTRArray_Seq s13 = new S_BSTRArray_Seq();
             s13.arr = InitArray<string>(ARRAY_SIZE);
@@ -281,7 +281,7 @@ class Test
         c12.arr = InitArray<string>(ARRAY_SIZE);
         Assert.Throws<TypeLoadException>(() => TakeLPCSTRArraySeqClassByVal(c12, ARRAY_SIZE), "TakeLPCSTRArraySeqClassByVal");
 
-        if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+        if (OperatingSystem.IsWindows())
         {
             C_BSTRArray_Seq c13 = new C_BSTRArray_Seq();
             c13.arr = InitArray<string>(ARRAY_SIZE);
@@ -345,7 +345,7 @@ class Test
         s12.arr = InitArray<string>(ARRAY_SIZE);
         Assert.Throws<TypeLoadException>(() => TakeLPCSTRArrayExpStructByVal(s12, ARRAY_SIZE), "TakeLPCSTRArrayExpStructByVal");
 
-        if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+        if (OperatingSystem.IsWindows())
         {
             S_BSTRArray_Exp s13 = new S_BSTRArray_Exp();
             s13.arr = InitArray<string>(ARRAY_SIZE);
@@ -409,7 +409,7 @@ class Test
         c12.arr = InitArray<string>(ARRAY_SIZE);
         Assert.Throws<TypeLoadException>(() => TakeLPCSTRArrayExpClassByVal(c12, ARRAY_SIZE), "TakeLPCSTRArrayExpClassByVal");
 
-        if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+        if (OperatingSystem.IsWindows())
         {
             C_BSTRArray_Exp c13 = new C_BSTRArray_Exp();
             c13.arr = InitArray<string>(ARRAY_SIZE);
@@ -427,7 +427,7 @@ class Test
         {
             RunTest1("RunTest 1 : Marshal Array In Sequential Struct As LPArray. ");
             RunTest2("RunTest 2 : Marshal Array In Sequential Class As LPArray. ");
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            if (OperatingSystem.IsWindows())
             {
                 RunTest3("RunTest 3 : Marshal Array In Explicit Struct As LPArray. "); 
             }

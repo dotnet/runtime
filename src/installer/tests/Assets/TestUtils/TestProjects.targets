@@ -3,27 +3,9 @@
     This file is imported by the test projects from the artifacts dir or the src/tests dir. It
     provides basic info needed for restore and build with the vanilla SDK.
   -->
-  <PropertyGroup>
-    <NETCoreAppMaximumVersion>$(NetCoreAppCurrentVersion)</NETCoreAppMaximumVersion>
-  </PropertyGroup>
 
-  <ItemGroup>
-    <KnownFrameworkReference Include="Microsoft.NETCore.App"
-      DefaultRuntimeFrameworkVersion="5.0.0-rc.1.20451.14"
-      IsTrimmable="true"
-      LatestRuntimeFrameworkVersion="5.0.0-rc.1.20451.14"
-      RuntimeFrameworkName="Microsoft.NETCore.App"
-      RuntimePackNamePatterns="Microsoft.NETCore.App.Runtime.**RID**"
-      RuntimePackRuntimeIdentifiers="linux-arm;linux-arm64;linux-musl-arm64;linux-musl-x64;linux-x64;osx-x64;rhel.6-x64;tizen.4.0.0-armel;tizen.5.0.0-armel;win-arm;win-arm64;win-x64;win-x86;ios-arm64;ios-arm;ios-x64;ios-x86;tvos-arm64;tvos-x64;android-arm64;android-arm;android-x64;android-x86;browser-wasm"
-      TargetFramework="net6.0"
-      TargetingPackName="Microsoft.NETCore.App.Ref"
-      TargetingPackVersion="5.0.0-rc.1.20451.14" />
-
-    <KnownAppHostPack Include="Microsoft.NETCore.App" 
-      AppHostPackNamePattern="Microsoft.NETCore.App.Host.**RID**"
-      AppHostPackVersion="5.0.0-rc.1.20451.14"
-      AppHostRuntimeIdentifiers="linux-arm;linux-arm64;linux-musl-arm64;linux-musl-x64;linux-x64;osx-x64;rhel.6-x64;tizen.4.0.0-armel;tizen.5.0.0-armel;win-arm;win-arm64;win-x64;win-x86"
-      TargetFramework="net6.0" />
-  </ItemGroup>
-
+  <!--
+    We are using to best emulate the live version. This should be removed once we start using the live bits.
+    https://github.com/dotnet/runtime/issues/45972  
+  -->
 </Project>

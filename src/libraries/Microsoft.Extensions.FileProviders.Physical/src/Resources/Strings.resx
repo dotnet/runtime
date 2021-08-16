@@ -120,4 +120,16 @@
   <data name="Error_FileSystemWatcherRequiredWithoutPolling" xml:space="preserve">
     <value>The fileSystemWatcher parameter must be non-null when pollForChanges is false.</value>
   </data>
+  <data name="CannotCreateStream" xml:space="preserve">
+    <value>Cannot create a stream for a directory.</value>
+  </data>
+  <data name="CannotModifyWhenFileWatcherInitialized" xml:space="preserve">
+    <value>Cannot modify {0} once file watcher has been initialized.</value>
+  </data>
+  <data name="UnexpectedFileSystemInfo" xml:space="preserve">
+    <value>Unexpected type of FileSystemInfo</value>
+  </data>
+  <data name="FileSystemWatcher_PlatformNotSupported" xml:space="preserve">
+    <value>The type '{0}' is not supported on this platform, use polling instead.</value>
+  </data>
 </root>

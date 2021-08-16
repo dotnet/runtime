@@ -52,7 +52,7 @@ namespace System.Net.Http.Functional.Tests
 
                             TextReader clientReader = new StreamReader(clientStream);
                             TextWriter clientWriter = new StreamWriter(clientStream) { AutoFlush = true };
-                            TextWriter serverWriter = connection.Writer;
+                            TextWriter serverWriter = new StreamWriter(connection.Stream, leaveOpen: true) { AutoFlush = true };
 
                             const string helloServer = "hello server";
                             const string helloClient = "hello client";

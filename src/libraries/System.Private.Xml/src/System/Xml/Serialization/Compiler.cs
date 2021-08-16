@@ -1,21 +1,26 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Reflection;
+using System.Buffers.Binary;
 using System.Collections;
-using System.IO;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
+using System.IO;
+using System.Reflection;
 using System.Runtime.CompilerServices;
+using System.Security.Cryptography;
+using System.Text;
 
 namespace System.Xml.Serialization
 {
-    internal class Compiler
+    internal sealed class Compiler
     {
         private readonly StringWriter _writer = new StringWriter(CultureInfo.InvariantCulture);
 
         // SxS: This method does not take any resource name and does not expose any resources to the caller.
         // It's OK to suppress the SxS warning.
+        [RequiresUnreferencedCode("Reflects against input Type DeclaringType")]
         internal void AddImport(Type? type, Hashtable types)
         {
             if (type == null)
@@ -87,7 +92,14 @@ namespace System.Xml.Serialization
 
         internal static string GetTempAssemblyName(AssemblyName parent, string? ns)
         {
-            return parent.Name + ".XmlSerializers" + (ns == null || ns.Length == 0 ? "" : "." + ns.GetHashCode());
+            return parent.Name + ".XmlSerializers" + (string.IsNullOrEmpty(ns) ? "" : $".{GetPersistentHashCode(ns)}");
+        }
+
+        private static uint GetPersistentHashCode(string value)
+        {
+            byte[] valueBytes = Encoding.UTF8.GetBytes(value);
+            byte[] hash = SHA512.HashData(valueBytes);
+            return BinaryPrimitives.ReadUInt32BigEndian(hash);
         }
     }
 }

@@ -1,6 +1,6 @@
 # escape=`
 # Simple Dockerfile which copies library build artifacts into target dotnet sdk image
-ARG SDK_BASE_IMAGE=mcr.microsoft.com/dotnet/nightly/sdk:5.0-nanoserver-1809
+ARG SDK_BASE_IMAGE=mcr.microsoft.com/dotnet/nightly/sdk:6.0-nanoserver-1809
 FROM $SDK_BASE_IMAGE as target
 
 ARG TESTHOST_LOCATION=".\\artifacts\\bin\\testhost"

@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Formats.Asn1;
@@ -51,15 +52,9 @@ namespace System.Security.Cryptography.Pkcs
         {
         }
 
-        // This can be implemented with NETCOREAPP2_0 with the cert creation API.
-        // * Open the parameters as RSACSP (RSA PKCS#1 signature was hard-coded in netfx)
-        //   * Which will fail on non-Windows
-        // * Create a certificate with subject CN=CMS Signer Dummy Certificate
-        //   * Need to check against .NET Framework to find out what the NotBefore/NotAfter values are
-        //   * No extensions
-        //
-        // Since it would only work on Windows, it could also be just done as P/Invokes to
-        // CertCreateSelfSignedCertificate on a split Windows/netstandard implementation.
+#if NET6_0_OR_GREATER
+        [Obsolete(Obsoletions.CmsSignerCspParamsCtorMessage, DiagnosticId = Obsoletions.CmsSignerCspParamsCtorDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+ #endif
         public CmsSigner(CspParameters parameters) => throw new PlatformNotSupportedException();
 
         public CmsSigner(SubjectIdentifierType signerIdentifierType, X509Certificate2? certificate) : this(signerIdentifierType, certificate, null)
@@ -258,6 +253,7 @@ namespace System.Security.Cryptography.Pkcs
                     X509Chain chain = new X509Chain();
                     chain.ChainPolicy.RevocationMode = X509RevocationMode.NoCheck;
                     chain.ChainPolicy.VerificationFlags = X509VerificationFlags.AllFlags;
+                    chain.ChainPolicy.VerificationTime = Certificate!.NotBefore;
 
                     if (!chain.Build(Certificate!))
                     {
@@ -265,7 +261,18 @@ namespace System.Security.Cryptography.Pkcs
                         {
                             if (status.Status == X509ChainStatusFlags.PartialChain)
                             {
-                                throw new CryptographicException(SR.Cryptography_Cms_IncompleteCertChain);
+                                if (chain.ChainElements.Count == 0)
+                                {
+                                    // On Android, we will fail with PartialChain to build a cert chain
+                                    // even if the failure is an untrusted root cert since the underlying platform
+                                    // does not provide a way to distinguish the failure.
+                                    // In that case, just use the provided cert.
+                                    certs.Add(Certificate!);
+                                }
+                                else
+                                {
+                                    throw new CryptographicException(SR.Cryptography_Cms_IncompleteCertChain);
+                                }
                             }
                         }
                     }

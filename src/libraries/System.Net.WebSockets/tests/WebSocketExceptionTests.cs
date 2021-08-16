@@ -34,7 +34,7 @@ namespace System.Net.WebSockets.Tests
         [Fact]
         public void ConstructorTests_Parameterless_Success()
         {
-            int lastError = Marshal.GetLastWin32Error();
+            int lastError = Marshal.GetLastPInvokeError();
             var wse = new WebSocketException();
             Assert.Equal(wse.NativeErrorCode, lastError);
             Assert.Equal(wse.ErrorCode, lastError);

@@ -206,7 +206,7 @@ namespace System
                 return -1;
 
             if (GlobalizationMode.Invariant)
-                TextInfo.ToLowerAsciiInvariant(source, destination);
+                InvariantModeCasing.ToLower(source, destination);
             else
                 culture.TextInfo.ChangeCaseToLower(source, destination);
             return source.Length;
@@ -230,7 +230,7 @@ namespace System
                 return -1;
 
             if (GlobalizationMode.Invariant)
-                TextInfo.ToLowerAsciiInvariant(source, destination);
+                InvariantModeCasing.ToLower(source, destination);
             else
                 TextInfo.Invariant.ChangeCaseToLower(source, destination);
             return source.Length;
@@ -258,7 +258,7 @@ namespace System
                 return -1;
 
             if (GlobalizationMode.Invariant)
-                TextInfo.ToUpperAsciiInvariant(source, destination);
+                InvariantModeCasing.ToUpper(source, destination);
             else
                 culture.TextInfo.ChangeCaseToUpper(source, destination);
             return source.Length;
@@ -282,7 +282,7 @@ namespace System
                 return -1;
 
             if (GlobalizationMode.Invariant)
-                TextInfo.ToUpperAsciiInvariant(source, destination);
+                InvariantModeCasing.ToUpper(source, destination);
             else
                 TextInfo.Invariant.ChangeCaseToUpper(source, destination);
             return source.Length;
@@ -379,6 +379,32 @@ namespace System
         public static SpanRuneEnumerator EnumerateRunes(this Span<char> span)
         {
             return new SpanRuneEnumerator(span);
+        }
+
+        /// <summary>
+        /// Returns an enumeration of lines over the provided span.
+        /// </summary>
+        /// <remarks>
+        /// It is recommended that protocol parsers not utilize this API. See the documentation
+        /// for <see cref="string.ReplaceLineEndings"/> for more information on how newline
+        /// sequences are detected.
+        /// </remarks>
+        public static SpanLineEnumerator EnumerateLines(this ReadOnlySpan<char> span)
+        {
+            return new SpanLineEnumerator(span);
+        }
+
+        /// <summary>
+        /// Returns an enumeration of lines over the provided span.
+        /// </summary>
+        /// <remarks>
+        /// It is recommended that protocol parsers not utilize this API. See the documentation
+        /// for <see cref="string.ReplaceLineEndings"/> for more information on how newline
+        /// sequences are detected.
+        /// </remarks>
+        public static SpanLineEnumerator EnumerateLines(this Span<char> span)
+        {
+            return new SpanLineEnumerator(span);
         }
     }
 }

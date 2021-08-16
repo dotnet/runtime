@@ -3,6 +3,7 @@
 
 using Xunit;
 using Xunit.Abstractions;
+using System;
 using System.Collections;
 using System.Diagnostics;
 using System.IO;
@@ -27,14 +28,14 @@ namespace System.Xml.Tests
         public static MethodInfo GetInstanceMethod(Type type, string methName)
         {
             MethodInfo methInfo = type.GetMethod(methName, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
-            Debug.Assert(methInfo != null, "Instance method " + type.Name + "." + methName + " not found");
+            Debug.Assert(methInfo != null, $"Instance method {type.Name}.{methName} not found");
             return methInfo;
         }
 
         public static MethodInfo GetStaticMethod(Type type, string methName)
         {
             MethodInfo methInfo = type.GetMethod(methName, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static);
-            Debug.Assert(methInfo != null, "Static method " + type.Name + "." + methName + " not found");
+            Debug.Assert(methInfo != null, $"Static method {type.Name}.{methName} not found");
             return methInfo;
         }
 

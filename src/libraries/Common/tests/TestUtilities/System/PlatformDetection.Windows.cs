@@ -22,7 +22,8 @@ namespace System
         public static bool HasWindowsShell => IsWindows && IsNotWindowsServerCore && IsNotWindowsNanoServer && IsNotWindowsIoTCore;
         public static bool IsWindows7 => IsWindows && GetWindowsVersion() == 6 && GetWindowsMinorVersion() == 1;
         public static bool IsWindows8x => IsWindows && GetWindowsVersion() == 6 && (GetWindowsMinorVersion() == 2 || GetWindowsMinorVersion() == 3);
-        public static bool IsWindows8xOrLater => IsWindows && new Version((int)GetWindowsVersion(), (int)GetWindowsMinorVersion()) >= new Version(6, 2);
+        public static bool IsWindows8xOrLater => IsWindowsVersionOrLater(6, 2);
+        public static bool IsWindows10OrLater => IsWindowsVersionOrLater(10, 0);
         public static bool IsWindowsNanoServer => IsWindows && (IsNotWindowsIoTCore && GetWindowsInstallationType().Equals("Nano Server", StringComparison.OrdinalIgnoreCase));
         public static bool IsWindowsServerCore => IsWindows && GetWindowsInstallationType().Equals("Server Core", StringComparison.OrdinalIgnoreCase);
         public static int WindowsVersion => IsWindows ? (int)GetWindowsVersion() : -1;
@@ -37,31 +38,24 @@ namespace System
         public static bool IsSoundPlaySupported => IsWindows && IsNotWindowsNanoServer;
 
         // >= Windows 10 Anniversary Update
-        public static bool IsWindows10Version1607OrGreater => IsWindows &&
-            GetWindowsVersion() == 10 && GetWindowsMinorVersion() == 0 && GetWindowsBuildNumber() >= 14393;
+        public static bool IsWindows10Version1607OrGreater => IsWindowsVersionOrLater(10, 0, 14393);
 
-         // >= Windows 10 Creators Update
-        public static bool IsWindows10Version1703OrGreater => IsWindows &&
-            GetWindowsVersion() == 10 && GetWindowsMinorVersion() == 0 && GetWindowsBuildNumber() >= 15063;
+        // >= Windows 10 Creators Update
+        public static bool IsWindows10Version1703OrGreater => IsWindowsVersionOrLater(10, 0, 15063);
 
         // >= Windows 10 Fall Creators Update
-        public static bool IsWindows10Version1709OrGreater => IsWindows &&
-            GetWindowsVersion() == 10 && GetWindowsMinorVersion() == 0 && GetWindowsBuildNumber() >= 16299;
+        public static bool IsWindows10Version1709OrGreater => IsWindowsVersionOrLater(10, 0, 16299);
 
         // >= Windows 10 April 2018 Update
-        public static bool IsWindows10Version1803OrGreater => IsWindows &&
-            GetWindowsVersion() == 10 && GetWindowsMinorVersion() == 0 && GetWindowsBuildNumber() >= 17134;
+        public static bool IsWindows10Version1803OrGreater => IsWindowsVersionOrLater(10, 0, 17134);
 
         // >= Windows 10 May 2019 Update (19H1)
-        public static bool IsWindows10Version1903OrGreater => IsWindows &&
-            GetWindowsVersion() == 10 && GetWindowsMinorVersion() == 0 && GetWindowsBuildNumber() >= 18362;
+        public static bool IsWindows10Version1903OrGreater => IsWindowsVersionOrLater(10, 0, 18362);
 
-        // >= Windows 10 20H1 Update (As of Jan. 2020 yet to be released)
-        // Per https://docs.microsoft.com/en-us/windows-insider/flight-hub/ the first 20H1 build is 18836.
-        public static bool IsWindows10Version2004OrGreater => IsWindows &&
-            GetWindowsVersion() == 10 && GetWindowsMinorVersion() == 0 && GetWindowsBuildNumber() >= 18836;
+        // >= Windows 10 20H1 Update
+        public static bool IsWindows10Version2004OrGreater => IsWindowsVersionOrLater(10, 0, 19041);
 
-        public static bool IsWindows10Version2004Build19573OrGreater => IsWindows10Version2004OrGreater && GetWindowsBuildNumber() >= 19573;
+        public static bool IsWindows10Version2004Build19573OrGreater => IsWindowsVersionOrLater(10, 0, 19573);
 
         public static bool IsWindowsIoTCore
         {
@@ -109,30 +103,6 @@ namespace System
             }
         }
 
-        public static bool IsWindowsSubsystemForLinux => m_isWindowsSubsystemForLinux.Value;
-        public static bool IsNotWindowsSubsystemForLinux => !IsWindowsSubsystemForLinux;
-
-        private static Lazy<bool> m_isWindowsSubsystemForLinux = new Lazy<bool>(GetIsWindowsSubsystemForLinux);
-        private static bool GetIsWindowsSubsystemForLinux()
-        {
-            // https://github.com/Microsoft/BashOnWindows/issues/423#issuecomment-221627364
-            if (IsLinux)
-            {
-                const string versionFile = "/proc/version";
-                if (File.Exists(versionFile))
-                {
-                    string s = File.ReadAllText(versionFile);
-
-                    if (s.Contains("Microsoft") || s.Contains("WSL"))
-                    {
-                        return true;
-                    }
-                }
-            }
-
-            return false;
-        }
-
         private static string GetWindowsInstallationType()
         {
             string key = @"HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion";
@@ -178,20 +148,25 @@ namespace System
         [DllImport("kernel32.dll", ExactSpelling = true)]
         private static extern int GetCurrentApplicationUserModelId(ref uint applicationUserModelIdLength, byte[] applicationUserModelId);
 
-        internal static uint GetWindowsVersion()
+        private static volatile Version s_windowsVersionObject;
+        internal static Version GetWindowsVersionObject()
         {
-            Assert.Equal(0, Interop.NtDll.RtlGetVersionEx(out Interop.NtDll.RTL_OSVERSIONINFOEX osvi));
-            return osvi.dwMajorVersion;
+            if (s_windowsVersionObject is null)
+            {
+                Assert.Equal(0, Interop.NtDll.RtlGetVersionEx(out Interop.NtDll.RTL_OSVERSIONINFOEX osvi));
+                Version newObject = new Version(checked((int)osvi.dwMajorVersion), checked((int)osvi.dwMinorVersion), checked((int)osvi.dwBuildNumber));
+                s_windowsVersionObject = newObject;
+            }
+
+            return s_windowsVersionObject;
         }
-        internal static uint GetWindowsMinorVersion()
+
+        internal static uint GetWindowsVersion() => (uint)GetWindowsVersionObject().Major;
+        internal static uint GetWindowsMinorVersion() => (uint)GetWindowsVersionObject().Minor;
+
+        internal static bool IsWindowsVersionOrLater(int major, int minor, int build = -1)
         {
-            Assert.Equal(0, Interop.NtDll.RtlGetVersionEx(out Interop.NtDll.RTL_OSVERSIONINFOEX osvi));
-            return osvi.dwMinorVersion;
-        }
-        internal static uint GetWindowsBuildNumber()
-        {
-            Assert.Equal(0, Interop.NtDll.RtlGetVersionEx(out Interop.NtDll.RTL_OSVERSIONINFOEX osvi));
-            return osvi.dwBuildNumber;
+            return IsWindows && GetWindowsVersionObject() >= (build != -1 ? new Version(major, minor, build) : new Version(major, minor));
         }
 
         private static int s_isInAppContainer = -1;

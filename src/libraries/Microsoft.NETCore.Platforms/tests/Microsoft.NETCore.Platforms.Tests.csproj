@@ -1,0 +1,28 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFrameworks>$(NetCoreAppCurrent);net472</TargetFrameworks>
+    <IgnoreForCI Condition="'$(TargetOS)' == 'Browser'">true</IgnoreForCI>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\src\Microsoft.NETCore.Platforms.csproj" />
+    <!-- Workaround NuGet promoting this to a ProjectReference -->
+    <PackageReference Include="System.Memory" Condition="'$(TargetFramework)' == 'net472'" Version="$(SystemMemoryVersion)" />
+    <PackageReference Include="System.Security.AccessControl" Condition="'$(TargetFramework)' == 'net472'" Version="$(SystemSecurityAccessControlVersion)" />
+    <PackageReference Include="System.Security.Principal.Windows" Condition="'$(TargetFramework)' == 'net472'" Version="$(SystemSecurityPrincipalWindowsVersion)" />
+  </ItemGroup>
+  
+  <ItemGroup>
+    <Compile Include="AssemblyInfo.cs" />
+    <Compile Include="GenerateRuntimeGraphTests.cs" />
+    <Compile Include="Log.cs" />
+    <Compile Include="RidTests.cs" />
+    <Compile Include="RuntimeVersionTests.cs" />
+    <Compile Include="TestBuildEngine.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="..\src\runtimeGroups.props" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="..\src\runtime.json" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+</Project>

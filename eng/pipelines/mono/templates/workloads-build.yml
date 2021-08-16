@@ -1,0 +1,100 @@
+parameters:
+  archType: ''
+  buildConfig: ''
+  container: ''
+  dependOnEvaluatePaths: false
+  dependsOn: []
+  isOfficialBuild: false
+  osGroup: ''
+  osSubgroup: ''
+  platform: ''
+  pool: ''
+  runtimeVariant: ''
+  stagedBuild: false
+  testGroup: ''
+  timeoutInMinutes: ''
+  variables: {}
+
+jobs:
+- template: xplat-pipeline-job.yml
+  parameters:
+    archType: ${{ parameters.archType }}
+    buildConfig: ${{ parameters.buildConfig }}
+    container: ${{ parameters.container }}
+    condition: ${{ parameters.isOfficialBuild }}
+    helixType: 'build/product/'
+    osGroup: ${{ parameters.osGroup }}
+    osSubgroup: ${{ parameters.osSubgroup }}
+    pool: ${{ parameters.pool }}
+    runtimeVariant: ${{ parameters.runtimeVariant }}
+    stagedBuild: ${{ parameters.stagedBuild }}
+    timeoutInMinutes: ${{ parameters.timeoutInMinutes }}
+    dependOnEvaluatePaths: ${{ parameters.dependOnEvaluatePaths }}
+
+    dependsOn: ${{ parameters.dependsOn }}
+
+    name: workloadsbuild
+    displayName: Build Workloads
+
+    variables:
+    - name: officialBuildIdArg
+      value: ''
+    - ${{ if and(eq(variables['System.TeamProject'], 'internal'), ne(variables['Build.Reason'], 'PullRequest')) }}:
+      - name: officialBuildIdArg
+        value: '/p:OfficialBuildId=$(Build.BuildNumber)'
+    - name: SignType
+      value: $[ coalesce(variables.OfficialSignType, 'real') ]
+    - ${{ parameters.variables }}
+
+    steps:
+    - task: DownloadPipelineArtifact@2
+      inputs:
+        artifact: 'IntermediateArtifacts'
+        path: $(workloadPackagesPath)
+        patterns: |
+          IntermediateArtifacts/MonoRuntimePacks/Shipping/Microsoft.NETCore.App.Runtime.AOT.win-x64.Cross.android-*.nupkg
+          IntermediateArtifacts/MonoRuntimePacks/Shipping/Microsoft.NETCore.App.Runtime.AOT.win-x64.Cross.browser-wasm*.nupkg
+          IntermediateArtifacts/MonoRuntimePacks/Shipping/Microsoft.NETCore.App.Runtime.Mono.android-*.nupkg
+          IntermediateArtifacts/MonoRuntimePacks/Shipping/Microsoft.NETCore.App.Runtime.Mono.browser-wasm*.nupkg
+          IntermediateArtifacts/MonoRuntimePacks/Shipping/Microsoft.NETCore.App.Runtime.Mono.ios-*.nupkg
+          IntermediateArtifacts/MonoRuntimePacks/Shipping/Microsoft.NETCore.App.Runtime.Mono.iossimulator-*.nupkg
+          IntermediateArtifacts/MonoRuntimePacks/Shipping/Microsoft.NETCore.App.Runtime.Mono.maccatalyst-*.nupkg
+          IntermediateArtifacts/MonoRuntimePacks/Shipping/Microsoft.NETCore.App.Runtime.Mono.tvos-*.nupkg
+          IntermediateArtifacts/MonoRuntimePacks/Shipping/Microsoft.NETCore.App.Runtime.Mono.tvossimulator-*.nupkg
+          IntermediateArtifacts/MonoRuntimePacks/Shipping/Microsoft.NET.Workload.Mono.ToolChain.Manifest*.nupkg
+          IntermediateArtifacts/MonoRuntimePacks/Shipping/Microsoft.NET.Runtime.MonoTargets.Sdk*.nupkg
+          IntermediateArtifacts/MonoRuntimePacks/Shipping/Microsoft.NET.Runtime.MonoAOTCompiler.Task*.nupkg
+          IntermediateArtifacts/MonoRuntimePacks/Shipping/Microsoft.NET.Runtime.WebAssembly.Sdk*.nupkg
+
+    - task: CopyFiles@2
+      displayName: Flatten packages
+      inputs:
+        sourceFolder: $(workloadPackagesPath)
+        contents: '*/Shipping/*.nupkg'
+        cleanTargetFolder: false
+        targetFolder: $(workloadPackagesPath)
+        flattenFolders: true
+
+    - script: $(Build.SourcesDirectory)$(dir)build$(scriptExt) -subset mono.workloads -arch $(archType) -c $(buildConfig) $(officialBuildIdArg) -ci
+      displayName: Build workload artifacts
+
+    # Upload packages wrapping msis
+    - template: /eng/pipelines/common/upload-intermediate-artifacts-step.yml
+      parameters:
+        name: workloads
+
+    # Delete wixpdb files before they are uploaded to artifacts
+    - task: DeleteFiles@1
+      displayName: Delete wixpdb's
+      inputs:
+        SourceFolder: $(workloadArtifactsPath)
+        Contents: '*.wixpdb'
+
+    # Upload artifacts to be used for generating VS components
+    - task: PublishPipelineArtifact@1
+      displayName: Publish workload artifacts
+      inputs:
+        targetPath: $(Build.SourcesDirectory)/artifacts/VSSetup/$(_BuildConfig)/Insertion
+        artifactName: 'Insertion'
+      continueOnError: true
+      condition: always()

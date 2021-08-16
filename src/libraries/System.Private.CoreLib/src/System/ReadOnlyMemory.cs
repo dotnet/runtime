@@ -3,6 +3,7 @@
 
 using System.Buffers;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -144,7 +145,7 @@ namespace System
             {
                 return (_object is string str) ? str.Substring(_index, _length) : Span.ToString();
             }
-            return string.Format("System.ReadOnlyMemory<{0}>[{1}]", typeof(T).Name, _length);
+            return $"System.ReadOnlyMemory<{typeof(T).Name}>[{_length}]";
         }
 
         /// <summary>
@@ -357,7 +358,7 @@ namespace System
 
         /// <summary>Determines whether the specified object is equal to the current object.</summary>
         [EditorBrowsable(EditorBrowsableState.Never)]
-        public override bool Equals(object? obj)
+        public override bool Equals([NotNullWhen(true)] object? obj)
         {
             if (obj is ReadOnlyMemory<T> readOnlyMemory)
             {

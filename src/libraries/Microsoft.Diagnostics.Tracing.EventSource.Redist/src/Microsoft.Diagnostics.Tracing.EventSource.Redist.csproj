@@ -1,13 +1,18 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
+    <PackageDescription>This package includes the class Microsoft.Diagnostics.Tracing.EventSource which enables firing ETW events from managed code. This is the "runtime" or "redist" EventSource package and should be referenced directly only by other NuGet packages that need the EventSource functionality. Application developers that need this functionality should instead reference the Microsoft.Diagnostics.Tracing.EventSource NuGet package which provides an enhanced developer experience.
+This package enables defining a strongly typed specification of an ETW provider that can be called by managed code. The EventSource class is also included in the .NET Framework, .NET Core, and netstandard2.0 in the System.Diagnostics.Tracing namespace. This package contains the latest version of EventSource and is meant to be used as a stop gap for .NET Framework developers until features and fixes are ported to System.Diagnostics.Tracing.EventSource in the .NET Framework.
+For more details, have a look at http://msdn.microsoft.com/en-us/library/system.diagnostics.tracing.eventsource.aspx.
+
+Commonly Used Types:
+Microsoft.Diagnostics.Tracing.EventSource</PackageDescription>
+    <IsPackable>true</IsPackable>
+    <PackageId>$(MSBuildProjectName)</PackageId>
     <AssemblyName>Microsoft.Diagnostics.Tracing.EventSource</AssemblyName>
     <DefineConstants>$(DefineConstants);NO_EVENTCOMMANDEXECUTED_SUPPORT;ES_BUILD_STANDALONE;FEATURE_MANAGED_ETW;TARGET_WINDOWS</DefineConstants>
     <TargetFrameworks>net461-windows</TargetFrameworks>
     <Nullable>enable</Nullable>
-    <DocumentationFile>$(OutputPath)$(AssemblyName).xml</DocumentationFile>
     <IncludePlatformAttributes>true</IncludePlatformAttributes>
-  </PropertyGroup>
-  <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
   <ItemGroup>
@@ -52,7 +57,6 @@
     <Compile Include="..\..\System.Private.CoreLib\src\System\Diagnostics\Tracing\TraceLogging\EventFieldFormat.cs" />
     <Compile Include="..\..\System.Private.CoreLib\src\System\Diagnostics\Tracing\TraceLogging\EventIgnoreAttribute.cs" />
     <Compile Include="..\..\System.Private.CoreLib\src\System\Diagnostics\Tracing\TraceLogging\EventPayload.cs" />
-    <Compile Include="..\..\System.Private.CoreLib\src\System\Diagnostics\Tracing\TraceLogging\EventSourceActivity.cs" />
     <Compile Include="..\..\System.Private.CoreLib\src\System\Diagnostics\Tracing\TraceLogging\EventSourceOptions.cs" />
     <Compile Include="..\..\System.Private.CoreLib\src\System\Diagnostics\Tracing\TraceLogging\FieldMetadata.cs" />
     <Compile Include="..\..\System.Private.CoreLib\src\System\Diagnostics\Tracing\TraceLogging\InvokeTypeInfo.cs" />

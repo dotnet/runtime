@@ -13,7 +13,7 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace System.Xml
 {
-    internal partial class DtdParser : IDtdParser
+    internal sealed partial class DtdParser : IDtdParser
     {
         //
         // Private types
@@ -115,7 +115,7 @@ namespace System.Xml
             SystemOrPublicID
         }
 
-        private class UndeclaredNotation
+        private sealed class UndeclaredNotation
         {
             internal string name;
             internal int lineNo;
@@ -1015,7 +1015,7 @@ namespace System.Xml
             OnUnexpectedError();
         }
 
-        private class ParseElementOnlyContent_LocalFrame
+        private sealed class ParseElementOnlyContent_LocalFrame
         {
             public ParseElementOnlyContent_LocalFrame(int startParentEntityIdParam)
             {

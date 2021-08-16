@@ -46,14 +46,41 @@ namespace Internal.Cryptography
         protected override byte[] UncheckedTransformFinalBlock(byte[] inputBuffer, int inputOffset, int inputCount)
         {
             byte[] buffer;
-#if NETSTANDARD || NETFRAMEWORK || NETCOREAPP3_0
-            buffer = new byte[GetCiphertextLength(inputCount)];
-#else
+#if NET5_0_OR_GREATER
             buffer = GC.AllocateUninitializedArray<byte>(GetCiphertextLength(inputCount));
+#else
+            buffer = new byte[GetCiphertextLength(inputCount)];
 #endif
             int written = UncheckedTransformFinalBlock(inputBuffer.AsSpan(inputOffset, inputCount), buffer);
             Debug.Assert(written == buffer.Length);
             return buffer;
+        }
+
+        public override bool TransformOneShot(ReadOnlySpan<byte> input, Span<byte> output, out int bytesWritten)
+        {
+            int ciphertextLength = GetCiphertextLength(input.Length);
+
+            if (output.Length < ciphertextLength)
+            {
+                bytesWritten = 0;
+                return false;
+            }
+
+            // Copy the input to the output, and apply padding if required. This will not throw since the
+            // output length has already been checked, and PadBlock will not copy from input to output
+            // until it has checked that it will be able to apply padding correctly.
+            int padWritten = PadBlock(input, output);
+
+            // Do an in-place encrypt. All of our implementations support this, either natively
+            // or making a temporary buffer themselves if in-place is not supported by the native
+            // implementation.
+            Span<byte> paddedOutput = output.Slice(0, padWritten);
+            bytesWritten = BasicSymmetricCipher.TransformFinal(paddedOutput, paddedOutput);
+
+            // After padding, we should have an even number of blocks, and the same applies
+            // to the transform.
+            Debug.Assert(padWritten == bytesWritten);
+            return true;
         }
 
         private int GetCiphertextLength(int plaintextLength)
@@ -168,8 +195,8 @@ namespace Internal.Cryptography
                         throw new ArgumentException(SR.Argument_DestinationTooShort, nameof(destination));
                     }
 
-                    destination.Slice(0, zeroSize).Clear();
                     block.CopyTo(destination);
+                    destination.Slice(count, padBytes).Clear();
                     return zeroSize;
 
                 default:

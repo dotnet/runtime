@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Generic;
 using Xunit;
 
 namespace System.SpanTests
@@ -14,8 +15,10 @@ namespace System.SpanTests
 
             Span<int> first = new Span<int>(a, 1, 0);
             Span<int> second = new Span<int>(a, 2, 0);
-            bool b = first.SequenceEqual(second);
-            Assert.True(b);
+
+            Assert.True(first.SequenceEqual(second));
+            Assert.True(first.SequenceEqual(second, null));
+            Assert.True(first.SequenceEqual(second, EqualityComparer<int>.Default));
         }
 
         [Fact]
@@ -23,8 +26,10 @@ namespace System.SpanTests
         {
             int[] a = { 4, 5, 6 };
             Span<int> span = new Span<int>(a);
-            bool b = span.SequenceEqual(span);
-            Assert.True(b);
+
+            Assert.True(span.SequenceEqual(span));
+            Assert.True(span.SequenceEqual(span, null));
+            Assert.True(span.SequenceEqual(span, EqualityComparer<int>.Default));
         }
 
         [Fact]
@@ -33,12 +38,17 @@ namespace System.SpanTests
             int[] a = { 4, 5, 6 };
             Span<int> first = new Span<int>(a, 0, 3);
             Span<int> second = new Span<int>(a, 0, 2);
-            bool b = first.SequenceEqual(second);
-            Assert.False(b);
+
+            Assert.False(first.SequenceEqual(second));
+            Assert.False(first.SequenceEqual(second, null));
+            Assert.False(first.SequenceEqual(second, EqualityComparer<int>.Default));
         }
 
-        [Fact]
-        public static void OnSequenceEqualOfEqualSpansMakeSureEveryElementIsCompared()
+        [Theory]
+        [InlineData(0)]
+        [InlineData(1)]
+        [InlineData(2)]
+        public static void OnSequenceEqualOfEqualSpansMakeSureEveryElementIsCompared(int mode)
         {
             for (int length = 0; length < 100; length++)
             {
@@ -53,8 +63,13 @@ namespace System.SpanTests
 
                 Span<TInt> firstSpan = new Span<TInt>(first);
                 ReadOnlySpan<TInt> secondSpan = new ReadOnlySpan<TInt>(second);
-                bool b = firstSpan.SequenceEqual(secondSpan);
-                Assert.True(b);
+
+                Assert.True(mode switch
+                {
+                    0 => firstSpan.SequenceEqual(secondSpan),
+                    1 => firstSpan.SequenceEqual(secondSpan, null),
+                    _ => firstSpan.SequenceEqual(secondSpan, EqualityComparer<TInt>.Default)
+                });
 
                 // Make sure each element of the array was compared once. (Strictly speaking, it would not be illegal for
                 // SequenceEqual to compare an element more than once but that would be a non-optimal implementation and
@@ -68,8 +83,11 @@ namespace System.SpanTests
             }
         }
 
-        [Fact]
-        public static void SequenceEqualNoMatch()
+        [Theory]
+        [InlineData(0)]
+        [InlineData(1)]
+        [InlineData(2)]
+        public static void SequenceEqualNoMatch(int mode)
         {
             for (int length = 1; length < 32; length++)
             {
@@ -88,8 +106,13 @@ namespace System.SpanTests
 
                     Span<TInt> firstSpan = new Span<TInt>(first);
                     ReadOnlySpan<TInt> secondSpan = new ReadOnlySpan<TInt>(second);
-                    bool b = firstSpan.SequenceEqual(secondSpan);
-                    Assert.False(b);
+
+                    Assert.False(mode switch
+                    {
+                        0 => firstSpan.SequenceEqual(secondSpan),
+                        1 => firstSpan.SequenceEqual(secondSpan, null),
+                        _ => firstSpan.SequenceEqual(secondSpan, EqualityComparer<TInt>.Default)
+                    });
 
                     Assert.Equal(1, log.CountCompares(first[mismatchIndex].Value, second[mismatchIndex].Value));
                 }
@@ -125,8 +148,10 @@ namespace System.SpanTests
 
                 Span<TInt> firstSpan = new Span<TInt>(first, GuardLength, length);
                 Span<TInt> secondSpan = new Span<TInt>(second, GuardLength, length);
-                bool b = firstSpan.SequenceEqual(secondSpan);
-                Assert.True(b);
+
+                Assert.True(firstSpan.SequenceEqual(secondSpan));
+                Assert.True(firstSpan.SequenceEqual(secondSpan, null));
+                Assert.True(firstSpan.SequenceEqual(secondSpan, EqualityComparer<TInt>.Default));
             }
         }
 
@@ -135,8 +160,15 @@ namespace System.SpanTests
         public static void SequenceEqualsNullData_String(string[] firstInput, string[] secondInput, bool expected)
         {
             Span<string> theStrings = firstInput;
+
             Assert.Equal(expected, theStrings.SequenceEqual(secondInput));
             Assert.Equal(expected, theStrings.SequenceEqual((ReadOnlySpan<string>)secondInput));
+
+            Assert.Equal(expected, theStrings.SequenceEqual(secondInput, null));
+            Assert.Equal(expected, theStrings.SequenceEqual((ReadOnlySpan<string>)secondInput, null));
+
+            Assert.Equal(expected, theStrings.SequenceEqual(secondInput, EqualityComparer<string>.Default));
+            Assert.Equal(expected, theStrings.SequenceEqual((ReadOnlySpan<string>)secondInput, EqualityComparer<string>.Default));
         }
     }
 }

@@ -26,9 +26,6 @@ namespace LoadIjwFromModuleHandle
             {
                 HostPolicyMock.Initialize(Environment.CurrentDirectory, null);
 
-                // Load our fake mscoree to prevent .NET Framework from loading.
-                NativeLibrary.Load(Path.Combine(Environment.CurrentDirectory, "mscoree.dll"));
-
                 Console.WriteLine("Verify that we can load an IJW assembly from native code.");
                 string ijwModulePath = Path.Combine(Environment.CurrentDirectory, "IjwNativeCallingManagedDll.dll");
                 IntPtr ijwNativeHandle = NativeLibrary.Load(ijwModulePath);
@@ -42,7 +39,7 @@ namespace LoadIjwFromModuleHandle
                 {
                     InMemoryAssemblyLoader.LoadInMemoryAssembly(ijwNativeHandle, (IntPtr)path);
                 }
-                
+
                 NativeEntryPointDelegate nativeEntryPoint = Marshal.GetDelegateForFunctionPointer<NativeEntryPointDelegate>(NativeLibrary.GetExport(ijwNativeHandle, "NativeEntryPoint"));
 
                 Assert.AreEqual(100, nativeEntryPoint());
@@ -63,7 +60,7 @@ namespace LoadIjwFromModuleHandle
                 changeReturnedValueMethod.Invoke(null, new object[] { newValue });
 
                 Assert.AreEqual(newValue, (int)getReturnValueMethod.Invoke(null, null));
-                
+
                 // Native images are only loaded into memory once. As a result, the stubs in the vtfixup table
                 // will always point to JIT stubs that exist in the first ALC that the module was loaded into.
                 // As a result, if an IJW module is loaded into two different ALCs, or if the module is

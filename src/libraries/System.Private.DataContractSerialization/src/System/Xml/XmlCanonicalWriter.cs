@@ -270,7 +270,7 @@ namespace System.Xml
             {
                 if (_inclusivePrefixes[i].Length == xmlnsAttribute.prefixLength)
                 {
-                    if (string.Compare(Encoding.UTF8.GetString(_xmlnsBuffer!, xmlnsAttribute.prefixOffset, xmlnsAttribute.prefixLength), _inclusivePrefixes[i], StringComparison.Ordinal) == 0)
+                    if (string.Equals(Encoding.UTF8.GetString(_xmlnsBuffer!, xmlnsAttribute.prefixOffset, xmlnsAttribute.prefixLength), _inclusivePrefixes[i], StringComparison.Ordinal))
                     {
                         return true;
                     }
@@ -918,7 +918,7 @@ namespace System.Xml
             return true;
         }
 
-        private class AttributeSorter : IComparer
+        private sealed class AttributeSorter : IComparer
         {
             private readonly XmlCanonicalWriter _writer;
 

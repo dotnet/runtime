@@ -71,7 +71,7 @@ namespace System.Linq.Parallel
         // (possibly partitioned) data source.
         //
 
-        private class LongSumAggregationOperatorEnumerator<TKey> : InlinedAggregationOperatorEnumerator<long>
+        private sealed class LongSumAggregationOperatorEnumerator<TKey> : InlinedAggregationOperatorEnumerator<long>
         {
             private readonly QueryOperatorEnumerator<long, TKey> _source; // The source data.
 
@@ -106,7 +106,7 @@ namespace System.Linq.Parallel
                     do
                     {
                         if ((i++ & CancellationState.POLL_INTERVAL) == 0)
-                            _cancellationToken.ThrowIfCancellationRequested();;
+                            _cancellationToken.ThrowIfCancellationRequested();
 
                         checked
                         {

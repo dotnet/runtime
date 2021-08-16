@@ -38,7 +38,7 @@ namespace Microsoft.Extensions.Options
             name = name ?? Options.DefaultName;
             Lazy<TOptions> value;
 
-#if NETCOREAPP
+#if NETSTANDARD2_1
             value = _cache.GetOrAdd(name, static (name, createOptions) => new Lazy<TOptions>(createOptions), createOptions);
 #else
             if (!_cache.TryGetValue(name, out value))
@@ -82,7 +82,7 @@ namespace Microsoft.Extensions.Options
             }
 
             return _cache.TryAdd(name ?? Options.DefaultName, new Lazy<TOptions>(
-#if !NETCOREAPP
+#if !NETSTANDARD2_1
                 () =>
 #endif
                 options));

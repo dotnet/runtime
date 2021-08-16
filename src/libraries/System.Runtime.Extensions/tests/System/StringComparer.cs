@@ -87,7 +87,7 @@ namespace System.Tests
             yield return new object[] { "abcd",             "ABCD",         "en-US" };
             yield return new object[] { "latin i",          "LATIN I",      "en-US" };
 
-            if (PlatformDetection.IsNotInvariantGlobalization)
+            if (PlatformDetection.IsNotInvariantGlobalization && !PlatformDetection.IsAndroid)
             {
                 yield return new object[] { "turky \u0131",     "TURKY I",      "tr-TR" };
                 yield return new object[] { "turky i",          "TURKY \u0130", "tr-TR" };
@@ -163,28 +163,33 @@ namespace System.Tests
             AssertExtensions.Throws<ArgumentException>("comparisonType", () => StringComparer.FromComparison(maxInvalid));
         }
 
-        public static TheoryData<string, string, string, CompareOptions, bool> CreateFromCultureAndOptionsData => 
-            new TheoryData<string, string, string, CompareOptions, bool>
+        public static IEnumerable<object[]> CreateFromCultureAndOptionsData()
+        {
+            yield return new object[] { "abcd", "ABCD", "en-US", CompareOptions.None, false};
+            yield return new object[] { "latin i", "LATIN I", "en-US", CompareOptions.None, false};
+            yield return new object[] { "turky \u0131", "TURKY I", "tr-TR", CompareOptions.None, false};
+            yield return new object[] { "turky i", "TURKY \u0130", "tr-TR", CompareOptions.None, false};
+            yield return new object[] { "abcd", "ABCD", "en-US", CompareOptions.IgnoreCase, true};
+            yield return new object[] { "latin i", "LATIN I", "en-US", CompareOptions.IgnoreCase, true};
+
+            // Android has its own ICU, which doesn't work well with tr
+            if (!PlatformDetection.IsAndroid)
             {
-                { "abcd", "ABCD", "en-US", CompareOptions.None, false},
-                { "latin i", "LATIN I", "en-US", CompareOptions.None, false},
-                { "turky \u0131", "TURKY I", "tr-TR", CompareOptions.None, false},
-                { "turky i", "TURKY \u0130", "tr-TR", CompareOptions.None, false},
-                { "abcd", "ABCD", "en-US", CompareOptions.IgnoreCase, true},
-                { "latin i", "LATIN I", "en-US", CompareOptions.IgnoreCase, true},
-                { "turky \u0131", "TURKY I", "tr-TR", CompareOptions.IgnoreCase, true},
-                { "turky i", "TURKY \u0130", "tr-TR", CompareOptions.IgnoreCase, true},
-                { "abcd", "ab cd", "en-US", CompareOptions.IgnoreSymbols, true },
-                { "abcd", "ab+cd", "en-US", CompareOptions.IgnoreSymbols, true },
-                { "abcd", "ab%cd", "en-US", CompareOptions.IgnoreSymbols, true },
-                { "abcd", "ab&cd", "en-US", CompareOptions.IgnoreSymbols, true },
-                { "abcd", "ab$cd", "en-US", CompareOptions.IgnoreSymbols, true },
-                { "abcd", "ab$cd", "en-US", CompareOptions.IgnoreSymbols, true },
-                { "a-bcd", "ab$cd", "en-US", CompareOptions.IgnoreSymbols, true },
-                { "abcd*", "ab$cd", "en-US", CompareOptions.IgnoreSymbols, true },
-                { "ab$dd", "ab$cd", "en-US", CompareOptions.IgnoreSymbols, false },
-                { "abcd", "ab$cd", "en-US", CompareOptions.IgnoreSymbols, true },
-            };
+                yield return new object[] { "turky \u0131", "TURKY I", "tr-TR", CompareOptions.IgnoreCase, true};
+                yield return new object[] { "turky i", "TURKY \u0130", "tr-TR", CompareOptions.IgnoreCase, true};
+            }
+
+            yield return new object[] { "abcd", "ab cd", "en-US", CompareOptions.IgnoreSymbols, true };
+            yield return new object[] { "abcd", "ab+cd", "en-US", CompareOptions.IgnoreSymbols, true };
+            yield return new object[] { "abcd", "ab%cd", "en-US", CompareOptions.IgnoreSymbols, true };
+            yield return new object[] { "abcd", "ab&cd", "en-US", CompareOptions.IgnoreSymbols, true };
+            yield return new object[] { "abcd", "ab$cd", "en-US", CompareOptions.IgnoreSymbols, true };
+            yield return new object[] { "abcd", "ab$cd", "en-US", CompareOptions.IgnoreSymbols, true };
+            yield return new object[] { "a-bcd", "ab$cd", "en-US", CompareOptions.IgnoreSymbols, true };
+            yield return new object[] { "abcd*", "ab$cd", "en-US", CompareOptions.IgnoreSymbols, true };
+            yield return new object[] { "ab$dd", "ab$cd", "en-US", CompareOptions.IgnoreSymbols, false };
+            yield return new object[] { "abcd", "ab$cd", "en-US", CompareOptions.IgnoreSymbols, true };
+        }
 
         public static TheoryData<string, string, string, CompareOptions, bool> CreateFromCultureAndOptionsStringSortData => new TheoryData<string, string, string, CompareOptions, bool>
         {

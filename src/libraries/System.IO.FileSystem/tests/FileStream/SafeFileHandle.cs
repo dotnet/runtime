@@ -9,7 +9,7 @@ using Xunit;
 
 namespace System.IO.Tests
 {
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/34583", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/34582", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
     public class FileStream_SafeFileHandle : FileSystemTest
     {
         [Fact]
@@ -38,6 +38,14 @@ namespace System.IO.Tests
         }
 
         [Fact]
+        public void DisposingBufferedFileStreamThatWasClosedViaSafeFileHandleCloseDoesNotThrow()
+        {
+            FileStream fs = new FileStream(GetTestFilePath(), FileMode.Create, FileAccess.ReadWrite, FileShare.Read, bufferSize: 100);
+            fs.SafeFileHandle.Dispose();
+            fs.Dispose(); // must not throw
+        }
+
+        [Fact]
         public void AccessFlushesFileClosesHandle()
         {
             string fileName = GetTestFilePath();
@@ -58,13 +66,13 @@ namespace System.IO.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNet5CompatFileStreamEnabled))]
         public async Task ThrowWhenHandlePositionIsChanged_sync()
         {
             await ThrowWhenHandlePositionIsChanged(useAsync: false);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported), nameof(PlatformDetection.IsNet5CompatFileStreamEnabled))]
         public async Task ThrowWhenHandlePositionIsChanged_async()
         {
             await ThrowWhenHandlePositionIsChanged(useAsync: true);
@@ -96,15 +104,13 @@ namespace System.IO.Tests
                     // Put data in FS write buffer and update position from FSR
                     fs.WriteByte(0);
                     fsr.Position = 0;
-                    Assert.Throws<IOException>(() => fs.Position);
 
-                    fs.WriteByte(0);
-                    fsr.Position++;
-                    Assert.Throws<IOException>(() => fs.Read(new byte[1], 0, 1));
-
-                    fs.WriteByte(0);
-                    fsr.Position++;
-                    if (useAsync && OperatingSystem.IsWindows()) // Async I/O behaviors differ due to kernel-based implementation on Windows
+                    if (useAsync
+                        // Async I/O behaviors differ due to kernel-based implementation on Windows
+                        && OperatingSystem.IsWindows()
+                        // ReadAsync which in this case (single byte written to buffer) calls FlushAsync is now 100% async
+                        // so it does not complete synchronously anymore
+                        && PlatformDetection.IsNet5CompatFileStreamEnabled) 
                     {
                         Assert.Throws<IOException>(() => FSAssert.CompletesSynchronously(fs.ReadAsync(new byte[1], 0, 1)));
                     }
@@ -112,6 +118,14 @@ namespace System.IO.Tests
                     {
                         await Assert.ThrowsAsync<IOException>(() => fs.ReadAsync(new byte[1], 0, 1));
                     }
+
+                    fs.WriteByte(0);
+                    fsr.Position++;
+                    Assert.Throws<IOException>(() => fs.Read(new byte[1], 0, 1));
+
+                    fs.WriteByte(0);
+                    fsr.Position++;
+                    await Assert.ThrowsAsync<IOException>(() => fs.ReadAsync(new byte[1], 0, 1));
 
                     fs.WriteByte(0);
                     fsr.Position++;

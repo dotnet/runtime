@@ -1,10 +1,9 @@
 #ifndef __DIAGNOSTICS_TYPES_H__
 #define __DIAGNOSTICS_TYPES_H__
 
-#include <config.h>
-
 #ifdef ENABLE_PERFTRACING
 #include "ep-types.h"
+#include "ds-ipc-pal-types.h"
 
 #undef DS_IMPL_GETTER_SETTER
 #ifdef DS_IMPL_IPC_GETTER_SETTER
@@ -17,19 +16,20 @@
  */
 
 typedef struct _DiagnosticsAttachProfilerCommandPayload DiagnosticsAttachProfilerCommandPayload;
+typedef struct _DiagnosticsStartupProfilerCommandPayload DiagnosticsStartupProfilerCommandPayload;
 typedef struct _DiagnosticsConnectPort DiagnosticsConnectPort;
 typedef struct _DiagnosticsEnvironmentInfoPayload DiagnosticsEnvironmentInfoPayload;
 typedef struct _DiagnosticsGenerateCoreDumpCommandPayload DiagnosticsGenerateCoreDumpCommandPayload;
-typedef struct _DiagnosticsIpc DiagnosticsIpc;
+typedef struct _DiagnosticsSetEnvironmentVariablePayload DiagnosticsSetEnvironmentVariablePayload;
+typedef struct _DiagnosticsGetEnvironmentVariablePayload DiagnosticsGetEnvironmentVariablePayload;
 typedef struct _DiagnosticsIpcHeader DiagnosticsIpcHeader;
 typedef struct _DiagnosticsIpcMessage DiagnosticsIpcMessage;
-typedef struct _DiagnosticsIpcPollHandle DiagnosticsIpcPollHandle;
-typedef struct _DiagnosticsIpcStream DiagnosticsIpcStream;
 typedef struct _DiagnosticsListenPort DiagnosticsListenPort;
 typedef struct _DiagnosticsPort DiagnosticsPort;
 typedef struct _DiagnosticsPortBuilder DiagnosticsPortBuilder;
 typedef struct _DiagnosticsPortVtable DiagnosticsPortVtable;
 typedef struct _DiagnosticsProcessInfoPayload DiagnosticsProcessInfoPayload;
+typedef struct _DiagnosticsProcessInfo2Payload DiagnosticsProcessInfo2Payload;
 typedef struct _EventPipeCollectTracingCommandPayload EventPipeCollectTracingCommandPayload;
 typedef struct _EventPipeCollectTracing2CommandPayload EventPipeCollectTracing2CommandPayload;
 typedef struct _EventPipeStopTracingCommandPayload EventPipeStopTracingCommandPayload;
@@ -67,6 +67,8 @@ typedef enum {
 	DS_PROCESS_COMMANDID_GET_PROCESS_INFO = 0x00,
 	DS_PROCESS_COMMANDID_RESUME_RUNTIME = 0x01,
 	DS_PROCESS_COMMANDID_GET_PROCESS_ENV = 0x02,
+	DS_PROCESS_COMMANDID_SET_ENV_VAR = 0x03,
+	DS_PROCESS_COMMANDID_GET_PROCESS_INFO_2 = 0x04
 	// future
 } DiagnosticsProcessCommandId;
 
@@ -74,6 +76,7 @@ typedef enum {
 typedef enum {
 	DS_PROFILER_COMMANDID_RESERVED = 0x00,
 	DS_PROFILER_COMMANDID_ATTACH_PROFILER = 0x01,
+	DS_PROFILER_COMMANDID_STARTUP_PROFILER = 0x02,
 	// future
 } DiagnosticsProfilerCommandId;
 
@@ -93,19 +96,6 @@ typedef enum {
 	EP_COMMANDID_COLLECT_TRACING_2 = 0x03,
 	// future
 } EventPipeCommandId;
-
-typedef enum {
-	DS_IPC_CONNECTION_MODE_CONNECT,
-	DS_IPC_CONNECTION_MODE_LISTEN
-} DiagnosticsIpcConnectionMode;
-
-typedef enum {
-	DS_IPC_POLL_EVENTS_NONE = 0x00, // no events
-	DS_IPC_POLL_EVENTS_SIGNALED = 0x01, // ready for use
-	DS_IPC_POLL_EVENTS_HANGUP = 0x02, // connection remotely closed
-	DS_IPC_POLL_EVENTS_ERR = 0x04, // error
-	DS_IPC_POLL_EVENTS_UNKNOWN = 0x80 // unknown state
-} DiagnosticsIpcPollEvents;
 
 typedef enum {
 	DS_PORT_TYPE_LISTEN = 0,
@@ -142,60 +132,8 @@ typedef int32_t ds_ipc_result_t;
 #define DS_IPC_E_NOT_YET_AVAILABLE ((ds_ipc_result_t)(0x8013135bL))
 #define DS_IPC_E_RUNTIME_UNINITIALIZED ((ds_ipc_result_t)(0x80131371L))
 #define DS_IPC_E_INVALIDARG ((ds_ipc_result_t)(0x80070057L))
-
-// Polling timeout semantics
-// If client connection is opted in
-//   and connection succeeds => set timeout to infinite
-//   and connection fails => set timeout to minimum and scale by falloff factor
-// else => set timeout to -1 (infinite)
-//
-// If an agent closes its socket while we're still connected,
-// Poll will return and let us know which connection hung up
-#define DS_IPC_POLL_TIMEOUT_FALLOFF_FACTOR (float)1.25
-#define DS_IPC_STREAM_TIMEOUT_INFINITE (int32_t)-1
-#define DS_IPC_POLL_TIMEOUT_INFINITE (int32_t)-1
-#define DS_IPC_POLL_TIMEOUT_MIN_MS (int32_t)10
-#define DS_IPC_POLL_TIMEOUT_MAX_MS (int32_t)500
-
-typedef void (*ds_ipc_error_callback_func)(
-	const ep_char8_t *message,
-	uint32_t code);
-
-/*
- * DiagnosticsIpcPollHandle.
- */
-
-// The bookeeping struct used for polling on server and client structs
-#if defined(DS_INLINE_GETTER_SETTER) || defined(DS_IMPL_IPC_GETTER_SETTER)
-struct _DiagnosticsIpcPollHandle {
-#else
-struct _DiagnosticsIpcPollHandle_Internal {
-#endif
-	// Only one of these will be non-null, treat as a union
-	DiagnosticsIpc *ipc;
-	DiagnosticsIpcStream *stream;
-
-	// contains some set of PollEvents
-	// will be set by Poll
-	// Any values here are ignored by Poll
-	uint8_t events;
-
-	// a cookie assignable by upstream users for additional bookkeeping
-	void *user_data;
-};
-
-#if !defined(DS_INLINE_GETTER_SETTER) && !defined(DS_IMPL_IPC_GETTER_SETTER)
-struct _DiagnosticsIpcPollHandle {
-	uint8_t _internal [sizeof (struct _DiagnosticsIpcPollHandle_Internal)];
-};
-#endif
-
-DS_DEFINE_GETTER(DiagnosticsIpcPollHandle *, ipc_poll_handle, DiagnosticsIpc *, ipc)
-DS_DEFINE_GETTER(DiagnosticsIpcPollHandle *, ipc_poll_handle, DiagnosticsIpcStream *, stream)
-DS_DEFINE_GETTER(DiagnosticsIpcPollHandle *, ipc_poll_handle, uint8_t, events)
-DS_DEFINE_SETTER(DiagnosticsIpcPollHandle *, ipc_poll_handle, uint8_t, events)
-DS_DEFINE_GETTER(DiagnosticsIpcPollHandle *, ipc_poll_handle, void *, user_data)
-DS_DEFINE_SETTER(DiagnosticsIpcPollHandle *, ipc_poll_handle, void *, user_data)
+#define DS_IPC_E_INSUFFICIENT_BUFFER ((ds_ipc_result_t)(0x8007007A))
+#define DS_IPC_E_ENVVAR_NOT_FOUND ((ds_ipc_result_t)(0x800000CB))
 
 #endif /* ENABLE_PERFTRACING */
 #endif /* __DIAGNOSTICS_TYPES_H__ */

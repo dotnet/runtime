@@ -1,6 +1,5 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <ProjectGuid>{a32671b6-5470-4f9c-9cd8-4094b9ab0799}</ProjectGuid>
     <NoVbRuntimeReference>true</NoVbRuntimeReference>
     <VBRuntime>None</VBRuntime>
     <OptionStrict>On</OptionStrict>
@@ -11,13 +10,16 @@
     <WarningsNotAsErrors>42025</WarningsNotAsErrors>
     <DefineConstants>$(DefineConstants),LATEBINDING=True</DefineConstants>
     <DefineConstants Condition="'$(TargetsWindows)' == 'true'">$(DefineConstants),TARGET_WINDOWS=True</DefineConstants>
-    <NoWarn>$(NoWarn),CA1810,CA2200</NoWarn>
+    <NoWarn>$(NoWarn),CA1052,CA1810,CA2200</NoWarn>
     <NoWarn Condition="'$(TargetsWindows)' != 'true'">$(NoWarn);CA1823</NoWarn>
     <!-- Avoid unused fields warnings in Unix build -->
     <AssemblyName>Microsoft.VisualBasic.Core</AssemblyName>
     <RemoveIntegerChecks>false</RemoveIntegerChecks>
     <RootNamespace />
     <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppCurrent)-windows</TargetFrameworks>
+  </PropertyGroup>
+  <PropertyGroup>
+    <ILLinkDescriptorsXml Condition="'$(TargetsWindows)' == 'true'">$(MSBuildProjectDirectory)\ILLink\ILLink.Descriptors.Windows.xml</ILLinkDescriptorsXml>
   </PropertyGroup>
   <ItemGroup Condition="'$(TargetsWindows)' == 'true'">
     <Compile Include="Microsoft\VisualBasic\Helpers\NativeMethods.vb" />

@@ -21,10 +21,7 @@ Building dotnet/runtime depends on several tools to be installed. You can downlo
 Install the following packages:
 
 - cmake 3.15.5 or newer
-- autoconf
-- automake
 - icu4c
-- libtool
 - openssl 1.1
 - pkg-config
 - python3

@@ -6,7 +6,7 @@ set(utils_win32_sources
     os-event-win32.c
     w32subset.h)
 
-if(TARGET_WIN32 AND TARGET_AMD64)
+if(HOST_WIN32 AND HOST_AMD64)
     enable_language(ASM_MASM)
     set(CMAKE_ASM_MASM_COMPILE_OPTIONS_MSVC_RUNTIME_LIBRARY_MultiThreaded         "")
     set(CMAKE_ASM_MASM_COMPILE_OPTIONS_MSVC_RUNTIME_LIBRARY_MultiThreadedDLL      "")
@@ -35,7 +35,6 @@ set(utils_common_sources
     mono-codeman.c
     mono-counters.c
     mono-compiler.h
-    mono-complex.h
     mono-dl.c
     mono-dl-windows.c
     mono-dl-darwin.c
@@ -55,8 +54,6 @@ set(utils_common_sources
     mono-state.c
     mono-internal-hash.c
     mono-internal-hash.h
-    mono-io-portability.c
-    mono-io-portability.h
     monobitset.c
     mono-filemap.c
     mono-math-c.c
@@ -201,7 +198,8 @@ set(utils_common_sources
     ward.h
     options.h
     options-def.h
-    options.c)
+    options.c
+	ftnptr.h)
 
 if(MONO_CROSS_COMPILE)
 set(utils_arch_sources mach-support-unknown.c)
@@ -231,6 +229,8 @@ elseif(TARGET_ARM64)
 set(utils_arch_sources "${utils_arch_sources};mono-hwcap-arm64.c")
 elseif(TARGET_ARM)
 set(utils_arch_sources "${utils_arch_sources};mono-hwcap-arm.c")
+elseif(TARGET_S390X)
+set(utils_arch_sources "${utils_arch_sources};mono-hwcap-s390x.c")
 elseif(TARGET_WASM)
 set(utils_arch_sources "${utils_arch_sources};mono-hwcap-wasm.c;mono-mmap-wasm.c")
 else()

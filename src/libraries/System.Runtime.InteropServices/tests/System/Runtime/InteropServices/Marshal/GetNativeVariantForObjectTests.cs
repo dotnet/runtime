@@ -37,10 +37,12 @@ namespace System.Runtime.InteropServices.Tests
             yield return new object[] { new char[] { 'a', 'b', 'c' }, (VarEnum.VT_ARRAY | VarEnum.VT_UI2), (IntPtr)(-1), new ushort[] { 'a', 'b', 'c' } };
 
             // IntPtr/UIntPtr objects are _always_ converted to int/uint respectively.
+            // See OleVariant::MarshalOleVariantForObject conversion from ELEMENT_TYPE_I/ELEMENT_TYPE_U to VT_INT/VT_UINT
             yield return new object[] { (IntPtr)10, VarEnum.VT_INT, (IntPtr)10, 10 };
             yield return new object[] { (UIntPtr)10, VarEnum.VT_UINT, (IntPtr)10, (uint)10 };
 
             // IntPtr/UIntPtr objects in arrays are converted to the appropriate pointer width.
+            // See OleVariant::GetVarTypeForTypeHandle conversion from IntPtr/UIntPtr to VT_INT/VT_UINT or VT_I8/VT_UI8 based on bitness
             if (IntPtr.Size == 4)
             {
                 yield return new object[] { new IntPtr[] { (IntPtr)10, (IntPtr)11, (IntPtr)12 }, (VarEnum.VT_ARRAY | VarEnum.VT_INT), (IntPtr)(-1), new int[] { 10, 11, 12 } };

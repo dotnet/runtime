@@ -172,7 +172,7 @@ namespace System.Security.AccessControl.Tests
                 accessMask = 1;
                 rawAcl = new RawAcl(0, 1);
                 opaque = new byte[4];
-                gAce = new CustomAce(AceType.MaxDefinedAceType + 1, AceFlags.InheritanceFlags | AceFlags.AuditFlags, opaque); ;
+                gAce = new CustomAce(AceType.MaxDefinedAceType + 1, AceFlags.InheritanceFlags | AceFlags.AuditFlags, opaque);
                 rawAcl.InsertAce(0, gAce);
                 systemAcl = new SystemAcl(isContainer, isDS, rawAcl);
                 gAce = new CommonAce(AceFlags.ContainerInherit | AceFlags.InheritOnly | AceFlags.AuditFlags,
@@ -202,7 +202,7 @@ namespace System.Security.AccessControl.Tests
                 rawAcl = new RawAcl(0, 1);
                 opaque = new byte[GenericAcl.MaxBinaryLength + 1 - 8 - 4 - 16];
                 gAce = new CustomAce(AceType.MaxDefinedAceType + 1,
-                    AceFlags.InheritanceFlags | AceFlags.AuditFlags, opaque); ;
+                    AceFlags.InheritanceFlags | AceFlags.AuditFlags, opaque);
                 rawAcl.InsertAce(0, gAce);
                 systemAcl = new SystemAcl(isContainer, isDS, rawAcl);
                 //After Mark changes design to make ACL with any CustomAce, CompoundAce uncanonical and

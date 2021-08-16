@@ -63,3 +63,11 @@ Combines DigestCreate, DigestUpdate, and DigestFinal in to a single operation.
 Returns 1 on success, 0 on failure, any other value on invalid inputs/state.
 */
 PALEXPORT int32_t AppleCryptoNative_DigestOneShot(PAL_HashAlgorithm algorithm, uint8_t* pBuf, int32_t cbBuf, uint8_t* pOutput, int32_t cbOutput, int32_t* pcbDigest);
+
+
+/*
+Re-initializes a digest context to an initial state.
+
+Returns 1 on success, 0 on failure, any other value on invalid inputs/state.
+*/
+PALEXPORT int32_t AppleCryptoNative_DigestReset(DigestCtx* ctx);

@@ -60,6 +60,8 @@ extern "C" EXPORT void STDMETHODCALLTYPE DoPInvoke(int i)
 
 HRESULT Transitions::UnmanagedToManagedTransition(FunctionID functionID, COR_PRF_TRANSITION_REASON reason)
 {
+    SHUTDOWNGUARD();
+
     if (FunctionIsTargetFunction(functionID))
     {
         _sawEnter = true;
@@ -70,6 +72,8 @@ HRESULT Transitions::UnmanagedToManagedTransition(FunctionID functionID, COR_PRF
 
 HRESULT Transitions::ManagedToUnmanagedTransition(FunctionID functionID, COR_PRF_TRANSITION_REASON reason)
 {
+    SHUTDOWNGUARD();
+
     if (FunctionIsTargetFunction(functionID))
     {
         _sawLeave = true;

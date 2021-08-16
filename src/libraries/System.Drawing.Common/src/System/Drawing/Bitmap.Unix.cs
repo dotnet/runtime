@@ -49,8 +49,6 @@ namespace System.Drawing
 {
     public sealed partial class Bitmap
     {
-        #region constructors
-
         // Usually called when cloning images that need to have
         // not only the handle saved, but also the underlying stream
         // (when using MS GDI+ and IStream we must ensure the stream stays alive for all the life of the Image)
@@ -64,25 +62,5 @@ namespace System.Drawing
             // false: stream is owned by user code
             nativeImage = InitializeFromStream(stream);
         }
-
-        public Bitmap(Type type, string resource)
-        {
-            if (resource == null)
-                throw new ArgumentNullException(nameof(resource));
-
-            // For compatibility with the .NET Framework
-            if (type == null)
-                throw new NullReferenceException();
-
-            Stream? s = type.Assembly.GetManifestResourceStream(type, resource);
-            if (s == null)
-            {
-                string msg = string.Format("Resource '{0}' was not found.", resource);
-                throw new FileNotFoundException(msg);
-            }
-
-            nativeImage = InitializeFromStream(s);
-        }
-        #endregion
     }
 }

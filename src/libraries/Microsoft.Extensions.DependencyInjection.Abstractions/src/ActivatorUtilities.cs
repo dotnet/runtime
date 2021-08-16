@@ -40,39 +40,36 @@ namespace Microsoft.Extensions.DependencyInjection
             {
                 foreach (ConstructorInfo? constructor in instanceType.GetConstructors())
                 {
-                    if (!constructor.IsStatic)
+                    var matcher = new ConstructorMatcher(constructor);
+                    bool isPreferred = constructor.IsDefined(typeof(ActivatorUtilitiesConstructorAttribute), false);
+                    int length = matcher.Match(parameters);
+
+                    if (isPreferred)
                     {
-                        var matcher = new ConstructorMatcher(constructor);
-                        bool isPreferred = constructor.IsDefined(typeof(ActivatorUtilitiesConstructorAttribute), false);
-                        int length = matcher.Match(parameters);
-
-                        if (isPreferred)
+                        if (seenPreferred)
                         {
-                            if (seenPreferred)
-                            {
-                                ThrowMultipleCtorsMarkedWithAttributeException();
-                            }
-
-                            if (length == -1)
-                            {
-                                ThrowMarkedCtorDoesNotTakeAllProvidedArguments();
-                            }
+                            ThrowMultipleCtorsMarkedWithAttributeException();
                         }
 
-                        if (isPreferred || bestLength < length)
+                        if (length == -1)
                         {
-                            bestLength = length;
-                            bestMatcher = matcher;
+                            ThrowMarkedCtorDoesNotTakeAllProvidedArguments();
                         }
-
-                        seenPreferred |= isPreferred;
                     }
+
+                    if (isPreferred || bestLength < length)
+                    {
+                        bestLength = length;
+                        bestMatcher = matcher;
+                    }
+
+                    seenPreferred |= isPreferred;
                 }
             }
 
             if (bestLength == -1)
             {
-                string? message = $"A suitable constructor for type '{instanceType}' could not be located. Ensure the type is concrete and services are registered for all parameters of a public constructor.";
+                string? message = $"A suitable constructor for type '{instanceType}' could not be located. Ensure the type is concrete and all parameters of a public constructor are either registered as services or passed as arguments. Also ensure no extraneous arguments are provided.";
                 throw new InvalidOperationException(message);
             }
 
@@ -101,10 +98,10 @@ namespace Microsoft.Extensions.DependencyInjection
             ParameterExpression? argumentArray = Expression.Parameter(typeof(object[]), "argumentArray");
             Expression? factoryExpressionBody = BuildFactoryExpression(constructor, parameterMap, provider, argumentArray);
 
-            var factoryLambda = Expression.Lambda<Func<IServiceProvider, object[], object>>(
+            var factoryLambda = Expression.Lambda<Func<IServiceProvider, object?[]?, object>>(
                 factoryExpressionBody, provider, argumentArray);
 
-            Func<IServiceProvider, object[], object>? result = factoryLambda.Compile();
+            Func<IServiceProvider, object?[]?, object>? result = factoryLambda.Compile();
             return result.Invoke;
         }
 
@@ -215,7 +212,7 @@ namespace Microsoft.Extensions.DependencyInjection
             if (!TryFindPreferredConstructor(instanceType, argumentTypes, ref constructorInfo, ref parameterMap) &&
                 !TryFindMatchingConstructor(instanceType, argumentTypes, ref constructorInfo, ref parameterMap))
             {
-                string? message = $"A suitable constructor for type '{instanceType}' could not be located. Ensure the type is concrete and services are registered for all parameters of a public constructor.";
+                string? message = $"A suitable constructor for type '{instanceType}' could not be located. Ensure the type is concrete and all parameters of a public constructor are either registered as services or passed as arguments. Also ensure no extraneous arguments are provided.";
                 throw new InvalidOperationException(message);
             }
 
@@ -232,11 +229,6 @@ namespace Microsoft.Extensions.DependencyInjection
         {
             foreach (ConstructorInfo? constructor in instanceType.GetConstructors())
             {
-                if (constructor.IsStatic)
-                {
-                    continue;
-                }
-
                 if (TryCreateParameterMap(constructor.GetParameters(), argumentTypes, out int?[] tempParameterMap))
                 {
                     if (matchingConstructor != null)
@@ -268,11 +260,6 @@ namespace Microsoft.Extensions.DependencyInjection
             bool seenPreferred = false;
             foreach (ConstructorInfo? constructor in instanceType.GetConstructors())
             {
-                if (constructor.IsStatic)
-                {
-                    continue;
-                }
-
                 if (constructor.IsDefined(typeof(ActivatorUtilitiesConstructorAttribute), false))
                 {
                     if (seenPreferred)
@@ -409,9 +396,7 @@ namespace Microsoft.Extensions.DependencyInjection
                     }
                 }
 
-#if NETCOREAPP
-                return _constructor.Invoke(BindingFlags.DoNotWrapExceptions, binder: null, parameters: _parameterValues, culture: null);
-#else
+#if NETFRAMEWORK || NETSTANDARD2_0
                 try
                 {
                     return _constructor.Invoke(_parameterValues);
@@ -422,6 +407,8 @@ namespace Microsoft.Extensions.DependencyInjection
                     // The above line will always throw, but the compiler requires we throw explicitly.
                     throw;
                 }
+#else
+                return _constructor.Invoke(BindingFlags.DoNotWrapExceptions, binder: null, parameters: _parameterValues, culture: null);
 #endif
             }
         }

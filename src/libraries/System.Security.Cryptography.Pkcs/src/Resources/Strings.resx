@@ -271,6 +271,9 @@
   <data name="PlatformNotSupported_CryptographyPkcs" xml:space="preserve">
     <value>System.Security.Cryptography.Pkcs is only supported on Windows platforms.</value>
   </data>
+  <data name="Cryptography_AlgorithmNotSupported" xml:space="preserve">
+    <value>Algorithm '{0}' is not supported on this platform.</value>
+  </data>
   <data name="Cryptography_Der_Invalid_Encoding" xml:space="preserve">
     <value>ASN1 corrupted data.</value>
   </data>
@@ -294,5 +297,8 @@
   </data>
   <data name="Cryptography_Cms_CertificateAlreadyInCollection" xml:space="preserve">
     <value>Certificate already present in the collection.</value>
+  </data>
+  <data name="Cryptography_Cms_InvalidSymmetricKey" xml:space="preserve">
+    <value>The key in the enveloped message is not valid or could not be decoded.</value>
   </data>
 </root>

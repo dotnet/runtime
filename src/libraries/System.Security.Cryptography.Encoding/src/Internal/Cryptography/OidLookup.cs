@@ -14,8 +14,8 @@ namespace Internal.Cryptography
         private static readonly ConcurrentDictionary<string, string> s_lateBoundOidToFriendlyName =
             new ConcurrentDictionary<string, string>();
 
-        private static readonly ConcurrentDictionary<string, string> s_lateBoundFriendlyNameToOid =
-            new ConcurrentDictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        private static readonly ConcurrentDictionary<string, string?> s_lateBoundFriendlyNameToOid =
+            new ConcurrentDictionary<string, string?>(StringComparer.OrdinalIgnoreCase);
 
         //
         // Attempts to map a friendly name to an OID. Returns null if not a known name.
@@ -80,20 +80,26 @@ namespace Internal.Cryptography
 
             mappedOid = NativeFriendlyNameToOid(friendlyName, oidGroup, fallBackToAllGroups);
 
-            if (shouldUseCache && mappedOid != null)
+            if (shouldUseCache)
             {
                 s_lateBoundFriendlyNameToOid.TryAdd(friendlyName, mappedOid);
 
                 // Don't add the reverse here.  Friendly Name => OID is a case insensitive search,
                 // so the casing provided as input here may not be the 'correct' one.  Just let
                 // ToFriendlyName capture the response and cache it itself.
+
+                // Also, mappedOid could be null here if the lookup failed.  Allowing storing null
+                // means we're able to cache that a lookup failed so we don't repeat it.  It's
+                // theoretically possible, however, the failure could have been intermittent, e.g.
+                // if the call was forced to follow an AD fallback path and the relevant servers
+                // were offline.
             }
 
             return mappedOid;
         }
 
         /// <summary>Expected size of <see cref="s_friendlyNameToOid"/>.</summary>
-        private const int FriendlyNameToOidCount = 110;
+        private const int FriendlyNameToOidCount = 111;
 
         /// <summary>Expected size of <see cref="s_oidToFriendlyName"/>.</summary>
         private const int OidToFriendlyNameCount = 103;
@@ -232,7 +238,7 @@ namespace Internal.Cryptography
             AddEntry("1.2.840.113549.1.1.1", "RSA");
             AddEntry("1.2.840.113549.1.1.7", "RSAES_OAEP");
             AddEntry("1.2.840.113549.1.1.10", "RSASSA-PSS");
-            AddEntry("2.5.4.8", "S");
+            AddEntry("2.5.4.8", "S", new[] { "ST" });
             AddEntry("1.3.132.0.9", "secP160k1");
             AddEntry("1.3.132.0.8", "secP160r1");
             AddEntry("1.3.132.0.30", "secP160r2");

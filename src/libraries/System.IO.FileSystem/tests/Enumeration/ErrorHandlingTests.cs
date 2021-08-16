@@ -82,6 +82,7 @@ namespace System.IO.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/55821", TestPlatforms.Android)]
         public void DeleteDirectoryAfterOpening()
         {
             // We shouldn't prevent the directory from being deleted, even though we've

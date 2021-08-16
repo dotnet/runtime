@@ -2,9 +2,12 @@ cmake_minimum_required(VERSION 3.6.2)
 include(CheckCCompilerFlag)
 
 if(CLR_CMAKE_TARGET_IOS OR CLR_CMAKE_TARGET_TVOS)
-     # CMake 3.14.5 contains bug fixes for iOS
-     cmake_minimum_required(VERSION 3.14.5)
- endif()
+    # CMake 3.14.5 contains bug fixes for iOS
+    cmake_minimum_required(VERSION 3.14.5)
+elseif(CLR_CMAKE_TARGET_MACCATALYST)
+    # CMake 3.18.1 properly generates MacCatalyst C and CXX compilers
+    cmake_minimum_required(VERSION 3.18.1)
+endif()
 cmake_policy(SET CMP0042 NEW)
 
 project(CoreFX C)
@@ -13,7 +16,7 @@ include(../../../../eng/native/configurepaths.cmake)
 include(${CLR_ENG_NATIVE_DIR}/configuretools.cmake)
 
 set(CMAKE_MACOSX_RPATH ON)
-if(CLR_CMAKE_TARGET_IOS OR CLR_CMAKE_TARGET_TVOS)
+if(CLR_CMAKE_TARGET_MACCATALYST OR CLR_CMAKE_TARGET_IOS OR CLR_CMAKE_TARGET_TVOS)
     set(CMAKE_BUILD_WITH_INSTALL_NAME_DIR ON)
     set(CMAKE_INSTALL_NAME_DIR "@rpath")
 endif()
@@ -54,15 +57,59 @@ if (PRERELEASE)
     add_compile_options(-Werror)
 endif()
 
+if(STATIC_LIBS_ONLY)
+    # Suppress exporting of the PAL APIs
+    add_definitions(-DPALEXPORT=EXTERN_C)
+
+    set(STATIC_LIB_DESTINATION lib)
+    set(GEN_SHARED_LIB 0)
+else()
+    set(STATIC_LIB_DESTINATION .)
+    set(GEN_SHARED_LIB 1)
+endif()
+
 if(CLR_CMAKE_TARGET_BROWSER)
     # The emscripten build has additional warnings so -Werror breaks
     add_compile_options(-Wno-unused-parameter)
     add_compile_options(-Wno-unused-function)
     add_compile_options(-Wno-alloca)
     add_compile_options(-Wno-implicit-int-float-conversion)
-else()
-  set(GEN_SHARED_LIB 1)
-endif(CLR_CMAKE_TARGET_BROWSER)
+
+    set(GEN_SHARED_LIB 0)
+    set(STATIC_LIB_DESTINATION .)
+endif()
+
+if(CLR_CMAKE_TARGET_MACCATALYST)
+    # -target overrides -mmacosx-version-min so suppress warning about that
+    # https://gitlab.kitware.com/cmake/cmake/-/issues/20132
+    set(DISABLE_OVERRIDING_MIN_VERSION_ERROR -Wno-overriding-t-option)
+    add_link_options(-Wno-overriding-t-option)
+    if (CLR_CMAKE_TARGET_ARCH_AMD64)
+        set(MACOS_VERSION_MIN_FLAGS "-target x86_64-apple-ios13.5-macabi")
+        add_link_options(-target x86_64-apple-ios13.5-macabi)
+    elseif (CLR_CMAKE_TARGET_ARCH_ARM64)
+        set(MACOS_VERSION_MIN_FLAGS "-target arm64-apple-ios14.2-macabi")
+        add_link_options(-target arm64-apple-ios14.2-macabi)
+    endif()
+
+    # These options are intentionally set using the CMAKE_XXX_FLAGS instead of
+    # add_compile_options so that they take effect on the configuration functions
+    # in various configure.cmake files.
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${MACOS_VERSION_MIN_FLAGS} ${DISABLE_OVERRIDING_MIN_VERSION_ERROR}")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${MACOS_VERSION_MIN_FLAGS} ${DISABLE_OVERRIDING_MIN_VERSION_ERROR}")
+    set(CMAKE_ASM_FLAGS "${CMAKE_ASM_FLAGS} ${MACOS_VERSION_MIN_FLAGS} ${DISABLE_OVERRIDING_MIN_VERSION_ERROR}")
+
+endif()
+
+if(CLR_CMAKE_TARGET_TVOS)
+    # with -fembed-bitcode passing -headerpad_max_install_names is not allowed so remove it from the CMake flags
+    string(REPLACE "-Wl,-headerpad_max_install_names" "" CMAKE_C_LINK_FLAGS ${CMAKE_C_LINK_FLAGS})
+    string(REPLACE "-Wl,-headerpad_max_install_names" "" CMAKE_CXX_LINK_FLAGS ${CMAKE_CXX_LINK_FLAGS})
+    string(REPLACE "-Wl,-headerpad_max_install_names" "" CMAKE_SHARED_LIBRARY_CREATE_C_FLAGS ${CMAKE_SHARED_LIBRARY_CREATE_C_FLAGS})
+    string(REPLACE "-Wl,-headerpad_max_install_names" "" CMAKE_SHARED_LIBRARY_CREATE_CXX_FLAGS ${CMAKE_SHARED_LIBRARY_CREATE_CXX_FLAGS})
+    add_compile_options(-fembed-bitcode)
+    add_link_options(-fembed-bitcode)
+endif()
 
 if (CLR_CMAKE_TARGET_ARCH_AMD64)
     add_definitions(-DTARGET_64BIT=1)
@@ -80,6 +127,10 @@ elseif (CLR_CMAKE_TARGET_ARCH_ARM64)
 elseif (CLR_CMAKE_TARGET_ARCH_MIPS64)
     add_definitions(-DTARGET_64BIT=1)
     add_definitions(-DTARGET_MIPS64)
+elseif (CLR_CMAKE_TARGET_ARCH_S390X)
+    add_definitions(-DTARGET_64BIT=1)
+    add_definitions(-DTARGET_S390X)
+    add_definitions(-DBIGENDIAN=1)
 elseif (CLR_CMAKE_TARGET_ARCH_ARM)
     add_definitions(-DTARGET_32BIT=1)
     add_definitions(-DTARGET_ARM)
@@ -156,7 +207,7 @@ else ()
 endif ()
 
 if(CLR_CMAKE_TARGET_BROWSER)
-elseif (CLR_CMAKE_TARGET_OSX OR CLR_CMAKE_TARGET_IOS OR CLR_CMAKE_TARGET_TVOS)
+elseif (CLR_CMAKE_TARGET_OSX OR CLR_CMAKE_TARGET_MACCATALYST OR CLR_CMAKE_TARGET_IOS OR CLR_CMAKE_TARGET_TVOS)
     add_definitions(-D__APPLE_USE_RFC_3542)
 
    # We cannot enable "stack-protector-strong" on OS X due to a bug in clang compiler (current version 7.0.2)
@@ -176,7 +227,7 @@ endif ()
 #       ./build-native.sh cmakeargs -DCLR_ADDITIONAL_COMPILER_OPTIONS=<...> cmakeargs -DCLR_ADDITIONAL_LINKER_FLAGS=<...>
 #
 if(CLR_CMAKE_TARGET_UNIX)
-    if(NOT CLR_CMAKE_TARGET_BROWSER AND NOT CLR_CMAKE_TARGET_IOS AND NOT CLR_CMAKE_TARGET_TVOS)
+    if(NOT CLR_CMAKE_TARGET_BROWSER AND NOT CLR_CMAKE_TARGET_MACCATALYST AND NOT CLR_CMAKE_TARGET_IOS AND NOT CLR_CMAKE_TARGET_TVOS)
         if(CLR_CMAKE_TARGET_OSX)
             add_definitions(-DTARGET_OSX)
             set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,-bind_at_load")
@@ -184,7 +235,7 @@ if(CLR_CMAKE_TARGET_UNIX)
         else()
             add_compile_options($<$<COMPILE_LANGUAGE:ASM>:-Wa,--noexecstack>)
             if(CLR_CMAKE_TARGET_SUNOS)
-                add_definitions(-D__EXTENSIONS__ -D_XPG4_2 -D_POSIX_PTHREAD_SEMANTICS)
+                add_definitions(-D__EXTENSIONS__ -D_XPG4_2 -D_POSIX_PTHREAD_SEMANTICS -DTARGET_SUNOS)
             else()
                 # -z,now is required for full relro.
                 # see https://www.redhat.com/en/blog/hardening-elf-binaries-using-relocation-read-only-relro
@@ -204,7 +255,7 @@ include(configure.cmake)
 
 add_subdirectory(System.IO.Compression.Native)
 
-if (NOT CLR_CMAKE_TARGET_BROWSER AND NOT CLR_CMAKE_TARGET_IOS AND NOT CLR_CMAKE_TARGET_TVOS AND NOT CLR_CMAKE_TARGET_ANDROID)
+if (NOT CLR_CMAKE_TARGET_BROWSER AND NOT CLR_CMAKE_TARGET_MACCATALYST AND NOT CLR_CMAKE_TARGET_IOS AND NOT CLR_CMAKE_TARGET_TVOS AND NOT CLR_CMAKE_TARGET_ANDROID)
     add_subdirectory(System.IO.Ports.Native)
 endif()
 
@@ -216,6 +267,10 @@ add_subdirectory(System.Native)
 
 if(CLR_CMAKE_TARGET_BROWSER)
     # skip for now
+elseif(CLR_CMAKE_TARGET_MACCATALYST)
+    add_subdirectory(System.Net.Security.Native)
+    # System.Security.Cryptography.Native is intentionally disabled on iOS
+    # it is only used for interacting with OpenSSL which isn't useful there
 elseif(CLR_CMAKE_TARGET_IOS)
     add_subdirectory(System.Net.Security.Native)
     # System.Security.Cryptography.Native is intentionally disabled on iOS
@@ -224,23 +279,14 @@ elseif(CLR_CMAKE_TARGET_TVOS)
     #add_subdirectory(System.Net.Security.Native) # no gssapi on tvOS, see https://developer.apple.com/documentation/gss
     # System.Security.Cryptography.Native is intentionally disabled on tvOS
     # it is only used for interacting with OpenSSL which isn't useful there
-elseif(CLR_CMAKE_TARGET_ANDROID AND NOT CROSS_ROOTFS)
-    #add_subdirectory(System.Net.Security.Native) # TODO: reenable
-    if (NOT "$ENV{ANDROID_OPENSSL_AAR}" STREQUAL "")
-        set(PREFER_OPENSSL_ANDROID 1)
-        add_subdirectory(System.Security.Cryptography.Native)
-    endif()
+elseif(CLR_CMAKE_TARGET_ANDROID)
+    add_subdirectory(System.Security.Cryptography.Native.Android)
 else()
     add_subdirectory(System.Globalization.Native)
     add_subdirectory(System.Net.Security.Native)
     add_subdirectory(System.Security.Cryptography.Native)
 endif()
 
-if(CLR_CMAKE_TARGET_OSX OR CLR_CMAKE_TARGET_IOS OR CLR_CMAKE_TARGET_TVOS)
+if(CLR_CMAKE_TARGET_OSX OR CLR_CMAKE_TARGET_MACCATALYST OR CLR_CMAKE_TARGET_IOS OR CLR_CMAKE_TARGET_TVOS)
     add_subdirectory(System.Security.Cryptography.Native.Apple)
-endif()
-
-# if ANDROID_OPENSSL_AAR is not set - use Android Native Crypto (it's going to replace openssl eventually)
-if(CLR_CMAKE_TARGET_ANDROID AND NOT PREFER_OPENSSL_ANDROID)
-    add_subdirectory(System.Security.Cryptography.Native.Android)
 endif()

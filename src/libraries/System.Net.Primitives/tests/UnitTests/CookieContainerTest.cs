@@ -125,11 +125,11 @@ namespace System.Net.Primitives.Unit.Tests
             yield return new object[]
             {
                 u,
-                "name98=value98; path=/; domain=.uri.com; expires=Wed, 09 Jun 2021 10:18:14 GMT, name99=value99",
+                "name98=value98; path=/; domain=.uri.com; expires=Wed, 09 Jun 2050 10:18:14 GMT, name99=value99",
                 new Cookie[]
                 {
                     new Cookie("name99", "value99"),
-                    new Cookie("name98", "value98", "/", ".uri.com") { Expires = new DateTime(2021, 6, 9, 10, 18, 14) }
+                    new Cookie("name98", "value98", "/", ".uri.com") { Expires = new DateTime(2050, 6, 9, 10, 18, 14) }
                 }
             }; // Version0
 
@@ -169,11 +169,11 @@ namespace System.Net.Primitives.Unit.Tests
             yield return new object[]
             {
                 uSecure,
-                "name98=value98; name98=value98; comment=comment; comment=comment2; commentURL=http://url.com; commentURL=commentURL2; discard; discard; domain=.uri.com; domain=domain2; max-age=400; max-age=400; path=/; path=path; port=\"80, 90, 443\"; port=port2; path=path; expires=Wed, 09 Jun 2021 10:18:14 GMT; expires=expires2; secure; secure; httponly; httponly; Version=100; Version=100, name99=value99",
+                "name98=value98; name98=value98; comment=comment; comment=comment2; commentURL=http://url.com; commentURL=commentURL2; discard; discard; domain=.uri.com; domain=domain2; max-age=400; max-age=400; path=/; path=path; port=\"80, 90, 443\"; port=port2; path=path; expires=Wed, 09 Jun 2050 10:18:14 GMT; expires=expires2; secure; secure; httponly; httponly; Version=100; Version=100, name99=value99",
                 new Cookie[]
                 {
                     new Cookie("name99", "value99"),
-                    new Cookie("name98", "value98", "/", ".uri.com") { Port = "\"80, 90, 443\"", Version = 100, Secure = true, HttpOnly = true, Discard = true, Expires = new DateTime(2021, 6, 9, 10, 18, 14), Comment = "comment", CommentUri = new Uri("http://url.com") }
+                    new Cookie("name98", "value98", "/", ".uri.com") { Port = "\"80, 90, 443\"", Version = 100, Secure = true, HttpOnly = true, Discard = true, Expires = new DateTime(2050, 6, 9, 10, 18, 14), Comment = "comment", CommentUri = new Uri("http://url.com") }
                 }
             }; // Double entries
 
@@ -374,6 +374,20 @@ namespace System.Net.Primitives.Unit.Tests
             cc.SetCookies(uri, cookieHeader);
             // Now that we've set cookie headers, we should now check to see if they're added
             VerifyGetCookies(cc, uri, expected);
+        }
+
+        [Fact]
+        public void SetCookies_ExpiresMaxValue_Success()
+        {
+            // Expiry can be 9999-12-31 23:59:59 UTC, but if this is converted to Local time, it might exceed DateTime.MaxValue and become invalid
+            // This test ensures that the DateTime in expiry has the correct kind, thereby ensuring it was interpreted as a UTC timezone
+            CookieContainer cc = new CookieContainer();
+            cc.SetCookies(new Uri("http://contoso.com/"), "set-cookie: MyKey=MyValue; expires=Fri, 31-Dec-9999 23:59:59 GMT");
+
+            var cookie = cc.GetCookies(new Uri("http://contoso.com/")).First();
+
+            Assert.Equal(new DateTime(9999, 12, 31, 23, 59, 59, DateTimeKind.Utc), cookie.Expires);
+            Assert.Equal(DateTimeKind.Utc, cookie.Expires.Kind);
         }
 
         [Fact]

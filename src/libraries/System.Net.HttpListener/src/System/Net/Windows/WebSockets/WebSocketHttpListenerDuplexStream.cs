@@ -9,6 +9,8 @@ using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
 
+#pragma warning disable CA1844 // Memory-based Read/WriteAsync
+
 namespace System.Net.WebSockets
 {
     internal sealed class WebSocketHttpListenerDuplexStream : Stream, WebSocketBase.IWebSocketStream
@@ -31,7 +33,7 @@ namespace System.Net.WebSockets
         private int _cleanedUp;
 
 #if DEBUG
-        private class OutstandingOperations
+        private sealed class OutstandingOperations
         {
             internal int _reads;
             internal int _writes;
@@ -723,7 +725,7 @@ namespace System.Net.WebSockets
             }
         }
 
-        internal class HttpListenerAsyncEventArgs : EventArgs, IDisposable
+        internal sealed class HttpListenerAsyncEventArgs : EventArgs, IDisposable
         {
             private const int Free = 0;
             private const int InProgress = 1;
@@ -874,7 +876,7 @@ namespace System.Net.WebSockets
                 }
             }
 
-            protected virtual void OnCompleted(HttpListenerAsyncEventArgs e)
+            private void OnCompleted(HttpListenerAsyncEventArgs e)
             {
                 m_Completed?.Invoke(e._currentStream, e);
             }

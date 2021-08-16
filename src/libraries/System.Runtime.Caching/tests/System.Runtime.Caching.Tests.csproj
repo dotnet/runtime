@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFrameworks>$(NetCoreAppCurrent)-windows;net48-windows</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppCurrent)-windows;net48-windows</TargetFrameworks>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="AdditionalCacheTests\AdditionalCacheTests.cs" />
@@ -9,8 +9,12 @@
     <Compile Include="Common\PokerObjectCache.cs" />
     <Compile Include="Common\TestNotificationSystem.cs" />
     <Compile Include="System.Runtime.Caching\HostFileChangeMonitorTest.cs" />
+    <Compile Include="System.Runtime.Caching\CountersTest.cs" />
     <Compile Include="System.Runtime.Caching\ObjectCacheTest.cs" />
     <Compile Include="System.Runtime.Caching\MemoryCacheTest.cs" />
+    <Compile Include="$(CommonTestPath)System\Diagnostics\Tracing\TestEventListener.cs" Link="Common\System\Diagnostics\Tracing\TestEventListener.cs" />
+
+    <TrimmerRootDescriptor Include="$(MSBuildThisFileDirectory)ILLink.Descriptors.xml" />
   </ItemGroup>
   <ItemGroup Condition="$(TargetFramework.StartsWith('$(NetCoreAppCurrent)'))">
     <ProjectReference Include="..\src\System.Runtime.Caching.csproj" />

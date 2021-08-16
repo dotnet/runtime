@@ -85,7 +85,7 @@ namespace Microsoft.Win32.SafeHandles
 {
     internal sealed class SafeCFStringHandle : SafeHandle
     {
-        internal SafeCFStringHandle()
+        public SafeCFStringHandle()
             : base(IntPtr.Zero, ownsHandle: true)
         {
         }

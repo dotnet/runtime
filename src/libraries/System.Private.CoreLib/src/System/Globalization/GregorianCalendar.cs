@@ -196,10 +196,7 @@ namespace System.Globalization
         /// Monday, 2 indicates Tuesday, 3 indicates Wednesday, 4 indicates
         /// Thursday, 5 indicates Friday, and 6 indicates Saturday.
         /// </summary>
-        public override DayOfWeek GetDayOfWeek(DateTime time)
-        {
-            return (DayOfWeek)((int)(time.Ticks / TicksPerDay + 1) % 7);
-        }
+        public override DayOfWeek GetDayOfWeek(DateTime time) => time.DayOfWeek;
 
         /// <summary>
         /// Returns the day-of-year part of the specified DateTime. The returned value
@@ -217,21 +214,7 @@ namespace System.Globalization
             {
                 throw new ArgumentOutOfRangeException(nameof(era), era, SR.ArgumentOutOfRange_InvalidEraValue);
             }
-
-            if (year < 1 || year > MaxYear)
-            {
-                throw new ArgumentOutOfRangeException(
-                    nameof(year),
-                    year,
-                    SR.Format(SR.ArgumentOutOfRange_Range, 1, MaxYear));
-            }
-            if (month < 1 || month > 12)
-            {
-                throw new ArgumentOutOfRangeException(nameof(month), month, SR.ArgumentOutOfRange_Month);
-            }
-
-            int[] days = ((year % 4 == 0 && (year % 100 != 0 || year % 400 == 0)) ? DaysToMonth366 : DaysToMonth365);
-            return days[month] - days[month - 1];
+            return DateTime.DaysInMonth(year, month);
         }
 
         /// <summary>
@@ -244,16 +227,7 @@ namespace System.Globalization
             {
                 throw new ArgumentOutOfRangeException(nameof(era), era, SR.ArgumentOutOfRange_InvalidEraValue);
             }
-
-            if (year < 1 || year > MaxYear)
-            {
-                throw new ArgumentOutOfRangeException(
-                    nameof(year),
-                    year,
-                    SR.Format(SR.ArgumentOutOfRange_Range, 1, MaxYear));
-            }
-
-            return (year % 4 == 0 && (year % 100 != 0 || year % 400 == 0)) ? 366 : 365;
+            return DateTime.IsLeapYear(year) ? 366 : 365;
         }
 
         public override int GetEra(DateTime time) => ADEra;
@@ -404,15 +378,7 @@ namespace System.Globalization
             {
                 throw new ArgumentOutOfRangeException(nameof(era), era, SR.ArgumentOutOfRange_InvalidEraValue);
             }
-            if (year < 1 || year > MaxYear)
-            {
-                throw new ArgumentOutOfRangeException(
-                    nameof(year),
-                    year,
-                    SR.Format(SR.ArgumentOutOfRange_Range, 1, MaxYear));
-            }
-
-            return year % 4 == 0 && (year % 100 != 0 || year % 400 == 0);
+            return DateTime.IsLeapYear(year);
         }
 
         /// <summary>

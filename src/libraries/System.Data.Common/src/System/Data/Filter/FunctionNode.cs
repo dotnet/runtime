@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Data.Common;
 using System.Data.SqlTypes;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.Serialization;
 
 namespace System.Data
@@ -110,11 +111,13 @@ namespace System.Data
             }
         }
 
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         internal override object Eval()
         {
             return Eval(null, DataRowVersion.Default);
         }
 
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         internal override object Eval(DataRow? row, DataRowVersion version)
         {
             Debug.Assert(_info < s_funcs.Length && _info >= 0, "Invalid function info.");
@@ -173,6 +176,7 @@ namespace System.Data
             return EvalFunction(s_funcs[_info]._id, argumentValues, row, version);
         }
 
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         internal override object Eval(int[] recordNos)
         {
             throw ExprException.ComputeNotAggregate(ToString()!);
@@ -242,6 +246,8 @@ namespace System.Data
             return false;
         }
 
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+            Justification = "Constant expressions are safe to be evaluated.")]
         internal override ExpressionNode Optimize()
         {
             for (int i = 0; i < _argumentCount; i++)
@@ -270,6 +276,7 @@ namespace System.Data
             return this;
         }
 
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         private Type GetDataType(ExpressionNode node)
         {
             Type nodeType = node.GetType();
@@ -304,13 +311,14 @@ namespace System.Data
             return dataType;
         }
 
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         private object EvalFunction(FunctionId id, object[] argumentValues, DataRow? row, DataRowVersion version)
         {
             StorageType storageType;
             switch (id)
             {
                 case FunctionId.Abs:
-                    Debug.Assert(_argumentCount == 1, "Invalid argument argumentCount for " + s_funcs[_info]._name + " : " + _argumentCount.ToString(FormatProvider));
+                    Debug.Assert(_argumentCount == 1, $"Invalid argument argumentCount for {s_funcs[_info]._name} : {_argumentCount.ToString(FormatProvider)}");
 
                     storageType = DataStorage.GetStorageType(argumentValues[0].GetType());
                     if (ExpressionNode.IsInteger(storageType))
@@ -321,7 +329,7 @@ namespace System.Data
                     throw ExprException.ArgumentTypeInteger(s_funcs[_info]._name, 1);
 
                 case FunctionId.cBool:
-                    Debug.Assert(_argumentCount == 1, "Invalid argument argumentCount for " + s_funcs[_info]._name + " : " + _argumentCount.ToString(FormatProvider));
+                    Debug.Assert(_argumentCount == 1, $"Invalid argument argumentCount for {s_funcs[_info]._name} : {_argumentCount.ToString(FormatProvider)}");
 
                     storageType = DataStorage.GetStorageType(argumentValues[0].GetType());
                     return storageType switch
@@ -333,26 +341,26 @@ namespace System.Data
                         _ => throw ExprException.DatatypeConvertion(argumentValues[0].GetType(), typeof(bool)),
                     };
                 case FunctionId.cInt:
-                    Debug.Assert(_argumentCount == 1, "Invalid argument argumentCount for " + s_funcs[_info]._name + " : " + _argumentCount.ToString(FormatProvider));
+                    Debug.Assert(_argumentCount == 1, $"Invalid argument argumentCount for {s_funcs[_info]._name} : {_argumentCount.ToString(FormatProvider)}");
                     return Convert.ToInt32(argumentValues[0], FormatProvider);
 
                 case FunctionId.cDate:
-                    Debug.Assert(_argumentCount == 1, "Invalid argument argumentCount for " + s_funcs[_info]._name + " : " + _argumentCount.ToString(FormatProvider));
+                    Debug.Assert(_argumentCount == 1, $"Invalid argument argumentCount for {s_funcs[_info]._name} : {_argumentCount.ToString(FormatProvider)}");
                     return Convert.ToDateTime(argumentValues[0], FormatProvider);
 
                 case FunctionId.cDbl:
-                    Debug.Assert(_argumentCount == 1, "Invalid argument argumentCount for " + s_funcs[_info]._name + " : " + _argumentCount.ToString(FormatProvider));
+                    Debug.Assert(_argumentCount == 1, $"Invalid argument argumentCount for {s_funcs[_info]._name} : {_argumentCount.ToString(FormatProvider)}");
                     return Convert.ToDouble(argumentValues[0], FormatProvider);
 
                 case FunctionId.cStr:
-                    Debug.Assert(_argumentCount == 1, "Invalid argument argumentCount for " + s_funcs[_info]._name + " : " + _argumentCount.ToString(FormatProvider));
+                    Debug.Assert(_argumentCount == 1, $"Invalid argument argumentCount for {s_funcs[_info]._name} : {_argumentCount.ToString(FormatProvider)}");
                     return Convert.ToString(argumentValues[0], FormatProvider)!;
 
                 case FunctionId.Charindex:
-                    Debug.Assert(_argumentCount == 2, "Invalid argument argumentCount for " + s_funcs[_info]._name + " : " + _argumentCount.ToString(FormatProvider));
+                    Debug.Assert(_argumentCount == 2, $"Invalid argument argumentCount for {s_funcs[_info]._name} : {_argumentCount.ToString(FormatProvider)}");
 
-                    Debug.Assert(argumentValues[0] is string, "Invalid argument type for " + s_funcs[_info]._name);
-                    Debug.Assert(argumentValues[1] is string, "Invalid argument type for " + s_funcs[_info]._name);
+                    Debug.Assert(argumentValues[0] is string, $"Invalid argument type for {s_funcs[_info]._name}");
+                    Debug.Assert(argumentValues[1] is string, $"Invalid argument type for {s_funcs[_info]._name}");
 
                     if (DataStorage.IsObjectNull(argumentValues[0]) || DataStorage.IsObjectNull(argumentValues[1]))
                         return DBNull.Value;
@@ -366,7 +374,7 @@ namespace System.Data
                     return ((string)argumentValues[1]).IndexOf((string)argumentValues[0], StringComparison.Ordinal);
 
                 case FunctionId.Iif:
-                    Debug.Assert(_argumentCount == 3, "Invalid argument argumentCount: " + _argumentCount.ToString(FormatProvider));
+                    Debug.Assert(_argumentCount == 3, $"Invalid argument argumentCount: {_argumentCount.ToString(FormatProvider)}");
 
                     object first = _arguments![0].Eval(row, version);
 
@@ -393,8 +401,8 @@ namespace System.Data
                         return argumentValues[0];
 
                 case FunctionId.Len:
-                    Debug.Assert(_argumentCount == 1, "Invalid argument argumentCount for " + s_funcs[_info]._name + " : " + _argumentCount.ToString(FormatProvider));
-                    Debug.Assert((argumentValues[0] is string) || (argumentValues[0] is SqlString), "Invalid argument type for " + s_funcs[_info]._name);
+                    Debug.Assert(_argumentCount == 1, $"Invalid argument argumentCount for {s_funcs[_info]._name} : {_argumentCount.ToString(FormatProvider)}");
+                    Debug.Assert((argumentValues[0] is string) || (argumentValues[0] is SqlString), $"Invalid argument type for {s_funcs[_info]._name}");
 
                     if (argumentValues[0] is SqlString)
                     {
@@ -412,10 +420,10 @@ namespace System.Data
 
 
                 case FunctionId.Substring:
-                    Debug.Assert(_argumentCount == 3, "Invalid argument argumentCount: " + _argumentCount.ToString(FormatProvider));
-                    Debug.Assert((argumentValues[0] is string) || (argumentValues[0] is SqlString), "Invalid first argument " + argumentValues[0].GetType().FullName + " in " + s_funcs[_info]._name);
-                    Debug.Assert(argumentValues[1] is int, "Invalid second argument " + argumentValues[1].GetType().FullName + " in " + s_funcs[_info]._name);
-                    Debug.Assert(argumentValues[2] is int, "Invalid third argument " + argumentValues[2].GetType().FullName + " in " + s_funcs[_info]._name);
+                    Debug.Assert(_argumentCount == 3, $"Invalid argument argumentCount: {_argumentCount.ToString(FormatProvider)}");
+                    Debug.Assert((argumentValues[0] is string) || (argumentValues[0] is SqlString), $"Invalid first argument {argumentValues[0].GetType().FullName} in {s_funcs[_info]._name}");
+                    Debug.Assert(argumentValues[1] is int, $"Invalid second argument {argumentValues[1].GetType().FullName} in {s_funcs[_info]._name}");
+                    Debug.Assert(argumentValues[2] is int, $"Invalid third argument {argumentValues[2].GetType().FullName} in {s_funcs[_info]._name}");
 
                     // work around the differences in .NET and VBA implementation of the Substring function
                     // 1. The <index> Argument is 0-based in .NET, and 1-based in VBA
@@ -454,8 +462,8 @@ namespace System.Data
 
                 case FunctionId.Trim:
                     {
-                        Debug.Assert(_argumentCount == 1, "Invalid argument argumentCount for " + s_funcs[_info]._name + " : " + _argumentCount.ToString(FormatProvider));
-                        Debug.Assert((argumentValues[0] is string) || (argumentValues[0] is SqlString), "Invalid argument type for " + s_funcs[_info]._name);
+                        Debug.Assert(_argumentCount == 1, $"Invalid argument argumentCount for {s_funcs[_info]._name} : {_argumentCount.ToString(FormatProvider)}");
+                        Debug.Assert((argumentValues[0] is string) || (argumentValues[0] is SqlString), $"Invalid argument type for {s_funcs[_info]._name}");
 
                         if (DataStorage.IsObjectNull(argumentValues[0]))
                             return DBNull.Value;

@@ -81,6 +81,38 @@ namespace System.ComponentModel.TypeConverterTests
             Assert.Null(font);
         }
 
+        [ConditionalFact(Helpers.IsDrawingSupported)]
+        public void GetFontPropsSorted()
+        {
+            // The order provided since .NET Framework
+            string[] expectedPropNames = new[]
+            {
+                nameof(Font.Name),
+                nameof(Font.Size),
+                nameof(Font.Unit),
+                nameof(Font.Bold),
+                nameof(Font.GdiCharSet),
+                nameof(Font.GdiVerticalFont),
+                nameof(Font.Italic),
+                nameof(Font.Strikeout),
+                nameof(Font.Underline),
+            };
+
+            FontConverter converter = new FontConverter();
+            Font font = new($"Courier New", 8.25f, FontStyle.Regular, GraphicsUnit.Point);
+
+            PropertyDescriptorCollection props = converter.GetProperties(font);
+            string[] propNames = new string[props.Count];
+
+            int index = 0;
+            foreach (PropertyDescriptor prop in props)
+            {
+                propNames[index++] = prop.DisplayName;
+            }
+
+            Assert.True(propNames.SequenceEqual(expectedPropNames));
+        }
+
         public static TheoryData<string, string, float, GraphicsUnit, FontStyle> TestConvertFormData()
         {
             var data = PlatformDetection.IsWindows ?

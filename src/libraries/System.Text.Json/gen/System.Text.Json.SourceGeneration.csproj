@@ -1,0 +1,66 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFrameworks>netstandard2.0</TargetFrameworks>
+    <CLSCompliant>false</CLSCompliant>
+    <Nullable>enable</Nullable>
+    <!-- Suppress warning: XML comment has cref attribute that could not be resolved -->
+    <NoWarn>CS1574</NoWarn>
+    <EnableDefaultEmbeddedResourceItems>false</EnableDefaultEmbeddedResourceItems>
+    <UsingToolXliff>true</UsingToolXliff>
+    <IsNETCoreAppAnalyzer>true</IsNETCoreAppAnalyzer>
+    <AnalyzerLanguage>cs</AnalyzerLanguage>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <DefineConstants>$(DefineConstants);BUILDING_SOURCE_GENERATOR</DefineConstants>
+    <DefineConstants Condition="'$(LaunchDebugger)' == 'true'">$(DefineConstants);LAUNCH_DEBUGGER</DefineConstants>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Workspaces" Version="$(MicrosoftCodeAnalysisCSharpWorkspacesVersion)" PrivateAssets="all" />
+    <PackageReference Include="Microsoft.DotNet.Build.Tasks.Packaging" Version="$(MicrosoftDotNetBuildTasksPackagingVersion)" PrivateAssets="all" />
+
+    <PackageDestination Include="analyzers\dotnet\cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="$(CommonPath)System\Runtime\CompilerServices\IsExternalInit.cs" Link="Common\System\Runtime\CompilerServices\IsExternalInit.cs" />
+    <Compile Include="..\Common\JsonCamelCaseNamingPolicy.cs" Link="Common\System\Text\Json\JsonCamelCaseNamingPolicy.cs" />
+    <Compile Include="..\Common\JsonNamingPolicy.cs" Link="Common\System\Text\Json\JsonNamingPolicy.cs" />
+    <Compile Include="..\Common\JsonAttribute.cs" Link="Common\System\Text\Json\Serialization\JsonAttribute.cs" />
+    <Compile Include="..\Common\JsonConstants.cs" Link="Common\System\Text\Json\JsonConstants.cs" />
+    <Compile Include="..\Common\JsonHelpers.cs" Link="Common\System\Text\Json\JsonHelpers.cs" />
+    <Compile Include="..\Common\JsonIgnoreCondition.cs" Link="Common\System\Text\Json\Serialization\JsonIgnoreCondition.cs" />
+    <Compile Include="..\Common\JsonKnownNamingPolicy.cs" Link="Common\System\Text\Json\Serialization\JsonKnownNamingPolicy.cs" />
+    <Compile Include="..\Common\JsonNumberHandling.cs" Link="Common\System\Text\Json\Serialization\JsonNumberHandling.cs" />
+    <Compile Include="..\Common\JsonSerializableAttribute.cs" Link="Common\System\Text\Json\Serialization\JsonSerializableAttribute.cs" />
+    <Compile Include="..\Common\JsonSourceGenerationMode.cs" Link="Common\System\Text\Json\Serialization\JsonSourceGenerationMode.cs" />
+    <Compile Include="..\Common\JsonSourceGenerationOptionsAttribute.cs" Link="Common\System\Text\Json\Serialization\JsonSourceGenerationOptionsAttribute.cs" />
+    <Compile Include="..\Common\ReflectionExtensions.cs" Link="Common\System\Text\Json\Serialization\ReflectionExtensions.cs" />
+    <Compile Include="ClassType.cs" />
+    <Compile Include="CollectionType.cs" />
+    <Compile Include="JsonConstants.cs" />
+    <Compile Include="JsonSourceGenerator.cs" />
+    <Compile Include="JsonSourceGenerator.Emitter.cs" />
+    <Compile Include="JsonSourceGenerator.Parser.cs" />
+    <Compile Include="ObjectConstructionStrategy.cs" />
+    <Compile Include="ParameterGenerationSpec.cs" />
+    <Compile Include="PropertyGenerationSpec.cs" />
+    <Compile Include="Reflection\AssemblyWrapper.cs" />
+    <Compile Include="Reflection\TypeExtensions.cs" />
+    <Compile Include="Reflection\FieldInfoWrapper.cs" />
+    <Compile Include="Reflection\ConstructorInfoWrapper.cs" />
+    <Compile Include="Reflection\CustomAttributeDataWrapper.cs" />
+    <Compile Include="Reflection\MemberInfoWrapper.cs" />
+    <Compile Include="Reflection\MetadataLoadContextInternal.cs" />
+    <Compile Include="Reflection\MethodInfoWrapper.cs" />
+    <Compile Include="Reflection\ParameterInfoWrapper.cs" />
+    <Compile Include="Reflection\PropertyInfoWrapper.cs" />
+    <Compile Include="Reflection\ReflectionExtensions.cs" />
+    <Compile Include="Reflection\RoslynExtensions.cs" />
+    <Compile Include="Reflection\TypeWrapper.cs" />
+    <Compile Include="ContextGenerationSpec.cs" />
+    <Compile Include="SourceGenerationSpec.cs" />
+    <Compile Include="TypeGenerationSpec.cs" />
+  </ItemGroup>
+</Project>

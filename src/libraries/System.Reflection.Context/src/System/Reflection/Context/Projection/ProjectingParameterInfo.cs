@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Reflection.Context.Delegation;
 
 namespace System.Reflection.Context.Projection
@@ -59,7 +60,7 @@ namespace System.Reflection.Context.Projection
             return Projector.Project(base.GetRequiredCustomModifiers(), Projector.ProjectType);
         }
 
-        public override bool Equals(object o)
+        public override bool Equals([NotNullWhen(true)] object? o)
         {
             return o is ProjectingParameterInfo other &&
                 Projector == other.Projector &&

@@ -8,6 +8,7 @@ using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
+using DispatchProxyTestDependency;
 
 
 // Test types used to make proxies.
@@ -18,6 +19,7 @@ public interface TestType_IHelloService
 
 public interface TestType_IOut_Ref
 {
+    void In(in string message);
     void Out(out string message);
     void Ref(ref string message);
     void InAttribute([In] string message);
@@ -91,6 +93,20 @@ internal interface TestType_PublicInterfaceService_Implements_Internal : TestTyp
     string Echo2(string message);
 }
 
+internal interface TestType_InternalInterfaceImplementsNonPublicExternalType : TestType_IExternalNonPublicHiService
+{
+    string Hi2(string message);
+}
+
+internal interface TestType_ServiceWithGenericArgument<T>
+{
+    T GetInnerService();
+}
+
+internal interface TestType_InternalInterfaceWithNonPublicExternalGenericArgument : TestType_ServiceWithGenericArgument<TestType_IExternalNonPublicHiService>
+{
+}
+
 public interface TypeType_GenericMethod
 {
     T Echo<T>(T messages);
@@ -109,6 +125,35 @@ public sealed class Sealed_TestDispatchProxy : DispatchProxy
     {
         throw new InvalidOperationException();
     }
+}
+
+public class TestType_PrivateProxy
+{
+    public static T Proxy<T>() => DispatchProxy.Create<T, InvokeProxy<T>>();
+
+    private class InvokeProxy<T> : DispatchProxy
+    {
+        protected override object Invoke(MethodInfo targetMethod, object[] args) => null;
+    }
+}
+
+internal class TestType_InternalProxyInternalBaseType : TestType_ExternalNonPublicBaseClassForProxy
+{
+}
+
+internal class TestType_InternalProxyImplementingInterfaceWithGenericArgumentBeingNonPublicExternalType : DispatchProxy, TestType_InternalInterfaceWithNonPublicExternalGenericArgument
+{
+    public TestType_IExternalNonPublicHiService GetInnerService() => throw new InvalidOperationException();
+
+    protected override object Invoke(MethodInfo targetMethod, object[] args)
+    {
+        throw new InvalidOperationException();
+    }
+}
+
+internal class InternalInvokeProxy : DispatchProxy
+{
+    protected override object Invoke(MethodInfo targetMethod, object[] args) => null;
 }
 
 // This test double creates a proxy instance for the requested 'ProxyT' type.

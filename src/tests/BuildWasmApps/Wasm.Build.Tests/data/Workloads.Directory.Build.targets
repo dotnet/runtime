@@ -1,0 +1,93 @@
+<Project>
+  <PropertyGroup>
+    <WasmBuildAppDependsOn>PrepareForWasmBuild;$(WasmBuildAppDependsOn)</WasmBuildAppDependsOn>
+    <_MicrosoftNetCoreAppRefDir>$(AppRefDir)\</_MicrosoftNetCoreAppRefDir>
+  </PropertyGroup>
+
+  <Target Name="PrepareForWasmBuild">
+    <ItemGroup>
+      <WasmAssembliesToBundle Include="$(TargetDir)publish\**\*.dll" />
+    </ItemGroup>
+  </Target>
+
+  <Target Name="PrintRuntimePackPath" BeforeTargets="Publish">
+    <Message Text="** MicrosoftNetCoreAppRuntimePackDir : %(ResolvedRuntimePack.PackageDirectory)" Importance="High" />
+  </Target>
+
+  <!-- Add the resolved targeting pack to the assembly search path. -->
+  <!-- <Target Name="UseTargetingPackForAssemblySearchPaths"
+          BeforeTargets="ResolveAssemblyReferences;
+                         DesignTimeResolveAssemblyReferences"
+          Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
+    <PropertyGroup>
+      <AssemblySearchPaths>$(AssemblySearchPaths);$(MicrosoftNetCoreAppRefPackRefDir.TrimEnd('/\'))</AssemblySearchPaths>
+      <DesignTimeAssemblySearchPaths>$(DesignTimeAssemblySearchPaths);$(MicrosoftNetCoreAppRefPackRefDir.TrimEnd('/\'))</DesignTimeAssemblySearchPaths>
+    </PropertyGroup>
+  </Target> -->
+
+  <!-- SDK tries to download runtime packs when RuntimeIdentifier is set, remove them from PackageDownload item. -->
+  <Target Name="RemoveRuntimePackFromDownloadItem"
+          AfterTargets="ProcessFrameworkReferences">
+    <ItemGroup>
+      <PackageDownload Remove="@(PackageDownload)"
+                       Condition="'$(UsePackageDownload)' == 'true' and $([System.String]::Copy('%(Identity)').StartsWith('Microsoft.NETCore.App.Runtime'))" />
+      <PackageReference Remove="@(PackageReference)"
+                        Condition="'$(UsePackageDownload)' != 'true' and $([System.String]::Copy('%(Identity)').StartsWith('Microsoft.NETCore.App.Runtime'))" />
+    </ItemGroup>
+  </Target>
+
+  <!-- Use local targeting pack for NetCoreAppCurrent. -->
+  <Target Name="UpdateTargetingAndRuntimePack"
+          AfterTargets="ResolveFrameworkReferences">
+    <ItemGroup>
+      <ResolvedTargetingPack Path="$(_MicrosoftNetCoreAppRefDir.TrimEnd('/\'))"
+                             NuGetPackageVersion="$(RuntimePackInWorkloadVersion)"
+                             PackageDirectory="$(_MicrosoftNetCoreAppRefDir.TrimEnd('/\'))"
+                             Condition="'%(ResolvedTargetingPack.RuntimeFrameworkName)' == 'Microsoft.NETCore.App' and
+                                        Exists('$(_MicrosoftNetCoreAppRefDir)data\FrameworkList.xml')" />
+      <ResolvedRuntimePack
+                            Update="Microsoft.NETCore.App.Runtime.Mono.browser-wasm"
+                            FrameworkName="Microsoft.NETCore.App"
+                            NuGetPackageId="Microsoft.NETCore.App.Runtime.Mono.browser-wasm"
+                            NuGetPackageVersion="$(RuntimePackInWorkloadVersion)"
+                            PackageDirectory="$(NetCoreTargetingPackRoot)\Microsoft.NETCore.App.Runtime.Mono.browser-wasm\$(RuntimePackInWorkloadVersion)"
+                            RuntimeIdentifier="browser-wasm" />
+
+       <ResolvedFrameworkReference Update="Microsoft.NETCore.App"
+                                   TargetingPackPath="$(_MicrosoftNetCoreAppRefDir.TrimEnd('/\'))"
+                                   RuntimePackName="Microsoft.NETCore.App.Runtime.Mono.browser-wasm"
+                                   RuntimePackVersion="$(RuntimePackInWorkloadVersion)"
+                                   RuntimePackPath="$(NetCoreTargetingPackRoot)\Microsoft.NETCore.App.Runtime.Mono.browser-wasm\$(RuntimePackInWorkloadVersion)"
+                                   RuntimeIdentifier="browser-wasm" />
+    </ItemGroup>
+  </Target>
+
+  <!-- Update the local targeting pack's version as it's written into the runtimeconfig.json file to select the right framework. -->
+  <Target Name="UpdateRuntimeFrameworkVersion"
+          AfterTargets="ResolveTargetingPackAssets">
+    <ItemGroup>
+      <RuntimeFramework Version="$(RuntimePackInWorkloadVersion)"
+                        Condition="'%(RuntimeFramework.FrameworkName)' == 'Microsoft.NETCore.App'" />
+    </ItemGroup>
+  </Target>
+
+  <!-- Filter out conflicting implicit assembly references. -->
+  <Target Name="FilterImplicitAssemblyReferences"
+          Condition="'$(DisableImplicitAssemblyReferences)' != 'true'"
+          DependsOnTargets="ResolveProjectReferences"
+          AfterTargets="ResolveTargetingPackAssets">
+    <ItemGroup>
+      <_targetingPackReferenceExclusion Include="$(TargetName)" />
+      <_targetingPackReferenceExclusion Include="@(_ResolvedProjectReferencePaths->'%(Filename)')" />
+      <_targetingPackReferenceExclusion Include="@(DefaultReferenceExclusion)" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <_targetingPackReferenceWithExclusion Include="@(Reference)">
+        <Exclusion>%(_targetingPackReferenceExclusion.Identity)</Exclusion>
+      </_targetingPackReferenceWithExclusion>
+      <Reference Remove="@(_targetingPackReferenceWithExclusion)"
+                 Condition="'%(_targetingPackReferenceWithExclusion.ExternallyResolved)' == 'true' and '%(_targetingPackReferenceWithExclusion.Filename)' == '%(_targetingPackReferenceWithExclusion.Exclusion)'" />
+    </ItemGroup>
+  </Target>
+</Project>

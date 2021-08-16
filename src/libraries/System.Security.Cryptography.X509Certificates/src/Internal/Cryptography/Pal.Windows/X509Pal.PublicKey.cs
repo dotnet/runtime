@@ -283,46 +283,32 @@ namespace Internal.Cryptography.Pal
         {
             unsafe
             {
-                byte[]? decodedKeyValue = null;
-
-                encodedKeyValue.DecodeObject(
+                return encodedKeyValue.DecodeObject(
                     CryptDecodeObjectStructType.X509_DSS_PUBLICKEY,
-                    delegate (void* pvDecoded, int cbDecoded)
+                    static delegate (void* pvDecoded, int cbDecoded)
                     {
                         Debug.Assert(cbDecoded >= sizeof(CRYPTOAPI_BLOB));
                         CRYPTOAPI_BLOB* pBlob = (CRYPTOAPI_BLOB*)pvDecoded;
-                        decodedKeyValue = pBlob->ToByteArray();
-                    }
-                );
-
-                return decodedKeyValue;
+                        return pBlob->ToByteArray();
+                    });
             }
         }
 
         private static void DecodeDssParameters(byte[] encodedParameters, out byte[] p, out byte[] q, out byte[] g)
         {
-            byte[] pLocal = null!;
-            byte[] qLocal = null!;
-            byte[] gLocal = null!;
-
             unsafe
             {
-                encodedParameters.DecodeObject(
+                (p, q, g) = encodedParameters.DecodeObject(
                     CryptDecodeObjectStructType.X509_DSS_PARAMETERS,
                     delegate (void* pvDecoded, int cbDecoded)
                     {
                         Debug.Assert(cbDecoded >= sizeof(CERT_DSS_PARAMETERS));
                         CERT_DSS_PARAMETERS* pCertDssParameters = (CERT_DSS_PARAMETERS*)pvDecoded;
-                        pLocal = pCertDssParameters->p.ToByteArray();
-                        qLocal = pCertDssParameters->q.ToByteArray();
-                        gLocal = pCertDssParameters->g.ToByteArray();
-                    }
-                );
+                        return (pCertDssParameters->p.ToByteArray(),
+                                pCertDssParameters->q.ToByteArray(),
+                                pCertDssParameters->g.ToByteArray());
+                    });
             }
-
-            p = pLocal;
-            q = qLocal;
-            g = gLocal;
         }
 
         private static bool HasExplicitParameters(SafeBCryptKeyHandle bcryptHandle)

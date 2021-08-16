@@ -6,7 +6,7 @@ using Microsoft.Internal;
 
 namespace System.ComponentModel.Composition.ReflectionModel
 {
-    internal class ReflectionField : ReflectionWritableMember
+    internal sealed class ReflectionField : ReflectionWritableMember
     {
         private readonly FieldInfo _field;
 

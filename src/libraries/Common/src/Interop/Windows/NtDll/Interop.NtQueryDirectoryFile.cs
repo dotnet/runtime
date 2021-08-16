@@ -4,9 +4,9 @@
 using System;
 using System.Runtime.InteropServices;
 
-internal partial class Interop
+internal static partial class Interop
 {
-    internal partial class NtDll
+    internal static partial class NtDll
     {
         // https://msdn.microsoft.com/en-us/library/windows/hardware/ff556633.aspx
         // https://msdn.microsoft.com/en-us/library/windows/hardware/ff567047.aspx
@@ -16,7 +16,7 @@ internal partial class Interop
             IntPtr Event,
             IntPtr ApcRoutine,
             IntPtr ApcContext,
-            out IO_STATUS_BLOCK IoStatusBlock,
+            IO_STATUS_BLOCK* IoStatusBlock,
             IntPtr FileInformation,
             uint Length,
             FILE_INFORMATION_CLASS FileInformationClass,

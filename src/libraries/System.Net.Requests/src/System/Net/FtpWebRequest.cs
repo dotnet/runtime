@@ -47,7 +47,7 @@ namespace System.Net
         MustChangeWorkingDirectoryToPath = 0x100
     }
 
-    internal class FtpMethodInfo
+    internal sealed class FtpMethodInfo
     {
         internal string Method;
         internal FtpOperation Operation;
@@ -221,7 +221,7 @@ namespace System.Net
         private LazyAsyncResult? _readAsyncResult;
         private LazyAsyncResult? _requestCompleteAsyncResult;
 
-        // [SuppressMessage("Microsoft.Security", "CS002:SecretInNextLine", Justification="Anonymous FTP credential in production code.")]
+        // [SuppressMessage("Microsoft.Security", "CS002:SecretInNextLine", Justification="Suppression approved. Anonymous FTP credential in production code.")]
         private static readonly NetworkCredential s_defaultFtpNetworkCredential = new NetworkCredential("anonymous", "anonymous@", string.Empty);
         private const int s_DefaultTimeout = 100000;  // 100 seconds
         private static readonly TimerThread.Queue s_DefaultTimerQueue = TimerThread.GetOrCreateQueue(s_DefaultTimeout);
@@ -480,9 +480,7 @@ namespace System.Net
             }
         }
 
-#pragma warning disable SYSLIB0014
         public ServicePoint ServicePoint => _servicePoint ??= ServicePointManager.FindServicePoint(_uri);
-#pragma warning restore SYSLIB0014
 
         internal bool Aborted
         {
@@ -492,9 +490,7 @@ namespace System.Net
             }
         }
 
-#pragma warning disable SYSLIB0014
         internal FtpWebRequest(Uri uri)
-#pragma warning restore SYSLIB0014
         {
             if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, uri);
 
@@ -655,7 +651,7 @@ namespace System.Net
                         lock (_syncObject)
                         {
                             if (_requestStage >= RequestStage.ReadReady)
-                                asyncResult = null; ;
+                                asyncResult = null;
                         }
                     }
 
@@ -971,15 +967,11 @@ namespace System.Net
 
         private async void CreateConnectionAsync()
         {
-            string hostname = _uri.Host;
-            int port = _uri.Port;
-
-            TcpClient client = new TcpClient();
-
             object result;
             try
             {
-                await client.ConnectAsync(hostname, port).ConfigureAwait(false);
+                var client = new TcpClient();
+                await client.ConnectAsync(_uri.Host, _uri.Port).ConfigureAwait(false);
                 result = new FtpControlStream(client);
             }
             catch (Exception e)
@@ -1754,7 +1746,7 @@ namespace System.Net
     //
     // Class used by the WebRequest.Create factory to create FTP requests
     //
-    internal class FtpWebRequestCreator : IWebRequestCreate
+    internal sealed class FtpWebRequestCreator : IWebRequestCreate
     {
         internal FtpWebRequestCreator()
         {

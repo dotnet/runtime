@@ -76,7 +76,7 @@ namespace System.Collections.Immutable
         /// <summary>
         /// Enumerates a stack with no memory allocations.
         /// </summary>
-        private class EnumeratorObject : IEnumerator<T>
+        private sealed class EnumeratorObject : IEnumerator<T>
         {
             /// <summary>
             /// The original stack being enumerated.

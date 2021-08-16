@@ -3,7 +3,7 @@
 
 namespace System.Reflection.Emit
 {
-    internal class EmptyCAHolder : ICustomAttributeProvider
+    internal sealed class EmptyCAHolder : ICustomAttributeProvider
     {
         internal EmptyCAHolder() { }
 

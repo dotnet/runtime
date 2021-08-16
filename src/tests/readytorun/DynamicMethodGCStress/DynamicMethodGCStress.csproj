@@ -5,6 +5,9 @@
     <Optimize>true</Optimize>
     <!-- This test has a secondary thread with an infinite loop -->
     <UnloadabilityIncompatible>true</UnloadabilityIncompatible>
+
+    <!-- This is an explicit crossgen test -->
+    <AlwaysUseCrossGen2>true</AlwaysUseCrossGen2>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="$(MSBuildProjectName).cs" />
@@ -12,14 +15,10 @@
   <PropertyGroup>
     <CLRTestBatchPreCommands><![CDATA[
 $(CLRTestBatchPreCommands)
-%CORE_ROOT%\crossgen.exe /readytorun /platform_assemblies_paths %CORE_ROOT%%3B%25CD% /out DynamicMethodGCStress.ni.dll DynamicMethodGCStress.dll
-set ExePath=DynamicMethodGCStress.ni.dll
 set COMPlus_GCStress=3
 ]]></CLRTestBatchPreCommands>
     <BashCLRTestPreCommands><![CDATA[
 $(BashCLRTestPreCommands)
-$CORE_ROOT/crossgen -readytorun -platform_assemblies_paths $CORE_ROOT:`pwd` -out DynamicMethodGCStress.ni.dll DynamicMethodGCStress.dll
-ExePath=DynamicMethodGCStress.ni.dll
 export COMPlus_GCStress=3
 ]]></BashCLRTestPreCommands>
   </PropertyGroup>

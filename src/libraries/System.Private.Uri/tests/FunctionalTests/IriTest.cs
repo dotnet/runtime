@@ -103,7 +103,8 @@ namespace System.PrivateUri.Tests
 
             Assert.Equal(
                 "http://con.tosoco.ntosoc.com/abcdefghi/jk" + "%C8%F3%B7%A2%B7%BF%B2%FA",
-                resultUri.ToString());
+                resultUri.ToString(),
+                StringComparer.OrdinalIgnoreCase);
 
             string u4 = "http://co.ntsosocon.com/abcd/" + "%A2%F3%BD%CB%FC%FB%D5%E9%F3%B7%AA%B5";
             new Uri(u4);

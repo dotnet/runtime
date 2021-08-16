@@ -5,7 +5,7 @@ using System.Diagnostics;
 
 namespace System.Net.Http.Headers
 {
-    internal class TransferCodingHeaderParser : BaseHeaderParser
+    internal sealed class TransferCodingHeaderParser : BaseHeaderParser
     {
         private readonly Func<TransferCodingHeaderValue> _transferCodingCreator;
 

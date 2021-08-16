@@ -10,7 +10,9 @@ using System.Net.Sockets;
 
 namespace System.IO.Ports
 {
+#pragma warning disable CA1844
     internal sealed partial class SerialStream : Stream
+#pragma warning restore CA1844
     {
         private const int MaxDataBits = 8;
         private const int MinDataBits = 5;
@@ -86,7 +88,7 @@ namespace System.IO.Ports
             Dispose(false);
         }
 
-        private void CheckReadWriteArguments(byte[] array, int offset, int count)
+        private void CheckArrayArguments(byte[] array, int offset, int count)
         {
             if (array == null)
                 throw new ArgumentNullException(nameof(array));
@@ -96,8 +98,27 @@ namespace System.IO.Ports
                 throw new ArgumentOutOfRangeException(nameof(count), SR.ArgumentOutOfRange_NeedNonNegNumRequired);
             if (array.Length - offset < count)
                 throw new ArgumentException(SR.Argument_InvalidOffLen);
+        }
+
+        private void CheckHandle()
+        {
             if (_handle == null)
                 InternalResources.FileNotOpen();
+        }
+
+        private void CheckReadWriteArguments(byte[] array, int offset, int count)
+        {
+            CheckArrayArguments(array, offset, count);
+
+            CheckHandle();
+        }
+
+        private void CheckWriteArguments()
+        {
+            if (_inBreak)
+                throw new InvalidOperationException(SR.In_Break_State);
+
+            CheckHandle();
         }
 
         private void CheckWriteArguments(byte[] array, int offset, int count)

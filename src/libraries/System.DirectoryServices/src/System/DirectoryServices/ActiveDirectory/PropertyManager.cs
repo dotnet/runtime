@@ -6,7 +6,7 @@ using System.Runtime.InteropServices;
 
 namespace System.DirectoryServices.ActiveDirectory
 {
-    internal class PropertyManager
+    internal static class PropertyManager
     {
         public static string DefaultNamingContext = "defaultNamingContext";
         public static string SchemaNamingContext = "schemaNamingContext";
@@ -124,12 +124,12 @@ namespace System.DirectoryServices.ActiveDirectory
 #pragma warning restore 0414
         public static string MsDSHasInstantiatedNCs = "msDS-HasInstantiatedNCs";
 
-        public static object GetPropertyValue(DirectoryEntry directoryEntry, string propertyName)
+        public static object? GetPropertyValue(DirectoryEntry directoryEntry, string propertyName)
         {
             return GetPropertyValue(null, directoryEntry, propertyName);
         }
 
-        public static object GetPropertyValue(DirectoryContext context, DirectoryEntry directoryEntry, string propertyName)
+        public static object? GetPropertyValue(DirectoryContext? context, DirectoryEntry directoryEntry, string propertyName)
         {
             Debug.Assert(directoryEntry != null, "PropertyManager::GetPropertyValue - directoryEntry is null");
 
@@ -157,13 +157,13 @@ namespace System.DirectoryServices.ActiveDirectory
             return directoryEntry.Properties[propertyName].Value;
         }
 
-        public static object GetSearchResultPropertyValue(SearchResult res, string propertyName)
+        public static object? GetSearchResultPropertyValue(SearchResult res, string propertyName)
         {
             Debug.Assert(res != null, "PropertyManager::GetSearchResultPropertyValue - res is null");
 
             Debug.Assert(propertyName != null, "PropertyManager::GetSearchResultPropertyValue - propertyName is null");
 
-            ResultPropertyValueCollection propertyValues = null;
+            ResultPropertyValueCollection? propertyValues = null;
             try
             {
                 propertyValues = res.Properties[propertyName];

@@ -1691,17 +1691,17 @@ namespace System.Data.Tests.Common
 
             sb["Data Source"] = "testdb";
             sb["User ID"] = "someuser";
-            sb["Password"] = "abcdef";
-            Assert.Equal("Data Source=testdb;User ID=someuser;Password=abcdef",
+            sb["Password"] = "PLACEHOLDER";
+            Assert.Equal("Data Source=testdb;User ID=someuser;Password=PLACEHOLDER",
                 sb.ConnectionString);
 
-            sb["Password"] = "abcdef#";
-            Assert.Equal("Data Source=testdb;User ID=someuser;Password=abcdef#",
+            sb["Password"] = "PLACEHOLDER#";
+            Assert.Equal("Data Source=testdb;User ID=someuser;Password=PLACEHOLDER#",
                 sb.ConnectionString);
 
             // an embedded single-quote value will result in the value being delimieted with double quotes
-            sb["Password"] = "abc\'def";
-            Assert.Equal("Data Source=testdb;User ID=someuser;Password=\"abc\'def\"",
+            sb["Password"] = "PLACEHOLDER\'def";
+            Assert.Equal("Data Source=testdb;User ID=someuser;Password=\"PLACEHOLDER\'def\"",
                 sb.ConnectionString);
 
             // an embedded double-quote value will result in the value being delimieted with single quotes
@@ -1717,39 +1717,39 @@ namespace System.Data.Tests.Common
                 sb.ConnectionString);
 
             sb = new DbConnectionStringBuilder();
-            sb["PASSWORD"] = "abcdef1";
+            sb["PASSWORD"] = "PLACEHOLDERabcdef1";
             sb["user id"] = "someuser";
             sb["Data Source"] = "testdb";
-            Assert.Equal("PASSWORD=abcdef1;user id=someuser;Data Source=testdb",
+            Assert.Equal("PASSWORD=PLACEHOLDERabcdef1;user id=someuser;Data Source=testdb",
                 sb.ConnectionString);
 
             // case is preserved for a keyword that was added the first time
             sb = new DbConnectionStringBuilder();
-            sb["PassWord"] = "abcdef2";
+            sb["PassWord"] = "PLACEHOLDERabcdef2";
             sb["uSER iD"] = "someuser";
             sb["DaTa SoUrCe"] = "testdb";
-            Assert.Equal("PassWord=abcdef2;uSER iD=someuser;DaTa SoUrCe=testdb",
+            Assert.Equal("PassWord=PLACEHOLDERabcdef2;uSER iD=someuser;DaTa SoUrCe=testdb",
                 sb.ConnectionString);
-            sb["passWORD"] = "abc123";
-            Assert.Equal("PassWord=abc123;uSER iD=someuser;DaTa SoUrCe=testdb",
+            sb["passWORD"] = "PLACEHOLDERabc123";
+            Assert.Equal("PassWord=PLACEHOLDERabc123;uSER iD=someuser;DaTa SoUrCe=testdb",
                 sb.ConnectionString);
 
             // embedded equal sign in the value will cause the value to be
             // delimited with double-quotes
             sb = new DbConnectionStringBuilder();
-            sb["Password"] = "abc=def";
+            sb["Password"] = "PLACEHOLDER=def";
             sb["Data Source"] = "testdb";
             sb["User ID"] = "someuser";
-            Assert.Equal("Password=\"abc=def\";Data Source=testdb;User ID=someuser",
+            Assert.Equal("Password=\"PLACEHOLDER=def\";Data Source=testdb;User ID=someuser",
                 sb.ConnectionString);
 
             // embedded semicolon in the value will cause the value to be
             // delimited with double-quotes
             sb = new DbConnectionStringBuilder();
-            sb["Password"] = "abc;def";
+            sb["Password"] = "PLACEHOLDER;def";
             sb["Data Source"] = "testdb";
             sb["User ID"] = "someuser";
-            Assert.Equal("Password=\"abc;def\";Data Source=testdb;User ID=someuser",
+            Assert.Equal("Password=\"PLACEHOLDER;def\";Data Source=testdb;User ID=someuser",
                 sb.ConnectionString);
 
             // more right parentheses then left parentheses - happily takes it
@@ -1866,32 +1866,32 @@ namespace System.Data.Tests.Common
             DbConnectionStringBuilder sb;
 
             sb = new DbConnectionStringBuilder();
-            sb.ConnectionString = "User ID=SCOTT;Password=TiGeR;Data Source=" + dataSource;
+            sb.ConnectionString = "User ID=SCOTT;Password=PLACEHOLDER;Data Source=" + dataSource;
             Assert.Equal(dataSource, sb["Data Source"]);
             Assert.Equal("SCOTT", sb["User ID"]);
-            Assert.Equal("TiGeR", sb["Password"]);
+            Assert.Equal("PLACEHOLDER", sb["Password"]);
             Assert.Equal(
-                "user id=SCOTT;password=TiGeR;data source=\"(DESCRIPTION=(ADDRESS=(PROTOCOL=" +
+                "user id=SCOTT;password=PLACEHOLDER;data source=\"(DESCRIPTION=(ADDRESS=(PROTOCOL=" +
                 "TCP)(HOST=192.168.1.101)(PORT=1521))(CONNECT_DATA=(SERVER=DEDICATED)" +
                 "(SERVICE_NAME=TESTDB)))\"", sb.ConnectionString);
 
             sb = new DbConnectionStringBuilder(false);
-            sb.ConnectionString = "User ID=SCOTT;Password=TiGeR;Data Source=" + dataSource;
+            sb.ConnectionString = "User ID=SCOTT;Password=PLACEHOLDER;Data Source=" + dataSource;
             Assert.Equal(dataSource, sb["Data Source"]);
             Assert.Equal("SCOTT", sb["User ID"]);
-            Assert.Equal("TiGeR", sb["Password"]);
+            Assert.Equal("PLACEHOLDER", sb["Password"]);
             Assert.Equal(
-                "user id=SCOTT;password=TiGeR;data source=\"(DESCRIPTION=(ADDRESS=(PROTOCOL=" +
+                "user id=SCOTT;password=PLACEHOLDER;data source=\"(DESCRIPTION=(ADDRESS=(PROTOCOL=" +
                 "TCP)(HOST=192.168.1.101)(PORT=1521))(CONNECT_DATA=(SERVER=DEDICATED)" +
                 "(SERVICE_NAME=TESTDB)))\"", sb.ConnectionString);
 
             sb = new DbConnectionStringBuilder(true);
-            sb.ConnectionString = "User ID=SCOTT;Password=TiGeR;Data Source=" + dataSource;
+            sb.ConnectionString = "User ID=SCOTT;Password=PLACEHOLDER;Data Source=" + dataSource;
             Assert.Equal(dataSource, sb["Data Source"]);
             Assert.Equal("SCOTT", sb["User ID"]);
-            Assert.Equal("TiGeR", sb["Password"]);
+            Assert.Equal("PLACEHOLDER", sb["Password"]);
             Assert.Equal(
-                "user id=SCOTT;password=TiGeR;data source=(DESCRIPTION=(ADDRESS=(PROTOCOL=" +
+                "user id=SCOTT;password=PLACEHOLDER;data source=(DESCRIPTION=(ADDRESS=(PROTOCOL=" +
                 "TCP)(HOST=192.168.1.101)(PORT=1521))(CONNECT_DATA=(SERVER=DEDICATED)" +
                 "(SERVICE_NAME=TESTDB)))", sb.ConnectionString);
         }
@@ -1902,24 +1902,24 @@ namespace System.Data.Tests.Common
             DbConnectionStringBuilder sb;
 
             sb = new DbConnectionStringBuilder();
-            sb.ConnectionString = "PassWord=abcdef2;uSER iD=someuser;DaTa SoUrCe=testdb";
+            sb.ConnectionString = "PassWord=PLACEHOLDER;user iD=someuser;DaTa SoUrCe=testdb";
             sb["Integrated Security"] = "False";
             Assert.Equal(
-                "password=abcdef2;user id=someuser;data source=testdb;Integrated Security=False",
+                "password=PLACEHOLDER;user id=someuser;data source=testdb;Integrated Security=False",
                 sb.ConnectionString);
 
             sb = new DbConnectionStringBuilder(false);
-            sb.ConnectionString = "PassWord=abcdef2;uSER iD=someuser;DaTa SoUrCe=testdb";
+            sb.ConnectionString = "PassWord=PLACEHOLDER;uSER iD=someuser;DaTa SoUrCe=testdb";
             sb["Integrated Security"] = "False";
             Assert.Equal(
-                "password=abcdef2;user id=someuser;data source=testdb;Integrated Security=False",
+                "password=PLACEHOLDER;user id=someuser;data source=testdb;Integrated Security=False",
                 sb.ConnectionString);
 
             sb = new DbConnectionStringBuilder(true);
-            sb.ConnectionString = "PassWord=abcdef2;uSER iD=someuser;DaTa SoUrCe=testdb";
+            sb.ConnectionString = "PassWord=PLACEHOLDER;uSER iD=someuser;DaTa SoUrCe=testdb";
             sb["Integrated Security"] = "False";
             Assert.Equal(
-                "password=abcdef2;user id=someuser;data source=testdb;Integrated Security=False",
+                "password=PLACEHOLDER;user id=someuser;data source=testdb;Integrated Security=False",
                 sb.ConnectionString);
         }
 

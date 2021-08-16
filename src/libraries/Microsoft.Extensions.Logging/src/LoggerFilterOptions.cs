@@ -28,6 +28,9 @@ namespace Microsoft.Extensions.Logging
         /// <summary>
         /// Gets the collection of <see cref="LoggerFilterRule"/> used for filtering log messages.
         /// </summary>
-        public IList<LoggerFilterRule> Rules { get; } = new List<LoggerFilterRule>();
+        public IList<LoggerFilterRule> Rules => RulesInternal;
+
+        // Concrete representation of the rule list
+        internal List<LoggerFilterRule> RulesInternal { get; } = new List<LoggerFilterRule>();
     }
 }

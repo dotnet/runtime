@@ -41,7 +41,6 @@ namespace System.Xml.Serialization
         private XmlTypeAttribute? _xmlType;
         private XmlAnyAttributeAttribute? _xmlAnyAttribute;
         private readonly XmlChoiceIdentifierAttribute? _xmlChoiceIdentifier;
-        private static volatile Type? s_ignoreAttributeType;
 
 
         /// <devdoc>
@@ -72,22 +71,6 @@ namespace System.Xml.Serialization
             }
         }
 
-        private static Type IgnoreAttribute
-        {
-            get
-            {
-                if (s_ignoreAttributeType == null)
-                {
-                    s_ignoreAttributeType = typeof(object).Assembly.GetType("System.XmlIgnoreMemberAttribute");
-                    if (s_ignoreAttributeType == null)
-                    {
-                        s_ignoreAttributeType = typeof(XmlIgnoreAttribute);
-                    }
-                }
-                return s_ignoreAttributeType;
-            }
-        }
-
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
@@ -99,7 +82,7 @@ namespace System.Xml.Serialization
             XmlAnyElementAttribute? wildcard = null;
             for (int i = 0; i < attrs.Length; i++)
             {
-                if (attrs[i] is XmlIgnoreAttribute || attrs[i] is ObsoleteAttribute || attrs[i].GetType() == IgnoreAttribute)
+                if (attrs[i] is XmlIgnoreAttribute || attrs[i] is ObsoleteAttribute)
                 {
                     _xmlIgnore = true;
                     break;

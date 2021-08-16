@@ -88,6 +88,7 @@ namespace System.Security.Cryptography.Xml.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/51370", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public void Constructor_X509Certificate()
         {
             KeyInfoX509Data data1 = new KeyInfoX509Data();
@@ -107,6 +108,7 @@ namespace System.Security.Cryptography.Xml.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/51370", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public void Constructor_X509Certificate_X509IncludeOption()
         {
             KeyInfoX509Data data = new KeyInfoX509Data(new X509Certificate(cert), X509IncludeOption.EndCertOnly);
@@ -124,6 +126,7 @@ namespace System.Security.Cryptography.Xml.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/51370", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public void Constructor_X509Certificate_X509IncludeOptionBad()
         {
             KeyInfoX509Data data = new KeyInfoX509Data(new X509Certificate(cert), (X509IncludeOption)int.MinValue);
@@ -217,6 +220,7 @@ namespace System.Security.Cryptography.Xml.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/51370", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public void Complex()
         {
             KeyInfoX509Data data1 = new KeyInfoX509Data(cert);
@@ -279,6 +283,7 @@ namespace System.Security.Cryptography.Xml.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/51370", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public void ImportX509Data()
         {
             string simple = "<X509Data xmlns=\"http://www.w3.org/2000/09/xmldsig#\"><X509Certificate>MIIJuTCCCSKgAwIBAgIQIAs1Xs7EsGO33sY0uXA0RDANBgkqhkiG9w0BAQQFADBiMREwDwYDVQQHEwhJbnRlcm5ldDEXMBUGA1UEChMOVmVyaVNpZ24sIEluYy4xNDAyBgNVBAsTK1ZlcmlTaWduIENsYXNzIDEgQ0EgLSBJbmRpdmlkdWFsIFN1YnNjcmliZXIwHhcNOTYwODIxMDAwMDAwWhcNOTcwODIwMjM1OTU5WjCCAQoxETAPBgNVBAcTCEludGVybmV0MRcwFQYDVQQKEw5WZXJpU2lnbiwgSW5jLjE0MDIGA1UECxMrVmVyaVNpZ24gQ2xhc3MgMSBDQSAtIEluZGl2aWR1YWwgU3Vic2NyaWJlcjFGMEQGA1UECxM9d3d3LnZlcmlzaWduLmNvbS9yZXBvc2l0b3J5L0NQUyBJbmNvcnAuIGJ5IFJlZi4sTElBQi5MVEQoYyk5NjEmMCQGA1UECxMdRGlnaXRhbCBJRCBDbGFzcyAxIC0gTmV0c2NhcGUxFjAUBgNVBAMTDURhdmlkIFQuIEdyYXkxHjAcBgkqhkiG9w0BCQEWD2RhdmlkQGZvcm1hbC5pZTBcMA0GCSqGSIb3DQEBAQUAA0sAMEgCQQDFgQei6w+4//j4HO4y/78SNWr5a8i+L/s+rwRRSqzdECmozUBbZh6Y7/JMd/qPhtEhZ5JESsSJyYPPiJ9v4jI1AgMBAAGjggcIMIIHBDAJBgNVHRMEAjAAMIICHwYDVR0DBIICFjCCAhIwggIOMIICCgYLYIZIAYb4RQEHAQEwggH5FoIBp1RoaXMgY2VydGlmaWNhdGUgaW5jb3Jwb3JhdGVzIGJ5IHJlZmVyZW5jZSwgYW5kIGl0cyB1c2UgaXMgc3RyaWN0bHkgc3ViamVjdCB0bywgdGhlIFZlcmlTaWduIENlcnRpZmljYXRpb24gUHJhY3RpY2UgU3RhdGVtZW50IChDUFMpLCBhdmFpbGFibGUgYXQ6IGh0dHBzOi8vd3d3LnZlcmlzaWduLmNvbS9DUFM7IGJ5IEUtbWFpbCBhdCBDUFMtcmVxdWVzdHNAdmVyaXNpZ24uY29tOyBvciBieSBtYWlsIGF0IFZlcmlTaWduLCBJbmMuLCAyNTkzIENvYXN0IEF2ZS4sIE1vdW50YWluIFZpZXcsIENBIDk0MDQzIFVTQSBUZWwuICsxICg0MTUpIDk2MS04ODMwIENvcHlyaWdodCAoYykgMTk5NiBWZXJpU2lnbiwgSW5jLiAgQWxsIFJpZ2h0cyBSZXNlcnZlZC4gQ0VSVEFJTiBXQVJSQU5USUVTIERJU0NMQUlNRUQgYW5kIExJQUJJTElUWSBMSU1JVEVELqAOBgxghkgBhvhFAQcBAQGhDgYMYIZIAYb4RQEHAQECMCwwKhYoaHR0cHM6Ly93d3cudmVyaXNpZ24uY29tL3JlcG9zaXRvcnkvQ1BTIDARBglghkgBhvhCAQEEBAMCB4AwNgYJYIZIAYb4QgEIBCkWJ2h0dHBzOi8vd3d3LnZlcmlzaWduLmNvbS9yZXBvc2l0b3J5L0NQUzCCBIcGCWCGSAGG+EIBDQSCBHgWggR0Q0FVVElPTjogV";

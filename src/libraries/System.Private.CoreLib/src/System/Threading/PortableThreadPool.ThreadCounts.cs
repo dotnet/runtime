@@ -2,10 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Threading
 {
-    internal partial class PortableThreadPool
+    internal sealed partial class PortableThreadPool
     {
         /// <summary>
         /// Tracks information on the number of threads we want/have in different states in our thread pool.
@@ -46,6 +47,14 @@ namespace System.Threading
                 _data -= (ulong)(ushort)value << NumProcessingWorkShift;
             }
 
+            public void InterlockedDecrementNumProcessingWork()
+            {
+                Debug.Assert(NumProcessingWorkShift == 0);
+
+                ThreadCounts counts = new ThreadCounts(Interlocked.Decrement(ref _data));
+                Debug.Assert(counts.NumProcessingWork >= 0);
+            }
+
             /// <summary>
             /// Number of thread pool threads that currently exist.
             /// </summary>
@@ -80,15 +89,44 @@ namespace System.Threading
                 }
             }
 
+            public ThreadCounts InterlockedSetNumThreadsGoal(short value)
+            {
+                ThreadPoolInstance._threadAdjustmentLock.VerifyIsLocked();
+
+                ThreadCounts counts = this;
+                while (true)
+                {
+                    ThreadCounts newCounts = counts;
+                    newCounts.NumThreadsGoal = value;
+
+                    ThreadCounts countsBeforeUpdate = InterlockedCompareExchange(newCounts, counts);
+                    if (countsBeforeUpdate == counts)
+                    {
+                        return newCounts;
+                    }
+
+                    counts = countsBeforeUpdate;
+                }
+            }
+
             public ThreadCounts VolatileRead() => new ThreadCounts(Volatile.Read(ref _data));
 
-            public ThreadCounts InterlockedCompareExchange(ThreadCounts newCounts, ThreadCounts oldCounts) =>
-                new ThreadCounts(Interlocked.CompareExchange(ref _data, newCounts._data, oldCounts._data));
+            public ThreadCounts InterlockedCompareExchange(ThreadCounts newCounts, ThreadCounts oldCounts)
+            {
+#if DEBUG
+                if (newCounts.NumThreadsGoal != oldCounts.NumThreadsGoal)
+                {
+                    ThreadPoolInstance._threadAdjustmentLock.VerifyIsLocked();
+                }
+#endif
+
+                return new ThreadCounts(Interlocked.CompareExchange(ref _data, newCounts._data, oldCounts._data));
+            }
 
             public static bool operator ==(ThreadCounts lhs, ThreadCounts rhs) => lhs._data == rhs._data;
             public static bool operator !=(ThreadCounts lhs, ThreadCounts rhs) => lhs._data != rhs._data;
 
-            public override bool Equals(object? obj) => obj is ThreadCounts other && _data == other._data;
+            public override bool Equals([NotNullWhen(true)] object? obj) => obj is ThreadCounts other && _data == other._data;
             public override int GetHashCode() => (int)_data + (int)(_data >> 32);
         }
     }

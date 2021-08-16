@@ -1,1 +1,0 @@
-_install(FILES SOS_README.md DESTINATION .)

@@ -1,0 +1,102 @@
+# Template to evaluate common paths in different pipelines.
+parameters:
+  extraSubsets: ''
+
+jobs:
+- template: /eng/pipelines/common/evaluate-paths-job.yml
+  parameters:
+    paths:
+    - subset: coreclr
+      include:
+      - src/libraries/System.Private.CoreLib/*
+      - src/libraries/Native/Unix/System.Globalization.Native/*
+      - src/libraries/Native/Unix/Common/*
+      exclude:
+      - eng/Version.Details.xml
+      - '*.md'
+      - LICENSE.TXT
+      - PATENTS.TXT
+      - THIRD-PARTY-NOTICES.TXT
+      - docs/*
+      - src/installer/*
+      - src/mono/*
+      - src/libraries/*
+      - src/tests/*
+      - eng/pipelines/installer/*
+      - eng/pipelines/mono/*
+      - eng/pipelines/libraries/*
+    - subset: mono
+      include:
+      - src/libraries/System.Private.CoreLib/*
+      - src/libraries/Native/Unix/System.Globalization.Native/*
+      - src/libraries/Native/Unix/Common/*
+      - src/tests/BuildWasmApps/*
+      exclude:
+      - eng/Version.Details.xml
+      - '*.md'
+      - LICENSE.TXT
+      - PATENTS.TXT
+      - THIRD-PARTY-NOTICES.TXT
+      - docs/*
+      - src/installer/*
+      - src/coreclr/*
+      - src/libraries/*
+      - src/tests/*
+      - eng/pipelines/installer/*
+      - eng/pipelines/coreclr/*
+      - eng/pipelines/libraries/*
+    - subset: libraries
+      exclude:
+      - eng/Version.Details.xml
+      - '*.md'
+      - LICENSE.TXT
+      - PATENTS.TXT
+      - THIRD-PARTY-NOTICES.TXT
+      - docs/*
+      - src/installer/*
+      - src/mono/*
+      - src/coreclr/*
+      - src/tests/*
+      - src/native/eventpipe/*
+      - eng/pipelines/coreclr/*
+      - eng/pipelines/mono/*
+      - eng/pipelines/installer/*
+    - subset: runtimetests
+      include:
+      - src/tests/*
+    - subset: installer
+      include:
+      - docs/manpages/*
+      exclude:
+      - eng/Version.Details.xml
+      - '*.md'
+      - LICENSE.TXT
+      - PATENTS.TXT
+      - THIRD-PARTY-NOTICES.TXT
+      - docs/*
+      - src/coreclr/*
+      - src/mono/*
+      - src/libraries/*
+      - src/tests/*
+      - src/native/eventpipe/*
+      - eng/pipelines/coreclr/*
+      - eng/pipelines/mono/*
+      - eng/pipelines/libraries/*
+    # We have limited Apple Silicon testing capacity
+    # We want PR testing on a narrower set of changes
+    # Specifically runtime directories which are higher risk of
+    # introducing a platform specific regression
+    - subset: coreclr_AppleSilicon
+      include:
+      - src/coreclr/dlls/*
+      - src/coreclr/gc/*
+      - src/coreclr/gcinfo/*
+      - src/coreclr/inc/*
+      - src/coreclr/jit/*
+      - src/coreclr/pal/*
+      - src/coreclr/vm/*
+      exclude:
+      - '*'
+
+    - ${{ if ne(parameters.extraSubsets, '') }}:
+      - ${{ parameters.extraSubsets }}

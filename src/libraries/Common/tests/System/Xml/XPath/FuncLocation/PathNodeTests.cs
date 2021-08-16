@@ -79,7 +79,6 @@ namespace XPathTests.FunctionalTests.Location.Paths
                     Value = "\n   Direct content\n "
                 },
                 new XPathResultToken { NodeType = XPathNodeType.Whitespace, HasNameTable = true });
-            ;
 
             Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
         }
@@ -97,7 +96,6 @@ namespace XPathTests.FunctionalTests.Location.Paths
             var expected = new XPathResult(0,
                 new XPathResultToken { NodeType = XPathNodeType.Comment, HasNameTable = true, Value = " Doc Comment " },
                 new XPathResultToken { NodeType = XPathNodeType.Comment, HasNameTable = true, Value = " Chap Comment " });
-            ;
 
             Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
         }
@@ -226,7 +224,6 @@ namespace XPathTests.FunctionalTests.Location.Paths
                     Value = "\n   Direct content\n "
                 },
                 new XPathResultToken { NodeType = XPathNodeType.Whitespace, HasNameTable = true });
-            ;
 
             Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
         }
@@ -255,7 +252,6 @@ namespace XPathTests.FunctionalTests.Location.Paths
                     Name = "PI2",
                     HasNameTable = true
                 });
-            ;
 
             Utils.XPathNodesetTest(xml, testExpression, expected);
         }
@@ -277,7 +273,6 @@ namespace XPathTests.FunctionalTests.Location.Paths
                     Name = "PI1",
                     HasNameTable = true
                 });
-            ;
 
             Utils.XPathNodesetTest(xml, testExpression, expected);
         }
@@ -299,7 +294,6 @@ namespace XPathTests.FunctionalTests.Location.Paths
                     Name = "PI1",
                     HasNameTable = true
                 });
-            ;
 
             Utils.XPathNodesetTest(xml, testExpression, expected);
         }
@@ -342,7 +336,6 @@ namespace XPathTests.FunctionalTests.Location.Paths
                     HasNameTable = true,
                     Value = "Second paragraph "
                 });
-            ;
 
             Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
         }
@@ -367,7 +360,6 @@ namespace XPathTests.FunctionalTests.Location.Paths
                     HasNameTable = true,
                     Value = "Para1"
                 });
-            ;
 
             Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
         }
@@ -391,7 +383,6 @@ namespace XPathTests.FunctionalTests.Location.Paths
                     HasNameTable = true,
                     Value = "Para1"
                 });
-            ;
 
             Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
         }
@@ -482,7 +473,6 @@ namespace XPathTests.FunctionalTests.Location.Paths
                     Value =
                         "\n\t\tTrenton Today, Trenton Tomorrow\n\t\t\n\t\t\tToni\n\t\t\tBob\n\t\t\tB.A.\n\t\t\tPh.D.\n\t\t\tPulizer\n\t\t\tStill in Trenton\n\t\t\tTrenton Forever\n\t\t\n\t\t6.50\n\t\t\n\t\t\tIt was a dark and stormy night.\n\t\t\tBut then all nights in Trenton seem dark and\n\t\t\tstormy to someone who has gone through what\n\t\t\tI have.\n\t\t\t\n\t\t\t\n\t\t\t\tTrenton\n\t\t\t\tmisery\n\t\t\t\n\t\t\n\t"
                 });
-            ;
 
             Utils.XPathNodesetTest(xml, testExpression, expected);
         }
@@ -497,8 +487,6 @@ namespace XPathTests.FunctionalTests.Location.Paths
             var xml = "books.xml";
             var testExpression = @"/bookstore/magazine/child::frequency";
             var expected = new XPathResult(0);
-            ;
-
             Utils.XPathNodesetTest(xml, testExpression, expected);
         }
 
@@ -541,7 +529,6 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 new XPathResultToken { NodeType = XPathNodeType.Whitespace, HasNameTable = true },
                 new XPathResultToken { NodeType = XPathNodeType.Whitespace, HasNameTable = true },
                 new XPathResultToken { NodeType = XPathNodeType.Whitespace, HasNameTable = true });
-            ;
 
             Utils.XPathNodesetTest(xml, testExpression, expected);
         }
@@ -562,7 +549,6 @@ namespace XPathTests.FunctionalTests.Location.Paths
                     HasNameTable = true,
                     Value = " This file represents a fragment of a book store inventory database "
                 });
-            ;
 
             Utils.XPathNodesetTest(xml, testExpression, expected);
         }
@@ -577,8 +563,6 @@ namespace XPathTests.FunctionalTests.Location.Paths
             var xml = "books.xml";
             var testExpression = @"/processing-instruction()";
             var expected = new XPathResult(0);
-            ;
-
             Utils.XPathNodesetTest(xml, testExpression, expected);
         }
 
@@ -2036,7 +2020,6 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 },
                 new XPathResultToken { NodeType = XPathNodeType.Whitespace, HasNameTable = true },
                 new XPathResultToken { NodeType = XPathNodeType.Whitespace, HasNameTable = true });
-            ;
 
             Utils.XPathNodesetTest(xml, testExpression, expected);
         }

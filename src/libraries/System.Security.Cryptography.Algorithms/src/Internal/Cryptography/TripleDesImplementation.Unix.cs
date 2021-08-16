@@ -6,9 +6,9 @@ using System.Security.Cryptography;
 
 namespace Internal.Cryptography
 {
-    internal partial class TripleDesImplementation
+    internal sealed partial class TripleDesImplementation
     {
-        private static ICryptoTransform CreateTransformCore(
+        private static UniversalCryptoTransform CreateTransformCore(
             CipherMode cipherMode,
             PaddingMode paddingMode,
             byte[] key,

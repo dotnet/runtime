@@ -57,5 +57,20 @@ namespace System.Linq.Parallel.Tests
             AssertExtensions.Throws<ArgumentNullException>("source", () => ((ParallelQuery<int>)null).ForAll(x => { }));
             AssertExtensions.Throws<ArgumentNullException>("action", () => ParallelEnumerable.Range(0, 1).ForAll(null));
         }
+
+        [Fact]
+        public static void ForAll_UserThrownAggregateException()
+        {
+            const int Count = 10;
+            try
+            {
+                new int[Count].AsParallel().Select<int, int>(i => throw new AggregateException()).ForAll(_ => { });
+            }
+            catch (AggregateException e)
+            {
+                // PLINQ internals flatten all AggregateExceptions.
+                Assert.Equal(0, e.InnerExceptions.Count);
+            }
+        }
     }
 }

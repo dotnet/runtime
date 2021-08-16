@@ -183,9 +183,14 @@ namespace System.Globalization.Tests
 
             // Turkish
             yield return new object[] { s_turkishCompare, "i", "I", CompareOptions.None, 1 };
-            yield return new object[] { s_turkishCompare, "i", "I", CompareOptions.IgnoreCase, 1 };
+            // Android has its own ICU, which doesn't work well with tr
+            if (!PlatformDetection.IsAndroid)
+            {
+                yield return new object[] { s_turkishCompare, "i", "I", CompareOptions.IgnoreCase, 1 };
+                yield return new object[] { s_turkishCompare, "i", "\u0130", CompareOptions.IgnoreCase, 0 };
+            }
+
             yield return new object[] { s_invariantCompare, "i", "\u0130", CompareOptions.None, -1 };
-            yield return new object[] { s_turkishCompare, "i", "\u0130", CompareOptions.IgnoreCase, 0 };
             yield return new object[] { s_invariantCompare, "i", "I", CompareOptions.None, -1 };
             yield return new object[] { s_invariantCompare, "i", "I", CompareOptions.IgnoreCase, 0 };
             yield return new object[] { s_invariantCompare, "i", "\u0130", CompareOptions.None, -1 };
@@ -240,6 +245,20 @@ namespace System.Globalization.Tests
             yield return new object[] { s_invariantCompare, "\u3060", "\u30C0", CompareOptions.IgnoreCase, s_expectedHiraganaToKatakanaCompare };
             yield return new object[] { s_invariantCompare, "c", "C", CompareOptions.IgnoreKanaType, -1 };
 
+            // Japanese [semi-]voiced sound mark
+            yield return new object[] { s_invariantCompare, "\u306F", "\u3070", CompareOptions.IgnoreCase, -1 };
+            yield return new object[] { s_invariantCompare, "\u306F", "\u3071", CompareOptions.IgnoreCase, -1 };
+            yield return new object[] { s_invariantCompare, "\u3070", "\u3071", CompareOptions.IgnoreCase, -1 };
+            yield return new object[] { s_invariantCompare, "\u30CF", "\u30D0", CompareOptions.IgnoreCase, -1 };
+            yield return new object[] { s_invariantCompare, "\u30CF", "\u30D1", CompareOptions.IgnoreCase, -1 };
+            yield return new object[] { s_invariantCompare, "\u30D0", "\u30D1", CompareOptions.IgnoreCase, -1 };
+            yield return new object[] { s_invariantCompare, "\u306F", "\u3070", CompareOptions.IgnoreNonSpace, 0 };
+            yield return new object[] { s_invariantCompare, "\u306F", "\u3071", CompareOptions.IgnoreNonSpace, 0 };
+            yield return new object[] { s_invariantCompare, "\u3070", "\u3071", CompareOptions.IgnoreNonSpace, 0 };
+            yield return new object[] { s_invariantCompare, "\u30CF", "\u30D0", CompareOptions.IgnoreNonSpace, 0 };
+            yield return new object[] { s_invariantCompare, "\u30CF", "\u30D1", CompareOptions.IgnoreNonSpace, 0 };
+            yield return new object[] { s_invariantCompare, "\u30D0", "\u30D1", CompareOptions.IgnoreNonSpace, 0 };
+
             // Spanish
             yield return new object[] { new CultureInfo("es-ES").CompareInfo, "llegar", "lugar", CompareOptions.None, -1 };
 
@@ -254,8 +273,25 @@ namespace System.Globalization.Tests
             yield return new object[] { s_hungarianCompare, "dzsdzs", "ddzs", CompareOptions.None, useNls ? 0 : -1 };
             yield return new object[] { s_invariantCompare, "Test's", "Tests", CompareOptions.None, useNls ? 1 : -1 };
             yield return new object[] { new CultureInfo("de-DE").CompareInfo, "\u00DC", "UE", CompareOptions.None, -1 };
-            yield return new object[] { new CultureInfo("de-DE_phoneb").CompareInfo, "\u00DC", "UE", CompareOptions.None, useNls ? 0 : -1 };
-            yield return new object[] { new CultureInfo("es-ES_tradnl").CompareInfo, "llegar", "lugar", CompareOptions.None, useNls ? 1 : -1 };
+            if (PlatformDetection.IsNotBrowser)
+            {
+                yield return new object[] { new CultureInfo("de-DE_phoneb").CompareInfo, "\u00DC", "UE", CompareOptions.None, useNls ? 0 : -1 };
+                yield return new object[] { new CultureInfo("es-ES_tradnl").CompareInfo, "llegar", "lugar", CompareOptions.None, useNls ? 1 : -1 };
+            }
+
+            //
+            // Ordinal comparisons with ignore casing.
+            //
+
+            yield return new object[] { s_invariantCompare, "abcd", "abcd", CompareOptions.OrdinalIgnoreCase, 0};
+            yield return new object[] { s_invariantCompare, "abcd", "ABCD", CompareOptions.OrdinalIgnoreCase, 0};
+            yield return new object[] { s_invariantCompare, "Hello\u00F6", "HELLO\u00D6", CompareOptions.OrdinalIgnoreCase, 0};
+            yield return new object[] { s_invariantCompare, "Hello\uFE6A", "Hello\U0001F601", CompareOptions.OrdinalIgnoreCase, useNls ? 1 : -1};
+            yield return new object[] { s_invariantCompare, "Hello\U0001F601", "Hello\uFE6A", CompareOptions.OrdinalIgnoreCase, useNls ? -1 : 1};
+            yield return new object[] { s_invariantCompare, "\uDBFF", "\uD800\uDC00", CompareOptions.OrdinalIgnoreCase, useNls ? 1 : -1};
+            yield return new object[] { s_invariantCompare, "\uD800\uDC00", "\uDBFF", CompareOptions.OrdinalIgnoreCase, useNls ? -1 : 1};
+            yield return new object[] { s_invariantCompare, "abcdefg\uDBFF", "abcdefg\uD800\uDC00", CompareOptions.OrdinalIgnoreCase, useNls ? 1 : -1};
+            yield return new object[] { s_invariantCompare, "\U00010400", "\U00010428", CompareOptions.OrdinalIgnoreCase, useNls ? -1 : 0};
         }
 
         // There is a regression in Windows 190xx version with the Kana comparison. Avoid running this test there.
@@ -479,6 +515,82 @@ namespace System.Globalization.Tests
                                             $"Expect '{(int)hiraganaChar:x4}'  != {(int)hiraganaChar + hiraganaToKatakanaOffset:x4} with CompareOptions.IgnoreCase");
                 Assert.True(string.Compare(new string(hiraganaChar, 1), new string((char)(hiraganaChar + hiraganaToKatakanaOffset), 1), CultureInfo.InvariantCulture, CompareOptions.IgnoreKanaType) == 0,
                                             $"Expect '{(int)hiraganaChar:x4}'  == {(int)hiraganaChar + hiraganaToKatakanaOffset:x4} with CompareOptions.IgnoreKanaType");
+            }
+        }
+
+        [Fact]
+        public void TestHiraganaAndKatakana()
+        {
+            const char hiraganaStart = '\u3041';
+            const char hiraganaEnd = '\u3096';
+            const int hiraganaToKatakanaOffset = 0x30a1 - 0x3041;
+            List<char> hiraganaList = new List<char>();
+            for (char c = hiraganaStart; c <= hiraganaEnd; c++) // Hiragana
+            {
+                // TODO: small hiragana/katakana orders
+                // https://github.com/dotnet/runtime/issues/54987
+                switch (c)
+                {
+                    case '\u3041':
+                    case '\u3043':
+                    case '\u3045':
+                    case '\u3047':
+                    case '\u3049':
+                    case '\u3063':
+                    case '\u3083':
+                    case '\u3085':
+                    case '\u3087':
+                    case '\u308E':
+                    case '\u3095':
+                    case '\u3096':
+                        break;
+                    default:
+                        hiraganaList.Add(c);
+                        break;
+                }
+            }
+            for (char c = '\u309D'; c <= '\u309E'; c++) // Hiragana iteration mark
+            {
+                hiraganaList.Add(c);
+            }
+            CompareOptions[] options = new[] {
+                CompareOptions.None,
+                CompareOptions.IgnoreCase,
+                CompareOptions.IgnoreNonSpace,
+                CompareOptions.IgnoreSymbols,
+                CompareOptions.IgnoreKanaType,
+                CompareOptions.IgnoreWidth,
+                CompareOptions.Ordinal,
+                CompareOptions.OrdinalIgnoreCase,
+                CompareOptions.IgnoreKanaType | CompareOptions.IgnoreCase,
+                CompareOptions.IgnoreKanaType | CompareOptions.IgnoreNonSpace,
+                CompareOptions.IgnoreKanaType | CompareOptions.IgnoreCase | CompareOptions.IgnoreNonSpace,
+                CompareOptions.IgnoreWidth | CompareOptions.IgnoreCase,
+                CompareOptions.IgnoreWidth | CompareOptions.IgnoreNonSpace,
+                CompareOptions.IgnoreWidth | CompareOptions.IgnoreCase | CompareOptions.IgnoreNonSpace,
+                CompareOptions.IgnoreKanaType | CompareOptions.IgnoreWidth | CompareOptions.IgnoreCase,
+                CompareOptions.IgnoreKanaType | CompareOptions.IgnoreWidth | CompareOptions.IgnoreNonSpace,
+                CompareOptions.IgnoreKanaType | CompareOptions.IgnoreWidth | CompareOptions.IgnoreCase | CompareOptions.IgnoreNonSpace,
+            };
+
+            foreach (var option in options)
+            {
+                for (int i = 0; i < hiraganaList.Count; i++)
+                {
+                    char hiraganaChar1 = hiraganaList[i];
+                    char katakanaChar1 = (char)(hiraganaChar1 + hiraganaToKatakanaOffset);
+
+                    for (int j = i; j < hiraganaList.Count; j++)
+                    {
+                        char hiraganaChar2 = hiraganaList[j];
+                        char katakanaChar2 = (char)(hiraganaChar2 + hiraganaToKatakanaOffset);
+
+                        int hiraganaResult = s_invariantCompare.Compare(new string(hiraganaChar1, 1), new string(hiraganaChar2, 1), option);
+                        int katakanaResult = s_invariantCompare.Compare(new string(katakanaChar1, 1), new string(katakanaChar2, 1), option);
+                        Assert.True(hiraganaResult == katakanaResult,
+                            $"Expect Compare({(int)hiraganaChar1:x4}, {(int)hiraganaChar2:x4}) == Compare({(int)katakanaChar1:x4}, {(int)katakanaChar2:x4}) with CompareOptions.{option}");
+                    }
+                }
             }
         }
     }

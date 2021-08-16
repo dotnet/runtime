@@ -52,7 +52,7 @@ namespace Microsoft.Extensions.Configuration.UserSecrets.Test
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/34580", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34582", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         public void AddUserSecrets_FindsAssemblyAttribute()
         {
             var randValue = Guid.NewGuid().ToString();
@@ -67,7 +67,7 @@ namespace Microsoft.Extensions.Configuration.UserSecrets.Test
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/34580", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34582", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         public void AddUserSecrets_FindsAssemblyAttributeFromType()
         {
             var randValue = Guid.NewGuid().ToString();
@@ -121,16 +121,16 @@ namespace Microsoft.Extensions.Configuration.UserSecrets.Test
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/34580", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34582", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         public void AddUserSecrets_With_SecretsId_Passed_Explicitly()
         {
             var userSecretsId = Guid.NewGuid().ToString();
-            SetSecret(userSecretsId, "Facebook:AppSecret", "value1");
+            SetSecret(userSecretsId, "Facebook:PLACEHOLDER", "value1");
 
             var builder = new ConfigurationBuilder().AddUserSecrets(userSecretsId);
             var configuration = builder.Build();
 
-            Assert.Equal("value1", configuration["Facebook:AppSecret"]);
+            Assert.Equal("value1", configuration["Facebook:PLACEHOLDER"]);
         }
 
         [Fact]
@@ -141,7 +141,7 @@ namespace Microsoft.Extensions.Configuration.UserSecrets.Test
             var builder = new ConfigurationBuilder().AddUserSecrets(userSecretsId);
 
             var configuration = builder.Build();
-            Assert.Null(configuration["Facebook:AppSecret"]);
+            Assert.Null(configuration["Facebook:PLACEHOLDER"]);
             Assert.False(File.Exists(secretFilePath));
         }
 

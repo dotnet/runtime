@@ -6,6 +6,12 @@ include(CheckPrototypeDefinition)
 include(CheckStructHasMember)
 include(CheckSymbolExists)
 include(CheckTypeSize)
+include(CheckLibraryExists)
+
+# CMP0075 Include file check macros honor CMAKE_REQUIRED_LIBRARIES.
+if(POLICY CMP0075)
+    cmake_policy(SET CMP0075 NEW)
+endif()
 
 if (CLR_CMAKE_TARGET_ANDROID)
     set(PAL_UNIX_NAME \"ANDROID\")
@@ -19,6 +25,8 @@ elseif (CLR_CMAKE_TARGET_OSX)
     # Xcode's clang does not include /usr/local/include by default, but brew's does.
     # This ensures an even playing field.
     include_directories(SYSTEM /usr/local/include)
+elseif (CLR_CMAKE_TARGET_MACCATALYST)
+    set(PAL_UNIX_NAME \"MACCATALYST\")
 elseif (CLR_CMAKE_TARGET_IOS)
     set(PAL_UNIX_NAME \"IOS\")
 elseif (CLR_CMAKE_TARGET_TVOS)
@@ -52,7 +60,7 @@ endif()
 # Older CMake versions (3.8) do not assign the result of their tests, causing unused-value errors
 # which are not distinguished from the test failing. So no error for that one.
 # For clang-5.0 avoid errors like "unused variable 'err' [-Werror,-Wunused-variable]".
-set(CMAKE_REQUIRED_FLAGS "-Werror -Wno-error=unused-value -Wno-error=unused-variable")
+set(CMAKE_REQUIRED_FLAGS "${CMAKE_REQUIRED_FLAGS} -Werror -Wno-error=unused-value -Wno-error=unused-variable")
 
 # Apple platforms like macOS/iOS allow targeting older operating system versions with a single SDK,
 # the mere presence of a symbol in the SDK doesn't tell us whether the deployment target really supports it.
@@ -99,6 +107,28 @@ check_c_source_compiles(
     HAVE_IP_MREQN)
 
 # /in_pktinfo
+
+check_c_source_compiles(
+    "
+    #include <sys/vfs.h>
+    int main(void)
+    {
+        struct statfs s;
+        return 0;
+    }
+    "
+    HAVE_STATFS_VFS)
+
+check_c_source_compiles(
+    "
+    #include <sys/mount.h>
+    int main(void)
+    {
+        struct statfs s;
+        return 0;
+    }
+    "
+    HAVE_STATFS_MOUNT)
 
 check_c_source_compiles(
     "
@@ -187,9 +217,39 @@ check_symbol_exists(
     HAVE_STRLCPY)
 
 check_symbol_exists(
+    strcat_s
+    string.h
+    HAVE_STRCAT_S)
+
+check_symbol_exists(
+    strlcat
+    string.h
+    HAVE_STRLCAT)
+
+check_symbol_exists(
     posix_fadvise
     fcntl.h
     HAVE_POSIX_ADVISE)
+
+check_symbol_exists(
+    posix_fallocate
+    fcntl.h
+    HAVE_POSIX_FALLOCATE)
+
+check_symbol_exists(
+    posix_fallocate64
+    fcntl.h
+    HAVE_POSIX_FALLOCATE64)
+
+check_symbol_exists(
+    preadv
+    sys/uio.h
+    HAVE_PREADV)
+
+check_symbol_exists(
+    pwritev
+    sys/uio.h
+    HAVE_PWRITEV)
 
 check_symbol_exists(
     ioctl
@@ -491,24 +551,63 @@ if (CLR_CMAKE_TARGET_LINUX)
     set(HAVE_SUPPORT_FOR_DUAL_MODE_IPV4_PACKET_INFO 1)
 endif ()
 
+check_symbol_exists(
+    malloc_size
+    malloc/malloc.h
+    HAVE_MALLOC_SIZE)
+check_symbol_exists(
+    malloc_usable_size
+    malloc.h
+    HAVE_MALLOC_USABLE_SIZE)
+check_symbol_exists(
+    malloc_usable_size
+    malloc_np.h
+    HAVE_MALLOC_USABLE_SIZE_NP)
+check_symbol_exists(
+    posix_memalign
+    stdlib.h
+    HAVE_POSIX_MEMALIGN)
+
 if(CLR_CMAKE_TARGET_IOS)
     # Manually set results from check_c_source_runs() since it's not possible to actually run it during CMake configure checking
     unset(HAVE_SHM_OPEN_THAT_WORKS_WELL_ENOUGH_WITH_MMAP)
+    unset(HAVE_ALIGNED_ALLOC)   # only exists on iOS 13+
+    unset(HAVE_CLOCK_MONOTONIC) # only exists on iOS 10+
+    unset(HAVE_CLOCK_REALTIME)  # only exists on iOS 10+
+    unset(HAVE_FORK) # exists but blocked by kernel
+elseif(CLR_CMAKE_TARGET_MACCATALYST)
+    # Manually set results from check_c_source_runs() since it's not possible to actually run it during CMake configure checking
+    # TODO: test to see if these all actually hold true on Mac Catalyst
+    unset(HAVE_SHM_OPEN_THAT_WORKS_WELL_ENOUGH_WITH_MMAP)
+    unset(HAVE_ALIGNED_ALLOC)   # only exists on iOS 13+
     unset(HAVE_CLOCK_MONOTONIC) # only exists on iOS 10+
     unset(HAVE_CLOCK_REALTIME)  # only exists on iOS 10+
     unset(HAVE_FORK) # exists but blocked by kernel
 elseif(CLR_CMAKE_TARGET_TVOS)
     # Manually set results from check_c_source_runs() since it's not possible to actually run it during CMake configure checking
     unset(HAVE_SHM_OPEN_THAT_WORKS_WELL_ENOUGH_WITH_MMAP)
+    unset(HAVE_ALIGNED_ALLOC)   # only exists on iOS 13+
     unset(HAVE_CLOCK_MONOTONIC) # only exists on iOS 10+
     unset(HAVE_CLOCK_REALTIME)  # only exists on iOS 10+
     unset(HAVE_FORK) # exists but blocked by kernel
 elseif(CLR_CMAKE_TARGET_ANDROID)
     # Manually set results from check_c_source_runs() since it's not possible to actually run it during CMake configure checking
     unset(HAVE_SHM_OPEN_THAT_WORKS_WELL_ENOUGH_WITH_MMAP)
+    unset(HAVE_ALIGNED_ALLOC) # only exists on newer Android
     set(HAVE_CLOCK_MONOTONIC 1)
     set(HAVE_CLOCK_REALTIME 1)
+elseif(CLR_CMAKE_TARGET_BROWSER)
+    set(HAVE_FORK 0)
 else()
+    if(CLR_CMAKE_TARGET_OSX)
+        unset(HAVE_ALIGNED_ALLOC) # only exists on OSX 10.15+
+    else()
+        check_symbol_exists(
+            aligned_alloc
+            stdlib.h
+            HAVE_ALIGNED_ALLOC)
+    endif()
+
     check_c_source_runs(
         "
         #include <sys/mman.h>
@@ -571,6 +670,8 @@ check_symbol_exists(
     clock_gettime_nsec_np
     time.h
     HAVE_CLOCK_GETTIME_NSEC_NP)
+
+check_library_exists(pthread pthread_condattr_setclock "" HAVE_PTHREAD_CONDATTR_SETCLOCK)
 
 check_symbol_exists(
     futimes
@@ -776,7 +877,7 @@ check_symbol_exists(
     "unistd.h;grp.h"
     HAVE_GETGROUPLIST)
 
-if(CLR_CMAKE_TARGET_IOS OR CLR_CMAKE_TARGET_TVOS)
+if(CLR_CMAKE_TARGET_MACCATALYST OR CLR_CMAKE_TARGET_IOS OR CLR_CMAKE_TARGET_TVOS)
     set(HAVE_IOS_NET_ROUTE_H 1)
     set(CMAKE_EXTRA_INCLUDE_FILES sys/types.h "${CMAKE_CURRENT_SOURCE_DIR}/System.Native/ios/net/route.h")
 else()
@@ -800,9 +901,14 @@ check_type_size(
      BUILTIN_TYPES_ONLY)
 set(CMAKE_EXTRA_INCLUDE_FILES) # reset CMAKE_EXTRA_INCLUDE_FILES
 
-check_include_files(
-    "sys/types.h;sys/sysctl.h"
-    HAVE_SYS_SYSCTL_H)
+if (CLR_CMAKE_TARGET_LINUX)
+    # sysctl is deprecated on Linux
+    set(HAVE_SYS_SYSCTL_H 0)
+else ()
+    check_include_files(
+        "sys/types.h;sys/sysctl.h"
+        HAVE_SYS_SYSCTL_H)
+endif()
 
 check_include_files(
     "sys/ioctl.h"

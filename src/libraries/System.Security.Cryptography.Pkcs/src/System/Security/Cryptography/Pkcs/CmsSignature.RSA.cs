@@ -195,7 +195,7 @@ namespace System.Security.Cryptography.Pkcs
             }
         }
 
-        private class RSAPssCmsSignature : RSACmsSignature
+        private sealed class RSAPssCmsSignature : RSACmsSignature
         {
             public RSAPssCmsSignature() : base(null, null)
             {

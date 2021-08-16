@@ -11,8 +11,10 @@ namespace System.ComponentModel
     [AttributeUsage(AttributeTargets.All)]
     public class ToolboxItemAttribute : Attribute
     {
-        private Type _toolboxItemType;
-        private readonly string _toolboxItemTypeName;
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)]
+        private Type? _toolboxItemType;
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)]
+        private readonly string? _toolboxItemTypeName;
 
         /// <summary>
         /// Initializes a new instance of ToolboxItemAttribute and sets the type to
@@ -44,7 +46,7 @@ namespace System.ComponentModel
         /// <summary>
         /// Initializes a new instance of ToolboxItemAttribute and specifies the name of the type.
         /// </summary>
-        public ToolboxItemAttribute(string toolboxItemTypeName)
+        public ToolboxItemAttribute([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] string toolboxItemTypeName)
         {
             _toolboxItemTypeName = toolboxItemTypeName ?? throw new ArgumentNullException(nameof(toolboxItemTypeName));
         }
@@ -52,7 +54,7 @@ namespace System.ComponentModel
         /// <summary>
         /// Initializes a new instance of ToolboxItemAttribute and specifies the type of the toolbox item.
         /// </summary>
-        public ToolboxItemAttribute(Type toolboxItemType)
+        public ToolboxItemAttribute([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] Type toolboxItemType)
         {
             if (toolboxItemType == null)
             {
@@ -66,7 +68,8 @@ namespace System.ComponentModel
         /// <summary>
         /// Gets the toolbox item's type.
         /// </summary>
-        public Type ToolboxItemType
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)]
+        public Type? ToolboxItemType
         {
             get
             {
@@ -88,9 +91,10 @@ namespace System.ComponentModel
             }
         }
 
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)]
         public string ToolboxItemTypeName => _toolboxItemTypeName ?? string.Empty;
 
-        public override bool Equals(object obj)
+        public override bool Equals([NotNullWhen(true)] object? obj)
         {
             if (obj == this)
             {

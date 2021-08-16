@@ -138,9 +138,9 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
         {
             // Some current Linux RIDs are not supported in 2.0\2.1; just test for Ubuntu 16.
             return (
-                RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ||
-                RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ||
-                (RuntimeInformation.IsOSPlatform(OSPlatform.Linux) && RuntimeInformation.RuntimeIdentifier == "ubuntu.16.04-x64")
+                OperatingSystem.IsWindows() ||
+                OperatingSystem.IsMacOS() ||
+                (OperatingSystem.IsLinux() && RuntimeInformation.RuntimeIdentifier == "ubuntu.16.04-x64")
             );
         }
 
@@ -162,7 +162,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
 
                 var fixtureLatest = new TestProjectFixture("StandaloneApp", RepoDirectories);
                 fixtureLatest
-                    .EnsureRestoredForRid(fixtureLatest.CurrentRid, RepoDirectories.CorehostPackages)
+                    .EnsureRestoredForRid(fixtureLatest.CurrentRid)
                     .PublishProject(runtime: fixtureLatest.CurrentRid);
 
                 FixtureLatest = fixtureLatest;
@@ -185,7 +185,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                 if (IsRidSupported())
                 {
                     publishFixture
-                        .EnsureRestoredForRid(publishFixture.CurrentRid, repoDirectories.CorehostPackages)
+                        .EnsureRestoredForRid(publishFixture.CurrentRid)
                         .PublishProject(runtime: publishFixture.CurrentRid);
                 }
 

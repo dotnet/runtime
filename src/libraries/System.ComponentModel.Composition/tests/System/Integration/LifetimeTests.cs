@@ -54,7 +54,6 @@ namespace Tests.Integration
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/mono/mono/issues/16417", TestRuntimes.Mono)]
         public void PartAddedViaAddExportedValue_ShouldNotBeDisposedWithContainer()
         {
             var container = new CompositionContainer();
@@ -68,7 +67,6 @@ namespace Tests.Integration
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/mono/mono/issues/16417", TestRuntimes.Mono)]
         public void PartAddedTwice_AppearsTwice()
         {
             //  You probably shouldn't be adding a part to the container twice, but it's not something we're going to check for and throw an exception on
@@ -106,7 +104,6 @@ namespace Tests.Integration
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/mono/mono/issues/16417", TestRuntimes.Mono)]
         public void AnyPart_Disposable_ShouldNotBeCollected()
         {
             var catalog = new TypeCatalog(typeof(AnyPartDisposable));
@@ -121,7 +118,6 @@ namespace Tests.Integration
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/mono/mono/issues/16417", TestRuntimes.Mono)]
         public void AnyPart_Disposable_ShouldBeDisposedWithContainer()
         {
             var catalog = new TypeCatalog(typeof(AnyPartDisposable));
@@ -137,7 +133,6 @@ namespace Tests.Integration
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/mono/mono/issues/16417", TestRuntimes.Mono)]
         public void AnyPart_RecomposabeImport_ShouldNotBeCollected()
         {
             var catalog = new TypeCatalog(typeof(AnyPartRecomposable));
@@ -169,7 +164,6 @@ namespace Tests.Integration
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/mono/mono/issues/16417", TestRuntimes.Mono)]
         public void AnyPart_DisposableRecomposabeImport_ShouldNotBeCollected()
         {
             var catalog = new TypeCatalog(typeof(AnyPartDisposableRecomposable));
@@ -264,7 +258,6 @@ namespace Tests.Integration
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/mono/mono/issues/16417", TestRuntimes.Mono)]
         public void SharedPart_Disposable_ShouldNotBeCollected()
         {
             var catalog = new TypeCatalog(typeof(SharedPartDisposable));
@@ -281,7 +274,6 @@ namespace Tests.Integration
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/mono/mono/issues/16417", TestRuntimes.Mono)]
         public void SharedPart_Disposable_ShouldBeDisposedWithContainer()
         {
             var catalog = new TypeCatalog(typeof(SharedPartDisposable));
@@ -297,7 +289,6 @@ namespace Tests.Integration
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/mono/mono/issues/16417", TestRuntimes.Mono)]
         public void SharedPart_RecomposabeImport_ShouldNotBeCollected()
         {
             var catalog = new TypeCatalog(typeof(SharedPartRecomposable));
@@ -330,7 +321,6 @@ namespace Tests.Integration
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/mono/mono/issues/16417", TestRuntimes.Mono)]
         public void SharedPart_DisposableRecomposabeImport_ShouldNotBeCollected()
         {
             var catalog = new TypeCatalog(typeof(SharedPartDisposableRecomposable));
@@ -423,7 +413,6 @@ namespace Tests.Integration
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/mono/mono/issues/16417", TestRuntimes.Mono)]
         public void NonSharedPart_Disposable_ShouldNotBeCollected()
         {
             var catalog = new TypeCatalog(typeof(NonSharedPartDisposable));
@@ -440,7 +429,6 @@ namespace Tests.Integration
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/mono/mono/issues/16417", TestRuntimes.Mono)]
         public void NonSharedPart_Disposable_ShouldBeDisposedWithContainer()
         {
             var catalog = new TypeCatalog(typeof(NonSharedPartDisposable));
@@ -456,7 +444,6 @@ namespace Tests.Integration
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/mono/mono/issues/16417", TestRuntimes.Mono)]
         public void NonSharedPart_RecomposableImport_WithReference_ShouldNotBeCollected()
         {
             var catalog = new TypeCatalog(typeof(NonSharedPartRecomposable));
@@ -489,7 +476,6 @@ namespace Tests.Integration
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/mono/mono/issues/16417", TestRuntimes.Mono)]
         public void NonSharedPart_DisposableRecomposabeImport_NoReference_ShouldNotBeCollected()
         {
             var catalog = new TypeCatalog(typeof(NonSharedPartDisposableRecomposable));
@@ -544,7 +530,6 @@ namespace Tests.Integration
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/mono/mono/issues/16417", TestRuntimes.Mono)]
         public void NonSharedPart_TwoRecomposablePartsSameExportedValue()
         {
             // This test is primarily used to ensure that we allow for multiple parts to be associated
@@ -604,7 +589,6 @@ namespace Tests.Integration
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/mono/mono/issues/16417", TestRuntimes.Mono)]
         public void GetReleaseExport_SharedRoot_ShouldNotDisposeChain()
         {
             var container = GetContainer();
@@ -619,7 +603,6 @@ namespace Tests.Integration
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/mono/mono/issues/16417", TestRuntimes.Mono)]
         public void AddRemovePart_SharedRoot_ShouldNotDisposeChain()
         {
             var container = GetContainer();
@@ -639,7 +622,6 @@ namespace Tests.Integration
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/mono/mono/issues/16417", TestRuntimes.Mono)]
         public void ContainerDispose_SharedRoot_ShouldDisposeChain()
         {
             var container = GetContainer();
@@ -654,7 +636,6 @@ namespace Tests.Integration
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/mono/mono/issues/16417", TestRuntimes.Mono)]
         public void GetReleaseExport_NonSharedRoot_ShouldDisposeChain()
         {
             var container = GetContainer();
@@ -685,7 +666,6 @@ namespace Tests.Integration
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/mono/mono/issues/16417", TestRuntimes.Mono)]
         public void GetReleaseExport_NonSharedRoot_ShouldDisposeChain_WithMetadata()
         {
             var container = GetContainer();
@@ -716,7 +696,6 @@ namespace Tests.Integration
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/mono/mono/issues/16417", TestRuntimes.Mono)]
         public void ReleaseExports_ShouldDispose_NonSharedParts()
         {
             var container = GetContainer();
@@ -737,7 +716,6 @@ namespace Tests.Integration
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/mono/mono/issues/16417", TestRuntimes.Mono)]
         public void AddRemovePart_NonSharedRoot_ShouldDisposeChain()
         {
             var container = GetContainer();
@@ -757,7 +735,6 @@ namespace Tests.Integration
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/mono/mono/issues/16417", TestRuntimes.Mono)]
         public void ContainerDispose_NonSharedRoot_ShouldNotDisposeChain()
         {
             var container = GetContainer();
@@ -772,7 +749,6 @@ namespace Tests.Integration
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/mono/mono/issues/16417", TestRuntimes.Mono)]
         public void GetReleaseExport_NonSharedPart_ShouldNotRecomposeAfterRelease()
         {
             var catalog = new TypeCatalog(typeof(NonSharedPartRecomposable));
@@ -800,7 +776,6 @@ namespace Tests.Integration
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/mono/mono/issues/16417", TestRuntimes.Mono)]
         public void GetExportManualDisposeThenRecompose_NonSharedDisposableRecomposablePart_ShouldThrowComposition()
         {
             var catalog = new TypeCatalog(typeof(NonSharedPartDisposableRecomposable));
@@ -841,7 +816,6 @@ namespace Tests.Integration
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/mono/mono/issues/16417", TestRuntimes.Mono)]
         public void RecomposeCausesOldImportedValuesToBeDisposed()
         {
             var cat = new AggregateCatalog();
@@ -884,7 +858,6 @@ namespace Tests.Integration
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/mono/mono/issues/16417", TestRuntimes.Mono)]
         public void ChildContainerGetReleaseExport_NonSharedRoot_ShouldDisposeChain()
         {
             var child = CreateParentChildContainerWithNonSharedImporter();
@@ -899,7 +872,6 @@ namespace Tests.Integration
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/mono/mono/issues/16417", TestRuntimes.Mono)]
         public void ChildContainerAddRemovePart_NonSharedRoot_ShouldDisposeChain()
         {
             var child = CreateParentChildContainerWithNonSharedImporter();
@@ -919,7 +891,6 @@ namespace Tests.Integration
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/mono/mono/issues/16417", TestRuntimes.Mono)]
         public void ChildContainerAddRemovePart_NonSharedRoot_ShouldNotDisposeChain()
         {
             var child = CreateParentChildContainerWithNonSharedImporter();
@@ -1290,7 +1261,6 @@ namespace Tests.Integration
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/mono/mono/issues/16417", TestRuntimes.Mono)]
         public void ReleaseExports_ShouldWorkWithExportCollection()
         {
             var container = GetContainer();

@@ -482,5 +482,35 @@ namespace Microsoft.Extensions.Caching.Memory
             Assert.Null(cache.Get(key2));
             Assert.Null(cache.Get(key4));
         }
+
+        [Fact]
+        public async Task OnceExpiredIsSetToTrueItRemainsTrue()
+        {
+            var cache = CreateCache();
+            var entry = (CacheEntry)cache.CreateEntry("someKey");
+
+            await Task.WhenAll(
+                Task.Run(() => SetExpiredManyTimes(entry)),
+                Task.Run(() => SetExpiredManyTimes(entry)));
+
+            Assert.True(entry.CheckExpired(DateTimeOffset.UtcNow));
+
+            static void SetExpiredManyTimes(CacheEntry cacheEntry)
+            {
+                var now = DateTimeOffset.UtcNow;
+                for (int i = 0; i < 1_000; i++)
+                {
+                    cacheEntry.SetExpired(EvictionReason.Expired); // modifies CacheEntry._state
+                    Assert.True(cacheEntry.CheckExpired(now));
+                    cacheEntry.Value = cacheEntry; // modifies CacheEntry._state
+                    Assert.True(cacheEntry.CheckExpired(now));
+
+                    cacheEntry.SetExpired(EvictionReason.Expired); // modifies CacheEntry._state
+                    Assert.True(cacheEntry.CheckExpired(now));
+                    cacheEntry.Dispose(); // might modify CacheEntry._state
+                    Assert.True(cacheEntry.CheckExpired(now));
+                }
+            }
+        }
     }
 }

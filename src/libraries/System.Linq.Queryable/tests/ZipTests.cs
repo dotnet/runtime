@@ -90,5 +90,55 @@ namespace System.Linq.Tests
             Assert.Equal(tuple.Item1, tuple.First);
             Assert.Equal(tuple.Item2, tuple.Second);
         }
+
+        [Fact]
+        public void Zip3_CorrectResults()
+        {
+            int[] first = new int[] { 1, 3, 5 };
+            int[] second = new int[] { 2, 6, 8 };
+            int[] third = new int[] { 1, 7, 2 };
+            var expected = new (int, int, int)[] { (1, 2, 1), (3, 6, 7), (5, 8, 2) };
+            Assert.Equal(expected, first.AsQueryable().Zip(second.AsQueryable(), third.AsQueryable()));
+        }
+
+
+        [Fact]
+        public void Zip3_FirstIsNull()
+        {
+            IQueryable<int> first = null;
+            int[] second = new int[] { 2, 6, 8 };
+            int[] third = new int[] { 1, 7, 2 };
+            AssertExtensions.Throws<ArgumentNullException>("source1", () => first.Zip(second.AsQueryable(), third.AsQueryable()));
+        }
+
+        [Fact]
+        public void Zip3_SecondIsNull()
+        {
+            int[] first = new int[] { 1, 3, 5 };
+            IQueryable<int> second = null;
+            int[] third = new int[] { 1, 7, 2 };
+            AssertExtensions.Throws<ArgumentNullException>("source2", () => first.AsQueryable().Zip(second, third.AsQueryable()));
+        }
+
+        [Fact]
+        public void Zip3_ThirdIsNull()
+        {
+            int[] first = new int[] { 1, 3, 5 };
+            int[] second = new int[] { 2, 6, 8 };
+            IQueryable<int> third = null;
+            AssertExtensions.Throws<ArgumentNullException>("source3", () => first.AsQueryable().Zip(second.AsQueryable(), third));
+        }
+
+        [Fact]
+        public void Zip3_TupleNames()
+        {
+            int[] first = new int[] { 1 };
+            int[] second = new int[] { 2 };
+            int[] third = new int[] { 3 };
+            var tuple = first.AsQueryable().Zip(second.AsQueryable(), third.AsQueryable()).First();
+            Assert.Equal(tuple.Item1, tuple.First);
+            Assert.Equal(tuple.Item2, tuple.Second);
+            Assert.Equal(tuple.Item3, tuple.Third);
+        }
     }
 }

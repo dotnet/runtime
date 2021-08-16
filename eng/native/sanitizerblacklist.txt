@@ -8,7 +8,7 @@ fun:_ZN11CMiniMdBase19UsesAllocatedMemoryEP11CMiniColDef
 # 0 0x4e8a0c in __ubsan::checkDynamicType(void*, void*, unsigned long)
 # 1 0x4e807f in HandleDynamicTypeCacheMiss(__ubsan::DynamicTypeCacheMissData*, unsigned long, unsigned long, __ubsan::ReportOptions)
 # 2 0x4e8051 in __ubsan_handle_dynamic_type_cache_miss
-# 3 0x7f02ce676cd8 in JIT_InitPInvokeFrame(InlinedCallFrame*, void*) /home/steveharter/git/dotnet_coreclr/src/vm/jithelpers.cpp:6491:9
+# 3 0x7f02ce676cd8 in JIT_InitPInvokeFrame(InlinedCallFrame*, void*) /home/steveharter/git/dotnet_coreclr/vm/jithelpers.cpp:6491:9
 # 4 0x7f0252bbceb2  (<unknown module>)
 fun:_Z20JIT_InitPInvokeFrameP16InlinedCallFramePv
 

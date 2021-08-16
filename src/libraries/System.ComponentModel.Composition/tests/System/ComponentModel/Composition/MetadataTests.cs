@@ -272,7 +272,6 @@ namespace System.ComponentModel.Composition
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/mono/mono/issues/16417", TestRuntimes.Mono)]
         public void InvalidDuplicateMetadataOnMember_ShouldThrow()
         {
             var part = AttributedModelServices.CreatePart(new ClassWithInvalidDuplicateMetadataOnMember());
@@ -319,7 +318,6 @@ namespace System.ComponentModel.Composition
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/mono/mono/issues/16417", TestRuntimes.Mono)]
         public void ValidDuplicateMetadataOnMember_ShouldDiscoverAllMetadata()
         {
             var container = ContainerFactory.Create();

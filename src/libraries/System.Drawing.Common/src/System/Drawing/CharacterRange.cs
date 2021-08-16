@@ -39,7 +39,7 @@ namespace System.Drawing
             set => _length = value;
         }
 
-        public override bool Equals(object? obj)
+        public override bool Equals([NotNullWhen(true)] object? obj)
         {
             if (!(obj is CharacterRange cr))
             {

@@ -74,7 +74,7 @@ namespace System.Security.Cryptography.Pkcs.Tests.Pkcs12
         public static void AddCertificateDisallowedInReadOnly()
         {
             Pkcs12SafeContents contents = MakeReadonly(new Pkcs12SafeContents());
-            X509Certificate2 cert = new X509Certificate2();
+            X509Certificate2 cert = new X509Certificate2(stackalloc byte[0]);
 
             Assert.Throws<InvalidOperationException>(() => contents.AddCertificate(cert));
         }

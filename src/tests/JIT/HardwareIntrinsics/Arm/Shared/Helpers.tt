@@ -1393,6 +1393,30 @@ namespace JIT.HardwareIntrinsics.Arm
 <#
         }
 
+        foreach (string typeName in new string[] { "long", "ulong" })
+        {
+        // The following implementation is adaptation of an algorithm described in
+        // "Hacker's Delight, 2nd Edition" by Henry S. Warren, p.174.
+#>
+        public static <#= typeName #> MultiplyHigh(<#= typeName #> op1, <#= typeName #> op2)
+        {
+            ulong u0, v0, w0;
+            <#= typeName #> u1, v1, w1, w2, t;
+            u0 = (ulong)op1 & 0xFFFFFFFF;
+            u1 = op1 >> 32;
+            v0 = (ulong)op2 & 0xFFFFFFFF;
+            v1 = op2 >> 32;
+            w0 = u0 * v0;
+            t  = u1 * (<#= typeName #>)v0 + (<#= typeName #>)(w0 >> 32);
+            w1 = t & 0xFFFFFFFF;
+            w2 = t >> 32;
+            w1 = (<#= typeName #>)u0 * v1 + w1;
+            return u1 * v1 + w2 + (w1 >> 32);
+        }
+
+<#
+        }
+
         foreach (var type in new[] { (name: "byte",  wide: "ushort"),
                                      (name: "sbyte", wide: "short") })
         {

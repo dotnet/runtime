@@ -16,19 +16,14 @@
 
 #include "mono/utils/mono-coop-mutex.h"
 #include "mono/utils/mono-error.h"
+#include <mono/utils/mono-compiler.h>
 
 #define MONO_W32HANDLE_MAXIMUM_WAIT_OBJECTS 64
 #define MONO_INFINITE_WAIT ((guint32) 0xFFFFFFFF)
 
 typedef enum {
 	MONO_W32TYPE_UNUSED = 0,
-	MONO_W32TYPE_SEM,
-	MONO_W32TYPE_MUTEX,
 	MONO_W32TYPE_EVENT,
-	MONO_W32TYPE_PROCESS,
-	MONO_W32TYPE_NAMEDMUTEX,
-	MONO_W32TYPE_NAMEDSEM,
-	MONO_W32TYPE_NAMEDEVENT,
 	MONO_W32TYPE_COUNT
 } MonoW32Type;
 
@@ -107,9 +102,6 @@ void
 mono_w32handle_init (void);
 
 void
-mono_w32handle_cleanup (void);
-
-void
 mono_w32handle_register_ops (MonoW32Type type, const MonoW32HandleOps *ops);
 
 gpointer
@@ -131,12 +123,6 @@ void
 mono_w32handle_unref (MonoW32Handle *handle_data);
 
 void
-mono_w32handle_foreach (gboolean (*on_each)(MonoW32Handle *handle_data, gpointer user_data), gpointer user_data);
-
-void
-mono_w32handle_dump (void);
-
-void
 mono_w32handle_register_capabilities (MonoW32Type type, MonoW32HandleCapability caps);
 
 void
@@ -148,26 +134,12 @@ mono_w32handle_issignalled (MonoW32Handle *handle_data);
 void
 mono_w32handle_lock (MonoW32Handle *handle_data);
 
-gboolean
-mono_w32handle_trylock (MonoW32Handle *handle_data);
-
 void
 mono_w32handle_unlock (MonoW32Handle *handle_data);
 
-gboolean
-mono_w32handle_handle_is_signalled (gpointer handle);
-
-gboolean
-mono_w32handle_handle_is_owned (gpointer handle);
-
+MONO_COMPONENT_API
 MonoW32HandleWaitRet
 mono_w32handle_wait_one (gpointer handle, guint32 timeout, gboolean alertable);
-
-MonoW32HandleWaitRet
-mono_w32handle_wait_multiple (gpointer *handles, gsize nhandles, gboolean waitall, guint32 timeout, gboolean alertable, MonoError *error);
-
-MonoW32HandleWaitRet
-mono_w32handle_signal_and_wait (gpointer signal_handle, gpointer wait_handle, guint32 timeout, gboolean alertable);
 
 #ifdef HOST_WIN32
 static inline MonoW32HandleWaitRet

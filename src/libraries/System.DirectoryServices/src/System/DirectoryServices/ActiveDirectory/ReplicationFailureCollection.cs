@@ -18,7 +18,7 @@ namespace System.DirectoryServices.ActiveDirectory
             _nameTable = Hashtable.Synchronized(tempNameTable);
         }
 
-        public ReplicationFailure this[int index] => (ReplicationFailure)InnerList[index];
+        public ReplicationFailure this[int index] => (ReplicationFailure)InnerList[index]!;
 
         public bool Contains(ReplicationFailure failure)
         {

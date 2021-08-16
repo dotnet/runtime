@@ -173,5 +173,30 @@ namespace Microsoft.NET.HostModel.AppHost
             // Copy file to destination path so it inherits the same attributes/permissions.
             File.Copy(sourcePath, destinationPath, overwrite: true);
         }
+
+        internal static void WriteToStream(MemoryMappedViewAccessor sourceViewAccessor, FileStream fileStream, long length)
+        {
+            int pos = 0;
+            int bufSize = 16384; //16K
+
+            byte[] buf = new byte[bufSize];
+            length = Math.Min(length, sourceViewAccessor.Capacity);
+            do
+            {
+                int bytesRequested = Math.Min((int)length - pos, bufSize);
+                if (bytesRequested <= 0)
+                {
+                    break;
+                }
+
+                int bytesRead = sourceViewAccessor.ReadArray(pos, buf, 0, bytesRequested);
+                if (bytesRead > 0)
+                {
+                    fileStream.Write(buf, 0, bytesRead);
+                    pos += bytesRead;
+                }
+            }
+            while (true);
+        }
     }
 }

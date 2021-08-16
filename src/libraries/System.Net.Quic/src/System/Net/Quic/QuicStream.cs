@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#nullable enable
 using System.Buffers;
 using System.IO;
 using System.Net.Quic.Implementations;
@@ -80,6 +79,20 @@ namespace System.Net.Quic
 
         public override void Write(ReadOnlySpan<byte> buffer) => _provider.Write(buffer);
 
+        public override bool CanTimeout => _provider.CanTimeout;
+
+        public override int ReadTimeout
+        {
+            get => _provider.ReadTimeout;
+            set => _provider.ReadTimeout = value;
+        }
+
+        public override int WriteTimeout
+        {
+            get => _provider.WriteTimeout;
+            set => _provider.WriteTimeout = value;
+        }
+
         public override ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default) => _provider.WriteAsync(buffer, cancellationToken);
 
         public override void Flush() => _provider.Flush();
@@ -100,7 +113,7 @@ namespace System.Net.Quic
 
         public ValueTask WriteAsync(ReadOnlyMemory<ReadOnlyMemory<byte>> buffers, bool endStream, CancellationToken cancellationToken = default) => _provider.WriteAsync(buffers, endStream, cancellationToken);
 
-        public ValueTask ShutdownWriteCompleted(CancellationToken cancellationToken = default) => _provider.ShutdownWriteCompleted(cancellationToken);
+        public ValueTask ShutdownCompleted(CancellationToken cancellationToken = default) => _provider.ShutdownCompleted(cancellationToken);
 
         public void Shutdown() => _provider.Shutdown();
 

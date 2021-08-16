@@ -16,7 +16,7 @@
     extends [System.Runtime]System.Object
 {
     .method public hidebysig static 
-        void CallbackMethod (
+        int32 CallbackMethod (
             int32 n
         ) cil managed preservesig 
     {
@@ -68,6 +68,15 @@
         IL_0000: ldstr "Instance functions with attribute UnmanagedCallersOnlyAttribute are invalid"
         IL_0005: newobj instance void [System.Runtime]System.Exception::.ctor(string)
         IL_000a: throw
+    }
+
+    .method public hidebysig static
+        native int GetNonStaticCallbackFunctionPointer (
+        ) cil managed preservesig
+    {
+        .maxstack 8
+        ldftn instance int32 InvalidCSharp.Callbacks::CallbackNonStatic(int32)
+        ret
     }
 
     .method public hidebysig specialname rtspecialname 

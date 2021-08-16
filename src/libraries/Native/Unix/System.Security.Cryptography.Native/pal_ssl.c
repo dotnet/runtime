@@ -5,7 +5,6 @@
 #include "openssl.h"
 #include "pal_evp_pkey.h"
 #include "pal_evp_pkey_rsa.h"
-#include "pal_rsa.h"
 #include "pal_x509.h"
 
 #include <assert.h>
@@ -43,18 +42,25 @@ static int32_t g_config_specified_ciphersuites = 0;
 
 static void DetectCiphersuiteConfiguration()
 {
-    // OpenSSL 1.0 does not support CipherSuites so there is no way for caller to override default
-    // Always produce g_config_specified_ciphersuites = 1 on OpenSSL 1.0.
 #ifdef FEATURE_DISTRO_AGNOSTIC_SSL
+
     if (API_EXISTS(SSL_state))
     {
+        // For portable builds NEED_OPENSSL_1_1 is always set.
+        // OpenSSL 1.0 does not support CipherSuites so there is no way for caller to override default
         g_config_specified_ciphersuites = 1;
         return;
     }
-#elif OPENSSL_VERSION_NUMBER < OPENSSL_VERSION_1_1_0_RTM
-    g_config_specified_ciphersuites = 1;
-    return;
+
 #endif
+
+    // This routine will always produce g_config_specified_ciphersuites = 1 on OpenSSL 1.0.x,
+    // so if we're building direct for 1.0.x (the only time NEED_OPENSSL_1_1 is undefined) then
+    // just omit all the code here.
+    //
+    // The method uses OpenSSL 1.0.x API, except for the fallback function SSL_CTX_config, to
+    // make the portable version easier.
+#if defined NEED_OPENSSL_1_1 || defined NEED_OPENSSL_3_0
 
     // Check to see if there's a registered default CipherString. If not, we will use our own.
     SSL_CTX* ctx = SSL_CTX_new(TLS_method());
@@ -100,13 +106,20 @@ static void DetectCiphersuiteConfiguration()
     {
         ssl = SSL_new(ctx);
         assert(ssl != NULL);
-        int systemDefaultCount = sk_SSL_CIPHER_num(SSL_get_ciphers(ssl));
+        int after = sk_SSL_CIPHER_num(SSL_get_ciphers(ssl));
         SSL_free(ssl);
 
-        g_config_specified_ciphersuites = (allCount != systemDefaultCount);
+        g_config_specified_ciphersuites = (allCount != after);
     }
 
     SSL_CTX_free(ctx);
+
+#else
+
+    // OpenSSL 1.0 does not support CipherSuites so there is no way for caller to override default
+    g_config_specified_ciphersuites = 1;
+
+#endif
 }
 
 void CryptoNative_EnsureLibSslInitialized()
@@ -354,8 +367,36 @@ int32_t CryptoNative_SslRead(SSL* ssl, void* buf, int32_t num)
     return SSL_read(ssl, buf, num);
 }
 
+static int verify_callback(int preverify_ok, X509_STORE_CTX* store)
+{
+    (void)preverify_ok;
+    (void)store;
+    // We don't care. Real verification happens in managed code.
+    return 1;
+}
+
+int32_t CryptoNative_SslRenegotiate(SSL* ssl)
+{
+    // The openssl context is destroyed so we can't use ticket or session resumption.
+    SSL_set_options(ssl, SSL_OP_NO_TICKET | SSL_OP_NO_SESSION_RESUMPTION_ON_RENEGOTIATION);
+
+    int pending = SSL_renegotiate_pending(ssl);
+    if (!pending)
+    {
+        SSL_set_verify(ssl, SSL_VERIFY_PEER, verify_callback);
+        int ret = SSL_renegotiate(ssl);
+        if(ret != 1)
+            return ret;
+
+        return SSL_do_handshake(ssl);
+    }
+
+    return 0;
+}
+
 int32_t CryptoNative_IsSslRenegotiatePending(SSL* ssl)
 {
+    SSL_peek(ssl, NULL, 0);
     return SSL_renegotiate_pending(ssl) != 0;
 }
 
@@ -383,7 +424,7 @@ int32_t CryptoNative_IsSslStateOK(SSL* ssl)
 
 X509* CryptoNative_SslGetPeerCertificate(SSL* ssl)
 {
-    return SSL_get_peer_certificate(ssl);
+    return SSL_get1_peer_certificate(ssl);
 }
 
 X509Stack* CryptoNative_SslGetPeerCertChain(SSL* ssl)
@@ -630,18 +671,24 @@ int32_t CryptoNative_SslGetCurrentCipherId(SSL* ssl, int32_t* cipherId)
 // This function generates key pair and creates simple certificate.
 static int MakeSelfSignedCertificate(X509 * cert, EVP_PKEY* evp)
 {
-    RSA* rsa = CryptoNative_RsaCreate();
+    RSA* rsa = NULL;
     ASN1_TIME* time = ASN1_TIME_new();
-    BIGNUM* bn = BN_new();
-    BN_set_word(bn, RSA_F4);
     X509_NAME * asnName;
     unsigned char * name = (unsigned char*)"localhost";
 
     int ret = 0;
 
-    if (rsa != NULL && CryptoNative_RsaGenerateKeyEx(rsa, 2048, bn) == 1)
+    EVP_PKEY* pkey = CryptoNative_RsaGenerateKey(2048);
+
+    if (pkey != NULL)
     {
-        if (CryptoNative_EvpPkeySetRsa(evp, rsa) == 1)
+        rsa = EVP_PKEY_get1_RSA(pkey);
+        EVP_PKEY_free(pkey);
+    }
+
+    if (rsa != NULL)
+    {
+        if (EVP_PKEY_set1_RSA(evp, rsa) == 1)
         {
             rsa = NULL;
         }
@@ -659,11 +706,6 @@ static int MakeSelfSignedCertificate(X509 * cert, EVP_PKEY* evp)
         X509_set1_notAfter(cert, time);
 
         ret = X509_sign(cert, evp, EVP_sha256());
-    }
-
-    if (bn != NULL)
-    {
-        BN_free(bn);
     }
 
     if (rsa != NULL)

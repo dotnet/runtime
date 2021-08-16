@@ -56,9 +56,7 @@
 #include <mono/metadata/gc-internals.h>
 #include <mono/metadata/threads-types.h>
 #include <mono/metadata/verify.h>
-#include <mono/metadata/verify-internals.h>
 #include <mono/metadata/mempool-internals.h>
-#include <mono/metadata/attach.h>
 #include <mono/utils/mono-math.h>
 #include <mono/utils/mono-errno.h>
 #include <mono/utils/mono-compiler.h>
@@ -71,13 +69,14 @@
 #include <mono/utils/os-event.h>
 #include <mono/utils/mono-state.h>
 #include <mono/utils/mono-time.h>
-#include <mono/mini/debugger-state-machine.h>
+#include <mono/component/debugger-state-machine.h>
+#include <mono/metadata/components.h>
 
 #include "mini.h"
 #include <string.h>
 #include <ctype.h>
 #include "trace.h"
-#include "debugger-agent.h"
+#include <mono/component/debugger-agent.h>
 #include "mini-runtime.h"
 #include "jit-icalls.h"
 
@@ -107,13 +106,6 @@ mono_runtime_setup_stat_profiler (void)
 	printf("WARNING: mono_runtime_setup_stat_profiler() called!\n");
 }
 
-
-void
-mono_runtime_shutdown_stat_profiler (void)
-{
-}
-
-
 gboolean
 MONO_SIG_HANDLER_SIGNATURE (mono_chain_signal)
 {
@@ -139,27 +131,35 @@ mono_runtime_shutdown_handlers (void)
 {
 }
 
-void
-mono_runtime_cleanup_handlers (void)
-{
-}
-
 #else
 
 static GHashTable *mono_saved_signal_handlers = NULL;
 
 static struct sigaction *
-get_saved_signal_handler (int signo, gboolean remove)
+get_saved_signal_handler (int signo)
 {
 	if (mono_saved_signal_handlers) {
 		/* The hash is only modified during startup, so no need for locking */
 		struct sigaction *handler = (struct sigaction*)g_hash_table_lookup (mono_saved_signal_handlers, GINT_TO_POINTER (signo));
-		if (remove && handler)
-			g_hash_table_remove (mono_saved_signal_handlers, GINT_TO_POINTER (signo));
 		return handler;
 	}
 	return NULL;
 }
+
+
+static void
+remove_saved_signal_handler (int signo)
+{
+	if (mono_saved_signal_handlers) {
+		/* The hash is only modified during startup, so no need for locking */
+		struct sigaction *handler = (struct sigaction*)g_hash_table_lookup (mono_saved_signal_handlers, GINT_TO_POINTER (signo));
+		if (handler)
+			g_hash_table_remove (mono_saved_signal_handlers, GINT_TO_POINTER (signo));
+	}
+	return;
+}
+
+
 
 static void
 save_old_signal_handler (int signo, struct sigaction *old_action)
@@ -184,13 +184,6 @@ save_old_signal_handler (int signo, struct sigaction *old_action)
 	g_hash_table_insert (mono_saved_signal_handlers, GINT_TO_POINTER (signo), handler_to_save);
 }
 
-static void
-free_saved_signal_handlers (void)
-{
-	g_hash_table_destroy (mono_saved_signal_handlers);
-	mono_saved_signal_handlers = NULL;
-}
-
 /*
  * mono_chain_signal:
  *
@@ -202,7 +195,7 @@ gboolean
 MONO_SIG_HANDLER_SIGNATURE (mono_chain_signal)
 {
 	int signal = MONO_SIG_HANDLER_GET_SIGNO ();
-	struct sigaction *saved_handler = (struct sigaction *)get_saved_signal_handler (signal, FALSE);
+	struct sigaction *saved_handler = (struct sigaction *)get_saved_signal_handler (signal);
 
 	if (saved_handler && saved_handler->sa_handler) {
 		if (!(saved_handler->sa_flags & SA_SIGINFO)) {
@@ -225,7 +218,7 @@ MONO_SIG_HANDLER_FUNC (static, sigabrt_signal_handler)
 	MONO_SIG_HANDLER_GET_CONTEXT;
 
 	if (mono_thread_internal_current ())
-		ji = mono_jit_info_table_find_internal (mono_domain_get (), mono_arch_ip_from_context (ctx), TRUE, TRUE);
+		ji = mono_jit_info_table_find_internal (mono_arch_ip_from_context (ctx), TRUE, TRUE);
 	if (!ji) {
 		if (mono_chain_signal (MONO_SIG_HANDLER_PARAMS))
 			return;
@@ -323,13 +316,6 @@ MONO_SIG_HANDLER_FUNC (static, profiler_signal_handler)
 
 MONO_SIG_HANDLER_FUNC (static, sigquit_signal_handler)
 {
-	gboolean res;
-
-	/* We use this signal to start the attach agent too */
-	res = mono_attach_start ();
-	if (res)
-		return;
-
 	mono_threads_request_thread_dump ();
 
 	mono_chain_signal (MONO_SIG_HANDLER_PARAMS);
@@ -404,7 +390,7 @@ static void
 remove_signal_handler (int signo)
 {
 	struct sigaction sa;
-	struct sigaction *saved_action = get_saved_signal_handler (signo, TRUE);
+	struct sigaction *saved_action = get_saved_signal_handler (signo);
 
 	if (!saved_action) {
 		sa.sa_handler = SIG_DFL;
@@ -415,6 +401,7 @@ remove_signal_handler (int signo)
 	} else {
 		g_assert (sigaction (signo, saved_action, NULL) != -1);
 	}
+	remove_saved_signal_handler(signo);
 }
 
 void
@@ -489,27 +476,6 @@ mono_runtime_install_handlers (void)
 	mono_runtime_posix_install_handlers ();
 }
 #endif
-
-void
-mono_runtime_cleanup_handlers (void)
-{
-	if (mini_debug_options.handle_sigint)
-		remove_signal_handler (SIGINT);
-
-	remove_signal_handler (SIGFPE);
-	remove_signal_handler (SIGQUIT);
-	remove_signal_handler (SIGILL);
-	remove_signal_handler (SIGBUS);
-	if (mono_jit_trace_calls != NULL)
-		remove_signal_handler (SIGUSR2);
-	remove_signal_handler (SIGSYS);
-
-	remove_signal_handler (SIGABRT);
-
-	remove_signal_handler (SIGSEGV);
-
-	free_saved_signal_handlers ();
-}
 
 #ifdef HAVE_PROFILER_SIGNAL
 
@@ -737,52 +703,6 @@ done:
 }
 
 void
-mono_runtime_shutdown_stat_profiler (void)
-{
-	mono_atomic_store_i32 (&sampling_thread_running, 0);
-
-	mono_profiler_sampling_thread_post ();
-
-#ifndef HOST_DARWIN
-	/*
-	 * There is a slight problem when we're using CLOCK_PROCESS_CPUTIME_ID: If
-	 * we're shutting down and there's largely no activity in the process other
-	 * than waiting for the sampler thread to shut down, it can take upwards of
-	 * 20 seconds (depending on a lot of factors) for us to shut down because
-	 * the sleep progresses very slowly as a result of the low CPU activity.
-	 *
-	 * We fix this by repeatedly sending the profiler signal to the sampler
-	 * thread in order to interrupt the sleep. clock_sleep_ns_abs () will check
-	 * sampling_thread_running upon an interrupt and return immediately if it's
-	 * zero. profiler_signal_handler () has a special case to ignore the signal
-	 * for the sampler thread.
-	 */
-	MonoThreadInfo *info;
-
-	// Did it shut down already?
-	if ((info = mono_thread_info_lookup (sampling_thread))) {
-		while (!mono_atomic_load_i32 (&sampling_thread_exiting)) {
-			mono_threads_pthread_kill (info, profiler_signal);
-			mono_thread_info_usleep (10 * 1000 /* 10ms */);
-		}
-
-		// Make sure info can be freed.
-		mono_hazard_pointer_clear (mono_hazard_pointer_get (), 1);
-	}
-#endif
-
-	mono_os_event_wait_one (&sampling_thread_exited, MONO_INFINITE_WAIT, FALSE);
-	mono_os_event_destroy (&sampling_thread_exited);
-
-	/*
-	 * We can't safely remove the signal handler because we have no guarantee
-	 * that all pending signals have been delivered at this point. This should
-	 * not really be a problem anyway.
-	 */
-	//remove_signal_handler (profiler_signal);
-}
-
-void
 mono_runtime_setup_stat_profiler (void)
 {
 	/*
@@ -819,7 +739,7 @@ mono_runtime_setup_stat_profiler (void)
 	mono_atomic_store_i32 (&sampling_thread_running, 1);
 
 	ERROR_DECL (error);
-	MonoInternalThread *thread = mono_thread_create_internal (mono_get_root_domain (), (gpointer)sampling_thread_func, NULL, MONO_THREAD_CREATE_FLAGS_NONE, error);
+	MonoInternalThread *thread = mono_thread_create_internal ((MonoThreadStart)sampling_thread_func, NULL, MONO_THREAD_CREATE_FLAGS_NONE, error);
 	mono_error_assert_ok (error);
 
 	sampling_thread = MONO_UINT_TO_NATIVE_THREAD_ID (thread->tid);
@@ -854,6 +774,7 @@ dump_memory_around_ip (MonoContext *mctx)
 
 	gpointer native_ip = MONO_CONTEXT_GET_IP (mctx);
 	if (native_ip) {
+		native_ip = MINI_FTNPTR_TO_ADDR (native_ip);
 		g_async_safe_printf ("Memory around native instruction pointer (%p):", native_ip);
 		mono_dump_mem (((guint8 *) native_ip) - 0x10, 0x40);
 	} else {
@@ -1079,7 +1000,7 @@ dump_native_stacktrace (const char *signal, MonoContext *mctx)
 		// see if we can notify any attached debugger instances.
 		//
 		// At this point we are accepting that the below step might end in a crash
-		mini_get_dbg_callbacks ()->send_crash (output, &hashes, 0 /* wait # seconds */);
+		mono_component_debugger ()->send_crash (output, &hashes, 0 /* wait # seconds */);
 	}
 	output = NULL;
 	mono_state_free_mem (&merp_mem);
@@ -1128,13 +1049,6 @@ mono_init_native_crash_info (void)
 	gdb_path = g_find_program_in_path ("gdb");
 	lldb_path = g_find_program_in_path ("lldb");
 	mono_threads_summarize_init ();
-}
-
-void
-mono_cleanup_native_crash_info (void)
-{
-	g_free (gdb_path);
-	g_free (lldb_path);
 }
 
 static gboolean

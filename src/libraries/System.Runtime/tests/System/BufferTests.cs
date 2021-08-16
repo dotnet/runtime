@@ -91,6 +91,10 @@ namespace System.Tests
         [InlineData(new uint[] { 0x01234567, 0x89abcdef }, 7, 0x89)]
         public static void GetByte(Array array, int index, int expected)
         {
+            if (!BitConverter.IsLittleEndian)
+            {
+                index = index ^ 3;
+            }
             Assert.Equal(expected, Buffer.GetByte(array, index));
         }
 
@@ -211,6 +215,10 @@ namespace System.Tests
         [InlineData(new uint[] { 0x01234542, 0x89abcdef }, 7, 0xa2, new uint[] { 0x01234542, 0xa2abcdef })]
         public static void SetByte(Array array, int index, byte value, Array expected)
         {
+            if (!BitConverter.IsLittleEndian)
+            {
+                index = index ^ 3;
+            }
             Buffer.SetByte(array, index, value);
             Assert.Equal(expected, array);
         }

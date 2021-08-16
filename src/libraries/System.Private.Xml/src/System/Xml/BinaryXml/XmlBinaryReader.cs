@@ -5,6 +5,7 @@ using System;
 using System.Buffers.Binary;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.IO;
 using System.Runtime.InteropServices;
@@ -105,7 +106,7 @@ namespace System.Xml
             }
 
 
-            public override bool Equals(object? other)
+            public override bool Equals([NotNullWhen(true)] object? other)
             {
                 if (other is QName that)
                 {
@@ -214,7 +215,7 @@ namespace System.Xml
             }
         }
 
-        private class NamespaceDecl
+        private sealed class NamespaceDecl
         {
             public string prefix;
             public string uri;
@@ -253,7 +254,7 @@ namespace System.Xml
             }
         }
 
-        private class NestedBinXml
+        private sealed class NestedBinXml
         {
             public SymbolTables symbolTables;
             public int docState;
@@ -1986,7 +1987,7 @@ namespace System.Xml
         {
             _symbolTables.symCount = _symbolTables.qnameCount = 1;
             Array.Clear(_symbolTables.symtable, 1, _symbolTables.symtable.Length - 1);
-            Array.Clear(_symbolTables.qnametable, 0, _symbolTables.qnametable.Length);
+            Array.Clear(_symbolTables.qnametable);
         }
 
         private void SkipExtn()

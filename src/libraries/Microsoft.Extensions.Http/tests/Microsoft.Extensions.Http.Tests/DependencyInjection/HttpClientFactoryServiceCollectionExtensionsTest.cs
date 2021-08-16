@@ -80,6 +80,7 @@ namespace Microsoft.Extensions.DependencyInjection
         }
 
         [Fact] // Verifies that AddHttpClient does not override any existing registration
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/50873", TestPlatforms.Android)]
         public void AddHttpClient_DoesNotRegisterDefaultClientIfAlreadyRegistered()
         {
             // Arrange

@@ -1,34 +1,35 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Reflection;
-using System.Collections.ObjectModel;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Reflection;
 using System.Runtime.CompilerServices;
 
 namespace System.ComponentModel
 {
     [Serializable]
     [TypeForwardedFrom("System, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
-    public class BindingList<T> : Collection<T>, IBindingList, ICancelAddNew, IRaiseItemChangedEvents
+    public class BindingList<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] T> :
+        Collection<T>, IBindingList, ICancelAddNew, IRaiseItemChangedEvents
     {
         private int addNewPos = -1; // Do not rename (binary serialization)
         private bool raiseListChangedEvents = true; // Do not rename (binary serialization)
         private bool raiseItemChangedEvents; // Do not rename (binary serialization)
 
         [NonSerialized]
-        private PropertyDescriptorCollection _itemTypeProperties;
+        private PropertyDescriptorCollection? _itemTypeProperties;
 
         [NonSerialized]
-        private PropertyChangedEventHandler _propertyChangedEventHandler;
+        private PropertyChangedEventHandler? _propertyChangedEventHandler;
 
         [NonSerialized]
-        private AddingNewEventHandler _onAddingNew;
+        private AddingNewEventHandler? _onAddingNew;
 
         [NonSerialized]
-        private ListChangedEventHandler _onListChanged;
+        private ListChangedEventHandler? _onListChanged;
 
         [NonSerialized]
         private int _lastChangeIndex = -1;
@@ -40,16 +41,19 @@ namespace System.ComponentModel
 
         #region Constructors
 
+        [RequiresUnreferencedCode("Raises ListChanged events with PropertyDescriptors. PropertyDescriptors require unreferenced code.")]
         public BindingList() => Initialize();
 
         /// <summary>
         /// Constructor that allows substitution of the inner list with a custom list.
         /// </summary>
+        [RequiresUnreferencedCode("Raises ListChanged events with PropertyDescriptors. PropertyDescriptors require unreferenced code.")]
         public BindingList(IList<T> list) : base(list)
         {
             Initialize();
         }
 
+        [RequiresUnreferencedCode("Raises ListChanged events with PropertyDescriptors. PropertyDescriptors require unreferenced code.")]
         private void Initialize()
         {
             // Set the default value of AllowNew based on whether type T has a default constructor
@@ -120,7 +124,7 @@ namespace System.ComponentModel
         protected virtual void OnAddingNew(AddingNewEventArgs e) => _onAddingNew?.Invoke(this, e);
 
         // Private helper method
-        private object FireAddingNew()
+        private object? FireAddingNew()
         {
             AddingNewEventArgs e = new AddingNewEventArgs(null);
             OnAddingNew(e);
@@ -190,6 +194,8 @@ namespace System.ComponentModel
             FireListChanged(ListChangedType.Reset, -1);
         }
 
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+            Justification = "BindingList ctor is marked with RequiresUnreferencedCode.")]
         protected override void InsertItem(int index, T item)
         {
             EndNew(addNewPos);
@@ -222,6 +228,8 @@ namespace System.ComponentModel
             FireListChanged(ListChangedType.ItemDeleted, index);
         }
 
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+            Justification = "BindingList ctor is marked with RequiresUnreferencedCode.")]
         protected override void SetItem(int index, T item)
         {
             if (raiseItemChangedEvents)
@@ -279,12 +287,12 @@ namespace System.ComponentModel
         /// changes the contents of the list (such as an Insert or Remove). When an add operation is
         /// cancelled, the new item is removed from the list.
         /// </summary>
-        public T AddNew() => (T)((this as IBindingList).AddNew());
+        public T AddNew() => (T)((this as IBindingList).AddNew())!;
 
-        object IBindingList.AddNew()
+        object? IBindingList.AddNew()
         {
             // Create new item and add it to list
-            object newItem = AddNewCore();
+            object? newItem = AddNewCore();
 
             // Record position of new item (to support cancellation later on)
             addNewPos = (newItem != null) ? IndexOf((T)newItem) : -1;
@@ -302,10 +310,10 @@ namespace System.ComponentModel
         /// supply a custom item to add to the list. Otherwise an item of type T is created.
         /// The new item is then added to the end of the list.
         /// </summary>
-        protected virtual object AddNewCore()
+        protected virtual object? AddNewCore()
         {
             // Allow event handler to supply the new item for us
-            object newItem = FireAddingNew();
+            object? newItem = FireAddingNew();
 
             // If event hander did not supply new item, create one ourselves
             if (newItem == null)
@@ -315,7 +323,7 @@ namespace System.ComponentModel
 
             // Add item to end of list. Note: If event handler returned an item not of type T,
             // the cast below will trigger an InvalidCastException. This is by design.
-            Add((T)newItem);
+            Add((T)newItem!);
 
             // Return new item to caller
             return newItem;
@@ -397,9 +405,9 @@ namespace System.ComponentModel
 
         protected virtual bool IsSortedCore => false;
 
-        PropertyDescriptor IBindingList.SortProperty => SortPropertyCore;
+        PropertyDescriptor? IBindingList.SortProperty => SortPropertyCore;
 
-        protected virtual PropertyDescriptor SortPropertyCore => null;
+        protected virtual PropertyDescriptor? SortPropertyCore => null;
 
         ListSortDirection IBindingList.SortDirection => SortDirectionCore;
 
@@ -443,6 +451,7 @@ namespace System.ComponentModel
 
         #region Property Change Support
 
+        [RequiresUnreferencedCode("Raises ListChanged events with PropertyDescriptors. PropertyDescriptors require unreferenced code.")]
         private void HookPropertyChanged(T item)
         {
             // Note: inpc may be null if item is null, so always check.
@@ -465,7 +474,8 @@ namespace System.ComponentModel
             }
         }
 
-        private void Child_PropertyChanged(object sender, PropertyChangedEventArgs e)
+        [RequiresUnreferencedCode("Raises ListChanged events with PropertyDescriptors. PropertyDescriptors require unreferenced code.")]
+        private void Child_PropertyChanged(object? sender, PropertyChangedEventArgs? e)
         {
             if (RaiseListChangedEvents)
             {
@@ -496,7 +506,7 @@ namespace System.ComponentModel
                     // somehow the item has been removed from our list without our knowledge.
                     int pos = _lastChangeIndex;
 
-                    if (pos < 0 || pos >= Count || !this[pos].Equals(item))
+                    if (pos < 0 || pos >= Count || !this[pos]!.Equals(item))
                     {
                         pos = IndexOf(item);
                         _lastChangeIndex = pos;
@@ -519,7 +529,7 @@ namespace System.ComponentModel
                             Debug.Assert(_itemTypeProperties != null);
                         }
 
-                        PropertyDescriptor pd = _itemTypeProperties.Find(e.PropertyName, true);
+                        PropertyDescriptor? pd = _itemTypeProperties.Find(e.PropertyName, true);
 
                         // Create event args. If there was no matching property descriptor,
                         // we raise the list changed anyway.

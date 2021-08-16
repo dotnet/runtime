@@ -1,3 +1,7 @@
+#if defined(_MSC_VER) && defined(_DEBUG)
+#include "ep-tests-debug.h"
+#endif
+
 #include <eventpipe/ep.h>
 #include <eventpipe/ep-config.h>
 #include <eventpipe/ep-event.h>
@@ -9,6 +13,7 @@
 
 #define TEST_PROVIDER_NAME "MyTestProvider"
 #define TEST_FILE "./ep_test_create_file.txt"
+#define TEST_FILE_2 "./ep_test_create_file_2.txt"
 
 //#define TEST_PERF
 
@@ -222,6 +227,7 @@ test_enable_disable (void)
 		EP_SERIALIZATION_FORMAT_NETTRACE_V4,
 		false,
 		NULL,
+		NULL,
 		NULL);
 
 	if (!session_id) {
@@ -344,6 +350,7 @@ test_enable_disable_default_provider_config (void)
 		EP_SERIALIZATION_FORMAT_NETTRACE_V4,
 		false,
 		NULL,
+		NULL,
 		NULL);
 
 	if (!session_id) {
@@ -376,6 +383,88 @@ ep_on_error:
 }
 
 static RESULT
+test_enable_disable_multiple_default_provider_config (void)
+{
+	RESULT result = NULL;
+	uint32_t test_location = 0;
+
+	EventPipeSessionID session_id_1 = 0;
+	EventPipeSessionID session_id_2 = 0;
+
+	session_id_1 = ep_enable_2 (
+		TEST_FILE,
+		1,
+		NULL,
+		EP_SESSION_TYPE_FILE,
+		EP_SERIALIZATION_FORMAT_NETTRACE_V4,
+		false,
+		NULL,
+		NULL,
+		NULL);
+
+	if (!session_id_1) {
+		result = FAILED ("Failed to enable session");
+		ep_raise_error ();
+	}
+
+	test_location = 2;
+
+	result = validate_default_provider_config ((EventPipeSession *)session_id_1);
+	ep_raise_error_if_nok (result == NULL);
+
+	test_location = 3;
+
+	ep_start_streaming (session_id_1);
+
+	if (!ep_enabled ()) {
+		result = FAILED ("event pipe disabled");
+		ep_raise_error ();
+	}
+
+	test_location = 4;
+
+	session_id_2 = ep_enable_2 (
+		TEST_FILE_2,
+		1,
+		NULL,
+		EP_SESSION_TYPE_FILE,
+		EP_SERIALIZATION_FORMAT_NETTRACE_V4,
+		false,
+		NULL,
+		NULL,
+		NULL);
+
+	if (!session_id_2) {
+		result = FAILED ("Failed to enable session");
+		ep_raise_error ();
+	}
+
+	test_location = 5;
+
+	result = validate_default_provider_config ((EventPipeSession *)session_id_2);
+	ep_raise_error_if_nok (result == NULL);
+
+	test_location = 6;
+
+	ep_start_streaming (session_id_2);
+
+	if (!ep_enabled ()) {
+		result = FAILED ("event pipe disabled");
+		ep_raise_error ();
+	}
+
+ep_on_exit:
+	ep_disable (session_id_1);
+	ep_disable (session_id_2);
+	return result;
+
+ep_on_error:
+	if (!result)
+		result = FAILED ("Failed at test location=%i", test_location);
+	ep_exit_error_handler ();
+}
+
+static RESULT
 test_enable_disable_provider_config (void)
 {
 	RESULT result = NULL;
@@ -391,6 +480,7 @@ test_enable_disable_provider_config (void)
 		EP_SESSION_TYPE_FILE,
 		EP_SERIALIZATION_FORMAT_NETTRACE_V4,
 		false,
+		NULL,
 		NULL,
 		NULL);
 
@@ -472,6 +562,7 @@ test_enable_disable_provider_parse_default_config (void)
 		EP_SERIALIZATION_FORMAT_NETTRACE_V4,
 		false,
 		NULL,
+		NULL,
 		NULL);
 
 	if (!session_id) {
@@ -542,6 +633,7 @@ test_create_delete_provider_with_callback (void)
 		EP_SESSION_TYPE_FILE,
 		EP_SERIALIZATION_FORMAT_NETTRACE_V4,
 		false,
+		NULL,
 		NULL,
 		NULL);
 
@@ -644,6 +736,7 @@ test_session_start_streaming (void)
 		EP_SERIALIZATION_FORMAT_NETTRACE_V4,
 		false,
 		NULL,
+		NULL,
 		NULL);
 
 	if (!session_id) {
@@ -693,7 +786,7 @@ test_session_write_event (void)
 
 	test_location = 3;
 
-	session_id = ep_enable (TEST_FILE, 1, current_provider_config, 1, EP_SESSION_TYPE_FILE, EP_SERIALIZATION_FORMAT_NETTRACE_V4,false, NULL, NULL);
+	session_id = ep_enable (TEST_FILE, 1, current_provider_config, 1, EP_SESSION_TYPE_FILE, EP_SERIALIZATION_FORMAT_NETTRACE_V4,false, NULL, NULL, NULL);
 	ep_raise_error_if_nok (session_id != 0);
 
 	test_location = 4;
@@ -746,7 +839,7 @@ test_session_write_event_seq_point (void)
 
 	test_location = 3;
 
-	session_id = ep_enable (TEST_FILE, 1, current_provider_config, 1, EP_SESSION_TYPE_FILE, EP_SERIALIZATION_FORMAT_NETTRACE_V4,false, NULL, NULL);
+	session_id = ep_enable (TEST_FILE, 1, current_provider_config, 1, EP_SESSION_TYPE_FILE, EP_SERIALIZATION_FORMAT_NETTRACE_V4, false, NULL, NULL, NULL);
 	ep_raise_error_if_nok (session_id != 0);
 
 	test_location = 4;
@@ -803,7 +896,7 @@ test_session_write_wait_get_next_event (void)
 
 	test_location = 3;
 
-	session_id = ep_enable (TEST_FILE, 1, current_provider_config, 1, EP_SESSION_TYPE_FILE, EP_SERIALIZATION_FORMAT_NETTRACE_V4,false, NULL, NULL);
+	session_id = ep_enable (TEST_FILE, 1, current_provider_config, 1, EP_SESSION_TYPE_FILE, EP_SERIALIZATION_FORMAT_NETTRACE_V4, false, NULL, NULL, NULL);
 	ep_raise_error_if_nok (session_id != 0);
 
 	test_location = 4;
@@ -868,7 +961,7 @@ test_session_write_get_next_event (void)
 
 	test_location = 3;
 
-	session_id = ep_enable (TEST_FILE, 1, current_provider_config, 1, EP_SESSION_TYPE_FILE, EP_SERIALIZATION_FORMAT_NETTRACE_V4,false, NULL, false);
+	session_id = ep_enable (TEST_FILE, 1, current_provider_config, 1, EP_SESSION_TYPE_FILE, EP_SERIALIZATION_FORMAT_NETTRACE_V4, false, NULL, NULL, NULL);
 	ep_raise_error_if_nok (session_id != 0);
 
 	test_location = 4;
@@ -945,7 +1038,7 @@ test_session_write_suspend_event (void)
 
 	test_location = 3;
 
-	session_id = ep_enable (TEST_FILE, 1, current_provider_config, 1, EP_SESSION_TYPE_FILE, EP_SERIALIZATION_FORMAT_NETTRACE_V4,false, NULL, false);
+	session_id = ep_enable (TEST_FILE, 1, current_provider_config, 1, EP_SESSION_TYPE_FILE, EP_SERIALIZATION_FORMAT_NETTRACE_V4, false, NULL, NULL, NULL);
 	ep_raise_error_if_nok (session_id != 0);
 
 	test_location = 4;
@@ -1005,7 +1098,7 @@ test_write_event (void)
 
 	test_location = 3;
 
-	session_id = ep_enable (TEST_FILE, 1, current_provider_config, 1, EP_SESSION_TYPE_FILE, EP_SERIALIZATION_FORMAT_NETTRACE_V4,false, NULL, false);
+	session_id = ep_enable (TEST_FILE, 1, current_provider_config, 1, EP_SESSION_TYPE_FILE, EP_SERIALIZATION_FORMAT_NETTRACE_V4, false, NULL, NULL, NULL);
 	ep_raise_error_if_nok (session_id != 0);
 
 	test_location = 4;
@@ -1056,7 +1149,7 @@ test_write_get_next_event (void)
 
 	test_location = 3;
 
-	session_id = ep_enable (TEST_FILE, 1, current_provider_config, 1, EP_SESSION_TYPE_FILE, EP_SERIALIZATION_FORMAT_NETTRACE_V4,false, NULL, false);
+	session_id = ep_enable (TEST_FILE, 1, current_provider_config, 1, EP_SESSION_TYPE_FILE, EP_SERIALIZATION_FORMAT_NETTRACE_V4, false, NULL, NULL, NULL);
 	ep_raise_error_if_nok (session_id != 0);
 
 	test_location = 4;
@@ -1116,7 +1209,7 @@ test_write_wait_get_next_event (void)
 
 	test_location = 3;
 
-	session_id = ep_enable (TEST_FILE, 1, current_provider_config, 1, EP_SESSION_TYPE_FILE, EP_SERIALIZATION_FORMAT_NETTRACE_V4,false, NULL, false);
+	session_id = ep_enable (TEST_FILE, 1, current_provider_config, 1, EP_SESSION_TYPE_FILE, EP_SERIALIZATION_FORMAT_NETTRACE_V4, false, NULL, NULL, NULL);
 	ep_raise_error_if_nok (session_id != 0);
 
 	session = ep_get_session (session_id);
@@ -1196,7 +1289,7 @@ test_write_event_perf (void)
 
 	test_location = 3;
 
-	session_id = ep_enable (TEST_FILE, 1, current_provider_config, 1, EP_SESSION_TYPE_FILE, EP_SERIALIZATION_FORMAT_NETTRACE_V4,false, NULL, false);
+	session_id = ep_enable (TEST_FILE, 1, current_provider_config, 1, EP_SESSION_TYPE_FILE, EP_SERIALIZATION_FORMAT_NETTRACE_V4, false, NULL, NULL, NULL);
 	ep_raise_error_if_nok (session_id != 0);
 
 	test_location = 4;
@@ -1252,6 +1345,7 @@ test_eventpipe_mem_checkpoint (void)
 #ifdef _CRTDBG_MAP_ALLOC
 	// Need to emulate a thread exit to make sure TLS gets cleaned up for current thread
 	// or we will get memory leaks reported.
+	extern void ep_rt_mono_thread_exited (void);
 	ep_rt_mono_thread_exited ();
 
 	_CrtMemCheckpoint (&eventpipe_memory_end_snapshot);
@@ -1322,6 +1416,7 @@ static Test ep_tests [] = {
 #endif
 	{"test_eventpipe_mem_checkpoint", test_eventpipe_mem_checkpoint},
 	{"test_enable_disable_default_provider_config", test_enable_disable_default_provider_config},
+	{"test_enable_disable_multiple_default_provider_config", test_enable_disable_multiple_default_provider_config},
 	{"test_enable_disable_provider_parse_default_config", test_enable_disable_provider_parse_default_config},
 	{"test_eventpipe_reset_mem_checkpoint", test_eventpipe_reset_mem_checkpoint},
 	{"test_eventpipe_teardown", test_eventpipe_teardown},

@@ -67,7 +67,7 @@ namespace System.Linq.Expressions.Interpreter
         public override string ToString() => "New " + _constructor.DeclaringType!.Name + "(" + _constructor + ")";
     }
 
-    internal class ByRefNewInstruction : NewInstruction
+    internal sealed class ByRefNewInstruction : NewInstruction
     {
         private readonly ByRefUpdater[] _byrefArgs;
 

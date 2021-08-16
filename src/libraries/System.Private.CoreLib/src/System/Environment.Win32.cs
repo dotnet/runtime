@@ -56,7 +56,7 @@ namespace System
                 fixed (char* lParam = "Environment")
                 {
                     IntPtr r = Interop.User32.SendMessageTimeout(new IntPtr(Interop.User32.HWND_BROADCAST), Interop.User32.WM_SETTINGCHANGE, IntPtr.Zero, (IntPtr)lParam, 0, 1000, out IntPtr _);
-                    Debug.Assert(r != IntPtr.Zero, "SetEnvironmentVariable failed: " + Marshal.GetLastWin32Error());
+                    Debug.Assert(r != IntPtr.Zero, $"SetEnvironmentVariable failed: {Marshal.GetLastPInvokeError()}");
                 }
             }
         }
@@ -139,7 +139,7 @@ namespace System
             uint size = 0;
             while (Interop.Secur32.GetUserNameExW(Interop.Secur32.NameSamCompatible, ref builder.GetPinnableReference(), ref size) == Interop.BOOLEAN.FALSE)
             {
-                if (Marshal.GetLastWin32Error() == Interop.Errors.ERROR_MORE_DATA)
+                if (Marshal.GetLastPInvokeError() == Interop.Errors.ERROR_MORE_DATA)
                 {
                     builder.EnsureCapacity(checked((int)size));
                 }
@@ -186,7 +186,7 @@ namespace System
                 while (!Interop.Advapi32.LookupAccountNameW(null, ref builder.GetPinnableReference(), ref MemoryMarshal.GetReference(sid),
                     ref sidLength, ref domainBuilder.GetPinnableReference(), ref length, out _))
                 {
-                    int error = Marshal.GetLastWin32Error();
+                    int error = Marshal.GetLastPInvokeError();
 
                     // The docs don't call this out clearly, but experimenting shows that the error returned is the following.
                     if (error != Interop.Errors.ERROR_INSUFFICIENT_BUFFER)

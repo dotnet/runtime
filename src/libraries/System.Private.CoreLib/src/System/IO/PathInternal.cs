@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#nullable enable
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Text;
@@ -246,5 +245,13 @@ namespace System.IO
         /// </summary>
         internal static bool EndsInDirectorySeparator(ReadOnlySpan<char> path) =>
             path.Length > 0 && IsDirectorySeparator(path[path.Length - 1]);
+
+        internal static string GetLinkTargetFullPath(string path, string pathToTarget)
+            => IsPartiallyQualified(pathToTarget.AsSpan()) ?
+#if MS_IO_REDIST
+                Path.Combine(Path.GetDirectoryName(path), pathToTarget) : pathToTarget;
+#else
+                Path.Join(Path.GetDirectoryName(path.AsSpan()), pathToTarget.AsSpan()) : pathToTarget;
+#endif
     }
 }

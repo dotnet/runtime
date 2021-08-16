@@ -4,6 +4,7 @@
 using System.Collections;
 using System.ComponentModel.Design;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 
 namespace System.ComponentModel
@@ -57,18 +58,23 @@ namespace System.ComponentModel
     /// </summary>
     internal sealed class ReflectEventDescriptor : EventDescriptor
     {
-        private Type _type;           // the delegate type for the event
+        private Type? _type;           // the delegate type for the event
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
         private readonly Type _componentClass; // the class of the component this info is for
 
-        private MethodInfo _addMethod;     // the method to use when adding an event
-        private MethodInfo _removeMethod;  // the method to use when removing an event
-        private EventInfo _realEvent;      // actual event info... may be null
+        private MethodInfo? _addMethod;     // the method to use when adding an event
+        private MethodInfo? _removeMethod;  // the method to use when removing an event
+        private EventInfo? _realEvent;      // actual event info... may be null
         private bool _filledMethods;   // did we already call FillMethods() once?
 
         /// <summary>
         /// This is the main constructor for an ReflectEventDescriptor.
         /// </summary>
-        public ReflectEventDescriptor(Type componentClass, string name, Type type, Attribute[] attributes)
+        public ReflectEventDescriptor(
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type componentClass,
+            string name,
+            Type type,
+            Attribute[] attributes)
             : base(name, attributes)
         {
             if (componentClass == null)
@@ -84,9 +90,13 @@ namespace System.ComponentModel
             _type = type;
         }
 
-        public ReflectEventDescriptor(Type componentClass, EventInfo eventInfo)
+        public ReflectEventDescriptor(
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type componentClass,
+            EventInfo eventInfo)
             : base(eventInfo.Name, Array.Empty<Attribute>())
         {
+            Debug.Assert(eventInfo.ReflectedType!.IsAssignableFrom(componentClass), "eventInfo.ReflectedType is used below, but only componentClass is annotated with DynamicallyAccessedMembers. Ensure ReflectedType is in componentClass's hierarchy.");
+
             _componentClass = componentClass ?? throw new ArgumentException(SR.Format(SR.InvalidNullArgument, nameof(componentClass)));
             _realEvent = eventInfo;
         }
@@ -95,7 +105,10 @@ namespace System.ComponentModel
         /// This constructor takes an existing ReflectEventDescriptor and modifies it by merging in the
         /// passed-in attributes.
         /// </summary>
-        public ReflectEventDescriptor(Type componentType, EventDescriptor oldReflectEventDescriptor, Attribute[] attributes)
+        public ReflectEventDescriptor(
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type componentType,
+            EventDescriptor oldReflectEventDescriptor,
+            Attribute[] attributes)
             : base(oldReflectEventDescriptor, attributes)
         {
             _componentClass = componentType;
@@ -122,7 +135,7 @@ namespace System.ComponentModel
             get
             {
                 FillMethods();
-                return _type;
+                return _type!;
             }
         }
 
@@ -141,13 +154,13 @@ namespace System.ComponentModel
 
             if (component != null)
             {
-                ISite site = GetSite(component);
-                IComponentChangeService changeService = null;
+                ISite? site = GetSite(component);
+                IComponentChangeService? changeService = null;
 
                 // Announce that we are about to change this component
                 if (site != null)
                 {
-                    changeService = (IComponentChangeService)site.GetService(typeof(IComponentChangeService));
+                    changeService = (IComponentChangeService?)site.GetService(typeof(IComponentChangeService));
                 }
 
                 if (changeService != null)
@@ -176,10 +189,10 @@ namespace System.ComponentModel
                     {
                         throw new ArgumentException(SR.Format(SR.ErrorInvalidEventHandler, Name));
                     }
-                    IDictionaryService dict = (IDictionaryService)site.GetService(typeof(IDictionaryService));
+                    IDictionaryService? dict = (IDictionaryService?)site.GetService(typeof(IDictionaryService));
                     if (dict != null)
                     {
-                        Delegate eventdesc = (Delegate)dict.GetValue(this);
+                        Delegate? eventdesc = (Delegate?)dict.GetValue(this);
                         eventdesc = Delegate.Combine(eventdesc, value);
                         dict.SetValue(this, eventdesc);
                         shadowed = true;
@@ -188,7 +201,7 @@ namespace System.ComponentModel
 
                 if (!shadowed)
                 {
-                    _addMethod.Invoke(component, new[] { value });
+                    _addMethod!.Invoke(component, new[] { value });
                 }
 
                 // Now notify the change service that the change was successful.
@@ -234,12 +247,15 @@ namespace System.ComponentModel
             base.FillAttributes(attributes);
         }
 
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2075:UnrecognizedReflectionPattern",
+            Justification = "currentReflectType is in _componentClass's hierarchy. Since _componentClass is annotated with All, this means currentReflectType is annotated with All as well.")]
         private void FillEventInfoAttribute(EventInfo realEventInfo, IList attributes)
         {
             string eventName = realEventInfo.Name;
             BindingFlags bindingFlags = BindingFlags.Instance | BindingFlags.Public | BindingFlags.DeclaredOnly;
-            Type currentReflectType = realEventInfo.ReflectedType;
+            Type currentReflectType = realEventInfo.ReflectedType!;
             Debug.Assert(currentReflectType != null, "currentReflectType cannot be null");
+            Debug.Assert(currentReflectType.IsAssignableFrom(_componentClass), "currentReflectType must be in _componentClass's hierarchy");
             int depth = 0;
 
             // First, calculate the depth of the object hierarchy. We do this so we can do a single
@@ -247,19 +263,19 @@ namespace System.ComponentModel
             while (currentReflectType != typeof(object))
             {
                 depth++;
-                currentReflectType = currentReflectType.BaseType;
+                currentReflectType = currentReflectType.BaseType!;
             }
 
             if (depth > 0)
             {
                 // Now build up an array in reverse order
-                currentReflectType = realEventInfo.ReflectedType;
+                currentReflectType = realEventInfo.ReflectedType!;
                 Attribute[][] attributeStack = new Attribute[depth][];
 
                 while (currentReflectType != typeof(object))
                 {
                     // Fill in our member info so we can get at the custom attributes.
-                    MemberInfo memberInfo = currentReflectType.GetEvent(eventName, bindingFlags);
+                    MemberInfo? memberInfo = currentReflectType!.GetEvent(eventName, bindingFlags);
 
                     // Get custom attributes for the member info.
                     if (memberInfo != null)
@@ -268,7 +284,7 @@ namespace System.ComponentModel
                     }
 
                     // Ready for the next loop iteration.
-                    currentReflectType = currentReflectType.BaseType;
+                    currentReflectType = currentReflectType.BaseType!;
                 }
 
                 // Now trawl the attribute stack so that we add attributes
@@ -292,22 +308,23 @@ namespace System.ComponentModel
         /// </summary>
         private void FillMethods()
         {
-            if (_filledMethods) return;
+            if (_filledMethods)
+                return;
 
             if (_realEvent != null)
             {
                 _addMethod = _realEvent.GetAddMethod();
                 _removeMethod = _realEvent.GetRemoveMethod();
 
-                EventInfo defined = null;
+                EventInfo? defined = null;
 
                 if (_addMethod == null || _removeMethod == null)
                 {
-                    Type start = _componentClass.BaseType;
+                    Type? start = _componentClass.BaseType;
                     while (start != null && start != typeof(object))
                     {
                         BindingFlags bindingFlags = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic;
-                        EventInfo test = start.GetEvent(_realEvent.Name, bindingFlags);
+                        EventInfo test = start.GetEvent(_realEvent.Name, bindingFlags)!;
                         if (test.GetAddMethod() != null)
                         {
                             defined = test;
@@ -338,7 +355,7 @@ namespace System.ComponentModel
                     return;
                 }
 
-                Type[] argsType = new Type[] { _type };
+                Type[] argsType = new Type[] { _type! };
                 _addMethod = FindMethod(_componentClass, "AddOn" + Name, argsType, typeof(void));
                 _removeMethod = FindMethod(_componentClass, "RemoveOn" + Name, argsType, typeof(void));
                 if (_addMethod == null || _removeMethod == null)
@@ -351,12 +368,15 @@ namespace System.ComponentModel
             _filledMethods = true;
         }
 
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2075:UnrecognizedReflectionPattern",
+            Justification = "currentReflectType is in _componentClass's hierarchy. Since _componentClass is annotated with All, this means currentReflectType is annotated with All as well.")]
         private void FillSingleMethodAttribute(MethodInfo realMethodInfo, IList attributes)
         {
             string methodName = realMethodInfo.Name;
             BindingFlags bindingFlags = BindingFlags.Instance | BindingFlags.Public | BindingFlags.DeclaredOnly;
-            Type currentReflectType = realMethodInfo.ReflectedType;
+            Type? currentReflectType = realMethodInfo.ReflectedType;
             Debug.Assert(currentReflectType != null, "currentReflectType cannot be null");
+            Debug.Assert(currentReflectType.IsAssignableFrom(_componentClass), "currentReflectType must be in _componentClass's hierarchy");
 
             // First, calculate the depth of the object hierarchy. We do this so we can do a single
             // object create for an array of attributes.
@@ -378,7 +398,7 @@ namespace System.ComponentModel
                 while (currentReflectType != null && currentReflectType != typeof(object))
                 {
                     // Fill in our member info so we can get at the custom attributes.
-                    MemberInfo memberInfo = currentReflectType.GetMethod(methodName, bindingFlags);
+                    MemberInfo? memberInfo = currentReflectType.GetMethod(methodName, bindingFlags);
 
                     // Get custom attributes for the member info.
                     if (memberInfo != null)
@@ -415,13 +435,13 @@ namespace System.ComponentModel
 
             if (component != null)
             {
-                ISite site = GetSite(component);
-                IComponentChangeService changeService = null;
+                ISite? site = GetSite(component);
+                IComponentChangeService? changeService = null;
 
                 // Announce that we are about to change this component
                 if (site != null)
                 {
-                    changeService = (IComponentChangeService)site.GetService(typeof(IComponentChangeService));
+                    changeService = (IComponentChangeService?)site.GetService(typeof(IComponentChangeService));
                 }
 
                 if (changeService != null)
@@ -445,10 +465,10 @@ namespace System.ComponentModel
 
                 if (site != null && site.DesignMode)
                 {
-                    IDictionaryService dict = (IDictionaryService)site.GetService(typeof(IDictionaryService));
+                    IDictionaryService? dict = (IDictionaryService?)site.GetService(typeof(IDictionaryService));
                     if (dict != null)
                     {
-                        Delegate del = (Delegate)dict.GetValue(this);
+                        Delegate? del = (Delegate?)dict.GetValue(this);
                         del = Delegate.Remove(del, value);
                         dict.SetValue(this, del);
                         shadowed = true;
@@ -457,7 +477,7 @@ namespace System.ComponentModel
 
                 if (!shadowed)
                 {
-                    _removeMethod.Invoke(component, new[] { value });
+                    _removeMethod!.Invoke(component, new[] { value });
                 }
 
                 // Now notify the change service that the change was successful.

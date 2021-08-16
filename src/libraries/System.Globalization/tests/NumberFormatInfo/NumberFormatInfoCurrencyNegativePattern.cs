@@ -30,9 +30,9 @@ namespace System.Globalization.Tests
             yield return new object[] { "fr-CD" };
             yield return new object[] { "fr-CA" };
 
-            if (PlatformDetection.IsNotBrowser)
+            if (PlatformDetection.IsNotUsingLimitedCultures)
             {
-                // Browser's ICU doesn't contain these locales
+                // ICU for mobile / browser do not contain these locales
                 yield return new object[] { "as" };
                 yield return new object[] { "es-BO" };
             }

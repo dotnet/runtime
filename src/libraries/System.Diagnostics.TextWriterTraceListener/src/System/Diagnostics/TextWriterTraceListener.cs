@@ -240,7 +240,7 @@ namespace System.Diagnostics
                     }
                     catch (IOException)
                     {
-                        fileNameOnly = Guid.NewGuid().ToString() + fileNameOnly;
+                        fileNameOnly = $"{Guid.NewGuid()}{fileNameOnly}";
                         fullPath = Path.Combine(dirPath, fileNameOnly);
                         continue;
                     }

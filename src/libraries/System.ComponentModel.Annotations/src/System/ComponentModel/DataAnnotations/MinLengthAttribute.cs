@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 
 namespace System.ComponentModel.DataAnnotations
@@ -19,6 +20,7 @@ namespace System.ComponentModel.DataAnnotations
         ///     The minimum allowable length of collection/string data.
         ///     Value must be greater than or equal to zero.
         /// </param>
+        [RequiresUnreferencedCode(CountPropertyHelper.RequiresUnreferencedCodeMessage)]
         public MinLengthAttribute(int length)
             : base(SR.MinLengthAttribute_ValidationError)
         {
@@ -43,6 +45,7 @@ namespace System.ComponentModel.DataAnnotations
         ///     <c>false</c>
         /// </returns>
         /// <exception cref="InvalidOperationException">Length is less than zero.</exception>
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode", Justification = "The ctor is marked with RequiresUnreferencedCode.")]
         public override bool IsValid(object? value)
         {
             // Check the lengths for legality

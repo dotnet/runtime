@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.Build.NoTargets">
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <IsPackable>true</IsPackable>
+    <!-- Reference the outputs for the dependency nodes calculation. -->
+    <NoTargetsDoNotReferenceOutputAssemblies>false</NoTargetsDoNotReferenceOutputAssemblies>
+    <!-- This is a meta package and doesn't contain any libs. -->
+    <NoWarn>$(NoWarn);NU5128</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Listing the runtime specific packages to populate the dependencies section.
+         Not building these references to avoid unintentional Build/Pack invocations.
+         They are filtered in the traversal build in src.proj based on the OutputRid. -->
+    <ProjectReference Include="$(MSBuildThisFileDirectory)*.proj" Exclude="$(MSBuildProjectFile)" BuildReference="false" />
+  </ItemGroup>
+</Project>

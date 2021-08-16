@@ -312,7 +312,7 @@ namespace System.Threading.Tasks.Dataflow.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop] // spins waiting for a condition to be true, though it should happen very quickly
         public async Task TestCount()
         {

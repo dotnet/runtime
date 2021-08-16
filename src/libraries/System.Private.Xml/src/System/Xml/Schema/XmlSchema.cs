@@ -10,6 +10,7 @@ namespace System.Xml.Schema
     using System.Threading;
     using System.Diagnostics;
     using System.Collections.Generic;
+    using System.Diagnostics.CodeAnalysis;
 
     [XmlRoot("schema", Namespace = XmlSchema.Namespace)]
     public class XmlSchema : XmlSchemaObject
@@ -88,11 +89,13 @@ namespace System.Xml.Schema
             return parser.XmlSchema;
         }
 
+        [RequiresUnreferencedCode(XmlSerializer.TrimSerializationWarning)]
         public void Write(Stream stream)
         {
             Write(stream, null);
         }
 
+        [RequiresUnreferencedCode(XmlSerializer.TrimSerializationWarning)]
         public void Write(Stream stream, XmlNamespaceManager? namespaceManager)
         {
             XmlTextWriter xmlWriter = new XmlTextWriter(stream, null);
@@ -100,11 +103,13 @@ namespace System.Xml.Schema
             Write(xmlWriter, namespaceManager);
         }
 
+        [RequiresUnreferencedCode(XmlSerializer.TrimSerializationWarning)]
         public void Write(TextWriter writer)
         {
             Write(writer, null);
         }
 
+        [RequiresUnreferencedCode(XmlSerializer.TrimSerializationWarning)]
         public void Write(TextWriter writer, XmlNamespaceManager? namespaceManager)
         {
             XmlTextWriter xmlWriter = new XmlTextWriter(writer);
@@ -112,11 +117,17 @@ namespace System.Xml.Schema
             Write(xmlWriter, namespaceManager);
         }
 
+        [RequiresUnreferencedCode(XmlSerializer.TrimSerializationWarning)]
         public void Write(XmlWriter writer)
         {
             Write(writer, null);
         }
 
+        [DynamicDependency(TrimmerConstants.PublicMembers, typeof(XmlSchema))]
+        // This method may be safe given the above Dynamic Dependency but it is not yet fully understood if just preserving
+        // all of XmlSchema public members is enough in order to be safe in all cases, so we have opted to keep the RequiresUnreferencedCode
+        // attribute for now. This can be removed in the future if it is determined that the above is enough for all scenarios to be trim-safe.
+        [RequiresUnreferencedCode(XmlSerializer.TrimSerializationWarning)]
         public void Write(XmlWriter writer, XmlNamespaceManager? namespaceManager)
         {
             XmlSerializer serializer = new XmlSerializer(typeof(XmlSchema));
@@ -128,7 +139,7 @@ namespace System.Xml.Schema
                 bool ignoreXS = false;
                 if (this.Namespaces != null)
                 { //User may have set both nsManager and Namespaces property on the XmlSchema object
-                    ignoreXS = this.Namespaces.Namespaces.ContainsKey("xs") || this.Namespaces.Namespaces.ContainsValue(XmlReservedNs.NsXs);
+                    ignoreXS = this.Namespaces.TryLookupPrefix("xs", out string? p) || this.Namespaces.TryLookupNamespace(XmlReservedNs.NsXs, out string? n);
                 }
                 if (!ignoreXS && namespaceManager.LookupPrefix(XmlReservedNs.NsXs) == null &&
                     namespaceManager.LookupNamespace("xs") == null)
@@ -145,10 +156,9 @@ namespace System.Xml.Schema
             }
             else if (this.Namespaces != null && this.Namespaces.Count > 0)
             {
-                Dictionary<string, string?> serializerNS = this.Namespaces.Namespaces;
-                if (!serializerNS.ContainsKey("xs") && !serializerNS.ContainsValue(XmlReservedNs.NsXs))
+                if (!this.Namespaces.TryLookupPrefix("xs", out string? p) && !this.Namespaces.TryLookupNamespace(XmlReservedNs.NsXs, out string? n))
                 { //Prefix xs not defined AND schema namespace not already mapped to a prefix
-                    serializerNS.Add("xs", XmlReservedNs.NsXs);
+                    this.Namespaces.Add("xs", XmlReservedNs.NsXs);
                 }
                 ns = this.Namespaces;
             }
@@ -164,7 +174,7 @@ namespace System.Xml.Schema
             serializer.Serialize(writer, this, ns);
         }
 
-        [Obsolete("Use System.Xml.Schema.XmlSchemaSet for schema compilation and validation. https://go.microsoft.com/fwlink/?linkid=14202")]
+        [Obsolete("XmlSchema.Compile has been deprecated. Use System.Xml.Schema.XmlSchemaSet for schema compilation and validation instead.")]
         public void Compile(ValidationEventHandler? validationEventHandler)
         {
             SchemaInfo sInfo = new SchemaInfo();
@@ -172,7 +182,7 @@ namespace System.Xml.Schema
             CompileSchema(null, null, sInfo, null, validationEventHandler, NameTable, false);
         }
 
-        [Obsolete("Use System.Xml.Schema.XmlSchemaSet for schema compilation and validation. https://go.microsoft.com/fwlink/?linkid=14202")]
+        [Obsolete("XmlSchema.Compile has been deprecated. Use System.Xml.Schema.XmlSchemaSet for schema compilation and validation instead.")]
         public void Compile(ValidationEventHandler? validationEventHandler, XmlResolver? resolver)
         {
             SchemaInfo sInfo = new SchemaInfo();

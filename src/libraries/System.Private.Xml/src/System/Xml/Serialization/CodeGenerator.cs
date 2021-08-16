@@ -21,15 +21,15 @@ using System.Xml.Extensions;
 
 namespace System.Xml.Serialization
 {
-    internal class CodeGenerator
+    internal sealed class CodeGenerator
     {
-        internal static BindingFlags InstancePublicBindingFlags = BindingFlags.Instance | BindingFlags.Public;
-        internal static BindingFlags InstanceBindingFlags = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic;
-        internal static BindingFlags StaticBindingFlags = BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic;
-        internal static MethodAttributes PublicMethodAttributes = MethodAttributes.Public | MethodAttributes.HideBySig;
-        internal static MethodAttributes PublicOverrideMethodAttributes = MethodAttributes.Public | MethodAttributes.Virtual | MethodAttributes.HideBySig;
-        internal static MethodAttributes ProtectedOverrideMethodAttributes = MethodAttributes.Family | MethodAttributes.Virtual | MethodAttributes.HideBySig;
-        internal static MethodAttributes PrivateMethodAttributes = MethodAttributes.Private | MethodAttributes.HideBySig;
+        internal const BindingFlags InstancePublicBindingFlags = BindingFlags.Instance | BindingFlags.Public;
+        internal const BindingFlags InstanceBindingFlags = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic;
+        internal const BindingFlags StaticBindingFlags = BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic;
+        internal const MethodAttributes PublicMethodAttributes = MethodAttributes.Public | MethodAttributes.HideBySig;
+        internal const MethodAttributes PublicOverrideMethodAttributes = MethodAttributes.Public | MethodAttributes.Virtual | MethodAttributes.HideBySig;
+        internal const MethodAttributes ProtectedOverrideMethodAttributes = MethodAttributes.Family | MethodAttributes.Virtual | MethodAttributes.HideBySig;
+        internal const MethodAttributes PrivateMethodAttributes = MethodAttributes.Private | MethodAttributes.HideBySig;
 
         private readonly TypeBuilder _typeBuilder;
         private MethodBuilder? _methodBuilder;
@@ -53,9 +53,11 @@ namespace System.Xml.Serialization
             return type.Name == "Nullable`1";
         }
 
+        [Conditional("DEBUG")]
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2070:UnrecognizedReflectionPattern",
+            Justification = "Debug only code, we don't ship debug binaries.")]
         internal static void AssertHasInterface(Type type, Type iType)
         {
-#if DEBUG
             Debug.Assert(iType.IsInterface);
             foreach (Type iFace in type.GetInterfaces())
             {
@@ -63,7 +65,6 @@ namespace System.Xml.Serialization
                     return;
             }
             Debug.Fail("Interface not found");
-#endif
         }
 
         internal void BeginMethod(Type returnType, string methodName, Type[] argTypes, string[] argNames, MethodAttributes methodAttributes)
@@ -475,6 +476,7 @@ namespace System.Xml.Serialization
             return objType.IsValueType && !objType.IsPrimitive;
         }
 
+        [RequiresUnreferencedCode("calls LoadMember")]
         internal Type LoadMember(object obj, MemberInfo memberInfo)
         {
             if (GetVariableType(obj).IsValueType)
@@ -484,6 +486,7 @@ namespace System.Xml.Serialization
             return LoadMember(memberInfo);
         }
 
+        [RequiresUnreferencedCode("GetProperty on PropertyInfo type's base type")]
         private static MethodInfo? GetPropertyMethodFromBaseType(PropertyInfo propertyInfo, bool isGetter)
         {
             // we only invoke this when the propertyInfo does not have a GET or SET method on it
@@ -522,6 +525,7 @@ namespace System.Xml.Serialization
             return result;
         }
 
+        [RequiresUnreferencedCode("calls GetPropertyMethodFromBaseType")]
         internal Type LoadMember(MemberInfo memberInfo)
         {
             Type? memberType = null;
@@ -560,6 +564,7 @@ namespace System.Xml.Serialization
             return memberType;
         }
 
+        [RequiresUnreferencedCode("calls GetPropertyMethodFromBaseType")]
         internal Type LoadMemberAddress(MemberInfo memberInfo)
         {
             Type? memberType = null;
@@ -602,6 +607,7 @@ namespace System.Xml.Serialization
             return memberType;
         }
 
+        [RequiresUnreferencedCode("calls GetPropertyMethodFromBaseType")]
         internal void StoreMember(MemberInfo memberInfo)
         {
             if (memberInfo is FieldInfo)
@@ -845,6 +851,19 @@ namespace System.Xml.Serialization
                             )!;
                             Ldc(((TimeSpan)o).Ticks); // ticks
                             New(TimeSpan_ctor);
+                            break;
+                        }
+                        else if (valueType == typeof(DateTimeOffset))
+                        {
+                            ConstructorInfo DateTimeOffset_ctor = typeof(DateTimeOffset).GetConstructor(
+                            CodeGenerator.InstanceBindingFlags,
+                            null,
+                            new Type[] { typeof(long), typeof(TimeSpan) },
+                            null
+                            )!;
+                            Ldc(((DateTimeOffset)o).Ticks); // ticks
+                            Ldc(((DateTimeOffset)o).Offset); // offset
+                            New(DateTimeOffset_ctor);
                             break;
                         }
                         else
@@ -1242,7 +1261,13 @@ namespace System.Xml.Serialization
         {
             return assemblyBuilder.DefineDynamicModule(name);
         }
-        internal static TypeBuilder CreateTypeBuilder(ModuleBuilder moduleBuilder, string name, TypeAttributes attributes, Type parent, Type[] interfaces)
+
+        internal static TypeBuilder CreateTypeBuilder(
+            ModuleBuilder moduleBuilder,
+            string name,
+            TypeAttributes attributes,
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type parent,
+            Type[] interfaces)
         {
             // parent is nullable if no base class
             return moduleBuilder.DefineType(TempAssembly.GeneratedAssemblyNamespace + "." + name,
@@ -1331,7 +1356,7 @@ namespace System.Xml.Serialization
             Br(_methodEndLabel);
         }
 
-        internal class WhileState
+        internal sealed class WhileState
         {
             public Label StartLabel;
             public Label CondLabel;
@@ -1399,7 +1424,7 @@ namespace System.Xml.Serialization
     }
 
 
-    internal class ArgBuilder
+    internal sealed class ArgBuilder
     {
         internal string Name;
         internal int Index;
@@ -1412,7 +1437,7 @@ namespace System.Xml.Serialization
         }
     }
 
-    internal class ForState
+    internal sealed class ForState
     {
         private readonly LocalBuilder _indexVar;
         private readonly Label _beginLabel;
@@ -1470,7 +1495,7 @@ namespace System.Xml.Serialization
         GreaterThanOrEqualTo
     }
 
-    internal class IfState
+    internal sealed class IfState
     {
         private Label _elseBegin;
         private Label _endIf;
@@ -1500,7 +1525,7 @@ namespace System.Xml.Serialization
         }
     }
 
-    internal class LocalScope
+    internal sealed class LocalScope
     {
         public readonly LocalScope? parent;
         private readonly Dictionary<string, LocalBuilder> _locals;
@@ -1575,7 +1600,7 @@ namespace System.Xml.Serialization
         }
     }
 
-    internal class MethodBuilderInfo
+    internal sealed class MethodBuilderInfo
     {
         public readonly MethodBuilder MethodBuilder;
         public readonly Type[] ParameterTypes;
@@ -1599,7 +1624,7 @@ namespace System.Xml.Serialization
         }
     }
 
-    internal class CodeGeneratorConversionException : Exception
+    internal sealed class CodeGeneratorConversionException : Exception
     {
         private readonly Type _sourceType;
         private readonly Type _targetType;

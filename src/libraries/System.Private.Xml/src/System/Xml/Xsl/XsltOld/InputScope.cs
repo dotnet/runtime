@@ -9,7 +9,7 @@ namespace System.Xml.Xsl.XsltOld
     using System.Xml.XPath;
     using System.Collections;
 
-    internal class InputScope : DocumentScope
+    internal sealed class InputScope : DocumentScope
     {
         private InputScope? _parent;
         private bool _forwardCompatibility;

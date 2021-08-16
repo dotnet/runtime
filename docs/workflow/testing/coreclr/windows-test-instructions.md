@@ -9,6 +9,28 @@ Building coreclr tests must be done using a specific script as follows:
 src\tests\build.cmd
 ```
 
+By default, the test build uses Release as the libraries configuration. To use a different configuration, set the `LibrariesConfiguration` property to the desired configuration. For example:
+
+```
+src\tests\build.cmd /p:LibrariesConfiguration=Debug
+```
+
+## Building Native Test Components
+
+Sometimes you want to only build the native test components instead of the managed and native components. To build the native test components only, pass the `skipmanaged` and `skipgeneratelayout` parameters to the build script as follows:
+
+```
+src\tests\build.cmd skipmanaged skipgeneratelayout
+```
+
+## Building C++/CLI native test components against the live ref assemblies
+
+By default, the C++/CLI native test components build against the ref pack from the SDK specified in the `global.json` file in the root of the repository. To build these components against the ref assemblies produced in the build, pass the `-cmakeargs -DCPP_CLI_LIVE_REF_ASSEMBLIES=1` parameters to the test build. For example:
+
+```
+src\tests\build.cmd skipmanaged -cmakeargs -DCPP_CLI_LIVE_REF_ASSEMBLIES=1
+```
+
 ## Building Precompiled Tests
 
 ```
@@ -54,6 +76,39 @@ For additional supported parameters use the following:
 ```
 src\tests\build.cmd -?
 ```
+
+## Building Test Subsets
+
+The `src\tests\build.cmd` script supports three options that let you limit the set of tests to build;
+when none of these is specified, the entire test tree (under `src\tests`) gets built but that can be
+lengthy (especially in `-priority=1` mode) and unnecessary when working on a particular test.
+
+1) `test <test-project>` - build a particular test project specified by its project file path,
+either absolute or relative to `src\tests`. The option can be specified multiple times on the command
+line to request building several individual projects; alternatively, a single occurrence of the option
+can represent several project paths separated by semicolons.
+
+**Example**: `src\tests\build.cmd test JIT/Methodical/divrem/div/i4div_cs_do.csproj;JIT/Methodical/divrem/div/i8div_cs_do.csproj`
+
+2) `dir <test-folder>` - build all test projects within a given directory path, either absolute
+or relative to `src\tests`. The option can be specified multiple times on the command line to request
+building projects in several folders; alternatively, a single instance of the option
+can represent several project folders separated by semicolons.
+
+**Example**: `src\tests\build.cmd dir JIT/Methodical/Arrays/huge;JIT/Methodical/divrem/div`
+
+3) `tree <root-folder>` - build all test projects within the subtree specified by its root path,
+either absolute or relative to `src\tests`. The option can be specified multiple times on the command
+line to request building projects in several subtrees; alternatively, a single instance of the option
+can represent several project subtree root folder paths separated by semicolons.
+
+**Example**: `src\tests\build.cmd tree baseservices/exceptions;JIT/Methodical`
+
+**Please note** that priority filtering is orthogonal to specifying test subsets; even when you request
+building a particular test and the test is Pri1, you need to specify `-priority=1` in the command line,
+otherwise the test build will get skipped. While somewhat unintuitive, 'fixing' this ad hoc would likely
+create more harm than good and we're hoping to ultimately get rid of the test priorities in the long term
+anyway.
 
 ## Building Individual Tests
 

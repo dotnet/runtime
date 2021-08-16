@@ -10,6 +10,7 @@
 #define FASTLOOP
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 
 using Internal.Runtime.CompilerServices;
@@ -1739,9 +1740,7 @@ namespace System.Text
             if (decoder != null)
             {
                 Debug.Assert(!decoder.MustFlush || ((lastChar == (char)0) && (lastByte == -1)),
-                    "[UnicodeEncoding.GetChars] Expected no left over chars or bytes if flushing"
-                    // + " " + ((int)lastChar).ToString("X4") + " " + lastByte.ToString("X2")
-                    );
+                    "[UnicodeEncoding.GetChars] Expected no left over chars or bytes if flushing");
 
                 decoder._bytesUsed = (int)(bytes - byteStart);
                 decoder.lastChar = lastChar;
@@ -1829,7 +1828,7 @@ namespace System.Text
             return (int)charCount;
         }
 
-        public override bool Equals(object? value)
+        public override bool Equals([NotNullWhen(true)] object? value)
         {
             if (value is UnicodeEncoding that)
             {

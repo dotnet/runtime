@@ -8,7 +8,7 @@ using System.Threading;
 
 namespace System.ComponentModel.Composition.ReflectionModel
 {
-    internal class ExportingMember
+    internal sealed class ExportingMember
     {
         private readonly ExportDefinition _definition;
         private readonly ReflectionMember _member;

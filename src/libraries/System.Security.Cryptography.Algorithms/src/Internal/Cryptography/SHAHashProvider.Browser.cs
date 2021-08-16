@@ -4,8 +4,8 @@
 using System;
 using System.IO;
 using System.Diagnostics;
-using System.Numerics;
 using System.Security.Cryptography;
+using static System.Numerics.BitOperations;
 
 namespace Internal.Cryptography
 {
@@ -74,6 +74,12 @@ namespace Internal.Cryptography
 
         public override int HashSizeInBytes => hashSizeInBytes;
 
+        public override void Reset()
+        {
+            buffer = null;
+            impl.Initialize();
+        }
+
         public override void Dispose(bool disposing)
         {
         }
@@ -85,7 +91,7 @@ namespace Internal.Cryptography
             public abstract byte[] HashFinal();
         }
 
-        private class SHA1ManagedImplementation : SHAManagedImplementationBase
+        private sealed class SHA1ManagedImplementation : SHAManagedImplementationBase
         {
             // It's ok to use a "non-secret purposes" hashing implementation here, as this is only
             // used in wasm scenarios, and as of the current release we don't make any security guarantees
@@ -112,7 +118,7 @@ namespace Internal.Cryptography
         }
 
         // ported from https://github.com/microsoft/referencesource/blob/a48449cb48a9a693903668a71449ac719b76867c/mscorlib/system/security/cryptography/sha256managed.cs
-        private class SHA256ManagedImplementation : SHAManagedImplementationBase
+        private sealed class SHA256ManagedImplementation : SHAManagedImplementationBase
         {
             private byte[] _buffer;
             private long _count; // Number of bytes in the hashed message
@@ -336,11 +342,6 @@ namespace Internal.Cryptography
                 state[7] += h;
             }
 
-            private static uint RotateRight(uint x, int n)
-            {
-                return (((x) >> (n)) | ((x) << (32 - (n))));
-            }
-
             private static uint Ch(uint x, uint y, uint z)
             {
                 return ((x & y) ^ ((x ^ 0xffffffff) & z));
@@ -384,7 +385,7 @@ namespace Internal.Cryptography
         }
 
         // ported from https://github.com/microsoft/referencesource/blob/a48449cb48a9a693903668a71449ac719b76867c/mscorlib/system/security/cryptography/sha384managed.cs
-        private class SHA384ManagedImplementation : SHAManagedImplementationBase
+        private sealed class SHA384ManagedImplementation : SHAManagedImplementationBase
         {
             private byte[] _buffer;
             private ulong _count; // Number of bytes in the hashed message
@@ -671,7 +672,7 @@ namespace Internal.Cryptography
         }
 
         // ported from https://github.com/microsoft/referencesource/blob/a48449cb48a9a693903668a71449ac719b76867c/mscorlib/system/security/cryptography/sha512managed.cs
-        private class SHA512ManagedImplementation : SHAManagedImplementationBase
+        private sealed class SHA512ManagedImplementation : SHAManagedImplementationBase
         {
             private byte[] _buffer;
             private ulong _count; // Number of bytes in the hashed message
@@ -911,11 +912,6 @@ namespace Internal.Cryptography
                 state[7] += h;
             }
 
-            private static ulong RotateRight(ulong x, int n)
-            {
-                return (((x) >> (n)) | ((x) << (64 - (n))));
-            }
-
             private static ulong Ch(ulong x, ulong y, ulong z)
             {
                 return ((x & y) ^ ((x ^ 0xffffffffffffffff) & z));
@@ -959,7 +955,7 @@ namespace Internal.Cryptography
         }
 
         // ported from https://github.com/microsoft/referencesource/blob/a48449cb48a9a693903668a71449ac719b76867c/mscorlib/system/security/cryptography/utils.cs
-        private class SHAUtils
+        private static class SHAUtils
         {
             // digits == number of DWORDs
             public static unsafe void DWORDFromBigEndian(uint* x, int digits, byte* block)

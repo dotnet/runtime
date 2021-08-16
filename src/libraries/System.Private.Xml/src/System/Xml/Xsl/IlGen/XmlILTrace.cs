@@ -182,19 +182,19 @@ namespace System.Xml.Xsl.IlGen
             string s = Enum.GetName(typeof(XmlILOptimization), opt)!;
             if (s.StartsWith("Introduce", StringComparison.Ordinal))
             {
-                return s.Substring(9) + " introduction";
+                return string.Concat(s.AsSpan(9), " introduction");
             }
             else if (s.StartsWith("Eliminate", StringComparison.Ordinal))
             {
-                return s.Substring(9) + " elimination";
+                return string.Concat(s.AsSpan(9), " elimination");
             }
             else if (s.StartsWith("Commute", StringComparison.Ordinal))
             {
-                return s.Substring(7) + " commutation";
+                return string.Concat(s.AsSpan(7), " commutation");
             }
             else if (s.StartsWith("Fold", StringComparison.Ordinal))
             {
-                return s.Substring(4) + " folding";
+                return string.Concat(s.AsSpan(4), " folding");
             }
             else if (s.StartsWith("Misc", StringComparison.Ordinal))
             {

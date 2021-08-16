@@ -12,7 +12,7 @@ namespace System.Xml.Xsl.Xslt
 {
     using T = XmlQueryTypeFactory;
 
-    internal class XsltQilFactory : XPathQilFactory
+    internal sealed class XsltQilFactory : XPathQilFactory
     {
         public XsltQilFactory(QilFactory f, bool debug) : base(f, debug) { }
 
@@ -35,7 +35,7 @@ namespace System.Xml.Xsl.Xslt
                     Debug.Assert(IsDebug, "QName is reserved as the marker for missing values");
                     break;
                 default:
-                    Debug.Assert(xt.IsNode, "Unexpected expression type: " + xt.ToString());
+                    Debug.Assert(xt.IsNode, $"Unexpected expression type: {xt}");
                     break;
             }
         }

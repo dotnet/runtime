@@ -26,7 +26,7 @@ namespace System.IO.Pipes
                 {
                     return new string(userName);
                 }
-                error = Marshal.GetLastWin32Error();
+                error = Marshal.GetLastPInvokeError();
             }
 
             throw WinIOError(error);

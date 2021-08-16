@@ -68,7 +68,7 @@ public struct S : I{
 	}
 
 	public static bool operator !=(S s, int i){
-		return !s.Equals(i);;
+		return !s.Equals(i);
 	}
 
 	public override bool Equals(object o){

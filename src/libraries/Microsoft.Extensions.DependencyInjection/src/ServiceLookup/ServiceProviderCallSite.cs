@@ -5,7 +5,7 @@ using System;
 
 namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
 {
-    internal class ServiceProviderCallSite : ServiceCallSite
+    internal sealed class ServiceProviderCallSite : ServiceCallSite
     {
         public ServiceProviderCallSite() : base(ResultCache.None)
         {

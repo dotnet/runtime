@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.IO;
+using System.Buffers.Binary;
 using System.Runtime.Serialization;
 using System.Runtime.CompilerServices;
 
@@ -9,6 +10,26 @@ namespace System.Text
 {
     internal abstract partial class BaseCodePageEncoding : EncodingNLS, ISerializable
     {
+        internal static unsafe void ReadCodePageIndex(Stream stream, Span<byte> codePageIndex)
+        {
+            stream.Read(codePageIndex);
+            if (!BitConverter.IsLittleEndian)
+            {
+                fixed (byte* pBytes = &codePageIndex[0])
+                {
+                    CodePageIndex* p = (CodePageIndex*)pBytes;
+                    char *pCodePageName = &p->CodePageName;
+                    for (int i = 0; i < 16; i++)
+                    {
+                            pCodePageName[i] = (char)BinaryPrimitives.ReverseEndianness((ushort)pCodePageName[i]);
+                    }
+                    p->CodePage = BinaryPrimitives.ReverseEndianness(p->CodePage);
+                    p->ByteCount = BinaryPrimitives.ReverseEndianness(p->ByteCount);
+                    p->Offset = BinaryPrimitives.ReverseEndianness(p->Offset);
+                }
+            }
+        }
+
         internal static unsafe EncodingInfo [] GetEncodings(CodePagesEncodingProvider provider)
         {
             lock (s_streamLock)
@@ -29,7 +50,7 @@ namespace System.Text
 
                 for (int i = 0; i < codePagesCount; i++)
                 {
-                    s_codePagesEncodingDataStream.Read(pCodePageIndex);
+                    ReadCodePageIndex(s_codePagesEncodingDataStream, pCodePageIndex);
 
                     string codePageName;
                     switch (codePageIndex.CodePage)

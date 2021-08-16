@@ -1,0 +1,14 @@
+<linker>
+  <assembly fullname="System.Private.CoreLib">
+    <!-- Workaround for https://github.com/mono/linker/issues/378 -->
+    <type fullname="System.Runtime.InteropServices.IDispatch" />
+    <type fullname="System.Runtime.InteropServices.IMarshal" />
+    <type fullname="Internal.Runtime.InteropServices.IClassFactory2" />
+    <!-- ComActivator is needed for native host operations -->
+    <type fullname="Internal.Runtime.InteropServices.ComActivator" >
+      <method name="GetClassFactoryForTypeInternal" />
+      <method name="RegisterClassForTypeInternal" />
+      <method name="UnregisterClassForTypeInternal" />
+    </type>
+  </assembly>
+</linker>

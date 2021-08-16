@@ -23,16 +23,7 @@ namespace System.Drawing
             if (stream == null)
                 throw new ArgumentNullException(nameof(stream));
 
-            IntPtr image = IntPtr.Zero;
-
-            if (useEmbeddedColorManagement)
-            {
-                Gdip.CheckStatus(Gdip.GdipLoadImageFromStreamICM(new GPStream(stream), out image));
-            }
-            else
-            {
-                Gdip.CheckStatus(Gdip.GdipLoadImageFromStream(new GPStream(stream), out image));
-            }
+            IntPtr image = LoadGdipImageFromStream(new GPStream(stream), useEmbeddedColorManagement);
 
             if (validateImageData)
                 ValidateImage(image);
@@ -45,9 +36,7 @@ namespace System.Drawing
         // Used for serialization
         private IntPtr InitializeFromStream(Stream stream)
         {
-            IntPtr image = IntPtr.Zero;
-
-            Gdip.CheckStatus(Gdip.GdipLoadImageFromStream(new GPStream(stream), out image));
+            IntPtr image = LoadGdipImageFromStream(new GPStream(stream), useEmbeddedColorManagement: false);
             ValidateImage(image);
 
             nativeImage = image;
@@ -56,6 +45,22 @@ namespace System.Drawing
 
             Gdip.CheckStatus(Gdip.GdipGetImageType(new HandleRef(this, nativeImage), out type));
             EnsureSave(this, null, stream);
+            return image;
+        }
+
+        private static unsafe IntPtr LoadGdipImageFromStream(GPStream stream, bool useEmbeddedColorManagement)
+        {
+            using DrawingCom.IStreamWrapper streamWrapper = DrawingCom.GetComWrapper(stream);
+
+            IntPtr image = IntPtr.Zero;
+            if (useEmbeddedColorManagement)
+            {
+                Gdip.CheckStatus(Gdip.GdipLoadImageFromStreamICM(streamWrapper.Ptr, &image));
+            }
+            else
+            {
+                Gdip.CheckStatus(Gdip.GdipLoadImageFromStream(streamWrapper.Ptr, &image));
+            }
             return image;
         }
 
@@ -90,7 +95,7 @@ namespace System.Drawing
 #endif
                 Gdip.GdipDisposeImage(new HandleRef(this, nativeImage));
 #if DEBUG
-                Debug.Assert(status == Gdip.Ok, "GDI+ returned an error status: " + status.ToString(CultureInfo.InvariantCulture));
+                Debug.Assert(status == Gdip.Ok, $"GDI+ returned an error status: {status.ToString(CultureInfo.InvariantCulture)}");
 #endif
             }
             catch (Exception ex)
@@ -240,11 +245,15 @@ namespace System.Drawing
 
                 if (!saved)
                 {
-                    Gdip.CheckStatus(Gdip.GdipSaveImageToStream(
-                        new HandleRef(this, nativeImage),
-                        new GPStream(stream, makeSeekable: false),
-                        ref g,
-                        new HandleRef(encoderParams, encoderParamsMemory)));
+                    using DrawingCom.IStreamWrapper streamWrapper = DrawingCom.GetComWrapper(new GPStream(stream, makeSeekable: false));
+                    unsafe
+                    {
+                        Gdip.CheckStatus(Gdip.GdipSaveImageToStream(
+                            new HandleRef(this, nativeImage),
+                            streamWrapper.Ptr,
+                            &g,
+                            new HandleRef(encoderParams, encoderParamsMemory)));
+                    }
                 }
             }
             finally
@@ -388,91 +397,6 @@ namespace System.Drawing
                 callbackData));
 
             return CreateImageObject(thumbImage);
-        }
-
-        /// <summary>
-        /// Gets an array of the property IDs stored in this <see cref='Image'/>.
-        /// </summary>
-        [Browsable(false)]
-        public int[] PropertyIdList
-        {
-            get
-            {
-                Gdip.CheckStatus(Gdip.GdipGetPropertyCount(new HandleRef(this, nativeImage), out int count));
-
-                int[] propid = new int[count];
-
-                //if we have a 0 count, just return our empty array
-                if (count == 0)
-                    return propid;
-
-                Gdip.CheckStatus(Gdip.GdipGetPropertyIdList(new HandleRef(this, nativeImage), count, propid));
-
-                return propid;
-            }
-        }
-
-        /// <summary>
-        /// Gets the specified property item from this <see cref='Image'/>.
-        /// </summary>
-        public PropertyItem? GetPropertyItem(int propid)
-        {
-            Gdip.CheckStatus(Gdip.GdipGetPropertyItemSize(new HandleRef(this, nativeImage), propid, out int size));
-
-            if (size == 0)
-                return null;
-
-            IntPtr propdata = Marshal.AllocHGlobal(size);
-
-            try
-            {
-                Gdip.CheckStatus(Gdip.GdipGetPropertyItem(new HandleRef(this, nativeImage), propid, size, propdata));
-                return PropertyItemInternal.ConvertFromMemory(propdata, 1)[0];
-            }
-            finally
-            {
-                Marshal.FreeHGlobal(propdata);
-            }
-        }
-
-        /// <summary>
-        /// Sets the specified property item to the specified value.
-        /// </summary>
-        public void SetPropertyItem(PropertyItem propitem)
-        {
-            PropertyItemInternal propItemInternal = PropertyItemInternal.ConvertFromPropertyItem(propitem);
-
-            using (propItemInternal)
-            {
-                Gdip.CheckStatus(Gdip.GdipSetPropertyItem(new HandleRef(this, nativeImage), propItemInternal));
-            }
-        }
-
-        /// <summary>
-        /// Gets an array of <see cref='PropertyItem'/> objects that describe this <see cref='Image'/>.
-        /// </summary>
-        [Browsable(false)]
-        public PropertyItem[] PropertyItems
-        {
-            get
-            {
-                Gdip.CheckStatus(Gdip.GdipGetPropertyCount(new HandleRef(this, nativeImage), out int count));
-                Gdip.CheckStatus(Gdip.GdipGetPropertySize(new HandleRef(this, nativeImage), out int size, ref count));
-
-                if (size == 0 || count == 0)
-                    return Array.Empty<PropertyItem>();
-
-                IntPtr propdata = Marshal.AllocHGlobal(size);
-                try
-                {
-                    Gdip.CheckStatus(Gdip.GdipGetAllPropertyItems(new HandleRef(this, nativeImage), size, count, propdata));
-                    return PropertyItemInternal.ConvertFromMemory(propdata, count);
-                }
-                finally
-                {
-                    Marshal.FreeHGlobal(propdata);
-                }
-            }
         }
 
         internal static void ValidateImage(IntPtr image)

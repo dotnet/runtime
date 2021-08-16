@@ -47,6 +47,21 @@ namespace DispatchProxyTests
         {
             TestType_InternalInterfaceService proxy = DispatchProxy.Create<TestType_PublicInterfaceService_Implements_Internal, TestDispatchProxy>();
             Assert.NotNull(proxy);
+
+            // ensure we emit a valid attribute definition
+            Type iactAttributeType = proxy.GetType().Assembly.GetType("System.Runtime.CompilerServices.IgnoresAccessChecksToAttribute");
+            Assert.NotNull(iactAttributeType);
+            ConstructorInfo constructor = iactAttributeType.GetConstructor(new[] { typeof(string) });
+            Assert.NotNull(constructor);
+            PropertyInfo propertyInfo = iactAttributeType.GetProperty("AssemblyName");
+            Assert.NotNull(propertyInfo);
+            Assert.NotNull(propertyInfo.GetMethod);
+
+            string name = "anAssemblyName";
+            object attributeInstance = constructor.Invoke(new object[] { name });
+            Assert.NotNull(attributeInstance);
+            object actualName = propertyInfo.GetMethod.Invoke(attributeInstance, null);
+            Assert.Equal(name, actualName);
         }
 
         [Fact]
@@ -119,6 +134,60 @@ namespace DispatchProxyTests
         public static void Create_Using_BaseType_Without_Default_Ctor_Throws_ArgumentException()
         {
             AssertExtensions.Throws<ArgumentException>("TProxy", () => DispatchProxy.Create<TestType_IHelloService, NoDefaultCtor_TestDispatchProxy>());
+        }
+
+        [Fact]
+        public static void Create_Using_PrivateProxy()
+        {
+            Assert.NotNull(TestType_PrivateProxy.Proxy<TestType_IHelloService>());
+        }
+
+        [Fact]
+        public static void Create_Using_PrivateProxyAndInternalService()
+        {
+            Assert.NotNull(TestType_PrivateProxy.Proxy<TestType_InternalInterfaceService>());
+        }
+
+        [Fact]
+        public static void Create_Using_PrivateProxyAndInternalServiceWithExternalGenericArgument()
+        {
+            Assert.NotNull(TestType_PrivateProxy.Proxy<TestType_InternalInterfaceWithNonPublicExternalGenericArgument>());
+        }
+
+        [Fact]
+        public static void Create_Using_InternalProxy()
+        {
+            Assert.NotNull(DispatchProxy.Create<TestType_InternalInterfaceService, InternalInvokeProxy>());
+        }
+
+        [Fact]
+        public static void Create_Using_ExternalNonPublicService()
+        {
+            Assert.NotNull(DispatchProxy.Create<DispatchProxyTestDependency.TestType_IExternalNonPublicHiService, TestDispatchProxy>());
+        }
+
+        [Fact]
+        public static void Create_Using_InternalProxyWithExternalNonPublicBaseType()
+        {
+            Assert.NotNull(DispatchProxy.Create<TestType_IHelloService, TestType_InternalProxyInternalBaseType>());
+        }
+
+        [Fact]
+        public static void Create_Using_InternalServiceImplementingNonPublicExternalService()
+        {
+            Assert.NotNull(DispatchProxy.Create<TestType_InternalInterfaceImplementsNonPublicExternalType, TestDispatchProxy>());
+        }
+
+        [Fact]
+        public static void Create_Using_InternalServiceWithGenericArgumentBeingNonPublicExternalService()
+        {
+            Assert.NotNull(DispatchProxy.Create<TestType_InternalInterfaceWithNonPublicExternalGenericArgument, TestDispatchProxy>());
+        }
+
+        [Fact]
+        public static void Create_Using_InternalProxyWithBaseTypeImplementingServiceWithgenericArgumentBeingNonPublicExternalService()
+        {
+            Assert.NotNull(DispatchProxy.Create<TestType_IHelloService, TestType_InternalProxyImplementingInterfaceWithGenericArgumentBeingNonPublicExternalType>());
         }
 
         [Fact]
@@ -534,6 +603,7 @@ namespace DispatchProxyTests
             testRefOutInInvocation(p => p.Out(out _), null);
             testRefOutInInvocation(p => p.OutAttribute(value), "Hello");
             testRefOutInInvocation(p => p.Ref(ref value), "Hello");
+            testRefOutInInvocation(p => p.In(in value), "Hello");
         }
 
         private static void testRefOutInInvocation(Action<TestType_IOut_Ref> invocation, string expected)

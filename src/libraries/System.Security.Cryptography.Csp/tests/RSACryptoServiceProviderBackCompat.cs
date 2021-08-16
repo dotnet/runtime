@@ -124,10 +124,7 @@ namespace System.Security.Cryptography.Csp.Tests
         {
             byte[] dataHash, signature;
 
-            using (HashAlgorithm hash = SHA256.Create())
-            {
-                dataHash = hash.ComputeHash(TestData.HelloBytes);
-            }
+            dataHash = SHA256.HashData(TestData.HelloBytes);
 
             using (var rsa = new RSACryptoServiceProvider())
             {

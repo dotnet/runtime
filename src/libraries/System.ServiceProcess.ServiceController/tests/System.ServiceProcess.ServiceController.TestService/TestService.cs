@@ -12,7 +12,7 @@ namespace System.ServiceProcess.Tests
         // To view tracing, use DbgView from sysinternals.com;
         // run it elevated, check "Capture>Global Win32" and "Capture>Win32",
         // and filter to just messages beginning with "##"
-        internal const bool DebugTracing = false;
+        internal const bool DebugTracing = false; // toggle in TestServiceProvider.cs as well
 
         private bool _disposed;
         private Task _waitClientConnect;
@@ -106,7 +106,6 @@ namespace System.ServiceProcess.Tests
         {
             DebugTrace("TestService " + ServiceName + ": WriteStreamAsync writing " + code.ToString());
 
-            const int WriteTimeout = 60000;
             var toWrite = (code == PipeMessageByteCode.OnCustomCommand) ? new byte[] { (byte)command } : new byte[] { (byte)code };
 
             // Wait for the client connection before writing to the pipe.
@@ -116,7 +115,7 @@ namespace System.ServiceProcess.Tests
             {
                 await _waitClientConnect;
             }
-            await _serverStream.WriteAsync(toWrite, 0, 1).TimeoutAfter(WriteTimeout).ConfigureAwait(false);
+            await _serverStream.WriteAsync(toWrite, 0, 1).WaitAsync(TimeSpan.FromSeconds(60)).ConfigureAwait(false);
             DebugTrace("TestService " + ServiceName + ": WriteStreamAsync completed");
         }
 

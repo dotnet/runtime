@@ -6,7 +6,6 @@ using Xunit;
 
 namespace System.Text.Tests
 {
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/38433", TestPlatforms.Browser)] // wasm doesn't honor runtimeconfig.json
     public class UTF7EncodingTests
     {
         [Fact]
@@ -52,6 +51,7 @@ namespace System.Text.Tests
             yield return new object[] { Encoding.UTF7 };
             yield return new object[] { Encoding.GetEncoding("utf-7") };
         }
+
         [Theory]
         [MemberData(nameof(Encodings_TestData))]
         public void WebName(UTF7Encoding encoding)

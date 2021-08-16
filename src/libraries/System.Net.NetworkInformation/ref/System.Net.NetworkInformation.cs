@@ -130,8 +130,11 @@ namespace System.Net.NetworkInformation
         public abstract System.Net.NetworkInformation.NetBiosNodeType NodeType { get; }
         public virtual System.IAsyncResult BeginGetUnicastAddresses(System.AsyncCallback? callback, object? state) { throw null; }
         public virtual System.Net.NetworkInformation.UnicastIPAddressInformationCollection EndGetUnicastAddresses(System.IAsyncResult asyncResult) { throw null; }
+        [System.Runtime.Versioning.UnsupportedOSPlatform("android")]
         public abstract System.Net.NetworkInformation.TcpConnectionInformation[] GetActiveTcpConnections();
+        [System.Runtime.Versioning.UnsupportedOSPlatform("android")]
         public abstract System.Net.IPEndPoint[] GetActiveTcpListeners();
+        [System.Runtime.Versioning.UnsupportedOSPlatform("android")]
         public abstract System.Net.IPEndPoint[] GetActiveUdpListeners();
         public abstract System.Net.NetworkInformation.IcmpV4Statistics GetIcmpV4Statistics();
         public abstract System.Net.NetworkInformation.IcmpV6Statistics GetIcmpV6Statistics();
@@ -365,7 +368,7 @@ namespace System.Net.NetworkInformation
     {
         public static readonly System.Net.NetworkInformation.PhysicalAddress None;
         public PhysicalAddress(byte[] address) { }
-        public override bool Equals(object? comparand) { throw null; }
+        public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] object? comparand) { throw null; }
         public byte[] GetAddressBytes() { throw null; }
         public override int GetHashCode() { throw null; }
         public static System.Net.NetworkInformation.PhysicalAddress Parse(string? address) { throw null; }

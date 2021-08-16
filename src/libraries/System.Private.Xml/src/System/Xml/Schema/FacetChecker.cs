@@ -993,7 +993,7 @@ namespace System.Xml.Schema
     }
 
 
-    internal class Numeric10FacetsChecker : FacetsChecker
+    internal sealed class Numeric10FacetsChecker : FacetsChecker
     {
         private readonly decimal _maxValue;
         private readonly decimal _minValue;
@@ -1127,7 +1127,7 @@ namespace System.Xml.Schema
     }
 
 
-    internal class Numeric2FacetsChecker : FacetsChecker
+    internal sealed class Numeric2FacetsChecker : FacetsChecker
     {
         internal override Exception? CheckValueFacets(object value, XmlSchemaDatatype datatype)
         {
@@ -1203,7 +1203,7 @@ namespace System.Xml.Schema
         }
     }
 
-    internal class DurationFacetsChecker : FacetsChecker
+    internal sealed class DurationFacetsChecker : FacetsChecker
     {
         internal override Exception? CheckValueFacets(object value, XmlSchemaDatatype datatype)
         {
@@ -1274,7 +1274,7 @@ namespace System.Xml.Schema
         }
     }
 
-    internal class DateTimeFacetsChecker : FacetsChecker
+    internal sealed class DateTimeFacetsChecker : FacetsChecker
     {
         internal override Exception? CheckValueFacets(object value, XmlSchemaDatatype datatype)
         {
@@ -1348,7 +1348,7 @@ namespace System.Xml.Schema
         }
     }
 
-    internal class StringFacetsChecker : FacetsChecker
+    internal sealed class StringFacetsChecker : FacetsChecker
     { //All types derived from string & anyURI
         private static Regex? s_languagePattern;
 
@@ -1505,7 +1505,7 @@ namespace System.Xml.Schema
         }
     }
 
-    internal class QNameFacetsChecker : FacetsChecker
+    internal sealed class QNameFacetsChecker : FacetsChecker
     {
         internal override Exception? CheckValueFacets(object value, XmlSchemaDatatype datatype)
         {
@@ -1573,11 +1573,11 @@ namespace System.Xml.Schema
         }
     }
 
-    internal class MiscFacetsChecker : FacetsChecker
+    internal sealed class MiscFacetsChecker : FacetsChecker
     { //For bool, anySimpleType
     }
 
-    internal class BinaryFacetsChecker : FacetsChecker
+    internal sealed class BinaryFacetsChecker : FacetsChecker
     { //hexBinary & Base64Binary
         internal override Exception? CheckValueFacets(object value, XmlSchemaDatatype datatype)
         {
@@ -1642,7 +1642,7 @@ namespace System.Xml.Schema
         }
     }
 
-    internal class ListFacetsChecker : FacetsChecker
+    internal sealed class ListFacetsChecker : FacetsChecker
     {
         internal override Exception? CheckValueFacets(object value, XmlSchemaDatatype datatype)
         {
@@ -1703,7 +1703,7 @@ namespace System.Xml.Schema
         }
     }
 
-    internal class UnionFacetsChecker : FacetsChecker
+    internal sealed class UnionFacetsChecker : FacetsChecker
     {
         internal override Exception? CheckValueFacets(object value, XmlSchemaDatatype datatype)
         {

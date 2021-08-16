@@ -6,7 +6,7 @@ using System.Globalization;
 
 namespace System.ServiceModel.Channels
 {
-    internal class UriGenerator
+    internal sealed class UriGenerator
     {
         private long _id;
         private readonly string _prefix;

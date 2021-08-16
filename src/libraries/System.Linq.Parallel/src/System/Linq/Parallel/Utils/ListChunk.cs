@@ -16,7 +16,7 @@ namespace System.Linq.Parallel
     /// A linked list of array chunks. Allows direct access to its arrays.
     /// </summary>
     /// <typeparam name="TInputOutput">The elements held within.</typeparam>
-    internal class ListChunk<TInputOutput> : IEnumerable<TInputOutput>
+    internal sealed class ListChunk<TInputOutput> : IEnumerable<TInputOutput>
     {
         internal TInputOutput[] _chunk;
         private int _chunkCount;

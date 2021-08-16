@@ -1116,7 +1116,7 @@ namespace System.Xml.XPath
             return XmlReader.Create(reader, readerSettings);
         }
 
-        private class CheckValidityHelper
+        private sealed class CheckValidityHelper
         {
             private bool _isValid;
             private readonly ValidationEventHandler _nextEventHandler;

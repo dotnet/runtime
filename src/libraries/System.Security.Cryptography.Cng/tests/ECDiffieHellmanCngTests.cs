@@ -13,7 +13,6 @@ namespace System.Security.Cryptography.EcDiffieHellman.Tests
             return new ECDiffieHellmanCng();
         }
 
-#if NETCOREAPP
         [Fact]
         public static void ECCurve_ctor()
         {
@@ -35,7 +34,6 @@ namespace System.Security.Cryptography.EcDiffieHellman.Tests
                 ecdh.Exercise();
             }
         }
-#endif
 
         [Fact]
         public static void CngKey_ReusesObject()

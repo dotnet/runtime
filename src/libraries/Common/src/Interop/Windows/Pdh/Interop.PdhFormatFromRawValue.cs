@@ -3,9 +3,9 @@
 
 using System.Runtime.InteropServices;
 
-internal partial class Interop
+internal static partial class Interop
 {
-    internal partial class Pdh
+    internal static partial class Pdh
     {
         [DllImport(Libraries.Pdh, CharSet = CharSet.Unicode)]
         public static extern int PdhFormatFromRawValue(

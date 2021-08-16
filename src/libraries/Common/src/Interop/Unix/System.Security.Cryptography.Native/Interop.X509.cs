@@ -6,12 +6,28 @@ using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
 using Microsoft.Win32.SafeHandles;
+using System.Diagnostics.CodeAnalysis;
 
 internal static partial class Interop
 {
     internal static partial class Crypto
     {
         internal delegate int X509StoreVerifyCallback(int ok, IntPtr ctx);
+
+        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_GetX509NotBefore")]
+        internal static extern IntPtr GetX509NotBefore(SafeX509Handle x509);
+
+        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_GetX509NotAfter")]
+        internal static extern IntPtr GetX509NotAfter(SafeX509Handle x509);
+
+        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_GetX509SignatureAlgorithm")]
+        internal static extern IntPtr GetX509SignatureAlgorithm(SafeX509Handle x509);
+
+        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_GetX509PublicKeyAlgorithm")]
+        internal static extern IntPtr GetX509PublicKeyAlgorithm(SafeX509Handle x509);
+
+        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_GetX509PublicKeyBytes")]
+        internal static extern IntPtr GetX509PublicKeyBytes(SafeX509Handle x509);
 
         [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_GetX509EvpPublicKey")]
         internal static extern SafeEvpPKeyHandle GetX509EvpPublicKey(SafeX509Handle x509);
@@ -180,8 +196,13 @@ internal static partial class Interop
             return result != 0;
         }
 
-        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_X509StoreCtxGetError")]
-        internal static extern X509VerifyStatusCode X509StoreCtxGetError(SafeX509StoreCtxHandle ctx);
+        [DllImport(Libraries.CryptoNative)]
+        internal static extern int CryptoNative_X509StoreCtxGetError(SafeX509StoreCtxHandle ctx);
+
+        internal static X509VerifyStatusCode X509StoreCtxGetError(SafeX509StoreCtxHandle ctx)
+        {
+            return (X509VerifyStatusCode)CryptoNative_X509StoreCtxGetError(ctx);
+        }
 
         [DllImport(Libraries.CryptoNative)]
         private static extern int CryptoNative_X509StoreCtxReset(SafeX509StoreCtxHandle ctx);
@@ -215,13 +236,13 @@ internal static partial class Interop
         [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_X509StoreCtxSetVerifyCallback")]
         internal static extern void X509StoreCtxSetVerifyCallback(SafeX509StoreCtxHandle ctx, X509StoreVerifyCallback callback);
 
-        internal static string GetX509VerifyCertErrorString(X509VerifyStatusCode n)
+        internal static string GetX509VerifyCertErrorString(int n)
         {
             return Marshal.PtrToStringAnsi(X509VerifyCertErrorString(n))!;
         }
 
         [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_X509VerifyCertErrorString")]
-        private static extern IntPtr X509VerifyCertErrorString(X509VerifyStatusCode n);
+        private static extern IntPtr X509VerifyCertErrorString(int n);
 
         [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_X509CrlDestroy")]
         internal static extern void X509CrlDestroy(IntPtr a);
@@ -238,11 +259,13 @@ internal static partial class Interop
         [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EncodeX509SubjectPublicKeyInfo")]
         internal static extern int EncodeX509SubjectPublicKeyInfo(SafeX509Handle x509, byte[] buf);
 
-        internal enum X509VerifyStatusCode : int
+        internal enum X509VerifyStatusCodeUniversal
         {
             X509_V_OK = 0,
+            X509_V_ERR_UNSPECIFIED = 1,
             X509_V_ERR_UNABLE_TO_GET_ISSUER_CERT = 2,
             X509_V_ERR_UNABLE_TO_GET_CRL = 3,
+            X509_V_ERR_UNABLE_TO_DECRYPT_CERT_SIGNATURE = 4,
             X509_V_ERR_UNABLE_TO_DECRYPT_CRL_SIGNATURE = 5,
             X509_V_ERR_UNABLE_TO_DECODE_ISSUER_PUBLIC_KEY = 6,
             X509_V_ERR_CERT_SIGNATURE_FAILURE = 7,
@@ -262,18 +285,25 @@ internal static partial class Interop
             X509_V_ERR_UNABLE_TO_VERIFY_LEAF_SIGNATURE = 21,
             X509_V_ERR_CERT_CHAIN_TOO_LONG = 22,
             X509_V_ERR_CERT_REVOKED = 23,
-            X509_V_ERR_INVALID_CA = 24,
+
+            // Code 24 varies.
+
             X509_V_ERR_PATH_LENGTH_EXCEEDED = 25,
             X509_V_ERR_INVALID_PURPOSE = 26,
             X509_V_ERR_CERT_UNTRUSTED = 27,
             X509_V_ERR_CERT_REJECTED = 28,
+            X509_V_ERR_SUBJECT_ISSUER_MISMATCH = 29,
+            X509_V_ERR_AKID_SKID_MISMATCH = 30,
+            X509_V_ERR_AKID_ISSUER_SERIAL_MISMATCH = 31,
             X509_V_ERR_KEYUSAGE_NO_CERTSIGN = 32,
             X509_V_ERR_UNABLE_TO_GET_CRL_ISSUER = 33,
             X509_V_ERR_UNHANDLED_CRITICAL_EXTENSION = 34,
             X509_V_ERR_KEYUSAGE_NO_CRL_SIGN = 35,
             X509_V_ERR_UNHANDLED_CRITICAL_CRL_EXTENSION = 36,
             X509_V_ERR_INVALID_NON_CA = 37,
+            X509_V_ERR_PROXY_PATH_LENGTH_EXCEEDED = 38,
             X509_V_ERR_KEYUSAGE_NO_DIGITAL_SIGNATURE = 39,
+            X509_V_ERR_PROXY_CERTIFICATES_NOT_ALLOWED = 40,
             X509_V_ERR_INVALID_EXTENSION = 41,
             X509_V_ERR_INVALID_POLICY_EXTENSION = 42,
             X509_V_ERR_NO_EXPLICIT_POLICY = 43,
@@ -288,7 +318,6 @@ internal static partial class Interop
             X509_V_ERR_UNSUPPORTED_CONSTRAINT_SYNTAX = 52,
             X509_V_ERR_UNSUPPORTED_NAME_SYNTAX = 53,
             X509_V_ERR_CRL_PATH_VALIDATION_ERROR = 54,
-            X509_V_ERR_PATH_LOOP = 55,
             X509_V_ERR_SUITE_B_INVALID_VERSION = 56,
             X509_V_ERR_SUITE_B_INVALID_ALGORITHM = 57,
             X509_V_ERR_SUITE_B_INVALID_CURVE = 58,
@@ -298,6 +327,20 @@ internal static partial class Interop
             X509_V_ERR_HOSTNAME_MISMATCH = 62,
             X509_V_ERR_EMAIL_MISMATCH = 63,
             X509_V_ERR_IP_ADDRESS_MISMATCH = 64,
+        }
+        internal enum X509VerifyStatusCode102
+        {
+            X509_V_ERR_INVALID_CA = 24,
+
+            X509_V_ERR_INVALID_CALL = 65,
+            X509_V_ERR_STORE_LOOKUP = 66,
+            X509_V_ERR_PROXY_SUBJECT_NAME_VIOLATION = 67,
+        }
+
+        internal enum X509VerifyStatusCode111
+        {
+            X509_V_ERR_INVALID_CA = 24,
+
             X509_V_ERR_DANE_NO_MATCH = 65,
             X509_V_ERR_EE_KEY_TOO_SMALL = 66,
             X509_V_ERR_CA_KEY_TOO_SMALL = 67,
@@ -309,6 +352,83 @@ internal static partial class Interop
             X509_V_ERR_OCSP_VERIFY_NEEDED = 73,
             X509_V_ERR_OCSP_VERIFY_FAILED = 74,
             X509_V_ERR_OCSP_CERT_UNKNOWN = 75,
+            X509_V_ERR_SIGNATURE_ALGORITHM_MISMATCH = 76,
+            X509_V_ERR_NO_ISSUER_PUBLIC_KEY = 77,
+            X509_V_ERR_UNSUPPORTED_SIGNATURE_ALGORITHM = 78,
+            X509_V_ERR_EC_KEY_EXPLICIT_PARAMS = 79,
+        }
+
+        internal enum X509VerifyStatusCode30
+        {
+            X509_V_ERR_NO_ISSUER_PUBLIC_KEY = 24,
+
+            X509_V_ERR_DANE_NO_MATCH = 65,
+            X509_V_ERR_EE_KEY_TOO_SMALL = 66,
+            X509_V_ERR_CA_KEY_TOO_SMALL = 67,
+            X509_V_ERR_CA_MD_TOO_WEAK = 68,
+            X509_V_ERR_INVALID_CALL = 69,
+            X509_V_ERR_STORE_LOOKUP = 70,
+            X509_V_ERR_NO_VALID_SCTS = 71,
+            X509_V_ERR_PROXY_SUBJECT_NAME_VIOLATION = 72,
+            X509_V_ERR_OCSP_VERIFY_NEEDED = 73,
+            X509_V_ERR_OCSP_VERIFY_FAILED = 74,
+            X509_V_ERR_OCSP_CERT_UNKNOWN = 75,
+            X509_V_ERR_UNSUPPORTED_SIGNATURE_ALGORITHM = 76,
+            X509_V_ERR_SIGNATURE_ALGORITHM_MISMATCH = 77,
+            X509_V_ERR_SIGNATURE_ALGORITHM_INCONSISTENCY = 78,
+            X509_V_ERR_INVALID_CA = 79,
+            X509_V_ERR_PATHLEN_INVALID_FOR_NON_CA = 80,
+            X509_V_ERR_PATHLEN_WITHOUT_KU_KEY_CERT_SIGN = 81,
+            X509_V_ERR_KU_KEY_CERT_SIGN_INVALID_FOR_NON_CA = 82,
+            X509_V_ERR_ISSUER_NAME_EMPTY = 83,
+            X509_V_ERR_SUBJECT_NAME_EMPTY = 84,
+            X509_V_ERR_MISSING_AUTHORITY_KEY_IDENTIFIER = 85,
+            X509_V_ERR_MISSING_SUBJECT_KEY_IDENTIFIER = 86,
+            X509_V_ERR_EMPTY_SUBJECT_ALT_NAME = 87,
+            X509_V_ERR_EMPTY_SUBJECT_SAN_NOT_CRITICAL = 88,
+            X509_V_ERR_CA_BCONS_NOT_CRITICAL = 89,
+            X509_V_ERR_AUTHORITY_KEY_IDENTIFIER_CRITICAL = 90,
+            X509_V_ERR_SUBJECT_KEY_IDENTIFIER_CRITICAL = 91,
+            X509_V_ERR_CA_CERT_MISSING_KEY_USAGE = 92,
+            X509_V_ERR_EXTENSIONS_REQUIRE_VERSION_3 = 93,
+            X509_V_ERR_EC_KEY_EXPLICIT_PARAMS = 94,
+        }
+
+        internal readonly struct X509VerifyStatusCode : IEquatable<X509VerifyStatusCode>
+        {
+            internal static readonly X509VerifyStatusCode X509_V_OK = X509VerifyStatusCodeUniversal.X509_V_OK;
+
+            public int Code { get; }
+
+            internal X509VerifyStatusCode(int code)
+            {
+                Code = code;
+            }
+
+            public X509VerifyStatusCodeUniversal UniversalCode => (X509VerifyStatusCodeUniversal)Code;
+            public X509VerifyStatusCode102 Code102 => (X509VerifyStatusCode102)Code;
+            public X509VerifyStatusCode111 Code111 => (X509VerifyStatusCode111)Code;
+            public X509VerifyStatusCode30 Code30 => (X509VerifyStatusCode30)Code;
+
+            public bool Equals(X509VerifyStatusCode other) => Code == other.Code;
+
+            public override bool Equals([NotNullWhen(true)] object? obj) => obj is X509VerifyStatusCode other && Equals(other);
+
+            public override int GetHashCode() => Code.GetHashCode();
+
+            public static bool operator ==(X509VerifyStatusCode left, X509VerifyStatusCode right) => left.Equals(right);
+
+            public static bool operator !=(X509VerifyStatusCode left, X509VerifyStatusCode right) => !left.Equals(right);
+
+            public static explicit operator X509VerifyStatusCode(int code)
+            {
+                return new X509VerifyStatusCode(code);
+            }
+
+            public static implicit operator X509VerifyStatusCode(X509VerifyStatusCodeUniversal code)
+            {
+                return new X509VerifyStatusCode((int)code);
+            }
         }
     }
 }

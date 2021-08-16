@@ -5,7 +5,7 @@ using System.Diagnostics;
 
 namespace System.Net.NetworkInformation
 {
-    internal class BsdUdpStatistics : UdpStatistics
+    internal sealed class BsdUdpStatistics : UdpStatistics
     {
         private readonly long _datagramsReceived;
         private readonly long _datagramsSent;

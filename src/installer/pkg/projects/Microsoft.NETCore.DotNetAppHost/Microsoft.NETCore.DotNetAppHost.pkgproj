@@ -1,16 +1,19 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <VersionProp>AppHostVersion</VersionProp>
+    <PackageDescription>Provides the .NET app bootstrapper intended for use in the application directory</PackageDescription>
   </PropertyGroup>
 
   <ItemGroup>
     <NativeBinary Include="$(DotNetHostBinDir)/apphost$(ExeSuffix)" />
-    <NativeBinary Include="$(DotNetHostBinDir)/singlefilehost$(ExeSuffix)" />
     <NativeBinary Include="$(DotNetHostBinDir)/$(LibPrefix)nethost$(LibSuffix)" />
     <NativeBinary Include="$(DotNetHostBinDir)/$(LibPrefix)nethost$(StaticLibSuffix)" />
     <NativeBinary Include="$(DotNetHostBinDir)/coreclr_delegates.h" />
     <NativeBinary Include="$(DotNetHostBinDir)/hostfxr.h" />
     <NativeBinary Include="$(DotNetHostBinDir)/nethost.h" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(RuntimeFlavor)' != 'Mono'">
+    <NativeBinary Include="$(DotNetHostBinDir)/singlefilehost$(ExeSuffix)" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetOS)' == 'windows'">
     <NativeBinary Include="$(DotNetHostBinDir)/comhost.dll" />
@@ -21,6 +24,11 @@
         binaries that link against the static version. -->
     <NativeBinary Include="$(DotNetHostBinDir)/libnethost.lib" />
     <NativeBinary Include="$(DotNetHostBinDir)/PDB/libnethost.pdb" />
+    <NativeBinary Include="$(DotNetHostBinDir)/libhostfxr.lib" />
+    <NativeBinary Include="$(DotNetHostBinDir)/PDB/libhostfxr.pdb" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetOS)' != 'windows'">
+    <NativeBinary Include="$(DotNetHostBinDir)/$(LibPrefix)hostfxr$(StaticLibSuffix)" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(PackageTargetRuntime)' != ''">

@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.Versioning;
 
 namespace System.Security.Cryptography
@@ -95,12 +96,12 @@ namespace System.Security.Cryptography
             return (((h1 << 5) + h1) ^ h2);
         }
 
-        public override bool Equals(object? obj)
+        public override bool Equals([NotNullWhen(true)] object? obj)
         {
             return Equals(obj as RSAEncryptionPadding);
         }
 
-        public bool Equals(RSAEncryptionPadding? other)
+        public bool Equals([NotNullWhen(true)] RSAEncryptionPadding? other)
         {
             return other is not null
                 && _mode == other._mode

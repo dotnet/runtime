@@ -6,7 +6,7 @@ using System.Xml.XPath;
 
 namespace System.Xml
 {
-    internal class XmlAsyncCheckWriter : XmlWriter
+    internal sealed class XmlAsyncCheckWriter : XmlWriter
     {
         private readonly XmlWriter _coreWriter;
         private Task _lastTask = Task.CompletedTask;

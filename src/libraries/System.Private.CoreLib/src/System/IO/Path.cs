@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#nullable enable
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
@@ -32,7 +31,7 @@ namespace System.IO
         // 8 random bytes provides 12 chars in our encoding for the 8.3 name.
         private const int KeyLength = 8;
 
-        [Obsolete("Please use GetInvalidPathChars or GetInvalidFileNameChars instead.")]
+        [Obsolete("Path.InvalidPathChars has been deprecated. Use GetInvalidPathChars or GetInvalidFileNameChars instead.")]
         public static readonly char[] InvalidPathChars = GetInvalidPathChars();
 
         // Changes the extension of a file path. The path parameter
@@ -126,7 +125,7 @@ namespace System.IO
             return end >= 0 ? path.Slice(0, end) : ReadOnlySpan<char>.Empty;
         }
 
-        private static int GetDirectoryNameOffset(ReadOnlySpan<char> path)
+        internal static int GetDirectoryNameOffset(ReadOnlySpan<char> path)
         {
             int rootLength = PathInternal.GetRootLength(path);
             int end = path.Length;
@@ -295,7 +294,7 @@ namespace System.IO
         /// Tests if a path's file name includes a file extension. A trailing period
         /// is not considered an extension.
         /// </summary>
-        public static bool HasExtension(string? path)
+        public static bool HasExtension([NotNullWhen(true)] string? path)
         {
             if (path != null)
             {
@@ -694,9 +693,9 @@ namespace System.IO
             Debug.Assert(first.Length > 0 && second.Length > 0 && third.Length > 0, "should have dealt with empty paths");
 
             byte firstNeedsSeparator = PathInternal.IsDirectorySeparator(first[first.Length - 1])
-                || PathInternal.IsDirectorySeparator(second[0]) ? 0 : 1;
+                || PathInternal.IsDirectorySeparator(second[0]) ? (byte)0 : (byte)1;
             byte secondNeedsSeparator = PathInternal.IsDirectorySeparator(second[second.Length - 1])
-                || PathInternal.IsDirectorySeparator(third[0]) ? 0 : 1;
+                || PathInternal.IsDirectorySeparator(third[0]) ? (byte)0 : (byte)1;
 
             fixed (char* f = &MemoryMarshal.GetReference(first), s = &MemoryMarshal.GetReference(second), t = &MemoryMarshal.GetReference(third))
             {
@@ -755,11 +754,11 @@ namespace System.IO
             Debug.Assert(first.Length > 0 && second.Length > 0 && third.Length > 0 && fourth.Length > 0, "should have dealt with empty paths");
 
             byte firstNeedsSeparator = PathInternal.IsDirectorySeparator(first[first.Length - 1])
-                || PathInternal.IsDirectorySeparator(second[0]) ? 0 : 1;
+                || PathInternal.IsDirectorySeparator(second[0]) ? (byte)0 : (byte)1;
             byte secondNeedsSeparator = PathInternal.IsDirectorySeparator(second[second.Length - 1])
-                || PathInternal.IsDirectorySeparator(third[0]) ? 0 : 1;
+                || PathInternal.IsDirectorySeparator(third[0]) ? (byte)0 : (byte)1;
             byte thirdNeedsSeparator = PathInternal.IsDirectorySeparator(third[third.Length - 1])
-                || PathInternal.IsDirectorySeparator(fourth[0]) ? 0 : 1;
+                || PathInternal.IsDirectorySeparator(fourth[0]) ? (byte)0 : (byte)1;
 
             fixed (char* f = &MemoryMarshal.GetReference(first), s = &MemoryMarshal.GetReference(second), t = &MemoryMarshal.GetReference(third), u = &MemoryMarshal.GetReference(fourth))
             {
@@ -861,7 +860,7 @@ namespace System.IO
         /// <exception cref="ArgumentNullException">Thrown if <paramref name="relativeTo"/> or <paramref name="path"/> is <c>null</c> or an empty string.</exception>
         public static string GetRelativePath(string relativeTo, string path)
         {
-            return GetRelativePath(relativeTo, path, StringComparison);
+            return GetRelativePath(relativeTo, path, PathInternal.StringComparison);
         }
 
         private static string GetRelativePath(string relativeTo, string path, StringComparison comparisonType)
@@ -957,12 +956,6 @@ namespace System.IO
 
             return sb.ToString();
         }
-
-        /// <summary>Returns a comparison that can be used to compare file and directory names for equality.</summary>
-        internal static StringComparison StringComparison =>
-            IsCaseSensitive ?
-                StringComparison.Ordinal :
-                StringComparison.OrdinalIgnoreCase;
 
         /// <summary>
         /// Trims one trailing directory separator beyond the root of the path.

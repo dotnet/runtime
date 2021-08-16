@@ -3,6 +3,7 @@
 
 using System;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Text;
 using System.Xml.XPath;
 
@@ -280,7 +281,7 @@ namespace MS.Internal.Xml.Cache
         /// <summary>
         /// Return true if this InfoAtom has the same values as another InfoAtom.
         /// </summary>
-        public override bool Equals(object? other)
+        public override bool Equals([NotNullWhen(true)] object? other)
         {
             return Equals(other as XPathNodeInfoAtom);
         }
@@ -498,7 +499,7 @@ namespace MS.Internal.Xml.Cache
 
             for (int i = 0; i < _hashTable.Length; i++)
             {
-                bldr.AppendFormat("{0,4}: ", i);
+                bldr.Append($"{i,4}: ");
 
                 infoAtom = _hashTable[i];
 

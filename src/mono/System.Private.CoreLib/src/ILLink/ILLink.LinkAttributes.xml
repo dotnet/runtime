@@ -1,0 +1,16 @@
+<linker>
+  <!-- The attributes listed here are only removed on mono. Removing them on coreclr would change runtime behavior. -->
+
+  <assembly fullname="System.Private.CoreLib" feature="System.AggressiveAttributeTrimming" featurevalue="true">
+    <type fullname="System.Runtime.CompilerServices.IntrinsicAttribute">
+      <attribute internal="RemoveAttributeInstances" />
+    </type>
+  </assembly>
+
+  <assembly fullname="*" feature="System.AggressiveAttributeTrimming" featurevalue="true">
+    <!-- Internal attributes shared as implementation, so they could be in any assembly -->
+    <type fullname="System.Runtime.Versioning.NonVersionableAttribute">
+      <attribute internal="RemoveAttributeInstances" />
+    </type>
+  </assembly>
+</linker>

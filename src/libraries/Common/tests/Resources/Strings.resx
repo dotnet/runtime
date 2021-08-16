@@ -159,6 +159,9 @@
   <data name="Arg_InvalidSearchPattern" xml:space="preserve">
     <value>Arg_InvalidSearchPattern {0}</value>
   </data>
+  <data name="Argv_IncludeDoubleQuote" xml:space="preserve">
+    <value>The argv[0] argument cannot include a double quote.</value>
+  </data>
   <data name="net_http_headers_exceeded_length" xml:space="preserve">
     <value>The HTTP headers length exceeded the set limit of {0} bytes.</value>
   </data>

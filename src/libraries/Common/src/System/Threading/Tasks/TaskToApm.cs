@@ -11,7 +11,6 @@
 //     public int EndFoo(IAsyncResult asyncResult) =>
 //         TaskToApm.End<int>(asyncResult);
 
-#nullable enable
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 

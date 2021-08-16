@@ -86,7 +86,7 @@ namespace System.Diagnostics
         // warning would be hitted.
         protected override string[] GetSupportedAttributes() => new string[] { DelimiterKey };
 
-        public override void TraceEvent(TraceEventCache? eventCache, string source, TraceEventType eventType, int id, string format, params object?[]? args)
+        public override void TraceEvent(TraceEventCache? eventCache, string source, TraceEventType eventType, int id, string? format, params object?[]? args)
         {
             if (Filter != null && !Filter.ShouldTrace(eventCache, source, eventType, id, format, args, null, null))
                 return;
@@ -94,7 +94,7 @@ namespace System.Diagnostics
             WriteHeader(source, eventType, id);
 
             if (args != null)
-                WriteEscaped(string.Format(CultureInfo.InvariantCulture, format, args));
+                WriteEscaped(string.Format(CultureInfo.InvariantCulture, format!, args));
             else
                 WriteEscaped(format);
             Write(Delimiter); // Use get_Delimiter

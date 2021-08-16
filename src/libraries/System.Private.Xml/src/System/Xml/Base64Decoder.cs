@@ -5,7 +5,7 @@ using System.Diagnostics;
 
 namespace System.Xml
 {
-    internal class Base64Decoder : IncrementalReadDecoder
+    internal sealed class Base64Decoder : IncrementalReadDecoder
     {
         //
         // Fields

@@ -41,6 +41,10 @@
 #include "llvm/CodeGen/GCs.h"
 #endif
 
+#if LLVM_API_VERSION >= 1100
+#include "llvm/InitializePasses.h"
+#endif
+
 #include <cstdlib>
 
 #include <mono/utils/mono-dl.h>
@@ -92,10 +96,10 @@ alloc_code (LLVMValueRef function, int size)
 	return (unsigned char *)mono_mem_manager_code_reserve (cfg->mem_manager, size);
 }
 
-class MonoJitMemoryManager : public RTDyldMemoryManager
+class MonoLLVMMemoryManager : public RTDyldMemoryManager
 {
 public:
-	~MonoJitMemoryManager() override;
+	~MonoLLVMMemoryManager() override;
 
 	uint8_t *allocateDataSection(uintptr_t Size,
 								 unsigned Alignment,
@@ -113,12 +117,12 @@ private:
 	SmallVector<sys::MemoryBlock, 16> PendingCodeMem;
 };
 
-MonoJitMemoryManager::~MonoJitMemoryManager()
+MonoLLVMMemoryManager::~MonoLLVMMemoryManager()
 {
 }
 
 uint8_t *
-MonoJitMemoryManager::allocateDataSection(uintptr_t Size,
+MonoLLVMMemoryManager::allocateDataSection(uintptr_t Size,
 										  unsigned Alignment,
 										  unsigned SectionID,
 										  StringRef SectionName,
@@ -138,7 +142,7 @@ MonoJitMemoryManager::allocateDataSection(uintptr_t Size,
 }
 
 uint8_t *
-MonoJitMemoryManager::allocateCodeSection(uintptr_t Size,
+MonoLLVMMemoryManager::allocateCodeSection(uintptr_t Size,
 										  unsigned Alignment,
 										  unsigned SectionID,
 										  StringRef SectionName)
@@ -149,7 +153,7 @@ MonoJitMemoryManager::allocateCodeSection(uintptr_t Size,
 }
 
 bool
-MonoJitMemoryManager::finalizeMemory(std::string *ErrMsg)
+MonoLLVMMemoryManager::finalizeMemory(std::string *ErrMsg)
 {
 	for (sys::MemoryBlock &Block : PendingCodeMem) {
 #if LLVM_API_VERSION >= 900
@@ -196,8 +200,24 @@ init_function_pass_manager (legacy::FunctionPassManager &fpm)
 
 #if LLVM_API_VERSION >= 900
 
+#if LLVM_API_VERSION >= 1100
+using symbol_t = const llvm::StringRef;
+static inline std::string
+to_str (symbol_t s)
+{
+	return s.str ();
+}
+#else
+using symbol_t = const std::string &;
+static inline const std::string &
+to_str (symbol_t s)
+{
+	return s;
+}
+#endif
+
 struct MonoLLVMJIT {
-	std::shared_ptr<MonoJitMemoryManager> mmgr;
+	std::shared_ptr<MonoLLVMMemoryManager> mmgr;
 	ExecutionSession execution_session;
 	std::map<VModuleKey, std::shared_ptr<SymbolResolver>> resolvers;
 	TargetMachine *target_machine;
@@ -207,7 +227,7 @@ struct MonoLLVMJIT {
 	legacy::FunctionPassManager fpm;
 
 	MonoLLVMJIT (TargetMachine *tm, Module *pgo_module)
-		: mmgr (std::make_shared<MonoJitMemoryManager>())
+		: mmgr (std::make_shared<MonoLLVMMemoryManager>())
 		, target_machine (tm)
 		, object_layer (
 			AcknowledgeORCv1Deprecation, execution_session,
@@ -231,16 +251,17 @@ struct MonoLLVMJIT {
 	add_module (std::unique_ptr<Module> m)
 	{
 		auto k = execution_session.allocateVModule();
-		auto lookup_name = [this] (const std::string &namestr) {
-			auto jit_sym = compile_layer.findSymbol(namestr, false);
+		auto lookup_name = [this] (symbol_t nameref) {
+			const auto &namestr = to_str (nameref);
+			auto jit_sym = compile_layer.findSymbol (namestr, false);
 			if (jit_sym) {
 				return jit_sym;
 			}
-			auto namebuf = namestr.c_str();
 			JITSymbolFlags flags{};
-			if (!strcmp(namebuf, "___bzero")) {
+			if (namestr == "___bzero") {
 				return JITSymbol{(uint64_t)(gssize)(void*)bzero, flags};
 			}
+			auto namebuf = namestr.c_str ();
 			auto current = mono_dl_open (NULL, 0, NULL);
 			g_assert (current);
 			auto name = namebuf[0] == '_' ? namebuf + 1 : namebuf;
@@ -285,6 +306,14 @@ struct MonoLLVMJIT {
 		return ret;
 	}
 
+	void
+	optimize (Function *func)
+	{
+		auto module = func->getParent ();
+		module->setDataLayout (data_layout);
+		fpm.run (*func);
+	}
+
 	gpointer
 	compile (
 		Function *func, int nvars, LLVMValueRef *callee_vars,
@@ -292,7 +321,6 @@ struct MonoLLVMJIT {
 	{
 		auto module = func->getParent ();
 		module->setDataLayout (data_layout);
-		fpm.run (*func);
 		// The lifetime of this module is managed by Mono, not LLVM, so
 		// the `unique_ptr` created here will be released in the
 		// NotifyCompiled callback.
@@ -331,7 +359,7 @@ public:
 	typedef IRCompileLayer<ObjLayerT, SimpleCompiler> CompileLayerT;
 	typedef CompileLayerT::ModuleHandleT ModuleHandleT;
 
-	MonoLLVMJIT (TargetMachine *TM, MonoJitMemoryManager *mm)
+	MonoLLVMJIT (TargetMachine *TM, MonoLLVMMemoryManager *mm)
 		: TM(TM), ObjectLayer([=] { return std::shared_ptr<RuntimeDyld::MemoryManager> (mm); }),
 		  CompileLayer (ObjectLayer, SimpleCompiler (*TM)),
 		  modules(),
@@ -395,9 +423,15 @@ public:
 		return MangledName;
 	}
 
-	gpointer compile (Function *F, int nvars, LLVMValueRef *callee_vars, gpointer *callee_addrs, gpointer *eh_frame) {
+	void
+	optimize (Function *func)
+	{
 		F->getParent ()->setDataLayout (TM->createDataLayout ());
 		fpm.run(*F);
+	}
+
+	gpointer compile (Function *F, int nvars, LLVMValueRef *callee_vars, gpointer *callee_addrs, gpointer *eh_frame) {
+		F->getParent ()->setDataLayout (TM->createDataLayout ());
 		// TODO: run module wide optimizations, e.g. remove dead globals/functions
 		// Orc uses a shared_ptr to refer to modules so we have to save them ourselves to keep a ref
 		std::shared_ptr<Module> m (F->getParent ());
@@ -432,12 +466,12 @@ private:
 	legacy::FunctionPassManager fpm;
 };
 
-static MonoJitMemoryManager *mono_mm;
+static MonoLLVMMemoryManager *mono_mm;
 
 static MonoLLVMJIT *
 make_mono_llvm_jit (TargetMachine *target_machine, llvm::Module *)
 {
-	mono_mm = new MonoJitMemoryManager ();
+	mono_mm = new MonoLLVMMemoryManager ();
 	return new MonoLLVMJIT(target_machine, mono_mm);
 }
 
@@ -515,6 +549,22 @@ mono_llvm_jit_init ()
 	g_assert_not_reached ();
 #endif
 
+	llvm::StringMap<bool> cpu_features;
+	// Why 76? LLVM 9 supports 76 different x86 feature strings. This
+	// requires around 1216 bytes of data in the local activation record.
+	// It'd be possible to stream entries to setMAttrs using
+	// llvm::map_range and llvm::make_filter_range, but llvm::map_range
+	// isn't available in LLVM 6, and it's not worth writing a small
+	// single-purpose one here.
+	llvm::SmallVector<llvm::StringRef, 76> supported_features;
+	if (llvm::sys::getHostCPUFeatures (cpu_features)) {
+		for (const auto &feature : cpu_features) {
+			if (feature.second)
+				supported_features.push_back (feature.first ());
+		}
+		EB.setMAttrs (supported_features);
+	}
+
 	auto TM = EB.selectTarget ();
 	assert (TM);
 	dummy_pgo_module = unwrap (LLVMModuleCreateWithName("dummy-pgo-module"));
@@ -526,6 +576,12 @@ MonoEERef
 mono_llvm_create_ee (LLVMExecutionEngineRef *ee)
 {
 	return NULL;
+}
+
+void
+mono_llvm_optimize_method (LLVMValueRef method)
+{
+	jit->optimize (unwrap<Function> (method));
 }
 
 /*

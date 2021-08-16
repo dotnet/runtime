@@ -8,6 +8,7 @@ using System.Net;
 using System.Net.Http;
 using System.Reflection;
 using System.Text.RegularExpressions;
+using Microsoft.DotNet.RemoteExecutor;
 using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
@@ -145,10 +146,10 @@ namespace System.Diagnostics.Tests
         }
 
         [OuterLoop]
-        [Fact]
-        public async Task TestW3CHeaders()
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public void TestW3CHeaders()
         {
-            try
+            RemoteExecutor.Invoke(async () =>
             {
                 using (var eventRecords = new EventObserverAndRecorder())
                 {
@@ -182,18 +183,14 @@ namespace System.Diagnostics.Tests
                     HttpWebResponse stopResponse = ReadPublicProperty<HttpWebResponse>(stopEvent.Value, "Response");
                     Assert.NotNull(stopResponse);
                 }
-            }
-            finally
-            {
-                CleanUp();
-            }
+            }).Dispose();
         }
 
         [OuterLoop]
-        [Fact]
-        public async Task TestW3CHeadersTraceStateAndCorrelationContext()
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public void TestW3CHeadersTraceStateAndCorrelationContext()
         {
-            try
+            RemoteExecutor.Invoke(async () =>
             {
                 using (var eventRecords = new EventObserverAndRecorder())
                 {
@@ -227,11 +224,7 @@ namespace System.Diagnostics.Tests
                     Assert.Matches("^[0-9a-f]{2}-[0-9a-f]{32}-[0-9a-f]{16}-[0-9a-f]{2}$", traceparent);
                     Assert.Null(startRequest.Headers["Request-Id"]);
                 }
-            }
-            finally
-            {
-                CleanUp();
-            }
+            }).Dispose();
         }
 
 
@@ -258,10 +251,10 @@ namespace System.Diagnostics.Tests
         }
 
         [OuterLoop]
-        [Fact]
-        public async Task DoNotInjectTraceParentWhenPresent()
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public void DoNotInjectTraceParentWhenPresent()
         {
-            try
+            RemoteExecutor.Invoke(async () =>
             {
                 using (var eventRecords = new EventObserverAndRecorder())
                 {
@@ -282,11 +275,7 @@ namespace System.Diagnostics.Tests
 
                     Assert.Equal("00-abcdef0123456789abcdef0123456789-abcdef0123456789-01", startRequest.Headers["traceparent"]);
                 }
-            }
-            finally
-            {
-                CleanUp();
-            }
+            }).Dispose();
         }
 
         /// <summary>
@@ -402,62 +391,68 @@ namespace System.Diagnostics.Tests
         /// Test Request-Id and Correlation-Context headers injection
         /// </summary>
         [OuterLoop]
-        [Fact]
-        public async Task TestActivityIsCreated()
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public void TestActivityIsCreated()
         {
-            var parentActivity = new Activity("parent").AddBaggage("k1", "v1").AddBaggage("k2", "v2").Start();
-            using (var eventRecords = new EventObserverAndRecorder())
+            RemoteExecutor.Invoke(async () =>
             {
-                using (var client = new HttpClient())
+                var parentActivity = new Activity("parent").AddBaggage("k1", "v1").AddBaggage("k2", "v2").Start();
+                using (var eventRecords = new EventObserverAndRecorder())
                 {
-                    (await client.GetAsync(Configuration.Http.RemoteEchoServer)).Dispose();
+                    using (var client = new HttpClient())
+                    {
+                        (await client.GetAsync(Configuration.Http.RemoteEchoServer)).Dispose();
+                    }
+
+                    Assert.Equal(1, eventRecords.Records.Count(rec => rec.Key.EndsWith("Start")));
+                    Assert.Equal(1, eventRecords.Records.Count(rec => rec.Key.EndsWith("Stop")));
+
+                    WebRequest thisRequest = ReadPublicProperty<WebRequest>(eventRecords.Records.First().Value, "Request");
+                    var requestId = thisRequest.Headers["Request-Id"];
+                    var correlationContext = thisRequest.Headers["Correlation-Context"];
+
+                    Assert.NotNull(requestId);
+                    Assert.StartsWith(parentActivity.Id, requestId);
+
+                    Assert.NotNull(correlationContext);
+                    Assert.True(correlationContext == "k1=v1,k2=v2" || correlationContext == "k2=v2,k1=v1");
                 }
-
-                Assert.Equal(1, eventRecords.Records.Count(rec => rec.Key.EndsWith("Start")));
-                Assert.Equal(1, eventRecords.Records.Count(rec => rec.Key.EndsWith("Stop")));
-
-                WebRequest thisRequest = ReadPublicProperty<WebRequest>(eventRecords.Records.First().Value, "Request");
-                var requestId = thisRequest.Headers["Request-Id"];
-                var correlationContext = thisRequest.Headers["Correlation-Context"];
-
-                Assert.NotNull(requestId);
-                Assert.StartsWith(parentActivity.Id, requestId);
-
-                Assert.NotNull(correlationContext);
-                Assert.True(correlationContext == "k1=v1,k2=v2" || correlationContext == "k2=v2,k1=v1");
-            }
-            parentActivity.Stop();
+                parentActivity.Stop();
+            }).Dispose();
         }
 
 
         [OuterLoop]
-        [Fact]
-        public async Task TestInvalidBaggage()
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public void TestInvalidBaggage()
         {
-            var parentActivity = new Activity("parent")
-                .AddBaggage("key", "value")
-                .AddBaggage("bad/key", "value")
-                .AddBaggage("goodkey", "bad/value")
-                .Start();
-            using (var eventRecords = new EventObserverAndRecorder())
+            RemoteExecutor.Invoke(async () =>
             {
-                using (var client = new HttpClient())
+                var parentActivity = new Activity("parent")
+                    .AddBaggage("key", "value")
+                    .AddBaggage("bad/key", "value")
+                    .AddBaggage("goodkey", "bad/value")
+                    .Start();
+                using (var eventRecords = new EventObserverAndRecorder())
                 {
-                    (await client.GetAsync(Configuration.Http.RemoteEchoServer)).Dispose();
+                    using (var client = new HttpClient())
+                    {
+                        (await client.GetAsync(Configuration.Http.RemoteEchoServer)).Dispose();
+                    }
+
+                    Assert.Equal(1, eventRecords.Records.Count(rec => rec.Key.EndsWith("Start")));
+                    Assert.Equal(1, eventRecords.Records.Count(rec => rec.Key.EndsWith("Stop")));
+
+                    WebRequest thisRequest = ReadPublicProperty<WebRequest>(eventRecords.Records.First().Value, "Request");
+                    string[] correlationContext = thisRequest.Headers["Correlation-Context"].Split(',');
+
+                    Assert.Equal(3, correlationContext.Length);
+                    Assert.Contains("key=value", correlationContext);
+                    Assert.Contains("bad%2Fkey=value", correlationContext);
+                    Assert.Contains("goodkey=bad%2Fvalue", correlationContext);
                 }
-
-                Assert.Equal(1, eventRecords.Records.Count(rec => rec.Key.EndsWith("Start")));
-                Assert.Equal(1, eventRecords.Records.Count(rec => rec.Key.EndsWith("Stop")));
-
-                WebRequest thisRequest = ReadPublicProperty<WebRequest>(eventRecords.Records.First().Value, "Request");
-                string[] correlationContext = thisRequest.Headers["Correlation-Context"].Split(',');
-
-                Assert.Equal(3, correlationContext.Length);
-                Assert.Contains("key=value", correlationContext);
-                Assert.Contains("bad%2Fkey=value", correlationContext);
-                Assert.Contains("goodkey=bad%2Fvalue", correlationContext);
-            }
-            parentActivity.Stop();
+                parentActivity.Stop();
+            }).Dispose();
         }
 
         /// <summary>
@@ -546,135 +541,127 @@ namespace System.Diagnostics.Tests
         /// Test to make sure every event record has the right dynamic properties.
         /// </summary>
         [OuterLoop]
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void TestMultipleConcurrentRequests()
         {
-            ServicePointManager.DefaultConnectionLimit = int.MaxValue;
-            var parentActivity = new Activity("parent").Start();
-            using (var eventRecords = new EventObserverAndRecorder())
+            RemoteExecutor.Invoke(() =>
             {
-                Dictionary<Uri, Tuple<WebRequest, WebResponse>> requestData =
-                    new Dictionary<Uri, Tuple<WebRequest, WebResponse>>();
-                for (int i = 0; i < 10; i++)
+                ServicePointManager.DefaultConnectionLimit = int.MaxValue;
+                var parentActivity = new Activity("parent").Start();
+                using (var eventRecords = new EventObserverAndRecorder())
                 {
-                    Uri uriWithRedirect =
-                        Configuration.Http.RemoteSecureHttp11Server.RedirectUriForDestinationUri(302, new Uri($"{Configuration.Http.RemoteEchoServer}?q={i}"), 3);
-
-                    requestData[uriWithRedirect] = null;
-                }
-
-                // Issue all requests simultaneously
-                HttpClient httpClient = new HttpClient();
-                Dictionary<Uri, Task<HttpResponseMessage>> tasks = new Dictionary<Uri, Task<HttpResponseMessage>>();
-
-                CancellationTokenSource cts = new CancellationTokenSource(TimeSpan.FromSeconds(10));
-                foreach (var url in requestData.Keys)
-                {
-                    tasks.Add(url, httpClient.GetAsync(url, cts.Token));
-                }
-
-                // wait up to 10 sec for all requests and suppress exceptions
-                Task.WhenAll(tasks.Select(t => t.Value).ToArray()).ContinueWith(tt =>
-                {
-                    foreach (var task in tasks)
+                    Dictionary<Uri, Tuple<WebRequest, WebResponse>> requestData =
+                        new Dictionary<Uri, Tuple<WebRequest, WebResponse>>();
+                    for (int i = 0; i < 10; i++)
                     {
-                        task.Value.Result?.Dispose();
+                        Uri uriWithRedirect =
+                            Configuration.Http.RemoteSecureHttp11Server.RedirectUriForDestinationUri(302, new Uri($"{Configuration.Http.RemoteEchoServer}?q={i}"), 3);
+
+                        requestData[uriWithRedirect] = null;
                     }
-                }).Wait();
 
-                // Examine the result. Make sure we got all successful requests.
+                    // Issue all requests simultaneously
+                    HttpClient httpClient = new HttpClient();
+                    Dictionary<Uri, Task<HttpResponseMessage>> tasks = new Dictionary<Uri, Task<HttpResponseMessage>>();
 
-                // Just make sure some events are written, to confirm we successfully subscribed to it. We should have
-                // exactly 1 Start event per request and exaclty 1 Stop event per response (if request succeeded)
-                var successfulTasks = tasks.Where(t => t.Value.Status == TaskStatus.RanToCompletion);
-
-                Assert.Equal(tasks.Count, eventRecords.Records.Count(rec => rec.Key.EndsWith("Start")));
-                Assert.Equal(successfulTasks.Count(), eventRecords.Records.Count(rec => rec.Key.EndsWith("Stop")));
-
-                // Check to make sure: We have a WebRequest and a WebResponse for each successful request
-                foreach (var pair in eventRecords.Records)
-                {
-                    object eventFields = pair.Value;
-
-                    Assert.True(
-                        pair.Key == "System.Net.Http.Desktop.HttpRequestOut.Start" ||
-                        pair.Key == "System.Net.Http.Desktop.HttpRequestOut.Stop",
-                        "An unexpected event of name " + pair.Key + "was received");
-
-                    WebRequest request = ReadPublicProperty<WebRequest>(eventFields, "Request");
-                    Assert.Equal("HttpWebRequest", request.GetType().Name);
-
-                    if (pair.Key == "System.Net.Http.Desktop.HttpRequestOut.Start")
+                    CancellationTokenSource cts = new CancellationTokenSource(TimeSpan.FromSeconds(10));
+                    foreach (var url in requestData.Keys)
                     {
-                        // Make sure this is an URL that we recognize. If not, just skip
-                        Tuple<WebRequest, WebResponse> tuple = null;
-                        if (!requestData.TryGetValue(request.RequestUri, out tuple))
+                        tasks.Add(url, httpClient.GetAsync(url, cts.Token));
+                    }
+
+                    // wait up to 10 sec for all requests and suppress exceptions
+                    Task.WhenAll(tasks.Select(t => t.Value).ToArray()).ContinueWith(tt =>
+                    {
+                        foreach (var task in tasks)
                         {
-                            continue;
+                            task.Value.Result?.Dispose();
                         }
+                    }).Wait();
 
-                        // all requests have Request-Id with proper parent Id
-                        var requestId = request.Headers["Request-Id"];
-                        Assert.StartsWith(parentActivity.Id, requestId);
-                        // all request activities are siblings:
-                        var childSuffix = requestId.Substring(0, parentActivity.Id.Length);
-                        Assert.True(childSuffix.IndexOf('.') == childSuffix.Length - 1);
+                    // Examine the result. Make sure we got all successful requests.
 
-                        Assert.Null(requestData[request.RequestUri]);
-                        requestData[request.RequestUri] =
-                            new Tuple<WebRequest, WebResponse>(request, null);
-                    }
-                    else
+                    // Just make sure some events are written, to confirm we successfully subscribed to it. We should have
+                    // exactly 1 Start event per request and exaclty 1 Stop event per response (if request succeeded)
+                    var successfulTasks = tasks.Where(t => t.Value.Status == TaskStatus.RanToCompletion);
+
+                    Assert.Equal(tasks.Count, eventRecords.Records.Count(rec => rec.Key.EndsWith("Start")));
+                    Assert.Equal(successfulTasks.Count(), eventRecords.Records.Count(rec => rec.Key.EndsWith("Stop")));
+
+                    // Check to make sure: We have a WebRequest and a WebResponse for each successful request
+                    foreach (var pair in eventRecords.Records)
                     {
-                        // This must be the response.
-                        WebResponse response = ReadPublicProperty<WebResponse>(eventFields, "Response");
-                        Assert.Equal("HttpWebResponse", response.GetType().Name);
+                        object eventFields = pair.Value;
 
-                        // By the time we see the response, the request object may already have been redirected with a different
-                        // url. Hence, it's not reliable to just look up requestData by the URL/hostname. Instead, we have to look
-                        // through each one and match by object reference on the request object.
-                        Tuple<WebRequest, WebResponse> tuple = null;
-                        foreach (Tuple<WebRequest, WebResponse> currentTuple in requestData.Values)
+                        Assert.True(
+                            pair.Key == "System.Net.Http.Desktop.HttpRequestOut.Start" ||
+                            pair.Key == "System.Net.Http.Desktop.HttpRequestOut.Stop",
+                            "An unexpected event of name " + pair.Key + "was received");
+
+                        WebRequest request = ReadPublicProperty<WebRequest>(eventFields, "Request");
+                        Assert.Equal("HttpWebRequest", request.GetType().Name);
+
+                        if (pair.Key == "System.Net.Http.Desktop.HttpRequestOut.Start")
                         {
-                            if (currentTuple != null && currentTuple.Item1 == request)
+                            // Make sure this is an URL that we recognize. If not, just skip
+                            Tuple<WebRequest, WebResponse> tuple = null;
+                            if (!requestData.TryGetValue(request.RequestUri, out tuple))
                             {
-                                // Found it!
-                                tuple = currentTuple;
-                                break;
+                                continue;
                             }
+
+                            // all requests have Request-Id with proper parent Id
+                            var requestId = request.Headers["Request-Id"];
+                            Assert.StartsWith(parentActivity.Id, requestId);
+                            // all request activities are siblings:
+                            var childSuffix = requestId.Substring(0, parentActivity.Id.Length);
+                            Assert.True(childSuffix.IndexOf('.') == childSuffix.Length - 1);
+
+                            Assert.Null(requestData[request.RequestUri]);
+                            requestData[request.RequestUri] =
+                                new Tuple<WebRequest, WebResponse>(request, null);
                         }
+                        else
+                        {
+                            // This must be the response.
+                            WebResponse response = ReadPublicProperty<WebResponse>(eventFields, "Response");
+                            Assert.Equal("HttpWebResponse", response.GetType().Name);
 
-                        // Update the tuple with the response object
-                        Assert.NotNull(tuple);
-                        requestData[request.RequestUri] =
-                            new Tuple<WebRequest, WebResponse>(request, response);
+                            // By the time we see the response, the request object may already have been redirected with a different
+                            // url. Hence, it's not reliable to just look up requestData by the URL/hostname. Instead, we have to look
+                            // through each one and match by object reference on the request object.
+                            Tuple<WebRequest, WebResponse> tuple = null;
+                            foreach (Tuple<WebRequest, WebResponse> currentTuple in requestData.Values)
+                            {
+                                if (currentTuple != null && currentTuple.Item1 == request)
+                                {
+                                    // Found it!
+                                    tuple = currentTuple;
+                                    break;
+                                }
+                            }
+
+                            // Update the tuple with the response object
+                            Assert.NotNull(tuple);
+                            requestData[request.RequestUri] =
+                                new Tuple<WebRequest, WebResponse>(request, response);
+                        }
                     }
-                }
 
-                // Finally, make sure we have request and response objects for every successful request
-                foreach (KeyValuePair<Uri, Tuple<WebRequest, WebResponse>> pair in requestData)
-                {
-                    if (successfulTasks.Any(t => t.Key == pair.Key))
+                    // Finally, make sure we have request and response objects for every successful request
+                    foreach (KeyValuePair<Uri, Tuple<WebRequest, WebResponse>> pair in requestData)
                     {
-                        Assert.NotNull(pair.Value);
-                        Assert.NotNull(pair.Value.Item1);
-                        Assert.NotNull(pair.Value.Item2);
+                        if (successfulTasks.Any(t => t.Key == pair.Key))
+                        {
+                            Assert.NotNull(pair.Value);
+                            Assert.NotNull(pair.Value.Item1);
+                            Assert.NotNull(pair.Value.Item2);
+                        }
                     }
                 }
-            }
+            }).Dispose();
         }
 
-
-        private void CleanUp()
-        {
-            Activity.DefaultIdFormat = ActivityIdFormat.Hierarchical;
-            Activity.ForceDefaultIdFormat = false;
-
-            while (Activity.Current != null)
-            {
-                Activity.Current.Stop();
-            }
-        }
 
         private static T ReadPublicProperty<T>(object obj, string propertyName)
         {

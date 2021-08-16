@@ -9,7 +9,7 @@ using System.Text;
 
 namespace Microsoft.Extensions.Http.Logging
 {
-    internal class HttpHeadersLogValue : IReadOnlyList<KeyValuePair<string, object>>
+    internal sealed class HttpHeadersLogValue : IReadOnlyList<KeyValuePair<string, object>>
     {
         private readonly Kind _kind;
         private readonly Func<string, bool> _shouldRedactHeaderValue;

@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#nullable enable
 using Microsoft.Win32.SafeHandles;
 using System.Diagnostics;
 using System.Globalization;
@@ -13,7 +12,7 @@ namespace System.Net.Security
     {
         private static readonly IdnMapping s_idnMapping = new IdnMapping();
 
-        internal static SslPolicyErrors BuildChainAndVerifyProperties(X509Chain chain, X509Certificate2 remoteCertificate, bool checkCertName, string? hostName)
+        internal static SslPolicyErrors BuildChainAndVerifyProperties(X509Chain chain, X509Certificate2 remoteCertificate, bool checkCertName, bool isServer, string? hostName)
         {
             SslPolicyErrors errors = chain.Build(remoteCertificate) ?
                 SslPolicyErrors.None :

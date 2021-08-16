@@ -43,8 +43,8 @@ namespace System.Runtime.Intrinsics
             where T : struct
             where U : struct
         {
-            ThrowHelper.ThrowForUnsupportedVectorBaseType<T>();
-            ThrowHelper.ThrowForUnsupportedVectorBaseType<U>();
+            ThrowHelper.ThrowForUnsupportedIntrinsicsVectorBaseType<T>();
+            ThrowHelper.ThrowForUnsupportedIntrinsicsVectorBaseType<U>();
             return Unsafe.As<Vector256<T>, Vector256<U>>(ref vector);
         }
 
@@ -182,7 +182,7 @@ namespace System.Runtime.Intrinsics
             where T : struct
         {
             Debug.Assert(Vector256<T>.Count >= Vector<T>.Count);
-            ThrowHelper.ThrowForUnsupportedVectorBaseType<T>();
+            ThrowHelper.ThrowForUnsupportedIntrinsicsVectorBaseType<T>();
 
             Vector256<T> result = default;
             Unsafe.WriteUnaligned(ref Unsafe.As<Vector256<T>, byte>(ref result), value);
@@ -199,7 +199,7 @@ namespace System.Runtime.Intrinsics
             where T : struct
         {
             Debug.Assert(Vector256<T>.Count >= Vector<T>.Count);
-            ThrowHelper.ThrowForUnsupportedVectorBaseType<T>();
+            ThrowHelper.ThrowForUnsupportedIntrinsicsVectorBaseType<T>();
             return Unsafe.As<Vector256<T>, Vector<T>>(ref value);
         }
 
@@ -1724,7 +1724,7 @@ namespace System.Runtime.Intrinsics
         public static T GetElement<T>(this Vector256<T> vector, int index)
             where T : struct
         {
-            ThrowHelper.ThrowForUnsupportedVectorBaseType<T>();
+            ThrowHelper.ThrowForUnsupportedIntrinsicsVectorBaseType<T>();
 
             if ((uint)(index) >= (uint)(Vector256<T>.Count))
             {
@@ -1747,7 +1747,7 @@ namespace System.Runtime.Intrinsics
         public static Vector256<T> WithElement<T>(this Vector256<T> vector, int index, T value)
             where T : struct
         {
-            ThrowHelper.ThrowForUnsupportedVectorBaseType<T>();
+            ThrowHelper.ThrowForUnsupportedIntrinsicsVectorBaseType<T>();
 
             if ((uint)(index) >= (uint)(Vector256<T>.Count))
             {
@@ -1769,7 +1769,7 @@ namespace System.Runtime.Intrinsics
         public static Vector128<T> GetLower<T>(this Vector256<T> vector)
             where T : struct
         {
-            ThrowHelper.ThrowForUnsupportedVectorBaseType<T>();
+            ThrowHelper.ThrowForUnsupportedIntrinsicsVectorBaseType<T>();
             return Unsafe.As<Vector256<T>, Vector128<T>>(ref vector);
         }
 
@@ -1783,7 +1783,7 @@ namespace System.Runtime.Intrinsics
         public static Vector256<T> WithLower<T>(this Vector256<T> vector, Vector128<T> value)
             where T : struct
         {
-            ThrowHelper.ThrowForUnsupportedVectorBaseType<T>();
+            ThrowHelper.ThrowForUnsupportedIntrinsicsVectorBaseType<T>();
 
             if (Avx2.IsSupported && ((typeof(T) != typeof(float)) && (typeof(T) != typeof(double))))
             {
@@ -1817,7 +1817,7 @@ namespace System.Runtime.Intrinsics
         public static Vector128<T> GetUpper<T>(this Vector256<T> vector)
             where T : struct
         {
-            ThrowHelper.ThrowForUnsupportedVectorBaseType<T>();
+            ThrowHelper.ThrowForUnsupportedIntrinsicsVectorBaseType<T>();
 
             if (Avx2.IsSupported && ((typeof(T) != typeof(float)) && (typeof(T) != typeof(double))))
             {
@@ -1851,7 +1851,7 @@ namespace System.Runtime.Intrinsics
         public static Vector256<T> WithUpper<T>(this Vector256<T> vector, Vector128<T> value)
             where T : struct
         {
-            ThrowHelper.ThrowForUnsupportedVectorBaseType<T>();
+            ThrowHelper.ThrowForUnsupportedIntrinsicsVectorBaseType<T>();
 
             if (Avx2.IsSupported && ((typeof(T) != typeof(float)) && (typeof(T) != typeof(double))))
             {
@@ -1886,7 +1886,7 @@ namespace System.Runtime.Intrinsics
         public static T ToScalar<T>(this Vector256<T> vector)
             where T : struct
         {
-            ThrowHelper.ThrowForUnsupportedVectorBaseType<T>();
+            ThrowHelper.ThrowForUnsupportedIntrinsicsVectorBaseType<T>();
             return Unsafe.As<Vector256<T>, T>(ref vector);
         }
     }

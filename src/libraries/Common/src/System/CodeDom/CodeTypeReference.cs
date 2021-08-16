@@ -5,14 +5,16 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
 
-#if !FEATURE_SERIALIZATION
+#nullable enable
+
+#if CODEDOM
 namespace System.CodeDom
 #else
 namespace System.Runtime.Serialization
 #endif
 {
     [Flags]
-#if !FEATURE_SERIALIZATION
+#if CODEDOM
     public enum CodeTypeReferenceOptions
 #else
     internal enum CodeTypeReferenceOptions
@@ -22,10 +24,10 @@ namespace System.Runtime.Serialization
         GenericTypeParameter = 0x00000002
     }
 
-#if !FEATURE_SERIALIZATION
+#if CODEDOM
     public class CodeTypeReference : CodeObject
 #else
-    internal class CodeTypeReference : CodeObject
+    internal sealed class CodeTypeReference : CodeObject
 #endif
     {
         private string? _baseType;
@@ -73,7 +75,7 @@ namespace System.Runtime.Serialization
             Initialize(typeName, codeTypeReferenceOption);
         }
 
-        public CodeTypeReference(string typeName)
+        public CodeTypeReference(string? typeName)
         {
             Initialize(typeName);
         }
@@ -281,7 +283,7 @@ namespace System.Runtime.Serialization
             }
         }
 
-#if !FEATURE_SERIALIZATION
+#if CODEDOM
         public CodeTypeReference(CodeTypeParameter typeParameter) :
             this(typeParameter?.Name)
         {
@@ -325,7 +327,7 @@ namespace System.Runtime.Serialization
 
                 string returnType = _baseType;
                 return _needsFixup && TypeArguments.Count > 0 ?
-                    returnType + '`' + TypeArguments.Count.ToString(CultureInfo.InvariantCulture) :
+                    $"{returnType}`{(uint)TypeArguments.Count}" :
                     returnType;
             }
             set

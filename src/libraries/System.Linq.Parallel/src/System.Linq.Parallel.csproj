@@ -18,6 +18,7 @@
     <Compile Include="System\Linq\Parallel\Enumerables\QueryAggregationOptions.cs" />
     <Compile Include="System\Linq\Parallel\Enumerables\RangeEnumerable.cs" />
     <Compile Include="System\Linq\Parallel\Enumerables\RepeatEnumerable.cs" />
+    <Compile Include="System\Linq\Parallel\JaggedArray.cs" />
     <Compile Include="System\Linq\Parallel\Merging\ArrayMergeHelper.cs" />
     <Compile Include="System\Linq\Parallel\Merging\AsynchronousChannelMergeEnumerator.cs" />
     <Compile Include="System\Linq\Parallel\Merging\DefaultMergeHelper.cs" />
@@ -123,7 +124,6 @@
     <Compile Include="System\Linq\Parallel\Scheduling\Scheduling.cs" />
     <Compile Include="System\Linq\Parallel\Scheduling\SpoolingTask.cs" />
     <Compile Include="System\Linq\Parallel\Scheduling\SpoolingTaskBase.cs" />
-    <Compile Include="System\Linq\Parallel\Helpers.cs" />
     <Compile Include="System\Linq\Parallel\Utils\CancellableEnumerable.cs" />
     <Compile Include="System\Linq\Parallel\Utils\ExceptionAggregator.cs" />
     <Compile Include="System\Linq\Parallel\Utils\ExchangeUtilities.cs" />

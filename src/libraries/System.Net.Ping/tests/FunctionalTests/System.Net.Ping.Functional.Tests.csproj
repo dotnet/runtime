@@ -19,6 +19,8 @@
              Link="SocketCommon\Configuration.cs" />
     <Compile Include="$(CommonTestPath)System\Net\Configuration.Ping.cs"
              Link="SocketCommon\Configuration.Ping.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\Interop.DefaultPathBufferSize.cs"
+             Link="Common\Interop\Unix\Interop.DefaultPathBufferSize.cs" />
     <Compile Include="$(CommonPath)System\Net\RawSocketPermissions.cs"
              Link="Common\System\Net\RawSocketPermissions.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\Interop.Libraries.cs"
@@ -29,5 +31,7 @@
              Link="Common\System\Net\NetworkInformation\UnixCommandLinePing.cs" />
     <Compile Include="$(CommonTestPath)System\Net\Capability.RawSocketPermissions.cs"
              Link="Common\System\Net\Capability.RawSocketPermissions.cs" />
+    <Compile Include="$(CommonPath)System\Text\ValueUtf8Converter.cs"
+             Link="Common\System\Text\ValueUtf8Converter.cs" />
   </ItemGroup>
 </Project>

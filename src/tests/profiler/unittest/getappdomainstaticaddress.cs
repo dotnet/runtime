@@ -47,7 +47,7 @@ namespace Profiler.Tests
             object instance = Activator.CreateInstance(testType);
 
             Console.WriteLine(instance.GetHashCode());
-
+            GC.Collect();
             collectibleContext.Unload();
         }
     }

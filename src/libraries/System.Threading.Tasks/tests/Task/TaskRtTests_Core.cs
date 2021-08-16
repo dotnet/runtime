@@ -1334,7 +1334,7 @@ namespace System.Threading.Tasks.Tests
         }
 
         // creates a large number of tasks and does WaitAll on them from a thread of the specified apartment state
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
         public static void RunTaskWaitAllTests()
         {

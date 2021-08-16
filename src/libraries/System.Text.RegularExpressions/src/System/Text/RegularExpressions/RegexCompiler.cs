@@ -1240,19 +1240,21 @@ namespace System.Text.RegularExpressions
                             {
                                 Stloc(newlinePos);
 
-                                // if (newlinePos == -1)
+                                // if (newlinePos == -1 || newlinePos + 1 > runtextend)
                                 // {
                                 //     runtextpos = runtextend;
                                 //     return false;
                                 // }
-                                Label foundNextLine = DefineLabel();
                                 Ldloc(newlinePos);
                                 Ldc(-1);
-                                Bne(foundNextLine);
-                                BrFar(returnFalse);
+                                Beq(returnFalse);
+                                Ldloc(newlinePos);
+                                Ldc(1);
+                                Add();
+                                Ldloc(_runtextendLocal);
+                                Bgt(returnFalse);
 
                                 // runtextpos = newlinePos + 1;
-                                MarkLabel(foundNextLine);
                                 Ldloc(newlinePos);
                                 Ldc(1);
                                 Add();
@@ -1368,7 +1370,7 @@ namespace System.Text.RegularExpressions
                     {
                         // Create a string to store the lookup table we use to find the offset.
                         Debug.Assert(_boyerMoorePrefix.Pattern.Length <= char.MaxValue, "RegexBoyerMoore should have limited the size allowed.");
-                        string negativeLookup = string.Create(negativeRange, (thisRef: this, beforefirst), (span, state) =>
+                        string negativeLookup = string.Create(negativeRange, (thisRef: this, beforefirst), static (span, state) =>
                         {
                             // Store the offsets into the string.  RightToLeft has negative offsets, so to support it with chars (unsigned), we negate
                             // the values to be stored in the string, and then at run time after looking up the offset in the string, negate it again.
@@ -5256,7 +5258,7 @@ namespace System.Text.RegularExpressions
 
             // Generate the lookup table to store 128 answers as bits. We use a const string instead of a byte[] / static
             // data property because it lets IL emit handle all the details for us.
-            string bitVectorString = string.Create(8, (charClass, invariant), (dest, state) => // String length is 8 chars == 16 bytes == 128 bits.
+            string bitVectorString = string.Create(8, (charClass, invariant), static (dest, state) => // String length is 8 chars == 16 bytes == 128 bits.
             {
                 for (int i = 0; i < 128; i++)
                 {
@@ -5365,7 +5367,7 @@ namespace System.Text.RegularExpressions
             var sb = new StringBuilder();
             if (_backpos > 0)
             {
-                sb.AppendFormat("{0:D6} ", _backpos);
+                sb.Append($"{_backpos:D6} ");
             }
             else
             {

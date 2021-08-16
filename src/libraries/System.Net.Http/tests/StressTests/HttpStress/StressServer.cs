@@ -45,7 +45,7 @@ namespace HttpStress
             (string scheme, string hostname, int port) = ParseServerUri(configuration.ServerUri);
             IWebHostBuilder host = WebHost.CreateDefaultBuilder();
 
-            if (configuration.UseHttpSys)
+            if (configuration.UseHttpSys && OperatingSystem.IsWindows())
             {
                 // Use http.sys.  This requires additional manual configuration ahead of time;
                 // see https://docs.microsoft.com/en-us/aspnet/core/fundamentals/servers/httpsys?view=aspnetcore-2.2#configure-windows-server.
@@ -67,7 +67,7 @@ namespace HttpStress
                 // Use Kestrel, and configure it for HTTPS with a self-signed test certificate.
                 host = host.UseKestrel(ko =>
                 {
-                    // conservative estimation based on https://github.com/aspnet/AspNetCore/blob/caa910ceeba5f2b2c02c47a23ead0ca31caea6f0/src/Servers/Kestrel/Core/src/Internal/Http2/Http2Stream.cs#L204
+                    // conservative estimation based on https://github.com/dotnet/aspnetcore/blob/caa910ceeba5f2b2c02c47a23ead0ca31caea6f0/src/Servers/Kestrel/Core/src/Internal/Http2/Http2Stream.cs#L204
                     ko.Limits.MaxRequestLineSize = Math.Max(ko.Limits.MaxRequestLineSize, configuration.MaxRequestUriSize + 100);
                     ko.Limits.MaxRequestHeaderCount = Math.Max(ko.Limits.MaxRequestHeaderCount, configuration.MaxRequestHeaderCount);
                     ko.Limits.MaxRequestHeadersTotalSize = Math.Max(ko.Limits.MaxRequestHeadersTotalSize, configuration.MaxRequestHeaderTotalSize);
@@ -102,28 +102,41 @@ namespace HttpStress
                                 certReq.CertificateExtensions.Add(new X509EnhancedKeyUsageExtension(new OidCollection { new Oid("1.3.6.1.5.5.7.3.1") }, false));
                                 certReq.CertificateExtensions.Add(new X509KeyUsageExtension(X509KeyUsageFlags.DigitalSignature, false));
                                 X509Certificate2 cert = certReq.CreateSelfSigned(DateTimeOffset.UtcNow.AddMonths(-1), DateTimeOffset.UtcNow.AddMonths(1));
-                                if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                                if (OperatingSystem.IsWindows())
                                 {
                                     cert = new X509Certificate2(cert.Export(X509ContentType.Pfx));
                                 }
                                 listenOptions.UseHttps(cert);
                             }
+                            if (configuration.HttpVersion == HttpVersion.Version30)
+                            {
+                                listenOptions.Protocols = HttpProtocols.Http3;
+                            }
                         }
                         else
                         {
-                            listenOptions.Protocols = 
-                                configuration.HttpVersion == new Version(2,0) ?
+                            listenOptions.Protocols =
+                                configuration.HttpVersion ==  HttpVersion.Version20 ?
                                 HttpProtocols.Http2 :
                                 HttpProtocols.Http1 ;
                         }
                     }
                 });
+
+                if (configuration.HttpVersion == HttpVersion.Version30)
+                {
+                    host = host.UseQuic(options =>
+                    {
+                        options.Alpn = "h3";
+                        options.IdleTimeout = TimeSpan.FromMinutes(1);
+                    });
+                }
             };
 
             LoggerConfiguration loggerConfiguration = new LoggerConfiguration();
             if (configuration.Trace)
             {
-                // Clear existing logs first.                
+                // Clear existing logs first.
                 foreach (var filename in Directory.GetFiles(".", "server*.log"))
                 {
                     try
@@ -161,7 +174,7 @@ namespace HttpStress
         private static void MapRoutes(IEndpointRouteBuilder endpoints)
         {
             var loggerFactory = endpoints.ServiceProvider.GetService<ILoggerFactory>();
-            var logger = loggerFactory.CreateLogger<StressServer>();
+            var logger = loggerFactory?.CreateLogger<StressServer>();
             var head = new[] { "HEAD" };
 
             endpoints.MapGet("/", async context =>
@@ -239,7 +252,7 @@ namespace HttpStress
                 // Post echos back the requested content, first buffering it all server-side, then sending it all back.
                 var s = new MemoryStream();
                 await context.Request.Body.CopyToAsync(s);
-                
+
                 ulong checksum = CRC.CalculateCRC(s.ToArray());
                 AppendChecksumHeader(context.Response.Headers, checksum);
 
@@ -323,7 +336,7 @@ namespace HttpStress
             {
                 var uri = new Uri(serverUri);
                 return (uri.Scheme, uri.Host, uri.Port);
-            } 
+            }
             catch (UriFormatException)
             {
                 // Simple uri parser: used to parse values valid in Kestrel
@@ -345,7 +358,7 @@ namespace HttpStress
 
             int GetExpectedContentLength()
             {
-                if (ctx.Request.Headers.TryGetValue(ExpectedResponseContentLength, out StringValues values) && 
+                if (ctx.Request.Headers.TryGetValue(ExpectedResponseContentLength, out StringValues values) &&
                     values.Count == 1 &&
                     int.TryParse(values[0], out int result))
                 {

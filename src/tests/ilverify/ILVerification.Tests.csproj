@@ -15,7 +15,7 @@
     <Compile Include="..\Common\XunitBase.cs" />
   </ItemGroup>
 
-  <Import Project="..\..\coreclr\src\tools\ILVerification\ILVerification.projitems" />
+  <Import Project="..\..\coreclr\tools\ILVerification\ILVerification.projitems" />
 
   <ItemGroup>
     <PackageReference Include="xunit" Version="$(XUnitVersion)" />

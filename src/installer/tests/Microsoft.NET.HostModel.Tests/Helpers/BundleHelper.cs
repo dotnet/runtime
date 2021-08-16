@@ -6,6 +6,7 @@ using Microsoft.NET.HostModel.Bundle;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Runtime.InteropServices;
 using System.Xml.Linq;
 
@@ -57,17 +58,36 @@ namespace BundleTests.Helpers
             return new string[] { $"{appBaseName}.dll", $"{appBaseName}.deps.json", $"{appBaseName}.runtimeconfig.json" };
         }
 
-        public static string[] GetExtractedFiles(TestProjectFixture fixture)
+        public static string[] GetExtractedFiles(TestProjectFixture fixture, BundleOptions bundleOptions)
         {
-            return new string[] { Path.GetFileName(fixture.TestProject.CoreClrDll) };
+            switch (bundleOptions & ~BundleOptions.EnableCompression)
+            {
+                case BundleOptions.None:
+                case BundleOptions.BundleOtherFiles:
+                case BundleOptions.BundleSymbolFiles:
+                    throw new ArgumentException($"Bundle option {bundleOptions} doesn't extract any files to disk.");
+
+                case BundleOptions.BundleAllContent:
+                    return Directory.GetFiles(GetPublishPath(fixture))
+                        .Select(f => Path.GetFileName(f))
+                        .Except(GetFilesNeverExtracted(fixture)).ToArray();
+
+                case BundleOptions.BundleNativeBinaries:
+                    return new string[] { Path.GetFileName(fixture.TestProject.CoreClrDll) };
+
+                default:
+                    throw new ArgumentException("Unsupported bundle option.");
+            }
         }
 
         public static string[] GetFilesNeverExtracted(TestProjectFixture fixture)
         {
             string appBaseName = GetAppBaseName(fixture);
-            return new string[] { $"{appBaseName}.deps.json",
-                                  $"{appBaseName}.runtimeconfig.json",
+            return new string[] { $"{appBaseName}",
                                   $"{appBaseName}.dll",
+                                  $"{appBaseName}.exe",
+                                  $"{appBaseName}.pdb",
+                                  $"{appBaseName}.runtimeconfig.dev.json",
                                   Path.GetFileName(fixture.TestProject.HostFxrDll),
                                   Path.GetFileName(fixture.TestProject.HostPolicyDll) };
         }

@@ -117,7 +117,7 @@ namespace System.Globalization
         [DoesNotReturn]
         private static void ThrowForZeroLength(bool unicode)
         {
-            int lastError = Marshal.GetLastWin32Error();
+            int lastError = Marshal.GetLastPInvokeError();
 
             throw new ArgumentException(
                 lastError == Interop.Errors.ERROR_INVALID_NAME ? SR.Argument_IdnIllegalName :

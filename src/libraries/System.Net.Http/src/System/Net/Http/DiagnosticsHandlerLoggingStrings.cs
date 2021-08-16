@@ -15,11 +15,5 @@ namespace System.Net.Http
         public const string ExceptionEventName = "System.Net.Http.Exception";
         public const string ActivityName = "System.Net.Http.HttpRequestOut";
         public const string ActivityStartName = "System.Net.Http.HttpRequestOut.Start";
-
-        public const string RequestIdHeaderName = "Request-Id";
-        public const string CorrelationContextHeaderName = "Correlation-Context";
-
-        public const string TraceParentHeaderName = "traceparent";
-        public const string TraceStateHeaderName = "tracestate";
     }
 }

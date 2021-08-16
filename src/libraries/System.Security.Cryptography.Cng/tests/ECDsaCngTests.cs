@@ -156,7 +156,6 @@ namespace System.Security.Cryptography.Cng.Tests
                Assert.Equal(CngAlgorithm.Sha256, cng.HashAlgorithm);
         }
 
-#if NETCOREAPP
         [Fact]
         public static void TestPositive256WithBlob()
         {
@@ -211,7 +210,6 @@ namespace System.Security.Cryptography.Cng.Tests
                 Assert.Equal(algorithm, cng.Key.Algorithm);
             }
         }
-#endif
 
         public static IEnumerable<object[]> SpecialNistKeys
         {

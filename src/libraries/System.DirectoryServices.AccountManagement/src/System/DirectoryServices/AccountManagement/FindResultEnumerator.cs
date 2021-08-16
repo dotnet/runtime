@@ -8,7 +8,7 @@ using System.Diagnostics;
 
 namespace System.DirectoryServices.AccountManagement
 {
-    internal class FindResultEnumerator<T> : IEnumerator<T>, IEnumerator
+    internal sealed class FindResultEnumerator<T> : IEnumerator<T>, IEnumerator
     {
         //
         // Public properties

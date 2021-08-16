@@ -191,7 +191,7 @@ function mount_emulator {
             sudo umount -l $__ARMRootfsMountPath
         fi
         mount_with_checking "" "$__ARMEmulPath/platform/rootfs-t30.ext4" "$__ARMRootfsMountPath"
-        
+
         cd $__ARMRootfsMountPath
         sudo tar -cf "$__ARMEmulRootfs/arm-emulator-rootfs.tar" *
         cd -
@@ -230,7 +230,7 @@ function cross_build_coreclr {
     ROOTFS_DIR="$__ARMEmulRootfs" CPLUS_INCLUDE_PATH=$LINUX_ARM_INCPATH CXXFLAGS=$LINUX_ARM_CXXFLAGS ./build.sh $__buildArch cross $__verboseFlag $__skipMscorlib clang3.5 $__buildConfig
 
     #Reset the code to the upstream version
-    (set +x; echo 'Rewinding HEAD to master code')
+    (set +x; echo 'Rewinding HEAD to main code')
     if [[ "$__buildConfig" == "Release" ]]; then
         git reset --hard HEAD^
     fi
@@ -246,13 +246,13 @@ function cross_build_coreclr_with_docker {
         # TODO: For arm, we are going to embed RootFS inside Docker image.
         case $__linuxCodeName in
         trusty)
-            __dockerImage=" microsoft/dotnet-buildtools-prereqs:ubuntu-14.04-cross-0cd4667-20172211042239"
+            __dockerImage=" mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-14.04-cross-0cd4667-20172211042239"
             __skipRootFS=1
             __dockerEnvironmentVariables+=" -e ROOTFS_DIR=/crossrootfs/arm"
             __runtimeOS="ubuntu.14.04"
         ;;
         xenial)
-            __dockerImage=" microsoft/dotnet-buildtools-prereqs:ubuntu-16.04-cross-ef0ac75-20175511035548"
+            __dockerImage=" mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-16.04-cross-ef0ac75-20175511035548"
             __skipRootFS=1
             __dockerEnvironmentVariables+=" -e ROOTFS_DIR=/crossrootfs/arm"
             __runtimeOS="ubuntu.16.04"
@@ -346,7 +346,7 @@ function copy_to_emulator {
                 __coreFxBinDirBase="$__coreFxBinDirBase;$__ARMEmulCorefx/$currDirBase"
             fi
         done
-    done <<< "$__coreFxBinDir" 
+    done <<< "$__coreFxBinDir"
 }
 
 #Runs tests in an emulated mode
@@ -372,12 +372,12 @@ function run_tests_using_docker {
     if [ "$__buildArch" == "arm" ]; then
         case $__linuxCodeName in
         trusty)
-            __dockerImage=" microsoft/dotnet-buildtools-prereqs:ubuntu1404_cross_prereqs_v3"
+            __dockerImage=" mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu1404_cross_prereqs_v3"
             __skipRootFS=1
             __dockerEnvironmentVariables=" -e ROOTFS_DIR=/crossrootfs/arm"
         ;;
         xenial)
-            __dockerImage=" microsoft/dotnet-buildtools-prereqs:ubuntu1604_cross_prereqs_v3"
+            __dockerImage=" mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu1604_cross_prereqs_v3"
             __skipRootFS=1
             __dockerEnvironmentVariables=" -e ROOTFS_DIR=/crossrootfs/arm"
         ;;
@@ -439,7 +439,7 @@ do
         __ARMRootfsMountPath=${arg#*=}
         ;;
     --buildConfig=*)
-        __buildConfig="$(echo ${arg#*=} | awk '{print tolower($0)}')"
+        __buildConfig="$(echo ${arg#*=} | tr "[:upper:]" "[:lower:]")"
         if [[ "$__buildConfig" != "debug" && "$__buildConfig" != "release" && "$__buildConfig" != "checked" ]]; then
             exit_with_error "--buildConfig can be Debug, Checked or Release" true
         fi
@@ -511,7 +511,7 @@ if [ "$__ciMode" == "emulator" ]; then
     __skipTests=1
 fi
 
-__coreFxBinDir="./bin/CoreFxBinDir" # TODO-cleanup: Just for testing.... 
+__coreFxBinDir="./bin/CoreFxBinDir" # TODO-cleanup: Just for testing....
 #Check if the optional arguments are present in the case that testing is to be done
 if [ $__skipTests == 0 ]; then
     exit_if_empty "$__testRootDir" "Testing requested, but --testRootDir not provided" true

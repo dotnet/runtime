@@ -55,9 +55,12 @@ namespace System.IO
             ValidateCopyToArguments(destination, bufferSize);
             if (!CanRead)
             {
-                throw CanWrite ? (Exception)
-                    new NotSupportedException(SR.NotSupported_UnreadableStream) :
-                    new ObjectDisposedException(GetType().Name, SR.ObjectDisposed_StreamClosed);
+                if (CanWrite)
+                {
+                    ThrowHelper.ThrowNotSupportedException_UnreadableStream();
+                }
+
+                ThrowHelper.ThrowObjectDisposedException_StreamClosed(GetType().Name);
             }
 
             byte[] buffer = ArrayPool<byte>.Shared.Rent(bufferSize);
@@ -86,9 +89,12 @@ namespace System.IO
             ValidateCopyToArguments(destination, bufferSize);
             if (!CanRead)
             {
-                throw CanWrite ? (Exception)
-                    new NotSupportedException(SR.NotSupported_UnreadableStream) :
-                    new ObjectDisposedException(GetType().Name, SR.ObjectDisposed_StreamClosed);
+                if (CanWrite)
+                {
+                    ThrowHelper.ThrowNotSupportedException_UnreadableStream();
+                }
+
+                ThrowHelper.ThrowObjectDisposedException_StreamClosed(GetType().Name);
             }
 
             return Core(this, destination, bufferSize, cancellationToken);
@@ -189,20 +195,20 @@ namespace System.IO
                 static state => ((Stream)state!).Flush(), this,
                 cancellationToken, TaskCreationOptions.DenyChildAttach, TaskScheduler.Default);
 
-        [Obsolete("CreateWaitHandle will be removed eventually.  Please use \"new ManualResetEvent(false)\" instead.")]
+        [Obsolete("CreateWaitHandle has been deprecated. Use the ManualResetEvent(false) constructor instead.")]
         protected virtual WaitHandle CreateWaitHandle() => new ManualResetEvent(false);
 
         public virtual IAsyncResult BeginRead(byte[] buffer, int offset, int count, AsyncCallback? callback, object? state) =>
             BeginReadInternal(buffer, offset, count, callback, state, serializeAsynchronously: false, apm: true);
 
-        internal IAsyncResult BeginReadInternal(
+        internal Task<int> BeginReadInternal(
             byte[] buffer, int offset, int count, AsyncCallback? callback, object? state,
             bool serializeAsynchronously, bool apm)
         {
             ValidateBufferArguments(buffer, offset, count);
             if (!CanRead)
             {
-                throw Error.GetReadNotSupported();
+                ThrowHelper.ThrowNotSupportedException_UnreadableStream();
             }
 
             // To avoid a race with a stream's position pointer & generating race conditions
@@ -225,7 +231,7 @@ namespace System.IO
 
             // Create the task to asynchronously do a Read.  This task serves both
             // as the asynchronous work item and as the IAsyncResult returned to the user.
-            var asyncResult = new ReadWriteTask(true /*isRead*/, apm, delegate
+            var task = new ReadWriteTask(true /*isRead*/, apm, delegate
             {
                 // The ReadWriteTask stores all of the parameters to pass to Read.
                 // As we're currently inside of it, we can get the current task
@@ -256,14 +262,14 @@ namespace System.IO
             // Schedule it
             if (semaphoreTask != null)
             {
-                RunReadWriteTaskWhenReady(semaphoreTask, asyncResult);
+                RunReadWriteTaskWhenReady(semaphoreTask, task);
             }
             else
             {
-                RunReadWriteTask(asyncResult);
+                RunReadWriteTask(task);
             }
 
-            return asyncResult; // return it
+            return task; // return it
         }
 
         public virtual int EndRead(IAsyncResult asyncResult)
@@ -332,7 +338,7 @@ namespace System.IO
             {
                 // If the Stream does not override Begin/EndRead, then we can take an optimized path
                 // that skips an extra layer of tasks / IAsyncResults.
-                return (Task<int>)BeginReadInternal(buffer, offset, count, null, null, serializeAsynchronously: true, apm: false);
+                return BeginReadInternal(buffer, offset, count, null, null, serializeAsynchronously: true, apm: false);
             }
 
             // Otherwise, we need to wrap calls to Begin/EndWrite to ensure we use the derived type's functionality.
@@ -352,14 +358,14 @@ namespace System.IO
         public virtual IAsyncResult BeginWrite(byte[] buffer, int offset, int count, AsyncCallback? callback, object? state) =>
             BeginWriteInternal(buffer, offset, count, callback, state, serializeAsynchronously: false, apm: true);
 
-        internal IAsyncResult BeginWriteInternal(
+        internal Task BeginWriteInternal(
             byte[] buffer, int offset, int count, AsyncCallback? callback, object? state,
             bool serializeAsynchronously, bool apm)
         {
             ValidateBufferArguments(buffer, offset, count);
             if (!CanWrite)
             {
-                throw Error.GetWriteNotSupported();
+                ThrowHelper.ThrowNotSupportedException_UnwritableStream();
             }
 
             // To avoid a race condition with a stream's position pointer & generating conditions
@@ -382,7 +388,7 @@ namespace System.IO
 
             // Create the task to asynchronously do a Write.  This task serves both
             // as the asynchronous work item and as the IAsyncResult returned to the user.
-            var asyncResult = new ReadWriteTask(false /*isRead*/, apm, delegate
+            var task = new ReadWriteTask(false /*isRead*/, apm, delegate
             {
                 // The ReadWriteTask stores all of the parameters to pass to Write.
                 // As we're currently inside of it, we can get the current task
@@ -414,14 +420,14 @@ namespace System.IO
             // Schedule it
             if (semaphoreTask != null)
             {
-                RunReadWriteTaskWhenReady(semaphoreTask, asyncResult);
+                RunReadWriteTaskWhenReady(semaphoreTask, task);
             }
             else
             {
-                RunReadWriteTask(asyncResult);
+                RunReadWriteTask(task);
             }
 
-            return asyncResult; // return it
+            return task; // return it
         }
 
         private static void RunReadWriteTaskWhenReady(Task asyncWaiter, ReadWriteTask readWriteTask)
@@ -636,7 +642,7 @@ namespace System.IO
             {
                 // If the Stream does not override Begin/EndWrite, then we can take an optimized path
                 // that skips an extra layer of tasks / IAsyncResults.
-                return (Task)BeginWriteInternal(buffer, offset, count, null, null, serializeAsynchronously: true, apm: false);
+                return BeginWriteInternal(buffer, offset, count, null, null, serializeAsynchronously: true, apm: false);
             }
 
             // Otherwise, we need to wrap calls to Begin/EndWrite to ensure we use the derived type's functionality.
@@ -759,9 +765,12 @@ namespace System.IO
 
             if (!destination.CanWrite)
             {
-                throw destination.CanRead ? (Exception)
-                    new NotSupportedException(SR.NotSupported_UnwritableStream) :
-                    new ObjectDisposedException(destination.GetType().Name, SR.ObjectDisposed_StreamClosed);
+                if (destination.CanRead)
+                {
+                    ThrowHelper.ThrowNotSupportedException_UnwritableStream();
+                }
+
+                ThrowHelper.ThrowObjectDisposedException_StreamClosed(destination.GetType().Name);
             }
         }
 

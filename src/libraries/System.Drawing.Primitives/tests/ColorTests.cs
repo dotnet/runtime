@@ -130,6 +130,7 @@ namespace System.Drawing.Primitives.Tests
                 new object[] {"Plum", 255, 221, 160, 221},
                 new object[] {"PowderBlue", 255, 176, 224, 230},
                 new object[] {"Purple", 255, 128, 0, 128},
+                new object[] {"RebeccaPurple", 255, 102, 51, 153},
                 new object[] {"Red", 255, 255, 0, 0},
                 new object[] {"RosyBrown", 255, 188, 143, 143},
                 new object[] {"RoyalBlue", 255, 65, 105, 225},
@@ -389,6 +390,12 @@ namespace System.Drawing.Primitives.Tests
         [InlineData(51, 255, 51, 0.6f)]
         [InlineData(51, 51, 255, 0.6f)]
         [InlineData(51, 51, 51, 0.2f)]
+        [InlineData(0, 51, 255, 0.5f)]
+        [InlineData(51, 255, 0, 0.5f)]
+        [InlineData(0, 255, 51, 0.5f)]
+        [InlineData(255, 0, 51, 0.5f)]
+        [InlineData(51, 0, 255, 0.5f)]
+        [InlineData(255, 51, 0, 0.5f)]
         public void GetBrightness(int r, int g, int b, float expected)
         {
             Assert.Equal(expected, Color.FromArgb(r, g, b).GetBrightness());
@@ -532,7 +539,7 @@ namespace System.Drawing.Primitives.Tests
         [Theory]
         [InlineData((KnownColor)(-1))]
         [InlineData((KnownColor)0)]
-        [InlineData(KnownColor.MenuHighlight + 1)]
+        [InlineData(KnownColor.RebeccaPurple + 1)]
         public void FromOutOfRangeKnownColor(KnownColor known)
         {
             Color color = Color.FromKnownColor(known);
@@ -556,7 +563,7 @@ namespace System.Drawing.Primitives.Tests
         [Theory]
         [InlineData((KnownColor)(-1))]
         [InlineData((KnownColor)0)]
-        [InlineData(KnownColor.MenuHighlight + 1)]
+        [InlineData(KnownColor.RebeccaPurple + 1)]
         public void FromOutOfRangeKnownColorToKnownColor(KnownColor known)
         {
             Color color = Color.FromKnownColor(known);
@@ -585,10 +592,14 @@ namespace System.Drawing.Primitives.Tests
             Assert.False(match.IsSystemColor);
         }
 
+        [Theory, MemberData(nameof(SystemKindKnownColorPairs))]
+        public void SystemKindOrdering(bool isSystemColor, KnownColor known) =>
+            Assert.Equal(isSystemColor, Color.FromKnownColor(known).IsSystemColor);
+
         [Theory]
         [InlineData((KnownColor)(-1))]
         [InlineData((KnownColor)0)]
-        [InlineData(KnownColor.MenuHighlight + 1)]
+        [InlineData(KnownColor.RebeccaPurple + 1)]
         public void IsSystemColorOutOfRangeKnown(KnownColor known)
         {
             Color color = Color.FromKnownColor(known);
@@ -612,7 +623,7 @@ namespace System.Drawing.Primitives.Tests
         [Theory]
         [InlineData((KnownColor)(-1))]
         [InlineData((KnownColor)0)]
-        [InlineData(KnownColor.MenuHighlight + 1)]
+        [InlineData(KnownColor.RebeccaPurple + 1)]
         public void IsKnownColorOutOfRangeKnown(KnownColor known)
         {
             Color color = Color.FromKnownColor(known);
@@ -683,8 +694,192 @@ namespace System.Drawing.Primitives.Tests
                 KnownColor.SeaShell, KnownColor.Sienna, KnownColor.Silver, KnownColor.SkyBlue, KnownColor.SlateBlue,
                 KnownColor.SlateGray, KnownColor.Snow, KnownColor.SpringGreen, KnownColor.SteelBlue, KnownColor.Tan,
                 KnownColor.Teal, KnownColor.Thistle, KnownColor.Tomato, KnownColor.Turquoise, KnownColor.Violet,
-                KnownColor.Wheat, KnownColor.White, KnownColor.WhiteSmoke, KnownColor.Yellow, KnownColor.YellowGreen
+                KnownColor.Wheat, KnownColor.White, KnownColor.WhiteSmoke, KnownColor.Yellow, KnownColor.YellowGreen,
+                KnownColor.RebeccaPurple
             }.Select(kc => new object[] { kc }).ToArray();
+
+        public static readonly IEnumerable<bool> SystemKindOrder =
+            new[]
+            {
+                true,       // ActiveBorder
+                true,       // ActiveCaption
+                true,       // ActiveCaptionText
+                true,       // AppWorkspace
+                true,       // Control
+                true,       // ControlDark
+                true,       // ControlDarkDark
+                true,       // ControlLight
+                true,       // ControlLightLight
+                true,       // ControlText
+                true,       // Desktop
+                true,       // GrayText
+                true,       // Highlight
+                true,       // HighlightText
+                true,       // HotTrack
+                true,       // InactiveBorder
+                true,       // InactiveCaption
+                true,       // InactiveCaptionText
+                true,       // Info
+                true,       // InfoText
+                true,       // Menu
+                true,       // MenuText
+                true,       // ScrollBar
+                true,       // Window
+                true,       // WindowFrame
+                true,       // WindowText
+                false,      // Transparent
+                false,      // AliceBlue
+                false,      // AntiqueWhite
+                false,      // Aqua
+                false,      // Aquamarine
+                false,      // Azure
+                false,      // Beige
+                false,      // Bisque
+                false,      // Black
+                false,      // BlanchedAlmond
+                false,      // Blue
+                false,      // BlueViolet
+                false,      // Brown
+                false,      // BurlyWood
+                false,      // CadetBlue
+                false,      // Chartreuse
+                false,      // Chocolate
+                false,      // Coral
+                false,      // CornflowerBlue
+                false,      // Cornsilk
+                false,      // Crimson
+                false,      // Cyan
+                false,      // DarkBlue
+                false,      // DarkCyan
+                false,      // DarkGoldenrod
+                false,      // DarkGray
+                false,      // DarkGreen
+                false,      // DarkKhaki
+                false,      // DarkMagenta
+                false,      // DarkOliveGreen
+                false,      // DarkOrange
+                false,      // DarkOrchid
+                false,      // DarkRed
+                false,      // DarkSalmon
+                false,      // DarkSeaGreen
+                false,      // DarkSlateBlue
+                false,      // DarkSlateGray
+                false,      // DarkTurquoise
+                false,      // DarkViolet
+                false,      // DeepPink
+                false,      // DeepSkyBlue
+                false,      // DimGray
+                false,      // DodgerBlue
+                false,      // Firebrick
+                false,      // FloralWhite
+                false,      // ForestGreen
+                false,      // Fuchsia
+                false,      // Gainsboro
+                false,      // GhostWhite
+                false,      // Gold
+                false,      // Goldenrod
+                false,      // Gray
+                false,      // Green
+                false,      // GreenYellow
+                false,      // Honeydew
+                false,      // HotPink
+                false,      // IndianRed
+                false,      // Indigo
+                false,      // Ivory
+                false,      // Khaki
+                false,      // Lavender
+                false,      // LavenderBlush
+                false,      // LawnGreen
+                false,      // LemonChiffon
+                false,      // LightBlue
+                false,      // LightCoral
+                false,      // LightCyan
+                false,      // LightGoldenrodYellow
+                false,      // LightGray
+                false,      // LightGreen
+                false,      // LightPink
+                false,      // LightSalmon
+                false,      // LightSeaGreen
+                false,      // LightSkyBlue
+                false,      // LightSlateGray
+                false,      // LightSteelBlue
+                false,      // LightYellow
+                false,      // Lime
+                false,      // LimeGreen
+                false,      // Linen
+                false,      // Magenta
+                false,      // Maroon
+                false,      // MediumAquamarine
+                false,      // MediumBlue
+                false,      // MediumOrchid
+                false,      // MediumPurple
+                false,      // MediumSeaGreen
+                false,      // MediumSlateBlue
+                false,      // MediumSpringGreen
+                false,      // MediumTurquoise
+                false,      // MediumVioletRed
+                false,      // MidnightBlue
+                false,      // MintCream
+                false,      // MistyRose
+                false,      // Moccasin
+                false,      // NavajoWhite
+                false,      // Navy
+                false,      // OldLace
+                false,      // Olive
+                false,      // OliveDrab
+                false,      // Orange
+                false,      // OrangeRed
+                false,      // Orchid
+                false,      // PaleGoldenrod
+                false,      // PaleGreen
+                false,      // PaleTurquoise
+                false,      // PaleVioletRed
+                false,      // PapayaWhip
+                false,      // PeachPuff
+                false,      // Peru
+                false,      // Pink
+                false,      // Plum
+                false,      // PowderBlue
+                false,      // Purple
+                false,      // Red
+                false,      // RosyBrown
+                false,      // RoyalBlue
+                false,      // SaddleBrown
+                false,      // Salmon
+                false,      // SandyBrown
+                false,      // SeaGreen
+                false,      // SeaShell
+                false,      // Sienna
+                false,      // Silver
+                false,      // SkyBlue
+                false,      // SlateBlue
+                false,      // SlateGray
+                false,      // Snow
+                false,      // SpringGreen
+                false,      // SteelBlue
+                false,      // Tan
+                false,      // Teal
+                false,      // Thistle
+                false,      // Tomato
+                false,      // Turquoise
+                false,      // Violet
+                false,      // Wheat
+                false,      // White
+                false,      // WhiteSmoke
+                false,      // Yellow
+                false,      // YellowGreen
+                true,       // ButtonFace
+                true,       // ButtonHighlight
+                true,       // ButtonShadow
+                true,       // GradientActiveCaption
+                true,       // GradientInactiveCaption
+                true,       // MenuBar
+                true,       // MenuHighlight
+                false,      // RebeccaPurple
+            };
+
+        public static IEnumerable<object[]> SystemKindKnownColorPairs =>
+            SystemKindOrder.Zip(AllKnownColors, (isSystemKind, color) => new[] { isSystemKind, color[0] });
 
         [DllImport("user32.dll", SetLastError = true)]
         private static extern int SetSysColors(int cElements, int[] lpaElements, int[] lpaRgbValues);

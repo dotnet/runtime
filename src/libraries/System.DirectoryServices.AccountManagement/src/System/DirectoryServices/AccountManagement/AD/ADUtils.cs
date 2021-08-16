@@ -12,11 +12,8 @@ using System.Security.Principal;
 
 namespace System.DirectoryServices.AccountManagement
 {
-    internal class ADUtils
+    internal static class ADUtils
     {
-        // To stop the compiler from autogenerating a constructor for this class
-        private ADUtils() { }
-
         // We use this, rather than simply testing DirectoryEntry.SchemaClassName, because we don't
         // want to miss objects that are of a derived type.
         // Note that, since computer is a derived class of user in AD, if you don't want to confuse

@@ -8,7 +8,7 @@ using System.Text;
 
 namespace System.ComponentModel.Composition.ReflectionModel
 {
-    internal class PartCreatorMemberImportDefinition : ReflectionMemberImportDefinition, IPartCreatorImportDefinition
+    internal sealed class PartCreatorMemberImportDefinition : ReflectionMemberImportDefinition, IPartCreatorImportDefinition
     {
         private readonly ContractBasedImportDefinition _productImportDefinition;
 

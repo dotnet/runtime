@@ -1,7 +1,6 @@
-#include <config.h>
+#include "ep-rt-config.h"
 
 #ifdef ENABLE_PERFTRACING
-#include "ep-rt-config.h"
 #if !defined(EP_INCLUDE_SOURCE_FILES) || defined(EP_FORCE_INCLUDE_SOURCE_FILES)
 
 #define EP_IMPL_FILE_GETTER_SETTER
@@ -175,7 +174,7 @@ file_get_stack_id (
 			ep_file_flush (file, EP_FILE_FLUSH_FLAGS_STACK_BLOCK);
 			bool result = ep_stack_block_write_stack (stack_block, stack_id, stack_contents);
 			if (!result)
-				EP_ASSERT (!"Should never fail to add event to a clear block. If we do the max size is too small.");
+				EP_UNREACHABLE ("Should never fail to add event to a clear block. If we do the max size is too small.");
 		}
 	} else {
 		stack_id = ep_stack_hash_entry_get_id (entry);
@@ -247,7 +246,7 @@ file_write_event_to_block (
 
 	bool result = ep_event_block_base_write_event (block, event_instance, capture_thread_id, sequence_number, stack_id, is_sotred_event);
 	if (!result)
-		EP_ASSERT (!"Should never fail to add event to a clear block. If we do the max size is too small.");
+		EP_UNREACHABLE ("Should never fail to add event to a clear block. If we do the max size is too small.");
 }
 
 static
@@ -399,7 +398,7 @@ ep_file_initialize_file (EventPipeFile *file)
 	bool success = true;
 	if (file->format >= EP_SERIALIZATION_FORMAT_NETTRACE_V4) {
 		const ep_char8_t header[] = "Nettrace";
-		const uint32_t bytes_to_write = EP_ARRAY_SIZE (header) - 1;
+		const uint32_t bytes_to_write = (uint32_t)(EP_ARRAY_SIZE (header) - 1);
 		uint32_t bytes_written = 0;
 		success = ep_stream_writer_write (file->stream_writer, (const uint8_t *)header, bytes_to_write, &bytes_written) && bytes_written == bytes_to_write;
 	}

@@ -1,3 +1,7 @@
+#if defined(_MSC_VER) && defined(_DEBUG)
+#include "ep-tests-debug.h"
+#endif
+
 #include <eventpipe/ep.h>
 #include <eventpipe/ep-config.h>
 #include <eventpipe/ep-buffer.h>
@@ -86,7 +90,8 @@ load_buffer_with_events_init (
 			1,
 			current_provider_config,
 			1,
-			false);
+			NULL,
+			NULL);
 	EP_LOCK_EXIT (section1)
 
 	ep_raise_error_if_nok (*session != NULL);

@@ -1,15 +1,23 @@
-<?xml version="1.0" encoding="utf-8"?>
 <Project>
   <Import Project="..\..\Directory.Build.targets" />
 
-  <Import Project="Sdk.targets" Sdk="Microsoft.DotNet.Arcade.Sdk" />
+  <ItemGroup>
+    <BuiltBinary Include="$(TargetPath)" />
+  </ItemGroup>
 
-  <PropertyGroup>
-    <!-- SDK sets product to assembly but we want it to be our product name -->
-    <Product>Microsoft%AE .NET</Product>
+  <!-- Target used to consolidate all PDBs into a single location -->
+  <Target Name="MoveSymbolFiles"
+          AfterTargets="Build"
+          Condition="Exists(@(BuiltBinary -> '%(RootDir)%(Directory)%(Filename).pdb'))"
+          Inputs="@(BuiltBinary -> '%(RootDir)%(Directory)%(Filename).pdb')"
+          Outputs="@(BuiltBinary -> '$(RuntimeBinDir)PDB/%(Filename).pdb')">
 
-    <!-- Use the .NET product branding version for informational version description -->
-    <InformationalVersion>$(ProductVersion)</InformationalVersion>
-    <InformationalVersion Condition="'$(VersionSuffix)' != ''">$(InformationalVersion)-$(VersionSuffix)</InformationalVersion>
-  </PropertyGroup>
+    <Move SourceFiles="@(BuiltBinary -> '%(RootDir)%(Directory)%(Filename).pdb')"
+          DestinationFolder="$(RuntimeBinDir)PDB" />
+
+  </Target>
+
+  <!-- Import targets here to have TargetPath and other macros defined. Limit to CoreLib. -->
+  <Import Condition="'$(MSBuildProjectName)' == 'System.Private.CoreLib'" Project="$(RepositoryEngineeringDir)illink.targets" />
+
 </Project>

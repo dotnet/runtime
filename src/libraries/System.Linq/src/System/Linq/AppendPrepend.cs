@@ -86,7 +86,7 @@ namespace System.Linq
         /// Represents the insertion of an item before or after an <see cref="IEnumerable{TSource}"/>.
         /// </summary>
         /// <typeparam name="TSource">The type of the source enumerable.</typeparam>
-        private partial class AppendPrepend1Iterator<TSource> : AppendPrependIterator<TSource>
+        private sealed partial class AppendPrepend1Iterator<TSource> : AppendPrependIterator<TSource>
         {
             private readonly TSource _item;
             private readonly bool _appending;
@@ -165,7 +165,7 @@ namespace System.Linq
         /// Represents the insertion of multiple items before or after an <see cref="IEnumerable{TSource}"/>.
         /// </summary>
         /// <typeparam name="TSource">The type of the source enumerable.</typeparam>
-        private partial class AppendPrependN<TSource> : AppendPrependIterator<TSource>
+        private sealed partial class AppendPrependN<TSource> : AppendPrependIterator<TSource>
         {
             private readonly SingleLinkedNode<TSource>? _prepended;
             private readonly SingleLinkedNode<TSource>? _appended;

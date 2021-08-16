@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 
 EXECUTION_DIR=$(dirname $0)
+SCENARIO=$3
 
 cd $EXECUTION_DIR
 
@@ -18,7 +19,9 @@ else
 	HARNESS_RUNNER="dotnet xharness"
 fi
 
-if [ -z "$XHARNESS_COMMAND" ]; then
+if [ "$SCENARIO" == "WasmTestOnBrowser" ]; then
+	XHARNESS_COMMAND="test-browser"
+elif [ -z "$XHARNESS_COMMAND" ]; then
 	XHARNESS_COMMAND="test"
 fi
 

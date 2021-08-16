@@ -5,6 +5,7 @@ if(ENABLE_PERFTRACING OR FEATURE_PERFTRACING)
     set (SHARED_DIAGNOSTIC_SERVER_HEADERS "")
 
     list(APPEND SHARED_EVENTPIPE_SOURCES
+        ep-sources.c
         ep.c
         ep-block.c
         ep-buffer.c
@@ -39,6 +40,9 @@ if(ENABLE_PERFTRACING OR FEATURE_PERFTRACING)
         ep-event-source.h
         ep-file.h
         ep-getter-setter.h
+        ep-ipc-pal-types.h
+        ep-ipc-pal-types-forward.h
+        ep-ipc-stream.h
         ep-json-file.h
         ep-metadata-generator.h
         ep-provider.h
@@ -48,14 +52,16 @@ if(ENABLE_PERFTRACING OR FEATURE_PERFTRACING)
         ep-rt-types.h
         ep-sample-profiler.h
         ep-session.h
+        ep-session-provider.h
         ep-stack-contents.h
         ep-stream.h
         ep-thread.h
         ep-types.h
+        ep-types-forward.h
     )
 
     list(APPEND SHARED_DIAGNOSTIC_SERVER_SOURCES
-        ds.c
+        ds-sources.c
         ds-dump-protocol.c
         ds-eventpipe-protocol.c
         ds-ipc.c
@@ -70,6 +76,8 @@ if(ENABLE_PERFTRACING OR FEATURE_PERFTRACING)
         ds-eventpipe-protocol.h
         ds-getter-setter.h
         ds-ipc.h
+        ds-ipc-pal.h
+        ds-ipc-pal-types.h
         ds-process-protocol.h
         ds-profiler-protocol.h
         ds-protocol.h
@@ -79,28 +87,29 @@ if(ENABLE_PERFTRACING OR FEATURE_PERFTRACING)
         ds-server.h
         ds-types.h
     )
+    if (FEATURE_PERFTRACING_PAL_TCP)
+            list(APPEND SHARED_DIAGNOSTIC_SERVER_PAL_SOURCES
+                ds-ipc-pal-socket.c
+            )
+            list(APPEND SHARED_DIAGNOSTIC_SERVER_PAL_HEADERS
+                ds-ipc-pal-socket.h
+            )
+    else (FEATURE_PERFTRACING_PAL_TCP)
+        if(HOST_WIN32 OR CLR_CMAKE_TARGET_WIN32)
+            list(APPEND SHARED_DIAGNOSTIC_SERVER_PAL_SOURCES
+                ds-ipc-pal-namedpipe.c
+            )
+            list(APPEND SHARED_DIAGNOSTIC_SERVER_PAL_HEADERS
+                ds-ipc-pal-namedpipe.h
+            )
+        else(HOST_WIN32 OR CLR_CMAKE_TARGET_WIN32)
+            list(APPEND SHARED_DIAGNOSTIC_SERVER_PAL_SOURCES
+                ds-ipc-pal-socket.c
+            )
+            list(APPEND SHARED_DIAGNOSTIC_SERVER_PAL_HEADERS
+                ds-ipc-pal-socket.h
+            )
+        endif(HOST_WIN32 OR CLR_CMAKE_TARGET_WIN32)
+    endif (FEATURE_PERFTRACING_PAL_TCP)
 
-    if(HOST_WIN32 OR CLR_CMAKE_TARGET_WIN32)
-        list(APPEND SHARED_DIAGNOSTIC_SERVER_SOURCES
-            ds-ipc-win32.c
-        )
-        list(APPEND SHARED_DIAGNOSTIC_SERVER_HEADERS
-            ds-ipc-win32.h
-        )
-    else(HOST_WIN32 OR CLR_CMAKE_TARGET_WIN32)
-        list(APPEND SHARED_DIAGNOSTIC_SERVER_SOURCES
-            ds-ipc-posix.c
-        )
-        list(APPEND SHARED_DIAGNOSTIC_SERVER_HEADERS
-            ds-ipc-posix.h
-        )
-    endif(HOST_WIN32 OR CLR_CMAKE_TARGET_WIN32)
-
-    list(APPEND SHARED_EVENTPIPE_SOURCES
-        ${SHARED_DIAGNOSTIC_SERVER_SOURCES}
-    )
-
-    list(APPEND SHARED_EVENTPIPE_HEADERS
-        ${SHARED_DIAGNOSTIC_SERVER_HEADERS}
-    )
 endif(ENABLE_PERFTRACING OR FEATURE_PERFTRACING)

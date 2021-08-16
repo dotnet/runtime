@@ -2,41 +2,44 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Collections.Generic;
+using System.Diagnostics;
 using System.Threading;
-using System.Threading.Tasks;
 
 namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
 {
-    internal class DynamicServiceProviderEngine : CompiledServiceProviderEngine
+    internal sealed class DynamicServiceProviderEngine : CompiledServiceProviderEngine
     {
-        public DynamicServiceProviderEngine(IEnumerable<ServiceDescriptor> serviceDescriptors)
-            : base(serviceDescriptors)
+        private readonly ServiceProvider _serviceProvider;
+
+        public DynamicServiceProviderEngine(ServiceProvider serviceProvider): base(serviceProvider)
         {
+            _serviceProvider = serviceProvider;
         }
 
-        protected override Func<ServiceProviderEngineScope, object> RealizeService(ServiceCallSite callSite)
+        public override Func<ServiceProviderEngineScope, object> RealizeService(ServiceCallSite callSite)
         {
             int callCount = 0;
             return scope =>
             {
                 // Resolve the result before we increment the call count, this ensures that singletons
                 // won't cause any side effects during the compilation of the resolve function.
-                var result = RuntimeResolver.Resolve(callSite, scope);
+                var result = CallSiteRuntimeResolver.Instance.Resolve(callSite, scope);
 
                 if (Interlocked.Increment(ref callCount) == 2)
                 {
                     // Don't capture the ExecutionContext when forking to build the compiled version of the
                     // resolve function
-                    ThreadPool.UnsafeQueueUserWorkItem(state =>
+                    _ = ThreadPool.UnsafeQueueUserWorkItem(_ =>
                     {
                         try
                         {
-                            base.RealizeService(callSite);
+                            _serviceProvider.ReplaceServiceAccessor(callSite, base.RealizeService(callSite));
                         }
-                        catch
+                        catch (Exception ex)
                         {
-                            // Swallow the exception, we should log this via the event source in a non-patched release
+                            DependencyInjectionEventSource.Log.ServiceRealizationFailed(ex, _serviceProvider.GetHashCode());
+
+                            Debug.Fail($"We should never get exceptions from the background compilation.{Environment.NewLine}{ex}");
                         }
                     },
                     null);

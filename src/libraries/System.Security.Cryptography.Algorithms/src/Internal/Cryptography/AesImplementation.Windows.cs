@@ -6,9 +6,9 @@ using Internal.NativeCrypto;
 
 namespace Internal.Cryptography
 {
-    internal partial class AesImplementation
+    internal sealed partial class AesImplementation
     {
-        private static ICryptoTransform CreateTransformCore(
+        private static UniversalCryptoTransform CreateTransformCore(
             CipherMode cipherMode,
             PaddingMode paddingMode,
             byte[] key,

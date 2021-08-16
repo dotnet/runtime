@@ -1,7 +1,4 @@
 <Project Sdk="Microsoft.NET.Sdk">
-
-  <UsingTask TaskName="CopyNupkgAndChangeVersion" AssemblyFile="$(InstallerTasksAssemblyPath)" />
-
   <Target Name="PrepareTestAssets"
           DependsOnTargets="
             GetNETCoreAppRuntimePackVersion;

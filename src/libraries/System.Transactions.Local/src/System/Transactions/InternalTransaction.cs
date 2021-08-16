@@ -12,11 +12,11 @@ namespace System.Transactions
     // InternalTransaction
     //
     // This class holds the state and all data common to a transaction instance
-    internal class InternalTransaction : IDisposable
+    internal sealed class InternalTransaction : IDisposable
     {
         // This variable manages the state of the transaction it should be one of the
         // static elements of TransactionState derived from TransactionState.
-        protected TransactionState? _transactionState;
+        private TransactionState? _transactionState;
 
         internal TransactionState? State
         {
@@ -168,7 +168,7 @@ namespace System.Transactions
 
         private static string? s_instanceIdentifier;
         internal static string InstanceIdentifier =>
-            LazyInitializer.EnsureInitialized(ref s_instanceIdentifier, ref s_classSyncObject, () => Guid.NewGuid().ToString() + ":");
+            LazyInitializer.EnsureInitialized(ref s_instanceIdentifier, ref s_classSyncObject, () => $"{Guid.NewGuid()}:");
 
         // Double-checked locking pattern requires volatile for read/write synchronization
         private volatile bool _traceIdentifierInited;
@@ -186,7 +186,7 @@ namespace System.Transactions
                         if (!_traceIdentifierInited)
                         {
                             TransactionTraceIdentifier temp = new TransactionTraceIdentifier(
-                                InstanceIdentifier + Convert.ToString(_transactionHash, CultureInfo.InvariantCulture),
+                                string.Create(CultureInfo.InvariantCulture, $"{InstanceIdentifier}{_transactionHash}"),
                                 0);
                             _traceIdentifier = temp;
                             _traceIdentifierInited = true;

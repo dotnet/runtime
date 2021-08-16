@@ -1,10 +1,16 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <TargetFrameworks>$(NetCoreAppCurrent)-windows;netcoreapp3.0-windows;$(NetCoreAppCurrent);netcoreapp3.0</TargetFrameworks>
-    <ExcludeCurrentNetCoreAppFromPackage>true</ExcludeCurrentNetCoreAppFromPackage>
+    <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent);netcoreapp3.1-windows;netcoreapp3.1</TargetFrameworks>
+    <IsPackable>true</IsPackable>
+    <PackageDescription>Provides miscellaneous Windows-specific types
+
+Commonly Used Types:
+System.Security.Cryptography.X509Certificates.X509Certificate2UI
+System.Security.Cryptography.X509Certificates.X509SelectionFlag</PackageDescription>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(TargetsWindows)' != 'true'">
+  <!-- DesignTimeBuild requires all the TargetFramework Derived Properties to not be present in the first property group. -->
+  <PropertyGroup Condition="'$(TargetsWindows)' != 'true'"> 
     <GeneratePlatformNotSupportedAssemblyMessage>SR.PlatformNotSupported_System_Windows_Extensions</GeneratePlatformNotSupportedAssemblyMessage>
   </PropertyGroup>
   <ItemGroup Condition="'$(TargetsWindows)' == 'true'">
@@ -52,9 +58,7 @@
     <Compile Include="System\Xaml\Permissions\XamlAccessLevel.cs" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="$(LibrariesProjectRoot)System.Drawing.Common\ref\System.Drawing.Common.csproj" />
-  </ItemGroup>
-  <ItemGroup>
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Drawing.Common\src\System.Drawing.Common.csproj" />
     <Reference Include="System.Buffers" />
     <Reference Include="System.Collections.NonGeneric" />
     <Reference Include="System.ComponentModel.EventBasedAsync" />

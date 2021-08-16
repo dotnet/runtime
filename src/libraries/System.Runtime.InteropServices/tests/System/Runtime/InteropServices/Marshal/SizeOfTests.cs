@@ -59,6 +59,12 @@ namespace System.Runtime.InteropServices.Tests
             Assert.Equal(8, Marshal.SizeOf<TestStructWithVector64>());
         }
 
+        [Fact]
+        public void SizeOf_TypeWithEmptyBase_ReturnsExpected()
+        {
+            Assert.Equal(4, Marshal.SizeOf<DerivedClass>());
+        }
+
         public static IEnumerable<object[]> SizeOf_InvalidType_TestData()
         {
             yield return new object[] { typeof(int).MakeByRefType(), null };
@@ -87,6 +93,34 @@ namespace System.Runtime.InteropServices.Tests
         public void SizeOf_InvalidType_ThrowsArgumentException(Type type, string paramName)
         {
             AssertExtensions.Throws<ArgumentException>(paramName, () => Marshal.SizeOf(type));
+        }
+
+        [Fact]
+        public void SizeOf_GenericStruct_Value_NonGeneric()
+        {
+            GenericStruct<int> value = default;
+            Assert.Equal(8, Marshal.SizeOf((object)value));
+        }
+
+        [Fact]
+        public void SizeOf_GenericStruct_Value_Generic()
+        {
+            GenericStruct<int> value = default;
+            Assert.Equal(8, Marshal.SizeOf(value));
+        }
+
+        [Fact]
+        public void SizeOf_GenericClass_Value_NonGeneric()
+        {
+            SequentialGenericClass<int> value = new();
+            Assert.Equal(4, Marshal.SizeOf((object)value));
+        }
+
+        [Fact]
+        public void SizeOf_GenericClass_Value_Generic()
+        {
+            SequentialGenericClass<int> value = new();
+            Assert.Equal(4, Marshal.SizeOf(value));
         }
 
         public struct TestStructWithEnumArray
@@ -135,6 +169,17 @@ namespace System.Runtime.InteropServices.Tests
         public struct TestStructWithVector64
         {
             public System.Runtime.Intrinsics.Vector64<double> v;
+        }
+
+        [StructLayout(LayoutKind.Sequential)]
+        public class EmptyClass
+        {
+        }
+
+        [StructLayout(LayoutKind.Sequential)]
+        public class DerivedClass : EmptyClass
+        {
+            public int i;
         }
     }
 }

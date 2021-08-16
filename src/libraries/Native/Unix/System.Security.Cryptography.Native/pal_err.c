@@ -35,7 +35,7 @@ const char* CryptoNative_ErrReasonErrorString(uint64_t error)
 {
     const char* errStr = NULL;
 
-#ifdef NEED_OPENSSL_1_1
+#if defined NEED_OPENSSL_1_1 || defined NEED_OPENSSL_3_0
     int result = pthread_mutex_lock(&g_err_mutex);
     assert(!result && "Acquiring the error string table mutex failed.");
 
@@ -43,7 +43,7 @@ const char* CryptoNative_ErrReasonErrorString(uint64_t error)
     {
 #endif
         errStr = ERR_reason_error_string((unsigned long)error);
-#ifdef NEED_OPENSSL_1_1
+#if defined NEED_OPENSSL_1_1 || defined NEED_OPENSSL_3_0
     }
 
     result = pthread_mutex_unlock(&g_err_mutex);
@@ -55,7 +55,7 @@ const char* CryptoNative_ErrReasonErrorString(uint64_t error)
 
 void CryptoNative_ErrErrorStringN(uint64_t e, char* buf, int32_t len)
 {
-#ifdef NEED_OPENSSL_1_1
+#if defined NEED_OPENSSL_1_1 || defined NEED_OPENSSL_3_0
     int result = pthread_mutex_lock(&g_err_mutex);
     assert(!result && "Acquiring the error string table mutex failed.");
 
@@ -63,7 +63,7 @@ void CryptoNative_ErrErrorStringN(uint64_t e, char* buf, int32_t len)
     {
 #endif
         ERR_error_string_n((unsigned long)e, buf, Int32ToSizeT(len));
-#ifdef NEED_OPENSSL_1_1
+#if defined NEED_OPENSSL_1_1 || defined NEED_OPENSSL_3_0
     }
     else
     {

@@ -4,6 +4,7 @@
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 
 namespace System.Runtime.Serialization
@@ -15,7 +16,7 @@ namespace System.Runtime.Serialization
         private readonly List<MethodInfo>? _onDeserializingMethods;
         private readonly List<MethodInfo>? _onDeserializedMethods;
 
-        internal SerializationEvents(Type? t)
+        internal SerializationEvents([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type? t)
         {
             _onSerializingMethods = GetMethodsWithAttribute(typeof(OnSerializingAttribute), t);
             _onSerializedMethods = GetMethodsWithAttribute(typeof(OnSerializedAttribute), t);
@@ -23,7 +24,10 @@ namespace System.Runtime.Serialization
             _onDeserializedMethods = GetMethodsWithAttribute(typeof(OnDeserializedAttribute), t);
         }
 
-        private List<MethodInfo>? GetMethodsWithAttribute(Type attribute, Type? t)
+        private List<MethodInfo>? GetMethodsWithAttribute(
+            Type attribute,
+            // currently the only way to preserve base, non-public methods is to use All
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type? t)
         {
             List<MethodInfo>? mi = null;
 
@@ -93,7 +97,12 @@ namespace System.Runtime.Serialization
     {
         private static readonly ConcurrentDictionary<Type, SerializationEvents> s_cache = new ConcurrentDictionary<Type, SerializationEvents>();
 
-        internal static SerializationEvents GetSerializationEventsForType(Type t) =>
-            s_cache.GetOrAdd(t, type => new SerializationEvents(type));
+        internal static SerializationEvents GetSerializationEventsForType(
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type t) =>
+            s_cache.GetOrAdd(t, type => CreateSerializationEvents(type));
+
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2067:UnrecognizedReflectionPattern",
+            Justification = "The Type is annotated correctly, it just can't pass through the lambda method.")]
+        private static SerializationEvents CreateSerializationEvents(Type t) => new SerializationEvents(t);
     }
 }

@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.ComponentModel;
+using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
@@ -31,7 +33,7 @@ namespace System
             if ((uint)start > (uint)array.Length)
                 ThrowHelper.ThrowArgumentOutOfRangeException();
 
-            return new Span<T>(ref Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(array), start), array.Length - start);
+            return new Span<T>(ref Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(array), (nint)(uint)start /* force zero-extension */), array.Length - start);
         }
 
         /// <summary>
@@ -55,7 +57,7 @@ namespace System
             if ((uint)actualIndex > (uint)array.Length)
                 ThrowHelper.ThrowArgumentOutOfRangeException();
 
-            return new Span<T>(ref Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(array), actualIndex), array.Length - actualIndex);
+            return new Span<T>(ref Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(array), (nint)(uint)actualIndex /* force zero-extension */), array.Length - actualIndex);
         }
 
         /// <summary>
@@ -79,7 +81,7 @@ namespace System
                 ThrowHelper.ThrowArrayTypeMismatchException();
 
             (int start, int length) = range.GetOffsetAndLength(array.Length);
-            return new Span<T>(ref Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(array), start), length);
+            return new Span<T>(ref Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(array), (nint)(uint)start /* force zero-extension */), length);
         }
 
         /// <summary>
@@ -118,7 +120,7 @@ namespace System
             if ((uint)start > (uint)text.Length)
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.start);
 
-            return new ReadOnlySpan<char>(ref Unsafe.Add(ref text.GetRawStringData(), start), text.Length - start);
+            return new ReadOnlySpan<char>(ref Unsafe.Add(ref text.GetRawStringData(), (nint)(uint)start /* force zero-extension */), text.Length - start);
         }
 
         /// <summary>
@@ -150,7 +152,7 @@ namespace System
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.start);
 #endif
 
-            return new ReadOnlySpan<char>(ref Unsafe.Add(ref text.GetRawStringData(), start), length);
+            return new ReadOnlySpan<char>(ref Unsafe.Add(ref text.GetRawStringData(), (nint)(uint)start /* force zero-extension */), length);
         }
 
         /// <summary>Creates a new <see cref="ReadOnlyMemory{T}"/> over the portion of the target string.</summary>
@@ -422,7 +424,7 @@ namespace System
                 SpanHelpers.SequenceEqual(
                     ref Unsafe.As<T, byte>(ref MemoryMarshal.GetReference(span)),
                     ref Unsafe.As<T, byte>(ref MemoryMarshal.GetReference(other)),
-                    ((nuint)length) * size);  // If this multiplication overflows, the Span we got overflows the entire address range. There's no happy outcome for this api in such a case so we choose not to take the overhead of checking.
+                    ((uint)length) * size);  // If this multiplication overflows, the Span we got overflows the entire address range. There's no happy outcome for this api in such a case so we choose not to take the overhead of checking.
             }
 
             return length == other.Length && SpanHelpers.SequenceEqual(ref MemoryMarshal.GetReference(span), ref MemoryMarshal.GetReference(other), length);
@@ -619,98 +621,8 @@ namespace System
         /// <param name="span">The span to search.</param>
         /// <param name="values">The set of values to search for.</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static int IndexOfAny<T>(this Span<T> span, ReadOnlySpan<T> values) where T : IEquatable<T>
-        {
-            if (RuntimeHelpers.IsBitwiseEquatable<T>())
-            {
-                if (Unsafe.SizeOf<T>() == sizeof(byte))
-                {
-                    ref byte valueRef = ref Unsafe.As<T, byte>(ref MemoryMarshal.GetReference(values));
-                    if (values.Length == 2)
-                    {
-                        return SpanHelpers.IndexOfAny(
-                            ref Unsafe.As<T, byte>(ref MemoryMarshal.GetReference(span)),
-                            valueRef,
-                            Unsafe.Add(ref valueRef, 1),
-                            span.Length);
-                    }
-                    else if (values.Length == 3)
-                    {
-                        return SpanHelpers.IndexOfAny(
-                            ref Unsafe.As<T, byte>(ref MemoryMarshal.GetReference(span)),
-                            valueRef,
-                            Unsafe.Add(ref valueRef, 1),
-                            Unsafe.Add(ref valueRef, 2),
-                            span.Length);
-                    }
-                    else
-                    {
-                        return SpanHelpers.IndexOfAny(
-                            ref Unsafe.As<T, byte>(ref MemoryMarshal.GetReference(span)),
-                            span.Length,
-                            ref valueRef,
-                            values.Length);
-                    }
-                }
-
-                if (Unsafe.SizeOf<T>() == sizeof(char))
-                {
-                    ref char valueRef = ref Unsafe.As<T, char>(ref MemoryMarshal.GetReference(values));
-                    if (values.Length == 5)
-                    {
-                        // Length 5 is a common length for FileSystemName expression (", <, >, *, ?) and in preference to 2 as it has an explicit overload
-                        return SpanHelpers.IndexOfAny(
-                            ref Unsafe.As<T, char>(ref MemoryMarshal.GetReference(span)),
-                            valueRef,
-                            Unsafe.Add(ref valueRef, 1),
-                            Unsafe.Add(ref valueRef, 2),
-                            Unsafe.Add(ref valueRef, 3),
-                            Unsafe.Add(ref valueRef, 4),
-                            span.Length);
-                    }
-                    else if (values.Length == 2)
-                    {
-                        // Length 2 is a common length for simple wildcards (*, ?),  directory separators (/, \), quotes (", '), brackets, etc
-                        return SpanHelpers.IndexOfAny(
-                            ref Unsafe.As<T, char>(ref MemoryMarshal.GetReference(span)),
-                            valueRef,
-                            Unsafe.Add(ref valueRef, 1),
-                            span.Length);
-                    }
-                    else if (values.Length == 4)
-                    {
-                        // Length 4 before 3 as 3 has an explicit overload
-                        return SpanHelpers.IndexOfAny(
-                            ref Unsafe.As<T, char>(ref MemoryMarshal.GetReference(span)),
-                            valueRef,
-                            Unsafe.Add(ref valueRef, 1),
-                            Unsafe.Add(ref valueRef, 2),
-                            Unsafe.Add(ref valueRef, 3),
-                            span.Length);
-                    }
-                    else if (values.Length == 3)
-                    {
-                        return SpanHelpers.IndexOfAny(
-                            ref Unsafe.As<T, char>(ref MemoryMarshal.GetReference(span)),
-                            valueRef,
-                            Unsafe.Add(ref valueRef, 1),
-                            Unsafe.Add(ref valueRef, 2),
-                            span.Length);
-                    }
-                    else if (values.Length == 1)
-                    {
-                        // Length 1 last, as ctoring a ReadOnlySpan to call this overload for a single value
-                        // is already throwing away a bunch of performance vs just calling IndexOf
-                        return SpanHelpers.IndexOf(
-                            ref Unsafe.As<T, char>(ref MemoryMarshal.GetReference(span)),
-                            valueRef,
-                            span.Length);
-                    }
-                }
-            }
-
-            return SpanHelpers.IndexOfAny(ref MemoryMarshal.GetReference(span), span.Length, ref MemoryMarshal.GetReference(values), values.Length);
-        }
+        public static int IndexOfAny<T>(this Span<T> span, ReadOnlySpan<T> values) where T : IEquatable<T> =>
+            IndexOfAny((ReadOnlySpan<T>)span, values);
 
         /// <summary>
         /// Searches for the first index of any of the specified values similar to calling IndexOf several times with the logical OR operator. If not found, returns -1.
@@ -802,14 +714,6 @@ namespace System
                             Unsafe.Add(ref valueRef, 1),
                             Unsafe.Add(ref valueRef, 2),
                             span.Length);
-                    }
-                    else
-                    {
-                        return SpanHelpers.IndexOfAny(
-                            ref Unsafe.As<T, byte>(ref MemoryMarshal.GetReference(span)),
-                            span.Length,
-                            ref valueRef,
-                            values.Length);
                     }
                 }
 
@@ -978,14 +882,7 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static int LastIndexOfAny<T>(this ReadOnlySpan<T> span, ReadOnlySpan<T> values) where T : IEquatable<T>
         {
-            if (Unsafe.SizeOf<T>() == sizeof(byte) && RuntimeHelpers.IsBitwiseEquatable<T>())
-                return SpanHelpers.LastIndexOfAny(
-                    ref Unsafe.As<T, byte>(ref MemoryMarshal.GetReference(span)),
-                    span.Length,
-                    ref Unsafe.As<T, byte>(ref MemoryMarshal.GetReference(values)),
-                    values.Length);
-
-            return SpanHelpers.LastIndexOfAny<T>(ref MemoryMarshal.GetReference(span), span.Length, ref MemoryMarshal.GetReference(values), values.Length);
+            return SpanHelpers.LastIndexOfAny(ref MemoryMarshal.GetReference(span), span.Length, ref MemoryMarshal.GetReference(values), values.Length);
         }
 
         /// <summary>
@@ -999,13 +896,78 @@ namespace System
             {
                 nuint size = (nuint)Unsafe.SizeOf<T>();
                 return length == other.Length &&
-                SpanHelpers.SequenceEqual(
-                    ref Unsafe.As<T, byte>(ref MemoryMarshal.GetReference(span)),
-                    ref Unsafe.As<T, byte>(ref MemoryMarshal.GetReference(other)),
-                    ((nuint)length) * size);  // If this multiplication overflows, the Span we got overflows the entire address range. There's no happy outcome for this api in such a case so we choose not to take the overhead of checking.
+                    SpanHelpers.SequenceEqual(
+                        ref Unsafe.As<T, byte>(ref MemoryMarshal.GetReference(span)),
+                        ref Unsafe.As<T, byte>(ref MemoryMarshal.GetReference(other)),
+                        ((uint)length) * size);  // If this multiplication overflows, the Span we got overflows the entire address range. There's no happy outcome for this API in such a case so we choose not to take the overhead of checking.
             }
 
             return length == other.Length && SpanHelpers.SequenceEqual(ref MemoryMarshal.GetReference(span), ref MemoryMarshal.GetReference(other), length);
+        }
+
+        /// <summary>
+        /// Determines whether two sequences are equal by comparing the elements using an <see cref="IEqualityComparer{T}"/>.
+        /// </summary>
+        /// <param name="span">The first sequence to compare.</param>
+        /// <param name="other">The second sequence to compare.</param>
+        /// <param name="comparer">The <see cref="IEqualityComparer{T}"/> implementation to use when comparing elements, or null to use the default <see cref="IEqualityComparer{T}"/> for the type of an element.</param>
+        /// <returns>true if the two sequences are equal; otherwise, false.</returns>
+        public static bool SequenceEqual<T>(this Span<T> span, ReadOnlySpan<T> other, IEqualityComparer<T>? comparer = null) =>
+            SequenceEqual((ReadOnlySpan<T>)span, other, comparer);
+
+        /// <summary>
+        /// Determines whether two sequences are equal by comparing the elements using an <see cref="IEqualityComparer{T}"/>.
+        /// </summary>
+        /// <param name="span">The first sequence to compare.</param>
+        /// <param name="other">The second sequence to compare.</param>
+        /// <param name="comparer">The <see cref="IEqualityComparer{T}"/> implementation to use when comparing elements, or null to use the default <see cref="IEqualityComparer{T}"/> for the type of an element.</param>
+        /// <returns>true if the two sequences are equal; otherwise, false.</returns>
+        public static bool SequenceEqual<T>(this ReadOnlySpan<T> span, ReadOnlySpan<T> other, IEqualityComparer<T>? comparer = null)
+        {
+            // If the spans differ in length, they're not equal.
+            if (span.Length != other.Length)
+            {
+                return false;
+            }
+
+            if (typeof(T).IsValueType)
+            {
+                if (comparer is null || comparer == EqualityComparer<T>.Default)
+                {
+                    // If no comparer was supplied and the type is bitwise equatable, take the fast path doing a bitwise comparison.
+                    if (RuntimeHelpers.IsBitwiseEquatable<T>())
+                    {
+                        nuint size = (nuint)Unsafe.SizeOf<T>();
+                        return SpanHelpers.SequenceEqual(
+                            ref Unsafe.As<T, byte>(ref MemoryMarshal.GetReference(span)),
+                            ref Unsafe.As<T, byte>(ref MemoryMarshal.GetReference(other)),
+                            ((uint)span.Length) * size);  // If this multiplication overflows, the Span we got overflows the entire address range. There's no happy outcome for this API in such a case so we choose not to take the overhead of checking.
+                    }
+
+                    // Otherwise, compare each element using EqualityComparer<T>.Default.Equals in a way that will enable it to devirtualize.
+                    for (int i = 0; i < span.Length; i++)
+                    {
+                        if (!EqualityComparer<T>.Default.Equals(span[i], other[i]))
+                        {
+                            return false;
+                        }
+                    }
+
+                    return true;
+                }
+            }
+
+            // Use the comparer to compare each element.
+            comparer ??= EqualityComparer<T>.Default;
+            for (int i = 0; i < span.Length; i++)
+            {
+                if (!comparer.Equals(span[i], other[i]))
+                {
+                    return false;
+                }
+            }
+
+            return true;
         }
 
         /// <summary>
@@ -1049,7 +1011,7 @@ namespace System
                 SpanHelpers.SequenceEqual(
                     ref Unsafe.As<T, byte>(ref MemoryMarshal.GetReference(span)),
                     ref Unsafe.As<T, byte>(ref MemoryMarshal.GetReference(value)),
-                    ((nuint)valueLength) * size);  // If this multiplication overflows, the Span we got overflows the entire address range. There's no happy outcome for this api in such a case so we choose not to take the overhead of checking.
+                    ((uint)valueLength) * size);  // If this multiplication overflows, the Span we got overflows the entire address range. There's no happy outcome for this api in such a case so we choose not to take the overhead of checking.
             }
 
             return valueLength <= span.Length && SpanHelpers.SequenceEqual(ref MemoryMarshal.GetReference(span), ref MemoryMarshal.GetReference(value), valueLength);
@@ -1069,7 +1031,7 @@ namespace System
                 SpanHelpers.SequenceEqual(
                     ref Unsafe.As<T, byte>(ref MemoryMarshal.GetReference(span)),
                     ref Unsafe.As<T, byte>(ref MemoryMarshal.GetReference(value)),
-                    ((nuint)valueLength) * size);  // If this multiplication overflows, the Span we got overflows the entire address range. There's no happy outcome for this api in such a case so we choose not to take the overhead of checking.
+                    ((uint)valueLength) * size);  // If this multiplication overflows, the Span we got overflows the entire address range. There's no happy outcome for this api in such a case so we choose not to take the overhead of checking.
             }
 
             return valueLength <= span.Length && SpanHelpers.SequenceEqual(ref MemoryMarshal.GetReference(span), ref MemoryMarshal.GetReference(value), valueLength);
@@ -1088,14 +1050,14 @@ namespace System
                 nuint size = (nuint)Unsafe.SizeOf<T>();
                 return valueLength <= spanLength &&
                 SpanHelpers.SequenceEqual(
-                    ref Unsafe.As<T, byte>(ref Unsafe.Add(ref MemoryMarshal.GetReference(span), spanLength - valueLength)),
+                    ref Unsafe.As<T, byte>(ref Unsafe.Add(ref MemoryMarshal.GetReference(span), (nint)(uint)(spanLength - valueLength) /* force zero-extension */)),
                     ref Unsafe.As<T, byte>(ref MemoryMarshal.GetReference(value)),
-                    ((nuint)valueLength) * size);  // If this multiplication overflows, the Span we got overflows the entire address range. There's no happy outcome for this api in such a case so we choose not to take the overhead of checking.
+                    ((uint)valueLength) * size);  // If this multiplication overflows, the Span we got overflows the entire address range. There's no happy outcome for this api in such a case so we choose not to take the overhead of checking.
             }
 
             return valueLength <= spanLength &&
                 SpanHelpers.SequenceEqual(
-                    ref Unsafe.Add(ref MemoryMarshal.GetReference(span), spanLength - valueLength),
+                    ref Unsafe.Add(ref MemoryMarshal.GetReference(span), (nint)(uint)(spanLength - valueLength) /* force zero-extension */),
                     ref MemoryMarshal.GetReference(value),
                     valueLength);
         }
@@ -1113,14 +1075,14 @@ namespace System
                 nuint size = (nuint)Unsafe.SizeOf<T>();
                 return valueLength <= spanLength &&
                 SpanHelpers.SequenceEqual(
-                    ref Unsafe.As<T, byte>(ref Unsafe.Add(ref MemoryMarshal.GetReference(span), spanLength - valueLength)),
+                    ref Unsafe.As<T, byte>(ref Unsafe.Add(ref MemoryMarshal.GetReference(span), (nint)(uint)(spanLength - valueLength) /* force zero-extension */)),
                     ref Unsafe.As<T, byte>(ref MemoryMarshal.GetReference(value)),
-                    ((nuint)valueLength) * size);  // If this multiplication overflows, the Span we got overflows the entire address range. There's no happy outcome for this api in such a case so we choose not to take the overhead of checking.
+                    ((uint)valueLength) * size);  // If this multiplication overflows, the Span we got overflows the entire address range. There's no happy outcome for this api in such a case so we choose not to take the overhead of checking.
             }
 
             return valueLength <= spanLength &&
                 SpanHelpers.SequenceEqual(
-                    ref Unsafe.Add(ref MemoryMarshal.GetReference(span), spanLength - valueLength),
+                    ref Unsafe.Add(ref MemoryMarshal.GetReference(span), (nint)(uint)(spanLength - valueLength) /* force zero-extension */),
                     ref MemoryMarshal.GetReference(value),
                     valueLength);
         }
@@ -1906,6 +1868,460 @@ namespace System
             if (keys.Length > 1)
             {
                 ArraySortHelper<TKey, TValue>.Default.Sort(keys, items, new ComparisonComparer<TKey>(comparison));
+            }
+        }
+
+        /// <summary>Writes the specified interpolated string to the character span.</summary>
+        /// <param name="destination">The span to which the interpolated string should be formatted.</param>
+        /// <param name="handler">The interpolated string.</param>
+        /// <param name="charsWritten">The number of characters written to the span.</param>
+        /// <returns>true if the entire interpolated string could be formatted successfully; otherwise, false.</returns>
+        public static bool TryWrite(this Span<char> destination, [InterpolatedStringHandlerArgument("destination")] ref TryWriteInterpolatedStringHandler handler, out int charsWritten)
+        {
+            // The span argument isn't used directly in the method; rather, it'll be used by the compiler to create the handler.
+            // We could validate here that span == handler._destination, but that doesn't seem necessary.
+            if (handler._success)
+            {
+                charsWritten = handler._pos;
+                return true;
+            }
+
+            charsWritten = 0;
+            return false;
+        }
+
+        /// <summary>Writes the specified interpolated string to the character span.</summary>
+        /// <param name="destination">The span to which the interpolated string should be formatted.</param>
+        /// <param name="provider">An object that supplies culture-specific formatting information.</param>
+        /// <param name="handler">The interpolated string.</param>
+        /// <param name="charsWritten">The number of characters written to the span.</param>
+        /// <returns>true if the entire interpolated string could be formatted successfully; otherwise, false.</returns>
+        public static bool TryWrite(this Span<char> destination, IFormatProvider? provider, [InterpolatedStringHandlerArgument("destination", "provider")] ref TryWriteInterpolatedStringHandler handler, out int charsWritten) =>
+            // The provider is passed to the handler by the compiler, so the actual implementation of the method
+            // is the same as the non-provider overload.
+            TryWrite(destination, ref handler, out charsWritten);
+
+        /// <summary>Provides a handler used by the language compiler to format interpolated strings into character spans.</summary>
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        [InterpolatedStringHandler]
+        public ref struct TryWriteInterpolatedStringHandler
+        {
+            // Implementation note:
+            // As this type is only intended to be targeted by the compiler, public APIs eschew argument validation logic
+            // in a variety of places, e.g. allowing a null input when one isn't expected to produce a NullReferenceException rather
+            // than an ArgumentNullException.
+
+            /// <summary>The destination buffer.</summary>
+            private readonly Span<char> _destination;
+            /// <summary>Optional provider to pass to IFormattable.ToString or ISpanFormattable.TryFormat calls.</summary>
+            private readonly IFormatProvider? _provider;
+            /// <summary>The number of characters written to <see cref="_destination"/>.</summary>
+            internal int _pos;
+            /// <summary>true if all formatting operations have succeeded; otherwise, false.</summary>
+            internal bool _success;
+            /// <summary>Whether <see cref="_provider"/> provides an ICustomFormatter.</summary>
+            /// <remarks>
+            /// Custom formatters are very rare.  We want to support them, but it's ok if we make them more expensive
+            /// in order to make them as pay-for-play as possible.  So, we avoid adding another reference type field
+            /// to reduce the size of the handler and to reduce required zero'ing, by only storing whether the provider
+            /// provides a formatter, rather than actually storing the formatter.  This in turn means, if there is a
+            /// formatter, we pay for the extra interface call on each AppendFormatted that needs it.
+            /// </remarks>
+            private readonly bool _hasCustomFormatter;
+
+            /// <summary>Creates a handler used to write an interpolated string into a <see cref="Span{Char}"/>.</summary>
+            /// <param name="literalLength">The number of constant characters outside of interpolation expressions in the interpolated string.</param>
+            /// <param name="formattedCount">The number of interpolation expressions in the interpolated string.</param>
+            /// <param name="destination">The destination buffer.</param>
+            /// <param name="shouldAppend">Upon return, true if the destination may be long enough to support the formatting, or false if it won't be.</param>
+            /// <remarks>This is intended to be called only by compiler-generated code. Arguments are not validated as they'd otherwise be for members intended to be used directly.</remarks>
+            public TryWriteInterpolatedStringHandler(int literalLength, int formattedCount, Span<char> destination, out bool shouldAppend)
+            {
+                _destination = destination;
+                _provider = null;
+                _pos = 0;
+                _success = shouldAppend = destination.Length >= literalLength;
+                _hasCustomFormatter = false;
+            }
+
+            /// <summary>Creates a handler used to write an interpolated string into a <see cref="Span{Char}"/>.</summary>
+            /// <param name="literalLength">The number of constant characters outside of interpolation expressions in the interpolated string.</param>
+            /// <param name="formattedCount">The number of interpolation expressions in the interpolated string.</param>
+            /// <param name="destination">The destination buffer.</param>
+            /// <param name="provider">An object that supplies culture-specific formatting information.</param>
+            /// <param name="shouldAppend">Upon return, true if the destination may be long enough to support the formatting, or false if it won't be.</param>
+            /// <remarks>This is intended to be called only by compiler-generated code. Arguments are not validated as they'd otherwise be for members intended to be used directly.</remarks>
+            public TryWriteInterpolatedStringHandler(int literalLength, int formattedCount, Span<char> destination, IFormatProvider? provider, out bool shouldAppend)
+            {
+                _destination = destination;
+                _provider = provider;
+                _pos = 0;
+                _success = shouldAppend = destination.Length >= literalLength;
+                _hasCustomFormatter = provider is not null && DefaultInterpolatedStringHandler.HasCustomFormatter(provider);
+            }
+
+            /// <summary>Writes the specified string to the handler.</summary>
+            /// <param name="value">The string to write.</param>
+            /// <returns>true if the value could be formatted to the span; otherwise, false.</returns>
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public bool AppendLiteral(string value)
+            {
+                // See comment on inlining and special-casing in DefaultInterpolatedStringHandler.AppendLiteral.
+
+                if (value.Length == 1)
+                {
+                    Span<char> destination = _destination;
+                    int pos = _pos;
+                    if ((uint)pos < (uint)destination.Length)
+                    {
+                        destination[pos] = value[0];
+                        _pos = pos + 1;
+                        return true;
+                    }
+
+                    return Fail();
+                }
+
+                if (value.Length == 2)
+                {
+                    Span<char> destination = _destination;
+                    int pos = _pos;
+                    if ((uint)pos < destination.Length - 1)
+                    {
+                        Unsafe.WriteUnaligned(
+                            ref Unsafe.As<char, byte>(ref Unsafe.Add(ref MemoryMarshal.GetReference(destination), pos)),
+                            Unsafe.ReadUnaligned<int>(ref Unsafe.As<char, byte>(ref value.GetRawStringData())));
+                        _pos = pos + 2;
+                        return true;
+                    }
+
+                    return Fail();
+                }
+
+                return AppendStringDirect(value);
+            }
+
+            /// <summary>Writes the specified string to the handler.</summary>
+            /// <param name="value">The string to write.</param>
+            /// <returns>true if the value could be appended to the span; otherwise, false.</returns>
+            private bool AppendStringDirect(string value)
+            {
+                if (value.TryCopyTo(_destination.Slice(_pos)))
+                {
+                    _pos += value.Length;
+                    return true;
+                }
+
+                return Fail();
+            }
+
+            #region AppendFormatted
+            // Design note:
+            // This provides the same set of overloads and semantics as DefaultInterpolatedStringHandler.
+
+            #region AppendFormatted T
+            /// <summary>Writes the specified value to the handler.</summary>
+            /// <param name="value">The value to write.</param>
+            public bool AppendFormatted<T>(T value)
+            {
+                // This method could delegate to AppendFormatted with a null format, but explicitly passing
+                // default as the format to TryFormat helps to improve code quality in some cases when TryFormat is inlined,
+                // e.g. for Int32 it enables the JIT to eliminate code in the inlined method based on a length check on the format.
+
+                // If there's a custom formatter, always use it.
+                if (_hasCustomFormatter)
+                {
+                    return AppendCustomFormatter(value, format: null);
+                }
+
+                // Check first for IFormattable, even though we'll prefer to use ISpanFormattable, as the latter
+                // derives from the former.  For value types, it won't matter as the type checks devolve into
+                // JIT-time constants.  For reference types, they're more likely to implement IFormattable
+                // than they are to implement ISpanFormattable: if they don't implement either, we save an
+                // interface check over first checking for ISpanFormattable and then for IFormattable, and
+                // if it only implements IFormattable, we come out even: only if it implements both do we
+                // end up paying for an extra interface check.
+                string? s;
+                if (value is IFormattable)
+                {
+                    // If the value can format itself directly into our buffer, do so.
+                    if (value is ISpanFormattable)
+                    {
+                        int charsWritten;
+                        if (((ISpanFormattable)value).TryFormat(_destination.Slice(_pos), out charsWritten, default, _provider)) // constrained call avoiding boxing for value types
+                        {
+                            _pos += charsWritten;
+                            return true;
+                        }
+
+                        return Fail();
+                    }
+
+                    s = ((IFormattable)value).ToString(format: null, _provider); // constrained call avoiding boxing for value types
+                }
+                else
+                {
+                    s = value?.ToString();
+                }
+
+                return s is null || AppendStringDirect(s);
+            }
+
+            /// <summary>Writes the specified value to the handler.</summary>
+            /// <param name="value">The value to write.</param>
+            /// <param name="format">The format string.</param>
+            public bool AppendFormatted<T>(T value, string? format)
+            {
+                // If there's a custom formatter, always use it.
+                if (_hasCustomFormatter)
+                {
+                    return AppendCustomFormatter(value, format);
+                }
+
+                // Check first for IFormattable, even though we'll prefer to use ISpanFormattable, as the latter
+                // derives from the former.  For value types, it won't matter as the type checks devolve into
+                // JIT-time constants.  For reference types, they're more likely to implement IFormattable
+                // than they are to implement ISpanFormattable: if they don't implement either, we save an
+                // interface check over first checking for ISpanFormattable and then for IFormattable, and
+                // if it only implements IFormattable, we come out even: only if it implements both do we
+                // end up paying for an extra interface check.
+                string? s;
+                if (value is IFormattable)
+                {
+                    // If the value can format itself directly into our buffer, do so.
+                    if (value is ISpanFormattable)
+                    {
+                        int charsWritten;
+                        if (((ISpanFormattable)value).TryFormat(_destination.Slice(_pos), out charsWritten, format, _provider)) // constrained call avoiding boxing for value types
+                        {
+                            _pos += charsWritten;
+                            return true;
+                        }
+
+                        return Fail();
+                    }
+
+                    s = ((IFormattable)value).ToString(format, _provider); // constrained call avoiding boxing for value types
+                }
+                else
+                {
+                    s = value?.ToString();
+                }
+
+                return s is null || AppendStringDirect(s);
+            }
+
+            /// <summary>Writes the specified value to the handler.</summary>
+            /// <param name="value">The value to write.</param>
+            /// <param name="alignment">Minimum number of characters that should be written for this value.  If the value is negative, it indicates left-aligned and the required minimum is the absolute value.</param>
+            public bool AppendFormatted<T>(T value, int alignment)
+            {
+                int startingPos = _pos;
+                if (AppendFormatted(value))
+                {
+                    return alignment == 0 || TryAppendOrInsertAlignmentIfNeeded(startingPos, alignment);
+                }
+
+                return Fail();
+            }
+
+            /// <summary>Writes the specified value to the handler.</summary>
+            /// <param name="value">The value to write.</param>
+            /// <param name="format">The format string.</param>
+            /// <param name="alignment">Minimum number of characters that should be written for this value.  If the value is negative, it indicates left-aligned and the required minimum is the absolute value.</param>
+            public bool AppendFormatted<T>(T value, int alignment, string? format)
+            {
+                int startingPos = _pos;
+                if (AppendFormatted(value, format))
+                {
+                    return alignment == 0 || TryAppendOrInsertAlignmentIfNeeded(startingPos, alignment);
+                }
+
+                return Fail();
+            }
+            #endregion
+
+            #region AppendFormatted ReadOnlySpan<char>
+            /// <summary>Writes the specified character span to the handler.</summary>
+            /// <param name="value">The span to write.</param>
+            public bool AppendFormatted(ReadOnlySpan<char> value)
+            {
+                // Fast path for when the value fits in the current buffer
+                if (value.TryCopyTo(_destination.Slice(_pos)))
+                {
+                    _pos += value.Length;
+                    return true;
+                }
+
+                return Fail();
+            }
+
+            /// <summary>Writes the specified string of chars to the handler.</summary>
+            /// <param name="value">The span to write.</param>
+            /// <param name="alignment">Minimum number of characters that should be written for this value.  If the value is negative, it indicates left-aligned and the required minimum is the absolute value.</param>
+            /// <param name="format">The format string.</param>
+            public bool AppendFormatted(ReadOnlySpan<char> value, int alignment = 0, string? format = null)
+            {
+                bool leftAlign = false;
+                if (alignment < 0)
+                {
+                    leftAlign = true;
+                    alignment = -alignment;
+                }
+
+                int paddingRequired = alignment - value.Length;
+                if (paddingRequired <= 0)
+                {
+                    // The value is as large or larger than the required amount of padding,
+                    // so just write the value.
+                    return AppendFormatted(value);
+                }
+
+                // Write the value along with the appropriate padding.
+                Debug.Assert(alignment > value.Length);
+                if (alignment <= _destination.Length - _pos)
+                {
+                    if (leftAlign)
+                    {
+                        value.CopyTo(_destination.Slice(_pos));
+                        _pos += value.Length;
+                        _destination.Slice(_pos, paddingRequired).Fill(' ');
+                        _pos += paddingRequired;
+                    }
+                    else
+                    {
+                        _destination.Slice(_pos, paddingRequired).Fill(' ');
+                        _pos += paddingRequired;
+                        value.CopyTo(_destination.Slice(_pos));
+                        _pos += value.Length;
+                    }
+
+                    return true;
+                }
+
+                return Fail();
+            }
+            #endregion
+
+            #region AppendFormatted string
+            /// <summary>Writes the specified value to the handler.</summary>
+            /// <param name="value">The value to write.</param>
+            public bool AppendFormatted(string? value)
+            {
+                if (_hasCustomFormatter)
+                {
+                    return AppendCustomFormatter(value, format: null);
+                }
+
+                if (value is null)
+                {
+                    return true;
+                }
+
+                if (value.TryCopyTo(_destination.Slice(_pos)))
+                {
+                    _pos += value.Length;
+                    return true;
+                }
+
+                return Fail();
+            }
+
+            /// <summary>Writes the specified value to the handler.</summary>
+            /// <param name="value">The value to write.</param>
+            /// <param name="alignment">Minimum number of characters that should be written for this value.  If the value is negative, it indicates left-aligned and the required minimum is the absolute value.</param>
+            /// <param name="format">The format string.</param>
+            public bool AppendFormatted(string? value, int alignment = 0, string? format = null) =>
+                // Format is meaningless for strings and doesn't make sense for someone to specify.  We have the overload
+                // simply to disambiguate between ROS<char> and object, just in case someone does specify a format, as
+                // string is implicitly convertible to both. Just delegate to the T-based implementation.
+                AppendFormatted<string?>(value, alignment, format);
+            #endregion
+
+            #region AppendFormatted object
+            /// <summary>Writes the specified value to the handler.</summary>
+            /// <param name="value">The value to write.</param>
+            /// <param name="alignment">Minimum number of characters that should be written for this value.  If the value is negative, it indicates left-aligned and the required minimum is the absolute value.</param>
+            /// <param name="format">The format string.</param>
+            public bool AppendFormatted(object? value, int alignment = 0, string? format = null) =>
+                // This overload is expected to be used rarely, only if either a) something strongly typed as object is
+                // formatted with both an alignment and a format, or b) the compiler is unable to target type to T. It
+                // exists purely to help make cases from (b) compile. Just delegate to the T-based implementation.
+                AppendFormatted<object?>(value, alignment, format);
+            #endregion
+            #endregion
+
+            /// <summary>Formats the value using the custom formatter from the provider.</summary>
+            /// <param name="value">The value to write.</param>
+            /// <param name="format">The format string.</param>
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            private bool AppendCustomFormatter<T>(T value, string? format)
+            {
+                // This case is very rare, but we need to handle it prior to the other checks in case
+                // a provider was used that supplied an ICustomFormatter which wanted to intercept the particular value.
+                // We do the cast here rather than in the ctor, even though this could be executed multiple times per
+                // formatting, to make the cast pay for play.
+                Debug.Assert(_hasCustomFormatter);
+                Debug.Assert(_provider != null);
+
+                ICustomFormatter? formatter = (ICustomFormatter?)_provider.GetFormat(typeof(ICustomFormatter));
+                Debug.Assert(formatter != null, "An incorrectly written provider said it implemented ICustomFormatter, and then didn't");
+
+                if (formatter is not null && formatter.Format(format, value, _provider) is string customFormatted)
+                {
+                    return AppendStringDirect(customFormatted);
+                }
+
+                return true;
+            }
+
+            /// <summary>Handles adding any padding required for aligning a formatted value in an interpolation expression.</summary>
+            /// <param name="startingPos">The position at which the written value started.</param>
+            /// <param name="alignment">Non-zero minimum number of characters that should be written for this value.  If the value is negative, it indicates left-aligned and the required minimum is the absolute value.</param>
+            private bool TryAppendOrInsertAlignmentIfNeeded(int startingPos, int alignment)
+            {
+                Debug.Assert(startingPos >= 0 && startingPos <= _pos);
+                Debug.Assert(alignment != 0);
+
+                int charsWritten = _pos - startingPos;
+
+                bool leftAlign = false;
+                if (alignment < 0)
+                {
+                    leftAlign = true;
+                    alignment = -alignment;
+                }
+
+                int paddingNeeded = alignment - charsWritten;
+                if (paddingNeeded <= 0)
+                {
+                    return true;
+                }
+
+                if (paddingNeeded <= _destination.Length - _pos)
+                {
+                    if (leftAlign)
+                    {
+                        _destination.Slice(_pos, paddingNeeded).Fill(' ');
+                    }
+                    else
+                    {
+                        _destination.Slice(startingPos, charsWritten).CopyTo(_destination.Slice(startingPos + paddingNeeded));
+                        _destination.Slice(startingPos, paddingNeeded).Fill(' ');
+                    }
+
+                    _pos += paddingNeeded;
+                    return true;
+                }
+
+                return Fail();
+            }
+
+            /// <summary>Marks formatting as having failed and returns false.</summary>
+            private bool Fail()
+            {
+                _success = false;
+                return false;
             }
         }
     }

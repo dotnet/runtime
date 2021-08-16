@@ -6,7 +6,7 @@ using Microsoft.Win32.SafeHandles;
 
 namespace System.Security.Cryptography.X509Certificates
 {
-    internal class SafeCertContextHandle : SafePointerHandle<SafeCertContextHandle>
+    internal sealed class SafeCertContextHandle : SafePointerHandle<SafeCertContextHandle>
     {
         protected override bool ReleaseHandle()
         {

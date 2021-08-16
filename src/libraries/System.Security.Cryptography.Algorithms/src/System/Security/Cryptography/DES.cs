@@ -3,6 +3,7 @@
 
 using System.Buffers.Binary;
 using System.ComponentModel;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.Versioning;
 using Internal.Cryptography;
 
@@ -26,6 +27,7 @@ namespace System.Security.Cryptography
             return new DesImplementation();
         }
 
+        [RequiresUnreferencedCode(CryptoConfig.CreateFromNameUnreferencedCodeMessage)]
         public static new DES? Create(string algName)
         {
             return (DES?)CryptoConfig.CreateFromName(algName);

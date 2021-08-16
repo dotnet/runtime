@@ -197,7 +197,6 @@ namespace System.Collections.Immutable
                 }
             }
 
-#if !NETSTANDARD1_0
             /// <summary>
             /// Returns a read-only reference to the value associated with the provided key.
             /// </summary>
@@ -208,7 +207,6 @@ namespace System.Collections.Immutable
 
                 return ref _root.ValueRef(key, _keyComparer);
             }
-#endif
 
             #endregion
 
@@ -655,7 +653,7 @@ namespace System.Collections.Immutable
     /// <summary>
     /// A simple view of the immutable collection that the debugger can show to the developer.
     /// </summary>
-    internal class ImmutableSortedDictionaryBuilderDebuggerProxy<TKey, TValue> where TKey : notnull
+    internal sealed class ImmutableSortedDictionaryBuilderDebuggerProxy<TKey, TValue> where TKey : notnull
     {
         /// <summary>
         /// The collection to be enumerated.

@@ -242,7 +242,7 @@ namespace System.Dynamic
                 _expression = expression;
             }
 
-            public override bool Equals(object? obj)
+            public override bool Equals([NotNullWhen(true)] object? obj)
             {
                 return obj is CustomRestriction other && other._expression == _expression;
             }
@@ -265,7 +265,7 @@ namespace System.Dynamic
                 _type = type;
             }
 
-            public override bool Equals(object? obj)
+            public override bool Equals([NotNullWhen(true)] object? obj)
             {
                 return obj is TypeRestriction other && other._expression == _expression && TypeUtils.AreEquivalent(other._type, _type);
             }
@@ -287,7 +287,7 @@ namespace System.Dynamic
                 _instance = instance;
             }
 
-            public override bool Equals(object? obj)
+            public override bool Equals([NotNullWhen(true)] object? obj)
             {
                 return obj is InstanceRestriction other && other._expression == _expression && other._instance == _instance;
             }

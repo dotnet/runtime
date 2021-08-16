@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.ComponentModel;
+using System.Diagnostics.CodeAnalysis;
+using System.Numerics;
 
 namespace System.Drawing
 {
@@ -41,6 +43,21 @@ namespace System.Drawing
         }
 
         /// <summary>
+        /// Initializes a new instance of the <see cref='System.Drawing.SizeF'/> struct from the specified
+        /// <see cref="System.Numerics.Vector2"/>.
+        /// </summary>
+        public SizeF(Vector2 vector)
+        {
+            width = vector.X;
+            height = vector.Y;
+        }
+
+        /// <summary>
+        /// Creates a new <see cref="System.Numerics.Vector2"/> from this <see cref="System.Drawing.SizeF"/>.
+        /// </summary>
+        public Vector2 ToVector2() => new Vector2(width, height);
+
+        /// <summary>
         /// Initializes a new instance of the <see cref='System.Drawing.SizeF'/> class from the specified dimensions.
         /// </summary>
         public SizeF(float width, float height)
@@ -48,6 +65,16 @@ namespace System.Drawing
             this.width = width;
             this.height = height;
         }
+
+        /// <summary>
+        /// Converts the specified <see cref="System.Drawing.SizeF"/> to a <see cref="System.Numerics.Vector2"/>.
+        /// </summary>
+        public static explicit operator Vector2(SizeF size) => size.ToVector2();
+
+        /// <summary>
+        /// Converts the specified <see cref="System.Numerics.Vector2"/> to a <see cref="System.Drawing.SizeF"/>.
+        /// </summary>
+        public static explicit operator SizeF(Vector2 vector) => new SizeF(vector);
 
         /// <summary>
         /// Performs vector addition of two <see cref='System.Drawing.SizeF'/> objects.
@@ -137,7 +164,7 @@ namespace System.Drawing
         /// Tests to see whether the specified object is a <see cref='System.Drawing.SizeF'/>  with the same dimensions
         /// as this <see cref='System.Drawing.SizeF'/>.
         /// </summary>
-        public override readonly bool Equals(object? obj) => obj is SizeF && Equals((SizeF)obj);
+        public override readonly bool Equals([NotNullWhen(true)] object? obj) => obj is SizeF && Equals((SizeF)obj);
 
         public readonly bool Equals(SizeF other) => this == other;
 
@@ -150,7 +177,7 @@ namespace System.Drawing
         /// <summary>
         /// Creates a human-readable string that represents this <see cref='System.Drawing.SizeF'/>.
         /// </summary>
-        public override readonly string ToString() => "{Width=" + width.ToString() + ", Height=" + height.ToString() + "}";
+        public override readonly string ToString() => $"{{Width={width}, Height={height}}}";
 
         /// <summary>
         /// Multiplies <see cref="SizeF"/> by a <see cref="float"/> producing <see cref="SizeF"/>.

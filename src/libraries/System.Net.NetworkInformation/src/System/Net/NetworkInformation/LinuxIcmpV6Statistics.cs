@@ -3,7 +3,7 @@
 
 namespace System.Net.NetworkInformation
 {
-    internal class LinuxIcmpV6Statistics : IcmpV6Statistics
+    internal sealed class LinuxIcmpV6Statistics : IcmpV6Statistics
     {
         private readonly Icmpv6StatisticsTable _table;
 

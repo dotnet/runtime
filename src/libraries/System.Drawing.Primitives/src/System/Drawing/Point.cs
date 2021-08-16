@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.ComponentModel;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Drawing
 {
@@ -135,7 +136,7 @@ namespace System.Drawing
         /// Specifies whether this <see cref='System.Drawing.Point'/> contains the same coordinates as the specified
         /// <see cref='object'/>.
         /// </summary>
-        public override readonly bool Equals(object? obj) => obj is Point && Equals((Point)obj);
+        public override readonly bool Equals([NotNullWhen(true)] object? obj) => obj is Point && Equals((Point)obj);
 
         public readonly bool Equals(Point other) => this == other;
 
@@ -164,7 +165,7 @@ namespace System.Drawing
         /// <summary>
         /// Converts this <see cref='System.Drawing.Point'/> to a human readable string.
         /// </summary>
-        public override readonly string ToString() => "{X=" + X.ToString() + ",Y=" + Y.ToString() + "}";
+        public override readonly string ToString() => $"{{X={X},Y={Y}}}";
 
         private static short HighInt16(int n) => unchecked((short)((n >> 16) & 0xffff));
 

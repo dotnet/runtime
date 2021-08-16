@@ -1,0 +1,134 @@
+<Project TreatAsLocalProperty="UsingBrowserRuntimeWorkload;WasmNativeWorkload">
+    <PropertyGroup>
+        <RuntimePackInWorkloadVersion>${PackageVersion}</RuntimePackInWorkloadVersion>
+        <BrowserWorkloadDisabled Condition="'$(BrowserWorkloadDisabled)' == '' and
+                                            '$(RuntimeIdentifier)' == 'browser-wasm' and
+                                            '$(TargetFrameworkIdentifier)' == '.NETCoreApp' and
+                                            !$([MSBuild]::VersionGreaterThanOrEquals('$(TargetFrameworkVersion)', '6.0'))">true</BrowserWorkloadDisabled>
+    </PropertyGroup>
+
+    <PropertyGroup Condition="'$(RuntimeIdentifier)' == 'browser-wasm' and '$(BrowserWorkloadDisabled)' == 'true'">
+        <_NativeBuildNeeded Condition="'$(RunAOTCompilation)' == 'true'">true</_NativeBuildNeeded>
+        <WorkloadDisabledWithReason Condition="'$(_NativeBuildNeeded)' == 'true'">WebAssembly workloads (required for AOT) are only supported for projects targeting net6.0+</WorkloadDisabledWithReason>
+    </PropertyGroup>
+
+    <PropertyGroup Condition="'$(RuntimeIdentifier)' == 'browser-wasm' AND '$(UsingBrowserRuntimeWorkload)' == ''">
+        <UsingBrowserRuntimeWorkload Condition="'$(RunAOTCompilation)' == 'true' or '$(UsingMicrosoftNETSdkBlazorWebAssembly)' != 'true'" >true</UsingBrowserRuntimeWorkload>
+        <UsingBrowserRuntimeWorkload Condition="'$(UsingBrowserRuntimeWorkload)' == ''" >$(WasmNativeWorkload)</UsingBrowserRuntimeWorkload>
+    </PropertyGroup>
+
+    <PropertyGroup Condition="'$(BrowserWorkloadDisabled)' == 'true'">
+        <UsingBrowserRuntimeWorkload>false</UsingBrowserRuntimeWorkload>
+        <WasmNativeWorkload>false</WasmNativeWorkload>
+    </PropertyGroup>
+
+    <PropertyGroup Condition="'$(UsingMicrosoftNETSdkBlazorWebAssembly)' == 'true' and '$(UsingBrowserRuntimeWorkload)' == 'true'">
+      <WasmGenerateAppBundle>false</WasmGenerateAppBundle>
+      <UsingBlazorAOTWorkloadManifest>true</UsingBlazorAOTWorkloadManifest>
+    </PropertyGroup>
+
+    <Import Condition="'$(RunAOTCompilation)' == 'true' and '$(BrowserWorkloadDisabled)' != 'true'" Project="Sdk.props" Sdk="Microsoft.NET.Runtime.MonoAOTCompiler.Task" />
+
+    <ImportGroup Condition="'$(TargetPlatformIdentifier)' == 'android'">
+        <Import Project="Sdk.props" Sdk="Microsoft.NET.Runtime.MonoTargets.Sdk" />
+        <Import Project="Sdk.targets" Sdk="Microsoft.NET.Runtime.MonoTargets.Sdk" />
+    </ImportGroup>
+    <ImportGroup Condition="'$(TargetPlatformIdentifier)' == 'android' and '$(RunAOTCompilation)' == 'true'">
+        <Import Project="Sdk.props" Sdk="Microsoft.NETCore.App.Runtime.AOT.Cross.android-x86" />
+        <Import Project="Sdk.props" Sdk="Microsoft.NETCore.App.Runtime.AOT.Cross.android-x64" />
+        <Import Project="Sdk.props" Sdk="Microsoft.NETCore.App.Runtime.AOT.Cross.android-arm" />
+        <Import Project="Sdk.props" Sdk="Microsoft.NETCore.App.Runtime.AOT.Cross.android-arm64" />
+    </ImportGroup>
+
+    <ImportGroup Condition="'$(TargetPlatformIdentifier)' == 'macOS'">
+        <Import Project="Sdk.props" Sdk="Microsoft.NET.Runtime.MonoTargets.Sdk" />
+        <Import Project="Sdk.targets" Sdk="Microsoft.NET.Runtime.MonoTargets.Sdk" />
+    </ImportGroup>
+    <!--
+    <ImportGroup Condition="'$(TargetPlatformIdentifier)' == 'macOS' and $([MSBuild]::IsOSPlatform('osx'))">
+        <Import Project="Sdk.props" Sdk="Microsoft.NETCore.App.Runtime.AOT.Cross.osx-arm64" />
+        <Import Project="Sdk.props" Sdk="Microsoft.NETCore.App.Runtime.AOT.Cross.osx-x64" />
+    </ImportGroup>
+    -->
+
+    <ImportGroup Condition="'$(TargetPlatformIdentifier)' == 'ios'">
+        <Import Project="Sdk.props" Sdk="Microsoft.NET.Runtime.MonoTargets.Sdk" />
+        <Import Project="Sdk.targets" Sdk="Microsoft.NET.Runtime.MonoTargets.Sdk" />
+    </ImportGroup>
+    <ImportGroup Condition="'$(TargetPlatformIdentifier)' == 'ios' and $([MSBuild]::IsOSPlatform('osx'))">
+        <Import Project="Sdk.props" Sdk="Microsoft.NETCore.App.Runtime.AOT.Cross.ios-arm" />
+        <Import Project="Sdk.props" Sdk="Microsoft.NETCore.App.Runtime.AOT.Cross.ios-arm64" />
+        <Import Project="Sdk.props" Sdk="Microsoft.NETCore.App.Runtime.AOT.Cross.iossimulator-arm64" />
+        <Import Project="Sdk.props" Sdk="Microsoft.NETCore.App.Runtime.AOT.Cross.iossimulator-x64" />
+        <Import Project="Sdk.props" Sdk="Microsoft.NETCore.App.Runtime.AOT.Cross.iossimulator-x86" />
+    </ImportGroup>
+
+    <ImportGroup Condition="'$(TargetPlatformIdentifier)' == 'maccatalyst'">
+        <Import Project="Sdk.props" Sdk="Microsoft.NET.Runtime.MonoTargets.Sdk" />
+        <Import Project="Sdk.targets" Sdk="Microsoft.NET.Runtime.MonoTargets.Sdk" />
+    </ImportGroup>
+    <ImportGroup Condition="'$(TargetPlatformIdentifier)' == 'maccatalyst' and $([MSBuild]::IsOSPlatform('osx'))">
+        <Import Project="Sdk.props" Sdk="Microsoft.NETCore.App.Runtime.AOT.Cross.maccatalyst-arm64" />
+        <Import Project="Sdk.props" Sdk="Microsoft.NETCore.App.Runtime.AOT.Cross.maccatalyst-x64" />
+    </ImportGroup>
+
+    <ImportGroup Condition="'$(TargetPlatformIdentifier)' == 'tvos'">
+        <Import Project="Sdk.props" Sdk="Microsoft.NET.Runtime.MonoTargets.Sdk" />
+        <Import Project="Sdk.targets" Sdk="Microsoft.NET.Runtime.MonoTargets.Sdk" />
+    </ImportGroup>
+    <ImportGroup Condition="'$(TargetPlatformIdentifier)' == 'tvos' and $([MSBuild]::IsOSPlatform('osx'))">
+        <Import Project="Sdk.props" Sdk="Microsoft.NETCore.App.Runtime.AOT.Cross.tvos-arm64" />
+        <Import Project="Sdk.props" Sdk="Microsoft.NETCore.App.Runtime.AOT.Cross.tvossimulator-arm64" />
+        <Import Project="Sdk.props" Sdk="Microsoft.NETCore.App.Runtime.AOT.Cross.tvossimulator-x64" />
+    </ImportGroup>
+
+    <ImportGroup Condition="'$(RuntimeIdentifier)' == 'browser-wasm' and '$(UsingBrowserRuntimeWorkload)' == 'true'">
+        <Import Project="Sdk.props" Sdk="Microsoft.NET.Runtime.MonoTargets.Sdk" />
+        <Import Project="Sdk.targets" Sdk="Microsoft.NET.Runtime.WebAssembly.Sdk" />
+        <Import Project="Sdk.props" Sdk="Microsoft.NETCore.App.Runtime.AOT.Cross.browser-wasm" />
+        <Import Project="Sdk.targets" Sdk="Microsoft.NET.Runtime.MonoTargets.Sdk" />
+    </ImportGroup>
+
+    <PropertyGroup Condition="'$(TargetPlatformIdentifier)' == 'android' or '$(TargetPlatformIdentifier)' == 'macOS' or '$(TargetPlatformIdentifier)' == 'ios' or '$(TargetPlatformIdentifier)' == 'maccatalyst' or '$(TargetPlatformIdentifier)' == 'tvos' or ('$(RuntimeIdentifier)' == 'browser-wasm' and '$(UsingBrowserRuntimeWorkload)' == 'true')">
+      <_MonoWorkloadTargetsMobile>true</_MonoWorkloadTargetsMobile>
+      <_MonoWorkloadRuntimePackPackageVersion>$(RuntimePackInWorkloadVersion)</_MonoWorkloadRuntimePackPackageVersion>
+    </PropertyGroup>
+
+    <ItemGroup Condition="'$(_MonoWorkloadTargetsMobile)' == 'true'">
+      <MonoRuntimePackRids Include="
+        linux-x64;
+        win-x64;
+        osx-x64;
+        osx-arm64;
+        maccatalyst-x64;
+        maccatalyst-arm64;
+        browser-wasm;
+        ios-arm64;
+        ios-arm;
+        iossimulator-arm64;
+        iossimulator-x64;
+        iossimulator-x86;
+        tvos-arm64;
+        tvossimulator-arm64;
+        tvossimulator-x64;
+        android-arm64;
+        android-arm;
+        android-x64;
+        android-x86;
+        " />
+
+      <KnownRuntimePack Remove="Microsoft.NETCore.App" />
+      <KnownRuntimePack Include="Microsoft.NETCore.App"
+                        TargetFramework="net6.0"
+                        RuntimeFrameworkName="Microsoft.NETCore.App"
+                        LatestRuntimeFrameworkVersion="$(_MonoWorkloadRuntimePackPackageVersion)"
+                        RuntimePackNamePatterns="Microsoft.NETCore.App.Runtime.Mono.**RID**"
+                        RuntimePackRuntimeIdentifiers="@(MonoRuntimePackRids, '%3B')"
+                        RuntimePackLabels="Mono"
+                        />
+    </ItemGroup>
+
+    <Target Name="ErrorDisabledWorkload" Condition="'$(WorkloadDisabledWithReason)' != ''" BeforeTargets="Publish">
+      <Error Text="$(WorkloadDisabledWithReason)" />
+    </Target>
+</Project>

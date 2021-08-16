@@ -5,7 +5,7 @@ using System.Diagnostics;
 
 namespace System.Globalization
 {
-    internal partial class CultureData
+    internal sealed partial class CultureData
     {
         /// <summary>
         /// Check with the OS to see if this is a valid culture.
@@ -42,6 +42,11 @@ namespace System.Globalization
         /// </summary>
         private unsafe bool InitCultureDataCore()
         {
+            if (!ShouldUseUserOverrideNlsData)
+            {
+                return InitIcuCultureDataCore();
+            }
+
             Debug.Assert(!GlobalizationMode.Invariant);
 
             int result;
@@ -63,8 +68,6 @@ namespace System.Globalization
             realNameBuffer = _sRealName;
 
             // Check for neutrality, don't expect to fail
-            // (buffer has our name in it, so we don't have to do the gc. stuff)
-
             result = GetLocaleInfoEx(realNameBuffer, Interop.Kernel32.LOCALE_INEUTRAL | Interop.Kernel32.LOCALE_RETURN_NUMBER, pBuffer, sizeof(int) / sizeof(char));
             if (result == 0)
             {

@@ -1,7 +1,6 @@
-#include <config.h>
+#include "ep-rt-config.h"
 
 #ifdef ENABLE_PERFTRACING
-#include "ep-rt-config.h"
 #if !defined(EP_INCLUDE_SOURCE_FILES) || defined(EP_FORCE_INCLUDE_SOURCE_FILES)
 
 #define EP_IMPL_EVENT_INSTANCE_GETTER_SETTER
@@ -207,7 +206,7 @@ ep_event_instance_serialize_to_json_file (
 		ep_event_get_event_id (ep_event_instance->ep_event),
 		ep_event_get_event_version (ep_event_instance->ep_event));
 
-	if (characters_written > 0 && characters_written < EP_ARRAY_SIZE (buffer))
+	if (characters_written > 0 && characters_written < (int32_t)EP_ARRAY_SIZE (buffer))
 		ep_json_file_write_event_data (json_file, ep_event_instance->timestamp, ep_rt_uint64_t_to_thread_id_t (ep_event_instance->thread_id), buffer, &ep_event_instance->stack_contents);
 }
 #else

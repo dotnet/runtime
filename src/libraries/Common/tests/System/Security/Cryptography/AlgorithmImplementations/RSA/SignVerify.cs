@@ -9,7 +9,7 @@ using Xunit;
 
 namespace System.Security.Cryptography.Rsa.Tests
 {
-    [SkipOnMono("Not supported on Browser", TestPlatforms.Browser)]
+    [SkipOnPlatform(TestPlatforms.Browser, "Not supported on Browser")]
     public sealed class SignVerify_Array : SignVerify
     {
         protected override byte[] SignData(RSA rsa, byte[] data, HashAlgorithmName hashAlgorithm, RSASignaturePadding padding) =>
@@ -38,7 +38,7 @@ namespace System.Security.Cryptography.Rsa.Tests
         }
     }
 
-    [SkipOnMono("Not supported on Browser", TestPlatforms.Browser)]
+    [SkipOnPlatform(TestPlatforms.Browser, "Not supported on Browser")]
     public abstract class SignVerify
     {
         public static bool SupportsPss => RSAFactory.SupportsPss;

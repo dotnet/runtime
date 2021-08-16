@@ -22,11 +22,17 @@ namespace Internal.Cryptography.Pal
 
         private SafeX509StackHandle? _nativeCollection;
         private DateTime _loadLastWrite;
+        private bool _forceRefresh;
 
         internal CachedDirectoryStoreProvider(string storeName)
         {
             string storePath = DirectoryBasedStoreProvider.GetStorePath(storeName);
             _storeDirectoryInfo = new DirectoryInfo(storePath);
+        }
+
+        internal void DoRefresh()
+        {
+            _forceRefresh = true;
         }
 
         internal SafeX509StackHandle GetNativeCollection()
@@ -35,7 +41,7 @@ namespace Internal.Cryptography.Pal
 
             TimeSpan elapsed = _recheckStopwatch.Elapsed;
 
-            if (ret == null || elapsed >= s_lastWriteRecheckInterval)
+            if (ret == null || elapsed >= s_lastWriteRecheckInterval || _forceRefresh)
             {
                 lock (_recheckStopwatch)
                 {
@@ -43,6 +49,7 @@ namespace Internal.Cryptography.Pal
                     DirectoryInfo info = _storeDirectoryInfo;
 
                     if (ret == null ||
+                        _forceRefresh ||
                         elapsed >= s_assumeInvalidInterval ||
                         (info.Exists && info.LastWriteTimeUtc != _loadLastWrite))
                     {
@@ -65,6 +72,7 @@ namespace Internal.Cryptography.Pal
                         ret = newColl;
                         _nativeCollection = newColl;
                         _recheckStopwatch.Restart();
+                        _forceRefresh = false;
                     }
                 }
             }

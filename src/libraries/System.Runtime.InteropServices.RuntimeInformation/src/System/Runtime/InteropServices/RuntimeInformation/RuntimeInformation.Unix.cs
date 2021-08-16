@@ -27,6 +27,8 @@ namespace System.Runtime.InteropServices
                     return Architecture.Arm64;
                 case Interop.Sys.ProcessorArchitecture.WASM:
                     return Architecture.Wasm;
+                case Interop.Sys.ProcessorArchitecture.S390x:
+                    return Architecture.S390x;
                 case Interop.Sys.ProcessorArchitecture.x86:
                 default:
                     Debug.Assert(arch == Interop.Sys.ProcessorArchitecture.x86, "Unidentified Architecture");

@@ -9,7 +9,7 @@ using System.Runtime.Versioning;
 namespace Microsoft.Extensions.Logging.EventLog
 {
     [SupportedOSPlatform("windows")]
-    internal class WindowsEventLog : IEventLog
+    internal sealed class WindowsEventLog : IEventLog
     {
         // https://msdn.microsoft.com/EN-US/library/windows/desktop/aa363679.aspx
         private const int MaximumMessageSize = 31839;

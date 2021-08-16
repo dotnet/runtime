@@ -4,8 +4,10 @@
 // Do not remove this, it is needed to retain calls to these conditional methods in release builds
 #define DEBUG
 
+using System.ComponentModel;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
+using System.Text;
 using System.Threading;
 
 namespace System.Diagnostics
@@ -54,37 +56,41 @@ namespace System.Diagnostics
             }
         }
 
-        [System.Diagnostics.Conditional("DEBUG")]
+        [Conditional("DEBUG")]
         public static void Close() { }
 
-        [System.Diagnostics.Conditional("DEBUG")]
+        [Conditional("DEBUG")]
         public static void Flush() { }
 
-        [System.Diagnostics.Conditional("DEBUG")]
+        [Conditional("DEBUG")]
         public static void Indent() =>
             IndentLevel++;
 
-        [System.Diagnostics.Conditional("DEBUG")]
+        [Conditional("DEBUG")]
         public static void Unindent() =>
             IndentLevel--;
 
-        [System.Diagnostics.Conditional("DEBUG")]
+        [Conditional("DEBUG")]
         public static void Print(string? message) =>
             WriteLine(message);
 
-        [System.Diagnostics.Conditional("DEBUG")]
+        [Conditional("DEBUG")]
         public static void Print(string format, params object?[] args) =>
             WriteLine(string.Format(null, format, args));
 
-        [System.Diagnostics.Conditional("DEBUG")]
+        [Conditional("DEBUG")]
         public static void Assert([DoesNotReturnIf(false)] bool condition) =>
             Assert(condition, string.Empty, string.Empty);
 
-        [System.Diagnostics.Conditional("DEBUG")]
+        [Conditional("DEBUG")]
         public static void Assert([DoesNotReturnIf(false)] bool condition, string? message) =>
             Assert(condition, message, string.Empty);
 
-        [System.Diagnostics.Conditional("DEBUG")]
+        [Conditional("DEBUG")]
+        public static void Assert([DoesNotReturnIf(false)] bool condition, [InterpolatedStringHandlerArgument("condition")] AssertInterpolatedStringHandler message) =>
+            Assert(condition, message.ToString());
+
+        [Conditional("DEBUG")]
         public static void Assert([DoesNotReturnIf(false)] bool condition, string? message, string? detailMessage)
         {
             if (!condition)
@@ -93,12 +99,20 @@ namespace System.Diagnostics
             }
         }
 
+        [Conditional("DEBUG")]
+        public static void Assert([DoesNotReturnIf(false)] bool condition, [InterpolatedStringHandlerArgument("condition")] AssertInterpolatedStringHandler message, [InterpolatedStringHandlerArgument("condition")] AssertInterpolatedStringHandler detailMessage) =>
+            Assert(condition, message.ToString(), detailMessage.ToString());
+
+        [Conditional("DEBUG")]
+        public static void Assert([DoesNotReturnIf(false)] bool condition, string? message, string detailMessageFormat, params object?[] args) =>
+            Assert(condition, message, string.Format(detailMessageFormat, args));
+
         internal static void ContractFailure(string message, string detailMessage, string failureKindMessage)
         {
             string stackTrace;
             try
             {
-                stackTrace = new StackTrace(2, true).ToString(System.Diagnostics.StackTrace.TraceFormat.Normal);
+                stackTrace = new StackTrace(2, true).ToString(StackTrace.TraceFormat.Normal);
             }
             catch
             {
@@ -108,42 +122,38 @@ namespace System.Diagnostics
             DebugProvider.FailCore(stackTrace, message, detailMessage, failureKindMessage);
         }
 
-        [System.Diagnostics.Conditional("DEBUG")]
+        [Conditional("DEBUG")]
         [DoesNotReturn]
         public static void Fail(string? message) =>
             Fail(message, string.Empty);
 
-        [System.Diagnostics.Conditional("DEBUG")]
+        [Conditional("DEBUG")]
         [DoesNotReturn]
         [MethodImpl(MethodImplOptions.NoInlining)] // Preserve the frame for debugger
         public static void Fail(string? message, string? detailMessage) =>
             s_provider.Fail(message, detailMessage);
 
-        [System.Diagnostics.Conditional("DEBUG")]
-        public static void Assert([DoesNotReturnIf(false)] bool condition, string? message, string detailMessageFormat, params object?[] args) =>
-            Assert(condition, message, string.Format(detailMessageFormat, args));
-
-        [System.Diagnostics.Conditional("DEBUG")]
+        [Conditional("DEBUG")]
         public static void WriteLine(string? message) =>
             s_provider.WriteLine(message);
 
-        [System.Diagnostics.Conditional("DEBUG")]
+        [Conditional("DEBUG")]
         public static void Write(string? message) =>
             s_provider.Write(message);
 
-        [System.Diagnostics.Conditional("DEBUG")]
+        [Conditional("DEBUG")]
         public static void WriteLine(object? value) =>
             WriteLine(value?.ToString());
 
-        [System.Diagnostics.Conditional("DEBUG")]
+        [Conditional("DEBUG")]
         public static void WriteLine(object? value, string? category) =>
             WriteLine(value?.ToString(), category);
 
-        [System.Diagnostics.Conditional("DEBUG")]
+        [Conditional("DEBUG")]
         public static void WriteLine(string format, params object?[] args) =>
             WriteLine(string.Format(null, format, args));
 
-        [System.Diagnostics.Conditional("DEBUG")]
+        [Conditional("DEBUG")]
         public static void WriteLine(string? message, string? category)
         {
             if (category == null)
@@ -156,11 +166,11 @@ namespace System.Diagnostics
             }
         }
 
-        [System.Diagnostics.Conditional("DEBUG")]
+        [Conditional("DEBUG")]
         public static void Write(object? value) =>
             Write(value?.ToString());
 
-        [System.Diagnostics.Conditional("DEBUG")]
+        [Conditional("DEBUG")]
         public static void Write(string? message, string? category)
         {
             if (category == null)
@@ -173,11 +183,11 @@ namespace System.Diagnostics
             }
         }
 
-        [System.Diagnostics.Conditional("DEBUG")]
+        [Conditional("DEBUG")]
         public static void Write(object? value, string? category) =>
             Write(value?.ToString(), category);
 
-        [System.Diagnostics.Conditional("DEBUG")]
+        [Conditional("DEBUG")]
         public static void WriteIf(bool condition, string? message)
         {
             if (condition)
@@ -186,7 +196,11 @@ namespace System.Diagnostics
             }
         }
 
-        [System.Diagnostics.Conditional("DEBUG")]
+        [Conditional("DEBUG")]
+        public static void WriteIf(bool condition, [InterpolatedStringHandlerArgument("condition")] WriteIfInterpolatedStringHandler message) =>
+            WriteIf(condition, message.ToString());
+
+        [Conditional("DEBUG")]
         public static void WriteIf(bool condition, object? value)
         {
             if (condition)
@@ -195,7 +209,7 @@ namespace System.Diagnostics
             }
         }
 
-        [System.Diagnostics.Conditional("DEBUG")]
+        [Conditional("DEBUG")]
         public static void WriteIf(bool condition, string? message, string? category)
         {
             if (condition)
@@ -204,7 +218,11 @@ namespace System.Diagnostics
             }
         }
 
-        [System.Diagnostics.Conditional("DEBUG")]
+        [Conditional("DEBUG")]
+        public static void WriteIf(bool condition, [InterpolatedStringHandlerArgument("condition")] WriteIfInterpolatedStringHandler message, string? category) =>
+            WriteIf(condition, message.ToString(), category);
+
+        [Conditional("DEBUG")]
         public static void WriteIf(bool condition, object? value, string? category)
         {
             if (condition)
@@ -213,7 +231,7 @@ namespace System.Diagnostics
             }
         }
 
-        [System.Diagnostics.Conditional("DEBUG")]
+        [Conditional("DEBUG")]
         public static void WriteLineIf(bool condition, object? value)
         {
             if (condition)
@@ -222,7 +240,7 @@ namespace System.Diagnostics
             }
         }
 
-        [System.Diagnostics.Conditional("DEBUG")]
+        [Conditional("DEBUG")]
         public static void WriteLineIf(bool condition, object? value, string? category)
         {
             if (condition)
@@ -231,7 +249,7 @@ namespace System.Diagnostics
             }
         }
 
-        [System.Diagnostics.Conditional("DEBUG")]
+        [Conditional("DEBUG")]
         public static void WriteLineIf(bool condition, string? message)
         {
             if (condition)
@@ -240,13 +258,191 @@ namespace System.Diagnostics
             }
         }
 
-        [System.Diagnostics.Conditional("DEBUG")]
+        [Conditional("DEBUG")]
+        public static void WriteLineIf(bool condition, [InterpolatedStringHandlerArgument("condition")] WriteIfInterpolatedStringHandler message) =>
+            WriteLineIf(condition, message.ToString());
+
+        [Conditional("DEBUG")]
         public static void WriteLineIf(bool condition, string? message, string? category)
         {
             if (condition)
             {
                 WriteLine(message, category);
             }
+        }
+
+        [Conditional("DEBUG")]
+        public static void WriteLineIf(bool condition, [InterpolatedStringHandlerArgument("condition")] WriteIfInterpolatedStringHandler message, string? category) =>
+            WriteLineIf(condition, message.ToString(), category);
+
+        /// <summary>Provides an interpolated string handler for <see cref="Debug.Assert"/> that only performs formatting if the assert fails.</summary>
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        [InterpolatedStringHandler]
+        public struct AssertInterpolatedStringHandler
+        {
+            /// <summary>The handler we use to perform the formatting.</summary>
+            private StringBuilder.AppendInterpolatedStringHandler _stringBuilderHandler;
+
+            /// <summary>Creates an instance of the handler..</summary>
+            /// <param name="literalLength">The number of constant characters outside of interpolation expressions in the interpolated string.</param>
+            /// <param name="formattedCount">The number of interpolation expressions in the interpolated string.</param>
+            /// <param name="condition">The condition Boolean passed to the <see cref="Debug"/> method.</param>
+            /// <param name="shouldAppend">A value indicating whether formatting should proceed.</param>
+            /// <remarks>This is intended to be called only by compiler-generated code. Arguments are not validated as they'd otherwise be for members intended to be used directly.</remarks>
+            public AssertInterpolatedStringHandler(int literalLength, int formattedCount, bool condition, out bool shouldAppend)
+            {
+                if (condition)
+                {
+                    _stringBuilderHandler = default;
+                    shouldAppend = false;
+                }
+                else
+                {
+                    _stringBuilderHandler = new StringBuilder.AppendInterpolatedStringHandler(literalLength, formattedCount, new StringBuilder(DefaultInterpolatedStringHandler.GetDefaultLength(literalLength, formattedCount)));
+                    shouldAppend = true;
+                }
+            }
+
+            /// <summary>Extracts the built string from the handler.</summary>
+            internal new string ToString() =>
+                _stringBuilderHandler._stringBuilder is StringBuilder sb ?
+                    sb.ToString() :
+                    string.Empty;
+
+            /// <summary>Writes the specified string to the handler.</summary>
+            /// <param name="value">The string to write.</param>
+            public void AppendLiteral(string value) => _stringBuilderHandler.AppendLiteral(value);
+
+            /// <summary>Writes the specified value to the handler.</summary>
+            /// <param name="value">The value to write.</param>
+            public void AppendFormatted<T>(T value) => _stringBuilderHandler.AppendFormatted(value);
+
+            /// <summary>Writes the specified value to the handler.</summary>
+            /// <param name="value">The value to write.</param>
+            /// <param name="format">The format string.</param>
+            public void AppendFormatted<T>(T value, string? format) => _stringBuilderHandler.AppendFormatted(value, format);
+
+            /// <summary>Writes the specified value to the handler.</summary>
+            /// <param name="value">The value to write.</param>
+            /// <param name="alignment">Minimum number of characters that should be written for this value.  If the value is negative, it indicates left-aligned and the required minimum is the absolute value.</param>
+            public void AppendFormatted<T>(T value, int alignment) => _stringBuilderHandler.AppendFormatted(value, alignment);
+
+            /// <summary>Writes the specified value to the handler.</summary>
+            /// <param name="value">The value to write.</param>
+            /// <param name="format">The format string.</param>
+            /// <param name="alignment">Minimum number of characters that should be written for this value.  If the value is negative, it indicates left-aligned and the required minimum is the absolute value.</param>
+            public void AppendFormatted<T>(T value, int alignment, string? format) => _stringBuilderHandler.AppendFormatted(value, alignment, format);
+
+            /// <summary>Writes the specified character span to the handler.</summary>
+            /// <param name="value">The span to write.</param>
+            public void AppendFormatted(ReadOnlySpan<char> value) => _stringBuilderHandler.AppendFormatted(value);
+
+            /// <summary>Writes the specified string of chars to the handler.</summary>
+            /// <param name="value">The span to write.</param>
+            /// <param name="alignment">Minimum number of characters that should be written for this value.  If the value is negative, it indicates left-aligned and the required minimum is the absolute value.</param>
+            /// <param name="format">The format string.</param>
+            public void AppendFormatted(ReadOnlySpan<char> value, int alignment = 0, string? format = null) => _stringBuilderHandler.AppendFormatted(value, alignment, format);
+
+            /// <summary>Writes the specified value to the handler.</summary>
+            /// <param name="value">The value to write.</param>
+            public void AppendFormatted(string? value) => _stringBuilderHandler.AppendFormatted(value);
+
+            /// <summary>Writes the specified value to the handler.</summary>
+            /// <param name="value">The value to write.</param>
+            /// <param name="alignment">Minimum number of characters that should be written for this value.  If the value is negative, it indicates left-aligned and the required minimum is the absolute value.</param>
+            /// <param name="format">The format string.</param>
+            public void AppendFormatted(string? value, int alignment = 0, string? format = null) => _stringBuilderHandler.AppendFormatted(value, alignment, format);
+
+            /// <summary>Writes the specified value to the handler.</summary>
+            /// <param name="value">The value to write.</param>
+            /// <param name="alignment">Minimum number of characters that should be written for this value.  If the value is negative, it indicates left-aligned and the required minimum is the absolute value.</param>
+            /// <param name="format">The format string.</param>
+            public void AppendFormatted(object? value, int alignment = 0, string? format = null) => _stringBuilderHandler.AppendFormatted(value, alignment, format);
+        }
+
+        /// <summary>Provides an interpolated string handler for <see cref="Debug.WriteIf"/> and <see cref="Debug.WriteLineIf"/> that only performs formatting if the condition applies.</summary>
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        [InterpolatedStringHandler]
+        public struct WriteIfInterpolatedStringHandler
+        {
+            /// <summary>The handler we use to perform the formatting.</summary>
+            private StringBuilder.AppendInterpolatedStringHandler _stringBuilderHandler;
+
+            /// <summary>Creates an instance of the handler..</summary>
+            /// <param name="literalLength">The number of constant characters outside of interpolation expressions in the interpolated string.</param>
+            /// <param name="formattedCount">The number of interpolation expressions in the interpolated string.</param>
+            /// <param name="condition">The condition Boolean passed to the <see cref="Debug"/> method.</param>
+            /// <param name="shouldAppend">A value indicating whether formatting should proceed.</param>
+            /// <remarks>This is intended to be called only by compiler-generated code. Arguments are not validated as they'd otherwise be for members intended to be used directly.</remarks>
+            public WriteIfInterpolatedStringHandler(int literalLength, int formattedCount, bool condition, out bool shouldAppend)
+            {
+                if (condition)
+                {
+                    _stringBuilderHandler = new StringBuilder.AppendInterpolatedStringHandler(literalLength, formattedCount, new StringBuilder(DefaultInterpolatedStringHandler.GetDefaultLength(literalLength, formattedCount)));
+                    shouldAppend = true;
+                }
+                else
+                {
+                    _stringBuilderHandler = default;
+                    shouldAppend = false;
+                }
+            }
+
+            /// <summary>Extracts the built string from the handler.</summary>
+            internal new string ToString() =>
+                _stringBuilderHandler._stringBuilder is StringBuilder sb ?
+                    sb.ToString() :
+                    string.Empty;
+
+            /// <summary>Writes the specified string to the handler.</summary>
+            /// <param name="value">The string to write.</param>
+            public void AppendLiteral(string value) => _stringBuilderHandler.AppendLiteral(value);
+
+            /// <summary>Writes the specified value to the handler.</summary>
+            /// <param name="value">The value to write.</param>
+            public void AppendFormatted<T>(T value) => _stringBuilderHandler.AppendFormatted(value);
+
+            /// <summary>Writes the specified value to the handler.</summary>
+            /// <param name="value">The value to write.</param>
+            /// <param name="format">The format string.</param>
+            public void AppendFormatted<T>(T value, string? format) => _stringBuilderHandler.AppendFormatted(value, format);
+
+            /// <summary>Writes the specified value to the handler.</summary>
+            /// <param name="value">The value to write.</param>
+            /// <param name="alignment">Minimum number of characters that should be written for this value.  If the value is negative, it indicates left-aligned and the required minimum is the absolute value.</param>
+            public void AppendFormatted<T>(T value, int alignment) => _stringBuilderHandler.AppendFormatted(value, alignment);
+
+            /// <summary>Writes the specified value to the handler.</summary>
+            /// <param name="value">The value to write.</param>
+            /// <param name="format">The format string.</param>
+            /// <param name="alignment">Minimum number of characters that should be written for this value.  If the value is negative, it indicates left-aligned and the required minimum is the absolute value.</param>
+            public void AppendFormatted<T>(T value, int alignment, string? format) => _stringBuilderHandler.AppendFormatted(value, alignment, format);
+
+            /// <summary>Writes the specified character span to the handler.</summary>
+            /// <param name="value">The span to write.</param>
+            public void AppendFormatted(ReadOnlySpan<char> value) => _stringBuilderHandler.AppendFormatted(value);
+
+            /// <summary>Writes the specified string of chars to the handler.</summary>
+            /// <param name="value">The span to write.</param>
+            /// <param name="alignment">Minimum number of characters that should be written for this value.  If the value is negative, it indicates left-aligned and the required minimum is the absolute value.</param>
+            /// <param name="format">The format string.</param>
+            public void AppendFormatted(ReadOnlySpan<char> value, int alignment = 0, string? format = null) => _stringBuilderHandler.AppendFormatted(value, alignment, format);
+
+            /// <summary>Writes the specified value to the handler.</summary>
+            /// <param name="value">The value to write.</param>
+            public void AppendFormatted(string? value) => _stringBuilderHandler.AppendFormatted(value);
+
+            /// <summary>Writes the specified value to the handler.</summary>
+            /// <param name="value">The value to write.</param>
+            /// <param name="alignment">Minimum number of characters that should be written for this value.  If the value is negative, it indicates left-aligned and the required minimum is the absolute value.</param>
+            /// <param name="format">The format string.</param>
+            public void AppendFormatted(string? value, int alignment = 0, string? format = null) => _stringBuilderHandler.AppendFormatted(value, alignment, format);
+
+            /// <summary>Writes the specified value to the handler.</summary>
+            /// <param name="value">The value to write.</param>
+            /// <param name="alignment">Minimum number of characters that should be written for this value.  If the value is negative, it indicates left-aligned and the required minimum is the absolute value.</param>
+            /// <param name="format">The format string.</param>
+            public void AppendFormatted(object? value, int alignment = 0, string? format = null) => _stringBuilderHandler.AppendFormatted(value, alignment, format);
         }
     }
 }

@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
 using System.IO.Pipes;
@@ -216,7 +217,7 @@ namespace System.Net.Sockets.Tests
         [Theory]
         [InlineData(AddressFamily.Packet)]
         [InlineData(AddressFamily.ControllerAreaNetwork)]
-        [PlatformSpecific(~TestPlatforms.Linux)]
+        [SkipOnPlatform(TestPlatforms.Linux, "Not supported on Linux.")]
         public void Ctor_Netcoreapp_Throws(AddressFamily addressFamily)
         {
             // All protocols are Linux specific and throw on other platforms
@@ -249,12 +250,18 @@ namespace System.Net.Sockets.Tests
         {
             AssertExtensions.Throws<ArgumentNullException>("handle", () => new Socket(null));
             AssertExtensions.Throws<ArgumentException>("handle", () => new Socket(new SafeSocketHandle((IntPtr)(-1), false)));
+        }
 
-            using (var pipe = new AnonymousPipeServerStream())
-            {
-                SocketException se = Assert.Throws<SocketException>(() => new Socket(new SafeSocketHandle(pipe.ClientSafePipeHandle.DangerousGetHandle(), false)));
-                Assert.Equal(SocketError.NotSocket, se.SocketErrorCode);
-            }
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        [PlatformSpecific(TestPlatforms.Linux)]
+        public void Ctor_Socket_FromPipeHandle_Ctor_Dispose_Success(bool ownsHandle)
+        {
+            (int fd1, int fd2) = pipe2();
+            close(fd2);
+
+            using var _ = new Socket(new SafeSocketHandle(new IntPtr(fd1), ownsHandle));
         }
 
         [Theory]
@@ -267,6 +274,7 @@ namespace System.Net.Sockets.Tests
         [InlineData(AddressFamily.InterNetworkV6, SocketType.Raw, ProtocolType.Unspecified)]
         [InlineData(AddressFamily.Packet, SocketType.Raw, ProtocolType.Raw)]
         [InlineData(AddressFamily.Unix, SocketType.Stream, ProtocolType.Unspecified)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/52124", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public void Ctor_SafeHandle_BasicPropertiesPropagate_Success(AddressFamily addressFamily, SocketType socketType, ProtocolType protocolType)
         {
             bool isRawPacket = (addressFamily == AddressFamily.Packet) &&
@@ -304,8 +312,8 @@ namespace System.Net.Sockets.Tests
             if (copy.IsBound)
             {
                 // On Unix, we may successfully obtain an (empty) local end point, even though Bind wasn't called.
-                Debug.Assert(!RuntimeInformation.IsOSPlatform(OSPlatform.Windows));
-                if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux)) // OSX gets some strange results in some cases, e.g. "@\0\0\0\0\0\0\0\0\0\0\0\0\0" for a UDS
+                Debug.Assert(!OperatingSystem.IsWindows());
+                if (OperatingSystem.IsLinux()) // OSX gets some strange results in some cases, e.g. "@\0\0\0\0\0\0\0\0\0\0\0\0\0" for a UDS
                 {
                     switch (addressFamily)
                     {
@@ -371,12 +379,15 @@ namespace System.Net.Sockets.Tests
             Assert.Equal(orig.ReceiveTimeout, copy.ReceiveTimeout);
             Assert.Equal(orig.SendBufferSize, copy.SendBufferSize);
             Assert.Equal(orig.SendTimeout, copy.SendTimeout);
+#pragma warning disable 0618
             Assert.Equal(orig.UseOnlyOverlappedIO, copy.UseOnlyOverlappedIO);
+#pragma warning restore 0618
         }
 
         [Theory]
         [InlineData(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp)]
         [InlineData(AddressFamily.InterNetworkV6, SocketType.Stream, ProtocolType.Tcp)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/52124", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public async Task Ctor_SafeHandle_Tcp_SendReceive_Success(AddressFamily addressFamily, SocketType socketType, ProtocolType protocolType)
         {
             using var orig = new Socket(addressFamily, socketType, protocolType);
@@ -415,7 +426,6 @@ namespace System.Net.Sockets.Tests
             Assert.Equal(orig.SendBufferSize, client.SendBufferSize);
             Assert.Equal(orig.SendTimeout, client.SendTimeout);
             Assert.Equal(orig.Ttl, client.Ttl);
-            Assert.Equal(orig.UseOnlyOverlappedIO, client.UseOnlyOverlappedIO);
 
             // Validate setting various properties on the new instance and seeing them roundtrip back to the original.
             client.ReceiveTimeout = 42;
@@ -436,37 +446,41 @@ namespace System.Net.Sockets.Tests
         [Theory]
         [InlineData(false)]
         [InlineData(true)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/52124", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public async Task Ctor_SafeHandle_Listening_Success(bool shareSafeHandle)
         {
-            using var listener = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
-            listener.Bind(new IPEndPoint(IPAddress.Loopback, 0));
-            listener.Listen();
-
-            using var listenerCopy = new Socket(shareSafeHandle ? listener.SafeHandle : new SafeSocketHandle(listener.Handle, ownsHandle: false));
-            Assert.False(listenerCopy.Connected);
-            // This will throw if _isListening is set internally. (before reaching any real code)
-            Assert.Throws<InvalidOperationException>(() => listenerCopy.Connect(new IPEndPoint(IPAddress.Loopback,0)));
-
-            Assert.Equal(listener.AddressFamily, listenerCopy.AddressFamily);
-            Assert.Equal(listener.Handle, listenerCopy.Handle);
-            Assert.Equal(listener.IsBound, listenerCopy.IsBound);
-            Assert.Equal(listener.LocalEndPoint, listenerCopy.LocalEndPoint);
-            Assert.Equal(listener.ProtocolType, listenerCopy.ProtocolType);
-            Assert.Equal(listener.SocketType, listenerCopy.SocketType);
-
-            foreach (Socket listenerSocket in new[] { listener, listenerCopy })
+            await Task.Run(async () =>
             {
-                using (var client1 = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
+                using var listener = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+                listener.Bind(new IPEndPoint(IPAddress.Loopback, 0));
+                listener.Listen();
+
+                using var listenerCopy = new Socket(shareSafeHandle ? listener.SafeHandle : new SafeSocketHandle(listener.Handle, ownsHandle: false));
+                Assert.False(listenerCopy.Connected);
+                // This will throw if _isListening is set internally. (before reaching any real code)
+                Assert.Throws<InvalidOperationException>(() => listenerCopy.Connect(new IPEndPoint(IPAddress.Loopback, 0)));
+
+                Assert.Equal(listener.AddressFamily, listenerCopy.AddressFamily);
+                Assert.Equal(listener.Handle, listenerCopy.Handle);
+                Assert.Equal(listener.IsBound, listenerCopy.IsBound);
+                Assert.Equal(listener.LocalEndPoint, listenerCopy.LocalEndPoint);
+                Assert.Equal(listener.ProtocolType, listenerCopy.ProtocolType);
+                Assert.Equal(listener.SocketType, listenerCopy.SocketType);
+
+                foreach (Socket listenerSocket in new[] { listener, listenerCopy })
                 {
-                    Task connect1 = client1.ConnectAsync(listenerSocket.LocalEndPoint);
-                    using (Socket server1 = listenerSocket.Accept())
+                    using (var client1 = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
                     {
-                        await connect1;
-                        server1.Send(new byte[] { 42 });
-                        Assert.Equal(1, client1.Receive(new byte[1]));
+                        Task connect1 = client1.ConnectAsync(listenerSocket.LocalEndPoint);
+                        using (Socket server1 = listenerSocket.Accept())
+                        {
+                            await connect1;
+                            server1.Send(new byte[] { 42 });
+                            Assert.Equal(1, client1.Receive(new byte[1]));
+                        }
                     }
                 }
-            }
+            }).WaitAsync(TestSettings.PassingTestTimeout); 
         }
 
         [DllImport("libc")]
@@ -624,8 +638,28 @@ namespace System.Net.Sockets.Tests
         [DllImport("libc")]
         private static extern int close(int fd);
 
+        [DllImport("libc", SetLastError = true)]
+        private static unsafe extern int pipe2(int* pipefd, int flags);
+
+        private static unsafe (int, int) pipe2(int flags = 0)
+        {
+            Span<int> pipefd = stackalloc int[2];
+            fixed (int* ptr = pipefd)
+            {
+                if (pipe2(ptr, flags) == 0)
+                {
+                    return (pipefd[0], pipefd[1]);
+                }
+                else
+                {
+                    throw new Win32Exception();
+                }
+            }
+        }
+
         [Fact]
         [PlatformSpecific(TestPlatforms.AnyUnix)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/52124", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public unsafe void Ctor_SafeHandle_SocketPair_Success()
         {
             // This is platform dependent but it seems like this is same on all supported platforms.

@@ -221,7 +221,7 @@ namespace System.Collections.Concurrent
             Debug.Assert(boundedCapacity > 0 || boundedCapacity == NON_BOUNDED);
 
             _collection = collection;
-            _boundedCapacity = boundedCapacity; ;
+            _boundedCapacity = boundedCapacity;
             _isDisposed = false;
             _consumersCancellationTokenSource = new CancellationTokenSource();
             _producersCancellationTokenSource = new CancellationTokenSource();
@@ -761,12 +761,7 @@ namespace System.Collections.Concurrent
                 }
             }
 
-#pragma warning disable CS8762
-            // https://github.com/dotnet/runtime/issues/36132
-            // Compiler can't automatically deduce that nullability constraints
-            // for 'item' are satisfied at this exit point.
             return waitForSemaphoreWasSuccessful;
-#pragma warning restore CS8762
         }
 
 
@@ -1144,7 +1139,7 @@ namespace System.Collections.Concurrent
             }
 
             // Subtract the elapsed time from the current wait time
-            int currentWaitTimeout = originalWaitMillisecondsTimeout - (int)elapsedMilliseconds; ;
+            int currentWaitTimeout = originalWaitMillisecondsTimeout - (int)elapsedMilliseconds;
             if (currentWaitTimeout <= 0)
             {
                 return 0;

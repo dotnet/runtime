@@ -13,6 +13,7 @@ namespace Internal.Cryptography
     /// be consistent with the rest of the static Create() methods which return opaque types.
     /// They both have the same implementation.
     /// </summary>
+    [Obsolete(Obsoletions.RijndaelMessage, DiagnosticId = Obsoletions.RijndaelDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
     internal sealed class RijndaelImplementation : Rijndael
     {
         private readonly Aes _impl;
@@ -23,6 +24,7 @@ namespace Internal.Cryptography
 
             // This class wraps Aes
             _impl = Aes.Create();
+            _impl.FeedbackSize = 128;
         }
 
         public override int BlockSize
@@ -40,6 +42,12 @@ namespace Internal.Cryptography
                 if (value != 128)
                     throw new CryptographicException(SR.Cryptography_Rijndael_BlockSize);
             }
+        }
+
+        public override int FeedbackSize
+        {
+            get => _impl.FeedbackSize;
+            set => _impl.FeedbackSize = value;
         }
 
         public override byte[] IV

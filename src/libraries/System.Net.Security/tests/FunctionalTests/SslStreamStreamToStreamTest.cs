@@ -68,6 +68,7 @@ namespace System.Net.Security.Tests
 
         [Theory]
         [MemberData(nameof(SslStream_StreamToStream_Authentication_Success_MemberData))]
+        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS, "X509 certificate store is not supported on iOS or tvOS.")]
         public async Task SslStream_StreamToStream_Authentication_Success(X509Certificate serverCert = null, X509Certificate clientCert = null)
         {
             (Stream stream1, Stream stream2) = TestHelper.GetConnectedStreams();
@@ -126,6 +127,7 @@ namespace System.Net.Security.Tests
         }
 
         [Fact]
+        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS, "X509 certificate store is not supported on iOS or tvOS.")]
         public async Task Read_CorrectlyUnlocksAfterFailure()
         {
             (Stream stream1, Stream stream2) = TestHelper.GetConnectedStreams();
@@ -153,6 +155,7 @@ namespace System.Net.Security.Tests
         }
 
         [Fact]
+        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS, "X509 certificate store is not supported on iOS or tvOS.")]
         public async Task Write_CorrectlyUnlocksAfterFailure()
         {
             (Stream stream1, Stream stream2) = TestHelper.GetConnectedStreams();
@@ -201,6 +204,7 @@ namespace System.Net.Security.Tests
         }
 
         [Fact]
+        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS, "X509 certificate store is not supported on iOS or tvOS.")]
         public async Task Write_InvokedSynchronously()
         {
             (Stream stream1, Stream stream2) = TestHelper.GetConnectedStreams();
@@ -242,7 +246,7 @@ namespace System.Net.Security.Tests
                 var serverBuffer = new byte[1];
                 Task serverReadTask = ReadAsync(serverSslStream, serverBuffer, 0, serverBuffer.Length);
                 await WriteAsync(serverSslStream, new byte[] { 1 }, 0, 1)
-                    .TimeoutAfter(TestConfiguration.PassingTestTimeoutMilliseconds);
+                    .WaitAsync(TestConfiguration.PassingTestTimeout);
 
                 // Shouldn't throw, the context is disposed now.
                 // Since the server read task is in progress, the read buffer is not returned to ArrayPool.

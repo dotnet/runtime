@@ -9,6 +9,9 @@
     <Compile Include="ServiceControllerTests.cs" />
     <Compile Include="ServiceProcessDescriptionAttributeTests.cs" />
   </ItemGroup>
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
+    <Compile Include="ServiceControllerTests.netcoreapp.cs" />
+  </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="System.ServiceProcess.ServiceController.TestService\System.ServiceProcess.ServiceController.TestService.csproj" />
   </ItemGroup>

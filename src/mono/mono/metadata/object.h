@@ -22,11 +22,7 @@ typedef struct _MonoReflectionEvent MONO_RT_MANAGED_ATTR MonoReflectionEvent;
 typedef struct _MonoReflectionType MONO_RT_MANAGED_ATTR MonoReflectionType;
 typedef struct _MonoDelegate MONO_RT_MANAGED_ATTR MonoDelegate;
 typedef struct _MonoThreadsSync MonoThreadsSync;
-#ifdef ENABLE_NETCORE
 typedef struct _MonoInternalThread MONO_RT_MANAGED_ATTR MonoThread;
-#else
-typedef struct _MonoThread MONO_RT_MANAGED_ATTR MonoThread;
-#endif
 typedef struct _MonoDynamicAssembly MonoDynamicAssembly;
 typedef struct _MonoDynamicImage MonoDynamicImage;
 typedef struct _MonoReflectionMethodBody MONO_RT_MANAGED_ATTR MonoReflectionMethodBody;
@@ -305,8 +301,6 @@ mono_runtime_exec_main	    (MonoMethod *method, MonoArray *args,
 MONO_API MONO_RT_EXTERNAL_ONLY int
 mono_runtime_set_main_args  (int argc, char* argv[]);
 
-/* The following functions won't be available with mono was configured with remoting disabled. */
-/*#ifndef DISABLE_REMOTING */
 MONO_API MONO_RT_EXTERNAL_ONLY void*
 mono_load_remote_field (MonoObject *this_obj, MonoClass *klass, MonoClassField *field, void **res);
 
@@ -318,8 +312,6 @@ mono_store_remote_field (MonoObject *this_obj, MonoClass *klass, MonoClassField 
 
 MONO_API MONO_RT_EXTERNAL_ONLY void
 mono_store_remote_field_new (MonoObject *this_obj, MonoClass *klass, MonoClassField *field, MonoObject *arg);
-
-/* #endif */
 
 MONO_API MONO_RT_EXTERNAL_ONLY void
 mono_unhandled_exception    (MonoObject *exc);

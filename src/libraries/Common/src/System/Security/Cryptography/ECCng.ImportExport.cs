@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#nullable enable
 using Internal.Cryptography;
 using Microsoft.Win32.SafeHandles;
 using System.Diagnostics;
@@ -475,7 +474,7 @@ namespace System.Security.Cryptography
                     descPtr = Marshal.AllocHGlobal(Marshal.SizeOf(desc));
                     buffPtr = Marshal.AllocHGlobal(Marshal.SizeOf(buff));
                     buff.cbBuffer = (curveName.Length + 1) * 2; // Add 1 for null terminator
-                    buff.BufferType = Interop.BCrypt.NCryptBufferDescriptors.NCRYPTBUFFER_ECC_CURVE_NAME;
+                    buff.BufferType = Interop.BCrypt.CngBufferDescriptors.NCRYPTBUFFER_ECC_CURVE_NAME;
                     buff.pvBuffer = safeCurveName.DangerousGetHandle();
                     Marshal.StructureToPtr(buff, buffPtr, false);
 

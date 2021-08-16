@@ -80,7 +80,6 @@ namespace System.ComponentModel.Composition.Hosting
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/mono/mono/issues/16417", TestRuntimes.Mono)]
         public void GetExportsWithGenerics()
         {
             var originalCatalog = new TypeCatalog(typeof(GenericExporter<,>), typeof(Exporter11), typeof(Exporter22));

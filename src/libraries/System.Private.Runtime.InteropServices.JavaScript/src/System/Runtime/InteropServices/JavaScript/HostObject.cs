@@ -27,11 +27,11 @@ namespace System.Runtime.InteropServices.JavaScript
 
     public abstract class HostObjectBase : JSObject, IHostObject
     {
-        protected HostObjectBase(int jHandle) : base(jHandle, true)
+        protected HostObjectBase(int jsHandle) : base(jsHandle, true)
         {
-            object result = Interop.Runtime.BindHostObject(jHandle, Int32Handle, out int exception);
+            object result = Interop.Runtime.BindCoreObject(jsHandle, GCHandleValue, out int exception);
             if (exception != 0)
-                throw new JSException($"HostObject Error binding: {result}");
+                throw new JSException(SR.Format(SR.HostObjectErrorBinding, result));
         }
 
         internal HostObjectBase(IntPtr jsHandle, bool ownsHandle) : base(jsHandle, ownsHandle)

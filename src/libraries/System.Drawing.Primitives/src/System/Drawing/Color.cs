@@ -3,6 +3,7 @@
 
 using System.ComponentModel;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 
 namespace System.Drawing
@@ -248,6 +249,12 @@ namespace System.Drawing
 
         public static Color Purple => new Color(KnownColor.Purple);
 
+        /// <summary>
+        /// Gets a system-defined color that has an ARGB value of <c>#663399</c>.
+        /// </summary>
+        /// <value>A system-defined color.</value>
+        public static Color RebeccaPurple => new Color(KnownColor.RebeccaPurple);
+
         public static Color Red => new Color(KnownColor.Red);
 
         public static Color RosyBrown => new Color(KnownColor.RosyBrown);
@@ -301,7 +308,6 @@ namespace System.Drawing
         public static Color Yellow => new Color(KnownColor.Yellow);
 
         public static Color YellowGreen => new Color(KnownColor.YellowGreen);
-
         //
         //  end "web" colors
         // -------------------------------------------------------------------
@@ -372,7 +378,7 @@ namespace System.Drawing
         public bool IsSystemColor => IsKnownColor && IsKnownColorSystem((KnownColor)knownColor);
 
         internal static bool IsKnownColorSystem(KnownColor knownColor)
-            => (knownColor <= KnownColor.WindowText) || (knownColor > KnownColor.YellowGreen);
+            => KnownColorTable.ColorKindTable[(int)knownColor] == KnownColorTable.KnownColorKindSystem;
 
         // Used for the [DebuggerDisplay]. Inlining in the attribute is possible, but
         // against best practices as the current project language parses the string with
@@ -400,7 +406,7 @@ namespace System.Drawing
 
                 // if we reached here, just encode the value
                 //
-                return Convert.ToString(value, 16);
+                return value.ToString("x");
             }
         }
 
@@ -464,7 +470,7 @@ namespace System.Drawing
         public static Color FromArgb(int red, int green, int blue) => FromArgb(byte.MaxValue, red, green, blue);
 
         public static Color FromKnownColor(KnownColor color) =>
-            color <= 0 || color > KnownColor.MenuHighlight ? FromName(color.ToString()) : new Color(color);
+            color <= 0 || color > KnownColor.RebeccaPurple ? FromName(color.ToString()) : new Color(color);
 
         public static Color FromName(string name)
         {
@@ -485,12 +491,34 @@ namespace System.Drawing
             b = (int)(value & ARGBBlueMask) >> ARGBBlueShift;
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static void MinMaxRgb(out int min, out int max, int r, int g, int b)
+        {
+            if (r > g)
+            {
+                max = r;
+                min = g;
+            }
+            else
+            {
+                max = g;
+                min = r;
+            }
+            if (b > max)
+            {
+                max = b;
+            }
+            else if (b < min)
+            {
+                min = b;
+            }
+        }
+
         public float GetBrightness()
         {
             GetRgbValues(out int r, out int g, out int b);
 
-            int min = Math.Min(Math.Min(r, g), b);
-            int max = Math.Max(Math.Max(r, g), b);
+            MinMaxRgb(out int min, out int max, r, g, b);
 
             return (max + min) / (byte.MaxValue * 2f);
         }
@@ -502,8 +530,7 @@ namespace System.Drawing
             if (r == g && g == b)
                 return 0f;
 
-            int min = Math.Min(Math.Min(r, g), b);
-            int max = Math.Max(Math.Max(r, g), b);
+            MinMaxRgb(out int min, out int max, r, g, b);
 
             float delta = max - min;
             float hue;
@@ -529,8 +556,7 @@ namespace System.Drawing
             if (r == g && g == b)
                 return 0f;
 
-            int min = Math.Min(Math.Min(r, g), b);
-            int max = Math.Max(Math.Max(r, g), b);
+            MinMaxRgb(out int min, out int max, r, g, b);
 
             int div = max + min;
             if (div > byte.MaxValue)
@@ -543,21 +569,10 @@ namespace System.Drawing
 
         public KnownColor ToKnownColor() => (KnownColor)knownColor;
 
-        public override string ToString()
-        {
-            if (IsNamedColor)
-            {
-                return nameof(Color) + " [" + Name + "]";
-            }
-            else if ((state & StateValueMask) != 0)
-            {
-                return nameof(Color) + " [A=" + A.ToString() + ", R=" + R.ToString() + ", G=" + G.ToString() + ", B=" + B.ToString() + "]";
-            }
-            else
-            {
-                return nameof(Color) + " [Empty]";
-            }
-        }
+        public override string ToString() =>
+            IsNamedColor ? $"{nameof(Color)} [{Name}]":
+            (state & StateValueMask) != 0 ? $"{nameof(Color)} [A={A}, R={R}, G={G}, B={B}]" :
+            $"{nameof(Color)} [Empty]";
 
         public static bool operator ==(Color left, Color right) =>
             left.value == right.value
@@ -567,7 +582,7 @@ namespace System.Drawing
 
         public static bool operator !=(Color left, Color right) => !(left == right);
 
-        public override bool Equals(object? obj) => obj is Color other && Equals(other);
+        public override bool Equals([NotNullWhen(true)] object? obj) => obj is Color other && Equals(other);
 
         public bool Equals(Color other) => this == other;
 

@@ -252,7 +252,6 @@ namespace System.Collections.Immutable
                 }
             }
 
-#if !NETSTANDARD1_0
             /// <summary>
             /// Gets a read-only reference to the element of the set at the given index.
             /// </summary>
@@ -261,21 +260,26 @@ namespace System.Collections.Immutable
             internal ref readonly T ItemRef(int index)
             {
                 Requires.Range(index >= 0 && index < this.Count, nameof(index));
+
+                return ref ItemRefUnchecked(index);
+            }
+
+            private ref readonly T ItemRefUnchecked(int index)
+            {
                 Debug.Assert(_left != null && _right != null);
 
                 if (index < _left._count)
                 {
-                    return ref _left.ItemRef(index);
+                    return ref _left.ItemRefUnchecked(index);
                 }
 
                 if (index > _left._count)
                 {
-                    return ref _right.ItemRef(index - _left._count - 1);
+                    return ref _right.ItemRefUnchecked(index - _left._count - 1);
                 }
 
                 return ref _key;
             }
-#endif
 
             #region IEnumerable<T> Members
 

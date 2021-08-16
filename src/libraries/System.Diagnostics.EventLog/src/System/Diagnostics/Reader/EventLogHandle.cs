@@ -11,8 +11,7 @@ namespace System.Diagnostics.Eventing.Reader
     /// </summary>
     internal sealed class EventLogHandle : SafeHandle
     {
-        // Called by P/Invoke when returning SafeHandles
-        private EventLogHandle()
+        public EventLogHandle()
             : base(IntPtr.Zero, true)
         {
         }

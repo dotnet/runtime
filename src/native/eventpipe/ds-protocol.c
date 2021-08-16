@@ -1,7 +1,6 @@
-#include <config.h>
+#include "ds-rt-config.h"
 
 #ifdef ENABLE_PERFTRACING
-#include "ds-rt-config.h"
 #if !defined(DS_INCLUDE_SOURCE_FILES) || defined(DS_FORCE_INCLUDE_SOURCE_FILES)
 
 #define DS_IMPL_PROTOCOL_GETTER_SETTER
@@ -27,7 +26,7 @@ const DiagnosticsIpcHeader _ds_ipc_generic_error_header = {
 	(uint16_t)0x0000
 };
 
-static uint8_t _ds_ipc_advertise_cooike_v1 [EP_ACTIVITY_ID_SIZE] = { 0 };
+static uint8_t _ds_ipc_advertise_cooike_v1 [EP_GUID_SIZE] = { 0 };
 
 /*
  * Forward declares of all static functions.
@@ -73,7 +72,7 @@ ds_ipc_advertise_cookie_v1_get (void)
 void
 ds_ipc_advertise_cookie_v1_init (void)
 {
-	ep_rt_create_activity_id ((uint8_t *)&_ds_ipc_advertise_cooike_v1, EP_ACTIVITY_ID_SIZE);
+	ep_rt_create_activity_id ((uint8_t *)&_ds_ipc_advertise_cooike_v1, EP_GUID_SIZE);
 }
 
 /**
@@ -105,7 +104,7 @@ ds_icp_advertise_v1_send (DiagnosticsIpcStream *stream)
 	buffer++;
 
 	// fills buffer[1] and buffer[2]
-	memcpy (buffer, cookie, EP_ACTIVITY_ID_SIZE);
+	memcpy (buffer, cookie, EP_GUID_SIZE);
 	buffer +=2;
 
 	memcpy (buffer, &pid, sizeof (uint64_t));
@@ -414,7 +413,7 @@ ds_ipc_message_try_parse_string_utf16_t (
 	}
 
 	*buffer = *buffer + (string_len * sizeof (ep_char16_t));
-	*buffer_len = *buffer_len + (string_len * sizeof (ep_char16_t));
+	*buffer_len = *buffer_len - (string_len * sizeof (ep_char16_t));
 
 	result = true;
 

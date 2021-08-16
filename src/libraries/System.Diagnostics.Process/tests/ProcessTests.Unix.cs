@@ -4,6 +4,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Reflection;
@@ -156,7 +157,8 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
-        [PlatformSpecific(~TestPlatforms.OSX)] // On OSX, ProcessName returns the script interpreter.
+        [SkipOnPlatform(TestPlatforms.OSX, "On OSX, ProcessName returns the script interpreter.")]
+        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.MacCatalyst | TestPlatforms.tvOS, "Not supported on iOS, MacCatalyst, or tvOS.")]
         public void ProcessNameMatchesScriptName()
         {
             string scriptName = GetTestFileName();
@@ -181,6 +183,40 @@ namespace System.Diagnostics.Tests
                     process.WaitForExit();
                 }
             }
+        }
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public void ProcessStart_SkipsNonExecutableFilesOnPATH()
+        {
+            const string ScriptName = "script";
+
+            // Create a directory named ScriptName.
+            string path1 = Path.Combine(TestDirectory, "Path1");
+            Directory.CreateDirectory(Path.Combine(path1, ScriptName));
+
+            // Create a non-executable file named ScriptName
+            string path2 = Path.Combine(TestDirectory, "Path2");
+            Directory.CreateDirectory(path2);
+            File.WriteAllText(Path.Combine(path2, ScriptName), "Not executable");
+
+            // Create an executable script named ScriptName
+            string path3 = Path.Combine(TestDirectory, "Path3");
+            Directory.CreateDirectory(path3);
+            string filename = WriteScriptFile(path3, ScriptName, returnValue: 42);
+
+            // Process.Start ScriptName with the above on PATH.
+            RemoteInvokeOptions options = new RemoteInvokeOptions();
+            options.StartInfo.EnvironmentVariables["PATH"] = $"{path1}:{path2}:{path3}";
+            RemoteExecutor.Invoke(() =>
+            {
+                using (var px = Process.Start(new ProcessStartInfo { FileName = ScriptName }))
+                {
+                    Assert.NotNull(px);
+                    px.WaitForExit();
+                    Assert.True(px.HasExited);
+                    Assert.Equal(42, px.ExitCode);
+                }
+            }, options).Dispose();
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
@@ -451,21 +487,12 @@ namespace System.Diagnostics.Tests
 
             ProcessPriorityClass originalPriority = _process.PriorityClass;
             Assert.Equal(ProcessPriorityClass.Normal, originalPriority);
-
-            // https://github.com/dotnet/runtime/issues/24426 -- returns "-19" and not "19"
-            if (!PlatformDetection.IsWindowsSubsystemForLinux)
-            {
-                SetAndCheckBasePriority(ProcessPriorityClass.Idle, 19);
-            }
+            SetAndCheckBasePriority(ProcessPriorityClass.Idle, 19);
 
             try
             {
                 SetAndCheckBasePriority(ProcessPriorityClass.Normal, 0);
-                // https://github.com/dotnet/runtime/issues/24426 -- returns "11" and not "-11"
-                if (!PlatformDetection.IsWindowsSubsystemForLinux)
-                {
-                    SetAndCheckBasePriority(ProcessPriorityClass.High, -11);
-                }
+                SetAndCheckBasePriority(ProcessPriorityClass.High, -11);
                 _process.PriorityClass = originalPriority;
             }
             catch (Win32Exception ex)
@@ -475,6 +502,7 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
+        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.MacCatalyst | TestPlatforms.tvOS, "Not supported on iOS, MacCatalyst, or tvOS.")]
         public void TestStartOnUnixWithBadPermissions()
         {
             string path = GetTestFilePath();
@@ -486,6 +514,7 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
+        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.MacCatalyst | TestPlatforms.tvOS, "Not supported on iOS, MacCatalyst, or tvOS.")]
         public void TestStartOnUnixWithBadFormat()
         {
             string path = GetTestFilePath();
@@ -541,8 +570,7 @@ namespace System.Diagnostics.Tests
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/28922", TestPlatforms.AnyUnix)]
-        public unsafe void TestCheckChildProcessUserAndGroupIds()
+        public void TestCheckChildProcessUserAndGroupIds()
         {
             string userName = GetCurrentRealUserName();
             string userId = GetUserId(userName);
@@ -803,6 +831,24 @@ namespace System.Diagnostics.Tests
             Assert.True(foundRecycled);
         }
 
+        [PlatformSpecific(TestPlatforms.AnyUnix)]
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [InlineData("/dev/stdin",  O_RDONLY)]
+        [InlineData("/dev/stdout", O_WRONLY)]
+        [InlineData("/dev/stderr", O_WRONLY)]
+        public void ChildProcessRedirectedIO_FilePathOpenShouldSucceed(string filename, int flags)
+        {
+            var options = new RemoteInvokeOptions { StartInfo = new ProcessStartInfo { RedirectStandardOutput = true, RedirectStandardInput = true, RedirectStandardError = true }};
+            using (RemoteInvokeHandle handle = RemoteExecutor.Invoke(ExecuteChildProcess, filename, flags.ToString(CultureInfo.InvariantCulture), options))
+            { }
+
+            static void ExecuteChildProcess(string filename, string flags)
+            {
+                int result = open(filename, int.Parse(flags, CultureInfo.InvariantCulture));
+                Assert.True(result >= 0, $"failed to open file with {result} and errno {Marshal.GetLastWin32Error()}.");
+            }
+        }
+
         [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [InlineData(true)]
         [InlineData(false)]
@@ -923,7 +969,11 @@ namespace System.Diagnostics.Tests
                 }
 
                 // Return this as a HashSet to filter out duplicates.
-                return new HashSet<uint>(groups.Slice(0, rv).ToArray());
+                var result = new HashSet<uint>(groups.Slice(0, rv).ToArray());
+                // according to https://man7.org/linux/man-pages/man2/getgroups.2.html it's not specified
+                // if this group is included in the list returned by getgroups
+                result.Add(getegid());
+                return result;
             }
         }
 
@@ -937,6 +987,12 @@ namespace System.Diagnostics.Tests
 
         [DllImport("libc", SetLastError = true)]
         private static extern int kill(int pid, int sig);
+
+        [DllImport("libc", SetLastError = true)]
+        private static extern int open(string pathname, int flags);
+
+        private const int O_RDONLY = 0;
+        private const int O_WRONLY = 1;
 
         private static readonly string[] s_allowedProgramsToRun = new string[] { "xdg-open", "gnome-open", "kfmclient" };
 

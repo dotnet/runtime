@@ -22,7 +22,9 @@ namespace System.Security.Cryptography.Xml
                 "urn:mpeg:mpeg21:2003:01-REL-R-NS:licenseTransform" => new XmlLicenseTransform(),
                 "http://www.w3.org/2000/09/xmldsig# X509Data" => new KeyInfoX509Data(),
                 "http://www.w3.org/2000/09/xmldsig# KeyName" => new KeyInfoName(),
+#pragma warning disable CA1416 // This call site is reachable on all platforms. 'DSAKeyValue' is unsupported on: 'ios', 'maccatalyst', 'tvos'
                 "http://www.w3.org/2000/09/xmldsig# KeyValue/DSAKeyValue" => new DSAKeyValue(),
+#pragma warning restore CA1416
                 "http://www.w3.org/2000/09/xmldsig# KeyValue/RSAKeyValue" => new RSAKeyValue(),
                 "http://www.w3.org/2000/09/xmldsig# RetrievalMethod" => new KeyInfoRetrievalMethod(),
                 "http://www.w3.org/2001/04/xmlenc# EncryptedKey" => new KeyInfoEncryptedKey(),

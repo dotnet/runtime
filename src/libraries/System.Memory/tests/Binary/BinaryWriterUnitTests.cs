@@ -14,8 +14,6 @@ namespace System.Buffers.Binary.Tests
         [Fact]
         public void SpanWrite()
         {
-            Assert.True(BitConverter.IsLittleEndian);
-
             Span<byte> span = new byte[8];
 
             byte byteValue = 0x11;
@@ -92,7 +90,6 @@ namespace System.Buffers.Binary.Tests
         [InlineData(0x00FF)]
         public void SpanWriteInt16(short value)
         {
-            Assert.True(BitConverter.IsLittleEndian);
             var span = new Span<byte>(new byte[2]);
             WriteInt16BigEndian(span, value);
             short read = ReadInt16BigEndian(span);
@@ -121,7 +118,6 @@ namespace System.Buffers.Binary.Tests
         [InlineData(0x00FF)]
         public void SpanWriteUInt16(ushort value)
         {
-            Assert.True(BitConverter.IsLittleEndian);
             var span = new Span<byte>(new byte[2]);
             WriteUInt16BigEndian(span, value);
             ushort read = ReadUInt16BigEndian(span);
@@ -152,7 +148,6 @@ namespace System.Buffers.Binary.Tests
         [InlineData(0x000000FF)]
         public void SpanWriteInt32(int value)
         {
-            Assert.True(BitConverter.IsLittleEndian);
             var span = new Span<byte>(new byte[4]);
             WriteInt32BigEndian(span, value);
             int read = ReadInt32BigEndian(span);
@@ -183,7 +178,6 @@ namespace System.Buffers.Binary.Tests
         [InlineData(0x000000FF)]
         public void SpanWriteUInt32(uint value)
         {
-            Assert.True(BitConverter.IsLittleEndian);
             var span = new Span<byte>(new byte[4]);
             WriteUInt32BigEndian(span, value);
             uint read = ReadUInt32BigEndian(span);
@@ -218,7 +212,6 @@ namespace System.Buffers.Binary.Tests
         [InlineData(0x00000000000000FF)]
         public void SpanWriteInt64(long value)
         {
-            Assert.True(BitConverter.IsLittleEndian);
             var span = new Span<byte>(new byte[8]);
             WriteInt64BigEndian(span, value);
             long read = ReadInt64BigEndian(span);
@@ -253,7 +246,6 @@ namespace System.Buffers.Binary.Tests
         [InlineData(0x00000000000000FF)]
         public void SpanWriteUInt64(ulong value)
         {
-            Assert.True(BitConverter.IsLittleEndian);
             var span = new Span<byte>(new byte[8]);
             WriteUInt64BigEndian(span, value);
             ulong read = ReadUInt64BigEndian(span);
@@ -290,7 +282,6 @@ namespace System.Buffers.Binary.Tests
         [MemberData(nameof(SpanWriteHalf_TestData))]
         public void SpanWriteHalf(Half value)
         {
-            Assert.True(BitConverter.IsLittleEndian);
             var span = new Span<byte>(new byte[4]);
             WriteHalfBigEndian(span, value);
             Half read = ReadHalfBigEndian(span);
@@ -321,7 +312,6 @@ namespace System.Buffers.Binary.Tests
         [InlineData(float.NaN)]
         public void SpanWriteSingle(float value)
         {
-            Assert.True(BitConverter.IsLittleEndian);
             var span = new Span<byte>(new byte[4]);
             WriteSingleBigEndian(span, value);
             float read = ReadSingleBigEndian(span);
@@ -352,7 +342,6 @@ namespace System.Buffers.Binary.Tests
         [InlineData(double.NaN)]
         public void SpanWriteDouble(double value)
         {
-            Assert.True(BitConverter.IsLittleEndian);
             var span = new Span<byte>(new byte[8]);
             WriteDoubleBigEndian(span, value);
             double read = ReadDoubleBigEndian(span);

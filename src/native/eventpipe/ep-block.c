@@ -1,7 +1,6 @@
-#include <config.h>
+#include "ep-rt-config.h"
 
 #ifdef ENABLE_PERFTRACING
-#include "ep-rt-config.h"
 #if !defined(EP_INCLUDE_SOURCE_FILES) || defined(EP_FORCE_INCLUDE_SOURCE_FILES)
 
 #define EP_IMPL_BLOCK_GETTER_SETTER
@@ -691,7 +690,7 @@ ep_event_block_base_write_event (
 	instance_timestamp = ep_event_instance_get_timestamp (event_instance);
 	if (event_block_base->min_timestamp > instance_timestamp)
 		event_block_base->min_timestamp = instance_timestamp;
-	if (event_block_base->max_timestamp > instance_timestamp)
+	if (event_block_base->max_timestamp < instance_timestamp)
 		event_block_base->max_timestamp = instance_timestamp;
 
 	block->write_pointer = write_pointer;

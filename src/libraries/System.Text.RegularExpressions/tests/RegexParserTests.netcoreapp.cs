@@ -140,7 +140,7 @@ namespace System.Text.RegularExpressions.Tests
                 throw new XunitException($"Expected RegexParseException with error: ({error}) -> Actual error: {regexParseError})");
             }
             catch (Exception e)
-            { 
+            {
                 throw new XunitException($"Expected RegexParseException -> Actual: ({e})");
             }
 

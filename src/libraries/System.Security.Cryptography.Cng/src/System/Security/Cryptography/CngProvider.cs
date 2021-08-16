@@ -3,6 +3,7 @@
 
 using System;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Security.Cryptography
 {
@@ -53,14 +54,14 @@ namespace System.Security.Cryptography
             return !left.Equals(right);
         }
 
-        public override bool Equals(object? obj)
+        public override bool Equals([NotNullWhen(true)] object? obj)
         {
             Debug.Assert(_provider != null);
 
             return Equals(obj as CngProvider);
         }
 
-        public bool Equals(CngProvider? other)
+        public bool Equals([NotNullWhen(true)] CngProvider? other)
         {
             if (other is null)
             {
@@ -86,6 +87,18 @@ namespace System.Security.Cryptography
         // Well known NCrypt KSPs
         //
 
+        /// <summary>
+        /// Gets a <see cref="CngProvider" /> object that specifies the Microsoft Platform Crypto Storage Provider.
+        /// </summary>
+        /// <value>An object that specifies the Microsoft Platform Crypto Storage Provider.</value>
+        public static CngProvider MicrosoftPlatformCryptoProvider
+        {
+            get
+            {
+                return s_msPlatformKsp ?? (s_msPlatformKsp = new CngProvider("Microsoft Platform Crypto Provider")); // MS_PLATFORM_CRYPTO_PROVIDER
+            }
+        }
+
         public static CngProvider MicrosoftSmartCardKeyStorageProvider
         {
             get
@@ -102,6 +115,7 @@ namespace System.Security.Cryptography
             }
         }
 
+        private static CngProvider? s_msPlatformKsp;
         private static CngProvider? s_msSmartCardKsp;
         private static CngProvider? s_msSoftwareKsp;
 

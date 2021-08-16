@@ -20,15 +20,11 @@ namespace Internal.Cryptography.Pal
         // followed by a reboot for a kernel update, etc).
         // Customers requested something more often than "never" and 5 minutes seems like a reasonable
         // balance.
-        //
-        // Note that on Ubuntu the LastWrite test always fails, because the system default for SSL_CERT_DIR
-        // is a symlink, so the LastWrite value is always just when the symlink was created (and Ubuntu does
-        // not provide the single-file version at SSL_CERT_FILE, so the file update does not trigger) --
-        // meaning the "assume invalid" interval is Ubuntu's only refresh.
         private static readonly TimeSpan s_lastWriteRecheckInterval = TimeSpan.FromSeconds(5);
         private static readonly TimeSpan s_assumeInvalidInterval = TimeSpan.FromMinutes(5);
         private static readonly Stopwatch s_recheckStopwatch = new Stopwatch();
-        private static readonly DirectoryInfo? s_rootStoreDirectoryInfo = SafeOpenRootDirectoryInfo();
+        private static DirectoryInfo? s_rootStoreDirectoryInfo = SafeOpenRootDirectoryInfo();
+        private static bool s_defaultRootDir;
         private static readonly FileInfo? s_rootStoreFileInfo = SafeOpenRootFileInfo();
 
         // Use non-Value-Tuple so that it's an atomic update.
@@ -107,8 +103,8 @@ namespace Internal.Cryptography.Pal
 
                     if (ret == null ||
                         elapsed > s_assumeInvalidInterval ||
-                        (fileInfo != null && fileInfo.Exists && fileInfo.LastWriteTimeUtc != s_fileCertsLastWrite) ||
-                        (dirInfo != null && dirInfo.Exists && dirInfo.LastWriteTimeUtc != s_directoryCertsLastWrite))
+                        (fileInfo != null && fileInfo.Exists && ContentWriteTime(fileInfo) != s_fileCertsLastWrite) ||
+                        (dirInfo != null && dirInfo.Exists && ContentWriteTime(dirInfo) != s_directoryCertsLastWrite))
                     {
                         ret = LoadMachineStores(dirInfo, fileInfo);
                     }
@@ -137,31 +133,62 @@ namespace Internal.Cryptography.Pal
 
             var uniqueRootCerts = new HashSet<X509Certificate2>();
             var uniqueIntermediateCerts = new HashSet<X509Certificate2>();
+            bool firstLoad = (s_nativeCollections == null);
 
             if (rootStoreFile != null && rootStoreFile.Exists)
             {
-                newFileTime = rootStoreFile.LastWriteTimeUtc;
+                newFileTime = ContentWriteTime(rootStoreFile);
                 ProcessFile(rootStoreFile);
             }
 
+            bool hasStoreData = false;
+
             if (rootStorePath != null && rootStorePath.Exists)
             {
-                newDirTime = rootStorePath.LastWriteTimeUtc;
-                foreach (FileInfo file in rootStorePath.EnumerateFiles())
+                newDirTime = ContentWriteTime(rootStorePath);
+                hasStoreData = ProcessDir(rootStorePath);
+            }
+
+            if (firstLoad && !hasStoreData && s_defaultRootDir)
+            {
+                DirectoryInfo etcSslCerts = new DirectoryInfo("/etc/ssl/certs");
+
+                if (etcSslCerts.Exists)
                 {
-                    ProcessFile(file);
+                    DateTime tmpTime = ContentWriteTime(etcSslCerts);
+                    hasStoreData = ProcessDir(etcSslCerts);
+
+                    if (hasStoreData)
+                    {
+                        newDirTime = tmpTime;
+                        s_rootStoreDirectoryInfo = etcSslCerts;
+                    }
                 }
             }
 
-            void ProcessFile(FileInfo file)
+            bool ProcessDir(DirectoryInfo dir)
             {
+                bool hasStoreData = false;
+
+                foreach (FileInfo file in dir.EnumerateFiles())
+                {
+                    hasStoreData |= ProcessFile(file);
+                }
+
+                return hasStoreData;
+            }
+
+            bool ProcessFile(FileInfo file)
+            {
+                bool readData = false;
+
                 using (SafeBioHandle fileBio = Interop.Crypto.BioNewFile(file.FullName, "rb"))
                 {
                     // The handle may be invalid, for example when we don't have read permission for the file.
                     if (fileBio.IsInvalid)
                     {
                         Interop.Crypto.ErrClearError();
-                        return;
+                        return false;
                     }
 
                     // Some distros ship with two variants of the same certificate.
@@ -174,6 +201,7 @@ namespace Internal.Cryptography.Pal
                     while (OpenSslX509CertificateReader.TryReadX509PemNoAux(fileBio, out pal) ||
                         OpenSslX509CertificateReader.TryReadX509Der(fileBio, out pal))
                     {
+                        readData = true;
                         X509Certificate2 cert = new X509Certificate2(pal);
 
                         // The HashSets are just used for uniqueness filters, they do not survive this method.
@@ -219,6 +247,8 @@ namespace Internal.Cryptography.Pal
                         cert.Dispose();
                     }
                 }
+
+                return readData;
             }
 
             foreach (X509Certificate2 cert in uniqueRootCerts)
@@ -274,7 +304,7 @@ namespace Internal.Cryptography.Pal
 
         private static DirectoryInfo? SafeOpenRootDirectoryInfo()
         {
-            string? rootDirectory = Interop.Crypto.GetX509RootStorePath();
+            string? rootDirectory = Interop.Crypto.GetX509RootStorePath(out s_defaultRootDir);
 
             if (!string.IsNullOrEmpty(rootDirectory))
             {
@@ -290,6 +320,70 @@ namespace Internal.Cryptography.Pal
             }
 
             return null;
+        }
+
+        private static DateTime ContentWriteTime(FileInfo info)
+        {
+            string path = info.FullName;
+            string? target = Interop.Sys.ReadLink(path);
+
+            if (string.IsNullOrEmpty(target))
+            {
+                return info.LastWriteTimeUtc;
+            }
+
+            if (target[0] != '/')
+            {
+                target = Path.Join(info.Directory?.FullName, target);
+            }
+
+            try
+            {
+                var targetInfo = new FileInfo(target);
+
+                if (targetInfo.Exists)
+                {
+                    return targetInfo.LastWriteTimeUtc;
+                }
+            }
+            catch (ArgumentException)
+            {
+                // If we can't load information about the link path, just treat it as not a link.
+            }
+
+            return info.LastWriteTimeUtc;
+        }
+
+        private static DateTime ContentWriteTime(DirectoryInfo info)
+        {
+            string path = info.FullName;
+            string? target = Interop.Sys.ReadLink(path);
+
+            if (string.IsNullOrEmpty(target))
+            {
+                return info.LastWriteTimeUtc;
+            }
+
+            if (target[0] != '/')
+            {
+                target = Path.Join(info.Parent?.FullName, target);
+            }
+
+            try
+            {
+                var targetInfo = new DirectoryInfo(target);
+
+                if (targetInfo.Exists)
+                {
+                    return targetInfo.LastWriteTimeUtc;
+                }
+            }
+            catch (ArgumentException)
+            {
+                // If we can't load information about the link path, just treat it as not a link.
+            }
+
+            return info.LastWriteTimeUtc;
         }
     }
 }

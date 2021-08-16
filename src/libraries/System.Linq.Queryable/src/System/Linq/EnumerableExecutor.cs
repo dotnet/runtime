@@ -2,12 +2,14 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq.Expressions;
 
 namespace System.Linq
 {
     public abstract class EnumerableExecutor
     {
+        [RequiresUnreferencedCode(Queryable.InMemoryQueryableExtensionMethodsRequiresUnreferencedCode)]
         internal abstract object? ExecuteBoxed();
 
         internal EnumerableExecutor() { }
@@ -28,8 +30,10 @@ namespace System.Linq
             _expression = expression;
         }
 
+        [RequiresUnreferencedCode(Queryable.InMemoryQueryableExtensionMethodsRequiresUnreferencedCode)]
         internal override object? ExecuteBoxed() => Execute();
 
+        [RequiresUnreferencedCode(Queryable.InMemoryQueryableExtensionMethodsRequiresUnreferencedCode)]
         internal T Execute()
         {
             EnumerableRewriter rewriter = new EnumerableRewriter();

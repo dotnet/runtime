@@ -8,7 +8,7 @@ namespace System.Xml.Xsl.XsltOld
     using System.Diagnostics;
     using System.Xml;
 
-    internal class OutputScopeManager
+    internal sealed class OutputScopeManager
     {
         private const int STACK_INCREMENT = 10;
 

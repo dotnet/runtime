@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
 using System.Runtime.Serialization;
 
 namespace System.Collections.Generic
@@ -101,7 +100,7 @@ namespace System.Collections.Generic
                 BreadthFirstTreeWalk(n => { toRemove.Add(n.Item); return true; });
                 while (toRemove.Count != 0)
                 {
-                    _underlying.Remove(toRemove[toRemove.Count - 1]);
+                    _underlying.Remove(toRemove[^1]);
                     toRemove.RemoveAt(toRemove.Count - 1);
                 }
 
@@ -126,6 +125,7 @@ namespace System.Collections.Generic
             {
                 get
                 {
+                    VersionCheck();
                     Node? current = root;
                     T? result = default;
 
@@ -133,7 +133,7 @@ namespace System.Collections.Generic
                     {
 
                         int comp = _lBoundActive ? Comparer.Compare(_min, current.Item) : -1;
-                        if (comp == 1)
+                        if (comp > 0)
                         {
                             current = current.Right;
                         }
@@ -156,13 +156,14 @@ namespace System.Collections.Generic
             {
                 get
                 {
+                    VersionCheck();
                     Node? current = root;
                     T? result = default;
 
                     while (current != null)
                     {
                         int comp = _uBoundActive ? Comparer.Compare(_max, current.Item) : 1;
-                        if (comp == -1)
+                        if (comp < 0)
                         {
                             current = current.Left;
                         }

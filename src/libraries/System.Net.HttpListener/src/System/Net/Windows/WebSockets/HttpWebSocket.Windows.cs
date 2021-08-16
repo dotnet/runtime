@@ -15,7 +15,7 @@ namespace System.Net.WebSockets
     internal static partial class HttpWebSocket
     {
         internal static Task<HttpListenerWebSocketContext> AcceptWebSocketAsync(HttpListenerContext context,
-            string subProtocol,
+            string? subProtocol,
             int receiveBufferSize,
             TimeSpan keepAliveInterval,
             ArraySegment<byte> internalBuffer)
@@ -28,7 +28,7 @@ namespace System.Net.WebSockets
         }
 
         private static async Task<HttpListenerWebSocketContext> AcceptWebSocketAsyncCore(HttpListenerContext context,
-            string subProtocol,
+            string? subProtocol,
             int receiveBufferSize,
             TimeSpan keepAliveInterval,
             ArraySegment<byte> internalBuffer)
@@ -135,15 +135,6 @@ namespace System.Net.WebSockets
             }
 
             return webSocketContext;
-        }
-
-        internal static string GetTraceMsgForParameters(int offset, int count, CancellationToken cancellationToken)
-        {
-            return string.Format(CultureInfo.InvariantCulture,
-                "offset: {0}, count: {1}, cancellationToken.CanBeCanceled: {2}",
-                offset,
-                count,
-                cancellationToken.CanBeCanceled);
         }
 
         internal static ConfiguredTaskAwaitable SuppressContextFlow(this Task task)

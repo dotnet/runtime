@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 
 namespace System.Security.Cryptography.X509Certificates.Tests
 {
@@ -13,7 +14,8 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             out X509Certificate2 rootCert,
             IEnumerable<X509Extension> endEntityExtensions = null,
             IEnumerable<X509Extension> intermediateExtensions = null,
-            IEnumerable<X509Extension> rootExtensions = null)
+            IEnumerable<X509Extension> rootExtensions = null,
+            [CallerMemberName] string testName = null)
         {
             using (RSA rootKey = RSA.Create())
             using (RSA intermediateKey = RSA.Create())
@@ -32,7 +34,8 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                     certs,
                     endEntityExtensions,
                     intermediateExtensions,
-                    rootExtensions);
+                    rootExtensions,
+                    testName);
 
                 endEntityCert = certs[0];
                 intermediateCert = certs[1];
@@ -48,7 +51,8 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             out X509Certificate2 rootCert,
             IEnumerable<X509Extension> endEntityExtensions = null,
             IEnumerable<X509Extension> intermediateExtensions = null,
-            IEnumerable<X509Extension> rootExtensions = null)
+            IEnumerable<X509Extension> rootExtensions = null,
+            [CallerMemberName] string testName = null)
         {
             using (RSA rootKey = RSA.Create())
             using (RSA intermediateKey = RSA.Create())
@@ -68,7 +72,8 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                     certs,
                     endEntityExtensions,
                     intermediateExtensions,
-                    rootExtensions);
+                    rootExtensions,
+                    testName);
 
                 endEntityCert = certs[0];
                 intermediateCert1 = certs[1];
@@ -82,7 +87,8 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             Span<X509Certificate2> certs,
             IEnumerable<X509Extension> endEntityExtensions,
             IEnumerable<X509Extension> intermediateExtensions,
-            IEnumerable<X509Extension> rootExtensions)
+            IEnumerable<X509Extension> rootExtensions,
+            string testName)
         {
             if (keys.Length < 2)
                 throw new ArgumentException(nameof(keys));
@@ -128,7 +134,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             RSASignaturePadding signaturePadding = RSASignaturePadding.Pkcs1;
 
             CertificateRequest rootReq = new CertificateRequest(
-                "CN=Test Root",
+                $"CN=Test Root, O=\"{testName}\"",
                 keys[rootIndex],
                 hashAlgorithm,
                 signaturePadding);
@@ -155,7 +161,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 presentationNumber++;
 
                 CertificateRequest intermediateReq = new CertificateRequest(
-                    $"CN=Intermediate Layer {presentationNumber}",
+                    $"CN=Intermediate Layer {presentationNumber}, O=\"{testName}\"",
                     keys[i],
                     hashAlgorithm,
                     signaturePadding);
@@ -177,7 +183,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             }
 
             CertificateRequest eeReq = new CertificateRequest(
-                "CN=End-Entity",
+                $"CN=End-Entity, O=\"{testName}\"",
                 keys[0],
                 hashAlgorithm,
                 signaturePadding);

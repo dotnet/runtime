@@ -8,6 +8,14 @@ namespace VectorMathTests
 {
     class Program
     {
+        public const int DefaultSeed = 20010415;
+        public static int Seed = Environment.GetEnvironmentVariable("CORECLR_SEED") switch
+        {
+            string seedStr when seedStr.Equals("random", StringComparison.OrdinalIgnoreCase) => new Random().Next(),
+            string seedStr when int.TryParse(seedStr, out int envSeed) => envSeed,
+            _ => DefaultSeed
+        };
+
         static float NextFloat(Random random)
         {
             double mantissa = (random.NextDouble() * 2.0) - 1.0;
@@ -34,7 +42,7 @@ namespace VectorMathTests
         {
             System.Diagnostics.Stopwatch clock = new System.Diagnostics.Stopwatch();
             clock.Start();
-            Random random = new Random(13);
+            Random random = new Random(Seed);
             int N = 10000;
             Point[] arr = new Point[N];
             for (int i = 0; i < N; ++i)

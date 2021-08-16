@@ -227,7 +227,7 @@ namespace GenDefinedCharList
 
         // Represents a range of Unicode code points which are all members of a single category.
         // More info: https://www.unicode.org/faq/blocks_ranges.html
-        private class UnicodeRange
+        private sealed class UnicodeRange
         {
             public uint FirstCodePoint;
             public uint LastCodePoint;

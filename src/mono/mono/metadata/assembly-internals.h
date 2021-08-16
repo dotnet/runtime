@@ -11,11 +11,7 @@
 #include <mono/metadata/assembly.h>
 #include <mono/metadata/metadata-internals.h>
 
-#ifndef ENABLE_NETCORE
-#define MONO_ASSEMBLY_CORLIB_NAME "mscorlib"
-#else
 #define MONO_ASSEMBLY_CORLIB_NAME "System.Private.CoreLib"
-#endif
 #define MONO_ASSEMBLY_RESOURCE_SUFFIX ".resources"
 #define MONO_ASSEMBLY_CORLIB_RESOURCE_NAME (MONO_ASSEMBLY_CORLIB_NAME MONO_ASSEMBLY_RESOURCE_SUFFIX)
 
@@ -35,7 +31,7 @@ typedef enum {
 
 G_ENUM_FUNCTIONS (MonoAssemblyNameEqFlags)
 
-void
+MONO_COMPONENT_API void
 mono_assembly_name_free_internal (MonoAssemblyName *aname);
 
 gboolean
@@ -56,14 +52,14 @@ typedef gboolean (*MonoAssemblyAsmCtxFromPathFunc) (const char *absfname, MonoAs
 
 void mono_install_assembly_asmctx_from_path_hook (MonoAssemblyAsmCtxFromPathFunc func, gpointer user_data);
 
-typedef MonoAssembly * (*MonoAssemblyPreLoadFuncV2) (MonoAssemblyLoadContext *alc, MonoAssemblyName *aname, char **assemblies_path, gboolean refonly, gpointer user_data, MonoError *error);
+typedef MonoAssembly * (*MonoAssemblyPreLoadFuncV2) (MonoAssemblyLoadContext *alc, MonoAssemblyName *aname, char **assemblies_path, gpointer user_data, MonoError *error);
 
-void mono_install_assembly_preload_hook_v2 (MonoAssemblyPreLoadFuncV2 func, gpointer user_data, gboolean refonly, gboolean append);
+void mono_install_assembly_preload_hook_v2 (MonoAssemblyPreLoadFuncV2 func, gpointer user_data, gboolean append);
 
-typedef MonoAssembly * (*MonoAssemblySearchFuncV2) (MonoAssemblyLoadContext *alc, MonoAssembly *requesting, MonoAssemblyName *aname, gboolean refonly, gboolean postload, gpointer user_data, MonoError *error);
+typedef MonoAssembly * (*MonoAssemblySearchFuncV2) (MonoAssemblyLoadContext *alc, MonoAssembly *requesting, MonoAssemblyName *aname, gboolean postload, gpointer user_data, MonoError *error);
 
 void
-mono_install_assembly_search_hook_v2 (MonoAssemblySearchFuncV2 func, gpointer user_data, gboolean refonly, gboolean postload, gboolean append);
+mono_install_assembly_search_hook_v2 (MonoAssemblySearchFuncV2 func, gpointer user_data, gboolean postload, gboolean append);
 
 typedef void (*MonoAssemblyLoadFuncV2) (MonoAssemblyLoadContext *alc, MonoAssembly *assembly, gpointer user_data, MonoError *error);
 
@@ -112,7 +108,7 @@ void                   mono_assembly_request_prepare_open (MonoAssemblyOpenReque
 							   MonoAssemblyContextKind asmctx,
 							   MonoAssemblyLoadContext *alc);
 
-void                   mono_assembly_request_prepare_byname (MonoAssemblyByNameRequest *req,
+MONO_COMPONENT_API void mono_assembly_request_prepare_byname (MonoAssemblyByNameRequest *req,
 							     MonoAssemblyContextKind asmctx,
 							     MonoAssemblyLoadContext *alc);
 
@@ -124,7 +120,7 @@ MonoAssembly*          mono_assembly_request_load_from (MonoImage *image, const 
 							const MonoAssemblyLoadRequest *req,
 							MonoImageOpenStatus *status);
 
-MonoAssembly*          mono_assembly_request_byname (MonoAssemblyName *aname,
+MONO_COMPONENT_API MonoAssembly* mono_assembly_request_byname (MonoAssemblyName *aname,
 						     const MonoAssemblyByNameRequest *req,
 						     MonoImageOpenStatus *status);
 
@@ -139,11 +135,8 @@ mono_assembly_candidate_predicate_sn_same_name (MonoAssembly *candidate, gpointe
 gboolean
 mono_assembly_check_name_match (MonoAssemblyName *wanted_name, MonoAssemblyName *candidate_name);
 
-MonoAssembly*
-mono_assembly_binding_applies_to_image (MonoAssemblyLoadContext *alc, MonoImage* image, MonoImageOpenStatus *status);
-
 MonoAssembly *
-mono_assembly_loaded_internal (MonoAssemblyLoadContext *alc, MonoAssemblyName *aname, gboolean refonly);
+mono_assembly_loaded_internal (MonoAssemblyLoadContext *alc, MonoAssemblyName *aname);
 
 MONO_PROFILER_API MonoAssemblyName*
 mono_assembly_get_name_internal (MonoAssembly *assembly);
@@ -153,5 +146,12 @@ mono_assembly_get_image_internal (MonoAssembly *assembly);
 
 void
 mono_set_assemblies_path_direct (char **path);
+
+MONO_COMPONENT_API
+gboolean
+mono_assembly_is_jit_optimizer_disabled (MonoAssembly *assembly);
+
+guint32
+mono_assembly_get_count (void);
 
 #endif /* __MONO_METADATA_ASSEMBLY_INTERNALS_H__ */

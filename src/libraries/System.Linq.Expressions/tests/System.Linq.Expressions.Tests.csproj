@@ -2,9 +2,10 @@
   <PropertyGroup>
     <FeatureInterpret>true</FeatureInterpret>
     <IsInterpreting>false</IsInterpreting>
+    <IsInterpreting Condition="'$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true' or '$(TargetsMacCatalyst)' == 'true'">true</IsInterpreting>
     <DefineConstants Condition=" '$(IsInterpreting)' != 'true' ">$(DefineConstants);FEATURE_COMPILE</DefineConstants>
     <DefineConstants Condition=" '$(FeatureInterpret)' == 'true' ">$(DefineConstants);FEATURE_INTERPRET</DefineConstants>
-    <TargetFrameworks>$(NetCoreAppCurrent)</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppCurrent)-iOS;$(NetCoreAppCurrent)-tvOS;$(NetCoreAppCurrent)-MacCatalyst</TargetFrameworks>
   </PropertyGroup>
   <ItemGroup>
     <AssembliesBeingTested Include="Microsoft.CSharp" />
@@ -180,6 +181,7 @@
     <Compile Include="TestExtensions\PerCompilationTypeAttribute.cs" />
     <Compile Include="TestExtensions\TestOrderer.cs" />
     <Compile Include="TestExtensions\TestOrderAttribute.cs" />
+    <Compile Include="TrimCompatibilityTests.cs" />
     <Compile Include="TypeBinary\TypeBinaryTests.cs" />
     <Compile Include="TypeBinary\TypeEqual.cs" />
     <Compile Include="TypeBinary\TypeIs.cs" />

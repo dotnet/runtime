@@ -132,7 +132,7 @@ namespace System.Linq.Parallel
         // requested.
         //
 
-        private class ContainsSearchOperatorEnumerator<TKey> : QueryOperatorEnumerator<bool, int>
+        private sealed class ContainsSearchOperatorEnumerator<TKey> : QueryOperatorEnumerator<bool, int>
         {
             private readonly QueryOperatorEnumerator<TInput, TKey> _source; // The source data.
             private readonly TInput _searchValue; // The value for which we are searching.
@@ -189,7 +189,7 @@ namespace System.Linq.Parallel
                     do
                     {
                         if ((i++ & CancellationState.POLL_INTERVAL) == 0)
-                            _cancellationToken.ThrowIfCancellationRequested();;
+                            _cancellationToken.ThrowIfCancellationRequested();
 
                         if (_resultFoundFlag.Value)
                         {

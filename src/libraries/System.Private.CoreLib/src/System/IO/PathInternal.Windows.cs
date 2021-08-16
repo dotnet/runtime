@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#nullable enable
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Text;
@@ -170,29 +169,6 @@ namespace System.IO
                 && (path[1] == '\\' || path[1] == '?')
                 && path[2] == '?'
                 && path[3] == '\\';
-        }
-
-        /// <summary>
-        /// Check for known wildcard characters. '*' and '?' are the most common ones.
-        /// </summary>
-        internal static bool HasWildCardCharacters(ReadOnlySpan<char> path)
-        {
-            // Question mark is part of dos device syntax so we have to skip if we are
-            int startIndex = IsDevice(path) ? ExtendedPathPrefix.Length : 0;
-
-            // [MS - FSA] 2.1.4.4 Algorithm for Determining if a FileName Is in an Expression
-            // https://msdn.microsoft.com/en-us/library/ff469270.aspx
-            for (int i = startIndex; i < path.Length; i++)
-            {
-                char c = path[i];
-                if (c <= '?') // fast path for common case - '?' is highest wildcard character
-                {
-                    if (c == '\"' || c == '<' || c == '>' || c == '*' || c == '?')
-                        return true;
-                }
-            }
-
-            return false;
         }
 
         /// <summary>

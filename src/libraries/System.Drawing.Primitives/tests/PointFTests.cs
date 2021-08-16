@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Globalization;
+using System.Numerics;
 using System.Reflection;
 using Xunit;
 
@@ -27,6 +28,25 @@ namespace System.Drawing.PrimitivesTests
 
             Assert.Equal(x, p1.X);
             Assert.Equal(y, p1.Y);
+
+            PointF p2 = new PointF(new Vector2(x, y));
+            Assert.Equal(p1, p2);
+        }
+
+        [Theory]
+        [InlineData(float.MaxValue, float.MinValue)]
+        [InlineData(float.MinValue, float.MinValue)]
+        [InlineData(float.MaxValue, float.MaxValue)]
+        [InlineData(float.MinValue, float.MaxValue)]
+        [InlineData(0.0, 0.0)]
+        public void ToFromVector(float x, float y)
+        {
+            PointF point1 = new PointF(x, y);
+            Vector2 vector1 = new Vector2(x, y);
+
+            Assert.Equal(vector1, point1.ToVector2());
+            Assert.Equal(vector1, (Vector2)point1);
+            Assert.Equal(point1, (PointF)vector1);
         }
 
         [Fact]

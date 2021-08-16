@@ -5,7 +5,6 @@ using System.Buffers;
 using System.ComponentModel;
 using System.IO;
 using System.Runtime.InteropServices;
-using System.Runtime.Versioning;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -58,6 +57,11 @@ namespace System.Net.WebSockets
             MemoryMarshal.TryGetArray(buffer, out ArraySegment<byte> arraySegment) ?
                 new ValueTask(SendAsync(arraySegment, messageType, endOfMessage, cancellationToken)) :
                 SendWithArrayPoolAsync(buffer, messageType, endOfMessage, cancellationToken);
+
+        public virtual ValueTask SendAsync(ReadOnlyMemory<byte> buffer, WebSocketMessageType messageType, WebSocketMessageFlags messageFlags, CancellationToken cancellationToken = default)
+        {
+            return SendAsync(buffer, messageType, messageFlags.HasFlag(WebSocketMessageFlags.EndOfMessage), cancellationToken);
+        }
 
         private async ValueTask SendWithArrayPoolAsync(
             ReadOnlyMemory<byte> buffer,
@@ -134,7 +138,6 @@ namespace System.Net.WebSockets
         /// <param name="subProtocol">The agreed upon sub-protocol that was used when creating the connection.</param>
         /// <param name="keepAliveInterval">The keep-alive interval to use, or <see cref="Timeout.InfiniteTimeSpan"/> to disable keep-alives.</param>
         /// <returns>The created <see cref="WebSocket"/>.</returns>
-        [UnsupportedOSPlatform("browser")]
         public static WebSocket CreateFromStream(Stream stream, bool isServer, string? subProtocol, TimeSpan keepAliveInterval)
         {
             if (stream == null)
@@ -159,7 +162,24 @@ namespace System.Net.WebSockets
                     0));
             }
 
-            return ManagedWebSocket.CreateFromConnectedStream(stream, isServer, subProtocol, keepAliveInterval);
+            return new ManagedWebSocket(stream, isServer, subProtocol, keepAliveInterval);
+        }
+
+        /// <summary>Creates a <see cref="WebSocket"/> that operates on a <see cref="Stream"/> representing a web socket connection.</summary>
+        /// <param name="stream">The <see cref="Stream"/> for the connection.</param>
+        /// <param name="options">The options with which the websocket must be created.</param>
+        public static WebSocket CreateFromStream(Stream stream, WebSocketCreationOptions options)
+        {
+            if (stream is null)
+                throw new ArgumentNullException(nameof(stream));
+
+            if (options is null)
+                throw new ArgumentNullException(nameof(options));
+
+            if (!stream.CanRead || !stream.CanWrite)
+                throw new ArgumentException(!stream.CanRead ? SR.NotReadableStream : SR.NotWriteableStream, nameof(stream));
+
+            return new ManagedWebSocket(stream, options);
         }
 
         [EditorBrowsable(EditorBrowsableState.Never)]
@@ -167,6 +187,7 @@ namespace System.Net.WebSockets
         public static bool IsApplicationTargeting45() => true;
 
         [EditorBrowsable(EditorBrowsableState.Never)]
+        [Obsolete("This API supports the .NET Framework infrastructure and is not intended to be used directly from your code.")]
         public static void RegisterPrefixes()
         {
             // The current WebRequest implementation in the libraries does not support upgrading
@@ -174,7 +195,6 @@ namespace System.Net.WebSockets
             throw new PlatformNotSupportedException();
         }
 
-        [UnsupportedOSPlatform("browser")]
         [EditorBrowsable(EditorBrowsableState.Never)]
         public static WebSocket CreateClientWebSocket(Stream innerStream,
             string? subProtocol, int receiveBufferSize, int sendBufferSize,
@@ -212,8 +232,7 @@ namespace System.Net.WebSockets
 
             // Ignore useZeroMaskingKey. ManagedWebSocket doesn't currently support that debugging option.
             // Ignore internalBuffer. ManagedWebSocket uses its own small buffer for headers/control messages.
-
-            return ManagedWebSocket.CreateFromConnectedStream(innerStream, false, subProtocol, keepAliveInterval);
+            return new ManagedWebSocket(innerStream, false, subProtocol, keepAliveInterval);
         }
     }
 }

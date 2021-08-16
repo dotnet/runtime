@@ -246,7 +246,7 @@ namespace System
         //  Returns true if the string represents a valid argument to the Uri ctor
         //  If uriKind != AbsoluteUri then certain parsing errors are ignored but Uri usage is limited
         //
-        public static bool TryCreate(string? uriString, UriKind uriKind, [NotNullWhen(true)] out Uri? result)
+        public static bool TryCreate([NotNullWhen(true)] string? uriString, UriKind uriKind, [NotNullWhen(true)] out Uri? result)
         {
             if (uriString is null)
             {
@@ -534,7 +534,7 @@ namespace System
             if (position == -1)
                 return stringToUnescape;
 
-            var vsb = new ValueStringBuilder(stackalloc char[256]);
+            var vsb = new ValueStringBuilder(stackalloc char[StackallocThreshold]);
             vsb.EnsureCapacity(stringToUnescape.Length);
 
             vsb.Append(stringToUnescape.AsSpan(0, position));
@@ -744,11 +744,9 @@ namespace System
                 if (_string.Length == 0)
                     return string.Empty;
 
-                char[] dest = new char[_string.Length];
-                int position = 0;
-                dest = UriHelper.UnescapeString(_string, 0, _string.Length, dest, ref position, c_DummyChar,
-                    c_DummyChar, c_DummyChar, UnescapeMode.EscapeUnescape, null, false);
-                return new string(dest, 0, position);
+                var vsb = new ValueStringBuilder(stackalloc char[StackallocThreshold]);
+                UriHelper.UnescapeString(_string, ref vsb, c_DummyChar, c_DummyChar, c_DummyChar, UnescapeMode.EscapeUnescape, null, false);
+                return vsb.ToString();
             }
             else
             {

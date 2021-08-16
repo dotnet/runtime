@@ -19,3 +19,6 @@
 [assembly:System.Runtime.CompilerServices.TypeForwardedTo(typeof(System.OrdinalComparer))]
 [assembly:System.Runtime.CompilerServices.TypeForwardedTo(typeof(System.UnitySerializationHolder))]
 [assembly:System.Runtime.CompilerServices.TypeForwardedTo(typeof(System.Diagnostics.Contracts.ContractException))]
+// This is required for back-compatibility with legacy Xamarin which had Stack<T> and Queue<T> in mscorlib
+[assembly:System.Runtime.CompilerServices.TypeForwardedTo(typeof(System.Collections.Generic.Stack<>))]
+[assembly:System.Runtime.CompilerServices.TypeForwardedTo(typeof(System.Collections.Generic.Queue<>))]

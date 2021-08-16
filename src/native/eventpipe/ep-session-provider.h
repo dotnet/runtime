@@ -1,8 +1,6 @@
 #ifndef __EVENTPIPE_SESSION_PROVIDER_H__
 #define __EVENTPIPE_SESSION_PROVIDER_H__
 
-#include <config.h>
-
 #ifdef ENABLE_PERFTRACING
 #include "ep-rt-config.h"
 #include "ep-types.h"

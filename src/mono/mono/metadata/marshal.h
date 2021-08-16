@@ -18,7 +18,6 @@
 #include <mono/metadata/opcodes.h>
 #include <mono/metadata/reflection.h>
 #include <mono/metadata/method-builder.h>
-#include <mono/metadata/remoting.h>
 #include <mono/utils/mono-error.h>
 #include <mono/metadata/icalls.h>
 
@@ -114,7 +113,9 @@ typedef enum {
 	WRAPPER_SUBTYPE_RUNTIME_INVOKE_VIRTUAL,
 	/* Subtypes of MONO_WRAPPER_MANAGED_TO_NATIVE */
 	WRAPPER_SUBTYPE_ICALL_WRAPPER, // specifically JIT icalls
+	WRAPPER_SUBTYPE_NATIVE_FUNC,
 	WRAPPER_SUBTYPE_NATIVE_FUNC_AOT,
+	WRAPPER_SUBTYPE_NATIVE_FUNC_INDIRECT,
 	WRAPPER_SUBTYPE_PINVOKE,
 	/* Subtypes of MONO_WRAPPER_OTHER */
 	WRAPPER_SUBTYPE_SYNCHRONIZED_INNER,
@@ -185,10 +186,6 @@ typedef struct {
 } ArrayAccessorWrapperInfo;
 
 typedef struct {
-	MonoClass *klass;
-} ProxyWrapperInfo;
-
-typedef struct {
 	const char *gc_name;
 	int alloc_type;
 } AllocatorWrapperInfo;
@@ -196,10 +193,6 @@ typedef struct {
 typedef struct {
 	MonoMethod *method;
 } UnboxWrapperInfo;
-
-typedef struct {
-	MonoMethod *method;
-} RemotingWrapperInfo;
 
 typedef struct {
 	MonoMethodSignature *sig;
@@ -217,7 +210,8 @@ typedef enum {
 	AOT_INIT_METHOD = 0,
 	AOT_INIT_METHOD_GSHARED_MRGCTX = 1,
 	AOT_INIT_METHOD_GSHARED_THIS = 2,
-	AOT_INIT_METHOD_GSHARED_VTABLE = 3
+	AOT_INIT_METHOD_GSHARED_VTABLE = 3,
+	AOT_INIT_METHOD_NUM = 4
 } MonoAotInitSubtype;
 
 typedef struct {
@@ -268,14 +262,10 @@ typedef struct {
 		ICallWrapperInfo icall;
 		/* ARRAY_ACCESSOR */
 		ArrayAccessorWrapperInfo array_accessor;
-		/* PROXY_ISINST etc. */
-		ProxyWrapperInfo proxy;
 		/* ALLOC */
 		AllocatorWrapperInfo alloc;
 		/* UNBOX */
 		UnboxWrapperInfo unbox;
-		/* MONO_WRAPPER_REMOTING_INVOKE/MONO_WRAPPER_REMOTING_INVOKE_WITH_CHECK/MONO_WRAPPER_XDOMAIN_INVOKE */
-		RemotingWrapperInfo remoting;
 		/* GSHAREDVT_IN_SIG/GSHAREDVT_OUT_SIG */
 		GsharedvtWrapperInfo gsharedvt;
 		/* DELEGATE_INVOKE */
@@ -300,7 +290,17 @@ typedef enum {
 } MonoStelemrefKind;
 
 
-#define MONO_MARSHAL_CALLBACKS_VERSION 4
+typedef enum {
+	EMIT_NATIVE_WRAPPER_AOT = 0x01, /* FIXME: what does "aot" mean here */
+	EMIT_NATIVE_WRAPPER_CHECK_EXCEPTIONS = 0x02,
+	EMIT_NATIVE_WRAPPER_FUNC_PARAM = 0x04,
+	EMIT_NATIVE_WRAPPER_FUNC_PARAM_UNBOXED = 0x08,
+	EMIT_NATIVE_WRAPPER_SKIP_GC_TRANS=0x10,
+} MonoNativeWrapperFlags;
+
+G_ENUM_FUNCTIONS(MonoNativeWrapperFlags);
+
+#define MONO_MARSHAL_CALLBACKS_VERSION 5
 
 typedef struct {
 	int version;
@@ -325,7 +325,7 @@ typedef struct {
 	void (*emit_virtual_stelemref) (MonoMethodBuilder *mb, const char **param_names, MonoStelemrefKind kind);
 	void (*emit_stelemref) (MonoMethodBuilder *mb);
 	void (*emit_array_address) (MonoMethodBuilder *mb, int rank, int elem_size);
-	void (*emit_native_wrapper) (MonoImage *image, MonoMethodBuilder *mb, MonoMethodSignature *sig, MonoMethodPInvoke *piinfo, MonoMarshalSpec **mspecs, gpointer func, gboolean aot, gboolean check_exceptions, gboolean func_param, gboolean skip_gc_trans);
+	void (*emit_native_wrapper) (MonoImage *image, MonoMethodBuilder *mb, MonoMethodSignature *sig, MonoMethodPInvoke *piinfo, MonoMarshalSpec **mspecs, gpointer func, MonoNativeWrapperFlags flags);
 	void (*emit_managed_wrapper) (MonoMethodBuilder *mb, MonoMethodSignature *invoke_sig, MonoMarshalSpec **mspecs, EmitMarshalContext* m, MonoMethod *method, MonoGCHandle target_handle);
 	void (*emit_runtime_invoke_body) (MonoMethodBuilder *mb, const char **param_names, MonoImage *image, MonoMethod *method, MonoMethodSignature *sig, MonoMethodSignature *callsig, gboolean virtual_, gboolean need_direct_wrapper);
 	void (*emit_runtime_invoke_dynamic) (MonoMethodBuilder *mb);
@@ -365,9 +365,6 @@ mono_marshal_init (void);
 void
 mono_marshal_init_tls (void);
 
-void
-mono_marshal_cleanup (void);
-
 gint32
 mono_class_native_size (MonoClass *klass, guint32 *align);
 
@@ -395,7 +392,7 @@ mono_marshal_ftnptr_eh_callback (guint32 gchandle);
 MONO_PAL_API void
 mono_marshal_set_last_error (void);
 
-ICALL_EXTERN_C
+ICALL_EXPORT
 void
 mono_marshal_clear_last_error (void);
 
@@ -407,7 +404,7 @@ mono_type_to_stind (MonoType *type);
 
 /* functions to create various architecture independent helper functions */
 
-MonoMethod *
+MONO_COMPONENT_API MonoMethod *
 mono_marshal_method_from_wrapper (MonoMethod *wrapper);
 
 WrapperInfo*
@@ -416,7 +413,7 @@ mono_wrapper_info_create (MonoMethodBuilder *mb, WrapperSubtype subtype);
 void
 mono_marshal_set_wrapper_info (MonoMethod *method, WrapperInfo *info);
 
-WrapperInfo*
+MONO_COMPONENT_API WrapperInfo*
 mono_marshal_get_wrapper_info (MonoMethod *wrapper);
 
 MonoMethod *
@@ -473,6 +470,10 @@ mono_marshal_get_native_func_wrapper (MonoImage *image, MonoMethodSignature *sig
 MonoMethod*
 mono_marshal_get_native_func_wrapper_aot (MonoClass *klass);
 
+MonoMethod*
+mono_marshal_get_native_func_wrapper_indirect (MonoClass *caller_class, MonoMethodSignature *sig,
+					       gboolean aot);
+
 MonoMethod *
 mono_marshal_get_struct_to_ptr (MonoClass *klass);
 
@@ -502,6 +503,9 @@ mono_marshal_get_virtual_stelemref (MonoClass *array_class);
 
 MonoMethod**
 mono_marshal_get_virtual_stelemref_wrappers (int *nwrappers);
+
+MonoMethod*
+mono_marshal_get_virtual_stelemref_wrapper (MonoStelemrefKind kind);
 
 MonoMethod*
 mono_marshal_get_array_address (int rank, int elem_size);
@@ -535,28 +539,25 @@ mono_marshal_unlock_internal (void);
 void * 
 mono_marshal_alloc (gsize size, MonoError *error);
 
-ICALL_EXTERN_C
+ICALL_EXPORT
 void 
 mono_marshal_free (gpointer ptr);
 
-ICALL_EXTERN_C
+ICALL_EXPORT
 void
 mono_marshal_free_array (gpointer *ptr, int size);
 
 gboolean 
 mono_marshal_free_ccw (MonoObject* obj);
 
-void
-mono_cominterop_release_all_rcws (void); 
-
 MONO_API void *
 mono_marshal_string_to_utf16 (MonoString *s);
 
-ICALL_EXTERN_C
+ICALL_EXPORT
 void
 mono_marshal_set_last_error_windows (int error);
 
-ICALL_EXTERN_C
+ICALL_EXPORT
 void 
 mono_struct_delete_old (MonoClass *klass, char *ptr);
 
@@ -565,15 +566,15 @@ mono_emit_marshal (EmitMarshalContext *m, int argnum, MonoType *t,
 	      MonoMarshalSpec *spec, int conv_arg, 
 	      MonoType **conv_arg_type, MarshalAction action);
 
-ICALL_EXTERN_C
+ICALL_EXPORT
 MonoObject *
 mono_marshal_isinst_with_cache (MonoObject *obj, MonoClass *klass, uintptr_t *cache);
 
-ICALL_EXTERN_C
+ICALL_EXPORT
 MonoAsyncResult *
 mono_delegate_begin_invoke (MonoDelegate *delegate, gpointer *params);
 
-ICALL_EXTERN_C
+ICALL_EXPORT
 MonoObject *
 mono_delegate_end_invoke (MonoDelegate *delegate, gpointer *params);
 
@@ -604,20 +605,20 @@ mono_pinvoke_is_unicode (MonoMethodPInvoke *piinfo);
 gboolean
 mono_marshal_need_free (MonoType *t, MonoMethodPInvoke *piinfo, MonoMarshalSpec *spec);
 
-ICALL_EXTERN_C
+ICALL_EXPORT
 MonoObject* mono_marshal_get_type_object (MonoClass *klass);
 
-ICALL_EXTERN_C
+ICALL_EXPORT
 gpointer
 mono_marshal_lookup_pinvoke (MonoMethod *method);
 
 ICALL_EXPORT
-guint32 
-ves_icall_System_Runtime_InteropServices_Marshal_GetLastWin32Error (void);
+guint32
+ves_icall_System_Runtime_InteropServices_Marshal_GetLastPInvokeError (void);
 
 ICALL_EXPORT
 void
-ves_icall_System_Runtime_InteropServices_Marshal_SetLastWin32Error (guint32 err);
+ves_icall_System_Runtime_InteropServices_Marshal_SetLastPInvokeError (guint32 err);
 
 ICALL_EXPORT
 mono_bstr
@@ -668,7 +669,7 @@ mono_signature_no_pinvoke (MonoMethod *method);
 /* Called from cominterop.c/remoting.c */
 
 void
-mono_marshal_emit_native_wrapper (MonoImage *image, MonoMethodBuilder *mb, MonoMethodSignature *sig, MonoMethodPInvoke *piinfo, MonoMarshalSpec **mspecs, gpointer func, gboolean aot, gboolean check_exceptions, gboolean func_param, gboolean skip_gc_trans);
+mono_marshal_emit_native_wrapper (MonoImage *image, MonoMethodBuilder *mb, MonoMethodSignature *sig, MonoMethodPInvoke *piinfo, MonoMarshalSpec **mspecs, gpointer func, MonoNativeWrapperFlags flags);
 
 void
 mono_marshal_emit_managed_wrapper (MonoMethodBuilder *mb, MonoMethodSignature *invoke_sig, MonoMarshalSpec **mspecs, EmitMarshalContext* m, MonoMethod *method, MonoGCHandle target_handle);

@@ -3,4 +3,4 @@
 
 using Xunit;
 
-[assembly: SkipOnMono("System.Net.Security is not supported on Browser", TestPlatforms.Browser)]
+[assembly: SkipOnPlatform(TestPlatforms.Browser, "System.Net.Security is not supported on Browser")]

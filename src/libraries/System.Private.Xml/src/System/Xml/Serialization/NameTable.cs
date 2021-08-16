@@ -1,6 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics.CodeAnalysis;
+
 namespace System.Xml.Serialization
 {
     using System.Xml;
@@ -8,7 +10,7 @@ namespace System.Xml.Serialization
     using System.Collections;
     using System.Collections.Generic;
 
-    internal class NameKey
+    internal sealed class NameKey
     {
         private readonly string? _ns;
         private readonly string? _name;
@@ -19,7 +21,7 @@ namespace System.Xml.Serialization
             _ns = ns;
         }
 
-        public override bool Equals(object? other)
+        public override bool Equals([NotNullWhen(true)] object? other)
         {
             if (!(other is NameKey)) return false;
             NameKey key = (NameKey)other;
@@ -35,7 +37,7 @@ namespace System.Xml.Serialization
     {
         object? this[string? name, string? ns] { get; set; }
     }
-    internal class NameTable : INameScope
+    internal sealed class NameTable : INameScope
     {
         private readonly Dictionary<NameKey, object?> _table = new Dictionary<NameKey, object?>();
 

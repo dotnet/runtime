@@ -405,11 +405,11 @@ namespace System.IO.Packaging
         /// <returns>
         /// The value of the specified attribute. If the attribute is not found, a null reference is returned.
         /// </returns>
-        public override string? GetAttribute(string localName, string namespaceURI)
+        public override string? GetAttribute(string localName, string? namespaceURI)
         {
             string? result = null;
 
-            if (_ignoredAttributeCount == 0 || !ShouldIgnoreNamespace(namespaceURI))
+            if (_ignoredAttributeCount == 0 || !ShouldIgnoreNamespace(namespaceURI!))
             {
                 // if the current element does not have any attributes that should be ignored or
                 // the namespace provided is not ignorable, call Reader method
@@ -503,7 +503,7 @@ namespace System.IO.Packaging
         /// <returns>
         /// true if the attribute is found; otherwise, false. If false, the reader's position does not change.
         /// </returns>
-        public override bool MoveToAttribute(string localName, string namespaceURI)
+        public override bool MoveToAttribute(string localName, string? namespaceURI)
         {
             bool result;
 
@@ -518,7 +518,7 @@ namespace System.IO.Packaging
 
                 result = Reader.MoveToAttribute(localName, namespaceURI);
 
-                if (result && ShouldIgnoreNamespace(namespaceURI))
+                if (result && ShouldIgnoreNamespace(namespaceURI!))
                 {
                     result = false;
                     RestoreReaderPosition();
@@ -594,7 +594,7 @@ namespace System.IO.Packaging
         /// </returns>
         public override string? LookupNamespace(string prefix)
         {
-            string namespaceName = Reader.LookupNamespace(prefix);
+            string? namespaceName = Reader.LookupNamespace(prefix);
 
             if (namespaceName != null)
             {
@@ -613,6 +613,7 @@ namespace System.IO.Packaging
         /// for the xmlns attribute reflects all the
         /// compatibility (subsuming) rules.
         /// </summary>
+#pragma warning disable CS8764 // Nullability of return type doesn't match overridden member
         public override string? Value
         {
             get
@@ -631,6 +632,7 @@ namespace System.IO.Packaging
                 return Reader.Value;
             }
         }
+#pragma warning restore CS8764
 
         /// <summary>
         /// Gets the namespace URI (as defined in the W3C Namespace specification) of the node
@@ -693,7 +695,7 @@ namespace System.IO.Packaging
             // Restore reader state from SaveReaderPosition
             if (_inAttribute)
             {
-                Reader.MoveToAttribute(_currentName);
+                Reader.MoveToAttribute(_currentName!);
             }
             else
             {
@@ -1141,7 +1143,7 @@ namespace System.IO.Packaging
                 Error(SR.XCRChoiceAfterFallback);
             }
 
-            string requiresValue = Reader.GetAttribute(Requires);
+            string? requiresValue = Reader.GetAttribute(Requires);
 
             if (requiresValue == null)
             {
@@ -1558,7 +1560,7 @@ namespace System.IO.Packaging
         /// Each scope stores the "previous" or parent scope, its depth, and an associated XmlCompatibilityReader.
         /// At a particular Reader depth, only one scope should be pushed.
         /// </summary>
-        private class CompatibilityScope
+        private sealed class CompatibilityScope
         {
             private readonly CompatibilityScope? _previous;
             private readonly int _depth;
@@ -1834,7 +1836,7 @@ namespace System.IO.Packaging
             }
         }
 
-        private class ProcessContentSet
+        private sealed class ProcessContentSet
         {
             private bool _all;
             private readonly string _namespaceName;
@@ -1889,7 +1891,7 @@ namespace System.IO.Packaging
             }
         }
 
-        private class PreserveItemSet
+        private sealed class PreserveItemSet
         {
             private bool _all;
             private readonly string _namespaceName;

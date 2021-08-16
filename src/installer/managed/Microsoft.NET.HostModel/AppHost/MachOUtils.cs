@@ -188,7 +188,7 @@ namespace Microsoft.NET.HostModel.AppHost
         /// - Truncates the apphost file to the end of the __LINKEDIT segment
         ///
         /// </summary>
-        /// <param name="filePath">Path to the AppHost</param>
+        /// <param name="stream">Stream containing the AppHost</param>
         /// <returns>
         ///  True if
         ///    - The input is a MachO binary, and
@@ -199,125 +199,248 @@ namespace Microsoft.NET.HostModel.AppHost
         /// <exception cref="AppHostMachOFormatException">
         /// The input is a MachO file, but doesn't match the expect format of the AppHost.
         /// </exception>
-        public static unsafe bool RemoveSignature(string filePath)
+        public static unsafe bool RemoveSignature(FileStream stream)
         {
-            using (var stream = new FileStream(filePath, FileMode.Open, FileAccess.ReadWrite))
+            uint signatureSize = 0;
+            using (var mappedFile = MemoryMappedFile.CreateFromFile(stream,
+                                                                    mapName: null,
+                                                                    capacity: 0,
+                                                                    MemoryMappedFileAccess.ReadWrite,
+                                                                    HandleInheritability.None,
+                                                                    leaveOpen: true))
             {
-                uint signatureSize = 0;
-                using (var mappedFile = MemoryMappedFile.CreateFromFile(stream,
-                                                                        mapName: null,
-                                                                        capacity: 0,
-                                                                        MemoryMappedFileAccess.ReadWrite,
-                                                                        HandleInheritability.None,
-                                                                        leaveOpen: true))
+                using (var accessor = mappedFile.CreateViewAccessor())
                 {
-                    using (var accessor = mappedFile.CreateViewAccessor())
+                    byte* file = null;
+                    try
                     {
-                        byte* file = null;
-                        RuntimeHelpers.PrepareConstrainedRegions();
-                        try
+                        accessor.SafeMemoryMappedViewHandle.AcquirePointer(ref file);
+                        Verify(file != null, MachOFormatError.MemoryMapAccessFault);
+
+                        MachHeader* header = (MachHeader*)file;
+
+                        if (!header->IsValid())
                         {
-                            accessor.SafeMemoryMappedViewHandle.AcquirePointer(ref file);
-                            Verify(file != null, MachOFormatError.MemoryMapAccessFault);
-
-                            MachHeader* header = (MachHeader*)file;
-
-                            if (!header->IsValid())
-                            {
-                                // Not a MachO file.
-                                return false;
-                            }
-
-                            Verify(header->Is64BitExecutable(), MachOFormatError.Not64BitExe);
-
-                            file += sizeof(MachHeader);
-                            SegmentCommand64* linkEdit = null;
-                            SymtabCommand* symtab = null;
-                            LinkEditDataCommand* signature = null;
-
-                            for (uint i = 0; i < header->ncmds; i++)
-                            {
-                                LoadCommand* command = (LoadCommand*)file;
-                                if (command->cmd == Command.LC_SEGMENT_64)
-                                {
-                                    SegmentCommand64* segment = (SegmentCommand64*)file;
-                                    if (segment->SegName.Equals("__LINKEDIT"))
-                                    {
-                                        Verify(linkEdit == null, MachOFormatError.DuplicateLinkEdit);
-                                        linkEdit = segment;
-                                    }
-                                }
-                                else if (command->cmd == Command.LC_SYMTAB)
-                                {
-                                    Verify(symtab == null, MachOFormatError.DuplicateSymtab);
-                                    symtab = (SymtabCommand*)command;
-                                }
-                                else if (command->cmd == Command.LC_CODE_SIGNATURE)
-                                {
-                                    Verify(i == header->ncmds - 1, MachOFormatError.SignCommandNotLast);
-                                    signature = (LinkEditDataCommand*)command;
-                                    break;
-                                }
-
-                                file += command->cmdsize;
-                            }
-
-                            if (signature != null)
-                            {
-                                Verify(linkEdit != null, MachOFormatError.SignNeedsLinkEdit);
-                                Verify(symtab != null, MachOFormatError.SignNeedsSymtab);
-
-                                var symtabEnd = symtab->stroff + symtab->strsize;
-                                var linkEditEnd = linkEdit->fileoff + linkEdit->filesize;
-                                var signatureEnd = signature->dataoff + signature->datasize;
-                                var fileEnd = (ulong)stream.Length;
-
-                                Verify(linkEditEnd == fileEnd, MachOFormatError.LinkEditNotLast);
-                                Verify(signatureEnd == fileEnd, MachOFormatError.SignBlobNotLast);
-
-                                Verify(symtab->symoff > linkEdit->fileoff, MachOFormatError.SymtabNotInLinkEdit);
-                                Verify(signature->dataoff > linkEdit->fileoff, MachOFormatError.SignNotInLinkEdit);
-
-                                // The signature blob immediately follows the symtab blob,
-                                // except for a few bytes of padding.
-                                Verify(signature->dataoff >= symtabEnd && signature->dataoff - symtabEnd < 32, MachOFormatError.SignBlobNotLast);
-
-                                // Remove the signature command
-                                header->ncmds--;
-                                header->sizeofcmds -= signature->cmdsize;
-                                Unsafe.InitBlock(signature, 0, signature->cmdsize);
-
-                                // Remove the signature blob (note for truncation)
-                                signatureSize = (uint)(fileEnd - symtabEnd);
-
-                                // Adjust the __LINKEDIT segment load command
-                                linkEdit->filesize -= signatureSize;
-
-                                // codesign --remove-signature doesn't reset the vmsize.
-                                // Setting the vmsize here makes the output bin-equal with the original
-                                // unsigned apphost (and not bin-equal with a signed-unsigned-apphost).
-                                linkEdit->vmsize = linkEdit->filesize;
-                            }
+                            // Not a MachO file.
+                            return false;
                         }
-                        finally
+
+                        Verify(header->Is64BitExecutable(), MachOFormatError.Not64BitExe);
+
+                        file += sizeof(MachHeader);
+                        SegmentCommand64* linkEdit = null;
+                        SymtabCommand* symtab = null;
+                        LinkEditDataCommand* signature = null;
+
+                        for (uint i = 0; i < header->ncmds; i++)
                         {
-                            if (file != null)
+                            LoadCommand* command = (LoadCommand*)file;
+                            if (command->cmd == Command.LC_SEGMENT_64)
                             {
-                                accessor.SafeMemoryMappedViewHandle.ReleasePointer();
+                                SegmentCommand64* segment = (SegmentCommand64*)file;
+                                if (segment->SegName.Equals("__LINKEDIT"))
+                                {
+                                    Verify(linkEdit == null, MachOFormatError.DuplicateLinkEdit);
+                                    linkEdit = segment;
+                                }
                             }
+                            else if (command->cmd == Command.LC_SYMTAB)
+                            {
+                                Verify(symtab == null, MachOFormatError.DuplicateSymtab);
+                                symtab = (SymtabCommand*)command;
+                            }
+                            else if (command->cmd == Command.LC_CODE_SIGNATURE)
+                            {
+                                Verify(i == header->ncmds - 1, MachOFormatError.SignCommandNotLast);
+                                signature = (LinkEditDataCommand*)command;
+                                break;
+                            }
+
+                            file += command->cmdsize;
+                        }
+
+                        if (signature != null)
+                        {
+                            Verify(linkEdit != null, MachOFormatError.MissingLinkEdit);
+                            Verify(symtab != null, MachOFormatError.MissingSymtab);
+
+                            var symtabEnd = symtab->stroff + symtab->strsize;
+                            var linkEditEnd = linkEdit->fileoff + linkEdit->filesize;
+                            var signatureEnd = signature->dataoff + signature->datasize;
+                            var fileEnd = (ulong)stream.Length;
+
+                            Verify(linkEditEnd == fileEnd, MachOFormatError.LinkEditNotLast);
+                            Verify(signatureEnd == fileEnd, MachOFormatError.SignBlobNotLast);
+
+                            Verify(symtab->symoff > linkEdit->fileoff, MachOFormatError.SymtabNotInLinkEdit);
+                            Verify(signature->dataoff > linkEdit->fileoff, MachOFormatError.SignNotInLinkEdit);
+
+                            // The signature blob immediately follows the symtab blob,
+                            // except for a few bytes of padding.
+                            Verify(signature->dataoff >= symtabEnd && signature->dataoff - symtabEnd < 32, MachOFormatError.SignBlobNotLast);
+
+                            // Remove the signature command
+                            header->ncmds--;
+                            header->sizeofcmds -= signature->cmdsize;
+                            Unsafe.InitBlock(signature, 0, signature->cmdsize);
+
+                            // Remove the signature blob (note for truncation)
+                            signatureSize = (uint)(fileEnd - symtabEnd);
+
+                            // Adjust the __LINKEDIT segment load command
+                            linkEdit->filesize -= signatureSize;
+
+                            // codesign --remove-signature doesn't reset the vmsize.
+                            // Setting the vmsize here makes the output bin-equal with the original
+                            // unsigned apphost (and not bin-equal with a signed-unsigned-apphost).
+                            linkEdit->vmsize = linkEdit->filesize;
+                        }
+                    }
+                    finally
+                    {
+                        if (file != null)
+                        {
+                            accessor.SafeMemoryMappedViewHandle.ReleasePointer();
                         }
                     }
                 }
-
-                if (signatureSize != 0)
-                {
-                    // The signature was removed, update the file length
-                    stream.SetLength(stream.Length - signatureSize);
-                    return true;
-                }
-
-                return false;
             }
+
+            if (signatureSize != 0)
+            {
+                // The signature was removed, update the file length
+                stream.SetLength(stream.Length - signatureSize);
+                return true;
+            }
+
+            return false;
+        }
+
+        /// <summary>
+        /// This Method is a utility to adjust the apphost MachO-header
+        /// to include the bytes added by the single-file bundler at the end of the file.
+        ///
+        /// The tool assumes the following layout of the executable
+        ///
+        /// * MachoHeader (64-bit, executable, not swapped integers)
+        /// * LoadCommands
+        ///     LC_SEGMENT_64 (__PAGEZERO)
+        ///     LC_SEGMENT_64 (__TEXT)
+        ///     LC_SEGMENT_64 (__DATA)
+        ///     LC_SEGMENT_64 (__LINKEDIT)
+        ///     ...
+        ///     LC_SYMTAB
+        ///
+        ///  * ... Different Segments
+        ///
+        ///  * The __LINKEDIT Segment (last)
+        ///      * ... Different sections ...
+        ///      * SYMTAB (last)
+        ///
+        /// The MAC codesign tool places several restrictions on the layout
+        ///   * The __LINKEDIT segment must be the last one
+        ///   * The __LINKEDIT segment must cover the end of the file
+        ///   * All bytes in the __LINKEDIT segment are used by other linkage commands
+        ///     (ex: symbol/string table, dynamic load information etc)
+        ///
+        /// In order to circumvent these restrictions, we:
+        ///    * Extend the __LINKEDIT segment to include the bundle-data
+        ///    * Extend the string table to include all the bundle-data
+        ///      (that is, the bundle-data appear as strings to the loader/codesign tool).
+        ///
+        ///  This method has certain limitations:
+        ///    * The bytes for the bundler may be unnecessarily loaded at startup
+        ///    * Tools that process the string table may be confused (?)
+        ///    * The string table size is limited to 4GB. Bundles larger than that size
+        ///      cannot be accomodated by this utility.
+        ///
+        /// </summary>
+        /// <param name="filePath">Path to the AppHost</param>
+        /// <returns>
+        ///  True if
+        ///    - The input is a MachO binary, and
+        ///    - The additional bytes were successfully accomodated within the MachO segments.
+        ///   False otherwise
+        /// </returns>
+        /// <exception cref="AppHostMachOFormatException">
+        /// The input is a MachO file, but doesn't match the expect format of the AppHost.
+        /// </exception>
+        public static unsafe bool AdjustHeadersForBundle(string filePath)
+        {
+            ulong fileLength = (ulong)new FileInfo(filePath).Length;
+            using (var mappedFile = MemoryMappedFile.CreateFromFile(filePath))
+            {
+                using (var accessor = mappedFile.CreateViewAccessor())
+                {
+                    byte* file = null;
+                    try
+                    {
+                        accessor.SafeMemoryMappedViewHandle.AcquirePointer(ref file);
+                        Verify(file != null, MachOFormatError.MemoryMapAccessFault);
+
+                        MachHeader* header = (MachHeader*)file;
+
+                        if (!header->IsValid())
+                        {
+                            // Not a MachO file.
+                            return false;
+                        }
+
+                        Verify(header->Is64BitExecutable(), MachOFormatError.Not64BitExe);
+
+                        file += sizeof(MachHeader);
+                        SegmentCommand64* linkEdit = null;
+                        SymtabCommand* symtab = null;
+                        LinkEditDataCommand* signature = null;
+
+                        for (uint i = 0; i < header->ncmds; i++)
+                        {
+                            LoadCommand* command = (LoadCommand*)file;
+                            if (command->cmd == Command.LC_SEGMENT_64)
+                            {
+                                SegmentCommand64* segment = (SegmentCommand64*)file;
+                                if (segment->SegName.Equals("__LINKEDIT"))
+                                {
+                                    Verify(linkEdit == null, MachOFormatError.DuplicateLinkEdit);
+                                    linkEdit = segment;
+                                }
+                            }
+                            else if (command->cmd == Command.LC_SYMTAB)
+                            {
+                                Verify(symtab == null, MachOFormatError.DuplicateSymtab);
+                                symtab = (SymtabCommand*)command;
+                            }
+
+                            file += command->cmdsize;
+                        }
+
+                        Verify(linkEdit != null, MachOFormatError.MissingLinkEdit);
+                        Verify(symtab != null, MachOFormatError.MissingSymtab);
+
+                        // Update the string table to include bundle-data
+                        ulong newStringTableSize = fileLength - symtab->stroff;
+                        if (newStringTableSize > uint.MaxValue)
+                        {
+                            // Too big, too bad;
+                            return false;
+                        }
+                        symtab->strsize = (uint)newStringTableSize;
+
+                        // Update the __LINKEDIT segment to include bundle-data
+                        linkEdit->filesize = fileLength - linkEdit->fileoff;
+                        linkEdit->vmsize = linkEdit->filesize;
+                    }
+                    finally
+                    {
+                        if (file != null)
+                        {
+                            accessor.SafeMemoryMappedViewHandle.ReleasePointer();
+                        }
+                    }
+                }
+            }
+
+            return true;
         }
     }
 }

@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Reflection;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Runtime.Serialization
 {
@@ -72,6 +73,7 @@ namespace System.Runtime.Serialization
         {
         }
 
+        [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         public void Export(ICollection<Assembly> assemblies)
         {
             if (assemblies == null)
@@ -103,6 +105,7 @@ namespace System.Runtime.Serialization
             TraceExportEnd();
         }
 
+        [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         public void Export(ICollection<Type> types)
         {
             if (types == null)
@@ -131,6 +134,7 @@ namespace System.Runtime.Serialization
             TraceExportEnd();
         }
 
+        [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         public void Export(Type type)
         {
             if (type == null)
@@ -153,6 +157,7 @@ namespace System.Runtime.Serialization
             TraceExportEnd();
         }
 
+        [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         public XmlQualifiedName GetSchemaTypeName(Type type)
         {
             if (type == null)
@@ -166,6 +171,7 @@ namespace System.Runtime.Serialization
             return dataContract.StableName;
         }
 
+        [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         public XmlSchemaType? GetSchemaType(Type type)
         {
             if (type == null)
@@ -179,6 +185,7 @@ namespace System.Runtime.Serialization
             return null;
         }
 
+        [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         public XmlQualifiedName? GetRootElementName(Type type)
         {
             if (type == null)
@@ -206,6 +213,7 @@ namespace System.Runtime.Serialization
             return type;
         }
 
+        [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         private void CheckAndAddType(Type type)
         {
             type = GetSurrogatedType(type);
@@ -213,11 +221,13 @@ namespace System.Runtime.Serialization
                 AddType(type);
         }
 
+        [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         private void AddType(Type type)
         {
             DataContractSet.Add(type);
         }
 
+        [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         private void Export()
         {
             AddKnownTypes();
@@ -225,6 +235,7 @@ namespace System.Runtime.Serialization
             schemaExporter.Export();
         }
 
+        [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         private void AddKnownTypes()
         {
             if (Options != null)
@@ -244,6 +255,7 @@ namespace System.Runtime.Serialization
             }
         }
 
+        [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         public bool CanExport(ICollection<Assembly> assemblies)
         {
             if (assemblies == null)
@@ -277,6 +289,7 @@ namespace System.Runtime.Serialization
             }
         }
 
+        [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         public bool CanExport(ICollection<Type> types)
         {
             if (types == null)
@@ -307,6 +320,7 @@ namespace System.Runtime.Serialization
             }
         }
 
+        [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         public bool CanExport(Type type)
         {
             if (type == null)

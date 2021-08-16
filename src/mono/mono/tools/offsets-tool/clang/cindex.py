@@ -3436,13 +3436,13 @@ functionList = [
    [Cursor],
    bool),
 
-  ("clang_CXXRecord_isAbstract",
-   [Cursor],
-   bool),
+  #("clang_CXXRecord_isAbstract",
+  # [Cursor],
+  # bool),
 
-  ("clang_EnumDecl_isScoped",
-   [Cursor],
-   bool),
+  #("clang_EnumDecl_isScoped",
+  # [Cursor],
+  # bool),
 
   ("clang_defaultDiagnosticDisplayOptions",
    [],
@@ -3854,10 +3854,10 @@ functionList = [
    Type,
    Type.from_result),
 
-  ("clang_getTypedefName",
-   [Type],
-   _CXString,
-   _CXString.from_result),
+  #("clang_getTypedefName",
+  # [Type],
+  # _CXString,
+  # _CXString.from_result),
 
   ("clang_getTypeKindSpelling",
    [c_uint],

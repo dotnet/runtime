@@ -3,7 +3,7 @@
 
 namespace System.Linq.Expressions.Compiler
 {
-    internal partial class StackSpiller
+    internal sealed partial class StackSpiller
     {
         private readonly StackGuard _guard = new StackGuard();
 

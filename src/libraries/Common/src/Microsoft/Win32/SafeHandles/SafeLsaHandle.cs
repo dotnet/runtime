@@ -9,7 +9,7 @@ namespace Microsoft.Win32.SafeHandles
 {
     internal sealed class SafeLsaHandle : SafeHandle
     {
-        internal SafeLsaHandle()
+        public SafeLsaHandle()
             : base(IntPtr.Zero, true)
         {
         }

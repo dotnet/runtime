@@ -33,6 +33,7 @@ typedef struct __darwin_xmm_reg MonoContextSimdReg;
 typedef struct _libc_xmmreg MonoContextSimdReg;
 #elif defined(HOST_WIN32)
 #define MONO_HAVE_SIMD_REG
+//#define MONO_HAVE_SIMD_REG_AVX
 #include <emmintrin.h>
 typedef __m128d MonoContextSimdReg;
 #elif defined(HOST_ANDROID)
@@ -44,8 +45,17 @@ typedef struct _libc_xmmreg MonoContextSimdReg;
 typedef __m128d MonoContextSimdReg;
 #endif
 #elif defined(TARGET_ARM64)
+/* We need a definition for MonoContextSimdReg even when cross-compiling
+   from Windows, but __uint128_t doesn't exist. Here __m128d is used as
+   a stand-in. This is not expected to work for Windows ARM64 native builds. */
+#if defined(HOST_WIN32)
+#define MONO_HAVE_SIMD_REG
+#include <emmintrin.h>
+typedef __m128d MonoContextSimdReg;
+#else
 #define MONO_HAVE_SIMD_REG
 typedef __uint128_t MonoContextSimdReg;
+#endif
 #endif
 
 /*
@@ -74,7 +84,7 @@ typedef struct {
 #define MONO_CONTEXT_GET_BP(ctx) ((gpointer)(gsize)((ctx)->wasm_bp))
 #define MONO_CONTEXT_GET_SP(ctx) ((gpointer)(gsize)((ctx)->wasm_sp))
 
-#elif (defined(__i386__) && !defined(MONO_CROSS_COMPILE)) || (defined(TARGET_X86))
+#elif ((defined(__i386__) || defined(_M_IX86)) && !defined(MONO_CROSS_COMPILE)) || (defined(TARGET_X86))
 
 /*HACK, move this to an eventual mono-signal.c*/
 #if defined( __linux__) || defined(__sun) || defined(__APPLE__) || defined(__NetBSD__) || \
@@ -245,7 +255,7 @@ typedef struct {
 
 #define MONO_ARCH_HAS_MONO_CONTEXT 1
 
-#elif (defined(__x86_64__) && !defined(MONO_CROSS_COMPILE)) || (defined(TARGET_AMD64)) /* defined(__i386__) */
+#elif ((defined(__x86_64__) || defined(_M_X64)) && !defined(MONO_CROSS_COMPILE)) || (defined(TARGET_AMD64))
 
 #include <mono/arch/amd64/amd64-codegen.h>
 
@@ -272,7 +282,10 @@ MONO_DISABLE_WARNING(4324) // 'struct_name' : structure was padded due to __decl
 
 typedef struct {
 	host_mgreg_t gregs [AMD64_NREG];
-#if defined(MONO_HAVE_SIMD_REG)
+#if defined(MONO_HAVE_SIMD_REG_AVX)
+	// Lower AMD64_XMM_NREG fregs holds lower 128 bit YMM. Upper AMD64_XMM_NREG fregs holds upper 128-bit YMM.
+	MonoContextSimdReg fregs [AMD64_XMM_NREG * 2];
+#elif defined(MONO_HAVE_SIMD_REG)
 	MonoContextSimdReg fregs [AMD64_XMM_NREG];
 #else
 	double fregs [AMD64_XMM_NREG];
@@ -289,11 +302,29 @@ MONO_RESTORE_WARNING
 #define MONO_CONTEXT_GET_BP(ctx) ((gpointer)(gsize)((ctx)->gregs [AMD64_RBP]))
 #define MONO_CONTEXT_GET_SP(ctx) ((gpointer)(gsize)((ctx)->gregs [AMD64_RSP]))
 
-#if defined (HOST_WIN32) && !defined(__GNUC__)
+#if defined(HOST_WIN32) && !defined(__GNUC__)
 /* msvc doesn't support inline assembly, so have to use a separate .asm file */
 // G_EXTERN_C due to being written in assembly.
+#if defined(MONO_HAVE_SIMD_REG_AVX) && defined(__AVX__)
+G_EXTERN_C void mono_context_get_current_avx (void *);
+#define MONO_CONTEXT_GET_CURRENT(ctx) \
+do { \
+	mono_context_get_current_avx((void*)&(ctx)); \
+} while (0)
+#elif defined(MONO_HAVE_SIMD_REG_AVX)
 G_EXTERN_C void mono_context_get_current (void *);
-#define MONO_CONTEXT_GET_CURRENT(ctx) do { mono_context_get_current((void*)&(ctx)); } while (0)
+#define MONO_CONTEXT_GET_CURRENT(ctx) \
+do { \
+	mono_context_get_current((void*)&(ctx)); \
+	memset (&(ctx.fregs [AMD64_XMM_NREG]), 0, sizeof (MonoContextSimdReg) * AMD64_XMM_NREG); \
+} while (0)
+#else
+G_EXTERN_C void mono_context_get_current (void *);
+#define MONO_CONTEXT_GET_CURRENT(ctx) \
+do { \
+	mono_context_get_current((void*)&(ctx)); \
+} while (0)
+#endif
 
 #else
 
@@ -892,7 +923,6 @@ typedef struct ucontext MonoContext;
 #define MONO_CONTEXT_SET_BP(ctx,bp) 					\
 	do {		 						\
 		(ctx)->uc_mcontext.gregs[15] = (unsigned long)bp;	\
-		(ctx)->uc_stack.ss_sp	     = (void*)bp;		\
 	} while (0) 
 
 #define MONO_CONTEXT_GET_IP(ctx) (gpointer) (ctx)->uc_mcontext.psw.addr
@@ -1046,7 +1076,7 @@ typedef struct {
  * The naming is misleading, the SIGCTX argument should be the platform's context
  * structure (ucontext_c on posix, CONTEXT on windows).
  */
-void mono_sigctx_to_monoctx (void *sigctx, MonoContext *mctx);
+MONO_COMPONENT_API void mono_sigctx_to_monoctx (void *sigctx, MonoContext *mctx);
 
 /*
  * This will not completely initialize SIGCTX since MonoContext contains less
@@ -1054,6 +1084,6 @@ void mono_sigctx_to_monoctx (void *sigctx, MonoContext *mctx);
  * the system, and use this function to override the parts of it which are
  * also in MonoContext.
  */
-void mono_monoctx_to_sigctx (MonoContext *mctx, void *sigctx);
+MONO_COMPONENT_API void mono_monoctx_to_sigctx (MonoContext *mctx, void *sigctx);
 
 #endif /* __MONO_MONO_CONTEXT_H__ */

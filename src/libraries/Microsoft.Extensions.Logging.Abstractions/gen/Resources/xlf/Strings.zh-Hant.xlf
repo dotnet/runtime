@@ -1,0 +1,162 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<xliff xmlns="urn:oasis:names:tc:xliff:document:1.2" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" version="1.2" xsi:schemaLocation="urn:oasis:names:tc:xliff:document:1.2 xliff-core-1.2-transitional.xsd">
+  <file datatype="xml" source-language="en" target-language="zh-Hant" original="../Strings.resx">
+    <body>
+      <trans-unit id="ArgumentHasNoCorrespondingTemplateMessage">
+        <source>Argument '{0}' is not referenced from the logging message</source>
+        <target state="translated">引數 '{0}' 未參照記錄訊息</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ArgumentHasNoCorrespondingTemplateTitle">
+        <source>Argument is not referenced from the logging message</source>
+        <target state="translated">未從記錄訊息參照引數</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="GeneratingForMax6ArgumentsMessage">
+        <source>Generating more than 6 arguments is not supported</source>
+        <target state="translated">不支援產生 6 個以上的引數</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="InconsistentTemplateCasingMessage">
+        <source>Can't have the same template with different casing</source>
+        <target state="translated">不能有不同大小寫的相同範本</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="InvalidLoggingMethodNameMessage">
+        <source>Logging method names cannot start with _</source>
+        <target state="translated">記錄方法名稱的開頭不能為 _</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="InvalidLoggingMethodParameterNameMessage">
+        <source>Logging method parameter names cannot start with _</source>
+        <target state="translated">記錄方法參數名稱的開頭不能為 _</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="LoggingMethodHasBodyMessage">
+        <source>Logging methods cannot have a body</source>
+        <target state="translated">記錄方法不能有主體</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="LoggingMethodIsGenericMessage">
+        <source>Logging methods cannot be generic</source>
+        <target state="translated">記錄方法不可為泛型</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="LoggingMethodMustBePartialMessage">
+        <source>Logging methods must be partial</source>
+        <target state="translated">記錄方法必須是部分</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="LoggingMethodMustReturnVoidMessage">
+        <source>Logging methods must return void</source>
+        <target state="translated">記錄方法必須傳回 void</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="LoggingMethodShouldBeStaticMessage">
+        <source>Logging methods must be static</source>
+        <target state="translated">記錄方法必須是靜態</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="MalformedFormatStringsMessage">
+        <source>Can't have malformed format strings (like dangling {, etc)</source>
+        <target state="translated">不能有格式錯誤的格式字串 (例如懸空 {, 等等)</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="MissingLogLevelMessage">
+        <source>A LogLevel value must be supplied in the LoggerMessage attribute or as a parameter to the logging method</source>
+        <target state="translated">必須在 LoggerMessage 屬性中提供 LogLevel 值，或將其做為記錄方法的參數。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="MissingLoggerArgumentMessage">
+        <source>One of the arguments to the static logging method '{0}' must implement the Microsoft.Extensions.Logging.ILogger interface</source>
+        <target state="translated">靜態記錄方法 '{0}' 的其中一個引數必須實作 Microsoft.Extensions.Logging.ILogger 介面</target>
+        <note>{Locked="Microsoft.Extensions.Logging.ILogger"}</note>
+      </trans-unit>
+      <trans-unit id="MissingLoggerArgumentTitle">
+        <source>One of the arguments to a static logging method must implement the Microsoft.Extensions.Logging.ILogger interface</source>
+        <target state="translated">靜態記錄方法的其中一個引數必須實作 Microsoft.Extensions.Logging.ILogger 介面</target>
+        <note>{Locked="Microsoft.Extensions.Logging.ILogger"}</note>
+      </trans-unit>
+      <trans-unit id="MissingLoggerFieldMessage">
+        <source>Couldn't find a field of type Microsoft.Extensions.Logging.ILogger in class {0}</source>
+        <target state="translated">找不到類別 {0} 中 Microsoft.Extensions.Logging.ILogger 類型的欄位</target>
+        <note>{Locked="Microsoft.Extensions.Logging.ILogger"}</note>
+      </trans-unit>
+      <trans-unit id="MissingLoggerFieldTitle">
+        <source>Couldn't find a field of type Microsoft.Extensions.Logging.ILogger</source>
+        <target state="translated">找不到 Microsoft.Extensions.Logging.ILogger 類型的欄位</target>
+        <note>{Locked="Microsoft.Extensions.Logging.ILogger"}</note>
+      </trans-unit>
+      <trans-unit id="MissingRequiredTypeMessage">
+        <source>Could not find definition for type {0}</source>
+        <target state="translated">找不到類型 {0} 的定義</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="MissingRequiredTypeTitle">
+        <source>Could not find a required type definition</source>
+        <target state="translated">找不到所需的類型定義</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="MultipleLoggerFieldsMessage">
+        <source>Found multiple fields of type Microsoft.Extensions.Logging.ILogger in class {0}</source>
+        <target state="translated">在類別 {0} 中找到多個 Microsoft.Extensions.Logging.ILogger 類型的欄位</target>
+        <note>{Locked="Microsoft.Extensions.Logging.ILogger"}</note>
+      </trans-unit>
+      <trans-unit id="MultipleLoggerFieldsTitle">
+        <source>Found multiple fields of type Microsoft.Extensions.Logging.ILogger</source>
+        <target state="translated">找到多個 Microsoft.Extensions.Logging.ILogger 類型的欄位</target>
+        <note>{Locked="Microsoft.Extensions.Logging.ILogger"}</note>
+      </trans-unit>
+      <trans-unit id="RedundantQualifierInMessageMessage">
+        <source>Remove redundant qualifier (Info:, Warning:, Error:, etc) from the logging message since it is implicit in the specified log level.</source>
+        <target state="translated">從記錄訊息中移除備援限定詞 (資訊:、警告:、錯誤: 等等)，因為它在指定的記錄層級中為隱含。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="RedundantQualifierInMessageTitle">
+        <source>Redundant qualifier in logging message</source>
+        <target state="translated">記錄訊息中的備援限定詞</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ShouldntMentionExceptionInMessageTitle">
+        <source>Don't include exception parameters as templates in the logging message</source>
+        <target state="translated">請勿在記錄訊息中包含做為範本的例外狀況參數</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ShouldntMentionInTemplateMessage">
+        <source>Don't include a template for {0} in the logging message since it is implicitly taken care of</source>
+        <target state="translated">請勿在記錄訊息中包含 {0} 的範本，因為系統是將它隱含處理</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ShouldntMentionLogLevelInMessageTitle">
+        <source>Don't include log level parameters as templates in the logging message</source>
+        <target state="translated">請勿在記錄訊息中包含做為範本的記錄層級參數</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ShouldntMentionLoggerInMessageTitle">
+        <source>Don't include logger parameters as templates in the logging message</source>
+        <target state="translated">請勿在記錄訊息中包含做為範本的記錄器參數</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ShouldntReuseEventIdsMessage">
+        <source>Multiple logging methods are using event id {0} in class {1}</source>
+        <target state="translated">多個記錄方法是使用類別 {1} 中的事件識別碼 {0}</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ShouldntReuseEventIdsTitle">
+        <source>Multiple logging methods cannot use the same event id within a class</source>
+        <target state="translated">多個記錄方法不能在類別內使用相同的事件識別碼</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="TemplateHasNoCorrespondingArgumentMessage">
+        <source>Template '{0}' is not provided as argument to the logging method</source>
+        <target state="translated">未將範本 '{0}' 提供做為記錄方法的引數</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="TemplateHasNoCorrespondingArgumentTitle">
+        <source>Logging template has no corresponding method argument</source>
+        <target state="translated">記錄範本沒有對應的方法引數</target>
+        <note />
+      </trans-unit>
+    </body>
+  </file>
+</xliff>

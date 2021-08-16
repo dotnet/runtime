@@ -2,25 +2,18 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 #nullable disable
-using System;
-using System.IO;
-using System.Xml;
-using System.Xml.XPath;
-using System.Xml.Schema;
 using System.Collections;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Diagnostics;
-using System.Text;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Reflection;
-using System.Reflection.Emit;
-using System.Xml.Xsl.Qil;
-#if FEATURE_COMPILED_XSL
+using System.Xml.Schema;
+using System.Xml.XPath;
 using System.Xml.Xsl.IlGen;
-#endif
-using System.ComponentModel;
+using System.Xml.Xsl.Xslt;
 using MS.Internal.Xml.XPath;
-using System.Runtime.Versioning;
 
 namespace System.Xml.Xsl.Runtime
 {
@@ -282,6 +275,7 @@ namespace System.Xml.Xsl.Runtime
         /// <summary>
         /// Return true if the early bound object identified by "namespaceUri" contains a method that matches "name".
         /// </summary>
+        [RequiresUnreferencedCode(Scripts.ExtensionFunctionCannotBeStaticallyAnalyzed)]
         public bool EarlyBoundFunctionExists(string name, string namespaceUri)
         {
             if (_earlyInfo == null)
@@ -494,12 +488,11 @@ namespace System.Xml.Xsl.Runtime
         /// </summary>
         internal object ChangeTypeXsltArgument(XmlQueryType xmlType, object value, Type destinationType)
         {
-#if FEATURE_COMPILED_XSL
             Debug.Assert(XmlILTypeHelper.GetStorageType(xmlType).IsAssignableFrom(value.GetType()),
                          "Values passed to ChangeTypeXsltArgument should be in ILGen's default Clr representation.");
-#endif
+
             Debug.Assert(destinationType == XsltConvert.ObjectType || !destinationType.IsAssignableFrom(value.GetType()),
-                         "No need to call ChangeTypeXsltArgument since value is already assignable to destinationType " + destinationType);
+                         $"No need to call ChangeTypeXsltArgument since value is already assignable to destinationType {destinationType}");
 
             switch (xmlType.TypeCode)
             {
@@ -573,7 +566,7 @@ namespace System.Xml.Xsl.Runtime
                     }
             }
 
-            Debug.Assert(destinationType.IsAssignableFrom(value.GetType()), "ChangeType from type " + value.GetType().Name + " to type " + destinationType.Name + " failed");
+            Debug.Assert(destinationType.IsAssignableFrom(value.GetType()), $"ChangeType from type {value.GetType().Name} to type {destinationType.Name} failed");
             return value;
         }
 
@@ -695,9 +688,8 @@ namespace System.Xml.Xsl.Runtime
                     }
             }
 
-#if FEATURE_COMPILED_XSL
-            Debug.Assert(XmlILTypeHelper.GetStorageType(xmlType).IsAssignableFrom(value.GetType()), "Xml type " + xmlType + " is not represented in ILGen as " + value.GetType().Name);
-#endif
+            Debug.Assert(XmlILTypeHelper.GetStorageType(xmlType).IsAssignableFrom(value.GetType()), $"Xml type {xmlType} is not represented in ILGen as {value.GetType().Name}");
+
             return value;
         }
 
@@ -892,7 +884,7 @@ namespace System.Xml.Xsl.Runtime
         /// </summary>
         public string GenerateId(XPathNavigator navigator)
         {
-            return string.Concat("ID", _docOrderCmp.GetDocumentIndex(navigator).ToString(CultureInfo.InvariantCulture), navigator.UniqueId);
+            return string.Create(CultureInfo.InvariantCulture, $"ID{_docOrderCmp.GetDocumentIndex(navigator)}{navigator.UniqueId}");
         }
 
 

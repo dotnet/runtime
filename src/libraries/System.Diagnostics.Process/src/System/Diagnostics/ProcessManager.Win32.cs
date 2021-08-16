@@ -42,7 +42,7 @@ namespace System.Diagnostics
 
         private static bool IsMainWindow(IntPtr handle)
         {
-            return (Interop.User32.GetWindow(handle, GW_OWNER) == IntPtr.Zero) && Interop.User32.IsWindowVisible(handle);
+            return (Interop.User32.GetWindow(handle, GW_OWNER) == IntPtr.Zero) && Interop.User32.IsWindowVisible(handle) != Interop.BOOL.FALSE;
         }
 
         [UnmanagedCallersOnly]
@@ -51,7 +51,7 @@ namespace System.Diagnostics
             MainWindowFinder* instance = (MainWindowFinder*)extraParameter;
 
             int processId = 0; // Avoid uninitialized variable if the window got closed in the meantime
-            Interop.User32.GetWindowThreadProcessId(handle, out processId);
+            Interop.User32.GetWindowThreadProcessId(handle, &processId);
 
             if ((processId == instance->_processId) && IsMainWindow(handle))
             {
@@ -131,7 +131,13 @@ namespace System.Diagnostics
 
                 var modules = new ProcessModuleCollection(firstModuleOnly ? 1 : modulesCount);
 
-                char[] chars = ArrayPool<char>.Shared.Rent(1024);
+                const int StartLength =
+#if DEBUG
+                    1; // in debug, validate ArrayPool growth
+#else
+                    Interop.Kernel32.MAX_PATH;
+#endif
+                char[]? chars = ArrayPool<char>.Shared.Rent(StartLength);
                 try
                 {
                     for (int i = 0; i < modulesCount; i++)
@@ -162,25 +168,44 @@ namespace System.Diagnostics
                             BaseAddress = ntModuleInfo.BaseOfDll
                         };
 
-                        int length = Interop.Kernel32.GetModuleBaseName(processHandle, moduleHandle, chars, chars.Length);
+                        int length = 0;
+                        while ((length = Interop.Kernel32.GetModuleBaseName(processHandle, moduleHandle, chars, chars.Length)) == chars.Length)
+                        {
+                            char[] toReturn = chars;
+                            chars = ArrayPool<char>.Shared.Rent(length * 2);
+                            ArrayPool<char>.Shared.Return(toReturn);
+                        }
+
                         if (length == 0)
                         {
+                            module.Dispose();
                             HandleLastWin32Error();
                             continue;
                         }
 
                         module.ModuleName = new string(chars, 0, length);
 
-                        length = Interop.Kernel32.GetModuleFileNameEx(processHandle, moduleHandle, chars, chars.Length);
+                        while ((length = Interop.Kernel32.GetModuleFileNameEx(processHandle, moduleHandle, chars, chars.Length)) == chars.Length)
+                        {
+                            char[] toReturn = chars;
+                            chars = ArrayPool<char>.Shared.Rent(length * 2);
+                            ArrayPool<char>.Shared.Return(toReturn);
+                        }
+
                         if (length == 0)
                         {
+                            module.Dispose();
                             HandleLastWin32Error();
                             continue;
                         }
 
-                        module.FileName = (length >= 4 && chars[0] == '\\' && chars[1] == '\\' && chars[2] == '?' && chars[3] == '\\') ?
-                            new string(chars, 4, length - 4) :
-                            new string(chars, 0, length);
+                        const string NtPathPrefix = @"\\?\";
+                        ReadOnlySpan<char> charsSpan = chars.AsSpan(0, length);
+                        if (charsSpan.StartsWith(NtPathPrefix))
+                        {
+                            charsSpan = charsSpan.Slice(NtPathPrefix.Length);
+                        }
+                        module.FileName = charsSpan.ToString();
 
                         modules.Add(module);
                     }
@@ -253,7 +278,7 @@ namespace System.Diagnostics
 
         private static int MostRecentSize = DefaultCachedBufferSize;
 
-        internal static ProcessInfo[] GetProcessInfos(Predicate<int>? processIdFilter = null)
+        internal static ProcessInfo[] GetProcessInfos(int? processIdFilter = null)
         {
             // Start with the default buffer size.
             int bufferSize = MostRecentSize;
@@ -347,7 +372,7 @@ namespace System.Diagnostics
             return newSize;
         }
 
-        private static unsafe ProcessInfo[] GetProcessInfos(ReadOnlySpan<byte> data, Predicate<int>? processIdFilter)
+        private static unsafe ProcessInfo[] GetProcessInfos(ReadOnlySpan<byte> data, int? processIdFilter)
         {
             // Use a dictionary to avoid duplicate entries if any
             // 60 is a reasonable number for processes on a normal machine.
@@ -361,7 +386,7 @@ namespace System.Diagnostics
 
                 // Process ID shouldn't overflow. OS API GetCurrentProcessID returns DWORD.
                 int processInfoProcessId = pi.UniqueProcessId.ToInt32();
-                if (processIdFilter == null || processIdFilter(processInfoProcessId))
+                if (processIdFilter == null || processIdFilter.GetValueOrDefault() == processInfoProcessId)
                 {
                     // get information for a process
                     ProcessInfo processInfo = new ProcessInfo((int)pi.NumberOfThreads)

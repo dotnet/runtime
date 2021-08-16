@@ -11,7 +11,7 @@ using System.Security.Principal;
 
 namespace System.DirectoryServices.AccountManagement
 {
-    internal class TokenGroupSet : ResultSet
+    internal sealed class TokenGroupSet : ResultSet
     {
         internal TokenGroupSet(
                              string userDN,

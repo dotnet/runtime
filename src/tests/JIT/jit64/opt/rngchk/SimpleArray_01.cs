@@ -76,7 +76,7 @@ namespace SimpleArray_01
         [MethodImplAttribute(MethodImplOptions.NoInlining)]
         public static void Test2()
         {
-            int[] numbers = new int[100]; ;
+            int[] numbers = new int[100];
             int index = 0;
             for (index = 0; index < 101; index++)
             {

@@ -17,7 +17,6 @@
 #include <glib.h>
 
 #include <mono/metadata/abi-details.h>
-#include <mono/metadata/appdomain.h>
 #include <mono/metadata/marshal.h>
 #include <mono/metadata/tabledefs.h>
 #include <mono/metadata/profiler-private.h>
@@ -29,12 +28,12 @@
 #include "mini.h"
 #include "mini-amd64.h"
 #include "mini-runtime.h"
-#include "debugger-agent.h"
 
 #ifndef DISABLE_INTERPRETER
 #include "interp/interp.h"
 #endif
 #include "mono/utils/mono-tls-inline.h"
+#include <mono/metadata/components.h>
 
 #ifdef MONO_ARCH_CODE_EXEC_ONLY
 #include "aot-runtime.h"
@@ -61,8 +60,7 @@ mono_arch_get_unbox_trampoline (MonoMethod *m, gpointer addr)
 	guint8 *code, *start;
 	GSList *unwind_ops;
 	const int size = 20;
-	MonoDomain *domain = mono_domain_get ();
-	MonoMemoryManager *mem_manager = m_method_get_mem_manager (domain, m);
+	MonoMemoryManager *mem_manager = m_method_get_mem_manager (m);
 
 	const int this_reg = mono_arch_get_this_arg_reg (NULL);
 
@@ -80,7 +78,7 @@ mono_arch_get_unbox_trampoline (MonoMethod *m, gpointer addr)
 	mono_arch_flush_icache (start, code - start);
 	MONO_PROFILER_RAISE (jit_code_buffer, (start, code - start, MONO_PROFILER_CODE_BUFFER_UNBOX_TRAMPOLINE, m));
 
-	mono_tramp_info_register (mono_tramp_info_create (NULL, start, code - start, NULL, unwind_ops), domain);
+	mono_tramp_info_register (mono_tramp_info_create (NULL, start, code - start, NULL, unwind_ops), mem_manager);
 
 	return start;
 }
@@ -96,7 +94,6 @@ mono_arch_get_static_rgctx_trampoline (MonoMemoryManager *mem_manager, gpointer 
 	guint8 *code, *start;
 	GSList *unwind_ops;
 	int buf_len;
-	MonoDomain *domain = mono_domain_get ();
 
 #ifdef MONO_ARCH_NOMAP32BIT
 	buf_len = 32;
@@ -120,7 +117,7 @@ mono_arch_get_static_rgctx_trampoline (MonoMemoryManager *mem_manager, gpointer 
 	mono_arch_flush_icache (start, code - start);
 	MONO_PROFILER_RAISE (jit_code_buffer, (start, code - start, MONO_PROFILER_CODE_BUFFER_GENERICS_TRAMPOLINE, NULL));
 
-	mono_tramp_info_register (mono_tramp_info_create (NULL, start, code - start, NULL, unwind_ops), domain);
+	mono_tramp_info_register (mono_tramp_info_create (NULL, start, code - start, NULL, unwind_ops), mem_manager);
 
 	return start;
 }
@@ -148,18 +145,16 @@ mono_arch_patch_callsite (guint8 *method_start, guint8 *orig_code, guint8 *addr)
 	// last instruction of a function is the call (due to OP_NOT_REACHED) instruction and then directly followed by a
 	// different method. In that case current orig_code points into next method and method_start will also point into
 	// next method, not the method including the call to patch. For this specific case, fallback to using a method_start of NULL.
-	gboolean can_write = mono_breakpoint_clean_code (method_start != orig_code ? method_start : NULL, orig_code, 14, buf, sizeof (buf));
+	mono_breakpoint_clean_code (method_start != orig_code ? method_start : NULL, orig_code, 14, buf, sizeof (buf));
 
 	code = buf + 14;
 
 	/* mov 64-bit imm into r11 (followed by call reg?)  or direct call*/
 	if (((code [-13] == 0x49) && (code [-12] == 0xbb)) || (code [-5] == 0xe8)) {
 		if (code [-5] != 0xe8) {
-			if (can_write) {
-				g_assert ((guint64)(orig_code - 11) % 8 == 0);
-				mono_atomic_xchg_ptr ((gpointer*)(orig_code - 11), addr);
-				VALGRIND_DISCARD_TRANSLATIONS (orig_code - 11, sizeof (gpointer));
-			}
+			g_assert ((guint64)(orig_code - 11) % 8 == 0);
+			mono_atomic_xchg_ptr ((gpointer*)(orig_code - 11), addr);
+			VALGRIND_DISCARD_TRANSLATIONS (orig_code - 11, sizeof (gpointer));
 		} else {
 			gboolean disp_32bit = ((((gint64)addr - (gint64)orig_code)) < (1 << 30)) && ((((gint64)addr - (gint64)orig_code)) > -(1 << 30));
 
@@ -168,7 +163,7 @@ mono_arch_patch_callsite (guint8 *method_start, guint8 *orig_code, guint8 *addr)
 				 * This might happen with LLVM or when calling AOTed code. Create a thunk.
 				 */
 				guint8 *thunk_start, *thunk_code;
-				MonoMemoryManager *mem_manager = mono_domain_ambient_memory_manager (mono_domain_get ());
+				MonoMemoryManager *mem_manager = mini_get_default_mem_manager ();
 
 				thunk_start = thunk_code = (guint8 *)mono_mem_manager_code_reserve (mem_manager, 32);
 				amd64_jump_membase (thunk_code, AMD64_RIP, 0);
@@ -178,25 +173,21 @@ mono_arch_patch_callsite (guint8 *method_start, guint8 *orig_code, guint8 *addr)
 				mono_arch_flush_icache (thunk_start, thunk_code - thunk_start);
 				MONO_PROFILER_RAISE (jit_code_buffer, (thunk_start, thunk_code - thunk_start, MONO_PROFILER_CODE_BUFFER_HELPER, NULL));
 			}
-			if (can_write) {
-				mono_atomic_xchg_i32 ((gint32*)(orig_code - 4), ((gint64)addr - (gint64)orig_code));
-				VALGRIND_DISCARD_TRANSLATIONS (orig_code - 5, 4);
-			}
+			mono_atomic_xchg_i32 ((gint32*)(orig_code - 4), ((gint64)addr - (gint64)orig_code));
+			VALGRIND_DISCARD_TRANSLATIONS (orig_code - 5, 4);
 		}
 	}
 	else if ((code [-7] == 0x41) && (code [-6] == 0xff) && (code [-5] == 0x15)) {
 		/* call *<OFFSET>(%rip) */
 		gpointer *got_entry = (gpointer*)((guint8*)orig_code + (*(guint32*)(orig_code - 4)));
-		if (can_write) {
-			mono_atomic_xchg_ptr (got_entry, addr);
-			VALGRIND_DISCARD_TRANSLATIONS (orig_code - 5, sizeof (gpointer));
-		}
+		mono_atomic_xchg_ptr (got_entry, addr);
+		VALGRIND_DISCARD_TRANSLATIONS (orig_code - 5, sizeof (gpointer));
 	}
 }
 
 #ifndef DISABLE_JIT
 guint8*
-mono_arch_create_llvm_native_thunk (MonoDomain *domain, guint8 *addr)
+mono_arch_create_llvm_native_thunk (guint8 *addr)
 {
 	/*
 	 * The caller is LLVM code and the call displacement might exceed 32 bits. We can't determine the caller address, so
@@ -206,7 +197,7 @@ mono_arch_create_llvm_native_thunk (MonoDomain *domain, guint8 *addr)
 	 */
 	guint8 *thunk_start, *thunk_code;
 	// FIXME: Has to be an argument
-	MonoMemoryManager *mem_manager = mono_domain_ambient_memory_manager (domain);
+	MonoMemoryManager *mem_manager = mini_get_default_mem_manager ();
 
 	thunk_start = thunk_code = (guint8 *)mono_mem_manager_code_reserve (mem_manager, 32);
 	amd64_jump_membase (thunk_code, AMD64_RIP, 0);
@@ -719,7 +710,7 @@ mono_arch_create_rgctx_lazy_fetch_trampoline (guint32 slot, MonoTrampInfo **info
 		code = mono_arch_emit_load_aotconst (buf, code, &ji, MONO_PATCH_INFO_SPECIFIC_TRAMPOLINE_LAZY_FETCH_ADDR, GUINT_TO_POINTER (slot));
 		amd64_jump_reg (code, AMD64_R11);
 	} else {
-		MonoMemoryManager *mem_manager = mono_domain_ambient_memory_manager (mono_get_root_domain ());
+		MonoMemoryManager *mem_manager = mini_get_default_mem_manager ();
 		tramp = (guint8 *)mono_arch_create_specific_trampoline (GUINT_TO_POINTER (slot), MONO_TRAMPOLINE_RGCTX_LAZY_FETCH, mem_manager, NULL);
 
 		/* jump to the actual trampoline */
@@ -972,9 +963,9 @@ mono_arch_create_sdb_trampoline (gboolean single_step, MonoTrampInfo **info, gbo
 			code = mono_arch_emit_load_aotconst (buf, code, &ji, MONO_PATCH_INFO_JIT_ICALL_ADDR, GUINT_TO_POINTER (MONO_JIT_ICALL_mono_debugger_agent_breakpoint_from_context));
 	} else {
 		if (single_step)
-			amd64_mov_reg_imm (code, AMD64_R11, mini_get_dbg_callbacks ()->single_step_from_context);
+			amd64_mov_reg_imm (code, AMD64_R11, mono_component_debugger ()->single_step_from_context);
 		else
-			amd64_mov_reg_imm (code, AMD64_R11, mini_get_dbg_callbacks ()->breakpoint_from_context);
+			amd64_mov_reg_imm (code, AMD64_R11, mono_component_debugger ()->breakpoint_from_context);
 	}	
 	amd64_call_reg (code, AMD64_R11);
 

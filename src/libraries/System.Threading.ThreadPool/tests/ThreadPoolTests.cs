@@ -2,7 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
+using System.Reflection;
 using System.Threading.Tasks;
 using System.Threading.Tests;
 using Microsoft.DotNet.RemoteExecutor;
@@ -709,7 +711,7 @@ namespace System.Threading.ThreadPools.Tests
                     verifyNameWorkItem = _ =>
                     {
                         Thread currentThread = Thread.CurrentThread;
-                        if (currentThread.Name != null)
+                        if (currentThread.Name == nameof(WorkerThreadStateResetTest))
                         {
                             failureMessage += $"Name was not reset: {currentThread.Name}{Environment.NewLine}";
                         }
@@ -833,6 +835,170 @@ namespace System.Threading.ThreadPools.Tests
             }
 
             done.CheckedWait();
+        }
+
+        [ThreadStatic]
+        private static int t_ThreadPoolThreadCreationDoesNotTransferExecutionContext_asyncLocalSideEffect;
+
+        [ConditionalFact(nameof(IsThreadingAndRemoteExecutorSupported))]
+        public static void ThreadPoolThreadCreationDoesNotTransferExecutionContext()
+        {
+            // Run in a separate process to test in a clean thread pool environment such that work items queued by the test
+            // would cause the thread pool to create threads
+            RemoteExecutor.Invoke(() =>
+            {
+                var done = new AutoResetEvent(false);
+
+                // Create an AsyncLocal with value change notifications, this changes the EC on this thread to non-default
+                var asyncLocal = new AsyncLocal<int>(e =>
+                {
+                    // There is nothing in this test that should cause a thread's EC to change due to EC flow
+                    Assert.False(e.ThreadContextChanged);
+
+                    // Record a side-effect from AsyncLocal value changes caused by flow. This is mainly because AsyncLocal
+                    // value change notifications can have side-effects like impersonation, we want to ensure that not only the
+                    // AsyncLocal's value is correct, but also that the side-effect matches the value, confirming that any value
+                    // changes cause matching notifications.
+                    t_ThreadPoolThreadCreationDoesNotTransferExecutionContext_asyncLocalSideEffect = e.CurrentValue;
+                });
+                asyncLocal.Value = 1;
+
+                ThreadPool.UnsafeQueueUserWorkItem(_ =>
+                {
+                    // The EC should not have flowed. If the EC had flowed, the assertion in the value change notification would
+                    // fail. Just for additional verification, check the side-effect as well.
+                    Assert.Equal(0, t_ThreadPoolThreadCreationDoesNotTransferExecutionContext_asyncLocalSideEffect);
+
+                    done.Set();
+                }, null);
+                done.CheckedWait();
+
+                ThreadPool.UnsafeRegisterWaitForSingleObject(done, (_, timedOut) =>
+                {
+                    Assert.True(timedOut);
+
+                    // The EC should not have flowed. If the EC had flowed, the assertion in the value change notification would
+                    // fail. Just for additional verification, check the side-effect as well.
+                    Assert.Equal(0, t_ThreadPoolThreadCreationDoesNotTransferExecutionContext_asyncLocalSideEffect);
+
+                    done.Set();
+                }, null, 0, true);
+                done.CheckedWait();
+            }).Dispose();
+        }
+
+        [ConditionalFact(nameof(IsThreadingAndRemoteExecutorSupported))]
+        public static void CooperativeBlockingCanCreateThreadsFaster()
+        {
+            // Run in a separate process to test in a clean thread pool environment such that work items queued by the test
+            // would cause the thread pool to create threads
+            RemoteExecutor.Invoke(() =>
+            {
+                // All but the last of these work items will block and the last queued work item would release the blocking.
+                // Without cooperative blocking, this would lead to starvation after <proc count> work items run. Since
+                // starvation adds threads at a rate of at most 2 per second, the extra 120 work items would take roughly 60
+                // seconds to get unblocked and since the test waits for 30 seconds it would time out. Cooperative blocking is
+                // configured below to increase the rate of thread injection for testing purposes while getting a decent amount
+                // of coverage for its behavior. With cooperative blocking as configured below, the test should finish within a
+                // few seconds.
+                int processorCount = Environment.ProcessorCount;
+                int workItemCount = processorCount + 120;
+                SetBlockingConfigValue("ThreadsToAddWithoutDelay_ProcCountFactor", 1);
+                SetBlockingConfigValue("MaxDelayMs", 1);
+
+                var allWorkItemsUnblocked = new AutoResetEvent(false);
+
+                // Run a second iteration for some extra coverage. Iterations after the first one would be much faster because
+                // the necessary number of threads would already have been created by then, and would not add much to the test
+                // time.
+                for (int iterationIndex = 0; iterationIndex < 2; ++iterationIndex)
+                {
+                    var tcs = new TaskCompletionSource<int>();
+                    int unblockedThreadCount = 0;
+
+                    Action<int> blockingWorkItem = _ =>
+                    {
+                        tcs.Task.Wait();
+                        if (Interlocked.Increment(ref unblockedThreadCount) == workItemCount - 1)
+                        {
+                            allWorkItemsUnblocked.Set();
+                        }
+                    };
+
+                    for (int i = 0; i < workItemCount - 1; ++i)
+                    {
+                        ThreadPool.UnsafeQueueUserWorkItem(blockingWorkItem, 0, preferLocal: false);
+                    }
+
+                    Action<int> unblockingWorkItem = _ => tcs.SetResult(0);
+                    ThreadPool.UnsafeQueueUserWorkItem(unblockingWorkItem, 0, preferLocal: false);
+                    Assert.True(allWorkItemsUnblocked.WaitOne(30_000));
+                }
+
+                void SetBlockingConfigValue(string name, int value) =>
+                    AppContextSetData("System.Threading.ThreadPool.Blocking." + name, value);
+
+                void AppContextSetData(string name, object value)
+                {
+                    typeof(AppContext).InvokeMember(
+                        "SetData",
+                        BindingFlags.ExactBinding | BindingFlags.InvokeMethod | BindingFlags.Public | BindingFlags.Static,
+                        null,
+                        null,
+                        new object[] { name, value });
+                }
+            }).Dispose();
+        }
+
+        [ConditionalFact(nameof(IsThreadingAndRemoteExecutorSupported))]
+        public static void CooperativeBlockingWithProcessingThreadsAndGoalThreadsAndAddWorkerRaceTest()
+        {
+            // Avoid contaminating the main process' environment
+            RemoteExecutor.Invoke(() =>
+            {
+                try
+                {
+                    // The test is run affinitized to at most 2 processors for more frequent repros. The actual test process below
+                    // will inherit the affinity.
+                    Process testParentProcess = Process.GetCurrentProcess();
+                    testParentProcess.ProcessorAffinity = (nint)testParentProcess.ProcessorAffinity & 0x3;
+                }
+                catch (PlatformNotSupportedException)
+                {
+                    // Processor affinity is not supported on some platforms, try to run the test anyway
+                }
+
+                RemoteExecutor.Invoke(() =>
+                {
+                    const uint TestDurationMs = 4000;
+
+                    var done = new ManualResetEvent(false);
+                    int startTimeMs = Environment.TickCount;
+                    Action<object> completingTask = data => ((TaskCompletionSource<int>)data).SetResult(0);
+                    Action repeatingTask = null;
+                    repeatingTask = () =>
+                    {
+                        if ((uint)(Environment.TickCount - startTimeMs) >= TestDurationMs)
+                        {
+                            done.Set();
+                            return;
+                        }
+
+                        Task.Run(repeatingTask);
+
+                        var tcs = new TaskCompletionSource<int>();
+                        Task.Factory.StartNew(completingTask, tcs);
+                        tcs.Task.Wait();
+                    };
+
+                    for (int i = 0; i < Environment.ProcessorCount; ++i)
+                    {
+                        Task.Run(repeatingTask);
+                    }
+
+                    done.CheckedWait();
+                }).Dispose();
+            }).Dispose();
         }
 
         public static bool IsThreadingAndRemoteExecutorSupported =>

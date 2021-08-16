@@ -15,7 +15,7 @@ instrumenting code.
 In addition to `DiagnosticSource`, there are two other logging systems provided by Microsoft:
 
 1. `EventSource` [docs](https://msdn.microsoft.com/en-us/library/system.diagnostics.tracing.eventsource(v=vs.110).aspx)
-   and [src](https://github.com/dotnet/runtime/blob/master/src/libraries/System.Diagnostics.DiagnosticSource/src/System/Diagnostics/DiagnosticSourceEventSource.cs).
+   and [src](https://github.com/dotnet/runtime/blob/main/src/libraries/System.Diagnostics.DiagnosticSource/src/System/Diagnostics/DiagnosticSourceEventSource.cs).
    `EventSource` has been available since V4.5 of the .NET Runtime and is what is used
    to instrument the runtime itself. It is designed to be fast and to be strongly
    typed (payloads are typed, named properties), and to interface with OS logging
@@ -374,7 +374,7 @@ Note that using reflection is relatively expensive. However, using reflection is
 option if the payloads were generated using anonymous types. You can reduce this overhead by
 making fast, specialized property fetchers either using `PropertyInfo.CreateDelegate` or
 `ReflectEmit`, but that is beyond the scope of this document.
-(See the [PropertySpec](https://github.com/dotnet/runtime/blob/master/src/libraries/System.Diagnostics.DiagnosticSource/src/System/Diagnostics/DiagnosticSourceEventSource.cs#L784)
+(See the [PropertySpec](https://github.com/dotnet/runtime/blob/main/src/libraries/System.Diagnostics.DiagnosticSource/src/System/Diagnostics/DiagnosticSourceEventSource.cs#L784)
 class used in the `DiagnosticSourceEventSource` for an example of a fast, delegate-based property fetcher.)
 
 #### Filtering
@@ -453,5 +453,5 @@ subscribe to any `DiagnosticListener` as well as pluck off particular data items
 Thus code that is using `System.Diagnostics.Tracing.EventListener` or ETW can get at
 any information logged with `DiagnosticSource`.
 
-See [DiagnosticSourceEventSource](https://github.com/dotnet/runtime/blob/master/src/libraries/System.Diagnostics.DiagnosticSource/src/System/Diagnostics/DiagnosticSourceEventSource.cs)
+See [DiagnosticSourceEventSource](https://github.com/dotnet/runtime/blob/main/src/libraries/System.Diagnostics.DiagnosticSource/src/System/Diagnostics/DiagnosticSourceEventSource.cs)
 for more information on how to use it.

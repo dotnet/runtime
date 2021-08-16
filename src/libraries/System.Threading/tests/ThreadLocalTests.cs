@@ -134,7 +134,7 @@ namespace System.Threading.Tests
                 GC.WaitForPendingFinalizers();
                 GC.Collect();
                 return mres.IsSet;
-            }, 5000);
+            }, ThreadTestHelpers.UnexpectedTimeoutMilliseconds);
 
             Assert.True(mres.IsSet);
         }
@@ -329,7 +329,7 @@ namespace System.Threading.Tests
                     GC.WaitForPendingFinalizers();
                     GC.Collect();
                     return mres.IsSet;
-                }, 5000);
+                }, ThreadTestHelpers.UnexpectedTimeoutMilliseconds);
 
                 Assert.True(mres.IsSet, "RunThreadLocalTest8_Values: Expected thread local to release the object and for it to be finalized");
             }
@@ -367,7 +367,7 @@ namespace System.Threading.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
         public static void ValuesGetterDoesNotThrowUnexpectedExceptionWhenDisposed()
         {
@@ -433,6 +433,37 @@ namespace System.Threading.Tests
             }
             waitForCreatorDisposer();
             Assert.False(failed);
+        }
+
+        private enum UniqueEnumUsedOnlyWithNonInterferenceTest { True, False }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        public static void TestUnrelatedThreadLocalDoesNotInterfereWithTrackAllValues()
+        {
+            ThreadLocal<UniqueEnumUsedOnlyWithNonInterferenceTest> localThatDoesNotTrackValues = new ThreadLocal<UniqueEnumUsedOnlyWithNonInterferenceTest>(false);
+            ThreadLocal<UniqueEnumUsedOnlyWithNonInterferenceTest> localThatDoesTrackValues = new ThreadLocal<UniqueEnumUsedOnlyWithNonInterferenceTest>(true);
+
+            for (int i = 0; i < 10; i++)
+            {
+                Thread t = new Thread(Work);
+                t.Start();
+                t.Join();
+            }
+            GC.Collect();
+            GC.WaitForPendingFinalizers();
+            int count = 0;
+            foreach (var x in localThatDoesTrackValues.Values)
+            {
+                if (x == UniqueEnumUsedOnlyWithNonInterferenceTest.True)
+                    count++;
+            }
+
+            Assert.Equal(10, count);
+            void Work()
+            {
+                localThatDoesNotTrackValues.Value = UniqueEnumUsedOnlyWithNonInterferenceTest.True;
+                localThatDoesTrackValues.Value = UniqueEnumUsedOnlyWithNonInterferenceTest.True;
+            }
         }
 
         private class SetMreOnFinalize

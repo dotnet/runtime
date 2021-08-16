@@ -7,7 +7,7 @@ using Xunit;
 
 namespace System.Security.Cryptography.Encryption.TripleDes.Tests
 {
-    [SkipOnMono("Not supported on Browser", TestPlatforms.Browser)]
+    [SkipOnPlatform(TestPlatforms.Browser, "Not supported on Browser")]
     public static class TripleDESContractTests
     {
 
@@ -87,6 +87,25 @@ namespace System.Security.Cryptography.Encryption.TripleDes.Tests
                 using var encryptor = tdes.CreateEncryptor();
                 Assert.NotNull(decryptor);
                 Assert.NotNull(encryptor);
+            }
+        }
+
+        [Fact]
+        public static void Cfb8ModeCanDepadCfb64Padding()
+        {
+            using (TripleDES tdes = TripleDESFactory.Create())
+            {
+                // 1, 2, 3, 4, 5 encrypted with CFB8 but padded with block-size padding.
+                byte[] ciphertext = "97F1CE6A6D869A85".HexToByteArray();
+                tdes.Key = "3D1ECCEE6C99B029950ED23688AA229AF85177421609F7BF".HexToByteArray();
+                tdes.IV = new byte[8];
+                tdes.Padding = PaddingMode.PKCS7;
+                tdes.Mode = CipherMode.CFB;
+                tdes.FeedbackSize = 8;
+
+                using ICryptoTransform transform = tdes.CreateDecryptor();
+                byte[] decrypted = transform.TransformFinalBlock(ciphertext, 0, ciphertext.Length);
+                Assert.Equal(new byte[] { 1, 2, 3, 4, 5 }, decrypted);
             }
         }
     }

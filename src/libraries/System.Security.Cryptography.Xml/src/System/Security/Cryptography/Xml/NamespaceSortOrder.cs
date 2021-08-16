@@ -6,7 +6,7 @@ using System.Collections;
 
 namespace System.Security.Cryptography.Xml
 {
-    internal class NamespaceSortOrder : IComparer
+    internal sealed class NamespaceSortOrder : IComparer
     {
         internal NamespaceSortOrder() { }
 

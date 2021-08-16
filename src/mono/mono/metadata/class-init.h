@@ -16,9 +16,6 @@ mono_class_init_internal (MonoClass *klass);
 void
 mono_classes_init (void);
 
-void
-mono_classes_cleanup (void);
-
 MonoClass *
 mono_class_create_from_typedef (MonoImage *image, guint32 type_token, MonoError *error);
 
@@ -28,10 +25,10 @@ mono_class_create_generic_inst (MonoGenericClass *gclass);
 MonoClass *
 mono_class_create_bounded_array (MonoClass *element_class, uint32_t rank, mono_bool bounded);
 
-MonoClass *
+MONO_COMPONENT_API MonoClass *
 mono_class_create_array (MonoClass *element_class, uint32_t rank);
 
-MonoClass *
+MONO_COMPONENT_API MonoClass *
 mono_class_create_generic_parameter (MonoGenericParam *param);
 
 MonoClass *
@@ -52,7 +49,7 @@ mono_class_setup_basic_field_info (MonoClass *klass);
 void
 mono_class_setup_fields (MonoClass *klass);
 
-void
+MONO_COMPONENT_API void
 mono_class_setup_methods (MonoClass *klass);
 
 void
@@ -67,7 +64,7 @@ mono_class_layout_fields (MonoClass *klass, int base_instance_size, int packing_
 void
 mono_class_setup_interface_offsets (MonoClass *klass);
 
-void
+MONO_COMPONENT_API void
 mono_class_setup_vtable (MonoClass *klass);
 
 void
@@ -82,10 +79,10 @@ mono_class_setup_has_finalizer (MonoClass *klass);
 void
 mono_class_setup_nested_types (MonoClass *klass);
 
-void
-mono_class_setup_runtime_info (MonoClass *klass, MonoDomain *domain, MonoVTable *vtable);
-
 MonoClass *
 mono_class_create_array_fill_type (void);
+
+void
+mono_class_set_runtime_vtable (MonoClass *klass, MonoVTable *vtable);
 
 #endif

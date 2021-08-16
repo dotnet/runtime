@@ -6,9 +6,7 @@ using System.Diagnostics;
 
 namespace System.Formats.Cbor
 {
-    /// <summary>
-    ///   A stateful, forward-only reader for CBOR encoded data.
-    /// </summary>
+    /// <summary>A stateful, forward-only reader for Concise Binary Object Representation (CBOR) encoded data.</summary>
     public partial class CborReader
     {
         private readonly ReadOnlyMemory<byte> _data;
@@ -33,42 +31,28 @@ namespace System.Formats.Cbor
         // keeps a cached copy of the reader state; 'None' denotes uncomputed state
         private CborReaderState _cachedState = CborReaderState.Undefined;
 
-        /// <summary>
-        ///   The conformance mode used by this reader.
-        /// </summary>
+        /// <summary>Gets the conformance mode used by this reader.</summary>
+        /// <value>One of the enumeration values that represents the conformance mode used by this reader.</value>
         public CborConformanceMode ConformanceMode { get; }
 
-        /// <summary>
-        ///   Declares whether this reader allows multiple root-level CBOR data items.
-        /// </summary>
+        /// <summary>Gets a value that indicates whether this reader allows multiple root-level CBOR data items.</summary>
+        /// <value><see langword="true" /> if this reader allows multiple root-level CBOR data items; <see langword="false" /> otherwise.</value>
         public bool AllowMultipleRootLevelValues { get; }
 
-        /// <summary>
-        ///   Gets the reader's current level of nestedness in the CBOR document.
-        /// </summary>
+        /// <summary>Gets the reader's current level of nestedness in the CBOR document.</summary>
+        /// <value>A number that represents the current level of nestedness in the CBOR document.</value>
         public int CurrentDepth => _nestedDataItems is null ? 0 : _nestedDataItems.Count;
 
-        /// <summary>
-        ///   Gets the total number of unread bytes in the buffer.
-        /// </summary>
+        /// <summary>Gets the total number of unread bytes in the buffer.</summary>
+        /// <value>The total number of unread bytes in the buffer.</value>
         public int BytesRemaining => _data.Length - _offset;
 
-        /// <summary>
-        ///   Construct a CborReader instance over <paramref name="data"/> with given configuration.
-        /// </summary>
+        /// <summary>Initializes a <see cref="CborReader" /> instance over the specified <paramref name="data" /> with the given configuration.</summary>
         /// <param name="data">The CBOR encoded data to read.</param>
-        /// <param name="conformanceMode">
-        ///   Specifies a conformance mode guiding the checks performed on the encoded data.
-        ///   Defaults to <see cref="CborConformanceMode.Strict" /> conformance mode.
-        /// </param>
-        /// <param name="allowMultipleRootLevelValues">
-        ///   Specify if multiple root-level values are to be supported by the reader.
-        ///   When set to <see langword="false" />, the reader will throw an <see cref="InvalidOperationException"/>
-        ///   if trying to read beyond the scope of one root-level CBOR data item.
-        /// </param>
-        /// <exception cref="ArgumentOutOfRangeException">
-        ///   <paramref name="conformanceMode"/> is not defined.
-        /// </exception>
+        /// <param name="conformanceMode">One of the enumeration values to specify a conformance mode guiding the checks performed on the encoded data.
+        /// Defaults to <see cref="CborConformanceMode.Strict" /> conformance mode.</param>
+        /// <param name="allowMultipleRootLevelValues"><see langword="true" /> to indicate that multiple root-level values are supported by the reader; otherwise, <see langword="false" />.</param>
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="conformanceMode" /> is not defined.</exception>
         public CborReader(ReadOnlyMemory<byte> data, CborConformanceMode conformanceMode = CborConformanceMode.Strict, bool allowMultipleRootLevelValues = false)
         {
             CborConformanceModeHelpers.Validate(conformanceMode);
@@ -79,19 +63,12 @@ namespace System.Formats.Cbor
             _definiteLength = allowMultipleRootLevelValues ? null : (int?)1;
         }
 
-        /// <summary>
-        ///   Reads the next CBOR data item, returning a <see cref="ReadOnlyMemory{T}"/> view
-        ///   of the encoded value. For indefinite length encodings this includes the break byte.
-        /// </summary>
-        /// <param name="disableConformanceModeChecks">
-        ///   Disable conformance mode validation for the read value,
-        ///   equivalent to using <see cref="CborConformanceMode.Lax"/>.
-        /// </param>
-        /// <returns>A <see cref="ReadOnlyMemory{T}"/> view of the encoded value.</returns>
-        /// <exception cref="CborContentException">
-        ///   The data item is not a valid CBOR data item encoding. -or-
-        ///   The CBOR encoding is not valid under the current conformance mode
-        /// </exception>
+        /// <summary>Reads the next CBOR data item, returning a <see cref="ReadOnlyMemory{T}" /> view of the encoded value. For indefinite length encodings this includes the break byte.</summary>
+        /// <param name="disableConformanceModeChecks"><see langword="true" /> to disable conformance mode validation for the read value, equivalent to using <see cref="CborConformanceMode.Lax" />; otherwise, <see langword="false" />.</param>
+        /// <returns>A view of the encoded value as a contiguous region of memory.</returns>
+        /// <exception cref="CborContentException">The data item is not a valid CBOR data item encoding.
+        /// -or-
+        /// The CBOR encoding is not valid under the current conformance mode.</exception>
         public ReadOnlyMemory<byte> ReadEncodedValue(bool disableConformanceModeChecks = false)
         {
             // keep a snapshot of the current offset

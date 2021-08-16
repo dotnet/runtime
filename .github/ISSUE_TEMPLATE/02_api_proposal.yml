@@ -1,0 +1,66 @@
+name: API Suggestion
+description: Propose a change to the public API surface
+title: "[API Proposal]: "
+labels: [api-suggestion]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        We welcome API proposals! We have a process to evaluate the value and shape of new API. There is an overview of our process [here](https://github.com/dotnet/runtime/blob/main/docs/project/api-review-process.md). This template will help us gather the information we need to start the review process.
+  - type: textarea
+    id: background
+    attributes:
+      label: Background and motivation
+      description: Please describe the purpose and value of the new API here.
+      placeholder: Purpose
+    validations:
+      required: true
+  - type: textarea
+    id: api-proposal
+    attributes:
+      label: API Proposal
+      description: |
+        Please provide the specific public API signature diff that you are proposing.
+
+        You may find the [Framework Design Guidelines](https://github.com/dotnet/runtime/blob/main/docs/coding-guidelines/framework-design-guidelines-digest.md) helpful.
+      placeholder: API declaration (no method bodies)
+      value: |
+        ```C#
+        namespace System.Collections.Generic
+        {
+             public class MyFancyCollection<T> : IEnumerable<T>
+             {
+                  public void Fancy(T item);
+             }
+        }
+        ```     
+    validations:
+      required: true
+  - type: textarea
+    id: api-usage
+    attributes:
+      label: API Usage
+      description: |
+        Please provide code examples that highlight how the proposed API additions are meant to be consumed. This will help suggest whether the API has the right shape to be functional, performant and useable.
+      placeholder: API usage
+      value: |
+        ```C#
+        // Fancy the value
+        var c = new MyFancyCollection<int>();
+        c.Fancy(42);
+
+        // Getting the values out
+        foreach (var v in c)
+            Console.WriteLine(v);
+        ```     
+    validations:
+      required: true
+  - type: textarea
+    id: risks
+    attributes:
+      label: Risks
+      description: |
+        Please mention any risks that to your knowledge the API proposal might entail, such as breaking changes, performance regressions, etc.
+      placeholder: Risks
+    validations:
+      required: false

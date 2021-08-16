@@ -1,10 +1,16 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppCurrent);net461</TargetFrameworks>
   </PropertyGroup>
 
   <ItemGroup>
     <Compile Include="..\src\HostFactoryResolver.cs" />
+    <Compile Include="HostFactoryResolverTests.cs" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetFramework)' != '$(NetCoreAppCurrent)'">
+    <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\DynamicDependencyAttribute.cs" />
+    <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\DynamicallyAccessedMemberTypes.cs" />
   </ItemGroup>
 
   <ItemGroup>
@@ -14,5 +20,16 @@
     <ProjectReference Include="CreateHostBuilderPatternTestSite\CreateHostBuilderPatternTestSite.csproj" />
     <ProjectReference Include="CreateWebHostBuilderInvalidSignature\CreateWebHostBuilderInvalidSignature.csproj" />
     <ProjectReference Include="CreateWebHostBuilderPatternTestSite\CreateWebHostBuilderPatternTestSite.csproj" />
+    <ProjectReference Include="NoSpecialEntryPointPattern\NoSpecialEntryPointPattern.csproj" />
+    <ProjectReference Include="NoSpecialEntryPointPatternBuildsThenThrows\NoSpecialEntryPointPatternBuildsThenThrows.csproj" />
+    <ProjectReference Include="NoSpecialEntryPointPatternThrows\NoSpecialEntryPointPatternThrows.csproj" />
+    <ProjectReference Include="NoSpecialEntryPointPatternExits\NoSpecialEntryPointPatternExits.csproj" />
+    <ProjectReference Include="NoSpecialEntryPointPatternHangs\NoSpecialEntryPointPatternHangs.csproj" />
+    <ProjectReference Include="NoSpecialEntryPointPatternMainNoArgs\NoSpecialEntryPointPatternMainNoArgs.csproj" />
+    <ProjectReference Include="TopLevelStatements\TopLevelStatements.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Extensions.Hosting.Abstractions\src\Microsoft.Extensions.Hosting.Abstractions.csproj" />
   </ItemGroup>
 </Project>

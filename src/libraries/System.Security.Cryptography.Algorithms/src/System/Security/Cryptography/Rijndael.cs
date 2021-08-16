@@ -2,11 +2,13 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.ComponentModel;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.Versioning;
 using Internal.Cryptography;
 
 namespace System.Security.Cryptography
 {
+    [Obsolete(Obsoletions.RijndaelMessage, DiagnosticId = Obsoletions.RijndaelDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
     [EditorBrowsable(EditorBrowsableState.Never)]
     [UnsupportedOSPlatform("browser")]
     public abstract class Rijndael : SymmetricAlgorithm
@@ -16,6 +18,7 @@ namespace System.Security.Cryptography
             return new RijndaelImplementation();
         }
 
+        [RequiresUnreferencedCode(CryptoConfig.CreateFromNameUnreferencedCodeMessage)]
         public static new Rijndael? Create(string algName)
         {
             return (Rijndael?)CryptoConfig.CreateFromName(algName);

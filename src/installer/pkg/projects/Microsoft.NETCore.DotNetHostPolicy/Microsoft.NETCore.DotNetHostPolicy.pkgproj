@@ -2,6 +2,7 @@
 
   <PropertyGroup>
     <VersionProp>HostPolicyVersion</VersionProp>
+    <PackageDescription>Provides a CoreCLR hosting policy implementation -- configuration settings, assembly paths and assembly servicing</PackageDescription>
   </PropertyGroup>
 
   <ItemGroup>

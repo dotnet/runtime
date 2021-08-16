@@ -3,7 +3,7 @@
 
 namespace System.Configuration
 {
-    internal class DeclarationUpdate : Update
+    internal sealed class DeclarationUpdate : Update
     {
         internal DeclarationUpdate(string configKey, bool moved, string updatedXml) : base(configKey, moved, updatedXml) { }
     }

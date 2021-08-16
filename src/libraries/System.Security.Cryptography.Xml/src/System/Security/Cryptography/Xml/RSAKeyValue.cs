@@ -102,7 +102,7 @@ namespace System.Security.Cryptography.Xml
             if (value.LocalName != KeyValueElementName
                 || value.NamespaceURI != SignedXml.XmlDsigNamespaceUrl)
             {
-                throw new CryptographicException($"Root element must be {KeyValueElementName} element in namespace {SignedXml.XmlDsigNamespaceUrl}");
+                throw new CryptographicException(SR.Format(SR.WrongRootElement, KeyValueElementName, SignedXml.XmlDsigNamespaceUrl));
             }
 
             const string xmlDsigNamespacePrefix = "dsig";
@@ -112,7 +112,7 @@ namespace System.Security.Cryptography.Xml
             XmlNode rsaKeyValueElement = value.SelectSingleNode($"{xmlDsigNamespacePrefix}:{RSAKeyValueElementName}", xmlNamespaceManager);
             if (rsaKeyValueElement == null)
             {
-                throw new CryptographicException($"{KeyValueElementName} must contain child element {RSAKeyValueElementName}");
+                throw new CryptographicException(SR.Format(SR.MustContainChildElement, KeyValueElementName, RSAKeyValueElementName));
             }
 
             try

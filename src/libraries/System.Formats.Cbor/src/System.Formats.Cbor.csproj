@@ -1,12 +1,16 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFrameworks>net5.0;$(NetCoreAppCurrent)</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent);net5.0</TargetFrameworks>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <ExcludeCurrentNetCoreAppFromPackage>true</ExcludeCurrentNetCoreAppFromPackage>
     <Nullable>enable</Nullable>
+    <IsPackable>true</IsPackable>
+    <PackageDescription>Provides classes that can read and write the CBOR data format.
+
+Commonly Used Types:
+System.Formats.Cbor.CborReader
+System.Formats.Cbor.CborWriter</PackageDescription>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="$(CommonPath)System\Marvin.cs" Link="Common\System\Marvin.cs" />
     <Compile Include="$(CommonPath)System\Memory\PointerMemoryManager.cs" Link="Common\System\Memory\PointerMemoryManager.cs" />
     <Compile Include="System\Formats\Cbor\HalfHelpers.cs" />
     <Compile Include="System\Formats\Cbor\Reader\CborReaderState.cs" />
@@ -33,14 +37,14 @@
   </ItemGroup>
   <ItemGroup>
     <Reference Include="System" />
-    <Reference Include="System.Collections" />
     <Reference Include="System.Buffers" />
+    <Reference Include="System.Collections" />
     <Reference Include="System.Memory" />
     <Reference Include="System.Runtime" />
     <Reference Include="System.Runtime.CompilerServices.Unsafe" />
     <Reference Include="System.Runtime.Numerics" />
     <Reference Include="System.Security.Cryptography.Algorithms" />
-    <Reference Include="System.Threading" />
     <Reference Include="System.Text.Encoding.Extensions" />
+    <Reference Include="System.Threading" />
   </ItemGroup>
 </Project>

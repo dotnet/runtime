@@ -11,7 +11,7 @@ using System.Text.RegularExpressions;
 
 namespace System.DirectoryServices.AccountManagement
 {
-    internal class SAMQuerySet : ResultSet
+    internal sealed class SAMQuerySet : ResultSet
     {
         // We will iterate over all principals under ctxBase, returning only those which are in the list of types and which
         // satisfy ALL the matching properties.
@@ -202,7 +202,7 @@ namespace System.DirectoryServices.AccountManagement
     // The matcher routines for query-by-example support
     //
 
-    internal class QbeMatcher : SAMMatcher
+    internal sealed class QbeMatcher : SAMMatcher
     {
         private readonly QbeFilterDescription _propertiesToMatch;
 
@@ -314,7 +314,7 @@ namespace System.DirectoryServices.AccountManagement
 
         private static readonly Hashtable s_filterPropertiesTable = CreateFilterPropertiesTable();
 
-        private class FilterPropertyTableEntry
+        private sealed class FilterPropertyTableEntry
         {
             internal string winNTPropertyName;
             internal MatcherDelegate matcher;
@@ -666,7 +666,7 @@ namespace System.DirectoryServices.AccountManagement
     // The matcher routines for FindBy* support
     //
 
-    internal class FindByDateMatcher : SAMMatcher
+    internal sealed class FindByDateMatcher : SAMMatcher
     {
         internal enum DateProperty
         {
@@ -804,7 +804,7 @@ namespace System.DirectoryServices.AccountManagement
         }
     }
 
-    internal class GroupMemberMatcher : SAMMatcher
+    internal sealed class GroupMemberMatcher : SAMMatcher
     {
         private readonly byte[] _memberSidToMatch;
 

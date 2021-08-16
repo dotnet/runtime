@@ -378,12 +378,12 @@ namespace System
         private static void ThrowUInt64OverflowException() { throw new OverflowException(SR.Overflow_UInt64); }
 
         // Conversions to Boolean
-        public static bool ToBoolean(object? value)
+        public static bool ToBoolean([NotNullWhen(true)] object? value)
         {
             return value == null ? false : ((IConvertible)value).ToBoolean(null);
         }
 
-        public static bool ToBoolean(object? value, IFormatProvider? provider)
+        public static bool ToBoolean([NotNullWhen(true)] object? value, IFormatProvider? provider)
         {
             return value == null ? false : ((IConvertible)value).ToBoolean(provider);
         }
@@ -444,14 +444,14 @@ namespace System
             return value != 0;
         }
 
-        public static bool ToBoolean(string? value)
+        public static bool ToBoolean([NotNullWhen(true)] string? value)
         {
             if (value == null)
                 return false;
             return bool.Parse(value);
         }
 
-        public static bool ToBoolean(string? value, IFormatProvider? provider)
+        public static bool ToBoolean([NotNullWhen(true)] string? value, IFormatProvider? provider)
         {
             if (value == null)
                 return false;
@@ -2527,16 +2527,16 @@ namespace System
 
         private static int ToBase64_CalculateAndValidateOutputLength(int inputLength, bool insertLineBreaks)
         {
-            long outlen = ((long)inputLength) / 3 * 4;          // the base length - we want integer division here.
-            outlen += ((inputLength % 3) != 0) ? 4 : 0;         // at most 4 more chars for the remainder
+            // the base length - we want integer division here, at most 4 more chars for the remainder
+            long outlen = ((long)inputLength + 2) / 3 * 4;
 
             if (outlen == 0)
                 return 0;
 
             if (insertLineBreaks)
             {
-                long newLines = outlen / base64LineBreakPosition;
-                if ((outlen % base64LineBreakPosition) == 0)
+                (long newLines, long remainder) = Math.DivRem(outlen, base64LineBreakPosition);
+                if (remainder == 0)
                 {
                     --newLines;
                 }

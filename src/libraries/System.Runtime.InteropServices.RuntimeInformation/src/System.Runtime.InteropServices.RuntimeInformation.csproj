@@ -40,6 +40,7 @@
   <ItemGroup>
     <Reference Include="System.Reflection" />
     <Reference Include="System.Reflection.Extensions" />
+    <Reference Include="System.Memory" />
     <Reference Include="System.Runtime" />
     <Reference Include="System.Runtime.InteropServices" />
     <Reference Include="System.Threading" />

@@ -142,7 +142,6 @@
 #define MONO_ARCH_HAVE_EXCEPTIONS_INIT                      (1)
 #define MONO_ARCH_HAVE_GET_TRAMPOLINES                      (1)
 #define MONO_ARCH_HAVE_OPCODE_NEEDS_EMULATION               (1)
-#define MONO_ARCH_HAVE_PATCH_CODE_NEW                       (1)
 #define MONO_ARCH_HAVE_SETUP_ASYNC_CALLBACK                 (1)
 #define MONO_ARCH_HAVE_SETUP_RESUME_FROM_SIGNAL_HANDLER_CTX (1)
 

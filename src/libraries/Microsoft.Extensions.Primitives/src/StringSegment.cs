@@ -76,28 +76,12 @@ namespace Microsoft.Extensions.Primitives
         /// <summary>
         /// Gets the value of this segment as a <see cref="string"/>.
         /// </summary>
-        public string Value
-        {
-            get
-            {
-                if (HasValue)
-                {
-                    return Buffer.Substring(Offset, Length);
-                }
-                else
-                {
-                    return null;
-                }
-            }
-        }
+        public string Value => HasValue ? Buffer.Substring(Offset, Length) : null;
 
         /// <summary>
         /// Gets whether this <see cref="StringSegment"/> contains a valid value.
         /// </summary>
-        public bool HasValue
-        {
-            get { return Buffer != null; }
-        }
+        public bool HasValue => Buffer != null;
 
         /// <summary>
         /// Gets the <see cref="char"/> at a specified position in the current <see cref="StringSegment"/>.
@@ -127,6 +111,48 @@ namespace Microsoft.Extensions.Primitives
         public ReadOnlySpan<char> AsSpan() => Buffer.AsSpan(Offset, Length);
 
         /// <summary>
+        /// Gets a <see cref="ReadOnlySpan{T}"/> from the current <see cref="StringSegment"/> that starts
+        /// at the position specified by <paramref name="start"/>, and has the remaining length.
+        /// </summary>
+        /// <param name="start">The zero-based starting character position in this <see cref="StringSegment"/>.</param>
+        /// <returns>A <see cref="ReadOnlySpan{T}"/> with the remaining chars that begins at <paramref name="start"/> in
+        /// this <see cref="StringSegment"/>.</returns>
+        /// <exception cref="ArgumentOutOfRangeException">
+        /// <paramref name="start"/> is greater than or equal to <see cref="Length"/> or less than zero.
+        /// </exception>
+        public ReadOnlySpan<char> AsSpan(int start)
+        {
+            if (!HasValue || start < 0)
+            {
+                ThrowInvalidArguments(start, Length - start, ExceptionArgument.start);
+            }
+
+            return Buffer.AsSpan(Offset + start, Length - start);
+        }
+
+        /// <summary>
+        /// Gets a <see cref="ReadOnlySpan{T}"/> from the current <see cref="StringSegment"/> that starts
+        /// at the position specified by <paramref name="start"/>, and has the specified <paramref name="length"/>.
+        /// </summary>
+        /// <param name="start">The zero-based starting character position in this <see cref="StringSegment"/>.</param>
+        /// <param name="length">The number of characters in the span.</param>
+        /// <returns>A <see cref="ReadOnlySpan{T}"/> with length <paramref name="length"/> that begins at
+        /// <paramref name="start"/> in this <see cref="StringSegment"/>.</returns>
+        /// <exception cref="ArgumentOutOfRangeException">
+        /// <paramref name="start"/> or <paramref name="length"/> is less than zero, or <paramref name="start"/> + <paramref name="length"/> is
+        /// greater than <see cref="Length"/>.
+        /// </exception>
+        public ReadOnlySpan<char> AsSpan(int start, int length)
+        {
+            if (!HasValue || start < 0 || length < 0 || (uint)(start + length) > (uint)Length)
+            {
+                ThrowInvalidArguments(start, length, ExceptionArgument.start);
+            }
+
+            return Buffer.AsSpan(Offset + start, length);
+        }
+
+        /// <summary>
         /// Gets a <see cref="ReadOnlyMemory{T}"/> from the current <see cref="StringSegment"/>.
         /// </summary>
         /// <returns>The <see cref="ReadOnlyMemory{T}"/> from this <see cref="StringSegment"/>.</returns>
@@ -146,24 +172,24 @@ namespace Microsoft.Extensions.Primitives
         /// </returns>
         public static int Compare(StringSegment a, StringSegment b, StringComparison comparisonType)
         {
-            int minLength = Math.Min(a.Length, b.Length);
-            int diff = string.Compare(a.Buffer, a.Offset, b.Buffer, b.Offset, minLength, comparisonType);
-            if (diff == 0)
+            if (a.HasValue && b.HasValue)
             {
-                diff = a.Length - b.Length;
+                return a.AsSpan().CompareTo(b.AsSpan(), comparisonType);
             }
-
-            return diff;
+            else
+            {
+                CheckStringComparison(comparisonType); // must arg check before returning
+                return !a.HasValue ? (b.HasValue ? -1 : 0) : 1; // null sorts less than non-null, and two nulls sort as equal
+            }
         }
 
-        /// <inheritdoc />
+        /// <summary>
+        /// Indicates whether the current object is equal to another object of the same type.
+        /// </summary>
+        /// <param name="obj">An object to compare with this object.</param>
+        /// <returns><see langword="true" /> if the current object is equal to the other parameter; otherwise, <see langword="false" />.</returns>
         public override bool Equals(object obj)
         {
-            if (obj is null)
-            {
-                return false;
-            }
-
             return obj is StringSegment segment && Equals(segment);
         }
 
@@ -182,12 +208,15 @@ namespace Microsoft.Extensions.Primitives
         /// <returns><see langword="true" /> if the current object is equal to the other parameter; otherwise, <see langword="false" />.</returns>
         public bool Equals(StringSegment other, StringComparison comparisonType)
         {
-            if (Length != other.Length)
+            if (HasValue && other.HasValue)
             {
-                return false;
+                return AsSpan().Equals(other.AsSpan(), comparisonType);
             }
-
-            return string.Compare(Buffer, Offset, other.Buffer, other.Offset, other.Length, comparisonType) == 0;
+            else
+            {
+                CheckStringComparison(comparisonType); // must arg check before returning
+                return !HasValue && !other.HasValue; // only return true if both are null
+            }
         }
 
         // This handles StringSegment.Equals(string, StringSegment, StringComparison) and StringSegment.Equals(StringSegment, string, StringComparison)
@@ -232,20 +261,25 @@ namespace Microsoft.Extensions.Primitives
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.text);
             }
 
-            int textLength = text.Length;
-            if (!HasValue || Length != textLength)
+            if (!HasValue)
             {
+                CheckStringComparison(comparisonType); // must arg check before returning
                 return false;
             }
 
-            return string.Compare(Buffer, Offset, text, 0, textLength, comparisonType) == 0;
+            return AsSpan().Equals(text.AsSpan(), comparisonType);
         }
 
-        /// <inheritdoc />
+        /// <summary>
+        /// Returns a hash code for this instance.
+        /// </summary>
+        /// <returns>
+        /// A hash code for this instance, suitable for use in hashing algorithms and data structures like a hash table.
+        /// </returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public override int GetHashCode()
         {
-#if NETCOREAPP || NETSTANDARD2_1
+#if NETCOREAPP
             return string.GetHashCode(AsSpan());
 #elif (NETSTANDARD2_0 || NETFRAMEWORK)
             // This GetHashCode is expensive since it allocates on every call.
@@ -255,7 +289,6 @@ namespace Microsoft.Extensions.Primitives
 #else
 #error Target frameworks need to be updated.
 #endif
-
         }
 
         /// <summary>
@@ -310,15 +343,13 @@ namespace Microsoft.Extensions.Primitives
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.text);
             }
 
-            bool result = false;
-            int textLength = text.Length;
-
-            if (HasValue && Length >= textLength)
+            if (!HasValue)
             {
-                result = string.Compare(Buffer, Offset, text, 0, textLength, comparisonType) == 0;
+                CheckStringComparison(comparisonType); // must arg check before returning
+                return false;
             }
 
-            return result;
+            return AsSpan().StartsWith(text.AsSpan(), comparisonType);
         }
 
         /// <summary>
@@ -338,16 +369,13 @@ namespace Microsoft.Extensions.Primitives
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.text);
             }
 
-            bool result = false;
-            int textLength = text.Length;
-            int comparisonLength = Offset + Length - textLength;
-
-            if (HasValue && comparisonLength > 0)
+            if (!HasValue)
             {
-                result = string.Compare(Buffer, comparisonLength, text, 0, textLength, comparisonType) == 0;
+                CheckStringComparison(comparisonType); // must arg check before returning
+                return false;
             }
 
-            return result;
+            return AsSpan().EndsWith(text.AsSpan(), comparisonType);
         }
 
         /// <summary>
@@ -379,7 +407,7 @@ namespace Microsoft.Extensions.Primitives
         {
             if (!HasValue || offset < 0 || length < 0 || (uint)(offset + length) > (uint)Length)
             {
-                ThrowInvalidArguments(offset, length);
+                ThrowInvalidArguments(offset, length, ExceptionArgument.offset);
             }
 
             return Buffer.Substring(Offset + offset, length);
@@ -412,7 +440,7 @@ namespace Microsoft.Extensions.Primitives
         {
             if (!HasValue || offset < 0 || length < 0 || (uint)(offset + length) > (uint)Length)
             {
-                ThrowInvalidArguments(offset, length);
+                ThrowInvalidArguments(offset, length, ExceptionArgument.offset);
             }
 
             return new StringSegment(Buffer, Offset + offset, length);
@@ -433,22 +461,25 @@ namespace Microsoft.Extensions.Primitives
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public int IndexOf(char c, int start, int count)
         {
-            int offset = Offset + start;
+            int index = -1;
 
-            if (!HasValue || start < 0 || (uint)offset > (uint)Buffer.Length)
+            if (HasValue)
             {
-                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.start);
-            }
+                if ((uint)start > (uint)Length)
+                {
+                    ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.start);
+                }
 
-            if (count < 0)
-            {
-                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.count);
-            }
+                if ((uint)count > (uint)(Length - start))
+                {
+                    ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.count);
+                }
 
-            int index = Buffer.IndexOf(c, offset, count);
-            if (index != -1)
-            {
-                index -= Offset;
+                index = AsSpan(start, count).IndexOf(c);
+                if (index >= 0)
+                {
+                    index += start;
+                }
             }
 
             return index;
@@ -497,12 +528,12 @@ namespace Microsoft.Extensions.Primitives
 
             if (HasValue)
             {
-                if (startIndex < 0 || Offset + startIndex > Buffer.Length)
+                if ((uint)startIndex > (uint)Length)
                 {
                     ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.start);
                 }
 
-                if (count < 0 || Offset + startIndex + count > Buffer.Length)
+                if ((uint)count > (uint)(Length - startIndex))
                 {
                     ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.count);
                 }
@@ -552,18 +583,7 @@ namespace Microsoft.Extensions.Primitives
         /// <returns>The zero-based index position of value if that character is found, or -1 if it is not.</returns>
         public int LastIndexOf(char value)
         {
-            int index = -1;
-
-            if (HasValue)
-            {
-                index = Buffer.LastIndexOf(value, Offset + Length - 1, Length);
-                if (index != -1)
-                {
-                    index -= Offset;
-                }
-            }
-
-            return index;
+            return AsSpan().LastIndexOf(value);
         }
 
         /// <summary>
@@ -576,54 +596,40 @@ namespace Microsoft.Extensions.Primitives
         /// Removes all leading whitespaces.
         /// </summary>
         /// <returns>The trimmed <see cref="StringSegment"/>.</returns>
-        public unsafe StringSegment TrimStart()
+        public StringSegment TrimStart()
         {
-            int trimmedStart = Offset;
-            int length = Offset + Length;
+            ReadOnlySpan<char> span = AsSpan();
 
-            fixed (char* p = Buffer)
+            int i;
+            for (i = 0; i < span.Length; i++)
             {
-                while (trimmedStart < length)
+                if (!char.IsWhiteSpace(span[i]))
                 {
-                    char c = p[trimmedStart];
-
-                    if (!char.IsWhiteSpace(c))
-                    {
-                        break;
-                    }
-
-                    trimmedStart++;
+                    break;
                 }
             }
 
-            return new StringSegment(Buffer, trimmedStart, length - trimmedStart);
+            return Subsegment(i);
         }
 
         /// <summary>
         /// Removes all trailing whitespaces.
         /// </summary>
         /// <returns>The trimmed <see cref="StringSegment"/>.</returns>
-        public unsafe StringSegment TrimEnd()
+        public StringSegment TrimEnd()
         {
-            int offset = Offset;
-            int trimmedEnd = offset + Length - 1;
+            ReadOnlySpan<char> span = AsSpan();
 
-            fixed (char* p = Buffer)
+            int i;
+            for (i = span.Length - 1; i >= 0; i--)
             {
-                while (trimmedEnd >= offset)
+                if (!char.IsWhiteSpace(span[i]))
                 {
-                    char c = p[trimmedEnd];
-
-                    if (!char.IsWhiteSpace(c))
-                    {
-                        break;
-                    }
-
-                    trimmedEnd--;
+                    break;
                 }
             }
 
-            return new StringSegment(Buffer, offset, trimmedEnd - offset + 1);
+            return Subsegment(0, i + 1);
         }
 
         /// <summary>
@@ -664,6 +670,15 @@ namespace Microsoft.Extensions.Primitives
             return Value ?? string.Empty;
         }
 
+        private static void CheckStringComparison(StringComparison comparisonType)
+        {
+            // Single comparison to check if comparisonType is within [CurrentCulture .. OrdinalIgnoreCase]
+            if ((uint)comparisonType > (uint)StringComparison.OrdinalIgnoreCase)
+            {
+                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.comparisonType);
+            }
+        }
+
         // Methods that do no return (i.e. throw) are not inlined
         // https://github.com/dotnet/coreclr/pull/6103
         private static void ThrowInvalidArguments(string buffer, int offset, int length)
@@ -692,7 +707,7 @@ namespace Microsoft.Extensions.Primitives
             }
         }
 
-        private void ThrowInvalidArguments(int offset, int length)
+        private void ThrowInvalidArguments(int offset, int length, ExceptionArgument offsetOrStart)
         {
             throw GetInvalidArgumentsException(HasValue);
 
@@ -700,12 +715,12 @@ namespace Microsoft.Extensions.Primitives
             {
                 if (!hasValue)
                 {
-                    return ThrowHelper.GetArgumentOutOfRangeException(ExceptionArgument.offset);
+                    return ThrowHelper.GetArgumentOutOfRangeException(offsetOrStart);
                 }
 
                 if (offset < 0)
                 {
-                    return ThrowHelper.GetArgumentOutOfRangeException(ExceptionArgument.offset);
+                    return ThrowHelper.GetArgumentOutOfRangeException(offsetOrStart);
                 }
 
                 if (length < 0)
@@ -715,6 +730,15 @@ namespace Microsoft.Extensions.Primitives
 
                 return ThrowHelper.GetArgumentException(ExceptionResource.Argument_InvalidOffsetLengthStringSegment);
             }
+        }
+
+        /// <inheritdoc />
+        bool IEquatable<string>.Equals(string other)
+        {
+            // Explicit interface implementation for IEquatable<string> because
+            // the interface's Equals method allows null strings, which we return
+            // as not-equal.
+            return other != null && Equals(other);
         }
     }
 }

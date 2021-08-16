@@ -5,9 +5,9 @@ using Microsoft.Win32.SafeHandles;
 using System.IO;
 using System.Runtime.InteropServices;
 
-internal partial class Interop
+internal static partial class Interop
 {
-    internal partial class Kernel32
+    internal static partial class Kernel32
     {
         private const uint MOVEFILE_REPLACE_EXISTING = 0x01;
         private const uint MOVEFILE_COPY_ALLOWED = 0x02;
