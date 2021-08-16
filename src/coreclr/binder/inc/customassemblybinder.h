@@ -13,7 +13,7 @@
 class AssemblyLoaderAllocator;
 class PEImage;
 
-class CLRPrivBinderAssemblyLoadContext : public AssemblyLoadContext
+class CustomAssemblyBinder : public AssemblyLoadContext
 {
 public:
 
@@ -34,13 +34,13 @@ public:
     // Class functions
     //-------------------------------------------------------------------------
 
-    CLRPrivBinderAssemblyLoadContext();
+    CustomAssemblyBinder();
 
     static HRESULT SetupContext(DefaultAssemblyBinder *pTPABinder,
                                 AssemblyLoaderAllocator* pLoaderAllocator,
                                 void* loaderAllocatorHandle,
                                 UINT_PTR ptrAssemblyLoadContext,
-                                CLRPrivBinderAssemblyLoadContext **ppBindContext);
+                                CustomAssemblyBinder **ppBindContext);
 
     void PrepareForLoadContextRelease(INT_PTR ptrManagedStrongAssemblyLoadContext);
     void ReleaseLoadContext();

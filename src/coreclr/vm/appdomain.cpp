@@ -5305,7 +5305,7 @@ HRESULT RuntimeInvokeHostAssemblyResolver(INT_PTR pManagedAssemblyLoadContextToB
     {
         if (pTPABinder != NULL)
         {
-            // Step 2 (of CLRPrivBinderAssemblyLoadContext::BindAssemblyByName) - Invoke Load method
+            // Step 2 (of CustomAssemblyBinder::BindAssemblyByName) - Invoke Load method
             // This is not invoked for TPA Binder since it always returns NULL.
             tracer.GoToStage(BinderTracing::ResolutionAttemptedOperation::Stage::AssemblyLoadContextLoad);
 
@@ -5328,7 +5328,7 @@ HRESULT RuntimeInvokeHostAssemblyResolver(INT_PTR pManagedAssemblyLoadContextToB
 
             hr = fResolvedAssembly ? S_OK : COR_E_FILENOTFOUND;
 
-            // Step 3 (of CLRPrivBinderAssemblyLoadContext::BindAssemblyByName)
+            // Step 3 (of CustomAssemblyBinder::BindAssemblyByName)
             if (!fResolvedAssembly && !isSatelliteAssemblyRequest)
             {
                 tracer.GoToStage(BinderTracing::ResolutionAttemptedOperation::Stage::DefaultAssemblyLoadContextFallback);
@@ -5351,7 +5351,7 @@ HRESULT RuntimeInvokeHostAssemblyResolver(INT_PTR pManagedAssemblyLoadContextToB
 
         if (!fResolvedAssembly && isSatelliteAssemblyRequest)
         {
-            // Step 4 (of CLRPrivBinderAssemblyLoadContext::BindAssemblyByName)
+            // Step 4 (of CustomAssemblyBinder::BindAssemblyByName)
             //
             // Attempt to resolve it using the ResolveSatelliteAssembly method.
             // Finally, setup arguments for invocation
@@ -5379,7 +5379,7 @@ HRESULT RuntimeInvokeHostAssemblyResolver(INT_PTR pManagedAssemblyLoadContextToB
 
         if (!fResolvedAssembly)
         {
-            // Step 5 (of CLRPrivBinderAssemblyLoadContext::BindAssemblyByName)
+            // Step 5 (of CustomAssemblyBinder::BindAssemblyByName)
             //
             // If we couldn't resolve the assembly using TPA LoadContext as well, then
             // attempt to resolve it using the Resolving event.

@@ -4,16 +4,16 @@
 #include "common.h"
 #include "assemblybindercommon.hpp"
 #include "defaultassemblybinder.h"
-#include "clrprivbinderassemblyloadcontext.h"
+#include "customassemblybinder.h"
 
 #if !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
 
 using namespace BINDER_SPACE;
 
 // ============================================================================
-// CLRPrivBinderAssemblyLoadContext implementation
+// CustomAssemblyBinder implementation
 // ============================================================================
-HRESULT CLRPrivBinderAssemblyLoadContext::BindAssemblyByNameWorker(BINDER_SPACE::AssemblyName *pAssemblyName,
+HRESULT CustomAssemblyBinder::BindAssemblyByNameWorker(BINDER_SPACE::AssemblyName *pAssemblyName,
                                                                    BINDER_SPACE::Assembly **ppCoreCLRFoundAssembly)
 {
     VALIDATE_ARG_RET(pAssemblyName != nullptr && ppCoreCLRFoundAssembly != nullptr);
@@ -42,7 +42,7 @@ HRESULT CLRPrivBinderAssemblyLoadContext::BindAssemblyByNameWorker(BINDER_SPACE:
     return hr;
 }
 
-HRESULT CLRPrivBinderAssemblyLoadContext::BindUsingAssemblyName(BINDER_SPACE::AssemblyName* pAssemblyName,
+HRESULT CustomAssemblyBinder::BindUsingAssemblyName(BINDER_SPACE::AssemblyName* pAssemblyName,
     BINDER_SPACE::Assembly** ppAssembly)
 {
     // When LoadContext needs to resolve an assembly reference, it will go through the following lookup order:
@@ -104,7 +104,7 @@ Exit:;
     return hr;
 }
 
-HRESULT CLRPrivBinderAssemblyLoadContext::BindUsingPEImage( /* in */ PEImage *pPEImage,
+HRESULT CustomAssemblyBinder::BindUsingPEImage( /* in */ PEImage *pPEImage,
                                                             /* in */ BOOL fIsNativeImage,
                                                             /* [retval][out] */ BINDER_SPACE::Assembly **ppAssembly)
 {
@@ -156,7 +156,7 @@ Exit:;
     return hr;
 }
 
-AssemblyLoaderAllocator* CLRPrivBinderAssemblyLoadContext::GetLoaderAllocator()
+AssemblyLoaderAllocator* CustomAssemblyBinder::GetLoaderAllocator()
 {
     return m_pAssemblyLoaderAllocator;
 }
@@ -168,20 +168,20 @@ AssemblyLoaderAllocator* CLRPrivBinderAssemblyLoadContext::GetLoaderAllocator()
 // managed AssemblyLoadContext type.
 //=============================================================================
 /* static */
-HRESULT CLRPrivBinderAssemblyLoadContext::SetupContext(DefaultAssemblyBinder *pTPABinder,
+HRESULT CustomAssemblyBinder::SetupContext(DefaultAssemblyBinder *pTPABinder,
                                                        AssemblyLoaderAllocator* pLoaderAllocator,
                                                        void* loaderAllocatorHandle,
                                                        UINT_PTR ptrAssemblyLoadContext,
-                                                       CLRPrivBinderAssemblyLoadContext **ppBindContext)
+                                                       CustomAssemblyBinder **ppBindContext)
 {
     HRESULT hr = E_FAIL;
     EX_TRY
     {
         if(ppBindContext != NULL)
         {
-            NewHolder<CLRPrivBinderAssemblyLoadContext> pBinder;
+            NewHolder<CustomAssemblyBinder> pBinder;
 
-            SAFE_NEW(pBinder, CLRPrivBinderAssemblyLoadContext);
+            SAFE_NEW(pBinder, CustomAssemblyBinder);
             hr = pBinder->GetAppContext()->Init();
             if(SUCCEEDED(hr))
             {
@@ -218,7 +218,7 @@ Exit:
     return hr;
 }
 
-void CLRPrivBinderAssemblyLoadContext::PrepareForLoadContextRelease(INT_PTR ptrManagedStrongAssemblyLoadContext)
+void CustomAssemblyBinder::PrepareForLoadContextRelease(INT_PTR ptrManagedStrongAssemblyLoadContext)
 {
     CONTRACTL
     {
@@ -229,7 +229,7 @@ void CLRPrivBinderAssemblyLoadContext::PrepareForLoadContextRelease(INT_PTR ptrM
     CONTRACTL_END;
 
     // Add a strong handle so that the managed assembly load context stays alive until the
-    // CLRPrivBinderAssemblyLoadContext::ReleaseLoadContext is called.
+    // CustomAssemblyBinder::ReleaseLoadContext is called.
     // We keep the weak handle as well since this method can be running on one thread (e.g. the finalizer one)
     // and other thread can be using the weak handle.
     m_ptrManagedStrongAssemblyLoadContext = ptrManagedStrongAssemblyLoadContext;
@@ -248,13 +248,13 @@ void CLRPrivBinderAssemblyLoadContext::PrepareForLoadContextRelease(INT_PTR ptrM
     m_loaderAllocatorHandle = NULL;
 }
 
-CLRPrivBinderAssemblyLoadContext::CLRPrivBinderAssemblyLoadContext()
+CustomAssemblyBinder::CustomAssemblyBinder()
 {
     m_pTPABinder = NULL;
     m_ptrManagedStrongAssemblyLoadContext = NULL;
 }
 
-void CLRPrivBinderAssemblyLoadContext::ReleaseLoadContext()
+void CustomAssemblyBinder::ReleaseLoadContext()
 {
     VERIFY(m_ptrManagedAssemblyLoadContext != NULL);
     VERIFY(m_ptrManagedStrongAssemblyLoadContext != NULL);

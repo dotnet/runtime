@@ -124,7 +124,7 @@ namespace
 #ifdef CROSSGEN_COMPILE
             GetAssemblyLoadContextNameFromManagedALC(0, alcName);
 #else // CROSSGEN_COMPILE
-            CLRPrivBinderAssemblyLoadContext* alcBinder = static_cast<CLRPrivBinderAssemblyLoadContext*>(bindContext);
+            CustomAssemblyBinder* alcBinder = static_cast<CustomAssemblyBinder*>(bindContext);
 
             GetAssemblyLoadContextNameFromManagedALC(alcBinder->GetManagedAssemblyLoadContext(), alcName);
 #endif // CROSSGEN_COMPILE

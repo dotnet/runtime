@@ -49,13 +49,13 @@ set(BINDER_COMMON_HEADERS
 set(BINDER_SOURCES
     ${BINDER_COMMON_SOURCES}
     activitytracker.cpp
-    clrprivbinderassemblyloadcontext.cpp
+    customassemblybinder.cpp
 )
 
 set(BINDER_HEADERS
     ${BINDER_COMMON_HEADERS}
     inc/activitytracker.h
-    inc/clrprivbinderassemblyloadcontext.h
+    inc/customassemblybinder.h
     inc/contextentry.hpp
 )
 

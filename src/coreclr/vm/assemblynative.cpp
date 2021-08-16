@@ -1208,7 +1208,7 @@ INT_PTR QCALLTYPE AssemblyNative::InitializeAssemblyLoadContext(INT_PTR ptrManag
     if (!fRepresentsTPALoadContext)
     {
         // Initialize a custom Assembly Load Context
-        CLRPrivBinderAssemblyLoadContext *pBindContext = NULL;
+        CustomAssemblyBinder *pBindContext = NULL;
 
         AssemblyLoaderAllocator* loaderAllocator = NULL;
         OBJECTHANDLE loaderAllocatorHandle = NULL;
@@ -1243,7 +1243,7 @@ INT_PTR QCALLTYPE AssemblyNative::InitializeAssemblyLoadContext(INT_PTR ptrManag
             loaderAllocator->ActivateManagedTracking();
         }
 
-        IfFailThrow(CLRPrivBinderAssemblyLoadContext::SetupContext(pTPABinderContext, loaderAllocator, loaderAllocatorHandle, ptrManagedAssemblyLoadContext, &pBindContext));
+        IfFailThrow(CustomAssemblyBinder::SetupContext(pTPABinderContext, loaderAllocator, loaderAllocatorHandle, ptrManagedAssemblyLoadContext, &pBindContext));
         ptrNativeAssemblyLoadContext = reinterpret_cast<INT_PTR>(pBindContext);
     }
     else
@@ -1274,7 +1274,7 @@ void QCALLTYPE AssemblyNative::PrepareForAssemblyLoadContextRelease(INT_PTR ptrN
 
     {
         GCX_COOP();
-        reinterpret_cast<CLRPrivBinderAssemblyLoadContext *>(ptrNativeAssemblyLoadContext)->PrepareForLoadContextRelease(ptrManagedStrongAssemblyLoadContext);
+        reinterpret_cast<CustomAssemblyBinder *>(ptrNativeAssemblyLoadContext)->PrepareForLoadContextRelease(ptrManagedStrongAssemblyLoadContext);
     }
 
     END_QCALL;
@@ -1295,9 +1295,9 @@ INT_PTR QCALLTYPE AssemblyNative::GetLoadContextForAssembly(QCall::AssemblyHandl
 
     if (pAssemblyLoadContext != AppDomain::GetCurrentDomain()->GetTPABinderContext())
     {
-        // Only CLRPrivBinderAssemblyLoadContext instance contains the reference to its
+        // Only CustomAssemblyBinder instance contains the reference to its
         // corresponding managed instance.
-        CLRPrivBinderAssemblyLoadContext* pBinder = (CLRPrivBinderAssemblyLoadContext*)(pAssemblyLoadContext);
+        CustomAssemblyBinder* pBinder = (CustomAssemblyBinder*)(pAssemblyLoadContext);
 
         // Fetch the managed binder reference from the native binder instance
         ptrManagedAssemblyLoadContext = pBinder->GetManagedAssemblyLoadContext();

@@ -22,7 +22,7 @@
 #include "defaultassemblybinder.h"
 
 #if !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
-#include "clrprivbinderassemblyloadcontext.h"
+#include "customassemblybinder.h"
 #endif // !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
 
 #include "bundle.h"
@@ -132,7 +132,7 @@ namespace BINDER_SPACE
         friend class ::DefaultAssemblyBinder;
 
 #if !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
-        friend class ::CLRPrivBinderAssemblyLoadContext;
+        friend class ::CustomAssemblyBinder;
 #endif // !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
     };
 

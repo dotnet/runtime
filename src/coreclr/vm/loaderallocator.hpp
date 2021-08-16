@@ -37,7 +37,7 @@ enum LoaderAllocatorType
 
 typedef SHash<PtrSetSHashTraits<LoaderAllocator *>> LoaderAllocatorSet;
 
-class CLRPrivBinderAssemblyLoadContext;
+class CustomAssemblyBinder;
 
 // Iterator over a DomainAssembly in the same ALC
 class DomainAssemblyIterator
@@ -731,12 +731,12 @@ public:
     virtual void RegisterHandleForCleanup(OBJECTHANDLE objHandle);
     virtual void UnregisterHandleFromCleanup(OBJECTHANDLE objHandle);
     virtual void CleanupHandles();
-    CLRPrivBinderAssemblyLoadContext* GetBinder()
+    CustomAssemblyBinder* GetBinder()
     {
         return m_binderToRelease;
     }
     virtual ~AssemblyLoaderAllocator();
-    void RegisterBinder(CLRPrivBinderAssemblyLoadContext* binderToRelease);
+    void RegisterBinder(CustomAssemblyBinder* binderToRelease);
     virtual void ReleaseManagedAssemblyLoadContext();
 #endif // !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
 
@@ -754,7 +754,7 @@ private:
 
     SList<HandleCleanupListItem> m_handleCleanupList;
 #if !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
-    CLRPrivBinderAssemblyLoadContext* m_binderToRelease;
+    CustomAssemblyBinder* m_binderToRelease;
 #endif
 };
 

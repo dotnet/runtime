@@ -352,7 +352,7 @@ namespace
         GCPROTECT_BEGIN(pUnmanagedDllName);
 
         // Get the pointer to the managed assembly load context
-        INT_PTR ptrManagedAssemblyLoadContext = ((CLRPrivBinderAssemblyLoadContext *)pCurrentBinder)->GetManagedAssemblyLoadContext();
+        INT_PTR ptrManagedAssemblyLoadContext = ((CustomAssemblyBinder *)pCurrentBinder)->GetManagedAssemblyLoadContext();
 
         // Prepare to invoke  System.Runtime.Loader.AssemblyLoadContext.ResolveUnmanagedDll method.
         PREPARE_NONVIRTUAL_CALLSITE(METHOD__ASSEMBLYLOADCONTEXT__RESOLVEUNMANAGEDDLL);
