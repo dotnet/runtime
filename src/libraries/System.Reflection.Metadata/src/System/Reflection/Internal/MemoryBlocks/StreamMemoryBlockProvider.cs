@@ -136,11 +136,11 @@ namespace System.Reflection.Internal
                     {
                         newMemoryMap =
                             MemoryMappedFile.CreateFromFile(
-                                (FileStream)_stream,
-                                null,
-                                0,
-                                MemoryMappedFileAccess.Read,
-                                HandleInheritability.None,
+                                fileStream: (FileStream)_stream,
+                                mapName: null,
+                                capacity: 0,
+                                access: MemoryMappedFileAccess.Read,
+                                inheritability: HandleInheritability.None,
                                 leaveOpen: true);
                     } catch (UnauthorizedAccessException e)
                     {
