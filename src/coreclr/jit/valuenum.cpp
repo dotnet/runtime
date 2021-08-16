@@ -8007,12 +8007,11 @@ void Compiler::fgValueNumberTree(GenTree* tree)
                                         rhsVNPair.SetBoth(vnStore->VNForExpr(compCurBB, lclVarTree->TypeGet()));
                                     }
 
-                                    unsigned     lclDefSsaNum;
+                                    unsigned     lclDefSsaNum = GetSsaNumForLocalVarDef(lclVarTree);
                                     ValueNumPair newLhsVNPair;
                                     if (isEntire)
                                     {
                                         newLhsVNPair = rhsVNPair;
-                                        lclDefSsaNum = lclVarTree->GetSsaNum();
                                     }
                                     else
                                     {
@@ -8021,7 +8020,6 @@ void Compiler::fgValueNumberTree(GenTree* tree)
                                         ValueNumPair oldLhsVNPair = lvaTable[lclVarTree->GetLclNum()]
                                                                         .GetPerSsaData(lclVarTree->GetSsaNum())
                                                                         ->m_vnPair;
-                                        lclDefSsaNum = GetSsaNumForLocalVarDef(lclVarTree);
                                         newLhsVNPair =
                                             vnStore->VNPairApplySelectorsAssign(oldLhsVNPair, fieldSeq, rhsVNPair,
                                                                                 lhs->TypeGet(), compCurBB);
