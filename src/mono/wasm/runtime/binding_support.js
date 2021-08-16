@@ -168,14 +168,14 @@ var BindingSupportLib = {
 			if (typeof globalThis.FinalizationRegistry === "function") {
 				this._js_owned_object_registry = new globalThis.FinalizationRegistry(this._js_owned_object_finalized.bind(this));
 			}
-			if (typeof globalThis.WeakRef !== "function") {
-				// this is trivial WeakRef polyfill, which holds strong refrence, instead of weak one
-				globalThis.WeakRef = function WeakRef(targetObject) {
+			this._weak_ref_ctor = typeof globalThis.WeakRef !== "function"
+				? globalThis.WeakRef
+				// this is trivial WeakRef replacement, which holds strong refrence, instead of weak one, when the browser doesn't support it
+				: function WeakRef(targetObject) {
 					this.deref = () => {
 						return targetObject;
 					}
-				}
-			}
+				};
 		},
 
 		_js_owned_object_finalized: function (gc_handle) {
@@ -197,6 +197,10 @@ var BindingSupportLib = {
 				// TODO: are there race condition consequences ?
 			}
 			return null;
+		},
+
+		_register_js_owned_object: function(gc_handle, js_obj){
+			this._js_owned_object_table.set(gc_handle, new this._weak_ref_ctor(js_obj));
 		},
 
 		_wrap_js_thenable_as_task: function (thenable) {
@@ -296,7 +300,7 @@ var BindingSupportLib = {
 				}
 
 				// register for instance reuse
-				this._js_owned_object_table.set(gc_handle, new WeakRef(result));
+				this._register_js_owned_object(gc_handle, result);
 			}
 
 			return result;
@@ -339,7 +343,7 @@ var BindingSupportLib = {
 
 				// register for instance reuse
 				// NOTE: this would be leaking C# objects when the browser doesn't support FinalizationRegistry/WeakRef
-				this._js_owned_object_table.set(gc_handle, new WeakRef(result));
+				this._register_js_owned_object(gc_handle, result);
 			}
 
 			return result;
@@ -398,7 +402,7 @@ var BindingSupportLib = {
 
 				// register for instance reuse
 				// NOTE: this would be leaking C# objects when the browser doesn't support FinalizationRegistry/WeakRef. Except in case of EventListener where we cleanup after unregistration.
-				this._js_owned_object_table.set(gc_handle, new WeakRef(result));
+				this._register_js_owned_object(gc_handle, result);
 			}
 
 			return result;
