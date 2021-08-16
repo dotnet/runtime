@@ -19,7 +19,7 @@ namespace System.Text.Json
         /// <summary>
         /// The enumerator for resumable async disposables.
         /// </summary>
-        public IAsyncDisposable? AsyncEnumerator;
+        public IAsyncDisposable? AsyncDisposable;
 
         /// <summary>
         /// The current stackframe has suspended serialization due to a pending task,
