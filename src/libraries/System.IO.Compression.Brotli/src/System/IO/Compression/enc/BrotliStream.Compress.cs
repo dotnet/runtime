@@ -23,11 +23,6 @@ namespace System.IO.Compression
         /// <param name="leaveOpen"><see langword="true" /> to leave the stream open after disposing the <see cref="System.IO.Compression.BrotliStream" /> object; otherwise, <see langword="false" />.</param>
         public BrotliStream(Stream stream, CompressionLevel compressionLevel, bool leaveOpen) : this(stream, CompressionMode.Compress, leaveOpen)
         {
-            if ((int)compressionLevel is < BrotliUtils.Quality_Min or > BrotliUtils.Quality_Max)
-            {
-                throw new ArgumentException(SR.ArgumentOutOfRange_Enum, nameof(compressionLevel));
-            }
-
             _encoder.SetQuality(BrotliUtils.GetQualityFromCompressionLevel(compressionLevel));
         }
 
