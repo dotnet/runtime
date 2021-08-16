@@ -53,6 +53,8 @@
     <PackageReference Include="NuGet.ProjectModel" Version="$(RefOnlyNugetProjectModelVersion)" />
   </ItemGroup>
   
+  <Import Project="runtimeGroups.props" />
+  
   <UsingTask TaskName="GenerateRuntimeGraph" AssemblyFile="$(_generateRuntimeGraphTask)"/>
 
   <Target Name="GenerateRuntimeJson" Condition="'$(AdditionalRuntimeIdentifiers)' != ''">
@@ -75,6 +77,5 @@
                           RuntimeDirectedGraph="$(OutputPath)runtime.json.dgml"
                           UpdateRuntimeFiles="$(UpdateRuntimeFiles)" />
   </Target>
-  
-  <Import Project="runtimeGroups.props" />
+
 </Project>
