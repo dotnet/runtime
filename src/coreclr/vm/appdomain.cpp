@@ -65,7 +65,7 @@
 
 #include "../binder/inc/bindertracing.h"
 #include "../binder/inc/clrprivbindercoreclr.h"
-#include "../binder/inc/coreclrbindercommon.h"
+#include "../binder/inc/assemblybindercommon.hpp"
 
 // this file handles string conversion errors for itself
 #undef  MAKE_TRANSLATIONFAILED
@@ -4336,7 +4336,7 @@ CLRPrivBinderCoreCLR *AppDomain::CreateBinderContext()
         GCX_PREEMP();
 
         // Initialize the assembly binder for the default context loads for CoreCLR.
-        IfFailThrow(CCoreCLRBinderHelper::DefaultBinderSetupContext(&m_pTPABinderContext));
+        IfFailThrow(BINDER_SPACE::AssemblyBinderCommon::DefaultBinderSetupContext(&m_pTPABinderContext));
     }
 
     RETURN m_pTPABinderContext;

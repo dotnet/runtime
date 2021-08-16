@@ -21,7 +21,7 @@
 #include "../binder/inc/applicationcontext.hpp"
 
 #include "clrprivbinderutil.h"
-#include "../binder/inc/coreclrbindercommon.h"
+#include "../binder/inc/assemblybindercommon.hpp"
 
 #include "sha1.h"
 
@@ -1921,7 +1921,7 @@ PEAssembly *PEAssembly::DoOpenSystem(IUnknown * pAppCtx)
     ETWOnStartup (FusionBinding_V1, FusionBindingEnd_V1);
     CoreBindResult bindResult;
     ReleaseHolder<BINDER_SPACE::Assembly> pPrivAsm;
-    IfFailThrow(CCoreCLRBinderHelper::BindToSystem(&pPrivAsm, !IsCompilationProcess() || g_fAllowNativeImages));
+    IfFailThrow(BINDER_SPACE::AssemblyBinderCommon::BindToSystem(&pPrivAsm, !IsCompilationProcess() || g_fAllowNativeImages));
     if(pPrivAsm != NULL)
     {
         bindResult.Init(pPrivAsm);

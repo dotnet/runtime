@@ -26,7 +26,7 @@
 #include "../binder/inc/assembly.hpp"
 #include "../binder/inc/assemblyname.hpp"
 
-#include "../binder/inc/coreclrbindercommon.h"
+#include "../binder/inc/assemblybindercommon.hpp"
 #include "../binder/inc/applicationcontext.hpp"
 
 STDAPI BinderAddRefPEImage(PEImage *pPEImage)
@@ -118,7 +118,7 @@ VOID  AssemblySpec::Bind(AppDomain      *pAppDomain,
             tmpString.ConvertToUnicode(sCultureName);
         }
 
-        hr = CCoreCLRBinderHelper::BindToSystemSatellite(sSystemDirectory, sSimpleName, sCultureName, &pPrivAsm);
+        hr = BINDER_SPACE::AssemblyBinderCommon::BindToSystemSatellite(sSystemDirectory, sSimpleName, sCultureName, &pPrivAsm);
     }
     else if (m_wszCodeBase == NULL)
     {
@@ -314,7 +314,7 @@ HRESULT BaseAssemblySpec::ParseName()
             pAppContext = pBinder->GetAppContext();
         }
 
-        hr = CCoreCLRBinderHelper::GetAssemblyIdentity(m_pAssemblyName, pAppContext, pAssemblyIdentity);
+        hr = BINDER_SPACE::AssemblyBinderCommon::GetAssemblyIdentity(m_pAssemblyName, pAppContext, pAssemblyIdentity);
 
         if (FAILED(hr))
         {

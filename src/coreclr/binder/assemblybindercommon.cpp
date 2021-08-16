@@ -11,6 +11,7 @@
 //
 // ============================================================
 
+#include "common.h"
 #include "assemblybindercommon.hpp"
 #include "assemblyname.hpp"
 #include "assembly.hpp"
@@ -346,6 +347,30 @@ namespace BINDER_SPACE
 
         return hr;
     }
+
+#if !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
+    /* static */
+    HRESULT AssemblyBinderCommon::BindToSystem(BINDER_SPACE::Assembly** ppSystemAssembly, bool fBindToNativeImage)
+    {
+        HRESULT hr = S_OK;
+        _ASSERTE(ppSystemAssembly != NULL);
+
+        EX_TRY
+        {
+            ReleaseHolder<BINDER_SPACE::Assembly> pAsm;
+            StackSString systemPath(SystemDomain::System()->SystemDirectory());
+            hr = AssemblyBinderCommon::BindToSystem(systemPath, &pAsm, fBindToNativeImage);
+            if (SUCCEEDED(hr))
+            {
+                _ASSERTE(pAsm != NULL);
+                *ppSystemAssembly = pAsm.Extract();
+            }
+        }
+        EX_CATCH_HRESULT(hr);
+
+        return hr;
+    }
+#endif // !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
 
     /* static */
     HRESULT AssemblyBinderCommon::BindToSystem(SString   &systemDirectory,
@@ -715,8 +740,6 @@ namespace BINDER_SPACE
                                                    AssemblyName        *pAssemblyName,
                                                    ContextEntry       **ppContextEntry)
     {
-        HRESULT hr = S_OK;
-
         _ASSERTE(pApplicationContext != NULL);
         _ASSERTE(pAssemblyName != NULL);
         _ASSERTE(ppContextEntry != NULL);
@@ -1542,6 +1565,73 @@ Exit:
     tracer.TraceBindResult(bindResult, mvidMismatch);
     return hr;
 }
+
+HRESULT AssemblyBinderCommon::DefaultBinderSetupContext(CLRPrivBinderCoreCLR** ppTPABinder)
+{
+    HRESULT hr = S_OK;
+    EX_TRY
+    {
+        if (ppTPABinder != NULL)
+        {
+            NewHolder<CLRPrivBinderCoreCLR> pBinder;
+            SAFE_NEW(pBinder, CLRPrivBinderCoreCLR);
+
+            BINDER_SPACE::ApplicationContext* pApplicationContext = pBinder->GetAppContext();
+            hr = pApplicationContext->Init();
+            if (SUCCEEDED(hr))
+            {
+                pBinder->SetManagedAssemblyLoadContext(NULL);
+                *ppTPABinder = pBinder.Extract();
+            }
+        }
+    }
+    EX_CATCH_HRESULT(hr);
+
+Exit:
+    return hr;
+}
+
+HRESULT AssemblyBinderCommon::GetAssemblyIdentity(LPCSTR     szTextualIdentity,
+    BINDER_SPACE::ApplicationContext* pApplicationContext,
+    NewHolder<AssemblyIdentityUTF8>& assemblyIdentityHolder)
+{
+    HRESULT hr = S_OK;
+    _ASSERTE(szTextualIdentity != NULL);
+
+    EX_TRY
+    {
+        AssemblyIdentityUTF8 * pAssemblyIdentity = NULL;
+        if (pApplicationContext != NULL)
+        {
+            // This returns a cached copy owned by application context
+            hr = pApplicationContext->GetAssemblyIdentity(szTextualIdentity, &pAssemblyIdentity);
+            if (SUCCEEDED(hr))
+            {
+                assemblyIdentityHolder = pAssemblyIdentity;
+                assemblyIdentityHolder.SuppressRelease();
+            }
+        }
+        else
+        {
+            SString sTextualIdentity;
+
+            sTextualIdentity.SetUTF8(szTextualIdentity);
+
+            // This is a private copy
+            pAssemblyIdentity = new AssemblyIdentityUTF8();
+            hr = TextualIdentityParser::Parse(sTextualIdentity, pAssemblyIdentity);
+            if (SUCCEEDED(hr))
+            {
+                pAssemblyIdentity->PopulateUTF8Fields();
+                assemblyIdentityHolder = pAssemblyIdentity;
+            }
+        }
+    }
+    EX_CATCH_HRESULT(hr);
+
+    return hr;
+}
+
 #endif // !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
 };
 

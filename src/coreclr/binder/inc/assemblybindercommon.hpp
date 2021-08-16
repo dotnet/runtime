@@ -25,6 +25,8 @@ class PEImage;
 
 namespace BINDER_SPACE
 {
+    class AssemblyIdentityUTF8;
+
     class AssemblyBinderCommon
     {
     public:
@@ -39,6 +41,8 @@ namespace BINDER_SPACE
                                     /* in */  BOOL                 fExplicitBindToNativeImage,
                                     /* in */  bool                 excludeAppPaths,
                                     /* out */ Assembly           **ppAssembly);
+
+        static HRESULT BindToSystem(BINDER_SPACE::Assembly** ppSystemAssembly, bool fBindToNativeImage);
 
         static HRESULT BindToSystem(/* in */ SString    &systemDirectory,
                                     /* out */ Assembly **ppSystemAssembly,
@@ -71,6 +75,15 @@ namespace BINDER_SPACE
 #endif // !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
 
         static HRESULT TranslatePEToArchitectureType(DWORD  *pdwPAFlags, PEKIND *PeKind);
+
+        static HRESULT DefaultBinderSetupContext(CLRPrivBinderCoreCLR** ppTPABinder);
+
+        // TODO: The call indicates that this can come from a case where
+        // pDomain->GetFusionContext() is null, hence this is static function
+        // which handles a null binder. See if this actually happens
+        static HRESULT GetAssemblyIdentity(LPCSTR     szTextualIdentity,
+            BINDER_SPACE::ApplicationContext* pApplicationContext,
+            NewHolder<BINDER_SPACE::AssemblyIdentityUTF8>& assemblyIdentityHolder);
 
     private:
         static HRESULT BindByName(/* in */  ApplicationContext *pApplicationContext,
