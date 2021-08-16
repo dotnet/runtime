@@ -32,7 +32,7 @@
 #include "slist.h"
 #include "eventtrace.h"
 
-#include "clrprivbinderutil.h"
+#include "assemblybinderutil.h"
 
 // --------------------------------------------------------------------------------
 // Forward declared classes

@@ -2,8 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 
-#ifndef __CLRPRIVBINDERASSEMBLYLOADCONTEXT_H__
-#define __CLRPRIVBINDERASSEMBLYLOADCONTEXT_H__
+#ifndef __CUSTOM_ASSEMBLY_BINDER_H__
+#define __CUSTOM_ASSEMBLY_BINDER_H__
 
 #include "applicationcontext.hpp"
 #include "defaultassemblybinder.h"
@@ -64,4 +64,4 @@ private:
 };
 
 #endif // !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
-#endif // __CLRPRIVBINDERASSEMBLYLOADCONTEXT_H__
+#endif // __CUSTOM_ASSEMBLY_BINDER_H__

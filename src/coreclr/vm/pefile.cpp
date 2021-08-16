@@ -20,7 +20,7 @@
 
 #include "../binder/inc/applicationcontext.hpp"
 
-#include "clrprivbinderutil.h"
+#include "assemblybinderutil.h"
 #include "../binder/inc/assemblybindercommon.hpp"
 
 #include "sha1.h"

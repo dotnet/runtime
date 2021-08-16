@@ -2,8 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 
-#ifndef __CLR_DEFAULT_ASSEMBLY_BINDER_H__
-#define __CLR_DEFAULT_ASSEMBLY_BINDER_H__
+#ifndef __DEFAULT_ASSEMBLY_BINDER_H__
+#define __DEFAULT_ASSEMBLY_BINDER_H__
 
 #include "applicationcontext.hpp"
 #include "assemblyloadcontext.h"
@@ -52,4 +52,4 @@ private:
             bool excludeAppPaths);
 };
 
-#endif // __CLR_PRIV_BINDER_CORECLR_H__
+#endif // __DEFAULT_ASSEMBLY_BINDER_H__
