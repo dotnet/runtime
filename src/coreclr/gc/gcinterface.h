@@ -921,6 +921,8 @@ public:
     // Enables or disables the given keyword or level on the private event provider.
     virtual void ControlPrivateEvents(GCEventKeyword keyword, GCEventLevel level) = 0;
 
+    virtual unsigned int WhichRange(Object* object, uint8_t** ppStart, uint8_t** ppAllocated, uint8_t** ppReserved) = 0;
+
     IGCHeap() {}
     virtual ~IGCHeap() {}
 };

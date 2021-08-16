@@ -5823,7 +5823,12 @@ heap_segment* gc_heap::get_segment_for_uoh (int gen_number, size_t size
                 gc_etw_segment_pinned_object_heap :
                 gc_etw_segment_large_object_heap);
 
-        GCToEEInterface::DiagUpdateGenerationBounds();
+        GCToEEInterface::DiagAddNewRegion(
+                            gen_number,
+                            heap_segment_mem (res),
+                            heap_segment_allocated (res),
+                            heap_segment_reserved (res)
+                        );
 
 #ifndef USE_REGIONS
 #ifdef MULTIPLE_HEAPS
@@ -6683,6 +6688,9 @@ void gc_heap::gc_thread_function ()
 
             if (!should_proceed_with_gc())
             {
+#ifdef USE_REGIONS
+                GCToEEInterface::DiagUpdateGenerationBounds();
+#endif //USE_REGIONS
                 update_collection_counts_for_no_gc();
                 proceed_with_gc_p = FALSE;
             }
@@ -43165,6 +43173,71 @@ unsigned int GCHeap::WhichGeneration (Object* object)
     return g;
 }
 
+unsigned int GCHeap::WhichRange (Object* object, uint8_t** ppStart, uint8_t** ppAllocated, uint8_t** ppReserved)
+{
+    unsigned int generation = -1;
+    heap_segment * hs = gc_heap::find_segment ((uint8_t*)object, FALSE);
+#ifdef USE_REGIONS
+    generation = heap_segment_gen_num (hs);
+    if (generation == max_generation)
+    {
+        if (heap_segment_loh_p (hs))
+        {
+            generation = loh_generation;
+        }
+        else if (heap_segment_poh_p (hs))
+        {
+            generation = poh_generation;
+        }
+    }
+
+    *ppStart = heap_segment_mem (hs);
+    *ppAllocated = heap_segment_allocated (hs);
+    *ppReserved = heap_segment_reserved (hs);
+#else
+    gc_heap* hp = gc_heap::heap_of ((uint8_t*)object);
+    if (hs == hp->ephemeral_heap_segment)
+    {
+        uint8_t* reserved = heap_segment_reserved (hs);
+        uint8_t* end = heap_segment_allocated(hs);
+        for (int gen = 0; gen < max_generation; gen++)
+        {
+            uint8_t* start = generation_allocation_start (hp->generation_of (gen));
+            if ((uint8_t*)object > start)
+            {
+                generation = gen;
+                *ppStart = start;
+                *ppAllocated = end;
+                *ppReserved = reserved;
+                break;
+            }
+            end = reserved = start;
+        }
+        if (generation == -1)
+        {
+            *ppStart = heap_segment_mem (hs);
+            *ppAllocated = *ppReserved = generation_allocation_start (hp->generation_of (max_generation - 1));
+        }
+    }
+    else
+    {
+        generation = 2;
+        if (heap_segment_loh_p (hs))
+        {
+            generation = loh_generation;
+        }
+        else if (heap_segment_poh_p (hs))
+        {
+            generation = poh_generation;
+        }
+        *ppStart = heap_segment_mem (hs);
+        *ppAllocated = heap_segment_allocated (hs);
+        *ppReserved = heap_segment_reserved (hs);
+    }
+#endif //USE_REGIONS
+    return generation;
+}
+
 bool GCHeap::IsEphemeral (Object* object)
 {
     uint8_t* o = (uint8_t*)object;
@@ -44718,9 +44791,16 @@ GCHeap::GarbageCollectGeneration (unsigned int gen, gc_reason reason)
         gc_heap::proceed_with_gc_p = gc_heap::should_proceed_with_gc();
         gc_heap::disable_preemptive (cooperative_mode);
         if (gc_heap::proceed_with_gc_p)
+        {
             pGenGCHeap->settings.init_mechanisms();
+        }
         else
+        {
             gc_heap::update_collection_counts_for_no_gc();
+#ifdef USE_REGIONS
+            GCToEEInterface::DiagUpdateGenerationBounds();
+#endif //USE_REGIONS
+        }
 
 #endif //!MULTIPLE_HEAPS
     }

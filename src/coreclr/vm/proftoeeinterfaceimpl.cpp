@@ -719,21 +719,102 @@ struct GenerationDesc
     BYTE *rangeEndReserved;
 };
 
-struct GenerationTable
+class GenerationTable
 {
+public:
+    GenerationTable();
+    void AddRecord(int generation, BYTE* rangeStart, BYTE* rangeEnd, BYTE* rangeEndReserved);
+    void AddRecordNoLock(int generation, BYTE* rangeStart, BYTE* rangeEnd, BYTE* rangeEndReserved);
+    void Refresh();
+    void GetGenerationBounds(ULONG cObjectRanges, ULONG* pcObjectRanges, COR_PRF_GC_GENERATION_RANGE* ranges);
+private:
+    Crst mutex;
     ULONG count;
     ULONG capacity;
-    // Bad code - make it easy to add a record without worry
-    static const ULONG defaultCapacity = 50000; // that's the minimum for Gen0-2 + LOH + POH
-    GenerationTable *prev;
+    static const ULONG defaultCapacity = 5; // that's the minimum for Gen0-2 + LOH + POH
     GenerationDesc *genDescTable;
-#ifdef  _DEBUG
-    ULONG magic;
-#define GENERATION_TABLE_MAGIC 0x34781256
-#define GENERATION_TABLE_BAD_MAGIC 0x55aa55aa
-#endif
 };
 
+GenerationTable::GenerationTable() : mutex(CrstLeafLock, CRST_UNSAFE_ANYMODE)
+{
+    count = 0;
+    capacity = GenerationTable::defaultCapacity;
+    genDescTable = new (nothrow) GenerationDesc[capacity];
+    if (genDescTable == NULL)
+    {
+        capacity = 0;
+    }
+}
+
+void GenerationTable::AddRecord(int generation, BYTE* rangeStart, BYTE* rangeEnd, BYTE* rangeEndReserved)
+{
+    CONTRACT_VOID
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+        MODE_ANY; // can be called even on GC threads
+        PRECONDITION(0 <= generation && generation <= 4);
+        PRECONDITION(CheckPointer(rangeStart));
+        PRECONDITION(CheckPointer(rangeEnd));
+        PRECONDITION(CheckPointer(rangeEndReserved));
+    } CONTRACT_END;
+    CrstHolder holder(&mutex);
+    AddRecordNoLock(generation, rangeStart, rangeEnd, rangeEndReserved);
+    RETURN;
+}
+
+void GenerationTable::AddRecordNoLock(int generation, BYTE* rangeStart, BYTE* rangeEnd, BYTE* rangeEndReserved)
+{
+    CONTRACT_VOID
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+        MODE_ANY; // can be called even on GC threads
+        PRECONDITION(0 <= generation && generation <= 4);
+        PRECONDITION(CheckPointer(rangeStart));
+        PRECONDITION(CheckPointer(rangeEnd));
+        PRECONDITION(CheckPointer(rangeEndReserved));
+    } CONTRACT_END;
+
+    assert (mutex.OwnedByCurrentThread());
+    if (count >= capacity)
+    {
+        ULONG newCapacity = capacity == 0 ? GenerationTable::defaultCapacity : capacity * 2;
+        GenerationDesc *newGenDescTable = new (nothrow) GenerationDesc[newCapacity];
+        if (newGenDescTable == NULL)
+        {
+            // if we can't allocate a bigger table, we'll have to ignore this call
+            RETURN;
+        }
+        memcpy(newGenDescTable, genDescTable, sizeof(genDescTable[0]) * count);
+        delete[] genDescTable;
+        genDescTable = newGenDescTable;
+        capacity = newCapacity;
+    }
+    _ASSERTE(count < capacity);
+
+    genDescTable[count].generation = generation;
+    genDescTable[count].rangeStart = rangeStart;
+    genDescTable[count].rangeEnd = rangeEnd;
+    genDescTable[count].rangeEndReserved = rangeEndReserved;
+
+    count = count + 1;
+    RETURN;
+}
+
+void GenerationTable::GetGenerationBounds(ULONG cObjectRanges, ULONG* pcObjectRanges, COR_PRF_GC_GENERATION_RANGE* ranges)
+{
+    CrstHolder holder(&mutex);
+    ULONG copy = min(count, cObjectRanges);
+    for (ULONG i = 0; i < copy; i++)
+    {
+        ranges[i].generation          = (COR_PRF_GC_GENERATION)genDescTable[i].generation;
+        ranges[i].rangeStart          = (ObjectID)genDescTable[i].rangeStart;
+        ranges[i].rangeLength         = genDescTable[i].rangeEnd         - genDescTable[i].rangeStart;
+        ranges[i].rangeLengthReserved = genDescTable[i].rangeEndReserved - genDescTable[i].rangeStart;
+    }
+    *pcObjectRanges = count;
+}
 
 //---------------------------------------------------------------------------------------
 //
@@ -770,45 +851,22 @@ static void GenWalkFunc(void * context,
     } CONTRACT_END;
 
     GenerationTable *generationTable = (GenerationTable *)context;
+    generationTable->AddRecordNoLock(generation, rangeStart, rangeEnd, rangeEndReserved);
+    RETURN;
+}
 
-    _ASSERTE(generationTable->magic == GENERATION_TABLE_MAGIC);
-
-    ULONG count = generationTable->count;
-    if (count >= generationTable->capacity)
-    {
-        ULONG newCapacity = generationTable->capacity == 0 ? GenerationTable::defaultCapacity : generationTable->capacity * 2;
-        GenerationDesc *newGenDescTable = new (nothrow) GenerationDesc[newCapacity];
-        if (newGenDescTable == NULL)
-        {
-            // if we can't allocate a bigger table, we'll have to ignore this call
-            RETURN;
-        }
-        memcpy(newGenDescTable, generationTable->genDescTable, sizeof(generationTable->genDescTable[0]) * generationTable->count);
-        delete[] generationTable->genDescTable;
-        generationTable->genDescTable = newGenDescTable;
-        generationTable->capacity = newCapacity;
-    }
-    _ASSERTE(count < generationTable->capacity);
-
-    GenerationDesc *genDescTable = generationTable->genDescTable;
-
-    genDescTable[count].generation = generation;
-    genDescTable[count].rangeStart = rangeStart;
-    genDescTable[count].rangeEnd = rangeEnd;
-    genDescTable[count].rangeEndReserved = rangeEndReserved;
-
-    generationTable->count = count + 1;
+void GenerationTable::Refresh()
+{
+    // fill in the values by calling back into the gc, which will report
+    // the ranges by calling GenWalkFunc for each one
+    CrstHolder holder(&mutex);    
+    IGCHeap *hp = GCHeapUtilities::GetGCHeap();
+    hp->DiagDescrGenerations(GenWalkFunc, this);
 }
 
 // This is the table of generation bounds updated by the gc
-// and read by the profiler. So this is a single writer,
-// multiple readers scenario.
+// and read by the profiler. 
 static GenerationTable *s_currentGenerationTable;
-
-// The generation table is updated atomically by replacing the
-// pointer to it. The only tricky part is knowing when
-// the old table can be deleted.
-static Volatile<LONG> s_generationTableLock;
 
 // This is just so we can assert there's a single writer
 #ifdef  ENABLE_CONTRACTS
@@ -838,67 +896,24 @@ void __stdcall UpdateGenerationBounds()
     // Notify the profiler of start of the collection
     if (CORProfilerTrackGC() || CORProfilerTrackBasicGC())
     {
-        // generate a new generation table
-        GenerationTable *newGenerationTable = new (nothrow) GenerationTable();
-        if (newGenerationTable == NULL)
-            RETURN;
-        newGenerationTable->count = 0;
-        newGenerationTable->capacity = GenerationTable::defaultCapacity;
-        // if there is already a current table, use its capacity as a guess for the capacity
-        if (s_currentGenerationTable != NULL)
-            newGenerationTable->capacity = s_currentGenerationTable->capacity;
-        newGenerationTable->prev = NULL;
-        newGenerationTable->genDescTable = new (nothrow) GenerationDesc[newGenerationTable->capacity];
-        if (newGenerationTable->genDescTable == NULL)
-            newGenerationTable->capacity = 0;
 
-#ifdef  _DEBUG
-        newGenerationTable->magic = GENERATION_TABLE_MAGIC;
-#endif
-        // fill in the values by calling back into the gc, which will report
-        // the ranges by calling GenWalkFunc for each one
-        IGCHeap *hp = GCHeapUtilities::GetGCHeap();
-        hp->DiagDescrGenerations(GenWalkFunc, newGenerationTable);
-
-        // remember the old table and plug in the new one
-        GenerationTable *oldGenerationTable = s_currentGenerationTable;
-        s_currentGenerationTable = newGenerationTable;
-
-        // WARNING: tricky code!
-        //
-        // We sample the generation table lock *after* plugging in the new table
-        // We do so using an interlocked operation so the cpu can't reorder
-        // the write to the s_currentGenerationTable with the increment.
-        // If the interlocked increment returns 1, we know nobody can be using
-        // the old table (readers increment the lock before using the table,
-        // and decrement it afterwards). Any new readers coming in
-        // will use the new table. So it's safe to delete the old
-        // table.
-        // On the other hand, if the interlocked increment returns
-        // something other than one, we put the old table on a list
-        // dangling off of the new one. Next time around, we'll try again
-        // deleting any old tables.
-        if (FastInterlockIncrement(&s_generationTableLock) == 1)
+        if (s_currentGenerationTable == nullptr)
         {
-            // We know nobody can be using any of the old tables
-            while (oldGenerationTable != NULL)
+            EX_TRY
             {
-                _ASSERTE(oldGenerationTable->magic == GENERATION_TABLE_MAGIC);
-#ifdef  _DEBUG
-                oldGenerationTable->magic = GENERATION_TABLE_BAD_MAGIC;
-#endif
-                GenerationTable *temp = oldGenerationTable;
-                oldGenerationTable = oldGenerationTable->prev;
-                delete[] temp->genDescTable;
-                delete temp;
+                s_currentGenerationTable = new (nothrow) GenerationTable();
             }
+            EX_CATCH
+            {
+            }
+            EX_END_CATCH(SwallowAllExceptions)
         }
-        else
+
+        if (s_currentGenerationTable == nullptr)
         {
-            // put the old table on a list
-            newGenerationTable->prev = oldGenerationTable;
+            RETURN;
         }
-        FastInterlockDecrement(&s_generationTableLock);
+        s_currentGenerationTable->Refresh();        
     }
 #endif // PROFILING_SUPPORTED
     RETURN;
@@ -915,21 +930,7 @@ void __stdcall ProfAddNewRegion(int generation, uint8_t* rangeStart, uint8_t* ra
 #ifdef PROFILING_SUPPORTED
     if (CORProfilerTrackGC() || CORProfilerTrackBasicGC())
     {
-        ULONG count = s_currentGenerationTable->count;
-        if (count < s_currentGenerationTable->capacity)
-        {
-            // Bad code - this needs to be thread safe
-            s_currentGenerationTable->genDescTable[count].generation = generation;
-            s_currentGenerationTable->genDescTable[count].rangeStart = rangeStart;
-            s_currentGenerationTable->genDescTable[count].rangeEnd = rangeEnd;
-            s_currentGenerationTable->genDescTable[count].rangeEndReserved = rangeEndReserved;
-            s_currentGenerationTable->count = count + 1;
-        }
-        else
-        {
-            // Bad code - this could happen
-            assert (false);
-        }
+        s_currentGenerationTable->AddRecord(generation, rangeStart, rangeEnd, rangeEndReserved);
     }
 #endif // PROFILING_SUPPORTED
     RETURN;
@@ -8863,13 +8864,11 @@ HRESULT ProfToEEInterfaceImpl::GetGenerationBounds(ULONG cObjectRanges,
         // Yay!
         EE_THREAD_NOT_REQUIRED;
 
-        // Yay!
-        CANNOT_TAKE_LOCK;
-
+        // Lock is required to ensure this is synchronized with GC's updates.
+        CAN_TAKE_LOCK;
 
         PRECONDITION(CheckPointer(pcObjectRanges));
         PRECONDITION(cObjectRanges <= 0 || ranges != NULL);
-        PRECONDITION(s_generationTableLock >= 0);
     }
     CONTRACTL_END;
 
@@ -8878,31 +8877,12 @@ HRESULT ProfToEEInterfaceImpl::GetGenerationBounds(ULONG cObjectRanges,
         LL_INFO1000,
         "**PROF: GetGenerationBounds.\n"));
 
-    // Announce we are using the generation table now
-    CounterHolder genTableLock(&s_generationTableLock);
-
-    GenerationTable *generationTable = s_currentGenerationTable;
-
-    if (generationTable == NULL)
+    if (s_currentGenerationTable == NULL)
     {
         return E_FAIL;
     }
 
-    _ASSERTE(generationTable->magic == GENERATION_TABLE_MAGIC);
-
-    // For a large application, we could have lots of regions
-    // We might be able to optimize if we could merge adjacent regions of the same generation
-    GenerationDesc *genDescTable = generationTable->genDescTable;
-    ULONG count = min(generationTable->count, cObjectRanges);
-    for (ULONG i = 0; i < count; i++)
-    {
-        ranges[i].generation          = (COR_PRF_GC_GENERATION)genDescTable[i].generation;
-        ranges[i].rangeStart          = (ObjectID)genDescTable[i].rangeStart;
-        ranges[i].rangeLength         = genDescTable[i].rangeEnd         - genDescTable[i].rangeStart;
-        ranges[i].rangeLengthReserved = genDescTable[i].rangeEndReserved - genDescTable[i].rangeStart;
-    }
-
-    *pcObjectRanges = generationTable->count;
+    s_currentGenerationTable->GetGenerationBounds(cObjectRanges, pcObjectRanges, ranges);
 
     return S_OK;
 }
@@ -9000,7 +8980,6 @@ HRESULT ProfToEEInterfaceImpl::GetObjectGeneration(ObjectID objectId,
 
         PRECONDITION(objectId != NULL);
         PRECONDITION(CheckPointer(range));
-        PRECONDITION(s_generationTableLock >= 0);
     }
     CONTRACTL_END;
 
@@ -9013,37 +8992,21 @@ HRESULT ProfToEEInterfaceImpl::GetObjectGeneration(ObjectID objectId,
 
     _ASSERTE((GetThreadNULLOk() == NULL) || (GetThreadNULLOk()->PreemptiveGCDisabled()));
 
+    IGCHeap *hp = GCHeapUtilities::GetGCHeap();
 
-    // Announce we are using the generation table now
-    CounterHolder genTableLock(&s_generationTableLock);
+    uint8_t* pStart;
+    uint8_t* pAllocated;
+    uint8_t* pReserved;
+    unsigned int generation = hp->WhichRange((Object*)objectId, &pStart, &pAllocated, &pReserved);
 
-    GenerationTable *generationTable = s_currentGenerationTable;
+    UINT_PTR rangeLength = pAllocated - pStart;
+    UINT_PTR rangeLengthReserved = pReserved - pStart;
 
-    if (generationTable == NULL)
-    {
-        return E_FAIL;
-    }
-
-    _ASSERTE(generationTable->magic == GENERATION_TABLE_MAGIC);
-
-    GenerationDesc *genDescTable = generationTable->genDescTable;
-    ULONG count = generationTable->count;
-    // For a large application, we could have lots of regions
-    // Searching sequentially could be slow.
-    for (ULONG i = 0; i < count; i++)
-    {
-        if (genDescTable[i].rangeStart <= (BYTE *)objectId && (BYTE *)objectId < genDescTable[i].rangeEndReserved)
-        {
-            range->generation          = (COR_PRF_GC_GENERATION)genDescTable[i].generation;
-            range->rangeStart          = (ObjectID)genDescTable[i].rangeStart;
-            range->rangeLength         = genDescTable[i].rangeEnd         - genDescTable[i].rangeStart;
-            range->rangeLengthReserved = genDescTable[i].rangeEndReserved - genDescTable[i].rangeStart;
-
-            return S_OK;
-        }
-    }
-
-    return E_FAIL;
+    range->generation = (COR_PRF_GC_GENERATION)generation;
+    range->rangeStart = (ObjectID)pStart;
+    range->rangeLength = rangeLength;
+    range->rangeLengthReserved = rangeLengthReserved;
+    return S_OK;
 }
 
 HRESULT ProfToEEInterfaceImpl::GetReJITIDs(
