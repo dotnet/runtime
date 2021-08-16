@@ -42,20 +42,9 @@ HRESULT CLRPrivBinderAssemblyLoadContext::BindAssemblyByNameWorker(BINDER_SPACE:
     return hr;
 }
 
-HRESULT CLRPrivBinderAssemblyLoadContext::BindAssemblyByName(AssemblyNameData *pAssemblyNameData,
-                                                             BINDER_SPACE::Assembly **ppAssembly)
+HRESULT CLRPrivBinderAssemblyLoadContext::BindUsingAssemblyName(BINDER_SPACE::AssemblyName* pAssemblyName,
+    BINDER_SPACE::Assembly** ppAssembly)
 {
-    HRESULT hr = S_OK;
-    VALIDATE_ARG_RET(pAssemblyNameData != nullptr && ppAssembly != nullptr);
-
-    _ASSERTE(m_pTPABinder != NULL);
-
-    ReleaseHolder<BINDER_SPACE::Assembly> pCoreCLRFoundAssembly;
-    ReleaseHolder<AssemblyName> pAssemblyName;
-
-    SAFE_NEW(pAssemblyName, AssemblyName);
-    IF_FAIL_GO(pAssemblyName->Init(*pAssemblyNameData));
-
     // When LoadContext needs to resolve an assembly reference, it will go through the following lookup order:
     //
     // 1) Lookup the assembly within the LoadContext itself. If assembly is found, use it.
@@ -67,6 +56,9 @@ HRESULT CLRPrivBinderAssemblyLoadContext::BindAssemblyByName(AssemblyNameData *p
     //
     // This approach enables a LoadContext to override assemblies that have been loaded in TPA context by loading
     // a different (or even the same!) version.
+
+    HRESULT hr = S_OK;
+    ReleaseHolder<BINDER_SPACE::Assembly> pCoreCLRFoundAssembly;
 
     {
         // Step 1 - Try to find the assembly within the LoadContext.
@@ -134,7 +126,7 @@ HRESULT CLRPrivBinderAssemblyLoadContext::BindUsingPEImage( /* in */ PEImage *pP
         _ASSERTE(pIMetaDataAssemblyImport != NULL);
 
         // Using the information we just got, initialize the assemblyname
-        SAFE_NEW(pAssemblyName, AssemblyName);
+        SAFE_NEW(pAssemblyName, BINDER_SPACE::AssemblyName);
         IF_FAIL_GO(pAssemblyName->Init(pIMetaDataAssemblyImport, PeKind));
 
         // Validate architecture

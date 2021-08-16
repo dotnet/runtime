@@ -5,36 +5,27 @@
 #define _ASSEMBLYLOADCONTEXT_H
 
 #include "crst.h"
-#include <internalunknownimpl.h>
 #include <sarray.h>
 
 
 class NativeImage;
+class PEImage;
 class Module;
 class Assembly;
 class AssemblyLoaderAllocator;
 
-/**************************************************************************************
- ** Some things to keep in mind:
- **    - Equality is determined by pointer equality: two interface instances
- **      should be considered equal if and only if their pointer values are equal.
- **    - All operations are idempotent: when a method is called more than once with
- **      the same input values, it is required to return identical results. The only
- **      possible exceptions center around transient errors such as E_OUTOFMEMORY.
-**************************************************************************************/
 class ICLRPrivBinder
 {
 public:
-    /**********************************************************************************
-     ** BindAssemblyByName -- Binds an assembly by name.
-     **     NOTE: This method is required to be idempotent. See general comment above.
-     **
-     ** pAssemblyFullName - name of the assembly for which a bind is being requested.
-     ** ppAssembly - upon success, receives the bound assembly.
-     **********************************************************************************/
-    virtual HRESULT BindAssemblyByName(
-        AssemblyNameData* pAssemblyNameData,
-        BINDER_SPACE::Assembly **ppAssembly) = 0;
+    HRESULT BindAssemblyByName(AssemblyNameData* pAssemblyNameData,
+        BINDER_SPACE::Assembly** ppAssembly);
+
+    virtual HRESULT BindUsingPEImage(PEImage* pPEImage,
+        BOOL fIsNativeImage,
+        BINDER_SPACE::Assembly** ppAssembly) = 0;
+
+    virtual HRESULT BindUsingAssemblyName(BINDER_SPACE::AssemblyName* pAssemblyName,
+        BINDER_SPACE::Assembly** ppAssembly) = 0;
 
     /**********************************************************************************
      ** GetLoaderAllocator
@@ -54,8 +45,6 @@ public:
     }
 
 private:
-    LONG m_cRef = 0;
-
     BINDER_SPACE::ApplicationContext m_appContext;
 };
 

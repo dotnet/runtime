@@ -21,7 +21,18 @@ public:
         AssemblyNameData* pAssemblyNameData,
         BINDER_SPACE::Assembly** ppAssembly);
 
-    AssemblyLoaderAllocator* GetLoaderAllocator();
+    HRESULT BindUsingPEImage(PEImage* pPEImage,
+        BOOL fIsNativeImage,
+        BINDER_SPACE::Assembly** ppAssembly);
+
+    HRESULT BindUsingAssemblyName(BINDER_SPACE::AssemblyName* pAssemblyName,
+        BINDER_SPACE::Assembly** ppAssembly);
+
+    AssemblyLoaderAllocator* GetLoaderAllocator()
+    {
+        // Not supported by this binder
+        return NULL;
+    }
 
 public:
 
@@ -36,14 +47,7 @@ public:
                  BOOL         fExplicitBindToNativeImage,
                  BINDER_SPACE::Assembly **ppAssembly);
 
-    HRESULT BindUsingAssemblyName(BINDER_SPACE::AssemblyName *pAssemblyName,
-                                  BINDER_SPACE::Assembly **ppAssembly);
-
-#if !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
-    HRESULT BindUsingPEImage( /* in */ PEImage *pPEImage,
-                              /* in */ BOOL fIsNativeImage,
-                              /* [retval][out] */ BINDER_SPACE::Assembly **ppAssembly);
-#endif // !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
+private:
 
     HRESULT BindAssemblyByNameWorker(
             BINDER_SPACE::AssemblyName *pAssemblyName,

@@ -42,24 +42,6 @@ HRESULT CLRPrivBinderCoreCLR::BindAssemblyByNameWorker(BINDER_SPACE::AssemblyNam
 // ============================================================================
 // CLRPrivBinderCoreCLR implementation
 // ============================================================================
-HRESULT CLRPrivBinderCoreCLR::BindAssemblyByName(AssemblyNameData *pAssemblyNameData,
-                                                 BINDER_SPACE::Assembly **ppAssembly)
-{
-    HRESULT hr = S_OK;
-    VALIDATE_ARG_RET(pAssemblyNameData != nullptr && ppAssembly != nullptr);
-
-    *ppAssembly = nullptr;
-
-    ReleaseHolder<AssemblyName> pAssemblyName;
-    SAFE_NEW(pAssemblyName, AssemblyName);
-    IF_FAIL_GO(pAssemblyName->Init(*pAssemblyNameData));
-
-    hr = BindUsingAssemblyName(pAssemblyName, ppAssembly);
-
-Exit:
-    return hr;
-}
-
 HRESULT CLRPrivBinderCoreCLR::BindUsingAssemblyName(BINDER_SPACE::AssemblyName *pAssemblyName,
                                                     BINDER_SPACE::Assembly **ppAssembly)
 {
@@ -253,10 +235,4 @@ HRESULT CLRPrivBinderCoreCLR::Bind(LPCWSTR            wszCodeBase,
     EX_CATCH_HRESULT(hr);
 
     return hr;
-}
-
-AssemblyLoaderAllocator* CLRPrivBinderCoreCLR::GetLoaderAllocator()
-{
-    // Not supported by this binder
-    return NULL;
 }

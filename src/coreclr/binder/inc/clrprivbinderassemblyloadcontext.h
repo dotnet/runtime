@@ -20,8 +20,11 @@ public:
     //=========================================================================
     // ICLRPrivBinder functions
     //-------------------------------------------------------------------------
-    HRESULT BindAssemblyByName(
-        AssemblyNameData* pAssemblyNameData,
+    HRESULT BindUsingPEImage(PEImage* pPEImage,
+        BOOL fIsNativeImage,
+        BINDER_SPACE::Assembly** ppAssembly);
+
+    HRESULT BindUsingAssemblyName(BINDER_SPACE::AssemblyName* pAssemblyName,
         BINDER_SPACE::Assembly** ppAssembly);
 
     AssemblyLoaderAllocator* GetLoaderAllocator();
@@ -31,6 +34,8 @@ public:
     // Class functions
     //-------------------------------------------------------------------------
 
+    CLRPrivBinderAssemblyLoadContext();
+
     static HRESULT SetupContext(CLRPrivBinderCoreCLR *pTPABinder,
                                 AssemblyLoaderAllocator* pLoaderAllocator,
                                 void* loaderAllocatorHandle,
@@ -39,12 +44,6 @@ public:
 
     void PrepareForLoadContextRelease(INT_PTR ptrManagedStrongAssemblyLoadContext);
     void ReleaseLoadContext();
-
-    CLRPrivBinderAssemblyLoadContext();
-
-    HRESULT BindUsingPEImage( /* in */ PEImage *pPEImage,
-                              /* in */ BOOL fIsNativeImage,
-                              /* [retval][out] */ BINDER_SPACE::Assembly **ppAssembly);
 
     //=========================================================================
     // Internal implementation details
