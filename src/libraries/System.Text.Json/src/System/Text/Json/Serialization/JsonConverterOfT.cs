@@ -3,6 +3,7 @@
 
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Runtime.CompilerServices;
 using System.Text.Json.Serialization.Metadata;
 
 namespace System.Text.Json.Serialization
@@ -143,6 +144,9 @@ namespace System.Text.Json.Serialization
         /// <remarks>Note that the value of <seealso cref="HandleNull"/> determines if the converter handles null JSON tokens.</remarks>
         public abstract T? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options);
 
+#if NET6_0_OR_GREATER
+        [MethodImpl(MethodImplOptions.AggressiveOptimization)]
+#endif
         internal bool TryRead(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options, ref ReadStack state, out T? value)
         {
             if (ConverterStrategy == ConverterStrategy.Value)
@@ -310,10 +314,15 @@ namespace System.Text.Json.Serialization
         }
 
         /// <summary>
-        /// Overridden by the nullable converter to prevent boxing of values by the JIT.
+        /// Performance optimization.
+        /// The 'in' modifier in 'TryWrite(in T Value)' causes boxing for Nullable{T}, so this helper avoids that.
+        /// TODO: Remove this work-around once #50915 is addressed.
         /// </summary>
-        internal virtual bool IsNull(in T value) => value == null;
+        private static bool IsNull(T value) => value is null;
 
+#if NET6_0_OR_GREATER
+        [MethodImpl(MethodImplOptions.AggressiveOptimization)]
+#endif
         internal bool TryWrite(Utf8JsonWriter writer, in T value, JsonSerializerOptions options, ref WriteStack state)
         {
             if (writer.CurrentDepth >= options.EffectiveMaxDepth)
@@ -333,10 +342,14 @@ namespace System.Text.Json.Serialization
 
             if (
 #if NET5_0_OR_GREATER
-                !typeof(T).IsValueType && // treated as a constant by recent versions of the JIT.
+                // Short-circuit the check against "is not null"; treated as a constant by recent versions of the JIT.
+                !typeof(T).IsValueType &&
 #else
                 !IsValueType &&
 #endif
+                // Since we may have checked for a null value above we may have a redundant check here,
+                // but this seems to be better than trying to cache that value when considering all permutations:
+                // int?, int?(null value), int, object, object(null value)
                 value is not null)
             {
 
@@ -433,11 +446,12 @@ namespace System.Text.Json.Serialization
 
                 if (
 #if NET5_0_OR_GREATER
-                    !typeof(T).IsValueType && // treated as a constant by recent versions of the JIT.
+                    // Short-circuit the check against ignoreCyclesPopReference; treated as a constant by recent versions of the JIT.
+                    !typeof(T).IsValueType &&
 #endif
                     ignoreCyclesPopReference)
                 {
-                    // should only be entered if we're serializing instances
+                    // Should only be entered if we're serializing instances
                     // of type object using the internal object converter.
                     Debug.Assert(value?.GetType() == typeof(object) && IsInternalConverter);
                     state.ReferenceResolver.PopReferenceForCycleDetection();
