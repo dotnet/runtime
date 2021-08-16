@@ -86,6 +86,12 @@ namespace System.Reflection.Metadata.Ecma335
 
                     // At this point, the reader points to the "GenArgCount Type Type*" part of the signature.
                 }
+                else
+                {
+                    // Some other invalid TypeSpec. Don't accidentally allow resolving generic parameters
+                    // from the constructor signature into a broken blob.
+                    genericContextReader = default;
+                }
             }
 
             ImmutableArray<CustomAttributeTypedArgument<TType>> fixedArguments = DecodeFixedArguments(ref signatureReader, ref valueReader, parameterCount, genericContextReader);
@@ -205,6 +211,11 @@ namespace System.Reflection.Metadata.Ecma335
                     break;
 
                 case SignatureTypeCode.GenericTypeParameter:
+                    if (genericContextReader.IsNil)
+                    {
+                        throw new BadImageFormatException();
+                    }
+                
                     int parameterIndex = signatureReader.ReadCompressedInteger();
                     int numGenericParameters = genericContextReader.ReadCompressedInteger();
                     if (parameterIndex >= numGenericParameters)
