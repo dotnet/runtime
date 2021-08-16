@@ -305,7 +305,7 @@ namespace System.Diagnostics
             {
                 if (_tagsCount == _overflowTags.Length)
                 {
-                    Array.Resize(ref _overflowTags, _tagsCount + 8);
+                    Array.Resize(ref _overflowTags, _tagsCount + OverflowAdditionalCapacity);
                 }
 
                 for (int i = _tagsCount; i > index; i--)
