@@ -1,9 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
 using System.Buffers;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.Net.Quic.Implementations.MsQuic.Internal;
 using System.Runtime.ExceptionServices;
@@ -11,7 +9,6 @@ using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
 using static System.Net.Quic.Implementations.MsQuic.Internal.MsQuicNativeMethods;
-using static System.Net.Quic.Implementations.MsQuic.MsQuicConnection;
 
 namespace System.Net.Quic.Implementations.MsQuic
 {
