@@ -9,10 +9,8 @@
          BeforePack must be used. Setting both to ensure that we are always running before other targets. --> 
     <PackDependsOn>AddNETStandardCompatErrorFileForPackaging;IncludeAnalyzersInPackage;$(PackDependsOn)</PackDependsOn>
     <BeforePack>AddNETStandardCompatErrorFileForPackaging;IncludeAnalyzersInPackage;$(BeforePack)</BeforePack>
-    <SymbolPackageOutputPath>$(PackageOutputPath)</SymbolPackageOutputPath>
     <TargetsForTfmSpecificContentInPackage>$(TargetsForTfmSpecificContentInPackage);AddRuntimeSpecificFilesToPackage;IncludePrivateProjectReferencesWithPackAttributeInPackage</TargetsForTfmSpecificContentInPackage>
-    <TargetsForTfmSpecificDebugSymbolsInPackage>$(TargetsForTfmSpecificDebugSymbolsInPackage);AddRuntimeSpecificSymbolToPackage</TargetsForTfmSpecificDebugSymbolsInPackage>
-    <IncludeBuildOutput Condition="'$(TargetsAnyOS)' != 'true' or '$(ExcludeFromPackage)' == 'true'">false</IncludeBuildOutput>  
+    <IncludeBuildOutput Condition="'$(TargetFrameworkSuffix)' != '' or '$(ExcludeFromPackage)' == 'true'">false</IncludeBuildOutput>  
     <!-- Don't include target platform specific dependencies, since we use the target platform to represent RIDs instead -->
     <SuppressDependenciesWhenPacking Condition="'$(ExcludeFromPackage)' == 'true' or ('$(TargetsAnyOS)' != 'true' and $([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net5.0')))">true</SuppressDependenciesWhenPacking>
     <PackageDesignerMarkerFile>$(MSBuildThisFileDirectory)useSharedDesignerContext.txt</PackageDesignerMarkerFile>
@@ -48,7 +46,7 @@
     <None Include="$(PackageDesignerMarkerFile)"
           PackagePath="$([System.IO.Path]::GetFileName('$(PackageDesignerMarkerFile)'))"
           Pack="true"
-          Condition="'$(IncludeDesignerMarker)' != 'false'" />
+          Condition="'$(IncludePackageDesignerMarkerFile)' == 'true'" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(AddNETFrameworkAssemblyReferenceToPackage)' == 'true'">
@@ -63,16 +61,16 @@
         <NoWarn>$(NoWarn);NU5128</NoWarn>
       </PropertyGroup>
       <ItemGroup Condition="'$(AddNETFrameworkPlaceholderFileToPackage)' == 'true'">
-        <None Include="$(PlaceholderFile)" PackagePath="lib/net461" Pack="true" />
-        <None Include="$(PlaceholderFile)" PackagePath="runtimes/win/lib/net461" Pack="true" Condition="$(TargetFrameworks.Contains('netstandard2.0-windows'))" />
+        <None Include="$(PlaceholderFile)" PackagePath="$(BuildOutputTargetFolder)/net461" Pack="true" />
+        <None Include="$(PlaceholderFile)" PackagePath="runtimes/win/$(BuildOutputTargetFolder)/net461" Pack="true" Condition="$(TargetFrameworks.Contains('netstandard2.0-windows'))" />
       </ItemGroup>
       <ItemGroup Condition="'$(AddXamarinPlaceholderFilesToPackage)' == 'true'">
-        <None Include="$(PlaceholderFile)" PackagePath="lib\MonoAndroid10" Pack="true" />
-        <None Include="$(PlaceholderFile)" PackagePath="lib\MonoTouch10" Pack="true" />
-        <None Include="$(PlaceholderFile)" PackagePath="lib\xamarinios10" Pack="true" />
-        <None Include="$(PlaceholderFile)" PackagePath="lib\xamarinmac20" Pack="true" />
-        <None Include="$(PlaceholderFile)" PackagePath="lib\xamarintvos10" Pack="true" />
-        <None Include="$(PlaceholderFile)" PackagePath="lib\xamarinwatchos10" Pack="true" />
+        <None Include="$(PlaceholderFile)" PackagePath="$(BuildOutputTargetFolder)/MonoAndroid10" Pack="true" />
+        <None Include="$(PlaceholderFile)" PackagePath="$(BuildOutputTargetFolder)/MonoTouch10" Pack="true" />
+        <None Include="$(PlaceholderFile)" PackagePath="$(BuildOutputTargetFolder)/xamarinios10" Pack="true" />
+        <None Include="$(PlaceholderFile)" PackagePath="$(BuildOutputTargetFolder)/xamarinmac20" Pack="true" />
+        <None Include="$(PlaceholderFile)" PackagePath="$(BuildOutputTargetFolder)/xamarintvos10" Pack="true" />
+        <None Include="$(PlaceholderFile)" PackagePath="$(BuildOutputTargetFolder)/xamarinwatchos10" Pack="true" />
       </ItemGroup>
     </When>
   </Choose>
@@ -88,46 +86,39 @@
     </ItemGroup>
   </Target>
 
+  <!-- Runtime agnostic files (including symbols) are added by the pack task automatically.-->
   <Target Name="AddRuntimeSpecificFilesToPackage"
           DependsOnTargets="BuiltProjectOutputGroup;
                             DocumentationProjectOutputGroup;
                             SatelliteDllsProjectOutputGroup;
                             $(TargetsForTfmSpecificBuildOutput)"
           Condition="'$(ExcludeFromPackage)' != 'true' and
-                     '$(TargetsAnyOS)' != 'true'">
+                     '$(TargetFrameworkSuffix)' != ''">
+    <PropertyGroup>
+      <RuntimeSymbolPath>$(TargetDir)$(TargetName).pdb</RuntimeSymbolPath>
+    </PropertyGroup>
+
     <ItemGroup>
       <TfmRuntimeSpecificPackageFile Include="@(SatelliteDllsProjectOutputGroupOutput);
                                               @(BuiltProjectOutputGroupOutput);
                                               @(DocumentationProjectOutputGroupOutput)" />
       <TfmSpecificPackageFile Include="@(TfmRuntimeSpecificPackageFile)"
-                              PackagePath="runtimes/$(PackageTargetRuntime)/lib/$(TargetFrameworkWithoutSuffix)" />
-      <!-- Copy runtime specific assemblies into the rid agnostic 'lib' folder if the ridless tfm doesn't exist on .NETFramework.
-           The assumption holds that a ridless tfm doesn't follow a '-' charater. This is necessary to avoid NU5128. -->
-      <TfmSpecificPackageFile Include="@(TfmRuntimeSpecificPackageFile)"
-                              PackagePath="$([MSBuild]::ValueOrDefault('$(BuildOutputTargetFolder)', 'lib'))/$(TargetFrameworkWithoutSuffix)"
-                              Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework' and !$([System.Text.RegularExpressions.Regex]::IsMatch('$(TargetFrameworks)', '$(TargetFrameworkWithoutSuffix)(?!-)'))" />
-    </ItemGroup>
-  </Target>
-
-  <!-- Runtime agnostic symbols are automatically added by the pack task.-->
-  <Target Name="AddRuntimeSpecificSymbolToPackage"
-          Condition="'$(ExcludeFromPackage)' != 'true' and
-                     '$(TargetsAnyOS)' != 'true' and
-                     '$(IncludeSymbols)' == 'true'">
-    <PropertyGroup>
-      <RuntimeSymbolPath>$(TargetDir)$(TargetName).pdb</RuntimeSymbolPath>
-    </PropertyGroup>
-
-    <ItemGroup Condition="Exists('$(RuntimeSymbolPath)')">
+                              PackagePath="runtimes/$(PackageTargetRuntime)/$(BuildOutputTargetFolder)/$(TargetFrameworkWithoutSuffix)" />
       <TfmSpecificDebugSymbolsFile Include="$(RuntimeSymbolPath)"
-                                   TargetPath="/runtimes/$(PackageTargetRuntime)/lib/$(TargetFrameworkWithoutSuffix)"
-                                   TargetFramework="$(TargetFrameworkWithoutSuffix)" />
-      <!-- Copy runtime specific symbol into the rid agnostic 'lib' folder if the ridless tfm doesn't exist on .NETFramework.
-           The assumption holds that a ridless tfm doesn't follow a '-' charater. This is necessary to avoid NU5128. -->
-      <TfmSpecificDebugSymbolsFile Include="$(RuntimeSymbolPath)"
-                                   TargetPath="/$([MSBuild]::ValueOrDefault('$(BuildOutputTargetFolder)', 'lib'))/$(TargetFrameworkWithoutSuffix)"
+                                   TargetPath="/runtimes/$(PackageTargetRuntime)/$(BuildOutputTargetFolder)/$(TargetFrameworkWithoutSuffix)/%(Filename)%(Extension)"
                                    TargetFramework="$(TargetFrameworkWithoutSuffix)"
-                                   Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework' and !$([System.Text.RegularExpressions.Regex]::IsMatch('$(TargetFrameworks)', '$(TargetFrameworkWithoutSuffix)(?!-)'))" />
+                                   Condition="'$(IncludeSymbols)' == 'true' and Exists('$(RuntimeSymbolPath)')" />
+    </ItemGroup>
+
+    <!-- Copy runtime specific assemblies into the rid agnostic $(BuildOutputTargetFolder) folder if the ridless tfm doesn't exist on .NETFramework.
+         The assumption holds that a ridless tfm doesn't follow a '-' charater. This is necessary to avoid NU5128. -->
+    <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework' and !$([System.Text.RegularExpressions.Regex]::IsMatch('$(TargetFrameworks)', '$(TargetFrameworkWithoutSuffix)(?!-)'))">
+      <TfmSpecificPackageFile Include="@(TfmRuntimeSpecificPackageFile)"
+                              PackagePath="$(BuildOutputTargetFolder)/$(TargetFrameworkWithoutSuffix)" />
+      <TfmSpecificDebugSymbolsFile Include="$(RuntimeSymbolPath)"
+                                   TargetPath="/$(BuildOutputTargetFolder)/$(TargetFrameworkWithoutSuffix)/%(Filename)%(Extension)"
+                                   TargetFramework="$(TargetFrameworkWithoutSuffix)"
+                                   Condition="'$(IncludeSymbols)' == 'true' and Exists('$(RuntimeSymbolPath)')" />
     </ItemGroup>
   </Target>
 

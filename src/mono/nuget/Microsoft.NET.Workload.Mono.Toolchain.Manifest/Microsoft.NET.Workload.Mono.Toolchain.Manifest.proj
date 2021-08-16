@@ -1,0 +1,43 @@
+<Project Sdk="Microsoft.Build.NoTargets">
+
+  <PropertyGroup>
+    <IsPackable>true</IsPackable>
+    <!-- Override the id to include the sdk band as per the workload installer spec -->
+    <PackageId>Microsoft.NET.Workload.Mono.ToolChain.Manifest-$(SdkBandVersion)</PackageId>
+    <PackageDescription>Internal toolchain package not meant for direct consumption. Please do not reference directly.</PackageDescription>
+    <!-- TODO: Enable when package shipped with NET6. -->
+    <DisablePackageBaselineValidation>true</DisablePackageBaselineValidation>
+    <SuppressDependenciesWhenPacking>true</SuppressDependenciesWhenPacking>
+    <WorkloadManifestPath>$(IntermediateOutputPath)WorkloadManifest.json</WorkloadManifestPath>
+    <WorkloadManifestTargetsPath>$(IntermediateOutputPath)WorkloadManifest.targets</WorkloadManifestTargetsPath>
+    <BeforePack>GenerateWorkloadManifestFiles;$(BeforePack)</BeforePack>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="$(WorkloadManifestPath)" PackagePath="data" Pack="true" />
+    <None Include="$(WorkloadManifestTargetsPath)" PackagePath="data" Pack="true" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.DotNet.Build.Tasks.Templating" Version="$(MicrosoftDotNetBuildTasksTemplatingVersion)" />
+  </ItemGroup>
+
+  <Target Name="GenerateWorkloadManifestFiles">
+    <ItemGroup>
+      <_WorkloadManifestValues Include="WorkloadVersion=$(PackageVersion)" />
+      <_WorkloadManifestValues Include="PackageVersion=$(PackageVersion)" />
+      <_WorkloadManifestValues Include="EmscriptenVersion=$(MicrosoftNETRuntimeEmscriptenVersion)" />
+    </ItemGroup>
+
+    <Microsoft.DotNet.Build.Tasks.Templating.GenerateFileFromTemplate
+      TemplateFile="WorkloadManifest.json.in"
+      Properties="@(_WorkloadManifestValues)"
+      OutputPath="$(WorkloadManifestPath)" />
+
+    <Microsoft.DotNet.Build.Tasks.Templating.GenerateFileFromTemplate
+      TemplateFile="WorkloadManifest.targets.in"
+      Properties="@(_WorkloadManifestValues)"
+      OutputPath="$(WorkloadManifestTargetsPath)" />
+  </Target>
+
+</Project>

@@ -1,52 +1,54 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFrameworks>$(TargetFrameworkForNETCoreTasks);$(TargetFrameworkForNETFrameworkTasks)</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppToolCurrent);$(NetFrameworkToolCurrent)</TargetFrameworks>
     <Nullable>enable</Nullable>
     <NoWarn>$(NoWarn),CA1050</NoWarn>
-    <!-- Ignore nullable warnings on net4* -->
+    <!-- Ignore nullable warnings on .NETFramework -->
     <NoWarn Condition="$([MSBuild]::GetTargetFrameworkIdentifier('$(TargetFramework)')) == '.NETFramework'">$(NoWarn),CS8604,CS8602</NoWarn>
     <EnableSingleFileAnalyzer>false</EnableSingleFileAnalyzer>
+    <IsPackable>true</IsPackable>
+    <PackageId>Microsoft.NET.Runtime.wasm.Sample.Mono</PackageId>
+    <PackageDescription>Internal package for sharing wasm App Builder.</PackageDescription>
+    <!-- TODO: Enable when package shipped with NET6. -->
+    <DisablePackageBaselineValidation>true</DisablePackageBaselineValidation>
+    <BuildOutputTargetFolder>tools</BuildOutputTargetFolder>
+    <SuppressDependenciesWhenPacking>true</SuppressDependenciesWhenPacking>
+    <IncludeBuildOutput>false</IncludeBuildOutput>
+    <TargetsForTfmSpecificContentInPackage>$(TargetsForTfmSpecificContentInPackage);_AddBuildOutputToPackageCore;_AddBuildOutputToPackageDesktop</TargetsForTfmSpecificContentInPackage>
   </PropertyGroup>
 
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">
     <Compile Include="..\Common\IsExternalInit.cs" />
-    <Compile Include="$(RepoRoot)src\libraries\System.Private.CoreLib/src/System/Diagnostics/CodeAnalysis/NullableAttributes.cs" />
+    <Compile Include="$(LibrariesProjectRoot)System.Private.CoreLib\src\System\Diagnostics\CodeAnalysis\NullableAttributes.cs" />
   </ItemGroup>
 
   <ItemGroup>
     <Compile Include="..\Common\Utils.cs" />
-
-    <PackageReference Include="Microsoft.Build" Version="$(RefOnlyMicrosoftBuildVersion)" />
-    <PackageReference Include="Microsoft.Build.Framework" Version="$(RefOnlyMicrosoftBuildFrameworkVersion)" />
-    <PackageReference Include="Microsoft.Build.Tasks.Core" Version="$(RefOnlyMicrosoftBuildTasksCoreVersion)" />
-    <PackageReference Include="Microsoft.Build.Utilities.Core" Version="$(RefOnlyMicrosoftBuildUtilitiesCoreVersion)" />
-    <PackageReference Include="System.Reflection.MetadataLoadContext" Version="4.7.1" />
   </ItemGroup>
 
-  <Target Name="PublishBuilder"
-          AfterTargets="Build">
-
-    <!-- needed for publishing with multi-targeting. We are publishing essentially to get the SR.MetadataLoadContext.dll :/ -->
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Build" Version="$(RefOnlyMicrosoftBuildVersion)" PrivateAssets="all" />
+    <PackageReference Include="Microsoft.Build.Framework" Version="$(RefOnlyMicrosoftBuildFrameworkVersion)" PrivateAssets="all" />
+    <PackageReference Include="Microsoft.Build.Tasks.Core" Version="$(RefOnlyMicrosoftBuildTasksCoreVersion)" PrivateAssets="all" />
+    <PackageReference Include="Microsoft.Build.Utilities.Core" Version="$(RefOnlyMicrosoftBuildUtilitiesCoreVersion)" PrivateAssets="all" />
+    <PackageReference Include="System.Reflection.MetadataLoadContext" Version="$(SystemReflectionMetadataLoadContextVersion)" />
+  </ItemGroup>
+  
+  <Target Name="_AddBuildOutputToPackageCore"
+          DependsOnTargets="Publish"
+          Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
     <ItemGroup>
-      <_PublishFramework Include="$(TargetFrameworks)" />
+      <TfmSpecificPackageFile Include="$(PublishDir)**"
+                              PackagePath="$(BuildOutputTargetFolder)/$(TargetFramework)/%(RecursiveDir)%(FileName)%(Extension)"/>
     </ItemGroup>
-    <MSBuild Projects="$(MSBuildProjectFile)" Targets="Publish" Properties="TargetFramework=%(_PublishFramework.Identity)" />
   </Target>
 
-  <Target Name="GetFilesToPackage" Returns="@(FilesToPackage)">
+  <Target Name="_AddBuildOutputToPackageDesktop"
+          Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">
     <ItemGroup>
-      <_PublishFramework Remove="@(_PublishFramework)" />
-      <_PublishFramework Include="$(TargetFrameworks)" />
-
-      <!-- non-net4* -->
-      <FilesToPackage Include="$(OutputPath)$(TargetFrameworkForNETCoreTasks)\$(MSBuildProjectName)*"
-                      TargetPath="tasks\$(TargetFrameworkForNETCoreTasks)" />
-      <FilesToPackage Include="$(OutputPath)$(TargetFrameworkForNETCoreTasks)\publish\System.Reflection.MetadataLoadContext.dll"
-                      TargetPath="tasks\$(TargetFrameworkForNETCoreTasks)" />
-
-      <!-- for net472 we need all the dependent assemblies too, so copy from the publish folder -->
-      <FilesToPackage Include="$(OutputPath)$(TargetFrameworkForNETFrameworkTasks)\publish\*"
-                      TargetPath="tasks\$(TargetFrameworkForNETFrameworkTasks)" />
+      <!-- Include .NET Framework build outputs in the package under tools directory. -->
+      <TfmSpecificPackageFile Include="$(OutputPath)**"
+                              PackagePath="$(BuildOutputTargetFolder)/$(TargetFramework)/%(RecursiveDir)%(FileName)%(Extension)"/>
     </ItemGroup>
   </Target>
 

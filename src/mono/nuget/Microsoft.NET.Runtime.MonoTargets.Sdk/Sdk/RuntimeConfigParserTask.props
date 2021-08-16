@@ -1,7 +1,9 @@
+<!-- Licensed to the .NET Foundation under one or more agreements. The .NET Foundation licenses this file to you under the MIT license. -->
 <Project>
   <PropertyGroup>
-    <RuntimeConfigParserTasksAssemblyPath Condition="'$(MSBuildRuntimeType)' == 'Core'">$(MSBuildThisFileDirectory)..\tasks\net6.0\RuntimeConfigParser.dll</RuntimeConfigParserTasksAssemblyPath>
-    <RuntimeConfigParserTasksAssemblyPath Condition="'$(MSBuildRuntimeType)' != 'Core'">$(MSBuildThisFileDirectory)..\tasks\net472\RuntimeConfigParser.dll</RuntimeConfigParserTasksAssemblyPath>
+    <RuntimeConfigParserTasksAssemblyPath Condition="'$(MSBuildRuntimeType)' == 'core'">$(MSBuildThisFileDirectory)..\tools\net6.0\RuntimeConfigParser.dll</RuntimeConfigParserTasksAssemblyPath>
+    <RuntimeConfigParserTasksAssemblyPath Condition="'$(MSBuildRuntimeType)' != 'core'">$(MSBuildThisFileDirectory)..\tools\net472\RuntimeConfigParser.dll</RuntimeConfigParserTasksAssemblyPath>
   </PropertyGroup>
+
   <UsingTask TaskName="RuntimeConfigParserTask" AssemblyFile="$(RuntimeConfigParserTasksAssemblyPath)" />
 </Project>

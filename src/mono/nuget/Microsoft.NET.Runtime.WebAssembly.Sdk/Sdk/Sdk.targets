@@ -1,13 +1,13 @@
+<!-- Licensed to the .NET Foundation under one or more agreements. The .NET Foundation licenses this file to you under the MIT license. -->
 <Project>
-  <!-- Property overrides -->
   <PropertyGroup>
-    <_TasksDir Condition="'$(MSBuildRuntimeType)' == 'Core'">$(MSBuildThisFileDirectory)..\tasks\net6.0\</_TasksDir>
-    <_TasksDir Condition="'$(MSBuildRuntimeType)' != 'Core'">$(MSBuildThisFileDirectory)..\tasks\net472\</_TasksDir>
+    <_TasksDir Condition="'$(MSBuildRuntimeType)' == 'core'">$(MSBuildThisFileDirectory)..\tools\net6.0\</_TasksDir>
+    <_TasksDir Condition="'$(MSBuildRuntimeType)' != 'core'">$(MSBuildThisFileDirectory)..\tools\net472\</_TasksDir>
 
     <WasmAppBuilderTasksAssemblyPath>$(_TasksDir)WasmAppBuilder.dll</WasmAppBuilderTasksAssemblyPath>
     <WasmBuildTasksAssemblyPath>$(_TasksDir)WasmBuildTasks.dll</WasmBuildTasksAssemblyPath>
   </PropertyGroup>
 
-  <Import Project="$(MSBuildThisFileDirectory)\WasmApp.props" />
-  <Import Project="$(MSBuildThisFileDirectory)\WasmApp.targets" />
+  <Import Project="$(MSBuildThisFileDirectory)WasmApp.props" />
+  <Import Project="$(MSBuildThisFileDirectory)WasmApp.targets" />
 </Project>

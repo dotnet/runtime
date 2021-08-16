@@ -1,21 +1,23 @@
 <Project Sdk="Microsoft.NET.Sdk">
+
   <PropertyGroup>
-    <TargetFramework>$(TargetFrameworkForNETCoreTasks)</TargetFramework>
-    <OutputType>Library</OutputType>
-    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <TargetFramework>$(NetCoreAppToolCurrent)</TargetFramework>
     <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
     <Nullable>enable</Nullable>
-    <NoWarn>$(NoWarn),CA1050</NoWarn>
+    <NoWarn>$(NoWarn);CA1050</NoWarn>
+    <IsPackable>true</IsPackable>
+    <PackageId>Microsoft.NET.Runtime.Android.Sample.Mono</PackageId>
+    <PackageDescription>Internal package for sharing Android App Builder.</PackageDescription>
+    <!-- TODO: Enable when package shipped with NET6. -->
+    <DisablePackageBaselineValidation>true</DisablePackageBaselineValidation>
+    <BuildOutputTargetFolder>tools</BuildOutputTargetFolder>
+    <SuppressDependenciesWhenPacking>true</SuppressDependenciesWhenPacking>
   </PropertyGroup>
+
   <ItemGroup>
     <EmbeddedResource Include="Templates\*.*" />
   </ItemGroup>
-  <ItemGroup>
-    <PackageReference Include="Microsoft.Build" Version="$(RefOnlyMicrosoftBuildVersion)" />
-    <PackageReference Include="Microsoft.Build.Framework" Version="$(RefOnlyMicrosoftBuildFrameworkVersion)" />
-    <PackageReference Include="Microsoft.Build.Tasks.Core" Version="$(RefOnlyMicrosoftBuildTasksCoreVersion)" />
-    <PackageReference Include="Microsoft.Build.Utilities.Core" Version="$(RefOnlyMicrosoftBuildUtilitiesCoreVersion)" />
-  </ItemGroup>
+
   <ItemGroup>
     <Compile Include="ApkBuilder.cs" />
     <Compile Include="AndroidAppBuilder.cs" />
@@ -23,10 +25,15 @@
     <Compile Include="..\Common\Utils.cs" />
   </ItemGroup>
 
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Build" Version="$(RefOnlyMicrosoftBuildVersion)" PrivateAssets="all" />
+    <PackageReference Include="Microsoft.Build.Framework" Version="$(RefOnlyMicrosoftBuildFrameworkVersion)" PrivateAssets="all" />
+    <PackageReference Include="Microsoft.Build.Tasks.Core" Version="$(RefOnlyMicrosoftBuildTasksCoreVersion)" PrivateAssets="all" />
+    <PackageReference Include="Microsoft.Build.Utilities.Core" Version="$(RefOnlyMicrosoftBuildUtilitiesCoreVersion)" PrivateAssets="all" />
+  </ItemGroup>
+
   <Target Name="PublishBuilder"
           AfterTargets="Build"
           DependsOnTargets="Publish" />
-
-  <Target Name="GetFilesToPackage" />
 
 </Project>

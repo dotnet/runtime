@@ -1,40 +1,39 @@
 <Project Sdk="Microsoft.NET.Sdk">
+
   <PropertyGroup>
-    <TargetFrameworks>$(TargetFrameworkForNETCoreTasks);$(TargetFrameworkForNETFrameworkTasks)</TargetFrameworks>
-    <OutputType>Library</OutputType>
-    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <TargetFrameworks>$(NetCoreAppToolCurrent);$(NetFrameworkToolCurrent)</TargetFrameworks>
     <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
     <Nullable>enable</Nullable>
-    <NoWarn>$(NoWarn),CA1050</NoWarn>
-
-    <!-- Ignore nullable warnings on net4* -->
-    <NoWarn Condition="$(TargetFramework.StartsWith('net4'))">$(NoWarn),CS8604,CS8602</NoWarn>
+    <NoWarn>$(NoWarn);CA1050</NoWarn>
+    <!-- Ignore nullable warnings on .NETFramework. -->
+    <NoWarn Condition="$([MSBuild]::GetTargetFrameworkIdentifier('$(TargetFramework)')) == '.NETFramework'">$(NoWarn);CS8604;CS8602</NoWarn>
+    <IsPackable>true</IsPackable>
+    <PackageId>Microsoft.NET.Runtime.MonoAOTCompiler.Task</PackageId>
+    <PackageDescription>Provides the MonoAOTCompiler task</PackageDescription>
+    <!-- TODO: Enable when package shipped with NET6. -->
+    <DisablePackageBaselineValidation>true</DisablePackageBaselineValidation>
+    <BuildOutputTargetFolder>tools</BuildOutputTargetFolder>
+    <SuppressDependenciesWhenPacking>true</SuppressDependenciesWhenPacking>
   </PropertyGroup>
-  <ItemGroup>
-    <PackageReference Include="Microsoft.Build" Version="$(RefOnlyMicrosoftBuildVersion)" />
-    <PackageReference Include="Microsoft.Build.Framework" Version="$(RefOnlyMicrosoftBuildFrameworkVersion)" />
-    <PackageReference Include="Microsoft.Build.Tasks.Core" Version="$(RefOnlyMicrosoftBuildTasksCoreVersion)" />
-    <PackageReference Include="Microsoft.Build.Utilities.Core" Version="$(RefOnlyMicrosoftBuildUtilitiesCoreVersion)" />
-    <PackageReference Include="System.Reflection.Metadata" Version="$(SystemReflectionMetadataVersion)" />
-  </ItemGroup>
+
   <ItemGroup>
     <Compile Include="MonoAOTCompiler.cs" />
     <Compile Include="..\Common\Utils.cs" />
-    <Compile Include="$(RepoRoot)src\libraries\System.Private.CoreLib\src\System\Diagnostics\CodeAnalysis\NullableAttributes.cs" Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'" />
+    <Compile Include="$(LibrariesProjectRoot)System.Private.CoreLib\src\System\Diagnostics\CodeAnalysis\NullableAttributes.cs" Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'" />
   </ItemGroup>
+
   <ItemGroup>
-    <Content Include="MonoAOTCompiler.props">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
+    <Content Include="MonoAOTCompiler.props" CopyToOutputDirectory="PreserveNewest" Pack="false" />
+    <None Include="Sdk\*" PackagePath="Sdk" Pack="true" />
+    <None Include="build\*" PackagePath="build" Pack="true" />
   </ItemGroup>
 
-  <!-- GetFilesToPackage assists to place `MonoAOTCompiler.dll` in a NuGet package in Microsoft.NET.Runtime.MonoAOTCompiler.Task.pkgproj for external use -->
-  <Target Name="GetFilesToPackage" Returns="@(FilesToPackage)">
-    <ItemGroup>
-      <_PublishFramework Remove="@(_PublishFramework)" />
-      <_PublishFramework Include="$(TargetFrameworks)" />
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Build" Version="$(RefOnlyMicrosoftBuildVersion)" PrivateAssets="all" />
+    <PackageReference Include="Microsoft.Build.Framework" Version="$(RefOnlyMicrosoftBuildFrameworkVersion)" PrivateAssets="all" />
+    <PackageReference Include="Microsoft.Build.Tasks.Core" Version="$(RefOnlyMicrosoftBuildTasksCoreVersion)" PrivateAssets="all" />
+    <PackageReference Include="Microsoft.Build.Utilities.Core" Version="$(RefOnlyMicrosoftBuildUtilitiesCoreVersion)" PrivateAssets="all" />
+    <PackageReference Include="System.Reflection.Metadata" Version="$(SystemReflectionMetadataVersion)" PrivateAssets="all" Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'" />
+  </ItemGroup>
 
-      <FilesToPackage Include="$(OutputPath)%(_PublishFramework.Identity)\$(AssemblyName).dll" TargetPath="tasks\%(_PublishFramework.Identity)" />
-    </ItemGroup>
-  </Target>
 </Project>

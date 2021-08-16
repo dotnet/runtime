@@ -1,17 +1,20 @@
 <Project Sdk="Microsoft.NET.Sdk">
+
   <PropertyGroup>
-    <TargetFramework>$(TargetFrameworkForNETCoreTasks)</TargetFramework>
-    <OutputType>Library</OutputType>
+    <TargetFramework>$(NetCoreAppToolCurrent)</TargetFramework>
     <Nullable>enable</Nullable>
     <NoWarn>$(NoWarn),CA1050</NoWarn>
   </PropertyGroup>
+
   <ItemGroup>
     <Compile Include="..\Common\Utils.cs" />
+  </ItemGroup>
 
-    <PackageReference Include="Microsoft.Build" Version="$(RefOnlyMicrosoftBuildVersion)" />
-    <PackageReference Include="Microsoft.Build.Framework" Version="$(RefOnlyMicrosoftBuildFrameworkVersion)" />
-    <PackageReference Include="Microsoft.Build.Tasks.Core" Version="$(RefOnlyMicrosoftBuildTasksCoreVersion)" />
-    <PackageReference Include="Microsoft.Build.Utilities.Core" Version="$(RefOnlyMicrosoftBuildUtilitiesCoreVersion)" />
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Build" Version="$(RefOnlyMicrosoftBuildVersion)" PrivateAssets="all" />
+    <PackageReference Include="Microsoft.Build.Framework" Version="$(RefOnlyMicrosoftBuildFrameworkVersion)" PrivateAssets="all" />
+    <PackageReference Include="Microsoft.Build.Tasks.Core" Version="$(RefOnlyMicrosoftBuildTasksCoreVersion)" PrivateAssets="all" />
+    <PackageReference Include="Microsoft.Build.Utilities.Core" Version="$(RefOnlyMicrosoftBuildUtilitiesCoreVersion)" PrivateAssets="all" />
   </ItemGroup>
 
   <Target Name="PublishBuilder"

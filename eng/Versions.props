@@ -56,6 +56,7 @@
     <!-- Arcade dependencies -->
     <MicrosoftDotNetApiCompatVersion>6.0.0-beta.21412.1</MicrosoftDotNetApiCompatVersion>
     <MicrosoftDotNetBuildTasksFeedVersion>6.0.0-beta.21412.1</MicrosoftDotNetBuildTasksFeedVersion>
+    <MicrosoftDotNetBuildTasksTemplatingVersion>6.0.0-beta.21412.1</MicrosoftDotNetBuildTasksTemplatingVersion>
     <MicrosoftDotNetCodeAnalysisVersion>6.0.0-beta.21412.1</MicrosoftDotNetCodeAnalysisVersion>
     <MicrosoftDotNetGenAPIVersion>6.0.0-beta.21412.1</MicrosoftDotNetGenAPIVersion>
     <MicrosoftDotNetGenFacadesVersion>6.0.0-beta.21412.1</MicrosoftDotNetGenFacadesVersion>
@@ -96,6 +97,7 @@
     <SystemNetPrimitivesVersion>4.3.1</SystemNetPrimitivesVersion>
     <SystemNumericsVectorsVersion>4.5.0</SystemNumericsVectorsVersion>
     <SystemReflectionMetadataVersion>5.0.0</SystemReflectionMetadataVersion>
+    <SystemReflectionMetadataLoadContextVersion>5.0.1</SystemReflectionMetadataLoadContextVersion>
     <SystemReflectionEmitVersion>4.7.0</SystemReflectionEmitVersion>
     <SystemReflectionEmitILGenerationVersion>4.7.0</SystemReflectionEmitILGenerationVersion>
     <SystemReflectionEmitLightweightVersion>4.7.0</SystemReflectionEmitLightweightVersion>

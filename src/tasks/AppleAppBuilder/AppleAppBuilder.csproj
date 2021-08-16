@@ -1,21 +1,25 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFrameworks>$(TargetFrameworkForNETCoreTasks)</TargetFrameworks>
-    <OutputType>Library</OutputType>
-    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <TargetFrameworks>$(NetCoreAppToolCurrent)</TargetFrameworks>
     <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
     <Nullable>enable</Nullable>
-    <NoWarn>$(NoWarn),CA1050</NoWarn>
+    <NoWarn>$(NoWarn);CA1050</NoWarn>
+    <IsPackable>true</IsPackable>
+    <PackageId>Microsoft.NET.Runtime.iOS.Sample.Mono</PackageId>
+    <PackageDescription>Internal package for sharing embedded Mono runtime and iOS App Builder.</PackageDescription>
+    <!-- TODO: Enable when package shipped with NET6. -->
+    <DisablePackageBaselineValidation>true</DisablePackageBaselineValidation>
+    <BuildOutputTargetFolder>tools</BuildOutputTargetFolder>
+    <SuppressDependenciesWhenPacking>true</SuppressDependenciesWhenPacking>
+    <DefaultAllowedOutputExtensionsInPackageBuildOutputFolder>$(DefaultAllowedOutputExtensionsInPackageBuildOutputFolder).h;.m</DefaultAllowedOutputExtensionsInPackageBuildOutputFolder>
   </PropertyGroup>
+
   <ItemGroup>
     <EmbeddedResource Include="Templates\*.*" />
+    <BuildOutputInPackage Include="Templates\runtime.h" />
+    <BuildOutputInPackage Include="Templates\runtime.m" />
   </ItemGroup>
-  <ItemGroup>
-    <PackageReference Include="Microsoft.Build" Version="$(RefOnlyMicrosoftBuildVersion)" />
-    <PackageReference Include="Microsoft.Build.Framework" Version="$(RefOnlyMicrosoftBuildFrameworkVersion)" />
-    <PackageReference Include="Microsoft.Build.Tasks.Core" Version="$(RefOnlyMicrosoftBuildTasksCoreVersion)" />
-    <PackageReference Include="Microsoft.Build.Utilities.Core" Version="$(RefOnlyMicrosoftBuildUtilitiesCoreVersion)" />
-  </ItemGroup>
+
   <ItemGroup>
     <Compile Include="AppleAppBuilder.cs" />
     <Compile Include="..\Common\Utils.cs" />
@@ -23,6 +27,11 @@
     <Compile Include="Xcode.cs" />
   </ItemGroup>
 
-  <Target Name="GetFilesToPackage" />
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Build" Version="$(RefOnlyMicrosoftBuildVersion)" PrivateAssets="all" />
+    <PackageReference Include="Microsoft.Build.Framework" Version="$(RefOnlyMicrosoftBuildFrameworkVersion)" PrivateAssets="all" />
+    <PackageReference Include="Microsoft.Build.Tasks.Core" Version="$(RefOnlyMicrosoftBuildTasksCoreVersion)" PrivateAssets="all" />
+    <PackageReference Include="Microsoft.Build.Utilities.Core" Version="$(RefOnlyMicrosoftBuildUtilitiesCoreVersion)" PrivateAssets="all" />
+  </ItemGroup>
 
 </Project>

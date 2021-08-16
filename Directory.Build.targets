@@ -93,4 +93,7 @@
       <HostPolicyVersion Condition="'$(HostPolicyVersion)' == ''">$(ProductVersion)</HostPolicyVersion>
     </PropertyGroup>
   </Target>
+
+  <!-- TODO: Remove SkipPackagingTargetsImport condition when coreclr and installer use the common packaging infrastructure. -->
+  <Import Project="$(RepositoryEngineeringDir)packaging.targets" Condition="'$(IsPackable)' == 'true' and '$(SkipPackagingTargetsImport)' != 'true'" />
 </Project>

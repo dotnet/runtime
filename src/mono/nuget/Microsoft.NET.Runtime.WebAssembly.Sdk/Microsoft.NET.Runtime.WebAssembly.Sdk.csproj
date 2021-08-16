@@ -1,0 +1,33 @@
+<Project Sdk="Microsoft.Build.NoTargets">
+
+  <PropertyGroup>
+    <!-- Using a csproj extension to get the correct multi-targeting behavior. -->
+    <TargetFrameworks>$(NetCoreAppToolCurrent);$(NetFrameworkToolCurrent)</TargetFrameworks>
+    <!-- Reference the outputs to include them in the build output. -->
+    <NoTargetsDoNotReferenceOutputAssemblies>false</NoTargetsDoNotReferenceOutputAssemblies>
+    <!-- IncludeBuildOutput needs to be set to true to make NuGet include the passed in debug symbol files. -->
+    <IncludeBuildOutput>true</IncludeBuildOutput>
+    <DebugSymbols>false</DebugSymbols>
+    <DebugType>none</DebugType>
+    <IsPackable>true</IsPackable>
+    <PackageDescription>Provides the tasks+targets, for consumption by wasm based workloads</PackageDescription>
+    <!-- TODO: Enable when package shipped with NET6. -->
+    <DisablePackageBaselineValidation>true</DisablePackageBaselineValidation>
+    <BuildOutputTargetFolder>tools</BuildOutputTargetFolder>
+    <SuppressDependenciesWhenPacking>true</SuppressDependenciesWhenPacking>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="Sdk\*" PackagePath="Sdk" Pack="true" />
+    <None Include="$(MonoProjectRoot)wasm\build\WasmApp.props" PackagePath="Sdk" Pack="true" />
+    <None Include="$(MonoProjectRoot)wasm\build\WasmApp.targets" PackagePath="Sdk" Pack="true" />
+    <None Include="$(MonoProjectRoot)wasm\build\WasmApp.Native.*" PackagePath="Sdk" Pack="true" />
+    <None Include="$(MonoProjectRoot)wasm\build\EmSdkRepo.Defaults.props" PackagePath="Sdk" Pack="true" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="$(RepoTasksDir)WasmAppBuilder\WasmAppBuilder.csproj" PrivateAssets="all" Pack="true" />
+    <ProjectReference Include="$(RepoTasksDir)WasmBuildTasks\WasmBuildTasks.csproj" PrivateAssets="all" Pack="true" Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'" />
+  </ItemGroup>
+
+</Project>

@@ -1,0 +1,29 @@
+<Project Sdk="Microsoft.Build.NoTargets">
+
+  <PropertyGroup>
+    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
+    <IsPackable>true</IsPackable>
+    <PackageDescription>Internal package for sharing BrowserDebugHost.</PackageDescription>
+    <IsShipping>false</IsShipping>
+    <!-- TODO: Enable when package shipped with NET6. -->
+    <DisablePackageBaselineValidation>true</DisablePackageBaselineValidation>
+    <SuppressDependenciesWhenPacking>true</SuppressDependenciesWhenPacking>
+    <BuildOutputTargetFolder>tools</BuildOutputTargetFolder>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="$(MonoProjectRoot)wasm\debugger\BrowserDebugHost\BrowserDebugHost.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <_browserDebugHostFile Include="$(ArtifactsBinDir)BrowserDebugHost\$(TargetArchitecture)\$(Configuration)\BrowserDebugHost.dll" />
+    <_browserDebugHostFile Include="$(ArtifactsBinDir)BrowserDebugHost\$(TargetArchitecture)\$(Configuration)\BrowserDebugHost.runtimeconfig.json" />
+    <_browserDebugHostFile Include="$(ArtifactsBinDir)BrowserDebugHost\$(TargetArchitecture)\$(Configuration)\BrowserDebugProxy.dll" />
+    <_browserDebugHostFile Include="$(ArtifactsBinDir)BrowserDebugHost\$(TargetArchitecture)\$(Configuration)\Microsoft.CodeAnalysis.CSharp.dll" />
+    <_browserDebugHostFile Include="$(ArtifactsBinDir)BrowserDebugHost\$(TargetArchitecture)\$(Configuration)\Microsoft.CodeAnalysis.dll" />
+    <_browserDebugHostFile Include="$(ArtifactsBinDir)BrowserDebugHost\$(TargetArchitecture)\$(Configuration)\Newtonsoft.Json.dll" />
+
+    <None Include="@(_browserDebugHostFile)" PackagePath="$(BuildOutputTargetFolder)\$(TargetFramework)" Pack="true" />
+  </ItemGroup>
+
+</Project>

@@ -14,5 +14,7 @@
       The NuGet fallback folder can/will contain packages we are building in this repo, and we
       want to ensure we use the correct packages. -->
     <DisableImplicitNuGetFallbackFolder>true</DisableImplicitNuGetFallbackFolder>
+    <!-- TODO: Remove when installer uses the common packaging infrastructure and removed pkgprojs. -->
+    <SkipPackagingTargetsImport>true</SkipPackagingTargetsImport>
   </PropertyGroup>
 </Project>

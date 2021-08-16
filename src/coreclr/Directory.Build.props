@@ -24,4 +24,9 @@
     <SignAssembly Condition="'$(UsingMicrosoftNETSdk)' != 'true'">false</SignAssembly>
     <CL_MPCount>$(NumberOfCores)</CL_MPCount>
   </PropertyGroup>
+
+  <!-- TODO: Remove when coreclr uses the common packaging infrastructure and removed pkgprojs. -->
+  <PropertyGroup>
+    <SkipPackagingTargetsImport>true</SkipPackagingTargetsImport>
+  </PropertyGroup>
 </Project>
