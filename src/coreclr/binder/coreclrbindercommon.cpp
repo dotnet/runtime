@@ -89,7 +89,7 @@ HRESULT CCoreCLRBinderHelper::BindToSystem(BINDER_SPACE::Assembly **ppSystemAsse
     {
         ReleaseHolder<BINDER_SPACE::Assembly> pAsm;
         StackSString systemPath(SystemDomain::System()->SystemDirectory());
-        hr = AssemblyBinder::BindToSystem(systemPath, &pAsm, fBindToNativeImage);
+        hr = BINDER_SPACE::AssemblyBinder::BindToSystem(systemPath, &pAsm, fBindToNativeImage);
         if(SUCCEEDED(hr))
         {
             _ASSERTE(pAsm != NULL);
@@ -112,7 +112,7 @@ HRESULT CCoreCLRBinderHelper::BindToSystemSatellite(SString            &systemPa
     EX_TRY
     {
         ReleaseHolder<BINDER_SPACE::Assembly> pAsm;
-        hr = AssemblyBinder::BindToSystemSatellite(systemPath, sSimpleName, sCultureName, &pAsm);
+        hr = BINDER_SPACE::AssemblyBinder::BindToSystemSatellite(systemPath, sSimpleName, sCultureName, &pAsm);
         if(SUCCEEDED(hr))
         {
             _ASSERTE(pAsm != NULL);

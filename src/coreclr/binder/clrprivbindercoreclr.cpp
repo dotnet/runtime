@@ -23,7 +23,7 @@ HRESULT CLRPrivBinderCoreCLR::BindAssemblyByNameWorker(BINDER_SPACE::AssemblyNam
     _ASSERTE(!pAssemblyName->IsCoreLib());
 #endif
 
-    hr = AssemblyBinder::BindAssembly(this,
+    hr = BINDER_SPACE::AssemblyBinder::BindAssembly(this,
                                       pAssemblyName,
                                       NULL,
                                       NULL,
@@ -88,7 +88,7 @@ HRESULT CLRPrivBinderCoreCLR::BindUsingAssemblyName(BINDER_SPACE::AssemblyName *
 
         if (pManagedAssemblyLoadContext != NULL)
         {
-            hr = AssemblyBinder::BindUsingHostAssemblyResolver(pManagedAssemblyLoadContext, pAssemblyName,
+            hr = BINDER_SPACE::AssemblyBinder::BindUsingHostAssemblyResolver(pManagedAssemblyLoadContext, pAssemblyName,
                                                                 NULL, &pCoreCLRFoundAssembly);
             if (SUCCEEDED(hr))
             {
@@ -131,7 +131,7 @@ HRESULT CLRPrivBinderCoreCLR::BindUsingPEImage( /* in */ PEImage *pPEImage,
         // Get the Metadata interface
         DWORD dwPAFlags[2];
         IF_FAIL_GO(BinderAcquireImport(pPEImage, &pIMetaDataAssemblyImport, dwPAFlags, fIsNativeImage));
-        IF_FAIL_GO(AssemblyBinder::TranslatePEToArchitectureType(dwPAFlags, &PeKind));
+        IF_FAIL_GO(BINDER_SPACE::AssemblyBinder::TranslatePEToArchitectureType(dwPAFlags, &PeKind));
 
         _ASSERTE(pIMetaDataAssemblyImport != NULL);
 
@@ -172,7 +172,7 @@ HRESULT CLRPrivBinderCoreCLR::BindUsingPEImage( /* in */ PEImage *pPEImage,
             }
         }
 
-        hr = AssemblyBinder::BindUsingPEImage(this, pAssemblyName, pPEImage, PeKind, pIMetaDataAssemblyImport, &pCoreCLRFoundAssembly);
+        hr = BINDER_SPACE::AssemblyBinder::BindUsingPEImage(this, pAssemblyName, pPEImage, PeKind, pIMetaDataAssemblyImport, &pCoreCLRFoundAssembly);
         if (hr == S_OK)
         {
             _ASSERTE(pCoreCLRFoundAssembly != NULL);
@@ -202,7 +202,7 @@ HRESULT CLRPrivBinderCoreCLR::SetupBindingPaths(SString  &sTrustedPlatformAssemb
     return hr;
 }
 
-// See code:BINDER_SPACE::AssemblyBinder::GetAssembly for info on fNgenExplicitBind
+// See code:BINDER_SPACE::BINDER_SPACE::AssemblyBinder::GetAssembly for info on fNgenExplicitBind
 // and fExplicitBindToNativeImage, and see code:CEECompileInfo::LoadAssemblyByPath
 // for an example of how they're used.
 HRESULT CLRPrivBinderCoreCLR::Bind(LPCWSTR            wszCodeBase,
@@ -217,7 +217,7 @@ HRESULT CLRPrivBinderCoreCLR::Bind(LPCWSTR            wszCodeBase,
     EX_TRY
     {
         ReleaseHolder<BINDER_SPACE::Assembly> pAsm;
-        hr = AssemblyBinder::BindAssembly(this,
+        hr = BINDER_SPACE::AssemblyBinder::BindAssembly(this,
                                           NULL,
                                           wszCodeBase,
                                           pParentAssembly,

@@ -10,24 +10,6 @@ AssemblyLoadContext::AssemblyLoadContext()
 
 #ifndef DACCESS_COMPILE
 
-HRESULT ICLRPrivBinder::BindAssemblyByName(AssemblyNameData* pAssemblyNameData,
-    BINDER_SPACE::Assembly** ppAssembly)
-{
-    HRESULT hr = S_OK;
-    VALIDATE_ARG_RET(pAssemblyNameData != nullptr && ppAssembly != nullptr);
-
-    *ppAssembly = nullptr;
-
-    ReleaseHolder<BINDER_SPACE::AssemblyName> pAssemblyName;
-    SAFE_NEW(pAssemblyName, BINDER_SPACE::AssemblyName);
-    IF_FAIL_GO(pAssemblyName->Init(*pAssemblyNameData));
-
-    hr = BindUsingAssemblyName(pAssemblyName, ppAssembly);
-
-Exit:
-    return hr;
-}
-
 NativeImage *AssemblyLoadContext::LoadNativeImage(Module *componentModule, LPCUTF8 nativeImageName)
 {
     STANDARD_VM_CONTRACT;

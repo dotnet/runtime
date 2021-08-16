@@ -565,7 +565,7 @@ public:
         return m_pHostAssembly;
     }
 
-    // Returns the ICLRPrivBinder* instance associated with the PEFile
+    // Returns the AssemblyBinder* instance associated with the PEFile
     PTR_ICLRPrivBinder GetBindingContext();
 
 #ifndef DACCESS_COMPILE

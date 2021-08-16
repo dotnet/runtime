@@ -238,8 +238,8 @@ void AssemblySpec::InitializeSpec(PEAssembly * pFile)
     InitializeSpec(a, pImport, NULL);
 
     // Set the binding context for the AssemblySpec
-    ICLRPrivBinder* pCurrentBinder = GetBindingContext();
-    ICLRPrivBinder* pExpectedBinder = pFile->GetBindingContext();
+    AssemblyBinder* pCurrentBinder = GetBindingContext();
+    AssemblyBinder* pExpectedBinder = pFile->GetBindingContext();
     if (pCurrentBinder == NULL)
     {
         // We should aways having the binding context in the PEAssembly. The only exception to this are the following:
@@ -678,7 +678,7 @@ Assembly *AssemblySpec::LoadAssembly(FileLoadLevel targetLevel, BOOL fThrowOnFil
     return pDomainAssembly->GetAssembly();
 }
 
-ICLRPrivBinder* AssemblySpec::GetBindingContextFromParentAssembly(AppDomain *pDomain)
+AssemblyBinder* AssemblySpec::GetBindingContextFromParentAssembly(AppDomain *pDomain)
 {
     CONTRACTL
     {
@@ -689,7 +689,7 @@ ICLRPrivBinder* AssemblySpec::GetBindingContextFromParentAssembly(AppDomain *pDo
     }
     CONTRACTL_END;
 
-    ICLRPrivBinder *pParentAssemblyBinder = NULL;
+    AssemblyBinder *pParentAssemblyBinder = NULL;
     DomainAssembly *pParentDomainAssembly = GetParentAssembly();
 
     if(pParentDomainAssembly != NULL)
@@ -735,7 +735,7 @@ ICLRPrivBinder* AssemblySpec::GetBindingContextFromParentAssembly(AppDomain *pDo
             // TPABinder context anyways.
             //
             // Get the reference to the default binding context (this could be the TPABinder context or custom AssemblyLoadContext)
-            pParentAssemblyBinder = static_cast<ICLRPrivBinder*>(pDomain->GetTPABinderContext());
+            pParentAssemblyBinder = static_cast<AssemblyBinder*>(pDomain->GetTPABinderContext());
         }
     }
 
@@ -746,7 +746,7 @@ ICLRPrivBinder* AssemblySpec::GetBindingContextFromParentAssembly(AppDomain *pDo
         //
         // In such a case, the parent assembly (semantically) is CoreLibrary and thus, the default binding context should be
         // used as the parent assembly binder.
-        pParentAssemblyBinder = static_cast<ICLRPrivBinder*>(pDomain->GetTPABinderContext());
+        pParentAssemblyBinder = static_cast<AssemblyBinder*>(pDomain->GetTPABinderContext());
     }
 
     return pParentAssemblyBinder;
@@ -1009,7 +1009,7 @@ AssemblySpecBindingCache::AssemblyBinding* AssemblySpecBindingCache::LookupInter
     UPTR key = (UPTR)pSpec->Hash();
 
     // On CoreCLR, we will use the BinderID as the key
-    ICLRPrivBinder *pBinderContextForLookup = NULL;
+    AssemblyBinder *pBinderContextForLookup = NULL;
     AppDomain *pSpecDomain = pSpec->GetAppDomain();
     bool fGetBindingContextFromParent = true;
 
@@ -1253,7 +1253,7 @@ BOOL AssemblySpecBindingCache::StoreAssembly(AssemblySpec *pSpec, DomainAssembly
     UPTR key = (UPTR)pSpec->Hash();
 
     // On CoreCLR, we will use the BinderID as the key
-    ICLRPrivBinder* pBinderContextForLookup = pAssembly->GetFile()->GetBindingContext();
+    AssemblyBinder* pBinderContextForLookup = pAssembly->GetFile()->GetBindingContext();
 
     _ASSERTE(pBinderContextForLookup || pAssembly->GetFile()->IsSystem());
     if (pBinderContextForLookup)
@@ -1335,7 +1335,7 @@ BOOL AssemblySpecBindingCache::StoreFile(AssemblySpec *pSpec, PEAssembly *pFile)
     UPTR key = (UPTR)pSpec->Hash();
 
     // On CoreCLR, we will use the BinderID as the key
-    ICLRPrivBinder* pBinderContextForLookup = pFile->GetBindingContext();
+    AssemblyBinder* pBinderContextForLookup = pFile->GetBindingContext();
 
     _ASSERTE(pBinderContextForLookup || pFile->IsSystem());
     if (pBinderContextForLookup)
@@ -1425,7 +1425,7 @@ BOOL AssemblySpecBindingCache::StoreException(AssemblySpec *pSpec, Exception* pE
         //
         // Since no entry was found for this assembly in any binding context, save the failure
         // in the TPABinder context
-        ICLRPrivBinder* pBinderToSaveException = NULL;
+        AssemblyBinder* pBinderToSaveException = NULL;
         pBinderToSaveException = pSpec->GetBindingContext();
         if (pBinderToSaveException == NULL)
         {

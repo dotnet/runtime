@@ -249,7 +249,7 @@ namespace BINDER_SPACE
     // See code:BINDER_SPACE::AssemblyBinder::GetAssembly for info on fNgenExplicitBind
     // and fExplicitBindToNativeImage, and see code:CEECompileInfo::LoadAssemblyByPath
     // for an example of how they're used.
-    HRESULT AssemblyBinder::BindAssembly(/* in */  ICLRPrivBinder      *pBinder,
+    HRESULT AssemblyBinder::BindAssembly(/* in */  ::AssemblyBinder      *pBinder,
                                          /* in */  AssemblyName        *pAssemblyName,
                                          /* in */  LPCWSTR              szCodeBase,
                                          /* in */  PEAssembly          *pParentAssembly,
@@ -1429,7 +1429,7 @@ HRESULT AssemblyBinder::BindUsingHostAssemblyResolver(/* in */ INT_PTR pManagedA
 }
 
 /* static */
-HRESULT AssemblyBinder::BindUsingPEImage(/* in */  ICLRPrivBinder* pBinder,
+HRESULT AssemblyBinder::BindUsingPEImage(/* in */  ::AssemblyBinder* pBinder,
                                          /* in */  BINDER_SPACE::AssemblyName *pAssemblyName,
                                          /* in */  PEImage            *pPEImage,
                                          /* in */  PEKIND              peKind,

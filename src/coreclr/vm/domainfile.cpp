@@ -1738,7 +1738,7 @@ BOOL DomainAssembly::CheckZapDependencyIdentities(PEImage *pNativeImage)
                 // We just initialized the assembly spec for the NI dependency. This will not have binding context
                 // associated with it, so set it from that of the parent.
                 _ASSERTE(!name.GetBindingContext());
-                ICLRPrivBinder *pParentAssemblyBindingContext = name.GetBindingContextFromParentAssembly(name.GetAppDomain());
+                AssemblyBinder *pParentAssemblyBindingContext = name.GetBindingContextFromParentAssembly(name.GetAppDomain());
                 _ASSERTE(pParentAssemblyBindingContext);
                 name.SetBindingContext(pParentAssemblyBindingContext);
             }

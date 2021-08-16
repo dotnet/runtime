@@ -94,7 +94,7 @@ namespace BinderTracing
 
     public:
         // One of native bindContext or managedALC is expected to be non-zero. If the managed ALC is set, bindContext is ignored.
-        ResolutionAttemptedOperation(BINDER_SPACE::AssemblyName *assemblyName, ICLRPrivBinder* bindContext, INT_PTR managedALC, const HRESULT& hr);
+        ResolutionAttemptedOperation(BINDER_SPACE::AssemblyName *assemblyName, AssemblyBinder* bindContext, INT_PTR managedALC, const HRESULT& hr);
 
         void TraceBindResult(const BINDER_SPACE::BindResult &bindResult, bool mvidMismatch = false);
 

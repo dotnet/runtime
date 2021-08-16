@@ -402,8 +402,8 @@ BOOL PEFile::Equals(PEFile *pFile)
     // because another thread beats it; the losing thread will pick up the PEAssembly in the cache.
     if (pFile->HasHostAssembly() && this->HasHostAssembly())
     {
-        ICLRPrivBinder* fileBinderId = pFile->GetHostAssembly()->GetBinder();
-        ICLRPrivBinder* thisBinderId = this->GetHostAssembly()->GetBinder();
+        AssemblyBinder* fileBinderId = pFile->GetHostAssembly()->GetBinder();
+        AssemblyBinder* thisBinderId = this->GetHostAssembly()->GetBinder();
 
         if (fileBinderId != thisBinderId || fileBinderId == NULL)
             return FALSE;
@@ -2374,7 +2374,7 @@ TADDR PEFile::GetMDInternalRWAddress()
 }
 #endif
 
-// Returns the ICLRPrivBinder* instance associated with the PEFile
+// Returns the AssemblyBinder* instance associated with the PEFile
 PTR_ICLRPrivBinder PEFile::GetBindingContext()
 {
     LIMITED_METHOD_CONTRACT;

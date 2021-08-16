@@ -54,12 +54,12 @@ void QCALLTYPE AssemblyNative::InternalLoad(QCall::ObjectHandleOnStack assemblyN
 
     DomainAssembly * pParentAssembly = NULL;
     Assembly * pRefAssembly = NULL;
-    ICLRPrivBinder *pBinderContext = NULL;
+    AssemblyBinder *pBinderContext = NULL;
 
     if (assemblyLoadContext.Get() != NULL)
     {
         INT_PTR nativeAssemblyLoadContext = ((ASSEMBLYLOADCONTEXTREF)assemblyLoadContext.Get())->GetNativeAssemblyLoadContext();
-        pBinderContext = reinterpret_cast<ICLRPrivBinder*>(nativeAssemblyLoadContext);
+        pBinderContext = reinterpret_cast<AssemblyBinder*>(nativeAssemblyLoadContext);
     }
 
     AssemblySpec spec;
@@ -127,7 +127,7 @@ void QCALLTYPE AssemblyNative::InternalLoad(QCall::ObjectHandleOnStack assemblyN
 }
 
 /* static */
-Assembly* AssemblyNative::LoadFromPEImage(ICLRPrivBinder* pBinderContext, PEImage *pILImage, PEImage *pNIImage)
+Assembly* AssemblyNative::LoadFromPEImage(AssemblyBinder* pBinderContext, PEImage *pILImage, PEImage *pNIImage)
 {
     CONTRACT(Assembly*)
     {
@@ -213,7 +213,7 @@ void QCALLTYPE AssemblyNative::LoadFromPath(INT_PTR ptrNativeAssemblyLoadContext
     PTR_AppDomain pCurDomain = GetAppDomain();
 
     // Get the binder context in which the assembly will be loaded.
-    ICLRPrivBinder *pBinderContext = reinterpret_cast<ICLRPrivBinder*>(ptrNativeAssemblyLoadContext);
+    AssemblyBinder *pBinderContext = reinterpret_cast<AssemblyBinder*>(ptrNativeAssemblyLoadContext);
     _ASSERTE(pBinderContext != NULL);
 
     // Form the PEImage for the ILAssembly. Incase of an exception, the holders will ensure
@@ -302,7 +302,7 @@ void QCALLTYPE AssemblyNative::LoadFromStream(INT_PTR ptrNativeAssemblyLoadConte
         ThrowHR(COR_E_BADIMAGEFORMAT, BFA_BAD_IL);
 
     // Get the binder context in which the assembly will be loaded
-    ICLRPrivBinder *pBinderContext = reinterpret_cast<ICLRPrivBinder*>(ptrNativeAssemblyLoadContext);
+    AssemblyBinder *pBinderContext = reinterpret_cast<AssemblyBinder*>(ptrNativeAssemblyLoadContext);
 
     LoaderAllocator* pLoaderAllocator = pBinderContext->GetLoaderAllocator();
     if (pLoaderAllocator && pLoaderAllocator->IsCollectible() && !pILImage->IsILOnly())
@@ -365,7 +365,7 @@ void QCALLTYPE AssemblyNative::LoadFromInMemoryModule(INT_PTR ptrNativeAssemblyL
         ThrowHR(COR_E_BADIMAGEFORMAT, BFA_BAD_IL);
 
     // Get the binder context in which the assembly will be loaded
-    ICLRPrivBinder *pBinderContext = reinterpret_cast<ICLRPrivBinder*>(ptrNativeAssemblyLoadContext);
+    AssemblyBinder *pBinderContext = reinterpret_cast<AssemblyBinder*>(ptrNativeAssemblyLoadContext);
 
     // Pass the in memory module as IL in an attempt to bind and load it
     Assembly* pLoadedAssembly = AssemblyNative::LoadFromPEImage(pBinderContext, pILImage, NULL);
@@ -419,7 +419,7 @@ void QCALLTYPE AssemblyNative::GetType(QCall::AssemblyHandle pAssembly,
 
     BOOL prohibitAsmQualifiedName = TRUE;
 
-    ICLRPrivBinder * pPrivHostBinder = NULL;
+    AssemblyBinder * pPrivHostBinder = NULL;
 
     if (*pAssemblyLoadContext.m_ppObject != NULL)
     {
@@ -428,7 +428,7 @@ void QCALLTYPE AssemblyNative::GetType(QCall::AssemblyHandle pAssembly,
 
         INT_PTR nativeAssemblyLoadContext = (*pAssemblyLoadContextRef)->GetNativeAssemblyLoadContext();
 
-        pPrivHostBinder = reinterpret_cast<ICLRPrivBinder *>(nativeAssemblyLoadContext);
+        pPrivHostBinder = reinterpret_cast<AssemblyBinder *>(nativeAssemblyLoadContext);
     }
 
     // Load the class from this assembly (fail if it is in a different one).

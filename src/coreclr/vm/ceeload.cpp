@@ -4259,7 +4259,7 @@ Module::GetAssemblyIfLoaded(
     mdAssemblyRef       kAssemblyRef,
     IMDInternalImport * pMDImportOverride,  // = NULL
     BOOL                fDoNotUtilizeExtraChecks, // = FALSE
-    ICLRPrivBinder      *pBindingContextForLoadedAssembly // = NULL
+    AssemblyBinder      *pBindingContextForLoadedAssembly // = NULL
 )
 {
     CONTRACT(Assembly *)
@@ -4579,7 +4579,7 @@ DomainAssembly * Module::LoadAssembly(mdAssemblyRef kAssemblyRef)
         // Set the binding context in the AssemblySpec if one is available. This can happen if the LoadAssembly ended up
         // invoking the custom AssemblyLoadContext implementation that returned a reference to an assembly bound to a different
         // AssemblyLoadContext implementation.
-        ICLRPrivBinder *pBindingContext = pFile->GetBindingContext();
+        AssemblyBinder *pBindingContext = pFile->GetBindingContext();
         if (pBindingContext != NULL)
         {
             spec.SetBindingContext(pBindingContext);

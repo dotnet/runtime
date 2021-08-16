@@ -2948,8 +2948,8 @@ DomainAssembly* AppDomain::LoadDomainAssembly(AssemblySpec* pSpec,
         if (!pEx->IsTransient())
         {
             // Setup the binder reference in AssemblySpec from the PEAssembly if one is not already set.
-            ICLRPrivBinder* pCurrentBindingContext = pSpec->GetBindingContext();
-            ICLRPrivBinder* pBindingContextFromPEAssembly = pFile->GetBindingContext();
+            AssemblyBinder* pCurrentBindingContext = pSpec->GetBindingContext();
+            AssemblyBinder* pBindingContextFromPEAssembly = pFile->GetBindingContext();
 
             if (pCurrentBindingContext == NULL)
             {
@@ -3017,7 +3017,7 @@ DomainAssembly *AppDomain::LoadDomainAssemblyInternal(AssemblySpec* pIdentity,
         LoaderAllocator *pLoaderAllocator = NULL;
 
 #ifndef CROSSGEN_COMPILE
-        ICLRPrivBinder *pFileBinder = pFile->GetBindingContext();
+        AssemblyBinder *pFileBinder = pFile->GetBindingContext();
         if (pFileBinder != NULL)
         {
             // Assemblies loaded with AssemblyLoadContext need to use a different LoaderAllocator if
@@ -3985,7 +3985,7 @@ PEAssembly * AppDomain::BindAssemblySpec(
                     }
 
                     // Setup the reference to the binder, which performed the bind, into the AssemblySpec
-                    ICLRPrivBinder* pBinder = result->GetBindingContext();
+                    AssemblyBinder* pBinder = result->GetBindingContext();
                     _ASSERTE(pBinder != NULL);
                     pSpec->SetBindingContext(pBinder);
 

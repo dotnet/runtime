@@ -374,7 +374,7 @@ Assembly * Assembly::Create(
 
 
 #ifndef CROSSGEN_COMPILE
-Assembly *Assembly::CreateDynamic(AppDomain *pDomain, ICLRPrivBinder* pBinderContext, CreateDynamicAssemblyArgs *args)
+Assembly *Assembly::CreateDynamic(AppDomain *pDomain, AssemblyBinder* pBinderContext, CreateDynamicAssemblyArgs *args)
 {
     // WARNING: not backout clean
     CONTRACT(Assembly *)
@@ -516,7 +516,7 @@ Assembly *Assembly::CreateDynamic(AppDomain *pDomain, ICLRPrivBinder* pBinderCon
                                                    &ma));
         pFile = PEAssembly::Create(pCallerAssembly->GetManifestFile(), pAssemblyEmit);
 
-        ICLRPrivBinder* pFallbackLoadContextBinder = pBinderContext;
+        AssemblyBinder* pFallbackLoadContextBinder = pBinderContext;
 
         // If ALC is not specified
         if (pFallbackLoadContextBinder == nullptr)

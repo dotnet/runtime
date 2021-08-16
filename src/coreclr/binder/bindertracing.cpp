@@ -111,7 +111,7 @@ namespace
 #endif // CROSSGEN_COMPILE
     }
 
-    void GetAssemblyLoadContextNameFromBindContext(ICLRPrivBinder *bindContext, AppDomain *domain, /*out*/ SString &alcName)
+    void GetAssemblyLoadContextNameFromBindContext(AssemblyBinder *bindContext, AppDomain *domain, /*out*/ SString &alcName)
     {
         _ASSERTE(bindContext != nullptr);
 
@@ -136,7 +136,7 @@ namespace
         _ASSERTE(spec != nullptr);
 
         AppDomain *domain = spec->GetAppDomain();
-        ICLRPrivBinder* bindContext = spec->GetBindingContext();
+        AssemblyBinder* bindContext = spec->GetBindingContext();
         if (bindContext == nullptr)
             bindContext = spec->GetBindingContextFromParentAssembly(domain);
 
@@ -162,7 +162,7 @@ namespace
             peAssembly->GetDisplayName(request.RequestingAssembly);
 
             AppDomain *domain = parentAssembly->GetAppDomain();
-            ICLRPrivBinder *bindContext = peAssembly->GetBindingContext();
+            AssemblyBinder *bindContext = peAssembly->GetBindingContext();
             if (bindContext == nullptr)
                 bindContext = domain->GetTPABinderContext(); // System.Private.CoreLib returns null
 
@@ -249,7 +249,7 @@ namespace BinderTracing
 
 namespace BinderTracing
 {
-    ResolutionAttemptedOperation::ResolutionAttemptedOperation(AssemblyName *assemblyName, ICLRPrivBinder* bindContext, INT_PTR managedALC, const HRESULT& hr)
+    ResolutionAttemptedOperation::ResolutionAttemptedOperation(AssemblyName *assemblyName, AssemblyBinder* bindContext, INT_PTR managedALC, const HRESULT& hr)
         : m_hr { hr }
         , m_stage { Stage::NotYetStarted }
         , m_tracingEnabled { BinderTracing::IsEnabled() }

@@ -18,7 +18,7 @@
 #include "bindresult.hpp"
 #include "bundle.h"
 
-class ICLRPrivBinder;
+class AssemblyBinder;
 class CLRPrivBinderCoreCLR;
 class PEAssembly;
 class PEImage;
@@ -31,7 +31,7 @@ namespace BINDER_SPACE
         // See code:BINDER_SPACE::AssemblyBinder::GetAssembly for info on fNgenExplicitBind
         // and fExplicitBindToNativeImage, and see code:CEECompileInfo::LoadAssemblyByPath
         // for an example of how they're used.
-        static HRESULT BindAssembly(/* in */  ICLRPrivBinder      *pBinder, 
+        static HRESULT BindAssembly(/* in */  ::AssemblyBinder      *pBinder, 
                                     /* in */  AssemblyName        *pAssemblyName,
                                     /* in */  LPCWSTR              szCodeBase,
                                     /* in */  PEAssembly          *pParentAssembly,
@@ -62,7 +62,7 @@ namespace BINDER_SPACE
                                                       /* in */ CLRPrivBinderCoreCLR *pTPABinder,
                                                       /* out */ Assembly           **ppAssembly);
 
-        static HRESULT BindUsingPEImage(/* in */  ICLRPrivBinder     *pBinder,
+        static HRESULT BindUsingPEImage(/* in */  ::AssemblyBinder     *pBinder,
                                         /* in */  BINDER_SPACE::AssemblyName *pAssemblyName,
                                         /* in */  PEImage            *pPEImage,
                                         /* in */  PEKIND              peKind,

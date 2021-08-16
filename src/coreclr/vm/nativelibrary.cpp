@@ -332,7 +332,7 @@ namespace
             return NULL;
         }
 
-        ICLRPrivBinder *pCurrentBinder = pBindingContext;
+        AssemblyBinder *pCurrentBinder = pBindingContext;
 
         // For assemblies bound via TPA binder, we should use the standard mechanism to make the pinvoke call.
         if (pCurrentBinder == pTPABinder)

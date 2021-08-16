@@ -15,11 +15,8 @@ class CLRPrivBinderCoreCLR : public AssemblyLoadContext
 {
 public:
     //=========================================================================
-    // ICLRPrivBinder functions
+    // AssemblyBinder functions
     //-------------------------------------------------------------------------
-    HRESULT BindAssemblyByName(
-        AssemblyNameData* pAssemblyNameData,
-        BINDER_SPACE::Assembly** ppAssembly);
 
     HRESULT BindUsingPEImage(PEImage* pPEImage,
         BOOL fIsNativeImage,

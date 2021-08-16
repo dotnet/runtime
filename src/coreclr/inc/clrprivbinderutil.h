@@ -11,7 +11,7 @@
 //=====================================================================================================================
 // Forward declarations
 typedef DPTR(BINDER_SPACE::Assembly) PTR_BINDER_SPACE_Assembly;
-typedef DPTR(ICLRPrivBinder) PTR_ICLRPrivBinder;
+typedef DPTR(AssemblyBinder) PTR_ICLRPrivBinder;
 
 //=====================================================================================================================
 #define VALIDATE_CONDITION(condition, fail_op)  \

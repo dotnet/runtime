@@ -93,7 +93,7 @@ VOID  AssemblySpec::Bind(AppDomain      *pAppDomain,
     pResult->Reset();
 
     // Have a default binding context setup
-    ICLRPrivBinder *pBinder = GetBindingContextFromParentAssembly(pAppDomain);
+    AssemblyBinder *pBinder = GetBindingContextFromParentAssembly(pAppDomain);
 
     // Get the reference to the TPABinder context
     CLRPrivBinderCoreCLR *pTPABinder = pAppDomain->GetTPABinderContext();

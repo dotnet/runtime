@@ -89,7 +89,7 @@ namespace BINDER_SPACE
         static PEKIND GetSystemArchitecture();
         static BOOL IsValidArchitecture(PEKIND kArchitecture);
 
-        inline ICLRPrivBinder* GetBinder()
+        inline AssemblyBinder* GetBinder()
         {
             return m_pBinder;
         }
@@ -121,9 +121,9 @@ namespace BINDER_SPACE
         AssemblyName            *m_pAssemblyName;
         SString                  m_assemblyPath;
         DWORD                    m_dwAssemblyFlags;
-        ICLRPrivBinder          *m_pBinder;
+        AssemblyBinder          *m_pBinder;
 
-        inline void SetBinder(ICLRPrivBinder *pBinder)
+        inline void SetBinder(AssemblyBinder *pBinder)
         {
             _ASSERTE(m_pBinder == NULL || m_pBinder == pBinder);
             m_pBinder = pBinder;
