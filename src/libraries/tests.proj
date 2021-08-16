@@ -252,7 +252,6 @@
     <!-- Issue: https://github.com/dotnet/runtime/issues/51602 -->
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.ComponentModel.Primitives\tests\System.ComponentModel.Primitives.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.ObjectModel\tests\System.ObjectModel.Tests.csproj" />
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.ComponentModel.TypeConverter/tests/System.ComponentModel.TypeConverter.Tests.csproj" />
 
     <!-- Issue: https://github.com/dotnet/runtime/issues/51708 -->
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Linq.Expressions\tests\System.Linq.Expressions.Tests.csproj" />
