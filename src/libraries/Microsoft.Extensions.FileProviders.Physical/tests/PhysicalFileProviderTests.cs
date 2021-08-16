@@ -1544,7 +1544,12 @@ namespace Microsoft.Extensions.FileProviders
         {
             // Arrange
             using var root = new DisposableFileSystem();
-            string fileName = Path.GetRandomFileName();
+            string fileName =
+#if NETCOREAPP
+                GetTestFileName();
+#else
+                Path.GetRandomFileName();
+#endif
             string filePath = Path.Combine(root.RootPath, fileName);
             File.WriteAllText(filePath, "v1.1");
 
@@ -1573,7 +1578,12 @@ namespace Microsoft.Extensions.FileProviders
         {
             // Arrange
             using var root = new DisposableFileSystem();
-            string fileName = Path.GetRandomFileName();
+            string fileName =
+#if NETCOREAPP
+                GetTestFileName();
+#else
+                Path.GetRandomFileName();
+#endif
             string filePath = Path.Combine(root.RootPath, fileName);
             File.WriteAllText(filePath, "v1.1");
 

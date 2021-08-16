@@ -10,7 +10,7 @@ using Xunit;
 
 namespace Microsoft.Extensions.FileProviders
 {
-    public partial class PhysicalFileProviderTests
+    public partial class PhysicalFileProviderTests : FileCleanupTestBase
     {
         [Theory]
         [InlineData(false)]
@@ -19,11 +19,11 @@ namespace Microsoft.Extensions.FileProviders
         {
             // Arrange
             using var rootOfFile = new DisposableFileSystem();
-            string filePath = Path.Combine(rootOfFile.RootPath, Path.GetRandomFileName());
+            string filePath = Path.Combine(rootOfFile.RootPath, GetTestFileName());
             File.WriteAllText(filePath, "v1.1");
 
             using var rootOfLink = new DisposableFileSystem();
-            string linkName = Path.GetRandomFileName();
+            string linkName = GetTestFileName();
             string linkPath = Path.Combine(rootOfLink.RootPath, linkName);
             File.CreateSymbolicLink(linkPath, filePath);
 
@@ -52,7 +52,7 @@ namespace Microsoft.Extensions.FileProviders
         {
             // Arrange
             using var rootOfLink = new DisposableFileSystem();
-            string linkName = Path.GetRandomFileName();
+            string linkName = GetTestFileName();
             string linkPath = Path.Combine(rootOfLink.RootPath, linkName);
             File.CreateSymbolicLink(linkPath, "not-existent-file");
 
@@ -79,10 +79,10 @@ namespace Microsoft.Extensions.FileProviders
             // Arrange
             using var rootOfFile = new DisposableFileSystem();
             // Create file 2 first as we want to verify that the change is reported regardless of the timestamp being older.
-            string file2Path = Path.Combine(rootOfFile.RootPath, Path.GetRandomFileName());
+            string file2Path = Path.Combine(rootOfFile.RootPath, GetTestFileName());
             File.WriteAllText(file2Path, "v2.1");
 
-            string file1Path = Path.Combine(rootOfFile.RootPath, Path.GetRandomFileName());
+            string file1Path = Path.Combine(rootOfFile.RootPath, GetTestFileName());
             if (!linkWasBroken)
             {
                 await Task.Delay(1000); // Wait a second before writing again, see https://github.com/dotnet/runtime/issues/55951.
@@ -90,7 +90,7 @@ namespace Microsoft.Extensions.FileProviders
             }
 
             using var rootOfLink = new DisposableFileSystem();
-            string linkName = Path.GetRandomFileName();
+            string linkName = GetTestFileName();
             string linkPath = Path.Combine(rootOfLink.RootPath, linkName);
             File.CreateSymbolicLink(linkPath, file1Path);
 
@@ -126,11 +126,11 @@ namespace Microsoft.Extensions.FileProviders
             // Arrange
             using var rootOfFile = new DisposableFileSystem();
 
-            string filePath = Path.Combine(rootOfFile.RootPath, Path.GetRandomFileName());
+            string filePath = Path.Combine(rootOfFile.RootPath, GetTestFileName());
             File.WriteAllText(filePath, "v1.1");
 
             using var rootOfLink = new DisposableFileSystem();
-            string linkName = Path.GetRandomFileName();
+            string linkName = GetTestFileName();
             string linkPath = Path.Combine(rootOfLink.RootPath, linkName);
             File.CreateSymbolicLink(linkPath, filePath);
 
