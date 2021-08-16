@@ -142,7 +142,7 @@ PALEXPORT SSL_CTX* CryptoNative_SslCtxCreate(const SSL_METHOD* method);
 /*
 Sets the specified protocols in the SSL_CTX options.
 */
-PALEXPORT void CryptoNative_SetProtocolOptions(SSL_CTX* ctx, SslProtocols protocols);
+PALEXPORT void CryptoNative_SslCtxSetProtocolOptions(SSL_CTX* ctx, SslProtocols protocols);
 
 /*
 Shims the SSL_new method.

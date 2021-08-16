@@ -231,22 +231,7 @@ static void ResetCtxProtocolRestrictions(SSL_CTX* ctx)
     SSL_CTX_ctrl(ctx, SSL_CTRL_SET_MAX_PROTO_VERSION, 0, NULL);
 }
 
-/*
-static void ResetProtocolRestrictions(SSL* ssl)
-{
-#ifndef SSL_CTRL_SET_MIN_PROTO_VERSION
-#define SSL_CTRL_SET_MIN_PROTO_VERSION 123
-#endif
-#ifndef SSL_CTRL_SET_MAX_PROTO_VERSION
-#define SSL_CTRL_SET_MAX_PROTO_VERSION 124
-#endif
-
-    SSL_ctrl(ssl, SSL_CTRL_SET_MIN_PROTO_VERSION, 0, NULL);
-    SSL_ctrl(ssl, SSL_CTRL_SET_MAX_PROTO_VERSION, 0, NULL);
-}
-*/
-
-void CryptoNative_SetProtocolOptions(SSL_CTX* ctx, SslProtocols protocols)
+void CryptoNative_SslCtxSetProtocolOptions(SSL_CTX* ctx, SslProtocols protocols)
 {
     // Ensure that ECDHE is available
     if (TrySetECDHNamedCurve(ctx) == 0)
@@ -489,12 +474,6 @@ void CryptoNative_SslSetVerifyPeer(SSL* ssl)
 {
     SSL_set_verify(ssl, SSL_VERIFY_PEER, verify_callback);
 }
-
-//void
-//CryptoNative_SslCtxSetCertVerifyCallback(SSL_CTX* ctx, SslCtxSetCertVerifyCallbackCallback callback, void* arg)
-//{
-//    SSL_CTX_set_cert_verify_callback(ctx, callback, arg);
-//}
 
 int32_t CryptoNative_SslCtxSetEncryptionPolicy(SSL_CTX* ctx, EncryptionPolicy policy)
 {
@@ -821,8 +800,8 @@ int32_t CryptoNative_OpenSslGetProtocolSupport(SslProtocols protocol)
 
     if (clientCtx != NULL && serverCtx != NULL && cert != NULL && evp != NULL && bio1 != NULL && bio2 != NULL)
     {
-        CryptoNative_SetProtocolOptions(serverCtx, protocol);
-        CryptoNative_SetProtocolOptions(clientCtx, protocol);
+        CryptoNative_SslCtxSetProtocolOptions(serverCtx, protocol);
+        CryptoNative_SslCtxSetProtocolOptions(clientCtx, protocol);
         SSL_CTX_set_verify(clientCtx, SSL_VERIFY_NONE, NULL);
         SSL_CTX_set_verify(serverCtx, SSL_VERIFY_NONE, NULL);
 

@@ -76,11 +76,11 @@ internal static partial class Interop
          }
 
         // This essentially wraps SSL_CTX* aka SSL_CTX_new + setting
-        internal static SafeSslContextHandle AllocateSslContext(SafeFreeSslCredentials credential, SslAuthenticationOptions sslAuthenticationOptions, SslProtocols protocols)
+        internal static SafeSslContextHandle AllocateSslContext(SafeFreeSslCredentials credential, SslAuthenticationOptions sslAuthenticationOptions)
         {
             SafeX509Handle? certHandle = credential.CertHandle;
             SafeEvpPKeyHandle? certKeyHandle = credential.CertKeyHandle;
-
+            SslProtocols protocols = sslAuthenticationOptions.EnabledSslProtocols;
 
             // Always use SSLv23_method, regardless of protocols.  It supports negotiating to the highest
             // mutually supported version and can thus handle any of the set protocols, and we then use
@@ -93,9 +93,47 @@ internal static partial class Interop
                     throw CreateSslException(SR.net_allocate_ssl_context_failed);
                 }
 
+                if (!Interop.Ssl.Tls13Supported)
+                {
+                    if (protocols != SslProtocols.None &&
+                        CipherSuitesPolicyPal.WantsTls13(protocols))
+                    {
+                        protocols = protocols & (~SslProtocols.Tls13);
+                    }
+                }
+                else if (CipherSuitesPolicyPal.WantsTls13(protocols) &&
+                            CipherSuitesPolicyPal.ShouldOptOutOfTls13(sslAuthenticationOptions.CipherSuitesPolicy, sslAuthenticationOptions.EncryptionPolicy))
+                {
+                    if (protocols == SslProtocols.None)
+                    {
+                        // we are using default settings but cipher suites policy says that TLS 1.3
+                        // is not compatible with our settings (i.e. we requested no encryption or disabled
+                        // all TLS 1.3 cipher suites)
+                        protocols = SslProtocols.Tls | SslProtocols.Tls11 | SslProtocols.Tls12;
+                    }
+                    else
+                    {
+                        // user explicitly asks for TLS 1.3 but their policy is not compatible with TLS 1.3
+                        throw new SslException(
+                            SR.Format(SR.net_ssl_encryptionpolicy_notsupported, sslAuthenticationOptions.EncryptionPolicy));
+                    }
+                }
+
+                if (CipherSuitesPolicyPal.ShouldOptOutOfLowerThanTls13(sslAuthenticationOptions.CipherSuitesPolicy, sslAuthenticationOptions.EncryptionPolicy))
+                {
+                    if (!CipherSuitesPolicyPal.WantsTls13(protocols))
+                    {
+                        // We cannot provide neither TLS 1.3 or non TLS 1.3, user disabled all cipher suites
+                        throw new SslException(
+                            SR.Format(SR.net_ssl_encryptionpolicy_notsupported, sslAuthenticationOptions.EncryptionPolicy));
+                    }
+
+                    protocols = SslProtocols.Tls13;
+                }
+
                 // Configure allowed protocols. It's ok to use DangerousGetHandle here without AddRef/Release as we just
                 // create the handle, it's rooted by the using, no one else has a reference to it, etc.
-                Ssl.SetProtocolOptions(innerContext, protocols);
+                Ssl.SslCtxSetProtocolOptions(innerContext, protocols);
 
                 if (sslAuthenticationOptions.EncryptionPolicy != EncryptionPolicy.RequireEncryption)
                 {
@@ -103,6 +141,29 @@ internal static partial class Interop
                     if (!Ssl.SetEncryptionPolicy(innerContext, sslAuthenticationOptions.EncryptionPolicy))
                     {
                         throw new SslException( SR.Format(SR.net_ssl_encryptionpolicy_notsupported, sslAuthenticationOptions.EncryptionPolicy));
+                    }
+                }
+
+                byte[]? cipherList =
+                    CipherSuitesPolicyPal.GetOpenSslCipherList(sslAuthenticationOptions.CipherSuitesPolicy, protocols, sslAuthenticationOptions.EncryptionPolicy);
+
+                Debug.Assert(cipherList == null || (cipherList.Length >= 1 && cipherList[cipherList.Length - 1] == 0));
+
+                byte[]? cipherSuites =
+                    CipherSuitesPolicyPal.GetOpenSslCipherSuites(sslAuthenticationOptions.CipherSuitesPolicy, protocols, sslAuthenticationOptions.EncryptionPolicy);
+
+                Debug.Assert(cipherSuites == null || (cipherSuites.Length >= 1 && cipherSuites[cipherSuites.Length - 1] == 0));
+
+                unsafe
+                {
+                    fixed (byte* cipherListStr = cipherList)
+                    fixed (byte* cipherSuitesStr = cipherSuites)
+                    {
+                        if (!Ssl.SslCtxSetCiphers(innerContext, cipherListStr, cipherSuitesStr))
+                        {
+                            Crypto.ErrClearError();
+                            throw new PlatformNotSupportedException(SR.Format(SR.net_ssl_encryptionpolicy_notsupported, sslAuthenticationOptions.EncryptionPolicy));
+                        }
                     }
                 }
 
@@ -150,6 +211,7 @@ internal static partial class Interop
             SafeSslContextHandle? innerContext = null;
             SslProtocols protocols = sslAuthenticationOptions.EnabledSslProtocols;
             bool cacheSslContext = !DisableTlsResume && sslAuthenticationOptions.EncryptionPolicy == EncryptionPolicy.RequireEncryption &&
+                     sslAuthenticationOptions.CipherSuitesPolicy == null &&
                     (!sslAuthenticationOptions.IsServer ||
                     (sslAuthenticationOptions.ApplicationProtocols != null && sslAuthenticationOptions.ApplicationProtocols.Count != 0));
 
@@ -199,7 +261,7 @@ internal static partial class Interop
             if (sslCtx == null)
             {
                 // We did not get SslContext from cache
-                sslCtx = innerContext = AllocateSslContext(credential, sslAuthenticationOptions, protocols);
+                sslCtx = innerContext = AllocateSslContext(credential, sslAuthenticationOptions);
             }
 
             try
@@ -230,6 +292,7 @@ internal static partial class Interop
                         {
                             alpnHandle = GCHandle.Alloc(sslAuthenticationOptions.ApplicationProtocols);
                             Interop.Ssl.SslSetData(context, GCHandle.ToIntPtr(alpnHandle));
+                            context.AlpnHandle = alpnHandle;
                         }
                         else
                         {
@@ -252,29 +315,6 @@ internal static partial class Interop
                         }
                     }
 
-                    byte[]? cipherList =
-                        CipherSuitesPolicyPal.GetOpenSslCipherList(sslAuthenticationOptions.CipherSuitesPolicy, protocols, sslAuthenticationOptions.EncryptionPolicy);
-
-                    Debug.Assert(cipherList == null || (cipherList.Length >= 1 && cipherList[cipherList.Length - 1] == 0));
-
-                    byte[]? cipherSuites =
-                        CipherSuitesPolicyPal.GetOpenSslCipherSuites(sslAuthenticationOptions.CipherSuitesPolicy, protocols, sslAuthenticationOptions.EncryptionPolicy);
-
-                    Debug.Assert(cipherSuites == null || (cipherSuites.Length >= 1 && cipherSuites[cipherSuites.Length - 1] == 0));
-
-                    unsafe
-                    {
-                        fixed (byte* cipherListStr = cipherList)
-                        fixed (byte* cipherSuitesStr = cipherSuites)
-                        {
-                            if (!Ssl.SslSetCiphers(context, cipherListStr, cipherSuitesStr))
-                            {
-                                Crypto.ErrClearError();
-                                throw new PlatformNotSupportedException(SR.Format(SR.net_ssl_encryptionpolicy_notsupported, sslAuthenticationOptions.EncryptionPolicy));
-                            }
-                        }
-                    }
-
                     if (sslAuthenticationOptions.CertificateContext != null && sslAuthenticationOptions.CertificateContext.IntermediateCertificates.Length > 0)
                     {
                         if (!Ssl.AddExtraChainCertificates(context, sslAuthenticationOptions.CertificateContext!.IntermediateCertificates))
@@ -282,9 +322,6 @@ internal static partial class Interop
                             throw CreateSslException(SR.net_ssl_use_cert_failed);
                         }
                     }
-
-                    context.AlpnHandle = alpnHandle;
-
 
                     if (sslAuthenticationOptions.IsServer && sslAuthenticationOptions.RemoteCertRequired)
                     {
