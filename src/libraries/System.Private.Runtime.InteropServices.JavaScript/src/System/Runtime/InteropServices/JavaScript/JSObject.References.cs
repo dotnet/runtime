@@ -20,7 +20,7 @@ namespace System.Runtime.InteropServices.JavaScript
             InFlight = null;
             InFlightCounter = 0;
 
-            var jsHandle = Runtime.CreateCsOwnedObject(this, nameof(Object));
+            var jsHandle = Runtime.CreateCSOwnedObject(this, nameof(Object));
             SetHandle(jsHandle);
         }
 
@@ -29,7 +29,7 @@ namespace System.Runtime.InteropServices.JavaScript
             InFlight = null;
             InFlightCounter = 0;
 
-            var jsHandle = Runtime.CreateCsOwnedObject(this, typeName, _params);
+            var jsHandle = Runtime.CreateCSOwnedObject(this, typeName, _params);
             SetHandle(jsHandle);
         }
 
@@ -92,7 +92,7 @@ namespace System.Runtime.InteropServices.JavaScript
 
         protected override bool ReleaseHandle()
         {
-            Runtime.ReleaseCsOwnedObject(this);
+            Runtime.ReleaseCSOwnedObject(this);
             SetHandleAsInvalid();
             IsDisposed = true;
             return true;

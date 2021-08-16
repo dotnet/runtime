@@ -74,8 +74,8 @@ void core_initialize_internals ()
 	mono_add_internal_call ("Interop/Runtime::SetObjectProperty", mono_wasm_set_object_property);
 	mono_add_internal_call ("Interop/Runtime::SetByIndex", mono_wasm_set_by_index);
 	mono_add_internal_call ("Interop/Runtime::GetGlobalObject", mono_wasm_get_global_object);
-	mono_add_internal_call ("Interop/Runtime::CreateCsOwnedObject", mono_wasm_create_cs_owned_object);
-	mono_add_internal_call ("Interop/Runtime::ReleaseCsOwnedObject", mono_wasm_release_cs_owned_object);
+	mono_add_internal_call ("Interop/Runtime::CreateCSOwnedObject", mono_wasm_create_cs_owned_object);
+	mono_add_internal_call ("Interop/Runtime::ReleaseCSOwnedObject", mono_wasm_release_cs_owned_object);
 	mono_add_internal_call ("Interop/Runtime::TypedArrayToArray", mono_wasm_typed_array_to_array);
 	mono_add_internal_call ("Interop/Runtime::TypedArrayCopyTo", mono_wasm_typed_array_copy_to);
 	mono_add_internal_call ("Interop/Runtime::TypedArrayFrom", mono_wasm_typed_array_from);

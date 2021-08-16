@@ -127,10 +127,10 @@ var BindingSupportLib = {
 			//  that any code relying on the old get_method/call_method pattern will
 			//  break in a more understandable way.
 
-			this._get_cs_owned_object_by_js_handle = bind_runtime_method ("GetCSOwnedObjectByJsHandle", "ii!");
-			this._get_cs_owned_object_js_handle = bind_runtime_method ("GetCsOwnedObjectJsHandle", 'mi');
-			this._try_get_cs_owned_object_js_handle = bind_runtime_method ("TryGetCsOwnedObjectJsHandle", "mi");
-			this._create_cs_owned_proxy = bind_runtime_method ("CreateCsOwnedProxy", "iii!");
+			this._get_cs_owned_object_by_js_handle = bind_runtime_method ("GetCSOwnedObjectByJSHandle", "ii!");
+			this._get_cs_owned_object_js_handle = bind_runtime_method ("GetCSOwnedObjectJSHandle", 'mi');
+			this._try_get_cs_owned_object_js_handle = bind_runtime_method ("TryGetCSOwnedObjectJSHandle", "mi");
+			this._create_cs_owned_proxy = bind_runtime_method ("CreateCSOwnedProxy", "iii!");
 
 			this._get_js_owned_object_by_gc_handle = bind_runtime_method ("GetJSOwnedObjectByGCHandle", "i!");
 			this._get_js_owned_object_gc_handle = bind_runtime_method ("GetJSOwnedObjectGCHandle", "m");

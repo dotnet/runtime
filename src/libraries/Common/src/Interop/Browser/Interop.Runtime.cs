@@ -30,9 +30,9 @@ internal static partial class Interop
         internal static extern object GetGlobalObject(string? globalName, out int exceptionalResult);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal static extern object ReleaseCsOwnedObject(int jsHandle);
+        internal static extern object ReleaseCSOwnedObject(int jsHandle);
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal static extern object CreateCsOwnedObject(string className, object[] parms, out int exceptionalResult);
+        internal static extern object CreateCSOwnedObject(string className, object[] parms, out int exceptionalResult);
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         internal static extern object TypedArrayToArray(int jsHandle, out int exceptionalResult);
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
