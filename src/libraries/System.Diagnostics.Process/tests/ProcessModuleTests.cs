@@ -4,6 +4,7 @@
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Runtime.InteropServices;
 using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
 
@@ -96,7 +97,7 @@ namespace System.Diagnostics.Tests
             => OperatingSystem.IsWindows() // it's specific to Windows
             && PathFeatures.AreAllLongPathsAvailable() // we want to test long paths
             && !PlatformDetection.IsMonoRuntime // Assembly.LoadFile used the way this test is implemented fails on Mono
-            && PlatformDetection.Is64BitProcess; // for some reason it's flaky on x86
+            && RuntimeInformation.ProcessArchitecture != Architecture.X86; // for some reason it's flaky on x86
 
         [ConditionalFact(typeof(ProcessModuleTests), nameof(Is_LongModuleFileNamesAreSupported_TestEnabled))]
         public void LongModuleFileNamesAreSupported()
