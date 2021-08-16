@@ -141,7 +141,7 @@ namespace Microsoft.Extensions.DependencyModel
 
             string depsJsonFile = Path.ChangeExtension(assemblyLocation, DepsJsonExtension);
             bool depsJsonFileExists = _fileSystem.File.Exists(depsJsonFile);
-
+#if !NET5_0_OR_GREATER
             if (!depsJsonFileExists)
             {
                 // in some cases (like .NET Framework shadow copy) the Assembly Location
@@ -154,21 +154,17 @@ namespace Microsoft.Extensions.DependencyModel
                     depsJsonFileExists = _fileSystem.File.Exists(depsJsonFile);
                 }
             }
+#endif
 
             return depsJsonFileExists ?
                 depsJsonFile :
                 null;
         }
 
+#if !NET5_0_OR_GREATER
         private static string? GetNormalizedCodeBasePath(Assembly assembly)
         {
-#if NETCOREAPP
-            string assemblyLocation = assembly.Location;
-#else
-            string assemblyLocation = assembly.CodeBase;
-#endif
-
-            if (Uri.TryCreate(assemblyLocation, UriKind.Absolute, out Uri? codeBase)
+            if (Uri.TryCreate(assembly.CodeBase, UriKind.Absolute, out Uri? codeBase)
                 && codeBase.IsFile)
             {
                 return codeBase.LocalPath;
@@ -178,5 +174,6 @@ namespace Microsoft.Extensions.DependencyModel
                 return null;
             }
         }
+#endif
     }
 }
