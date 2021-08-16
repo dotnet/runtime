@@ -40,6 +40,7 @@ namespace System.Diagnostics
         internal KeyValuePair<string, object?> Tag8;
         private int _tagsCount;
         private KeyValuePair<string, object?>[]? _overflowTags;
+        private const int OverflowAdditionalCapacity = 8;
 
         /// <summary>
         /// Initializes a new instance of the TagList structure using the specified <paramref name="tagList" />.
@@ -86,7 +87,7 @@ namespace System.Diagnostics
 
                 default:
                     Debug.Assert(_tagsCount > 8);
-                    _overflowTags = new KeyValuePair<string, object?>[_tagsCount + 8]; // Add extra 8 slots for more tags to add if needed
+                    _overflowTags = new KeyValuePair<string, object?>[_tagsCount + OverflowAdditionalCapacity]; // Add extra slots for more tags to add if needed
                     tagList.CopyTo(_overflowTags);
                     break;
             }
@@ -120,6 +121,8 @@ namespace System.Diagnostics
                     Debug.Assert(index < _overflowTags.Length);
                     return _overflowTags[index];
                 }
+
+                Debug.Assert(index <= 7);
 
                 return index switch
                 {
@@ -183,7 +186,7 @@ namespace System.Diagnostics
             {
                 if (_tagsCount == _overflowTags.Length)
                 {
-                    Array.Resize(ref _overflowTags, _tagsCount + 8);
+                    Array.Resize(ref _overflowTags, _tagsCount + OverflowAdditionalCapacity);
                 }
 
                 _overflowTags[_tagsCount++] = tag;
