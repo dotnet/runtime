@@ -35,9 +35,9 @@ namespace System
         private static string? GetSpecialFolder(SpecialFolder folder)
         {
 #if TARGET_TVOS
-        string DocumentsSearchPath = CombineAndCreateSearchPath(NSSearchPathDirectory.NSLibraryDirectory, Path.Combine("Caches", "Documents"));
+        string? DocumentsSearchPath = CombineAndCreateSearchPath(NSSearchPathDirectory.NSLibraryDirectory, Path.Combine("Caches", "Documents"));
 #else
-        string DocumentsSearchPath = Interop.Sys.SearchPath(NSSearchPathDirectory.NSDocumentDirectory);
+        string? DocumentsSearchPath = Interop.Sys.SearchPath(NSSearchPathDirectory.NSDocumentDirectory);
 #endif
 
             switch (folder)
@@ -103,6 +103,7 @@ namespace System
                     string.Empty;
             }
 
+#if TARGET_TVOS
             // Special version of CombineSearchPath which creates the path if needed.
             // This isn't needed for "real" search paths which always exist, but on tvOS
             // the base path is really a subdirectory we define rather than an OS directory.
@@ -115,6 +116,7 @@ namespace System
                     Directory.CreateDirectory (path);
                 return path;
             }
+#endif
         }
     }
 }
