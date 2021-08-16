@@ -2,15 +2,16 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 #include "assemblybinder.h"
+#include "../binder/inc/assemblyname.hpp"
 
 #ifndef DACCESS_COMPILE
 
 HRESULT AssemblyBinder::BindAssemblyByName(AssemblyNameData* pAssemblyNameData,
     BINDER_SPACE::Assembly** ppAssembly)
 {
-    HRESULT hr = S_OK;
-    VALIDATE_ARG_RET(pAssemblyNameData != nullptr && ppAssembly != nullptr);
+    _ASSERTE(pAssemblyNameData != nullptr && ppAssembly != nullptr);
 
+    HRESULT hr = S_OK;
     *ppAssembly = nullptr;
 
     ReleaseHolder<BINDER_SPACE::AssemblyName> pAssemblyName;

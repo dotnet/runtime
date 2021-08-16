@@ -4,6 +4,8 @@
 #ifndef _ASSEMBLYBINDER_H
 #define _ASSEMBLYBINDER_H
 
+#include "../binder/inc/applicationcontext.hpp"
+
 class PEImage;
 class AssemblyLoaderAllocator;
 
