@@ -25,7 +25,7 @@ HRESULT CLRPrivBinderAssemblyLoadContext::BindAssemblyByNameWorker(BINDER_SPACE:
 #endif
 
     // Do we have the assembly already loaded in the context of the current binder?
-    hr = AssemblyBinder::BindAssembly(&m_appContext,
+    hr = AssemblyBinder::BindAssembly(GetAppContext(),
                                       pAssemblyName,
                                       NULL,
                                       NULL,
@@ -150,7 +150,7 @@ HRESULT CLRPrivBinderAssemblyLoadContext::BindUsingPEImage( /* in */ PEImage *pP
             IF_FAIL_GO(HRESULT_FROM_WIN32(ERROR_FILE_NOT_FOUND));
         }
 
-        hr = AssemblyBinder::BindUsingPEImage(&m_appContext, pAssemblyName, pPEImage, PeKind, pIMetaDataAssemblyImport, &pCoreCLRFoundAssembly);
+        hr = AssemblyBinder::BindUsingPEImage(GetAppContext(), pAssemblyName, pPEImage, PeKind, pIMetaDataAssemblyImport, &pCoreCLRFoundAssembly);
         if (hr == S_OK)
         {
             _ASSERTE(pCoreCLRFoundAssembly != NULL);
@@ -191,7 +191,7 @@ HRESULT CLRPrivBinderAssemblyLoadContext::SetupContext(CLRPrivBinderCoreCLR *pTP
 
             SAFE_NEW(pBinder, CLRPrivBinderAssemblyLoadContext);
             UINT_PTR binderId = pBinder->GetBinderID();
-            hr = pBinder->m_appContext.Init(binderId);
+            hr = pBinder->GetAppContext()->Init(binderId);
             if(SUCCEEDED(hr))
             {
                 // Save reference to the TPABinder that is required to be present.

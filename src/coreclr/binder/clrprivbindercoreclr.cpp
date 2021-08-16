@@ -23,7 +23,7 @@ HRESULT CLRPrivBinderCoreCLR::BindAssemblyByNameWorker(BINDER_SPACE::AssemblyNam
     _ASSERTE(!pAssemblyName->IsCoreLib());
 #endif
 
-    hr = AssemblyBinder::BindAssembly(&m_appContext,
+    hr = AssemblyBinder::BindAssembly(GetAppContext(),
                                       pAssemblyName,
                                       NULL,
                                       NULL,
@@ -190,7 +190,7 @@ HRESULT CLRPrivBinderCoreCLR::BindUsingPEImage( /* in */ PEImage *pPEImage,
             }
         }
 
-        hr = AssemblyBinder::BindUsingPEImage(&m_appContext, pAssemblyName, pPEImage, PeKind, pIMetaDataAssemblyImport, &pCoreCLRFoundAssembly);
+        hr = AssemblyBinder::BindUsingPEImage(GetAppContext(), pAssemblyName, pPEImage, PeKind, pIMetaDataAssemblyImport, &pCoreCLRFoundAssembly);
         if (hr == S_OK)
         {
             _ASSERTE(pCoreCLRFoundAssembly != NULL);
@@ -214,7 +214,7 @@ HRESULT CLRPrivBinderCoreCLR::SetupBindingPaths(SString  &sTrustedPlatformAssemb
 
     EX_TRY
     {
-        hr = m_appContext.SetupBindingPaths(sTrustedPlatformAssemblies, sPlatformResourceRoots, sAppPaths, sAppNiPaths, TRUE /* fAcquireLock */);
+        hr = GetAppContext()->SetupBindingPaths(sTrustedPlatformAssemblies, sPlatformResourceRoots, sAppPaths, sAppNiPaths, TRUE /* fAcquireLock */);
     }
     EX_CATCH_HRESULT(hr);
     return hr;
@@ -235,7 +235,7 @@ HRESULT CLRPrivBinderCoreCLR::Bind(LPCWSTR            wszCodeBase,
     EX_TRY
     {
         ReleaseHolder<BINDER_SPACE::Assembly> pAsm;
-        hr = AssemblyBinder::BindAssembly(&m_appContext,
+        hr = AssemblyBinder::BindAssembly(GetAppContext(),
                                           NULL,
                                           wszCodeBase,
                                           pParentAssembly,

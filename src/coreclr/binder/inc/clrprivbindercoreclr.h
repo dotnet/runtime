@@ -30,11 +30,6 @@ public:
                               SString  &sAppPaths,
                               SString  &sAppNiPaths);
 
-    inline BINDER_SPACE::ApplicationContext *GetAppContext()
-    {
-        return &m_appContext;
-    }
-
     HRESULT Bind(LPCWSTR      wszCodeBase,
                  PEAssembly  *pParentAssembly,
                  BOOL         fNgenExplicitBind,
@@ -54,12 +49,6 @@ public:
             BINDER_SPACE::AssemblyName *pAssemblyName,
             BINDER_SPACE::Assembly **ppCoreCLRFoundAssembly,
             bool excludeAppPaths);
-
-    //=========================================================================
-    // Internal implementation details
-    //-------------------------------------------------------------------------
-private:
-    BINDER_SPACE::ApplicationContext m_appContext;
 };
 
 #endif // __CLR_PRIV_BINDER_CORECLR_H__

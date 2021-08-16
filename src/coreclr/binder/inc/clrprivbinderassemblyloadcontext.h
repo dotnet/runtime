@@ -42,11 +42,6 @@ public:
 
     CLRPrivBinderAssemblyLoadContext();
 
-    inline BINDER_SPACE::ApplicationContext *GetAppContext()
-    {
-        return &m_appContext;
-    }
-
     HRESULT BindUsingPEImage( /* in */ PEImage *pPEImage,
                               /* in */ BOOL fIsNativeImage,
                               /* [retval][out] */ BINDER_SPACE::Assembly **ppAssembly);
@@ -56,8 +51,6 @@ public:
     //-------------------------------------------------------------------------
 private:
     HRESULT BindAssemblyByNameWorker(BINDER_SPACE::AssemblyName *pAssemblyName, BINDER_SPACE::Assembly **ppCoreCLRFoundAssembly);
-
-    BINDER_SPACE::ApplicationContext m_appContext;
 
     CLRPrivBinderCoreCLR *m_pTPABinder;
 

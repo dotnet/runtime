@@ -55,17 +55,22 @@ public:
         return reinterpret_cast<UINT_PTR>(this);
     }
 
+    inline BINDER_SPACE::ApplicationContext* GetAppContext()
+    {
+        return &m_appContext;
+    }
+
     // Add a virtual destructor to force derived types to also have virtual destructors.
     virtual ~ICLRPrivBinder()
     {
     }
 
-    STDMETHOD_(ULONG, AddRef())
+    ULONG AddRef()
     {
         return InterlockedIncrement(&m_cRef);
     }
 
-    STDMETHOD_(ULONG, Release())
+    ULONG Release()
     {
         _ASSERTE(m_cRef > 0);
 
@@ -80,6 +85,7 @@ public:
 private:
     LONG m_cRef = 0;
 
+    BINDER_SPACE::ApplicationContext m_appContext;
 };
 
 //
