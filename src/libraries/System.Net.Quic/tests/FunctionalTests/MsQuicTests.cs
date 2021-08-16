@@ -22,7 +22,7 @@ namespace System.Net.Quic.Tests
     [ConditionalClass(typeof(QuicTestBase<MsQuicProviderFactory>), nameof(IsSupported))]
     public class MsQuicTests : QuicTestBase<MsQuicProviderFactory>
     {
-        private static ReadOnlyMemory<byte> s_data = Encoding.UTF8.GetBytes("Hello world!");
+        private static byte[] s_data = Encoding.UTF8.GetBytes("Hello world!");
 
         public MsQuicTests(ITestOutputHelper output) : base(output) { }
 
@@ -858,45 +858,23 @@ namespace System.Net.Quic.Tests
             }
         }
 
-        internal sealed class LogEventListener : EventListener
-        {
-            protected override void OnEventSourceCreated(EventSource eventSource)
-            {
-                if (eventSource.Name == "Private.InternalDiagnostics.System.Net.Quic")
-                    EnableEvents(eventSource, EventLevel.LogAlways);
-            }
-
-            protected override void OnEventWritten(EventWrittenEventArgs eventData)
-            {
-                var sb = new StringBuilder().Append($"{eventData.TimeStamp:HH:mm:ss.fffffff}[{eventData.EventName}] ");
-                for (int i = 0; i < eventData.Payload?.Count; i++)
-                {
-                    if (i > 0)
-                        sb.Append(", ");
-                    sb.Append(eventData.PayloadNames?[i]).Append(": ").Append(eventData.Payload[i]);
-                }
-                Console.WriteLine(sb.ToString());
-            }
-        }
-
         [Fact]
         public async Task BasicTest_WithReadsCompletedCheck()
         {
             QuicStream clientStream = null;
             QuicStream serverStream = null;
-            using var log = new LogEventListener();
             await RunClientServer(
-                iterations: 1,//100,
+                iterations: 100,
                 serverFunction: async connection =>
                 {
                     QuicStream stream = await connection.AcceptStreamAsync();
                     serverStream = stream;
-                    ////Assert.False(stream.ReadsCompleted);
+                    Assert.False(stream.ReadsCompleted);
 
                     byte[] buffer = new byte[s_data.Length];
                     int bytesRead = await ReadAll(stream, buffer);
 
-                   // Assert.True(stream.ReadsCompleted);
+                    Assert.True(stream.ReadsCompleted);
                     Assert.Equal(s_data.Length, bytesRead);
                     Assert.Equal(s_data, buffer);
 
@@ -907,14 +885,14 @@ namespace System.Net.Quic.Tests
                 {
                     QuicStream stream = connection.OpenBidirectionalStream();
                     clientStream = stream;
-                    //Assert.False(stream.ReadsCompleted);
+                    Assert.False(stream.ReadsCompleted);
 
                     await stream.WriteAsync(s_data, endStream: true);
 
                     byte[] buffer = new byte[s_data.Length];
                     int bytesRead = await ReadAll(stream, buffer);
 
-                    //Assert.True(stream.ReadsCompleted);
+                    Assert.True(stream.ReadsCompleted);
                     Assert.Equal(s_data.Length, bytesRead);
                     Assert.Equal(s_data, buffer);
 
@@ -953,53 +931,6 @@ namespace System.Net.Quic.Tests
                     Assert.Equal(0, received);
                     Assert.True(serverStream.ReadsCompleted);
                 });
-        }
-
-        [Theory]
-        [InlineData(true)]
-        [InlineData(false)]
-        public async Task ReadsCompleted_WithoutPeerWriting_ReturnsTrueWithoutExplicitRead(bool bidirectional)
-        {
-            await RunClientServer(
-                clientFunction: connection =>
-                {
-                    using QuicStream stream = bidirectional 
-                        ? connection.OpenBidirectionalStream() 
-                        : connection.OpenUnidirectionalStream();
-
-                    // gracefully close Write side
-                    stream.Shutdown();
-
-                    if (bidirectional)
-                    {
-                        stream.AbortRead(0);
-                    }
-
-                    return Task.CompletedTask;
-                },
-                serverFunction: async connection =>
-                {
-                    await using QuicStream stream = await connection.AcceptStreamAsync();
-
-                    // Should be true without needing to issue a receive (but need to wait for event to arrive)
-                    await SpinUntilReadsCompleted().WaitAsync(PassingTestTimeoutMilliseconds);
-
-                    async Task SpinUntilReadsCompleted()
-                    {
-                        while (true)
-                        {
-                            if (stream.ReadsCompleted)
-                            {
-                                break;
-                            }
-                            await Task.Delay(10);
-                        }
-                    }
-
-                    // client shuts down both sides of the stream, so we will receive the final event
-                    await stream.ShutdownCompleted();
-                }
-            );
         }
     }
 }
