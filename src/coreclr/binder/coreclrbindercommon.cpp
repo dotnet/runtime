@@ -21,8 +21,7 @@ HRESULT CCoreCLRBinderHelper::DefaultBinderSetupContext(CLRPrivBinderCoreCLR **p
             SAFE_NEW(pBinder, CLRPrivBinderCoreCLR);
 
             BINDER_SPACE::ApplicationContext *pApplicationContext = pBinder->GetAppContext();
-            UINT_PTR binderId = pBinder->GetBinderID();
-            hr = pApplicationContext->Init(binderId);
+            hr = pApplicationContext->Init();
             if(SUCCEEDED(hr))
             {
                 pBinder->SetManagedAssemblyLoadContext(NULL);

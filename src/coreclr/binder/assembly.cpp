@@ -139,11 +139,6 @@ namespace BINDER_SPACE
         return (pAsmName == nullptr ? nullptr : (LPCWSTR)pAsmName->GetSimpleName());
     }
 
-    UINT_PTR Assembly::GetBinderID()
-    {
-        return m_pBinder ? m_pBinder->GetBinderID() : 0;
-    }
-
     AssemblyLoaderAllocator* Assembly::GetLoaderAllocator()
     {
         return m_pBinder ? m_pBinder->GetLoaderAllocator() : NULL;

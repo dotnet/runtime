@@ -43,18 +43,6 @@ public:
      **********************************************************************************/
     virtual AssemblyLoaderAllocator* GetLoaderAllocator() = 0;
 
-    /**********************************************************************************
-     ** GetBinderID
-     **  pBinderId, pointer to binder id. The binder id has the following properties
-     **        It is a pointer that does not change over the lifetime of a binder object
-     **        It points at an object in memory that will remain allocated for the lifetime of the binder.
-     **        This value should be the same for a set of binder objects that represent the same binder behavior.
-     **********************************************************************************/
-    UINT_PTR GetBinderID()
-    {
-        return reinterpret_cast<UINT_PTR>(this);
-    }
-
     inline BINDER_SPACE::ApplicationContext* GetAppContext()
     {
         return &m_appContext;

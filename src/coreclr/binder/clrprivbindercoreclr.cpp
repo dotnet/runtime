@@ -23,7 +23,7 @@ HRESULT CLRPrivBinderCoreCLR::BindAssemblyByNameWorker(BINDER_SPACE::AssemblyNam
     _ASSERTE(!pAssemblyName->IsCoreLib());
 #endif
 
-    hr = AssemblyBinder::BindAssembly(GetAppContext(),
+    hr = AssemblyBinder::BindAssembly(this,
                                       pAssemblyName,
                                       NULL,
                                       NULL,
@@ -190,7 +190,7 @@ HRESULT CLRPrivBinderCoreCLR::BindUsingPEImage( /* in */ PEImage *pPEImage,
             }
         }
 
-        hr = AssemblyBinder::BindUsingPEImage(GetAppContext(), pAssemblyName, pPEImage, PeKind, pIMetaDataAssemblyImport, &pCoreCLRFoundAssembly);
+        hr = AssemblyBinder::BindUsingPEImage(this, pAssemblyName, pPEImage, PeKind, pIMetaDataAssemblyImport, &pCoreCLRFoundAssembly);
         if (hr == S_OK)
         {
             _ASSERTE(pCoreCLRFoundAssembly != NULL);
@@ -235,7 +235,7 @@ HRESULT CLRPrivBinderCoreCLR::Bind(LPCWSTR            wszCodeBase,
     EX_TRY
     {
         ReleaseHolder<BINDER_SPACE::Assembly> pAsm;
-        hr = AssemblyBinder::BindAssembly(GetAppContext(),
+        hr = AssemblyBinder::BindAssembly(this,
                                           NULL,
                                           wszCodeBase,
                                           pParentAssembly,

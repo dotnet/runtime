@@ -249,7 +249,7 @@ namespace BINDER_SPACE
     // See code:BINDER_SPACE::AssemblyBinder::GetAssembly for info on fNgenExplicitBind
     // and fExplicitBindToNativeImage, and see code:CEECompileInfo::LoadAssemblyByPath
     // for an example of how they're used.
-    HRESULT AssemblyBinder::BindAssembly(/* in */  ApplicationContext  *pApplicationContext,
+    HRESULT AssemblyBinder::BindAssembly(/* in */  ICLRPrivBinder      *pBinder,
                                          /* in */  AssemblyName        *pAssemblyName,
                                          /* in */  LPCWSTR              szCodeBase,
                                          /* in */  PEAssembly          *pParentAssembly,
@@ -261,9 +261,10 @@ namespace BINDER_SPACE
         HRESULT hr = S_OK;
         LONG kContextVersion = 0;
         BindResult bindResult;
+        ApplicationContext* pApplicationContext = pBinder->GetAppContext();
 
         // Tracing happens outside the binder lock to avoid calling into managed code within the lock
-        BinderTracing::ResolutionAttemptedOperation tracer{pAssemblyName, pApplicationContext->GetBinderID(), 0 /*managedALC*/, hr};
+        BinderTracing::ResolutionAttemptedOperation tracer{pAssemblyName, pBinder, 0 /*managedALC*/, hr};
 
 #ifndef CROSSGEN_COMPILE
     Retry:
@@ -1428,7 +1429,7 @@ HRESULT AssemblyBinder::BindUsingHostAssemblyResolver(/* in */ INT_PTR pManagedA
 }
 
 /* static */
-HRESULT AssemblyBinder::BindUsingPEImage(/* in */  ApplicationContext *pApplicationContext,
+HRESULT AssemblyBinder::BindUsingPEImage(/* in */  ICLRPrivBinder* pBinder,
                                          /* in */  BINDER_SPACE::AssemblyName *pAssemblyName,
                                          /* in */  PEImage            *pPEImage,
                                          /* in */  PEKIND              peKind,
@@ -1442,9 +1443,10 @@ HRESULT AssemblyBinder::BindUsingPEImage(/* in */  ApplicationContext *pApplicat
 
     // Prepare binding data
     *ppAssembly = NULL;
+    ApplicationContext* pApplicationContext = pBinder->GetAppContext();
 
     // Tracing happens outside the binder lock to avoid calling into managed code within the lock
-    BinderTracing::ResolutionAttemptedOperation tracer{pAssemblyName, pApplicationContext->GetBinderID(), 0 /*managedALC*/, hr};
+    BinderTracing::ResolutionAttemptedOperation tracer{pAssemblyName, pBinder, 0 /*managedALC*/, hr};
 
     // Attempt the actual bind (eventually more than once)
 Retry:

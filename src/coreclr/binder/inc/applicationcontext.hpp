@@ -85,7 +85,7 @@ namespace BINDER_SPACE
         // ApplicationContext methods
         ApplicationContext();
         ~ApplicationContext();
-        HRESULT Init(UINT_PTR binderID);
+        HRESULT Init();
 
         inline SString &GetApplicationName();
 
@@ -114,8 +114,6 @@ namespace BINDER_SPACE
         inline LONG GetVersion();
         inline void IncrementVersion();
 
-        UINT_PTR GetBinderID() { return m_binderID; }
-
     private:
         Volatile<LONG>     m_cVersion;
         SString            m_applicationName;
@@ -130,8 +128,6 @@ namespace BINDER_SPACE
         StringArrayList    m_appNiPaths;
 
         SimpleNameToFileNameMap * m_pTrustedPlatformAssemblyMap;
-
-        UINT_PTR m_binderID;
     };
 
 #include "applicationcontext.inl"

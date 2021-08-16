@@ -402,10 +402,10 @@ BOOL PEFile::Equals(PEFile *pFile)
     // because another thread beats it; the losing thread will pick up the PEAssembly in the cache.
     if (pFile->HasHostAssembly() && this->HasHostAssembly())
     {
-        UINT_PTR fileBinderId = pFile->GetHostAssembly()->GetBinderID();
-        UINT_PTR thisBinderId = this->GetHostAssembly()->GetBinderID();
+        ICLRPrivBinder* fileBinderId = pFile->GetHostAssembly()->GetBinder();
+        ICLRPrivBinder* thisBinderId = this->GetHostAssembly()->GetBinder();
 
-        if (fileBinderId != thisBinderId || fileBinderId == 0)
+        if (fileBinderId != thisBinderId || fileBinderId == NULL)
             return FALSE;
     }
 

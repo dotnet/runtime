@@ -1007,7 +1007,6 @@ AssemblySpecBindingCache::AssemblyBinding* AssemblySpecBindingCache::LookupInter
     CONTRACTL_END;
 
     UPTR key = (UPTR)pSpec->Hash();
-    UPTR lookupKey = key;
 
     // On CoreCLR, we will use the BinderID as the key
     ICLRPrivBinder *pBinderContextForLookup = NULL;
@@ -1044,11 +1043,10 @@ AssemblySpecBindingCache::AssemblyBinding* AssemblySpecBindingCache::LookupInter
 
     if (pBinderContextForLookup)
     {
-        UINT_PTR binderID = pBinderContextForLookup->GetBinderID();
-        lookupKey = key^binderID;
+        key = key ^ (UPTR)pBinderContextForLookup;
     }
 
-    AssemblyBinding* pEntry = (AssemblyBinding *)m_map.LookupValue(lookupKey, pSpec);
+    AssemblyBinding* pEntry = (AssemblyBinding *)m_map.LookupValue(key, pSpec);
 
     // Reset the binding context if one was originally never present in the AssemblySpec and we didnt find any entry
     // in the cache.
@@ -1260,8 +1258,7 @@ BOOL AssemblySpecBindingCache::StoreAssembly(AssemblySpec *pSpec, DomainAssembly
     _ASSERTE(pBinderContextForLookup || pAssembly->GetFile()->IsSystem());
     if (pBinderContextForLookup)
     {
-        UINT_PTR binderID = pBinderContextForLookup->GetBinderID();
-        key = key^binderID;
+        key = key ^ (UPTR)pBinderContextForLookup;
 
         if (!pSpec->GetBindingContext())
         {
@@ -1343,8 +1340,7 @@ BOOL AssemblySpecBindingCache::StoreFile(AssemblySpec *pSpec, PEAssembly *pFile)
     _ASSERTE(pBinderContextForLookup || pFile->IsSystem());
     if (pBinderContextForLookup)
     {
-        UINT_PTR binderID = pBinderContextForLookup->GetBinderID();
-        key = key^binderID;
+        key = key ^ (UPTR)pBinderContextForLookup;
 
         if (!pSpec->GetBindingContext())
         {
@@ -1436,8 +1432,7 @@ BOOL AssemblySpecBindingCache::StoreException(AssemblySpec *pSpec, Exception* pE
             if (!pSpec->IsAssemblySpecForCoreLib())
             {
                 pBinderToSaveException = pSpec->GetBindingContextFromParentAssembly(pSpec->GetAppDomain());
-                UINT_PTR binderID = pBinderToSaveException->GetBinderID();
-                key = key^binderID;
+                key = key ^ (UPTR)pBinderToSaveException;
             }
         }
     }

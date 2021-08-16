@@ -60,7 +60,6 @@ namespace BINDER_SPACE
         ULONG Release();
 
         LPCWSTR GetSimpleName();
-        UINT_PTR GetBinderID();
         AssemblyLoaderAllocator* GetLoaderAllocator();
 
         // --------------------------------------------------------------------

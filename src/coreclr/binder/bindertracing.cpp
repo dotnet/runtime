@@ -111,10 +111,11 @@ namespace
 #endif // CROSSGEN_COMPILE
     }
 
-    void GetAssemblyLoadContextNameFromBinderID(UINT_PTR binderID, AppDomain *domain, /*out*/ SString &alcName)
+    void GetAssemblyLoadContextNameFromBindContext(ICLRPrivBinder *bindContext, AppDomain *domain, /*out*/ SString &alcName)
     {
-        ICLRPrivBinder *binder = reinterpret_cast<ICLRPrivBinder *>(binderID);
-        if (binder == domain->GetTPABinderContext())
+        _ASSERTE(bindContext != nullptr);
+
+        if (bindContext == domain->GetTPABinderContext())
         {
             alcName.Set(W("Default"));
         }
@@ -123,19 +124,11 @@ namespace
 #ifdef CROSSGEN_COMPILE
             GetAssemblyLoadContextNameFromManagedALC(0, alcName);
 #else // CROSSGEN_COMPILE
-            CLRPrivBinderAssemblyLoadContext *alcBinder = static_cast<CLRPrivBinderAssemblyLoadContext *>(binder);
+            CLRPrivBinderAssemblyLoadContext* alcBinder = static_cast<CLRPrivBinderAssemblyLoadContext*>(bindContext);
 
             GetAssemblyLoadContextNameFromManagedALC(alcBinder->GetManagedAssemblyLoadContext(), alcName);
 #endif // CROSSGEN_COMPILE
         }
-    }
-
-    void GetAssemblyLoadContextNameFromBindContext(ICLRPrivBinder *bindContext, AppDomain *domain, /*out*/ SString &alcName)
-    {
-        _ASSERTE(bindContext != nullptr);
-
-        UINT_PTR binderID = bindContext->GetBinderID();
-        GetAssemblyLoadContextNameFromBinderID(binderID, domain, alcName);
     }
 
     void GetAssemblyLoadContextNameFromSpec(AssemblySpec *spec, /*out*/ SString &alcName)
@@ -256,14 +249,14 @@ namespace BinderTracing
 
 namespace BinderTracing
 {
-    ResolutionAttemptedOperation::ResolutionAttemptedOperation(AssemblyName *assemblyName, UINT_PTR binderID, INT_PTR managedALC, const HRESULT& hr)
+    ResolutionAttemptedOperation::ResolutionAttemptedOperation(AssemblyName *assemblyName, ICLRPrivBinder* bindContext, INT_PTR managedALC, const HRESULT& hr)
         : m_hr { hr }
         , m_stage { Stage::NotYetStarted }
         , m_tracingEnabled { BinderTracing::IsEnabled() }
         , m_assemblyNameObject { assemblyName }
         , m_pFoundAssembly { nullptr }
     {
-        _ASSERTE(binderID != 0 || managedALC != 0);
+        _ASSERTE(bindContext != nullptr || managedALC != 0);
 
         if (!m_tracingEnabled)
             return;
@@ -279,7 +272,7 @@ namespace BinderTracing
         }
         else
         {
-            GetAssemblyLoadContextNameFromBinderID(binderID, GetAppDomain(), m_assemblyLoadContextName);
+            GetAssemblyLoadContextNameFromBindContext(bindContext, GetAppDomain(), m_assemblyLoadContextName);
         }
     }
 
