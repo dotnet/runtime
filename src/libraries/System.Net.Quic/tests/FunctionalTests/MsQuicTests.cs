@@ -304,7 +304,7 @@ namespace System.Net.Quic.Tests
         [Theory]
         [PlatformSpecific(TestPlatforms.Windows)]
         [InlineData(true)]
-        // [InlineData(false)] ActiveIssue("https://github.com/dotnet/runtime/issues/57308")
+        // [InlineData(false)] [ActiveIssue("https://github.com/dotnet/runtime/issues/57308")]
         public async Task ConnectWithClientCertificate(bool sendCerttificate)
         {
             bool clientCertificateOK = false;
@@ -315,7 +315,6 @@ namespace System.Net.Quic.Tests
             listenerOptions.ServerAuthenticationOptions.ClientCertificateRequired = true;
             listenerOptions.ServerAuthenticationOptions.RemoteCertificateValidationCallback = (sender, cert, chain, errors) =>
             {
-                Console.WriteLine("RemoteCertificateValidationCallback called!!!");
                 if (sendCerttificate)
                 {
                     _output.WriteLine("client certificate {0}", cert);

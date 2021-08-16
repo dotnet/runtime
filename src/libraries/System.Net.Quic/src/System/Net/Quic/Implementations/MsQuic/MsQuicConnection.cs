@@ -224,45 +224,47 @@ namespace System.Net.Quic.Implementations.MsQuic
 
         private static uint HandleEventConnected(State state, ref ConnectionEvent connectionEvent)
         {
-            if (!state.Connected)
+            if (state.Connected)
             {
-                if (state.IsServer)
-                {
-                    state.Connected = true;
-                    MsQuicListener.State? listenerState = state.ListenerState;
-                    state.ListenerState = null;
+                return MsQuicStatusCodes.Success;
+            }
 
-                    if (listenerState != null)
+            if (state.IsServer)
+            {
+                state.Connected = true;
+                MsQuicListener.State? listenerState = state.ListenerState;
+                state.ListenerState = null;
+
+                if (listenerState != null)
+                {
+                    if (listenerState.PendingConnections.TryRemove(state.Handle.DangerousGetHandle(), out MsQuicConnection? connection))
                     {
-                        if (listenerState.PendingConnections.TryRemove(state.Handle.DangerousGetHandle(), out MsQuicConnection? connection))
+                        // Move connection from pending to Accept queue and hand it out.
+                        if (listenerState.AcceptConnectionQueue.Writer.TryWrite(connection))
                         {
-                            // Move connection from pending to Accept queue and hand it out.
-                            if (listenerState.AcceptConnectionQueue.Writer.TryWrite(connection))
-                            {
-                                return MsQuicStatusCodes.Success;
-                            }
-                            // Listener is closed
-                            connection.Dispose();
+                            return MsQuicStatusCodes.Success;
                         }
+                        // Listener is closed
+                        connection.Dispose();
                     }
-
-                    return MsQuicStatusCodes.UserCanceled;
                 }
-                else
-                {
-                    // Connected will already be true for connections accepted from a listener.
-                    Debug.Assert(!Monitor.IsEntered(state));
-                    SOCKADDR_INET inetAddress = MsQuicParameterHelpers.GetINetParam(MsQuicApi.Api, state.Handle, QUIC_PARAM_LEVEL.CONNECTION, (uint)QUIC_PARAM_CONN.LOCAL_ADDRESS);
 
-                    Debug.Assert(state.Connection != null);
-                    state.Connection._localEndPoint = MsQuicAddressHelpers.INetToIPEndPoint(ref inetAddress);
-                    state.Connection.SetNegotiatedAlpn(connectionEvent.Data.Connected.NegotiatedAlpn, connectionEvent.Data.Connected.NegotiatedAlpnLength);
-                    state.Connection = null;
+                return MsQuicStatusCodes.UserCanceled;
+            }
+            else
+            {
+                // Connected will already be true for connections accepted from a listener.
+                Debug.Assert(!Monitor.IsEntered(state));
+                SOCKADDR_INET inetAddress = MsQuicParameterHelpers.GetINetParam(MsQuicApi.Api, state.Handle, QUIC_PARAM_LEVEL.CONNECTION, (uint)QUIC_PARAM_CONN.LOCAL_ADDRESS);
 
-                    state.Connected = true;
-                    state.ConnectTcs!.SetResult(MsQuicStatusCodes.Success);
-                    state.ConnectTcs = null;
-                }
+                Debug.Assert(state.Connection != null);
+                state.Connection._localEndPoint = MsQuicAddressHelpers.INetToIPEndPoint(ref inetAddress);
+                state.Connection.SetNegotiatedAlpn(connectionEvent.Data.Connected.NegotiatedAlpn, connectionEvent.Data.Connected.NegotiatedAlpnLength);
+                state.Connection = null;
+
+                state.Connected = true;
+                state.ConnectTcs!.SetResult(MsQuicStatusCodes.Success);
+                state.ConnectTcs = null;
             }
 
             return MsQuicStatusCodes.Success;
