@@ -366,6 +366,7 @@ namespace Microsoft.WebAssembly.Diagnostics
         public string Name { get; }
         public List<FieldTypeClass> FieldsList { get; set; }
         public MonoBinaryReader PropertiesBinaryReader { get; set; }
+        public List<int> TypeParamsOrArgsForGenericType { get; set; }
 
         public TypeInfoWithDebugInformation(TypeInfo typeInfo, int debugId, string name)
         {
@@ -917,12 +918,20 @@ namespace Microsoft.WebAssembly.Diagnostics
             return retDebuggerCmdReader.ReadInt32();
         }
 
-        public async Task<List<int>> GetTypeParamsOrArgsForGenericType(SessionId sessionId, int type_id, CancellationToken token)
+        public async Task<List<int>> GetTypeParamsOrArgsForGenericType(SessionId sessionId, int typeId, CancellationToken token)
         {
+            var typeInfo = await GetTypeInfo(sessionId, typeId, token);
+
+            if (typeInfo == null)
+                return null;
+
+            if (typeInfo.TypeParamsOrArgsForGenericType != null)
+                return typeInfo.TypeParamsOrArgsForGenericType;
+
             var ret = new List<int>();
             var commandParams = new MemoryStream();
             var commandParamsWriter = new MonoBinaryWriter(commandParams);
-            commandParamsWriter.Write(type_id);
+            commandParamsWriter.Write(typeId);
             commandParamsWriter.Write((int) MonoTypeNameFormat.FormatReflection);
             var retDebuggerCmdReader = await SendDebuggerAgentCommand<CmdType>(sessionId, CmdType.GetInfo, commandParams, token);
 
@@ -948,6 +957,9 @@ namespace Microsoft.WebAssembly.Diagnostics
             {
                 ret.Add(retDebuggerCmdReader.ReadInt32()); //generic type
             }
+
+            typeInfo.TypeParamsOrArgsForGenericType = ret;
+
             return ret;
         }
 
