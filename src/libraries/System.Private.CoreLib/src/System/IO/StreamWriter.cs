@@ -29,15 +29,15 @@ namespace System.IO
         // Bit bucket - Null has no backing store. Non closable.
         public static new readonly StreamWriter Null = new StreamWriter(Stream.Null, UTF8NoBOM, MinBufferSize, leaveOpen: true);
 
-        protected internal readonly Stream InnerStream;
-        protected internal readonly Encoding InnerEncoding;
-        protected internal readonly Encoder InnerEncoder;
-        protected internal byte[]? InnerByteBuffer;
-        protected internal readonly char[] InnerCharBuffer;
-        protected internal int InnerCharPos;
+        private readonly Stream _stream;
+        private readonly Encoding _encoding;
+        private readonly Encoder _encoder;
+        private byte[]? _byteBuffer;
+        private readonly char[] _charBuffer;
+        private int _charPos;
         private int _charLen;
         private bool _autoFlush;
-        protected internal bool InnerHaveWrittenPreamble;
+        private bool _haveWrittenPreamble;
         private readonly bool _closable;
         private bool _disposed;
 
@@ -114,21 +114,21 @@ namespace System.IO
                 throw new ArgumentOutOfRangeException(nameof(bufferSize), SR.ArgumentOutOfRange_NeedPosNum);
             }
 
-            InnerStream = stream;
-            InnerEncoding = encoding;
-            InnerEncoder = InnerEncoding.GetEncoder();
+            _stream = stream;
+            _encoding = encoding;
+            _encoder = _encoding.GetEncoder();
             if (bufferSize < MinBufferSize)
             {
                 bufferSize = MinBufferSize;
             }
 
-            InnerCharBuffer = new char[bufferSize];
+            _charBuffer = new char[bufferSize];
             _charLen = bufferSize;
             // If we're appending to a Stream that already has data, don't write
             // the preamble.
-            if (InnerStream.CanSeek && InnerStream.Position > 0)
+            if (_stream.CanSeek && _stream.Position > 0)
             {
-                InnerHaveWrittenPreamble = true;
+                _haveWrittenPreamble = true;
             }
 
             _closable = !leaveOpen;
@@ -239,7 +239,7 @@ namespace System.IO
                     // cleaning up internal resources, hence the finally block.
                     if (disposing)
                     {
-                        InnerStream.Close();
+                        _stream.Close();
                     }
                 }
                 finally
@@ -281,7 +281,7 @@ namespace System.IO
             Flush(true, true);
         }
 
-        protected virtual void Flush(bool flushStream, bool flushEncoder)
+        private void Flush(bool flushStream, bool flushEncoder)
         {
             // flushEncoder should be true at the end of the file and if
             // the user explicitly calls Flush (though not if AutoFlush is true).
@@ -290,46 +290,46 @@ namespace System.IO
             ThrowIfDisposed();
 
             // Perf boost for Flush on non-dirty writers.
-            if (InnerCharPos == 0 && !flushStream && !flushEncoder)
+            if (_charPos == 0 && !flushStream && !flushEncoder)
             {
                 return;
             }
 
-            if (!InnerHaveWrittenPreamble)
+            if (!_haveWrittenPreamble)
             {
-                InnerHaveWrittenPreamble = true;
-                ReadOnlySpan<byte> preamble = InnerEncoding.Preamble;
+                _haveWrittenPreamble = true;
+                ReadOnlySpan<byte> preamble = _encoding.Preamble;
                 if (preamble.Length > 0)
                 {
-                    InnerStream.Write(preamble);
+                    _stream.Write(preamble);
                 }
             }
 
             // For sufficiently small char data being flushed, try to encode to the stack.
             // For anything else, fall back to allocating the byte[] buffer.
             Span<byte> byteBuffer = stackalloc byte[0];
-            if (InnerByteBuffer is not null)
+            if (_byteBuffer is not null)
             {
-                byteBuffer = InnerByteBuffer;
+                byteBuffer = _byteBuffer;
             }
             else
             {
-                int maxBytesForCharPos = InnerEncoding.GetMaxByteCount(InnerCharPos);
+                int maxBytesForCharPos = _encoding.GetMaxByteCount(_charPos);
                 byteBuffer = maxBytesForCharPos <= 1024 ? // arbitrary threshold
                     stackalloc byte[1024] :
-                    (InnerByteBuffer = new byte[InnerEncoding.GetMaxByteCount(InnerCharBuffer.Length)]);
+                    (_byteBuffer = new byte[_encoding.GetMaxByteCount(_charBuffer.Length)]);
             }
 
-            int count = InnerEncoder.GetBytes(new ReadOnlySpan<char>(InnerCharBuffer, 0, InnerCharPos), byteBuffer, flushEncoder);
-            InnerCharPos = 0;
+            int count = _encoder.GetBytes(new ReadOnlySpan<char>(_charBuffer, 0, _charPos), byteBuffer, flushEncoder);
+            _charPos = 0;
             if (count > 0)
             {
-                InnerStream.Write(byteBuffer.Slice(0, count));
+                _stream.Write(byteBuffer.Slice(0, count));
             }
 
             if (flushStream)
             {
-                InnerStream.Flush();
+                _stream.Flush();
             }
         }
 
@@ -349,21 +349,21 @@ namespace System.IO
             }
         }
 
-        public virtual Stream BaseStream => InnerStream;
+        public virtual Stream BaseStream => _stream;
 
-        public override Encoding Encoding => InnerEncoding;
+        public override Encoding Encoding => _encoding;
 
         public override void Write(char value)
         {
             CheckAsyncTaskInProgress();
 
-            if (InnerCharPos == _charLen)
+            if (_charPos == _charLen)
             {
                 Flush(false, false);
             }
 
-            InnerCharBuffer[InnerCharPos] = value;
-            InnerCharPos++;
+            _charBuffer[_charPos] = value;
+            _charPos++;
             if (_autoFlush)
             {
                 Flush(true, false);
@@ -420,13 +420,13 @@ namespace System.IO
             CheckAsyncTaskInProgress();
 
             if (buffer.Length <= 4 && // Threshold of 4 chosen based on perf experimentation
-                buffer.Length <= _charLen - InnerCharPos)
+                buffer.Length <= _charLen - _charPos)
             {
                 // For very short buffers and when we don't need to worry about running out of space
                 // in the char buffer, just copy the chars individually.
                 for (int i = 0; i < buffer.Length; i++)
                 {
-                    InnerCharBuffer[InnerCharPos++] = buffer[i];
+                    _charBuffer[_charPos++] = buffer[i];
                 }
             }
             else
@@ -438,14 +438,14 @@ namespace System.IO
                 // make local copies of instance state to protect against potential concurrent misuse.
 
                 ThrowIfDisposed();
-                char[] charBuffer = InnerCharBuffer;
+                char[] charBuffer = _charBuffer;
 
                 fixed (char* bufferPtr = &MemoryMarshal.GetReference(buffer))
                 fixed (char* dstPtr = &charBuffer[0])
                 {
                     char* srcPtr = bufferPtr;
                     int count = buffer.Length;
-                    int dstPos = InnerCharPos; // use a local copy of InnerCharPos for safety
+                    int dstPos = _charPos; // use a local copy of _charPos for safety
                     while (count > 0)
                     {
                         if (dstPos == charBuffer.Length)
@@ -459,7 +459,7 @@ namespace System.IO
 
                         Buffer.MemoryCopy(srcPtr, dstPtr + dstPos, bytesToCopy, bytesToCopy);
 
-                        InnerCharPos += n;
+                        _charPos += n;
                         dstPos += n;
                         srcPtr += n;
                         count -= n;
@@ -472,13 +472,13 @@ namespace System.IO
                 char[] coreNewLine = CoreNewLine;
                 for (int i = 0; i < coreNewLine.Length; i++) // Generally 1 (\n) or 2 (\r\n) iterations
                 {
-                    if (InnerCharPos == _charLen)
+                    if (_charPos == _charLen)
                     {
                         Flush(false, false);
                     }
 
-                    InnerCharBuffer[InnerCharPos] = coreNewLine[i];
-                    InnerCharPos++;
+                    _charBuffer[_charPos] = coreNewLine[i];
+                    _charPos++;
                 }
             }
 
@@ -664,23 +664,23 @@ namespace System.IO
 
         private async Task WriteAsyncInternal(char value, bool appendNewLine)
         {
-            if (InnerCharPos == _charLen)
+            if (_charPos == _charLen)
             {
                 await FlushAsyncInternal(flushStream: false, flushEncoder: false).ConfigureAwait(false);
             }
 
-            InnerCharBuffer[InnerCharPos++] = value;
+            _charBuffer[_charPos++] = value;
 
             if (appendNewLine)
             {
                 for (int i = 0; i < CoreNewLine.Length; i++) // Generally 1 (\n) or 2 (\r\n) iterations
                 {
-                    if (InnerCharPos == _charLen)
+                    if (_charPos == _charLen)
                     {
                         await FlushAsyncInternal(flushStream: false, flushEncoder: false).ConfigureAwait(false);
                     }
 
-                    InnerCharBuffer[InnerCharPos++] = CoreNewLine[i];
+                    _charBuffer[_charPos++] = CoreNewLine[i];
                 }
             }
 
@@ -780,16 +780,16 @@ namespace System.IO
             int copied = 0;
             while (copied < source.Length)
             {
-                if (InnerCharPos == _charLen)
+                if (_charPos == _charLen)
                 {
                     await FlushAsyncInternal(flushStream: false, flushEncoder: false, cancellationToken).ConfigureAwait(false);
                 }
 
-                int n = Math.Min(_charLen - InnerCharPos, source.Length - copied);
+                int n = Math.Min(_charLen - _charPos, source.Length - copied);
                 Debug.Assert(n > 0, "StreamWriter::Write(char[], int, int) isn't making progress!  This is most likely a race condition in user code.");
 
-                source.Span.Slice(copied, n).CopyTo(new Span<char>(InnerCharBuffer, InnerCharPos, n));
-                InnerCharPos += n;
+                source.Span.Slice(copied, n).CopyTo(new Span<char>(_charBuffer, _charPos, n));
+                _charPos += n;
                 copied += n;
             }
 
@@ -797,12 +797,12 @@ namespace System.IO
             {
                 for (int i = 0; i < CoreNewLine.Length; i++) // Generally 1 (\n) or 2 (\r\n) iterations
                 {
-                    if (InnerCharPos == _charLen)
+                    if (_charPos == _charLen)
                     {
                         await FlushAsyncInternal(flushStream: false, flushEncoder: false, cancellationToken).ConfigureAwait(false);
                     }
 
-                    InnerCharBuffer[InnerCharPos++] = CoreNewLine[i];
+                    _charBuffer[_charPos++] = CoreNewLine[i];
                 }
             }
 
@@ -967,7 +967,7 @@ namespace System.IO
             }
 
             // Perf boost for Flush on non-dirty writers.
-            if (InnerCharPos == 0 && !flushStream && !flushEncoder)
+            if (_charPos == 0 && !flushStream && !flushEncoder)
             {
                 return Task.CompletedTask;
             }
@@ -976,23 +976,23 @@ namespace System.IO
 
             async Task Core(bool flushStream, bool flushEncoder, CancellationToken cancellationToken)
             {
-                if (!InnerHaveWrittenPreamble)
+                if (!_haveWrittenPreamble)
                 {
-                    InnerHaveWrittenPreamble = true;
-                    byte[] preamble = InnerEncoding.GetPreamble();
+                    _haveWrittenPreamble = true;
+                    byte[] preamble = _encoding.GetPreamble();
                     if (preamble.Length > 0)
                     {
-                        await InnerStream.WriteAsync(new ReadOnlyMemory<byte>(preamble), cancellationToken).ConfigureAwait(false);
+                        await _stream.WriteAsync(new ReadOnlyMemory<byte>(preamble), cancellationToken).ConfigureAwait(false);
                     }
                 }
 
-                byte[] byteBuffer = InnerByteBuffer ??= new byte[InnerEncoding.GetMaxByteCount(InnerCharBuffer.Length)];
+                byte[] byteBuffer = _byteBuffer ??= new byte[_encoding.GetMaxByteCount(_charBuffer.Length)];
 
-                int count = InnerEncoder.GetBytes(new ReadOnlySpan<char>(InnerCharBuffer, 0, InnerCharPos), byteBuffer, flushEncoder);
-                InnerCharPos = 0;
+                int count = _encoder.GetBytes(new ReadOnlySpan<char>(_charBuffer, 0, _charPos), byteBuffer, flushEncoder);
+                _charPos = 0;
                 if (count > 0)
                 {
-                    await InnerStream.WriteAsync(new ReadOnlyMemory<byte>(byteBuffer, 0, count), cancellationToken).ConfigureAwait(false);
+                    await _stream.WriteAsync(new ReadOnlyMemory<byte>(byteBuffer, 0, count), cancellationToken).ConfigureAwait(false);
                 }
 
                 // By definition, calling Flush should flush the stream, but this is
@@ -1000,12 +1000,12 @@ namespace System.IO
                 // Services guys have some perf tests where flushing needlessly hurts.
                 if (flushStream)
                 {
-                    await InnerStream.FlushAsync(cancellationToken).ConfigureAwait(false);
+                    await _stream.FlushAsync(cancellationToken).ConfigureAwait(false);
                 }
             }
         }
 
-        protected internal void ThrowIfDisposed()
+        private void ThrowIfDisposed()
         {
             if (_disposed)
             {

@@ -236,11 +236,7 @@ namespace System
         {
             return TextWriter.Synchronized(outputStream == Stream.Null ?
                 StreamWriter.Null :
-#if TARGET_IOS || TARGET_TVOS || TARGET_MACCATALYST
-                new IOSStreamWriter(
-#else
                 new StreamWriter(
-#endif
                     stream: outputStream,
                     encoding: OutputEncoding.RemovePreamble(), // This ensures no prefix is written to the stream.
                     bufferSize: WriteBufferSize,

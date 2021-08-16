@@ -1,23 +1,89 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics;
 using System.IO;
+using System.Runtime.InteropServices;
 using System.Text;
 
 namespace System
 {
     internal sealed class NSLogStream : ConsoleStream
     {
-        public NSLogStream() : base(FileAccess.Write) {}
+        private readonly StringBuilder _buffer = new StringBuilder();
+        private Decoder _decoder;
+
+        public NSLogStream() : base(FileAccess.Write)
+        {
+            _decoder = Encoding.Unicode.GetDecoder();
+        }
 
         public override int Read(Span<byte> buffer) => throw Error.GetReadNotSupported();
 
         public override unsafe void Write(ReadOnlySpan<byte> buffer)
         {
-            fixed (byte* ptr = buffer)
+            int charCount = _decoder.GetCharCount(buffer, false);
+            Span<char> charSpan = new char[charCount];
+            int count = _decoder.GetChars(buffer, charSpan, false);
+            if (count > 0)
             {
-                Interop.Sys.Log(ptr, buffer.Length);
+                WriteOrCache(_buffer, charSpan);
             }
+        }
+
+        private static unsafe void WriteOrCache(StringBuilder cache, Span<char> charBuffer)
+        {
+            int lineStartIndex = 0;
+            for (int i = 0; i < charBuffer.Length; i++)
+            {
+                if (charBuffer[i] == '\n')
+                {
+                    Span<char> lineSpan = charBuffer.Slice(lineStartIndex, i - lineStartIndex);
+                    if (cache.Length > 0)
+                    {
+                        printer(cache.Append(lineSpan).ToString());
+                        cache.Clear();
+                    }
+                    else
+                    {
+                        printer(lineSpan.ToString());
+                    }
+
+                    lineStartIndex = i + 1;
+                }
+            }
+
+            if (lineStartIndex < charBuffer.Length)
+            {
+                // no newlines found, add the entire buffer to the cache
+                cache.Append(charBuffer.Slice(lineStartIndex, charBuffer.Length - lineStartIndex));
+            }
+
+            static void printer(string line)
+            {
+                fixed (char* ptr = line)
+                {
+                    Interop.Sys.Log((byte*)ptr, line.Length * 2);
+                }
+            }
+        }
+
+        protected override void Dispose(bool disposing)
+        {
+            if (_buffer.Length > 0)
+            {
+                var line = _buffer.ToString();
+                _buffer.Clear();
+                unsafe
+                {
+                    fixed (char* ptr = line)
+                    {
+                        Interop.Sys.Log((byte*)ptr, line.Length * 2);
+                    }
+                }
+            }
+
+            base.Dispose(disposing);
         }
     }
 
