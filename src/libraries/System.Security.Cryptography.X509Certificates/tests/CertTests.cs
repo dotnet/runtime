@@ -497,7 +497,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
-        public static void SignatureAlgorithmOidReadableForUnknownKeyAlgorithms()
+        public static void SignatureAlgorithmOidReadableForGostCertificate()
         {
             using (X509Certificate2 cert = new X509Certificate2(TestData.GostCertificate))
             {
