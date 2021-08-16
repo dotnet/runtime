@@ -306,10 +306,10 @@ internal static partial class Interop
             }
             finally
             {
-                if (innerContext != null && cacheSslContext)
+                if (innerContext != null)
                 {
-                    // We allocated new context
-                    if (sslAuthenticationOptions.CertificateContext?.SslContexts == null ||
+                    // We allocated new context and we want to cache
+                    if (!cacheSslContext || sslAuthenticationOptions.CertificateContext?.SslContexts == null ||
                         !sslAuthenticationOptions.CertificateContext.SslContexts.TryAdd(sslAuthenticationOptions.EnabledSslProtocols, innerContext))
                     {
                         innerContext.Dispose();
