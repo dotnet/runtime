@@ -5,11 +5,13 @@
     <Nullable>enable</Nullable>
     <!-- Suppress `string.Contains(char)` offers better performance than `string.Contains(string)` to avoid ifdefs.-->
     <NoWarn>$(NoWarn);CA1847</NoWarn>
+    <IsPackable>true</IsPackable>
+    <PackageDescription>Provides classes that support storage of multiple data objects in a single container.</PackageDescription>
   </PropertyGroup>
 
   <!-- DesignTimeBuild requires all the TargetFramework Derived Properties to not be present in the first property group. -->
   <PropertyGroup>
-    <IsPartialFacadeAssembly Condition="'$(TargetFramework)' == 'net461'">true</IsPartialFacadeAssembly>
+    <IsPartialFacadeAssembly Condition="$([MSBuild]::GetTargetFrameworkIdentifier('$(TargetFramework)')) == '.NETFramework'">true</IsPartialFacadeAssembly>
   </PropertyGroup>
 
   <ItemGroup Condition="'$(IsPartialFacadeAssembly)' != 'true'">
@@ -51,7 +53,7 @@
     <Reference Include="System.Threading" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(TargetFramework)' == 'net461'">
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">
     <Reference Include="WindowsBase" />
   </ItemGroup>
 </Project>

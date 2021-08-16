@@ -197,9 +197,23 @@ find_tramp (gpointer key, gpointer value, gpointer user_data)
 		ud->method = (MonoMethod*)key;
 }
 
+static char*
+mono_get_method_from_ip_u (void *ip);
+
 /* debug function */
 char*
 mono_get_method_from_ip (void *ip)
+{
+	char *result;
+	MONO_ENTER_GC_UNSAFE;
+	result = mono_get_method_from_ip_u (ip);
+	MONO_EXIT_GC_UNSAFE;
+	return result;
+}
+
+/* debug function */
+static char*
+mono_get_method_from_ip_u (void *ip)
 {
 	MonoJitInfo *ji;
 	MonoMethod *method;
@@ -270,6 +284,12 @@ G_GNUC_UNUSED char *
 mono_pmip (void *ip)
 {
 	return mono_get_method_from_ip (ip);
+}
+
+G_GNUC_UNUSED char *
+mono_pmip_u (void *ip)
+{
+	return mono_get_method_from_ip_u (ip);
 }
 
 /**
@@ -523,7 +543,6 @@ mono_tramp_info_register_internal (MonoTrampInfo *info, MonoMemoryManager *mem_m
 		copy->uw_info_len = info->uw_info_len;
 	}
 
-	mono_save_trampoline_xdebug_info (info);
 	mono_lldb_save_trampoline_info (info);
 
 #ifdef MONO_ARCH_HAVE_UNWIND_TABLE
@@ -2504,6 +2523,7 @@ mono_jit_compile_method_with_opt (MonoMethod *method, guint32 opt, gboolean jit_
 		code = mini_get_interp_callbacks ()->create_method_pointer (method, TRUE, error);
 		if (code)
 			return code;
+		return_val_if_nok (error, NULL);
 	}
 
 	if (mono_llvm_only)
@@ -3934,7 +3954,7 @@ mini_parse_debug_option (const char *option)
 	else if (!strcmp (option, "dyn-runtime-invoke"))
 		mini_debug_options.dyn_runtime_invoke = TRUE;
 	else if (!strcmp (option, "gdb"))
-		mini_debug_options.gdb = TRUE;
+		fprintf (stderr, "MONO_DEBUG=gdb is deprecated.");
 	else if (!strcmp (option, "lldb"))
 		mini_debug_options.lldb = TRUE;
 	else if (!strcmp (option, "llvm-disable-inlining"))
@@ -4430,21 +4450,6 @@ mini_init (const char *filename, const char *runtime_version)
 		mono_lldb_init ("");
 		mono_dont_free_domains = TRUE;
 	}
-
-#ifdef XDEBUG_ENABLED
-	char *mono_xdebug = g_getenv ("MONO_XDEBUG");
-	if (mono_xdebug) {
-		mono_xdebug_init (mono_xdebug);
-		g_free (mono_xdebug);
-		/* So methods for multiple domains don't have the same address */
-		mono_dont_free_domains = TRUE;
-		mono_using_xdebug = TRUE;
-	} else if (mini_debug_options.gdb) {
-		mono_xdebug_init ((char*)"gdb");
-		mono_dont_free_domains = TRUE;
-		mono_using_xdebug = TRUE;
-	}
-#endif
 
 #ifdef ENABLE_LLVM
 	if (mono_use_llvm)

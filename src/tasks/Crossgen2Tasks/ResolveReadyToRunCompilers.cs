@@ -17,6 +17,7 @@ namespace Microsoft.NET.Build.Tasks
     {
         public bool EmitSymbols { get; set; }
         public bool ReadyToRunUseCrossgen2 { get; set; }
+        public string PerfmapFormatVersion { get; set; }
 
         [Required]
         public ITaskItem[] RuntimePacks { get; set; }
@@ -177,6 +178,10 @@ namespace Microsoft.NET.Build.Tasks
             {
                 Crossgen2Tool.SetMetadata(MetadataKeys.TargetOS, targetOS);
                 Crossgen2Tool.SetMetadata(MetadataKeys.TargetArch, ArchitectureToString(_targetArchitecture));
+                if (!string.IsNullOrEmpty(PerfmapFormatVersion))
+                {
+                    Crossgen2Tool.SetMetadata(MetadataKeys.PerfmapFormatVersion, PerfmapFormatVersion);
+                }
             }
 
             _crossgen2IsVersion5 = version5;

@@ -18,16 +18,12 @@ namespace System.Runtime.InteropServices.JavaScript
     /// </summary>
     public class JSObject : AnyRef, IJSObject, IDisposable
     {
-        internal object? RawObject;
-
-        private WeakReference<Delegate>? WeakRawObject;
-
         // to detect redundant calls
         public bool IsDisposed { get; private set; }
 
         public JSObject() : this(Interop.Runtime.New<object>(), true)
         {
-            object result = Interop.Runtime.BindCoreObject(JSHandle, Int32Handle, out int exception);
+            object result = Interop.Runtime.BindCoreObject(JSHandle, GCHandleValue, out int exception);
             if (exception != 0)
                 throw new JSException(SR.Format(SR.JSObjectErrorBinding, result));
 
@@ -38,16 +34,6 @@ namespace System.Runtime.InteropServices.JavaScript
 
         internal JSObject(int jsHandle, bool ownsHandle) : base((IntPtr)jsHandle, ownsHandle)
         { }
-
-        internal JSObject(int jsHandle, object rawObj) : base(jsHandle, false)
-        {
-            RawObject = rawObj;
-        }
-
-        internal JSObject(int jsHandle, Delegate rawDelegate, bool ownsHandle = true) : base(jsHandle, ownsHandle)
-        {
-            WeakRawObject = new WeakReference<Delegate>(rawDelegate, trackResurrection: false);
-        }
 
         /// <summary>
         ///   Invoke a named method of the object, or throws a JSException on error.
@@ -84,7 +70,7 @@ namespace System.Runtime.InteropServices.JavaScript
             public object? Signal;
         }
 
-        public int AddEventListener(string name, Delegate listener, EventListenerOptions? options = null)
+        public int AddEventListener(string name, Action<JSObject> listener, EventListenerOptions? options = null)
         {
             var optionsDict = options.HasValue
                 ? new JSObject()
@@ -94,7 +80,7 @@ namespace System.Runtime.InteropServices.JavaScript
                 if (options?.Signal != null)
                     throw new NotImplementedException("EventListenerOptions.Signal");
 
-                var jsfunc = Runtime.GetJSOwnedObjectHandle(listener);
+                var jsfunc = Runtime.GetJSOwnedObjectGCHandle(listener);
                 // int exception;
                 if (options.HasValue) {
                     // TODO: Optimize this
@@ -117,17 +103,17 @@ namespace System.Runtime.InteropServices.JavaScript
             }
         }
 
-        public void RemoveEventListener(string name, Delegate? listener, EventListenerOptions? options = null)
+        public void RemoveEventListener(string name, Action<JSObject>? listener, EventListenerOptions? options = null)
         {
             if (listener == null)
                 return;
-            var jsfunc = Runtime.GetJSOwnedObjectHandle(listener);
+            var jsfunc = Runtime.GetJSOwnedObjectGCHandle(listener);
             RemoveEventListener(name, jsfunc, options);
         }
 
-        public void RemoveEventListener(string name, int listenerHandle, EventListenerOptions? options = null)
+        public void RemoveEventListener(string name, int listenerGCHandle, EventListenerOptions? options = null)
         {
-            var ret = Interop.Runtime.RemoveEventListener(JSHandle, name, listenerHandle, options?.Capture ?? false);
+            var ret = Interop.Runtime.RemoveEventListener(JSHandle, name, listenerGCHandle, options?.Capture ?? false);
             if (ret != null)
                 throw new JSException(ret);
         }
@@ -178,7 +164,7 @@ namespace System.Runtime.InteropServices.JavaScript
         {
             object setPropResult = Interop.Runtime.SetObjectProperty(JSHandle, name, value, createIfNotExists, hasOwnProperty, out int exception);
             if (exception != 0)
-                throw new JSException($"Error setting {name} on (js-obj js '{JSHandle}' .NET '{Int32Handle} raw '{RawObject != null})");
+                throw new JSException($"Error setting {name} on (js-obj js '{JSHandle}' .NET '{GCHandleValue})");
         }
 
         /// <summary>
@@ -205,19 +191,11 @@ namespace System.Runtime.InteropServices.JavaScript
         /// <param name="prop">The String name or Symbol of the property to test.</param>
         public bool PropertyIsEnumerable(string prop) => (bool)Invoke("propertyIsEnumerable", prop);
 
-        internal bool IsWeakWrapper => WeakRawObject?.TryGetTarget(out _) == true;
-
-        internal object? GetWrappedObject()
-        {
-            return RawObject ?? (WeakRawObject is WeakReference<Delegate> wr && wr.TryGetTarget(out Delegate? d) ? d : null);
-        }
         internal void FreeHandle()
         {
             Runtime.ReleaseJSObject(this);
             SetHandleAsInvalid();
             IsDisposed = true;
-            RawObject = null;
-            WeakRawObject = null;
             FreeGCHandle();
         }
 
@@ -258,7 +236,7 @@ namespace System.Runtime.InteropServices.JavaScript
 
         public override string ToString()
         {
-            return $"(js-obj js '{Int32Handle}' raw '{RawObject != null}' weak_raw '{WeakRawObject != null}')";
+            return $"(js-obj js '{GCHandleValue}')";
         }
     }
 }

@@ -104,7 +104,6 @@ set(CORECLR_LIBRARIES
     comfloat_wks
     corguids
     gcinfo
-    ildbsymlib
     utilcode
     v3binder
     System.Globalization.Native-Static

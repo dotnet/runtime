@@ -1059,6 +1059,8 @@ namespace System.Threading
             box.MoveNext();
         };
 
+        internal static bool EnableWorkerTracking => IsWorkerTrackingEnabledInConfig && EventSource.IsSupported;
+
         [CLSCompliant(false)]
         [UnsupportedOSPlatform("browser")]
         public static RegisteredWaitHandle RegisterWaitForSingleObject(

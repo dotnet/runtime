@@ -579,6 +579,13 @@ Assembly *Assembly::CreateDynamic(AppDomain *pDomain, ICLRPrivBinder* pBinderCon
     {
         GCX_PREEMP();
 
+        AssemblyLoaderAllocator* pBinderAssemblyLoaderAllocator = nullptr;
+
+        if (pBinderContext != nullptr)
+        {
+            pBinderContext->GetLoaderAllocator((LPVOID*)&pBinderAssemblyLoaderAllocator);
+        }
+
         // Create a new LoaderAllocator if appropriate
         if ((args->access & ASSEMBLY_ACCESS_COLLECT) != 0)
         {
@@ -595,17 +602,15 @@ Assembly *Assembly::CreateDynamic(AppDomain *pDomain, ICLRPrivBinder* pBinderCon
             // atomically transfered by call to LoaderAllocator::ActivateManagedTracking().
             pAssemblyLoaderAllocator->SetupManagedTracking(&args->loaderAllocator);
             createdNewAssemblyLoaderAllocator = TRUE;
+
+            if(pBinderAssemblyLoaderAllocator != nullptr)
+            {
+                pAssemblyLoaderAllocator->EnsureReference(pBinderAssemblyLoaderAllocator);
+            }
         }
         else
         {
-            AssemblyLoaderAllocator* pAssemblyLoaderAllocator = nullptr;
-
-            if (pBinderContext != nullptr)
-            {
-                pBinderContext->GetLoaderAllocator((LPVOID*)&pAssemblyLoaderAllocator);
-            }
-
-            pLoaderAllocator = pAssemblyLoaderAllocator == nullptr ? pDomain->GetLoaderAllocator() : pAssemblyLoaderAllocator;
+            pLoaderAllocator = pBinderAssemblyLoaderAllocator == nullptr ? pDomain->GetLoaderAllocator() : pBinderAssemblyLoaderAllocator;
         }
 
         if (!createdNewAssemblyLoaderAllocator)

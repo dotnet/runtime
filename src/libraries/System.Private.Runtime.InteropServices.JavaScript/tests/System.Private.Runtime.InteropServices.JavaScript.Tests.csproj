@@ -3,6 +3,7 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <TargetFrameworks>$(NetCoreAppCurrent)-Browser</TargetFrameworks>
     <TestRuntime>true</TestRuntime>
+    <WasmXHarnessArgs>$(WasmXHarnessArgs) --engine-arg=--expose-gc</WasmXHarnessArgs>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System\Runtime\InteropServices\JavaScript\JavaScriptTests.cs" />

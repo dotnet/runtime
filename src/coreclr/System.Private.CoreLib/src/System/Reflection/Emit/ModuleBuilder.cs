@@ -38,9 +38,6 @@ namespace System.Reflection.Emit
     // deliberately not [serializable]
     public class ModuleBuilder : Module
     {
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern IntPtr nCreateISymWriterForDynamicModule(Module module, string filename);
-
         internal static string UnmangleTypeName(string typeName)
         {
             // Gets the original type name, without '+' name mangling.
@@ -77,7 +74,6 @@ namespace System.Reflection.Emit
 
         // _TypeBuilder contains both TypeBuilder and EnumBuilder objects
         private Dictionary<string, Type> _typeBuilderDict = null!;
-        private ISymbolWriter? _iSymWriter;
         internal ModuleBuilderData _moduleData = null!;
         internal InternalModuleBuilder _internalModuleBuilder;
         // This is the "external" AssemblyBuilder
@@ -320,8 +316,6 @@ namespace System.Reflection.Emit
             _moduleData = new ModuleBuilderData(this, strModuleName);
             _typeBuilderDict = new Dictionary<string, Type>();
         }
-
-        internal void SetSymWriter(ISymbolWriter? writer) => _iSymWriter = writer;
 
         internal object SyncRoot => ContainingAssemblyBuilder.SyncRoot;
 
@@ -895,6 +889,7 @@ namespace System.Reflection.Emit
 
         #region Define Global Method
 
+        [RequiresUnreferencedCode("P/Invoke marshalling may dynamically access members that could be trimmed.")]
         public MethodBuilder DefinePInvokeMethod(string name, string dllName, MethodAttributes attributes,
             CallingConventions callingConvention, Type? returnType, Type[]? parameterTypes,
             CallingConvention nativeCallConv, CharSet nativeCharSet)
@@ -902,6 +897,7 @@ namespace System.Reflection.Emit
             return DefinePInvokeMethod(name, dllName, name, attributes, callingConvention, returnType, parameterTypes, nativeCallConv, nativeCharSet);
         }
 
+        [RequiresUnreferencedCode("P/Invoke marshalling may dynamically access members that could be trimmed.")]
         public MethodBuilder DefinePInvokeMethod(string name, string dllName, string entryName, MethodAttributes attributes,
             CallingConventions callingConvention, Type? returnType, Type[]? parameterTypes, CallingConvention nativeCallConv,
             CharSet nativeCharSet)
@@ -1571,44 +1567,6 @@ namespace System.Reflection.Emit
             }
 
             customBuilder.CreateCustomAttribute(this, 1);   // This is hard coding the module token to 1
-        }
-
-        // This API returns the symbol writer being used to write debug symbols for this
-        // module (if any).
-        //
-        // WARNING: It is unlikely this API can be used correctly by applications in any
-        // reasonable way.  It may be called internally from within TypeBuilder.CreateType.
-        //
-        // Specifically:
-        // 1. The underlying symbol writer (written in unmanaged code) is not necessarily well
-        // hardenned and fuzz-tested against malicious API calls.  The security of partial-trust
-        // symbol writing is improved by restricting usage of the writer APIs to the well-structured
-        // uses in ModuleBuilder.
-        // 2. TypeBuilder.CreateType emits all the symbols for the type.  This will effectively
-        // overwrite anything someone may have written manually about the type (specifically
-        // ISymbolWriter.OpenMethod is specced to clear anything previously written for the
-        // specified method)
-        // 3. Someone could technically update the symbols for a method after CreateType is
-        // called, but the debugger (which uses these symbols) assumes that they are only
-        // updated at TypeBuilder.CreateType time.  The changes wouldn't be visible (committed
-        // to the underlying stream) until another type was baked.
-        // 4. Access to the writer is supposed to be synchronized (the underlying COM API is
-        // not thread safe, and these are only thin wrappers on top of them).  Exposing this
-        // directly allows the synchronization to be violated.  We know that concurrent symbol
-        // writer access can cause AVs and other problems.  The writer APIs should not be callable
-        // directly by partial-trust code, but if they could this would be a security hole.
-        // Regardless, this is a reliability bug.
-        internal ISymbolWriter? GetSymWriter() => _iSymWriter;
-
-        private ISymbolDocumentWriter? DefineDocumentNoLock(string url, Guid language, Guid languageVendor, Guid documentType)
-        {
-            if (_iSymWriter == null)
-            {
-                // Cannot DefineDocument when it is not a debug module
-                throw new InvalidOperationException(SR.InvalidOperation_NotADebugModule);
-            }
-
-            return _iSymWriter.DefineDocument(url, language, languageVendor, documentType);
         }
 
         #endregion

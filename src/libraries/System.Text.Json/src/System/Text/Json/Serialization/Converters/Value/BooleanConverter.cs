@@ -17,7 +17,7 @@ namespace System.Text.Json.Serialization.Converters
             writer.WriteBooleanValue(value);
         }
 
-        internal override bool ReadWithQuotes(ref Utf8JsonReader reader)
+        internal override bool ReadAsPropertyName(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
         {
             ReadOnlySpan<byte> propertyName = reader.GetSpan();
             if (Utf8Parser.TryParse(propertyName, out bool value, out int bytesConsumed)
@@ -29,7 +29,7 @@ namespace System.Text.Json.Serialization.Converters
             throw ThrowHelper.GetFormatException(DataType.Boolean);
         }
 
-        internal override void WriteWithQuotes(Utf8JsonWriter writer, bool value, JsonSerializerOptions options, ref WriteStack state)
+        internal override void WriteAsPropertyName(Utf8JsonWriter writer, bool value, JsonSerializerOptions options, ref WriteStack state)
         {
             writer.WritePropertyName(value);
         }

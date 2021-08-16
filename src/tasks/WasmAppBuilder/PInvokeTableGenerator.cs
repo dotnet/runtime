@@ -92,12 +92,21 @@ public class PInvokeTableGenerator : Task
         foreach (var pinvoke in pinvokes.OrderBy(l => l.EntryPoint))
         {
             if (modules.ContainsKey(pinvoke.Module)) {
-                var decl = GenPInvokeDecl(pinvoke);
-                if (decls.Contains(decl))
-                    continue;
+                try
+                {
+                    var decl = GenPInvokeDecl(pinvoke);
+                    if (decls.Contains(decl))
+                        continue;
 
-                w.WriteLine(decl);
-                decls.Add(decl);
+                    w.WriteLine(decl);
+                    decls.Add(decl);
+                }
+                catch (NotSupportedException)
+                {
+                    // See the FIXME in GenPInvokeDecl
+                    Log.LogWarning($"Cannot handle function pointer arguments/return value in pinvoke method '{pinvoke.Method}' in type '{pinvoke.Method.DeclaringType}'.");
+                    pinvoke.Skip = true;
+                }
             }
         }
 
@@ -107,7 +116,7 @@ public class PInvokeTableGenerator : Task
             w.WriteLine("static PinvokeImport " + symbol + " [] = {");
 
             var assemblies_pinvokes = pinvokes.
-                Where(l => l.Module == module).
+                Where(l => l.Module == module && !l.Skip).
                 OrderBy(l => l.EntryPoint).
                 GroupBy(d => d.EntryPoint).
                 Select (l => "{\"" + l.Key + "\", " + l.Key + "}, // " + string.Join (", ", l.Select(c => c.Method.DeclaringType!.Module!.Assembly!.GetName ()!.Name!).Distinct()));
@@ -340,6 +349,7 @@ internal class PInvoke
     public string EntryPoint;
     public string Module;
     public MethodInfo Method;
+    public bool Skip;
 }
 
 internal class PInvokeCallback

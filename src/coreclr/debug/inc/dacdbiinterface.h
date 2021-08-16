@@ -547,7 +547,6 @@ public:
     {
         kSymbolFormatNone,  // No symbols available
         kSymbolFormatPDB,   // PDB symbol format - use diasymreader.dll
-        kSymbolFormatILDB,  // ILDB symbol format - use ildbsymlib
     } SymbolFormat;
 
     //

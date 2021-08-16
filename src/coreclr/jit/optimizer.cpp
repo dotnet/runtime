@@ -4467,7 +4467,7 @@ bool Compiler::optInvertWhileLoop(BasicBlock* block)
         // Note "next" is the loop top block, not bTest's bbNext,
         // we'll call this latter block "after".
         //
-        BasicBlock::weight_t const testToNextLikelihood  = weightNext / weightTest;
+        BasicBlock::weight_t const testToNextLikelihood  = min(1.0f, weightNext / weightTest);
         BasicBlock::weight_t const testToAfterLikelihood = 1.0f - testToNextLikelihood;
 
         // Adjust edges out of bTest (which now has weight weightNext)

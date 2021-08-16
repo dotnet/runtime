@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFrameworks>netstandard2.0</TargetFrameworks>
     <CLSCompliant>false</CLSCompliant>
@@ -28,7 +28,8 @@
     <Compile Include="..\Common\JsonCamelCaseNamingPolicy.cs" Link="Common\System\Text\Json\JsonCamelCaseNamingPolicy.cs" />
     <Compile Include="..\Common\JsonNamingPolicy.cs" Link="Common\System\Text\Json\JsonNamingPolicy.cs" />
     <Compile Include="..\Common\JsonAttribute.cs" Link="Common\System\Text\Json\Serialization\JsonAttribute.cs" />
-    <Compile Include="..\Common\JsonHelpers.cs" Link ="Common\System\Text\Json\JsonHelpers.cs" />
+    <Compile Include="..\Common\JsonConstants.cs" Link="Common\System\Text\Json\JsonConstants.cs" />
+    <Compile Include="..\Common\JsonHelpers.cs" Link="Common\System\Text\Json\JsonHelpers.cs" />
     <Compile Include="..\Common\JsonIgnoreCondition.cs" Link="Common\System\Text\Json\Serialization\JsonIgnoreCondition.cs" />
     <Compile Include="..\Common\JsonKnownNamingPolicy.cs" Link="Common\System\Text\Json\Serialization\JsonKnownNamingPolicy.cs" />
     <Compile Include="..\Common\JsonNumberHandling.cs" Link="Common\System\Text\Json\Serialization\JsonNumberHandling.cs" />
@@ -38,10 +39,12 @@
     <Compile Include="..\Common\ReflectionExtensions.cs" Link="Common\System\Text\Json\Serialization\ReflectionExtensions.cs" />
     <Compile Include="ClassType.cs" />
     <Compile Include="CollectionType.cs" />
+    <Compile Include="JsonConstants.cs" />
     <Compile Include="JsonSourceGenerator.cs" />
     <Compile Include="JsonSourceGenerator.Emitter.cs" />
     <Compile Include="JsonSourceGenerator.Parser.cs" />
     <Compile Include="ObjectConstructionStrategy.cs" />
+    <Compile Include="ParameterGenerationSpec.cs" />
     <Compile Include="PropertyGenerationSpec.cs" />
     <Compile Include="Reflection\AssemblyWrapper.cs" />
     <Compile Include="Reflection\TypeExtensions.cs" />

@@ -1,6 +1,7 @@
 <Project>
   <!-- This depends on the root Directory.Build.targets imported this file -->
   <UsingTask TaskName="MonoAOTCompiler" AssemblyFile="$(MonoAOTCompilerTasksAssemblyPath)" />
+  <UsingTask TaskName="RuntimeConfigParserTask" AssemblyFile="$(RuntimeConfigParserTasksAssemblyPath)" />
 
   <!-- TODO: this breaks runtime tests on Helix due to the file not being there for some reason. Once this is fixed we can remove the UpdateRuntimePack target here -->
   <!--<Import Project="$(RepositoryEngineeringDir)targetingpacks.targets" Condition="'$(TargetingpacksTargetsImported)' != 'true'"/>-->

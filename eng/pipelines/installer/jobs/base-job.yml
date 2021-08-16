@@ -110,7 +110,6 @@ jobs:
         /p:PortableBuild=true
         /p:SkipTests=$(SkipTests)
         /p:RuntimeFlavor=${{ parameters.runtimeFlavor }}
-        $(llvmParameter)
         $(OfficialBuildArg)
     - name: MsbuildSigningArguments
       value: >-
@@ -138,7 +137,6 @@ jobs:
         /p:RuntimeFlavor=${{ parameters.runtimeFlavor }}
         /p:TargetArchitecture=${{ parameters.archType }}
         /p:CrossBuild=${{ parameters.crossBuild }}
-        $(llvmParameter)
 
     - name: BaseJobBuildCommand
       value: >-
@@ -156,7 +154,6 @@ jobs:
       value: >-
         /p:PortableBuild=true
         /p:SkipTests=$(SkipTests)
-        $(llvmParameter)
 
     - name: BaseJobBuildCommand
       value: >-
@@ -207,7 +204,6 @@ jobs:
         /p:TargetArchitecture=${{ parameters.archType }}
         /p:RuntimeFlavor=${{ parameters.runtimeFlavor }}
         $(OfficialBuildArg)
-        $(llvmParameter)
 
     - name: _PortableBuild
       value: ${{ eq(parameters.osSubgroup, '') }}

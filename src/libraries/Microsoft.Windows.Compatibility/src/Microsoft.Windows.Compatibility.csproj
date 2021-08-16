@@ -1,0 +1,70 @@
+﻿<Project Sdk="Microsoft.Build.NoTargets">
+  <PropertyGroup>
+    <!-- Using a csproj extension to get the correct multi-targeting behavior. -->
+    <TargetFrameworks>$(NetCoreAppCurrent);netcoreapp3.1;netstandard2.1;netstandard2.0</TargetFrameworks>
+    <!-- Reference the outputs for the dependency nodes calculation. -->
+    <NoTargetsDoNotReferenceOutputAssemblies>false</NoTargetsDoNotReferenceOutputAssemblies>
+    <IsPackable>true</IsPackable>
+    <!-- This is a meta package and doesn't contain any libs. -->
+    <NoWarn>$(NoWarn);NU5128</NoWarn>
+    <PackageDescription>This Windows Compatibility Pack provides access to APIs that were previously available only for .NET Framework. It can be used from both .NET Core as well as .NET Standard.</PackageDescription>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Win32.Registry.AccessControl\src\Microsoft.Win32.Registry.AccessControl.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Win32.SystemEvents\src\Microsoft.Win32.SystemEvents.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.CodeDom\src\System.CodeDom.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.ComponentModel.Composition\src\System.ComponentModel.Composition.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Configuration.ConfigurationManager\src\System.Configuration.ConfigurationManager.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Data.Odbc\src\System.Data.Odbc.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Data.OleDb\src\System.Data.OleDb.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Diagnostics.EventLog\src\System.Diagnostics.EventLog.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Diagnostics.PerformanceCounter\src\System.Diagnostics.PerformanceCounter.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.DirectoryServices.AccountManagement\src\System.DirectoryServices.AccountManagement.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.DirectoryServices.Protocols\src\System.DirectoryServices.Protocols.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.DirectoryServices\src\System.DirectoryServices.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Drawing.Common\src\System.Drawing.Common.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.IO.Packaging\src\System.IO.Packaging.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.IO.Ports\src\System.IO.Ports.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Management\src\System.Management.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Reflection.Context\src\System.Reflection.Context.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime.Caching\src\System.Runtime.Caching.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Security.Cryptography.Pkcs\src\System.Security.Cryptography.Pkcs.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Security.Cryptography.ProtectedData\src\System.Security.Cryptography.ProtectedData.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Security.Cryptography.Xml\src\System.Security.Cryptography.Xml.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Security.Permissions\src\System.Security.Permissions.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.ServiceModel.Syndication\src\System.ServiceModel.Syndication.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.ServiceProcess.ServiceController\src\System.ServiceProcess.ServiceController.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Speech\src\System.Speech.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Text.Encoding.CodePages\src\System.Text.Encoding.CodePages.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Threading.AccessControl\src\System.Threading.AccessControl.csproj" />
+  </ItemGroup>
+
+  <ItemGroup Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'netstandard2.1'))">
+    <ProjectReference Include="$(LibrariesProjectRoot)System.ComponentModel.Composition.Registration\src\System.ComponentModel.Composition.Registration.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="System.Data.SqlClient" Version="$(SystemDataSqlClientVersion)" />  
+    <PackageReference Include="System.ServiceModel.Primitives;
+                                     System.ServiceModel.Duplex;
+                                     System.ServiceModel.Http;
+                                     System.ServiceModel.NetTcp;
+                                     System.ServiceModel.Security"
+                      Version="$(ServiceModelVersion)" />
+  </ItemGroup>
+
+  <!-- Packages which are inbox in NET6 and shouldn't and can't be referenced anymore. -->
+  <ItemGroup Condition="!$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net6.0'))">
+    <PackageReference Include="Microsoft.Win32.Registry" Version="$(MicrosoftWin32RegistryVersion)" />
+    <PackageReference Include="System.Data.DataSetExtensions" Version="$(SystemDataDataSetExtensionsVersion)" />
+    <PackageReference Include="System.IO.FileSystem.AccessControl" Version="$(SystemIOFileSystemAccessControlVersion)" />
+    <PackageReference Include="System.IO.Pipes.AccessControl" Version="$(SystemIOPipesAccessControlVersion)" />
+    <PackageReference Include="System.Reflection.Emit" Version="$(SystemReflectionEmitVersion)" />
+    <PackageReference Include="System.Reflection.Emit.ILGeneration" Version="$(SystemReflectionEmitILGenerationVersion)" />
+    <PackageReference Include="System.Reflection.Emit.Lightweight" Version="$(SystemReflectionEmitLightweightVersion)" />
+    <PackageReference Include="System.Security.AccessControl" Version="$(SystemSecurityAccessControlVersion)" />
+    <PackageReference Include="System.Security.Cryptography.Cng" Version="$(SystemSecurityCryptographyCngVersion)" />
+    <PackageReference Include="System.Security.Principal.Windows" Version="$(SystemSecurityPrincipalWindowsVersion)" />
+  </ItemGroup>
+</Project>

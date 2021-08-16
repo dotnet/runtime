@@ -100,6 +100,7 @@ namespace Microsoft.NET.HostModel.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/57242", TestPlatforms.OSX)]
         public void TestWithAbsolutePaths()
         {
             var fixture = sharedTestState.TestFixture.Copy();
@@ -108,6 +109,7 @@ namespace Microsoft.NET.HostModel.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/57242", TestPlatforms.OSX)]
         public void TestWithRelativePaths()
         {
             var fixture = sharedTestState.TestFixture.Copy();
@@ -116,6 +118,7 @@ namespace Microsoft.NET.HostModel.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/57242", TestPlatforms.OSX)]
         public void TestWithRelativePathsDirSeparator()
         {
             var fixture = sharedTestState.TestFixture.Copy();

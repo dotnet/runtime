@@ -65,6 +65,7 @@
     <Compile Include="System\Configuration\ConfigurationElementCollectionTests.cs" />
     <Compile Include="System\Configuration\ConfigurationElementTests.cs" />
     <Compile Include="System\Configuration\ConfigurationPropertyAttributeTests.cs" />
+    <Compile Include="System\Configuration\ConfigurationPathTests.cs" />
     <Compile Include="System\Configuration\CustomHostTests.cs" />
     <Compile Include="System\Configuration\ConfigurationPropertyTests.cs" />
     <Compile Include="System\Configuration\ConfigurationTests.cs" />
@@ -102,7 +103,9 @@
   <ItemGroup>
     <ProjectReference Include="..\src\System.Configuration.ConfigurationManager.csproj" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetFramework)' == 'net461'">
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">
     <Reference Include="System.Configuration" />
+    <!-- Manually reference the transitive dependency to make NuGet pick the package over the transitive project: https://github.com/NuGet/Home/issues/10368 -->
+    <PackageReference Include="System.Security.Principal.Windows" Version="$(SystemSecurityPrincipalWindowsVersion)" PrivateAssets="all" />
   </ItemGroup>
 </Project>

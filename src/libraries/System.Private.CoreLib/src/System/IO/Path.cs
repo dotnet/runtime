@@ -31,7 +31,7 @@ namespace System.IO
         // 8 random bytes provides 12 chars in our encoding for the 8.3 name.
         private const int KeyLength = 8;
 
-        [Obsolete("Please use GetInvalidPathChars or GetInvalidFileNameChars instead.")]
+        [Obsolete("Path.InvalidPathChars has been deprecated. Use GetInvalidPathChars or GetInvalidFileNameChars instead.")]
         public static readonly char[] InvalidPathChars = GetInvalidPathChars();
 
         // Changes the extension of a file path. The path parameter

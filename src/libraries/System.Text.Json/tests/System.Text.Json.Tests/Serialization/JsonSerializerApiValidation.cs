@@ -66,18 +66,24 @@ public abstract class JsonSerializerApiValidation
         public override JsonTypeInfo? GetTypeInfo(Type type) => throw new NotImplementedException();
     }
 
-    private JsonTypeInfo<MyPoco> myDummyTypeInfo = JsonMetadataServices.CreateObjectInfo<MyPoco>(
-        new JsonSerializerOptions(),
-        createObjectFunc: static () => throw new NotImplementedException(),
-        propInitFunc: null,
-        default,
-        serializeFunc: (Utf8JsonWriter writer, MyPoco value) => throw new NotImplementedException());
+    private JsonTypeInfo<MyPoco> myDummyTypeInfo = GetTypeInfo();
 
     private JsonSerializerWrapperForString Serializer { get; }
 
     public JsonSerializerApiValidation(JsonSerializerWrapperForString serializer)
     {
         Serializer = serializer;
+    }
+
+    private static JsonTypeInfo<MyPoco> GetTypeInfo()
+    {
+        JsonObjectInfoValues<MyPoco> objectInfo = new()
+        {
+            ObjectCreator = static () => throw new NotImplementedException(),
+            SerializeHandler = (Utf8JsonWriter writer, MyPoco value) => throw new NotImplementedException()
+        };
+
+        return JsonMetadataServices.CreateObjectInfo<MyPoco>(new JsonSerializerOptions(), objectInfo);
     }
 
     [Fact]

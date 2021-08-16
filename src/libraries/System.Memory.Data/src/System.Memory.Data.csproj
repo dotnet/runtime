@@ -3,6 +3,13 @@
     <TargetFrameworks>$(NetCoreAppCurrent);netstandard2.0;net461</TargetFrameworks>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <Nullable>enable</Nullable>
+    <IsPackable>true</IsPackable>
+    <!--- TODO: Remove after this package shipped with NET6. -->
+    <PackageValidationBaselineVersion>1.0.2</PackageValidationBaselineVersion>
+    <PackageDescription>A lightweight abstraction for a payload of bytes. Provides methods for converting between strings, streams, JSON, and bytes.
+
+Commonly Used Types:
+System.BinaryData</PackageDescription>
   </PropertyGroup>
 
   <ItemGroup>
@@ -28,6 +35,7 @@
 
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">
     <PackageReference Include="System.Memory" Version="$(SystemMemoryVersion)" />
-    <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime.CompilerServices.Unsafe\src\System.Runtime.CompilerServices.Unsafe.ilproj" />
+    <!-- S.R.C.Unsafe isn't a primary but transitive dependency and this P2P makes sure that the live version is used. -->
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime.CompilerServices.Unsafe\src\System.Runtime.CompilerServices.Unsafe.ilproj" PrivateAssets="all" />
   </ItemGroup>
 </Project>

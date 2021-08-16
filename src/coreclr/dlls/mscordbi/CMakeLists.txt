@@ -66,7 +66,6 @@ set(COREDBI_LIBRARIES
     debug-pal
     cordbdi
     utilcodestaticnohost
-    ildbsymlib
     mdcompiler-dbi
     mdruntime-dbi
     mdruntimerw-dbi

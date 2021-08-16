@@ -8,6 +8,7 @@ namespace System.Text.Json.SourceGeneration.Tests
 {
     [JsonSerializable(typeof(Location))]
     [JsonSerializable(typeof(RepeatedTypes.Location), TypeInfoPropertyName = "RepeatedLocation")]
+    [JsonSerializable(typeof(NumberTypes))]
     [JsonSerializable(typeof(ActiveOrUpcomingEvent))]
     [JsonSerializable(typeof(CampaignSummaryViewModel))]
     [JsonSerializable(typeof(IndexViewModel))]
@@ -38,6 +39,7 @@ namespace System.Text.Json.SourceGeneration.Tests
         public override void EnsureFastPathGeneratedAsExpected()
         {
             Assert.NotNull(MetadataAndSerializationContext.Default.Location.Serialize);
+            Assert.NotNull(MetadataAndSerializationContext.Default.NumberTypes.Serialize);
             Assert.NotNull(MetadataAndSerializationContext.Default.RepeatedLocation.Serialize);
             Assert.NotNull(MetadataAndSerializationContext.Default.ActiveOrUpcomingEvent.Serialize);
             Assert.NotNull(MetadataAndSerializationContext.Default.CampaignSummaryViewModel.Serialize);

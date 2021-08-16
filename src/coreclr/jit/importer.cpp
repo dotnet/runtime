@@ -14497,6 +14497,18 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     }
                     else
                     {
+                        // If we're newing up a finalizable object, spill anything that can cause exceptions.
+                        //
+                        bool            hasSideEffects = false;
+                        CorInfoHelpFunc newHelper =
+                            info.compCompHnd->getNewHelper(&resolvedToken, info.compMethodHnd, &hasSideEffects);
+
+                        if (hasSideEffects)
+                        {
+                            JITDUMP("\nSpilling stack for finalizable newobj\n");
+                            impSpillSideEffects(true, (unsigned)CHECK_SPILL_ALL DEBUGARG("finalizable newobj spill"));
+                        }
+
                         const bool useParent = true;
                         op1                  = gtNewAllocObjNode(&resolvedToken, useParent);
                         if (op1 == nullptr)

@@ -767,6 +767,19 @@ namespace SerializationTypes
         }
     }
 
+    public class WithXmlElement
+    {
+        public XmlElement xml;
+
+        public WithXmlElement() { }
+
+        public WithXmlElement(bool init)
+        {
+            var doc = new XmlDocument();
+            xml = doc.CreateElement("Element1");
+        }
+    }
+
     public class WithXElementWithNestedXElement
     {
         public XElement e1;

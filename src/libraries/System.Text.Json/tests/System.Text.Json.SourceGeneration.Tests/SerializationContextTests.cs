@@ -9,6 +9,7 @@ namespace System.Text.Json.SourceGeneration.Tests
     [JsonSourceGenerationOptions(GenerationMode = JsonSourceGenerationMode.Serialization)]
     [JsonSerializable(typeof(Location))]
     [JsonSerializable(typeof(RepeatedTypes.Location), TypeInfoPropertyName = "RepeatedLocation")]
+    [JsonSerializable(typeof(NumberTypes))]
     [JsonSerializable(typeof(ActiveOrUpcomingEvent))]
     [JsonSerializable(typeof(CampaignSummaryViewModel))]
     [JsonSerializable(typeof(IndexViewModel))]
@@ -32,6 +33,7 @@ namespace System.Text.Json.SourceGeneration.Tests
 
     [JsonSerializable(typeof(Location), GenerationMode = JsonSourceGenerationMode.Serialization)]
     [JsonSerializable(typeof(RepeatedTypes.Location), GenerationMode = JsonSourceGenerationMode.Serialization, TypeInfoPropertyName = "RepeatedLocation")]
+    [JsonSerializable(typeof(NumberTypes), GenerationMode = JsonSourceGenerationMode.Serialization)]
     [JsonSerializable(typeof(ActiveOrUpcomingEvent), GenerationMode = JsonSourceGenerationMode.Serialization)]
     [JsonSerializable(typeof(CampaignSummaryViewModel), GenerationMode = JsonSourceGenerationMode.Serialization)]
     [JsonSerializable(typeof(IndexViewModel), GenerationMode = JsonSourceGenerationMode.Serialization)]
@@ -56,6 +58,7 @@ namespace System.Text.Json.SourceGeneration.Tests
     [JsonSourceGenerationOptions(PropertyNamingPolicy = JsonKnownNamingPolicy.CamelCase)]
     [JsonSerializable(typeof(Location), GenerationMode = JsonSourceGenerationMode.Serialization)]
     [JsonSerializable(typeof(RepeatedTypes.Location), GenerationMode = JsonSourceGenerationMode.Serialization, TypeInfoPropertyName = "RepeatedLocation")]
+    [JsonSerializable(typeof(NumberTypes), GenerationMode = JsonSourceGenerationMode.Serialization)]
     [JsonSerializable(typeof(ActiveOrUpcomingEvent), GenerationMode = JsonSourceGenerationMode.Serialization)]
     [JsonSerializable(typeof(CampaignSummaryViewModel), GenerationMode = JsonSourceGenerationMode.Serialization)]
     [JsonSerializable(typeof(IndexViewModel), GenerationMode = JsonSourceGenerationMode.Serialization)]
@@ -91,6 +94,7 @@ namespace System.Text.Json.SourceGeneration.Tests
         {
             Assert.NotNull(SerializationContext.Default.Location.Serialize);
             Assert.NotNull(SerializationContext.Default.RepeatedLocation.Serialize);
+            Assert.NotNull(SerializationContext.Default.NumberTypes.Serialize);
             Assert.NotNull(SerializationContext.Default.ActiveOrUpcomingEvent.Serialize);
             Assert.NotNull(SerializationContext.Default.CampaignSummaryViewModel.Serialize);
             Assert.NotNull(SerializationContext.Default.IndexViewModel.Serialize);
@@ -122,6 +126,20 @@ namespace System.Text.Json.SourceGeneration.Tests
             VerifyLocation(expected, obj);
 
             AssertFastPathLogicCorrect(json, obj, DefaultContext.Location);
+        }
+
+        [Fact]
+        public override void RoundTripNumberTypes()
+        {
+            NumberTypes expected = CreateNumberTypes();
+
+            string json = JsonSerializer.Serialize(expected, DefaultContext.NumberTypes);
+            JsonTestHelper.AssertThrows_PropMetadataInit(() => JsonSerializer.Deserialize(json, DefaultContext.NumberTypes), typeof(NumberTypes));
+
+            NumberTypes obj = JsonSerializer.Deserialize(json, ((ITestContext)MetadataWithPerTypeAttributeContext.Default).NumberTypes);
+            VerifyNumberTypes(expected, obj);
+
+            AssertFastPathLogicCorrect(json, obj, DefaultContext.NumberTypes);
         }
 
         [Fact]
