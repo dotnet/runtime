@@ -111,7 +111,7 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
     /// <summary>
     /// File to use for profile-guided optimization, *only* the methods described in the file will be AOT compiled.
     /// </summary>
-    public string? AotProfilePath { get; set; }
+    public string[]? AotProfilePath { get; set; }
 
     /// <summary>
     /// List of profilers to use.
@@ -176,6 +176,7 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
     /// </summary>
     public string? DedupAssembly { get; set; }
 
+    /// <summary>
     /// Debug option in llvm aot mode
     /// defaults to "nodebug" since some targes can't generate debug info
     /// </summary>
@@ -218,10 +219,16 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
             return false;
         }
 
-        if (!string.IsNullOrEmpty(AotProfilePath) && !File.Exists(AotProfilePath))
+        if (AotProfilePath != null)
         {
-            Log.LogError($"'{AotProfilePath}' doesn't exist.", nameof(AotProfilePath));
-            return false;
+            foreach (var path in AotProfilePath)
+            {
+                if (!File.Exists(path))
+                {
+                    Log.LogError($"AotProfilePath '{path}' doesn't exist.");
+                    return false;
+                }
+            }
         }
 
         if (UseLLVM)
@@ -336,6 +343,7 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
         var aotArgs = new List<string>();
         var processArgs = new List<string>();
         bool isDedup = assembly == DedupAssembly;
+        string msgPrefix = $"[{Path.GetFileName(assembly)}] ";
 
         var a = assemblyItem.GetMetadata("AotArguments");
         if (a != null)
@@ -489,9 +497,13 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
             aotAssembly.SetMetadata("AotDataFile", aotDataFile);
         }
 
-        if (!string.IsNullOrEmpty(AotProfilePath))
+        if (AotProfilePath?.Length > 0)
         {
-            aotArgs.Add($"profile={AotProfilePath},profile-only");
+            aotArgs.Add("profile-only");
+            foreach (var path in AotProfilePath)
+            {
+                aotArgs.Add($"profile={path}");
+            }
         }
 
         // we need to quote the entire --aot arguments here to make sure it is parsed
@@ -541,27 +553,27 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
             sw.WriteLine(responseFileContent);
         }
 
-        Log.LogMessage(MessageImportance.Low, $"AOT compiler arguments: {responseFileContent}");
-
-        string args = $"--response=\"{responseFilePath}\"";
+        string workingDir = assemblyDir;
 
         // Log the command in a compact format which can be copy pasted
-        StringBuilder envStr = new StringBuilder(string.Empty);
-        foreach (KeyValuePair<string, string> kvp in envVariables)
-            envStr.Append($"{kvp.Key}={kvp.Value} ");
-        Log.LogMessage(MessageImportance.Low, $"Exec: {envStr}{CompilerBinaryPath} {args}");
+        {
+            StringBuilder envStr = new StringBuilder(string.Empty);
+            foreach (KeyValuePair<string, string> kvp in envVariables)
+                envStr.Append($"{kvp.Key}={kvp.Value} ");
+            Log.LogMessage(MessageImportance.Low, $"{msgPrefix}Exec (with response file contents expanded) in {workingDir}: {envStr}{CompilerBinaryPath} {responseFileContent}");
+        }
 
         try
         {
             // run the AOT compiler
             (int exitCode, string output) = Utils.TryRunProcess(Log,
                                                                 CompilerBinaryPath,
-                                                                args,
+                                                                $"--response=\"{responseFilePath}\"",
                                                                 envVariables,
-                                                                assemblyDir,
+                                                                workingDir,
                                                                 silent: false,
                                                                 debugMessageImportance: MessageImportance.Low,
-                                                                label: assembly);
+                                                                label: Path.GetFileName(assembly));
             if (exitCode != 0)
             {
                 Log.LogError($"Precompiling failed for {assembly}: {output}");

@@ -35,7 +35,6 @@
 #include <mono/utils/mono-errno.h>
 #include <mono/utils/mono-path.h>
 #include <mono/utils/mono-mmap.h>
-#include <mono/utils/mono-io-portability.h>
 #include <mono/utils/atomic.h>
 #include <mono/utils/mono-proclib.h>
 #include <mono/metadata/class-internals.h>
@@ -1374,18 +1373,8 @@ mono_image_storage_open (const char *fname)
 	
 	MonoFileMap *filed;
 	if ((filed = mono_file_map_open (fname)) == NULL){
-		if (IS_PORTABILITY_SET) {
-			gchar *ffname = mono_portability_find_file (fname, TRUE);
-			if (ffname) {
-				filed = mono_file_map_open (ffname);
-				g_free (ffname);
-			}
-		}
-
-		if (filed == NULL) {
-			g_free (key);
-			return NULL;
-		}
+		g_free (key);
+		return NULL;
 	}
 
 	MonoImageStorage *storage = g_new0 (MonoImageStorage, 1);

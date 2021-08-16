@@ -1051,14 +1051,6 @@ int WrapICorJitInfo::FilterException(
     return temp;
 }
 
-void WrapICorJitInfo::HandleException(
-          struct _EXCEPTION_POINTERS* pExceptionPointers)
-{
-    API_ENTER(HandleException);
-    wrapHnd->HandleException(pExceptionPointers);
-    API_LEAVE(HandleException);
-}
-
 void WrapICorJitInfo::ThrowExceptionForJitResult(
           JITINTERFACE_HRESULT result)
 {
@@ -1082,6 +1074,16 @@ bool WrapICorJitInfo::runWithErrorTrap(
     API_ENTER(runWithErrorTrap);
     bool temp = wrapHnd->runWithErrorTrap(function, parameter);
     API_LEAVE(runWithErrorTrap);
+    return temp;
+}
+
+bool WrapICorJitInfo::runWithSPMIErrorTrap(
+          ICorJitInfo::errorTrapFunction function,
+          void* parameter)
+{
+    API_ENTER(runWithSPMIErrorTrap);
+    bool temp = wrapHnd->runWithSPMIErrorTrap(function, parameter);
+    API_LEAVE(runWithSPMIErrorTrap);
     return temp;
 }
 

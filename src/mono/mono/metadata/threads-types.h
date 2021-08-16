@@ -267,7 +267,7 @@ mono_thread_set_name (MonoInternalThread *thread,
 
 gboolean mono_thread_interruption_requested (void);
 
-ICALL_EXTERN_C
+ICALL_EXPORT
 MonoException*
 mono_thread_interruption_checkpoint (void);
 
@@ -280,7 +280,7 @@ mono_thread_interruption_checkpoint_void (void);
 MonoExceptionHandle
 mono_thread_interruption_checkpoint_handle (void);
 
-ICALL_EXTERN_C
+ICALL_EXPORT
 MonoException* mono_thread_force_interruption_checkpoint_noraise (void);
 
 /**
@@ -296,7 +296,7 @@ extern gint32 mono_thread_interruption_request_flag;
 
 uint32_t mono_alloc_special_static_data (uint32_t static_type, uint32_t size, uint32_t align, uintptr_t *bitmap, int numbits);
 
-ICALL_EXTERN_C
+ICALL_EXPORT
 void*    mono_get_special_static_data   (uint32_t offset);
 
 MONO_COMPONENT_API gpointer mono_get_special_static_data_for_thread (MonoInternalThread *thread, guint32 offset);

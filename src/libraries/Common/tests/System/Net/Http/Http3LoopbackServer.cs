@@ -34,9 +34,7 @@ namespace System.Net.Test.Common
                     EnabledSslProtocols = options.SslProtocols,
                     ApplicationProtocols = new List<SslApplicationProtocol>
                     {
-                        new SslApplicationProtocol("h3-31"),
-                        new SslApplicationProtocol("h3-30"),
-                        new SslApplicationProtocol("h3-29")
+                        new SslApplicationProtocol(options.Alpn)
                     },
                     ServerCertificate = _cert,
                     ClientCertificateRequired = false
@@ -122,13 +120,17 @@ namespace System.Net.Test.Common
     }
     public class Http3Options : GenericLoopbackOptions
     {
-        public int MaxUnidirectionalStreams {get; set; }
+        public int MaxUnidirectionalStreams { get; set; }
 
-        public int MaxBidirectionalStreams {get; set; }
+        public int MaxBidirectionalStreams { get; set; }
+
+        public string Alpn { get; set; }
+
         public Http3Options()
         {
             MaxUnidirectionalStreams = 100;
             MaxBidirectionalStreams = 100;
+            Alpn = SslApplicationProtocol.Http3.ToString();
         }
     }
 }

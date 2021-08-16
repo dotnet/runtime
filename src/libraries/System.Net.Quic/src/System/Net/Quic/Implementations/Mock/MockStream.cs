@@ -42,6 +42,20 @@ namespace System.Net.Quic.Implementations.Mock
 
         private StreamBuffer? ReadStreamBuffer => _isInitiator ? _streamState._inboundStreamBuffer : _streamState._outboundStreamBuffer;
 
+        internal override bool CanTimeout => false;
+
+        internal override int ReadTimeout
+        {
+            get => throw new InvalidOperationException();
+            set => throw new InvalidOperationException();
+        }
+
+        internal override int WriteTimeout
+        {
+            get => throw new InvalidOperationException();
+            set => throw new InvalidOperationException();
+        }
+
         internal override bool CanRead => !_disposed && ReadStreamBuffer is not null;
 
         internal override int Read(Span<byte> buffer)
@@ -73,7 +87,7 @@ namespace System.Net.Quic.Implementations.Mock
                 long errorCode = _isInitiator ? _streamState._inboundReadErrorCode : _streamState._outboundReadErrorCode;
                 if (errorCode != 0)
                 {
-                    throw new QuicStreamAbortedException(errorCode);
+                    throw (errorCode == -1) ? new QuicOperationAbortedException() : new QuicStreamAbortedException(errorCode);
                 }
             }
 
@@ -202,14 +216,6 @@ namespace System.Net.Quic.Implementations.Mock
 
             WriteStreamBuffer?.EndWrite();
         }
-
-        internal override ValueTask ShutdownWriteCompleted(CancellationToken cancellationToken = default)
-        {
-            CheckDisposed();
-
-            return default;
-        }
-
 
         internal override ValueTask ShutdownCompleted(CancellationToken cancellationToken = default)
         {

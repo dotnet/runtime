@@ -1911,15 +1911,19 @@ instruction CodeGen::ins_Copy(regNumber srcReg, var_types dstType)
         return INS_mov;
     }
 #elif defined(TARGET_ARM)
-    // No SIMD support yet
+    // No SIMD support yet.
     assert(!varTypeIsSIMD(dstType));
     if (dstIsFloatReg)
     {
-        return (dstType == TYP_DOUBLE) ? INS_vmov_i2d : INS_vmov_i2f;
+        // Can't have LONG in a register.
+        assert(dstType == TYP_FLOAT);
+        return INS_vmov_i2f;
     }
     else
     {
-        return (dstType == TYP_LONG) ? INS_vmov_d2i : INS_vmov_f2i;
+        // Can't have LONG in a register.
+        assert(dstType == TYP_INT);
+        return INS_vmov_f2i;
     }
 #else // TARGET*
 #error "Unknown TARGET"
@@ -2020,31 +2024,38 @@ instruction CodeGenInterface::ins_Store(var_types dstType, bool aligned /*=false
 // Return Value:
 //   the instruction to use
 //
-// Notes:
-//   The function currently does not expect float srcReg with integral dstType and will assert on such cases.
-//
 instruction CodeGenInterface::ins_StoreFromSrc(regNumber srcReg, var_types dstType, bool aligned /*=false*/)
 {
+    assert(srcReg != REG_NA);
+
     bool dstIsFloatType = isFloatRegType(dstType);
     bool srcIsFloatReg  = genIsValidFloatReg(srcReg);
     if (srcIsFloatReg == dstIsFloatType)
     {
         return ins_Store(dstType, aligned);
     }
-
-    assert(!srcIsFloatReg && dstIsFloatType && "not expecting an integer type passed in a float reg");
-    assert(!varTypeIsSmall(dstType) && "not expecting small float types");
-
-    instruction ins = INS_invalid;
-#if defined(TARGET_XARCH)
-    ins = INS_mov;
-#elif defined(TARGET_ARMARCH)
-    ins     = INS_str;
-#else
-    NYI("ins_Store");
-#endif
-    assert(ins != INS_invalid);
-    return ins;
+    else
+    {
+        // We know that we are writing to memory, so make the destination type same
+        // as the source type.
+        var_types dstTypeForStore = TYP_UNDEF;
+        unsigned  dstSize         = genTypeSize(dstType);
+        switch (dstSize)
+        {
+            case 4:
+                dstTypeForStore = srcIsFloatReg ? TYP_FLOAT : TYP_INT;
+                break;
+#if defined(TARGET_64BIT)
+            case 8:
+                dstTypeForStore = srcIsFloatReg ? TYP_DOUBLE : TYP_LONG;
+                break;
+#endif // TARGET_64BIT
+            default:
+                assert(!"unexpected write to the stack.");
+                break;
+        }
+        return ins_Store(dstTypeForStore, aligned);
+    }
 }
 
 #if defined(TARGET_XARCH)

@@ -278,7 +278,7 @@ open_file_map (const char *c_path, int input_fd, int mode, gint64 *capacity, int
 	}
 
 	MONO_ENTER_GC_SAFE;
-	if (c_path) //FIXME use io portability?
+	if (c_path)
 		fd = open (c_path, file_mode_to_unix (mode) | access_mode_to_unix (access), DEFAULT_FILEMODE);
 	else
 		fd = dup (input_fd);

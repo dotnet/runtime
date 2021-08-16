@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TestRuntime>true</TestRuntime>
+    <Scenario>WasmTestOnBrowser</Scenario>
+    <ExpectedExitCode>42</ExpectedExitCode>
+    <WasmMainJSPath>runtime.js</WasmMainJSPath>
+  </PropertyGroup>
+  
+  <ItemGroup>
+    <Compile Include="Program.cs" />
+  </ItemGroup>
+
+  <Target Name="AfterWasmBuildApp" AfterTargets="WasmBuildApp">
+    <Copy SourceFiles="$(MSBuildThisFileDirectory)\index.html" DestinationFolder="$(WasmAppDir)" />
+  </Target>
+  
+</Project>

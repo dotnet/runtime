@@ -63,7 +63,7 @@ struct _EventPipeProviderCallbackData {
 #else
 struct _EventPipeProviderCallbackData_Internal {
 #endif
-	const ep_char8_t *filter_data;
+	ep_char8_t *filter_data;
 	EventPipeCallback callback_function;
 	void *callback_data;
 	int64_t keywords;

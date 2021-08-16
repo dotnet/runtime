@@ -335,6 +335,32 @@ namespace DebuggerTests
             AssertEqual(expected_names.Length, filtered_props.Count(), $"expected number of properties");
         }
 
+        [Fact]
+        public async Task GetObjectValueWithInheritance()
+        {
+            var pause_location = await EvaluateAndCheck(
+               "window.setTimeout(function() { invoke_static_method('[debugger-test] TestChild:TestWatchWithInheritance'); }, 1);",
+                "dotnet://debugger-test.dll/debugger-test2.cs", 127, 8,
+               "TestWatchWithInheritance");
+            var frame_id = pause_location["callFrames"][0]["callFrameId"].Value<string>();
+            var frame_locals = await GetProperties(frame_id);
+            var test_props = await GetObjectOnLocals(frame_locals, "test");
+            await CheckProps(test_props, new
+            {
+                j = TNumber(20),
+                i = TNumber(50),
+                k = TNumber(30),
+                GetJ = TGetter("GetJ"),
+                GetI = TGetter("GetI"),
+                GetK = TGetter("GetK")
+            }, "test_props");
+            await EvaluateOnCallFrameAndCheck(frame_id,
+                ($"test.GetJ", TNumber(20)),
+                ($"test.GetI", TNumber(50)),
+                ($"test.GetK", TNumber(30))
+            );
+        }
+
         private async Task CheckExpectedProperties(string[] expected_names, Func<string, JToken> get_actual_prop, Dictionary<string, (JObject, bool)> all_props)
         {
             foreach (var exp_name in expected_names)

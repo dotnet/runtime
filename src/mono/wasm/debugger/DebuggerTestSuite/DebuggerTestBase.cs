@@ -902,6 +902,23 @@ namespace DebuggerTests
             return res;
         }
 
+        internal async Task EvaluateOnCallFrameAndCheck(string call_frame_id, params (string expression, JObject expected)[] args)
+        {
+            foreach (var arg in args)
+            {
+                var (eval_val, _) = await EvaluateOnCallFrame(call_frame_id, arg.expression);
+                try
+                {
+                    await CheckValue(eval_val, arg.expected, arg.expression);
+                }
+                catch
+                {
+                    Console.WriteLine($"CheckValue failed for {arg.expression}. Expected: {arg.expected}, vs {eval_val}");
+                    throw;
+                }
+            }
+        }
+
         internal void AssertEqual(object expected, object actual, string label)
         {
             if (expected?.Equals(actual) == true)

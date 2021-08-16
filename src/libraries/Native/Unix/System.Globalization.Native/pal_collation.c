@@ -839,11 +839,35 @@ int32_t GlobalizationNative_LastIndexOf(
 
     result = usearch_last(pSearch, &err);
 
-    // if the search was successful,
-    // we'll try to get the matched string length.
-    if (result != USEARCH_DONE && pMatchedLength != NULL)
+    // if the search was successful, we'll try to get the matched string length.
+    if (result != USEARCH_DONE)
     {
-        *pMatchedLength = usearch_getMatchedLength(pSearch);
+        int32_t matchLength = -1;
+
+        if (pMatchedLength != NULL)
+        {
+            matchLength = usearch_getMatchedLength(pSearch);
+            *pMatchedLength = matchLength;
+        }
+
+        // In case the search result is pointing at the last character (including Surrogate case) of the source string, we need to check if the target string
+        // was constructed with characters which have no sort weights. The way we do that is to check that the matched length is 0.
+        // We need to update the returned index to have consistent behavior with Ordinal and NLS operations, and satisfy the condition:
+        //      index = source.LastIndexOf(value, comparisonType);
+        //      originalString.Substring(index).StartsWith(value, comparisonType) == true.
+        // https://github.com/dotnet/runtime/issues/13383
+        if (result >= cwSourceLength - 2)
+        {
+            if (pMatchedLength == NULL)
+            {
+                matchLength = usearch_getMatchedLength(pSearch);
+            }
+
+            if (matchLength == 0)
+            {
+                result = cwSourceLength;
+            }
+        }
     }
 
     RestoreSearchHandle(pSortHandle, pSearch, searchCacheSlot);

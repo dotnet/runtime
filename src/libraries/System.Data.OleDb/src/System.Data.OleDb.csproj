@@ -10,6 +10,18 @@
     <NoWarn>$(NoWarn);SYSLIB0004</NoWarn>
     <!-- Suppress CA1845: Use span-based 'string.Concat' and 'AsSpan' instead of 'Substring' to avoid ifdefs. -->
     <NoWarn>$(NoWarn);CA1845</NoWarn>
+    <IsPackable>true</IsPackable>
+    <PackageDescription>Provides a collection of classes for OLEDB.
+
+Commonly Used Types:
+System.Data.OleDb.OleDbCommand
+System.Data.OleDb.OleDbCommandBuilder
+System.Data.OleDb.OleDbConnection
+System.Data.OleDb.OleDbDataAdapter
+System.Data.OleDb.OleDbDataReader
+System.Data.OleDb.OleDbParameter
+System.Data.OleDb.OleDbParameterCollection
+System.Data.OleDb.OleDbTransaction</PackageDescription>
   </PropertyGroup>
 
   <!-- DesignTimeBuild requires all the TargetFramework Derived Properties to not be present in the first property group. -->
@@ -141,7 +153,8 @@
     <PackageReference Include="System.Security.Principal.Windows" Version="$(SystemSecurityPrincipalWindowsVersion)" />
     <PackageReference Include="System.Memory" Version="$(SystemMemoryVersion)" />
     <!-- Manually reference the transitive dependency to make NuGet pick the package over the transitive project: https://github.com/NuGet/Home/issues/10368 -->
-    <PackageReference Include="System.Security.AccessControl" Version="$(SystemSecurityAccessControlVersion)" />
-    <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime.CompilerServices.Unsafe\src\System.Runtime.CompilerServices.Unsafe.ilproj" />
+    <PackageReference Include="System.Security.AccessControl" Version="$(SystemSecurityAccessControlVersion)" PrivateAssets="all" />
+    <!-- S.R.C.Unsafe isn't a primary but transitive dependency and this P2P makes sure that the live version is used. -->
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime.CompilerServices.Unsafe\src\System.Runtime.CompilerServices.Unsafe.ilproj" PrivateAssets="all" />
   </ItemGroup>
 </Project>

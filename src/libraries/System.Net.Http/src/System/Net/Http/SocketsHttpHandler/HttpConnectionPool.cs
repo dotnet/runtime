@@ -295,20 +295,9 @@ namespace System.Net.Http
         [SupportedOSPlatformGuard("Windows")]
         internal static bool IsHttp3Supported() => (OperatingSystem.IsLinux() && !OperatingSystem.IsAndroid()) || OperatingSystem.IsWindows() || OperatingSystem.IsMacOS();
 
-        private static readonly List<SslApplicationProtocol> s_http3ApplicationProtocols = CreateHttp3ApplicationProtocols();
+        private static readonly List<SslApplicationProtocol> s_http3ApplicationProtocols = new List<SslApplicationProtocol>() { SslApplicationProtocol.Http3 };
         private static readonly List<SslApplicationProtocol> s_http2ApplicationProtocols = new List<SslApplicationProtocol>() { SslApplicationProtocol.Http2, SslApplicationProtocol.Http11 };
         private static readonly List<SslApplicationProtocol> s_http2OnlyApplicationProtocols = new List<SslApplicationProtocol>() { SslApplicationProtocol.Http2 };
-
-        private static List<SslApplicationProtocol> CreateHttp3ApplicationProtocols()
-        {
-            if (IsHttp3Supported())
-            {
-                // TODO: Once the HTTP/3 versions are part of SslApplicationProtocol, see https://github.com/dotnet/runtime/issues/1293, move this back to field initialization.
-                return new List<SslApplicationProtocol>() { Http3Connection.Http3ApplicationProtocol31, Http3Connection.Http3ApplicationProtocol30, Http3Connection.Http3ApplicationProtocol29 };
-            }
-
-            return null!;
-        }
 
         private static SslClientAuthenticationOptions ConstructSslOptions(HttpConnectionPoolManager poolManager, string sslHostName)
         {
@@ -461,7 +450,7 @@ namespace System.Net.Http
             {
                 try
                 {
-                    connection = await CreateHttp11ConnectionAsync(request, false, cts.Token).ConfigureAwait(false);
+                    connection = await CreateHttp11ConnectionAsync(request, true, cts.Token).ConfigureAwait(false);
                 }
                 catch (OperationCanceledException oce) when (oce.CancellationToken == cts.Token)
                 {
@@ -607,7 +596,7 @@ namespace System.Net.Http
             try
             {
                 // Note, the same CancellationToken from the original HTTP2 connection establishment still applies here.
-                http11Connection = await ConstructHttp11ConnectionAsync(false, socket, stream, transportContext, request, cancellationToken).ConfigureAwait(false);
+                http11Connection = await ConstructHttp11ConnectionAsync(true, socket, stream, transportContext, request, cancellationToken).ConfigureAwait(false);
             }
             catch (OperationCanceledException oce) when (oce.CancellationToken == cancellationToken)
             {
@@ -632,7 +621,7 @@ namespace System.Net.Http
             {
                 try
                 {
-                    (Socket? socket, Stream stream, TransportContext? transportContext) = await ConnectAsync(request, false, cts.Token).ConfigureAwait(false);
+                    (Socket? socket, Stream stream, TransportContext? transportContext) = await ConnectAsync(request, true, cts.Token).ConfigureAwait(false);
 
                     if (IsSecure)
                     {
@@ -1822,6 +1811,9 @@ namespace System.Net.Http
                     if (NetEventSource.Log.IsEnabled()) connection.Trace("Dequeued waiting HTTP/2 request.");
                 }
 
+                // Since we only inject one connection at a time, we may want to inject another now.
+                CheckForHttp2ConnectionInjection();
+
                 if (_disposed)
                 {
                     // If the pool has been disposed of, we want to dispose the connection being returned, as the pool is being deactivated.
@@ -1938,6 +1930,12 @@ namespace System.Net.Http
                     Debug.Assert(_associatedHttp2ConnectionCount >= (_availableHttp2Connections?.Count ?? 0));
                     _associatedHttp2ConnectionCount -= (_availableHttp2Connections?.Count ?? 0);
                     _availableHttp2Connections?.Clear();
+
+                    if (_http3Connection is not null)
+                    {
+                        toDispose.Add(_http3Connection);
+                        _http3Connection = null;
+                    }
 
                     if (_authorityExpireTimer != null)
                     {

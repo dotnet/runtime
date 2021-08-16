@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net.Http.Headers;
+using System.Net.Quic;
 using System.Net.Test.Common;
 using System.Text;
 using System.Threading.Tasks;
@@ -213,6 +214,12 @@ namespace System.Net.Http.Functional.Tests
         [InlineData("RandomCustomHeader", 12345)]
         public async Task GetAsync_LargeHeader_Success(string headerName, int headerValueLength)
         {
+            if (UseVersion == HttpVersion.Version30)
+            {
+                // [ActiveIssue("https://github.com/dotnet/runtime/issues/55508")]
+                return;
+            }
+
             var rand = new Random(42);
             string headerValue = string.Concat(Enumerable.Range(0, headerValueLength).Select(_ => (char)('A' + rand.Next(26))));
 
@@ -422,6 +429,7 @@ namespace System.Net.Http.Functional.Tests
                         });
                     }
                     catch (IOException) { }
+                    catch (QuicConnectionAbortedException) { }
                 });
         }
 

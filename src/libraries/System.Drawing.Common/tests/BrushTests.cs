@@ -7,7 +7,7 @@ namespace System.Drawing.Tests
 {
     public class BrushTests
     {
-        [Fact]
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         public void SetNativeBrush_Brush_Success()
         {
             using (var brush = new SubBrush())

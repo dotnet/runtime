@@ -1,0 +1,20 @@
+<?xml version="1.0"?>
+<Suppressions xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+  <Suppression>
+    <DiagnosticId>CP0001</DiagnosticId>
+    <Left>lib/netstandard2.0/System.ServiceProcess.ServiceController.dll</Left>
+    <Right>lib/net461/System.ServiceProcess.ServiceController.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>PKV006</DiagnosticId>
+    <Target>.NETStandard,Version=v1.4</Target>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>PKV006</DiagnosticId>
+    <Target>.NETStandard,Version=v1.5</Target>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>PKV007</DiagnosticId>
+    <Target>.NETStandard,Version=v1.5-win</Target>
+  </Suppression>
+</Suppressions>

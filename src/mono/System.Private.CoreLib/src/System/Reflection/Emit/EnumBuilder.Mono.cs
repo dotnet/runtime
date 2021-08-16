@@ -209,6 +209,10 @@ namespace System.Reflection.Emit
             return _underlyingType;
         }
 
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2110:ReflectionToDynamicallyAccessedMembers",
+            Justification = "For instance members with MethodImplOptions.InternalCall, the linker preserves all fields of the declaring type. " +
+            "The _tb field has DynamicallyAccessedMembersAttribute requirements, but the field access is safe because " +
+            "Reflection.Emit is not subject to trimming.")]
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private extern void setup_enum_type(Type t);
 

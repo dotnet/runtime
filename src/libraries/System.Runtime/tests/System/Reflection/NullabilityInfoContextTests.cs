@@ -6,6 +6,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.IO.Enumeration;
 using System.Text.RegularExpressions;
+using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
 
 namespace System.Reflection.Tests
@@ -280,6 +281,43 @@ namespace System.Reflection.Tests
             Assert.Equal(valueState, nullability.GenericTypeArguments[1].ReadState);
             Assert.Equal(valueElement, nullability.GenericTypeArguments[1].ElementType.ReadState);
             Assert.Null(nullability.ElementType);
+        }
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public void VerifyIsSupportedThrows()
+        {
+            RemoteInvokeOptions options = new RemoteInvokeOptions();
+            options.RuntimeConfigurationOptions.Add("System.Reflection.NullabilityInfoContext.IsSupported", "false");
+
+            using RemoteInvokeHandle remoteHandle = RemoteExecutor.Invoke(() =>
+            {
+                FieldInfo field = testType.GetField("FieldNullable", flags);
+                Assert.Throws<InvalidOperationException>(() => nullabilityContext.Create(field));
+
+                EventInfo @event = testType.GetEvent("EventNullable");
+                Assert.Throws<InvalidOperationException>(() => nullabilityContext.Create(@event));
+
+                PropertyInfo property = testType.GetProperty("PropertyNullable", flags);
+                Assert.Throws<InvalidOperationException>(() => nullabilityContext.Create(property));
+
+                MethodInfo method = testType.GetMethod("MethodNullNonNullNonNon", flags);
+                Assert.Throws<InvalidOperationException>(() => nullabilityContext.Create(method.ReturnParameter));
+            }, options);
+        }
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public void VerifyIsSupportedWorks()
+        {
+            RemoteInvokeOptions options = new RemoteInvokeOptions();
+            options.RuntimeConfigurationOptions.Add("System.Reflection.NullabilityInfoContext.IsSupported", "true");
+
+            using RemoteInvokeHandle remoteHandle = RemoteExecutor.Invoke(() =>
+            {
+                FieldInfo field = testType.GetField("FieldNullable", flags);
+                NullabilityInfo nullability = nullabilityContext.Create(field);
+                Assert.Equal(NullabilityState.Nullable, nullability.ReadState);
+                Assert.Equal(NullabilityState.Nullable, nullability.WriteState);
+            }, options);
         }
 
         public static IEnumerable<object[]> GenericPropertyReferenceTypeTestData()

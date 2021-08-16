@@ -1024,7 +1024,7 @@ namespace System
                 {
                     case 'G':
                     case 'g':
-                        return GetEnumName(rtType, ToUInt64(value)) ?? value.ToString()!;
+                        return InternalFormat(rtType, ToUInt64(value)) ?? value.ToString()!;
 
                     case 'D':
                     case 'd':
@@ -1202,7 +1202,7 @@ namespace System
         #endregion
 
         #region IFormattable
-        [Obsolete("The provider argument is not used. Please use ToString(String).")]
+        [Obsolete("The provider argument is not used. Use ToString(String) instead.")]
         public string ToString(string? format, IFormatProvider? provider)
         {
             return ToString(format);
@@ -1242,7 +1242,7 @@ namespace System
             throw new FormatException(SR.Format_InvalidEnumFormatSpecification);
         }
 
-        [Obsolete("The provider argument is not used. Please use ToString().")]
+        [Obsolete("The provider argument is not used. Use ToString() instead.")]
         public string ToString(IFormatProvider? provider)
         {
             return ToString();

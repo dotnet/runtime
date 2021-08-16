@@ -9,6 +9,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
+using Xunit.Abstractions;
 
 namespace System.Net.Quic.Tests
 {
@@ -16,6 +17,7 @@ namespace System.Net.Quic.Tests
          where T : IQuicImplProviderFactory, new()
     {
         private static byte[] s_data = Encoding.UTF8.GetBytes("Hello world!");
+        public QuicStreamTests(ITestOutputHelper output) : base(output) { }
 
         [Fact]
         public async Task BasicTest()
@@ -55,6 +57,8 @@ namespace System.Net.Quic.Tests
         [Fact]
         public async Task MultipleReadsAndWrites()
         {
+            using CancellationTokenSource cts = new CancellationTokenSource();
+            cts.CancelAfter(PassingTestTimeout);
             const int sendCount = 5;
             int expectedBytesCount = s_data.Length * sendCount;
             byte[] expected = new byte[expectedBytesCount];
@@ -69,7 +73,7 @@ namespace System.Net.Quic.Tests
                 iterations: 100,
                 serverFunction: async connection =>
                 {
-                    await using QuicStream stream = await connection.AcceptStreamAsync();
+                    await using QuicStream stream = await connection.AcceptStreamAsync(cts.Token);
 
                     byte[] buffer = new byte[expectedBytesCount];
                     int bytesRead = await ReadAll(stream, buffer);
@@ -80,9 +84,9 @@ namespace System.Net.Quic.Tests
                     {
                         await stream.WriteAsync(s_data);
                     }
-                    await stream.WriteAsync(Memory<byte>.Empty, endStream: true);
+                    await stream.WriteAsync(Memory<byte>.Empty, endStream: true, cts.Token);
 
-                    await stream.ShutdownCompleted();
+                    await stream.ShutdownCompleted(cts.Token);
                 },
                 clientFunction: async connection =>
                 {
@@ -90,16 +94,16 @@ namespace System.Net.Quic.Tests
 
                     for (int i = 0; i < sendCount; i++)
                     {
-                        await stream.WriteAsync(s_data);
+                        await stream.WriteAsync(s_data, cts.Token);
                     }
-                    await stream.WriteAsync(Memory<byte>.Empty, endStream: true);
+                    await stream.WriteAsync(Memory<byte>.Empty, endStream: true, cts.Token);
 
                     byte[] buffer = new byte[expectedBytesCount];
                     int bytesRead = await ReadAll(stream, buffer);
                     Assert.Equal(expectedBytesCount, bytesRead);
                     Assert.Equal(expected, buffer);
 
-                    await stream.ShutdownCompleted();
+                    await stream.ShutdownCompleted(cts.Token);
                 }
             );
         }
@@ -153,6 +157,35 @@ namespace System.Net.Quic.Tests
                     await stream2.ShutdownCompleted();
                 }
             );
+        }
+
+        [Fact]
+        public async Task MultipleConcurrentStreamsOnSingleConnection()
+        {
+            const int count = 100;
+            Task[] tasks = new Task[count];
+
+            (QuicConnection clientConnection, QuicConnection serverConnection) = await CreateConnectedQuicConnection();
+            using (clientConnection)
+            using (serverConnection)
+            {
+                for (int i = 0; i < count; i++)
+                {
+                    tasks[i] = MakeStreams(clientConnection, serverConnection);
+                }
+                await tasks.WhenAllOrAnyFailed(PassingTestTimeoutMilliseconds);
+            }
+
+            static async Task MakeStreams(QuicConnection clientConnection, QuicConnection serverConnection)
+            {
+                byte[] buffer = new byte[64];
+                QuicStream clientStream = clientConnection.OpenBidirectionalStream();
+                ValueTask writeTask = clientStream.WriteAsync(Encoding.UTF8.GetBytes("PING"), endStream: true);
+                ValueTask<QuicStream> acceptTask = serverConnection.AcceptStreamAsync();
+                await new Task[] { writeTask.AsTask(), acceptTask.AsTask()}.WhenAllOrAnyFailed(PassingTestTimeoutMilliseconds);
+                QuicStream serverStream = acceptTask.Result;
+                await serverStream.ReadAsync(buffer);
+            }
         }
 
         [Fact]
@@ -479,27 +512,31 @@ namespace System.Net.Quic.Tests
                 return;
             }
 
-            const int ExpectedErrorCode = 0xfffffff;
+            (QuicConnection clientConnection, QuicConnection serverConnection) = await CreateConnectedQuicConnection();
+            using (clientConnection)
+            using (serverConnection)
+            {
+                byte[] buffer = new byte[1] { 42 };
+                const int ExpectedErrorCode = 0xfffffff;
 
-            using SemaphoreSlim sem = new SemaphoreSlim(0);
+                QuicStream clientStream = clientConnection.OpenBidirectionalStream();
+                Task<QuicStream> t = serverConnection.AcceptStreamAsync().AsTask();
+                await TaskTimeoutExtensions.WhenAllOrAnyFailed(clientStream.WriteAsync(buffer).AsTask(), t, PassingTestTimeoutMilliseconds);
+                QuicStream serverStream = t.Result;
+                Assert.Equal(1, await serverStream.ReadAsync(buffer));
 
-            await RunBidirectionalClientServer(
-                async clientStream =>
-                {
-                    await sem.WaitAsync();
-                },
-                async serverStream =>
+                // streams are new established and in good shape.
+                using (clientStream)
+                using (serverStream)
                 {
                     Task exTask = Assert.ThrowsAsync<QuicOperationAbortedException>(() => serverStream.ReadAsync(new byte[1]).AsTask());
-
                     Assert.False(exTask.IsCompleted);
 
                     serverStream.AbortRead(ExpectedErrorCode);
 
                     await exTask;
-
-                    sem.Release();
-                });
+                }
+            }
         }
 
         [Fact]
@@ -615,6 +652,12 @@ namespace System.Net.Quic.Tests
         [Fact]
         public async Task WriteCanceled_NextWriteThrows()
         {
+            // [ActiveIssue("https://github.com/dotnet/runtime/issues/55995")]
+            if (typeof(T) == typeof(MockProviderFactory))
+            {
+                return;
+            }
+
             const long expectedErrorCode = 1234;
 
             await RunClientServer(
@@ -648,7 +691,7 @@ namespace System.Net.Quic.Tests
                 {
                     await using QuicStream stream = await connection.AcceptStreamAsync();
 
-                    async Task ReadUntilAborted()  
+                    async Task ReadUntilAborted()
                     {
                         var buffer = new byte[1024];
                         while (true)
@@ -667,10 +710,80 @@ namespace System.Net.Quic.Tests
                 }
             );
         }
+
+        [Fact]
+        public async Task AbortAfterDispose_ProperlyOpenedStream_Success()
+        {
+            byte[] buffer = new byte[1] { 42 };
+            var sem = new SemaphoreSlim(0);
+
+            await RunClientServer(
+                clientFunction: async connection =>
+                {
+                    QuicStream stream = connection.OpenBidirectionalStream();
+                    // Force stream to open on the wire
+                    await stream.WriteAsync(buffer);
+                    await sem.WaitAsync();
+
+                    stream.Dispose();
+
+                    // should not throw ODE on aborting
+                    stream.AbortRead(1234);
+                    stream.AbortWrite(5675);
+                },
+                serverFunction: async connection =>
+                {
+                    await using QuicStream stream = await connection.AcceptStreamAsync();
+                    Assert.Equal(1, await stream.ReadAsync(buffer));
+                    sem.Release();
+
+                    // client will abort both sides, so we will receive the final event
+                    await stream.ShutdownCompleted();
+                }
+            );
+        }
+
+        [Fact]
+        public async Task AbortAfterDispose_StreamCreationFlushedByDispose_Success()
+        {
+            await RunClientServer(
+                clientFunction: connection =>
+                {
+                    QuicStream stream = connection.OpenBidirectionalStream();
+
+                    // dispose will flush stream creation on the wire
+                    stream.Dispose();
+
+                    // should not throw ODE on aborting
+                    stream.AbortRead(1234);
+                    stream.AbortWrite(5675);
+
+                    return Task.CompletedTask;
+                },
+                serverFunction: async connection =>
+                {
+                    await using QuicStream stream = await connection.AcceptStreamAsync();
+
+                    // client will abort both sides, so we will receive the final event
+                    await stream.ShutdownCompleted();
+                }
+            );
+        }
     }
 
-    public sealed class QuicStreamTests_MockProvider : QuicStreamTests<MockProviderFactory> { }
+    public sealed class QuicStreamTests_MockProvider : QuicStreamTests<MockProviderFactory>
+    {
+        public QuicStreamTests_MockProvider(ITestOutputHelper output) : base(output) { }
+    }
 
     [ConditionalClass(typeof(QuicTestBase<MsQuicProviderFactory>), nameof(QuicTestBase<MsQuicProviderFactory>.IsSupported))]
-    public sealed class QuicStreamTests_MsQuicProvider : QuicStreamTests<MsQuicProviderFactory> { }
+    [Collection("NoParallelTests")]
+    public sealed class QuicStreamTests_MsQuicProvider : QuicStreamTests<MsQuicProviderFactory>
+    {
+        public QuicStreamTests_MsQuicProvider(ITestOutputHelper output) : base(output) { }
+    }
+
+    // Define test collection for tests to avoid all other tests.
+    [CollectionDefinition("NoParallelTests", DisableParallelization = true)]
+    public partial class NoParallelTests { }
 }

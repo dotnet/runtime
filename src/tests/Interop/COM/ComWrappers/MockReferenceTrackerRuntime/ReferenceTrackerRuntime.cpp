@@ -3,14 +3,22 @@
 
 #include <xplatform.h>
 #include <ComHelpers.h>
-#include <unordered_map>
+#ifdef WINDOWS
+#include <inspectable.h>
+#endif //WINDOWS
+
+#include <atomic>
+#include <cassert>
+#include <exception>
 #include <list>
 #include <mutex>
-#include <inspectable.h>
+#include <unordered_map>
 
 namespace API
 {
     // Documentation found at https://docs.microsoft.com/windows/win32/api/windows.ui.xaml.hosting.referencetracker/
+    //64bd43f8-bfee-4ec4-b7eb-2935158dae21
+    const GUID IID_IReferenceTrackerTarget = { 0x64bd43f8, 0xbfee, 0x4ec4, { 0xb7, 0xeb, 0x29, 0x35, 0x15, 0x8d, 0xae, 0x21} };
     class DECLSPEC_UUID("64bd43f8-bfee-4ec4-b7eb-2935158dae21") IReferenceTrackerTarget : public IUnknown
     {
     public:
@@ -20,6 +28,8 @@ namespace API
         STDMETHOD(Unpeg)() = 0;
     };
 
+    //29a71c6a-3c42-4416-a39d-e2825a07a773
+    const GUID IID_IReferenceTrackerHost = { 0x29a71c6a, 0x3c42, 0x4416, { 0xa3, 0x9d, 0xe2, 0x82, 0x5a, 0x07, 0xa7, 0x73} };
     class DECLSPEC_UUID("29a71c6a-3c42-4416-a39d-e2825a07a773") IReferenceTrackerHost : public IUnknown
     {
     public:
@@ -31,6 +41,8 @@ namespace API
         STDMETHOD(RemoveMemoryPressure)(_In_ UINT64 bytesAllocated) = 0;
     };
 
+    //3cf184b4-7ccb-4dda-8455-7e6ce99a3298
+    const GUID IID_IReferenceTrackerManager = { 0x3cf184b4, 0x7ccb, 0x4dda, { 0x84, 0x55, 0x7e, 0x6c, 0xe9, 0x9a, 0x32, 0x98} };
     class DECLSPEC_UUID("3cf184b4-7ccb-4dda-8455-7e6ce99a3298") IReferenceTrackerManager : public IUnknown
     {
     public:
@@ -46,6 +58,8 @@ namespace API
         STDMETHOD(FoundTrackerTarget)(_In_ IReferenceTrackerTarget* target) = 0;
     };
 
+    //11d3b13a-180e-4789-a8be-7712882893e6
+    const GUID IID_IReferenceTracker = { 0x11d3b13a, 0x180e, 0x4789, { 0xa8, 0xbe, 0x77, 0x12, 0x88, 0x28, 0x93, 0xe6} };
     class DECLSPEC_UUID("11d3b13a-180e-4789-a8be-7712882893e6") IReferenceTracker : public IUnknown
     {
     public:
@@ -62,11 +76,15 @@ namespace API
 namespace
 {
     // Testing types
+    //447BB9ED-DA48-4ABC-8963-5BB5C3E0AA09
+    const GUID IID_ITest = { 0x447BB9ED, 0xda48, 0x4abc, { 0x89, 0x63, 0x5b, 0xb5, 0xc3, 0xe0, 0xaa, 0x9} };
     struct DECLSPEC_UUID("447BB9ED-DA48-4ABC-8963-5BB5C3E0AA09") ITest : public IUnknown
     {
         STDMETHOD(SetValue)(int i) = 0;
     };
 
+    //42951130-245C-485E-B60B-4ED4254256F8
+    const GUID IID_ITrackerObject = { 0x42951130, 0x245c, 0x485e, { 0xb6, 0x0b, 0x4e, 0xd4, 0x25, 0x42, 0x56, 0xf8} };
     struct DECLSPEC_UUID("42951130-245C-485E-B60B-4ED4254256F8") ITrackerObject : public IUnknown
     {
         STDMETHOD(AddObjectRef)(_In_ IUnknown* c, _Out_ int* id) = 0;
@@ -114,7 +132,7 @@ namespace
             while (curr != std::end(_impl._elements))
             {
                 ComSmartPtr<API::IReferenceTrackerTarget> mowMaybe;
-                if (S_OK == curr->second->QueryInterface(&mowMaybe))
+                if (S_OK == curr->second->QueryInterface(API::IID_IReferenceTrackerTarget, (void**)&mowMaybe))
                 {
                     if (shouldPeg)
                     {
@@ -136,7 +154,7 @@ namespace
             if (_impl._outerRefTrackerTarget)
             {
                 ComSmartPtr<API::IReferenceTrackerTarget> thisTgtMaybe;
-                if (S_OK == _outer->QueryInterface(&thisTgtMaybe))
+                if (S_OK == _outer->QueryInterface(API::IID_IReferenceTrackerTarget, (void**)&thisTgtMaybe))
                 {
                     if (shouldPeg)
                     {
@@ -162,7 +180,7 @@ namespace
             if (_impl._outerRefTrackerTarget)
             {
                 ComSmartPtr<API::IReferenceTrackerTarget> thisTgtMaybe;
-                if (S_OK == _outer->QueryInterface(&thisTgtMaybe))
+                if (S_OK == _outer->QueryInterface(API::IID_IReferenceTrackerTarget, (void**)&thisTgtMaybe))
                     RETURN_IF_FAILED(thisTgtMaybe->ReleaseFromReferenceTracker());
             }
 
@@ -189,13 +207,13 @@ namespace
             {
                 // Check if we are aggregating with a tracker target
                 ComSmartPtr<API::IReferenceTrackerTarget> tgt;
-                if (SUCCEEDED(_implOuter->QueryInterface(&tgt)))
+                if (SUCCEEDED(_implOuter->QueryInterface(API::IID_IReferenceTrackerTarget, (void**)&tgt)))
                 {
                     _outerRefTrackerTarget = true;
                     (void)tgt->AddRefFromReferenceTracker();
                     if (FAILED(tgt->Peg()))
                     {
-                        throw std::exception{ "Peg failure" };
+                        throw std::runtime_error{ "Peg failure" };
                     }
                 }
             }
@@ -205,7 +223,7 @@ namespace
                 assert(c != nullptr && id != nullptr);
 
                 ComSmartPtr<API::IReferenceTrackerTarget> mowMaybe;
-                if (S_OK == c->QueryInterface(&mowMaybe))
+                if (S_OK == c->QueryInterface(API::IID_IReferenceTrackerTarget, (void**)&mowMaybe))
                 {
                     (void)mowMaybe->AddRefFromReferenceTracker();
                     c = mowMaybe.p;
@@ -234,7 +252,7 @@ namespace
                     return S_FALSE;
 
                 ComSmartPtr<API::IReferenceTrackerTarget> mowMaybe;
-                if (S_OK == iter->second->QueryInterface(&mowMaybe))
+                if (S_OK == iter->second->QueryInterface(API::IID_IReferenceTrackerTarget, (void**)&mowMaybe))
                 {
                     (void)mowMaybe->ReleaseFromReferenceTracker();
                     (void)mowMaybe->Unpeg();
@@ -255,7 +273,7 @@ namespace
 
             STDMETHOD(QueryInterface)(
                 /* [in] */ REFIID riid,
-                /* [iid_is][out] */ _COM_Outptr_ void __RPC_FAR* __RPC_FAR* ppvObject)
+                /* [iid_is][out] */ void ** ppvObject)
             {
                 return _implOuter->QueryInterface(riid, ppvObject);
             }
@@ -271,7 +289,7 @@ namespace
 
         STDMETHOD(QueryInterface)(
             /* [in] */ REFIID riid,
-            /* [iid_is][out] */ _COM_Outptr_ void __RPC_FAR* __RPC_FAR* ppvObject)
+            /* [iid_is][out] */ void ** ppvObject)
         {
             if (ppvObject == nullptr)
                 return E_POINTER;
@@ -286,7 +304,7 @@ namespace
             else
             {
                 // Send non-IUnknown queries to the implementation.
-                if (riid == __uuidof(API::IReferenceTracker))
+                if (riid == API::IID_IReferenceTracker)
                 {
                     tgt = static_cast<API::IReferenceTracker*>(&_impl);
                 }
@@ -399,7 +417,7 @@ namespace
         STDMETHOD(SetReferenceTrackerHost)(_In_ API::IReferenceTrackerHost* pHostServices)
         {
             assert(pHostServices != nullptr);
-            return pHostServices->QueryInterface(&_runtimeServices);
+            return pHostServices->QueryInterface(API::IID_IReferenceTrackerHost, (void**)&_runtimeServices);
         }
 
         // Lifetime maintained by stack - we don't care about ref counts
@@ -408,12 +426,12 @@ namespace
 
         STDMETHOD(QueryInterface)(
             /* [in] */ REFIID riid,
-            /* [iid_is][out] */ _COM_Outptr_ void __RPC_FAR* __RPC_FAR* ppvObject)
+            /* [iid_is][out] */ void ** ppvObject)
         {
             if (ppvObject == nullptr)
                 return E_POINTER;
 
-            if (IsEqualIID(riid, __uuidof(API::IReferenceTrackerManager)))
+            if (IsEqualIID(riid, API::IID_IReferenceTrackerManager))
             {
                 *ppvObject = static_cast<API::IReferenceTrackerManager*>(this);
             }
@@ -453,7 +471,7 @@ namespace
         ComSmartPtr<API::IReferenceTrackerTarget> mowMaybe;
         for (auto& e : _elements)
         {
-            if (S_OK == e.second->QueryInterface(&mowMaybe))
+            if (S_OK == e.second->QueryInterface(API::IID_IReferenceTrackerTarget, (void**)&mowMaybe))
             {
                 (void)pCallback->FoundTrackerTarget(mowMaybe.p);
                 mowMaybe.Release();
@@ -466,7 +484,7 @@ namespace
     HRESULT STDMETHODCALLTYPE TrackerObject::TrackerObjectImpl::GetReferenceTrackerManager(_Outptr_ API::IReferenceTrackerManager** ppTrackerManager)
     {
         assert(ppTrackerManager != nullptr);
-        return TrackerRuntimeManager.QueryInterface(__uuidof(API::IReferenceTrackerManager), (void**)ppTrackerManager);
+        return TrackerRuntimeManager.QueryInterface(API::IID_IReferenceTrackerManager, (void**)ppTrackerManager);
     }
 
     HRESULT STDMETHODCALLTYPE TrackerObject::TrackerObjectImpl::AddRefFromTrackerSource()
@@ -533,7 +551,7 @@ extern "C" DLL_EXPORT void* STDMETHODCALLTYPE TrackerTarget_AddRefFromReferenceT
     assert(obj != nullptr);
 
     API::IReferenceTrackerTarget* targetMaybe;
-    if (S_OK == obj->QueryInterface(&targetMaybe))
+    if (S_OK == obj->QueryInterface(API::IID_IReferenceTrackerTarget, (void**)&targetMaybe))
     {
         (void)targetMaybe->AddRefFromReferenceTracker();
         (void)targetMaybe->Release();
@@ -559,13 +577,14 @@ extern "C" DLL_EXPORT int STDMETHODCALLTYPE UpdateTestObjectAsIUnknown(IUnknown 
 
     HRESULT hr;
     ComSmartPtr<ITest> testObj;
-    RETURN_IF_FAILED(obj->QueryInterface(&testObj));
+    RETURN_IF_FAILED(obj->QueryInterface(IID_ITest, (void**)&testObj));
     RETURN_IF_FAILED(testObj->SetValue(i));
 
     *out = testObj.Detach();
     return S_OK;
 }
 
+#ifdef WINDOWS
 extern "C" DLL_EXPORT int STDMETHODCALLTYPE UpdateTestObjectAsIDispatch(IDispatch *obj, int i, IDispatch **out)
 {
     if (obj == nullptr)
@@ -573,6 +592,7 @@ extern "C" DLL_EXPORT int STDMETHODCALLTYPE UpdateTestObjectAsIDispatch(IDispatc
 
     return UpdateTestObjectAsIUnknown(obj, i, (IUnknown**)out);
 }
+#endif // WINDOWS
 
 extern "C" DLL_EXPORT int STDMETHODCALLTYPE UpdateTestObjectAsInterface(ITest *obj, int i, ITest **out)
 {

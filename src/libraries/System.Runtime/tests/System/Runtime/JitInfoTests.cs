@@ -38,6 +38,7 @@ namespace System.Runtime.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMonoAOT))] // JitInfo metrics will be 0 in AOT scenarios
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/55712", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public void JitInfoIsPopulated()
         {
             TimeSpan beforeCompilationTime = System.Runtime.JitInfo.GetCompilationTime();

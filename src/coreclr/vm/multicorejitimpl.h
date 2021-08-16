@@ -212,7 +212,7 @@ public:
 
     ModuleRecord(unsigned lenName = 0, unsigned lenAssemblyName = 0);
 
-    bool MatchWithModule(ModuleVersion & version, bool & gotVersion, Module * pModule, bool & shouldAbort, bool fAppx) const;
+    bool MatchWithModule(ModuleVersion & version, bool & gotVersion, Module * pModule, bool & shouldAbort) const;
 
     unsigned ModuleNameLen() const
     {
@@ -282,7 +282,6 @@ private:
     MulticoreJitPlayerStat           & m_stats;
     MulticoreJitCounter              & m_appdomainSession;
     bool                               m_shouldAbort;
-    bool                               m_fAppxMode;
 
     Thread                           * m_pThread;
 
@@ -320,7 +319,7 @@ private:
 
 public:
 
-    MulticoreJitProfilePlayer(ICLRPrivBinder * pBinderContext, LONG nSession, bool fAppxMode);
+    MulticoreJitProfilePlayer(ICLRPrivBinder * pBinderContext, LONG nSession);
 
     ~MulticoreJitProfilePlayer();
 
@@ -619,16 +618,15 @@ private:
     SString                   m_fullFileName;
     MulticoreJitPlayerStat  & m_stats;
 
-    RecorderModuleInfo        m_ModuleList[MAX_MODULES];
+    RecorderModuleInfo        * m_ModuleList;
     unsigned                  m_ModuleCount;
     unsigned                  m_ModuleDepCount;
 
-    RecorderInfo              m_JitInfoArray[MAX_METHODS];
+    RecorderInfo              * m_JitInfoArray;
     LONG                      m_JitInfoCount;
 
     bool                      m_fFirstMethod;
     bool                      m_fAborted;
-    bool                      m_fAppxMode;
 
 #ifndef TARGET_UNIX
     static TP_TIMER         * s_delayedWriteTimer;
@@ -657,21 +655,32 @@ private:
 
 public:
 
-    MulticoreJitRecorder(AppDomain * pDomain, ICLRPrivBinder * pBinderContext, bool fAppxMode)
+    MulticoreJitRecorder(AppDomain * pDomain, ICLRPrivBinder * pBinderContext, bool fRecorderActive)
         : m_stats(pDomain->GetMulticoreJitManager().GetStats())
+        , m_ModuleList(nullptr)
+        , m_JitInfoArray(nullptr)
     {
         LIMITED_METHOD_CONTRACT;
 
         m_pDomain           = pDomain;
         m_pBinderContext    = pBinderContext;
+
+        if (fRecorderActive)
+        {
+            m_ModuleList        = new (nothrow) RecorderModuleInfo[MAX_MODULES];
+        }
         m_ModuleCount       = 0;
+
         m_ModuleDepCount    = 0;
 
+        if (fRecorderActive)
+        {
+            m_JitInfoArray      = new (nothrow) RecorderInfo[MAX_METHODS];
+        }
         m_JitInfoCount      = 0;
 
         m_fFirstMethod      = true;
         m_fAborted          = false;
-        m_fAppxMode         = fAppxMode;
 
 
         m_stats.Clear();
@@ -688,14 +697,26 @@ public:
             CloseThreadpoolTimer(pTimer);
         }
     }
+#endif // !TARGET_UNIX
 
     ~MulticoreJitRecorder()
     {
         LIMITED_METHOD_CONTRACT;
 
+        delete[] m_ModuleList;
+        delete[] m_JitInfoArray;
+
+#ifndef TARGET_UNIX
         CloseTimer();
-    }
 #endif // !TARGET_UNIX
+    }
+
+    bool CanGatherProfile()
+    {
+        LIMITED_METHOD_CONTRACT;
+
+        return m_ModuleList != NULL && m_JitInfoArray != NULL;
+    }
 
     bool IsAtFullCapacity() const
     {

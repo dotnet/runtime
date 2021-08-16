@@ -102,9 +102,11 @@ namespace System.Tests
         public static void TestIsOSVersionAtLeast_Android_21() => Assert.True(OperatingSystem.IsAndroidVersionAtLeast(21)); // 21 is our min supported version
 
         [Fact, PlatformSpecific(TestPlatforms.iOS)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/56084", TestPlatforms.MacCatalyst)]
         public static void TestIsOSPlatform_IOS() => TestIsOSPlatform("iOS", OperatingSystem.IsIOS);
 
         [Fact, PlatformSpecific(TestPlatforms.iOS)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/56084", TestPlatforms.MacCatalyst)]
         public static void TestIsOSVersionAtLeast_IOS() => TestIsOSVersionAtLeast("iOS");
 
         [Fact, PlatformSpecific(TestPlatforms.OSX)]
@@ -127,9 +129,11 @@ namespace System.Tests
         }
 
         [Fact, PlatformSpecific(TestPlatforms.MacCatalyst)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/56084", TestPlatforms.MacCatalyst)]
         public static void TestIsOSPlatform_MacCatalyst() => TestIsOSPlatform("MacCatalyst", OperatingSystem.IsMacCatalyst);
 
         [Fact, PlatformSpecific(TestPlatforms.MacCatalyst)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/56084", TestPlatforms.MacCatalyst)]
         public static void TestIsOSVersionAtLeast_MacCatalyst() => TestIsOSVersionAtLeast("MacCatalyst");
 
         [Fact, PlatformSpecific(TestPlatforms.MacCatalyst)]
@@ -143,6 +147,7 @@ namespace System.Tests
         }
 
         [Fact, PlatformSpecific(TestPlatforms.iOS)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/56084", TestPlatforms.MacCatalyst)]
         public static void IOS_Is_Not_Also_MacCatalyst()
         {
             Assert.False(OperatingSystem.IsOSPlatform("MacCatalyst"));

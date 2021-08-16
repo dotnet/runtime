@@ -1623,7 +1623,8 @@ NativeImageDumper::PrintManifestTokenName(mdToken token,
 
 BOOL NativeImageDumper::HandleFixupForHistogram(PTR_CORCOMPILE_IMPORT_SECTION pSection,
                                                 SIZE_T fixupIndex,
-                                                SIZE_T *fixupCell)
+                                                SIZE_T *fixupCell,
+                                                BOOL mayUsePrecompiledNDirectMethods)
 {
     COUNT_T nImportSections;
     PTR_CORCOMPILE_IMPORT_SECTION pImportSections = m_decoder.GetNativeImportSections(&nImportSections);
@@ -3577,7 +3578,7 @@ size_t NativeImageDumper::TranslateSymbol(IXCLRDisassemblySupport *dis,
     return 0;
 }
 
-BOOL NativeImageDumper::HandleFixupForMethodDump(PTR_CORCOMPILE_IMPORT_SECTION pSection, SIZE_T fixupIndex, SIZE_T *fixupCell)
+BOOL NativeImageDumper::HandleFixupForMethodDump(PTR_CORCOMPILE_IMPORT_SECTION pSection, SIZE_T fixupIndex, SIZE_T *fixupCell, BOOL mayUsePrecompiledNDirectMethods)
 {
     PTR_SIZE_T fixupPtr(TO_TADDR(fixupCell));
     m_display->StartElement( "Fixup" );

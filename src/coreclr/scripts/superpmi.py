@@ -194,6 +194,10 @@ Normally, we don't download if the target directory exists. This forces download
 target directory already exists.
 """
 
+download_no_progress_help = """\
+If specified, then download progress will not be shown.
+"""
+
 merge_mch_pattern_help = """\
 A pattern to describing files to merge, passed through directly to `mcs -merge`.
 Acceptable patterns include `*.mch`, `file*.mch`, and `c:\\my\\directory\\*.mch`.
@@ -337,6 +341,7 @@ download_parser.add_argument("-filter", nargs='+', help=filter_help)
 download_parser.add_argument("-jit_ee_version", help=jit_ee_version_help)
 download_parser.add_argument("--skip_cleanup", action="store_true", help=skip_cleanup_help)
 download_parser.add_argument("--force_download", action="store_true", help=force_download_help)
+download_parser.add_argument("--no_progress", action="store_true", help=download_no_progress_help)
 download_parser.add_argument("-mch_files", metavar="MCH_FILE", nargs='+', help=replay_mch_files_help)
 download_parser.add_argument("-private_store", action="append", help=private_store_help)
 
@@ -424,7 +429,7 @@ def download_progress_hook(count, block_size, total_size):
     sys.stdout.flush()
 
 
-def download_with_progress_urlretrieve(uri, target_location, fail_if_not_found=True):
+def download_with_progress_urlretrieve(uri, target_location, fail_if_not_found=True, display_progress=True):
     """ Do an URI download using urllib.request.urlretrieve with a progress hook.
 
     Args:
@@ -439,7 +444,8 @@ def download_with_progress_urlretrieve(uri, target_location, fail_if_not_found=T
 
     ok = True
     try:
-        urllib.request.urlretrieve(uri, target_location, reporthook=download_progress_hook)
+        progress_display_method = download_progress_hook if display_progress else None
+        urllib.request.urlretrieve(uri, target_location, reporthook=progress_display_method)
     except urllib.error.HTTPError as httperror:
         if (httperror == 404) and fail_if_not_found:
             logging.error("HTTP 404 error")
@@ -498,7 +504,7 @@ def download_with_azure(uri, target_location, fail_if_not_found=True):
     return ok
 
 
-def download_one_url(uri, target_location, fail_if_not_found=True):
+def download_one_url(uri, target_location, fail_if_not_found=True, display_progress=True):
     """ Do an URI download using urllib.request.urlretrieve or Azure Storage APIs.
 
     Args:
@@ -512,7 +518,7 @@ def download_one_url(uri, target_location, fail_if_not_found=True):
     if authenticate_using_azure:
         return download_with_azure(uri, target_location, fail_if_not_found)
     else:
-        return download_with_progress_urlretrieve(uri, target_location, fail_if_not_found)
+        return download_with_progress_urlretrieve(uri, target_location, fail_if_not_found, display_progress)
 
 
 def is_zero_length_file(fpath):
@@ -2532,7 +2538,7 @@ def process_local_mch_files(coreclr_args, mch_files, mch_cache_dir):
     for item in mch_files:
         # On Windows only, see if any of the mch_files are UNC paths (i.e., "\\server\share\...").
         # If so, download and cache all the files found there to our usual local cache location, to avoid future network access.
-        if coreclr_args.host_os == "windows" and item.startswith("\\\\"):
+        if coreclr_args.host_os == "windows":# and item.startswith("\\\\"):
             # Special case: if the user specifies a .mch file, we'll also look for and cache a .mch.mct file next to it, if one exists.
             # This happens naturally if a directory is passed and we search for all .mch and .mct files in that directory.
             mch_file = os.path.abspath(item)
@@ -2557,8 +2563,9 @@ def process_local_mch_files(coreclr_args, mch_files, mch_cache_dir):
     urls = [url for url in urls if filter_local_path(url)]
 
     # Download all the urls at once, and add the local cache filenames to our accumulated list of local file names.
+    skip_progress = hasattr(coreclr_args, 'no_progress') and coreclr_args.no_progress
     if len(urls) != 0:
-        local_mch_files += download_files(urls, mch_cache_dir)
+        local_mch_files += download_files(urls, mch_cache_dir, display_progress=not skip_progress)
 
     # Special case: walk the URLs list and for every ".mch" or ".mch.zip" file, check to see that either the associated ".mct" file is already
     # in the list, or add it to a new list to attempt to download (but don't fail the download if it doesn't exist).
@@ -2569,7 +2576,7 @@ def process_local_mch_files(coreclr_args, mch_files, mch_cache_dir):
             if mct_url not in urls:
                 mct_urls.append(mct_url)
     if len(mct_urls) != 0:
-        local_mch_files += download_files(mct_urls, mch_cache_dir, fail_if_not_found=False)
+        local_mch_files += download_files(mct_urls, mch_cache_dir, fail_if_not_found=False, display_progress=not skip_progress)
 
     # Even though we might have downloaded MCT files, only return the set of MCH files.
     local_mch_files = [file for file in local_mch_files if any(file.lower().endswith(extension) for extension in [".mch"])]
@@ -2645,7 +2652,7 @@ def download_mch_from_azure(coreclr_args, target_dir):
         list containing the local path of files downloaded
     """
 
-    blob_filter_string = "{}/{}/{}/".format(coreclr_args.jit_ee_version, coreclr_args.target_os, coreclr_args.mch_arch).lower()
+    blob_filter_string =  "{}/{}/{}/".format(coreclr_args.jit_ee_version, coreclr_args.target_os, coreclr_args.mch_arch).lower()
 
     # Determine if a URL in Azure Storage should be allowed. The path looks like:
     #   jit-ee-guid/Linux/x64/Linux.x64.Checked.frameworks.mch.zip
@@ -2664,10 +2671,10 @@ def download_mch_from_azure(coreclr_args, target_dir):
     blob_url_prefix = "{}/{}/".format(az_blob_storage_superpmi_container_uri, az_collections_root_folder)
     urls = [blob_url_prefix + path for path in paths]
 
-    return download_files(urls, target_dir)
+    skip_progress = hasattr(coreclr_args, 'no_progress') and coreclr_args.no_progress
+    return download_files(urls, target_dir, display_progress=not skip_progress)
 
-
-def download_files(paths, target_dir, verbose=True, fail_if_not_found=True):
+def download_files(paths, target_dir, verbose=True, fail_if_not_found=True, display_progress=True):
     """ Download a set of files, specified as URLs or paths (such as Windows UNC paths),
         to a target directory. If a file is a .ZIP file, then uncompress the file and
         copy all its contents to the target directory.
@@ -2716,7 +2723,7 @@ def download_files(paths, target_dir, verbose=True, fail_if_not_found=True):
 
                 download_path = os.path.join(temp_location, item_name)
                 if is_item_url:
-                    ok = download_one_url(item_path, download_path, fail_if_not_found)
+                    ok = download_one_url(item_path, download_path, fail_if_not_found, display_progress)
                     if not ok:
                         continue
                 else:
@@ -2742,7 +2749,7 @@ def download_files(paths, target_dir, verbose=True, fail_if_not_found=True):
                 # Not a zip file; download directory to target directory
                 download_path = os.path.join(target_dir, item_name)
                 if is_item_url:
-                    ok = download_one_url(item_path, download_path, fail_if_not_found)
+                    ok = download_one_url(item_path, download_path, fail_if_not_found, display_progress)
                     if not ok:
                         continue
                 else:
@@ -3773,6 +3780,11 @@ def setup_args(args):
                             "force_download",
                             lambda unused: True,
                             "Unable to set force_download")
+
+        coreclr_args.verify(args,
+                            "no_progress",
+                            lambda unused: True,
+                            "Unable to set no_progress")
 
         coreclr_args.verify(args,
                             "filter",

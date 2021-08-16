@@ -43,28 +43,36 @@ namespace Wasm.Build.Tests
 
         static BuildTestBase()
         {
-            s_buildEnv = new BuildEnvironment();
-            s_runtimePackPathRegex = new Regex(s_runtimePackPathPattern);
-
-            s_skipProjectCleanup = !string.IsNullOrEmpty(EnvironmentVariables.SkipProjectCleanup) && EnvironmentVariables.SkipProjectCleanup == "1";
-
-            if (string.IsNullOrEmpty(EnvironmentVariables.XHarnessCliPath))
-                s_xharnessRunnerCommand = "xharness";
-            else
-                s_xharnessRunnerCommand = EnvironmentVariables.XHarnessCliPath;
-
-            string? nugetPackagesPath = Environment.GetEnvironmentVariable("NUGET_PACKAGES");
-            if (!string.IsNullOrEmpty(nugetPackagesPath))
+            try
             {
-                if (!Directory.Exists(nugetPackagesPath))
-                    Directory.CreateDirectory(nugetPackagesPath);
-            }
+                s_buildEnv = new BuildEnvironment();
+                s_runtimePackPathRegex = new Regex(s_runtimePackPathPattern);
 
-            Console.WriteLine ("");
-            Console.WriteLine ($"==============================================================================================");
-            Console.WriteLine ($"=============== Running with {(s_buildEnv.IsWorkload ? "Workloads" : "EMSDK")} ===============");
-            Console.WriteLine ($"==============================================================================================");
-            Console.WriteLine ("");
+                s_skipProjectCleanup = !string.IsNullOrEmpty(EnvironmentVariables.SkipProjectCleanup) && EnvironmentVariables.SkipProjectCleanup == "1";
+
+                if (string.IsNullOrEmpty(EnvironmentVariables.XHarnessCliPath))
+                    s_xharnessRunnerCommand = "xharness";
+                else
+                    s_xharnessRunnerCommand = EnvironmentVariables.XHarnessCliPath;
+
+                string? nugetPackagesPath = Environment.GetEnvironmentVariable("NUGET_PACKAGES");
+                if (!string.IsNullOrEmpty(nugetPackagesPath))
+                {
+                    if (!Directory.Exists(nugetPackagesPath))
+                        Directory.CreateDirectory(nugetPackagesPath);
+                }
+
+                Console.WriteLine ("");
+                Console.WriteLine ($"==============================================================================================");
+                Console.WriteLine ($"=============== Running with {(s_buildEnv.IsWorkload ? "Workloads" : "EMSDK")} ===============");
+                Console.WriteLine ($"==============================================================================================");
+                Console.WriteLine ("");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine ($"Exception: {ex}");
+                throw;
+            }
         }
 
         public BuildTestBase(ITestOutputHelper output, SharedBuildPerTestClassFixture buildContext)
@@ -332,10 +340,7 @@ namespace Wasm.Build.Tests
                 }
 
                 if (useCache)
-                {
                     _buildContext.CacheBuild(buildArgs, new BuildProduct(_projectDir, logFilePath, true));
-                    Console.WriteLine($"caching build for {buildArgs}");
-                }
 
                 return (_projectDir, result.buildOutput);
             }
@@ -517,8 +522,6 @@ namespace Wasm.Build.Tests
             process.StartInfo = processStartInfo;
             process.EnableRaisingEvents = true;
 
-            process.ErrorDataReceived += (sender, e) => LogData($"[{label}-stderr]", e.Data);
-            process.OutputDataReceived += (sender, e) => LogData($"[{label}]", e.Data);
             // AutoResetEvent resetEvent = new (false);
             // process.Exited += (_, _) => { Console.WriteLine ($"- exited called"); resetEvent.Set(); };
 
@@ -527,6 +530,11 @@ namespace Wasm.Build.Tests
 
             try
             {
+                DataReceivedEventHandler logStdErr = (sender, e) => LogData($"[{label}-stderr]", e.Data);
+                DataReceivedEventHandler logStdOut = (sender, e) => LogData($"[{label}]", e.Data);
+
+                process.ErrorDataReceived += logStdErr;
+                process.OutputDataReceived += logStdOut;
                 process.BeginOutputReadLine();
                 process.BeginErrorReadLine();
 
@@ -539,9 +547,21 @@ namespace Wasm.Build.Tests
                     lock (syncObj)
                     {
                         var lastLines = outputBuilder.ToString().Split('\r', '\n').TakeLast(20);
-                        throw new XunitException($"Process timed out, output: {string.Join(Environment.NewLine, lastLines)}");
+                        throw new XunitException($"Process timed out. Last 20 lines of output:{Environment.NewLine}{string.Join(Environment.NewLine, lastLines)}");
                     }
                 }
+                else
+                {
+                    // this will ensure that all the async event handling
+                    // has completed
+                    // https://docs.microsoft.com/en-us/dotnet/api/system.diagnostics.process.waitforexit?view=net-5.0#System_Diagnostics_Process_WaitForExit_System_Int32_
+                    process.WaitForExit();
+                }
+
+                process.ErrorDataReceived -= logStdErr;
+                process.OutputDataReceived -= logStdOut;
+                process.CancelErrorRead();
+                process.CancelOutputRead();
 
                 lock (syncObj)
                 {

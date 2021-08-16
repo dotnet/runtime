@@ -7617,67 +7617,67 @@ assembly_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 		g_free (name);
 		break;
 	}
-    case CMD_ASSEMBLY_GET_METADATA_BLOB: {
-        MonoImage* image = ass->image;
-        if (ass->dynamic) {
-            return ERR_NOT_IMPLEMENTED;
-        }
-        buffer_add_byte_array (buf, (guint8*)image->raw_data, image->raw_data_len);
-        break;
-    }
-    case CMD_ASSEMBLY_GET_IS_DYNAMIC: {
-        buffer_add_byte (buf, ass->dynamic);
-        break;
-    }
-    case CMD_ASSEMBLY_GET_PDB_BLOB: {
-        MonoImage* image = ass->image;
-        MonoDebugHandle* handle = mono_debug_get_handle (image); 
-        if (!handle) {
-            return ERR_INVALID_ARGUMENT;
-        }
-        MonoPPDBFile* ppdb = handle->ppdb;
-        if (ppdb) {
-            image = mono_ppdb_get_image (ppdb);
-            buffer_add_byte_array (buf, (guint8*)image->raw_data, image->raw_data_len);
-        } else {
-            buffer_add_byte_array (buf, NULL, 0);
-        }
-        break;
-    }
-    case CMD_ASSEMBLY_GET_TYPE_FROM_TOKEN: {
-        if (ass->dynamic) {
-            return ERR_NOT_IMPLEMENTED;
-        }
-        guint32 token = decode_int (p, &p, end);
-        ERROR_DECL (error);
-        error_init (error);
-        MonoClass* mono_class = mono_class_get_checked (ass->image, token, error);
-        if (!is_ok (error)) {
-            add_error_string (buf, mono_error_get_message (error));
-            mono_error_cleanup (error);
-            return ERR_INVALID_ARGUMENT;
-        }
-        buffer_add_typeid (buf, domain, mono_class);
-        mono_error_cleanup (error);
-        break;
-    }
-    case CMD_ASSEMBLY_GET_METHOD_FROM_TOKEN: {
-        if (ass->dynamic) {
-            return ERR_NOT_IMPLEMENTED;
-        }
-        guint32 token = decode_int (p, &p, end);
-        ERROR_DECL (error);
-        error_init (error);
-        MonoMethod* mono_method = mono_get_method_checked (ass->image, token, NULL, NULL, error);
-        if (!is_ok (error)) {
-            add_error_string (buf, mono_error_get_message (error));
-            mono_error_cleanup (error);
-            return ERR_INVALID_ARGUMENT;
-        }
-        buffer_add_methodid (buf, domain, mono_method);
-        mono_error_cleanup (error);
-        break;
-    }
+	case CMD_ASSEMBLY_GET_METADATA_BLOB: {
+		MonoImage* image = ass->image;
+		if (ass->dynamic) {
+			return ERR_NOT_IMPLEMENTED;
+		}
+		buffer_add_byte_array (buf, (guint8*)image->raw_data, image->raw_data_len);
+		break;
+	}
+	case CMD_ASSEMBLY_GET_IS_DYNAMIC: {
+		buffer_add_byte (buf, ass->dynamic);
+		break;
+	}
+	case CMD_ASSEMBLY_GET_PDB_BLOB: {
+		MonoImage* image = ass->image;
+		MonoDebugHandle* handle = mono_debug_get_handle (image); 
+		if (!handle) {
+			return ERR_INVALID_ARGUMENT;
+		}
+		MonoPPDBFile* ppdb = handle->ppdb;
+		if (ppdb) {
+			image = mono_ppdb_get_image (ppdb);
+			buffer_add_byte_array (buf, (guint8*)image->raw_data, image->raw_data_len);
+		} else {
+			buffer_add_byte_array (buf, NULL, 0);
+		}
+		break;
+	}
+	case CMD_ASSEMBLY_GET_TYPE_FROM_TOKEN: {
+		if (ass->dynamic) {
+			return ERR_NOT_IMPLEMENTED;
+		}
+		guint32 token = decode_int (p, &p, end);
+		ERROR_DECL (error);
+		error_init (error);
+		MonoClass* mono_class = mono_class_get_checked (ass->image, token, error);
+		if (!is_ok (error)) {
+			add_error_string (buf, mono_error_get_message (error));
+			mono_error_cleanup (error);
+			return ERR_INVALID_ARGUMENT;
+		}
+		buffer_add_typeid (buf, domain, mono_class);
+		mono_error_cleanup (error);
+		break;
+	}
+	case CMD_ASSEMBLY_GET_METHOD_FROM_TOKEN: {
+		if (ass->dynamic) {
+			return ERR_NOT_IMPLEMENTED;
+		}
+		guint32 token = decode_int (p, &p, end);
+		ERROR_DECL (error);
+		error_init (error);
+		MonoMethod* mono_method = mono_get_method_checked (ass->image, token, NULL, NULL, error);
+		if (!is_ok (error)) {
+			add_error_string (buf, mono_error_get_message (error));
+			mono_error_cleanup (error);
+			return ERR_INVALID_ARGUMENT;
+		}
+		buffer_add_methodid (buf, domain, mono_method);
+		mono_error_cleanup (error);
+		break;
+	}
 	case CMD_ASSEMBLY_HAS_DEBUG_INFO: {
 		buffer_add_byte (buf, !ass->dynamic && mono_debug_image_has_debug_info (ass->image));
 		break;
@@ -8025,6 +8025,8 @@ type_commands_internal (int command, MonoClass *klass, MonoDomain *domain, guint
 			buffer_add_string (buf, f->name);
 			buffer_add_typeid (buf, domain, mono_class_from_mono_type_internal (f->type));
 			buffer_add_int (buf, f->type->attrs);
+			if (CHECK_PROTOCOL_VERSION(2, 61))
+				buffer_add_int(buf, mono_class_field_is_special_static(f));
 			i ++;
 		}
 		g_assert (i == nfields);
@@ -8377,6 +8379,13 @@ type_commands_internal (int command, MonoClass *klass, MonoDomain *domain, guint
 		}
 		break;
 	}
+	case MDBGPROT_CMD_TYPE_INITIALIZE: {
+		MonoVTable *vtable = mono_class_vtable_checked (klass, error);
+		goto_if_nok (error, loader_error);
+		mono_runtime_class_init_full (vtable, error);
+		goto_if_nok (error, loader_error);
+		break;
+	}
 	default:
 		err = ERR_NOT_IMPLEMENTED;
 		goto exit;
@@ -8449,7 +8458,7 @@ method_commands_internal (int command, MonoMethod *method, MonoDomain *domain, g
 		ERROR_DECL (error);
 		MonoDebugMethodInfo *minfo;
 		char *source_file;
-		int i, j, n_il_offsets, n_il_offsets_original;
+		int i, j, n_il_offsets;
 		int *source_files;
 		GPtrArray *source_file_list;
 		MonoSymSeqPoint *sym_seq_points;
@@ -8472,8 +8481,7 @@ method_commands_internal (int command, MonoMethod *method, MonoDomain *domain, g
 			break;
 		}
 
-		mono_debug_get_seq_points (minfo, &source_file, &source_file_list, &source_files, NULL, &n_il_offsets_original);
-		mono_debug_get_seq_points (minfo, NULL, NULL, NULL, &sym_seq_points, &n_il_offsets);
+		mono_debug_get_seq_points (minfo,&source_file, &source_file_list, &source_files, &sym_seq_points, &n_il_offsets);
 		buffer_add_int (buf, header->code_size);
 		if (CHECK_PROTOCOL_VERSION (2, 13)) {
 			buffer_add_int (buf, source_file_list->len);
@@ -8496,8 +8504,6 @@ method_commands_internal (int command, MonoMethod *method, MonoDomain *domain, g
 
 			if (source_files [i] != -1) {
 				int idx = i;
-				if (i >= n_il_offsets_original)
-					idx = 0;
 				MonoDebugSourceInfo *sinfo = (MonoDebugSourceInfo *)g_ptr_array_index (source_file_list, source_files [idx]);
 				srcfile = sinfo->source_file;
 			}
@@ -8505,7 +8511,7 @@ method_commands_internal (int command, MonoMethod *method, MonoDomain *domain, g
 			buffer_add_int (buf, sp->il_offset);
 			buffer_add_int (buf, sp->line);
 			if (CHECK_PROTOCOL_VERSION (2, 13))
-				buffer_add_int (buf, i >= n_il_offsets_original ? source_files [0] : source_files [i]);
+				buffer_add_int (buf, source_files [i]);
 			if (CHECK_PROTOCOL_VERSION (2, 19))
 				buffer_add_int (buf, sp->column);
 			if (CHECK_PROTOCOL_VERSION (2, 32)) {

@@ -7088,6 +7088,9 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			inst_tailcall && is_supported_tailcall (cfg, ip, method, NULL, fsig,
 						FALSE/*virtual irrelevant*/, addr != NULL, &tailcall);
 
+			if (save_last_error)
+				mono_emit_jit_icall (cfg, mono_marshal_clear_last_error, NULL);
+
 			if (callee) {
 				if (method->wrapper_type != MONO_WRAPPER_DELEGATE_INVOKE)
 					/* Not tested */
@@ -7587,10 +7590,6 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 						will_have_imt_arg = TRUE;
 					}
 				}
-			}
-
-			if (save_last_error) {
-				mono_emit_jit_icall (cfg, mono_marshal_clear_last_error, NULL);
 			}
 
 			/* Tail prefix / tailcall optimization */
@@ -8493,7 +8492,16 @@ calli_end:
 			if (sp [-1]->type == STACK_R8 || sp [-1]->type == STACK_R4) {
 				/* floats are always signed, _UN has no effect */
 				ADD_UNOP (CEE_CONV_OVF_I8);
-				ADD_UNOP (il_op);
+				if (il_op == MONO_CEE_CONV_OVF_I1_UN)
+					ADD_UNOP (MONO_CEE_CONV_OVF_I1);
+				else if (il_op == MONO_CEE_CONV_OVF_I2_UN)
+					ADD_UNOP (MONO_CEE_CONV_OVF_I2);
+				else if (il_op == MONO_CEE_CONV_OVF_I4_UN)
+					ADD_UNOP (MONO_CEE_CONV_OVF_I4);
+				else if (il_op == MONO_CEE_CONV_OVF_I8_UN)
+					;
+				else
+					ADD_UNOP (il_op);
 			} else {
 				ADD_UNOP (il_op);
 			}

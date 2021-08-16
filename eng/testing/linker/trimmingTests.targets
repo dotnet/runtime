@@ -42,6 +42,7 @@
       <TestConsoleApps Include="@(TestConsoleAppSourceFiles->'%(ProjectFile)')" Condition="!$([System.String]::Copy('%(TestConsoleAppSourceFiles.SkipOnTestRuntimes)').Contains('$(PackageRID)'))">
         <ProjectCompileItems>%(Identity)</ProjectCompileItems>
       </TestConsoleApps>
+      <TestConsoleApps AdditionalProperties="MSBuildEnableWorkloadResolver=$(MSBuildEnableWorkloadResolver)" Condition="'$(MSBuildEnableWorkloadResolver)' != ''" />
     </ItemGroup>
   </Target>
 
@@ -96,6 +97,7 @@
                                                  .Replace('{MonoProjectRoot}', '$(MonoProjectRoot)')
                                                  .Replace('{MonoAOTCompilerTasksAssemblyPath}', '$(MonoAOTCompilerTasksAssemblyPath)')
                                                  .Replace('{JsonToItemsTaskFactoryTasksAssemblyPath}', '$(JsonToItemsTaskFactoryTasksAssemblyPath)')
+                                                 .Replace('{RuntimeConfigParserTasksAssemblyPath}', '$(RuntimeConfigParserTasksAssemblyPath)')
                                                  .Replace('{WasmAppBuilderTasksAssemblyPath}', '$(WasmAppBuilderTasksAssemblyPath)')
                                                  .Replace('{MicrosoftNetCoreAppRuntimePackRidDir}', '$(MicrosoftNetCoreAppRuntimePackRidDir)'))"
                       Overwrite="true" />

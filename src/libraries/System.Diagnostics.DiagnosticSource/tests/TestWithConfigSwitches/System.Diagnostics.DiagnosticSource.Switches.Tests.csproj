@@ -2,7 +2,6 @@
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppCurrent)</TargetFrameworks>
     <TestRuntime>true</TestRuntime>
-    <IgnoreForCI Condition="'$(TargetOS)' == 'Browser'">true</IgnoreForCI> <!-- remove once https://github.com/dotnet/runtime/issues/38433 is fixed -->
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="ActivityTests.cs" />

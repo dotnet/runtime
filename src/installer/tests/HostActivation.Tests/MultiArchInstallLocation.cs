@@ -205,6 +205,38 @@ namespace HostActivation.Tests
             }
         }
 
+        [Fact]
+        [SkipOnPlatform(TestPlatforms.Windows, "This test targets the install_location config file which is only used on Linux and macOS.")]
+        public void InstallLocationFile_MissingFile()
+        {
+            var fixture = sharedTestState.PortableAppFixture.Copy();
+
+            var appExe = fixture.TestProject.AppExe;
+            string testArtifactsPath = SharedFramework.CalculateUniqueTestDirectory(Path.Combine(TestArtifact.TestArtifactsPath, "missingInstallLocation"));
+            using (new TestArtifact(testArtifactsPath))
+            using (var testOnlyProductBehavior = TestOnlyProductBehavior.Enable(appExe))
+            {
+                Directory.CreateDirectory(testArtifactsPath);
+
+                string directory = Path.Combine(testArtifactsPath, "installLocationOverride");
+                Directory.CreateDirectory(directory);
+                string nonExistentLocationFile = Path.Combine(directory, "install_location");
+                string defaultInstallLocation = Path.Combine(testArtifactsPath, "defaultInstallLocation");
+
+                Command.Create(appExe)
+                    .CaptureStdErr()
+                    .EnvironmentVariable(
+                        Constants.TestOnlyEnvironmentVariables.InstallLocationFilePath,
+                        nonExistentLocationFile)
+                    .EnvironmentVariable(
+                        Constants.TestOnlyEnvironmentVariables.DefaultInstallPath,
+                        defaultInstallLocation)
+                    .DotNetRoot(null)
+                    .Execute()
+                    .Should().NotHaveStdErrContaining("The install_location file");
+            }
+        }
+
         public class SharedTestState : IDisposable
         {
             public string BaseDirectory { get; }

@@ -510,6 +510,8 @@ protected:
 
     void emitRecomputeIGoffsets();
 
+    void emitDispCommentForHandle(size_t handle, GenTreeFlags flags);
+
     /************************************************************************/
     /*          The following describes a single instruction                */
     /************************************************************************/
@@ -545,7 +547,7 @@ protected:
         size_t            idSize;        // size of the instruction descriptor
         unsigned          idVarRefOffs;  // IL offset for LclVar reference
         size_t            idMemCookie;   // for display of method name  (also used by switch table)
-        unsigned          idFlags;       // for determining type of handle in idMemCookie
+        GenTreeFlags      idFlags;       // for determining type of handle in idMemCookie
         bool              idFinallyCall; // Branch instruction is a call to finally
         bool              idCatchRet;    // Instruction is for a catch 'return'
         CORINFO_SIG_INFO* idCallSig;     // Used to report native call site signatures to the EE
@@ -882,16 +884,6 @@ protected:
         }
         void idCodeSize(unsigned sz)
         {
-            if (sz > 15)
-            {
-                // This is a temporary workaround for non-precise instr size
-                // estimator on XARCH. It often overestimates sizes and can
-                // return value more than 15 that doesn't fit in 4 bits _idCodeSize.
-                // If somehow we generate instruction that needs more than 15 bytes we
-                // will fail on another assert in emit.cpp: noway_assert(id->idCodeSize() >= csz).
-                // Issue https://github.com/dotnet/runtime/issues/12840.
-                sz = 15;
-            }
             assert(sz <= 15); // Intel decoder limit.
             _idCodeSize = sz;
             assert(sz == _idCodeSize);
