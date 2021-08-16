@@ -14,7 +14,7 @@ namespace System.Memory.Tests
     {
         public static ReadOnlySequenceFactory<T> ArrayFactory { get; } = new ArrayTestSequenceFactory();
         public static ReadOnlySequenceFactory<T> MemoryFactory { get; } = new MemoryTestSequenceFactory();
-        public static ReadOnlySequenceFactory<byte> MemoryManagerFactory { get; } = new MemoryManagerTestSequenceFactory();
+        public static ReadOnlySequenceFactory<T> MemoryManagerFactory { get; } = new MemoryManagerTestSequenceFactory();
         public static ReadOnlySequenceFactory<T> SingleSegmentFactory { get; } = new SingleSegmentTestSequenceFactory();
         public static ReadOnlySequenceFactory<T> SegmentPerItemFactory { get; } = new BytePerSegmentTestSequenceFactory();
         public static ReadOnlySequenceFactory<T> SplitInThree { get; } = new SegmentsTestSequenceFactory(3);
@@ -42,7 +42,7 @@ namespace System.Memory.Tests
             public override ReadOnlySequence<T> CreateOfSize(int size)
             {
 #if DEBUG
-                return new ReadOnlySequence<T>(new ReadOnlyMemory<T>(new T[size + 1]).Slice(1)); // #57472
+                return new ReadOnlySequence<T>(new ReadOnlyMemory<T>(new T[size + 1]).Slice(1));
 #else
                 return new ReadOnlySequence<T>(new ReadOnlyMemory<T>(new T[size]));
 #endif
@@ -120,61 +120,46 @@ namespace System.Memory.Tests
             }
         }
 
-        internal class MemoryManagerTestSequenceFactory : ReadOnlySequenceFactory<byte>
+        internal class MemoryManagerTestSequenceFactory : ReadOnlySequenceFactory<T>
         {
-            public override ReadOnlySequence<byte> CreateOfSize(int size)
+            public override ReadOnlySequence<T> CreateOfSize(int size)
             {
 #if DEBUG
-                return new ReadOnlySequence<byte>(new CustomMemoryManager(size + 1).Memory.Slice(1)); // #57472
+                return new ReadOnlySequence<T>(new CustomMemoryManager(size + 1).Memory.Slice(1));
 #else
-                return new ReadOnlySequence<byte>(new CustomMemoryManager(size).Memory);
+                return new ReadOnlySequence<T>(new CustomMemoryManager(size).Memory);
 #endif
             }
 
-            public override ReadOnlySequence<byte> CreateWithContent(byte[] data)
+            public override ReadOnlySequence<T> CreateWithContent(T[] data)
             {
-                return new ReadOnlySequence<byte>(new CustomMemoryManager(data).Memory);
+                return new ReadOnlySequence<T>(new CustomMemoryManager(data).Memory);
             }
 
-            private unsafe class CustomMemoryManager : MemoryManager<byte>
+            private unsafe class CustomMemoryManager : MemoryManager<T>
             {
-                private readonly int _size;
-                private IntPtr _pointer;
-                private long _referenceCount;
+                private readonly T[] _buffer;
 
-                public CustomMemoryManager(int size) => _pointer = Marshal.AllocHGlobal(_size = size);
+                public CustomMemoryManager(int size) => _buffer = new T[size];
 
-                public CustomMemoryManager(byte[] content)
-                {
-                    _pointer = Marshal.AllocHGlobal(_size = content.Length);
-                    content.AsSpan().CopyTo(new Span<byte>(_pointer.ToPointer(), _size));
-                }
+                public CustomMemoryManager(T[] content) => _buffer = content;
 
-                public unsafe override Span<byte> GetSpan() => new Span<byte>(_pointer.ToPointer(), _size);
+                public unsafe override Span<T> GetSpan() => _buffer;
 
                 public override unsafe MemoryHandle Pin(int elementIndex = 0)
                 {
-                    if ((uint)elementIndex > (uint)_size)
+                    if ((uint)elementIndex > (uint)_buffer.Length)
                     {
                         throw new ArgumentOutOfRangeException(nameof(elementIndex));
                     }
 
-                    Interlocked.Increment(ref _referenceCount);
-
-                    return default; // there is no need to pin anything, it's unmanaged memory
+                    var handle = GCHandle.Alloc(_buffer, GCHandleType.Pinned);
+                    return new MemoryHandle(Unsafe.Add<T>((void*)handle.AddrOfPinnedObject(), elementIndex), handle, this);
                 }
 
-                public override void Unpin() => Interlocked.Decrement(ref _referenceCount);
+                public override void Unpin() { }
 
-                protected override void Dispose(bool disposing)
-                {
-                    if (Interlocked.Read(ref _referenceCount) == 0)
-                    {
-                        // this code is not thread safe, don't copy and reuse it!
-                        IntPtr pointer = Interlocked.Exchange(ref _pointer, IntPtr.Zero);
-                        Marshal.FreeHGlobal(pointer);
-                    }
-                }
+                protected override void Dispose(bool disposing) { }
             }
         }
 
