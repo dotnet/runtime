@@ -2667,8 +2667,17 @@ GenTree* Compiler::optVNConstantPropOnTree(BasicBlock* block, GenTree* tree)
                         unreached();
                         break;
 
+                    case TYP_BOOL:
+                    case TYP_BYTE:
+                    case TYP_UBYTE:
+                    case TYP_SHORT:
+                    case TYP_USHORT:
+                        assert(FitsIn(tree->TypeGet(), value));
+                        conValTree = gtNewIconNode(value);
+                        break;
+
                     default:
-                        // Do not support (e.g. bool(const int)).
+                        // Do not support (e.g. byref(const int)).
                         break;
                 }
             }
