@@ -74,8 +74,7 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Equal(1, asyncEnumerable.TotalDisposedEnumerators);
         }
 
-        [OuterLoop]
-        [Theory]
+        [Theory, OuterLoop]
         [InlineData(5000, 1000, true)]
         [InlineData(5000, 1000, false)]
         [InlineData(1000, 10_000, true)]
