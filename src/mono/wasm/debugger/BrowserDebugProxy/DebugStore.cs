@@ -505,8 +505,6 @@ namespace Microsoft.WebAssembly.Diagnostics
         private readonly ILogger logger;
         private Dictionary<int, MethodInfo> methods = new Dictionary<int, MethodInfo>();
         private Dictionary<string, string> sourceLinkMappings = new Dictionary<string, string>();
-        private Dictionary<string, TypeInfo> typesByName = new Dictionary<string, TypeInfo>();
-        private Dictionary<int, TypeInfo> typesByToken = new Dictionary<int, TypeInfo>();
         private readonly List<SourceFile> sources = new List<SourceFile>();
         internal string Url { get; }
         internal MetadataReader asmMetadataReader { get; }
@@ -516,7 +514,7 @@ namespace Microsoft.WebAssembly.Diagnostics
         internal PEReader peReader;
         internal MemoryStream asmStream;
         internal MemoryStream pdbStream;
-        public int DebuggerId { get; set; }
+        public int DebugId { get; set; }
 
         public bool TriedToLoadSymbolsOnDemand { get; set; }
 
@@ -606,8 +604,8 @@ namespace Microsoft.WebAssembly.Diagnostics
                 var typeDefinition = asmMetadataReader.GetTypeDefinition(type);
 
                 var typeInfo = new TypeInfo(this, type, typeDefinition);
-                typesByName[typeInfo.FullName] = typeInfo;
-                typesByToken[typeInfo.Token] = typeInfo;
+                TypesByName[typeInfo.FullName] = typeInfo;
+                TypesByToken[typeInfo.Token] = typeInfo;
                 if (pdbMetadataReader != null)
                 {
                     foreach (MethodDefinitionHandle method in typeDefinition.GetMethods())
@@ -685,8 +683,8 @@ namespace Microsoft.WebAssembly.Diagnostics
         public IEnumerable<SourceFile> Sources => this.sources;
         public Dictionary<int, MethodInfo> Methods => this.methods;
 
-        public Dictionary<string, TypeInfo> TypesByName => this.typesByName;
-        public Dictionary<int, TypeInfo> TypesByToken => this.typesByToken;
+        public Dictionary<string, TypeInfo> TypesByName { get; } = new();
+        public Dictionary<int, TypeInfo> TypesByToken { get; } = new();
         public int Id => id;
         public string Name { get; }
         public bool HasSymbols => pdbMetadataReader != null;
@@ -707,7 +705,7 @@ namespace Microsoft.WebAssembly.Diagnostics
 
         public TypeInfo GetTypeByName(string name)
         {
-            typesByName.TryGetValue(name, out TypeInfo res);
+            TypesByName.TryGetValue(name, out TypeInfo res);
             return res;
         }
 
