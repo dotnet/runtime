@@ -12,6 +12,17 @@ namespace System.Threading
         /// </summary>
         private static class WorkerThread
         {
+            private const int SemaphoreSpinCountDefaultBaseline = 70;
+#if !TARGET_ARM64 && !TARGET_ARM
+            private const int SemaphoreSpinCountDefault = SemaphoreSpinCountDefaultBaseline;
+#else
+            // On systems with ARM processors, more spin-waiting seems to be necessary to avoid perf regressions from incurring
+            // the full wait when work becomes available soon enough. This is more noticeable after reducing the number of
+            // thread requests made to the thread pool because otherwise the extra thread requests cause threads to do more
+            // busy-waiting instead and adding to contention in trying to look for work items, which is less preferable.
+            private const int SemaphoreSpinCountDefault = SemaphoreSpinCountDefaultBaseline * 4;
+#endif
+
             // This value represents an assumption of how much uncommited stack space a worker thread may use in the future.
             // Used in calculations to estimate when to throttle the rate of thread injection to reduce the possibility of
             // preexisting threads from running out of memory when using new stack space in low-memory situations.
@@ -24,7 +35,10 @@ namespace System.Threading
                 new LowLevelLifoSemaphore(
                     0,
                     MaxPossibleThreadCount,
-                    AppContextConfigHelper.GetInt32Config("System.Threading.ThreadPool.UnfairSemaphoreSpinLimit", 70, false),
+                    AppContextConfigHelper.GetInt32Config(
+                        "System.Threading.ThreadPool.UnfairSemaphoreSpinLimit",
+                        SemaphoreSpinCountDefault,
+                        false),
                     onWait: () =>
                     {
                         if (NativeRuntimeEventSource.Log.IsEnabled())
