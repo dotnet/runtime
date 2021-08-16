@@ -106,7 +106,7 @@ namespace RuntimeEventCounterTests
             {
                 if (observedEvents.ContainsKey(key))
                 {
-                    Console.WriteLine($"Should not have seen appContextStringData");
+                    Console.WriteLine($"Should not have seen {key}");
                     return false;
                 }
             }
@@ -119,9 +119,9 @@ namespace RuntimeEventCounterTests
         public static int Main(string[] args)
         {
             AppContext.SetSwitch("appContextSwitch", true);
-            AppDomain.CurrentDomain.SetData("appContextBoolData", true);
+            AppDomain.CurrentDomain.SetData("appContextBoolData", true); // Not loggeed, bool key
             AppDomain.CurrentDomain.SetData("appContextBoolAsStringData", "true");
-            AppDomain.CurrentDomain.SetData("appContextStringData", "myString");
+            AppDomain.CurrentDomain.SetData("appContextStringData", "myString"); // Not logged, string does not parse as bool
 
             // Create an EventListener.
             using (RuntimeCounterListener myListener = new RuntimeCounterListener())
