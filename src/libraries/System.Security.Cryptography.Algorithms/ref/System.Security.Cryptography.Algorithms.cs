@@ -621,6 +621,7 @@ namespace System.Security.Cryptography
         protected RC2() { }
         public virtual int EffectiveKeySize { get { throw null; } set { } }
         public override int KeySize { get { throw null; } set { } }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("android")]
         public static new System.Security.Cryptography.RC2 Create() { throw null; }
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The default algorithm implementations might be removed, use strong type references like 'RSA.Create()' instead.")]
         public static new System.Security.Cryptography.RC2? Create(string AlgName) { throw null; }

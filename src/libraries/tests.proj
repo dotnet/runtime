@@ -240,14 +240,7 @@
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)Microsoft.Extensions.DependencyInjection\tests\DI.Tests\Microsoft.Extensions.DependencyInjection.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)Microsoft.Extensions.Logging.EventSource\tests\Microsoft.Extensions.Logging.EventSource.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Diagnostics.DiagnosticSource\tests\System.Diagnostics.DiagnosticSource.Tests.csproj" />
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Linq.Queryable\tests\System.Linq.Queryable.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Diagnostics.Tracing/tests/System.Diagnostics.Tracing.Tests.csproj" />
-
-    <!-- Issue: https://github.com/dotnet/runtime/issues/51211 -->
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Runtime.CompilerServices.VisualC\tests\System.Runtime.CompilerServices.VisualC.Tests.csproj" />
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Reflection.TypeExtensions\tests\System.Reflection.TypeExtensions.Tests.csproj" />
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Reflection.Emit.Lightweight\tests\System.Reflection.Emit.Lightweight.Tests.csproj" />
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)Microsoft.Extensions.Configuration.Binder\tests\Microsoft.Extensions.Configuration.Binder.Tests.csproj" />
 
     <!-- Issue: https://github.com/dotnet/runtime/issues/51602 -->
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.ComponentModel.Primitives\tests\System.ComponentModel.Primitives.Tests.csproj" />
@@ -309,11 +302,11 @@
                       AdditionalProperties="%(AdditionalProperties);SkipTrimmingProjectsRestore=true" />
     <ProjectReference Include="@(TrimmingTestProjects)" />
 
-    <!-- wasm.build.tests are run on non-aot regular run -->
+    <!-- wasm.build.tests are run on _WasmBuildTests job on CI, and with library tests locally. -->
     <ProjectReference Include="$(RepoRoot)\src\tests\BuildWasmApps\**\*.Tests.csproj"
                       Exclude="@(ProjectExclusions)"
                       Condition="'$(TargetOS)' == 'Browser' and
-                                    (('$(ContinuousIntegrationBuild)' == 'true' and '$(OnlyWasmBuildTests)' == 'true') or
+                                    (('$(ContinuousIntegrationBuild)' == 'true' and '$(TestWasmBuildTests)' == 'true') or
                                      ('$(ContinuousIntegrationBuild)' != 'true' and '$(TestAssemblies)' == 'true'))"
                       BuildInParallel="false" />
   </ItemGroup>
@@ -342,7 +335,7 @@
   </ItemGroup>
 
   <!-- Don't build samples, and functional tests on EAT, AOT, and WBT lanes -->
-  <ItemGroup Condition="'$(ArchiveTests)' == 'true' and '$(TargetOS)' == 'Browser' and '$(BuildAOTTestsOnHelix)' != 'true' and '$(OnlyWasmBuildTests)' != 'true'">
+  <ItemGroup Condition="'$(ArchiveTests)' == 'true' and '$(TargetOS)' == 'Browser' and '$(BuildAOTTestsOnHelix)' != 'true' and '$(TestWasmBuildTests)' != 'true'">
     <ProjectReference Include="$(MonoProjectRoot)sample\wasm\**\*.Sample.csproj"
                       Exclude="@(ProjectExclusions)"
                       BuildInParallel="true" />

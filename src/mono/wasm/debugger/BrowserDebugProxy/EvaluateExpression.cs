@@ -192,7 +192,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                     case "boolean":
                         return value?.Value<bool>();
                     case "object":
-                        return null;
+                        return variable;
                     case "void":
                         return null;
                 }
@@ -396,19 +396,13 @@ namespace Microsoft.WebAssembly.Diagnostics
         {
             if (v == null)
                 return new { type = "object", subtype = "null", className = type.ToString(), description = type.ToString() };
-
             if (v is string s)
-            {
                 return new { type = "string", value = s, description = s };
-            }
-            else if (NumericTypes.Contains(v.GetType()))
-            {
+            if (NumericTypes.Contains(v.GetType()))
                 return new { type = "number", value = v, description = v.ToString() };
-            }
-            else
-            {
-                return new { type = "object", value = v, description = v.ToString(), className = type.ToString() };
-            }
+            if (v is JObject)
+                return v;
+            return new { type = "object", value = v, description = v.ToString(), className = type.ToString() };
         }
 
     }

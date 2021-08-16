@@ -54,7 +54,7 @@ namespace System
         public static bool Is64BitProcess => IntPtr.Size == 8;
         public static bool IsNotWindows => !IsWindows;
 
-        public static bool IsCaseInsensitiveOS => IsWindows || IsOSX;
+        public static bool IsCaseInsensitiveOS => IsWindows || IsOSX || IsMacCatalyst;
         public static bool IsCaseSensitiveOS => !IsCaseInsensitiveOS;
 
         public static bool IsThreadingSupported => !IsBrowser;
