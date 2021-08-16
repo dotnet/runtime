@@ -7271,12 +7271,37 @@ void Compiler::fgValueNumberBlockAssignment(GenTree* tree)
 
                 if (!isNewUniq && (rhsVarDsc != nullptr) && (lhsVarDsc != nullptr))
                 {
-                    if ((rhsFldSeq == nullptr) && (lhsFldSeq == nullptr))
+                    if (rhsLclVarTree->TypeGet() == TYP_STRUCT)
                     {
-                        if (rhsVarDsc->TypeGet() == lhsVarDsc->TypeGet())
+                        if (rhsLclVarTree->TypeGet() == lclVarTree->TypeGet())
                         {
                             assert(rhsVarDsc->TypeGet() == TYP_STRUCT);
-                            if (rhsVarDsc->GetStructHnd() != lhsVarDsc->GetStructHnd())
+                            assert(lhsVarDsc->TypeGet() == TYP_STRUCT);
+
+                            CORINFO_CLASS_HANDLE rhsStructHnd = NO_CLASS_HANDLE;
+                            CORINFO_CLASS_HANDLE lhsStructHnd = NO_CLASS_HANDLE;
+
+                            if (rhsFldSeq == nullptr)
+                            {
+                                rhsStructHnd = rhsVarDsc->GetStructHnd();
+                            }
+                            else
+                            {
+                                CORINFO_FIELD_HANDLE fldHnd = rhsFldSeq->GetTail()->GetFieldHandle();
+                                rhsStructHnd                = info.compCompHnd->getFieldClass(fldHnd);
+                            }
+
+                            if (lhsFldSeq == nullptr)
+                            {
+                                lhsStructHnd = lhsVarDsc->GetStructHnd();
+                            }
+                            else
+                            {
+                                CORINFO_FIELD_HANDLE fldHnd = lhsFldSeq->GetTail()->GetFieldHandle();
+                                lhsStructHnd                = info.compCompHnd->getFieldClass(fldHnd);
+                            }
+
+                            if (rhsStructHnd != lhsStructHnd)
                             {
                                 // This can occur for nested structs or for unsafe casts, when we have IR like
                                 // struct1 = struct2.
