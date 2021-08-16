@@ -690,7 +690,7 @@ namespace Microsoft.WebAssembly.Diagnostics
 
             if (asm == null)
             {
-                assemblyName = await GetFullAssemblyName(sessionId, assemblyId, token); //maybe is a lazy loaded assembly
+                assemblyName = await GetAssemblyFileNameFromId(sessionId, assemblyId, token); //maybe is a lazy loaded assembly
                 asm = store.GetAssemblyByName(assemblyName);
                 if (asm == null)
                 {
