@@ -7286,7 +7286,6 @@ void Compiler::fgValueNumberBlockAssignment(GenTree* tree)
                                 // will be handled in `VNPairApplySelectorsAssign`, here we care only about
                                 // `LCL_VAR structX = (*)LCL_VAR structY` cases.
                                 JITDUMP("    *** Different struct handles for Dst/Src of COPYBLK\n");
-                                assert(ClassLayout::AreCompatible(rhsVarDsc->GetLayout(), lhsVarDsc->GetLayout()));
                                 isNewUniq = true;
                             }
                         }
