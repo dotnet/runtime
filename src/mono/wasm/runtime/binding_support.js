@@ -36,6 +36,11 @@ var BindingSupportLib = {
 			// avoid infinite recursion
 			this.init = true;
 			this.wasm_type_symbol = Symbol.for("wasm type");
+			this.js_owned_gc_handle_symbol = Symbol.for("wasm js_owned_gc_handle");
+			this.cs_owned_js_handle_symbol = Symbol.for("wasm cs_owned_js_handle");
+			this.delegate_invoke_symbol = Symbol.for("wasm delegate_invoke");
+			this.delegate_invoke_signature_symbol = Symbol.for("wasm delegate_invoke_signature");
+			this.listener_registration_count_symbol = Symbol.for("wasm listener_registration_count");
 
 			// please keep System.Runtime.InteropServices.JavaScript.Runtime.MappedType in sync
 			Object.prototype[this.wasm_type_symbol] = 0;
@@ -338,10 +343,10 @@ var BindingSupportLib = {
 
 			// If the JS object for this gc_handle was already collected (or was never created)
 			if (!result) {
-				result = {
-					// keep the gc_handle so that we could easily convert it back to original C# object for roundtrip
-					__js_owned_gc_handle__ : gc_handle
-				}
+				result = {};
+
+				// keep the gc_handle so that we could easily convert it back to original C# object for roundtrip
+				result[BINDING.js_owned_gc_handle_symbol]=gc_handle;
 
 				// NOTE: this would be leaking C# objects when the browser doesn't support FinalizationRegistry/WeakRef
 				if (this._is_finalizarion_registry_supported) {
@@ -379,7 +384,7 @@ var BindingSupportLib = {
 				result = function() {
 					const delegateRoot = MONO.mono_wasm_new_root (BINDING.get_js_owned_object_by_gc_handle(gc_handle));
 					try {
-						return BINDING.call_method (result.__mono_delegate_invoke__, delegateRoot.value, result.__mono_delegate_invoke_sig__, arguments);
+						return BINDING.call_method (result[BINDING.delegate_invoke_symbol], delegateRoot.value, result[BINDING.delegate_invoke_signature_symbol], arguments);
 					} finally {
 						delegateRoot.release();
 					}
@@ -388,15 +393,15 @@ var BindingSupportLib = {
 				// bind the method
 				const delegateRoot = MONO.mono_wasm_new_root (BINDING.get_js_owned_object_by_gc_handle(gc_handle));
 				try {
-					if (typeof result.__mono_delegate_invoke__ === "undefined"){
-						result.__mono_delegate_invoke__ = BINDING.mono_wasm_get_delegate_invoke(delegateRoot.value);
-						if (!result.__mono_delegate_invoke__){
+					if (typeof result[BINDING.delegate_invoke_symbol] === "undefined"){
+						result[BINDING.delegate_invoke_symbol] = BINDING.mono_wasm_get_delegate_invoke(delegateRoot.value);
+						if (!result[BINDING.delegate_invoke_symbol]){
 							throw new Error("System.Delegate Invoke method can not be resolved.");
 						}
 					}
 
-					if (typeof result.__mono_delegate_invoke_sig__ === "undefined"){
-						result.__mono_delegate_invoke_sig__ = Module.mono_method_get_call_signature (result.__mono_delegate_invoke__, delegateRoot.value);
+					if (typeof result[BINDING.delegate_invoke_signature_symbol] === "undefined"){
+						result[BINDING.delegate_invoke_signature_symbol] = Module.mono_method_get_call_signature (result[BINDING.delegate_invoke_symbol], delegateRoot.value);
 					}
 				} finally {
 					delegateRoot.release();
@@ -789,19 +794,19 @@ var BindingSupportLib = {
 				return 0;
 
 			var result = null;
-			if (js_obj.__js_owned_gc_handle__) {
-				// for __js_owned_gc_handle__ we don't want to create new proxy
+			if (js_obj[BINDING.js_owned_gc_handle_symbol]) {
+				// for js_owned_gc_handle we don't want to create new proxy
 				// since this is strong gc_handle we don't need to in-flight reference
-				result = this.get_js_owned_object_by_gc_handle (js_obj.__js_owned_gc_handle__);
+				result = this.get_js_owned_object_by_gc_handle (js_obj[BINDING.js_owned_gc_handle_symbol]);
 				return result;
 			}
-			if (js_obj.__cs_owned_js_handle__) {
-				result = this.get_cs_owned_object_by_js_handle (js_obj.__cs_owned_js_handle__, should_add_in_flight);
+			if (js_obj[BINDING.cs_owned_js_handle_symbol]) {
+				result = this.get_cs_owned_object_by_js_handle (js_obj[BINDING.cs_owned_js_handle_symbol], should_add_in_flight);
 
 				// It's possible the managed object corresponding to this JS object was collected,
 				//  in which case we need to make a new one.
 				if (!result) {
-					delete js_obj.__cs_owned_js_handle__;
+					delete js_obj[BINDING.cs_owned_js_handle_symbol];
 				}
 			}
 
@@ -1707,13 +1712,13 @@ var BindingSupportLib = {
 			return null;
 		},
 		mono_wasm_get_js_handle: function(js_obj) {
-			if(js_obj.__cs_owned_js_handle__){
-				return js_obj.__cs_owned_js_handle__;
+			if(js_obj[BINDING.cs_owned_js_handle_symbol]){
+				return js_obj[BINDING.cs_owned_js_handle_symbol];
 			}
 			var js_handle = this._js_handle_free_list.length ? this._js_handle_free_list.pop() : this._next_js_handle++;
 			// note _cs_owned_objects_by_js_handle is list, not Map. That's why we maintain _js_handle_free_list.
 			this._cs_owned_objects_by_js_handle[js_handle] = js_obj;
-			js_obj.__cs_owned_js_handle__ = js_handle;
+			js_obj[BINDING.cs_owned_js_handle_symbol] = js_handle;
 			return js_handle;
 		},
 		_mono_wasm_release_js_handle: function(js_handle) {
@@ -1724,8 +1729,8 @@ var BindingSupportLib = {
 				if (globalThis === obj)
 					return obj;
 
-				if (typeof obj.__cs_owned_js_handle__  !== "undefined") {
-					obj.__cs_owned_js_handle__ = undefined;
+				if (typeof obj[BINDING.cs_owned_js_handle_symbol]  !== "undefined") {
+					obj[BINDING.cs_owned_js_handle_symbol] = undefined;
 				}
 
 				BINDING._cs_owned_objects_by_js_handle[js_handle] = undefined;
@@ -2047,7 +2052,7 @@ var BindingSupportLib = {
 
 			if(!BINDING._is_finalizarion_registry_supported){
 				// we are counting registrations because same delegate could be registered into multiple sources
-				listener.__registration_count__ = listener.__registration_count__ ? listener.__registration_count__ + 1 : 1;
+				listener[BINDING.listener_registration_count_symbol] = listener[BINDING.listener_registration_count_symbol] ? listener[BINDING.listener_registration_count_symbol] + 1 : 1;
 			}
 
 			if (options)
@@ -2082,8 +2087,8 @@ var BindingSupportLib = {
 
 			// When FinalizationRegistry is not supported by this browser, we cleanup manuall after unregistration
 			if (!BINDING._is_finalizarion_registry_supported) {
-				listener.__registration_count__--;
-				if (listener.__registration_count__ === 0) {
+				listener[BINDING.listener_registration_count_symbol]--;
+				if (listener[BINDING.listener_registration_count_symbol] === 0) {
 					BINDING._js_owned_object_table.delete(listener_gc_handle);
 					BINDING._release_js_owned_object_by_gc_handle(listener_gc_handle);
 				}
