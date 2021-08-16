@@ -55,7 +55,10 @@ namespace System.Text.Json
         /// </remarks>
         [RequiresUnreferencedCode(SerializationUnreferencedCodeMessage)]
         public static TValue? Deserialize<TValue>(ref Utf8JsonReader reader, JsonSerializerOptions? options = null)
-            => ReadUsingOptions<TValue>(ref reader, typeof(TValue), options);
+        {
+            JsonTypeInfo jsonTypeInfo = GetTypeInfo(options, typeof(TValue));
+            return Read<TValue>(ref reader, jsonTypeInfo);
+        }
 
         /// <summary>
         /// Reads one JSON value (including objects or arrays) from the provided reader into a <paramref name="returnType"/>.
@@ -110,7 +113,8 @@ namespace System.Text.Json
                 throw new ArgumentNullException(nameof(returnType));
             }
 
-            return ReadUsingOptions<object?>(ref reader, returnType, options);
+            JsonTypeInfo jsonTypeInfo = GetTypeInfo(options, returnType);
+            return Read<object?>(ref reader, jsonTypeInfo);
         }
 
         /// <summary>
@@ -162,7 +166,7 @@ namespace System.Text.Json
                 throw new ArgumentNullException(nameof(jsonTypeInfo));
             }
 
-            return ReadUsingMetadata<TValue>(ref reader, jsonTypeInfo);
+            return Read<TValue>(ref reader, jsonTypeInfo);
         }
 
         /// <summary>
@@ -226,17 +230,10 @@ namespace System.Text.Json
                 throw new ArgumentNullException(nameof(context));
             }
 
-            return ReadUsingMetadata<object>(ref reader, GetTypeInfo(context, returnType));
+            return Read<object>(ref reader, GetTypeInfo(context, returnType));
         }
 
-        [RequiresUnreferencedCode(SerializationUnreferencedCodeMessage)]
-        private static TValue? ReadUsingOptions<TValue>(ref Utf8JsonReader reader, Type returnType, JsonSerializerOptions? options)
-        {
-            JsonTypeInfo jsonTypeInfo = GetTypeInfo(returnType, options);
-            return ReadUsingMetadata<TValue>(ref reader, jsonTypeInfo);
-        }
-
-        private static TValue? ReadUsingMetadata<TValue>(ref Utf8JsonReader reader, JsonTypeInfo jsonTypeInfo)
+        private static TValue? Read<TValue>(ref Utf8JsonReader reader, JsonTypeInfo jsonTypeInfo)
         {
             ReadStack state = default;
             state.Initialize(jsonTypeInfo);

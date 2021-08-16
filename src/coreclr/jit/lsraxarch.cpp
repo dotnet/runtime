@@ -2403,7 +2403,7 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree)
 
                 // Any pair of the index, mask, or destination registers should be different
                 srcCount += BuildOperandUses(op1);
-                srcCount += BuildDelayFreeUses(op2, op1);
+                srcCount += BuildDelayFreeUses(op2);
 
                 // op3 should always be contained
                 assert(op3->isContained());
@@ -2428,9 +2428,9 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree)
 
                 // Any pair of the index, mask, or destination registers should be different
                 srcCount += BuildOperandUses(op1);
-                srcCount += BuildDelayFreeUses(op2, op1);
-                srcCount += BuildDelayFreeUses(op3, op1);
-                srcCount += BuildDelayFreeUses(op4, op1);
+                srcCount += BuildDelayFreeUses(op2);
+                srcCount += BuildDelayFreeUses(op3);
+                srcCount += BuildDelayFreeUses(op4);
 
                 // op5 should always be contained
                 assert(argList->Rest()->Current()->isContained());

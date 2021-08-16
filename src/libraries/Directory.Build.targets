@@ -10,8 +10,6 @@
   <PropertyGroup Condition="'$(TestUsingWorkloads)' == 'true'">
     <!-- for non-ci builds, we install the sdk when tests are run -->
     <InstallWorkloadForTesting Condition="'$(ContinuousIntegrationBuild)' == 'true' and '$(ArchiveTests)' == 'true'">true</InstallWorkloadForTesting>
-
-    <WorkloadStampFile>$(SdkPathForWorkloadTesting)workload.stamp</WorkloadStampFile>
   </PropertyGroup>
 
   <!-- resources.targets need to be imported before the Arcade SDK. -->
@@ -45,7 +43,6 @@
     <IsNETCoreAppRef Condition="'$(IsNETCoreAppRef)' == '' and
                                 '$(IsReferenceAssembly)' == 'true' and
                                 $(NetCoreAppLibrary.Contains('$(AssemblyName);'))">true</IsNETCoreAppRef>
-
     <!-- By default, disable implicit framework references for NetCoreAppCurrent libraries. -->
     <DisableImplicitFrameworkReferences Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp' and
                                                    $([MSBuild]::VersionGreaterThanOrEquals($(TargetFrameworkVersion), '$(NETCoreAppCurrentVersion)')) and
@@ -96,13 +93,6 @@
                                 '$(BinPlaceRuntime)' == 'true' and
                                 '$(ILLinkTrimAssembly)' == ''">ILLinkTrimAssembly=true</SetProperties>
     </BinPlaceTargetFrameworks>
-    <BinPlaceTargetFrameworks Include="$(NetCoreAppCurrent)"
-                              Condition="'$(IsAspNetCoreApp)' == 'true'">
-      <RuntimePath>$(ASPNETCoreAppPackageRuntimePath)</RuntimePath>
-      <RefPath>$(ASPNETCoreAppPackageRefPath)</RefPath>
-    </BinPlaceTargetFrameworks>
-    <BinPlaceDir Include="$(ASPNETCoreAppPackageRootPath)\analyzers\dotnet\$(AnalyzerLanguage)"
-                 Condition="'$(IsAspNetCoreAppAnalyzer)' == 'true'" />
     <BinPlaceDir Include="$(MicrosoftNetCoreAppRefPackDir)analyzers\dotnet\$(AnalyzerLanguage)"
                  Condition="'$(IsNETCoreAppAnalyzer)' == 'true'" />
 

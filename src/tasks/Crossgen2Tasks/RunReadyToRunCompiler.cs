@@ -25,6 +25,7 @@ namespace Microsoft.NET.Build.Tasks
         public bool ShowCompilerWarnings { get; set; }
         public bool UseCrossgen2 { get; set; }
         public string Crossgen2ExtraCommandLineArgs { get; set; }
+        public ITaskItem[] Crossgen2PgoFiles { get; set; }
 
         [Output]
         public bool WarningsDetected { get; set; }
@@ -326,6 +327,20 @@ namespace Microsoft.NET.Build.Tasks
                 {
                     result.AppendLine("--perfmap");
                     result.AppendLine($"--perfmap-path:{Path.GetDirectoryName(_outputPDBImage)}");
+
+                    string perfmapFormatVersion = Crossgen2Tool.GetMetadata(MetadataKeys.PerfmapFormatVersion);
+                    if (!string.IsNullOrEmpty(perfmapFormatVersion))
+                    {
+                        result.AppendLine($"--perfmap-format-version:{perfmapFormatVersion}");
+                    }
+                }
+            }
+
+            if (Crossgen2PgoFiles != null)
+            {
+                foreach (var mibc in Crossgen2PgoFiles)
+                {
+                    result.AppendLine($"-m:\"{mibc.ItemSpec}\"");
                 }
             }
 

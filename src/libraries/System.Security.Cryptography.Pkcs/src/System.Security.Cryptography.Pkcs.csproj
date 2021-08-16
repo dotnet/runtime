@@ -317,6 +317,8 @@ System.Security.Cryptography.Pkcs.EnvelopedCms</PackageDescription>
     <Compile Include="Internal\Cryptography\Pal\AnyOS\PkcsPal.AnyOS.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(IsPartialFacadeAssembly)' != 'true'">
+    <Compile Include="$(CommonPath)System\Obsoletions.cs"
+             Link="Common\System\Obsoletions.cs" />
     <Compile Include="$(CommonPath)System\Memory\PointerMemoryManager.cs"
              Link="Common\System\Memory\PointerMemoryManager.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\CryptoPool.cs"

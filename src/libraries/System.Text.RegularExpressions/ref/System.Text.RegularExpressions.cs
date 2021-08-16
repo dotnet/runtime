@@ -12,6 +12,7 @@ namespace System.Text.RegularExpressions
         public int Index { get { throw null; } }
         public int Length { get { throw null; } }
         public string Value { get { throw null; } }
+        public System.ReadOnlySpan<char> ValueSpan { get { throw null; } }
         public override string ToString() { throw null; }
     }
     public partial class CaptureCollection : System.Collections.Generic.ICollection<System.Text.RegularExpressions.Capture>, System.Collections.Generic.IEnumerable<System.Text.RegularExpressions.Capture>, System.Collections.Generic.IList<System.Text.RegularExpressions.Capture>, System.Collections.Generic.IReadOnlyCollection<System.Text.RegularExpressions.Capture>, System.Collections.Generic.IReadOnlyList<System.Text.RegularExpressions.Capture>, System.Collections.ICollection, System.Collections.IEnumerable, System.Collections.IList

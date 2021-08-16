@@ -112,10 +112,6 @@
     <NetCoreAppCurrentRefPath>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'ref', '$(NetCoreAppCurrent)'))</NetCoreAppCurrentRefPath>
     <NetCoreAppCurrentRuntimePath>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'runtime', '$(NetCoreAppCurrent)-$(TargetOS)-$(Configuration)-$(TargetArchitecture)'))</NetCoreAppCurrentRuntimePath>
 
-    <ASPNETCoreAppPackageRootPath>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'pkg', 'aspnetcoreapp'))</ASPNETCoreAppPackageRootPath>
-    <ASPNETCoreAppPackageRefPath>$([MSBuild]::NormalizeDirectory('$(ASPNETCoreAppPackageRootPath)', 'ref'))</ASPNETCoreAppPackageRefPath>
-    <ASPNETCoreAppPackageRuntimePath>$([MSBuild]::NormalizeDirectory('$(ASPNETCoreAppPackageRootPath)', 'lib'))</ASPNETCoreAppPackageRuntimePath>
-
     <CommonPathRoot>$([MSBuild]::NormalizeDirectory('$(LibrariesProjectRoot)', 'Common'))</CommonPathRoot>
     <CommonPath>$([MSBuild]::NormalizeDirectory('$(CommonPathRoot)', 'src'))</CommonPath>
     <CommonTestPath>$([MSBuild]::NormalizeDirectory('$(CommonPathRoot)', 'tests'))</CommonTestPath>
@@ -138,10 +134,17 @@
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(TargetsMobile)' == 'true'">
-    <SdkPathForWorkloadTesting Condition="'$(SdkPathForWorkloadTesting)' == ''">$(ArtifactsBinDir)dotnet-workload\</SdkPathForWorkloadTesting>
-    <SdkPathForWorkloadTesting>$([MSBuild]::NormalizeDirectory($(SdkPathForWorkloadTesting)))</SdkPathForWorkloadTesting>
+    <SdkWithNoWorkloadForTestingPath>$(ArtifactsBinDir)sdk-no-workload\</SdkWithNoWorkloadForTestingPath>
+    <SdkWithNoWorkloadForTestingPath>$([MSBuild]::NormalizeDirectory($(SdkWithNoWorkloadForTestingPath)))</SdkWithNoWorkloadForTestingPath>
 
-    <SdkForWorkloadTestingStampPath>$(SdkPathForWorkloadTesting)version-$(SdkVersionForWorkloadTesting).stamp</SdkForWorkloadTestingStampPath>
+    <SdkWithNoWorkloadStampPath>$(SdkWithNoWorkloadForTestingPath)version-$(SdkVersionForWorkloadTesting).stamp</SdkWithNoWorkloadStampPath>
+    <SdkWithNoWorkload_WorkloadStampPath>$(SdkWithWorkloadForTestingPath)workload.stamp</SdkWithNoWorkload_WorkloadStampPath>
+
+    <SdkWithWorkloadForTestingPath>$(ArtifactsBinDir)dotnet-workload\</SdkWithWorkloadForTestingPath>
+    <SdkWithWorkloadForTestingPath>$([MSBuild]::NormalizeDirectory($(SdkWithWorkloadForTestingPath)))</SdkWithWorkloadForTestingPath>
+
+    <SdkWithWorkloadStampPath>$(SdkWithWorkloadForTestingPath)version-$(SdkVersionForWorkloadTesting).stamp</SdkWithWorkloadStampPath>
+    <SdkWithWorkload_WorkloadStampPath>$(SdkWithWorkloadForTestingPath)workload.stamp</SdkWithWorkload_WorkloadStampPath>
   </PropertyGroup>
 
   <Import Project="$(RepositoryEngineeringDir)testing\tests.props" Condition="'$(EnableTestSupport)' == 'true'" />

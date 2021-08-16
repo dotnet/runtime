@@ -599,9 +599,28 @@ namespace System.Net.Quic.Implementations.MsQuic
             }
             else if (_remoteEndPoint is DnsEndPoint)
             {
-                // We don't have way how to set separate SNI and name for connection at this moment.
-                targetHost = ((DnsEndPoint)_remoteEndPoint).Host;
                 port = ((DnsEndPoint)_remoteEndPoint).Port;
+                string dnsHost = ((DnsEndPoint)_remoteEndPoint).Host!;
+
+                // We don't have way how to set separate SNI and name for connection at this moment.
+                // If the name is actually IP address we can use it to make at least some cases work for people
+                // who want to bypass DNS but connect to specific virtual host.
+                if (!string.IsNullOrEmpty(_state.TargetHost) && !dnsHost.Equals(_state.TargetHost, StringComparison.InvariantCultureIgnoreCase) && IPAddress.TryParse(dnsHost, out IPAddress? address))
+                {
+                    // This is form of IPAddress and _state.TargetHost is set to different string
+                    SOCKADDR_INET quicAddress = MsQuicAddressHelpers.IPEndPointToINet(new IPEndPoint(address, port));
+                    unsafe
+                    {
+                        Debug.Assert(!Monitor.IsEntered(_state));
+                        status = MsQuicApi.Api.SetParamDelegate(_state.Handle, QUIC_PARAM_LEVEL.CONNECTION, (uint)QUIC_PARAM_CONN.REMOTE_ADDRESS, (uint)sizeof(SOCKADDR_INET), (byte*)&quicAddress);
+                        QuicExceptionHelpers.ThrowIfFailed(status, "Failed to connect to peer.");
+                    }
+                    targetHost = _state.TargetHost!;
+                }
+                else
+                {
+                    targetHost = dnsHost;
+                }
             }
             else
             {

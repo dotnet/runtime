@@ -208,6 +208,9 @@ typedef struct
 	GList *dont_inline;
 	int inline_depth;
 	int has_localloc : 1;
+	// If method compilation fails due to certain limits being exceeded, we disable inlining
+	// and retry compilation.
+	int disable_inlining : 1;
 	// If the current method (inlined_method) has the aggressive inlining attribute, we no longer
 	// bail out of inlining when having to generate certain opcodes (like call, throw).
 	int aggressive_inlining : 1;
