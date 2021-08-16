@@ -1619,7 +1619,6 @@ namespace System.Text.Json.Serialization.Tests
                 () => new JsonNumberHandlingAttribute((JsonNumberHandling)(8)));
         }
 
-
         [Fact]
         public static void InternalCollectionConverter_CustomNumberConverter_GlobalOption()
         {
@@ -1665,10 +1664,20 @@ namespace System.Text.Json.Serialization.Tests
         {
             // Invalid to set number handling for number collection property when number is handled with custom converter.
             var ex = Assert.Throws<InvalidOperationException>(() => JsonSerializer.Deserialize<ClassWithListPropAndAttribute_ConverterOnProp>(""));
-            Assert.Throws<InvalidOperationException>(() => JsonSerializer.Serialize(new ClassWithListPropAndAttribute_ConverterOnProp()));
+            Assert.Contains(nameof(ClassWithListPropAndAttribute_ConverterOnProp), ex.ToString());
+            Assert.Contains("IntProp", ex.ToString());
 
-            Assert.Throws<InvalidOperationException>(() => JsonSerializer.Deserialize<ClassWithDictPropAndAttribute_ConverterOnProp>(""));
-            Assert.Throws<InvalidOperationException>(() => JsonSerializer.Serialize(new ClassWithDictPropAndAttribute_ConverterOnProp()));
+            ex = Assert.Throws<InvalidOperationException>(() => JsonSerializer.Serialize(new ClassWithListPropAndAttribute_ConverterOnProp()));
+            Assert.Contains(nameof(ClassWithListPropAndAttribute_ConverterOnProp), ex.ToString());
+            Assert.Contains("IntProp", ex.ToString());
+
+            ex = Assert.Throws<InvalidOperationException>(() => JsonSerializer.Deserialize<ClassWithDictPropAndAttribute_ConverterOnProp>(""));
+            Assert.Contains(nameof(ClassWithDictPropAndAttribute_ConverterOnProp), ex.ToString());
+            Assert.Contains("IntProp", ex.ToString());
+
+            ex = Assert.Throws<InvalidOperationException>(() => JsonSerializer.Serialize(new ClassWithDictPropAndAttribute_ConverterOnProp()));
+            Assert.Contains(nameof(ClassWithDictPropAndAttribute_ConverterOnProp), ex.ToString());
+            Assert.Contains("IntProp", ex.ToString());
         }
 
         private class ClassWithListPropAndAttribute_ConverterOnProp
@@ -1689,12 +1698,6 @@ namespace System.Text.Json.Serialization.Tests
         {
             public override List<int> Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options) => throw new NotImplementedException();
             public override void Write(Utf8JsonWriter writer, List<int> value, JsonSerializerOptions options) => throw new NotImplementedException();
-        }
-
-        public class DictionaryOfNullableIntConverter : JsonConverter<Dictionary<int, int?>>
-        {
-            public override Dictionary<int, int?> Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options) => throw new NotImplementedException();
-            public override void Write(Utf8JsonWriter writer, Dictionary<int, int?> value, JsonSerializerOptions options) => throw new NotImplementedException();
         }
 
         [Fact]
@@ -1725,6 +1728,81 @@ namespace System.Text.Json.Serialization.Tests
             public override void Write(Utf8JsonWriter writer, int? value, JsonSerializerOptions options)
             {
                 throw new NotImplementedException();
+            }
+        }
+
+        /// <summary>
+        /// Example of a custom converter that uses the options to determine behavior.
+        /// </summary>
+        [Fact]
+        public static void AdaptableCustomConverter()
+        {
+            // Baseline without custom converter
+            PlainClassWithList obj = new() { Prop = new List<int>() { 1 } };
+            string json = JsonSerializer.Serialize(obj, s_optionReadAndWriteFromStr);
+            Assert.Equal("{\"Prop\":[\"1\"]}", json);
+
+            obj = JsonSerializer.Deserialize<PlainClassWithList>(json, s_optionReadAndWriteFromStr);
+            Assert.Equal(1, obj.Prop[0]);
+
+            // First with numbers
+            JsonSerializerOptions options = new()
+            {
+                Converters = { new AdaptableInt32Converter() }
+            };
+
+            obj = new() { Prop = new List<int>() { 1 } };
+            json = JsonSerializer.Serialize(obj, options);
+            Assert.Equal("{\"Prop\":[101]}", json);
+
+            obj = JsonSerializer.Deserialize<PlainClassWithList>(json, options);
+            Assert.Equal(1, obj.Prop[0]);
+
+            // Then with strings
+            options = new()
+            {
+                NumberHandling = JsonNumberHandling.AllowReadingFromString | JsonNumberHandling.WriteAsString,
+                Converters = { new AdaptableInt32Converter() }
+            };
+
+            obj = new() { Prop = new List<int>() { 1 } };
+            json = JsonSerializer.Serialize(obj, options);
+            Assert.Equal("{\"Prop\":[\"101\"]}", json);
+
+            obj = JsonSerializer.Deserialize<PlainClassWithList>(json, options);
+            Assert.Equal(1, obj.Prop[0]);
+        }
+
+        private class PlainClassWithList
+        {
+            public List<int> Prop { get; set; }
+        }
+
+        public class AdaptableInt32Converter : JsonConverter<int>
+        {
+            public override int Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+            {
+                if ((JsonNumberHandling.AllowReadingFromString & options.NumberHandling) != 0)
+                {
+                    // Assume it's a string; don't use TryParse().
+                    return int.Parse(reader.GetString(), CultureInfo.InvariantCulture) - 100;
+                }
+                else
+                {
+                    return reader.GetInt32() - 100;
+                }
+            }
+
+            public override void Write(Utf8JsonWriter writer, int value, JsonSerializerOptions options)
+            {
+                if ((JsonNumberHandling.WriteAsString & options.NumberHandling) != 0)
+                {
+                    writer.WriteStringValue((value + 100).ToString(CultureInfo.InvariantCulture));
+                }
+                else
+                {
+                    writer.WriteNumberValue(value + 100);
+                }
             }
         }
     }

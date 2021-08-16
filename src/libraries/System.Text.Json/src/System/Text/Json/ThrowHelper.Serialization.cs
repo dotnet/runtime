@@ -240,7 +240,7 @@ namespace System.Text.Json
         {
             MemberInfo? memberInfo = jsonPropertyInfo.MemberInfo;
             Debug.Assert(memberInfo != null);
-            Debug.Assert(!jsonPropertyInfo.IsForClassInfo);
+            Debug.Assert(!jsonPropertyInfo.IsForTypeInfo);
 
             throw new InvalidOperationException(SR.Format(SR.NumberHandlingOnPropertyInvalid, memberInfo.Name, memberInfo.DeclaringType));
         }
