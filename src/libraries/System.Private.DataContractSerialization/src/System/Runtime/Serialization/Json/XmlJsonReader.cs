@@ -339,7 +339,6 @@ namespace System.Runtime.Serialization.Json
 
         public override void Close()
         {
-            base.Close();
             OnXmlDictionaryReaderClose? onClose = _onReaderClose;
             _onReaderClose = null;
             ResetState();
@@ -354,6 +353,8 @@ namespace System.Runtime.Serialization.Json
                     throw new InvalidOperationException(SR.GenericCallbackException, e);
                 }
             }
+
+            base.Close();
         }
 
         public override void EndCanonicalization()
