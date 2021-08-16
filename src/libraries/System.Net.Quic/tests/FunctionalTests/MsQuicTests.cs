@@ -793,14 +793,11 @@ namespace System.Net.Quic.Tests
         [Fact]
         public async Task BasicTest_WithReadsCompletedCheck()
         {
-            QuicStream clientStream = null;
-            QuicStream serverStream = null;
             await RunClientServer(
                 iterations: 100,
                 serverFunction: async connection =>
                 {
-                    QuicStream stream = await connection.AcceptStreamAsync();
-                    serverStream = stream;
+                    using QuicStream stream = await connection.AcceptStreamAsync();
                     Assert.False(stream.ReadsCompleted);
 
                     byte[] buffer = new byte[s_data.Length];
@@ -815,8 +812,7 @@ namespace System.Net.Quic.Tests
                 },
                 clientFunction: async connection =>
                 {
-                    QuicStream stream = connection.OpenBidirectionalStream();
-                    clientStream = stream;
+                    using QuicStream stream = connection.OpenBidirectionalStream();
                     Assert.False(stream.ReadsCompleted);
 
                     await stream.WriteAsync(s_data, endStream: true);
@@ -831,26 +827,19 @@ namespace System.Net.Quic.Tests
                     await stream.ShutdownCompleted();
                 }
             );
-
-            clientStream.Dispose();
-            serverStream.Dispose();
         }
 
         [Fact]
         public async Task Read_ReadsCompleted_ReportedBeforeReturning0()
         {
-            var sem = new SemaphoreSlim(0);
-
             await RunBidirectionalClientServer(
                 async clientStream =>
                 {
-                    await sem.WaitAsync();
                     await clientStream.WriteAsync(new byte[1], endStream: true);
                 },
                 async serverStream =>
                 {
                     Assert.False(serverStream.ReadsCompleted);
-                    sem.Release();
 
                     var received = await serverStream.ReadAsync(new byte[1]);
                     Assert.Equal(1, received);
