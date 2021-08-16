@@ -16,9 +16,9 @@ namespace Microsoft.Extensions.FileProviders
         public void Dispose() { }
         protected virtual void Dispose(bool disposing) { }
         ~PhysicalFileProvider() { }
-        public Microsoft.Extensions.FileProviders.IDirectoryContents GetDirectoryContents(string? subpath) { throw null; }
+        public Microsoft.Extensions.FileProviders.IDirectoryContents GetDirectoryContents(string subpath) { throw null; }
         public Microsoft.Extensions.FileProviders.IFileInfo GetFileInfo(string subpath) { throw null; }
-        public Microsoft.Extensions.Primitives.IChangeToken Watch(string? filter) { throw null; }
+        public Microsoft.Extensions.Primitives.IChangeToken Watch(string filter) { throw null; }
     }
 }
 namespace Microsoft.Extensions.FileProviders.Internal
