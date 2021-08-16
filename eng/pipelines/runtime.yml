@@ -228,6 +228,7 @@ jobs:
     - MacCatalyst_x64
     - MacCatalyst_arm64
     - tvOSSimulator_x64
+    - tvOS_arm64
     - iOSSimulator_x86
     - iOS_arm64
     - Linux_arm
