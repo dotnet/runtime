@@ -58,11 +58,7 @@ namespace Microsoft.Extensions.FileProviders.Physical
 
             if (lastWriteTimeUtc == null)
             {
-                try
-                {
-                    lastWriteTimeUtc = _fileInfo.LastWriteTimeUtc;
-                }
-                catch (IOException) { } // https://github.com/dotnet/runtime/issues/57221
+                lastWriteTimeUtc = _fileInfo.LastWriteTimeUtc;
             }
 
             return lastWriteTimeUtc ?? DateTime.MinValue;
