@@ -316,6 +316,11 @@
     <XUnitRunnerDll>%CORE_ROOT%\xunit\xunit.console.dll</XUnitRunnerDll>
   </PropertyGroup>
 
+  <PropertyGroup Condition=" '$(UsesHelixSdk)' == 'true' ">
+    <IsRunningOnMobileTargets>false</IsRunningOnMobileTargets>
+    <IsRunningOnMobileTargets Condition="'$(TargetOS)' == 'Android' or '$(TargetOS)' == 'iOSSimulator' or '$(TargetOS)' == 'tvOSSimulator' ">true</IsRunningOnMobileTargets>
+  </PropertyGroup>
+
   <PropertyGroup Condition=" '$(TestWrapperTargetsWindows)' != 'true' ">
     <XUnitRunnerDll>$CORE_ROOT/xunit/xunit.console.dll</XUnitRunnerDll>
   </PropertyGroup>
@@ -337,10 +342,6 @@
       <TestGroup Condition=" $([MSBuild]::ValueOrDefault(%(XUnitWrapperDlls), '').IndexOf('.XUnitWrapper.dll')) != $([MSBuild]::ValueOrDefault(%(XUnitWrapperDlls), '').LastIndexOf('.XUnitWrapper.dll')) "></TestGroup>
     </Payloads>
 
-    <PropertyGroup>
-      <IsRunningOnMobileTargets>false</IsRunningOnMobileTargets>
-      <IsRunningOnMobileTargets Condition="'$(TargetOS)' == 'Android' or '$(TargetOS)' == 'iOSSimulator' or '$(TargetOS)' == 'tvOSSimulator' ">true</IsRunningOnMobileTargets>
-    </PropertyGroup>
 
     <ItemGroup Condition=" '$(IsRunningOnMobileTargets)' == 'false' ">
       <HelixWorkItem Include="@(Payloads->Metadata('PayloadGroup'))">
