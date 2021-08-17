@@ -406,15 +406,6 @@ namespace System.Reflection.Emit
             throw new NotSupportedException(SR.InvalidOperation_NotAllowedInDynamicMethod);
         }
 
-        public override void MarkSequencePoint(ISymbolDocumentWriter document,
-                                               int startLine,
-                                               int startColumn,
-                                               int endLine,
-                                               int endColumn)
-        {
-            throw new NotSupportedException(SR.InvalidOperation_NotAllowedInDynamicMethod);
-        }
-
         public override void BeginScope()
         {
             throw new NotSupportedException(SR.InvalidOperation_NotAllowedInDynamicMethod);

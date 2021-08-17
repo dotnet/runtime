@@ -138,10 +138,10 @@ namespace System
 
         /// <summary>
         /// Returns a new TimeOnly that adds the value of the specified TimeSpan to the value of this instance.
-        /// If the added value circulate though the day, this method will out the number of the circulated days.
+        /// If the result wraps past the end of the day, this method will return the number of excess days as an out parameter.
         /// </summary>
         /// <param name="value">A positive or negative time interval.</param>
-        /// <param name="wrappedDays">When this method returns, contains the number of circulated days resulted from this addition operation.</param>
+        /// <param name="wrappedDays">When this method returns, contains the number of excess days if any that resulted from wrapping during this addition operation.</param>
         /// <returns>An object whose value is the sum of the time represented by this instance and the time interval represented by value.</returns>
         public TimeOnly Add(TimeSpan value, out int wrappedDays) => AddTicks(value.Ticks, out wrappedDays);
 
@@ -154,10 +154,10 @@ namespace System
 
         /// <summary>
         /// Returns a new TimeOnly that adds the specified number of hours to the value of this instance.
-        /// If the added value circulate though the day, this method will out the number of the circulated days.
+        /// If the result wraps past the end of the day, this method will return the number of excess days as an out parameter.
         /// </summary>
         /// <param name="value">A number of whole and fractional hours. The value parameter can be negative or positive.</param>
-        /// <param name="wrappedDays">When this method returns, contains the number of circulated days resulted from this addition operation.</param>
+        /// <param name="wrappedDays">When this method returns, contains the number of excess days if any that resulted from wrapping during this addition operation.</param>
         /// <returns>An object whose value is the sum of the time represented by this instance and the number of hours represented by value.</returns>
         public TimeOnly AddHours(double value, out int wrappedDays) => AddTicks((long)(value * TimeSpan.TicksPerHour), out wrappedDays);
 
@@ -170,10 +170,10 @@ namespace System
 
         /// <summary>
         /// Returns a new TimeOnly that adds the specified number of minutes to the value of this instance.
-        /// If the added value circulate though the day, this method will out the number of the circulated days.
+        /// If the result wraps past the end of the day, this method will return the number of excess days as an out parameter.
         /// </summary>
         /// <param name="value">A number of whole and fractional minutes. The value parameter can be negative or positive.</param>
-        /// <param name="wrappedDays">When this method returns, contains the number of circulated days resulted from this addition operation.</param>
+        /// <param name="wrappedDays">When this method returns, contains the number of excess days if any that resulted from wrapping during this addition operation.</param>
         /// <returns>An object whose value is the sum of the time represented by this instance and the number of minutes represented by value.</returns>
         public TimeOnly AddMinutes(double value, out int wrappedDays) => AddTicks((long)(value * TimeSpan.TicksPerMinute), out wrappedDays);
 

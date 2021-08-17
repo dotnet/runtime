@@ -522,6 +522,10 @@ namespace System.Text.Json.Serialization.Tests
             RunTest<SerializationInfo>(json);
             RunTest<IntPtr>(json);
             RunTest<UIntPtr>(json);
+#if NETCOREAPP
+            RunTest<DateOnly>(json);
+            RunTest<TimeOnly>(json);
+#endif
 
             void RunTest<T>(string json)
             {
@@ -553,10 +557,14 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public static void SerializeUnsupportedType()
         {
-            RunTest<Type>(typeof(int));
-            RunTest<SerializationInfo>(new SerializationInfo(typeof(Type), new FormatterConverter()));
-            RunTest<IntPtr>((IntPtr)123);
-            RunTest<UIntPtr>((UIntPtr)123);
+            RunTest(typeof(int));
+            RunTest(new SerializationInfo(typeof(Type), new FormatterConverter()));
+            RunTest((IntPtr)123);
+            RunTest((UIntPtr)123);
+#if NETCOREAPP
+            RunTest(DateOnly.MaxValue);
+            RunTest(TimeOnly.MinValue);
+#endif
 
             void RunTest<T>(T value)
             {
@@ -606,9 +614,7 @@ namespace System.Text.Json.Serialization.Tests
 
             // Each constructor parameter must bind to an object property or field.
             InvalidOperationException ex = Assert.Throws<InvalidOperationException>(() => JsonSerializer.Deserialize("{}", type));
-            string exAsStr = ex.ToString();
-            Assert.Contains(typeof(SerializationInfo).FullName, exAsStr);
-            Assert.Contains(typeof(StreamingContext).FullName, exAsStr);
+            Assert.Contains(type.FullName, ex.ToString());
         }
 
         [Theory]

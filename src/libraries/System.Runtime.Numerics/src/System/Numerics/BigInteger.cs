@@ -264,7 +264,7 @@ namespace System.Numerics
             bool isNegative;
             if (byteCount > 0)
             {
-                byte mostSignificantByte = isBigEndian ? value[0] : value[^1];
+                byte mostSignificantByte = isBigEndian ? value[0] : value[byteCount - 1];
                 isNegative = (mostSignificantByte & 0x80) != 0 && !isUnsigned;
 
                 if (mostSignificantByte == 0)
@@ -820,9 +820,9 @@ namespace System.Numerics
             if (value._bits == null)
                 return Math.Log(value._sign, baseValue);
 
-            ulong h = value._bits[^1];
-            ulong m = value._bits.Length > 1 ? value._bits[^2] : 0;
-            ulong l = value._bits.Length > 2 ? value._bits[^3] : 0;
+            ulong h = value._bits[value._bits.Length - 1];
+            ulong m = value._bits.Length > 1 ? value._bits[value._bits.Length - 2] : 0;
+            ulong l = value._bits.Length > 2 ? value._bits[value._bits.Length - 3] : 0;
 
             // Measure the exact bit count
             int c = BitOperations.LeadingZeroCount((uint)h);
@@ -1363,13 +1363,13 @@ namespace System.Numerics
                 // because a bits array of all zeros would represent 0, and this case
                 // would be encoded as _bits = null and _sign = 0.
                 Debug.Assert(bits.Length > 0);
-                Debug.Assert(bits[^1] != 0);
+                Debug.Assert(bits[bits.Length - 1] != 0);
                 while (bits[nonZeroDwordIndex] == 0U)
                 {
                     nonZeroDwordIndex++;
                 }
 
-                highDword = ~bits[^1];
+                highDword = ~bits[bits.Length - 1];
                 if (bits.Length - 1 == nonZeroDwordIndex)
                 {
                     // This will not overflow because highDword is less than or equal to uint.MaxValue - 1.
@@ -1381,7 +1381,7 @@ namespace System.Numerics
             {
                 Debug.Assert(sign == 1);
                 highByte = 0x00;
-                highDword = bits[^1];
+                highDword = bits[bits.Length - 1];
             }
 
             byte msb;
@@ -1536,13 +1536,13 @@ namespace System.Numerics
             if (needExtraByte)
             {
                 count = msb + 2;
-                buffer = buffer[..count];
-                buffer[^1] = highDWord;
+                buffer = buffer.Slice(0, count);
+                buffer[buffer.Length - 1] = highDWord;
             }
             else
             {
                 count = msb + 1;
-                buffer = buffer[..count];
+                buffer = buffer.Slice(0, count);
             }
 
             return count;
@@ -1925,9 +1925,9 @@ namespace System.Numerics
                     return double.NegativeInfinity;
             }
 
-            ulong h = bits[^1];
-            ulong m = length > 1 ? bits[^2] : 0;
-            ulong l = length > 2 ? bits[^3] : 0;
+            ulong h = bits[length - 1];
+            ulong m = length > 1 ? bits[length - 2] : 0;
+            ulong l = length > 2 ? bits[length - 3] : 0;
 
             int z = BitOperations.LeadingZeroCount((uint)h);
 
@@ -2683,7 +2683,7 @@ namespace System.Numerics
             else
             {
                 bitsArrayLength = bits.Length;
-                highValue = bits[^1];
+                highValue = bits[bitsArrayLength - 1];
             }
 
             long bitLength = bitsArrayLength * 32L - BitOperations.LeadingZeroCount(highValue);
@@ -2758,7 +2758,7 @@ namespace System.Numerics
                 // Wasted space: _bits[0] could have been packed into _sign
                 Debug.Assert(_bits.Length > 1 || _bits[0] >= kuMaskHighBit);
                 // Wasted space: leading zeros could have been truncated
-                Debug.Assert(_bits[^1] != 0);
+                Debug.Assert(_bits[_bits.Length - 1] != 0);
             }
             else
             {

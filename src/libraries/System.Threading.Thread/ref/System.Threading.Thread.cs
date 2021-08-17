@@ -64,7 +64,7 @@ namespace System.Threading
         ~Thread() { }
         public static void FreeNamedDataSlot(string name) { }
         public System.Threading.ApartmentState GetApartmentState() { throw null; }
-        [System.ObsoleteAttribute("Thread.GetCompressedStack has been deprecated. Use the System.Threading.CompressedStack class instead.")]
+        [System.ObsoleteAttribute("Code Access Security is not supported or honored by the runtime.", DiagnosticId = "SYSLIB0003", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         public System.Threading.CompressedStack GetCompressedStack() { throw null; }
         public static int GetCurrentProcessorId() { throw null; }
         public static object? GetData(System.LocalDataStoreSlot slot) { throw null; }
@@ -83,7 +83,7 @@ namespace System.Threading
         public void Resume() { }
         [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
         public void SetApartmentState(System.Threading.ApartmentState state) { }
-        [System.ObsoleteAttribute("Thread.SetCompressedStack has been deprecated. Use the System.Threading.CompressedStack class instead.")]
+        [System.ObsoleteAttribute("Code Access Security is not supported or honored by the runtime.", DiagnosticId = "SYSLIB0003", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         public void SetCompressedStack(System.Threading.CompressedStack stack) { }
         public static void SetData(System.LocalDataStoreSlot slot, object? data) { }
         public static void Sleep(int millisecondsTimeout) { }

@@ -379,10 +379,93 @@ namespace System.Net.Http.Functional.Tests
             await serverTask;
         }
 
+        [Fact]
+        public async Task EmptyCustomContent_FlushHeaders()
+        {
+            using Http3LoopbackServer server = CreateHttp3LoopbackServer();
+            TaskCompletionSource headersReceived = new TaskCompletionSource();
+
+            Task serverTask = Task.Run(async () =>
+            {
+                using Http3LoopbackConnection connection = (Http3LoopbackConnection)await server.EstablishGenericConnectionAsync();
+                using Http3LoopbackStream stream = await connection.AcceptRequestStreamAsync();
+
+                // Receive headers and unblock the client.
+                await stream.ReadRequestDataAsync(false);
+                headersReceived.SetResult();
+
+                await stream.ReadRequestBodyAsync();
+                await stream.SendResponseAsync();
+            });
+
+            Task clientTask = Task.Run(async () =>
+            {
+                StreamingHttpContent requestContent = new StreamingHttpContent();
+
+                using HttpClient client = CreateHttpClient();
+                using HttpRequestMessage request = new()
+                {
+                    Method = HttpMethod.Post,
+                    RequestUri = server.Address,
+                    Version = HttpVersion30,
+                    VersionPolicy = HttpVersionPolicy.RequestVersionExact,
+                    Content = requestContent
+                };
+
+                Task<HttpResponseMessage> responseTask = client.SendAsync(request);
+
+                Stream requestStream = await requestContent.GetStreamAsync();
+                await requestStream.FlushAsync();
+
+                await headersReceived.Task;
+
+                requestContent.CompleteStream();
+
+                using HttpResponseMessage response = await responseTask;
+
+                Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+            });
+
+            await new[] { clientTask, serverTask }.WhenAllOrAnyFailed(20_000);
+        }
+
+        [Fact]
+        public async Task DisposeHttpClient_Http3ConnectionIsClosed()
+        {
+            using Http3LoopbackServer server = CreateHttp3LoopbackServer();
+
+            Task serverTask = Task.Run(async () =>
+            {
+                using Http3LoopbackConnection connection = (Http3LoopbackConnection)await server.EstablishGenericConnectionAsync();
+                HttpRequestData request = await connection.ReadRequestDataAsync();
+                await connection.SendResponseAsync();
+
+                await connection.WaitForClientDisconnectAsync(refuseNewRequests: false);
+            });
+
+            Task clientTask = Task.Run(async () =>
+            {
+                using HttpClient client = CreateHttpClient();
+                using HttpRequestMessage request = new()
+                {
+                    Method = HttpMethod.Get,
+                    RequestUri = server.Address,
+                    Version = HttpVersion30,
+                    VersionPolicy = HttpVersionPolicy.RequestVersionExact
+                };
+
+                using HttpResponseMessage response = await client.SendAsync(request);
+                Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+
+                // Return and let the HttpClient be disposed
+            });
+
+            await new[] { clientTask, serverTask }.WhenAllOrAnyFailed(20_000);
+        }
+
         [OuterLoop]
         [ConditionalTheory(nameof(IsMsQuicSupported))]
         [MemberData(nameof(InteropUris))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/54726")]
         public async Task Public_Interop_ExactVersion_Success(string uri)
         {
             if (UseQuicImplementationProvider == QuicImplementationProviders.Mock)
@@ -406,9 +489,8 @@ namespace System.Net.Http.Functional.Tests
 
         [OuterLoop]
         [ConditionalTheory(nameof(IsMsQuicSupported))]
-        [MemberData(nameof(InteropUris))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/54726")]
-        public async Task Public_Interop_Upgrade_Success(string uri)
+        [MemberData(nameof(InteropUrisWithContent))]
+        public async Task Public_Interop_ExactVersion_BufferContent_Success(string uri)
         {
             if (UseQuicImplementationProvider == QuicImplementationProviders.Mock)
             {
@@ -416,6 +498,35 @@ namespace System.Net.Http.Functional.Tests
             }
 
             using HttpClient client = CreateHttpClient();
+            using HttpRequestMessage request = new HttpRequestMessage
+            {
+                Method = HttpMethod.Get,
+                RequestUri = new Uri(uri, UriKind.Absolute),
+                Version = HttpVersion.Version30,
+                VersionPolicy = HttpVersionPolicy.RequestVersionExact
+            };
+            using HttpResponseMessage response = await client.SendAsync(request, HttpCompletionOption.ResponseContentRead).WaitAsync(TimeSpan.FromSeconds(20));
+
+            Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+            Assert.Equal(3, response.Version.Major);
+
+            var content = await response.Content.ReadAsStringAsync();
+            Assert.NotEmpty(content);
+        }
+
+        [OuterLoop]
+        [ConditionalTheory(nameof(IsMsQuicSupported))]
+        [MemberData(nameof(InteropUris))]
+        public async Task Public_Interop_Upgrade_Success(string uri)
+        {
+            if (UseQuicImplementationProvider == QuicImplementationProviders.Mock)
+            {
+                return;
+            }
+
+            // Create the handler manually without passing in useVersion = Http3 to avoid using VersionHttpClientHandler,
+            // because it overrides VersionPolicy on each request with RequestVersionExact (bypassing Alt-Svc code path completely).
+            using HttpClient client = CreateHttpClient(CreateHttpClientHandler(quicImplementationProvider: UseQuicImplementationProvider));
 
             // First request uses HTTP/1 or HTTP/2 and receives an Alt-Svc either by header or (with HTTP/2) by frame.
 
@@ -445,7 +556,7 @@ namespace System.Net.Http.Functional.Tests
                 using HttpResponseMessage responseB = await client.SendAsync(requestB).WaitAsync(TimeSpan.FromSeconds(20));
 
                 Assert.Equal(HttpStatusCode.OK, responseB.StatusCode);
-                Assert.NotEqual(3, responseB.Version.Major);
+                Assert.Equal(3, responseB.Version.Major);
             }
         }
 
@@ -608,7 +719,7 @@ namespace System.Net.Http.Functional.Tests
                 Exception ex = await Assert.ThrowsAnyAsync<Exception>(() => stream.ReadAsync(new byte[1024], cancellationToken: cts.Token).AsTask());
 
                 // exact exception depends on who won the race
-                if (ex is not OperationCanceledException and not ObjectDisposedException)
+                if (ex is not OperationCanceledException)
                 {
                     var ioe = Assert.IsType<IOException>(ex);
                     var hre = Assert.IsType<HttpRequestException>(ioe.InnerException);
@@ -741,16 +852,118 @@ namespace System.Net.Http.Functional.Tests
             return (SslApplicationProtocol)alpn;
         }
 
+        [ConditionalTheory(nameof(IsMsQuicSupported))]
+        [MemberData(nameof(StatusCodesTestData))]
+        public async Task StatusCodes_ReceiveSuccess(HttpStatusCode statusCode, bool qpackEncode)
+        {
+            using Http3LoopbackServer server = CreateHttp3LoopbackServer();
+
+            Http3LoopbackConnection connection = null;
+            Task serverTask = Task.Run(async () =>
+            {
+                connection = (Http3LoopbackConnection)await server.EstablishGenericConnectionAsync();
+                using Http3LoopbackStream stream = await connection.AcceptRequestStreamAsync();
+
+                HttpRequestData request = await stream.ReadRequestDataAsync().ConfigureAwait(false);
+
+                if (qpackEncode)
+                {
+                    await stream.SendResponseHeadersWithEncodedStatusAsync(statusCode).ConfigureAwait(false);
+                }
+                else
+                {
+                    await stream.SendResponseHeadersAsync(statusCode).ConfigureAwait(false);
+                }
+            });
+
+            using HttpClient client = CreateHttpClient();
+            using HttpRequestMessage request = new()
+            {
+                Method = HttpMethod.Get,
+                RequestUri = server.Address,
+                Version = HttpVersion30,
+                VersionPolicy = HttpVersionPolicy.RequestVersionExact
+            };
+            HttpResponseMessage response = await client.SendAsync(request).WaitAsync(TimeSpan.FromSeconds(10));
+            
+            Assert.Equal(statusCode, response.StatusCode);
+
+            await serverTask;
+            Assert.NotNull(connection);
+            connection.Dispose();
+        }
+
+        public static TheoryData<HttpStatusCode, bool> StatusCodesTestData()
+        {
+            var statuses = Enum.GetValues(typeof(HttpStatusCode)).Cast<HttpStatusCode>().Where(s => s >= HttpStatusCode.OK); // exclude informational
+            var data = new TheoryData<HttpStatusCode, bool>();
+            foreach (var status in statuses)
+            {
+                data.Add(status, true);
+                data.Add(status, false);
+            }
+            return data;
+        }
+
         /// <summary>
         /// These are public interop test servers for various QUIC and HTTP/3 implementations,
-        /// taken from https://github.com/quicwg/base-drafts/wiki/Implementations
+        /// taken from https://github.com/quicwg/base-drafts/wiki/Implementations and https://bagder.github.io/HTTP3-test/.
         /// </summary>
         public static TheoryData<string> InteropUris() =>
             new TheoryData<string>
             {
-                { "https://quic.rocks:4433/" }, // Chromium
-                { "https://http3-test.litespeedtech.com:4433/" }, // LiteSpeed
-                { "https://quic.tech:8443/" } // Cloudflare
+                { "https://www.litespeedtech.com/" }, // LiteSpeed
+                { "https://quic.tech:8443/" }, // Cloudflare
+                { "https://quic.aiortc.org:443/" }, // aioquic
+                { "https://h2o.examp1e.net/" } // h2o/quicly
             };
+
+        /// <summary>
+        /// These are public interop test servers for various QUIC and HTTP/3 implementations,
+        /// taken from https://github.com/quicwg/base-drafts/wiki/Implementations and https://bagder.github.io/HTTP3-test/.
+        /// </summary>
+        public static TheoryData<string> InteropUrisWithContent() =>
+            new TheoryData<string>
+            {
+                { "https://cloudflare-quic.com/" }, // Cloudflare with content
+                { "https://pgjones.dev/" }, // aioquic with content
+            };
+    }
+
+    internal class StreamingHttpContent : HttpContent
+    {
+        private readonly TaskCompletionSource _completeTcs = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        private readonly TaskCompletionSource<Stream> _getStreamTcs = new TaskCompletionSource<Stream>(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        protected override Task SerializeToStreamAsync(Stream stream, TransportContext context)
+        {
+            throw new NotSupportedException();
+        }
+
+        protected override async Task SerializeToStreamAsync(Stream stream, TransportContext context, CancellationToken cancellationToken)
+        {
+            _getStreamTcs.TrySetResult(stream);
+
+            var cancellationTcs = new TaskCompletionSource();
+            cancellationToken.Register(() => cancellationTcs.TrySetCanceled());
+
+            await Task.WhenAny(_completeTcs.Task, cancellationTcs.Task);
+        }
+
+        protected override bool TryComputeLength(out long length)
+        {
+            length = -1;
+            return false;
+        }
+
+        public Task<Stream> GetStreamAsync()
+        {
+            return _getStreamTcs.Task;
+        }
+
+        public void CompleteStream()
+        {
+            _completeTcs.TrySetResult();
+        }
     }
 }

@@ -33,8 +33,4 @@ System.Security.AccessControl.RegistrySecurity</PackageDescription>
     <PackageReference Include="Microsoft.Win32.Registry" Version="$(MicrosoftWin32RegistryVersion)" />
     <PackageReference Include="System.Security.AccessControl" Version="$(SystemSecurityAccessControlVersion)" />
   </ItemGroup>
-
-  <ItemGroup>
-    <NETStandardCompatError Include="netcoreapp2.0" Supported="$(NetCoreAppMinimum)" />
-  </ItemGroup>
 </Project>

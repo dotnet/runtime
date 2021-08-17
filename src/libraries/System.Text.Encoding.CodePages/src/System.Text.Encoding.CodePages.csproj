@@ -88,7 +88,4 @@ System.Text.CodePagesEncodingProvider</PackageDescription>
   <ItemGroup Condition="!$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'netstandard2.1'))">
     <PackageReference Include="System.Memory" Version="$(SystemMemoryVersion)" />
   </ItemGroup>
-  <ItemGroup>
-    <NETStandardCompatError Include="netcoreapp2.0" Supported="$(NetCoreAppMinimum)" />
-  </ItemGroup>
 </Project>

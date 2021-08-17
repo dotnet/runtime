@@ -75,7 +75,4 @@ System.Threading.Tasks.Dataflow.WriteOnceBlock&lt;T&gt;</PackageDescription>
     <Reference Include="System.Threading.ThreadPool" />
     <Reference Include="System.Threading.Timer" />
   </ItemGroup>
-  <ItemGroup>
-    <NETStandardCompatError Include="netcoreapp2.0" Supported="$(NetCoreAppMinimum)" />
-  </ItemGroup>
 </Project>

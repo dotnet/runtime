@@ -19,6 +19,8 @@ namespace System.Text.Json.Serialization.Converters
     /// </summary>
     internal abstract partial class ObjectWithParameterizedConstructorConverter<T> : ObjectDefaultConverter<T> where T : notnull
     {
+        internal sealed override bool ConstructorIsParameterized => true;
+
         internal sealed override bool OnTryRead(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options, ref ReadStack state, [MaybeNullWhen(false)] out T value)
         {
             object obj;
@@ -465,7 +467,7 @@ namespace System.Text.Json.Serialization.Converters
 
             if (state.Current.JsonTypeInfo.ParameterCount != state.Current.JsonTypeInfo.ParameterCache!.Count)
             {
-                ThrowHelper.ThrowInvalidOperationException_ConstructorParameterIncompleteBinding(ConstructorInfo!, TypeToConvert);
+                ThrowHelper.ThrowInvalidOperationException_ConstructorParameterIncompleteBinding(TypeToConvert);
             }
 
             // Set current JsonPropertyInfo to null to avoid conflicts on push.
@@ -508,7 +510,5 @@ namespace System.Text.Json.Serialization.Converters
 
             return jsonParameterInfo != null;
         }
-
-        internal override bool ConstructorIsParameterized => true;
     }
 }

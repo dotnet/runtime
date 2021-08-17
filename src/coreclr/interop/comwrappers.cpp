@@ -9,7 +9,6 @@
 #include <new> // placement new
 #endif // _WIN32
 
-
 using OBJECTHANDLE = InteropLib::OBJECTHANDLE;
 using AllocScenario = InteropLibImports::AllocScenario;
 using TryInvokeICustomQueryInterfaceResult = InteropLibImports::TryInvokeICustomQueryInterfaceResult;

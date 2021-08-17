@@ -136,6 +136,7 @@ Microsoft.VisualBasic.VBCodeProvider</PackageDescription>
     <Compile Include="System\CodeDom\MemberAttributes.cs" />
     <Compile Include="System\Collections\Specialized\FixedStringLookup.cs" />
     <Compile Include="$(CommonPath)System\CSharpHelpers.cs" />
+    <Compile Include="StringExtensions.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
     <Reference Include="System.Collections" />
@@ -150,8 +151,5 @@ Microsoft.VisualBasic.VBCodeProvider</PackageDescription>
     <Reference Include="System.Runtime" />
     <Reference Include="System.Runtime.Extensions" />
     <Reference Include="System.Threading" />
-  </ItemGroup>
-  <ItemGroup>
-    <NETStandardCompatError Include="netcoreapp2.0" Supported="$(NetCoreAppMinimum)" />
   </ItemGroup>
 </Project>

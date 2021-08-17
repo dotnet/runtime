@@ -1382,8 +1382,11 @@ is_ok_for_covariant_ret (MonoType *type_impl, MonoType *type_decl)
 	if (type_impl->byref) {
 		return mono_byref_type_is_assignable_from (type_decl, type_impl, TRUE);
 	}
+
+	MonoClass *class_impl = mono_class_from_mono_type_internal (type_impl);
+
 	/* method declared to return an interface, impl returns a value type that implements the interface */
-	if (!mono_type_is_reference (type_impl) && mono_type_is_reference (type_decl))
+	if (m_class_is_valuetype (class_impl) && mono_type_is_reference (type_decl))
 		return FALSE;
 
 
@@ -1395,7 +1398,6 @@ is_ok_for_covariant_ret (MonoType *type_impl, MonoType *type_decl)
 			g_free (impl_str);
 		} while (0));
 
-	MonoClass *class_impl = mono_class_from_mono_type_internal (type_impl);
 	MonoClass *class_decl = mono_class_from_mono_type_internal (type_decl);
 
 	/* Also disallow overriding a Nullable<T> return with an impl that

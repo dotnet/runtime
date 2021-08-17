@@ -9,6 +9,9 @@
   <PropertyGroup Condition=" '$(TargetsOSX)' == 'true' or '$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true' or '$(TargetsMacCatalyst)' == 'true'">
     <DefineConstants>$(DefineConstants);SYSNETHTTP_NO_OPENSSL</DefineConstants>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(TargetsAndroid)' == 'true' or '$(TargetsiOS)' == 'true' or '$(TargetsMacCatalyst)' == 'true' or '$(TargetsTVOS)' == 'true'">
+    <DefineConstants>$(DefineConstants);TARGET_MOBILE</DefineConstants>
+  </PropertyGroup>
   <PropertyGroup Condition="'$(TargetsBrowser)' == 'true'">
     <DefineConstants>$(DefineConstants);TARGET_BROWSER</DefineConstants>
   </PropertyGroup>

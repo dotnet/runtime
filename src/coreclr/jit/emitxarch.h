@@ -38,7 +38,7 @@ struct CnsVal
     bool    cnsReloc;
 };
 
-UNATIVE_OFFSET emitInsSize(code_t code);
+UNATIVE_OFFSET emitInsSize(code_t code, bool includeRexPrefixSize);
 UNATIVE_OFFSET emitInsSizeSV(code_t code, int var, int dsp);
 UNATIVE_OFFSET emitInsSizeSV(instrDesc* id, code_t code, int var, int dsp);
 UNATIVE_OFFSET emitInsSizeSV(instrDesc* id, code_t code, int var, int dsp, int val);
@@ -67,7 +67,7 @@ BYTE* emitOutputLJ(insGroup* ig, BYTE* dst, instrDesc* id);
 unsigned emitOutputRexOrVexPrefixIfNeeded(instruction ins, BYTE* dst, code_t& code);
 unsigned emitGetRexPrefixSize(instruction ins);
 unsigned emitGetVexPrefixSize(instruction ins, emitAttr attr);
-unsigned emitGetPrefixSize(code_t code);
+unsigned emitGetPrefixSize(code_t code, bool includeRexPrefixSize);
 unsigned emitGetAdjustedSize(instruction ins, emitAttr attr, code_t code);
 
 unsigned insEncodeReg012(instruction ins, regNumber reg, emitAttr size, code_t* code);

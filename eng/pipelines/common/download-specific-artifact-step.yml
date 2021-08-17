@@ -1,0 +1,29 @@
+parameters:
+  unpackFolder: ''
+  cleanUnpackFolder: true
+  artifactFileName: ''
+  artifactName: ''
+  displayName: ''
+
+steps:
+  # Download artifact
+  - task: DownloadBuildArtifacts@0
+    displayName: 'Download specific ${{ parameters.displayName }}'
+    inputs:
+      buildType: specific
+      project:  'internal' # 'internal' or 'public'
+      pipeline: 'superpmi-replay'
+      buildVersionToDownload: specific
+      branchName: 'your/branch/having/artifacts'
+      buildId: '1274841'
+      downloadType: single
+      downloadPath: '$(Build.SourcesDirectory)/__download__'
+      artifactName: '${{ parameters.artifactName }}'
+
+  # Unzip artifact
+  - task: ExtractFiles@1
+    displayName: 'Unzip specific ${{ parameters.displayName }}'
+    inputs:
+      archiveFilePatterns: $(Build.SourcesDirectory)/__download__/${{ parameters.artifactName }}/${{ parameters.artifactFileName }}
+      destinationFolder: ${{ parameters.unpackFolder }}
+      cleanDestinationFolder: ${{ parameters.cleanUnpackFolder }}

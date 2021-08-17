@@ -242,7 +242,7 @@ namespace System.IO
         {
             EnsureCachesInitialized(path, continueOnError);
             if (!_exists)
-                return DateTimeOffset.FromFileTime(0);
+                return new DateTimeOffset(DateTime.FromFileTimeUtc(0));
 
             if ((_fileCache.Flags & Interop.Sys.FileStatusFlags.HasBirthTime) != 0)
                 return UnixTimeToDateTimeOffset(_fileCache.BirthTime, _fileCache.BirthTimeNsec);
@@ -273,7 +273,7 @@ namespace System.IO
         {
             EnsureCachesInitialized(path, continueOnError);
             if (!_exists)
-                return DateTimeOffset.FromFileTime(0);
+                return new DateTimeOffset(DateTime.FromFileTimeUtc(0));
             return UnixTimeToDateTimeOffset(_fileCache.ATime, _fileCache.ATimeNsec);
         }
 
@@ -283,7 +283,7 @@ namespace System.IO
         {
             EnsureCachesInitialized(path, continueOnError);
             if (!_exists)
-                return DateTimeOffset.FromFileTime(0);
+                return new DateTimeOffset(DateTime.FromFileTimeUtc(0));
             return UnixTimeToDateTimeOffset(_fileCache.MTime, _fileCache.MTimeNsec);
         }
 
@@ -291,7 +291,7 @@ namespace System.IO
 
         private DateTimeOffset UnixTimeToDateTimeOffset(long seconds, long nanoseconds)
         {
-            return DateTimeOffset.FromUnixTimeSeconds(seconds).AddTicks(nanoseconds / NanosecondsPerTick).ToLocalTime();
+            return DateTimeOffset.FromUnixTimeSeconds(seconds).AddTicks(nanoseconds / NanosecondsPerTick);
         }
 
         private unsafe void SetAccessOrWriteTime(string path, DateTimeOffset time, bool isAccessTime)
@@ -402,21 +402,18 @@ namespace System.IO
         // Throws if any of the caches has an error number saved in it
         private void ThrowOnCacheInitializationError(ReadOnlySpan<char> path)
         {
-            int errno = 0;
-
+            int errno;
             // Lstat should always be initialized by Refresh
             if (_initializedFileCache != 0)
             {
                 errno = _initializedFileCache;
+                InvalidateCaches();
+                throw Interop.GetExceptionForIoErrno(new Interop.ErrorInfo(errno), new string(path));
             }
             // Stat is optionally initialized when Refresh detects object is a symbolic link
             else if (_initializedSymlinkCache != 0 && _initializedSymlinkCache != -1)
             {
                 errno = _initializedSymlinkCache;
-            }
-
-            if (errno != 0)
-            {
                 InvalidateCaches();
                 throw Interop.GetExceptionForIoErrno(new Interop.ErrorInfo(errno), new string(path));
             }

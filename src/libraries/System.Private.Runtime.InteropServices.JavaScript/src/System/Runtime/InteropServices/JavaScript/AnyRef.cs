@@ -1,9 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
 using System.Diagnostics;
-using System.Runtime.InteropServices;
 using System.Threading;
 using Microsoft.Win32.SafeHandles;
 
@@ -16,9 +14,6 @@ namespace System.Runtime.InteropServices.JavaScript
         private GCHandle AnyRefHandle;
         public int JSHandle => (int)handle;
 
-        internal AnyRef(int jsHandle, bool ownsHandle) : this((IntPtr)jsHandle, ownsHandle)
-        { }
-
         internal AnyRef(IntPtr jsHandle, bool ownsHandle) : base(ownsHandle)
         {
             SetHandle(jsHandle);
@@ -26,7 +21,7 @@ namespace System.Runtime.InteropServices.JavaScript
             InFlight = null;
             InFlightCounter = 0;
         }
-        internal int Int32Handle => (int)(IntPtr)AnyRefHandle;
+        internal int GCHandleValue => (int)(IntPtr)AnyRefHandle;
 
         internal void AddInFlight()
         {

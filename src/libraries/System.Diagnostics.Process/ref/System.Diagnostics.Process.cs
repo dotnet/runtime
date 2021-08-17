@@ -43,8 +43,8 @@ namespace System.Diagnostics
         public System.Diagnostics.ProcessModule? MainModule { get { throw null; } }
         public System.IntPtr MainWindowHandle { get { throw null; } }
         public string MainWindowTitle { get { throw null; } }
-        public System.IntPtr MaxWorkingSet { [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("ios"), System.Runtime.Versioning.UnsupportedOSPlatformAttribute("maccatalyst"), System.Runtime.Versioning.UnsupportedOSPlatformAttribute("tvos")] get { throw null; } [System.Runtime.Versioning.SupportedOSPlatformAttribute("freebsd"), System.Runtime.Versioning.SupportedOSPlatformAttribute("macos"), System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")] set { } }
-        public System.IntPtr MinWorkingSet { [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("ios"), System.Runtime.Versioning.UnsupportedOSPlatformAttribute("maccatalyst"), System.Runtime.Versioning.UnsupportedOSPlatformAttribute("tvos")] get { throw null; } [System.Runtime.Versioning.SupportedOSPlatformAttribute("freebsd"), System.Runtime.Versioning.SupportedOSPlatformAttribute("macos"), System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")] set { } }
+        public System.IntPtr MaxWorkingSet { [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("ios"), System.Runtime.Versioning.UnsupportedOSPlatformAttribute("tvos")] get { throw null; } [System.Runtime.Versioning.SupportedOSPlatformAttribute("freebsd"), System.Runtime.Versioning.SupportedOSPlatformAttribute("macos"), System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")] set { } }
+        public System.IntPtr MinWorkingSet { [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("ios"), System.Runtime.Versioning.UnsupportedOSPlatformAttribute("tvos")] get { throw null; } [System.Runtime.Versioning.SupportedOSPlatformAttribute("freebsd"), System.Runtime.Versioning.SupportedOSPlatformAttribute("macos"), System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")] set { } }
         public System.Diagnostics.ProcessModuleCollection Modules { get { throw null; } }
         [System.ObsoleteAttribute("Process.NonpagedSystemMemorySize has been deprecated because the type of the property can't represent all valid results. Use System.Diagnostics.Process.NonpagedSystemMemorySize64 instead.")]
         public int NonpagedSystemMemorySize { get { throw null; } }
@@ -71,6 +71,8 @@ namespace System.Diagnostics
         public long PrivateMemorySize64 { get { throw null; } }
         public System.TimeSpan PrivilegedProcessorTime { get { throw null; } }
         public string ProcessName { get { throw null; } }
+        [System.Runtime.Versioning.SupportedOSPlatform("windows")]
+        [System.Runtime.Versioning.SupportedOSPlatform("linux")]
         public System.IntPtr ProcessorAffinity { get { throw null; } set { } }
         public bool Responding { get { throw null; } }
         public Microsoft.Win32.SafeHandles.SafeProcessHandle SafeHandle { get { throw null; } }
@@ -109,34 +111,27 @@ namespace System.Diagnostics
         public static System.Diagnostics.Process[] GetProcessesByName(string? processName) { throw null; }
         public static System.Diagnostics.Process[] GetProcessesByName(string? processName, string machineName) { throw null; }
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("ios")]
-        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("maccatalyst")]
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("tvos")]
         public void Kill() { }
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("ios")]
-        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("maccatalyst")]
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("tvos")]
         public void Kill(bool entireProcessTree) { }
         public static void LeaveDebugMode() { }
         protected void OnExited() { }
         public void Refresh() { }
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("ios")]
-        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("maccatalyst")]
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("tvos")]
         public bool Start() { throw null; }
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("ios")]
-        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("maccatalyst")]
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("tvos")]
         public static System.Diagnostics.Process? Start(System.Diagnostics.ProcessStartInfo startInfo) { throw null; }
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("ios")]
-        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("maccatalyst")]
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("tvos")]
         public static System.Diagnostics.Process Start(string fileName) { throw null; }
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("ios")]
-        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("maccatalyst")]
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("tvos")]
         public static System.Diagnostics.Process Start(string fileName, string arguments) { throw null; }
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("ios")]
-        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("maccatalyst")]
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("tvos")]
         public static System.Diagnostics.Process Start(string fileName, System.Collections.Generic.IEnumerable<string> arguments) { throw null; }
         [System.CLSCompliantAttribute(false)]
@@ -237,11 +232,13 @@ namespace System.Diagnostics
         public int Id { get { throw null; } }
         public int IdealProcessor { set { } }
         public bool PriorityBoostEnabled { get { throw null; } set { } }
-        public System.Diagnostics.ThreadPriorityLevel PriorityLevel { get { throw null; } [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")] set { } }
+        public System.Diagnostics.ThreadPriorityLevel PriorityLevel { [System.Runtime.Versioning.SupportedOSPlatform("windows")] [System.Runtime.Versioning.SupportedOSPlatform("linux")] [System.Runtime.Versioning.SupportedOSPlatform("freebsd")] get { throw null; } [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")] set { } }
         public System.TimeSpan PrivilegedProcessorTime { get { throw null; } }
         [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
         public System.IntPtr ProcessorAffinity { set { } }
         public System.IntPtr StartAddress { get { throw null; } }
+        [System.Runtime.Versioning.SupportedOSPlatform("windows")]
+        [System.Runtime.Versioning.SupportedOSPlatform("linux")]
         public System.DateTime StartTime { get { throw null; } }
         public System.Diagnostics.ThreadState ThreadState { get { throw null; } }
         public System.TimeSpan TotalProcessorTime { get { throw null; } }
