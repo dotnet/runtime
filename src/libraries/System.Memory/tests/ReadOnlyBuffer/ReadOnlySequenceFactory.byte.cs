@@ -4,6 +4,8 @@
 using System.Buffers;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 
 namespace System.Memory.Tests
 {
@@ -11,6 +13,7 @@ namespace System.Memory.Tests
     {
         public static ReadOnlySequenceFactory<T> ArrayFactory { get; } = new ArrayTestSequenceFactory();
         public static ReadOnlySequenceFactory<T> MemoryFactory { get; } = new MemoryTestSequenceFactory();
+        public static ReadOnlySequenceFactory<T> MemoryManagerFactory { get; } = new MemoryManagerTestSequenceFactory();
         public static ReadOnlySequenceFactory<T> SingleSegmentFactory { get; } = new SingleSegmentTestSequenceFactory();
         public static ReadOnlySequenceFactory<T> SegmentPerItemFactory { get; } = new BytePerSegmentTestSequenceFactory();
         public static ReadOnlySequenceFactory<T> SplitInThree { get; } = new SegmentsTestSequenceFactory(3);
@@ -109,6 +112,49 @@ namespace System.Memory.Tests
                 }
 
                 return CreateSegments(segments.ToArray());
+            }
+        }
+
+        internal class MemoryManagerTestSequenceFactory : ReadOnlySequenceFactory<T>
+        {
+            public override ReadOnlySequence<T> CreateOfSize(int size)
+            {
+#if DEBUG
+                return new ReadOnlySequence<T>(new CustomMemoryManager(size + 1).Memory.Slice(1));
+#else
+                return new ReadOnlySequence<T>(new CustomMemoryManager(size).Memory);
+#endif
+            }
+
+            public override ReadOnlySequence<T> CreateWithContent(T[] data)
+            {
+                return new ReadOnlySequence<T>(new CustomMemoryManager(data).Memory);
+            }
+
+            private unsafe class CustomMemoryManager : MemoryManager<T>
+            {
+                private readonly T[] _buffer;
+
+                public CustomMemoryManager(int size) => _buffer = new T[size];
+
+                public CustomMemoryManager(T[] content) => _buffer = content;
+
+                public unsafe override Span<T> GetSpan() => _buffer;
+
+                public override unsafe MemoryHandle Pin(int elementIndex = 0)
+                {
+                    if ((uint)elementIndex > (uint)_buffer.Length)
+                    {
+                        throw new ArgumentOutOfRangeException(nameof(elementIndex));
+                    }
+
+                    var handle = GCHandle.Alloc(_buffer, GCHandleType.Pinned);
+                    return new MemoryHandle(Unsafe.Add<T>((void*)handle.AddrOfPinnedObject(), elementIndex), handle, this);
+                }
+
+                public override void Unpin() { }
+
+                protected override void Dispose(bool disposing) { }
             }
         }
 
