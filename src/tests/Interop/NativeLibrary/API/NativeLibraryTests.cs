@@ -376,7 +376,7 @@ public class NativeLibraryTest
         return Run(() => {
             IntPtr moduleHandle = NativeLibrary.GetEntryPointModuleHandle();
             // Get a well-known export name from corerun to validate that we have a valid handle.
-            bool success = NativeLibrary.TryGetExport(moduleHandle, "GetCurrentClrDetails", out address);
+            bool success = NativeLibrary.TryGetExport(moduleHandle, "GetCurrentClrDetails", out IntPtr address);
             if (!success)
                 return TestResult.ReturnFailure;
             if (address == IntPtr.Zero)

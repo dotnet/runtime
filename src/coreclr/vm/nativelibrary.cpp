@@ -181,6 +181,28 @@ namespace
         return hmod;
     }
 
+    // Load the library directly and return the raw system handle
+    NATIVE_LIBRARY_HANDLE GetEntryPointModuleHandleHelper(LoadLibErrorTracker *pErrorTracker )
+    {
+        STANDARD_VM_CONTRACT;
+
+        NATIVE_LIBRARY_HANDLE hmod = NULL;
+
+#ifndef TARGET_UNIX
+        hmod = GetModuleHandleW(NULL);
+
+#else // !TARGET_UNIX
+        hmod = PAL_LoadLibraryDirect(NULL);
+#endif // !TARGET_UNIX
+
+        if (hmod == NULL)
+        {
+            pErrorTracker->TrackErrorCode();
+        }
+
+        return hmod;
+    }
+
     // DllImportSearchPathFlags is a special enumeration, whose values are tied closely with LoadLibrary flags.
     // There is no "default" value DllImportSearchPathFlags. In the absence of DllImportSearchPath attribute,
     // CoreCLR's LoadLibrary implementation uses the following defaults.
@@ -902,6 +924,26 @@ NATIVE_LIBRARY_HANDLE NativeLibrary::LoadLibraryFromMethodDesc(NDirectMethodDesc
             COMPlusThrow(kEntryPointNotFoundException, IDS_EE_NDIRECT_GETPROCADDRESS_NONAME);
 
         StackSString ssLibName(SString::Utf8, pMD->GetLibName());
+        errorTracker.Throw(ssLibName);
+    }
+
+    RETURN hmod;
+}
+
+NATIVE_LIBRARY_HANDLE NativeLibrary::GetEntryPointModuleHandle()
+{
+    CONTRACT(NATIVE_LIBRARY_HANDLE)
+    {
+        STANDARD_VM_CHECK;
+        POSTCONDITION(RETVAL != NULL);
+    }
+    CONTRACT_END;
+
+    LoadLibErrorTracker errorTracker;
+    NATIVE_LIBRARY_HANDLE hmod = GetEntryPointModuleHandleHelper(&errorTracker);
+    if (hmod == NULL)
+    {
+        StackSString ssLibName(SString::Utf8, "Entry Point Handle");
         errorTracker.Throw(ssLibName);
     }
 

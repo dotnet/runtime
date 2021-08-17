@@ -76,17 +76,13 @@ INT_PTR QCALLTYPE NativeLibraryNative::GetEntryPointModuleHandle()
 {
     QCALL_CONTRACT;
 
-    INT_PTR handle = NULL;
+    NATIVE_LIBRARY_HANDLE handle = NULL;
 
     BEGIN_QCALL;
 
-#if TARGET_WINDOWS
-    handle = GetModuleHandle(NULL);
-#else
-    handle = dlopen(NULL);
-#endif
+    handle = NativeLibrary::GetEntryPointModuleHandle();
 
     END_QCALL;
 
-    return handle;
+    return reinterpret_cast<INT_PTR>(handle);
 }

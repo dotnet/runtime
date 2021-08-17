@@ -17,6 +17,8 @@ public:
     static INT_PTR GetNativeLibraryExport(NATIVE_LIBRARY_HANDLE handle, LPCWSTR symbolName, BOOL throwOnError);
 
     static NATIVE_LIBRARY_HANDLE LoadLibraryFromMethodDesc(NDirectMethodDesc *pMD);
+
+    static NATIVE_LIBRARY_HANDLE GetEntryPointModuleHandle();
 };
 
 #endif // _NATIVELIBRARY_H_
