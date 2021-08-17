@@ -317,7 +317,7 @@ namespace System.Diagnostics
                                 Debug.Assert(actualSize > 0 && actualSize <= bufferSize, $"Actual size reported by NtQuerySystemInformation was {actualSize} for a buffer of size={bufferSize}.");
                                 MostRecentSize = GetNewBufferSize(bufferSize, (int)actualSize);
                                 // Parse the data block to get process information
-                                return GetProcessInfos(buffer.AsSpan(firstAlignedElementIndex), processIdFilter);
+                                return GetProcessInfos(buffer.AsSpan(firstAlignedElementIndex, (int)actualSize), processIdFilter);
                             }
 
                             bufferSize = GetNewBufferSize(bufferSize, (int)actualSize);
