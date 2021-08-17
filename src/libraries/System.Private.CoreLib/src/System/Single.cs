@@ -189,11 +189,7 @@ namespace System
             if (m_value < value) return -1;
             if (m_value > value) return 1;
             if (m_value == value) return 0;
-            return CompareToWithAtLeastOneNaN(value);
-        }
 
-        private int CompareToWithAtLeastOneNaN(float value)
-        {
             // At least one of the values is NaN.
             if (IsNaN(m_value))
                 return IsNaN(value) ? 0 : -1;
