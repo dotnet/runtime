@@ -5,7 +5,6 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
 using System.Numerics.Hashing;
 using System.Runtime.CompilerServices;
 using System.Text;
@@ -15,7 +14,7 @@ namespace Microsoft.Extensions.Primitives
     /// <summary>
     /// Represents zero/null, one, or many strings in an efficient way.
     /// </summary>
-    public readonly struct StringValues : IList<string?>, IReadOnlyList<string?>, IEquatable<StringValues>, IEquatable<string?>, IEquatable<string?[]>
+    public readonly struct StringValues : IList<string?>, IReadOnlyList<string?>, IEquatable<StringValues>, IEquatable<string?>, IEquatable<string?[]?>
     {
         /// <summary>
         /// A readonly instance of the <see cref="StringValues"/> struct whose value is an empty string array.
@@ -40,7 +39,7 @@ namespace Microsoft.Extensions.Primitives
         /// Initializes a new instance of the <see cref="StringValues"/> structure using the specified array of strings.
         /// </summary>
         /// <param name="values">A string array.</param>
-        public StringValues(string?[] values)
+        public StringValues(string?[]? values)
         {
             _values = values;
         }
@@ -58,7 +57,7 @@ namespace Microsoft.Extensions.Primitives
         /// Defines an implicit conversion of a given string array to a <see cref="StringValues"/>.
         /// </summary>
         /// <param name="values">A string array to implicitly convert.</param>
-        public static implicit operator StringValues(string?[] values)
+        public static implicit operator StringValues(string?[]? values)
         {
             return new StringValues(values);
         }
@@ -602,7 +601,7 @@ namespace Microsoft.Extensions.Primitives
         /// <param name="left">The string array to compare.</param>
         /// <param name="right">The <see cref="StringValues"/> to compare.</param>
         /// <returns><c>true</c> if the value of <paramref name="left"/> is the same as the value of <paramref name="right"/>; otherwise, <c>false</c>.</returns>
-        public static bool Equals(string?[] left, StringValues right) => Equals(new StringValues(left), right);
+        public static bool Equals(string?[]? left, StringValues right) => Equals(new StringValues(left), right);
 
         /// <summary>
         /// Determines whether the specified <see cref="StringValues"/> and string array objects have the same values.
@@ -610,14 +609,14 @@ namespace Microsoft.Extensions.Primitives
         /// <param name="left">The <see cref="StringValues"/> to compare.</param>
         /// <param name="right">The string array to compare.</param>
         /// <returns><c>true</c> if the value of <paramref name="left"/> is the same as the value of <paramref name="right"/>; otherwise, <c>false</c>.</returns>
-        public static bool Equals(StringValues left, string?[] right) => Equals(left, new StringValues(right));
+        public static bool Equals(StringValues left, string?[]? right) => Equals(left, new StringValues(right));
 
         /// <summary>
         /// Determines whether this instance and a specified string array have the same values.
         /// </summary>
         /// <param name="other">The string array to compare to this instance.</param>
         /// <returns><c>true</c> if the value of <paramref name="other"/> is the same as this instance; otherwise, <c>false</c>.</returns>
-        public bool Equals([NotNullWhen(true)] string?[]? other) => other != null && Equals(this, new StringValues(other));
+        public bool Equals(string?[]? other) => Equals(this, new StringValues(other));
 
         /// <inheritdoc cref="Equals(StringValues, string)" />
         public static bool operator ==(StringValues left, string? right) => Equals(left, new StringValues(right));
@@ -642,7 +641,7 @@ namespace Microsoft.Extensions.Primitives
         public static bool operator !=(string left, StringValues right) => !Equals(new StringValues(left), right);
 
         /// <inheritdoc cref="Equals(StringValues, string[])" />
-        public static bool operator ==(StringValues left, string?[] right) => Equals(left, new StringValues(right));
+        public static bool operator ==(StringValues left, string?[]? right) => Equals(left, new StringValues(right));
 
         /// <summary>
         /// Determines whether the specified <see cref="StringValues"/> and string array have different values.
@@ -650,10 +649,10 @@ namespace Microsoft.Extensions.Primitives
         /// <param name="left">The <see cref="StringValues"/> to compare.</param>
         /// <param name="right">The string array to compare.</param>
         /// <returns><c>true</c> if the value of <paramref name="left"/> is different to the value of <paramref name="right"/>; otherwise, <c>false</c>.</returns>
-        public static bool operator !=(StringValues left, string?[] right) => !Equals(left, new StringValues(right));
+        public static bool operator !=(StringValues left, string?[]? right) => !Equals(left, new StringValues(right));
 
         /// <inheritdoc cref="Equals(string[], StringValues)" />
-        public static bool operator ==(string?[] left, StringValues right) => Equals(new StringValues(left), right);
+        public static bool operator ==(string?[]? left, StringValues right) => Equals(new StringValues(left), right);
 
         /// <summary>
         /// Determines whether the specified string array and <see cref="StringValues"/> have different values.
@@ -661,7 +660,7 @@ namespace Microsoft.Extensions.Primitives
         /// <param name="left">The string array to compare.</param>
         /// <param name="right">The <see cref="StringValues"/> to compare.</param>
         /// <returns><c>true</c> if the value of <paramref name="left"/> is different to the value of <paramref name="right"/>; otherwise, <c>false</c>.</returns>
-        public static bool operator !=(string?[] left, StringValues right) => !Equals(new StringValues(left), right);
+        public static bool operator !=(string?[]? left, StringValues right) => !Equals(new StringValues(left), right);
 
         /// <summary>
         /// Determines whether the specified <see cref="StringValues"/> and <see cref="object"/>, which must be a
