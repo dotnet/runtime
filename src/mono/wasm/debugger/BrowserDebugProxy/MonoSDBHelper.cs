@@ -2344,6 +2344,8 @@ namespace Microsoft.WebAssembly.Diagnostics
                 {
                     className = await GetTypeName(sessionId, typeId[i], token);
                     var fields = await GetTypeFields(sessionId, typeId[i], token);
+                    if (getCommandType.HasFlag(GetObjectCommandOptions.ForDebuggerProxyAttribute))
+                        fields = fields.Where(field => field.IsPublic).ToList();
                     JArray objectFields = new JArray();
 
                     var commandParams = new MemoryStream();
@@ -2352,8 +2354,6 @@ namespace Microsoft.WebAssembly.Diagnostics
                     commandParamsWriter.Write(fields.Count);
                     foreach (var field in fields)
                     {
-                        if (getCommandType.HasFlag(GetObjectCommandOptions.ForDebuggerProxyAttribute) && !field.IsPublic)
-                            continue;
                         commandParamsWriter.Write(field.Id);
                     }
 
@@ -2361,8 +2361,6 @@ namespace Microsoft.WebAssembly.Diagnostics
 
                     foreach (var field in fields)
                     {
-                        if (getCommandType.HasFlag(GetObjectCommandOptions.ForDebuggerProxyAttribute) && !field.IsPublic)
-                            continue;
                         long initialPos = retDebuggerCmdReader.BaseStream.Position;
                         int valtype = retDebuggerCmdReader.ReadByte();
                         retDebuggerCmdReader.BaseStream.Position = initialPos;
