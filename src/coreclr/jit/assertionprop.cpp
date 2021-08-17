@@ -122,11 +122,14 @@ bool IntegralRange::Contains(int64_t value) const
             return {LowerBoundForType(toType), UpperBoundForType(toType)};
         }
 
-        // Widening/no-op representation-changing casts never "overflow" under our definition.
-        // These are CAST(u/long <- int), CAST(u/long <- uint), CAST(u/int <- u/int).
-        // Narrowing cases "overflow" when the input does not fit into TYP_INT.
-        // These are CAST(u/int <- u/long) - they are all the same operation.
-        return {SymbolicIntegerValue::IntMin, SymbolicIntegerValue::IntMax};
+        // We choose to say here that representation-changing casts never overflow.
+        // It does not really matter what we do here because representation-changing
+        // non-overflowing casts cannot be deleted from the IR in any case.
+        // CAST(uint/int <- uint/int)     - [INT_MIN..INT_MAX]
+        // CAST(uint/int <- ulong/long)   - [LONG_MIN..LONG_MAX]
+        // CAST(ulong/long <- uint/int)   - [INT_MIN..INT_MAX]
+        // CAST(ulong/long <- ulong/long) - [LONG_MIN..LONG_MAX]
+        return ForType(fromType);
     }
 
     SymbolicIntegerValue lowerBound;
