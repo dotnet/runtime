@@ -11,7 +11,7 @@ namespace System
     internal sealed class NSLogStream : ConsoleStream
     {
         private readonly StringBuilder _buffer = new StringBuilder();
-        private Decoder _decoder;
+        private readonly Decoder _decoder;
 
         public NSLogStream() : base(FileAccess.Write)
         {
@@ -41,12 +41,12 @@ namespace System
                     Span<char> lineSpan = charBuffer.Slice(lineStartIndex, i - lineStartIndex);
                     if (cache.Length > 0)
                     {
-                        printer(cache.Append(lineSpan).ToString());
+                        Print(cache.Append(lineSpan).ToString());
                         cache.Clear();
                     }
                     else
                     {
-                        printer(lineSpan.ToString());
+                        Print(lineSpan.ToString());
                     }
 
                     lineStartIndex = i + 1;
@@ -59,31 +59,13 @@ namespace System
                 cache.Append(charBuffer.Slice(lineStartIndex, charBuffer.Length - lineStartIndex));
             }
 
-            static void printer(string line)
+            static void Print(string line)
             {
                 fixed (char* ptr = line)
                 {
                     Interop.Sys.Log((byte*)ptr, line.Length * 2);
                 }
             }
-        }
-
-        protected override void Dispose(bool disposing)
-        {
-            if (_buffer.Length > 0)
-            {
-                var line = _buffer.ToString();
-                _buffer.Clear();
-                unsafe
-                {
-                    fixed (char* ptr = line)
-                    {
-                        Interop.Sys.Log((byte*)ptr, line.Length * 2);
-                    }
-                }
-            }
-
-            base.Dispose(disposing);
         }
     }
 
