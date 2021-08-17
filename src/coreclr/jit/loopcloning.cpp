@@ -969,7 +969,7 @@ bool Compiler::optDeriveLoopCloningConditions(unsigned loopNum, LoopCloneContext
         {
             // initVar >= 0
             const unsigned initLcl = loop->lpVarInit;
-            if (!genActualTypeIsInt(lvaGetDesc(initLcl)->lvType))
+            if (!genActualTypeIsInt(lvaGetDesc(initLcl)))
             {
                 JITDUMP("> Init var V%02u not compatible with TYP_INT\n", initLcl);
                 return false;
@@ -1000,7 +1000,7 @@ bool Compiler::optDeriveLoopCloningConditions(unsigned loopNum, LoopCloneContext
         else if (loop->lpFlags & LPFLG_VAR_LIMIT)
         {
             const unsigned limitLcl = loop->lpVarLimit();
-            if (!genActualTypeIsInt(lvaGetDesc(limitLcl)->lvType))
+            if (!genActualTypeIsInt(lvaGetDesc(limitLcl)))
             {
                 JITDUMP("> Limit var V%02u not compatible with TYP_INT\n", limitLcl);
                 return false;
