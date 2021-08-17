@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Threading;
 using Xunit;
 
@@ -232,6 +233,12 @@ namespace Microsoft.Extensions.Primitives
             Assert.Equal(1, count);
             Assert.Equal(2, provider.RegistrationCalls);
             Assert.Equal(2, provider.DisposeCalls);
+        }
+
+        [Fact]
+        public void NullTokenDisposeShouldNotThrow()
+        {
+            ChangeToken.OnChange(() => null, () => Debug.Fail("Should never be called")).Dispose();
         }
 
         public class TrackableChangeTokenProvider
