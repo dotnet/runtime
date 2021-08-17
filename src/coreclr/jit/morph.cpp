@@ -62,9 +62,9 @@ GenTree* Compiler::fgMorphIntoHelperCall(GenTree* tree, int helper, GenTreeCall:
     // The helper call ought to be semantically equivalent to the original node, so preserve its VN.
     tree->ChangeOper(GT_CALL, GenTree::PRESERVE_VN);
 
-    GenTreeCall* call = tree->AsCall();
-
+    GenTreeCall* call           = tree->AsCall();
     call->gtCallType            = CT_HELPER;
+    call->gtReturnType          = static_cast<unsigned char>(tree->TypeGet());
     call->gtCallMethHnd         = eeFindHelper(helper);
     call->gtCallThisArg         = nullptr;
     call->gtCallArgs            = args;
