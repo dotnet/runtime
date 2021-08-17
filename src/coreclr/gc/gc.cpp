@@ -3299,7 +3299,7 @@ sorted_table::make_sorted_table ()
     size_t size = 400;
 
     // allocate one more bk to store the older slot address.
-    sorted_table* res = (sorted_table*)new char [sizeof (sorted_table) + (size + 1) * sizeof (bk)];
+    sorted_table* res = (sorted_table*)new (nothrow) char [sizeof (sorted_table) + (size + 1) * sizeof (bk)];
     if (!res)
         return 0;
     res->size = size;
@@ -14973,7 +14973,6 @@ size_t gc_heap::new_allocation_limit (size_t size, size_t physical_limit, int ge
     ptrdiff_t logical_limit = max (new_alloc, (ptrdiff_t)size);
     size_t limit = min (logical_limit, (ptrdiff_t)physical_limit);
     assert (limit == Align (limit, get_alignment_constant (gen_number <= max_generation)));
-    dd_new_allocation (dd) = (new_alloc - limit);
 
     return limit;
 }
@@ -15354,6 +15353,7 @@ BOOL gc_heap::a_fit_free_list_p (int gen_number,
                 // to make sure that we can insert a free object
                 // in adjust_limit will set the limit lower
                 size_t limit = limit_from_size (size, flags, free_list_size, gen_number, align_const);
+                dd_new_allocation (dynamic_data_of (gen_number)) -= limit;
 
                 uint8_t*  remain = (free_list + limit);
                 size_t remain_size = (free_list_size - limit);
@@ -15540,6 +15540,7 @@ BOOL gc_heap::a_fit_free_list_uoh_p (size_t size,
                 // Substract min obj size because limit_from_size adds it. Not needed for LOH
                 size_t limit = limit_from_size (size - Align(min_obj_size, align_const), flags, free_list_size,
                                                 gen_number, align_const);
+                dd_new_allocation (dynamic_data_of (gen_number)) -= limit;
 
 #ifdef FEATURE_LOH_COMPACTION
                 if (loh_pad)
@@ -15644,7 +15645,7 @@ BOOL gc_heap::a_fit_segment_end_p (int gen_number,
 
     end = heap_segment_reserved (seg) - pad;
 
-    if (a_size_fit_p (size, allocated, end, align_const))
+    if ((heap_segment_reserved (seg) != heap_segment_committed (seg)) && (a_size_fit_p (size, allocated, end, align_const)))
     {
         limit = limit_from_size (size,
                                  flags,
@@ -15672,6 +15673,7 @@ BOOL gc_heap::a_fit_segment_end_p (int gen_number,
     goto found_no_fit;
 
 found_fit:
+    dd_new_allocation (dynamic_data_of (gen_number)) -= limit;
 
 #ifdef BACKGROUND_GC
     if (gen_number != 0)
@@ -20536,7 +20538,11 @@ start_no_gc_region_status gc_heap::prepare_for_no_gc_region (uint64_t total_size
     }
 
     int soh_align_const = get_alignment_constant (TRUE);
+#ifdef USE_REGIONS
+    size_t max_soh_allocated = SIZE_T_MAX;
+#else
     size_t max_soh_allocated = soh_segment_size - segment_info_size - eph_gen_starts_size;
+#endif
     size_t size_per_heap = 0;
     const double scale_factor = 1.05;
 
@@ -20783,40 +20789,64 @@ BOOL gc_heap::should_proceed_for_no_gc()
     BOOL no_gc_requested = FALSE;
     BOOL get_new_loh_segments = FALSE;
 
+    gc_heap* hp = nullptr;
     if (current_no_gc_region_info.soh_allocation_size)
     {
+#ifdef USE_REGIONS
 #ifdef MULTIPLE_HEAPS
         for (int i = 0; i < n_heaps; i++)
         {
-            gc_heap* hp = g_heaps[i];
-            if ((size_t)(heap_segment_reserved (hp->ephemeral_heap_segment) - hp->alloc_allocated) < hp->soh_allocation_no_gc)
+            hp = g_heaps[i];
+#else
+        {
+            hp = pGenGCHeap;
+#endif //MULTIPLE_HEAPS
+            if (!hp->extend_soh_for_no_gc())
             {
-                gc_requested = TRUE;
+                soh_full_gc_requested = TRUE;
+#ifdef MULTIPLE_HEAPS
                 break;
+#endif //MULTIPLE_HEAPS
             }
         }
+#else //USE_REGIONS
+#ifdef MULTIPLE_HEAPS
+        for (int i = 0; i < n_heaps; i++)
+        {
+            hp = g_heaps[i];
 #else //MULTIPLE_HEAPS
-        if ((size_t)(heap_segment_reserved (ephemeral_heap_segment) - alloc_allocated) < soh_allocation_no_gc)
-            gc_requested = TRUE;
+        {
+            hp = pGenGCHeap;
 #endif //MULTIPLE_HEAPS
-
+            size_t reserved_space = heap_segment_reserved (hp->ephemeral_heap_segment) - hp->alloc_allocated;
+            if (reserved_space < hp->soh_allocation_no_gc)
+            {
+                gc_requested = TRUE;
+#ifdef MULTIPLE_HEAPS
+                break;
+#endif //MULTIPLE_HEAPS
+            }
+        }
         if (!gc_requested)
         {
 #ifdef MULTIPLE_HEAPS
             for (int i = 0; i < n_heaps; i++)
             {
-                gc_heap* hp = g_heaps[i];
+                hp = g_heaps[i];
+#else //MULTIPLE_HEAPS
+            {
+                hp = pGenGCHeap;
+#endif //MULTIPLE_HEAPS
                 if (!(hp->grow_heap_segment (hp->ephemeral_heap_segment, (hp->alloc_allocated + hp->soh_allocation_no_gc))))
                 {
                     soh_full_gc_requested = TRUE;
+#ifdef MULTIPLE_HEAPS
                     break;
+#endif //MULTIPLE_HEAPS
                 }
             }
-#else //MULTIPLE_HEAPS
-            if (!grow_heap_segment (ephemeral_heap_segment, (alloc_allocated + soh_allocation_no_gc)))
-                soh_full_gc_requested = TRUE;
-#endif //MULTIPLE_HEAPS
         }
+#endif //USE_REGIONS
     }
 
     if (!current_no_gc_region_info.minimal_gc_p && gc_requested)
@@ -20943,12 +20973,45 @@ void gc_heap::update_collection_counts ()
     }
 }
 
+#ifdef USE_REGIONS
+bool gc_heap::extend_soh_for_no_gc()
+{
+    size_t required = soh_allocation_no_gc;
+    heap_segment* region = ephemeral_heap_segment;
+    
+    while (true)
+    {
+        uint8_t* allocated = (region == ephemeral_heap_segment) ? 
+                             alloc_allocated : 
+                             heap_segment_allocated (region);
+        size_t available = heap_segment_reserved (region) - allocated;
+        size_t commit = min (available, required);
+
+        if (grow_heap_segment (region, allocated + commit))
+        {
+            required -= commit;
+            if (required == 0)
+            {
+                break;
+            }
+
+            region = heap_segment_next (region);
+            if ((region == nullptr) && !(region = get_new_region (0)))
+            {
+                break;
+            }
+        }
+        else
+        {
+            break;
+        }
+    }
+
+    return (required == 0);
+}
+#else
 BOOL gc_heap::expand_soh_with_minimal_gc()
 {
-#ifdef USE_REGIONS
-    assert (!"NoGC region mode is not implemented yet for regions");
-    return FALSE;
-#else
     if ((size_t)(heap_segment_reserved (ephemeral_heap_segment) - heap_segment_allocated (ephemeral_heap_segment)) >= soh_allocation_no_gc)
         return TRUE;
 
@@ -21014,8 +21077,8 @@ BOOL gc_heap::expand_soh_with_minimal_gc()
     {
         return FALSE;
     }
-#endif //USE_REGIONS
 }
+#endif //USE_REGIONS
 
 // Only to be done on the thread that calls restart in a join for server GC
 // and reset the oom status per heap.
@@ -21051,11 +21114,15 @@ void gc_heap::allocate_for_no_gc_after_gc()
     {
         if (current_no_gc_region_info.soh_allocation_size != 0)
         {
+#ifdef USE_REGIONS
+            no_gc_oom_p = !extend_soh_for_no_gc();
+#else 
             if (((size_t)(heap_segment_reserved (ephemeral_heap_segment) - heap_segment_allocated (ephemeral_heap_segment)) < soh_allocation_no_gc) ||
                 (!grow_heap_segment (ephemeral_heap_segment, (heap_segment_allocated (ephemeral_heap_segment) + soh_allocation_no_gc))))
             {
                 no_gc_oom_p = true;
             }
+#endif //USE_REGIONS
 
 #ifdef MULTIPLE_HEAPS
             gc_t_join.join(this, gc_join_after_commit_soh_no_gc);
@@ -21270,6 +21337,7 @@ void gc_heap::garbage_collect (int n)
         if (gc_t_join.joined())
 #endif //MULTIPLE_HEAPS
         {
+#ifndef USE_REGIONS
 #ifdef MULTIPLE_HEAPS
             // this is serialized because we need to get a segment
             for (int i = 0; i < n_heaps; i++)
@@ -21281,6 +21349,7 @@ void gc_heap::garbage_collect (int n)
             if (!expand_soh_with_minimal_gc())
                 current_no_gc_region_info.start_status = start_no_gc_no_memory;
 #endif //MULTIPLE_HEAPS
+#endif //!USE_REGIONS
 
             update_collection_counts_for_no_gc();
 
@@ -44920,11 +44989,6 @@ int GCHeap::WaitForFullGCComplete(int millisecondsTimeout)
 
 int GCHeap::StartNoGCRegion(uint64_t totalSize, bool lohSizeKnown, uint64_t lohSize, bool disallowFullBlockingGC)
 {
-#ifdef USE_REGIONS
-    assert (!"not impl!");
-    return -1;
-#endif //USE_REGIONS
-
     NoGCRegionLockHolder lh;
 
     dprintf (1, ("begin no gc called"));
@@ -44943,11 +45007,6 @@ int GCHeap::StartNoGCRegion(uint64_t totalSize, bool lohSizeKnown, uint64_t lohS
 
 int GCHeap::EndNoGCRegion()
 {
-#ifdef USE_REGIONS
-    assert (!"not impl!");
-    return -1;
-#endif //USE_REGIONS
-
     NoGCRegionLockHolder lh;
     return (int)gc_heap::end_no_gc_region();
 }
@@ -46150,25 +46209,32 @@ void PopulateDacVars(GcDacVars *gcDacVars)
 {
 #ifndef DACCESS_COMPILE
 
+#define DEFINE_FIELD(field_name, field_type) offsetof(CLASS_NAME, field_name),
+#define DEFINE_DPTR_FIELD(field_name, field_type) offsetof(CLASS_NAME, field_name),
+#define DEFINE_ARRAY_FIELD(field_name, field_type, array_length) offsetof(CLASS_NAME, field_name),
+#define DEFINE_MISSING_FIELD(field_name) -1,
+
 #ifdef MULTIPLE_HEAPS
     static int gc_heap_field_offsets[] = {
-
-#define DEFINE_FIELD(field_name, field_type) offsetof(gc_heap, field_name),
-#define DEFINE_DPTR_FIELD(field_name, field_type) offsetof(gc_heap, field_name),
-#define DEFINE_ARRAY_FIELD(field_name, field_type, array_length) offsetof(gc_heap, field_name),
-#define DEFINE_MISSING_FIELD -1,
-
-#include "gc_typefields.h"
-
-#undef DEFINE_MISSING_FIELD
-#undef DEFINE_ARRAY_FIELD
-#undef DEFINE_DPTR_FIELD
-#undef DEFINE_FIELD
+#define CLASS_NAME gc_heap
+#include "dac_gcheap_fields.h"
+#undef CLASS_NAME
 
         offsetof(gc_heap, generation_table)
     };
     static_assert(sizeof(gc_heap_field_offsets) == (GENERATION_TABLE_FIELD_INDEX + 1) * sizeof(int), "GENERATION_TABLE_INDEX mismatch");
 #endif //MULTIPLE_HEAPS
+    static int generation_field_offsets[] = {
+
+#define CLASS_NAME generation
+#include "dac_generation_fields.h"
+#undef CLASS_NAME
+
+#undef DEFINE_MISSING_FIELD
+#undef DEFINE_ARRAY_FIELD
+#undef DEFINE_DPTR_FIELD
+#undef DEFINE_FIELD
+    };
 
     assert(gcDacVars != nullptr);
     *gcDacVars = {};
@@ -46177,6 +46243,9 @@ void PopulateDacVars(GcDacVars *gcDacVars)
     // SOS_BREAKING_CHANGE_VERSION in both the runtime and the diagnostics repo
     gcDacVars->major_version_number = 1;
     gcDacVars->minor_version_number = 0;
+#ifdef USE_REGIONS
+    gcDacVars->minor_version_number |= 1;
+#endif //USE_REGIONS
     gcDacVars->built_with_svr = &g_built_with_svr_gc;
     gcDacVars->build_variant = &g_build_variant;
     gcDacVars->gc_structures_invalid_cnt = const_cast<int32_t*>(&GCScan::m_GcStructuresInvalidCnt);
@@ -46193,14 +46262,14 @@ void PopulateDacVars(GcDacVars *gcDacVars)
 #else
     gcDacVars->saved_sweep_ephemeral_seg = reinterpret_cast<dac_heap_segment**>(&gc_heap::saved_sweep_ephemeral_seg);
     gcDacVars->saved_sweep_ephemeral_start = &gc_heap::saved_sweep_ephemeral_start;
-#endif //!USE_REGIONS
+#endif //USE_REGIONS
     gcDacVars->background_saved_lowest_address = &gc_heap::background_saved_lowest_address;
     gcDacVars->background_saved_highest_address = &gc_heap::background_saved_highest_address;
     gcDacVars->alloc_allocated = &gc_heap::alloc_allocated;
     gcDacVars->next_sweep_obj = &gc_heap::next_sweep_obj;
     gcDacVars->oom_info = &gc_heap::oom_info;
     gcDacVars->finalize_queue = reinterpret_cast<dac_finalize_queue**>(&gc_heap::finalize_queue);
-    gcDacVars->generation_table = reinterpret_cast<dac_generation**>(&gc_heap::generation_table);
+    gcDacVars->generation_table = reinterpret_cast<unused_generation**>(&gc_heap::generation_table);
 #ifdef GC_CONFIG_DRIVEN
     gcDacVars->gc_global_mechanisms = reinterpret_cast<size_t**>(&gc_global_mechanisms);
     gcDacVars->interesting_data_per_heap = reinterpret_cast<size_t**>(&gc_heap::interesting_data_per_heap);
@@ -46215,9 +46284,10 @@ void PopulateDacVars(GcDacVars *gcDacVars)
 #endif // HEAP_ANALYZE
 #else
     gcDacVars->n_heaps = &gc_heap::n_heaps;
-    gcDacVars->g_heaps = reinterpret_cast<opaque_gc_heap***>(&gc_heap::g_heaps);
+    gcDacVars->g_heaps = reinterpret_cast<unused_gc_heap***>(&gc_heap::g_heaps);
     gcDacVars->gc_heap_field_offsets = reinterpret_cast<int**>(&gc_heap_field_offsets);
 #endif // MULTIPLE_HEAPS
+    gcDacVars->generation_field_offsets = reinterpret_cast<int**>(&generation_field_offsets);
 #else
     UNREFERENCED_PARAMETER(gcDacVars);
 #endif // DACCESS_COMPILE

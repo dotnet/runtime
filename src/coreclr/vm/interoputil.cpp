@@ -4226,20 +4226,18 @@ void UnmarshalObjectFromInterface(OBJECTREF *ppObjectDest, IUnknown **ppUnkSrc, 
 
     _ASSERTE(!pClassMT || !pClassMT->IsInterface());
 
-    bool fIsInterface = (pItfMT != NULL && pItfMT->IsInterface());
-
     DWORD dwObjFromComIPFlags = ObjFromComIP::FromItfMarshalInfoFlags(dwFlags);
     GetObjectRefFromComIP(
         ppObjectDest,                  // Object
         ppUnkSrc,                      // Interface pointer
         pClassMT,                      // Class type
-        fIsInterface ? pItfMT : NULL,  // Interface type - used to cache the incoming interface pointer
         dwObjFromComIPFlags            // Flags
         );
 
     // Make sure the interface is supported.
     _ASSERTE(!pItfMT || pItfMT->IsInterface() || pItfMT->GetComClassInterfaceType() != clsIfNone);
 
+    bool fIsInterface = (pItfMT != NULL && pItfMT->IsInterface());
     if (fIsInterface)
     {
         // We only verify that the object supports the interface for non-WinRT scenarios because we

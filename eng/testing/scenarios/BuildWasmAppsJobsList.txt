@@ -1,0 +1,14 @@
+BlazorWasmTests
+FlagsChangeRebuildTest
+InvariantGlobalizationTests
+LocalEMSDKTests
+MainWithArgsTests
+NativeBuildTests
+NativeLibraryTests
+NoopNativeRebuildTest
+RebuildTests
+ReferenceNewAssemblyRebuildTest
+SatelliteAssembliesTests
+SimpleSourceChangeRebuildTest
+WasmBuildAppTest
+WorkloadTests

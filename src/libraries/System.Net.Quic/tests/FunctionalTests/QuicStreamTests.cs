@@ -710,6 +710,65 @@ namespace System.Net.Quic.Tests
                 }
             );
         }
+
+        [Fact]
+        public async Task AbortAfterDispose_ProperlyOpenedStream_Success()
+        {
+            byte[] buffer = new byte[1] { 42 };
+            var sem = new SemaphoreSlim(0);
+
+            await RunClientServer(
+                clientFunction: async connection =>
+                {
+                    QuicStream stream = connection.OpenBidirectionalStream();
+                    // Force stream to open on the wire
+                    await stream.WriteAsync(buffer);
+                    await sem.WaitAsync();
+
+                    stream.Dispose();
+
+                    // should not throw ODE on aborting
+                    stream.AbortRead(1234);
+                    stream.AbortWrite(5675);
+                },
+                serverFunction: async connection =>
+                {
+                    await using QuicStream stream = await connection.AcceptStreamAsync();
+                    Assert.Equal(1, await stream.ReadAsync(buffer));
+                    sem.Release();
+
+                    // client will abort both sides, so we will receive the final event
+                    await stream.ShutdownCompleted();
+                }
+            );
+        }
+
+        [Fact]
+        public async Task AbortAfterDispose_StreamCreationFlushedByDispose_Success()
+        {
+            await RunClientServer(
+                clientFunction: connection =>
+                {
+                    QuicStream stream = connection.OpenBidirectionalStream();
+
+                    // dispose will flush stream creation on the wire
+                    stream.Dispose();
+
+                    // should not throw ODE on aborting
+                    stream.AbortRead(1234);
+                    stream.AbortWrite(5675);
+
+                    return Task.CompletedTask;
+                },
+                serverFunction: async connection =>
+                {
+                    await using QuicStream stream = await connection.AcceptStreamAsync();
+
+                    // client will abort both sides, so we will receive the final event
+                    await stream.ShutdownCompleted();
+                }
+            );
+        }
     }
 
     public sealed class QuicStreamTests_MockProvider : QuicStreamTests<MockProviderFactory>
@@ -718,8 +777,13 @@ namespace System.Net.Quic.Tests
     }
 
     [ConditionalClass(typeof(QuicTestBase<MsQuicProviderFactory>), nameof(QuicTestBase<MsQuicProviderFactory>.IsSupported))]
+    [Collection("NoParallelTests")]
     public sealed class QuicStreamTests_MsQuicProvider : QuicStreamTests<MsQuicProviderFactory>
     {
         public QuicStreamTests_MsQuicProvider(ITestOutputHelper output) : base(output) { }
     }
+
+    // Define test collection for tests to avoid all other tests.
+    [CollectionDefinition("NoParallelTests", DisableParallelization = true)]
+    public partial class NoParallelTests { }
 }

@@ -5955,7 +5955,7 @@ bool Compiler::optIsProfitableToHoistableTree(GenTree* tree, unsigned lnum)
     int loopVarCount;
     int varInOutCount;
 
-    if (varTypeIsFloating(tree->TypeGet()))
+    if (varTypeIsFloating(tree))
     {
         hoistedExprCount = pLoopDsc->lpHoistedFPExprCount;
         loopVarCount     = pLoopDsc->lpLoopVarFPCount;

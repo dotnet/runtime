@@ -22,13 +22,13 @@ namespace System.Text.Json
         private const float FlushThreshold = .9f;
 
         /// <summary>
-        /// Convert the provided value to UTF-8 encoded JSON text and write it to the <see cref="System.IO.Stream"/>.
+        /// Converts the provided value to UTF-8 encoded JSON text and write it to the <see cref="System.IO.Stream"/>.
         /// </summary>
         /// <returns>A task that represents the asynchronous write operation.</returns>
         /// <param name="utf8Json">The UTF-8 <see cref="System.IO.Stream"/> to write to.</param>
         /// <param name="value">The value to convert.</param>
         /// <param name="options">Options to control the conversion behavior.</param>
-        /// <param name="cancellationToken">The <see cref="System.Threading.CancellationToken"/> which may be used to cancel the write operation.</param>
+        /// <param name="cancellationToken">The <see cref="System.Threading.CancellationToken"/> that can be used to cancel the write operation.</param>
         /// <exception cref="ArgumentNullException">
         /// <paramref name="utf8Json"/> is <see langword="null"/>.
         /// </exception>
@@ -48,17 +48,13 @@ namespace System.Text.Json
                 throw new ArgumentNullException(nameof(utf8Json));
             }
 
-            return WriteAsync(
-                utf8Json,
-                value,
-                GetRuntimeType(value),
-                options,
-                cancellationToken);
+            Type runtimeType = GetRuntimeType(value);
+            JsonTypeInfo jsonTypeInfo = GetTypeInfo(options, runtimeType);
+            return WriteStreamAsync(utf8Json, value!, jsonTypeInfo, cancellationToken);
         }
 
-
         /// <summary>
-        /// Convert the provided value to UTF-8 encoded JSON text and write it to the <see cref="System.IO.Stream"/>.
+        /// Converts the provided value to UTF-8 encoded JSON text and write it to the <see cref="System.IO.Stream"/>.
         /// </summary>
         /// <param name="utf8Json">The UTF-8 <see cref="System.IO.Stream"/> to write to.</param>
         /// <param name="value">The value to convert.</param>
@@ -81,22 +77,20 @@ namespace System.Text.Json
                 throw new ArgumentNullException(nameof(utf8Json));
             }
 
-            Write(
-                utf8Json,
-                value,
-                GetRuntimeType(value),
-                options);
+            Type runtimeType = GetRuntimeType(value);
+            JsonTypeInfo jsonTypeInfo = GetTypeInfo(options, runtimeType);
+            WriteStream(utf8Json, value!, jsonTypeInfo);
         }
 
         /// <summary>
-        /// Convert the provided value to UTF-8 encoded JSON text and write it to the <see cref="System.IO.Stream"/>.
+        /// Converts the provided value to UTF-8 encoded JSON text and write it to the <see cref="System.IO.Stream"/>.
         /// </summary>
         /// <returns>A task that represents the asynchronous write operation.</returns>
         /// <param name="utf8Json">The UTF-8 <see cref="System.IO.Stream"/> to write to.</param>
         /// <param name="value">The value to convert.</param>
         /// <param name="inputType">The type of the <paramref name="value"/> to convert.</param>
         /// <param name="options">Options to control the conversion behavior.</param>
-        /// <param name="cancellationToken">The <see cref="System.Threading.CancellationToken"/> which may be used to cancel the write operation.</param>
+        /// <param name="cancellationToken">The <see cref="System.Threading.CancellationToken"/> that can be used to cancel the write operation.</param>
         /// <exception cref="ArgumentException">
         /// <paramref name="inputType"/> is not compatible with <paramref name="value"/>.
         /// </exception>
@@ -120,16 +114,13 @@ namespace System.Text.Json
                 throw new ArgumentNullException(nameof(utf8Json));
             }
 
-            return WriteAsync<object?>(
-                utf8Json,
-                value!,
-                GetRuntimeTypeAndValidateInputType(value, inputType),
-                options,
-                cancellationToken);
+            Type runtimeType = GetRuntimeTypeAndValidateInputType(value, inputType);
+            JsonTypeInfo jsonTypeInfo = GetTypeInfo(options, runtimeType);
+            return WriteStreamAsync(utf8Json, value!, jsonTypeInfo, cancellationToken);
         }
 
         /// <summary>
-        /// Convert the provided value to UTF-8 encoded JSON text and write it to the <see cref="System.IO.Stream"/>.
+        /// Converts the provided value to UTF-8 encoded JSON text and write it to the <see cref="System.IO.Stream"/>.
         /// </summary>
         /// <param name="utf8Json">The UTF-8 <see cref="System.IO.Stream"/> to write to.</param>
         /// <param name="value">The value to convert.</param>
@@ -157,21 +148,19 @@ namespace System.Text.Json
                 throw new ArgumentNullException(nameof(utf8Json));
             }
 
-            Write<object?>(
-                utf8Json,
-                value!,
-                GetRuntimeTypeAndValidateInputType(value, inputType),
-                options);
+            Type runtimeType = GetRuntimeTypeAndValidateInputType(value, inputType);
+            JsonTypeInfo jsonTypeInfo = GetTypeInfo(options, runtimeType);
+            WriteStream(utf8Json, value!, jsonTypeInfo);
         }
 
         /// <summary>
-        /// Convert the provided value to UTF-8 encoded JSON text and write it to the <see cref="System.IO.Stream"/>.
+        /// Converts the provided value to UTF-8 encoded JSON text and write it to the <see cref="System.IO.Stream"/>.
         /// </summary>
         /// <returns>A task that represents the asynchronous write operation.</returns>
         /// <param name="utf8Json">The UTF-8 <see cref="System.IO.Stream"/> to write to.</param>
         /// <param name="value">The value to convert.</param>
         /// <param name="jsonTypeInfo">Metadata about the type to convert.</param>
-        /// <param name="cancellationToken">The <see cref="System.Threading.CancellationToken"/> which may be used to cancel the write operation.</param>
+        /// <param name="cancellationToken">The <see cref="System.Threading.CancellationToken"/> that can be used to cancel the write operation.</param>
         /// <exception cref="ArgumentNullException">
         /// <paramref name="utf8Json"/> is <see langword="null"/>.
         /// </exception>
@@ -195,11 +184,11 @@ namespace System.Text.Json
                 throw new ArgumentNullException(nameof(jsonTypeInfo));
             }
 
-            return WriteAsyncCore(utf8Json, value, jsonTypeInfo, cancellationToken);
+            return WriteStreamAsync(utf8Json, value, jsonTypeInfo, cancellationToken);
         }
 
         /// <summary>
-        /// Convert the provided value to UTF-8 encoded JSON text and write it to the <see cref="System.IO.Stream"/>.
+        /// Converts the provided value to UTF-8 encoded JSON text and write it to the <see cref="System.IO.Stream"/>.
         /// </summary>
         /// <param name="utf8Json">The UTF-8 <see cref="System.IO.Stream"/> to write to.</param>
         /// <param name="value">The value to convert.</param>
@@ -226,23 +215,23 @@ namespace System.Text.Json
                 throw new ArgumentNullException(nameof(jsonTypeInfo));
             }
 
-            WriteCore(utf8Json, value, jsonTypeInfo);
+            WriteStream(utf8Json, value, jsonTypeInfo);
         }
 
         /// <summary>
-        /// Convert the provided value to UTF-8 encoded JSON text and write it to the <see cref="System.IO.Stream"/>.
+        /// Converts the provided value to UTF-8 encoded JSON text and write it to the <see cref="System.IO.Stream"/>.
         /// </summary>
         /// <returns>A task that represents the asynchronous write operation.</returns>
         /// <param name="utf8Json">The UTF-8 <see cref="System.IO.Stream"/> to write to.</param>
         /// <param name="value">The value to convert.</param>
         /// <param name="inputType">The type of the <paramref name="value"/> to convert.</param>
         /// <param name="context">A metadata provider for serializable types.</param>
-        /// <param name="cancellationToken">The <see cref="System.Threading.CancellationToken"/> which may be used to cancel the write operation.</param>
+        /// <param name="cancellationToken">The <see cref="System.Threading.CancellationToken"/> that can be used to cancel the write operation.</param>
         /// <exception cref="ArgumentException">
         /// <paramref name="inputType"/> is not compatible with <paramref name="value"/>.
         /// </exception>
         /// <exception cref="ArgumentNullException">
-        /// <paramref name="utf8Json"/>, <paramref name="inputType"/> or <paramref name="context"/> is <see langword="null"/>.
+        /// <paramref name="utf8Json"/>, <paramref name="inputType"/>, or <paramref name="context"/> is <see langword="null"/>.
         /// </exception>
         /// <exception cref="NotSupportedException">
         /// There is no compatible <see cref="System.Text.Json.Serialization.JsonConverter"/>
@@ -266,7 +255,7 @@ namespace System.Text.Json
             }
 
             Type runtimeType = GetRuntimeTypeAndValidateInputType(value, inputType);
-            return WriteAsyncCore(
+            return WriteStreamAsync(
                 utf8Json,
                 value!,
                 GetTypeInfo(context, runtimeType),
@@ -274,7 +263,7 @@ namespace System.Text.Json
         }
 
         /// <summary>
-        /// Convert the provided value to UTF-8 encoded JSON text and write it to the <see cref="System.IO.Stream"/>.
+        /// Converts the provided value to UTF-8 encoded JSON text and write it to the <see cref="System.IO.Stream"/>.
         /// </summary>
         /// <param name="utf8Json">The UTF-8 <see cref="System.IO.Stream"/> to write to.</param>
         /// <param name="value">The value to convert.</param>
@@ -284,7 +273,7 @@ namespace System.Text.Json
         /// <paramref name="inputType"/> is not compatible with <paramref name="value"/>.
         /// </exception>
         /// <exception cref="ArgumentNullException">
-        /// <paramref name="utf8Json"/>, <paramref name="inputType"/> or <paramref name="context"/> is <see langword="null"/>.
+        /// <paramref name="utf8Json"/>, <paramref name="inputType"/>, or <paramref name="context"/> is <see langword="null"/>.
         /// </exception>
         /// <exception cref="NotSupportedException">
         /// There is no compatible <see cref="System.Text.Json.Serialization.JsonConverter"/>
@@ -307,33 +296,10 @@ namespace System.Text.Json
             }
 
             Type runtimeType = GetRuntimeTypeAndValidateInputType(value, inputType);
-            WriteCore(utf8Json, value!, GetTypeInfo(context, runtimeType));
+            WriteStream(utf8Json, value!, GetTypeInfo(context, runtimeType));
         }
 
-        [RequiresUnreferencedCode(SerializationUnreferencedCodeMessage)]
-        private static Task WriteAsync<TValue>(
-            Stream utf8Json,
-            in TValue value,
-            Type runtimeType,
-            JsonSerializerOptions? options,
-            CancellationToken cancellationToken)
-        {
-            JsonTypeInfo jsonTypeInfo = GetTypeInfo(runtimeType, options);
-            return WriteAsyncCore(utf8Json, value!, jsonTypeInfo, cancellationToken);
-        }
-
-        [RequiresUnreferencedCode(SerializationUnreferencedCodeMessage)]
-        private static void Write<TValue>(
-            Stream utf8Json,
-            in TValue value,
-            Type runtimeType,
-            JsonSerializerOptions? options)
-        {
-            JsonTypeInfo jsonTypeInfo = GetTypeInfo(runtimeType, options);
-            WriteCore(utf8Json, value!, jsonTypeInfo);
-        }
-
-        private static async Task WriteAsyncCore<TValue>(
+        private static async Task WriteStreamAsync<TValue>(
             Stream utf8Json,
             TValue value,
             JsonTypeInfo jsonTypeInfo,
@@ -359,28 +325,30 @@ namespace System.Text.Json
                         try
                         {
                             isFinalBlock = WriteCore(converter, writer, value, options, ref state);
+                            await bufferWriter.WriteToStreamAsync(utf8Json, cancellationToken).ConfigureAwait(false);
+                            bufferWriter.Clear();
                         }
                         finally
                         {
-                            if (state.PendingAsyncDisposables?.Count > 0)
+                            // Await any pending resumable converter tasks (currently these can only be IAsyncEnumerator.MoveNextAsync() tasks).
+                            // Note that pending tasks are always awaited, even if an exception has been thrown or the cancellation token has fired.
+                            if (state.PendingTask is not null)
                             {
-                                await state.DisposePendingAsyncDisposables().ConfigureAwait(false);
+                                try
+                                {
+                                    await state.PendingTask.ConfigureAwait(false);
+                                }
+                                catch
+                                {
+                                    // Exceptions should only be propagated by the resuming converter
+                                    // TODO https://github.com/dotnet/runtime/issues/22144
+                                }
                             }
-                        }
 
-                        await bufferWriter.WriteToStreamAsync(utf8Json, cancellationToken).ConfigureAwait(false);
-                        bufferWriter.Clear();
-
-                        if (state.PendingTask is not null)
-                        {
-                            try
+                            // Dispose any pending async disposables (currently these can only be completed IAsyncEnumerators).
+                            if (state.CompletedAsyncDisposables?.Count > 0)
                             {
-                                await state.PendingTask.ConfigureAwait(false);
-                            }
-                            catch
-                            {
-                                // Exceptions will be propagated elsewhere
-                                // TODO https://github.com/dotnet/runtime/issues/22144
+                                await state.DisposeCompletedAsyncDisposables().ConfigureAwait(false);
                             }
                         }
 
@@ -388,13 +356,14 @@ namespace System.Text.Json
                 }
                 catch
                 {
+                    // On exception, walk the WriteStack for any orphaned disposables and try to dispose them.
                     await state.DisposePendingDisposablesOnExceptionAsync().ConfigureAwait(false);
                     throw;
                 }
             }
         }
 
-        private static void WriteCore<TValue>(
+        private static void WriteStream<TValue>(
             Stream utf8Json,
             in TValue value,
             JsonTypeInfo jsonTypeInfo)

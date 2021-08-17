@@ -52,7 +52,7 @@
       <CoreLibNiPdbPath></CoreLibNiPdbPath>
       <CoreLibPerfMapPath></CoreLibPerfMapPath>
       <CoreLibNiPdbPath Condition="$(BuildPdb)">$([MSBuild]::NormalizePath('$(BinDir)', 'PDB', '$(CoreLibAssemblyName).ni.pdb'))</CoreLibNiPdbPath>
-      <CoreLibPerfMapPath Condition="$(BuildPerfMap)">$([MSBuild]::NormalizePath('$(BinDir)', '$(CoreLibAssemblyName).perf.map'))</CoreLibPerfMapPath>
+      <CoreLibPerfMapPath Condition="$(BuildPerfMap)">$([MSBuild]::NormalizePath('$(BinDir)', '$(CoreLibAssemblyName).ni.r2rmap'))</CoreLibPerfMapPath>
       <MergedMibcPath>$([MSBuild]::NormalizePath('$(BinDir)', 'StandardOptimizationData.mibc'))</MergedMibcPath>
     </PropertyGroup>
   </Target>
@@ -97,6 +97,7 @@
       <CrossGenDllCmd>$(CrossGenDllCmd) -o:$(CoreLibOutputPath)</CrossGenDllCmd>
       <CrossGenDllCmd>$(CrossGenDllCmd) -r:$([MSBuild]::NormalizePath('$(BinDir)', 'IL', '*.dll'))</CrossGenDllCmd>
       <CrossGenDllCmd>$(CrossGenDllCmd) --targetarch:$(TargetArchitecture)</CrossGenDllCmd>
+      <CrossGenDllCmd>$(CrossGenDllCmd) --perfmap-format-version:1</CrossGenDllCmd>
       <MibcArgs>@(OptimizationMibcFiles->'-m:$(MergedMibcPath)', ' ')</MibcArgs>
       <CrossGenDllCmd Condition="'$(UsingToolIbcOptimization)' != 'true' and '$(EnableNgenOptimization)' == 'true'">$(CrossGenDllCmd) $(MibcArgs) --embed-pgo-data</CrossGenDllCmd>
       <CrossGenDllCmd>$(CrossGenDllCmd) -O</CrossGenDllCmd>

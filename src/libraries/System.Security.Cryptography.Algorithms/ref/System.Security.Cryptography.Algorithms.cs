@@ -16,7 +16,6 @@ namespace System.Security.Cryptography
     }
     [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
     [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("ios")]
-    [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("maccatalyst")]
     [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("tvos")]
     public sealed partial class AesCcm : System.IDisposable
     {
@@ -33,7 +32,6 @@ namespace System.Security.Cryptography
     }
     [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
     [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("ios")]
-    [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("maccatalyst")]
     [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("tvos")]
     public sealed partial class AesGcm : System.IDisposable
     {
@@ -108,7 +106,6 @@ namespace System.Security.Cryptography
     }
     [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
     [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("ios")]
-    [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("maccatalyst")]
     [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("tvos")]
     public sealed partial class ChaCha20Poly1305 : System.IDisposable
     {
@@ -165,15 +162,12 @@ namespace System.Security.Cryptography
     {
         protected DSA() { }
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("ios")]
-        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("maccatalyst")]
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("tvos")]
         public static new System.Security.Cryptography.DSA Create() { throw null; }
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("ios")]
-        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("maccatalyst")]
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("tvos")]
         public static System.Security.Cryptography.DSA Create(int keySizeInBits) { throw null; }
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("ios")]
-        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("maccatalyst")]
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("tvos")]
         public static System.Security.Cryptography.DSA Create(System.Security.Cryptography.DSAParameters parameters) { throw null; }
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The default algorithm implementations might be removed, use strong type references like 'RSA.Create()' instead.")]
@@ -627,6 +621,7 @@ namespace System.Security.Cryptography
         protected RC2() { }
         public virtual int EffectiveKeySize { get { throw null; } set { } }
         public override int KeySize { get { throw null; } set { } }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("android")]
         public static new System.Security.Cryptography.RC2 Create() { throw null; }
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The default algorithm implementations might be removed, use strong type references like 'RSA.Create()' instead.")]
         public static new System.Security.Cryptography.RC2? Create(string AlgName) { throw null; }
@@ -645,6 +640,7 @@ namespace System.Security.Cryptography
         public System.Security.Cryptography.HashAlgorithmName HashAlgorithm { get { throw null; } }
         public int IterationCount { get { throw null; } set { } }
         public byte[] Salt { get { throw null; } set { } }
+        [System.ObsoleteAttribute("Rfc2898DeriveBytes.CryptDeriveKey is obsolete and is not supported. Use PasswordDeriveBytes.CryptDeriveKey instead.", DiagnosticId = "SYSLIB0033", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         public byte[] CryptDeriveKey(string algname, string alghashname, int keySize, byte[] rgbIV) { throw null; }
         protected override void Dispose(bool disposing) { }
         public override byte[] GetBytes(int cb) { throw null; }

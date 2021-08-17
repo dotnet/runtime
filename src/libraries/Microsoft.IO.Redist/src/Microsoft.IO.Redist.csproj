@@ -30,8 +30,6 @@
              Link="Microsoft\IO\Enumeration\FileSystemEnumerableFactory.cs" />
     <Compile Include="$(CoreLibSharedDir)System\IO\Enumeration\FileSystemEnumerator.cs"
              Link="Microsoft\IO\Enumeration\FileSystemEnumerator.cs" />
-    <Compile Include="$(CoreLibSharedDir)System\IO\Enumeration\FileSystemEnumerator.Win32.cs"
-             Link="Microsoft\IO\Enumeration\FileSystemEnumerator.Win32.cs" />
     <Compile Include="$(CoreLibSharedDir)System\IO\Enumeration\FileSystemEnumerator.Windows.cs"
              Link="Microsoft\IO\Enumeration\FileSystemEnumerator.Windows.cs" />
     <Compile Include="$(CoreLibSharedDir)System\IO\Enumeration\FileSystemName.cs"

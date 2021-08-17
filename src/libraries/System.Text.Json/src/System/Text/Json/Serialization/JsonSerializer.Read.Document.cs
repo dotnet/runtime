@@ -33,7 +33,8 @@ namespace System.Text.Json
                 throw new ArgumentNullException(nameof(document));
             }
 
-            return ReadUsingOptions<TValue>(document, typeof(TValue), options);
+            JsonTypeInfo jsonTypeInfo = GetTypeInfo(options, typeof(TValue));
+            return ReadDocument<TValue>(document, jsonTypeInfo);
         }
 
         /// <summary>
@@ -66,7 +67,8 @@ namespace System.Text.Json
                 throw new ArgumentNullException(nameof(returnType));
             }
 
-            return ReadUsingOptions<object?>(document, returnType, options);
+            JsonTypeInfo jsonTypeInfo = GetTypeInfo(options, returnType);
+            return ReadDocument<object?>(document, jsonTypeInfo);
         }
 
         /// <summary>
@@ -101,7 +103,7 @@ namespace System.Text.Json
                 throw new ArgumentNullException(nameof(jsonTypeInfo));
             }
 
-            return ReadUsingMetadata<TValue>(document, jsonTypeInfo);
+            return ReadDocument<TValue>(document, jsonTypeInfo);
         }
 
         /// <summary>
@@ -157,17 +159,14 @@ namespace System.Text.Json
                 throw new ArgumentNullException(nameof(context));
             }
 
-            return ReadUsingMetadata<object?>(document, GetTypeInfo(context, returnType));
+            JsonTypeInfo jsonTypeInfo = GetTypeInfo(context, returnType);
+            return ReadDocument<object?>(document, jsonTypeInfo);
         }
 
-        [RequiresUnreferencedCode(SerializationUnreferencedCodeMessage)]
-        private static TValue? ReadUsingOptions<TValue>(JsonDocument document, Type returnType, JsonSerializerOptions? options) =>
-            ReadUsingMetadata<TValue>(document, GetTypeInfo(returnType, options));
-
-        private static TValue? ReadUsingMetadata<TValue>(JsonDocument document, JsonTypeInfo jsonTypeInfo)
+        private static TValue? ReadDocument<TValue>(JsonDocument document, JsonTypeInfo jsonTypeInfo)
         {
             ReadOnlySpan<byte> utf8Json = document.GetRootRawValue().Span;
-            return ReadUsingMetadata<TValue>(utf8Json, jsonTypeInfo);
+            return ReadFromSpan<TValue>(utf8Json, jsonTypeInfo);
         }
     }
 }

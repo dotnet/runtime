@@ -4,7 +4,6 @@
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
-using System.Runtime.InteropServices;
 
 namespace System.Numerics
 {
@@ -264,7 +263,7 @@ namespace System.Numerics
             bool isNegative;
             if (byteCount > 0)
             {
-                byte mostSignificantByte = isBigEndian ? value[0] : value[^1];
+                byte mostSignificantByte = isBigEndian ? value[0] : value[byteCount - 1];
                 isNegative = (mostSignificantByte & 0x80) != 0 && !isUnsigned;
 
                 if (mostSignificantByte == 0)
@@ -627,11 +626,11 @@ namespace System.Numerics
             return;
         }
 
-        public static BigInteger Zero { get { return s_bnZeroInt; } }
+        public static BigInteger Zero => s_bnZeroInt;
 
-        public static BigInteger One { get { return s_bnOneInt; } }
+        public static BigInteger One => s_bnOneInt;
 
-        public static BigInteger MinusOne { get { return s_bnMinusOneInt; } }
+        public static BigInteger MinusOne => s_bnMinusOneInt;
 
         public bool IsPowerOfTwo
         {
@@ -640,12 +639,12 @@ namespace System.Numerics
                 AssertValid();
 
                 if (_bits == null)
-                    return BitOperations.IsPow2(_sign);
+                    return (_sign & (_sign - 1)) == 0 && _sign != 0;
 
                 if (_sign != 1)
                     return false;
                 int iu = _bits.Length - 1;
-                if (!BitOperations.IsPow2(_bits[iu]))
+                if ((_bits[iu] & (_bits[iu] - 1)) != 0)
                     return false;
                 while (--iu >= 0)
                 {
@@ -819,12 +818,12 @@ namespace System.Numerics
             if (value._bits == null)
                 return Math.Log(value._sign, baseValue);
 
-            ulong h = value._bits[^1];
-            ulong m = value._bits.Length > 1 ? value._bits[^2] : 0;
-            ulong l = value._bits.Length > 2 ? value._bits[^3] : 0;
+            ulong h = value._bits[value._bits.Length - 1];
+            ulong m = value._bits.Length > 1 ? value._bits[value._bits.Length - 2] : 0;
+            ulong l = value._bits.Length > 2 ? value._bits[value._bits.Length - 3] : 0;
 
             // Measure the exact bit count
-            int c = BitOperations.LeadingZeroCount((uint)h);
+            int c = NumericsHelpers.CbitHighZero((uint)h);
             long b = (long)value._bits.Length * 32 - c;
 
             // Extract most significant bits
@@ -990,17 +989,19 @@ namespace System.Numerics
 
             if (_bits == null)
                 return _sign;
-
-            HashCode hash = default;
-            hash.Add(_sign);
-            hash.AddBytes(MemoryMarshal.AsBytes(_bits.AsSpan()));
-            return hash.ToHashCode();
+            int hash = _sign;
+            for (int iv = _bits.Length; --iv >= 0;)
+                hash = NumericsHelpers.CombineHash(hash, unchecked((int)_bits[iv]));
+            return hash;
         }
 
         public override bool Equals([NotNullWhen(true)] object? obj)
         {
             AssertValid();
-            return obj is BigInteger other && Equals(other);
+
+            if (!(obj is BigInteger))
+                return false;
+            return Equals((BigInteger)obj);
         }
 
         public bool Equals(long other)
@@ -1123,9 +1124,9 @@ namespace System.Numerics
         {
             if (obj == null)
                 return 1;
-            if (obj is not BigInteger bigInt)
+            if (!(obj is BigInteger))
                 throw new ArgumentException(SR.Argument_MustBeBigInt, nameof(obj));
-            return CompareTo(bigInt);
+            return CompareTo((BigInteger)obj);
         }
 
         /// <summary>
@@ -1293,13 +1294,13 @@ namespace System.Numerics
                 // because a bits array of all zeros would represent 0, and this case
                 // would be encoded as _bits = null and _sign = 0.
                 Debug.Assert(bits.Length > 0);
-                Debug.Assert(bits[^1] != 0);
+                Debug.Assert(bits[bits.Length - 1] != 0);
                 while (bits[nonZeroDwordIndex] == 0U)
                 {
                     nonZeroDwordIndex++;
                 }
 
-                highDword = ~bits[^1];
+                highDword = ~bits[bits.Length - 1];
                 if (bits.Length - 1 == nonZeroDwordIndex)
                 {
                     // This will not overflow because highDword is less than or equal to uint.MaxValue - 1.
@@ -1311,7 +1312,7 @@ namespace System.Numerics
             {
                 Debug.Assert(sign == 1);
                 highByte = 0x00;
-                highDword = bits[^1];
+                highDword = bits[bits.Length - 1];
             }
 
             byte msb;
@@ -1469,18 +1470,15 @@ namespace System.Numerics
             }
 
             // Find highest significant byte and ensure high bit is 0 if positive, 1 if negative
-            int msb = dwords.Length - 1;
-            while (msb > 0 && dwords[msb] == highDWord)
-            {
-                msb--;
-            }
+            int msb;
+            for (msb = dwords.Length - 1; msb > 0 && dwords[msb] == highDWord; msb--);
             bool needExtraByte = (dwords[msb] & 0x80000000) != (highDWord & 0x80000000);
 
             int length = msb + 1 + (needExtraByte ? 1 : 0);
             bool copyDwordsToScratch = true;
             if (length <= scratch.Length)
             {
-                scratch = scratch[..length];
+                scratch = scratch.Slice(0, length);
                 copyDwordsToScratch = !dwordsIsScratch;
             }
             else
@@ -1490,7 +1488,7 @@ namespace System.Numerics
 
             if (copyDwordsToScratch)
             {
-                dwords[..(msb + 1)].CopyTo(scratch);
+                dwords.Slice(0, msb + 1).CopyTo(scratch);
             }
 
             if (needExtraByte)
@@ -1820,11 +1818,11 @@ namespace System.Numerics
                     return double.NegativeInfinity;
             }
 
-            ulong h = bits[^1];
-            ulong m = length > 1 ? bits[^2] : 0;
-            ulong l = length > 2 ? bits[^3] : 0;
+            ulong h = bits[length - 1];
+            ulong m = length > 1 ? bits[length - 2] : 0;
+            ulong l = length > 2 ? bits[length - 3] : 0;
 
-            int z = BitOperations.LeadingZeroCount((uint)h);
+            int z = NumericsHelpers.CbitHighZero((uint)h);
 
             int exp = (length - 2) * 32 - z;
             ulong man = (h << 32 + z) | (m << z) | (l >> 32 - z);
@@ -2418,7 +2416,7 @@ namespace System.Numerics
             else
             {
                 bitsArrayLength = bits.Length;
-                highValue = bits[^1];
+                highValue = bits[bitsArrayLength - 1];
             }
 
             long bitLength = bitsArrayLength * 32L - BitOperations.LeadingZeroCount(highValue);
@@ -2495,7 +2493,7 @@ namespace System.Numerics
                 // Wasted space: _bits[0] could have been packed into _sign
                 Debug.Assert(_bits.Length > 1 || _bits[0] >= kuMaskHighBit);
                 // Wasted space: leading zeros could have been truncated
-                Debug.Assert(_bits[^1] != 0);
+                Debug.Assert(_bits[_bits.Length - 1] != 0);
             }
             else
             {

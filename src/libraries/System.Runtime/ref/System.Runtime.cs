@@ -6838,6 +6838,7 @@ namespace System
         public virtual System.Type MakeByRefType() { throw null; }
         public static System.Type MakeGenericMethodParameter(int position) { throw null; }
         public static System.Type MakeGenericSignatureType(System.Type genericTypeDefinition, params System.Type[] typeArguments) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("If some of the generic arguments are annotated (either with DynamicallyAccessedMembersAttribute, or generic constraints), trimming can't validate that the requirements of those annotations are met.")]
         public virtual System.Type MakeGenericType(params System.Type[] typeArguments) { throw null; }
         public virtual System.Type MakePointerType() { throw null; }
         public static bool operator ==(System.Type? left, System.Type? right) { throw null; }
@@ -8860,16 +8861,18 @@ namespace System.Diagnostics
     [System.AttributeUsageAttribute(System.AttributeTargets.Assembly | System.AttributeTargets.Class | System.AttributeTargets.Struct, AllowMultiple=true)]
     public sealed partial class DebuggerVisualizerAttribute : System.Attribute
     {
-        public DebuggerVisualizerAttribute(string visualizerTypeName) { }
-        public DebuggerVisualizerAttribute(string visualizerTypeName, string? visualizerObjectSourceTypeName) { }
-        public DebuggerVisualizerAttribute(string visualizerTypeName, System.Type visualizerObjectSource) { }
-        public DebuggerVisualizerAttribute(System.Type visualizer) { }
-        public DebuggerVisualizerAttribute(System.Type visualizer, string? visualizerObjectSourceTypeName) { }
-        public DebuggerVisualizerAttribute(System.Type visualizer, System.Type visualizerObjectSource) { }
+        public DebuggerVisualizerAttribute([System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.All)] string visualizerTypeName) { }
+        public DebuggerVisualizerAttribute([System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.All)] string visualizerTypeName, [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.All)] string? visualizerObjectSourceTypeName) { }
+        public DebuggerVisualizerAttribute([System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.All)] string visualizerTypeName, [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.All)] System.Type visualizerObjectSource) { }
+        public DebuggerVisualizerAttribute([System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.All)] System.Type visualizer) { }
+        public DebuggerVisualizerAttribute([System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.All)] System.Type visualizer, [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.All)] string? visualizerObjectSourceTypeName) { }
+        public DebuggerVisualizerAttribute([System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.All)] System.Type visualizer, [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.All)] System.Type visualizerObjectSource) { }
         public string? Description { get { throw null; } set { } }
         public System.Type? Target { get { throw null; } set { } }
         public string? TargetTypeName { get { throw null; } set { } }
+        [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.All)]
         public string? VisualizerObjectSourceTypeName { get { throw null; } }
+        [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.All)]
         public string VisualizerTypeName { get { throw null; } }
     }
     [System.AttributeUsage(AttributeTargets.Class | System.AttributeTargets.Method | System.AttributeTargets.Constructor | System.AttributeTargets.Struct, Inherited = false)]
@@ -10204,7 +10207,6 @@ namespace System.IO
         public virtual void Flush(bool flushToDisk) { }
         public override System.Threading.Tasks.Task FlushAsync(System.Threading.CancellationToken cancellationToken) { throw null; }
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("ios")]
-        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("maccatalyst")]
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("macos")]
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("tvos")]
         public virtual void Lock(long position, long length) { }
@@ -10216,7 +10218,6 @@ namespace System.IO
         public override long Seek(long offset, System.IO.SeekOrigin origin) { throw null; }
         public override void SetLength(long value) { }
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("ios")]
-        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("maccatalyst")]
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("macos")]
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("tvos")]
         public virtual void Unlock(long position, long length) { }
@@ -11852,6 +11853,7 @@ namespace System.Reflection
         public override System.Type[] GetGenericArguments() { throw null; }
         public virtual System.Reflection.MethodInfo GetGenericMethodDefinition() { throw null; }
         public override int GetHashCode() { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("If some of the generic arguments are annotated (either with DynamicallyAccessedMembersAttribute, or generic constraints), trimming can't validate that the requirements of those annotations are met.")]
         public virtual System.Reflection.MethodInfo MakeGenericMethod(params System.Type[] typeArguments) { throw null; }
         public static bool operator ==(System.Reflection.MethodInfo? left, System.Reflection.MethodInfo? right) { throw null; }
         public static bool operator !=(System.Reflection.MethodInfo? left, System.Reflection.MethodInfo? right) { throw null; }
@@ -13047,6 +13049,7 @@ namespace System.Runtime.CompilerServices
         public static void PrepareMethod(System.RuntimeMethodHandle method, System.RuntimeTypeHandle[]? instantiation) { }
         [System.ObsoleteAttribute("The Constrained Execution Region (CER) feature is not supported.", DiagnosticId = "SYSLIB0004", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         public static void ProbeForSufficientStack() { }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Trimmer can't guarantee existence of class constructor")]
         public static void RunClassConstructor(System.RuntimeTypeHandle type) { }
         public static void RunModuleConstructor(System.ModuleHandle module) { }
         public static bool TryEnsureSufficientExecutionStack() { throw null; }
@@ -13612,6 +13615,9 @@ namespace System.Runtime.Versioning
     public sealed partial class RequiresPreviewFeaturesAttribute : System.Attribute
     {
         public RequiresPreviewFeaturesAttribute() { }
+        public RequiresPreviewFeaturesAttribute(string? message) { }
+        public string? Message { get { throw null; } }
+        public string? Url { get { throw null; } set { } }
     }
     [System.AttributeUsageAttribute(System.AttributeTargets.Constructor | System.AttributeTargets.Method | System.AttributeTargets.Property, Inherited=false)]
     [System.Diagnostics.ConditionalAttribute("RESOURCE_ANNOTATION_WORK")]

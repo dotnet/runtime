@@ -425,7 +425,7 @@ namespace System.Net.Http
                 Done
             }
 
-            public override bool NeedsDrain => (_connection != null);
+            public override bool NeedsDrain => CanReadFromConnection;
 
             public override async ValueTask<bool> DrainAsync(int maxDrainBytes)
             {

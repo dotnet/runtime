@@ -851,12 +851,6 @@ public:
 #endif //FREE_USAGE_STATS
 };
 
-static_assert(offsetof(dac_generation, allocation_context) == offsetof(generation, allocation_context), "DAC generation offset mismatch");
-static_assert(offsetof(dac_generation, start_segment) == offsetof(generation, start_segment), "DAC generation offset mismatch");
-#ifndef USE_REGIONS
-static_assert(offsetof(dac_generation, allocation_start) == offsetof(generation, allocation_start), "DAC generation offset mismatch");
-#endif //!USE_REGIONS
-
 // static data remains the same after it's initialized.
 // It's per generation.
 // TODO: for gen_time_tuning, we should put the multipliers in static data.
@@ -1535,8 +1529,10 @@ public:
     void get_and_reset_loh_alloc_info();
 #endif //BGC_SERVO_TUNING
 
+#ifndef USE_REGIONS
     PER_HEAP
     BOOL expand_soh_with_minimal_gc();
+#endif //!USE_REGIONS
 
     // EE is always suspended when this method is called.
     // returning FALSE means we actually didn't do a GC. This happens
@@ -1703,6 +1699,11 @@ protected:
 
     PER_HEAP
     void allocate_for_no_gc_after_gc();
+
+#ifdef USE_REGIONS
+    PER_HEAP
+    bool extend_soh_for_no_gc();
+#endif //USE_REGIONS
 
     PER_HEAP
     void set_loh_allocations_for_no_gc();

@@ -229,7 +229,7 @@ namespace System.Text.Json
         }
 
         /// <summary>
-        ///   Parse text representing a single JSON value into a JsonDocument.
+        ///   Parses text representing a single JSON value into a JsonDocument.
         /// </summary>
         /// <remarks>
         ///   The <see cref="ReadOnlyMemory{T}"/> value may be used for the entire lifetime of the
@@ -298,7 +298,7 @@ namespace System.Text.Json
         }
 
         /// <summary>
-        ///   Parse text representing a single JSON value into a JsonDocument.
+        ///   Parses text representing a single JSON value into a JsonDocument.
         /// </summary>
         /// <param name="json">JSON text to parse.</param>
         /// <param name="options">Options to control the reader behavior during parsing.</param>
@@ -340,7 +340,7 @@ namespace System.Text.Json
         ///   </para>
         ///
         ///   <para>
-        ///     Upon completion of this method <paramref name="reader"/> will be positioned at the
+        ///     Upon completion of this method, <paramref name="reader"/> will be positioned at the
         ///     final token in the JSON value.  If an exception is thrown, or <see langword="false"/>
         ///     is returned, the reader is reset to the state it was in when the method was called.
         ///   </para>
@@ -380,8 +380,8 @@ namespace System.Text.Json
         ///   </para>
         ///
         ///   <para>
-        ///     Upon completion of this method <paramref name="reader"/> will be positioned at the
-        ///     final token in the JSON value.  If an exception is thrown the reader is reset to
+        ///     Upon completion of this method, <paramref name="reader"/> will be positioned at the
+        ///     final token in the JSON value. If an exception is thrown, the reader is reset to
         ///     the state it was in when the method was called.
         ///   </para>
         ///

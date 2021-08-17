@@ -359,7 +359,7 @@ void Compiler::fgComputeEnterBlocksSet()
 // are never considered unreachable.
 //
 // Return Value:
-//    Return true if any unreachable blocks were removed.
+//    Return true if changes were made that may cause additional blocks to be removable.
 //
 // Assumptions:
 //    The reachability sets must be computed and valid.
@@ -376,6 +376,7 @@ bool Compiler::fgRemoveUnreachableBlocks()
 
     bool hasLoops             = false;
     bool hasUnreachableBlocks = false;
+    bool changed              = false;
 
     /* Record unreachable blocks */
     for (BasicBlock* const block : Blocks())
@@ -419,6 +420,9 @@ bool Compiler::fgRemoveUnreachableBlocks()
             /* Unmark the block as removed, */
             /* clear BBF_INTERNAL as well and set BBJ_IMPORTED */
 
+            // The successors may be unreachable after this change.
+            changed |= block->NumSucc() > 0;
+
             block->bbFlags &= ~(BBF_REMOVED | BBF_INTERNAL);
             block->bbFlags |= BBF_IMPORTED;
             block->bbJumpKind = BBJ_THROW;
@@ -438,6 +442,7 @@ bool Compiler::fgRemoveUnreachableBlocks()
         {
             /* We have to call fgRemoveBlock next */
             hasUnreachableBlocks = true;
+            changed              = true;
         }
         continue;
 
@@ -498,7 +503,7 @@ bool Compiler::fgRemoveUnreachableBlocks()
         }
     }
 
-    return hasUnreachableBlocks;
+    return changed;
 }
 
 //------------------------------------------------------------------------

@@ -13,7 +13,6 @@ namespace System.Runtime.Loader
     [UnsupportedOSPlatform("android")]
     [UnsupportedOSPlatform("browser")]
     [UnsupportedOSPlatform("ios")]
-    [UnsupportedOSPlatform("maccatalyst")]
     [UnsupportedOSPlatform("tvos")]
     public sealed class AssemblyDependencyResolver
     {

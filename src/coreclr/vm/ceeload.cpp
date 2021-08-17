@@ -71,7 +71,6 @@
 #include "../md/compiler/custattr.h"
 #include "typekey.h"
 #include "peimagelayout.inl"
-#include "ildbsymlib.h"
 
 #if defined(PROFILING_SUPPORTED)
 #include "profilermetadataemitvalidator.h"
@@ -205,7 +204,7 @@ BOOL Module::SetTransientFlagInterlocked(DWORD dwFlag)
     }
 }
 
-#if PROFILING_SUPPORTED
+#if defined(PROFILING_SUPPORTED) || defined(EnC_SUPPORTED)
 void Module::UpdateNewlyAddedTypes()
 {
     CONTRACTL
@@ -263,7 +262,9 @@ void Module::UpdateNewlyAddedTypes()
     m_dwExportedTypeCount = countExportedTypesAfterProfilerUpdate;
     m_dwCustomAttributeCount = countCustomAttributeCount;
 }
+#endif // PROFILING_SUPPORTED || EnC_SUPPORTED
 
+#if PROFILING_SUPPORTED
 void Module::NotifyProfilerLoadFinished(HRESULT hr)
 {
     CONTRACTL
@@ -413,7 +414,6 @@ Module::Module(Assembly *pAssembly, mdFile moduleRef, PEFile *file)
     {
         // Memory allocated on LoaderHeap is zero-filled. Spot-check it here.
         _ASSERTE(m_pBinder == NULL);
-        _ASSERTE(m_symbolFormat == eSymbolFormatNone);
     }
 
     file->AddRef();
@@ -1181,12 +1181,12 @@ void Module::ApplyMetaData()
     HRESULT hr = S_OK;
     ULONG ulCount;
 
-#if PROFILING_SUPPORTED
+#if defined(PROFILING_SUPPORTED) || defined(EnC_SUPPORTED)
     if (!IsResource())
     {
         UpdateNewlyAddedTypes();
     }
-#endif // PROFILING_SUPPORTED
+#endif // PROFILING_SUPPORTED || EnC_SUPPORTED
 
     // Ensure for TypeRef
     ulCount = GetMDImport()->GetCountWithTokenKind(mdtTypeRef) + 1;
@@ -3425,35 +3425,25 @@ ISymUnmanagedReader *Module::GetISymUnmanagedReader(void)
                             "reachable or needs to be reimplemented for CoreCLR!");
         }
 
-        if (this->GetInMemorySymbolStreamFormat() == eSymbolFormatILDB)
+        // We're going to be working with Windows PDB format symbols. Attempt to CoCreate the symbol binder.
+        // CoreCLR supports not having a symbol reader installed, so CoCreate searches the PATH env var
+        // and then tries coreclr dll location.
+        // On desktop, the framework installer is supposed to install diasymreader.dll as well
+        // and so this shouldn't happen.
+        hr = FakeCoCreateInstanceEx(CLSID_CorSymBinder_SxS, NATIVE_SYMBOL_READER_DLL, IID_ISymUnmanagedBinder, (void**)&pBinder, NULL);
+        if (FAILED(hr))
         {
-            // We've got in-memory ILDB symbols, create the ILDB symbol binder
-            // Note that in this case, we must be very careful not to use diasymreader.dll
-            // at all - we don't trust it, and shouldn't run any code in it
-            IfFailThrow(IldbSymbolsCreateInstance(CLSID_CorSymBinder_SxS, IID_ISymUnmanagedBinder, (void**)&pBinder));
-        }
-        else
-        {
-            // We're going to be working with Windows PDB format symbols. Attempt to CoCreate the symbol binder.
-            // CoreCLR supports not having a symbol reader installed, so CoCreate searches the PATH env var
-            // and then tries coreclr dll location.
-            // On desktop, the framework installer is supposed to install diasymreader.dll as well
-            // and so this shouldn't happen.
-            hr = FakeCoCreateInstanceEx(CLSID_CorSymBinder_SxS, NATIVE_SYMBOL_READER_DLL, IID_ISymUnmanagedBinder, (void**)&pBinder, NULL);
+            PathString symbolReaderPath;
+            hr = GetClrModuleDirectory(symbolReaderPath);
             if (FAILED(hr))
             {
-                PathString symbolReaderPath;
-                hr = GetClrModuleDirectory(symbolReaderPath);
-                if (FAILED(hr))
-                {
-                    RETURN (NULL);
-                }
-                symbolReaderPath.Append(NATIVE_SYMBOL_READER_DLL);
-                hr = FakeCoCreateInstanceEx(CLSID_CorSymBinder_SxS, symbolReaderPath.GetUnicode(), IID_ISymUnmanagedBinder, (void**)&pBinder, NULL);
-                if (FAILED(hr))
-                {
-                    RETURN (NULL);
-                }
+                RETURN (NULL);
+            }
+            symbolReaderPath.Append(NATIVE_SYMBOL_READER_DLL);
+            hr = FakeCoCreateInstanceEx(CLSID_CorSymBinder_SxS, symbolReaderPath.GetUnicode(), IID_ISymUnmanagedBinder, (void**)&pBinder, NULL);
+            if (FAILED(hr))
+            {
+                RETURN (NULL);
             }
         }
 
@@ -3547,14 +3537,6 @@ BOOL Module::IsSymbolReadingEnabled()
     }
     CONTRACTL_END;
 
-    // If the module has symbols in-memory (eg. RefEmit) that are in ILDB
-    // format, then there isn't any reason not to supply them.  The reader
-    // code is always available, and we trust it's security.
-    if (this->GetInMemorySymbolStreamFormat() == eSymbolFormatILDB)
-    {
-        return TRUE;
-    }
-
 #ifdef DEBUGGING_SUPPORTED
     if (!g_pDebugInterface)
     {
@@ -3586,7 +3568,7 @@ void Module::SetSymbolBytes(LPCBYTE pbSyms, DWORD cbSyms)
 
     // Make sure to set the symbol stream on the module before
     // attempting to send UpdateModuleSyms messages up for it.
-    SetInMemorySymbolStream(pStream, eSymbolFormatPDB);
+    SetInMemorySymbolStream(pStream);
 
     // This can only be called when the module is being created.  No-one should have
     // tried to use the symbols yet, and so there should not be a reader.
@@ -3713,57 +3695,6 @@ void Module::AddClass(mdTypeDef classdef)
     if (RidFromToken(classdef) == 0)
     {
         BuildClassForModule();
-    }
-
-    // Since the module is being modified, the in-memory symbol stream
-    // (if any) has probably also been modified. If we support reading the symbols
-    // then we need to commit the changes to the writer and flush any old readers
-    // However if we don't support reading then we can skip this which will give
-    // a substantial perf improvement. See DDB 671107.
-    if(IsSymbolReadingEnabled())
-    {
-        CONSISTENCY_CHECK(IsReflection());   // this is only used for dynamic modules
-        ISymUnmanagedWriter * pWriter = GetReflectionModule()->GetISymUnmanagedWriter();
-        if (pWriter != NULL)
-        {
-            // Serialize with any concurrent reader creations
-            // Specifically, if we started creating a reader on one thread, and then updated the
-            // symbols on another thread, we need to wait until the initial reader creation has
-            // completed and release it so we don't get stuck with a stale reader.
-            // Also, if we commit to the stream while we're in the process of creating a reader,
-            // the reader will get corrupted/incomplete data.
-            // Note that we must also be in co-operative mode here to ensure the debugger helper
-            // thread can't be simultaneously reading this stream while the process is synchronized
-            // (code:Debugger::GetSymbolBytes)
-            CrstHolder holder(&m_ISymUnmanagedReaderCrst);
-
-            // Flush writes to the symbol store to the symbol stream
-            // Note that we do this when finishing the addition of the class, instead of
-            // on-demand in GetISymUnmanagedReader because the writer is not thread-safe.
-            // Here, we're inside the lock of TypeBuilder.CreateType, and so it's safe to
-            // manipulate the writer.
-            SafeComHolderPreemp<ISymUnmanagedWriter3> pWriter3;
-            HRESULT thr = pWriter->QueryInterface(IID_ISymUnmanagedWriter3, (void**)&pWriter3);
-            CONSISTENCY_CHECK(SUCCEEDED(thr));
-            if (SUCCEEDED(thr))
-            {
-                thr = pWriter3->Commit();
-                if (SUCCEEDED(thr))
-                {
-                    // Flush any cached symbol reader to ensure we pick up any new symbols
-                    ReleaseISymUnmanagedReader();
-                }
-            }
-
-            // If either the QI or Commit failed
-            if (FAILED(thr))
-            {
-                // The only way we expect this might fail is out-of-memory.  In that
-                // case we silently fail to update the symbol stream with new data, but
-                // we leave the existing reader intact.
-                CONSISTENCY_CHECK(thr==E_OUTOFMEMORY);
-            }
-        }
     }
 }
 
@@ -12494,11 +12425,9 @@ ReflectionModule::ReflectionModule(Assembly *pAssembly, mdFile token, PEFile *pF
 
     m_pInMemoryWriter = NULL;
     m_sdataSection = NULL;
-    m_pISymUnmanagedWriter = NULL;
     m_pCreatingAssembly = NULL;
     m_pCeeFileGen = NULL;
     m_pDynamicMetadata = NULL;
-    m_fSuppressMetadataCapture = false;
 }
 
 HRESULT STDMETHODCALLTYPE CreateICeeGen(REFIID riid, void **pCeeGen);
@@ -12551,13 +12480,6 @@ void ReflectionModule::Destruct()
 
     delete m_pInMemoryWriter;
 
-    if (m_pISymUnmanagedWriter)
-    {
-        m_pISymUnmanagedWriter->Close();
-        m_pISymUnmanagedWriter->Release();
-        m_pISymUnmanagedWriter = NULL;
-    }
-
     if (m_pCeeFileGen)
         m_pCeeFileGen->Release();
 
@@ -12569,17 +12491,6 @@ void ReflectionModule::Destruct()
     m_CrstLeafLock.Destroy();
 }
 
-// Returns true iff metadata capturing is suppressed.
-//
-// Notes:
-//   This is during the window after code:ReflectionModule.SuppressMetadataCapture and before
-//   code:ReflectionModule.ResumeMetadataCapture.
-//
-//   If metadata updates are suppressed, then class-load notifications should be suppressed too.
-bool ReflectionModule::IsMetadataCaptureSuppressed()
-{
-    return m_fSuppressMetadataCapture;
-}
 //
 // Holder of changed value of MDUpdateMode via IMDInternalEmit::SetMDUpdateMode.
 // Returns back the original value on release.
@@ -12679,13 +12590,11 @@ void ReflectionModule::CaptureModuleMetaDataToMemory()
     }
     CONTRACTL_END;
 
-    // If we've suppresed metadata capture, then skip this. We'll recapture when we enable it. This allows
-    // for batching up capture.
     // If a debugger is attached, then the CLR will still send ClassLoad notifications for dynamic modules,
     // which mean we still need to keep the metadata available. This is the same as Whidbey.
     // An alternative (and better) design would be to suppress ClassLoad notifications too, but then we'd
     // need some way of sending a "catchup" notification to the debugger after we re-enable notifications.
-    if (IsMetadataCaptureSuppressed() && !CORDebuggerAttached())
+    if (!CORDebuggerAttached())
     {
         return;
     }
@@ -12733,41 +12642,6 @@ void ReflectionModule::CaptureModuleMetaDataToMemory()
     hr = hMDUpdateMode.Release(MDUpdateExtension);
     // Will be S_FALSE if someone changed the MDUpdateMode (from MDUpdateExtension) meanwhile
     _ASSERTE(hr == S_OK);
-}
-
-// Suppress the eager metadata serialization.
-//
-// Notes:
-//    This casues code:ReflectionModule.CaptureModuleMetaDataToMemory to be a nop.
-//    This is not nestable.
-//    This exists purely for performance reasons.
-//
-//    Don't call this directly. Use a SuppressMetadataCaptureHolder holder to ensure it's
-//    balanced with code:ReflectionModule.ResumeMetadataCapture
-//
-//    Types generating while eager metadata-capture is suppressed should not actually be executed until
-//    after metadata capture is restored.
-void ReflectionModule::SuppressMetadataCapture()
-{
-    LIMITED_METHOD_CONTRACT;
-    // If this fires, then you probably missed a call to ResumeMetadataCapture.
-    CONSISTENCY_CHECK_MSG(!m_fSuppressMetadataCapture, "SuppressMetadataCapture is not nestable");
-    m_fSuppressMetadataCapture = true;
-}
-
-// Resumes eager metadata serialization.
-//
-// Notes:
-//    This casues code:ReflectionModule.CaptureModuleMetaDataToMemory to resume eagerly serializing metadata.
-//    This must be called after code:ReflectionModule.SuppressMetadataCapture.
-//
-void ReflectionModule::ResumeMetadataCapture()
-{
-    WRAPPER_NO_CONTRACT;
-    _ASSERTE(m_fSuppressMetadataCapture);
-    m_fSuppressMetadataCapture = false;
-
-    CaptureModuleMetaDataToMemory();
 }
 
 #endif // !CROSSGEN_COMPILE

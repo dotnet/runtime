@@ -51,10 +51,17 @@ namespace Microsoft.Extensions.FileProviders.Physical
             Debug.Assert(fileInfo.Exists);
             if (fileInfo.LinkTarget != null)
             {
-                FileSystemInfo targetInfo = fileInfo.ResolveLinkTarget(returnFinalTarget: true);
-                if (targetInfo.Exists)
+                try
                 {
-                    return targetInfo.LastWriteTimeUtc;
+                    FileSystemInfo targetInfo = fileInfo.ResolveLinkTarget(returnFinalTarget: true);
+                    if (targetInfo != null && targetInfo.Exists)
+                    {
+                        return targetInfo.LastWriteTimeUtc;
+                    }
+                }
+                catch (FileNotFoundException)
+                {
+                    // The file ceased to exist between LinkTarget and ResolveLinkTarget.
                 }
 
                 return DateTime.MinValue;

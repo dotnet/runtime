@@ -13,5 +13,11 @@ namespace System.Net.Quic
             : base(message, innerException)
         {
         }
+
+        public QuicException(string? message, Exception? innerException, int result)
+            : base(message, innerException)
+        {
+            HResult = result;
+        }
     }
 }

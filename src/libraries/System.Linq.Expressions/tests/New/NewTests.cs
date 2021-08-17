@@ -79,6 +79,48 @@ namespace System.Linq.Expressions.Tests
 
         [Theory]
         [ClassData(typeof(CompilationTypes))]
+        public static void CheckNewStructWithParameterlessConstructorByTypeTest(bool useInterpreter)
+        {
+            Expression<Func<ValueTypeWithParameterlessConstructor>> e =
+                Expression.Lambda<Func<ValueTypeWithParameterlessConstructor>>(
+                        Expression.New(typeof(ValueTypeWithParameterlessConstructor)));
+            Func<ValueTypeWithParameterlessConstructor> f = e.Compile(useInterpreter);
+
+            ValueTypeWithParameterlessConstructor newValue = f();
+            Assert.True(newValue.ConstructorWasRun);
+        }
+
+        [Theory]
+        [ClassData(typeof(CompilationTypes))]
+        public static void CheckNewStructWithParameterlessConstructorByConstructorInfoTest(bool useInterpreter)
+        {
+            ConstructorInfo ctorInfo = typeof(ValueTypeWithParameterlessConstructor).GetConstructor(Type.EmptyTypes);
+            Assert.NotNull(ctorInfo);
+
+            Expression<Func<ValueTypeWithParameterlessConstructor>> e =
+                Expression.Lambda<Func<ValueTypeWithParameterlessConstructor>>(
+                        Expression.New(ctorInfo));
+            Func<ValueTypeWithParameterlessConstructor> f = e.Compile(useInterpreter);
+
+            ValueTypeWithParameterlessConstructor newValue = f();
+            Assert.True(newValue.ConstructorWasRun);
+        }
+
+        [Theory]
+        [ClassData(typeof(CompilationTypes))]
+        public static void CheckNewNullableStructWithParameterlessConstructorTest(bool useInterpreter)
+        {
+            Expression<Func<ValueTypeWithParameterlessConstructorThatThrows?>> e =
+                Expression.Lambda<Func<ValueTypeWithParameterlessConstructorThatThrows?>>(
+                        Expression.New(typeof(ValueTypeWithParameterlessConstructorThatThrows?)));
+            Func<ValueTypeWithParameterlessConstructorThatThrows?> f = e.Compile(useInterpreter);
+
+            ValueTypeWithParameterlessConstructorThatThrows? newValue = f();
+            Assert.Null(newValue);
+        }
+
+        [Theory]
+        [ClassData(typeof(CompilationTypes))]
         public static void CheckNewNullableStructTest(bool useInterpreter)
         {
             Expression<Func<S?>> e =

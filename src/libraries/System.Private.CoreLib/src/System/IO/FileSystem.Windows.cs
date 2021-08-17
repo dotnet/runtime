@@ -186,7 +186,10 @@ namespace System.IO
             }
 
             Interop.Kernel32.WIN32_FIND_DATA findData = default;
-            GetFindData(fullPath, isDirectory: true, ref findData);
+            // FindFirstFile($path) (used by GetFindData) fails with ACCESS_DENIED when user has no ListDirectory rights
+            // but FindFirstFile($path/*") (used by RemoveDirectoryRecursive) works fine in such scenario.
+            // So we ignore it here and let RemoveDirectoryRecursive throw if FindFirstFile($path/*") fails with ACCESS_DENIED.
+            GetFindData(fullPath, isDirectory: true, ignoreAccessDenied: true, ref findData);
             if (IsNameSurrogateReparsePoint(ref findData))
             {
                 // Don't recurse
@@ -200,7 +203,7 @@ namespace System.IO
             RemoveDirectoryRecursive(fullPath, ref findData, topLevel: true);
         }
 
-        private static void GetFindData(string fullPath, bool isDirectory, ref Interop.Kernel32.WIN32_FIND_DATA findData)
+        private static void GetFindData(string fullPath, bool isDirectory, bool ignoreAccessDenied, ref Interop.Kernel32.WIN32_FIND_DATA findData)
         {
             using SafeFindHandle handle = Interop.Kernel32.FindFirstFile(Path.TrimEndingDirectorySeparator(fullPath), ref findData);
             if (handle.IsInvalid)
@@ -209,6 +212,8 @@ namespace System.IO
                 // File not found doesn't make much sense coming from a directory.
                 if (isDirectory && errorCode == Interop.Errors.ERROR_FILE_NOT_FOUND)
                     errorCode = Interop.Errors.ERROR_PATH_NOT_FOUND;
+                if (isDirectory && errorCode == Interop.Errors.ERROR_ACCESS_DENIED && ignoreAccessDenied)
+                    return;
                 throw Win32Marshal.GetExceptionForWin32Error(errorCode, fullPath);
             }
         }
@@ -530,7 +535,7 @@ namespace System.IO
         private static unsafe string? GetFinalLinkTarget(string linkPath, bool isDirectory)
         {
             Interop.Kernel32.WIN32_FIND_DATA data = default;
-            GetFindData(linkPath, isDirectory, ref data);
+            GetFindData(linkPath, isDirectory, ignoreAccessDenied: false, ref data);
 
             // The file or directory is not a reparse point.
             if ((data.dwFileAttributes & (uint)FileAttributes.ReparsePoint) == 0 ||

@@ -123,8 +123,8 @@ namespace System.Text.Json.Serialization.Metadata
             Type declaringType,
             JsonTypeInfo typeInfo,
             JsonConverter<T> converter,
-            Func<object, T>? getter,
-            Action<object, T>? setter,
+            Func<object, T?>? getter,
+            Action<object, T?>? setter,
             JsonIgnoreCondition? ignoreCondition,
             bool hasJsonInclude,
             JsonNumberHandling? numberHandling,
@@ -168,7 +168,7 @@ namespace System.Text.Json.Serialization.Metadata
             }
             else
             {
-                Get = getter;
+                Get = getter!;
                 Set = setter;
                 HasGetter = Get != null;
                 HasSetter = Set != null;
