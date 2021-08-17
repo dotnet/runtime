@@ -176,7 +176,8 @@ namespace Microsoft.WebAssembly.Diagnostics
                                     }
                                     catch (Exception) //if the page is refreshed maybe it stops here.
                                     {
-                                        return false;
+                                        await SendCommand(sessionId, "Debugger.resume", new JObject(), token);
+                                        return true;
                                     }
                                 }
                         }
@@ -617,13 +618,18 @@ namespace Microsoft.WebAssembly.Diagnostics
         internal async Task<JToken> RuntimeGetPropertiesInternal(SessionId id, DotnetObjectId objectId, JToken args, CancellationToken token)
         {
             var accessorPropertiesOnly = false;
-            var ownProperties = false;
+            GetObjectCommandOptions objectValuesOpt = GetObjectCommandOptions.WithProperties;
             if (args != null)
             {
-                if (args["accessorPropertiesOnly"] != null)
-                    accessorPropertiesOnly = args["accessorPropertiesOnly"].Value<bool>();
-                if (args["ownProperties"] != null)
-                    ownProperties = args["ownProperties"].Value<bool>();
+                if (args["accessorPropertiesOnly"] != null && args["accessorPropertiesOnly"].Value<bool>())
+                {
+                    objectValuesOpt |= GetObjectCommandOptions.AccessorPropertiesOnly;
+                    accessorPropertiesOnly = true;
+                }
+                if (args["ownProperties"] != null && args["ownProperties"].Value<bool>())
+                {
+                    objectValuesOpt |= GetObjectCommandOptions.OwnProperties;
+                }
             }
             //Console.WriteLine($"RuntimeGetProperties - {args}");
             try {
@@ -639,7 +645,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                     case "array":
                         return await SdbHelper.GetArrayValues(id, int.Parse(objectId.Value), token);
                     case "object":
-                        return await SdbHelper.GetObjectValues(id, int.Parse(objectId.Value), true, false, accessorPropertiesOnly, ownProperties, token);
+                        return await SdbHelper.GetObjectValues(id, int.Parse(objectId.Value), objectValuesOpt, token);
                     case "pointer":
                         return new JArray{await SdbHelper.GetPointerContent(id, int.Parse(objectId.Value), token)};
                     case "cfo_res":
@@ -717,7 +723,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             AssemblyInfo asm = store.GetAssemblyByName(assembly_name);
             if (asm == null)
             {
-                assembly_name = await SdbHelper.GetAssemblyNameFull(sessionId, assembly_id, token);
+                assembly_name = await SdbHelper.GetAssemblyFileNameFromId(sessionId, assembly_id, token);
                 asm = store.GetAssemblyByName(assembly_name);
                 if (asm == null)
                 {
@@ -764,7 +770,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                 AssemblyInfo asm = store.GetAssemblyByName(assembly_name);
                 if (asm == null)
                 {
-                    assembly_name = await SdbHelper.GetAssemblyNameFull(sessionId, assembly_id, token); //maybe is a lazy loaded assembly
+                    assembly_name = await SdbHelper.GetAssemblyFileNameFromId(sessionId, assembly_id, token); //maybe is a lazy loaded assembly
                     asm = store.GetAssemblyByName(assembly_name);
                     if (asm == null)
                     {
@@ -911,7 +917,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                         string reason = "exception";
                         int object_id = retDebuggerCmdReader.ReadInt32();
                         var caught = retDebuggerCmdReader.ReadByte();
-                        var exceptionObject = await SdbHelper.GetObjectValues(sessionId, object_id, true, false, false, true, token);
+                        var exceptionObject = await SdbHelper.GetObjectValues(sessionId, object_id, GetObjectCommandOptions.WithProperties | GetObjectCommandOptions.OwnProperties, token);
                         var exceptionObjectMessage = exceptionObject.FirstOrDefault(attr => attr["name"].Value<string>().Equals("message"));
                         var data = JObject.FromObject(new
                         {

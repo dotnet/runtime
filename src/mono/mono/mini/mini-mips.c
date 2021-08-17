@@ -1987,7 +1987,7 @@ mono_arch_peephole_pass_2 (MonoCompile *cfg, MonoBasicBlock *bb)
 					MONO_DELETE_INS (bb, ins);
 					continue;
 				}
-			} else if (ins->inst_imm > 0) {
+			} else {
 				int power2 = mono_is_power_of_two (ins->inst_imm);
 				if (power2 > 0) {
 					ins->opcode = OP_SHL_IMM;
@@ -2666,7 +2666,7 @@ loop_start:
 				ins->inst_c0 = 0;
 				break;
 			}
-			imm = (ins->inst_imm > 0) ? mono_is_power_of_two (ins->inst_imm) : -1;
+			imm = mono_is_power_of_two (ins->inst_imm);
 			if (imm > 0) {
 				ins->opcode = OP_SHL_IMM;
 				ins->inst_imm = imm;

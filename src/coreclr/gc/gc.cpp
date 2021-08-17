@@ -3299,7 +3299,7 @@ sorted_table::make_sorted_table ()
     size_t size = 400;
 
     // allocate one more bk to store the older slot address.
-    sorted_table* res = (sorted_table*)new char [sizeof (sorted_table) + (size + 1) * sizeof (bk)];
+    sorted_table* res = (sorted_table*)new (nothrow) char [sizeof (sorted_table) + (size + 1) * sizeof (bk)];
     if (!res)
         return 0;
     res->size = size;

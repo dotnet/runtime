@@ -24,12 +24,12 @@
       </trans-unit>
       <trans-unit id="MultipleJsonConstructorAttributeFormat">
         <source>Type '{0}' has multiple constructors annotated with 'JsonConstructorAttribute'.</source>
-        <target state="new">Type '{0}' has multiple constructors annotated with 'JsonConstructorAttribute'.</target>
+        <target state="translated">El tipo '{0}' tiene varios constructores anotados con 'JsonConstructorAttribute'.</target>
         <note />
       </trans-unit>
       <trans-unit id="MultipleJsonConstructorAttributeTitle">
         <source>Type has multiple constructors annotated with JsonConstructorAttribute.</source>
-        <target state="new">Type has multiple constructors annotated with JsonConstructorAttribute.</target>
+        <target state="translated">El tipo tiene varios constructores anotados con JsonConstructorAttribute.</target>
         <note />
       </trans-unit>
       <trans-unit id="TypeNotSupportedMessageFormat">
