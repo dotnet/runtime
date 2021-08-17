@@ -37,7 +37,8 @@ namespace System.Runtime.Caching
         private Counters _perfCounters;
         private readonly bool _configLess;
         private bool _useMemoryCacheManager = true;
-        private bool _throwOnDisposed;// = false;
+        private bool _throwOnDisposed;
+        private readonly string _disposedName;
         private EventHandler _onAppDomainUnload;
         private UnhandledExceptionEventHandler _onUnhandledException;
 #if NET5_0_OR_GREATER
@@ -345,6 +346,7 @@ namespace System.Runtime.Caching
         private MemoryCache()
         {
             _name = "Default";
+            _disposedName = typeof(MemoryCache).FullName + $"({_name})";
             Init(null);
         }
 
@@ -363,6 +365,7 @@ namespace System.Runtime.Caching
                 throw new ArgumentException(SR.Default_is_reserved, nameof(name));
             }
             _name = name;
+            _disposedName = typeof(MemoryCache).FullName + $"({_name})";
             Init(config);
         }
 
@@ -383,6 +386,7 @@ namespace System.Runtime.Caching
                 throw new ArgumentException(SR.Default_is_reserved, nameof(name));
             }
             _name = name;
+            _disposedName = typeof(MemoryCache).FullName + $"({_name})";
             _configLess = ignoreConfigSection;
             Init(config);
         }
@@ -438,7 +442,7 @@ namespace System.Runtime.Caching
 
                 if (_throwOnDisposed)
                 {
-                    throw new ObjectDisposedException(typeof(MemoryCache).FullName);
+                    throw new ObjectDisposedException(_disposedName);
                 }
 
                 return null;
@@ -541,7 +545,7 @@ namespace System.Runtime.Caching
             {
                 if (_throwOnDisposed)
                 {
-                    throw new ObjectDisposedException(typeof(MemoryCache).FullName);
+                    throw new ObjectDisposedException(_disposedName);
                 }
 
                 return null;
@@ -557,7 +561,7 @@ namespace System.Runtime.Caching
 
             if (IsDisposed && _throwOnDisposed)
             {
-                throw new ObjectDisposedException(typeof(MemoryCache).FullName);
+                throw new ObjectDisposedException(_disposedName);
             }
 
             if (!IsDisposed)
@@ -576,7 +580,7 @@ namespace System.Runtime.Caching
 
             if (IsDisposed && _throwOnDisposed)
             {
-                throw new ObjectDisposedException(typeof(MemoryCache).FullName);
+                throw new ObjectDisposedException(_disposedName);
             }
 
             if (!IsDisposed)
@@ -600,7 +604,7 @@ namespace System.Runtime.Caching
         {
             if (IsDisposed && _throwOnDisposed)
             {
-                throw new ObjectDisposedException(typeof(MemoryCache).FullName);
+                throw new ObjectDisposedException(_disposedName);
             }
 
             if (percent > 100)
@@ -747,7 +751,7 @@ namespace System.Runtime.Caching
 
                 if (_throwOnDisposed)
                 {
-                    throw new ObjectDisposedException(typeof(MemoryCache).FullName);
+                    throw new ObjectDisposedException(_disposedName);
                 }
 
                 return;
@@ -793,7 +797,7 @@ namespace System.Runtime.Caching
 
                 if (_throwOnDisposed)
                 {
-                    throw new ObjectDisposedException(typeof(MemoryCache).FullName);
+                    throw new ObjectDisposedException(_disposedName);
                 }
 
                 return;
@@ -854,7 +858,7 @@ namespace System.Runtime.Caching
             {
                 if (_throwOnDisposed)
                 {
-                    throw new ObjectDisposedException(typeof(MemoryCache).FullName);
+                    throw new ObjectDisposedException(_disposedName);
                 }
 
                 return null;
@@ -872,7 +876,7 @@ namespace System.Runtime.Caching
 
             if (IsDisposed && _throwOnDisposed)
             {
-                throw new ObjectDisposedException(typeof(MemoryCache).FullName);
+                throw new ObjectDisposedException(_disposedName);
             }
 
             long count = 0;
@@ -908,7 +912,7 @@ namespace System.Runtime.Caching
             }
             if (IsDisposed && _throwOnDisposed)
             {
-                throw new ObjectDisposedException(typeof(MemoryCache).FullName);
+                throw new ObjectDisposedException(_disposedName);
             }
 
             Dictionary<string, object> values = null;
