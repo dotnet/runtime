@@ -1155,9 +1155,15 @@ apply_enclog_pass1 (MonoImage *image_base, MonoImage *image_dmeta, gconstpointer
 				mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE, "row[0x%02x]:0x%08x CUSTOM_ATTR update. Old Parent 0x%08x New Parent 0x%08x\n", i, log_token, ca_base_cols [MONO_CUSTOM_ATTR_PARENT], ca_upd_cols [MONO_CUSTOM_ATTR_PARENT]);
 				mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE, "row[0x%02x]:0x%08x CUSTOM_ATTR update. Old ctor 0x%08x New ctor 0x%08x\n", i, log_token, ca_base_cols [MONO_CUSTOM_ATTR_TYPE], ca_upd_cols [MONO_CUSTOM_ATTR_TYPE]);
 
-				if (ca_base_cols [MONO_CUSTOM_ATTR_PARENT] != ca_upd_cols [MONO_CUSTOM_ATTR_PARENT] ||
-				    ca_base_cols [MONO_CUSTOM_ATTR_TYPE] != ca_upd_cols [MONO_CUSTOM_ATTR_TYPE]) {
-					mono_error_set_type_load_name (error, NULL, image_base->name, "EnC: we do not support patching of existing CA table cols with a different Parent or Type. token=0x%08x", log_token);
+				/* TODO: when we support the ChangeCustomAttribute capability, the
+				 * parent might become 0 to delete attributes.  It may also be the
+				 * case that the MONO_CUSTOM_ATTR_TYPE will change.  Without that
+				 * capability, we trust that if the TYPE is not the same token, it
+				 * still resolves to the same MonoMethod* (but we can't check it in
+				 * pass1 because we haven't added the new AssemblyRefs yet.
+				 */
+				if (ca_base_cols [MONO_CUSTOM_ATTR_PARENT] != ca_upd_cols [MONO_CUSTOM_ATTR_PARENT]) {
+					mono_error_set_type_load_name (error, NULL, image_base->name, "EnC: we do not support patching of existing CA table cols with a different Parent. token=0x%08x", log_token);
 					unsupported_edits = TRUE;
 					continue;
 				}

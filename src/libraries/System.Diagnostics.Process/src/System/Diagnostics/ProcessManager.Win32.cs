@@ -131,7 +131,13 @@ namespace System.Diagnostics
 
                 var modules = new ProcessModuleCollection(firstModuleOnly ? 1 : modulesCount);
 
-                char[] chars = ArrayPool<char>.Shared.Rent(1024);
+                const int StartLength =
+#if DEBUG
+                    1; // in debug, validate ArrayPool growth
+#else
+                    Interop.Kernel32.MAX_PATH;
+#endif
+                char[]? chars = ArrayPool<char>.Shared.Rent(StartLength);
                 try
                 {
                     for (int i = 0; i < modulesCount; i++)
@@ -162,25 +168,44 @@ namespace System.Diagnostics
                             BaseAddress = ntModuleInfo.BaseOfDll
                         };
 
-                        int length = Interop.Kernel32.GetModuleBaseName(processHandle, moduleHandle, chars, chars.Length);
+                        int length = 0;
+                        while ((length = Interop.Kernel32.GetModuleBaseName(processHandle, moduleHandle, chars, chars.Length)) == chars.Length)
+                        {
+                            char[] toReturn = chars;
+                            chars = ArrayPool<char>.Shared.Rent(length * 2);
+                            ArrayPool<char>.Shared.Return(toReturn);
+                        }
+
                         if (length == 0)
                         {
+                            module.Dispose();
                             HandleLastWin32Error();
                             continue;
                         }
 
                         module.ModuleName = new string(chars, 0, length);
 
-                        length = Interop.Kernel32.GetModuleFileNameEx(processHandle, moduleHandle, chars, chars.Length);
+                        while ((length = Interop.Kernel32.GetModuleFileNameEx(processHandle, moduleHandle, chars, chars.Length)) == chars.Length)
+                        {
+                            char[] toReturn = chars;
+                            chars = ArrayPool<char>.Shared.Rent(length * 2);
+                            ArrayPool<char>.Shared.Return(toReturn);
+                        }
+
                         if (length == 0)
                         {
+                            module.Dispose();
                             HandleLastWin32Error();
                             continue;
                         }
 
-                        module.FileName = (length >= 4 && chars[0] == '\\' && chars[1] == '\\' && chars[2] == '?' && chars[3] == '\\') ?
-                            new string(chars, 4, length - 4) :
-                            new string(chars, 0, length);
+                        const string NtPathPrefix = @"\\?\";
+                        ReadOnlySpan<char> charsSpan = chars.AsSpan(0, length);
+                        if (charsSpan.StartsWith(NtPathPrefix))
+                        {
+                            charsSpan = charsSpan.Slice(NtPathPrefix.Length);
+                        }
+                        module.FileName = charsSpan.ToString();
 
                         modules.Add(module);
                     }

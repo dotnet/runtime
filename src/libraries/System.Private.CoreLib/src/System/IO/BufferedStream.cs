@@ -205,15 +205,7 @@ namespace System.IO
                 if (value < 0)
                     ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.value, ExceptionResource.ArgumentOutOfRange_NeedNonNegNum);
 
-                EnsureNotClosed();
-                EnsureCanSeek();
-
-                if (_writePos > 0)
-                    FlushWrite();
-
-                _readPos = 0;
-                _readLen = 0;
-                _stream!.Seek(value, SeekOrigin.Begin);
+                Seek(value, SeekOrigin.Begin);
             }
         }
 

@@ -369,7 +369,9 @@ namespace System.Security.Cryptography.DeriveBytesTests
         {
             using (var deriveBytes = new Rfc2898DeriveBytes(TestPassword, s_testSalt))
             {
+#pragma warning disable SYSLIB0033 // Rfc2898DeriveBytes.CryptDeriveKey is obsolete
                 Assert.Throws<PlatformNotSupportedException>(() => deriveBytes.CryptDeriveKey("RC2", "SHA1", 128, new byte[8]));
+#pragma warning restore SYSLIB0033
             }
         }
 

@@ -39,7 +39,7 @@ namespace System.Text.Json
         /// <summary>
         /// Used when processing extension data dictionaries.
         /// </summary>
-        public bool IgnoreDictionaryKeyPolicy;
+        public bool IsWritingExtensionDataProperty;
 
         /// <summary>
         /// The class (POCO or IEnumerable) that is being populated.

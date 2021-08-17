@@ -175,8 +175,8 @@ Documentation for VS debugger format specifiers: https://docs.microsoft.com/en-u
 
   <!-- Emitter -->
   <Type Name="insGroup">
-    <DisplayString Condition="igFlags &amp; 0x200">IG{igNum,d} [extend]</DisplayString>
-    <DisplayString>IG{igNum,d}</DisplayString>
+    <DisplayString Condition="igFlags &amp; 0x200">IG{igNum,d}, size={igSize,d}, offset={igOffs,d} [extend]</DisplayString>
+    <DisplayString>IG{igNum,d}, size={igSize,d}, offset={igOffs,d}</DisplayString>
   </Type>
 
   <Type Name="emitter::instrDesc">

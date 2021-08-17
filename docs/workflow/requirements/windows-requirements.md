@@ -26,7 +26,7 @@ Visual Studio 2019 installation process:
   - **.NET Desktop Development** with all default components,
   - **Desktop Development with C++** with all default components.
 - The build tools (CMake, Ninja and Python) can be downloaded and installed separately (see detailed instructions in the [section below](#build-tools)) or by selecting the following **Individual Components**:
-  - **C++ CMake tools for Windows** (includes Ninja),
+  - **C++ CMake tools for Windows** (includes Ninja, but might not work on ARM64 machines),
   - **Python 3 64-bit** (3.7.4 or newer).
 - To build for Arm32 or Arm64, make sure that you have the right architecture-specific compilers installed. In the **Individual components** window, in the **Compilers, build tools, and runtimes** section:
   - For Arm32, check the box for **MSVC v142 - VS 2019 C++ ARM build tools (Latest)** (v14.23 or newer),
@@ -45,7 +45,7 @@ These steps are required only in case the tools have not been installed as Visua
 
 ### CMake
 
-- Install [CMake](https://cmake.org/download) for Windows.
+- Install [CMake](https://cmake.org/download) for Windows. For ARM64 machines please use the `windows-i386` installer (`windows-x86_64` is not going to work).
 - Add its location (e.g. C:\Program Files (x86)\CMake\bin) to the PATH environment variable.
   The installation script has a check box to do this, but you can do it yourself after the fact following the instructions at [Adding to the Default PATH variable](#adding-to-the-default-path-variable).
 
@@ -56,6 +56,7 @@ The dotnet/runtime repository recommends using CMake 3.16.4 or newer, but it may
 - Install Ninja in one of the two following ways
   - [Download the executable](https://github.com/ninja-build/ninja/releases) and add its location to [the Default PATH variable](#adding-to-the-default-path-variable).
   - [Install via a package manager](https://github.com/ninja-build/ninja/wiki/Pre-built-Ninja-packages), which should automatically add it to the PATH environment variable.
+- Since there is no official Ninja support for ARM64, you can use MSBuild instead by passing `-msbuild` to `build.cmd`.
 
 ### Python
 
@@ -102,3 +103,13 @@ However, the change above will only last until the command windows close.
 You can make your change to the PATH variable persistent by going to  Control Panel -> System And Security -> System -> Advanced system settings -> Environment Variables,
 and select the 'Path' variable in the 'System variables' (if you want to change it for all users) or 'User variables' (if you only want to change it for the current user).
 Simply edit the PATH variable's value and add the directory (with a semicolon separator).
+
+## ARM64
+
+- Install [CMake](https://cmake.org/download) using the `windows-i386` installer (`windows-x86_64` is not going to work, `C++ CMake tools for Windows` from VS might also not work).
+- Use MSBuild instead of Ninja (no official support for ARM64 yet).
+- Specify the architecture in explicit way.
+
+```cmd
+build.cmd -c Release -subset clr+libs+libs.tests -arch arm64 -msbuild
+```

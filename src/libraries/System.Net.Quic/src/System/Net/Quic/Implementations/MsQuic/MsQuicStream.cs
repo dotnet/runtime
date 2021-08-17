@@ -534,7 +534,11 @@ namespace System.Net.Quic.Implementations.MsQuic
 
         internal override void AbortRead(long errorCode)
         {
-            ThrowIfDisposed();
+            if (_disposed == 1)
+            {
+                // Dispose called AbortRead already
+                return;
+            }
 
             bool shouldComplete = false;
             lock (_state)
@@ -562,7 +566,13 @@ namespace System.Net.Quic.Implementations.MsQuic
 
         internal override void AbortWrite(long errorCode)
         {
-            ThrowIfDisposed();
+            if (_disposed == 1)
+            {
+                // Dispose already triggered graceful shutdown
+                // It is unsafe to try to trigger abortive shutdown now, because final event arriving after Dispose releases SafeHandle
+                // so if it arrives after our check but before we call msquic, me might end up with access violation
+                return;
+            }
 
             lock (_state)
             {

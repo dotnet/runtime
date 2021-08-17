@@ -555,12 +555,12 @@ namespace System.Text.RegularExpressions.Tests
         private static void VerifyMatch(Match match, bool expectedSuccess, string expectedValue)
         {
             Assert.Equal(expectedSuccess, match.Success);
-            Assert.Equal(expectedValue, match.Value);
+            RegexAssert.Equal(expectedValue, match);
 
             // Groups can never be empty
             Assert.True(match.Groups.Count >= 1);
             Assert.Equal(expectedSuccess, match.Groups[0].Success);
-            Assert.Equal(expectedValue, match.Groups[0].Value);
+            RegexAssert.Equal(expectedValue, match.Groups[0]);
         }
 
         [Theory]
@@ -582,7 +582,7 @@ namespace System.Text.RegularExpressions.Tests
             Match m = r.Match(input);
 
             Assert.True(m.Success);
-            Assert.Equal(input, m.Value);
+            RegexAssert.Equal(input, m);
             Assert.Equal(count + 1, m.Groups.Count);
         }
 
@@ -592,7 +592,7 @@ namespace System.Text.RegularExpressions.Tests
             Regex regex = new Regex(@"\p{Lu}", RegexOptions.IgnoreCase, TimeSpan.FromHours(1));
             Match match = regex.Match("abc");
             Assert.True(match.Success);
-            Assert.Equal("a", match.Value);
+            RegexAssert.Equal("a", match);
         }
 
         [Theory]
@@ -1063,12 +1063,12 @@ namespace System.Text.RegularExpressions.Tests
         {
             Assert.Equal(expectedSuccess, match.Success);
 
-            Assert.Equal(expected[0].Value, match.Value);
+            RegexAssert.Equal(expected[0].Value, match);
             Assert.Equal(expected[0].Index, match.Index);
             Assert.Equal(expected[0].Length, match.Length);
 
             Assert.Equal(1, match.Captures.Count);
-            Assert.Equal(expected[0].Value, match.Captures[0].Value);
+            RegexAssert.Equal(expected[0].Value, match.Captures[0]);
             Assert.Equal(expected[0].Index, match.Captures[0].Index);
             Assert.Equal(expected[0].Length, match.Captures[0].Length);
 
@@ -1077,14 +1077,14 @@ namespace System.Text.RegularExpressions.Tests
             {
                 Assert.Equal(expectedSuccess, match.Groups[i].Success);
 
-                Assert.Equal(expected[i].Value, match.Groups[i].Value);
+                RegexAssert.Equal(expected[i].Value, match.Groups[i]);
                 Assert.Equal(expected[i].Index, match.Groups[i].Index);
                 Assert.Equal(expected[i].Length, match.Groups[i].Length);
 
                 Assert.Equal(expected[i].Captures.Length, match.Groups[i].Captures.Count);
                 for (int j = 0; j < match.Groups[i].Captures.Count; j++)
                 {
-                    Assert.Equal(expected[i].Captures[j].Value, match.Groups[i].Captures[j].Value);
+                    RegexAssert.Equal(expected[i].Captures[j].Value, match.Groups[i].Captures[j]);
                     Assert.Equal(expected[i].Captures[j].Index, match.Groups[i].Captures[j].Index);
                     Assert.Equal(expected[i].Captures[j].Length, match.Groups[i].Captures[j].Length);
                 }
@@ -1233,12 +1233,12 @@ namespace System.Text.RegularExpressions.Tests
         {
             var m = new Regex("abc").Match("abc");
             Assert.True(m.Success);
-            Assert.Equal("abc", m.Value);
+            RegexAssert.Equal("abc", m);
 
             var m2 = System.Text.RegularExpressions.Match.Synchronized(m);
             Assert.Same(m, m2);
             Assert.True(m2.Success);
-            Assert.Equal("abc", m2.Value);
+            RegexAssert.Equal("abc", m2);
 
             AssertExtensions.Throws<ArgumentNullException>("inner", () => System.Text.RegularExpressions.Match.Synchronized(null));
         }
