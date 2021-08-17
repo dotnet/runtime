@@ -602,11 +602,13 @@ namespace Microsoft.WebAssembly.Diagnostics
         public int Id { get; }
         public string Name { get; }
         public int TypeId { get; }
-        public FieldTypeClass(int id, string name, int typeId)
+        public bool IsPublic { get; }
+        public FieldTypeClass(int id, string name, int typeId, bool isPublic)
         {
             Id = id;
             Name = name;
             TypeId = typeId;
+            IsPublic = isPublic;
         }
     }
     internal class ValueTypeClass
@@ -1176,7 +1178,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             commandParamsWriter.Write(fieldId);
 
             var retDebuggerCmdReader = await SendDebuggerAgentCommand<CmdType>(sessionId, CmdType.GetValues, commandParams, token);
-            return await CreateJObjectForVariableValue(sessionId, retDebuggerCmdReader, "", false, -1, token);
+            return await CreateJObjectForVariableValue(sessionId, retDebuggerCmdReader, "", false, -1, false, token);
         }
 
         public async Task<int> TypeIsInitialized(SessionId sessionId, int typeId, CancellationToken token)
@@ -1222,7 +1224,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             return typeInfo.PropertiesBinaryReader;
         }
 
-        public async Task<List<FieldTypeClass>> GetTypeFields(SessionId sessionId, int typeId, bool onlyPublic, CancellationToken token)
+        public async Task<List<FieldTypeClass>> GetTypeFields(SessionId sessionId, int typeId, CancellationToken token)
         {
             var typeInfo = await GetTypeInfo(sessionId, typeId, token);
 
@@ -1240,13 +1242,14 @@ namespace Microsoft.WebAssembly.Diagnostics
 
             for (int i = 0 ; i < nFields; i++)
             {
+                bool isPublic = false;
                 int fieldId = retDebuggerCmdReader.ReadInt32(); //fieldId
                 string fieldNameStr = retDebuggerCmdReader.ReadString();
                 int fieldTypeId = retDebuggerCmdReader.ReadInt32(); //typeId
                 int attrs = retDebuggerCmdReader.ReadInt32(); //attrs
                 int isSpecialStatic = retDebuggerCmdReader.ReadInt32(); //is_special_static
-                if (onlyPublic && ((attrs & (int)MethodAttributes.Public) == 0))
-                    continue;
+                if (((attrs & (int)MethodAttributes.Public) != 0))
+                    isPublic = true;
                 if (isSpecialStatic == 1)
                     continue;
                 if (fieldNameStr.Contains("k__BackingField"))
@@ -1255,7 +1258,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                     fieldNameStr = fieldNameStr.Replace("<", "");
                     fieldNameStr = fieldNameStr.Replace(">", "");
                 }
-                ret.Add(new FieldTypeClass(fieldId, fieldNameStr, fieldTypeId));
+                ret.Add(new FieldTypeClass(fieldId, fieldNameStr, fieldTypeId, isPublic));
             }
             typeInfo.FieldsList = ret;
             return ret;
@@ -1304,7 +1307,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                     for (int j = 0; j < parmCount; j++)
                     {
                         //to typed_args
-                        await CreateJObjectForVariableValue(sessionId, retDebuggerCmdReader, "varName", false, -1, token);
+                        await CreateJObjectForVariableValue(sessionId, retDebuggerCmdReader, "varName", false, -1, false, token);
                     }
                 }
             }
@@ -1361,10 +1364,15 @@ namespace Microsoft.WebAssembly.Diagnostics
                 {
                     dispAttrStr = dispAttrStr.Replace(", nq", "");
                 }
+                if (dispAttrStr.Contains(",nq"))
+                {
+                    dispAttrStr = dispAttrStr.Replace(",nq", "");
+                }
                 expr = "$\"" + dispAttrStr + "\"";
                 JObject retValue = await resolver.Resolve(expr, token);
                 if (retValue == null)
                     retValue = await EvaluateExpression.CompileAndRunTheExpression(expr, resolver, token);
+
                 return retValue?["value"]?.Value<string>();
             }
             catch (Exception)
@@ -1543,7 +1551,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             commandParamsWriter.Write(0);
             var retDebuggerCmdReader = await SendDebuggerAgentCommand<CmdVM>(sessionId, CmdVM.InvokeMethod, parms, token);
             retDebuggerCmdReader.ReadByte(); //number of objects returned.
-            return await CreateJObjectForVariableValue(sessionId, retDebuggerCmdReader, varName, false, -1, token);
+            return await CreateJObjectForVariableValue(sessionId, retDebuggerCmdReader, varName, false, -1, false, token);
         }
 
         public async Task<int> GetPropertyMethodIdByName(SessionId sessionId, int typeId, string propertyName, CancellationToken token)
@@ -1630,7 +1638,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             var varName = pointerValues[pointerId].varName;
             if (int.TryParse(varName, out _))
                 varName = $"[{varName}]";
-            return await CreateJObjectForVariableValue(sessionId, retDebuggerCmdReader, "*" + varName, false, -1, token);
+            return await CreateJObjectForVariableValue(sessionId, retDebuggerCmdReader, "*" + varName, false, -1, false, token);
         }
 
         public async Task<JArray> GetPropertiesValuesOfValueType(SessionId sessionId, int valueTypeId, CancellationToken token)
@@ -1762,13 +1770,15 @@ namespace Microsoft.WebAssembly.Diagnostics
             return CreateJObject<string>(null, "object", $"{value.ToString()}({length})", false, value.ToString(), "dotnet:array:" + objectId, null, "array");
         }
 
-        public async Task<JObject> CreateJObjectForObject(SessionId sessionId, MonoBinaryReader retDebuggerCmdReader, int typeIdFromAttribute, CancellationToken token)
+        public async Task<JObject> CreateJObjectForObject(SessionId sessionId, MonoBinaryReader retDebuggerCmdReader, int typeIdFromAttribute, bool forDebuggerDisplayAttribute, CancellationToken token)
         {
             var objectId = retDebuggerCmdReader.ReadInt32();
             var className = "";
             var type_id = await GetTypeIdFromObject(sessionId, objectId, false, token);
             className = await GetTypeName(sessionId, type_id[0], token);
-            var debuggerDisplayAttribute = await GetValueFromDebuggerDisplayAttribute(sessionId, objectId, type_id[0], token);
+            string debuggerDisplayAttribute = null;
+            if (!forDebuggerDisplayAttribute)
+                debuggerDisplayAttribute = await GetValueFromDebuggerDisplayAttribute(sessionId, objectId, type_id[0], token);
             var description = className.ToString();
 
             if (debuggerDisplayAttribute != null)
@@ -1799,13 +1809,13 @@ namespace Microsoft.WebAssembly.Diagnostics
             var className = await GetTypeName(sessionId, typeId, token);
             var description = className;
             var numFields = retDebuggerCmdReader.ReadInt32();
-            var fields = await GetTypeFields(sessionId, typeId, onlyPublic: false, token);
+            var fields = await GetTypeFields(sessionId, typeId, token);
             JArray valueTypeFields = new JArray();
             if (className.IndexOf("System.Nullable<") == 0) //should we call something on debugger-agent to check???
             {
                 retDebuggerCmdReader.ReadByte(); //ignoring the boolean type
                 var isNull = retDebuggerCmdReader.ReadInt32();
-                var value = await CreateJObjectForVariableValue(sessionId, retDebuggerCmdReader, name, false, -1, token);
+                var value = await CreateJObjectForVariableValue(sessionId, retDebuggerCmdReader, name, false, -1, false, token);
                 if (isNull != 0)
                     return value;
                 else
@@ -1813,7 +1823,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             }
             for (int i = 0; i < numFields ; i++)
             {
-                fieldValueType = await CreateJObjectForVariableValue(sessionId, retDebuggerCmdReader, fields.ElementAt(i).Name, true, fields.ElementAt(i).TypeId, token);
+                fieldValueType = await CreateJObjectForVariableValue(sessionId, retDebuggerCmdReader, fields.ElementAt(i).Name, true, fields.ElementAt(i).TypeId, false, token);
                 valueTypeFields.Add(fieldValueType);
             }
 
@@ -1874,7 +1884,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             return CreateJObject<string>(null, "object", className, false, className, null, null, "null");
         }
 
-        public async Task<JObject> CreateJObjectForVariableValue(SessionId sessionId, MonoBinaryReader retDebuggerCmdReader, string name, bool isOwn, int typeIdFromAttribute, CancellationToken token)
+        public async Task<JObject> CreateJObjectForVariableValue(SessionId sessionId, MonoBinaryReader retDebuggerCmdReader, string name, bool isOwn, int typeIdFromAttribute, bool forDebuggerDisplayAttribute, CancellationToken token)
         {
             long initialPos = retDebuggerCmdReader == null ? 0 : retDebuggerCmdReader.BaseStream.Position;
             ElementType etype = (ElementType)retDebuggerCmdReader.ReadByte();
@@ -1982,7 +1992,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                 case ElementType.Class:
                 case ElementType.Object:
                 {
-                    ret = await CreateJObjectForObject(sessionId, retDebuggerCmdReader, typeIdFromAttribute, token);
+                    ret = await CreateJObjectForObject(sessionId, retDebuggerCmdReader, typeIdFromAttribute, forDebuggerDisplayAttribute, token);
                     break;
                 }
                 case ElementType.ValueType:
@@ -2122,13 +2132,13 @@ namespace Microsoft.WebAssembly.Diagnostics
             retDebuggerCmdReader = await SendDebuggerAgentCommand<CmdFrame>(sessionId, CmdFrame.GetValues, commandParams, token);
             foreach (var var in varIds)
             {
-                var var_json = await CreateJObjectForVariableValue(sessionId, retDebuggerCmdReader, var.Name, false, -1, token);
+                var var_json = await CreateJObjectForVariableValue(sessionId, retDebuggerCmdReader, var.Name, false, -1, false, token);
                 locals.Add(var_json);
             }
             if (!method.Info.IsStatic())
             {
                 retDebuggerCmdReader = await SendDebuggerAgentCommand<CmdFrame>(sessionId, CmdFrame.GetThis, commandParams, token);
-                var var_json = await CreateJObjectForVariableValue(sessionId, retDebuggerCmdReader, "this", false, -1, token);
+                var var_json = await CreateJObjectForVariableValue(sessionId, retDebuggerCmdReader, "this", false, -1, false, token);
                 var_json.Add("fieldOffset", -1);
                 locals.Add(var_json);
             }
@@ -2200,7 +2210,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             JArray array = new JArray();
             for (int i = 0 ; i < length ; i++)
             {
-                var var_json = await CreateJObjectForVariableValue(sessionId, retDebuggerCmdReader, i.ToString(), false, -1, token);
+                var var_json = await CreateJObjectForVariableValue(sessionId, retDebuggerCmdReader, i.ToString(), false, -1, false, token);
                 array.Add(var_json);
             }
             return array;
@@ -2332,7 +2342,8 @@ namespace Microsoft.WebAssembly.Diagnostics
             {
                 if (!getCommandType.HasFlag(GetObjectCommandOptions.AccessorPropertiesOnly))
                 {
-                    var fields = await GetTypeFields(sessionId, typeId[i], onlyPublic: getCommandType.HasFlag(GetObjectCommandOptions.ForDebuggerProxyAttribute), token);
+                    className = await GetTypeName(sessionId, typeId[i], token);
+                    var fields = await GetTypeFields(sessionId, typeId[i], token);
                     JArray objectFields = new JArray();
 
                     var commandParams = new MemoryStream();
@@ -2341,18 +2352,21 @@ namespace Microsoft.WebAssembly.Diagnostics
                     commandParamsWriter.Write(fields.Count);
                     foreach (var field in fields)
                     {
-                            commandParamsWriter.Write(field.Id);
+                        if (getCommandType.HasFlag(GetObjectCommandOptions.ForDebuggerProxyAttribute) && !field.IsPublic)
+                            continue;
+                        commandParamsWriter.Write(field.Id);
                     }
 
                     var retDebuggerCmdReader = await SendDebuggerAgentCommand<CmdObject>(sessionId, CmdObject.RefGetValues, commandParams, token);
 
                     foreach (var field in fields)
                     {
+                        if (getCommandType.HasFlag(GetObjectCommandOptions.ForDebuggerProxyAttribute) && !field.IsPublic)
+                            continue;
                         long initialPos = retDebuggerCmdReader.BaseStream.Position;
                         int valtype = retDebuggerCmdReader.ReadByte();
                         retDebuggerCmdReader.BaseStream.Position = initialPos;
-                        var fieldValue = await CreateJObjectForVariableValue(sessionId, retDebuggerCmdReader, field.Name, i == 0, field.TypeId, token);
-
+                        var fieldValue = await CreateJObjectForVariableValue(sessionId, retDebuggerCmdReader, field.Name, i == 0, field.TypeId, getCommandType.HasFlag(GetObjectCommandOptions.ForDebuggerDisplayAttribute), token);
                         if (ret.Where(attribute => attribute["name"].Value<string>().Equals(fieldValue["name"].Value<string>())).Any()) {
                             continue;
                         }
@@ -2399,7 +2413,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                 List<List<FieldTypeClass>> allFields = new List<List<FieldTypeClass>>();
                 for (int i = 0; i < typeId.Count; i++)
                 {
-                    var fields = await GetTypeFields(sessionId, typeId[i], onlyPublic: false, token);
+                    var fields = await GetTypeFields(sessionId, typeId[i], token);
                     allFields.Add(fields);
                 }
                 foreach (var item in ret)

@@ -94,7 +94,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                 classNameToFind += part.Trim();
                 if (typeId != -1)
                 {
-                    var fields = await sdbHelper.GetTypeFields(sessionId, typeId, onlyPublic: false, token);
+                    var fields = await sdbHelper.GetTypeFields(sessionId, typeId, token);
                     foreach (var field in fields)
                     {
                         if (field.Name == part.Trim())
