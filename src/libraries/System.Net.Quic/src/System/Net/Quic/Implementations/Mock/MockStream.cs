@@ -86,6 +86,11 @@ namespace System.Net.Quic.Implementations.Mock
             int bytesRead = await streamBuffer.ReadAsync(buffer, cancellationToken).ConfigureAwait(false);
             if (bytesRead == 0)
             {
+                if (_connection.ConnectionError is long connectonError)
+                {
+                    throw new QuicConnectionAbortedException(connectonError);
+                }
+
                 long errorCode = _isInitiator ? _streamState._inboundReadErrorCode : _streamState._outboundReadErrorCode;
                 if (errorCode != 0)
                 {
@@ -135,6 +140,11 @@ namespace System.Net.Quic.Implementations.Mock
             if (streamBuffer is null)
             {
                 throw new NotSupportedException();
+            }
+
+            if (_connection.ConnectionError is long connectonError)
+            {
+                throw new QuicConnectionAbortedException(connectonError);
             }
 
             long errorCode = _isInitiator ? _streamState._inboundWriteErrorCode : _streamState._outboundWriteErrorCode;

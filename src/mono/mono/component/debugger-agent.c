@@ -4081,6 +4081,13 @@ jit_end (MonoProfiler *prof, MonoMethod *method, MonoJitInfo *jinfo)
 		}
 	}
 
+	// only send typeload from AOTed classes if has .cctor when .cctor emits jit_end 
+	// to avoid deadlock while trying to set a breakpoint in a class that was not fully initialized
+	if (jinfo->from_aot && m_class_has_cctor(method->klass) && (!(method->flags & METHOD_ATTRIBUTE_SPECIAL_NAME) || strcmp (method->name, ".cctor")))
+	{
+		return;
+	}
+
 	send_type_load (method->klass);
 
 	if (m_class_get_image(method->klass)->has_updates) {

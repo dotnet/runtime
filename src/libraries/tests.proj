@@ -240,22 +240,13 @@
     <!--<ProjectExclusions Include="$(MSBuildThisFileDirectory)Microsoft.Extensions.DependencyInjection\tests\DI.Tests\Microsoft.Extensions.DependencyInjection.Tests.csproj" />-->
     <!--<ProjectExclusions Include="$(MSBuildThisFileDirectory)Microsoft.Extensions.Logging.EventSource\tests\Microsoft.Extensions.Logging.EventSource.Tests.csproj" />-->
     <!--<ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Diagnostics.DiagnosticSource\tests\System.Diagnostics.DiagnosticSource.Tests.csproj" />-->
-    <!--<ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Linq.Queryable\tests\System.Linq.Queryable.Tests.csproj" />-->
     <!--<ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Diagnostics.Tracing/tests/System.Diagnostics.Tracing.Tests.csproj" />-->
 
-    <!-- Issue: https://github.com/dotnet/runtime/issues/51602 --> <!-- IL2105 -->
-    <!--<ProjectExclusions Include="$(MSBuildThisFileDirectory)System.ComponentModel.Primitives\tests\System.ComponentModel.Primitives.Tests.csproj" />-->
-    <!--<ProjectExclusions Include="$(MSBuildThisFileDirectory)System.ObjectModel\tests\System.ObjectModel.Tests.csproj" />-->
-    <!--<ProjectExclusions Include="$(MSBuildThisFileDirectory)System.ComponentModel.TypeConverter/tests/System.ComponentModel.TypeConverter.Tests.csproj" />-->
+    <!-- Issue: https://github.com/dotnet/runtime/issues/51708 -->
+    <!--ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Linq.Expressions\tests\System.Linq.Expressions.Tests.csproj" />-->
 
-    <!-- Issue: https://github.com/dotnet/runtime/issues/51708 --> <!-- IL2103 -->
-    <!--<ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Linq.Expressions\tests\System.Linq.Expressions.Tests.csproj" />-->
-
-    <!-- Issue: https://github.com/dotnet/runtime/issues/56819 --> <!-- IL1005 This is a linker crash -->
-    <!--<ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Dynamic.Runtime/tests/System.Dynamic.Runtime.Tests.csproj" />-->
-
-    <!-- IL2103 -->
-    <!--<ProjectExclusions Include="$(MSBuildThisFileDirectory)Microsoft.Extensions.DependencyInjection/tests/DI.External.Tests/Microsoft.Extensions.DependencyInjection.ExternalContainers.Tests.csproj" />-->
+    <!-- MarkTypeForDynamicallyAccessedMembers stack overflow https://github.com/mono/linker/issues/1881 -->
+    <!--<ProjectExclusions Include="$(MSBuildThisFileDirectory)System.ComponentModel.Annotations\tests\System.ComponentModel.Annotations.Tests.csproj" />-->
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetOS)' == 'Browser' and '$(BrowserHost)' == 'windows' and '$(RunDisabledWasmTestsOnWindows)' != 'true'">

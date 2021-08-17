@@ -10962,8 +10962,23 @@ GenTree* Compiler::fgMorphCommutative(GenTreeOp* tree)
     genTreeOps oper = tree->OperGet();
 
     if (!op1->OperIs(oper) || !tree->gtGetOp2()->IsCnsIntOrI() || !op1->gtGetOp2()->IsCnsIntOrI() ||
-        op1->gtGetOp1()->IsCnsIntOrI() || gtIsActiveCSE_Candidate(op1))
+        op1->gtGetOp1()->IsCnsIntOrI())
     {
+        return nullptr;
+    }
+
+    if (!fgGlobalMorph && (op1 != tree->gtGetOp1()))
+    {
+        // Since 'tree->gtGetOp1()' can have complex structure (e.g. COMMA(..(COMMA(..,op1)))
+        // don't run the optimization for such trees outside of global morph.
+        // Otherwise, there is a chance of violating VNs invariants and/or modifying a tree
+        // that is an active CSE candidate.
+        return nullptr;
+    }
+
+    if (gtIsActiveCSE_Candidate(tree) || gtIsActiveCSE_Candidate(op1))
+    {
+        // The optimization removes 'tree' from IR and changes the value of 'op1'.
         return nullptr;
     }
 
@@ -10980,26 +10995,41 @@ GenTree* Compiler::fgMorphCommutative(GenTreeOp* tree)
         return nullptr;
     }
 
-    GenTree* foldedCns = gtFoldExprConst(gtNewOperNode(oper, cns1->TypeGet(), cns1, cns2));
-    if (!foldedCns->IsCnsIntOrI())
+    if (gtIsActiveCSE_Candidate(cns1) || gtIsActiveCSE_Candidate(cns2))
+    {
+        // The optimization removes 'cns2' from IR and changes the value of 'cns1'.
+        return nullptr;
+    }
+
+    GenTree* folded = gtFoldExprConst(gtNewOperNode(oper, cns1->TypeGet(), cns1, cns2));
+
+    if (!folded->IsCnsIntOrI())
     {
         // Give up if we can't fold "C1 op C2"
         return nullptr;
     }
 
-    cns1->gtIconVal = foldedCns->AsIntCon()->IconValue();
-    if ((oper == GT_ADD) && foldedCns->IsCnsIntOrI())
+    auto foldedCns = folded->AsIntCon();
+
+    cns1->SetIconValue(foldedCns->IconValue());
+    cns1->SetVNsFromNode(foldedCns);
+
+    if (oper == GT_ADD)
     {
-        cns1->AsIntCon()->gtFieldSeq =
-            GetFieldSeqStore()->Append(cns1->AsIntCon()->gtFieldSeq, cns2->AsIntCon()->gtFieldSeq);
+        // Note that gtFoldExprConst doesn't maintain fieldSeq when folding constant
+        // trees of TYP_LONG.
+        cns1->gtFieldSeq = GetFieldSeqStore()->Append(cns1->gtFieldSeq, cns2->gtFieldSeq);
     }
 
-    GenTreeOp* newTree = tree->gtGetOp1()->AsOp();
+    op1 = tree->gtGetOp1();
+    op1->SetVNsFromNode(tree);
+
     DEBUG_DESTROY_NODE(tree);
     DEBUG_DESTROY_NODE(cns2);
     DEBUG_DESTROY_NODE(foldedCns);
-    INDEBUG(newTree->gtOp2->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED);
-    return newTree;
+    INDEBUG(cns1->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED);
+
+    return op1;
 }
 
 /*****************************************************************************
