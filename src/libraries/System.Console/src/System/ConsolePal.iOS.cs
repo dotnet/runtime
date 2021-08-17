@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Buffers;
 using System.Diagnostics;
 using System.IO;
 using System.Runtime.InteropServices;
@@ -23,11 +24,19 @@ namespace System
         public override unsafe void Write(ReadOnlySpan<byte> buffer)
         {
             int charCount = _decoder.GetCharCount(buffer, false);
-            Span<char> charSpan = new char[charCount];
-            int count = _decoder.GetChars(buffer, charSpan, false);
-            if (count > 0)
+            char[] pooledBuffer = ArrayPool<char>.Shared.Rent(charCount);
+            Span<char> charSpan = pooledBuffer;
+            try
             {
-                WriteOrCache(_buffer, charSpan);
+                int count = _decoder.GetChars(buffer, charSpan, false);
+                if (count > 0)
+                {
+                    WriteOrCache(_buffer, charSpan);
+                }
+            }
+            finally
+            {
+                ArrayPool<char>.Shared.Return(pooledBuffer);
             }
         }
 
