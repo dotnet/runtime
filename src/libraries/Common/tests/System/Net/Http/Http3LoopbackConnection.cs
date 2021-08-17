@@ -41,8 +41,6 @@ namespace System.Net.Test.Common
         private Http3LoopbackStream _inboundControlStream;      // Inbound control stream from client
         private Http3LoopbackStream _outboundControlStream;     // Our outbound control stream
 
-        private bool _closed;
-
         public Http3LoopbackConnection(QuicConnection connection)
         {
             _connection = connection;
@@ -73,10 +71,7 @@ namespace System.Net.Test.Common
 
         public async Task CloseAsync(long errorCode)
         {
-            Debug.Assert(!_closed);
-
             await _connection.CloseAsync(errorCode).ConfigureAwait(false);
-            _closed = true;
         }
 
         public Http3LoopbackStream OpenUnidirectionalStream()
