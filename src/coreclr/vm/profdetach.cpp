@@ -170,9 +170,9 @@ HRESULT ProfilingAPIDetach::RequestProfilerDetach(ProfilerInfo *pProfilerInfo, D
 
     if (dwExpectedCompletionMilliseconds == 0)
     {
-        // Pick suitable default if the profiler just leaves this at 0.  5 seconds is
+        // Pick suitable default if the profiler just leaves this at 0. 2.5 seconds is
         // reasonable.
-        dwExpectedCompletionMilliseconds = 5000;
+        dwExpectedCompletionMilliseconds = 2500;
     }
 
     {
