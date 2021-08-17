@@ -211,7 +211,7 @@ namespace System.Reflection.Metadata.Ecma335
                     break;
 
                 case SignatureTypeCode.GenericTypeParameter:
-                    if (genericContextReader.IsNil)
+                    if (genericContextReader.Length == 0)
                     {
                         throw new BadImageFormatException();
                     }
