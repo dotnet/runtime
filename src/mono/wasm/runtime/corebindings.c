@@ -16,9 +16,8 @@ extern MonoObject* mono_wasm_get_by_index (int js_handle, int property_index, in
 extern MonoObject* mono_wasm_set_object_property (int js_handle, MonoString *propertyName, MonoObject *value, int createIfNotExist, int hasOwnProperty, int *is_exception);
 extern MonoObject* mono_wasm_set_by_index (int js_handle, int property_index, MonoObject *value, int *is_exception);
 extern MonoObject* mono_wasm_get_global_object (MonoString *global_name, int *is_exception);
-extern void* mono_wasm_release_handle (int js_handle, int *is_exception);
-extern MonoObject* mono_wasm_new (MonoString *core_name, MonoArray *args, int *is_exception);
-extern int mono_wasm_bind_core_object (int js_handle, int gc_handle, int *is_exception);
+extern void* mono_wasm_release_cs_owned_object (int js_handle);
+extern MonoObject* mono_wasm_create_cs_owned_object (MonoString *core_name, MonoArray *args, int *is_exception);
 extern MonoObject* mono_wasm_typed_array_to_array (int js_handle, int *is_exception);
 extern MonoObject* mono_wasm_typed_array_copy_to (int js_handle, int ptr, int begin, int end, int bytes_per_element, int *is_exception);
 extern MonoObject* mono_wasm_typed_array_from (int ptr, int begin, int end, int bytes_per_element, int type, int *is_exception);
@@ -39,7 +38,7 @@ EM_JS(MonoObject*, compile_function, (int snippet_ptr, int len, int *is_exceptio
 				+ 'Please use `return` statement to return a function.');
 		}
 		setValue (is_exception, 0, "i32");
-		return BINDING.js_to_mono_obj (func);	
+		return BINDING.js_to_mono_obj (func, true);	
 	}
 	catch (e)
 	{
@@ -47,7 +46,7 @@ EM_JS(MonoObject*, compile_function, (int snippet_ptr, int len, int *is_exceptio
 		setValue (is_exception, 1, "i32");
 		if (res === null || res === undefined)
 			res = "unknown exception";
-		return BINDING.js_to_mono_obj (res);		
+		return BINDING.js_to_mono_obj (res, true);
 	}
 });
 
@@ -75,9 +74,8 @@ void core_initialize_internals ()
 	mono_add_internal_call ("Interop/Runtime::SetObjectProperty", mono_wasm_set_object_property);
 	mono_add_internal_call ("Interop/Runtime::SetByIndex", mono_wasm_set_by_index);
 	mono_add_internal_call ("Interop/Runtime::GetGlobalObject", mono_wasm_get_global_object);
-	mono_add_internal_call ("Interop/Runtime::ReleaseHandle", mono_wasm_release_handle);
-	mono_add_internal_call ("Interop/Runtime::BindCoreObject", mono_wasm_bind_core_object);
-	mono_add_internal_call ("Interop/Runtime::New", mono_wasm_new);
+	mono_add_internal_call ("Interop/Runtime::CreateCSOwnedObject", mono_wasm_create_cs_owned_object);
+	mono_add_internal_call ("Interop/Runtime::ReleaseCSOwnedObject", mono_wasm_release_cs_owned_object);
 	mono_add_internal_call ("Interop/Runtime::TypedArrayToArray", mono_wasm_typed_array_to_array);
 	mono_add_internal_call ("Interop/Runtime::TypedArrayCopyTo", mono_wasm_typed_array_copy_to);
 	mono_add_internal_call ("Interop/Runtime::TypedArrayFrom", mono_wasm_typed_array_from);
