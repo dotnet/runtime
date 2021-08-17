@@ -878,12 +878,15 @@ function Try-LogClientIpAddress()
     Write-Host "Attempting to log this client's IP for Azure Package feed telemetry purposes"
     try
     {
-        $result = Invoke-WebRequest -Uri "http://co1.msedge.net/fdv2/diagnostics.aspx"
-        Write-Host $result.Content
+        $result = Invoke-WebRequest -Uri "http://co1.msedge.net/fdv2/diagnostics.aspx" -UseBasicParsing
+        $lines = $result.Content.Split([Environment]::NewLine) 
+        $socketIp = $lines | Select-String -Pattern "^Socket IP:.*"
+        Write-Host $socketIp
+        $clientIp = $lines | Select-String -Pattern "^Client IP:.*"
+        Write-Host $clientIp
     }
     catch
     {
-        $errMessage = $_
-        Write-Host "Unable to get this machine's effective IP address for logging: ($errMessage)"
+        Write-Host "Unable to get this machine's effective IP address for logging: $_"
     }
 }
