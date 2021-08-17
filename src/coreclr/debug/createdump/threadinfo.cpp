@@ -298,7 +298,7 @@ ThreadInfo::AddStackFrame(const StackFrame& frame)
             // Check for repeats through all the stack frames so far until we find one
             if (m_beginRepeat == m_frames.end())
             {
-                for (std::set<StackFrame>::iterator iterator = m_frames.begin(); iterator != m_frames.end(); ++iterator)
+                for (auto iterator = m_frames.cbegin(); iterator != m_frames.cend(); ++iterator)
                 {
                     if (frame.InstructionPointer() == iterator->InstructionPointer())
                     {
@@ -313,7 +313,7 @@ ThreadInfo::AddStackFrame(const StackFrame& frame)
             // Check for repeats until we stop find them
             if (m_endRepeat == m_frames.end())
             {
-                for (std::set<StackFrame>::iterator iterator = m_beginRepeat; iterator != m_endRepeat; ++iterator)
+                for (auto iterator = m_beginRepeat; iterator != m_endRepeat; ++iterator)
                 {
                     if (frame.InstructionPointer() == iterator->InstructionPointer())
                     {
@@ -339,7 +339,7 @@ ThreadInfo::AddStackFrame(const StackFrame& frame)
 
             // Count the number of frames in the repeating sequence and calculate how many times the sequence was repeated
             int framesRepeated = 0;
-            for (std::set<StackFrame>::iterator iterator = m_beginRepeat; iterator != m_endRepeat; ++iterator)
+            for (auto iterator = m_beginRepeat; iterator != m_endRepeat; ++iterator)
             {
                 framesRepeated++;
             }

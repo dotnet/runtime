@@ -149,7 +149,7 @@ CrashReportWriter::WriteCrashReport()
         CloseObject();          // ctx
 
         OpenArray("stack_frames");
-        for (std::set<StackFrame>::iterator iterator = thread->StackFrames().begin(); iterator != thread->StackFrames().end(); ++iterator)
+        for (auto iterator = thread->StackFrames().cbegin(); iterator != thread->StackFrames().cend(); ++iterator)
         {
             if (thread->IsBeginRepeat(iterator))
             { 

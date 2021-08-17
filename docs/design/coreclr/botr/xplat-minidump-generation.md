@@ -112,5 +112,3 @@ As of .NET 5.0, the following subset of the core pattern (see [core](https://man
 # Testing #
 
 The test plan is to modify the SOS tests in the (still) private debuggertests repo to trigger and use the core minidumps generated. Debugging managed core dumps on Linux is not supported by _mdbg_ at this time until we have a ELF core dump reader so only the SOS tests (which use _lldb_ on Linux) will be modified.
-
-# Open Issues #
