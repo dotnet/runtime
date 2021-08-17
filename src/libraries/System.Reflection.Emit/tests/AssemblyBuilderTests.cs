@@ -3,7 +3,6 @@
 
 using System.Collections.Generic;
 using System.Linq;
-using System.Runtime.Loader;
 using Xunit;
 
 namespace System.Reflection.Emit.Tests
@@ -428,8 +427,8 @@ namespace System.Reflection.Emit.Tests
     public void DefineDynamicAssembly_InternalAssemblyLocationIsEmpty()
     {
         AssemblyBuilder assembly = Helpers.DynamicAssembly(nameof(DefineDynamicAssembly_InternalAssemblyLocationIsEmpty));
-        Assembly internalAssemblyBuilder  = AssemblyLoadContext.Default.Assemblies
-                .FirstOrDefault(_ => _.FullName == assembly.FullName);
+        Assembly internalAssemblyBuilder  = AppDomain.CurrentDomain.GetAssemblies()
+                .FirstOrDefault(a => a.FullName == assembly.FullName);
 
         Assert.NotNull(internalAssemblyBuilder);
         Assert.Empty(internalAssemblyBuilder.Location);
