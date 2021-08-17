@@ -1856,10 +1856,9 @@ void CodeGen::genCodeForBinary(GenTreeOp* treeNode)
     emitAttr attr = emitActualTypeSize(treeNode);
 
     // UMULL/SMULL is twice as fast for 32*32->64bit MUL
-    if (oper == GT_MUL && EA_SIZE(attr) == EA_8BYTE && !varTypeIsFloating(treeNode->TypeGet()) &&
-        EA_SIZE(emitActualTypeSize(op1)) == EA_4BYTE && EA_SIZE(emitActualTypeSize(op2)) == EA_4BYTE)
+    if ((oper == GT_MUL) && (targetType == TYP_LONG) && genActualTypeIsInt(op1) && genActualTypeIsInt(op2))
     {
-        ins  = (treeNode->gtFlags & GTF_UNSIGNED) ? INS_umull : INS_smull;
+        ins  = treeNode->IsUnsigned() ? INS_umull : INS_smull;
         attr = EA_4BYTE;
     }
 

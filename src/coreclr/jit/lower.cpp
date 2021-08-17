@@ -5256,7 +5256,7 @@ bool Lowering::LowerUnsignedDivOrMod(GenTreeOp* divMod)
         }
         else if (type != TYP_I_IMPL
 #ifdef TARGET_ARM64
-                 && !simpleMul
+                 && !simpleMul // On ARM64 we will use a 32x32->64 bit multiply as that's faster.
 #endif
                  )
         {
@@ -5272,7 +5272,15 @@ bool Lowering::LowerUnsignedDivOrMod(GenTreeOp* divMod)
             adjustedDividend->SetRegNum(REG_RAX);
 #endif
 
-        divisor->gtType = simpleMul ? TYP_INT : TYP_I_IMPL;
+        divisor->gtType = TYP_I_IMPL;
+
+#ifdef TARGET_ARM64
+        if (simpleMul)
+        {
+            divisor->gtType = TYP_INT;
+        }
+#endif
+
         divisor->AsIntCon()->SetIconValue(magic);
 
         if (isDiv && !postShift && type == TYP_I_IMPL)
