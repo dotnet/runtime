@@ -879,12 +879,11 @@ function Try-LogClientIpAddress()
     try
     {
         $result = Invoke-WebRequest -Uri "http://co1.msedge.net/fdv2/diagnostics.aspx"
-        $lines = $result.Content.Split([Environment]::NewLine) 
-        Write-Host $lines | Select-String -Pattern "^Socket IP:.*"
-        Write-Host $lines | Select-String -Pattern "^Client IP:.*"
+        Write-Host $result.Content
     }
     catch
     {
-        Write-Host "Unable to get this machine's effective IP address for logging"
+        $errMessage = $_
+        Write-Host "Unable to get this machine's effective IP address for logging: ($errMessage)"
     }
 }
