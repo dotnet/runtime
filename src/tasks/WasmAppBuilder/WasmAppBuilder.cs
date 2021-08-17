@@ -248,12 +248,14 @@ public class WasmAppBuilder : Task
             config.Extra[name] = valueObject;
         }
 
-        string monoConfigPath = Path.Combine(AppDir, "mono-config.json");
-        using (var sw = File.CreateText(monoConfigPath))
+        string tmpMonoConfigPath = Path.GetTempFileName();
+        using (var sw = File.CreateText(tmpMonoConfigPath))
         {
             var json = JsonSerializer.Serialize (config, new JsonSerializerOptions { WriteIndented = true });
             sw.Write(json);
         }
+        string monoConfigPath = Path.Combine(AppDir, "mono-config.json");
+        Utils.CopyIfDifferent(tmpMonoConfigPath, monoConfigPath, useHash: false);
         _fileWrites.Add(monoConfigPath);
 
         if (ExtraFilesToDeploy != null)
