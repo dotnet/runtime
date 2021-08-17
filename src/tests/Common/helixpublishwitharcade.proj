@@ -354,10 +354,10 @@
 
     <ItemGroup Condition="'$(TargetOS)' == 'Android'">
       <XHarnessApkToTest Include="@(Payloads->Metadata('RuntimeTestApks'))">
-        <Targets Condition="'$(TargetArchitecture)' == 'arm'">armeabi-v7a</Targets>
-        <Targets Condition="'$(TargetArchitecture)' == 'arm64'">arm64-v8a</Targets>
-        <Targets Condition="'$(TargetArchitecture)' == 'x64'">x86_64</Targets>
-        <Targets Condition="'$(TargetArchitecture)' == 'x86'">x86</Targets>
+        <TestTarget Condition="'$(TargetArchitecture)' == 'arm'">armeabi-v7a</TestTarget>
+        <TestTarget Condition="'$(TargetArchitecture)' == 'arm64'">arm64-v8a</TestTarget>
+        <TestTarget Condition="'$(TargetArchitecture)' == 'x64'">x86_64</TestTarget>
+        <TestTarget Condition="'$(TargetArchitecture)' == 'x86'">x86</TestTarget>
         <TestTimeout Condition=" '$(TimeoutPerTestCollectionInMinutes)' != '' ">$([System.TimeSpan]::FromMinutes($(TimeoutPerTestCollectionInMinutes)))</TestTimeout>
         <LaunchTimeout>00:05:00</LaunchTimeout>
         <CustomCommands>dotnet $(XUnitRunnerDll) %(XUnitWrapperDlls) $(XUnitRunnerArgs)</CustomCommands>
