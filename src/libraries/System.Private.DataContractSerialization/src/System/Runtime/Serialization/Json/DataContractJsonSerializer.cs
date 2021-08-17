@@ -365,7 +365,6 @@ namespace System.Runtime.Serialization.Json
             return JsonDataContract.GetJsonDataContract(contract).ReadJsonValue(reader, context);
         }
 
-        [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         internal static void WriteJsonNull(XmlWriterDelegator writer)
         {
             writer.WriteAttributeString(null, JsonGlobals.typeString, null, JsonGlobals.nullString); //  prefix //  namespace
