@@ -538,7 +538,7 @@ static UBreakIterator* CreateCustomizedBreakIterator()
 
     int32_t breakIteratorRulesLength = newRulesLength > oldRulesLength ? newRulesLength : oldRulesLength;
 
-    UChar* rules = (UChar*)calloc((breakIteratorRulesLength + 1), sizeof(UChar));
+    UChar* rules = (UChar*)calloc((size_t)breakIteratorRulesLength + 1, sizeof(UChar));
     if (rules == NULL)
     {
         return NULL;
