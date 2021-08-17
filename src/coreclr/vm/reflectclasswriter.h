@@ -20,7 +20,6 @@ protected:
     ICeeGenInternal*	    m_pCeeGen;
 	IMetaDataEmitHelper*	m_pEmitHelper;
 	ULONG					m_ulResourceSize;
-    mdFile                  m_tkFile;
 
 public:
     RefClassWriter() {
