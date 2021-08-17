@@ -83,5 +83,3 @@ public class Runtime_57061_3
     [MethodImpl(MethodImplOptions.NoInlining)]
     static int Bound() => 0;
 }
-
-
