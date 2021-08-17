@@ -187,6 +187,7 @@ function InitializeCustomToolset {
 }
 
 function Build {
+  LogClientIp
   InitializeToolset
   InitializeCustomToolset
 
@@ -226,7 +227,6 @@ if [[ "$clean" == true ]]; then
 fi
 
 if [[ "$restore" == true ]]; then
-  LogClientIp
   InitializeNativeTools
 fi
 
