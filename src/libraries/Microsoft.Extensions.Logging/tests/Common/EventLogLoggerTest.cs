@@ -126,6 +126,34 @@ namespace Microsoft.Extensions.Logging
             Assert.Equal("blah", settings.MachineName);
         }
 
+        [Fact]
+        [PlatformSpecific(TestPlatforms.Windows)]
+        public void Settings_CreatesWindowsEventLog_WithSuppliedEventLogSettings()
+        {
+            // Arrange
+            var serviceCollection = new ServiceCollection();
+            var eventLogSettings = new EventLogSettings()
+            {
+                SourceName = "foo",
+                LogName = "bar",
+                MachineName = "blah",
+                EventLog = null,
+            };
+            serviceCollection.AddLogging(builder => builder.AddEventLog());
+
+            // Act
+            serviceCollection.AddLogging(builder => builder.AddEventLog(eventLogSettings));
+
+            // Assert
+            var services = serviceCollection.BuildServiceProvider();
+            var providers = services.GetRequiredService<IEnumerable<ILoggerProvider>>();
+            var provider = (EventLogLoggerProvider)providers.Last();
+            var settings = provider._settings;
+            Assert.Equal("bar", settings.LogName);
+            Assert.Equal("foo", settings.SourceName);
+            Assert.Equal("blah", settings.MachineName);
+        }
+
         [Theory]
         [PlatformSpecific(TestPlatforms.Windows)]
         [InlineData(50)]
