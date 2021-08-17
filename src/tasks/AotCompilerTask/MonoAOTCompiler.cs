@@ -9,10 +9,13 @@ using System.IO;
 using System.Linq;
 using System.Reflection.Metadata;
 using System.Text;
+using System.Text.Json;
+using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Build.Framework;
 using Microsoft.Build.Utilities;
 using System.Reflection.PortableExecutable;
+using System.Text.Json.Serialization;
 
 public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
 {
@@ -182,32 +185,40 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
     /// </summary>
     public string? LLVMDebug { get; set; } = "nodebug";
 
+    /// <summary>
+    /// File used to track hashes of assemblies, to act as a cache
+    /// Output files don't get written, if they haven't changed
+    /// </summary>
+    public string? CacheFilePath { get; set; }
+
     [Output]
     public string[]? FileWrites { get; private set; }
 
     private List<string> _fileWrites = new();
 
-    private ConcurrentBag<ITaskItem> compiledAssemblies = new ConcurrentBag<ITaskItem>();
+    private ConcurrentDictionary<string, ITaskItem> compiledAssemblies = new();
+
     private MonoAotMode parsedAotMode;
     private MonoAotOutputType parsedOutputType;
     private MonoAotLibraryFormat parsedLibraryFormat;
     private MonoAotModulesTableLanguage parsedAotModulesTableLanguage;
 
+    private FileCache? _cache;
+    private int _numCompiled;
+    private int _totalNumAssemblies;
+
     public override bool Execute()
     {
-        if (string.IsNullOrEmpty(CompilerBinaryPath))
-        {
-            throw new ArgumentException($"'{nameof(CompilerBinaryPath)}' is required.", nameof(CompilerBinaryPath));
-        }
-
         if (!File.Exists(CompilerBinaryPath))
         {
-            throw new ArgumentException($"'{CompilerBinaryPath}' doesn't exist.", nameof(CompilerBinaryPath));
+            Log.LogError($"{nameof(CompilerBinaryPath)}='{CompilerBinaryPath}' doesn't exist.");
+            return false;
         }
 
         if (Assemblies.Length == 0)
         {
-            throw new ArgumentException($"'{nameof(Assemblies)}' is required.", nameof(Assemblies));
+            Log.LogError($"'{nameof(Assemblies)}' is required.");
+            return false;
         }
 
         if (!Path.IsPathRooted(OutputDir))
@@ -291,7 +302,7 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
             // AOT modules for static linking, needs the aot modules table
             UseStaticLinking = true;
 
-            if (!GenerateAotModulesTable(Assemblies, Profilers))
+            if (!GenerateAotModulesTable(Assemblies, Profilers, AotModulesTablePath))
                 return false;
         }
 
@@ -314,22 +325,47 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
         if (AdditionalAssemblySearchPaths != null)
             monoPaths = string.Join(Path.PathSeparator.ToString(), AdditionalAssemblySearchPaths);
 
-        if (DisableParallelAot)
+        _cache = new FileCache(CacheFilePath, Log);
+
+        //FIXME: check the nothing changed at all case
+
+        _totalNumAssemblies = Assemblies.Length;
+        int allowedParallelism = Math.Min(Assemblies.Length, Environment.ProcessorCount);
+        if (BuildEngine is IBuildEngine9 be9)
+            allowedParallelism = be9.RequestCores(allowedParallelism);
+
+        if (DisableParallelAot || allowedParallelism == 1)
         {
             foreach (var assemblyItem in Assemblies)
             {
-                if (!PrecompileLibrary(assemblyItem, monoPaths))
+                if (!PrecompileLibrarySerial(assemblyItem, monoPaths))
                     return !Log.HasLoggedErrors;
             }
         }
         else
         {
-            Parallel.ForEach(Assemblies,
-                new ParallelOptions { MaxDegreeOfParallelism = Environment.ProcessorCount },
-                assemblyItem => PrecompileLibrary(assemblyItem, monoPaths));
+            ParallelLoopResult result = Parallel.ForEach(
+                                                    Assemblies,
+                                                    new ParallelOptions { MaxDegreeOfParallelism = allowedParallelism },
+                                                    (assemblyItem, state) => PrecompileLibraryParallel(assemblyItem, monoPaths, state));
+
+            if (!result.IsCompleted)
+            {
+                if (!Log.HasLoggedErrors)
+                    Log.LogError("Unknown failed occured while compiling");
+
+                return false;
+            }
         }
 
-        CompiledAssemblies = compiledAssemblies.ToArray();
+        int numUnchanged = _totalNumAssemblies - _numCompiled;
+        if (numUnchanged > 0 && numUnchanged != _totalNumAssemblies)
+            Log.LogMessage(MessageImportance.High, $"[{numUnchanged}/{_totalNumAssemblies}] skipped unchanged assemblies.");
+
+        if (_cache.Save(CacheFilePath!))
+            _fileWrites.Add(CacheFilePath!);
+
+        CompiledAssemblies = ConvertAssembliesDictToOrderedList(compiledAssemblies, Assemblies).ToArray();
         FileWrites = _fileWrites.ToArray();
 
         return !Log.HasLoggedErrors;
@@ -343,6 +379,7 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
         var aotArgs = new List<string>();
         var processArgs = new List<string>();
         bool isDedup = assembly == DedupAssembly;
+        List<ProxyFile> proxyFiles = new(capacity: 5);
         string msgPrefix = $"[{Path.GetFileName(assembly)}] ";
 
         var a = assemblyItem.GetMetadata("AotArguments");
@@ -356,8 +393,6 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
         {
             processArgs.AddRange(p.Split(new char[]{ ';' }, StringSplitOptions.RemoveEmptyEntries));
         }
-
-        Log.LogMessage(MessageImportance.Low, $"[AOT] {assembly}");
 
         processArgs.Add("--debug");
 
@@ -413,7 +448,9 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
             aotArgs.Add("llvmonly");
 
             string llvmBitcodeFile = Path.Combine(OutputDir, Path.ChangeExtension(assemblyFilename, ".dll.bc"));
-            aotAssembly.SetMetadata("LlvmBitcodeFile", llvmBitcodeFile);
+            ProxyFile proxyFile = _cache!.NewFile(llvmBitcodeFile);
+            proxyFiles.Add(proxyFile);
+            aotAssembly.SetMetadata("LlvmBitcodeFile", proxyFile.TargetFile);
 
             if (parsedAotMode == MonoAotMode.LLVMOnlyInterp)
             {
@@ -423,11 +460,11 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
             if (parsedOutputType == MonoAotOutputType.AsmOnly)
             {
                 aotArgs.Add("asmonly");
-                aotArgs.Add($"llvm-outfile={llvmBitcodeFile}");
+                aotArgs.Add($"llvm-outfile={proxyFile.TempFile}");
             }
             else
             {
-                aotArgs.Add($"outfile={llvmBitcodeFile}");
+                aotArgs.Add($"outfile={proxyFile.TempFile}");
             }
         }
         else
@@ -447,40 +484,59 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
                 aotArgs.Add("interp");
             }
 
-            if (parsedOutputType == MonoAotOutputType.ObjectFile)
+            switch (parsedOutputType)
             {
-                string objectFile = Path.Combine(OutputDir, Path.ChangeExtension(assemblyFilename, ".dll.o"));
-                aotArgs.Add($"outfile={objectFile}");
-                aotAssembly.SetMetadata("ObjectFile", objectFile);
-            }
-            else if (parsedOutputType == MonoAotOutputType.AsmOnly)
-            {
-                aotArgs.Add("asmonly");
+                case MonoAotOutputType.ObjectFile:
+                {
+                    string objectFile = Path.Combine(OutputDir, Path.ChangeExtension(assemblyFilename, ".dll.o"));
+                    ProxyFile proxyFile = _cache!.NewFile(objectFile);
+                    proxyFiles.Add((proxyFile));
+                    aotArgs.Add($"outfile={proxyFile.TempFile}");
+                    aotAssembly.SetMetadata("ObjectFile", proxyFile.TargetFile);
+                }
+                break;
 
-                string assemblerFile = Path.Combine(OutputDir, Path.ChangeExtension(assemblyFilename, ".dll.s"));
-                aotArgs.Add($"outfile={assemblerFile}");
-                aotAssembly.SetMetadata("AssemblerFile", assemblerFile);
-            }
-            else if (parsedOutputType == MonoAotOutputType.Library)
-            {
-                string extension = parsedLibraryFormat switch {
-                    MonoAotLibraryFormat.Dll => ".dll",
-                    MonoAotLibraryFormat.Dylib => ".dylib",
-                    MonoAotLibraryFormat.So => ".so",
-                    _ => throw new ArgumentOutOfRangeException()
-                };
-                string libraryFileName = $"{LibraryFilePrefix}{assemblyFilename}{extension}";
-                string libraryFilePath = Path.Combine(OutputDir, libraryFileName);
+                case MonoAotOutputType.AsmOnly:
+                {
+                    aotArgs.Add("asmonly");
 
-                aotArgs.Add($"outfile={libraryFilePath}");
-                aotAssembly.SetMetadata("LibraryFile", libraryFilePath);
+                    string assemblerFile = Path.Combine(OutputDir, Path.ChangeExtension(assemblyFilename, ".dll.s"));
+                    ProxyFile proxyFile = _cache!.NewFile(assemblerFile);
+                    proxyFiles.Add(proxyFile);
+                    aotArgs.Add($"outfile={proxyFile.TempFile}");
+                    aotAssembly.SetMetadata("AssemblerFile", proxyFile.TargetFile);
+                }
+                break;
+
+                case MonoAotOutputType.Library:
+                {
+                    string extension = parsedLibraryFormat switch {
+                        MonoAotLibraryFormat.Dll => ".dll",
+                        MonoAotLibraryFormat.Dylib => ".dylib",
+                        MonoAotLibraryFormat.So => ".so",
+                        _ => throw new ArgumentOutOfRangeException()
+                    };
+                    string libraryFileName = $"{LibraryFilePrefix}{assemblyFilename}{extension}";
+                    string libraryFilePath = Path.Combine(OutputDir, libraryFileName);
+                    ProxyFile proxyFile = _cache!.NewFile(libraryFilePath);
+                    proxyFiles.Add(proxyFile);
+
+                    aotArgs.Add($"outfile={proxyFile.TempFile}");
+                    aotAssembly.SetMetadata("LibraryFile", proxyFile.TargetFile);
+                }
+                break;
+
+                default:
+                    throw new Exception($"Bug: Unhandled MonoAotOutputType: {parsedAotMode}");
             }
 
             if (UseLLVM)
             {
                 string llvmObjectFile = Path.Combine(OutputDir, Path.ChangeExtension(assemblyFilename, ".dll-llvm.o"));
-                aotArgs.Add($"llvm-outfile={llvmObjectFile}");
-                aotAssembly.SetMetadata("LlvmObjectFile", llvmObjectFile);
+                ProxyFile proxyFile = _cache.NewFile(llvmObjectFile);
+                proxyFiles.Add(proxyFile);
+                aotArgs.Add($"llvm-outfile={proxyFile.TempFile}");
+                aotAssembly.SetMetadata("LlvmObjectFile", proxyFile.TargetFile);
             }
         }
 
@@ -555,14 +611,6 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
 
         string workingDir = assemblyDir;
 
-        // Log the command in a compact format which can be copy pasted
-        {
-            StringBuilder envStr = new StringBuilder(string.Empty);
-            foreach (KeyValuePair<string, string> kvp in envVariables)
-                envStr.Append($"{kvp.Key}={kvp.Value} ");
-            Log.LogMessage(MessageImportance.Low, $"{msgPrefix}Exec (with response file contents expanded) in {workingDir}: {envStr}{CompilerBinaryPath} {responseFileContent}");
-        }
-
         try
         {
             // run the AOT compiler
@@ -571,12 +619,24 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
                                                                 $"--response=\"{responseFilePath}\"",
                                                                 envVariables,
                                                                 workingDir,
-                                                                silent: false,
+                                                                silent: true,
                                                                 debugMessageImportance: MessageImportance.Low,
                                                                 label: Path.GetFileName(assembly));
+
+            var importance = exitCode == 0 ? MessageImportance.Low : MessageImportance.High;
+            // Log the command in a compact format which can be copy pasted
+            {
+                StringBuilder envStr = new StringBuilder(string.Empty);
+                foreach (KeyValuePair<string, string> kvp in envVariables)
+                    envStr.Append($"{kvp.Key}={kvp.Value} ");
+                Log.LogMessage(importance, $"{msgPrefix}Exec (with response file contents expanded) in {workingDir}: {envStr}{CompilerBinaryPath} {responseFileContent}");
+            }
+
+            Log.LogMessage(importance, output);
+
             if (exitCode != 0)
             {
-                Log.LogError($"Precompiling failed for {assembly}: {output}");
+                Log.LogError($"Precompiling failed for {assembly}");
                 return false;
             }
         }
@@ -587,13 +647,69 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
             return false;
         }
 
-        File.Delete(responseFilePath);
 
-        compiledAssemblies.Add(aotAssembly);
+        bool copied = false;
+        foreach (var proxyFile in proxyFiles)
+        {
+            if (!File.Exists(proxyFile.TempFile))
+            {
+                Log.LogError($"Precompiling failed for {assembly}. Could not find output file {proxyFile.TempFile}");
+                return false;
+            }
+
+            copied |= proxyFile.CopyOutputFileIfChanged();
+            _fileWrites.Add(proxyFile.TargetFile);
+        }
+
+        if (copied)
+        {
+            string copiedFiles = string.Join(", ", proxyFiles.Select(tf => Path.GetFileName(tf.TargetFile)));
+            int count = Interlocked.Increment(ref _numCompiled);
+            Log.LogMessage(MessageImportance.High, $"[{count}/{_totalNumAssemblies}] {Path.GetFileName(assembly)} -> {copiedFiles}");
+        }
+
+        File.Delete(responseFilePath);
+        compiledAssemblies.GetOrAdd(aotAssembly.ItemSpec, aotAssembly);
         return true;
     }
 
-    private bool GenerateAotModulesTable(ITaskItem[] assemblies, string[]? profilers)
+    private bool PrecompileLibrarySerial(ITaskItem assemblyItem, string? monoPaths)
+    {
+        try
+        {
+            if (!PrecompileLibrary(assemblyItem, monoPaths))
+                return !Log.HasLoggedErrors;
+            return true;
+        }
+        catch (Exception ex)
+        {
+            if (Log.HasLoggedErrors)
+                Log.LogMessage(MessageImportance.Low, $"Precompile failed for {assemblyItem}: {ex}");
+            else
+                Log.LogError($"Precompile failed for {assemblyItem}: {ex}");
+
+            return false;
+        }
+    }
+
+    private void PrecompileLibraryParallel(ITaskItem assemblyItem, string? monoPaths, ParallelLoopState state)
+    {
+        try
+        {
+            if (!PrecompileLibrary(assemblyItem, monoPaths))
+                state.Break();
+        }
+        catch (Exception ex)
+        {
+            if (Log.HasLoggedErrors)
+                Log.LogMessage(MessageImportance.Low, $"Precompile failed for {assemblyItem}: {ex}");
+            else
+                Log.LogError($"Precompile failed for {assemblyItem}: {ex}");
+            state.Break();
+        }
+    }
+
+    private bool GenerateAotModulesTable(ITaskItem[] assemblies, string[]? profilers, string outputFile)
     {
         var symbols = new List<string>();
         foreach (var asm in assemblies)
@@ -608,15 +724,15 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
             if (!TryGetAssemblyName(asmPath, out string? assemblyName))
                 return false;
 
-            string symbolName = assemblyName.Replace ('.', '_').Replace ('-', '_');
+            string symbolName = assemblyName.Replace ('.', '_').Replace ('-', '_').Replace(' ', '_');
             symbols.Add($"mono_aot_module_{symbolName}_info");
         }
 
-        Directory.CreateDirectory(Path.GetDirectoryName(AotModulesTablePath!)!);
+        Directory.CreateDirectory(Path.GetDirectoryName(outputFile)!);
 
-        using (var writer = File.CreateText(AotModulesTablePath!))
+        string tmpAotModulesTablePath = Path.GetTempFileName();
+        using (var writer = File.CreateText(tmpAotModulesTablePath))
         {
-            _fileWrites.Add(AotModulesTablePath!);
             if (parsedAotModulesTableLanguage == MonoAotModulesTableLanguage.C)
             {
                 writer.WriteLine("#include <mono/jit/jit.h>");
@@ -674,7 +790,12 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
             {
                 throw new NotSupportedException();
             }
-            Log.LogMessage(MessageImportance.Low, $"Generated {AotModulesTablePath}");
+        }
+
+        if (Utils.CopyIfDifferent(tmpAotModulesTablePath, outputFile, useHash: false))
+        {
+            _fileWrites.Add(outputFile);
+            Log.LogMessage(MessageImportance.Low, $"Generated {outputFile}");
         }
 
         return true;
@@ -704,6 +825,122 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
             Log.LogError($"Failed to get assembly name for {asmPath}: {ex.Message}");
             return false;
         }
+    }
+
+    private IList<ITaskItem> ConvertAssembliesDictToOrderedList(ConcurrentDictionary<string, ITaskItem> dict, ITaskItem[] items)
+    {
+        List<ITaskItem> outItems = new(items.Length);
+        foreach (ITaskItem item in items)
+        {
+            if (!dict.TryGetValue(item.ItemSpec, out ITaskItem? dictItem))
+                throw new LogAsErrorException($"Bug: Could not find item in the dict with key {item.ItemSpec}");
+
+            outItems.Add(dictItem);
+        }
+        return outItems;
+    }
+}
+
+internal class FileCache
+{
+    private CompilerCache? _newCache;
+    private CompilerCache? _oldCache;
+
+    public bool Enabled { get; }
+    public TaskLoggingHelper Log { get; }
+
+    public FileCache(string? cacheFilePath, TaskLoggingHelper log)
+    {
+        Log = log;
+        if (string.IsNullOrEmpty(cacheFilePath))
+        {
+            Log.LogMessage(MessageImportance.Low, $"Disabling cache, because CacheFilePath is not set");
+            return;
+        }
+
+        Enabled = true;
+        if (File.Exists(cacheFilePath))
+        {
+            _oldCache = (CompilerCache?)JsonSerializer.Deserialize(File.ReadAllText(cacheFilePath),
+                                                                    typeof(CompilerCache),
+                                                                    new JsonSerializerOptions());
+        }
+
+        _oldCache ??= new();
+        _newCache = new();
+    }
+
+    public bool ShouldCopy(ProxyFile proxyFile, [NotNullWhen(true)] out string? cause)
+    {
+        cause = null;
+
+        string newHash = Utils.ComputeHash(proxyFile.TempFile);
+        _newCache!.FileHashes[proxyFile.TargetFile] = newHash;
+
+        if (!File.Exists(proxyFile.TargetFile))
+        {
+            cause = $"the output file didn't exist";
+            return true;
+        }
+
+        string? oldHash;
+        if (!_oldCache!.FileHashes.TryGetValue(proxyFile.TargetFile, out oldHash))
+            oldHash = Utils.ComputeHash(proxyFile.TargetFile);
+
+        if (oldHash != newHash)
+        {
+            cause = $"hash for the file changed";
+            return true;
+        }
+
+        return false;
+    }
+
+    public bool Save(string? cacheFilePath)
+    {
+        if (!Enabled || string.IsNullOrEmpty(cacheFilePath))
+            return false;
+
+        var json = JsonSerializer.Serialize (_newCache, new JsonSerializerOptions { WriteIndented = true });
+        File.WriteAllText(cacheFilePath!, json);
+        return true;
+    }
+
+    public ProxyFile NewFile(string targetFile) => new ProxyFile(targetFile, this);
+}
+
+internal class ProxyFile
+{
+    public string TargetFile { get; }
+    public string TempFile   { get; }
+    private FileCache _cache;
+
+    public ProxyFile(string targetFile, FileCache cache)
+    {
+        _cache = cache;
+        this.TargetFile = targetFile;
+        this.TempFile = _cache.Enabled ? targetFile + ".tmp" : targetFile;
+    }
+
+    public bool CopyOutputFileIfChanged()
+    {
+        if (!_cache.Enabled)
+            return true;
+
+        if (!_cache.ShouldCopy(this, out string? cause))
+        {
+            _cache.Log.LogMessage(MessageImportance.Low, $"Skipping copying over {TargetFile} as the contents are unchanged");
+            return false;
+        }
+
+        if (File.Exists(TargetFile))
+            File.Delete(TargetFile);
+
+        File.Copy(TempFile, TargetFile);
+        File.Delete(TempFile);
+
+        _cache.Log.LogMessage(MessageImportance.Low, $"Copying {TempFile} to {TargetFile} because {cause}");
+        return true;
     }
 }
 
@@ -736,4 +973,10 @@ public enum MonoAotModulesTableLanguage
 {
     C,
     ObjC
+}
+
+internal class CompilerCache
+{
+    [JsonPropertyName("file_hashes")]
+    public ConcurrentDictionary<string, string> FileHashes { get; set; } = new();
 }

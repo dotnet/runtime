@@ -2367,7 +2367,7 @@ public:
 
         bool     canEnregister = true;
         unsigned slotCount     = 1;
-        if (candidate->Expr()->TypeGet() == TYP_STRUCT)
+        if (candidate->Expr()->TypeIs(TYP_STRUCT))
         {
             // This is a non-enregisterable struct.
             canEnregister                  = false;
@@ -2601,10 +2601,19 @@ public:
         //
         if (candidate->LiveAcrossCall())
         {
+            if (candidate->Expr()->IsCnsFltOrDbl() && (CNT_CALLEE_SAVED_FLOAT == 0) &&
+                (candidate->CseDsc()->csdUseWtCnt <= 4))
+            {
+                // Floating point constants are expected to be contained, so unless there are more than 4 uses
+                // we better not to CSE them, especially on platforms without callee-saved registers
+                // for values living across calls
+                return false;
+            }
+
             // If we don't have a lot of variables to enregister or we have a floating point type
             // then we will likely need to spill an additional caller save register.
             //
-            if ((enregCount < (CNT_CALLEE_ENREG * 3 / 2)) || varTypeIsFloating(candidate->Expr()->TypeGet()))
+            if ((enregCount < (CNT_CALLEE_ENREG * 3 / 2)) || varTypeIsFloating(candidate->Expr()))
             {
                 // Extra cost in case we have to spill/restore a caller saved register
                 extra_yes_cost = BB_UNITY_WEIGHT_UNSIGNED;

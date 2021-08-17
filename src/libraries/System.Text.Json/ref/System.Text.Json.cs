@@ -818,12 +818,14 @@ namespace System.Text.Json.Serialization
         public virtual bool HandleNull { get { throw null; } }
         public override bool CanConvert(System.Type typeToConvert) { throw null; }
         public abstract T? Read(ref System.Text.Json.Utf8JsonReader reader, System.Type typeToConvert, System.Text.Json.JsonSerializerOptions options);
+        public virtual T ReadAsPropertyName(ref System.Text.Json.Utf8JsonReader reader, System.Type typeToConvert, System.Text.Json.JsonSerializerOptions options) { throw null; }
         public abstract void Write(
             System.Text.Json.Utf8JsonWriter writer,
 #nullable disable
             T value,
 #nullable restore
             System.Text.Json.JsonSerializerOptions options);
+        public virtual void WriteAsPropertyName(System.Text.Json.Utf8JsonWriter writer, T value, System.Text.Json.JsonSerializerOptions options) { }
     }
     [System.AttributeUsageAttribute(System.AttributeTargets.Field | System.AttributeTargets.Property, AllowMultiple=false)]
     public sealed partial class JsonExtensionDataAttribute : System.Text.Json.Serialization.JsonAttribute

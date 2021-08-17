@@ -4,7 +4,7 @@
     <EnablePackageValidation>true</EnablePackageValidation>
     <!-- Don't restore prebuilt packages during sourcebuild. -->
     <DisablePackageBaselineValidation Condition="'$(DotNetBuildFromSource)' == 'true'">true</DisablePackageBaselineValidation>
-    <PackageValidationBaselineVersion Condition="'$(PackageValidationBaselineVersion)' == ''">$([MSBuild]::Subtract($(MajorVersion), 1)).0.0</PackageValidationBaselineVersion>
+    <PackageValidationBaselineVersion Condition="'$(PackageValidationBaselineVersion)' == ''">$([MSBuild]::Subtract($(PreviousReleaseMajorVersion), 1)).0.0</PackageValidationBaselineVersion>
     <!-- PackDependsOn is the right hook in a targets file if the NuGet.Build.Tasks.Pack nuget package is used, otherwise
          BeforePack must be used. Setting both to ensure that we are always running before other targets. --> 
     <PackDependsOn>AddNETStandardCompatErrorFileForPackaging;IncludeAnalyzersInPackage;$(PackDependsOn)</PackDependsOn>
@@ -41,15 +41,6 @@
 
   <ItemGroup Condition="'$(EnablePackageValidation)' == 'true'">
     <PackageReference Include="Microsoft.DotNet.PackageValidation" Version="$(MicrosoftDotNetPackageValidationVersion)" PrivateAssets="all" IsImplicitlyDefined="true" />
-    <!-- TODO: Remove when the SDK is upgraded to RC1. -->
-    <PackageDownload Include="$([MSBuild]::ValueOrDefault('$(PackageValidationBaselineName)', '$(PackageId)'))"
-                     Version="[$(PackageValidationBaselineVersion)]"
-                     Condition="'$(DisablePackageBaselineValidation)' != 'true' and '$(PackageValidationBaselinePath)' == '' and '$(PackageValidationBaselineVersion)' != ''" />
-  </ItemGroup>
-
-  <!-- TODO: Remove when all required nuget pack features are part of the consumed SDK. -->
-  <ItemGroup>
-    <PackageReference Include="NuGet.Build.Tasks.Pack" Version="$(NuGetBuildTasksPackVersion)" PrivateAssets="all" IsImplicitlyDefined="true" />
   </ItemGroup>
 
   <ItemGroup>

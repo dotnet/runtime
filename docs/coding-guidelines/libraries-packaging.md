@@ -22,15 +22,15 @@ Removing a library from the shared framework is a breaking change and should be 
 
 Transport packages are non-shipping packages that dotnet/runtime produces in order to share binaries with other repositories.
 
-### Microsoft.AspNetCore.Internal.Transport
+### Microsoft.Internal.Runtime.**TARGET**.Transport
 
-This package represents the set of libraries which are produced in dotnet/runtime and ship in the ASP.NETCore shared framework. We produce a transport package so that we can easily share reference assemblies and implementation configurations that might not be present in NuGet packages that also ship.
+Such transport packages represent the set of libraries which are produced in dotnet/runtime and ship in target repo's shared framework (i.e. Microsoft.AspNetCore.App and Microsoft.WindowsDesktop.App). We produce a transport package so that we can easily share reference, implementation and analyzer assemblies that might not be present in NuGet packages that also ship.
 
-To add a library to the ASP.NETCore shared framework, that library should be listed in the `AspNetCoreAppLibrary` section in `NetCoreAppLibrary.props`.
+To add a library to the target's shared framework, that library should be listed in the `AspNetCoreAppLibrary` or `WindowsDesktopAppLibrary` section in `NetCoreAppLibrary.props`.
 
-Source generators and analyzers can be included in the ASP.NETCore shared framework by adding them to the `Microsoft.AspNetCore.Internal.Transport.proj` as an AnalyzerReference. These projects should specify `AnalyzerLanguage` as mentioned [below](#analyzers--source-generators).
+Source generators and analyzers can be included in the package by adding them to the `Microsoft.Internal.Runtime.**TARGET**.Transport.proj` as an AnalyzerReference. The analyzer projects should specify `AnalyzerLanguage` as mentioned [below](#analyzers--source-generators).
 
-Libraries included in this transport package should ensure all direct and transitive assembly references are also included in either the ASP.NETCore shared framework or the .NETCore shared framework. This is not validated in dotnet/runtime at the moment: https://github.com/dotnet/runtime/issues/52562
+Libraries included in this transport package should ensure all direct and transitive assembly references are also included in either the target's shared framework or the Microsoft.NETCore.App shared framework. This is not validated in dotnet/runtime at the moment: https://github.com/dotnet/runtime/issues/52562
 
 Removing a library from this transport package is a breaking change and should be avoided.
 

@@ -3,6 +3,7 @@
 
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Runtime.CompilerServices;
 using System.Text.Json.Serialization.Metadata;
 
 namespace System.Text.Json.Serialization
@@ -143,6 +144,9 @@ namespace System.Text.Json.Serialization
         /// <remarks>Note that the value of <seealso cref="HandleNull"/> determines if the converter handles null JSON tokens.</remarks>
         public abstract T? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options);
 
+#if NET6_0_OR_GREATER
+        [MethodImpl(MethodImplOptions.AggressiveOptimization)]
+#endif
         internal bool TryRead(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options, ref ReadStack state, out T? value)
         {
             if (ConverterStrategy == ConverterStrategy.Value)
@@ -166,7 +170,7 @@ namespace System.Text.Json.Serialization
                 // For performance, only perform validation on internal converters on debug builds.
                 if (IsInternalConverter)
                 {
-                    if (state.Current.NumberHandling != null)
+                    if (state.Current.NumberHandling != null && IsInternalConverterForNumberType)
                     {
                         value = ReadNumberWithCustomHandling(ref reader, state.Current.NumberHandling.Value, options);
                     }
@@ -182,7 +186,7 @@ namespace System.Text.Json.Serialization
                     int originalPropertyDepth = reader.CurrentDepth;
                     long originalPropertyBytesConsumed = reader.BytesConsumed;
 
-                    if (state.Current.NumberHandling != null)
+                    if (state.Current.NumberHandling != null && IsInternalConverterForNumberType)
                     {
                         value = ReadNumberWithCustomHandling(ref reader, state.Current.NumberHandling.Value, options);
                     }
@@ -310,10 +314,15 @@ namespace System.Text.Json.Serialization
         }
 
         /// <summary>
-        /// Overridden by the nullable converter to prevent boxing of values by the JIT.
+        /// Performance optimization.
+        /// The 'in' modifier in 'TryWrite(in T Value)' causes boxing for Nullable{T}, so this helper avoids that.
+        /// TODO: Remove this work-around once #50915 is addressed.
         /// </summary>
-        internal virtual bool IsNull(in T value) => value == null;
+        private static bool IsNull(T value) => value is null;
 
+#if NET6_0_OR_GREATER
+        [MethodImpl(MethodImplOptions.AggressiveOptimization)]
+#endif
         internal bool TryWrite(Utf8JsonWriter writer, in T value, JsonSerializerOptions options, ref WriteStack state)
         {
             if (writer.CurrentDepth >= options.EffectiveMaxDepth)
@@ -333,10 +342,14 @@ namespace System.Text.Json.Serialization
 
             if (
 #if NET5_0_OR_GREATER
-                !typeof(T).IsValueType && // treated as a constant by recent versions of the JIT.
+                // Short-circuit the check against "is not null"; treated as a constant by recent versions of the JIT.
+                !typeof(T).IsValueType &&
 #else
                 !IsValueType &&
 #endif
+                // Since we may have checked for a null value above we may have a redundant check here,
+                // but this seems to be better than trying to cache that value when considering all permutations:
+                // int?, int?(null value), int, object, object(null value)
                 value is not null)
             {
 
@@ -433,11 +446,12 @@ namespace System.Text.Json.Serialization
 
                 if (
 #if NET5_0_OR_GREATER
-                    !typeof(T).IsValueType && // treated as a constant by recent versions of the JIT.
+                    // Short-circuit the check against ignoreCyclesPopReference; treated as a constant by recent versions of the JIT.
+                    !typeof(T).IsValueType &&
 #endif
                     ignoreCyclesPopReference)
                 {
-                    // should only be entered if we're serializing instances
+                    // Should only be entered if we're serializing instances
                     // of type object using the internal object converter.
                     Debug.Assert(value?.GetType() == typeof(object) && IsInternalConverter);
                     state.ReferenceResolver.PopReferenceForCycleDetection();
@@ -514,8 +528,8 @@ namespace System.Text.Json.Serialization
                 state.Current.OriginalDepth = writer.CurrentDepth;
             }
 
-            // Ignore the naming policy for extension data.
-            state.Current.IgnoreDictionaryKeyPolicy = true;
+            // Extension data properties change how dictionary key naming policies are applied.
+            state.Current.IsWritingExtensionDataProperty = true;
             state.Current.DeclaredJsonPropertyInfo = state.Current.JsonTypeInfo.ElementTypeInfo!.PropertyInfoForTypeInfo;
 
             success = dictionaryConverter.OnWriteResume(writer, value, options, ref state);
@@ -607,34 +621,82 @@ namespace System.Text.Json.Serialization
 #nullable restore
             JsonSerializerOptions options);
 
-        internal virtual T ReadAsPropertyName(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+        /// <summary>
+        /// Reads a dictionary key from a JSON property name.
+        /// </summary>
+        /// <param name="reader">The <see cref="Utf8JsonReader"/> to read from.</param>
+        /// <param name="typeToConvert">The <see cref="Type"/> being converted.</param>
+        /// <param name="options">The <see cref="JsonSerializerOptions"/> being used.</param>
+        /// <returns>The value that was converted.</returns>
+        /// <remarks>Method should be overridden in custom converters of types used in deserialized dictionary keys.</remarks>
+        public virtual T ReadAsPropertyName(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
         {
             if (!IsInternalConverter && options.TryGetDefaultSimpleConverter(TypeToConvert, out JsonConverter? defaultConverter))
             {
                 // .NET 5 backward compatibility: hardcode the default converter for primitive key serialization.
                 Debug.Assert(defaultConverter.IsInternalConverter && defaultConverter is JsonConverter<T>);
-                return ((JsonConverter<T>)defaultConverter).ReadAsPropertyName(ref reader, TypeToConvert, options);
+                return ((JsonConverter<T>)defaultConverter).ReadAsPropertyNameCore(ref reader, TypeToConvert, options);
             }
 
             ThrowHelper.ThrowNotSupportedException_DictionaryKeyTypeNotSupported(TypeToConvert, this);
             return default;
         }
 
-        internal virtual void WriteAsPropertyName(Utf8JsonWriter writer, T value, JsonSerializerOptions options, ref WriteStack state)
+        internal virtual T ReadAsPropertyNameCore(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+        {
+            Debug.Assert(reader.TokenType == JsonTokenType.PropertyName);
+
+            long originalBytesConsumed = reader.BytesConsumed;
+            T result = ReadAsPropertyName(ref reader, typeToConvert, options);
+            if (reader.BytesConsumed != originalBytesConsumed)
+            {
+                ThrowHelper.ThrowJsonException_SerializationConverterRead(this);
+            }
+
+            return result;
+        }
+
+        /// <summary>
+        /// Writes a dictionary key as a JSON property name.
+        /// </summary>
+        /// <param name="writer">The <see cref="Utf8JsonWriter"/> to write to.</param>
+        /// <param name="value">The value to convert. Note that the value of <seealso cref="HandleNull"/> determines if the converter handles <see langword="null" /> values.</param>
+        /// <param name="options">The <see cref="JsonSerializerOptions"/> being used.</param>
+        /// <remarks>Method should be overridden in custom converters of types used in serialized dictionary keys.</remarks>
+        public virtual void WriteAsPropertyName(Utf8JsonWriter writer, T value, JsonSerializerOptions options)
         {
             if (!IsInternalConverter && options.TryGetDefaultSimpleConverter(TypeToConvert, out JsonConverter? defaultConverter))
             {
                 // .NET 5 backward compatibility: hardcode the default converter for primitive key serialization.
                 Debug.Assert(defaultConverter.IsInternalConverter && defaultConverter is JsonConverter<T>);
-                ((JsonConverter<T>)defaultConverter).WriteAsPropertyName(writer, value, options, ref state);
+                ((JsonConverter<T>)defaultConverter).WriteAsPropertyNameCore(writer, value, options, isWritingExtensionDataProperty: false);
                 return;
             }
 
             ThrowHelper.ThrowNotSupportedException_DictionaryKeyTypeNotSupported(TypeToConvert, this);
         }
 
-        internal sealed override void WriteAsPropertyNameAsObject(Utf8JsonWriter writer, object value, JsonSerializerOptions options, ref WriteStack state)
-            => WriteAsPropertyName(writer, (T)value, options, ref state);
+        internal virtual void WriteAsPropertyNameCore(Utf8JsonWriter writer, T value, JsonSerializerOptions options, bool isWritingExtensionDataProperty)
+        {
+            if (isWritingExtensionDataProperty)
+            {
+                // Extension data is meant as mechanism to gather unused JSON properties;
+                // do not apply any custom key conversions and hardcode the default behavior.
+                Debug.Assert(!IsInternalConverter && TypeToConvert == typeof(string));
+                writer.WritePropertyName((string)(object)value!);
+                return;
+            }
+
+            int originalDepth = writer.CurrentDepth;
+            WriteAsPropertyName(writer, value, options);
+            if (originalDepth != writer.CurrentDepth || writer.TokenType != JsonTokenType.PropertyName)
+            {
+                ThrowHelper.ThrowJsonException_SerializationConverterWrite(this);
+            }
+        }
+
+        internal sealed override void WriteAsPropertyNameCoreAsObject(Utf8JsonWriter writer, object value, JsonSerializerOptions options, bool isWritingExtensionDataProperty)
+            => WriteAsPropertyNameCore(writer, (T)value, options, isWritingExtensionDataProperty);
 
         internal virtual T ReadNumberWithCustomHandling(ref Utf8JsonReader reader, JsonNumberHandling handling, JsonSerializerOptions options)
             => throw new InvalidOperationException();

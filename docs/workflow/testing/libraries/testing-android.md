@@ -9,7 +9,7 @@ The following dependencies should be installed in order to be able to run tests:
 
 OpenJDK can be installed on Linux (Ubuntu) using `apt-get`:
 ```bash
-sudo apt-get install openjdk-8 unzip
+sudo apt-get install openjdk-8 zip unzip
 ```
 
 Android SDK, NDK and OpenSSL can be automatically installed via the following script:

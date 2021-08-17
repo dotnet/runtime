@@ -26,7 +26,9 @@ namespace System.Text.Json
         [RequiresUnreferencedCode(SerializationUnreferencedCodeMessage)]
         public static string Serialize<TValue>(TValue value, JsonSerializerOptions? options = null)
         {
-            return Write(value, GetRuntimeType(value), options);
+            Type runtimeType = GetRuntimeType(value);
+            JsonTypeInfo jsonTypeInfo = GetTypeInfo(options, runtimeType);
+            return WriteStringUsingSerializer(value, jsonTypeInfo);
         }
 
         /// <summary>
@@ -56,10 +58,9 @@ namespace System.Text.Json
             Type inputType,
             JsonSerializerOptions? options = null)
         {
-            return Write(
-                value,
-                GetRuntimeTypeAndValidateInputType(value, inputType),
-                options);
+            Type runtimeType = GetRuntimeTypeAndValidateInputType(value, inputType);
+            JsonTypeInfo jsonTypeInfo = GetTypeInfo(options, runtimeType);
+            return WriteStringUsingSerializer(value, jsonTypeInfo);
         }
 
         /// <summary>
@@ -81,7 +82,7 @@ namespace System.Text.Json
         /// </remarks>
         public static string Serialize<TValue>(TValue value, JsonTypeInfo<TValue> jsonTypeInfo)
         {
-            return WriteUsingMetadata(value, jsonTypeInfo);
+            return WriteStringUsingGeneratedSerializer(value, jsonTypeInfo);
         }
 
         /// <summary>
@@ -113,18 +114,12 @@ namespace System.Text.Json
                 throw new ArgumentNullException(nameof(context));
             }
 
-            Type runtimeType = GetRuntimeTypeAndValidateInputType(value, inputType);
-            return WriteUsingMetadata(value, GetTypeInfo(context, runtimeType));
+            Type type = GetRuntimeTypeAndValidateInputType(value, inputType);
+            JsonTypeInfo jsonTypeInfo = GetTypeInfo(context, type);
+            return WriteStringUsingGeneratedSerializer(value, jsonTypeInfo);
         }
 
-        [RequiresUnreferencedCode(SerializationUnreferencedCodeMessage)]
-        private static string Write<TValue>(in TValue value, Type runtimeType, JsonSerializerOptions? options)
-        {
-            JsonTypeInfo typeInfo = GetTypeInfo(runtimeType, options);
-            return WriteUsingMetadata(value, typeInfo);
-        }
-
-        private static string WriteUsingMetadata<TValue>(in TValue value, JsonTypeInfo? jsonTypeInfo)
+        private static string WriteStringUsingGeneratedSerializer<TValue>(in TValue value, JsonTypeInfo? jsonTypeInfo)
         {
             if (jsonTypeInfo == null)
             {
@@ -137,7 +132,27 @@ namespace System.Text.Json
             {
                 using (var writer = new Utf8JsonWriter(output, options.GetWriterOptions()))
                 {
-                    WriteUsingMetadata(writer, value, jsonTypeInfo);
+                    WriteUsingGeneratedSerializer(writer, value, jsonTypeInfo);
+                }
+
+                return JsonReaderHelper.TranscodeHelper(output.WrittenMemory.Span);
+            }
+        }
+
+        private static string WriteStringUsingSerializer<TValue>(in TValue value, JsonTypeInfo? jsonTypeInfo)
+        {
+            if (jsonTypeInfo == null)
+            {
+                throw new ArgumentNullException(nameof(jsonTypeInfo));
+            }
+
+            JsonSerializerOptions options = jsonTypeInfo.Options;
+
+            using (var output = new PooledByteBufferWriter(options.DefaultBufferSize))
+            {
+                using (var writer = new Utf8JsonWriter(output, options.GetWriterOptions()))
+                {
+                    WriteUsingSerializer(writer, value, jsonTypeInfo);
                 }
 
                 return JsonReaderHelper.TranscodeHelper(output.WrittenMemory.Span);
