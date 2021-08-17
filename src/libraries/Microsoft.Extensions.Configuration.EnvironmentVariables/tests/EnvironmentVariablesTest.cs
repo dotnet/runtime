@@ -82,7 +82,7 @@ namespace Microsoft.Extensions.Configuration.EnvironmentVariables.Test
             Assert.Equal("System.Data.SqlClient", envConfigSrc.Get("ConnectionStrings:db4_ProviderName"));
             Assert.Equal("CommonEnvValue", envConfigSrc.Get("CommonEnv"));
             Assert.Equal("PostgreSQLConnStr", envConfigSrc.Get("ConnectionStrings:db5"));
-            Assert.Equal("Npgsql", envConfigSrc.Get("ConnectionStrings:db5_ProviderName"));
+            Assert.Equal("Postgres", envConfigSrc.Get("ConnectionStrings:db5_ProviderName"));
         }
 
         [Fact]
@@ -109,7 +109,7 @@ namespace Microsoft.Extensions.Configuration.EnvironmentVariables.Test
             Assert.Equal("SQLAzureConnStr", envConfigSrc.Get("db4"));
             Assert.Equal("System.Data.SqlClient", envConfigSrc.Get("db4_ProviderName"));
             Assert.Equal("PostgreSQLConnStr", envConfigSrc.Get("db5"));
-            Assert.Equal("Npgsql", envConfigSrc.Get("db5_ProviderName"));
+            Assert.Equal("Postgres", envConfigSrc.Get("db5_ProviderName"));
         }
 
         [Fact]

@@ -68,7 +68,7 @@ namespace Microsoft.Extensions.Configuration.EnvironmentVariables
                     else if (key.StartsWith(PostgreSqlServerPrefix, StringComparison.OrdinalIgnoreCase))
                     {
                         prefix = PostgreSqlServerPrefix;
-                        provider = "Npgsql";
+                        provider = "Postgres";
                     }
                     else if (key.StartsWith(SqlAzureServerPrefix, StringComparison.OrdinalIgnoreCase))
                     {
