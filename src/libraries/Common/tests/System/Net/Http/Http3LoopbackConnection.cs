@@ -56,6 +56,10 @@ namespace System.Net.Test.Common
                 stream.Dispose();
             }
 
+// We don't dispose the connection currently, because this causes races when the server connection is closed before
+// the client has received and handled all response data.
+// See discussion in https://github.com/dotnet/runtime/pull/57223#discussion_r687447832
+#if false
             // Dispose the connection
             // If we already waited for graceful shutdown from the client, then the connection is already closed and this will simply release the handle.
             // If not, then this will silently abort the connection.
@@ -64,6 +68,7 @@ namespace System.Net.Test.Common
             // Dispose control streams so that we release their handles too.
             _inboundControlStream?.Dispose();
             _outboundControlStream?.Dispose();
+#endif
         }
 
         public async Task CloseAsync(long errorCode)
