@@ -1481,6 +1481,7 @@ protected:
 
     ssize_t emitGetInsCIdisp(instrDesc* id);
     unsigned emitGetInsCIargs(instrDesc* id);
+    inline static emitAttr emitGetMemOpSize(instrDesc* id);
 
     // Return the argument count for a direct call "id".
     int emitGetInsCDinfo(instrDesc* id);
@@ -2790,6 +2791,58 @@ inline unsigned emitter::emitGetInsCIargs(instrDesc* id)
         ssize_t cns = emitGetInsCns(id);
         assert((unsigned)cns == (size_t)cns);
         return (unsigned)cns;
+    }
+}
+
+//-----------------------------------------------------------------------------
+//  emitGetMemOpSize: Get the memory operand size of instrDesc.
+//
+//  Arguments:
+//       id - Instruction descriptor
+//
+/* static */ emitAttr emitter::emitGetMemOpSize(instrDesc* id)
+{
+    switch (id->idIns())
+    {
+        case INS_vextractf128:
+        case INS_vextracti128:
+        case INS_vinsertf128:
+        case INS_vinserti128:
+        {
+            return EA_16BYTE;
+        }
+
+        case INS_pextrb:
+        case INS_pinsrb:
+        {
+            return EA_1BYTE;
+        }
+
+        case INS_pextrw:
+        case INS_pextrw_sse41:
+        case INS_pinsrw:
+        {
+            return EA_2BYTE;
+        }
+
+        case INS_extractps:
+        case INS_insertps:
+        case INS_pextrd:
+        case INS_pinsrd:
+        {
+            return EA_4BYTE;
+        }
+
+        case INS_pextrq:
+        case INS_pinsrq:
+        {
+            return EA_8BYTE;
+        }
+
+        default:
+        {
+            return id->idOpSize();
+        }
     }
 }
 
