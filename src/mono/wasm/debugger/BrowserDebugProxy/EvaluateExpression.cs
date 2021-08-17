@@ -286,13 +286,17 @@ namespace Microsoft.WebAssembly.Diagnostics
         internal static async Task<JObject> CompileAndRunTheExpression(string expression, MemberReferenceResolver resolver, CancellationToken token)
         {
             expression = expression.Trim();
+            if (!expression.StartsWith('('))
+            {
+                expression = "(" + expression + ")";
+            }
             SyntaxTree syntaxTree = CSharpSyntaxTree.ParseText(@"
                 using System;
                 public class CompileAndRunTheExpression
                 {
                     public static object Evaluate()
                     {
-                        return (" + expression + @");
+                        return " + expression + @";
                     }
                 }", cancellationToken: token);
 

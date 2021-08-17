@@ -841,7 +841,6 @@ namespace DebuggerTests
                 var t_props = await GetObjectOnLocals(locals, "t");
                 await CheckProps(t_props, new
                     {
-                        s_taskIdCounter = TNumber(0),
                         Status = TGetter("Status")
                     }, "t_props", num_fields: 53);
             });

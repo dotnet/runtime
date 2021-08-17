@@ -2117,14 +2117,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                 retDebuggerCmdReader.ReadByte(); //ignore type
                 var objectId = retDebuggerCmdReader.ReadInt32();
                 var asyncLocals = await GetObjectValues(sessionId, objectId, GetObjectCommandOptions.WithProperties, token);
-                asyncLocals = new JArray(asyncLocals.Where( asyncLocal => !asyncLocal["name"].Value<string>().Contains("<>") || asyncLocal["name"].Value<string>().EndsWith("__this")));
-                foreach (var asyncLocal in asyncLocals)
-                {
-                    if (asyncLocal["name"].Value<string>().EndsWith("__this", StringComparison.Ordinal))
-                        asyncLocal["name"] = "this";
-                    else if (asyncLocal["name"].Value<string>().Contains('<'))
-                        asyncLocal["name"] = Regex.Match(asyncLocal["name"].Value<string>(), @"\<([^)]*)\>").Groups[1].Value;
-                }
+                asyncLocals = await GetHoistedLocalVariables(sessionId, objectId, asyncLocals, token);
                 return asyncLocals;
             }
 
