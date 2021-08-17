@@ -41,7 +41,7 @@ namespace System
                     foreach (var (k, v) in s_switches)
                     {
                         // Convert bool to int because it's cheaper to log (no boxing)
-                        ev.LogAppContextSwitch(k, v ? 0 : 1);
+                        ev.LogAppContextSwitch(k, v ? 1 : 0);
                     }
                 }
             }
@@ -50,11 +50,18 @@ namespace System
             {
                 lock (s_dataStore)
                 {
-                    foreach (var (k, v) in s_dataStore)
+                    if (s_switches is not null)
                     {
-                        if (v is string s && bool.TryParse(s, out bool isEnabled))
+                        lock (s_switches)
                         {
-                            ev.LogAppContextSwitch(k, isEnabled ? 0 : 1);
+                            foreach (var (k, v) in s_dataStore)
+                            {
+                                if (v is string s && bool.TryParse(s, out bool isEnabled) &&
+                                    !s_switches.ContainsKey(s))
+                                {
+                                    ev.LogAppContextSwitch(k, isEnabled ? 1 : 0);
+                                }
+                            }
                         }
                     }
                 }
