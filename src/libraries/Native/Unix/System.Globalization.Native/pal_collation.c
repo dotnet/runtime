@@ -417,7 +417,7 @@ static int CanIgnoreAllCollationElements(const UCollator* pColl, const UChar* lp
 
 static void CreateSortHandle(SortHandle** ppSortHandle)
 {
-    *ppSortHandle = (SortHandle*)malloc(sizeof(SortHandle));
+    *ppSortHandle = (SortHandle*)calloc(1, sizeof(SortHandle));
     if ((*ppSortHandle) == NULL)
     {
         return;
@@ -513,7 +513,6 @@ static const char* BreakIteratorRuleNew =  // supported on newer ICU versions li
                         ".;";
 
 static UChar* s_breakIteratorRules = NULL;
-static int32_t s_breakIteratorRulesLength = 0;
 
 // When doing string search operations using ICU, it is internally using a break iterator which doesn't allow breaking between some characters according to
 // the Grapheme Cluster Boundary Rules specified in http://www.unicode.org/reports/tr29/#Grapheme_Cluster_Boundary_Rules.
@@ -530,8 +529,7 @@ static UBreakIterator* CreateCustomizedBreakIterator()
     UErrorCode status = U_ZERO_ERROR;
     if (s_breakIteratorRules != NULL)
     {
-        assert(s_breakIteratorRulesLength > 0);
-        breaker = ubrk_openRules(s_breakIteratorRules, s_breakIteratorRulesLength, emptyString, 0, NULL, &status);
+        breaker = ubrk_openRules(s_breakIteratorRules, -1, emptyString, 0, NULL, &status);
         return U_FAILURE(status) ? NULL : breaker;
     }
 
@@ -540,25 +538,22 @@ static UBreakIterator* CreateCustomizedBreakIterator()
 
     int32_t breakIteratorRulesLength = newRulesLength > oldRulesLength ? newRulesLength : oldRulesLength;
 
-    UChar* rules = (UChar*)malloc((breakIteratorRulesLength + 1) * sizeof(UChar));
+    UChar* rules = (UChar*)calloc((breakIteratorRulesLength + 1), sizeof(UChar));
     if (rules == NULL)
     {
         return NULL;
     }
 
-    u_uastrcpy(rules, BreakIteratorRuleNew);
+    u_uastrncpy(rules, BreakIteratorRuleNew, newRulesLength);
+    rules[newRulesLength] = '\0';
 
     breaker = ubrk_openRules(rules, newRulesLength, emptyString, 0, NULL, &status);
     if (U_FAILURE(status))
     {
         status = U_ZERO_ERROR;
-        u_uastrcpy(rules, BreakIteratorRuleOld);
+        u_uastrncpy(rules, BreakIteratorRuleOld, oldRulesLength);
+        rules[oldRulesLength] = '\0';
         breaker = ubrk_openRules(rules, oldRulesLength, emptyString, 0, NULL, &status);
-        s_breakIteratorRulesLength = oldRulesLength;
-    }
-    else
-    {
-        s_breakIteratorRulesLength = newRulesLength;
     }
 
     if (U_FAILURE(status))
@@ -667,7 +662,7 @@ static const UCollator* GetCollatorFromSortHandle(SortHandle* pSortHandle, int32
 // CreateNewSearchNode will create a new node in the linked list and mark this node search handle as borrowed handle.
 static inline int32_t CreateNewSearchNode(SortHandle* pSortHandle, int32_t options)
 {
-    SearchIteratorNode* node = (SearchIteratorNode*) malloc(sizeof(SearchIteratorNode));
+    SearchIteratorNode* node = (SearchIteratorNode*)calloc(1, sizeof(SearchIteratorNode));
     if (node == NULL)
     {
         return false;

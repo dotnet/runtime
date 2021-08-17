@@ -5,6 +5,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdlib.h>
+#include <string.h>
 
 #include "pal_errors_internal.h"
 #include "pal_locale_internal.h"
@@ -223,7 +224,7 @@ static void FixupTimeZoneGenericDisplayName(const char* locale, const UChar* tim
         }
 
         // Make a UChar[] version of the test time zone id for use in the API calls.
-        u_uastrcpy(testTimeZoneId, testId);
+        u_uastrncpy(testTimeZoneId, testId, (int32_t)strlen(testId));
 
         // Get the standard name from the test time zone.
         GetTimeZoneDisplayName_FromCalendar(locale, testTimeZoneId, timestamp, UCAL_STANDARD, testDisplayName, DISPLAY_NAME_LENGTH, err);

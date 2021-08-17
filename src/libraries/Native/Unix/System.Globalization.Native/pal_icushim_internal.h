@@ -72,7 +72,7 @@ U_CAPI int32_t U_EXPORT2 ucal_getWindowsTimeZoneID(const UChar* id, int32_t len,
     PER_FUNCTION_BLOCK(u_strncpy, libicuuc, true) \
     PER_FUNCTION_BLOCK(u_tolower, libicuuc, true) \
     PER_FUNCTION_BLOCK(u_toupper, libicuuc, true) \
-    PER_FUNCTION_BLOCK(u_uastrcpy, libicuuc, true) \
+    PER_FUNCTION_BLOCK(u_uastrncpy, libicuuc, true) \
     PER_FUNCTION_BLOCK(ubrk_close, libicui18n, true) \
     PER_FUNCTION_BLOCK(ubrk_openRules, libicui18n, true) \
     PER_FUNCTION_BLOCK(ucal_add, libicui18n, true) \
@@ -218,7 +218,7 @@ FOR_ALL_ICU_FUNCTIONS
 #define u_strncpy(...) u_strncpy_ptr(__VA_ARGS__)
 #define u_tolower(...) u_tolower_ptr(__VA_ARGS__)
 #define u_toupper(...) u_toupper_ptr(__VA_ARGS__)
-#define u_uastrcpy(...) u_uastrcpy_ptr(__VA_ARGS__)
+#define u_uastrncpy(...) u_uastrncpy_ptr(__VA_ARGS__)
 #define ubrk_close(...) ubrk_close_ptr(__VA_ARGS__)
 #define ubrk_openRules(...) ubrk_openRules_ptr(__VA_ARGS__)
 #define ucal_add(...) ucal_add_ptr(__VA_ARGS__)

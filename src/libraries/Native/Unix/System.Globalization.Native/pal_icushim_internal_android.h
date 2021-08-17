@@ -441,7 +441,7 @@ UChar * u_strcpy(UChar * dst, const UChar * src);
 UChar * u_strncpy(UChar * dst, const UChar * src, int32_t n);
 UChar32 u_tolower(UChar32 c);
 UChar32 u_toupper(UChar32 c);
-UChar* u_uastrcpy(UChar * dst, const char * src);
+UChar* u_uastrncpy(UChar * dst, const char * src, int32_t n);
 void ubrk_close(UBreakIterator * bi);
 UBreakIterator* ubrk_openRules(const UChar * rules, int32_t rulesLength, const UChar * text, int32_t textLength, UParseError * parseErr, UErrorCode * status);
 void ucal_add(UCalendar * cal, UCalendarDateFields field, int32_t amount, UErrorCode * status);
