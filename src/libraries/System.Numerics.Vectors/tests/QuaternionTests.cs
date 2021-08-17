@@ -877,27 +877,13 @@ namespace System.Numerics.Tests
             actual = a.Equals(b);
             Assert.Equal(expected, actual);
         }
-        
+
         // A test for Zero
         [Fact]
         public void QuaternionZeroTest()
         {
             Quaternion val = default;
             Assert.Equal(val, Quaternion.Zero);
-        }
-
-        // A test for IsZero
-        [Fact]
-        public void QuaternionIsZeroTest()
-        {
-            Assert.True(Quaternion.Zero.IsZero);
-            Assert.True(default(Quaternion).IsZero);
-            Assert.True(new Quaternion().IsZero);
-            Assert.True(new Quaternion(0, 0, 0, 0).IsZero);
-            Assert.False(new Quaternion(0, 0, 0, 1).IsZero);
-            Assert.False(new Quaternion(1, 0, 0, 1).IsZero);
-            Assert.False(new Quaternion(0, 1, 0, 1).IsZero);
-            Assert.False(new Quaternion(0, 0, 1, 1).IsZero);
         }
 
         // A test for Identity

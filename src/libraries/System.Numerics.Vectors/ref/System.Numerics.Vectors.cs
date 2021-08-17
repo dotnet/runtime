@@ -155,7 +155,6 @@ namespace System.Numerics
         public Quaternion(float x, float y, float z, float w) { throw null; }
         public static System.Numerics.Quaternion Zero { get { throw null; } }
         public static System.Numerics.Quaternion Identity { get { throw null; } }
-        public readonly bool IsZero { get { throw null; } }
         public readonly bool IsIdentity { get { throw null; } }
         public static System.Numerics.Quaternion Add(System.Numerics.Quaternion value1, System.Numerics.Quaternion value2) { throw null; }
         public static System.Numerics.Quaternion Concatenate(System.Numerics.Quaternion value1, System.Numerics.Quaternion value2) { throw null; }

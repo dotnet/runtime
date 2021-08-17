@@ -65,14 +65,6 @@ namespace System.Numerics
             get => new Quaternion(0, 0, 0, 1);
         }
 
-        /// <summary>Gets a value that indicates whether the current instance is the zero quaternion.</summary>
-        /// <value><see langword="true" /> if the current instance is the zero quaternion; otherwise, <see langword="false" />.</value>
-        /// <altmember cref="System.Numerics.Quaternion.Zero"/>
-        public readonly bool IsZero
-        {
-            get => this == Zero;
-        }
-
         /// <summary>Gets a value that indicates whether the current instance is the identity quaternion.</summary>
         /// <value><see langword="true" /> if the current instance is the identity quaternion; otherwise, <see langword="false" />.</value>
         /// <altmember cref="System.Numerics.Quaternion.Identity"/>
