@@ -851,12 +851,6 @@ public:
 #endif //FREE_USAGE_STATS
 };
 
-static_assert(offsetof(dac_generation, allocation_context) == offsetof(generation, allocation_context), "DAC generation offset mismatch");
-static_assert(offsetof(dac_generation, start_segment) == offsetof(generation, start_segment), "DAC generation offset mismatch");
-#ifndef USE_REGIONS
-static_assert(offsetof(dac_generation, allocation_start) == offsetof(generation, allocation_start), "DAC generation offset mismatch");
-#endif //!USE_REGIONS
-
 // static data remains the same after it's initialized.
 // It's per generation.
 // TODO: for gen_time_tuning, we should put the multipliers in static data.
