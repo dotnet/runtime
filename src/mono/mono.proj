@@ -504,6 +504,7 @@
       <_Objcopy>objcopy</_Objcopy>
       <_Objcopy Condition="'$(Platform)' == 'arm'">arm-linux-$(_LinuxAbi)eabi$(_LinuxFloatAbi)-$(_Objcopy)</_Objcopy>
       <_Objcopy Condition="'$(Platform)' == 'arm64'">aarch64-linux-$(_LinuxAbi)-$(_Objcopy)</_Objcopy>
+      <_Objcopy Condition="'$(Platform)' == 's390x'">s390x-linux-$(_LinuxAbi)-$(_Objcopy)</_Objcopy>
       <_Objcopy Condition="'$(Platform)' == 'x64'">x86_64-linux-$(_LinuxAbi)-$(_Objcopy)</_Objcopy>
       <_Objcopy Condition="'$(Platform)' == 'x86'">i686-linux-$(_LinuxAbi)-$(_Objcopy)</_Objcopy>
       <_Objcopy Condition="'$(TargetsAndroid)' == 'true'">$(ANDROID_NDK_ROOT)/toolchains/llvm/prebuilt/$(MonoToolchainPrebuiltOS)/bin/$(_Objcopy)</_Objcopy>
