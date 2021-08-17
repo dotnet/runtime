@@ -427,10 +427,7 @@ bool pal::get_dotnet_self_registered_dir(pal::string_t* recv)
     }
     //  ***************************
 
-    pal::string_t install_location_file_path;
-    get_dotnet_self_registered_config_location(&install_location_file_path);
-    //  ***************************
-
+    pal::string_t install_location_file_path = get_dotnet_self_registered_config_location();
     trace::verbose(_X("Looking for install_location file in '%s'."), install_location_file_path.c_str());
     FILE* install_location_file = pal::file_open(install_location_file_path, "r");
     if (install_location_file == nullptr)
