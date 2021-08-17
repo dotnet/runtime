@@ -86,13 +86,7 @@ namespace System
 
             public override void NextBytes(byte[] buffer) => _prng.NextBytes(buffer);
 
-            public override void NextBytes(Span<byte> buffer)
-            {
-                for (int i = 0; i < buffer.Length; i++)
-                {
-                    buffer[i] = (byte)_prng.InternalSample();
-                }
-            }
+            public override void NextBytes(Span<byte> buffer) => _prng.NextBytes(buffer);
         }
 
         /// <summary>
@@ -257,7 +251,7 @@ namespace System
                 // Including the division at the end gives us significantly improved random number distribution.
                 InternalSample() * (1.0 / int.MaxValue);
 
-            internal void NextBytes(byte[] buffer)
+            internal void NextBytes(Span<byte> buffer)
             {
                 for (int i = 0; i < buffer.Length; i++)
                 {
