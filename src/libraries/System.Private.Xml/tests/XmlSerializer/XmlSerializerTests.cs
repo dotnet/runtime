@@ -237,6 +237,7 @@ string.Format(@"<?xml version=""1.0"" encoding=""utf-8""?>
         Assert.StrictEqual(x.P1, y.P1);
     }
 
+#if !XMLSERIALIZERGENERATORTESTS
     [Fact]
     public static void Xml_EnumAsObject()
     {
@@ -248,6 +249,7 @@ string.Format(@"<?xml version=""1.0"" encoding=""utf-8""?>
         Assert.StrictEqual((int)o, o2);
         Assert.Equal(MyEnum.Three, (MyEnum)o2);
     }
+#endif
 
     [Fact]
     public static void Xml_DCClassWithEnumAndStruct()
