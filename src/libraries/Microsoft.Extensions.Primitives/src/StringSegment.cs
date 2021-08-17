@@ -252,9 +252,6 @@ namespace Microsoft.Extensions.Primitives
         /// <param name="text">The <see cref="string"/> to compare with the current <see cref="StringSegment"/>.</param>
         /// <param name="comparisonType">One of the enumeration values that specifies the rules to use in the comparison.</param>
         /// <returns><see langword="true" /> if the specified <see cref="string"/> is equal to the current <see cref="StringSegment"/>; otherwise, <see langword="false" />.</returns>
-        /// <exception cref="ArgumentNullException">
-        /// <paramref name="text"/> is <see langword="null" />.
-        /// </exception>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool Equals([NotNullWhen(true)] string? text, StringComparison comparisonType)
         {
