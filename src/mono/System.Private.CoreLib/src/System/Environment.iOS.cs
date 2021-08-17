@@ -112,8 +112,9 @@ namespace System
             static string CombineAndCreateSearchPath(NSSearchPathDirectory searchPath, string subdirectory)
             {
                 string path = CombineSearchPath(searchPath, subdirectory);
-                if (!Directory.Exists (path))
-                    Directory.CreateDirectory (path);
+// DISABLE FOR NOW FOR DEBUGGING
+//                if (!Directory.Exists (path))
+//                    Directory.CreateDirectory (path);
                 return path;
             }
 #endif
