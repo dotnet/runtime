@@ -19,7 +19,7 @@
     <!-- Opt-in/out repo features -->
     <UsingToolMicrosoftNetCompilers>true</UsingToolMicrosoftNetCompilers>
     <!-- TODO: Upgrade compiler version to enable Static Abstracts in Interfaces, interpolated string handlers, and caller arg expressions; remove this once the employed SDK uses a new enough version. -->
-    <MicrosoftNetCompilersToolsetVersion>4.0.0-3.21376.12</MicrosoftNetCompilersToolsetVersion>
+    <MicrosoftNetCompilersToolsetVersion>4.0.0-4.21416.10</MicrosoftNetCompilersToolsetVersion>
     <UsingToolMicrosoftNetILLinkTasks>true</UsingToolMicrosoftNetILLinkTasks>
     <UsingToolIbcOptimization>false</UsingToolIbcOptimization>
     <UsingToolXliff>false</UsingToolXliff>
