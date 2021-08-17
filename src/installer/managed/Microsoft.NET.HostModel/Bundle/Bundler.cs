@@ -42,7 +42,7 @@ namespace Microsoft.NET.HostModel.Bundle
                        Version targetFrameworkVersion = null,
                        bool diagnosticOutput = false,
                        string appAssemblyName = null,
-                       bool macosCodesign = false)
+                       bool macosCodesign = true)
         {
             Tracer = new Trace(diagnosticOutput);
 
