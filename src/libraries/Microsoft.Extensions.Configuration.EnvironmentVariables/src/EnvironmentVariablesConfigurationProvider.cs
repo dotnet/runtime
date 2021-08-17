@@ -13,6 +13,7 @@ namespace Microsoft.Extensions.Configuration.EnvironmentVariables
     public class EnvironmentVariablesConfigurationProvider : ConfigurationProvider
     {
         private const string MySqlServerPrefix = "MYSQLCONNSTR_";
+        private const string PostgreSqlServerPrefix = "POSTGRESQLCONNSTR_";
         private const string SqlAzureServerPrefix = "SQLAZURECONNSTR_";
         private const string SqlServerPrefix = "SQLCONNSTR_";
         private const string CustomPrefix = "CUSTOMCONNSTR_";
@@ -63,6 +64,11 @@ namespace Microsoft.Extensions.Configuration.EnvironmentVariables
                     {
                         prefix = MySqlServerPrefix;
                         provider = "MySql.Data.MySqlClient";
+                    }
+                    else if (key.StartsWith(PostgreSqlServerPrefix, StringComparison.OrdinalIgnoreCase))
+                    {
+                        prefix = PostgreSqlServerPrefix;
+                        provider = "Npgsql";
                     }
                     else if (key.StartsWith(SqlAzureServerPrefix, StringComparison.OrdinalIgnoreCase))
                     {
