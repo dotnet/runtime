@@ -298,12 +298,13 @@ namespace System.Diagnostics
                             Debug.Assert(bufferSize > 8);
                             byte* alignedBufferPtr = (byte*)(((nint)bufferPtr + 7) & ~7);
                             int firstAlignedElementIndex = (int)(alignedBufferPtr - bufferPtr);
+                            bufferSize = buffer.Length - firstAlignedElementIndex;
 
                             uint actualSize = 0;
                             uint status = Interop.NtDll.NtQuerySystemInformation(
                                 Interop.NtDll.SystemProcessInformation,
                                 alignedBufferPtr,
-                                (uint)(buffer.Length - firstAlignedElementIndex),
+                                (uint)bufferSize,
                                 &actualSize);
 
                             if (status != Interop.NtDll.STATUS_INFO_LENGTH_MISMATCH)
@@ -315,12 +316,13 @@ namespace System.Diagnostics
                                 }
 
                                 Debug.Assert(actualSize > 0 && actualSize <= bufferSize, $"Actual size reported by NtQuerySystemInformation was {actualSize} for a buffer of size={bufferSize}.");
-                                MostRecentSize = GetNewBufferSize(bufferSize, (int)actualSize);
+                                MostRecentSize = GetEstimatedBufferSize(actualSize);
                                 // Parse the data block to get process information
                                 return GetProcessInfos(buffer.AsSpan(firstAlignedElementIndex, (int)actualSize), processIdFilter);
                             }
 
-                            bufferSize = GetNewBufferSize(bufferSize, (int)actualSize);
+                            Debug.Assert(actualSize > bufferSize, $"Actual size reported by NtQuerySystemInformation was {actualSize} for a buffer of size={bufferSize}.");
+                            bufferSize = GetEstimatedBufferSize(actualSize);
                         }
                     }
                 }
@@ -331,31 +333,9 @@ namespace System.Diagnostics
             }
         }
 
-        private static int GetNewBufferSize(int existingBufferSize, int requiredSize)
-        {
-            int newSize;
-
-            if (requiredSize == 0)
-            {
-                // On some old OS like win2000, requiredSize will not be set if the buffer
-                // passed to NtQuerySystemInformation is not enough.
-                newSize = existingBufferSize * 2;
-            }
-            else
-            {
-                // allocating a few more kilo bytes just in case there are some new process
-                // kicked in since new call to NtQuerySystemInformation
-                newSize = requiredSize + 1024 * 10;
-            }
-
-            if (newSize < 0)
-            {
-                // In reality, we should never overflow.
-                // Adding the code here just in case it happens.
-                throw new OutOfMemoryException();
-            }
-            return newSize;
-        }
+        // allocating a few more kilo bytes just in case there are some new process
+        // kicked in since new call to NtQuerySystemInformation
+        private static int GetEstimatedBufferSize(uint actualSize) => (int)actualSize + 1024 * 10;
 
         private static unsafe ProcessInfo[] GetProcessInfos(ReadOnlySpan<byte> data, int? processIdFilter)
         {
