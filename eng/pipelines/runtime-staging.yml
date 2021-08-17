@@ -66,11 +66,11 @@ jobs:
     runtimeFlavor: mono
     platforms:
     - MacCatalyst_x64
-    - MacCatalyst_arm64
     - iOSSimulator_x64
     - tvOSSimulator_x64
     # don't run tests on arm64 PRs until we can get significantly more devices
     - ${{ if eq(variables['isFullMatrix'], true) }}:
+      - MacCatalyst_arm64
       - iOSSimulator_arm64
     variables:
       # map dependencies variables to local variables
@@ -82,7 +82,7 @@ jobs:
       testGroup: innerloop
       nameSuffix: AllSubsets_Mono
       buildArgs: -s mono+libs+host+packs+libs.tests -c $(_BuildConfig) /p:ArchiveTests=true /p:RunAOTCompilation=true /p:MonoForceInterpreter=true /p:BuildDarwinFrameworks=true
-      timeoutInMinutes: 210
+      timeoutInMinutes: 180
       condition: >-
         or(
           eq(dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),

@@ -452,7 +452,7 @@ namespace BasicEventSourceTests
         [Theory]
         [InlineData(true)]
         [InlineData(false)]
-        [ActiveIssue("Add issue", TestPlatforms.MacCatalyst)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/51382", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public void Test_EventListenerThrows_ExceptionIsNotRethrownToCaller(bool setThrowOnEventWriteErrorsFlag)
         {
             TestUtilities.CheckNoEventSourcesRunning("Start");
