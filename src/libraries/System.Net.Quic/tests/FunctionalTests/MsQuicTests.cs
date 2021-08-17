@@ -4,6 +4,7 @@
 using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.Tracing;
 using System.Linq;
 using System.Net.Security;
 using System.Net.Sockets;
@@ -22,7 +23,7 @@ namespace System.Net.Quic.Tests
     [Collection("NoParallelTests")]
     public class MsQuicTests : QuicTestBase<MsQuicProviderFactory>
     {
-        private static ReadOnlyMemory<byte> s_data = Encoding.UTF8.GetBytes("Hello world!");
+        private static byte[] s_data = Encoding.UTF8.GetBytes("Hello world!");
 
         public MsQuicTests(ITestOutputHelper output) : base(output) { }
 
@@ -839,6 +840,70 @@ namespace System.Net.Quic.Tests
                     Assert.Equal(expected, actual);
                 }
             }
+        }
+
+        [Fact]
+        public async Task BasicTest_WithReadsCompletedCheck()
+        {
+            await RunClientServer(
+                iterations: 100,
+                serverFunction: async connection =>
+                {
+                    using QuicStream stream = await connection.AcceptStreamAsync();
+                    Assert.False(stream.ReadsCompleted);
+
+                    byte[] buffer = new byte[s_data.Length];
+                    int bytesRead = await ReadAll(stream, buffer);
+
+                    Assert.True(stream.ReadsCompleted);
+                    Assert.Equal(s_data.Length, bytesRead);
+                    Assert.Equal(s_data, buffer);
+
+                    await stream.WriteAsync(s_data, endStream: true);
+                    await stream.ShutdownCompleted();
+                },
+                clientFunction: async connection =>
+                {
+                    using QuicStream stream = connection.OpenBidirectionalStream();
+                    Assert.False(stream.ReadsCompleted);
+
+                    await stream.WriteAsync(s_data, endStream: true);
+
+                    byte[] buffer = new byte[s_data.Length];
+                    int bytesRead = await ReadAll(stream, buffer);
+
+                    Assert.True(stream.ReadsCompleted);
+                    Assert.Equal(s_data.Length, bytesRead);
+                    Assert.Equal(s_data, buffer);
+
+                    await stream.ShutdownCompleted();
+                }
+            );
+        }
+
+        [Fact]
+        public async Task Read_ReadsCompleted_ReportedBeforeReturning0()
+        {
+            await RunBidirectionalClientServer(
+                async clientStream =>
+                {
+                    await clientStream.WriteAsync(new byte[1], endStream: true);
+                },
+                async serverStream =>
+                {
+                    Assert.False(serverStream.ReadsCompleted);
+
+                    var received = await serverStream.ReadAsync(new byte[1]);
+                    Assert.Equal(1, received);
+                    Assert.True(serverStream.ReadsCompleted);
+
+                    var task = serverStream.ReadAsync(new byte[1]);
+                    Assert.True(task.IsCompleted);
+
+                    received = await task;
+                    Assert.Equal(0, received);
+                    Assert.True(serverStream.ReadsCompleted);
+                });
         }
     }
 }
