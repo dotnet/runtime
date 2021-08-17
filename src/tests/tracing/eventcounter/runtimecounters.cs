@@ -69,7 +69,7 @@ namespace RuntimeEventCounterTests
                                Payload: { Count: 2 } } &&
                 eventData.Payload[0] is string switchName)
             {
-                observedEvents[switchName] = true;
+                observedEvents[switchName] = ((int)eventData.Payload[1]) == 1;
                 return;
             }
 
@@ -122,6 +122,7 @@ namespace RuntimeEventCounterTests
             AppDomain.CurrentDomain.SetData("appContextBoolData", true); // Not loggeed, bool key
             AppDomain.CurrentDomain.SetData("appContextBoolAsStringData", "true");
             AppDomain.CurrentDomain.SetData("appContextStringData", "myString"); // Not logged, string does not parse as bool
+            AppDomain.CurrentDomain.SetData("appContextSwitch", false); // should not override the SetSwitch above
 
             // Create an EventListener.
             using (RuntimeCounterListener myListener = new RuntimeCounterListener())
