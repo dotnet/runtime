@@ -425,7 +425,11 @@ namespace System.Net.Http.Functional.Tests
                 {
                     await server.AcceptConnectionAsync(async connection =>
                     {
-                        await Task.Delay(10);
+                        try
+                        {
+                            await connection.ReadRequestHeaderAsync();
+                        }
+                        catch { }
                         cts.Cancel();
                     });
                 });
@@ -588,7 +592,11 @@ namespace System.Net.Http.Functional.Tests
                 {
                     await server.AcceptConnectionAsync(async connection =>
                     {
-                        await Task.Delay(10);
+                        try
+                        {
+                            await connection.ReadRequestHeaderAsync();
+                        }
+                        catch { }
                         cts.Cancel();
                     });
                 });
@@ -658,7 +666,11 @@ namespace System.Net.Http.Functional.Tests
                 {
                     await server.AcceptConnectionAsync(async connection =>
                     {
-                        await Task.Delay(10);
+                        try
+                        {
+                            await connection.ReadRequestHeaderAsync();
+                        }
+                        catch { }
                         cts.Cancel();
                     });
                 });
