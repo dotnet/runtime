@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Diagnostics.Tracing;
 using System.IO;
@@ -50,17 +51,27 @@ namespace System
             {
                 lock (s_dataStore)
                 {
+                    var dataStore = s_dataStore;
                     if (s_switches is not null)
                     {
                         lock (s_switches)
                         {
-                            foreach (var (k, v) in s_dataStore)
+                            LogDataStore(s_switches);
+                        }
+                    }
+                    else
+                    {
+                        LogDataStore(null);
+                    }
+
+                    void LogDataStore(Dictionary<string, bool>? switches)
+                    {
+                        foreach (var (k, v) in dataStore)
+                        {
+                            if (v is string s && bool.TryParse(s, out bool isEnabled) &&
+                                switches?.ContainsKey(s) != true)
                             {
-                                if (v is string s && bool.TryParse(s, out bool isEnabled) &&
-                                    !s_switches.ContainsKey(s))
-                                {
-                                    ev.LogAppContextSwitch(k, isEnabled ? 1 : 0);
-                                }
+                                ev.LogAppContextSwitch(k, isEnabled ? 1 : 0);
                             }
                         }
                     }
