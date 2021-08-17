@@ -2,8 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Collections.Generic;
-using System.Diagnostics;
 using System.Threading;
 using Xunit;
 
@@ -238,7 +236,7 @@ namespace Microsoft.Extensions.Primitives
         [Fact]
         public void NullTokenDisposeShouldNotThrow()
         {
-            ChangeToken.OnChange(() => null, () => Debug.Fail("Should never be called")).Dispose();
+            ChangeToken.OnChange(() => null, () => Assert.True(false)).Dispose();
         }
 
         public class TrackableChangeTokenProvider
