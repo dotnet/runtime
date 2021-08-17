@@ -16,41 +16,37 @@ namespace RuntimeEventCounterTests
 {
     public class RuntimeCounterListener : EventListener
     {
-        private readonly Dictionary<string, bool> observedEvents = new Dictionary<string, bool>() {
-            { "cpu-usage" , false },
-            { "working-set", false },
-            { "gc-heap-size", false },
-            { "gen-0-gc-count", false },
-            { "gen-1-gc-count", false },
-            { "gen-2-gc-count", false },
-            { "threadpool-thread-count", false },
-            { "monitor-lock-contention-count", false },
-            { "threadpool-queue-length", false },
-            { "threadpool-completed-items-count", false },
-            { "alloc-rate", false },
-            { "active-timer-count", false },
-            { "gc-fragmentation", false },
-            { "gc-committed", false },
-            { "exception-count", false },
-            { "time-in-gc", false },
-            { "gen-0-size", false },
-            { "gen-1-size", false },
-            { "gen-2-size", false },
-            { "loh-size", false },
-            { "poh-size", false },
-            { "assembly-count", false },
-            { "il-bytes-jitted", false },
-            { "methods-jitted-count", false },
-            { "time-in-jit", false },
-            // These are AppContext switches, not counters
-            { "appContextSwitch", false },
-            { "appContextBoolAsStringData", false },
-        };
-
-        private static readonly string[] s_unexpectedEvents = new[] {
-            "appContextBoolData",
-            "appContextStringData",
-        };
+        public RuntimeCounterListener()
+        {
+            observedRuntimeCounters = new Dictionary<string, bool>() {
+                { "cpu-usage" , false },
+                { "working-set", false },
+                { "gc-heap-size", false },
+                { "gen-0-gc-count", false },
+                { "gen-1-gc-count", false },
+                { "gen-2-gc-count", false },
+                { "threadpool-thread-count", false },
+                { "monitor-lock-contention-count", false },
+                { "threadpool-queue-length", false },
+                { "threadpool-completed-items-count", false },
+                { "alloc-rate", false },
+                { "active-timer-count", false },
+                { "gc-fragmentation", false },
+                { "gc-committed", false },
+                { "exception-count", false },
+                { "time-in-gc", false },
+                { "gen-0-size", false },
+                { "gen-1-size", false },
+                { "gen-2-size", false },
+                { "loh-size", false },
+                { "poh-size", false },
+                { "assembly-count", false },
+                { "il-bytes-jitted", false },
+                { "methods-jitted-count", false },
+                { "time-in-jit", false }
+            };
+        }
+        private Dictionary<string, bool> observedRuntimeCounters;
 
         protected override void OnEventSourceCreated(EventSource source)
         {
@@ -58,22 +54,15 @@ namespace RuntimeEventCounterTests
             {
                 Dictionary<string, string> refreshInterval = new Dictionary<string, string>();
                 refreshInterval.Add("EventCounterIntervalSec", "1");
-                EnableEvents(source, EventLevel.Informational, (EventKeywords)(-1), refreshInterval);
+                EnableEvents(source, EventLevel.Informational,
+                    (EventKeywords)(-1 & (~1 /* RuntimeEventSource.Keywords.AppContext */)),
+                    refreshInterval);
             }
         }
 
         protected override void OnEventWritten(EventWrittenEventArgs eventData)
         {
-            // Check AppContext switches
-            if (eventData is { EventName: "LogAppContextSwitch",
-                               Payload: { Count: 2 } } &&
-                eventData.Payload[0] is string switchName)
-            {
-                observedEvents[switchName] = ((int)eventData.Payload[1]) == 1;
-                return;
-            }
 
-            // Check counters
             for (int i = 0; i < eventData.Payload.Count; i++)
             {
                 IDictionary<string, object> eventPayload = eventData.Payload[i] as IDictionary<string, object>;
@@ -82,7 +71,7 @@ namespace RuntimeEventCounterTests
                     foreach (KeyValuePair<string, object> payload in eventPayload)
                     {
                         if (payload.Key.Equals("Name"))
-                            observedEvents[payload.Value.ToString()] = true;
+                            observedRuntimeCounters[payload.Value.ToString()] = true;
                     }
                 }
             }
@@ -90,24 +79,16 @@ namespace RuntimeEventCounterTests
 
         public bool Verify()
         {
-            foreach (string counterName in observedEvents.Keys)
+            foreach (string counterName in observedRuntimeCounters.Keys)
             {
-                if (!observedEvents[counterName])
+                if (!observedRuntimeCounters[counterName])
                 {
+                    Console.WriteLine($"Did not see {counterName}");
                     return false;
                 }
                 else
                 {
                     Console.WriteLine($"Saw {counterName}");
-                }
-            }
-
-            foreach (var key in s_unexpectedEvents)
-            {
-                if (observedEvents.ContainsKey(key))
-                {
-                    Console.WriteLine($"Should not have seen {key}");
-                    return false;
                 }
             }
             return true;
@@ -118,12 +99,6 @@ namespace RuntimeEventCounterTests
     {
         public static int Main(string[] args)
         {
-            AppContext.SetSwitch("appContextSwitch", true);
-            AppDomain.CurrentDomain.SetData("appContextBoolData", true); // Not loggeed, bool key
-            AppDomain.CurrentDomain.SetData("appContextBoolAsStringData", "true");
-            AppDomain.CurrentDomain.SetData("appContextStringData", "myString"); // Not logged, string does not parse as bool
-            AppDomain.CurrentDomain.SetData("appContextSwitch", false); // should not override the SetSwitch above
-
             // Create an EventListener.
             using (RuntimeCounterListener myListener = new RuntimeCounterListener())
             {
