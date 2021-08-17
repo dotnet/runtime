@@ -226,6 +226,7 @@ if [[ "$clean" == true ]]; then
 fi
 
 if [[ "$restore" == true ]]; then
+  LogClientIp
   InitializeNativeTools
 fi
 
