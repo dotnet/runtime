@@ -94,7 +94,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                 classNameToFind += part.Trim();
                 if (typeId != -1)
                 {
-                    var fields = await sdbHelper.GetTypeFields(sessionId, typeId, onlyPublic: false, token);
+                    var fields = await sdbHelper.GetTypeFields(sessionId, typeId, token);
                     foreach (var field in fields)
                     {
                         if (field.Name == part.Trim())
@@ -124,8 +124,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                     var type = asm.GetTypeByName(classNameToFind);
                     if (type != null)
                     {
-                        var assemblyId = await sdbHelper.GetAssemblyId(sessionId, type.assembly.Name, token);
-                        typeId = await sdbHelper.GetTypeIdFromToken(sessionId, assemblyId, type.Token, token);
+                        typeId = await sdbHelper.GetTypeIdFromToken(sessionId, asm.DebugId, type.Token, token);
                     }
                 }
             }
