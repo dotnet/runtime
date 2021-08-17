@@ -34,22 +34,20 @@ namespace System
 
         private static string? GetSpecialFolder(SpecialFolder folder)
         {
-#if TARGET_TVOS
-        string? DocumentsSearchPath = CombineAndCreateSearchPath(NSSearchPathDirectory.NSLibraryDirectory, Path.Combine("Caches", "Documents"));
-#else
-        string? DocumentsSearchPath = Interop.Sys.SearchPath(NSSearchPathDirectory.NSDocumentDirectory);
-#endif
-
             switch (folder)
             {
+                // TODO: fix for tvOS (https://github.com/dotnet/runtime/issues/34007)
+                // The "normal" NSDocumentDirectory is a read-only directory on tvOS
+                // and that breaks a lot of assumptions in the runtime and the BCL
+
                 case SpecialFolder.Personal:
                 case SpecialFolder.LocalApplicationData:
-                    return DocumentsSearchPath;
+                    return Interop.Sys.SearchPath(NSSearchPathDirectory.NSDocumentDirectory);
 
                 case SpecialFolder.ApplicationData:
                     // note: at first glance that looked like a good place to return NSLibraryDirectory
                     // but it would break isolated storage for existing applications
-                    return DocumentsSearchPath != null ? Path.Combine(DocumentsSearchPath, ".config") : string.Empty;
+                    return CombineSearchPath(NSSearchPathDirectory.NSDocumentDirectory, ".config");
 
                 case SpecialFolder.Resources:
                     return Interop.Sys.SearchPath(NSSearchPathDirectory.NSLibraryDirectory); // older (8.2 and previous) would return String.Empty
@@ -65,7 +63,7 @@ namespace System
                     return Path.Combine(GetFolderPathCore(SpecialFolder.Personal, SpecialFolderOption.None), "Pictures");
 
                 case SpecialFolder.Templates:
-                    return DocumentsSearchPath != null ? Path.Combine(DocumentsSearchPath, "Templates") : string.Empty;
+                    return CombineSearchPath(NSSearchPathDirectory.NSDocumentDirectory, "Templates");
 
                 case SpecialFolder.MyVideos:
                     return Path.Combine(GetFolderPathCore(SpecialFolder.Personal, SpecialFolderOption.None), "Videos");
@@ -74,7 +72,7 @@ namespace System
                     return "/usr/share/templates";
 
                 case SpecialFolder.Fonts:
-                    return DocumentsSearchPath != null ? Path.Combine(DocumentsSearchPath, ".fonts") : string.Empty;
+                    return CombineSearchPath(NSSearchPathDirectory.NSDocumentDirectory, ".fonts");
 
                 case SpecialFolder.Favorites:
                     return CombineSearchPath(NSSearchPathDirectory.NSLibraryDirectory, "Favorites");
@@ -102,22 +100,6 @@ namespace System
                     Path.Combine(path, subdirectory) :
                     string.Empty;
             }
-
-#if TARGET_TVOS
-            // Special version of CombineSearchPath which creates the path if needed.
-            // This isn't needed for "real" search paths which always exist, but on tvOS
-            // the base path is really a subdirectory we define rather than an OS directory.
-            // In order to not treat Directory.Exists(SpecialFolder.ApplicationData) differently
-            // on tvOS, guarantee that it exists by creating it here
-            static string CombineAndCreateSearchPath(NSSearchPathDirectory searchPath, string subdirectory)
-            {
-                string path = CombineSearchPath(searchPath, subdirectory);
-// DISABLE FOR NOW FOR DEBUGGING
-//                if (!Directory.Exists (path))
-//                    Directory.CreateDirectory (path);
-                return path;
-            }
-#endif
         }
     }
 }
