@@ -299,12 +299,12 @@ namespace System.Diagnostics
                             byte* alignedBufferPtr = (byte*)(((nint)bufferPtr + 7) & ~7);
                             int firstAlignedElementIndex = (int)(alignedBufferPtr - bufferPtr);
 
-                            uint requiredSize = 0;
+                            uint actualSize = 0;
                             uint status = Interop.NtDll.NtQuerySystemInformation(
                                 Interop.NtDll.SystemProcessInformation,
                                 alignedBufferPtr,
                                 (uint)(buffer.Length - firstAlignedElementIndex),
-                                &requiredSize);
+                                &actualSize);
 
                             if (status != Interop.NtDll.STATUS_INFO_LENGTH_MISMATCH)
                             {
@@ -314,12 +314,13 @@ namespace System.Diagnostics
                                     throw new InvalidOperationException(SR.CouldntGetProcessInfos, new Win32Exception((int)status));
                                 }
 
-                                MostRecentSize = buffer.Length;
+                                Debug.Assert(actualSize > 0 && actualSize <= bufferSize, $"Actual size reported by NtQuerySystemInformation was {actualSize} for a buffer of size={bufferSize}.");
+                                MostRecentSize = GetNewBufferSize(bufferSize, (int)actualSize);
                                 // Parse the data block to get process information
                                 return GetProcessInfos(buffer.AsSpan(firstAlignedElementIndex), processIdFilter);
                             }
 
-                            bufferSize = GetNewBufferSize(bufferSize, (int)requiredSize);
+                            bufferSize = GetNewBufferSize(bufferSize, (int)actualSize);
                         }
                     }
                 }
