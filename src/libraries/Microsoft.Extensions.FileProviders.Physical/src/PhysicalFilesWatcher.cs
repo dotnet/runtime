@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Concurrent;
+using System.Diagnostics;
 using System.IO;
 using System.Runtime.Versioning;
 using System.Security;
@@ -443,9 +444,11 @@ namespace Microsoft.Extensions.FileProviders.Physical
 
         internal static void RaiseChangeEvents(object? state)
         {
+            Debug.Assert(state != null);
+
             // Iterating over a concurrent bag gives us a point in time snapshot making it safe
             // to remove items from it.
-            var changeTokens = (ConcurrentDictionary<IPollingChangeToken, IPollingChangeToken>)state!;
+            var changeTokens = (ConcurrentDictionary<IPollingChangeToken, IPollingChangeToken>)state;
             foreach (System.Collections.Generic.KeyValuePair<IPollingChangeToken, IPollingChangeToken> item in changeTokens)
             {
                 IPollingChangeToken token = item.Key;
