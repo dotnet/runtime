@@ -215,7 +215,7 @@ namespace System.Reflection.Metadata.Ecma335
                     {
                         throw new BadImageFormatException();
                     }
-                
+
                     int parameterIndex = signatureReader.ReadCompressedInteger();
                     int numGenericParameters = genericContextReader.ReadCompressedInteger();
                     if (parameterIndex >= numGenericParameters)
