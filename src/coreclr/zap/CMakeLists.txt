@@ -50,7 +50,3 @@ endif(CLR_CMAKE_TARGET_WIN32)
 add_library_clr(corzap_crossgen STATIC ${ZAP_SOURCES})
 set_target_properties(corzap_crossgen PROPERTIES CROSSGEN_COMPONENT TRUE)
 target_precompile_headers(corzap_crossgen PRIVATE [["common.h"]])
-
-if(FEATURE_MERGE_JIT_AND_ENGINE)
-  target_link_libraries(corzap_crossgen clrjit_crossgen)
-endif(FEATURE_MERGE_JIT_AND_ENGINE)
