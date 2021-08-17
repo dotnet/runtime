@@ -448,7 +448,8 @@ namespace Microsoft.Extensions.DependencyModel
 
             while (reader.TryReadStringProperty(out string? name, out string? version))
             {
-                dependencies.Add(new Dependency(Pool(name), Pool(version)!));
+                Debug.Assert(version != null);
+                dependencies.Add(new Dependency(Pool(name), Pool(version)));
             }
 
             reader.CheckEndObject();
@@ -533,10 +534,12 @@ namespace Microsoft.Extensions.DependencyModel
                     switch (propertyName)
                     {
                         case DependencyContextStrings.RidPropertyName:
-                            runtimeTarget.Rid = Pool(propertyValue)!;
+                            Debug.Assert(propertyValue != null);
+                            runtimeTarget.Rid = Pool(propertyValue);
                             break;
                         case DependencyContextStrings.AssetTypePropertyName:
-                            runtimeTarget.Type = Pool(propertyValue)!;
+                            Debug.Assert(propertyValue != null);
+                            runtimeTarget.Type = Pool(propertyValue);
                             break;
                         case DependencyContextStrings.AssemblyVersionPropertyName:
                             runtimeTarget.AssemblyVersion = propertyValue;
@@ -650,10 +653,12 @@ namespace Microsoft.Extensions.DependencyModel
 
             reader.CheckEndObject();
 
+            Debug.Assert(type != null);
+
             return new LibraryStub()
             {
                 Hash = hash,
-                Type = Pool(type)!,
+                Type = Pool(type),
                 Serviceable = serviceable,
                 Path = path,
                 HashPath = hashPath,
