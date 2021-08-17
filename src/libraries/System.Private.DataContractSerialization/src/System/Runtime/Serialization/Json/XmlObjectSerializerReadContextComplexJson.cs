@@ -241,19 +241,16 @@ namespace System.Runtime.Serialization.Json
             return new XmlQualifiedName(name, ns);
         }
 
-        [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         protected override bool IsReadingCollectionExtensionData(XmlReaderDelegator xmlReader)
         {
             return xmlReader.GetAttribute(JsonGlobals.typeString) == JsonGlobals.arrayString;
         }
 
-        [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         protected override bool IsReadingClassExtensionData(XmlReaderDelegator xmlReader)
         {
             return xmlReader.GetAttribute(JsonGlobals.typeString) == JsonGlobals.objectString;
         }
 
-        [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         protected override XmlReaderDelegator CreateReaderDelegatorForReader(XmlReader xmlReader)
         {
             return new JsonReaderDelegator(xmlReader, this._dateTimeFormat);
@@ -345,6 +342,7 @@ namespace System.Runtime.Serialization.Json
             return BitFlagsGenerator.IsBitSet(bytes, bitIndex);
         }
 
+        [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         protected override DataContract? ResolveDataContractFromRootDataContract(XmlQualifiedName typeQName)
         {
             return XmlObjectSerializerWriteContextComplexJson.ResolveJsonDataContractFromRootDataContract(this, typeQName, rootTypeDataContract!);
