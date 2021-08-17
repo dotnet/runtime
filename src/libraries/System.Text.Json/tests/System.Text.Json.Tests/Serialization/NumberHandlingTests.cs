@@ -1428,7 +1428,7 @@ namespace System.Text.Json.Serialization.Tests
 
             var obj = new AttributeAppliedToFirstLevelProp
             {
-                NestedClass = new BadProperty { MyInt = 1 }
+                NestedClass = new NonNumberType { MyInt = 1 }
             };
             Assert.Equal(@"{""NestedClass"":{""MyInt"":1}}", JsonSerializer.Serialize(obj));
         }
@@ -1436,10 +1436,10 @@ namespace System.Text.Json.Serialization.Tests
         [JsonNumberHandling(JsonNumberHandling.AllowReadingFromString | JsonNumberHandling.WriteAsString)]
         public class AttributeAppliedToFirstLevelProp
         {
-            public BadProperty NestedClass { get; set; }
+            public NonNumberType NestedClass { get; set; }
         }
 
-        public class BadProperty
+        public class NonNumberType
         {
             public int MyInt { get; set; }
         }
@@ -1483,37 +1483,35 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
-        [ActiveIssue("Need to tweak number handling option registration following code-gen support.")]
-        public static void Attribute_NotAllowed_On_NonNumber_NonCollection_Property()
+        public static void Attribute_Allowed_On_NonNumber_NonCollection_Property()
         {
-            string json = @"";
-            InvalidOperationException ex = Assert.Throws<InvalidOperationException>(() => JsonSerializer.Deserialize<ClassWith_NumberHandlingOn_ObjectProperty>(json));
-            string exAsStr = ex.ToString();
-            Assert.Contains("MyProp", exAsStr);
-            Assert.Contains(typeof(ClassWith_NumberHandlingOn_ObjectProperty).ToString(), exAsStr);
+            const string Json = @"{""MyProp"":{""MyInt"":1}}";
 
-            ex = Assert.Throws<InvalidOperationException>(() => JsonSerializer.Serialize(new ClassWith_NumberHandlingOn_ObjectProperty()));
-            exAsStr = ex.ToString();
-            Assert.Contains("MyProp", exAsStr);
-            Assert.Contains(typeof(ClassWith_NumberHandlingOn_ObjectProperty).ToString(), exAsStr);
+            ClassWith_NumberHandlingOn_ObjectProperty obj = JsonSerializer.Deserialize<ClassWith_NumberHandlingOn_ObjectProperty>(Json);
+            Assert.Equal(1, obj.MyProp.MyInt);
+
+            string json = JsonSerializer.Serialize(obj);
+            Assert.Equal(Json, json);
         }
 
         public class ClassWith_NumberHandlingOn_ObjectProperty
         {
             [JsonNumberHandling(JsonNumberHandling.Strict)]
-            public BadProperty MyProp { get; set; }
+            public NonNumberType MyProp { get; set; }
         }
 
         [Fact]
-        [ActiveIssue("Need to tweak number handling option registration following code-gen support.")]
-        public static void Attribute_NotAllowed_On_Property_WithCustomConverter()
+        public static void Attribute_Allowed_On_Property_WithCustomConverter()
         {
             string json = @"{""Prop"":1}";
 
-            // Ensure custom converter is honored.
+            // Converter returns 25 regardless of input.
             var obj = JsonSerializer.Deserialize<ClassWith_NumberHandlingOn_Property_WithCustomConverter>(json);
             Assert.Equal(25, obj.Prop);
-            Assert.Throws<NotImplementedException>(() => JsonSerializer.Serialize(obj));
+
+            // Converter throws this exception regardless of input.
+            NotImplementedException ex = Assert.Throws<NotImplementedException>(() => JsonSerializer.Serialize(obj));
+            Assert.Equal("Converter was called", ex.Message);
         }
 
         public class ClassWith_NumberHandlingOn_Property_WithCustomConverter
@@ -1524,14 +1522,17 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
-        [ActiveIssue("Need to tweak number handling option registration following code-gen support.")]
-        public static void Attribute_Ignored_On_Type_WithCustomConverter()
+        public static void Attribute_Allowed_On_Type_WithCustomConverter()
         {
             string json = @"{}";
+            NotImplementedException ex;
 
             // Assert regular Read/Write methods on custom converter are called.
-            Assert.Throws<NotImplementedException>(() => JsonSerializer.Deserialize<ClassWith_NumberHandlingOn_Type_WithCustomConverter>(json));
-            Assert.Throws<NotImplementedException>(() => JsonSerializer.Serialize(new ClassWith_NumberHandlingOn_Type_WithCustomConverter()));
+            ex = Assert.Throws<NotImplementedException>(() => JsonSerializer.Deserialize<ClassWith_NumberHandlingOn_Type_WithCustomConverter>(json));
+            Assert.Equal("Converter was called", ex.Message);
+
+            ex = Assert.Throws<NotImplementedException>(() => JsonSerializer.Serialize(new ClassWith_NumberHandlingOn_Type_WithCustomConverter()));
+            Assert.Equal("Converter was called", ex.Message);
         }
 
         [JsonNumberHandling(JsonNumberHandling.Strict)]
@@ -1544,12 +1545,12 @@ namespace System.Text.Json.Serialization.Tests
         {
             public override ClassWith_NumberHandlingOn_Type_WithCustomConverter Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
             {
-                throw new NotImplementedException();
+                throw new NotImplementedException("Converter was called");
             }
 
             public override void Write(Utf8JsonWriter writer, ClassWith_NumberHandlingOn_Type_WithCustomConverter value, JsonSerializerOptions options)
             {
-                throw new NotImplementedException();
+                throw new NotImplementedException("Converter was called");
             }
         }
 
@@ -1567,7 +1568,8 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Equal(25, JsonSerializer.Deserialize<int>(json, options));
 
             // Converter throws this exception regardless of input.
-            Assert.Throws<NotImplementedException>(() => JsonSerializer.Serialize(4, options));
+            NotImplementedException ex = Assert.Throws<NotImplementedException>(() => JsonSerializer.Serialize(4, options));
+            Assert.Equal("Converter was called", ex.Message);
 
             json = @"""NaN""";
 
@@ -1622,6 +1624,8 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public static void InternalCollectionConverter_CustomNumberConverter_GlobalOption()
         {
+            NotImplementedException ex;
+
             var list = new List<int> { 1 };
             var options = new JsonSerializerOptions(s_optionReadAndWriteFromStr)
             {
@@ -1629,22 +1633,28 @@ namespace System.Text.Json.Serialization.Tests
             };
 
             // Assert converter methods are called and not Read/WriteWithNumberHandling (which would throw InvalidOperationException).
-            Assert.Throws<NotImplementedException>(() => JsonSerializer.Serialize(list, options));
+            // Converter returns 25 regardless of input.
             Assert.Equal(25, JsonSerializer.Deserialize<List<int>>(@"[""1""]", options)[0]);
+            // Converter throws this exception regardless of input.
+            ex = Assert.Throws<NotImplementedException>(() => JsonSerializer.Serialize(list, options));
+            Assert.Equal("Converter was called", ex.Message);
 
             var list2 = new List<int?> { 1 };
-            Assert.Throws<NotImplementedException>(() => JsonSerializer.Serialize(list2, options));
             Assert.Equal(25, JsonSerializer.Deserialize<List<int?>>(@"[""1""]", options)[0]);
+            ex = Assert.Throws<NotImplementedException>(() => JsonSerializer.Serialize(list2, options));
+            Assert.Equal("Converter was called", ex.Message);
 
             // Okay to set number handling for number collection property when number is handled with custom converter;
             // converter Read/Write methods called.
             ClassWithListPropAndAttribute obj1 = JsonSerializer.Deserialize<ClassWithListPropAndAttribute>(@"{""Prop"":[""1""]}", options);
             Assert.Equal(25, obj1.Prop[0]);
-            Assert.Throws<NotImplementedException>(() => JsonSerializer.Serialize(obj1, options));
+            ex = Assert.Throws<NotImplementedException>(() => JsonSerializer.Serialize(obj1, options));
+            Assert.Equal("Converter was called", ex.Message);
 
             ClassWithDictPropAndAttribute obj2 = JsonSerializer.Deserialize<ClassWithDictPropAndAttribute>(@"{""Prop"":{""1"":""1""}}", options);
             Assert.Equal(25, obj2.Prop[1]);
-            Assert.Throws<NotImplementedException>(() => JsonSerializer.Serialize(obj2, options));
+            ex = Assert.Throws<NotImplementedException>(() => JsonSerializer.Serialize(obj2, options));
+            Assert.Equal("Converter was called", ex.Message);
         }
 
         private class ClassWithListPropAndAttribute
@@ -1703,6 +1713,8 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public static void InternalCollectionConverter_CustomNullableNumberConverter()
         {
+            NotImplementedException ex;
+
             var dict = new Dictionary<int, int?> { [1] = 1 };
             var options = new JsonSerializerOptions(s_optionReadAndWriteFromStr)
             {
@@ -1710,12 +1722,16 @@ namespace System.Text.Json.Serialization.Tests
             };
 
             // Assert converter methods are called and not Read/WriteWithNumberHandling (which would throw InvalidOperationException).
-            Assert.Throws<NotImplementedException>(() => JsonSerializer.Serialize(dict, options));
+            // Converter returns 25 regardless of input.
             Assert.Equal(25, JsonSerializer.Deserialize<Dictionary<int, int?>>(@"{""1"":""1""}", options)[1]);
+            ex = Assert.Throws<NotImplementedException>(() => JsonSerializer.Serialize(dict, options));
+            Assert.Equal("Converter was called", ex.Message);
 
             var obj = JsonSerializer.Deserialize<ClassWithDictPropAndAttribute>(@"{""Prop"":{""1"":""1""}}", options);
             Assert.Equal(25, obj.Prop[1]);
-            Assert.Throws<NotImplementedException>(() => JsonSerializer.Serialize(obj, options));
+            ex = Assert.Throws<NotImplementedException>(() => JsonSerializer.Serialize(obj, options));
+            Assert.Throws<NotImplementedException>(() => JsonSerializer.Serialize(dict, options));
+            Assert.Equal("Converter was called", ex.Message);
         }
 
         public class ConverterForNullableInt32 : JsonConverter<int?>
@@ -1727,7 +1743,7 @@ namespace System.Text.Json.Serialization.Tests
 
             public override void Write(Utf8JsonWriter writer, int? value, JsonSerializerOptions options)
             {
-                throw new NotImplementedException();
+                throw new NotImplementedException("Converter was called");
             }
         }
 
