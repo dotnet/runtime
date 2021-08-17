@@ -18,8 +18,6 @@ protected:
 	IMetaDataImport*		m_importer;			// Import interface.
 	IMDInternalImport*		m_internalimport;	// Scopeless internal import interface
     ICeeGenInternal*	    m_pCeeGen;
-    ICeeFileGen*            m_pCeeFileGen;
-    HCEEFILE                m_ceeFile;
 	IMetaDataEmitHelper*	m_pEmitHelper;
 	ULONG					m_ulResourceSize;
     mdFile                  m_tkFile;
@@ -54,16 +52,6 @@ public:
     ICeeGenInternal* GetCeeGen() {
         LIMITED_METHOD_CONTRACT;
 		return m_pCeeGen;
-	}
-
-	ICeeFileGen* GetCeeFileGen() {
-        LIMITED_METHOD_CONTRACT;
-		return m_pCeeFileGen;
-	}
-
-	HCEEFILE GetHCEEFILE() {
-        LIMITED_METHOD_CONTRACT;
-		return m_ceeFile;
 	}
 
 	~RefClassWriter();

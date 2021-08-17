@@ -169,7 +169,6 @@ DEFINE_CLASS(ATTRIBUTE,             System,                 Attribute)
 
 
 DEFINE_CLASS(BINDER,                Reflection,             Binder)
-DEFINE_METHOD(BINDER,               CHANGE_TYPE,            ChangeType,                 IM_Obj_Type_CultureInfo_RetObj)
 
 DEFINE_CLASS(BINDING_FLAGS,         Reflection,             BindingFlags)
 
