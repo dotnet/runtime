@@ -73,10 +73,6 @@ namespace System.Globalization.Tests
             yield return new object[] { s_invariantCompare, "TestFooBA\u0300R", "FooB\u00C0R", 0, 11, CompareOptions.IgnoreNonSpace, 4, 7 };
             yield return new object[] { s_invariantCompare, "o\u0308", "o", 0, 2, CompareOptions.None, -1, 0 };
             yield return new object[] { s_invariantCompare, "\r\n", "\n", 0, 2, CompareOptions.None, 1, 1 };
-            yield return new object[] { s_invariantCompare, "\u0600x", "x", 0, 2, CompareOptions.None, 1, 1 };
-            yield return new object[] { s_invariantCompare, "\u0601x", "x", 0, 2, CompareOptions.None, 1, 1 };
-            yield return new object[] { s_invariantCompare, "x\u0600", "x", 0, 2, CompareOptions.None, 0, 1 };
-            yield return new object[] { s_invariantCompare, "x\u0601", "x", 0, 2, CompareOptions.None, 0, 1 };
 
             // Weightless characters
             yield return new object[] { s_invariantCompare, "", "\u200d", 0, 0, CompareOptions.None, 0, 0 };

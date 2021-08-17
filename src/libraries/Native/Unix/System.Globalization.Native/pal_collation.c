@@ -449,32 +449,132 @@ ResultCode GlobalizationNative_GetSortHandle(const char* lpLocaleName, SortHandl
     return GetResultCode(err);
 }
 
-static const char* BreakIteratorRule = "$CR      = [\\p{Grapheme_Cluster_Break = CR}]; \n"          \
-                                       "$LF      = [\\p{Grapheme_Cluster_Break = LF}]; \n"          \
-                                       "$Control = [[\\p{Grapheme_Cluster_Break = Control}]]; \n"   \
-                                       "$Extend  = [[\\p{Grapheme_Cluster_Break = Extend}]];  \n"   \
-                                       "[^$Control $CR $LF] ($Extend | [\\u200D]); \n";
+static const char* BreakIteratorRuleOld =  // supported on ICU like versions 52
+                        "$CR          = [\\p{Grapheme_Cluster_Break = CR}]; \n" \
+                        "$LF          = [\\p{Grapheme_Cluster_Break = LF}]; \n" \
+                        "$Control     = [\\p{Grapheme_Cluster_Break = Control}]; \n" \
+                        "$Extend      = [\\p{Grapheme_Cluster_Break = Extend}]; \n" \
+                        "$SpacingMark = [\\p{Grapheme_Cluster_Break = SpacingMark}]; \n" \
+                        "$Regional_Indicator = [\\p{Grapheme_Cluster_Break = Regional_Indicator}]; \n" \
+                        "$L       = [\\p{Grapheme_Cluster_Break = L}]; \n" \
+                        "$V       = [\\p{Grapheme_Cluster_Break = V}]; \n" \
+                        "$T       = [\\p{Grapheme_Cluster_Break = T}]; \n" \
+                        "$LV      = [\\p{Grapheme_Cluster_Break = LV}]; \n" \
+                        "$LVT     = [\\p{Grapheme_Cluster_Break = LVT}]; \n" \
+                        "!!chain; \n" \
+                        "!!forward; \n" \
+                        "$L ($L | $V | $LV | $LVT); \n" \
+                        "($LV | $V) ($V | $T); \n" \
+                        "($LVT | $T) $T; \n" \
+                        "$Regional_Indicator $Regional_Indicator; \n" \
+                        "[^$Control $CR $LF] $Extend; \n" \
+                        "[^$Control $CR $LF] $SpacingMark; \n" \
+                        "!!reverse; \n" \
+                        "($L | $V | $LV | $LVT) $L; \n" \
+                        "($V | $T) ($LV | $V); \n" \
+                        "$T ($LVT | $T); \n" \
+                        "$Regional_Indicator $Regional_Indicator; \n" \
+                        "$Extend      [^$Control $CR $LF]; \n" \
+                        "$SpacingMark [^$Control $CR $LF]; \n" \
+                        "!!safe_reverse; \n" \
+                        "!!safe_forward; \n";
+
+static const char* BreakIteratorRuleNew =  // supported on newer ICU versions like 62 and up
+                        "!!quoted_literals_only; \n" \
+                        "$CR          = [\\p{Grapheme_Cluster_Break = CR}]; \n" \
+                        "$LF          = [\\p{Grapheme_Cluster_Break = LF}]; \n" \
+                        "$Control     = [[\\p{Grapheme_Cluster_Break = Control}]]; \n" \
+                        "$Extend      = [[\\p{Grapheme_Cluster_Break = Extend}]]; \n" \
+                        "$ZWJ         = [\\p{Grapheme_Cluster_Break = ZWJ}]; \n" \
+                        "$Regional_Indicator = [\\p{Grapheme_Cluster_Break = Regional_Indicator}]; \n" \
+                        "$Prepend     = [\\p{Grapheme_Cluster_Break = Prepend}]; \n" \
+                        "$SpacingMark = [\\p{Grapheme_Cluster_Break = SpacingMark}]; \n" \
+                        "$Virama      = [\\p{Gujr}\\p{sc=Telu}\\p{sc=Mlym}\\p{sc=Orya}\\p{sc=Beng}\\p{sc=Deva}&\\p{Indic_Syllabic_Category=Virama}]; \n" \
+                        "$LinkingConsonant = [\\p{Gujr}\\p{sc=Telu}\\p{sc=Mlym}\\p{sc=Orya}\\p{sc=Beng}\\p{sc=Deva}&\\p{Indic_Syllabic_Category=Consonant}]; \n" \
+                        "$ExtCccZwj   = [[\\p{gcb=Extend}-\\p{ccc=0}] \\p{gcb=ZWJ}]; \n" \
+                        "$L           = [\\p{Grapheme_Cluster_Break = L}]; \n" \
+                        "$V           = [\\p{Grapheme_Cluster_Break = V}]; \n" \
+                        "$T           = [\\p{Grapheme_Cluster_Break = T}]; \n" \
+                        "$LV          = [\\p{Grapheme_Cluster_Break = LV}]; \n" \
+                        "$LVT         = [\\p{Grapheme_Cluster_Break = LVT}]; \n" \
+                        "$Extended_Pict = [:ExtPict:]; \n" \
+                        "!!chain; \n" \
+                        "!!lookAheadHardBreak; \n" \
+                        "$L ($L | $V | $LV | $LVT); \n" \
+                        "($LV | $V) ($V | $T); \n" \
+                        "($LVT | $T) $T; \n" \
+                        "[^$Control $CR $LF] ($Extend | $ZWJ); \n" \
+                        "[^$Control $CR $LF] $SpacingMark; \n" \
+                        "$Prepend [^$Control $CR $LF]; \n" \
+                        "$LinkingConsonant $ExtCccZwj* $Virama $ExtCccZwj* $LinkingConsonant; \n" \
+                        "$Extended_Pict $Extend* $ZWJ $Extended_Pict; \n" \
+                        "^$Prepend* $Regional_Indicator $Regional_Indicator / $Regional_Indicator; \n" \
+                        "^$Prepend* $Regional_Indicator $Regional_Indicator; \n" \
+                        ".;";
+
+static UChar* s_breakIteratorRules = NULL;
+static int32_t s_breakIteratorRulesLength = 0;
 
 // When doing string search operations using ICU, it is internally using a break iterator which doesn't allow breaking between some characters according to
 // the Grapheme Cluster Boundary Rules specified in http://www.unicode.org/reports/tr29/#Grapheme_Cluster_Boundary_Rules.
 // Unfortunately, not all rules will have the desired behavior we need to get in .NET. For example, the rules don't allow breaking between CR '\r' and LF '\n' characters.
 // When searching for "\n" in a string like "\r\n", will get not found result.
-// We are customizing the break iterator to include only the rules which give the desired behavior. Mainly, we include the GB9 rule http://www.unicode.org/reports/tr29/#GB9
-// which doesn't allow breaking before the nonspace marks.
+// We are customizing the break iterator to exclude the CRxLF rule which don't allow breaking between CR and LF.
 // The general rules syntax explained in the doc https://unicode-org.github.io/icu/userguide/boundaryanalysis/break-rules.html.
-// The ICU rules definition exist here https://github.com/unicode-org/icu/blob/main/icu4c/source/data/brkitr/rules/char.txt.
+// The ICU latest rules definition exist here https://github.com/unicode-org/icu/blob/main/icu4c/source/data/brkitr/rules/char.txt.
 static UBreakIterator* CreateCustomizedBreakIterator()
 {
-    UChar uRule[400];
-    assert(strlen(BreakIteratorRule) < 400);
-    u_uastrcpy(uRule, BreakIteratorRule);
-
     static UChar emptyString[1];
+    UBreakIterator* breaker;
+
     UErrorCode status = U_ZERO_ERROR;
+    if (s_breakIteratorRules != NULL)
+    {
+        assert(s_breakIteratorRulesLength > 0);
+        breaker = ubrk_openRules(s_breakIteratorRules, s_breakIteratorRulesLength, emptyString, 0, NULL, &status);
+        return U_FAILURE(status) ? NULL : breaker;
+    }
 
-    UBreakIterator* breaker = ubrk_openRules(uRule, (int32_t)strlen(BreakIteratorRule), emptyString, 0, NULL, &status);
+    int32_t oldRulesLength = (int32_t)strlen(BreakIteratorRuleOld);
+    int32_t newRulesLength = (int32_t)strlen(BreakIteratorRuleNew);
 
-    return U_FAILURE(status) ? NULL : breaker;
+    int32_t breakIteratorRulesLength = newRulesLength > oldRulesLength ? newRulesLength : oldRulesLength;
+
+    UChar* rules = (UChar*)malloc((breakIteratorRulesLength + 1) * sizeof(UChar));
+    if (rules == NULL)
+    {
+        return NULL;
+    }
+
+    u_uastrcpy(rules, BreakIteratorRuleNew);
+
+    breaker = ubrk_openRules(rules, newRulesLength, emptyString, 0, NULL, &status);
+    if (U_FAILURE(status))
+    {
+        status = U_ZERO_ERROR;
+        u_uastrcpy(rules, BreakIteratorRuleOld);
+        breaker = ubrk_openRules(rules, oldRulesLength, emptyString, 0, NULL, &status);
+        s_breakIteratorRulesLength = oldRulesLength;
+    }
+    else
+    {
+        s_breakIteratorRulesLength = newRulesLength;
+    }
+
+    if (U_FAILURE(status))
+    {
+        free(rules);
+        return NULL;
+    }
+
+    UChar* pNull = NULL;
+    if (!pal_atomic_cas_ptr((void* volatile*)&s_breakIteratorRules, rules, pNull))
+    {
+        free(rules);
+        assert(s_breakIteratorRules != NULL);
+    }
+
+    return breaker;
 }
 
 static void CloseSearchIterator(UStringSearch* pSearch)
