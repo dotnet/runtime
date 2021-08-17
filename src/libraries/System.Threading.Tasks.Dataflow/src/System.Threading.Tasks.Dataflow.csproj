@@ -25,8 +25,7 @@ System.Threading.Tasks.Dataflow.WriteOnceBlock&lt;T&gt;</PackageDescription>
     <Compile Include="Base\DataflowLinkOptions.cs" />
     <Compile Include="Base\DataflowMessageHeader.cs" />
     <Compile Include="Base\DataflowMessageStatus.cs" />
-    <Compile Include="Base\DataflowBlock.IAsyncEnumerable.cs"
-             Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'netstandard2.1'))" />
+    <Compile Include="Base\DataflowBlock.IAsyncEnumerable.cs" Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'netstandard2.1'))" />
     <Compile Include="Base\IDataflowBlock.cs" />
     <Compile Include="Base\IPropagatorBlock.cs" />
     <Compile Include="Base\IReceivableSourceBlock.cs" />
@@ -55,10 +54,8 @@ System.Threading.Tasks.Dataflow.WriteOnceBlock&lt;T&gt;</PackageDescription>
     <Compile Include="Internal\SpscTargetCore.cs" />
     <Compile Include="Internal\TargetCore.cs" />
     <Compile Include="Internal\TargetRegistry.cs" />
-    <Compile Include="$(CommonPath)Internal\Padding.cs"
-             Link="Common\Internal\Padding.cs" />
-    <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\UnconditionalSuppressMessageAttribute.cs"
-             Condition="!$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net5.0'))" />
+    <Compile Include="$(CommonPath)Internal\Padding.cs" Link="Common\Internal\Padding.cs" />
+    <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\UnconditionalSuppressMessageAttribute.cs" Condition="!$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net5.0'))" />
   </ItemGroup>
   <ItemGroup>
     <None Include="XmlDocs\CommonXmlDocComments.xml" />

@@ -1,6 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Runtime.Versioning;
+
 namespace System.Net.NetworkInformation
 {
     internal sealed class BsdTcpStatistics : TcpStatistics
@@ -46,14 +48,34 @@ namespace System.Net.NetworkInformation
 
         public override long FailedConnectionAttempts { get { return _failedConnectionAttempts; } }
 
+        [UnsupportedOSPlatform("osx")]
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
+        [UnsupportedOSPlatform("freebsd")]
         public override long MaximumConnections { get { throw new PlatformNotSupportedException(SR.net_InformationUnavailableOnPlatform); } }
 
+        [UnsupportedOSPlatform("osx")]
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
+        [UnsupportedOSPlatform("freebsd")]
         public override long MaximumTransmissionTimeout { get { throw new PlatformNotSupportedException(SR.net_InformationUnavailableOnPlatform); } }
 
+        [UnsupportedOSPlatform("osx")]
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
+        [UnsupportedOSPlatform("freebsd")]
         public override long MinimumTransmissionTimeout { get { throw new PlatformNotSupportedException(SR.net_InformationUnavailableOnPlatform); } }
 
+        [UnsupportedOSPlatform("osx")]
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
+        [UnsupportedOSPlatform("freebsd")]
         public override long ResetConnections { get { throw new PlatformNotSupportedException(SR.net_InformationUnavailableOnPlatform); } }
 
+        [UnsupportedOSPlatform("osx")]
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
+        [UnsupportedOSPlatform("freebsd")]
         public override long ResetsSent { get { throw new PlatformNotSupportedException(SR.net_InformationUnavailableOnPlatform); } }
 
         public override long SegmentsReceived { get { return _segmentsReceived; } }

@@ -29,6 +29,7 @@
     <Compile Include="MetricEventSourceTests.cs" />
     <Compile Include="MetricsTests.cs" />
     <Compile Include="PropagatorTests.cs" />
+    <Compile Include="TagListTests.cs" />
   </ItemGroup>
   <ItemGroup Condition="$(TargetFramework.StartsWith('net4'))">
     <Compile Include="HttpHandlerDiagnosticListenerTests.cs" />
