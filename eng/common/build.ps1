@@ -149,7 +149,7 @@ try {
   if ($restore) {
     InitializeNativeTools
   }
-
+  Try-LogClientIpAddress
   Build
 }
 catch {

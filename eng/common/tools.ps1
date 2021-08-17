@@ -872,3 +872,19 @@ if (!$disableConfigureToolsetImport) {
     }
   }
 }
+
+function Try-LogClientIpAddress()
+{
+    Write-Host "Attempting to log this client's IP for Azure Package feed telemetry purposes"
+    try
+    {
+        $result = Invoke-WebRequest -Uri "http://co1.msedge.net/fdv2/diagnostics.aspx"
+        $lines = $result.Content.Split([Environment]::NewLine) 
+        Write-Host $lines | Select-String -Pattern "^Socket IP:.*"
+        Write-Host $lines | Select-String -Pattern "^Client IP:.*"
+    }
+    catch
+    {
+        Write-Host "Unable to get this machine's effective IP address for logging"
+    }
+}
