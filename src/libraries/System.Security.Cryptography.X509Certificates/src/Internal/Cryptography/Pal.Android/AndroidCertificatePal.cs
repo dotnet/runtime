@@ -63,11 +63,6 @@ namespace Internal.Cryptography.Pal
                     // We don't support determining this on Android right now, so we throw.
                     throw new CryptographicException(SR.Cryptography_X509_PKCS7_NoSigner);
                 case X509ContentType.Pkcs12:
-                    if ((keyStorageFlags & X509KeyStorageFlags.Exportable) == X509KeyStorageFlags.Exportable)
-                    {
-                        throw new PlatformNotSupportedException(SR.Cryptography_X509_PKCS12_ExportableNotSupported);
-                    }
-
                     if ((keyStorageFlags & X509KeyStorageFlags.PersistKeySet) == X509KeyStorageFlags.PersistKeySet)
                     {
                         throw new PlatformNotSupportedException(SR.Cryptography_X509_PKCS12_PersistKeySetNotSupported);
