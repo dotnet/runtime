@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 using System;
+using System.Diagnostics;
 using System.IO;
 using System.Reflection;
 using System.Runtime.InteropServices;
@@ -181,9 +182,25 @@ public class NativeLibraryTest
             NativeLibrary.Free(handle);
 
             // -----------------------------------------------
-            //         GetLibraryExport Tests
+            //         GetEntryPointModuleHandle Tests
             // -----------------------------------------------
-            success &= EXPECT(GetEntryPointModuleHandle());
+
+            // Mobile test runs aren't hosted by corerun, so we don't have a well-known export to test here
+            if (IsHostedByCoreRun())
+            {
+                // Export from CoreRun host
+                success &= EXPECT(GetSymbolFromEntryPointModuleHandle("GetCurrentClrDetails"));
+                success &= EXPECT(GetSymbolFromEntryPointModuleHandle("NonExistentCoreRunExport"), TestResult.ReturnFailure);
+            }
+
+            handle = NativeLibrary.Load(libName);
+
+            // On non-Windows, the returned handle can load any global symbol,
+            // so try loading a symbol from the native test library.
+            success &= EXPECT(GetSymbolFromEntryPointModuleHandle(TestLibrary.Utilities.IsX86 ? "_NativeSum@8" : "NativeSum"), OperatingSystem.IsWindows() ? TestResult.ReturnFailure : TestResult.Success);
+            success &= EXPECT(GetSymbolFromEntryPointModuleHandle("NonNativeSum"), TestResult.ReturnFailure);
+
+            NativeLibrary.Free(handle);
         }
         catch (Exception e)
         {
@@ -195,6 +212,11 @@ public class NativeLibraryTest
         }
 
         return (success) ? 100 : -100;
+    }
+
+    static bool IsHostedByCoreRun()
+    {
+        return Process.GetCurrentProcess().MainModule.ModuleName is "corerun" or "corerun.exe";
     }
 
     static bool EXPECT(TestResult actualValue, TestResult expectedValue = TestResult.Success)
@@ -370,13 +392,12 @@ public class NativeLibraryTest
         });
     }
 
-    static TestResult GetEntryPointModuleHandle()
+    static TestResult GetSymbolFromEntryPointModuleHandle(string symbolToLoadFromHandle)
     {
-        CurrentTest = nameof(GetEntryPointModuleHandle);
+        CurrentTest = nameof(GetSymbolFromEntryPointModuleHandle);
         return Run(() => {
             IntPtr moduleHandle = NativeLibrary.GetEntryPointModuleHandle();
-            // Get a well-known export name from corerun to validate that we have a valid handle.
-            bool success = NativeLibrary.TryGetExport(moduleHandle, "GetCurrentClrDetails", out IntPtr address);
+            bool success = NativeLibrary.TryGetExport(moduleHandle, symbolToLoadFromHandle, out IntPtr address);
             if (!success)
                 return TestResult.ReturnFailure;
             if (address == IntPtr.Zero)
