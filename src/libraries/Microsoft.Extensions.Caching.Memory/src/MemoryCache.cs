@@ -276,6 +276,14 @@ namespace Microsoft.Extensions.Caching.Memory
             StartScanForExpiredItemsIfNeeded(_options.Clock.UtcNow);
         }
 
+        /// <summary>
+        /// Removes all keys and values from the cache.
+        /// </summary>
+        public void Clear()
+        {
+
+        }
+
         private void RemoveEntry(CacheEntry entry)
         {
             if (EntriesCollection.Remove(new KeyValuePair<object, CacheEntry>(entry.Key, entry)))
