@@ -82,7 +82,6 @@ namespace BINDER_SPACE
     HRESULT ApplicationContext::SetupBindingPaths(SString &sTrustedPlatformAssemblies,
                                                   SString &sPlatformResourceRoots,
                                                   SString &sAppPaths,
-                                                  SString &sAppNiPaths,
                                                   BOOL     fAcquireLock)
     {
         HRESULT hr = S_OK;
@@ -217,31 +216,6 @@ namespace BINDER_SPACE
 #endif
 
             m_appPaths.Append(pathName);
-        }
-
-        //
-        // Parse AppNiPaths
-        //
-        sAppNiPaths.Normalize();
-        for (SString::Iterator i = sAppNiPaths.Begin(); i != sAppNiPaths.End(); )
-        {
-            SString pathName;
-            HRESULT pathResult = S_OK;
-
-            IF_FAIL_GO(pathResult = GetNextPath(sAppNiPaths, i, pathName));
-            if (pathResult == S_FALSE)
-            {
-                break;
-            }
-
-#ifndef CROSSGEN_COMPILE
-            if (Path::IsRelative(pathName))
-            {
-                GO_WITH_HRESULT(E_INVALIDARG);
-            }
-#endif
-
-            m_appNiPaths.Append(pathName);
         }
 
     Exit:

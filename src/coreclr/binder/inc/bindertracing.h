@@ -176,7 +176,7 @@ namespace BinderTracing
     enum PathSource
     {
         ApplicationAssemblies,
-        AppNativeImagePaths,
+        Unused,
         AppPaths,
         PlatformResourceRoots,
         SatelliteSubdirectory,

@@ -92,7 +92,6 @@ namespace BINDER_SPACE
         HRESULT SetupBindingPaths(/* in */ SString &sTrustedPlatformAssemblies,
                                   /* in */ SString &sPlatformResourceRoots,
                                   /* in */ SString &sAppPaths,
-                                  /* in */ SString &sAppNiPaths,
                                   /* in */ BOOL     fAcquireLock);
 
         HRESULT GetAssemblyIdentity(/* in */ LPCSTR                szTextualIdentity,
@@ -106,7 +105,6 @@ namespace BINDER_SPACE
         inline StringArrayList *GetAppPaths();
         inline SimpleNameToFileNameMap *GetTpaList();
         inline StringArrayList *GetPlatformResourceRoots();
-        inline StringArrayList *GetAppNiPaths();
 
         // Using a host-configured Trusted Platform Assembly list
         bool IsTpaListProvided();
@@ -125,7 +123,6 @@ namespace BINDER_SPACE
 
         StringArrayList    m_platformResourceRoots;
         StringArrayList    m_appPaths;
-        StringArrayList    m_appNiPaths;
 
         SimpleNameToFileNameMap * m_pTrustedPlatformAssemblyMap;
     };
