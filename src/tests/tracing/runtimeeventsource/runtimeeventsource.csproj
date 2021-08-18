@@ -10,5 +10,6 @@
   <ItemGroup>
     <Compile Include="RuntimeEventSourceTest.cs" />
     <ProjectReference Include="../common/common.csproj" />
+    <RuntimeHostConfigurationOption Include="RuntimeHostConfigSwitch" Value="true" />
   </ItemGroup>
 </Project>
