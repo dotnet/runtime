@@ -473,6 +473,14 @@ bool DefaultPolicy::BudgetCheck() const
         return false;
     }
 
+#ifdef DEBUG
+    if (m_RootCompiler->compInlineStress())
+    {
+        JITDUMP("\nAllowing over-budge for stress mode\n");
+        return false;
+    }
+#endif
+
     // The strategy tracks the amout of inlining done so far,
     // so it performs the actual check.
     //
@@ -1373,6 +1381,13 @@ void ExtendedDefaultPolicy::NoteInt(InlineObservation obs, int value)
             }
             else if (!m_IsForceInline && !m_HasProfile)
             {
+#ifdef DEBUG
+                if (m_RootCompiler->compInlineStress())
+                {
+                    break;
+                }
+#endif
+
                 unsigned bbLimit = (unsigned)JitConfig.JitExtDefaultPolicyMaxBB();
                 if (m_IsPrejitRoot)
                 {
@@ -1738,7 +1753,7 @@ double ExtendedDefaultPolicy::DetermineMultiplier()
 
     if (m_RootCompiler->compInlineStress())
     {
-        multiplier += 10;
+        multiplier += 100;
         JITDUMP("\nmultiplier increased via inline stress to %g.", multiplier);
     }
 
