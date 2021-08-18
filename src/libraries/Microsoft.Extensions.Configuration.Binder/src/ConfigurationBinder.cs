@@ -713,7 +713,7 @@ namespace Microsoft.Extensions.Configuration
 
 
             IEnumerable<IConfigurationSection> children;
-            // If children contain an array, there will a number as the index
+            // If configuration's children is an array, the configuration key will be a number
             if (config.GetChildren().Any(a => long.TryParse(a.Key, out _)))
             {
                 children = config.GetChildren();
