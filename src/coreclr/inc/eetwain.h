@@ -514,7 +514,7 @@ PTR_VOID GetParamTypeArg(PREGDISPLAY     pContext,
 virtual GenericParamContextType GetParamContextType(PREGDISPLAY     pContext,
                                                     EECodeInfo *    pCodeInfo);
 
-#if defined(FEATURE_EH_FUNCLETS) && defined(USE_GC_INFO_DECODER) && !defined(CROSSGEN_COMPILE)
+#if defined(FEATURE_EH_FUNCLETS) && defined(USE_GC_INFO_DECODER)
 /*
     Returns the generics token.  This is used by GetInstance() and GetParamTypeArg() on WIN64.
 */
@@ -527,7 +527,7 @@ PTR_VOID GetExactGenericsToken(SIZE_T          baseStackSlot,
                                EECodeInfo *    pCodeInfo);
 
 
-#endif // FEATURE_EH_FUNCLETS && USE_GC_INFO_DECODER && !CROSSGEN_COMPILE
+#endif // FEATURE_EH_FUNCLETS && USE_GC_INFO_DECODER
 
 /*
     Returns the offset of the GuardStack cookie if it exists.

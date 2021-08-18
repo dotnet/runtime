@@ -456,7 +456,7 @@ VOID Frame::Pop(Thread *pThread)
     m_Next = NULL;
 }
 
-#if defined(TARGET_UNIX) && !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
+#if defined(TARGET_UNIX) && !defined(DACCESS_COMPILE)
 void Frame::PopIfChained()
 {
     CONTRACTL
@@ -475,7 +475,7 @@ void Frame::PopIfChained()
         Pop();
     }
 }
-#endif // TARGET_UNIX && !DACCESS_COMPILE && !CROSSGEN_COMPILE
+#endif // TARGET_UNIX && !DACCESS_COMPILE
 
 //-----------------------------------------------------------------------
 #endif // #ifndef DACCESS_COMPILE

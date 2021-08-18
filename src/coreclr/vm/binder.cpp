@@ -508,7 +508,7 @@ void CoreLibBinder::Startup()
     s_SigConvertCrst.Init(CrstSigConvert);
 }
 
-#if defined(_DEBUG) && !defined(CROSSGEN_COMPILE)
+#if defined(_DEBUG)
 
 // NoClass is used to suppress check for unmanaged and managed size match
 #define NoClass char[USHRT_MAX]
@@ -1098,7 +1098,7 @@ ErrExit:
     _ASSERTE(SUCCEEDED(hr));
 }
 
-#endif // _DEBUG && !CROSSGEN_COMPILE
+#endif // _DEBUG
 
 extern const CoreLibClassDescription c_rgCoreLibClassDescriptions[];
 extern const USHORT c_nCoreLibClassDescriptions;
@@ -1121,7 +1121,7 @@ void CoreLibBinder::AttachModule(Module * pModule)
         c_rgCoreLibMethodDescriptions, c_nCoreLibMethodDescriptions,
         c_rgCoreLibFieldDescriptions,  c_nCoreLibFieldDescriptions);
 
-#if defined(FEATURE_PREJIT) && !defined(CROSSGEN_COMPILE)
+#if defined(FEATURE_PREJIT)
     CoreLibBinder * pPersistedBinder = pModule->m_pBinder;
 
     if (pPersistedBinder != NULL
@@ -1135,7 +1135,7 @@ void CoreLibBinder::AttachModule(Module * pModule)
         pModule->m_pBinder = pGlobalBinder;
         return;
     }
-#endif // FEATURE_PREJIT && CROSSGEN_COMPILE
+#endif // FEATURE_PREJIT
 
     pGlobalBinder->AllocateTables();
 

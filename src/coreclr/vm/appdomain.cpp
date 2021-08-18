@@ -1500,7 +1500,7 @@ void SystemDomain::LoadBaseSystemClasses()
     g_profControlBlock.fBaseSystemClassesLoaded = TRUE;
 #endif // PROFILING_SUPPORTED
 
-#if defined(_DEBUG) && !defined(CROSSGEN_COMPILE)
+#if defined(_DEBUG)
     if (!NingenEnabled())
     {
         g_CoreLib.Check();
@@ -1542,7 +1542,7 @@ void SystemDomain::LoadDomain(AppDomain *pDomain)
 
 #ifndef DACCESS_COMPILE
 
-#if defined(FEATURE_COMINTEROP_APARTMENT_SUPPORT) && !defined(CROSSGEN_COMPILE)
+#if defined(FEATURE_COMINTEROP_APARTMENT_SUPPORT)
 
 Thread::ApartmentState SystemDomain::GetEntryPointThreadAptState(IMDInternalImport* pScope, mdMethodDef mdMethod)
 {
@@ -1593,7 +1593,7 @@ void SystemDomain::SetThreadAptState (Thread::ApartmentState state)
         _ASSERTE(pState == Thread::AS_InMTA);
     }
 }
-#endif // defined(FEATURE_COMINTEROP_APARTMENT_SUPPORT) && !defined(CROSSGEN_COMPILE)
+#endif // defined(FEATURE_COMINTEROP_APARTMENT_SUPPORT)
 
 /*static*/
 bool SystemDomain::IsReflectionInvocationMethod(MethodDesc* pMeth)
@@ -5195,7 +5195,7 @@ AppDomain::AssemblyIterator::Next_Unlocked(
     return FALSE;
 } // AppDomain::AssemblyIterator::Next_Unlocked
 
-#if !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
+#if !defined(DACCESS_COMPILE)
 
 // Returns S_OK if the assembly was successfully loaded
 HRESULT RuntimeInvokeHostAssemblyResolver(INT_PTR pManagedAssemblyLoadContextToBindWithin, BINDER_SPACE::AssemblyName *pAssemblyName, CLRPrivBinderCoreCLR *pTPABinder, ICLRPrivAssembly **ppLoadedAssembly)
@@ -5405,7 +5405,7 @@ HRESULT RuntimeInvokeHostAssemblyResolver(INT_PTR pManagedAssemblyLoadContextToB
 
     return hr;
 }
-#endif // !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
+#endif // !defined(DACCESS_COMPILE)
 
 //approximate size of loader data
 //maintained for each assembly

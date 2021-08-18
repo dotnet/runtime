@@ -22,9 +22,9 @@
 
 #include "clrprivbindercoreclr.h"
 
-#if !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
+#if !defined(DACCESS_COMPILE)
 #include "clrprivbinderassemblyloadcontext.h"
-#endif // !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
+#endif // !defined(DACCESS_COMPILE)
 
 #include "bundle.h"
 
@@ -150,9 +150,9 @@ namespace BINDER_SPACE
 
         friend class ::CLRPrivBinderCoreCLR;
 
-#if !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
+#if !defined(DACCESS_COMPILE)
         friend class ::CLRPrivBinderAssemblyLoadContext;
-#endif // !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
+#endif // !defined(DACCESS_COMPILE)
     };
 
     // This is a fast version which goes around the COM interfaces and directly

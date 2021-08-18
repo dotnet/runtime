@@ -8057,7 +8057,7 @@ CorInfoInline CEEInfo::canInline (CORINFO_METHOD_HANDLE hCaller,
             goto exit;
         }
 
-#if defined(FEATURE_REJIT) && !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
+#if defined(FEATURE_REJIT) && !defined(DACCESS_COMPILE)
         if (CORProfilerEnableRejit())
         {
             CodeVersionManager* pCodeVersionManager = pCallee->GetCodeVersionManager();
@@ -8070,7 +8070,7 @@ CorInfoInline CEEInfo::canInline (CORINFO_METHOD_HANDLE hCaller,
                 goto exit;
             }
         }
-#endif // defined(FEATURE_REJIT) && !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
+#endif // defined(FEATURE_REJIT) && !defined(DACCESS_COMPILE)
 
         // If the profiler wishes to be notified of JIT events and the result from
         // the above tests will cause a function to be inlined, we need to tell the
@@ -8258,7 +8258,7 @@ void CEEInfo::reportInliningDecision (CORINFO_METHOD_HANDLE inlinerHnd,
     }
 
 
-#if defined FEATURE_REJIT && !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
+#if defined FEATURE_REJIT && !defined(DACCESS_COMPILE)
     if(inlineResult == INLINE_PASS)
     {
         // We don't want to track the chain of methods, so intentionally use m_pMethodBeingCompiled
@@ -8284,7 +8284,7 @@ void CEEInfo::reportInliningDecision (CORINFO_METHOD_HANDLE inlinerHnd,
             }
         }
     }
-#endif // defined FEATURE_REJIT && !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
+#endif // defined FEATURE_REJIT && !defined(DACCESS_COMPILE)
 
     EE_TO_JIT_TRANSITION();
 }
@@ -11477,7 +11477,7 @@ void CEEJitInfo::allocUnwindInfo (
     }
 
     PT_RUNTIME_FUNCTION pRuntimeFunction = m_CodeHeaderRW->GetUnwindInfo(m_usedUnwindInfos);
-    
+
     m_usedUnwindInfos++;
 
     // Make sure that the RUNTIME_FUNCTION is aligned on a DWORD sized boundary
@@ -12182,7 +12182,7 @@ HRESULT CEEJitInfo::getPgoInstrumentationResults(
         m_foundPgoData = newPgoData;
         newPgoData.SuppressRelease();
 
-        newPgoData->m_hr = PgoManager::getPgoInstrumentationResults(pMD, &newPgoData->m_allocatedData, &newPgoData->m_schema, 
+        newPgoData->m_hr = PgoManager::getPgoInstrumentationResults(pMD, &newPgoData->m_allocatedData, &newPgoData->m_schema,
             &newPgoData->m_cSchemaElems, &newPgoData->m_pInstrumentationData, &newPgoData->m_pgoSource);
         pDataCur = m_foundPgoData;
     }
@@ -12526,7 +12526,7 @@ CorJitResult invokeCompileMethodHelper(EEJitManager *jitMgr,
     bool samplingEnabled = (s_stackSamplingEnabled.val(CLRConfig::UNSUPPORTED_StackSamplingEnabled) != 0);
 #endif
 
-#if defined(ALLOW_SXS_JIT) && !defined(CROSSGEN_COMPILE)
+#if defined(ALLOW_SXS_JIT)
     if (FAILED(ret) && jitMgr->m_alternateJit
 #ifdef FEATURE_STACK_SAMPLING
         && (!samplingEnabled || (jitFlags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_SAMPLING_JIT_BACKGROUND)))
@@ -12558,7 +12558,7 @@ CorJitResult invokeCompileMethodHelper(EEJitManager *jitMgr,
             ret = CORJIT_SKIPPED;
         }
     }
-#endif // defined(ALLOW_SXS_JIT) && !defined(CROSSGEN_COMPILE)
+#endif // defined(ALLOW_SXS_JIT)
     comp->setJitFlags(jitFlags);
 
 #ifdef FEATURE_INTERPRETER
@@ -14235,7 +14235,7 @@ BOOL LoadDynamicInfoEntry(Module *currentModule,
             TypeHandle thImpl = ZapSig::DecodeType(currentModule, pInfoModule, updatedSignature, CLASS_LOADED, &updatedSignature);
 
             MethodDesc *pImplMethodCompiler = NULL;
-            
+
             if ((flags & READYTORUN_VIRTUAL_OVERRIDE_VirtualFunctionOverriden) != 0)
             {
                 pImplMethodCompiler = ZapSig::DecodeMethod(currentModule, pInfoModule, updatedSignature);

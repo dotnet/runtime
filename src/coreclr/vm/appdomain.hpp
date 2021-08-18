@@ -1007,7 +1007,7 @@ public:
     //****************************************************************************************
     // Handles
 
-#if !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
+#if !defined(DACCESS_COMPILE)
     IGCHandleStore* GetHandleStore()
     {
         LIMITED_METHOD_CONTRACT;
@@ -1101,7 +1101,7 @@ public:
         return ::CreateDependentHandle(m_handleStore, primary, secondary);
     }
 
-#endif // DACCESS_COMPILE && !CROSSGEN_COMPILE
+#endif // DACCESS_COMPILE
 
     CLRPrivBinderCoreCLR *GetTPABinderContext() {LIMITED_METHOD_CONTRACT;  return m_pTPABinderContext; }
 
@@ -2602,7 +2602,7 @@ public:
     }
 #endif // DACCESS_COMPILE
 
-#if defined(FEATURE_COMINTEROP_APARTMENT_SUPPORT) && !defined(CROSSGEN_COMPILE)
+#if defined(FEATURE_COMINTEROP_APARTMENT_SUPPORT)
     static Thread::ApartmentState GetEntryPointThreadAptState(IMDInternalImport* pScope, mdMethodDef mdMethod);
     static void SetThreadAptState(Thread::ApartmentState state);
 #endif

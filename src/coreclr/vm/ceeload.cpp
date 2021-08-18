@@ -113,7 +113,7 @@ COUNT_T Module::GetNativeOrReadyToRunInliners(PTR_Module inlineeOwnerMod, mdMeth
     return 0;
 }
 
-#if defined(PROFILING_SUPPORTED) && !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
+#if defined(PROFILING_SUPPORTED) && !defined(DACCESS_COMPILE)
 BOOL Module::HasJitInlineTrackingMap()
 {
     LIMITED_METHOD_CONTRACT;
@@ -132,7 +132,7 @@ void Module::AddInlining(MethodDesc *inliner, MethodDesc *inlinee)
         m_pJitInlinerTrackingMap->AddInlining(inliner, inlinee);
     }
 }
-#endif // defined(PROFILING_SUPPORTED) && !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
+#endif // defined(PROFILING_SUPPORTED) && !defined(DACCESS_COMPILE)
 
 #ifndef DACCESS_COMPILE
 // ===========================================================================
@@ -680,13 +680,13 @@ void Module::Initialize(AllocMemTracker *pamTracker, LPCWSTR szName)
         Module::CreateAssemblyRefByNameTable(pamTracker);
     }
 
-#if defined(PROFILING_SUPPORTED) && !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
+#if defined(PROFILING_SUPPORTED) && !defined(DACCESS_COMPILE)
     m_pJitInlinerTrackingMap = NULL;
     if (ReJitManager::IsReJITInlineTrackingEnabled())
     {
         m_pJitInlinerTrackingMap = new JITInlineTrackingMap(GetLoaderAllocator());
     }
-#endif // defined (PROFILING_SUPPORTED) &&!defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
+#endif // defined (PROFILING_SUPPORTED) &&!defined(DACCESS_COMPILE)
 
     LOG((LF_CLASSLOADER, LL_INFO10, "Loaded pModule: \"%ws\".\n", GetDebugName()));
 }
@@ -3200,7 +3200,7 @@ HRESULT Module::GetReadablePublicMetaDataInterface(DWORD dwOpenFlags, REFIID rii
 // a special token that indicates no reader could be created - don't try again
 static ISymUnmanagedReader* const k_pInvalidSymReader = (ISymUnmanagedReader*)0x1;
 
-#if defined(FEATURE_ISYM_READER) && !defined(CROSSGEN_COMPILE)
+#if defined(FEATURE_ISYM_READER)
 ISymUnmanagedReader *Module::GetISymUnmanagedReaderNoThrow(void)
 {
     CONTRACT(ISymUnmanagedReader *)
@@ -3411,7 +3411,7 @@ ISymUnmanagedReader *Module::GetISymUnmanagedReader(void)
     m_pISymUnmanagedReader->AddRef();
     RETURN (m_pISymUnmanagedReader);
 }
-#endif // FEATURE_ISYM_READER && !CROSSGEN_COMPILE
+#endif // FEATURE_ISYM_READER
 
 BOOL Module::IsSymbolReadingEnabled()
 {
@@ -3475,13 +3475,13 @@ void Module::SetSymbolBytes(LPCBYTE pbSyms, DWORD cbSyms)
                                                 &cbWritten);
     IfFailThrow(HRESULT_FROM_WIN32(dwError));
 
-#if PROFILING_SUPPORTED && !defined(CROSSGEN_COMPILE)
+#if PROFILING_SUPPORTED
     BEGIN_PROFILER_CALLBACK(CORProfilerInMemorySymbolsUpdatesEnabled());
     {
         (&g_profControlBlock)->ModuleInMemorySymbolsUpdated((ModuleID) this);
     }
     END_PROFILER_CALLBACK();
-#endif //PROFILING_SUPPORTED && !defined(CROSSGEN_COMPILE)
+#endif //PROFILING_SUPPORTED
 
     ETW::CodeSymbolLog::EmitCodeSymbols(this);
 

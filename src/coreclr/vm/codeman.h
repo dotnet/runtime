@@ -918,12 +918,12 @@ public:
     }
 #endif // ALLOW_SXS_JIT
 
-#if !defined CROSSGEN_COMPILE && !defined DACCESS_COMPILE
+#if !defined DACCESS_COMPILE
     EEJitManager();
 
     // No destructor necessary. Only one instance of this class that is destroyed at process shutdown.
     // ~EEJitManager();
-#endif // !CROSSGEN_COMPILE && !DACCESS_COMPILE
+#endif // !DACCESS_COMPILE
 
 
     virtual DWORD GetCodeType()
@@ -959,7 +959,7 @@ public:
                                         CrawlFrame *pCf);
 #endif // !DACCESS_COMPILE
     GCInfoToken         GetGCInfoToken(const METHODTOKEN& MethodToken);
-#if !defined DACCESS_COMPILE && !defined CROSSGEN_COMPILE
+#if !defined DACCESS_COMPILE
     void                RemoveJitData(CodeHeader * pCHdr, size_t GCinfo_len, size_t EHinfo_len);
     void                Unload(LoaderAllocator* pAllocator);
     void                CleanupCodeHeaps();
@@ -983,7 +983,7 @@ public:
                                             bool throwOnOutOfMemoryWithinRange);
 
     void *              allocCodeFragmentBlock(size_t blockSize, unsigned alignment, LoaderAllocator *pLoaderAllocator, StubCodeBlockKind kind);
-#endif // !DACCESS_COMPILE && !CROSSGEN_COMPILE
+#endif // !DACCESS_COMPILE
 
     static CodeHeader * GetCodeHeader(const METHODTOKEN& MethodToken);
     static CodeHeader * GetCodeHeaderFromStartAddress(TADDR methodStartAddress);
@@ -1022,13 +1022,13 @@ public:
     static TADDR FindMethodCode(RangeSection * pRangeSection, PCODE currentPC);
     static TADDR FindMethodCode(PCODE currentPC);
 
-#if !defined DACCESS_COMPILE && !defined CROSSGEN_COMPILE
+#if !defined DACCESS_COMPILE
     void        FreeCodeMemory(HostCodeHeap *pCodeHeap, void * codeStart);
     void        RemoveFromCleanupList(HostCodeHeap *pCodeHeap);
     void        AddToCleanupList(HostCodeHeap *pCodeHeap);
     void        DeleteCodeHeap(HeapList *pHeapList);
     void        RemoveCodeHeapFromDomainList(CodeHeap *pHeap, LoaderAllocator *pAllocator);
-#endif // !DACCESS_COMPILE && !CROSSGEN_COMPILE
+#endif // !DACCESS_COMPILE
 
 private :
     struct DomainCodeHeapList {
@@ -1096,7 +1096,7 @@ public:
 private:
     CORJIT_FLAGS m_CPUCompileFlags;
 
-#if !defined CROSSGEN_COMPILE && !defined DACCESS_COMPILE
+#if !defined DACCESS_COMPILE
     void SetCpuInfo();
 #endif
 

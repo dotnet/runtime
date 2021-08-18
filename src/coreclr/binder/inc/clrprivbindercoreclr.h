@@ -46,11 +46,11 @@ public:
     HRESULT BindUsingAssemblyName(BINDER_SPACE::AssemblyName *pAssemblyName,
                                   ICLRPrivAssembly **ppAssembly);
 
-#if !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
+#if !defined(DACCESS_COMPILE)
     HRESULT BindUsingPEImage( /* in */ PEImage *pPEImage,
                               /* in */ BOOL fIsNativeImage,
                               /* [retval][out] */ ICLRPrivAssembly **ppAssembly);
-#endif // !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
+#endif // !defined(DACCESS_COMPILE)
 
     HRESULT BindAssemblyByNameWorker(
             BINDER_SPACE::AssemblyName *pAssemblyName,

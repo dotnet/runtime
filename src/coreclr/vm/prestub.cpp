@@ -326,7 +326,7 @@ PCODE MethodDesc::PrepareCode(PrepareCodeConfig* pConfig)
     _ASSERTE(IsIL() || IsNoMetadata());
     PCODE pCode = PrepareILBasedCode(pConfig);
 
-#if defined(FEATURE_GDBJIT) && defined(TARGET_UNIX) && !defined(CROSSGEN_COMPILE)
+#if defined(FEATURE_GDBJIT) && defined(TARGET_UNIX)
     NotifyGdb::MethodPrepared(this);
 #endif
 

@@ -100,7 +100,7 @@ PTR_Bucket HashMap::Buckets()
 {
     LIMITED_METHOD_DAC_CONTRACT;
 
-#if !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
+#if !defined(DACCESS_COMPILE)
     _ASSERTE (!g_fEEStarted || !m_fAsyncMode || GetThreadNULLOk() == NULL || GetThread()->PreemptiveGCDisabled() || IsGCThread());
 #endif
     return m_rgBuckets + 1;

@@ -973,7 +973,7 @@ void JIT_TailCall()
     _ASSERTE(!"ARM64:NYI");
 }
 
-#if !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
+#if !defined(DACCESS_COMPILE)
 EXTERN_C void JIT_UpdateWriteBarrierState(bool skipEphemeralCheck, size_t writeableOffset);
 
 extern "C" void STDCALL JIT_PatchedCodeStart();
@@ -1023,7 +1023,7 @@ void InitJITHelpers1()
 
 #else
 void UpdateWriteBarrierState(bool) {}
-#endif // !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
+#endif // !defined(DACCESS_COMPILE)
 
 PTR_CONTEXT GetCONTEXTFromRedirectedStubStackFrame(T_DISPATCHER_CONTEXT * pDispatcherContext)
 {
@@ -1049,7 +1049,7 @@ void RedirectForThreadAbort()
     throw "NYI";
 }
 
-#if !defined(DACCESS_COMPILE) && !defined (CROSSGEN_COMPILE)
+#if !defined(DACCESS_COMPILE)
 FaultingExceptionFrame *GetFrameFromRedirectedStubStackFrame (DISPATCHER_CONTEXT *pDispatcherContext)
 {
     LIMITED_METHOD_CONTRACT;
@@ -1114,7 +1114,7 @@ AdjustContextForVirtualStub(
 
     return TRUE;
 }
-#endif // !(DACCESS_COMPILE && CROSSGEN_COMPILE)
+#endif // !DACCESS_COMPILE
 
 UMEntryThunk * UMEntryThunk::Decode(void *pCallback)
 {

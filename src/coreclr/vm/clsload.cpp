@@ -3068,7 +3068,7 @@ TypeHandle ClassLoader::CreateTypeHandleForTypeKey(TypeKey* pKey, AllocMemTracke
         {
             typeHnd = CreateTypeHandleForNonCanonicalGenericInstantiation(pKey, pamTracker);
         }
-#if defined(_DEBUG) && !defined(CROSSGEN_COMPILE)
+#if defined(_DEBUG)
         if (Nullable::IsNullableType(typeHnd))
             Nullable::CheckFieldOffsets(typeHnd);
 #endif

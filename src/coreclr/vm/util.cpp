@@ -1856,7 +1856,7 @@ void DACNotify::DoJITPitchingNotification(MethodDesc *MethodDescPtr)
     }
     CONTRACTL_END;
 
-#if defined(FEATURE_GDBJIT) && defined(TARGET_UNIX) && !defined(CROSSGEN_COMPILE)
+#if defined(FEATURE_GDBJIT) && defined(TARGET_UNIX)
     NotifyGdb::MethodPitched(MethodDescPtr);
 #endif
     TADDR Args[2] = { JIT_PITCHING_NOTIFICATION, (TADDR) MethodDescPtr };

@@ -887,7 +887,7 @@ void PEFile::SetNativeImage(PEImage *image)
     m_nativeImage->AddRef();
     m_nativeImage->Load();
 
-#if defined(TARGET_AMD64) && !defined(CROSSGEN_COMPILE)
+#if defined(TARGET_AMD64)
     static ConfigDWORD configNGenReserveForJumpStubs;
     int percentReserveForJumpStubs = configNGenReserveForJumpStubs.val(CLRConfig::INTERNAL_NGenReserveForJumpStubs);
     if (percentReserveForJumpStubs != 0)

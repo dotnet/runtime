@@ -1226,7 +1226,7 @@ private:
         _ASSERTE(IsVersionable());
         _ASSERTE(IsIL() || IsDynamicMethod());
 
-#if defined(FEATURE_CODE_VERSIONING) && !defined(CROSSGEN_COMPILE)
+#if defined(FEATURE_CODE_VERSIONING)
         _ASSERTE(CodeVersionManager::IsMethodSupported(PTR_MethodDesc(this)));
 
         // For a method eligible for code versioning and vtable slot backpatch:

@@ -19,7 +19,7 @@
 #define STRESS_LOG
 #endif
 
-#if defined(_DEBUG) && !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
+#if defined(_DEBUG) && !defined(DACCESS_COMPILE)
 #define USE_CHECKED_OBJECTREFS
 #endif
 

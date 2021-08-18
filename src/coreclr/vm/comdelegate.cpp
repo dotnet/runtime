@@ -3142,7 +3142,7 @@ BOOL COMDelegate::IsDelegate(MethodTable *pMT)
 }
 
 
-#if !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
+#if !defined(DACCESS_COMPILE)
 
 
 // Helper to construct an UnhandledExceptionEventArgs.  This may fail for out-of-memory or
@@ -3291,4 +3291,4 @@ void DistributeUnhandledExceptionReliably(OBJECTREF *pDelegate,
     EX_END_CATCH(SwallowAllExceptions)
 }
 
-#endif // !DACCESS_COMPILE && !CROSSGEN_COMPILE
+#endif // !DACCESS_COMPILE

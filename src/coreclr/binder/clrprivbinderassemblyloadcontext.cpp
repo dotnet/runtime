@@ -6,7 +6,7 @@
 #include "clrprivbindercoreclr.h"
 #include "clrprivbinderassemblyloadcontext.h"
 
-#if !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
+#if !defined(DACCESS_COMPILE)
 
 using namespace BINDER_SPACE;
 
@@ -222,7 +222,7 @@ HRESULT CLRPrivBinderAssemblyLoadContext::SetupContext(DWORD      dwAppDomainId,
                 pBinder->m_pAssemblyLoaderAllocator = pLoaderAllocator;
                 pBinder->m_loaderAllocatorHandle = loaderAllocatorHandle;
 
-#if !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
+#if !defined(DACCESS_COMPILE)
                 if (pLoaderAllocator != NULL)
                 {
                     ((AssemblyLoaderAllocator*)pLoaderAllocator)->RegisterBinder(pBinder);
@@ -289,5 +289,5 @@ void CLRPrivBinderAssemblyLoadContext::ReleaseLoadContext()
     m_ptrManagedAssemblyLoadContext = NULL;
 }
 
-#endif // !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
+#endif // !defined(DACCESS_COMPILE)
 

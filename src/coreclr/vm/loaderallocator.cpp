@@ -90,7 +90,7 @@ LoaderAllocator::~LoaderAllocator()
         DESTRUCTOR_CHECK;
     }
     CONTRACTL_END;
-#if !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
+#if !defined(DACCESS_COMPILE)
     Terminate();
 
     // Assert that VSD is not still active when the destructor is called.

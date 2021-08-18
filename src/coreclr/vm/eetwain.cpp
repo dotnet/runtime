@@ -3262,7 +3262,7 @@ unsigned SKIP_ALLOC_FRAME(int size, PTR_CBYTE base, unsigned offset)
 #endif // !USE_GC_INFO_DECODER
 
 
-#if defined(FEATURE_EH_FUNCLETS) && !defined(CROSSGEN_COMPILE)
+#if defined(FEATURE_EH_FUNCLETS)
 
 void EECodeManager::EnsureCallerContextIsValid( PREGDISPLAY  pRD, StackwalkCacheEntry* pCacheEntry, EECodeInfo * pCodeInfo /*= NULL*/ )
 {
@@ -3316,7 +3316,7 @@ size_t EECodeManager::GetCallerSp( PREGDISPLAY  pRD )
     return GetSP(pRD->pCallerContext);
 }
 
-#endif // FEATURE_EH_FUNCLETS && !CROSSGEN_COMPILE
+#endif // FEATURE_EH_FUNCLETS
 
 #ifdef HAS_QUICKUNWIND
 /*
@@ -5105,7 +5105,7 @@ bool EECodeManager::EnumGcRefs( PREGDISPLAY     pContext,
         else
             argsStart = PTR_BYTE((size_t)argBase) + info.stackSize + sizeof(void*);   // ESP + locals + retAddr
 
-#if defined(_DEBUG) && !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
+#if defined(_DEBUG) && !defined(DACCESS_COMPILE)
         // Note that I really want to say hCallBack is a GCCONTEXT, but this is pretty close
         extern void GcEnumObject(LPVOID pData, OBJECTREF *pObj, uint32_t flags);
         _ASSERTE((void*) GcEnumObject == pCallBack);
@@ -5621,7 +5621,7 @@ PTR_VOID EECodeManager::GetParamTypeArg(PREGDISPLAY     pContext,
 #endif // USE_GC_INFO_DECODER
 }
 
-#if defined(FEATURE_EH_FUNCLETS) && defined(USE_GC_INFO_DECODER) && !defined(CROSSGEN_COMPILE)
+#if defined(FEATURE_EH_FUNCLETS) && defined(USE_GC_INFO_DECODER)
 /*
     Returns the generics token.  This is used by GetInstance() and GetParamTypeArg() on WIN64.
 */
@@ -5692,7 +5692,7 @@ PTR_VOID EECodeManager::GetExactGenericsToken(SIZE_T          baseStackSlot,
 }
 
 
-#endif // FEATURE_EH_FUNCLETS && USE_GC_INFO_DECODER && !CROSSGEN_COMPILE
+#endif // FEATURE_EH_FUNCLETS && USE_GC_INFO_DECODER
 
 /*****************************************************************************/
 

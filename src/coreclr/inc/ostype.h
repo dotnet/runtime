@@ -51,7 +51,7 @@ void InitWinRTStatus();
 inline BOOL RunningOnWin8()
 {
     WRAPPER_NO_CONTRACT;
-#if (!defined(HOST_X86) && !defined(HOST_AMD64)) || defined(CROSSGEN_COMPILE)
+#if (!defined(HOST_X86) && !defined(HOST_AMD64))
     return TRUE;
 #else
     if (gRunningOnStatus == RUNNING_ON_STATUS_UNINITED)

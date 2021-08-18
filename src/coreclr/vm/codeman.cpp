@@ -950,8 +950,8 @@ ExecutionManager::ScanFlag ExecutionManager::GetScanFlags()
         SUPPORTS_DAC;
     } CONTRACTL_END;
 
-#if !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
-    
+#if !defined(DACCESS_COMPILE)
+
 
     Thread *pThread = GetThreadNULLOk();
 
@@ -966,7 +966,7 @@ ExecutionManager::ScanFlag ExecutionManager::GetScanFlags()
     if (pThread->PreemptiveGCDisabled() || (pThread == ThreadSuspend::GetSuspensionThread()))
         return ScanNoReaderLock;
 
-    
+
 
     return ScanReaderLock;
 #else
@@ -1550,7 +1550,7 @@ JIT_LOAD_DATA g_JitLoadData;
 //     ':'  - (colon)
 //
 //  Returns false if we find any of these characters in 'pwzJitName'
-//  Returns true if we reach the null terminator without encountering 
+//  Returns true if we reach the null terminator without encountering
 //  any of these characters.
 //
 static bool ValidateJitName(LPCWSTR pwzJitName)
@@ -4441,7 +4441,7 @@ LPCWSTR ExecutionManager::GetJitName()
 
     // Try to obtain a name for the jit library from the env. variable
     IfFailThrow(CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_JitName, const_cast<LPWSTR *>(&pwzJitName)));
-    
+
     if (NULL == pwzJitName)
     {
         pwzJitName = MAKEDLLNAME_W(W("clrjit"));
@@ -4922,7 +4922,7 @@ void ExecutionManager::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
 }
 #endif // #ifdef DACCESS_COMPILE
 
-#if !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
+#if !defined(DACCESS_COMPILE)
 
 void ExecutionManager::Unload(LoaderAllocator *pLoaderAllocator)
 {
@@ -5263,7 +5263,7 @@ DONE:
 
     RETURN((PCODE)jumpStub);
 }
-#endif // !DACCESS_COMPILE && !CROSSGEN_COMPILE
+#endif // !DACCESS_COMPILE
 
 static void GetFuncletStartOffsetsHelper(PCODE pCodeStart, SIZE_T size, SIZE_T ofsAdj,
     PTR_RUNTIME_FUNCTION pFunctionEntry, TADDR moduleBase,

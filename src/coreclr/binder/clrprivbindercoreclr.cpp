@@ -72,7 +72,7 @@ HRESULT CLRPrivBinderCoreCLR::BindUsingAssemblyName(BINDER_SPACE::AssemblyName *
 
     hr = BindAssemblyByNameWorker(pAssemblyName, &pCoreCLRFoundAssembly, false /* excludeAppPaths */);
 
-#if !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
+#if !defined(DACCESS_COMPILE)
     if ((hr == HRESULT_FROM_WIN32(ERROR_FILE_NOT_FOUND)) ||
         (hr == FUSION_E_APP_DOMAIN_LOCKED) || (hr == FUSION_E_REF_DEF_MISMATCH))
     {
@@ -120,7 +120,7 @@ HRESULT CLRPrivBinderCoreCLR::BindUsingAssemblyName(BINDER_SPACE::AssemblyName *
             }
         }
     }
-#endif // !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
+#endif // !defined(DACCESS_COMPILE)
 
     IF_FAIL_GO(hr);
 
@@ -131,7 +131,7 @@ Exit:;
     return hr;
 }
 
-#if !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
+#if !defined(DACCESS_COMPILE)
 HRESULT CLRPrivBinderCoreCLR::BindUsingPEImage( /* in */ PEImage *pPEImage,
                                                 /* in */ BOOL fIsNativeImage,
                                                 /* [retval][out] */ ICLRPrivAssembly **ppAssembly)
@@ -203,7 +203,7 @@ Exit:;
 
     return hr;
 }
-#endif // !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
+#endif // !defined(DACCESS_COMPILE)
 
 HRESULT CLRPrivBinderCoreCLR::SetupBindingPaths(SString  &sTrustedPlatformAssemblies,
                                                 SString  &sPlatformResourceRoots,

@@ -810,7 +810,7 @@ TypeHandle FieldDesc::GetExactFieldType(TypeHandle owner)
     }
 }
 
-#if !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
+#if !defined(DACCESS_COMPILE)
 REFLECTFIELDREF FieldDesc::GetStubFieldInfo()
 {
     CONTRACTL
@@ -836,4 +836,4 @@ REFLECTFIELDREF FieldDesc::GetStubFieldInfo()
 
     return retVal;
 }
-#endif // !DACCESS_COMPILE && !CROSSGEN_COMPILE
+#endif // !DACCESS_COMPILE

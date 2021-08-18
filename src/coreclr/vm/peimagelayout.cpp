@@ -9,7 +9,7 @@
 #include "peimagelayout.inl"
 #include "dataimage.h"
 
-#if defined(TARGET_WINDOWS) && !defined(CROSSGEN_COMPILE)
+#if defined(TARGET_WINDOWS)
 #include "amsi.h"
 #endif
 
@@ -61,7 +61,7 @@ PEImageLayout* PEImageLayout::Load(PEImage* pOwner, BOOL bNTSafeLoad, HRESULT* r
 {
     STANDARD_VM_CONTRACT;
 
-#if defined(CROSSGEN_COMPILE) || defined(TARGET_UNIX)
+#if defined(TARGET_UNIX)
     return PEImageLayout::Map(pOwner);
 #else
     if (pOwner->IsInBundle())
@@ -235,14 +235,14 @@ void PEImageLayout::ApplyBaseRelocations()
             if (((pSection->Characteristics & VAL32(IMAGE_SCN_MEM_WRITE)) == 0))
             {
                 DWORD dwNewProtection = PAGE_READWRITE;
-#if defined(TARGET_UNIX) && !defined(CROSSGEN_COMPILE)
+#if defined(TARGET_UNIX)
                 if (((pSection->Characteristics & VAL32(IMAGE_SCN_MEM_EXECUTE)) != 0))
                 {
                     // On SELinux, we cannot change protection that doesn't have execute access rights
                     // to one that has it, so we need to set the protection to RWX instead of RW
                     dwNewProtection = PAGE_EXECUTE_READWRITE;
                 }
-#endif // TARGET_UNIX && !CROSSGEN_COMPILE
+#endif // TARGET_UNIX
                 if (!ClrVirtualProtect(pWriteableRegion, cbWriteableRegion,
                                        dwNewProtection, &dwOldProtection))
                     ThrowLastError();
@@ -341,7 +341,7 @@ RawImageLayout::RawImageLayout(const void *flat, COUNT_T size, PEImage* pOwner)
 
     if (size)
     {
-#if defined(TARGET_WINDOWS) && !defined(CROSSGEN_COMPILE)
+#if defined(TARGET_WINDOWS)
         if (Amsi::IsBlockedByAmsiScan((void*)flat, size))
         {
             // This is required to throw a BadImageFormatException for compatibility, but
@@ -350,7 +350,7 @@ RawImageLayout::RawImageLayout(const void *flat, COUNT_T size, PEImage* pOwner)
             GetHRMsg(HRESULT_FROM_WIN32(ERROR_VIRUS_INFECTED), virusHrString);
             ThrowHR(COR_E_BADIMAGEFORMAT, virusHrString);
         }
-#endif // defined(TARGET_WINDOWS) && !defined(CROSSGEN_COMPILE)
+#endif // defined(TARGET_WINDOWS)
 
         HandleHolder mapping(WszCreateFileMapping(INVALID_HANDLE_VALUE,
                                                   NULL,
@@ -421,11 +421,11 @@ ConvertedImageLayout::ConvertedImageLayout(PEImageLayout* source, BOOL isInBundl
         source->HasCorHeader() &&
         (source->HasNativeHeader() || source->HasReadyToRunHeader()) &&
         g_fAllowNativeImages;
-    
+
     DWORD mapAccess = PAGE_READWRITE;
     DWORD viewAccess = FILE_MAP_ALL_ACCESS;
 
-#if !defined(CROSSGEN_COMPILE) && !defined(TARGET_UNIX)
+#if !defined(TARGET_UNIX)
     if (enableExecution)
     {
         // to make sections executable on Windows the view must have EXECUTE permissions
@@ -488,7 +488,7 @@ ConvertedImageLayout::~ConvertedImageLayout()
     }
     CONTRACTL_END;
 
-#if !defined(CROSSGEN_COMPILE) && !defined(TARGET_UNIX) && !defined(TARGET_X86)
+#if !defined(TARGET_UNIX) && !defined(TARGET_X86)
     if (m_pExceptionDir)
     {
         RtlDeleteFunctionTable(m_pExceptionDir);
@@ -616,7 +616,7 @@ MappedImageLayout::MappedImageLayout(PEImage* pOwner)
 #endif // !TARGET_UNIX
 }
 
-#if !defined(CROSSGEN_COMPILE) && !defined(TARGET_UNIX)
+#if !defined(TARGET_UNIX)
 LoadedImageLayout::LoadedImageLayout(PEImage* pOwner, BOOL bNTSafeLoad, HRESULT* returnDontThrow)
 {
     CONTRACTL
@@ -651,7 +651,7 @@ LoadedImageLayout::LoadedImageLayout(PEImage* pOwner, BOOL bNTSafeLoad, HRESULT*
 
     LOG((LF_LOADER, LL_INFO1000, "PEImage: Opened HMODULE %S\n", (LPCWSTR) GetPath()));
 }
-#endif // !CROSSGEN_COMPILE && !TARGET_UNIX
+#endif // !TARGET_UNIX
 
 FlatImageLayout::FlatImageLayout(PEImage* pOwner)
 {
@@ -789,7 +789,7 @@ NativeImageLayout::NativeImageLayout(LPCWSTR fullPath)
 #else
     loadedImage = CLRLoadLibraryEx(fullPath, NULL, GetLoadWithAlteredSearchPathFlag());
 #endif
-    
+
     if (loadedImage == NULL)
     {
         ThrowLastError();

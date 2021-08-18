@@ -3381,7 +3381,7 @@ VOID MarshalInfo::DumpMarshalInfo(Module* pModule, SigPointer sig, const SigType
 } // MarshalInfo::DumpMarshalInfo
 #endif //_DEBUG
 
-#if defined(FEATURE_COMINTEROP) && !defined(CROSSGEN_COMPILE)
+#if defined(FEATURE_COMINTEROP)
 DispParamMarshaler *MarshalInfo::GenerateDispParamMarshaler()
 {
     CONTRACT (DispParamMarshaler*)
@@ -3502,7 +3502,7 @@ DispatchWrapperType MarshalInfo::GetDispWrapperType()
     return WrapperType;
 }
 
-#endif // defined(FEATURE_COMINTEROP) && !defined(CROSSGEN_COMPILE)
+#endif // defined(FEATURE_COMINTEROP)
 
 // Returns true if the marshaler represented by this instance requires COM to have been started.
 bool MarshalInfo::MarshalerRequiresCOM()

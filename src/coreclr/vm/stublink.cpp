@@ -875,7 +875,7 @@ int StubLinker::CalculateSize(int* pGlobalSize)
 
     _ASSERTE(pGlobalSize);
 
-#if defined(_DEBUG) && defined(STUBLINKER_GENERATES_UNWIND_INFO) && !defined(CROSSGEN_COMPILE)
+#if defined(_DEBUG) && defined(STUBLINKER_GENERATES_UNWIND_INFO)
     if (m_pUnwindInfoCheckLabel)
     {
         EmitLabel(m_pUnwindInfoCheckLabel);

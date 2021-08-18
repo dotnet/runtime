@@ -1618,7 +1618,7 @@ public:
     // Functions used to perform initialization and cleanup on a managed thread
     // that would normally occur if the thread was stated when the runtime was
     // fully initialized and ready to run.
-    // Examples where this applies are the Main and Finalizer threads. 
+    // Examples where this applies are the Main and Finalizer threads.
     static void InitializationForManagedThreadInNative(_In_ Thread* pThread);
     static void CleanUpForManagedThreadInNative(_In_ Thread* pThread);
 
@@ -3801,7 +3801,7 @@ private:
     BYTE* m_pOSContextBuffer;
 
 #ifdef _DEBUG
-    // validate that we use only one context per thread. 
+    // validate that we use only one context per thread.
     bool m_RedirectContextInUse;
 #endif
 
@@ -4705,11 +4705,11 @@ private:
     static CONTEXT *s_pOSContext;
 public:
     // Pre-allocate an OS context for possible use by a redirected thread and keep in a static variable.
-    // 
+    //
     // There are two reasons for this pattern:
     // - We can not do any memory allocation after we suspend a thread in order to avoid deadlock situation.
     //   So, when anticipating a need, we must pre-allocate.
-    // 
+    //
     // - Even though we know the thread we are suspending, we do not want to put the context directly on the
     //   thread because the thread only _may_ need the context. Often it does not end up needing it,
     //   then we will keep the context for the next time like this.
@@ -6171,7 +6171,7 @@ BYTE* GetWriteBarrierCodeLocation(VOID* barrier);
 BOOL IsIPInWriteBarrierCodeCopy(PCODE controlPc);
 PCODE AdjustWriteBarrierIP(PCODE controlPc);
 
-#if !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
+#if !defined(DACCESS_COMPILE)
 extern thread_local Thread* t_pStackWalkerWalkingThread;
 #define SET_THREAD_TYPE_STACKWALKER(pThread)    t_pStackWalkerWalkingThread = pThread
 #define CLEAR_THREAD_TYPE_STACKWALKER()         t_pStackWalkerWalkingThread = NULL
@@ -6184,7 +6184,7 @@ inline BOOL IsStackWalkerThread()
 {
     LIMITED_METHOD_CONTRACT;
 
-#if !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
+#if !defined(DACCESS_COMPILE)
     return t_pStackWalkerWalkingThread != NULL;
 #else
     return FALSE;
@@ -6198,7 +6198,7 @@ public:
     {
         LIMITED_METHOD_CONTRACT;
 
-#if !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
+#if !defined(DACCESS_COMPILE)
         m_PreviousValue = t_pStackWalkerWalkingThread;
         t_pStackWalkerWalkingThread = value;
 #endif
@@ -6208,7 +6208,7 @@ public:
     {
         LIMITED_METHOD_CONTRACT;
 
-#if !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
+#if !defined(DACCESS_COMPILE)
         t_pStackWalkerWalkingThread = m_PreviousValue;
 #endif
     }

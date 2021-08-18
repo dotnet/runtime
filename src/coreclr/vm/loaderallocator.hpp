@@ -699,7 +699,7 @@ protected:
 public:
     virtual LoaderAllocatorID* Id();
     AssemblyLoaderAllocator() : m_Id(LAT_Assembly), m_pShuffleThunkCache(NULL)
-#if !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
+#if !defined(DACCESS_COMPILE)
         , m_binderToRelease(NULL)
 #endif
     { LIMITED_METHOD_CONTRACT; }
@@ -719,7 +719,7 @@ public:
         return m_pShuffleThunkCache;
     }
 
-#if !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
+#if !defined(DACCESS_COMPILE)
     virtual void RegisterHandleForCleanup(OBJECTHANDLE objHandle);
     virtual void UnregisterHandleFromCleanup(OBJECTHANDLE objHandle);
     virtual void CleanupHandles();
@@ -730,7 +730,7 @@ public:
     virtual ~AssemblyLoaderAllocator();
     void RegisterBinder(CLRPrivBinderAssemblyLoadContext* binderToRelease);
     virtual void ReleaseManagedAssemblyLoadContext();
-#endif // !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
+#endif // !defined(DACCESS_COMPILE)
 
 private:
     struct HandleCleanupListItem
@@ -745,7 +745,7 @@ private:
     };
 
     SList<HandleCleanupListItem> m_handleCleanupList;
-#if !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
+#if !defined(DACCESS_COMPILE)
     CLRPrivBinderAssemblyLoadContext* m_binderToRelease;
 #endif
 };

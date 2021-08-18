@@ -1756,7 +1756,7 @@ protected:
         return m_file->GetEmitter();
     }
 
-#if defined(PROFILING_SUPPORTED) && !defined(CROSSGEN_COMPILE)
+#if defined(PROFILING_SUPPORTED)
     IMetaDataEmit *GetValidatedEmitter();
 #endif
 
@@ -2317,11 +2317,11 @@ public:
 
     BOOL HasNativeOrReadyToRunInlineTrackingMap();
     COUNT_T GetNativeOrReadyToRunInliners(PTR_Module inlineeOwnerMod, mdMethodDef inlineeTkn, COUNT_T inlinersSize, MethodInModule inliners[], BOOL *incompleteData);
-#if defined(PROFILING_SUPPORTED) && !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
+#if defined(PROFILING_SUPPORTED) && !defined(DACCESS_COMPILE)
     BOOL HasJitInlineTrackingMap();
     PTR_JITInlineTrackingMap GetJitInlineTrackingMap() { LIMITED_METHOD_CONTRACT; return m_pJitInlinerTrackingMap; }
     void AddInlining(MethodDesc *inliner, MethodDesc *inlinee);
-#endif // defined(PROFILING_SUPPORTED) && !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
+#endif // defined(PROFILING_SUPPORTED) && !defined(DACCESS_COMPILE)
 
 public:
     void NotifyEtwLoadFinished(HRESULT hr);
@@ -3037,9 +3037,9 @@ private:
     // This is used to allow bulk emitting types without re-emitting the metadata between each type.
     bool m_fSuppressMetadataCapture;
 
-#if !defined DACCESS_COMPILE && !defined CROSSGEN_COMPILE
+#if !defined DACCESS_COMPILE
     ReflectionModule(Assembly *pAssembly, mdFile token, PEFile *pFile);
-#endif // !DACCESS_COMPILE && !CROSSGEN_COMPILE
+#endif // !DACCESS_COMPILE
 
 public:
 
@@ -3048,11 +3048,11 @@ public:
     PTR_SBuffer GetDynamicMetadataBuffer() const;
 #endif
 
-#if !defined DACCESS_COMPILE && !defined CROSSGEN_COMPILE
+#if !defined DACCESS_COMPILE
     static ReflectionModule *Create(Assembly *pAssembly, PEFile *pFile, AllocMemTracker *pamTracker, LPCWSTR szName);
     void Initialize(AllocMemTracker *pamTracker, LPCWSTR szName);
     void Destruct();
-#endif // !DACCESS_COMPILE && !CROSSGEN_COMPILE
+#endif // !DACCESS_COMPILE
 
     // Overrides functions to access sections
     virtual TADDR GetIL(RVA target);

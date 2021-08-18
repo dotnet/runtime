@@ -8,7 +8,7 @@
 #include "applicationcontext.hpp"
 #include "clrprivbindercoreclr.h"
 
-#if !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
+#if !defined(DACCESS_COMPILE)
 
 class LoaderAllocator;
 class PEImage;
@@ -73,5 +73,5 @@ private:
     void* m_loaderAllocatorHandle;
 };
 
-#endif // !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
+#endif // !defined(DACCESS_COMPILE)
 #endif // __CLRPRIVBINDERASSEMBLYLOADCONTEXT_H__

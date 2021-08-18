@@ -1052,7 +1052,6 @@ LOCAL_LABEL(NullObject):
 LEAF_END SinglecastDelegateInvokeStub, _TEXT
 #endif // FEATURE_STUBS_AS_IL
 
-#ifndef CROSSGEN_COMPILE
 // =======================================================================================
 // void ResolveWorkerChainLookupAsmStub();
 //
@@ -1146,7 +1145,6 @@ LOCAL_LABEL(fail):
     jmp     ResolveWorkerAsmStub
 
 NESTED_END ResolveWorkerChainLookupAsmStub, _TEXT
-#endif // CROSSGEN_COMPILE
 
 // backpatch a call site to point to a different stub
 NESTED_ENTRY BackPatchWorkerAsmStub, _TEXT, NoHandler

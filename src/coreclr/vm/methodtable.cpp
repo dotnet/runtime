@@ -2960,7 +2960,7 @@ void  MethodTable::AssignClassifiedEightByteTypes(SystemVStructRegisterPassingHe
 
 #endif // defined(UNIX_AMD64_ABI_ITF)
 
-#if !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
+#if !defined(DACCESS_COMPILE)
 //==========================================================================================
 void MethodTable::AllocateRegularStaticBoxes()
 {
@@ -3785,7 +3785,7 @@ OBJECTREF MethodTable::GetManagedClassObject()
     RETURN(GetManagedClassObjectIfExists());
 }
 
-#endif //!DACCESS_COMPILE && !CROSSGEN_COMPILE
+#endif //!DACCESS_COMPILE
 
 //==========================================================================================
 // This needs to stay consistent with AllocateNewMT() and MethodTable::Save()
@@ -4537,7 +4537,7 @@ void MethodTable::DoFullyLoad(Generics::RecursionGraph * const pVisited,  const 
             }
 
             // Validate implementation of virtual static methods on all implemented interfaces unless:
-            // 1) The type resides in a module where sanity checks are disabled (such as System.Private.CoreLib, or an 
+            // 1) The type resides in a module where sanity checks are disabled (such as System.Private.CoreLib, or an
             //    R2R module with type checks disabled)
             // 2) There are no virtual static methods defined on any of the interfaces implemented by this type;
             // 3) The type is abstract in which case it's allowed to leave some virtual static methods unimplemented
@@ -8151,7 +8151,7 @@ MethodTable::ResolveVirtualStaticMethod(MethodTable* pInterfaceType, MethodDesc*
                         }
                         else
                         {
-                            // When performing override checking to ensure that a concrete type is valid, require the implementation 
+                            // When performing override checking to ensure that a concrete type is valid, require the implementation
                             // actually implement the exact or equivalent interface.
                             equivalentOrVariantCompatible = pItfInMap->IsEquivalentTo(pInterfaceType);
                         }
@@ -8235,7 +8235,7 @@ MethodTable::TryResolveVirtualStaticMethodOnThisType(MethodTable* pInterfaceType
             continue;
         }
         MethodDesc *pMethodDecl;
-        
+
         if ((TypeFromToken(methodDecl) == mdtMethodDef) || pInterfaceMT->IsFullyLoaded())
         {
             pMethodDecl =  MemberLoader::GetMethodDescFromMemberDefOrRefOrSpec(
@@ -8281,7 +8281,7 @@ MethodTable::TryResolveVirtualStaticMethodOnThisType(MethodTable* pInterfaceType
         {
             COMPlusThrow(kTypeLoadException, E_FAIL);
         }
-        
+
         MethodDesc *pMethodImpl = MemberLoader::GetMethodDescFromMethodDef(
             GetModule(),
             methodBody,
@@ -8292,7 +8292,7 @@ MethodTable::TryResolveVirtualStaticMethodOnThisType(MethodTable* pInterfaceType
             COMPlusThrow(kTypeLoadException, E_FAIL);
         }
 
-        // Spec requires that all body token for MethodImpls that refer to static virtual implementation methods must to methods 
+        // Spec requires that all body token for MethodImpls that refer to static virtual implementation methods must to methods
         // defined on the same type that defines the MethodImpl
         if (!HasSameTypeDefAs(pMethodImpl->GetMethodTable()))
         {

@@ -21,9 +21,9 @@
 #endif // !GET_CALLER_SP
 
 #ifndef VALIDATE_OBJECTREF
-#if defined(DACCESS_COMPILE) || defined(CROSSGEN_COMPILE)
+#if defined(DACCESS_COMPILE)
 #define VALIDATE_OBJECTREF(objref, fDeep)
-#else // DACCESS_COMPILE || CROSSGEN_COMPILE
+#else // DACCESS_COMPILE
 #define VALIDATE_OBJECTREF(objref, fDeep)                          \
     do {                                                           \
         Object* objPtr = OBJECTREF_TO_UNCHECKED_OBJECTREF(objref); \
@@ -32,7 +32,7 @@
             objPtr->Validate(fDeep);                               \
         }                                                          \
     } while(0)
-#endif // DACCESS_COMPILE || CROSSGEN_COMPILE
+#endif // DACCESS_COMPILE
 #endif // !VALIDATE_OBJECTREF
 
 #ifndef VALIDATE_ROOT

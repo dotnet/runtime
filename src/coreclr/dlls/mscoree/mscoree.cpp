@@ -17,7 +17,7 @@
 
 #include <dbgenginemetrics.h>
 
-#if !defined(CROSSGEN_COMPILE) && !defined(CORECLR_EMBEDDED)
+#if !defined(CORECLR_EMBEDDED)
 
 BOOL STDMETHODCALLTYPE EEDllMain( // TRUE on success, FALSE on error.
                        HINSTANCE    hInst,                  // Instance handle of the loaded module.
@@ -45,7 +45,7 @@ BOOL WINAPI DllMain(HANDLE hInstance, DWORD dwReason, LPVOID lpReserved)
     return EEDllMain((HINSTANCE)hInstance, dwReason, lpReserved);
 }
 
-#endif // !defined(CROSSGEN_COMPILE) && !defined(CORECLR_EMBEDDED)
+#endif // !defined(CORECLR_EMBEDDED)
 
 extern void* GetClrModuleBase();
 

@@ -4421,7 +4421,7 @@ PTR_LoaderAllocator MethodDesc::GetLoaderAllocator()
     return GetLoaderModule()->GetLoaderAllocator();
 }
 
-#if !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
+#if !defined(DACCESS_COMPILE)
 REFLECTMETHODREF MethodDesc::GetStubMethodInfo()
 {
     CONTRACTL
@@ -4447,7 +4447,7 @@ REFLECTMETHODREF MethodDesc::GetStubMethodInfo()
 
     return retVal;
 }
-#endif // !DACCESS_COMPILE && CROSSGEN_COMPILE
+#endif // !DACCESS_COMPILE
 
 #ifndef DACCESS_COMPILE
 typedef void (*WalkValueTypeParameterFnPtr)(Module *pModule, mdToken token, Module *pDefModule, mdToken tkDefToken, SigPointer *ptr, SigTypeContext *pTypeContext, void *pData);
