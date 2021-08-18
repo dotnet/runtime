@@ -11,7 +11,7 @@ void* SystemNative_GetDefaultSearchOrderPseudoHandle()
     return (void*)RTLD_DEFAULT;
 }
 #else
-void* g_defaultSearchOrderPseudoHandle = NULL;
+static void* g_defaultSearchOrderPseudoHandle = NULL;
 void* SystemNative_GetDefaultSearchOrderPseudoHandle()
 {
     if (g_defaultSearchOrderPseudoHandle == NULL)
