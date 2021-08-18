@@ -2882,11 +2882,7 @@ public:
         };
 
         // The writeable part of the methoddesc.
-#if defined(FEATURE_NGEN_RELOCS_OPTIMIZATIONS)
-        RelativePointer<PTR_NDirectWriteableData>    m_pWriteableData;
-#else
         PlainPointer<PTR_NDirectWriteableData>    m_pWriteableData;
-#endif
 
 #ifdef HAS_NDIRECT_IMPORT_PRECODE
         RelativePointer<PTR_NDirectImportThunkGlue> m_pImportThunkGlue;
@@ -3661,18 +3657,14 @@ private:
 public: // <TODO>make private: JITinterface.cpp accesses through this </TODO>
     // Note we can't steal bits off m_pPerInstInfo as the JIT generates code to access through it!!
 
-        // Type parameters to method (exact)
-        // For non-unboxing instantiating stubs this is actually
-        // a dictionary and further slots may hang off the end of the
-        // instantiation.
-        //
-        // For generic method definitions that are not the typical method definition (e.g. C<int>.m<U>)
-        // this field is null; to obtain the instantiation use LoadMethodInstantiation
-#if defined(FEATURE_NGEN_RELOCS_OPTIMIZATIONS)
-    RelativePointer<PTR_Dictionary> m_pPerInstInfo;  //SHARED
-#else
+    // Type parameters to method (exact)
+    // For non-unboxing instantiating stubs this is actually
+    // a dictionary and further slots may hang off the end of the
+    // instantiation.
+    //
+    // For generic method definitions that are not the typical method definition (e.g. C<int>.m<U>)
+    // this field is null; to obtain the instantiation use LoadMethodInstantiation
     PlainPointer<PTR_Dictionary> m_pPerInstInfo;  //SHARED
-#endif
 
 private:
     WORD          m_wFlags2;
