@@ -482,10 +482,6 @@ endfunction()
 
 set(JIT_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR})
 
-if (FEATURE_MERGE_JIT_AND_ENGINE)
-  add_subdirectory(crossgen)
-endif (FEATURE_MERGE_JIT_AND_ENGINE)
-
 # Creates a static library "clrjit_static" to link into the VM.
 add_subdirectory(static)
 
