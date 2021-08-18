@@ -39,10 +39,10 @@ jobs:
     name: CreateYoloArtifact
     displayName: Create YOLO artifacts
   - task: PublishBuildArtifacts@1
-      inputs:
-        pathToPublish: '$(Build.StagingDirectory)/Hello.txt'
-        PublishLocation: Container
-        artifactName: YOLOArtifact
+    inputs:
+      pathToPublish: '$(Build.StagingDirectory)/Hello.txt'
+      PublishLocation: Container
+      artifactName: YOLOArtifact
 
 #  - bash: |
 #      $(dockerfilesFolder)/build-docker-sdk.sh -t $(sdkBaseImage) -c $(BUILD_CONFIGURATION)
