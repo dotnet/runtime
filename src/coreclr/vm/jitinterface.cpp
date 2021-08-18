@@ -662,12 +662,6 @@ size_t CEEInfo::findNameOfToken (
     return NameLen;
 }
 
-static bool CallerAndCalleeInSystemVersionBubble(MethodDesc* pCaller, MethodDesc* pCallee)
-{
-    LIMITED_METHOD_CONTRACT;
-    return false;
-}
-
 /*********************************************************************/
 // Checks if the given metadata token is valid
 bool CEEInfo::isValidToken (
@@ -3807,14 +3801,7 @@ uint32_t CEEInfo::getClassAttribsInternal (CORINFO_CLASS_HANDLE clsHnd)
 
         if (pClass->IsBeforeFieldInit())
         {
-            if (IsReadyToRunCompilation() && !pMT->GetModule()->IsInCurrentVersionBubble())
-            {
-                // For version resiliency do not allow hoisting static constructors out of loops
-            }
-            else
-            {
-                ret |= CORINFO_FLG_BEFOREFIELDINIT;
-            }
+            ret |= CORINFO_FLG_BEFOREFIELDINIT;
         }
 
         if (pClass->IsAbstract())
@@ -5249,36 +5236,27 @@ void CEEInfo::getCallInfo(
         {
             _ASSERTE(!m_pMethodBeingCompiled->IsDynamicMethod());
 
-            if (IsReadyToRunCompilation() && unresolvedLdVirtFtn)
+            pResult->kind = CORINFO_CALL_CODE_POINTER;
+
+            DictionaryEntryKind entryKind;
+            if (constrainedType.IsNull() || ((flags & CORINFO_CALLINFO_CALLVIRT) && !constrainedType.IsValueType()))
             {
-                // Compensate for always treating delegates as direct calls above.
-                // Dictionary lookup is computed in embedGenericHandle as part of the LDVIRTFTN code sequence
-                pResult->kind = CORINFO_VIRTUALCALL_LDVIRTFTN;
+                // For reference types, the constrained type does not affect method resolution on a callvirt, and if there is no
+                // constraint, it doesn't effect it either
+                entryKind = MethodEntrySlot;
             }
             else
             {
-                pResult->kind = CORINFO_CALL_CODE_POINTER;
-
-                DictionaryEntryKind entryKind;
-                if (constrainedType.IsNull() || ((flags & CORINFO_CALLINFO_CALLVIRT) && !constrainedType.IsValueType()))
-                {
-                    // For reference types, the constrained type does not affect method resolution on a callvirt, and if there is no
-                    // constraint, it doesn't effect it either
-                    entryKind = MethodEntrySlot;
-                }
-                else
-                {
-                    // constrained. callvirt case where the constraint type is a valuetype
-                    // OR
-                    // constrained. call or constrained. ldftn case
-                    entryKind = ConstrainedMethodEntrySlot;
-                }
-                ComputeRuntimeLookupForSharedGenericToken(entryKind,
-                                                            pResolvedToken,
-                                                            pConstrainedResolvedToken,
-                                                            pMD,
-                                                            &pResult->codePointerLookup);
+                // constrained. callvirt case where the constraint type is a valuetype
+                // OR
+                // constrained. call or constrained. ldftn case
+                entryKind = ConstrainedMethodEntrySlot;
             }
+            ComputeRuntimeLookupForSharedGenericToken(entryKind,
+                                                        pResolvedToken,
+                                                        pConstrainedResolvedToken,
+                                                        pMD,
+                                                        &pResult->codePointerLookup);
         }
         else
         {
@@ -5288,12 +5266,6 @@ void CEEInfo::getCallInfo(
             }
 
             pResult->kind = CORINFO_CALL;
-
-            if (IsReadyToRunCompilation() && unresolvedLdVirtFtn)
-            {
-                // Compensate for always treating delegates as direct calls above
-                pResult->kind = CORINFO_VIRTUALCALL_LDVIRTFTN;
-            }
         }
         pResult->nullInstanceCheck = resolvedCallVirt;
     }
@@ -5310,28 +5282,11 @@ void CEEInfo::getCallInfo(
     {
         pResult->kind = CORINFO_VIRTUALCALL_VTABLE;
         pResult->nullInstanceCheck = TRUE;
-
-        // We'll special virtual calls to target methods in the corelib assembly when compiling in R2R mode, and generate fragile-NI-like callsites for improved performance. We
-        // can do that because today we'll always service the corelib assembly and the runtime in one bundle. Any caller in the corelib version bubble can benefit from this
-        // performance optimization.
-        if (IsReadyToRunCompilation() && !CallerAndCalleeInSystemVersionBubble((MethodDesc*)callerHandle, pTargetMD))
-        {
-            pResult->kind = CORINFO_VIRTUALCALL_STUB;
-        }
     }
     else
     {
-        if (IsReadyToRunCompilation())
-        {
-            // Insert explicit null checks for cross-version bubble non-interface calls.
-            // It is required to handle null checks properly for non-virtual <-> virtual change between versions
-            pResult->nullInstanceCheck = !!(callVirtCrossingVersionBubble && !pTargetMD->IsInterface());
-        }
-        else
-        {
-            // No need to null check - the dispatch code will deal with null this.
-            pResult->nullInstanceCheck = FALSE;
-        }
+        // No need to null check - the dispatch code will deal with null this.
+        pResult->nullInstanceCheck = FALSE;
 #ifdef STUB_DISPATCH_PORTABLE
         pResult->kind = CORINFO_VIRTUALCALL_LDVIRTFTN;
 #else // STUB_DISPATCH_PORTABLE
@@ -10133,38 +10088,11 @@ void CEEInfo::getEEInfo(CORINFO_EE_INFO *pEEInfoOut)
 
     JIT_TO_EE_TRANSITION();
 
-    if (!IsReadyToRunCompilation())
-    {
-        InlinedCallFrame::GetEEInfo(&pEEInfoOut->inlinedCallFrameInfo);
+    InlinedCallFrame::GetEEInfo(&pEEInfoOut->inlinedCallFrameInfo);
 
-        // Offsets into the Thread structure
-        pEEInfoOut->offsetOfThreadFrame = Thread::GetOffsetOfCurrentFrame();
-        pEEInfoOut->offsetOfGCState     = Thread::GetOffsetOfGCFlag();
-    }
-    else
-    {
-        // We'll declare a fixed size to use for the inlined call frame for R2R here. The size we declare
-        // is currently slightly larger that the actual size of the struct, just in case we decide to add
-        // more fields to the struct in the future, in an effort to not completely invalidate existing R2R images.
-        // The assert below ensures that this fixed size is at least large enough to hold the data structures
-        // used at runtime.
-        // ** IMPORTANT ** If you ever need to change the value of this fixed size, make sure to change the R2R
-        // version number, otherwise older R2R images will probably crash when used.
-
-        const int r2rInlinedCallFrameSize = TARGET_POINTER_SIZE * READYTORUN_PInvokeTransitionFrameSizeInPointerUnits;
-
-#if defined(_DEBUG) && !defined(CROSSBITNESS_COMPILE)
-        InlinedCallFrame::GetEEInfo(&pEEInfoOut->inlinedCallFrameInfo);
-        _ASSERTE(pEEInfoOut->inlinedCallFrameInfo.size <= r2rInlinedCallFrameSize);
-#endif
-
-        // inlinedCallFrameInfo is mostly not used for R2R compilation (only the size field is used)
-        ZeroMemory(&pEEInfoOut->inlinedCallFrameInfo, sizeof(pEEInfoOut->inlinedCallFrameInfo));
-
-        pEEInfoOut->offsetOfThreadFrame         = (DWORD)-1;
-        pEEInfoOut->offsetOfGCState             = (DWORD)-1;
-        pEEInfoOut->inlinedCallFrameInfo.size   = r2rInlinedCallFrameSize;
-    }
+    // Offsets into the Thread structure
+    pEEInfoOut->offsetOfThreadFrame = Thread::GetOffsetOfCurrentFrame();
+    pEEInfoOut->offsetOfGCState     = Thread::GetOffsetOfGCFlag();
 
 #ifndef CROSSBITNESS_COMPILE
     // The assertions must hold in every non-crossbitness scenario
@@ -10188,16 +10116,7 @@ void CEEInfo::getEEInfo(CORINFO_EE_INFO *pEEInfoOut)
     _ASSERTE(sizeof(ReversePInvokeFrame) <= pEEInfoOut->sizeOfReversePInvokeFrame);
 #endif
 
-    if (!IsReadyToRunCompilation())
-    {
-        pEEInfoOut->osPageSize = GetOsPageSize();
-    }
-    else
-    {
-        // In AOT scenarios the VM reports to the JIT the minimal supported page size.
-        pEEInfoOut->osPageSize = 0x1000;
-    }
-
+    pEEInfoOut->osPageSize = GetOsPageSize();
     pEEInfoOut->maxUncheckedOffsetForNullObject = MAX_UNCHECKED_OFFSET_FOR_NULL_OBJECT;
     pEEInfoOut->targetAbi = CORINFO_CORECLR_ABI;
 
@@ -11830,7 +11749,7 @@ CORINFO_CLASS_HANDLE CEEJitInfo::getStaticFieldCurrentClass(CORINFO_FIELD_HANDLE
     }
 
     // Only examine the field's value if we are producing jitted code.
-    if (isVerifyOnly() || IsCompilingForNGen() || IsReadyToRunCompilation())
+    if (isVerifyOnly())
     {
         return result;
     }

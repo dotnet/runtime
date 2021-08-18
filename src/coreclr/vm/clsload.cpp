@@ -98,7 +98,7 @@ PTR_Module ClassLoader::ComputeLoaderModuleWorker(
     // for CoreLib (or compiling CoreLib itself). It is not the case for ReadyToRun compilation because
     // CoreLib as always treated as IL there (see code:PEFile::ShouldTreatNIAsMSIL for details).
     //
-    if (IsCompilationProcess() && !IsReadyToRunCompilation())
+    if (IsCompilationProcess())
     {
         RETURN(ComputeLoaderModuleForCompilation(pDefinitionModule, token, classInst, methodInst));
     }

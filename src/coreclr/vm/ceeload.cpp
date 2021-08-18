@@ -3181,9 +3181,6 @@ BOOL Module::IsInCurrentVersionBubble()
     if (pAppDomain->IsCompilationDomain() && pAppDomain->ToCompilationDomain()->GetTargetModule() == this)
         return TRUE;
 
-    if (IsReadyToRunCompilation())
-        return IsLargeVersionBubbleEnabled();
-
     return TRUE;
 #else // FEATURE_NATIVE_IMAGE_GENERATION
     return TRUE;
@@ -7021,12 +7018,6 @@ MethodDesc* Module::LoadIBCMethodHelper(DataImage *image, CORBBTPROF_BLOB_PARAM_
                               FALSE,
                               NULL,
                               pZapSigContext);
-
-                // curInst will be nullptr when the type fails the versioning bubble check
-                if (curInst.IsNull() && IsReadyToRunCompilation())
-                {
-                    COMPlusThrow(kTypeLoadException, IDS_IBC_MISSING_EXTERNAL_TYPE);
-                }
 
                 pInst[i] = curInst;
                 IfFailThrow(p.SkipExactlyOne());

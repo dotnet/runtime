@@ -1372,12 +1372,6 @@ BOOL PEFile::ShouldTreatNIAsMSIL()
 {
     LIMITED_METHOD_CONTRACT;
 
-    // Never use fragile native image content during ReadyToRun compilation. It would
-    // produces non-version resilient images because of wrong cached values for
-    // MethodTable::IsLayoutFixedInCurrentVersionBubble, etc.
-    if (IsReadyToRunCompilation())
-        return TRUE;
-
     // Ask profiling API & config vars whether NGENd images should be avoided
     // completely.
     if (!NGENImagesAllowed())

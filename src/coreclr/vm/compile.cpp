@@ -429,12 +429,6 @@ HRESULT CEECompileInfo::SetCompilationTarget(CORINFO_ASSEMBLY_HANDLE     assembl
         GetAppDomain()->BindAssemblySpec(&corelib,TRUE);
     }
 
-    if (IsReadyToRunCompilation() && !pModule->GetFile()->IsILOnly())
-    {
-        GetSvcLogger()->Printf(LogLevel_Error, W("Error: ReadyToRun is not supported for mixed mode assemblies\n"));
-        return E_FAIL;
-    }
-
     return S_OK;
 }
 
@@ -3858,9 +3852,6 @@ BOOL CEEPreloader::CanPrerestoreEmbedClassHandle(CORINFO_CLASS_HANDLE handle)
 {
     STANDARD_VM_CONTRACT;
 
-    if (IsReadyToRunCompilation())
-        return FALSE;
-
     TypeHandle th(handle);
 
     return m_image->CanPrerestoreEagerBindToTypeHandle(th, NULL);
@@ -3869,9 +3860,6 @@ BOOL CEEPreloader::CanPrerestoreEmbedClassHandle(CORINFO_CLASS_HANDLE handle)
 BOOL CEEPreloader::CanPrerestoreEmbedMethodHandle(CORINFO_METHOD_HANDLE handle)
 {
     STANDARD_VM_CONTRACT;
-
-    if (IsReadyToRunCompilation())
-        return FALSE;
 
     MethodDesc *pMD = (MethodDesc*) handle;
 
@@ -5502,12 +5490,6 @@ void CEEPreloader::GenerateMethodStubs(
     MethodDesc* pMD = GetMethod(hMethod);
     MethodDesc* pStubMD = NULL;
 
-    // Do not generate IL stubs when generating ReadyToRun images except for System.Private.Corelib
-    // This prevents versionability concerns around IL stubs exposing internal
-    // implementation details of the CLR.
-    if (IsReadyToRunCompilation() && (!GetAppDomain()->ToCompilationDomain()->GetTargetModule()->IsSystem() || !pMD->IsNDirect()))
-        return;
-
     DWORD dwNGenStubFlags = NDIRECTSTUB_FL_NGENEDSTUB;
 
     if (fNgenProfilerImage)
@@ -5586,10 +5568,6 @@ void CEEPreloader::GenerateMethodStubs(
         LOG((LF_ZAP, LL_WARNING, "NGEN_ILSTUB: Generating forward interop stub FAILED: %s::%s\n", pMD->m_pszDebugClassName, pMD->m_pszDebugMethodName));
     }
     EX_END_CATCH(RethrowTransientExceptions);
-
-    // Only P/Invoke stubs are eligible to be created in R2R
-    if (IsReadyToRunCompilation())
-        return;
 
     //
     // Now take care of reverse P/Invoke stubs for delegates
@@ -5747,11 +5725,6 @@ CORINFO_METHOD_HANDLE CEEPreloader::LookupMethodDef(mdMethodDef token)
     EX_TRY
     {
         MethodDesc *pMD = MemberLoader::GetMethodDescFromMethodDef(m_image->GetModule(), token, FALSE);
-
-        if (IsReadyToRunCompilation() && pMD->HasClassOrMethodInstantiation())
-        {
-            _ASSERTE(IsCompilationProcess() && pMD->GetModule_NoLogging() == GetAppDomain()->ToCompilationDomain()->GetTargetModule());
-        }
 
         resultMD = pMD->FindOrCreateTypicalSharedInstantiation();
     }

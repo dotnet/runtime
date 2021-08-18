@@ -1738,11 +1738,4 @@ extern "C" unsigned __stdcall PartialNGenStressPercentage();
 extern "C" HRESULT __stdcall CreatePdb(CORINFO_ASSEMBLY_HANDLE hAssembly, BSTR pNativeImagePath, BSTR pPdbPath, BOOL pdbLines, BSTR pManagedPdbSearchPath, LPCWSTR pDiasymreaderPath);
 
 extern bool g_fNGenMissingDependenciesOk;
-
-
-inline bool IsReadyToRunCompilation()
-{
-    return false;
-}
-
 #endif /* COR_COMPILE_H_ */

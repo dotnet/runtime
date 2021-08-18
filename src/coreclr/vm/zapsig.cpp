@@ -1355,15 +1355,6 @@ BOOL ZapSig::EncodeMethod(
             _ASSERTE(pResolvedToken->cbTypeSpec > 0);
 
             DWORD moduleIndex = MODULE_INDEX_NONE;
-            if ((IsReadyToRunCompilation() && pMethod->GetModule()->IsInCurrentVersionBubble() && pInfoModule != GetModule(pResolvedToken->tokenScope)))
-            {
-                if (IsDynamicScope(pResolvedToken->tokenScope))
-                {
-                    _ASSERTE(FALSE); // IL stubs aren't expected to call methods which need this
-                    ThrowHR(E_FAIL);
-                }
-                moduleIndex = (*((EncodeModuleCallback)pfnEncodeModule))(pEncodeModuleContext, (Module *) GetModule(pResolvedToken->tokenScope));
-            }
 
             SigParser sigParser(pResolvedToken->pTypeSpec, pResolvedToken->cbTypeSpec);
             CopyTypeSignature(&sigParser, pSigBuilder, moduleIndex);
@@ -1412,10 +1403,6 @@ BOOL ZapSig::EncodeMethod(
             }
 
             DWORD moduleIndex = MODULE_INDEX_NONE;
-            if (IsReadyToRunCompilation() && pMethod->GetModule()->IsInCurrentVersionBubble() && pInfoModule != GetModule(pResolvedToken->tokenScope))
-            {
-                moduleIndex = (*((EncodeModuleCallback)pfnEncodeModule))(pEncodeModuleContext, GetModule(pResolvedToken->tokenScope));
-            }
 
             while (numGenArgs != 0)
             {
@@ -1479,10 +1466,6 @@ void ZapSig::EncodeField(
             _ASSERTE(pResolvedToken->cbTypeSpec > 0);
 
             DWORD moduleIndex = MODULE_INDEX_NONE;
-            if ((IsReadyToRunCompilation() && pField->GetModule()->IsInCurrentVersionBubble() && pInfoModule != (Module *) pResolvedToken->tokenScope))
-            {
-                moduleIndex = (*((EncodeModuleCallback)pfnEncodeModule))(pEncodeModuleContext, (Module *) pResolvedToken->tokenScope);
-            }
 
             SigParser sigParser(pResolvedToken->pTypeSpec, pResolvedToken->cbTypeSpec);
             CopyTypeSignature(&sigParser, pSigBuilder, moduleIndex);
