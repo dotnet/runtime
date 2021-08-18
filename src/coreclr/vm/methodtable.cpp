@@ -4553,7 +4553,7 @@ void MethodTable::DoFullyLoad(Generics::RecursionGraph * const pVisited,  const 
             }
 
             // Validate implementation of virtual static methods on all implemented interfaces unless:
-            // 1) The type resides in a module where sanity checks are disabled (such as System.Private.CoreLib, or an 
+            // 1) The type resides in a module where sanity checks are disabled (such as System.Private.CoreLib, or an
             //    R2R module with type checks disabled)
             // 2) There are no virtual static methods defined on any of the interfaces implemented by this type;
             // 3) The type is abstract in which case it's allowed to leave some virtual static methods unimplemented
@@ -8167,7 +8167,7 @@ MethodTable::ResolveVirtualStaticMethod(MethodTable* pInterfaceType, MethodDesc*
                         }
                         else
                         {
-                            // When performing override checking to ensure that a concrete type is valid, require the implementation 
+                            // When performing override checking to ensure that a concrete type is valid, require the implementation
                             // actually implement the exact or equivalent interface.
                             equivalentOrVariantCompatible = pItfInMap->IsEquivalentTo(pInterfaceType);
                         }
@@ -8251,7 +8251,7 @@ MethodTable::TryResolveVirtualStaticMethodOnThisType(MethodTable* pInterfaceType
             continue;
         }
         MethodDesc *pMethodDecl;
-        
+
         if ((TypeFromToken(methodDecl) == mdtMethodDef) || pInterfaceMT->IsFullyLoaded())
         {
             pMethodDecl =  MemberLoader::GetMethodDescFromMemberDefOrRefOrSpec(
@@ -8297,7 +8297,7 @@ MethodTable::TryResolveVirtualStaticMethodOnThisType(MethodTable* pInterfaceType
         {
             COMPlusThrow(kTypeLoadException, E_FAIL);
         }
-        
+
         MethodDesc *pMethodImpl = MemberLoader::GetMethodDescFromMethodDef(
             GetModule(),
             methodBody,
@@ -8308,7 +8308,7 @@ MethodTable::TryResolveVirtualStaticMethodOnThisType(MethodTable* pInterfaceType
             COMPlusThrow(kTypeLoadException, E_FAIL);
         }
 
-        // Spec requires that all body token for MethodImpls that refer to static virtual implementation methods must to methods 
+        // Spec requires that all body token for MethodImpls that refer to static virtual implementation methods must to methods
         // defined on the same type that defines the MethodImpl
         if (!HasSameTypeDefAs(pMethodImpl->GetMethodTable()))
         {
@@ -8710,165 +8710,3 @@ PTR_MethodTable MethodTable::InterfaceMapIterator::GetInterface(MethodTable* pMT
     RETURN (pResult);
 }
 #endif // DACCESS_COMPILE
-
-#ifdef FEATURE_READYTORUN_COMPILER
-
-static BOOL ComputeIsLayoutFixedInCurrentVersionBubble(MethodTable * pMT)
-{
-    STANDARD_VM_CONTRACT;
-
-    // Primitive types and enums have fixed layout
-    if (pMT->IsTruePrimitive() || pMT->IsEnum())
-        return TRUE;
-
-    if (!pMT->GetModule()->IsInCurrentVersionBubble())
-    {
-        if (!pMT->IsValueType())
-        {
-            // Eventually, we may respect the non-versionable attribute for reference types too. For now, we are going
-            // to play is safe and ignore it.
-            return FALSE;
-        }
-
-        // Valuetypes with non-versionable attribute are candidates for fixed layout. Reject the rest.
-        if (pMT->GetModule()->GetMDImport()->GetCustomAttributeByName(pMT->GetCl(),
-                NONVERSIONABLE_TYPE, NULL, NULL) != S_OK)
-        {
-            return FALSE;
-        }
-    }
-
-    // If the above condition passed, check that all instance fields have fixed layout as well. In particular,
-    // it is important for generic types with non-versionable layout (e.g. Nullable<T>)
-    ApproxFieldDescIterator fieldIterator(pMT, ApproxFieldDescIterator::INSTANCE_FIELDS);
-    for (FieldDesc *pFD = fieldIterator.Next(); pFD != NULL; pFD = fieldIterator.Next())
-    {
-        if (pFD->GetFieldType() != ELEMENT_TYPE_VALUETYPE)
-            continue;
-
-        MethodTable * pFieldMT = pFD->GetApproxFieldTypeHandleThrowing().AsMethodTable();
-        if (!pFieldMT->IsLayoutFixedInCurrentVersionBubble())
-            return FALSE;
-    }
-
-    return TRUE;
-}
-
-static BOOL ComputeIsLayoutInCurrentVersionBubble(MethodTable* pMT)
-{
-    if (pMT->IsTruePrimitive() || pMT->IsEnum())
-        return TRUE;
-
-    if (!pMT->GetModule()->IsInCurrentVersionBubble())
-        return FALSE;
-
-    ApproxFieldDescIterator fieldIterator(pMT, ApproxFieldDescIterator::INSTANCE_FIELDS);
-    for (FieldDesc *pFD = fieldIterator.Next(); pFD != NULL; pFD = fieldIterator.Next())
-    {
-        MethodTable * pFieldMT = pFD->GetApproxFieldTypeHandleThrowing().GetMethodTable();
-
-        if (!pFieldMT->IsLayoutInCurrentVersionBubble())
-            return FALSE;
-    }
-
-    if (!pMT->IsValueType())
-    {
-        pMT = pMT->GetParentMethodTable();
-
-        while ((pMT != g_pObjectClass) && (pMT != NULL))
-        {
-            if (!pMT->IsLayoutInCurrentVersionBubble())
-                return FALSE;
-
-            pMT = pMT->GetParentMethodTable();
-        }
-    }
-
-    return TRUE;
-}
-
-BOOL MethodTable::IsLayoutInCurrentVersionBubble()
-{
-    STANDARD_VM_CONTRACT;
-
-    const MethodTableWriteableData * pWriteableData = GetWriteableData();
-    if (!(pWriteableData->m_dwFlags & MethodTableWriteableData::enum_flag_NGEN_IsLayoutInCurrentVersionBubbleComputed))
-    {
-        MethodTableWriteableData * pWriteableDataForWrite = GetWriteableDataForWrite();
-        if (ComputeIsLayoutInCurrentVersionBubble(this))
-            pWriteableDataForWrite->m_dwFlags |= MethodTableWriteableData::enum_flag_NGEN_IsLayoutInCurrentVersionBubble;
-        pWriteableDataForWrite->m_dwFlags |= MethodTableWriteableData::enum_flag_NGEN_IsLayoutInCurrentVersionBubbleComputed;
-    }
-
-    return (pWriteableData->m_dwFlags & MethodTableWriteableData::enum_flag_NGEN_IsLayoutInCurrentVersionBubble) != 0;
-}
-
-//
-// Is field layout in this type fixed within the current version bubble?
-// This check does not take the inheritance chain into account.
-//
-BOOL MethodTable::IsLayoutFixedInCurrentVersionBubble()
-{
-    STANDARD_VM_CONTRACT;
-
-    const MethodTableWriteableData * pWriteableData = GetWriteableData();
-    if (!(pWriteableData->m_dwFlags & MethodTableWriteableData::enum_flag_NGEN_IsLayoutFixedComputed))
-    {
-        MethodTableWriteableData * pWriteableDataForWrite = GetWriteableDataForWrite();
-        if (ComputeIsLayoutFixedInCurrentVersionBubble(this))
-            pWriteableDataForWrite->m_dwFlags |= MethodTableWriteableData::enum_flag_NGEN_IsLayoutFixed;
-        pWriteableDataForWrite->m_dwFlags |= MethodTableWriteableData::enum_flag_NGEN_IsLayoutFixedComputed;
-    }
-
-    return (pWriteableData->m_dwFlags & MethodTableWriteableData::enum_flag_NGEN_IsLayoutFixed) != 0;
-}
-
-//
-// Is field layout of the inheritance chain fixed within the current version bubble?
-//
-BOOL MethodTable::IsInheritanceChainLayoutFixedInCurrentVersionBubble()
-{
-    STANDARD_VM_CONTRACT;
-
-    // This method is not expected to be called for value types
-    _ASSERTE(!IsValueType());
-
-    MethodTable * pMT = this;
-
-    while ((pMT != g_pObjectClass) && (pMT != NULL))
-    {
-        if (!pMT->IsLayoutFixedInCurrentVersionBubble())
-            return FALSE;
-
-        pMT = pMT->GetParentMethodTable();
-    }
-
-    return TRUE;
-}
-
-//
-// Is the inheritance chain fixed within the current version bubble?
-//
-BOOL MethodTable::IsInheritanceChainFixedInCurrentVersionBubble()
-{
-    STANDARD_VM_CONTRACT;
-
-    MethodTable * pMT = this;
-
-    if (pMT->IsValueType())
-    {
-        return pMT->GetModule()->IsInCurrentVersionBubble();
-    }
-
-    while ((pMT != g_pObjectClass) && (pMT != NULL))
-    {
-        if (!pMT->GetModule()->IsInCurrentVersionBubble())
-            return FALSE;
-
-        pMT = pMT->GetParentMethodTable();
-    }
-
-    return TRUE;
-}
-
-#endif // FEATURE_READYTORUN_COMPILER

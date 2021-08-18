@@ -3089,7 +3089,7 @@ BOOL Module::IsInCurrentVersionBubble()
     return TRUE;
 }
 
-#if defined(FEATURE_READYTORUN) && !defined(FEATURE_READYTORUN_COMPILER)
+#if defined(FEATURE_READYTORUN)
 //---------------------------------------------------------------------------------------
 // Check if the target module is in the same version bubble as this one
 // The current implementation uses the presence of an AssemblyRef for the target module's assembly in
@@ -3156,7 +3156,7 @@ BOOL Module::IsInSameVersionBubble(Module *target)
 
     return FALSE;
 }
-#endif // FEATURE_READYTORUN && !FEATURE_READYTORUN_COMPILER
+#endif // FEATURE_READYTORUN
 
 //---------------------------------------------------------------------------------------
 //

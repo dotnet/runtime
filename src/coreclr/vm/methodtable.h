@@ -333,12 +333,10 @@ struct MethodTableWriteableData
         enum_flag_NGEN_CachedNeedsRestore   = 0x00040000, // The result of the needs restore computation
         // enum_unused                      = 0x00080000,
 
-#ifdef FEATURE_READYTORUN_COMPILER
-        enum_flag_NGEN_IsLayoutFixedComputed                    = 0x0010000, // Set if we have cached the result of IsLayoutFixed computation
-        enum_flag_NGEN_IsLayoutFixed                            = 0x0020000, // The result of the IsLayoutFixed computation
-        enum_flag_NGEN_IsLayoutInCurrentVersionBubbleComputed   = 0x0040000, // Set if we have cached the result of IsLayoutInCurrentVersionBubble computation
-        enum_flag_NGEN_IsLayoutInCurrentVersionBubble           = 0x0080000, // The result of the IsLayoutInCurrentVersionBubble computation
-#endif
+        // enum_unused                      = 0x0010000,
+        // enum_unused                      = 0x0020000,
+        // enum_unused                      = 0x0040000,
+        // enum_unused                      = 0x0080000,
 
 #endif // FEATURE_PREJIT
 
@@ -4011,29 +4009,6 @@ private:
 public:
 
     BOOL Validate ();
-
-#ifdef FEATURE_READYTORUN_COMPILER
-    //
-    // Is field layout in this type within the current version bubble?
-    //
-    BOOL IsLayoutInCurrentVersionBubble();
-    //
-    // Is field layout in this type fixed within the current version bubble?
-    // This check does not take the inheritance chain into account.
-    //
-    BOOL IsLayoutFixedInCurrentVersionBubble();
-
-    //
-    // Is field layout of the inheritance chain fixed within the current version bubble?
-    //
-    BOOL IsInheritanceChainLayoutFixedInCurrentVersionBubble();
-
-    //
-    // Is the inheritance chain fixed within the current version bubble?
-    //
-    BOOL IsInheritanceChainFixedInCurrentVersionBubble();
-#endif
-
 };  // class MethodTable
 
 #ifndef CROSSBITNESS_COMPILE
