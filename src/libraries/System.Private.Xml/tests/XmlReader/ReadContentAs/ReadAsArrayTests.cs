@@ -1,6 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Xml.Schema;
+using System.Xml.XPath;
 using Xunit;
 
 namespace System.Xml.Tests
@@ -507,13 +509,62 @@ namespace System.Xml.Tests
         [Fact]
         public static void DeserializationOfTypedArraysByXmlReader37()
         {
-            var reader = Utils.CreateFragmentReader("<a b='xmlns:os  xmlns:a'>xmlns:os xmlns:a</a>");
+            var reader = Utils.CreateFragmentReader("<a b='a  true 16 42 .555 0002-01-01T00:00:00+00:00'>sdf</a>");
             reader.PositionOnElement("a");
             reader.MoveToAttribute("b");
-            var values = (XmlQualifiedName[])reader.ReadContentAs(typeof(XmlQualifiedName[]), null);
-            Assert.Equal(2, values.Length);
-            Assert.Equal(new XmlQualifiedName("os", "http://www.w3.org/2000/xmlns/"), values[0]);
-            Assert.Equal(new XmlQualifiedName("a", "http://www.w3.org/2000/xmlns/"), values[1]);
+            var values = (XmlAtomicValue[])reader.ReadContentAs(typeof(XmlAtomicValue[]), null);
+            Assert.Equal(6, values.Length);
+            Assert.Equal("a", values[0].Value);
+            Assert.True(values[1].ValueAsBoolean);
+            Assert.Equal(16, values[2].ValueAsInt);
+            Assert.Equal(42L, values[3].ValueAsLong);
+            Assert.Equal(.555, values[4].ValueAsDouble);
+
+            Assert.Equal
+            (
+                new DateTime(2, 1, 1).Add(TimeZoneInfo.Local.GetUtcOffset(new DateTime(2, 1, 1))),
+                values[5].ValueAsDateTime
+            );
+        }
+        [Fact]
+        public static void DeserializationOfTypedArraysByXmlReader38()
+        {
+            var reader = Utils.CreateFragmentReader("<a b='a  true 16 42 .555 0002-01-01T00:00:00+00:00'>sdf</a>");
+            reader.PositionOnElement("a");
+            reader.MoveToAttribute("b");
+            var values = (XPathItem[])reader.ReadContentAs(typeof(XPathItem[]), null);
+            Assert.Equal(6, values.Length);
+            Assert.Equal("a", values[0].Value);
+            Assert.True(values[1].ValueAsBoolean);
+            Assert.Equal(16, values[2].ValueAsInt);
+            Assert.Equal(42L, values[3].ValueAsLong);
+            Assert.Equal(.555, values[4].ValueAsDouble);
+
+            Assert.Equal
+            (
+                new DateTime(2, 1, 1).Add(TimeZoneInfo.Local.GetUtcOffset(new DateTime(2, 1, 1))),
+                values[5].ValueAsDateTime
+            );
+        }
+        [Fact]
+        public static void DeserializationOfTypedArraysByXmlReader39()
+        {
+            var reader = Utils.CreateFragmentReader("<a b='a  true 16 42 .555 0002-01-01T00:00:00+00:00'>sdf</a>");
+            reader.PositionOnElement("a");
+            reader.MoveToAttribute("b");
+            var values = (XPathNavigator[])reader.ReadContentAs(typeof(XPathNavigator[]), null);
+            Assert.Equal(6, values.Length);
+            Assert.Equal("a", values[0].Value);
+            Assert.True(values[1].ValueAsBoolean);
+            Assert.Equal(16, values[2].ValueAsInt);
+            Assert.Equal(42L, values[3].ValueAsLong);
+            Assert.Equal(.555, values[4].ValueAsDouble);
+
+            Assert.Equal
+            (
+                new DateTime(2, 1, 1).Add(TimeZoneInfo.Local.GetUtcOffset(new DateTime(2, 1, 1))),
+                values[5].ValueAsDateTime
+            );
         }
         [Fact]
         public static void DeserializationOfTypedArraysByXmlReader4()
