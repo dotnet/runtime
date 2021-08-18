@@ -13973,7 +13973,73 @@ DONE_MORPHING_CHILDREN:
         return tree;
     }
 
-    tree = fgMorphSmpOpOptional(tree->AsOp());
+    if (tree->OperIs(GT_ASG))
+    {
+        // Make sure we're allowed to do this.
+        if (optValnumCSE_phase)
+        {
+            // It is not safe to reorder/delete CSE's
+            return tree;
+        }
+
+        if (varTypeIsStruct(typ) && !tree->IsPhiDefn())
+        {
+            if (tree->OperIsCopyBlkOp())
+            {
+                return fgMorphCopyBlock(tree);
+            }
+            else
+            {
+                return fgMorphInitBlock(tree);
+            }
+        }
+
+        if (typ == TYP_LONG)
+        {
+            return tree;
+        }
+
+        if (op2->gtFlags & GTF_ASG)
+        {
+            return tree;
+        }
+
+        if ((op2->gtFlags & GTF_CALL) && (op1->gtFlags & GTF_ALL_EFFECT))
+        {
+            return tree;
+        }
+
+        /* Special case: a cast that can be thrown away */
+
+        // TODO-Cleanup: fgMorphSmp does a similar optimization. However, it removes only
+        // one cast and sometimes there is another one after it that gets removed by this
+        // code. fgMorphSmp should be improved to remove all redundant casts so this code
+        // can be removed.
+
+        if (op1->gtOper == GT_IND && op2->gtOper == GT_CAST && !op2->gtOverflow())
+        {
+            var_types srct;
+            var_types cast;
+            var_types dstt;
+
+            srct = op2->AsCast()->CastOp()->TypeGet();
+            cast = (var_types)op2->CastToType();
+            dstt = op1->TypeGet();
+
+            /* Make sure these are all ints and precision is not lost */
+
+            if (genTypeSize(cast) >= genTypeSize(dstt) && dstt <= TYP_INT && srct <= TYP_INT)
+            {
+                op2 = tree->AsOp()->gtOp2 = op2->AsCast()->CastOp();
+            }
+        }
+        return tree;
+    }
+
+    if (!fgGlobalMorph)
+    {
+        tree = fgMorphSmpOpOptional(tree->AsOp());
+    }
 
     return tree;
 }
@@ -14150,68 +14216,6 @@ GenTree* Compiler::fgMorphSmpOpOptional(GenTreeOp* tree)
 
     switch (oper)
     {
-        case GT_ASG:
-            // Make sure we're allowed to do this.
-            if (optValnumCSE_phase)
-            {
-                // It is not safe to reorder/delete CSE's
-                break;
-            }
-
-            if (varTypeIsStruct(typ) && !tree->IsPhiDefn())
-            {
-                if (tree->OperIsCopyBlkOp())
-                {
-                    return fgMorphCopyBlock(tree);
-                }
-                else
-                {
-                    return fgMorphInitBlock(tree);
-                }
-            }
-
-            if (typ == TYP_LONG)
-            {
-                break;
-            }
-
-            if (op2->gtFlags & GTF_ASG)
-            {
-                break;
-            }
-
-            if ((op2->gtFlags & GTF_CALL) && (op1->gtFlags & GTF_ALL_EFFECT))
-            {
-                break;
-            }
-
-            /* Special case: a cast that can be thrown away */
-
-            // TODO-Cleanup: fgMorphSmp does a similar optimization. However, it removes only
-            // one cast and sometimes there is another one after it that gets removed by this
-            // code. fgMorphSmp should be improved to remove all redundant casts so this code
-            // can be removed.
-
-            if (op1->gtOper == GT_IND && op2->gtOper == GT_CAST && !op2->gtOverflow())
-            {
-                var_types srct;
-                var_types cast;
-                var_types dstt;
-
-                srct = op2->AsCast()->CastOp()->TypeGet();
-                cast = (var_types)op2->CastToType();
-                dstt = op1->TypeGet();
-
-                /* Make sure these are all ints and precision is not lost */
-
-                if (genTypeSize(cast) >= genTypeSize(dstt) && dstt <= TYP_INT && srct <= TYP_INT)
-                {
-                    op2 = tree->gtOp2 = op2->AsCast()->CastOp();
-                }
-            }
-
-            break;
-
         case GT_MUL:
 
             /* Check for the case "(val + icon) * icon" */
