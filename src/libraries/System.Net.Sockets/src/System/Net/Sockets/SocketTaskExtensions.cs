@@ -13,7 +13,7 @@ namespace System.Net.Sockets
     {
         [EditorBrowsable(EditorBrowsableState.Never)]
         public static Task<Socket> AcceptAsync(this Socket socket) =>
-                socket.AcceptAsync();
+            socket.AcceptAsync();
         [EditorBrowsable(EditorBrowsableState.Never)]
         public static Task<Socket> AcceptAsync(this Socket socket, Socket? acceptSocket) =>
             socket.AcceptAsync(acceptSocket);
