@@ -171,9 +171,9 @@ namespace Microsoft.Extensions.DependencyModel
                     Debug.Assert(compilationLibrary.RuntimeStoreManifestName == null);
                 }
 
-                Library? library = (Library?)compilationLibrary ?? runtimeLibrary;
+                Library library = (Library?)compilationLibrary ?? runtimeLibrary ?? throw new NullReferenceException(nameof(library));
 
-                WritePortableTargetLibrary(library?.Name + DependencyContextStrings.VersionSeparator + library?.Version,
+                WritePortableTargetLibrary(library.Name + DependencyContextStrings.VersionSeparator + library.Version,
                     runtimeLibrary, compilationLibrary, jsonWriter);
             }
             jsonWriter.WriteEndObject();
