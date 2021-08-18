@@ -14036,6 +14036,12 @@ DONE_MORPHING_CHILDREN:
         return tree;
     }
 
+    if (tree->OperIs(GT_UDIV, GT_UMOD))
+    {
+        tree->AsOp()->CheckDivideByConstOptimized(this);
+        return tree;
+    }
+
     if (!fgGlobalMorph)
     {
         tree = fgMorphSmpOpOptional(tree->AsOp());
@@ -14265,11 +14271,6 @@ GenTree* Compiler::fgMorphSmpOpOptional(GenTreeOp* tree)
                 DEBUG_DESTROY_NODE(tree);
                 return op1;
             }
-            break;
-
-        case GT_UDIV:
-        case GT_UMOD:
-            tree->CheckDivideByConstOptimized(this);
             break;
 
         case GT_LSH:
