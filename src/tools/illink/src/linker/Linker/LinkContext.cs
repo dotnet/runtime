@@ -559,8 +559,8 @@ namespace Mono.Linker
 
 			if (WarningSuppressionWriter != null &&
 				(message.Category == MessageCategory.Warning || message.Category == MessageCategory.WarningAsError) &&
-				message.Origin?.MemberDefinition != null)
-				WarningSuppressionWriter.AddWarning (message.Code.Value, message.Origin?.MemberDefinition);
+				message.Origin?.Provider != null)
+				WarningSuppressionWriter.AddWarning (message.Code.Value, message.Origin?.Provider);
 
 			if (message.Category == MessageCategory.Error || message.Category == MessageCategory.WarningAsError)
 				ErrorsCount++;

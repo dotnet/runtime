@@ -25,8 +25,13 @@ namespace Mono.Linker
 
 		public bool IsEmpty => _warnings.Count == 0;
 
-		public void AddWarning (int code, IMemberDefinition memberDefinition)
+		public void AddWarning (int code, ICustomAttributeProvider provider)
 		{
+			// We don't have a targeted suppression mechanism for
+			// warnings from assembly-level attributes.
+			if (provider is not IMemberDefinition memberDefinition)
+				return;
+
 			var assemblyName = UnconditionalSuppressMessageAttributeState.GetModuleFromProvider (memberDefinition).Assembly.Name;
 			if (!_warnings.TryGetValue (assemblyName, out var warnings)) {
 				warnings = new HashSet<(int, IMemberDefinition)> ();

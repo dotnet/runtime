@@ -41,8 +41,8 @@ namespace Mono.Linker.Steps
 				// we will store the suppression context in the SuppressionContextMember.
 				// For code which is not compiler generated the suppression context
 				// is the same as the message's origin member.
-				IMemberDefinition suppressionContextMember = _scopeStack.GetSuppressionContext (origin.MemberDefinition);
-				_scopeStack.Push (new Scope (new MessageOrigin (origin.MemberDefinition, origin.ILOffset, suppressionContextMember)));
+				IMemberDefinition suppressionContextMember = _scopeStack.GetSuppressionContext (origin.Provider);
+				_scopeStack.Push (new Scope (new MessageOrigin (origin, suppressionContextMember)));
 			}
 
 			public LocalScope (in Scope scope, MarkScopeStack scopeStack)
@@ -56,7 +56,7 @@ namespace Mono.Linker.Steps
 			{
 				Scope scope = _scopeStack.Pop ();
 
-				if (_origin.MemberDefinition != scope.Origin.MemberDefinition)
+				if (_origin.Provider != scope.Origin.Provider)
 					throw new InternalErrorException ($"Scope stack imbalance - expected to pop '{_origin}' but instead popped '{scope.Origin}'.");
 			}
 		}
@@ -76,7 +76,7 @@ namespace Mono.Linker.Steps
 
 			public void Dispose ()
 			{
-				if (_parentScope.Origin.MemberDefinition != _scopeStack.CurrentScope.Origin.MemberDefinition)
+				if (_parentScope.Origin.Provider != _scopeStack.CurrentScope.Origin.Provider)
 					throw new InternalErrorException ($"Scope stack imbalance - expected top of stack to be '{_parentScope.Origin}' but instead found '{_scopeStack.CurrentScope.Origin}'.");
 
 				_scopeStack.Push (_childScope);
@@ -116,10 +116,10 @@ namespace Mono.Linker.Steps
 		public void UpdateCurrentScopeInstructionOffset (int offset)
 		{
 			var scope = _scopeStack.Pop ();
-			if (scope.Origin.MemberDefinition is not MethodDefinition)
+			if (scope.Origin.Provider is not MethodDefinition)
 				throw new InternalErrorException ($"Trying to update instruction offset of scope stack which is not a method. Current stack scope is '{scope}'.");
 
-			_scopeStack.Push (new Scope (new MessageOrigin (scope.Origin.MemberDefinition, offset, scope.Origin.SuppressionContextMember)));
+			_scopeStack.Push (new Scope (new MessageOrigin (scope.Origin.Provider, offset, scope.Origin.SuppressionContextMember)));
 		}
 
 		void Push (in Scope scope)
@@ -138,7 +138,11 @@ namespace Mono.Linker.Steps
 		[Conditional ("DEBUG")]
 		public void AssertIsEmpty () => Debug.Assert (_scopeStack.Count == 0);
 
-		IMemberDefinition GetSuppressionContext (IMemberDefinition sourceMember) =>
-			_context.CompilerGeneratedState.GetUserDefinedMethodForCompilerGeneratedMember (sourceMember) ?? sourceMember;
+		IMemberDefinition GetSuppressionContext (ICustomAttributeProvider provider)
+		{
+			if (provider is not IMemberDefinition sourceMember)
+				return null;
+			return _context.CompilerGeneratedState.GetUserDefinedMethodForCompilerGeneratedMember (sourceMember) ?? sourceMember;
+		}
 	}
 }

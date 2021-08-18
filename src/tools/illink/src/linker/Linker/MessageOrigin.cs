@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using Mono.Cecil;
@@ -14,10 +15,14 @@ namespace Mono.Linker
 	{
 #nullable enable
 		public string? FileName { get; }
-		public IMemberDefinition? MemberDefinition { get; }
-
-		readonly IMemberDefinition _suppressionContextMember;
-		public IMemberDefinition? SuppressionContextMember { get => _suppressionContextMember ?? MemberDefinition; }
+		public ICustomAttributeProvider? Provider { get; }
+		readonly ICustomAttributeProvider _suppressionContextMember;
+		public ICustomAttributeProvider? SuppressionContextMember {
+			get {
+				Debug.Assert (_suppressionContextMember == null || _suppressionContextMember is IMemberDefinition || _suppressionContextMember is AssemblyDefinition);
+				return _suppressionContextMember ?? Provider;
+			}
+		}
 #nullable disable
 		public int SourceLine { get; }
 		public int SourceColumn { get; }
@@ -25,8 +30,13 @@ namespace Mono.Linker
 
 		const int HiddenLineNumber = 0xfeefee;
 
-		public MessageOrigin (IMemberDefinition memberDefinition)
-			: this (memberDefinition, null)
+		public MessageOrigin (IMemberDefinition memberDefinition, int? ilOffset = null)
+			: this (memberDefinition as ICustomAttributeProvider, ilOffset)
+		{
+		}
+
+		public MessageOrigin (ICustomAttributeProvider provider)
+			: this (provider, null)
 		{
 		}
 
@@ -35,31 +45,43 @@ namespace Mono.Linker
 			FileName = fileName;
 			SourceLine = sourceLine;
 			SourceColumn = sourceColumn;
-			MemberDefinition = null;
+			Provider = null;
 			_suppressionContextMember = null;
 			ILOffset = null;
 		}
 
-		public MessageOrigin (IMemberDefinition memberDefinition, int? ilOffset)
-			: this (memberDefinition, ilOffset, null)
+		public MessageOrigin (ICustomAttributeProvider provider, int? ilOffset)
+			: this (provider, ilOffset, null)
 		{
 		}
 
-		public MessageOrigin (IMemberDefinition memberDefinition, int? ilOffset, IMemberDefinition suppressionContextMember)
+		public MessageOrigin (ICustomAttributeProvider provider, int? ilOffset, ICustomAttributeProvider suppressionContextMember)
 		{
+			Debug.Assert (provider == null || provider is IMemberDefinition || provider is AssemblyDefinition);
+			Debug.Assert (suppressionContextMember == null || suppressionContextMember is IMemberDefinition || provider is AssemblyDefinition);
 			FileName = null;
-			MemberDefinition = memberDefinition;
+			Provider = provider;
 			_suppressionContextMember = suppressionContextMember;
 			SourceLine = 0;
 			SourceColumn = 0;
 			ILOffset = ilOffset;
 		}
 
+		public MessageOrigin (MessageOrigin other, IMemberDefinition suppressionContextMember)
+		{
+			FileName = other.FileName;
+			Provider = other.Provider;
+			_suppressionContextMember = suppressionContextMember;
+			SourceLine = other.SourceLine;
+			SourceColumn = other.SourceColumn;
+			ILOffset = other.ILOffset;
+		}
+
 		public override string ToString ()
 		{
 			int sourceLine = SourceLine, sourceColumn = SourceColumn;
 			string fileName = FileName;
-			if (MemberDefinition is MethodDefinition method &&
+			if (Provider is MethodDefinition method &&
 				method.DebugInformation.HasSequencePoints) {
 				var offset = ILOffset ?? 0;
 				SequencePoint correspondingSequencePoint = method.DebugInformation.SequencePoints
@@ -95,20 +117,24 @@ namespace Mono.Linker
 		}
 
 		public bool Equals (MessageOrigin other) =>
-			(FileName, MemberDefinition, SourceLine, SourceColumn, ILOffset) == (other.FileName, other.MemberDefinition, other.SourceLine, other.SourceColumn, other.ILOffset);
+			(FileName, Provider, SourceLine, SourceColumn, ILOffset) == (other.FileName, other.Provider, other.SourceLine, other.SourceColumn, other.ILOffset);
 
 		public override bool Equals (object obj) => obj is MessageOrigin messageOrigin && Equals (messageOrigin);
-		public override int GetHashCode () => (FileName, MemberDefinition, SourceLine, SourceColumn).GetHashCode ();
+		public override int GetHashCode () => (FileName, Provider, SourceLine, SourceColumn).GetHashCode ();
 		public static bool operator == (MessageOrigin lhs, MessageOrigin rhs) => lhs.Equals (rhs);
 		public static bool operator != (MessageOrigin lhs, MessageOrigin rhs) => !lhs.Equals (rhs);
 
 		public int CompareTo (MessageOrigin other)
 		{
-			if (MemberDefinition != null && other.MemberDefinition != null) {
-				TypeDefinition thisTypeDef = (MemberDefinition as TypeDefinition) ?? MemberDefinition.DeclaringType;
-				TypeDefinition otherTypeDef = (other.MemberDefinition as TypeDefinition) ?? other.MemberDefinition.DeclaringType;
-				int result = (thisTypeDef?.Module?.Assembly?.Name?.Name, thisTypeDef?.Name, MemberDefinition?.Name).CompareTo
-					((otherTypeDef?.Module?.Assembly?.Name?.Name, otherTypeDef?.Name, other.MemberDefinition?.Name));
+			if (Provider != null && other.Provider != null) {
+				var thisMember = Provider as IMemberDefinition;
+				var otherMember = other.Provider as IMemberDefinition;
+				TypeDefinition thisTypeDef = (Provider as TypeDefinition) ?? (Provider as IMemberDefinition)?.DeclaringType;
+				TypeDefinition otherTypeDef = (other.Provider as TypeDefinition) ?? (other.Provider as IMemberDefinition)?.DeclaringType;
+				var thisAssembly = thisTypeDef?.Module.Assembly ?? Provider as AssemblyDefinition;
+				var otherAssembly = otherTypeDef?.Module.Assembly ?? other.Provider as AssemblyDefinition;
+				int result = (thisAssembly.Name.Name, thisTypeDef?.Name, thisMember?.Name).CompareTo
+					((otherAssembly.Name.Name, otherTypeDef?.Name, otherMember?.Name));
 				if (result != 0)
 					return result;
 
@@ -116,7 +142,7 @@ namespace Mono.Linker
 					return ILOffset.Value.CompareTo (other.ILOffset);
 
 				return ILOffset == null ? (other.ILOffset == null ? 0 : 1) : -1;
-			} else if (MemberDefinition == null && other.MemberDefinition == null) {
+			} else if (Provider == null && other.Provider == null) {
 				if (FileName != null && other.FileName != null) {
 					return string.Compare (FileName, other.FileName);
 				} else if (FileName == null && other.FileName == null) {
@@ -126,7 +152,7 @@ namespace Mono.Linker
 				return (FileName == null) ? 1 : -1;
 			}
 
-			return (MemberDefinition == null) ? 1 : -1;
+			return (Provider == null) ? 1 : -1;
 		}
 	}
 }

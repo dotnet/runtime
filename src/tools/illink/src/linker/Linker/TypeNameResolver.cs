@@ -13,7 +13,7 @@ namespace Mono.Linker
 			_context = context;
 		}
 
-		public TypeReference ResolveTypeName (string typeNameString, IMemberDefinition origin, out AssemblyDefinition typeAssembly, bool needsAssemblyName = true)
+		public TypeReference ResolveTypeName (string typeNameString, ICustomAttributeProvider origin, out AssemblyDefinition typeAssembly, bool needsAssemblyName = true)
 		{
 			typeAssembly = null;
 			if (string.IsNullOrEmpty (typeNameString))
@@ -40,9 +40,11 @@ namespace Mono.Linker
 			// search for the type in the calling object's assembly. If not found, look in the core
 			// assembly.
 			typeAssembly = origin switch {
-				TypeReference tr => tr.Module?.Assembly,
+				AssemblyDefinition asm => asm,
+				TypeDefinition type => type.Module?.Assembly,
+				IMemberDefinition member => member.DeclaringType.Module.Assembly,
 				null => null,
-				_ => origin.DeclaringType.Module.Assembly
+				_ => throw new NotSupportedException ()
 			};
 
 			if (typeAssembly != null && TryResolveTypeName (typeAssembly, parsedTypeName, out var typeRef))
