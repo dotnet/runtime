@@ -37,10 +37,6 @@
 
 #include "wellknownattributes.h"
 
-#ifdef FEATURE_PREJIT
-#include "dataimage.h"
-#endif // FEATURE_PREJIT
-
 #ifdef FEATURE_READYTORUN
 #include "readytoruninfo.h"
 #endif

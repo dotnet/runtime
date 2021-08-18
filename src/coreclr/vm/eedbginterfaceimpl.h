@@ -25,10 +25,6 @@
 #include "eedbginterface.h"
 #include "debugdebugger.h"
 
-#ifdef FEATURE_PREJIT
-#include "corcompile.h"
-#endif // FEATURE_PREJIT
-
 #include "eeconfig.h"
 #include "pefile.h"
 

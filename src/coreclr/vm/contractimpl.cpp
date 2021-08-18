@@ -18,10 +18,6 @@
 #include "virtualcallstub.h"
 #include "decodemd.h"
 
-#ifdef FEATURE_PREJIT
-#include "compile.h"
-#endif
-
 #if defined(_DEBUG)
 DummyGlobalContract ___contract;
 #endif

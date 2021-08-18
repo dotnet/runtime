@@ -29,7 +29,6 @@
 #include "typectxt.h"
 #include "virtualcallstub.h"
 #include "sigbuilder.h"
-#include "compile.h"
 
 #ifndef DACCESS_COMPILE
 

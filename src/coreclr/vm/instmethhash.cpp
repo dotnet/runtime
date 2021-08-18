@@ -16,10 +16,6 @@
 #include "eeconfig.h"
 #include "generics.h"
 #include "typestring.h"
-#ifdef FEATURE_PREJIT
-#include "zapsig.h"
-#include "compile.h"
-#endif
 #include "ngenhash.inl"
 
 PTR_MethodDesc InstMethodHashEntry::GetMethod()

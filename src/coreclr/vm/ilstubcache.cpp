@@ -14,7 +14,6 @@
 #include "jitinterface.h"
 #include "sigbuilder.h"
 #include "ngenhash.inl"
-#include "compile.h"
 
 #include "eventtrace.h"
 

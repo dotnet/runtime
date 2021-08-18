@@ -21,10 +21,6 @@
 #include "sigbuilder.h"
 #include "olevariant.h"
 
-#ifdef FEATURE_PREJIT
-#include "compile.h"
-#endif
-
 //
 // Retrieve structures from ID.
 //

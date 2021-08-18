@@ -11,7 +11,6 @@
 #include "common.h"
 
 #include "dbginterface.h"
-#include "compile.h"
 #include "versionresilienthashcode.h"
 #include "typehashingalgorithms.h"
 #include "method.hpp"

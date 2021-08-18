@@ -40,10 +40,6 @@
 #include "notifyexternals.h"
 #endif // FEATURE_COMINTEROP
 
-#ifdef FEATURE_PREJIT
-#include "compile.h"
-#endif
-
 #if defined(_DEBUG) && defined(STUBLINKER_GENERATES_UNWIND_INFO)
 #include <psapi.h>
 #endif

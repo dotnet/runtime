@@ -15,10 +15,6 @@
 #ifndef _GENERICDICT_H
 #define _GENERICDICT_H
 
-#ifdef FEATURE_PREJIT
-#include "dataimage.h"
-#endif
-
 // DICTIONARIES
 //
 // A dictionary is a cache of handles associated with particular

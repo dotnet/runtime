@@ -135,10 +135,6 @@
 #ifndef __NGEN_HASH_INCLUDED
 #define __NGEN_HASH_INCLUDED
 
-#ifdef FEATURE_PREJIT
-#include "corcompile.h"
-#endif
-
 // The type used to contain an entry hash value. This is not customizable on a per-hash class basis: all
 // NgenHash derived hashes will share the same definition. Note that we only care about the data size, and the
 // fact that it is an unsigned integer value (so we can take a modulus for bucket computation and use bitwise

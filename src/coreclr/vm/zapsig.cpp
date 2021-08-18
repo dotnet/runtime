@@ -12,7 +12,6 @@
 #include "common.h"
 #include "zapsig.h"
 #include "typedesc.h"
-#include "compile.h"
 #include "sigbuilder.h"
 #include "nativeimage.h"
 

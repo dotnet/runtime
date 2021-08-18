@@ -45,7 +45,6 @@
 #include "eeconfig.h"
 #include "contractimpl.h"
 #include "prettyprintsig.h"
-#include "compile.h"
 
 #include "comcallablewrapper.h"
 #include "clrtocomcall.h"

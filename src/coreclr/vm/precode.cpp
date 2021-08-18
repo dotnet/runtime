@@ -10,10 +10,6 @@
 
 #include "common.h"
 
-#ifdef FEATURE_PREJIT
-#include "compile.h"
-#endif
-
 #ifdef FEATURE_PERFMAP
 #include "perfmap.h"
 #endif

@@ -32,10 +32,6 @@
 #include "versionresilienthashcode.h"
 #include "typehashingalgorithms.h"
 
-#ifdef FEATURE_PREJIT
-#include "compile.h"
-#endif
-
 #ifdef FEATURE_COMINTEROP
 #include "comcallablewrapper.h"
 #include "clrtocomcall.h"

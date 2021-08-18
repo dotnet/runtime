@@ -22,11 +22,6 @@
 #include "dbginterface.h"
 #include "eventtrace.h"
 
-#ifdef FEATURE_PREJIT
-#include <corcompile.h>
-#include "compile.h"
-#endif  // FEATURE_PREJIT
-
 #include "dllimportcallback.h"
 #include "peimagelayout.inl"
 

@@ -37,11 +37,6 @@
 #include "finalizerthread.h"
 #include "threadsuspend.h"
 
-#ifdef FEATURE_PREJIT
-#include "corcompile.h"
-#include "compile.h"
-#endif // FEATURE_PREJIT
-
 #ifdef FEATURE_COMINTEROP
 #include "comtoclrcall.h"
 #include "runtimecallablewrapper.h"
@@ -5853,14 +5848,3 @@ PTR_NativeImage AppDomain::SetNativeImage(LPCUTF8 simpleFileName, PTR_NativeImag
     return nullptr;
 }
 #endif//DACCESS_COMPILE
-
-#if !defined(DACCESS_COMPILE) && defined(FEATURE_NATIVE_IMAGE_GENERATION)
-
-void ZapperSetBindingPaths(ICorCompilationDomain *pDomain, SString &trustedPlatformAssemblies, SString &platformResourceRoots, SString &appPaths, SString &appNiPaths)
-{
-    CLRPrivBinderCoreCLR *pBinder = ((CompilationDomain *)pDomain)->GetTPABinderContext();
-    _ASSERTE(pBinder != NULL);
-    pBinder->SetupBindingPaths(trustedPlatformAssemblies, platformResourceRoots, appPaths, appNiPaths);
-}
-
-#endif

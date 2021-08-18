@@ -19,9 +19,6 @@
 #include "common.h"
 #include "typedesc.h"
 #include "typestring.h"
-#if defined(FEATURE_PREJIT)
-#include "compile.h"
-#endif
 #include "array.h"
 #include "castcache.h"
 

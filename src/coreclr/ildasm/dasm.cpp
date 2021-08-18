@@ -29,10 +29,6 @@
 #pragma warning(disable : 4640)
 #endif
 
-#if defined(_DEBUG) && defined(FEATURE_PREJIT)
-#include <corcompile.h>
-#endif
-
 #ifdef TARGET_UNIX
 #include "resourcestring.h"
 #define NATIVE_STRING_RESOURCE_NAME dasm_rc

@@ -52,12 +52,6 @@
 #include "gccover.h"
 #endif // HAVE_GCCOVER
 
-#ifdef FEATURE_PREJIT
-#include "compile.h"
-#include "corcompile.h"
-#endif // FEATURE_PREJIT
-
-
 #ifdef FEATURE_INTERPRETER
 #include "interpreter.h"
 #endif // FEATURE_INTERPRETER
@@ -6872,39 +6866,9 @@ void CEEInfo::setMethodAttribs (
 
     if (attribs & CORINFO_FLG_BAD_INLINEE)
     {
-        BOOL fCacheInliningHint = TRUE;
-
-#ifdef FEATURE_NATIVE_IMAGE_GENERATION
-        if (IsCompilationProcess())
-        {
-            // Since we are running managed code during NGen the inlining hint may be
-            // changing underneeth us as the code is JITed. We need to prevent the inlining
-            // hints from changing once we start to use them to place IL in the image.
-            if (!g_pCEECompileInfo->IsCachingOfInliningHintsEnabled())
-            {
-                fCacheInliningHint = FALSE;
-            }
-            else
-            {
-                // Don't cache inlining hints inside CoreLib during NGen of other assemblies,
-                // since CoreLib is loaded domain neutral and will survive worker process recycling,
-                // causing determinism problems.
-                Module * pModule = ftn->GetModule();
-                if (pModule->IsSystem() && pModule->HasNativeImage())
-                {
-                    fCacheInliningHint = FALSE;
-                }
-            }
-        }
-#endif
-
-        if (fCacheInliningHint)
-        {
-            ftn->SetNotInline(true);
-        }
+        ftn->SetNotInline(true);
     }
 
-#ifndef CROSSGEN_COMPILE
     if (attribs & (CORINFO_FLG_SWITCHED_TO_OPTIMIZED | CORINFO_FLG_SWITCHED_TO_MIN_OPT))
     {
         PrepareCodeConfig *config = GetThread()->GetCurrentPrepareCodeConfig();
@@ -6924,7 +6888,6 @@ void CEEInfo::setMethodAttribs (
 #endif
         }
     }
-#endif // !CROSSGEN_COMPILE
 
     EE_TO_JIT_TRANSITION();
 }
@@ -10036,22 +9999,12 @@ namespace
             _ASSERTE(pMD->IsNDirect() || pMD->HasUnmanagedCallersOnlyAttribute());
             if (pMD->IsNDirect())
             {
-#ifdef CROSSGEN_COMPILE
-                // Return CorInfoCallConvExtension::Managed to indicate that crossgen does not support handling UnmanagedCallConv
-                if (pMD->HasUnmanagedCallConvAttribute())
-                    return CorInfoCallConvExtension::Managed;
-#endif // CROSSGEN_COMPILE
-
                 CorInfoCallConvExtension unmanagedCallConv;
                 NDirect::GetCallingConvention_IgnoreErrors(pMD, &unmanagedCallConv, pSuppressGCTransition);
                 return unmanagedCallConv;
             }
             else
             {
-#ifdef CROSSGEN_COMPILE
-                _ASSERTE_MSG(false, "UnmanagedCallersOnly methods are not supported in crossgen and should be rejected before getting here.");
-                return CorInfoCallConvExtension::Managed;
-#else
                 CorInfoCallConvExtension unmanagedCallConv;
                 if (CallConv::TryGetCallingConventionFromUnmanagedCallersOnly(pMD, &unmanagedCallConv))
                 {
@@ -10062,7 +10015,6 @@ namespace
                     return unmanagedCallConv;
                 }
                 return CallConv::GetDefaultUnmanagedCallingConvention();
-#endif // CROSSGEN_COMPILE
             }
         }
         else

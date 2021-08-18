@@ -14,10 +14,6 @@
 #include "typestring.h"
 #include "typedesc.h"
 #include "typekey.h"
-#ifdef FEATURE_PREJIT
-#include "zapsig.h"
-#include "compile.h"
-#endif
 #include "ngenhash.inl"
 
 #ifdef _MSC_VER
