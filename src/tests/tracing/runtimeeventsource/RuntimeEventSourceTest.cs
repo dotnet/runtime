@@ -72,7 +72,7 @@ public class RuntimeEventListener : EventListener
         {
             if (!v)
             {
-                Console.WriteLine($"Could not find key {k}")
+                Console.WriteLine($"Could not find key {k}");
                 return false;
             }
             else
