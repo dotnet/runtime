@@ -453,13 +453,13 @@ namespace System.IO
             MemoryHandle Pin(in T memory);
         }
 
-        private struct MemoryHandler : IMemoryHandler<Memory<byte>>
+        private readonly struct MemoryHandler : IMemoryHandler<Memory<byte>>
         {
             public int GetLength(in Memory<byte> memory) => memory.Length;
             public MemoryHandle Pin(in Memory<byte> memory) => memory.Pin();
         }
 
-        private struct ReadOnlyMemoryHandler : IMemoryHandler<ReadOnlyMemory<byte>>
+        private readonly struct ReadOnlyMemoryHandler : IMemoryHandler<ReadOnlyMemory<byte>>
         {
             public int GetLength(in ReadOnlyMemory<byte> memory) => memory.Length;
             public MemoryHandle Pin(in ReadOnlyMemory<byte> memory) => memory.Pin();
