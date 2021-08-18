@@ -3629,9 +3629,7 @@ process_event (EventKind event, gpointer arg, gint32 il_offset, MonoContext *ctx
 				buffer_add_int (&buf, mono_environment_exitcode_get ());
 			break;
 		case EVENT_KIND_CRASH: {
-			EventInfo *ei = (EventInfo *)arg;
-			buffer_add_long (&buf, 0);
-			buffer_add_string (&buf, "");
+			g_assert_not_reached ();
 			break;
 		}
 		case EVENT_KIND_EXCEPTION: {
