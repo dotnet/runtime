@@ -251,7 +251,6 @@ void AssemblySpec::InitializeSpec(PEAssembly * pFile)
     }
 }
 
-#ifndef CROSSGEN_COMPILE
 
 // This uses thread storage to allocate space. Please use Checkpoint and release it.
 HRESULT AssemblySpec::InitializeSpec(StackingAllocator* alloc, ASSEMBLYNAMEREF* pName,
@@ -608,7 +607,6 @@ void AssemblySpec::InitializeAssemblyNameRef(_In_ BINDER_SPACE::AssemblyName* as
     spec.AssemblyNameInit(assemblyNameRef, NULL);
 }
 
-#endif // CROSSGEN_COMPILE
 
 // Check if the supplied assembly's public key matches up with the one in the Spec, if any
 // Throws an appropriate exception in case of a mismatch
@@ -1395,7 +1393,6 @@ BOOL AssemblySpecBindingCache::StoreFile(AssemblySpec *pSpec, PEAssembly *pFile)
 
         LoaderHeap* pHeap = m_pHeap;
 
-#ifndef CROSSGEN_COMPILE
         if (pBinderContextForLookup != NULL)
         {
             LoaderAllocator* pLoaderAllocator = NULL;
@@ -1408,7 +1405,6 @@ BOOL AssemblySpecBindingCache::StoreFile(AssemblySpec *pSpec, PEAssembly *pFile)
                 pHeap = pLoaderAllocator->GetHighFrequencyHeap();
             }
         }
-#endif // !CROSSGEN_COMPILE
 
         entry = abHolder.CreateAssemblyBinding(pHeap);
 

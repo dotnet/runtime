@@ -29,11 +29,7 @@ inline BOOL CoreBindResult::IsCoreLib()
     CONTRACTL_END;
 
     BINDER_SPACE::Assembly* pAssembly = BINDER_SPACE::GetAssemblyFromPrivAssemblyFast(m_pAssembly);
-#ifndef CROSSGEN_COMPILE
     return pAssembly->GetAssemblyName()->IsCoreLib();
-#else
-    return (pAssembly->GetPath()).EndsWithCaseInsensitive(SString(CoreLibName_IL_W));
-#endif
 }
 
 inline void CoreBindResult::GetBindAssembly(ICLRPrivAssembly** ppAssembly)

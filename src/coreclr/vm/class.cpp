@@ -84,7 +84,6 @@ void EEClass::Destruct(MethodTable * pOwningMT)
     }
     CONTRACTL_END
 
-#ifndef CROSSGEN_COMPILE
 
 #ifdef _DEBUG
     _ASSERTE(!IsDestroyed());
@@ -198,7 +197,6 @@ void EEClass::Destruct(MethodTable * pOwningMT)
     }
 #endif // PROFILING_SUPPORTED
 
-#endif // CROSSGEN_COMPILE
 }
 
 //*******************************************************************************

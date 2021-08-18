@@ -40,11 +40,7 @@ EXTERN_C void checkStack(void);
 
 #define THUMB_CODE      1
 
-#ifdef CROSSGEN_COMPILE
-#define GetEEFuncEntryPoint(pfn) 0x1001
-#else
 #define GetEEFuncEntryPoint(pfn) (GFN_TADDR(pfn) | THUMB_CODE)
-#endif
 
 //**********************************************************************
 
@@ -702,14 +698,12 @@ public:
         {
             // For values >= 4K (pageSize) must check for guard page
 
-#ifndef CROSSGEN_COMPILE
             // mov r4, value
             ThumbEmitMovConstant(ThumbReg(4), value);
             // mov r12, checkStack
             ThumbEmitMovConstant(ThumbReg(12), (int)checkStack);
             // bl r12
             ThumbEmitCallRegister(ThumbReg(12));
-#endif
 
             // sub sp,sp,r4
             Emit16((WORD)0xebad);
@@ -1004,12 +998,7 @@ struct HijackArgs
 
 inline BOOL ClrFlushInstructionCache(LPCVOID pCodeAddr, size_t sizeOfCode)
 {
-#ifdef CROSSGEN_COMPILE
-    // The code won't be executed when we are cross-compiling so flush instruction cache is unnecessary
-    return TRUE;
-#else
     return FlushInstructionCache(GetCurrentProcess(), pCodeAddr, sizeOfCode);
-#endif
 }
 
 //

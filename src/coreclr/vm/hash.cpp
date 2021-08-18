@@ -871,10 +871,8 @@ void HashMap::Rehash()
     // BROKEN: This is called for the RCWCache on the GC thread
     GCX_MAYBE_COOP_NO_THREAD_BROKEN(m_fAsyncMode);
 
-#ifndef CROSSGEN_COMPILE
     _ASSERTE (!g_fEEStarted || !m_fAsyncMode || GetThreadNULLOk() == NULL || GetThread()->PreemptiveGCDisabled());
     _ASSERTE (OwnLock());
-#endif
 
     UPTR newPrimeIndex = NewSize();
 

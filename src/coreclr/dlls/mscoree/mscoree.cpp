@@ -311,35 +311,3 @@ HRESULT SetInternalSystemDirectory()
     return hr;
 }
 
-#if defined(CROSSGEN_COMPILE)
-void SetCoreLibPath(LPCWSTR wzSystemDirectory)
-{
-    DWORD len = (DWORD)wcslen(wzSystemDirectory);
-    bool appendSeparator = wzSystemDirectory[len-1] != DIRECTORY_SEPARATOR_CHAR_W;
-    DWORD lenAlloc = appendSeparator ? len+2 : len+1;
-    if (g_dwSystemDirectory < lenAlloc)
-    {
-        delete [] g_pSystemDirectory;
-        g_pSystemDirectory = new (nothrow) WCHAR[lenAlloc];
-
-        if (g_pSystemDirectory == NULL)
-        {
-            SetLastError(ERROR_NOT_ENOUGH_MEMORY);
-            return;
-        }
-    }
-
-    wcscpy_s(g_pSystemDirectory, len+1, wzSystemDirectory);
-
-    if(appendSeparator)
-    {
-        g_pSystemDirectory[len] = DIRECTORY_SEPARATOR_CHAR_W;
-        g_pSystemDirectory[len+1] = W('\0');
-        g_dwSystemDirectory = len + 1;
-    }
-    else
-    {
-        g_dwSystemDirectory = len;
-    }
-}
-#endif

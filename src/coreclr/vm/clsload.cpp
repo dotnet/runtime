@@ -4290,7 +4290,6 @@ BOOL AccessCheckOptions::DemandMemberAccess(AccessCheckContext *pContext, Method
 
     BOOL canAccessTarget = FALSE;
 
-#ifndef CROSSGEN_COMPILE
 
     // In CoreCLR kRestrictedMemberAccess means that one can access private/internal
     // classes/members in app code.
@@ -4307,7 +4306,6 @@ BOOL AccessCheckOptions::DemandMemberAccess(AccessCheckContext *pContext, Method
         ThrowAccessException(pContext, pTargetMT, NULL);
     }
 
-#endif // CROSSGEN_COMPILE
 
     return canAccessTarget;
 }

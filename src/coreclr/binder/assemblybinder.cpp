@@ -153,7 +153,6 @@ namespace BINDER_SPACE
             return hr;
         }
 
-#ifndef CROSSGEN_COMPILE
         HRESULT CreateImageAssembly(IMDInternalImport       *pIMetaDataAssemblyImport,
                                     PEKIND                   PeKind,
                                     PEImage                 *pPEImage,
@@ -178,7 +177,6 @@ namespace BINDER_SPACE
         Exit:
             return hr;
         }
-#endif // !CROSSGEN_COMPILE
     };
 
     HRESULT AssemblyBinder::TranslatePEToArchitectureType(DWORD  *pdwPAFlags, PEKIND *PeKind)
@@ -265,12 +263,10 @@ namespace BINDER_SPACE
         // Tracing happens outside the binder lock to avoid calling into managed code within the lock
         BinderTracing::ResolutionAttemptedOperation tracer{pAssemblyName, pApplicationContext->GetBinderID(), 0 /*managedALC*/, hr};
 
-#ifndef CROSSGEN_COMPILE
     Retry:
         {
             // Lock the binding application context
             CRITSEC_Holder contextLock(pApplicationContext->GetCriticalSectionCookie());
-#endif
 
             if (szCodeBase == NULL)
             {
@@ -307,16 +303,13 @@ namespace BINDER_SPACE
             // Remember the post-bind version
             kContextVersion = pApplicationContext->GetVersion();
 
-#ifndef CROSSGEN_COMPILE
         } // lock(pApplicationContext)
-#endif
 
     Exit:
         tracer.TraceBindResult(bindResult);
 
         if (bindResult.HaveResult())
         {
-#ifndef CROSSGEN_COMPILE
             BindResult hostBindResult;
 
             hr = RegisterAndGetHostChosen(pApplicationContext,
@@ -336,11 +329,6 @@ namespace BINDER_SPACE
             {
                 *ppAssembly = hostBindResult.GetAsAssembly(TRUE /* fAddRef */);
             }
-#else // CROSSGEN_COMPILE
-
-            *ppAssembly = bindResult.GetAsAssembly(TRUE /* fAddRef */);
-
-#endif // CROSSGEN_COMPILE
         }
 
         return hr;
@@ -647,7 +635,6 @@ namespace BINDER_SPACE
         HRESULT hr = S_OK;
 
         bool isTpaListProvided = pApplicationContext->IsTpaListProvided();
-#ifndef CROSSGEN_COMPILE
         ContextEntry *pContextEntry = NULL;
         hr = FindInExecutionContext(pApplicationContext, pAssemblyName, &pContextEntry);
 
@@ -679,7 +666,6 @@ namespace BINDER_SPACE
             pBindResult->SetResult(pContextEntry);
         }
         else
-#endif // !CROSSGEN_COMPILE
         if (isTpaListProvided)
         {
             // BindByTpaList handles setting attempt results on the bind result
@@ -708,7 +694,6 @@ namespace BINDER_SPACE
         return hr;
     }
 
-#ifndef CROSSGEN_COMPILE
     /* static */
     HRESULT AssemblyBinder::FindInExecutionContext(ApplicationContext  *pApplicationContext,
                                                    AssemblyName        *pAssemblyName,
@@ -739,7 +724,6 @@ namespace BINDER_SPACE
         return pContextEntry != NULL ? S_OK : S_FALSE;
     }
 
-#endif //CROSSGEN_COMPILE
 
     //
     // Tests whether a candidate assembly's name matches the requested.
@@ -1286,7 +1270,6 @@ namespace BINDER_SPACE
         return hr;
     }
 
-#ifndef CROSSGEN_COMPILE
 
     /* static */
     HRESULT AssemblyBinder::Register(ApplicationContext *pApplicationContext,
@@ -1402,7 +1385,6 @@ namespace BINDER_SPACE
         return hr;
     }
 
-#endif //CROSSGEN_COMPILE
 
 #if !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
 HRESULT AssemblyBinder::BindUsingHostAssemblyResolver(/* in */ INT_PTR pManagedAssemblyLoadContextToBindWithin,

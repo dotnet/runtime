@@ -7,9 +7,6 @@
 #include "log.h"
 #include "methoddescbackpatchinfo.h"
 
-#ifdef CROSSGEN_COMPILE
-    #error This file is not expected to be included into CrossGen
-#endif
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // EntryPointSlots

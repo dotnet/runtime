@@ -254,9 +254,7 @@ HRESULT EEConfig::Init()
     dwOSR_CounterBump = 5000;
 #endif
 
-#ifndef CROSSGEN_COMPILE
     backpatchEntryPointSlots = false;
-#endif
 
 #if defined(FEATURE_GDBJIT) && defined(_DEBUG)
     pszGDBJitElfDump = NULL;
@@ -866,9 +864,7 @@ HRESULT EEConfig::sync()
     dwOSR_HighId = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_OSR_HighId);
 #endif
 
-#ifndef CROSSGEN_COMPILE
     backpatchEntryPointSlots = CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_BackpatchEntryPointSlots) != 0;
-#endif
 
 #if defined(FEATURE_GDBJIT) && defined(_DEBUG)
     {

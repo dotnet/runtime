@@ -304,7 +304,6 @@ void PEImageLayout::ApplyBaseRelocations()
     }
     _ASSERTE(dirSize == dirPos);
 
-#ifndef CROSSGEN_COMPILE
     if (dwOldProtection != 0)
     {
         BOOL bExecRegion = (dwOldProtection & (PAGE_EXECUTE | PAGE_EXECUTE_READ |
@@ -318,7 +317,6 @@ void PEImageLayout::ApplyBaseRelocations()
 #ifdef TARGET_UNIX
     PAL_LOADMarkSectionAsNotNeeded((void*)dir);
 #endif // TARGET_UNIX
-#endif // CROSSGEN_COMPILE
 
     if (pFlushRegion != NULL)
     {
@@ -454,13 +452,6 @@ ConvertedImageLayout::ConvertedImageLayout(PEImageLayout* source, BOOL isInBundl
     source->LayoutILOnly(m_FileView, enableExecution);
     IfFailThrow(Init(m_FileView));
 
-#if defined(CROSSGEN_COMPILE)
-    if (HasNativeHeader())
-    {
-        ApplyBaseRelocations();
-    }
-
-#else
     if (enableExecution)
     {
         if (!IsNativeMachineFormat())
@@ -485,7 +476,6 @@ ConvertedImageLayout::ConvertedImageLayout(PEImageLayout* source, BOOL isInBundl
         }
 #endif //TARGET_X86
     }
-#endif
 }
 
 ConvertedImageLayout::~ConvertedImageLayout()
@@ -533,7 +523,6 @@ MappedImageLayout::MappedImageLayout(PEImage* pOwner)
     m_FileMap.Assign(WszCreateFileMapping(hFile, NULL, PAGE_READONLY | SEC_IMAGE, 0, 0, NULL));
     if (m_FileMap == NULL)
     {
-#ifndef CROSSGEN_COMPILE
 
         // Capture last error as it may get reset below.
 
@@ -551,7 +540,6 @@ MappedImageLayout::MappedImageLayout(PEImage* pOwner)
             ThrowWin32(dwLastError);
         }
 
-#endif // !CROSSGEN_COMPILE
 
         return;
     }
@@ -570,31 +558,6 @@ MappedImageLayout::MappedImageLayout(PEImage* pOwner)
         ThrowLastError();
     IfFailThrow(Init((void *) m_FileView));
 
-#ifdef CROSSGEN_COMPILE
-    //Do base relocation for PE. Unlike LoadLibrary, MapViewOfFile will not do that for us even with SEC_IMAGE
-    if (pOwner->IsTrustedNativeImage())
-    {
-        // This should never happen in correctly setup system, but do a quick check right anyway to
-        // avoid running too far with bogus data
-
-        if (!HasCorHeader())
-            ThrowHR(COR_E_BADIMAGEFORMAT);
-
-        // For phone, we need to be permissive of MSIL assemblies pretending to be native images,
-        // to support forced fall back to JIT
-        // if (!HasNativeHeader())
-        //     ThrowHR(COR_E_BADIMAGEFORMAT);
-
-        if (HasNativeHeader() && g_fAllowNativeImages)
-        {
-            if (!IsNativeMachineFormat())
-                ThrowHR(COR_E_BADIMAGEFORMAT);
-
-            ApplyBaseRelocations();
-        }
-    }
-    else
-#endif // CROSSGEN_COMPILE
     if (!IsNativeMachineFormat() && !IsI386())
     {
         //can't rely on the image
@@ -620,7 +583,6 @@ MappedImageLayout::MappedImageLayout(PEImage* pOwner)
 
 #else //!TARGET_UNIX
 
-#ifndef CROSSGEN_COMPILE
     m_LoadedFile = PAL_LOADLoadPEFile(hFile, offset);
 
     if (m_LoadedFile == NULL)
@@ -650,9 +612,6 @@ MappedImageLayout::MappedImageLayout(PEImage* pOwner)
         SetRelocated();
     }
 
-#else // !CROSSGEN_COMPILE
-    m_LoadedFile = NULL;
-#endif // !CROSSGEN_COMPILE
 
 #endif // !TARGET_UNIX
 }

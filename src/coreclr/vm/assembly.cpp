@@ -168,12 +168,10 @@ void Assembly::Init(AllocMemTracker *pamTracker, LoaderAllocator *pLoaderAllocat
     m_pClassLoader = new ClassLoader(this);
     m_pClassLoader->Init(pamTracker);
 
-#ifndef CROSSGEN_COMPILE
     if (GetManifestFile()->IsDynamic())
         // manifest modules of dynamic assemblies are always transient
         m_pManifest = ReflectionModule::Create(this, GetManifestFile(), pamTracker, REFEMIT_MANIFEST_MODULE_NAME);
     else
-#endif
         m_pManifest = Module::Create(this, mdFileNil, GetManifestFile(), pamTracker);
 
     FastInterlockIncrement((LONG*)&g_cAssemblies);
@@ -189,7 +187,6 @@ void Assembly::Init(AllocMemTracker *pamTracker, LoaderAllocator *pLoaderAllocat
     //  loading it entirely.
     //CacheFriendAssemblyInfo();
 
-#ifndef CROSSGEN_COMPILE
     if (IsCollectible())
     {
         COUNT_T size;
@@ -200,7 +197,6 @@ void Assembly::Init(AllocMemTracker *pamTracker, LoaderAllocator *pLoaderAllocat
             LoaderAllocator::AssociateMemoryWithLoaderAllocator(start, start + size, m_pLoaderAllocator);
         }
     }
-#endif
 
     {
         CANNOTTHROWCOMPLUSEXCEPTION();
@@ -213,7 +209,6 @@ void Assembly::Init(AllocMemTracker *pamTracker, LoaderAllocator *pLoaderAllocat
     }
 }
 
-#ifndef CROSSGEN_COMPILE
 Assembly::~Assembly()
 {
     CONTRACTL
@@ -326,7 +321,6 @@ void Assembly::Terminate( BOOL signalProfiler )
 
     this->m_fTerminated = TRUE;
 }
-#endif // CROSSGEN_COMPILE
 
 Assembly * Assembly::Create(
     BaseDomain *                 pDomain,
@@ -373,7 +367,6 @@ Assembly * Assembly::Create(
 } // Assembly::Create
 
 
-#ifndef CROSSGEN_COMPILE
 Assembly *Assembly::CreateDynamic(AppDomain *pDomain, ICLRPrivBinder* pBinderContext, CreateDynamicAssemblyArgs *args)
 {
     // WARNING: not backout clean
@@ -693,7 +686,6 @@ Assembly *Assembly::CreateDynamic(AppDomain *pDomain, ICLRPrivBinder* pBinderCon
 } // Assembly::CreateDynamic
 
 
-#endif // CROSSGEN_COMPILE
 
 void Assembly::SetDomainAssembly(DomainAssembly *pDomainAssembly)
 {
@@ -1337,7 +1329,6 @@ bool Assembly::IgnoresAccessChecksTo(Assembly *pAccessedAssembly)
 }
 
 
-#ifndef CROSSGEN_COMPILE
 
 enum CorEntryPointType
 {
@@ -1689,7 +1680,6 @@ INT32 Assembly::ExecuteMainMethod(PTRARRAYREF *stringArgs, BOOL waitForOtherThre
     END_ENTRYPOINT_THROWS;
     return iRetVal;
 }
-#endif // CROSSGEN_COMPILE
 
 MethodDesc* Assembly::GetEntryPoint()
 {
@@ -1781,7 +1771,6 @@ MethodDesc* Assembly::GetEntryPoint()
     RETURN m_pEntryPoint;
 }
 
-#ifndef CROSSGEN_COMPILE
 OBJECTREF Assembly::GetExposedObject()
 {
     CONTRACT(OBJECTREF)
@@ -1795,7 +1784,6 @@ OBJECTREF Assembly::GetExposedObject()
 
     RETURN GetDomainAssembly()->GetExposedAssemblyObject();
 }
-#endif // CROSSGEN_COMPILE
 
 /* static */
 BOOL Assembly::FileNotFound(HRESULT hr)

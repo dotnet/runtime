@@ -236,9 +236,7 @@ protected:
     FatTokenSet *m_pFatTokenSet;
 #endif
 
-#ifndef CROSSGEN_COMPILE
     VirtualCallStubManager *m_pVirtualCallStubManager;
-#endif
 
 private:
     LoaderAllocatorSet m_LoaderAllocatorReferences;
@@ -286,9 +284,7 @@ private:
     PTR_CallCountingManager m_callCountingManager;
 #endif
 
-#ifndef CROSSGEN_COMPILE
     MethodDescBackpatchInfoTracker m_methodDescBackpatchInfoTracker;
-#endif
 
 #ifdef FEATURE_ON_STACK_REPLACEMENT
     PTR_OnStackReplacementManager m_onStackReplacementManager;
@@ -587,7 +583,6 @@ public:
     void InitVirtualCallStubManager(BaseDomain *pDomain);
     void UninitVirtualCallStubManager();
 
-#ifndef CROSSGEN_COMPILE
     inline VirtualCallStubManager *GetVirtualCallStubManager()
     {
         LIMITED_METHOD_CONTRACT;
@@ -596,7 +591,6 @@ public:
 
     UMEntryThunkCache *GetUMEntryThunkCache();
 
-#endif
 
     static LoaderAllocator* GetLoaderAllocator(ILStubCache* pILStubCache)
     {
@@ -652,13 +646,11 @@ public:
     }
 #endif // FEATURE_TIERED_COMPILATION
 
-#ifndef CROSSGEN_COMPILE
     MethodDescBackpatchInfoTracker *GetMethodDescBackpatchInfoTracker()
     {
         LIMITED_METHOD_CONTRACT;
         return &m_methodDescBackpatchInfoTracker;
     }
-#endif
 
 #ifdef FEATURE_ON_STACK_REPLACEMENT
 public:

@@ -198,12 +198,10 @@ namespace BINDER_SPACE
             return S_FALSE;
         }
 
-#ifndef CROSSGEN_COMPILE
         if (Path::IsRelative(outPath))
         {
             GO_WITH_HRESULT(E_INVALIDARG);
         }
-#endif
 
         {
             // Find the beginning of the simple name

@@ -1150,7 +1150,6 @@ PTR_VOID GetUnwindDataBlob(TADDR moduleBase, PTR_RUNTIME_FUNCTION pRuntimeFuncti
 #endif // FEATURE_EH_FUNCLETS
 
 
-#ifndef CROSSGEN_COMPILE
 
 #ifndef DACCESS_COMPILE
 
@@ -1489,7 +1488,6 @@ void EEJitManager::SetCpuInfo()
         CPUCompileFlags.Set(InstructionSet_Crc32);
     }
 #endif // HOST_64BIT
-#ifndef CROSSGEN_COMPILE
     if (GetDataCacheZeroIDReg() == 4)
     {
         // DCZID_EL0<4> (DZP) indicates whether use of DC ZVA instructions is permitted (0) or prohibited (1).
@@ -1498,7 +1496,6 @@ void EEJitManager::SetCpuInfo()
         // We set the flag when the instruction is permitted and the block size is 64 bytes.
         CPUCompileFlags.Set(InstructionSet_Dczva);
     }
-#endif
 #endif // TARGET_ARM64
 
     CPUCompileFlags.Set64BitInstructionSetVariants();
@@ -1834,7 +1831,6 @@ BOOL EEJitManager::LoadJIT()
     return IsJitLoaded();
 }
 
-#ifndef CROSSGEN_COMPILE
 //**************************************************************************
 
 CodeFragmentHeap::CodeFragmentHeap(LoaderAllocator * pAllocator, StubCodeBlockKind kind)
@@ -2011,7 +2007,6 @@ void CodeFragmentHeap::RealBackoutMem(void *pMem
 
     AddBlock(pMem, dwSize);
 }
-#endif // !CROSSGEN_COMPILE
 
 //**************************************************************************
 
@@ -4178,17 +4173,6 @@ void EEJitManager::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
 }
 #endif // #ifdef DACCESS_COMPILE
 
-#else // CROSSGEN_COMPILE
-// stub for compilation
-BOOL EEJitManager::JitCodeToMethodInfo(RangeSection * pRangeSection,
-    PCODE currentPC,
-    MethodDesc ** ppMethodDesc,
-    EECodeInfo * pCodeInfo)
-{
-    _ASSERTE(FALSE);
-    return FALSE;
-}
-#endif // !CROSSGEN_COMPILE
 
 
 #ifndef DACCESS_COMPILE
@@ -4211,9 +4195,7 @@ void ExecutionManager::Init()
 
     m_pDefaultCodeMan = new EECodeManager();
 
-#ifndef CROSSGEN_COMPILE
     m_pEEJitManager = new EEJitManager();
-#endif
 #ifdef FEATURE_PREJIT
     m_pNativeImageJitManager = new NativeImageJitManager();
 #endif
@@ -4382,7 +4364,6 @@ BOOL ExecutionManager::IsManagedCodeWorker(PCODE currentPC)
 
     if (pRS->flags & RangeSection::RANGE_SECTION_CODEHEAP)
     {
-#ifndef CROSSGEN_COMPILE
         // Typically if we find a Jit Manager we are inside a managed method
         // but on we could also be in a stub, so we check for that
         // as well and we don't consider stub to be real managed code.
@@ -4392,7 +4373,6 @@ BOOL ExecutionManager::IsManagedCodeWorker(PCODE currentPC)
         CodeHeader * pCHdr = PTR_CodeHeader(start - sizeof(CodeHeader));
         if (!pCHdr->IsStubCodeBlock())
             return TRUE;
-#endif
     }
 #ifdef FEATURE_READYTORUN
     else

@@ -78,9 +78,6 @@ inline BOOL WinRTSupported()
     STATIC_CONTRACT_GC_NOTRIGGER;
     STATIC_CONTRACT_CANNOT_TAKE_LOCK;
 
-#ifdef CROSSGEN_COMPILE
-    return TRUE;
-#endif
 
     if (gWinRTStatus == WINRT_STATUS_UNINITED)
     {

@@ -1661,7 +1661,6 @@ PCODE ILStubManager::GetCOMTarget(Object *pThis, ComPlusCallInfo *pComPlusCallIn
 }
 #endif // FEATURE_COMINTEROP
 
-#ifndef CROSSGEN_COMPILE
 BOOL ILStubManager::TraceManager(Thread *thread,
                                  TraceDestination *trace,
                                  T_CONTEXT *pContext,
@@ -1796,7 +1795,6 @@ BOOL ILStubManager::TraceManager(Thread *thread,
 
     return TRUE;
 }
-#endif // !CROSSGEN_COMPILE
 #endif //!DACCESS_COMPILE
 
 // This is used to recognize GenericComPlusCallStub, VarargPInvokeStub, and GenericPInvokeCalliHelper.

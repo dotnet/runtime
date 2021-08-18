@@ -2437,9 +2437,7 @@ public:
     }
 
     GCFrame(Thread *pThread, OBJECTREF *pObjRefs, UINT numObjRefs, BOOL maybeInterior);
-#ifndef CROSSGEN_COMPILE
     ~GCFrame();
-#endif // CROSSGEN_COMPILE
 
 #endif // DACCESS_COMPILE
 
@@ -3067,7 +3065,6 @@ class TailCallFrame : public Frame
     TADDR           m_ReturnAddress;    // the return address of the tailcall
 
 public:
-#ifndef CROSSGEN_COMPILE
     static TailCallFrame* FindTailCallFrame(Frame* pFrame)
     {
         LIMITED_METHOD_CONTRACT;
@@ -3096,7 +3093,6 @@ public:
     }
 
     virtual void UpdateRegDisplay(const PREGDISPLAY pRD);
-#endif // !CROSSGEN_COMPILE
 
 private:
     // Keep as last entry in class

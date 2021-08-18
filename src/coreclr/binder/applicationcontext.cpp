@@ -134,9 +134,7 @@ namespace BINDER_SPACE
     {
         HRESULT hr = S_OK;
 
-#ifndef CROSSGEN_COMPILE
         CRITSEC_Holder contextLock(fAcquireLock ? GetCriticalSectionCookie() : NULL);
-#endif
         if (m_pTrustedPlatformAssemblyMap != nullptr)
         {
             GO_WITH_HRESULT(S_OK);
@@ -231,12 +229,10 @@ namespace BINDER_SPACE
                 break;
             }
 
-#ifndef CROSSGEN_COMPILE
             if (Path::IsRelative(pathName))
             {
                 GO_WITH_HRESULT(E_INVALIDARG);
             }
-#endif
 
             m_platformResourceRoots.Append(pathName);
         }
@@ -256,12 +252,10 @@ namespace BINDER_SPACE
                 break;
             }
 
-#ifndef CROSSGEN_COMPILE
             if (Path::IsRelative(pathName))
             {
                 GO_WITH_HRESULT(E_INVALIDARG);
             }
-#endif
 
             m_appPaths.Append(pathName);
         }
@@ -281,12 +275,10 @@ namespace BINDER_SPACE
                 break;
             }
 
-#ifndef CROSSGEN_COMPILE
             if (Path::IsRelative(pathName))
             {
                 GO_WITH_HRESULT(E_INVALIDARG);
             }
-#endif
 
             m_appNiPaths.Append(pathName);
         }

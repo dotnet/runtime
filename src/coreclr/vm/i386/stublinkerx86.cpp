@@ -2349,7 +2349,6 @@ static const X86Reg c_argRegs[] = {
 #endif
 
 
-#ifndef CROSSGEN_COMPILE
 
 #if defined(_DEBUG) && !defined(TARGET_UNIX)
 void StubLinkerCPU::EmitJITHelperLoggingThunk(PCODE pJitHelper, LPVOID helperFuncCount)
@@ -3660,7 +3659,6 @@ VOID StubLinkerCPU::EmitRareDisableHRESULT(CodeLabel *pRejoinPoint, CodeLabel *p
 
 #endif // TARGET_X86
 
-#endif // CROSSGEN_COMPILE
 
 
 VOID StubLinkerCPU::EmitShuffleThunk(ShuffleEntry *pShuffleEntryArray)

@@ -113,9 +113,7 @@ namespace BINDER_SPACE
             return m_pBinder;
         }
 
-#ifndef CROSSGEN_COMPILE
     protected:
-#endif
         // Assembly Flags
         enum
         {

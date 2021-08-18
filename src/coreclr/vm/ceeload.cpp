@@ -319,7 +319,6 @@ void Module::NotifyProfilerLoadFinished(HRESULT hr)
     }
 }
 
-#ifndef CROSSGEN_COMPILE
 IMetaDataEmit *Module::GetValidatedEmitter()
 {
     CONTRACTL
@@ -357,7 +356,6 @@ IMetaDataEmit *Module::GetValidatedEmitter()
     }
     return m_pValidatedEmitter.Load();
 }
-#endif // CROSSGEN_COMPILE
 #endif // PROFILING_SUPPORTED
 
 void Module::NotifyEtwLoadFinished(HRESULT hr)
@@ -475,10 +473,8 @@ void Module::InitializeNativeImage(AllocMemTracker* pamTracker)
 
     ExecutionManager::AddNativeImageRange(dac_cast<TADDR>(pNativeImage->GetBase()), pNativeImage->GetVirtualSize(), this);
 
-#ifndef CROSSGEN_COMPILE
     LoadTokenTables();
     LoadHelperTable();
-#endif // CROSSGEN_COMPILE
 
 #if defined(HAVE_GCCOVER)
     if (GCStress<cfg_instr_ngen>::IsEnabled())
@@ -2576,7 +2572,6 @@ void Module::FreeModuleIndex()
     {
         _ASSERTE(m_ModuleIndex == m_ModuleID->GetModuleIndex());
 
-#ifndef CROSSGEN_COMPILE
         if (IsCollectible())
         {
             ThreadStoreLockHolder tsLock;
@@ -2586,7 +2581,6 @@ void Module::FreeModuleIndex()
                 pThread->DeleteThreadStaticData(m_ModuleIndex);
             }
         }
-#endif // CROSSGEN_COMPILE
 
         // Get the ModuleIndex from the DLM and free it
         Module::FreeModuleIndex(m_ModuleIndex);
@@ -2636,7 +2630,6 @@ void Module::AllocateRegularStaticHandles(AppDomain* pDomain)
     }
     CONTRACTL_END;
 
-#ifndef CROSSGEN_COMPILE
     if (NingenEnabled())
         return;
 
@@ -2655,7 +2648,6 @@ void Module::AllocateRegularStaticHandles(AppDomain* pDomain)
         // We should throw if we fail to allocate and never hit this assert
         _ASSERTE(pModuleData->GetPrecomputedGCStaticsBasePointer() != NULL);
     }
-#endif // CROSSGEN_COMPILE
 }
 
 BOOL Module::IsStaticStoragePrepared(mdTypeDef tkType)
@@ -2786,7 +2778,6 @@ void Module::SetDomainFile(DomainFile *pDomainFile)
         AllocateRegularStaticHandles(pDomainFile->GetAppDomain());
 }
 
-#ifndef CROSSGEN_COMPILE
 OBJECTREF Module::GetExposedObject()
 {
     CONTRACT(OBJECTREF)
@@ -2801,7 +2792,6 @@ OBJECTREF Module::GetExposedObject()
 
     RETURN GetDomainFile()->GetExposedModuleObject();
 }
-#endif // CROSSGEN_COMPILE
 
 //
 // AllocateMap allocates the RID maps based on the size of the current
@@ -3038,7 +3028,6 @@ PTR_BaseDomain Module::GetDomain()
 
 #ifndef DACCESS_COMPILE
 
-#ifndef CROSSGEN_COMPILE
 void Module::StartUnload()
 {
     WRAPPER_NO_CONTRACT;
@@ -3081,7 +3070,6 @@ void Module::StartUnload()
 
     SetBeingUnloaded();
 }
-#endif // CROSSGEN_COMPILE
 
 BOOL Module::IsInCurrentVersionBubble()
 {
@@ -3907,7 +3895,6 @@ void Module::InitializeStringData(DWORD token, EEStringData *pstrData, CQuickByt
     pstrData->SetIsOnlyLowChars(!fIs80Plus);
 }
 
-#ifndef CROSSGEN_COMPILE
 
 #ifdef FEATURE_PREJIT
 OBJECTHANDLE Module::ResolveStringRefHelper(DWORD token, BaseDomain *pDomain, PTR_CORCOMPILE_IMPORT_SECTION pSection, EEStringData *pStrData)
@@ -4100,7 +4087,6 @@ INTERN_OLD_STYLE:
 
     return string;
 }
-#endif // CROSSGEN_COMPILE
 
 //
 // Used by the verifier.  Returns whether this stringref is valid.
@@ -5612,7 +5598,6 @@ void Module::NotifyDebuggerUnload(AppDomain *pDomain)
     g_pDebugInterface->UnloadModule(this, pDomain);
 }
 
-#if !defined(CROSSGEN_COMPILE)
 using GetTokenForVTableEntry_t = mdToken(STDMETHODCALLTYPE*)(HMODULE module, BYTE**ppVTEntry);
 
 static HMODULE GetIJWHostForModule(Module* module)
@@ -6052,7 +6037,6 @@ LoaderHeap *Module::GetThunkHeap()
 
     RETURN m_pThunkHeap;
 }
-#endif // !CROSSGEN_COMPILE
 
 Module *Module::GetModuleFromIndex(DWORD ix)
 {
@@ -6299,7 +6283,6 @@ void Module::LoadTokenTables()
     }
     CONTRACTL_END;
 
-#ifndef CROSSGEN_COMPILE
     if (NingenEnabled())
         return;
 
@@ -6323,7 +6306,6 @@ void Module::LoadTokenTables()
 
     pEEInfo->threadTlsIndex = TLS_OUT_OF_INDEXES;
     pEEInfo->rvaStaticTlsIndex = NULL;
-#endif // CROSSGEN_COMPILE
 }
 
 #endif // !DACCESS_COMPILE
@@ -8599,7 +8581,6 @@ idMethodSpec Module::LogInstantiatedMethod(const MethodDesc * md, ULONG flagNum)
 
 #ifndef DACCESS_COMPILE
 
-#ifndef CROSSGEN_COMPILE
 // ===========================================================================
 // ReflectionModule
 // ===========================================================================
@@ -8872,7 +8853,6 @@ void ReflectionModule::CaptureModuleMetaDataToMemory()
     _ASSERTE(hr == S_OK);
 }
 
-#endif // !CROSSGEN_COMPILE
 
 #endif // !DACCESS_COMPILE
 

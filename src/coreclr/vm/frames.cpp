@@ -41,7 +41,6 @@
 
 #define CHECK_APP_DOMAIN    0
 
-#if !defined(CROSSGEN_COMPILE)
 //-----------------------------------------------------------------------
 #if _DEBUG
 //-----------------------------------------------------------------------
@@ -1977,7 +1976,6 @@ PCODE UnmanagedToManagedFrame::GetReturnAddress()
         return pRetAddr;
     }
 }
-#endif // !CROSSGEN_COMPILE
 
 #ifndef DACCESS_COMPILE
 //=================================================================================

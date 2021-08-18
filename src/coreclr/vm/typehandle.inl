@@ -243,7 +243,6 @@ inline void TypeHandle::ForEachComponentMethodTable(T &callback) const
     }
 }
 
-#ifndef CROSSGEN_COMPILE
 FORCEINLINE OBJECTREF TypeHandle::GetManagedClassObjectFast() const
 {
     CONTRACTL
@@ -288,6 +287,5 @@ FORCEINLINE OBJECTREF TypeHandle::GetManagedClassObjectFast() const
 
     return o;
 }
-#endif // CROSSGEN_COMPILE
 
 #endif  // _TYPEHANDLE_INL_

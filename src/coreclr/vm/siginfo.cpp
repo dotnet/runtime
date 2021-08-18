@@ -4892,7 +4892,6 @@ void PromoteCarefully(promote_func   fn,
         return;
     }
 
-#ifndef CROSSGEN_COMPILE
     if (sc->promotion)
     {
         LoaderAllocator*pLoaderAllocator = LoaderAllocator::GetAssociatedLoaderAllocator_Unsafe(PTR_TO_TADDR(*ppObj));
@@ -4901,7 +4900,6 @@ void PromoteCarefully(promote_func   fn,
             GcReportLoaderAllocator(fn, sc, pLoaderAllocator);
         }
     }
-#endif // CROSSGEN_COMPILE
 #endif // !defined(DACCESS_COMPILE)
 
     (*fn) (ppObj, sc, flags);

@@ -1083,7 +1083,6 @@ BOOL RuntimeVerifyNativeImageVersion(const CORCOMPILE_VERSION_INFO *info, PEAsse
         return FALSE;
     }
 
-#ifndef CROSSGEN_COMPILE
     //
     // Check the processor specific ID
     //
@@ -1096,7 +1095,6 @@ BOOL RuntimeVerifyNativeImageVersion(const CORCOMPILE_VERSION_INFO *info, PEAsse
         RuntimeVerifyLog(LL_ERROR, pLogAsm, W("Required CPU features recorded in native image don't match this machine's processor."));
         return FALSE;
     }
-#endif // CROSSGEN_COMPILE
 
 
     //

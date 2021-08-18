@@ -1776,10 +1776,6 @@ OBJECTREF* GcInfoDecoder::GetStackSlot(
                         PREGDISPLAY     pRD
                         )
 {
-#ifdef CROSSGEN_COMPILE
-    _ASSERTE(!"GcInfoDecoder::GetStackSlot not supported in this build configuration");
-    return NULL;
-#else // CROSSGEN_COMPILE
     OBJECTREF* pObjRef;
 
     if( GC_SP_REL == spBase )
@@ -1811,7 +1807,6 @@ OBJECTREF* GcInfoDecoder::GetStackSlot(
     }
 
     return pObjRef;
-#endif // CROSSGEN_COMPILE
 }
 
 #ifdef DACCESS_COMPILE

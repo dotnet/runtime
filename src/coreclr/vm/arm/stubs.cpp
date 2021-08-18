@@ -260,7 +260,6 @@ void StubLinkerCPU::Init(void)
     new (gThumbNearJump) ThumbNearJump();
 }
 
-#ifndef CROSSGEN_COMPILE
 
 // GC write barrier support.
 //
@@ -518,11 +517,9 @@ void FlushWriteBarrierInstructionCache()
     FlushInstructionCache(GetCurrentProcess(), pbAlteredRange, cbAlteredRange);
 }
 
-#endif // CROSSGEN_COMPILE
 
 #endif // !DACCESS_COMPILE
 
-#ifndef CROSSGEN_COMPILE
 void LazyMachState::unwindLazyState(LazyMachState* baseState,
                                     MachState* unwoundstate,
                                     DWORD threadId,
@@ -723,7 +720,6 @@ void HelperMethodFrame::UpdateRegDisplay(const PREGDISPLAY pRD)
     pRD->pCurrentContextPointers->R11 = m_MachState._R4_R11[7];
     pRD->pCurrentContextPointers->Lr = NULL;
 }
-#endif // !CROSSGEN_COMPILE
 
 TADDR FixupPrecode::GetMethodDesc()
 {
@@ -837,7 +833,6 @@ void ThisPtrRetBufPrecode::Init(MethodDesc* pMD, LoaderAllocator *pLoaderAllocat
 }
 
 
-#ifndef CROSSGEN_COMPILE
 /*
 Rough pseudo-code of interface dispatching:
 
@@ -1375,7 +1370,6 @@ void StubLinkerCPU::ThumbEmitGetThread(ThumbReg dest)
 
 #endif // TARGET_UNIX
 }
-#endif // CROSSGEN_COMPILE
 
 
 // Emits code to adjust for a static delegate target.
@@ -1562,7 +1556,6 @@ VOID StubLinkerCPU::EmitShuffleThunk(ShuffleEntry *pShuffleEntryArray)
     ThumbEmitEpilog();
 }
 
-#ifndef CROSSGEN_COMPILE
 
 void StubLinkerCPU::ThumbEmitTailCallManagedMethod(MethodDesc *pMD)
 {
@@ -1688,7 +1681,6 @@ VOID StubLinkerCPU::EmitComputedInstantiatingMethodStub(MethodDesc* pSharedMD, s
     }
 }
 
-#endif // CROSSGEN_COMPILE
 
 #endif // !DACCESS_COMPILE
 
@@ -1724,7 +1716,6 @@ void UpdateRegDisplayFromCalleeSavedRegisters(REGDISPLAY * pRD, CalleeSavedRegis
     pRD->pCurrentContextPointers->Lr = NULL;
 }
 
-#ifndef CROSSGEN_COMPILE
 void TransitionFrame::UpdateRegDisplay(const PREGDISPLAY pRD)
 {
     pRD->IsCallerContextValid = FALSE;
@@ -1912,7 +1903,6 @@ void HijackFrame::UpdateRegDisplay(const PREGDISPLAY pRD)
      SyncRegDisplayToCurrentContext(pRD);
 }
 #endif // FEATURE_HIJACK
-#endif // !CROSSGEN_COMPILE
 
 class UMEntryThunk * UMEntryThunk::Decode(void *pCallback)
 {
@@ -1972,7 +1962,6 @@ void UMEntryThunkCode::Poison()
 
 #ifndef DACCESS_COMPILE
 
-#ifndef CROSSGEN_COMPILE
 
 extern "C" void STDCALL JIT_PatchedCodeStart();
 extern "C" void STDCALL JIT_PatchedCodeLast();
@@ -1999,7 +1988,6 @@ void InitJITHelpers1()
     }
 }
 
-#endif // CROSSGEN_COMPILE
 
 VOID ResetCurrentContext()
 {
@@ -2048,7 +2036,6 @@ void MovRegImm(BYTE* p, int reg, TADDR imm)
 
 #ifndef DACCESS_COMPILE
 
-#ifndef CROSSGEN_COMPILE
 
 #ifdef FEATURE_READYTORUN
 
@@ -2396,6 +2383,5 @@ PCODE DynamicHelpers::CreateDictionaryLookupHelper(LoaderAllocator * pAllocator,
 }
 #endif // FEATURE_READYTORUN
 
-#endif // CROSSGEN_COMPILE
 
 #endif // !DACCESS_COMPILE

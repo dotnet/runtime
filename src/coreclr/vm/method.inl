@@ -177,13 +177,11 @@ inline CodeVersionManager * MethodDesc::GetCodeVersionManager()
 }
 #endif
 
-#ifndef CROSSGEN_COMPILE
 inline MethodDescBackpatchInfoTracker * MethodDesc::GetBackpatchInfoTracker()
 {
     LIMITED_METHOD_CONTRACT;
     return GetLoaderAllocator()->GetMethodDescBackpatchInfoTracker();
 }
-#endif
 
 #endif  // _METHOD_INL_
 

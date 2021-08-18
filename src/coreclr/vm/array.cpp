@@ -719,7 +719,6 @@ MethodTable* Module::CreateArrayMethodTable(TypeHandle elemTypeHnd, CorElementTy
     return(pMT);
 } // Module::CreateArrayMethodTable
 
-#ifndef CROSSGEN_COMPILE
 
 #ifdef FEATURE_ARRAYSTUB_AS_IL
 
@@ -1247,7 +1246,6 @@ UINT ArrayStubCache::Length(const BYTE *pRawStub)
 
 #endif // FEATURE_ARRAYSTUB_AS_IL
 
-#endif // CROSSGEN_COMPILE
 
 //---------------------------------------------------------------------
 // This method returns TRUE if pInterfaceMT could be one of the interfaces

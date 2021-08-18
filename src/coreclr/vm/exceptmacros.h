@@ -459,12 +459,6 @@ ThrowStackOverflow      COMPlusThrowSO defers to this
 
 void COMPlusCooperativeTransitionHandler(Frame* pFrame);
 
-#ifdef CROSSGEN_COMPILE
-
-#define COOPERATIVE_TRANSITION_BEGIN()
-#define COOPERATIVE_TRANSITION_END()
-
-#else // CROSSGEN_COMPILE
 
 #define COOPERATIVE_TRANSITION_BEGIN()              \
   {                                                 \
@@ -479,7 +473,6 @@ void COMPlusCooperativeTransitionHandler(Frame* pFrame);
     END_GCX_ASSERT_PREEMP;                          \
   }
 
-#endif // CROSSGEN_COMPILE
 
 extern LONG UserBreakpointFilter(EXCEPTION_POINTERS *ep);
 extern LONG DefaultCatchFilter(EXCEPTION_POINTERS *ep, LPVOID pv);

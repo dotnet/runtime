@@ -894,12 +894,10 @@ MethodDesc *ZapSig::DecodeMethod(Module *pInfoModule,
     if (ppTH != NULL)
         *ppTH = thOwner;
 
-#ifndef CROSSGEN_COMPILE
     // Ensure that the methoddescs dependencies have been walked sufficiently for type forwarders to be resolved.
     // This method is actually basically a nop for dependencies which are ngen'd, but is real work for jitted
     // dependencies. (However, this shouldn't be meaningful work that wouldn't happen in any case very soon.)
     pMethod->PrepareForUseAsADependencyOfANativeImage();
-#endif // CROSSGEN_COMPILE
 
     Instantiation inst;
 
