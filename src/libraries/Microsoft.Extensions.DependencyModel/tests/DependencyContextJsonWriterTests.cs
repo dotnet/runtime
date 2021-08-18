@@ -5,9 +5,12 @@ using System.Collections.Generic;
 using System.IO;
 using System.Text;
 using System.Text.Json;
+
 using FluentAssertions;
+
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+
 using Xunit;
 
 namespace Microsoft.Extensions.DependencyModel.Tests
@@ -52,6 +55,71 @@ namespace Microsoft.Extensions.DependencyModel.Tests
                             runtimeLibraries ?? new RuntimeLibrary[0],
                             runtimeGraph ?? new RuntimeFallbacks[0]
                             );
+        }
+
+        [Fact]
+        public void DuplicateEntriesThrowArgumentException()
+        {
+            var context = Create(
+                            "Target",
+                            "Target/runtime",
+                            null,
+                            null,
+                            runtimeLibraries: new[]
+                            {
+                                new RuntimeLibrary(
+                                        "package",
+                                        "PackageName",
+                                        "1.2.3",
+                                        "HASH",
+                                        new [] {
+                                            new RuntimeAssetGroup(string.Empty, "Banana.dll"),
+                                            new RuntimeAssetGroup("win7-x64", "Banana.Win7-x64.dll")
+                                        },
+                                        new [] {
+                                            new RuntimeAssetGroup(string.Empty, "runtimes\\linux\\native\\native.so"),
+                                            new RuntimeAssetGroup("win7-x64", "native\\Banana.Win7-x64.so")
+                                        },
+                                        new [] { new ResourceAssembly("en-US\\Banana.Resource.dll", "en-US")},
+                                        new [] {
+                                            new Dependency("Fruits.Abstract.dll","2.0.0")
+                                        },
+                                        true,
+                                        "PackagePath",
+                                        "PackageHashPath",
+                                        "placeHolderManifest.xml"
+                                    ),
+
+                                new RuntimeLibrary(
+                                        "package",
+                                        "PackageName",
+                                        "1.2.3",
+                                        "HASH",
+                                        new [] {
+                                            new RuntimeAssetGroup(string.Empty, "Banana.dll"),
+                                            new RuntimeAssetGroup("win7-x64", "Banana.Win7-x64.dll")
+                                        },
+                                        new [] {
+                                            new RuntimeAssetGroup(string.Empty, "runtimes\\linux\\native\\native.so"),
+                                            new RuntimeAssetGroup("win7-x64", "native\\Banana.Win7-x64.so")
+                                        },
+                                        new [] { new ResourceAssembly("en-US\\Banana.Resource.dll", "en-US")},
+                                        new [] {
+                                            new Dependency("Fruits.Abstract.dll","2.0.0")
+                                        },
+                                        true,
+                                        "PackagePath",
+                                        "PackageHashPath",
+                                        "placeHolderManifest.xml"
+                                    ),
+                            },
+                            runtimeGraph: new[]
+                            {
+                                new RuntimeFallbacks("win7-x64", new [] { "win6", "win5"}),
+                                new RuntimeFallbacks("win8-x64", new [] { "win7-x64"}),
+                            });
+
+            Assert.Throws<System.ArgumentException>(() => Save(context));
         }
 
         [Fact]
