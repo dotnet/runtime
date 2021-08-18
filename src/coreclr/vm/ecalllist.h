@@ -798,7 +798,7 @@ FCFuncStart(gInteropNativeLibraryFuncs)
     QCFuncElement("LoadByName", NativeLibraryNative::LoadByName)
     QCFuncElement("FreeLib", NativeLibraryNative::FreeLib)
     QCFuncElement("GetSymbol", NativeLibraryNative::GetSymbol)
-	QCFuncElement("GetEntryPointModuleHandleInternal", NativeLibraryNative::GetEntryPointModuleHandle)
+    QCFuncElement("GetEntryPointModuleHandleInternal", NativeLibraryNative::GetEntryPointModuleHandle)
 FCFuncEnd()
 
 FCFuncStart(gTypeLoadExceptionFuncs)

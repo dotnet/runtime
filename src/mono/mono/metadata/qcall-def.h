@@ -16,4 +16,4 @@ FCFuncStart(gInteropNativeLibraryFuncs)
 	QCFuncElement("GetEntryPointModuleHandleInternal", netcore_lookup_self_native_handle)
 FCFuncEnd()
 
-FCClassElement("NativeLibary", "System.Runtime.InteropServices", gInteropNativeLibraryFuncs)
+FCClassElement("NativeLibrary", "System.Runtime.InteropServices", gInteropNativeLibraryFuncs)

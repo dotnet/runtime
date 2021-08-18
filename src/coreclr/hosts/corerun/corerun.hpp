@@ -313,6 +313,7 @@ public:
 #else
 #define DLL_EXPORT
 #endif
+#define CDECL
 #define MAIN main
 #define W(str) str
 #define FAILED(result) (result < 0)

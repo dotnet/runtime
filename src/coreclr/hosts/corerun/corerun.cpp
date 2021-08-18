@@ -555,7 +555,7 @@ int MAIN(const int argc, const char_t* argv[])
     return exit_code;
 }
 
-extern "C" __declspec(dllexport) HRESULT __cdecl GetCurrentClrDetails(void** clrInstance, unsigned int* appDomainId)
+extern "C" DLL_EXPORT HRESULT CDECL GetCurrentClrDetails(void** clrInstance, unsigned int* appDomainId)
 {
     assert(clrInstance != nullptr && appDomainId != nullptr);
     *clrInstance = CurrentClrInstance;
