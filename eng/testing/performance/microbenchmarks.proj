@@ -7,7 +7,7 @@
     <CoreRun>%HELIX_CORRELATION_PAYLOAD%\Core_Root\CoreRun.exe</CoreRun>
     <BaselineCoreRun>%HELIX_CORRELATION_PAYLOAD%\Baseline_Core_Root\CoreRun.exe</BaselineCoreRun>
     
-    <HelixPreCommands>$(HelixPreCommands);call %HELIX_CORRELATION_PAYLOAD%\performance\tools\machine-setup.cmd;set PYTHONPATH=%HELIX_WORKITEM_PAYLOAD%\scripts%3B%HELIX_WORKITEM_PAYLOAD%</HelixPreCommands>
+    <HelixPreCommands>$(HelixPreCommands);call %HELIX_CORRELATION_PAYLOAD%\performance\tools\machine-setup.cmd;set PYTHONPATH=%HELIX_WORKITEM_PAYLOAD%/scripts%3B%HELIX_WORKITEM_PAYLOAD%</HelixPreCommands>
     <ArtifactsDirectory>%HELIX_CORRELATION_PAYLOAD%\artifacts\BenchmarkDotNet.Artifacts</ArtifactsDirectory>
     <BaselineArtifactsDirectory>%HELIX_CORRELATION_PAYLOAD%\artifacts\BenchmarkDotNet.Artifacts_Baseline</BaselineArtifactsDirectory>
     <ResultsComparer>%HELIX_CORRELATION_PAYLOAD%\performance\src\tools\ResultsComparer\ResultsComparer.csproj</ResultsComparer>
@@ -32,7 +32,7 @@
     <Python>python3</Python>
     <CoreRun>$(BaseDirectory)/Core_Root/corerun</CoreRun>
     <BaselineCoreRun>$(BaseDirectory)/Baseline_Core_Root/corerun</BaselineCoreRun>
-    <HelixPreCommands>$(HelixPreCommands);chmod +x $(PerformanceDirectory)/tools/machine-setup.sh;. $(PerformanceDirectory)/tools/machine-setup.sh</HelixPreCommands>
+    <HelixPreCommands>$(HelixPreCommands);chmod +x $(PerformanceDirectory)/tools/machine-setup.sh;. $(PerformanceDirectory)/tools/machine-setup.sh;export PYTHONPATH=$HELIX_WORKITEM_PAYLOAD/scripts:$HELIX_WORKITEM_PAYLOAD</HelixPreCommands>
     <ArtifactsDirectory>$(BaseDirectory)/artifacts/BenchmarkDotNet.Artifacts</ArtifactsDirectory>
     <BaselineArtifactsDirectory>$(BaseDirectory)/artifacts/BenchmarkDotNet.Artifacts_Baseline</BaselineArtifactsDirectory>
     <ResultsComparer>$(PerformanceDirectory)/src/tools/ResultsComparer/ResultsComparer.csproj</ResultsComparer>
