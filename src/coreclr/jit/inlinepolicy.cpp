@@ -476,7 +476,7 @@ bool DefaultPolicy::BudgetCheck() const
 #ifdef DEBUG
     if (m_RootCompiler->compInlineStress())
     {
-        JITDUMP("\nAllowing over-budge for stress mode\n");
+        JITDUMP("\nAllowing over-budget for stress mode\n");
         return false;
     }
 #endif
