@@ -3,6 +3,7 @@
 
 #include "pal_dl.h"
 #include "dlfcn.h"
+#include <stdlib.h>
 
 #ifdef TARGET_ANDROID
 void* SystemNative_GetDefaultSearchOrderPseudoHandle()

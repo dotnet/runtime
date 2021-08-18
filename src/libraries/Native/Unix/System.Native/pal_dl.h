@@ -5,4 +5,4 @@
 
 #include "pal_compiler.h"
 
-PALEXPORT void* SystemNative_GetDefaultSearchOrderPseudoHandle();
+PALEXPORT void* SystemNative_GetDefaultSearchOrderPseudoHandle(void);
