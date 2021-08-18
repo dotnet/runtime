@@ -711,7 +711,6 @@ namespace Microsoft.Extensions.Configuration
                 return config.GetChildren();
             }
 
-
             IEnumerable<IConfigurationSection> children;
             // If configuration's children is an array, the configuration key will be a number
             if (config.GetChildren().Any(a => long.TryParse(a.Key, out _)))
