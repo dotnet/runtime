@@ -49,6 +49,7 @@ set(VM_SOURCES_DAC_AND_WKS_COMMON
     appdomain.cpp
     array.cpp
     assembly.cpp
+    assemblybinder.cpp
     assemblyloadcontext.cpp
     binder.cpp
     bundle.cpp
@@ -147,6 +148,7 @@ set(VM_HEADERS_DAC_AND_WKS_COMMON
     appdomain.inl
     array.h
     assembly.hpp
+    assemblybinder.h
     assemblyloadcontext.h
     binder.h
     castcache.h

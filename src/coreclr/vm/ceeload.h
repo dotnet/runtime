@@ -1970,7 +1970,7 @@ protected:
             mdAssemblyRef       kAssemblyRef,
             IMDInternalImport * pMDImportOverride = NULL,
             BOOL                fDoNotUtilizeExtraChecks = FALSE,
-            ICLRPrivBinder      *pBindingContextForLoadedAssembly = NULL
+            AssemblyBinder      *pBindingContextForLoadedAssembly = NULL
             );
 
 private:

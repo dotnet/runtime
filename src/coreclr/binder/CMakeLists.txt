@@ -6,12 +6,11 @@ include_directories(BEFORE "inc")
 set(BINDER_COMMON_SOURCES
     applicationcontext.cpp
     assembly.cpp
-    assemblybinder.cpp
+    assemblybindercommon.cpp
     assemblyidentitycache.cpp
     assemblyname.cpp
     bindertracing.cpp
-    clrprivbindercoreclr.cpp
-    coreclrbindercommon.cpp
+    defaultassemblybinder.cpp
     failurecache.cpp
     stringlexer.cpp
     textualidentityparser.cpp
@@ -23,7 +22,7 @@ set(BINDER_COMMON_HEADERS
     inc/applicationcontext.inl
     inc/assembly.hpp
     inc/assembly.inl
-    inc/assemblybinder.hpp
+    inc/assemblybindercommon.hpp
     inc/assemblyentry.hpp
     inc/assemblyhashtraits.hpp
     inc/assemblyidentity.hpp
@@ -36,8 +35,7 @@ set(BINDER_COMMON_HEADERS
     inc/bindertracing.h
     inc/bindresult.hpp
     inc/bindresult.inl
-    inc/clrprivbindercoreclr.h
-    inc/coreclrbindercommon.h
+    inc/defaultassemblybinder.h
     inc/failurecache.hpp
     inc/failurecachehashtraits.hpp
     inc/loadcontext.hpp
@@ -51,13 +49,13 @@ set(BINDER_COMMON_HEADERS
 set(BINDER_SOURCES
     ${BINDER_COMMON_SOURCES}
     activitytracker.cpp
-    clrprivbinderassemblyloadcontext.cpp
+    customassemblybinder.cpp
 )
 
 set(BINDER_HEADERS
     ${BINDER_COMMON_HEADERS}
     inc/activitytracker.h
-    inc/clrprivbinderassemblyloadcontext.h
+    inc/customassemblybinder.h
     inc/contextentry.hpp
 )
 

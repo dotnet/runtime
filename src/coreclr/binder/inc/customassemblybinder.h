@@ -2,56 +2,48 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 
-#ifndef __CLRPRIVBINDERASSEMBLYLOADCONTEXT_H__
-#define __CLRPRIVBINDERASSEMBLYLOADCONTEXT_H__
+#ifndef __CUSTOM_ASSEMBLY_BINDER_H__
+#define __CUSTOM_ASSEMBLY_BINDER_H__
 
 #include "applicationcontext.hpp"
-#include "clrprivbindercoreclr.h"
+#include "defaultassemblybinder.h"
 
 #if !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
 
-class LoaderAllocator;
+class AssemblyLoaderAllocator;
 class PEImage;
 
-class CLRPrivBinderAssemblyLoadContext : public AssemblyLoadContext
+class CustomAssemblyBinder final : public AssemblyLoadContext
 {
 public:
 
     //=========================================================================
-    // ICLRPrivBinder functions
+    // AssemblyBinder functions
     //-------------------------------------------------------------------------
-    STDMETHOD(BindAssemblyByName)(
-            /* [in] */ struct AssemblyNameData *pAssemblyNameData,
-            /* [retval][out] */ ICLRPrivAssembly **ppAssembly);
+    HRESULT BindUsingPEImage(PEImage* pPEImage,
+        BOOL fIsNativeImage,
+        BINDER_SPACE::Assembly** ppAssembly);
 
-    STDMETHOD(GetLoaderAllocator)(
-        /* [retval][out] */ LPVOID *pLoaderAllocator);
+    HRESULT BindUsingAssemblyName(BINDER_SPACE::AssemblyName* pAssemblyName,
+        BINDER_SPACE::Assembly** ppAssembly);
+
+    AssemblyLoaderAllocator* GetLoaderAllocator();
 
 public:
     //=========================================================================
     // Class functions
     //-------------------------------------------------------------------------
 
-    static HRESULT SetupContext(DWORD      dwAppDomainId,
-                                CLRPrivBinderCoreCLR *pTPABinder,
-                                LoaderAllocator* pLoaderAllocator,
+    CustomAssemblyBinder();
+
+    static HRESULT SetupContext(DefaultAssemblyBinder *pTPABinder,
+                                AssemblyLoaderAllocator* pLoaderAllocator,
                                 void* loaderAllocatorHandle,
                                 UINT_PTR ptrAssemblyLoadContext,
-                                CLRPrivBinderAssemblyLoadContext **ppBindContext);
+                                CustomAssemblyBinder **ppBindContext);
 
     void PrepareForLoadContextRelease(INT_PTR ptrManagedStrongAssemblyLoadContext);
     void ReleaseLoadContext();
-
-    CLRPrivBinderAssemblyLoadContext();
-
-    inline BINDER_SPACE::ApplicationContext *GetAppContext()
-    {
-        return &m_appContext;
-    }
-
-    HRESULT BindUsingPEImage( /* in */ PEImage *pPEImage,
-                              /* in */ BOOL fIsNativeImage,
-                              /* [retval][out] */ ICLRPrivAssembly **ppAssembly);
 
     //=========================================================================
     // Internal implementation details
@@ -59,9 +51,7 @@ public:
 private:
     HRESULT BindAssemblyByNameWorker(BINDER_SPACE::AssemblyName *pAssemblyName, BINDER_SPACE::Assembly **ppCoreCLRFoundAssembly);
 
-    BINDER_SPACE::ApplicationContext m_appContext;
-
-    CLRPrivBinderCoreCLR *m_pTPABinder;
+    DefaultAssemblyBinder *m_pTPABinder;
 
     // A strong GC handle to the managed AssemblyLoadContext. This handle is set when the unload of the AssemblyLoadContext is initiated
     // to keep the managed AssemblyLoadContext alive until the unload is finished.
@@ -69,9 +59,9 @@ private:
     // to refer to it during the whole lifetime of the AssemblyLoadContext.
     INT_PTR m_ptrManagedStrongAssemblyLoadContext;
 
-    LoaderAllocator* m_pAssemblyLoaderAllocator;
+    AssemblyLoaderAllocator* m_pAssemblyLoaderAllocator;
     void* m_loaderAllocatorHandle;
 };
 
 #endif // !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
-#endif // __CLRPRIVBINDERASSEMBLYLOADCONTEXT_H__
+#endif // __CUSTOM_ASSEMBLY_BINDER_H__
