@@ -637,9 +637,6 @@ HRESULT EEToProfInterfaceImpl::CreateProfiler(
     }
     CONTRACTL_END;
 
-    // Always called before Thread created.
-    _ASSERTE(GetThreadNULLOk() == NULL);
-
     // Try and CoCreate the registered profiler
     ReleaseHolder<ICorProfilerCallback2> pCallback2;
     HModuleHolder hmodProfilerDLL;
@@ -2771,10 +2768,6 @@ HRESULT EEToProfInterfaceImpl::InitializeForAttach(void * pvClientData, UINT cbC
 
     _ASSERTE(m_pProfToEE != NULL);
 
-    // Attach initialization occurs on the AttachThread, which does not have an EEThread
-    // object
-    _ASSERTE(GetThreadNULLOk() == NULL);
-
     // Should only be called on profilers that support ICorProfilerCallback3
     _ASSERTE(m_pCallback3 != NULL);
 
@@ -2825,10 +2818,6 @@ HRESULT EEToProfInterfaceImpl::ProfilerAttachComplete()
     CLR_TO_PROFILER_ENTRYPOINT((LF_CORPROF,
                                 LL_INFO10,
                                 "**PROF: Calling profiler's ProfilerAttachComplete() method.\n"));
-
-    // Attach initialization occurs on the AttachThread, which does not have an EEThread
-    // object
-    _ASSERTE(GetThreadNULLOk() == NULL);
 
     // Should only be called on profilers that support ICorProfilerCallback3
     _ASSERTE(m_pCallback3 != NULL);

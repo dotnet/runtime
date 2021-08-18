@@ -37,7 +37,7 @@ jobs:
 
   - script: ${{ parameters.sourceIndexBuildCommand }}
     displayName: Build Repository
-    
+
   - script: |
       dotnet tool install BinLogToSln --version $(SourceIndexPackageVersion) --add-source $(SourceIndexPackageSource) --tool-path .source-index/tools
       dotnet tool install UploadIndexStage1 --version $(SourceIndexPackageVersion) --add-source $(SourceIndexPackageSource) --tool-path .source-index/tools

@@ -68,7 +68,6 @@ jobs:
     - MacCatalyst_x64
     - iOSSimulator_x64
     - tvOSSimulator_x64
-    - tvOS_arm64
     # don't run tests on arm64 PRs until we can get significantly more devices
     - ${{ if eq(variables['isFullMatrix'], true) }}:
       - MacCatalyst_arm64

@@ -1,7 +1,7 @@
 ﻿<Project>
   <Import Project="..\Directory.Build.props" />
   <PropertyGroup>
-    <AssemblyVersion>$([MSBuild]::Add($(MajorVersion), 5)).$(MinorVersion).0.0</AssemblyVersion>
+    <AssemblyVersion>$([MSBuild]::Add($(PreviousReleaseMajorVersion), 5)).$(MinorVersion).0.0</AssemblyVersion>
     <StrongNameKeyId>Microsoft</StrongNameKeyId>
     <IncludePlatformAttributes>true</IncludePlatformAttributes>
   </PropertyGroup>

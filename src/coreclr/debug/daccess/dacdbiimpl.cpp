@@ -6452,7 +6452,10 @@ HRESULT DacHeapWalker::MoveToNextObject()
         mCurrObj += mCurrSize;
 
         // Check to see if we are in the correct bounds.
-        if (mHeaps[mCurrHeap].Gen0Start <= mCurrObj && mHeaps[mCurrHeap].Gen0End > mCurrObj)
+        bool isGen0 = IsRegion() ? (mHeaps[mCurrHeap].Segments[mCurrSeg].Generation == 0) : 
+                                   (mHeaps[mCurrHeap].Gen0Start <= mCurrObj && mHeaps[mCurrHeap].Gen0End > mCurrObj);
+
+        if (isGen0)
             CheckAllocAndSegmentRange();
 
         // Check to see if we've moved off the end of a segment
@@ -6541,7 +6544,10 @@ HRESULT DacHeapWalker::NextSegment()
 
         mCurrObj = mHeaps[mCurrHeap].Segments[mCurrSeg].Start;
 
-        if (mHeaps[mCurrHeap].Gen0Start <= mCurrObj && mHeaps[mCurrHeap].Gen0End > mCurrObj)
+        bool isGen0 = IsRegion() ? (mHeaps[mCurrHeap].Segments[mCurrSeg].Generation == 0) : 
+                                   (mHeaps[mCurrHeap].Gen0Start <= mCurrObj && mHeaps[mCurrHeap].Gen0End > mCurrObj);
+
+        if (isGen0)
             CheckAllocAndSegmentRange();
 
         if (!mCache.ReadMT(mCurrObj, &mCurrMT))
@@ -6723,54 +6729,107 @@ HRESULT DacHeapWalker::ListNearObjects(CORDB_ADDRESS obj, CORDB_ADDRESS *pPrev, 
 
 HRESULT DacHeapWalker::InitHeapDataWks(HeapData *&pHeaps, size_t &pCount)
 {
+    bool regions = IsRegion();
+
     // Scrape basic heap details
     pCount = 1;
     pHeaps = new (nothrow) HeapData[1];
     if (pHeaps == NULL)
         return E_OUTOFMEMORY;
 
-    dac_generation gen0 = *GenerationTableIndex(g_gcDacGlobals->generation_table, 0);
-    dac_generation gen1 = *GenerationTableIndex(g_gcDacGlobals->generation_table, 1);
-    dac_generation gen2 = *GenerationTableIndex(g_gcDacGlobals->generation_table, 2);
-    dac_generation loh  = *GenerationTableIndex(g_gcDacGlobals->generation_table, 3);
-    dac_generation poh  = *GenerationTableIndex(g_gcDacGlobals->generation_table, 4);
+    dac_generation gen0 = GenerationTableIndex(g_gcDacGlobals->generation_table, 0);
+    dac_generation gen1 = GenerationTableIndex(g_gcDacGlobals->generation_table, 1);
+    dac_generation gen2 = GenerationTableIndex(g_gcDacGlobals->generation_table, 2);
+    dac_generation loh  = GenerationTableIndex(g_gcDacGlobals->generation_table, 3);
+    dac_generation poh  = GenerationTableIndex(g_gcDacGlobals->generation_table, 4);
 
     pHeaps[0].YoungestGenPtr = (CORDB_ADDRESS)gen0.allocation_context.alloc_ptr;
     pHeaps[0].YoungestGenLimit = (CORDB_ADDRESS)gen0.allocation_context.alloc_limit;
 
-    pHeaps[0].Gen0Start = (CORDB_ADDRESS)gen0.allocation_start;
-    pHeaps[0].Gen0End = (CORDB_ADDRESS)*g_gcDacGlobals->alloc_allocated;
-    pHeaps[0].Gen1Start = (CORDB_ADDRESS)gen1.allocation_start;
+    if (!regions)
+    {
+        pHeaps[0].Gen0Start = (CORDB_ADDRESS)gen0.allocation_start;
+        pHeaps[0].Gen0End = (CORDB_ADDRESS)*g_gcDacGlobals->alloc_allocated;
+        pHeaps[0].Gen1Start = (CORDB_ADDRESS)gen1.allocation_start;
+    }
 
     // Segments
     int count = GetSegmentCount(loh.start_segment);
     count += GetSegmentCount(poh.start_segment);
     count += GetSegmentCount(gen2.start_segment);
+    if (regions)
+    {
+        count += GetSegmentCount(gen1.start_segment);
+        count += GetSegmentCount(gen0.start_segment);
+    }
 
     pHeaps[0].SegmentCount = count;
     pHeaps[0].Segments = new (nothrow) SegmentData[count];
     if (pHeaps[0].Segments == NULL)
         return E_OUTOFMEMORY;
 
-    // Small object heap segments
-    DPTR(dac_heap_segment) seg = gen2.start_segment;
+    DPTR(dac_heap_segment) seg;
     int i = 0;
-    for (; seg && (i < count); ++i)
-    {
-        pHeaps[0].Segments[i].Start = (CORDB_ADDRESS)seg->mem;
-        if (seg.GetAddr() == (TADDR)*g_gcDacGlobals->ephemeral_heap_segment)
-        {
-            pHeaps[0].Segments[i].End = (CORDB_ADDRESS)*g_gcDacGlobals->alloc_allocated;
-            pHeaps[0].Segments[i].Generation = 1;
-            pHeaps[0].EphemeralSegment = i;
-        }
-        else
-        {
-            pHeaps[0].Segments[i].End = (CORDB_ADDRESS)seg->allocated;
-            pHeaps[0].Segments[i].Generation = 2;
-        }
 
-        seg = seg->next;
+    // Small object heap segments
+    if (regions)
+    {
+        seg = gen2.start_segment;
+        for (; seg && (i < count); ++i)
+        {
+            pHeaps[0].Segments[i].Generation = 2;
+            pHeaps[0].Segments[i].Start = (CORDB_ADDRESS)seg->mem;
+            pHeaps[0].Segments[i].End = (CORDB_ADDRESS)seg->allocated;
+
+            seg = seg->next;
+        }
+        seg = gen1.start_segment;
+        for (; seg && (i < count); ++i)
+        {
+            pHeaps[0].Segments[i].Generation = 1;
+            pHeaps[0].Segments[i].Start = (CORDB_ADDRESS)seg->mem;
+            pHeaps[0].Segments[i].End = (CORDB_ADDRESS)seg->allocated;
+
+            seg = seg->next;
+        }
+        seg = gen0.start_segment;
+        for (; seg && (i < count); ++i)
+        {
+            pHeaps[0].Segments[i].Start = (CORDB_ADDRESS)seg->mem;
+            if (seg.GetAddr() == (TADDR)*g_gcDacGlobals->ephemeral_heap_segment)
+            {
+                pHeaps[0].Segments[i].End = (CORDB_ADDRESS)*g_gcDacGlobals->alloc_allocated;
+                pHeaps[0].EphemeralSegment = i;
+            }
+            else
+            {
+                pHeaps[0].Segments[i].End = (CORDB_ADDRESS)seg->allocated;
+            }
+            pHeaps[0].Segments[i].Generation = 0;
+
+            seg = seg->next;
+        }
+    }
+    else
+    {
+        DPTR(dac_heap_segment) seg = gen2.start_segment;
+        for (; seg && (i < count); ++i)
+        {
+            pHeaps[0].Segments[i].Start = (CORDB_ADDRESS)seg->mem;
+            if (seg.GetAddr() == (TADDR)*g_gcDacGlobals->ephemeral_heap_segment)
+            {
+                pHeaps[0].Segments[i].End = (CORDB_ADDRESS)*g_gcDacGlobals->alloc_allocated;
+                pHeaps[0].Segments[i].Generation = 1;
+                pHeaps[0].EphemeralSegment = i;
+            }
+            else
+            {
+                pHeaps[0].Segments[i].End = (CORDB_ADDRESS)seg->allocated;
+                pHeaps[0].Segments[i].Generation = 2;
+            }
+
+            seg = seg->next;
+        }
     }
 
     // Large object heap segments
@@ -6880,6 +6939,8 @@ HRESULT DacDbiInterfaceImpl::GetHeapSegments(OUT DacDbiArrayList<COR_SEGMENT> *p
     size_t heapCount = 0;
     HeapData *heaps = 0;
 
+    bool region = IsRegion();
+
 #ifdef FEATURE_SVR_GC
     HRESULT hr = GCHeapUtilities::IsServerHeap() ? DacHeapWalker::InitHeapDataSvr(heaps, heapCount) : DacHeapWalker::InitHeapDataWks(heaps, heapCount);
 #else
@@ -6892,16 +6953,20 @@ HRESULT DacDbiInterfaceImpl::GetHeapSegments(OUT DacDbiArrayList<COR_SEGMENT> *p
     int total = 0;
     for (size_t i = 0; i < heapCount; ++i)
     {
-        // SegmentCount is +1 due to the ephemeral segment containing more than one
-        // generation (Gen1 + Gen0, and sometimes part of Gen2).
-        total += (int)heaps[i].SegmentCount + 1;
-
-        // It's possible that part of Gen2 lives on the ephemeral segment.  If so,
-        // we need to add one more to the output.
-        const size_t eph = heaps[i].EphemeralSegment;
-        _ASSERTE(eph < heaps[i].SegmentCount);
-        if (heaps[i].Segments[eph].Start != heaps[i].Gen1Start)
+        total += (int)heaps[i].SegmentCount;
+        if (!region)
+        {
+            // SegmentCount is +1 due to the ephemeral segment containing more than one
+            // generation (Gen1 + Gen0, and sometimes part of Gen2).
             total++;
+
+            // It's possible that part of Gen2 lives on the ephemeral segment.  If so,
+            // we need to add one more to the output.
+            const size_t eph = heaps[i].EphemeralSegment;
+            _ASSERTE(eph < heaps[i].SegmentCount);
+            if (heaps[i].Segments[eph].Start != heaps[i].Gen1Start)
+                total++;
+        }        
     }
 
     pSegments->Alloc(total);
@@ -6910,9 +6975,10 @@ HRESULT DacDbiInterfaceImpl::GetHeapSegments(OUT DacDbiArrayList<COR_SEGMENT> *p
     int curr = 0;
     for (size_t i = 0; i < heapCount; ++i)
     {
-        // Generation 0 is not in the segment list.
         _ASSERTE(curr < total);
+        if (!region)
         {
+            // Generation 0 is not in the segment list.
             COR_SEGMENT &seg = (*pSegments)[curr++];
             seg.start = heaps[i].Gen0Start;
             seg.end = heaps[i].Gen0End;
@@ -6922,7 +6988,16 @@ HRESULT DacDbiInterfaceImpl::GetHeapSegments(OUT DacDbiArrayList<COR_SEGMENT> *p
 
         for (size_t j = 0; j < heaps[i].SegmentCount; ++j)
         {
-            if (heaps[i].Segments[j].Generation == 1)
+            if (region)
+            {
+                _ASSERTE(curr < total);
+                COR_SEGMENT &seg = (*pSegments)[curr++];
+                seg.start = heaps[i].Segments[j].Start;
+                seg.end = heaps[i].Segments[j].End;
+                seg.type = (CorDebugGenerationTypes)heaps[i].Segments[j].Generation;
+                seg.heap = (ULONG)i;
+            }
+            else if (heaps[i].Segments[j].Generation == 1)
             {
                 // This is the ephemeral segment.  We have already written Gen0,
                 // now write Gen1.

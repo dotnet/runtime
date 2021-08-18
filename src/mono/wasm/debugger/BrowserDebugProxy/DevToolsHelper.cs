@@ -214,14 +214,14 @@ namespace Microsoft.WebAssembly.Diagnostics
 
     internal class Frame
     {
-        public Frame(MethodInfo method, SourceLocation location, int id)
+        public Frame(MethodInfoWithDebugInformation method, SourceLocation location, int id)
         {
             this.Method = method;
             this.Location = location;
             this.Id = id;
         }
 
-        public MethodInfo Method { get; private set; }
+        public MethodInfoWithDebugInformation Method { get; private set; }
         public SourceLocation Location { get; private set; }
         public int Id { get; private set; }
     }
@@ -269,7 +269,7 @@ namespace Microsoft.WebAssembly.Diagnostics
 
     internal class ExecutionContext
     {
-        public string DebuggerId { get; set; }
+        public string DebugId { get; set; }
         public Dictionary<string, BreakpointRequest> BreakpointRequests { get; } = new Dictionary<string, BreakpointRequest>();
 
         public TaskCompletionSource<DebugStore> ready;

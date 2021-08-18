@@ -9545,14 +9545,16 @@ HRESULT ProfToEEInterfaceImpl::RequestProfilerDetach(DWORD dwExpectedCompletionM
     }
     CONTRACTL_END;
 
-    PROFILER_TO_CLR_ENTRYPOINT_SYNC_EX(
+    PROFILER_TO_CLR_ENTRYPOINT_ASYNC_EX(
         kP2EEAllowableAfterAttach | kP2EETriggers,
         (LF_CORPROF,
         LL_INFO1000,
         "**PROF: RequestProfilerDetach.\n"));
 
 #ifdef FEATURE_PROFAPI_ATTACH_DETACH
-    return ProfilingAPIDetach::RequestProfilerDetach(g_profControlBlock.GetProfilerInfo(this), dwExpectedCompletionMilliseconds);
+    ProfilerInfo *pProfilerInfo = g_profControlBlock.GetProfilerInfo(this);
+    _ASSERTE(pProfilerInfo != NULL);
+    return ProfilingAPIDetach::RequestProfilerDetach(pProfilerInfo, dwExpectedCompletionMilliseconds);
 #else // FEATURE_PROFAPI_ATTACH_DETACH
     return E_NOTIMPL;
 #endif // FEATURE_PROFAPI_ATTACH_DETACH

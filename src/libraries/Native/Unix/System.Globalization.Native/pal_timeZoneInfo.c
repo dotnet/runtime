@@ -223,7 +223,7 @@ static void FixupTimeZoneGenericDisplayName(const char* locale, const UChar* tim
         }
 
         // Make a UChar[] version of the test time zone id for use in the API calls.
-        u_uastrcpy(testTimeZoneId, testId);
+        u_uastrncpy(testTimeZoneId, testId, TZID_LENGTH);
 
         // Get the standard name from the test time zone.
         GetTimeZoneDisplayName_FromCalendar(locale, testTimeZoneId, timestamp, UCAL_STANDARD, testDisplayName, DISPLAY_NAME_LENGTH, err);
