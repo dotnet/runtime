@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Diagnostics.Tracing;
 using System.IO;
@@ -51,7 +52,6 @@ namespace System
             {
                 lock (s_dataStore)
                 {
-                    var dataStore = s_dataStore;
                     if (s_switches is not null)
                     {
                         lock (s_switches)
@@ -66,10 +66,11 @@ namespace System
 
                     void LogDataStore(Dictionary<string, bool>? switches)
                     {
-                        foreach (var (k, v) in dataStore)
+                        Debug.Assert(s_dataStore is not null);
+                        foreach (var (k, v) in s_dataStore)
                         {
                             if (v is string s && bool.TryParse(s, out bool isEnabled) &&
-                                switches?.ContainsKey(s) != true)
+                                switches?.ContainsKey(k) != true)
                             {
                                 ev.LogAppContextSwitch(k, isEnabled ? 1 : 0);
                             }
