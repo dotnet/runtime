@@ -237,6 +237,20 @@ string.Format(@"<?xml version=""1.0"" encoding=""utf-8""?>
         Assert.StrictEqual(x.P1, y.P1);
     }
 
+#if !XMLSERIALIZERGENERATORTESTS
+    [Fact]
+    public static void Xml_EnumAsObject()
+    {
+        object o = MyEnum.Three;
+        object o2 = SerializeAndDeserialize<object>(o,
+@"<?xml version=""1.0"" encoding=""utf-8""?>
+<anyType xmlns:q1=""http://www.w3.org/2001/XMLSchema"" p2:type=""q1:int"" xmlns:p2=""http://www.w3.org/2001/XMLSchema-instance"">2</anyType>");
+        Assert.NotNull(o2);
+        Assert.StrictEqual((int)o, o2);
+        Assert.Equal(MyEnum.Three, (MyEnum)o2);
+    }
+#endif
+
     [Fact]
     public static void Xml_DCClassWithEnumAndStruct()
     {

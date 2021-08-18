@@ -24,12 +24,12 @@
       </trans-unit>
       <trans-unit id="MultipleJsonConstructorAttributeFormat">
         <source>Type '{0}' has multiple constructors annotated with 'JsonConstructorAttribute'.</source>
-        <target state="new">Type '{0}' has multiple constructors annotated with 'JsonConstructorAttribute'.</target>
+        <target state="translated">型 '{0}' には、'JsonConstructorAttribute' で注釈が付けられた複数のコンストラクターがあります。</target>
         <note />
       </trans-unit>
       <trans-unit id="MultipleJsonConstructorAttributeTitle">
         <source>Type has multiple constructors annotated with JsonConstructorAttribute.</source>
-        <target state="new">Type has multiple constructors annotated with JsonConstructorAttribute.</target>
+        <target state="translated">型には、JsonConstructorAttribute で注釈が付けられた複数のコンストラクターがあります。</target>
         <note />
       </trans-unit>
       <trans-unit id="TypeNotSupportedMessageFormat">

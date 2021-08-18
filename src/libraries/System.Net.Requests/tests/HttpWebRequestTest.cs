@@ -24,12 +24,14 @@ namespace System.Net.Tests
 {
     using Configuration = System.Net.Test.Common.Configuration;
 
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/57506", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoRuntime), nameof(PlatformDetection.IsMariner))]
     public sealed class HttpWebRequestTest_Async : HttpWebRequestTest
     {
         public HttpWebRequestTest_Async(ITestOutputHelper output) : base(output) { }
         protected override Task<WebResponse> GetResponseAsync(HttpWebRequest request) => request.GetResponseAsync();
     }
 
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/57506", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoRuntime), nameof(PlatformDetection.IsMariner))]
     public sealed class HttpWebRequestTest_Sync : HttpWebRequestTest
     {
         public HttpWebRequestTest_Sync(ITestOutputHelper output) : base(output) { }

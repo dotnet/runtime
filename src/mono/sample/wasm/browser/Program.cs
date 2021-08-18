@@ -4,6 +4,7 @@
 using System;
 using System.Runtime.CompilerServices;
 using System.Diagnostics;
+using System.Collections.Generic;
 
 namespace Sample
 {
@@ -37,6 +38,28 @@ namespace Sample
             }
         }
 
+        [DebuggerTypeProxy(typeof(TheProxy))]
+        class WithProxy
+        {
+            public string Val1 {
+                get { return "one"; }
+            }
+        }
+
+        class TheProxy
+        {
+            WithProxy wp;
+
+            public TheProxy (WithProxy wp)
+            {
+                this.wp = wp;
+            }
+
+            public string Val2 {
+                get { return wp.Val1; }
+            }
+        }
+
         public static void Main(string[] args)
         {
             Console.WriteLine ("Hello, World!");
@@ -45,10 +68,8 @@ namespace Sample
         [MethodImpl(MethodImplOptions.NoInlining)]
         public static int TestMeaning()
         {
-            var a = new WithDisplayString();
-            var c = new DebuggerDisplayMethodTest();
-            Console.WriteLine(a);
-            Console.WriteLine(c);
+            List<int> myList = new List<int>{ 1, 2, 3, 4 };
+            Console.WriteLine(myList);
             return 42;
         }
     }
