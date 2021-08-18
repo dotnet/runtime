@@ -210,7 +210,7 @@ namespace Microsoft.Extensions.DependencyModel
             }
 
             return new DependencyContext(
-                new TargetInfo(framework, runtime, runtimeSignature ?? string.Empty, isPortable),
+                new TargetInfo(framework, runtime, runtimeSignature, isPortable),
                 compilationOptions,
                 CreateLibraries(compileTarget?.Libraries, false, libraryStubs).Cast<CompilationLibrary>().ToArray(),
                 CreateLibraries(runtimeTarget.Libraries, true, libraryStubs).Cast<RuntimeLibrary>().ToArray(),
