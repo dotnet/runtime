@@ -702,9 +702,6 @@ PTR_GSCookie GetProcessGSCookiePtr() { return  PTR_GSCookie(&s_gsCookie); }
 inline
 GSCookie GetProcessGSCookie() { return *(RAW_KEYWORD(volatile) GSCookie *)(&s_gsCookie); }
 
-class CEECompileInfo;
-extern CEECompileInfo *g_pCEECompileInfo;
-
 #ifdef FEATURE_READYTORUN_COMPILER
 extern bool g_fReadyToRunCompilation;
 extern bool g_fLargeVersionBubble;

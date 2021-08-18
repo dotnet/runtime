@@ -174,19 +174,6 @@ public:
 #ifndef DACCESS_COMPILE
     // Inserts a method-stub pair into the hash table
     VOID InsertMethodDesc(MethodDesc *pMD, MethodDesc *pStubMD);
-
-    void Save(DataImage *image, CorProfileData *profileData);
-    void Fixup(DataImage *image);
-
-    bool ShouldSave(DataImage *pImage, StubMethodHashEntry_t *pEntry);
-
-    bool IsHotEntry(StubMethodHashEntry_t *pEntry, CorProfileData *pProfileData)
-    { LIMITED_METHOD_CONTRACT; return true; }
-
-    bool SaveEntry(DataImage *pImage, CorProfileData *pProfileData, StubMethodHashEntry_t *pOldEntry, StubMethodHashEntry_t *pNewEntry, EntryMappingTable *pMap)
-    { LIMITED_METHOD_CONTRACT; return false; }
-
-    void FixupEntry(DataImage *pImage, StubMethodHashEntry_t *pEntry, void *pFixupBase, DWORD cbFixupOffset);
 #endif // !DACCESS_COMPILE
 
 #ifdef DACCESS_COMPILE

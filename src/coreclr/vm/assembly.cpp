@@ -34,10 +34,6 @@
 #include "assemblynative.hpp"
 #include "threadsuspend.h"
 
-#ifdef FEATURE_PREJIT
-#include "corcompile.h"
-#endif
-
 #include "appdomainnative.hpp"
 #include "customattribute.h"
 #include "winnls.h"

@@ -391,10 +391,6 @@ public:
 #endif
 
 #ifdef FEATURE_PREJIT
-
-    void Save(DataImage *image, MethodTable *pMT, DWORD profilingFlags) const;
-    void Fixup(DataImage *image, MethodTable *pMT, BOOL needsRestore);
-
     inline BOOL IsFixedUp() const
     {
         LIMITED_METHOD_CONTRACT;
@@ -945,41 +941,6 @@ public:
     // This is done by forcing a class load which in turn calls the Restore method
     // The pending list is required for restoring types that reference themselves through
     // instantiations of the superclass or interfaces e.g. System.Int32 : IComparable<System.Int32>
-
-
-#ifdef FEATURE_PREJIT
-
-    void Save(DataImage *image, DWORD profilingFlags);
-    void Fixup(DataImage *image);
-
-    // This is different from !IsRestored() in that it checks if restoring
-    // will ever be needed for this ngened data-structure.
-    // This is to be used at ngen time of a dependent module to determine
-    // if it can be accessed directly, or if the restoring mechanism needs
-    // to be hooked in.
-    BOOL ComputeNeedsRestore(DataImage *image, TypeHandleList *pVisited);
-
-    BOOL NeedsRestore(DataImage *image)
-    {
-        WRAPPER_NO_CONTRACT;
-        return ComputeNeedsRestore(image, NULL);
-    }
-
-private:
-    BOOL ComputeNeedsRestoreWorker(DataImage *image, TypeHandleList *pVisited);
-
-public:
-    // This returns true at NGen time if we can eager bind to all dictionaries along the inheritance chain
-    BOOL CanEagerBindToParentDictionaries(DataImage *image, TypeHandleList *pVisited);
-
-    // This returns true at NGen time if we may need to attach statics to
-    // other module than current loader module at runtime
-    BOOL NeedsCrossModuleGenericsStaticsInfo();
-
-    // Returns true at NGen time if we may need to write into the MethodTable at runtime
-    BOOL IsWriteable();
-
-#endif // FEATURE_PREJIT
 
     void AllocateRegularStaticBoxes();
     static OBJECTREF AllocateStaticBox(MethodTable* pFieldMT, BOOL fPinned, OBJECTHANDLE* pHandle = 0);
@@ -1535,7 +1496,6 @@ public:
 
 #ifdef FEATURE_PREJIT
     static BOOL CanShareVtableChunksFrom(MethodTable *pTargetMT, Module *pCurrentLoaderModule, Module *pCurrentPreferredZapModule);
-    BOOL CanInternVtableChunk(DataImage *image, VtableIndirectionSlotIterator it);
 #else
     static BOOL CanShareVtableChunksFrom(MethodTable *pTargetMT, Module *pCurrentLoaderModule);
 #endif
@@ -2340,12 +2300,6 @@ public:
     // GetExtraInterfaceInfoSize() returned zero, this call must still be made (with a NULL argument).
     void InitializeExtraInterfaceInfo(PVOID pInfo);
 
-#ifdef FEATURE_PREJIT
-    // Ngen support.
-    void SaveExtraInterfaceInfo(DataImage *pImage);
-    void FixupExtraInterfaceInfo(DataImage *pImage);
-#endif // FEATURE_PREJIT
-
 #ifdef DACCESS_COMPILE
     void EnumMemoryRegionsForExtraInterfaceInfo();
 #endif // DACCESS_COMPILE
@@ -2973,21 +2927,6 @@ public:
     // (The instantiation is stored in the initial slots of the dictionary)
     // If not instantiated, return NULL
     PTR_Dictionary GetDictionary();
-
-#ifdef FEATURE_PREJIT
-    //
-    // After the zapper compiles all code in a module it may attempt
-    // to populate entries in all dictionaries
-    // associated with generic types.  This is an optional step - nothing will
-    // go wrong at runtime except we may get more one-off calls to JIT_GenericHandle.
-    // Although these are one-off we prefer to avoid them since they touch metadata
-    // pages.
-    //
-    // Fully populating a dictionary may in theory load more types. However
-    // for the moment only those entries that refer to types that
-    // are already loaded will be filled in.
-    void PrepopulateDictionary(DataImage * image, BOOL nonExpansive);
-#endif // FEATURE_PREJIT
 
     // Return a substitution suitbale for interpreting
     // the metadata in parent class, assuming we already have a subst.

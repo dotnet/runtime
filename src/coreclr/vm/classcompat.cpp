@@ -45,7 +45,6 @@
 #include "eeconfig.h"
 #include "contractimpl.h"
 #include "prettyprintsig.h"
-#include "compile.h"
 
 #include "comcallablewrapper.h"
 #include "clrtocomcall.h"
@@ -2591,7 +2590,7 @@ VOID    MethodTableBuilder::EnumerateClassMethods()
 
         // Some interface checks.
         // We only need them if default interface method support is disabled or if this is fragile crossgen
-#if !defined(FEATURE_DEFAULT_INTERFACES) || defined(FEATURE_NATIVE_IMAGE_GENERATION)
+#if !defined(FEATURE_DEFAULT_INTERFACES)
         if (fIsClassInterface
 #if defined(FEATURE_DEFAULT_INTERFACES)
             // Only fragile crossgen wasn't upgraded to deal with default interface methods.
@@ -2615,7 +2614,7 @@ VOID    MethodTableBuilder::EnumerateClassMethods()
                 }
             }
         }
-#endif // !defined(FEATURE_DEFAULT_INTERFACES) || defined(FEATURE_NATIVE_IMAGE_GENERATION)
+#endif // !defined(FEATURE_DEFAULT_INTERFACES)
 
         // No synchronized methods in ValueTypes
         if(fIsClassValueType && IsMiSynchronized(dwImplFlags))
