@@ -36,9 +36,11 @@ using (var myListener = new RuntimeEventListener())
 
 public class RuntimeEventListener : EventListener
 {
-    private readonly Dictionary<string, bool> observedEvents = new Dictionary<string, bool>() {
-        { "appContextSwitch", false },
-        { "appContextBoolAsStringData", false },
+    private readonly Dictionary<string, bool> _observedEvents = new Dictionary<string, bool>();
+
+    private static readonly string[] s_expectedEvents = new[] {
+        "appContextSwitch",
+        "appContextBoolAsStringData",
     };
 
     private static readonly string[] s_unexpectedEvents = new[] {
@@ -58,32 +60,32 @@ public class RuntimeEventListener : EventListener
     {
         // Check AppContext switches
         if (eventData is { EventName: "LogAppContextSwitch",
-                           Payload: { Count: 2 } } &&
-            eventData.Payload[0] is string switchName)
+                           Payload: { Count: 2 } })
         {
-            observedEvents[switchName] = ((int)eventData.Payload[1]) == 1;
+            var switchName = (string)eventData.Payload[0];
+            _observedEvents[switchName] = ((int)eventData.Payload[1]) == 1;
             return;
         }
     }
 
     public bool Verify()
     {
-        foreach (var (k, v) in observedEvents)
+        foreach (var key in s_expectedEvents)
         {
-            if (!v)
+            if (!_observedEvents[key])
             {
-                Console.WriteLine($"Could not find key {k}");
+                Console.WriteLine($"Could not find key {key}");
                 return false;
             }
             else
             {
-                Console.WriteLine($"Saw {k}");
+                Console.WriteLine($"Saw {key}");
             }
         }
 
         foreach (var key in s_unexpectedEvents)
         {
-            if (observedEvents.ContainsKey(key))
+            if (_observedEvents.ContainsKey(key))
             {
                 Console.WriteLine($"Should not have seen {key}");
                 return false;
