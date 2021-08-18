@@ -7,7 +7,7 @@
 // Reduced from 82.6 KiB to 0.3 KiB in 00:02:54
 // Debug: Outputs 14270
 // Release: Outputs 4294953026
-public class Program
+public class Runtime_57640
 {
     static long[] s_28 = new long[]{1};
     public static int Main()
