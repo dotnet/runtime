@@ -181,6 +181,10 @@
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Text.Json/tests/System.Text.Json.SourceGeneration.Tests/System.Text.Json.SourceGeneration.Tests.csproj" />
   </ItemGroup>
 
+  <ItemGroup Condition="('$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'iOSSimulator') and '$(RunDisablediOSTests)' != 'true'">
+    <ProjectExclusions Include="$(MonoProjectRoot)sample/iOS/Program.csproj" />
+  </ItemGroup>
+
   <ItemGroup Condition="('$(TargetOS)' == 'tvOS' or '$(TargetOS)' == 'tvOSSimulator') and '$(RunDisablediOSTests)' != 'true'">
     <!-- https://github.com/dotnet/runtime/issues/50589 -->
     <ProjectExclusions Include="$(RepoRoot)\src\tests\FunctionalTests\tvOS\Simulator\AOT\tvOS.Simulator.Aot.Test.csproj" />
@@ -189,6 +193,7 @@
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Diagnostics.Process/tests/System.Diagnostics.Process.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.IO.Compression.Brotli/tests/System.IO.Compression.Brotli.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.IO.Compression.ZipFile/tests/System.IO.Compression.ZipFile.Tests.csproj" />
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Threading.Channels/tests/System.Threading.Channels.Tests.csproj" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetOS)' == 'MacCatalyst' and '$(RunDisablediOSTests)' != 'true'">
