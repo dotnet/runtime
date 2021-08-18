@@ -11,6 +11,7 @@ endif ()
 include_directories("${CLR_SRC_NATIVE_DIR}/common")
 
 set(NATIVE_SOURCES
+    pal_dl.c
     pal_errno.c
     pal_interfaceaddresses.c
     pal_io.c
