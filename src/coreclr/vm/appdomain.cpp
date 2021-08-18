@@ -64,8 +64,8 @@
 #include "stringarraylist.h"
 
 #include "../binder/inc/bindertracing.h"
-#include "../binder/inc/clrprivbindercoreclr.h"
-#include "../binder/inc/coreclrbindercommon.h"
+#include "../binder/inc/defaultassemblybinder.h"
+#include "../binder/inc/assemblybindercommon.hpp"
 
 // this file handles string conversion errors for itself
 #undef  MAKE_TRANSLATIONFAILED
@@ -740,8 +740,9 @@ void BaseDomain::ClearBinderContext()
     }
     CONTRACTL_END;
 
-    if (m_pTPABinderContext) {
-        m_pTPABinderContext->Release();
+    if (m_pTPABinderContext)
+    {
+        delete m_pTPABinderContext;
         m_pTPABinderContext = NULL;
     }
 }
@@ -2863,8 +2864,6 @@ Assembly *AppDomain::LoadAssembly(AssemblySpec* pIdentity,
     RETURN pAssembly->GetAssembly();
 }
 
-extern BOOL AreSameBinderInstance(ICLRPrivBinder *pBinderA, ICLRPrivBinder *pBinderB);
-
 DomainAssembly* AppDomain::LoadDomainAssembly(AssemblySpec* pSpec,
                                               PEAssembly *pFile,
                                               FileLoadLevel targetLevel)
@@ -2888,8 +2887,8 @@ DomainAssembly* AppDomain::LoadDomainAssembly(AssemblySpec* pSpec,
         if (!pEx->IsTransient())
         {
             // Setup the binder reference in AssemblySpec from the PEAssembly if one is not already set.
-            ICLRPrivBinder* pCurrentBindingContext = pSpec->GetBindingContext();
-            ICLRPrivBinder* pBindingContextFromPEAssembly = pFile->GetBindingContext();
+            AssemblyBinder* pCurrentBindingContext = pSpec->GetBindingContext();
+            AssemblyBinder* pBindingContextFromPEAssembly = pFile->GetBindingContext();
 
             if (pCurrentBindingContext == NULL)
             {
@@ -2902,7 +2901,7 @@ DomainAssembly* AppDomain::LoadDomainAssembly(AssemblySpec* pSpec,
             else
             {
                 // Binding context in the spec should be the same as the binding context in the PEAssembly
-                _ASSERTE(AreSameBinderInstance(pCurrentBindingContext, pBindingContextFromPEAssembly));
+                _ASSERTE(pCurrentBindingContext == pBindingContextFromPEAssembly);
             }
 #endif // _DEBUG
 
@@ -2957,12 +2956,12 @@ DomainAssembly *AppDomain::LoadDomainAssemblyInternal(AssemblySpec* pIdentity,
         LoaderAllocator *pLoaderAllocator = NULL;
 
 #ifndef CROSSGEN_COMPILE
-        ICLRPrivBinder *pFileBinder = pFile->GetBindingContext();
+        AssemblyBinder *pFileBinder = pFile->GetBindingContext();
         if (pFileBinder != NULL)
         {
             // Assemblies loaded with AssemblyLoadContext need to use a different LoaderAllocator if
             // marked as collectible
-            pFileBinder->GetLoaderAllocator((LPVOID*)&pLoaderAllocator);
+            pLoaderAllocator = pFileBinder->GetLoaderAllocator();
         }
 #endif // !CROSSGEN_COMPILE
 
@@ -3925,7 +3924,7 @@ PEAssembly * AppDomain::BindAssemblySpec(
                     }
 
                     // Setup the reference to the binder, which performed the bind, into the AssemblySpec
-                    ICLRPrivBinder* pBinder = result->GetBindingContext();
+                    AssemblyBinder* pBinder = result->GetBindingContext();
                     _ASSERTE(pBinder != NULL);
                     pSpec->SetBindingContext(pBinder);
 
@@ -4257,9 +4256,9 @@ AppDomain::RaiseUnhandledExceptionEvent(OBJECTREF *pThrowable, BOOL isTerminatin
 
 #endif // CROSSGEN_COMPILE
 
-CLRPrivBinderCoreCLR *AppDomain::CreateBinderContext()
+DefaultAssemblyBinder *AppDomain::CreateBinderContext()
 {
-    CONTRACT(CLRPrivBinderCoreCLR *)
+    CONTRACT(DefaultAssemblyBinder *)
     {
         GC_TRIGGERS;
         THROWS;
@@ -4276,7 +4275,7 @@ CLRPrivBinderCoreCLR *AppDomain::CreateBinderContext()
         GCX_PREEMP();
 
         // Initialize the assembly binder for the default context loads for CoreCLR.
-        IfFailThrow(CCoreCLRBinderHelper::DefaultBinderSetupContext(DefaultADID, &m_pTPABinderContext));
+        IfFailThrow(BINDER_SPACE::AssemblyBinderCommon::DefaultBinderSetupContext(&m_pTPABinderContext));
     }
 
     RETURN m_pTPABinderContext;
@@ -5201,7 +5200,7 @@ AppDomain::AssemblyIterator::Next_Unlocked(
 #if !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
 
 // Returns S_OK if the assembly was successfully loaded
-HRESULT RuntimeInvokeHostAssemblyResolver(INT_PTR pManagedAssemblyLoadContextToBindWithin, BINDER_SPACE::AssemblyName *pAssemblyName, CLRPrivBinderCoreCLR *pTPABinder, ICLRPrivAssembly **ppLoadedAssembly)
+HRESULT RuntimeInvokeHostAssemblyResolver(INT_PTR pManagedAssemblyLoadContextToBindWithin, BINDER_SPACE::AssemblyName *pAssemblyName, DefaultAssemblyBinder *pTPABinder, BINDER_SPACE::Assembly **ppLoadedAssembly)
 {
     CONTRACTL
     {
@@ -5228,7 +5227,7 @@ HRESULT RuntimeInvokeHostAssemblyResolver(INT_PTR pManagedAssemblyLoadContextToB
 
     GCPROTECT_BEGIN(_gcRefs);
 
-    ICLRPrivAssembly *pResolvedAssembly = NULL;
+    BINDER_SPACE::Assembly *pResolvedAssembly = NULL;
 
     bool fResolvedAssembly = false;
     BinderTracing::ResolutionAttemptedOperation tracer{pAssemblyName, 0 /*binderID*/, pManagedAssemblyLoadContextToBindWithin, hr};
@@ -5245,7 +5244,7 @@ HRESULT RuntimeInvokeHostAssemblyResolver(INT_PTR pManagedAssemblyLoadContextToB
     {
         if (pTPABinder != NULL)
         {
-            // Step 2 (of CLRPrivBinderAssemblyLoadContext::BindAssemblyByName) - Invoke Load method
+            // Step 2 (of CustomAssemblyBinder::BindAssemblyByName) - Invoke Load method
             // This is not invoked for TPA Binder since it always returns NULL.
             tracer.GoToStage(BinderTracing::ResolutionAttemptedOperation::Stage::AssemblyLoadContextLoad);
 
@@ -5268,7 +5267,7 @@ HRESULT RuntimeInvokeHostAssemblyResolver(INT_PTR pManagedAssemblyLoadContextToB
 
             hr = fResolvedAssembly ? S_OK : COR_E_FILENOTFOUND;
 
-            // Step 3 (of CLRPrivBinderAssemblyLoadContext::BindAssemblyByName)
+            // Step 3 (of CustomAssemblyBinder::BindAssemblyByName)
             if (!fResolvedAssembly && !isSatelliteAssemblyRequest)
             {
                 tracer.GoToStage(BinderTracing::ResolutionAttemptedOperation::Stage::DefaultAssemblyLoadContextFallback);
@@ -5278,7 +5277,7 @@ HRESULT RuntimeInvokeHostAssemblyResolver(INT_PTR pManagedAssemblyLoadContextToB
                 //
                 // Switch to pre-emp mode before calling into the binder
                 GCX_PREEMP();
-                ICLRPrivAssembly *pCoreCLRFoundAssembly = NULL;
+                BINDER_SPACE::Assembly *pCoreCLRFoundAssembly = NULL;
                 hr = pTPABinder->BindUsingAssemblyName(pAssemblyName, &pCoreCLRFoundAssembly);
                 if (SUCCEEDED(hr))
                 {
@@ -5291,7 +5290,7 @@ HRESULT RuntimeInvokeHostAssemblyResolver(INT_PTR pManagedAssemblyLoadContextToB
 
         if (!fResolvedAssembly && isSatelliteAssemblyRequest)
         {
-            // Step 4 (of CLRPrivBinderAssemblyLoadContext::BindAssemblyByName)
+            // Step 4 (of CustomAssemblyBinder::BindAssemblyByName)
             //
             // Attempt to resolve it using the ResolveSatelliteAssembly method.
             // Finally, setup arguments for invocation
@@ -5319,7 +5318,7 @@ HRESULT RuntimeInvokeHostAssemblyResolver(INT_PTR pManagedAssemblyLoadContextToB
 
         if (!fResolvedAssembly)
         {
-            // Step 5 (of CLRPrivBinderAssemblyLoadContext::BindAssemblyByName)
+            // Step 5 (of CustomAssemblyBinder::BindAssemblyByName)
             //
             // If we couldn't resolve the assembly using TPA LoadContext as well, then
             // attempt to resolve it using the Resolving event.
@@ -5371,7 +5370,7 @@ HRESULT RuntimeInvokeHostAssemblyResolver(INT_PTR pManagedAssemblyLoadContextToB
                 }
             }
 
-            // The loaded assembly's ICLRPrivAssembly* is saved as HostAssembly in PEAssembly
+            // The loaded assembly's BINDER_SPACE::Assembly* is saved as HostAssembly in PEAssembly
             if (fFailLoad)
             {
                 PathString name;
@@ -5386,7 +5385,7 @@ HRESULT RuntimeInvokeHostAssemblyResolver(INT_PTR pManagedAssemblyLoadContextToB
         {
             _ASSERTE(pResolvedAssembly != NULL);
 
-            // Get the ICLRPrivAssembly reference to return back to.
+            // Get the BINDER_SPACE::Assembly reference to return back to.
             *ppLoadedAssembly = clr::SafeAddRef(pResolvedAssembly);
             hr = S_OK;
 
@@ -5728,7 +5727,7 @@ void AppDomain::UnPublishHostedAssembly(
 #endif //!DACCESS_COMPILE
 
 //---------------------------------------------------------------------------------------------------------------------
-PTR_DomainAssembly AppDomain::FindAssembly(PTR_ICLRPrivAssembly pHostAssembly)
+PTR_DomainAssembly AppDomain::FindAssembly(PTR_BINDER_SPACE_Assembly pHostAssembly)
 {
     CONTRACTL
     {

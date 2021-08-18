@@ -29,16 +29,6 @@ SString &ApplicationContext::GetApplicationName()
     return m_applicationName;
 }
 
-DWORD ApplicationContext::GetAppDomainId()
-{
-    return m_dwAppDomainId;
-}
-
-void ApplicationContext::SetAppDomainId(DWORD dwAppDomainId)
-{
-    m_dwAppDomainId = dwAppDomainId;
-}
-
 ExecutionContext *ApplicationContext::GetExecutionContext()
 {
     return m_pExecutionContext;

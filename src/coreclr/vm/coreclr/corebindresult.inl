@@ -28,15 +28,14 @@ inline BOOL CoreBindResult::IsCoreLib()
     }
     CONTRACTL_END;
 
-    BINDER_SPACE::Assembly* pAssembly = BINDER_SPACE::GetAssemblyFromPrivAssemblyFast(m_pAssembly);
 #ifndef CROSSGEN_COMPILE
-    return pAssembly->GetAssemblyName()->IsCoreLib();
+    return m_pAssembly->GetAssemblyName()->IsCoreLib();
 #else
-    return (pAssembly->GetPath()).EndsWithCaseInsensitive(SString(CoreLibName_IL_W));
+    return (m_pAssembly->GetPath()).EndsWithCaseInsensitive(SString(CoreLibName_IL_W));
 #endif
 }
 
-inline void CoreBindResult::GetBindAssembly(ICLRPrivAssembly** ppAssembly)
+inline void CoreBindResult::GetBindAssembly(BINDER_SPACE::Assembly** ppAssembly)
 {
     CONTRACTL
     {
@@ -54,10 +53,12 @@ inline void CoreBindResult::GetBindAssembly(ICLRPrivAssembly** ppAssembly)
 inline PEImage* CoreBindResult::GetPEImage()
 {
     WRAPPER_NO_CONTRACT;
-    return m_pAssembly?BINDER_SPACE::GetAssemblyFromPrivAssemblyFast(m_pAssembly)->GetNativeOrILPEImage():NULL;
+    return m_pAssembly ?
+        m_pAssembly->GetNativeOrILPEImage() :
+        NULL;
 };
 
-inline void CoreBindResult::Init(ICLRPrivAssembly* pAssembly)
+inline void CoreBindResult::Init(BINDER_SPACE::Assembly* pAssembly)
 {
     WRAPPER_NO_CONTRACT;
     m_pAssembly=pAssembly;

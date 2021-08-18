@@ -7,7 +7,6 @@ set( CORGUIDS_IDL_SOURCES
   corprof.idl
   corpub.idl
   mscorsvc.idl
-  clrprivbinding.idl
   corsym.idl
   sospriv.idl
 )

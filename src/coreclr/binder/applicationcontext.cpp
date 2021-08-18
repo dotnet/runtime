@@ -23,63 +23,17 @@ using namespace clr::fs;
 
 namespace BINDER_SPACE
 {
-    STDMETHODIMP ApplicationContext::QueryInterface(REFIID   riid,
-                                                    void   **ppv)
-    {
-        HRESULT hr = S_OK;
-
-        if (ppv == NULL)
-        {
-            hr = E_POINTER;
-        }
-        else
-        {
-            if (IsEqualIID(riid, IID_IUnknown))
-            {
-                AddRef();
-                *ppv = static_cast<IUnknown *>(this);
-            }
-            else
-            {
-                *ppv = NULL;
-                hr = E_NOINTERFACE;
-            }
-        }
-
-        return hr;
-    }
-
-    STDMETHODIMP_(ULONG) ApplicationContext::AddRef()
-    {
-        return InterlockedIncrement(&m_cRef);
-    }
-
-    STDMETHODIMP_(ULONG) ApplicationContext::Release()
-    {
-        ULONG ulRef = InterlockedDecrement(&m_cRef);
-
-        if (ulRef == 0)
-        {
-            delete this;
-        }
-
-        return ulRef;
-    }
-
     ApplicationContext::ApplicationContext()
     {
-        m_cRef = 1;
-        m_dwAppDomainId = 0;
         m_pExecutionContext = NULL;
         m_pFailureCache = NULL;
         m_contextCS = NULL;
         m_pTrustedPlatformAssemblyMap = nullptr;
-        m_binderID = 0;
     }
 
     ApplicationContext::~ApplicationContext()
     {
-        SAFE_RELEASE(m_pExecutionContext);
+        SAFE_DELETE(m_pExecutionContext);
         SAFE_DELETE(m_pFailureCache);
 
         if (m_contextCS != NULL)
@@ -93,11 +47,11 @@ namespace BINDER_SPACE
         }
     }
 
-    HRESULT ApplicationContext::Init(UINT_PTR binderID)
+    HRESULT ApplicationContext::Init()
     {
         HRESULT hr = S_OK;
 
-        ReleaseHolder<ExecutionContext> pExecutionContext;
+        NewHolder<ExecutionContext> pExecutionContext;
 
         FailureCache *pFailureCache = NULL;
 
@@ -121,7 +75,6 @@ namespace BINDER_SPACE
             m_pFailureCache = pFailureCache;
         }
 
-        m_binderID = binderID;
     Exit:
         return hr;
     }

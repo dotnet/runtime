@@ -32,7 +32,7 @@
 #include "slist.h"
 #include "eventtrace.h"
 
-#include "clrprivbinderutil.h"
+#include "assemblybinderutil.h"
 
 // --------------------------------------------------------------------------------
 // Forward declared classes
@@ -478,7 +478,7 @@ public:
     void ConvertMDInternalToReadWrite();
 
 protected:
-    PTR_ICLRPrivAssembly m_pHostAssembly;
+    PTR_BINDER_SPACE_Assembly m_pHostAssembly;
 
     // For certain assemblies, we do not have m_pHostAssembly since they are not bound using an actual binder.
     // An example is Ref-Emitted assemblies. Thus, when such assemblies trigger load of their dependencies,
@@ -487,30 +487,30 @@ protected:
     // To enable this, we maintain a concept of "Fallback LoadContext", which will be set to the Binder of the
     // assembly that created the dynamic assembly. If the creator assembly is dynamic itself, then its fallback
     // load context would be propagated to the assembly being dynamically generated.
-    PTR_ICLRPrivBinder m_pFallbackLoadContextBinder;
+    PTR_AssemblyBinder m_pFallbackLoadContextBinder;
 
 protected:
 
 #ifndef DACCESS_COMPILE
-    void SetHostAssembly(ICLRPrivAssembly * pHostAssembly)
+    void SetHostAssembly(BINDER_SPACE::Assembly * pHostAssembly)
     { LIMITED_METHOD_CONTRACT; m_pHostAssembly = clr::SafeAddRef(pHostAssembly); }
 #endif //DACCESS_COMPILE
 
 public:
-    // Returns a non-AddRef'ed ICLRPrivAssembly*
-    PTR_ICLRPrivAssembly GetHostAssembly()
+    // Returns a non-AddRef'ed BINDER_SPACE::Assembly*
+    PTR_BINDER_SPACE_Assembly GetHostAssembly()
     {
         STATIC_CONTRACT_LIMITED_METHOD;
         return m_pHostAssembly;
     }
 
-    // Returns the ICLRPrivBinder* instance associated with the PEFile
-    PTR_ICLRPrivBinder GetBindingContext();
+    // Returns the AssemblyBinder* instance associated with the PEFile
+    PTR_AssemblyBinder GetBindingContext();
 
 #ifndef DACCESS_COMPILE
     void SetupAssemblyLoadContext();
 
-    void SetFallbackLoadContextBinder(PTR_ICLRPrivBinder pFallbackLoadContextBinder)
+    void SetFallbackLoadContextBinder(PTR_AssemblyBinder pFallbackLoadContextBinder)
     {
         LIMITED_METHOD_CONTRACT;
         m_pFallbackLoadContextBinder = pFallbackLoadContextBinder;
@@ -531,7 +531,7 @@ public:
     bool HasHostAssembly()
     { STATIC_CONTRACT_WRAPPER; return GetHostAssembly() != nullptr; }
 
-    PTR_ICLRPrivBinder GetFallbackLoadContextBinder()
+    PTR_AssemblyBinder GetFallbackLoadContextBinder()
     {
         LIMITED_METHOD_CONTRACT;
 
@@ -560,7 +560,7 @@ class PEAssembly : public PEFile
         PEAssembly *       pParent,
         PEImage *          pPEImageIL,
         PEImage *          pPEImageNI,
-        ICLRPrivAssembly * pHostAssembly);
+        BINDER_SPACE::Assembly * pHostAssembly);
 
     // This opens the canonical System.Private.CoreLib.dll
     static PEAssembly *OpenSystem(IUnknown *pAppCtx);
@@ -628,7 +628,7 @@ class PEAssembly : public PEFile
         BOOL system,
         PEImage * pPEImageIL = NULL,
         PEImage * pPEImageNI = NULL,
-        ICLRPrivAssembly * pHostAssembly = NULL
+        BINDER_SPACE::Assembly * pHostAssembly = NULL
         );
     virtual ~PEAssembly();
 #endif

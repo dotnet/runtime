@@ -10,7 +10,7 @@
 #include "eeconfig.h"
 #include "appdomain.inl"
 #include "eventtrace.h"
-#include "../binder/inc/clrprivbindercoreclr.h"
+#include "../binder/inc/defaultassemblybinder.h"
 
 #include "clr/fs/path.h"
 using namespace clr::fs;
@@ -39,13 +39,13 @@ void QCALLTYPE AppDomainNative::CreateDynamicAssembly(QCall::ObjectHandleOnStack
     args.stackMark              = stackMark;
 
     Assembly*       pAssembly = nullptr;
-    ICLRPrivBinder* pBinderContext = nullptr;
+    AssemblyBinder* pBinderContext = nullptr;
 
     if (assemblyLoadContext.Get() != NULL)
     {
         INT_PTR nativeAssemblyLoadContext = ((ASSEMBLYLOADCONTEXTREF)assemblyLoadContext.Get())->GetNativeAssemblyLoadContext();
 
-        pBinderContext = reinterpret_cast<ICLRPrivBinder*>(nativeAssemblyLoadContext);
+        pBinderContext = reinterpret_cast<AssemblyBinder*>(nativeAssemblyLoadContext);
     }
 
     pAssembly = Assembly::CreateDynamic(GetAppDomain(), pBinderContext, &args);

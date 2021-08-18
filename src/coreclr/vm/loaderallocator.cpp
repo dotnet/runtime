@@ -1701,7 +1701,7 @@ AssemblyLoaderAllocator::~AssemblyLoaderAllocator()
 {
     if (m_binderToRelease != NULL)
     {
-        VERIFY(m_binderToRelease->Release() == 0);
+        delete m_binderToRelease;
         m_binderToRelease = NULL;
     }
 
@@ -1709,7 +1709,7 @@ AssemblyLoaderAllocator::~AssemblyLoaderAllocator()
     m_pShuffleThunkCache = NULL;
 }
 
-void AssemblyLoaderAllocator::RegisterBinder(CLRPrivBinderAssemblyLoadContext* binderToRelease)
+void AssemblyLoaderAllocator::RegisterBinder(CustomAssemblyBinder* binderToRelease)
 {
     // When the binder is registered it will be released by the destructor
     // of this instance

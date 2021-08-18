@@ -2,8 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 #include "common.h"
-#include "assemblybinder.hpp"
-#include "clrprivbindercoreclr.h"
+#include "assemblybindercommon.hpp"
+#include "defaultassemblybinder.h"
 
 using namespace BINDER_SPACE;
 
@@ -11,7 +11,7 @@ using namespace BINDER_SPACE;
 // Helper functions
 //-----------------------------------------------------------------------------
 
-HRESULT CLRPrivBinderCoreCLR::BindAssemblyByNameWorker(BINDER_SPACE::AssemblyName *pAssemblyName,
+HRESULT DefaultAssemblyBinder::BindAssemblyByNameWorker(BINDER_SPACE::AssemblyName *pAssemblyName,
                                                        BINDER_SPACE::Assembly **ppCoreCLRFoundAssembly,
                                                        bool excludeAppPaths)
 {
@@ -23,7 +23,7 @@ HRESULT CLRPrivBinderCoreCLR::BindAssemblyByNameWorker(BINDER_SPACE::AssemblyNam
     _ASSERTE(!pAssemblyName->IsCoreLib());
 #endif
 
-    hr = AssemblyBinder::BindAssembly(&m_appContext,
+    hr = AssemblyBinderCommon::BindAssembly(this,
                                       pAssemblyName,
                                       NULL,
                                       NULL,
@@ -40,28 +40,10 @@ HRESULT CLRPrivBinderCoreCLR::BindAssemblyByNameWorker(BINDER_SPACE::AssemblyNam
 }
 
 // ============================================================================
-// CLRPrivBinderCoreCLR implementation
+// DefaultAssemblyBinder implementation
 // ============================================================================
-HRESULT CLRPrivBinderCoreCLR::BindAssemblyByName(AssemblyNameData *pAssemblyNameData,
-                                                 ICLRPrivAssembly **ppAssembly)
-{
-    HRESULT hr = S_OK;
-    VALIDATE_ARG_RET(pAssemblyNameData != nullptr && ppAssembly != nullptr);
-
-    *ppAssembly = nullptr;
-
-    ReleaseHolder<AssemblyName> pAssemblyName;
-    SAFE_NEW(pAssemblyName, AssemblyName);
-    IF_FAIL_GO(pAssemblyName->Init(*pAssemblyNameData));
-
-    hr = BindUsingAssemblyName(pAssemblyName, ppAssembly);
-
-Exit:
-    return hr;
-}
-
-HRESULT CLRPrivBinderCoreCLR::BindUsingAssemblyName(BINDER_SPACE::AssemblyName *pAssemblyName,
-                                                    ICLRPrivAssembly **ppAssembly)
+HRESULT DefaultAssemblyBinder::BindUsingAssemblyName(BINDER_SPACE::AssemblyName *pAssemblyName,
+                                                    BINDER_SPACE::Assembly **ppAssembly)
 {
     HRESULT hr = S_OK;
     VALIDATE_ARG_RET(pAssemblyName != nullptr && ppAssembly != nullptr);
@@ -106,7 +88,7 @@ HRESULT CLRPrivBinderCoreCLR::BindUsingAssemblyName(BINDER_SPACE::AssemblyName *
 
         if (pManagedAssemblyLoadContext != NULL)
         {
-            hr = AssemblyBinder::BindUsingHostAssemblyResolver(pManagedAssemblyLoadContext, pAssemblyName,
+            hr = AssemblyBinderCommon::BindUsingHostAssemblyResolver(pManagedAssemblyLoadContext, pAssemblyName,
                                                                 NULL, &pCoreCLRFoundAssembly);
             if (SUCCEEDED(hr))
             {
@@ -132,9 +114,9 @@ Exit:;
 }
 
 #if !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
-HRESULT CLRPrivBinderCoreCLR::BindUsingPEImage( /* in */ PEImage *pPEImage,
+HRESULT DefaultAssemblyBinder::BindUsingPEImage( /* in */ PEImage *pPEImage,
                                                 /* in */ BOOL fIsNativeImage,
-                                                /* [retval][out] */ ICLRPrivAssembly **ppAssembly)
+                                                /* [retval][out] */ BINDER_SPACE::Assembly **ppAssembly)
 {
     HRESULT hr = S_OK;
 
@@ -149,7 +131,7 @@ HRESULT CLRPrivBinderCoreCLR::BindUsingPEImage( /* in */ PEImage *pPEImage,
         // Get the Metadata interface
         DWORD dwPAFlags[2];
         IF_FAIL_GO(BinderAcquireImport(pPEImage, &pIMetaDataAssemblyImport, dwPAFlags, fIsNativeImage));
-        IF_FAIL_GO(AssemblyBinder::TranslatePEToArchitectureType(dwPAFlags, &PeKind));
+        IF_FAIL_GO(AssemblyBinderCommon::TranslatePEToArchitectureType(dwPAFlags, &PeKind));
 
         _ASSERTE(pIMetaDataAssemblyImport != NULL);
 
@@ -181,7 +163,7 @@ HRESULT CLRPrivBinderCoreCLR::BindUsingPEImage( /* in */ PEImage *pPEImage,
                 hr = BindAssemblyByNameWorker(pAssemblyName, &pCoreCLRFoundAssembly, true /* excludeAppPaths */);
                 if (SUCCEEDED(hr))
                 {
-                    if (pCoreCLRFoundAssembly->GetIsInGAC())
+                    if (pCoreCLRFoundAssembly->GetIsInTPA())
                     {
                         *ppAssembly = pCoreCLRFoundAssembly.Extract();
                         goto Exit;
@@ -190,7 +172,7 @@ HRESULT CLRPrivBinderCoreCLR::BindUsingPEImage( /* in */ PEImage *pPEImage,
             }
         }
 
-        hr = AssemblyBinder::BindUsingPEImage(&m_appContext, pAssemblyName, pPEImage, PeKind, pIMetaDataAssemblyImport, &pCoreCLRFoundAssembly);
+        hr = AssemblyBinderCommon::BindUsingPEImage(this, pAssemblyName, pPEImage, PeKind, pIMetaDataAssemblyImport, &pCoreCLRFoundAssembly);
         if (hr == S_OK)
         {
             _ASSERTE(pCoreCLRFoundAssembly != NULL);
@@ -205,7 +187,7 @@ Exit:;
 }
 #endif // !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
 
-HRESULT CLRPrivBinderCoreCLR::SetupBindingPaths(SString  &sTrustedPlatformAssemblies,
+HRESULT DefaultAssemblyBinder::SetupBindingPaths(SString  &sTrustedPlatformAssemblies,
                                                 SString  &sPlatformResourceRoots,
                                                 SString  &sAppPaths,
                                                 SString  &sAppNiPaths)
@@ -214,20 +196,20 @@ HRESULT CLRPrivBinderCoreCLR::SetupBindingPaths(SString  &sTrustedPlatformAssemb
 
     EX_TRY
     {
-        hr = m_appContext.SetupBindingPaths(sTrustedPlatformAssemblies, sPlatformResourceRoots, sAppPaths, sAppNiPaths, TRUE /* fAcquireLock */);
+        hr = GetAppContext()->SetupBindingPaths(sTrustedPlatformAssemblies, sPlatformResourceRoots, sAppPaths, sAppNiPaths, TRUE /* fAcquireLock */);
     }
     EX_CATCH_HRESULT(hr);
     return hr;
 }
 
-// See code:BINDER_SPACE::AssemblyBinder::GetAssembly for info on fNgenExplicitBind
+// See code:BINDER_SPACE::AssemblyBinderCommon::GetAssembly for info on fNgenExplicitBind
 // and fExplicitBindToNativeImage, and see code:CEECompileInfo::LoadAssemblyByPath
 // for an example of how they're used.
-HRESULT CLRPrivBinderCoreCLR::Bind(LPCWSTR            wszCodeBase,
+HRESULT DefaultAssemblyBinder::Bind(LPCWSTR            wszCodeBase,
                                    PEAssembly        *pParentAssembly,
                                    BOOL               fNgenExplicitBind,
                                    BOOL               fExplicitBindToNativeImage,
-                                   ICLRPrivAssembly **ppAssembly)
+                                   BINDER_SPACE::Assembly **ppAssembly)
 {
     HRESULT hr = S_OK;
     VALIDATE_ARG_RET(wszCodeBase != NULL && ppAssembly != NULL);
@@ -235,7 +217,7 @@ HRESULT CLRPrivBinderCoreCLR::Bind(LPCWSTR            wszCodeBase,
     EX_TRY
     {
         ReleaseHolder<BINDER_SPACE::Assembly> pAsm;
-        hr = AssemblyBinder::BindAssembly(&m_appContext,
+        hr = AssemblyBinderCommon::BindAssembly(this,
                                           NULL,
                                           wszCodeBase,
                                           pParentAssembly,
@@ -253,10 +235,4 @@ HRESULT CLRPrivBinderCoreCLR::Bind(LPCWSTR            wszCodeBase,
     EX_CATCH_HRESULT(hr);
 
     return hr;
-}
-
-HRESULT CLRPrivBinderCoreCLR::GetLoaderAllocator(LPVOID* pLoaderAllocator)
-{
-    // Not supported by this binder
-    return E_FAIL;
 }
