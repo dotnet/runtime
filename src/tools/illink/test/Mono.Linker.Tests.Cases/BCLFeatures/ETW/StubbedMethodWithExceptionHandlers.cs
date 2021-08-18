@@ -45,7 +45,6 @@ namespace Mono.Linker.Tests.Cases.BCLFeatures.ETW
 		{
 			"ret"
 		})]
-		[ExpectedExceptionHandlerSequence (new string[0])]
 		protected override void OnEventCommand (EventCommandEventArgs command)
 		{
 			try {

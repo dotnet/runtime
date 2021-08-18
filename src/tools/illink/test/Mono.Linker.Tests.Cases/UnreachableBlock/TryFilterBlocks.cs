@@ -35,7 +35,6 @@ namespace Mono.Linker.Tests.Cases.UnreachableBlock
 			"ldc.i4.2",
 			"ret",
 		})]
-		[ExpectedExceptionHandlerSequence (new string[] { "filter" })]
 		static int TestUnreachableInsideTry ()
 		{
 			try {
@@ -70,7 +69,6 @@ namespace Mono.Linker.Tests.Cases.UnreachableBlock
 			"ldc.i4.3",
 			"ret",
 		})]
-		[ExpectedExceptionHandlerSequence (new string[] { "filter" })]
 		static int TestUnreachableInsideFilterCondition ()
 		{
 			try {

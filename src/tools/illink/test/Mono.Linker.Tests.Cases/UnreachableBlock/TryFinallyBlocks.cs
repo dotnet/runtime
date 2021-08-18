@@ -10,36 +10,107 @@ namespace Mono.Linker.Tests.Cases.UnreachableBlock
 	{
 		public static void Main ()
 		{
-			TestSimpleTry ();
+			TryFinallyInConstantProperty.Test ();
+			TryFinallyInRemovedBranch.Test ();
+			TryFinallyInKeptBranchBeforeRemovedBranch.Test ();
 		}
 
-		[Kept]
-		[ExpectedInstructionSequence (new[] {
-			"call",
-			"ldc.i4.3",
-			"beq.s il_8",
-			"ret"
-		})]
-		static void TestSimpleTry ()
+		class TryFinallyInConstantProperty
 		{
-			if (Prop != 3)
-				Unreached_1 ();
-		}
-
-		[Kept]
-		static int Prop {
 			[Kept]
-			get {
-				try {
-					return 3;
-				} finally {
+			[ExpectedInstructionSequence (new[] {
+				"call",
+				"ldc.i4.3",
+				"beq.s il_8",
+				"ret"
+			})]
+			public static void Test ()
+			{
+				if (Prop != 3)
+					Unreached_1 ();
+			}
 
+			[Kept]
+			static int Prop {
+				[Kept]
+				get {
+					try {
+						return 3;
+					} finally {
+
+					}
 				}
+			}
+
+			static void Unreached_1 ()
+			{
 			}
 		}
 
-		static void Unreached_1 ()
+		class TryFinallyInRemovedBranch
 		{
+			[Kept]
+			[ExpectedInstructionSequence (new[] {
+				"call",
+				"pop",
+				"call",
+				"ret",
+			})]
+			public static void Test ()
+			{
+				if (Prop == 0) {
+					Reached ();
+				} else {
+					try { Unreached (); } finally { Unreached_2 (); }
+				}
+			}
+
+			[Kept]
+			static int Prop { [Kept] get => 0; }
+
+			[Kept]
+			static void Reached () { }
+
+			static void Unreached () { }
+
+			static void Unreached_2 () { }
+		}
+
+		class TryFinallyInKeptBranchBeforeRemovedBranch
+		{
+			[Kept]
+			[ExpectedInstructionSequence (new[] {
+				"call",
+				"pop",
+				".try",
+				"call",
+				"leave.s il_13",
+				".endtry",
+				".catch",
+				"call",
+				"endfinally",
+				".endcatch",
+				"ret",
+			})]
+			public static void Test ()
+			{
+				if (Prop == 0) {
+					try { Reached (); } finally { Reached_2 (); }
+				} else {
+					Unreached ();
+				}
+			}
+
+			[Kept]
+			static int Prop { [Kept] get => 0; }
+
+			[Kept]
+			static void Reached () { }
+
+			[Kept]
+			static void Reached_2 () { }
+
+			static void Unreached () { }
 		}
 	}
 }

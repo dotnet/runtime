@@ -377,7 +377,6 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			if (!src.HasBody)
 				return;
 
-			VerifyExceptionHandlers (src, linked);
 			VerifyInstructions (src, linked);
 			VerifyLocals (src, linked);
 		}
@@ -406,7 +405,10 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			foreach (var exHandler in body.ExceptionHandlers) {
 				if (existingTryBlocks.Add ((exHandler.TryStart, exHandler.TryEnd))) {
 					InsertBeforeInstruction (exHandler.TryStart, ".try");
-					InsertBeforeInstruction (exHandler.TryEnd, ".endtry");
+					if (exHandler.TryEnd != null)
+						InsertBeforeInstruction (exHandler.TryEnd, ".endtry");
+					else
+						Append (".endtry");
 				}
 
 				if (exHandler.HandlerStart != null)
@@ -414,6 +416,8 @@ namespace Mono.Linker.Tests.TestCasesRunner
 
 				if (exHandler.HandlerEnd != null)
 					InsertBeforeInstruction (exHandler.HandlerEnd, ".endcatch");
+				else
+					Append (".endcatch");
 
 				if (exHandler.FilterStart != null)
 					InsertBeforeInstruction (exHandler.FilterStart, ".filter");
@@ -423,6 +427,9 @@ namespace Mono.Linker.Tests.TestCasesRunner
 
 			void InsertBeforeInstruction (Instruction instruction, string text) =>
 				result.Insert (result.FindIndex (i => i.Item1 == instruction), (null, text));
+
+			void Append (string text) =>
+				result.Add ((null, text));
 		}
 
 		static string FormatInstruction (Instruction instr)
@@ -467,18 +474,6 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			default:
 				return instr.OpCode.ToString ();
 			}
-		}
-
-		static void VerifyExceptionHandlers (MethodDefinition src, MethodDefinition linked)
-		{
-			VerifyBodyProperties (
-				src,
-				linked,
-				nameof (ExpectedExceptionHandlerSequenceAttribute),
-				nameof (ExpectExceptionHandlersModifiedAttribute),
-				"exception handlers",
-				m => m.Body.ExceptionHandlers.Select (h => h.HandlerType.ToString ().ToLower ()).ToArray (),
-				attr => GetStringArrayAttributeValue (attr).Select (v => v.ToLower ()).ToArray ());
 		}
 
 		static void VerifyLocals (MethodDefinition src, MethodDefinition linked)

@@ -662,7 +662,7 @@ namespace Mono.Linker.Steps
 					RemoveUnreachableInstructions (reachableInstrs);
 
 				if (nopInstructions != null) {
-					ILProcessor processor = Body.GetILProcessor ();
+					LinkerILProcessor processor = Body.GetLinkerILProcessor ();
 
 					foreach (var instr in nopInstructions)
 						processor.Remove (instr);
@@ -673,7 +673,7 @@ namespace Mono.Linker.Steps
 
 			void RemoveUnreachableInstructions (BitArray reachable)
 			{
-				ILProcessor processor = Body.GetILProcessor ();
+				LinkerILProcessor processor = Body.GetLinkerILProcessor ();
 
 				int removed = 0;
 				for (int i = 0; i < reachable.Count; ++i) {
@@ -1114,7 +1114,7 @@ namespace Mono.Linker.Steps
 			readonly BitArray reachable;
 			readonly List<ExceptionHandler> unreachableExceptionHandlers;
 			readonly LinkContext context;
-			ILProcessor ilprocessor;
+			LinkerILProcessor ilprocessor;
 
 			public BodySweeper (MethodBody body, BitArray reachable, List<ExceptionHandler> unreachableEH, LinkContext context)
 			{
@@ -1155,7 +1155,7 @@ namespace Mono.Linker.Steps
 					}
 				}
 
-				ilprocessor = body.GetILProcessor ();
+				ilprocessor = body.GetLinkerILProcessor ();
 				return true;
 			}
 
