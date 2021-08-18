@@ -311,7 +311,10 @@ struct MethodTableWriteableData
         // enum_unused                      = 0x00010000,
         // enum_unused                      = 0x00020000,
         // enum_unused                      = 0x00040000,
-        // enum_unused                      = 0x00080000,
+        // enum_unused                      = 0x00080000,        // enum_unused                      = 0x0010000,
+        // enum_unused                      = 0x0020000,
+        // enum_unused                      = 0x0040000,
+        // enum_unused                      = 0x0080000,
 
 #ifdef _DEBUG
         enum_flag_ParentMethodTablePointerValid =  0x40000000,
@@ -3931,29 +3934,6 @@ private:
 public:
 
     BOOL Validate ();
-
-#ifdef FEATURE_READYTORUN_COMPILER
-    //
-    // Is field layout in this type within the current version bubble?
-    //
-    BOOL IsLayoutInCurrentVersionBubble();
-    //
-    // Is field layout in this type fixed within the current version bubble?
-    // This check does not take the inheritance chain into account.
-    //
-    BOOL IsLayoutFixedInCurrentVersionBubble();
-
-    //
-    // Is field layout of the inheritance chain fixed within the current version bubble?
-    //
-    BOOL IsInheritanceChainLayoutFixedInCurrentVersionBubble();
-
-    //
-    // Is the inheritance chain fixed within the current version bubble?
-    //
-    BOOL IsInheritanceChainFixedInCurrentVersionBubble();
-#endif
-
 };  // class MethodTable
 
 #ifndef CROSSBITNESS_COMPILE
