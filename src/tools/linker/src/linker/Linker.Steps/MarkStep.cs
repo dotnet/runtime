@@ -490,40 +490,13 @@ namespace Mono.Linker.Steps
 					continue;
 
 				Instruction instr = item.Instr;
-				ILProcessor ilProcessor = item.Body.GetILProcessor ();
+				LinkerILProcessor ilProcessor = item.Body.GetLinkerILProcessor ();
 
 				ilProcessor.InsertAfter (instr, Instruction.Create (OpCodes.Ldnull));
 				Instruction new_instr = Instruction.Create (OpCodes.Pop);
 				ilProcessor.Replace (instr, new_instr);
-				UpdateBranchTarget (item.Body, instr, new_instr);
 
 				_context.LogMessage ($"Removing typecheck of '{type.FullName}' inside {item.Body.Method.GetDisplayName ()} method");
-			}
-
-			static void UpdateBranchTarget (MethodBody body, Instruction oldTarget, Instruction newTarget)
-			{
-				foreach (var instr in body.Instructions) {
-					switch (instr.OpCode.FlowControl) {
-					case FlowControl.Branch:
-					case FlowControl.Cond_Branch:
-						if (instr.Operand == oldTarget)
-							instr.Operand = newTarget;
-						break;
-					}
-				}
-
-				foreach (var handler in body.ExceptionHandlers) {
-					if (handler.TryStart == oldTarget)
-						handler.TryStart = newTarget;
-					if (handler.TryEnd == oldTarget)
-						handler.TryEnd = newTarget;
-					if (handler.HandlerStart == oldTarget)
-						handler.HandlerStart = newTarget;
-					if (handler.HandlerEnd == oldTarget)
-						handler.HandlerEnd = newTarget;
-					if (handler.FilterStart == oldTarget)
-						handler.FilterStart = newTarget;
-				}
 			}
 		}
 

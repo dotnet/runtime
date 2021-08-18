@@ -241,7 +241,6 @@ namespace Mono.Linker.Tests.Cases.UnreachableBlock
 		}
 
 		[Kept]
-		[ExpectedExceptionHandlerSequence (new string[0])]
 		[ExpectedLocalsSequence (new string[0])]
 		[ExpectedInstructionSequence (new[] {
 			"call",

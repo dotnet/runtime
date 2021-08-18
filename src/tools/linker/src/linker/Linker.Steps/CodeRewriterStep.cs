@@ -39,7 +39,7 @@ namespace Mono.Linker.Steps
 		void AddFieldsInitializations (TypeDefinition type)
 		{
 			Instruction ret;
-			ILProcessor processor;
+			LinkerILProcessor processor;
 
 			var cctor = type.Methods.FirstOrDefault (MethodDefinitionExtensions.IsStaticConstructor);
 			if (cctor == null) {
@@ -51,13 +51,13 @@ namespace Mono.Linker.Steps
 
 				type.Methods.Add (method);
 
-				processor = method.Body.GetILProcessor ();
+				processor = method.Body.GetLinkerILProcessor ();
 				ret = Instruction.Create (OpCodes.Ret);
 				processor.Append (ret);
 			} else {
 				ret = cctor.Body.Instructions.Last (l => l.OpCode.Code == Code.Ret);
 				var body = cctor.Body;
-				processor = cctor.Body.GetILProcessor ();
+				processor = cctor.Body.GetLinkerILProcessor ();
 
 				for (int i = 0; i < body.Instructions.Count; ++i) {
 					var instr = body.Instructions[i];
@@ -122,7 +122,7 @@ namespace Mono.Linker.Steps
 		MethodBody CreateThrowLinkedAwayBody (MethodDefinition method)
 		{
 			var body = new MethodBody (method);
-			var il = body.GetILProcessor ();
+			var il = body.GetLinkerILProcessor ();
 			MethodReference ctor;
 
 			// Makes the body verifiable
@@ -151,7 +151,7 @@ namespace Mono.Linker.Steps
 			if (method.HasParameters && method.Parameters.Any (l => l.IsOut))
 				throw new NotSupportedException ($"Cannot replace body of method '{method.GetDisplayName ()}' because it has an out parameter.");
 
-			var il = body.GetILProcessor ();
+			var il = body.GetLinkerILProcessor ();
 			if (method.IsInstanceConstructor () && !method.DeclaringType.IsValueType) {
 				var baseType = Context.Resolve (method.DeclaringType.BaseType);
 				if (baseType is null)
@@ -184,7 +184,7 @@ namespace Mono.Linker.Steps
 			return body;
 		}
 
-		static void StubComplexBody (MethodDefinition method, MethodBody body, ILProcessor il)
+		static void StubComplexBody (MethodDefinition method, MethodBody body, LinkerILProcessor il)
 		{
 			switch (method.ReturnType.MetadataType) {
 			case MetadataType.MVar:
