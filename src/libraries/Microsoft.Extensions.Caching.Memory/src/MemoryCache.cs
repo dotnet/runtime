@@ -23,8 +23,8 @@ namespace Microsoft.Extensions.Caching.Memory
         internal readonly ILogger _logger;
 
         private readonly MemoryCacheOptions _options;
-        private readonly ConcurrentDictionary<object, CacheEntry> _entries;
 
+        private ConcurrentDictionary<object, CacheEntry> _entries;
         private long _cacheSize;
         private bool _disposed;
         private DateTimeOffset _lastExpirationScan;
@@ -260,8 +260,8 @@ namespace Microsoft.Extensions.Caching.Memory
         public void Remove(object key)
         {
             ValidateCacheKey(key);
-
             CheckDisposed();
+
             if (_entries.TryRemove(key, out CacheEntry entry))
             {
                 if (_options.SizeLimit.HasValue)
@@ -281,7 +281,17 @@ namespace Microsoft.Extensions.Caching.Memory
         /// </summary>
         public void Clear()
         {
+            CheckDisposed();
 
+            var oldEntries = Interlocked.Exchange(ref _entries, new ConcurrentDictionary<object, CacheEntry>());
+            Interlocked.Exchange(ref _cacheSize, 0);
+
+            foreach (var entry in oldEntries)
+            {
+                entry.Value.SetExpired(EvictionReason.Removed);
+                entry.Value.InvokeEvictionCallbacks();
+            }
+            oldEntries.Clear();
         }
 
         private void RemoveEntry(CacheEntry entry)
@@ -325,7 +335,8 @@ namespace Microsoft.Extensions.Caching.Memory
         {
             DateTimeOffset now = cache._lastExpirationScan = cache._options.Clock.UtcNow;
 
-            foreach (KeyValuePair<object, CacheEntry> item in cache._entries)
+            var entries = cache._entries; // Clear() can update the reference in the meantime
+            foreach (KeyValuePair<object, CacheEntry> item in entries)
             {
                 CacheEntry entry = item.Value;
 
@@ -410,7 +421,8 @@ namespace Microsoft.Extensions.Caching.Memory
 
             // Sort items by expired & priority status
             DateTimeOffset now = _options.Clock.UtcNow;
-            foreach (KeyValuePair<object, CacheEntry> item in _entries)
+            var entries = _entries; // Clear() can update the reference in the meantime
+            foreach (KeyValuePair<object, CacheEntry> item in entries)
             {
                 CacheEntry entry = item.Value;
                 if (entry.CheckExpired(now))
