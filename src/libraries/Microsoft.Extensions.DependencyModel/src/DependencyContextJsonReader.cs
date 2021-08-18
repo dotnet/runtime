@@ -272,7 +272,7 @@ namespace Microsoft.Extensions.DependencyModel
 
         private static CompilationOptions ReadCompilationOptions(ref Utf8JsonReader reader)
         {
-            IEnumerable<string>? defines = null;
+            IEnumerable<string?>? defines = null;
             string? languageVersion = null;
             string? platform = null;
             bool? allowUnsafe = null;
@@ -336,7 +336,7 @@ namespace Microsoft.Extensions.DependencyModel
             reader.CheckEndObject();
 
             return new CompilationOptions(
-                defines ?? Enumerable.Empty<string>(),
+                defines ?? Enumerable.Empty<string?>(),
                 languageVersion,
                 platform,
                 allowUnsafe,
@@ -358,7 +358,10 @@ namespace Microsoft.Extensions.DependencyModel
 
             while (reader.Read() && reader.IsTokenTypeProperty())
             {
-                targets.Add(ReadTarget(ref reader, reader.GetString()!));
+                string? targetName = reader.GetString();
+                Debug.Assert(targetName != null);
+
+                targets.Add(ReadTarget(ref reader, targetName));
             }
 
             reader.CheckEndObject();
@@ -374,7 +377,10 @@ namespace Microsoft.Extensions.DependencyModel
 
             while (reader.Read() && reader.IsTokenTypeProperty())
             {
-                libraries.Add(ReadTargetLibrary(ref reader, reader.GetString()!));
+                string? targetLibraryName = reader.GetString();
+                Debug.Assert(targetLibraryName != null);
+
+                libraries.Add(ReadTargetLibrary(ref reader, targetLibraryName));
             }
 
             reader.CheckEndObject();
@@ -448,6 +454,7 @@ namespace Microsoft.Extensions.DependencyModel
 
             while (reader.TryReadStringProperty(out string? name, out string? version))
             {
+                Debug.Assert(name != null);
                 Debug.Assert(version != null);
                 dependencies.Add(new Dependency(Pool(name), Pool(version)));
             }
@@ -465,7 +472,8 @@ namespace Microsoft.Extensions.DependencyModel
 
             while (reader.Read() && reader.IsTokenTypeProperty())
             {
-                string libraryName = reader.GetString()!;
+                string? libraryName = reader.GetString();
+                Debug.Assert(libraryName != null);
                 reader.Skip();
 
                 runtimes.Add(libraryName);
@@ -487,7 +495,8 @@ namespace Microsoft.Extensions.DependencyModel
                 string? assemblyVersion = null;
                 string? fileVersion = null;
 
-                string path = reader.GetString()!;
+                string? path = reader.GetString();
+                Debug.Assert(path != null);
 
                 reader.ReadStartObject();
 
@@ -522,9 +531,12 @@ namespace Microsoft.Extensions.DependencyModel
 
             while (reader.Read() && reader.IsTokenTypeProperty())
             {
+                string? path = reader.GetString();
+                Debug.Assert(path != null);
+
                 var runtimeTarget = new RuntimeTargetEntryStub
                 {
-                    Path = reader.GetString()!
+                    Path = path
                 };
 
                 reader.ReadStartObject();
@@ -568,7 +580,7 @@ namespace Microsoft.Extensions.DependencyModel
 
             while (reader.Read() && reader.IsTokenTypeProperty())
             {
-                string path = reader.GetString()!;
+                string? path = reader.GetString();
                 string? locale = null;
 
                 reader.ReadStartObject();
@@ -585,6 +597,7 @@ namespace Microsoft.Extensions.DependencyModel
 
                 if (locale != null)
                 {
+                    Debug.Assert(path != null);
                     resources.Add(new ResourceAssembly(path, Pool(locale)));
                 }
             }
@@ -602,7 +615,8 @@ namespace Microsoft.Extensions.DependencyModel
 
             while (reader.Read() && reader.IsTokenTypeProperty())
             {
-                string libraryName = reader.GetString()!;
+                string? libraryName = reader.GetString();
+                Debug.Assert(libraryName != null);
 
                 libraries.Add(Pool(libraryName), ReadOneLibrary(ref reader));
             }
@@ -674,8 +688,10 @@ namespace Microsoft.Extensions.DependencyModel
 
             while (reader.Read() && reader.IsTokenTypeProperty())
             {
-                string runtime = reader.GetString()!;
-                string[] fallbacks = reader.ReadStringArray();
+                string? runtime = reader.GetString();
+                string?[] fallbacks = reader.ReadStringArray();
+
+                Debug.Assert(runtime != null);
 
                 runtimeFallbacks.Add(new RuntimeFallbacks(runtime, fallbacks));
             }

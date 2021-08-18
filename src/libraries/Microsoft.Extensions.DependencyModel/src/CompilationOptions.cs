@@ -9,7 +9,7 @@ namespace Microsoft.Extensions.DependencyModel
 {
     public class CompilationOptions
     {
-        public IReadOnlyList<string> Defines { get; }
+        public IReadOnlyList<string?> Defines { get; }
 
         public string? LanguageVersion { get; }
 
@@ -34,7 +34,7 @@ namespace Microsoft.Extensions.DependencyModel
         public bool? GenerateXmlDocumentation { get; }
 
         public static CompilationOptions Default { get; } = new CompilationOptions(
-            defines: Enumerable.Empty<string>(),
+            defines: Enumerable.Empty<string?>(),
             languageVersion: null,
             platform: null,
             allowUnsafe: null,
@@ -47,7 +47,7 @@ namespace Microsoft.Extensions.DependencyModel
             emitEntryPoint: null,
             generateXmlDocumentation: null);
 
-        public CompilationOptions(IEnumerable<string> defines,
+        public CompilationOptions(IEnumerable<string?> defines,
             string? languageVersion,
             string? platform,
             bool? allowUnsafe,

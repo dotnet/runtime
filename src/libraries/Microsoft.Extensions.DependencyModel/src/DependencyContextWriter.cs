@@ -68,7 +68,7 @@ namespace Microsoft.Extensions.DependencyModel
             foreach (RuntimeFallbacks runtimeFallback in context.RuntimeGraph)
             {
                 jsonWriter.WriteStartArray(runtimeFallback.Runtime);
-                foreach (string fallback in runtimeFallback.Fallbacks)
+                foreach (string? fallback in runtimeFallback.Fallbacks)
                 {
                     jsonWriter.WriteStringValue(fallback);
                 }
@@ -83,7 +83,7 @@ namespace Microsoft.Extensions.DependencyModel
             if (compilationOptions.Defines?.Any() == true)
             {
                 jsonWriter.WriteStartArray(DependencyContextStrings.DefinesPropertyName);
-                foreach (string define in compilationOptions.Defines)
+                foreach (string? define in compilationOptions.Defines)
                 {
                     jsonWriter.WriteStringValue(define);
                 }

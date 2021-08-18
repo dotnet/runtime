@@ -15,19 +15,19 @@ namespace Microsoft.Extensions.DependencyModel
         public static bool IsTokenTypeProperty(this ref Utf8JsonReader reader)
             => reader.TokenType == JsonTokenType.PropertyName;
 
-        public static bool TryReadStringProperty(this ref Utf8JsonReader reader, [MaybeNullWhen(false)] out string name, out string? value)
+        public static bool TryReadStringProperty(this ref Utf8JsonReader reader, out string? name, out string? value)
         {
             name = null;
             value = null;
             if (reader.Read() && reader.IsTokenTypeProperty())
             {
-                name = reader.GetString()!;
+                name = reader.GetString();
 
                 if (reader.Read())
                 {
                     if (reader.TokenType == JsonTokenType.String)
                     {
-                        value = reader.GetString()!;
+                        value = reader.GetString();
                     }
                     else
                     {
@@ -63,7 +63,7 @@ namespace Microsoft.Extensions.DependencyModel
             }
         }
 
-        public static string[] ReadStringArray(this ref Utf8JsonReader reader)
+        public static string?[] ReadStringArray(this ref Utf8JsonReader reader)
         {
             reader.Read();
             if (reader.TokenType != JsonTokenType.StartArray)
@@ -71,11 +71,11 @@ namespace Microsoft.Extensions.DependencyModel
                 throw CreateUnexpectedException(ref reader, "[");
             }
 
-            var items = new List<string>();
+            var items = new List<string?>();
 
             while (reader.Read() && reader.TokenType == JsonTokenType.String)
             {
-                items.Add(reader.GetString()!);
+                items.Add(reader.GetString());
             }
 
             if (reader.TokenType != JsonTokenType.EndArray)
