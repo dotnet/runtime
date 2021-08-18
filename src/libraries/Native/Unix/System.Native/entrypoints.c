@@ -7,6 +7,7 @@
 #include "pal_autoreleasepool.h"
 #include "pal_console.h"
 #include "pal_datetime.h"
+#include "pal_dl.h"
 #include "pal_errno.h"
 #include "pal_interfaceaddresses.h"
 #include "pal_io.h"
@@ -257,6 +258,7 @@ static const Entry s_sysNative[] =
     DllImportEntry(SystemNative_SetPosixSignalHandler)
     DllImportEntry(SystemNative_GetPlatformSignalNumber)
     DllImportEntry(SystemNative_GetGroups)
+    DllImportEntry(SystemNative_GetDefaultSearchOrderPseudoHandle)
 };
 
 EXTERN_C const void* SystemResolveDllImport(const char* name);

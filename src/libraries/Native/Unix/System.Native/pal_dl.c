@@ -6,13 +6,13 @@
 #include <stdlib.h>
 
 #ifdef TARGET_ANDROID
-void* SystemNative_GetDefaultSearchOrderPseudoHandle()
+void* SystemNative_GetDefaultSearchOrderPseudoHandle(void)
 {
     return (void*)RTLD_DEFAULT;
 }
 #else
 static void* g_defaultSearchOrderPseudoHandle = NULL;
-void* SystemNative_GetDefaultSearchOrderPseudoHandle()
+void* SystemNative_GetDefaultSearchOrderPseudoHandle(void)
 {
     if (g_defaultSearchOrderPseudoHandle == NULL)
     {
