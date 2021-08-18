@@ -945,7 +945,7 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
 
             var configurationBuilder = new ConfigurationBuilder();
             configurationBuilder.AddInMemoryCollection(dic);
-            var config = configurationBuilder.Build();
+            IConfiguration config = configurationBuilder.Build();
 
             var stringArr = config.GetSection("MyString").Get<string[]>();
             Assert.Equal("hello world", stringArr[0]);
@@ -975,7 +975,7 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
 
             var configurationBuilder = new ConfigurationBuilder();
             configurationBuilder.AddInMemoryCollection(dic);
-            var config = configurationBuilder.Build();
+            IConfiguration config = configurationBuilder.Build();
 
             var stringArr = config.GetSection("MyString").Get<string[]>();
             Assert.Null(stringArr);
