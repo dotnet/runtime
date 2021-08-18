@@ -702,9 +702,6 @@ PTR_GSCookie GetProcessGSCookiePtr() { return  PTR_GSCookie(&s_gsCookie); }
 inline
 GSCookie GetProcessGSCookie() { return *(RAW_KEYWORD(volatile) GSCookie *)(&s_gsCookie); }
 
-class CEECompileInfo;
-extern CEECompileInfo *g_pCEECompileInfo;
-
 // Returns true if this is NGen compilation process.
 // This is a superset of CompilationDomain::IsCompilationDomain() as there is more
 // than one AppDomain in ngen (the DefaultDomain)

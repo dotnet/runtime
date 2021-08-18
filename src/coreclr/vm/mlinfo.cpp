@@ -20,10 +20,6 @@
 #include "ilmarshalers.h"
 #include "interoputil.h"
 
-#ifdef FEATURE_PREJIT
-    #include "dataimage.h"
-#endif
-
 #ifdef FEATURE_COMINTEROP
 #include "comcallablewrapper.h"
 #include "runtimecallablewrapper.h"

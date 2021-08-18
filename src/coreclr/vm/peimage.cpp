@@ -16,10 +16,6 @@
 #include "eventtrace.h"
 #include "peimagelayout.inl"
 
-#ifdef FEATURE_PREJIT
-#include "compile.h"
-#endif
-
 #ifndef DACCESS_COMPILE
 
 

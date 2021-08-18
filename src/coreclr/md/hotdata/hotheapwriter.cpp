@@ -21,11 +21,6 @@
 
 #include "hotdataformat.h"
 
-#ifdef FEATURE_PREJIT
-// Cannot be included without FEATURE_PREJIT:
-#include <corcompile.h>
-#endif //FEATURE_PREJIT
-
 namespace MetaData
 {
 

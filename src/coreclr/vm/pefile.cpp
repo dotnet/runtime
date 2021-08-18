@@ -16,24 +16,12 @@
 #include "peimagelayout.inl"
 #include "dlwrap.h"
 #include "invokeutil.h"
-#ifdef FEATURE_PREJIT
-#include "compile.h"
-#endif
 #include "strongnameinternal.h"
 
 #include "../binder/inc/applicationcontext.hpp"
 
 #include "clrprivbinderutil.h"
 #include "../binder/inc/coreclrbindercommon.h"
-
-
-#ifdef FEATURE_PREJIT
-#include "compile.h"
-
-#ifdef DEBUGGING_SUPPORTED
-SVAL_IMPL_INIT(DWORD, PEFile, s_NGENDebugFlags, 0);
-#endif
-#endif
 
 #include "sha1.h"
 

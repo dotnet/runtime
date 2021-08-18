@@ -46,10 +46,6 @@
 #include "clrtocomcall.h"
 #endif // FEATURE_COMINTEROP
 
-#ifdef FEATURE_PREJIT
-#include "compile.h"
-#endif // FEATURE_PREJIT
-
 #include "eventtrace.h"
 
 namespace

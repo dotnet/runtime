@@ -314,11 +314,6 @@ public:
 
     Precode* GetOrCreatePrecode();
 
-#ifdef FEATURE_PREJIT
-    Precode *     GetSavedPrecode(DataImage *image);
-    Precode *     GetSavedPrecodeOrNull(DataImage *image);
-#endif // FEATURE_PREJIT
-
     // Given a code address return back the MethodDesc whenever possible
     //
     static MethodDesc *  GetMethodDescFromStubAddr(PCODE addr, BOOL fSpeculative = FALSE);
@@ -1670,79 +1665,6 @@ public:
     //================================================================
     // Precompilation (NGEN)
 
-    void Save(DataImage *image);
-    void Fixup(DataImage *image);
-    void FixupSlot(DataImage *image, PVOID p, SSIZE_T offset, ZapRelocationType type = IMAGE_REL_BASED_PTR);
-
-    //
-    // Helper class used to regroup MethodDesc chunks before saving them into NGen image.
-    // The regrouping takes into account IBC data and optional NGen-specific MethodDesc members.
-    //
-    class SaveChunk
-    {
-        DataImage * m_pImage;
-
-        ZapStoredStructure * m_pFirstNode;
-        MethodDescChunk * m_pLastChunk;
-
-        typedef enum _MethodPriorityEnum
-        {
-            NoFlags = -1,
-            HotMethodDesc = 0x0,
-            WriteableMethodDesc = 0x1,
-            ColdMethodDesc = 0x2,
-            ColdWriteableMethodDesc=  ColdMethodDesc | WriteableMethodDesc
-
-        } MethodPriorityEnum;
-
-        struct MethodInfo
-        {
-            MethodDesc * m_pMD;
-            //MethodPriorityEnum
-            BYTE m_priority;
-
-            BOOL m_fHasPrecode:1;
-            BOOL m_fHasNativeCodeSlot:1;
-            BOOL m_fHasFixupList:1;
-        };
-
-        InlineSArray<MethodInfo, 20> m_methodInfos;
-
-        static int __cdecl MethodInfoCmp(const void* a_, const void* b_);
-
-        SIZE_T GetSavedMethodDescSize(MethodInfo * pMethodInfo);
-
-        void SaveOneChunk(COUNT_T start, COUNT_T count, ULONG size, DWORD priority);
-
-    public:
-        SaveChunk(DataImage * image)
-            : m_pImage(image), m_pFirstNode(NULL), m_pLastChunk(NULL)
-        {
-            LIMITED_METHOD_CONTRACT;
-        }
-
-        void Append(MethodDesc * pMD);
-
-        ZapStoredStructure * Save();
-    };
-
-    bool CanSkipDoPrestub(MethodDesc * callerMD,
-                          CorInfoIndirectCallReason *pReason,
-                          CORINFO_ACCESS_FLAGS  accessFlags = CORINFO_ACCESS_ANY);
-
-    // This is different from !IsRestored() in that it checks if restoring
-    // will ever be needed for this ngened data-structure.
-    // This is to be used at ngen time of a dependent module to determine
-    // if it can be accessed directly, or if the restoring mechanism needs
-    // to be hooked in.
-    BOOL NeedsRestore(DataImage *image, BOOL fAssumeMethodTableRestored = FALSE)
-    {
-        WRAPPER_NO_CONTRACT;
-        return ComputeNeedsRestore(image, NULL, fAssumeMethodTableRestored);
-    }
-
-    BOOL ComputeNeedsRestore(DataImage *image, TypeHandleList *pVisited, BOOL fAssumeMethodTableRestored = FALSE);
-
     //
     // After the zapper compiles all code in a module it may attempt
     // to populate entries in all dictionaries
@@ -2848,7 +2770,6 @@ public:
     }
 
     void Restore();
-    void Fixup(DataImage* image);
     //
     // following implementations defined in DynamicMethod.cpp
     //
@@ -3425,11 +3346,6 @@ struct ComPlusCallInfo
 
     // This field gets set only when this MethodDesc is marked as PreImplemented
     RelativePointer<PTR_MethodDesc> m_pStubMD;
-
-#ifdef FEATURE_PREJIT
-    BOOL ShouldSave(DataImage *image);
-    void Fixup(DataImage *image);
-#endif
 };
 
 

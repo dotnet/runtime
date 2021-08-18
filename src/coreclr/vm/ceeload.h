@@ -37,10 +37,6 @@
 
 #include "wellknownattributes.h"
 
-#ifdef FEATURE_PREJIT
-#include "dataimage.h"
-#endif // FEATURE_PREJIT
-
 #ifdef FEATURE_READYTORUN
 #include "readytoruninfo.h"
 #endif
@@ -221,58 +217,6 @@ struct LookupMapBase
 
     // Set of flags that the map supports writing on top of the data value
     TADDR               supportedFlags;
-
-#ifdef FEATURE_PREJIT
-    struct  HotItem
-    {
-        DWORD   rid;
-        TADDR   value;
-        static int __cdecl Cmp(const void* a_, const void* b_);
-    };
-    DWORD               dwNumHotItems;
-    ArrayDPTR(HotItem)  hotItemList;
-    PTR_TADDR FindHotItemValuePtr(DWORD rid);
-
-    //
-    // Compressed map support
-    //
-    PTR_CBYTE           pIndex;             // Bookmark for every kLookupMapIndexStride'th entry in the table
-    DWORD               cIndexEntryBits;    // Number of bits in every index entry
-    DWORD               cbTable;            // Number of bytes of compressed table data at pTable
-    DWORD               cbIndex;            // Number of bytes of index data at pIndex
-    BYTE                rgEncodingLengths[kLookupMapLengthEntries]; // Table of delta encoding lengths for
-                                                                    // compressed values
-
-    // Returns true if this map instance is compressed (this can only happen at runtime when running against
-    // an ngen image). Currently and for the forseeable future only TypeDefToMethodTable and MethodDefToDesc
-    // tables can be compressed.
-    bool MapIsCompressed()
-    {
-        LIMITED_METHOD_DAC_CONTRACT;
-        return pIndex != NULL;
-    }
-
-protected:
-    // Internal routine used to iterate though one entry in the compressed table.
-    INT32 GetNextCompressedEntry(BitStreamReader *pTableStream, INT32 iLastValue);
-
-public:
-    // Public method used to retrieve the full value (non-RVA) of a compressed table entry.
-    TADDR GetValueFromCompressedMap(DWORD rid);
-
-#ifndef DACCESS_COMPILE
-    void CreateHotItemList(DataImage *image, CorProfileData *profileData, int table, BOOL fSkipNullEntries = FALSE);
-    void Save(DataImage *image, DataImage::ItemKind kind, CorProfileData *profileData, int table, BOOL fCopyValues = FALSE);
-    void SaveUncompressedMap(DataImage *image, DataImage::ItemKind kind, BOOL fCopyValues = FALSE);
-    void ConvertSavedMapToUncompressed(DataImage *image, DataImage::ItemKind kind);
-    void Fixup(DataImage *image, BOOL fFixupEntries = TRUE);
-#endif // !DACCESS_COMPILE
-
-#ifdef _DEBUG
-    void    CheckConsistentHotItemList();
-#endif
-
-#endif // FEATURE_PREJIT
 
 #ifdef DACCESS_COMPILE
     void EnumMemoryRegions(CLRDataEnumMemoryFlags flags,
@@ -677,7 +621,6 @@ struct ModuleCtorInfo
 
 #ifdef FEATURE_PREJIT
 
-    void AddElement(MethodTable *pMethodTable);
     void Save(DataImage *image, CorProfileData *profileData);
     void Fixup(DataImage *image);
 
@@ -1170,29 +1113,6 @@ public:
     void EnumMemoryRegionsForEntry(GuidToMethodTableEntry *pEntry, CLRDataEnumMemoryFlags flags)
     { SUPPORTS_DAC; }
 #endif // DACCESS_COMPILE
-
-#if defined(FEATURE_PREJIT) && !defined(DACCESS_COMPILE)
-
-public:
-    void Save(DataImage *pImage, CorProfileData *pProfileData);
-    void Fixup(DataImage *pImage);
-
-private:
-    // We save all entries
-    bool ShouldSave(DataImage *pImage, GuidToMethodTableEntry *pEntry)
-    { LIMITED_METHOD_CONTRACT; return true; }
-
-    bool IsHotEntry(GuidToMethodTableEntry *pEntry, CorProfileData *pProfileData)
-    { LIMITED_METHOD_CONTRACT; return false; }
-
-    bool SaveEntry(DataImage *pImage, CorProfileData *pProfileData,
-                        GuidToMethodTableEntry *pOldEntry, GuidToMethodTableEntry *pNewEntry,
-                        EntryMappingTable *pMap);
-
-    void FixupEntry(DataImage *pImage, GuidToMethodTableEntry *pEntry, void *pFixupBase, DWORD cbFixupOffset);
-
-#endif // FEATURE_PREJIT && !DACCESS_COMPILE
-
 };
 
 #endif // FEATURE_COMINTEROP
@@ -1243,46 +1163,6 @@ public:
 
     void EnumMemoryRegionsForEntry(MemberRefToDescHashEntry *pEntry, CLRDataEnumMemoryFlags flags)
     { SUPPORTS_DAC; }
-
-#endif
-
-#if defined(FEATURE_PREJIT) && !defined(DACCESS_COMPILE)
-
-    void Fixup(DataImage *pImage)
-    {
-        WRAPPER_NO_CONTRACT;
-        BaseFixup(pImage);
-    }
-
-    void Save(DataImage *pImage, CorProfileData *pProfileData);
-
-
-private:
-    bool ShouldSave(DataImage *pImage, MemberRefToDescHashEntry *pEntry)
-    {
-        return IsHotEntry(pEntry, NULL);
-    }
-
-    bool IsHotEntry(MemberRefToDescHashEntry *pEntry, CorProfileData *pProfileData) // yes according to IBC data
-    {
-		LIMITED_METHOD_CONTRACT;
-
-        _ASSERTE(pEntry != NULL);
-		// Low order bit of data field indicates a hot entry.
-		return (pEntry->m_value & 0x1) != 0;
-
-    }
-
-
-    bool SaveEntry(DataImage *pImage, CorProfileData *pProfileData,
-                        MemberRefToDescHashEntry *pOldEntry, MemberRefToDescHashEntry *pNewEntry,
-                        EntryMappingTable *pMap)
-    {
-        //The entries are mutable
-        return FALSE;
-    }
-
-    void FixupEntry(DataImage *pImage, MemberRefToDescHashEntry *pEntry, void *pFixupBase, DWORD cbFixupOffset);
 
 #endif
 };
@@ -2184,10 +2064,6 @@ public:
 
     TypeHandle LookupTypeRef(mdTypeRef token);
 
-    mdTypeRef LookupTypeRefByMethodTable(MethodTable *pMT);
-
-    mdMemberRef LookupMemberRefByMethodDesc(MethodDesc *pMD);
-
 #ifndef DACCESS_COMPILE
     //
     // Increase the size of the TypeRef-to-MethodTable LookupMap to make sure the specified token
@@ -2399,10 +2275,6 @@ public:
 
 #endif // !DACCESS_COMPILE
 
-#ifdef FEATURE_PREJIT
-    void FinalizeLookupMapsPreSave(DataImage *image);
-#endif
-
     DWORD GetAssemblyRefMax() {LIMITED_METHOD_CONTRACT;  return m_ManifestModuleReferencesMap.GetSize(); }
 
     MethodDesc *FindMethodThrowing(mdToken pMethod);
@@ -2412,9 +2284,6 @@ public:
     HRESULT GetPropertyInfoForMethodDef(mdMethodDef md, mdProperty *ppd, LPCSTR *pName, ULONG *pSemantic);
 
     #define NUM_PROPERTY_SET_HASHES 4
-#ifdef FEATURE_PREJIT
-    void PrecomputeMatchingProperties(DataImage *image);
-#endif
     BOOL MightContainMatchingProperty(mdProperty tkProperty, ULONG nameHash);
 
 private:

@@ -44,10 +44,6 @@
 #include "safemath.h"
 #include "threadstatics.h"
 
-#ifdef FEATURE_PREJIT
-#include "compile.h"
-#endif
-
 #ifdef HAVE_GCCOVER
 #include "gccover.h"
 #endif // HAVE_GCCOVER

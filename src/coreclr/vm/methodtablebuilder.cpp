@@ -21,7 +21,6 @@
 #include "ecmakey.h"
 #include "customattribute.h"
 #include "typestring.h"
-#include "compile.h"
 
 //*******************************************************************************
 // Helper functions to sort GCdescs by offset (decending order)
@@ -3021,7 +3020,7 @@ MethodTableBuilder::EnumerateClassMethods()
 
             // Some interface checks.
             // We only need them if default interface method support is disabled or if this is fragile crossgen
-#if !defined(FEATURE_DEFAULT_INTERFACES) || defined(FEATURE_NATIVE_IMAGE_GENERATION)
+#if !defined(FEATURE_DEFAULT_INTERFACES)
             if (fIsClassInterface
 #if defined(FEATURE_DEFAULT_INTERFACES)
                 // Only fragile crossgen wasn't upgraded to deal with default interface methods.
@@ -3045,7 +3044,7 @@ MethodTableBuilder::EnumerateClassMethods()
                     }
                 }
             }
-#endif // !defined(FEATURE_DEFAULT_INTERFACES) || defined(FEATURE_NATIVE_IMAGE_GENERATION)
+#endif // !defined(FEATURE_DEFAULT_INTERFACES)
 
             // No synchronized methods in ValueTypes
             if(fIsClassValueType && IsMiSynchronized(dwImplFlags))

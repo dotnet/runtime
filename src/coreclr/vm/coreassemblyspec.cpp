@@ -21,10 +21,6 @@
 #include "strongnameinternal.h"
 #include "strongnameholders.h"
 
-#ifdef FEATURE_PREJIT
-#include "compile.h"
-#endif
-
 #include "../binder/inc/textualidentityparser.hpp"
 #include "../binder/inc/assemblyidentity.hpp"
 #include "../binder/inc/assembly.hpp"
