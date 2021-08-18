@@ -24,7 +24,6 @@ namespace System.IO
             // Question - should we relocate Path.GetTempPath on iOS/tvOS to something that is going to work?
             tempDirectory ??= PlatformDetection.IsNotAppleMobile ? Path.GetTempPath() : Environment.GetFolderPath(Environment.SpecialFolder.InternetCache);
 
-            Console.WriteLine("Temp Directory: " + tempDirectory);
             // Use a unique test directory per test class.  The test directory lives in the user's temp directory,
             // and includes both the name of the test class and a random string.  The test class name is included
             // so that it can be easily correlated if necessary, and the random string to helps avoid conflicts if

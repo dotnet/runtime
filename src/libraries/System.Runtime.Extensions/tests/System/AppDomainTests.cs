@@ -763,14 +763,16 @@ namespace System.Tests
 
         private void CopyTestAssemblies()
         {
-            string destTestAssemblyPath = Path.Combine(Environment.CurrentDirectory, "AssemblyResolveTestApp", "AssemblyResolveTestApp.dll");
+            string curDirectory = PlatformDetection.IsNotAppleMobile ? Environment.CurrentDirectory : Environment.GetFolderPath(Environment.SpecialFolder.InternetCache); 
+
+            string destTestAssemblyPath = Path.Combine(curDirectory, "AssemblyResolveTestApp", "AssemblyResolveTestApp.dll");
             if (!File.Exists(destTestAssemblyPath) && File.Exists("AssemblyResolveTestApp.dll"))
             {
                 Directory.CreateDirectory(Path.GetDirectoryName(destTestAssemblyPath));
                 File.Copy("AssemblyResolveTestApp.dll", destTestAssemblyPath, false);
             }
 
-            destTestAssemblyPath = Path.Combine(Environment.CurrentDirectory, "TestAppOutsideOfTPA", "TestAppOutsideOfTPA.exe");
+            destTestAssemblyPath = Path.Combine(curDirectory, "TestAppOutsideOfTPA", "TestAppOutsideOfTPA.exe");
             if (!File.Exists(destTestAssemblyPath) && File.Exists("TestAppOutsideOfTPA.exe"))
             {
                 Directory.CreateDirectory(Path.GetDirectoryName(destTestAssemblyPath));
