@@ -367,6 +367,29 @@ namespace Microsoft.Extensions.Caching.Memory
         }
 
         [Fact]
+        public void ClearClears()
+        {
+            var cache = (MemoryCache)CreateCache();
+            var obj = new object();
+            string[] keys = new string[] { "key1", "key2", "key3", "key4" };
+
+            foreach (var key in keys)
+            {
+                var result = cache.Set(key, obj);
+                Assert.Same(obj, result);
+                Assert.Same(obj, cache.Get(key));
+            }
+
+            cache.Clear();
+
+            Assert.Equal(0, cache.Count);
+            foreach (var key in keys)
+            {
+                Assert.Null(cache.Get(key));
+            }
+        }
+
+        [Fact]
         public void RemoveRemovesAndInvokesCallback()
         {
             var cache = CreateCache();
@@ -391,6 +414,38 @@ namespace Microsoft.Extensions.Caching.Memory
             Assert.Same(value, result);
 
             cache.Remove(key);
+            Assert.True(callbackInvoked.WaitOne(TimeSpan.FromSeconds(30)), "Callback");
+
+            result = cache.Get(key);
+            Assert.Null(result);
+        }
+
+        [Fact]
+        public void ClearClearsAndInvokesCallback()
+        {
+            var cache = (MemoryCache)CreateCache();
+            var value = new object();
+            string key = "myKey";
+            var callbackInvoked = new ManualResetEvent(false);
+
+            var options = new MemoryCacheEntryOptions();
+            options.PostEvictionCallbacks.Add(new PostEvictionCallbackRegistration()
+            {
+                EvictionCallback = (subkey, subValue, reason, state) =>
+                {
+                    Assert.Equal(key, subkey);
+                    Assert.Same(value, subValue);
+                    Assert.Equal(EvictionReason.Removed, reason);
+                    var localCallbackInvoked = (ManualResetEvent)state;
+                    localCallbackInvoked.Set();
+                },
+                State = callbackInvoked
+            });
+            var result = cache.Set(key, value, options);
+            Assert.Same(value, result);
+
+            cache.Clear();
+            Assert.Equal(0, cache.Count);
             Assert.True(callbackInvoked.WaitOne(TimeSpan.FromSeconds(30)), "Callback");
 
             result = cache.Get(key);
