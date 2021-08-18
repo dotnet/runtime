@@ -2,9 +2,13 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
+using System.Net.Security;
 using System.Reflection;
 using System.Runtime.Versioning;
+using System.Security.Authentication;
+using System.Security.Cryptography.X509Certificates;
 
 namespace System.Net.Http
 {
@@ -15,154 +19,56 @@ namespace System.Net.Http
         private const string NativeHandlerType = "Xamarin.Android.Net.AndroidMessageHandler";
         private const string AssemblyName = "Mono.Android";
 
-        public virtual bool SupportsAutomaticDecompression => true;
-        public virtual bool SupportsProxy => true;
-        public virtual bool SupportsRedirectConfiguration => true;
+        [DynamicDependency("get_DefaultProxyCredentials", NativeHandlerType, AssemblyName)]
+        private ICredentials? GetDefaultProxyCredentials() => (ICredentials?)InvokeNativeHandlerMethod("get_DefaultProxyCredentials");
 
-        [UnsupportedOSPlatform("browser")]
-        [UnsupportedOSPlatform("ios")]
-        [UnsupportedOSPlatform("tvos")]
-        public DecompressionMethods AutomaticDecompression
-        {
-            get
-            {
-                if (IsNativeHandlerEnabled)
-                {
-                    return GetAutomaticDecompression();
-                }
-                else
-                {
-                    return _socketHandler!.AutomaticDecompression;
-                }
-            }
-            set
-            {
-                if (IsNativeHandlerEnabled)
-                {
-                    SetAutomaticDecompression(value);
-                }
-                else
-                {
-                    _socketHandler!.AutomaticDecompression = value;
-                }
-            }
-        }
+        [DynamicDependency("set_DefaultProxyCredentials", NativeHandlerType, AssemblyName)]
+        private void SetDefaultProxyCredentials(ICredentials? value) => InvokeNativeHandlerMethod("set_DefaultProxyCredentials", value);
 
-        [UnsupportedOSPlatform("browser")]
-        [UnsupportedOSPlatform("ios")]
-        [UnsupportedOSPlatform("tvos")]
-        public bool UseProxy
-        {
-            get
-            {
-                if (IsNativeHandlerEnabled)
-                {
-                    return GetUseProxy();
-                }
-                else
-                {
-                    return _socketHandler!.UseProxy;
-                }
-            }
-            set
-            {
-                if (IsNativeHandlerEnabled)
-                {
-                    SetUseProxy(value);
-                }
-                else
-                {
-                    _socketHandler!.UseProxy = value;
-                }
-            }
-        }
+        [DynamicDependency("get_MaxConnectionsPerServer", NativeHandlerType, AssemblyName)]
+        private int GetMaxConnectionsPerServer() => (int)InvokeNativeHandlerMethod("get_MaxConnectionsPerServer");
 
-        [UnsupportedOSPlatform("browser")]
-        [UnsupportedOSPlatform("ios")]
-        [UnsupportedOSPlatform("tvos")]
-        public IWebProxy? Proxy
-        {
-            get
-            {
-                if (IsNativeHandlerEnabled)
-                {
-                    return GetProxy();
-                }
-                else
-                {
-                    return _socketHandler!.Proxy;
-                }
-            }
-            set
-            {
-                if (IsNativeHandlerEnabled)
-                {
-                    SetProxy(value!);
-                }
-                else
-                {
-                    _socketHandler!.Proxy = value;
-                }
-            }
-        }
+        [DynamicDependency("set_MaxConnectionsPerServer", NativeHandlerType, AssemblyName)]
+        private void SetMaxConnectionsPerServer(int value) => InvokeNativeHandlerMethod("set_MaxConnectionsPerServer", value);
 
-        [UnsupportedOSPlatform("browser")]
-        [UnsupportedOSPlatform("ios")]
-        [UnsupportedOSPlatform("tvos")]
-        public bool PreAuthenticate
-        {
-            get
-            {
-                if (IsNativeHandlerEnabled)
-                {
-                    return GetPreAuthenticate();
-                }
-                else
-                {
-                    return _socketHandler!.PreAuthenticate;
-                }
-            }
-            set
-            {
-                if (IsNativeHandlerEnabled)
-                {
-                    SetPreAuthenticate(value);
-                }
-                else
-                {
-                    _socketHandler!.PreAuthenticate = value;
-                }
-            }
-        }
+        [DynamicDependency("get_MaxResponseHeadersLength", NativeHandlerType, AssemblyName)]
+        private int GetMaxResponseHeadersLength() => (int)InvokeNativeHandlerMethod("get_MaxResponseHeadersLength");
 
-        [UnsupportedOSPlatform("browser")]
-        [UnsupportedOSPlatform("ios")]
-        [UnsupportedOSPlatform("tvos")]
-        public int MaxAutomaticRedirections
-        {
-            get
-            {
-                if (IsNativeHandlerEnabled)
-                {
-                    return GetMaxAutomaticRedirections();
-                }
-                else
-                {
-                    return _socketHandler!.MaxAutomaticRedirections;
-                }
-            }
-            set
-            {
-                if (IsNativeHandlerEnabled)
-                {
-                    SetMaxAutomaticRedirections(value);
-                }
-                else
-                {
-                    _socketHandler!.MaxAutomaticRedirections = value;
-                }
-            }
-        }
+        [DynamicDependency("set_MaxResponseHeadersLength", NativeHandlerType, AssemblyName)]
+        private void SetMaxResponseHeadersLength(int value) => InvokeNativeHandlerMethod("set_MaxResponseHeadersLength", value);
+
+        [DynamicDependency("get_ClientCertificateOptions", NativeHandlerType, AssemblyName)]
+        private ClientCertificateOption GetClientCertificateOptions() => (ClientCertificateOption)InvokeNativeHandlerMethod("get_ClientCertificateOptions");
+
+        [DynamicDependency("set_ClientCertificateOptions", NativeHandlerType, AssemblyName)]
+        private void SetClientCertificateOptions(ClientCertificateOption value) => InvokeNativeHandlerMethod("set_ClientCertificateOptions", value);
+
+        [DynamicDependency("get_ClientCertificates", NativeHandlerType, AssemblyName)]
+        private X509CertificateCollection GetClientCertificates() => (X509CertificateCollection)InvokeNativeHandlerMethod("get_ClientCertificates");
+
+        [DynamicDependency("get_CheckCertificateRevocationList", NativeHandlerType, AssemblyName)]
+        private bool GetCheckCertificateRevocationList() => (bool)InvokeNativeHandlerMethod("get_CheckCertificateRevocationList");
+
+        [DynamicDependency("set_CheckCertificateRevocationList", NativeHandlerType, AssemblyName)]
+        private void SetCheckCertificateRevocationList(bool value) => InvokeNativeHandlerMethod("set_CheckCertificateRevocationList", value);
+
+        [DynamicDependency("get_SslProtocols", NativeHandlerType, AssemblyName)]
+        private SslProtocols GetSslProtocols() => (SslProtocols)InvokeNativeHandlerMethod("get_SslProtocols");
+
+        [DynamicDependency("set_SslProtocols", NativeHandlerType, AssemblyName)]
+        private void SetSslProtocols(SslProtocols value) => InvokeNativeHandlerMethod("set_SslProtocols", value);
+
+        [DynamicDependency("get_Properties", NativeHandlerType, AssemblyName)]
+        private IDictionary<string, object?> GetProperties() => (IDictionary<string, object?>)InvokeNativeHandlerMethod("get_Properties");
+
+        [DynamicDependency("get_SupportsAutomaticDecompression", NativeHandlerType, AssemblyName)]
+        private bool GetSupportsAutomaticDecompression() => (bool)InvokeNativeHandlerMethod("get_SupportsAutomaticDecompression");
+
+        [DynamicDependency("get_SupportsProxy", NativeHandlerType, AssemblyName)]
+        private bool GetSupportsProxy() => (bool)InvokeNativeHandlerMethod("get_SupportsProxy");
+
+        [DynamicDependency("get_SupportsRedirectConfiguration", NativeHandlerType, AssemblyName)]
+        private bool GetSupportsRedirectConfiguration() => (bool)InvokeNativeHandlerMethod("get_SupportsRedirectConfiguration");
 
         [DynamicDependency("get_MaxAutomaticRedirections", NativeHandlerType, AssemblyName)]
         private int GetMaxAutomaticRedirections() => (int)InvokeNativeHandlerMethod("get_MaxAutomaticRedirections");

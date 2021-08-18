@@ -1,10 +1,10 @@
-
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
 using System.Threading.Tasks;
 using System.Diagnostics;
+using System.Collections.Generic;
 
 namespace DebuggerTests
 {
@@ -65,9 +65,9 @@ namespace DebuggerTests
             var a = new WithDisplayString();
             var b = new WithProxy();
             var c = new DebuggerDisplayMethodTest();
-            Console.WriteLine(a);
-            Console.WriteLine(b);
-            Console.WriteLine(c);
+            List<int> myList = new List<int>{ 1, 2, 3, 4 };
+            var listToTestToList = System.Linq.Enumerable.Range(1, 11);
+            Console.WriteLine("break here");
         }
     }
 }

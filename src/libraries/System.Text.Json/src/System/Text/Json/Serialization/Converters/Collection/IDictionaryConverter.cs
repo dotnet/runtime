@@ -92,13 +92,13 @@ namespace System.Text.Json.Serialization.Converters
                     if (key is string keyString)
                     {
                         _keyConverter ??= GetConverter<string>(typeInfo.KeyTypeInfo!);
-                        _keyConverter.WriteAsPropertyName(writer, keyString, options, ref state);
+                        _keyConverter.WriteAsPropertyNameCore(writer, keyString, options, state.Current.IsWritingExtensionDataProperty);
                     }
                     else
                     {
                         // IDictionary is a special case since it has polymorphic object semantics on serialization
                         // but needs to use JsonConverter<string> on deserialization.
-                        _valueConverter.WriteAsPropertyName(writer, key, options, ref state);
+                        _valueConverter.WriteAsPropertyNameCore(writer, key, options, state.Current.IsWritingExtensionDataProperty);
                     }
                 }
 

@@ -19,14 +19,14 @@ DEFINE_FIELD       (background_saved_highest_address,   uint8_t*)
 DEFINE_DPTR_FIELD  (saved_sweep_ephemeral_seg,          dac_heap_segment)
 DEFINE_FIELD       (saved_sweep_ephemeral_start,        uint8_t*)
 #else
-DEFINE_MISSING_FIELD
-DEFINE_MISSING_FIELD
+DEFINE_MISSING_FIELD(saved_sweep_ephemeral_seg)
+DEFINE_MISSING_FIELD(saved_sweep_ephemeral_start)
 #endif
 #else
-DEFINE_MISSING_FIELD
-DEFINE_MISSING_FIELD
-DEFINE_MISSING_FIELD
-DEFINE_MISSING_FIELD
-DEFINE_MISSING_FIELD
-DEFINE_MISSING_FIELD
+DEFINE_MISSING_FIELD(mark_array)
+DEFINE_MISSING_FIELD(next_sweep_obj)
+DEFINE_MISSING_FIELD(background_saved_lowest_address)
+DEFINE_MISSING_FIELD(background_saved_highest_address)
+DEFINE_MISSING_FIELD(saved_sweep_ephemeral_seg)
+DEFINE_MISSING_FIELD(saved_sweep_ephemeral_start)
 #endif

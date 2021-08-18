@@ -14,6 +14,7 @@
 #include "rejitprofiler/rejitprofiler.h"
 #include "releaseondetach/releaseondetach.h"
 #include "transitions/transitions.h"
+#include "multiple/multiple.h"
 
 ClassFactory::ClassFactory(REFCLSID clsid) : refCount(0), clsid(clsid)
 {
@@ -60,34 +61,60 @@ HRESULT STDMETHODCALLTYPE ClassFactory::CreateInstance(IUnknown *pUnkOuter, REFI
         return CLASS_E_NOAGGREGATION;
     }
 
-	//A little simplistic, we create an instance of every profiler, then return the one whose CLSID matches
-	Profiler* profilers[] = {
-        new GCAllocateProfiler(),
-		new GCBasicProfiler(),
-        new ReJITProfiler(),
-        new EventPipeReadingProfiler(),
-        new EventPipeWritingProfiler(),
-        new MetaDataGetDispenser(),
-        new GetAppDomainStaticAddress(),
-        new SlowPathELTProfiler(),
-        new GCProfiler(),
-        new ReleaseOnDetach(),
-        new Transitions(),
-        new NullProfiler()
-		// add new profilers here
-	};
-
 	Profiler* profiler = nullptr;
-	for (unsigned int i = 0; i < sizeof(profilers)/sizeof(Profiler*); i++)
-	{
-		if (clsid == profilers[i]->GetClsid())
-		{
-			profiler = profilers[i];
-			break;
-		}
-	}
-
-	if (profiler == nullptr)
+    if (clsid == GCAllocateProfiler::GetClsid())
+    {
+        profiler = new GCAllocateProfiler();
+    }
+    else if (clsid == GCBasicProfiler::GetClsid())
+    {
+        profiler = new GCBasicProfiler();
+    }
+    else if (clsid == ReJITProfiler::GetClsid())
+    {
+        profiler = new ReJITProfiler();
+    }
+    else if (clsid == EventPipeReadingProfiler::GetClsid())
+    {
+        profiler = new EventPipeReadingProfiler();
+    }
+    else if (clsid == EventPipeWritingProfiler::GetClsid())
+    {
+        profiler = new EventPipeWritingProfiler();
+    }
+    else if (clsid == MetaDataGetDispenser::GetClsid())
+    {
+        profiler = new MetaDataGetDispenser();
+    }
+    else if (clsid == GetAppDomainStaticAddress::GetClsid())
+    {
+        profiler = new GetAppDomainStaticAddress();
+    }
+    else if (clsid == SlowPathELTProfiler::GetClsid())
+    {
+        profiler = new SlowPathELTProfiler();
+    }
+    else if (clsid == GCProfiler::GetClsid())
+    {
+        profiler = new GCProfiler();
+    }
+    else if (clsid == ReleaseOnDetach::GetClsid())
+    {
+        profiler = new ReleaseOnDetach();
+    }
+    else if (clsid == Transitions::GetClsid())
+    {
+        profiler = new Transitions();
+    }
+    else if (clsid == NullProfiler::GetClsid())
+    {
+        profiler = new NullProfiler();
+    }
+    else if (clsid == MultiplyLoaded::GetClsid())
+    {
+        profiler = new MultiplyLoaded();
+    }
+    else
     {
         printf("No profiler found in ClassFactory::CreateInstance. Did you add your profiler to the list?\n");
         return E_FAIL;

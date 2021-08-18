@@ -7047,14 +7047,13 @@ void Compiler::fgValueNumberBlockAssignment(GenTree* tree)
 
             unsigned lclNum = lclVarTree->GetLclNum();
 
+            unsigned lclDefSsaNum = GetSsaNumForLocalVarDef(lclVarTree);
             // Ignore vars that we excluded from SSA (for example, because they're address-exposed). They don't have
             // SSA names in which to store VN's on defs.  We'll yield unique VN's when we read from them.
-            if (lvaInSsa(lclNum))
+            if (lvaInSsa(lclNum) && lclDefSsaNum != SsaConfig::RESERVED_SSA_NUM)
             {
                 // Should not have been recorded as updating ByrefExposed.
                 assert(!GetMemorySsaMap(ByrefExposed)->Lookup(tree));
-
-                unsigned lclDefSsaNum = GetSsaNumForLocalVarDef(lclVarTree);
 
                 ValueNum initBlkVN = ValueNumStore::NoVN;
                 GenTree* initConst = rhs;
@@ -7114,15 +7113,14 @@ void Compiler::fgValueNumberBlockAssignment(GenTree* tree)
             // Should not have been recorded as updating the GC heap.
             assert(!GetMemorySsaMap(GcHeap)->Lookup(tree));
 
-            unsigned      lhsLclNum = lclVarTree->GetLclNum();
-            FieldSeqNode* lhsFldSeq = nullptr;
+            unsigned      lhsLclNum    = lclVarTree->GetLclNum();
+            FieldSeqNode* lhsFldSeq    = nullptr;
+            unsigned      lclDefSsaNum = GetSsaNumForLocalVarDef(lclVarTree);
             // If it's excluded from SSA, don't need to do anything.
-            if (lvaInSsa(lhsLclNum))
+            if (lvaInSsa(lhsLclNum) && lclDefSsaNum != SsaConfig::RESERVED_SSA_NUM)
             {
                 // Should not have been recorded as updating ByrefExposed.
                 assert(!GetMemorySsaMap(ByrefExposed)->Lookup(tree));
-
-                unsigned lclDefSsaNum = GetSsaNumForLocalVarDef(lclVarTree);
 
                 if (lhs->IsLocalExpr(this, &lclVarTree, &lhsFldSeq))
                 {
@@ -7170,7 +7168,8 @@ void Compiler::fgValueNumberBlockAssignment(GenTree* tree)
                     {
                         unsigned rhsLclNum = rhsLclVarTree->GetLclNum();
                         rhsVarDsc          = &lvaTable[rhsLclNum];
-                        if (!lvaInSsa(rhsLclNum) || rhsFldSeq == FieldSeqStore::NotAField())
+                        if (!lvaInSsa(rhsLclNum) || !rhsLclVarTree->HasSsaName() ||
+                            rhsFldSeq == FieldSeqStore::NotAField())
                         {
                             rhsVNPair.SetBoth(vnStore->VNForExpr(compCurBB, rhsLclVarTree->TypeGet()));
                             isNewUniq = true;
@@ -7199,7 +7198,8 @@ void Compiler::fgValueNumberBlockAssignment(GenTree* tree)
                     {
                         unsigned rhsLclNum = rhsLclVarTree->GetLclNum();
                         rhsVarDsc          = &lvaTable[rhsLclNum];
-                        if (!lvaInSsa(rhsLclNum) || rhsFldSeq == FieldSeqStore::NotAField())
+                        if (!lvaInSsa(rhsLclNum) || !rhsLclVarTree->HasSsaName() ||
+                            rhsFldSeq == FieldSeqStore::NotAField())
                         {
                             isNewUniq = true;
                         }
@@ -7576,7 +7576,8 @@ void Compiler::fgValueNumberTree(GenTree* tree)
                     LclVarDsc* varDsc = &lvaTable[lclNum];
 
                     var_types indType = tree->TypeGet();
-                    if ((lclFld->GetFieldSeq() == FieldSeqStore::NotAField()) || !lvaInSsa(lclFld->GetLclNum()))
+                    if ((lclFld->GetFieldSeq() == FieldSeqStore::NotAField()) || !lvaInSsa(lclFld->GetLclNum()) ||
+                        !lclFld->HasSsaName())
                     {
                         // This doesn't represent a proper field access or it's a struct
                         // with overlapping fields that is hard to reason about; return a new unique VN.
@@ -7955,6 +7956,7 @@ void Compiler::fgValueNumberTree(GenTree* tree)
 
                             wasLocal = true;
 
+                            bool wasInSsa = false;
                             if (lvaInSsa(lclNum))
                             {
                                 FieldSeqNode* fieldSeq = vnStore->FieldSeqVNToFieldSeq(funcApp.m_args[1]);
@@ -7962,12 +7964,11 @@ void Compiler::fgValueNumberTree(GenTree* tree)
                                 // Either "arg" is the address of (part of) a local itself, or else we have
                                 // a "rogue" PtrToLoc, one that should have made the local in question
                                 // address-exposed.  Assert on that.
-                                GenTreeLclVarCommon* lclVarTree   = nullptr;
-                                bool                 isEntire     = false;
-                                unsigned             lclDefSsaNum = SsaConfig::RESERVED_SSA_NUM;
-                                ValueNumPair         newLhsVNPair;
+                                GenTreeLclVarCommon* lclVarTree = nullptr;
+                                bool                 isEntire   = false;
 
-                                if (arg->DefinesLocalAddr(this, genTypeSize(lhs->TypeGet()), &lclVarTree, &isEntire))
+                                if (arg->DefinesLocalAddr(this, genTypeSize(lhs->TypeGet()), &lclVarTree, &isEntire) &&
+                                    lclVarTree->HasSsaName())
                                 {
                                     // The local #'s should agree.
                                     assert(lclNum == lclVarTree->GetLclNum());
@@ -7988,6 +7989,8 @@ void Compiler::fgValueNumberTree(GenTree* tree)
                                         rhsVNPair.SetBoth(vnStore->VNForExpr(compCurBB, lclVarTree->TypeGet()));
                                     }
 
+                                    unsigned     lclDefSsaNum;
+                                    ValueNumPair newLhsVNPair;
                                     if (isEntire)
                                     {
                                         newLhsVNPair = rhsVNPair;
@@ -8005,24 +8008,30 @@ void Compiler::fgValueNumberTree(GenTree* tree)
                                             vnStore->VNPairApplySelectorsAssign(oldLhsVNPair, fieldSeq, rhsVNPair,
                                                                                 lhs->TypeGet(), compCurBB);
                                     }
-                                    lvaTable[lclNum].GetPerSsaData(lclDefSsaNum)->m_vnPair = newLhsVNPair;
+
+                                    if (lclDefSsaNum != SsaConfig::RESERVED_SSA_NUM)
+                                    {
+                                        lvaTable[lclNum].GetPerSsaData(lclDefSsaNum)->m_vnPair = newLhsVNPair;
+                                        wasInSsa                                               = true;
+#ifdef DEBUG
+                                        if (verbose)
+                                        {
+                                            printf("Tree ");
+                                            Compiler::printTreeID(tree);
+                                            printf(" assigned VN to local var V%02u/%d: VN ", lclNum, lclDefSsaNum);
+                                            vnpPrint(newLhsVNPair, 1);
+                                            printf("\n");
+                                        }
+#endif // DEBUG
+                                    }
                                 }
                                 else
                                 {
                                     unreached(); // "Rogue" PtrToLoc, as discussed above.
                                 }
-#ifdef DEBUG
-                                if (verbose)
-                                {
-                                    printf("Tree ");
-                                    Compiler::printTreeID(tree);
-                                    printf(" assigned VN to local var V%02u/%d: VN ", lclNum, lclDefSsaNum);
-                                    vnpPrint(newLhsVNPair, 1);
-                                    printf("\n");
-                                }
-#endif // DEBUG
                             }
-                            else if (lvaVarAddrExposed(lclNum))
+
+                            if (!wasInSsa && lvaVarAddrExposed(lclNum))
                             {
                                 // Need to record the effect on ByrefExposed.
                                 // We could use MapStore here and MapSelect on reads of address-exposed locals
@@ -8300,7 +8309,7 @@ void Compiler::fgValueNumberTree(GenTree* tree)
             {
                 FieldSeqNode* fieldSeq = nullptr;
                 ValueNum      newVN    = ValueNumStore::NoVN;
-                if (!lvaInSsa(arg->AsLclVarCommon()->GetLclNum()))
+                if (!lvaInSsa(arg->AsLclVarCommon()->GetLclNum()) || !arg->AsLclVarCommon()->HasSsaName())
                 {
                     newVN = vnStore->VNForExpr(compCurBB, TYP_BYREF);
                 }
@@ -8315,7 +8324,6 @@ void Compiler::fgValueNumberTree(GenTree* tree)
                 }
                 if (newVN == ValueNumStore::NoVN)
                 {
-                    assert(arg->AsLclVarCommon()->GetSsaNum() != ValueNumStore::NoVN);
                     newVN = vnStore->VNForFunc(TYP_BYREF, VNF_PtrToLoc,
                                                vnStore->VNForIntCon(arg->AsLclVarCommon()->GetLclNum()),
                                                vnStore->VNForFieldSeq(fieldSeq));
@@ -8518,7 +8526,8 @@ void Compiler::fgValueNumberTree(GenTree* tree)
                 VNFuncApp     funcApp;
 
                 // Is it a local or a heap address?
-                if (addr->IsLocalAddrExpr(this, &lclVarTree, &localFldSeq) && lvaInSsa(lclVarTree->GetLclNum()))
+                if (addr->IsLocalAddrExpr(this, &lclVarTree, &localFldSeq) && lvaInSsa(lclVarTree->GetLclNum()) &&
+                    lclVarTree->HasSsaName())
                 {
                     unsigned   lclNum = lclVarTree->GetLclNum();
                     unsigned   ssaNum = lclVarTree->GetSsaNum();

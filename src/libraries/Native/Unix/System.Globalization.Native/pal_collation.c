@@ -417,7 +417,7 @@ static int CanIgnoreAllCollationElements(const UCollator* pColl, const UChar* lp
 
 static void CreateSortHandle(SortHandle** ppSortHandle)
 {
-    *ppSortHandle = (SortHandle*)malloc(sizeof(SortHandle));
+    *ppSortHandle = (SortHandle*)calloc(1, sizeof(SortHandle));
     if ((*ppSortHandle) == NULL)
     {
         return;
@@ -449,6 +449,150 @@ ResultCode GlobalizationNative_GetSortHandle(const char* lpLocaleName, SortHandl
     return GetResultCode(err);
 }
 
+static const char* BreakIteratorRuleOld =  // supported on ICU like versions 52
+                        "$CR          = [\\p{Grapheme_Cluster_Break = CR}]; \n" \
+                        "$LF          = [\\p{Grapheme_Cluster_Break = LF}]; \n" \
+                        "$Control     = [\\p{Grapheme_Cluster_Break = Control}]; \n" \
+                        "$Extend      = [\\p{Grapheme_Cluster_Break = Extend}]; \n" \
+                        "$SpacingMark = [\\p{Grapheme_Cluster_Break = SpacingMark}]; \n" \
+                        "$Regional_Indicator = [\\p{Grapheme_Cluster_Break = Regional_Indicator}]; \n" \
+                        "$L       = [\\p{Grapheme_Cluster_Break = L}]; \n" \
+                        "$V       = [\\p{Grapheme_Cluster_Break = V}]; \n" \
+                        "$T       = [\\p{Grapheme_Cluster_Break = T}]; \n" \
+                        "$LV      = [\\p{Grapheme_Cluster_Break = LV}]; \n" \
+                        "$LVT     = [\\p{Grapheme_Cluster_Break = LVT}]; \n" \
+                        "!!chain; \n" \
+                        "!!forward; \n" \
+                        "$L ($L | $V | $LV | $LVT); \n" \
+                        "($LV | $V) ($V | $T); \n" \
+                        "($LVT | $T) $T; \n" \
+                        "$Regional_Indicator $Regional_Indicator; \n" \
+                        "[^$Control $CR $LF] $Extend; \n" \
+                        "[^$Control $CR $LF] $SpacingMark; \n" \
+                        "!!reverse; \n" \
+                        "($L | $V | $LV | $LVT) $L; \n" \
+                        "($V | $T) ($LV | $V); \n" \
+                        "$T ($LVT | $T); \n" \
+                        "$Regional_Indicator $Regional_Indicator; \n" \
+                        "$Extend      [^$Control $CR $LF]; \n" \
+                        "$SpacingMark [^$Control $CR $LF]; \n" \
+                        "!!safe_reverse; \n" \
+                        "!!safe_forward; \n";
+
+static const char* BreakIteratorRuleNew =  // supported on newer ICU versions like 62 and up
+                        "!!quoted_literals_only; \n" \
+                        "$CR          = [\\p{Grapheme_Cluster_Break = CR}]; \n" \
+                        "$LF          = [\\p{Grapheme_Cluster_Break = LF}]; \n" \
+                        "$Control     = [[\\p{Grapheme_Cluster_Break = Control}]]; \n" \
+                        "$Extend      = [[\\p{Grapheme_Cluster_Break = Extend}]]; \n" \
+                        "$ZWJ         = [\\p{Grapheme_Cluster_Break = ZWJ}]; \n" \
+                        "$Regional_Indicator = [\\p{Grapheme_Cluster_Break = Regional_Indicator}]; \n" \
+                        "$Prepend     = [\\p{Grapheme_Cluster_Break = Prepend}]; \n" \
+                        "$SpacingMark = [\\p{Grapheme_Cluster_Break = SpacingMark}]; \n" \
+                        "$Virama      = [\\p{Gujr}\\p{sc=Telu}\\p{sc=Mlym}\\p{sc=Orya}\\p{sc=Beng}\\p{sc=Deva}&\\p{Indic_Syllabic_Category=Virama}]; \n" \
+                        "$LinkingConsonant = [\\p{Gujr}\\p{sc=Telu}\\p{sc=Mlym}\\p{sc=Orya}\\p{sc=Beng}\\p{sc=Deva}&\\p{Indic_Syllabic_Category=Consonant}]; \n" \
+                        "$ExtCccZwj   = [[\\p{gcb=Extend}-\\p{ccc=0}] \\p{gcb=ZWJ}]; \n" \
+                        "$L           = [\\p{Grapheme_Cluster_Break = L}]; \n" \
+                        "$V           = [\\p{Grapheme_Cluster_Break = V}]; \n" \
+                        "$T           = [\\p{Grapheme_Cluster_Break = T}]; \n" \
+                        "$LV          = [\\p{Grapheme_Cluster_Break = LV}]; \n" \
+                        "$LVT         = [\\p{Grapheme_Cluster_Break = LVT}]; \n" \
+                        "$Extended_Pict = [:ExtPict:]; \n" \
+                        "!!chain; \n" \
+                        "!!lookAheadHardBreak; \n" \
+                        "$L ($L | $V | $LV | $LVT); \n" \
+                        "($LV | $V) ($V | $T); \n" \
+                        "($LVT | $T) $T; \n" \
+                        "[^$Control $CR $LF] ($Extend | $ZWJ); \n" \
+                        "[^$Control $CR $LF] $SpacingMark; \n" \
+                        "$Prepend [^$Control $CR $LF]; \n" \
+                        "$LinkingConsonant $ExtCccZwj* $Virama $ExtCccZwj* $LinkingConsonant; \n" \
+                        "$Extended_Pict $Extend* $ZWJ $Extended_Pict; \n" \
+                        "^$Prepend* $Regional_Indicator $Regional_Indicator / $Regional_Indicator; \n" \
+                        "^$Prepend* $Regional_Indicator $Regional_Indicator; \n" \
+                        ".;";
+
+static UChar* s_breakIteratorRules = NULL;
+
+// When doing string search operations using ICU, it is internally using a break iterator which doesn't allow breaking between some characters according to
+// the Grapheme Cluster Boundary Rules specified in http://www.unicode.org/reports/tr29/#Grapheme_Cluster_Boundary_Rules.
+// Unfortunately, not all rules will have the desired behavior we need to get in .NET. For example, the rules don't allow breaking between CR '\r' and LF '\n' characters.
+// When searching for "\n" in a string like "\r\n", will get not found result.
+// We are customizing the break iterator to exclude the CRxLF rule which don't allow breaking between CR and LF.
+// The general rules syntax explained in the doc https://unicode-org.github.io/icu/userguide/boundaryanalysis/break-rules.html.
+// The ICU latest rules definition exist here https://github.com/unicode-org/icu/blob/main/icu4c/source/data/brkitr/rules/char.txt.
+static UBreakIterator* CreateCustomizedBreakIterator()
+{
+    static UChar emptyString[1];
+    UBreakIterator* breaker;
+
+    UErrorCode status = U_ZERO_ERROR;
+    if (s_breakIteratorRules != NULL)
+    {
+        breaker = ubrk_openRules(s_breakIteratorRules, -1, emptyString, 0, NULL, &status);
+        return U_FAILURE(status) ? NULL : breaker;
+    }
+
+    int32_t oldRulesLength = (int32_t)strlen(BreakIteratorRuleOld);
+    int32_t newRulesLength = (int32_t)strlen(BreakIteratorRuleNew);
+
+    int32_t breakIteratorRulesLength = newRulesLength > oldRulesLength ? newRulesLength : oldRulesLength;
+
+    UChar* rules = (UChar*)calloc((size_t)breakIteratorRulesLength + 1, sizeof(UChar));
+    if (rules == NULL)
+    {
+        return NULL;
+    }
+
+    u_uastrncpy(rules, BreakIteratorRuleNew, newRulesLength);
+    rules[newRulesLength] = '\0';
+
+    breaker = ubrk_openRules(rules, newRulesLength, emptyString, 0, NULL, &status);
+    if (U_FAILURE(status))
+    {
+        status = U_ZERO_ERROR;
+        u_uastrncpy(rules, BreakIteratorRuleOld, oldRulesLength);
+        rules[oldRulesLength] = '\0';
+        breaker = ubrk_openRules(rules, oldRulesLength, emptyString, 0, NULL, &status);
+    }
+
+    if (U_FAILURE(status))
+    {
+        free(rules);
+        return NULL;
+    }
+
+    UChar* pNull = NULL;
+    if (!pal_atomic_cas_ptr((void* volatile*)&s_breakIteratorRules, rules, pNull))
+    {
+        free(rules);
+        assert(s_breakIteratorRules != NULL);
+    }
+
+    return breaker;
+}
+
+static void CloseSearchIterator(UStringSearch* pSearch)
+{
+    assert(pSearch != NULL);
+
+#if !defined(TARGET_WINDOWS)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wcast-qual"
+#endif
+    UBreakIterator* breakIterator = (UBreakIterator*)usearch_getBreakIterator(pSearch);
+#if !defined(TARGET_WINDOWS)
+#pragma GCC diagnostic pop
+#endif
+
+    usearch_close(pSearch);
+
+    if (breakIterator != NULL)
+    {
+        ubrk_close(breakIterator);
+    }
+}
+
 void GlobalizationNative_CloseSortHandle(SortHandle* pSortHandle)
 {
     for (int i = 0; i <= CompareOptionsMask; i++)
@@ -460,7 +604,7 @@ void GlobalizationNative_CloseSortHandle(SortHandle* pSortHandle)
             {
                 if (pSearch != USED_STRING_SEARCH)
                 {
-                    usearch_close(pSearch);
+                    CloseSearchIterator(pSearch);
                 }
                 pSortHandle->searchIteratorList[i].searchIterator = NULL;
                 SearchIteratorNode* pNext = pSortHandle->searchIteratorList[i].next;
@@ -470,7 +614,7 @@ void GlobalizationNative_CloseSortHandle(SortHandle* pSortHandle)
                 {
                     if (pNext->searchIterator != NULL && pNext->searchIterator != USED_STRING_SEARCH)
                     {
-                        usearch_close(pNext->searchIterator);
+                        CloseSearchIterator(pNext->searchIterator);
                     }
                     SearchIteratorNode* pCurrent = pNext;
                     pNext = pCurrent->next;
@@ -518,7 +662,7 @@ static const UCollator* GetCollatorFromSortHandle(SortHandle* pSortHandle, int32
 // CreateNewSearchNode will create a new node in the linked list and mark this node search handle as borrowed handle.
 static inline int32_t CreateNewSearchNode(SortHandle* pSortHandle, int32_t options)
 {
-    SearchIteratorNode* node = (SearchIteratorNode*) malloc(sizeof(SearchIteratorNode));
+    SearchIteratorNode* node = (SearchIteratorNode*)calloc(1, sizeof(SearchIteratorNode));
     if (node == NULL)
     {
         return false;
@@ -581,9 +725,14 @@ static int32_t GetSearchIteratorUsingCollator(
 
     if (*pSearchIterator == NULL)
     {
-        *pSearchIterator = usearch_openFromCollator(lpTarget, cwTargetLength, lpSource, cwSourceLength, pColl, NULL, &err);
+        UBreakIterator* breakIterator = CreateCustomizedBreakIterator();
+        *pSearchIterator = usearch_openFromCollator(lpTarget, cwTargetLength, lpSource, cwSourceLength, pColl, breakIterator, &err);
         if (!U_SUCCESS(err))
         {
+            if (breakIterator != NULL)
+            {
+                ubrk_close(breakIterator);
+            }
             assert(false && "Couldn't open the search iterator.");
             return -1;
         }
@@ -593,7 +742,7 @@ static int32_t GetSearchIteratorUsingCollator(
         {
             if (!CreateNewSearchNode(pSortHandle, options))
             {
-                usearch_close(*pSearchIterator);
+                CloseSearchIterator(*pSearchIterator);
                 return -1;
             }
         }
@@ -619,16 +768,22 @@ static int32_t GetSearchIteratorUsingCollator(
 
     if (*pSearchIterator == NULL) // Couldn't find any available handle to borrow then create a new one.
     {
-        *pSearchIterator = usearch_openFromCollator(lpTarget, cwTargetLength, lpSource, cwSourceLength, pColl, NULL, &err);
+        UBreakIterator* breakIterator = CreateCustomizedBreakIterator();
+        *pSearchIterator = usearch_openFromCollator(lpTarget, cwTargetLength, lpSource, cwSourceLength, pColl, breakIterator, &err);
         if (!U_SUCCESS(err))
         {
+            if (breakIterator != NULL)
+            {
+                ubrk_close(breakIterator);
+            }
+
             assert(false && "Couldn't open a new search iterator.");
             return -1;
         }
 
         if (!CreateNewSearchNode(pSortHandle, options))
         {
-            usearch_close(*pSearchIterator);
+            CloseSearchIterator(*pSearchIterator);
             return -1;
         }
 

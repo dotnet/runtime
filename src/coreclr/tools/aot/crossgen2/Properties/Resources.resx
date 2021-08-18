@@ -357,4 +357,7 @@
   <data name="InstructionSetHelp" xml:space="preserve">
     <value>The allowable values for the --instruction-set option are described in the table below. Each architecture has a different set of valid instruction sets, and multiple instruction sets may be specified by separating the instructions sets by a ','. For example 'avx2,bmi,lzcnt'</value>
   </data>
+  <data name="MakeReproPathHelp" xml:space="preserve">
+    <value>Make a repro zip file in the specified path. This is used for sending error reports to the .NET team.</value>
+  </data>
 </root>

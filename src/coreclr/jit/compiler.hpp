@@ -840,6 +840,7 @@ inline GenTree::GenTree(genTreeOps oper, var_types type DEBUGARG(bool largeNode)
 
 #ifdef DEBUG
     gtSeqNum = 0;
+    gtUseNum = -1;
     gtTreeID = JitTls::GetCompiler()->compGenTreeID++;
     gtVNPair.SetBoth(ValueNumStore::NoVN);
     gtRegTag   = GT_REGTAG_NONE;
