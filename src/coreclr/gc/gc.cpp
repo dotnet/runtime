@@ -8550,25 +8550,27 @@ void gc_heap::get_card_table_element_layout (uint8_t* start, uint8_t* end, size_
     size_t sizes[total_bookkeeping_elements];
     get_card_table_element_sizes(start, end, sizes);
 
-    size_t alignment[total_bookkeeping_elements + 1];
-    alignment[card_table_element] = sizeof (uint32_t);
-    alignment[brick_table_element] = sizeof (short);
+    const size_t alignment[total_bookkeeping_elements + 1] = 
+    {
+        sizeof (uint32_t), // card_table_element
+        sizeof (short),    // brick_table_element
 #ifdef CARD_BUNDLE
-    alignment[card_bundle_table_element] = sizeof (uint32_t);
+        sizeof (uint32_t), // card_bundle_table_element
 #endif //CARD_BUNDLE
 #ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
-    alignment[software_write_watch_table_element] = sizeof(size_t);
+        sizeof(size_t),    // software_write_watch_table_element
 #endif //FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
-    alignment[seg_mapping_table_element] = sizeof (uint8_t*);
+        sizeof (uint8_t*), // seg_mapping_table_element
 #ifdef BACKGROUND_GC
-    // In order to avoid a dependency between commit_mark_array_by_range and this logic, it is easier to make sure
-    // pages for mark array never overlaps with pages in the seg mapping table. That way commit_mark_array_by_range
-    // will never commit a page that is already committed here for the seg mapping table.
-    alignment[mark_array_element] = OS_PAGE_SIZE;
+        // In order to avoid a dependency between commit_mark_array_by_range and this logic, it is easier to make sure
+        // pages for mark array never overlaps with pages in the seg mapping table. That way commit_mark_array_by_range
+        // will never commit a page that is already committed here for the seg mapping table.
+        OS_PAGE_SIZE,      // mark_array_element
 #endif //BACKGROUND_GC
-    // commit_mark_array_by_range extends the end pointer of the commit to the next page boundary, we better make sure it
-    // is reserved
-    alignment[total_bookkeeping_elements] = OS_PAGE_SIZE;
+        // commit_mark_array_by_range extends the end pointer of the commit to the next page boundary, we better make sure it
+        // is reserved
+        OS_PAGE_SIZE       // total_bookkeeping_elements
+    };
 
     layout[card_table_element] = ALIGN_UP(sizeof(card_table_info), alignment[card_table_element]);
     for (int element = brick_table_element; element <= total_bookkeeping_elements; element++)
@@ -8605,8 +8607,8 @@ bool gc_heap::on_used_changed (uint8_t* new_used)
             {
                 uint64_t committed_size = (uint64_t)(bookkeeping_covered_committed - g_gc_lowest_address);
                 uint64_t total_size = (uint64_t)(g_gc_highest_address - g_gc_lowest_address);
-                assert (committed_size < total_size);
-                assert (committed_size < UINT64_MAX / 2);
+                assert (committed_size <= total_size);
+                assert (committed_size < (UINT64_MAX / 2));
                 uint64_t new_committed_size = min(committed_size * 2, total_size);
                 assert ((UINT64_MAX - new_committed_size) > (uint64_t)g_gc_lowest_address);
                 uint8_t* double_commit = g_gc_lowest_address + new_committed_size;
@@ -8810,7 +8812,7 @@ uint32_t* gc_heap::make_card_table (uint8_t* start, uint8_t* end)
         GCToOSInterface::VirtualRelease (mem, alloc_size);
         return 0;
     }
-#endif
+#endif //USE_REGIONS
 
     // initialize the ref count
     uint32_t* ct = (uint32_t*)(mem + card_table_element_layout[card_table_element]);
