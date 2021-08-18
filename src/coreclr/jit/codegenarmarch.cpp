@@ -2514,7 +2514,24 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
             genEmitCall(emitter::EC_FUNC_TOKEN, methHnd, INDEBUG_LDISASM_COMMA(sigInfo) addr,
                         retSize MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(secondRetSize), ilOffset);
         }
+#if 0 && defined(TARGET_ARM64)
+        // Use this path if you want to load an absolute call target using
+        //  a sequence of movs followed by an indirect call (blr instruction)
+        // If this path is enabled, we need to ensure that REG_IP0 is assigned during Lowering.
 
+        // Load the call target address in x16
+        instGen_Set_Reg_To_Imm(EA_8BYTE, REG_IP0, (ssize_t) addr);
+
+        // indirect call to constant address in IP0
+        genEmitCall(emitter::EC_INDIR_R,
+                    methHnd,
+                    INDEBUG_LDISASM_COMMA(sigInfo)
+                    nullptr, //addr
+                    retSize,
+                    secondRetSize,
+                    ilOffset,
+                    REG_IP0);
+#endif
     }
 
     // if it was a pinvoke we may have needed to get the address of a label
