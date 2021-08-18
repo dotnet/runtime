@@ -68,15 +68,16 @@ public class RuntimeEventListener : EventListener
 
     public bool Verify()
     {
-        foreach (string counterName in observedEvents.Keys)
+        foreach (var (k, v) in observedEvents)
         {
-            if (!observedEvents[counterName])
+            if (!v)
             {
+                Console.WriteLine($"Could not find key {k}")
                 return false;
             }
             else
             {
-                Console.WriteLine($"Saw {counterName}");
+                Console.WriteLine($"Saw {k}");
             }
         }
 
