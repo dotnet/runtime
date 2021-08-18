@@ -41,29 +41,32 @@ namespace Mono.Linker
 			// (if they're different). This is to correctly handle compiler generated code
 			// which needs to use suppressions from both the compiler generated scope
 			// as well as the original user defined method.
-			IMemberDefinition suppressionContextMember = warningOrigin.SuppressionContextMember;
+			ICustomAttributeProvider suppressionContextMember = warningOrigin.SuppressionContextMember;
+
 			if (IsSuppressed (id, suppressionContextMember, out info))
 				return true;
 
-			IMemberDefinition originMember = warningOrigin.MemberDefinition;
-			if (suppressionContextMember != originMember && IsSuppressed (id, originMember, out info))
+			ICustomAttributeProvider provider = warningOrigin.Provider;
+			if (suppressionContextMember != provider && IsSuppressed (id, provider, out info))
 				return true;
 
 			return false;
 		}
 
-		bool IsSuppressed (int id, IMemberDefinition warningOriginMember, out SuppressMessageInfo info)
+		bool IsSuppressed (int id, ICustomAttributeProvider warningOrigin, out SuppressMessageInfo info)
 		{
 			info = default;
-			if (warningOriginMember == null)
+			if (warningOrigin == null)
 				return false;
 
-			ModuleDefinition module = GetModuleFromProvider (warningOriginMember);
-			while (warningOriginMember != null) {
-				if (IsSuppressedOnElement (id, warningOriginMember, out info))
-					return true;
+			ModuleDefinition module = GetModuleFromProvider (warningOrigin);
+			if (warningOrigin is IMemberDefinition warningOriginMember) {
+				while (warningOriginMember != null) {
+					if (IsSuppressedOnElement (id, warningOriginMember, out info))
+						return true;
 
-				warningOriginMember = warningOriginMember.DeclaringType;
+					warningOriginMember = warningOriginMember.DeclaringType;
+				}
 			}
 
 			// Check if there's an assembly or module level suppression.

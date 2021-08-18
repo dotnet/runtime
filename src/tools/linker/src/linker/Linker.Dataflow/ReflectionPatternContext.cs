@@ -26,7 +26,7 @@ namespace Mono.Linker.Dataflow
 #endif
 
 		public MessageOrigin Origin { get; init; }
-		public IMemberDefinition Source { get => Origin.MemberDefinition; }
+		public ICustomAttributeProvider Source { get => Origin.Provider; }
 		public IMetadataTokenProvider MemberWithRequirements { get; init; }
 		public Instruction Instruction { get; init; }
 		public bool ReportingEnabled { get; init; }

@@ -251,10 +251,15 @@ namespace Mono.Linker.Steps
 
 		bool ProcessInternalsVisibleAttributes ()
 		{
-			using var nullScope = _scopeStack.PushScope (new MessageOrigin (null));
-
 			bool marked_any = false;
 			foreach (var attr in _ivt_attributes) {
+
+				var provider = attr.Provider;
+				Debug.Assert (attr.Provider is ModuleDefinition or AssemblyDefinition);
+				var assembly = (provider is ModuleDefinition module) ? module.Assembly : provider as AssemblyDefinition;
+
+				using var assemblyScope = _scopeStack.PushScope (new MessageOrigin (assembly));
+
 				if (!Annotations.IsMarked (attr.Attribute) && IsInternalsVisibleAttributeAssemblyMarked (attr.Attribute)) {
 					MarkCustomAttribute (attr.Attribute, new DependencyInfo (DependencyKind.AssemblyOrModuleAttribute, attr.Provider));
 					marked_any = true;
@@ -318,7 +323,7 @@ namespace Mono.Linker.Steps
 
 			// Prevent cases where there's nothing on the stack (can happen when marking entire assemblies)
 			// In which case we would generate warnings with no source (hard to debug)
-			using var _ = _scopeStack.CurrentScope.Origin.MemberDefinition == null ? _scopeStack.PushScope (new MessageOrigin (type)) : null;
+			using var _ = _scopeStack.CurrentScope.Origin.Provider == null ? _scopeStack.PushScope (new MessageOrigin (type)) : null;
 
 			if (!_entireTypesMarked.Add (type))
 				return;
@@ -439,7 +444,7 @@ namespace Mono.Linker.Steps
 
 		bool ProcessMarkedPending ()
 		{
-			using var emptyScope = _scopeStack.PushScope (new MessageOrigin (null));
+			using var emptyScope = _scopeStack.PushScope (new MessageOrigin (null as ICustomAttributeProvider));
 
 			bool marked = false;
 			foreach (var pending in Annotations.GetMarkedPending ()) {
@@ -1057,6 +1062,7 @@ namespace Mono.Linker.Steps
 
 		void LazyMarkCustomAttributes (ICustomAttributeProvider provider)
 		{
+			Debug.Assert (provider is ModuleDefinition or AssemblyDefinition);
 			if (!provider.HasCustomAttributes)
 				return;
 
@@ -1334,8 +1340,7 @@ namespace Mono.Linker.Steps
 			if (CheckProcessed (assembly))
 				return;
 
-			// We don't have a good origin for "assembly" level, so just use null for now
-			using var assemblyScope = _scopeStack.PushScope (new MessageOrigin (null));
+			using var assemblyScope = _scopeStack.PushScope (new MessageOrigin (assembly));
 
 			EmbeddedXmlInfo.ProcessDescriptors (assembly, _context);
 
@@ -1404,11 +1409,15 @@ namespace Mono.Linker.Steps
 			var skippedItems = new List<AttributeProviderPair> ();
 			var markOccurred = false;
 
-			// We don't have a good message origin for assembly level attributes - so set it to null
-			using var assemblyScope = _scopeStack.PushScope (new MessageOrigin (null));
 			while (_assemblyLevelAttributes.Count != 0) {
 				var assemblyLevelAttribute = _assemblyLevelAttributes.Dequeue ();
 				var customAttribute = assemblyLevelAttribute.Attribute;
+
+				var provider = assemblyLevelAttribute.Provider;
+				Debug.Assert (provider is ModuleDefinition or AssemblyDefinition);
+				var assembly = (provider is ModuleDefinition module) ? module.Assembly : provider as AssemblyDefinition;
+
+				using var assemblyScope = _scopeStack.PushScope (new MessageOrigin (assembly));
 
 				var resolved = _context.Resolve (customAttribute.Constructor);
 				if (resolved == null) {
@@ -1515,7 +1524,7 @@ namespace Mono.Linker.Steps
 			// annotation on a type, not a callsite which uses the annotation. We always want to warn about
 			// possible reflection access indicated by these annotations.
 
-			var type = _scopeStack.CurrentScope.Origin.MemberDefinition as TypeDefinition;
+			var type = _scopeStack.CurrentScope.Origin.Provider as TypeDefinition;
 			Debug.Assert (type != null);
 
 			static bool IsDeclaredWithinType (IMemberDefinition member, TypeDefinition type)
@@ -2023,7 +2032,7 @@ namespace Mono.Linker.Steps
 			TypeDefinition typeDefinition = null;
 			switch (attribute.ConstructorArguments[0].Value) {
 			case string s:
-				typeDefinition = _context.TypeNameResolver.ResolveTypeName (s, _scopeStack.CurrentScope.Origin.MemberDefinition, out AssemblyDefinition assemblyDefinition)?.Resolve ();
+				typeDefinition = _context.TypeNameResolver.ResolveTypeName (s, _scopeStack.CurrentScope.Origin.Provider, out AssemblyDefinition assemblyDefinition)?.Resolve ();
 				if (typeDefinition != null)
 					MarkingHelpers.MarkMatchingExportedType (typeDefinition, assemblyDefinition, new DependencyInfo (DependencyKind.CustomAttribute, provider));
 
@@ -2506,7 +2515,7 @@ namespace Mono.Linker.Steps
 					// The only two implementations of IGenericInstance both derive from MemberReference
 					Debug.Assert (instance is MemberReference);
 
-					using var _ = _scopeStack.CurrentScope.Origin.MemberDefinition == null ? _scopeStack.PushScope (new MessageOrigin ((instance as MemberReference).Resolve ())) : null;
+					using var _ = _scopeStack.CurrentScope.Origin.Provider == null ? _scopeStack.PushScope (new MessageOrigin ((instance as MemberReference).Resolve ())) : null;
 					var scanner = new ReflectionMethodBodyScanner (_context, this, _scopeStack);
 					scanner.ProcessGenericArgumentDataFlow (parameter, argument);
 				}
@@ -2864,12 +2873,12 @@ namespace Mono.Linker.Steps
 			// since that will be different for compiler generated code.
 			var currentOrigin = _scopeStack.CurrentScope.Origin;
 
-			IMemberDefinition suppressionContextMember = currentOrigin.SuppressionContextMember;
+			ICustomAttributeProvider suppressionContextMember = currentOrigin.SuppressionContextMember;
 			if (suppressionContextMember is MethodDefinition &&
 				Annotations.IsMethodInRequiresUnreferencedCodeScope ((MethodDefinition) suppressionContextMember))
 				return true;
 
-			IMemberDefinition originMember = currentOrigin.MemberDefinition;
+			ICustomAttributeProvider originMember = currentOrigin.Provider;
 			if (originMember is MethodDefinition && suppressionContextMember != originMember &&
 				Annotations.IsMethodInRequiresUnreferencedCodeScope ((MethodDefinition) originMember))
 				return true;
@@ -3156,7 +3165,7 @@ namespace Mono.Linker.Steps
 			if (disablePrivateReflection == null)
 				throw new LinkerFatalErrorException (MessageContainer.CreateErrorMessage ("Missing predefined 'System.Runtime.CompilerServices.DisablePrivateReflectionAttribute' type", 1007));
 
-			using (_scopeStack.PushScope (new MessageOrigin (null))) {
+			using (_scopeStack.PushScope (new MessageOrigin (null as ICustomAttributeProvider))) {
 				MarkType (disablePrivateReflection, DependencyInfo.DisablePrivateReflectionRequirement);
 
 				var ctor = MarkMethodIf (disablePrivateReflection.Methods, MethodDefinitionExtensions.IsDefaultConstructor, new DependencyInfo (DependencyKind.DisablePrivateReflectionRequirement, disablePrivateReflection));
@@ -3461,7 +3470,7 @@ namespace Mono.Linker.Steps
 			MarkCustomAttributes (iface, new DependencyInfo (DependencyKind.CustomAttribute, iface));
 			// Blame the interface type on the interfaceimpl itself.
 			MarkType (iface.InterfaceType, reason ?? new DependencyInfo (DependencyKind.InterfaceImplementationInterfaceType, iface));
-			Annotations.MarkProcessed (iface, reason ?? new DependencyInfo (DependencyKind.InterfaceImplementationOnType, _scopeStack.CurrentScope.Origin.MemberDefinition));
+			Annotations.MarkProcessed (iface, reason ?? new DependencyInfo (DependencyKind.InterfaceImplementationOnType, _scopeStack.CurrentScope.Origin.Provider));
 		}
 
 		//

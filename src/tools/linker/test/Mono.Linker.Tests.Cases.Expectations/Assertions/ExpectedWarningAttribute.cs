@@ -3,7 +3,7 @@
 namespace Mono.Linker.Tests.Cases.Expectations.Assertions
 {
 	[AttributeUsage (
-		AttributeTargets.Struct | AttributeTargets.Class | AttributeTargets.Method | AttributeTargets.Property | AttributeTargets.Constructor | AttributeTargets.Field | AttributeTargets.Interface | AttributeTargets.Event,
+		AttributeTargets.Assembly | AttributeTargets.Struct | AttributeTargets.Class | AttributeTargets.Method | AttributeTargets.Property | AttributeTargets.Constructor | AttributeTargets.Field | AttributeTargets.Interface | AttributeTargets.Event,
 		AllowMultiple = true,
 		Inherited = false)]
 	public class ExpectedWarningAttribute : EnableLoggerAttribute

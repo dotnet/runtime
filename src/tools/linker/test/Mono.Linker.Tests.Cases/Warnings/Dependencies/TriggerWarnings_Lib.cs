@@ -1,6 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq.Expressions;
+using Mono.Linker.Tests.Cases.Warnings.Dependencies;
+
+[assembly: TriggerWarnings_Lib.TriggerWarnings (typeof (TriggerWarnings_Lib.RUCType))]
 
 namespace Mono.Linker.Tests.Cases.Warnings.Dependencies
 {
@@ -45,5 +49,13 @@ namespace Mono.Linker.Tests.Cases.Warnings.Dependencies
 				Expression.Call (TriggerUnrecognizedPattern (), "", Type.EmptyTypes);
 			}
 		}
+
+		public class TriggerWarningsAttribute : Attribute
+		{
+			public TriggerWarningsAttribute ([DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.All)] Type t) { }
+		}
+
+		[RequiresUnreferencedCode ("--RUCType--")]
+		public class RUCType { }
 	}
 }

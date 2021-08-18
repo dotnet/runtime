@@ -10,8 +10,12 @@ using System.Linq.Expressions;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
+using Mono.Linker.Tests.Cases.DataFlow;
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
 using Mono.Linker.Tests.Cases.Expectations.Helpers;
+
+[assembly: ExpectedWarning ("IL2026", "--RequiresUnreferencedCodeType--")]
+[assembly: AnnotatedMembersAccessedViaReflection.AnnotatedAttributeConstructorAttribute (typeof (AnnotatedMembersAccessedViaReflection.RequiresUnreferencedCodeType))]
 
 namespace Mono.Linker.Tests.Cases.DataFlow
 {
@@ -645,6 +649,15 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			}
 		}
 
+		public class AnnotatedAttributeConstructorAttribute : Attribute
+		{
+			public AnnotatedAttributeConstructorAttribute ([DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.All)] Type type)
+			{ }
+		}
+
 		class TestType { }
+
+		[RequiresUnreferencedCode ("--RequiresUnreferencedCodeType--")]
+		public class RequiresUnreferencedCodeType { }
 	}
 }

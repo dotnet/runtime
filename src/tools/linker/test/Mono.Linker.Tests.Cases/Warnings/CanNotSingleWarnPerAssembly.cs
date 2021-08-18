@@ -10,8 +10,9 @@ namespace Mono.Linker.Tests.Cases.Warnings
 	[SetupCompileBefore ("library.dll", new[] { typeof (TriggerWarnings_Lib) })]
 	[SetupLinkerArgument ("--singlewarn+")]
 	[SetupLinkerArgument ("--singlewarn-", "library")]
-	[LogDoesNotContain ("IL2026")]
 	[LogContains ("warning IL2104: Assembly 'test' produced trim warnings")]
+	[LogContains ("IL2026.*" + nameof (TriggerWarnings_Lib) + ".*" + nameof (TriggerWarnings_Lib.RUCType) + ".*--RUCType--", regexMatch: true)]
+	[LogDoesNotContain ("IL2026")]
 	[LogDoesNotContain ("warning IL2104: Assembly 'library' produced trim warnings")]
 	public class CanNotSingleWarnPerAssembly
 	{

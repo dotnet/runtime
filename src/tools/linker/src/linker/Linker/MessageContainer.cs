@@ -146,9 +146,13 @@ namespace Mono.Linker
 			if (subcategory != MessageSubCategory.TrimAnalysis)
 				return false;
 
-			Debug.Assert (origin.MemberDefinition != null);
-			var declaringType = origin.MemberDefinition?.DeclaringType ?? (origin.MemberDefinition as TypeDefinition);
-			var assembly = declaringType.Module.Assembly;
+			Debug.Assert (origin.Provider != null);
+			var assembly = origin.Provider switch {
+				AssemblyDefinition asm => asm,
+				TypeDefinition type => type.Module.Assembly,
+				IMemberDefinition member => member.DeclaringType.Module.Assembly,
+				_ => throw new NotSupportedException ()
+			};
 
 			Debug.Assert (assembly != null);
 			if (assembly == null)
@@ -235,11 +239,15 @@ namespace Mono.Linker
 				sb.Append (" ");
 			}
 
-			if (Origin?.MemberDefinition != null) {
-				if (Origin?.MemberDefinition is MethodDefinition method)
+			if (Origin?.Provider != null) {
+				if (Origin?.Provider is MethodDefinition method)
 					sb.Append (method.GetDisplayName ());
+				else if (Origin?.Provider is IMemberDefinition member)
+					sb.Append (member.FullName);
+				else if (Origin?.Provider is AssemblyDefinition assembly)
+					sb.Append (assembly.Name.Name);
 				else
-					sb.Append (Origin?.MemberDefinition.FullName);
+					throw new NotSupportedException ();
 
 				sb.Append (": ");
 			}

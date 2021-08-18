@@ -37,12 +37,12 @@ namespace Mono.Linker
 			_context = context;
 		}
 
-		public void RecognizedReflectionAccessPattern (IMemberDefinition source, Instruction sourceInstruction, IMetadataTokenProvider accessedItem)
+		public void RecognizedReflectionAccessPattern (ICustomAttributeProvider source, Instruction sourceInstruction, IMetadataTokenProvider accessedItem)
 		{
 			// Do nothing - there's no logging for successfully recognized patterns
 		}
 
-		public void UnrecognizedReflectionAccessPattern (in MessageOrigin origin, IMemberDefinition source, Instruction sourceInstruction, IMetadataTokenProvider accessedItem, string message, int messageCode)
+		public void UnrecognizedReflectionAccessPattern (in MessageOrigin origin, ICustomAttributeProvider source, Instruction sourceInstruction, IMetadataTokenProvider accessedItem, string message, int messageCode)
 		{
 			_context.LogWarning (message, messageCode, origin, MessageSubCategory.TrimAnalysis);
 		}
