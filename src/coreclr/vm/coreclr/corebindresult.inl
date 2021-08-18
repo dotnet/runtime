@@ -72,27 +72,6 @@ inline void CoreBindResult::Reset()
     m_pAssembly=NULL;
     m_hrBindResult = S_OK;
 }
-#ifdef FEATURE_PREJIT
-inline BOOL CoreBindResult::HasNativeImage()
-{
-    LIMITED_METHOD_CONTRACT;
-    BINDER_SPACE::Assembly* pAssembly = BINDER_SPACE::GetAssemblyFromPrivAssemblyFast(m_pAssembly);
-    return pAssembly->GetNativePEImage() != NULL;
-}
-inline PEImage* CoreBindResult::GetNativeImage()
-{
-    WRAPPER_NO_CONTRACT;
-    _ASSERTE(HasNativeImage());
-    BINDER_SPACE::Assembly* pAssembly = BINDER_SPACE::GetAssemblyFromPrivAssemblyFast(m_pAssembly);
-    return pAssembly->GetNativePEImage();
-}
-
-inline PEImage* CoreBindResult::GetILImage()
-{
-    WRAPPER_NO_CONTRACT;
-    return m_pAssembly?BINDER_SPACE::GetAssemblyFromPrivAssemblyFast(m_pAssembly)->GetPEImage():NULL;
-};
-#endif
 
 inline void CoreBindResult::SetHRBindResult(HRESULT hrBindResult)
 {

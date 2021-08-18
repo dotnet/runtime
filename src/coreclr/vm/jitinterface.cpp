@@ -3163,11 +3163,7 @@ void CEEInfo::ComputeRuntimeLookupForSharedGenericToken(DictionaryEntryKind entr
             {
                 pResult->indirections = 2;
                 pResult->testForNull = 0;
-#ifdef FEATURE_PREJIT
-                pResult->testForFixup = 1;
-#else
                 pResult->testForFixup = 0;
-#endif
                 pResult->offsets[0] = offsetof(InstantiatedMethodDesc, m_pPerInstInfo);
 
                 if (decltype(InstantiatedMethodDesc::m_pPerInstInfo)::isRelative)
@@ -3249,11 +3245,7 @@ void CEEInfo::ComputeRuntimeLookupForSharedGenericToken(DictionaryEntryKind entr
             {
                 pResult->indirections = 3;
                 pResult->testForNull = 0;
-#ifdef FEATURE_PREJIT
-                pResult->testForFixup = 1;
-#else
                 pResult->testForFixup = 0;
-#endif
                 pResult->offsets[0] = MethodTable::GetOffsetOfPerInstInfo();
                 pResult->offsets[1] = sizeof(TypeHandle*) * (pContextMT->GetNumDicts() - 1);
                 uint32_t data;
@@ -6279,16 +6271,6 @@ CorInfoHelpFunc CEEInfo::getCastingHelperStatic(TypeHandle clsHnd, bool fThrowin
         _ASSERTE(helper == CORINFO_HELP_ISINSTANCEOFANY);
     }
 
-#ifdef FEATURE_PREJIT
-    BOOL t1, t2, forceInstr;
-    SystemDomain::GetCompilationOverrides(&t1, &t2, &forceInstr);
-    if (forceInstr)
-    {
-        // If we're compiling for instrumentation, use the slowest but instrumented cast helper
-        helper = CORINFO_HELP_ISINSTANCEOFANY;
-    }
-#endif
-
     if (fThrowing)
     {
         const int delta = CORINFO_HELP_CHKCASTANY - CORINFO_HELP_ISINSTANCEOFANY;
@@ -7998,54 +7980,6 @@ CorInfoInline CEEInfo::canInline (CORINFO_METHOD_HANDLE hCaller,
     //
     {
         Module *    pCalleeModule   = pCallee->GetModule();
-
-#ifdef FEATURE_PREJIT
-        Assembly *  pCalleeAssembly = pCalleeModule->GetAssembly();
-
-#ifdef _DEBUG
-        //
-        // Make sure that all methods with StackCrawlMark are marked as IsMdRequireSecObject
-        //
-        if (pCalleeAssembly->IsSystem())
-        {
-            _ASSERTE(!containsStackCrawlMarkLocal(pCallee));
-        }
-#endif
-
-        // To allow for servicing of Ngen images we want to disable most
-        // Cross-Assembly inlining except for the cases that we explicitly allow.
-        //
-        if (IsCompilingForNGen())
-        {
-            // This is an canInline call at Ngen time
-            //
-            //
-            Assembly *  pOrigCallerAssembly = pOrigCallerModule->GetAssembly();
-
-            if (pCalleeAssembly == pOrigCallerAssembly)
-            {
-                // Within the same assembly
-                // we can freely inline with no restrictions
-            }
-            else
-            {
-#ifdef FEATURE_READYTORUN_COMPILER
-                // No inlinining for version resilient code except if in the same version bubble
-                // If this condition changes, please make the corresponding change
-                // in getCallInfo, too.
-                if (IsReadyToRunCompilation() &&
-                    !isVerifyOnly() &&
-                    !IsInSameVersionBubble(pCaller, pCallee)
-                   )
-                {
-                    result = INLINE_NEVER;
-                    szFailReason = "Cross-module inlining in version resilient code";
-                    goto exit;
-                }
-#endif
-            }
-        }
-#endif  // FEATURE_PREJIT
 
         // TODO: We can probably be smarter here if the caller is jitted, as we will
         // know for sure if the inlinee has really no string interning active (currently
@@ -12165,17 +12099,12 @@ HRESULT CEEJitInfo::allocPgoInstrumentationBySchema(
         codeSize = m_ILHeader->GetCodeSize();
     }
 
-#ifdef FEATURE_PREJIT
-    *pBlockCounts = m_pMethodBeingCompiled->GetLoaderModule()->AllocateMethodBlockCounts(m_pMethodBeingCompiled->GetMemberDef(), count, codeSize);
-    hr = (*pBlockCounts != nullptr) ? S_OK : E_OUTOFMEMORY;
-#else // FEATURE_PREJIT
 #ifdef FEATURE_PGO
     hr = PgoManager::allocPgoInstrumentationBySchema(m_pMethodBeingCompiled, pSchema, countSchemaItems, pInstrumentationData);
 #else
     _ASSERTE(!"allocMethodBlockCounts not implemented on CEEJitInfo!");
     hr = E_NOTIMPL;
 #endif // !FEATURE_PGO
-#endif // !FEATURE_PREJIT
 
     EE_TO_JIT_TRANSITION();
 
@@ -13025,31 +12954,6 @@ PCODE UnsafeJitFunction(PrepareCodeConfig* config,
 
     timer.Start();
 
-#ifdef FEATURE_PREJIT
-
-    if (g_pConfig->RequireZaps() == EEConfig::REQUIRE_ZAPS_ALL &&
-        ftn->GetModule()->GetDomainFile()->IsZapRequired() &&
-        PartialNGenStressPercentage() == 0 &&
-#ifdef FEATURE_STACK_SAMPLING
-        !flags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_SAMPLING_JIT_BACKGROUND) &&
-#endif
-        !flags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_IMPORT_ONLY))
-    {
-        StackSString ss(SString::Ascii, "ZapRequire: JIT compiler invoked for ");
-        TypeString::AppendMethodInternal(ss, ftn);
-
-#ifdef _DEBUG
-        // Assert as some test may not check their error codes well. So throwing an
-        // exception may not cause a test failure (as it should).
-        StackScratchBuffer scratch;
-        DbgAssertDialog(__FILE__, __LINE__, (char*)ss.GetUTF8(scratch));
-#endif // _DEBUG
-
-        COMPlusThrowNonLocalized(kFileNotFoundException, ss.GetUnicode());
-    }
-
-#endif // FEATURE_PREJIT
-
     EEJitManager *jitMgr = ExecutionManager::GetEEJitManager();
     if (!jitMgr->LoadJIT())
     {
@@ -13415,86 +13319,6 @@ extern "C" unsigned __stdcall PartialNGenStressPercentage()
     return partialNGenStressVal;
 #endif // _DEBUG
 }
-
-#ifdef FEATURE_PREJIT
-/*********************************************************************/
-
-//
-// Table loading functions
-//
-void Module::LoadHelperTable()
-{
-    STANDARD_VM_CONTRACT;
-
-#ifndef CROSSGEN_COMPILE
-    COUNT_T tableSize;
-    BYTE * table = (BYTE *) GetNativeImage()->GetNativeHelperTable(&tableSize);
-
-    if (tableSize == 0)
-        return;
-
-    BYTE * curEntry   = table;
-    BYTE * tableEnd   = table + tableSize;
-
-#ifdef FEATURE_PERFMAP
-    PerfMap::LogStubs(__FUNCTION__, GetSimpleName(), (PCODE)table, tableSize);
-#endif
-
-#ifdef LOGGING
-    int iEntryNumber = 0;
-#endif // LOGGING
-
-    //
-    // Fill in helpers
-    //
-
-    while (curEntry < tableEnd)
-    {
-        DWORD dwHelper = *(DWORD *)curEntry;
-
-        int iHelper = (USHORT)dwHelper;
-        _ASSERTE(iHelper < CORINFO_HELP_COUNT);
-
-        LOG((LF_JIT, LL_INFO1000000, "JIT helper %3d (%-40s: table @ %p, size 0x%x, entry %3d @ %p, pfnHelper %p)\n",
-            iHelper, hlpFuncTable[iHelper].name, table, tableSize, iEntryNumber, curEntry, hlpFuncTable[iHelper].pfnHelper));
-
-        PCODE pfnHelper = CEEJitInfo::getHelperFtnStatic((CorInfoHelpFunc)iHelper);
-
-        if (dwHelper & CORCOMPILE_HELPER_PTR)
-        {
-            //
-            // Indirection cell
-            //
-            *(TADDR *)curEntry = pfnHelper;
-            curEntry = curEntry + sizeof(TADDR);
-        }
-        else
-        {
-            //
-            // Jump thunk
-            //
-
-#if defined(TARGET_AMD64)
-            *curEntry = X86_INSTR_JMP_REL32;
-            *(INT32 *)(curEntry + 1) = rel32UsingJumpStub((INT32 *)(curEntry + 1), pfnHelper, NULL, GetLoaderAllocator());
-#else // all other platforms
-            emitJump(curEntry, curEntry, (LPVOID)pfnHelper);
-            _ASSERTE(HELPER_TABLE_ENTRY_LEN >= JUMP_ALLOCATE_SIZE);
-#endif
-
-            curEntry = curEntry + HELPER_TABLE_ENTRY_LEN;
-        }
-
-#ifdef LOGGING
-        // Note that some table entries are sizeof(TADDR) in length, and some are HELPER_TABLE_ENTRY_LEN in length
-        ++iEntryNumber;
-#endif // LOGGING
-    }
-
-    ClrFlushInstructionCache(table, tableSize);
-#endif // CROSSGEN_COMPILE
-}
-#endif // FEATURE_PREJIT
 
 #ifdef FEATURE_READYTORUN
 CorInfoHelpFunc MapReadyToRunHelper(ReadyToRunHelper helperNum)
@@ -15136,21 +14960,6 @@ LPVOID                EECodeInfo::findNextFunclet (LPVOID pvFuncletStart, SIZE_T
 
         if (pFunctionEntry != NULL)
         {
-#ifdef FEATURE_PREJIT
-            // workaround: Check for indirect entry that is generated for cold part of main method body.
-            if ((TADDR)pvFuncletStart < (TADDR)uImageBase + pFunctionEntry->BeginAddress ||
-                (TADDR)uImageBase + pFunctionEntry->EndAddress <= (TADDR)pvFuncletStart)
-            {
-                Module * pZapModule = ExecutionManager::FindZapModule((TADDR)pvFuncletStart);
-                NGenLayoutInfo * pLayoutInfo = pZapModule->GetNGenLayoutInfo();
-
-                int ColdFunctionIndex = NativeUnwindInfoLookupTable::LookupUnwindInfoForMethod((DWORD)((TADDR)pvFuncletStart - uImageBase),
-                                                                               pLayoutInfo->m_pRuntimeFunctions[2],
-                                                                               0, pLayoutInfo->m_nRuntimeFunctions[2] - 1);
-
-                pFunctionEntry = pLayoutInfo->m_pRuntimeFunctions[2] + ColdFunctionIndex;
-            }
-#endif
 
             _ASSERTE((TADDR)pvFuncletStart == (TADDR)uImageBase + pFunctionEntry->BeginAddress);
             _ASSERTE((TADDR)uImageBase + pFunctionEntry->EndAddress <= (TADDR)pvFuncletStart + cbCode);

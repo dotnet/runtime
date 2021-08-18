@@ -433,22 +433,10 @@ ClrDataAccess::GetJitManagerList(unsigned int count, struct DacpJitManagerInfo m
             EEJitManager *eeJitManager = PTR_EEJitManager(PTR_HOST_TO_TADDR(managerPtr));
             currentPtr->ptrHeapList = HOST_CDADDR(eeJitManager->m_pCodeHeap);
         }
-#ifdef FEATURE_PREJIT
-        if (count >= 2)
-        {
-            NativeImageJitManager * managerPtr = ExecutionManager::GetNativeImageJitManager();
-            DacpJitManagerInfo *currentPtr = &managers[1];
-            currentPtr->managerAddr = HOST_CDADDR(managerPtr);
-            currentPtr->codeType = managerPtr->GetCodeType();
-        }
-#endif
     }
     else if (pNeeded)
     {
         *pNeeded = 1;
-#ifdef FEATURE_PREJIT
-        (*pNeeded)++;
-#endif
     }
 
     SOSDacLeave();

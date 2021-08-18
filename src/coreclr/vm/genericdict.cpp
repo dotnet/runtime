@@ -494,34 +494,6 @@ DictionaryEntryLayout::GetKind()
 
 #ifndef DACCESS_COMPILE
 
-#ifdef FEATURE_PREJIT
-//---------------------------------------------------------------------------------------
-//
-void
-Dictionary::Restore(
-    DWORD          numGenericArgs,
-    ClassLoadLevel level)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        INSTANCE_CHECK;
-    }
-    CONTRACTL_END
-
-    // First restore the type handles in the instantiation itself
-    FixupPointer<TypeHandle> *inst = GetInstantiation();
-    for (DWORD j = 0; j < numGenericArgs; j++)
-    {
-        Module::RestoreTypeHandlePointer(&inst[j], NULL, level);
-    }
-
-    // We don't restore the remainder of the dictionary - see
-    // long comment at the start of this file as to why
-}
-#endif // FEATURE_PREJIT
-
 #if !defined(CROSSGEN_COMPILE)
 Dictionary* Dictionary::GetMethodDictionaryWithSizeCheck(MethodDesc* pMD, ULONG slotIndex)
 {

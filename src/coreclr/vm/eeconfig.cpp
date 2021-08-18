@@ -739,14 +739,6 @@ HRESULT EEConfig::sync()
     m_fInteropValidatePinnedObjects = (CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_InteropValidatePinnedObjects) != 0);
     m_fInteropLogArguments = (CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_InteropLogArguments) != 0);
 
-#ifdef FEATURE_PREJIT
-#ifdef _DEBUG
-    dwNgenForceFailureMask  = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_NgenForceFailureMask);
-    dwNgenForceFailureCount = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_NgenForceFailureCount);
-    dwNgenForceFailureKind  = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_NgenForceFailureKind);
-#endif
-#endif // FEATURE_PREJIT
-
 #if defined(_DEBUG) && defined(FEATURE_EH_FUNCLETS)
     fSuppressLockViolationsOnReentryFromOS = (CLRConfig::GetConfigValue(CLRConfig::INTERNAL_SuppressLockViolationsOnReentryFromOS) != 0);
 #endif

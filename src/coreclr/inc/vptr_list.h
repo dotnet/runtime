@@ -6,9 +6,6 @@
 
 VPTR_CLASS(EEJitManager)
 
-#ifdef FEATURE_PREJIT
-VPTR_CLASS(NativeImageJitManager)
-#endif // FEATURE_PREJIT
 #ifdef FEATURE_READYTORUN
 VPTR_CLASS(ReadyToRunJitManager)
 #endif

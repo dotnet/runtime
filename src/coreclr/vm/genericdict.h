@@ -301,12 +301,6 @@ private:
     static Dictionary* GetMethodDictionaryWithSizeCheck(MethodDesc* pMD, ULONG slotIndex);
 
 #endif // #ifndef DACCESS_COMPILE
-
-public:
-
-#ifdef FEATURE_PREJIT
-    void Restore(DWORD numGenericArgs, ClassLoadLevel level);
-#endif // FEATURE_PREJIT
 };
 
 #endif

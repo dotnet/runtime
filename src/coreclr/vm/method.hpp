@@ -23,9 +23,7 @@
 #include "eeconfig.h"
 #include "precode.h"
 
-#ifndef FEATURE_PREJIT
 #include "fixuppointer.h"
-#endif
 
 class Stub;
 class FCallMethodDesc;
@@ -1660,26 +1658,6 @@ public:
 
     MethodImpl *GetMethodImpl();
 
-
-#if defined(FEATURE_PREJIT ) && !defined(DACCESS_COMPILE)
-    //================================================================
-    // Precompilation (NGEN)
-
-    //
-    // After the zapper compiles all code in a module it may attempt
-    // to populate entries in all dictionaries
-    // associated with instantiations of generic methods.  This is an optional step - nothing will
-    // go wrong at runtime except we may get more one-off calls to JIT_GenericHandle.
-    // Although these are one-off we prefer to avoid them since they touch metadata
-    // pages.
-    //
-    // Fully populating a dictionary may in theory load more types, methods etc. However
-    // for the moment only those entries that refer to things that
-    // are already loaded will be filled in.
-    void PrepopulateDictionary(DataImage * image, BOOL nonExpansive);
-
-#endif // FEATURE_PREJIT && !DACCESS_COMPILE
-
     TADDR GetFixupList();
 
     BOOL IsRestored_NoLogging();
@@ -1943,7 +1921,6 @@ public:
 private:
     PCODE PrepareILBasedCode(PrepareCodeConfig* pConfig);
     PCODE GetPrecompiledCode(PrepareCodeConfig* pConfig, bool shouldTier);
-    PCODE GetPrecompiledNgenCode(PrepareCodeConfig* pConfig);
     PCODE GetPrecompiledR2RCode(PrepareCodeConfig* pConfig);
     PCODE GetMulticoreJitCode(PrepareCodeConfig* pConfig, bool* pWasTier0);
     COR_ILMETHOD_DECODER* GetAndVerifyILHeader(PrepareCodeConfig* pConfig, COR_ILMETHOD_DECODER* pIlDecoderMemory);
@@ -2254,9 +2231,6 @@ class MethodDescChunk
 {
     friend class MethodDesc;
     friend class CheckAsmOffsets;
-#if defined(FEATURE_PREJIT) && !defined(DACCESS_COMPILE)
-    friend class MethodDesc::SaveChunk;
-#endif
 #ifdef DACCESS_COMPILE
     friend class NativeImageDumper;
 #endif // DACCESS_COMPILE
@@ -2373,19 +2347,7 @@ public:
         m_count = static_cast<BYTE>(methodDescCount - 1);
         _ASSERTE(GetCount() == methodDescCount);
     }
-#endif // !DACCESS_COMPILE
 
-#ifdef FEATURE_PREJIT
-#ifndef DACCESS_COMPILE
-    inline void RestoreMTPointer(ClassLoadLevel level = CLASS_LOADED)
-    {
-        LIMITED_METHOD_CONTRACT;
-        Module::RestoreMethodTablePointer(&m_methodTable, NULL, level);
-    }
-#endif // !DACCESS_COMPILE
-#endif // FEATURE_PREJIT
-
-#ifndef DACCESS_COMPILE
     void SetNextChunk(MethodDescChunk *chunk)
     {
         LIMITED_METHOD_CONTRACT;
@@ -2408,11 +2370,7 @@ public:
     BOOL IsZapped()
     {
         LIMITED_METHOD_DAC_CONTRACT;
-#ifdef FEATURE_PREJIT
-        return (m_flagsAndTokenRange & enum_flag_IsZapped) != 0;
-#else
         return FALSE;
-#endif
     }
 
     inline BOOL HasCompactEntryPoints()
@@ -2833,9 +2791,6 @@ public:
         LIMITED_METHOD_CONTRACT;
     }
 };
-#ifdef FEATURE_PREJIT
-PORTABILITY_WARNING("NDirectImportThunkGlue");
-#endif // FEATURE_PREJIT
 
 #endif // HAS_NDIRECT_IMPORT_PRECODE
 
@@ -3546,14 +3501,6 @@ public:
 
         _ASSERTE(IsGenericComPlusCall());
         SIZE_T size = s_ClassificationSizeTable[m_wFlags & (mdcClassification | mdcHasNonVtableSlot | mdcMethodImpl | mdcHasNativeCodeSlot)];
-
-#ifdef FEATURE_PREJIT
-        if (HasNativeCodeSlot())
-        {
-            size += (*dac_cast<PTR_TADDR>(GetAddrOfNativeCodeSlot()) & FIXUP_LIST_MASK) ?
-                sizeof(FixupListSlot) : 0;
-        }
-#endif
 
         return dac_cast<PTR_ComPlusCallInfo>(dac_cast<TADDR>(this) + size);
     }

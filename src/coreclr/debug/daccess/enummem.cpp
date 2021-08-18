@@ -619,9 +619,6 @@ HRESULT ClrDataAccess::EnumMemDumpModuleList(CLRDataEnumMemoryFlags flags)
     ULONG32         length;
     PEFile          *file;
     TSIZE_T         cbMemoryReported = m_cbMemoryReported;
-#ifdef FEATURE_PREJIT
-    COUNT_T         count;
-#endif // FEATURE_PREJIT
 
     //
     // Iterating through module list
@@ -668,15 +665,6 @@ HRESULT ClrDataAccess::EnumMemDumpModuleList(CLRDataEnumMemoryFlags flags)
                 file = modDef->GetFile();
                 base = PTR_TO_TADDR(file->GetLoadedImageContents(&length));
                 file->EnumMemoryRegions(flags);
-#ifdef FEATURE_PREJIT
-
-                // If module has native image and it has debug map, we need to get the debug map.
-                //
-                if (modDef->HasNativeImage() && modDef->GetNativeImage()->HasNativeDebugMap())
-                {
-                    modDef->GetNativeImage()->GetNativeDebugMap(&count);
-                }
-#endif // FEATURE_PREJIT
             }
             EX_CATCH
             {

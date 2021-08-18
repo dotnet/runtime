@@ -774,10 +774,6 @@ public:
         return IsTdImport(m_dwAttrClass);
     }
 
-#ifdef FEATURE_PREJIT
-    DWORD GetSize();
-#endif // FEATURE_PREJIT
-
     EEClassLayoutInfo *GetLayoutInfo();
     PTR_EEClassNativeLayoutInfo GetNativeLayoutInfo();
 
@@ -1074,10 +1070,6 @@ public:
      * There are (m_wNumInstanceFields - GetParentClass()->m_wNumInstanceFields + m_wNumStaticFields) entries
      * in this array
      */
-#ifdef FEATURE_PREJIT
-    static DWORD FieldDescListSize(MethodTable * pMT);
-#endif
-
     inline PTR_FieldDesc GetFieldDescList()
     {
         LIMITED_METHOD_DAC_CONTRACT;
@@ -1992,10 +1984,6 @@ typedef DPTR(ArrayClass) PTR_ArrayClass;
 // Dynamically generated array class structure
 class ArrayClass : public EEClass
 {
-#ifdef FEATURE_PREJIT
-    friend void EEClass::Fixup(DataImage *image, MethodTable *pMethodTable);
-#endif
-
     friend MethodTable* Module::CreateArrayMethodTable(TypeHandle elemTypeHnd, CorElementType arrayKind, unsigned Rank, AllocMemTracker *pamTracker);
 
 #ifndef DACCESS_COMPILE

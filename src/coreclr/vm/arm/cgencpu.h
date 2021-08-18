@@ -1098,9 +1098,6 @@ struct StubPrecode {
     }
 #endif // !DACCESS_COMPILE
 
-#ifdef FEATURE_PREJIT
-    void Fixup(DataImage *image);
-#endif
 };
 typedef DPTR(StubPrecode) PTR_StubPrecode;
 
@@ -1138,9 +1135,6 @@ struct NDirectImportPrecode {
         return (LPVOID)(dac_cast<TADDR>(this) + THUMB_CODE);
     }
 
-#ifdef FEATURE_PREJIT
-    void Fixup(DataImage *image);
-#endif
 };
 typedef DPTR(NDirectImportPrecode) PTR_NDirectImportPrecode;
 
@@ -1222,13 +1216,6 @@ struct FixupPrecode {
            (pInstr[1] == 0xf8df) &&
            (pInstr[2] == 0xf004);
     }
-
-#ifdef FEATURE_PREJIT
-    // Partial initialization. Used to save regrouped chunks.
-    void InitForSave(int iPrecodeChunkIndex);
-
-    void Fixup(DataImage *image, MethodDesc * pMD);
-#endif
 
 #ifdef DACCESS_COMPILE
     void EnumMemoryRegions(CLRDataEnumMemoryFlags flags);

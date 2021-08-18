@@ -70,11 +70,7 @@ inline BOOL TypeHandle::IsZapped() const
 {
     LIMITED_METHOD_DAC_CONTRACT;
 
-#ifdef FEATURE_PREJIT
-    return (GetZapModule() != NULL);
-#else
     return FALSE;
-#endif
 }
 
 // Methods to allow you get get a the two possible representations

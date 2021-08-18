@@ -320,11 +320,6 @@ public:
     // Does the loader support using a native image for this file?
     // Some implementation restrictions prevent native images from being used
     // in some cases.
-#ifdef FEATURE_PREJIT
-    BOOL IsNativeLoaded();
-    PEImage *GetNativeImageWithRef();
-    PEImage *GetPersistentNativeImage();
-#endif
     BOOL HasNativeOrReadyToRunImage();
     BOOL HasNativeImage();
     PTR_PEImageLayout GetLoaded();
@@ -340,33 +335,9 @@ public:
     PEImage *GetNativeImage()
     {
         LIMITED_METHOD_DAC_CONTRACT;
-#ifdef FEATURE_PREJIT
-        return m_nativeImage;
-#else
         return NULL;
-#endif
     }
 #endif
-
-#ifdef FEATURE_PREJIT
-    // ------------------------------------------------------------
-    // Native image config utilities
-    // ------------------------------------------------------------
-
-    static CorCompileConfigFlags GetNativeImageConfigFlags(BOOL fForceDebug = FALSE,
-                                                           BOOL fForceProfiling = FALSE,
-                                                           BOOL fForceInstrument = FALSE);
-
-    static CorCompileConfigFlags GetNativeImageConfigFlagsWithOverrides();
-
-#ifdef DEBUGGING_SUPPORTED
-    static void SetNGENDebugFlags(BOOL fAllowOpt);
-    static void GetNGENDebugFlags(BOOL *fAllowOpt);
-#endif
-
-    static BOOL ShouldTreatNIAsMSIL();
-
-#endif  // FEATURE_PREJIT
 
     // ------------------------------------------------------------
     // Resource access
@@ -382,19 +353,6 @@ public:
             mdAssemblyRef       kAssemblyRef,
             IMDInternalImport * pImport = NULL);
 
-    // ------------------------------------------------------------
-    // Logging
-    // ------------------------------------------------------------
-
-    // The format string is intentionally unicode to avoid globalization bugs
-#ifdef FEATURE_PREJIT
-    void ExternalLog(DWORD facility, DWORD level, const WCHAR *fmt, ...) DAC_EMPTY();
-    void ExternalLog(DWORD level, const WCHAR *fmt, ...) DAC_EMPTY();
-    void ExternalLog(DWORD level, const char *msg) DAC_EMPTY();
-    virtual void ExternalVLog(DWORD facility, DWORD level, const WCHAR *fmt, va_list args) DAC_EMPTY();
-    virtual void FlushExternalLog() DAC_EMPTY();
-#endif
-
 protected:
     // ------------------------------------------------------------
     // Internal constants
@@ -405,10 +363,6 @@ protected:
         PEFILE_SYSTEM                 = 0x01,
         PEFILE_ASSEMBLY               = 0x02,
         PEFILE_MODULE                 = 0x04,
-
-#ifdef FEATURE_PREJIT
-        PEFILE_HAS_NATIVE_IMAGE_METADATA = 0x200,
-#endif
     };
 
     // ------------------------------------------------------------
@@ -432,12 +386,6 @@ protected:
 
 
     friend class Module;
-#ifdef FEATURE_PREJIT
-    void SetNativeImage(PEImage *nativeImage);
-#ifndef DACCESS_COMPILE
-    virtual void ClearNativeImage();
-#endif
-#endif
 
 #ifndef DACCESS_COMPILE
     void EnsureImageOpened();
@@ -459,10 +407,6 @@ protected:
     PTR_PEImage              m_identity;
     // IL image, NULL if we didn't need to open the file
     PTR_PEImage              m_openedILimage;
-#ifdef FEATURE_PREJIT
-    // Native image
-    PTR_PEImage              m_nativeImage;
-#endif
     // This flag is not updated atomically with m_pMDImport. Its fine for debugger usage
     // but don't rely on it in the runtime. In runtime try QI'ing the m_pMDImport for
     // IID_IMDInternalImportENC
@@ -483,11 +427,6 @@ protected:
     // AssemblyLoadContext that this PEFile is associated with
     PTR_AssemblyLoadContext  m_pAssemblyLoadContext;
 
-#ifdef DEBUGGING_SUPPORTED
-#ifdef FEATURE_PREJIT
-    SVAL_DECL(DWORD, s_NGENDebugFlags);
-#endif
-#endif
 public:
 
     PTR_PEImage GetILimage()
@@ -679,15 +618,6 @@ class PEAssembly : public PEFile
     static void UrlToPath(SString &string);
     static BOOL FindLastPathSeparator(const SString &path, SString::Iterator &i);
 
-    // ------------------------------------------------------------
-    // Logging
-    // ------------------------------------------------------------
-#ifdef FEATURE_PREJIT
-    void ExternalVLog(DWORD facility, DWORD level, const WCHAR *fmt, va_list args) DAC_EMPTY();
-    void FlushExternalLog() DAC_EMPTY();
-#endif
-
-
   protected:
 
 #ifndef DACCESS_COMPILE
@@ -702,18 +632,6 @@ class PEAssembly : public PEFile
         );
     virtual ~PEAssembly();
 #endif
-
-    // ------------------------------------------------------------
-    // Loader access API
-    // ------------------------------------------------------------
-
-#ifdef FEATURE_PREJIT
-
-    void SetNativeImage(PEImage *image);
-
-    BOOL CheckNativeImageVersion(PEImage *image);
-
-#endif  // FEATURE_PREJIT
 
   private:
     // ------------------------------------------------------------

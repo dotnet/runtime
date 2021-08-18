@@ -106,21 +106,6 @@ public:
     BOOL GetSignatureForTypeHandle(TypeHandle typeHandle,
                                    SigBuilder * pSigBuilder);
 
-#ifdef FEATURE_PREJIT
-    // Compare a type handle with a tagged pointer. Ensure that the common path is inlined into the caller.
-    static FORCEINLINE BOOL CompareTaggedPointerToTypeHandle(Module * pModule, TADDR addr, TypeHandle handle)
-    {
-        WRAPPER_NO_CONTRACT;
-        if (handle.AsTAddr() == addr)
-            return TRUE;
-        if (!CORCOMPILE_IS_POINTER_TAGGED(addr))
-            return FALSE;
-        return CompareFixupToTypeHandle(pModule, addr, handle);
-    }
-
-    static BOOL CompareFixupToTypeHandle(Module * pModule, TADDR fixup, TypeHandle handle);
-#endif
-
     static BOOL CompareTypeHandleFieldToTypeHandle(TypeHandle *pTypeHnd, TypeHandle typeHnd2);
 
 private:

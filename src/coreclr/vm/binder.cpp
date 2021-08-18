@@ -1138,22 +1138,6 @@ void CoreLibBinder::AttachModule(Module * pModule)
         c_rgCoreLibMethodDescriptions, c_nCoreLibMethodDescriptions,
         c_rgCoreLibFieldDescriptions,  c_nCoreLibFieldDescriptions);
 
-#if defined(FEATURE_PREJIT) && !defined(CROSSGEN_COMPILE)
-    CoreLibBinder * pPersistedBinder = pModule->m_pBinder;
-
-    if (pPersistedBinder != NULL
-        // Do not use persisted binder for profiling native images. See comment in code:CoreLibBinder::Fixup.
-        && !(pModule->GetNativeImage()->GetNativeVersionInfo()->wConfigFlags  & CORCOMPILE_CONFIG_PROFILING))
-    {
-        pGlobalBinder->m_pClasses = pPersistedBinder->m_pClasses;
-        pGlobalBinder->m_pMethods = pPersistedBinder->m_pMethods;
-        pGlobalBinder->m_pFields = pPersistedBinder->m_pFields;
-
-        pModule->m_pBinder = pGlobalBinder;
-        return;
-    }
-#endif // FEATURE_PREJIT && CROSSGEN_COMPILE
-
     pGlobalBinder->AllocateTables();
 
 #ifdef CROSSGEN_COMPILE

@@ -42,15 +42,10 @@ public:
     PEImage* GetPEImage();
     BOOL IsCoreLib();
     void GetBindAssembly(ICLRPrivAssembly** ppAssembly);
-#ifdef FEATURE_PREJIT
-    BOOL HasNativeImage();
-    PEImage* GetNativeImage();
-    void SetNativeImage(PEImage * pNativeImage);
-    PEImage* GetILImage();
-#else
+
     BOOL HasNativeImage() { return FALSE; }
     PEImage* GetNativeImage() { return NULL; }
-#endif
+
     void SetHRBindResult(HRESULT hrBindResult);
     HRESULT GetHRBindResult();
 };

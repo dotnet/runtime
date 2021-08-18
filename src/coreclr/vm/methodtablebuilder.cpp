@@ -1801,18 +1801,7 @@ MethodTableBuilder::BuildMethodTableThrowing(
 
     // Now setup the method table
 
-#ifdef FEATURE_PREJIT
-    Module *pComputedPZM = pLoaderModule;
-
-    if (bmtGenerics->GetNumGenericArgs() > 0)
-    {
-        pComputedPZM = Module::ComputePreferredZapModule(pModule, bmtGenerics->GetInstantiation());
-    }
-
-    SetupMethodTable2(pLoaderModule, pComputedPZM);
-#else // FEATURE_PREJIT
     SetupMethodTable2(pLoaderModule);
-#endif // FEATURE_PREJIT
 
     MethodTable * pMT = GetHalfBakedMethodTable();
 
@@ -2073,10 +2062,6 @@ MethodTableBuilder::BuildMethodTableThrowing(
         pModule,
         GetCl(),
         GetHalfBakedMethodTable());
-
-#ifdef FEATURE_PREJIT
-    _ASSERTE(pComputedPZM == Module::GetPreferredZapModuleForMethodTable(pMT));
-#endif // FEATURE_PREJIT
 
     return GetHalfBakedMethodTable();
 } // MethodTableBuilder::BuildMethodTableThrowing
@@ -9007,11 +8992,7 @@ void MethodTableBuilder::CopyExactParentSlots(MethodTable *pMT, MethodTable *pAp
                 // The slot lives in a chunk shared from the approximate parent MT
                 // If so, we need to change to share the chunk from the exact parent MT
 
-#ifdef FEATURE_PREJIT
-                _ASSERTE(MethodTable::CanShareVtableChunksFrom(pParentMT, pMT->GetLoaderModule(), Module::GetPreferredZapModuleForMethodTable(pMT)));
-#else
                 _ASSERTE(MethodTable::CanShareVtableChunksFrom(pParentMT, pMT->GetLoaderModule()));
-#endif
 
                 pMT->GetVtableIndirections()[indirectionIndex].SetValueMaybeNull(pParentMT->GetVtableIndirections()[indirectionIndex].GetValueMaybeNull());
 
@@ -9973,9 +9954,6 @@ MethodTable * MethodTableBuilder::AllocateNewMT(
 #ifdef FEATURE_COMINTEROP
         , BOOL fHasDynamicInterfaceMap
 #endif
-#ifdef FEATURE_PREJIT
-        , Module *pComputedPZM
-#endif // FEATURE_PREJIT
         , AllocMemTracker *pamTracker
     )
 {
@@ -10041,9 +10019,6 @@ MethodTable * MethodTableBuilder::AllocateNewMT(
     S_SIZE_T offsetOfUnsharedVtableChunks = cbTotalSize;
 
     BOOL canShareVtableChunks = pMTParent && MethodTable::CanShareVtableChunksFrom(pMTParent, pLoaderModule
-#ifdef FEATURE_PREJIT
-        , pComputedPZM
-#endif //FEATURE_PREJIT
         );
 
     // If pMTParent has a generic instantiation, we cannot share its vtable chunks
@@ -10224,11 +10199,7 @@ MethodTable * MethodTableBuilder::AllocateNewMT(
 
 VOID
 MethodTableBuilder::SetupMethodTable2(
-        Module * pLoaderModule
-#ifdef FEATURE_PREJIT
-        , Module * pComputedPZM
-#endif // FEATURE_PREJIT
-    )
+        Module * pLoaderModule)
 {
     CONTRACTL
     {
@@ -10297,9 +10268,6 @@ MethodTableBuilder::SetupMethodTable2(
 #ifdef FEATURE_COMINTEROP
                                    fHasDynamicInterfaceMap,
 #endif
-#ifdef FEATURE_PREJIT
-                                   pComputedPZM,
-#endif //FEATURE_PREJIT
                                    GetMemTracker());
 
     pMT->SetClass(pClass);

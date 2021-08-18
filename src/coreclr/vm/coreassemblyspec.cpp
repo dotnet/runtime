@@ -169,30 +169,13 @@ STDAPI BinderAcquirePEImage(LPCWSTR             wszAssemblyPath,
         PEImageHolder pImage = NULL;
         PEImageHolder pNativeImage = NULL;
 
-#ifdef FEATURE_PREJIT
-        // fExplicitBindToNativeImage is set on Phone when we bind to a list of native images and have no IL on device for an assembly
-        if (fExplicitBindToNativeImage)
-        {
-            pNativeImage = PEImage::OpenImage(wszAssemblyPath, MDInternalImport_TrustedNativeImage, bundleFileLocation);
+        pImage = PEImage::OpenImage(wszAssemblyPath, MDInternalImport_Default, bundleFileLocation);
 
-            // Make sure that the IL image can be opened if the native image is not available.
-            hr=pNativeImage->TryOpenFile();
-            if (FAILED(hr))
-            {
-                goto Exit;
-            }
-        }
-        else
-#endif
+        // Make sure that the IL image can be opened if the native image is not available.
+        hr=pImage->TryOpenFile();
+        if (FAILED(hr))
         {
-            pImage = PEImage::OpenImage(wszAssemblyPath, MDInternalImport_Default, bundleFileLocation);
-
-            // Make sure that the IL image can be opened if the native image is not available.
-            hr=pImage->TryOpenFile();
-            if (FAILED(hr))
-            {
-                goto Exit;
-            }
+            goto Exit;
         }
 
         if (pImage)
@@ -259,16 +242,7 @@ STDAPI BinderAcquireImport(PEImage                  *pPEImage,
         if (!pLayout->CheckFormat())
             IfFailGo(COR_E_BADIMAGEFORMAT);
 
-#ifdef FEATURE_PREJIT
-        if (bNativeImage && pPEImage->IsNativeILILOnly())
-        {
-            pPEImage->GetNativeILPEKindAndMachine(&pdwPAFlags[0], &pdwPAFlags[1]);
-        }
-        else
-#endif
-        {
-            pPEImage->GetPEKindAndMachine(&pdwPAFlags[0], &pdwPAFlags[1]);
-        }
+        pPEImage->GetPEKindAndMachine(&pdwPAFlags[0], &pdwPAFlags[1]);
 
         *ppIAssemblyMetaDataImport = pPEImage->GetMDImport();
         if (!*ppIAssemblyMetaDataImport)
