@@ -319,6 +319,7 @@ if (CLR_CMAKE_HOST_UNIX)
     endif()
   endif(CLR_CMAKE_HOST_OSX OR CLR_CMAKE_HOST_MACCATALYST)
 
+  add_compile_options(-Werror=implicit-function-declaration)
   # Suppress warnings-as-errors in release branches to reduce servicing churn
   if (PRERELEASE)
     add_compile_options(-Werror)
