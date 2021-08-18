@@ -275,60 +275,44 @@ namespace System.Diagnostics
 #endif
         private static int MostRecentSize = DefaultCachedBufferSize;
 
-        internal static ProcessInfo[] GetProcessInfos(int? processIdFilter = null)
+        internal static unsafe ProcessInfo[] GetProcessInfos(int? processIdFilter = null)
         {
             // Start with the default buffer size.
             int bufferSize = MostRecentSize;
 
             while (true)
             {
-                byte[] buffer = ArrayPool<byte>.Shared.Rent(bufferSize);
+                byte* bufferPtr = (byte*)NativeMemory.AlignedAlloc((uint)bufferSize, 8); // some platforms require the buffer to be 64-bit aligned.
 
                 try
                 {
-                    unsafe
+                    uint actualSize = 0;
+                    uint status = Interop.NtDll.NtQuerySystemInformation(
+                        Interop.NtDll.SystemProcessInformation,
+                        bufferPtr,
+                        (uint)bufferSize,
+                        &actualSize);
+
+                    if (status != Interop.NtDll.STATUS_INFO_LENGTH_MISMATCH)
                     {
-                        // Note that the buffer will contain pointers to itself and it needs to be pinned while it is being processed
-                        // by GetProcessInfos below
-                        fixed (byte* bufferPtr = buffer)
+                        // see definition of NT_SUCCESS(Status) in SDK
+                        if ((int)status < 0)
                         {
-                            // some platforms require the buffer to be 64-bit aligned.
-                            // ArrayPool does not guarantee 64-bit alignment, so we take the address of first 64-bit aligned element
-                            // we round up the address of the pinned array to the nearest multiple of 64
-                            Debug.Assert(bufferSize > 8);
-                            byte* alignedBufferPtr = (byte*)(((nint)bufferPtr + 7) & ~7);
-                            int firstAlignedElementIndex = (int)(alignedBufferPtr - bufferPtr);
-                            bufferSize = buffer.Length - firstAlignedElementIndex;
-
-                            uint actualSize = 0;
-                            uint status = Interop.NtDll.NtQuerySystemInformation(
-                                Interop.NtDll.SystemProcessInformation,
-                                alignedBufferPtr,
-                                (uint)bufferSize,
-                                &actualSize);
-
-                            if (status != Interop.NtDll.STATUS_INFO_LENGTH_MISMATCH)
-                            {
-                                // see definition of NT_SUCCESS(Status) in SDK
-                                if ((int)status < 0)
-                                {
-                                    throw new InvalidOperationException(SR.CouldntGetProcessInfos, new Win32Exception((int)status));
-                                }
-
-                                Debug.Assert(actualSize > 0 && actualSize <= bufferSize, $"Actual size reported by NtQuerySystemInformation was {actualSize} for a buffer of size={bufferSize}.");
-                                MostRecentSize = GetEstimatedBufferSize(actualSize);
-                                // Parse the data block to get process information
-                                return GetProcessInfos(buffer.AsSpan(firstAlignedElementIndex, (int)actualSize), processIdFilter);
-                            }
-
-                            Debug.Assert(actualSize > bufferSize, $"Actual size reported by NtQuerySystemInformation was {actualSize} for a buffer of size={bufferSize}.");
-                            bufferSize = GetEstimatedBufferSize(actualSize);
+                            throw new InvalidOperationException(SR.CouldntGetProcessInfos, new Win32Exception((int)status));
                         }
+
+                        Debug.Assert(actualSize > 0 && actualSize <= bufferSize, $"Actual size reported by NtQuerySystemInformation was {actualSize} for a buffer of size={bufferSize}.");
+                        MostRecentSize = GetEstimatedBufferSize(actualSize);
+                        // Parse the data block to get process information
+                        return GetProcessInfos(new ReadOnlySpan<byte>(bufferPtr, (int)actualSize), processIdFilter);
                     }
+
+                    Debug.Assert(actualSize > bufferSize, $"Actual size reported by NtQuerySystemInformation was {actualSize} for a buffer of size={bufferSize}.");
+                    bufferSize = GetEstimatedBufferSize(actualSize);
                 }
                 finally
                 {
-                    ArrayPool<byte>.Shared.Return(buffer);
+                    NativeMemory.AlignedFree(bufferPtr);
                 }
             }
         }
