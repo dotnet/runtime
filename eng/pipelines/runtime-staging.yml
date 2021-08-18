@@ -69,7 +69,6 @@ jobs:
     - iOSSimulator_x64
     - tvOSSimulator_x64
     - tvOS_arm64
-    #adding noise to force a rebuild
     # don't run tests on arm64 PRs until we can get significantly more devices
     - ${{ if eq(variables['isFullMatrix'], true) }}:
       - MacCatalyst_arm64
