@@ -4,8 +4,6 @@
 // Changes to this file must follow the https://aka.ms/api-review process.
 // ------------------------------------------------------------------------------
 
-using System.Diagnostics.CodeAnalysis;
-
 namespace Microsoft.DotNet.PlatformAbstractions
 {
     [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
@@ -37,7 +35,7 @@ namespace Microsoft.Extensions.DependencyModel
         public bool? AllowUnsafe { get { throw null; } }
         public string? DebugType { get { throw null; } }
         public static Microsoft.Extensions.DependencyModel.CompilationOptions Default { get { throw null; } }
-        public System.Collections.Generic.IReadOnlyList<string> Defines { get { throw null; } }
+        public System.Collections.Generic.IReadOnlyList<string?> Defines { get { throw null; } }
         public bool? DelaySign { get { throw null; } }
         public bool? EmitEntryPoint { get { throw null; } }
         public bool? GenerateXmlDocumentation { get { throw null; } }
@@ -56,7 +54,7 @@ namespace Microsoft.Extensions.DependencyModel
         public readonly string Name { get { throw null; } }
         public readonly string Version { get { throw null; } }
         public bool Equals(Microsoft.Extensions.DependencyModel.Dependency other) { throw null; }
-        public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] object? obj) { throw null; }
+        public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? obj) { throw null; }
         public override int GetHashCode() { throw null; }
     }
     public partial class DependencyContext
@@ -150,9 +148,9 @@ namespace Microsoft.Extensions.DependencyModel
     }
     public partial class RuntimeFallbacks
     {
-        public RuntimeFallbacks(string runtime, System.Collections.Generic.IEnumerable<string> fallbacks) { }
-        public RuntimeFallbacks(string runtime, params string[] fallbacks) { }
-        public System.Collections.Generic.IReadOnlyList<string> Fallbacks { get { throw null; } set { } }
+        public RuntimeFallbacks(string runtime, System.Collections.Generic.IEnumerable<string?> fallbacks) { }
+        public RuntimeFallbacks(string runtime, params string?[] fallbacks) { }
+        public System.Collections.Generic.IReadOnlyList<string?> Fallbacks { get { throw null; } set { } }
         public string Runtime { get { throw null; } set { } }
     }
     public partial class RuntimeFile
@@ -173,11 +171,11 @@ namespace Microsoft.Extensions.DependencyModel
     }
     public partial class TargetInfo
     {
-        public TargetInfo(string framework, string runtime, string runtimeSignature, bool isPortable) { }
+        public TargetInfo(string framework, string? runtime, string? runtimeSignature, bool isPortable) { }
         public string Framework { get { throw null; } }
         public bool IsPortable { get { throw null; } }
-        public string Runtime { get { throw null; } }
-        public string RuntimeSignature { get { throw null; } }
+        public string? Runtime { get { throw null; } }
+        public string? RuntimeSignature { get { throw null; } }
     }
 }
 namespace Microsoft.Extensions.DependencyModel.Resolution
