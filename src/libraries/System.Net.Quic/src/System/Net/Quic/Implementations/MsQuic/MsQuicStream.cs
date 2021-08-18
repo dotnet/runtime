@@ -142,7 +142,6 @@ namespace System.Net.Quic.Implementations.MsQuic
 
             if (!connectionState.TryAddStream(this))
             {
-                _state.Handle?.Dispose();
                 throw new ObjectDisposedException(nameof(QuicConnection));
             }
             // this assignment should be done before StreamOpenDelegate to prevent NRE in HandleEventConnectionClose
