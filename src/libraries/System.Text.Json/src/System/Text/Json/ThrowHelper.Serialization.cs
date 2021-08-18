@@ -239,21 +239,10 @@ namespace System.Text.Json
         public static void ThrowInvalidOperationException_NumberHandlingOnPropertyInvalid(JsonPropertyInfo jsonPropertyInfo)
         {
             MemberInfo? memberInfo = jsonPropertyInfo.MemberInfo;
+            Debug.Assert(memberInfo != null);
+            Debug.Assert(!jsonPropertyInfo.IsForTypeInfo);
 
-            if (!jsonPropertyInfo.ConverterBase.IsInternalConverter)
-            {
-                throw new InvalidOperationException(SR.Format(
-                    SR.NumberHandlingConverterMustBeBuiltIn,
-                    jsonPropertyInfo.ConverterBase.GetType(),
-                    jsonPropertyInfo.IsForTypeInfo ? jsonPropertyInfo.DeclaredPropertyType : memberInfo!.DeclaringType));
-            }
-
-            // This exception is only thrown for object properties.
-            Debug.Assert(!jsonPropertyInfo.IsForTypeInfo && memberInfo != null);
-            throw new InvalidOperationException(SR.Format(
-                SR.NumberHandlingOnPropertyTypeMustBeNumberOrCollection,
-                memberInfo.Name,
-                memberInfo.DeclaringType));
+            throw new InvalidOperationException(SR.Format(SR.NumberHandlingOnPropertyInvalid, memberInfo.Name, memberInfo.DeclaringType));
         }
 
         [DoesNotReturn]

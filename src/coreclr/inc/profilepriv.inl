@@ -168,7 +168,7 @@ inline BOOL ProfControlBlock::IsMainProfiler(ProfToEEInterfaceImpl *pProfToEE)
 inline ProfilerInfo *ProfControlBlock::GetProfilerInfo(ProfToEEInterfaceImpl *pProfToEE)
 {
     ProfilerInfo *pProfilerInfo = NULL;
-    IterateProfilers(ProfilerCallbackType::Active,
+    IterateProfilers(ProfilerCallbackType::ActiveOrInitializing,
                     [](ProfilerInfo *pProfilerInfo, ProfToEEInterfaceImpl *pProfToEE, ProfilerInfo **ppFoundProfilerInfo)
                       {
                           if (pProfilerInfo->pProfInterface->m_pProfToEE == pProfToEE)

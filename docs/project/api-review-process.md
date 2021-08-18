@@ -21,7 +21,7 @@ sponsors the issue. This is usually [the area owner](issue-guide.md#areas) for w
 decision whether we want to pursue the proposal or not. In this phase, the goal
 isn't necessarily to perform an in-depth review; rather, we want to make sure
 that the proposal is actionable, i.e. has a concrete design, a sketch of the
-APIs and some code samples that show how it should be used. If changes are necessary, the owner will set the label `api-needs-work`. To make the changes, the requester should edit the top-most issue description. This allows folks joining later to understand the most recent proposal. To avoid confusion, the requester can maintain a tiny change log, like a bolded "Updates:" followed by a bullet point list of the updates that were being made. When you the feedback is addressed, the requester should notify the owner to re-review the changes.
+APIs and some code samples that show how it should be used. If changes are necessary, the owner will set the label `api-needs-work`. To make the changes, the requester should edit the top-most issue description. This allows folks joining later to understand the most recent proposal. To avoid confusion, the requester can maintain a tiny change log, like a bolded "Updates:" followed by a bullet point list of the updates that were being made. When the feedback is addressed, the requester should notify the owner to re-review the changes.
 
 4. **Owner makes decision**. When the owner believes enough information is available to make a decision, they will update the issue accordingly:
 

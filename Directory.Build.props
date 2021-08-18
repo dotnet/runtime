@@ -40,7 +40,7 @@
 
   <!-- The TFMs to build and test against. -->
   <PropertyGroup>
-    <NetCoreAppCurrentVersion>$(MajorVersion).$(MinorVersion)</NetCoreAppCurrentVersion>
+    <NetCoreAppCurrentVersion>$(PreviousReleaseMajorVersion).$(MinorVersion)</NetCoreAppCurrentVersion>
     <AspNetCoreAppCurrentVersion>6.0</AspNetCoreAppCurrentVersion>
     <NetCoreAppToolCurrentVersion>6.0</NetCoreAppToolCurrentVersion>
     <NetCoreAppCurrentIdentifier>.NETCoreApp</NetCoreAppCurrentIdentifier>

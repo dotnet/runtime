@@ -121,6 +121,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
 
                 Assert.Equal("00D01E4090000046520000000100000004", cert2.SerialNumber);
                 Assert.Equal("1.2.840.113549.1.1.5", cert2.SignatureAlgorithm.Value);
+                Assert.NotEmpty(cert2.SignatureAlgorithm.FriendlyName);
                 Assert.Equal("7A74410FB0CD5C972A364B71BF031D88A6510E9E", cert2.Thumbprint);
                 Assert.Equal(3, cert2.Version);
             }
@@ -492,6 +493,15 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 byte[] subjectBytes = cert.SubjectName.RawData;
                 Array.Clear(subjectBytes);
                 Assert.Equal("CN=Microsoft Corporation, OU=MOPR, O=Microsoft Corporation, L=Redmond, S=Washington, C=US", cert.Subject);
+            }
+        }
+
+        [Fact]
+        public static void SignatureAlgorithmOidReadableForGostCertificate()
+        {
+            using (X509Certificate2 cert = new X509Certificate2(TestData.GostCertificate))
+            {
+                Assert.Equal("1.2.643.2.2.3", cert.SignatureAlgorithm.Value);
             }
         }
 
