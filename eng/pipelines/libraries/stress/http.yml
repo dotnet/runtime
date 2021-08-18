@@ -34,14 +34,11 @@ jobs:
   - checkout: self
     clean: true
     fetchDepth: 5
-  - task: powershell@2
-      displayName: Create YOLO artifacts
-      inputs:
-        targetType: inline
-        script: |
-          Add-Content -Path "$(Build.StagingDirectory)/Hello.txt" -Value "YO!"
+  - powershell: |
+       Add-Content -Path "$(Build.StagingDirectory)/Hello.txt" -Value "YO!"
+     name: buildRuntime
+     displayName: Create YOLO artifacts
   - task: PublishBuildArtifacts@1
-      displayName: Publish YOLO artifact
       inputs:
         pathToPublish: '$(Build.StagingDirectory)/Hello.txt'
         PublishLocation: Container
