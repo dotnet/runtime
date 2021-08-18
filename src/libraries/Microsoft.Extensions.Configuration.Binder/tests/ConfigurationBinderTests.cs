@@ -960,6 +960,14 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
             var nestedAsArray = config.GetSection("Nested").Get<NestedOptions[]>();
             Assert.Equal(11, nestedAsArray[0].Integer);
             Assert.Equal(1, nestedAsArray.Length);
+
+            AppContext.SetSwitch("Microsoft.Extensions.Configuration.BindSingleElementsToArray", false);
+
+            stringArr = config.GetSection("MyString").Get<string[]>();
+            Assert.Null(stringArr);
+
+            stringAsStr = config.GetSection("MyString").Get<string>();
+            Assert.Equal("hello world", stringAsStr);
         }
 
         private interface ISomeInterface
