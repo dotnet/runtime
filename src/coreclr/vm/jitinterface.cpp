@@ -662,77 +662,9 @@ size_t CEEInfo::findNameOfToken (
     return NameLen;
 }
 
-#ifdef FEATURE_READYTORUN_COMPILER
-
-// Returns true if assemblies are in the same version bubble
-// Right now each assembly is in its own version bubble.
-// If the need arises (i.e. performance issues) we will define sets of assemblies (e.g. all app assemblies)
-// The main point is that all this logic is concentrated in one place.
-
-// NOTICE: If you change this logic to allow multi-assembly version bubbles you
-// need to consider the impact on diagnostic tools. Currently there is an inlining
-// table which tracks inliner/inlinee relationships in R2R images but it is not
-// yet capable of encoding cross-assembly inlines. The scenario where this
-// may show are instrumenting profilers that want to instrument a given method A
-// using the ReJit APIs. If method A happens to inlined within method B in another
-// assembly then the profiler needs to know that so it can rejit B too.
-// The recommended approach is to upgrade the inlining table (vm\inlinetracking.h\.cpp)
-// now that presumably R2R images have some way to refer to methods in other
-// assemblies in their version bubble. Chat with the diagnostics team if you need more
-// details.
-//
-// There already is a case where cross-assembly inlining occurs in an
-// unreported fashion for methods marked NonVersionable. There is a specific
-// exemption called out for this on ICorProfilerInfo6::EnumNgenModuleMethodsInliningThisMethod
-// and the impact of the cut was vetted with partners. It would not be appropriate
-// to increase that unreported set without additional review.
-
-
-bool IsInSameVersionBubble(Assembly * current, Assembly * target)
-{
-    LIMITED_METHOD_CONTRACT;
-
-    // trivial case: current and target are identical
-    // DO NOT change this without reading the notice above
-    if (current == target)
-        return true;
-
-    return IsLargeVersionBubbleEnabled();
-}
-
-// Returns true if the assemblies defining current and target are in the same version bubble
-static bool IsInSameVersionBubble(MethodDesc* pCurMD, MethodDesc *pTargetMD)
-{
-    LIMITED_METHOD_CONTRACT;
-    // DO NOT change this without reading the notice above
-    if (IsInSameVersionBubble(pCurMD->GetModule()->GetAssembly(),
-                              pTargetMD->GetModule()->GetAssembly()))
-    {
-        return true;
-    }
-    if (IsReadyToRunCompilation())
-    {
-        if (pTargetMD->GetModule()->GetMDImport()->GetCustomAttributeByName(pTargetMD->GetMemberDef(),
-                NONVERSIONABLE_TYPE, NULL, NULL) == S_OK)
-        {
-            return true;
-        }
-    }
-    return false;
-
-}
-
-#endif // FEATURE_READYTORUN_COMPILER
-
 static bool CallerAndCalleeInSystemVersionBubble(MethodDesc* pCaller, MethodDesc* pCallee)
 {
     LIMITED_METHOD_CONTRACT;
-
-#ifdef FEATURE_READYTORUN_COMPILER
-    if (IsReadyToRunCompilation())
-        return pCallee->GetModule()->IsSystem() && IsInSameVersionBubble(pCaller, pCallee);
-#endif
-
     return false;
 }
 
@@ -1982,9 +1914,6 @@ CEEInfo::getHeapClassSize(
     _ASSERTE(pMT);
     _ASSERTE(!pMT->IsValueType());
     _ASSERTE(!pMT->HasComponentSize());
-#ifdef FEATURE_READYTORUN_COMPILER
-    _ASSERTE(!IsReadyToRunCompilation() || pMT->IsInheritanceChainLayoutFixedInCurrentVersionBubble());
-#endif
 
     // Add OBJECT_SIZE to account for method table pointer.
     result = pMT->GetNumInstanceFieldBytes() + OBJECT_SIZE;
@@ -2014,13 +1943,6 @@ bool CEEInfo::canAllocateOnStack(CORINFO_CLASS_HANDLE clsHnd)
     _ASSERTE(!pMT->IsValueType());
 
     result = !pMT->HasFinalizer();
-
-#ifdef FEATURE_READYTORUN_COMPILER
-    if (IsReadyToRunCompilation() && !pMT->IsInheritanceChainLayoutFixedInCurrentVersionBubble())
-    {
-        result = false;
-    }
-#endif
 
     EE_TO_JIT_TRANSITION_LEAF();
     return result;
@@ -2288,11 +2210,6 @@ unsigned CEEInfo::getClassGClayoutStatic(TypeHandle VMClsHnd, BYTE* gcPtrs)
         _ASSERTE(sizeof(BYTE) == 1);
 
         BOOL isValueClass = pMT->IsValueType();
-
-#ifdef FEATURE_READYTORUN_COMPILER
-        _ASSERTE(isValueClass || !IsReadyToRunCompilation() || pMT->IsInheritanceChainLayoutFixedInCurrentVersionBubble());
-#endif
-
         unsigned int size = isValueClass ? VMClsHnd.GetSize() : pMT->GetNumInstanceFieldBytes() + OBJECT_SIZE;
 
         // assume no GC pointers at first
@@ -3109,57 +3026,6 @@ void CEEInfo::ComputeRuntimeLookupForSharedGenericToken(DictionaryEntryKind entr
             pResultLookup->lookupKind.runtimeLookupKind = CORINFO_LOOKUP_THISOBJ;
     }
 
-#ifdef FEATURE_READYTORUN_COMPILER
-    if (IsReadyToRunCompilation())
-    {
-        pResultLookup->lookupKind.runtimeLookupArgs = NULL;
-
-        switch (entryKind)
-        {
-        case DeclaringTypeHandleSlot:
-            _ASSERTE(pTemplateMD != NULL);
-            pResultLookup->lookupKind.runtimeLookupArgs = pTemplateMD->GetMethodTable();
-            pResultLookup->lookupKind.runtimeLookupFlags = READYTORUN_FIXUP_DeclaringTypeHandle;
-            break;
-
-        case TypeHandleSlot:
-            pResultLookup->lookupKind.runtimeLookupFlags = READYTORUN_FIXUP_TypeHandle;
-            break;
-
-        case MethodDescSlot:
-        case MethodEntrySlot:
-        case ConstrainedMethodEntrySlot:
-        case DispatchStubAddrSlot:
-        {
-            if (pTemplateMD != (MethodDesc*)pResolvedToken->hMethod)
-                ThrowHR(E_NOTIMPL);
-
-            if (entryKind == MethodDescSlot)
-                pResultLookup->lookupKind.runtimeLookupFlags = READYTORUN_FIXUP_MethodHandle;
-            else if (entryKind == MethodEntrySlot || entryKind == ConstrainedMethodEntrySlot)
-                pResultLookup->lookupKind.runtimeLookupFlags = READYTORUN_FIXUP_MethodEntry;
-            else
-                pResultLookup->lookupKind.runtimeLookupFlags = READYTORUN_FIXUP_VirtualEntry;
-
-            pResultLookup->lookupKind.runtimeLookupArgs = pConstrainedResolvedToken;
-
-            break;
-        }
-
-        case FieldDescSlot:
-            pResultLookup->lookupKind.runtimeLookupFlags = READYTORUN_FIXUP_FieldHandle;
-            break;
-
-        default:
-            _ASSERTE(!"Unknown dictionary entry kind!");
-            IfFailThrow(E_FAIL);
-        }
-
-        // For R2R compilations, we don't generate the dictionary lookup signatures (dictionary lookups are done in a
-        // different way that is more version resilient... plus we can't have pointers to existing MTs/MDs in the sigs)
-        return;
-    }
-#endif
     // If we've got a  method type parameter of any kind then we must look in the method desc arg
     if (pContextMD->RequiresInstMethodDescArg())
     {
@@ -4585,19 +4451,6 @@ TypeCompareState CEEInfo::compareTypesForCast(
         }
     }
 
-#ifdef FEATURE_READYTORUN_COMPILER
-    // In R2R it is a breaking change for a previously positive
-    // cast to become negative, but not for a previously negative
-    // cast to become positive. So in R2R a negative result is
-    // always reported back as May, except for CoreLib version bubble.
-    if (IsReadyToRunCompilation() && (result == TypeCompareState::MustNot)
-        && !GetAppDomain()->ToCompilationDomain()->GetTargetModule()->IsSystem()
-        && !IsLargeVersionBubbleEnabled())
-    {
-        result = TypeCompareState::May;
-    }
-#endif // FEATURE_READYTORUN_COMPILER
-
     EE_TO_JIT_TRANSITION();
 
     return result;
@@ -5261,21 +5114,8 @@ void CEEInfo::getCallInfo(
             // Because of .NET's notion of base calls, exactType may point to a sub-class
             // of the actual class that defines pTargetMD.  If the JIT decides to inline, it is
             // important that they 'match', so we fix exactType here.
-#ifdef FEATURE_READYTORUN_COMPILER
-            if (IsReadyToRunCompilation() &&
-                !isVerifyOnly() &&
-                !IsInSameVersionBubble((MethodDesc*)callerHandle, pTargetMD))
-            {
-                // For version resilient code we can only inline within the same version bubble;
-                // we "repair" the precise types only for those callees.
-                // The above condition needs to stay in sync with CEEInfo::canInline
-            }
-            else
-#endif
-            {
-                exactType = pTargetMD->GetExactDeclaringType(exactType.AsMethodTable());
-                _ASSERTE(!exactType.IsNull());
-            }
+            exactType = pTargetMD->GetExactDeclaringType(exactType.AsMethodTable());
+            _ASSERTE(!exactType.IsNull());
         }
 
         pResult->contextHandle = MAKE_CLASSCONTEXT(exactType.AsPtr());
@@ -5324,36 +5164,6 @@ void CEEInfo::getCallInfo(
     else
     {
         bool devirt;
-
-#ifdef FEATURE_READYTORUN_COMPILER
-
-        // if we are generating version resilient code
-        // AND
-        //    caller/callee are in different version bubbles
-        // we have to apply more restrictive rules
-        // These rules are related to the "inlining rules" as far as the
-        // boundaries of a version bubble are concerned.
-
-        if (IsReadyToRunCompilation() &&
-            !isVerifyOnly() &&
-            !IsInSameVersionBubble((MethodDesc*)callerHandle, pTargetMD)
-           )
-        {
-            // For version resiliency we won't de-virtualize all final/sealed method calls.  Because during a
-            // servicing event it is legal to unseal a method or type.
-            //
-            // Note that it is safe to devirtualize in the following cases, since a servicing event cannot later modify it
-            //  1) Callvirt on a virtual final method of a value type - since value types are sealed types as per ECMA spec
-            //  2) Delegate.Invoke() - since a Delegate is a sealed class as per ECMA spec
-            //  3) JIT intrinsics - since they have pre-defined behavior
-            devirt = pTargetMD->GetMethodTable()->IsValueType() ||
-                     (pTargetMD->GetMethodTable()->IsDelegate() && ((DelegateEEClass*)(pTargetMD->GetMethodTable()->GetClass()))->GetInvokeMethod() == pMD) ||
-                     (pTargetMD->IsFCall() && ECall::GetIntrinsicID(pTargetMD) != CORINFO_INTRINSIC_Illegal);
-
-            callVirtCrossingVersionBubble = true;
-        }
-        else
-#endif
         if (pTargetMD->GetMethodTable()->IsInterface())
         {
             // Handle interface methods specially because the Sealed bit has no meaning on interfaces.
@@ -6043,13 +5853,6 @@ CorInfoHelpFunc CEEInfo::getNewHelperStatic(MethodTable * pMT, bool * pHasSideEf
         *pHasSideEffects = true;
     }
     else
-#ifdef FEATURE_READYTORUN_COMPILER
-    if (IsReadyToRunCompilation())
-    {
-        *pHasSideEffects = hasFinalizer || !pMT->IsInheritanceChainFixedInCurrentVersionBubble();
-    }
-    else
-#endif
     {
         *pHasSideEffects = !!hasFinalizer;
     }
@@ -8055,54 +7858,6 @@ CorInfoInline CEEInfo::canInline (CORINFO_METHOD_HANDLE hCaller,
     {
         Module *    pCalleeModule   = pCallee->GetModule();
 
-#ifdef FEATURE_PREJIT
-        Assembly *  pCalleeAssembly = pCalleeModule->GetAssembly();
-
-#ifdef _DEBUG
-        //
-        // Make sure that all methods with StackCrawlMark are marked as IsMdRequireSecObject
-        //
-        if (pCalleeAssembly->IsSystem())
-        {
-            _ASSERTE(!containsStackCrawlMarkLocal(pCallee));
-        }
-#endif
-
-        // To allow for servicing of Ngen images we want to disable most
-        // Cross-Assembly inlining except for the cases that we explicitly allow.
-        //
-        if (IsCompilingForNGen())
-        {
-            // This is an canInline call at Ngen time
-            //
-            //
-            Assembly *  pOrigCallerAssembly = pOrigCallerModule->GetAssembly();
-
-            if (pCalleeAssembly == pOrigCallerAssembly)
-            {
-                // Within the same assembly
-                // we can freely inline with no restrictions
-            }
-            else
-            {
-#ifdef FEATURE_READYTORUN_COMPILER
-                // No inlinining for version resilient code except if in the same version bubble
-                // If this condition changes, please make the corresponding change
-                // in getCallInfo, too.
-                if (IsReadyToRunCompilation() &&
-                    !isVerifyOnly() &&
-                    !IsInSameVersionBubble(pCaller, pCallee)
-                   )
-                {
-                    result = INLINE_NEVER;
-                    szFailReason = "Cross-module inlining in version resilient code";
-                    goto exit;
-                }
-#endif
-            }
-        }
-#endif  // FEATURE_PREJIT
-
         // TODO: We can probably be smarter here if the caller is jitted, as we will
         // know for sure if the inlinee has really no string interning active (currently
         // it's only on in the ngen case (besides requiring the attribute)), but this is getting
@@ -9101,25 +8856,6 @@ bool CEEInfo::resolveVirtualMethodHelper(CORINFO_DEVIRTUALIZATION_INFO * info)
     {
         pExactMT = pDevirtMD->GetExactDeclaringType(pObjMT);
     }
-
-#ifdef FEATURE_READYTORUN_COMPILER
-    // Check if devirtualization is dependent upon cross-version
-    // bubble information and if so, disallow it.
-    if (IsReadyToRunCompilation())
-    {
-        MethodDesc* callerMethod = m_pMethodBeingCompiled;
-        Assembly* pCallerAssembly = callerMethod->GetModule()->GetAssembly();
-        bool allowDevirt =
-            IsInSameVersionBubble(pCallerAssembly , pDevirtMD->GetModule()->GetAssembly())
-            && IsInSameVersionBubble(pCallerAssembly, pObjMT->GetAssembly());
-
-        if (!allowDevirt)
-        {
-            info->detail = CORINFO_DEVIRTUALIZATION_FAILED_BUBBLE;
-            return false;
-        }
-    }
-#endif
 
     // Success! Pass back the results.
     //
@@ -11589,7 +11325,7 @@ void CEEJitInfo::allocUnwindInfo (
     }
 
     PT_RUNTIME_FUNCTION pRuntimeFunction = m_CodeHeaderRW->GetUnwindInfo(m_usedUnwindInfos);
-    
+
     m_usedUnwindInfos++;
 
     // Make sure that the RUNTIME_FUNCTION is aligned on a DWORD sized boundary
@@ -12294,7 +12030,7 @@ HRESULT CEEJitInfo::getPgoInstrumentationResults(
         m_foundPgoData = newPgoData;
         newPgoData.SuppressRelease();
 
-        newPgoData->m_hr = PgoManager::getPgoInstrumentationResults(pMD, &newPgoData->m_allocatedData, &newPgoData->m_schema, 
+        newPgoData->m_hr = PgoManager::getPgoInstrumentationResults(pMD, &newPgoData->m_allocatedData, &newPgoData->m_schema,
             &newPgoData->m_cSchemaElems, &newPgoData->m_pInstrumentationData, &newPgoData->m_pgoSource);
         pDataCur = m_foundPgoData;
     }
@@ -14360,7 +14096,7 @@ BOOL LoadDynamicInfoEntry(Module *currentModule,
             TypeHandle thImpl = ZapSig::DecodeType(currentModule, pInfoModule, updatedSignature, CLASS_LOADED, &updatedSignature);
 
             MethodDesc *pImplMethodCompiler = NULL;
-            
+
             if ((flags & READYTORUN_VIRTUAL_OVERRIDE_VirtualFunctionOverriden) != 0)
             {
                 pImplMethodCompiler = ZapSig::DecodeMethod(currentModule, pInfoModule, updatedSignature);

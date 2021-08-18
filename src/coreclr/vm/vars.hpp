@@ -705,11 +705,6 @@ GSCookie GetProcessGSCookie() { return *(RAW_KEYWORD(volatile) GSCookie *)(&s_gs
 class CEECompileInfo;
 extern CEECompileInfo *g_pCEECompileInfo;
 
-#ifdef FEATURE_READYTORUN_COMPILER
-extern bool g_fReadyToRunCompilation;
-extern bool g_fLargeVersionBubble;
-#endif
-
 // Returns true if this is NGen compilation process.
 // This is a superset of CompilationDomain::IsCompilationDomain() as there is more
 // than one AppDomain in ngen (the DefaultDomain)

@@ -3190,7 +3190,7 @@ BOOL Module::IsInCurrentVersionBubble()
 #endif // FEATURE_NATIVE_IMAGE_GENERATION
 }
 
-#if defined(FEATURE_READYTORUN) && !defined(FEATURE_READYTORUN_COMPILER)
+#if defined(FEATURE_READYTORUN)
 //---------------------------------------------------------------------------------------
 // Check if the target module is in the same version bubble as this one
 // The current implementation uses the presence of an AssemblyRef for the target module's assembly in
@@ -3257,7 +3257,7 @@ BOOL Module::IsInSameVersionBubble(Module *target)
 
     return FALSE;
 }
-#endif // FEATURE_READYTORUN && !FEATURE_READYTORUN_COMPILER
+#endif // FEATURE_READYTORUN
 
 //---------------------------------------------------------------------------------------
 //
@@ -4943,29 +4943,8 @@ mdTypeRef Module::LookupTypeRefByMethodTable(MethodTable *pMT)
             return token;
         }
     }
-
-#ifdef FEATURE_READYTORUN_COMPILER
-    if (IsReadyToRunCompilation())
-    {
-        if (pMT->GetClass()->IsEquivalentType())
-        {
-            if (g_CorCompileVerboseLevel >= CORCOMPILE_VERBOSE)
-                GetSvcLogger()->Log(W("ReadyToRun: Type reference to equivalent type cannot be encoded\n"));
-            ThrowHR(E_NOTIMPL);
-        }
-
-        // FUTURE: Encoding of new cross-module references for ReadyToRun
-        // This warning is hit for recursive cross-module inlining. It is commented out to avoid noise.
-        // if (g_CorCompileVerboseLevel >= CORCOMPILE_VERBOSE)
-        //     GetSvcLogger()->Log(W("ReadyToRun: Type reference outside of current version bubble cannot be encoded\n"));
-        ThrowHR(E_NOTIMPL);
-    }
-    else
-#endif // FEATURE_READYTORUN_COMPILER
-    {
-        // FUTURE TODO: Version resilience
-        _ASSERTE(!"Cross module type reference not found");
-    }
+    // FUTURE TODO: Version resilience
+    _ASSERTE(!"Cross module type reference not found");
     ThrowHR(E_FAIL);
 }
 

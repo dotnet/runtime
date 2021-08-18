@@ -1285,14 +1285,6 @@ class ICorCompilePreloader
             CORINFO_METHOD_HANDLE method,
             CORINFO_METHOD_HANDLE duplicateMethod) = 0;
 
-#ifdef FEATURE_READYTORUN_COMPILER
-    // Returns a compressed encoding of the inline tracking map
-    // for this compilation
-    virtual void GetSerializedInlineTrackingMap(
-            IN OUT SBuffer    * pSerializedInlineTrackingMap
-            ) = 0;
-#endif
-
     //
     // Release frees the preloader
     //
@@ -1726,27 +1718,6 @@ class ICorCompileInfo
     virtual BOOL GetIsGeneratingNgenPDB() = 0;
     virtual void SetIsGeneratingNgenPDB(BOOL fGeneratingNgenPDB) = 0;
 
-#ifdef FEATURE_READYTORUN_COMPILER
-    virtual CORCOMPILE_FIXUP_BLOB_KIND GetFieldBaseOffset(
-            CORINFO_CLASS_HANDLE classHnd,
-            DWORD * pBaseOffset
-            ) = 0;
-
-    virtual BOOL NeedsTypeLayoutCheck(CORINFO_CLASS_HANDLE classHnd) = 0;
-    virtual void EncodeTypeLayout(CORINFO_CLASS_HANDLE classHandle, SigBuilder * pSigBuilder) = 0;
-
-    virtual BOOL AreAllClassesFullyLoaded(CORINFO_MODULE_HANDLE moduleHandle) = 0;
-
-    virtual int GetVersionResilientTypeHashCode(CORINFO_MODULE_HANDLE moduleHandle, mdToken token) = 0;
-
-    virtual int GetVersionResilientMethodHashCode(CORINFO_METHOD_HANDLE methodHandle) = 0;
-
-    virtual BOOL EnumMethodsForStub(CORINFO_METHOD_HANDLE hMethod, void** enumerator) = 0;
-    virtual BOOL EnumNextMethodForStub(void * enumerator, CORINFO_METHOD_HANDLE *hMethod) = 0;
-    virtual void EnumCloseForStubEnumerator(void *enumerator) = 0;
-
-#endif
-
     virtual BOOL HasCustomAttribute(CORINFO_METHOD_HANDLE method, LPCSTR customAttributeName) = 0;
 };
 
@@ -1768,25 +1739,10 @@ extern "C" HRESULT __stdcall CreatePdb(CORINFO_ASSEMBLY_HANDLE hAssembly, BSTR p
 
 extern bool g_fNGenMissingDependenciesOk;
 
-#ifdef FEATURE_READYTORUN_COMPILER
-extern bool g_fReadyToRunCompilation;
-extern bool g_fLargeVersionBubble;
-#endif
 
 inline bool IsReadyToRunCompilation()
 {
-#ifdef FEATURE_READYTORUN_COMPILER
-    return g_fReadyToRunCompilation;
-#else
     return false;
-#endif
 }
-
-#ifdef FEATURE_READYTORUN_COMPILER
-inline bool IsLargeVersionBubbleEnabled()
-{
-    return g_fLargeVersionBubble;
-}
-#endif
 
 #endif /* COR_COMPILE_H_ */

@@ -61,9 +61,6 @@
 
 #ifdef CROSSGEN_COMPILE
 CompilationDomain * theDomain;
-#ifdef FEATURE_READYTORUN_COMPILER
-MapSHash<CORINFO_METHOD_HANDLE, CORINFO_METHOD_HANDLE> s_stubMethodsOfMethod;
-#endif // FEATURE_READYTORUN_COMPILER
 #endif
 
 VerboseLevel g_CorCompileVerboseLevel = CORCOMPILE_NO_LOG;
@@ -1201,45 +1198,6 @@ mdToken CEECompileInfo::TryEncodeMethodAsToken(
 
     MethodDesc * pMethod = GetMethod(handle);
 
-#ifdef FEATURE_READYTORUN_COMPILER
-    if (IsReadyToRunCompilation())
-    {
-        _ASSERTE(pResolvedToken != NULL);
-
-        Module * pReferencingModule = GetModule(pResolvedToken->tokenScope);
-
-        if (!pReferencingModule->IsInCurrentVersionBubble())
-            return mdTokenNil;
-
-        // If this is a MemberRef with TypeSpec, we might come to here because we resolved the method
-        // into a non-generic base class in the same version bubble. However, since we don't have the
-        // proper type context during ExternalMethodFixupWorker, we can't really encode using token
-        if (pResolvedToken->pTypeSpec != NULL)
-            return mdTokenNil;
-
-        unsigned methodToken = pResolvedToken->token;
-
-        switch (TypeFromToken(methodToken))
-        {
-        case mdtMethodDef:
-            if (pReferencingModule->LookupMethodDef(methodToken) != pMethod)
-                return mdTokenNil;
-            break;
-
-        case mdtMemberRef:
-            if (pReferencingModule->LookupMemberRefAsMethod(methodToken) != pMethod)
-                return mdTokenNil;
-            break;
-
-        default:
-            return mdTokenNil;
-        }
-
-        *referencingModule = CORINFO_MODULE_HANDLE(pReferencingModule);
-        return methodToken;
-    }
-#endif // FEATURE_READYTORUN_COMPILER
-
     Module *pModule = pMethod->GetModule();
     if (!pModule->IsInCurrentVersionBubble())
     {
@@ -1265,21 +1223,6 @@ DWORD CEECompileInfo::TryEncodeMethodSlot(CORINFO_METHOD_HANDLE handle)
     STANDARD_VM_CONTRACT;
 
     MethodDesc * pMethod = GetMethod(handle);
-
-#ifdef FEATURE_READYTORUN_COMPILER
-    if (IsReadyToRunCompilation())
-    {
-        // We can only encode real interface methods as slots
-        if (!pMethod->IsInterface() || pMethod->IsStatic())
-            return (DWORD)-1;
-
-        // And only if the interface lives in the current version bubble
-        // If may be possible to relax this restriction if we can guarantee that the external interfaces are
-        // really not changing. We will play it safe for now.
-        if (!pMethod->GetModule()->IsInCurrentVersionBubble())
-            return (DWORD)-1;
-    }
-#endif
 
     return pMethod->GetSlot();
 }
@@ -1571,150 +1514,6 @@ BOOL CEECompileInfo::IsEmptyString(mdString token,
 
     return fRet;
 }
-
-#ifdef FEATURE_READYTORUN_COMPILER
-CORCOMPILE_FIXUP_BLOB_KIND CEECompileInfo::GetFieldBaseOffset(
-        CORINFO_CLASS_HANDLE classHnd,
-        DWORD * pBaseOffset)
-{
-    STANDARD_VM_CONTRACT;
-
-    MethodTable * pMT = (MethodTable *)classHnd;
-    Module * pModule = pMT->GetModule();
-
-    if (!pMT->IsLayoutFixedInCurrentVersionBubble())
-    {
-        return pMT->IsValueType() ? ENCODE_CHECK_FIELD_OFFSET : ENCODE_FIELD_OFFSET;
-    }
-
-    if (pMT->IsValueType())
-    {
-        return ENCODE_NONE;
-    }
-
-    if (pMT->GetParentMethodTable()->IsInheritanceChainLayoutFixedInCurrentVersionBubble())
-    {
-        return ENCODE_NONE;
-    }
-
-    if (pMT->HasLayout())
-    {
-        // We won't try to be smart for classes with layout.
-        // They are complex to get right, and very rare anyway.
-        return ENCODE_FIELD_OFFSET;
-    }
-
-    *pBaseOffset = ReadyToRunInfo::GetFieldBaseOffset(pMT);
-    return ENCODE_FIELD_BASE_OFFSET;
-}
-
-BOOL CEECompileInfo::NeedsTypeLayoutCheck(CORINFO_CLASS_HANDLE classHnd)
-{
-    STANDARD_VM_CONTRACT;
-
-    TypeHandle th(classHnd);
-
-    if (th.IsTypeDesc())
-        return FALSE;
-
-    MethodTable * pMT = th.AsMethodTable();
-
-    if (!pMT->IsValueType())
-        return FALSE;
-
-    // Skip this check for equivalent types. Equivalent types are used for interop that ensures
-    // matching layout.
-    if (pMT->GetClass()->IsEquivalentType())
-        return FALSE;
-
-    return !pMT->IsLayoutFixedInCurrentVersionBubble();
-}
-
-extern void ComputeGCRefMap(MethodTable * pMT, BYTE * pGCRefMap, size_t cbGCRefMap);
-
-void CEECompileInfo::EncodeTypeLayout(CORINFO_CLASS_HANDLE classHandle, SigBuilder * pSigBuilder)
-{
-    STANDARD_VM_CONTRACT;
-
-    MethodTable * pMT = TypeHandle(classHandle).AsMethodTable();
-    _ASSERTE(pMT->IsValueType());
-
-    DWORD dwSize = pMT->GetNumInstanceFieldBytes();
-    DWORD dwAlignment = CEEInfo::getClassAlignmentRequirementStatic(pMT);
-
-    DWORD dwFlags = 0;
-
-#ifdef FEATURE_HFA
-    if (pMT->IsHFA())
-        dwFlags |= READYTORUN_LAYOUT_HFA;
-#endif
-
-    // Check everything
-    dwFlags |= READYTORUN_LAYOUT_Alignment;
-    if (dwAlignment == TARGET_POINTER_SIZE)
-        dwFlags |= READYTORUN_LAYOUT_Alignment_Native;
-
-    dwFlags |= READYTORUN_LAYOUT_GCLayout;
-    if (!pMT->ContainsPointers())
-        dwFlags |= READYTORUN_LAYOUT_GCLayout_Empty;
-
-    pSigBuilder->AppendData(dwFlags);
-
-    // Size is checked unconditionally
-    pSigBuilder->AppendData(dwSize);
-
-#ifdef FEATURE_HFA
-    if (dwFlags & READYTORUN_LAYOUT_HFA)
-    {
-        pSigBuilder->AppendData(pMT->GetHFAType());
-    }
-#endif
-
-    if ((dwFlags & READYTORUN_LAYOUT_Alignment) && !(dwFlags & READYTORUN_LAYOUT_Alignment_Native))
-    {
-        pSigBuilder->AppendData(dwAlignment);
-    }
-
-    if ((dwFlags & READYTORUN_LAYOUT_GCLayout) && !(dwFlags & READYTORUN_LAYOUT_GCLayout_Empty))
-    {
-        size_t cbGCRefMap = (dwSize / TARGET_POINTER_SIZE + 7) / 8;
-        _ASSERTE(cbGCRefMap > 0);
-
-        BYTE * pGCRefMap = (BYTE *)_alloca(cbGCRefMap);
-
-        ComputeGCRefMap(pMT, pGCRefMap, cbGCRefMap);
-
-        for (size_t i = 0; i < cbGCRefMap; i++)
-            pSigBuilder->AppendByte(pGCRefMap[i]);
-    }
-}
-
-BOOL CEECompileInfo::AreAllClassesFullyLoaded(CORINFO_MODULE_HANDLE moduleHandle)
-{
-    STANDARD_VM_CONTRACT;
-
-    return ((Module *)moduleHandle)->AreAllClassesFullyLoaded();
-}
-
-int CEECompileInfo::GetVersionResilientTypeHashCode(CORINFO_MODULE_HANDLE moduleHandle, mdToken token)
-{
-    STANDARD_VM_CONTRACT;
-
-    int dwHashCode;
-    if (!::GetVersionResilientTypeHashCode(((Module *)moduleHandle)->GetMDImport(), token, &dwHashCode))
-        ThrowHR(COR_E_BADIMAGEFORMAT);
-
-    return dwHashCode;
-}
-
-int CEECompileInfo::GetVersionResilientMethodHashCode(CORINFO_METHOD_HANDLE methodHandle)
-{
-    STANDARD_VM_CONTRACT;
-
-    return ::GetVersionResilientMethodHashCode(GetMethod(methodHandle));
-}
-
-#endif // FEATURE_READYTORUN_COMPILER
 
 BOOL CEECompileInfo::HasCustomAttribute(CORINFO_METHOD_HANDLE method, LPCSTR customAttributeName)
 {
@@ -2743,22 +2542,6 @@ HRESULT NGenModulePdbWriter::WritePDBData()
     if (FAILED(hr))
         return hr;
 
-
-#ifdef FEATURE_READYTORUN_COMPILER
-    if (pLoadedLayout->HasReadyToRunHeader())
-    {
-        ReadyToRunInfo::MethodIterator mi(m_pModule->GetReadyToRunInfo());
-        while (mi.Next())
-        {
-            MethodDesc *hotDesc = mi.GetMethodDesc();
-
-            hr = WriteMethodPDBData(pLoadedLayout, iCodeSection, pCodeBase, hotDesc, mi.GetMethodStartAddress(), isILPDBProvided);
-            if (FAILED(hr))
-                return hr;
-        }
-    }
-    else
-#endif // FEATURE_READYTORUN_COMPILER
     {
         MethodIterator mi(m_pModule);
         while (mi.Next())
@@ -5792,12 +5575,6 @@ void CEEPreloader::GenerateMethodStubs(
             // that we can recover the stub MethodDesc at prestub time, do the fixups, and wire up the native code
             if (pStubMD != NULL)
             {
-#ifdef FEATURE_READYTORUN_COMPILER
-                if (IsReadyToRunCompilation())
-                {
-                    s_stubMethodsOfMethod.Add(CORINFO_METHOD_HANDLE(pStubMD), CORINFO_METHOD_HANDLE(pMD));
-                }
-#endif // FEATURE_READYTORUN_COMPILER
                 SetStubMethodDescOnInteropMethodDesc(pMD, pStubMD, false /* fReverseStub */);
                 pStubMD = NULL;
             }
@@ -6209,14 +5986,6 @@ ULONG CEEPreloader::Release()
     delete this;
     return 0;
 }
-
-#ifdef FEATURE_READYTORUN_COMPILER
-void CEEPreloader::GetSerializedInlineTrackingMap(SBuffer* pBuffer)
-{
-    InlineTrackingMap * pInlineTrackingMap = m_image->GetInlineTrackingMap();
-    PersistentInlineTrackingMapR2R::Save(m_image->GetHeap(), pBuffer, pInlineTrackingMap);
-}
-#endif
 
 void CEEPreloader::Error(mdToken token, Exception * pException)
 {
@@ -6692,91 +6461,19 @@ HRESULT
 
 #ifdef CROSSGEN_COMPILE
 
-#ifdef FEATURE_READYTORUN_COMPILER
-
-class MethodsForStubEnumerator
-{
-    SHash<NoRemoveSHashTraits<MapSHashTraits<CORINFO_METHOD_HANDLE, CORINFO_METHOD_HANDLE>>>::KeyIterator current;
-    SHash<NoRemoveSHashTraits<MapSHashTraits<CORINFO_METHOD_HANDLE, CORINFO_METHOD_HANDLE>>>::KeyIterator end;
-    bool started = false;
-    bool complete = false;
-
-public:
-    MethodsForStubEnumerator(CORINFO_METHOD_HANDLE hMethod) :
-        current(s_stubMethodsOfMethod.Begin(hMethod)),
-        end(s_stubMethodsOfMethod.End(hMethod))
-    {
-        complete = current == end;
-    }
-
-    bool Next()
-    {
-        if (complete)
-            return false;
-
-        if (started)
-        {
-            ++current;
-        }
-        else
-        {
-            started = true;
-        }
-
-        if (current == end)
-        {
-            complete = true;
-            return false;
-        }
-        return true;
-    }
-
-    CORINFO_METHOD_HANDLE Current()
-    {
-        return current->Value();
-    }
-};
-#endif // FEATURE_READYTORUN_COMPILER
-
 BOOL CEECompileInfo::EnumMethodsForStub(CORINFO_METHOD_HANDLE hMethod, void** enumerator)
 {
-#ifdef FEATURE_READYTORUN_COMPILER
-    *enumerator = NULL;
-    if (s_stubMethodsOfMethod.LookupPtr(hMethod) == NULL)
-        return FALSE;
-
-    *enumerator = new MethodsForStubEnumerator(hMethod);
-    return TRUE;
-#else
     return FALSE;
-#endif // FEATURE_READYTORUN_COMPILER
 }
 
 BOOL CEECompileInfo::EnumNextMethodForStub(void * enumerator, CORINFO_METHOD_HANDLE *hMethod)
 {
     *hMethod = NULL;
-#ifdef FEATURE_READYTORUN_COMPILER
-    auto stubEnum = (MethodsForStubEnumerator*)enumerator;
-    if (stubEnum->Next())
-    {
-        *hMethod = stubEnum->Current();
-        return TRUE;
-    }
-    else
-    {
-        return FALSE;
-    }
-#else
     return FALSE;
-#endif // FEATURE_READYTORUN_COMPILER
 }
 
 void CEECompileInfo::EnumCloseForStubEnumerator(void *enumerator)
 {
-#ifdef FEATURE_READYTORUN_COMPILER
-    auto stubEnum = (MethodsForStubEnumerator*)enumerator;
-    delete stubEnum;
-#endif // FEATURE_READYTORUN_COMPILER
 }
 
 #endif // CROSSGEN_COMPILE

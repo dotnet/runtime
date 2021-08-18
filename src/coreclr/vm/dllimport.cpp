@@ -3403,13 +3403,6 @@ BOOL NDirect::MarshalingRequired(
                     return TRUE;
                 }
 
-#ifdef FEATURE_READYTORUN_COMPILER
-                if (IsReadyToRunCompilation())
-                {
-                    if (!hndArgType.AsMethodTable()->IsLayoutInCurrentVersionBubble())
-                        return TRUE;
-                }
-#endif
                 if (i > 0)
                 {
                     const bool isValueType = true;

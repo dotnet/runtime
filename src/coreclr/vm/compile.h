@@ -353,25 +353,6 @@ class CEECompileInfo : public ICorCompileInfo
     BOOL GetIsGeneratingNgenPDB();
     void SetIsGeneratingNgenPDB(BOOL fGeneratingNgenPDB);
 
-#ifdef FEATURE_READYTORUN_COMPILER
-    CORCOMPILE_FIXUP_BLOB_KIND GetFieldBaseOffset(
-            CORINFO_CLASS_HANDLE classHnd,
-            DWORD * pBaseOffset);
-
-    BOOL NeedsTypeLayoutCheck(CORINFO_CLASS_HANDLE classHnd);
-    void EncodeTypeLayout(CORINFO_CLASS_HANDLE classHandle, SigBuilder * pSigBuilder);
-
-    BOOL AreAllClassesFullyLoaded(CORINFO_MODULE_HANDLE moduleHandle);
-
-    int GetVersionResilientTypeHashCode(CORINFO_MODULE_HANDLE moduleHandle, mdToken token);
-
-    int GetVersionResilientMethodHashCode(CORINFO_METHOD_HANDLE methodHandle);
-
-    BOOL EnumMethodsForStub(CORINFO_METHOD_HANDLE hMethod, void** enumerator);
-    BOOL EnumNextMethodForStub(void * enumerator, CORINFO_METHOD_HANDLE *hMethod);
-    void EnumCloseForStubEnumerator(void *enumerator);
-#endif
-
     BOOL HasCustomAttribute(CORINFO_METHOD_HANDLE method, LPCSTR customAttributeName);
 
     //--------------------------------------------------------------------
@@ -648,10 +629,6 @@ public:
     void GetRVAFieldData(mdFieldDef fd, PVOID * ppData, DWORD * pcbSize, DWORD * pcbAlignment);
 
     ULONG Release();
-
-#ifdef FEATURE_READYTORUN_COMPILER
-    void GetSerializedInlineTrackingMap(SBuffer* pBuffer);
-#endif
 
     void Error(mdToken token, Exception * pException);
 };
