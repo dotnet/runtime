@@ -35,7 +35,7 @@ jobs:
     clean: true
     fetchDepth: 5
   - bash: |
-       touch "$(Build.StagingDirectory)/Hello.txt"
+      touch "$(Build.StagingDirectory)/Hello.txt"
     name: CreateYoloArtifact
     displayName: Create YOLO artifacts
   - task: PublishBuildArtifacts@1
