@@ -302,9 +302,6 @@ typedef struct {
 	char *category, *message;
 	/* For EVENT_KIND_TYPE_LOAD */
 	MonoClass *klass;
-	/* For EVENT_KIND_CRASH  */
-	char *dump;
-	MonoStackHash *hashes;
 } EventInfo;
 
 typedef struct {
@@ -3633,8 +3630,8 @@ process_event (EventKind event, gpointer arg, gint32 il_offset, MonoContext *ctx
 			break;
 		case EVENT_KIND_CRASH: {
 			EventInfo *ei = (EventInfo *)arg;
-			buffer_add_long (&buf, ei->hashes->offset_free_hash);
-			buffer_add_string (&buf, ei->dump);
+			buffer_add_long (&buf, 0);
+			buffer_add_string (&buf, "");
 			break;
 		}
 		case EVENT_KIND_EXCEPTION: {
@@ -4704,60 +4701,6 @@ ss_clear_for_assembly (SingleStepReq *req, MonoAssembly *assembly)
 			}
 		}
 	}
-}
-
-/*
- * This takes a lot of locks and stuff. Do this at the end, after
- * other things have dumped us, so that getting stuck here won't
- * prevent seeing other crash information
- */
-static void
-mono_debugger_agent_send_crash (char *json_dump, MonoStackHash *hashes, int pause)
-{
-	MONO_ENTER_GC_UNSAFE;
-#ifndef DISABLE_CRASH_REPORTING
-	int suspend_policy;
-	GSList *events;
-	EventInfo ei;
-
-	if (!agent_config.enabled)
-		return;
-
-	// Don't send the event if the client doesn't expect it
-	if (!CHECK_PROTOCOL_VERSION (2, 49))
-		return;
-
-	// It doesn't make sense to wait for lldb/gdb to finish if we're not
-	// actually enabled. Therefore we do the wait here.
-	sleep (pause);
-
-	// Don't heap allocate when we can avoid it
-	EventRequest request;
-	memset (&request, 0, sizeof (request));
-	request.event_kind = EVENT_KIND_CRASH;
-
-	gpointer pdata [1];
-	pdata [0] = &request;
-	GPtrArray array;
-	memset (&array, 0, sizeof (array));
-	array.pdata = pdata;
-	array.len = 1;
-
-	mono_loader_lock ();
-	events = create_event_list (EVENT_KIND_CRASH, &array, NULL, NULL, &suspend_policy);
-	mono_loader_unlock ();
-
-	ei.dump = json_dump;
-	ei.hashes = hashes;
-
-	g_assert (events != NULL);
-
-	process_event (EVENT_KIND_CRASH, &ei, 0, NULL, events, suspend_policy);
-
-	// Don't die before it is sent.
-	sleep (4);
-#endif
-	MONO_EXIT_GC_UNSAFE;
 }
 
 /*
@@ -10354,7 +10297,6 @@ debugger_agent_add_function_pointers(MonoComponentDebugger* fn_table)
 	fn_table->user_break = mono_dbg_debugger_agent_user_break;
 	fn_table->debug_log = debugger_agent_debug_log;
 	fn_table->debug_log_is_enabled = debugger_agent_debug_log_is_enabled;
-	fn_table->send_crash = mono_debugger_agent_send_crash;
 	fn_table->transport_handshake = debugger_agent_transport_handshake;
 	fn_table->send_enc_delta = send_enc_delta;
 }
