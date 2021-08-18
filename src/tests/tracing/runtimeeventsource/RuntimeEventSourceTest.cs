@@ -21,7 +21,6 @@ AppDomain.CurrentDomain.SetData("appContextSwitch", "false"); // should not over
 // Create an EventListener.
 using (var myListener = new RuntimeEventListener())
 {
-    await Task.Delay(10);
     if (myListener.Verify())
     {
         Console.WriteLine("Test passed");
@@ -30,17 +29,23 @@ using (var myListener = new RuntimeEventListener())
     else
     {
         Console.WriteLine($"Test Failed - did not see one or more of the expected runtime counters.");
+        Console.WriteLine("Observed events: ");
+        foreach (var (k, v) in myListener.ObservedEvents)
+        {
+            Console.WriteLine("Event: " + k + " " + v);
+        }
         return 1;
     }
 }
 
 public class RuntimeEventListener : EventListener
 {
-    private readonly Dictionary<string, bool> _observedEvents = new Dictionary<string, bool>();
+    internal readonly Dictionary<string, bool> ObservedEvents = new Dictionary<string, bool>();
 
     private static readonly string[] s_expectedEvents = new[] {
         "appContextSwitch",
         "appContextBoolAsStringData",
+        "RuntimeHostConfigSwitch", // Set in the project file
     };
 
     private static readonly string[] s_unexpectedEvents = new[] {
@@ -63,7 +68,7 @@ public class RuntimeEventListener : EventListener
                            Payload: { Count: 2 } })
         {
             var switchName = (string)eventData.Payload[0];
-            _observedEvents[switchName] = ((int)eventData.Payload[1]) == 1;
+            ObservedEvents[switchName] = ((int)eventData.Payload[1]) == 1;
             return;
         }
     }
@@ -72,7 +77,7 @@ public class RuntimeEventListener : EventListener
     {
         foreach (var key in s_expectedEvents)
         {
-            if (!_observedEvents[key])
+            if (!ObservedEvents[key])
             {
                 Console.WriteLine($"Could not find key {key}");
                 return false;
@@ -85,7 +90,7 @@ public class RuntimeEventListener : EventListener
 
         foreach (var key in s_unexpectedEvents)
         {
-            if (_observedEvents.ContainsKey(key))
+            if (ObservedEvents.ContainsKey(key))
             {
                 Console.WriteLine($"Should not have seen {key}");
                 return false;
