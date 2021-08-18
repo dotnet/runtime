@@ -483,37 +483,6 @@ DispatchMap::CreateEncodedMapping(
 #endif //_DEBUG
 } // DispatchMap::CreateEncodedMapping
 
-#ifdef FEATURE_NATIVE_IMAGE_GENERATION
-//------------------------------------------------------------------------
-void DispatchMap::Save(DataImage * image)
-{
-    STANDARD_VM_CONTRACT;
-
-    CONSISTENCY_CHECK(!image->IsStored(this));
-
-    UINT32 cbMap = GetMapSize();
-    UINT32 cbObj = GetObjectSize(cbMap);
-
-    image->StoreInternedStructure(
-        this,
-        cbObj,
-        DataImage::ITEM_DISPATCH_MAP,
-        sizeof(void *));
-
-#ifdef LOGGING
-    g_sdStats.m_cNGENDispatchMap++;
-    g_sdStats.m_cbNGENDispatchMap += cbObj;
-#endif //LOGGING
-}
-
-//------------------------------------------------------------------------
-void DispatchMap::Fixup(DataImage *image)
-{
-    STANDARD_VM_CONTRACT;
-}
-
-#endif //FEATURE_NATIVE_IMAGE_GENERATION
-
 #endif //!DACCESS_COMPILE
 
 //------------------------------------------------------------------------

@@ -554,15 +554,6 @@ PTR_ReadyToRunInfo ReadyToRunInfo::Initialize(Module * pModule, AllocMemTracker 
         return NULL;
     }
 
-#ifdef FEATURE_NATIVE_IMAGE_GENERATION
-    // Ignore ReadyToRun during NGen
-    if (IsCompilationProcess() && !IsNgenPDBCompilationProcess())
-    {
-        DoLog("Ready to Run disabled - compilation process");
-        return NULL;
-    }
-#endif
-
     if (!pLayout->IsNativeMachineFormat())
     {
         // For CoreCLR, be strict about disallowing machine mismatches.

@@ -190,13 +190,7 @@ BOOL ZapSig::GetSignatureForTypeHandle(TypeHandle      handle,
     //
     DWORD index = 0;
     mdToken token = pMT->GetCl_NoLogging();
-#ifdef FEATURE_NATIVE_IMAGE_GENERATION
-    if (pTypeHandleModule != this->context.pInfoModule && !pTypeHandleModule->IsInCurrentVersionBubble())
-    {
-        pTypeHandleModule = GetAppDomain()->ToCompilationDomain()->GetTargetModule();
-        token = pTypeHandleModule->LookupTypeRefByMethodTable(pMT);
-    }
-#endif
+
     if (pTypeHandleModule != this->context.pInfoModule)
     {
         // During IBC profiling this calls

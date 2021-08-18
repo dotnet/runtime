@@ -484,9 +484,6 @@ public:
     // True if this type handle is a zap-encoded fixup
     BOOL IsEncodedFixup() const;
 
-    // Only used at NGEN-time
-    BOOL ComputeNeedsRestore(DataImage *image, TypeHandleList *pVisited) const;
-
     void DoRestoreTypeKey();
 
     void CheckRestore() const;
