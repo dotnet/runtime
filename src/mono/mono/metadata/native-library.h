@@ -48,6 +48,4 @@ typedef struct MonoQCallFunc {
 void
 mono_loader_install_pinvoke_override (PInvokeOverrideFn override_fn);
 
-MonoDl*
-netcore_lookup_self_native_handle();
 #endif

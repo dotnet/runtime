@@ -756,7 +756,7 @@ netcore_check_alc_cache (MonoAssemblyLoadContext *alc, const char *scope)
 	return result;
 }
 
-MonoDl*
+static MonoDl*
 netcore_lookup_self_native_handle()
 {
 	char *error_msg = NULL;
