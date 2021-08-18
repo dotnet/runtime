@@ -221,8 +221,8 @@ MONO_SIG_HANDLER_FUNC (static, sigabrt_signal_handler)
 		if (mono_chain_signal (MONO_SIG_HANDLER_PARAMS))
 			return;
 		mono_sigctx_to_monoctx (ctx, &mctx);
-                mono_handle_native_crash (mono_get_signame (info->si_signo), &mctx, info);
-                abort ();
+		mono_handle_native_crash (mono_get_signame (info->si_signo), &mctx, info);
+		abort ();
 	}
 }
 
