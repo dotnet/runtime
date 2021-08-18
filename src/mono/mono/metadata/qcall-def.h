@@ -8,8 +8,15 @@
  *  where symbol_name is an array of MonoQCallFunc.
  *
  * FCClassElements have to be sorted by name then namespace, 
- * but that the functions in each one can be in any order, but 
- * have to end with a func_flag_end_of_array (0x01) entry.
+ * but the functions in each one can be in any order, 
+ * specified by the QCFuncElement macro as follows:
+ *      FCFuncStart(class_symbol_name)
+ *            QCFuncElement(method_name, symbol_name)
+ *      FCFuncEnd()
+ * where class_symbol_name is the symbol for the corresponding
+ * class specified in FCClassElement, method_name is the name of the
+ * method on the managed side, and symbol_name is the name
+ * of the implementing method on the native side.
  **/
 
 FCFuncStart(gInteropNativeLibraryFuncs)
