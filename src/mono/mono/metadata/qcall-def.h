@@ -18,9 +18,3 @@
  * method on the managed side, and symbol_name is the name
  * of the implementing method on the native side.
  **/
-
-FCFuncStart(gInteropNativeLibraryFuncs)
-	QCFuncElement("GetEntryPointModuleHandleInternal", netcore_lookup_self_native_handle)
-FCFuncEnd()
-
-FCClassElement("NativeLibrary", "System.Runtime.InteropServices", gInteropNativeLibraryFuncs)

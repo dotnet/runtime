@@ -19,7 +19,6 @@ public:
                                                BOOL throwOnError);
     static void QCALLTYPE FreeLib(INT_PTR handle);
     static INT_PTR QCALLTYPE GetSymbol(INT_PTR handle, LPCWSTR symbolName, BOOL throwOnError);
-    static INT_PTR QCALLTYPE GetEntryPointModuleHandle();
 };
 
 #endif // __NATIVELIBRARYNATIVE_H__

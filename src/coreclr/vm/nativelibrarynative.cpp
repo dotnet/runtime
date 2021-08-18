@@ -70,19 +70,3 @@ INT_PTR QCALLTYPE NativeLibraryNative::GetSymbol(INT_PTR handle, LPCWSTR symbolN
 
     return address;
 }
-
-//static
-INT_PTR QCALLTYPE NativeLibraryNative::GetEntryPointModuleHandle()
-{
-    QCALL_CONTRACT;
-
-    NATIVE_LIBRARY_HANDLE handle = NULL;
-
-    BEGIN_QCALL;
-
-    handle = NativeLibrary::GetEntryPointModuleHandle();
-
-    END_QCALL;
-
-    return reinterpret_cast<INT_PTR>(handle);
-}
