@@ -24,7 +24,6 @@
 #include "eehash.h"
 #include "contractimpl.h"
 #include "generics.h"
-#include "fixuppointer.h"
 #include "gcinfotypes.h"
 
 /*
@@ -252,7 +251,7 @@ typedef DPTR(GenericsDictInfo) PTR_GenericsDictInfo;
 struct GenericsStaticsInfo
 {
     // Pointer to field descs for statics
-    RelativePointer<PTR_FieldDesc> m_pFieldDescs;
+    PTR_FieldDesc       m_pFieldDescs;
 
     // Method table ID for statics
     SIZE_T              m_DynamicTypeID;
@@ -594,10 +593,6 @@ public:
 
     // Does this immediate item live in an NGEN module?
     BOOL IsZapped();
-
-    // For types that are part of an ngen-ed assembly this gets the
-    // Module* that contains this methodtable.
-    PTR_Module GetZapModule();
 
     // For regular, non-constructed types, GetLoaderModule() == GetModule()
     // For constructed types (e.g. int[], Dict<int[], C>) the hash table through which a type
@@ -1423,7 +1418,7 @@ public:
     {
         LIMITED_METHOD_DAC_CONTRACT;
         _ASSERTE(HasNonVirtualSlotsArray());
-        return RelativePointer<PTR_PCODE>::GetValueAtPtr(GetNonVirtualSlotsPtr());
+        return dac_cast<PTR_PCODE>(GetNonVirtualSlotsPtr());
     }
 
 #ifndef DACCESS_COMPILE
@@ -1432,8 +1427,7 @@ public:
         LIMITED_METHOD_CONTRACT;
         _ASSERTE(HasNonVirtualSlotsArray());
 
-        RelativePointer<PCODE *> *pRelPtr = (RelativePointer<PCODE *> *)GetNonVirtualSlotsPtr();
-        pRelPtr->SetValue(slots);
+        *(PCODE **)GetNonVirtualSlotsPtr() = slots;
     }
 
     inline void SetHasSingleNonVirtualSlot()
@@ -2220,9 +2214,7 @@ public:
         _ASSERTE(HasDispatchMapSlot());
 
         TADDR pSlot = GetMultipurposeSlotPtr(enum_flag_HasDispatchMapSlot, c_DispatchMapSlotOffsets);
-
-        RelativePointer<DispatchMap *> *pRelPtr = (RelativePointer<DispatchMap *> *)pSlot;
-        pRelPtr->SetValue(pDispatchMap);
+        *(DispatchMap **)pSlot = pDispatchMap;
     }
 #endif // !DACCESS_COMPILE
 
@@ -2399,7 +2391,7 @@ public:
     {
         WRAPPER_NO_CONTRACT;
         _ASSERTE(HasGenericsStaticsInfo());
-        return ReadPointerMaybeNull((GenericsStaticsInfo *)GetGenericsStaticsInfo(), &GenericsStaticsInfo::m_pFieldDescs);
+        return GetGenericsStaticsInfo()->m_pFieldDescs;
     }
 
     BOOL HasCrossModuleGenericStaticsInfo()
@@ -3666,7 +3658,7 @@ private:
 
     PTR_MethodTable m_pParentMethodTable;
 
-    RelativePointer<PTR_Module> m_pLoaderModule;    // LoaderModule. It is equal to the ZapModule in ngened images
+    PTR_Module      m_pLoaderModule;    // LoaderModule. It is equal to the ZapModule in ngened images
 
     PTR_MethodTableWriteableData m_pWriteableData;
 

@@ -23,8 +23,6 @@
 #include "eeconfig.h"
 #include "precode.h"
 
-#include "fixuppointer.h"
-
 class Stub;
 class FCallMethodDesc;
 class FieldDesc;
@@ -518,8 +516,6 @@ public:
     LoaderAllocator * GetDomainSpecificLoaderAllocator();
 
     Module* GetLoaderModule();
-
-    Module* GetZapModule();
 
     // Does this immediate item live in an NGEN module?
     BOOL IsZapped();
@@ -2346,14 +2342,14 @@ public:
     void SetNextChunk(MethodDescChunk *chunk)
     {
         LIMITED_METHOD_CONTRACT;
-        m_next.SetValueMaybeNull(chunk);
+        m_next = chunk;
     }
 #endif // !DACCESS_COMPILE
 
     PTR_MethodDescChunk GetNextChunk()
     {
         LIMITED_METHOD_CONTRACT;
-        return m_next.GetValueMaybeNull(PTR_HOST_MEMBER_TADDR(MethodDescChunk, this, m_next));
+        return m_next;
     }
 
     UINT32 GetCount()
@@ -2427,7 +2423,7 @@ private:
 
     PTR_MethodTable m_methodTable;
 
-    RelativePointer<PTR_MethodDescChunk> m_next;
+    PTR_MethodDescChunk  m_next;
 
     BYTE                 m_size;        // The size of this chunk minus 1 (in multiples of MethodDesc::ALIGNMENT)
     BYTE                 m_count;       // The number of MethodDescs in this chunk minus 1
@@ -2464,7 +2460,7 @@ class StoredSigMethodDesc : public MethodDesc
     // Put the sig RVA in here - this allows us to avoid
     // touching the method desc table when CoreLib is prejitted.
 
-    RelativePointer<TADDR>           m_pSig;
+    TADDR           m_pSig;
     DWORD           m_cSig;
 #ifdef TARGET_64BIT
     // m_dwExtendedFlags is not used by StoredSigMethodDesc itself.
@@ -2476,13 +2472,13 @@ class StoredSigMethodDesc : public MethodDesc
     TADDR GetSigRVA()
     {
         LIMITED_METHOD_DAC_CONTRACT;
-        return RelativePointer<TADDR>::GetValueMaybeNullAtPtr(PTR_HOST_MEMBER_TADDR(StoredSigMethodDesc, this, m_pSig));
+        return m_pSig;
     }
 
     bool HasStoredMethodSig(void)
     {
         LIMITED_METHOD_DAC_CONTRACT;
-        return !m_pSig.IsNull();
+        return m_pSig != NULL;
     }
     PCCOR_SIGNATURE GetStoredMethodSig(DWORD* sigLen = NULL)
     {
@@ -2496,13 +2492,13 @@ class StoredSigMethodDesc : public MethodDesc
             DacInstantiateTypeByAddress(GetSigRVA(), m_cSig, true);
 #else // !DACCESS_COMPILE
         g_IBCLogger.LogNDirectCodeAccess(this);
-        return (PCCOR_SIGNATURE) m_pSig.GetValueMaybeNull();
+        return (PCCOR_SIGNATURE) m_pSig;
 #endif // !DACCESS_COMPILE
     }
     void SetStoredMethodSig(PCCOR_SIGNATURE sig, DWORD sigBytes)
     {
 #ifndef DACCESS_COMPILE
-        m_pSig.SetValueMaybeNull((TADDR)sig);
+        m_pSig = (TADDR)sig;
         m_cSig = sigBytes;
 #endif // !DACCESS_COMPILE
     }
@@ -2562,7 +2558,7 @@ class DynamicMethodDesc : public StoredSigMethodDesc
 #endif
 
 protected:
-    RelativePointer<PTR_CUTF8>           m_pszMethodName;
+    PTR_CUTF8           m_pszMethodName;
     PTR_DynamicResolver m_pResolver;
 
 #ifndef TARGET_64BIT
@@ -2607,7 +2603,7 @@ public:
     PTR_CUTF8 GetMethodName()
     {
         LIMITED_METHOD_DAC_CONTRACT;
-        return RelativePointer<PTR_CUTF8>::GetValueMaybeNullAtPtr(PTR_HOST_MEMBER_TADDR(DynamicMethodDesc, this, m_pszMethodName));
+        return m_pszMethodName;
     }
 
     WORD GetAttrs()
@@ -2851,7 +2847,7 @@ public:
 #endif // defined(TARGET_X86)
 
         // This field gets set only when this MethodDesc is marked as PreImplemented
-        RelativePointer<PTR_MethodDesc> m_pStubMD;
+        PTR_MethodDesc m_pStubMD;
 
     } ndirect;
 
@@ -3285,7 +3281,7 @@ struct ComPlusCallInfo
 #endif // TARGET_X86
 
     // This field gets set only when this MethodDesc is marked as PreImplemented
-    RelativePointer<PTR_MethodDesc> m_pStubMD;
+    PTR_MethodDesc m_pStubMD;
 };
 
 
@@ -3499,7 +3495,7 @@ public:
     PTR_DictionaryLayout GetDictLayoutRaw()
     {
         LIMITED_METHOD_DAC_CONTRACT;
-        return RelativePointer<PTR_DictionaryLayout>::GetValueMaybeNullAtPtr(PTR_HOST_MEMBER_TADDR(InstantiatedMethodDesc, this, m_pDictLayout));
+        return m_pDictLayout;
     }
 
     PTR_MethodDesc IMD_GetWrappedMethodDesc()

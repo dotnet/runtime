@@ -39,7 +39,7 @@ class FieldDesc
 #endif
 
   protected:
-    RelativePointer<PTR_MethodTable> m_pMTOfEnclosingClass;  // This is used to hold the log2 of the field size temporarily during class loading.  Yuck.
+    PTR_MethodTable m_pMTOfEnclosingClass;  // This is used to hold the log2 of the field size temporarily during class loading.  Yuck.
 
     // See also: FieldDesc::InitializeFrom method
 
@@ -89,7 +89,7 @@ public:
 #ifndef DACCESS_COMPILE
     void InitializeFrom(const FieldDesc& sourceField, MethodTable *pMT)
     {
-        m_pMTOfEnclosingClass.SetValue(pMT);
+        m_pMTOfEnclosingClass = pMT;
 
         m_mb = sourceField.m_mb;
         m_isStatic = sourceField.m_isStatic;
@@ -122,7 +122,7 @@ public:
     void SetMethodTable(MethodTable* mt)
     {
         LIMITED_METHOD_CONTRACT;
-        m_pMTOfEnclosingClass.SetValue(mt);
+        m_pMTOfEnclosingClass = mt;
     }
 #endif
 
@@ -390,7 +390,7 @@ public:
     PTR_MethodTable GetApproxEnclosingMethodTable_NoLogging()
     {
         LIMITED_METHOD_DAC_CONTRACT;
-        return m_pMTOfEnclosingClass.GetValue(PTR_HOST_MEMBER_TADDR(FieldDesc, this, m_pMTOfEnclosingClass));
+        return m_pMTOfEnclosingClass;
     }
 
     PTR_MethodTable GetApproxEnclosingMethodTable()

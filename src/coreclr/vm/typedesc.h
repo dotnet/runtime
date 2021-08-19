@@ -159,9 +159,6 @@ public:
     // The module that defined the underlying type
     PTR_Module GetModule();
 
-    // The ngen'ed module where this type-desc lives
-    PTR_Module GetZapModule();
-
     // The module where this type lives for the purposes of loading and prejitting
     // See ComputeLoaderModule for more information
     PTR_Module GetLoaderModule();
@@ -337,7 +334,7 @@ public:
         }
         CONTRACTL_END;
 
-        m_pModule.SetValue(pModule);
+        m_pModule = pModule;
         m_typeOrMethodDef = typeOrMethodDef;
         m_token = token;
         m_index = index;
@@ -355,7 +352,7 @@ public:
         LIMITED_METHOD_CONTRACT;
         SUPPORTS_DAC;
 
-        return ReadPointer(this, &TypeVarTypeDesc::m_pModule);
+        return m_pModule;
     }
 
     unsigned int GetIndex()
@@ -438,7 +435,7 @@ protected:
     BOOL ConstrainedAsObjRefHelper();
 
     // Module containing the generic definition, also the loader module for this type desc
-    RelativePointer<PTR_Module> m_pModule;
+    PTR_Module m_pModule;
 
     // Declaring type or method
     mdToken m_typeOrMethodDef;

@@ -417,7 +417,7 @@ PTR_DispatchMap MethodTable::GetDispatchMap()
     g_IBCLogger.LogDispatchMapAccess(pMT);
 
     TADDR pSlot = pMT->GetMultipurposeSlotPtr(enum_flag_HasDispatchMapSlot, c_DispatchMapSlotOffsets);
-    return RelativePointer<PTR_DispatchMap>::GetValueAtPtr(pSlot);
+    return dac_cast<PTR_DispatchMap>(pSlot);
 }
 
 //==========================================================================================
@@ -1211,7 +1211,7 @@ void MethodTable::SetupGenericsStaticsInfo(FieldDesc* pStaticFieldDescs)
         pInfo->m_DynamicTypeID = (SIZE_T)-1;
     }
 
-    pInfo->m_pFieldDescs.SetValueMaybeNull(pStaticFieldDescs);
+    pInfo->m_pFieldDescs = pStaticFieldDescs;
 }
 
 #endif // !DACCESS_COMPILE

@@ -16,7 +16,6 @@
 
 #include "check.h"
 #include "classloadlevel.h"
-#include "fixuppointer.h"
 
 class TypeDesc;
 class TypeHandle;
@@ -422,9 +421,6 @@ public:
     // The module that defined the underlying type
     // (First strip off array/ptr qualifiers and generic type arguments)
     PTR_Module GetModule() const;
-
-    // The ngen'ed module where this type lives
-    PTR_Module GetZapModule() const;
 
     // Does this immediate item live in an NGEN module?
     BOOL IsZapped() const;

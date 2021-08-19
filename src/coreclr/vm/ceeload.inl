@@ -17,7 +17,7 @@ TYPE LookupMap<TYPE>::GetValueAt(PTR_TADDR pValue, TADDR* pFlags, TADDR supporte
 {
     WRAPPER_NO_CONTRACT;
     SUPPORTS_DAC;
-    TYPE value = RelativePointer<TYPE>::GetValueMaybeNullAtPtr(dac_cast<TADDR>(pValue));
+    TYPE value = dac_cast<TYPE>(pValue);
 
     if (pFlags)
         *pFlags = dac_cast<TADDR>(value) & supportedFlags;
@@ -33,10 +33,9 @@ void LookupMap<TYPE>::SetValueAt(PTR_TADDR pValue, TYPE value, TADDR flags)
 {
     WRAPPER_NO_CONTRACT;
 
-    value = (TYPE)(dac_cast<TADDR>(value) | flags);
+    value = dac_cast<TYPE>((dac_cast<TADDR>(value) | flags));
 
-    RelativePointer<TYPE> *pRelPtr = (RelativePointer<TYPE> *)pValue;
-    pRelPtr->SetValue(value);
+    *(dac_cast<DPTR(TYPE)>(pValue)) = value;
 }
 
 //

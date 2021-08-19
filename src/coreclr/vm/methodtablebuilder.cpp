@@ -6091,18 +6091,18 @@ MethodTableBuilder::InitMethodDesc(
 
         if (strcmp(pMethodName, "Invoke") == 0)
         {
-            BAD_FORMAT_NOTHROW_ASSERT(((DelegateEEClass*)GetHalfBakedClass())->m_pInvokeMethod.IsNull());
-            ((DelegateEEClass*)GetHalfBakedClass())->m_pInvokeMethod.SetValue(pNewMD);
+            BAD_FORMAT_NOTHROW_ASSERT(((DelegateEEClass*)GetHalfBakedClass())->m_pInvokeMethod == NULL);
+            ((DelegateEEClass*)GetHalfBakedClass())->m_pInvokeMethod = pNewMD;
         }
         else if (strcmp(pMethodName, "BeginInvoke") == 0)
         {
-            BAD_FORMAT_NOTHROW_ASSERT(((DelegateEEClass*)GetHalfBakedClass())->m_pBeginInvokeMethod.IsNull());
-            ((DelegateEEClass*)GetHalfBakedClass())->m_pBeginInvokeMethod.SetValue(pNewMD);
+            BAD_FORMAT_NOTHROW_ASSERT(((DelegateEEClass*)GetHalfBakedClass())->m_pBeginInvokeMethod == NULL);
+            ((DelegateEEClass*)GetHalfBakedClass())->m_pBeginInvokeMethod = pNewMD;
         }
         else if (strcmp(pMethodName, "EndInvoke") == 0)
         {
-            BAD_FORMAT_NOTHROW_ASSERT(((DelegateEEClass*)GetHalfBakedClass())->m_pEndInvokeMethod.IsNull());
-            ((DelegateEEClass*)GetHalfBakedClass())->m_pEndInvokeMethod.SetValue(pNewMD);
+            BAD_FORMAT_NOTHROW_ASSERT(((DelegateEEClass*)GetHalfBakedClass())->m_pEndInvokeMethod == NULL);
+            ((DelegateEEClass*)GetHalfBakedClass())->m_pEndInvokeMethod = pNewMD;
         }
         else
         {
@@ -6306,7 +6306,7 @@ MethodTableBuilder::PlaceMethodImpls()
 
     DWORD * slots = new (GetStackingAllocator()) DWORD[dwMaxSlotSize];
     mdToken * tokens = new (GetStackingAllocator()) mdToken[dwMaxSlotSize];
-    RelativePointer<MethodDesc *> * replaced = new (GetStackingAllocator()) RelativePointer<MethodDesc*>[dwMaxSlotSize];
+    MethodDesc ** replaced = new (GetStackingAllocator()) MethodDesc*[dwMaxSlotSize];
 
     DWORD iEntry = 0;
     bmtMDMethod * pCurImplMethod = bmtMethodImpl->GetImplementationMethod(iEntry);
@@ -6434,7 +6434,7 @@ MethodTableBuilder::WriteMethodImplData(
     DWORD         cSlots,
     DWORD *       rgSlots,
     mdToken *     rgTokens,
-    RelativePointer<MethodDesc *> * rgDeclMD)
+    MethodDesc ** rgDeclMD)
 {
     STANDARD_VM_CONTRACT;
 
@@ -6476,9 +6476,9 @@ MethodTableBuilder::WriteMethodImplData(
 
                 if (min != i)
                 {
-                    MethodDesc * mTmp = rgDeclMD[i].GetValue();
-                    rgDeclMD[i].SetValue(rgDeclMD[min].GetValue());
-                    rgDeclMD[min].SetValue(mTmp);
+                    MethodDesc * mTmp = rgDeclMD[i];
+                    rgDeclMD[i] = rgDeclMD[min];
+                    rgDeclMD[min] = mTmp;
 
                     DWORD sTmp = rgSlots[i];
                     rgSlots[i] = rgSlots[min];
@@ -6504,7 +6504,7 @@ MethodTableBuilder::PlaceLocalDeclarationOnClass(
     bmtMDMethod * pDecl,
     bmtMDMethod * pImpl,
     DWORD *       slots,
-    RelativePointer<MethodDesc *> * replaced,
+    MethodDesc ** replaced,
     DWORD *       pSlotIndex,
     DWORD         dwMaxSlotSize)
 {
@@ -6564,7 +6564,7 @@ MethodTableBuilder::PlaceLocalDeclarationOnClass(
     // We implement this slot, record it
     ASSERT(*pSlotIndex < dwMaxSlotSize);
     slots[*pSlotIndex] = pDecl->GetSlotIndex();
-    replaced[*pSlotIndex].SetValue(pDecl->GetMethodDesc());
+    replaced[*pSlotIndex] = pDecl->GetMethodDesc();
 
     // increment the counter
     (*pSlotIndex)++;
@@ -6665,7 +6665,7 @@ VOID MethodTableBuilder::PlaceInterfaceDeclarationOnInterface(
     bmtMethodHandle hDecl,
     bmtMDMethod   *pImpl,
     DWORD *       slots,
-    RelativePointer<MethodDesc *> * replaced,
+    MethodDesc ** replaced,
     DWORD *       pSlotIndex,
     DWORD         dwMaxSlotSize)
 {
@@ -6698,7 +6698,7 @@ VOID MethodTableBuilder::PlaceInterfaceDeclarationOnInterface(
     // We implement this slot, record it
     ASSERT(*pSlotIndex < dwMaxSlotSize);
     slots[*pSlotIndex] = hDecl.GetSlotIndex();
-    replaced[*pSlotIndex].SetValue(pDeclMD);
+    replaced[*pSlotIndex] = pDeclMD;
 
     // increment the counter
     (*pSlotIndex)++;
@@ -6710,7 +6710,7 @@ MethodTableBuilder::PlaceParentDeclarationOnClass(
     bmtRTMethod * pDecl,
     bmtMDMethod * pImpl,
     DWORD *       slots,
-    RelativePointer<MethodDesc *> * replaced,
+    MethodDesc**  replaced,
     DWORD *       pSlotIndex,
     DWORD         dwMaxSlotSize)
 {
@@ -6758,7 +6758,7 @@ MethodTableBuilder::PlaceParentDeclarationOnClass(
     // We implement this slot, record it
     ASSERT(*pSlotIndex < dwMaxSlotSize);
     slots[*pSlotIndex] = pDeclMD->GetSlot();
-    replaced[*pSlotIndex].SetValue(pDeclMD);
+    replaced[*pSlotIndex] = pDeclMD;
 
     // increment the counter
     (*pSlotIndex)++;
@@ -10271,7 +10271,7 @@ MethodTableBuilder::SetupMethodTable2(
                                    GetMemTracker());
 
     pMT->SetClass(pClass);
-    pClass->m_pMethodTable.SetValue(pMT);
+    pClass->m_pMethodTable = pMT;
     m_pHalfBakedMT = pMT;
 
 #ifdef _DEBUG
@@ -10450,7 +10450,7 @@ MethodTableBuilder::SetupMethodTable2(
     // Set all field slots to point to the newly created MethodTable
     for (i = 0; i < (bmtEnumFields->dwNumStaticFields + bmtEnumFields->dwNumInstanceFields); i++)
     {
-        pFieldDescList[i].m_pMTOfEnclosingClass.SetValue(pMT);
+        pFieldDescList[i].m_pMTOfEnclosingClass = pMT;
     }
 
     // Fill in type parameters before looking up exact parent or fetching the types of any field descriptors!

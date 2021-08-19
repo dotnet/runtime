@@ -26,7 +26,6 @@
 #include <daccess.h>
 #include <corbbtprof.h>
 #include <clrtypes.h>
-#include <fixuppointer.h>
 
 typedef DPTR(struct CORCOMPILE_CODE_MANAGER_ENTRY)
     PTR_CORCOMPILE_CODE_MANAGER_ENTRY;

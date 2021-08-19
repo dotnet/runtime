@@ -2552,7 +2552,7 @@ void Module::FreeClassTables()
                 if (!th.IsTypeDesc())
                 {
                     MethodTable * pMT = th.AsMethodTable();
-                    if (pMT->IsCanonicalMethodTable() && (!pMT->IsZapped() || pMT->GetZapModule() == this))
+                    if (pMT->IsCanonicalMethodTable())
                         pMT->GetClass()->Destruct(pMT);
                 }
             }
@@ -7931,7 +7931,7 @@ ModuleCtorInfo::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
 
     // This class is contained so do not enumerate 'this'.
     DacEnumMemoryRegion(dac_cast<TADDR>(ppMT), numElements *
-                        sizeof(RelativePointer<MethodTable *>));
+                        sizeof(MethodTable *));
     DacEnumMemoryRegion(dac_cast<TADDR>(cctorInfoHot), numElementsHot *
                         sizeof(ClassCtorInfoEntry));
     DacEnumMemoryRegion(dac_cast<TADDR>(cctorInfoCold),

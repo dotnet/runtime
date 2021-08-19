@@ -92,14 +92,6 @@ PTR_Module TypeDesc::GetLoaderModule()
     }
 }
 
-
-PTR_Module TypeDesc::GetZapModule()
-{
-    WRAPPER_NO_CONTRACT;
-    SUPPORTS_DAC;
-    return ExecutionManager::FindZapModule(dac_cast<TADDR>(this));
-}
-
 PTR_BaseDomain TypeDesc::GetDomain()
 {
     CONTRACTL

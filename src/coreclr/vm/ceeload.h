@@ -399,7 +399,7 @@ struct ModuleCtorInfo
     DWORD                   numElements;
     DWORD                   numLastAllocated;
     DWORD                   numElementsHot;
-    DPTR(RelativePointer<PTR_MethodTable>) ppMT; // size is numElements
+    DPTR(PTR_MethodTable)   ppMT; // size is numElements
     PTR_ClassCtorInfoEntry  cctorInfoHot;   // size is numElementsHot
     PTR_ClassCtorInfoEntry  cctorInfoCold;  // size is numElements-numElementsHot
 
@@ -450,7 +450,7 @@ struct ModuleCtorInfo
     PTR_MethodTable GetMT(DWORD i)
     {
         LIMITED_METHOD_DAC_CONTRACT;
-        return ppMT[i].GetValue(dac_cast<TADDR>(ppMT) + i * sizeof(RelativePointer<PTR_MethodTable>));
+        return ppMT[i];
     }
 
 };

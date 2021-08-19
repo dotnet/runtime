@@ -98,26 +98,10 @@ inline BOOL MethodTable::IsZapped()
 }
 
 //==========================================================================================
-// For types that are part of an ngen-ed assembly this gets the
-// Module* that contains this methodtable.
-inline PTR_Module MethodTable::GetZapModule()
-{
-    LIMITED_METHOD_DAC_CONTRACT;
-
-    PTR_Module zapModule = NULL;
-    if (IsZapped())
-    {
-        zapModule = ReadPointer(this, &MethodTable::m_pLoaderModule);
-    }
-
-    return zapModule;
-}
-
-//==========================================================================================
 inline PTR_Module MethodTable::GetLoaderModule()
 {
     LIMITED_METHOD_DAC_CONTRACT;
-    return ReadPointer(this, &MethodTable::m_pLoaderModule);
+    return m_pLoaderModule;
 }
 
 inline PTR_LoaderAllocator MethodTable::GetLoaderAllocator()
@@ -133,7 +117,7 @@ inline PTR_LoaderAllocator MethodTable::GetLoaderAllocator()
 inline void MethodTable::SetLoaderModule(Module* pModule)
 {
     WRAPPER_NO_CONTRACT;
-    m_pLoaderModule.SetValue(pModule);
+    m_pLoaderModule = pModule;
 }
 
 inline void MethodTable::SetLoaderAllocator(LoaderAllocator* pAllocator)

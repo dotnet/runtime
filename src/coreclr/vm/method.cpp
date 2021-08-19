@@ -1405,21 +1405,6 @@ DWORD MethodDesc::GetImplAttrs()
 }
 
 //*******************************************************************************
-Module* MethodDesc::GetZapModule()
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        FORBID_FAULT;
-        SUPPORTS_DAC;
-    }
-    CONTRACTL_END
-
-    return NULL;
-}
-
-//*******************************************************************************
 Module* MethodDesc::GetLoaderModule()
 {
     CONTRACTL
@@ -1430,11 +1415,6 @@ Module* MethodDesc::GetLoaderModule()
     }
     CONTRACTL_END;
 
-    if (IsZapped())
-    {
-        return GetZapModule();
-    }
-    else
     if (HasMethodInstantiation() && !IsGenericMethodDefinition())
     {
         Module *retVal = ClassLoader::ComputeLoaderModule(GetMethodTable(),
@@ -1836,7 +1816,7 @@ MethodDescChunk *MethodDescChunk::CreateChunk(LoaderHeap *pHeap, DWORD methodDes
             pMD = (MethodDesc *)((BYTE *)pMD + oneSize);
         }
 
-        pChunk->m_next.SetValueMaybeNull(pFirstChunk);
+        pChunk->m_next = pFirstChunk;
         pFirstChunk = pChunk;
 
         methodDescCount -= count;
