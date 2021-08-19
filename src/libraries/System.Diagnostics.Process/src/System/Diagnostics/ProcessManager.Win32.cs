@@ -282,7 +282,7 @@ namespace System.Diagnostics
 
             while (true)
             {
-                byte* bufferPtr = (byte*)NativeMemory.AlignedAlloc((uint)bufferSize, 8); // some platforms require the buffer to be 64-bit aligned.
+                void* bufferPtr = NativeMemory.Alloc((uint)bufferSize); // some platforms require the buffer to be 64-bit aligned and NativeLibrary.Alloc guarantees sufficient alignment.
 
                 try
                 {
@@ -312,7 +312,7 @@ namespace System.Diagnostics
                 }
                 finally
                 {
-                    NativeMemory.AlignedFree(bufferPtr);
+                    NativeMemory.Free(bufferPtr);
                 }
             }
         }
