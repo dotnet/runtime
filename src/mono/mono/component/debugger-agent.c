@@ -9285,9 +9285,12 @@ frame_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 				MonoDebugLocalsInfo *locals;
 
 				locals = mono_debug_lookup_locals (frame->de.method);
-				if (locals && CHECK_ICORDBG (FALSE)) { //on icordbg the index value is correct, we don't need to fix it.
-					g_assert (pos < locals->num_locals);
-					pos = locals->locals [pos].index;
+				if (locals) { 
+					if (CHECK_ICORDBG (FALSE)) //on icordbg the index value is correct, we don't need to fix it.
+					{
+						g_assert (pos < locals->num_locals);
+						pos = locals->locals [pos].index;
+					}
 					mono_debug_free_locals (locals);
 				}
 
@@ -9339,9 +9342,12 @@ frame_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 				MonoDebugLocalsInfo *locals;
 
 				locals = mono_debug_lookup_locals (frame->de.method);
-				if (locals && CHECK_ICORDBG (FALSE)) {
-					g_assert (pos < locals->num_locals);
-					pos = locals->locals [pos].index;
+				if (locals) {
+					if (CHECK_ICORDBG (FALSE))
+					{
+						g_assert (pos < locals->num_locals);
+						pos = locals->locals [pos].index;
+					}
 					mono_debug_free_locals (locals);
 				}
 				g_assert (pos >= 0 && pos < jit->num_locals);
