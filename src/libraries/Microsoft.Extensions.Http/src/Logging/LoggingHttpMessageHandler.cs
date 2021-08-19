@@ -11,7 +11,7 @@ using Microsoft.Extensions.Logging;
 namespace Microsoft.Extensions.Http.Logging
 {
     /// <summary>
-    /// Handles logging of the lifecycle for a http request.
+    /// Handles logging of the lifecycle for an HTTP request.
     /// </summary>
     public class LoggingHttpMessageHandler : DelegatingHandler
     {
