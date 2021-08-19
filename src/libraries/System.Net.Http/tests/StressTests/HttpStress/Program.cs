@@ -204,8 +204,9 @@ namespace HttpStress
             await WaitUntilMaxExecutionTimeElapsedOrKeyboardInterrupt(config.MaximumExecutionTime);
 
             client?.Stop();
-            client?.PrintFinalReport();
             client?.SaveReportFile();
+            client?.PrintFinalReport();
+            
 
             // return nonzero status code if there are stress errors
             return client?.TotalErrorCount == 0 ? ExitCode.Success : ExitCode.StressError;
