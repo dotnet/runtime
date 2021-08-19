@@ -547,26 +547,6 @@ namespace System.Xml.Tests
             );
         }
         [Fact]
-        public static void DeserializationOfTypedArraysByXmlReader39()
-        {
-            var reader = Utils.CreateFragmentReader("<a b='a  true 16 42 .555 0002-01-01T00:00:00+00:00'>sdf</a>");
-            reader.PositionOnElement("a");
-            reader.MoveToAttribute("b");
-            var values = (XPathNavigator[])reader.ReadContentAs(typeof(XPathNavigator[]), null);
-            Assert.Equal(6, values.Length);
-            Assert.Equal("a", values[0].Value);
-            Assert.True(values[1].ValueAsBoolean);
-            Assert.Equal(16, values[2].ValueAsInt);
-            Assert.Equal(42L, values[3].ValueAsLong);
-            Assert.Equal(.555, values[4].ValueAsDouble);
-
-            Assert.Equal
-            (
-                new DateTime(2, 1, 1).Add(TimeZoneInfo.Local.GetUtcOffset(new DateTime(2, 1, 1))),
-                values[5].ValueAsDateTime
-            );
-        }
-        [Fact]
         public static void DeserializationOfTypedArraysByXmlReader4()
         {
             var reader = Utils.CreateFragmentReader("<a b='1  2 3 4'>1  2 3 4</a>");
