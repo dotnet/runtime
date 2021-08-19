@@ -8,4 +8,4 @@
 
 PALEXPORT const char* SystemNative_SearchPath(int32_t folderId);
 
-PALEXPORT const char* SystemNative_SearchPath_TempDirectory();
+PALEXPORT const char* SystemNative_SearchPath_TempDirectory(void);
