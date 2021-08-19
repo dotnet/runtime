@@ -968,7 +968,14 @@ bool Compiler::optDeriveLoopCloningConditions(unsigned loopNum, LoopCloneContext
         else if (loop->lpFlags & LPFLG_VAR_INIT)
         {
             // initVar >= 0
-            LC_Condition geZero(GT_GE, LC_Expr(LC_Ident(loop->lpVarInit, LC_Ident::Var)),
+            const unsigned initLcl = loop->lpVarInit;
+            if (!genActualTypeIsInt(lvaGetDesc(initLcl)))
+            {
+                JITDUMP("> Init var V%02u not compatible with TYP_INT\n", initLcl);
+                return false;
+            }
+
+            LC_Condition geZero(GT_GE, LC_Expr(LC_Ident(initLcl, LC_Ident::Var)),
                                 LC_Expr(LC_Ident(0, LC_Ident::Const)));
             context->EnsureConditions(loopNum)->Push(geZero);
         }
@@ -992,9 +999,14 @@ bool Compiler::optDeriveLoopCloningConditions(unsigned loopNum, LoopCloneContext
         }
         else if (loop->lpFlags & LPFLG_VAR_LIMIT)
         {
-            unsigned limitLcl = loop->lpVarLimit();
-            ident             = LC_Ident(limitLcl, LC_Ident::Var);
+            const unsigned limitLcl = loop->lpVarLimit();
+            if (!genActualTypeIsInt(lvaGetDesc(limitLcl)))
+            {
+                JITDUMP("> Limit var V%02u not compatible with TYP_INT\n", limitLcl);
+                return false;
+            }
 
+            ident = LC_Ident(limitLcl, LC_Ident::Var);
             LC_Condition geZero(GT_GE, LC_Expr(ident), LC_Expr(LC_Ident(0, LC_Ident::Const)));
 
             context->EnsureConditions(loopNum)->Push(geZero);
