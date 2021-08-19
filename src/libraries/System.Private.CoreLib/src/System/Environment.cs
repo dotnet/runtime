@@ -130,8 +130,7 @@ namespace System
                 int processId = s_processId;
                 if (processId == 0)
                 {
-                    Interlocked.CompareExchange(ref s_processId, GetProcessId(), 0);
-                    processId = s_processId;
+                    s_processId = processId = GetProcessId();
                     // Assume that process Id zero is invalid for user processes. It holds for all mainstream operating systems.
                     Debug.Assert(processId != 0);
                 }
@@ -217,9 +216,9 @@ namespace System
             get
             {
                 int systemPageSize = s_systemPageSize;
-                if (systemPageSize == default)
+                if (systemPageSize == 0)
                 {
-                    Interlocked.CompareExchange(ref s_systemPageSize, systemPageSize = GetSystemPageSize(), default);
+                    s_systemPageSize = systemPageSize = GetSystemPageSize();
                 }
                 return systemPageSize;
             }
