@@ -13766,6 +13766,9 @@ GenTree* Compiler::fgOptimizeEqualityComparisonWithConst(GenTreeOp* cmp)
 SKIP:
 
     // Now check for compares with small constant longs that can be cast to int.
+    // Note that we filter out negative values here so that the transformations
+    // below are correct. E. g. "EQ(-1L, CAST_UN(int))" is always "false", but were
+    // we to make it into "EQ(-1, int)", "true" becomes possible for negative inputs.
     if (!op2->TypeIs(TYP_LONG) || ((op2->LngValue() >> 31) != 0))
     {
         return cmp;
