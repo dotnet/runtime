@@ -1,8 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Collections;
-using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 
 namespace System.Xml
@@ -112,7 +110,7 @@ namespace System.Xml
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
-        public static string ToString(string name, string ns)
+        public static string ToString(string name, string? ns)
         {
             return ns == null || ns.Length == 0 ? name : $"{ns}:{name}";
         }
@@ -141,7 +139,6 @@ namespace System.Xml
 
         internal void Atomize(XmlNameTable nameTable)
         {
-            Debug.Assert(Name != null);
             Name = nameTable.Add(Name);
             Namespace = nameTable.Add(Namespace);
         }
