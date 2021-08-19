@@ -15,12 +15,6 @@ inline InstantiatedMethodDesc* MethodDesc::AsInstantiatedMethodDesc() const
     return dac_cast<PTR_InstantiatedMethodDesc>(this);
 }
 
-inline BOOL MethodDesc::IsZapped()
-{
-    WRAPPER_NO_CONTRACT;
-    return FALSE;
-}
-
 inline PTR_DynamicResolver DynamicMethodDesc::GetResolver()
 {
     LIMITED_METHOD_CONTRACT;

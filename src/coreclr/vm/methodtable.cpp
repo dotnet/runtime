@@ -4034,27 +4034,6 @@ static void CheckForTypeForwardedTypeRefParameter(
         pLocals->fDependsOnEquivalentOrForwardedStructs = TRUE;
 }
 
-// Callback for code:MethodDesc::WalkValueTypeParameters (of type code:WalkValueTypeParameterFnPtr)
-static void LoadTypeDefOrRefAssembly(
-    Module *         pModule,
-    mdToken          token,
-    Module *         pDefModule,
-    mdToken          defToken,
-    const SigParser *ptr,
-    SigTypeContext * pTypeContext,
-    void *           pData)
-{
-    STANDARD_VM_CONTRACT;
-
-    DoFullyLoadLocals * pLocals = (DoFullyLoadLocals *)pData;
-
-    CheckForTypeForwardedTypeRefParameterLocals locals;
-    locals.pModule = pModule;
-    locals.pfTypeForwarderFound = NULL; // By passing NULL here, we simply resolve the token to TypeDef.
-
-    WalkValueTypeTypeDefOrRefs(ptr, CheckForTypeForwardedTypeRef, &locals);
-}
-
 #endif //!DACCESS_COMPILE
 
 void MethodTable::DoFullyLoad(Generics::RecursionGraph * const pVisited,  const ClassLoadLevel level, DFLPendingList * const pPending,
@@ -4304,15 +4283,6 @@ void MethodTable::DoFullyLoad(Generics::RecursionGraph * const pVisited,  const 
                 {
                 }
                 EX_END_CATCH(RethrowTerminalExceptions);
-
-                // This marks the class as needing restore.
-                if (locals.fHasTypeForwarderDependentStructParameter && !pMD->IsZapped())
-                    pMD->SetHasForwardedValuetypeParameter();
-            }
-            else if (pMD->IsZapped() && pMD->HasForwardedValuetypeParameter())
-            {
-                pMD->WalkValueTypeParameters(this, LoadTypeDefOrRefAssembly, NULL);
-                locals.fDependsOnEquivalentOrForwardedStructs = TRUE;
             }
 
 #ifdef FEATURE_TYPEEQUIVALENCE

@@ -518,9 +518,6 @@ public:
 
     Module* GetZapModule();
 
-    // Does this immediate item live in an NGEN module?
-    BOOL IsZapped();
-
     // Strip off method and class instantiation if present and replace by the typical instantiation
     // e.g. C<int>.m<string> -> C<T>.m<U>.  Does not modify the MethodDesc, but returns
     // the appropriate stripped MethodDesc.
@@ -1695,7 +1692,7 @@ public:
     void PrepareForUseAsADependencyOfANativeImage()
     {
         WRAPPER_NO_CONTRACT;
-        if (!IsZapped() && !HaveValueTypeParametersBeenWalked())
+        if (!HaveValueTypeParametersBeenWalked())
             PrepareForUseAsADependencyOfANativeImageWorker();
     }
 
@@ -1712,7 +1709,7 @@ protected:
                                                                       // These are seperate to allow the flags space available and used to be obvious here
                                                                       // and for the logic that splits the token to be algorithmically generated based on the
                                                                       // #define
-        enum_flag3_HasForwardedValuetypeParameter           = 0x4000, // Indicates that a type-forwarded type is used as a valuetype parameter (this flag is only valid for ngenned items)
+        // unused                                           = 0x4000,
         enum_flag3_ValueTypeParametersWalked                = 0x4000, // Indicates that all typeref's in the signature of the method have been resolved to typedefs (or that process failed) (this flag is only valid for non-ngenned methods)
         enum_flag3_DoesNotHaveEquivalentValuetypeParameters = 0x8000, // Indicates that we have verified that there are no equivalent valuetype parameters for this method
     };
@@ -1842,26 +1839,12 @@ public:
     }
 #endif // FEATURE_TYPEEQUIVALENCE
 
-    inline BOOL HasForwardedValuetypeParameter()
-    {
-        LIMITED_METHOD_DAC_CONTRACT;
-        // This should only be asked of Zapped MethodDescs
-        _ASSERTE(IsZapped());
-        return (m_wFlags3AndTokenRemainder & enum_flag3_HasForwardedValuetypeParameter) != 0;
-    }
-
-    inline void SetHasForwardedValuetypeParameter()
-    {
-        LIMITED_METHOD_CONTRACT;
-        InterlockedUpdateFlags3(enum_flag3_HasForwardedValuetypeParameter, TRUE);
-    }
-
     inline BOOL HaveValueTypeParametersBeenWalked()
     {
         LIMITED_METHOD_DAC_CONTRACT;
 
         // This should only be asked of non-Zapped MethodDescs, and only during execution (not compilation)
-        _ASSERTE(!IsZapped() && !IsCompilationProcess());
+        _ASSERTE(!IsCompilationProcess());
 
         return (m_wFlags3AndTokenRemainder & enum_flag3_ValueTypeParametersWalked) != 0;
     }
@@ -1870,7 +1853,7 @@ public:
     {
         LIMITED_METHOD_CONTRACT;
 
-        _ASSERTE(!IsZapped() && !IsCompilationProcess());
+        _ASSERTE(!IsCompilationProcess());
 
         InterlockedUpdateFlags3(enum_flag3_ValueTypeParametersWalked, TRUE);
     }

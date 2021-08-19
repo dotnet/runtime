@@ -166,8 +166,6 @@ BOOL NDirectMethodDesc::HasDefaultDllImportSearchPathsAttribute()
         return (ndirect.m_wFlags  & kDefaultDllImportSearchPathsStatus) != 0;
     }
 
-    _ASSERTE(!IsZapped());
-
     BOOL attributeIsFound = GetDefaultDllImportSearchPathsAttributeValue(GetModule(),GetMemberDef(),&ndirect.m_DefaultDllImportSearchPathsAttributeValue);
 
     if(attributeIsFound )
@@ -545,7 +543,7 @@ PCODE MethodDesc::GetMethodEntryPoint()
 
         TADDR pSlot = dac_cast<TADDR>(this) + size;
 
-        return IsZapped() ? NonVtableSlot::GetValueAtPtr(pSlot) : *PTR_PCODE(pSlot);
+        return *PTR_PCODE(pSlot);
     }
 
     _ASSERTE(GetMethodTable()->IsCanonicalMethodTable());
@@ -567,9 +565,6 @@ TADDR MethodDesc::GetAddrOfSlot()
 
     if (HasNonVtableSlot())
     {
-        // Slots in NGened images are relative pointers
-        _ASSERTE(!IsZapped());
-
         SIZE_T size = GetBaseSize();
 
         return dac_cast<TADDR>(this) + size;
@@ -1430,11 +1425,6 @@ Module* MethodDesc::GetLoaderModule()
     }
     CONTRACTL_END;
 
-    if (IsZapped())
-    {
-        return GetZapModule();
-    }
-    else
     if (HasMethodInstantiation() && !IsGenericMethodDefinition())
     {
         Module *retVal = ClassLoader::ComputeLoaderModule(GetMethodTable(),
@@ -3197,9 +3187,6 @@ bool MethodDesc::DetermineAndSetIsEligibleForTieredCompilation()
         // Policy
         g_pConfig->TieredCompilation() &&
 
-        // Functional requirement - NGEN images embed direct calls that we would be unable to detect and redirect
-        !IsZapped() &&
-
         // Functional requirement - The NativeCodeSlot is required to hold the code pointer for the default code version because
         // the method's entry point slot will point to a precode or to the current code entry point
         HasNativeCodeSlot() &&
@@ -4215,7 +4202,7 @@ moveToNextToken:
         IfFailThrowBF(ptr.SkipExactlyOne(), BFA_BAD_SIGNATURE, pModule);
     }
 
-    if (!IsZapped() && !IsCompilationProcess() && !HaveValueTypeParametersBeenWalked())
+    if (!IsCompilationProcess() && !HaveValueTypeParametersBeenWalked())
     {
         SetValueTypeParametersWalked();
     }
@@ -4260,7 +4247,7 @@ BOOL MethodDesc::HasTypeEquivalentStructParameters()
 
     WalkValueTypeParameters(this->GetMethodTable(), CheckForEquivalenceAndLoadType, &fHasTypeEquivalentStructParameters);
 
-    if (!fHasTypeEquivalentStructParameters && !IsZapped())
+    if (!fHasTypeEquivalentStructParameters)
         SetDoesNotHaveEquivalentValuetypeParameters();
 
     return fHasTypeEquivalentStructParameters;
@@ -4341,7 +4328,7 @@ void MethodDesc::PrepareForUseAsADependencyOfANativeImageWorker()
     {
     }
     EX_END_CATCH(RethrowTerminalExceptions);
-    _ASSERTE(IsZapped() || HaveValueTypeParametersBeenWalked());
+    _ASSERTE(HaveValueTypeParametersBeenWalked());
 }
 #endif //!DACCESS_COMPILE
 
