@@ -561,7 +561,7 @@ Compiler::fgWalkResult Compiler::fgUpdateInlineReturnExpressionPlaceHolder(GenTr
         }
 
         tree->ReplaceWith(inlineCandidate, comp);
-        *madeChanged = true;
+        *madeChanges = true;
         comp->compCurBB->bbFlags |= (bbFlags & BBF_SPLIT_GAINED);
 
 #ifdef DEBUG
@@ -606,13 +606,13 @@ Compiler::fgWalkResult Compiler::fgUpdateInlineReturnExpressionPlaceHolder(GenTr
                 {
                     // Either lhs is a call V05 = call(); or lhs is addr, and asg becomes a copyBlk.
                     comp->fgAttachStructInlineeToAsg(parent, tree, retClsHnd);
-                    *madeChanged = true;
+                    *madeChanges = true;
                 }
                 else
                 {
                     // Just assign the inlinee to a variable to keep it simple.
                     tree->ReplaceWith(comp->fgAssignStructInlineeToVar(tree, retClsHnd), comp);
-                    *madeChanged = true;
+                    *madeChanges = true;
                 }
             }
             break;
