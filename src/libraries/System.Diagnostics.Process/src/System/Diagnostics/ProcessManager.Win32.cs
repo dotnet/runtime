@@ -269,20 +269,20 @@ namespace System.Diagnostics
     {
         // Use a smaller buffer size on debug to ensure we hit the retry path.
 #if DEBUG
-        private const int DefaultCachedBufferSize = 8 * 1024;
+        private const uint DefaultCachedBufferSize = 8 * 1024;
 #else
-        private const int DefaultCachedBufferSize = 1024 * 1024;
+        private const uint DefaultCachedBufferSize = 1024 * 1024;
 #endif
-        private static int MostRecentSize = DefaultCachedBufferSize;
+        private static uint MostRecentSize = DefaultCachedBufferSize;
 
         internal static unsafe ProcessInfo[] GetProcessInfos(int? processIdFilter = null)
         {
             // Start with the default buffer size.
-            int bufferSize = MostRecentSize;
+            uint bufferSize = MostRecentSize;
 
             while (true)
             {
-                void* bufferPtr = NativeMemory.Alloc((uint)bufferSize); // some platforms require the buffer to be 64-bit aligned and NativeLibrary.Alloc guarantees sufficient alignment.
+                void* bufferPtr = NativeMemory.Alloc(bufferSize); // some platforms require the buffer to be 64-bit aligned and NativeLibrary.Alloc guarantees sufficient alignment.
 
                 try
                 {
@@ -290,7 +290,7 @@ namespace System.Diagnostics
                     uint status = Interop.NtDll.NtQuerySystemInformation(
                         Interop.NtDll.SystemProcessInformation,
                         bufferPtr,
-                        (uint)bufferSize,
+                        bufferSize,
                         &actualSize);
 
                     if (status != Interop.NtDll.STATUS_INFO_LENGTH_MISMATCH)
@@ -319,7 +319,7 @@ namespace System.Diagnostics
 
         // allocating a few more kilo bytes just in case there are some new process
         // kicked in since new call to NtQuerySystemInformation
-        private static int GetEstimatedBufferSize(uint actualSize) => (int)actualSize + 1024 * 10;
+        private static uint GetEstimatedBufferSize(uint actualSize) => actualSize + 1024 * 10;
 
         private static unsafe ProcessInfo[] GetProcessInfos(ReadOnlySpan<byte> data, int? processIdFilter)
         {
