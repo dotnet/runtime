@@ -61,6 +61,17 @@ namespace Microsoft.Extensions.Http
         /// </returns>
         public abstract HttpMessageHandler Build();
 
+        /// <summary>
+        /// Creates an instance of an <see cref="HttpMessageHandler"/> using the <see cref="DelegatingHandler"/> instances
+        /// provided by <paramref name="additionalHandlers"/>. The resulting pipeline can be used to manually create <see cref="HttpClient"/>
+        /// or <see cref="HttpMessageInvoker"/> instances with customized message handlers.
+        /// </summary>
+        /// <param name="primaryHandler">The primary handler represents the destination of the HTTP message channel.</param>
+        /// <param name="additionalHandlers">An ordered list of <see cref="DelegatingHandler"/> instances to be invoked as part
+        /// of sending an <see cref="HttpRequestMessage"/> and receiving an <see cref="HttpResponseMessage"/>.
+        /// The handlers are invoked in a top-down fashion. That is, the first entry is invoked first for
+        /// an outbound request message but last for an inbound response message.</param>
+        /// <returns>The HTTP message channel.</returns>
         protected internal static HttpMessageHandler CreateHandlerPipeline(HttpMessageHandler primaryHandler, IEnumerable<DelegatingHandler> additionalHandlers)
         {
             // This is similar to https://github.com/aspnet/AspNetWebStack/blob/master/src/System.Net.Http.Formatting/HttpClientFactory.cs#L58
