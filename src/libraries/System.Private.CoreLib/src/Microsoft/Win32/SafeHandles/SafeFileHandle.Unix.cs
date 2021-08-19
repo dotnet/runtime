@@ -313,9 +313,10 @@ namespace Microsoft.Win32.SafeHandles
             // still matches the file we've opened.
             // When the delete is performed by another .NET Handle, it holds the lock during the delete.
             // Since we've just obtained the lock, the file will already be removed/replaced.
-            // This checks whether other Handles had DeleteOnClose for this path.
-            // To avoid performing this check for every FileStream, we only check when DeleteOnClose is set.
-            if (((options & FileOptions.DeleteOnClose) != 0) && share == FileShare.None)
+            // We limit performing this check to cases where our file was opened with DeleteOnClose with
+            // a mode that opens existing files, or creates them when they don't exist.
+            if (_isLocked && ((options & FileOptions.DeleteOnClose) != 0) && share == FileShare.None &&
+                (mode != FileMode.CreateNew && mode != FileMode.Open && mode != FileMode.Truncate))
             {
                 if (!statusHasValue)
                 {
@@ -329,13 +330,12 @@ namespace Microsoft.Win32.SafeHandles
                 Interop.Sys.FileStatus pathStatus;
                 if (Interop.Sys.Stat(path, out pathStatus) < 0)
                 {
-                    // If the file was removed, re-open if our mode creates files.
+                    // If the file was removed, re-open.
                     // Otherwise throw the error 'stat' gave us (assuming this is the
                     // error 'open' will give us if we'd call it now).
                     Interop.ErrorInfo error = Interop.Sys.GetLastErrorInfo();
 
-                    if (error.Error == Interop.Error.ENOENT &&
-                        (mode != FileMode.Open && mode != FileMode.Truncate))
+                    if (error.Error == Interop.Error.ENOENT)
                     {
                         return false;
                     }
@@ -344,14 +344,8 @@ namespace Microsoft.Win32.SafeHandles
                 }
                 if (pathStatus.Ino != status.Ino || pathStatus.Dev != status.Dev)
                 {
-                    // The file was replaced, re-open if our mode opens existing files.
-                    // Otherwise throw EEXIST.
-                    if (mode != FileMode.CreateNew)
-                    {
-                        return false;
-                    }
-
-                    throw Interop.GetExceptionForIoErrno(Interop.Error.EEXIST.Info(), path);
+                    // The file was replaced, re-open
+                    return false;
                 }
             }
             // Enable DeleteOnClose when we've succesfully locked the file.

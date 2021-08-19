@@ -9,8 +9,11 @@ namespace System.IO.Tests
 {
     public class FileStream_DeleteOnClose : FileSystemTest
     {
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsFileLockingEnabled))]
-        public async Task DeleteOnClose_UsableAsMutex()
+        [InlineData(FileMode.Append)] // FileModes that open an existing file, or create a new one when it doesn't exist.
+        [InlineData(FileMode.Create)]
+        [InlineData(FileMode.OpenOrCreate)]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsFileLockingEnabled), nameof(PlatformDetection.IsThreadingSupported))]
+        public async Task DeleteOnClose_UsableAsMutex(FileMode mode)
         {
             var cts = new CancellationTokenSource();
             int enterCount = 0;
@@ -26,7 +29,7 @@ namespace System.IO.Tests
                 {
                     try
                     {
-                        using (var fs = new FileStream(path, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None, 4096, FileOptions.DeleteOnClose))
+                        using (var fs = new FileStream(path, mode, FileAccess.Write, FileShare.None, 4096, FileOptions.DeleteOnClose))
                         {
                             int counter = Interlocked.Increment(ref enterCount);
                             if (counter != 1)
