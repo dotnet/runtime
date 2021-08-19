@@ -14,6 +14,7 @@ using System.Net.Security;
 using System.Net.Sockets;
 using System.Threading;
 using System.Threading.Tasks;
+using System.IO;
 
 namespace HttpStress
 {
@@ -119,6 +120,19 @@ namespace HttpStress
                 _aggregator.PrintCurrentResults(_stopwatch.Elapsed);
                 _aggregator.PrintLatencies();
                 _aggregator.PrintFailureTypes();
+            }
+        }
+
+        public void SaveReportFile()
+        {
+            Console.WriteLine($"Saving report file to {_config.ReportFile}.");
+            try
+            {
+                File.WriteAllText(_config.ReportFile, $"{{ \"totalErrorCount\" : \"{_aggregator.TotalErrorCount}\" }}");
+            }
+            catch(Exception ex)
+            {
+                Console.WriteLine($"Saving report failed: {ex.Message}");
             }
         }
 

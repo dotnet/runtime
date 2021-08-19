@@ -49,6 +49,7 @@ namespace HttpStress
         public int? ServerMaxFrameSize { get; set; }
         public int? ServerInitialConnectionWindowSize { get; set; }
         public int? ServerMaxRequestHeaderFieldSize { get; set; }
+        public string ReportFile { get; set; }
     }
 
 }

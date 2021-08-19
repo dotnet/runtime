@@ -66,6 +66,9 @@ namespace HttpStress
             cmd.AddOption(new Option("-serverInitialConnectionWindowSize", "Overrides kestrel initial connection window size setting.") { Argument = new Argument<int?>("bytes", null) });
             cmd.AddOption(new Option("-serverMaxRequestHeaderFieldSize", "Overrides kestrel max request header field size.") { Argument = new Argument<int?>("bytes", null) });
 
+            cmd.AddOption(new Option("-reportFile", "Stress run report .json file.") { Argument = new Argument<string>("path", "./report.json") });
+
+
             ParseResult cmdline = cmd.Parse(args);
             if (cmdline.Errors.Count > 0)
             {
@@ -109,6 +112,7 @@ namespace HttpStress
                 ServerMaxFrameSize = cmdline.ValueForOption<int?>("-serverMaxFrameSize"),
                 ServerInitialConnectionWindowSize = cmdline.ValueForOption<int?>("-serverInitialConnectionWindowSize"),
                 ServerMaxRequestHeaderFieldSize = cmdline.ValueForOption<int?>("-serverMaxRequestHeaderFieldSize"),
+                ReportFile = cmdline.ValueForOption<string>("-reportFile")
             };
 
             return true;
@@ -201,6 +205,7 @@ namespace HttpStress
 
             client?.Stop();
             client?.PrintFinalReport();
+            client?.SaveReportFile();
 
             // return nonzero status code if there are stress errors
             return client?.TotalErrorCount == 0 ? ExitCode.Success : ExitCode.StressError;
