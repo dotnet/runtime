@@ -11,7 +11,7 @@ using Microsoft.Extensions.Logging;
 namespace Microsoft.Extensions.Http.Logging
 {
     /// <summary>
-    /// Handles logging of the lifecycle for a http request within a scope.
+    /// Handles logging of the lifecycle for an HTTP request within a log scope.
     /// </summary>
     public class LoggingScopeHttpMessageHandler : DelegatingHandler
     {
