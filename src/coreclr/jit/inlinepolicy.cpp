@@ -473,14 +473,6 @@ bool DefaultPolicy::BudgetCheck() const
         return false;
     }
 
-#ifdef DEBUG
-    if (m_RootCompiler->compInlineStress())
-    {
-        JITDUMP("\nAllowing over-budget for stress mode\n");
-        return false;
-    }
-#endif
-
     // The strategy tracks the amout of inlining done so far,
     // so it performs the actual check.
     //
