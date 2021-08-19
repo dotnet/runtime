@@ -8565,7 +8565,7 @@ method_commands_internal (int command, MonoMethod *method, MonoDomain *domain, g
 			return ERR_INVALID_ARGUMENT;
 		}
 
-		locals = mono_debug_lookup_locals (method, FALSE);
+		locals = mono_debug_lookup_locals (method);
 		if (!locals) {
 			if (CHECK_PROTOCOL_VERSION (2, 43)) {
 				/* Scopes */
@@ -9284,8 +9284,8 @@ frame_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 			} else {
 				MonoDebugLocalsInfo *locals;
 
-				locals = mono_debug_lookup_locals (frame->de.method, TRUE);
-				if (locals) {
+				locals = mono_debug_lookup_locals (frame->de.method);
+				if (locals && CHECK_ICORDBG (FALSE)) { //on icordbg the index value is correct, we don't need to fix it.
 					g_assert (pos < locals->num_locals);
 					pos = locals->locals [pos].index;
 					mono_debug_free_locals (locals);
@@ -9338,8 +9338,8 @@ frame_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 			} else {
 				MonoDebugLocalsInfo *locals;
 
-				locals = mono_debug_lookup_locals (frame->de.method, TRUE);
-				if (locals) {
+				locals = mono_debug_lookup_locals (frame->de.method);
+				if (locals && CHECK_ICORDBG (FALSE)) {
 					g_assert (pos < locals->num_locals);
 					pos = locals->locals [pos].index;
 					mono_debug_free_locals (locals);
