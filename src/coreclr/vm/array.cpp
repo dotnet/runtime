@@ -500,7 +500,7 @@ MethodTable* Module::CreateArrayMethodTable(TypeHandle elemTypeHnd, CorElementTy
             if (canShareVtableChunks)
             {
                 // Share the parent chunk
-                it.SetIndirectionSlot(pParentClass->GetVtableIndirections()[it.GetIndex()].GetValueMaybeNull());
+                it.SetIndirectionSlot(pParentClass->GetVtableIndirections()[it.GetIndex()]);
             }
             else
             {

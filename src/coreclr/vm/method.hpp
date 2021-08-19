@@ -1113,7 +1113,7 @@ public:
         return IsVirtualSlot() && !HasNonVtableSlot();
     }
 
-    TADDR GetAddrOfSlot();
+    PTR_PCODE GetAddrOfSlot();
 
     PTR_MethodDesc GetDeclMethodDesc(UINT32 slotNumber);
 
@@ -1474,7 +1474,7 @@ public:
 
     BOOL SetNativeCodeInterlocked(PCODE addr, PCODE pExpected = NULL);
 
-    TADDR GetAddrOfNativeCodeSlot();
+    PTR_PCODE GetAddrOfNativeCodeSlot();
 
     BOOL MayHaveNativeCode();
 
@@ -1891,13 +1891,8 @@ public:
 
     // class MethodImpl;                            // Present if HasMethodImplSlot() is true
 
-    typedef RelativePointer<PCODE> NonVtableSlot;   // Present if HasNonVtableSlot() is true
-                                                    // RelativePointer for NGen, PCODE for JIT
-
-#define FIXUP_LIST_MASK 1
-    typedef RelativePointer<TADDR> NativeCodeSlot;  // Present if HasNativeCodeSlot() is true
-                                                    // lower order bit (FIXUP_LIST_MASK) used to determine if FixupListSlot is present
-    typedef RelativePointer<TADDR> FixupListSlot;
+    typedef PCODE NonVtableSlot;   // Present if HasNonVtableSlot() is true
+    typedef PCODE NativeCodeSlot;  // Present if HasNativeCodeSlot() is true
 
 // Stub Dispatch code
 public:
@@ -2828,19 +2823,19 @@ public:
         LPVOID      m_pNativeNDirectTarget;
 
         // Information about the entrypoint
-        RelativePointer<PTR_CUTF8>     m_pszEntrypointName;
+        PTR_CUTF8   m_pszEntrypointName;
 
         union
         {
-            RelativePointer<PTR_CUTF8>     m_pszLibName;
+            PTR_CUTF8   m_pszLibName;
             DWORD       m_dwECallID;    // ECallID for QCalls
         };
 
         // The writeable part of the methoddesc.
-        PlainPointer<PTR_NDirectWriteableData>    m_pWriteableData;
+        PTR_NDirectWriteableData    m_pWriteableData;
 
 #ifdef HAS_NDIRECT_IMPORT_PRECODE
-        RelativePointer<PTR_NDirectImportThunkGlue> m_pImportThunkGlue;
+        PTR_NDirectImportThunkGlue  m_pImportThunkGlue;
 #else // HAS_NDIRECT_IMPORT_PRECODE
         NDirectImportThunkGlue      m_ImportThunkGlue;
 #endif // HAS_NDIRECT_IMPORT_PRECODE
@@ -2979,7 +2974,7 @@ public:
     {
         LIMITED_METHOD_DAC_CONTRACT;
 
-        return RelativePointer<PTR_CUTF8>::GetValueMaybeNullAtPtr(PTR_HOST_MEMBER_TADDR(NDirectMethodDesc, this, ndirect.m_pszLibName));
+        return ndirect.m_pszLibName;
     }
 
 #ifndef DACCESS_COMPILE
@@ -2987,7 +2982,7 @@ public:
     {
         LIMITED_METHOD_CONTRACT;
 
-        return IsQCall() ? "QCall" : ndirect.m_pszLibName.GetValueMaybeNull();
+        return IsQCall() ? "QCall" : ndirect.m_pszLibName;
     }
 #endif // !DACCESS_COMPILE
 
@@ -2995,7 +2990,7 @@ public:
     {
         LIMITED_METHOD_DAC_CONTRACT;
 
-        return RelativePointer<PTR_CUTF8>::GetValueMaybeNullAtPtr(PTR_HOST_MEMBER_TADDR(NDirectMethodDesc, this, ndirect.m_pszEntrypointName));
+        return ndirect.m_pszEntrypointName;
     }
 
     BOOL IsVarArgs() const
@@ -3057,20 +3052,14 @@ public:
     {
         LIMITED_METHOD_DAC_CONTRACT;
 
-        return ReadPointer(this, &NDirectMethodDesc::ndirect, &decltype(NDirectMethodDesc::ndirect)::m_pWriteableData);
+        return ndirect.m_pWriteableData;
     }
 
     PTR_NDirectImportThunkGlue GetNDirectImportThunkGlue()
     {
         LIMITED_METHOD_DAC_CONTRACT;
 
-        TADDR base = PTR_HOST_MEMBER_TADDR(NDirectMethodDesc, this, ndirect.m_pImportThunkGlue);
-
-#ifdef HAS_NDIRECT_IMPORT_PRECODE
-        return RelativePointer<PTR_NDirectImportThunkGlue>::GetValueAtPtr(base);
-#else
-        return dac_cast<PTR_NDirectImportThunkGlue>(base);
-#endif
+        return ndirect.m_pImportThunkGlue;
     }
 
     LPVOID GetNDirectTarget()
@@ -3428,7 +3417,7 @@ public:
         if (IMD_IsGenericMethodDefinition())
             return TRUE;
         else
-            return !m_pPerInstInfo.IsNull();
+            return m_pPerInstInfo != NULL;
     }
 
     // All varieties of InstantiatedMethodDesc's support this method.
@@ -3446,14 +3435,15 @@ public:
     {
         LIMITED_METHOD_DAC_CONTRACT;
 
-        return ReadPointerMaybeNull(this, &InstantiatedMethodDesc::m_pPerInstInfo);
+        return m_pPerInstInfo;
     }
 
     PTR_Dictionary IMD_GetMethodDictionaryNonNull()
     {
         LIMITED_METHOD_DAC_CONTRACT;
+        _ASSERTE(m_pPerInstInfo != NULL);
 
-        return ReadPointer(this, &InstantiatedMethodDesc::m_pPerInstInfo);
+        return m_pPerInstInfo;
     }
 
     BOOL IMD_IsGenericMethodDefinition()
@@ -3528,10 +3518,10 @@ public:
         if (IMD_IsWrapperStubWithInstantiations() && IMD_HasMethodInstantiation())
         {
             InstantiatedMethodDesc* pIMD = IMD_GetWrappedMethodDesc()->AsInstantiatedMethodDesc();
-            return pIMD->m_pDictLayout.GetValueMaybeNull();
+            return pIMD->m_pDictLayout;
         }
         else if (IMD_IsSharedByGenericMethodInstantiations())
-            return m_pDictLayout.GetValueMaybeNull();
+            return m_pDictLayout;
         else
             return NULL;
     }
@@ -3542,11 +3532,11 @@ public:
         if (IMD_IsWrapperStubWithInstantiations() && IMD_HasMethodInstantiation())
         {
             InstantiatedMethodDesc* pIMD = IMD_GetWrappedMethodDesc()->AsInstantiatedMethodDesc();
-            pIMD->m_pDictLayout.SetValueMaybeNull(pNewLayout);
+            pIMD->m_pDictLayout = pNewLayout;
         }
         else if (IMD_IsSharedByGenericMethodInstantiations())
         {
-            m_pDictLayout.SetValueMaybeNull(pNewLayout);
+            m_pDictLayout = pNewLayout;
         }
     }
 #endif // !DACCESS_COMPILE
@@ -3596,7 +3586,7 @@ private:
 
     friend class MethodDesc; // this fields are currently accessed by MethodDesc::Save/Restore etc.
     union {
-        RelativePointer<PTR_DictionaryLayout> m_pDictLayout; //SharedMethodInstantiation
+        PTR_DictionaryLayout m_pDictLayout; //SharedMethodInstantiation
 
         RelativeFixupPointer<PTR_MethodDesc> m_pWrappedMethodDesc; // For WrapperStubWithInstantiations
     };
@@ -3611,7 +3601,7 @@ public: // <TODO>make private: JITinterface.cpp accesses through this </TODO>
     //
     // For generic method definitions that are not the typical method definition (e.g. C<int>.m<U>)
     // this field is null; to obtain the instantiation use LoadMethodInstantiation
-    PlainPointer<PTR_Dictionary> m_pPerInstInfo;  //SHARED
+    PTR_Dictionary m_pPerInstInfo;  //SHARED
 
 private:
     WORD          m_wFlags2;

@@ -961,7 +961,7 @@ void MethodTable::SetInterfaceMap(WORD wNumInterfaces, InterfaceInfo_t* iMap)
     m_wNumInterfaces = wNumInterfaces;
 
     CONSISTENCY_CHECK(IS_ALIGNED(iMap, sizeof(void*)));
-    m_pInterfaceMap.SetValue(iMap);
+    m_pInterfaceMap = iMap;
 }
 
 //==========================================================================================
@@ -1170,7 +1170,7 @@ void MethodTable::AddDynamicInterface(MethodTable *pItfMT)
     *(((DWORD_PTR *)pNewItfMap) - 1) = NumDynAddedInterfaces + 1;
 
     // Switch the old interface map with the new one.
-    m_pInterfaceMap.SetValueVolatile(pNewItfMap);
+    VolatileStore(&m_pInterfaceMap, pNewItfMap);
 
     // Log the fact that we leaked the interface vtable map.
 #ifdef _DEBUG
@@ -4574,8 +4574,7 @@ PTR_Dictionary MethodTable::GetDictionary()
     {
         // The instantiation for this class is stored in the type slots table
         // *after* any inherited slots
-        TADDR base = dac_cast<TADDR>(&(GetPerInstInfo()[GetNumDicts()-1]));
-        return PerInstInfoElem_t::GetValueMaybeNullAtPtr(base);
+        return GetPerInstInfo()[GetNumDicts()-1];
     }
     else
     {
@@ -4592,8 +4591,7 @@ Instantiation MethodTable::GetInstantiation()
     if (HasInstantiation())
     {
         PTR_GenericsDictInfo  pDictInfo = GetGenericsDictInfo();
-        TADDR base = dac_cast<TADDR>(&(GetPerInstInfo()[pDictInfo->m_wNumDicts-1]));
-        return Instantiation(PerInstInfoElem_t::GetValueMaybeNullAtPtr(base)->GetInstantiation(), pDictInfo->m_wNumTyPars);
+        return Instantiation(GetPerInstInfo()[pDictInfo->m_wNumDicts-1]->GetInstantiation(), pDictInfo->m_wNumTyPars);
     }
     else
     {
@@ -6187,7 +6185,7 @@ BOOL MethodTable::SanityCheck()
     // strings have component size2, all other non-arrays should have 0
     _ASSERTE((GetComponentSize() <= 2) || IsArray());
 
-    if (m_pEEClass.IsNull())
+    if (m_pEEClass == NULL)
     {
         return FALSE;
     }
@@ -7550,7 +7548,7 @@ MethodTable::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
         DacEnumMemoryRegion(dac_cast<TADDR>(it.GetIndirectionSlot()), it.GetSize());
     }
 
-    PTR_MethodTableWriteableData pWriteableData = ReadPointer(this, &MethodTable::m_pWriteableData);
+    PTR_MethodTableWriteableData pWriteableData = m_pWriteableData;
     if (pWriteableData.IsValid())
     {
         pWriteableData.EnumMem();
@@ -7730,13 +7728,13 @@ void MethodTable::SetSlot(UINT32 slotNumber, PCODE slotCode)
 
         if (!IsCanonicalMethodTable())
         {
-            if (GetVtableIndirections()[indirectionIndex].GetValueMaybeNull() == GetCanonicalMethodTable()->GetVtableIndirections()[indirectionIndex].GetValueMaybeNull())
+            if (GetVtableIndirections()[indirectionIndex] == GetCanonicalMethodTable()->GetVtableIndirections()[indirectionIndex])
                 fSharedVtableChunk = TRUE;
         }
 
         if (slotNumber < GetNumParentVirtuals())
         {
-            if (GetVtableIndirections()[indirectionIndex].GetValueMaybeNull() == GetParentMethodTable()->GetVtableIndirections()[indirectionIndex].GetValueMaybeNull())
+            if (GetVtableIndirections()[indirectionIndex] == GetParentMethodTable()->GetVtableIndirections()[indirectionIndex])
                 fSharedVtableChunk = TRUE;
         }
 
@@ -7755,15 +7753,7 @@ void MethodTable::SetSlot(UINT32 slotNumber, PCODE slotCode)
     _ASSERTE(IsThumbCode(slotCode));
 #endif
 
-    TADDR slot = GetSlotPtrRaw(slotNumber);
-    if (slotNumber < GetNumVirtuals())
-    {
-        ((MethodTable::VTableIndir2_t *) slot)->SetValueMaybeNull(slotCode);
-    }
-    else
-    {
-        *((PCODE *)slot) = slotCode;
-    }
+    *GetSlotPtrRaw(slotNumber) = slotCode;
 }
 
 //==========================================================================================
@@ -8292,9 +8282,9 @@ BOOL MethodTable::Validate()
     ASSERT_AND_CHECK(SanityCheck());
 
 #ifdef _DEBUG
-    ASSERT_AND_CHECK(!m_pWriteableData.IsNull());
+    ASSERT_AND_CHECK(m_pWriteableData != NULL);
 
-    MethodTableWriteableData *pWriteableData = m_pWriteableData.GetValue();
+    MethodTableWriteableData *pWriteableData = m_pWriteableData;
     DWORD dwLastVerifiedGCCnt = pWriteableData->m_dwLastVerifedGCCnt;
     // Here we used to assert that (dwLastVerifiedGCCnt <= GCHeapUtilities::GetGCHeap()->GetGcCount()) but
     // this is no longer true because with background gc. Since the purpose of having

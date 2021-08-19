@@ -1233,9 +1233,6 @@ public:
     // code with the given MT because of generics.
     PTR_MethodTable GetCanonicalMethodTable();
 
-    // Returns fixup if canonical method table needs fixing up, NULL otherwise
-    TADDR GetCanonicalMethodTableFixup();
-
     //-------------------------------------------------------------------
     // Accessing methods by slot number
     //
@@ -1254,17 +1251,7 @@ public:
         WRAPPER_NO_CONTRACT;
         CONSISTENCY_CHECK(slotNumber < GetNumVtableSlots());
 
-        TADDR pSlot = GetSlotPtrRaw(slotNumber);
-        if (slotNumber < GetNumVirtuals())
-        {
-            return VTableIndir2_t::GetValueMaybeNullAtPtr(pSlot);
-        }
-        else if (IsZapped() && slotNumber >= GetNumVirtuals())
-        {
-            // Non-virtual slots in NGened images are relative pointers
-            return RelativePointer<PCODE>::GetValueAtPtr(pSlot);
-        }
-        return *dac_cast<PTR_PCODE>(pSlot);
+        return *GetSlotPtrRaw(slotNumber);
     }
 
     // Special-case for when we know that the slot number corresponds
@@ -1275,48 +1262,38 @@ public:
 
         CONSISTENCY_CHECK(slotNum < GetNumVirtuals());
         // Virtual slots live in chunks pointed to by vtable indirections
-
-        DWORD index = GetIndexOfVtableIndirection(slotNum);
-        TADDR base = dac_cast<TADDR>(&(GetVtableIndirections()[index]));
-        DPTR(VTableIndir2_t) baseAfterInd = VTableIndir_t::GetValueMaybeNullAtPtr(base) + GetIndexAfterVtableIndirection(slotNum);
-        return VTableIndir2_t::GetValueMaybeNullAtPtr(dac_cast<TADDR>(baseAfterInd));
+        return *(GetVtableIndirections()[GetIndexOfVtableIndirection(slotNum)] + GetIndexAfterVtableIndirection(slotNum));
     }
 
-    TADDR GetSlotPtrRaw(UINT32 slotNum)
+    PTR_PCODE GetSlotPtrRaw(UINT32 slotNum)
     {
         WRAPPER_NO_CONTRACT;
         CONSISTENCY_CHECK(slotNum < GetNumVtableSlots());
 
         if (slotNum < GetNumVirtuals())
         {
-            // Virtual slots live in chunks pointed to by vtable indirections
-            DWORD index = GetIndexOfVtableIndirection(slotNum);
-            TADDR base = dac_cast<TADDR>(&(GetVtableIndirections()[index]));
-            DPTR(VTableIndir2_t) baseAfterInd = VTableIndir_t::GetValueMaybeNullAtPtr(base) + GetIndexAfterVtableIndirection(slotNum);
-            return dac_cast<TADDR>(baseAfterInd);
+             // Virtual slots live in chunks pointed to by vtable indirections
+            return GetVtableIndirections()[GetIndexOfVtableIndirection(slotNum)] + GetIndexAfterVtableIndirection(slotNum);
         }
         else if (HasSingleNonVirtualSlot())
         {
             // Non-virtual slots < GetNumVtableSlots live in a single chunk pointed to by an optional member,
             // except when there is only one in which case it lives in the optional member itself
             _ASSERTE(slotNum == GetNumVirtuals());
-            return GetNonVirtualSlotsPtr();
+            return dac_cast<PTR_PCODE>(GetNonVirtualSlotsPtr());
         }
         else
         {
             // Non-virtual slots < GetNumVtableSlots live in a single chunk pointed to by an optional member
             _ASSERTE(HasNonVirtualSlotsArray());
             g_IBCLogger.LogMethodTableNonVirtualSlotsAccess(this);
-            return dac_cast<TADDR>(GetNonVirtualSlotsArray() + (slotNum - GetNumVirtuals()));
+            return GetNonVirtualSlotsArray() + (slotNum - GetNumVirtuals());
         }
     }
 
-    TADDR GetSlotPtr(UINT32 slotNum)
+    PTR_PCODE GetSlotPtr(UINT32 slotNum)
     {
         WRAPPER_NO_CONTRACT;
-
-        // Slots in NGened images are relative pointers
-        CONSISTENCY_CHECK(!IsZapped());
 
         return GetSlotPtrRaw(slotNum);
     }
@@ -1376,8 +1353,8 @@ public:
     #define VTABLE_SLOTS_PER_CHUNK 8
     #define VTABLE_SLOTS_PER_CHUNK_LOG2 3
 
-    typedef PlainPointer<PCODE> VTableIndir2_t;
-    typedef PlainPointer<DPTR(VTableIndir2_t)> VTableIndir_t;
+    typedef PCODE VTableIndir2_t;
+    typedef DPTR(VTableIndir2_t) VTableIndir_t;
 
     static DWORD GetIndexOfVtableIndirection(DWORD slotNum);
     static DWORD GetStartSlotForVtableIndirection(UINT32 indirectionIndex, DWORD wNumVirtuals);
@@ -1977,12 +1954,12 @@ public:
     inline void SetClass(EEClass *pClass)
     {
         LIMITED_METHOD_CONTRACT;
-        m_pEEClass.SetValue(pClass);
+        m_pEEClass = pClass;
     }
 
     inline void SetCanonicalMethodTable(MethodTable * pMT)
     {
-        m_pCanonMT.SetValue((TADDR)pMT | MethodTable::UNION_METHODTABLE);
+        m_pCanonMT = (TADDR)pMT | MethodTable::UNION_METHODTABLE;
     }
 #endif
 
@@ -2778,15 +2755,15 @@ public:
     // must have a dictionary entry. On the other hand, for instantiations shared with Dict<string,double> the opposite holds.
     //
 
-    typedef PlainPointer<PTR_Dictionary> PerInstInfoElem_t;
-    typedef PlainPointer<DPTR(PerInstInfoElem_t)> PerInstInfo_t;
+    typedef PTR_Dictionary PerInstInfoElem_t;
+    typedef DPTR(PerInstInfoElem_t) PerInstInfo_t;
 
     // Return a pointer to the per-instantiation information. See field itself for comments.
     DPTR(PerInstInfoElem_t) GetPerInstInfo()
     {
         LIMITED_METHOD_DAC_CONTRACT;
         _ASSERTE(HasPerInstInfo());
-        return ReadPointer(this, &MethodTable::m_pPerInstInfo);
+        return m_pPerInstInfo;
     }
     BOOL HasPerInstInfo()
     {
@@ -2794,11 +2771,6 @@ public:
         return GetFlag(enum_flag_HasPerInstInfo) && !IsArray();
     }
 #ifndef DACCESS_COMPILE
-    static inline bool IsPerInstInfoRelative()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return decltype(m_pPerInstInfo)::isRelative;
-    }
     static inline DWORD GetOffsetOfPerInstInfo()
     {
         LIMITED_METHOD_CONTRACT;
@@ -2807,7 +2779,7 @@ public:
     void SetPerInstInfo(PerInstInfoElem_t *pPerInstInfo)
     {
         LIMITED_METHOD_CONTRACT;
-        m_pPerInstInfo.SetValue(pPerInstInfo);
+        m_pPerInstInfo = pPerInstInfo;
     }
     void SetDictInfo(WORD numDicts, WORD numTyPars)
     {
@@ -2883,7 +2855,7 @@ public:
     {
         LIMITED_METHOD_CONTRACT;
         _ASSERTE(pMTWriteableData);
-        m_pWriteableData.SetValue(pMTWriteableData);
+        m_pWriteableData = pMTWriteableData;
     }
 #endif
 
@@ -2897,7 +2869,7 @@ public:
     inline PTR_Const_MethodTableWriteableData GetWriteableData_NoLogging() const
     {
         LIMITED_METHOD_DAC_CONTRACT;
-        return ReadPointer(this, &MethodTable::m_pWriteableData);
+        return MethodTable::m_pWriteableData;
     }
 
     inline PTR_MethodTableWriteableData GetWriteableDataForWrite()
@@ -2910,7 +2882,7 @@ public:
     inline PTR_MethodTableWriteableData GetWriteableDataForWrite_NoLogging()
     {
         LIMITED_METHOD_DAC_CONTRACT;
-        return ReadPointer(this, &MethodTable::m_pWriteableData);
+        return MethodTable::m_pWriteableData;
     }
 
     //-------------------------------------------------------------------
@@ -3741,20 +3713,18 @@ private:
 
     RelativePointer<PTR_Module> m_pLoaderModule;    // LoaderModule. It is equal to the ZapModule in ngened images
 
-    PlainPointer<PTR_MethodTableWriteableData> m_pWriteableData;
+    PTR_MethodTableWriteableData m_pWriteableData;
 
     // The value of lowest two bits describe what the union contains
     enum LowBits {
         UNION_EECLASS      = 0,    //  0 - pointer to EEClass. This MethodTable is the canonical method table.
-        UNION_INVALID      = 1,    //  1 - not used
-        UNION_METHODTABLE  = 2,    //  2 - pointer to canonical MethodTable.
-        UNION_INDIRECTION  = 3     //  3 - pointer to indirection cell that points to canonical MethodTable.
-    };                             //      (used only if FEATURE_PREJIT is defined)
-    static const TADDR UNION_MASK = 3;
+        UNION_METHODTABLE  = 1,    //  1 - pointer to canonical MethodTable.
+    };
+    static const TADDR UNION_MASK = 1;
 
     union {
-        PlainPointer<DPTR(EEClass)> m_pEEClass;
-        PlainPointer<TADDR> m_pCanonMT;
+        DPTR(EEClass) m_pEEClass;
+        TADDR m_pCanonMT;
     };
 
     __forceinline static LowBits union_getLowBits(TADDR pCanonMT)
@@ -3783,7 +3753,7 @@ private:
     public:
     union
     {
-        PlainPointer<PTR_InterfaceInfo>   m_pInterfaceMap;
+        PTR_InterfaceInfo   m_pInterfaceMap;
         TADDR               m_pMultipurposeSlot2;
     };
 
