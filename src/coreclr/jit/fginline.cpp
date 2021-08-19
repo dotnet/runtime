@@ -606,14 +606,13 @@ Compiler::fgWalkResult Compiler::fgUpdateInlineReturnExpressionPlaceHolder(GenTr
                 {
                     // Either lhs is a call V05 = call(); or lhs is addr, and asg becomes a copyBlk.
                     comp->fgAttachStructInlineeToAsg(parent, tree, retClsHnd);
-                    *madeChanges = true;
                 }
                 else
                 {
                     // Just assign the inlinee to a variable to keep it simple.
                     tree->ReplaceWith(comp->fgAssignStructInlineeToVar(tree, retClsHnd), comp);
-                    *madeChanges = true;
                 }
+                *madeChanges = true;
             }
             break;
 
