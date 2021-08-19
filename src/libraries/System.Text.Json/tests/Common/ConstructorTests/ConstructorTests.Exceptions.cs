@@ -196,18 +196,45 @@ namespace System.Text.Json.Serialization.Tests
             public ChildClass[] Children { get; set; }
         }
 
-        [Fact]
-        public async Task PathForChildListFails()
+        private const string PathForChildListFails_Json = @"{""Child"":{""MyIntArray"":[1, bad]}";
+
+        [Theory]
+        [MemberData(nameof(PathForChildDictionaryFails_TestData))]
+        public async Task PathForChildListFails(int bufferSize)
         {
-            JsonException e = await Assert.ThrowsAsync<JsonException>(() => JsonSerializerWrapperForString.DeserializeWrapper<RootClass>(@"{""Child"":{""MyIntArray"":[1, bad]}"));
+            JsonSerializerOptions options = new() { DefaultBufferSize = bufferSize };
+            JsonException e = await Assert.ThrowsAsync<JsonException>(() => JsonSerializerWrapperForString.DeserializeWrapper<RootClass>(PathForChildListFails_Json, options));
             Assert.Contains("$.Child.MyIntArray", e.Path);
         }
 
-        [Fact]
-        public async Task PathForChildDictionaryFails()
+        public static IEnumerable<object[]> PathForChildListFails_TestData()
         {
-            JsonException e = await Assert.ThrowsAsync<JsonException>(() => JsonSerializerWrapperForString.DeserializeWrapper<RootClass>(@"{""Child"":{""MyDictionary"":{""Key"": bad]"));
+            int maxBufferSize = PathForChildListFails_Json.Length * 2;
+            for (int i = 1; i <= maxBufferSize; i++)
+            {
+                yield return new object[] { i };
+            }
+        }
+
+        private const string PathForChildDictionaryFails_Json = @"{""Child"":{""MyDictionary"":{""Key"": bad]";
+
+        [Theory]
+        [MemberData(nameof(PathForChildDictionaryFails_TestData))]
+        public async Task PathForChildDictionaryFails(int bufferSize)
+        {
+            JsonSerializerOptions options = new() { DefaultBufferSize = bufferSize };
+            JsonException e = await Assert.ThrowsAsync<JsonException>(() => JsonSerializerWrapperForString.DeserializeWrapper<RootClass>(PathForChildDictionaryFails_Json, options));
             Assert.Equal("$.Child.MyDictionary.Key", e.Path);
+        }
+
+        public static IEnumerable<object[]> PathForChildDictionaryFails_TestData()
+        {
+            int maxBufferSize = PathForChildDictionaryFails_Json.Length * 2;
+
+            for (int i = 1; i <= maxBufferSize; i++)
+            {
+                yield return new object[] { i };
+            }
         }
 
         [Fact]
