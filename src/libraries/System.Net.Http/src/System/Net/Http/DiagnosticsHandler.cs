@@ -13,36 +13,59 @@ namespace System.Net.Http
     /// <summary>
     /// DiagnosticHandler notifies DiagnosticSource subscribers about outgoing Http requests
     /// </summary>
-    internal sealed class DiagnosticsHandler : DelegatingHandler
+    internal sealed class DiagnosticsHandler : HttpMessageHandlerStage
     {
         private static readonly DiagnosticListener s_diagnosticListener =
                 new DiagnosticListener(DiagnosticsHandlerLoggingStrings.DiagnosticListenerName);
 
-        /// <summary>
-        /// DiagnosticHandler constructor
-        /// </summary>
-        /// <param name="innerHandler">Inner handler: Windows or Unix implementation of HttpMessageHandler.
-        /// Note that DiagnosticHandler is the latest in the pipeline </param>
-        public DiagnosticsHandler(HttpMessageHandler innerHandler) : base(innerHandler)
+        private readonly HttpMessageHandler _innerHandler;
+        private readonly DistributedContextPropagator _propagator;
+        private readonly HeaderDescriptor[]? _propagatorFields;
+
+        public DiagnosticsHandler(HttpMessageHandler innerHandler, DistributedContextPropagator propagator, bool autoRedirect = false)
         {
+            Debug.Assert(IsGloballyEnabled());
+            Debug.Assert(innerHandler is not null && propagator is not null);
+
+            _innerHandler = innerHandler;
+            _propagator = propagator;
+
+            // Prepare HeaderDescriptors for fields we need to clear when following redirects
+            if (autoRedirect && _propagator.Fields is IReadOnlyCollection<string> fields && fields.Count > 0)
+            {
+                var fieldDescriptors = new List<HeaderDescriptor>(fields.Count);
+                foreach (string field in fields)
+                {
+                    if (field is not null && HeaderDescriptor.TryGet(field, out HeaderDescriptor descriptor))
+                    {
+                        fieldDescriptors.Add(descriptor);
+                    }
+                }
+                _propagatorFields = fieldDescriptors.ToArray();
+            }
         }
 
-        internal static bool IsEnabled()
+        private static bool IsEnabled()
         {
-            // check if there is a parent Activity (and propagation is not suppressed)
-            // or if someone listens to HttpHandlerDiagnosticListener
-            return IsGloballyEnabled() && (Activity.Current != null || s_diagnosticListener.IsEnabled());
+            // check if there is a parent Activity or if someone listens to HttpHandlerDiagnosticListener
+            return Activity.Current != null || s_diagnosticListener.IsEnabled();
         }
 
         internal static bool IsGloballyEnabled() => GlobalHttpSettings.DiagnosticsHandler.EnableActivityPropagation;
 
-        // SendAsyncCore returns already completed ValueTask for when async: false is passed.
-        // Internally, it calls the synchronous Send method of the base class.
-        protected internal override HttpResponseMessage Send(HttpRequestMessage request, CancellationToken cancellationToken) =>
-            SendAsyncCore(request, async: false, cancellationToken).AsTask().GetAwaiter().GetResult();
-
-        protected internal override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken) =>
-            SendAsyncCore(request, async: true, cancellationToken).AsTask();
+        internal override ValueTask<HttpResponseMessage> SendAsync(HttpRequestMessage request, bool async, CancellationToken cancellationToken)
+        {
+            if (IsEnabled())
+            {
+                return SendAsyncCore(request, async, cancellationToken);
+            }
+            else
+            {
+                return async ?
+                    new ValueTask<HttpResponseMessage>(_innerHandler.SendAsync(request, cancellationToken)) :
+                    new ValueTask<HttpResponseMessage>(_innerHandler.Send(request, cancellationToken));
+            }
+        }
 
         private async ValueTask<HttpResponseMessage> SendAsyncCore(HttpRequestMessage request, bool async,
             CancellationToken cancellationToken)
@@ -56,6 +79,16 @@ namespace System.Net.Http
             if (request == null)
             {
                 throw new ArgumentNullException(nameof(request), SR.net_http_handler_norequest);
+            }
+
+            // Since we are reusing the request message instance on redirects, clear any existing headers
+            // Do so before writing DiagnosticListener events as instrumentations use those to inject headers
+            if (request.WasRedirected() && _propagatorFields is HeaderDescriptor[] fields)
+            {
+                foreach (HeaderDescriptor field in fields)
+                {
+                    request.Headers.Remove(field);
+                }
             }
 
             Activity? activity = null;
@@ -72,8 +105,8 @@ namespace System.Net.Http
                 try
                 {
                     return async ?
-                        await base.SendAsync(request, cancellationToken).ConfigureAwait(false) :
-                        base.Send(request, cancellationToken);
+                        await _innerHandler.SendAsync(request, cancellationToken).ConfigureAwait(false) :
+                        _innerHandler.Send(request, cancellationToken);
                 }
                 finally
                 {
@@ -119,8 +152,8 @@ namespace System.Net.Http
             try
             {
                 response = async ?
-                    await base.SendAsync(request, cancellationToken).ConfigureAwait(false) :
-                    base.Send(request, cancellationToken);
+                    await _innerHandler.SendAsync(request, cancellationToken).ConfigureAwait(false) :
+                    _innerHandler.Send(request, cancellationToken);
                 return response;
             }
             catch (OperationCanceledException)
@@ -168,6 +201,16 @@ namespace System.Net.Http
                             taskStatus));
                 }
             }
+        }
+
+        protected override void Dispose(bool disposing)
+        {
+            if (disposing)
+            {
+                _innerHandler.Dispose();
+            }
+
+            base.Dispose(disposing);
         }
 
         #region private
@@ -269,42 +312,18 @@ namespace System.Net.Http
             public override string ToString() => $"{{ {nameof(Response)} = {Response}, {nameof(LoggingRequestId)} = {LoggingRequestId}, {nameof(Timestamp)} = {Timestamp}, {nameof(RequestTaskStatus)} = {RequestTaskStatus} }}";
         }
 
-        private static void InjectHeaders(Activity currentActivity, HttpRequestMessage request)
+        private void InjectHeaders(Activity currentActivity, HttpRequestMessage request)
         {
-            if (currentActivity.IdFormat == ActivityIdFormat.W3C)
+            _propagator.Inject(currentActivity, request, static (carrier, key, value) =>
             {
-                if (!request.Headers.Contains(DiagnosticsHandlerLoggingStrings.TraceParentHeaderName))
+                if (carrier is HttpRequestMessage request &&
+                    key is not null &&
+                    HeaderDescriptor.TryGet(key, out HeaderDescriptor descriptor) &&
+                    !request.Headers.TryGetHeaderValue(descriptor, out _))
                 {
-                    request.Headers.TryAddWithoutValidation(DiagnosticsHandlerLoggingStrings.TraceParentHeaderName, currentActivity.Id);
-                    if (currentActivity.TraceStateString != null)
-                    {
-                        request.Headers.TryAddWithoutValidation(DiagnosticsHandlerLoggingStrings.TraceStateHeaderName, currentActivity.TraceStateString);
-                    }
+                    request.Headers.TryAddWithoutValidation(descriptor, value);
                 }
-            }
-            else
-            {
-                if (!request.Headers.Contains(DiagnosticsHandlerLoggingStrings.RequestIdHeaderName))
-                {
-                    request.Headers.TryAddWithoutValidation(DiagnosticsHandlerLoggingStrings.RequestIdHeaderName, currentActivity.Id);
-                }
-            }
-
-            // we expect baggage to be empty or contain a few items
-            using (IEnumerator<KeyValuePair<string, string?>> e = currentActivity.Baggage.GetEnumerator())
-            {
-                if (e.MoveNext())
-                {
-                    var baggage = new List<string>();
-                    do
-                    {
-                        KeyValuePair<string, string?> item = e.Current;
-                        baggage.Add(new NameValueHeaderValue(WebUtility.UrlEncode(item.Key), WebUtility.UrlEncode(item.Value)).ToString());
-                    }
-                    while (e.MoveNext());
-                    request.Headers.TryAddWithoutValidation(DiagnosticsHandlerLoggingStrings.CorrelationContextHeaderName, baggage);
-                }
-            }
+            });
         }
 
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern",

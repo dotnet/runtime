@@ -249,7 +249,7 @@ namespace System.Security.Cryptography.Xml
         {
             Debug.Assert(o != null, "o != null");
 
-            return $"{o.GetType().Name}#{o.GetHashCode().ToString("x8", CultureInfo.InvariantCulture)}";
+            return $"{o.GetType().Name}#{o.GetHashCode():x8}";
         }
 
         /// <summary>

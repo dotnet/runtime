@@ -118,9 +118,16 @@ namespace System.IO.Tests
                     int take = Math.Min(content.Length - total, bufferSize);
                     content.AsSpan(total, take).CopyTo(buffer.GetSpan());
 
-                    total += async
-                        ? await RandomAccess.WriteAsync(handle, buffer.Memory, fileOffset: total)
-                        : RandomAccess.Write(handle, buffer.GetSpan(), fileOffset: total);
+                    if (async)
+                    {
+                        await RandomAccess.WriteAsync(handle, buffer.Memory, fileOffset: total);
+                    }
+                    else
+                    {
+                        RandomAccess.Write(handle, buffer.GetSpan(), fileOffset: total);
+                    }
+
+                    total += buffer.Memory.Length;
                 }
             }
 
@@ -154,9 +161,16 @@ namespace System.IO.Tests
                     content.AsSpan((int)total, bufferSize).CopyTo(buffer_1.GetSpan());
                     content.AsSpan((int)total + bufferSize, bufferSize).CopyTo(buffer_2.GetSpan());
 
-                    total += async
-                        ? await RandomAccess.WriteAsync(handle, buffers, fileOffset: total)
-                        : RandomAccess.Write(handle, buffers, fileOffset: total);
+                    if (async)
+                    {
+                        await RandomAccess.WriteAsync(handle, buffers, fileOffset: total);
+                    }
+                    else
+                    {
+                        RandomAccess.Write(handle, buffers, fileOffset: total);
+                    }
+
+                    total += buffer_1.Memory.Length + buffer_2.Memory.Length;
                 }
             }
 

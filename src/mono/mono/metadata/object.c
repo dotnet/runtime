@@ -1525,10 +1525,8 @@ build_imt_slots (MonoClass *klass, MonoVTable *vt, gpointer* imt, GSList *extra_
 				continue;
 			}
 
-			if (m_method_is_static (method)) {
-				vt_slot ++;
+			if (m_method_is_static (method))
 				continue;
-			}
 
 			if (method->flags & METHOD_ATTRIBUTE_VIRTUAL) {
 				add_imt_builder_entry (imt_builder, method, &imt_collisions_bitmap, vt_slot, slot_num);
@@ -4150,7 +4148,7 @@ mono_unhandled_exception_internal (MonoObject *exc_raw)
 void
 mono_unhandled_exception (MonoObject *exc)
 {
-	MONO_EXTERNAL_ONLY_VOID (mono_unhandled_exception_internal (exc));
+	MONO_EXTERNAL_ONLY_GC_UNSAFE_VOID (mono_unhandled_exception_internal (exc));
 }
 
 static MonoObjectHandle

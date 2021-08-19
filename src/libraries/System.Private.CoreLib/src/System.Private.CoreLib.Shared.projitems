@@ -342,6 +342,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\IdnMapping.Icu.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\IdnMapping.Nls.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\InternalGlobalizationHelper.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\InvariantModeCasing.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\ISOWeek.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\JapaneseCalendar.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\JapaneseCalendar.Icu.cs" />
@@ -363,6 +364,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\SortVersion.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\StringInfo.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\StrongBidiCategory.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\SurrogateCasing.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\TaiwanCalendar.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\TaiwanLunisolarCalendar.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\TextElementEnumerator.cs" />
@@ -570,6 +572,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\CallingConventions.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\ConstructorInfo.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\CorElementType.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\CustomAttributeData.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\CustomAttributeExtensions.cs" Condition="'$(TargetsCoreRT)' != 'true'" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\CustomAttributeFormatException.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\CustomAttributeNamedArgument.cs" Condition="'$(TargetsCoreRT)' != 'true'" />
@@ -616,6 +619,8 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\Missing.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\Module.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\ModuleResolveEventHandler.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\NullabilityInfo.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\NullabilityInfoContext.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\ObfuscateAssemblyAttribute.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\ObfuscationAttribute.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\ParameterAttributes.cs" />
@@ -838,6 +843,9 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\NFloat.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\OptionalAttribute.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\OutAttribute.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\PosixSignal.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\PosixSignalContext.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\PosixSignalRegistration.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\PreserveSigAttribute.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\ProgIdAttribute.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\SafeArrayRankMismatchException.cs" />
@@ -863,6 +871,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Intrinsics\Vector64_1.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Intrinsics\Vector64DebugView_1.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Intrinsics\X86\Enums.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\JitInfo.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Loader\AssemblyLoadContext.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Loader\LibraryNameVariation.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\MemoryFailPoint.cs" />
@@ -1236,6 +1245,7 @@
   </ItemGroup>
   <ItemGroup Condition="'$(IsMobileLike)' == 'true'">
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Loader\AssemblyDependencyResolver.PlatformNotSupported.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\PosixSignalRegistration.PlatformNotSupported.cs" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.ActivityControl.cs">
@@ -1282,7 +1292,6 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Diagnostics\Tracing\TraceLogging\EventFieldFormat.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Diagnostics\Tracing\TraceLogging\EventIgnoreAttribute.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Diagnostics\Tracing\TraceLogging\EventPayload.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\Diagnostics\Tracing\TraceLogging\EventSourceActivity.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Diagnostics\Tracing\TraceLogging\EventSourceOptions.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Diagnostics\Tracing\TraceLogging\FieldMetadata.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Diagnostics\Tracing\TraceLogging\InvokeTypeInfo.cs" />
@@ -1595,9 +1604,6 @@
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.MEMORYSTATUSEX.cs">
       <Link>Common\Interop\Windows\Kernel32\Interop.MEMORYSTATUSEX.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.MUI.cs">
-      <Link>Common\Interop\Windows\Kernel32\Interop.MUI.cs</Link>
-    </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.MultiByteToWideChar.cs">
       <Link>Common\Interop\Windows\Kernel32\Interop.MultiByteToWideChar.cs</Link>
     </Compile>
@@ -1651,6 +1657,9 @@
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Interop.OBJECT_ATTRIBUTES.cs">
       <Link>Common\Interop\Windows\Interop.OBJECT_ATTRIBUTES.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.SetConsoleCtrlHandler.cs">
+        <Link>Common\Interop\Windows\Interop.SetConsoleCtrlHandler.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.SetCurrentDirectory.cs">
       <Link>Common\Interop\Windows\Kernel32\Interop.SetCurrentDirectory.cs</Link>
@@ -1822,7 +1831,6 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\IO\PathInternal.Windows.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\IO\RandomAccess.Windows.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\IO\Enumeration\FileSystemEntry.Windows.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\IO\Enumeration\FileSystemEnumerator.Win32.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\IO\Enumeration\FileSystemEnumerator.Windows.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\IO\Strategies\AsyncWindowsFileStreamStrategy.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\IO\Strategies\FileStreamHelpers.Windows.cs" />
@@ -1834,6 +1842,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\MemoryFailPoint.Windows.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\Marshal.Windows.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\NativeMemory.Windows.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\PosixSignalRegistration.Windows.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\StandardOleMarshalObject.Windows.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Security\SecureString.Windows.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\LowLevelMonitor.Windows.cs" />
@@ -1949,8 +1958,11 @@
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.GetCwd.cs">
       <Link>Common\Interop\Unix\System.Native\Interop.GetCwd.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.GetDefaultTimeZone.Android.cs" Condition="'$(TargetsAndroid)' == 'true'">
+      <Link>Common\Interop\Unix\System.Native\Interop.GetDefaultTimeZone.Android.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.GetEGid.cs">
-      <Link>Common\Interop\Unix\System.Native\Interop.GetHostName.cs</Link>
+      <Link>Common\Interop\Unix\System.Native\Interop.GetEGid.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.GetHostName.cs">
       <Link>Common\Interop\Unix\System.Native\Interop.GetHostName.cs</Link>
@@ -2122,6 +2134,8 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\LowLevelMonitor.Unix.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\TimerQueue.Unix.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\TimeZoneInfo.Unix.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\TimeZoneInfo.Unix.Android.cs" Condition="'$(TargetsAndroid)' == 'true'" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\TimeZoneInfo.Unix.NonAndroid.cs" Condition="'$(TargetsAndroid)' != 'true'" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsUnix)' == 'true'">
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.GetEUid.cs">
@@ -2133,6 +2147,10 @@
     <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.GetPid.cs">
       <Link>Common\Interop\Unix\System.Native\Interop.GetPid.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.InitializeTerminalAndSignalHandling.cs"
+             Link="Common\Interop\Unix\Interop.InitializeTerminalAndSignalHandling.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.PosixSignal.cs"
+             Link="Common\Interop\Unix\Interop.PosixSignal.cs" />
     <Compile Include="$(CommonPath)Interop\FreeBSD\Interop.Process.GetProcInfo.cs" Condition="'$(TargetsFreeBSD)' == 'true'"
              Link="Common\Interop\FreeBSD\Interop.Process.GetProcInfo.cs" />
     <Compile Include="$(CommonPath)Interop\BSD\System.Native\Interop.Sysctl.cs" Condition="'$(TargetsFreeBSD)' == 'true'"
@@ -2154,6 +2172,9 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\TimeZoneInfo.FullGlobalizationData.Unix.cs" Condition="'$(UseMinimalGlobalizationData)' != 'true'" />
     <Compile Include="$(MSBuildThisFileDirectory)System\IO\DriveInfoInternal.Unix.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\IO\PersistedFiles.Unix.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetsUnix)' == 'true' and '$(IsMobileLike)' != 'true'">
+    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\PosixSignalRegistration.Unix.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsBrowser)' == 'true'">
     <Compile Include="$(MSBuildThisFileDirectory)System\AppContext.Browser.cs" />

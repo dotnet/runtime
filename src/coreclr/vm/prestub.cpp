@@ -19,13 +19,8 @@
 #include "stubgen.h"
 #include "eventtrace.h"
 #include "array.h"
-#include "compile.h"
 #include "ecall.h"
 #include "virtualcallstub.h"
-
-#ifdef FEATURE_PREJIT
-#include "compile.h"
-#endif
 
 #ifdef FEATURE_INTERPRETER
 #include "interpreter.h"
@@ -424,6 +419,12 @@ PCODE MethodDesc::PrepareILBasedCode(PrepareCodeConfig* pConfig)
         if (pCode != NULL)
             PerfMap::LogPreCompiledMethod(this, pCode);
 #endif
+    }
+
+    if (pConfig->IsForMulticoreJit() && pCode == NULL && pConfig->ReadyToRunRejectedPrecompiledCode())
+    {
+        // Was unable to load code from r2r image in mcj thread, don't try to jit it, this method will be loaded later
+        return NULL;
     }
 
     if (pCode == NULL)

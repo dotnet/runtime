@@ -321,14 +321,7 @@ public:
     // runtime deserialization
     COUNT_T GetInliners(PTR_Module inlineeOwnerMod, mdMethodDef inlineeTkn, COUNT_T inlinersSize, MethodInModule inliners[], BOOL *incompleteData);
 
-    // compile-time serialization
-#ifndef DACCESS_COMPILE
-    void Save(DataImage *image, InlineTrackingMap* runtimeMap);
-    void Fixup(DataImage *image);
-
 private:
-#endif
-
     Module *GetModuleByIndex(DWORD index);
 
 };
@@ -357,13 +350,6 @@ public:
     static BOOL TryLoad(Module* pModule, const BYTE* pBuffer, DWORD cbBuffer, AllocMemTracker *pamTracker, PersistentInlineTrackingMapR2R** ppLoadedMap);
 #endif
     virtual COUNT_T GetInliners(PTR_Module inlineeOwnerMod, mdMethodDef inlineeTkn, COUNT_T inlinersSize, MethodInModule inliners[], BOOL *incompleteData);
-
-
-    // compile time serialization
-#ifndef DACCESS_COMPILE
-    static void Save(ZapHeap* pHeap, SBuffer *saveTarget, InlineTrackingMap* runtimeMap);
-#endif
-
 };
 
 typedef DPTR(PersistentInlineTrackingMapR2R) PTR_PersistentInlineTrackingMapR2R;

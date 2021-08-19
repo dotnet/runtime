@@ -25,8 +25,6 @@ namespace Internal.TypeSystem.Interop
                     return new BooleanMarshaller();
                 case MarshallerKind.AnsiString:
                     return new AnsiStringMarshaller();
-                case MarshallerKind.UTF8String:
-                    return new UTF8StringMarshaller();
                 case MarshallerKind.SafeHandle:
                     return new SafeHandleMarshaller();
                 case MarshallerKind.UnicodeString:

@@ -31,6 +31,7 @@ namespace System.Net.Quic
         public int GetRemoteAvailableUnidirectionalStreamCount() { throw null; }
         public System.Net.Quic.QuicStream OpenBidirectionalStream() { throw null; }
         public System.Net.Quic.QuicStream OpenUnidirectionalStream() { throw null; }
+        public System.Security.Cryptography.X509Certificates.X509Certificate? RemoteCertificate { get { throw null; } }
         public System.Threading.Tasks.ValueTask WaitForAvailableBidirectionalStreamsAsync(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
         public System.Threading.Tasks.ValueTask WaitForAvailableUnidirectionalStreamsAsync(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
     }
@@ -43,6 +44,7 @@ namespace System.Net.Quic
     {
         public QuicException(string? message) { }
         public QuicException(string? message, System.Exception? innerException) { }
+        public QuicException(string? message, System.Exception? innerException, int result) { }
     }
     public static partial class QuicImplementationProviders
     {
@@ -84,8 +86,10 @@ namespace System.Net.Quic
         public override bool CanRead { get { throw null; } }
         public override bool CanSeek { get { throw null; } }
         public override bool CanWrite { get { throw null; } }
+        public override bool CanTimeout { get { throw null; } }
         public override long Length { get { throw null; } }
         public override long Position { get { throw null; } set { } }
+        public bool ReadsCompleted { get { throw null; } }
         public long StreamId { get { throw null; } }
         public void AbortRead(long errorCode) { }
         public void AbortWrite(long errorCode) { }
@@ -100,11 +104,11 @@ namespace System.Net.Quic
         public override int Read(System.Span<byte> buffer) { throw null; }
         public override System.Threading.Tasks.Task<int> ReadAsync(byte[] buffer, int offset, int count, System.Threading.CancellationToken cancellationToken) { throw null; }
         public override System.Threading.Tasks.ValueTask<int> ReadAsync(System.Memory<byte> buffer, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
+        public override int ReadTimeout { get { throw null; } set { } }
         public override long Seek(long offset, System.IO.SeekOrigin origin) { throw null; }
         public override void SetLength(long value) { }
         public void Shutdown() { }
         public System.Threading.Tasks.ValueTask ShutdownCompleted(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
-        public System.Threading.Tasks.ValueTask ShutdownWriteCompleted(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
         public override void Write(byte[] buffer, int offset, int count) { }
         public override void Write(System.ReadOnlySpan<byte> buffer) { }
         public System.Threading.Tasks.ValueTask WriteAsync(System.Buffers.ReadOnlySequence<byte> buffers, bool endStream, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
@@ -114,6 +118,7 @@ namespace System.Net.Quic
         public override System.Threading.Tasks.ValueTask WriteAsync(System.ReadOnlyMemory<byte> buffer, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
         public System.Threading.Tasks.ValueTask WriteAsync(System.ReadOnlyMemory<System.ReadOnlyMemory<byte>> buffers, bool endStream, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
         public System.Threading.Tasks.ValueTask WriteAsync(System.ReadOnlyMemory<System.ReadOnlyMemory<byte>> buffers, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
+        public override int WriteTimeout { get { throw null; } set { } }
     }
     public partial class QuicStreamAbortedException : System.Net.Quic.QuicException
     {

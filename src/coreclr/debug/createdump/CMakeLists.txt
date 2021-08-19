@@ -86,6 +86,7 @@ endif(CLR_CMAKE_HOST_OSX)
         dbgutil
         # share the PAL in the dac module
         mscordaccore
+        dl
     )
 
     add_dependencies(createdump mscordaccore)

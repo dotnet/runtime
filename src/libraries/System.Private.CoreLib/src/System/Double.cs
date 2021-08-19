@@ -56,7 +56,6 @@ namespace System
 
         internal const ulong SignMask = 0x8000_0000_0000_0000;
         internal const int SignShift = 63;
-        internal const uint ShiftedSignMask = (uint)(SignMask >> SignShift);
 
         internal const ulong ExponentMask = 0x7FF0_0000_0000_0000;
         internal const int ExponentShift = 52;
@@ -550,11 +549,11 @@ namespace System
 
         [RequiresPreviewFeatures]
         static double IDecrementOperators<double>.operator --(double value)
-            => value--;
+            => --value;
 
         // [RequiresPreviewFeatures]
         // static checked double IDecrementOperators<double>.operator --(double value)
-        //     => checked(value--);
+        //     => checked(--value);
 
         //
         // IDivisionOperators
@@ -828,11 +827,11 @@ namespace System
 
         [RequiresPreviewFeatures]
         static double IIncrementOperators<double>.operator ++(double value)
-            => value++;
+            => ++value;
 
         // [RequiresPreviewFeatures]
         // static checked double IIncrementOperators<double>.operator ++(double value)
-        //     => checked(value++);
+        //     => checked(++value);
 
         //
         // IMinMaxValue

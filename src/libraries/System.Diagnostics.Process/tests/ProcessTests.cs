@@ -171,29 +171,28 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
-        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS, "Not supported on iOS, or tvOS.")]
+        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst, "Not supported on iOS, tvOS, or MacCatalyst.")]
         public void ProcessStart_TryExitCommandAsFileName_ThrowsWin32Exception()
         {
             Assert.Throws<Win32Exception>(() => Process.Start(new ProcessStartInfo { UseShellExecute = false, FileName = "exit", Arguments = "42" }));
         }
 
         [Fact]
-        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS, "Not supported on iOS, or tvOS.")]
+        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst, "Not supported on iOS, tvOS, or MacCatalyst.")]
         public void ProcessStart_UseShellExecuteFalse_FilenameIsUrl_ThrowsWin32Exception()
         {
             Assert.Throws<Win32Exception>(() => Process.Start(new ProcessStartInfo { UseShellExecute = false, FileName = "https://www.github.com/corefx" }));
         }
 
         [Fact]
-        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS, "Not supported on iOS, or tvOS.")]
+        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst, "Not supported on iOS, tvOS, or MacCatalyst.")]
         public void ProcessStart_TryOpenFolder_UseShellExecuteIsFalse_ThrowsWin32Exception()
         {
             Assert.Throws<Win32Exception>(() => Process.Start(new ProcessStartInfo { UseShellExecute = false, FileName = Path.GetTempPath() }));
         }
 
         [Fact]
-        [SkipOnPlatform(TestPlatforms.OSX, "OSX doesn't support throwing on Process.Start")]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/52882", TestPlatforms.MacCatalyst)]
+        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst, "Not supported on iOS, tvOS, or MacCatalyst.")]
         public void TestStartWithBadWorkingDirectory()
         {
             string program;
@@ -220,6 +219,8 @@ namespace System.Diagnostics.Tests
 
                 Win32Exception e = Assert.Throws<Win32Exception>(() => Process.Start(psi));
                 Assert.NotEqual(0, e.NativeErrorCode);
+                Assert.Contains(program, e.Message);
+                Assert.Contains(workingDirectory, e.Message);
             }
             else
             {
@@ -229,16 +230,20 @@ namespace System.Diagnostics.Tests
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.HasWindowsShell))]
         [OuterLoop("Launches File Explorer")]
+        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst, "Not supported on iOS, tvOS, or MacCatalyst.")]
         public void ProcessStart_UseShellExecute_OnWindows_OpenMissingFile_Throws()
         {
             string fileToOpen = Path.Combine(Environment.CurrentDirectory, "_no_such_file.TXT");
-            Assert.Throws<Win32Exception>(() => Process.Start(new ProcessStartInfo { UseShellExecute = true, FileName = fileToOpen }));
+            AssertExtensions.ThrowsContains<Win32Exception>(
+                () => Process.Start(new ProcessStartInfo { UseShellExecute = true, FileName = fileToOpen }),
+                fileToOpen);
         }
 
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.HasWindowsShell))]
         [InlineData(true)]
         [InlineData(false)]
         [OuterLoop("Launches File Explorer")]
+        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst, "Not supported on iOS, tvOS, or MacCatalyst.")]
         public void ProcessStart_UseShellExecute_OnWindows_DoesNotThrow(bool isFolder)
         {
             string fileToOpen;
@@ -467,6 +472,27 @@ namespace System.Diagnostics.Tests
             }
         }
 
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public void TestToString_OnRunningProcess()
+        {
+            Process p = CreateDefaultProcess();
+            var name = p.ProcessName;
+            Assert.Equal($"System.Diagnostics.Process ({name})", p.ToString());
+
+            KillWait(p);
+        }
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public void TestToString_OnExitedProcess()
+        {
+            Process p = CreateDefaultProcess();
+            KillWait(p);
+
+            // Ensure ToString does not throw an exception, but still returns
+            // a representation of the object.
+            Assert.Contains("System.Diagnostics.Process", p.ToString());
+        }
+
         [Fact]
         public void HasExited_GetNotStarted_ThrowsInvalidOperationException()
         {
@@ -475,7 +501,7 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
-        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS, "Not supported on iOS, or tvOS.")]
+        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst, "Not supported on iOS, tvOS, or MacCatalyst.")]
         public void Kill_NotStarted_ThrowsInvalidOperationException()
         {
             var process = new Process();
@@ -1170,10 +1196,10 @@ namespace System.Diagnostics.Tests
                 StringBuilder builder = new StringBuilder();
                 foreach (Process process in Process.GetProcesses())
                 {
-                    builder.AppendFormat("Pid: '{0}' Name: '{1}'", process.Id, process.ProcessName);
+                    builder.Append($"Pid: '{process.Id}' Name: '{process.ProcessName}'");
                     try
                     {
-                        builder.AppendFormat(" Main module: '{0}'", process.MainModule.FileName);
+                        builder.Append($" Main module: '{process.MainModule.FileName}'");
                     }
                     catch
                     {
@@ -1182,7 +1208,7 @@ namespace System.Diagnostics.Tests
                     builder.AppendLine();
                 }
 
-                builder.AppendFormat("Current process id: {0} Process name: '{1}'", currentProcess.Id, currentProcess.ProcessName);
+                builder.Append($"Current process id: {currentProcess.Id} Process name: '{currentProcess.ProcessName}'");
                 return builder.ToString();
             }
         }
@@ -1398,6 +1424,7 @@ namespace System.Diagnostics.Tests
 
             Win32Exception e = Assert.Throws<Win32Exception>(() => Process.Start(path));
             Assert.NotEqual(0, e.NativeErrorCode);
+            Assert.Contains(path, e.Message);
         }
 
         [Fact]

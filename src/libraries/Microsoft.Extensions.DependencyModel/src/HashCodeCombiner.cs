@@ -9,7 +9,7 @@ using System.Runtime.CompilerServices;
 namespace Microsoft.DotNet.PlatformAbstractions
 {
     [EditorBrowsable(EditorBrowsableState.Never)]
-    [Obsolete("This type is obsolete and will be removed in a future version. The recommended alternative is System.HashCode.")]
+    [Obsolete("HashCodeCombiner has been deprecated. Use System.HashCode instead.")]
     public struct HashCodeCombiner
     {
         private long _combinedHash64;

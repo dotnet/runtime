@@ -14,7 +14,7 @@
     <UseAppleCrypto Condition="'$(TargetsOSX)' == 'true' or '$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true'">true</UseAppleCrypto>
   </PropertyGroup>
   <Import Project="$(CommonPath)System\Security\Cryptography\Asn1\AsnXml.targets" />
-  <Import Project="$(CommonPath)System\Security\Cryptography\Asn1Reader\System.Security.Cryptography.Asn1Reader.Shared.projitems" />
+  <Import Project="$(CommonPath)System\Security\Cryptography\Asn1Reader\System.Security.Cryptography.Asn1Reader.Shared.projitems" Condition="'$(TargetsAnyOS)' != 'true'" />
   <ItemGroup Condition="'$(TargetsAnyOS)' != 'true'">
     <Compile Include="Internal\Cryptography\ICertificatePal.cs" />
     <Compile Include="Internal\Cryptography\ICertificatePalCore.cs" />
@@ -518,6 +518,8 @@
              Link="Common\System\Security\Cryptography\ECDiffieHellmanDerivation.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\RSAKeyFormatHelper.cs"
              Link="Common\System\Security\Cryptography\RSAKeyFormatHelper.cs" />
+    <Compile Include="$(CommonPath)System\Security\Cryptography\RSAKeyFormatHelper.Encrypted.cs"
+             Link="Common\System\Security\Cryptography\RSAKeyFormatHelper.Encrypted.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\RsaPaddingProcessor.cs"
              Link="Common\System\Security\Cryptography\RsaPaddingProcessor.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\RSASecurityTransforms.cs"
@@ -642,6 +644,8 @@
   <ItemGroup Condition=" '$(TargetsUnix)' == 'true'">
     <Compile Include="$(CommonPath)System\Security\Cryptography\KeyFormatHelper.cs"
              Link="Common\System\Security\Cryptography\KeyFormatHelper.cs" />
+    <Compile Include="$(CommonPath)System\Security\Cryptography\KeyFormatHelper.Encrypted.cs"
+             Link="Common\System\Security\Cryptography\KeyFormatHelper.Encrypted.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\PasswordBasedEncryption.cs"
              Link="Common\System\Security\Cryptography\PasswordBasedEncryption.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\Pkcs12Kdf.cs"

@@ -48,6 +48,62 @@ bool Compiler::fgHaveProfileData()
 }
 
 //------------------------------------------------------------------------
+// fgHaveSufficientProfileData: check if profile data is available
+//   and is sufficient enough to be trustful.
+//
+// Returns:
+//   true if so
+//
+// Note:
+//   See notes for fgHaveProfileData.
+//
+bool Compiler::fgHaveSufficientProfileData()
+{
+    if (!fgHaveProfileData())
+    {
+        return false;
+    }
+
+    if ((fgFirstBB != nullptr) && (fgPgoSource == ICorJitInfo::PgoSource::Static))
+    {
+        const BasicBlock::weight_t sufficientSamples = 1000;
+        return fgFirstBB->bbWeight > sufficientSamples;
+    }
+    return true;
+}
+
+//------------------------------------------------------------------------
+// fgHaveTrustedProfileData: check if profile data source is one
+//   that can be trusted to faithfully represent the current program
+//   behavior.
+//
+// Returns:
+//   true if so
+//
+// Note:
+//   See notes for fgHaveProfileData.
+//
+bool Compiler::fgHaveTrustedProfileData()
+{
+    if (!fgHaveProfileData())
+    {
+        return false;
+    }
+
+    // We allow Text to be trusted so we can use it to stand in
+    // for Dynamic results.
+    //
+    switch (fgPgoSource)
+    {
+        case ICorJitInfo::PgoSource::Dynamic:
+        case ICorJitInfo::PgoSource::Text:
+            return true;
+        default:
+            return false;
+    }
+}
+
+//------------------------------------------------------------------------
 // fgApplyProfileScale: scale inlinee counts by appropriate scale factor
 //
 void Compiler::fgApplyProfileScale()
@@ -434,7 +490,7 @@ void BlockCountInstrumentor::InstrumentMethodEntry(Schema& schema, BYTE* profile
 
     GenTree* arg;
 
-#ifdef FEATURE_READYTORUN_COMPILER
+#ifdef FEATURE_READYTORUN
     if (opts.IsReadyToRun())
     {
         mdMethodDef currentMethodToken = info.compCompHnd->getMethodDefFromMethod(info.compMethodHnd);
@@ -1771,6 +1827,9 @@ PhaseStatus Compiler::fgIncorporateProfileData()
                 break;
 
             default:
+                JITDUMP("Unknown PGO record type 0x%x in schema entry %u (offset 0x%x count 0x%x other 0x%x)\n",
+                        fgPgoSchema[iSchema].InstrumentationKind, iSchema, fgPgoSchema[iSchema].ILOffset,
+                        fgPgoSchema[iSchema].Count, fgPgoSchema[iSchema].Other);
                 otherRecords++;
                 break;
         }
@@ -2975,6 +3034,8 @@ bool flowList::setEdgeWeightMaxChecked(BasicBlock::weight_t newWeight,
 void flowList::setEdgeWeights(BasicBlock::weight_t theMinWeight, BasicBlock::weight_t theMaxWeight, BasicBlock* bDst)
 {
     assert(theMinWeight <= theMaxWeight);
+    assert(theMinWeight >= 0.0f);
+    assert(theMaxWeight >= 0.0f);
 
     JITDUMP("Setting edge weights for " FMT_BB " -> " FMT_BB " to [" FMT_WT " .. " FMT_WT "]\n", getBlock()->bbNum,
             bDst->bbNum, theMinWeight, theMaxWeight);

@@ -1165,7 +1165,7 @@ bool LinearScan::buildKillPositionsForNode(GenTree* tree, LsraLocation currentLo
             {
                 LclVarDsc* varDsc = compiler->lvaGetDescByTrackedIndex(varIndex);
 #if FEATURE_PARTIAL_SIMD_CALLEE_SAVE
-                if (Compiler::varTypeNeedsPartialCalleeSave(varDsc->lvType))
+                if (Compiler::varTypeNeedsPartialCalleeSave(varDsc->GetRegisterType()))
                 {
                     if (!VarSetOps::IsMember(compiler, largeVectorCalleeSaveCandidateVars, varIndex))
                     {
@@ -1511,7 +1511,40 @@ void LinearScan::buildUpperVectorSaveRefPositions(GenTree* tree, LsraLocation cu
     for (RefInfoListNode *listNode = defList.Begin(), *end = defList.End(); listNode != end;
          listNode = listNode->Next())
     {
-        if (Compiler::varTypeNeedsPartialCalleeSave(listNode->treeNode->TypeGet()))
+        const GenTree* defNode = listNode->treeNode;
+        var_types      regType = defNode->TypeGet();
+        if (regType == TYP_STRUCT)
+        {
+            assert(defNode->OperIs(GT_LCL_VAR, GT_CALL));
+            if (defNode->OperIs(GT_LCL_VAR))
+            {
+                const GenTreeLclVar* lcl    = defNode->AsLclVar();
+                const LclVarDsc*     varDsc = compiler->lvaGetDesc(lcl);
+                regType                     = varDsc->GetRegisterType();
+            }
+            else
+            {
+                const GenTreeCall*          call      = defNode->AsCall();
+                const CORINFO_CLASS_HANDLE  retClsHnd = call->gtRetClsHnd;
+                Compiler::structPassingKind howToReturnStruct;
+                regType = compiler->getReturnTypeForStruct(retClsHnd, call->GetUnmanagedCallConv(), &howToReturnStruct);
+                if (howToReturnStruct == Compiler::SPK_ByValueAsHfa)
+                {
+                    regType = compiler->GetHfaType(retClsHnd);
+                }
+#if defined(TARGET_ARM64)
+                else if (howToReturnStruct == Compiler::SPK_ByValue)
+                {
+                    // TODO-Cleanup: add a new Compiler::SPK for this case.
+                    // This is the case when 16-byte struct is returned as [x0, x1].
+                    // We don't need a partial callee save.
+                    regType = TYP_LONG;
+                }
+#endif // TARGET_ARM64
+            }
+            assert((regType != TYP_STRUCT) && (regType != TYP_UNDEF));
+        }
+        if (Compiler::varTypeNeedsPartialCalleeSave(regType))
         {
             // In the rare case where such an interval is live across nested calls, we don't need to insert another.
             if (listNode->ref->getInterval()->recentRefPosition->refType != RefTypeUpperVectorSave)
@@ -1826,25 +1859,6 @@ void LinearScan::buildPhysRegRecords()
 }
 
 //------------------------------------------------------------------------
-// getNonEmptyBlock: Return the first non-empty block starting with 'block'
-//
-// Arguments:
-//    block - the BasicBlock from which we start looking
-//
-// Return Value:
-//    The first non-empty BasicBlock we find.
-//
-BasicBlock* getNonEmptyBlock(BasicBlock* block)
-{
-    while (block != nullptr && block->GetFirstLIRNode() == nullptr)
-    {
-        block = block->GetUniqueSucc();
-    }
-    assert(block != nullptr && block->GetFirstLIRNode() != nullptr);
-    return block;
-}
-
-//------------------------------------------------------------------------
 // insertZeroInitRefPositions: Handle lclVars that are live-in to the first block
 //
 // Notes:
@@ -1894,9 +1908,8 @@ void LinearScan::insertZeroInitRefPositions()
                 }
 
                 JITDUMP(" creating ZeroInit\n");
-                GenTree*     firstNode = getNonEmptyBlock(compiler->fgFirstBB)->firstNode();
-                RefPosition* pos =
-                    newRefPosition(interval, MinLocation, RefTypeZeroInit, firstNode, allRegs(interval->registerType));
+                RefPosition* pos = newRefPosition(interval, MinLocation, RefTypeZeroInit, nullptr /* theTreeNode */,
+                                                  allRegs(interval->registerType));
                 pos->setRegOptional(true);
             }
             else
@@ -1924,9 +1937,8 @@ void LinearScan::insertZeroInitRefPositions()
                     if (interval->recentRefPosition == nullptr)
                     {
                         JITDUMP(" creating ZeroInit\n");
-                        GenTree*     firstNode = getNonEmptyBlock(compiler->fgFirstBB)->firstNode();
-                        RefPosition* pos       = newRefPosition(interval, MinLocation, RefTypeZeroInit, firstNode,
-                                                          allRegs(interval->registerType));
+                        RefPosition* pos = newRefPosition(interval, MinLocation, RefTypeZeroInit,
+                                                          nullptr /* theTreeNode */, allRegs(interval->registerType));
                         pos->setRegOptional(true);
                         varDsc->lvMustInit = true;
                     }
@@ -2635,7 +2647,8 @@ void LinearScan::validateIntervals()
             }
             Interval* interval = getIntervalForLocalVar(i);
 
-            bool defined = false;
+            bool     defined      = false;
+            unsigned lastUseBBNum = 0;
             JITDUMP("-----------------\n");
             for (RefPosition* ref = interval->firstRefPosition; ref != nullptr; ref = ref->nextRefPosition)
             {
@@ -2644,13 +2657,17 @@ void LinearScan::validateIntervals()
                     ref->dump(this);
                 }
                 RefType refType = ref->refType;
-                if (!defined && RefTypeIsUse(refType))
+                if (!defined && RefTypeIsUse(refType) && (lastUseBBNum == ref->bbNum))
                 {
-                    if (compiler->info.compMethodName != nullptr)
+                    if (!ref->lastUse)
                     {
-                        JITDUMP("%s: ", compiler->info.compMethodName);
+                        if (compiler->info.compMethodName != nullptr)
+                        {
+                            JITDUMP("%s: ", compiler->info.compMethodName);
+                        }
+                        JITDUMP("LocalVar V%02u: undefined use at %u\n", interval->varNum, ref->nodeLocation);
+                        assert(false);
                     }
-                    JITDUMP("LocalVar V%02u: undefined use at %u\n", interval->varNum, ref->nodeLocation);
                 }
 
                 // For single-def intervals, the only the first refposition should be a RefTypeDef
@@ -2663,7 +2680,8 @@ void LinearScan::validateIntervals()
                 // so we can't really check the lastUse flag
                 if (ref->lastUse)
                 {
-                    defined = false;
+                    defined      = false;
+                    lastUseBBNum = ref->bbNum;
                 }
                 if (RefTypeIsDef(refType))
                 {
@@ -3123,7 +3141,7 @@ int LinearScan::BuildDelayFreeUses(GenTree* node, GenTree* rmwNode, regMaskTP ca
     if (use != nullptr)
     {
         // If node != rmwNode, then definitely node should be marked as "delayFree".
-        // However, if node == rmwNode, then we can mark node as "delayFree" only
+        // However, if node == rmwNode, then we can mark node as "delayFree" only if
         // none of the node/rmwNode are the last uses. If either of them are last use,
         // we can safely reuse the rmwNode as destination.
         if ((use->getInterval() != rmwInterval) || (!rmwIsLastUse && !use->lastUse))
@@ -3377,7 +3395,7 @@ int LinearScan::BuildStoreLoc(GenTreeLclVarCommon* storeLoc)
 
     // Second, use source registers.
 
-    if (op1->IsMultiRegNode())
+    if (op1->IsMultiRegNode() && (op1->GetMultiRegCount() > 1))
     {
         // This is the case where the source produces multiple registers.
         // This must be a store lclvar.
@@ -3559,6 +3577,7 @@ int LinearScan::BuildReturn(GenTree* tree)
                 noway_assert(op1->IsMultiRegCall() || op1->IsMultiRegLclVar());
 
                 int                   srcCount;
+                ReturnTypeDesc        nonCallRetTypeDesc;
                 const ReturnTypeDesc* pRetTypeDesc;
                 if (op1->OperIs(GT_CALL))
                 {
@@ -3567,13 +3586,12 @@ int LinearScan::BuildReturn(GenTree* tree)
                 else
                 {
                     assert(compiler->lvaEnregMultiRegVars);
-                    LclVarDsc*     varDsc = compiler->lvaGetDesc(op1->AsLclVar()->GetLclNum());
-                    ReturnTypeDesc retTypeDesc;
-                    retTypeDesc.InitializeStructReturnType(compiler, varDsc->GetStructHnd(),
-                                                           compiler->info.compCallConv);
-                    pRetTypeDesc = &retTypeDesc;
+                    LclVarDsc* varDsc = compiler->lvaGetDesc(op1->AsLclVar()->GetLclNum());
+                    nonCallRetTypeDesc.InitializeStructReturnType(compiler, varDsc->GetStructHnd(),
+                                                                  compiler->info.compCallConv);
+                    pRetTypeDesc = &nonCallRetTypeDesc;
                     assert(compiler->lvaGetDesc(op1->AsLclVar()->GetLclNum())->lvFieldCnt ==
-                           retTypeDesc.GetReturnRegCount());
+                           nonCallRetTypeDesc.GetReturnRegCount());
                 }
                 srcCount = pRetTypeDesc->GetReturnRegCount();
                 // For any source that's coming from a different register file, we need to ensure that

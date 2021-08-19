@@ -103,6 +103,36 @@ namespace System.IO
 
         public static void ReplaceFile(string sourceFullPath, string destFullPath, string? destBackupFullPath, bool ignoreMetadataErrors)
         {
+            // Unix rename works in more cases, we limit to what is allowed by Windows File.Replace.
+            // These checks are not atomic, the file could change after a check was performed and before it is renamed.
+            Interop.Sys.FileStatus sourceStat;
+            if (Interop.Sys.LStat(sourceFullPath, out sourceStat) != 0)
+            {
+                Interop.ErrorInfo errno = Interop.Sys.GetLastErrorInfo();
+                throw Interop.GetExceptionForIoErrno(errno, sourceFullPath);
+            }
+            // Check source is not a directory.
+            if ((sourceStat.Mode & Interop.Sys.FileTypes.S_IFMT) == Interop.Sys.FileTypes.S_IFDIR)
+            {
+                throw new UnauthorizedAccessException(SR.Format(SR.IO_NotAFile, sourceFullPath));
+            }
+
+            Interop.Sys.FileStatus destStat;
+            if (Interop.Sys.LStat(destFullPath, out destStat) == 0)
+            {
+                // Check destination is not a directory.
+                if ((destStat.Mode & Interop.Sys.FileTypes.S_IFMT) == Interop.Sys.FileTypes.S_IFDIR)
+                {
+                    throw new UnauthorizedAccessException(SR.Format(SR.IO_NotAFile, destFullPath));
+                }
+                // Check source and destination are not the same.
+                if (sourceStat.Dev == destStat.Dev &&
+                    sourceStat.Ino == destStat.Ino)
+                  {
+                      throw new IOException(SR.Format(SR.IO_CannotReplaceSameFile, sourceFullPath, destFullPath));
+                  }
+            }
+
             if (destBackupFullPath != null)
             {
                 // We're backing up the destination file to the backup file, so we need to first delete the backup
@@ -350,7 +380,7 @@ namespace System.IO
                 // On Windows we end up with ERROR_INVALID_NAME, which is
                 // "The filename, directory name, or volume label syntax is incorrect."
                 //
-                // This surfaces as a IOException, if we let it go beyond here it would
+                // This surfaces as an IOException, if we let it go beyond here it would
                 // give DirectoryNotFound.
 
                 if (Path.EndsInDirectorySeparator(sourceFullPath))
@@ -375,7 +405,7 @@ namespace System.IO
                     case Interop.Error.EACCES: // match Win32 exception
                         throw new IOException(SR.Format(SR.UnauthorizedAccess_IODenied_Path, sourceFullPath), errorInfo.RawErrno);
                     default:
-                        throw Interop.GetExceptionForIoErrno(errorInfo, sourceFullPath, isDirectory: true);
+                        throw Interop.GetExceptionForIoErrno(errorInfo, isDirectory: true);
                 }
             }
         }
@@ -491,7 +521,7 @@ namespace System.IO
 
         public static DateTimeOffset GetCreationTime(string fullPath)
         {
-            return new FileInfo(fullPath, null).CreationTime;
+            return new FileInfo(fullPath, null).CreationTimeUtc;
         }
 
         public static void SetCreationTime(string fullPath, DateTimeOffset time, bool asDirectory)
@@ -505,7 +535,7 @@ namespace System.IO
 
         public static DateTimeOffset GetLastAccessTime(string fullPath)
         {
-            return new FileInfo(fullPath, null).LastAccessTime;
+            return new FileInfo(fullPath, null).LastAccessTimeUtc;
         }
 
         public static void SetLastAccessTime(string fullPath, DateTimeOffset time, bool asDirectory)
@@ -519,7 +549,7 @@ namespace System.IO
 
         public static DateTimeOffset GetLastWriteTime(string fullPath)
         {
-            return new FileInfo(fullPath, null).LastWriteTime;
+            return new FileInfo(fullPath, null).LastWriteTimeUtc;
         }
 
         public static void SetLastWriteTime(string fullPath, DateTimeOffset time, bool asDirectory)

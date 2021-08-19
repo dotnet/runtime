@@ -365,7 +365,7 @@ namespace System.Runtime.InteropServices.Tests
         {
             Assert.Throws<ApplicationException>(() => NonICustomMarshalerMethod(""));
         }
-    
+
         [DllImport(LibcLibrary, EntryPoint = "atoi", CallingConvention = CallingConvention.Cdecl)]
         public static extern int NonICustomMarshalerMethod([MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(string))] string str);
 
@@ -509,7 +509,7 @@ namespace System.Runtime.InteropServices.Tests
 
         [Fact]
         public void Parameter_GetInstanceMethodThrows_ThrowsActualException()
-        {            
+        {
             Assert.Throws<NotImplementedException>(() => ThrowingGetInstanceMethod(""));
         }
 
@@ -587,6 +587,58 @@ namespace System.Runtime.InteropServices.Tests
 
         [DllImport(LibcLibrary, EntryPoint = "atoi", CallingConvention = CallingConvention.Cdecl)]
         public static extern int StructWithCustomMarshalerFieldMethod(StructWithCustomMarshalerField c);
+
+
+        [Fact]
+        public void Parameter_DifferentCustomMarshalerType_MarshalsCorrectly()
+        {
+            Assert.Equal(234, DifferentCustomMarshalerType("5678"));
+        }
+
+        public class OuterCustomMarshaler : ICustomMarshaler
+        {
+            public void CleanUpManagedData(object ManagedObj) => throw new NotImplementedException();
+            public void CleanUpNativeData(IntPtr pNativeData) => throw new NotImplementedException();
+
+            public int GetNativeDataSize() => throw new NotImplementedException();
+
+            public IntPtr MarshalManagedToNative(object ManagedObj) => throw new NotImplementedException();
+            public object MarshalNativeToManaged(IntPtr pNativeData) => throw new NotImplementedException();
+
+            public static ICustomMarshaler GetInstance(string cookie) => new InnerCustomMarshaler();
+
+            private interface ILargeInterface
+            {
+                void Method1();
+                void Method2();
+                void Method3();
+                void Method4();
+                void Method5();
+                void Method6();
+            }
+
+            private class InnerCustomMarshaler : ILargeInterface, ICustomMarshaler
+            {
+                public void Method1() => throw new InvalidOperationException();
+                public void Method2() => throw new InvalidOperationException();
+                public void Method3() => throw new InvalidOperationException();
+                public void Method4() => throw new InvalidOperationException();
+                public void Method5() => throw new InvalidOperationException();
+                public void Method6() => throw new InvalidOperationException();
+
+                public void CleanUpManagedData(object ManagedObj) { }
+                public void CleanUpNativeData(IntPtr pNativeData) => Marshal.FreeCoTaskMem(pNativeData);
+
+                public int GetNativeDataSize() => IntPtr.Size;
+
+                public IntPtr MarshalManagedToNative(object ManagedObj) => Marshal.StringToCoTaskMemAnsi("234");
+                public object MarshalNativeToManaged(IntPtr pNativeData) => null;
+            }
+        }
+
+        [DllImport(LibcLibrary, EntryPoint = "atoi", CallingConvention = CallingConvention.Cdecl)]
+        public static extern int DifferentCustomMarshalerType([MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(OuterCustomMarshaler))] string str);
+
 
         public static int Main(String[] args)
         {

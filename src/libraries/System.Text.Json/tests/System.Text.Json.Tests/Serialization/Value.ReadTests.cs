@@ -468,6 +468,20 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
+        public static void TimeSpan_Read_Nullable_Tests()
+        {
+            TimeSpan? value = JsonSerializer.Deserialize<TimeSpan?>("null");
+            Assert.False(value.HasValue);
+
+            value = JsonSerializer.Deserialize<TimeSpan?>("\"23:59:59\"");
+            Assert.True(value.HasValue);
+            Assert.Equal(TimeSpan.Parse("23:59:59"), value);
+            Assert.Equal(value, JsonConvert.DeserializeObject<TimeSpan>("\"23:59:59\""));
+
+            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<TimeSpan>("null"));
+        }
+
+        [Fact]
         public static void TimeSpan_Read_KnownDifferences()
         {
             string value = "24:00:00";

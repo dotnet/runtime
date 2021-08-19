@@ -1724,6 +1724,18 @@ tempReg     SETS "$tmpReg"
 
     END_WRITE_BARRIERS
 
+    IMPORT JIT_WriteBarrier_Loc
+
+; ------------------------------------------------------------------
+; __declspec(naked) void F_CALL_CONV JIT_WriteBarrier_Callable(Object **dst, Object* val)
+    LEAF_ENTRY  JIT_WriteBarrier_Callable
+
+    ; Branch to the write barrier
+    ldr     r2, =JIT_WriteBarrier_Loc ; or R3? See targetarm.h
+    ldr     pc, [r2]
+
+    LEAF_END
+
 #ifdef FEATURE_READYTORUN
 
     NESTED_ENTRY DelayLoad_MethodCall_FakeProlog

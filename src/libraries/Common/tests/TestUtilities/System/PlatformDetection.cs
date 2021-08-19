@@ -27,6 +27,7 @@ namespace System
         public static bool IsNotMonoRuntime => !IsMonoRuntime;
         public static bool IsMonoInterpreter => GetIsRunningOnMonoInterpreter();
         public static bool IsMonoAOT => Environment.GetEnvironmentVariable("MONO_AOT_MODE") == "aot";
+        public static bool IsNotMonoAOT => Environment.GetEnvironmentVariable("MONO_AOT_MODE") != "aot";
         public static bool IsFreeBSD => RuntimeInformation.IsOSPlatform(OSPlatform.Create("FREEBSD"));
         public static bool IsNetBSD => RuntimeInformation.IsOSPlatform(OSPlatform.Create("NETBSD"));
         public static bool IsAndroid => RuntimeInformation.IsOSPlatform(OSPlatform.Create("ANDROID"));
@@ -37,7 +38,8 @@ namespace System
         public static bool IsSolaris => RuntimeInformation.IsOSPlatform(OSPlatform.Create("SOLARIS"));
         public static bool IsBrowser => RuntimeInformation.IsOSPlatform(OSPlatform.Create("BROWSER"));
         public static bool IsNotBrowser => !IsBrowser;
-        public static bool IsNotMobile => IsNotBrowser && !IsMacCatalyst && !IsiOS && !IstvOS && !IsAndroid;
+        public static bool IsMobile => IsBrowser || IsMacCatalyst || IsiOS || IstvOS || IsAndroid;
+        public static bool IsNotMobile => !IsMobile;
         public static bool IsNotNetFramework => !IsNetFramework;
 
         public static bool IsArmProcess => RuntimeInformation.ProcessArchitecture == Architecture.Arm;
@@ -51,6 +53,9 @@ namespace System
         public static bool Is32BitProcess => IntPtr.Size == 4;
         public static bool Is64BitProcess => IntPtr.Size == 8;
         public static bool IsNotWindows => !IsWindows;
+
+        public static bool IsCaseInsensitiveOS => IsWindows || IsOSX || IsMacCatalyst;
+        public static bool IsCaseSensitiveOS => !IsCaseInsensitiveOS;
 
         public static bool IsThreadingSupported => !IsBrowser;
         public static bool IsBinaryFormatterSupported => IsNotMobile;
@@ -92,7 +97,11 @@ namespace System
 #if NETCOREAPP
                 if (!IsWindows)
                 {
-                    if (IsOSX)
+                    if (IsMobile)
+                    {
+                        return false;
+                    }
+                    else if (IsOSX)
                     {
                         return NativeLibrary.TryLoad("libgdiplus.dylib", out _);
                     }
@@ -281,9 +290,11 @@ namespace System
                               version & 0xFF);
         }
 
-        private static readonly Lazy<bool> _net5CompatFileStream = new Lazy<bool>(() => GetStaticNonPublicBooleanPropertyValue("System.IO.FileStreamHelpers", "UseNet5CompatStrategy"));
+        private static readonly Lazy<bool> _net5CompatFileStream = new Lazy<bool>(() => GetStaticNonPublicBooleanPropertyValue("System.IO.Strategies.FileStreamHelpers", "UseNet5CompatStrategy"));
 
         public static bool IsNet5CompatFileStreamEnabled => _net5CompatFileStream.Value;
+
+        public static bool IsNet5CompatFileStreamDisabled => !IsNet5CompatFileStreamEnabled;
 
         private static readonly Lazy<bool> s_fileLockingDisabled = new Lazy<bool>(() => GetStaticNonPublicBooleanPropertyValue("Microsoft.Win32.SafeHandles.SafeFileHandle", "DisableFileLocking"));
 

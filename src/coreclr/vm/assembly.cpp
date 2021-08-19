@@ -31,13 +31,8 @@
 
 #include "eeconfig.h"
 
-#include "ceefilegenwriter.h"
 #include "assemblynative.hpp"
 #include "threadsuspend.h"
-
-#ifdef FEATURE_PREJIT
-#include "corcompile.h"
-#endif
 
 #include "appdomainnative.hpp"
 #include "customattribute.h"
@@ -176,7 +171,7 @@ void Assembly::Init(AllocMemTracker *pamTracker, LoaderAllocator *pLoaderAllocat
 #ifndef CROSSGEN_COMPILE
     if (GetManifestFile()->IsDynamic())
         // manifest modules of dynamic assemblies are always transient
-        m_pManifest = ReflectionModule::Create(this, GetManifestFile(), pamTracker, REFEMIT_MANIFEST_MODULE_NAME, TRUE);
+        m_pManifest = ReflectionModule::Create(this, GetManifestFile(), pamTracker, REFEMIT_MANIFEST_MODULE_NAME);
     else
 #endif
         m_pManifest = Module::Create(this, mdFileNil, GetManifestFile(), pamTracker);
@@ -379,7 +374,7 @@ Assembly * Assembly::Create(
 
 
 #ifndef CROSSGEN_COMPILE
-Assembly *Assembly::CreateDynamic(AppDomain *pDomain, ICLRPrivBinder* pBinderContext, CreateDynamicAssemblyArgs *args)
+Assembly *Assembly::CreateDynamic(AppDomain *pDomain, AssemblyBinder* pBinderContext, CreateDynamicAssemblyArgs *args)
 {
     // WARNING: not backout clean
     CONTRACT(Assembly *)
@@ -521,7 +516,7 @@ Assembly *Assembly::CreateDynamic(AppDomain *pDomain, ICLRPrivBinder* pBinderCon
                                                    &ma));
         pFile = PEAssembly::Create(pCallerAssembly->GetManifestFile(), pAssemblyEmit);
 
-        ICLRPrivBinder* pFallbackLoadContextBinder = pBinderContext;
+        AssemblyBinder* pFallbackLoadContextBinder = pBinderContext;
 
         // If ALC is not specified
         if (pFallbackLoadContextBinder == nullptr)
@@ -550,12 +545,10 @@ Assembly *Assembly::CreateDynamic(AppDomain *pDomain, ICLRPrivBinder* pBinderCon
                 else
                 {
                     // Fetch the binder from the host assembly
-                    PTR_ICLRPrivAssembly pCallerAssemblyHostAssembly = pCallerAssemblyManifestFile->GetHostAssembly();
+                    PTR_BINDER_SPACE_Assembly pCallerAssemblyHostAssembly = pCallerAssemblyManifestFile->GetHostAssembly();
                     _ASSERTE(pCallerAssemblyHostAssembly != nullptr);
 
-                    UINT_PTR assemblyBinderID = 0;
-                    IfFailThrow(pCallerAssemblyHostAssembly->GetBinderID(&assemblyBinderID));
-                    pFallbackLoadContextBinder = reinterpret_cast<ICLRPrivBinder*>(assemblyBinderID);
+                    pFallbackLoadContextBinder = pCallerAssemblyHostAssembly->GetBinder();
                 }
             }
             else
@@ -579,6 +572,12 @@ Assembly *Assembly::CreateDynamic(AppDomain *pDomain, ICLRPrivBinder* pBinderCon
     {
         GCX_PREEMP();
 
+        AssemblyLoaderAllocator* pBinderAssemblyLoaderAllocator = nullptr;
+        if (pBinderContext != nullptr)
+        {
+            pBinderAssemblyLoaderAllocator = pBinderContext->GetLoaderAllocator();
+        }
+
         // Create a new LoaderAllocator if appropriate
         if ((args->access & ASSEMBLY_ACCESS_COLLECT) != 0)
         {
@@ -595,17 +594,15 @@ Assembly *Assembly::CreateDynamic(AppDomain *pDomain, ICLRPrivBinder* pBinderCon
             // atomically transfered by call to LoaderAllocator::ActivateManagedTracking().
             pAssemblyLoaderAllocator->SetupManagedTracking(&args->loaderAllocator);
             createdNewAssemblyLoaderAllocator = TRUE;
+
+            if(pBinderAssemblyLoaderAllocator != nullptr)
+            {
+                pAssemblyLoaderAllocator->EnsureReference(pBinderAssemblyLoaderAllocator);
+            }
         }
         else
         {
-            AssemblyLoaderAllocator* pAssemblyLoaderAllocator = nullptr;
-
-            if (pBinderContext != nullptr)
-            {
-                pBinderContext->GetLoaderAllocator((LPVOID*)&pAssemblyLoaderAllocator);
-            }
-
-            pLoaderAllocator = pAssemblyLoaderAllocator == nullptr ? pDomain->GetLoaderAllocator() : pAssemblyLoaderAllocator;
+            pLoaderAllocator = pBinderAssemblyLoaderAllocator == nullptr ? pDomain->GetLoaderAllocator() : pBinderAssemblyLoaderAllocator;
         }
 
         if (!createdNewAssemblyLoaderAllocator)

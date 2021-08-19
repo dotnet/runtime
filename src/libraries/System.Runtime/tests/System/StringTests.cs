@@ -148,6 +148,22 @@ namespace System.Tests
             Assert.Equal(expected, result);
         }
 
+        [Fact]
+        public static void Create_InterpolatedString_ConstructsStringAndClearsBuilder()
+        {
+            Span<char> initialBuffer = stackalloc char[16];
+
+            DefaultInterpolatedStringHandler handler = new DefaultInterpolatedStringHandler(0, 0, CultureInfo.InvariantCulture, initialBuffer);
+            handler.AppendLiteral("hello");
+            Assert.Equal("hello", string.Create(CultureInfo.InvariantCulture, initialBuffer, ref handler));
+            Assert.Equal("", string.Create(CultureInfo.InvariantCulture, initialBuffer, ref handler));
+
+            handler = new DefaultInterpolatedStringHandler(0, 0, CultureInfo.InvariantCulture);
+            handler.AppendLiteral("hello");
+            Assert.Equal("hello", string.Create(CultureInfo.InvariantCulture, ref handler));
+            Assert.Equal("", string.Create(CultureInfo.InvariantCulture, ref handler));
+        }
+
         [Theory]
         [InlineData("Hello", 'H', true)]
         [InlineData("Hello", 'Z', false)]

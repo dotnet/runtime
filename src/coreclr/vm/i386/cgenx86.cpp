@@ -37,10 +37,6 @@
 #include "olevariant.h"
 #endif // FEATURE_COMINTEROP
 
-#ifdef FEATURE_PREJIT
-#include "compile.h"
-#endif
-
 #include "stublink.inl"
 
 extern "C" DWORD STDCALL GetSpecificCpuTypeAsm(void);

@@ -6,6 +6,8 @@ using System.Diagnostics;                   // Debug services
 using System.Runtime.InteropServices;
 using System.Text;
 
+#pragma warning disable CA1419 // TODO https://github.com/dotnet/roslyn-analyzers/issues/5232: not intended for use with P/Invoke
+
 namespace System.Data.Odbc
 {
     internal sealed class CNativeBuffer : System.Data.ProviderBase.DbBuffer

@@ -3,6 +3,16 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <TargetFrameworks>$(NetCoreAppCurrent);netstandard2.0;net461</TargetFrameworks>
     <Nullable>enable</Nullable>
+    <IsPackable>true</IsPackable>
+    <!-- TODO: Reenable when this package shipped with NET6. -->
+    <DisablePackageBaselineValidation>true</DisablePackageBaselineValidation>
+    <PackageDescription>Tensor class which represents and extends multi-dimensional arrays.
+
+Commonly Used Types:
+System.Numerics.Tensors.Tensor&lt;T&gt;
+System.Numerics.Tensors.CompressedSparseTensor&lt;T&gt;
+System.Numerics.Tensors.DenseTensor&lt;T&gt;
+System.Numerics.Tensors.SparseTensor&lt;T&gt;</PackageDescription>
   </PropertyGroup>
 
   <ItemGroup>
@@ -24,6 +34,7 @@
 
   <ItemGroup Condition="!$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'netstandard2.1'))">
     <PackageReference Include="System.Memory" Version="$(SystemMemoryVersion)" />
-    <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime.CompilerServices.Unsafe\src\System.Runtime.CompilerServices.Unsafe.ilproj" />
+    <!-- S.R.C.Unsafe isn't a primary but transitive dependency and this P2P makes sure that the live version is used. -->
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime.CompilerServices.Unsafe\src\System.Runtime.CompilerServices.Unsafe.ilproj" PrivateAssets="all" />
   </ItemGroup>
 </Project>

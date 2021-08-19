@@ -116,7 +116,7 @@ GenTree* Lowering::LowerNode(GenTree* node)
             break;
 
         case GT_STOREIND:
-            LowerStoreIndirCommon(node->AsIndir());
+            LowerStoreIndirCommon(node->AsStoreInd());
             break;
 
         case GT_ADD:
@@ -1507,6 +1507,11 @@ GenTree* Lowering::LowerFloatArgReg(GenTree* arg, regNumber regNum)
 #ifdef TARGET_ARM
     if (floatType == TYP_DOUBLE)
     {
+        // A special case when we introduce TYP_LONG
+        // during lowering for arm32 softFP to pass double
+        // in int registers.
+        assert(comp->opts.compUseSoftFP);
+
         regNumber nextReg                  = REG_NEXT(regNum);
         intArg->AsMultiRegOp()->gtOtherReg = nextReg;
     }
@@ -3558,7 +3563,7 @@ void Lowering::LowerStoreSingleRegCallStruct(GenTreeBlk* store)
     {
         store->ChangeType(regType);
         store->SetOper(GT_STOREIND);
-        LowerStoreIndirCommon(store);
+        LowerStoreIndirCommon(store->AsStoreInd());
         return;
     }
     else
@@ -3626,7 +3631,7 @@ GenTree* Lowering::LowerDirectCall(GenTreeCall* call)
     InfoAccessType  accessType;
     CorInfoHelpFunc helperNum = comp->eeGetHelperNum(call->gtCallMethHnd);
 
-#ifdef FEATURE_READYTORUN_COMPILER
+#ifdef FEATURE_READYTORUN
     if (call->gtEntryPoint.addr != nullptr)
     {
         accessType = call->gtEntryPoint.accessType;
@@ -3701,12 +3706,12 @@ GenTree* Lowering::LowerDirectCall(GenTreeCall* call)
         case IAT_PVALUE:
         {
             bool isR2RRelativeIndir = false;
-#if defined(FEATURE_READYTORUN_COMPILER) && defined(TARGET_ARMARCH)
+#if defined(FEATURE_READYTORUN) && defined(TARGET_ARMARCH)
             // Skip inserting the indirection node to load the address that is already
             // computed in REG_R2R_INDIRECT_PARAM as a hidden parameter. Instead during the
             // codegen, just load the call target from REG_R2R_INDIRECT_PARAM.
             isR2RRelativeIndir = call->IsR2RRelativeIndir();
-#endif // FEATURE_READYTORUN_COMPILER && TARGET_ARMARCH
+#endif // FEATURE_READYTORUN && TARGET_ARMARCH
 
             if (!isR2RRelativeIndir)
             {
@@ -4100,7 +4105,7 @@ void Lowering::InsertPInvokeMethodProlog()
         // The init routine sets InlinedCallFrame's m_pNext, so we just set the thead's top-of-stack
         GenTree* frameUpd = CreateFrameLinkUpdate(PushFrame);
         firstBlockRange.InsertBefore(insertionPoint, LIR::SeqTree(comp, frameUpd));
-        ContainCheckStoreIndir(frameUpd->AsIndir());
+        ContainCheckStoreIndir(frameUpd->AsStoreInd());
         DISPTREERANGE(firstBlockRange, frameUpd);
     }
 #endif // TARGET_64BIT
@@ -4163,7 +4168,7 @@ void Lowering::InsertPInvokeMethodEpilog(BasicBlock* returnBB DEBUGARG(GenTree* 
     {
         GenTree* frameUpd = CreateFrameLinkUpdate(PopFrame);
         returnBlockRange.InsertBefore(insertionPoint, LIR::SeqTree(comp, frameUpd));
-        ContainCheckStoreIndir(frameUpd->AsIndir());
+        ContainCheckStoreIndir(frameUpd->AsStoreInd());
     }
 }
 
@@ -4325,7 +4330,7 @@ void Lowering::InsertPInvokeCallProlog(GenTreeCall* call)
         // Stubs do this once per stub, not once per call.
         GenTree* frameUpd = CreateFrameLinkUpdate(PushFrame);
         BlockRange().InsertBefore(insertBefore, LIR::SeqTree(comp, frameUpd));
-        ContainCheckStoreIndir(frameUpd->AsIndir());
+        ContainCheckStoreIndir(frameUpd->AsStoreInd());
     }
 #endif // TARGET_64BIT
 
@@ -4335,7 +4340,7 @@ void Lowering::InsertPInvokeCallProlog(GenTreeCall* call)
     //  [tcb + offsetOfGcState] = 0
     GenTree* storeGCState = SetGCState(0);
     BlockRange().InsertBefore(insertBefore, LIR::SeqTree(comp, storeGCState));
-    ContainCheckStoreIndir(storeGCState->AsIndir());
+    ContainCheckStoreIndir(storeGCState->AsStoreInd());
 
     // Indicate that codegen has switched this thread to preemptive GC.
     // This tree node doesn't generate any code, but impacts LSRA and gc reporting.
@@ -4381,7 +4386,7 @@ void Lowering::InsertPInvokeCallEpilog(GenTreeCall* call)
 
     GenTree* tree = SetGCState(1);
     BlockRange().InsertBefore(insertionPoint, LIR::SeqTree(comp, tree));
-    ContainCheckStoreIndir(tree->AsIndir());
+    ContainCheckStoreIndir(tree->AsStoreInd());
 
     tree = CreateReturnTrapSeq();
     BlockRange().InsertBefore(insertionPoint, LIR::SeqTree(comp, tree));
@@ -4396,7 +4401,7 @@ void Lowering::InsertPInvokeCallEpilog(GenTreeCall* call)
     {
         tree = CreateFrameLinkUpdate(PopFrame);
         BlockRange().InsertBefore(insertionPoint, LIR::SeqTree(comp, tree));
-        ContainCheckStoreIndir(tree->AsIndir());
+        ContainCheckStoreIndir(tree->AsStoreInd());
     }
 #else
     const CORINFO_EE_INFO::InlinedCallFrameInfo& callFrameInfo = comp->eeGetEEInfo()->inlinedCallFrameInfo;
@@ -4521,7 +4526,7 @@ GenTree* Lowering::LowerNonvirtPinvokeCall(GenTreeCall* call)
                     // a direct call within range of hardware relative call instruction
                     // stash the address for codegen
                     call->gtDirectCallAddress = addr;
-#ifdef FEATURE_READYTORUN_COMPILER
+#ifdef FEATURE_READYTORUN
                     call->gtEntryPoint.addr       = nullptr;
                     call->gtEntryPoint.accessType = IAT_VALUE;
 #endif
@@ -4769,14 +4774,14 @@ GenTree* Lowering::LowerVirtualStubCall(GenTreeCall* call)
         {
 
             bool shouldOptimizeVirtualStubCall = false;
-#if defined(FEATURE_READYTORUN_COMPILER) && defined(TARGET_ARMARCH)
+#if defined(FEATURE_READYTORUN) && defined(TARGET_ARMARCH)
             // Skip inserting the indirection node to load the address that is already
             // computed in REG_R2R_INDIRECT_PARAM as a hidden parameter. Instead during the
             // codegen, just load the call target from REG_R2R_INDIRECT_PARAM.
             // However, for tail calls, the call target is always computed in RBM_FASTTAILCALL_TARGET
             // and so do not optimize virtual stub calls for such cases.
             shouldOptimizeVirtualStubCall = !call->IsTailCall();
-#endif // FEATURE_READYTORUN_COMPILER && TARGET_ARMARCH
+#endif // FEATURE_READYTORUN && TARGET_ARMARCH
 
             if (!shouldOptimizeVirtualStubCall)
             {
@@ -5249,7 +5254,11 @@ bool Lowering::LowerUnsignedDivOrMod(GenTreeOp* divMod)
             BlockRange().InsertBefore(divMod, preShiftBy, adjustedDividend);
             firstNode = preShiftBy;
         }
-        else if (type != TYP_I_IMPL)
+        else if (type != TYP_I_IMPL
+#ifdef TARGET_ARM64
+                 && !simpleMul // On ARM64 we will use a 32x32->64 bit multiply as that's faster.
+#endif
+                 )
         {
             adjustedDividend = comp->gtNewCastNode(TYP_I_IMPL, adjustedDividend, true, TYP_U_IMPL);
             BlockRange().InsertBefore(divMod, adjustedDividend);
@@ -5264,6 +5273,14 @@ bool Lowering::LowerUnsignedDivOrMod(GenTreeOp* divMod)
 #endif
 
         divisor->gtType = TYP_I_IMPL;
+
+#ifdef TARGET_ARM64
+        if (simpleMul)
+        {
+            divisor->gtType = TYP_INT;
+        }
+#endif
+
         divisor->AsIntCon()->SetIconValue(magic);
 
         if (isDiv && !postShift && type == TYP_I_IMPL)
@@ -6421,7 +6438,7 @@ void Lowering::ContainCheckNode(GenTree* node)
             ContainCheckReturnTrap(node->AsOp());
             break;
         case GT_STOREIND:
-            ContainCheckStoreIndir(node->AsIndir());
+            ContainCheckStoreIndir(node->AsStoreInd());
             break;
         case GT_IND:
             ContainCheckIndir(node->AsIndir());
@@ -6604,9 +6621,8 @@ void Lowering::ContainCheckBitCast(GenTree* node)
 // Arguments:
 //    ind - the store indirection node we are lowering.
 //
-void Lowering::LowerStoreIndirCommon(GenTreeIndir* ind)
+void Lowering::LowerStoreIndirCommon(GenTreeStoreInd* ind)
 {
-    assert(ind->OperIs(GT_STOREIND));
     assert(ind->TypeGet() != TYP_STRUCT);
     TryCreateAddrMode(ind->Addr(), true);
     if (!comp->codeGen->gcInfo.gcIsWriteBarrierStoreIndNode(ind))
@@ -6731,7 +6747,7 @@ void Lowering::LowerBlockStoreCommon(GenTreeBlk* blkNode)
 bool Lowering::TryTransformStoreObjAsStoreInd(GenTreeBlk* blkNode)
 {
     assert(blkNode->OperIs(GT_STORE_BLK, GT_STORE_DYN_BLK, GT_STORE_OBJ));
-    if (comp->opts.OptimizationEnabled())
+    if (!comp->opts.OptimizationEnabled())
     {
         return false;
     }
@@ -6752,7 +6768,9 @@ bool Lowering::TryTransformStoreObjAsStoreInd(GenTreeBlk* blkNode)
     {
         return false;
     }
-    if (varTypeIsSIMD(regType))
+
+    GenTree* src = blkNode->Data();
+    if (varTypeIsSIMD(regType) && src->IsConstInitVal())
     {
         // TODO-CQ: support STORE_IND SIMD16(SIMD16, CNT_INT 0).
         return false;
@@ -6765,13 +6783,12 @@ bool Lowering::TryTransformStoreObjAsStoreInd(GenTreeBlk* blkNode)
         return false;
     }
 
-    GenTree* src = blkNode->Data();
     if (src->OperIsInitVal() && !src->IsConstInitVal())
     {
         return false;
     }
 
-    if (varTypeIsSmall(regType) && !src->IsConstInitVal())
+    if (varTypeIsSmall(regType) && !src->IsConstInitVal() && !src->IsLocal())
     {
         // source operand INDIR will use a widening instruction
         // and generate worse code, like `movzx` instead of `mov`
@@ -6806,6 +6823,6 @@ bool Lowering::TryTransformStoreObjAsStoreInd(GenTreeBlk* blkNode)
     {
         assert(src->TypeIs(regType) || src->IsCnsIntOrI() || src->IsCall());
     }
-    LowerStoreIndirCommon(blkNode);
+    LowerStoreIndirCommon(blkNode->AsStoreInd());
     return true;
 }

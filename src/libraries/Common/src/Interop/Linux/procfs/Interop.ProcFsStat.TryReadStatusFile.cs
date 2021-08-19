@@ -30,10 +30,7 @@ internal static partial class Interop
             internal ulong VmPeak;
         }
 
-        internal static string GetStatusFilePathForProcess(int pid)
-        {
-            return RootPath + pid.ToString(CultureInfo.InvariantCulture) + StatusFileName;
-        }
+        internal static string GetStatusFilePathForProcess(int pid) => string.Create(null, stackalloc char[256], $"{RootPath}{(uint)pid}{StatusFileName}");
 
         internal static bool TryReadStatusFile(int pid, out ParsedStatus result)
         {

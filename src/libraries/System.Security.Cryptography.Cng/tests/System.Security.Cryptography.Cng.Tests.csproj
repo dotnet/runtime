@@ -142,6 +142,8 @@
              Link="CommonTest\System\Security\Cryptography\AlgorithmImplementations\RSA\SignVerify.netcoreapp.cs" />
     <Compile Condition="'$(TargetsWindows)' == 'true'" Include="AesCngTests.cs" />
     <Compile Condition="'$(TargetsWindows)' == 'true'" Include="TripleDESCngTests.cs" />
+    <Compile Include="$(CommonTestPath)System\Security\Cryptography\AlgorithmImplementations\TripleDES\TripleDESContractTests.cs"
+             Link="CommonTest\System\Security\Cryptography\AlgorithmImplementations\TripleDES\TripleDESContractTests.cs" />
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\AlgorithmImplementations\AES\AesContractTests.cs"
              Link="CommonTest\AlgorithmImplementations\AES\AesContractTests.cs" />
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\AlgorithmImplementations\TripleDES\TripleDESCipherTests.cs"

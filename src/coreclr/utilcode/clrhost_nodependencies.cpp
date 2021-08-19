@@ -215,7 +215,7 @@ ClrDebugState *CLRInitDebugState()
 
 const NoThrow nothrow = { 0 };
 
-#ifdef HAS_ADDRESS_SANITIZER
+#if defined(HAS_ADDRESS_SANITIZER) || defined(DACCESS_COMPILE)
 // use standard heap functions for address santizier
 #else
 
@@ -345,11 +345,11 @@ operator new[](size_t n)
     return result;
 };
 
-#endif // HAS_ADDRESS_SANITIZER
+#endif // HAS_ADDRESS_SANITIZER || DACCESS_COMPILE
 
 void * __cdecl operator new(size_t n, const NoThrow&) NOEXCEPT
 {
-#ifdef HAS_ADDRESS_SANITIZER
+#if defined(HAS_ADDRESS_SANITIZER) || defined(DACCESS_COMPILE)
     // use standard heap functions for address santizier (which doesn't provide for NoThrow)
 	void * result = operator new(n);
 #else
@@ -361,14 +361,14 @@ void * __cdecl operator new(size_t n, const NoThrow&) NOEXCEPT
     INCONTRACT(_ASSERTE(!ARE_FAULTS_FORBIDDEN()));
 
     void* result = ClrMalloc(n);
-#endif // HAS_ADDRESS_SANITIZER
+#endif // HAS_ADDRESS_SANITIZER || DACCESS_COMPILE
 	TRASH_LASTERROR;
     return result;
 }
 
 void * __cdecl operator new[](size_t n, const NoThrow&) NOEXCEPT
 {
-#ifdef HAS_ADDRESS_SANITIZER
+#if defined(HAS_ADDRESS_SANITIZER) || defined(DACCESS_COMPILE)
     // use standard heap functions for address santizier (which doesn't provide for NoThrow)
 	void * result = operator new[](n);
 #else
@@ -380,12 +380,12 @@ void * __cdecl operator new[](size_t n, const NoThrow&) NOEXCEPT
     INCONTRACT(_ASSERTE(!ARE_FAULTS_FORBIDDEN()));
 
     void* result = ClrMalloc(n);
-#endif // HAS_ADDRESS_SANITIZER
+#endif // HAS_ADDRESS_SANITIZER || DACCESS_COMPILE
 	TRASH_LASTERROR;
     return result;
 }
 
-#ifdef HAS_ADDRESS_SANITIZER
+#if defined(HAS_ADDRESS_SANITIZER) || defined(DACCESS_COMPILE)
 // use standard heap functions for address santizier
 #else
 void __cdecl
@@ -411,7 +411,7 @@ operator delete[](void *p) NOEXCEPT
     TRASH_LASTERROR;
 }
 
-#endif // HAS_ADDRESS_SANITIZER
+#endif // HAS_ADDRESS_SANITIZER || DACCESS_COMPILE
 
 /* ------------------------------------------------------------------------ *
  * New operator overloading for the executable heap

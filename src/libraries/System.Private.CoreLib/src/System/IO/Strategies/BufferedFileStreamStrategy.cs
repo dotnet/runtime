@@ -423,6 +423,7 @@ namespace System.IO.Strategies
             }
         }
 
+        [AsyncMethodBuilder(typeof(PoolingAsyncValueTaskMethodBuilder<>))]
         private async ValueTask<int> ReadAsyncSlowPath(Task semaphoreLockTask, Memory<byte> buffer, CancellationToken cancellationToken)
         {
             Debug.Assert(_asyncActiveSemaphore != null);
@@ -705,6 +706,7 @@ namespace System.IO.Strategies
             }
         }
 
+        [AsyncMethodBuilder(typeof(PoolingAsyncValueTaskMethodBuilder))]
         private async ValueTask WriteAsyncSlowPath(Task semaphoreLockTask, ReadOnlyMemory<byte> source, CancellationToken cancellationToken)
         {
             Debug.Assert(_asyncActiveSemaphore != null);
@@ -985,7 +987,7 @@ namespace System.IO.Strategies
                 _readPos = _readLen = 0;
             }
 
-            Debug.Assert(newPos == Position, "newPos (=" + newPos + ") == Position (=" + Position + ")");
+            Debug.Assert(newPos == Position, $"newPos (={newPos}) == Position (={Position})");
             return newPos;
         }
 
@@ -1023,7 +1025,7 @@ namespace System.IO.Strategies
         /// </summary>
         private void ClearReadBufferBeforeWrite()
         {
-            Debug.Assert(_readPos <= _readLen, "_readPos <= _readLen [" + _readPos + " <= " + _readLen + "]");
+            Debug.Assert(_readPos <= _readLen, $"_readPos <= _readLen [{_readPos} <= {_readLen}]");
 
             // No read data in the buffer:
             if (_readPos == _readLen)

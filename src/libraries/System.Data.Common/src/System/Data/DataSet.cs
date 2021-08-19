@@ -227,11 +227,15 @@ namespace System.Data
 
         // Deserialize all the tables schema and data of the dataset from binary/xml stream.
         [RequiresUnreferencedCode(RequiresUnreferencedCodeMessage)]
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2112:ReflectionToRequiresUnreferencedCode",
+            Justification = "CreateInstanceOfThisType's use of GetType uses only the parameterless constructor, but the annotations preserve all non-public constructors causing a warning for the serialization constructors. Those constructors won't be used here.")]
         protected DataSet(SerializationInfo info, StreamingContext context) : this(info, context, true)
         {
         }
 
         [RequiresUnreferencedCode(RequiresUnreferencedCodeMessage)]
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2112:ReflectionToRequiresUnreferencedCode",
+            Justification = "CreateInstanceOfThisType's use of GetType uses only the parameterless constructor, but the annotations preserve all non-public constructors causing a warning for the serialization constructors. Those constructors won't be used here.")]
         protected DataSet(SerializationInfo info, StreamingContext context, bool ConstructSchema) : this()
         {
             SerializationFormat remotingFormat = SerializationFormat.Xml;
@@ -1093,8 +1097,6 @@ namespace System.Data
             }
         }
 
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
-            Justification = "Only parameterless constructors are used here but since nonPublic=true, all non-public constructors are being preserved causing a warning for the serialization constructors. Those constructors won't be used here.")]
         private DataSet CreateInstanceOfThisType()
         {
             return (DataSet)Activator.CreateInstance(GetType(), true)!;
@@ -3444,7 +3446,6 @@ namespace System.Data
 
         private static bool PublishLegacyWSDL() => false;
 
-#pragma warning disable 8632
         XmlSchema? IXmlSerializable.GetSchema()
         {
             if (GetType() == typeof(DataSet))
@@ -3457,10 +3458,16 @@ namespace System.Data
             XmlWriter writer = new XmlTextWriter(stream, null);
             if (writer != null)
             {
-                (new XmlTreeGen(SchemaFormat.WebService)).Save(this, writer);
+                WriteXmlSchema(this, writer);
             }
             stream.Position = 0;
             return XmlSchema.Read(new XmlTextReader(stream), null);
+        }
+
+        [RequiresUnreferencedCode("DataSet.GetSchema uses TypeDescriptor and XmlSerialization underneath which are not trimming safe. Members from serialized types may be trimmed if not referenced directly.")]
+        private static void WriteXmlSchema(DataSet ds, XmlWriter writer)
+        {
+            (new XmlTreeGen(SchemaFormat.WebService)).Save(ds, writer);
         }
 
         void IXmlSerializable.ReadXml(XmlReader reader)
@@ -3483,7 +3490,7 @@ namespace System.Data
                 }
             }
 
-            ReadXmlSerializable(reader);
+            ReadXmlSerializableInternal(reader);
 
             if (xmlTextParser != null)
             {
@@ -3495,12 +3502,23 @@ namespace System.Data
             }
         }
 
+        [RequiresUnreferencedCode("DataSet.ReadXml uses XmlSerialization underneath which is not trimming safe. Members from serialized types may be trimmed if not referenced directly.")]
+        private void ReadXmlSerializableInternal(XmlReader reader)
+        {
+            ReadXmlSerializable(reader);
+        }
+
         void IXmlSerializable.WriteXml(XmlWriter writer)
+        {
+            WriteXmlInternal(writer);
+        }
+
+        [RequiresUnreferencedCode("DataSet.WriteXml uses XmlSerialization underneath which is not trimming safe. Members from serialized types may be trimmed if not referenced directly.")]
+        private void WriteXmlInternal(XmlWriter writer)
         {
             WriteXmlSchema(writer, SchemaFormat.WebService, null);
             WriteXml(writer, XmlWriteMode.DiffGram);
         }
-#pragma warning restore 8632
 
         [RequiresUnreferencedCode("Using LoadOption may cause members from types used in the expression column to be trimmed if not referenced directly.")]
         public virtual void Load(IDataReader reader, LoadOption loadOption, FillErrorEventHandler? errorHandler, params DataTable[] tables)

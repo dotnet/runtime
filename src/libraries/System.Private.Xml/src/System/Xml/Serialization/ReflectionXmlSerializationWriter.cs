@@ -397,6 +397,17 @@ namespace System.Xml.Serialization
                 {
                     WriteQualifiedNameElement(name, ns!, element.Default, (XmlQualifiedName)o!, element.IsNullable, mapping.IsSoap, mapping);
                 }
+                else if (o == null && element.IsNullable)
+                {
+                    if (mapping.IsSoap)
+                    {
+                        WriteNullTagEncoded(element.Name, ns);
+                    }
+                    else
+                    {
+                        WriteNullTagLiteral(element.Name, ns);
+                    }
+                }
                 else
                 {
                     WritePrimitiveMethodRequirement suffixNullable = mapping.IsSoap ? WritePrimitiveMethodRequirement.Encoded : WritePrimitiveMethodRequirement.None;
@@ -649,7 +660,7 @@ namespace System.Xml.Serialization
         [RequiresUnreferencedCode("Calls GetType on object")]
         private object? GetMemberValue(object o, string memberName)
         {
-            MemberInfo memberInfo = ReflectionXmlSerializationHelper.GetMember(o.GetType(), memberName);
+            MemberInfo memberInfo = ReflectionXmlSerializationHelper.GetEffectiveGetInfo(o.GetType(), memberName);
             object? memberValue = GetMemberValue(o, memberInfo);
             return memberValue;
         }
@@ -657,52 +668,27 @@ namespace System.Xml.Serialization
         [RequiresUnreferencedCode("calls WriteMember")]
         private bool WriteEnumAndArrayTypes(StructMapping structMapping, object o, string n, string? ns)
         {
-            if (o is Enum)
-            {
-                Writer.WriteStartElement(n, ns);
+            Type objType = o.GetType();
 
-                EnumMapping? enumMapping = null;
-                Type enumType = o.GetType();
-                foreach (var m in _mapping.Scope!.TypeMappings)
+            foreach (var m in _mapping.Scope!.TypeMappings)
+            {
+                if (m is EnumMapping em && em.TypeDesc!.Type == objType)
                 {
-                    if (m is EnumMapping em && em.TypeDesc!.Type == enumType)
-                    {
-                        enumMapping = em;
-                        break;
-                    }
+                    Writer.WriteStartElement(n, ns);
+                    WriteXsiType(em.TypeName!, ns);
+                    Writer.WriteString(WriteEnumMethod(em, o));
+                    Writer.WriteEndElement();
+                    return true;
                 }
 
-                if (enumMapping == null)
-                    throw new InvalidOperationException(SR.XmlInternalError);
-
-                WriteXsiType(enumMapping.TypeName!, ns);
-                Writer.WriteString(WriteEnumMethod(enumMapping, o));
-                Writer.WriteEndElement();
-                return true;
-            }
-
-            if (o is Array)
-            {
-                Writer.WriteStartElement(n, ns);
-                ArrayMapping? arrayMapping = null;
-                Type arrayType = o.GetType();
-                foreach (var m in _mapping.Scope!.TypeMappings)
+                if (m is ArrayMapping am && am.TypeDesc!.Type == objType)
                 {
-                    if (m is ArrayMapping am && am.TypeDesc!.Type == arrayType)
-                    {
-                        arrayMapping = am;
-                        break;
-                    }
+                    Writer.WriteStartElement(n, ns);
+                    WriteXsiType(am.TypeName!, ns);
+                    WriteMember(o, null, am.ElementsSortedByDerivation!, null, null, am.TypeDesc!, true);
+                    Writer.WriteEndElement();
+                    return true;
                 }
-
-                if (arrayMapping == null)
-                    throw new InvalidOperationException(SR.XmlInternalError);
-
-                WriteXsiType(arrayMapping.TypeName!, ns);
-                WriteMember(o, null, arrayMapping.ElementsSortedByDerivation!, null, null, arrayMapping.TypeDesc!, true);
-                Writer.WriteEndElement();
-
-                return true;
             }
 
             return false;
@@ -1195,6 +1181,7 @@ namespace System.Xml.Serialization
                 "Guid" => XmlConvert.ToString((Guid)o),
                 "Char" => XmlConvert.ToString((char)o),
                 "TimeSpan" => XmlConvert.ToString((TimeSpan)o),
+                "DateTimeOffset" => XmlConvert.ToString((DateTimeOffset)o),
                 _ => o.ToString()!,
             };
             return stringValue;
@@ -1356,7 +1343,7 @@ namespace System.Xml.Serialization
     internal static class ReflectionXmlSerializationHelper
     {
         [RequiresUnreferencedCode("Reflects over base members")]
-        public static MemberInfo GetMember(Type declaringType, string memberName)
+        public static MemberInfo? GetMember(Type declaringType, string memberName, bool throwOnNotFound)
         {
             MemberInfo[] memberInfos = declaringType.GetMember(memberName);
             if (memberInfos == null || memberInfos.Length == 0)
@@ -1377,7 +1364,11 @@ namespace System.Xml.Serialization
 
                 if (!foundMatchedMember)
                 {
-                    throw new InvalidOperationException(SR.Format(SR.XmlInternalErrorDetails, $"Could not find member named {memberName} of type {declaringType}"));
+                    if (throwOnNotFound)
+                    {
+                        throw new InvalidOperationException(SR.Format(SR.XmlInternalErrorDetails, $"Could not find member named {memberName} of type {declaringType}"));
+                    }
+                    return null;
                 }
 
                 declaringType = currentType!;
@@ -1393,6 +1384,62 @@ namespace System.Xml.Serialization
                         memberInfo = mi;
                         break;
                     }
+                }
+            }
+
+            return memberInfo;
+        }
+
+        [RequiresUnreferencedCode(XmlSerializer.TrimSerializationWarning)]
+        public static MemberInfo GetEffectiveGetInfo(Type declaringType, string memberName)
+        {
+            MemberInfo memberInfo = GetMember(declaringType, memberName, true)!;
+
+            // For properties, we might have a PropertyInfo that does not have a valid
+            // getter at this level of inheritance. If that's the case, we need to look
+            // up the chain to find the right PropertyInfo for the getter.
+            if (memberInfo is PropertyInfo propInfo && propInfo.GetMethod == null)
+            {
+                var parent = declaringType.BaseType;
+
+                while (parent != null)
+                {
+                    var mi = GetMember(parent, memberName, false);
+
+                    if (mi is PropertyInfo pi && pi.GetMethod != null && pi.PropertyType == propInfo.PropertyType)
+                    {
+                        return pi;
+                    }
+
+                    parent = parent.BaseType;
+                }
+            }
+
+            return memberInfo;
+        }
+
+        [RequiresUnreferencedCode(XmlSerializer.TrimSerializationWarning)]
+        public static MemberInfo GetEffectiveSetInfo(Type declaringType, string memberName)
+        {
+            MemberInfo memberInfo = GetMember(declaringType, memberName, true)!;
+
+            // For properties, we might have a PropertyInfo that does not have a valid
+            // setter at this level of inheritance. If that's the case, we need to look
+            // up the chain to find the right PropertyInfo for the setter.
+            if (memberInfo is PropertyInfo propInfo && propInfo.SetMethod == null)
+            {
+                var parent = declaringType.BaseType;
+
+                while (parent != null)
+                {
+                    var mi = GetMember(parent, memberName, false);
+
+                    if (mi is PropertyInfo pi && pi.SetMethod != null && pi.PropertyType == propInfo.PropertyType)
+                    {
+                        return pi;
+                    }
+
+                    parent = parent.BaseType;
                 }
             }
 

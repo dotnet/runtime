@@ -194,6 +194,9 @@ typedef struct MonoComponentDebugger {
 	void (*mono_wasm_breakpoint_hit) (void);
 	void (*mono_wasm_single_step_hit) (void);
 
+	//HotReload
+	void (*send_enc_delta) (MonoImage *image, gconstpointer dmeta_bytes, int32_t dmeta_len, gconstpointer dpdb_bytes, int32_t dpdb_len);
+
 } MonoComponentDebugger;
 
 

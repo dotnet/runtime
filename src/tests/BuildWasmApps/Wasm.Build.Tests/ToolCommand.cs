@@ -88,6 +88,7 @@ namespace Wasm.Build.Tests
                     return;
 
                 output.Add($"[{_label}] {e.Data}");
+                Console.WriteLine($"[{_label}] {e.Data}");
                 ErrorDataReceived?.Invoke(s, e);
             };
 
@@ -97,6 +98,7 @@ namespace Wasm.Build.Tests
                     return;
 
                 output.Add($"[{_label}] {e.Data}");
+                Console.WriteLine($"[{_label}] {e.Data}");
                 OutputDataReceived?.Invoke(s, e);
             };
 

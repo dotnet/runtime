@@ -22,11 +22,6 @@
 #include "dbginterface.h"
 #include "eventtrace.h"
 
-#ifdef FEATURE_PREJIT
-#include <corcompile.h>
-#include "compile.h"
-#endif  // FEATURE_PREJIT
-
 #include "dllimportcallback.h"
 #include "peimagelayout.inl"
 
@@ -733,33 +728,6 @@ BOOL DomainFile::IsZapRequired()
     if (pMD->GetCountWithTokenKind(mdtTypeDef) == 0 && pMD->GetCountWithTokenKind(mdtMethodDef) == 0)
         return FALSE;
 
-    DomainAssembly * pDomainAssembly = GetDomainAssembly();
-
-#ifdef FEATURE_NATIVE_IMAGE_GENERATION
-    if (IsCompilationProcess())
-    {
-        // Ignore the assembly being ngened.
-
-        bool fileIsBeingNGened = false;
-
-        if (this->GetAppDomain()->IsCompilationDomain())
-        {
-            Assembly * assemblyBeingNGened = this->GetAppDomain()->ToCompilationDomain()->GetTargetAssembly();
-            if (assemblyBeingNGened == NULL || assemblyBeingNGened == pDomainAssembly->GetCurrentAssembly())
-                fileIsBeingNGened = true;
-        }
-        else if (IsSystem())
-        {
-            // CoreLib gets loaded before the CompilationDomain gets created.
-            // However, we may be ngening CoreLib itself
-            fileIsBeingNGened = true;
-        }
-
-        if (fileIsBeingNGened)
-            return FALSE;
-    }
-#endif
-
     return TRUE;
 }
 
@@ -832,18 +800,6 @@ void DomainFile::ClearNativeImageStress()
 
     // Different app-domains should make different decisions
     hash ^= HashString(this->GetAppDomain()->GetFriendlyName());
-
-#ifdef FEATURE_NATIVE_IMAGE_GENERATION
-    // Since DbgRandomOnHashAndExe() is not so random under ngen.exe, also
-    // factor in the module being compiled
-    if (this->GetAppDomain()->IsCompilationDomain())
-    {
-        Module * module = this->GetAppDomain()->ToCompilationDomain()->GetTargetModule();
-        // Has the target module been set yet?
-        if (module)
-            hash ^= HashStringA(module->GetSimpleName());
-    }
-#endif
 
     if (DbgRandomOnHashAndExe(hash, float(stressPercentage)/100))
     {
@@ -1281,7 +1237,7 @@ void DomainAssembly::Begin()
         AppDomain::LoadLockHolder lock(m_pDomain);
         m_pDomain->AddAssembly(this);
     }
-    // Make it possible to find this DomainAssembly object from associated ICLRPrivAssembly.
+    // Make it possible to find this DomainAssembly object from associated BINDER_SPACE::Assembly.
     GetAppDomain()->PublishHostedAssembly(this);
     m_fHostAssemblyPublished = true;
 }
@@ -1782,7 +1738,7 @@ BOOL DomainAssembly::CheckZapDependencyIdentities(PEImage *pNativeImage)
                 // We just initialized the assembly spec for the NI dependency. This will not have binding context
                 // associated with it, so set it from that of the parent.
                 _ASSERTE(!name.GetBindingContext());
-                ICLRPrivBinder *pParentAssemblyBindingContext = name.GetBindingContextFromParentAssembly(name.GetAppDomain());
+                AssemblyBinder *pParentAssemblyBindingContext = name.GetBindingContextFromParentAssembly(name.GetAppDomain());
                 _ASSERTE(pParentAssemblyBindingContext);
                 name.SetBindingContext(pParentAssemblyBindingContext);
             }

@@ -52,7 +52,6 @@ namespace System
 
         internal const uint SignMask = 0x8000_0000;
         internal const int SignShift = 31;
-        internal const uint ShiftedSignMask = SignMask >> SignShift;
 
         internal const uint ExponentMask = 0x7F80_0000;
         internal const int ExponentShift = 23;
@@ -542,11 +541,11 @@ namespace System
 
         [RequiresPreviewFeatures]
         static float IDecrementOperators<float>.operator --(float value)
-            => value--;
+            => --value;
 
         // [RequiresPreviewFeatures]
         // static checked float IDecrementOperators<float>.operator --(float value)
-        //     => checked(value--);
+        //     => checked(--value);
 
         //
         // IDivisionOperators
@@ -820,11 +819,11 @@ namespace System
 
         [RequiresPreviewFeatures]
         static float IIncrementOperators<float>.operator ++(float value)
-            => value++;
+            => ++value;
 
         // [RequiresPreviewFeatures]
         // static checked float IIncrementOperators<float>.operator ++(float value)
-        //     => checked(value++);
+        //     => checked(++value);
 
         //
         // IMinMaxValue

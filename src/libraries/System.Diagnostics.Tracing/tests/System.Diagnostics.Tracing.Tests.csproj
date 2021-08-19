@@ -17,6 +17,7 @@
     <Compile Include="BasicEventSourceTest\TestsManifestGeneration.Etw.cs" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="BasicEventSourceTest\ActivityTracking.cs" />
     <Compile Include="BasicEventSourceTest\Harness\EventTestHarness.cs" />
     <Compile Include="BasicEventSourceTest\FuzzyTests.cs" />
     <Compile Include="BasicEventSourceTest\Harness\Listeners.cs" />

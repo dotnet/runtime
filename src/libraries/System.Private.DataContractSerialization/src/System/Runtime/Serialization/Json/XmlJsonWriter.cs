@@ -1420,7 +1420,7 @@ namespace System.Runtime.Serialization.Json
                         _nodeWriter.WriteChars(chars + i, j - i);
                         _nodeWriter.WriteText(BACK_SLASH);
                         _nodeWriter.WriteText('u');
-                        _nodeWriter.WriteText(string.Format(CultureInfo.InvariantCulture, "{0:x4}", (int)ch));
+                        _nodeWriter.WriteText($"{(int)ch:x4}");
                         i = j + 1;
                     }
                 }

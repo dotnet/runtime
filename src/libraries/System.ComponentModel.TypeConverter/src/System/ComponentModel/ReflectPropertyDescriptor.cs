@@ -300,7 +300,7 @@ namespace System.ComponentModel
                         object? defaultValue = ((DefaultValueAttribute)a).Value;
                         bool storedAsUnderlyingType = defaultValue != null && PropertyType.IsEnum && PropertyType.GetEnumUnderlyingType() == defaultValue.GetType();
                         _defaultValue = storedAsUnderlyingType ?
-                            Enum.ToObject(PropertyType, _defaultValue!) :
+                            Enum.ToObject(PropertyType, defaultValue!) :
                             defaultValue;
                     }
                     else

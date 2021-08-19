@@ -11,7 +11,6 @@
 #include "common.h"
 
 #include "dbginterface.h"
-#include "compile.h"
 #include "versionresilienthashcode.h"
 #include "typehashingalgorithms.h"
 #include "method.hpp"
@@ -555,15 +554,6 @@ PTR_ReadyToRunInfo ReadyToRunInfo::Initialize(Module * pModule, AllocMemTracker 
         return NULL;
     }
 
-#ifdef FEATURE_NATIVE_IMAGE_GENERATION
-    // Ignore ReadyToRun during NGen
-    if (IsCompilationProcess() && !IsNgenPDBCompilationProcess())
-    {
-        DoLog("Ready to Run disabled - compilation process");
-        return NULL;
-    }
-#endif
-
     if (!pLayout->IsNativeMachineFormat())
     {
         // For CoreCLR, be strict about disallowing machine mismatches.
@@ -978,7 +968,12 @@ PCODE ReadyToRunInfo::GetEntryPoint(MethodDesc * pMD, PrepareCodeConfig* pConfig
 
         if (fFixups)
         {
-            if (!m_pModule->FixupDelayList(dac_cast<TADDR>(GetImage()->GetBase()) + offset))
+            BOOL mayUsePrecompiledNDirectMethods = TRUE;
+#ifndef CROSSGEN_COMPILE
+            mayUsePrecompiledNDirectMethods = !pConfig->IsForMulticoreJit();
+#endif // CROSSGEN_COMPILE
+
+            if (!m_pModule->FixupDelayList(dac_cast<TADDR>(GetImage()->GetBase()) + offset, mayUsePrecompiledNDirectMethods))
             {
 #ifndef CROSSGEN_COMPILE
                 pConfig->SetReadyToRunRejectedPrecompiledCode();

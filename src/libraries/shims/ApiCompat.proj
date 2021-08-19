@@ -107,7 +107,7 @@
       <Output TaskParameter="ExitCode" PropertyName="ApiCompatExitCode" />
     </Exec>
 
-    <Error Condition="'$(ApiCompatExitCode)' != '0'" Text="ApiCompat failed comparing $(PreviousNetCoreApp) to $(NetCoreAppCurrent)" />
+    <Error Condition="'$(ApiCompatExitCode)' != '0'" Text="ApiCompat failed comparing $(PreviousNetCoreApp) to $(NetCoreAppCurrent). If this breaking change is intentional, the ApiCompat baseline can be updated by running 'dotnet build $(MSBuildThisFileFullPath) /p:UpdatePreviousNetCoreAppBaseline=true'" />
   </Target>
 
   <Target Name="CleanAdditionalFiles" AfterTargets="Clean">

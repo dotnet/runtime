@@ -51,7 +51,7 @@ namespace Microsoft.Extensions.DependencyModel
             return assembly.GetManifestResourceStream(name);
         }
 
-        [RequiresAssemblyFiles(Message = "DependencyContext for an assembly from a application published as single-file is not supported. The method will return null. Make sure the calling code can handle this case.")]
+        [RequiresAssemblyFiles("DependencyContext for an assembly from a application published as single-file is not supported. The method will return null. Make sure the calling code can handle this case.")]
         public DependencyContext Load(Assembly assembly)
         {
             if (assembly == null)
@@ -105,7 +105,7 @@ namespace Microsoft.Extensions.DependencyModel
             return null;
         }
 
-        [RequiresAssemblyFiles(Message = "DependencyContext for an assembly from a application published as single-file is not supported. The method will return null. Make sure the calling code can handle this case.")]
+        [RequiresAssemblyFiles("DependencyContext for an assembly from a application published as single-file is not supported. The method will return null. Make sure the calling code can handle this case.")]
         private DependencyContext LoadAssemblyContext(Assembly assembly, IDependencyContextReader reader)
         {
             using (Stream stream = GetResourceStream(assembly, assembly.GetName().Name + DepsJsonExtension))
@@ -128,7 +128,7 @@ namespace Microsoft.Extensions.DependencyModel
             return null;
         }
 
-        [RequiresAssemblyFiles(Message = "The use of DependencyContextLoader is not supported when publishing as single-file")]
+        [RequiresAssemblyFiles("The use of DependencyContextLoader is not supported when publishing as single-file")]
         private string GetDepsJsonPath(Assembly assembly)
         {
             // Assemblies loaded in memory (e.g. single file) return empty string from Location.

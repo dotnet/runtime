@@ -571,31 +571,6 @@ namespace System.Threading.Tasks
         /// <summary>Gets a <see cref="ValueTask{TResult}"/> that may be used at any point in the future.</summary>
         public ValueTask<TResult> Preserve() => _obj == null ? this : new ValueTask<TResult>(AsTask());
 
-        /// <summary>Casts a <see cref="ValueTask{TResult}"/> to <see cref="ValueTask"/>.</summary>
-        internal ValueTask AsValueTask()
-        {
-            object? obj = _obj;
-            Debug.Assert(obj == null || obj is Task<TResult> || obj is IValueTaskSource<TResult>);
-
-            if (obj is null)
-            {
-                return default;
-            }
-
-            if (obj is Task<TResult> t)
-            {
-                return new ValueTask(t);
-            }
-
-            if (obj is IValueTaskSource vts)
-            {
-                // This assumes the token used with IVTS is the same as used with IVTS<TResult>.
-                return new ValueTask(vts, _token);
-            }
-
-            return new ValueTask(GetTaskForValueTaskSource(Unsafe.As<IValueTaskSource<TResult>>(obj)));
-        }
-
         /// <summary>Creates a <see cref="Task{TResult}"/> to represent the <see cref="IValueTaskSource{TResult}"/>.</summary>
         /// <remarks>
         /// The <see cref="IValueTaskSource{TResult}"/> is passed in rather than reading and casting <see cref="_obj"/>

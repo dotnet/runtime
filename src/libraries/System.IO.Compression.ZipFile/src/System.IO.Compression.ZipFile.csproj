@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <TargetFrameworks>$(NetCoreAppCurrent)</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-Unix;$(NetCoreAppCurrent)-Browser</TargetFrameworks>
     <Nullable>enable</Nullable>
   </PropertyGroup>
   <ItemGroup>
@@ -14,10 +14,26 @@
     <Compile Include="$(CommonPath)System\IO\PathInternal.CaseSensitivity.cs"
              Link="Common\System\IO\PathInternal.CaseSensitivity.cs" />
   </ItemGroup>
+  <!-- Unix specific files -->
+  <ItemGroup Condition=" '$(TargetsUnix)' == 'true' or '$(TargetsBrowser)' == 'true' ">
+    <Compile Include="System\IO\Compression\ZipFileExtensions.ZipArchive.Create.Unix.cs" />
+    <Compile Include="System\IO\Compression\ZipFileExtensions.ZipArchiveEntry.Extract.Unix.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\Interop.IOErrors.cs"
+             Link="Common\Interop\Unix\Interop.IOErrors.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\Interop.Libraries.cs"
+             Link="Common\Interop\Unix\Interop.Libraries.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\Interop.Errors.cs"
+             Link="Common\Interop\Unix\System.Native\Interop.Errors.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.FChMod.cs"
+             Link="Common\Interop\Unix\System.Native\Interop.FChMod.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Stat.cs"
+             Link="Common\Interop\Unix\System.Native\Interop.Stat.cs" />
+  </ItemGroup>
   <ItemGroup>
     <Reference Include="System.IO.Compression" />
     <Reference Include="System.IO.FileSystem" />
     <Reference Include="System.Runtime" />
     <Reference Include="System.Runtime.Extensions" />
+    <Reference Include="System.Runtime.InteropServices" />
   </ItemGroup>
 </Project>

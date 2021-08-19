@@ -1005,7 +1005,7 @@ namespace System.IO.Ports
 
             if (count == 0) return 0; // return immediately if no bytes requested; no need for overhead.
 
-            Debug.Assert(timeout == SerialPort.InfiniteTimeout || timeout >= 0, "Serial Stream Read - called with timeout " + timeout);
+            Debug.Assert(timeout == SerialPort.InfiniteTimeout || timeout >= 0, $"Serial Stream Read - called with timeout {timeout}");
 
             int numBytes = 0;
             if (_isAsync)
@@ -1069,7 +1069,7 @@ namespace System.IO.Ports
 
             if (count == 0) return; // no need to expend overhead in creating asyncResult, etc.
 
-            Debug.Assert(timeout == SerialPort.InfiniteTimeout || timeout >= 0, "Serial Stream Write - write timeout is " + timeout);
+            Debug.Assert(timeout == SerialPort.InfiniteTimeout || timeout >= 0, $"Serial Stream Write - write timeout is {timeout}");
 
             int numBytes;
             if (_isAsync)
@@ -1627,7 +1627,7 @@ namespace System.IO.Ports
                                 // if we get IO pending, MSDN says we should wait on the WaitHandle, then call GetOverlappedResult
                                 // to get the results of WaitCommEvent.
                                 bool success = waitCommEventWaitHandle.WaitOne();
-                                Debug.Assert(success, "waitCommEventWaitHandle.WaitOne() returned error " + Marshal.GetLastWin32Error());
+                                Debug.Assert(success, $"waitCommEventWaitHandle.WaitOne() returned error {Marshal.GetLastWin32Error()}");
 
                                 do
                                 {

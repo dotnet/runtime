@@ -307,11 +307,11 @@ namespace System
             => (ushort)BitOperations.PopCount(value);
 
         [RequiresPreviewFeatures]
-        static ushort IBinaryInteger<ushort>.RotateLeft(ushort value, ushort rotateAmount)
+        static ushort IBinaryInteger<ushort>.RotateLeft(ushort value, int rotateAmount)
             => (ushort)((value << (rotateAmount & 15)) | (value >> ((16 - rotateAmount) & 15)));
 
         [RequiresPreviewFeatures]
-        static ushort IBinaryInteger<ushort>.RotateRight(ushort value, ushort rotateAmount)
+        static ushort IBinaryInteger<ushort>.RotateRight(ushort value, int rotateAmount)
             => (ushort)((value >> (rotateAmount & 15)) | (value << ((16 - rotateAmount) & 15)));
 
         [RequiresPreviewFeatures]
@@ -376,11 +376,11 @@ namespace System
 
         [RequiresPreviewFeatures]
         static ushort IDecrementOperators<ushort>.operator --(ushort value)
-            => value--;
+            => --value;
 
         // [RequiresPreviewFeatures]
         // static checked ushort IDecrementOperators<ushort>.operator --(ushort value)
-        //     => checked(value--);
+        //     => checked(--value);
 
         //
         // IDivisionOperators
@@ -412,11 +412,11 @@ namespace System
 
         [RequiresPreviewFeatures]
         static ushort IIncrementOperators<ushort>.operator ++(ushort value)
-            => value++;
+            => ++value;
 
         // [RequiresPreviewFeatures]
         // static checked ushort IIncrementOperators<ushort>.operator ++(ushort value)
-        //     => checked(value++);
+        //     => checked(++value);
 
         //
         // IMinMaxValue

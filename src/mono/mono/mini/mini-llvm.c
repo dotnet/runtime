@@ -108,6 +108,7 @@ typedef struct {
 	LLVMContextRef context;
 	LLVMValueRef sentinel_exception;
 	LLVMValueRef gc_safe_point_flag_var;
+	LLVMValueRef interrupt_flag_var;
 	void *di_builder, *cu;
 	GHashTable *objc_selector_to_var;
 	GPtrArray *cfgs;
@@ -1909,15 +1910,6 @@ get_aotconst_module (MonoLLVMModule *module, LLVMBuilderRef builder, MonoJumpInf
 	guint32 got_offset;
 	LLVMValueRef load;
 
-	if (module->static_link && type == MONO_PATCH_INFO_GC_SAFE_POINT_FLAG) {
-		const char *symbol = "mono_polling_required";
-		if (!module->gc_safe_point_flag_var) {
-			module->gc_safe_point_flag_var = LLVMAddGlobal (module->lmodule, llvm_type, symbol);
-			LLVMSetLinkage (module->gc_safe_point_flag_var, LLVMExternalLinkage);
-		}
-		return module->gc_safe_point_flag_var;
-	}
-
 	MonoJumpInfo tmp_ji;
 	tmp_ji.type = type;
 	tmp_ji.data.target = data;
@@ -1932,6 +1924,23 @@ get_aotconst_module (MonoLLVMModule *module, LLVMBuilderRef builder, MonoJumpInf
 
 	if (out_got_offset)
 		*out_got_offset = got_offset;
+
+	if (module->static_link && type == MONO_PATCH_INFO_GC_SAFE_POINT_FLAG) {
+		if (!module->gc_safe_point_flag_var) {
+			const char *symbol = "mono_polling_required";
+			module->gc_safe_point_flag_var = LLVMAddGlobal (module->lmodule, llvm_type, symbol);
+			LLVMSetLinkage (module->gc_safe_point_flag_var, LLVMExternalLinkage);
+		}
+		return module->gc_safe_point_flag_var;
+	}
+	if (module->static_link && type == MONO_PATCH_INFO_INTERRUPTION_REQUEST_FLAG) {
+		if (!module->interrupt_flag_var) {
+			const char *symbol = "mono_thread_interruption_request_flag";
+			module->interrupt_flag_var = LLVMAddGlobal (module->lmodule, llvm_type, symbol);
+			LLVMSetLinkage (module->interrupt_flag_var, LLVMExternalLinkage);
+		}
+		return module->interrupt_flag_var;
+	}
 
 	LLVMValueRef const_var = g_hash_table_lookup (module->aotconst_vars, GINT_TO_POINTER (got_offset));
 	if (!const_var) {
@@ -7230,6 +7239,7 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			MonoClass *klass = ins->klass;
 			LLVMValueRef src = NULL, dst, args [5];
 			gboolean done = FALSE;
+			gboolean is_volatile = FALSE;
 
 			if (!klass) {
 				// FIXME:
@@ -7285,15 +7295,20 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			if (done)
 				break;
 
+#ifdef TARGET_WASM
+			is_volatile = m_class_has_references (klass);
+#endif
+
 			int aindex = 0;
 			args [aindex ++] = dst;
 			args [aindex ++] = src;
 			args [aindex ++] = LLVMConstInt (LLVMInt32Type (), mono_class_value_size (klass, NULL), FALSE);
+
 #if LLVM_API_VERSION < 900
 			// FIXME: Alignment
 			args [aindex ++] = LLVMConstInt (LLVMInt32Type (), 0, FALSE);
 #endif
-			args [aindex ++] = LLVMConstInt (LLVMInt1Type (), 0, FALSE);
+			args [aindex ++] = LLVMConstInt (LLVMInt1Type (), is_volatile ? 1 : 0, FALSE);
 			call_intrins (ctx, INTRINS_MEMCPY, args, "");
 			break;
 		}

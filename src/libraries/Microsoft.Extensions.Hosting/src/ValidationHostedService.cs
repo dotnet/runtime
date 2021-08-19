@@ -13,7 +13,7 @@ namespace Microsoft.Extensions.DependencyInjection
 {
     internal sealed class ValidationHostedService : IHostedService
     {
-        private readonly IDictionary<Type, Action> _validators;
+        private readonly IDictionary<(Type, string), Action> _validators;
 
         public ValidationHostedService(IOptions<ValidatorOptions> validatorOptions)
         {

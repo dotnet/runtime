@@ -79,6 +79,7 @@ class FgStack;             // defined in fgbasic.cpp
 class Instrumentor;        // defined in fgprofile.cpp
 class SpanningTreeVisitor; // defined in fgprofile.cpp
 class CSE_DataFlow;        // defined in OptCSE.cpp
+class OptBoolsDsc;         // defined in optimizer.cpp
 #ifdef DEBUG
 struct IndentStack;
 #endif
@@ -3116,6 +3117,8 @@ public:
 
     void gtUpdateNodeOperSideEffects(GenTree* tree);
 
+    void gtUpdateNodeOperSideEffectsPost(GenTree* tree);
+
     // Returns "true" iff the complexity (not formally defined, but first interpretation
     // is #of nodes in subtree) of "tree" is greater than "limit".
     // (This is somewhat redundant with the "GetCostEx()/GetCostSz()" fields, but can be used
@@ -4050,6 +4053,8 @@ protected:
                             CORINFO_CALL_INFO* callInfo,
                             IL_OFFSET          rawILOffset);
 
+    CORINFO_CLASS_HANDLE impGetSpecialIntrinsicExactReturnType(CORINFO_METHOD_HANDLE specialIntrinsicHandle);
+
     bool impMethodInfo_hasRetBuffArg(CORINFO_METHOD_INFO* methInfo, CorInfoCallConvExtension callConv);
 
     GenTree* impFixupCallStructReturn(GenTreeCall* call, CORINFO_CLASS_HANDLE retClsHnd);
@@ -4097,6 +4102,7 @@ protected:
                               var_types             callType,
                               NamedIntrinsic        intrinsicName,
                               bool                  tailCall);
+    NamedIntrinsic lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method);
     GenTree* impUnsupportedNamedIntrinsic(unsigned              helper,
                                           CORINFO_METHOD_HANDLE method,
                                           CORINFO_SIG_INFO*     sig,
@@ -4197,7 +4203,6 @@ public:
         CHECK_SPILL_NONE = -2
     };
 
-    NamedIntrinsic lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method);
     void impBeginTreeList();
     void impEndTreeList(BasicBlock* block, Statement* firstStmt, Statement* lastStmt);
     void impEndTreeList(BasicBlock* block);
@@ -4512,6 +4517,7 @@ private:
     void impSpillCliqueSetMember(SpillCliqueDir predOrSucc, BasicBlock* blk, BYTE val);
 
     void impPushVar(GenTree* op, typeInfo tiRetVal);
+    GenTreeLclVar* impCreateLocalNode(unsigned lclNum DEBUGARG(IL_OFFSET offset));
     void impLoadVar(unsigned lclNum, IL_OFFSET offset, const typeInfo& tiRetVal);
     void impLoadVar(unsigned lclNum, IL_OFFSET offset)
     {
@@ -4600,7 +4606,8 @@ private:
                                       bool                   exactContextNeedsRuntimeLookup,
                                       CORINFO_CALL_INFO*     callInfo);
 
-    bool impTailCallRetTypeCompatible(var_types                callerRetType,
+    bool impTailCallRetTypeCompatible(bool                     allowWidening,
+                                      var_types                callerRetType,
                                       CORINFO_CLASS_HANDLE     callerRetTypeClass,
                                       CorInfoCallConvExtension callerCallConv,
                                       var_types                calleeRetType,
@@ -5049,6 +5056,33 @@ public:
         }
         return m_opAsgnVarDefSsaNums;
     }
+
+    // This map tracks nodes whose value numbers explicitly or implicitly depend on memory states.
+    // The map provides the entry block of the most closely enclosing loop that
+    // defines the memory region accessed when defining the nodes's VN.
+    //
+    // This information should be consulted when considering hoisting node out of a loop, as the VN
+    // for the node will only be valid within the indicated loop.
+    //
+    // It is not fine-grained enough to track memory dependence within loops, so cannot be used
+    // for more general code motion.
+    //
+    // If a node does not have an entry in the map we currently assume the VN is not memory dependent
+    // and so memory does not constrain hoisting.
+    //
+    typedef JitHashTable<GenTree*, JitPtrKeyFuncs<GenTree>, BasicBlock*> NodeToLoopMemoryBlockMap;
+    NodeToLoopMemoryBlockMap* m_nodeToLoopMemoryBlockMap;
+    NodeToLoopMemoryBlockMap* GetNodeToLoopMemoryBlockMap()
+    {
+        if (m_nodeToLoopMemoryBlockMap == nullptr)
+        {
+            m_nodeToLoopMemoryBlockMap = new (getAllocator()) NodeToLoopMemoryBlockMap(getAllocator());
+        }
+        return m_nodeToLoopMemoryBlockMap;
+    }
+
+    void optRecordLoopMemoryDependence(GenTree* tree, BasicBlock* block, ValueNum memoryVN);
+    void optCopyLoopMemoryDependence(GenTree* fromTree, GenTree* toTree);
 
     // Requires value numbering phase to have completed. Returns the value number ("gtVN") of the
     // "tree," EXCEPT in the case of GTF_VAR_USEASG, because the tree node's gtVN member is the
@@ -5814,6 +5848,8 @@ public:
     void WalkSpanningTree(SpanningTreeVisitor* visitor);
     void fgSetProfileWeight(BasicBlock* block, BasicBlock::weight_t weight);
     void fgApplyProfileScale();
+    bool fgHaveSufficientProfileData();
+    bool fgHaveTrustedProfileData();
 
     // fgIsUsingProfileWeights - returns true if we have real profile data for this method
     //                           or if we have some fake profile data for the stress mode
@@ -6349,11 +6385,6 @@ private:
 public:
     void optOptimizeBools();
 
-private:
-    GenTree* optIsBoolCond(GenTree* condBranch, GenTree** compPtr, bool* boolPtr);
-#ifdef DEBUG
-    void optOptimizeBoolsGcStress(BasicBlock* condBlock);
-#endif
 public:
     PhaseStatus optInvertLoops();    // Invert loops so they're entered at top and tested at bottom.
     PhaseStatus optOptimizeLayout(); // Optimize the BasicBlock layout of the method
@@ -7631,11 +7662,13 @@ public:
 #if defined(TARGET_AMD64)
     static bool varTypeNeedsPartialCalleeSave(var_types type)
     {
+        assert(type != TYP_STRUCT);
         return (type == TYP_SIMD32);
     }
 #elif defined(TARGET_ARM64)
     static bool varTypeNeedsPartialCalleeSave(var_types type)
     {
+        assert(type != TYP_STRUCT);
         // ARM64 ABI FP Callee save registers only require Callee to save lower 8 Bytes
         // For SIMD types longer than 8 bytes Caller is responsible for saving and restoring Upper bytes.
         return ((type == TYP_SIMD16) || (type == TYP_SIMD12));
@@ -7957,6 +7990,14 @@ public:
     }
 
     bool eeRunWithErrorTrapImp(void (*function)(void*), void* param);
+
+    template <typename ParamType>
+    bool eeRunWithSPMIErrorTrap(void (*function)(ParamType*), ParamType* param)
+    {
+        return eeRunWithSPMIErrorTrapImp(reinterpret_cast<void (*)(void*)>(function), reinterpret_cast<void*>(param));
+    }
+
+    bool eeRunWithSPMIErrorTrapImp(void (*function)(void*), void* param);
 
     // Utility functions
 
@@ -9260,7 +9301,7 @@ public:
             return !!(compFlags & optFlag);
         }
 
-#ifdef FEATURE_READYTORUN_COMPILER
+#ifdef FEATURE_READYTORUN
         bool IsReadyToRun()
         {
             return jitFlags->IsSet(JitFlags::JIT_FLAG_READYTORUN);
@@ -9964,6 +10005,7 @@ public:
 
     BasicBlock* compCurBB;   // the current basic block in process
     Statement*  compCurStmt; // the current statement in process
+    GenTree*    compCurTree; // the current tree in process
 
     //  The following is used to create the 'method JIT info' block.
     size_t compInfoBlkSize;

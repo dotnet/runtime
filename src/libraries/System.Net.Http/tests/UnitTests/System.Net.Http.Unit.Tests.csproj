@@ -184,12 +184,6 @@
              Link="ProductionCode\System\Net\Http\Headers\WarningHeaderValue.cs" />
     <Compile Include="..\..\src\System\Net\Http\HttpClient.cs"
              Link="ProductionCode\System\Net\Http\HttpClient.cs" />
-    <Compile Condition="'$(TargetsAndroid)' != 'true'"
-             Include="..\..\src\System\Net\Http\HttpClient.CreateDefaultHandler.cs"
-             Link="ProductionCode\System\Net\Http\HttpClient.CreateDefaultHandler.cs" />
-    <Compile Condition="'$(TargetsAndroid)' == 'true'"
-             Include="..\..\src\System\Net\Http\HttpClient.CreateDefaultHandler.Android.cs"
-             Link="ProductionCode\System\Net\Http\HttpClient.CreateDefaultHandler.Android.cs" />
     <Compile Include="..\..\src\System\Net\Http\HttpHandlerDefaults.cs"
              Link="ProductionCode\System\Net\Http\HttpHandlerDefaults.cs" />
     <Compile Include="..\..\src\System\Net\Http\HttpCompletionOption.cs"

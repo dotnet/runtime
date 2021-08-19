@@ -15,7 +15,9 @@ int32_t local_DSA_set0_pqg(DSA* dsa, BIGNUM* bnP, BIGNUM* bnQ, BIGNUM* bnG);
 void local_EVP_CIPHER_CTX_free(EVP_CIPHER_CTX* ctx);
 EVP_CIPHER_CTX* local_EVP_CIPHER_CTX_new(void);
 int32_t local_EVP_CIPHER_CTX_reset(EVP_CIPHER_CTX* ctx);
+int local_EVP_PKEY_check(EVP_PKEY_CTX* ctx);
 RSA* local_EVP_PKEY_get0_RSA(EVP_PKEY* pkey);
+int local_EVP_PKEY_public_check(EVP_PKEY_CTX* ctx);
 int32_t local_EVP_PKEY_up_ref(EVP_PKEY* pkey);
 void local_HMAC_CTX_free(HMAC_CTX* ctx);
 HMAC_CTX* local_HMAC_CTX_new(void);
@@ -32,6 +34,7 @@ int32_t local_RSA_pkey_ctx_ctrl(EVP_PKEY_CTX* ctx, int32_t optype, int32_t cmd, 
 int32_t local_SSL_is_init_finished(const SSL* ssl);
 int32_t local_SSL_CTX_config(SSL_CTX* ctx, const char* name);
 unsigned long local_SSL_CTX_set_options(SSL_CTX* ctx, unsigned long options);
+unsigned long local_SSL_set_options(SSL* ssl, unsigned long options);
 void local_SSL_CTX_set_security_level(SSL_CTX* ctx, int32_t level);
 int local_SSL_session_reused(SSL* ssl);
 int32_t local_X509_check_host(X509* x509, const char* name, size_t namelen, unsigned int flags, char** peername);

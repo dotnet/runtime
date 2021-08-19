@@ -379,11 +379,6 @@ DWORD WINAPI FinalizerThread::FinalizerThreadStart(void *args)
         {
             GetFinalizerThread()->SetBackground(TRUE);
 
-            {
-                GCX_PREEMP();
-                EnsureYieldProcessorNormalizedInitialized();
-            }
-
             while (!fQuitFinalizer)
             {
                 // This will apply any policy for swallowing exceptions during normal

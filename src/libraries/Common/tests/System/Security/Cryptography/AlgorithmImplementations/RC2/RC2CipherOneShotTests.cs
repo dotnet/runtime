@@ -90,6 +90,26 @@ namespace System.Security.Cryptography.Encryption.RC2.Tests
         public void EncryptOneShot_Array(byte[] plaintext, byte[] ciphertext, PaddingMode padding, CipherMode mode) =>
             EncryptOneShot_ArrayTest(plaintext, ciphertext, padding, mode);
 
+        [Fact]
+        public void EncryptOneShot_CfbNotSupported()
+        {
+            using (SymmetricAlgorithm alg = CreateAlgorithm())
+            {
+                Assert.ThrowsAny<CryptographicException>(() =>
+                    alg.TryEncryptCfb(ReadOnlySpan<byte>.Empty, IV, Span<byte>.Empty, out _));
+            }
+        }
+
+        [Fact]
+        public void DecryptOneShot_CfbNotSupported()
+        {
+            using (SymmetricAlgorithm alg = CreateAlgorithm())
+            {
+                Assert.ThrowsAny<CryptographicException>(() =>
+                    alg.TryDecryptCfb(ReadOnlySpan<byte>.Empty, IV, Span<byte>.Empty, out _));
+            }
+        }
+
         public static IEnumerable<object[]> TestCases
         {
             get

@@ -1,11 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Net.Http.Headers;
-using System.Text;
 
 using Xunit;
 
@@ -29,8 +25,8 @@ namespace System.Net.Http.Tests
         public void TryParse_SetOfValidValueStrings_ParsedCorrectly()
         {
             CheckValidParsedValue("X , , 1.1   host, ,next", 1, new ViaHeaderValue("1.1", "host"), 19);
-            CheckValidParsedValue("X HTTP  /  x11   192.168.0.1\r\n (comment) , ,next", 1,
-                new ViaHeaderValue("x11", "192.168.0.1", "HTTP", "(comment)"), 44);
+            CheckValidParsedValue("X HTTP  /  x11   192.168.0.1 (comment) , ,next", 1,
+                new ViaHeaderValue("x11", "192.168.0.1", "HTTP", "(comment)"), 42);
             CheckValidParsedValue(" ,HTTP/1.1 [::1]", 0, new ViaHeaderValue("1.1", "[::1]", "HTTP"), 16);
             CheckValidParsedValue("1.1 host", 0, new ViaHeaderValue("1.1", "host"), 8);
 
@@ -54,6 +50,7 @@ namespace System.Net.Http.Tests
             CheckInvalidParsedValue("\u4F1A", 0);
             CheckInvalidParsedValue("HTTP/test [::1]:80\r(comment)", 0);
             CheckInvalidParsedValue("HTTP/test [::1]:80\n(comment)", 0);
+            CheckInvalidParsedValue("X HTTP  /  x11   192.168.0.1 (comment) , ,next", 0);
         }
 
         #region Helper methods

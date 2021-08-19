@@ -102,8 +102,6 @@ namespace System
 
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
             Justification = "Implementation detail of Activator that linker intrinsically recognizes")]
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2057:UnrecognizedReflectionPattern",
-            Justification = "Implementation detail of Activator that linker intrinsically recognizes")]
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2072:UnrecognizedReflectionPattern",
             Justification = "Implementation detail of Activator that linker intrinsically recognizes")]
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2096:UnrecognizedReflectionPattern",
@@ -118,8 +116,7 @@ namespace System
                                                            object?[]? activationAttributes,
                                                            ref StackCrawlMark stackMark)
         {
-            Type? type = null;
-            Assembly? assembly = null;
+            Assembly assembly;
             if (assemblyString == null)
             {
                 assembly = Assembly.GetExecutingAssembly(ref stackMark);
@@ -127,23 +124,10 @@ namespace System
             else
             {
                 AssemblyName assemblyName = new AssemblyName(assemblyString);
-
-                if (assemblyName.ContentType == AssemblyContentType.WindowsRuntime)
-                {
-                    // WinRT type - we have to use Type.GetType
-                    type = Type.GetType(typeName + ", " + assemblyString, throwOnError: true, ignoreCase);
-                }
-                else
-                {
-                    // Classic managed type
-                    assembly = RuntimeAssembly.InternalLoad(assemblyName, ref stackMark, AssemblyLoadContext.CurrentContextualReflectionContext);
-                }
+                assembly = RuntimeAssembly.InternalLoad(assemblyName, ref stackMark, AssemblyLoadContext.CurrentContextualReflectionContext);
             }
 
-            if (type == null)
-            {
-                type = assembly!.GetType(typeName, throwOnError: true, ignoreCase);
-            }
+            Type? type = assembly.GetType(typeName, throwOnError: true, ignoreCase);
 
             object? o = CreateInstance(type!, bindingAttr, binder, args, culture, activationAttributes);
 

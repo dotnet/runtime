@@ -47,7 +47,7 @@ namespace Internal.Cryptography.Pal
                     ? Interop.AppleCrypto.SecKeychainCopyDefault()
                     : Interop.AppleCrypto.CreateTemporaryKeychain();
 
-                return ImportPkcs12(rawData, password, exportable, keychain);
+                return ImportPkcs12(rawData, password, exportable, ephemeralSpecified: false, keychain);
             }
 
             SafeCFArrayHandle certs = Interop.AppleCrypto.X509ImportCollection(
@@ -64,13 +64,14 @@ namespace Internal.Cryptography.Pal
             ReadOnlySpan<byte> rawData,
             SafePasswordHandle password,
             bool exportable,
+            bool ephemeralSpecified,
             SafeKeychainHandle keychain)
         {
             ApplePkcs12Reader reader = new ApplePkcs12Reader(rawData);
 
             try
             {
-                reader.Decrypt(password);
+                reader.Decrypt(password, ephemeralSpecified);
                 return new ApplePkcs12CertLoader(reader, keychain, password, exportable);
             }
             catch

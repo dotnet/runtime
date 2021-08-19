@@ -910,12 +910,27 @@ GenTreeCall* Compiler::fgGetStaticsCCtorHelper(CORINFO_CLASS_HANDLE cls, CorInfo
 
     GenTreeCall* result = gtNewHelperCallNode(helper, type, argList);
     result->gtFlags |= callFlags;
+
+    // If we're importing the special EqualityComparer<T>.Default or Comparer<T>.Default
+    // intrinsics, flag the helper call. Later during inlining, we can
+    // remove the helper call if the associated field lookup is unused.
+    if ((info.compFlags & CORINFO_FLG_JIT_INTRINSIC) != 0)
+    {
+        NamedIntrinsic ni = lookupNamedIntrinsic(info.compMethodHnd);
+        if ((ni == NI_System_Collections_Generic_EqualityComparer_get_Default) ||
+            (ni == NI_System_Collections_Generic_Comparer_get_Default))
+        {
+            JITDUMP("\nmarking helper call [%06u] as special dce...\n", result->gtTreeID);
+            result->gtCallMoreFlags |= GTF_CALL_M_HELPER_SPECIAL_DCE;
+        }
+    }
+
     return result;
 }
 
 GenTreeCall* Compiler::fgGetSharedCCtor(CORINFO_CLASS_HANDLE cls)
 {
-#ifdef FEATURE_READYTORUN_COMPILER
+#ifdef FEATURE_READYTORUN
     if (opts.IsReadyToRun())
     {
         CORINFO_RESOLVED_TOKEN resolvedToken;
@@ -933,13 +948,12 @@ GenTreeCall* Compiler::fgGetSharedCCtor(CORINFO_CLASS_HANDLE cls)
 //------------------------------------------------------------------------------
 // fgAddrCouldBeNull : Check whether the address tree can represent null.
 //
-//
 // Arguments:
 //    addr     -  Address to check
 //
 // Return Value:
 //    True if address could be null; false otherwise
-
+//
 bool Compiler::fgAddrCouldBeNull(GenTree* addr)
 {
     addr = addr->gtEffectiveVal();
@@ -1130,7 +1144,7 @@ GenTree* Compiler::fgOptimizeDelegateConstructor(GenTreeCall*            call,
         assert(targetMethodHnd == nullptr);
     }
 
-#ifdef FEATURE_READYTORUN_COMPILER
+#ifdef FEATURE_READYTORUN
     if (opts.IsReadyToRun())
     {
         if (IsTargetAbi(CORINFO_CORERT_ABI))

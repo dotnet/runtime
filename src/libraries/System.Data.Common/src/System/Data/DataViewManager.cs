@@ -5,6 +5,7 @@ using System.ComponentModel;
 using System.Collections;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
+using System.Globalization;
 using System.Text;
 using System.Xml;
 
@@ -92,7 +93,7 @@ namespace System.Data
                 foreach (DataTable dt in _dataSet.Tables)
                 {
                     DataViewSetting ds = _dataViewSettingsCollection[dt];
-                    builder.AppendFormat(System.Globalization.CultureInfo.InvariantCulture, "<{0} Sort=\"{1}\" RowFilter=\"{2}\" RowStateFilter=\"{3}\"/>", dt.EncodedTableName, ds.Sort, ds.RowFilter, ds.RowStateFilter);
+                    builder.Append(CultureInfo.InvariantCulture, $"<{dt.EncodedTableName} Sort=\"{ds.Sort}\" RowFilter=\"{ds.RowFilter}\" RowStateFilter=\"{ds.RowStateFilter}\"/>");
                 }
                 builder.Append("</DataViewSettingCollectionString>");
                 return builder.ToString();

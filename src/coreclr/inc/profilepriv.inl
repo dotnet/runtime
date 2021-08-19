@@ -168,7 +168,7 @@ inline BOOL ProfControlBlock::IsMainProfiler(ProfToEEInterfaceImpl *pProfToEE)
 inline ProfilerInfo *ProfControlBlock::GetProfilerInfo(ProfToEEInterfaceImpl *pProfToEE)
 {
     ProfilerInfo *pProfilerInfo = NULL;
-    IterateProfilers(ProfilerCallbackType::Active,
+    IterateProfilers(ProfilerCallbackType::ActiveOrInitializing,
                     [](ProfilerInfo *pProfilerInfo, ProfToEEInterfaceImpl *pProfToEE, ProfilerInfo **ppFoundProfilerInfo)
                       {
                           if (pProfilerInfo->pProfInterface->m_pProfToEE == pProfToEE)
@@ -1858,6 +1858,21 @@ inline BOOL CORProfilerTrackLargeAllocations()
     return
             (CORProfilerPresent() &&
             (&g_profControlBlock)->globalEventMask.IsEventMaskHighSet(COR_PRF_HIGH_MONITOR_LARGEOBJECT_ALLOCATED));
+}
+
+inline BOOL CORProfilerTrackPinnedAllocations()
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+        CANNOT_TAKE_LOCK;
+    }
+    CONTRACTL_END;
+
+    return
+            (CORProfilerPresent() &&
+            (&g_profControlBlock)->globalEventMask.IsEventMaskHighSet(COR_PRF_HIGH_MONITOR_PINNEDOBJECT_ALLOCATED));
 }
 
 inline BOOL CORProfilerEnableRejit()

@@ -1124,6 +1124,7 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
             {
                 aes.Mode = cipherMode;
                 aes.Padding = paddingMode;
+                aes.Key = key;
 
                 if (feedbackSize.HasValue)
                 {
@@ -1135,15 +1136,18 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
 
                 if (cipherMode == CipherMode.ECB)
                 {
-                    aes.Key = key;
                     liveOneShotDecryptBytes = aes.DecryptEcb(cipherBytes, paddingMode);
                     liveOneShotEncryptBytes = aes.EncryptEcb(plainBytes, paddingMode);
                 }
                 else if (cipherMode == CipherMode.CBC)
                 {
-                    aes.Key = key;
                     liveOneShotDecryptBytes = aes.DecryptCbc(cipherBytes, iv, paddingMode);
                     liveOneShotEncryptBytes = aes.EncryptCbc(plainBytes, iv, paddingMode);
+                }
+                else if (cipherMode == CipherMode.CFB)
+                {
+                    liveOneShotDecryptBytes = aes.DecryptCfb(cipherBytes, iv, paddingMode, feedbackSizeInBits: feedbackSize.Value);
+                    liveOneShotEncryptBytes = aes.EncryptCfb(plainBytes, iv, paddingMode, feedbackSizeInBits: feedbackSize.Value);
                 }
             }
 

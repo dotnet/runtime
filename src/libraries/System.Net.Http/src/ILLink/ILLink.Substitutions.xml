@@ -3,8 +3,5 @@
     <type fullname="System.Net.Http.DiagnosticsHandler">
       <method signature="System.Boolean IsGloballyEnabled()" body="stub" value="false" feature="System.Net.Http.EnableActivityPropagation" featurevalue="false" />
     </type>
-    <type fullname="System.Net.Http.HttpClient">
-      <method signature="System.Boolean IsNativeHandlerEnabled()" body="stub" value="true" feature="System.Net.Http.UseNativeHttpHandler" featurevalue="true" />
-    </type>
   </assembly>
 </linker>

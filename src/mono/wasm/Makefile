@@ -119,10 +119,10 @@ $(BUILDS_OBJ_DIR)/corebindings.o: runtime/corebindings.c $(EMCC_DEFAULT_RSP) | $
 $(EMCC_DEFAULT_RSP): $(CURDIR)/wasm.proj | $(NATIVE_BIN_DIR)/src Makefile
 	$(DOTNET) build $(CURDIR)/wasm.proj /p:Configuration=$(CONFIG) /t:GenerateEmccPropsAndRspFiles
 
-$(NATIVE_BIN_DIR)/src/Emcc.props: $(EMSDK_PATH)/upstream/.emsdk_version | $(NATIVE_BIN_DIR)/src
+$(NATIVE_BIN_DIR)/src/emcc-props.json: $(EMSDK_PATH)/upstream/.emsdk_version | $(NATIVE_BIN_DIR)/src
 	$(DOTNET) build $(CURDIR)/wasm.proj /p:Configuration=$(CONFIG) /t:GenerateEmccPropsAndRspFiles
 
-build-native: $(NATIVE_BIN_DIR)/dotnet.js $(NATIVE_BIN_DIR)/src/emcc-default.rsp $(NATIVE_BIN_DIR)/src/Emcc.props
+build-native: $(NATIVE_BIN_DIR)/dotnet.js $(NATIVE_BIN_DIR)/src/emcc-default.rsp $(NATIVE_BIN_DIR)/src/emcc-props.json
 
 endef
 

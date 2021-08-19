@@ -20,10 +20,6 @@
 #include "ilmarshalers.h"
 #include "interoputil.h"
 
-#ifdef FEATURE_PREJIT
-    #include "dataimage.h"
-#endif
-
 #ifdef FEATURE_COMINTEROP
 #include "comcallablewrapper.h"
 #include "runtimecallablewrapper.h"
@@ -3863,7 +3859,7 @@ void ArrayMarshalInfo::InitElementInfo(CorNativeType arrayNativeType, MarshalInf
             }
         }
 #ifdef FEATURE_COMINTEROP
-        else if (m_thElement == TypeHandle(CoreLibBinder::GetClass(CLASS__ERROR_WRAPPER)))
+        else if (g_pConfig->IsBuiltInCOMSupported() && m_thElement == TypeHandle(CoreLibBinder::GetClass(CLASS__ERROR_WRAPPER)))
         {
             m_vtElement = VT_ERROR;
         }

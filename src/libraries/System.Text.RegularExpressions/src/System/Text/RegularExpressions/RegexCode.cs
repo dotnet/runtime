@@ -292,7 +292,7 @@ namespace System.Text.RegularExpressions
             var sb = new StringBuilder();
             int opcode = Codes[offset];
 
-            sb.AppendFormat("{0:D6} ", offset);
+            sb.Append($"{offset:D6} ");
             sb.Append(OpcodeBacktracks(opcode & Mask) ? '*' : ' ');
             sb.Append(OperatorDescription(opcode));
             sb.Append(Indent());
@@ -403,9 +403,9 @@ namespace System.Text.RegularExpressions
         {
             var sb = new StringBuilder();
 
-            sb.AppendLine("Direction:  " + (RightToLeft ? "right-to-left" : "left-to-right"));
-            sb.AppendLine("Anchor:     " + RegexPrefixAnalyzer.AnchorDescription(LeadingAnchor));
-            sb.AppendLine("");
+            sb.AppendLine($"Direction:  {(RightToLeft ? "right-to-left" : "left-to-right")}");
+            sb.AppendLine($"Anchor:     {RegexPrefixAnalyzer.AnchorDescription(LeadingAnchor)}");
+            sb.AppendLine();
 
             if (BoyerMoorePrefix != null)
             {

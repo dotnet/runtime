@@ -61,5 +61,81 @@ namespace System.IO.Tests.Enumeration
 
             Assert.Single(enumerable);
         }
+
+        [ConditionalTheory(nameof(CanCreateSymbolicLinks))]
+        [InlineData(false, false)] // OK
+        [InlineData(false, true)] // throw
+        [InlineData(true, false)] // throw, OK on Unix
+        [InlineData(true, true)] // throw
+        public void EnumerateGet_SelfReferencingLink_Instance(bool recurse, bool linkAsRoot)
+        {
+            var options = new EnumerationOptions() { RecurseSubdirectories = recurse };
+
+            DirectoryInfo testDirectory = linkAsRoot ?
+                CreateSelfReferencingSymbolicLink() :
+                CreateDirectoryContainingSelfReferencingSymbolicLink();
+
+            // Unix doesn't have a problem when it steps in a self-referencing link through the directory recursion.
+            if ((!recurse || !OperatingSystem.IsWindows()) && !linkAsRoot)
+            {
+                testDirectory.EnumerateFileSystemInfos("*", options).Count();
+                testDirectory.GetFileSystemInfos("*", options).Count();
+
+                testDirectory.EnumerateDirectories("*", options).Count();
+                testDirectory.GetDirectories("*", options).Count();
+
+                testDirectory.EnumerateFiles("*", options).Count();
+                testDirectory.GetFiles("*", options).Count();
+            }
+            else
+            {
+                Assert.Throws<IOException>(() => testDirectory.EnumerateFileSystemInfos("*", options).Count());
+                Assert.Throws<IOException>(() => testDirectory.GetFileSystemInfos("*", options).Count());
+
+                Assert.Throws<IOException>(() => testDirectory.EnumerateDirectories("*", options).Count());
+                Assert.Throws<IOException>(() => testDirectory.GetDirectories("*", options).Count());
+
+                Assert.Throws<IOException>(() => testDirectory.EnumerateFiles("*", options).Count());
+                Assert.Throws<IOException>(() => testDirectory.GetFiles("*", options).Count());
+            }
+        }
+
+        [ConditionalTheory(nameof(CanCreateSymbolicLinks))]
+        [InlineData(false, false)] // OK
+        [InlineData(false, true)] // throw
+        [InlineData(true, false)] // throw, OK on Unix
+        [InlineData(true, true)] // throw
+        public void EnumerateGet_SelfReferencingLink_Static(bool recurse, bool linkAsRoot)
+        {
+            var options = new EnumerationOptions() { RecurseSubdirectories = recurse };
+
+            DirectoryInfo testDirectory = linkAsRoot ?
+                CreateSelfReferencingSymbolicLink() :
+                CreateDirectoryContainingSelfReferencingSymbolicLink();
+
+            // Unix doesn't have a problem when it steps in a self-referencing link through the directory recursion.
+            if ((!recurse || !OperatingSystem.IsWindows()) && !linkAsRoot)
+            {
+                Directory.EnumerateFileSystemEntries(testDirectory.FullName, "*", options).Count();
+                Directory.GetFileSystemEntries(testDirectory.FullName, "*", options).Count();
+
+                Directory.EnumerateDirectories(testDirectory.FullName, "*", options).Count();
+                Directory.GetDirectories(testDirectory.FullName, "*", options).Count();
+
+                Directory.EnumerateFiles(testDirectory.FullName, "*", options).Count();
+                Directory.GetFiles(testDirectory.FullName, "*", options).Count();
+            }
+            else
+            {
+                Assert.Throws<IOException>(() => Directory.EnumerateFileSystemEntries(testDirectory.FullName, "*", options).Count());
+                Assert.Throws<IOException>(() => Directory.GetFileSystemEntries(testDirectory.FullName, "*", options).Count());
+
+                Assert.Throws<IOException>(() => Directory.EnumerateDirectories(testDirectory.FullName, "*", options).Count());
+                Assert.Throws<IOException>(() => Directory.GetDirectories(testDirectory.FullName, "*", options).Count());
+
+                Assert.Throws<IOException>(() => Directory.EnumerateFiles(testDirectory.FullName, "*", options).Count());
+                Assert.Throws<IOException>(() => Directory.GetFiles(testDirectory.FullName, "*", options).Count());
+            }
+        }
     }
 }

@@ -110,6 +110,22 @@ struct WriteBarrierParameters
     uint8_t* write_watch_table;
 };
 
+struct EtwGCSettingsInfo
+{
+    size_t heap_hard_limit;
+    size_t loh_threshold;
+    size_t physical_memory_from_config;
+    size_t gen0_min_budget_from_config;
+    size_t gen0_max_budget_from_config;
+    uint32_t high_mem_percent_from_config;
+    bool concurrent_gc_p;
+    bool use_large_pages_p;
+    bool use_frozen_segments_p;
+    // If this is false, it means the hardlimit was set implicitly by the container.
+    bool hard_limit_config_p;
+    bool no_affinitize_p;
+};
+
 // Opaque type for tracking object pointers
 #ifndef DACCESS_COMPILE
 struct OBJECTHANDLE__
@@ -863,6 +879,9 @@ public:
 
     // Traces all GC segments and fires ETW events with information on them.
     virtual void DiagTraceGCSegments() = 0;
+
+    // Get GC settings for tracing purposes. These are settings not obvious from a trace.
+    virtual void DiagGetGCSettings(EtwGCSettingsInfo* settings) = 0;
 
     /*
     ===========================================================================

@@ -22,7 +22,6 @@ namespace System.Net.Http.Tests
         {
             CheckValidParsedValue("host", 0, "host", 4);
             CheckValidParsedValue(" host ", 0, "host", 6);
-            CheckValidParsedValue("\r\n host\r\n ", 0, "host", 10);
             CheckValidParsedValue("!host", 1, "host", 5);
             CheckValidParsedValue("!host:50", 1, "host:50", 8);
             CheckValidParsedValue("//host\u4F1A", 2, "host\u4F1A", 7);
@@ -54,6 +53,7 @@ namespace System.Net.Http.Tests
             CheckInvalidParsedValue("host ,", 0);
             CheckInvalidParsedValue("/", 0);
             CheckInvalidParsedValue(" , ", 0);
+            CheckInvalidParsedValue(" host\r\n ", 0);
         }
 
         #region Helper methods

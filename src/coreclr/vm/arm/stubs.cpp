@@ -281,8 +281,13 @@ void StubLinkerCPU::Init(void)
 // value of the global into a register.
 struct WriteBarrierDescriptor
 {
+#ifdef TARGET_UNIX
+    DWORD   m_funcStartOffset;              // Offset to the start of the barrier function relative to this struct address
+    DWORD   m_funcEndOffset;                // Offset to the end of the barrier function relative to this struct address
+#else // TARGET_UNIX
     BYTE *  m_pFuncStart;                   // Pointer to the start of the barrier function
     BYTE *  m_pFuncEnd;                     // Pointer to the end of the barrier function
+#endif // TARGET_UNIX
     DWORD   m_dw_g_lowest_address_offset;   // Offset of the instruction reading g_lowest_address
     DWORD   m_dw_g_highest_address_offset;  // Offset of the instruction reading g_highest_address
     DWORD   m_dw_g_ephemeral_low_offset;    // Offset of the instruction reading g_ephemeral_low
@@ -329,16 +334,28 @@ void ComputeWriteBarrierRange(BYTE ** ppbStart, DWORD * pcbLength)
 {
     DWORD size = (PBYTE)JIT_PatchedWriteBarrierLast - (PBYTE)JIT_PatchedWriteBarrierStart;
     *ppbStart = (PBYTE)JIT_PatchedWriteBarrierStart;
+    if (IsWriteBarrierCopyEnabled())
+    {
+        *ppbStart = GetWriteBarrierCodeLocation(*ppbStart);
+    }
     *pcbLength = size;
 }
 
 void CopyWriteBarrier(PCODE dstCode, PCODE srcCode, PCODE endCode)
 {
-    TADDR dst = PCODEToPINSTR(dstCode);
+    TADDR dst = (TADDR)PCODEToPINSTR((PCODE)GetWriteBarrierCodeLocation((void*)dstCode));
     TADDR src = PCODEToPINSTR(srcCode);
     TADDR end = PCODEToPINSTR(endCode);
 
     size_t size = (PBYTE)end - (PBYTE)src;
+
+    ExecutableWriterHolder<void> writeBarrierWriterHolder;
+    if (IsWriteBarrierCopyEnabled())
+    {
+        writeBarrierWriterHolder = ExecutableWriterHolder<void>((void*)dst, size);
+        dst = (TADDR)writeBarrierWriterHolder.GetRW();
+    }
+
     memcpy((PVOID)dst, (PVOID)src, size);
 }
 
@@ -419,18 +436,35 @@ void UpdateGCWriteBarriers(bool postGrow = false)
     }
 #define GWB_PATCH_OFFSET(_global)                                       \
     if (pDesc->m_dw_##_global##_offset != 0xffff)                       \
-        PutThumb2Mov32((UINT16*)(to + pDesc->m_dw_##_global##_offset - 1), (UINT32)(dac_cast<TADDR>(_global)));
+        PutThumb2Mov32((UINT16*)(to + pDesc->m_dw_##_global##_offset), (UINT32)(dac_cast<TADDR>(_global)));
 
     // Iterate through the write barrier patch table created in the .clrwb section
     // (see write barrier asm code)
     WriteBarrierDescriptor * pDesc = &g_rgWriteBarrierDescriptors;
+#ifdef TARGET_UNIX
+    while (pDesc->m_funcStartOffset)
+#else // TARGET_UNIX
     while (pDesc->m_pFuncStart)
+#endif // TARGET_UNIX
     {
         // If the write barrier is being currently used (as in copied over to the patchable site)
         // then read the patch location from the table and use the offset to patch the target asm code
+#ifdef TARGET_UNIX
+        PBYTE to = FindWBMapping((BYTE *)pDesc + pDesc->m_funcStartOffset);
+        size_t barrierSize = pDesc->m_funcEndOffset - pDesc->m_funcStartOffset;
+#else // TARGET_UNIX
         PBYTE to = FindWBMapping(pDesc->m_pFuncStart);
+        size_t barrierSize = pDesc->m_pFuncEnd - pDesc->m_pFuncStart;
+#endif // TARGET_UNIX
         if(to)
         {
+            to = (PBYTE)PCODEToPINSTR((PCODE)GetWriteBarrierCodeLocation(to));
+            ExecutableWriterHolder<BYTE> barrierWriterHolder;
+            if (IsWriteBarrierCopyEnabled())
+            {
+                barrierWriterHolder = ExecutableWriterHolder<BYTE>(to, barrierSize);
+                to = barrierWriterHolder.GetRW();
+            }
             GWB_PATCH_OFFSET(g_lowest_address);
             GWB_PATCH_OFFSET(g_highest_address);
             GWB_PATCH_OFFSET(g_ephemeral_low);
@@ -731,23 +765,6 @@ void StubPrecode::Init(StubPrecode* pPrecodeRX, MethodDesc* pMD, LoaderAllocator
     m_pMethodDesc = (TADDR)pMD;
 }
 
-#ifdef FEATURE_NATIVE_IMAGE_GENERATION
-void StubPrecode::Fixup(DataImage *image)
-{
-    WRAPPER_NO_CONTRACT;
-
-    image->FixupFieldToNode(this, offsetof(StubPrecode, m_pTarget),
-                            image->GetHelperThunk(CORINFO_HELP_EE_PRESTUB),
-                            0,
-                            IMAGE_REL_BASED_PTR);
-
-    image->FixupField(this, offsetof(StubPrecode, m_pMethodDesc),
-                      (void*)GetMethodDesc(),
-                      0,
-                      IMAGE_REL_BASED_PTR);
-}
-#endif // FEATURE_NATIVE_IMAGE_GENERATION
-
 void NDirectImportPrecode::Init(NDirectImportPrecode* pPrecodeRX, MethodDesc* pMD, LoaderAllocator *pLoaderAllocator)
 {
     WRAPPER_NO_CONTRACT;
@@ -764,23 +781,6 @@ void NDirectImportPrecode::Init(NDirectImportPrecode* pPrecodeRX, MethodDesc* pM
     m_pMethodDesc = (TADDR)pMD;
     m_pTarget = GetEEFuncEntryPoint(NDirectImportThunk);
 }
-
-#ifdef FEATURE_NATIVE_IMAGE_GENERATION
-void NDirectImportPrecode::Fixup(DataImage *image)
-{
-    WRAPPER_NO_CONTRACT;
-
-    image->FixupField(this, offsetof(NDirectImportPrecode, m_pMethodDesc),
-                      (void*)GetMethodDesc(),
-                      0,
-                      IMAGE_REL_BASED_PTR);
-
-    image->FixupFieldToNode(this, offsetof(NDirectImportPrecode, m_pTarget),
-                            image->GetHelperThunk(CORINFO_HELP_EE_PINVOKE_FIXUP),
-                            0,
-                            IMAGE_REL_BASED_PTR);
-}
-#endif
 
 void FixupPrecode::Init(FixupPrecode* pPrecodeRX, MethodDesc* pMD, LoaderAllocator *pLoaderAllocator, int iMethodDescChunkIndex /*=0*/, int iPrecodeChunkIndex /*=0*/)
 {
@@ -816,53 +816,6 @@ void FixupPrecode::Init(FixupPrecode* pPrecodeRX, MethodDesc* pMD, LoaderAllocat
         m_pTarget = GetEEFuncEntryPoint(PrecodeFixupThunk);
     }
 }
-
-#ifdef FEATURE_NATIVE_IMAGE_GENERATION
-// Partial initialization. Used to save regrouped chunks.
-void FixupPrecode::InitForSave(int iPrecodeChunkIndex)
-{
-    STANDARD_VM_CONTRACT;
-
-    m_rgCode[0] = 0x46fc;   // mov r12, pc
-    m_rgCode[1] = 0xf8df;   // ldr pc, [pc, #4]
-    m_rgCode[2] = 0xf004;
-
-    _ASSERTE(FitsInU1(iPrecodeChunkIndex));
-    m_PrecodeChunkIndex = static_cast<BYTE>(iPrecodeChunkIndex);
-
-    // The rest is initialized in code:FixupPrecode::Fixup
-}
-
-void FixupPrecode::Fixup(DataImage *image, MethodDesc * pMD)
-{
-    STANDARD_VM_CONTRACT;
-
-    // Note that GetMethodDesc() does not return the correct value because of
-    // regrouping of MethodDescs into hot and cold blocks. That's why the caller
-    // has to supply the actual MethodDesc
-
-    SSIZE_T mdChunkOffset;
-    ZapNode * pMDChunkNode = image->GetNodeForStructure(pMD, &mdChunkOffset);
-    ZapNode * pHelperThunk = image->GetHelperThunk(CORINFO_HELP_EE_PRECODE_FIXUP);
-
-    image->FixupFieldToNode(this, offsetof(FixupPrecode, m_pTarget), pHelperThunk);
-
-    // Set the actual chunk index
-    FixupPrecode * pNewPrecode = (FixupPrecode *)image->GetImagePointer(this);
-
-    size_t mdOffset   = mdChunkOffset - sizeof(MethodDescChunk);
-    size_t chunkIndex = mdOffset / MethodDesc::ALIGNMENT;
-    _ASSERTE(FitsInU1(chunkIndex));
-    pNewPrecode->m_MethodDescChunkIndex = (BYTE) chunkIndex;
-
-    // Fixup the base of MethodDescChunk
-    if (m_PrecodeChunkIndex == 0)
-    {
-        image->FixupFieldToNode(this, (BYTE *)GetBase() - (BYTE *)this,
-            pMDChunkNode, sizeof(MethodDescChunk));
-    }
-}
-#endif // FEATURE_NATIVE_IMAGE_GENERATION
 
 void ThisPtrRetBufPrecode::Init(MethodDesc* pMD, LoaderAllocator *pLoaderAllocator)
 {
@@ -1616,9 +1569,7 @@ void StubLinkerCPU::ThumbEmitTailCallManagedMethod(MethodDesc *pMD)
     bool isRelative = MethodTable::VTableIndir2_t::isRelative
                       && pMD->IsVtableSlot();
 
-#ifndef FEATURE_NGEN_RELOCS_OPTIMIZATIONS
     _ASSERTE(!isRelative);
-#endif
 
     // Use direct call if possible.
     if (pMD->HasStableEntryPoint())
@@ -1718,9 +1669,7 @@ VOID StubLinkerCPU::EmitComputedInstantiatingMethodStub(MethodDesc* pSharedMD, s
     bool isRelative = MethodTable::VTableIndir2_t::isRelative
                       && pSharedMD->IsVtableSlot();
 
-#ifndef FEATURE_NGEN_RELOCS_OPTIMIZATIONS
     _ASSERTE(!isRelative);
-#endif
 
     if (isRelative)
     {

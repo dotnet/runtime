@@ -257,6 +257,7 @@ static const Entry s_sysNative[] =
     DllImportEntry(SystemNative_HandleNonCanceledPosixSignal)
     DllImportEntry(SystemNative_SetPosixSignalHandler)
     DllImportEntry(SystemNative_GetPlatformSignalNumber)
+    DllImportEntry(SystemNative_GetGroups)
 };
 
 EXTERN_C const void* SystemResolveDllImport(const char* name);

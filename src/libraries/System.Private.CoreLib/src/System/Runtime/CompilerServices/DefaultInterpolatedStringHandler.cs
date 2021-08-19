@@ -4,6 +4,8 @@
 using System.Buffers;
 using System.Diagnostics;
 using System.Globalization;
+using System.Runtime.InteropServices;
+using Internal.Runtime.CompilerServices;
 
 namespace System.Runtime.CompilerServices
 {
@@ -91,7 +93,7 @@ namespace System.Runtime.CompilerServices
         /// <param name="literalLength">The number of constant characters outside of interpolation expressions in the interpolated string.</param>
         /// <param name="formattedCount">The number of interpolation expressions in the interpolated string.</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)] // becomes a constant when inputs are constant
-        private static int GetDefaultLength(int literalLength, int formattedCount) =>
+        internal static int GetDefaultLength(int literalLength, int formattedCount) =>
             Math.Max(MinimumArrayPoolLength, literalLength + (formattedCount * GuessedLengthPerHole));
 
         /// <summary>Gets the built <see cref="string"/>.</summary>
@@ -130,7 +132,67 @@ namespace System.Runtime.CompilerServices
 
         /// <summary>Writes the specified string to the handler.</summary>
         /// <param name="value">The string to write.</param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void AppendLiteral(string value)
+        {
+            // AppendLiteral is expected to always be called by compiler-generated code with a literal string.
+            // By inlining it, the method body is exposed to the constant length of that literal, allowing the JIT to
+            // prune away the irrelevant cases.  This effectively enables multiple implementations of AppendLiteral,
+            // special-cased on and optimized for the literal's length.  We special-case lengths 1 and 2 because
+            // they're very common, e.g.
+            //     1: ' ', '.', '-', '\t', etc.
+            //     2: ", ", "0x", "=>", ": ", etc.
+            // but we refrain from adding more because, in the rare case where AppendLiteral is called with a non-literal,
+            // there is a lot of code here to be inlined.
+
+            // TODO: https://github.com/dotnet/runtime/issues/41692#issuecomment-685192193
+            // What we really want here is to be able to add a bunch of additional special-cases based on length,
+            // e.g. a switch with a case for each length <= 8, not mark the method as AggressiveInlining, and have
+            // it inlined when provided with a string literal such that all the other cases evaporate but not inlined
+            // if called directly with something that doesn't enable pruning.  Even better, if "literal".TryCopyTo
+            // could be unrolled based on the literal, ala https://github.com/dotnet/runtime/pull/46392, we might
+            // be able to remove all special-casing here.
+
+            if (value.Length == 1)
+            {
+                Span<char> chars = _chars;
+                int pos = _pos;
+                if ((uint)pos < (uint)chars.Length)
+                {
+                    chars[pos] = value[0];
+                    _pos = pos + 1;
+                }
+                else
+                {
+                    GrowThenCopyString(value);
+                }
+                return;
+            }
+
+            if (value.Length == 2)
+            {
+                Span<char> chars = _chars;
+                int pos = _pos;
+                if ((uint)pos < chars.Length - 1)
+                {
+                    Unsafe.WriteUnaligned(
+                        ref Unsafe.As<char, byte>(ref Unsafe.Add(ref MemoryMarshal.GetReference(chars), pos)),
+                        Unsafe.ReadUnaligned<int>(ref Unsafe.As<char, byte>(ref value.GetRawStringData())));
+                    _pos = pos + 2;
+                }
+                else
+                {
+                    GrowThenCopyString(value);
+                }
+                return;
+            }
+
+            AppendStringDirect(value);
+        }
+
+        /// <summary>Writes the specified string to the handler.</summary>
+        /// <param name="value">The string to write.</param>
+        private void AppendStringDirect(string value)
         {
             if (value.TryCopyTo(_chars.Slice(_pos)))
             {
@@ -265,7 +327,7 @@ namespace System.Runtime.CompilerServices
 
             if (s is not null)
             {
-                AppendLiteral(s);
+                AppendStringDirect(s);
             }
         }
         /// <summary>Writes the specified value to the handler.</summary>
@@ -312,7 +374,7 @@ namespace System.Runtime.CompilerServices
 
             if (s is not null)
             {
-                AppendLiteral(s);
+                AppendStringDirect(s);
             }
         }
 
@@ -493,7 +555,7 @@ namespace System.Runtime.CompilerServices
 
             if (formatter is not null && formatter.Format(format, value, _provider) is string customFormatted)
             {
-                AppendLiteral(customFormatted);
+                AppendStringDirect(customFormatted);
             }
         }
 
@@ -543,7 +605,7 @@ namespace System.Runtime.CompilerServices
             }
         }
 
-        /// <summary>Fallback for fast path in <see cref="AppendLiteral"/> when there's not enough space in the destination.</summary>
+        /// <summary>Fallback for fast path in <see cref="AppendStringDirect"/> when there's not enough space in the destination.</summary>
         /// <param name="value">The string to write.</param>
         [MethodImpl(MethodImplOptions.NoInlining)]
         private void GrowThenCopyString(string value)

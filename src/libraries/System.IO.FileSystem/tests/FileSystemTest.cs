@@ -11,8 +11,8 @@ namespace System.IO.Tests
     {
         public static readonly byte[] TestBuffer = { 0xBA, 0x5E, 0xBA, 0x11, 0xF0, 0x07, 0xBA, 0x11 };
 
-        protected const TestPlatforms CaseInsensitivePlatforms = TestPlatforms.Windows | TestPlatforms.OSX;
-        protected const TestPlatforms CaseSensitivePlatforms = TestPlatforms.AnyUnix & ~TestPlatforms.OSX;
+        protected const TestPlatforms CaseInsensitivePlatforms = TestPlatforms.Windows | TestPlatforms.OSX | TestPlatforms.MacCatalyst;
+        protected const TestPlatforms CaseSensitivePlatforms = TestPlatforms.AnyUnix & ~TestPlatforms.OSX & ~TestPlatforms.MacCatalyst;
 
         public static bool AreAllLongPathsAvailable => PathFeatures.AreAllLongPathsAvailable();
 
@@ -61,7 +61,23 @@ namespace System.IO.Tests
             {
                 return @"LOCAL\" + Guid.NewGuid().ToString("N");
             }
-            return Guid.NewGuid().ToString("N");
+
+            if (PlatformDetection.IsWindows)
+            {
+                return Guid.NewGuid().ToString("N");
+            }
+
+            const int MinUdsPathLength = 104; // required min is 92, but every platform we currently target is at least 104
+            const int MinAvailableForSufficientRandomness = 5; // we want enough randomness in the name to avoid conflicts between concurrent tests
+            string prefix = Path.Combine(Path.GetTempPath(), "CoreFxPipe_");
+            int availableLength = MinUdsPathLength - prefix.Length - 1; // 1 - for possible null terminator
+            Assert.True(availableLength >= MinAvailableForSufficientRandomness, $"UDS prefix {prefix} length {prefix.Length} is too long");
+
+            return string.Create(availableLength, 0, (span, _) =>
+            {
+                for (int i = 0; i < span.Length; i++)
+                    span[i] = (char)('a' + Random.Shared.Next(0, 26));
+            });
         }
 
         /// <summary>

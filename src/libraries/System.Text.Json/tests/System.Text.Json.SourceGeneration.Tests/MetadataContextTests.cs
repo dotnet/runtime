@@ -8,6 +8,7 @@ namespace System.Text.Json.SourceGeneration.Tests
 {
     [JsonSerializable(typeof(Location), GenerationMode = JsonSourceGenerationMode.Metadata)]
     [JsonSerializable(typeof(RepeatedTypes.Location), TypeInfoPropertyName = "RepeatedLocation", GenerationMode = JsonSourceGenerationMode.Metadata)]
+    [JsonSerializable(typeof(NumberTypes), GenerationMode = JsonSourceGenerationMode.Metadata)]
     [JsonSerializable(typeof(ActiveOrUpcomingEvent), GenerationMode = JsonSourceGenerationMode.Metadata)]
     [JsonSerializable(typeof(CampaignSummaryViewModel), GenerationMode = JsonSourceGenerationMode.Metadata)]
     [JsonSerializable(typeof(IndexViewModel), GenerationMode = JsonSourceGenerationMode.Metadata)]
@@ -17,6 +18,7 @@ namespace System.Text.Json.SourceGeneration.Tests
     [JsonSerializable(typeof(MyType), GenerationMode = JsonSourceGenerationMode.Metadata)]
     [JsonSerializable(typeof(MyType2), GenerationMode = JsonSourceGenerationMode.Metadata)]
     [JsonSerializable(typeof(MyTypeWithCallbacks), GenerationMode = JsonSourceGenerationMode.Metadata)]
+    [JsonSerializable(typeof(MyTypeWithPropertyOrdering), GenerationMode = JsonSourceGenerationMode.Metadata)]
     [JsonSerializable(typeof(MyIntermediateType), GenerationMode = JsonSourceGenerationMode.Metadata)]
     [JsonSerializable(typeof(HighLowTempsImmutable), GenerationMode = JsonSourceGenerationMode.Metadata)]
     [JsonSerializable(typeof(RealWorldContextTests.MyNestedClass), GenerationMode = JsonSourceGenerationMode.Metadata)]
@@ -24,6 +26,12 @@ namespace System.Text.Json.SourceGeneration.Tests
     [JsonSerializable(typeof(object[]), GenerationMode = JsonSourceGenerationMode.Metadata)]
     [JsonSerializable(typeof(string), GenerationMode = JsonSourceGenerationMode.Metadata)]
     [JsonSerializable(typeof(RealWorldContextTests.ClassWithEnumAndNullable), GenerationMode = JsonSourceGenerationMode.Metadata)]
+    [JsonSerializable(typeof(ClassWithCustomConverter), GenerationMode = JsonSourceGenerationMode.Metadata)]
+    [JsonSerializable(typeof(StructWithCustomConverter), GenerationMode = JsonSourceGenerationMode.Metadata)]
+    [JsonSerializable(typeof(ClassWithCustomConverter), GenerationMode = JsonSourceGenerationMode.Metadata)]
+    [JsonSerializable(typeof(StructWithCustomConverter), GenerationMode = JsonSourceGenerationMode.Metadata)]
+    [JsonSerializable(typeof(ClassWithBadCustomConverter), GenerationMode = JsonSourceGenerationMode.Metadata)]
+    [JsonSerializable(typeof(StructWithBadCustomConverter), GenerationMode = JsonSourceGenerationMode.Metadata)]
     internal partial class MetadataWithPerTypeAttributeContext : JsonSerializerContext, ITestContext
     {
     }
@@ -37,6 +45,7 @@ namespace System.Text.Json.SourceGeneration.Tests
         {
             Assert.Null(MetadataWithPerTypeAttributeContext.Default.Location.Serialize);
             Assert.Null(MetadataWithPerTypeAttributeContext.Default.RepeatedLocation.Serialize);
+            Assert.Null(MetadataWithPerTypeAttributeContext.Default.NumberTypes.Serialize);
             Assert.Null(MetadataWithPerTypeAttributeContext.Default.ActiveOrUpcomingEvent.Serialize);
             Assert.Null(MetadataWithPerTypeAttributeContext.Default.CampaignSummaryViewModel.Serialize);
             Assert.Null(MetadataWithPerTypeAttributeContext.Default.IndexViewModel.Serialize);
@@ -52,12 +61,17 @@ namespace System.Text.Json.SourceGeneration.Tests
             Assert.Null(MetadataWithPerTypeAttributeContext.Default.ObjectArray.Serialize);
             Assert.Null(MetadataWithPerTypeAttributeContext.Default.String.Serialize);
             Assert.Null(MetadataWithPerTypeAttributeContext.Default.ClassWithEnumAndNullable.Serialize);
+            Assert.Null(MetadataWithPerTypeAttributeContext.Default.ClassWithCustomConverter.Serialize);
+            Assert.Null(MetadataWithPerTypeAttributeContext.Default.StructWithCustomConverter.Serialize);
+            Assert.Throws<InvalidOperationException>(() => MetadataWithPerTypeAttributeContext.Default.ClassWithBadCustomConverter.Serialize);
+            Assert.Throws<InvalidOperationException>(() => MetadataWithPerTypeAttributeContext.Default.StructWithBadCustomConverter.Serialize);
         }
     }
 
     [JsonSourceGenerationOptions(GenerationMode = JsonSourceGenerationMode.Metadata)]
     [JsonSerializable(typeof(Location))]
     [JsonSerializable(typeof(RepeatedTypes.Location), TypeInfoPropertyName = "RepeatedLocation")]
+    [JsonSerializable(typeof(NumberTypes))]
     [JsonSerializable(typeof(ActiveOrUpcomingEvent))]
     [JsonSerializable(typeof(CampaignSummaryViewModel))]
     [JsonSerializable(typeof(IndexViewModel))]
@@ -67,6 +81,7 @@ namespace System.Text.Json.SourceGeneration.Tests
     [JsonSerializable(typeof(MyType))]
     [JsonSerializable(typeof(MyType2))]
     [JsonSerializable(typeof(MyTypeWithCallbacks))]
+    [JsonSerializable(typeof(MyTypeWithPropertyOrdering))]
     [JsonSerializable(typeof(MyIntermediateType))]
     [JsonSerializable(typeof(HighLowTempsImmutable))]
     [JsonSerializable(typeof(RealWorldContextTests.MyNestedClass))]
@@ -74,6 +89,10 @@ namespace System.Text.Json.SourceGeneration.Tests
     [JsonSerializable(typeof(object[]))]
     [JsonSerializable(typeof(string))]
     [JsonSerializable(typeof(RealWorldContextTests.ClassWithEnumAndNullable))]
+    [JsonSerializable(typeof(ClassWithCustomConverter))]
+    [JsonSerializable(typeof(StructWithCustomConverter))]
+    [JsonSerializable(typeof(ClassWithBadCustomConverter))]
+    [JsonSerializable(typeof(StructWithBadCustomConverter))]
     internal partial class MetadataContext : JsonSerializerContext, ITestContext
     {
     }
@@ -87,6 +106,7 @@ namespace System.Text.Json.SourceGeneration.Tests
         {
             Assert.Null(MetadataContext.Default.Location.Serialize);
             Assert.Null(MetadataContext.Default.RepeatedLocation.Serialize);
+            Assert.Null(MetadataContext.Default.NumberTypes.Serialize);
             Assert.Null(MetadataContext.Default.ActiveOrUpcomingEvent.Serialize);
             Assert.Null(MetadataContext.Default.CampaignSummaryViewModel.Serialize);
             Assert.Null(MetadataContext.Default.IndexViewModel.Serialize);
@@ -96,6 +116,7 @@ namespace System.Text.Json.SourceGeneration.Tests
             Assert.Null(MetadataContext.Default.MyType.Serialize);
             Assert.Null(MetadataContext.Default.MyType2.Serialize);
             Assert.Null(MetadataContext.Default.MyTypeWithCallbacks.Serialize);
+            Assert.Null(MetadataContext.Default.MyTypeWithPropertyOrdering.Serialize);
             Assert.Null(MetadataContext.Default.MyIntermediateType.Serialize);
             Assert.Null(MetadataContext.Default.HighLowTempsImmutable.Serialize);
             Assert.Null(MetadataContext.Default.MyNestedClass.Serialize);
@@ -103,6 +124,10 @@ namespace System.Text.Json.SourceGeneration.Tests
             Assert.Null(MetadataContext.Default.ObjectArray.Serialize);
             Assert.Null(MetadataContext.Default.String.Serialize);
             Assert.Null(MetadataContext.Default.ClassWithEnumAndNullable.Serialize);
+            Assert.Null(MetadataContext.Default.ClassWithCustomConverter.Serialize);
+            Assert.Null(MetadataContext.Default.StructWithCustomConverter.Serialize);
+            Assert.Throws<InvalidOperationException>(() => MetadataContext.Default.ClassWithBadCustomConverter.Serialize);
+            Assert.Throws<InvalidOperationException>(() => MetadataContext.Default.StructWithBadCustomConverter.Serialize);
         }
     }
 }

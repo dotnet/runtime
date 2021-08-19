@@ -22,7 +22,7 @@ namespace System.IO.Pipelines.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/50957", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsMonoAOT))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/55435")]
         public async Task FlushAsync_ThrowsIfWriterReaderWithException()
         {
             void ThrowTestException()
@@ -49,7 +49,7 @@ namespace System.IO.Pipelines.Tests
             Assert.Equal("Reader exception", invalidOperationException.Message);
             Assert.Contains("ThrowTestException", invalidOperationException.StackTrace);
 
-            Assert.Single(Regex.Matches(invalidOperationException.StackTrace, "Pipe.GetFlushResult"));
+            Assert.Contains("Pipe.GetFlushResult", invalidOperationException.StackTrace);
         }
 
         [Fact]
@@ -71,7 +71,6 @@ namespace System.IO.Pipelines.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/50927", TestPlatforms.Android)]
         public async Task DoubleFlushAsyncThrows()
         {
             Pipe.Writer.WriteEmpty(65);

@@ -388,6 +388,42 @@ namespace Tracing.Tests.DiagnosticPortValidation
             return fSuccess;
         }
 
+        public static async Task<bool> TEST_CanGetProcessInfo2WhileSuspended()
+        {
+            bool fSuccess = true;
+            Task<bool> subprocessTask = Utils.RunSubprocess(
+                currentAssembly: Assembly.GetExecutingAssembly(),
+                environment: new Dictionary<string,string> 
+                {
+                    { Utils.DiagnosticPortSuspend, "1" }
+                },
+                duringExecution: (int pid) =>
+                {
+                    Stream stream = ConnectionHelper.GetStandardTransport(pid);
+
+                    // 0x04 = ProcessCommandSet, 0x04 = ProcessInfo2
+                    var processInfoMessage = new IpcMessage(0x04, 0x04);
+                    Logger.logger.Log($"Wrote: {processInfoMessage}");
+                    IpcMessage response = IpcClient.SendMessage(stream, processInfoMessage);
+                    Logger.logger.Log($"Received: [{response.Payload.Select(b => b.ToString("X2") + " ").Aggregate(string.Concat)}]");
+                    ProcessInfo2 processInfo2 = ProcessInfo2.TryParse(response.Payload);
+                    Utils.Assert(String.IsNullOrEmpty(processInfo2.ManagedEntrypointAssemblyName));
+
+                    // send resume command on this connection
+                    var message = new IpcMessage(0x04,0x01);
+                    Logger.logger.Log($"Sent: {message.ToString()}");
+                    response = IpcClient.SendMessage(ConnectionHelper.GetStandardTransport(pid), message);
+                    Logger.logger.Log($"Received: {response.ToString()}");
+
+                    return Task.FromResult(true);
+                }
+            );
+
+            fSuccess &= await subprocessTask;
+
+            return fSuccess;
+        }
+
         public static async Task<int> Main(string[] args)
         {
             if (args.Length >= 1)

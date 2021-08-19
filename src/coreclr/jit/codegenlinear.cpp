@@ -1577,7 +1577,6 @@ void CodeGen::genConsumeRegs(GenTree* tree)
         {
             genConsumeAddress(tree);
         }
-#ifdef TARGET_XARCH
         else if (tree->OperIsLocalRead())
         {
             // A contained lcl var must be living on stack and marked as reg optional, or not be a
@@ -1591,6 +1590,7 @@ void CodeGen::genConsumeRegs(GenTree* tree)
             // Update the life of the lcl var.
             genUpdateLife(tree);
         }
+#ifdef TARGET_XARCH
 #ifdef FEATURE_HW_INTRINSICS
         else if (tree->OperIs(GT_HWINTRINSIC))
         {

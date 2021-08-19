@@ -5,7 +5,259 @@
       <argument>ILLink</argument>
       <argument>IL2075</argument>
       <property name="Scope">member</property>
-      <property name="Target">M:System.Net.Http.HttpClient.CreateDefaultHandler()</property>
+      <property name="Target">M:System.Net.Http.HttpClientHandler.CreateNativeHandler()</property>
+      <property name="Justification">The Xamarin.iOS and Mono.Android libraries are not present when running the trimmer analysis during our build. A consuming application will get a warning if these libraries aren't present when trimming the full app.</property>
+    </attribute>
+    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
+      <argument>ILLink</argument>
+      <argument>IL2075</argument>
+      <property name="Scope">member</property>
+      <property name="Target">M:System.Net.Http.HttpClientHandler.InvokeNativeHandlerMethod(System.String,System.Object[])</property>
+      <property name="Justification">The Xamarin.iOS and Mono.Android libraries are not present when running the trimmer analysis during our build. A consuming application will get a warning if these libraries aren't present when trimming the full app.</property>
+    </attribute>
+    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
+      <argument>ILLink</argument>
+      <argument>IL2035</argument>
+      <property name="Scope">member</property>
+      <property name="Target">M:System.Net.Http.HttpClientHandler.GetUseCookies()</property>
+      <property name="Justification">The Xamarin.iOS and Mono.Android libraries are not present when running the trimmer analysis during our build. A consuming application will get a warning if these libraries aren't present when trimming the full app.</property>
+    </attribute>
+    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
+      <argument>ILLink</argument>
+      <argument>IL2035</argument>
+      <property name="Scope">member</property>
+      <property name="Target">M:System.Net.Http.HttpClientHandler.SetUseCookies(System.Boolean)</property>
+      <property name="Justification">The Xamarin.iOS and Mono.Android libraries are not present when running the trimmer analysis during our build. A consuming application will get a warning if these libraries aren't present when trimming the full app.</property>
+    </attribute>
+    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
+      <argument>ILLink</argument>
+      <argument>IL2035</argument>
+      <property name="Scope">member</property>
+      <property name="Target">M:System.Net.Http.HttpClientHandler.GetCookieContainer()</property>
+      <property name="Justification">The Xamarin.iOS and Mono.Android libraries are not present when running the trimmer analysis during our build. A consuming application will get a warning if these libraries aren't present when trimming the full app.</property>
+    </attribute>
+    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
+      <argument>ILLink</argument>
+      <argument>IL2035</argument>
+      <property name="Scope">member</property>
+      <property name="Target">M:System.Net.Http.HttpClientHandler.SetCookieContainer(System.Net.CookieContainer)</property>
+      <property name="Justification">The Xamarin.iOS and Mono.Android libraries are not present when running the trimmer analysis during our build. A consuming application will get a warning if these libraries aren't present when trimming the full app.</property>
+    </attribute>
+    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
+      <argument>ILLink</argument>
+      <argument>IL2035</argument>
+      <property name="Scope">member</property>
+      <property name="Target">M:System.Net.Http.HttpClientHandler.GetAllowAutoRedirect()</property>
+      <property name="Justification">The Xamarin.iOS and Mono.Android libraries are not present when running the trimmer analysis during our build. A consuming application will get a warning if these libraries aren't present when trimming the full app.</property>
+    </attribute>
+    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
+      <argument>ILLink</argument>
+      <argument>IL2035</argument>
+      <property name="Scope">member</property>
+      <property name="Target">M:System.Net.Http.HttpClientHandler.SetAllowAutoRedirect(System.Boolean)</property>
+      <property name="Justification">The Xamarin.iOS and Mono.Android libraries are not present when running the trimmer analysis during our build. A consuming application will get a warning if these libraries aren't present when trimming the full app.</property>
+    </attribute>
+    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
+      <argument>ILLink</argument>
+      <argument>IL2035</argument>
+      <property name="Scope">member</property>
+      <property name="Target">M:System.Net.Http.HttpClientHandler.GetCredentials()</property>
+      <property name="Justification">The Xamarin.iOS and Mono.Android libraries are not present when running the trimmer analysis during our build. A consuming application will get a warning if these libraries aren't present when trimming the full app.</property>
+    </attribute>
+    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
+      <argument>ILLink</argument>
+      <argument>IL2035</argument>
+      <property name="Scope">member</property>
+      <property name="Target">M:System.Net.Http.HttpClientHandler.SetCredentials(System.Net.ICredentials)</property>
+      <property name="Justification">The Xamarin.iOS and Mono.Android libraries are not present when running the trimmer analysis during our build. A consuming application will get a warning if these libraries aren't present when trimming the full app.</property>
+    </attribute>
+    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
+      <argument>ILLink</argument>
+      <argument>IL2035</argument>
+      <property name="Scope">member</property>
+      <property name="Target">M:System.Net.Http.HttpClientHandler.GetAutomaticDecompression()</property>
+      <property name="Justification">The Xamarin.iOS and Mono.Android libraries are not present when running the trimmer analysis during our build. A consuming application will get a warning if these libraries aren't present when trimming the full app.</property>
+    </attribute>
+    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
+      <argument>ILLink</argument>
+      <argument>IL2035</argument>
+      <property name="Scope">member</property>
+      <property name="Target">M:System.Net.Http.HttpClientHandler.SetAutomaticDecompression(System.Net.DecompressionMethods)</property>
+      <property name="Justification">The Xamarin.iOS and Mono.Android libraries are not present when running the trimmer analysis during our build. A consuming application will get a warning if these libraries aren't present when trimming the full app.</property>
+    </attribute>
+    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
+      <argument>ILLink</argument>
+      <argument>IL2035</argument>
+      <property name="Scope">member</property>
+      <property name="Target">M:System.Net.Http.HttpClientHandler.GetUseProxy()</property>
+      <property name="Justification">The Xamarin.iOS and Mono.Android libraries are not present when running the trimmer analysis during our build. A consuming application will get a warning if these libraries aren't present when trimming the full app.</property>
+    </attribute>
+    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
+      <argument>ILLink</argument>
+      <argument>IL2035</argument>
+      <property name="Scope">member</property>
+      <property name="Target">M:System.Net.Http.HttpClientHandler.SetUseProxy(System.Boolean)</property>
+      <property name="Justification">The Xamarin.iOS and Mono.Android libraries are not present when running the trimmer analysis during our build. A consuming application will get a warning if these libraries aren't present when trimming the full app.</property>
+    </attribute>
+    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
+      <argument>ILLink</argument>
+      <argument>IL2035</argument>
+      <property name="Scope">member</property>
+      <property name="Target">M:System.Net.Http.HttpClientHandler.GetProxy()</property>
+      <property name="Justification">The Xamarin.iOS and Mono.Android libraries are not present when running the trimmer analysis during our build. A consuming application will get a warning if these libraries aren't present when trimming the full app.</property>
+    </attribute>
+    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
+      <argument>ILLink</argument>
+      <argument>IL2035</argument>
+      <property name="Scope">member</property>
+      <property name="Target">M:System.Net.Http.HttpClientHandler.SetProxy(System.Net.IWebProxy)</property>
+      <property name="Justification">The Xamarin.iOS and Mono.Android libraries are not present when running the trimmer analysis during our build. A consuming application will get a warning if these libraries aren't present when trimming the full app.</property>
+    </attribute>
+    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
+      <argument>ILLink</argument>
+      <argument>IL2035</argument>
+      <property name="Scope">member</property>
+      <property name="Target">M:System.Net.Http.HttpClientHandler.GetPreAuthenticate()</property>
+      <property name="Justification">The Xamarin.iOS and Mono.Android libraries are not present when running the trimmer analysis during our build. A consuming application will get a warning if these libraries aren't present when trimming the full app.</property>
+    </attribute>
+    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
+      <argument>ILLink</argument>
+      <argument>IL2035</argument>
+      <property name="Scope">member</property>
+      <property name="Target">M:System.Net.Http.HttpClientHandler.SetPreAuthenticate(System.Boolean)</property>
+      <property name="Justification">The Xamarin.iOS and Mono.Android libraries are not present when running the trimmer analysis during our build. A consuming application will get a warning if these libraries aren't present when trimming the full app.</property>
+    </attribute>
+    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
+      <argument>ILLink</argument>
+      <argument>IL2035</argument>
+      <property name="Scope">member</property>
+      <property name="Target">M:System.Net.Http.HttpClientHandler.GetMaxAutomaticRedirections()</property>
+      <property name="Justification">The Xamarin.iOS and Mono.Android libraries are not present when running the trimmer analysis during our build. A consuming application will get a warning if these libraries aren't present when trimming the full app.</property>
+    </attribute>
+    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
+      <argument>ILLink</argument>
+      <argument>IL2035</argument>
+      <property name="Scope">member</property>
+      <property name="Target">M:System.Net.Http.HttpClientHandler.SetMaxAutomaticRedirections(System.Int32)</property>
+      <property name="Justification">The Xamarin.iOS and Mono.Android libraries are not present when running the trimmer analysis during our build. A consuming application will get a warning if these libraries aren't present when trimming the full app.</property>
+    </attribute>
+    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
+      <argument>ILLink</argument>
+      <argument>IL2035</argument>
+      <property name="Scope">member</property>
+      <property name="Target">M:System.Net.Http.HttpClientHandler.GetCheckCertificateRevocationList()</property>
+      <property name="Justification">The Xamarin.iOS and Mono.Android libraries are not present when running the trimmer analysis during our build. A consuming application will get a warning if these libraries aren't present when trimming the full app.</property>
+    </attribute>
+    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
+      <argument>ILLink</argument>
+      <argument>IL2035</argument>
+      <property name="Scope">member</property>
+      <property name="Target">M:System.Net.Http.HttpClientHandler.SetCheckCertificateRevocationList(System.Boolean)</property>
+      <property name="Justification">The Xamarin.iOS and Mono.Android libraries are not present when running the trimmer analysis during our build. A consuming application will get a warning if these libraries aren't present when trimming the full app.</property>
+    </attribute>
+    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
+      <argument>ILLink</argument>
+      <argument>IL2035</argument>
+      <property name="Scope">member</property>
+      <property name="Target">M:System.Net.Http.HttpClientHandler.GetClientCertificateOptions()</property>
+      <property name="Justification">The Xamarin.iOS and Mono.Android libraries are not present when running the trimmer analysis during our build. A consuming application will get a warning if these libraries aren't present when trimming the full app.</property>
+    </attribute>
+    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
+      <argument>ILLink</argument>
+      <argument>IL2035</argument>
+      <property name="Scope">member</property>
+      <property name="Target">M:System.Net.Http.HttpClientHandler.SetClientCertificateOptions(System.Net.Http.ClientCertificateOption)</property>
+      <property name="Justification">The Xamarin.iOS and Mono.Android libraries are not present when running the trimmer analysis during our build. A consuming application will get a warning if these libraries aren't present when trimming the full app.</property>
+    </attribute>
+    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
+      <argument>ILLink</argument>
+      <argument>IL2035</argument>
+      <property name="Scope">member</property>
+      <property name="Target">M:System.Net.Http.HttpClientHandler.GetClientCertificates()</property>
+      <property name="Justification">The Xamarin.iOS and Mono.Android libraries are not present when running the trimmer analysis during our build. A consuming application will get a warning if these libraries aren't present when trimming the full app.</property>
+    </attribute>
+    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
+      <argument>ILLink</argument>
+      <argument>IL2035</argument>
+      <property name="Scope">member</property>
+      <property name="Target">M:System.Net.Http.HttpClientHandler.GetDefaultProxyCredentials()</property>
+      <property name="Justification">The Xamarin.iOS and Mono.Android libraries are not present when running the trimmer analysis during our build. A consuming application will get a warning if these libraries aren't present when trimming the full app.</property>
+    </attribute>
+    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
+      <argument>ILLink</argument>
+      <argument>IL2035</argument>
+      <property name="Scope">member</property>
+      <property name="Target">M:System.Net.Http.HttpClientHandler.SetDefaultProxyCredentials(System.Net.ICredentials)</property>
+      <property name="Justification">The Xamarin.iOS and Mono.Android libraries are not present when running the trimmer analysis during our build. A consuming application will get a warning if these libraries aren't present when trimming the full app.</property>
+    </attribute>
+    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
+      <argument>ILLink</argument>
+      <argument>IL2035</argument>
+      <property name="Scope">member</property>
+      <property name="Target">M:System.Net.Http.HttpClientHandler.GetMaxConnectionsPerServer()</property>
+      <property name="Justification">The Xamarin.iOS and Mono.Android libraries are not present when running the trimmer analysis during our build. A consuming application will get a warning if these libraries aren't present when trimming the full app.</property>
+    </attribute>
+    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
+      <argument>ILLink</argument>
+      <argument>IL2035</argument>
+      <property name="Scope">member</property>
+      <property name="Target">M:System.Net.Http.HttpClientHandler.SetMaxConnectionsPerServer(System.Int32)</property>
+      <property name="Justification">The Xamarin.iOS and Mono.Android libraries are not present when running the trimmer analysis during our build. A consuming application will get a warning if these libraries aren't present when trimming the full app.</property>
+    </attribute>
+    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
+      <argument>ILLink</argument>
+      <argument>IL2035</argument>
+      <property name="Scope">member</property>
+      <property name="Target">M:System.Net.Http.HttpClientHandler.GetMaxResponseHeadersLength()</property>
+      <property name="Justification">The Xamarin.iOS and Mono.Android libraries are not present when running the trimmer analysis during our build. A consuming application will get a warning if these libraries aren't present when trimming the full app.</property>
+    </attribute>
+    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
+      <argument>ILLink</argument>
+      <argument>IL2035</argument>
+      <property name="Scope">member</property>
+      <property name="Target">M:System.Net.Http.HttpClientHandler.SetMaxResponseHeadersLength(System.Int32)</property>
+      <property name="Justification">The Xamarin.iOS and Mono.Android libraries are not present when running the trimmer analysis during our build. A consuming application will get a warning if these libraries aren't present when trimming the full app.</property>
+    </attribute>
+    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
+      <argument>ILLink</argument>
+      <argument>IL2035</argument>
+      <property name="Scope">member</property>
+      <property name="Target">M:System.Net.Http.HttpClientHandler.GetProperties()</property>
+      <property name="Justification">The Xamarin.iOS and Mono.Android libraries are not present when running the trimmer analysis during our build. A consuming application will get a warning if these libraries aren't present when trimming the full app.</property>
+    </attribute>
+    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
+      <argument>ILLink</argument>
+      <argument>IL2035</argument>
+      <property name="Scope">member</property>
+      <property name="Target">M:System.Net.Http.HttpClientHandler.GetSupportsAutomaticDecompression()</property>
+      <property name="Justification">The Xamarin.iOS and Mono.Android libraries are not present when running the trimmer analysis during our build. A consuming application will get a warning if these libraries aren't present when trimming the full app.</property>
+    </attribute>
+    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
+      <argument>ILLink</argument>
+      <argument>IL2035</argument>
+      <property name="Scope">member</property>
+      <property name="Target">M:System.Net.Http.HttpClientHandler.GetSupportsProxy()</property>
+      <property name="Justification">The Xamarin.iOS and Mono.Android libraries are not present when running the trimmer analysis during our build. A consuming application will get a warning if these libraries aren't present when trimming the full app.</property>
+    </attribute>
+    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
+      <argument>ILLink</argument>
+      <argument>IL2035</argument>
+      <property name="Scope">member</property>
+      <property name="Target">M:System.Net.Http.HttpClientHandler.GetSupportsRedirectConfiguration()</property>
+      <property name="Justification">The Xamarin.iOS and Mono.Android libraries are not present when running the trimmer analysis during our build. A consuming application will get a warning if these libraries aren't present when trimming the full app.</property>
+    </attribute>
+    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
+      <argument>ILLink</argument>
+      <argument>IL2035</argument>
+      <property name="Scope">member</property>
+      <property name="Target">M:System.Net.Http.HttpClientHandler.GetSslProtocols()</property>
+      <property name="Justification">The Xamarin.iOS and Mono.Android libraries are not present when running the trimmer analysis during our build. A consuming application will get a warning if these libraries aren't present when trimming the full app.</property>
+    </attribute>
+    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
+      <argument>ILLink</argument>
+      <argument>IL2035</argument>
+      <property name="Scope">member</property>
+      <property name="Target">M:System.Net.Http.HttpClientHandler.SetSslProtocols(System.Security.Authentication.SslProtocols)</property>
       <property name="Justification">The Xamarin.iOS and Mono.Android libraries are not present when running the trimmer analysis during our build. A consuming application will get a warning if these libraries aren't present when trimming the full app.</property>
     </attribute>
   </assembly>

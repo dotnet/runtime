@@ -4,32 +4,42 @@
     <body>
       <trans-unit id="ContextClassesMustBePartialMessageFormat">
         <source>Derived 'JsonSerializerContext' type '{0}' specifies JSON-serializable types. The type and all containing types must be made partial to kick off source generation.</source>
-        <target state="new">Derived 'JsonSerializerContext' type '{0}' specifies JSON-serializable types. The type and all containing types must be made partial to kick off source generation.</target>
+        <target state="translated">El tipo derivado "JsonSerializerContext" "{0}" especifica tipos de JSON serializables. El tipo y todos los tipos que contienen deben hacerse parciales para iniciar la generación de origen.</target>
         <note />
       </trans-unit>
       <trans-unit id="ContextClassesMustBePartialTitle">
         <source>Derived 'JsonSerializerContext' types and all containing types must be partial.</source>
-        <target state="new">Derived 'JsonSerializerContext' types and all containing types must be partial.</target>
+        <target state="translated">Los tipos derivados "JsonSerializerContext" y todos los tipos que contienen deben ser parciales.</target>
         <note />
       </trans-unit>
       <trans-unit id="DuplicateTypeNameMessageFormat">
         <source>There are multiple types named {0}. Source was generated for the first one detected. Use 'JsonSerializableAttribute.TypeInfoPropertyName' to resolve this collision.</source>
-        <target state="new">There are multiple types named {0}. Source was generated for the first one detected. Use 'JsonSerializableAttribute.TypeInfoPropertyName' to resolve this collision.</target>
+        <target state="translated">Hay varios tipos denominados {0}. El origen se generó para el primero detectado. Use "JsonSerializableAttribute.TypeInfoPropertyName" para resolver esta colisión.</target>
         <note />
       </trans-unit>
       <trans-unit id="DuplicateTypeNameTitle">
         <source>Duplicate type name.</source>
-        <target state="new">Duplicate type name.</target>
+        <target state="translated">Nombre de tipo duplicado.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="MultipleJsonConstructorAttributeFormat">
+        <source>Type '{0}' has multiple constructors annotated with 'JsonConstructorAttribute'.</source>
+        <target state="translated">El tipo '{0}' tiene varios constructores anotados con 'JsonConstructorAttribute'.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="MultipleJsonConstructorAttributeTitle">
+        <source>Type has multiple constructors annotated with JsonConstructorAttribute.</source>
+        <target state="translated">El tipo tiene varios constructores anotados con JsonConstructorAttribute.</target>
         <note />
       </trans-unit>
       <trans-unit id="TypeNotSupportedMessageFormat">
         <source>Did not generate serialization metadata for type '{0}'.</source>
-        <target state="new">Did not generate serialization metadata for type '{0}'.</target>
+        <target state="translated">No generó metadatos de serialización para el tipo '{0}".</target>
         <note />
       </trans-unit>
       <trans-unit id="TypeNotSupportedTitle">
         <source>Did not generate serialization metadata for type.</source>
-        <target state="new">Did not generate serialization metadata for type.</target>
+        <target state="translated">No generó metadatos de serialización de metadatos para el tipo.</target>
         <note />
       </trans-unit>
     </body>

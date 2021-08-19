@@ -379,8 +379,8 @@ namespace System.Text.RegularExpressions.Tests
         [InlineData("(?:a[ce]*|b*)c", "(?:a[ce]*|(?>b*))c")]
         [InlineData("apple|(?:orange|pear)|grape", "apple|orange|pear|grape")]
         [InlineData("(?>(?>(?>(?:abc)*)))", "(?:abc)*")]
-        [InlineData("(w*)+", "((?>w*))+")]
-        [InlineData("(w*)+\\.", "((?>w*))+\\.")]
+        [InlineData("(?:w*)+", "(?>w*)+")]
+        [InlineData("(?:w*)+\\.", "(?>w*)+\\.")]
         [InlineData("(a[bcd]e*)*fg", "(a[bcd](?>e*))*fg")]
         [InlineData("(\\w[bcd]\\s*)*fg", "(\\w[bcd](?>\\s*))*fg")]
         public void PatternsReduceIdentically(string pattern1, string pattern2)
@@ -457,6 +457,8 @@ namespace System.Text.RegularExpressions.Tests
         [InlineData("[a-z]*[\x0000-\xFFFF]+", "(?>[a-z]*)[\x0000-\xFFFF]+")]
         [InlineData("[^a-c]*[e-g]", "(?>[^a-c]*)[e-g]")]
         [InlineData("[^a-c]*[^e-g]", "(?>[^a-c]*)[^e-g]")]
+        [InlineData("(w+)+", "((?>w+))+")]
+        [InlineData("(w{1,2})+", "((?>w{1,2}))+")]
         public void PatternsReduceDifferently(string pattern1, string pattern2)
         {
             var r1 = new Regex(pattern1);

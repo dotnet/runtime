@@ -14,33 +14,25 @@ namespace System.Diagnostics.Tracing
         {
             // Returns the current process' CPU usage as a percentage
 
-            int cpuUsage;
+            int cpuUsage = 0;
 
-            if (!Interop.Kernel32.GetProcessTimes(Interop.Kernel32.GetCurrentProcess(), out _, out _, out long procKernelTime, out long procUserTime))
-            {
-                return 0;
-            }
-
-            if (!Interop.Kernel32.GetSystemTimes(out _, out long systemUserTime, out long systemKernelTime))
-            {
-                return 0;
-            }
-
-            if (s_prevSystemUserTime == 0 && s_prevSystemKernelTime == 0) // These may be 0 when we report CPU usage for the first time, in which case we should just return 0.
-            {
-                cpuUsage = 0;
-            }
-            else
+            if (Interop.Kernel32.GetProcessTimes(Interop.Kernel32.GetCurrentProcess(), out _, out _, out long procKernelTime, out long procUserTime) &&
+                Interop.Kernel32.GetSystemTimes(out _, out long systemUserTime, out long systemKernelTime))
             {
                 long totalProcTime = (procUserTime - s_prevProcUserTime) + (procKernelTime - s_prevProcKernelTime);
                 long totalSystemTime = (systemUserTime - s_prevSystemUserTime) + (systemKernelTime - s_prevSystemKernelTime);
-                cpuUsage = (int)(totalProcTime * 100 / totalSystemTime);
-            }
 
-            s_prevProcUserTime = procUserTime;
-            s_prevProcKernelTime = procKernelTime;
-            s_prevSystemUserTime = systemUserTime;
-            s_prevSystemKernelTime = systemKernelTime;
+                if (s_prevSystemUserTime != 0 && s_prevSystemKernelTime != 0 && // These may be 0 when we report CPU usage for the first time, in which case we should just return 0.
+                    totalSystemTime != 0)
+                {
+                    cpuUsage = (int)(totalProcTime * 100 / totalSystemTime);
+                }
+
+                s_prevProcUserTime = procUserTime;
+                s_prevProcKernelTime = procKernelTime;
+                s_prevSystemUserTime = systemUserTime;
+                s_prevSystemKernelTime = systemKernelTime;
+            }
 
             return cpuUsage;
         }

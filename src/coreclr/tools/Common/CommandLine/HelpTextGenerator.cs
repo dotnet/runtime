@@ -27,6 +27,7 @@ namespace Internal.CommandLine
             public string ApplicationName;
             public IEnumerable<string> SyntaxElements;
             public IReadOnlyList<HelpRow> Rows;
+            public IReadOnlyList<string> ExtraParagraphs;
         }
 
         private struct HelpRow
@@ -47,6 +48,15 @@ namespace Internal.CommandLine
             sb.WriteRows(page.Rows, maxWidth);
 
             sb.AppendLine();
+
+            if (page.ExtraParagraphs != null)
+            {
+                foreach (string text in page.ExtraParagraphs)
+                {
+                    var words = SplitWords(text);
+                    sb.WriteWordWrapped(words, 0, maxWidth);
+                }
+            }
         }
 
         private static void WriteUsage(this StringBuilder sb, string applicationName, IEnumerable<string> syntaxElements, int maxWidth)
@@ -115,7 +125,8 @@ namespace Internal.CommandLine
             {
                 ApplicationName = argumentSyntax.ApplicationName,
                 SyntaxElements = GetGlobalSyntax(),
-                Rows = GetCommandRows(argumentSyntax).ToArray()
+                Rows = GetCommandRows(argumentSyntax).ToArray(),
+                ExtraParagraphs = argumentSyntax.ExtraHelpParagraphs
             };
         }
 
@@ -125,7 +136,8 @@ namespace Internal.CommandLine
             {
                 ApplicationName = argumentSyntax.ApplicationName,
                 SyntaxElements = GetCommandSyntax(argumentSyntax, command),
-                Rows = GetArgumentRows(argumentSyntax, command).ToArray()
+                Rows = GetArgumentRows(argumentSyntax, command).ToArray(),
+                ExtraParagraphs = argumentSyntax.ExtraHelpParagraphs
             };
         }
 

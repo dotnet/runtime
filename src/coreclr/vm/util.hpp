@@ -918,6 +918,83 @@ public:
     static BOOL nativeIsDigit(WCHAR c);
 };
 
+// ======================================================================================
+// Simple, reusable 100ns timer for normalizing ticks. For use in Q/FCalls to avoid discrepency with
+// tick frequency between native and managed.
+class NormalizedTimer
+{
+private:
+    static const int64_t NormalizedTicksPerSecond = 10000000 /* 100ns ticks per second (1e7) */;
+    static Volatile<double> s_frequency;
+
+    LARGE_INTEGER startTimestamp;
+    LARGE_INTEGER stopTimestamp;
+
+#if _DEBUG
+    bool isRunning = false;
+#endif // _DEBUG
+
+public:
+    NormalizedTimer()
+    {
+        LIMITED_METHOD_CONTRACT;
+        if (s_frequency.Load() == -1)
+        {
+            double frequency;
+            LARGE_INTEGER qpfValue;
+            QueryPerformanceFrequency(&qpfValue);
+            frequency = static_cast<double>(qpfValue.QuadPart);
+            frequency /= NormalizedTicksPerSecond;
+            s_frequency.Store(frequency);
+        }
+
+        startTimestamp.QuadPart = 0;
+        startTimestamp.QuadPart = 0;
+    }
+
+    // ======================================================================================
+    // Start the timer
+    inline
+    void Start()
+    {
+        LIMITED_METHOD_CONTRACT;
+        _ASSERTE(!isRunning);
+        QueryPerformanceCounter(&startTimestamp);
+
+#if _DEBUG
+        isRunning = true;
+#endif // _DEBUG
+    }
+
+    // ======================================================================================
+    // stop the timer. If called before starting, sets the start time to the same as the stop
+    inline
+    void Stop()
+    {
+        LIMITED_METHOD_CONTRACT;
+        _ASSERTE(isRunning);
+        QueryPerformanceCounter(&stopTimestamp);
+
+#if _DEBUG
+        isRunning = false;
+#endif // _DEBUG
+    }
+
+    // ======================================================================================
+    // Return elapsed ticks. This will stop a running timer.
+    // Will return 0 if called out of order.
+    // Only recalculated this value if it has been stopped/started since previous calculation.
+    inline
+    int64_t Elapsed100nsTicks()
+    {
+        LIMITED_METHOD_CONTRACT;
+        _ASSERTE(!isRunning);
+        _ASSERTE(startTimestamp.QuadPart > 0);
+        _ASSERTE(stopTimestamp.QuadPart > 0);
+        return static_cast<int64_t>((stopTimestamp.QuadPart - startTimestamp.QuadPart) / s_frequency);
+    }
+};
+
 #ifdef _DEBUG
 #define FORCEINLINE_NONDEBUG
 #else

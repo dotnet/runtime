@@ -1790,7 +1790,7 @@ namespace System.Data
 #if DEBUG
             for (int i = 1; i < s_mapNameTypeXsd.Length; ++i)
             {
-                Debug.Assert((s_mapNameTypeXsd[i - 1].CompareTo(s_mapNameTypeXsd[i].name)) < 0, "incorrect sorting " + s_mapNameTypeXsd[i].name);
+                Debug.Assert((s_mapNameTypeXsd[i - 1].CompareTo(s_mapNameTypeXsd[i].name)) < 0, $"incorrect sorting {s_mapNameTypeXsd[i].name}");
             }
 #endif
             int index = Array.BinarySearch(s_mapNameTypeXsd, xsdTypeName);
@@ -1856,7 +1856,7 @@ namespace System.Data
 #if DEBUG
             for (int i = 1; i < s_mapNameTypeXsd.Length; ++i)
             {
-                Debug.Assert((s_mapNameTypeXsd[i - 1].CompareTo(s_mapNameTypeXsd[i].name)) < 0, "incorrect sorting " + s_mapNameTypeXsd[i].name);
+                Debug.Assert((s_mapNameTypeXsd[i - 1].CompareTo(s_mapNameTypeXsd[i].name)) < 0, $"incorrect sorting {s_mapNameTypeXsd[i].name}");
             }
 #endif
             int index = Array.BinarySearch(s_mapNameTypeXsd, name);
@@ -1904,7 +1904,7 @@ namespace System.Data
 #if DEBUG
             for (int i = 1; i < s_mapNameTypeXsd.Length; ++i)
             {
-                Debug.Assert((s_mapNameTypeXsd[i - 1].CompareTo(s_mapNameTypeXsd[i].name)) < 0, "incorrect sorting " + s_mapNameTypeXsd[i].name);
+                Debug.Assert((s_mapNameTypeXsd[i - 1].CompareTo(s_mapNameTypeXsd[i].name)) < 0, $"incorrect sorting {s_mapNameTypeXsd[i].name}");
             }
 #endif
             int index = Array.BinarySearch(s_mapNameTypeXsd, name);
@@ -1914,12 +1914,12 @@ namespace System.Data
                 // Let's check that we realy don't have this name:
                 foreach (NameType nt in s_mapNameTypeXsd)
                 {
-                    Debug.Assert(nt.name != name, "FindNameType('" + name + "') -- failed. Existed name not found");
+                    Debug.Assert(nt.name != name, $"FindNameType('{name}') -- failed. Existed name not found");
                 }
 #endif
                 return false;
             }
-            Debug.Assert(s_mapNameTypeXsd[index].name == name, "FindNameType('" + name + "') -- failed. Wrong name found");
+            Debug.Assert(s_mapNameTypeXsd[index].name == name, $"FindNameType('{name}') -- failed. Wrong name found");
             return true;
         }
 

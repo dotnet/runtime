@@ -844,8 +844,8 @@ namespace System.Data.Common
                     string keyname = (string)entry.Key;
                     string? value1 = (string?)entry.Value;
                     string? value2 = (string?)parsetable[keyname];
-                    Debug.Assert(parsetable.Contains(keyname), "ParseInternal code vs. regex mismatch keyname <" + keyname + ">");
-                    Debug.Assert(value1 == value2, "ParseInternal code vs. regex mismatch keyvalue <" + value1 + "> <" + value2 + ">");
+                    Debug.Assert(parsetable.Contains(keyname), $"ParseInternal code vs. regex mismatch keyname <{keyname}>");
+                    Debug.Assert(value1 == value2, $"ParseInternal code vs. regex mismatch keyvalue <{value1}> <{value2}>");
                 }
 
             }
@@ -871,11 +871,11 @@ namespace System.Data.Common
                             }
                         }
                     }
-                    Debug.Assert(isEquivalent, "ParseInternal code vs regex message mismatch: <" + msg1 + "> <" + msg2 + ">");
+                    Debug.Assert(isEquivalent, $"ParseInternal code vs regex message mismatch: <{msg1}> <{msg2}>");
                 }
                 else
                 {
-                    Debug.Assert(false, "ParseInternal code vs regex throw mismatch " + f.Message);
+                    Debug.Assert(false, $"ParseInternal code vs regex throw mismatch {f.Message}");
                 }
                 e = null;
             }

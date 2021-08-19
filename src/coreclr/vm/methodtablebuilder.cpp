@@ -21,7 +21,6 @@
 #include "ecmakey.h"
 #include "customattribute.h"
 #include "typestring.h"
-#include "compile.h"
 
 //*******************************************************************************
 // Helper functions to sort GCdescs by offset (decending order)
@@ -2751,15 +2750,7 @@ MethodTableBuilder::EnumerateClassMethods()
             BuildMethodTableThrowException(IDS_CLASSLOAD_BADFORMAT);
         }
 
-        // Signature validation
-        if (!bmtProp->fNoSanityChecks)
-        {
-            hr = validateTokenSig(tok,pMemberSignature,cMemberSignature,dwMemberAttrs,pMDInternalImport);
-            if (FAILED(hr))
-            {
-                BuildMethodTableThrowException(hr, BFA_BAD_SIGNATURE, mdMethodDefNil);
-            }
-        }
+        bool isVtblGap = false;
         if (IsMdRTSpecialName(dwMemberAttrs) || IsMdVirtual(dwMemberAttrs) || IsDelegate())
         {
             if (FAILED(pMDInternalImport->GetNameOfMethodDef(tok, (LPCSTR *)&strMethodName)))
@@ -2770,10 +2761,22 @@ MethodTableBuilder::EnumerateClassMethods()
             {
                 BuildMethodTableThrowException(BFA_METHOD_NAME_TOO_LONG);
             }
+
+            isVtblGap = IsMdRTSpecialName(dwMemberAttrs) && strncmp(strMethodName, "_VtblGap", 8) == 0;
         }
         else
         {
             strMethodName = NULL;
+        }
+
+        // Signature validation
+        if (!bmtProp->fNoSanityChecks && !isVtblGap)
+        {
+            hr = validateTokenSig(tok,pMemberSignature,cMemberSignature,dwMemberAttrs,pMDInternalImport);
+            if (FAILED(hr))
+            {
+                BuildMethodTableThrowException(hr, BFA_BAD_SIGNATURE, mdMethodDefNil);
+            }
         }
 
         DWORD numGenericMethodArgs = 0;
@@ -2847,84 +2850,77 @@ MethodTableBuilder::EnumerateClassMethods()
         // single empty slot).
         //
 
-        if (IsMdRTSpecialName(dwMemberAttrs))
+        if (isVtblGap)
         {
-            PREFIX_ASSUME(strMethodName != NULL); // if we've gotten here we've called GetNameOfMethodDef
+            //
+            // This slot doesn't really exist, don't add it to the method
+            // table. Instead it represents one or more empty slots, encoded
+            // in the method name. Locate the beginning of the count in the
+            // name. There are these points to consider:
+            //   There may be no count present at all (in which case the
+            //   count is taken as one).
+            //   There may be an additional count just after Gap but before
+            //   the '_'. We ignore this.
+            //
 
-            // The slot is special, but it might not be a vtable spacer. To
-            // determine that we must look at the name.
-            if (strncmp(strMethodName, "_VtblGap", 8) == 0)
+            LPCSTR pos = strMethodName + 8;
+
+            // Skip optional number.
+            while (IS_DIGIT(*pos))
+                pos++;
+
+            WORD n = 0;
+
+            // Check for presence of count.
+            if (*pos == '\0')
             {
-                                //
-                // This slot doesn't really exist, don't add it to the method
-                // table. Instead it represents one or more empty slots, encoded
-                // in the method name. Locate the beginning of the count in the
-                // name. There are these points to consider:
-                //   There may be no count present at all (in which case the
-                //   count is taken as one).
-                //   There may be an additional count just after Gap but before
-                //   the '_'. We ignore this.
-                                //
-
-                LPCSTR pos = strMethodName + 8;
-
-                // Skip optional number.
-                while (IS_DIGIT(*pos))
-                    pos++;
-
-                WORD n = 0;
-
-                // Check for presence of count.
-                if (*pos == '\0')
-                    n = 1;
-                else
+                n = 1;
+            }
+            else
+            {
+                if (*pos != '_')
                 {
-                    if (*pos != '_')
-                    {
-                        BuildMethodTableThrowException(COR_E_BADIMAGEFORMAT,
-                                                       IDS_CLASSLOAD_BADSPECIALMETHOD,
-                                                       tok);
-                    }
-
-                    // Skip '_'.
-                    pos++;
-
-                    // Read count.
-                    bool fReadAtLeastOneDigit = false;
-                    while (IS_DIGIT(*pos))
-                    {
-                        _ASSERTE(n < 6552);
-                        n *= 10;
-                        n += DIGIT_TO_INT(*pos);
-                        pos++;
-                        fReadAtLeastOneDigit = true;
-                    }
-
-                    // Check for end of name.
-                    if (*pos != '\0' || !fReadAtLeastOneDigit)
-                    {
-                        BuildMethodTableThrowException(COR_E_BADIMAGEFORMAT,
-                                                       IDS_CLASSLOAD_BADSPECIALMETHOD,
-                                                       tok);
-                    }
+                    BuildMethodTableThrowException(COR_E_BADIMAGEFORMAT,
+                                                    IDS_CLASSLOAD_BADSPECIALMETHOD,
+                                                    tok);
                 }
 
-#ifdef FEATURE_COMINTEROP
-                // Record vtable gap in mapping list. The map is an optional field, so ensure we've allocated
-                // these fields first.
-                EnsureOptionalFieldsAreAllocated(GetHalfBakedClass(), m_pAllocMemTracker, GetLoaderAllocator()->GetLowFrequencyHeap());
-                if (GetHalfBakedClass()->GetSparseCOMInteropVTableMap() == NULL)
-                    GetHalfBakedClass()->SetSparseCOMInteropVTableMap(new SparseVTableMap());
+                // Skip '_'.
+                pos++;
 
-                GetHalfBakedClass()->GetSparseCOMInteropVTableMap()->RecordGap((WORD)NumDeclaredMethods(), n);
+                // Read count.
+                bool fReadAtLeastOneDigit = false;
+                while (IS_DIGIT(*pos))
+                {
+                    _ASSERTE(n < 6552);
+                    n *= 10;
+                    n += DIGIT_TO_INT(*pos);
+                    pos++;
+                    fReadAtLeastOneDigit = true;
+                }
 
-                bmtProp->fSparse = true;
-#endif // FEATURE_COMINTEROP
-                continue;
+                // Check for end of name.
+                if (*pos != '\0' || !fReadAtLeastOneDigit)
+                {
+                    BuildMethodTableThrowException(COR_E_BADIMAGEFORMAT,
+                                                    IDS_CLASSLOAD_BADSPECIALMETHOD,
+                                                    tok);
+                }
             }
 
-        }
+#ifdef FEATURE_COMINTEROP
+            // Record vtable gap in mapping list. The map is an optional field, so ensure we've allocated
+            // these fields first.
+            EnsureOptionalFieldsAreAllocated(GetHalfBakedClass(), m_pAllocMemTracker, GetLoaderAllocator()->GetLowFrequencyHeap());
+            if (GetHalfBakedClass()->GetSparseCOMInteropVTableMap() == NULL)
+                GetHalfBakedClass()->SetSparseCOMInteropVTableMap(new SparseVTableMap());
 
+            GetHalfBakedClass()->GetSparseCOMInteropVTableMap()->RecordGap((WORD)NumDeclaredMethods(), n);
+
+            bmtProp->fSparse = true;
+#endif // FEATURE_COMINTEROP
+            continue;
+        }
 
         //
         // This is a real method so add it to the enumeration of methods. We now need to retrieve
@@ -3024,11 +3020,11 @@ MethodTableBuilder::EnumerateClassMethods()
 
             // Some interface checks.
             // We only need them if default interface method support is disabled or if this is fragile crossgen
-#if !defined(FEATURE_DEFAULT_INTERFACES) || defined(FEATURE_NATIVE_IMAGE_GENERATION)
+#if !defined(FEATURE_DEFAULT_INTERFACES)
             if (fIsClassInterface
 #if defined(FEATURE_DEFAULT_INTERFACES)
                 // Only fragile crossgen wasn't upgraded to deal with default interface methods.
-                && !IsReadyToRunCompilation() && !IsNgenPDBCompilationProcess()
+                && !IsNgenPDBCompilationProcess()
 #endif
                 )
             {
@@ -3048,7 +3044,7 @@ MethodTableBuilder::EnumerateClassMethods()
                     }
                 }
             }
-#endif // !defined(FEATURE_DEFAULT_INTERFACES) || defined(FEATURE_NATIVE_IMAGE_GENERATION)
+#endif // !defined(FEATURE_DEFAULT_INTERFACES)
 
             // No synchronized methods in ValueTypes
             if(fIsClassValueType && IsMiSynchronized(dwImplFlags))
@@ -6787,7 +6783,7 @@ VOID MethodTableBuilder::ValidateStaticMethodImpl(
     bmtMethodHandle     hDecl,
     bmtMethodHandle     hImpl)
 {
-    // While we don't want to place the static method impl declarations on the class/interface, we do 
+    // While we don't want to place the static method impl declarations on the class/interface, we do
     // need to validate the method constraints and signature are compatible
     if (!bmtProp->fNoSanityChecks)
     {
@@ -9101,9 +9097,14 @@ MethodTableBuilder::LoadExactInterfaceMap(MethodTable *pMT)
     MethodTable **pExactMTs = (MethodTable**) _alloca(sizeof(MethodTable *) * nInterfacesCount);
     BOOL duplicates;
     bool retry = false;
-    bool retryWithExactInterfaces = !pMT->IsValueType() || pMT->IsSharedByGenericInstantiations(); // Always use exact loading behavior with classes or shared generics, as they have to deal with inheritance, and the
-                                                                                          // inexact matching logic for classes would be more complex to write.
-    
+
+    // Always use exact loading behavior with classes or shared generics, as they have to deal with inheritance, and the
+    // inexact matching logic for classes would be more complex to write.
+    // Also always use the exact loading behavior with any generic that contains generic variables, as the open type is used
+    // to represent a type instantiated over its own generic variables, and the special marker type is currently the open type
+    // and we make this case distinguishable by simply disallowing the optimization in those cases.
+    bool retryWithExactInterfaces = !pMT->IsValueType() || pMT->IsSharedByGenericInstantiations() || pMT->ContainsGenericVariables();
+
     DWORD nAssigned = 0;
     do
     {
@@ -9132,7 +9133,7 @@ MethodTableBuilder::LoadExactInterfaceMap(MethodTable *pMT)
                                                                                 (const Substitution*)0,
                                                                                 retryWithExactInterfaces ? NULL : pMT).GetMethodTable();
 
-            bool uninstGenericCase = pNewIntfMT->IsSpecialMarkerTypeForGenericCasting();
+            bool uninstGenericCase = !retryWithExactInterfaces && pNewIntfMT->IsSpecialMarkerTypeForGenericCasting();
 
             duplicates |= InsertMethodTable(pNewIntfMT, pExactMTs, nInterfacesCount, &nAssigned);
 
@@ -9146,7 +9147,7 @@ MethodTableBuilder::LoadExactInterfaceMap(MethodTable *pMT)
                     MethodTable *pItfPossiblyApprox = intIt.GetInterfaceApprox();
                     if (uninstGenericCase && pItfPossiblyApprox->HasInstantiation() && pItfPossiblyApprox->ContainsGenericVariables())
                     {
-                        // We allow a limited set of interface generic shapes with type variables. In particular, we require the 
+                        // We allow a limited set of interface generic shapes with type variables. In particular, we require the
                         // instantiations to be exactly simple type variables, and to have a relatively small number of generic arguments
                         // so that the fallback instantiating logic works efficiently
                         if (InstantiationIsAllTypeVariables(pItfPossiblyApprox->GetInstantiation()) && pItfPossiblyApprox->GetInstantiation().GetNumArgs() <= MethodTable::MaxGenericParametersForSpecialMarkerType)
@@ -9192,7 +9193,7 @@ MethodTableBuilder::LoadExactInterfaceMap(MethodTable *pMT)
 #endif
     // We have a special algorithm for interface maps in CoreLib, which doesn't expand interfaces, and assumes no ambiguous
     // duplicates. Code related to this is marked with #SpecialCorelibInterfaceExpansionAlgorithm
-    _ASSERTE(!duplicates || !(pMT->GetModule()->IsSystem() && pMT->IsValueType())); 
+    _ASSERTE(!duplicates || !(pMT->GetModule()->IsSystem() && pMT->IsValueType()));
 
     CONSISTENCY_CHECK(duplicates || (nAssigned == pMT->GetNumInterfaces()));
     if (duplicates)
@@ -11302,8 +11303,7 @@ BOOL MethodTableBuilder::NeedsAlignedBaseOffset()
     if (!GetModule()->GetFile()->IsILImageReadyToRun())
     {
         // Always use ReadyToRun field layout algorithm to produce ReadyToRun images
-        if (!IsReadyToRunCompilation())
-            return FALSE;
+        return FALSE;
     }
 
     if (!ModulesAreDistributedAsAnIndivisibleUnit(GetModule(), pParentMT->GetModule()) ||

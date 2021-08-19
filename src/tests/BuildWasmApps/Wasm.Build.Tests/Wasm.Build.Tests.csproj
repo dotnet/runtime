@@ -13,11 +13,18 @@
     <DefineConstants Condition="'$(ContinuousIntegrationBuild)' != 'true'">TEST_DEBUG_CONFIG_ALSO</DefineConstants>
     <!-- This project should not build against the live built .NETCoreApp targeting pack as it contributes to the build itself. -->
     <UseLocalTargetingRuntimePack>false</UseLocalTargetingRuntimePack>
+
     <TestUsingWorkloads Condition="'$(TestUsingWorkloads)' == ''">true</TestUsingWorkloads>
+    <InstallWorkloadForTesting>true</InstallWorkloadForTesting>
 
     <!-- don't run any wasm build steps -->
     <WasmBuildAppAfterThisTarget />
-    <RunScriptInputName>RunScriptTemplate.sh</RunScriptInputName>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <RunScriptInputName Condition="'$(OS)' == 'Windows_NT'">RunScriptTemplate.cmd</RunScriptInputName>
+    <RunScriptInputName Condition="'$(OS)' != 'Windows_NT'">RunScriptTemplate.sh</RunScriptInputName>
+
     <RunScriptInputPath>$(MSBuildThisFileDirectory)data\$(RunScriptInputName)</RunScriptInputPath>
   </PropertyGroup>
 
@@ -28,7 +35,7 @@
   </ItemGroup>
 
   <Target Name="UpdateRunScriptCommands" BeforeTargets="GenerateRunScript">
-    <ItemGroup>
+    <ItemGroup Condition="'$(TestUsingWorkloads)' == 'true'">
       <RunScriptCommands Condition="'$(OS)' != 'Windows_NT'" Include="export WORKLOAD_PACKS_VER=$(Version)" />
       <RunScriptCommands Condition="'$(OS)' == 'Windows_NT'" Include="set WORKLOAD_PACKS_VER=$(Version)" />
     </ItemGroup>
@@ -40,9 +47,8 @@
     </ItemGroup>
 
     <ItemGroup Condition="'$(ContinuousIntegrationBuild)' != 'true'">
-      <!-- Enable once we add workloads based testing -->
-      <!--<RunScriptCommands Condition="'$(OS)' != 'Windows_NT'" Include="export TEST_USING_WORKLOADS=$(TestUsingWorkloads)" />-->
-      <!--<RunScriptCommands Condition="'$(OS)' == 'Windows_NT'" Include="set TEST_USING_WORKLOADS=$(TestUsingWorkloads)" />-->
+      <RunScriptCommands Condition="'$(OS)' != 'Windows_NT'" Include="export TEST_USING_WORKLOADS=$(TestUsingWorkloads)" />
+      <RunScriptCommands Condition="'$(OS)' == 'Windows_NT'" Include="set TEST_USING_WORKLOADS=$(TestUsingWorkloads)" />
 
       <RunScriptCommands Condition="'$(OS)' != 'Windows_NT'" Include="export BASE_DIR=$(ArtifactsBinDir)" />
       <RunScriptCommands Condition="'$(OS)' == 'Windows_NT'" Include="set BASE_DIR=$(ArtifactsBinDir)" />
@@ -50,16 +56,24 @@
 
     <ItemGroup>
       <RunScriptCommands Condition="'$(OS)' != 'Windows_NT'" Include="set_env_vars" />
+      <RunScriptCommands Condition="'$(OS)' == 'Windows_NT'" Include="CALL :SetEnvVars" />
     </ItemGroup>
 
     <PropertyGroup>
       <RunScriptCommand Condition="'$(OS)' != 'Windows_NT'">dotnet exec xunit.console.dll $(AssemblyName).dll -xml %24XHARNESS_OUT/testResults.xml</RunScriptCommand>
       <RunScriptCommand Condition="'$(OS)' == 'Windows_NT'">dotnet.exe exec xunit.console.dll $(AssemblyName).dll -xml %XHARNESS_OUT%\testResults.xml</RunScriptCommand>
+
+      <RunScriptCommand Condition="'$(ContinuousIntegrationBuild)' == 'true' and '$(OS)' != 'Windows_NT'">$(RunScriptCommand) %24HELIX_XUNIT_ARGS</RunScriptCommand>
+      <RunScriptCommand Condition="'$(ContinuousIntegrationBuild)' == 'true' and '$(OS)' == 'Windows_NT'">$(RunScriptCommand) %HELIX_XUNIT_ARGS%</RunScriptCommand>
+
       <RunScriptCommand Condition="'$(ContinuousIntegrationBuild)' == 'true'">$(RunScriptCommand) -nocolor</RunScriptCommand>
       <RunScriptCommand Condition="'$(ContinuousIntegrationBuild)' == 'true' or '$(XUnitShowProgress)' == 'true'">$(RunScriptCommand) -verbose</RunScriptCommand>
 
       <RunScriptCommand Condition="'$(XUnitMethodName)' != ''">$(RunScriptCommand) -method $(XUnitMethodName)</RunScriptCommand>
       <RunScriptCommand Condition="'$(XUnitClassName)' != ''">$(RunScriptCommand) -class $(XUnitClassName)</RunScriptCommand>
+
+      <!-- this allows use of test attributes from dotnet.xunitextensions -->
+      <RunScriptCommand>$(RunScriptCommand) -notrait category=IgnoreForCI -notrait category=failing</RunScriptCommand>
     </PropertyGroup>
   </Target>
 </Project>

@@ -46,6 +46,6 @@ namespace System.ComponentModel.Design
         /// <summary>
         /// Overrides Object's ToString method.
         /// </summary>
-        public override string ToString() => Guid.ToString() + " : " + ID.ToString(CultureInfo.CurrentCulture);
+        public override string ToString() => $"{Guid} : {ID}";
     }
 }

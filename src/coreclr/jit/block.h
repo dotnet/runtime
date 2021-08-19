@@ -1019,13 +1019,11 @@ struct BasicBlock : private LIR::Range
 
     // The following fields are used for loop detection
     typedef unsigned char loopNumber;
-    static const unsigned NOT_IN_LOOP = UCHAR_MAX;
+    static const unsigned NOT_IN_LOOP  = UCHAR_MAX;
+    static const unsigned MAX_LOOP_NUM = 64;
 
     loopNumber bbNatLoopNum; // Index, in optLoopTable, of most-nested loop that contains this block,
                              // or else NOT_IN_LOOP if this block is not in a loop.
-
-#define MAX_LOOP_NUM 16       // we're using a 'short' for the mask
-#define LOOP_MASK_TP unsigned // must be big enough for a mask
 
     // TODO-Cleanup: Get rid of bbStkDepth and use bbStackDepthOnEntry() instead
     union {

@@ -85,6 +85,23 @@ namespace System.Collections.Tests
                 }
             }
         }
+
+        [Fact]
+        public void SortedSet_Generic_GetViewBetween_MinMax_Updating()
+        {
+            var set = (SortedSet<int>)CreateSortedSet(new[] { 1 }, 1, 1);
+            var lowerView = set.GetViewBetween(-5, -2);
+            var upperView = set.GetViewBetween(2, 5);
+
+            set.Add(-3);
+            set.Add(2);
+            set.Add(3);
+
+            Assert.Equal(-3, lowerView.Min);
+            Assert.Equal(-3, lowerView.Max);
+            Assert.Equal(2, upperView.Min);
+            Assert.Equal(3, upperView.Max);
+        }
     }
 
     public class SortedSet_Generic_Tests_int_With_NullComparer : SortedSet_Generic_Tests_int

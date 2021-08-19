@@ -8,6 +8,7 @@ using System.Net.Quic.Implementations;
 using System.Runtime.Versioning;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Diagnostics;
 
 namespace System.Net.Http
 {
@@ -47,6 +48,8 @@ namespace System.Net.Http
         internal HeaderEncodingSelector<HttpRequestMessage>? _requestHeaderEncodingSelector;
         internal HeaderEncodingSelector<HttpRequestMessage>? _responseHeaderEncodingSelector;
 
+        internal DistributedContextPropagator? _activityHeadersPropagator = DistributedContextPropagator.Current;
+
         internal Version _maxHttpVersion;
 
         internal SslClientAuthenticationOptions? _sslOptions;
@@ -67,7 +70,7 @@ namespace System.Net.Http
         public HttpConnectionSettings()
         {
             bool allowHttp2 = GlobalHttpSettings.SocketsHttpHandler.AllowHttp2;
-            bool allowHttp3 = GlobalHttpSettings.SocketsHttpHandler.AllowDraftHttp3;
+            bool allowHttp3 = GlobalHttpSettings.SocketsHttpHandler.AllowHttp3;
             _maxHttpVersion =
                 allowHttp3 && allowHttp2 ? HttpVersion.Version30 :
                 allowHttp2 ? HttpVersion.Version20 :
@@ -119,6 +122,7 @@ namespace System.Net.Http
                 _connectCallback = _connectCallback,
                 _plaintextStreamFilter = _plaintextStreamFilter,
                 _initialHttp2StreamWindowSize = _initialHttp2StreamWindowSize,
+                _activityHeadersPropagator = _activityHeadersPropagator,
             };
 
             // TODO: Remove if/when QuicImplementationProvider is removed from System.Net.Quic.

@@ -345,7 +345,7 @@ namespace System.Security.Cryptography.X509Certificates
                 if (signatureAlgorithm == null)
                 {
                     string oidValue = Pal.SignatureAlgorithm;
-                    signatureAlgorithm = _lazySignatureAlgorithm = Oid.FromOidValue(oidValue, OidGroup.SignatureAlgorithm);
+                    signatureAlgorithm = _lazySignatureAlgorithm = new Oid(oidValue, null);
                 }
                 return signatureAlgorithm;
             }

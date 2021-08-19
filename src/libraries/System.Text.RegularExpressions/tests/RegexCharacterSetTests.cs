@@ -82,7 +82,7 @@ namespace System.Text.RegularExpressions.Tests
         [InlineData('\u0100')]
         public void SingleExpected(char c)
         {
-            string s = @"\u" + ((int)c).ToString("X4");
+            string s = $@"\u{(int)c:X4}";
             var set = new HashSet<char>() { c };
 
             // One

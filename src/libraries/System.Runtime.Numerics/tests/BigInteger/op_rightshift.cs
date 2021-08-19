@@ -54,6 +54,15 @@ namespace System.Numerics.Tests
                 tempByteArray2 = new byte[] { (byte)32 };
                 VerifyRightShiftString(Print(tempByteArray2) + Print(tempByteArray1) + "b>>");
             }
+
+            // RightShift Method - All One Uint Large BigIntegers - 32 bit Shift
+            for (int i = 0; i < s_samples; i++)
+            {
+                tempByteArray1 = GetRandomLengthAllOnesUIntByteArray(s_random);
+                tempByteArray2 = new byte[] { (byte)32 };
+                VerifyRightShiftString(Print(tempByteArray2) + Print(tempByteArray1) + "b>>");
+            }
+
             // RightShift Method - Large BigIntegers - large - Shift
             for (int i = 0; i < s_samples; i++)
             {
@@ -209,6 +218,16 @@ namespace System.Numerics.Tests
             value[value.Length - 1] |= 0x80;
 
             return value;
+        }
+
+        private static byte[] GetRandomLengthAllOnesUIntByteArray(Random random)
+        {
+            int gap = random.Next(0, 128);
+            int byteLength = 4 + gap * 4 + 1;
+            byte[] array = new byte[byteLength];
+            array[0] = 1;
+            array[^1] = 0xFF;
+            return array;
         }
 
         private static string Print(byte[] bytes)

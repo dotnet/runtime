@@ -1251,7 +1251,7 @@ public:
         return OperIsInitVal(OperGet());
     }
 
-    bool IsConstInitVal()
+    bool IsConstInitVal() const
     {
         return (gtOper == GT_CNS_INT) || (OperIsInitVal() && (gtGetOp1()->gtOper == GT_CNS_INT));
     }
@@ -3648,7 +3648,7 @@ struct GenTreeField : public GenTree
     CORINFO_FIELD_HANDLE gtFldHnd;
     DWORD                gtFldOffset;
     bool                 gtFldMayOverlap;
-#ifdef FEATURE_READYTORUN_COMPILER
+#ifdef FEATURE_READYTORUN
     CORINFO_CONST_LOOKUP gtFieldLookup;
 #endif
 
@@ -3660,7 +3660,7 @@ struct GenTreeField : public GenTree
             gtFlags |= (obj->gtFlags & GTF_ALL_EFFECT);
         }
 
-#ifdef FEATURE_READYTORUN_COMPILER
+#ifdef FEATURE_READYTORUN
         gtFieldLookup.addr = nullptr;
 #endif
     }
@@ -3797,6 +3797,8 @@ enum GenTreeCallFlags : unsigned int
                                                      // to restore real function address and load hidden argument
                                                      // as the first argument for calli. It is CoreRT replacement for instantiating
                                                      // stubs, because executable code cannot be generated at runtime.
+    GTF_CALL_M_HELPER_SPECIAL_DCE      = 0x00020000, // this helper call can be removed if it is part of a comma and
+                                                     // the comma result is unused.
     GTF_CALL_M_DEVIRTUALIZED           = 0x00040000, // this call was devirtualized
     GTF_CALL_M_UNBOXED                 = 0x00080000, // this call was optimized to use the unboxed entry point
     GTF_CALL_M_GUARDED_DEVIRT          = 0x00100000, // this call is a candidate for guarded devirtualization
@@ -4423,12 +4425,12 @@ struct GenTreeCall final : public GenTree
 
     bool IsR2ROrVirtualStubRelativeIndir()
     {
-#if defined(FEATURE_READYTORUN_COMPILER) && defined(TARGET_ARMARCH)
+#if defined(FEATURE_READYTORUN) && defined(TARGET_ARMARCH)
         bool isVirtualStub = (gtFlags & GTF_CALL_VIRT_KIND_MASK) == GTF_CALL_VIRT_STUB;
         return ((IsR2RRelativeIndir()) || (isVirtualStub && (IsVirtualStubRelativeIndir())));
 #else
         return false;
-#endif // FEATURE_READYTORUN_COMPILER && TARGET_ARMARCH
+#endif // FEATURE_READYTORUN && TARGET_ARMARCH
     }
 
     bool HasNonStandardAddedArgs(Compiler* compiler) const;
@@ -4596,7 +4598,7 @@ struct GenTreeCall final : public GenTree
         return (gtCallMoreFlags & GTF_CALL_M_VIRTSTUB_REL_INDIRECT) != 0;
     }
 
-#ifdef FEATURE_READYTORUN_COMPILER
+#ifdef FEATURE_READYTORUN
     bool IsR2RRelativeIndir() const
     {
         return (gtCallMoreFlags & GTF_CALL_M_R2R_REL_INDIRECT) != 0;
@@ -4609,7 +4611,7 @@ struct GenTreeCall final : public GenTree
             gtCallMoreFlags |= GTF_CALL_M_R2R_REL_INDIRECT;
         }
     }
-#endif // FEATURE_READYTORUN_COMPILER
+#endif // FEATURE_READYTORUN
 
     bool IsVarargs() const
     {
@@ -4739,7 +4741,7 @@ struct GenTreeCall final : public GenTree
         GenTree*              gtCallAddr;    // CT_INDIRECT
     };
 
-#ifdef FEATURE_READYTORUN_COMPILER
+#ifdef FEATURE_READYTORUN
     // Call target lookup info for method call from a Ready To Run module
     CORINFO_CONST_LOOKUP gtEntryPoint;
 #endif
@@ -4919,13 +4921,13 @@ struct GenTreeFptrVal : public GenTree
 {
     CORINFO_METHOD_HANDLE gtFptrMethod;
 
-#ifdef FEATURE_READYTORUN_COMPILER
+#ifdef FEATURE_READYTORUN
     CORINFO_CONST_LOOKUP gtEntryPoint;
 #endif
 
     GenTreeFptrVal(var_types type, CORINFO_METHOD_HANDLE meth) : GenTree(GT_FTN_ADDR, type), gtFptrMethod(meth)
     {
-#ifdef FEATURE_READYTORUN_COMPILER
+#ifdef FEATURE_READYTORUN
         gtEntryPoint.addr       = nullptr;
         gtEntryPoint.accessType = IAT_VALUE;
 #endif
@@ -4959,7 +4961,7 @@ struct GenTreeIntrinsic : public GenTreeOp
     NamedIntrinsic        gtIntrinsicName;
     CORINFO_METHOD_HANDLE gtMethodHandle; // Method handle of the method which is treated as an intrinsic.
 
-#ifdef FEATURE_READYTORUN_COMPILER
+#ifdef FEATURE_READYTORUN
     // Call target lookup info for method call from a Ready To Run module
     CORINFO_CONST_LOOKUP gtEntryPoint;
 #endif
@@ -6801,6 +6803,7 @@ struct GenTreeCopyOrReload : public GenTreeUnOp
 
     GenTreeCopyOrReload(genTreeOps oper, var_types type, GenTree* op1) : GenTreeUnOp(oper, type, op1)
     {
+        assert(type != TYP_STRUCT || op1->IsMultiRegNode());
         SetRegNum(REG_NA);
         ClearOtherRegs();
     }
@@ -6819,7 +6822,7 @@ struct GenTreeAllocObj final : public GenTreeUnOp
     unsigned int         gtNewHelper; // Value returned by ICorJitInfo::getNewHelper
     bool                 gtHelperHasSideEffects;
     CORINFO_CLASS_HANDLE gtAllocObjClsHnd;
-#ifdef FEATURE_READYTORUN_COMPILER
+#ifdef FEATURE_READYTORUN
     CORINFO_CONST_LOOKUP gtEntryPoint;
 #endif
 
@@ -6831,7 +6834,7 @@ struct GenTreeAllocObj final : public GenTreeUnOp
         , gtHelperHasSideEffects(helperHasSideEffects)
         , gtAllocObjClsHnd(clsHnd)
     {
-#ifdef FEATURE_READYTORUN_COMPILER
+#ifdef FEATURE_READYTORUN
         gtEntryPoint.addr = nullptr;
 #endif
     }

@@ -14,8 +14,6 @@
 #ifndef __BASE_ASSEMBLY_SPEC_INL__
 #define __BASE_ASSEMBLY_SPEC_INL__
 
-BOOL AreSameBinderInstance(ICLRPrivBinder *pBinderA, ICLRPrivBinder *pBinderB);
-
 inline int BaseAssemblySpec::CompareStrings(LPCUTF8 string1, LPCUTF8 string2)
 {
     WRAPPER_NO_CONTRACT;
@@ -322,7 +320,7 @@ inline BOOL BaseAssemblySpec::CompareEx(BaseAssemblySpec *pSpec, DWORD dwCompare
     // If the assemblySpec contains the binding context, then check if they match.
     if (!(pSpec->IsAssemblySpecForCoreLib() && IsAssemblySpecForCoreLib()))
     {
-        if (!AreSameBinderInstance(pSpec->m_pBindingContext, m_pBindingContext))
+        if (pSpec->m_pBindingContext != m_pBindingContext)
         {
             return FALSE;
         }

@@ -89,15 +89,6 @@ public:
     void EnumMemoryRegionsForEntry(TypeEquivalenceEntry *pEntry, CLRDataEnumMemoryFlags flags) { return; }
 #endif
 
-#if defined(FEATURE_PREJIT) && !defined(DACCESS_COMPILE)
-private:
-    // Override operations from NgenHashTable - see ngenhash.h
-    bool ShouldSave(DataImage *pImage, TypeEquivalenceEntry *pEntry) { return false; }
-    bool IsHotEntry(TypeEquivalenceEntry *pEntry, CorProfileData *pProfileData) { return false; }
-    bool SaveEntry(DataImage *pImage, CorProfileData *pProfileData, TypeEquivalenceEntry *pOldEntry, TypeEquivalenceEntry *pNewEntry, EntryMappingTable *pMap) { return true; }
-    void FixupEntry(DataImage *pImage, TypeEquivalenceEntry *pEntry, void *pFixupBase, DWORD cbFixupOffset) { return; }
-#endif // FEATURE_PREJIT && !DACCESS_COMPILE
-
 private:
 #ifndef DACCESS_COMPILE
     TypeEquivalenceHashTable(LoaderHeap *pHeap, DWORD cInitialBuckets, CrstExplicitInit *pCrst)

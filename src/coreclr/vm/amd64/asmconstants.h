@@ -493,6 +493,10 @@ ASMCONSTANTS_C_ASSERT(OFFSET__TEB__ThreadLocalStoragePointer == offsetof(TEB, Th
 
 #define THROWSTUB_ESTABLISHER_OFFSET_FaultingExceptionFrame 0x30
 
+#ifdef FEATURE_SPECIAL_USER_MODE_APC
+#define OFFSETOF__APC_CALLBACK_DATA__ContextRecord 0x8
+#endif
+
 #define Thread__ObjectRefFlush  ?ObjectRefFlush@Thread@@SAXPEAV1@@Z
 
 

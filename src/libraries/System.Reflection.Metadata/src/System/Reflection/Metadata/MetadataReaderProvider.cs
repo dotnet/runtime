@@ -30,7 +30,7 @@ namespace System.Reflection.Metadata
         private MetadataReader? _lazyMetadataReader;
         private readonly object _metadataReaderGuard = new object();
 
-        private MetadataReaderProvider(AbstractMemoryBlock metadataBlock)
+        internal MetadataReaderProvider(AbstractMemoryBlock metadataBlock)
         {
             Debug.Assert(metadataBlock != null);
             _lazyMetadataBlock = metadataBlock;

@@ -9,7 +9,7 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
     {
         public override bool IsInvalid => handle == IntPtr.Zero;
 
-        private SafeMsQuicStreamHandle()
+        public SafeMsQuicStreamHandle()
             : base(IntPtr.Zero, ownsHandle: true)
         { }
 

@@ -15,9 +15,6 @@
 
 #include "common.h"
 #include "array.h"
-#ifdef FEATURE_PREJIT
-#include "compile.h"
-#endif
 
 #ifdef FEATURE_PERFMAP
 #include "perfmap.h"
@@ -641,7 +638,7 @@ void VirtualCallStubManager::Init(BaseDomain *pDomain, LoaderAllocator *pLoaderA
                               dwTotalReserveMemSize);
         }
 
-        initReservedMem = ClrVirtualAllocExecutable (dwTotalReserveMemSize, MEM_RESERVE, PAGE_NOACCESS);
+        initReservedMem = (BYTE*)ExecutableAllocator::Instance()->Reserve(dwTotalReserveMemSize);
 
         m_initialReservedMemForHeaps = (BYTE *) initReservedMem;
 
@@ -2766,11 +2763,7 @@ DispatchHolder *VirtualCallStubManager::GenerateDispatchStub(PCODE            ad
     }
 #endif
 
-    ExecutableWriterHolder<DispatchHolder> dispatchWriterHolder(holder, sizeof(DispatchHolder)
-#ifdef TARGET_AMD64
-                                                                        + sizeof(DispatchStubShort)
-#endif
-                                                               );
+    ExecutableWriterHolder<DispatchHolder> dispatchWriterHolder(holder, dispatchHolderSize);
     dispatchWriterHolder.GetRW()->Initialize(holder, addrOfCode,
                        addrOfFail,
                        (size_t)pMTExpected
@@ -2833,9 +2826,9 @@ DispatchHolder *VirtualCallStubManager::GenerateDispatchStubLong(PCODE          
     } CONTRACT_END;
 
     //allocate from the requisite heap and copy the template over it.
-    DispatchHolder * holder = (DispatchHolder*) (void*)
-        dispatch_heap->AllocAlignedMem(DispatchHolder::GetHolderSize(DispatchStub::e_TYPE_LONG), CODE_SIZE_ALIGN);
-    ExecutableWriterHolder<DispatchHolder> dispatchWriterHolder(holder, sizeof(DispatchHolder) + sizeof(DispatchStubLong));
+    size_t dispatchHolderSize = DispatchHolder::GetHolderSize(DispatchStub::e_TYPE_LONG);
+    DispatchHolder * holder = (DispatchHolder*) (void*)dispatch_heap->AllocAlignedMem(dispatchHolderSize, CODE_SIZE_ALIGN);
+    ExecutableWriterHolder<DispatchHolder> dispatchWriterHolder(holder, dispatchHolderSize);
 
     dispatchWriterHolder.GetRW()->Initialize(holder, addrOfCode,
                        addrOfFail,

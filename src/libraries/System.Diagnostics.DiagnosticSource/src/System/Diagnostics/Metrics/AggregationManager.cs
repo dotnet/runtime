@@ -41,6 +41,7 @@ namespace System.Diagnostics.Metrics
         private readonly Action<Exception> _collectionError;
         private readonly Action _timeSeriesLimitReached;
         private readonly Action _histogramLimitReached;
+        private readonly Action<Exception> _observableInstrumentCallbackError;
 
         public AggregationManager(
             int maxTimeSeries,
@@ -54,7 +55,8 @@ namespace System.Diagnostics.Metrics
             Action initialInstrumentEnumerationComplete,
             Action<Exception> collectionError,
             Action timeSeriesLimitReached,
-            Action histogramLimitReached)
+            Action histogramLimitReached,
+            Action<Exception> observableInstrumentCallbackError)
         {
             _maxTimeSeries = maxTimeSeries;
             _maxHistograms = maxHistograms;
@@ -68,6 +70,7 @@ namespace System.Diagnostics.Metrics
             _collectionError = collectionError;
             _timeSeriesLimitReached = timeSeriesLimitReached;
             _histogramLimitReached = histogramLimitReached;
+            _observableInstrumentCallbackError = observableInstrumentCallbackError;
 
             _listener = new MeterListener()
             {
@@ -351,7 +354,14 @@ namespace System.Diagnostics.Metrics
 
         internal void Collect()
         {
-            _listener.RecordObservableInstruments();
+            try
+            {
+                _listener.RecordObservableInstruments();
+            }
+            catch (Exception e)
+            {
+                _observableInstrumentCallbackError(e);
+            }
 
             foreach (KeyValuePair<Instrument, InstrumentState> kv in _instrumentStates)
             {

@@ -846,7 +846,7 @@ Stub *StubLinker::Link(LoaderHeap *pHeap, DWORD flags)
                 );
         ASSERT(pStub != NULL);
 
-        bool fSuccess = EmitStub(pStub, globalsize, pHeap);
+        bool fSuccess = EmitStub(pStub, globalsize, size, pHeap);
 
 #ifdef STUBLINKER_GENERATES_UNWIND_INFO
         if (fSuccess)
@@ -1007,13 +1007,13 @@ int StubLinker::CalculateSize(int* pGlobalSize)
     return globalsize + datasize;
 }
 
-bool StubLinker::EmitStub(Stub* pStub, int globalsize, LoaderHeap* pHeap)
+bool StubLinker::EmitStub(Stub* pStub, int globalsize, int totalSize, LoaderHeap* pHeap)
 {
     STANDARD_VM_CONTRACT;
 
     BYTE *pCode = (BYTE*)(pStub->GetBlob());
 
-    ExecutableWriterHolder<Stub> stubWriterHolder(pStub, sizeof(Stub));
+    ExecutableWriterHolder<Stub> stubWriterHolder(pStub, sizeof(Stub) + totalSize);
     Stub *pStubRW = stubWriterHolder.GetRW();
 
     BYTE *pCodeRW = (BYTE*)(pStubRW->GetBlob());
@@ -2013,11 +2013,7 @@ VOID Stub::DeleteStub()
         FillMemory(this+1, m_numCodeBytes, 0xcc);
 #endif
 
-#ifndef TARGET_UNIX
-        DeleteExecutable((BYTE*)GetAllocationBase());
-#else
         delete [] (BYTE*)GetAllocationBase();
-#endif
     }
 }
 
@@ -2124,11 +2120,7 @@ Stub* Stub::NewStub(PTR_VOID pCode, DWORD flags)
     BYTE *pBlock;
     if (pHeap == NULL)
     {
-#ifndef TARGET_UNIX
-        pBlock = new (executable) BYTE[totalSize];
-#else
         pBlock = new BYTE[totalSize];
-#endif
     }
     else
     {

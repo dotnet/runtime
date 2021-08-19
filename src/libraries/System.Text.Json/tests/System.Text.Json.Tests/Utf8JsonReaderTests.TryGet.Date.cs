@@ -207,7 +207,7 @@ namespace System.Text.Json.Tests
         [MemberData(nameof(JsonDateTimeTestData.InvalidISO8601Tests), MemberType = typeof(JsonDateTimeTestData))]
         public static void TryGetDateTime_HasValueSequence_False(string testString)
         {
-            static void test(string testString, bool isFinalBlock)
+            static void Test(string testString, bool isFinalBlock)
             {
                 byte[] dataUtf8 = Encoding.UTF8.GetBytes(testString);
                 ReadOnlySequence<byte> sequence = JsonTestHelper.GetSequence(dataUtf8, 1);
@@ -224,15 +224,15 @@ namespace System.Text.Json.Tests
                 JsonTestHelper.AssertThrows<FormatException>(json, (jsonReader) => jsonReader.GetDateTime());
             }
 
-            test(testString, isFinalBlock: true);
-            test(testString, isFinalBlock: false);
+            Test(testString, isFinalBlock: true);
+            Test(testString, isFinalBlock: false);
         }
 
         [Theory]
         [MemberData(nameof(JsonDateTimeTestData.InvalidISO8601Tests), MemberType = typeof(JsonDateTimeTestData))]
         public static void TryGetDateTimeOffset_HasValueSequence_False(string testString)
         {
-            static void test(string testString, bool isFinalBlock)
+            static void Test(string testString, bool isFinalBlock)
             {
                 byte[] dataUtf8 = Encoding.UTF8.GetBytes(testString);
                 ReadOnlySequence<byte> sequence = JsonTestHelper.GetSequence(dataUtf8, 1);
@@ -249,8 +249,8 @@ namespace System.Text.Json.Tests
                 JsonTestHelper.AssertThrows<FormatException>(json, (jsonReader) => jsonReader.GetDateTimeOffset());
             }
 
-            test(testString, isFinalBlock: true);
-            test(testString, isFinalBlock: false);
+            Test(testString, isFinalBlock: true);
+            Test(testString, isFinalBlock: false);
         }
     }
 }

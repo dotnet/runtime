@@ -87,7 +87,7 @@
           $(CoreCLRSharedFrameworkPdbDir)*.pdb;
           $(CoreCLRSharedFrameworkPdbDir)*.dbg;
           $(CoreCLRSharedFrameworkPdbDir)*.dwarf" IsNative="true" />
-      <RuntimeFiles
+      <RuntimeFiles Condition="Exists('$(CoreCLRArtifactsPdbDir)System.Private.CoreLib.pdb')"
         Include="$(CoreCLRArtifactsPdbDir)System.Private.CoreLib.pdb" />
       <RuntimeFiles Condition="Exists('$(CoreCLRArtifactsPdbDir)System.Private.CoreLib.ni.pdb')"
         Include="$(CoreCLRArtifactsPdbDir)System.Private.CoreLib.ni.pdb" />
@@ -178,7 +178,7 @@
         $(LibrariesNativeArtifactsPath)src\*.c;
         $(LibrariesNativeArtifactsPath)src\*.js;
         $(LibrariesNativeArtifactsPath)src\emcc-default.rsp;
-        $(LibrariesNativeArtifactsPath)src\Emcc.props;"
+        $(LibrariesNativeArtifactsPath)src\emcc-props.json;"
         NativeSubDirectory="src"
         IsNative="true" />
       <LibrariesRuntimeFiles Condition="'$(TargetOS)' == 'Browser'"

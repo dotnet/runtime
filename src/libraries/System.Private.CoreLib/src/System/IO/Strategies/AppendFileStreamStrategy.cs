@@ -17,7 +17,7 @@ namespace System.IO.Strategies
         private const long WriteOffset = unchecked((long)ulong.MaxValue);
         private readonly SafeFileHandle _fileHandle; // only ever null if ctor throws
 
-        internal AppendFileStreamStrategy(SafeFileHandle handle, FileAccess access, FileShare share)
+        internal AppendFileStreamStrategy(SafeFileHandle handle, FileAccess access)
         {
             Debug.Assert(handle.IsAppend);
 
@@ -92,12 +92,13 @@ namespace System.IO.Strategies
             {
                 throw new ArgumentException(SR.Argument_InvalidSeekOrigin, nameof(origin));
             }
-            else if (_fileHandle.IsClosed)
-            {
-                ThrowHelper.ThrowObjectDisposedException_FileClosed();
-            }
             else if (!CanSeek)
             {
+                if (_fileHandle.IsClosed)
+                {
+                    ThrowHelper.ThrowObjectDisposedException_FileClosed();
+                }
+
                 ThrowHelper.ThrowNotSupportedException_UnseekableStream();
             }
 
@@ -135,59 +136,46 @@ namespace System.IO.Strategies
             FileStreamHelpers.SetFileLength(_fileHandle, value);
         }
 
-        public override IAsyncResult BeginRead(byte[] buffer, int offset, int count, AsyncCallback? callback, object? state)  => throw new NotSupportedException(SR.NotSupported_UnreadableStream);
+        public override IAsyncResult BeginRead(byte[] buffer, int offset, int count, AsyncCallback? callback, object? state)
+            => throw new NotSupportedException(SR.NotSupported_UnreadableStream);
 
-        public override int EndRead(IAsyncResult asyncResult)  => throw new NotSupportedException(SR.NotSupported_UnreadableStream);
+        public override int EndRead(IAsyncResult asyncResult)
+            => throw new NotSupportedException(SR.NotSupported_UnreadableStream);
 
-        public override int ReadByte() => throw new NotSupportedException(SR.NotSupported_UnreadableStream);
+        public override int ReadByte()
+            => throw new NotSupportedException(SR.NotSupported_UnreadableStream);
 
-        public override int Read(byte[] buffer, int offset, int count) => throw new NotSupportedException(SR.NotSupported_UnreadableStream);
+        public override int Read(byte[] buffer, int offset, int count)
+            => throw new NotSupportedException(SR.NotSupported_UnreadableStream);
 
-        public override int Read(Span<byte> buffer) => throw new NotSupportedException(SR.NotSupported_UnreadableStream);
+        public override int Read(Span<byte> buffer)
+            => throw new NotSupportedException(SR.NotSupported_UnreadableStream);
 
-        public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken) => throw new NotSupportedException(SR.NotSupported_UnreadableStream);
+        public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
+            => throw new NotSupportedException(SR.NotSupported_UnreadableStream);
 
-        public override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default) => throw new NotSupportedException(SR.NotSupported_UnreadableStream);
+        public override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
+            => throw new NotSupportedException(SR.NotSupported_UnreadableStream);
 
-        public override unsafe void WriteByte(byte value) =>
-            Write(new ReadOnlySpan<byte>(&value, 1));
+        public override unsafe void WriteByte(byte value)
+            => Write(new ReadOnlySpan<byte>(&value, 1));
 
-        public override void Write(byte[] buffer, int offset, int count) =>
-            Write(new ReadOnlySpan<byte>(buffer, offset, count));
+        public override void Write(byte[] buffer, int offset, int count)
+            => Write(new ReadOnlySpan<byte>(buffer, offset, count));
 
         public override void Write(ReadOnlySpan<byte> buffer)
-        {
-            if (_fileHandle.IsClosed)
-            {
-                ThrowHelper.ThrowObjectDisposedException_FileClosed();
-            }
+            => RandomAccess.WriteAtOffset(_fileHandle, buffer, WriteOffset);
 
-            int r = RandomAccess.WriteAtOffset(_fileHandle, buffer, WriteOffset);
-            Debug.Assert(r >= 0, $"RandomAccess.WriteAtOffset returned {r}.");
-        }
+        public override IAsyncResult BeginWrite(byte[] buffer, int offset, int count, AsyncCallback? callback, object? state)
+            => TaskToApm.Begin(WriteAsync(buffer, offset, count), callback, state);
 
-        public override IAsyncResult BeginWrite(byte[] buffer, int offset, int count, AsyncCallback? callback, object? state) =>
-            TaskToApm.Begin(WriteAsync(buffer, offset, count), callback, state);
+        public override void EndWrite(IAsyncResult asyncResult)
+            => TaskToApm.End(asyncResult);
 
-        public override void EndWrite(IAsyncResult asyncResult) =>
-            TaskToApm.End(asyncResult);
+        public override Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
+            => WriteAsync(new ReadOnlyMemory<byte>(buffer, offset, count), cancellationToken).AsTask();
 
-        public override Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken) =>
-            WriteAsyncCore(new ReadOnlyMemory<byte>(buffer, offset, count), cancellationToken).AsTask();
-
-        public override ValueTask WriteAsync(ReadOnlyMemory<byte> source, CancellationToken cancellationToken) =>
-#pragma warning disable CA2012 // The analyzer doesn't know the internal AsValueTask is safe.
-            WriteAsyncCore(source, cancellationToken).AsValueTask();
-#pragma warning restore CA2012
-
-        private ValueTask<int> WriteAsyncCore(ReadOnlyMemory<byte> source, CancellationToken cancellationToken)
-        {
-            if (!CanWrite)
-            {
-                ThrowHelper.ThrowNotSupportedException_UnwritableStream();
-            }
-
-            return RandomAccess.WriteAtOffsetAsync(_fileHandle, source, WriteOffset, cancellationToken);
-        }
+        public override ValueTask WriteAsync(ReadOnlyMemory<byte> source, CancellationToken cancellationToken)
+            => RandomAccess.WriteAtOffsetAsync(_fileHandle, source, WriteOffset, cancellationToken);
     }
 }

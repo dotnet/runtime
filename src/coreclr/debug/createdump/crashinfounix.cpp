@@ -414,3 +414,13 @@ GetStatus(pid_t pid, pid_t* ppid, pid_t* tgid, std::string* name)
     fclose(statusFile);
     return true;
 }
+
+void
+ModuleInfo::LoadModule()
+{
+    if (m_module == nullptr)
+    {
+        m_module = dlopen(m_moduleName.c_str(), RTLD_LAZY);
+        m_localBaseAddress = ((struct link_map*)m_module)->l_addr;
+    }
+}

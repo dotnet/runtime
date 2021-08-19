@@ -512,7 +512,7 @@ namespace System.IO.Tests
                     // Extended DOS
                     yield return Path.Combine(@"\\?\", Path.GetTempPath(), "foo");
                     // UNC
-                    yield return @"\\SERVER\share\path";
+                    yield return @"\\LOCALHOST\share\path";
                 }
                 else
                 {

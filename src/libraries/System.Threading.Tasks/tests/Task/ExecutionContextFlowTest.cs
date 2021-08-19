@@ -29,8 +29,7 @@ namespace System.Threading.Tasks.Tests
             }
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/30122")]
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsPreciseGcSupported))]
         public static async Task TaskDropsExecutionContextUponCompletion()
         {
             // Create a finalizable object that'll be referenced by captured ExecutionContext,
@@ -38,13 +37,13 @@ namespace System.Threading.Tasks.Tests
             // We want to make sure that holding on to the resulting Task doesn't keep
             // that finalizable object alive.
 
-            var tcs = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+            bool finalized = false;
 
             Task t = null;
 
             Thread runner = new Thread(() =>
             {
-                var state = new InvokeActionOnFinalization { Action = () => tcs.SetResult() };
+                var state = new InvokeActionOnFinalization { Action = () => Volatile.Write(ref finalized, true) };
                 var al = new AsyncLocal<object>(){ Value = state }; // ensure the object is stored in ExecutionContext
                 t = Task.Run(() => { }); // run a task that'll capture EC
                 al.Value = null;
@@ -55,19 +54,15 @@ namespace System.Threading.Tasks.Tests
 
             await t; // wait for the task method to complete and clear out its state
 
-            for (int i = 0; i < 2; i++)
+            for (int i = 0; i < 10 && !Volatile.Read(ref finalized); i++)
             {
                 GC.Collect();
                 GC.WaitForPendingFinalizers();
             }
 
-            try
+            if (!Volatile.Read(ref finalized))
             {
-                await tcs.Task.WaitAsync(TimeSpan.FromSeconds(60)); // finalizable object should have been collected and finalized
-            }
-            catch (Exception e)
-            {
-                Environment.FailFast("Look at the created dump", e);
+                Environment.FailFast("Look at the created dump");
             }
 
             GC.KeepAlive(t); // ensure the object is stored in the state machine

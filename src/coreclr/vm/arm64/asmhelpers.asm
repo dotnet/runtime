@@ -61,6 +61,10 @@
 #ifdef FEATURE_COMINTEROP
     IMPORT CLRToCOMWorker
 #endif // FEATURE_COMINTEROP
+
+    IMPORT JIT_WriteBarrier_Table_Loc
+    IMPORT JIT_WriteBarrier_Loc
+
     TEXTAREA
 
 ;; LPVOID __stdcall GetCurrentIP(void);
@@ -308,6 +312,7 @@ ThePreStubPatchLabel
         ; x12 will be used for pointers
 
         mov      x8, x0
+        mov      x9, x1
 
         adrp     x12, g_card_table
         ldr      x0, [x12, g_card_table]
@@ -346,7 +351,9 @@ EphemeralCheckEnabled
         ldr      x7, [x12, g_highest_address]
 
         ; Update wbs state
-        adr      x12, wbs_begin
+        adrp     x12, JIT_WriteBarrier_Table_Loc
+        ldr      x12, [x12, JIT_WriteBarrier_Table_Loc]
+        add      x12, x12, x9
         stp      x0, x1, [x12], 16
         stp      x2, x3, [x12], 16
         stp      x4, x5, [x12], 16
@@ -355,9 +362,11 @@ EphemeralCheckEnabled
         EPILOG_RESTORE_REG_PAIR fp, lr, #16!
         EPILOG_RETURN
 
+    WRITE_BARRIER_END JIT_UpdateWriteBarrierState
+
         ; Begin patchable literal pool
         ALIGN 64  ; Align to power of two at least as big as patchable literal pool so that it fits optimally in cache line
-
+    WRITE_BARRIER_ENTRY JIT_WriteBarrier_Table
 wbs_begin
 wbs_card_table
         DCQ 0
@@ -375,14 +384,7 @@ wbs_lowest_address
         DCQ 0
 wbs_highest_address
         DCQ 0
-
-    WRITE_BARRIER_END JIT_UpdateWriteBarrierState
-
-; ------------------------------------------------------------------
-; End of the writeable code region
-    LEAF_ENTRY JIT_PatchedCodeLast
-        ret      lr
-    LEAF_END
+    WRITE_BARRIER_END JIT_WriteBarrier_Table
 
 ; void JIT_ByRefWriteBarrier
 ; On entry:
@@ -545,6 +547,12 @@ Exit
         add      x14, x14, 8
         ret      lr
     WRITE_BARRIER_END JIT_WriteBarrier
+
+; ------------------------------------------------------------------
+; End of the writeable code region
+    LEAF_ENTRY JIT_PatchedCodeLast
+        ret      lr
+    LEAF_END
 
 #ifdef FEATURE_PREJIT
 ;------------------------------------------------
@@ -1417,9 +1425,10 @@ CallHelper2
     mov     x14, x0                     ; x14 = dst
     mov     x15, x1                     ; x15 = val
 
-    ; Branch to the write barrier (which is already correctly overwritten with
-    ; single or multi-proc code based on the current CPU
-    b       JIT_WriteBarrier
+    ; Branch to the write barrier
+    adrp    x17, JIT_WriteBarrier_Loc
+    ldr     x17, [x17, JIT_WriteBarrier_Loc]
+    br      x17
 
     LEAF_END
 

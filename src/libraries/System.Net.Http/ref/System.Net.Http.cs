@@ -154,7 +154,14 @@ namespace System.Net.Http
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public bool UseProxy { get { throw null; } set { } }
         protected override void Dispose(bool disposing) { }
+        //
+        // Attributes are commented out due to https://github.com/dotnet/arcade/issues/7585
+        // API compat will fail until this is fixed
+        //
+        //[System.Runtime.Versioning.UnsupportedOSPlatformAttribute("android")]
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
+        //[System.Runtime.Versioning.UnsupportedOSPlatformAttributeUnsupportedOSPlatform("ios")]
+        //[System.Runtime.Versioning.UnsupportedOSPlatformAttributeUnsupportedOSPlatform("tvos")]
         protected internal override System.Net.Http.HttpResponseMessage Send(System.Net.Http.HttpRequestMessage request, System.Threading.CancellationToken cancellationToken) { throw null; }
         protected internal override System.Threading.Tasks.Task<System.Net.Http.HttpResponseMessage> SendAsync(System.Net.Http.HttpRequestMessage request, System.Threading.CancellationToken cancellationToken) { throw null; }
     }
@@ -245,7 +252,7 @@ namespace System.Net.Http
         public System.Net.Http.HttpContent? Content { get { throw null; } set { } }
         public System.Net.Http.Headers.HttpRequestHeaders Headers { get { throw null; } }
         public System.Net.Http.HttpMethod Method { get { throw null; } set { } }
-        [Obsolete("Use Options instead.")]
+        [Obsolete("HttpRequestMessage.Properties has been deprecated. Use Options instead.")]
         public System.Collections.Generic.IDictionary<string, object?> Properties { get { throw null; } }
         public HttpRequestOptions Options { get { throw null; } }
         public System.Uri? RequestUri { get { throw null; } set { } }
@@ -394,6 +401,8 @@ namespace System.Net.Http
         public bool EnableMultipleHttp2Connections { get { throw null; } set { } }
         public Func<SocketsHttpConnectionContext, System.Threading.CancellationToken, System.Threading.Tasks.ValueTask<System.IO.Stream>>? ConnectCallback { get { throw null; } set { } }
         public Func<SocketsHttpPlaintextStreamFilterContext, System.Threading.CancellationToken, System.Threading.Tasks.ValueTask<System.IO.Stream>>? PlaintextStreamFilter { get { throw null; } set { } }
+        [System.CLSCompliantAttribute(false)]
+        public System.Diagnostics.DistributedContextPropagator? ActivityHeadersPropagator { get { throw null; } set { } }
     }
     public sealed class SocketsHttpConnectionContext
     {

@@ -10,10 +10,27 @@ private:
     GUID m_mvid;
     std::string m_moduleName;
     bool m_isManaged;
+    void* m_module;
+    uint64_t m_localBaseAddress;
+
+    // no public copy constructor
+    ModuleInfo(const ModuleInfo&) = delete;
+    void operator=(const ModuleInfo&) = delete;
+
+    void LoadModule();
 
 public:
+    ModuleInfo() :
+        m_baseAddress(0),
+        m_module(nullptr),
+        m_localBaseAddress(0)
+    {
+    }
+
     ModuleInfo(uint64_t baseAddress) :
-        m_baseAddress(baseAddress)
+        m_baseAddress(baseAddress),
+        m_module(nullptr),
+        m_localBaseAddress(0)
     {
     }
 
@@ -23,23 +40,19 @@ public:
         m_imageSize(imageSize),
         m_mvid(*mvid),
         m_moduleName(moduleName),
-        m_isManaged(isManaged)
-    {
-    }
-
-    // copy constructor
-    ModuleInfo(const ModuleInfo& moduleInfo) :
-        m_baseAddress(moduleInfo.m_baseAddress),
-        m_timeStamp(moduleInfo.m_timeStamp),
-        m_imageSize(moduleInfo.m_imageSize),
-        m_mvid(moduleInfo.m_mvid),
-        m_moduleName(moduleInfo.m_moduleName),
-        m_isManaged(moduleInfo.m_isManaged)
+        m_isManaged(isManaged),
+        m_module(nullptr),
+        m_localBaseAddress(0)
     {
     }
 
     ~ModuleInfo()
     {
+        if (m_module != nullptr)
+        {
+            dlclose(m_module);
+            m_module = nullptr;
+        }
     }
 
     inline bool IsManaged() const { return m_isManaged; }
@@ -49,13 +62,5 @@ public:
     inline const GUID* Mvid() const { return &m_mvid; }
     inline const std::string& ModuleName() const { return m_moduleName; }
 
-    bool operator<(const ModuleInfo& rhs) const
-    {
-        return m_baseAddress < rhs.m_baseAddress;
-    }
-
-    void Trace() const
-    {
-        TRACE("%" PRIA PRIx64 " %s\n", m_baseAddress, m_moduleName.c_str());
-    }
+    const char* GetSymbolName(uint64_t address);
 };

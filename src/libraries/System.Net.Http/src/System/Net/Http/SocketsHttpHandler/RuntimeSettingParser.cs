@@ -36,6 +36,22 @@ namespace System.Net.Http
         }
 
         /// <summary>
+        /// Parse a <see cref="bool"/> value from an AppContext switch.
+        /// </summary>
+        public static bool QueryRuntimeSettingSwitch(string appCtxSettingName, bool defaultValue)
+        {
+            bool value;
+
+            // First check for the AppContext switch, giving it priority over the environment variable.
+            if (AppContext.TryGetSwitch(appCtxSettingName, out value))
+            {
+                return value;
+            }
+
+            return defaultValue;
+        }
+
+        /// <summary>
         /// Parse an environment variable for an <see cref="int"/> value.
         /// </summary>
         public static int ParseInt32EnvironmentVariableValue(string environmentVariableSettingName, int defaultValue)

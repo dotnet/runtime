@@ -6699,14 +6699,12 @@ AdjustContextForJITHelpers(
 
     PCODE ip = GetIP(pContext);
 
-#ifdef FEATURE_WRITEBARRIER_COPY
     if (IsIPInWriteBarrierCodeCopy(ip))
     {
         // Pretend we were executing the barrier function at its original location so that the unwinder can unwind the frame
         ip = AdjustWriteBarrierIP(ip);
         SetIP(pContext, ip);
     }
-#endif // FEATURE_WRITEBARRIER_COPY
 
 #ifdef FEATURE_DATABREAKPOINT
 
@@ -6973,13 +6971,31 @@ void HandleManagedFault(EXCEPTION_RECORD*               pExceptionRecord,
     WRAPPER_NO_CONTRACT;
 
     // Ok.  Now we have a brand new fault in jitted code.
-    g_SavedExceptionInfo.Enter();
-    g_SavedExceptionInfo.SaveExceptionRecord(pExceptionRecord);
-    g_SavedExceptionInfo.SaveContext(pContext);
+    if (!Thread::UseContextBasedThreadRedirection())
+    {
+        // Once this code path gets enough bake time, perhaps this path could always be used instead of the alternative path to
+        // redirect the thread
+        FrameWithCookie<FaultingExceptionFrame> frameWithCookie;
+        FaultingExceptionFrame *frame = &frameWithCookie;
+    #if defined(FEATURE_EH_FUNCLETS)
+        *frame->GetGSCookiePtr() = GetProcessGSCookie();
+    #endif // FEATURE_EH_FUNCLETS
+        frame->InitAndLink(pContext);
 
-    SetNakedThrowHelperArgRegistersInContext(pContext);
+        SEHException exception(pExceptionRecord);
+        OBJECTREF managedException = CLRException::GetThrowableFromException(&exception);
+        RaiseTheExceptionInternalOnly(managedException, FALSE);
+    }
+    else
+    {
+        g_SavedExceptionInfo.Enter();
+        g_SavedExceptionInfo.SaveExceptionRecord(pExceptionRecord);
+        g_SavedExceptionInfo.SaveContext(pContext);
 
-    SetIP(pContext, GetEEFuncEntryPoint(NakedThrowHelper));
+        SetNakedThrowHelperArgRegistersInContext(pContext);
+
+        SetIP(pContext, GetEEFuncEntryPoint(NakedThrowHelper));
+    }
 }
 
 #else // USE_FEF && !TARGET_UNIX
@@ -7170,6 +7186,52 @@ LONG WINAPI CLRVectoredExceptionHandler(PEXCEPTION_POINTERS pExceptionInfo)
         }
 
     }
+#ifdef TARGET_AMD64
+
+#ifndef STATUS_RETURN_ADDRESS_HIJACK_ATTEMPT
+#define STATUS_RETURN_ADDRESS_HIJACK_ATTEMPT ((DWORD)0x80000033L)
+#endif
+
+    if (pExceptionInfo->ExceptionRecord->ExceptionCode == STATUS_RETURN_ADDRESS_HIJACK_ATTEMPT)
+    {
+        HijackArgs hijackArgs;
+        hijackArgs.Rax = pExceptionInfo->ContextRecord->Rax;
+        hijackArgs.Rsp = pExceptionInfo->ContextRecord->Rsp;
+
+        bool areCetShadowStacksEnabled = Thread::AreCetShadowStacksEnabled();
+        if (areCetShadowStacksEnabled)
+        {
+            // When the CET is enabled, the return address is still on stack, so we need to set the Rsp as
+            // if it was popped.
+            hijackArgs.Rsp += 8;
+        }
+        hijackArgs.Rip = 0 ; // The OnHijackWorker sets this
+        #define CALLEE_SAVED_REGISTER(regname) hijackArgs.Regs.regname = pExceptionInfo->ContextRecord->regname;
+        ENUM_CALLEE_SAVED_REGISTERS();
+        #undef CALLEE_SAVED_REGISTER
+
+        OnHijackWorker(&hijackArgs);
+
+        #define CALLEE_SAVED_REGISTER(regname) pExceptionInfo->ContextRecord->regname = hijackArgs.Regs.regname;
+        ENUM_CALLEE_SAVED_REGISTERS();
+        #undef CALLEE_SAVED_REGISTER
+        pExceptionInfo->ContextRecord->Rax = hijackArgs.Rax;
+
+        if (areCetShadowStacksEnabled)
+        {
+            // The context refers to the return instruction
+            // Set the return address on the stack to the original one
+            *(size_t *)pExceptionInfo->ContextRecord->Rsp = hijackArgs.ReturnAddress;
+        }
+        else
+        {
+            // The context refers to the location after the return was processed
+            pExceptionInfo->ContextRecord->Rip = hijackArgs.ReturnAddress;
+        }
+
+        return EXCEPTION_CONTINUE_EXECUTION;
+    }
+#endif
 
     // We need to unhijack the thread here if it is not unhijacked already.  On x86 systems,
     // we do this in Thread::StackWalkFramesEx, but on amd64 systems we have the OS walk the

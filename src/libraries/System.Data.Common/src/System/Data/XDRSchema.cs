@@ -130,7 +130,7 @@ namespace System.Data
 
         internal bool IsTextOnlyContent(XmlElement node)
         {
-            Debug.Assert(FEqualIdentity(node, Keywords.XDR_ELEMENTTYPE, Keywords.XDRNS), "Invalid node type " + node.LocalName);
+            Debug.Assert(FEqualIdentity(node, Keywords.XDR_ELEMENTTYPE, Keywords.XDRNS), $"Invalid node type {node.LocalName}");
 
             string value = node.GetAttribute(Keywords.CONTENT);
             if (value == null || value.Length == 0)
@@ -282,12 +282,12 @@ namespace System.Data
                 // Let's check that we realy don't have this name:
                 foreach (NameType nt in s_mapNameTypeXdr)
                 {
-                    Debug.Assert(nt.name != name, "FindNameType('" + name + "') -- failed. Existed name not found");
+                    Debug.Assert(nt.name != name, $"FindNameType('{name}') -- failed. Existed name not found");
                 }
 #endif
                 throw ExceptionBuilder.UndefinedDatatype(name);
             }
-            Debug.Assert(s_mapNameTypeXdr[index].name == name, "FindNameType('" + name + "') -- failed. Wrong name found");
+            Debug.Assert(s_mapNameTypeXdr[index].name == name, $"FindNameType('{name}') -- failed. Wrong name found");
             return s_mapNameTypeXdr[index];
         }
 

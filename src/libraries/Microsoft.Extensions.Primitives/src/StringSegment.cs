@@ -183,7 +183,11 @@ namespace Microsoft.Extensions.Primitives
             }
         }
 
-        /// <inheritdoc />
+        /// <summary>
+        /// Indicates whether the current object is equal to another object of the same type.
+        /// </summary>
+        /// <param name="obj">An object to compare with this object.</param>
+        /// <returns><see langword="true" /> if the current object is equal to the other parameter; otherwise, <see langword="false" />.</returns>
         public override bool Equals(object obj)
         {
             return obj is StringSegment segment && Equals(segment);
@@ -266,7 +270,12 @@ namespace Microsoft.Extensions.Primitives
             return AsSpan().Equals(text.AsSpan(), comparisonType);
         }
 
-        /// <inheritdoc />
+        /// <summary>
+        /// Returns a hash code for this instance.
+        /// </summary>
+        /// <returns>
+        /// A hash code for this instance, suitable for use in hashing algorithms and data structures like a hash table.
+        /// </returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public override int GetHashCode()
         {
@@ -452,22 +461,25 @@ namespace Microsoft.Extensions.Primitives
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public int IndexOf(char c, int start, int count)
         {
-            int offset = Offset + start;
+            int index = -1;
 
-            if (!HasValue || start < 0 || (uint)offset > (uint)Buffer.Length)
+            if (HasValue)
             {
-                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.start);
-            }
+                if ((uint)start > (uint)Length)
+                {
+                    ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.start);
+                }
 
-            if (count < 0)
-            {
-                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.count);
-            }
+                if ((uint)count > (uint)(Length - start))
+                {
+                    ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.count);
+                }
 
-            int index = AsSpan().Slice(start, count).IndexOf(c);
-            if (index >= 0)
-            {
-                index += start;
+                index = AsSpan(start, count).IndexOf(c);
+                if (index >= 0)
+                {
+                    index += start;
+                }
             }
 
             return index;
@@ -516,12 +528,12 @@ namespace Microsoft.Extensions.Primitives
 
             if (HasValue)
             {
-                if (startIndex < 0 || Offset + startIndex > Buffer.Length)
+                if ((uint)startIndex > (uint)Length)
                 {
                     ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.start);
                 }
 
-                if (count < 0 || Offset + startIndex + count > Buffer.Length)
+                if ((uint)count > (uint)(Length - startIndex))
                 {
                     ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.count);
                 }
