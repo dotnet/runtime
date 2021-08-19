@@ -3806,7 +3806,7 @@ namespace System.Globalization
             return GetLocaleDataMappedCulture(cultureName, IcuLocaleDataParts.ConsoleLocaleIndex);
         }
 
-        // Returns index of the culture or -1 if it fail finding any match
+        // Returns index of the culture or less than 0 if it fail finding any match
         private static int SearchCultureName(string name)
         {
             if (name.Length > LocaleLongestName)
