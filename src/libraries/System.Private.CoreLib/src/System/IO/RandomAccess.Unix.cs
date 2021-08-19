@@ -93,7 +93,7 @@ namespace System.IO
 
                     // POSIX requires that pwrite should respect provided offset even for handles opened with O_APPEND.
                     // But Linux and BSD don't do that, moreover their behaviour is different. So we always use write for O_APPEND.
-                    int bytesWritten = handle.CanSeek && !handle.IsAppend 
+                    int bytesWritten = handle.CanSeek && !handle.IsAppend
                        ? Interop.Sys.PWrite(handle, bufPtr, GetNumberOfBytesToWrite(buffer.Length), fileOffset)
                        : Interop.Sys.Write(handle, bufPtr, GetNumberOfBytesToWrite(buffer.Length));
                     FileStreamHelpers.CheckFileCall(bytesWritten, handle.Path);
