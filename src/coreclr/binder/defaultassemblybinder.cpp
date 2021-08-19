@@ -189,14 +189,13 @@ Exit:;
 
 HRESULT DefaultAssemblyBinder::SetupBindingPaths(SString  &sTrustedPlatformAssemblies,
                                                 SString  &sPlatformResourceRoots,
-                                                SString  &sAppPaths,
-                                                SString  &sAppNiPaths)
+                                                SString  &sAppPaths)
 {
     HRESULT hr = S_OK;
 
     EX_TRY
     {
-        hr = GetAppContext()->SetupBindingPaths(sTrustedPlatformAssemblies, sPlatformResourceRoots, sAppPaths, sAppNiPaths, TRUE /* fAcquireLock */);
+        hr = GetAppContext()->SetupBindingPaths(sTrustedPlatformAssemblies, sPlatformResourceRoots, sAppPaths, TRUE /* fAcquireLock */);
     }
     EX_CATCH_HRESULT(hr);
     return hr;

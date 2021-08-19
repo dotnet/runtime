@@ -949,11 +949,10 @@ namespace BINDER_SPACE
         HRESULT BindAssemblyByProbingPaths(
             const StringArrayList   *pBindingPaths,
             AssemblyName            *pRequestedAssemblyName,
-            bool                    useNativeImages,
             Assembly                **ppAssembly)
         {
             const SString &simpleName = pRequestedAssemblyName->GetSimpleName();
-            BinderTracing::PathSource pathSource = useNativeImages ? BinderTracing::PathSource::AppNativeImagePaths : BinderTracing::PathSource::AppPaths;
+            BinderTracing::PathSource pathSource = BinderTracing::PathSource::AppPaths;
             // Loop through the binding paths looking for a matching assembly
             for (DWORD i = 0; i < pBindingPaths->GetCount(); i++)
             {
@@ -966,20 +965,20 @@ namespace BINDER_SPACE
 
                 // Look for a matching dll first
                 PathString fileName(fileNameWithoutExtension);
-                fileName.Append(useNativeImages ? W(".ni.dll") : W(".dll"));
+                fileName.Append(W(".dll"));
                 hr = AssemblyBinderCommon::GetAssembly(fileName,
                                                  FALSE, // fIsInTPA
-                                                 useNativeImages, // fExplicitBindToNativeImage
+                                                 FALSE, // fExplicitBindToNativeImage
                                                  &pAssembly);
                 BinderTracing::PathProbed(fileName, pathSource, hr);
 
                 if (FAILED(hr))
                 {
                     fileName.Set(fileNameWithoutExtension);
-                    fileName.Append(useNativeImages ? W(".ni.exe") : W(".exe"));
+                    fileName.Append(W(".exe"));
                     hr = AssemblyBinderCommon::GetAssembly(fileName,
                                                      FALSE, // fIsInTPA
-                                                     useNativeImages, // fExplicitBindToNativeImage
+                                                     FALSE, // fExplicitBindToNativeImage
                                                      &pAssembly);
                     BinderTracing::PathProbed(fileName, pathSource, hr);
                 }
@@ -1028,9 +1027,8 @@ namespace BINDER_SPACE
      * a set of folders configured by the host.
      *
      * If a requested assembly identity cannot be found in the TPA list or the resource roots,
-     * it is considered an application assembly.  We probe for application assemblies in one of two
-     * sets of paths: the AppNiPaths, a list of paths containing native images, and the AppPaths, a
-     * list of paths containing IL files and satellite resource folders.
+     * it is considered an application assembly.  We probe for application assemblies in the
+     * AppPaths, a list of paths containing IL files and satellite resource folders.
      *
      */
     /* static */
@@ -1157,19 +1155,11 @@ namespace BINDER_SPACE
 
             if (!excludeAppPaths)
             {
-                // Probe AppNiPaths first, then AppPaths
+                // Probe AppPaths
                 ReleaseHolder<Assembly> pAssembly;
-                hr = BindAssemblyByProbingPaths(pApplicationContext->GetAppNiPaths(),
+                hr = BindAssemblyByProbingPaths(pApplicationContext->GetAppPaths(),
                                                 pRequestedAssemblyName,
-                                                true, // useNativeImages
                                                 &pAssembly);
-                if (hr == HRESULT_FROM_WIN32(ERROR_FILE_NOT_FOUND))
-                {
-                    hr = BindAssemblyByProbingPaths(pApplicationContext->GetAppPaths(),
-                                                    pRequestedAssemblyName,
-                                                    false, // useNativeImages
-                                                    &pAssembly);
-                }
 
                 pBindResult->SetAttemptResult(hr, pAssembly);
                 if (hr != HRESULT_FROM_WIN32(ERROR_FILE_NOT_FOUND))

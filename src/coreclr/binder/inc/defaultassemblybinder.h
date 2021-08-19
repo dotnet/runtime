@@ -35,8 +35,7 @@ public:
 
     HRESULT SetupBindingPaths(SString  &sTrustedPlatformAssemblies,
                               SString  &sPlatformResourceRoots,
-                              SString  &sAppPaths,
-                              SString  &sAppNiPaths);
+                              SString  &sAppPaths);
 
     HRESULT Bind(LPCWSTR      wszCodeBase,
                  PEAssembly  *pParentAssembly,

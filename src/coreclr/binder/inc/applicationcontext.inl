@@ -63,11 +63,6 @@ StringArrayList * ApplicationContext::GetPlatformResourceRoots()
     return &m_platformResourceRoots;
 }
 
-StringArrayList * ApplicationContext::GetAppNiPaths()
-{
-    return &m_appNiPaths;
-}
-
 CRITSEC_COOKIE ApplicationContext::GetCriticalSectionCookie()
 {
     return m_contextCS;
