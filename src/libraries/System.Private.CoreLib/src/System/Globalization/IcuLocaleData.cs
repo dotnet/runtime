@@ -3816,10 +3816,9 @@ namespace System.Globalization
             for (int i = 0; i < name.Length; ++i)
             {
                 char ch = name[i];
-                if (ch > 'z')
-                    return -1;
 
-                lower_case[i] = (byte)(ch | 0x20);
+                Debug.Assert(ch <= 'z');
+                lower_case[i] = ((uint)(ch - 'A') <= 'Z' - 'A') ? (byte)(ch | 0x20) : (byte)ch;
             }
 
             ReadOnlySpan<byte> lname = lower_case;
