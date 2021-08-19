@@ -40,7 +40,7 @@
   </PropertyGroup>
 
   <ItemGroup Condition="'$(EnablePackageValidation)' == 'true'">
-    <PackageReference Include="Microsoft.DotNet.PackageValidation" Version="$(MicrosoftDotNetPackageValidationVersion)" PrivateAssets="all" IsImplicitlyDefined="true" />
+    <PackageReference Include="Microsoft.DotNet.Compatibility" Version="$(MicrosoftDotNetCompatibilityVersion)" PrivateAssets="all" IsImplicitlyDefined="true" />
   </ItemGroup>
 
   <ItemGroup>
