@@ -40,10 +40,10 @@ namespace System
             {
                 lock (s_switches)
                 {
-                    foreach (var (k, v) in s_switches)
+                    foreach (KeyValuePair<string, bool> kvp in s_switches)
                     {
                         // Convert bool to int because it's cheaper to log (no boxing)
-                        ev.LogAppContextSwitch(k, v ? 1 : 0);
+                        ev.LogAppContextSwitch(kvp.Key, kvp.Value ? 1 : 0);
                     }
                 }
             }
@@ -67,12 +67,13 @@ namespace System
                     void LogDataStore(Dictionary<string, bool>? switches)
                     {
                         Debug.Assert(s_dataStore is not null);
-                        foreach (var (k, v) in s_dataStore)
+                        foreach (KeyValuePair<string, bool> kvp in s_dataStore)
                         {
-                            if (v is string s && bool.TryParse(s, out bool isEnabled) &&
-                                switches?.ContainsKey(k) != true)
+                            if (kvp.Value is string s &&
+                                bool.TryParse(s, out bool isEnabled) &&
+                                switches?.ContainsKey(kvp.Key) != true)
                             {
-                                ev.LogAppContextSwitch(k, isEnabled ? 1 : 0);
+                                ev.LogAppContextSwitch(kvp.Key, isEnabled ? 1 : 0);
                             }
                         }
                     }
