@@ -592,10 +592,6 @@ public:
     // then they will all belong to the same domain.
     PTR_BaseDomain GetDomain();
 
-    // For types that are part of an ngen-ed assembly this gets the
-    // Module* that contains this methodtable.
-    PTR_Module GetZapModule();
-
     // For regular, non-constructed types, GetLoaderModule() == GetModule()
     // For constructed types (e.g. int[], Dict<int[], C>) the hash table through which a type
     // is accessed lives in a "loader module". The rule for determining the loader module must ensure

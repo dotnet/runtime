@@ -159,9 +159,6 @@ public:
     // The module that defined the underlying type
     PTR_Module GetModule();
 
-    // The ngen'ed module where this type-desc lives
-    PTR_Module GetZapModule();
-
     // The module where this type lives for the purposes of loading and prejitting
     // See ComputeLoaderModule for more information
     PTR_Module GetLoaderModule();

@@ -112,15 +112,6 @@ inline BOOL MethodTable::IsClassPointerValid()
 }
 
 //==========================================================================================
-// For types that are part of an ngen-ed assembly this gets the
-// Module* that contains this methodtable.
-inline PTR_Module MethodTable::GetZapModule()
-{
-    LIMITED_METHOD_DAC_CONTRACT;
-    return NULL;
-}
-
-//==========================================================================================
 inline PTR_Module MethodTable::GetLoaderModule()
 {
     LIMITED_METHOD_DAC_CONTRACT;

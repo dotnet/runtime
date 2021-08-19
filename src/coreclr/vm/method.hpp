@@ -516,8 +516,6 @@ public:
 
     Module* GetLoaderModule();
 
-    Module* GetZapModule();
-
     // Strip off method and class instantiation if present and replace by the typical instantiation
     // e.g. C<int>.m<string> -> C<T>.m<U>.  Does not modify the MethodDesc, but returns
     // the appropriate stripped MethodDesc.
