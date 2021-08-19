@@ -11,7 +11,8 @@
 //
 // ============================================================
 
-#include "assemblybinder.hpp"
+#include "common.h"
+#include "assemblybindercommon.hpp"
 #include "assemblyname.hpp"
 #include "assembly.hpp"
 #include "applicationcontext.hpp"
@@ -28,12 +29,12 @@
 #endif
 
 #if !defined(DACCESS_COMPILE)
-#include "clrprivbindercoreclr.h"
+#include "defaultassemblybinder.h"
 // Helper function in the VM, invoked by the Binder, to invoke the host assembly resolver
 extern HRESULT RuntimeInvokeHostAssemblyResolver(INT_PTR pManagedAssemblyLoadContextToBindWithin,
                                                  BINDER_SPACE::AssemblyName *pAssemblyName,
-                                                 CLRPrivBinderCoreCLR *pTPABinder,
-                                                 ICLRPrivAssembly **ppLoadedAssembly);
+                                                 DefaultAssemblyBinder *pTPABinder,
+                                                 BINDER_SPACE::Assembly **ppLoadedAssembly);
 
 #endif // !defined(DACCESS_COMPILE)
 
@@ -169,7 +170,7 @@ namespace BINDER_SPACE
                                        pPEImage,
                                        pNativePEImage,
                                        asesmblyPath,
-                                       FALSE /* fIsInGAC */));
+                                       FALSE /* fIsInTPA */));
 
             pBindResult->SetResult(pAssembly);
             pBindResult->SetIsFirstRequest(TRUE);
@@ -179,7 +180,7 @@ namespace BINDER_SPACE
         }
     };
 
-    HRESULT AssemblyBinder::TranslatePEToArchitectureType(DWORD  *pdwPAFlags, PEKIND *PeKind)
+    HRESULT AssemblyBinderCommon::TranslatePEToArchitectureType(DWORD  *pdwPAFlags, PEKIND *PeKind)
     {
         HRESULT hr = S_OK;
 
@@ -244,10 +245,10 @@ namespace BINDER_SPACE
         return hr;
     }
 
-    // See code:BINDER_SPACE::AssemblyBinder::GetAssembly for info on fNgenExplicitBind
+    // See code:BINDER_SPACE::AssemblyBinderCommon::GetAssembly for info on fNgenExplicitBind
     // and fExplicitBindToNativeImage, and see code:CEECompileInfo::LoadAssemblyByPath
     // for an example of how they're used.
-    HRESULT AssemblyBinder::BindAssembly(/* in */  ApplicationContext  *pApplicationContext,
+    HRESULT AssemblyBinderCommon::BindAssembly(/* in */  AssemblyBinder      *pBinder,
                                          /* in */  AssemblyName        *pAssemblyName,
                                          /* in */  LPCWSTR              szCodeBase,
                                          /* in */  PEAssembly          *pParentAssembly,
@@ -259,9 +260,10 @@ namespace BINDER_SPACE
         HRESULT hr = S_OK;
         LONG kContextVersion = 0;
         BindResult bindResult;
+        ApplicationContext* pApplicationContext = pBinder->GetAppContext();
 
         // Tracing happens outside the binder lock to avoid calling into managed code within the lock
-        BinderTracing::ResolutionAttemptedOperation tracer{pAssemblyName, pApplicationContext->GetBinderID(), 0 /*managedALC*/, hr};
+        BinderTracing::ResolutionAttemptedOperation tracer{pAssemblyName, pBinder, 0 /*managedALC*/, hr};
 
     Retry:
         {
@@ -327,15 +329,39 @@ namespace BINDER_SPACE
             }
             else if (hr == S_OK)
             {
-                *ppAssembly = hostBindResult.GetAsAssembly(TRUE /* fAddRef */);
+                *ppAssembly = hostBindResult.GetAssembly(TRUE /* fAddRef */);
             }
         }
 
         return hr;
     }
 
+#if !defined(DACCESS_COMPILE)
     /* static */
-    HRESULT AssemblyBinder::BindToSystem(SString   &systemDirectory,
+    HRESULT AssemblyBinderCommon::BindToSystem(BINDER_SPACE::Assembly** ppSystemAssembly, bool fBindToNativeImage)
+    {
+        HRESULT hr = S_OK;
+        _ASSERTE(ppSystemAssembly != NULL);
+
+        EX_TRY
+        {
+            ReleaseHolder<BINDER_SPACE::Assembly> pAsm;
+            StackSString systemPath(SystemDomain::System()->SystemDirectory());
+            hr = AssemblyBinderCommon::BindToSystem(systemPath, &pAsm, fBindToNativeImage);
+            if (SUCCEEDED(hr))
+            {
+                _ASSERTE(pAsm != NULL);
+                *ppSystemAssembly = pAsm.Extract();
+            }
+        }
+        EX_CATCH_HRESULT(hr);
+
+        return hr;
+    }
+#endif // !defined(DACCESS_COMPILE)
+
+    /* static */
+    HRESULT AssemblyBinderCommon::BindToSystem(SString   &systemDirectory,
                                          Assembly **ppSystemAssembly,
                                          bool       fBindToNativeImage)
     {
@@ -366,8 +392,8 @@ namespace BINDER_SPACE
         sCoreLib.Set(systemDirectory);
         CombinePath(sCoreLib, sCoreLibName, sCoreLib);
 
-        hr = AssemblyBinder::GetAssembly(sCoreLib,
-                                         TRUE /* fIsInGAC */,
+        hr = AssemblyBinderCommon::GetAssembly(sCoreLib,
+                                         TRUE /* fIsInTPA */,
                                          fBindToNativeImage,
                                          &pSystemAssembly,
                                          NULL /* szMDAssemblyPath */,
@@ -407,8 +433,8 @@ namespace BINDER_SPACE
                 GO_WITH_HRESULT(HRESULT_FROM_WIN32(ERROR_FILE_NOT_FOUND));
             }
 
-            hr = AssemblyBinder::GetAssembly(sCoreLib,
-                TRUE /* fIsInGAC */,
+            hr = AssemblyBinderCommon::GetAssembly(sCoreLib,
+                TRUE /* fIsInTPA */,
                 fBindToNativeImage,
                 &pSystemAssembly,
                 NULL /* szMDAssemblyPath */,
@@ -427,7 +453,7 @@ namespace BINDER_SPACE
 
 
     /* static */
-    HRESULT AssemblyBinder::BindToSystemSatellite(SString& systemDirectory,
+    HRESULT AssemblyBinderCommon::BindToSystemSatellite(SString& systemDirectory,
         SString& simpleName,
         SString& cultureName,
         Assembly** ppSystemAssembly)
@@ -466,8 +492,8 @@ namespace BINDER_SPACE
         CombinePath(sCoreLibSatellite, relativePath, sCoreLibSatellite);
 
         ReleaseHolder<Assembly> pSystemAssembly;
-        IF_FAIL_GO(AssemblyBinder::GetAssembly(sCoreLibSatellite,
-                                               TRUE /* fIsInGAC */,
+        IF_FAIL_GO(AssemblyBinderCommon::GetAssembly(sCoreLibSatellite,
+                                               TRUE /* fIsInTPA */,
                                                FALSE /* fExplicitBindToNativeImage */,
                                                &pSystemAssembly,
                                                NULL /* szMDAssemblyPath */,
@@ -481,7 +507,7 @@ namespace BINDER_SPACE
     }
 
     /* static */
-    HRESULT AssemblyBinder::BindByName(ApplicationContext *pApplicationContext,
+    HRESULT AssemblyBinderCommon::BindByName(ApplicationContext *pApplicationContext,
                                        AssemblyName       *pAssemblyName,
                                        bool                skipFailureCaching,
                                        bool                skipVersionCompatibilityCheck,
@@ -556,10 +582,10 @@ namespace BINDER_SPACE
     }
 
     /* static */
-    // See code:BINDER_SPACE::AssemblyBinder::GetAssembly for info on fNgenExplicitBind
+    // See code:BINDER_SPACE::AssemblyBinderCommon::GetAssembly for info on fNgenExplicitBind
     // and fExplicitBindToNativeImage, and see code:CEECompileInfo::LoadAssemblyByPath
     // for an example of how they're used.
-    HRESULT AssemblyBinder::BindWhereRef(ApplicationContext *pApplicationContext,
+    HRESULT AssemblyBinderCommon::BindWhereRef(ApplicationContext *pApplicationContext,
                                          PathString         &assemblyPath,
                                          BOOL                fNgenExplicitBind,
                                          BOOL                fExplicitBindToNativeImage,
@@ -582,7 +608,7 @@ namespace BINDER_SPACE
         // Design decision. For now, keep the V2 model of Fusion being oblivious of the strong name.
         // Security team did not see any security concern with interpreting the version information.
         IF_FAIL_GO(GetAssembly(assemblyPath,
-                               FALSE /* fIsInGAC */,
+                               FALSE /* fIsInTPA */,
 
                                // Pass through caller's intent of whether to bind to the
                                // NI using an explicit path to the NI that was
@@ -626,7 +652,7 @@ namespace BINDER_SPACE
     }
 
     /* static */
-    HRESULT AssemblyBinder::BindLocked(ApplicationContext *pApplicationContext,
+    HRESULT AssemblyBinderCommon::BindLocked(ApplicationContext *pApplicationContext,
                                        AssemblyName       *pAssemblyName,
                                        bool                skipVersionCompatibilityCheck,
                                        bool                excludeAppPaths,
@@ -677,7 +703,7 @@ namespace BINDER_SPACE
             {
                 bool isCompatible = IsCompatibleAssemblyVersion(pAssemblyName, pBindResult->GetAssemblyName());
                 hr = isCompatible ? S_OK : FUSION_E_APP_DOMAIN_LOCKED;
-                pBindResult->SetAttemptResult(hr, pBindResult->GetAsAssembly());
+                pBindResult->SetAttemptResult(hr, pBindResult->GetAssembly());
 
                 // TPA binder returns FUSION_E_REF_DEF_MISMATCH for incompatible version
                 if (hr == FUSION_E_APP_DOMAIN_LOCKED && isTpaListProvided)
@@ -695,12 +721,10 @@ namespace BINDER_SPACE
     }
 
     /* static */
-    HRESULT AssemblyBinder::FindInExecutionContext(ApplicationContext  *pApplicationContext,
+    HRESULT AssemblyBinderCommon::FindInExecutionContext(ApplicationContext  *pApplicationContext,
                                                    AssemblyName        *pAssemblyName,
                                                    ContextEntry       **ppContextEntry)
     {
-        HRESULT hr = S_OK;
-
         _ASSERTE(pApplicationContext != NULL);
         _ASSERTE(pAssemblyName != NULL);
         _ASSERTE(ppContextEntry != NULL);
@@ -768,8 +792,8 @@ namespace BINDER_SPACE
             }
 
             ReleaseHolder<Assembly> pAssembly;
-            hr = AssemblyBinder::GetAssembly(relativePath,
-                                             FALSE /* fIsInGAC */,
+            hr = AssemblyBinderCommon::GetAssembly(relativePath,
+                                             FALSE /* fIsInTPA */,
                                              FALSE /* fExplicitBindToNativeImage */,
                                              &pAssembly,
                                              NULL,  // szMDAssemblyPath
@@ -818,8 +842,8 @@ namespace BINDER_SPACE
                 SString fileName(wszBindingPath);
                 CombinePath(fileName, relativePath, fileName);
 
-                hr = AssemblyBinder::GetAssembly(fileName,
-                                                 FALSE /* fIsInGAC */,
+                hr = AssemblyBinderCommon::GetAssembly(fileName,
+                                                 FALSE /* fIsInTPA */,
                                                  FALSE /* fExplicitBindToNativeImage */,
                                                  &pAssembly);
                 BinderTracing::PathProbed(fileName, pathSource, hr);
@@ -909,11 +933,10 @@ namespace BINDER_SPACE
         HRESULT BindAssemblyByProbingPaths(
             const StringArrayList   *pBindingPaths,
             AssemblyName            *pRequestedAssemblyName,
-            bool                    useNativeImages,
             Assembly                **ppAssembly)
         {
             const SString &simpleName = pRequestedAssemblyName->GetSimpleName();
-            BinderTracing::PathSource pathSource = useNativeImages ? BinderTracing::PathSource::AppNativeImagePaths : BinderTracing::PathSource::AppPaths;
+            BinderTracing::PathSource pathSource = BinderTracing::PathSource::AppPaths;
             // Loop through the binding paths looking for a matching assembly
             for (DWORD i = 0; i < pBindingPaths->GetCount(); i++)
             {
@@ -926,20 +949,20 @@ namespace BINDER_SPACE
 
                 // Look for a matching dll first
                 PathString fileName(fileNameWithoutExtension);
-                fileName.Append(useNativeImages ? W(".ni.dll") : W(".dll"));
-                hr = AssemblyBinder::GetAssembly(fileName,
-                                                 FALSE, // fIsInGAC
-                                                 useNativeImages, // fExplicitBindToNativeImage
+                fileName.Append(W(".dll"));
+                hr = AssemblyBinderCommon::GetAssembly(fileName,
+                                                 FALSE, // fIsInTPA
+                                                 FALSE, // fExplicitBindToNativeImage
                                                  &pAssembly);
                 BinderTracing::PathProbed(fileName, pathSource, hr);
 
                 if (FAILED(hr))
                 {
                     fileName.Set(fileNameWithoutExtension);
-                    fileName.Append(useNativeImages ? W(".ni.exe") : W(".exe"));
-                    hr = AssemblyBinder::GetAssembly(fileName,
-                                                     FALSE, // fIsInGAC
-                                                     useNativeImages, // fExplicitBindToNativeImage
+                    fileName.Append(W(".exe"));
+                    hr = AssemblyBinderCommon::GetAssembly(fileName,
+                                                     FALSE, // fIsInTPA
+                                                     FALSE, // fExplicitBindToNativeImage
                                                      &pAssembly);
                     BinderTracing::PathProbed(fileName, pathSource, hr);
                 }
@@ -988,13 +1011,12 @@ namespace BINDER_SPACE
      * a set of folders configured by the host.
      *
      * If a requested assembly identity cannot be found in the TPA list or the resource roots,
-     * it is considered an application assembly.  We probe for application assemblies in one of two
-     * sets of paths: the AppNiPaths, a list of paths containing native images, and the AppPaths, a
-     * list of paths containing IL files and satellite resource folders.
+     * it is considered an application assembly.  We probe for application assemblies in the
+     * AppPaths, a list of paths containing IL files and satellite resource folders.
      *
      */
     /* static */
-    HRESULT AssemblyBinder::BindByTpaList(ApplicationContext  *pApplicationContext,
+    HRESULT AssemblyBinderCommon::BindByTpaList(ApplicationContext  *pApplicationContext,
                                           AssemblyName        *pRequestedAssemblyName,
                                           bool                 excludeAppPaths,
                                           BindResult          *pBindResult)
@@ -1036,7 +1058,7 @@ namespace BINDER_SPACE
                     if (bundleFileLocation.IsValid())
                     {
                         hr = GetAssembly(assemblyFilePath,
-                                         TRUE,  // fIsInGAC
+                                         TRUE,  // fIsInTPA
                                          FALSE, // fExplicitBindToNativeImage
                                          &pTPAAssembly,
                                          NULL,  // szMDAssemblyPath
@@ -1071,7 +1093,7 @@ namespace BINDER_SPACE
                     SString fileName(pTpaEntry->m_wszNIFileName);
 
                     hr = GetAssembly(fileName,
-                                     TRUE,  // fIsInGAC
+                                     TRUE,  // fIsInTPA
                                      TRUE,  // fExplicitBindToNativeImage
                                      &pTPAAssembly);
                     BinderTracing::PathProbed(fileName, BinderTracing::PathSource::ApplicationAssemblies, hr);
@@ -1082,7 +1104,7 @@ namespace BINDER_SPACE
                     SString fileName(pTpaEntry->m_wszILFileName);
 
                     hr = GetAssembly(fileName,
-                                     TRUE,  // fIsInGAC
+                                     TRUE,  // fIsInTPA
                                      FALSE, // fExplicitBindToNativeImage
                                      &pTPAAssembly);
                     BinderTracing::PathProbed(fileName, BinderTracing::PathSource::ApplicationAssemblies, hr);
@@ -1117,19 +1139,11 @@ namespace BINDER_SPACE
 
             if (!excludeAppPaths)
             {
-                // Probe AppNiPaths first, then AppPaths
+                // Probe AppPaths
                 ReleaseHolder<Assembly> pAssembly;
-                hr = BindAssemblyByProbingPaths(pApplicationContext->GetAppNiPaths(),
+                hr = BindAssemblyByProbingPaths(pApplicationContext->GetAppPaths(),
                                                 pRequestedAssemblyName,
-                                                true, // useNativeImages
                                                 &pAssembly);
-                if (hr == HRESULT_FROM_WIN32(ERROR_FILE_NOT_FOUND))
-                {
-                    hr = BindAssemblyByProbingPaths(pApplicationContext->GetAppPaths(),
-                                                    pRequestedAssemblyName,
-                                                    false, // useNativeImages
-                                                    &pAssembly);
-                }
 
                 pBindResult->SetAttemptResult(hr, pAssembly);
                 if (hr != HRESULT_FROM_WIN32(ERROR_FILE_NOT_FOUND))
@@ -1176,8 +1190,8 @@ namespace BINDER_SPACE
     }
 
     /* static */
-    HRESULT AssemblyBinder::GetAssembly(SString            &assemblyPath,
-                                        BOOL               fIsInGAC,
+    HRESULT AssemblyBinderCommon::GetAssembly(SString            &assemblyPath,
+                                        BOOL               fIsInTPA,
 
                                         // When binding to the native image, should we
                                         // assume assemblyPath explicitly specifies that
@@ -1251,7 +1265,7 @@ namespace BINDER_SPACE
                                    pPEImage,
                                    pNativePEImage,
                                    assemblyPath,
-                                   fIsInGAC));
+                                   fIsInTPA));
 
         // We're done
         *ppAssembly = pAssembly.Extract();
@@ -1272,7 +1286,7 @@ namespace BINDER_SPACE
 
 
     /* static */
-    HRESULT AssemblyBinder::Register(ApplicationContext *pApplicationContext,
+    HRESULT AssemblyBinderCommon::Register(ApplicationContext *pApplicationContext,
                                      BindResult         *pBindResult)
     {
         HRESULT hr = S_OK;
@@ -1304,7 +1318,7 @@ namespace BINDER_SPACE
     }
 
     /* static */
-    HRESULT AssemblyBinder::RegisterAndGetHostChosen(ApplicationContext *pApplicationContext,
+    HRESULT AssemblyBinderCommon::RegisterAndGetHostChosen(ApplicationContext *pApplicationContext,
                                                      LONG                kContextVersion,
                                                      BindResult         *pBindResult,
                                                      BindResult         *pHostBindResult)
@@ -1326,7 +1340,7 @@ namespace BINDER_SPACE
                 // Only perform costly validation if other binds succeded before us
                 if (kContextVersion != pApplicationContext->GetVersion())
                 {
-                    IF_FAIL_GO(AssemblyBinder::OtherBindInterfered(pApplicationContext,
+                    IF_FAIL_GO(AssemblyBinderCommon::OtherBindInterfered(pApplicationContext,
                                                                    pBindResult));
 
                     if (hr == S_FALSE)
@@ -1352,7 +1366,7 @@ namespace BINDER_SPACE
     }
 
     /* static */
-    HRESULT AssemblyBinder::OtherBindInterfered(ApplicationContext *pApplicationContext,
+    HRESULT AssemblyBinderCommon::OtherBindInterfered(ApplicationContext *pApplicationContext,
                                                 BindResult         *pBindResult)
     {
         HRESULT hr = S_FALSE;
@@ -1387,30 +1401,30 @@ namespace BINDER_SPACE
 
 
 #if !defined(DACCESS_COMPILE)
-HRESULT AssemblyBinder::BindUsingHostAssemblyResolver(/* in */ INT_PTR pManagedAssemblyLoadContextToBindWithin,
+HRESULT AssemblyBinderCommon::BindUsingHostAssemblyResolver(/* in */ INT_PTR pManagedAssemblyLoadContextToBindWithin,
                                                       /* in */ AssemblyName       *pAssemblyName,
-                                                      /* in */ CLRPrivBinderCoreCLR *pTPABinder,
+                                                      /* in */ DefaultAssemblyBinder *pTPABinder,
                                                       /* out */ Assembly           **ppAssembly)
 {
     HRESULT hr = E_FAIL;
 
     _ASSERTE(pManagedAssemblyLoadContextToBindWithin != NULL);
 
-    // RuntimeInvokeHostAssemblyResolver will perform steps 2-4 of CLRPrivBinderAssemblyLoadContext::BindAssemblyByName.
-    ICLRPrivAssembly *pLoadedAssembly = NULL;
+    // RuntimeInvokeHostAssemblyResolver will perform steps 2-4 of CustomAssemblyBinder::BindAssemblyByName.
+    BINDER_SPACE::Assembly *pLoadedAssembly = NULL;
     hr = RuntimeInvokeHostAssemblyResolver(pManagedAssemblyLoadContextToBindWithin,
                                            pAssemblyName, pTPABinder, &pLoadedAssembly);
     if (SUCCEEDED(hr))
     {
         _ASSERTE(pLoadedAssembly != NULL);
-        *ppAssembly = static_cast<Assembly *>(pLoadedAssembly);
+        *ppAssembly = pLoadedAssembly;
     }
 
     return hr;
 }
 
 /* static */
-HRESULT AssemblyBinder::BindUsingPEImage(/* in */  ApplicationContext *pApplicationContext,
+HRESULT AssemblyBinderCommon::BindUsingPEImage(/* in */  AssemblyBinder* pBinder,
                                          /* in */  BINDER_SPACE::AssemblyName *pAssemblyName,
                                          /* in */  PEImage            *pPEImage,
                                          /* in */  PEKIND              peKind,
@@ -1424,9 +1438,10 @@ HRESULT AssemblyBinder::BindUsingPEImage(/* in */  ApplicationContext *pApplicat
 
     // Prepare binding data
     *ppAssembly = NULL;
+    ApplicationContext* pApplicationContext = pBinder->GetAppContext();
 
     // Tracing happens outside the binder lock to avoid calling into managed code within the lock
-    BinderTracing::ResolutionAttemptedOperation tracer{pAssemblyName, pApplicationContext->GetBinderID(), 0 /*managedALC*/, hr};
+    BinderTracing::ResolutionAttemptedOperation tracer{pAssemblyName, pBinder, 0 /*managedALC*/, hr};
 
     // Attempt the actual bind (eventually more than once)
 Retry:
@@ -1473,7 +1488,7 @@ Retry:
 
                 // If we cannot get MVID, then err on side of caution and fail the
                 // load.
-                IF_FAIL_GO(bindResult.GetAsAssembly()->GetMVID(&boundMVID));
+                IF_FAIL_GO(bindResult.GetAssembly()->GetMVID(&boundMVID));
 
                 mvidMismatch = incomingMVID != boundMVID;
                 if (mvidMismatch)
@@ -1514,7 +1529,7 @@ Retry:
         }
         else if (hr == S_OK)
         {
-            *ppAssembly = hostBindResult.GetAsAssembly(TRUE /* fAddRef */);
+            *ppAssembly = hostBindResult.GetAssembly(TRUE /* fAddRef */);
         }
     }
 
@@ -1522,6 +1537,73 @@ Exit:
     tracer.TraceBindResult(bindResult, mvidMismatch);
     return hr;
 }
+
+HRESULT AssemblyBinderCommon::DefaultBinderSetupContext(DefaultAssemblyBinder** ppTPABinder)
+{
+    HRESULT hr = S_OK;
+    EX_TRY
+    {
+        if (ppTPABinder != NULL)
+        {
+            NewHolder<DefaultAssemblyBinder> pBinder;
+            SAFE_NEW(pBinder, DefaultAssemblyBinder);
+
+            BINDER_SPACE::ApplicationContext* pApplicationContext = pBinder->GetAppContext();
+            hr = pApplicationContext->Init();
+            if (SUCCEEDED(hr))
+            {
+                pBinder->SetManagedAssemblyLoadContext(NULL);
+                *ppTPABinder = pBinder.Extract();
+            }
+        }
+    }
+    EX_CATCH_HRESULT(hr);
+
+Exit:
+    return hr;
+}
+
+HRESULT AssemblyBinderCommon::GetAssemblyIdentity(LPCSTR     szTextualIdentity,
+    BINDER_SPACE::ApplicationContext* pApplicationContext,
+    NewHolder<AssemblyIdentityUTF8>& assemblyIdentityHolder)
+{
+    HRESULT hr = S_OK;
+    _ASSERTE(szTextualIdentity != NULL);
+
+    EX_TRY
+    {
+        AssemblyIdentityUTF8 * pAssemblyIdentity = NULL;
+        if (pApplicationContext != NULL)
+        {
+            // This returns a cached copy owned by application context
+            hr = pApplicationContext->GetAssemblyIdentity(szTextualIdentity, &pAssemblyIdentity);
+            if (SUCCEEDED(hr))
+            {
+                assemblyIdentityHolder = pAssemblyIdentity;
+                assemblyIdentityHolder.SuppressRelease();
+            }
+        }
+        else
+        {
+            SString sTextualIdentity;
+
+            sTextualIdentity.SetUTF8(szTextualIdentity);
+
+            // This is a private copy
+            pAssemblyIdentity = new AssemblyIdentityUTF8();
+            hr = TextualIdentityParser::Parse(sTextualIdentity, pAssemblyIdentity);
+            if (SUCCEEDED(hr))
+            {
+                pAssemblyIdentity->PopulateUTF8Fields();
+                assemblyIdentityHolder = pAssemblyIdentity;
+            }
+        }
+    }
+    EX_CATCH_HRESULT(hr);
+
+    return hr;
+}
+
 #endif // !defined(DACCESS_COMPILE)
 };
 

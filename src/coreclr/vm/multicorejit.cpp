@@ -1164,7 +1164,7 @@ void MulticoreJitManager::SetProfileRoot(const WCHAR * pProfilePath)
 
 // API Function: StartProfile
 // Threading: protected by m_playerLock
-void MulticoreJitManager::StartProfile(AppDomain * pDomain, ICLRPrivBinder *pBinderContext, const WCHAR * pProfile, int suffix)
+void MulticoreJitManager::StartProfile(AppDomain * pDomain, AssemblyBinder *pBinderContext, const WCHAR * pProfile, int suffix)
 {
     CONTRACTL
     {
@@ -1569,7 +1569,7 @@ void QCALLTYPE MultiCoreJITNative::InternalStartProfile(__in_z LPCWSTR wszProfil
 
     AppDomain * pDomain = GetAppDomain();
 
-    ICLRPrivBinder *pBinderContext = reinterpret_cast<ICLRPrivBinder *>(ptrNativeAssemblyLoadContext);
+    AssemblyBinder *pBinderContext = reinterpret_cast<AssemblyBinder *>(ptrNativeAssemblyLoadContext);
 
     pDomain->GetMulticoreJitManager().StartProfile(
         pDomain,

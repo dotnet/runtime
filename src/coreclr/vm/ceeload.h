@@ -1779,9 +1779,9 @@ protected:
 
     BOOL IsInCurrentVersionBubble();
 
-#if defined(FEATURE_READYTORUN) && !defined(FEATURE_READYTORUN_COMPILER)
+#if defined(FEATURE_READYTORUN)
     BOOL IsInSameVersionBubble(Module *target);
-#endif // FEATURE_READYTORUN && !FEATURE_READYTORUN_COMPILER
+#endif // FEATURE_READYTORUN
 
 
     LPCWSTR GetPathForErrorMessages();
@@ -1970,7 +1970,7 @@ protected:
             mdAssemblyRef       kAssemblyRef,
             IMDInternalImport * pMDImportOverride = NULL,
             BOOL                fDoNotUtilizeExtraChecks = FALSE,
-            ICLRPrivBinder      *pBindingContextForLoadedAssembly = NULL
+            AssemblyBinder      *pBindingContextForLoadedAssembly = NULL
             );
 
 private:

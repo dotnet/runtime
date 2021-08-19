@@ -1164,26 +1164,4 @@ extern "C" unsigned __stdcall PartialNGenStressPercentage();
 extern "C" HRESULT __stdcall CreatePdb(CORINFO_ASSEMBLY_HANDLE hAssembly, BSTR pNativeImagePath, BSTR pPdbPath, BOOL pdbLines, BSTR pManagedPdbSearchPath, LPCWSTR pDiasymreaderPath);
 
 extern bool g_fNGenMissingDependenciesOk;
-
-#ifdef FEATURE_READYTORUN_COMPILER
-extern bool g_fReadyToRunCompilation;
-extern bool g_fLargeVersionBubble;
-#endif
-
-inline bool IsReadyToRunCompilation()
-{
-#ifdef FEATURE_READYTORUN_COMPILER
-    return g_fReadyToRunCompilation;
-#else
-    return false;
-#endif
-}
-
-#ifdef FEATURE_READYTORUN_COMPILER
-inline bool IsLargeVersionBubbleEnabled()
-{
-    return g_fLargeVersionBubble;
-}
-#endif
-
 #endif /* COR_COMPILE_H_ */

@@ -1562,9 +1562,7 @@ void StubLinkerCPU::ThumbEmitTailCallManagedMethod(MethodDesc *pMD)
     bool isRelative = MethodTable::VTableIndir2_t::isRelative
                       && pMD->IsVtableSlot();
 
-#ifndef FEATURE_NGEN_RELOCS_OPTIMIZATIONS
     _ASSERTE(!isRelative);
-#endif
 
     // Use direct call if possible.
     if (pMD->HasStableEntryPoint())
@@ -1664,9 +1662,7 @@ VOID StubLinkerCPU::EmitComputedInstantiatingMethodStub(MethodDesc* pSharedMD, s
     bool isRelative = MethodTable::VTableIndir2_t::isRelative
                       && pSharedMD->IsVtableSlot();
 
-#ifndef FEATURE_NGEN_RELOCS_OPTIMIZATIONS
     _ASSERTE(!isRelative);
-#endif
 
     if (isRelative)
     {

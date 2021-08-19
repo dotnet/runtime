@@ -651,7 +651,7 @@ public:
         DWORD dwMethodDescLocalNum = (DWORD)-1;
 
         // Notify the profiler of call out of the runtime
-        if (!SF_IsReverseCOMStub(m_dwStubFlags) && !SF_IsStructMarshalStub(m_dwStubFlags) && (CORProfilerTrackTransitions() || (!IsReadyToRunCompilation() && SF_IsNGENedStubForProfiling(m_dwStubFlags))))
+        if (!SF_IsReverseCOMStub(m_dwStubFlags) && !SF_IsStructMarshalStub(m_dwStubFlags) && (CORProfilerTrackTransitions() || SF_IsNGENedStubForProfiling(m_dwStubFlags)))
         {
             dwMethodDescLocalNum = m_slIL.EmitProfilerBeginTransitionCallback(pcsDispatch, m_dwStubFlags);
             _ASSERTE(dwMethodDescLocalNum != (DWORD)-1);
@@ -3383,13 +3383,6 @@ BOOL NDirect::MarshalingRequired(
                     return TRUE;
                 }
 
-#ifdef FEATURE_READYTORUN_COMPILER
-                if (IsReadyToRunCompilation())
-                {
-                    if (!hndArgType.AsMethodTable()->IsLayoutInCurrentVersionBubble())
-                        return TRUE;
-                }
-#endif
                 if (i > 0)
                 {
                     const bool isValueType = true;
@@ -5302,12 +5295,6 @@ MethodDesc* NDirect::CreateStructMarshalILStub(MethodTable* pMT)
         POSTCONDITION(CheckPointer(RETVAL));
     }
     CONTRACT_END;
-
-    if (IsReadyToRunCompilation())
-    {
-        // We don't support emitting struct marshalling IL stubs into R2R images.
-        ThrowHR(E_FAIL);
-    }
 
     DWORD dwStubFlags = NDIRECTSTUB_FL_STRUCT_MARSHAL;
 

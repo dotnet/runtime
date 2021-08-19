@@ -5,15 +5,13 @@
 //
 // Contains helper types for assembly binding host infrastructure.
 
-#ifndef __CLRPRIVBINDERUTIL_H__
-#define __CLRPRIVBINDERUTIL_H__
-
-#include "clrprivbinding.h"
+#ifndef __ASSEMBLY_BINDER_UTIL_H__
+#define __ASSEMBLY_BINDER_UTIL_H__
 
 //=====================================================================================================================
 // Forward declarations
-typedef DPTR(ICLRPrivAssembly) PTR_ICLRPrivAssembly;
-typedef DPTR(ICLRPrivBinder) PTR_ICLRPrivBinder;
+typedef DPTR(BINDER_SPACE::Assembly) PTR_BINDER_SPACE_Assembly;
+typedef DPTR(AssemblyBinder) PTR_AssemblyBinder;
 
 //=====================================================================================================================
 #define VALIDATE_CONDITION(condition, fail_op)  \
@@ -25,4 +23,4 @@ typedef DPTR(ICLRPrivBinder) PTR_ICLRPrivBinder;
 
 #define VALIDATE_ARG_RET(condition) VALIDATE_CONDITION(condition, return E_INVALIDARG)
 
-#endif // __CLRPRIVBINDERUTIL_H__
+#endif // __ASSEMBLY_BINDER_UTIL_H__

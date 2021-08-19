@@ -3077,7 +3077,7 @@ BOOL Module::IsInCurrentVersionBubble()
     return TRUE;
 }
 
-#if defined(FEATURE_READYTORUN) && !defined(FEATURE_READYTORUN_COMPILER)
+#if defined(FEATURE_READYTORUN)
 //---------------------------------------------------------------------------------------
 // Check if the target module is in the same version bubble as this one
 // The current implementation uses the presence of an AssemblyRef for the target module's assembly in
@@ -3144,7 +3144,7 @@ BOOL Module::IsInSameVersionBubble(Module *target)
 
     return FALSE;
 }
-#endif // FEATURE_READYTORUN && !FEATURE_READYTORUN_COMPILER
+#endif // FEATURE_READYTORUN
 
 //---------------------------------------------------------------------------------------
 //
@@ -4245,7 +4245,7 @@ Module::GetAssemblyIfLoaded(
     mdAssemblyRef       kAssemblyRef,
     IMDInternalImport * pMDImportOverride,  // = NULL
     BOOL                fDoNotUtilizeExtraChecks, // = FALSE
-    ICLRPrivBinder      *pBindingContextForLoadedAssembly // = NULL
+    AssemblyBinder      *pBindingContextForLoadedAssembly // = NULL
 )
 {
     CONTRACT(Assembly *)
@@ -4565,7 +4565,7 @@ DomainAssembly * Module::LoadAssembly(mdAssemblyRef kAssemblyRef)
         // Set the binding context in the AssemblySpec if one is available. This can happen if the LoadAssembly ended up
         // invoking the custom AssemblyLoadContext implementation that returned a reference to an assembly bound to a different
         // AssemblyLoadContext implementation.
-        ICLRPrivBinder *pBindingContext = pFile->GetBindingContext();
+        AssemblyBinder *pBindingContext = pFile->GetBindingContext();
         if (pBindingContext != NULL)
         {
             spec.SetBindingContext(pBindingContext);
@@ -4578,7 +4578,7 @@ DomainAssembly * Module::LoadAssembly(mdAssemblyRef kAssemblyRef)
         _ASSERTE(
             pDomainAssembly->IsSystem() ||                  // GetAssemblyIfLoaded will not find CoreLib (see AppDomain::FindCachedFile)
             !pDomainAssembly->IsLoaded() ||                 // GetAssemblyIfLoaded will not find not-yet-loaded assemblies
-            GetAssemblyIfLoaded(kAssemblyRef, NULL, FALSE, pDomainAssembly->GetFile()->GetHostAssembly()) != NULL);     // GetAssemblyIfLoaded should find all remaining cases
+            GetAssemblyIfLoaded(kAssemblyRef, NULL, FALSE, pDomainAssembly->GetFile()->GetHostAssembly()->GetBinder()) != NULL);     // GetAssemblyIfLoaded should find all remaining cases
 
         if (pDomainAssembly->GetCurrentAssembly() != NULL)
         {

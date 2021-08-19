@@ -900,7 +900,7 @@ TypeHandle TypeName::GetTypeUsingCASearchRules(LPCWSTR szTypeName, Assembly *pRe
     BOOL bProhibitAsmQualifiedName,
     Assembly* pRequestingAssembly,
     OBJECTREF *pKeepAlive,
-    ICLRPrivBinder * pPrivHostBinder)
+    AssemblyBinder * pPrivHostBinder)
 {
     STANDARD_VM_CONTRACT;
 
@@ -1115,7 +1115,7 @@ TypeHandle TypeName::GetTypeFromAsm()
     BOOL fEnableCASearchRules,
     BOOL bProhibitAsmQualifiedName,
     Assembly* pRequestingAssembly,
-    ICLRPrivBinder * pPrivHostBinder,
+    AssemblyBinder * pPrivHostBinder,
     OBJECTREF *pKeepAlive)
 {
     CONTRACT(TypeHandle)
@@ -1444,7 +1444,7 @@ TypeName::GetTypeHaveAssemblyHelper(
 DomainAssembly * LoadDomainAssembly(
     SString *  psszAssemblySpec,
     Assembly * pRequestingAssembly,
-    ICLRPrivBinder * pPrivHostBinder,
+    AssemblyBinder * pPrivHostBinder,
     BOOL       bThrowIfNotFound)
 {
     CONTRACTL

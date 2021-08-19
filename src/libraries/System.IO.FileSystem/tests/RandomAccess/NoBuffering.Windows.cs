@@ -15,18 +15,24 @@ namespace System.IO.Tests
     {
         private const FileOptions NoBuffering = (FileOptions)0x20000000;
 
+        public static IEnumerable<object[]> AllAsyncSyncCombinations()
+        {
+            yield return new object[] { false, false };
+            yield return new object[] { false, true };
+            yield return new object[] { true, true };
+            yield return new object[] { true, false };
+        }
+
         [Theory]
-        [InlineData(true)]
-        [InlineData(false)]
-        public async Task ReadUsingSingleBuffer(bool async)
+        [MemberData(nameof(AllAsyncSyncCombinations))]
+        public async Task ReadUsingSingleBuffer(bool asyncOperation, bool asyncHandle)
         {
             const int fileSize = 1_000_000; // 1 MB
             string filePath = GetTestFilePath();
             byte[] expected = RandomNumberGenerator.GetBytes(fileSize);
             File.WriteAllBytes(filePath, expected);
 
-            using (SafeFileHandle handle = File.OpenHandle(filePath, FileMode.Open,
-                options: FileOptions.Asynchronous | NoBuffering)) // to use Scatter&Gather APIs on Windows the handle MUST be opened for async IO
+            using (SafeFileHandle handle = File.OpenHandle(filePath, FileMode.Open, options: GetFileOptions(asyncHandle)))
             using (SectorAlignedMemory<byte> buffer = SectorAlignedMemory<byte>.Allocate(Environment.SystemPageSize))
             {
                 int current = 0;
@@ -43,7 +49,7 @@ namespace System.IO.Tests
                 // It's possible to get 0 if we are lucky and file size is a multiple of physical sector size.
                 do
                 {
-                    current = async
+                    current = asyncOperation
                         ? await RandomAccess.ReadAsync(handle, buffer.Memory, fileOffset: total)
                         : RandomAccess.Read(handle, buffer.GetSpan(), fileOffset: total);
 
@@ -58,16 +64,15 @@ namespace System.IO.Tests
         }
 
         [Theory]
-        [InlineData(true)]
-        [InlineData(false)]
-        public async Task ReadAsyncUsingMultipleBuffers(bool async)
+        [MemberData(nameof(AllAsyncSyncCombinations))]
+        public async Task ReadAsyncUsingMultipleBuffers(bool asyncOperation, bool asyncHandle)
         {
             const int fileSize = 1_000_000; // 1 MB
             string filePath = GetTestFilePath();
             byte[] expected = RandomNumberGenerator.GetBytes(fileSize);
             File.WriteAllBytes(filePath, expected);
 
-            using (SafeFileHandle handle = File.OpenHandle(filePath, FileMode.Open, options: FileOptions.Asynchronous | NoBuffering))
+            using (SafeFileHandle handle = File.OpenHandle(filePath, FileMode.Open, options: GetFileOptions(asyncHandle)))
             using (SectorAlignedMemory<byte> buffer_1 = SectorAlignedMemory<byte>.Allocate(Environment.SystemPageSize))
             using (SectorAlignedMemory<byte> buffer_2 = SectorAlignedMemory<byte>.Allocate(Environment.SystemPageSize))
             {
@@ -82,7 +87,7 @@ namespace System.IO.Tests
 
                 do
                 {
-                    current = async
+                    current = asyncOperation
                         ? await RandomAccess.ReadAsync(handle, buffers, fileOffset: total)
                         : RandomAccess.Read(handle, buffers, fileOffset: total);
 
@@ -99,16 +104,15 @@ namespace System.IO.Tests
         }
 
         [Theory]
-        [InlineData(true)]
-        [InlineData(false)]
-        public async Task WriteUsingSingleBuffer(bool async)
+        [MemberData(nameof(AllAsyncSyncCombinations))]
+        public async Task WriteUsingSingleBuffer(bool asyncOperation, bool asyncHandle)
         {
             string filePath = GetTestFilePath();
             int bufferSize = Environment.SystemPageSize;
             int fileSize = bufferSize * 10;
             byte[] content = RandomNumberGenerator.GetBytes(fileSize);
 
-            using (SafeFileHandle handle = File.OpenHandle(filePath, FileMode.CreateNew, FileAccess.Write, FileShare.None, FileOptions.Asynchronous | NoBuffering))
+            using (SafeFileHandle handle = File.OpenHandle(filePath, FileMode.CreateNew, FileAccess.Write, FileShare.None, GetFileOptions(asyncHandle)))
             using (SectorAlignedMemory<byte> buffer = SectorAlignedMemory<byte>.Allocate(bufferSize))
             {
                 int total = 0;
@@ -118,7 +122,7 @@ namespace System.IO.Tests
                     int take = Math.Min(content.Length - total, bufferSize);
                     content.AsSpan(total, take).CopyTo(buffer.GetSpan());
 
-                    if (async)
+                    if (asyncOperation)
                     {
                         await RandomAccess.WriteAsync(handle, buffer.Memory, fileOffset: total);
                     }
@@ -135,16 +139,15 @@ namespace System.IO.Tests
         }
 
         [Theory]
-        [InlineData(true)]
-        [InlineData(false)]
-        public async Task WriteAsyncUsingMultipleBuffers(bool async)
+        [MemberData(nameof(AllAsyncSyncCombinations))]
+        public async Task WriteAsyncUsingMultipleBuffers(bool asyncOperation, bool asyncHandle)
         {
             string filePath = GetTestFilePath();
             int bufferSize = Environment.SystemPageSize;
             int fileSize = bufferSize * 10;
             byte[] content = RandomNumberGenerator.GetBytes(fileSize);
 
-            using (SafeFileHandle handle = File.OpenHandle(filePath, FileMode.CreateNew, FileAccess.Write, FileShare.None, FileOptions.Asynchronous | NoBuffering))
+            using (SafeFileHandle handle = File.OpenHandle(filePath, FileMode.CreateNew, FileAccess.Write, FileShare.None, GetFileOptions(asyncHandle)))
             using (SectorAlignedMemory<byte> buffer_1 = SectorAlignedMemory<byte>.Allocate(bufferSize))
             using (SectorAlignedMemory<byte> buffer_2 = SectorAlignedMemory<byte>.Allocate(bufferSize))
             {
@@ -161,7 +164,7 @@ namespace System.IO.Tests
                     content.AsSpan((int)total, bufferSize).CopyTo(buffer_1.GetSpan());
                     content.AsSpan((int)total + bufferSize, bufferSize).CopyTo(buffer_2.GetSpan());
 
-                    if (async)
+                    if (asyncOperation)
                     {
                         await RandomAccess.WriteAsync(handle, buffers, fileOffset: total);
                     }
@@ -176,5 +179,8 @@ namespace System.IO.Tests
 
             Assert.Equal(content, File.ReadAllBytes(filePath));
         }
+
+        // when using FileOptions.Asynchronous we are testing Scatter&Gather APIs on Windows (FILE_FLAG_OVERLAPPED requirement)
+        private static FileOptions GetFileOptions(bool asyncHandle) => (asyncHandle ? FileOptions.Asynchronous : FileOptions.None) | NoBuffering; 
     }
 }

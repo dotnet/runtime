@@ -95,6 +95,14 @@ namespace System.Net.Quic.Implementations.MsQuic
         // inbound.
         internal MsQuicStream(MsQuicConnection.State connectionState, SafeMsQuicStreamHandle streamHandle, QUIC_STREAM_OPEN_FLAGS flags)
         {
+            if (!connectionState.TryAddStream(this))
+            {
+                throw new ObjectDisposedException(nameof(QuicConnection));
+            }
+            // this assignment should be done before SetCallbackHandlerDelegate to prevent NRE in HandleEventConnectionClose
+            // but after TryAddStream to prevent unnecessary RemoveStream in finalizer
+            _state.ConnectionState = connectionState;
+
             _state.Handle = streamHandle;
             _canRead = true;
             _canWrite = !flags.HasFlag(QUIC_STREAM_OPEN_FLAGS.UNIDIRECTIONAL);
@@ -117,14 +125,6 @@ namespace System.Net.Quic.Implementations.MsQuic
                 throw;
             }
 
-            if (!connectionState.TryAddStream(this))
-            {
-                _state.StateGCHandle.Free();
-                throw new ObjectDisposedException(nameof(QuicConnection));
-            }
-
-            _state.ConnectionState = connectionState;
-
             _state.TraceId = MsQuicTraceHelper.GetTraceId(_state.Handle);
             if (NetEventSource.Log.IsEnabled())
             {
@@ -139,6 +139,14 @@ namespace System.Net.Quic.Implementations.MsQuic
         internal MsQuicStream(MsQuicConnection.State connectionState, QUIC_STREAM_OPEN_FLAGS flags)
         {
             Debug.Assert(connectionState.Handle != null);
+
+            if (!connectionState.TryAddStream(this))
+            {
+                throw new ObjectDisposedException(nameof(QuicConnection));
+            }
+            // this assignment should be done before StreamOpenDelegate to prevent NRE in HandleEventConnectionClose
+            // but after TryAddStream to prevent unnecessary RemoveStream in finalizer
+            _state.ConnectionState = connectionState;
 
             _canRead = !flags.HasFlag(QUIC_STREAM_OPEN_FLAGS.UNIDIRECTIONAL);
             _canWrite = true;
@@ -169,15 +177,6 @@ namespace System.Net.Quic.Implementations.MsQuic
                 _state.StateGCHandle.Free();
                 throw;
             }
-
-            if (!connectionState.TryAddStream(this))
-            {
-                _state.Handle?.Dispose();
-                _state.StateGCHandle.Free();
-                throw new ObjectDisposedException(nameof(QuicConnection));
-            }
-
-            _state.ConnectionState = connectionState;
 
             _state.TraceId = MsQuicTraceHelper.GetTraceId(_state.Handle);
             if (NetEventSource.Log.IsEnabled())
@@ -265,7 +264,7 @@ namespace System.Net.Quic.Implementations.MsQuic
         {
             ThrowIfDisposed();
 
-            using CancellationTokenRegistration registration = HandleWriteStartState(cancellationToken);
+            using CancellationTokenRegistration registration = HandleWriteStartState(buffers.IsEmpty, cancellationToken);
 
             await SendReadOnlySequenceAsync(buffers, endStream ? QUIC_SEND_FLAGS.FIN : QUIC_SEND_FLAGS.NONE).ConfigureAwait(false);
 
@@ -281,7 +280,7 @@ namespace System.Net.Quic.Implementations.MsQuic
         {
             ThrowIfDisposed();
 
-            using CancellationTokenRegistration registration = HandleWriteStartState(cancellationToken);
+            using CancellationTokenRegistration registration = HandleWriteStartState(buffers.IsEmpty, cancellationToken);
 
             await SendReadOnlyMemoryListAsync(buffers, endStream ? QUIC_SEND_FLAGS.FIN : QUIC_SEND_FLAGS.NONE).ConfigureAwait(false);
 
@@ -292,20 +291,20 @@ namespace System.Net.Quic.Implementations.MsQuic
         {
             ThrowIfDisposed();
 
-            using CancellationTokenRegistration registration = HandleWriteStartState(cancellationToken);
+            using CancellationTokenRegistration registration = HandleWriteStartState(buffer.IsEmpty, cancellationToken);
 
             await SendReadOnlyMemoryAsync(buffer, endStream ? QUIC_SEND_FLAGS.FIN : QUIC_SEND_FLAGS.NONE).ConfigureAwait(false);
 
             HandleWriteCompletedState();
         }
 
-        private CancellationTokenRegistration HandleWriteStartState(CancellationToken cancellationToken)
+        private CancellationTokenRegistration HandleWriteStartState(bool emptyBuffer, CancellationToken cancellationToken)
         {
             if (_state.SendState == SendState.Closed)
             {
                 throw new InvalidOperationException(SR.net_quic_writing_notallowed);
             }
-            else if ( _state.SendState == SendState.Aborted)
+            if (_state.SendState == SendState.Aborted)
             {
                 if (_state.SendErrorCode != -1)
                 {
@@ -363,10 +362,14 @@ namespace System.Net.Quic.Implementations.MsQuic
 
                     throw new OperationCanceledException(SR.net_quic_sending_aborted);
                 }
-                else if (_state.SendState == SendState.ConnectionClosed)
+                if (_state.SendState == SendState.ConnectionClosed)
                 {
                     throw GetConnectionAbortedException(_state);
                 }
+
+                // Change the state in the same lock where we check for final states to prevent coming back from Aborted/ConnectionClosed.
+                Debug.Assert(_state.SendState != SendState.Pending);
+                _state.SendState = emptyBuffer ? SendState.Finished : SendState.Pending;
             }
 
             return registration;
@@ -632,7 +635,10 @@ namespace System.Net.Quic.Implementations.MsQuic
 
             lock (_state)
             {
-                _state.SendState = SendState.Finished;
+                if (_state.SendState < SendState.Finished)
+                {
+                    _state.SendState = SendState.Finished;
+                }
             }
 
             // it is ok to send shutdown several times, MsQuic will ignore it
@@ -1157,12 +1163,6 @@ namespace System.Net.Quic.Implementations.MsQuic
            ReadOnlyMemory<byte> buffer,
            QUIC_SEND_FLAGS flags)
         {
-            lock (_state)
-            {
-                Debug.Assert(_state.SendState != SendState.Pending);
-                _state.SendState = buffer.IsEmpty ? SendState.Finished : SendState.Pending;
-            }
-
             if (buffer.IsEmpty)
             {
                 if ((flags & QUIC_SEND_FLAGS.FIN) == QUIC_SEND_FLAGS.FIN)
@@ -1211,13 +1211,6 @@ namespace System.Net.Quic.Implementations.MsQuic
            ReadOnlySequence<byte> buffers,
            QUIC_SEND_FLAGS flags)
         {
-
-            lock (_state)
-            {
-                Debug.Assert(_state.SendState != SendState.Pending);
-                _state.SendState = buffers.IsEmpty ? SendState.Finished : SendState.Pending;
-            }
-
             if (buffers.IsEmpty)
             {
                 if ((flags & QUIC_SEND_FLAGS.FIN) == QUIC_SEND_FLAGS.FIN)
@@ -1281,12 +1274,6 @@ namespace System.Net.Quic.Implementations.MsQuic
            ReadOnlyMemory<ReadOnlyMemory<byte>> buffers,
            QUIC_SEND_FLAGS flags)
         {
-            lock (_state)
-            {
-                Debug.Assert(_state.SendState != SendState.Pending);
-                _state.SendState = buffers.IsEmpty ? SendState.Finished : SendState.Pending;
-            }
-
             if (buffers.IsEmpty)
             {
                 if ((flags & QUIC_SEND_FLAGS.FIN) == QUIC_SEND_FLAGS.FIN)

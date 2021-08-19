@@ -11,17 +11,19 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Runtime.InteropServices;
 using System.Buffers;
+using Microsoft.Extensions.ObjectPool;
 
 namespace HttpStress
 {
     public sealed class LogHttpEventListener : EventListener
     {
+        public const string LogDirectory = "logs";
+
         private int _lastLogNumber = 0;
         private FileStream _log;
         private Channel<string> _messagesChannel = Channel.CreateUnbounded<string>();
         private Task _processMessages;
-        private CancellationTokenSource _stopProcessing = new CancellationTokenSource();
-        private const string LogDirectory = "./clientlog";
+        private DefaultObjectPool<StringBuilder> _stringBuilderPool = new DefaultObjectPool<StringBuilder>(new StringBuilderPooledObjectPolicy());
 
         private FileStream CreateNextLogFileStream()
         {
@@ -54,7 +56,8 @@ namespace HttpStress
 
         protected override void OnEventSourceCreated(EventSource eventSource)
         {
-            if (eventSource.Name == "Private.InternalDiagnostics.System.Net.Http")
+            if (eventSource.Name == "Private.InternalDiagnostics.System.Net.Http" ||
+                eventSource.Name == "Private.InternalDiagnostics.System.Net.Quic")
             {
                 EnableEvents(eventSource, EventLevel.LogAlways);
             }
@@ -62,36 +65,29 @@ namespace HttpStress
 
         private async Task ProcessMessagesAsync()
         {
-            try
-            {
-                byte[] buffer = new byte[8192];
-                var encoding = Encoding.ASCII;
+            byte[] buffer = new byte[8192];
+            var encoding = Encoding.ASCII;
 
-                int i = 0;
-                await foreach (string message in _messagesChannel.Reader.ReadAllAsync(_stopProcessing.Token))
-                {
-                    if ((++i % 10_000) == 0)
-                    {
-                        await RotateFiles();
-                    }
-                    int maxLen = encoding.GetMaxByteCount(message.Length);
-                    if (maxLen > buffer.Length)
-                    {
-                        buffer = new byte[maxLen];
-                    }
-                    int byteCount = encoding.GetBytes(message, buffer);
-                                        
-                    await _log.WriteAsync(buffer.AsMemory(0, byteCount), _stopProcessing.Token);
-                }
-            }
-            catch (OperationCanceledException)
+            int i = 0;
+            await foreach (string message in _messagesChannel.Reader.ReadAllAsync())
             {
-                return;
+                if ((++i % 10_000) == 0)
+                {
+                    await RotateFiles();
+                }
+                int maxLen = encoding.GetMaxByteCount(message.Length);
+                if (maxLen > buffer.Length)
+                {
+                    buffer = new byte[maxLen];
+                }
+                int byteCount = encoding.GetBytes(message, buffer);
+
+                await _log.WriteAsync(buffer.AsMemory(0, byteCount));
             }
 
             async ValueTask RotateFiles()
             {
-                await _log.FlushAsync(_stopProcessing.Token);
+                await _log.FlushAsync();
                 // Rotate the log if it reaches 50 MB size.
                 if (_log.Length > (100 << 20))
                 {
@@ -101,11 +97,9 @@ namespace HttpStress
             }
         }
 
-        private StringBuilder? _cachedStringBuilder;
-
         protected override async void OnEventWritten(EventWrittenEventArgs eventData)
         {
-            StringBuilder sb = Interlocked.Exchange(ref _cachedStringBuilder, null) ?? new StringBuilder();
+            StringBuilder sb = _stringBuilderPool.Get();
             sb.Append($"{eventData.TimeStamp:HH:mm:ss.fffffff}[{eventData.EventName}] ");
             for (int i = 0; i < eventData.Payload?.Count; i++)
             {
@@ -116,21 +110,16 @@ namespace HttpStress
                 sb.Append(eventData.PayloadNames?[i]).Append(": ").Append(eventData.Payload[i]);
             }
             sb.Append(Environment.NewLine);
-            string s = sb.ToString();
-            sb.Clear();
-            Interlocked.Exchange(ref _cachedStringBuilder, sb);
-            await _messagesChannel.Writer.WriteAsync(s, _stopProcessing.Token);
+            await _messagesChannel.Writer.WriteAsync(sb.ToString());
+            _stringBuilderPool.Return(sb);
         }
 
         public override void Dispose()
         {
             base.Dispose();
             _log.Flush();
-            if (!_processMessages.Wait(TimeSpan.FromSeconds(30)))
-            {
-                _stopProcessing.Cancel();
-                _processMessages.Wait();
-            }
+            _messagesChannel.Writer.Complete();
+            _processMessages.Wait();
             _log.Dispose();
         }
     }
