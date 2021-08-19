@@ -1,8 +1,10 @@
 <Project>
   <ItemGroup Condition="'$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'iOSSimulator' or '$(TargetOS)' == 'tvOS' or '$(TargetOS)' == 'tvOSSimulator' or '$(TargetOS)' == 'MacCatalyst'">
-    <MonoAOTCompilerDefaultAotArguments Condition="'$(TargetArchitecture)' == 'arm64'" Include="mtriple=arm64-ios" />
+    <MonoAOTCompilerDefaultAotArguments Condition="'$(TargetArchitecture)' == 'arm64' and '$(TargetOS)' != 'MacCatalyst'" Include="mtriple=arm64-ios" />
+    <MonoAOTCompilerDefaultAotArguments Condition="'$(TargetArchitecture)' == 'arm64' and '$(TargetOS)' == 'MacCatalyst'" Include="mtriple=arm64-apple-ios14.2-macabi" />
     <MonoAOTCompilerDefaultAotArguments Condition="'$(TargetArchitecture)' == 'arm'" Include="mtriple=armv7-ios" />
-    <MonoAOTCompilerDefaultAotArguments Condition="'$(TargetArchitecture)' == 'x64'" Include="mtriple=x86_64-ios" />
+    <MonoAOTCompilerDefaultAotArguments Condition="'$(TargetArchitecture)' == 'x64' and '$(TargetOS)' != 'MacCatalyst'" Include="mtriple=x86_64-ios" />
+    <MonoAOTCompilerDefaultAotArguments Condition="'$(TargetArchitecture)' == 'x64' and '$(TargetOS)' == 'MacCatalyst'" Include="mtriple=x86_64-apple-ios13.5-macabi" />
     <MonoAOTCompilerDefaultAotArguments Condition="'$(TargetArchitecture)' == 'x86'" Include="mtriple=i386-ios" />
     <MonoAOTCompilerDefaultAotArguments Include="static" />
     <MonoAOTCompilerDefaultAotArguments Include="dwarfdebug" />
