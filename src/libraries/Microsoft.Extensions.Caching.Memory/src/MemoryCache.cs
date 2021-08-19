@@ -283,7 +283,8 @@ namespace Microsoft.Extensions.Caching.Memory
         {
             CheckDisposed();
 
-            var oldEntries = Interlocked.Exchange(ref _entries, new ConcurrentDictionary<object, CacheEntry>());
+            // the following two operations are not atomic change as a whole, but an alternative would be to introduce a global lock for every access to _entries and _cacheSize
+            ConcurrentDictionary<object, CacheEntry> oldEntries = Interlocked.Exchange(ref _entries, new ConcurrentDictionary<object, CacheEntry>());
             Interlocked.Exchange(ref _cacheSize, 0);
 
             foreach (var entry in oldEntries)
@@ -291,7 +292,6 @@ namespace Microsoft.Extensions.Caching.Memory
                 entry.Value.SetExpired(EvictionReason.Removed);
                 entry.Value.InvokeEvictionCallbacks();
             }
-            oldEntries.Clear();
         }
 
         private void RemoveEntry(CacheEntry entry)
@@ -335,7 +335,7 @@ namespace Microsoft.Extensions.Caching.Memory
         {
             DateTimeOffset now = cache._lastExpirationScan = cache._options.Clock.UtcNow;
 
-            var entries = cache._entries; // Clear() can update the reference in the meantime
+            ConcurrentDictionary<object, CacheEntry> entries = cache._entries; // Clear() can update the reference in the meantime
             foreach (KeyValuePair<object, CacheEntry> item in entries)
             {
                 CacheEntry entry = item.Value;
@@ -421,7 +421,7 @@ namespace Microsoft.Extensions.Caching.Memory
 
             // Sort items by expired & priority status
             DateTimeOffset now = _options.Clock.UtcNow;
-            var entries = _entries; // Clear() can update the reference in the meantime
+            ConcurrentDictionary<object, CacheEntry> entries = _entries; // Clear() can update the reference in the meantime
             foreach (KeyValuePair<object, CacheEntry> item in entries)
             {
                 CacheEntry entry = item.Value;
