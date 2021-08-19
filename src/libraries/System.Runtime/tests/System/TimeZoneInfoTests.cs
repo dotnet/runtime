@@ -87,7 +87,7 @@ namespace System.Tests
         //  Name abbreviations, if available, are used instead
         public static IEnumerable<object []> Platform_TimeZoneNamesTestData()
         {
-            if (PlatformDetection.IsBrowser)
+            if (PlatformDetection.IsBrowser || PlatformDetection.IsiOS || PlatformDetection.IstvOS)
                 return new TheoryData<TimeZoneInfo, string, string, string>
                 {
                     { TimeZoneInfo.FindSystemTimeZoneById(s_strPacific), "(UTC-08:00) America/Los_Angeles", "PST", "PDT" },
@@ -125,7 +125,6 @@ namespace System.Tests
         // We test the existence of a specific English time zone name to avoid failures on non-English platforms.
         [ConditionalTheory(nameof(IsEnglishUILanguage))]
         [MemberData(nameof(Platform_TimeZoneNamesTestData))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/52072", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public static void Platform_TimeZoneNames(TimeZoneInfo tzi, string displayName, string standardName, string daylightName)
         {
             // Edge case - Optionally allow some characters to be absent in the display name.
@@ -2623,10 +2622,9 @@ namespace System.Tests
         [InlineData("Argentina Standard Time", "America/Argentina/Catamarca")]
         [InlineData("Newfoundland Standard Time", "America/St_Johns")]
         [InlineData("Iran Standard Time", "Asia/Tehran")]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/52072", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public static void UsingAlternativeTimeZoneIdsTest(string windowsId, string ianaId)
         {
-            if (PlatformDetection.ICUVersion.Major >= 52)
+            if (PlatformDetection.ICUVersion.Major >= 52 && !PlatformDetection.IsiOS && !PlatformDetection.IstvOS)
             {
                 TimeZoneInfo tzi1 = TimeZoneInfo.FindSystemTimeZoneById(ianaId);
                 TimeZoneInfo tzi2 = TimeZoneInfo.FindSystemTimeZoneById(windowsId);
