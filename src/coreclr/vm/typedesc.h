@@ -234,7 +234,7 @@ public:
 
         LIMITED_METHOD_CONTRACT;
 
-        m_TemplateMT.SetValueMaybeNull(pMT);
+        m_TemplateMT = pMT;
 
         // ParamTypeDescs start out life not fully loaded
         m_typeAndFlags |= TypeDesc::enum_flag_IsNotFullyLoaded;
@@ -299,11 +299,11 @@ public:
 protected:
     PTR_MethodTable GetTemplateMethodTableInternal() {
         WRAPPER_NO_CONTRACT;
-        return ReadPointerMaybeNull(this, &ParamTypeDesc::m_TemplateMT);
+        return m_TemplateMT;
     }
 
     // the m_typeAndFlags field in TypeDesc tell what kind of parameterized type we have
-    RelativeFixupPointer<PTR_MethodTable> m_TemplateMT; // The shared method table, some variants do not use this field (it is null)
+    PTR_MethodTable m_TemplateMT; // The shared method table, some variants do not use this field (it is null)
     TypeHandle      m_Arg;              // The type that is being modified
     LOADERHANDLE    m_hExposedClassObject;  // handle back to the internal reflection Type object
 };

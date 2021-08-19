@@ -1037,7 +1037,7 @@ public:
     inline PTR_MethodTable GetMethodTable() const;
     inline PTR_MethodTable GetMethodTable_NoLogging() const;
 
-    inline DPTR(RelativeFixupPointer<PTR_MethodTable>) GetMethodTablePtr() const;
+    inline DPTR(PTR_MethodTable) GetMethodTablePtr() const;
 
   public:
     inline MethodDescChunk* GetMethodDescChunk() const;
@@ -2312,22 +2312,22 @@ public:
     FORCEINLINE PTR_MethodTable GetMethodTable()
     {
         LIMITED_METHOD_DAC_CONTRACT;
-        return m_methodTable.GetValue(PTR_HOST_MEMBER_TADDR(MethodDescChunk, this, m_methodTable));
+        return m_methodTable;
     }
 
-    inline DPTR(RelativeFixupPointer<PTR_MethodTable>) GetMethodTablePtr() const
+    inline DPTR(PTR_MethodTable) GetMethodTablePtr() const
     {
         LIMITED_METHOD_DAC_CONTRACT;
-        return dac_cast<DPTR(RelativeFixupPointer<PTR_MethodTable>)>(PTR_HOST_MEMBER_TADDR(MethodDescChunk, this, m_methodTable));
+        return dac_cast<DPTR(PTR_MethodTable)>(PTR_HOST_MEMBER_TADDR(MethodDescChunk, this, m_methodTable));
     }
 
 #ifndef DACCESS_COMPILE
     inline void SetMethodTable(MethodTable * pMT)
     {
         LIMITED_METHOD_CONTRACT;
-        _ASSERTE(m_methodTable.IsNull());
+        _ASSERTE(m_methodTable == NULL);
         _ASSERTE(pMT != NULL);
-        m_methodTable.SetValue(pMT);
+        m_methodTable = pMT;
     }
 
     inline void SetSizeAndCount(ULONG sizeOfMethodDescs, COUNT_T methodDescCount)
@@ -2425,7 +2425,7 @@ private:
         m_flagsAndTokenRange = (m_flagsAndTokenRange & ~enum_flag_TokenRangeMask) | tokenRange;
     }
 
-    RelativeFixupPointer<PTR_MethodTable> m_methodTable;
+    PTR_MethodTable m_methodTable;
 
     RelativePointer<PTR_MethodDescChunk> m_next;
 
@@ -3507,7 +3507,7 @@ public:
         LIMITED_METHOD_DAC_CONTRACT;
 
         _ASSERTE(IMD_IsWrapperStubWithInstantiations());
-        return RelativeFixupPointer<PTR_MethodDesc>::GetValueAtPtr(PTR_HOST_MEMBER_TADDR(InstantiatedMethodDesc, this, m_pWrappedMethodDesc));
+        return m_pWrappedMethodDesc;
     }
 
 #ifndef DACCESS_COMPILE
@@ -3588,7 +3588,7 @@ private:
     union {
         PTR_DictionaryLayout m_pDictLayout; //SharedMethodInstantiation
 
-        RelativeFixupPointer<PTR_MethodDesc> m_pWrappedMethodDesc; // For WrapperStubWithInstantiations
+        PTR_MethodDesc m_pWrappedMethodDesc; // For WrapperStubWithInstantiations
     };
 
 public: // <TODO>make private: JITinterface.cpp accesses through this </TODO>
@@ -3643,7 +3643,7 @@ inline PTR_MethodTable MethodDesc::GetMethodTable() const
     return GetMethodTable_NoLogging();
 }
 
-inline DPTR(RelativeFixupPointer<PTR_MethodTable>) MethodDesc::GetMethodTablePtr() const
+inline DPTR(PTR_MethodTable) MethodDesc::GetMethodTablePtr() const
 {
     LIMITED_METHOD_DAC_CONTRACT;
 

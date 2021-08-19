@@ -1459,7 +1459,7 @@ void InstantiatedMethodDesc::SetupWrapperStubWithInstantiations(MethodDesc* wrap
 
     //_ASSERTE(sharedMD->IMD_IsSharedByGenericMethodInstantiations());
 
-    m_pWrappedMethodDesc.SetValue(wrappedMD);
+    m_pWrappedMethodDesc = wrappedMD;
     m_wFlags2 = WrapperStubWithInstantiations | (m_wFlags2 & ~KindMask);
     m_pPerInstInfo = (Dictionary*)pInst;
 

@@ -408,8 +408,8 @@ struct ModuleCtorInfo
     DWORD                   numHotHashes;
     DWORD                   numColdHashes;
 
-    ArrayDPTR(RelativeFixupPointer<PTR_MethodTable>) ppHotGCStaticsMTs;            // hot table
-    ArrayDPTR(RelativeFixupPointer<PTR_MethodTable>) ppColdGCStaticsMTs;           // cold table
+    ArrayDPTR(PTR_MethodTable) ppHotGCStaticsMTs;            // hot table
+    ArrayDPTR(PTR_MethodTable) ppColdGCStaticsMTs;           // cold table
 
     DWORD                   numHotGCStaticsMTs;
     DWORD                   numColdGCStaticsMTs;
@@ -445,7 +445,7 @@ struct ModuleCtorInfo
         return hashVal;
     };
 
-    ArrayDPTR(RelativeFixupPointer<PTR_MethodTable>) GetGCStaticMTs(DWORD index);
+    ArrayDPTR(PTR_MethodTable) GetGCStaticMTs(DWORD index);
 
     PTR_MethodTable GetMT(DWORD i)
     {

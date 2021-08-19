@@ -879,15 +879,7 @@ ClassLoader::LoadExactParentAndInterfacesTransitively(MethodTable *pMT)
             LOG((LF_CLASSLOADER, LL_INFO1000, "GENERICS: Replaced approximate parent %s with exact parent %s from token %x\n", pParentMT->GetDebugClassName(), pNewParentMT->GetDebugClassName(), crExtends));
 
             // SetParentMethodTable is not used here since we want to update the indirection cell in the NGen case
-            if (pMT->IsParentMethodTableIndirectPointerMaybeNull())
-            {
-                *pMT->GetParentMethodTableValuePtr() = pNewParentMT;
-            }
-            else
-            {
-                pMT->GetParentMethodTablePointerPtr()->SetValueMaybeNull(pNewParentMT);
-            }
-
+            *pMT->GetParentMethodTableValuePtr() = pNewParentMT;
             pParentMT = pNewParentMT;
         }
     }

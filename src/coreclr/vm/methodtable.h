@@ -1822,9 +1822,6 @@ public:
     //-------------------------------------------------------------------
     // THE METHOD TABLE PARENT (SUPERCLASS/BASE CLASS)
     //
-#define PARENT_MT_FIXUP_OFFSET ((SSIZE_T)offsetof(MethodTable, m_pParentMethodTable))
-    typedef IndirectPointer<PTR_MethodTable> ParentMT_t;
-
     BOOL HasApproxParent()
     {
         LIMITED_METHOD_DAC_CONTRACT;
@@ -1843,50 +1840,14 @@ public:
         LIMITED_METHOD_DAC_CONTRACT;
 
         PRECONDITION(IsParentMethodTablePointerValid());
-        return ReadPointerMaybeNull(this, &MethodTable::m_pParentMethodTable, GetFlagHasIndirectParent());
-    }
-
-    inline static PTR_VOID GetParentMethodTableOrIndirection(PTR_VOID pMT)
-    {
-        WRAPPER_NO_CONTRACT;
-        return PTR_VOID(*PTR_TADDR(dac_cast<TADDR>(pMT) + offsetof(MethodTable, m_pParentMethodTable)));
-    }
-
-    inline static BOOL IsParentMethodTableTagged(PTR_MethodTable pMT)
-    {
-        LIMITED_METHOD_CONTRACT;
-        TADDR base = dac_cast<TADDR>(pMT) + offsetof(MethodTable, m_pParentMethodTable);
-        return pMT->m_pParentMethodTable.IsTaggedIndirect(base, pMT->GetFlagHasIndirectParent(), PARENT_MT_FIXUP_OFFSET);
-    }
-
-    bool GetFlagHasIndirectParent()
-    {
-        return false;
+        return m_pParentMethodTable;
     }
 
 #ifndef DACCESS_COMPILE
-    inline ParentMT_t * GetParentMethodTablePointerPtr()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return &m_pParentMethodTable;
-    }
-
-    inline bool IsParentMethodTableIndirectPointerMaybeNull()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return m_pParentMethodTable.IsIndirectPtrMaybeNullIndirect(GetFlagHasIndirectParent(), PARENT_MT_FIXUP_OFFSET);
-    }
-
-    inline bool IsParentMethodTableIndirectPointer()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return m_pParentMethodTable.IsIndirectPtrIndirect(GetFlagHasIndirectParent(), PARENT_MT_FIXUP_OFFSET);
-    }
-
     inline MethodTable ** GetParentMethodTableValuePtr()
     {
         LIMITED_METHOD_CONTRACT;
-        return m_pParentMethodTable.GetValuePtrIndirect(GetFlagHasIndirectParent(), PARENT_MT_FIXUP_OFFSET);
+        return &m_pParentMethodTable;
     }
 #endif // !DACCESS_COMPILE
 
@@ -1907,8 +1868,7 @@ public:
     void SetParentMethodTable (MethodTable *pParentMethodTable)
     {
         LIMITED_METHOD_CONTRACT;
-        PRECONDITION(!IsParentMethodTableIndirectPointerMaybeNull());
-        m_pParentMethodTable.SetValueMaybeNull(pParentMethodTable);
+        m_pParentMethodTable = pParentMethodTable;
 #ifdef _DEBUG
         GetWriteableDataForWrite_NoLogging()->SetParentMethodTablePointerValid();
 #endif
@@ -3543,7 +3503,7 @@ private:
 
         enum_flag_ICastable                   = 0x00400000, // class implements ICastable interface
 
-        enum_flag_HasIndirectParent           = 0x00800000, // m_pParentMethodTable has double indirection
+        enum_flag_Unused_1                    = 0x00800000,
 
         enum_flag_ContainsPointers            = 0x01000000,
 
@@ -3704,12 +3664,7 @@ private:
     LPCUTF8         debug_m_szClassName;
 #endif //_DEBUG
 
-    // On Linux ARM is a RelativeFixupPointer. Otherwise,
-    // Parent PTR_MethodTable if enum_flag_HasIndirectParent is not set. Pointer to indirection cell
-    // if enum_flag_enum_flag_HasIndirectParent is set. The indirection is offset by offsetof(MethodTable, m_pParentMethodTable).
-    // It allows casting helpers to go through parent chain natually. Casting helper do not need need the explicit check
-    // for enum_flag_HasIndirectParentMethodTable.
-    ParentMT_t m_pParentMethodTable;
+    PTR_MethodTable m_pParentMethodTable;
 
     RelativePointer<PTR_Module> m_pLoaderModule;    // LoaderModule. It is equal to the ZapModule in ngened images
 
@@ -3893,10 +3848,10 @@ private:
         return GetFlag(enum_flag_HasModuleOverride);
     }
 
-    DPTR(RelativeFixupPointer<PTR_Module>) GetModuleOverridePtr()
+    DPTR(PTR_Module) GetModuleOverridePtr()
     {
         LIMITED_METHOD_DAC_CONTRACT;
-        return dac_cast<DPTR(RelativeFixupPointer<PTR_Module>)>(GetMultipurposeSlotPtr(enum_flag_HasModuleOverride, c_ModuleOverrideOffsets));
+        return dac_cast<DPTR(PTR_Module)>(GetMultipurposeSlotPtr(enum_flag_HasModuleOverride, c_ModuleOverrideOffsets));
     }
 
     void SetModule(Module * pModule);

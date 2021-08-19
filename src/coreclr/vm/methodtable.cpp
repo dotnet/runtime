@@ -380,7 +380,7 @@ PTR_Module MethodTable::GetModule()
         return pMTForModule->GetLoaderModule();
 
     TADDR pSlot = pMTForModule->GetMultipurposeSlotPtr(enum_flag_HasModuleOverride, c_ModuleOverrideOffsets);
-    return RelativeFixupPointer<PTR_Module>::GetValueAtPtr(pSlot);
+    return dac_cast<PTR_Module>(pSlot);
 }
 
 //==========================================================================================
@@ -397,7 +397,7 @@ PTR_Module MethodTable::GetModule_NoLogging()
         return pMTForModule->GetLoaderModule();
 
     TADDR pSlot = pMTForModule->GetMultipurposeSlotPtr(enum_flag_HasModuleOverride, c_ModuleOverrideOffsets);
-    return RelativeFixupPointer<PTR_Module>::GetValueAtPtr(pSlot);
+    return dac_cast<PTR_Module>(pSlot);
 }
 
 //==========================================================================================
@@ -456,7 +456,7 @@ void MethodTable::SetModule(Module * pModule)
 
     if (HasModuleOverride())
     {
-        GetModuleOverridePtr()->SetValue(pModule);
+        *GetModuleOverridePtr() = pModule;
     }
 
     _ASSERTE(GetModule() == pModule);
@@ -6333,7 +6333,7 @@ BOOL MethodTable::IsParentMethodTablePointerValid()
     if (!GetWriteableData_NoLogging()->IsParentMethodTablePointerValid())
         return FALSE;
 
-    return !IsParentMethodTableTagged(dac_cast<PTR_MethodTable>(this));
+    return TRUE;
 }
 #endif
 

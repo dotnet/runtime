@@ -75,12 +75,12 @@ PTR_TypeRef LookupMap<PTR_TypeRef>::GetValueAt(PTR_TADDR pValue, TADDR* pFlags, 
     WRAPPER_NO_CONTRACT;
     SUPPORTS_DAC;
 
-    // Strip flags before RelativeFixupPointer dereference
+    // Strip flags before pointer dereference
     TADDR value = *pValue;
 
     TADDR flags = (value & supportedFlags);
     value -= flags;
-    value = ((RelativeFixupPointer<TADDR>&)(value)).GetValueMaybeNull(dac_cast<TADDR>(pValue));
+    value = *dac_cast<PTR_TADDR>(value);
 
     if (pFlags)
         *pFlags = flags;
@@ -95,12 +95,12 @@ PTR_Module LookupMap<PTR_Module>::GetValueAt(PTR_TADDR pValue, TADDR* pFlags, TA
     WRAPPER_NO_CONTRACT;
     SUPPORTS_DAC;
 
-    // Strip flags before RelativeFixupPointer dereference
+    // Strip flags before pointer dereference
     TADDR value = *pValue;
 
     TADDR flags = (value & supportedFlags);
     value -= flags;
-    value = ((RelativeFixupPointer<TADDR>&)(value)).GetValueMaybeNull(dac_cast<TADDR>(pValue));
+    value = *dac_cast<PTR_TADDR>(value);
 
     if (pFlags)
         *pFlags = flags;
@@ -115,12 +115,12 @@ PTR_MemberRef LookupMap<PTR_MemberRef>::GetValueAt(PTR_TADDR pValue, TADDR* pFla
     WRAPPER_NO_CONTRACT;
     SUPPORTS_DAC;
 
-    // Strip flags before RelativeFixupPointer dereference
+    // Strip flags before pointer dereference
     TADDR value = *pValue;
 
     TADDR flags = (value & supportedFlags);
     value -= flags;
-    value = ((RelativeFixupPointer<TADDR>&)(value)).GetValueMaybeNull(dac_cast<TADDR>(pValue));
+    value = *dac_cast<PTR_TADDR>(value);
 
     if (pFlags)
         *pFlags = flags;

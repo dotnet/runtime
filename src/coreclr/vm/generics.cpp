@@ -325,7 +325,7 @@ ClassLoader::CreateTypeHandleForNonCanonicalGenericInstantiation(
     pMT->ClearFlag(MethodTable::enum_flag_GenericsMask);
     pMT->SetFlag(MethodTable::enum_flag_GenericsMask_GenericInst);
 
-    pMT->m_pParentMethodTable.SetValueMaybeNull(NULL);
+    pMT->m_pParentMethodTable = NULL;
 
     // Non non-virtual slots
     pMT->ClearFlag(MethodTable::enum_flag_HasSingleNonVirtualSlot);

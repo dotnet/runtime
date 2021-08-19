@@ -2053,7 +2053,7 @@ BOOL Module::IsPreV4Assembly()
 }
 
 
-ArrayDPTR(RelativeFixupPointer<PTR_MethodTable>) ModuleCtorInfo::GetGCStaticMTs(DWORD index)
+ArrayDPTR(PTR_MethodTable) ModuleCtorInfo::GetGCStaticMTs(DWORD index)
 {
     LIMITED_METHOD_CONTRACT;
 
