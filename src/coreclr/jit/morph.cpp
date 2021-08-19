@@ -13893,10 +13893,7 @@ GenTree* Compiler::fgOptimizeRelationalComparisonWithConst(GenTreeOp* cmp)
         // will still compute the same value as before.
         cmp->SetOper(oper, GenTree::PRESERVE_VN);
         op2->SetIntegralValue(0);
-        if (vnStore != nullptr)
-        {
-            fgValueNumberTreeConst(op2);
-        }
+        fgUpdateConstTreeValueNumber(op2);
     }
 
     return cmp;
