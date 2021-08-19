@@ -497,7 +497,7 @@ Compiler::fgWalkResult Compiler::fgUpdateInlineReturnExpressionPlaceHolder(GenTr
         return WALK_SKIP_SUBTREES;
     }
 
-    bool*                madeChanged = static_cast<bool*>(data->pCallbackData);
+    bool*                madeChanges = static_cast<bool*>(data->pCallbackData);
     Compiler*            comp        = data->compiler;
     CORINFO_CLASS_HANDLE retClsHnd   = NO_CLASS_HANDLE;
 
