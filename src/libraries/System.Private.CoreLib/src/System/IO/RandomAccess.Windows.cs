@@ -4,13 +4,11 @@
 using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
 using System.IO.Strategies;
 using System.Numerics;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
-using Internal.Runtime.CompilerServices;
 using Microsoft.Win32.SafeHandles;
 
 namespace System.IO
@@ -18,6 +16,9 @@ namespace System.IO
     public static partial class RandomAccess
     {
         private static readonly IOCompletionCallback s_callback = AllocateCallback();
+
+        // TODO: Use SystemPageSize directly when #57442 is fixed.
+        private static readonly int s_cachedPageSize = Environment.SystemPageSize;
 
         internal static unsafe long GetFileLength(SafeFileHandle handle)
         {
@@ -416,62 +417,10 @@ namespace System.IO
             }
         }
 
-        private static ValueTask<long> ReadScatterAtOffsetAsync(SafeFileHandle handle, IReadOnlyList<Memory<byte>> buffers,
-            long fileOffset, CancellationToken cancellationToken)
-        {
-            if (!handle.IsAsync)
-            {
-                return ScheduleSyncReadScatterAtOffsetAsync(handle, buffers, fileOffset, cancellationToken);
-            }
-
-            switch (buffers.Count)
-            {
-                case 0:
-                    return CastValueTask(ReadAtOffsetAsync(handle, Memory<byte>.Empty, fileOffset, cancellationToken));
-                case 1:
-                    return CastValueTask(ReadAtOffsetAsync(handle, buffers[0], fileOffset, cancellationToken));
-            }
-
-            if (CanUseScatterGatherWindowsAPIs(handle)
-                && TryPrepareScatterGatherBuffers(buffers, default(MemoryHandler), out MemoryHandle[] handlesToDispose, out IntPtr segmentsPtr, out int totalBytes))
-            {
-                return ReadScatterAtOffsetSingleSyscallAsync(handle, handlesToDispose, segmentsPtr, fileOffset, totalBytes, cancellationToken);
-            }
-
-            return ReadScatterAtOffsetMultipleSyscallsAsync(handle, buffers, fileOffset, cancellationToken);
-
-            static async ValueTask<long> CastValueTask(ValueTask<int> task) =>
-                // we have to await it because we can't cast a VT<int> to VT<long>
-                await task.ConfigureAwait(false);
-        }
-
-        // Abstracts away the type signature incompatibility between Memory and ReadOnlyMemory.
-        // TODO: Use abstract static methods when they become stable.
-        private interface IMemoryHandler<T>
-        {
-            int GetLength(in T memory);
-            MemoryHandle Pin(in T memory);
-        }
-
-        private readonly struct MemoryHandler : IMemoryHandler<Memory<byte>>
-        {
-            public int GetLength(in Memory<byte> memory) => memory.Length;
-            public MemoryHandle Pin(in Memory<byte> memory) => memory.Pin();
-        }
-
-        private readonly struct ReadOnlyMemoryHandler : IMemoryHandler<ReadOnlyMemory<byte>>
-        {
-            public int GetLength(in ReadOnlyMemory<byte> memory) => memory.Length;
-            public MemoryHandle Pin(in ReadOnlyMemory<byte> memory) => memory.Pin();
-        }
-
         // From https://docs.microsoft.com/en-us/windows/win32/api/fileapi/nf-fileapi-readfilescatter:
         // "The file handle must be created with [...] the FILE_FLAG_OVERLAPPED and FILE_FLAG_NO_BUFFERING flags."
         private static bool CanUseScatterGatherWindowsAPIs(SafeFileHandle handle)
             => handle.IsAsync && ((handle.GetFileOptions() & SafeFileHandle.NoBuffering) != 0);
-
-        // TODO: Use SystemPageSize directly when #57442 is fixed.
-        private static readonly int s_cachedPageSize = Environment.SystemPageSize;
 
         // From the same source:
         // "Each buffer must be at least the size of a system memory page and must be aligned on a system
@@ -543,6 +492,35 @@ namespace System.IO
                     NativeMemory.Free(segmentsArray);
                 }
             }
+        }
+
+        private static ValueTask<long> ReadScatterAtOffsetAsync(SafeFileHandle handle, IReadOnlyList<Memory<byte>> buffers,
+            long fileOffset, CancellationToken cancellationToken)
+        {
+            if (!handle.IsAsync)
+            {
+                return ScheduleSyncReadScatterAtOffsetAsync(handle, buffers, fileOffset, cancellationToken);
+            }
+
+            switch (buffers.Count)
+            {
+                case 0:
+                    return CastValueTask(ReadAtOffsetAsync(handle, Memory<byte>.Empty, fileOffset, cancellationToken));
+                case 1:
+                    return CastValueTask(ReadAtOffsetAsync(handle, buffers[0], fileOffset, cancellationToken));
+            }
+
+            if (CanUseScatterGatherWindowsAPIs(handle)
+                && TryPrepareScatterGatherBuffers(buffers, default(MemoryHandler), out MemoryHandle[] handlesToDispose, out IntPtr segmentsPtr, out int totalBytes))
+            {
+                return ReadScatterAtOffsetSingleSyscallAsync(handle, handlesToDispose, segmentsPtr, fileOffset, totalBytes, cancellationToken);
+            }
+
+            return ReadScatterAtOffsetMultipleSyscallsAsync(handle, buffers, fileOffset, cancellationToken);
+
+            static async ValueTask<long> CastValueTask(ValueTask<int> task) =>
+                // we have to await it because we can't cast a VT<int> to VT<long>
+                await task.ConfigureAwait(false);
         }
 
         private static async ValueTask<long> ReadScatterAtOffsetSingleSyscallAsync(SafeFileHandle handle, MemoryHandle[] handlesToDispose, IntPtr segmentsPtr, long fileOffset, int totalBytes, CancellationToken cancellationToken)
@@ -658,18 +636,6 @@ namespace System.IO
             return WriteGatherAtOffsetMultipleSyscallsAsync(handle, buffers, fileOffset, cancellationToken);
         }
 
-        private static async ValueTask WriteGatherAtOffsetMultipleSyscallsAsync(SafeFileHandle handle, IReadOnlyList<ReadOnlyMemory<byte>> buffers, long fileOffset, CancellationToken cancellationToken)
-        {
-            long bytesWritten = 0;
-            int buffersCount = buffers.Count;
-            for (int i = 0; i < buffersCount; i++)
-            {
-                ReadOnlyMemory<byte> rom = buffers[i];
-                await WriteAtOffsetAsync(handle, rom, fileOffset + bytesWritten, cancellationToken).ConfigureAwait(false);
-                bytesWritten += rom.Length;
-            }
-        }
-
         private static async ValueTask WriteGatherAtOffsetSingleSyscallAsync(SafeFileHandle handle, MemoryHandle[] handlesToDispose, IntPtr segmentsPtr, long fileOffset, int totalBytes, CancellationToken cancellationToken)
         {
             try
@@ -730,6 +696,18 @@ namespace System.IO
             // Completion handled by callback.
             vts.FinishedScheduling();
             return new ValueTask(vts, vts.Version);
+        }
+
+        private static async ValueTask WriteGatherAtOffsetMultipleSyscallsAsync(SafeFileHandle handle, IReadOnlyList<ReadOnlyMemory<byte>> buffers, long fileOffset, CancellationToken cancellationToken)
+        {
+            long bytesWritten = 0;
+            int buffersCount = buffers.Count;
+            for (int i = 0; i < buffersCount; i++)
+            {
+                ReadOnlyMemory<byte> rom = buffers[i];
+                await WriteAtOffsetAsync(handle, rom, fileOffset + bytesWritten, cancellationToken).ConfigureAwait(false);
+                bytesWritten += rom.Length;
+            }
         }
 
         private static unsafe NativeOverlapped* GetNativeOverlappedForAsyncHandle(ThreadPoolBoundHandle threadPoolBinding, long fileOffset, CallbackResetEvent resetEvent)
@@ -802,6 +780,26 @@ namespace System.IO
                     _threadPoolBoundHandle.FreeNativeOverlapped(pOverlapped);
                 }
             }
+        }
+
+        // Abstracts away the type signature incompatibility between Memory and ReadOnlyMemory.
+        // TODO: Use abstract static methods when they become stable.
+        private interface IMemoryHandler<T>
+        {
+            int GetLength(in T memory);
+            MemoryHandle Pin(in T memory);
+        }
+
+        private readonly struct MemoryHandler : IMemoryHandler<Memory<byte>>
+        {
+            public int GetLength(in Memory<byte> memory) => memory.Length;
+            public MemoryHandle Pin(in Memory<byte> memory) => memory.Pin();
+        }
+
+        private readonly struct ReadOnlyMemoryHandler : IMemoryHandler<ReadOnlyMemory<byte>>
+        {
+            public int GetLength(in ReadOnlyMemory<byte> memory) => memory.Length;
+            public MemoryHandle Pin(in ReadOnlyMemory<byte> memory) => memory.Pin();
         }
     }
 }
