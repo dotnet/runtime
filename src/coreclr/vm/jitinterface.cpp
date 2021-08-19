@@ -8622,6 +8622,11 @@ bool CEEInfo::resolveVirtualMethodHelper(CORINFO_DEVIRTUALIZATION_INFO * info)
         }
 #endif // FEATURE_COMINTEROP
 
+        if (info->context != nullptr)
+        {
+            pBaseMT = GetTypeFromContext(info->context).GetMethodTable();
+        }
+
         // Interface call devirtualization.
         //
         // We must ensure that pObjMT actually implements the
