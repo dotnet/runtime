@@ -43,14 +43,6 @@ namespace BINDER_SPACE
             m_pPEImage = NULL;
         }
 
-#ifdef  FEATURE_PREJIT
-        if (m_pNativePEImage != NULL)
-        {
-            BinderReleasePEImage(m_pNativePEImage);
-            m_pNativePEImage = NULL;
-        }
-#endif
-
         SAFE_RELEASE(m_pAssemblyName);
         SAFE_RELEASE(m_pMDImport);
     }

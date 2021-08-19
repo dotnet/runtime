@@ -24,11 +24,7 @@ inline InstantiatedMethodDesc* MethodDesc::AsInstantiatedMethodDesc() const
 inline BOOL MethodDesc::IsZapped()
 {
     WRAPPER_NO_CONTRACT;
-#ifdef FEATURE_PREJIT
-    return GetMethodDescChunk()->IsZapped();
-#else
     return FALSE;
-#endif
 }
 
 inline PTR_DynamicResolver DynamicMethodDesc::GetResolver()

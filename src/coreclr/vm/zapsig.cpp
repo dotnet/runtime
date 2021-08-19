@@ -544,31 +544,6 @@ BOOL ZapSig::GetSignatureForTypeHandle(TypeHandle      handle,
     RETURN(TRUE);
 }
 
-#ifdef FEATURE_PREJIT
-/*static*/
-BOOL ZapSig::CompareFixupToTypeHandle(Module * pModule, TADDR fixup, TypeHandle handle)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
-        FORBID_FAULT;
-        PRECONDITION(CORCOMPILE_IS_POINTER_TAGGED(fixup));
-        PRECONDITION(CheckPointer(pModule));
-    }
-    CONTRACTL_END
-
-    Module *pDefiningModule;
-    PCCOR_SIGNATURE pSig = pModule->GetEncodedSigIfLoaded(CORCOMPILE_UNTAG_TOKEN(fixup), &pDefiningModule);
-    if (pDefiningModule == NULL)
-        return FALSE;
-
-    ZapSig::Context zapSigContext(pDefiningModule, pModule);
-    return ZapSig::CompareSignatureToTypeHandle(pSig, pDefiningModule, handle, &zapSigContext);
-}
-#endif // FEATURE_PREJIT
-
 /*static*/
 BOOL ZapSig::CompareTypeHandleFieldToTypeHandle(TypeHandle *pTypeHnd, TypeHandle typeHnd2)
 {
@@ -587,26 +562,7 @@ BOOL ZapSig::CompareTypeHandleFieldToTypeHandle(TypeHandle *pTypeHnd, TypeHandle
     // Ensure that the compiler won't fetch the value twice
     SIZE_T fixup = VolatileLoadWithoutBarrier((SIZE_T *)pTypeHnd);
 
-#ifdef FEATURE_PREJIT
-    if (CORCOMPILE_IS_POINTER_TAGGED(fixup))
-    {
-        Module *pContainingModule = ExecutionManager::FindZapModule(dac_cast<TADDR>(pTypeHnd));
-        CONSISTENCY_CHECK(pContainingModule != NULL);
-
-        Module *pDefiningModule;
-        PCCOR_SIGNATURE pSig = pContainingModule->GetEncodedSigIfLoaded(CORCOMPILE_UNTAG_TOKEN(fixup), &pDefiningModule);
-        if (pDefiningModule == NULL)
-            return FALSE;
-        else
-        {
-            ZapSig::Context    zapSigContext(pDefiningModule, pContainingModule);
-            ZapSig::Context *  pZapSigContext = &zapSigContext;
-            return CompareSignatureToTypeHandle(pSig, pDefiningModule, typeHnd2, pZapSigContext);
-        }
-    }
-    else
-#endif // FEATURE_PREJIT
-        return TypeHandle::FromTAddr(fixup) == typeHnd2;
+    return TypeHandle::FromTAddr(fixup) == typeHnd2;
 }
 
 #ifndef DACCESS_COMPILE

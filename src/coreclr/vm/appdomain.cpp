@@ -94,11 +94,6 @@ static const WCHAR OTHER_DOMAIN_FRIENDLY_NAME_PREFIX[] = W("Domain");
 
 SPTR_IMPL(AppDomain, AppDomain, m_pTheAppDomain);
 SPTR_IMPL(SystemDomain, SystemDomain, m_pSystemDomain);
-#ifdef FEATURE_PREJIT
-SVAL_IMPL(BOOL, SystemDomain, s_fForceDebug);
-SVAL_IMPL(BOOL, SystemDomain, s_fForceProfiling);
-SVAL_IMPL(BOOL, SystemDomain, s_fForceInstrument);
-#endif
 
 #ifndef DACCESS_COMPILE
 
@@ -1013,34 +1008,6 @@ void SystemDomain::operator delete(void *pMem)
     // Do nothing - new() was in-place
 }
 
-#ifdef FEATURE_PREJIT
-void    SystemDomain::SetCompilationOverrides(BOOL fForceDebug,
-                                              BOOL fForceProfiling,
-                                              BOOL fForceInstrument)
-{
-    LIMITED_METHOD_CONTRACT;
-    s_fForceDebug = fForceDebug;
-    s_fForceProfiling = fForceProfiling;
-    s_fForceInstrument = fForceInstrument;
-}
-#endif
-
-#endif //!DACCESS_COMPILE
-
-#ifdef FEATURE_PREJIT
-void    SystemDomain::GetCompilationOverrides(BOOL * fForceDebug,
-                                              BOOL * fForceProfiling,
-                                              BOOL * fForceInstrument)
-{
-    LIMITED_METHOD_DAC_CONTRACT;
-    *fForceDebug = s_fForceDebug;
-    *fForceProfiling = s_fForceProfiling;
-    *fForceInstrument = s_fForceInstrument;
-}
-#endif
-
-#ifndef DACCESS_COMPILE
-
 void SystemDomain::Attach()
 {
     CONTRACTL
@@ -1161,14 +1128,6 @@ void SystemDomain::PreallocateSpecialObjects()
 
     OBJECTREF pPreallocatedSentinalObject = AllocateObject(g_pObjectClass);
     g_pPreallocatedSentinelObject = CreatePinningHandle( pPreallocatedSentinalObject );
-
-#ifdef FEATURE_PREJIT
-    if (SystemModule()->HasNativeImage())
-    {
-        CORCOMPILE_EE_INFO_TABLE *pEEInfo = SystemModule()->GetNativeImage()->GetNativeEEInfoTable();
-        pEEInfo->emptyString = (CORINFO_Object **)StringObject::GetEmptyStringRefPtr();
-    }
-#endif
 }
 
 void SystemDomain::CreatePreallocatedExceptions()
@@ -1535,20 +1494,6 @@ void SystemDomain::LoadBaseSystemClasses()
         g_CoreLib.Check();
     }
 #endif
-
-#if defined(HAVE_GCCOVER) && defined(FEATURE_PREJIT)
-    if (GCStress<cfg_instr_ngen>::IsEnabled())
-    {
-        // Setting up gc coverage requires the base system classes
-        //  to be initialized. So we have deferred it until now for CoreLib.
-        Module *pModule = CoreLibBinder::GetModule();
-        _ASSERTE(pModule->IsSystem());
-        if(pModule->HasNativeImage())
-        {
-            SetupGcCoverageForNativeImage(pModule);
-        }
-    }
-#endif // defined(HAVE_GCCOVER) && !defined(FEATURE_PREJIT)
 }
 
 /*static*/
@@ -2148,9 +2093,6 @@ AppDomain::AppDomain()
     m_pTypeEquivalenceTable = NULL;
 #endif // FEATURE_TYPEEQUIVALENCE
 
-#ifdef FEATURE_PREJIT
-    m_pDomainFileWithNativeImageList = NULL;
-#endif
 } // AppDomain::AppDomain
 
 AppDomain::~AppDomain()
@@ -2254,9 +2196,6 @@ BOOL AppDomain::IsCompilationDomain()
     LIMITED_METHOD_CONTRACT;
 
     BOOL isCompilationDomain = (m_dwFlags & COMPILATION_DOMAIN) != 0;
-#ifdef FEATURE_PREJIT
-    _ASSERTE(!isCompilationDomain || IsCompilationProcess());
-#endif // FEATURE_PREJIT
     return isCompilationDomain;
 }
 

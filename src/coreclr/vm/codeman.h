@@ -1263,14 +1263,6 @@ public:
         return m_pEEJitManager;
     }
 
-#ifdef FEATURE_PREJIT
-    static NativeImageJitManager * GetNativeImageJitManager()
-    {
-        LIMITED_METHOD_DAC_CONTRACT;
-        return m_pNativeImageJitManager;
-    }
-#endif
-
 #ifdef FEATURE_READYTORUN
     static ReadyToRunJitManager * GetReadyToRunJitManager()
     {
@@ -1336,9 +1328,6 @@ private:
     SPTR_DECL(EECodeManager, m_pDefaultCodeMan);
 
     SPTR_DECL(EEJitManager, m_pEEJitManager);
-#ifdef FEATURE_PREJIT
-    SPTR_DECL(NativeImageJitManager, m_pNativeImageJitManager);
-#endif
 #ifdef FEATURE_READYTORUN
     SPTR_DECL(ReadyToRunJitManager, m_pReadyToRunJitManager);
 #endif
@@ -1509,96 +1498,7 @@ inline void EEJitManager::JitTokenToMethodRegionInfo(const METHODTOKEN& MethodTo
     methodRegionInfo->coldSize         = 0;
 }
 
-
-//-----------------------------------------------------------------------------
-#ifdef FEATURE_PREJIT
-
-//*****************************************************************************
-// Stub JitManager for Managed native.
-
-class NativeImageJitManager : public IJitManager
-{
-    VPTR_VTABLE_CLASS(NativeImageJitManager, IJitManager)
-
-public:
-#ifndef DACCESS_COMPILE
-    NativeImageJitManager();
-#endif // #ifndef DACCESS_COMPILE
-
-    virtual DWORD GetCodeType()
-    {
-        LIMITED_METHOD_DAC_CONTRACT;
-        return (miManaged | miNative);
-    }
-
-    // Used to read debug info.
-    virtual BOOL GetBoundariesAndVars(
-        const DebugInfoRequest & request,
-        IN FP_IDS_NEW fpNew, IN void * pNewData,
-        OUT ULONG32 * pcMap,
-        OUT ICorDebugInfo::OffsetMapping **ppMap,
-        OUT ULONG32 * pcVars,
-        OUT ICorDebugInfo::NativeVarInfo **ppVars);
-
-    virtual BOOL JitCodeToMethodInfo(RangeSection * pRangeSection,
-                                     PCODE currentPC,
-                                     MethodDesc ** ppMethodDesc,
-                                     EECodeInfo * pCodeInfo);
-
-    virtual PCODE GetCodeAddressForRelOffset(const METHODTOKEN& MethodToken, DWORD relOffset);
-
-    static PTR_Module   JitTokenToZapModule(const METHODTOKEN& MethodToken);
-    virtual TADDR       JitTokenToStartAddress(const METHODTOKEN& MethodToken);
-    virtual void        JitTokenToMethodRegionInfo(const METHODTOKEN& MethodToken, MethodRegionInfo * methodRegionInfo);
-
-    virtual unsigned    InitializeEHEnumeration(const METHODTOKEN& MethodToken, EH_CLAUSE_ENUMERATOR* pEnumState);
-
-    virtual PTR_EXCEPTION_CLAUSE_TOKEN  GetNextEHClause(EH_CLAUSE_ENUMERATOR* pEnumState,
-                                        EE_ILEXCEPTION_CLAUSE* pEHclause);
-
-#ifndef DACCESS_COMPILE
-    virtual TypeHandle  ResolveEHClause(EE_ILEXCEPTION_CLAUSE* pEHClause,
-                                        CrawlFrame *pCf);
-#endif // #ifndef DACCESS_COMPILE
-
-    virtual GCInfoToken  GetGCInfoToken(const METHODTOKEN& MethodToken);
-
-#if defined(FEATURE_EH_FUNCLETS)
-    virtual PTR_RUNTIME_FUNCTION    LazyGetFunctionEntry(EECodeInfo * pCodeInfo);
-
-    virtual TADDR                   GetFuncletStartAddress(EECodeInfo * pCodeInfo);
-    virtual DWORD                   GetFuncletStartOffsets(const METHODTOKEN& MethodToken, DWORD* pStartFuncletOffsets, DWORD dwLength);
-    virtual BOOL                    IsFilterFunclet(EECodeInfo * pCodeInfo);
-#endif // FEATURE_EH_FUNCLETS
-
-    virtual StubCodeBlockKind       GetStubCodeBlockKind(RangeSection * pRangeSection, PCODE currentPC);
-
-#if defined(DACCESS_COMPILE)
-    virtual void EnumMemoryRegions(CLRDataEnumMemoryFlags flags);
-    virtual void EnumMemoryRegionsForMethodDebugInfo(CLRDataEnumMemoryFlags flags, MethodDesc * pMD);
-#if defined(FEATURE_EH_FUNCLETS)
-    // Enumerate the memory necessary to retrieve the unwind info for a specific method
-    virtual void EnumMemoryRegionsForMethodUnwindInfo(CLRDataEnumMemoryFlags flags, EECodeInfo * pCodeInfo);
-#endif //FEATURE_EH_FUNCLETS
-#endif //DACCESS_COMPILE
-};
-
-inline TADDR NativeImageJitManager::JitTokenToStartAddress(const METHODTOKEN& MethodToken)
-{
-    CONTRACTL{
-        NOTHROW;
-        GC_NOTRIGGER;
-        HOST_NOCALLS;
-        SUPPORTS_DAC;
-    } CONTRACTL_END;
-
-    return JitTokenToModuleBase(MethodToken) +
-        RUNTIME_FUNCTION__BeginAddress(dac_cast<PTR_RUNTIME_FUNCTION>(MethodToken.m_pCodeHeader));
-}
-
-#endif // FEATURE_PREJIT
-
-#if defined(FEATURE_PREJIT) || defined(FEATURE_READYTORUN)
+#if defined(FEATURE_READYTORUN)
 
 class NativeExceptionInfoLookupTable
 {
@@ -1616,17 +1516,9 @@ public:
                                          PTR_RUNTIME_FUNCTION pRuntimeFunctionTable,
                                          int StartIndex,
                                          int EndIndex);
-
-#ifdef FEATURE_PREJIT
-    static BOOL HasExceptionInfo(NGenLayoutInfo * pNgenLayout, PTR_RUNTIME_FUNCTION pMainRuntimeFunction);
-    static PTR_MethodDesc GetMethodDesc(NGenLayoutInfo * pNgenLayout, PTR_RUNTIME_FUNCTION pMainRuntimeFunction, TADDR moduleBase);
-
-private:
-    static DWORD GetMethodDescRVA(NGenLayoutInfo * pNgenLayout, PTR_RUNTIME_FUNCTION pMainRuntimeFunction);
-#endif
 };
 
-#endif // FEATURE_PREJIT || FEATURE_READYTORUN
+#endif // FEATURE_READYTORUN
 
 #ifdef FEATURE_READYTORUN
 
@@ -1715,9 +1607,6 @@ public:
 class EECodeInfo
 {
     friend BOOL EEJitManager::JitCodeToMethodInfo(RangeSection * pRangeSection, PCODE currentPC, MethodDesc** ppMethodDesc, EECodeInfo * pCodeInfo);
-#ifdef FEATURE_PREJIT
-    friend BOOL NativeImageJitManager::JitCodeToMethodInfo(RangeSection * pRangeSection, PCODE currentPC, MethodDesc** ppMethodDesc, EECodeInfo * pCodeInfo);
-#endif
 #ifdef FEATURE_READYTORUN
     friend BOOL ReadyToRunJitManager::JitCodeToMethodInfo(RangeSection * pRangeSection, PCODE currentPC, MethodDesc** ppMethodDesc, EECodeInfo * pCodeInfo);
 #endif
@@ -1852,52 +1741,6 @@ private:
 };
 
 #include "codeman.inl"
-
-
-#ifdef FEATURE_PREJIT
-class MethodSectionIterator;
-
-//
-//  MethodIterator class is used to iterate all the methods in an ngen image.
-//  It will match and report hot (and cold, if any) sections of a method at the same time.
-//  GcInfo version is always current
-class MethodIterator
-{
-public:
-    enum MethodIteratorOptions
-    {
-        Hot = 0x1,
-        Unprofiled =0x2,
-        All = Hot | Unprofiled
-    };
-private:
-    TADDR                 m_ModuleBase;
-    MethodIteratorOptions methodIteratorOptions;
-
-    NGenLayoutInfo *        m_pNgenLayout;
-    BOOL                    m_fHotMethodsDone;
-    COUNT_T                 m_CurrentRuntimeFunctionIndex;
-    COUNT_T                 m_CurrentColdRuntimeFunctionIndex;
-
-    void Init(PTR_Module pModule, PEDecoder * pPEDecoder, MethodIteratorOptions mio);
-
-  public:
-    MethodIterator(PTR_Module pModule, MethodIteratorOptions mio = All);
-    MethodIterator(PTR_Module pModule, PEDecoder * pPEDecoder, MethodIteratorOptions mio = All);
-
-    BOOL Next();
-
-    PTR_MethodDesc GetMethodDesc();
-    GCInfoToken GetGCInfoToken();
-    TADDR GetMethodStartAddress();
-    TADDR GetMethodColdStartAddress();
-    ULONG GetHotCodeSize();
-
-    PTR_RUNTIME_FUNCTION GetRuntimeFunction();
-
-    void GetMethodRegionInfo(IJitManager::MethodRegionInfo *methodRegionInfo);
-};
-#endif //FEATURE_PREJIT
 
 void ThrowOutOfMemoryWithinRange();
 

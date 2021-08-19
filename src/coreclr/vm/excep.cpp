@@ -7615,17 +7615,7 @@ BOOL IsIPInEE(void *ip)
 {
     WRAPPER_NO_CONTRACT;
 
-#if defined(FEATURE_PREJIT) && !defined(TARGET_UNIX)
-    if ((TADDR)ip > g_runtimeLoadedBaseAddress &&
-        (TADDR)ip < g_runtimeLoadedBaseAddress + g_runtimeVirtualSize)
-    {
-        return TRUE;
-    }
-    else
-#endif // FEATURE_PREJIT && !TARGET_UNIX
-    {
-        return FALSE;
-    }
+    return FALSE;
 }
 
 #if defined(FEATURE_HIJACK) && (!defined(TARGET_X86) || defined(TARGET_UNIX))

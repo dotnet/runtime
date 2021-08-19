@@ -281,12 +281,7 @@ ClassLoader::CreateTypeHandleForNonCanonicalGenericInstantiation(
         ThrowHR(COR_E_OVERFLOW);
     }
 
-#ifdef FEATURE_PREJIT
-    Module *pComputedPZM = Module::ComputePreferredZapModule(pTypeKey);
-    BOOL canShareVtableChunks = MethodTable::CanShareVtableChunksFrom(pOldMT, pLoaderModule, pComputedPZM);
-#else
     BOOL canShareVtableChunks = MethodTable::CanShareVtableChunksFrom(pOldMT, pLoaderModule);
-#endif // FEATURE_PREJIT
 
     SIZE_T offsetOfUnsharedVtableChunks = allocSize.Value();
 
@@ -329,14 +324,6 @@ ClassLoader::CreateTypeHandleForNonCanonicalGenericInstantiation(
     // Set generics flags
     pMT->ClearFlag(MethodTable::enum_flag_GenericsMask);
     pMT->SetFlag(MethodTable::enum_flag_GenericsMask_GenericInst);
-
-#ifdef FEATURE_PREJIT
-    // Freshly allocated - does not need restore
-    pMT->ClearFlag(MethodTable::enum_flag_IsZapped);
-    pMT->ClearFlag(MethodTable::enum_flag_IsPreRestored);
-
-    pMT->ClearFlag(MethodTable::enum_flag_HasIndirectParent);
-#endif
 
     pMT->m_pParentMethodTable.SetValueMaybeNull(NULL);
 
@@ -590,10 +577,6 @@ ClassLoader::CreateTypeHandleForNonCanonicalGenericInstantiation(
         pMT->Debug_DumpInterfaceMap("Approximate");
     }
 #endif //_DEBUG
-
-#ifdef FEATURE_PREJIT
-    _ASSERTE(pComputedPZM == Module::GetPreferredZapModuleForMethodTable(pMT));
-#endif //FEATURE_PREJIT
 
     // We never have non-virtual slots in this method table (set SetNumVtableSlots and SetNumVirtuals above)
     _ASSERTE(!pMT->HasNonVirtualSlots());

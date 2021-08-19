@@ -42,9 +42,6 @@
 #include "customattribute.h"
 #include "virtualcallstub.h"
 #include "contractimpl.h"
-#ifdef FEATURE_PREJIT
-#include "zapsig.h"
-#endif //FEATURE_PREJIT
 
 #ifdef FEATURE_COMINTEROP
 #include "comcallablewrapper.h"
@@ -448,17 +445,7 @@ PTR_Module MethodTable::GetModuleIfLoaded()
     }
     CONTRACTL_END;
 
-#ifdef FEATURE_PREJIT
-    g_IBCLogger.LogMethodTableAccess(this);
-
-    MethodTable * pMTForModule = IsArray() ? this : GetCanonicalMethodTable();
-    if (!pMTForModule->HasModuleOverride())
-        return pMTForModule->GetLoaderModule();
-
-    return Module::RestoreModulePointerIfLoaded(pMTForModule->GetModuleOverridePtr(), pMTForModule->GetLoaderModule());
-#else
     return GetModule();
-#endif
 }
 
 #ifndef DACCESS_COMPILE
@@ -693,30 +680,7 @@ PTR_MethodTable InterfaceInfo_t::GetApproxMethodTable(Module * pContainingModule
         MODE_ANY;
     }
     CONTRACTL_END;
-#ifdef FEATURE_PREJIT
-    if (m_pMethodTable.IsTagged())
-    {
-        // Ideally, we would use Module::RestoreMethodTablePointer here. Unfortunately, it is not
-        // possible because of the current type loader architecture that restores types incrementally
-        // even in the NGen case.
-        MethodTable * pItfMT = *(m_pMethodTable.GetValuePtr());
-
-        // Restore the method table, but do not write it back if it has instantiation. We do not want
-        // to write back the approximate instantiations.
-        Module::RestoreMethodTablePointerRaw(&pItfMT, pContainingModule, CLASS_LOAD_APPROXPARENTS);
-
-        if (!pItfMT->HasInstantiation())
-        {
-            // m_pMethodTable.SetValue() is not used here since we want to update the indirection cell
-            *m_pMethodTable.GetValuePtr() = pItfMT;
-        }
-
-        return pItfMT;
-    }
-    MethodTable * pItfMT = m_pMethodTable.GetValue();
-#else
     MethodTable * pItfMT = GetMethodTable();
-#endif
     ClassLoader::EnsureLoaded(TypeHandle(pItfMT), CLASS_LOAD_APPROXPARENTS);
     return pItfMT;
 }
@@ -1820,37 +1784,12 @@ MethodTable::IsExternallyVisible()
     return bIsVisible;
 } // MethodTable::IsExternallyVisible
 
-#ifdef FEATURE_PREJIT
-
-BOOL MethodTable::CanShareVtableChunksFrom(MethodTable *pTargetMT, Module *pCurrentLoaderModule, Module *pCurrentPreferredZapModule)
-{
-    WRAPPER_NO_CONTRACT;
-
-    // These constraints come from two places:
-    //   1. A non-zapped MT cannot share with a zapped MT since it may result in SetSlot() on a read-only slot
-    //   2. Zapping this MT in MethodTable::Save cannot "unshare" something we decide to share now
-    //
-    // We could fix both of these and allow non-zapped MTs to share chunks fully by doing the following
-    //   1. Fix the few dangerous callers of SetSlot to first check whether the chunk itself is zapped
-    //        (see MethodTableBuilder::CopyExactParentSlots, or we could use ExecutionManager::FindZapModule)
-    //   2. Have this function return FALSE if IsCompilationProcess and rely on MethodTable::Save to do all sharing for the NGen case
-
-    return !pTargetMT->IsZapped() &&
-            pTargetMT->GetLoaderModule() == pCurrentLoaderModule &&
-            pCurrentLoaderModule == pCurrentPreferredZapModule &&
-            pCurrentPreferredZapModule == Module::GetPreferredZapModuleForMethodTable(pTargetMT);
-}
-
-#else
-
 BOOL MethodTable::CanShareVtableChunksFrom(MethodTable *pTargetMT, Module *pCurrentLoaderModule)
 {
     WRAPPER_NO_CONTRACT;
 
     return pTargetMT->GetLoaderModule() == pCurrentLoaderModule;
 }
-
-#endif
 
 #ifdef _DEBUG
 
@@ -2998,35 +2937,6 @@ void MethodTable::AllocateRegularStaticBoxes()
 
     GCPROTECT_BEGININTERIOR(pStaticBase);
 
-#ifdef FEATURE_PREJIT
-    // In ngened case, we have cached array with boxed statics MTs. In JITed case, we have just the FieldDescs
-    ClassCtorInfoEntry *pClassCtorInfoEntry = GetClassCtorInfoIfExists();
-    if (pClassCtorInfoEntry != NULL)
-    {
-        OBJECTREF* pStaticSlots = (OBJECTREF*)(pStaticBase + pClassCtorInfoEntry->firstBoxedStaticOffset);
-        GCPROTECT_BEGININTERIOR(pStaticSlots);
-
-        ArrayDPTR(RelativeFixupPointer<PTR_MethodTable>) ppMTs = GetLoaderModule()->GetZapModuleCtorInfo()->
-            GetGCStaticMTs(pClassCtorInfoEntry->firstBoxedStaticMTIndex);
-
-        DWORD numBoxedStatics = pClassCtorInfoEntry->numBoxedStatics;
-        for (DWORD i = 0; i < numBoxedStatics; i++)
-        {
-            Module::RestoreMethodTablePointer(&(ppMTs[i]), GetLoaderModule());
-
-            MethodTable *pFieldMT = ppMTs[i].GetValue();
-
-            _ASSERTE(pFieldMT);
-
-            LOG((LF_CLASSLOADER, LL_INFO10000, "\tInstantiating static of type %s\n", pFieldMT->GetDebugClassName()));
-            OBJECTREF obj = AllocateStaticBox(pFieldMT, pClassCtorInfoEntry->hasFixedAddressVTStatics);
-
-            SetObjectReference( &(pStaticSlots[i]), obj);
-        }
-        GCPROTECT_END();
-    }
-    else
-#endif
     {
         // We should never take this codepath in zapped images.
         _ASSERTE(!IsZapped());
@@ -4449,12 +4359,6 @@ void MethodTable::DoFullyLoad(Generics::RecursionGraph * const pVisited,  const 
                     pMD->SetDoesNotHaveEquivalentValuetypeParameters();
             }
 #else
-#ifdef FEATURE_PREJIT
-            if (!IsZapped() && pMD->IsVirtual() && !IsCompilationProcess() )
-            {
-                pMD->PrepareForUseAsADependencyOfANativeImage();
-            }
-#endif
 #endif //FEATURE_TYPEEQUIVALENCE
         }
     }
@@ -4596,148 +4500,6 @@ void MethodTable::DoFullyLoad(Generics::RecursionGraph * const pVisited,  const 
 
 
 #ifndef DACCESS_COMPILE
-
-#ifdef FEATURE_PREJIT
-
-// For a MethodTable in a native image, decode sufficient encoded pointers
-// that the TypeKey for this type is recoverable.
-//
-// For instantiated generic types, we need the generic type arguments,
-// the EEClass pointer, and its Module pointer.
-// (For non-generic types, the EEClass and Module are always hard bound).
-//
-// The process is applied recursively e.g. consider C<D<string>[]>.
-// It is guaranteed to terminate because types cannot contain cycles in their structure.
-//
-// Also note that no lock is required; the process of restoring this information is idempotent.
-// (Note the atomic action at the end though)
-//
-void MethodTable::DoRestoreTypeKey()
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-    }
-    CONTRACTL_END;
-
-    // If we have an indirection cell then restore the m_pCanonMT and its module pointer
-    //
-    if (union_getLowBits(m_pCanonMT.GetValue()) == UNION_INDIRECTION)
-    {
-        Module::RestoreMethodTablePointerRaw((MethodTable **)(union_getPointer(m_pCanonMT.GetValue())),
-            GetLoaderModule(), CLASS_LOAD_UNRESTORED);
-    }
-
-    MethodTable * pMTForModule = IsArray() ? this : GetCanonicalMethodTable();
-    if (pMTForModule->HasModuleOverride())
-    {
-        Module::RestoreModulePointer(pMTForModule->GetModuleOverridePtr(), pMTForModule->GetLoaderModule());
-    }
-
-    if (IsArray())
-    {
-        //
-        // Restore array element type handle
-        //
-        Module::RestoreTypeHandlePointerRaw(GetArrayElementTypeHandlePtr(),
-                                            GetLoaderModule(), CLASS_LOAD_UNRESTORED);
-    }
-
-    // Next restore the instantiation and recurse
-    Instantiation inst = GetInstantiation();
-    for (DWORD j = 0; j < inst.GetNumArgs(); j++)
-    {
-        Module::RestoreTypeHandlePointer(&inst.GetRawArgs()[j], GetLoaderModule(), CLASS_LOAD_UNRESTORED);
-    }
-
-    FastInterlockAnd(&GetWriteableDataForWrite()->m_dwFlags, ~MethodTableWriteableData::enum_flag_UnrestoredTypeKey);
-}
-
-//==========================================================================================
-// For a MethodTable in a native image, apply Restore actions
-// * Decode any encoded pointers
-// * Instantiate static handles
-// * Propagate Restore to EEClass
-// For array method tables, Restore MUST BE IDEMPOTENT as it can be entered from multiple threads
-// For other classes, restore cannot be entered twice because the loader maintains locks
-//
-// When you actually restore the MethodTable for a generic type, the generic
-// dictionary is restored.  That means:
-// * Parent slots in the PerInstInfo are restored by this method eagerly.  They are copied down from the
-//   parent in code:ClassLoader.LoadExactParentAndInterfacesTransitively
-// * Instantiation parameters in the dictionary are restored eagerly when the type is restored.  These are
-//   either hard bound pointers, or tagged tokens (fixups).
-// * All other dictionary entries are either hard bound pointers or they are NULL (they are cleared when we
-//   freeze the Ngen image).  They are *never* tagged tokens.
-void MethodTable::Restore()
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        PRECONDITION(IsZapped());
-        PRECONDITION(!IsRestored_NoLogging());
-        PRECONDITION(!HasUnrestoredTypeKey());
-    }
-    CONTRACTL_END;
-
-    g_IBCLogger.LogMethodTableAccess(this);
-
-    STRESS_LOG1(LF_ZAP, LL_INFO10000, "MethodTable::Restore: Restoring type %pT\n", this);
-    LOG((LF_ZAP, LL_INFO10000,
-         "Restoring methodtable %s at " FMT_ADDR ".\n", GetDebugClassName(), DBG_ADDR(this)));
-
-    // Class pointer should be restored already (in DoRestoreTypeKey)
-    CONSISTENCY_CHECK(IsClassPointerValid());
-
-    // If this isn't the canonical method table itself, then restore the canonical method table
-    // We will load the canonical method table to level EXACTPARENTS in LoadExactParents
-    if (!IsCanonicalMethodTable())
-    {
-        ClassLoader::EnsureLoaded(GetCanonicalMethodTable(), CLASS_LOAD_APPROXPARENTS);
-    }
-
-    //
-    // Restore parent method table
-    //
-    if (IsParentMethodTableIndirectPointerMaybeNull())
-    {
-        Module::RestoreMethodTablePointerRaw(GetParentMethodTableValuePtr(), GetLoaderModule(), CLASS_LOAD_APPROXPARENTS);
-    }
-    else
-    {
-        ClassLoader::EnsureLoaded(ReadPointer(this, &MethodTable::m_pParentMethodTable, GetFlagHasIndirectParent()),
-                                  CLASS_LOAD_APPROXPARENTS);
-    }
-
-    //
-    // Restore interface classes
-    //
-    InterfaceMapIterator it = IterateInterfaceMap();
-    while (it.Next())
-    {
-        // Just make sure that approximate interface is loaded. LoadExactParents fill in the exact interface later.
-        MethodTable * pIftMT;
-        pIftMT = it.GetInterfaceInfo()->GetApproxMethodTable(GetLoaderModule());
-        _ASSERTE(pIftMT != NULL);
-    }
-
-    if (HasCrossModuleGenericStaticsInfo())
-    {
-        MethodTableWriteableData * pWriteableData = GetWriteableDataForWrite();
-        CrossModuleGenericsStaticsInfo * pInfo = pWriteableData->GetCrossModuleGenericsStaticsInfo();
-
-        pInfo->m_pModuleForStatics = GetLoaderModule();
-    }
-
-    LOG((LF_ZAP, LL_INFO10000,
-         "Restored methodtable %s at " FMT_ADDR ".\n", GetDebugClassName(), DBG_ADDR(this)));
-
-    // This has to be last!
-    SetIsRestored();
-}
-#endif // FEATURE_PREJIT
 
 #ifdef FEATURE_COMINTEROP
 
@@ -6557,51 +6319,6 @@ ClassCtorInfoEntry* MethodTable::GetClassCtorInfoIfExists()
 {
     LIMITED_METHOD_CONTRACT;
 
-#ifdef FEATURE_PREJIT
-    if (!IsZapped())
-        return NULL;
-
-    g_IBCLogger.LogCCtorInfoReadAccess(this);
-
-    if (HasBoxedRegularStatics())
-    {
-        ModuleCtorInfo *pModuleCtorInfo = GetZapModule()->GetZapModuleCtorInfo();
-        DPTR(RelativePointer<PTR_MethodTable>) ppMT = pModuleCtorInfo->ppMT;
-        PTR_DWORD hotHashOffsets = pModuleCtorInfo->hotHashOffsets;
-        PTR_DWORD coldHashOffsets = pModuleCtorInfo->coldHashOffsets;
-
-        if (pModuleCtorInfo->numHotHashes)
-        {
-            DWORD hash = pModuleCtorInfo->GenerateHash(PTR_MethodTable(this), ModuleCtorInfo::HOT);
-            _ASSERTE(hash < pModuleCtorInfo->numHotHashes);
-
-            for (DWORD i = hotHashOffsets[hash]; i != hotHashOffsets[hash + 1]; i++)
-            {
-                _ASSERTE(!ppMT[i].IsNull());
-                if (dac_cast<TADDR>(pModuleCtorInfo->GetMT(i)) == dac_cast<TADDR>(this))
-                {
-                    return pModuleCtorInfo->cctorInfoHot + i;
-                }
-            }
-        }
-
-        if (pModuleCtorInfo->numColdHashes)
-        {
-            DWORD hash = pModuleCtorInfo->GenerateHash(PTR_MethodTable(this), ModuleCtorInfo::COLD);
-            _ASSERTE(hash < pModuleCtorInfo->numColdHashes);
-
-            for (DWORD i = coldHashOffsets[hash]; i != coldHashOffsets[hash + 1]; i++)
-            {
-                _ASSERTE(!ppMT[i].IsNull());
-                if (dac_cast<TADDR>(pModuleCtorInfo->GetMT(i)) == dac_cast<TADDR>(this))
-                {
-                    return pModuleCtorInfo->cctorInfoCold + (i - pModuleCtorInfo->numElementsHot);
-                }
-            }
-        }
-    }
-#endif // FEATURE_PREJIT
-
     return NULL;
 }
 
@@ -7930,11 +7647,7 @@ PCODE MethodTable::GetRestoredSlot(DWORD slotNumber)
 
         PCODE slot = pMT->GetSlot(slotNumber);
 
-        if ((slot != NULL)
-#ifdef FEATURE_PREJIT
-            && !pMT->GetLoaderModule()->IsVirtualImportThunk(slot)
-#endif
-            )
+        if (slot != NULL)
         {
             return slot;
         }
@@ -7970,11 +7683,7 @@ MethodTable * MethodTable::GetRestoredSlotMT(DWORD slotNumber)
 
         PCODE slot = pMT->GetSlot(slotNumber);
 
-        if ((slot != NULL)
-#ifdef FEATURE_PREJIT
-            && !pMT->GetLoaderModule()->IsVirtualImportThunk(slot)
-#endif
-            )
+        if (slot != NULL)
         {
             return pMT;
         }
