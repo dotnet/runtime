@@ -15744,11 +15744,9 @@ bool Compiler::fgMorphBlockStmt(BasicBlock* block, Statement* stmt DEBUGARG(cons
  *  for reentrant calls.
  */
 
-void Compiler::fgMorphStmts(BasicBlock* block, bool* lnot, bool* loadw)
+void Compiler::fgMorphStmts(BasicBlock* block)
 {
     fgRemoveRestOfBlock = false;
-
-    *lnot = *loadw = false;
 
     fgCurrentlyInUseArgTemps = hashBv::Create(this);
 
@@ -16006,12 +16004,6 @@ void Compiler::fgMorphBlocks()
 
     do
     {
-#if OPT_BOOL_OPS
-        bool lnot = false;
-#endif
-
-        bool loadw = false;
-
 #ifdef DEBUG
         if (verbose)
         {
@@ -16034,7 +16026,7 @@ void Compiler::fgMorphBlocks()
         compCurBB = block;
 
         // Process all statement trees in the basic block.
-        fgMorphStmts(block, &lnot, &loadw);
+        fgMorphStmts(block);
 
         // Do we need to merge the result of this block into a single return block?
         if ((block->bbJumpKind == BBJ_RETURN) && ((block->bbFlags & BBF_HAS_JMP) == 0))
