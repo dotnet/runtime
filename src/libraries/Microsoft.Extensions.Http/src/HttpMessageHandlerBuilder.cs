@@ -62,9 +62,9 @@ namespace Microsoft.Extensions.Http
         public abstract HttpMessageHandler Build();
 
         /// <summary>
-        /// Creates an instance of an <see cref="HttpMessageHandler"/> using the <see cref="DelegatingHandler"/> instances
-        /// provided by <paramref name="additionalHandlers"/>. The resulting pipeline can be used to manually create <see cref="HttpClient"/>
-        /// or <see cref="HttpMessageInvoker"/> instances with customized message handlers.
+        /// Constructs an instance of <see cref="HttpMessageHandler"/> by chaining <paramref name="additionalHandlers"/> one after another with <paramref name="primaryHandler"/> in the
+        /// end of the chain. The resulting pipeline is used by <see cref="IHttpClientFactory"/> infrastructure to create <see cref="HttpClient"/> instances with customized message
+        /// handlers. The resulting pipeline can also be accessed by using <see cref="IHttpMessageHandlerFactory"/> instead of <see cref="IHttpClientFactory"/>.
         /// </summary>
         /// <param name="primaryHandler">An instance of <see cref="HttpMessageHandler"/> to operate at the bottom of the handler chain and actually handle the HTTP transport operations.</param>
         /// <param name="additionalHandlers">An ordered list of <see cref="DelegatingHandler"/> instances to be invoked as part
