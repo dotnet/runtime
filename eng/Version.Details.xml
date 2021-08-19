@@ -8,9 +8,9 @@
       <Uri>https://github.com/dotnet/msquic</Uri>
       <Sha>98129287d56a5e0348c291ce4260e630b4aa510d</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.NET.Workload.Emscripten.Manifest-6.0.100" Version="6.0.0-rc.1.21416.1">
+    <Dependency Name="Microsoft.NET.Workload.Emscripten.Manifest-6.0.100" Version="6.0.0-rc.1.21419.1">
       <Uri>https://github.com/dotnet/emsdk</Uri>
-      <Sha>9f2345b3c5f43dbf34790e21657ae1f2445cd06a</Sha>
+      <Sha>74f858629aef569bf3b70b88183dca2ba2c2ad4e</Sha>
     </Dependency>
   </ProductDependencies>
   <ToolsetDependencies>
