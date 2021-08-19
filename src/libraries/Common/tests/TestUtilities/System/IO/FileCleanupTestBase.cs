@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using Xunit;
-using System;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Threading;
@@ -21,7 +20,6 @@ namespace System.IO
         /// <summary>Initialize the test class base.  This creates the associated test directory.</summary>
         protected FileCleanupTestBase(string tempDirectory = null)
         {
-            //tempDirectory ??= PlatformDetection.IsNotAppleMobile ? Path.GetTempPath() : Environment.GetFolderPath(Environment.SpecialFolder.InternetCache);
             tempDirectory ??= Path.GetTempPath();
 
             // Use a unique test directory per test class.  The test directory lives in the user's temp directory,
