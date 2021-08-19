@@ -268,10 +268,11 @@ namespace System.Diagnostics
     internal static class NtProcessInfoHelper
     {
         // Use a smaller buffer size on debug to ensure we hit the retry path.
+        private const uint DefaultCachedBufferSize = 1024 *
 #if DEBUG
-        private const uint DefaultCachedBufferSize = 8 * 1024;
+            8;
 #else
-        private const uint DefaultCachedBufferSize = 1024 * 1024;
+            1024;
 #endif
         private static uint MostRecentSize = DefaultCachedBufferSize;
 
