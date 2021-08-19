@@ -2978,8 +2978,6 @@ PCODE MethodDescChunk::GetTemporaryEntryPoint(int index)
 {
     LIMITED_METHOD_CONTRACT;
 
-    _ASSERTE(HasTemporaryEntryPoints());
-
 #ifdef HAS_COMPACT_ENTRYPOINTS
     if (HasCompactEntryPoints())
     {
@@ -3013,8 +3011,6 @@ PCODE MethodDesc::GetTemporaryEntryPoint()
     CONTRACTL_END;
 
     MethodDescChunk* pChunk = GetMethodDescChunk();
-    _ASSERTE(pChunk->HasTemporaryEntryPoints());
-
     int lo = 0, hi = pChunk->GetCount() - 1;
 
     // Find the temporary entrypoint in the chunk by binary search
@@ -4061,23 +4057,20 @@ MethodDescChunk::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
         pMT->EnumMemoryRegions(flags);
     }
 
-    if (HasTemporaryEntryPoints())
-    {
-        SIZE_T size;
+    SIZE_T size;
 
 #ifdef HAS_COMPACT_ENTRYPOINTS
-        if (HasCompactEntryPoints())
-        {
-            size = SizeOfCompactEntryPoints(GetCount());
-        }
-        else
-#endif // HAS_COMPACT_ENTRYPOINTS
-        {
-            size = Precode::SizeOfTemporaryEntryPoints(GetTemporaryEntryPoints(), GetCount());
-        }
-
-        DacEnumMemoryRegion(GetTemporaryEntryPoints(), size);
+    if (HasCompactEntryPoints())
+    {
+        size = SizeOfCompactEntryPoints(GetCount());
     }
+    else
+#endif // HAS_COMPACT_ENTRYPOINTS
+    {
+        size = Precode::SizeOfTemporaryEntryPoints(GetTemporaryEntryPoints(), GetCount());
+    }
+
+    DacEnumMemoryRegion(GetTemporaryEntryPoints(), size);
 
     MethodDesc * pMD = GetFirstMethodDesc();
     MethodDesc * pOldMD = NULL;

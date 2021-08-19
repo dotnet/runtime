@@ -205,7 +205,7 @@ BOOL DacValidateMD(MethodDesc * pMD)
             retval = FALSE;
         }
 
-        if (retval && pMD->HasTemporaryEntryPoint())
+        if (retval)
         {
             MethodDesc *pMDCheck = MethodDesc::GetMethodDescFromStubAddr(pMD->GetTemporaryEntryPoint(), TRUE);
 

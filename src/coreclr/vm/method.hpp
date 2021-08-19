@@ -252,7 +252,6 @@ public:
     void SetMethodEntryPoint(PCODE addr);
     BOOL SetStableEntryPointInterlocked(PCODE addr);
 
-    BOOL HasTemporaryEntryPoint();
     PCODE GetTemporaryEntryPoint();
 
     void SetTemporaryEntryPoint(LoaderAllocator *pLoaderAllocator, AllocMemTracker *pamTracker);
@@ -2228,7 +2227,7 @@ class MethodDescChunk
                                                                      // and for the logic that splits the token to be algorithmically generated based on the
                                                                      // #define
         enum_flag_HasCompactEntrypoints                    = 0x4000, // Compact temporary entry points
-        enum_flag_IsZapped                                 = 0x8000, // This chunk lives in NGen module
+        // unused                                          = 0x8000,
     };
 
 public:
@@ -2244,16 +2243,9 @@ public:
                                         MethodTable *initialMT,
                                         class AllocMemTracker *pamTracker);
 
-    BOOL HasTemporaryEntryPoints()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return !IsZapped();
-    }
-
     TADDR GetTemporaryEntryPoints()
     {
         LIMITED_METHOD_CONTRACT;
-        _ASSERTE(HasTemporaryEntryPoints());
         return *(dac_cast<DPTR(TADDR)>(this) - 1);
     }
 
@@ -2354,12 +2346,6 @@ public:
         return m_count + 1;
     }
 
-    BOOL IsZapped()
-    {
-        LIMITED_METHOD_DAC_CONTRACT;
-        return FALSE;
-    }
-
     inline BOOL HasCompactEntryPoints()
     {
         LIMITED_METHOD_DAC_CONTRACT;
@@ -2397,12 +2383,6 @@ public:
 #endif
 
 private:
-    void SetIsZapped()
-    {
-        LIMITED_METHOD_CONTRACT;
-        m_flagsAndTokenRange |= enum_flag_IsZapped;
-    }
-
     void SetHasCompactEntryPoints()
     {
         LIMITED_METHOD_CONTRACT;

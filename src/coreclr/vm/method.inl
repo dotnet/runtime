@@ -6,12 +6,6 @@
 #ifndef _METHOD_INL_
 #define _METHOD_INL_
 
-inline BOOL MethodDesc::HasTemporaryEntryPoint()
-{
-    WRAPPER_NO_CONTRACT;
-    return GetMethodDescChunk()->HasTemporaryEntryPoints();
-}
-
 inline InstantiatedMethodDesc* MethodDesc::AsInstantiatedMethodDesc() const
 {
     WRAPPER_NO_CONTRACT;

@@ -2922,9 +2922,6 @@ void MethodTable::AllocateRegularStaticBoxes()
     GCPROTECT_BEGININTERIOR(pStaticBase);
 
     {
-        // We should never take this codepath in zapped images.
-        _ASSERTE(!IsZapped());
-
         FieldDesc *pField = HasGenericsStaticsInfo() ?
             GetGenericsStaticFieldDescs() : (GetApproxFieldDescListRaw() + GetNumIntroducedInstanceFields());
         FieldDesc *pFieldEnd = pField + GetNumStaticFields();
@@ -4120,17 +4117,14 @@ void MethodTable::DoFullyLoad(Generics::RecursionGraph * const pVisited,  const 
 
     DoFullyLoadLocals locals(pPending, level, this, pVisited);
 
-    bool fNeedsSanityChecks = !IsZapped(); // Validation has been performed for NGened classes already
+    bool fNeedsSanityChecks = true;
 
 #ifdef FEATURE_READYTORUN
-    if (fNeedsSanityChecks)
-    {
-        Module * pModule = GetModule();
+    Module * pModule = GetModule();
 
-        // No sanity checks for ready-to-run compiled images if possible
-        if (pModule->IsSystem() || (pModule->IsReadyToRun() && pModule->GetReadyToRunInfo()->SkipTypeValidation()))
-            fNeedsSanityChecks = false;
-    }
+    // No sanity checks for ready-to-run compiled images if possible
+    if (pModule->IsSystem() || (pModule->IsReadyToRun() && pModule->GetReadyToRunInfo()->SkipTypeValidation()))
+        fNeedsSanityChecks = false;
 #endif
 
     bool fNeedAccessChecks = (level == CLASS_LOADED) &&
@@ -4139,42 +4133,39 @@ void MethodTable::DoFullyLoad(Generics::RecursionGraph * const pVisited,  const 
 
     TypeHandle typicalTypeHnd;
 
-    if (!IsZapped()) // Validation has been performed for NGened classes already
+    // Fully load the typical instantiation. Make sure that this is done before loading other dependencies
+    // as the recursive generics detection algorithm needs to examine typical instantiations of the types
+    // in the closure.
+    if (!IsTypicalTypeDefinition())
     {
-        // Fully load the typical instantiation. Make sure that this is done before loading other dependencies
-        // as the recursive generics detection algorithm needs to examine typical instantiations of the types
-        // in the closure.
-        if (!IsTypicalTypeDefinition())
-        {
-            typicalTypeHnd = ClassLoader::LoadTypeDefThrowing(GetModule(), GetCl(),
-                ClassLoader::ThrowIfNotFound, ClassLoader::PermitUninstDefOrRef, tdNoTypes,
-                (ClassLoadLevel) (level - 1));
-            CONSISTENCY_CHECK(!typicalTypeHnd.IsNull());
-            typicalTypeHnd.DoFullyLoad(&locals.newVisited, level, pPending, &locals.fBailed, pInstContext);
-        }
-        else if (level == CLASS_DEPENDENCIES_LOADED && HasInstantiation())
-        {
-            // This is a typical instantiation of a generic type. When attaining CLASS_DEPENDENCIES_LOADED, the
-            // recursive inheritance graph (ECMA part.II Section 9.2) will be constructed and checked for "expanding
-            // cycles" to detect infinite recursion, e.g. A<T> : B<A<A<T>>>.
-            //
-            // The dependencies loaded by this method (parent type, implemented interfaces, generic arguments)
-            // ensure that we will generate the finite instantiation closure as defined in ECMA. This load level
-            // is not being attained under lock so it's not possible to use TypeVarTypeDesc to represent graph
-            // nodes because multiple threads trying to fully load types from the closure at the same time would
-            // interfere with each other. In addition, the graph is only used for loading and can be discarded
-            // when the closure is fully loaded (TypeVarTypeDesc need to stay).
-            //
-            // The graph is represented by Generics::RecursionGraph instances organized in a linked list with
-            // each of them holding part of the graph. They live on the stack and are cleaned up automatically
-            // before returning from DoFullyLoad.
+        typicalTypeHnd = ClassLoader::LoadTypeDefThrowing(GetModule(), GetCl(),
+            ClassLoader::ThrowIfNotFound, ClassLoader::PermitUninstDefOrRef, tdNoTypes,
+            (ClassLoadLevel) (level - 1));
+        CONSISTENCY_CHECK(!typicalTypeHnd.IsNull());
+        typicalTypeHnd.DoFullyLoad(&locals.newVisited, level, pPending, &locals.fBailed, pInstContext);
+    }
+    else if (level == CLASS_DEPENDENCIES_LOADED && HasInstantiation())
+    {
+        // This is a typical instantiation of a generic type. When attaining CLASS_DEPENDENCIES_LOADED, the
+        // recursive inheritance graph (ECMA part.II Section 9.2) will be constructed and checked for "expanding
+        // cycles" to detect infinite recursion, e.g. A<T> : B<A<A<T>>>.
+        //
+        // The dependencies loaded by this method (parent type, implemented interfaces, generic arguments)
+        // ensure that we will generate the finite instantiation closure as defined in ECMA. This load level
+        // is not being attained under lock so it's not possible to use TypeVarTypeDesc to represent graph
+        // nodes because multiple threads trying to fully load types from the closure at the same time would
+        // interfere with each other. In addition, the graph is only used for loading and can be discarded
+        // when the closure is fully loaded (TypeVarTypeDesc need to stay).
+        //
+        // The graph is represented by Generics::RecursionGraph instances organized in a linked list with
+        // each of them holding part of the graph. They live on the stack and are cleaned up automatically
+        // before returning from DoFullyLoad.
 
-            if (locals.newVisited.CheckForIllegalRecursion())
-            {
-                // An expanding cycle was detected, this type is part of a closure that is defined recursively.
-                IMDInternalImport* pInternalImport = GetModule()->GetMDImport();
-                GetModule()->GetAssembly()->ThrowTypeLoadException(pInternalImport, GetCl(), IDS_CLASSLOAD_GENERICTYPE_RECURSIVE);
-            }
+        if (locals.newVisited.CheckForIllegalRecursion())
+        {
+            // An expanding cycle was detected, this type is part of a closure that is defined recursively.
+            IMDInternalImport* pInternalImport = GetModule()->GetMDImport();
+            GetModule()->GetAssembly()->ThrowTypeLoadException(pInternalImport, GetCl(), IDS_CLASSLOAD_GENERICTYPE_RECURSIVE);
         }
     }
 
@@ -4291,21 +4282,11 @@ void MethodTable::DoFullyLoad(Generics::RecursionGraph * const pVisited,  const 
     // structures that marked as type equivalent. In the no-PIA world
     // these structures are called "local types" and are usually generated automatically by the compiler. Note that there
     // is a related logic in code:CompareTypeDefsForEquivalence that declares two tokens corresponding to structures as
-    // equivalent based on an extensive set of equivalency checks..
-    //
-    // To address this situation for NGENed types and methods, we prevent pre-restoring them - see code:ComputeNeedsRestoreWorker
-    // for details. That forces them to go through the final stages of loading at run-time and hit the same code below.
+    // equivalent based on an extensive set of equivalency checks.
 
     if ((level == CLASS_LOADED)
         && (GetCl() != mdTypeDefNil)
-        && !ContainsGenericVariables()
-        && (!IsZapped()
-            || DependsOnEquivalentOrForwardedStructs()
-#ifdef DEBUG
-            || TRUE // Always load types in debug builds so that we calculate fDependsOnEquivalentOrForwardedStructs all of the time
-#endif
-           )
-       )
+        && !ContainsGenericVariables())
     {
         MethodTable::IntroducedMethodIterator itMethods(this, FALSE);
         for (; itMethods.IsValid(); itMethods.Next())
@@ -4339,7 +4320,7 @@ void MethodTable::DoFullyLoad(Generics::RecursionGraph * const pVisited,  const 
             {
                 locals.fHasEquivalentStructParameter = FALSE;
                 pMD->WalkValueTypeParameters(this, CheckForEquivalenceAndFullyLoadType, &locals);
-                if (!locals.fHasEquivalentStructParameter && !IsZapped())
+                if (!locals.fHasEquivalentStructParameter)
                     pMD->SetDoesNotHaveEquivalentValuetypeParameters();
             }
 #else
@@ -4347,15 +4328,11 @@ void MethodTable::DoFullyLoad(Generics::RecursionGraph * const pVisited,  const 
         }
     }
 
-    _ASSERTE(!IsZapped() || !IsCanonicalMethodTable() || (level != CLASS_LOADED) || ((!!locals.fDependsOnEquivalentOrForwardedStructs) == (!!DependsOnEquivalentOrForwardedStructs())));
     if (locals.fDependsOnEquivalentOrForwardedStructs)
     {
-        if (!IsZapped())
-        {
-            // if this type declares a method that has an equivalent or type forwarded structure as a parameter type,
-            // make sure we come here and pre-load these structure types in NGENed cases as well
-            SetDependsOnEquivalentOrForwardedStructs();
-        }
+        // if this type declares a method that has an equivalent or type forwarded structure as a parameter type,
+        // make sure we come here and pre-load these structure types in NGENed cases as well
+        SetDependsOnEquivalentOrForwardedStructs();
     }
 
     // The rules for constraint cycles are same as rules for access checks
@@ -4428,8 +4405,7 @@ void MethodTable::DoFullyLoad(Generics::RecursionGraph * const pVisited,  const 
             break;
 
         case CLASS_LOADED:
-            if (!IsZapped() && // Constraint checks have been performed for NGened classes already
-                !IsTypicalTypeDefinition() &&
+            if (!IsTypicalTypeDefinition() &&
                 !IsSharedByGenericInstantiations())
             {
                 TypeHandle thThis = TypeHandle(this);
