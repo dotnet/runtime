@@ -29,6 +29,10 @@ namespace System.Text.Json.SourceGeneration.Tests
         public JsonTypeInfo<object[]> ObjectArray { get; }
         public JsonTypeInfo<string> String { get; }
         public JsonTypeInfo<RealWorldContextTests.ClassWithEnumAndNullable> ClassWithEnumAndNullable { get; }
+        public JsonTypeInfo<ClassWithCustomConverter> ClassWithCustomConverter { get; }
+        public JsonTypeInfo<StructWithCustomConverter> StructWithCustomConverter { get; }
+        public JsonTypeInfo<ClassWithBadCustomConverter> ClassWithBadCustomConverter { get; }
+        public JsonTypeInfo<StructWithBadCustomConverter> StructWithBadCustomConverter { get; }
     }
 
     internal partial class JsonContext : JsonSerializerContext

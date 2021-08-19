@@ -161,9 +161,6 @@ set(metadata_common_sources
     custom-attrs-internals.h
     sre-internals.h
     reflection-internals.h
-    file-mmap-posix.c
-    file-mmap-windows.c
-    file-mmap.h
     object-offsets.h
     abi-details.h
     class-abi-details.h

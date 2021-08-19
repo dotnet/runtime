@@ -15,9 +15,6 @@
 
 #include "common.h"
 #include "array.h"
-#ifdef FEATURE_PREJIT
-#include "compile.h"
-#endif
 
 #ifdef FEATURE_PERFMAP
 #include "perfmap.h"

@@ -14,7 +14,6 @@
 #include "jitinterface.h"
 #include "sigbuilder.h"
 #include "ngenhash.inl"
-#include "compile.h"
 
 #include "eventtrace.h"
 
@@ -721,47 +720,6 @@ void StubMethodHashTable::InsertMethodDesc(MethodDesc *pMD, MethodDesc *pStubMD)
     DWORD dwHash = Hash(pMD);
     BaseInsertEntry(dwHash, pNewEntry);
 }
-
-#ifdef FEATURE_NATIVE_IMAGE_GENERATION
-// Save the hash table and any method descriptors referenced by it
-void StubMethodHashTable::Save(DataImage *image, CorProfileData *pProfileData)
-{
-    WRAPPER_NO_CONTRACT;
-    BaseSave(image, pProfileData);
-}
-
-void StubMethodHashTable::Fixup(DataImage *image)
-{
-    WRAPPER_NO_CONTRACT;
-    BaseFixup(image);
-}
-
-void StubMethodHashTable::FixupEntry(DataImage *pImage, StubMethodHashEntry_t *pEntry, void *pFixupBase, DWORD cbFixupOffset)
-{
-    WRAPPER_NO_CONTRACT;
-    pImage->FixupField(pFixupBase, cbFixupOffset + offsetof(StubMethodHashEntry_t, pMD), pEntry->GetMethod());
-    pImage->FixupField(pFixupBase, cbFixupOffset + offsetof(StubMethodHashEntry_t, pStubMD), pEntry->GetStubMethod());
-}
-
-bool StubMethodHashTable::ShouldSave(DataImage *pImage, StubMethodHashEntry_t *pEntry)
-{
-    STANDARD_VM_CONTRACT;
-
-    MethodDesc *pMD = pEntry->GetMethod();
-    if (pMD->GetClassification() == mcInstantiated)
-    {
-        // save entries only for "accepted" methods
-        if (!pImage->GetPreloader()->IsMethodInTransitiveClosureOfInstantiations(CORINFO_METHOD_HANDLE(pMD)))
-            return false;
-    }
-
-    // Save the entry only if the native code was successfully generated for the stub
-    if (pImage->GetCodeAddress(pEntry->GetStubMethod()) == NULL)
-        return false;
-
-    return true;
-}
-#endif // FEATURE_NATIVE_IMAGE_GENERATION
 
 #endif // !DACCESS_COMPILE
 

@@ -38,10 +38,6 @@ target_precompile_headers(mdhotdata_full_obj PRIVATE external.h)
 add_library(mdhotdata_full INTERFACE)
 target_sources(mdhotdata_full INTERFACE $<TARGET_OBJECTS:mdhotdata_full_obj>)
 
-add_library_clr(mdhotdata_crossgen ${MDHOTDATA_SOURCES})
-set_target_properties(mdhotdata_crossgen PROPERTIES CROSSGEN_COMPONENT TRUE)
-target_precompile_headers(mdhotdata_crossgen PRIVATE external.h)
-
 if(CLR_CMAKE_HOST_WIN32)
   add_library_clr(mdhotdata-staticcrt ${MDHOTDATA_SOURCES})
   target_precompile_headers(mdhotdata-staticcrt PRIVATE external.h)

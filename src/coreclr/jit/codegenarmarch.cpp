@@ -2450,10 +2450,10 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
     {
         // Generate a direct call to a non-virtual user defined or helper method
         assert(callType == CT_HELPER || callType == CT_USER_FUNC);
-#ifdef FEATURE_READYTORUN_COMPILER
+#ifdef FEATURE_READYTORUN
         assert(((call->IsR2RRelativeIndir()) && (call->gtEntryPoint.accessType == IAT_PVALUE)) ||
                ((call->IsVirtualStubRelativeIndir()) && (call->gtEntryPoint.accessType == IAT_VALUE)));
-#endif // FEATURE_READYTORUN_COMPILER
+#endif // FEATURE_READYTORUN
         assert(call->gtControlExpr == nullptr);
         assert(!call->IsTailCall());
 
@@ -2475,14 +2475,14 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
         assert(callType == CT_HELPER || callType == CT_USER_FUNC);
 
         void* addr = nullptr;
-#ifdef FEATURE_READYTORUN_COMPILER
+#ifdef FEATURE_READYTORUN
         if (call->gtEntryPoint.addr != NULL)
         {
             assert(call->gtEntryPoint.accessType == IAT_VALUE);
             addr = call->gtEntryPoint.addr;
         }
         else
-#endif // FEATURE_READYTORUN_COMPILER
+#endif // FEATURE_READYTORUN
             if (callType == CT_HELPER)
         {
             CorInfoHelpFunc helperNum = compiler->eeGetHelperNum(methHnd);

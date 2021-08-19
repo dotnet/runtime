@@ -1098,20 +1098,6 @@ void TypeHandle::CheckRestore() const
 
 #ifndef DACCESS_COMPILE
 
-#ifdef FEATURE_NATIVE_IMAGE_GENERATION
-BOOL TypeHandle::ComputeNeedsRestore(DataImage *image, TypeHandleList *pVisited) const
-{
-    STATIC_STANDARD_VM_CONTRACT;
-
-    _ASSERTE(GetAppDomain()->IsCompilationDomain());
-
-    if (!IsTypeDesc())
-        return AsMethodTable()->ComputeNeedsRestore(image, pVisited);
-    else
-        return AsTypeDesc()->ComputeNeedsRestore(image, pVisited);
-}
-#endif // FEATURE_NATIVE_IMAGE_GENERATION
-
 BOOL
 TypeHandle::IsExternallyVisible() const
 {
