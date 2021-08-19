@@ -424,12 +424,13 @@ namespace System.Reflection.Emit.Tests
 	}
 
     [Fact]
-    public void DefineDynamicAssembly_InternalAssemblyLocationIsEmpty()
+    public void DefineDynamicAssembly_AssemblyBuilderLocationIsEmpty_InternalAssemblyBuilderLocationIsEmpty()
     {
-        AssemblyBuilder assembly = Helpers.DynamicAssembly(nameof(DefineDynamicAssembly_InternalAssemblyLocationIsEmpty));
+        AssemblyBuilder assembly = Helpers.DynamicAssembly(nameof(DefineDynamicAssembly_AssemblyBuilderLocationIsEmpty_InternalAssemblyBuilderLocationIsEmpty));
         Assembly internalAssemblyBuilder  = AppDomain.CurrentDomain.GetAssemblies()
                 .FirstOrDefault(a => a.FullName == assembly.FullName);
 
+        Assert.Empty(assembly.Location);
         Assert.NotNull(internalAssemblyBuilder);
         Assert.Empty(internalAssemblyBuilder.Location);
     }
