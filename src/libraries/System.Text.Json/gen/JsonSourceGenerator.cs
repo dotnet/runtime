@@ -1,6 +1,7 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+//define LAUNCH_DEBUGGER
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Diagnostics;
@@ -23,10 +24,12 @@ namespace System.Text.Json.SourceGeneration
         private const string IJsonOnSerializedFullName = "System.Text.Json.Serialization.IJsonOnSerialized";
         private const string IJsonOnSerializingFullName = "System.Text.Json.Serialization.IJsonOnSerializing";
 
-
         public void Initialize(IncrementalGeneratorInitializationContext context)
         {
-            var classDeclarations = context.SyntaxProvider.CreateSyntaxProvider((s, _) => s is ClassDeclarationSyntax, (s, _) => (ClassDeclarationSyntax)s.Node);
+
+            var classDeclarations = context.SyntaxProvider
+                .CreateSyntaxProvider((s, _) => Parser.IsSyntaxTargetForGeneration(s), (s, _) => Parser.IsSemanticTargetForGeneration(s))
+                .Where(c => c is object);
 
             var compilationAndClasses = context.CompilationProvider.Combine(classDeclarations.Collect());
 

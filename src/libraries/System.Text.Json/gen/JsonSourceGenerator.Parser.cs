@@ -45,7 +45,7 @@ namespace System.Text.Json.SourceGeneration
             private readonly Type? _dictionaryType;
             private readonly Type? _idictionaryOfTKeyTValueType;
             private readonly Type? _ireadonlyDictionaryType;
-            private readonly Type? _isetType; 
+            private readonly Type? _isetType;
             private readonly Type? _stackOfTType;
             private readonly Type? _queueOfTType;
             private readonly Type? _concurrentStackType;
@@ -401,6 +401,37 @@ namespace System.Text.Json.SourceGeneration
                 }
 
                 return typeGenerationSpec;
+            }
+
+            internal static bool IsSyntaxTargetForGeneration(SyntaxNode node) => node is ClassDeclarationSyntax { AttributeLists: { Count: > 0 }, BaseList: { Types : {Count : 0 } } };
+
+            internal static ClassDeclarationSyntax? IsSemanticTargetForGeneration(GeneratorSyntaxContext context)
+            {
+                var classDeclarationSyntax = (ClassDeclarationSyntax)context.Node;
+
+                foreach (AttributeListSyntax attributeListSyntax in classDeclarationSyntax.AttributeLists)
+                {
+                    foreach (var attributeSyntax in attributeListSyntax.Attributes)
+                    {
+                        IMethodSymbol attributeSymbol = context.SemanticModel.GetSymbolInfo(attributeSyntax).Symbol as IMethodSymbol;
+                        if (attributeSymbol == null)
+                        {
+                            continue;
+                        }
+
+                        INamedTypeSymbol attributeContainingTypeSymbol = attributeSymbol.ContainingType;
+                        var fullName = attributeContainingTypeSymbol.ToDisplayString();
+
+                        if (fullName == "System.Text.Json.Serialization.JsonSerializableAttribute"
+                            || fullName == "System.Text.Json.Serialization.JsonSourceGenerationOptionsAttribute")
+                        {
+                            return classDeclarationSyntax;
+                        }
+                    }
+
+                }
+
+                return null;
             }
 
             private static JsonSourceGenerationMode? GetJsonSourceGenerationModeEnumVal(SyntaxNode propertyValueMode)
