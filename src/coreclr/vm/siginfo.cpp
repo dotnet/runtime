@@ -1451,21 +1451,6 @@ TypeHandle SigPointer::GetTypeHandleThrowing(
 
             IfFailThrowBF(psig.GetToken(&typeToken), BFA_BAD_SIGNATURE, pOrigModule);
 
-#if defined(FEATURE_NATIVE_IMAGE_GENERATION) && !defined(DACCESS_COMPILE)
-            if ((pOrigModule != pModule) && (pZapSigContext->externalTokens == ZapSig::IbcTokens))
-            {
-                // ibcExternalType tokens are actually encoded as mdtTypeDef tokens in the signature
-                RID            typeRid  = RidFromToken(typeToken);
-                idExternalType ibcToken = RidToToken(typeRid, ibcExternalType);
-                typeToken = pOrigModule->LookupIbcTypeToken(pModule, ibcToken);
-
-                if (IsNilToken(typeToken))
-                {
-                    COMPlusThrow(kTypeLoadException, IDS_IBC_MISSING_EXTERNAL_TYPE);
-                }
-            }
-#endif
-
             if ((TypeFromToken(typeToken) != mdtTypeRef) && (TypeFromToken(typeToken) != mdtTypeDef))
                 THROW_BAD_FORMAT(BFA_UNEXPECTED_TOKEN_AFTER_CLASSVALTYPE, pOrigModule);
 
@@ -1745,21 +1730,6 @@ TypeHandle SigPointer::GetGenericInstType(Module *        pModule,
     {
         mdToken typeToken = mdTypeRefNil;
         IfFailThrowBF(GetToken(&typeToken), BFA_BAD_SIGNATURE, pOrigModule);
-
-#if defined(FEATURE_NATIVE_IMAGE_GENERATION) && !defined(DACCESS_COMPILE)
-        if ((pOrigModule != pModule) && (pZapSigContext->externalTokens == ZapSig::IbcTokens))
-        {
-            // ibcExternalType tokens are actually encoded as mdtTypeDef tokens in the signature
-            RID            typeRid  = RidFromToken(typeToken);
-            idExternalType ibcToken = RidToToken(typeRid, ibcExternalType);
-            typeToken = pOrigModule->LookupIbcTypeToken(pModule, ibcToken);
-
-            if (IsNilToken(typeToken))
-            {
-                COMPlusThrow(kTypeLoadException, IDS_IBC_MISSING_EXTERNAL_TYPE);
-            }
-        }
-#endif
 
         if ((TypeFromToken(typeToken) != mdtTypeRef) && (TypeFromToken(typeToken) != mdtTypeDef))
             THROW_BAD_FORMAT(BFA_UNEXPECTED_TOKEN_AFTER_GENINST, pOrigModule);

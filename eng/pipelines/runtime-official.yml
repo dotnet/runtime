@@ -54,7 +54,9 @@ stages:
   #
   # Source Index Build
   #
-  - template: ./source-index.yml
+  - template: /eng/common/templates/job/source-index-stage1.yml
+    parameters:
+      sourceIndexBuildCommand: build.cmd -subset libs.ref+libs.src -binarylog -os Linux -ci
 
   #
   # Build CoreCLR
@@ -373,7 +375,7 @@ stages:
       - Linux_x64
 
   #
-  # Build Blazor Workload
+  # Build Workloads
   #
   - template: /eng/pipelines/common/platform-matrix.yml
     parameters:
@@ -383,6 +385,7 @@ stages:
       - windows_x64
       jobParameters:
         isOfficialBuild: ${{ variables.isOfficialBuild }}
+        timeoutInMinutes: 120
         dependsOn:
         - Build_Android_arm_release_AllSubsets_Mono
         - Build_Android_arm64_release_AllSubsets_Mono

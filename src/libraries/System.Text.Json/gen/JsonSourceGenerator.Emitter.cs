@@ -277,10 +277,12 @@ namespace {@namespace}
                 string typeCompilableName = typeMetadata.TypeRef;
                 string typeFriendlyName = typeMetadata.TypeInfoPropertyName;
 
-                StringBuilder sb = new();
+                string metadataInitSource;
 
                 // TODO (https://github.com/dotnet/runtime/issues/52218): consider moving this verification source to common helper.
-                string metadataInitSource = $@"{JsonConverterTypeRef} converter = {typeMetadata.ConverterInstantiationLogic};
+                if (typeMetadata.IsValueType)
+                {
+                    metadataInitSource = $@"{JsonConverterTypeRef} converter = {typeMetadata.ConverterInstantiationLogic};
                     {TypeTypeRef} typeToConvert = typeof({typeCompilableName});
                     if (!converter.CanConvert(typeToConvert))
                     {{
@@ -309,6 +311,18 @@ namespace {@namespace}
                     }}
 
                     _{typeFriendlyName} = {JsonMetadataServicesTypeRef}.{GetCreateValueInfoMethodRef(typeCompilableName)}({OptionsInstanceVariableName}, converter);";
+                }
+                else
+                {
+                    metadataInitSource = $@"{JsonConverterTypeRef} converter = {typeMetadata.ConverterInstantiationLogic};
+                    {TypeTypeRef} typeToConvert = typeof({typeCompilableName});
+                    if (!converter.CanConvert(typeToConvert))
+                    {{
+                        throw new {InvalidOperationExceptionTypeRef}($""The converter '{{converter.GetType()}}' is not compatible with the type '{{typeToConvert}}'."");
+                    }}
+
+                    _{typeFriendlyName} = {JsonMetadataServicesTypeRef}.{GetCreateValueInfoMethodRef(typeCompilableName)}({OptionsInstanceVariableName}, converter);";
+                }
 
                 return GenerateForType(typeMetadata, metadataInitSource);
             }

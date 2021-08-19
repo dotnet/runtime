@@ -33,8 +33,6 @@
 #define _ASSERTE(x) assert(x)
 #endif
 
-#include <compile.h>
-
 #ifdef USE_GC_INFO_DECODER
 #include <gcinfodecoder.h>
 #endif

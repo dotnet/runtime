@@ -302,9 +302,6 @@ typedef struct {
 	char *category, *message;
 	/* For EVENT_KIND_TYPE_LOAD */
 	MonoClass *klass;
-	/* For EVENT_KIND_CRASH  */
-	char *dump;
-	MonoStackHash *hashes;
 } EventInfo;
 
 typedef struct {
@@ -3632,9 +3629,7 @@ process_event (EventKind event, gpointer arg, gint32 il_offset, MonoContext *ctx
 				buffer_add_int (&buf, mono_environment_exitcode_get ());
 			break;
 		case EVENT_KIND_CRASH: {
-			EventInfo *ei = (EventInfo *)arg;
-			buffer_add_long (&buf, ei->hashes->offset_free_hash);
-			buffer_add_string (&buf, ei->dump);
+			g_assert_not_reached ();
 			break;
 		}
 		case EVENT_KIND_EXCEPTION: {
@@ -4079,6 +4074,13 @@ jit_end (MonoProfiler *prof, MonoMethod *method, MonoJitInfo *jinfo)
 		} else {
 			break;
 		}
+	}
+
+	// only send typeload from AOTed classes if has .cctor when .cctor emits jit_end 
+	// to avoid deadlock while trying to set a breakpoint in a class that was not fully initialized
+	if (jinfo->from_aot && m_class_has_cctor(method->klass) && (!(method->flags & METHOD_ATTRIBUTE_SPECIAL_NAME) || strcmp (method->name, ".cctor")))
+	{
+		return;
 	}
 
 	send_type_load (method->klass);
@@ -4697,60 +4699,6 @@ ss_clear_for_assembly (SingleStepReq *req, MonoAssembly *assembly)
 			}
 		}
 	}
-}
-
-/*
- * This takes a lot of locks and stuff. Do this at the end, after
- * other things have dumped us, so that getting stuck here won't
- * prevent seeing other crash information
- */
-static void
-mono_debugger_agent_send_crash (char *json_dump, MonoStackHash *hashes, int pause)
-{
-	MONO_ENTER_GC_UNSAFE;
-#ifndef DISABLE_CRASH_REPORTING
-	int suspend_policy;
-	GSList *events;
-	EventInfo ei;
-
-	if (!agent_config.enabled)
-		return;
-
-	// Don't send the event if the client doesn't expect it
-	if (!CHECK_PROTOCOL_VERSION (2, 49))
-		return;
-
-	// It doesn't make sense to wait for lldb/gdb to finish if we're not
-	// actually enabled. Therefore we do the wait here.
-	sleep (pause);
-
-	// Don't heap allocate when we can avoid it
-	EventRequest request;
-	memset (&request, 0, sizeof (request));
-	request.event_kind = EVENT_KIND_CRASH;
-
-	gpointer pdata [1];
-	pdata [0] = &request;
-	GPtrArray array;
-	memset (&array, 0, sizeof (array));
-	array.pdata = pdata;
-	array.len = 1;
-
-	mono_loader_lock ();
-	events = create_event_list (EVENT_KIND_CRASH, &array, NULL, NULL, &suspend_policy);
-	mono_loader_unlock ();
-
-	ei.dump = json_dump;
-	ei.hashes = hashes;
-
-	g_assert (events != NULL);
-
-	process_event (EVENT_KIND_CRASH, &ei, 0, NULL, events, suspend_policy);
-
-	// Don't die before it is sent.
-	sleep (4);
-#endif
-	MONO_EXIT_GC_UNSAFE;
 }
 
 /*
@@ -6459,7 +6407,7 @@ get_types (gpointer key, gpointer value, gpointer user_data)
 			t = mono_reflection_get_type_checked (alc, ass->image, ass->image, ud->info, ud->ignore_case, TRUE, &type_resolve, probe_type_error);
 			mono_error_cleanup (probe_type_error);
 			if (t) {
-				g_ptr_array_add (ud->res_classes, mono_type_get_class_internal (t));
+				g_ptr_array_add (ud->res_classes, mono_class_from_mono_type_internal (t));
 				g_ptr_array_add (ud->res_domains, domain);
 			}
 		}
@@ -10347,7 +10295,6 @@ debugger_agent_add_function_pointers(MonoComponentDebugger* fn_table)
 	fn_table->user_break = mono_dbg_debugger_agent_user_break;
 	fn_table->debug_log = debugger_agent_debug_log;
 	fn_table->debug_log_is_enabled = debugger_agent_debug_log_is_enabled;
-	fn_table->send_crash = mono_debugger_agent_send_crash;
 	fn_table->transport_handshake = debugger_agent_transport_handshake;
 	fn_table->send_enc_delta = send_enc_delta;
 }

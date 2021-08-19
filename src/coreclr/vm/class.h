@@ -311,12 +311,6 @@ public:
         return (void*)m_MapList;
     }
 
-#ifdef FEATURE_PREJIT
-    // Methods to persist structure
-    void Save(DataImage *image);
-    void Fixup(DataImage *image);
-#endif // FEATURE_PREJIT
-
 private:
 
     enum { MapGrow = 4 };
@@ -782,9 +776,6 @@ public:
 
 #ifdef FEATURE_PREJIT
     DWORD GetSize();
-
-    void Save(DataImage *image, MethodTable *pMT);
-    void Fixup(DataImage *image, MethodTable *pMT);
 #endif // FEATURE_PREJIT
 
     EEClassLayoutInfo *GetLayoutInfo();

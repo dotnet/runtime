@@ -41,8 +41,6 @@ namespace R2RTest
                     {
                         InputDirectory(),
                         OutputDirectory(),
-                        Crossgen(),
-                        CrossgenPath(),
                         Crossgen2Path(),
                         TargetArch(),
                         VerifyTypeAndFieldLayout(),
@@ -80,8 +78,6 @@ namespace R2RTest
                     {
                         InputDirectory(),
                         OutputDirectory(),
-                        Crossgen(),
-                        CrossgenPath(),
                         Crossgen2Path(),
                         TargetArch(),
                         VerifyTypeAndFieldLayout(),
@@ -116,8 +112,6 @@ namespace R2RTest
                 CreateCommand("compile-framework", "Compile managed framework assemblies in Core_Root",
                     new Option[]
                     {
-                        Crossgen(),
-                        CrossgenPath(),
                         Crossgen2Path(),
                         TargetArch(),
                         VerifyTypeAndFieldLayout(),
@@ -151,7 +145,6 @@ namespace R2RTest
                         InputDirectory(),
                         OutputDirectory(),
                         PackageList(),
-                        Crossgen(),
                         NoCleanup(),
                         Map(),
                         Pdb(),
@@ -203,12 +196,6 @@ namespace R2RTest
             Option MibcPath() =>
                 new Option<FileInfo[]>(new[] { "--mibc-path", "-m" }, "Mibc files to use in compilation")
                 { Argument = new Argument<FileInfo[]>() { Arity = ArgumentArity.ZeroOrMore }.ExistingOnly() };
-
-            Option Crossgen() =>
-                new Option<bool>(new[] { "--crossgen" }, "Compile the apps using Crossgen in the CORE_ROOT folder");
-
-            Option CrossgenPath() =>
-                new Option<FileInfo>(new[] { "--crossgen-path", "-cp" }, "Explicit Crossgen path (useful for cross-targeting)").ExistingOnly();
 
             Option Crossgen2Path() =>
                 new Option<FileInfo>(new[] { "--crossgen2-path", "-c2p" }, "Explicit Crossgen2 path (useful for cross-targeting)").ExistingOnly();

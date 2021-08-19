@@ -21,7 +21,7 @@
     <_XHarnessArgs Condition="'$(OS)' != 'Windows_NT'">wasm $XHARNESS_COMMAND --app=. --output-directory=$XHARNESS_OUT</_XHarnessArgs>
     <_XHarnessArgs Condition="'$(OS)' == 'Windows_NT'">wasm %XHARNESS_COMMAND% --app=. --output-directory=%XHARNESS_OUT%</_XHarnessArgs>
 
-    <_XHarnessArgs Condition="'$(Scenario)' != 'WasmTestOnBrowser'">$(_XHarnessArgs) --engine=$(JSEngine) $(JSEngineArgs) --js-file=runtime.js</_XHarnessArgs>
+    <_XHarnessArgs Condition="'$(Scenario)' != 'WasmTestOnBrowser' and '$(Scenario)' != 'BuildWasmApps'">$(_XHarnessArgs) --engine=$(JSEngine) $(JSEngineArgs) --js-file=runtime.js</_XHarnessArgs>
     <_XHarnessArgs Condition="'$(BrowserHost)' == 'windows'">$(_XHarnessArgs) --browser=chrome --browser-path=%HELIX_CORRELATION_PAYLOAD%\chrome-win\chrome.exe</_XHarnessArgs>
     <_XHarnessArgs Condition="'$(IsFunctionalTest)' == 'true'"     >$(_XHarnessArgs) --expected-exit-code=$(ExpectedExitCode)</_XHarnessArgs>
     <_XHarnessArgs Condition="'$(WasmXHarnessArgs)' != ''"         >$(_XHarnessArgs) $(WasmXHarnessArgs)</_XHarnessArgs>

@@ -11,9 +11,6 @@
 #define JITINTERFACE_H
 
 #include "corjit.h"
-#ifdef FEATURE_PREJIT
-#include "corcompile.h"
-#endif // FEATURE_PREJIT
 
 #ifndef TARGET_UNIX
 #define MAX_UNCHECKED_OFFSET_FOR_NULL_OBJECT ((32*1024)-1)   // when generating JIT code

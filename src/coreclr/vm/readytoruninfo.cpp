@@ -11,7 +11,6 @@
 #include "common.h"
 
 #include "dbginterface.h"
-#include "compile.h"
 #include "versionresilienthashcode.h"
 #include "typehashingalgorithms.h"
 #include "method.hpp"
@@ -554,15 +553,6 @@ PTR_ReadyToRunInfo ReadyToRunInfo::Initialize(Module * pModule, AllocMemTracker 
         DoLog("Ready to Run disabled - module on exclusion list");
         return NULL;
     }
-
-#ifdef FEATURE_NATIVE_IMAGE_GENERATION
-    // Ignore ReadyToRun during NGen
-    if (IsCompilationProcess() && !IsNgenPDBCompilationProcess())
-    {
-        DoLog("Ready to Run disabled - compilation process");
-        return NULL;
-    }
-#endif
 
     if (!pLayout->IsNativeMachineFormat())
     {

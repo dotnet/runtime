@@ -1396,21 +1396,6 @@ namespace R2RTest
 
             string cpaotRequiresMarshalingFile = Path.Combine(_options.OutputDirectory.FullName, "requires-marshaling-cpaot-" + suffix);
             WriterMarkerLog(cpaotRequiresMarshalingFile, _cpaotRequiresMarshalingResults);
-
-            if (_options.Crossgen)
-            {
-                string crossgenManagedSequentialFile = Path.Combine(_options.OutputDirectory.FullName, "managed-sequential-crossgen-" + suffix);
-                WriterMarkerLog(crossgenManagedSequentialFile, _crossgenManagedSequentialResults);
-
-                string crossgenRequiresMarshalingFile = Path.Combine(_options.OutputDirectory.FullName, "requires-marshaling-crossgen-" + suffix);
-                WriterMarkerLog(crossgenRequiresMarshalingFile, _crossgenRequiresMarshalingResults);
-
-                string managedSequentialDiffFile = Path.Combine(_options.OutputDirectory.FullName, "managed-sequential-diff-" + suffix);
-                WriterMarkerDiff(managedSequentialDiffFile, _cpaotManagedSequentialResults, _crossgenManagedSequentialResults);
-
-                string requiresMarshalingDiffFile = Path.Combine(_options.OutputDirectory.FullName, "requires-marshaling-diff-" + suffix);
-                WriterMarkerDiff(requiresMarshalingDiffFile, _cpaotRequiresMarshalingResults, _crossgenRequiresMarshalingResults);
-            }
         }
 
         private static void WriterMarkerLog(string fileName, Dictionary<string, byte> markerResults)

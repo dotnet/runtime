@@ -72,6 +72,7 @@ jobs:
             - (Fedora.34.Amd64.Open)ubuntu.1604.amd64.open@mcr.microsoft.com/dotnet-buildtools/prereqs:fedora-34-helix-20210728124700-4f64125
             - (Ubuntu.1910.Amd64.Open)ubuntu.1604.amd64.open@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-19.10-helix-amd64-cfcfd50-20191030180623
             - (Debian.10.Amd64.Open)ubuntu.1604.amd64.open@mcr.microsoft.com/dotnet-buildtools/prereqs:debian-10-helix-amd64-bfcd90a-20200121150006
+            - (Mariner.1.0.Amd64.Open)ubuntu.1604.amd64.open@mcr.microsoft.com/dotnet-buildtools/prereqs:cbl-mariner-1.0-helix-20210528192219-92bf620
           - ${{ if eq(parameters.jobParameters.isFullMatrix, false) }}:
             - (Centos.8.Amd64.Open)Ubuntu.1604.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:centos-8-helix-20201229003624-c1bf759
             - RedHat.7.Amd64.Open

@@ -19,13 +19,8 @@
 #include "stubgen.h"
 #include "eventtrace.h"
 #include "array.h"
-#include "compile.h"
 #include "ecall.h"
 #include "virtualcallstub.h"
-
-#ifdef FEATURE_PREJIT
-#include "compile.h"
-#endif
 
 #ifdef FEATURE_INTERPRETER
 #include "interpreter.h"

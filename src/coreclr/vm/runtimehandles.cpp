@@ -1444,7 +1444,7 @@ void QCALLTYPE RuntimeTypeHandle::GetTypeByName(LPCWSTR pwzClassName, BOOL bThro
             COMPlusThrowArgumentNull(W("className"),W("ArgumentNull_String"));
 
     {
-        ICLRPrivBinder * pPrivHostBinder = NULL;
+        AssemblyBinder * pPrivHostBinder = NULL;
 
         if (*pAssemblyLoadContext.m_ppObject != NULL)
         {
@@ -1453,7 +1453,7 @@ void QCALLTYPE RuntimeTypeHandle::GetTypeByName(LPCWSTR pwzClassName, BOOL bThro
 
             INT_PTR nativeAssemblyLoadContext = (*pAssemblyLoadContextRef)->GetNativeAssemblyLoadContext();
 
-            pPrivHostBinder = reinterpret_cast<ICLRPrivBinder *>(nativeAssemblyLoadContext);
+            pPrivHostBinder = reinterpret_cast<AssemblyBinder *>(nativeAssemblyLoadContext);
         }
 
 

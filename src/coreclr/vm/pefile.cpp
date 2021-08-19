@@ -16,24 +16,12 @@
 #include "peimagelayout.inl"
 #include "dlwrap.h"
 #include "invokeutil.h"
-#ifdef FEATURE_PREJIT
-#include "compile.h"
-#endif
 #include "strongnameinternal.h"
 
 #include "../binder/inc/applicationcontext.hpp"
 
-#include "clrprivbinderutil.h"
-#include "../binder/inc/coreclrbindercommon.h"
-
-
-#ifdef FEATURE_PREJIT
-#include "compile.h"
-
-#ifdef DEBUGGING_SUPPORTED
-SVAL_IMPL_INIT(DWORD, PEFile, s_NGENDebugFlags, 0);
-#endif
-#endif
+#include "assemblybinderutil.h"
+#include "../binder/inc/assemblybindercommon.hpp"
 
 #include "sha1.h"
 
@@ -414,17 +402,11 @@ BOOL PEFile::Equals(PEFile *pFile)
     // because another thread beats it; the losing thread will pick up the PEAssembly in the cache.
     if (pFile->HasHostAssembly() && this->HasHostAssembly())
     {
-        UINT_PTR fileBinderId = 0;
-        if (FAILED(pFile->GetHostAssembly()->GetBinderID(&fileBinderId)))
-            return FALSE;
+        AssemblyBinder* fileBinderId = pFile->GetHostAssembly()->GetBinder();
+        AssemblyBinder* thisBinderId = this->GetHostAssembly()->GetBinder();
 
-        UINT_PTR thisBinderId = 0;
-        if (FAILED(this->GetHostAssembly()->GetBinderID(&thisBinderId)))
+        if (fileBinderId != thisBinderId || fileBinderId == NULL)
             return FALSE;
-
-        if (fileBinderId != thisBinderId)
-            return FALSE;
-
     }
 
     // Same identity is equal
@@ -1372,12 +1354,6 @@ BOOL PEFile::ShouldTreatNIAsMSIL()
 {
     LIMITED_METHOD_CONTRACT;
 
-    // Never use fragile native image content during ReadyToRun compilation. It would
-    // produces non-version resilient images because of wrong cached values for
-    // MethodTable::IsLayoutFixedInCurrentVersionBubble, etc.
-    if (IsReadyToRunCompilation())
-        return TRUE;
-
     // Ask profiling API & config vars whether NGENd images should be avoided
     // completely.
     if (!NGENImagesAllowed())
@@ -1775,7 +1751,7 @@ PEAssembly::PEAssembly(
                 BOOL system,
                 PEImage * pPEImageIL /*= NULL*/,
                 PEImage * pPEImageNI /*= NULL*/,
-                ICLRPrivAssembly * pHostAssembly /*= NULL*/)
+                BINDER_SPACE::Assembly * pHostAssembly /*= NULL*/)
 
   : PEFile(pBindResultInfo ? (pBindResultInfo->GetPEImage() ? pBindResultInfo->GetPEImage() :
                                                               (pBindResultInfo->HasNativeImage() ? pBindResultInfo->GetNativeImage() : NULL)
@@ -1867,7 +1843,7 @@ PEAssembly *PEAssembly::Open(
     PEAssembly *       pParent,
     PEImage *          pPEImageIL,
     PEImage *          pPEImageNI,
-    ICLRPrivAssembly * pHostAssembly)
+    BINDER_SPACE::Assembly * pHostAssembly)
 {
     STANDARD_VM_CONTRACT;
 
@@ -1938,8 +1914,8 @@ PEAssembly *PEAssembly::DoOpenSystem(IUnknown * pAppCtx)
 
     ETWOnStartup (FusionBinding_V1, FusionBindingEnd_V1);
     CoreBindResult bindResult;
-    ReleaseHolder<ICLRPrivAssembly> pPrivAsm;
-    IfFailThrow(CCoreCLRBinderHelper::BindToSystem(&pPrivAsm, !IsCompilationProcess() || g_fAllowNativeImages));
+    ReleaseHolder<BINDER_SPACE::Assembly> pPrivAsm;
+    IfFailThrow(BINDER_SPACE::AssemblyBinderCommon::BindToSystem(&pPrivAsm, !IsCompilationProcess() || g_fAllowNativeImages));
     if(pPrivAsm != NULL)
     {
         bindResult.Init(pPrivAsm);
@@ -2280,19 +2256,10 @@ void PEFile::EnsureImageOpened()
 
 void PEFile::SetupAssemblyLoadContext()
 {
-    PTR_ICLRPrivBinder pBindingContext = GetBindingContext();
-    ICLRPrivBinder* pOpaqueBinder = NULL;
+    PTR_AssemblyBinder pBindingContext = GetBindingContext();
 
-    if (pBindingContext != NULL)
-    {
-        UINT_PTR assemblyBinderID = 0;
-        IfFailThrow(pBindingContext->GetBinderID(&assemblyBinderID));
-
-        pOpaqueBinder = reinterpret_cast<ICLRPrivBinder*>(assemblyBinderID);
-    }
-
-    m_pAssemblyLoadContext = (pOpaqueBinder != NULL) ?
-        (AssemblyLoadContext*)pOpaqueBinder :
+    m_pAssemblyLoadContext = (pBindingContext != NULL) ?
+        (AssemblyLoadContext*)pBindingContext :
         AppDomain::GetCurrentDomain()->CreateBinderContext();
 }
 
@@ -2401,21 +2368,25 @@ TADDR PEFile::GetMDInternalRWAddress()
 }
 #endif
 
-// Returns the ICLRPrivBinder* instance associated with the PEFile
-PTR_ICLRPrivBinder PEFile::GetBindingContext()
+// Returns the AssemblyBinder* instance associated with the PEFile
+PTR_AssemblyBinder PEFile::GetBindingContext()
 {
     LIMITED_METHOD_CONTRACT;
 
-    PTR_ICLRPrivBinder pBindingContext = NULL;
+    PTR_AssemblyBinder pBindingContext = NULL;
 
     // CoreLibrary is always bound in context of the TPA Binder. However, since it gets loaded and published
     // during EEStartup *before* DefaultContext Binder (aka TPAbinder) is initialized, we dont have a binding context to publish against.
     if (!IsSystem())
     {
-        pBindingContext = dac_cast<PTR_ICLRPrivBinder>(GetHostAssembly());
-        if (!pBindingContext)
+        BINDER_SPACE::Assembly* pHostAssembly = GetHostAssembly();
+        if (pHostAssembly)
         {
-            // If we do not have any binding context, check if we are dealing with
+            pBindingContext = dac_cast<PTR_AssemblyBinder>(pHostAssembly->GetBinder());
+        }
+        else
+        {
+            // If we do not have a host assembly, check if we are dealing with
             // a dynamically emitted assembly and if so, use its fallback load context
             // binder reference.
             if (IsDynamic())

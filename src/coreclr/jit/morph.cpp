@@ -86,7 +86,7 @@ GenTree* Compiler::fgMorphIntoHelperCall(GenTree* tree, int helper, GenTreeCall:
 
 #endif // DEBUG
 
-#ifdef FEATURE_READYTORUN_COMPILER
+#ifdef FEATURE_READYTORUN
     call->gtEntryPoint.addr       = nullptr;
     call->gtEntryPoint.accessType = IAT_VALUE;
 #endif
@@ -2831,7 +2831,7 @@ void Compiler::fgInitArgInfo(GenTreeCall* call)
         call->gtCallType    = CT_HELPER;
         call->gtCallMethHnd = eeFindHelper(CORINFO_HELP_PINVOKE_CALLI);
     }
-#if defined(FEATURE_READYTORUN_COMPILER) && defined(TARGET_ARMARCH)
+#if defined(FEATURE_READYTORUN) && defined(TARGET_ARMARCH)
     // For arm, we dispatch code same as VSD using virtualStubParamInfo->GetReg()
     // for indirection cell address, which ZapIndirectHelperThunk expects.
     if (call->IsR2RRelativeIndir())
@@ -2859,7 +2859,7 @@ void Compiler::fgInitArgInfo(GenTreeCall* call)
         nonStandardArgs.Add(indirectCellAddress, indirectCellAddress->GetRegNum());
     }
 
-#endif // FEATURE_READYTORUN_COMPILER && TARGET_ARMARCH
+#endif // FEATURE_READYTORUN && TARGET_ARMARCH
 
     // Allocate the fgArgInfo for the call node;
     //
@@ -6236,7 +6236,7 @@ GenTree* Compiler::fgMorphField(GenTree* tree, MorphAddrContext* mac)
                     // See GitHub issue #16454.
                     bool fieldHasChangeableOffset = false;
 
-#ifdef FEATURE_READYTORUN_COMPILER
+#ifdef FEATURE_READYTORUN
                     fieldHasChangeableOffset = (tree->AsField()->gtFieldLookup.addr != nullptr);
 #endif
 
@@ -6307,7 +6307,7 @@ GenTree* Compiler::fgMorphField(GenTree* tree, MorphAddrContext* mac)
             addr = objRef;
         }
 
-#ifdef FEATURE_READYTORUN_COMPILER
+#ifdef FEATURE_READYTORUN
         if (tree->AsField()->gtFieldLookup.addr != nullptr)
         {
             GenTree* offsetNode = nullptr;
@@ -9213,7 +9213,7 @@ GenTree* Compiler::fgMorphCall(GenTreeCall* call)
 
     if ((call->gtCallMoreFlags & GTF_CALL_M_SPECIAL_INTRINSIC) == 0 &&
         (call->gtCallMethHnd == eeFindHelper(CORINFO_HELP_VIRTUAL_FUNC_PTR)
-#ifdef FEATURE_READYTORUN_COMPILER
+#ifdef FEATURE_READYTORUN
          || call->gtCallMethHnd == eeFindHelper(CORINFO_HELP_READYTORUN_VIRTUAL_FUNC_PTR)
 #endif
              ) &&
@@ -9767,7 +9767,7 @@ GenTree* Compiler::fgMorphLeaf(GenTree* tree)
     {
         CORINFO_CONST_LOOKUP addrInfo;
 
-#ifdef FEATURE_READYTORUN_COMPILER
+#ifdef FEATURE_READYTORUN
         if (tree->AsFptrVal()->gtEntryPoint.addr != nullptr)
         {
             addrInfo = tree->AsFptrVal()->gtEntryPoint;
@@ -10962,8 +10962,23 @@ GenTree* Compiler::fgMorphCommutative(GenTreeOp* tree)
     genTreeOps oper = tree->OperGet();
 
     if (!op1->OperIs(oper) || !tree->gtGetOp2()->IsCnsIntOrI() || !op1->gtGetOp2()->IsCnsIntOrI() ||
-        op1->gtGetOp1()->IsCnsIntOrI() || gtIsActiveCSE_Candidate(op1))
+        op1->gtGetOp1()->IsCnsIntOrI())
     {
+        return nullptr;
+    }
+
+    if (!fgGlobalMorph && (op1 != tree->gtGetOp1()))
+    {
+        // Since 'tree->gtGetOp1()' can have complex structure (e.g. COMMA(..(COMMA(..,op1)))
+        // don't run the optimization for such trees outside of global morph.
+        // Otherwise, there is a chance of violating VNs invariants and/or modifying a tree
+        // that is an active CSE candidate.
+        return nullptr;
+    }
+
+    if (gtIsActiveCSE_Candidate(tree) || gtIsActiveCSE_Candidate(op1))
+    {
+        // The optimization removes 'tree' from IR and changes the value of 'op1'.
         return nullptr;
     }
 
@@ -10980,26 +10995,41 @@ GenTree* Compiler::fgMorphCommutative(GenTreeOp* tree)
         return nullptr;
     }
 
-    GenTree* foldedCns = gtFoldExprConst(gtNewOperNode(oper, cns1->TypeGet(), cns1, cns2));
-    if (!foldedCns->IsCnsIntOrI())
+    if (gtIsActiveCSE_Candidate(cns1) || gtIsActiveCSE_Candidate(cns2))
+    {
+        // The optimization removes 'cns2' from IR and changes the value of 'cns1'.
+        return nullptr;
+    }
+
+    GenTree* folded = gtFoldExprConst(gtNewOperNode(oper, cns1->TypeGet(), cns1, cns2));
+
+    if (!folded->IsCnsIntOrI())
     {
         // Give up if we can't fold "C1 op C2"
         return nullptr;
     }
 
-    cns1->gtIconVal = foldedCns->AsIntCon()->IconValue();
-    if ((oper == GT_ADD) && foldedCns->IsCnsIntOrI())
+    auto foldedCns = folded->AsIntCon();
+
+    cns1->SetIconValue(foldedCns->IconValue());
+    cns1->SetVNsFromNode(foldedCns);
+
+    if (oper == GT_ADD)
     {
-        cns1->AsIntCon()->gtFieldSeq =
-            GetFieldSeqStore()->Append(cns1->AsIntCon()->gtFieldSeq, cns2->AsIntCon()->gtFieldSeq);
+        // Note that gtFoldExprConst doesn't maintain fieldSeq when folding constant
+        // trees of TYP_LONG.
+        cns1->gtFieldSeq = GetFieldSeqStore()->Append(cns1->gtFieldSeq, cns2->gtFieldSeq);
     }
 
-    GenTreeOp* newTree = tree->gtGetOp1()->AsOp();
+    op1 = tree->gtGetOp1();
+    op1->SetVNsFromNode(tree);
+
     DEBUG_DESTROY_NODE(tree);
     DEBUG_DESTROY_NODE(cns2);
     DEBUG_DESTROY_NODE(foldedCns);
-    INDEBUG(newTree->gtOp2->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED);
-    return newTree;
+    INDEBUG(cns1->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED);
+
+    return op1;
 }
 
 /*****************************************************************************
@@ -13114,13 +13144,17 @@ DONE_MORPHING_CHILDREN:
         case GT_NEG:
             // Remove double negation/not.
             // Note: this is not a safe tranformation if "tree" is a CSE candidate.
-            // Consider for example the following expression: NEG(NEG(OP)), where the top-level
+            // Consider for example the following expression: NEG(NEG(OP)), where any
             // NEG is a CSE candidate. Were we to morph this to just OP, CSE would fail to find
             // the original NEG in the statement.
-            if (op1->OperIs(oper) && opts.OptimizationEnabled() && !gtIsActiveCSE_Candidate(tree))
+            if (op1->OperIs(oper) && opts.OptimizationEnabled() && !gtIsActiveCSE_Candidate(tree) &&
+                !gtIsActiveCSE_Candidate(op1))
             {
-                GenTree* child = op1->AsOp()->gtGetOp1();
-                return child;
+                JITDUMP("Remove double negation/not\n")
+                GenTree* op1op1 = op1->gtGetOp1();
+                DEBUG_DESTROY_NODE(tree);
+                DEBUG_DESTROY_NODE(op1);
+                return op1op1;
             }
 
             // Distribute negation over simple multiplication/division expressions
@@ -13143,6 +13177,7 @@ DONE_MORPHING_CHILDREN:
                         GenTree* newOp2 = gtNewIconNode(-constVal, op1op2->TypeGet()); // -C
                         mulOrDiv->gtOp1 = newOp1;
                         mulOrDiv->gtOp2 = newOp2;
+                        mulOrDiv->SetVNsFromNode(tree);
 
                         DEBUG_DESTROY_NODE(tree);
                         DEBUG_DESTROY_NODE(op1op2);
@@ -16360,7 +16395,7 @@ GenTree* Compiler::fgInitThisClass()
     }
     else
     {
-#ifdef FEATURE_READYTORUN_COMPILER
+#ifdef FEATURE_READYTORUN
         // Only CoreRT understands CORINFO_HELP_READYTORUN_GENERIC_STATIC_BASE. Don't do this on CoreCLR.
         if (opts.IsReadyToRun() && IsTargetAbi(CORINFO_CORERT_ABI))
         {
