@@ -554,7 +554,7 @@ common_call_trampoline (host_mgreg_t *regs, guint8 *code, MonoMethod *m, MonoVTa
 		/*
 		 * The caller is gshared code, compute the actual method to call from M and this/rgctx.
 		 */
-		if (m->is_inflated && mono_method_get_context (m)->method_inst) {
+		if (m->is_inflated && (mono_method_get_context (m)->method_inst || mini_method_is_default_method (m))) {
 			MonoMethodRuntimeGenericContext *mrgctx = (MonoMethodRuntimeGenericContext*)mono_arch_find_static_call_vtable (regs, code);
 
 			klass = mrgctx->class_vtable->klass;
