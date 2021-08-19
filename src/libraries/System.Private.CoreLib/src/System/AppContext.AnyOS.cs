@@ -56,15 +56,15 @@ namespace System
                     {
                         lock (s_switches)
                         {
-                            LogDataStore(s_switches);
+                            LogDataStore(ev, s_switches);
                         }
                     }
                     else
                     {
-                        LogDataStore(null);
+                        LogDataStore(ev, null);
                     }
 
-                    void LogDataStore(Dictionary<string, bool>? switches)
+                    static void LogDataStore(RuntimeEventSource ev, Dictionary<string, bool>? switches)
                     {
                         Debug.Assert(s_dataStore is not null);
                         foreach (KeyValuePair<string, object?> kvp in s_dataStore)
