@@ -34,7 +34,7 @@ namespace System.IO.Tests
                 Assert.Equal(length, fs.Position);
 
                 fs.Write(TestBuffer);
-                Assert.Equal(length, fs.Seek(length, SeekOrigin.Begin));
+                Assert.Equal(fs.Position, fs.Seek(fs.Length, SeekOrigin.Begin));
             }
         }
     }

@@ -28,6 +28,7 @@ namespace System.IO.Tests
                 Assert.Equal(length + 1, fs.Position);
 
                 fs.Write(TestBuffer);
+                length = fs.Length;
                 fs.Position = length + 1;
                 Assert.Equal(length + 1, fs.Position);
             }

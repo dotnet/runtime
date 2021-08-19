@@ -223,14 +223,13 @@ namespace System.IO.Tests
                 fs.Write(Encoding.ASCII.GetBytes("abcde"));
                 Assert.Equal(5, fs.Length);
                 Assert.Equal(5, fs.Position);
-                Assert.Equal(1, fs.Seek(1, SeekOrigin.Begin));
 
                 fs.Write(Encoding.ASCII.GetBytes("xyz"));
-                Assert.Equal(4, fs.Position);
-                Assert.Equal(5, fs.Length);
+                Assert.Equal(8, fs.Position);
+                Assert.Equal(8, fs.Length);
             }
 
-            Assert.Equal("axyze", File.ReadAllText(fileName));
+            Assert.Equal("abcdexyz", File.ReadAllText(fileName));
         }
 
         [Theory, MemberData(nameof(StreamSpecifiers))]
@@ -262,12 +261,11 @@ namespace System.IO.Tests
                 fs.Write(Encoding.ASCII.GetBytes("abcde"));
                 Assert.Equal(position + 5, fs.Position);
 
-                Assert.Equal(position, fs.Seek(position, SeekOrigin.Begin));
-                Assert.Equal(position + 1, fs.Seek(1, SeekOrigin.Current));
                 fs.Write(Encoding.ASCII.GetBytes("xyz"));
+                Assert.Equal(position + 8, fs.Position);
             }
 
-            Assert.Equal(initialContents + "axyze", File.ReadAllText(fileName));
+            Assert.Equal(initialContents + "abcdexyz", File.ReadAllText(fileName));
         }
     }
 }

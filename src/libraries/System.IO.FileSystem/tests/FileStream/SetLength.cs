@@ -27,8 +27,10 @@ namespace System.IO.Tests
                 fs.Write(TestBuffer);
                 Assert.Equal(length + TestBuffer.Length, fs.Length);
 
-                fs.SetLength(length);
-                Assert.Equal(length, fs.Length);
+                if (PlatformDetection.IsNet5CompatFileStreamDisabled)
+                {
+                    Assert.Throws<IOException>(() => fs.SetLength(fs.Length - 1));
+                }
             }
         }
 
