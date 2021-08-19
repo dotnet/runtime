@@ -6191,7 +6191,7 @@ MethodTableBuilder::InitMethodDesc(
 #ifdef _DEBUG
     pNewMD->m_pszDebugMethodName = (LPUTF8)pszDebugMethodName;
     pNewMD->m_pszDebugClassName  = (LPUTF8)pszDebugClassName;
-    pNewMD->m_pDebugMethodTable.SetValue(GetHalfBakedMethodTable());
+    pNewMD->m_pDebugMethodTable = GetHalfBakedMethodTable();
 
     if (pszDebugMethodSignature == NULL)
         pNewMD->m_pszDebugMethodSignature = FormatSig(pNewMD,pNewMD->GetLoaderAllocator()->GetLowFrequencyHeap(),GetMemTracker());
@@ -10397,13 +10397,13 @@ MethodTableBuilder::SetupMethodTable2(
             MethodDesc *pMD = it->GetMethodDesc();
             if (pMD != NULL)
             {
-                pMD->m_pDebugMethodTable.SetValue(pMT);
+                pMD->m_pDebugMethodTable = pMT;
                 pMD->m_pszDebugMethodSignature = FormatSig(pMD, GetLoaderAllocator()->GetLowFrequencyHeap(), GetMemTracker());
             }
             MethodDesc *pUnboxedMD = it->GetUnboxedMethodDesc();
             if (pUnboxedMD != NULL)
             {
-                pUnboxedMD->m_pDebugMethodTable.SetValue(pMT);
+                pUnboxedMD->m_pDebugMethodTable = pMT;
                 pUnboxedMD->m_pszDebugMethodSignature = FormatSig(pUnboxedMD, GetLoaderAllocator()->GetLowFrequencyHeap(), GetMemTracker());
             }
         }

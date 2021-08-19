@@ -6104,7 +6104,7 @@ MethodDesc* MethodTable::GetMethodDescForSlotAddress(PCODE addr, BOOL fSpeculati
         GC_NOTRIGGER;
         NOTHROW;
         POSTCONDITION(CheckPointer(RETVAL, NULL_NOT_OK));
-        POSTCONDITION(RETVAL->m_pDebugMethodTable.IsNull() || // We must be in BuildMethdTableThrowing()
+        POSTCONDITION(RETVAL->m_pDebugMethodTable == NULL || // We must be in BuildMethdTableThrowing()
                       RETVAL->SanityCheck());
     }
     CONTRACT_END;

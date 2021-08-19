@@ -132,7 +132,7 @@ static MethodDesc* CreateMethodDesc(LoaderAllocator *pAllocator,
     pMD->m_pszDebugMethodSignature = "<generic method signature>";
     pMD->m_pszDebugClassName  = "<generic method class name>";
     pMD->m_pszDebugMethodName = "<generic method name>";
-    pMD->m_pDebugMethodTable.SetValue(pMT);
+    pMD->m_pDebugMethodTable = pMT;
 #endif // _DEBUG
 
     return pMD;

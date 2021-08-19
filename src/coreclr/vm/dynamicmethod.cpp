@@ -191,7 +191,7 @@ void DynamicMethodTable::AddMethodsToList()
         pNewMD->SetTemporaryEntryPoint(m_pDomain->GetLoaderAllocator(), &amt);
 
 #ifdef _DEBUG
-        pNewMD->m_pDebugMethodTable.SetValue(m_pMethodTable);
+        pNewMD->m_pDebugMethodTable = m_pMethodTable;
 #endif
 
         if (pPrevMD)

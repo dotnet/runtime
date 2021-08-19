@@ -227,7 +227,7 @@ public:
     LPCUTF8         m_pszDebugMethodName;
     LPCUTF8         m_pszDebugClassName;
     LPCUTF8         m_pszDebugMethodSignature;
-    FixupPointer<PTR_MethodTable>   m_pDebugMethodTable;
+    PTR_MethodTable   m_pDebugMethodTable;
 
     PTR_GCCoverageInfo m_GcCover;
 
@@ -3743,7 +3743,7 @@ inline BOOL MethodDesc::SanityCheck()
     {
         // If it looks good, do a more intensive sanity test. We don't care about the result,
         // we just want it to not AV.
-        return GetMethodTable() == m_pDebugMethodTable.GetValue() && this->GetModule() != NULL;
+        return GetMethodTable() == m_pDebugMethodTable && this->GetModule() != NULL;
     }
 
     return TRUE;

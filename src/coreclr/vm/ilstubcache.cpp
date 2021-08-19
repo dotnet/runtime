@@ -316,7 +316,7 @@ MethodDesc* ILStubCache::CreateNewMethodDesc(LoaderHeap* pCreationHeap, MethodTa
     pMD->m_pszDebugMethodName = RelativePointer<PTR_CUTF8>::GetValueAtPtr(PTR_HOST_MEMBER_TADDR(DynamicMethodDesc, pMD, m_pszMethodName));
     pMD->m_pszDebugClassName  = ILStubResolver::GetStubClassName(pMD);  // must be called after type is set
     pMD->m_pszDebugMethodSignature = FormatSig(pMD, pCreationHeap, pamTracker);
-    pMD->m_pDebugMethodTable.SetValue(pMT);
+    pMD->m_pDebugMethodTable = pMT;
 #endif // _DEBUG
 
     RETURN pMD;

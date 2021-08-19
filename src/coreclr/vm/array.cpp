@@ -230,7 +230,7 @@ void ArrayClass::InitArrayMethodDesc(
     _ASSERTE(pNewMD->GetMethodName() && GetDebugClassName());
     pNewMD->m_pszDebugMethodName = pNewMD->GetMethodName();
     pNewMD->m_pszDebugClassName  = GetDebugClassName();
-    pNewMD->m_pDebugMethodTable.SetValue(pNewMD->GetMethodTable());
+    pNewMD->m_pDebugMethodTable = pNewMD->GetMethodTable();
 #endif // _DEBUG
 }
 
