@@ -171,9 +171,6 @@ public:
 
     // Check utilites
     CHECK CheckILFormat();
-#ifdef FEATURE_PREJIT
-    CHECK CheckNativeFormat();
-#endif // FEATURE_PREJIT
     static CHECK CheckCanonicalFullPath(const SString &path);
     static CHECK CheckStartup();
     PTR_CVOID GetMetadata(COUNT_T *pSize = NULL);
@@ -196,11 +193,6 @@ public:
     BOOL HasReadyToRunHeader();
     BOOL IsReferenceAssembly();
     BOOL IsComponentAssembly();
-#ifdef FEATURE_PREJIT
-    BOOL IsNativeILILOnly();
-    BOOL IsNativeILDll();
-    void GetNativeILPEKindAndMachine(DWORD* pdwKind, DWORD* pdwMachine);
-#endif
     PTR_CVOID GetNativeManifestMetadata(COUNT_T *pSize = NULL);
     BOOL HasDirectoryEntry(int entry);
     mdToken GetEntryPointToken();

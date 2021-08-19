@@ -16,10 +16,6 @@
 #include "array.h"
 #include "castcache.h"
 
-#ifdef FEATURE_PREJIT
-#include "zapsig.h"
-#endif
-
 #ifdef _DEBUG_IMPL
 
 BOOL TypeHandle::Verify()
@@ -1035,46 +1031,6 @@ BOOL TypeHandle::HasUnrestoredTypeKey()  const
         return AsMethodTable()->HasUnrestoredTypeKey();
 }
 
-#ifdef FEATURE_PREJIT
-void TypeHandle::DoRestoreTypeKey()
-{
-    CONTRACT_VOID
-    {
-        THROWS;
-        GC_TRIGGERS;
-        PRECONDITION(!IsEncodedFixup());
-    }
-    CONTRACT_END
-
-#ifndef DACCESS_COMPILE
-    if (IsTypeDesc())
-    {
-        AsTypeDesc()->DoRestoreTypeKey();
-    }
-    else
-    {
-        MethodTable* pMT = AsMethodTable();
-        PREFIX_ASSUME(pMT != NULL);
-        pMT->DoRestoreTypeKey();
-    }
-#endif
-
-#ifdef _DEBUG
-#ifndef DACCESS_COMPILE
-    if (LoggingOn(LF_CLASSLOADER, LL_INFO10000))
-    {
-        StackSString name;
-        TypeString::AppendTypeDebug(name, *this);
-        LOG((LF_CLASSLOADER, LL_INFO10000, "GENERICS:RestoreTypeKey: type %S at %p\n", name.GetUnicode(), AsPtr()));
-    }
-#endif
-#endif
-
-
-    RETURN;
-}
-#endif
-
 void TypeHandle::CheckRestore() const
 {
     CONTRACTL
@@ -1617,13 +1573,8 @@ CHECK TypeHandle::CheckMatchesKey(TypeKey *pKey) const
                 {
                     for (DWORD i = 0; i < pMT->GetNumGenericArgs(); i++)
                     {
-#ifdef FEATURE_PREJIT
-                        CHECK_MSGF(ZapSig::CompareTypeHandleFieldToTypeHandle(pMT->GetInstantiation().GetRawArgs()[i].GetValuePtr(), pKey->GetInstantiation()[i]),
-                               ("Generic argument %d in MethodTable does not match key %S", i, typeKeyString.GetUnicode()));
-#else
                         CHECK_MSGF(pMT->GetInstantiation()[i] == pKey->GetInstantiation()[i],
                                ("Generic argument %d in MethodTable does not match key %S", i, typeKeyString.GetUnicode()));
-#endif
                     }
                 }
             }

@@ -122,9 +122,9 @@ Assembly::Assembly(BaseDomain *pDomain, PEAssembly* pFile, DebuggerAssemblyContr
 #endif
     m_debuggerFlags(debuggerFlags),
     m_fTerminated(FALSE),
-#if defined(FEATURE_PREJIT) || defined(FEATURE_READYTORUN)
+#if FEATURE_READYTORUN
     m_isInstrumentedStatus(IS_INSTRUMENTED_UNSET)
-#endif
+#endif // FEATURE_READYTORUN
 {
     STANDARD_VM_CONTRACT;
 }
@@ -236,24 +236,6 @@ Assembly::~Assembly()
     }
 #endif // FEATURE_COMINTEROP
 }
-
-#ifdef  FEATURE_PREJIT
-void Assembly::DeleteNativeCodeRanges()
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_PREEMPTIVE;
-        FORBID_FAULT;
-    }
-    CONTRACTL_END
-
-    ModuleIterator i = IterateModules();
-    while (i.Next())
-            i.GetModule()->DeleteNativeCodeRanges();
-}
-#endif
 
 #ifdef PROFILING_SUPPORTED
 void ProfilerCallAssemblyUnloadStarted(Assembly* assemblyUnloaded)
@@ -1817,7 +1799,7 @@ BOOL Assembly::GetResource(LPCSTR szName, DWORD *cbResource,
     return result;
 }
 
-#if defined(FEATURE_PREJIT) || defined(FEATURE_READYTORUN)
+#ifdef FEATURE_READYTORUN
 BOOL Assembly::IsInstrumented()
 {
     STATIC_CONTRACT_THROWS;
@@ -1927,7 +1909,7 @@ BOOL Assembly::IsInstrumentedHelper()
 
     return false;
 }
-#endif // FEATURE_PREJIT
+#endif // FEATURE_READYTORUN
 
 
 #ifdef FEATURE_COMINTEROP

@@ -685,13 +685,6 @@ struct FixupPrecode {
         return *dac_cast<PTR_BYTE>(addr) == X86_INSTR_JMP_REL32;
     }
 
-#ifdef FEATURE_PREJIT
-    // Partial initialization. Used to save regrouped chunks.
-    void InitForSave(int iPrecodeChunkIndex);
-
-    void Fixup(DataImage *image, MethodDesc * pMD);
-#endif
-
 #ifdef DACCESS_COMPILE
     void EnumMemoryRegions(CLRDataEnumMemoryFlags flags);
 #endif

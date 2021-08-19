@@ -417,21 +417,6 @@ void NativeImagePerfMap::LogDataForModule(Module * pModule)
     PEImageLayout * pLoadedLayout = pModule->GetFile()->GetLoaded();
     _ASSERTE(pLoadedLayout != nullptr);
 
-#ifdef FEATURE_PREJIT
-    if (!pLoadedLayout->HasReadyToRunHeader())
-    {
-        MethodIterator mi((PTR_Module)pModule);
-        while (mi.Next())
-        {
-            MethodDesc *hotDesc = mi.GetMethodDesc();
-            hotDesc->CheckRestore();
-
-            LogPreCompiledMethod(hotDesc, mi.GetMethodStartAddress(), pLoadedLayout, nullptr);
-        }
-        return;
-    }
-#endif
-
     ReadyToRunInfo::MethodIterator mi(pModule->GetReadyToRunInfo());
     while (mi.Next())
     {

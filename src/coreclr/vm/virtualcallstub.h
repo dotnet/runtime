@@ -42,13 +42,6 @@ struct VTableCallHolder;
 // Forward function declarations
 extern "C" void InContextTPQuickDispatchAsmStub();
 
-#ifdef FEATURE_PREJIT
-extern "C" PCODE STDCALL StubDispatchFixupWorker(TransitionBlock * pTransitionBlock,
-                                                 TADDR siteAddrForRegisterIndirect,
-                                                 DWORD sectionIndex,
-                                                 Module * pModule);
-#endif
-
 extern "C" PCODE STDCALL VSD_ResolveWorker(TransitionBlock * pTransitionBlock,
                                            TADDR siteAddrForRegisterIndirect,
                                            size_t token
@@ -153,10 +146,6 @@ public:
 
     PCODE           GetReturnAddress() { LIMITED_METHOD_CONTRACT; return m_returnAddr; }
 };
-
-#ifdef FEATURE_PREJIT
-extern "C" void StubDispatchFixupStub();              // for lazy fixup of ngen call sites
-#endif
 
 // These are the assembly language entry points that the stubs use when they want to go into the EE
 

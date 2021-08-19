@@ -749,83 +749,6 @@ void TypeDesc::DoFullyLoad(Generics::RecursionGraph *pVisited, ClassLoadLevel le
 #endif
 }
 
-
-#ifdef FEATURE_PREJIT
-void TypeDesc::DoRestoreTypeKey()
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-    }
-    CONTRACTL_END
-
-#ifndef DACCESS_COMPILE
-    if (HasTypeParam())
-    {
-        ParamTypeDesc* pPTD = (ParamTypeDesc*) this;
-
-        // Must have the same loader module, so not encoded
-        CONSISTENCY_CHECK(!pPTD->m_Arg.IsEncodedFixup());
-        ClassLoader::EnsureLoaded(pPTD->m_Arg, CLASS_LOAD_UNRESTORED);
-
-        // Might live somewhere else e.g. Object[] is shared across all ref array types
-        Module::RestoreMethodTablePointer(&(pPTD->m_TemplateMT), NULL, CLASS_LOAD_UNRESTORED);
-    }
-
-    FastInterlockAnd(&m_typeAndFlags, ~TypeDesc::enum_flag_UnrestoredTypeKey);
-#endif
-}
-
-#ifndef DACCESS_COMPILE
-
-void TypeDesc::SetIsRestored()
-{
-    STATIC_CONTRACT_THROWS;
-    STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_FORBID_FAULT;
-    STATIC_CONTRACT_CANNOT_TAKE_LOCK;
-
-    TypeHandle th = TypeHandle(this);
-    FastInterlockAnd(&m_typeAndFlags, ~TypeDesc::enum_flag_Unrestored);
-}
-
-#endif // #ifndef DACCESS_COMPILE
-
-void TypeDesc::Restore()
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        INJECT_FAULT(COMPlusThrowOM(););
-        CONSISTENCY_CHECK(!HasUnrestoredTypeKey());
-    }
-    CONTRACTL_END;
-
-#ifndef DACCESS_COMPILE
-    if (HasTypeParam())
-    {
-        ParamTypeDesc *pPTD = dac_cast<PTR_ParamTypeDesc>(this);
-
-        OVERRIDE_TYPE_LOAD_LEVEL_LIMIT(CLASS_LOAD_EXACTPARENTS);
-
-        // Must have the same loader module
-        ClassLoader::EnsureLoaded(pPTD->m_Arg, CLASS_LOAD_EXACTPARENTS);
-
-        // Method-table pointer must have been restored by DoRestoreTypeKey
-        Module::RestoreMethodTablePointer(&pPTD->m_TemplateMT, NULL, CLASS_LOAD_EXACTPARENTS);
-    }
-
-    SetIsRestored();
-#else
-    DacNotImpl();
-#endif // #ifndef DACCESS_COMPILE
-}
-
-#endif // FEATURE_PREJIT
-
-
 #ifndef DACCESS_COMPILE
 
 MethodDesc * TypeVarTypeDesc::LoadOwnerMethod()
@@ -1772,13 +1695,6 @@ FnPtrTypeDesc::GetRetAndArgTypes()
     }
     CONTRACTL_END;
 
-    // Decode encoded type handles on demand
-#if defined(FEATURE_PREJIT) && !defined(DACCESS_COMPILE)
-    for (DWORD i = 0; i <= m_NumArgs; i++)
-    {
-        Module::RestoreTypeHandlePointerRaw(&m_RetAndArgTypes[i]);
-    }
-#endif //defined(FEATURE_PREJIT) && !defined(DACCESS_COMPILE)
 
     return m_RetAndArgTypes;
 } // FnPtrTypeDesc::GetRetAndArgTypes

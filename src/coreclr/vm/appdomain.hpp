@@ -998,12 +998,6 @@ public:
     // will be properly serialized)
     OBJECTREF *AllocateObjRefPtrsInLargeTable(int nRequested, OBJECTREF** ppLazyAllocate = NULL);
 
-#ifdef FEATURE_PREJIT
-    // Ensures that the file for logging profile data is open (we only open it once)
-    // return false on failure
-    static BOOL EnsureNGenLogFileOpen();
-#endif
-
     //****************************************************************************************
     // Handles
 
@@ -2467,16 +2461,6 @@ private:
         DomainAssembly* pAssembly);
 #endif // DACCESS_COMPILE
 
-#ifdef FEATURE_PREJIT
-    friend void DomainFile::InsertIntoDomainFileWithNativeImageList();
-    Volatile<DomainFile *> m_pDomainFileWithNativeImageList;
-public:
-    DomainFile *GetDomainFilesWithNativeImagesList()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return m_pDomainFileWithNativeImageList;
-    }
-#endif
 };  // class AppDomain
 
 // Just a ref holder
@@ -2785,17 +2769,6 @@ private:
 
     static DWORD        m_dwLowestFreeIndex;
 #endif // DACCESS_COMPILE
-
-#ifdef FEATURE_PREJIT
-protected:
-
-    // These flags let the correct native image of CoreLib to be loaded.
-    // This is important for hardbinding to it
-
-    SVAL_DECL(BOOL, s_fForceDebug);
-    SVAL_DECL(BOOL, s_fForceProfiling);
-    SVAL_DECL(BOOL, s_fForceInstrument);
-#endif
 
 public:
     static void     SetCompilationOverrides(BOOL fForceDebug,

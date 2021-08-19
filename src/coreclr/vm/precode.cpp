@@ -203,20 +203,6 @@ BOOL Precode::IsPointingToPrestub(PCODE target)
         return TRUE;
 #endif
 
-#ifdef FEATURE_PREJIT
-    Module *pZapModule = GetMethodDesc()->GetZapModule();
-    if (pZapModule != NULL)
-    {
-        if (IsPointingTo(target, pZapModule->GetPrestubJumpStub()))
-            return TRUE;
-
-#ifdef HAS_FIXUP_PRECODE
-        if (IsPointingTo(target, pZapModule->GetPrecodeFixupJumpStub()))
-            return TRUE;
-#endif
-    }
-#endif // FEATURE_PREJIT
-
     return FALSE;
 }
 
@@ -229,37 +215,6 @@ PCODE Precode::TryToSkipFixupPrecode(PCODE addr)
     } CONTRACTL_END;
 
     PCODE pTarget = NULL;
-
-#if defined(FEATURE_PREJIT) && defined(HAS_FIXUP_PRECODE)
-    // Early out for common cases
-    if (!FixupPrecode::IsFixupPrecodeByASM(addr))
-        return NULL;
-
-    // This optimization makes sense in NGened code only.
-    Module * pModule = ExecutionManager::FindZapModule(addr);
-    if (pModule == NULL)
-        return NULL;
-
-    // Verify that the address is in precode section
-    if (!pModule->IsZappedPrecode(addr))
-        return NULL;
-
-    pTarget = GetPrecodeFromEntryPoint(addr)->GetTarget();
-
-    // Verify that the target is in code section
-    if (!pModule->IsZappedCode(pTarget))
-        return NULL;
-
-#if defined(_DEBUG)
-    MethodDesc * pMD_orig   = MethodTable::GetMethodDescForSlotAddress(addr);
-    MethodDesc * pMD_direct = MethodTable::GetMethodDescForSlotAddress(pTarget);
-
-    // Both the original and direct entrypoint should map to same MethodDesc
-    // Some FCalls are remapped to private methods (see System.String.CtorCharArrayStartLength)
-    _ASSERTE((pMD_orig == pMD_direct) || pMD_orig->IsRuntimeSupplied());
-#endif
-
-#endif // defined(FEATURE_PREJIT) && defined(HAS_FIXUP_PRECODE)
 
     return pTarget;
 }

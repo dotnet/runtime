@@ -120,17 +120,6 @@ inline bool TargetHasAVXSupport()
     return false;
 }
 
-#ifdef FEATURE_PREJIT
-// Can code compiled for "minReqdCpuType" be used on "actualCpuType"
-inline BOOL IsCompatibleCpuInfo(const CORINFO_CPU * actualCpuInfo,
-                                const CORINFO_CPU * minReqdCpuInfo)
-{
-    LIMITED_METHOD_CONTRACT;
-    return ((minReqdCpuInfo->dwFeatures & actualCpuInfo->dwFeatures) ==
-             minReqdCpuInfo->dwFeatures);
-}
-#endif // FEATURE_PREJIT
-
 
 #ifndef DACCESS_COMPILE
 // Given an address in a slot, figure out if the prestub will be called
