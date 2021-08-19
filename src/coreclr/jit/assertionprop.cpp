@@ -2648,17 +2648,17 @@ GenTree* Compiler::optVNConstantPropOnTree(BasicBlock* block, GenTree* tree)
                     case TYP_REF:
                     case TYP_INT:
                         // Same type no conversion required
-                        conValTree = gtNewIconNode(static_cast<int>(value));
+                        conValTree = gtNewIconNode(value);
                         break;
 
                     case TYP_LONG:
                         // Implicit assignment conversion to larger integer
-                        conValTree = gtNewLconNode(static_cast<int>(value));
+                        conValTree = gtNewLconNode(value);
                         break;
 
                     case TYP_FLOAT:
                         // Same sized reinterpretation of bits to float
-                        conValTree = gtNewDconNode(*(reinterpret_cast<float*>(&value)), TYP_FLOAT);
+                        conValTree = gtNewDconNode(*reinterpret_cast<float*>(&value), TYP_FLOAT);
                         break;
 
                     case TYP_DOUBLE:
