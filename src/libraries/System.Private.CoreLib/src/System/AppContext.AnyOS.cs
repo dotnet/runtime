@@ -67,7 +67,7 @@ namespace System
                     void LogDataStore(Dictionary<string, bool>? switches)
                     {
                         Debug.Assert(s_dataStore is not null);
-                        foreach (KeyValuePair<string, bool> kvp in s_dataStore)
+                        foreach (KeyValuePair<string, object?> kvp in s_dataStore)
                         {
                             if (kvp.Value is string s &&
                                 bool.TryParse(s, out bool isEnabled) &&
