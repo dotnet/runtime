@@ -799,19 +799,16 @@ Compiler::fgWalkResult Compiler::fgLateDevirtualization(GenTree** pTree, fgWalkD
             tree->gtBashToNOP();
             *madeChanges = true;
 
-            BasicBlock* bTaken    = nullptr;
             BasicBlock* bNotTaken = nullptr;
 
             if (condTree->AsIntCon()->gtIconVal != 0)
             {
                 block->bbJumpKind = BBJ_ALWAYS;
-                bTaken            = block->bbJumpDest;
                 bNotTaken         = block->bbNext;
             }
             else
             {
                 block->bbJumpKind = BBJ_NONE;
-                bTaken            = block->bbNext;
                 bNotTaken         = block->bbJumpDest;
             }
 
@@ -830,7 +827,6 @@ Compiler::fgWalkResult Compiler::fgLateDevirtualization(GenTree** pTree, fgWalkD
     {
         const var_types retType    = tree->TypeGet();
         GenTree*        foldedTree = comp->gtFoldExpr(tree);
-        const var_types newType    = foldedTree->TypeGet();
 
         GenTree* putArgType = comp->fgCheckCallArgUpdate(data->parent, foldedTree, retType);
         if (putArgType != nullptr)
