@@ -66,7 +66,7 @@ namespace Microsoft.Extensions.Http
         /// provided by <paramref name="additionalHandlers"/>. The resulting pipeline can be used to manually create <see cref="HttpClient"/>
         /// or <see cref="HttpMessageInvoker"/> instances with customized message handlers.
         /// </summary>
-        /// <param name="primaryHandler">The primary handler represents the destination of the HTTP message channel.</param>
+        /// <param name="primaryHandler">An instance of <see cref="HttpMessageHandler"/> to operate at the bottom of the handler chain and actually handle the HTTP transport operations.</param>
         /// <param name="additionalHandlers">An ordered list of <see cref="DelegatingHandler"/> instances to be invoked as part
         /// of sending an <see cref="HttpRequestMessage"/> and receiving an <see cref="HttpResponseMessage"/>.
         /// The handlers are invoked in a top-down fashion. That is, the first entry is invoked first for
