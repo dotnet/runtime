@@ -71,7 +71,7 @@ namespace Microsoft.Extensions.Http
         /// of sending an <see cref="HttpRequestMessage"/> and receiving an <see cref="HttpResponseMessage"/>.
         /// The handlers are invoked in a top-down fashion. That is, the first entry is invoked first for
         /// an outbound request message but last for an inbound response message.</param>
-        /// <returns>The HTTP message channel.</returns>
+        /// <returns>The HTTP message handler chain.</returns>
         protected internal static HttpMessageHandler CreateHandlerPipeline(HttpMessageHandler primaryHandler, IEnumerable<DelegatingHandler> additionalHandlers)
         {
             // This is similar to https://github.com/aspnet/AspNetWebStack/blob/master/src/System.Net.Http.Formatting/HttpClientFactory.cs#L58
