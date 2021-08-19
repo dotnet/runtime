@@ -137,12 +137,6 @@ public:
     void EnumMemoryRegions(CLRDataEnumMemoryFlags flags);
 #endif
 
-#ifdef FEATURE_PREJIT
-    void Save(DataImage *image);
-    void Fixup(DataImage *image, PVOID p, SSIZE_T offset);
-#endif // FEATURE_PREJIT
-
-
     // Returns the method desc for the replaced slot;
     PTR_MethodDesc FindMethodDesc(DWORD slot, PTR_MethodDesc defaultReturn);
 

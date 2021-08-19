@@ -22,10 +22,6 @@
 
 #include "../hotdata/hotdataformat.h"
 
-#ifdef FEATURE_PREJIT
-#include "corcompile.h"
-#endif
-
 #ifdef _MSC_VER
 #pragma intrinsic(memcpy)
 #endif

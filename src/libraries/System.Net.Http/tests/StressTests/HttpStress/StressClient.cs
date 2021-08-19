@@ -107,6 +107,7 @@ namespace HttpStress
             }
             _stopwatch.Stop();
             _cts.Dispose();
+            _eventListener?.Dispose();
         }
 
         public void PrintFinalReport()
@@ -139,7 +140,6 @@ namespace HttpStress
         public void Dispose()
         {
             Stop();
-            _eventListener?.Dispose();
         }
 
         private async Task InitializeClient()

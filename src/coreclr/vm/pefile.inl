@@ -100,7 +100,7 @@ inline ULONG PEAssembly::HashIdentity()
         GC_TRIGGERS;
     }
     CONTRACTL_END;
-    return BINDER_SPACE::GetAssemblyFromPrivAssemblyFast(m_pHostAssembly)->GetAssemblyName()->Hash(BINDER_SPACE::AssemblyName::INCLUDE_VERSION);
+    return m_pHostAssembly->GetAssemblyName()->Hash(BINDER_SPACE::AssemblyName::INCLUDE_VERSION);
 }
 
 inline void PEFile::ValidateForExecution()

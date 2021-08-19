@@ -19,7 +19,7 @@
 struct CoreBindResult : public IUnknown
 {
 protected:
-    ReleaseHolder<ICLRPrivAssembly> m_pAssembly;
+    ReleaseHolder<BINDER_SPACE::Assembly> m_pAssembly;
     HRESULT m_hrBindResult;
     LONG m_cRef;
 
@@ -35,13 +35,13 @@ public:
     CoreBindResult() : m_cRef(1) {}
     virtual ~CoreBindResult() {}
 
-    void Init(ICLRPrivAssembly* pAssembly);
+    void Init(BINDER_SPACE::Assembly* pAssembly);
     void Reset();
 
     BOOL Found();
     PEImage* GetPEImage();
     BOOL IsCoreLib();
-    void GetBindAssembly(ICLRPrivAssembly** ppAssembly);
+    void GetBindAssembly(BINDER_SPACE::Assembly** ppAssembly);
 #ifdef FEATURE_PREJIT
     BOOL HasNativeImage();
     PEImage* GetNativeImage();

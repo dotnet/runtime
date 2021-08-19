@@ -9521,7 +9521,7 @@ void Compiler::fgValueNumberHelperCallFunc(GenTreeCall* call, VNFunc vnf, ValueN
         vnpUniq.SetBoth(vnStore->VNForExpr(compCurBB, call->TypeGet()));
     }
 
-#if defined(FEATURE_READYTORUN_COMPILER) && defined(TARGET_ARMARCH)
+#if defined(FEATURE_READYTORUN) && defined(TARGET_ARMARCH)
     if (call->IsR2RRelativeIndir())
     {
 #ifdef DEBUG
@@ -9536,7 +9536,7 @@ void Compiler::fgValueNumberHelperCallFunc(GenTreeCall* call, VNFunc vnf, ValueN
         // in morph. So we do not need to use EntryPointAddrAsArg0, because arg0 is already an entry point addr.
         useEntryPointAddrAsArg0 = false;
     }
-#endif // FEATURE_READYTORUN_COMPILER && TARGET_ARMARCH
+#endif // FEATURE_READYTORUN && TARGET_ARMARCH
 
     if (nArgs == 0)
     {
@@ -9572,7 +9572,7 @@ void Compiler::fgValueNumberHelperCallFunc(GenTreeCall* call, VNFunc vnf, ValueN
         // Has at least one argument.
         ValueNumPair vnp0;
         ValueNumPair vnp0x = ValueNumStore::VNPForEmptyExcSet();
-#ifdef FEATURE_READYTORUN_COMPILER
+#ifdef FEATURE_READYTORUN
         if (useEntryPointAddrAsArg0)
         {
             ssize_t  addrValue  = (ssize_t)call->gtEntryPoint.addr;
@@ -9580,7 +9580,7 @@ void Compiler::fgValueNumberHelperCallFunc(GenTreeCall* call, VNFunc vnf, ValueN
             vnp0                = ValueNumPair(callAddrVN, callAddrVN);
         }
         else
-#endif // FEATURE_READYTORUN_COMPILER
+#endif // FEATURE_READYTORUN
         {
             assert(!useEntryPointAddrAsArg0);
             ValueNumPair vnp0wx = getCurrentArg(0)->gtVNPair;
