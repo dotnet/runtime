@@ -5383,7 +5383,7 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
             // clang-format on
         }
     }
-#ifdef FEATURE_READYTORUN_COMPILER
+#ifdef FEATURE_READYTORUN
     else if (call->gtEntryPoint.addr != nullptr)
     {
         // clang-format off
