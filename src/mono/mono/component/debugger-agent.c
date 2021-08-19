@@ -9293,7 +9293,7 @@ frame_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 
 				locals = mono_debug_lookup_locals (frame->de.method);
 				if (locals) { 
-					if (CHECK_ICORDBG (FALSE)) //on icordbg the index value is correct, we don't need to fix it.
+					if (!CHECK_PROTOCOL_VERSION (2, 59)) //from newer protocol versions it's sent the pdb index
 					{
 						g_assert (pos < locals->num_locals);
 						pos = locals->locals [pos].index;
@@ -9350,7 +9350,7 @@ frame_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 
 				locals = mono_debug_lookup_locals (frame->de.method);
 				if (locals) {
-					if (CHECK_ICORDBG (FALSE))
+					if (!CHECK_PROTOCOL_VERSION (2, 59)) //from newer protocol versions it's sent the pdb index
 					{
 						g_assert (pos < locals->num_locals);
 						pos = locals->locals [pos].index;
