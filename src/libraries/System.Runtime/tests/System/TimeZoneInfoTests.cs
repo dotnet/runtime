@@ -87,7 +87,7 @@ namespace System.Tests
         //  Name abbreviations, if available, are used instead
         public static IEnumerable<object []> Platform_TimeZoneNamesTestData()
         {
-            if (PlatformDetection.IsBrowser || PlatformDetection.IsiOS || PlatformDetection.IsMacCatalyst || PlatformDetection.IstvOS)
+            if (PlatformDetection.IsBrowser || PlatformDetection.IsiOS || PlatformDetection.IstvOS)
                 return new TheoryData<TimeZoneInfo, string, string, string>
                 {
                     { TimeZoneInfo.FindSystemTimeZoneById(s_strPacific), "(UTC-08:00) America/Los_Angeles", "PST", "PDT" },
@@ -2624,7 +2624,7 @@ namespace System.Tests
         [InlineData("Iran Standard Time", "Asia/Tehran")]
         public static void UsingAlternativeTimeZoneIdsTest(string windowsId, string ianaId)
         {
-            if (PlatformDetection.ICUVersion.Major >= 52 && !PlatformDetection.IsiOS && !PlatformDetection.IsMacCatalyst && !PlatformDetection.IstvOS)
+            if (PlatformDetection.ICUVersion.Major >= 52 && !PlatformDetection.IsiOS && !PlatformDetection.IstvOS)
             {
                 TimeZoneInfo tzi1 = TimeZoneInfo.FindSystemTimeZoneById(ianaId);
                 TimeZoneInfo tzi2 = TimeZoneInfo.FindSystemTimeZoneById(windowsId);
@@ -2651,7 +2651,7 @@ namespace System.Tests
                 Assert.True((expected || tzi.Id.Equals("Utc", StringComparison.OrdinalIgnoreCase)) == tzi.HasIanaId, $"`{tzi.Id}` has wrong IANA Id indicator");
             }
 
-            string timeZoneIdNotIANAId = PlatformDetection.IsiOS || PlatformDetection.IsMacCatalyst || PlatformDetection.IstvOS ? "America/Buenos_Aires" : "Pacific Standard Time";
+            string timeZoneIdNotIANAId = PlatformDetection.IsiOS || PlatformDetection.IstvOS ? "America/Buenos_Aires" : "Pacific Standard Time";
             Assert.False(TimeZoneInfo.FindSystemTimeZoneById(timeZoneIdNotIANAId).HasIanaId, $" should not be IANA Id.");
             Assert.True(TimeZoneInfo.FindSystemTimeZoneById("America/Los_Angeles").HasIanaId, $"'America/Los_Angeles' should be IANA Id");
         }
