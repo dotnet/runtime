@@ -233,19 +233,19 @@ namespace System.Net.Sockets.Tests
         public override Task MultiConnectAsync(Socket s, IPAddress[] addresses, int port) =>
             s.ConnectAsync(addresses, port);
         public override Task<int> ReceiveAsync(Socket s, ArraySegment<byte> buffer) =>
-            s.ReceiveAsync(buffer, SocketFlags.None);
+            s.ReceiveAsync(buffer);
         public override Task<int> ReceiveAsync(Socket s, IList<ArraySegment<byte>> bufferList) =>
-            s.ReceiveAsync(bufferList, SocketFlags.None);
+            s.ReceiveAsync(bufferList);
         public override Task<SocketReceiveFromResult> ReceiveFromAsync(Socket s, ArraySegment<byte> buffer, EndPoint endPoint) =>
-            s.ReceiveFromAsync(buffer, SocketFlags.None, endPoint);
+            s.ReceiveFromAsync(buffer, endPoint);
         public override Task<SocketReceiveMessageFromResult> ReceiveMessageFromAsync(Socket s, ArraySegment<byte> buffer, EndPoint endPoint) =>
-            s.ReceiveMessageFromAsync(buffer, SocketFlags.None, endPoint);
+            s.ReceiveMessageFromAsync(buffer, endPoint);
         public override Task<int> SendAsync(Socket s, ArraySegment<byte> buffer) =>
-            s.SendAsync(buffer, SocketFlags.None);
+            s.SendAsync(buffer);
         public override Task<int> SendAsync(Socket s, IList<ArraySegment<byte>> bufferList) =>
-            s.SendAsync(bufferList, SocketFlags.None);
+            s.SendAsync(bufferList);
         public override Task<int> SendToAsync(Socket s, ArraySegment<byte> buffer, EndPoint endPoint) =>
-            s.SendToAsync(buffer, SocketFlags.None, endPoint);
+            s.SendToAsync(buffer, endPoint);
         public override Task SendFileAsync(Socket s, string fileName) =>
             s.SendFileAsync(fileName).AsTask();
         public override Task SendFileAsync(Socket s, string fileName, ArraySegment<byte> preBuffer, ArraySegment<byte> postBuffer, TransmitFileOptions flags) =>
@@ -273,19 +273,19 @@ namespace System.Net.Sockets.Tests
         public override Task MultiConnectAsync(Socket s, IPAddress[] addresses, int port) =>
             s.ConnectAsync(addresses, port, _cts.Token).AsTask();
         public override Task<int> ReceiveAsync(Socket s, ArraySegment<byte> buffer) =>
-            s.ReceiveAsync(buffer, SocketFlags.None, _cts.Token).AsTask();
+            s.ReceiveAsync(buffer, _cts.Token).AsTask();
         public override Task<int> ReceiveAsync(Socket s, IList<ArraySegment<byte>> bufferList) =>
-            s.ReceiveAsync(bufferList, SocketFlags.None);
+            s.ReceiveAsync(bufferList);
         public override Task<SocketReceiveFromResult> ReceiveFromAsync(Socket s, ArraySegment<byte> buffer, EndPoint endPoint) =>
-            s.ReceiveFromAsync(buffer, SocketFlags.None, endPoint, _cts.Token).AsTask();
+            s.ReceiveFromAsync(buffer, endPoint, _cts.Token).AsTask();
         public override Task<SocketReceiveMessageFromResult> ReceiveMessageFromAsync(Socket s, ArraySegment<byte> buffer, EndPoint endPoint) =>
-           s.ReceiveMessageFromAsync(buffer, SocketFlags.None, endPoint, _cts.Token).AsTask();
+           s.ReceiveMessageFromAsync(buffer, endPoint, _cts.Token).AsTask();
         public override Task<int> SendAsync(Socket s, ArraySegment<byte> buffer) =>
-            s.SendAsync(buffer, SocketFlags.None, _cts.Token).AsTask();
+            s.SendAsync(buffer, _cts.Token).AsTask();
         public override Task<int> SendAsync(Socket s, IList<ArraySegment<byte>> bufferList) =>
-            s.SendAsync(bufferList, SocketFlags.None);
+            s.SendAsync(bufferList);
         public override Task<int> SendToAsync(Socket s, ArraySegment<byte> buffer, EndPoint endPoint) =>
-            s.SendToAsync(buffer, SocketFlags.None, endPoint, _cts.Token).AsTask() ;
+            s.SendToAsync(buffer, endPoint, _cts.Token).AsTask() ;
         public override Task SendFileAsync(Socket s, string fileName) =>
             s.SendFileAsync(fileName, _cts.Token).AsTask();
         public override Task SendFileAsync(Socket s, string fileName, ArraySegment<byte> preBuffer, ArraySegment<byte> postBuffer, TransmitFileOptions flags) =>
@@ -484,15 +484,14 @@ namespace System.Net.Sockets.Tests
     {
         public override bool ValidatesArrayArguments => false;
         public override Task<int> ReceiveAsync(Socket s, ArraySegment<byte> buffer) =>
-            Task.Run(() => s.Receive((Span<byte>)buffer, SocketFlags.None));
+            Task.Run(() => s.Receive((Span<byte>)buffer));
         public override Task<int> SendAsync(Socket s, ArraySegment<byte> buffer) =>
-            Task.Run(() => s.Send((ReadOnlySpan<byte>)buffer, SocketFlags.None));
+            Task.Run(() => s.Send((ReadOnlySpan<byte>)buffer));
         public override Task<SocketReceiveFromResult> ReceiveFromAsync(Socket s, ArraySegment<byte> buffer,
             EndPoint endPoint) =>
             Task.Run(() =>
             {
-                SocketFlags socketFlags = SocketFlags.None;
-                int received = s.ReceiveFrom((Span<byte>)buffer, socketFlags, ref endPoint);
+                int received = s.ReceiveFrom((Span<byte>)buffer, ref endPoint);
                 return new SocketReceiveFromResult
                 {
                     ReceivedBytes = received,
