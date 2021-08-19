@@ -93,7 +93,7 @@ namespace System.Xml
                 return true;
             }
 
-            if (ReferenceEquals(a, null) || ReferenceEquals(b, null))
+            if (a is null || b is null)
             {
                 return false;
             }
