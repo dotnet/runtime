@@ -11,8 +11,6 @@ namespace System
 {
     public static partial class Environment
     {
-        private static volatile int s_systemPageSize;
-
         public static int ProcessorCount { get; } = GetProcessorCount();
 
         /// <summary>
@@ -210,6 +208,8 @@ namespace System
             [MethodImpl(MethodImplOptions.NoInlining)] // Prevent inlining from affecting where the stacktrace starts
             get => new StackTrace(true).ToString(System.Diagnostics.StackTrace.TraceFormat.Normal);
         }
+
+        private static volatile int s_systemPageSize;
 
         public static int SystemPageSize
         {
