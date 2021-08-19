@@ -11,6 +11,8 @@ namespace System
 {
     public static partial class Environment
     {
+        private static volatile int s_systemPageSize;
+
         public static int ProcessorCount { get; } = GetProcessorCount();
 
         /// <summary>
@@ -208,6 +210,19 @@ namespace System
         {
             [MethodImpl(MethodImplOptions.NoInlining)] // Prevent inlining from affecting where the stacktrace starts
             get => new StackTrace(true).ToString(System.Diagnostics.StackTrace.TraceFormat.Normal);
+        }
+
+        public static int SystemPageSize
+        {
+            get
+            {
+                int systemPageSize = s_systemPageSize;
+                if (systemPageSize == default)
+                {
+                    Interlocked.CompareExchange(ref s_systemPageSize, systemPageSize = GetSystemPageSize(), default);
+                }
+                return systemPageSize;
+            }
         }
 
         private static bool ValidateAndConvertRegistryTarget(EnvironmentVariableTarget target)
