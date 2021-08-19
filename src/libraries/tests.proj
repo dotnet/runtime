@@ -201,6 +201,7 @@
     <ProjectExclusions Include="$(RepoRoot)\src\tests\FunctionalTests\iOS\Simulator\Interpreter\iOS.Simulator.Interpreter.Test.csproj" />
     <ProjectExclusions Include="$(RepoRoot)\src\tests\FunctionalTests\iOS\Simulator\InvariantCultureOnlyMode\iOS.Simulator.InvariantCultureOnlyMode.Test.csproj" />
     <ProjectExclusions Include="$(RepoRoot)\src\tests\FunctionalTests\iOS\Simulator\AOT\iOS.Simulator.Aot.Test.csproj" />
+    <ProjectExclusions Include="$(RepoRoot)\src\tests\FunctionalTests\iOS\Simulator\XmlSerializer_Deserialize\iOS.Simulator.XmlSerializer_Deserialize.Test.csproj" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetOS)' == 'MacCatalyst' and '$(TargetArchitecture)' == 'x64' and '$(RunDisablediOSTests)' != 'true'">
