@@ -372,7 +372,7 @@ var BindingSupportLib = {
 			return this._wrap_delegate_gc_handle_as_function(gc_handle);
 		},
 
-		_wrap_delegate_gc_handle_as_function: function (gc_handle) {
+		_wrap_delegate_gc_handle_as_function: function (gc_handle, call_after_listener) {
 			this.bindings_lazy_init ();
 
 			// see if we have js owned instance for this gc_handle already
@@ -384,7 +384,11 @@ var BindingSupportLib = {
 				result = function() {
 					const delegateRoot = MONO.mono_wasm_new_root (BINDING.get_js_owned_object_by_gc_handle(gc_handle));
 					try {
-						return BINDING.call_method (result[BINDING.delegate_invoke_symbol], delegateRoot.value, result[BINDING.delegate_invoke_signature_symbol], arguments);
+						const res = BINDING.call_method(result[BINDING.delegate_invoke_symbol], delegateRoot.value, result[BINDING.delegate_invoke_signature_symbol], arguments);
+						if (call_after_listener) { 
+							call_after_listener(); 
+						}
+						return res;
 					} finally {
 						delegateRoot.release();
 					}
@@ -2042,7 +2046,12 @@ var BindingSupportLib = {
 			var obj = BINDING.mono_wasm_get_jsobj_from_js_handle(objHandle);
 			if (!obj)
 				throw new Error("ERR09: Invalid JS object handle for '"+sName+"'");
-			var listener = BINDING._wrap_delegate_gc_handle_as_function(listener_gc_handle);
+
+			const prevent_timer_throttling = obj.constructor.name !== 'WebSocket' || !navigator.userAgent.includes("Chrome")
+				? null
+				: () => MONO.prevent_timer_throttling(0);
+
+			var listener = BINDING._wrap_delegate_gc_handle_as_function(listener_gc_handle, prevent_timer_throttling);
 			if (!listener)
 				throw new Error("ERR10: Invalid listener gc_handle");
 
