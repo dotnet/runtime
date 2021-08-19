@@ -777,7 +777,6 @@ netcore_lookup_native_library (MonoAssemblyLoadContext *alc, MonoImage *image, c
 	MonoDl *module = NULL;
 	MonoDl *cached;
 	MonoAssembly *assembly = mono_image_get_assembly (image);
-	char *error_msg = NULL;
 
 	MONO_REQ_GC_UNSAFE_MODE;
 
