@@ -3283,10 +3283,6 @@ BOOL NDirect::MarshalingRequired(
                 return TRUE;
 
             NDirectMethodDesc* pNMD = (NDirectMethodDesc*)pMD;
-            // Make sure running cctor can be handled by stub
-            if (pNMD->IsClassConstructorTriggeredByILStub())
-                return TRUE;
-
             InitializeSigInfoAndPopulateNDirectMethodDesc(pNMD, &sigInfo);
 
             // Pending exceptions are handled by stub
@@ -5436,11 +5432,6 @@ MethodDesc* NDirect::GetILStubMethodDesc(NDirectMethodDesc* pNMD, PInvokeStaticS
 
     if (!pNMD->IsVarArgs() || SF_IsForNumParamBytes(dwStubFlags))
     {
-        if (pNMD->IsClassConstructorTriggeredByILStub())
-        {
-            dwStubFlags |= NDIRECTSTUB_FL_TRIGGERCCTOR;
-        }
-
         pStubMD = CreateCLRToNativeILStub(
             pSigInfo,
             dwStubFlags & ~NDIRECTSTUB_FL_FOR_NUMPARAMBYTES,
@@ -6155,11 +6146,6 @@ PCODE GetILStubForCalli(VASigCookie *pVASigCookie, MethodDesc *pMD)
 
         // vararg P/Invoke must be cdecl
         unmgdCallConv = CorInfoCallConvExtension::C;
-
-        if (((NDirectMethodDesc *)pMD)->IsClassConstructorTriggeredByILStub())
-        {
-            dwStubFlags |= NDIRECTSTUB_FL_TRIGGERCCTOR;
-        }
     }
 
     mdMethodDef md;
