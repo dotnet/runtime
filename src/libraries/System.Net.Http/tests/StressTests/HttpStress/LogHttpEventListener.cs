@@ -23,8 +23,7 @@ namespace HttpStress
         private FileStream _log;
         private Channel<string> _messagesChannel = Channel.CreateUnbounded<string>();
         private Task _processMessages;
-        private CancellationTokenSource _stopProcessing = new CancellationTokenSource();
-        private ObjectPool<StringBuilder> _stringBuilderPool = new DefaultObjectPool<StringBuilder>(new StringBuilderPooledObjectPolicy());
+        private DefaultObjectPool<StringBuilder> _stringBuilderPool = new DefaultObjectPool<StringBuilder>(new StringBuilderPooledObjectPolicy());
 
         private FileStream CreateNextLogFileStream()
         {
@@ -66,36 +65,29 @@ namespace HttpStress
 
         private async Task ProcessMessagesAsync()
         {
-            try
-            {
-                byte[] buffer = new byte[8192];
-                var encoding = Encoding.ASCII;
+            byte[] buffer = new byte[8192];
+            var encoding = Encoding.ASCII;
 
-                int i = 0;
-                await foreach (string message in _messagesChannel.Reader.ReadAllAsync(_stopProcessing.Token))
+            int i = 0;
+            await foreach (string message in _messagesChannel.Reader.ReadAllAsync())
+            {
+                if ((++i % 10_000) == 0)
                 {
-                    if ((++i % 10_000) == 0)
-                    {
-                        await RotateFiles();
-                    }
-                    int maxLen = encoding.GetMaxByteCount(message.Length);
-                    if (maxLen > buffer.Length)
-                    {
-                        buffer = new byte[maxLen];
-                    }
-                    int byteCount = encoding.GetBytes(message, buffer);
-
-                    await _log.WriteAsync(buffer.AsMemory(0, byteCount), _stopProcessing.Token);
+                    await RotateFiles();
                 }
-            }
-            catch (OperationCanceledException)
-            {
-                return;
+                int maxLen = encoding.GetMaxByteCount(message.Length);
+                if (maxLen > buffer.Length)
+                {
+                    buffer = new byte[maxLen];
+                }
+                int byteCount = encoding.GetBytes(message, buffer);
+
+                await _log.WriteAsync(buffer.AsMemory(0, byteCount));
             }
 
             async ValueTask RotateFiles()
             {
-                await _log.FlushAsync(_stopProcessing.Token);
+                await _log.FlushAsync();
                 // Rotate the log if it reaches 50 MB size.
                 if (_log.Length > (100 << 20))
                 {
@@ -118,7 +110,7 @@ namespace HttpStress
                 sb.Append(eventData.PayloadNames?[i]).Append(": ").Append(eventData.Payload[i]);
             }
             sb.Append(Environment.NewLine);
-            await _messagesChannel.Writer.WriteAsync(sb.ToString(), _stopProcessing.Token);
+            await _messagesChannel.Writer.WriteAsync(sb.ToString());
             _stringBuilderPool.Return(sb);
         }
 
@@ -126,11 +118,8 @@ namespace HttpStress
         {
             base.Dispose();
             _log.Flush();
-            if (!_processMessages.Wait(TimeSpan.FromSeconds(30)))
-            {
-                _stopProcessing.Cancel();
-                _processMessages.Wait();
-            }
+            _messagesChannel.Writer.Complete();
+            _processMessages.Wait();
             _log.Dispose();
         }
     }
