@@ -113,7 +113,7 @@ COUNT_T Module::GetNativeOrReadyToRunInliners(PTR_Module inlineeOwnerMod, mdMeth
     return 0;
 }
 
-#if defined(PROFILING_SUPPORTED) && !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
+#if defined(PROFILING_SUPPORTED) && !defined(DACCESS_COMPILE)
 BOOL Module::HasJitInlineTrackingMap()
 {
     LIMITED_METHOD_CONTRACT;
@@ -132,7 +132,7 @@ void Module::AddInlining(MethodDesc *inliner, MethodDesc *inlinee)
         m_pJitInlinerTrackingMap->AddInlining(inliner, inlinee);
     }
 }
-#endif // defined(PROFILING_SUPPORTED) && !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
+#endif // defined(PROFILING_SUPPORTED) && !defined(DACCESS_COMPILE)
 
 #ifndef DACCESS_COMPILE
 // ===========================================================================
@@ -319,7 +319,6 @@ void Module::NotifyProfilerLoadFinished(HRESULT hr)
     }
 }
 
-#ifndef CROSSGEN_COMPILE
 IMetaDataEmit *Module::GetValidatedEmitter()
 {
     CONTRACTL
@@ -357,7 +356,6 @@ IMetaDataEmit *Module::GetValidatedEmitter()
     }
     return m_pValidatedEmitter.Load();
 }
-#endif // CROSSGEN_COMPILE
 #endif // PROFILING_SUPPORTED
 
 void Module::NotifyEtwLoadFinished(HRESULT hr)
@@ -622,13 +620,13 @@ void Module::Initialize(AllocMemTracker *pamTracker, LPCWSTR szName)
         Module::CreateAssemblyRefByNameTable(pamTracker);
     }
 
-#if defined(PROFILING_SUPPORTED) && !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
+#if defined(PROFILING_SUPPORTED) && !defined(DACCESS_COMPILE)
     m_pJitInlinerTrackingMap = NULL;
     if (ReJitManager::IsReJITInlineTrackingEnabled())
     {
         m_pJitInlinerTrackingMap = new JITInlineTrackingMap(GetLoaderAllocator());
     }
-#endif // defined (PROFILING_SUPPORTED) &&!defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
+#endif // defined (PROFILING_SUPPORTED) &&!defined(DACCESS_COMPILE)
 
     LOG((LF_CLASSLOADER, LL_INFO10, "Loaded pModule: \"%ws\".\n", GetDebugName()));
 }
@@ -2129,7 +2127,6 @@ void Module::FreeModuleIndex()
     {
         _ASSERTE(m_ModuleIndex == m_ModuleID->GetModuleIndex());
 
-#ifndef CROSSGEN_COMPILE
         if (IsCollectible())
         {
             ThreadStoreLockHolder tsLock;
@@ -2139,7 +2136,6 @@ void Module::FreeModuleIndex()
                 pThread->DeleteThreadStaticData(m_ModuleIndex);
             }
         }
-#endif // CROSSGEN_COMPILE
 
         // Get the ModuleIndex from the DLM and free it
         Module::FreeModuleIndex(m_ModuleIndex);
@@ -2189,7 +2185,6 @@ void Module::AllocateRegularStaticHandles(AppDomain* pDomain)
     }
     CONTRACTL_END;
 
-#ifndef CROSSGEN_COMPILE
     if (NingenEnabled())
         return;
 
@@ -2208,7 +2203,6 @@ void Module::AllocateRegularStaticHandles(AppDomain* pDomain)
         // We should throw if we fail to allocate and never hit this assert
         _ASSERTE(pModuleData->GetPrecomputedGCStaticsBasePointer() != NULL);
     }
-#endif // CROSSGEN_COMPILE
 }
 
 BOOL Module::IsStaticStoragePrepared(mdTypeDef tkType)
@@ -2328,7 +2322,6 @@ void Module::SetDomainFile(DomainFile *pDomainFile)
         AllocateRegularStaticHandles(pDomainFile->GetAppDomain());
 }
 
-#ifndef CROSSGEN_COMPILE
 OBJECTREF Module::GetExposedObject()
 {
     CONTRACT(OBJECTREF)
@@ -2343,7 +2336,6 @@ OBJECTREF Module::GetExposedObject()
 
     RETURN GetDomainFile()->GetExposedModuleObject();
 }
-#endif // CROSSGEN_COMPILE
 
 //
 // AllocateMap allocates the RID maps based on the size of the current
@@ -2580,7 +2572,6 @@ PTR_BaseDomain Module::GetDomain()
 
 #ifndef DACCESS_COMPILE
 
-#ifndef CROSSGEN_COMPILE
 void Module::StartUnload()
 {
     WRAPPER_NO_CONTRACT;
@@ -2623,7 +2614,6 @@ void Module::StartUnload()
 
     SetBeingUnloaded();
 }
-#endif // CROSSGEN_COMPILE
 
 BOOL Module::IsInCurrentVersionBubble()
 {
@@ -2754,7 +2744,7 @@ HRESULT Module::GetReadablePublicMetaDataInterface(DWORD dwOpenFlags, REFIID rii
 // a special token that indicates no reader could be created - don't try again
 static ISymUnmanagedReader* const k_pInvalidSymReader = (ISymUnmanagedReader*)0x1;
 
-#if defined(FEATURE_ISYM_READER) && !defined(CROSSGEN_COMPILE)
+#if defined(FEATURE_ISYM_READER)
 ISymUnmanagedReader *Module::GetISymUnmanagedReaderNoThrow(void)
 {
     CONTRACT(ISymUnmanagedReader *)
@@ -2965,7 +2955,7 @@ ISymUnmanagedReader *Module::GetISymUnmanagedReader(void)
     m_pISymUnmanagedReader->AddRef();
     RETURN (m_pISymUnmanagedReader);
 }
-#endif // FEATURE_ISYM_READER && !CROSSGEN_COMPILE
+#endif // FEATURE_ISYM_READER
 
 BOOL Module::IsSymbolReadingEnabled()
 {
@@ -3029,13 +3019,13 @@ void Module::SetSymbolBytes(LPCBYTE pbSyms, DWORD cbSyms)
                                                 &cbWritten);
     IfFailThrow(HRESULT_FROM_WIN32(dwError));
 
-#if PROFILING_SUPPORTED && !defined(CROSSGEN_COMPILE)
+#if PROFILING_SUPPORTED
     BEGIN_PROFILER_CALLBACK(CORProfilerInMemorySymbolsUpdatesEnabled());
     {
         (&g_profControlBlock)->ModuleInMemorySymbolsUpdated((ModuleID) this);
     }
     END_PROFILER_CALLBACK();
-#endif //PROFILING_SUPPORTED && !defined(CROSSGEN_COMPILE)
+#endif //PROFILING_SUPPORTED
 
     ETW::CodeSymbolLog::EmitCodeSymbols(this);
 
@@ -3405,7 +3395,6 @@ void Module::InitializeStringData(DWORD token, EEStringData *pstrData, CQuickByt
     pstrData->SetIsOnlyLowChars(!fIs80Plus);
 }
 
-#ifndef CROSSGEN_COMPILE
 
 OBJECTHANDLE Module::ResolveStringRef(DWORD token, BaseDomain *pDomain, bool bNeedToSyncWithFixups)
 {
@@ -3447,7 +3436,6 @@ OBJECTHANDLE Module::ResolveStringRef(DWORD token, BaseDomain *pDomain, bool bNe
 
     return string;
 }
-#endif // CROSSGEN_COMPILE
 
 //
 // Used by the verifier.  Returns whether this stringref is valid.
@@ -4532,7 +4520,6 @@ void Module::NotifyDebuggerUnload(AppDomain *pDomain)
     g_pDebugInterface->UnloadModule(this, pDomain);
 }
 
-#if !defined(CROSSGEN_COMPILE)
 using GetTokenForVTableEntry_t = mdToken(STDMETHODCALLTYPE*)(HMODULE module, BYTE**ppVTEntry);
 
 static HMODULE GetIJWHostForModule(Module* module)
@@ -4965,7 +4952,6 @@ LoaderHeap *Module::GetThunkHeap()
 
     RETURN m_pThunkHeap;
 }
-#endif // !CROSSGEN_COMPILE
 
 Module *Module::GetModuleFromIndex(DWORD ix)
 {
@@ -7363,7 +7349,6 @@ idMethodSpec Module::LogInstantiatedMethod(const MethodDesc * md, ULONG flagNum)
 
 #ifndef DACCESS_COMPILE
 
-#ifndef CROSSGEN_COMPILE
 // ===========================================================================
 // ReflectionModule
 // ===========================================================================
@@ -7636,7 +7621,6 @@ void ReflectionModule::CaptureModuleMetaDataToMemory()
     _ASSERTE(hr == S_OK);
 }
 
-#endif // !CROSSGEN_COMPILE
 
 #endif // !DACCESS_COMPILE
 

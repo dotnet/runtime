@@ -162,14 +162,12 @@ CHECK DomainFile::CheckLoadLevel(FileLoadLevel requiredLevel, BOOL deadlockOK)
 
     if (deadlockOK)
     {
-#ifndef CROSSGEN_COMPILE
         // CheckLoading requires waiting on a host-breakable lock.
         // Since this is only a checked-build assert and we've been
         // living with it for a while, I'll leave it as is.
         //@TODO: CHECK statements are *NOT* debug-only!!!
         CONTRACT_VIOLATION(ThrowsViolation|GCViolation|TakesLockViolation);
         CHECK(this->GetAppDomain()->CheckLoading(this, requiredLevel));
-#endif
     }
     else
     {
@@ -359,7 +357,6 @@ BOOL DomainAssembly::IsVisibleToDebugger()
 
 #ifndef DACCESS_COMPILE
 
-#ifndef CROSSGEN_COMPILE
 //---------------------------------------------------------------------------------------
 //
 // Returns managed representation of the module (Module or ModuleBuilder).
@@ -431,7 +428,6 @@ OBJECTREF DomainFile::GetExposedModuleObject()
 
     return pLoaderAllocator->GetHandleValue(m_hExposedModuleObject);
 } // DomainFile::GetExposedModuleObject
-#endif // CROSSGEN_COMPILE
 
 BOOL DomainFile::DoIncrementalLoad(FileLoadLevel level)
 {
@@ -587,9 +583,7 @@ void DomainFile::EagerFixups()
 #ifdef FEATURE_READYTORUN
     if (GetCurrentModule()->IsReadyToRun())
     {
-#ifndef CROSSGEN_COMPILE
         GetCurrentModule()->RunEagerFixups();
-#endif
 
         PEImageLayout * pLayout = GetCurrentModule()->GetReadyToRunInfo()->GetImage();
 
@@ -607,10 +601,8 @@ void DomainFile::VtableFixups()
 {
     WRAPPER_NO_CONTRACT;
 
-#if !defined(CROSSGEN_COMPILE)
     if (!GetCurrentModule()->IsResource())
         GetCurrentModule()->FixupVTables();
-#endif // !CROSSGEN_COMPILE
 }
 
 void DomainFile::FinishLoad()
@@ -677,7 +669,6 @@ void DomainFile::Activate()
     // Now activate any dependencies.
     // This will typically cause reentrancy of course.
 
-#ifndef CROSSGEN_COMPILE
 
     //
     // Now call the module constructor.  Note that this might cause reentrancy;
@@ -698,7 +689,6 @@ void DomainFile::Activate()
     }
 #endif //_DEBUG
 
-#endif // CROSSGEN_COMPILE
 
     RETURN;
 }
@@ -781,7 +771,6 @@ void DomainAssembly::SetAssembly(Assembly* pAssembly)
 }
 
 
-#ifndef CROSSGEN_COMPILE
 //---------------------------------------------------------------------------------------
 //
 // Returns managed representation of the assembly (Assembly or AssemblyBuilder).
@@ -872,7 +861,6 @@ OBJECTREF DomainAssembly::GetExposedAssemblyObject()
 
     return pLoaderAllocator->GetHandleValue(m_hExposedAssemblyObject);
 } // DomainAssembly::GetExposedAssemblyObject
-#endif // CROSSGEN_COMPILE
 
 void DomainAssembly::Begin()
 {

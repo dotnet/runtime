@@ -115,7 +115,6 @@ ULONG               SystemDomain::s_dNumAppDomains = 0;
 
 DWORD               SystemDomain::m_dwLowestFreeIndex        = 0;
 
-#ifndef CROSSGEN_COMPILE
 // Constructor for the PinnedHeapHandleBucket class.
 PinnedHeapHandleBucket::PinnedHeapHandleBucket(PinnedHeapHandleBucket *pNext, DWORD Size, BaseDomain *pDomain)
 : m_pNext(pNext)
@@ -602,7 +601,6 @@ OBJECTHANDLE ThreadStaticHandleTable::AllocateHandles(DWORD nRequested)
     return m_pHead->GetHandles();
 }
 
-#endif // CROSSGEN_COMPILE
 
 
 //*****************************************************************************
@@ -631,12 +629,8 @@ BaseDomain::BaseDomain()
     // Make sure the container is set to NULL so that it gets loaded when it is used.
     m_pPinnedHeapHandleTable = NULL;
 
-#ifndef CROSSGEN_COMPILE
     // Note that m_handleStore is overridden by app domains
     m_handleStore = GCHandleUtilities::GetGCHandleManager()->GetGlobalHandleStore();
-#else
-    m_handleStore = NULL;
-#endif
 
 #ifdef FEATURE_COMINTEROP
     m_pMngStdInterfacesInfo = NULL;
@@ -723,12 +717,9 @@ void BaseDomain::InitVSD()
     UINT32 startingId = TypeIDMap::STARTING_UNSHARED_DOMAIN_ID;
     m_typeIDMap.Init(startingId, 2);
 
-#ifndef CROSSGEN_COMPILE
     GetLoaderAllocator()->InitVirtualCallStubManager(this);
-#endif
 }
 
-#ifndef CROSSGEN_COMPILE
 
 void BaseDomain::ClearBinderContext()
 {
@@ -894,12 +885,10 @@ OBJECTREF* BaseDomain::AllocateObjRefPtrsInLargeTable(int nRequested, OBJECTREF*
         return result;
     }
 }
-#endif // CROSSGEN_COMPILE
 
 #endif // !DACCESS_COMPILE
 
 #ifdef FEATURE_COMINTEROP
-#ifndef CROSSGEN_COMPILE
 #ifndef DACCESS_COMPILE
 
 OBJECTREF AppDomain::GetMissingObject()
@@ -933,12 +922,10 @@ OBJECTREF AppDomain::GetMissingObject()
 }
 
 #endif // DACCESS_COMPILE
-#endif //CROSSGEN_COMPILE
 #endif // FEATURE_COMINTEROP
 
 #ifndef DACCESS_COMPILE
 
-#ifndef CROSSGEN_COMPILE
 
 STRINGREF *BaseDomain::IsStringInterned(STRINGREF *pString)
 {
@@ -989,7 +976,6 @@ void BaseDomain::InitPinnedHeapHandleTable()
 #endif
 }
 
-#endif // CROSSGEN_COMPILE
 
 //*****************************************************************************
 //*****************************************************************************
@@ -1020,7 +1006,6 @@ void SystemDomain::Attach()
     }
     CONTRACTL_END;
 
-#ifndef CROSSGEN_COMPILE
     // Initialize stub managers
     PrecodeStubManager::Init();
     DelegateInvokeStubManager::Init();
@@ -1036,7 +1021,6 @@ void SystemDomain::Attach()
 #endif
 
     PerAppDomainTPCountList::InitAppDomainIndexList();
-#endif // CROSSGEN_COMPILE
 
     m_SystemDomainCrst.Init(CrstSystemDomain, (CrstFlags)(CRST_REENTRANCY | CRST_TAKEN_DURING_SHUTDOWN));
     m_DelayedUnloadCrst.Init(CrstSystemDomainDelayedUnloadList, CRST_UNSAFE_COOPGC);
@@ -1065,7 +1049,6 @@ void SystemDomain::Attach()
     ReJitManager::InitStatic();
 }
 
-#ifndef CROSSGEN_COMPILE
 
 void SystemDomain::DetachBegin()
 {
@@ -1161,7 +1144,6 @@ void SystemDomain::CreatePreallocatedExceptions()
     _ASSERTE(g_pPreallocatedExecutionEngineException == NULL);
     g_pPreallocatedExecutionEngineException = CreateHandle(pExecutionEngine);
 }
-#endif // CROSSGEN_COMPILE
 
 void SystemDomain::Init()
 {
@@ -1228,14 +1210,12 @@ void SystemDomain::Init()
         // the state here:
         GCX_COOP();
 
-#ifndef CROSSGEN_COMPILE
         if (!NingenEnabled())
         {
             CreatePreallocatedExceptions();
 
             PreallocateSpecialObjects();
         }
-#endif
 
         // Finish loading CoreLib now.
         m_pSystemAssembly->GetDomainAssembly()->EnsureActive();
@@ -1251,7 +1231,6 @@ void SystemDomain::Init()
 #endif // _DEBUG
 }
 
-#ifndef CROSSGEN_COMPILE
 void SystemDomain::LazyInitGlobalStringLiteralMap()
 {
     CONTRACTL
@@ -1339,7 +1318,6 @@ DWORD SystemDomain::GetTotalNumSizedRefHandles()
 
     return dwTotalNumSizedRefHandles;
 }
-#endif // CROSSGEN_COMPILE
 
 void SystemDomain::LoadBaseSystemClasses()
 {
@@ -1426,16 +1404,12 @@ void SystemDomain::LoadBaseSystemClasses()
     g_pDelegateClass = CoreLibBinder::GetClass(CLASS__DELEGATE);
     g_pMulticastDelegateClass = CoreLibBinder::GetClass(CLASS__MULTICAST_DELEGATE);
 
-#ifndef CROSSGEN_COMPILE
     CrossLoaderAllocatorHashSetup::EnsureTypesLoaded();
-#endif
 
     // further loading of nonprimitive types may need casting support.
     // initialize cast cache here.
-#ifndef CROSSGEN_COMPILE
     CastCache::Initialize();
     ECall::PopulateManagedCastHelpers();
-#endif // CROSSGEN_COMPILE
 
     // used by IsImplicitInterfaceOfSZArray
     CoreLibBinder::GetClass(CLASS__IENUMERABLEGENERIC);
@@ -1447,9 +1421,7 @@ void SystemDomain::LoadBaseSystemClasses()
     // Load String
     g_pStringClass = CoreLibBinder::LoadPrimitiveType(ELEMENT_TYPE_STRING);
 
-#ifndef CROSSGEN_COMPILE
     ECall::PopulateManagedStringConstructors();
-#endif // CROSSGEN_COMPILE
 
     g_pExceptionClass = CoreLibBinder::GetClass(CLASS__EXCEPTION);
     g_pOutOfMemoryExceptionClass = CoreLibBinder::GetException(kOutOfMemoryException);
@@ -1488,7 +1460,7 @@ void SystemDomain::LoadBaseSystemClasses()
     g_profControlBlock.fBaseSystemClassesLoaded = TRUE;
 #endif // PROFILING_SUPPORTED
 
-#if defined(_DEBUG) && !defined(CROSSGEN_COMPILE)
+#if defined(_DEBUG)
     if (!NingenEnabled())
     {
         g_CoreLib.Check();
@@ -1516,7 +1488,7 @@ void SystemDomain::LoadDomain(AppDomain *pDomain)
 
 #ifndef DACCESS_COMPILE
 
-#if defined(FEATURE_COMINTEROP_APARTMENT_SUPPORT) && !defined(CROSSGEN_COMPILE)
+#if defined(FEATURE_COMINTEROP_APARTMENT_SUPPORT)
 
 Thread::ApartmentState SystemDomain::GetEntryPointThreadAptState(IMDInternalImport* pScope, mdMethodDef mdMethod)
 {
@@ -1567,7 +1539,7 @@ void SystemDomain::SetThreadAptState (Thread::ApartmentState state)
         _ASSERTE(pState == Thread::AS_InMTA);
     }
 }
-#endif // defined(FEATURE_COMINTEROP_APARTMENT_SUPPORT) && !defined(CROSSGEN_COMPILE)
+#endif // defined(FEATURE_COMINTEROP_APARTMENT_SUPPORT)
 
 /*static*/
 bool SystemDomain::IsReflectionInvocationMethod(MethodDesc* pMeth)
@@ -1641,7 +1613,6 @@ bool SystemDomain::IsReflectionInvocationMethod(MethodDesc* pMeth)
     return false;
 }
 
-#ifndef CROSSGEN_COMPILE
 struct CallersDataWithStackMark
 {
     StackCrawlMark* stackMark;
@@ -1878,22 +1849,13 @@ StackWalkAction SystemDomain::CallersMethodCallback(CrawlFrame* pCf, VOID* data)
     }
 
 }
-#endif // CROSSGEN_COMPILE
 
-#ifdef CROSSGEN_COMPILE
-// defined in compile.cpp
-extern CompilationDomain * theDomain;
-#endif
 
 void AppDomain::Create()
 {
     STANDARD_VM_CONTRACT;
 
-#ifdef CROSSGEN_COMPILE
-    AppDomainRefHolder pDomain(theDomain);
-#else
     AppDomainRefHolder pDomain(new AppDomain());
-#endif
 
     pDomain->Init();
 
@@ -2105,7 +2067,6 @@ AppDomain::~AppDomain()
     }
     CONTRACTL_END;
 
-#ifndef CROSSGEN_COMPILE
 
     // release the TPIndex.  note that since TPIndex values are recycled the TPIndex
     // can only be released once all threads in the AppDomain have exited.
@@ -2114,7 +2075,6 @@ AppDomain::~AppDomain()
 
     m_AssemblyCache.Clear();
 
-#endif // CROSSGEN_COMPILE
 }
 
 //*****************************************************************************
@@ -2143,12 +2103,10 @@ void AppDomain::Init()
                     INDEBUG(| CRST_DEBUG_ONLY_CHECK_FORBID_SUSPEND_THREAD)));
     m_crstHostAssemblyMapAdd.Init(CrstHostAssemblyMapAdd);
 
-#ifndef CROSSGEN_COMPILE
     //Allocate the threadpool entry before the appdomain id list. Otherwise,
     //the thread pool list will be out of sync if insertion of id in
     //the appdomain fails.
     m_tpIndex = PerAppDomainTPCountList::AddNewTPIndex();
-#endif // CROSSGEN_COMPILE
 
     BaseDomain::Init();
 
@@ -2157,7 +2115,6 @@ void AppDomain::Init()
 
     m_MemoryPressure = 0;
 
-#ifndef CROSSGEN_COMPILE
 
     // Default domain reuses the handletablemap that was created during EEStartup
     m_handleStore = GCHandleUtilities::GetGCHandleManager()->GetGlobalHandleStore();
@@ -2167,7 +2124,6 @@ void AppDomain::Init()
         COMPlusThrowOM();
     }
 
-#endif // CROSSGEN_COMPILE
 
 #ifdef FEATURE_TYPEEQUIVALENCE
     m_TypeEquivalenceCrst.Init(CrstTypeEquivalenceMap);
@@ -2178,12 +2134,10 @@ void AppDomain::Init()
 
     SetStage(STAGE_READYFORMANAGEDCODE);
 
-#ifndef CROSSGEN_COMPILE
 
 #ifdef FEATURE_TIERED_COMPILATION
     m_tieredCompilationManager.Init();
 #endif
-#endif // CROSSGEN_COMPILE
 
     m_nativeImageLoadCrst.Init(CrstNativeImageLoad);
 } // AppDomain::Init
@@ -2199,7 +2153,6 @@ BOOL AppDomain::IsCompilationDomain()
     return isCompilationDomain;
 }
 
-#ifndef CROSSGEN_COMPILE
 
 void AppDomain::Stop()
 {
@@ -2231,7 +2184,6 @@ void AppDomain::Stop()
 #endif // DEBUGGING_SUPPORTED
 }
 
-#endif // !CROSSGEN_COMPILE
 
 #endif //!DACCESS_COMPILE
 
@@ -2955,7 +2907,6 @@ DomainAssembly *AppDomain::LoadDomainAssemblyInternal(AssemblySpec* pIdentity,
     {
         LoaderAllocator *pLoaderAllocator = NULL;
 
-#ifndef CROSSGEN_COMPILE
         AssemblyBinder *pFileBinder = pFile->GetBindingContext();
         if (pFileBinder != NULL)
         {
@@ -2963,7 +2914,6 @@ DomainAssembly *AppDomain::LoadDomainAssemblyInternal(AssemblySpec* pIdentity,
             // marked as collectible
             pLoaderAllocator = pFileBinder->GetLoaderAllocator();
         }
-#endif // !CROSSGEN_COMPILE
 
         if (pLoaderAllocator == NULL)
         {
@@ -2989,14 +2939,12 @@ DomainAssembly *AppDomain::LoadDomainAssemblyInternal(AssemblySpec* pIdentity,
                 registerNewAssembly = true;
                 fileLock = FileLoadLock::Create(lock, pFile, pDomainAssembly);
                 pDomainAssembly.SuppressRelease();
-#ifndef CROSSGEN_COMPILE
                 if (pDomainAssembly->IsCollectible())
                 {
                     // We add the assembly to the LoaderAllocator only when we are sure that it can be added
                     // and won't be deleted in case of a concurrent load from the same ALC
                     ((AssemblyLoaderAllocator *)pLoaderAllocator)->AddDomainAssembly(pDomainAssembly);
                 }
-#endif // !CROSSGEN_COMPILE
             }
         }
         else
@@ -3402,7 +3350,6 @@ void AppDomain::SetupSharedStatics()
     }
     CONTRACTL_END;
 
-#ifndef CROSSGEN_COMPILE
     if (NingenEnabled())
         return;
 
@@ -3427,7 +3374,6 @@ void AppDomain::SetupSharedStatics()
     OBJECTREF* pEmptyStringHandle = (OBJECTREF*)
         ((TADDR)pLocalModule->GetPrecomputedGCStaticsBasePointer()+pEmptyStringFD->GetOffset());
     SetObjectReference( pEmptyStringHandle, StringObject::GetEmptyString());
-#endif // CROSSGEN_COMPILE
 }
 
 DomainAssembly * AppDomain::FindAssembly(PEAssembly * pFile, FindAssemblyOptions options/* = FindAssemblyOptions_None*/)
@@ -4126,7 +4072,6 @@ ULONG AppDomain::Release()
 }
 
 
-#ifndef CROSSGEN_COMPILE
 
 void AppDomain::RaiseLoadingAssemblyEvent(DomainAssembly *pAssembly)
 {
@@ -4254,7 +4199,6 @@ AppDomain::RaiseUnhandledExceptionEvent(OBJECTREF *pThrowable, BOOL isTerminatin
     return TRUE;
 }
 
-#endif // CROSSGEN_COMPILE
 
 DefaultAssemblyBinder *AppDomain::CreateBinderContext()
 {
@@ -4361,7 +4305,6 @@ void AppDomain::NotifyDebuggerUnload()
 }
 #endif // DEBUGGING_SUPPORTED
 
-#ifndef CROSSGEN_COMPILE
 
 #ifdef FEATURE_COMWRAPPERS
 
@@ -4455,7 +4398,6 @@ void AppDomain::ExceptionUnwind(Frame *pFrame)
     LOG((LF_APPDOMAIN, LL_INFO10, "AppDomain::ExceptionUnwind: not first transition or abort\n"));
 }
 
-#endif // CROSSGEN_COMPILE
 
 #endif // !DACCESS_COMPILE
 
@@ -4582,7 +4524,6 @@ void DomainLocalModule::EnsureDynamicClassIndex(DWORD dwID)
     m_aDynamicEntries = aDynamicEntries;
 }
 
-#ifndef CROSSGEN_COMPILE
 void    DomainLocalModule::AllocateDynamicClass(MethodTable *pMT)
 {
     CONTRACTL
@@ -4731,9 +4672,7 @@ void DomainLocalModule::PopulateClass(MethodTable *pMT)
 
     return;
 }
-#endif // CROSSGEN_COMPILE
 
-#ifndef CROSSGEN_COMPILE
 
 DomainAssembly* AppDomain::RaiseTypeResolveEventThrowing(DomainAssembly* pAssembly, LPCSTR szName, ASSEMBLYREF *pResultingAssemblyRef)
 {
@@ -4971,7 +4910,6 @@ void SystemDomain::ProcessDelayedUnloadLoaderAllocators()
     }
 }
 
-#endif // CROSSGEN_COMPILE
 
 void AppDomain::EnumStaticGCRefs(promote_func* fn, ScanContext* sc)
 {
@@ -4986,12 +4924,10 @@ void AppDomain::EnumStaticGCRefs(promote_func* fn, ScanContext* sc)
              GCHeapUtilities::IsServerHeap()   &&
              IsGCSpecialThread());
 
-#ifndef CROSSGEN_COMPILE
     if (m_pPinnedHeapHandleTable != nullptr)
     {
         m_pPinnedHeapHandleTable->EnumStaticGCRefs(fn, sc);
     }
-#endif // CROSSGEN_COMPILE
 
     RETURN;
 }
@@ -5197,7 +5133,7 @@ AppDomain::AssemblyIterator::Next_Unlocked(
     return FALSE;
 } // AppDomain::AssemblyIterator::Next_Unlocked
 
-#if !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
+#if !defined(DACCESS_COMPILE)
 
 // Returns S_OK if the assembly was successfully loaded
 HRESULT RuntimeInvokeHostAssemblyResolver(INT_PTR pManagedAssemblyLoadContextToBindWithin, BINDER_SPACE::AssemblyName *pAssemblyName, DefaultAssemblyBinder *pTPABinder, BINDER_SPACE::Assembly **ppLoadedAssembly)
@@ -5407,7 +5343,7 @@ HRESULT RuntimeInvokeHostAssemblyResolver(INT_PTR pManagedAssemblyLoadContextToB
 
     return hr;
 }
-#endif // !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
+#endif // !defined(DACCESS_COMPILE)
 
 //approximate size of loader data
 //maintained for each assembly

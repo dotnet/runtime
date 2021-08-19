@@ -21,9 +21,9 @@
 
 #include "defaultassemblybinder.h"
 
-#if !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
+#if !defined(DACCESS_COMPILE)
 #include "customassemblybinder.h"
-#endif // !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
+#endif // !defined(DACCESS_COMPILE)
 
 #include "bundle.h"
 
@@ -131,9 +131,9 @@ namespace BINDER_SPACE
 
         friend class ::DefaultAssemblyBinder;
 
-#if !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
+#if !defined(DACCESS_COMPILE)
         friend class ::CustomAssemblyBinder;
-#endif // !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
+#endif // !defined(DACCESS_COMPILE)
     };
 
 #include "assembly.inl"

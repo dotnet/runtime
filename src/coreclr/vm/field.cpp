@@ -322,7 +322,6 @@ PTR_VOID FieldDesc::GetStaticAddressHandle(PTR_VOID base)
 }
 
 
-#ifndef CROSSGEN_COMPILE
 
 // These routines encapsulate the operation of getting and setting
 // fields.
@@ -698,7 +697,6 @@ VOID    FieldDesc::SetValue64(OBJECTREF o, __int64 value)
 }
 #endif // #ifndef DACCESS_COMPILE
 
-#endif // !CROSSGEN_COMPILE
 
 UINT FieldDesc::LoadSize()
 {
@@ -812,7 +810,7 @@ TypeHandle FieldDesc::GetExactFieldType(TypeHandle owner)
     }
 }
 
-#if !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
+#if !defined(DACCESS_COMPILE)
 REFLECTFIELDREF FieldDesc::GetStubFieldInfo()
 {
     CONTRACTL
@@ -838,4 +836,4 @@ REFLECTFIELDREF FieldDesc::GetStubFieldInfo()
 
     return retVal;
 }
-#endif // !DACCESS_COMPILE && !CROSSGEN_COMPILE
+#endif // !DACCESS_COMPILE

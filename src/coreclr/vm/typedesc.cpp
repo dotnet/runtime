@@ -509,7 +509,6 @@ TypeHandle TypeDesc::GetParent() {
 
 #ifndef DACCESS_COMPILE
 
-#ifndef CROSSGEN_COMPILE
 OBJECTREF ParamTypeDesc::GetManagedClassObject()
 {
     CONTRACTL {
@@ -558,7 +557,6 @@ OBJECTREF ParamTypeDesc::GetManagedClassObject()
     }
     return GetManagedClassObjectIfExists();
 }
-#endif // CROSSGEN_COMPILE
 
 #endif // #ifndef DACCESS_COMPILE
 
@@ -1647,7 +1645,6 @@ BOOL TypeVarTypeDesc::SatisfiesConstraints(SigTypeContext *pTypeContextOfConstra
 }
 
 
-#ifndef CROSSGEN_COMPILE
 OBJECTREF TypeVarTypeDesc::GetManagedClassObject()
 {
     CONTRACTL {
@@ -1684,7 +1681,6 @@ OBJECTREF TypeVarTypeDesc::GetManagedClassObject()
     }
     return GetManagedClassObjectIfExists();
 }
-#endif // CROSSGEN_COMPILE
 
 #endif //!DACCESS_COMPILE
 

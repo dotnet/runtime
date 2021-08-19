@@ -485,9 +485,6 @@ CONFIG_DWORD_INFO(INTERNAL_NoASLRForNgen, W("NoASLRForNgen"), 0, "Turn off IMAGE
 
 RETAIL_CONFIG_STRING_INFO(INTERNAL_NativeImageSearchPaths, W("NativeImageSearchPaths"), "Extra search paths for native composite R2R images")
 
-#ifdef CROSSGEN_COMPILE
-RETAIL_CONFIG_DWORD_INFO(INTERNAL_CrossGenAssumeInputSigned, W("CrossGenAssumeInputSigned"), 1, "CrossGen should assume that its input assemblies will be signed before deployment")
-#endif
 
 ///
 /// Profiling API / ETW
@@ -636,9 +633,7 @@ RETAIL_CONFIG_DWORD_INFO(INTERNAL_TieredPGO, W("TieredPGO"), 0, "Instrument Tier
 ///
 /// Entry point slot backpatch
 ///
-#ifndef CROSSGEN_COMPILE
 RETAIL_CONFIG_DWORD_INFO(UNSUPPORTED_BackpatchEntryPointSlots, W("BackpatchEntryPointSlots"), 1, "Indicates whether to enable entry point slot backpatching, for instance to avoid making virtual calls through a precode and instead to patch virtual slots for a method when its entry point changes.")
-#endif
 
 ///
 /// TypeLoader

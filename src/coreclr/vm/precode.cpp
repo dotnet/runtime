@@ -314,9 +314,7 @@ Precode* Precode::Allocate(PrecodeType t, MethodDesc* pMD,
     ExecutableWriterHolder<Precode> precodeWriterHolder(pPrecode, size);
     precodeWriterHolder.GetRW()->Init(pPrecode, t, pMD, pLoaderAllocator);
 
-#ifndef CROSSGEN_COMPILE
     ClrFlushInstructionCache(pPrecode, size);
-#endif
 
     return pPrecode;
 }
@@ -540,10 +538,8 @@ TADDR Precode::AllocateTemporaryEntryPoints(MethodDescChunk *  pChunk,
             // GetDynamicMethodPrecodeFixupJumpStub()).
             precodeFixupJumpStub = temporaryEntryPoints + count * sizeof(FixupPrecode) + sizeof(PTR_MethodDesc);
             // TODO: how to get the size?
-#ifndef CROSSGEN_COMPILE
             precodeFixupJumpStubRW = (TADDR)entryPointsWriterHolder.GetRW() + count * sizeof(FixupPrecode) + sizeof(PTR_MethodDesc);
             emitBackToBackJump((BYTE*)precodeFixupJumpStub, (BYTE*)precodeFixupJumpStubRW, (LPVOID)GetEEFuncEntryPoint(PrecodeFixupThunk));
-#endif // !CROSSGEN_COMPILE
         }
 #endif // FIXUP_PRECODE_PREALLOCATE_DYNAMIC_METHOD_JUMP_STUBS
 

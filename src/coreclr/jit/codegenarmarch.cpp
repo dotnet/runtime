@@ -2514,7 +2514,6 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
             genEmitCall(emitter::EC_FUNC_TOKEN, methHnd, INDEBUG_LDISASM_COMMA(sigInfo) addr,
                         retSize MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(secondRetSize), ilOffset);
         }
-
 #if 0 && defined(TARGET_ARM64)
         // Use this path if you want to load an absolute call target using
         //  a sequence of movs followed by an indirect call (blr instruction)

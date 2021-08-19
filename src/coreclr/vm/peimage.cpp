@@ -619,7 +619,6 @@ void DECLSPEC_NORETURN PEImage::ThrowFormat(HRESULT hrError)
     EEFileLoadException::Throw(m_path, hrError);
 }
 
-#if !defined(CROSSGEN_COMPILE)
 
 //may outlive PEImage
 PEImage::IJWFixupData::IJWFixupData(void *pBase)
@@ -751,7 +750,6 @@ void PEImage::UnloadIJWModule(void *pBase)
         delete pData;
 }
 
-#endif // !CROSSGEN_COMPILE
 
 
 

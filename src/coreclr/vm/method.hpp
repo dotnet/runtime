@@ -507,9 +507,7 @@ public:
     CodeVersionManager* GetCodeVersionManager();
 #endif
 
-#ifndef CROSSGEN_COMPILE
     MethodDescBackpatchInfoTracker* GetBackpatchInfoTracker();
-#endif
 
     PTR_LoaderAllocator GetLoaderAllocator();
 
@@ -1226,7 +1224,7 @@ private:
         _ASSERTE(IsVersionable());
         _ASSERTE(IsIL() || IsDynamicMethod());
 
-#if defined(FEATURE_CODE_VERSIONING) && !defined(CROSSGEN_COMPILE)
+#if defined(FEATURE_CODE_VERSIONING)
         _ASSERTE(CodeVersionManager::IsMethodSupported(PTR_MethodDesc(this)));
 
         // For a method eligible for code versioning and vtable slot backpatch:
@@ -1305,17 +1303,11 @@ public:
     {
         WRAPPER_NO_CONTRACT;
 
-#ifndef CROSSGEN_COMPILE
         // This is the only case currently. In the future, a method that does not have a vtable slot may still record entry
         // point slots that need to be backpatched on entry point change, and in such cases the conditions here may be changed.
         return IsVersionableWithVtableSlotBackpatch();
-#else
-        // Entry point slot backpatch is disabled for CrossGen
-        return false;
-#endif
     }
 
-#ifndef CROSSGEN_COMPILE
 
 private:
     // Gets the prestub entry point to use for backpatching. Entry point slot backpatch uses this entry point as an oracle to
@@ -1402,7 +1394,6 @@ public:
     void ResetCodeEntryPoint();
     void ResetCodeEntryPointForEnC();
 
-#endif // !CROSSGEN_COMPILE
 
 public:
     bool RequestedAggressiveOptimization()
@@ -2056,7 +2047,6 @@ public:
     }
 #endif
 
-#ifndef CROSSGEN_COMPILE
 public:
     enum class JitOptimizationTier : UINT8
     {
@@ -2125,7 +2115,6 @@ public:
 
         m_nextInSameThread = config;
     }
-#endif // !CROSSGEN_COMPILE
 
 protected:
     MethodDesc* m_pMethodDesc;
@@ -2153,14 +2142,12 @@ private:
     bool m_shouldCountCalls;
 #endif
 
-#ifndef CROSSGEN_COMPILE
 private:
     bool m_jitSwitchedToMinOpt; // when it wasn't requested
 #ifdef FEATURE_TIERED_COMPILATION
     bool m_jitSwitchedToOptimized; // when a different tier was requested
 #endif
     PrepareCodeConfig *m_nextInSameThread;
-#endif // !CROSSGEN_COMPILE
 };
 
 #ifdef FEATURE_CODE_VERSIONING

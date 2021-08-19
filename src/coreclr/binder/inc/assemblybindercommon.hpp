@@ -60,7 +60,7 @@ namespace BINDER_SPACE
                                    /* in */  LPCTSTR      szMDAssemblyPath = NULL,
                                    /* in */  BundleFileLocation bundleFileLocation = BundleFileLocation::Invalid());
 
-#if !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
+#if !defined(DACCESS_COMPILE)
         static HRESULT BindUsingHostAssemblyResolver (/* in */ INT_PTR pManagedAssemblyLoadContextToBindWithin,
                                                       /* in */ AssemblyName       *pAssemblyName,
                                                       /* in */ DefaultAssemblyBinder *pTPABinder,
@@ -72,7 +72,7 @@ namespace BINDER_SPACE
                                         /* in */  PEKIND              peKind,
                                         /* in */  IMDInternalImport  *pIMetaDataAssemblyImport,
                                         /* [retval] [out] */  Assembly **ppAssembly);
-#endif // !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
+#endif // !defined(DACCESS_COMPILE)
 
         static HRESULT TranslatePEToArchitectureType(DWORD  *pdwPAFlags, PEKIND *PeKind);
 

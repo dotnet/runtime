@@ -1846,7 +1846,6 @@ MethodDescChunk *MethodDescChunk::CreateChunk(LoaderHeap *pHeap, DWORD methodDes
     RETURN pFirstChunk;
 }
 
-#ifndef CROSSGEN_COMPILE
 //--------------------------------------------------------------------
 // Virtual Resolution on Objects
 //
@@ -2237,7 +2236,6 @@ MethodDesc* Entry2MethodDesc(PCODE entryPoint, MethodTable *pMT)
     _ASSERTE(!"Entry2MethodDesc failed");
     RETURN (NULL);
 }
-#endif // CROSSGEN_COMPILE
 
 //*******************************************************************************
 BOOL MethodDesc::IsFCallOrIntrinsic()
@@ -3237,7 +3235,6 @@ bool MethodDesc::DetermineAndSetIsEligibleForTieredCompilation()
 
 #endif // !DACCESS_COMPILE
 
-#ifndef CROSSGEN_COMPILE
 bool MethodDesc::IsJitOptimizationDisabled()
 {
     WRAPPER_NO_CONTRACT;
@@ -3250,10 +3247,8 @@ bool MethodDesc::IsJitOptimizationDisabled()
         CORDisableJITOptimizations(GetModule()->GetDebuggerInfoBits()) ||
         (!IsNoMetadata() && IsMiNoOptimization(GetImplAttrs()));
 }
-#endif
 
 #ifndef DACCESS_COMPILE
-#ifndef CROSSGEN_COMPILE
 
 void MethodDesc::RecordAndBackpatchEntryPointSlot(
     LoaderAllocator *slotLoaderAllocator, // the loader allocator from which the slot's memory is allocated
@@ -3447,7 +3442,6 @@ void MethodDesc::ResetCodeEntryPointForEnC()
     }
 }
 
-#endif // !CROSSGEN_COMPILE
 
 //*******************************************************************************
 BOOL MethodDesc::SetNativeCodeInterlocked(PCODE addr, PCODE pExpected /*=NULL*/)
@@ -3486,7 +3480,6 @@ BOOL MethodDesc::SetNativeCodeInterlocked(PCODE addr, PCODE pExpected /*=NULL*/)
     return SetStableEntryPointInterlocked(addr);
 }
 
-#ifndef CROSSGEN_COMPILE
 
 //*******************************************************************************
 void MethodDesc::SetMethodEntryPoint(PCODE addr)
@@ -3517,7 +3510,6 @@ void MethodDesc::SetMethodEntryPoint(PCODE addr)
     *(TADDR *)slotAddr = newVal;
 }
 
-#endif // CROSSGEN_COMPILE
 
 //*******************************************************************************
 BOOL MethodDesc::SetStableEntryPointInterlocked(PCODE addr)
@@ -3582,16 +3574,11 @@ void *NDirectMethodDesc::ResolveAndSetNDirectTarget(_In_ NDirectMethodDesc* pMD)
 
 // This build conditional is here due to dllimport.cpp
 // not being relevant during the crossgen build.
-#ifdef CROSSGEN_COMPILE
-    UNREACHABLE();
-
-#else
     LPVOID targetMaybe = NDirectImportWorker(pMD);
     _ASSERTE(targetMaybe != nullptr);
     pMD->SetNDirectTarget(targetMaybe);
     return targetMaybe;
 
-#endif // CROSSGEN_COMPILE
 }
 
 BOOL NDirectMethodDesc::TryResolveNDirectTargetForNoGCTransition(_In_ MethodDesc* pMD, _Out_ void** ndirectTarget)
@@ -3606,10 +3593,6 @@ BOOL NDirectMethodDesc::TryResolveNDirectTargetForNoGCTransition(_In_ MethodDesc
     }
     CONTRACTL_END
 
-#ifdef CROSSGEN_COMPILE
-    UNREACHABLE();
-
-#else
     if (!pMD->ShouldSuppressGCTransition())
         return FALSE;
 
@@ -3617,7 +3600,6 @@ BOOL NDirectMethodDesc::TryResolveNDirectTargetForNoGCTransition(_In_ MethodDesc
     *ndirectTarget = ResolveAndSetNDirectTarget((NDirectMethodDesc*)pMD);
     return TRUE;
 
-#endif // CROSSGEN_COMPILE
 }
 
 //*******************************************************************************
@@ -3651,7 +3633,6 @@ void NDirectMethodDesc::InterlockedSetNDirectFlags(WORD wFlags)
     FastInterlockOr((DWORD*)pFlags, dwMask);
 }
 
-#ifndef CROSSGEN_COMPILE
 
 #ifdef TARGET_WINDOWS
 FARPROC NDirectMethodDesc::FindEntryPointWithMangling(NATIVE_LIBRARY_HANDLE hMod, PTR_CUTF8 entryPointName)
@@ -3782,9 +3763,7 @@ void NDirectMethodDesc::EnsureStackArgumentSize()
 }
 #endif
 
-#endif // CROSSGEN_COMPILE
 
-#if !defined(CROSSGEN_COMPILE)
 //*******************************************************************************
 void NDirectMethodDesc::InitEarlyBoundNDirectTarget()
 {
@@ -3814,7 +3793,6 @@ void NDirectMethodDesc::InitEarlyBoundNDirectTarget()
     // NDirectImportThunk().  In fact, backpatching the import thunk glue leads to race conditions.
     SetNDirectTarget((LPVOID)target);
 }
-#endif // !CROSSGEN_COMPILE
 
 //*******************************************************************************
 BOOL MethodDesc::HasUnmanagedCallConvAttribute()
@@ -4156,7 +4134,7 @@ PTR_LoaderAllocator MethodDesc::GetLoaderAllocator()
     return GetLoaderModule()->GetLoaderAllocator();
 }
 
-#if !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
+#if !defined(DACCESS_COMPILE)
 REFLECTMETHODREF MethodDesc::GetStubMethodInfo()
 {
     CONTRACTL
@@ -4182,7 +4160,7 @@ REFLECTMETHODREF MethodDesc::GetStubMethodInfo()
 
     return retVal;
 }
-#endif // !DACCESS_COMPILE && CROSSGEN_COMPILE
+#endif // !DACCESS_COMPILE
 
 #ifndef DACCESS_COMPILE
 typedef void (*WalkValueTypeParameterFnPtr)(Module *pModule, mdToken token, Module *pDefModule, mdToken tkDefToken, SigPointer *ptr, SigTypeContext *pTypeContext, void *pData);
