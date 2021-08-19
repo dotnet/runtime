@@ -3089,9 +3089,9 @@ ILStubCache* Module::GetILStubCache()
     }
     CONTRACTL_END;
 
-    // Use per-LoaderAllocator cache for modules when not NGENing
+    // Use per-LoaderAllocator cache for modules
     BaseDomain *pDomain = GetDomain();
-    if (!IsSystem() && !pDomain->AsAppDomain()->IsCompilationDomain())
+    if (!IsSystem())
         return GetLoaderAllocator()->GetILStubCache();
 
     if (m_pILStubCache == NULL)
@@ -4660,13 +4660,6 @@ void Module::FixupVTables()
     }
 
     HINSTANCE hInstThis = GetFile()->GetIJWBase();
-
-    // <REVISIT_TODO>@todo: workaround!</REVISIT_TODO>
-    // If we are compiling in-process, we don't want to fixup the vtables - as it
-    // will have side effects on the other copy of the module!
-    if (SystemDomain::GetCurrentDomain()->IsCompilationDomain()) {
-        return;
-    }
 
     // Get vtable fixup data
     COUNT_T cFixupRecords;

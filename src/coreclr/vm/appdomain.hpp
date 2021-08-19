@@ -38,7 +38,6 @@
 class BaseDomain;
 class SystemDomain;
 class AppDomain;
-class CompilationDomain;
 class GlobalStringLiteralMap;
 class StringLiteralMap;
 class MngStdInterfacesInfo;
@@ -1997,23 +1996,6 @@ public:
         return (m_dwFlags & IGNORE_UNHANDLED_EXCEPTIONS);
     }
 
-    void SetCompilationDomain()
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        m_dwFlags |= COMPILATION_DOMAIN;
-    }
-
-    BOOL IsCompilationDomain();
-
-    PTR_CompilationDomain ToCompilationDomain()
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        _ASSERTE(IsCompilationDomain());
-        return dac_cast<PTR_CompilationDomain>(this);
-    }
-
     static void ExceptionUnwind(Frame *pFrame);
 
 #ifdef _DEBUG
@@ -2309,7 +2291,7 @@ public:
 
     enum {
         CONTEXT_INITIALIZED =               0x0001,
-        COMPILATION_DOMAIN =                0x0400, // Are we ngenning?
+        // unused =                         0x0400,
         IGNORE_UNHANDLED_EXCEPTIONS =      0x10000, // AppDomain was created using the APPDOMAIN_IGNORE_UNHANDLED_EXCEPTIONS flag
     };
 
