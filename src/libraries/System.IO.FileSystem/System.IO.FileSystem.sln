@@ -21,8 +21,6 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.IO.FileSystem.Disabl
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.IO.FileSystem.Manual.Tests", "tests\ManualTests\System.IO.FileSystem.Manual.Tests.csproj", "{534152EB-14A8-4EF4-B181-342A555337F1}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.IO.FileSystem.Net5Compat.Tests", "tests\Net5CompatTests\System.IO.FileSystem.Net5Compat.Tests.csproj", "{48E07F12-8597-40DE-8A37-CCBEB9D54012}"
-EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.IO.FileSystem.Tests", "tests\System.IO.FileSystem.Tests.csproj", "{3A8E16D3-8A22-4076-BB48-2CD1FBFAF81B}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Runtime.CompilerServices.Unsafe", "..\System.Runtime.CompilerServices.Unsafe\ref\System.Runtime.CompilerServices.Unsafe.csproj", "{79A74577-C550-4264-B352-51D304796B89}"

@@ -229,18 +229,6 @@ namespace System.IO.Tests
                 {
                     writes[i] = WriteAsync(fs, expectedData, i * writeSize, writeSize, cancellationToken);
                     Assert.Null(writes[i].Exception);
-                    if (useAsync)
-                    {
-                        // To ensure that the buffer of a FileStream opened for async IO is flushed
-                        // by FlushAsync in asynchronous way, we aquire a lock for every buffered WriteAsync.
-                        // The side effect of this is that the Position of FileStream is not updated until
-                        // the lock is released by a previous operation.
-                        // So now all WriteAsync calls should be awaited before starting another async file operation.
-                        if (PlatformDetection.IsNet5CompatFileStreamEnabled)
-                        {
-                            Assert.Equal((i + 1) * writeSize, fs.Position);
-                        }
-                    }
                 }
 
                 await Task.WhenAll(writes);
