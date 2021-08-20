@@ -9,7 +9,7 @@ namespace Microsoft.Extensions.DependencyModel
     internal static class LibraryCollectionExtensions
 
     {
-        public static IDictionary<string, T> LibraryCollectionToDictionary<T>(this IReadOnlyList<T> collection) where T : Library
+        public static Dictionary<string, T> LibraryCollectionToDictionary<T>(this IReadOnlyList<T> collection) where T : Library
         {
             var dictionary = new Dictionary<string, T>(StringComparer.OrdinalIgnoreCase);
 
