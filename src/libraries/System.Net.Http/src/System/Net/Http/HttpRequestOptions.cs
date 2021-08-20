@@ -40,6 +40,13 @@ namespace System.Net.Http
         bool IDictionary<string, object?>.Remove(string key) => Options.Remove(key);
         bool ICollection<KeyValuePair<string, object?>>.Remove(KeyValuePair<string, object?> item) => ((IDictionary<string, object?>)Options).Remove(item);
         bool IDictionary<string, object?>.TryGetValue(string key, out object? value) => Options.TryGetValue(key, out value);
+        
+        ///<summary>
+        ///Gets the value of a given option.
+        ///</summary>
+        ///<param name="key">The key to get the value of.</param>
+        ///<param name="value">When this method returns, contains the value of the option. This parameter is treated as uninitialized.</param>
+        ///<returns>True, if an item is retrieved.</returns>
         public bool TryGetValue<TValue>(HttpRequestOptionsKey<TValue> key, [MaybeNullWhen(false)] out TValue value)
         {
             if (Options.TryGetValue(key.Key, out object? _value) && _value is TValue tvalue)
