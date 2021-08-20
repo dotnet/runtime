@@ -352,7 +352,7 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
             if (!result.IsCompleted)
             {
                 if (!Log.HasLoggedErrors)
-                    Log.LogError("Unknown failed occured while compiling");
+                    Log.LogError("Unknown failure occured while compiling");
 
                 return false;
             }
@@ -646,17 +646,14 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
             Log.LogError($"Precompiling failed for {assembly}: {ex.Message}");
             return false;
         }
-
+        finally
+        {
+            File.Delete(responseFilePath);
+        }
 
         bool copied = false;
         foreach (var proxyFile in proxyFiles)
         {
-            if (!File.Exists(proxyFile.TempFile))
-            {
-                Log.LogError($"Precompiling failed for {assembly}. Could not find output file {proxyFile.TempFile}");
-                return false;
-            }
-
             copied |= proxyFile.CopyOutputFileIfChanged();
             _fileWrites.Add(proxyFile.TargetFile);
         }
@@ -668,7 +665,6 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
             Log.LogMessage(MessageImportance.High, $"[{count}/{_totalNumAssemblies}] {Path.GetFileName(assembly)} -> {copiedFiles}");
         }
 
-        File.Delete(responseFilePath);
         compiledAssemblies.GetOrAdd(aotAssembly.ItemSpec, aotAssembly);
         return true;
     }
@@ -677,9 +673,12 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
     {
         try
         {
-            if (!PrecompileLibrary(assemblyItem, monoPaths))
-                return !Log.HasLoggedErrors;
-            return true;
+            if (PrecompileLibrary(assemblyItem, monoPaths))
+                return true;
+        }
+        catch (LogAsErrorException laee)
+        {
+            Log.LogError($"Precompile failed for {assemblyItem}: {laee.Message}");
         }
         catch (Exception ex)
         {
@@ -687,17 +686,21 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
                 Log.LogMessage(MessageImportance.Low, $"Precompile failed for {assemblyItem}: {ex}");
             else
                 Log.LogError($"Precompile failed for {assemblyItem}: {ex}");
-
-            return false;
         }
+
+        return false;
     }
 
     private void PrecompileLibraryParallel(ITaskItem assemblyItem, string? monoPaths, ParallelLoopState state)
     {
         try
         {
-            if (!PrecompileLibrary(assemblyItem, monoPaths))
-                state.Break();
+            if (PrecompileLibrary(assemblyItem, monoPaths))
+                return;
+        }
+        catch (LogAsErrorException laee)
+        {
+            Log.LogError($"Precompile failed for {assemblyItem}: {laee.Message}");
         }
         catch (Exception ex)
         {
@@ -705,8 +708,9 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
                 Log.LogMessage(MessageImportance.Low, $"Precompile failed for {assemblyItem}: {ex}");
             else
                 Log.LogError($"Precompile failed for {assemblyItem}: {ex}");
-            state.Break();
         }
+
+        state.Break();
     }
 
     private bool GenerateAotModulesTable(ITaskItem[] assemblies, string[]? profilers, string outputFile)
@@ -926,6 +930,9 @@ internal class ProxyFile
     {
         if (!_cache.Enabled)
             return true;
+
+        if (!File.Exists(TempFile))
+            throw new LogAsErrorException($"Could not find output file {TempFile}");
 
         if (!_cache.ShouldCopy(this, out string? cause))
         {
