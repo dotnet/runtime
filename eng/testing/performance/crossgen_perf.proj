@@ -6,6 +6,9 @@
     </HelixCorrelationPayload>
   </ItemGroup>
 
+  <PropertyGroup>
+    <EnableAzurePipelinesReporter>false</EnableAzurePipelinesReporter>
+  </PropertyGroup>
   <!-- 
     Crossgen and Crossgen2 Scenario WorkItems 
   -->
