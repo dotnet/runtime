@@ -66,6 +66,7 @@ namespace Microsoft.Win32
         internal const int ERROR_ARITHMETIC_OVERFLOW = 0x216;  // 534
 
         internal const int ERROR_RESOURCE_LANG_NOT_FOUND = 0x717;  // 1815
+        internal const int ERROR_RESOURCE_TYPE_NOT_FOUND = 0x718;  // 1816
 
         // Event log specific codes:
 
