@@ -5479,8 +5479,7 @@ void Compiler::optPerformHoistExpr(GenTree* origExpr, unsigned lnum)
     // This loop has to be in a form that is approved for hoisting.
     assert(optLoopTable[lnum].lpFlags & LPFLG_HOISTABLE);
 
-    // Create a copy 
-    of the expression and mark it for CSE's.
+    // Create a copy of the expression and mark it for CSE's.
     GenTree* hoistExpr = gtCloneExpr(origExpr, GTF_MAKE_CSE);
 
     // The hoist Expr does not have to computed into a specific register,
