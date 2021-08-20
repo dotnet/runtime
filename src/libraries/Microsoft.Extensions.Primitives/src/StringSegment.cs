@@ -102,7 +102,8 @@ namespace Microsoft.Extensions.Primitives
                     ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.index);
                 }
 
-                return Buffer![Offset + index];
+                Debug.Assert(Buffer is not null);
+                return Buffer[Offset + index];
             }
         }
 
