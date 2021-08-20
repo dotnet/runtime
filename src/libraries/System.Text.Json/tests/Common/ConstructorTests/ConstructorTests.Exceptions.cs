@@ -204,6 +204,7 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/39055 (already fixed in main)")]
         public async Task PathForChildDictionaryFails()
         {
             JsonException e = await Assert.ThrowsAsync<JsonException>(() => JsonSerializerWrapperForString.DeserializeWrapper<RootClass>(@"{""Child"":{""MyDictionary"":{""Key"": bad]"));
