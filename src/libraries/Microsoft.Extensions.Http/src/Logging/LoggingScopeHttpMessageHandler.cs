@@ -58,6 +58,7 @@ namespace Microsoft.Extensions.Http.Logging
         }
 
         /// <inheritdoc />
+        /// <remarks>Loggs the request to and response from the sent <see cref="HttpRequestMessage"/>.</remarks>
         protected async override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
         {
             if (request == null)
