@@ -283,14 +283,6 @@ RETAIL_CONFIG_DWORD_INFO(EXTERNAL_GCCpuGroup, W("GCCpuGroup"), 0, "Specifies if 
 RETAIL_CONFIG_STRING_INFO(EXTERNAL_GCName, W("GCName"), "")
 
 ///
-/// IBC
-///
-RETAIL_CONFIG_DWORD_INFO(UNSUPPORTED_ConvertIbcData, W("ConvertIbcData"), 1, "Converts between v1 and v2 IBC data")
-RETAIL_CONFIG_DWORD_INFO(UNSUPPORTED_DisableIBC, W("DisableIBC"), 0, "Disables the use of IBC data")
-RETAIL_CONFIG_DWORD_INFO(EXTERNAL_UseIBCFile, W("UseIBCFile"), 0, "")
-
-
-///
 /// JIT
 ///
 CONFIG_DWORD_INFO(INTERNAL_JitBreakEmit, W("JitBreakEmit"), (DWORD)-1, "")
@@ -465,12 +457,6 @@ CONFIG_STRING_INFO(INTERNAL_NgenBind_ZapForbidExcludeList, W("NgenBind_ZapForbid
 CONFIG_STRING_INFO(INTERNAL_NgenBind_ZapForbidList,        W("NgenBind_ZapForbidList"), "")
 
 CONFIG_DWORD_INFO(INTERNAL_SymDiffDump, W("SymDiffDump"), 0, "Used to create the map file while binding the assembly. Used by SemanticDiffer")
-
-///
-/// NGEN
-///
-RETAIL_CONFIG_STRING_INFO(INTERNAL_NativeImageSearchPaths, W("NativeImageSearchPaths"), "Extra search paths for native composite R2R images")
-
 
 ///
 /// Profiling API / ETW
@@ -659,6 +645,7 @@ RETAIL_CONFIG_STRING_INFO(INTERNAL_ZapBBInstr, W("ZapBBInstr"), "")
 RETAIL_CONFIG_STRING_INFO(EXTERNAL_ZapBBInstrDir, W("ZapBBInstrDir"), "")
 RETAIL_CONFIG_DWORD_INFO(EXTERNAL_ZapDisable, W("ZapDisable"), 0, "")
 
+RETAIL_CONFIG_STRING_INFO(INTERNAL_NativeImageSearchPaths, W("NativeImageSearchPaths"), "Extra search paths for native composite R2R images")
 RETAIL_CONFIG_DWORD_INFO(EXTERNAL_ReadyToRun, W("ReadyToRun"), 1, "Enable/disable use of ReadyToRun native code") // On by default for CoreCLR
 RETAIL_CONFIG_STRING_INFO(EXTERNAL_ReadyToRunExcludeList, W("ReadyToRunExcludeList"), "List of assemblies that cannot use Ready to Run images")
 RETAIL_CONFIG_STRING_INFO(EXTERNAL_ReadyToRunLogFile, W("ReadyToRunLogFile"), "Name of file to log success/failure of using Ready to Run images")
