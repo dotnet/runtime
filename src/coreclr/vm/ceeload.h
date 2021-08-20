@@ -57,7 +57,6 @@ class SigTypeContext;
 class Assembly;
 class BaseDomain;
 class AppDomain;
-class CompilationDomain;
 class DomainModule;
 struct DomainLocalModule;
 class SystemDomain;

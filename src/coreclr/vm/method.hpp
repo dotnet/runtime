@@ -3151,9 +3151,8 @@ public:
     // In AppDomains, we can trigger declarer's cctor when we link the P/Invoke,
     // which takes care of inlined calls as well. See code:NDirect.NDirectLink.
     // Although the cctor is guaranteed to run in the shared domain before the
-    // target is invoked (code:IsClassConstructorTriggeredByILStub), we will
-    // trigger at it link time as well because linking may depend on it - the
-    // cctor may change the target DLL, change DLL search path etc.
+    // target is invoked, we will trigger it at link time as well because linking
+    // may depend on it - cctor may change the target DLL, DLL search path etc.
     BOOL IsClassConstructorTriggeredAtLinkTime()
     {
         LIMITED_METHOD_CONTRACT;
@@ -3163,21 +3162,7 @@ public:
             return FALSE;
         return !pMT->GetClass()->IsBeforeFieldInit();
     }
-
-#ifndef DACCESS_COMPILE
-    // In the shared domain and in NGENed code, we will trigger declarer's cctor
-    // in the marshaling stub by calling code:StubHelpers.InitDeclaringType. If
-    // this returns TRUE, the call must not be inlined.
-    BOOL IsClassConstructorTriggeredByILStub()
-    {
-        WRAPPER_NO_CONTRACT;
-
-        return (IsClassConstructorTriggeredAtLinkTime() &&
-                (IsZapped() || SystemDomain::GetCurrentDomain()->IsCompilationDomain()));
-    }
-#endif //!DACCESS_COMPILE
 };  //class NDirectMethodDesc
-
 
 //-----------------------------------------------------------------------
 // Operations specific to EEImplCall methods. We use a derived class to get
