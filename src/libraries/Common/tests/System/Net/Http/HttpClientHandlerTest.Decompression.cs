@@ -4,6 +4,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.IO.Compression;
+using System.Linq;
 using System.Net.Test.Common;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
@@ -26,19 +27,28 @@ namespace System.Net.Http.Functional.Tests
 #endif
         public HttpClientHandler_Decompression_Test(ITestOutputHelper output) : base(output) { }
 
+        public static IEnumerable<object[]> DecompressedResponse_MethodSpecified_DecompressedContentReturned_MemberData() =>
+            from compressionName in new[] { "gzip", "zlib", "deflate", "br" }
+            from all in new[] { false, true }
+            from copyTo in new[] { false, true }
+            select new object[] { compressionName, all, copyTo };
+
         [Theory]
-        [InlineData("gzip", false)]
-        [InlineData("gzip", true)]
-        [InlineData("deflate", false)]
-        [InlineData("deflate", true)]
-        [InlineData("br", false)]
-        [InlineData("br", true)]
+        [MemberData(nameof(DecompressedResponse_MethodSpecified_DecompressedContentReturned_MemberData))]
         [SkipOnPlatform(TestPlatforms.Browser, "AutomaticDecompression not supported on Browser")]
-        public async Task DecompressedResponse_MethodSpecified_DecompressedContentReturned(string encodingName, bool all)
+        public async Task DecompressedResponse_MethodSpecified_DecompressedContentReturned(string compressionName, bool all, bool useCopyTo)
         {
+            if (IsWinHttpHandler &&
+                (compressionName == "br" || compressionName == "zlib"))
+            {
+                // brotli and zlib not supported on WinHttpHandler
+                return;
+            }
+
             Func<Stream, Stream> compress;
             DecompressionMethods methods;
-            switch (encodingName)
+            string encodingName = compressionName;
+            switch (compressionName)
             {
                 case "gzip":
                     compress = s => new GZipStream(s, CompressionLevel.Optimal, leaveOpen: true);
@@ -47,29 +57,24 @@ namespace System.Net.Http.Functional.Tests
 
 #if !NETFRAMEWORK
                 case "br":
-                    if (IsWinHttpHandler)
-                    {
-                        // Brotli only supported on SocketsHttpHandler.
-                        return;
-                    }
-
                     compress = s => new BrotliStream(s, CompressionLevel.Optimal, leaveOpen: true);
                     methods = all ? DecompressionMethods.Brotli : _all;
                     break;
-
-                case "deflate":
-                    // WinHttpHandler continues to use DeflateStream as it doesn't have a newer build than netstandard2.0
-                    // and doesn't have access to ZLibStream.
-                    compress = IsWinHttpHandler ?
-                        new Func<Stream, Stream>(s => new DeflateStream(s, CompressionLevel.Optimal, leaveOpen: true)) :
-                        new Func<Stream, Stream>(s => new ZLibStream(s, CompressionLevel.Optimal, leaveOpen: true));
-                    methods = all ? DecompressionMethods.Deflate : _all;
-                    break;
 #endif
 
+                case "zlib":
+                    compress = s => new ZLibStream(s, CompressionLevel.Optimal, leaveOpen: true);
+                    methods = all ? DecompressionMethods.Deflate : _all;
+                    encodingName = "deflate";
+                    break;
+
+                case "deflate":
+                    compress = s => new DeflateStream(s, CompressionLevel.Optimal, leaveOpen: true);
+                    methods = all ? DecompressionMethods.Deflate : _all;
+                    break;
+
                 default:
-                    Assert.Contains(encodingName, new[] { "br", "deflate", "gzip" });
-                    return;
+                    throw new Exception($"Unexpected compression: {compressionName}");
             }
 
             var expectedContent = new byte[12345];
@@ -81,7 +86,7 @@ namespace System.Net.Http.Functional.Tests
                 using (HttpClient client = CreateHttpClient(handler))
                 {
                     handler.AutomaticDecompression = methods;
-                    Assert.Equal<byte>(expectedContent, await client.GetByteArrayAsync(uri));
+                    Assert.Equal<byte>(expectedContent, await client.GetByteArrayAsync(TestAsync, useCopyTo, uri));
                 }
             }, async server =>
             {
@@ -99,33 +104,39 @@ namespace System.Net.Http.Functional.Tests
 
         public static IEnumerable<object[]> DecompressedResponse_MethodNotSpecified_OriginalContentReturned_MemberData()
         {
-            yield return new object[]
+            foreach (bool useCopyTo in new[] { false, true })
             {
-                "gzip",
-                new Func<Stream, Stream>(s => new GZipStream(s, CompressionLevel.Optimal, leaveOpen: true)),
-                DecompressionMethods.None
-            };
+                yield return new object[]
+                {
+                    "gzip",
+                    new Func<Stream, Stream>(s => new GZipStream(s, CompressionLevel.Optimal, leaveOpen: true)),
+                    DecompressionMethods.None,
+                    useCopyTo
+                };
 #if !NETFRAMEWORK
-            yield return new object[]
-            {
-                "deflate",
-                new Func<Stream, Stream>(s => new ZLibStream(s, CompressionLevel.Optimal, leaveOpen: true)),
-                DecompressionMethods.Brotli
-            };
-            yield return new object[]
-            {
-                "br",
-                new Func<Stream, Stream>(s => new BrotliStream(s, CompressionLevel.Optimal, leaveOpen: true)),
-                DecompressionMethods.Deflate | DecompressionMethods.GZip
-            };
+                yield return new object[]
+                {
+                    "deflate",
+                    new Func<Stream, Stream>(s => new ZLibStream(s, CompressionLevel.Optimal, leaveOpen: true)),
+                    DecompressionMethods.Brotli,
+                    useCopyTo
+                };
+                yield return new object[]
+                {
+                    "br",
+                    new Func<Stream, Stream>(s => new BrotliStream(s, CompressionLevel.Optimal, leaveOpen: true)),
+                    DecompressionMethods.Deflate | DecompressionMethods.GZip,
+                    useCopyTo
+                };
 #endif
+            }
         }
 
         [Theory]
         [MemberData(nameof(DecompressedResponse_MethodNotSpecified_OriginalContentReturned_MemberData))]
         [SkipOnPlatform(TestPlatforms.Browser, "AutomaticDecompression not supported on Browser")]
         public async Task DecompressedResponse_MethodNotSpecified_OriginalContentReturned(
-            string encodingName, Func<Stream, Stream> compress, DecompressionMethods methods)
+            string encodingName, Func<Stream, Stream> compress, DecompressionMethods methods, bool useCopyTo)
         {
             var expectedContent = new byte[12345];
             new Random(42).NextBytes(expectedContent);
@@ -143,7 +154,7 @@ namespace System.Net.Http.Functional.Tests
                 using (HttpClient client = CreateHttpClient(handler))
                 {
                     handler.AutomaticDecompression = methods;
-                    Assert.Equal<byte>(compressedContent, await client.GetByteArrayAsync(uri));
+                    Assert.Equal<byte>(compressedContent, await client.GetByteArrayAsync(TestAsync, useCopyTo, uri));
                 }
             }, async server =>
             {

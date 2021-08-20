@@ -196,5 +196,42 @@ namespace System.Net.Http.Functional.Tests
 #endif
             }
         }
+
+        public static Task<byte[]> GetByteArrayAsync(this HttpClient client, bool async, bool useCopyTo, Uri uri)
+        {
+            return Task.Run(async () =>
+            {
+                var m = new HttpRequestMessage(HttpMethod.Get, uri);
+                using HttpResponseMessage r = async ? await client.SendAsync(m, HttpCompletionOption.ResponseHeadersRead) : client.Send(m, HttpCompletionOption.ResponseHeadersRead);
+                using Stream s = async ? await r.Content.ReadAsStreamAsync() : r.Content.ReadAsStream();
+
+                var result = new MemoryStream();
+                if (useCopyTo)
+                {
+                    if (async)
+                    {
+                        await s.CopyToAsync(result);
+                    }
+                    else
+                    {
+                        s.CopyTo(result);
+                    }
+                }
+                else
+                {
+                    byte[] buffer = new byte[100];
+                    while (true)
+                    {
+                        int bytesRead = async ? await s.ReadAsync(buffer) : s.Read(buffer);
+                        if (bytesRead == 0)
+                        {
+                            break;
+                        }
+                        result.Write(buffer.AsSpan(0, bytesRead));
+                    }
+                }
+                return result.ToArray();
+            });
+        }
     }
 }
