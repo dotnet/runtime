@@ -85,8 +85,11 @@ inline void FATAL_GC_ERROR()
 #define FEATURE_PREMORTEM_FINALIZATION
 #define GC_HISTORY
 
+// andrewau
+// #define BACKGROUND_GC   //concurrent background GC (requires WRITE_WATCH)
+
 // We need the lower 3 bits in the MT to do our bookkeeping so doubly linked free list is only for 64-bit
-#ifdef HOST_64BIT
+#if defined(BACKGROUND_GC) && defined(HOST_64BIT)
 #define DOUBLY_LINKED_FL
 #endif //HOST_64BIT
 
@@ -98,8 +101,6 @@ inline void FATAL_GC_ERROR()
 #ifdef HEAP_ANALYZE
 #define initial_internal_roots        (1024*16)
 #endif // HEAP_ANALYZE
-
-#define BACKGROUND_GC   //concurrent background GC (requires WRITE_WATCH)
 
 #ifdef SERVER_GC
 #define MH_SC_MARK //scalable marking
@@ -5918,14 +5919,7 @@ inline gc_oh_num heap_segment_oh (heap_segment * inst)
     }
 }
 
-#ifdef BACKGROUND_GC
 #ifdef USE_REGIONS
-inline
-bool heap_segment_overflow_p (heap_segment* inst)
-{
-    return ((inst->flags & heap_segment_flags_overflow) != 0);
-}
-
 inline
 region_free_list*& heap_segment_containing_free_list (heap_segment* inst)
 {
@@ -5936,6 +5930,15 @@ inline
 PTR_heap_segment& heap_segment_prev_free_region (heap_segment* inst)
 {
     return inst->prev_free_region;
+}
+#endif //USE_REGIONS
+
+#ifdef BACKGROUND_GC
+#ifdef USE_REGIONS
+inline
+bool heap_segment_overflow_p (heap_segment* inst)
+{
+    return ((inst->flags & heap_segment_flags_overflow) != 0);
 }
 #endif //USE_REGIONS
 
