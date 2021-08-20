@@ -1,0 +1,34 @@
+﻿// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
+namespace Microsoft.Extensions.DependencyModel
+{
+    using System;
+    using System.Collections.Generic;
+
+    internal static class LibraryCollectionExtensions
+
+    {
+        public static IDictionary<string, T> LibraryCollectionToDictionary<T>(this IReadOnlyList<T> collection) where T : Library
+        {
+            var dictionary = new Dictionary<string, T>(StringComparer.OrdinalIgnoreCase);
+
+            foreach (var element in collection)
+            {
+                if (string.IsNullOrWhiteSpace(element.Name))
+                {
+                    continue;
+                }
+
+                if (dictionary.ContainsKey(element.Name))
+                {
+                    throw new ArgumentException($"An item with the same key '{element.Name}' has already been added from collection of type '{collection.GetType()}'.");
+                }
+
+                dictionary.Add(element.Name, element);
+            }
+
+            return dictionary;
+        }
+    }
+}

@@ -11,31 +11,6 @@ using System.Text.Json;
 
 namespace Microsoft.Extensions.DependencyModel
 {
-    public static class ReadOnlyListExtensions
-    {
-        public static IDictionary<string, T> ConvertToDictionary<T>(this IReadOnlyList<T> list) where T : Library
-        {
-            var dictionary = new Dictionary<string, T>(StringComparer.OrdinalIgnoreCase);
-
-            foreach (var element in list)
-            {
-                if (string.IsNullOrWhiteSpace(element.Name))
-                {
-                    continue;
-                }
-
-                if (dictionary.ContainsKey(element.Name))
-                {
-                    throw new ArgumentException($"An item with the same key '{element.Name}' has already been added from list of type '{list.GetType()}'.");
-                }
-
-                dictionary.Add(element.Name, element);
-            }
-
-            return dictionary;
-        }
-    }
-
     public class DependencyContextWriter
     {
         public void Write(DependencyContext context, Stream stream)
@@ -174,8 +149,8 @@ namespace Microsoft.Extensions.DependencyModel
 
         private void WritePortableTarget(string key, IReadOnlyList<RuntimeLibrary> runtimeLibraries, IReadOnlyList<CompilationLibrary> compilationLibraries, Utf8JsonWriter jsonWriter)
         {
-            var runtimeLookup = runtimeLibraries.ConvertToDictionary();
-            var compileLookup = compilationLibraries.ConvertToDictionary();
+            var runtimeLookup = runtimeLibraries.LibraryCollectionToDictionary();
+            var compileLookup = compilationLibraries.LibraryCollectionToDictionary();
 
             jsonWriter.WriteStartObject(key);
 
