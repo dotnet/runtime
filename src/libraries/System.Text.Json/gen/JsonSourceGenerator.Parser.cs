@@ -403,7 +403,7 @@ namespace System.Text.Json.SourceGeneration
                 return typeGenerationSpec;
             }
 
-            internal static bool IsSyntaxTargetForGeneration(SyntaxNode node) => node is ClassDeclarationSyntax { AttributeLists: { Count: > 0 }, BaseList: { Types : {Count : 0 } } };
+            internal static bool IsSyntaxTargetForGeneration(SyntaxNode node) => node is ClassDeclarationSyntax { AttributeLists: { Count: > 0 }, BaseList: { Types : {Count : > 0 } } };
 
             internal static ClassDeclarationSyntax? IsSemanticTargetForGeneration(GeneratorSyntaxContext context)
             {
