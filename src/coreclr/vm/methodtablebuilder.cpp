@@ -21,7 +21,6 @@
 #include "ecmakey.h"
 #include "customattribute.h"
 #include "typestring.h"
-#include "compile.h"
 
 //*******************************************************************************
 // Helper functions to sort GCdescs by offset (decending order)
@@ -1156,7 +1155,6 @@ BOOL MethodTableBuilder::CheckIfSIMDAndUpdateSize()
         COMPlusThrow(kTypeLoadException, IDS_EE_SIMD_NGEN_DISALLOWED);
     }
 
-#ifndef CROSSGEN_COMPILE
     if (!TargetHasAVXSupport())
         return false;
 
@@ -1178,7 +1176,6 @@ BOOL MethodTableBuilder::CheckIfSIMDAndUpdateSize()
             }
         }
     }
-#endif // !CROSSGEN_COMPILE
 #endif // defined(TARGET_X86) || defined(TARGET_AMD64)
     return false;
 }
@@ -1515,23 +1512,6 @@ MethodTableBuilder::BuildMethodTableThrowing(
         if (hr == S_OK && (strcmp(nameSpace, "System.Runtime.Intrinsics.X86") == 0))
 #endif
         {
-#if defined(CROSSGEN_COMPILE)
-#if defined(TARGET_X86) || defined(TARGET_AMD64) || defined(TARGET_ARM64)
-            if ((!IsNgenPDBCompilationProcess()
-                && GetAppDomain()->ToCompilationDomain()->GetTargetModule() != g_pObjectClass->GetModule()))
-#endif // defined(TARGET_X86) || defined(TARGET_AMD64) || defined(TARGET_ARM64)
-            {
-                // Disable AOT compiling for managed implementation of hardware intrinsics.
-                // We specially treat them here to ensure correct ISA features are set during compilation
-                //
-                // When a hardware intrinsic is not supported, the JIT can generate a PlatformNotSupportedException
-                // at runtime. We cannot do the same in AOT. AOT generated ones would cause illegal instruction traps.
-                //
-                // To avoid it, one must make sure all usages are protected under IsSupported. We can guarantee this for
-                // CoreLib. That's why we can allow these to AOT compile in CoreLib:
-                COMPlusThrow(kTypeLoadException, IDS_EE_HWINTRINSIC_NGEN_DISALLOWED);
-            }
-#endif // defined(CROSSGEN_COMPILE)
             bmtProp->fIsHardwareIntrinsic = true;
         }
     }
@@ -1802,18 +1782,7 @@ MethodTableBuilder::BuildMethodTableThrowing(
 
     // Now setup the method table
 
-#ifdef FEATURE_PREJIT
-    Module *pComputedPZM = pLoaderModule;
-
-    if (bmtGenerics->GetNumGenericArgs() > 0)
-    {
-        pComputedPZM = Module::ComputePreferredZapModule(pModule, bmtGenerics->GetInstantiation());
-    }
-
-    SetupMethodTable2(pLoaderModule, pComputedPZM);
-#else // FEATURE_PREJIT
     SetupMethodTable2(pLoaderModule);
-#endif // FEATURE_PREJIT
 
     MethodTable * pMT = GetHalfBakedMethodTable();
 
@@ -2074,10 +2043,6 @@ MethodTableBuilder::BuildMethodTableThrowing(
         pModule,
         GetCl(),
         GetHalfBakedMethodTable());
-
-#ifdef FEATURE_PREJIT
-    _ASSERTE(pComputedPZM == Module::GetPreferredZapModuleForMethodTable(pMT));
-#endif // FEATURE_PREJIT
 
     return GetHalfBakedMethodTable();
 } // MethodTableBuilder::BuildMethodTableThrowing
@@ -3021,11 +2986,11 @@ MethodTableBuilder::EnumerateClassMethods()
 
             // Some interface checks.
             // We only need them if default interface method support is disabled or if this is fragile crossgen
-#if !defined(FEATURE_DEFAULT_INTERFACES) || defined(FEATURE_NATIVE_IMAGE_GENERATION)
+#if !defined(FEATURE_DEFAULT_INTERFACES)
             if (fIsClassInterface
 #if defined(FEATURE_DEFAULT_INTERFACES)
                 // Only fragile crossgen wasn't upgraded to deal with default interface methods.
-                && !IsReadyToRunCompilation() && !IsNgenPDBCompilationProcess()
+                && !IsNgenPDBCompilationProcess()
 #endif
                 )
             {
@@ -3045,7 +3010,7 @@ MethodTableBuilder::EnumerateClassMethods()
                     }
                 }
             }
-#endif // !defined(FEATURE_DEFAULT_INTERFACES) || defined(FEATURE_NATIVE_IMAGE_GENERATION)
+#endif // !defined(FEATURE_DEFAULT_INTERFACES)
 
             // No synchronized methods in ValueTypes
             if(fIsClassValueType && IsMiSynchronized(dwImplFlags))
@@ -6784,7 +6749,7 @@ VOID MethodTableBuilder::ValidateStaticMethodImpl(
     bmtMethodHandle     hDecl,
     bmtMethodHandle     hImpl)
 {
-    // While we don't want to place the static method impl declarations on the class/interface, we do 
+    // While we don't want to place the static method impl declarations on the class/interface, we do
     // need to validate the method constraints and signature are compatible
     if (!bmtProp->fNoSanityChecks)
     {
@@ -6943,10 +6908,8 @@ VOID MethodTableBuilder::AllocAndInitMethodDescs()
             }
         }
 
-#ifndef CROSSGEN_COMPILE
         if (tokenRange != currentTokenRange ||
             sizeOfMethodDescs + size > MethodDescChunk::MaxSizeOfMethodDescs)
-#endif // CROSSGEN_COMPILE
         {
             if (sizeOfMethodDescs != 0)
             {
@@ -9008,11 +8971,7 @@ void MethodTableBuilder::CopyExactParentSlots(MethodTable *pMT, MethodTable *pAp
                 // The slot lives in a chunk shared from the approximate parent MT
                 // If so, we need to change to share the chunk from the exact parent MT
 
-#ifdef FEATURE_PREJIT
-                _ASSERTE(MethodTable::CanShareVtableChunksFrom(pParentMT, pMT->GetLoaderModule(), Module::GetPreferredZapModuleForMethodTable(pMT)));
-#else
                 _ASSERTE(MethodTable::CanShareVtableChunksFrom(pParentMT, pMT->GetLoaderModule()));
-#endif
 
                 pMT->GetVtableIndirections()[indirectionIndex].SetValueMaybeNull(pParentMT->GetVtableIndirections()[indirectionIndex].GetValueMaybeNull());
 
@@ -9105,7 +9064,7 @@ MethodTableBuilder::LoadExactInterfaceMap(MethodTable *pMT)
     // to represent a type instantiated over its own generic variables, and the special marker type is currently the open type
     // and we make this case distinguishable by simply disallowing the optimization in those cases.
     bool retryWithExactInterfaces = !pMT->IsValueType() || pMT->IsSharedByGenericInstantiations() || pMT->ContainsGenericVariables();
-    
+
     DWORD nAssigned = 0;
     do
     {
@@ -9148,7 +9107,7 @@ MethodTableBuilder::LoadExactInterfaceMap(MethodTable *pMT)
                     MethodTable *pItfPossiblyApprox = intIt.GetInterfaceApprox();
                     if (uninstGenericCase && pItfPossiblyApprox->HasInstantiation() && pItfPossiblyApprox->ContainsGenericVariables())
                     {
-                        // We allow a limited set of interface generic shapes with type variables. In particular, we require the 
+                        // We allow a limited set of interface generic shapes with type variables. In particular, we require the
                         // instantiations to be exactly simple type variables, and to have a relatively small number of generic arguments
                         // so that the fallback instantiating logic works efficiently
                         if (InstantiationIsAllTypeVariables(pItfPossiblyApprox->GetInstantiation()) && pItfPossiblyApprox->GetInstantiation().GetNumArgs() <= MethodTable::MaxGenericParametersForSpecialMarkerType)
@@ -9194,7 +9153,7 @@ MethodTableBuilder::LoadExactInterfaceMap(MethodTable *pMT)
 #endif
     // We have a special algorithm for interface maps in CoreLib, which doesn't expand interfaces, and assumes no ambiguous
     // duplicates. Code related to this is marked with #SpecialCorelibInterfaceExpansionAlgorithm
-    _ASSERTE(!duplicates || !(pMT->GetModule()->IsSystem() && pMT->IsValueType())); 
+    _ASSERTE(!duplicates || !(pMT->GetModule()->IsSystem() && pMT->IsValueType()));
 
     CONSISTENCY_CHECK(duplicates || (nAssigned == pMT->GetNumInterfaces()));
     if (duplicates)
@@ -9759,21 +9718,6 @@ void MethodTableBuilder::CheckForSystemTypes()
                 // These __m128 and __m256 types, among other requirements, are special in that they must always
                 // be aligned properly.
 
-#ifdef CROSSGEN_COMPILE
-                // Disable AOT compiling for the SIMD hardware intrinsic types. These types require special
-                // ABI handling as they represent fundamental data types (__m64, __m128, and __m256) and not
-                // aggregate or union types. See https://github.com/dotnet/runtime/issues/9578
-                //
-                // Once they are properly handled according to the ABI requirements, we can remove this check
-                // and allow them to be used in crossgen/AOT scenarios.
-                //
-                // We can allow these to AOT compile in CoreLib since CoreLib versions with the runtime.
-                if (!IsNgenPDBCompilationProcess() &&
-                    GetAppDomain()->ToCompilationDomain()->GetTargetModule() != g_pObjectClass->GetModule())
-                {
-                    COMPlusThrow(kTypeLoadException, IDS_EE_HWINTRINSIC_NGEN_DISALLOWED);
-                }
-#endif
 
                 if (strcmp(name, g_Vector64Name) == 0)
                 {
@@ -9974,9 +9918,6 @@ MethodTable * MethodTableBuilder::AllocateNewMT(
 #ifdef FEATURE_COMINTEROP
         , BOOL fHasDynamicInterfaceMap
 #endif
-#ifdef FEATURE_PREJIT
-        , Module *pComputedPZM
-#endif // FEATURE_PREJIT
         , AllocMemTracker *pamTracker
     )
 {
@@ -10042,9 +9983,6 @@ MethodTable * MethodTableBuilder::AllocateNewMT(
     S_SIZE_T offsetOfUnsharedVtableChunks = cbTotalSize;
 
     BOOL canShareVtableChunks = pMTParent && MethodTable::CanShareVtableChunksFrom(pMTParent, pLoaderModule
-#ifdef FEATURE_PREJIT
-        , pComputedPZM
-#endif //FEATURE_PREJIT
         );
 
     // If pMTParent has a generic instantiation, we cannot share its vtable chunks
@@ -10225,11 +10163,7 @@ MethodTable * MethodTableBuilder::AllocateNewMT(
 
 VOID
 MethodTableBuilder::SetupMethodTable2(
-        Module * pLoaderModule
-#ifdef FEATURE_PREJIT
-        , Module * pComputedPZM
-#endif // FEATURE_PREJIT
-    )
+        Module * pLoaderModule)
 {
     CONTRACTL
     {
@@ -10298,9 +10232,6 @@ MethodTableBuilder::SetupMethodTable2(
 #ifdef FEATURE_COMINTEROP
                                    fHasDynamicInterfaceMap,
 #endif
-#ifdef FEATURE_PREJIT
-                                   pComputedPZM,
-#endif //FEATURE_PREJIT
                                    GetMemTracker());
 
     pMT->SetClass(pClass);
@@ -11304,8 +11235,7 @@ BOOL MethodTableBuilder::NeedsAlignedBaseOffset()
     if (!GetModule()->GetFile()->IsILImageReadyToRun())
     {
         // Always use ReadyToRun field layout algorithm to produce ReadyToRun images
-        if (!IsReadyToRunCompilation())
-            return FALSE;
+        return FALSE;
     }
 
     if (!ModulesAreDistributedAsAnIndivisibleUnit(GetModule(), pParentMT->GetModule()) ||

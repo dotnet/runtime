@@ -101,9 +101,7 @@ public:
     DWORD         OSR_HighId() const { LIMITED_METHOD_CONTRACT; return dwOSR_HighId; }
 #endif
 
-#ifndef CROSSGEN_COMPILE
     bool          BackpatchEntryPointSlots() const { LIMITED_METHOD_CONTRACT; return backpatchEntryPointSlots; }
-#endif
 
 #if defined(FEATURE_GDBJIT) && defined(_DEBUG)
     inline bool ShouldDumpElfOnMethod(LPCUTF8 methodName) const
@@ -699,9 +697,7 @@ private: //----------------------------------------------------------------
     DWORD dwOSR_HighId;
 #endif
 
-#ifndef CROSSGEN_COMPILE
     bool backpatchEntryPointSlots;
-#endif
 
 #if defined(FEATURE_GDBJIT) && defined(_DEBUG)
     LPCUTF8 pszGDBJitElfDump;

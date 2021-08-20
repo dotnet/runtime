@@ -607,24 +607,6 @@ InstantiatedMethodDesc::FindLoadedInstantiatedMethodDesc(MethodTable *pExactOrRe
     if (resultMD != NULL)
        RETURN((InstantiatedMethodDesc*) resultMD);
 
-#ifdef FEATURE_PREJIT
-    // Next look in the preferred zap module
-    Module *pPreferredZapModule = Module::ComputePreferredZapModule(pExactOrRepMT->GetModule(),
-                                                                    pExactOrRepMT->GetInstantiation(),
-                                                                    methodInst);
-    if (pPreferredZapModule->HasNativeImage())
-    {
-        resultMD = pPreferredZapModule->GetInstMethodHashTable()->FindMethodDesc(TypeHandle(pExactOrRepMT),
-                                                                                 methodDef,
-                                                                                 FALSE /* not forceBoxedEntryPoint */,
-                                                                                 methodInst,
-                                                                                 getWrappedCode);
-
-       if (resultMD != NULL)
-           RETURN((InstantiatedMethodDesc*) resultMD);
-    }
-#endif // FEATURE_PREJIT
-
     RETURN(NULL);
 }
 
@@ -1624,22 +1606,6 @@ void MethodDesc::LoadConstraintsForTypicalMethodDefinition(BOOL *pfHasCircularCl
     return;
 }
 
-
-#ifdef FEATURE_PREJIT
-
-void MethodDesc::PrepopulateDictionary(DataImage * image, BOOL nonExpansive)
-{
-    STANDARD_VM_CONTRACT;
-
-     // Note the strong similarity to MethodTable::PrepopulateDictionary
-     if (GetMethodDictionary())
-     {
-         LOG((LF_JIT, LL_INFO10000, "GENERICS: Prepopulating dictionary for MD %s\n",  this));
-         GetMethodDictionary()->PrepopulateDictionary(this, NULL, nonExpansive);
-     }
-}
-
-#endif // FEATURE_PREJIT
 
 #ifndef DACCESS_COMPILE
 

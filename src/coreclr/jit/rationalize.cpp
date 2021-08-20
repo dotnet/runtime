@@ -201,7 +201,7 @@ void Rationalizer::RewriteSIMDIndir(LIR::Use& use)
 void Rationalizer::RewriteNodeAsCall(GenTree**             use,
                                      ArrayStack<GenTree*>& parents,
                                      CORINFO_METHOD_HANDLE callHnd,
-#ifdef FEATURE_READYTORUN_COMPILER
+#ifdef FEATURE_READYTORUN
                                      CORINFO_CONST_LOOKUP entryPoint,
 #endif
                                      GenTreeCall::Use* args)
@@ -221,7 +221,7 @@ void Rationalizer::RewriteNodeAsCall(GenTree**             use,
     assert(JITtype2varType(sig.retType) == tree->gtType);
 #endif // DEBUG
 
-#ifdef FEATURE_READYTORUN_COMPILER
+#ifdef FEATURE_READYTORUN
     call->AsCall()->setEntryPoint(entryPoint);
 #endif
 
@@ -285,7 +285,7 @@ void Rationalizer::RewriteIntrinsicAsUserCall(GenTree** use, ArrayStack<GenTree*
     }
 
     RewriteNodeAsCall(use, parents, intrinsic->gtMethodHandle,
-#ifdef FEATURE_READYTORUN_COMPILER
+#ifdef FEATURE_READYTORUN
                       intrinsic->gtEntryPoint,
 #endif
                       args);

@@ -20,10 +20,6 @@
 
 #include "ex.h"
 
-#ifdef FEATURE_PREJIT
-#include <corcompile.h>
-#endif
-
 using namespace StreamUtil;
 
 #define MAX_CHAIN_LENGTH 20             // Max chain length before rehashing.
