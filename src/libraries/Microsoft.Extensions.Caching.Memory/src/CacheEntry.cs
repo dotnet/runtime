@@ -20,7 +20,7 @@ namespace Microsoft.Extensions.Caching.Memory
         private TimeSpan? _absoluteExpirationRelativeToNow;
         private TimeSpan? _slidingExpiration;
         private long? _size;
-        private CacheEntry _previous; // this field is not null only before the entry is added to the cache
+        private CacheEntry _previous; // this field is not null only before the entry is added to the cache and tracking is enabled
         private object _value;
         private CacheEntryState _state;
 
