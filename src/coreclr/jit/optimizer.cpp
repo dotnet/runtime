@@ -5479,7 +5479,8 @@ void Compiler::optPerformHoistExpr(GenTree* origExpr, unsigned lnum)
     // This loop has to be in a form that is approved for hoisting.
     assert(optLoopTable[lnum].lpFlags & LPFLG_HOISTABLE);
 
-    // Create a copy of the expression and mark it for CSE's.
+    // Create a copy 
+    of the expression and mark it for CSE's.
     GenTree* hoistExpr = gtCloneExpr(origExpr, GTF_MAKE_CSE);
 
     // The hoist Expr does not have to computed into a specific register,
@@ -5513,7 +5514,7 @@ void Compiler::optPerformHoistExpr(GenTree* origExpr, unsigned lnum)
     hoist     = fgMorphTree(hoist);
 
 #ifdef DEBUG
-    if ((JitConfig.JitDoEarlyProp() > 0) || opts.optRepeat)
+    if ((JitConfig.JitDoEarlyProp() == 0) || opts.optRepeat)
     {
         // Normally its EarlyProp's responsibility to propagate these trees/flags
         preHead->bbFlags |= BBF_HAS_NULLCHECK | BBF_HAS_IDX_LEN;
