@@ -31,9 +31,6 @@ endif()
 
 set(metadata_win32_sources
     w32file-win32.c
-    icall-windows.c
-    marshal-windows.c
-    mono-security-windows.c
     w32event-win32.c
     w32error-win32.c)
 
@@ -142,7 +139,6 @@ set(metadata_common_sources
     profiler.c
     profiler-private.h
     runtime.c
-    security.h
     string-icalls.c
     string-icalls.h
     sysmath.c
