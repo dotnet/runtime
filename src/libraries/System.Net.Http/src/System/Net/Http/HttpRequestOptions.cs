@@ -51,7 +51,13 @@ namespace System.Net.Http
             value = default(TValue);
             return false;
         }
-
+        
+        ///<summary>
+        ///Sets an options for the HTTP Request.
+        ///</summary>
+        ///<param name="key">The key for the option.</param>
+        ///<param name="value">The value to set the option to</param>
+        ///<typeparam name="TValue">The type of the value to set the option to.</typeparam>
         public void Set<TValue>(HttpRequestOptionsKey<TValue> key, TValue value)
         {
             Options[key.Key] = value;
