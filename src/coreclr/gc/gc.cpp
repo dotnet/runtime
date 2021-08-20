@@ -6,7 +6,7 @@
 // #Overview
 //
 // GC automatically manages memory allocated by managed code.
-// The design doc for GC can be found at Documentation/botr/garbage-collection.md
+// The design doc for GC can be found at docs/design/coreclr/botr/garbage-collection.md
 //
 // This file includes both the code for GC and the allocator. The most common
 // case for a GC to be triggered is from the allocator code. See
