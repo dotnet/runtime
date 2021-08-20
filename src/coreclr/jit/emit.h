@@ -1481,7 +1481,10 @@ protected:
 
     ssize_t emitGetInsCIdisp(instrDesc* id);
     unsigned emitGetInsCIargs(instrDesc* id);
+
+#ifdef DEBUG
     inline static emitAttr emitGetMemOpSize(instrDesc* id);
+#endif // DEBUG
 
     // Return the argument count for a direct call "id".
     int emitGetInsCDinfo(instrDesc* id);
@@ -2794,14 +2797,23 @@ inline unsigned emitter::emitGetInsCIargs(instrDesc* id)
     }
 }
 
+#ifdef DEBUG
 //-----------------------------------------------------------------------------
-//  emitGetMemOpSize: Get the memory operand size of instrDesc.
+// emitGetMemOpSize: Get the memory operand size of instrDesc.
 //
+// Note: vextractf128 has a 128-bit output (register or memory) but a 256-bit input (register).
+// vinsertf128 is the inverse with a 256-bit output (register), a 256-bit input(register),
+// and a 128-bit input (register or memory).
+// This method is mainly used for such instructions to return the appropriate memory operand
+// size, otherwise returns the regular operand size of the instruction.
+
 //  Arguments:
 //       id - Instruction descriptor
 //
 /* static */ emitAttr emitter::emitGetMemOpSize(instrDesc* id)
 {
+    emitAttr defaultSize = id->idOpSize();
+    emitAttr newSize     = defaultSize;
     switch (id->idIns())
     {
         case INS_vextractf128:
@@ -2845,6 +2857,7 @@ inline unsigned emitter::emitGetInsCIargs(instrDesc* id)
         }
     }
 }
+#endif // DEBUG
 
 #endif // TARGET_XARCH
 
