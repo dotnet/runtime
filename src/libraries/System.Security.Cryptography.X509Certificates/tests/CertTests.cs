@@ -486,14 +486,17 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             }
         }
 
-
         [Fact]
-        public static void RawDataMemory_RoundTrip()
+        public static void RawDataMemory_RoundTrip_LifetimeIndependentOfCert()
         {
+            ReadOnlyMemory<byte> memory;
+
             using (X509Certificate2 cert = new X509Certificate2(TestData.MsCertificate))
             {
-                AssertExtensions.SequenceEqual(TestData.MsCertificate.AsSpan(), cert.RawDataMemory.Span);
+                memory = cert.RawDataMemory;
             }
+
+            AssertExtensions.SequenceEqual(TestData.MsCertificate.AsSpan(), memory.Span);
         }
 
         [Fact]
