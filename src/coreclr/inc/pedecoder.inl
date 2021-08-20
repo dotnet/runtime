@@ -20,7 +20,6 @@ inline PEDecoder::PEDecoder()
     m_flags(0),
     m_pNTHeaders(nullptr),
     m_pCorHeader(nullptr),
-    m_pNativeHeader(nullptr),
     m_pReadyToRunHeader(nullptr)
 {
     CONTRACTL
@@ -95,7 +94,6 @@ inline PEDecoder::PEDecoder(PTR_VOID mappedBase, bool fixedUp /*= FALSE*/)
     m_flags(FLAG_MAPPED | FLAG_CONTENTS | FLAG_NT_CHECKED | (fixedUp ? FLAG_RELOCATED : 0)),
     m_pNTHeaders(nullptr),
     m_pCorHeader(nullptr),
-    m_pNativeHeader(nullptr),
     m_pReadyToRunHeader(nullptr)
 {
     CONTRACTL
@@ -134,7 +132,6 @@ inline PEDecoder::PEDecoder(void *flatBase, COUNT_T size)
     m_flags(FLAG_CONTENTS),
     m_pNTHeaders(NULL),
     m_pCorHeader(NULL),
-    m_pNativeHeader(NULL),
     m_pReadyToRunHeader(NULL)
 {
     CONTRACTL
@@ -210,7 +207,6 @@ inline void PEDecoder::Reset()
     m_size=NULL;
     m_pNTHeaders=NULL;
     m_pCorHeader=NULL;
-    m_pNativeHeader=NULL;
     m_pReadyToRunHeader=NULL;
 }
 #endif // #ifndef DACCESS_COMPILE
