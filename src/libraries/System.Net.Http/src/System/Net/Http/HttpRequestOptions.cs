@@ -6,6 +6,10 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace System.Net.Http
 {
+    ///<summary>
+    ///It's a collection of options for an HTTP request.
+    ///This class cannot be inherited.
+    ///</summary>
     public sealed class HttpRequestOptions : IDictionary<string, object?>
     {
         private Dictionary<string, object?> Options { get; } = new Dictionary<string, object?>();
