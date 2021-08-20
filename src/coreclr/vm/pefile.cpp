@@ -16,24 +16,12 @@
 #include "peimagelayout.inl"
 #include "dlwrap.h"
 #include "invokeutil.h"
-#ifdef FEATURE_PREJIT
-#include "compile.h"
-#endif
 #include "strongnameinternal.h"
 
 #include "../binder/inc/applicationcontext.hpp"
 
-#include "clrprivbinderutil.h"
-#include "../binder/inc/coreclrbindercommon.h"
-
-
-#ifdef FEATURE_PREJIT
-#include "compile.h"
-
-#ifdef DEBUGGING_SUPPORTED
-SVAL_IMPL_INIT(DWORD, PEFile, s_NGENDebugFlags, 0);
-#endif
-#endif
+#include "assemblybinderutil.h"
+#include "../binder/inc/assemblybindercommon.hpp"
 
 #include "sha1.h"
 
@@ -51,9 +39,6 @@ PEFile::PEFile(PEImage *identity) :
 #endif
     m_identity(NULL),
     m_openedILimage(NULL),
-#ifdef FEATURE_PREJIT
-    m_nativeImage(NULL),
-#endif
     m_MDImportIsRW_Debugger_Use_Only(FALSE),
     m_bHasPersistentMDImport(FALSE),
     m_pMDImport(NULL),
@@ -105,15 +90,6 @@ PEFile::~PEFile()
     CONTRACTL_END;
 
     ReleaseMetadataInterfaces(TRUE);
-
-#ifdef FEATURE_PREJIT
-    if (m_nativeImage != NULL)
-    {
-        MarkNativeImageInvalidIfOwned();
-
-        m_nativeImage->Release();
-    }
-#endif //FEATURE_PREJIT
 
 
     if (m_openedILimage != NULL)
@@ -250,71 +226,34 @@ void PEFile::LoadLibrary(BOOL allowNativeSkip/*=TRUE*/) // if allowNativeSkip==F
         EnsureImageOpened();
     }
 
-#ifdef FEATURE_PREJIT
-    // For on-disk Dlls, we can call LoadLibrary
-    if (IsDll() && !((HasNativeImage()?m_nativeImage:GetILimage())->GetPath().IsEmpty()))
+    // Since we couldn't call LoadLibrary, we must be an IL only image
+    // or the image may still contain unfixed up stuff
+    if (!GetILimage()->IsILOnly())
     {
-        // Note that we may get a DllMain notification inside here.
-        if (allowNativeSkip && HasNativeImage())
+        if (!GetILimage()->HasV1Metadata())
+            ThrowHR(COR_E_FIXUPSINEXE); // <TODO>@todo: better error</TODO>
+    }
+
+    if (GetILimage()->IsFile())
+    {
+#ifdef TARGET_UNIX
+        bool loadILImage = GetILimage()->IsILOnly();
+#else // TARGET_UNIX
+        bool loadILImage = GetILimage()->IsILOnly() && GetILimage()->IsInBundle();
+#endif // TARGET_UNIX
+        if (loadILImage)
         {
-            m_nativeImage->Load();
-            if(!m_nativeImage->IsNativeILILOnly())
-                GetILimage()->Load();             // For IJW we have to load IL also...
+            GetILimage()->Load();
         }
         else
-            GetILimage()->Load();
+        {
+            GetILimage()->LoadFromMapped();
+        }
     }
     else
-#endif // FEATURE_PREJIT
     {
-
-        // Since we couldn't call LoadLibrary, we must be an IL only image
-        // or the image may still contain unfixed up stuff
-        // Note that we make an exception for CompilationDomains, since PEImage
-        // will map non-ILOnly images in a compilation domain.
-        if (!GetILimage()->IsILOnly() && !GetAppDomain()->IsCompilationDomain())
-        {
-            if (!GetILimage()->HasV1Metadata())
-                ThrowHR(COR_E_FIXUPSINEXE); // <TODO>@todo: better error</TODO>
-        }
-
-
-
-        // If we are already mapped, we can just use the current image.
-#ifdef FEATURE_PREJIT
-        if (allowNativeSkip && HasNativeImage())
-        {
-            m_nativeImage->LoadFromMapped();
-
-            if( !m_nativeImage->IsNativeILILOnly())
-                GetILimage()->LoadFromMapped();        // For IJW we have to load IL also...
-        }
-        else
-#endif
-        {
-            if (GetILimage()->IsFile())
-            {
-#ifdef TARGET_UNIX
-                bool loadILImage = GetILimage()->IsILOnly();
-#else // TARGET_UNIX
-                bool loadILImage = GetILimage()->IsILOnly() && GetILimage()->IsInBundle();
-#endif // TARGET_UNIX
-                if (loadILImage)
-                {
-                    GetILimage()->Load();
-                }
-                else
-                {
-                    GetILimage()->LoadFromMapped();
-                }
-            }
-            else
-            {
-                GetILimage()->LoadNoFile();
-            }
-        }
+        GetILimage()->LoadNoFile();
     }
-
 
     RETURN;
 }
@@ -414,17 +353,11 @@ BOOL PEFile::Equals(PEFile *pFile)
     // because another thread beats it; the losing thread will pick up the PEAssembly in the cache.
     if (pFile->HasHostAssembly() && this->HasHostAssembly())
     {
-        UINT_PTR fileBinderId = 0;
-        if (FAILED(pFile->GetHostAssembly()->GetBinderID(&fileBinderId)))
-            return FALSE;
+        AssemblyBinder* fileBinderId = pFile->GetHostAssembly()->GetBinder();
+        AssemblyBinder* thisBinderId = this->GetHostAssembly()->GetBinder();
 
-        UINT_PTR thisBinderId = 0;
-        if (FAILED(this->GetHostAssembly()->GetBinderID(&thisBinderId)))
+        if (fileBinderId != thisBinderId || fileBinderId == NULL)
             return FALSE;
-
-        if (fileBinderId != thisBinderId)
-            return FALSE;
-
     }
 
     // Same identity is equal
@@ -456,10 +389,6 @@ BOOL PEFile::Equals(PEImage *pImage)
     if (pImage == m_identity || pImage == m_openedILimage)
         return TRUE;
 
-#ifdef FEATURE_PREJIT
-    if(pImage == m_nativeImage)
-        return TRUE;
-#endif
     // Same identity is equal
     if (m_identity != NULL
         && m_identity->Equals(pImage))
@@ -546,13 +475,6 @@ PTR_CVOID PEFile::GetMetadata(COUNT_T *pSize)
     }
     CONTRACT_END;
 
-#ifdef FEATURE_PREJIT
-    if (HasNativeImageMetadata())
-    {
-        RETURN m_nativeImage->GetMetadata(pSize);
-    }
-#endif
-
     if (IsDynamic()
          || !GetILimage()->HasNTHeaders()
          || !GetILimage()->HasCorHeader())
@@ -581,13 +503,6 @@ PTR_CVOID PEFile::GetLoadedMetadata(COUNT_T *pSize)
         SUPPORTS_DAC;
     }
     CONTRACT_END;
-
-#ifdef FEATURE_PREJIT
-    if (HasNativeImageMetadata())
-    {
-        RETURN GetLoadedNative()->GetMetadata(pSize);
-    }
-#endif
 
     if (!HasLoadedIL()
          || !GetLoadedIL()->HasNTHeaders()
@@ -624,30 +539,13 @@ TADDR PEFile::GetIL(RVA il)
 
     PEImageLayout *image = NULL;
 
-#ifdef FEATURE_PREJIT
-    // Note it is important to get the IL from the native image if
-    // available, since we are using the metadata from the native image
-    // which has different IL rva's.
-    if (HasNativeImageMetadata())
-    {
-        image = GetLoadedNative();
+    image = GetLoadedIL();
 
 #ifndef DACCESS_COMPILE
-        // NGen images are trusted to be well-formed.
-        _ASSERTE(image->CheckILMethod(il));
+    // Verify that the IL blob is valid before giving it out
+    if (!image->CheckILMethod(il))
+        COMPlusThrowHR(COR_E_BADIMAGEFORMAT, BFA_BAD_IL_RANGE);
 #endif
-    }
-    else
-#endif // FEATURE_PREJIT
-    {
-        image = GetLoadedIL();
-
-#ifndef DACCESS_COMPILE
-        // Verify that the IL blob is valid before giving it out
-        if (!image->CheckILMethod(il))
-            COMPlusThrowHR(COR_E_BADIMAGEFORMAT, BFA_BAD_IL_RANGE);
-#endif
-    }
 
     RETURN image->GetRvaData(il);
 }
@@ -761,32 +659,19 @@ void PEFile::OpenMDImport_Unsafe()
 
     if (m_pMDImport != NULL)
         return;
-#ifdef FEATURE_PREJIT
-    if (m_nativeImage != NULL
-        && m_nativeImage->GetMDImport() != NULL
-        )
+    if (!IsDynamic()
+        && GetILimage()->HasNTHeaders()
+            && GetILimage()->HasCorHeader())
     {
-        // Use native image for metadata
-        m_flags |= PEFILE_HAS_NATIVE_IMAGE_METADATA;
-        m_pMDImport=m_nativeImage->GetMDImport();
+        m_pMDImport=GetILimage()->GetMDImport();
     }
     else
-#endif
     {
-#ifdef FEATURE_PREJIT
-        m_flags &= ~PEFILE_HAS_NATIVE_IMAGE_METADATA;
-#endif
-        if (!IsDynamic()
-           && GetILimage()->HasNTHeaders()
-             && GetILimage()->HasCorHeader())
-        {
-            m_pMDImport=GetILimage()->GetMDImport();
-        }
-        else
-            ThrowHR(COR_E_BADIMAGEFORMAT);
-
-        m_bHasPersistentMDImport=TRUE;
+        ThrowHR(COR_E_BADIMAGEFORMAT);
     }
+
+    m_bHasPersistentMDImport=TRUE;
+
     _ASSERTE(m_pMDImport);
     m_pMDImport->AddRef();
 }
@@ -860,543 +745,6 @@ void PEFile::ReleaseMetadataInterfaces(BOOL bDestructor, BOOL bKeepNativeData/*=
 
 #endif //!DACCESS_COMPILE
 
-#ifdef FEATURE_PREJIT
-#ifndef DACCESS_COMPILE
-// ------------------------------------------------------------
-// Native image access
-// ------------------------------------------------------------
-
-void PEFile::SetNativeImage(PEImage *image)
-{
-    CONTRACT_VOID
-    {
-        INSTANCE_CHECK;
-        PRECONDITION(!HasNativeImage());
-        STANDARD_VM_CHECK;
-    }
-    CONTRACT_END;
-
-    _ASSERTE(image != NULL);
-    PREFIX_ASSUME(image != NULL);
-
-    if (image->GetLoadedLayout()->GetBase() != image->GetLoadedLayout()->GetPreferredBase())
-    {
-        ExternalLog(LL_WARNING,
-                    W("Native image loaded at base address") LFMT_ADDR
-                    W("rather than preferred address:") LFMT_ADDR ,
-                    DBG_ADDR(image->GetLoadedLayout()->GetBase()),
-                    DBG_ADDR(image->GetLoadedLayout()->GetPreferredBase()));
-    }
-
-    // First ask if we're supposed to be ignoring the prejitted code &
-    // structures in NGENd images. If so, bail now and do not set m_nativeImage. We've
-    // already set m_identity & m_openedILimage), and will use those PEImages to find
-    // and JIT IL.
-    if (ShouldTreatNIAsMSIL())
-        RETURN;
-
-    m_nativeImage = image;
-    m_nativeImage->AddRef();
-    m_nativeImage->Load();
-
-#if defined(TARGET_AMD64) && !defined(CROSSGEN_COMPILE)
-    static ConfigDWORD configNGenReserveForJumpStubs;
-    int percentReserveForJumpStubs = configNGenReserveForJumpStubs.val(CLRConfig::INTERNAL_NGenReserveForJumpStubs);
-    if (percentReserveForJumpStubs != 0)
-    {
-        PEImageLayout * pLayout = image->GetLoadedLayout();
-        ExecutionManager::GetEEJitManager()->EnsureJumpStubReserve((BYTE *)pLayout->GetBase(), pLayout->GetVirtualSize(),
-            percentReserveForJumpStubs * (pLayout->GetVirtualSize() / 100));
-    }
-#endif
-
-    ExternalLog(LL_INFO100, W("Attempting to use native image %s."), image->GetPath().GetUnicode());
-    RETURN;
-}
-
-void PEFile::ClearNativeImage()
-{
-    CONTRACT_VOID
-    {
-        INSTANCE_CHECK;
-        PRECONDITION(HasNativeImage());
-        POSTCONDITION(!HasNativeImage());
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-        INJECT_FAULT(COMPlusThrowOM(););
-    }
-    CONTRACT_END;
-
-    ExternalLog(LL_WARNING, "Discarding native image.");
-
-
-    MarkNativeImageInvalidIfOwned();
-
-    {
-        GCX_PREEMP();
-        SafeComHolderPreemp<IMDInternalImport> pOldImport=GetMDImportWithRef();
-        SimpleWriteLockHolder lock(m_pMetadataLock);
-
-        EX_TRY
-        {
-            ReleaseMetadataInterfaces(FALSE);
-            m_flags &= ~PEFILE_HAS_NATIVE_IMAGE_METADATA;
-            if (m_nativeImage)
-                m_nativeImage->Release();
-            m_nativeImage = NULL;
-            // Make sure our normal image is open
-            EnsureImageOpened();
-
-            // Reopen metadata from normal image
-            OpenMDImport();
-        }
-        EX_HOOK
-        {
-            RestoreMDImport(pOldImport);
-        }
-        EX_END_HOOK;
-    }
-
-    RETURN;
-}
-
-
-extern DWORD g_dwLogLevel;
-
-//===========================================================================================================
-// Encapsulates CLR and Fusion logging for runtime verification of native images.
-//===========================================================================================================
-static void RuntimeVerifyVLog(DWORD level, PEAssembly *pLogAsm, const WCHAR *fmt, va_list args)
-{
-    STANDARD_VM_CONTRACT;
-
-    BOOL fOutputToDebugger = (level == LL_ERROR && IsDebuggerPresent());
-    BOOL fOutputToLogging = LoggingOn(LF_ZAP, level);
-
-    StackSString message;
-    message.VPrintf(fmt, args);
-
-    if (fOutputToLogging)
-    {
-        SString displayString = pLogAsm->GetPath();
-        LOG((LF_ZAP, level, "%s: \"%S\"\n", "ZAP", displayString.GetUnicode()));
-        LOG((LF_ZAP, level, "%S", message.GetUnicode()));
-        LOG((LF_ZAP, level, "\n"));
-    }
-
-    if (fOutputToDebugger)
-    {
-        SString displayString = pLogAsm->GetPath();
-        WszOutputDebugString(W("CLR:("));
-        WszOutputDebugString(displayString.GetUnicode());
-        WszOutputDebugString(W(") "));
-        WszOutputDebugString(message);
-        WszOutputDebugString(W("\n"));
-    }
-
-}
-
-
-//===========================================================================================================
-// Encapsulates CLR and Fusion logging for runtime verification of native images.
-//===========================================================================================================
-static void RuntimeVerifyLog(DWORD level, PEAssembly *pLogAsm, const WCHAR *fmt, ...)
-{
-    STANDARD_VM_CONTRACT;
-
-    // Avoid calling RuntimeVerifyVLog unless logging is on
-    if (   ((level == LL_ERROR) && IsDebuggerPresent())
-        || LoggingOn(LF_ZAP, level)
-       )
-    {
-        va_list args;
-        va_start(args, fmt);
-
-        RuntimeVerifyVLog(level, pLogAsm, fmt, args);
-
-        va_end(args);
-    }
-}
-
-//==============================================================================
-
-static const LPCWSTR CorCompileRuntimeDllNames[NUM_RUNTIME_DLLS] =
-{
-    MAKEDLLNAME_W(W("coreclr")),
-    MAKEDLLNAME_W(W("clrjit"))
-};
-
-
-LPCWSTR CorCompileGetRuntimeDllName(CorCompileRuntimeDlls id)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-        INJECT_FAULT(COMPlusThrowOM(););
-    }
-    CONTRACTL_END;
-
-
-    return CorCompileRuntimeDllNames[id];
-}
-
-//===========================================================================================================
-// Validates that an NI matches the running CLR, OS, CPU, etc.
-//
-// For historial reasons, some versions of the runtime perform this check at native bind time (preferrred),
-// while others check at CLR load time.
-//
-// This is the common funnel for both versions and is agnostic to whether the "assembly" is represented
-// by a CLR object or Fusion object.
-//===========================================================================================================
-BOOL RuntimeVerifyNativeImageVersion(const CORCOMPILE_VERSION_INFO *info, PEAssembly *pLogAsm)
-{
-    STANDARD_VM_CONTRACT;
-
-    //
-    // Check that the EE version numbers are the same.
-    //
-
-    if (info->wVersionMajor != RuntimeFileMajorVersion
-        || info->wVersionMinor != RuntimeFileMinorVersion
-        || info->wVersionBuildNumber != RuntimeFileBuildVersion
-        || info->wVersionPrivateBuildNumber != RuntimeFileRevisionVersion)
-    {
-        RuntimeVerifyLog(LL_ERROR, pLogAsm, W("CLR version recorded in native image doesn't match the current CLR."));
-        return FALSE;
-    }
-
-    //
-    // Check checked/free status
-    //
-
-    if (info->wBuild !=
-#if _DEBUG
-        CORCOMPILE_BUILD_CHECKED
-#else
-        CORCOMPILE_BUILD_FREE
-#endif
-        )
-    {
-        RuntimeVerifyLog(LL_ERROR, pLogAsm, W("Checked/free mismatch with native image."));
-        return FALSE;
-    }
-
-    //
-    // Check processor
-    //
-
-    if (info->wMachine != IMAGE_FILE_MACHINE_NATIVE_NI)
-    {
-        RuntimeVerifyLog(LL_ERROR, pLogAsm, W("Processor type recorded in native image doesn't match this machine's processor."));
-        return FALSE;
-    }
-
-#ifndef CROSSGEN_COMPILE
-    //
-    // Check the processor specific ID
-    //
-
-    CORINFO_CPU cpuInfo;
-    GetSpecificCpuInfo(&cpuInfo);
-
-    if (!IsCompatibleCpuInfo(&cpuInfo, &info->cpuInfo))
-    {
-        RuntimeVerifyLog(LL_ERROR, pLogAsm, W("Required CPU features recorded in native image don't match this machine's processor."));
-        return FALSE;
-    }
-#endif // CROSSGEN_COMPILE
-
-
-    //
-    // The zap is up to date.
-    //
-
-    RuntimeVerifyLog(LL_INFO100, pLogAsm, W("Native image has correct version information."));
-    return TRUE;
-}
-
-//===========================================================================================================
-// Validates that an NI matches the running CLR, OS, CPU, etc. This is the entrypoint used by the CLR loader.
-//
-//===========================================================================================================
-BOOL PEAssembly::CheckNativeImageVersion(PEImage *peimage)
-{
-    STANDARD_VM_CONTRACT;
-
-    //
-    // Get the zap version header. Note that modules will not have version
-    // headers - they add no additional versioning constraints from their
-    // assemblies.
-    //
-    PEImageLayoutHolder image = peimage->GetLayout(PEImageLayout::LAYOUT_ANY, PEImage::LAYOUT_CREATEIFNEEDED);
-
-    if (!image->HasNativeHeader())
-        return FALSE;
-
-    if (!image->CheckNativeHeaderVersion())
-    {
-        // Wrong native image version is fatal error on CoreCLR
-        ThrowHR(COR_E_NI_AND_RUNTIME_VERSION_MISMATCH);
-    }
-
-    CORCOMPILE_VERSION_INFO *info = image->GetNativeVersionInfo();
-    if (info == NULL)
-        return FALSE;
-
-    if (!RuntimeVerifyNativeImageVersion(info, this))
-    {
-        // Wrong native image version is fatal error on CoreCLR
-        ThrowHR(COR_E_NI_AND_RUNTIME_VERSION_MISMATCH);
-    }
-
-    CorCompileConfigFlags configFlags = PEFile::GetNativeImageConfigFlagsWithOverrides();
-
-    // Otherwise, match regardless of the instrumentation flags
-    configFlags = (CorCompileConfigFlags)(configFlags & ~(CORCOMPILE_CONFIG_INSTRUMENTATION_NONE | CORCOMPILE_CONFIG_INSTRUMENTATION));
-
-    if ((info->wConfigFlags & configFlags) != configFlags)
-    {
-        return FALSE;
-    }
-
-    return TRUE;
-}
-
-#endif // !DACCESS_COMPILE
-
-/* static */
-CorCompileConfigFlags PEFile::GetNativeImageConfigFlags(BOOL fForceDebug/*=FALSE*/,
-                                                        BOOL fForceProfiling/*=FALSE*/,
-                                                        BOOL fForceInstrument/*=FALSE*/)
-{
-    LIMITED_METHOD_DAC_CONTRACT;
-
-    CorCompileConfigFlags result = (CorCompileConfigFlags)0;
-
-    // Debugging
-
-#ifdef DEBUGGING_SUPPORTED
-    // if these have been set, the take precedence over anything else
-    if (s_NGENDebugFlags)
-    {
-        if ((s_NGENDebugFlags & CORCOMPILE_CONFIG_DEBUG_NONE) != 0)
-        {
-            result = (CorCompileConfigFlags) (result|CORCOMPILE_CONFIG_DEBUG_NONE);
-        }
-        else
-        {
-            if ((s_NGENDebugFlags & CORCOMPILE_CONFIG_DEBUG) != 0)
-            {
-                result = (CorCompileConfigFlags) (result|CORCOMPILE_CONFIG_DEBUG);
-            }
-        }
-    }
-    else
-#endif // DEBUGGING_SUPPORTED
-    {
-        if (fForceDebug)
-        {
-            result = (CorCompileConfigFlags) (result|CORCOMPILE_CONFIG_DEBUG);
-        }
-        else
-        {
-            result = (CorCompileConfigFlags) (result|CORCOMPILE_CONFIG_DEBUG_DEFAULT);
-        }
-    }
-
-    // Profiling
-
-#ifdef PROFILING_SUPPORTED
-    if (fForceProfiling || CORProfilerUseProfileImages())
-    {
-        result = (CorCompileConfigFlags) (result|CORCOMPILE_CONFIG_PROFILING);
-
-        result = (CorCompileConfigFlags) (result & ~(CORCOMPILE_CONFIG_DEBUG_NONE|
-                                                     CORCOMPILE_CONFIG_DEBUG|
-                                                     CORCOMPILE_CONFIG_DEBUG_DEFAULT));
-    }
-    else
-#endif //PROFILING_SUPPORTED
-        result = (CorCompileConfigFlags) (result|CORCOMPILE_CONFIG_PROFILING_NONE);
-
-    // Instrumentation
-#ifndef DACCESS_COMPILE
-    BOOL instrumented = (!IsCompilationProcess() && g_pConfig->GetZapBBInstr());
-#else
-    BOOL instrumented = FALSE;
-#endif
-    if (instrumented || fForceInstrument)
-    {
-        result = (CorCompileConfigFlags) (result|CORCOMPILE_CONFIG_INSTRUMENTATION);
-    }
-    else
-    {
-        result = (CorCompileConfigFlags) (result|CORCOMPILE_CONFIG_INSTRUMENTATION_NONE);
-    }
-
-    // NOTE: Right now we are not taking instrumentation into account when binding.
-
-    return result;
-}
-
-CorCompileConfigFlags PEFile::GetNativeImageConfigFlagsWithOverrides()
-{
-    LIMITED_METHOD_DAC_CONTRACT;
-
-    BOOL fForceDebug, fForceProfiling, fForceInstrument;
-    SystemDomain::GetCompilationOverrides(&fForceDebug,
-                                          &fForceProfiling,
-                                          &fForceInstrument);
-    return PEFile::GetNativeImageConfigFlags(fForceDebug,
-                                             fForceProfiling,
-                                             fForceInstrument);
-}
-
-#ifndef DACCESS_COMPILE
-
-
-
-//===========================================================================================================
-// Validates that a hard-dep matches the a parent NI's compile-time hard-dep.
-//
-// For historial reasons, some versions of the runtime perform this check at native bind time (preferrred),
-// while others check at CLR load time.
-//
-// This is the common funnel for both versions and is agnostic to whether the "assembly" is represented
-// by a CLR object or Fusion object.
-//
-//===========================================================================================================
-BOOL RuntimeVerifyNativeImageDependency(const CORCOMPILE_NGEN_SIGNATURE &ngenSigExpected,
-                                        const CORCOMPILE_VERSION_INFO *pActual,
-                                        PEAssembly                    *pLogAsm)
-{
-    STANDARD_VM_CONTRACT;
-
-    if (ngenSigExpected != pActual->signature)
-    {
-        // Signature did not match
-        SString displayString = pLogAsm->GetPath();
-        RuntimeVerifyLog(LL_ERROR,
-                         pLogAsm,
-                         W("Rejecting native image because native image dependency %s ")
-                         W("had a different identity than expected"),
-                         displayString.GetUnicode());
-
-        return FALSE;
-    }
-    return TRUE;
-}
-// Wrapper function for use by parts of the runtime that actually have a CORCOMPILE_DEPENDENCY to work with.
-BOOL RuntimeVerifyNativeImageDependency(const CORCOMPILE_DEPENDENCY   *pExpected,
-                                        const CORCOMPILE_VERSION_INFO *pActual,
-                                        PEAssembly                    *pLogAsm)
-{
-    WRAPPER_NO_CONTRACT;
-
-    return RuntimeVerifyNativeImageDependency(pExpected->signNativeImage,
-                                              pActual,
-                                              pLogAsm);
-}
-
-#endif // !DACCESS_COMPILE
-
-#ifdef DEBUGGING_SUPPORTED
-//
-// Called through ICorDebugAppDomain2::SetDesiredNGENCompilerFlags to specify
-// which kinds of ngen'd images fusion should load wrt debugging support
-// Overrides any previous settings
-//
-void PEFile::SetNGENDebugFlags(BOOL fAllowOpt)
-{
-    CONTRACTL
-    {
-        GC_NOTRIGGER;
-        NOTHROW;
-        MODE_ANY;
-        SUPPORTS_DAC;
-    }
-    CONTRACTL_END;
-
-    if (fAllowOpt)
-        s_NGENDebugFlags = CORCOMPILE_CONFIG_DEBUG_NONE;
-    else
-        s_NGENDebugFlags = CORCOMPILE_CONFIG_DEBUG;
-    }
-
-//
-// Called through ICorDebugAppDomain2::GetDesiredNGENCompilerFlags to determine
-// which kinds of ngen'd images fusion should load wrt debugging support
-//
-void PEFile::GetNGENDebugFlags(BOOL *fAllowOpt)
-{
-    CONTRACTL
-    {
-        GC_NOTRIGGER;
-        NOTHROW;
-        MODE_ANY;
-        SUPPORTS_DAC;
-    }
-    CONTRACTL_END;
-
-    CorCompileConfigFlags configFlags = PEFile::GetNativeImageConfigFlagsWithOverrides();
-
-    *fAllowOpt = ((configFlags & CORCOMPILE_CONFIG_DEBUG) == 0);
-}
-#endif // DEBUGGING_SUPPORTED
-
-
-
-#ifndef DACCESS_COMPILE
-
-//---------------------------------------------------------------------------------------
-//
-// Used in Apollo, this method determines whether profiling or debugging has requested
-// the runtime to provide debuggable / profileable code. In other CLR builds, this would
-// normally result in requiring the appropriate NGEN scenario be loaded (/Debug or
-// /Profile) and to JIT if unavailable. In Apollo, however, these NGEN scenarios are
-// never available, and even MSIL assemblies are often not available. So this function
-// tells its caller to use the NGENd assembly as if it were an MSIL assembly--ignore the
-// prejitted code and prebaked structures, and just JIT code and load classes from
-// scratch.
-//
-// Return Value:
-//      nonzero iff NGENd images should be treated as MSIL images.
-//
-
-// static
-BOOL PEFile::ShouldTreatNIAsMSIL()
-{
-    LIMITED_METHOD_CONTRACT;
-
-    // Never use fragile native image content during ReadyToRun compilation. It would
-    // produces non-version resilient images because of wrong cached values for
-    // MethodTable::IsLayoutFixedInCurrentVersionBubble, etc.
-    if (IsReadyToRunCompilation())
-        return TRUE;
-
-    // Ask profiling API & config vars whether NGENd images should be avoided
-    // completely.
-    if (!NGENImagesAllowed())
-        return TRUE;
-
-    // Ask profiling and debugging if they're requesting us to use ngen /Debug or
-    // /Profile images (which aren't available under Apollo)
-
-    CorCompileConfigFlags configFlags = PEFile::GetNativeImageConfigFlagsWithOverrides();
-
-    if ((configFlags & (CORCOMPILE_CONFIG_DEBUG | CORCOMPILE_CONFIG_PROFILING)) != 0)
-        return TRUE;
-
-    return FALSE;
-}
-
-#endif  //!DACCESS_COMPILE
-#endif  // FEATURE_PREJIT
-
 #ifndef DACCESS_COMPILE
 
 // ------------------------------------------------------------
@@ -1419,17 +767,8 @@ void PEFile::GetEmbeddedResource(DWORD dwOffset, DWORD *cbResource, PBYTE *pbInM
     // m_loadedImage is probably preferable, but this may be called by security
     // before the image is loaded.
 
-    PEImage *image;
-
-#ifdef FEATURE_PREJIT
-    if (m_nativeImage != NULL)
-        image = m_nativeImage;
-    else
-#endif
-    {
-        EnsureImageOpened();
-        image = GetILimage();
-    }
+    EnsureImageOpened();
+    PEImage* image = GetILimage();
 
     PEImageLayoutHolder theImage(image->GetLayout(PEImageLayout::LAYOUT_ANY,PEImage::LAYOUT_CREATEIFNEEDED));
     if (!theImage->CheckResource(dwOffset))
@@ -1479,93 +818,6 @@ PEFile::LoadAssembly(
     RETURN GetAppDomain()->BindAssemblySpec(&spec, TRUE);
 }
 
-// ------------------------------------------------------------
-// Logging
-// ------------------------------------------------------------
-#ifdef FEATURE_PREJIT
-void PEFile::ExternalLog(DWORD facility, DWORD level, const WCHAR *fmt, ...)
-{
-    WRAPPER_NO_CONTRACT;
-
-    va_list args;
-    va_start(args, fmt);
-
-    ExternalVLog(facility, level, fmt, args);
-
-    va_end(args);
-}
-
-void PEFile::ExternalLog(DWORD level, const WCHAR *fmt, ...)
-{
-    WRAPPER_NO_CONTRACT;
-
-    va_list args;
-    va_start(args, fmt);
-
-    ExternalVLog(LF_ZAP, level, fmt, args);
-
-    va_end(args);
-}
-
-void PEFile::ExternalLog(DWORD level, const char *msg)
-{
-    WRAPPER_NO_CONTRACT;
-
-    // It is OK to use %S here. We know that msg is ASCII-only.
-    ExternalLog(level, W("%S"), msg);
-}
-
-void PEFile::ExternalVLog(DWORD facility, DWORD level, const WCHAR *fmt, va_list args)
-{
-    CONTRACT_VOID
-    {
-        THROWS;
-        GC_TRIGGERS;
-    }
-    CONTRACT_END;
-
-    BOOL fOutputToDebugger = (level == LL_ERROR && IsDebuggerPresent());
-    BOOL fOutputToLogging = LoggingOn(facility, level);
-
-    if (!fOutputToDebugger && !fOutputToLogging)
-        return;
-
-    StackSString message;
-    message.VPrintf(fmt, args);
-
-    if (fOutputToLogging)
-    {
-        if (GetMDImport() != NULL)
-            LOG((facility, level, "%s: \"%s\"\n", (facility == LF_ZAP ? "ZAP" : "LOADER"), GetSimpleName()));
-        else
-            LOG((facility, level, "%s: \"%S\"\n", (facility == LF_ZAP ? "ZAP" : "LOADER"), ((const WCHAR *)GetPath())));
-
-        LOG((facility, level, "%S", message.GetUnicode()));
-        LOG((facility, level, "\n"));
-    }
-
-    if (fOutputToDebugger)
-    {
-        WszOutputDebugString(W("CLR:("));
-
-        StackSString codebase;
-        GetCodeBaseOrName(codebase);
-        WszOutputDebugString(codebase);
-
-        WszOutputDebugString(W(") "));
-
-        WszOutputDebugString(message);
-        WszOutputDebugString(W("\n"));
-    }
-
-    RETURN;
-}
-
-void PEFile::FlushExternalLog()
-{
-    LIMITED_METHOD_CONTRACT;
-}
-#endif
 
 BOOL PEFile::GetResource(LPCSTR szName, DWORD *cbResource,
                                  PBYTE *pbInMemoryResource, DomainAssembly** pAssemblyRef,
@@ -1698,28 +950,6 @@ void PEFile::GetPEKindAndMachine(DWORD* pdwKind, DWORD* pdwMachine)
         return;
     }
 
-#ifdef FEATURE_PREJIT
-    if (IsNativeLoaded())
-    {
-        CONSISTENCY_CHECK(HasNativeImage());
-
-        m_nativeImage->GetNativeILPEKindAndMachine(pdwKind, pdwMachine);
-        return;
-    }
-#ifndef DACCESS_COMPILE
-    if (!HasOpenedILimage())
-    {
-        //don't want to touch the IL image unless we already have
-        ReleaseHolder<PEImage> pNativeImage = GetNativeImageWithRef();
-        if (pNativeImage)
-        {
-            pNativeImage->GetNativeILPEKindAndMachine(pdwKind, pdwMachine);
-            return;
-        }
-    }
-#endif // DACCESS_COMPILE
-#endif // FEATURE_PREJIT
-
     GetILimage()->GetPEKindAndMachine(pdwKind, pdwMachine);
     return;
 }
@@ -1733,24 +963,6 @@ ULONG PEFile::GetILImageTimeDateStamp()
         MODE_ANY;
     }
     CONTRACTL_END;
-
-#ifdef FEATURE_PREJIT
-    if (IsNativeLoaded())
-    {
-        CONSISTENCY_CHECK(HasNativeImage());
-
-        // The IL image's time stamp is copied to the native image.
-        CORCOMPILE_VERSION_INFO* pVersionInfo = GetLoadedNative()->GetNativeVersionInfoMaybeNull();
-        if (pVersionInfo == NULL)
-        {
-            return 0;
-        }
-        else
-        {
-            return pVersionInfo->sourceAssembly.timeStamp;
-        }
-    }
-#endif // FEATURE_PREJIT
 
     return GetLoadedIL()->GetTimeDateStamp();
 }
@@ -1775,7 +987,7 @@ PEAssembly::PEAssembly(
                 BOOL system,
                 PEImage * pPEImageIL /*= NULL*/,
                 PEImage * pPEImageNI /*= NULL*/,
-                ICLRPrivAssembly * pHostAssembly /*= NULL*/)
+                BINDER_SPACE::Assembly * pHostAssembly /*= NULL*/)
 
   : PEFile(pBindResultInfo ? (pBindResultInfo->GetPEImage() ? pBindResultInfo->GetPEImage() :
                                                               (pBindResultInfo->HasNativeImage() ? pBindResultInfo->GetNativeImage() : NULL)
@@ -1795,18 +1007,6 @@ PEAssembly::PEAssembly(
     m_flags |= PEFILE_ASSEMBLY;
     if (system)
         m_flags |= PEFILE_SYSTEM;
-
-#ifdef FEATURE_PREJIT
-    // We check the precondition above that either pBindResultInfo is null or both pPEImageIL and pPEImageNI are,
-    // so we'll only get a max of one native image passed in.
-    if (pPEImageNI != NULL)
-    {
-        SetNativeImage(pPEImageNI);
-    }
-
-    if (pBindResultInfo && pBindResultInfo->HasNativeImage())
-        SetNativeImage(pBindResultInfo->GetNativeImage());
-#endif
 
     // If we have no native image, we require a mapping for the file.
     if (!HasNativeImage() || !IsILOnly())
@@ -1867,7 +1067,7 @@ PEAssembly *PEAssembly::Open(
     PEAssembly *       pParent,
     PEImage *          pPEImageIL,
     PEImage *          pPEImageNI,
-    ICLRPrivAssembly * pHostAssembly)
+    BINDER_SPACE::Assembly * pHostAssembly)
 {
     STANDARD_VM_CONTRACT;
 
@@ -1938,8 +1138,8 @@ PEAssembly *PEAssembly::DoOpenSystem(IUnknown * pAppCtx)
 
     ETWOnStartup (FusionBinding_V1, FusionBindingEnd_V1);
     CoreBindResult bindResult;
-    ReleaseHolder<ICLRPrivAssembly> pPrivAsm;
-    IfFailThrow(CCoreCLRBinderHelper::BindToSystem(&pPrivAsm, !IsCompilationProcess() || g_fAllowNativeImages));
+    ReleaseHolder<BINDER_SPACE::Assembly> pPrivAsm;
+    IfFailThrow(BINDER_SPACE::AssemblyBinderCommon::BindToSystem(&pPrivAsm, !IsCompilationProcess() || g_fAllowNativeImages));
     if(pPrivAsm != NULL)
     {
         bindResult.Init(pPrivAsm);
@@ -1977,51 +1177,6 @@ PEAssembly *PEAssembly::Create(PEAssembly *pParentAssembly,
     RETURN pFile.Extract();
 }
 
-
-#ifdef FEATURE_PREJIT
-
-
-void PEAssembly::SetNativeImage(PEImage * image)
-{
-    CONTRACTL
-    {
-        INSTANCE_CHECK;
-        STANDARD_VM_CHECK;
-    }
-    CONTRACTL_END;
-
-    image->Load();
-
-    if (CheckNativeImageVersion(image))
-    {
-        PEFile::SetNativeImage(image);
-#if 0
-        //Enable this code if you want to make sure we never touch the flat layout in the presence of the
-        //ngen image.
-//#if defined(_DEBUG)
-        //find all the layouts in the il image and make sure we never touch them.
-        unsigned ignored = 0;
-        PTR_PEImageLayout layout = m_ILimage->GetLayout(PEImageLayout::LAYOUT_FLAT, 0);
-        if (layout != NULL)
-        {
-            //cache a bunch of PE metadata in the PEDecoder
-            m_ILimage->CheckILFormat();
-
-            //fudge this by a few pages to make sure we can still mess with the PE headers
-            const size_t fudgeSize = 4096 * 4;
-            ClrVirtualProtect((void*)(((char *)layout->GetBase()) + fudgeSize),
-                              layout->GetSize() - fudgeSize, 0, &ignored);
-            layout->Release();
-        }
-#endif
-    }
-    else
-    {
-        ExternalLog(LL_WARNING, "Native image is not correct version.");
-    }
-}
-
-#endif  // FEATURE_PREJIT
 
 #endif // #ifndef DACCESS_COMPILE
 
@@ -2185,39 +1340,6 @@ BOOL PEAssembly::FindLastPathSeparator(const SString &path, SString::Iterator &i
 #endif //TARGET_UNIX
 }
 
-
-// ------------------------------------------------------------
-// Logging
-// ------------------------------------------------------------
-#ifdef FEATURE_PREJIT
-void PEAssembly::ExternalVLog(DWORD facility, DWORD level, const WCHAR *fmt, va_list args)
-{
-    CONTRACT_VOID
-    {
-        THROWS;
-        GC_TRIGGERS;
-    }
-    CONTRACT_END;
-
-    PEFile::ExternalVLog(facility, level, fmt, args);
-
-
-    RETURN;
-}
-
-void PEAssembly::FlushExternalLog()
-{
-    CONTRACT_VOID
-    {
-        THROWS;
-        GC_TRIGGERS;
-    }
-    CONTRACT_END;
-
-
-    RETURN;
-}
-#endif //FEATURE_PREJIT
 // ------------------------------------------------------------
 // Metadata access
 // ------------------------------------------------------------
@@ -2270,29 +1392,16 @@ void PEFile::EnsureImageOpened()
     WRAPPER_NO_CONTRACT;
     if (IsDynamic())
         return;
-#ifdef FEATURE_PREJIT
-    if(HasNativeImage())
-        m_nativeImage->GetLayout(PEImageLayout::LAYOUT_ANY,PEImage::LAYOUT_CREATEIFNEEDED)->Release();
-    else
-#endif
-        GetILimage()->GetLayout(PEImageLayout::LAYOUT_ANY,PEImage::LAYOUT_CREATEIFNEEDED)->Release();
+
+    GetILimage()->GetLayout(PEImageLayout::LAYOUT_ANY,PEImage::LAYOUT_CREATEIFNEEDED)->Release();
 }
 
 void PEFile::SetupAssemblyLoadContext()
 {
-    PTR_ICLRPrivBinder pBindingContext = GetBindingContext();
-    ICLRPrivBinder* pOpaqueBinder = NULL;
+    PTR_AssemblyBinder pBindingContext = GetBindingContext();
 
-    if (pBindingContext != NULL)
-    {
-        UINT_PTR assemblyBinderID = 0;
-        IfFailThrow(pBindingContext->GetBinderID(&assemblyBinderID));
-
-        pOpaqueBinder = reinterpret_cast<ICLRPrivBinder*>(assemblyBinderID);
-    }
-
-    m_pAssemblyLoadContext = (pOpaqueBinder != NULL) ?
-        (AssemblyLoadContext*)pOpaqueBinder :
+    m_pAssemblyLoadContext = (pBindingContext != NULL) ?
+        (AssemblyLoadContext*)pBindingContext :
         AppDomain::GetCurrentDomain()->CreateBinderContext();
 }
 
@@ -2323,13 +1432,6 @@ PEFile::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
     {
         GetILimage()->EnumMemoryRegions(flags);
     }
-#ifdef FEATURE_PREJIT
-    if (m_nativeImage.IsValid())
-    {
-        m_nativeImage->EnumMemoryRegions(flags);
-        DacEnumHostDPtrMem(m_nativeImage->GetLoadedLayout()->GetNativeVersionInfo());
-    }
-#endif
 }
 
 void
@@ -2401,21 +1503,25 @@ TADDR PEFile::GetMDInternalRWAddress()
 }
 #endif
 
-// Returns the ICLRPrivBinder* instance associated with the PEFile
-PTR_ICLRPrivBinder PEFile::GetBindingContext()
+// Returns the AssemblyBinder* instance associated with the PEFile
+PTR_AssemblyBinder PEFile::GetBindingContext()
 {
     LIMITED_METHOD_CONTRACT;
 
-    PTR_ICLRPrivBinder pBindingContext = NULL;
+    PTR_AssemblyBinder pBindingContext = NULL;
 
     // CoreLibrary is always bound in context of the TPA Binder. However, since it gets loaded and published
     // during EEStartup *before* DefaultContext Binder (aka TPAbinder) is initialized, we dont have a binding context to publish against.
     if (!IsSystem())
     {
-        pBindingContext = dac_cast<PTR_ICLRPrivBinder>(GetHostAssembly());
-        if (!pBindingContext)
+        BINDER_SPACE::Assembly* pHostAssembly = GetHostAssembly();
+        if (pHostAssembly)
         {
-            // If we do not have any binding context, check if we are dealing with
+            pBindingContext = dac_cast<PTR_AssemblyBinder>(pHostAssembly->GetBinder());
+        }
+        else
+        {
+            // If we do not have a host assembly, check if we are dealing with
             // a dynamically emitted assembly and if so, use its fallback load context
             // binder reference.
             if (IsDynamic())

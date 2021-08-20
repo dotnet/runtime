@@ -936,6 +936,58 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
                 exception.Message);
         }
 
+        [Fact]
+        public void CanBindSingleElementToCollection()
+        {
+            var dic = new Dictionary<string, string>
+            {
+                {"MyString", "hello world"},
+                {"Nested:Integer", "11"},
+            };
+
+            var configurationBuilder = new ConfigurationBuilder();
+            configurationBuilder.AddInMemoryCollection(dic);
+            IConfiguration config = configurationBuilder.Build();
+
+            var stringArr = config.GetSection("MyString").Get<string[]>();
+            Assert.Equal("hello world", stringArr[0]);
+            Assert.Equal(1, stringArr.Length);
+
+            var stringAsStr = config.GetSection("MyString").Get<string>();
+            Assert.Equal("hello world", stringAsStr);
+
+            var nested = config.GetSection("Nested").Get<NestedOptions>();
+            Assert.Equal(11, nested.Integer);
+
+            var nestedAsArray = config.GetSection("Nested").Get<NestedOptions[]>();
+            Assert.Equal(11, nestedAsArray[0].Integer);
+            Assert.Equal(1, nestedAsArray.Length);
+        }
+
+        [Fact]
+        public void CannotBindSingleElementToCollectionWhenSwitchSet()
+        {
+            AppContext.SetSwitch("Microsoft.Extensions.Configuration.BindSingleElementsToArray", false);
+
+            var dic = new Dictionary<string, string>
+            {
+                {"MyString", "hello world"},
+                {"Nested:Integer", "11"},
+            };
+
+            var configurationBuilder = new ConfigurationBuilder();
+            configurationBuilder.AddInMemoryCollection(dic);
+            IConfiguration config = configurationBuilder.Build();
+
+            var stringArr = config.GetSection("MyString").Get<string[]>();
+            Assert.Null(stringArr);
+
+            var stringAsStr = config.GetSection("MyString").Get<string>();
+            Assert.Equal("hello world", stringAsStr);
+
+            AppContext.SetSwitch("Microsoft.Extensions.Configuration.BindSingleElementsToArray", true);
+        }
+
         private interface ISomeInterface
         {
         }

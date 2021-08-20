@@ -46,10 +46,6 @@ CLiteWeightStgdb<MiniMd>::InitOnMem(
     // Validate the signature of the format, or it isn't ours.
     IfFailGo(MDFormat::VerifySignature((PSTORAGESIGNATURE)pData, cbData));
 
-#ifdef FEATURE_PREJIT
-    m_MiniMd.m_pHotTablesDirectory = NULL;
-#endif //FEATURE_PREJIT
-
     // Remaining buffer size behind the stream header (pStream).
     cbStreamBuffer = cbData;
     // Get back the first stream.
@@ -163,23 +159,8 @@ CLiteWeightStgdb<MiniMd>::InitOnMem(
         // Found the hot meta data stream
         else if (strcmp(pStream->GetName(), HOT_MODEL_STREAM_A) == 0)
         {
-#ifdef FEATURE_PREJIT
-            BYTE * hotStreamEnd = reinterpret_cast< BYTE * >( pvCurrentData ) + cbCurrentData;
-            ULONG * hotMetadataDir = reinterpret_cast< ULONG * >( hotStreamEnd ) - 2;
-            ULONG hotPoolsSize = *hotMetadataDir;
-
-            m_MiniMd.m_pHotTablesDirectory = (struct MetaData::HotTablesDirectory *)
-                (reinterpret_cast<BYTE *>(hotMetadataDir) - hotPoolsSize - sizeof(struct MetaData::HotTablesDirectory));
-            MetaData::HotTable::CheckTables(m_MiniMd.m_pHotTablesDirectory);
-
-            DataBuffer hotMetaData(
-                reinterpret_cast<BYTE *>(pvCurrentData),
-                cbCurrentData);
-            IfFailGo(InitHotPools(hotMetaData));
-#else //!FEATURE_PREJIT
             Debug_ReportError("MetaData hot stream is peresent, but ngen is not supported.");
             // Ignore the stream
-#endif //!FEATURE_PREJIT
         }
         // Pick off the next stream if there is one.
         pStream = pNext;

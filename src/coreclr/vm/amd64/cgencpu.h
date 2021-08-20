@@ -136,11 +136,7 @@ void     R8ToFPSpill(void* pSpillSlot, SIZE_T  srcDoubleAsSIZE_T)
 }
 
 
-#ifdef CROSSGEN_COMPILE
-#define GetEEFuncEntryPoint(pfn) 0x1001
-#else
 #define GetEEFuncEntryPoint(pfn) GFN_TADDR(pfn)
-#endif
 
 
 //**********************************************************************

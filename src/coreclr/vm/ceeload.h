@@ -37,10 +37,6 @@
 
 #include "wellknownattributes.h"
 
-#ifdef FEATURE_PREJIT
-#include "dataimage.h"
-#endif // FEATURE_PREJIT
-
 #ifdef FEATURE_READYTORUN
 #include "readytoruninfo.h"
 #endif
@@ -61,7 +57,6 @@ class SigTypeContext;
 class Assembly;
 class BaseDomain;
 class AppDomain;
-class CompilationDomain;
 class DomainModule;
 struct DomainLocalModule;
 class SystemDomain;
@@ -75,14 +70,6 @@ class CodeVersionManager;
 class TieredCompilationManager;
 class ProfileEmitter;
 class JITInlineTrackingMap;
-#ifdef FEATURE_PREJIT
-class TypeHandleList;
-class TrackingMap;
-struct MethodInModule;
-class PersistentInlineTrackingMapNGen;
-
-extern VerboseLevel g_CorCompileVerboseLevel;
-#endif
 
 // Hash table parameter of available classes (name -> module/class) hash
 #define AVAILABLE_CLASSES_HASH_BUCKETS 1024
@@ -117,99 +104,6 @@ typedef DPTR(JITInlineTrackingMap) PTR_JITInlineTrackingMap;
 
 typedef DPTR(struct LookupMapBase) PTR_LookupMapBase;
 
-#ifdef FEATURE_PREJIT
-
-//
-// LookupMap cold entry compression support
-//
-// A lookup map (the cold section) is notionally an array of pointer values indexed by rid. The pointers are
-// generally to data structures such as MethodTables or MethodDescs. When we compress such a table (at ngen
-// time) we wish to avoid direct pointers, since these would need to be fixed up due to image base
-// relocations. Instead we store RVAs (Relative Virtual Addresses). Unlike regular RVAs our base address is
-// the map address itself (as opposed to the module base). We do this purely out of convenience since
-// LookupMaps don't store the module base address.
-//
-// It turns out that very often the value pointers (and hence the value RVAs) are related to each other:
-// adjacent map entries often point to data structures that were allocated next to or close to each other. The
-// compression algorithm takes advantage of this fact: instead of storing value RVAs we store the deltas
-// between RVAs. So the nth value in the table is composed of the addition of the deltas from the preceding (n
-// - 1) entries. Since the deltas are often small (especially when we take structure alignment into account
-// and realize that we can discard the lower 2 or 3 bits of the delta) we can store them in a compressed
-// manner by discarding the insignificant leading zero bits in each value.
-//
-// So now we imagine our compressed table to be a sequence of entries, each entry being a variably sized delta
-// from the previous entry. As a result we need some means to encode how large each delta in the table is. We
-// could use a fixed size field (a 5-bit length field would be able to encode any length between 1 and 32
-// bits, say). This is troublesome since although most entry values are close in value there are a few
-// (usually a minority) that require much larger deltas (hot/cold data splitting based on profiling can cause
-// this for instance). For most tables this would force us to use a large fixed-size length field for every
-// entry, just to deal with the relatively uncommon worst case (5 bits would be enough, but many entry deltas
-// can be encoded in 2 or 3 bits).
-//
-// Instead we utilize a compromise: we store all delta lengths with a small number of bits
-// (kLookupMapLengthBits below). Instead of encoding the length directly this value indexes a per-map table of
-// possible delta encoding lengths. During ngen we calculate the optimal value for each entry in this encoding
-// length table. The advantage here is that it lets us encode both best case and worst case delta lengths with
-// a fixed size but small field. The disadvantage is that some deltas will be encoded with more bits than they
-// strictly need.
-//
-// This still leaves the problem of runtime lookup performance. Touches to the cold section of a LookupMap
-// aren't all that critical (after all the data is meant to be cold), but looking up the last entry of a map
-// with 22 thousand entries (roughly what the MethodDefToDesc map in CoreLib is sized at at the time of
-// writing) is still likely to so inefficient as to be noticeable. Remember that the issue is that we have to
-// decode all predecessor entries in order to compute the value of a given entry in the table.
-//
-// To address this we introduce an index to each compressed map. The index contains an entry for each
-// kLookupMapIndexStride'th entry in the compressed map. The index entry consists of the RVA of the
-// corresponding table value and the bit offset into the compressed map at which the data for the next entry
-// commences. Thus we can use the index to find a value within kLookupMapIndexStride entries of our target and
-// then proceed to decode only the last few compressed entries to finish the job. This reduces the lookup to a
-// constant time operation once more (given a reasonable value for kLookupMapIndexStride).
-//
-// The main areas in which this algorithm can be tuned are the number of bits used as an index into the
-// encoding lengths table (kLookupMapLengthBits) and the frequency with which entries are bookmarked in the
-// index (kLookupMapIndexStride). The current values have been set based on looking at models of CoreLib,
-// PresentationCore and PresentationFramework built from the actual ridmap data in their ngen images and
-// methodically trying different values in order to maximize compression or balance size versus likely runtime
-// performance. An alternative strategy was considered using direct (non-length prefix) encoding of the
-// deltas with a couple of variantions on probability-based variable length encoding (completely unbalanced
-// tree and completely balanced tree with pessimally encoded worst case escapes). But these were found to
-// yield best case results similar to the above but with more complex processing required at ngen (optimal
-// results for these algorithms are achieved when you have enough resources to build a probability map of your
-// entire data).
-//
-// Note that not all lookup tables are suitable for compression. In fact we compress only TypeDefToMethodTable
-// and MethodDefToDesc tables. For one thing this optimization only brings benefits to larger tables. But more
-// importantly we cannot mutate compressed entries (for obvious reasons). Many of the lookup maps are only
-// partially populated at ngen time or otherwise might be updated at runtime and thus are not candidates.
-//
-// In the threshhold timeframe (predicted to be .NET Framework 4.5.3 at the time of writing), we added profiler support
-// for adding new types to NGEN images. Historically we could always do this for jitted images, but one of the
-// blockers for NGEN were the compressed RID maps. We worked around that by supporting multi-node maps in which
-// the first node is compressed, but all future nodes are uncompressed. The NGENed portion will all land in the
-// compressed node, while the new profiler added data will land in the uncompressed portion. Note this could
-// probably be leveraged for other dynamic scenarios such as a limited form of EnC, but nothing further has
-// been implemented at this time.
-//
-
-// Some useful constants used when compressing tables.
-enum {
-    kLookupMapLengthBits    = 2,                            // Bits used to encode an index into a table of possible value lengths
-    kLookupMapLengthEntries = 1 << kLookupMapLengthBits,    // Number of entries in the encoding table above
-    kLookupMapIndexStride   = 0x10,                         // The range of table entries covered by one index entry (power of two for faster hash lookup)
-    kBitsPerRVA             = sizeof(DWORD) * 8,            // Bits in an (uncompressed) table value RVA (RVAs
-                                                            // currently still 32-bit even on 64-bit platforms)
-#ifdef HOST_64BIT
-    kFlagBits               = 3,                            // Number of bits at the bottom of a value
-                                                            // pointer that may be used for flags
-#else // HOST_64BIT
-    kFlagBits               = 2,
-#endif // HOST_64BIT
-
-};
-
-#endif // FEATURE_PREJIT
-
 struct LookupMapBase
 {
     DPTR(LookupMapBase) pNext;
@@ -222,58 +116,6 @@ struct LookupMapBase
     // Set of flags that the map supports writing on top of the data value
     TADDR               supportedFlags;
 
-#ifdef FEATURE_PREJIT
-    struct  HotItem
-    {
-        DWORD   rid;
-        TADDR   value;
-        static int __cdecl Cmp(const void* a_, const void* b_);
-    };
-    DWORD               dwNumHotItems;
-    ArrayDPTR(HotItem)  hotItemList;
-    PTR_TADDR FindHotItemValuePtr(DWORD rid);
-
-    //
-    // Compressed map support
-    //
-    PTR_CBYTE           pIndex;             // Bookmark for every kLookupMapIndexStride'th entry in the table
-    DWORD               cIndexEntryBits;    // Number of bits in every index entry
-    DWORD               cbTable;            // Number of bytes of compressed table data at pTable
-    DWORD               cbIndex;            // Number of bytes of index data at pIndex
-    BYTE                rgEncodingLengths[kLookupMapLengthEntries]; // Table of delta encoding lengths for
-                                                                    // compressed values
-
-    // Returns true if this map instance is compressed (this can only happen at runtime when running against
-    // an ngen image). Currently and for the forseeable future only TypeDefToMethodTable and MethodDefToDesc
-    // tables can be compressed.
-    bool MapIsCompressed()
-    {
-        LIMITED_METHOD_DAC_CONTRACT;
-        return pIndex != NULL;
-    }
-
-protected:
-    // Internal routine used to iterate though one entry in the compressed table.
-    INT32 GetNextCompressedEntry(BitStreamReader *pTableStream, INT32 iLastValue);
-
-public:
-    // Public method used to retrieve the full value (non-RVA) of a compressed table entry.
-    TADDR GetValueFromCompressedMap(DWORD rid);
-
-#ifndef DACCESS_COMPILE
-    void CreateHotItemList(DataImage *image, CorProfileData *profileData, int table, BOOL fSkipNullEntries = FALSE);
-    void Save(DataImage *image, DataImage::ItemKind kind, CorProfileData *profileData, int table, BOOL fCopyValues = FALSE);
-    void SaveUncompressedMap(DataImage *image, DataImage::ItemKind kind, BOOL fCopyValues = FALSE);
-    void ConvertSavedMapToUncompressed(DataImage *image, DataImage::ItemKind kind);
-    void Fixup(DataImage *image, BOOL fFixupEntries = TRUE);
-#endif // !DACCESS_COMPILE
-
-#ifdef _DEBUG
-    void    CheckConsistentHotItemList();
-#endif
-
-#endif // FEATURE_PREJIT
-
 #ifdef DACCESS_COMPILE
     void EnumMemoryRegions(CLRDataEnumMemoryFlags flags,
                            bool enumThis);
@@ -283,9 +125,6 @@ public:
     PTR_TADDR GetIndexPtr(DWORD index)
     {
         LIMITED_METHOD_DAC_CONTRACT;
-#ifdef FEATURE_PREJIT
-        _ASSERTE(!MapIsCompressed());
-#endif // FEATURE_PREJIT
         _ASSERTE(index < dwCount);
         return dac_cast<PTR_TADDR>(pTable) + index;
     }
@@ -373,10 +212,6 @@ public:
         WRAPPER_NO_CONTRACT;
 
         _ASSERTE((flag & supportedFlags) == flag);
-#ifdef FEATURE_PREJIT
-        _ASSERTE(!MapIsCompressed());
-        _ASSERTE(dwNumHotItems == 0);
-#endif // FEATURE_PREJIT
 
         PTR_TADDR pElement = GetElementPtr(rid);
         _ASSERTE(pElement);
@@ -483,11 +318,6 @@ public:
 
         LookupMap* m_map;
         DWORD m_index;
-#ifdef FEATURE_PREJIT
-        // Support for iterating compressed maps.
-        INT32 m_currentEntry;           // RVA of current entry value
-        BitStreamReader m_tableStream;  // Our current context in the compressed bit stream
-#endif // FEATURE_PREJIT
     };
 };
 
@@ -502,59 +332,6 @@ typedef DPTR(class MemberRef) PTR_MemberRef;
 
 // flag used to mark member ref pointers to field descriptors in the member ref cache
 #define IS_FIELD_MEMBER_REF ((TADDR)0x00000002)
-
-
-#ifdef FEATURE_PREJIT
-//
-// NGen image layout information that we need to quickly access at runtime
-//
-typedef DPTR(struct NGenLayoutInfo) PTR_NGenLayoutInfo;
-struct NGenLayoutInfo
-{
-    // One range for each hot, unprofiled, cold code sections
-    MemoryRange             m_CodeSections[3];
-
-    // Pointer to the RUNTIME_FUNCTION table for hot, unprofiled, and cold code sections.
-    PTR_RUNTIME_FUNCTION    m_pRuntimeFunctions[3];
-
-    // Number of RUNTIME_FUNCTIONs for hot, unprofiled, and cold code sections.
-    DWORD                   m_nRuntimeFunctions[3];
-
-    // A parallel arrays of MethodDesc RVAs for hot and unprofiled methods. Both of the array are parallel for m_pRuntimeFunctions
-    // The first array is for hot methods. The second array is for unprofiled methods.
-    PTR_DWORD               m_MethodDescs[2];
-
-    // Lookup table to speed up RUNTIME_FUNCTION lookup.
-    // The first array is for hot methods. The second array is for unprofiled methods.
-    // Number of elements is m_UnwindInfoLookupTableEntryCount + 1.
-    // Last element of the lookup table is a sentinal entry that's good to cover the rest of the code section.
-    // Values are indices into m_pRuntimeFunctions array.
-    PTR_DWORD               m_UnwindInfoLookupTable[2];
-
-    // Count of lookup entries in m_UnwindInfoLookupTable
-    DWORD                   m_UnwindInfoLookupTableEntryCount[2];
-
-    // Map for matching the cold code with hot code. Index is relative position of RUNTIME_FUNCTION within the section.
-    PTR_CORCOMPILE_COLD_METHOD_ENTRY m_ColdCodeMap;
-
-    // One range for each hot, cold, write, hot writeable, and cold writeable precode sections
-    MemoryRange             m_Precodes[4];
-
-    MemoryRange             m_JumpStubs;
-    MemoryRange             m_StubLinkStubs;
-    MemoryRange             m_VirtualMethodThunks;
-    MemoryRange             m_ExternalMethodThunks;
-    MemoryRange             m_ExceptionInfoLookupTable;
-
-    PCODE                   m_pPrestubJumpStub;
-#ifdef HAS_FIXUP_PRECODE
-    PCODE                   m_pPrecodeFixupJumpStub;
-#endif
-    PCODE                   m_pVirtualImportFixupJumpStub;
-    PCODE                   m_pExternalMethodFixupJumpStub;
-    DWORD                   m_rvaFilterPersonalityRoutine;
-};
-#endif // FEATURE_PREJIT
 
 
 //
@@ -675,63 +452,6 @@ struct ModuleCtorInfo
         return ppMT[i].GetValue(dac_cast<TADDR>(ppMT) + i * sizeof(RelativePointer<PTR_MethodTable>));
     }
 
-#ifdef FEATURE_PREJIT
-
-    void AddElement(MethodTable *pMethodTable);
-    void Save(DataImage *image, CorProfileData *profileData);
-    void Fixup(DataImage *image);
-
-    class ClassCtorInfoEntryArraySort : public CQuickSort<DWORD>
-    {
-    private:
-        DPTR(RelativePointer<PTR_MethodTable>) m_pBase1;
-
-    public:
-        //Constructor
-        ClassCtorInfoEntryArraySort(DWORD *base, DPTR(RelativePointer<PTR_MethodTable>) base1, int count)
-          : CQuickSort<DWORD>(base, count)
-        {
-            WRAPPER_NO_CONTRACT;
-
-            m_pBase1 = base1;
-        }
-
-        //Returns -1,0,or 1 if first's nativeStartOffset is less than, equal to, or greater than second's
-        FORCEINLINE int Compare(DWORD *first, DWORD *second)
-        {
-            LIMITED_METHOD_CONTRACT;
-
-            if (*first < *second)
-                return -1;
-            else if (*first == *second)
-                return 0;
-            else
-                return 1;
-        }
-
-#ifndef DACCESS_COMPILE
-        // Swap is overwriten so that we can sort both the MethodTable pointer
-        // array and the ClassCtorInfoEntry array in parrallel.
-        FORCEINLINE void Swap(SSIZE_T iFirst, SSIZE_T iSecond)
-        {
-            LIMITED_METHOD_CONTRACT;
-
-            DWORD sTemp;
-            PTR_MethodTable sTemp1;
-
-            if (iFirst == iSecond) return;
-
-            sTemp = m_pBase[iFirst];
-            m_pBase[iFirst] = m_pBase[iSecond];
-            m_pBase[iSecond] = sTemp;
-
-            sTemp1 = m_pBase1[iFirst].GetValueMaybeNull();
-            m_pBase1[iFirst].SetValueMaybeNull(m_pBase1[iSecond].GetValueMaybeNull());
-            m_pBase1[iSecond].SetValueMaybeNull(sTemp1);
-        }
-#endif // !DACCESS_COMPILE
-    };
-#endif // FEATURE_PREJIT
 };
 
 
@@ -996,44 +716,6 @@ public:
 typedef SHash<ProfilingBlobTraits> ProfilingBlobTable;
 typedef DPTR(ProfilingBlobTable) PTR_ProfilingBlobTable;
 
-#ifdef FEATURE_PREJIT
-#define METHODTABLE_RESTORE_REASON() \
-    RESTORE_REASON_FUNC(CanNotPreRestoreHardBindToParentMethodTable) \
-    RESTORE_REASON_FUNC(CanNotPreRestoreHardBindToCanonicalMethodTable) \
-    RESTORE_REASON_FUNC(CrossModuleNonCanonicalMethodTable) \
-    RESTORE_REASON_FUNC(CanNotHardBindToInstanceMethodTableChain) \
-    RESTORE_REASON_FUNC(GenericsDictionaryNeedsRestore) \
-    RESTORE_REASON_FUNC(InterfaceIsGeneric) \
-    RESTORE_REASON_FUNC(CrossModuleGenericsStatics) \
-    RESTORE_REASON_FUNC(ComImportStructDependenciesNeedRestore) \
-    RESTORE_REASON_FUNC(CrossAssembly) \
-    RESTORE_REASON_FUNC(ArrayElement) \
-    RESTORE_REASON_FUNC(ProfilingEnabled)
-
-#undef RESTORE_REASON_FUNC
-#define RESTORE_REASON_FUNC(s) s ,
-typedef enum
-{
-
-    METHODTABLE_RESTORE_REASON()
-
-    TotalMethodTables
-} MethodTableRestoreReason;
-#undef RESTORE_REASON_FUNC
-
-class NgenStats
-{
-public:
-    NgenStats()
-    {
-        LIMITED_METHOD_CONTRACT;
-        memset (MethodTableRestoreNumReasons, 0, sizeof(DWORD)*(TotalMethodTables+1));
-    }
-
-    DWORD MethodTableRestoreNumReasons[TotalMethodTables + 1];
-};
-#endif // FEATURE_PREJIT
-
 //
 // A Module is the primary unit of code packaging in the runtime.  It
 // corresponds mostly to an OS executable image, although other kinds
@@ -1170,29 +852,6 @@ public:
     void EnumMemoryRegionsForEntry(GuidToMethodTableEntry *pEntry, CLRDataEnumMemoryFlags flags)
     { SUPPORTS_DAC; }
 #endif // DACCESS_COMPILE
-
-#if defined(FEATURE_PREJIT) && !defined(DACCESS_COMPILE)
-
-public:
-    void Save(DataImage *pImage, CorProfileData *pProfileData);
-    void Fixup(DataImage *pImage);
-
-private:
-    // We save all entries
-    bool ShouldSave(DataImage *pImage, GuidToMethodTableEntry *pEntry)
-    { LIMITED_METHOD_CONTRACT; return true; }
-
-    bool IsHotEntry(GuidToMethodTableEntry *pEntry, CorProfileData *pProfileData)
-    { LIMITED_METHOD_CONTRACT; return false; }
-
-    bool SaveEntry(DataImage *pImage, CorProfileData *pProfileData,
-                        GuidToMethodTableEntry *pOldEntry, GuidToMethodTableEntry *pNewEntry,
-                        EntryMappingTable *pMap);
-
-    void FixupEntry(DataImage *pImage, GuidToMethodTableEntry *pEntry, void *pFixupBase, DWORD cbFixupOffset);
-
-#endif // FEATURE_PREJIT && !DACCESS_COMPILE
-
 };
 
 #endif // FEATURE_COMINTEROP
@@ -1243,46 +902,6 @@ public:
 
     void EnumMemoryRegionsForEntry(MemberRefToDescHashEntry *pEntry, CLRDataEnumMemoryFlags flags)
     { SUPPORTS_DAC; }
-
-#endif
-
-#if defined(FEATURE_PREJIT) && !defined(DACCESS_COMPILE)
-
-    void Fixup(DataImage *pImage)
-    {
-        WRAPPER_NO_CONTRACT;
-        BaseFixup(pImage);
-    }
-
-    void Save(DataImage *pImage, CorProfileData *pProfileData);
-
-
-private:
-    bool ShouldSave(DataImage *pImage, MemberRefToDescHashEntry *pEntry)
-    {
-        return IsHotEntry(pEntry, NULL);
-    }
-
-    bool IsHotEntry(MemberRefToDescHashEntry *pEntry, CorProfileData *pProfileData) // yes according to IBC data
-    {
-		LIMITED_METHOD_CONTRACT;
-
-        _ASSERTE(pEntry != NULL);
-		// Low order bit of data field indicates a hot entry.
-		return (pEntry->m_value & 0x1) != 0;
-
-    }
-
-
-    bool SaveEntry(DataImage *pImage, CorProfileData *pProfileData,
-                        MemberRefToDescHashEntry *pOldEntry, MemberRefToDescHashEntry *pNewEntry,
-                        EntryMappingTable *pMap)
-    {
-        //The entries are mutable
-        return FALSE;
-    }
-
-    void FixupEntry(DataImage *pImage, MemberRefToDescHashEntry *pEntry, void *pFixupBase, DWORD cbFixupOffset);
 
 #endif
 };
@@ -1523,11 +1142,6 @@ public:
     // Hashtable of instantiated methods and per-instantiation static methods
     PTR_InstMethodHashTable m_pInstMethodHashTable;
 
-#ifdef FEATURE_PREJIT
-    // Mapping from tokens to IL marshaling stubs (NGEN only).
-    PTR_StubMethodHashTable m_pStubMethodHashTable;
-#endif // FEATURE_PREJIT
-
     // This is used by the Debugger. We need to store a dword
     // for a count of JMC functions. This is a count, not a pointer.
     // We'll pass the address of this field
@@ -1611,13 +1225,6 @@ private:
     DWORD                   m_dwCustomAttributeCount;
 #endif // PROFILING_SUPPORTED_DATA
 
-#ifdef FEATURE_PREJIT
-    PTR_NGenLayoutInfo      m_pNGenLayoutInfo;
-    // Module wide static fields information
-    ModuleCtorInfo          m_ModuleCtorInfo;
-
-#endif // FEATURE_PREJIT
-
     struct TokenProfileData
     {
         static TokenProfileData *CreateNoThrow(void);
@@ -1645,11 +1252,6 @@ private:
 
     } *m_tokenProfileData;
 
-#ifdef FEATURE_PREJIT
-    // Stats for prejit log
-    NgenStats                *m_pNgenStats;
-#endif // FEATURE_PREJIT
-
 
 protected:
 
@@ -1662,9 +1264,6 @@ protected:
 #ifndef DACCESS_COMPILE
     virtual void Initialize(AllocMemTracker *pamTracker, LPCWSTR szName = NULL);
     void InitializeForProfiling();
-#ifdef FEATURE_PREJIT
-    void InitializeNativeImage(AllocMemTracker* pamTracker);
-#endif
 #endif
 
     void AllocateMaps();
@@ -1685,9 +1284,6 @@ protected:
  public:
 #ifndef DACCESS_COMPILE
     virtual void Destruct();
-#ifdef  FEATURE_PREJIT
-    void DeleteNativeCodeRanges();
-#endif
 #endif
 
     PTR_LoaderAllocator GetLoaderAllocator();
@@ -1876,7 +1472,7 @@ protected:
         return m_file->GetEmitter();
     }
 
-#if defined(PROFILING_SUPPORTED) && !defined(CROSSGEN_COMPILE)
+#if defined(PROFILING_SUPPORTED)
     IMetaDataEmit *GetValidatedEmitter();
 #endif
 
@@ -1899,9 +1495,9 @@ protected:
 
     BOOL IsInCurrentVersionBubble();
 
-#if defined(FEATURE_READYTORUN) && !defined(FEATURE_READYTORUN_COMPILER)
+#if defined(FEATURE_READYTORUN)
     BOOL IsInSameVersionBubble(Module *target);
-#endif // FEATURE_READYTORUN && !FEATURE_READYTORUN_COMPILER
+#endif // FEATURE_READYTORUN
 
 
     LPCWSTR GetPathForErrorMessages();
@@ -2063,11 +1659,6 @@ protected:
         return m_pInstMethodHashTable;
     }
 
-#ifdef FEATURE_PREJIT
-    // Gets or creates the token -> IL stub MethodDesc hash.
-    StubMethodHashTable *GetStubMethodHashTable();
-#endif // FEATURE_PREJIT
-
     // Creates a new Method table for an array.  Used to make type handles
     // Note that if kind == SZARRAY or ARRAY, we get passed the GENERIC_ARRAY
     // needed to create the array.  That way we dont need to load classes during
@@ -2079,9 +1670,6 @@ protected:
 
     // Resolving
     OBJECTHANDLE ResolveStringRef(DWORD Token, BaseDomain *pDomain, bool bNeedToSyncWithFixups);
-#ifdef FEATURE_PREJIT
-    OBJECTHANDLE ResolveStringRefHelper(DWORD token, BaseDomain *pDomain, PTR_CORCOMPILE_IMPORT_SECTION pSection, EEStringData *strData);
-#endif
 
     CHECK CheckStringRef(RVA rva);
 
@@ -2090,7 +1678,7 @@ protected:
             mdAssemblyRef       kAssemblyRef,
             IMDInternalImport * pMDImportOverride = NULL,
             BOOL                fDoNotUtilizeExtraChecks = FALSE,
-            ICLRPrivBinder      *pBindingContextForLoadedAssembly = NULL
+            AssemblyBinder      *pBindingContextForLoadedAssembly = NULL
             );
 
 private:
@@ -2183,10 +1771,6 @@ public:
 #endif // !DACCESS_COMPILE
 
     TypeHandle LookupTypeRef(mdTypeRef token);
-
-    mdTypeRef LookupTypeRefByMethodTable(MethodTable *pMT);
-
-    mdMemberRef LookupMemberRefByMethodDesc(MethodDesc *pMD);
 
 #ifndef DACCESS_COMPILE
     //
@@ -2399,10 +1983,6 @@ public:
 
 #endif // !DACCESS_COMPILE
 
-#ifdef FEATURE_PREJIT
-    void FinalizeLookupMapsPreSave(DataImage *image);
-#endif
-
     DWORD GetAssemblyRefMax() {LIMITED_METHOD_CONTRACT;  return m_ManifestModuleReferencesMap.GetSize(); }
 
     MethodDesc *FindMethodThrowing(mdToken pMethod);
@@ -2412,9 +1992,6 @@ public:
     HRESULT GetPropertyInfoForMethodDef(mdMethodDef md, mdProperty *ppd, LPCSTR *pName, ULONG *pSemantic);
 
     #define NUM_PROPERTY_SET_HASHES 4
-#ifdef FEATURE_PREJIT
-    void PrecomputeMatchingProperties(DataImage *image);
-#endif
     BOOL MightContainMatchingProperty(mdProperty tkProperty, ULONG nameHash);
 
 private:
@@ -2448,27 +2025,17 @@ public:
 
     BOOL HasNativeOrReadyToRunInlineTrackingMap();
     COUNT_T GetNativeOrReadyToRunInliners(PTR_Module inlineeOwnerMod, mdMethodDef inlineeTkn, COUNT_T inlinersSize, MethodInModule inliners[], BOOL *incompleteData);
-#if defined(PROFILING_SUPPORTED) && !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
+#if defined(PROFILING_SUPPORTED) && !defined(DACCESS_COMPILE)
     BOOL HasJitInlineTrackingMap();
     PTR_JITInlineTrackingMap GetJitInlineTrackingMap() { LIMITED_METHOD_CONTRACT; return m_pJitInlinerTrackingMap; }
     void AddInlining(MethodDesc *inliner, MethodDesc *inlinee);
-#endif // defined(PROFILING_SUPPORTED) && !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
+#endif // defined(PROFILING_SUPPORTED) && !defined(DACCESS_COMPILE)
 
 public:
     void NotifyEtwLoadFinished(HRESULT hr);
 
     // Enregisters a VASig.
     VASigCookie *GetVASigCookie(Signature vaSignature);
-
-#ifdef FEATURE_PREJIT
-    // This data is only valid for NGEN'd modules, and for modules we're creating at NGEN time.
-    ModuleCtorInfo* GetZapModuleCtorInfo()
-    {
-        LIMITED_METHOD_DAC_CONTRACT;
-
-        return &m_ModuleCtorInfo;
-    }
-#endif
 
 public:
 #ifndef DACCESS_COMPILE
@@ -2490,31 +2057,6 @@ public:
     LPCWSTR GetDebugName() { WRAPPER_NO_CONTRACT; return m_file->GetDebugName(); }
 #endif
 
-#ifdef FEATURE_PREJIT
-    BOOL HasNativeImage()
-    {
-        WRAPPER_NO_CONTRACT;
-        SUPPORTS_DAC;
-        return m_file->HasNativeImage();
-    }
-
-    PEImageLayout *GetNativeImage()
-    {
-        CONTRACT(PEImageLayout *)
-        {
-            PRECONDITION(m_file->HasNativeImage());
-            POSTCONDITION(CheckPointer(RETVAL));
-            NOTHROW;
-            GC_NOTRIGGER;
-            SUPPORTS_DAC;
-            CANNOT_TAKE_LOCK;
-        }
-        CONTRACT_END;
-
-        _ASSERTE(!IsCollectible());
-        RETURN m_file->GetLoadedNative();
-    }
-#else
     BOOL HasNativeImage()
     {
         LIMITED_METHOD_CONTRACT;
@@ -2527,8 +2069,6 @@ public:
         PRECONDITION(HasNativeImage());
         return NULL;
     }
-#endif // FEATURE_PREJIT
-
 
     BOOL            HasNativeOrReadyToRunImage();
     PEImageLayout * GetNativeOrReadyToRunImage();
@@ -2584,55 +2124,6 @@ public:
 
     void AddActiveDependency(Module *pModule, BOOL unconditional);
 
-#ifdef FEATURE_PREJIT
-    BOOL IsZappedCode(PCODE code);
-    BOOL IsZappedPrecode(PCODE code);
-
-    CORCOMPILE_DEBUG_ENTRY GetMethodDebugInfoOffset(MethodDesc *pMD);
-    PTR_BYTE GetNativeDebugInfo(MethodDesc * pMD);
-
-    // The methods below must be called when loading back an ngen'ed image for any fields that
-    // might be an encoded token (rather than a hard pointer) and/or need a restore operation
-    //
-    static void RestoreMethodTablePointerRaw(PTR_MethodTable * ppMT,
-                                             Module *pContainingModule = NULL,
-                                             ClassLoadLevel level = CLASS_LOADED);
-    static void RestoreTypeHandlePointerRaw(TypeHandle *pHandle,
-                                            Module *pContainingModule = NULL,
-                                            ClassLoadLevel level = CLASS_LOADED);
-    static void RestoreMethodDescPointerRaw(PTR_MethodDesc * ppMD,
-                                            Module *pContainingModule = NULL,
-                                            ClassLoadLevel level = CLASS_LOADED);
-
-    static void RestoreMethodTablePointer(FixupPointer<PTR_MethodTable> * ppMT,
-                                          Module *pContainingModule = NULL,
-                                          ClassLoadLevel level = CLASS_LOADED);
-    static void RestoreTypeHandlePointer(FixupPointer<TypeHandle> *pHandle,
-                                         Module *pContainingModule = NULL,
-                                         ClassLoadLevel level = CLASS_LOADED);
-    static void RestoreMethodDescPointer(FixupPointer<PTR_MethodDesc> * ppMD,
-                                          Module *pContainingModule = NULL,
-                                          ClassLoadLevel level = CLASS_LOADED);
-
-    static void RestoreMethodTablePointer(RelativeFixupPointer<PTR_MethodTable> * ppMT,
-                                          Module *pContainingModule = NULL,
-                                         ClassLoadLevel level = CLASS_LOADED);
-    static void RestoreTypeHandlePointer(RelativeFixupPointer<TypeHandle> *pHandle,
-                                         Module *pContainingModule = NULL,
-                                      ClassLoadLevel level = CLASS_LOADED);
-    static void RestoreMethodDescPointer(RelativeFixupPointer<PTR_MethodDesc> * ppMD,
-                                         Module *pContainingModule = NULL,
-                                         ClassLoadLevel level = CLASS_LOADED);
-    static void RestoreFieldDescPointer(RelativeFixupPointer<PTR_FieldDesc> * ppFD);
-
-    static void RestoreModulePointer(RelativeFixupPointer<PTR_Module> * ppModule, Module *pContainingModule);
-
-    static PTR_Module RestoreModulePointerIfLoaded(DPTR(RelativeFixupPointer<PTR_Module>) ppModule, Module *pContainingModule);
-
-    PCCOR_SIGNATURE GetEncodedSig(RVA fixupRva, Module **ppDefiningModule);
-    PCCOR_SIGNATURE GetEncodedSigIfLoaded(RVA fixupRva, Module **ppDefiningModule);
-#endif
-
     BYTE* GetNativeFixupBlobData(RVA fixup);
 
     IMDInternalImport *GetNativeAssemblyImport(BOOL loadAllowed = TRUE);
@@ -2655,115 +2146,6 @@ public:
     Module *GetModuleFromIndex(DWORD ix);
     Module *GetModuleFromIndexIfLoaded(DWORD ix);
 
-#ifdef FEATURE_PREJIT
-    // This is to rebuild stub dispatch maps to module-local values.
-    void UpdateStubDispatchTypeTable(DataImage *image);
-
-    void SetProfileData(CorProfileData * profileData);
-    CorProfileData *GetProfileData();
-
-    mdTypeDef     LookupIbcTypeToken(  Module *   pExternalModule, mdToken ibcToken, SString* optionalFullNameOut = NULL);
-    mdMethodDef   LookupIbcMethodToken(TypeHandle enclosingType,   mdToken ibcToken, SString* optionalFullNameOut = NULL);
-
-    TypeHandle    LoadIBCTypeHelper(DataImage *image, CORBBTPROF_BLOB_PARAM_SIG_ENTRY *pBlobSigEntry);
-    MethodDesc *  LoadIBCMethodHelper(DataImage *image, CORBBTPROF_BLOB_PARAM_SIG_ENTRY *pBlobSigEntry);
-
-
-    void ExpandAll(DataImage *image);
-    // profileData may be different than the profileData passed in to
-    // ExpandAll() depending on more information that may now be available
-    // (after all the methods have been compiled)
-
-    void Save(DataImage *image);
-    void Arrange(DataImage *image);
-    void PlaceType(DataImage *image, TypeHandle th, DWORD profilingFlags);
-    void PlaceMethod(DataImage *image, MethodDesc *pMD, DWORD profilingFlags);
-    void Fixup(DataImage *image);
-
-    bool AreAllClassesFullyLoaded();
-
-    // Precompute type-specific auxiliary information saved into NGen image
-    void PrepareTypesForSave(DataImage *image);
-
-    static void SaveMethodTable(DataImage *image,
-                                MethodTable *pMT,
-                                DWORD profilingFlags);
-
-    static void SaveTypeHandle(DataImage *image,
-                               TypeHandle t,
-                               DWORD profilingFlags);
-
-private:
-    static BOOL CanEagerBindTo(Module *targetModule, Module *pPreferredZapModule, void *address);
-public:
-
-    static PTR_Module ComputePreferredZapModule(Module * pDefinitionModule,        // the module that declares the generic type or method
-                                                Instantiation classInst,           // the type arguments to the type (if any)
-                                                Instantiation methodInst = Instantiation()); // the type arguments to the method (if any)
-
-    static PTR_Module ComputePreferredZapModuleHelper(Module * pDefinitionModule,
-                                                      Instantiation classInst,
-                                                      Instantiation methodInst);
-
-    static PTR_Module ComputePreferredZapModule(TypeKey * pKey);
-
-    // Return true if types or methods of this instantiation are *always* precompiled and saved
-    // in the preferred zap module
-    // At present, only true for <__Canon,...,__Canon> instantiation
-    static BOOL IsAlwaysSavedInPreferredZapModule(Instantiation classInst,
-                                                  Instantiation methodInst = Instantiation());
-
-    static PTR_Module GetPreferredZapModuleForTypeHandle(TypeHandle t);
-    static PTR_Module GetPreferredZapModuleForMethodTable(MethodTable * pMT);
-    static PTR_Module GetPreferredZapModuleForMethodDesc(const MethodDesc * pMD);
-    static PTR_Module GetPreferredZapModuleForFieldDesc(FieldDesc * pFD);
-    static PTR_Module GetPreferredZapModuleForTypeDesc(PTR_TypeDesc pTD);
-
-    void PrepopulateDictionaries(DataImage *image, BOOL nonExpansive);
-
-
-    void LoadTokenTables();
-    void LoadHelperTable();
-
-    PTR_NGenLayoutInfo GetNGenLayoutInfo()
-    {
-        LIMITED_METHOD_DAC_CONTRACT;
-        return m_pNGenLayoutInfo;
-    }
-
-    PCODE GetPrestubJumpStub()
-    {
-        LIMITED_METHOD_DAC_CONTRACT;
-
-        if (!m_pNGenLayoutInfo)
-            return NULL;
-
-        return m_pNGenLayoutInfo->m_pPrestubJumpStub;
-    }
-
-#ifdef HAS_FIXUP_PRECODE
-    PCODE GetPrecodeFixupJumpStub()
-    {
-        LIMITED_METHOD_DAC_CONTRACT;
-
-        if (!m_pNGenLayoutInfo)
-            return NULL;
-
-        return m_pNGenLayoutInfo->m_pPrecodeFixupJumpStub;
-    }
-#endif
-
-    BOOL IsVirtualImportThunk(PCODE code)
-    {
-        LIMITED_METHOD_DAC_CONTRACT;
-
-        if (!m_pNGenLayoutInfo)
-            return FALSE;
-
-        return m_pNGenLayoutInfo->m_VirtualMethodThunks.IsInRange(code);
-    }
-#endif // FEATURE_PREJIT
-
     ICorJitInfo::BlockCounts * AllocateMethodBlockCounts(mdToken _token, DWORD _size, DWORD _ILSize);
     HANDLE OpenMethodProfileDataLogFile(GUID mvid);
     static void ProfileDataAllocateTokenLists(ProfileEmitter * pEmitter, TokenProfileData* pTokenProfileData);
@@ -2781,29 +2163,6 @@ public:
 
     void LogTokenAccess(mdToken token, SectionFormat format, ULONG flagNum);
     void LogTokenAccess(mdToken token, ULONG flagNum);
-
-#ifdef FEATURE_PREJIT
-    BOOL AreTypeSpecsTriaged()
-    {
-        return m_dwTransientFlags & TYPESPECS_TRIAGED;
-    }
-
-    void SetTypeSpecsTriaged()
-    {
-        FastInterlockOr(&m_dwTransientFlags, TYPESPECS_TRIAGED);
-    }
-
-    BOOL IsModuleSaved()
-    {
-        return m_dwTransientFlags & MODULE_SAVED;
-    }
-
-    void SetIsModuleSaved()
-    {
-        FastInterlockOr(&m_dwTransientFlags, MODULE_SAVED);
-    }
-
-#endif  // FEATURE_PREJIT
 
     BOOL IsReadyToRun() const
     {
@@ -2942,14 +2301,6 @@ public:
     }
 
     PTR_DomainLocalModule   GetDomainLocalModule();
-
-#ifdef FEATURE_PREJIT
-    NgenStats *GetNgenStats()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return m_pNgenStats;
-    }
-#endif // FEATURE_PREJIT
 
     // LoaderHeap for storing IJW thunks
     PTR_LoaderHeap           m_pThunkHeap;
@@ -3168,9 +2519,9 @@ private:
     // This is used to allow bulk emitting types without re-emitting the metadata between each type.
     bool m_fSuppressMetadataCapture;
 
-#if !defined DACCESS_COMPILE && !defined CROSSGEN_COMPILE
+#if !defined DACCESS_COMPILE
     ReflectionModule(Assembly *pAssembly, mdFile token, PEFile *pFile);
-#endif // !DACCESS_COMPILE && !CROSSGEN_COMPILE
+#endif // !DACCESS_COMPILE
 
 public:
 
@@ -3179,11 +2530,11 @@ public:
     PTR_SBuffer GetDynamicMetadataBuffer() const;
 #endif
 
-#if !defined DACCESS_COMPILE && !defined CROSSGEN_COMPILE
+#if !defined DACCESS_COMPILE
     static ReflectionModule *Create(Assembly *pAssembly, PEFile *pFile, AllocMemTracker *pamTracker, LPCWSTR szName);
     void Initialize(AllocMemTracker *pamTracker, LPCWSTR szName);
     void Destruct();
-#endif // !DACCESS_COMPILE && !CROSSGEN_COMPILE
+#endif // !DACCESS_COMPILE
 
     // Overrides functions to access sections
     virtual TADDR GetIL(RVA target);

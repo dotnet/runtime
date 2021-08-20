@@ -76,11 +76,8 @@ enum MDInternalImportFlags
 {
     MDInternalImport_Default            = 0,
     MDInternalImport_NoCache            = 1, // Do not share/cached the results of opening the image
-#ifdef FEATURE_PREJIT
-    MDInternalImport_TrustedNativeImage = 2, // The image is a native image, and so its format can be trusted
-    MDInternalImport_ILMetaData         = 4, // Open the IL metadata, even if this is a native image
-    MDInternalImport_TrustedNativeImage_and_IL = MDInternalImport_TrustedNativeImage | MDInternalImport_ILMetaData,
-#endif
+    // unused                           = 2,
+    // unused                           = 4,
     MDInternalImport_OnlyLookInCache    =0x20, // Only look in the cache. (If the cache does not have the image already loaded, return NULL)
 };  // enum MDInternalImportFlags
 
@@ -469,57 +466,6 @@ DECLARE_INTERFACE_(IGetIMDInternalImport, IUnknown)
         IMDInternalImport ** ppIMDInternalImport   // [OUT] Buffer to receive IMDInternalImport*
     ) PURE;
 };
-
-// ===========================================================================
-#ifdef FEATURE_PREJIT
-// ===========================================================================
-
-// Use the default JIT compiler
-#define DEFAULT_NGEN_COMPILER_DLL_NAME W("clrjit.dll")
-
-#ifndef DACCESS_COMPILE
-
-/* --------------------------------------------------------------------------- *
- * NGen logger
- * --------------------------------------------------------------------------- */
- #include "mscorsvc.h"
-
-struct ICorSvcLogger;
-class SvcLogger
-{
-public:
-
-    SvcLogger();
-    ~SvcLogger();
-    void ReleaseLogger();
-    void SetSvcLogger(ICorSvcLogger *pCorSvcLoggerArg);
-    BOOL HasSvcLogger();
-    ICorSvcLogger* GetSvcLogger();
-    void Printf(const CHAR *format, ...);
-    void SvcPrintf(const CHAR *format, ...);
-    void Printf(const WCHAR *format, ...);
-    void Printf(CorSvcLogLevel logLevel, const WCHAR *format, ...);
-    void SvcPrintf(const WCHAR *format, ...);
-    void Log(const WCHAR *message, CorSvcLogLevel logLevel = LogLevel_Warning);
-    //Need to add this to allocate StackSString, as we don't want static class
-
-private:
-
-    void LogHelper(SString s, CorSvcLogLevel logLevel = LogLevel_Success);
-    //instantiations that need VM services like contracts in dllmain.
-    void CheckInit();
-
-    StackSString* pss;
-    ICorSvcLogger *pCorSvcLogger;
-};  // class SvcLogger
-
-SvcLogger *GetSvcLogger();
-BOOL       HasSvcLogger();
-#endif // #ifndef DACCESS_COMPILE
-
-// ===========================================================================
-#endif // #ifdef FEATURE_PREJIT
-// ===========================================================================
 
 struct CORCOMPILE_ASSEMBLY_SIGNATURE;
 struct CORCOMPILE_VERSION_INFO;

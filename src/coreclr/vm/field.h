@@ -356,11 +356,6 @@ public:
 
     BOOL IsObjRef();
 
-#ifdef FEATURE_PREJIT
-    void SaveContents(DataImage *image);
-    void Fixup(DataImage *image);
-#endif // FEATURE_PREJIT
-
     UINT LoadSize();
 
     // Return -1 if the type isn't loaded yet (i.e. if LookupFieldTypeHandle() would return null)

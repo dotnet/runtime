@@ -237,16 +237,6 @@ class CoreLibBinder
     //
     static void AttachModule(Module *pModule);
 
-#ifdef FEATURE_PREJIT
-    //
-    // Store the binding arrays to a prejit image
-    // so we don't have to do name lookup at runtime
-    //
-    void BindAll();
-    void Save(DataImage *image);
-    void Fixup(DataImage *image);
-#endif
-
 #ifdef _DEBUG
     void Check();
     void CheckExtended();

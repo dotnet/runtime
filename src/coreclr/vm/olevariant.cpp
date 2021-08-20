@@ -870,23 +870,13 @@ const OleVariant::Marshaler *OleVariant::GetMarshalerForVarType(VARTYPE vt, BOOL
 
 #ifdef FEATURE_COMINTEROP
 
-#ifdef CROSSGEN_COMPILE
-#define RETURN_MARSHALER(OleToCom, ComToOle, OleRefToCom, ArrayOleToCom, ArrayComToOle, ClearArray) \
-    { static const Marshaler marshaler = { NULL, NULL, NULL, NULL, NULL, NULL }; RETURN &marshaler; }
-#else
 #define RETURN_MARSHALER(OleToCom, ComToOle, OleRefToCom, ArrayOleToCom, ArrayComToOle, ClearArray) \
     { static const Marshaler marshaler = { OleToCom, ComToOle, OleRefToCom, ArrayOleToCom, ArrayComToOle, ClearArray }; RETURN &marshaler; }
-#endif
 
 #else // FEATURE_COMINTEROP
 
-#ifdef CROSSGEN_COMPILE
-#define RETURN_MARSHALER(OleToCom, ComToOle, OleRefToCom, ArrayOleToCom, ArrayComToOle, ClearArray) \
-    { static const Marshaler marshaler = { NULL, NULL, NULL }; RETURN &marshaler; }
-#else
 #define RETURN_MARSHALER(OleToCom, ComToOle, OleRefToCom, ArrayOleToCom, ArrayComToOle, ClearArray) \
     { static const Marshaler marshaler = { ArrayOleToCom, ArrayComToOle, ClearArray }; RETURN &marshaler; }
-#endif
 
 #endif // FEATURE_COMINTEROP
 
@@ -1088,7 +1078,6 @@ VariantArray:
     }
 } // OleVariant::Marshaler *OleVariant::GetMarshalerForVarType()
 
-#ifndef CROSSGEN_COMPILE
 
 #ifdef FEATURE_COMINTEROP
 
@@ -5291,4 +5280,3 @@ BSTR OleVariant::ConvertStringToBSTR(STRINGREF *pStringObj)
 }
 #endif // FEATURE_COMINTEROP
 
-#endif // CROSSGEN_COMPILE

@@ -70,11 +70,7 @@ inline BOOL TypeHandle::IsZapped() const
 {
     LIMITED_METHOD_DAC_CONTRACT;
 
-#ifdef FEATURE_PREJIT
-    return (GetZapModule() != NULL);
-#else
     return FALSE;
-#endif
 }
 
 // Methods to allow you get get a the two possible representations
@@ -243,7 +239,6 @@ inline void TypeHandle::ForEachComponentMethodTable(T &callback) const
     }
 }
 
-#ifndef CROSSGEN_COMPILE
 FORCEINLINE OBJECTREF TypeHandle::GetManagedClassObjectFast() const
 {
     CONTRACTL
@@ -288,6 +283,5 @@ FORCEINLINE OBJECTREF TypeHandle::GetManagedClassObjectFast() const
 
     return o;
 }
-#endif // CROSSGEN_COMPILE
 
 #endif  // _TYPEHANDLE_INL_

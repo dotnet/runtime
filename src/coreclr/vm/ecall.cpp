@@ -15,17 +15,8 @@
 
 #ifndef DACCESS_COMPILE
 
-#ifdef CROSSGEN_COMPILE
-namespace CrossGenCoreLib
-{
-    extern const ECClass c_rgECClasses[];
-    extern const int c_nECClasses;
-};
-using namespace CrossGenCoreLib;
-#else // CROSSGEN_COMPILE
 extern const ECClass c_rgECClasses[];
 extern const int c_nECClasses;
-#endif // CROSSGEN_COMPILE
 
 
 /**********
@@ -107,7 +98,6 @@ void ECall::PopulateManagedStringConstructors()
 
 void ECall::PopulateManagedCastHelpers()
 {
-#ifndef CROSSGEN_COMPILE
 
     STANDARD_VM_CONTRACT;
 
@@ -117,14 +107,9 @@ void ECall::PopulateManagedCastHelpers()
     // array cast uses the "ANY" helper
     SetJitHelperFunction(CORINFO_HELP_ISINSTANCEOFARRAY, pDest);
 
-#ifdef FEATURE_PREJIT
-    // When interface table uses indirect references, just set interface casts to "ANY" helper
-    SetJitHelperFunction(CORINFO_HELP_ISINSTANCEOFINTERFACE, pDest);
-#else
     pMD = CoreLibBinder::GetMethod((BinderMethodID)(METHOD__CASTHELPERS__ISINSTANCEOFINTERFACE));
     pDest = pMD->GetMultiCallableAddrOfCode();
     SetJitHelperFunction(CORINFO_HELP_ISINSTANCEOFINTERFACE, pDest);
-#endif
 
     pMD = CoreLibBinder::GetMethod((BinderMethodID)(METHOD__CASTHELPERS__ISINSTANCEOFCLASS));
     pDest = pMD->GetMultiCallableAddrOfCode();
@@ -136,14 +121,9 @@ void ECall::PopulateManagedCastHelpers()
     // array cast uses the "ANY" helper
     SetJitHelperFunction(CORINFO_HELP_CHKCASTARRAY, pDest);
 
-#ifdef FEATURE_PREJIT
-    // When interface table uses indirect references, just set interface casts to "ANY" handler
-    SetJitHelperFunction(CORINFO_HELP_CHKCASTINTERFACE, pDest);
-#else
     pMD = CoreLibBinder::GetMethod((BinderMethodID)(METHOD__CASTHELPERS__CHKCASTINTERFACE));
     pDest = pMD->GetMultiCallableAddrOfCode();
     SetJitHelperFunction(CORINFO_HELP_CHKCASTINTERFACE, pDest);
-#endif
 
     pMD = CoreLibBinder::GetMethod((BinderMethodID)(METHOD__CASTHELPERS__CHKCASTCLASS));
     pDest = pMD->GetMultiCallableAddrOfCode();
@@ -179,7 +159,6 @@ void ECall::PopulateManagedCastHelpers()
     // Get the code directly to avoid PreStub indirection.
     pDest = pMD->GetNativeCode();
     SetJitHelperFunction(CORINFO_HELP_LDELEMA_REF, pDest);
-#endif  //CROSSGEN_COMPILE
 }
 
 static CrstStatic gFCallLock;
@@ -480,15 +459,6 @@ PCODE ECall::GetFCallImpl(MethodDesc * pMD, BOOL * pfSharedOrDynamicFCallImpl /*
         ("%s::%s is not registered using FCFuncElement macro in ecall.cpp",
         pMD->m_pszDebugClassName, pMD->m_pszDebugMethodName));
 
-#ifdef CROSSGEN_COMPILE
-
-    // Use the ECFunc address as a unique fake entrypoint to make the entrypoint<->MethodDesc mapping work
-    PCODE pImplementation = (PCODE)ret;
-#ifdef TARGET_ARM
-    pImplementation |= THUMB_CODE;
-#endif
-
-#else // CROSSGEN_COMPILE
 
     PCODE pImplementation = (PCODE)ret->m_pImplementation;
 
@@ -503,7 +473,6 @@ PCODE ECall::GetFCallImpl(MethodDesc * pMD, BOOL * pfSharedOrDynamicFCallImpl /*
         return pImplementation;
     }
 
-#endif // CROSSGEN_COMPILE
 
     // Insert the implementation into hash table if it is not there already.
 
@@ -608,7 +577,6 @@ BOOL ECall::CheckUnusedECalls(SetSHash<DWORD>& usedIDs)
 }
 
 
-#if !defined(CROSSGEN_COMPILE)
 // This function is a stub implementation for the constructor of a ComImport class.
 // The actual work to implement COM Activation (and built-in COM support checks) is done as part
 // of the implementation of object allocation. As a result, the constructor itself has no extra
@@ -621,7 +589,6 @@ FCIMPL1(VOID, FCComCtor, LPVOID pV)
     FCUnique(0x34);
 }
 FCIMPLEND
-#endif // !CROSSGEN_COMPILE
 
 
 
