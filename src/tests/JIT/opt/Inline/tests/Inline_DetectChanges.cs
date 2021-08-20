@@ -24,7 +24,13 @@ public class Program
     internal static ulong[] s_16;
     public static int Main()
     {
-        Foo(null);
+        try
+        {
+            Foo(null);
+        }
+        catch (NullReferenceException)
+        {
+        }
         return 100;
     } 
 
