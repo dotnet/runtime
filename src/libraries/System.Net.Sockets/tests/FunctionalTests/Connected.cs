@@ -14,9 +14,14 @@ namespace System.Net.Sockets.Tests
 
             socket.Blocking = false;
 
-            SocketException se = Assert.ThrowsAny<SocketException>(() => socket.Connect(IPAddress.Loopback, 0));
+            // Connect to port 1 where we expect no server to be listening.
+            SocketException se = Assert.ThrowsAny<SocketException>(() => socket.Connect(IPAddress.Loopback, 1));
 
             Assert.Equal(SocketError.WouldBlock, se.SocketErrorCode);
+
+            // Give the non-blocking connect some time to complete.
+            socket.Poll(5_000, SelectMode.SelectWrite);
+
             Assert.False(socket.Connected);
         }
     }
