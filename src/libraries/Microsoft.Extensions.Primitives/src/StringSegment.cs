@@ -23,7 +23,7 @@ namespace Microsoft.Extensions.Primitives
         /// <param name="buffer">
         /// The original <see cref="string"/>. The <see cref="StringSegment"/> includes the whole <see cref="string"/>.
         /// </param>
-        public StringSegment(string buffer)
+        public StringSegment(string? buffer)
         {
             Buffer = buffer;
             Offset = 0;
@@ -62,7 +62,7 @@ namespace Microsoft.Extensions.Primitives
         /// <summary>
         /// Gets the <see cref="string"/> buffer for this <see cref="StringSegment"/>.
         /// </summary>
-        public string Buffer { get; }
+        public string? Buffer { get; }
 
         /// <summary>
         /// Gets the offset within the buffer for this <see cref="StringSegment"/>.
@@ -102,7 +102,7 @@ namespace Microsoft.Extensions.Primitives
                     ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.index);
                 }
 
-                return Buffer[Offset + index];
+                return Buffer![Offset + index];
             }
         }
 

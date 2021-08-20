@@ -41,9 +41,9 @@ namespace Microsoft.Extensions.Primitives
         private readonly object _dummy;
         private readonly int _dummyPrimitive;
         public static readonly Microsoft.Extensions.Primitives.StringSegment Empty;
-        public StringSegment(string buffer) { throw null; }
+        public StringSegment(string? buffer) { throw null; }
         public StringSegment(string buffer, int offset, int length) { throw null; }
-        public string Buffer { get { throw null; } }
+        public string? Buffer { get { throw null; } }
         [System.Diagnostics.CodeAnalysis.MemberNotNullWhen(true, nameof(Buffer))]
         public bool HasValue { get { throw null; } }
         public char this[int index] { get { throw null; } }
