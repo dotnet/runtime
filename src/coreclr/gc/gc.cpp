@@ -43175,7 +43175,7 @@ unsigned int GCHeap::WhichGeneration (Object* object)
 
 unsigned int GCHeap::WhichRange (Object* object, uint8_t** ppStart, uint8_t** ppAllocated, uint8_t** ppReserved)
 {
-    unsigned int generation = -1;
+    int generation = -1;
     heap_segment * hs = gc_heap::find_segment ((uint8_t*)object, FALSE);
 #ifdef USE_REGIONS
     generation = heap_segment_gen_num (hs);
@@ -43235,7 +43235,7 @@ unsigned int GCHeap::WhichRange (Object* object, uint8_t** ppStart, uint8_t** pp
         *ppReserved = heap_segment_reserved (hs);
     }
 #endif //USE_REGIONS
-    return generation;
+    return (unsigned int)generation;
 }
 
 bool GCHeap::IsEphemeral (Object* object)
