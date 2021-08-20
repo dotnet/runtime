@@ -199,6 +199,7 @@ namespace System.Net.Http.Functional.Tests
 
         public static Task<byte[]> GetByteArrayAsync(this HttpClient client, bool async, bool useCopyTo, Uri uri)
         {
+#if NETCOREAPP
             return Task.Run(async () =>
             {
                 var m = new HttpRequestMessage(HttpMethod.Get, uri);
@@ -232,6 +233,10 @@ namespace System.Net.Http.Functional.Tests
                 }
                 return result.ToArray();
             });
+#else
+            // For WinHttpHandler on .NET Framework, we fall back to ignoring async and useCopyTo.
+            return client.GetByteArrayAsync(uri);
+#endif
         }
     }
 }
