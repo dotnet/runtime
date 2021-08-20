@@ -459,6 +459,7 @@ namespace System.Diagnostics.Eventing.Reader
                     case UnsafeNativeMethods.ERROR_EVT_MESSAGE_LOCALE_NOT_FOUND:
                     case UnsafeNativeMethods.ERROR_RESOURCE_LANG_NOT_FOUND:
                     case UnsafeNativeMethods.ERROR_MUI_FILE_NOT_FOUND:
+                    case UnsafeNativeMethods.ERROR_RESOURCE_TYPE_NOT_FOUND:
                         return null;
                 }
                 if (error != UnsafeNativeMethods.ERROR_INSUFFICIENT_BUFFER)
@@ -480,11 +481,8 @@ namespace System.Diagnostics.Eventing.Reader
                     case UnsafeNativeMethods.ERROR_EVT_MESSAGE_LOCALE_NOT_FOUND:
                     case UnsafeNativeMethods.ERROR_RESOURCE_LANG_NOT_FOUND:
                     case UnsafeNativeMethods.ERROR_MUI_FILE_NOT_FOUND:
+                    case UnsafeNativeMethods.ERROR_RESOURCE_TYPE_NOT_FOUND:
                         return null;
-                }
-                if (error == UnsafeNativeMethods.ERROR_EVT_UNRESOLVED_VALUE_INSERT)
-                {
-                    return null;
                 }
                 EventLogException.Throw(error);
             }
@@ -913,7 +911,8 @@ namespace System.Diagnostics.Eventing.Reader
             bool status = UnsafeNativeMethods.EvtFormatMessage(pmHandle, eventHandle, 0, 0, null, flag, 0, sb, out bufferNeeded);
             int error = Marshal.GetLastWin32Error();
 
-            if (!status && error != UnsafeNativeMethods.ERROR_EVT_UNRESOLVED_VALUE_INSERT)
+            if (!status && error != UnsafeNativeMethods.ERROR_EVT_UNRESOLVED_VALUE_INSERT
+                        && error != UnsafeNativeMethods.ERROR_EVT_UNRESOLVED_PARAMETER_INSERT)
             {
                 //
                 // ERROR_EVT_UNRESOLVED_VALUE_INSERT can be returned.  It means
@@ -928,6 +927,7 @@ namespace System.Diagnostics.Eventing.Reader
                     case UnsafeNativeMethods.ERROR_EVT_MESSAGE_LOCALE_NOT_FOUND:
                     case UnsafeNativeMethods.ERROR_RESOURCE_LANG_NOT_FOUND:
                     case UnsafeNativeMethods.ERROR_MUI_FILE_NOT_FOUND:
+                    case UnsafeNativeMethods.ERROR_RESOURCE_TYPE_NOT_FOUND:
                         return null;
                 }
                 if (error != (int)UnsafeNativeMethods.ERROR_INSUFFICIENT_BUFFER)
@@ -938,7 +938,8 @@ namespace System.Diagnostics.Eventing.Reader
             status = UnsafeNativeMethods.EvtFormatMessage(pmHandle, eventHandle, 0, 0, null, flag, bufferNeeded, sb, out bufferNeeded);
             error = Marshal.GetLastWin32Error();
 
-            if (!status && error != UnsafeNativeMethods.ERROR_EVT_UNRESOLVED_VALUE_INSERT)
+            if (!status && error != UnsafeNativeMethods.ERROR_EVT_UNRESOLVED_VALUE_INSERT
+                        && error != UnsafeNativeMethods.ERROR_EVT_UNRESOLVED_PARAMETER_INSERT)
             {
                 switch (error)
                 {
@@ -947,6 +948,7 @@ namespace System.Diagnostics.Eventing.Reader
                     case UnsafeNativeMethods.ERROR_EVT_MESSAGE_LOCALE_NOT_FOUND:
                     case UnsafeNativeMethods.ERROR_RESOURCE_LANG_NOT_FOUND:
                     case UnsafeNativeMethods.ERROR_MUI_FILE_NOT_FOUND:
+                    case UnsafeNativeMethods.ERROR_RESOURCE_TYPE_NOT_FOUND:
                         return null;
                 }
                 EventLogException.Throw(error);
@@ -975,6 +977,7 @@ namespace System.Diagnostics.Eventing.Reader
                         case UnsafeNativeMethods.ERROR_EVT_MESSAGE_LOCALE_NOT_FOUND:
                         case UnsafeNativeMethods.ERROR_RESOURCE_LANG_NOT_FOUND:
                         case UnsafeNativeMethods.ERROR_MUI_FILE_NOT_FOUND:
+                        case UnsafeNativeMethods.ERROR_RESOURCE_TYPE_NOT_FOUND:
                             return keywordsList.AsReadOnly();
                     }
                     if (error != UnsafeNativeMethods.ERROR_INSUFFICIENT_BUFFER)
@@ -993,6 +996,7 @@ namespace System.Diagnostics.Eventing.Reader
                         case UnsafeNativeMethods.ERROR_EVT_MESSAGE_LOCALE_NOT_FOUND:
                         case UnsafeNativeMethods.ERROR_RESOURCE_LANG_NOT_FOUND:
                         case UnsafeNativeMethods.ERROR_MUI_FILE_NOT_FOUND:
+                        case UnsafeNativeMethods.ERROR_RESOURCE_TYPE_NOT_FOUND:
                             return keywordsList;
                     }
                     EventLogException.Throw(error);
@@ -1067,7 +1071,8 @@ namespace System.Diagnostics.Eventing.Reader
             bool status = UnsafeNativeMethods.EvtFormatMessage(handle, eventHandle, 0xffffffff, values.Length, stringVariants, UnsafeNativeMethods.EvtFormatMessageFlags.EvtFormatMessageEvent, 0, sb, out bufferNeeded);
             int error = Marshal.GetLastWin32Error();
 
-            if (!status && error != UnsafeNativeMethods.ERROR_EVT_UNRESOLVED_VALUE_INSERT)
+            if (!status && error != UnsafeNativeMethods.ERROR_EVT_UNRESOLVED_VALUE_INSERT
+                        && error != UnsafeNativeMethods.ERROR_EVT_UNRESOLVED_PARAMETER_INSERT)
             {
                 //
                 // ERROR_EVT_UNRESOLVED_VALUE_INSERT can be returned.  It means
@@ -1082,6 +1087,7 @@ namespace System.Diagnostics.Eventing.Reader
                     case UnsafeNativeMethods.ERROR_EVT_MESSAGE_LOCALE_NOT_FOUND:
                     case UnsafeNativeMethods.ERROR_RESOURCE_LANG_NOT_FOUND:
                     case UnsafeNativeMethods.ERROR_MUI_FILE_NOT_FOUND:
+                    case UnsafeNativeMethods.ERROR_RESOURCE_TYPE_NOT_FOUND:
                         return null;
                 }
                 if (error != UnsafeNativeMethods.ERROR_INSUFFICIENT_BUFFER)
@@ -1092,7 +1098,8 @@ namespace System.Diagnostics.Eventing.Reader
             status = UnsafeNativeMethods.EvtFormatMessage(handle, eventHandle, 0xffffffff, values.Length, stringVariants, UnsafeNativeMethods.EvtFormatMessageFlags.EvtFormatMessageEvent, bufferNeeded, sb, out bufferNeeded);
             error = Marshal.GetLastWin32Error();
 
-            if (!status && error != UnsafeNativeMethods.ERROR_EVT_UNRESOLVED_VALUE_INSERT)
+            if (!status && error != UnsafeNativeMethods.ERROR_EVT_UNRESOLVED_VALUE_INSERT
+                        && error != UnsafeNativeMethods.ERROR_EVT_UNRESOLVED_PARAMETER_INSERT)
             {
                 switch (error)
                 {
@@ -1101,6 +1108,7 @@ namespace System.Diagnostics.Eventing.Reader
                     case UnsafeNativeMethods.ERROR_EVT_MESSAGE_LOCALE_NOT_FOUND:
                     case UnsafeNativeMethods.ERROR_RESOURCE_LANG_NOT_FOUND:
                     case UnsafeNativeMethods.ERROR_MUI_FILE_NOT_FOUND:
+                    case UnsafeNativeMethods.ERROR_RESOURCE_TYPE_NOT_FOUND:
                         return null;
                 }
                 EventLogException.Throw(error);
