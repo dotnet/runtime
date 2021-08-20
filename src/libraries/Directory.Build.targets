@@ -220,7 +220,7 @@
 
   <!-- Enable the SkipLocalsInit feature for any source project that is part of the .NETCoreApp shared framework. -->
   <PropertyGroup>
-    <SkipLocalsInit Condition="'$(SkipLocalsInit)' == '' and '$(MSBuildProjectExtension)' == '.csproj' and '$(IsNETCoreAppSrc)' == 'true' and $([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net5.0'))">true</SkipLocalsInit>
+    <SkipLocalsInit Condition="'$(SkipLocalsInit)' == '' and '$(MSBuildProjectExtension)' == '.csproj' and '$(IsNETCoreAppSrc)' == 'true' and '$(TargetFrameworkIdentifier)' == '.NETCoreApp'">true</SkipLocalsInit>
   </PropertyGroup>
 
   <!--Instructs compiler not to emit .locals init, using SkipLocalsInitAttribute.-->
