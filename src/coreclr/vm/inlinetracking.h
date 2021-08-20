@@ -378,7 +378,7 @@ typedef DPTR(PersistentInlineTrackingMapR2R2) PTR_PersistentInlineTrackingMapR2R
 
 #endif //FEATURE_READYTORUN
 
-#if !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
+#if !defined(DACCESS_COMPILE)
 // For inline tracking of JIT methods at runtime we use the CrossLoaderAllocatorHash
 class InliningInfoTrackerHashTraits : public NoRemoveDefaultCrossLoaderAllocatorHashTraits<MethodDesc *, MethodDesc *>
 {
@@ -428,6 +428,6 @@ private:
 
 typedef DPTR(JITInlineTrackingMap) PTR_JITInlineTrackingMap;
 
-#endif // !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
+#endif // !defined(DACCESS_COMPILE)
 
 #endif //INLINETRACKING_H_

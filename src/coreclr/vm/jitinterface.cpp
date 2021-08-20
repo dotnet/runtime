@@ -80,12 +80,6 @@
 #define EE_TO_JIT_TRANSITION_LEAF()
 
 
-#if defined(CROSSGEN_COMPILE)
-static const char *const hlpNameTable[CORINFO_HELP_COUNT] = {
-#define JITHELPER(code, pfnHelper, sig) #code,
-#include "jithelpers.h"
-};
-#endif
 
 #ifdef DACCESS_COMPILE
 
@@ -115,7 +109,6 @@ int64_t AtomicLoad64WithoutTearing(int64_t volatile *valueRef)
 #endif // TARGET_64BIT
 }
 
-#ifndef CROSSGEN_COMPILE
 FCIMPL1(INT64, GetCompiledILBytes, CLR_BOOL currentThread)
 {
     FCALL_CONTRACT;
@@ -139,7 +132,6 @@ FCIMPL1(INT64, GetCompilationTimeInTicks, CLR_BOOL currentThread)
     return currentThread ? t_c100nsTicksInJitForThread : AtomicLoad64WithoutTearing(&g_c100nsTicksInJit);
 }
 FCIMPLEND
-#endif
 
 /*********************************************************************/
 
@@ -3415,14 +3407,10 @@ const char* CEEInfo::getHelperName (CorInfoHelpFunc ftnNum)
 
     JIT_TO_EE_TRANSITION_LEAF();
 
-#ifdef CROSSGEN_COMPILE
-    result = hlpNameTable[ftnNum];
-#else
 #ifdef _DEBUG
     result = hlpFuncTable[ftnNum].name;
 #else
     result = "AnyJITHelper";
-#endif
 #endif
 
     EE_TO_JIT_TRANSITION_LEAF();
@@ -3821,16 +3809,12 @@ CorInfoInitClassResult CEEInfo::initClass(
     }
     else
     {
-#ifdef CROSSGEN_COMPILE
-        _ASSERTE(FALSE);
-#else // CROSSGEN_COMPILE
         if (pTypeToInitMT->IsClassInited())
         {
             // If the type is initialized there really is nothing to do.
             result = CORINFO_INITCLASS_INITIALIZED;
             goto exit;
         }
-#endif // CROSSGEN_COMPILE
     }
 
     if (pTypeToInitMT->IsGlobalClass())
@@ -3941,7 +3925,6 @@ CorInfoInitClassResult CEEInfo::initClass(
         goto exit;
     }
 
-#ifndef CROSSGEN_COMPILE
     //
     // Optimizations for domain specific code
     //
@@ -3956,7 +3939,6 @@ CorInfoInitClassResult CEEInfo::initClass(
         result = CORINFO_INITCLASS_INITIALIZED;
         goto exit;
     }
-#endif // CROSSGEN_COMPILE
 
     result = CORINFO_INITCLASS_USE_HELPER;
     }
@@ -5256,7 +5238,6 @@ void CEEInfo::getCallInfo(
 
             if (!(flags & CORINFO_CALLINFO_KINDONLY) && !isVerifyOnly())
             {
-#ifndef CROSSGEN_COMPILE
                 // We shouldn't be using GetLoaderAllocator here because for LCG, we need to get the
                 // VirtualCallStubManager from where the stub will be used.
                 // For normal methods there is no difference.
@@ -5282,10 +5263,6 @@ void CEEInfo::getCallInfo(
                     // used by one method.
                     indcell = pMgr->GenerateStubIndirection(addr, FALSE);
                 }
-#else // CROSSGEN_COMPILE
-                // This path should be unreachable during crossgen
-                _ASSERTE(false);
-#endif // CROSSGEN_COMPILE
             }
 
             // We use an indirect call
@@ -6538,12 +6515,10 @@ DWORD CEEInfo::getMethodAttribsInternal (CORINFO_METHOD_HANDLE ftn)
         result |= CORINFO_FLG_DELEGATE_INVOKE;
     }
 
-#ifndef CROSSGEN_COMPILE
     if (!g_pConfig->TieredCompilation_QuickJitForLoops())
     {
         result |= CORINFO_FLG_DISABLE_TIER0_FOR_LOOPS;
     }
-#endif
 
     return result;
 }
@@ -7752,7 +7727,7 @@ CorInfoInline CEEInfo::canInline (CORINFO_METHOD_HANDLE hCaller,
             goto exit;
         }
 
-#if defined(FEATURE_REJIT) && !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
+#if defined(FEATURE_REJIT) && !defined(DACCESS_COMPILE)
         if (CORProfilerEnableRejit())
         {
             CodeVersionManager* pCodeVersionManager = pCallee->GetCodeVersionManager();
@@ -7765,7 +7740,7 @@ CorInfoInline CEEInfo::canInline (CORINFO_METHOD_HANDLE hCaller,
                 goto exit;
             }
         }
-#endif // defined(FEATURE_REJIT) && !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
+#endif // defined(FEATURE_REJIT) && !defined(DACCESS_COMPILE)
 
         // If the profiler wishes to be notified of JIT events and the result from
         // the above tests will cause a function to be inlined, we need to tell the
@@ -7953,7 +7928,7 @@ void CEEInfo::reportInliningDecision (CORINFO_METHOD_HANDLE inlinerHnd,
     }
 
 
-#if defined FEATURE_REJIT && !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
+#if defined FEATURE_REJIT && !defined(DACCESS_COMPILE)
     if(inlineResult == INLINE_PASS)
     {
         // We don't want to track the chain of methods, so intentionally use m_pMethodBeingCompiled
@@ -7979,7 +7954,7 @@ void CEEInfo::reportInliningDecision (CORINFO_METHOD_HANDLE inlinerHnd,
             }
         }
     }
-#endif // defined FEATURE_REJIT && !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
+#endif // defined FEATURE_REJIT && !defined(DACCESS_COMPILE)
 
     EE_TO_JIT_TRANSITION();
 }
@@ -10069,11 +10044,7 @@ const void * CEEInfo::getInlinedCallFrameVptr(void **ppIndirection)
 
     JIT_TO_EE_TRANSITION_LEAF();
 
-#ifndef CROSSGEN_COMPILE
     result = (void*)InlinedCallFrame::GetMethodFrameVPtr();
-#else
-    result = (void*)0x43210;
-#endif
 
     EE_TO_JIT_TRANSITION_LEAF();
 
@@ -10144,7 +10115,6 @@ uint32_t CEEInfo::GetErrorMessage(__inout_ecount(bufferLength) char16_t* buffer,
 
     uint32_t result = 0;
 
-#ifndef CROSSGEN_COMPILE
     JIT_TO_EE_TRANSITION();
 
     GCX_COOP();
@@ -10164,7 +10134,6 @@ uint32_t CEEInfo::GetErrorMessage(__inout_ecount(bufferLength) char16_t* buffer,
     }
 
     EE_TO_JIT_TRANSITION();
-#endif
 
     return result;
 }
@@ -10212,12 +10181,6 @@ LONG EEFilterException(struct _EXCEPTION_POINTERS *pExceptionPointers, void *unu
     {
         result = EXCEPTION_CONTINUE_SEARCH;
     }
-#ifdef CROSSGEN_COMPILE
-    else
-    {
-        result = EXCEPTION_EXECUTE_HANDLER;
-    }
-#else
     else if (!IsComPlusException(pExceptionPointers->ExceptionRecord))
     {
         result = EXCEPTION_EXECUTE_HANDLER;
@@ -10252,7 +10215,6 @@ LONG EEFilterException(struct _EXCEPTION_POINTERS *pExceptionPointers, void *unu
             GCPROTECT_END();
         }
     }
-#endif
 
     EE_TO_JIT_TRANSITION_LEAF();
 
@@ -10275,7 +10237,6 @@ void CEEInfo::HandleException(struct _EXCEPTION_POINTERS *pExceptionPointers)
 
     JIT_TO_EE_TRANSITION_LEAF();
 
-#ifndef CROSSGEN_COMPILE
     if (IsComPlusException(pExceptionPointers->ExceptionRecord))
     {
         GCX_COOP();
@@ -10339,7 +10300,6 @@ void CEEInfo::HandleException(struct _EXCEPTION_POINTERS *pExceptionPointers)
             GCPROTECT_END();
         }
     }
-#endif
 
     EE_TO_JIT_TRANSITION_LEAF();
 }
@@ -10575,9 +10535,6 @@ int CEEInfo::doAssert(const char* szFile, int iLine, const char* szExpr)
 
     JIT_TO_EE_TRANSITION();
 
-#ifdef CROSSGEN_COMPILE
-    ThrowHR(COR_E_INVALIDPROGRAM);
-#else
 
 #ifdef _DEBUG
     BEGIN_DEBUG_ONLY_CODE;
@@ -10587,7 +10544,6 @@ int CEEInfo::doAssert(const char* szFile, int iLine, const char* szExpr)
     result = 1;   // break into debugger
 #endif // !_DEBUG
 
-#endif
 
     EE_TO_JIT_TRANSITION();
 
@@ -10632,7 +10588,6 @@ bool CEEInfo::logMsg(unsigned level, const char* fmt, va_list args)
     return result;
 }
 
-#ifndef CROSSGEN_COMPILE
 
 /*********************************************************************/
 
@@ -12129,11 +12084,7 @@ void CEEJitInfo::getEHinfo(
 }
 
 
-#endif // CROSSGEN_COMPILE
 
-#if defined(CROSSGEN_COMPILE)
-EXTERN_C ICorJitCompiler* getJit();
-#endif // defined(CROSSGEN_COMPILE)
 
 #ifdef FEATURE_INTERPRETER
 static CorJitResult CompileMethodWithEtwWrapper(EEJitManager *jitMgr,
@@ -12181,7 +12132,7 @@ CorJitResult invokeCompileMethodHelper(EEJitManager *jitMgr,
     bool samplingEnabled = (s_stackSamplingEnabled.val(CLRConfig::UNSUPPORTED_StackSamplingEnabled) != 0);
 #endif
 
-#if defined(ALLOW_SXS_JIT) && !defined(CROSSGEN_COMPILE)
+#if defined(ALLOW_SXS_JIT)
     if (FAILED(ret) && jitMgr->m_alternateJit
 #ifdef FEATURE_STACK_SAMPLING
         && (!samplingEnabled || (jitFlags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_SAMPLING_JIT_BACKGROUND)))
@@ -12213,7 +12164,7 @@ CorJitResult invokeCompileMethodHelper(EEJitManager *jitMgr,
             ret = CORJIT_SKIPPED;
         }
     }
-#endif // defined(ALLOW_SXS_JIT) && !defined(CROSSGEN_COMPILE)
+#endif // defined(ALLOW_SXS_JIT)
     comp->setJitFlags(jitFlags);
 
 #ifdef FEATURE_INTERPRETER
@@ -12274,7 +12225,6 @@ CorJitResult invokeCompileMethodHelper(EEJitManager *jitMgr,
     }
 #endif // FEATURE_INTERPRETER
 
-#if !defined(CROSSGEN_COMPILE)
     // Cleanup any internal data structures allocated
     // such as IL code after a successfull JIT compile
     // If the JIT fails we keep the IL around and will
@@ -12291,7 +12241,6 @@ CorJitResult invokeCompileMethodHelper(EEJitManager *jitMgr,
         comp->MethodCompileComplete(info->ftn);
 #endif // FEATURE_INTERPRETER
     }
-#endif // !defined(CROSSGEN_COMPILE)
 
 
 #if defined(FEATURE_GDBJIT)
@@ -12599,7 +12548,6 @@ BOOL g_fAllowRel32 = TRUE;
 #endif
 
 
-#ifndef CROSSGEN_COMPILE
 // ********************************************************************
 //                  README!!
 // ********************************************************************
@@ -12982,7 +12930,6 @@ PCODE UnsafeJitFunction(PrepareCodeConfig* config,
     COOPERATIVE_TRANSITION_END();
     return ret;
 }
-#endif // CROSSGEN_COMPILE
 
 extern "C" unsigned __stdcall PartialNGenStressPercentage()
 {
@@ -13244,10 +13191,8 @@ BOOL LoadDynamicInfoEntry(Module *currentModule,
 
     MethodDesc * pMD = NULL;
 
-#ifndef CROSSGEN_COMPILE
     PCCOR_SIGNATURE pSig;
     DWORD cSig;
-#endif // CROSSGEN_COMPILE
 
     size_t result = 0;
 
@@ -13294,7 +13239,6 @@ BOOL LoadDynamicInfoEntry(Module *currentModule,
         result = (size_t) ZapSig::DecodeField(currentModule, pInfoModule, pBlob);
         break;
 
-#ifndef CROSSGEN_COMPILE
     case ENCODE_STRING_HANDLE:
         {
             // We need to update strings atomically (due to NoStringInterning attribute). Note
@@ -13927,7 +13871,6 @@ BOOL LoadDynamicInfoEntry(Module *currentModule,
         break;
 #endif // FEATURE_READYTORUN
 
-#endif // CROSSGEN_COMPILE
 
     default:
         STRESS_LOG1(LF_ZAP, LL_WARNING, "Unknown FIXUP_BLOB_KIND %d\n", kind);

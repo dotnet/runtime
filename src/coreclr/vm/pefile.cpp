@@ -228,9 +228,7 @@ void PEFile::LoadLibrary(BOOL allowNativeSkip/*=TRUE*/) // if allowNativeSkip==F
 
     // Since we couldn't call LoadLibrary, we must be an IL only image
     // or the image may still contain unfixed up stuff
-    // Note that we make an exception for CompilationDomains, since PEImage
-    // will map non-ILOnly images in a compilation domain.
-    if (!GetILimage()->IsILOnly() && !GetAppDomain()->IsCompilationDomain())
+    if (!GetILimage()->IsILOnly())
     {
         if (!GetILimage()->HasV1Metadata())
             ThrowHR(COR_E_FIXUPSINEXE); // <TODO>@todo: better error</TODO>

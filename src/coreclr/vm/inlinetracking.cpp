@@ -546,7 +546,7 @@ Module* PersistentInlineTrackingMapR2R2::GetModuleByIndex(DWORD index)
 #endif //FEATURE_READYTORUN
 
 
-#if !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
+#if !defined(DACCESS_COMPILE)
 JITInlineTrackingMap::JITInlineTrackingMap(LoaderAllocator *pAssociatedLoaderAllocator) :
     m_mapCrst(CrstJitInlineTrackingMap),
     m_map()
@@ -610,4 +610,4 @@ void JITInlineTrackingMap::AddInliningDontTakeLock(MethodDesc *inliner, MethodDe
     }
 }
 
-#endif // !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
+#endif // !defined(DACCESS_COMPILE)

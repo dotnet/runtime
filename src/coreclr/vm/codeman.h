@@ -650,9 +650,6 @@ struct RangeSection
 
 /*****************************************************************************/
 
-#ifdef CROSSGEN_COMPILE
-#define CodeFragmentHeap LoaderHeap
-#else
 
 //
 // A simple linked-list based allocator to expose code heap as loader heap for allocation of precodes.
@@ -712,7 +709,6 @@ public:
     }
 #endif
 };
-#endif // CROSSGEN_COMPILE
 
 typedef DPTR(class CodeFragmentHeap) PTR_CodeFragmentHeap;
 
@@ -922,12 +918,12 @@ public:
     }
 #endif // ALLOW_SXS_JIT
 
-#if !defined CROSSGEN_COMPILE && !defined DACCESS_COMPILE
+#if !defined DACCESS_COMPILE
     EEJitManager();
 
     // No destructor necessary. Only one instance of this class that is destroyed at process shutdown.
     // ~EEJitManager();
-#endif // !CROSSGEN_COMPILE && !DACCESS_COMPILE
+#endif // !DACCESS_COMPILE
 
 
     virtual DWORD GetCodeType()
@@ -936,7 +932,6 @@ public:
         return (miManaged | miIL);
     }
 
-#ifndef CROSSGEN_COMPILE
     // Used to read debug info.
     virtual BOOL GetBoundariesAndVars(
         const DebugInfoRequest & request,
@@ -947,7 +942,6 @@ public:
         OUT ICorDebugInfo::NativeVarInfo **ppVars);
 
     virtual PCODE GetCodeAddressForRelOffset(const METHODTOKEN& MethodToken, DWORD relOffset);
-#endif // !CROSSGEN_COMPILE
 
     virtual BOOL JitCodeToMethodInfo(RangeSection * pRangeSection,
                                      PCODE currentPC,
@@ -957,7 +951,6 @@ public:
     virtual TADDR       JitTokenToStartAddress(const METHODTOKEN& MethodToken);
     virtual void        JitTokenToMethodRegionInfo(const METHODTOKEN& MethodToken, MethodRegionInfo *methodRegionInfo);
 
-#ifndef CROSSGEN_COMPILE
     virtual unsigned    InitializeEHEnumeration(const METHODTOKEN& MethodToken, EH_CLAUSE_ENUMERATOR* pEnumState);
     virtual PTR_EXCEPTION_CLAUSE_TOKEN GetNextEHClause(EH_CLAUSE_ENUMERATOR* pEnumState,
                                         EE_ILEXCEPTION_CLAUSE* pEHclause);
@@ -966,8 +959,7 @@ public:
                                         CrawlFrame *pCf);
 #endif // !DACCESS_COMPILE
     GCInfoToken         GetGCInfoToken(const METHODTOKEN& MethodToken);
-#endif // !CROSSGEN_COMPILE
-#if !defined DACCESS_COMPILE && !defined CROSSGEN_COMPILE
+#if !defined DACCESS_COMPILE
     void                RemoveJitData(CodeHeader * pCHdr, size_t GCinfo_len, size_t EHinfo_len);
     void                Unload(LoaderAllocator* pAllocator);
     void                CleanupCodeHeaps();
@@ -991,12 +983,11 @@ public:
                                             bool throwOnOutOfMemoryWithinRange);
 
     void *              allocCodeFragmentBlock(size_t blockSize, unsigned alignment, LoaderAllocator *pLoaderAllocator, StubCodeBlockKind kind);
-#endif // !DACCESS_COMPILE && !CROSSGEN_COMPILE
+#endif // !DACCESS_COMPILE
 
     static CodeHeader * GetCodeHeader(const METHODTOKEN& MethodToken);
     static CodeHeader * GetCodeHeaderFromStartAddress(TADDR methodStartAddress);
 
-#ifndef CROSSGEN_COMPILE
 #if defined(FEATURE_EH_FUNCLETS)
     // Compute function entry lazily. Do not call directly. Use EECodeInfo::GetFunctionEntry instead.
     virtual PTR_RUNTIME_FUNCTION    LazyGetFunctionEntry(EECodeInfo * pCodeInfo);
@@ -1021,9 +1012,7 @@ public:
         // available at debug time).
     }
 #endif // FEATURE_EH_FUNCLETS
-#endif // !CROSSGEN_COMPILE
 
-#ifndef CROSSGEN_COMPILE
 #ifndef DACCESS_COMPILE
 	// Heap Management functions
     void NibbleMapSet(HeapList * pHp, TADDR pCode, BOOL bSet);
@@ -1032,28 +1021,24 @@ public:
 
     static TADDR FindMethodCode(RangeSection * pRangeSection, PCODE currentPC);
     static TADDR FindMethodCode(PCODE currentPC);
-#endif // !CROSSGEN_COMPILE
 
-#if !defined DACCESS_COMPILE && !defined CROSSGEN_COMPILE
+#if !defined DACCESS_COMPILE
     void        FreeCodeMemory(HostCodeHeap *pCodeHeap, void * codeStart);
     void        RemoveFromCleanupList(HostCodeHeap *pCodeHeap);
     void        AddToCleanupList(HostCodeHeap *pCodeHeap);
     void        DeleteCodeHeap(HeapList *pHeapList);
     void        RemoveCodeHeapFromDomainList(CodeHeap *pHeap, LoaderAllocator *pAllocator);
-#endif // !DACCESS_COMPILE && !CROSSGEN_COMPILE
+#endif // !DACCESS_COMPILE
 
 private :
-#ifndef CROSSGEN_COMPILE
     struct DomainCodeHeapList {
         LoaderAllocator *m_pAllocator;
         CDynArray<HeapList *> m_CodeHeapList;
         DomainCodeHeapList();
         ~DomainCodeHeapList();
     };
-#endif
 
 #ifndef DACCESS_COMPILE
-#ifndef CROSSGEN_COMPILE
     HeapList*   NewCodeHeap(CodeHeapRequestInfo *pInfo, DomainCodeHeapList *pADHeapList);
     bool        CanUseCodeHeap(CodeHeapRequestInfo *pInfo, HeapList *pCodeHeap);
     void*       allocCodeRaw(CodeHeapRequestInfo *pInfo,
@@ -1063,18 +1048,15 @@ private :
     DomainCodeHeapList *GetCodeHeapList(CodeHeapRequestInfo *pInfo, LoaderAllocator *pAllocator, BOOL fDynamicOnly = FALSE);
     DomainCodeHeapList *CreateCodeHeapList(CodeHeapRequestInfo *pInfo);
     LoaderHeap* GetJitMetaHeap(MethodDesc *pMD);
-#endif // !CROSSGEN_COMPILE
 
     HeapList * GetCodeHeapList()
     {
         return m_pCodeHeap;
     }
 
-#ifndef CROSSGEN_COMPILE
 protected:
     void *      allocEHInfoRaw(CodeHeader* pCodeHeader, DWORD blockSize, size_t * pAllocationSize);
 private:
-#endif
 #endif // !DACCESS_COMPILE
 
     PTR_HeapList m_pCodeHeap;
@@ -1114,7 +1096,7 @@ public:
 private:
     CORJIT_FLAGS m_CPUCompileFlags;
 
-#if !defined CROSSGEN_COMPILE && !defined DACCESS_COMPILE
+#if !defined DACCESS_COMPILE
     void SetCpuInfo();
 #endif
 
@@ -1130,11 +1112,9 @@ private :
     //When EH Clauses are resolved we need to atomically update the TypeHandle
     Crst                m_JitLoadCritSec;
 
-#if !defined CROSSGEN_COMPILE
     // must hold critical section to access this structure.
     CUnorderedArray<DomainCodeHeapList *, 5> m_DomainCodeHeaps;
     CUnorderedArray<DomainCodeHeapList *, 5> m_DynamicDomainCodeHeaps;
-#endif
 
 #ifdef TARGET_AMD64
 private:

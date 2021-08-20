@@ -462,6 +462,8 @@ namespace Microsoft.Extensions.Primitives
                 {
                     { "eLLo", StringComparison.OrdinalIgnoreCase, true },
                     { "eLLo", StringComparison.Ordinal, false },
+                    { null, StringComparison.OrdinalIgnoreCase, false },
+                    { null, StringComparison.Ordinal, false },
                 };
             }
         }
@@ -478,17 +480,6 @@ namespace Microsoft.Extensions.Primitives
 
             // Assert
             Assert.Equal(expectedResult, result);
-        }
-
-        [Fact]
-        public void StringSegment_Equals_NullString_Throws()
-        {
-            // Arrange
-            var segment = new StringSegment();
-
-            // Act & assert
-            Assert.Throws<ArgumentNullException>("text", () => segment.Equals((string)null));
-            Assert.Throws<ArgumentNullException>("text", () => segment.Equals((string)null, StringComparison.Ordinal));
         }
 
         [Fact]

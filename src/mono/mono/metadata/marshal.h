@@ -626,14 +626,6 @@ ves_icall_System_Runtime_InteropServices_Marshal_BufferToBSTR (const gunichar2 *
 
 ICALL_EXPORT
 void
-ves_icall_System_Runtime_InteropServices_Marshal_FreeCoTaskMem (void *ptr);
-
-ICALL_EXPORT
-void
-ves_icall_System_Runtime_InteropServices_Marshal_FreeHGlobal (void *ptr);
-
-ICALL_EXPORT
-void
 ves_icall_System_Runtime_InteropServices_Marshal_FreeBSTR (mono_bstr_const ptr);
 
 ICALL_EXPORT

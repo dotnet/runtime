@@ -4717,15 +4717,15 @@ VMPTR_OBJECTHANDLE DacDbiInterfaceImpl::GetThreadObject(VMPTR_Thread vmThread)
     }
 }
 
-void DacDbiInterfaceImpl::GetThreadAllocInfo(VMPTR_Thread        vmThread, 
+void DacDbiInterfaceImpl::GetThreadAllocInfo(VMPTR_Thread        vmThread,
                                              DacThreadAllocInfo* threadAllocInfo)
 {
     DD_ENTER_MAY_THROW;
 
     Thread * pThread = vmThread.GetDacPtr();
     gc_alloc_context* allocContext = pThread->GetAllocContext();
-    threadAllocInfo->m_allocBytesSOH = (ULONG)(allocContext->alloc_bytes - (allocContext->alloc_limit - allocContext->alloc_ptr));
-    threadAllocInfo->m_allocBytesUOH = (ULONG)allocContext->alloc_bytes_uoh;
+    threadAllocInfo->m_allocBytesSOH = allocContext->alloc_bytes - (allocContext->alloc_limit - allocContext->alloc_ptr);
+    threadAllocInfo->m_allocBytesUOH = allocContext->alloc_bytes_uoh;
 }
 
 // Set and reset the TSNC_DebuggerUserSuspend bit on the state of the specified thread

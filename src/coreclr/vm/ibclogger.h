@@ -39,7 +39,7 @@ typedef PTR_VOID HashDatum;
 
 typedef Pair< Module*, mdToken > RidMapLogData;
 
-#if !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
+#if !defined(DACCESS_COMPILE)
 #define IBCLOGGER_ENABLED
 #endif
 

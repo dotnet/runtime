@@ -1155,7 +1155,6 @@ BOOL MethodTableBuilder::CheckIfSIMDAndUpdateSize()
         COMPlusThrow(kTypeLoadException, IDS_EE_SIMD_NGEN_DISALLOWED);
     }
 
-#ifndef CROSSGEN_COMPILE
     if (!TargetHasAVXSupport())
         return false;
 
@@ -1177,7 +1176,6 @@ BOOL MethodTableBuilder::CheckIfSIMDAndUpdateSize()
             }
         }
     }
-#endif // !CROSSGEN_COMPILE
 #endif // defined(TARGET_X86) || defined(TARGET_AMD64)
     return false;
 }
@@ -1514,23 +1512,6 @@ MethodTableBuilder::BuildMethodTableThrowing(
         if (hr == S_OK && (strcmp(nameSpace, "System.Runtime.Intrinsics.X86") == 0))
 #endif
         {
-#if defined(CROSSGEN_COMPILE)
-#if defined(TARGET_X86) || defined(TARGET_AMD64) || defined(TARGET_ARM64)
-            if ((!IsNgenPDBCompilationProcess()
-                && GetAppDomain()->ToCompilationDomain()->GetTargetModule() != g_pObjectClass->GetModule()))
-#endif // defined(TARGET_X86) || defined(TARGET_AMD64) || defined(TARGET_ARM64)
-            {
-                // Disable AOT compiling for managed implementation of hardware intrinsics.
-                // We specially treat them here to ensure correct ISA features are set during compilation
-                //
-                // When a hardware intrinsic is not supported, the JIT can generate a PlatformNotSupportedException
-                // at runtime. We cannot do the same in AOT. AOT generated ones would cause illegal instruction traps.
-                //
-                // To avoid it, one must make sure all usages are protected under IsSupported. We can guarantee this for
-                // CoreLib. That's why we can allow these to AOT compile in CoreLib:
-                COMPlusThrow(kTypeLoadException, IDS_EE_HWINTRINSIC_NGEN_DISALLOWED);
-            }
-#endif // defined(CROSSGEN_COMPILE)
             bmtProp->fIsHardwareIntrinsic = true;
         }
     }
@@ -6927,10 +6908,8 @@ VOID MethodTableBuilder::AllocAndInitMethodDescs()
             }
         }
 
-#ifndef CROSSGEN_COMPILE
         if (tokenRange != currentTokenRange ||
             sizeOfMethodDescs + size > MethodDescChunk::MaxSizeOfMethodDescs)
-#endif // CROSSGEN_COMPILE
         {
             if (sizeOfMethodDescs != 0)
             {
@@ -9739,21 +9718,6 @@ void MethodTableBuilder::CheckForSystemTypes()
                 // These __m128 and __m256 types, among other requirements, are special in that they must always
                 // be aligned properly.
 
-#ifdef CROSSGEN_COMPILE
-                // Disable AOT compiling for the SIMD hardware intrinsic types. These types require special
-                // ABI handling as they represent fundamental data types (__m64, __m128, and __m256) and not
-                // aggregate or union types. See https://github.com/dotnet/runtime/issues/9578
-                //
-                // Once they are properly handled according to the ABI requirements, we can remove this check
-                // and allow them to be used in crossgen/AOT scenarios.
-                //
-                // We can allow these to AOT compile in CoreLib since CoreLib versions with the runtime.
-                if (!IsNgenPDBCompilationProcess() &&
-                    GetAppDomain()->ToCompilationDomain()->GetTargetModule() != g_pObjectClass->GetModule())
-                {
-                    COMPlusThrow(kTypeLoadException, IDS_EE_HWINTRINSIC_NGEN_DISALLOWED);
-                }
-#endif
 
                 if (strcmp(name, g_Vector64Name) == 0)
                 {

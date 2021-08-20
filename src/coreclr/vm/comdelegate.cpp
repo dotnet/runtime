@@ -839,7 +839,6 @@ Stub* COMDelegate::SetupShuffleThunk(MethodTable * pDelMT, MethodDesc *pTargetMe
 }
 
 
-#ifndef CROSSGEN_COMPILE
 
 static PCODE GetVirtualCallStub(MethodDesc *method, TypeHandle scopeType)
 {
@@ -1459,7 +1458,6 @@ PCODE COMDelegate::GetStubForILStub(EEImplMethodDesc* pDelegateMD, MethodDesc** 
     RETURN NDirect::GetStubForILStub(pDelegateMD, ppStubMD, dwStubFlags);
 }
 
-#endif // CROSSGEN_COMPILE
 
 
 // static
@@ -1476,7 +1474,6 @@ MethodDesc* COMDelegate::GetILStubMethodDesc(EEImplMethodDesc* pDelegateMD, DWOR
 }
 
 
-#ifndef CROSSGEN_COMPILE
 
 FCIMPL2(FC_BOOL_RET, COMDelegate::CompareUnmanagedFunctionPtrs, Object *refDelegate1UNSAFE, Object *refDelegate2UNSAFE)
 {
@@ -2042,7 +2039,6 @@ FCIMPL2(FC_BOOL_RET, COMDelegate::InternalEqualTypes, Object* pThis, Object *pTh
 }
 FCIMPLEND
 
-#endif // CROSSGEN_COMPILE
 
 void COMDelegate::ThrowIfInvalidUnmanagedCallersOnlyUsage(MethodDesc* pMD)
 {
@@ -2086,7 +2082,6 @@ BOOL COMDelegate::NeedsWrapperDelegate(MethodDesc* pTargetMD)
 }
 
 
-#ifndef CROSSGEN_COMPILE
 
 // to create a wrapper delegate wrapper we need:
 // - the delegate to forward to         -> _invocationList
@@ -2442,7 +2437,6 @@ PCODE COMDelegate::GetWrapperInvoke(MethodDesc* pMD)
     return pStub->GetEntryPoint();
 }
 
-#endif // CROSSGEN_COMPILE
 
 
 static bool IsLocationAssignable(TypeHandle fromHandle, TypeHandle toHandle, bool relaxedMatch, bool fromHandleIsBoxed)
@@ -3148,7 +3142,7 @@ BOOL COMDelegate::IsDelegate(MethodTable *pMT)
 }
 
 
-#if !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
+#if !defined(DACCESS_COMPILE)
 
 
 // Helper to construct an UnhandledExceptionEventArgs.  This may fail for out-of-memory or
@@ -3297,4 +3291,4 @@ void DistributeUnhandledExceptionReliably(OBJECTREF *pDelegate,
     EX_END_CATCH(SwallowAllExceptions)
 }
 
-#endif // !DACCESS_COMPILE && !CROSSGEN_COMPILE
+#endif // !DACCESS_COMPILE

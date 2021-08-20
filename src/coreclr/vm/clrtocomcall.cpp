@@ -38,7 +38,6 @@ void CreateCLRToDispatchCOMStub(
             DWORD        dwStubFlags             // NDirectStubFlags
             );
 
-#ifndef CROSSGEN_COMPILE
 
 PCODE TheGenericComplusCallStub()
 {
@@ -47,7 +46,6 @@ PCODE TheGenericComplusCallStub()
     return GetEEFuncEntryPoint(GenericComPlusCallStub);
 }
 
-#endif //#ifndef CROSSGEN_COMPILE
 
 
 ComPlusCallInfo *ComPlusCall::PopulateComPlusCallMethodDesc(MethodDesc* pMD, DWORD* pdwStubFlags)
@@ -171,7 +169,6 @@ MethodDesc* ComPlusCall::GetILStubMethodDesc(MethodDesc* pMD, DWORD dwStubFlags)
 }
 
 
-#ifndef CROSSGEN_COMPILE
 
 PCODE ComPlusCall::GetStubForILStub(MethodDesc* pMD, MethodDesc** ppStubMD)
 {
@@ -795,10 +792,8 @@ UINT32 STDCALL CLRToCOMWorker(TransitionBlock * pTransitionBlock, ComPlusCallMet
 
 #pragma optimize( "", on )
 
-#endif // CROSSGEN_COMPILE
 #endif // #ifndef DACCESS_COMPILE
 
-#ifndef CROSSGEN_COMPILE
 //---------------------------------------------------------
 // Debugger support for ComPlusMethodFrame
 //---------------------------------------------------------
@@ -971,7 +966,6 @@ BOOL ComPlusMethodFrame::TraceFrame(Thread *thread, BOOL fromPatch,
 
     return TRUE;
 }
-#endif //CROSSGEN_COMPILE
 
 #ifdef TARGET_X86
 

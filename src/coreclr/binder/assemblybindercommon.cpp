@@ -28,7 +28,7 @@
 #define IMAGE_FILE_MACHINE_ARM64             0xAA64  // ARM64 Little-Endian
 #endif
 
-#if !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
+#if !defined(DACCESS_COMPILE)
 #include "defaultassemblybinder.h"
 // Helper function in the VM, invoked by the Binder, to invoke the host assembly resolver
 extern HRESULT RuntimeInvokeHostAssemblyResolver(INT_PTR pManagedAssemblyLoadContextToBindWithin,
@@ -36,7 +36,7 @@ extern HRESULT RuntimeInvokeHostAssemblyResolver(INT_PTR pManagedAssemblyLoadCon
                                                  DefaultAssemblyBinder *pTPABinder,
                                                  BINDER_SPACE::Assembly **ppLoadedAssembly);
 
-#endif // !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
+#endif // !defined(DACCESS_COMPILE)
 
 namespace BINDER_SPACE
 {
@@ -154,7 +154,6 @@ namespace BINDER_SPACE
             return hr;
         }
 
-#ifndef CROSSGEN_COMPILE
         HRESULT CreateImageAssembly(IMDInternalImport       *pIMetaDataAssemblyImport,
                                     PEKIND                   PeKind,
                                     PEImage                 *pPEImage,
@@ -179,7 +178,6 @@ namespace BINDER_SPACE
         Exit:
             return hr;
         }
-#endif // !CROSSGEN_COMPILE
     };
 
     HRESULT AssemblyBinderCommon::TranslatePEToArchitectureType(DWORD  *pdwPAFlags, PEKIND *PeKind)
@@ -267,12 +265,10 @@ namespace BINDER_SPACE
         // Tracing happens outside the binder lock to avoid calling into managed code within the lock
         BinderTracing::ResolutionAttemptedOperation tracer{pAssemblyName, pBinder, 0 /*managedALC*/, hr};
 
-#ifndef CROSSGEN_COMPILE
     Retry:
         {
             // Lock the binding application context
             CRITSEC_Holder contextLock(pApplicationContext->GetCriticalSectionCookie());
-#endif
 
             if (szCodeBase == NULL)
             {
@@ -309,16 +305,13 @@ namespace BINDER_SPACE
             // Remember the post-bind version
             kContextVersion = pApplicationContext->GetVersion();
 
-#ifndef CROSSGEN_COMPILE
         } // lock(pApplicationContext)
-#endif
 
     Exit:
         tracer.TraceBindResult(bindResult);
 
         if (bindResult.HaveResult())
         {
-#ifndef CROSSGEN_COMPILE
             BindResult hostBindResult;
 
             hr = RegisterAndGetHostChosen(pApplicationContext,
@@ -338,17 +331,12 @@ namespace BINDER_SPACE
             {
                 *ppAssembly = hostBindResult.GetAssembly(TRUE /* fAddRef */);
             }
-#else // CROSSGEN_COMPILE
-
-            *ppAssembly = bindResult.GetAssembly(TRUE /* fAddRef */);
-
-#endif // CROSSGEN_COMPILE
         }
 
         return hr;
     }
 
-#if !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
+#if !defined(DACCESS_COMPILE)
     /* static */
     HRESULT AssemblyBinderCommon::BindToSystem(BINDER_SPACE::Assembly** ppSystemAssembly, bool fBindToNativeImage)
     {
@@ -370,7 +358,7 @@ namespace BINDER_SPACE
 
         return hr;
     }
-#endif // !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
+#endif // !defined(DACCESS_COMPILE)
 
     /* static */
     HRESULT AssemblyBinderCommon::BindToSystem(SString   &systemDirectory,
@@ -673,7 +661,6 @@ namespace BINDER_SPACE
         HRESULT hr = S_OK;
 
         bool isTpaListProvided = pApplicationContext->IsTpaListProvided();
-#ifndef CROSSGEN_COMPILE
         ContextEntry *pContextEntry = NULL;
         hr = FindInExecutionContext(pApplicationContext, pAssemblyName, &pContextEntry);
 
@@ -705,7 +692,6 @@ namespace BINDER_SPACE
             pBindResult->SetResult(pContextEntry);
         }
         else
-#endif // !CROSSGEN_COMPILE
         if (isTpaListProvided)
         {
             // BindByTpaList handles setting attempt results on the bind result
@@ -734,7 +720,6 @@ namespace BINDER_SPACE
         return hr;
     }
 
-#ifndef CROSSGEN_COMPILE
     /* static */
     HRESULT AssemblyBinderCommon::FindInExecutionContext(ApplicationContext  *pApplicationContext,
                                                    AssemblyName        *pAssemblyName,
@@ -763,7 +748,6 @@ namespace BINDER_SPACE
         return pContextEntry != NULL ? S_OK : S_FALSE;
     }
 
-#endif //CROSSGEN_COMPILE
 
     //
     // Tests whether a candidate assembly's name matches the requested.
@@ -1300,7 +1284,6 @@ namespace BINDER_SPACE
         return hr;
     }
 
-#ifndef CROSSGEN_COMPILE
 
     /* static */
     HRESULT AssemblyBinderCommon::Register(ApplicationContext *pApplicationContext,
@@ -1416,9 +1399,8 @@ namespace BINDER_SPACE
         return hr;
     }
 
-#endif //CROSSGEN_COMPILE
 
-#if !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
+#if !defined(DACCESS_COMPILE)
 HRESULT AssemblyBinderCommon::BindUsingHostAssemblyResolver(/* in */ INT_PTR pManagedAssemblyLoadContextToBindWithin,
                                                       /* in */ AssemblyName       *pAssemblyName,
                                                       /* in */ DefaultAssemblyBinder *pTPABinder,
@@ -1622,7 +1604,7 @@ HRESULT AssemblyBinderCommon::GetAssemblyIdentity(LPCSTR     szTextualIdentity,
     return hr;
 }
 
-#endif // !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
+#endif // !defined(DACCESS_COMPILE)
 };
 
 

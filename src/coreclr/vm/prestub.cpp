@@ -326,7 +326,7 @@ PCODE MethodDesc::PrepareCode(PrepareCodeConfig* pConfig)
     _ASSERTE(IsIL() || IsNoMetadata());
     PCODE pCode = PrepareILBasedCode(pConfig);
 
-#if defined(FEATURE_GDBJIT) && defined(TARGET_UNIX) && !defined(CROSSGEN_COMPILE)
+#if defined(FEATURE_GDBJIT) && defined(TARGET_UNIX)
     NotifyGdb::MethodPrepared(this);
 #endif
 
@@ -947,9 +947,7 @@ PCODE MethodDesc::JitCompileCodeLocked(PrepareCodeConfig* pConfig, JitListLockEn
 
     EX_TRY
     {
-#ifndef CROSSGEN_COMPILE
         Thread::CurrentPrepareCodeConfigHolder threadPrepareCodeConfigHolder(GetThread(), pConfig);
-#endif
 
         pCode = UnsafeJitFunction(pConfig, pilHeader, *pFlags, pSizeOfCode);
     }

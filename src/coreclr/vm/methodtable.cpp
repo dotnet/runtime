@@ -685,7 +685,6 @@ PTR_MethodTable InterfaceInfo_t::GetApproxMethodTable(Module * pContainingModule
     return pItfMT;
 }
 
-#ifndef CROSSGEN_COMPILE
 //==========================================================================================
 // get the method desc given the interface method desc
 /* static */ MethodDesc *MethodTable::GetMethodDescForInterfaceMethodAndServer(
@@ -849,7 +848,6 @@ MethodDesc *MethodTable::GetMethodDescForComInterfaceMethod(MethodDesc *pItfMD, 
 }
 #endif // FEATURE_COMINTEROP
 
-#endif // CROSSGEN_COMPILE
 
 //---------------------------------------------------------------------------------------
 //
@@ -910,7 +908,6 @@ MethodTable* CreateMinimalMethodTable(Module* pContainingModule,
 
 
 #ifdef FEATURE_COMINTEROP
-#ifndef CROSSGEN_COMPILE
 //==========================================================================================
 OBJECTREF MethodTable::GetObjCreateDelegate()
 {
@@ -944,7 +941,6 @@ void MethodTable::SetObjCreateDelegate(OBJECTREF orDelegate)
     else
         SetOHDelegate (GetAppDomain()->CreateHandle(orDelegate));
 }
-#endif //CROSSGEN_COMPILE
 #endif // FEATURE_COMINTEROP
 
 
@@ -1650,11 +1646,9 @@ BOOL MethodTable::CanCastTo(MethodTable* pTargetMT, TypeHandlePairList* pVisited
     }
     CONTRACTL_END
 
-#ifndef CROSSGEN_COMPILE
     // we cannot cache T --> Nullable<T> here since result is contextual.
     // callers should have handled this already according to their rules.
     _ASSERTE(!Nullable::IsNullableForType(TypeHandle(pTargetMT), this));
-#endif // CROSSGEN_COMPILE
 
     if (IsArray())
     {
@@ -2064,15 +2058,6 @@ MethodDesc *MethodTable::GetMethodDescForInterfaceMethod(TypeHandle ownerType, M
 
     MethodTable *pInterfaceMT = ownerType.AsMethodTable();
 
-#ifdef CROSSGEN_COMPILE
-    DispatchSlot implSlot(FindDispatchSlot(pInterfaceMT->GetTypeID(), pInterfaceMD->GetSlot(), throwOnConflict));
-    if (implSlot.IsNull())
-    {
-        _ASSERTE(!throwOnConflict);
-        return NULL;
-    }
-    PCODE pTgt = implSlot.GetTarget();
-#else
     PCODE pTgt = VirtualCallStubManager::GetTarget(
         pInterfaceMT->GetLoaderAllocator()->GetDispatchToken(pInterfaceMT->GetTypeID(), pInterfaceMD->GetSlot()),
         this, throwOnConflict);
@@ -2081,7 +2066,6 @@ MethodDesc *MethodTable::GetMethodDescForInterfaceMethod(TypeHandle ownerType, M
         _ASSERTE(!throwOnConflict);
         return NULL;
     }
-#endif
     pMD = MethodTable::GetMethodDescForSlotAddress(pTgt);
 
 #ifdef _DEBUG
@@ -2915,7 +2899,7 @@ void  MethodTable::AssignClassifiedEightByteTypes(SystemVStructRegisterPassingHe
 
 #endif // defined(UNIX_AMD64_ABI_ITF)
 
-#if !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
+#if !defined(DACCESS_COMPILE)
 //==========================================================================================
 void MethodTable::AllocateRegularStaticBoxes()
 {
@@ -3711,7 +3695,7 @@ OBJECTREF MethodTable::GetManagedClassObject()
     RETURN(GetManagedClassObjectIfExists());
 }
 
-#endif //!DACCESS_COMPILE && !CROSSGEN_COMPILE
+#endif //!DACCESS_COMPILE
 
 //==========================================================================================
 // This needs to stay consistent with AllocateNewMT() and MethodTable::Save()

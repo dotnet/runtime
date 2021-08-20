@@ -626,7 +626,6 @@ BOOL TypeHandle::CanCastTo(TypeHandle type, TypeHandlePairList *pVisited)  const
         if (IsTypeDesc())
             return AsTypeDesc()->CanCastTo(type, pVisited);
 
-#ifndef CROSSGEN_COMPILE
         // we check nullable case first because it is not cacheable.
         // object castability and type castability disagree on T --> Nullable<T>,
         // so we can't put this in the cache
@@ -635,7 +634,6 @@ BOOL TypeHandle::CanCastTo(TypeHandle type, TypeHandlePairList *pVisited)  const
             // do not allow type T to be cast to Nullable<T>
             return FALSE;
         }
-#endif  //!CROSSGEN_COMPILE
 
         return AsMethodTable()->CanCastTo(type.AsMethodTable(), pVisited);
     }
@@ -1079,7 +1077,6 @@ TypeHandle::IsExternallyVisible() const
     return paramType.IsExternallyVisible();
 } // TypeHandle::IsExternallyVisible
 
-#ifndef CROSSGEN_COMPILE
 OBJECTREF TypeHandle::GetManagedClassObject() const
 {
     CONTRACTL
@@ -1125,7 +1122,6 @@ OBJECTREF TypeHandle::GetManagedClassObject() const
         }
     }
 }
-#endif // CROSSGEN_COMPILE
 
 #endif // #ifndef DACCESS_COMPILE
 

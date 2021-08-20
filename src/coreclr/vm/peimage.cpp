@@ -75,19 +75,7 @@ CHECK PEImage::CheckLayoutFormat(PEDecoder *pe)
     }
     CONTRACT_CHECK_END;
 
-    // If we are in a compilation domain, we will allow
-    // non-IL only files to be treated as IL only
-
-    // <TODO>@todo: this is not really the right model here.  This is a per-app domain
-    // choice, but an image created this way would become available globally.
-    // (Also, this call prevents us from moving peimage into utilcode.)</TODO>
-
-    if (GetAppDomain() == NULL ||
-        (!GetAppDomain()->IsCompilationDomain()))
-    {
-        CHECK(pe->IsILOnly());
-    }
-
+    CHECK(pe->IsILOnly());
     CHECK(!pe->HasNativeHeader());
     CHECK_OK;
 }
@@ -619,7 +607,6 @@ void DECLSPEC_NORETURN PEImage::ThrowFormat(HRESULT hrError)
     EEFileLoadException::Throw(m_path, hrError);
 }
 
-#if !defined(CROSSGEN_COMPILE)
 
 //may outlive PEImage
 PEImage::IJWFixupData::IJWFixupData(void *pBase)
@@ -751,7 +738,6 @@ void PEImage::UnloadIJWModule(void *pBase)
         delete pData;
 }
 
-#endif // !CROSSGEN_COMPILE
 
 
 
