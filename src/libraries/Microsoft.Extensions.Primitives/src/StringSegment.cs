@@ -257,7 +257,7 @@ namespace Microsoft.Extensions.Primitives
         {
             if (text == null)
             {
-                return false;
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.text);
             }
 
             if (!HasValue)
