@@ -5512,25 +5512,13 @@ void Compiler::optPerformHoistExpr(GenTree* origExpr, unsigned lnum)
     compCurBB = preHead;
     hoist     = fgMorphTree(hoist);
 
-    // Update preHead's flags
-    fgWalkTreePre(&hoist,
-                  [](GenTree** tree, fgWalkData* data) -> fgWalkResult {
-                      BasicBlock* bb = data->compiler->compCurBB;
-                      switch ((*tree)->OperGet())
-                      {
-                          case GT_ARR_LENGTH:
-                          case GT_INDEX:
-                              bb->bbFlags |= BBF_HAS_IDX_LEN;
-                              break;
-                          case GT_NULLCHECK:
-                              bb->bbFlags |= BBF_HAS_NULLCHECK;
-                              break;
-                          default:
-                              break;
-                      }
-                      return WALK_CONTINUE;
-                  },
-                  nullptr);
+#ifdef DEBUG
+    if ((JitConfig.JitDoEarlyProp() > 0) || opts.optRepeat)
+    {
+        // Normally its EarlyProp's responsibility to propagate these trees/flags
+        preHead->bbFlags |= BBF_HAS_NULLCHECK | BBF_HAS_IDX_LEN;
+    }
+#endif
 
     Statement* hoistStmt = gtNewStmt(hoist);
     hoistStmt->SetCompilerAdded();
