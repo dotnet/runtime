@@ -9201,7 +9201,7 @@ void SetupWatsonBucketsForUEF(BOOL fUseLastThrownObject)
             gc.oBuckets = ((EXCEPTIONREF)gc.oThrowable)->GetWatsonBucketReference();
             if (gc.oBuckets != NULL)
             {
-                pUEWatsonBucketTracker->CopyBucketsFromThrowable(gc.oBuckets);
+                pUEWatsonBucketTracker->CopyBuckets(gc.oBuckets);
             }
 
             if (pUEWatsonBucketTracker->RetrieveWatsonBuckets() == NULL)
@@ -9676,7 +9676,7 @@ BOOL SetupWatsonBucketsForFailFast(EXCEPTIONREF refException)
                 if (gc.oBuckets != NULL)
                 {
                     pUEWatsonBucketTracker->ClearWatsonBucketDetails();
-                    pUEWatsonBucketTracker->CopyBucketsFromThrowable(gc.oBuckets);
+                    pUEWatsonBucketTracker->CopyBuckets(gc.oBuckets);
                     if (pUEWatsonBucketTracker->RetrieveWatsonBuckets() != NULL)
                     {
                         LOG((LF_EH, LL_INFO1000, "SetupWatsonBucketsForFailFast - Got watson buckets from regular innermost exception.\n"));
@@ -9720,7 +9720,7 @@ BOOL SetupWatsonBucketsForFailFast(EXCEPTIONREF refException)
             {
                 // Copy the buckets to the current watson bucket tracker
                 pUEWatsonBucketTracker->ClearWatsonBucketDetails();
-                pUEWatsonBucketTracker->CopyBucketsFromThrowable(gc.oBuckets);
+                pUEWatsonBucketTracker->CopyBuckets(gc.oBuckets);
                 if (pUEWatsonBucketTracker->RetrieveWatsonBuckets() != NULL)
                 {
                     LOG((LF_EH, LL_INFO1000, "SetupWatsonBucketsForFailFast - Watson buckets copied from the exception object.\n"));
@@ -10694,7 +10694,7 @@ void EHWatsonBucketTracker::Init()
 
 // This method copies the bucketing details from the specified throwable
 // to the current Watson Bucket tracker.
-void EHWatsonBucketTracker::CopyBucketsFromThrowable(U1ARRAYREF oBuckets)
+void EHWatsonBucketTracker::CopyBuckets(U1ARRAYREF oBuckets)
 {
 #ifndef DACCESS_COMPILE
     CONTRACTL
