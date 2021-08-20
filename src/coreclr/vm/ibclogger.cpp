@@ -510,11 +510,10 @@ void IBCLogger::LogMethodAccessHelper(const MethodDesc* pMD, ULONG flagNum)
         if (g_pObjectClass == NULL || g_pStringClass == NULL)
             goto DelayCallback;
 
-        PTR_MethodTable * ppMT = pMD->GetMethodTablePtr();
-        if (ppMT == NULL)
+        PTR_MethodTable pMT = pMD->GetMethodTable();
+        if (pMT == NULL)
             goto DelayCallback;
 
-        MethodTable *pMT = *ppMT;
         if (!pMT->IsRestored_NoLogging())
             goto DelayCallback;
 

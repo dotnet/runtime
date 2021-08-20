@@ -6820,7 +6820,7 @@ VOID MethodTableBuilder::ValidateInterfaceMethodConstraints()
             // If pTargetMT is null, this indicates that the target MethodDesc belongs
             // to the current type. Otherwise, the MethodDesc MUST be owned by a parent
             // of the type we're building.
-            BOOL              fTargetIsOwnedByParent = pTargetMD->GetMethodTablePtr() != NULL;
+            BOOL              fTargetIsOwnedByParent = pTargetMD->GetMethodTable() != NULL;
 
             // If the method is owned by a parent, we need to use the parent's module,
             // and we must construct the substitution chain all the way up to the parent.
