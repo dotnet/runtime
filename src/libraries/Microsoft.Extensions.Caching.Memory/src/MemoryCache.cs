@@ -235,7 +235,7 @@ namespace Microsoft.Extensions.Caching.Memory
                     entry.LastAccessed = utcNow;
                     result = entry.Value;
 
-                    if (_options.TrackLinkedCacheEntries && entry.CanPropagateOptions())
+                    if (TrackLinkedCacheEntries && entry.CanPropagateOptions())
                     {
                         // When this entry is retrieved in the scope of creating another entry,
                         // that entry needs a copy of these expiration tokens.
