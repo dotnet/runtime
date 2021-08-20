@@ -15,11 +15,6 @@ namespace Microsoft.Extensions.DependencyModel
 
             foreach (var element in collection)
             {
-                if (string.IsNullOrWhiteSpace(element.Name))
-                {
-                    continue;
-                }
-
                 if (dictionary.ContainsKey(element.Name))
                 {
                     throw new ArgumentException($"An item with the same key '{element.Name}' has already been added from collection of type '{collection.GetType()}'.");
