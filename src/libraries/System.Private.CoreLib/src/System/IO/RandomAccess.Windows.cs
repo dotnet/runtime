@@ -502,14 +502,6 @@ namespace System.IO
                 return ScheduleSyncReadScatterAtOffsetAsync(handle, buffers, fileOffset, cancellationToken);
             }
 
-            switch (buffers.Count)
-            {
-                case 0:
-                    return CastValueTask(ReadAtOffsetAsync(handle, Memory<byte>.Empty, fileOffset, cancellationToken));
-                case 1:
-                    return CastValueTask(ReadAtOffsetAsync(handle, buffers[0], fileOffset, cancellationToken));
-            }
-
             if (CanUseScatterGatherWindowsAPIs(handle)
                 && TryPrepareScatterGatherBuffers(buffers, default(MemoryHandler), out MemoryHandle[] handlesToDispose, out IntPtr segmentsPtr, out int totalBytes))
             {
@@ -517,10 +509,6 @@ namespace System.IO
             }
 
             return ReadScatterAtOffsetMultipleSyscallsAsync(handle, buffers, fileOffset, cancellationToken);
-
-            static async ValueTask<long> CastValueTask(ValueTask<int> task) =>
-                // we have to await it because we can't cast a VT<int> to VT<long>
-                await task.ConfigureAwait(false);
         }
 
         private static async ValueTask<long> ReadScatterAtOffsetSingleSyscallAsync(SafeFileHandle handle, MemoryHandle[] handlesToDispose, IntPtr segmentsPtr, long fileOffset, int totalBytes, CancellationToken cancellationToken)
@@ -617,14 +605,6 @@ namespace System.IO
             if (!handle.IsAsync)
             {
                 return ScheduleSyncWriteGatherAtOffsetAsync(handle, buffers, fileOffset, cancellationToken);
-            }
-
-            switch (buffers.Count)
-            {
-                case 0:
-                    return WriteAtOffsetAsync(handle, ReadOnlyMemory<byte>.Empty, fileOffset, cancellationToken);
-                case 1:
-                    return WriteAtOffsetAsync(handle, buffers[0], fileOffset, cancellationToken);
             }
 
             if (CanUseScatterGatherWindowsAPIs(handle)
