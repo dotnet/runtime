@@ -24,6 +24,7 @@ namespace Microsoft.Extensions.Http.Logging
         /// Initializes a new instance of the <see cref="LoggingHttpMessageHandler"/> class with a specified logger.
         /// </summary>
         /// <param name="logger">The <see cref="ILogger"/> to log to.</param>
+        /// <exception cref="ArgumentNullException"><paramref name="logger"/> is <see langword="null"/>.</exception>
         public LoggingHttpMessageHandler(ILogger logger)
         {
             if (logger == null)
