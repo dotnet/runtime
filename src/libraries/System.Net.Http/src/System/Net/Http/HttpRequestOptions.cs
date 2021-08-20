@@ -53,7 +53,7 @@ namespace System.Net.Http
         }
         
         ///<summary>
-        ///Sets an options for the HTTP Request.
+        ///Sets the value of a given option.
         ///</summary>
         ///<param name="key">The key for the option.</param>
         ///<param name="value">The value to set the option to</param>
