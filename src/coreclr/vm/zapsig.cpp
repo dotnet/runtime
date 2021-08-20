@@ -544,31 +544,6 @@ BOOL ZapSig::GetSignatureForTypeHandle(TypeHandle      handle,
     RETURN(TRUE);
 }
 
-#ifdef FEATURE_PREJIT
-/*static*/
-BOOL ZapSig::CompareFixupToTypeHandle(Module * pModule, TADDR fixup, TypeHandle handle)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
-        FORBID_FAULT;
-        PRECONDITION(CORCOMPILE_IS_POINTER_TAGGED(fixup));
-        PRECONDITION(CheckPointer(pModule));
-    }
-    CONTRACTL_END
-
-    Module *pDefiningModule;
-    PCCOR_SIGNATURE pSig = pModule->GetEncodedSigIfLoaded(CORCOMPILE_UNTAG_TOKEN(fixup), &pDefiningModule);
-    if (pDefiningModule == NULL)
-        return FALSE;
-
-    ZapSig::Context zapSigContext(pDefiningModule, pModule);
-    return ZapSig::CompareSignatureToTypeHandle(pSig, pDefiningModule, handle, &zapSigContext);
-}
-#endif // FEATURE_PREJIT
-
 /*static*/
 BOOL ZapSig::CompareTypeHandleFieldToTypeHandle(TypeHandle *pTypeHnd, TypeHandle typeHnd2)
 {
@@ -587,26 +562,7 @@ BOOL ZapSig::CompareTypeHandleFieldToTypeHandle(TypeHandle *pTypeHnd, TypeHandle
     // Ensure that the compiler won't fetch the value twice
     SIZE_T fixup = VolatileLoadWithoutBarrier((SIZE_T *)pTypeHnd);
 
-#ifdef FEATURE_PREJIT
-    if (CORCOMPILE_IS_POINTER_TAGGED(fixup))
-    {
-        Module *pContainingModule = ExecutionManager::FindZapModule(dac_cast<TADDR>(pTypeHnd));
-        CONSISTENCY_CHECK(pContainingModule != NULL);
-
-        Module *pDefiningModule;
-        PCCOR_SIGNATURE pSig = pContainingModule->GetEncodedSigIfLoaded(CORCOMPILE_UNTAG_TOKEN(fixup), &pDefiningModule);
-        if (pDefiningModule == NULL)
-            return FALSE;
-        else
-        {
-            ZapSig::Context    zapSigContext(pDefiningModule, pContainingModule);
-            ZapSig::Context *  pZapSigContext = &zapSigContext;
-            return CompareSignatureToTypeHandle(pSig, pDefiningModule, typeHnd2, pZapSigContext);
-        }
-    }
-    else
-#endif // FEATURE_PREJIT
-        return TypeHandle::FromTAddr(fixup) == typeHnd2;
+    return TypeHandle::FromTAddr(fixup) == typeHnd2;
 }
 
 #ifndef DACCESS_COMPILE
@@ -894,12 +850,10 @@ MethodDesc *ZapSig::DecodeMethod(Module *pInfoModule,
     if (ppTH != NULL)
         *ppTH = thOwner;
 
-#ifndef CROSSGEN_COMPILE
     // Ensure that the methoddescs dependencies have been walked sufficiently for type forwarders to be resolved.
     // This method is actually basically a nop for dependencies which are ngen'd, but is real work for jitted
     // dependencies. (However, this shouldn't be meaningful work that wouldn't happen in any case very soon.)
     pMethod->PrepareForUseAsADependencyOfANativeImage();
-#endif // CROSSGEN_COMPILE
 
     Instantiation inst;
 

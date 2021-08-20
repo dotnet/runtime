@@ -10,7 +10,7 @@ namespace System.Reflection.Emit
     {
         [RequiresAssemblyFiles(ThrowingMessageInRAF)]
         public override string? CodeBase => throw new NotSupportedException(SR.NotSupported_DynamicAssembly);
-        public override string Location => throw new NotSupportedException(SR.NotSupported_DynamicAssembly);
+        public override string Location => string.Empty;
         public override MethodInfo? EntryPoint => null;
         public override bool IsDynamic => true;
 

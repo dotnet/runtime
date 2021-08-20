@@ -73,11 +73,11 @@ DictionaryLayout* DictionaryLayout::Allocate(WORD              numSlots,
 // Total number of bytes for a dictionary with the specified layout (including optional back pointer
 // used by expanded dictionaries). The pSlotSize argument is used to return the size
 // to be stored in the size slot of the dictionary (not including the optional back pointer).
-// 
+//
 //static
-DWORD 
+DWORD
 DictionaryLayout::GetDictionarySizeFromLayout(
-    DWORD                numGenericArgs, 
+    DWORD                numGenericArgs,
     PTR_DictionaryLayout pDictLayout,
     DWORD*               pSlotSize)
 {
@@ -193,7 +193,7 @@ BOOL DictionaryLayout::FindTokenWorker(LoaderAllocator*                 pAllocat
 
                 if (pDictLayout->m_slots[iSlot].m_signatureSource != FromReadyToRunImage)
                 {
-                    // Compare the signatures. We do not need to worry about the size of pCandidate. 
+                    // Compare the signatures. We do not need to worry about the size of pCandidate.
                     // As long as we are comparing one byte at a time we are guaranteed to not overrun.
                     DWORD j;
                     for (j = 0; j < cbSig; j++)
@@ -254,15 +254,14 @@ BOOL DictionaryLayout::FindTokenWorker(LoaderAllocator*                 pAllocat
     return FALSE;
 }
 
-#ifndef CROSSGEN_COMPILE
 /* static */
-DictionaryLayout* DictionaryLayout::ExpandDictionaryLayout(LoaderAllocator*                 pAllocator, 
-                                                           DictionaryLayout*                pCurrentDictLayout, 
-                                                           DWORD                            numGenericArgs, 
-                                                           SigBuilder*                      pSigBuilder, 
-                                                           BYTE*                            pSig, 
-                                                           int                              nFirstOffset, 
-                                                           DictionaryEntrySignatureSource   signatureSource, 
+DictionaryLayout* DictionaryLayout::ExpandDictionaryLayout(LoaderAllocator*                 pAllocator,
+                                                           DictionaryLayout*                pCurrentDictLayout,
+                                                           DWORD                            numGenericArgs,
+                                                           SigBuilder*                      pSigBuilder,
+                                                           BYTE*                            pSig,
+                                                           int                              nFirstOffset,
+                                                           DictionaryEntrySignatureSource   signatureSource,
                                                            CORINFO_RUNTIME_LOOKUP*          pResult,
                                                            WORD*                            pSlotOut)
 {
@@ -274,7 +273,7 @@ DictionaryLayout* DictionaryLayout::ExpandDictionaryLayout(LoaderAllocator*     
         PRECONDITION(CheckPointer(pResult) && CheckPointer(pSlotOut));
     }
     CONTRACTL_END
-        
+
     // There shouldn't be any empty slots remaining in the current dictionary.
     _ASSERTE(pCurrentDictLayout->m_slots[pCurrentDictLayout->m_numSlots - 1].m_signature != NULL);
 
@@ -311,7 +310,6 @@ DictionaryLayout* DictionaryLayout::ExpandDictionaryLayout(LoaderAllocator*     
 
     return pNewDictionaryLayout;
 }
-#endif
 
 /* static */
 BOOL DictionaryLayout::FindToken(MethodTable*                       pMT,
@@ -344,7 +342,6 @@ BOOL DictionaryLayout::FindToken(MethodTable*                       pMT,
         if (FindTokenWorker(pMT->GetLoaderAllocator(), pMT->GetNumGenericArgs(), pMT->GetClass()->GetDictionaryLayout(), pSigBuilder, pSig, cbSig, nFirstOffset, signatureSource, pResult, pSlotOut, *pSlotOut, TRUE))
             return TRUE;
 
-#ifndef CROSSGEN_COMPILE
         DictionaryLayout* pOldLayout = pMT->GetClass()->GetDictionaryLayout();
         DictionaryLayout* pNewLayout = ExpandDictionaryLayout(pAllocator, pOldLayout, pMT->GetNumGenericArgs(), pSigBuilder, pSig, nFirstOffset, signatureSource, pResult, pSlotOut);
         if (pNewLayout == NULL)
@@ -358,10 +355,6 @@ BOOL DictionaryLayout::FindToken(MethodTable*                       pMT,
         pMT->GetClass()->SetDictionaryLayout(pNewLayout);
 
         return TRUE;
-#else
-        pResult->signature = pSigBuilder == NULL ? pSig : CreateSignatureWithSlotData(pSigBuilder, pAllocator, 0);
-        return FALSE;
-#endif
     }
 }
 
@@ -396,7 +389,6 @@ BOOL DictionaryLayout::FindToken(MethodDesc*                        pMD,
         if (FindTokenWorker(pAllocator, pMD->GetNumGenericMethodArgs(), pMD->GetDictionaryLayout(), pSigBuilder, pSig, cbSig, nFirstOffset, signatureSource, pResult, pSlotOut, *pSlotOut, TRUE))
             return TRUE;
 
-#ifndef CROSSGEN_COMPILE
         DictionaryLayout* pOldLayout = pMD->GetDictionaryLayout();
         DictionaryLayout* pNewLayout = ExpandDictionaryLayout(pAllocator, pOldLayout, pMD->GetNumGenericMethodArgs(), pSigBuilder, pSig, nFirstOffset, signatureSource, pResult, pSlotOut);
         if (pNewLayout == NULL)
@@ -410,10 +402,6 @@ BOOL DictionaryLayout::FindToken(MethodDesc*                        pMD,
         pMD->AsInstantiatedMethodDesc()->IMD_SetDictionaryLayout(pNewLayout);
 
         return TRUE;
-#else
-        pResult->signature = pSigBuilder == NULL ? pSig : CreateSignatureWithSlotData(pSigBuilder, pAllocator, 0);
-        return FALSE;
-#endif
     }
 }
 
@@ -493,36 +481,6 @@ DictionaryEntryLayout::GetKind()
 }
 
 #ifndef DACCESS_COMPILE
-
-#ifdef FEATURE_PREJIT
-//---------------------------------------------------------------------------------------
-//
-void
-Dictionary::Restore(
-    DWORD          numGenericArgs,
-    ClassLoadLevel level)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        INSTANCE_CHECK;
-    }
-    CONTRACTL_END
-
-    // First restore the type handles in the instantiation itself
-    FixupPointer<TypeHandle> *inst = GetInstantiation();
-    for (DWORD j = 0; j < numGenericArgs; j++)
-    {
-        Module::RestoreTypeHandlePointer(&inst[j], NULL, level);
-    }
-
-    // We don't restore the remainder of the dictionary - see
-    // long comment at the start of this file as to why
-}
-#endif // FEATURE_PREJIT
-
-#if !defined(CROSSGEN_COMPILE)
 Dictionary* Dictionary::GetMethodDictionaryWithSizeCheck(MethodDesc* pMD, ULONG slotIndex)
 {
     CONTRACT(Dictionary*)
@@ -640,7 +598,6 @@ Dictionary* Dictionary::GetTypeDictionaryWithSizeCheck(MethodTable* pMT, ULONG s
 
     RETURN pDictionary;
 }
-#endif // !CROSSGEN_COMPILE
 
 //---------------------------------------------------------------------------------------
 //
@@ -761,7 +718,7 @@ Dictionary::PopulateEntry(
         {
             IfFailThrow(ptr.GetData(&dictionaryIndex));
         }
-        
+
 #if _DEBUG
         // Lock is needed because dictionary pointers can get updated during dictionary size expansion
         CrstHolder ch(&SystemDomain::SystemModule()->m_DictionaryCrst);
@@ -989,9 +946,7 @@ Dictionary::PopulateEntry(
                         if (NingenEnabled())
                             return NULL;
 
-#ifndef CROSSGEN_COMPILE
                         fRequiresDispatchStub = TRUE;
-#endif
                     }
 
                     if (!fRequiresDispatchStub)
@@ -1031,7 +986,6 @@ Dictionary::PopulateEntry(
 
             if (fRequiresDispatchStub)
             {
-#ifndef CROSSGEN_COMPILE
                 // Generate a dispatch stub and store it in the dictionary.
                 //
                 // We generate an indirection so we don't have to write to the dictionary
@@ -1059,7 +1013,6 @@ Dictionary::PopulateEntry(
 
                 result = (CORINFO_GENERIC_HANDLE)pMgr->GenerateStubIndirection(addr);
                 break;
-#endif // CROSSGEN_COMPILE
             }
 
             Instantiation inst;
@@ -1245,7 +1198,6 @@ Dictionary::PopulateEntry(
 
         MemoryBarrier();
 
-#if !defined(CROSSGEN_COMPILE)
         if (slotIndex != 0)
         {
             Dictionary* pDictionary;
@@ -1289,7 +1241,6 @@ Dictionary::PopulateEntry(
                 VolatileStoreWithoutBarrier(pDictionary->GetSlotAddr(0, slotIndex), (DictionaryEntry)result);
             }
         }
-#endif // !CROSSGEN_COMPILE
     }
 
     return result;

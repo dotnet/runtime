@@ -34,13 +34,6 @@ typedef struct EETypeHashEntry
     TypeHandle GetTypeHandle();
     void SetTypeHandle(TypeHandle handle);
 
-#ifdef FEATURE_PREJIT
-    // To make ngen saving much more efficient we support marking individual entries as hot (as determined by
-    // profile data).
-    bool IsHot();
-    void MarkAsHot();
-#endif // FEATURE_PREJIT
-
 #ifndef DACCESS_COMPILE
     EETypeHashEntry& operator=(const EETypeHashEntry& src)
     {

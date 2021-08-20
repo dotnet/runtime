@@ -80,12 +80,6 @@
 #define EE_TO_JIT_TRANSITION_LEAF()
 
 
-#if defined(CROSSGEN_COMPILE)
-static const char *const hlpNameTable[CORINFO_HELP_COUNT] = {
-#define JITHELPER(code, pfnHelper, sig) #code,
-#include "jithelpers.h"
-};
-#endif
 
 #ifdef DACCESS_COMPILE
 
@@ -115,7 +109,6 @@ int64_t AtomicLoad64WithoutTearing(int64_t volatile *valueRef)
 #endif // TARGET_64BIT
 }
 
-#ifndef CROSSGEN_COMPILE
 FCIMPL1(INT64, GetCompiledILBytes, CLR_BOOL currentThread)
 {
     FCALL_CONTRACT;
@@ -139,7 +132,6 @@ FCIMPL1(INT64, GetCompilationTimeInTicks, CLR_BOOL currentThread)
     return currentThread ? t_c100nsTicksInJitForThread : AtomicLoad64WithoutTearing(&g_c100nsTicksInJit);
 }
 FCIMPLEND
-#endif
 
 /*********************************************************************/
 
@@ -3023,11 +3015,7 @@ void CEEInfo::ComputeRuntimeLookupForSharedGenericToken(DictionaryEntryKind entr
             {
                 pResult->indirections = 2;
                 pResult->testForNull = 0;
-#ifdef FEATURE_PREJIT
-                pResult->testForFixup = 1;
-#else
                 pResult->testForFixup = 0;
-#endif
                 pResult->offsets[0] = offsetof(InstantiatedMethodDesc, m_pPerInstInfo);
 
                 if (decltype(InstantiatedMethodDesc::m_pPerInstInfo)::isRelative)
@@ -3109,11 +3097,7 @@ void CEEInfo::ComputeRuntimeLookupForSharedGenericToken(DictionaryEntryKind entr
             {
                 pResult->indirections = 3;
                 pResult->testForNull = 0;
-#ifdef FEATURE_PREJIT
-                pResult->testForFixup = 1;
-#else
                 pResult->testForFixup = 0;
-#endif
                 pResult->offsets[0] = MethodTable::GetOffsetOfPerInstInfo();
                 pResult->offsets[1] = sizeof(TypeHandle*) * (pContextMT->GetNumDicts() - 1);
                 uint32_t data;
@@ -3445,14 +3429,10 @@ const char* CEEInfo::getHelperName (CorInfoHelpFunc ftnNum)
 
     JIT_TO_EE_TRANSITION_LEAF();
 
-#ifdef CROSSGEN_COMPILE
-    result = hlpNameTable[ftnNum];
-#else
 #ifdef _DEBUG
     result = hlpFuncTable[ftnNum].name;
 #else
     result = "AnyJITHelper";
-#endif
 #endif
 
     EE_TO_JIT_TRANSITION_LEAF();
@@ -3851,16 +3831,12 @@ CorInfoInitClassResult CEEInfo::initClass(
     }
     else
     {
-#ifdef CROSSGEN_COMPILE
-        _ASSERTE(FALSE);
-#else // CROSSGEN_COMPILE
         if (pTypeToInitMT->IsClassInited())
         {
             // If the type is initialized there really is nothing to do.
             result = CORINFO_INITCLASS_INITIALIZED;
             goto exit;
         }
-#endif // CROSSGEN_COMPILE
     }
 
     if (pTypeToInitMT->IsGlobalClass())
@@ -3971,7 +3947,6 @@ CorInfoInitClassResult CEEInfo::initClass(
         goto exit;
     }
 
-#ifndef CROSSGEN_COMPILE
     //
     // Optimizations for domain specific code
     //
@@ -3986,7 +3961,6 @@ CorInfoInitClassResult CEEInfo::initClass(
         result = CORINFO_INITCLASS_INITIALIZED;
         goto exit;
     }
-#endif // CROSSGEN_COMPILE
 
     result = CORINFO_INITCLASS_USE_HELPER;
     }
@@ -5286,7 +5260,6 @@ void CEEInfo::getCallInfo(
 
             if (!(flags & CORINFO_CALLINFO_KINDONLY) && !isVerifyOnly())
             {
-#ifndef CROSSGEN_COMPILE
                 // We shouldn't be using GetLoaderAllocator here because for LCG, we need to get the
                 // VirtualCallStubManager from where the stub will be used.
                 // For normal methods there is no difference.
@@ -5312,10 +5285,6 @@ void CEEInfo::getCallInfo(
                     // used by one method.
                     indcell = pMgr->GenerateStubIndirection(addr, FALSE);
                 }
-#else // CROSSGEN_COMPILE
-                // This path should be unreachable during crossgen
-                _ASSERTE(false);
-#endif // CROSSGEN_COMPILE
             }
 
             // We use an indirect call
@@ -6037,16 +6006,6 @@ CorInfoHelpFunc CEEInfo::getCastingHelperStatic(TypeHandle clsHnd, bool fThrowin
         _ASSERTE(helper == CORINFO_HELP_ISINSTANCEOFANY);
     }
 
-#ifdef FEATURE_PREJIT
-    BOOL t1, t2, forceInstr;
-    SystemDomain::GetCompilationOverrides(&t1, &t2, &forceInstr);
-    if (forceInstr)
-    {
-        // If we're compiling for instrumentation, use the slowest but instrumented cast helper
-        helper = CORINFO_HELP_ISINSTANCEOFANY;
-    }
-#endif
-
     if (fThrowing)
     {
         const int delta = CORINFO_HELP_CHKCASTANY - CORINFO_HELP_ISINSTANCEOFANY;
@@ -6578,12 +6537,10 @@ DWORD CEEInfo::getMethodAttribsInternal (CORINFO_METHOD_HANDLE ftn)
         result |= CORINFO_FLG_DELEGATE_INVOKE;
     }
 
-#ifndef CROSSGEN_COMPILE
     if (!g_pConfig->TieredCompilation_QuickJitForLoops())
     {
         result |= CORINFO_FLG_DISABLE_TIER0_FOR_LOOPS;
     }
-#endif
 
     return result;
 }
@@ -7792,7 +7749,7 @@ CorInfoInline CEEInfo::canInline (CORINFO_METHOD_HANDLE hCaller,
             goto exit;
         }
 
-#if defined(FEATURE_REJIT) && !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
+#if defined(FEATURE_REJIT) && !defined(DACCESS_COMPILE)
         if (CORProfilerEnableRejit())
         {
             CodeVersionManager* pCodeVersionManager = pCallee->GetCodeVersionManager();
@@ -7805,7 +7762,7 @@ CorInfoInline CEEInfo::canInline (CORINFO_METHOD_HANDLE hCaller,
                 goto exit;
             }
         }
-#endif // defined(FEATURE_REJIT) && !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
+#endif // defined(FEATURE_REJIT) && !defined(DACCESS_COMPILE)
 
         // If the profiler wishes to be notified of JIT events and the result from
         // the above tests will cause a function to be inlined, we need to tell the
@@ -7993,7 +7950,7 @@ void CEEInfo::reportInliningDecision (CORINFO_METHOD_HANDLE inlinerHnd,
     }
 
 
-#if defined FEATURE_REJIT && !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
+#if defined FEATURE_REJIT && !defined(DACCESS_COMPILE)
     if(inlineResult == INLINE_PASS)
     {
         // We don't want to track the chain of methods, so intentionally use m_pMethodBeingCompiled
@@ -8019,7 +7976,7 @@ void CEEInfo::reportInliningDecision (CORINFO_METHOD_HANDLE inlinerHnd,
             }
         }
     }
-#endif // defined FEATURE_REJIT && !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
+#endif // defined FEATURE_REJIT && !defined(DACCESS_COMPILE)
 
     EE_TO_JIT_TRANSITION();
 }
@@ -10118,11 +10075,7 @@ const void * CEEInfo::getInlinedCallFrameVptr(void **ppIndirection)
 
     JIT_TO_EE_TRANSITION_LEAF();
 
-#ifndef CROSSGEN_COMPILE
     result = (void*)InlinedCallFrame::GetMethodFrameVPtr();
-#else
-    result = (void*)0x43210;
-#endif
 
     EE_TO_JIT_TRANSITION_LEAF();
 
@@ -10193,7 +10146,6 @@ uint32_t CEEInfo::GetErrorMessage(__inout_ecount(bufferLength) char16_t* buffer,
 
     uint32_t result = 0;
 
-#ifndef CROSSGEN_COMPILE
     JIT_TO_EE_TRANSITION();
 
     GCX_COOP();
@@ -10213,7 +10165,6 @@ uint32_t CEEInfo::GetErrorMessage(__inout_ecount(bufferLength) char16_t* buffer,
     }
 
     EE_TO_JIT_TRANSITION();
-#endif
 
     return result;
 }
@@ -10261,12 +10212,6 @@ LONG EEFilterException(struct _EXCEPTION_POINTERS *pExceptionPointers, void *unu
     {
         result = EXCEPTION_CONTINUE_SEARCH;
     }
-#ifdef CROSSGEN_COMPILE
-    else
-    {
-        result = EXCEPTION_EXECUTE_HANDLER;
-    }
-#else
     else if (!IsComPlusException(pExceptionPointers->ExceptionRecord))
     {
         result = EXCEPTION_EXECUTE_HANDLER;
@@ -10301,7 +10246,6 @@ LONG EEFilterException(struct _EXCEPTION_POINTERS *pExceptionPointers, void *unu
             GCPROTECT_END();
         }
     }
-#endif
 
     EE_TO_JIT_TRANSITION_LEAF();
 
@@ -10324,7 +10268,6 @@ void CEEInfo::HandleException(struct _EXCEPTION_POINTERS *pExceptionPointers)
 
     JIT_TO_EE_TRANSITION_LEAF();
 
-#ifndef CROSSGEN_COMPILE
     if (IsComPlusException(pExceptionPointers->ExceptionRecord))
     {
         GCX_COOP();
@@ -10388,7 +10331,6 @@ void CEEInfo::HandleException(struct _EXCEPTION_POINTERS *pExceptionPointers)
             GCPROTECT_END();
         }
     }
-#endif
 
     EE_TO_JIT_TRANSITION_LEAF();
 }
@@ -10624,9 +10566,6 @@ int CEEInfo::doAssert(const char* szFile, int iLine, const char* szExpr)
 
     JIT_TO_EE_TRANSITION();
 
-#ifdef CROSSGEN_COMPILE
-    ThrowHR(COR_E_INVALIDPROGRAM);
-#else
 
 #ifdef _DEBUG
     BEGIN_DEBUG_ONLY_CODE;
@@ -10636,7 +10575,6 @@ int CEEInfo::doAssert(const char* szFile, int iLine, const char* szExpr)
     result = 1;   // break into debugger
 #endif // !_DEBUG
 
-#endif
 
     EE_TO_JIT_TRANSITION();
 
@@ -10681,7 +10619,6 @@ bool CEEInfo::logMsg(unsigned level, const char* fmt, va_list args)
     return result;
 }
 
-#ifndef CROSSGEN_COMPILE
 
 /*********************************************************************/
 
@@ -11825,17 +11762,12 @@ HRESULT CEEJitInfo::allocPgoInstrumentationBySchema(
         codeSize = m_ILHeader->GetCodeSize();
     }
 
-#ifdef FEATURE_PREJIT
-    *pBlockCounts = m_pMethodBeingCompiled->GetLoaderModule()->AllocateMethodBlockCounts(m_pMethodBeingCompiled->GetMemberDef(), count, codeSize);
-    hr = (*pBlockCounts != nullptr) ? S_OK : E_OUTOFMEMORY;
-#else // FEATURE_PREJIT
 #ifdef FEATURE_PGO
     hr = PgoManager::allocPgoInstrumentationBySchema(m_pMethodBeingCompiled, pSchema, countSchemaItems, pInstrumentationData);
 #else
     _ASSERTE(!"allocMethodBlockCounts not implemented on CEEJitInfo!");
     hr = E_NOTIMPL;
 #endif // !FEATURE_PGO
-#endif // !FEATURE_PREJIT
 
     EE_TO_JIT_TRANSITION();
 
@@ -12183,11 +12115,7 @@ void CEEJitInfo::getEHinfo(
 }
 
 
-#endif // CROSSGEN_COMPILE
 
-#if defined(CROSSGEN_COMPILE)
-EXTERN_C ICorJitCompiler* getJit();
-#endif // defined(CROSSGEN_COMPILE)
 
 #ifdef FEATURE_INTERPRETER
 static CorJitResult CompileMethodWithEtwWrapper(EEJitManager *jitMgr,
@@ -12235,7 +12163,7 @@ CorJitResult invokeCompileMethodHelper(EEJitManager *jitMgr,
     bool samplingEnabled = (s_stackSamplingEnabled.val(CLRConfig::UNSUPPORTED_StackSamplingEnabled) != 0);
 #endif
 
-#if defined(ALLOW_SXS_JIT) && !defined(CROSSGEN_COMPILE)
+#if defined(ALLOW_SXS_JIT)
     if (FAILED(ret) && jitMgr->m_alternateJit
 #ifdef FEATURE_STACK_SAMPLING
         && (!samplingEnabled || (jitFlags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_SAMPLING_JIT_BACKGROUND)))
@@ -12267,7 +12195,7 @@ CorJitResult invokeCompileMethodHelper(EEJitManager *jitMgr,
             ret = CORJIT_SKIPPED;
         }
     }
-#endif // defined(ALLOW_SXS_JIT) && !defined(CROSSGEN_COMPILE)
+#endif // defined(ALLOW_SXS_JIT)
     comp->setJitFlags(jitFlags);
 
 #ifdef FEATURE_INTERPRETER
@@ -12328,7 +12256,6 @@ CorJitResult invokeCompileMethodHelper(EEJitManager *jitMgr,
     }
 #endif // FEATURE_INTERPRETER
 
-#if !defined(CROSSGEN_COMPILE)
     // Cleanup any internal data structures allocated
     // such as IL code after a successfull JIT compile
     // If the JIT fails we keep the IL around and will
@@ -12345,7 +12272,6 @@ CorJitResult invokeCompileMethodHelper(EEJitManager *jitMgr,
         comp->MethodCompileComplete(info->ftn);
 #endif // FEATURE_INTERPRETER
     }
-#endif // !defined(CROSSGEN_COMPILE)
 
 
 #if defined(FEATURE_GDBJIT)
@@ -12653,7 +12579,6 @@ BOOL g_fAllowRel32 = TRUE;
 #endif
 
 
-#ifndef CROSSGEN_COMPILE
 // ********************************************************************
 //                  README!!
 // ********************************************************************
@@ -12684,31 +12609,6 @@ PCODE UnsafeJitFunction(PrepareCodeConfig* config,
     COOPERATIVE_TRANSITION_BEGIN();
 
     timer.Start();
-
-#ifdef FEATURE_PREJIT
-
-    if (g_pConfig->RequireZaps() == EEConfig::REQUIRE_ZAPS_ALL &&
-        ftn->GetModule()->GetDomainFile()->IsZapRequired() &&
-        PartialNGenStressPercentage() == 0 &&
-#ifdef FEATURE_STACK_SAMPLING
-        !flags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_SAMPLING_JIT_BACKGROUND) &&
-#endif
-        !flags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_IMPORT_ONLY))
-    {
-        StackSString ss(SString::Ascii, "ZapRequire: JIT compiler invoked for ");
-        TypeString::AppendMethodInternal(ss, ftn);
-
-#ifdef _DEBUG
-        // Assert as some test may not check their error codes well. So throwing an
-        // exception may not cause a test failure (as it should).
-        StackScratchBuffer scratch;
-        DbgAssertDialog(__FILE__, __LINE__, (char*)ss.GetUTF8(scratch));
-#endif // _DEBUG
-
-        COMPlusThrowNonLocalized(kFileNotFoundException, ss.GetUnicode());
-    }
-
-#endif // FEATURE_PREJIT
 
     EEJitManager *jitMgr = ExecutionManager::GetEEJitManager();
     if (!jitMgr->LoadJIT())
@@ -13061,7 +12961,6 @@ PCODE UnsafeJitFunction(PrepareCodeConfig* config,
     COOPERATIVE_TRANSITION_END();
     return ret;
 }
-#endif // CROSSGEN_COMPILE
 
 extern "C" unsigned __stdcall PartialNGenStressPercentage()
 {
@@ -13075,86 +12974,6 @@ extern "C" unsigned __stdcall PartialNGenStressPercentage()
     return partialNGenStressVal;
 #endif // _DEBUG
 }
-
-#ifdef FEATURE_PREJIT
-/*********************************************************************/
-
-//
-// Table loading functions
-//
-void Module::LoadHelperTable()
-{
-    STANDARD_VM_CONTRACT;
-
-#ifndef CROSSGEN_COMPILE
-    COUNT_T tableSize;
-    BYTE * table = (BYTE *) GetNativeImage()->GetNativeHelperTable(&tableSize);
-
-    if (tableSize == 0)
-        return;
-
-    BYTE * curEntry   = table;
-    BYTE * tableEnd   = table + tableSize;
-
-#ifdef FEATURE_PERFMAP
-    PerfMap::LogStubs(__FUNCTION__, GetSimpleName(), (PCODE)table, tableSize);
-#endif
-
-#ifdef LOGGING
-    int iEntryNumber = 0;
-#endif // LOGGING
-
-    //
-    // Fill in helpers
-    //
-
-    while (curEntry < tableEnd)
-    {
-        DWORD dwHelper = *(DWORD *)curEntry;
-
-        int iHelper = (USHORT)dwHelper;
-        _ASSERTE(iHelper < CORINFO_HELP_COUNT);
-
-        LOG((LF_JIT, LL_INFO1000000, "JIT helper %3d (%-40s: table @ %p, size 0x%x, entry %3d @ %p, pfnHelper %p)\n",
-            iHelper, hlpFuncTable[iHelper].name, table, tableSize, iEntryNumber, curEntry, hlpFuncTable[iHelper].pfnHelper));
-
-        PCODE pfnHelper = CEEJitInfo::getHelperFtnStatic((CorInfoHelpFunc)iHelper);
-
-        if (dwHelper & CORCOMPILE_HELPER_PTR)
-        {
-            //
-            // Indirection cell
-            //
-            *(TADDR *)curEntry = pfnHelper;
-            curEntry = curEntry + sizeof(TADDR);
-        }
-        else
-        {
-            //
-            // Jump thunk
-            //
-
-#if defined(TARGET_AMD64)
-            *curEntry = X86_INSTR_JMP_REL32;
-            *(INT32 *)(curEntry + 1) = rel32UsingJumpStub((INT32 *)(curEntry + 1), pfnHelper, NULL, GetLoaderAllocator());
-#else // all other platforms
-            emitJump(curEntry, curEntry, (LPVOID)pfnHelper);
-            _ASSERTE(HELPER_TABLE_ENTRY_LEN >= JUMP_ALLOCATE_SIZE);
-#endif
-
-            curEntry = curEntry + HELPER_TABLE_ENTRY_LEN;
-        }
-
-#ifdef LOGGING
-        // Note that some table entries are sizeof(TADDR) in length, and some are HELPER_TABLE_ENTRY_LEN in length
-        ++iEntryNumber;
-#endif // LOGGING
-    }
-
-    ClrFlushInstructionCache(table, tableSize);
-#endif // CROSSGEN_COMPILE
-}
-#endif // FEATURE_PREJIT
 
 #ifdef FEATURE_READYTORUN
 CorInfoHelpFunc MapReadyToRunHelper(ReadyToRunHelper helperNum)
@@ -13403,10 +13222,8 @@ BOOL LoadDynamicInfoEntry(Module *currentModule,
 
     MethodDesc * pMD = NULL;
 
-#ifndef CROSSGEN_COMPILE
     PCCOR_SIGNATURE pSig;
     DWORD cSig;
-#endif // CROSSGEN_COMPILE
 
     size_t result = 0;
 
@@ -13453,7 +13270,6 @@ BOOL LoadDynamicInfoEntry(Module *currentModule,
         result = (size_t) ZapSig::DecodeField(currentModule, pInfoModule, pBlob);
         break;
 
-#ifndef CROSSGEN_COMPILE
     case ENCODE_STRING_HANDLE:
         {
             // We need to update strings atomically (due to NoStringInterning attribute). Note
@@ -14086,7 +13902,6 @@ BOOL LoadDynamicInfoEntry(Module *currentModule,
         break;
 #endif // FEATURE_READYTORUN
 
-#endif // CROSSGEN_COMPILE
 
     default:
         STRESS_LOG1(LF_ZAP, LL_WARNING, "Unknown FIXUP_BLOB_KIND %d\n", kind);
@@ -14796,21 +14611,6 @@ LPVOID                EECodeInfo::findNextFunclet (LPVOID pvFuncletStart, SIZE_T
 
         if (pFunctionEntry != NULL)
         {
-#ifdef FEATURE_PREJIT
-            // workaround: Check for indirect entry that is generated for cold part of main method body.
-            if ((TADDR)pvFuncletStart < (TADDR)uImageBase + pFunctionEntry->BeginAddress ||
-                (TADDR)uImageBase + pFunctionEntry->EndAddress <= (TADDR)pvFuncletStart)
-            {
-                Module * pZapModule = ExecutionManager::FindZapModule((TADDR)pvFuncletStart);
-                NGenLayoutInfo * pLayoutInfo = pZapModule->GetNGenLayoutInfo();
-
-                int ColdFunctionIndex = NativeUnwindInfoLookupTable::LookupUnwindInfoForMethod((DWORD)((TADDR)pvFuncletStart - uImageBase),
-                                                                               pLayoutInfo->m_pRuntimeFunctions[2],
-                                                                               0, pLayoutInfo->m_nRuntimeFunctions[2] - 1);
-
-                pFunctionEntry = pLayoutInfo->m_pRuntimeFunctions[2] + ColdFunctionIndex;
-            }
-#endif
 
             _ASSERTE((TADDR)pvFuncletStart == (TADDR)uImageBase + pFunctionEntry->BeginAddress);
             _ASSERTE((TADDR)uImageBase + pFunctionEntry->EndAddress <= (TADDR)pvFuncletStart + cbCode);

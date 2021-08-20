@@ -109,20 +109,7 @@ CHECK PEImage::CheckILFormat()
         pLayoutToCheck = pLayoutHolder;
     }
 
-#ifdef FEATURE_PREJIT
-    if (PEFile::ShouldTreatNIAsMSIL())
-    {
-        // This PEImage may intentionally be an NI image, being used as if it were an
-        // MSIL image.  In that case, rather than using CheckILFormat on its layout,
-        // do CheckCORFormat(), which is the same as CheckILFormat, except it allows for
-        // a native header.  (CheckILFormat() fails if it finds a native header.)
-        CHECK(pLayoutToCheck->CheckCORFormat());
-    }
-    else
-#endif
-    {
-        CHECK(pLayoutToCheck->CheckILFormat());
-    }
+    CHECK(pLayoutToCheck->CheckILFormat());
 
     CHECK_OK;
 };
@@ -610,18 +597,7 @@ void PEImage::VerifyIsILOrNIAssembly(BOOL fIL)
         ThrowFormat(COR_E_ASSEMBLYEXPECTED);
 
     CHECK checkGoodFormat;
-#ifdef FEATURE_PREJIT
-    if (fIL)
-    {
-        checkGoodFormat = CheckILFormat();
-    }
-    else
-    {
-        checkGoodFormat = CheckNativeFormat();
-    }
-#else
     checkGoodFormat = CheckILFormat();
-#endif
     if (!checkGoodFormat)
         ThrowFormat(COR_E_BADIMAGEFORMAT);
 
@@ -643,7 +619,6 @@ void DECLSPEC_NORETURN PEImage::ThrowFormat(HRESULT hrError)
     EEFileLoadException::Throw(m_path, hrError);
 }
 
-#if !defined(CROSSGEN_COMPILE)
 
 //may outlive PEImage
 PEImage::IJWFixupData::IJWFixupData(void *pBase)
@@ -775,7 +750,6 @@ void PEImage::UnloadIJWModule(void *pBase)
         delete pData;
 }
 
-#endif // !CROSSGEN_COMPILE
 
 
 

@@ -14737,32 +14737,8 @@ HRESULT CordbProcess::SetDesiredNGENCompilerFlags(DWORD dwFlags)
     PUBLIC_API_ENTRY(this);
     FAIL_IF_NEUTERED(this);
 
-#if defined(FEATURE_PREJIT)
-    if ((dwFlags != CORDEBUG_JIT_DEFAULT) && (dwFlags != CORDEBUG_JIT_DISABLE_OPTIMIZATION))
-    {
-        return E_INVALIDARG;
-    }
-
-    CordbProcess *pProcess = GetProcess();
-    ATT_REQUIRE_STOPPED_MAY_FAIL(pProcess);
-    HRESULT  hr = S_OK;
-    EX_TRY
-    {
-        // Left-side checks that this is a valid time to set the Ngen flags.
-        hr = pProcess->GetDAC()->SetNGENCompilerFlags(dwFlags);
-        if (!SUCCEEDED(hr) && GetShim() != NULL)
-        {
-            // Emulate V2 error semantics.
-            hr = GetShim()->FilterSetNgenHresult(hr);
-        }
-    }
-    EX_CATCH_HRESULT(hr);
-    return hr;
-
-#else  // !FEATURE_PREJIT
     return CORDBG_E_NGEN_NOT_SUPPORTED;
 
-#endif // FEATURE_PREJIT
 }
 
 HRESULT CordbProcess::GetDesiredNGENCompilerFlags(DWORD *pdwFlags )

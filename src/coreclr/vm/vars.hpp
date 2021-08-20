@@ -707,21 +707,13 @@ GSCookie GetProcessGSCookie() { return *(RAW_KEYWORD(volatile) GSCookie *)(&s_gs
 // than one AppDomain in ngen (the DefaultDomain)
 inline BOOL IsCompilationProcess()
 {
-#ifdef CROSSGEN_COMPILE
-    return TRUE;
-#else
     return FALSE;
-#endif
 }
 
 // Flag for cross-platform ngen: Removes all execution of managed or third-party code in the ngen compilation process.
 inline BOOL NingenEnabled()
 {
-#ifdef CROSSGEN_COMPILE
-    return TRUE;
-#else
     return FALSE;
-#endif
 }
 
 // Passed to JitManager APIs to determine whether to avoid calling into the host.

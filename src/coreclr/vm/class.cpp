@@ -84,7 +84,6 @@ void EEClass::Destruct(MethodTable * pOwningMT)
     }
     CONTRACTL_END
 
-#ifndef CROSSGEN_COMPILE
 
 #ifdef _DEBUG
     _ASSERTE(!IsDestroyed());
@@ -198,7 +197,6 @@ void EEClass::Destruct(MethodTable * pOwningMT)
     }
 #endif // PROFILING_SUPPORTED
 
-#endif // CROSSGEN_COMPILE
 }
 
 //*******************************************************************************
@@ -912,21 +910,7 @@ ClassLoader::LoadExactParentAndInterfacesTransitively(MethodTable *pMT)
         }
     }
 
-#ifdef FEATURE_PREJIT
-    // Restore action, not in MethodTable::Restore because we may have had approx parents at that point
-    if (pMT->IsZapped())
-    {
-        MethodTable::InterfaceMapIterator it = pMT->IterateInterfaceMap();
-        while (it.Next())
-        {
-            Module::RestoreMethodTablePointer(&it.GetInterfaceInfo()->m_pMethodTable, pMT->GetLoaderModule(), CLASS_LOAD_EXACTPARENTS);
-        }
-    }
-    else
-#endif
-    {
-        MethodTableBuilder::LoadExactInterfaceMap(pMT);
-    }
+    MethodTableBuilder::LoadExactInterfaceMap(pMT);
 
 #ifdef _DEBUG
     if (g_pConfig->ShouldDumpOnClassLoad(pMT->GetDebugClassName()))
@@ -1057,11 +1041,7 @@ bool ClassLoader::IsMethodSignatureCompatibleWith(FnPtrTypeDesc* fn1TD, FnPtrTyp
     TypeHandle* pFn2ArgTH = fn2TD->GetRetAndArgTypes();
     for (DWORD i = 0; i < fn1TD->GetNumArgs() + 1; i++)
     {
-#ifdef FEATURE_PREJIT
-        if (!ZapSig::CompareTaggedPointerToTypeHandle(pFn1ArgTH->GetModule(), pFn1ArgTH[i].AsTAddr(), pFn2ArgTH[i]))
-#else
         if (pFn1ArgTH[i] != pFn2ArgTH[i])
-#endif
         {
             return false;
         }
@@ -2572,29 +2552,6 @@ MethodTable::GetSubstitutionForParent(
 } // MethodTable::GetSubstitutionForParent
 
 #endif //!DACCESS_COMPILE
-
-
-//*******************************************************************************
-#ifdef FEATURE_PREJIT
-DWORD EEClass::GetSize()
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        FORBID_FAULT;
-    }
-    CONTRACTL_END;
-
-    // Total instance size consists of the fixed ("normal") fields, cached at construction time and dependent
-    // on whether we're a vanilla EEClass or DelegateEEClass etc., and a portion for the packed fields tacked on
-    // the end. The size of the packed fields can be retrieved from the fields themselves or, if we were
-    // unsuccessful in our attempts to compress the data, the full size of the EEClassPackedFields structure
-    // (which is essentially just a DWORD array of all the field values).
-    return m_cbFixedEEClassFields +
-        (m_fFieldsArePacked ? GetPackedFields()->GetPackedSize() : sizeof(EEClassPackedFields));
-}
-#endif // FEATURE_PREJIT
 
 #ifndef DACCESS_COMPILE
 #ifdef FEATURE_COMINTEROP

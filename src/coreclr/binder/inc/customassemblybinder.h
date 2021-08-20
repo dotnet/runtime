@@ -8,7 +8,7 @@
 #include "applicationcontext.hpp"
 #include "defaultassemblybinder.h"
 
-#if !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
+#if !defined(DACCESS_COMPILE)
 
 class AssemblyLoaderAllocator;
 class PEImage;
@@ -63,5 +63,5 @@ private:
     void* m_loaderAllocatorHandle;
 };
 
-#endif // !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
+#endif // !defined(DACCESS_COMPILE)
 #endif // __CUSTOM_ASSEMBLY_BINDER_H__

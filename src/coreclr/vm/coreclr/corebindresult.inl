@@ -28,11 +28,7 @@ inline BOOL CoreBindResult::IsCoreLib()
     }
     CONTRACTL_END;
 
-#ifndef CROSSGEN_COMPILE
     return m_pAssembly->GetAssemblyName()->IsCoreLib();
-#else
-    return (m_pAssembly->GetPath()).EndsWithCaseInsensitive(SString(CoreLibName_IL_W));
-#endif
 }
 
 inline void CoreBindResult::GetBindAssembly(BINDER_SPACE::Assembly** ppAssembly)
@@ -73,27 +69,6 @@ inline void CoreBindResult::Reset()
     m_pAssembly=NULL;
     m_hrBindResult = S_OK;
 }
-#ifdef FEATURE_PREJIT
-inline BOOL CoreBindResult::HasNativeImage()
-{
-    LIMITED_METHOD_CONTRACT;
-    return m_pAssembly->GetNativePEImage() != NULL;
-}
-inline PEImage* CoreBindResult::GetNativeImage()
-{
-    WRAPPER_NO_CONTRACT;
-    _ASSERTE(HasNativeImage());
-    return m_pAssembly->GetNativePEImage();
-}
-
-inline PEImage* CoreBindResult::GetILImage()
-{
-    WRAPPER_NO_CONTRACT;
-    return m_pAssembly ?
-        m_pAssembly->GetPEImage():
-        NULL;
-};
-#endif
 
 inline void CoreBindResult::SetHRBindResult(HRESULT hrBindResult)
 {

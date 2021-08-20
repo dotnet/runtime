@@ -187,7 +187,6 @@ typedef struct MonoComponentDebugger {
 	void (*end_exception_filter) (MonoException *exc, MonoContext *ctx, MonoContext *orig_ctx);
 	void (*debug_log) (int level, MonoString *category, MonoString *message);
 	gboolean (*debug_log_is_enabled) (void);
-	void (*send_crash) (char *json_dump, MonoStackHash *hashes, int pause);
 	gboolean (*transport_handshake) (void);
 
 	//wasm
