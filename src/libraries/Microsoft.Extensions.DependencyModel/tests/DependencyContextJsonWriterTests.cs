@@ -5,12 +5,9 @@ using System.Collections.Generic;
 using System.IO;
 using System.Text;
 using System.Text.Json;
-
 using FluentAssertions;
-
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
-
 using Xunit;
 
 namespace Microsoft.Extensions.DependencyModel.Tests
