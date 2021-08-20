@@ -2987,12 +2987,7 @@ MethodTableBuilder::EnumerateClassMethods()
             // Some interface checks.
             // We only need them if default interface method support is disabled or if this is fragile crossgen
 #if !defined(FEATURE_DEFAULT_INTERFACES)
-            if (fIsClassInterface
-#if defined(FEATURE_DEFAULT_INTERFACES)
-                // Only fragile crossgen wasn't upgraded to deal with default interface methods.
-                && !IsNgenPDBCompilationProcess()
-#endif
-                )
+            if (fIsClassInterface)
             {
                 if (IsMdVirtual(dwMemberAttrs))
                 {
