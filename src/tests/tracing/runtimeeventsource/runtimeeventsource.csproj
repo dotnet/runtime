@@ -4,18 +4,12 @@
     <CLRTestKind>BuildAndRun</CLRTestKind>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <CLRTestPriority>0</CLRTestPriority>
-    <GCStressIncompatible>true</GCStressIncompatible>
     <!-- This test has a secondary thread with an infinite loop -->
     <UnloadabilityIncompatible>true</UnloadabilityIncompatible>
-    <!--
-      Test is blocking official build.
-      Related failures: #18907, #19340, #22441, #22729.
-      Issue tracking to re-enable: #22898.
-    -->
-    <DisableProjectBuild>true</DisableProjectBuild>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="RuntimeEventSourceTest.cs" />
     <ProjectReference Include="../common/common.csproj" />
+    <RuntimeHostConfigurationOption Include="RuntimeHostConfigSwitch" Value="true" />
   </ItemGroup>
 </Project>

@@ -89,22 +89,6 @@ PTR_Module ClassLoader::ComputeLoaderModuleWorker(
     if (classInst.IsEmpty() && methodInst.IsEmpty())
         RETURN PTR_Module(pDefinitionModule);
 
-#ifndef DACCESS_COMPILE
-#ifdef FEATURE_NATIVE_IMAGE_GENERATION
-    //
-    // Use special loader module placement during compilation of fragile native images.
-    //
-    // ComputeLoaderModuleForCompilation algorithm assumes that we are using fragile native image
-    // for CoreLib (or compiling CoreLib itself). It is not the case for ReadyToRun compilation because
-    // CoreLib as always treated as IL there (see code:PEFile::ShouldTreatNIAsMSIL for details).
-    //
-    if (IsCompilationProcess() && !IsReadyToRunCompilation())
-    {
-        RETURN(ComputeLoaderModuleForCompilation(pDefinitionModule, token, classInst, methodInst));
-    }
-#endif // FEATURE_PREJIT
-#endif // #ifndef DACCESS_COMPILE
-
     Module *pLoaderModule = NULL;
 
     if (pDefinitionModule)
@@ -186,135 +170,6 @@ ComputeCollectibleLoaderModule:
     }
     RETURN PTR_Module(pLoaderModule);
 }
-
-#ifndef DACCESS_COMPILE
-#ifdef FEATURE_NATIVE_IMAGE_GENERATION
-/* static */
-PTR_Module ClassLoader::ComputeLoaderModuleForCompilation(
-    Module *     pDefinitionModule,  // the module that declares the generic type or method
-    mdToken      token,              // method or class token for this item
-    Instantiation classInst,         // the type arguments to the type (if any)
-    Instantiation methodInst)        // the type arguments to the method (if any)
-{
-    CONTRACT(Module*)
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        FORBID_FAULT;
-        MODE_ANY;
-        PRECONDITION(CheckPointer(pDefinitionModule, NULL_OK));
-        POSTCONDITION(CheckPointer(RETVAL));
-    }
-    CONTRACT_END
-
-    // The NGEN rule for compiling constructed types and instantiated methods
-    // into modules other than their "natural" LoaderModule. This is at the heart of
-    // "full generics NGEN".
-    //
-    // If this instantiation doesn't have a unique home then use the ngen module
-
-    // OK, we're certainly NGEN'ing.  And if we're NGEN'ing then we're not on the debugger thread.
-    CONSISTENCY_CHECK(((GetThreadNULLOk() && GetAppDomain()) || IsGCThread()) &&
-        "unexpected: running a load on debug thread but IsCompilationProcess() returned TRUE");
-
-    // Save it into its PreferredZapModule if it's always going to be saved there.
-    // This is a stable choice - no need to record it in the table (as we do for others below)
-    if (Module::IsAlwaysSavedInPreferredZapModule(classInst, methodInst))
-    {
-        RETURN (Module::ComputePreferredZapModule(pDefinitionModule, classInst, methodInst));
-    }
-
-    // Check if this compilation process has already decided on an adjustment.  Once we decide
-    // on the LoaderModule for an item it must be stable for the duration of a
-    // compilation process, no matter how many modules get NGEN'd.
-
-    ZapperLoaderModuleTableKey key(pDefinitionModule,
-                                   token,
-                                   classInst,
-                                   methodInst);
-
-    Module * pZapperLoaderModule = g_pCEECompileInfo->LookupZapperLoaderModule(&key);
-    if (pZapperLoaderModule != NULL)
-    {
-        RETURN (pZapperLoaderModule);
-    }
-
-    // OK, we need to compute a non-standard zapping module.
-
-    Module * pPreferredZapModule = Module::ComputePreferredZapModule(pDefinitionModule, classInst, methodInst);
-
-    // Check if we're NGEN'ing but where perhaps the compilation domain
-    // isn't set up yet.  This can happen in following situations:
-    // - Managed code running during startup before compilation domain is setup.
-    // - Exceptions (e.g. invalid program exceptions) thrown from compilation domain and caught in default domain
-
-    // We're a little stuck - we can't force the item into an NGEN image at this point.  So just bail out
-    // and use the loader module we've computed without recording the choice. The loader module should always
-    // be CoreLib in this case.
-    AppDomain * pAppDomain = GetAppDomain();
-    if (!pAppDomain->IsCompilationDomain() ||
-        !pAppDomain->ToCompilationDomain()->GetTargetModule())
-    {
-        _ASSERTE(pPreferredZapModule->IsSystem() || IsNgenPDBCompilationProcess());
-        RETURN (pPreferredZapModule);
-    }
-
-    Module * pTargetModule = pAppDomain->ToCompilationDomain()->GetTargetModule();
-
-    // If it is multi-module assembly and we have not saved PZM yet, do not create
-    // speculative instantiation - just save it in PZM.
-    if (pTargetModule->GetAssembly() == pPreferredZapModule->GetAssembly() &&
-        !pPreferredZapModule->IsModuleSaved())
-    {
-        pZapperLoaderModule = pPreferredZapModule;
-    }
-    else
-    {
-        // Everything else can be saved into the current module.
-        pZapperLoaderModule = pTargetModule;
-    }
-
-    // Record this choice just in case we're NGEN'ing multiple modules
-    // to make sure we always do the same thing if we're asked to compute
-    // the loader module again.
-
-    // Note this whole code path only happens while NGEN'ing, so this violation
-    // is not so bad.  It is needed since we allocate stuff on the heap.
-    CONTRACT_VIOLATION(ThrowsViolation|FaultViolation);
-
-    // Copy the instantiation arrays so they can escape the scope of this method.
-    // Since this is a permanent entry in a table for this compilation process
-    // we do not need to collect these.  If we did have to we would do it when we deleteed the
-    // ZapperLoaderModuleTable.
-    NewArrayHolder<TypeHandle> pClassArgs = NULL;
-    if (!classInst.IsEmpty())
-    {
-        pClassArgs = new TypeHandle[classInst.GetNumArgs()];
-        for (unsigned int i = 0; i < classInst.GetNumArgs(); i++)
-            pClassArgs[i] = classInst[i];
-    }
-
-    NewArrayHolder<TypeHandle> pMethodArgs = NULL;
-    if (!methodInst.IsEmpty())
-    {
-        pMethodArgs = new TypeHandle[methodInst.GetNumArgs()];
-        for (unsigned int i = 0; i < methodInst.GetNumArgs(); i++)
-            pMethodArgs[i] = methodInst[i];
-    }
-
-    ZapperLoaderModuleTableKey key2(pDefinitionModule,
-                                    token,
-                                    Instantiation(pClassArgs, classInst.GetNumArgs()),
-                                    Instantiation(pMethodArgs, methodInst.GetNumArgs()));
-    g_pCEECompileInfo->RecordZapperLoaderModule(&key2, pZapperLoaderModule);
-
-    pClassArgs.SuppressRelease();
-    pMethodArgs.SuppressRelease();
-
-    RETURN (pZapperLoaderModule);
-}
-#endif // FEATURE_NATIVE_IMAGE_GENERATION
-#endif // #ifndef DACCESS_COMPILE
 
 /*static*/
 Module * ClassLoader::ComputeLoaderModule(MethodTable * pMT,
@@ -1181,12 +1036,6 @@ void ClassLoader::EnsureLoaded(TypeHandle typeHnd, ClassLoadLevel level)
 
     if (typeHnd.GetLoadLevel() < level)
     {
-#ifdef FEATURE_PREJIT
-        if (typeHnd.GetLoadLevel() == CLASS_LOAD_UNRESTOREDTYPEKEY)
-        {
-            typeHnd.DoRestoreTypeKey();
-        }
-#endif
         if (level > CLASS_LOAD_UNRESTORED)
         {
             TypeKey typeKey = typeHnd.GetTypeKey();
@@ -1267,38 +1116,6 @@ TypeHandle ClassLoader::LookupTypeKey(TypeKey *pKey,
     return th;
 }
 
-
-#ifdef FEATURE_PREJIT
-/* static */
-TypeHandle ClassLoader::LookupInPreferredZapModule(TypeKey *pKey, BOOL fCheckUnderLock)
-{
-    CONTRACTL {
-        NOTHROW;
-        GC_NOTRIGGER;
-        FORBID_FAULT;
-        PRECONDITION(CheckPointer(pKey));
-        PRECONDITION(pKey->IsConstructed());
-        MODE_ANY;
-        SUPPORTS_DAC;
-    } CONTRACTL_END;
-
-    // First look for an NGEN'd type in the preferred ngen module
-    TypeHandle th;
-    PTR_Module pPreferredZapModule = Module::ComputePreferredZapModule(pKey);
-
-    if (pPreferredZapModule != NULL && pPreferredZapModule->HasNativeImage())
-    {
-        th = LookupTypeKey(pKey,
-                           pPreferredZapModule->GetAvailableParamTypes(),
-                           &pPreferredZapModule->GetClassLoader()->m_AvailableTypesLock,
-                           fCheckUnderLock);
-    }
-
-    return th;
-}
-#endif // FEATURE_PREJIT
-
-
 /* static */
 TypeHandle ClassLoader::LookupInLoaderModule(TypeKey *pKey, BOOL fCheckUnderLock)
 {
@@ -1369,18 +1186,6 @@ TypeHandle ClassLoader::LookupTypeHandleForTypeKeyInner(TypeKey *pKey, BOOL fChe
     {
         return TypeHandle(pKey->GetModule()->LookupTypeDef(pKey->GetTypeToken()));
     }
-
-#ifdef FEATURE_PREJIT
-    // The following ways of finding a constructed type should be mutually exclusive!
-    //  1. Look for a zapped item in the PreferredZapModule
-    //  2. Look for a unzapped (JIT-loaded) item in the LoaderModule
-
-    TypeHandle thPZM = LookupInPreferredZapModule(pKey, fCheckUnderLock);
-    if (!thPZM.IsNull())
-    {
-        return thPZM;
-    }
-#endif // FEATURE_PREJIT
 
     // Next look in the loader module.  This is where the item is guaranteed to live if
     // it is not latched from an NGEN image, i.e. if it is JIT loaded.
@@ -3133,22 +2938,10 @@ TypeHandle ClassLoader::DoIncrementalLoad(TypeKey *pTypeKey, TypeHandle typeHnd,
             break;
 
         case CLASS_LOAD_UNRESTOREDTYPEKEY :
-#ifdef FEATURE_PREJIT
-            typeHnd.DoRestoreTypeKey();
-#endif
             break;
 
         // Attain level CLASS_LOAD_APPROXPARENTS, starting with unrestored class
         case CLASS_LOAD_UNRESTORED :
-#ifdef FEATURE_PREJIT
-            {
-                CONSISTENCY_CHECK(!typeHnd.IsRestored_NoLogging());
-                if (typeHnd.IsTypeDesc())
-                    typeHnd.AsTypeDesc()->Restore();
-                else
-                    typeHnd.AsMethodTable()->Restore();
-            }
-#endif
             break;
 
         // Attain level CLASS_LOAD_EXACTPARENTS
@@ -3213,7 +3006,7 @@ TypeHandle ClassLoader::CreateTypeHandleForTypeKey(TypeKey* pKey, AllocMemTracke
         {
             typeHnd = CreateTypeHandleForNonCanonicalGenericInstantiation(pKey, pamTracker);
         }
-#if defined(_DEBUG) && !defined(CROSSGEN_COMPILE)
+#if defined(_DEBUG)
         if (Nullable::IsNullableType(typeHnd))
             Nullable::CheckFieldOffsets(typeHnd);
 #endif
@@ -4435,7 +4228,6 @@ BOOL AccessCheckOptions::DemandMemberAccess(AccessCheckContext *pContext, Method
 
     BOOL canAccessTarget = FALSE;
 
-#ifndef CROSSGEN_COMPILE
 
     // In CoreCLR kRestrictedMemberAccess means that one can access private/internal
     // classes/members in app code.
@@ -4452,7 +4244,6 @@ BOOL AccessCheckOptions::DemandMemberAccess(AccessCheckContext *pContext, Method
         ThrowAccessException(pContext, pTargetMT, NULL);
     }
 
-#endif // CROSSGEN_COMPILE
 
     return canAccessTarget;
 }

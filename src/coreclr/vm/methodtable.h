@@ -105,36 +105,20 @@ struct InterfaceInfo_t
 #endif
 
     // Method table of the interface
-#ifdef FEATURE_PREJIT
-#if defined(FEATURE_NGEN_RELOCS_OPTIMIZATIONS)
-    RelativeFixupPointer<PTR_MethodTable> m_pMethodTable;
-#else
-    FixupPointer<PTR_MethodTable> m_pMethodTable;
-#endif
-#else
     PTR_MethodTable m_pMethodTable;
-#endif
 
 public:
     FORCEINLINE PTR_MethodTable GetMethodTable()
     {
         LIMITED_METHOD_CONTRACT;
-#ifdef FEATURE_PREJIT
-        return ReadPointerMaybeNull(this, &InterfaceInfo_t::m_pMethodTable);
-#else
         return VolatileLoadWithoutBarrier(&m_pMethodTable);
-#endif
     }
 
 #ifndef DACCESS_COMPILE
     void SetMethodTable(MethodTable * pMT)
     {
         LIMITED_METHOD_CONTRACT;
-#ifdef FEATURE_PREJIT
-        m_pMethodTable.SetValueMaybeNull(pMT);
-#else
         return VolatileStoreWithoutBarrier(&m_pMethodTable, pMT);
-#endif
     }
 
     // Get approximate method table. This is used by the type loader before the type is fully loaded.
@@ -144,11 +128,7 @@ public:
 #ifndef DACCESS_COMPILE
     InterfaceInfo_t(InterfaceInfo_t &right)
     {
-#ifdef FEATURE_PREJIT
-        m_pMethodTable.SetValueMaybeNull(right.m_pMethodTable.GetValueMaybeNull());
-#else
         VolatileStoreWithoutBarrier(&m_pMethodTable, VolatileLoadWithoutBarrier(&right.m_pMethodTable));
-#endif
     }
 #else // !DACCESS_COMPILE
 private:
@@ -328,23 +308,13 @@ struct MethodTableWriteableData
         enum_flag_CanCompareBitsOrUseFastGetHashCode       = 0x00000200,     // Is any field type or sub field type overrode Equals or GetHashCode
         enum_flag_HasCheckedCanCompareBitsOrUseFastGetHashCode   = 0x00000400,  // Whether we have checked the overridden Equals or GetHashCode
 
-#ifdef FEATURE_PREJIT
-        // These flags are used only at ngen time. We store them here since
-        // we are running out of available flags in MethodTable. They may eventually
-        // go into ngen speficic state.
-        enum_flag_NGEN_IsFixedUp            = 0x00010000, // This MT has been fixed up during NGEN
-        enum_flag_NGEN_IsNeedsRestoreCached = 0x00020000, // Set if we have cached the results of needs restore computation
-        enum_flag_NGEN_CachedNeedsRestore   = 0x00040000, // The result of the needs restore computation
-        // enum_unused                      = 0x00080000,
-
-#ifdef FEATURE_READYTORUN_COMPILER
-        enum_flag_NGEN_IsLayoutFixedComputed                    = 0x0010000, // Set if we have cached the result of IsLayoutFixed computation
-        enum_flag_NGEN_IsLayoutFixed                            = 0x0020000, // The result of the IsLayoutFixed computation
-        enum_flag_NGEN_IsLayoutInCurrentVersionBubbleComputed   = 0x0040000, // Set if we have cached the result of IsLayoutInCurrentVersionBubble computation
-        enum_flag_NGEN_IsLayoutInCurrentVersionBubble           = 0x0080000, // The result of the IsLayoutInCurrentVersionBubble computation
-#endif
-
-#endif // FEATURE_PREJIT
+        // enum_unused                      = 0x00010000,
+        // enum_unused                      = 0x00020000,
+        // enum_unused                      = 0x00040000,
+        // enum_unused                      = 0x00080000,        // enum_unused                      = 0x0010000,
+        // enum_unused                      = 0x0020000,
+        // enum_unused                      = 0x0040000,
+        // enum_unused                      = 0x0080000,
 
 #ifdef _DEBUG
         enum_flag_ParentMethodTablePointerValid =  0x40000000,
@@ -389,49 +359,6 @@ public:
         m_dwFlags |= enum_flag_ParentMethodTablePointerValid;
     }
 #endif
-
-#ifdef FEATURE_PREJIT
-
-    void Save(DataImage *image, MethodTable *pMT, DWORD profilingFlags) const;
-    void Fixup(DataImage *image, MethodTable *pMT, BOOL needsRestore);
-
-    inline BOOL IsFixedUp() const
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        return (m_dwFlags & enum_flag_NGEN_IsFixedUp);
-    }
-    inline void SetFixedUp()
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        m_dwFlags |= enum_flag_NGEN_IsFixedUp;
-    }
-
-    inline BOOL IsNeedsRestoreCached() const
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        return (m_dwFlags & enum_flag_NGEN_IsNeedsRestoreCached);
-    }
-
-    inline BOOL GetCachedNeedsRestore() const
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        _ASSERTE(IsNeedsRestoreCached());
-        return (m_dwFlags & enum_flag_NGEN_CachedNeedsRestore);
-    }
-
-    inline void SetCachedNeedsRestore(BOOL fNeedsRestore)
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        _ASSERTE(!IsNeedsRestoreCached());
-        m_dwFlags |= enum_flag_NGEN_IsNeedsRestoreCached;
-        if (fNeedsRestore) m_dwFlags |= enum_flag_NGEN_CachedNeedsRestore;
-    }
-#endif // FEATURE_PREJIT
 
 
     inline LOADERHANDLE GetExposedClassObjectHandle() const
@@ -946,41 +873,6 @@ public:
     // The pending list is required for restoring types that reference themselves through
     // instantiations of the superclass or interfaces e.g. System.Int32 : IComparable<System.Int32>
 
-
-#ifdef FEATURE_PREJIT
-
-    void Save(DataImage *image, DWORD profilingFlags);
-    void Fixup(DataImage *image);
-
-    // This is different from !IsRestored() in that it checks if restoring
-    // will ever be needed for this ngened data-structure.
-    // This is to be used at ngen time of a dependent module to determine
-    // if it can be accessed directly, or if the restoring mechanism needs
-    // to be hooked in.
-    BOOL ComputeNeedsRestore(DataImage *image, TypeHandleList *pVisited);
-
-    BOOL NeedsRestore(DataImage *image)
-    {
-        WRAPPER_NO_CONTRACT;
-        return ComputeNeedsRestore(image, NULL);
-    }
-
-private:
-    BOOL ComputeNeedsRestoreWorker(DataImage *image, TypeHandleList *pVisited);
-
-public:
-    // This returns true at NGen time if we can eager bind to all dictionaries along the inheritance chain
-    BOOL CanEagerBindToParentDictionaries(DataImage *image, TypeHandleList *pVisited);
-
-    // This returns true at NGen time if we may need to attach statics to
-    // other module than current loader module at runtime
-    BOOL NeedsCrossModuleGenericsStaticsInfo();
-
-    // Returns true at NGen time if we may need to write into the MethodTable at runtime
-    BOOL IsWriteable();
-
-#endif // FEATURE_PREJIT
-
     void AllocateRegularStaticBoxes();
     static OBJECTREF AllocateStaticBox(MethodTable* pFieldMT, BOOL fPinned, OBJECTHANDLE* pHandle = 0);
 
@@ -1264,7 +1156,7 @@ public:
     // The current rule is that these interfaces can only appear
     // on valuetypes that are not shared generic, and that the special
     // marker type is the open generic type.
-    // 
+    //
     inline bool IsSpecialMarkerTypeForGenericCasting()
     {
         return IsGenericTypeDefinition();
@@ -1484,13 +1376,8 @@ public:
     #define VTABLE_SLOTS_PER_CHUNK 8
     #define VTABLE_SLOTS_PER_CHUNK_LOG2 3
 
-#if defined(FEATURE_NGEN_RELOCS_OPTIMIZATIONS)
-    typedef RelativePointer<PCODE> VTableIndir2_t;
-    typedef RelativePointer<DPTR(VTableIndir2_t)> VTableIndir_t;
-#else
     typedef PlainPointer<PCODE> VTableIndir2_t;
     typedef PlainPointer<DPTR(VTableIndir2_t)> VTableIndir_t;
-#endif
 
     static DWORD GetIndexOfVtableIndirection(DWORD slotNum);
     static DWORD GetStartSlotForVtableIndirection(UINT32 indirectionIndex, DWORD wNumVirtuals);
@@ -1533,12 +1420,7 @@ public:
     VtableIndirectionSlotIterator IterateVtableIndirectionSlots();
     VtableIndirectionSlotIterator IterateVtableIndirectionSlotsFrom(DWORD index);
 
-#ifdef FEATURE_PREJIT
-    static BOOL CanShareVtableChunksFrom(MethodTable *pTargetMT, Module *pCurrentLoaderModule, Module *pCurrentPreferredZapModule);
-    BOOL CanInternVtableChunk(DataImage *image, VtableIndirectionSlotIterator it);
-#else
     static BOOL CanShareVtableChunksFrom(MethodTable *pTargetMT, Module *pCurrentLoaderModule);
-#endif
 
     inline BOOL HasNonVirtualSlots()
     {
@@ -1963,14 +1845,8 @@ public:
     //-------------------------------------------------------------------
     // THE METHOD TABLE PARENT (SUPERCLASS/BASE CLASS)
     //
-
-#if defined(FEATURE_NGEN_RELOCS_OPTIMIZATIONS)
-#define PARENT_MT_FIXUP_OFFSET (-FIXUP_POINTER_INDIRECTION)
-    typedef RelativeFixupPointer<PTR_MethodTable> ParentMT_t;
-#else
 #define PARENT_MT_FIXUP_OFFSET ((SSIZE_T)offsetof(MethodTable, m_pParentMethodTable))
     typedef IndirectPointer<PTR_MethodTable> ParentMT_t;
-#endif
 
     BOOL HasApproxParent()
     {
@@ -1996,13 +1872,7 @@ public:
     inline static PTR_VOID GetParentMethodTableOrIndirection(PTR_VOID pMT)
     {
         WRAPPER_NO_CONTRACT;
-#if defined(FEATURE_NGEN_RELOCS_OPTIMIZATIONS)
-        PTR_MethodTable pMethodTable = dac_cast<PTR_MethodTable>(pMT);
-        PTR_MethodTable pParentMT = ReadPointerMaybeNull((MethodTable*) pMethodTable, &MethodTable::m_pParentMethodTable);
-        return dac_cast<PTR_VOID>(pParentMT);
-#else
         return PTR_VOID(*PTR_TADDR(dac_cast<TADDR>(pMT) + offsetof(MethodTable, m_pParentMethodTable)));
-#endif
     }
 
     inline static BOOL IsParentMethodTableTagged(PTR_MethodTable pMT)
@@ -2014,11 +1884,7 @@ public:
 
     bool GetFlagHasIndirectParent()
     {
-#ifdef FEATURE_PREJIT
-        return !!GetFlag(enum_flag_HasIndirectParent);
-#else
         return false;
-#endif
     }
 
 #ifndef DACCESS_COMPILE
@@ -2243,8 +2109,8 @@ public:
             bool exactMatch = pCurrentMethodTable == pMT;
             if (!exactMatch)
             {
-                if (pCurrentMethodTable->HasSameTypeDefAs(pMT) && 
-                    pMT->HasInstantiation() && 
+                if (pCurrentMethodTable->HasSameTypeDefAs(pMT) &&
+                    pMT->HasInstantiation() &&
                     pCurrentMethodTable->IsSpecialMarkerTypeForGenericCasting() &&
                     !pMTOwner->ContainsGenericVariables() &&
                     pMT->GetInstantiation().ContainsAllOneType(pMTOwner))
@@ -2339,12 +2205,6 @@ public:
     // track extra interface info. If there are a non-zero number of interfaces implemented on this class but
     // GetExtraInterfaceInfoSize() returned zero, this call must still be made (with a NULL argument).
     void InitializeExtraInterfaceInfo(PVOID pInfo);
-
-#ifdef FEATURE_PREJIT
-    // Ngen support.
-    void SaveExtraInterfaceInfo(DataImage *pImage);
-    void FixupExtraInterfaceInfo(DataImage *pImage);
-#endif // FEATURE_PREJIT
 
 #ifdef DACCESS_COMPILE
     void EnumMemoryRegionsForExtraInterfaceInfo();
@@ -2918,13 +2778,8 @@ public:
     // must have a dictionary entry. On the other hand, for instantiations shared with Dict<string,double> the opposite holds.
     //
 
-#if defined(FEATURE_NGEN_RELOCS_OPTIMIZATIONS)
-    typedef RelativePointer<PTR_Dictionary> PerInstInfoElem_t;
-    typedef RelativePointer<DPTR(PerInstInfoElem_t)> PerInstInfo_t;
-#else
     typedef PlainPointer<PTR_Dictionary> PerInstInfoElem_t;
     typedef PlainPointer<DPTR(PerInstInfoElem_t)> PerInstInfo_t;
-#endif
 
     // Return a pointer to the per-instantiation information. See field itself for comments.
     DPTR(PerInstInfoElem_t) GetPerInstInfo()
@@ -2974,21 +2829,6 @@ public:
     // If not instantiated, return NULL
     PTR_Dictionary GetDictionary();
 
-#ifdef FEATURE_PREJIT
-    //
-    // After the zapper compiles all code in a module it may attempt
-    // to populate entries in all dictionaries
-    // associated with generic types.  This is an optional step - nothing will
-    // go wrong at runtime except we may get more one-off calls to JIT_GenericHandle.
-    // Although these are one-off we prefer to avoid them since they touch metadata
-    // pages.
-    //
-    // Fully populating a dictionary may in theory load more types. However
-    // for the moment only those entries that refer to types that
-    // are already loaded will be filled in.
-    void PrepopulateDictionary(DataImage * image, BOOL nonExpansive);
-#endif // FEATURE_PREJIT
-
     // Return a substitution suitbale for interpreting
     // the metadata in parent class, assuming we already have a subst.
     // suitable for interpreting the current class.
@@ -3015,11 +2855,7 @@ public:
     {
         LIMITED_METHOD_DAC_CONTRACT;
 
-#ifdef FEATURE_PREJIT
-        return GetFlag(enum_flag_IsPreRestored);
-#else
         return FALSE;
-#endif
     }
 
     //-------------------------------------------------------------------
@@ -3905,11 +3741,7 @@ private:
 
     RelativePointer<PTR_Module> m_pLoaderModule;    // LoaderModule. It is equal to the ZapModule in ngened images
 
-#if defined(FEATURE_NGEN_RELOCS_OPTIMIZATIONS)
-    RelativePointer<PTR_MethodTableWriteableData> m_pWriteableData;
-#else
     PlainPointer<PTR_MethodTableWriteableData> m_pWriteableData;
-#endif
 
     // The value of lowest two bits describe what the union contains
     enum LowBits {
@@ -3921,13 +3753,8 @@ private:
     static const TADDR UNION_MASK = 3;
 
     union {
-#if defined(FEATURE_NGEN_RELOCS_OPTIMIZATIONS)
-        RelativePointer<DPTR(EEClass)> m_pEEClass;
-        RelativePointer<TADDR> m_pCanonMT;
-#else
         PlainPointer<DPTR(EEClass)> m_pEEClass;
         PlainPointer<TADDR> m_pCanonMT;
-#endif
     };
 
     __forceinline static LowBits union_getLowBits(TADDR pCanonMT)
@@ -3956,11 +3783,7 @@ private:
     public:
     union
     {
-#if defined(FEATURE_NGEN_RELOCS_OPTIMIZATIONS)
-        RelativePointer<PTR_InterfaceInfo>   m_pInterfaceMap;
-#else
         PlainPointer<PTR_InterfaceInfo>   m_pInterfaceMap;
-#endif
         TADDR               m_pMultipurposeSlot2;
     };
 
@@ -4111,29 +3934,6 @@ private:
 public:
 
     BOOL Validate ();
-
-#ifdef FEATURE_READYTORUN_COMPILER
-    //
-    // Is field layout in this type within the current version bubble?
-    //
-    BOOL IsLayoutInCurrentVersionBubble();
-    //
-    // Is field layout in this type fixed within the current version bubble?
-    // This check does not take the inheritance chain into account.
-    //
-    BOOL IsLayoutFixedInCurrentVersionBubble();
-
-    //
-    // Is field layout of the inheritance chain fixed within the current version bubble?
-    //
-    BOOL IsInheritanceChainLayoutFixedInCurrentVersionBubble();
-
-    //
-    // Is the inheritance chain fixed within the current version bubble?
-    //
-    BOOL IsInheritanceChainFixedInCurrentVersionBubble();
-#endif
-
 };  // class MethodTable
 
 #ifndef CROSSBITNESS_COMPILE

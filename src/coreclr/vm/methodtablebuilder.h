@@ -2893,11 +2893,7 @@ private:
     CheckForSystemTypes();
 
     VOID SetupMethodTable2(
-        Module* pLoaderModule
-#ifdef FEATURE_PREJIT
-        , Module* pComputedPZM
-#endif // FEATURE_PREJIT
-        );
+        Module* pLoaderModule);
 
     VOID HandleGCForValueClasses(
         MethodTable **);
@@ -3003,9 +2999,6 @@ private:
 #ifdef FEATURE_COMINTEROP
                                 , BOOL bHasDynamicInterfaceMap
 #endif
-#ifdef FEATURE_PREJIT
-                                , Module *pComputedPZM
-#endif // FEATURE_PREJIT
                                 , AllocMemTracker *pamTracker
         );
 

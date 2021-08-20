@@ -24,11 +24,7 @@ inline InstantiatedMethodDesc* MethodDesc::AsInstantiatedMethodDesc() const
 inline BOOL MethodDesc::IsZapped()
 {
     WRAPPER_NO_CONTRACT;
-#ifdef FEATURE_PREJIT
-    return GetMethodDescChunk()->IsZapped();
-#else
     return FALSE;
-#endif
 }
 
 inline PTR_DynamicResolver DynamicMethodDesc::GetResolver()
@@ -177,13 +173,11 @@ inline CodeVersionManager * MethodDesc::GetCodeVersionManager()
 }
 #endif
 
-#ifndef CROSSGEN_COMPILE
 inline MethodDescBackpatchInfoTracker * MethodDesc::GetBackpatchInfoTracker()
 {
     LIMITED_METHOD_CONTRACT;
     return GetLoaderAllocator()->GetMethodDescBackpatchInfoTracker();
 }
-#endif
 
 #endif  // _METHOD_INL_
 

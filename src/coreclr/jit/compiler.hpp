@@ -840,6 +840,7 @@ inline GenTree::GenTree(genTreeOps oper, var_types type DEBUGARG(bool largeNode)
 
 #ifdef DEBUG
     gtSeqNum = 0;
+    gtUseNum = -1;
     gtTreeID = JitTls::GetCompiler()->compGenTreeID++;
     gtVNPair.SetBoth(ValueNumStore::NoVN);
     gtRegTag   = GT_REGTAG_NONE;
@@ -1282,6 +1283,14 @@ inline void Compiler::gtSetStmtInfo(Statement* stmt)
 }
 
 /*****************************************************************************/
+
+inline void Compiler::fgUpdateConstTreeValueNumber(GenTree* tree)
+{
+    if (vnStore != nullptr)
+    {
+        fgValueNumberTreeConst(tree);
+    }
+}
 
 inline void GenTree::SetOper(genTreeOps oper, ValueNumberUpdate vnUpdate)
 {
@@ -3587,7 +3596,7 @@ inline bool Compiler::IsSharedStaticHelper(GenTree* tree)
         helper == CORINFO_HELP_GETSHARED_NONGCTHREADSTATIC_BASE_NOCTOR ||
         helper == CORINFO_HELP_GETSHARED_GCTHREADSTATIC_BASE_DYNAMICCLASS ||
         helper == CORINFO_HELP_GETSHARED_NONGCTHREADSTATIC_BASE_DYNAMICCLASS ||
-#ifdef FEATURE_READYTORUN_COMPILER
+#ifdef FEATURE_READYTORUN
         helper == CORINFO_HELP_READYTORUN_STATIC_BASE || helper == CORINFO_HELP_READYTORUN_GENERIC_STATIC_BASE ||
 #endif
         helper == CORINFO_HELP_CLASSINIT_SHARED_DYNAMICCLASS;

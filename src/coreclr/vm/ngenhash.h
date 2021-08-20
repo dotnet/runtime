@@ -135,10 +135,6 @@
 #ifndef __NGEN_HASH_INCLUDED
 #define __NGEN_HASH_INCLUDED
 
-#ifdef FEATURE_PREJIT
-#include "corcompile.h"
-#endif
-
 // The type used to contain an entry hash value. This is not customizable on a per-hash class basis: all
 // NgenHash derived hashes will share the same definition. Note that we only care about the data size, and the
 // fact that it is an unsigned integer value (so we can take a modulus for bucket computation and use bitwise
@@ -253,48 +249,6 @@ protected:
     DPTR(VALUE) BaseFindFirstEntryByHash(NgenHashValue iHash, LookupContext *pContext);
     DPTR(VALUE) BaseFindNextEntryByHash(LookupContext *pContext);
 
-#if defined(FEATURE_PREJIT) && !defined(DACCESS_COMPILE)
-    // Call during ngen to save hash table data structures into the ngen image. Calls derived-class
-    // implementations of ShouldSave to determine which entries should be serialized, IsHotEntry to hot/cold
-    // split the entries and SaveEntry to allow per-entry extension of the saving process.
-    void BaseSave(DataImage *pImage, CorProfileData *pProfileData);
-
-    // Call during ngen to register fixups for hash table data structure fields. Calls derived-class
-    // implementation of FixupEntry to allow per-entry extension of the fixup process.
-    void BaseFixup(DataImage *pImage);
-
-    // Opaque structure used to store state will BaseSave is re-arranging hash entries and also passed to
-    // sub-classes' SaveEntry method to facilitate mapping old entry addresses to their new locations.
-    class EntryMappingTable
-    {
-    public:
-        ~EntryMappingTable();
-
-        // Given an old entry address (pre-BaseSave) return the address of the entry relocated ready for
-        // saving to disk. Note that this address is the (ngen) runtime address, not the disk image address
-        // you can further obtain by calling DataImage::GetImagePointer().
-        VALUE *GetNewEntryAddress(VALUE *pOldEntry);
-
-    private:
-        friend class NgenHashTable<NGEN_HASH_ARGS>;
-
-        // Each Entry holds the mapping from one old-to-new hash entry.
-        struct Entry
-        {
-            VALUE          *m_pOldEntry;        // Pointer to the user part of the old entry
-            VALUE          *m_pNewEntry;        // Pointer to the user part of the new version
-            NgenHashValue   m_iHashValue;       // The hash code of the entry
-            DWORD           m_dwNewBucket;      // The new bucket index of the entry
-            DWORD           m_dwChainOrdinal;   // The 0-based position within the chain of that bucket
-            bool            m_fHot;             // If true this entry was identified as hot by the sub-class
-        };
-
-        Entry  *m_pEntries;                     // Pointer to array of Entries
-        DWORD   m_cEntries;                     // Count of valid entries in the above (may be smaller than
-                                                // allocated size)
-    };
-#endif // FEATURE_PREJIT && !DACCESS_COMPILE
-
 #ifdef DACCESS_COMPILE
     // Call during DAC enumeration of memory regions to save in mini-dump to enumerate all hash table data
     // structures. Calls derived-class implementation of EnumMemoryRegionsForEntry to allow additional
@@ -312,92 +266,6 @@ protected:
 
 private:
     // Internal implementation details. Nothing of interest to sub-classers for here on.
-
-#ifdef FEATURE_PREJIT
-    // This is the format of each hash entry that is persisted to disk (Hot or Cold entries).
-    struct PersistedEntry
-    {
-        VALUE           m_sValue;       // The sub-class supplied entry layout
-        NgenHashValue   m_iHashValue;   // The hash code associated with the entry (comes after m_sValue to
-                                        // minimize chance of pad bytes on a 64-bit system).
-    };
-    typedef DPTR(PersistedEntry) PTR_PersistedEntry;
-    typedef ArrayDPTR(PersistedEntry) APTR_PersistedEntry;
-
-    // This class encapsulates a bucket list identifying chains of related persisted entries. It's compressed
-    // rather than being a simple array, hence the encapsulation.
-    // A bucket list represents a non-zero sequence of buckets, each bucket identified by a zero-based index.
-    // Each bucket holds the index of the entry at the start of the bucket chain and a count of entries in
-    // that chain. (In persisted form hash entries are collated into hot and cold entries which are then
-    // allocated in contiguous blocks: this allows entries to be identified by an index into the entry block).
-    // Buckets with zero entries have an undefined start index (and a zero count obviously).
-    class PersistedBucketList
-    {
-#ifdef DACCESS_COMPILE
-        friend class NativeImageDumper;
-#endif
-
-    public:
-        // Allocate and initialize a new list with the given count of buckets and configured to hold no more
-        // than the given number of entries or have a bucket chain longer than the specified maximum. These
-        // two maximums allow the implementation to choose an optimal data format for the bucket list at
-        // runtime and are enforced by asserts in the debug build.
-        static PersistedBucketList *CreateList(DWORD cBuckets, DWORD cEntries, DWORD cMaxEntriesInBucket);
-
-        // For the given bucket set the index of the initial entry and the count of entries in the chain. If
-        // the count is zero the initial entry index is meaningless and ignored.
-        void SetBucket(DWORD dwIndex, DWORD dwFirstEntry, DWORD cEntries);
-
-        // Get the size in bytes of this entire bucket list (need to pass in the bucket count since we save
-        // space by not storing it here, but we do validate this in debug mode).
-        size_t GetSize(DWORD cBuckets);
-
-        // Get the initial entry index and entry count for the given bucket. Initial entry index value is
-        // undefined when count comes back as zero.
-        void GetBucket(DWORD dwIndex, DWORD *pdwFirstEntry, DWORD *pdwCount);
-
-        // Simplified initial entry index when you don't need the count (don't call this for buckets with zero
-        // entries).
-        DWORD GetInitialEntry(DWORD dwIndex);
-
-    private:
-        // Return the number of bits required to express a unique ID for the number of entities given.
-        static DWORD BitsRequired(DWORD cEntities);
-
-        // Return the minimum size (in bytes) of each bucket list entry that can express all buckets given the
-        // max count of entries and entries in a single bucket chain.
-        static DWORD GetBucketSize(DWORD cEntries, DWORD cMaxEntriesInBucket);
-
-        // Each bucket is represented by a variable sized bitfield (16, 32 or 64 bits) whose low-order bits
-        // contain the index of the first entry in the chain and higher-order (just above the initial entry
-        // bits) contain the count of entries in the chain.
-
-        DWORD           m_cbBucket;             // The size in bytes of each bucket descriptor (2, 4 or 8)
-        DWORD           m_dwInitialEntryMask;   // The bitmask used to extract the initial entry index from a bucket
-        DWORD           m_dwEntryCountShift;    // The bit shift used to extract the entry count from a bucket
-
-#ifdef _DEBUG
-        // In debug mode we remember more initial state to catch common errors.
-        DWORD           m_cBuckets;             // Number of buckets in the list
-        DWORD           m_cEntries;             // Total number of entries mapped by the list
-        DWORD           m_cMaxEntriesInBucket;  // Largest bucket chain in the list
-#endif
-    };
-    typedef DPTR(PersistedBucketList) PTR_PersistedBucketList;
-
-    // Pointers and counters for entries and buckets persisted to disk during ngen. Collected into a structure
-    // because this logic is replicated for Hot and Cold entries so we can factor some common code.
-    struct PersistedEntries
-    {
-        RelativePointer<APTR_PersistedEntry>     m_pEntries;  // Pointer to a contiguous block of PersistedEntry structures
-                                                              // (NULL if zero entries)
-        RelativePointer<PTR_PersistedBucketList> m_pBuckets;  // Pointer to abstracted bucket list mapping above entries
-                                                              // into a hash (NULL if zero buckets, which is iff zero
-                                                              // entries)
-        DWORD                   m_cEntries;  // Count of entries in the above block
-        DWORD                   m_cBuckets;  // Count of buckets in the above bucket list
-    };
-#endif // FEATURE_PREJIT
 
     // This is the format of a Warm entry, defined for our purposes to be a non-persisted entry (i.e. those
     // created at runtime or during the creation of the ngen image itself).
@@ -417,14 +285,6 @@ private:
         Warm,   // Volatile (in-memory)
         Hot     // Persisted, profiling suggests this data is probably read (or no profiling data was available)
     };
-
-#ifdef FEATURE_PREJIT
-    // Find the first persisted entry (hot or cold based on pEntries) that matches the given hash. Looks only
-    // in the persisted block given (i.e. searches only hot *or* cold entries). Returns NULL on failure.
-    // Otherwise returns pointer to the derived class portion of the entry and initializes the provided
-    // LookupContext to allow enumeration of any further matches.
-    DPTR(VALUE) FindPersistedEntryByHash(PersistedEntries *pEntries, NgenHashValue iHash, LookupContext *pContext);
-#endif // FEATURE_PREJIT
 
     // Find the first volatile (warm) entry that matches the given hash. Looks only at warm entries. Returns
     // NULL on failure. Otherwise returns pointer to the derived class portion of the entry and initializes
@@ -450,84 +310,6 @@ private:
         return ReadPointer(this, &NgenHashTable<NGEN_HASH_ARGS>::m_pWarmBuckets);
     }
 
-#ifdef FEATURE_PREJIT
-    APTR_PersistedEntry GetPersistedHotEntries()
-    {
-        SUPPORTS_DAC;
-
-        return ReadPointerMaybeNull(this,
-                                    &NgenHashTable<NGEN_HASH_ARGS>::m_sHotEntries,
-                                    &decltype(NgenHashTable<NGEN_HASH_ARGS>::m_sHotEntries)::m_pEntries);
-    }
-
-    PTR_PersistedBucketList GetPersistedHotBuckets()
-    {
-        SUPPORTS_DAC;
-
-        return ReadPointerMaybeNull(this,
-                                    &NgenHashTable<NGEN_HASH_ARGS>::m_sHotEntries,
-                                    &decltype(NgenHashTable<NGEN_HASH_ARGS>::m_sHotEntries)::m_pBuckets);
-    }
-
-    APTR_PersistedEntry GetPersistedColdEntries()
-    {
-        SUPPORTS_DAC;
-
-        return ReadPointerMaybeNull(this,
-                                    &NgenHashTable<NGEN_HASH_ARGS>::m_sColdEntries,
-                                    &decltype(NgenHashTable<NGEN_HASH_ARGS>::m_sColdEntries)::m_pEntries);
-    }
-
-    PTR_PersistedBucketList GetPersistedColdBuckets()
-    {
-        SUPPORTS_DAC;
-
-        return ReadPointerMaybeNull(this,
-                                    &NgenHashTable<NGEN_HASH_ARGS>::m_sColdEntries,
-                                    &decltype(NgenHashTable<NGEN_HASH_ARGS>::m_sColdEntries)::m_pBuckets);
-    }
-
-#ifdef DACCESS_COMPILE
-    APTR_PersistedEntry GetPersistedEntries(DPTR(PersistedEntries) pEntries)
-    {
-        SUPPORTS_DAC;
-
-        TADDR hotEntriesAddr = dac_cast<TADDR>(this) + offsetof(NgenHashTable<NGEN_HASH_ARGS>, m_sHotEntries);
-        TADDR coldEntriesAddr = dac_cast<TADDR>(this) + offsetof(NgenHashTable<NGEN_HASH_ARGS>, m_sColdEntries);
-
-        if (hotEntriesAddr == dac_cast<TADDR>(pEntries))
-        {
-            return GetPersistedHotEntries();
-        }
-        else
-        {
-            _ASSERTE(hotEntriesAddr == dac_cast<TADDR>(pEntries));
-
-            return GetPersistedColdEntries();
-        }
-    }
-
-    PTR_PersistedBucketList GetPersistedBuckets(DPTR(PersistedEntries) pEntries)
-    {
-        SUPPORTS_DAC;
-
-        TADDR hotEntriesAddr = dac_cast<TADDR>(this) + offsetof(NgenHashTable<NGEN_HASH_ARGS>, m_sHotEntries);
-        TADDR coldEntriesAddr = dac_cast<TADDR>(this) + offsetof(NgenHashTable<NGEN_HASH_ARGS>, m_sColdEntries);
-
-        if (hotEntriesAddr == dac_cast<TADDR>(pEntries))
-        {
-            return GetPersistedHotBuckets();
-        }
-        else
-        {
-            _ASSERTE(hotEntriesAddr == dac_cast<TADDR>(pEntries));
-
-            return GetPersistedColdBuckets();
-        }
-    }
-#endif // DACCESS_COMPILE
-#endif // FEATURE_PREJIT
-
     // Loader heap provided at construction time. May be NULL (in which case m_pModule must *not* be NULL).
     LoaderHeap             *m_pHeap;
 
@@ -535,14 +317,6 @@ private:
     RelativePointer<DPTR(PTR_VolatileEntry)> m_pWarmBuckets;  // Pointer to a simple bucket list (array of VolatileEntry pointers)
     DWORD                                    m_cWarmBuckets;  // Count of buckets in the above array (always non-zero)
     DWORD                                    m_cWarmEntries;  // Count of elements in the warm section of the hash
-
-#ifdef FEATURE_PREJIT
-    PersistedEntries        m_sHotEntries;      // Hot persisted hash entries (if any)
-    PersistedEntries        m_sColdEntries;     // Cold persisted hash entries (if any)
-
-    DWORD                   m_cInitialBuckets;  // Initial number of warm buckets we started with. Only used
-                                                // to reset warm bucket count in ngen-persisted table.
-#endif // FEATURE_PREJIT
 };
 
 // Abstraction around cross-hash entry references (e.g. EEClassHashTable, where entries for nested types point
@@ -559,11 +333,6 @@ public:
 #ifndef DACCESS_COMPILE
     // Set the reference to point to the given entry.
     void Set(VALUE *pEntry);
-
-#ifdef FEATURE_PREJIT
-    // Call this during the ngen Fixup phase to adjust the relative pointer to account for ngen image layout.
-    void Fixup(DataImage *pImage, NgenHashTable<NGEN_HASH_ARGS> *pTable);
-#endif // FEATURE_PREJIT
 
     NgenHashEntryRef<NGEN_HASH_ARGS>& operator = (const NgenHashEntryRef<NGEN_HASH_ARGS> &src)
     {

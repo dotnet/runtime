@@ -194,7 +194,7 @@ namespace System.Xml.Serialization
             string typeName;
             string typeNs = XmlSchema.Namespace;
 
-            switch (type.GetTypeCode())
+            switch (Type.GetTypeCode(type))
             {
                 case TypeCode.String: typeName = "string"; break;
                 case TypeCode.Int32: typeName = "int"; break;
@@ -254,7 +254,7 @@ namespace System.Xml.Serialization
             Type t = o.GetType();
             bool wroteStartElement = false;
 
-            switch (t.GetTypeCode())
+            switch (Type.GetTypeCode(t))
             {
                 case TypeCode.String:
                     value = (string)o;
@@ -1312,7 +1312,7 @@ namespace System.Xml.Serialization
                 return;
             }
             Type t = o.GetType();
-            if (t.GetTypeCode() == TypeCode.Object && !(o is Guid) && (t != typeof(XmlQualifiedName)) && !(o is XmlNode[]) && (t != typeof(byte[])))
+            if (Type.GetTypeCode(t) == TypeCode.Object && !(o is Guid) && (t != typeof(XmlQualifiedName)) && !(o is XmlNode[]) && (t != typeof(byte[])))
             {
                 if ((suppressReference || _soap12) && !IsIdDefined(o))
                 {

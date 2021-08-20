@@ -5196,6 +5196,10 @@ public:
     // Assign the proper value number to the tree
     void fgValueNumberTreeConst(GenTree* tree);
 
+    // If the VN store has been initialized, reassign the
+    // proper value number to the constant tree.
+    void fgUpdateConstTreeValueNumber(GenTree* tree);
+
     // Assumes that all inputs to "tree" have had value numbers assigned; assigns a VN to tree.
     // (With some exceptions: the VN of the lhs of an assignment is assigned as part of the
     // assignment.)
@@ -6087,6 +6091,7 @@ private:
     GenTree* fgMorphCopyBlock(GenTree* tree);
     GenTree* fgMorphForRegisterFP(GenTree* tree);
     GenTree* fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac = nullptr);
+    GenTree* fgOptimizeEqualityComparisonWithConst(GenTreeOp* cmp);
     GenTree* fgMorphRetInd(GenTreeUnOp* tree);
     GenTree* fgMorphModToSubMulDiv(GenTreeOp* tree);
     GenTree* fgMorphSmpOpOptional(GenTreeOp* tree);
@@ -9301,7 +9306,7 @@ public:
             return !!(compFlags & optFlag);
         }
 
-#ifdef FEATURE_READYTORUN_COMPILER
+#ifdef FEATURE_READYTORUN
         bool IsReadyToRun()
         {
             return jitFlags->IsSet(JitFlags::JIT_FLAG_READYTORUN);

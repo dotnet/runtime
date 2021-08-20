@@ -37,10 +37,6 @@
 #include "olevariant.h"
 #endif // FEATURE_COMINTEROP
 
-#ifdef FEATURE_PREJIT
-#include "compile.h"
-#endif
-
 #include "stublink.inl"
 
 extern "C" DWORD STDCALL GetSpecificCpuTypeAsm(void);
@@ -1297,77 +1293,6 @@ BOOL DoesSlotCallPrestub(PCODE pCode)
 
     return pCode == GetPreStubEntryPoint();
 }
-
-#ifdef FEATURE_PREJIT
-//==========================================================================================
-// In NGen image, virtual slots inherited from cross-module dependencies point to jump thunks.
-// These jump thunk initially point to VirtualMethodFixupStub which transfers control here.
-// This method 'VirtualMethodFixupWorker' will patch the jump thunk to point to the actual
-// inherited method body after we have execute the precode and a stable entry point.
-//
-EXTERN_C PVOID STDCALL VirtualMethodFixupWorker(Object * pThisPtr,  CORCOMPILE_VIRTUAL_IMPORT_THUNK *pThunk)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_COOPERATIVE;
-        ENTRY_POINT;
-    }
-    CONTRACTL_END;
-
-    _ASSERTE(pThisPtr != NULL);
-    VALIDATEOBJECT(pThisPtr);
-
-    MethodTable * pMT = pThisPtr->GetMethodTable();
-
-    WORD slotNumber = pThunk->slotNum;
-    _ASSERTE(slotNumber != (WORD)-1);
-
-    PCODE pCode = pMT->GetRestoredSlot(slotNumber);
-
-    if (!DoesSlotCallPrestub(pCode))
-    {
-        MethodDesc *pMD = MethodTable::GetMethodDescForSlotAddress(pCode);
-        if (pMD->IsVersionableWithVtableSlotBackpatch())
-        {
-            // The entry point for this method needs to be versionable, so use a FuncPtrStub similarly to what is done in
-            // MethodDesc::GetMultiCallableAddrOfCode()
-            GCX_COOP();
-            pCode = pMD->GetLoaderAllocator()->GetFuncPtrStubs()->GetFuncPtrStub(pMD);
-        }
-        else
-        {
-            // Skip fixup precode jump for better perf
-            PCODE pDirectTarget = Precode::TryToSkipFixupPrecode(pCode);
-            if (pDirectTarget != NULL)
-                pCode = pDirectTarget;
-        }
-
-        INT64 oldValue = *(INT64*)pThunk;
-        BYTE* pOldValue = (BYTE*)&oldValue;
-
-        if (pOldValue[0] == X86_INSTR_CALL_REL32)
-        {
-            INT64 newValue = oldValue;
-            BYTE* pNewValue = (BYTE*)&newValue;
-            pNewValue[0] = X86_INSTR_JMP_REL32;
-
-            INT_PTR pcRelOffset = (BYTE*)pCode - &pThunk->callJmp[5];
-            *(INT32 *)(&pNewValue[1]) = (INT32) pcRelOffset;
-
-            _ASSERTE(IS_ALIGNED(pThunk, sizeof(INT64)));
-
-            ExecutableWriterHolder<INT64> thunkWriterHolder((INT64*)pThunk, sizeof(INT64));
-            FastInterlockCompareExchangeLong(thunkWriterHolder.GetRW(), newValue, oldValue);
-
-            FlushInstructionCache(GetCurrentProcess(), pThunk, 8);
-        }
-    }
-
-    return PVOID(pCode);
-}
-#endif // FEATURE_PREJIT
 
 #ifdef FEATURE_READYTORUN
 

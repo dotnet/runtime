@@ -21,11 +21,6 @@
 
 #include "hotdataformat.h"
 
-#ifdef FEATURE_PREJIT
-// Cannot be included without FEATURE_PREJIT:
-#include <corcompile.h>
-#endif //FEATURE_PREJIT
-
 namespace MetaData
 {
 
@@ -105,116 +100,6 @@ HotHeapWriter::SaveToStream(
     _ASSERTE(pStream != NULL);
     _ASSERTE(pProfileData != NULL);
     _ASSERTE(pnSavedSize != NULL);
-
-#ifdef FEATURE_PREJIT
-    HRESULT hr = S_OK;
-    UINT32 nOffset = 0;
-    UINT32 nValueHeapStart_PositiveOffset;
-    UINT32 nValueOffsetTableStart_PositiveOffset;
-    UINT32 nIndexTableStart_PositiveOffset;
-
-    // data
-    //
-
-    // number of hot tokens
-    UINT32 nHotItemsCount = pProfileData->GetHotTokens(
-        GetTableIndex(),
-        1 << ProfilingFlags_MetaData,
-        1 << ProfilingFlags_MetaData,
-        NULL,
-        0);
-    CONSISTENCY_CHECK(nHotItemsCount != 0);
-
-    NewArrayHolder<UINT32> hotItemArr = new (nothrow) UINT32[nHotItemsCount];
-    IfNullRet(hotItemArr);
-
-    // get hot tokens
-    static_assert_no_msg(sizeof(UINT32) == sizeof(mdToken));
-    pProfileData->GetHotTokens(
-        GetTableIndex(),
-        1 << ProfilingFlags_MetaData,
-        1 << ProfilingFlags_MetaData,
-        reinterpret_cast<mdToken *>(&hotItemArr[0]),
-        nHotItemsCount);
-
-    // convert tokens to rids
-    for (UINT32 i = 0; i < nHotItemsCount; i++)
-    {
-        hotItemArr[i] = RidFromToken(hotItemArr[i]);
-    }
-
-    NewArrayHolder<RidOffsetPair> offsetMapping = new (nothrow) RidOffsetPair[nHotItemsCount];
-    IfNullRet(offsetMapping);
-
-    // write data
-    nValueHeapStart_PositiveOffset = nOffset;
-
-    // note that we write hot items in the order they appear in pProfileData->GetHotTokens
-    // this is so that we preserve the ordering optimizations done by IbcMerge
-    for (UINT32 i = 0; i < nHotItemsCount; i++)
-    {
-        DataBlob data;
-        IfFailRet(GetData(
-            hotItemArr[i],
-            &data));
-
-        // keep track of the offset at which each hot item is written
-        offsetMapping[i].rid = hotItemArr[i];
-        offsetMapping[i].offset = nOffset;
-
-        IfFailRet(StreamUtil::WriteToStream(
-            pStream,
-            data.GetDataPointer(),
-            data.GetSize(),
-            &nOffset));
-    }
-
-    IfFailRet(StreamUtil::AlignDWORD(pStream, &nOffset));
-
-    // sort by rid so that a hot rid can be looked up by binary search
-    qsort(offsetMapping, nHotItemsCount, sizeof(RidOffsetPair), RidOffsetPair::Compare);
-
-    // initialize table of offsets to data
-    NewArrayHolder<UINT32> dataIndices = new (nothrow) UINT32[nHotItemsCount];
-    IfNullRet(dataIndices);
-
-    // fill in the hotItemArr (now sorted by rid) and dataIndices array with each offset
-    for (UINT32 i = 0; i < nHotItemsCount; i++)
-    {
-        hotItemArr[i] = offsetMapping[i].rid;
-        dataIndices[i] = offsetMapping[i].offset;
-    }
-
-    // table of offsets to data
-    //
-
-    nValueOffsetTableStart_PositiveOffset = nOffset;
-    IfFailRet(StreamUtil::WriteToStream(pStream, &dataIndices[0], sizeof(UINT32) * nHotItemsCount, &nOffset));
-
-    // rid table (sorted)
-    //
-
-    nIndexTableStart_PositiveOffset = nOffset;
-
-    IfFailRet(StreamUtil::WriteToStream(pStream, &hotItemArr[0], nHotItemsCount * sizeof(UINT32), &nOffset));
-    IfFailRet(StreamUtil::AlignDWORD(pStream, &nOffset));
-
-    {
-        // hot pool header
-        struct HotHeapHeader header;
-
-        // fix offsets
-        header.m_nIndexTableStart_NegativeOffset = nOffset - nIndexTableStart_PositiveOffset;
-        header.m_nValueOffsetTableStart_NegativeOffset = nOffset - nValueOffsetTableStart_PositiveOffset;
-        header.m_nValueHeapStart_NegativeOffset = nOffset - nValueHeapStart_PositiveOffset;
-
-        // write header
-        IfFailRet(StreamUtil::WriteToStream(pStream, &header, sizeof(header), &nOffset));
-    }
-
-    *pnSavedSize = nOffset;
-
-#endif //FEATURE_PREJIT
 
     return S_OK;
 } // HotHeapWriter::PersistHotToStream

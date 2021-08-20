@@ -537,7 +537,7 @@
                     </valueMap>
                     <valueMap name="KnownPathSourceMap">
                         <map value="0x0" message="$(string.RuntimePublisher.KnownPathSource.ApplicationAssembliesMessage)"/>
-                        <map value="0x1" message="$(string.RuntimePublisher.KnownPathSource.AppNativeImagePathsMessage)"/>
+                        <map value="0x1" message="$(string.RuntimePublisher.KnownPathSource.UnusedMessage)"/>
                         <map value="0x2" message="$(string.RuntimePublisher.KnownPathSource.AppPathsMessage)"/>
                         <map value="0x3" message="$(string.RuntimePublisher.KnownPathSource.PlatformResourceRootsMessage)"/>
                         <map value="0x4" message="$(string.RuntimePublisher.KnownPathSource.SatelliteSubdirectoryMessage)"/>
@@ -8730,7 +8730,7 @@
                 <string id="RuntimePublisher.TieredCompilationSettingsFlags.QuickJitMapMessage" value="QuickJit" />
                 <string id="RuntimePublisher.TieredCompilationSettingsFlags.QuickJitForLoopsMapMessage" value="QuickJitForLoops" />
                 <string id="RuntimePublisher.KnownPathSource.ApplicationAssembliesMessage" value="ApplicationAssemblies" />
-                <string id="RuntimePublisher.KnownPathSource.AppNativeImagePathsMessage" value="AppNativeImagePaths" />
+                <string id="RuntimePublisher.KnownPathSource.UnusedMessage" value="Unused" />
                 <string id="RuntimePublisher.KnownPathSource.AppPathsMessage" value="AppPaths" />
                 <string id="RuntimePublisher.KnownPathSource.PlatformResourceRootsMessage" value="PlatformResourceRoots" />
                 <string id="RuntimePublisher.KnownPathSource.SatelliteSubdirectoryMessage" value="SatelliteSubdirectory" />

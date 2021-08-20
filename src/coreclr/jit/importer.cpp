@@ -2084,7 +2084,7 @@ GenTree* Compiler::impLookupToTree(CORINFO_RESOLVED_TOKEN* pResolvedToken,
     return impRuntimeLookupToTree(pResolvedToken, pLookup, compileTimeHandle);
 }
 
-#ifdef FEATURE_READYTORUN_COMPILER
+#ifdef FEATURE_READYTORUN
 GenTree* Compiler::impReadyToRunLookupToTree(CORINFO_CONST_LOOKUP* pLookup,
                                              GenTreeFlags          handleFlags,
                                              void*                 compileTimeHandle)
@@ -2146,7 +2146,7 @@ GenTree* Compiler::impMethodPointer(CORINFO_RESOLVED_TOKEN* pResolvedToken, CORI
         case CORINFO_CALL:
             op1 = new (this, GT_FTN_ADDR) GenTreeFptrVal(TYP_I_IMPL, pCallInfo->hMethod);
 
-#ifdef FEATURE_READYTORUN_COMPILER
+#ifdef FEATURE_READYTORUN
             if (opts.IsReadyToRun())
             {
                 op1->AsFptrVal()->gtEntryPoint = pCallInfo->codePointerLookup.constLookup;
@@ -2239,7 +2239,7 @@ GenTree* Compiler::impRuntimeLookupToTree(CORINFO_RESOLVED_TOKEN* pResolvedToken
     // It's available only via the run-time helper function
     if (pRuntimeLookup->indirections == CORINFO_USEHELPER)
     {
-#ifdef FEATURE_READYTORUN_COMPILER
+#ifdef FEATURE_READYTORUN
         if (opts.IsReadyToRun())
         {
             return impReadyToRunHelperToTree(pResolvedToken, CORINFO_HELP_READYTORUN_GENERIC_HANDLE, TYP_I_IMPL,
@@ -3334,7 +3334,7 @@ GenTree* Compiler::impInitializeArrayIntrinsic(CORINFO_SIG_INFO* sig)
         newArrayCall->AsCall()->gtCallMethHnd != eeFindHelper(CORINFO_HELP_NEWARR_1_OBJ) &&
         newArrayCall->AsCall()->gtCallMethHnd != eeFindHelper(CORINFO_HELP_NEWARR_1_VC) &&
         newArrayCall->AsCall()->gtCallMethHnd != eeFindHelper(CORINFO_HELP_NEWARR_1_ALIGN8)
-#ifdef FEATURE_READYTORUN_COMPILER
+#ifdef FEATURE_READYTORUN
         && newArrayCall->AsCall()->gtCallMethHnd != eeFindHelper(CORINFO_HELP_READYTORUN_NEWARR_1)
 #endif
             )
@@ -3510,7 +3510,7 @@ GenTree* Compiler::impInitializeArrayIntrinsic(CORINFO_SIG_INFO* sig)
         GenTree* arrayLengthNode;
 
         GenTreeCall::Use* args = newArrayCall->AsCall()->gtCallArgs;
-#ifdef FEATURE_READYTORUN_COMPILER
+#ifdef FEATURE_READYTORUN
         if (newArrayCall->AsCall()->gtCallMethHnd == eeFindHelper(CORINFO_HELP_READYTORUN_NEWARR_1))
         {
             // Array length is 1st argument for readytorun helper
@@ -6379,7 +6379,7 @@ GenTree* Compiler::impImportLdvirtftn(GenTree*                thisPtr,
                                    gtNewCallArgs(thisPtr, runtimeMethodHandle));
     }
 
-#ifdef FEATURE_READYTORUN_COMPILER
+#ifdef FEATURE_READYTORUN
     if (opts.IsReadyToRun())
     {
         if (!pCallInfo->exactContextNeedsRuntimeLookup)
@@ -7733,7 +7733,7 @@ GenTree* Compiler::impImportStaticFieldAccess(CORINFO_RESOLVED_TOKEN* pResolvedT
 
         case CORINFO_FIELD_STATIC_SHARED_STATIC_HELPER:
         {
-#ifdef FEATURE_READYTORUN_COMPILER
+#ifdef FEATURE_READYTORUN
             if (opts.IsReadyToRun())
             {
                 GenTreeFlags callFlags = GTF_EMPTY;
@@ -7764,7 +7764,7 @@ GenTree* Compiler::impImportStaticFieldAccess(CORINFO_RESOLVED_TOKEN* pResolvedT
 
         case CORINFO_FIELD_STATIC_READYTORUN_HELPER:
         {
-#ifdef FEATURE_READYTORUN_COMPILER
+#ifdef FEATURE_READYTORUN
             assert(opts.IsReadyToRun());
             assert(!compIsForInlining());
             CORINFO_LOOKUP_KIND kind;
@@ -7790,7 +7790,7 @@ GenTree* Compiler::impImportStaticFieldAccess(CORINFO_RESOLVED_TOKEN* pResolvedT
                                 new (this, GT_CNS_INT) GenTreeIntCon(TYP_I_IMPL, pFieldInfo->offset, fs));
 #else
             unreached();
-#endif // FEATURE_READYTORUN_COMPILER
+#endif // FEATURE_READYTORUN
         }
         break;
 
@@ -8378,7 +8378,7 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
 
             if (call != nullptr)
             {
-#ifdef FEATURE_READYTORUN_COMPILER
+#ifdef FEATURE_READYTORUN
                 if (call->OperGet() == GT_INTRINSIC)
                 {
                     if (opts.IsReadyToRun())
@@ -8494,7 +8494,7 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
                     }
                 }
 
-#ifdef FEATURE_READYTORUN_COMPILER
+#ifdef FEATURE_READYTORUN
                 if (opts.IsReadyToRun())
                 {
                     // Null check is sometimes needed for ready to run to handle
@@ -8572,7 +8572,7 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
                     // CoreRT generic virtual method: need to handle potential fat function pointers
                     addFatPointerCandidate(call->AsCall());
                 }
-#ifdef FEATURE_READYTORUN_COMPILER
+#ifdef FEATURE_READYTORUN
                 if (opts.IsReadyToRun())
                 {
                     // Null check is needed for ready to run to handle
@@ -8601,7 +8601,7 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
                     call->gtFlags |= GTF_CALL_NULLCHECK;
                 }
 
-#ifdef FEATURE_READYTORUN_COMPILER
+#ifdef FEATURE_READYTORUN
                 if (opts.IsReadyToRun())
                 {
                     call->AsCall()->setEntryPoint(callInfo->codePointerLookup.constLookup);
@@ -8931,7 +8931,7 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
 
             if (!exactContextNeedsRuntimeLookup)
             {
-#ifdef FEATURE_READYTORUN_COMPILER
+#ifdef FEATURE_READYTORUN
                 if (opts.IsReadyToRun())
                 {
                     instParam =
@@ -8981,7 +8981,7 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
             }
             else if (!exactContextNeedsRuntimeLookup)
             {
-#ifdef FEATURE_READYTORUN_COMPILER
+#ifdef FEATURE_READYTORUN
                 if (opts.IsReadyToRun())
                 {
                     instParam =
@@ -11351,7 +11351,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 
     while (codeAddr < codeEndp)
     {
-#ifdef FEATURE_READYTORUN_COMPILER
+#ifdef FEATURE_READYTORUN
         bool usingReadyToRunHelper = false;
 #endif
         CORINFO_RESOLVED_TOKEN resolvedToken;
@@ -14903,7 +14903,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 switch (fieldInfo.fieldAccessor)
                 {
                     case CORINFO_FIELD_INSTANCE:
-#ifdef FEATURE_READYTORUN_COMPILER
+#ifdef FEATURE_READYTORUN
                     case CORINFO_FIELD_INSTANCE_WITH_BASE:
 #endif
                     {
@@ -14921,7 +14921,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                         /* Create the data member node */
                         op1 = gtNewFieldRef(lclTyp, resolvedToken.hField, obj, fieldInfo.offset);
 
-#ifdef FEATURE_READYTORUN_COMPILER
+#ifdef FEATURE_READYTORUN
                         if (fieldInfo.fieldAccessor == CORINFO_FIELD_INSTANCE_WITH_BASE)
                         {
                             op1->AsField()->gtFieldLookup = fieldInfo.fieldLookup;
@@ -15233,7 +15233,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 switch (fieldInfo.fieldAccessor)
                 {
                     case CORINFO_FIELD_INSTANCE:
-#ifdef FEATURE_READYTORUN_COMPILER
+#ifdef FEATURE_READYTORUN
                     case CORINFO_FIELD_INSTANCE_WITH_BASE:
 #endif
                     {
@@ -15247,7 +15247,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                             op1->AsField()->gtFldMayOverlap = true;
                         }
 
-#ifdef FEATURE_READYTORUN_COMPILER
+#ifdef FEATURE_READYTORUN
                         if (fieldInfo.fieldAccessor == CORINFO_FIELD_INSTANCE_WITH_BASE)
                         {
                             op1->AsField()->gtFieldLookup = fieldInfo.fieldLookup;
@@ -15516,7 +15516,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 }
 #endif // TARGET_64BIT
 
-#ifdef FEATURE_READYTORUN_COMPILER
+#ifdef FEATURE_READYTORUN
                 if (opts.IsReadyToRun())
                 {
                     op1 = impReadyToRunHelperToTree(&resolvedToken, CORINFO_HELP_READYTORUN_NEWARR_1, TYP_REF,
@@ -15720,7 +15720,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 else
                 {
 
-#ifdef FEATURE_READYTORUN_COMPILER
+#ifdef FEATURE_READYTORUN
                     if (opts.IsReadyToRun())
                     {
                         GenTreeCall* opLookup =
@@ -16315,7 +16315,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 else
                 {
 
-#ifdef FEATURE_READYTORUN_COMPILER
+#ifdef FEATURE_READYTORUN
                     if (opts.IsReadyToRun())
                     {
                         GenTreeCall* opLookup =
@@ -21651,7 +21651,7 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
         *pExactContextHandle = MAKE_CLASSCONTEXT(derivedClass);
     }
 
-#ifdef FEATURE_READYTORUN_COMPILER
+#ifdef FEATURE_READYTORUN
     if (opts.IsReadyToRun())
     {
         // For R2R, getCallInfo triggers bookkeeping on the zap
@@ -21666,7 +21666,7 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
         call->gtCallMoreFlags &= ~GTF_CALL_M_R2R_REL_INDIRECT;
         call->setEntryPoint(derivedCallInfo.codePointerLookup.constLookup);
     }
-#endif // FEATURE_READYTORUN_COMPILER
+#endif // FEATURE_READYTORUN
 }
 
 //------------------------------------------------------------------------

@@ -50,7 +50,8 @@ namespace System.Text.Json
                 throw new ArgumentNullException(nameof(utf8Json));
             }
 
-            return ReadAllUsingOptionsAsync<TValue>(utf8Json, typeof(TValue), options, cancellationToken);
+            JsonTypeInfo jsonTypeInfo = GetTypeInfo(options, typeof(TValue));
+            return ReadAllAsync<TValue>(utf8Json, jsonTypeInfo, cancellationToken);
         }
 
         /// <summary>
@@ -125,7 +126,8 @@ namespace System.Text.Json
                 throw new ArgumentNullException(nameof(returnType));
             }
 
-            return ReadAllUsingOptionsAsync<object>(utf8Json, returnType, options, cancellationToken);
+            JsonTypeInfo jsonTypeInfo = GetTypeInfo(options, returnType);
+            return ReadAllAsync<object?>(utf8Json, jsonTypeInfo, cancellationToken);
         }
 
         /// <summary>
@@ -365,7 +367,10 @@ namespace System.Text.Json
             }
 
             options ??= JsonSerializerOptions.s_defaultOptions;
-            options.RootBuiltInConvertersAndTypeInfoCreator();
+            if (!options.IsInitializedForReflectionSerializer)
+            {
+                options.InitializeForReflectionSerializer();
+            }
 
             return CreateAsyncEnumerableDeserializer(utf8Json, options, cancellationToken);
 
@@ -617,23 +622,12 @@ namespace System.Text.Json
         }
 
         [RequiresUnreferencedCode(SerializationUnreferencedCodeMessage)]
-        private static ValueTask<TValue?> ReadAllUsingOptionsAsync<TValue>(
-            Stream utf8Json,
-            Type returnType,
-            JsonSerializerOptions? options,
-            CancellationToken cancellationToken)
-        {
-            JsonTypeInfo jsonTypeInfo = GetTypeInfo(returnType, options);
-            return ReadAllAsync<TValue>(utf8Json, jsonTypeInfo, cancellationToken);
-        }
-
-        [RequiresUnreferencedCode(SerializationUnreferencedCodeMessage)]
         private static TValue? ReadAllUsingOptions<TValue>(
             Stream utf8Json,
             Type returnType,
             JsonSerializerOptions? options)
         {
-            JsonTypeInfo jsonTypeInfo = GetTypeInfo(returnType, options);
+            JsonTypeInfo jsonTypeInfo = GetTypeInfo(options, returnType);
             return ReadAll<TValue>(utf8Json, jsonTypeInfo);
         }
 

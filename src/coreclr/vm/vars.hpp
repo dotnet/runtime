@@ -157,6 +157,8 @@ class OBJECTREF {
     };
 
     public:
+        enum class tagVolatileLoadWithoutBarrier { tag };
+
         //-------------------------------------------------------------
         // Default constructor, for non-initializing declarations:
         //
@@ -168,6 +170,12 @@ class OBJECTREF {
         // Copy constructor, for passing OBJECTREF's as function arguments.
         //-------------------------------------------------------------
         OBJECTREF(const OBJECTREF & objref);
+
+        //-------------------------------------------------------------
+        // Copy constructor, for passing OBJECTREF's as function arguments
+        // using a volatile without barrier load
+        //-------------------------------------------------------------
+        OBJECTREF(const OBJECTREF * pObjref, tagVolatileLoadWithoutBarrier tag);
 
         //-------------------------------------------------------------
         // To allow NULL to be used as an OBJECTREF.
@@ -302,6 +310,7 @@ class REF : public OBJECTREF
 #define OBJECTREFToObject(objref)  ((objref).operator-> ())
 #define ObjectToSTRINGREF(obj)     (STRINGREF(obj))
 #define STRINGREFToObject(objref)  (*( (StringObject**) &(objref) ))
+#define VolatileLoadWithoutBarrierOBJECTREF(pObj) (OBJECTREF(pObj, OBJECTREF::tagVolatileLoadWithoutBarrier::tag))
 
 // the while (0) syntax below is to force a trailing semicolon on users of the macro
 #define VALIDATEOBJECT(obj) do {if ((obj) != NULL) (obj)->Validate();} while (0)
@@ -316,6 +325,7 @@ class REF : public OBJECTREF
 #define OBJECTREFToObject(objref) ((PTR_Object) (objref))
 #define ObjectToSTRINGREF(obj)    ((PTR_StringObject) (obj))
 #define STRINGREFToObject(objref) ((PTR_StringObject) (objref))
+#define VolatileLoadWithoutBarrierOBJECTREF(pObj) VolatileLoadWithoutBarrier(pObj)
 
 #endif // _DEBUG_IMPL
 
@@ -702,34 +712,18 @@ PTR_GSCookie GetProcessGSCookiePtr() { return  PTR_GSCookie(&s_gsCookie); }
 inline
 GSCookie GetProcessGSCookie() { return *(RAW_KEYWORD(volatile) GSCookie *)(&s_gsCookie); }
 
-class CEECompileInfo;
-extern CEECompileInfo *g_pCEECompileInfo;
-
-#ifdef FEATURE_READYTORUN_COMPILER
-extern bool g_fReadyToRunCompilation;
-extern bool g_fLargeVersionBubble;
-#endif
-
 // Returns true if this is NGen compilation process.
 // This is a superset of CompilationDomain::IsCompilationDomain() as there is more
 // than one AppDomain in ngen (the DefaultDomain)
 inline BOOL IsCompilationProcess()
 {
-#ifdef CROSSGEN_COMPILE
-    return TRUE;
-#else
     return FALSE;
-#endif
 }
 
 // Flag for cross-platform ngen: Removes all execution of managed or third-party code in the ngen compilation process.
 inline BOOL NingenEnabled()
 {
-#ifdef CROSSGEN_COMPILE
-    return TRUE;
-#else
     return FALSE;
-#endif
 }
 
 // Passed to JitManager APIs to determine whether to avoid calling into the host.

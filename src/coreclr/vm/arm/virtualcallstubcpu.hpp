@@ -8,9 +8,6 @@
 
 #ifdef DECLARE_DATA
 #include "asmconstants.h"
-#ifdef FEATURE_PREJIT
-#include "compile.h"
-#endif
 #endif
 
 //#define STUB_LOGGING

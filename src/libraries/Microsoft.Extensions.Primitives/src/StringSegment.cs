@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 
 namespace Microsoft.Extensions.Primitives
@@ -76,11 +77,12 @@ namespace Microsoft.Extensions.Primitives
         /// <summary>
         /// Gets the value of this segment as a <see cref="string"/>.
         /// </summary>
-        public string Value => HasValue ? Buffer.Substring(Offset, Length) : null;
+        public string? Value => HasValue ? Buffer.Substring(Offset, Length) : null;
 
         /// <summary>
         /// Gets whether this <see cref="StringSegment"/> contains a valid value.
         /// </summary>
+        [MemberNotNullWhen(true, nameof(Buffer))]
         public bool HasValue => Buffer != null;
 
         /// <summary>
@@ -188,7 +190,7 @@ namespace Microsoft.Extensions.Primitives
         /// </summary>
         /// <param name="obj">An object to compare with this object.</param>
         /// <returns><see langword="true" /> if the current object is equal to the other parameter; otherwise, <see langword="false" />.</returns>
-        public override bool Equals(object obj)
+        public override bool Equals([NotNullWhen(true)] object? obj)
         {
             return obj is StringSegment segment && Equals(segment);
         }
@@ -239,7 +241,7 @@ namespace Microsoft.Extensions.Primitives
         /// </summary>
         /// <param name="text">The <see cref="string"/> to compare with the current <see cref="StringSegment"/>.</param>
         /// <returns><see langword="true" /> if the specified <see cref="string"/> is equal to the current <see cref="StringSegment"/>; otherwise, <see langword="false" />.</returns>
-        public bool Equals(string text)
+        public bool Equals([NotNullWhen(true)] string? text)
         {
             return Equals(text, StringComparison.Ordinal);
         }
@@ -250,15 +252,12 @@ namespace Microsoft.Extensions.Primitives
         /// <param name="text">The <see cref="string"/> to compare with the current <see cref="StringSegment"/>.</param>
         /// <param name="comparisonType">One of the enumeration values that specifies the rules to use in the comparison.</param>
         /// <returns><see langword="true" /> if the specified <see cref="string"/> is equal to the current <see cref="StringSegment"/>; otherwise, <see langword="false" />.</returns>
-        /// <exception cref="ArgumentNullException">
-        /// <paramref name="text"/> is <see langword="null" />.
-        /// </exception>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public bool Equals(string text, StringComparison comparisonType)
+        public bool Equals([NotNullWhen(true)] string? text, StringComparison comparisonType)
         {
             if (text == null)
             {
-                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.text);
+                return false;
             }
 
             if (!HasValue)
@@ -681,7 +680,8 @@ namespace Microsoft.Extensions.Primitives
 
         // Methods that do no return (i.e. throw) are not inlined
         // https://github.com/dotnet/coreclr/pull/6103
-        private static void ThrowInvalidArguments(string buffer, int offset, int length)
+        [DoesNotReturn]
+        private static void ThrowInvalidArguments(string? buffer, int offset, int length)
         {
             // Only have single throw in method so is marked as "does not return" and isn't inlined to caller
             throw GetInvalidArgumentsException();
@@ -707,6 +707,7 @@ namespace Microsoft.Extensions.Primitives
             }
         }
 
+        [DoesNotReturn]
         private void ThrowInvalidArguments(int offset, int length, ExceptionArgument offsetOrStart)
         {
             throw GetInvalidArgumentsException(HasValue);
@@ -733,7 +734,7 @@ namespace Microsoft.Extensions.Primitives
         }
 
         /// <inheritdoc />
-        bool IEquatable<string>.Equals(string other)
+        bool IEquatable<string>.Equals(string? other)
         {
             // Explicit interface implementation for IEquatable<string> because
             // the interface's Equals method allows null strings, which we return

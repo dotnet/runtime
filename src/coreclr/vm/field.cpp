@@ -322,7 +322,6 @@ PTR_VOID FieldDesc::GetStaticAddressHandle(PTR_VOID base)
 }
 
 
-#ifndef CROSSGEN_COMPILE
 
 // These routines encapsulate the operation of getting and setting
 // fields.
@@ -698,79 +697,6 @@ VOID    FieldDesc::SetValue64(OBJECTREF o, __int64 value)
 }
 #endif // #ifndef DACCESS_COMPILE
 
-#endif // !CROSSGEN_COMPILE
-
-
-#ifndef DACCESS_COMPILE
-
-#ifdef FEATURE_NATIVE_IMAGE_GENERATION
-void FieldDesc::SaveContents(DataImage *image)
-{
-    STANDARD_VM_CONTRACT;
-
-#ifdef _DEBUG
-    if (m_debugName && !image->IsStored((void*) m_debugName))
-        image->StoreStructure((void *) m_debugName,
-                                        (ULONG)(strlen(m_debugName) + 1),
-                                        DataImage::ITEM_DEBUG,
-                                        1);
-#endif
-
-    //
-    // If we are compiling an IL only image, and our RVA fits
-    // in the designated range, copy the RVA data over to the prejit
-    // image.
-    //
-
-    if (IsRVA())
-    {
-        //
-        // Move the RVA data into the prejit image.
-        //
-
-        UINT size = LoadSize();
-
-        //
-        // Compute an alignment for the data based on the alignment
-        // of the RVA.  We'll align up to 8 bytes.
-        //
-
-        UINT align = 1;
-        DWORD rva = GetOffset();
-        DWORD rvaTemp = rva;
-
-        while ((rvaTemp&1) == 0 && align < 8 && align < size)
-        {
-            align <<= 1;
-            rvaTemp >>= 1;
-        }
-
-        image->StoreRvaInfo(this,
-                            rva,
-                            size,
-                            align);
-    }
-}
-
-void FieldDesc::Fixup(DataImage *image)
-{
-    STANDARD_VM_CONTRACT;
-
-    LOG((LF_ZAP, LL_INFO10000, "FieldDesc::Fixup %s::%s\n", GetApproxEnclosingMethodTable()->GetDebugClassName(), m_debugName));
-    image->FixupRelativePointerField(this, offsetof(FieldDesc, m_pMTOfEnclosingClass));
-
-#ifdef _DEBUG
-    image->FixupPointerField(this, offsetof(FieldDesc, m_debugName));
-#endif
-
-    // if (IsRVAFieldWithLessThanBigOffset())
-    // {
-    //      offset of RVA fields is fixed up in DataImage::FixupRvaStructure
-    // }
-}
-#endif // FEATURE_NATIVE_IMAGE_GENERATION
-
-#endif // #ifndef DACCESS_COMPILE
 
 UINT FieldDesc::LoadSize()
 {
@@ -884,7 +810,7 @@ TypeHandle FieldDesc::GetExactFieldType(TypeHandle owner)
     }
 }
 
-#if !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
+#if !defined(DACCESS_COMPILE)
 REFLECTFIELDREF FieldDesc::GetStubFieldInfo()
 {
     CONTRACTL
@@ -910,4 +836,4 @@ REFLECTFIELDREF FieldDesc::GetStubFieldInfo()
 
     return retVal;
 }
-#endif // !DACCESS_COMPILE && !CROSSGEN_COMPILE
+#endif // !DACCESS_COMPILE

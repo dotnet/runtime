@@ -19,9 +19,6 @@
 #include "common.h"
 #include "typedesc.h"
 #include "typestring.h"
-#if defined(FEATURE_PREJIT)
-#include "compile.h"
-#endif
 #include "array.h"
 #include "castcache.h"
 
@@ -512,7 +509,6 @@ TypeHandle TypeDesc::GetParent() {
 
 #ifndef DACCESS_COMPILE
 
-#ifndef CROSSGEN_COMPILE
 OBJECTREF ParamTypeDesc::GetManagedClassObject()
 {
     CONTRACTL {
@@ -561,7 +557,6 @@ OBJECTREF ParamTypeDesc::GetManagedClassObject()
     }
     return GetManagedClassObjectIfExists();
 }
-#endif // CROSSGEN_COMPILE
 
 #endif // #ifndef DACCESS_COMPILE
 
@@ -754,308 +749,7 @@ void TypeDesc::DoFullyLoad(Generics::RecursionGraph *pVisited, ClassLoadLevel le
 #endif
 }
 
-
-#ifdef FEATURE_PREJIT
-void TypeDesc::DoRestoreTypeKey()
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-    }
-    CONTRACTL_END
-
 #ifndef DACCESS_COMPILE
-    if (HasTypeParam())
-    {
-        ParamTypeDesc* pPTD = (ParamTypeDesc*) this;
-
-        // Must have the same loader module, so not encoded
-        CONSISTENCY_CHECK(!pPTD->m_Arg.IsEncodedFixup());
-        ClassLoader::EnsureLoaded(pPTD->m_Arg, CLASS_LOAD_UNRESTORED);
-
-        // Might live somewhere else e.g. Object[] is shared across all ref array types
-        Module::RestoreMethodTablePointer(&(pPTD->m_TemplateMT), NULL, CLASS_LOAD_UNRESTORED);
-    }
-
-    FastInterlockAnd(&m_typeAndFlags, ~TypeDesc::enum_flag_UnrestoredTypeKey);
-#endif
-}
-
-#ifndef DACCESS_COMPILE
-
-#ifdef FEATURE_NATIVE_IMAGE_GENERATION
-// This just performs a shallow save
-void TypeDesc::Save(DataImage *image)
-{
-    STANDARD_VM_CONTRACT;
-
-    ClassLoader::EnsureLoaded(TypeHandle(this));
-
-    if (LoggingOn(LF_ZAP, LL_INFO10000))
-    {
-        StackSString name;
-        TypeString::AppendType(name, TypeHandle(this));
-        LOG((LF_ZAP, LL_INFO10000, "TypeDesc::Save %S\n", name.GetUnicode()));
-    }
-
-    if (IsGenericVariable())
-    {
-        ((TypeVarTypeDesc*)this)->Save(image);
-    }
-    else if (GetInternalCorElementType() == ELEMENT_TYPE_FNPTR)
-    {
-        ((FnPtrTypeDesc *)this)->Save(image);
-    }
-    else
-    {
-        _ASSERTE(HasTypeParam());
-        ((ParamTypeDesc*)this)->Save(image);
-    }
-
-}
-
-void TypeDesc::Fixup(DataImage *image)
-{
-    STANDARD_VM_CONTRACT;
-
-    if (IsGenericVariable())
-    {
-        TypeVarTypeDesc* tyvar = (TypeVarTypeDesc*) this;
-        tyvar->Fixup(image);
-    }
-    else if (GetInternalCorElementType() == ELEMENT_TYPE_FNPTR)
-    {
-        ((FnPtrTypeDesc*)this)->Fixup(image);
-    }
-    else
-    {
-        // Works for PTR/BYREF types, but not function pointers
-        _ASSERTE(HasTypeParam());
-
-        ((ParamTypeDesc*) this)->Fixup(image);
-    }
-
-    if (NeedsRestore(image))
-    {
-        TypeDesc *pTD = (TypeDesc*) image->GetImagePointer(this);
-        _ASSERTE(pTD != NULL);
-        pTD->m_typeAndFlags |= TypeDesc::enum_flag_Unrestored | TypeDesc::enum_flag_UnrestoredTypeKey | TypeDesc::enum_flag_IsNotFullyLoaded;
-    }
-
-}
-
-BOOL TypeDesc::ComputeNeedsRestore(DataImage *image, TypeHandleList *pVisited)
-{
-    STATIC_STANDARD_VM_CONTRACT;
-
-    _ASSERTE(GetAppDomain()->IsCompilationDomain());
-
-    if (HasTypeParam())
-    {
-        return dac_cast<PTR_ParamTypeDesc>(this)->ComputeNeedsRestore(image, pVisited);
-    }
-    else
-        return FALSE;
-}
-
-
-
-void ParamTypeDesc::Save(DataImage *image)
-{
-    STANDARD_VM_CONTRACT;
-
-    image->StoreStructure(this, sizeof(ParamTypeDesc), DataImage::ITEM_PARAM_TYPEDESC);
-
-    // This set of checks matches precisely those in ParamTypeDesc::ComputeNeedsRestore
-    //
-    // They indicate if an array TypeDesc is non-canonical (in much the same a a generic
-    // method table being non-canonical), i.e. it is not the primary
-    // owner of the m_TemplateMT 
-    //
-    if (OwnsTemplateMethodTable())
-    {
-        // This TypeDesc should be the only one saving this MT
-        _ASSERTE(!image->IsStored(GetTemplateMethodTableInternal()));
-        Module::SaveMethodTable(image, GetTemplateMethodTableInternal(), 0);
-    }
-
-}
-
-
-void ParamTypeDesc::Fixup(DataImage *image)
-{
-    STANDARD_VM_CONTRACT;
-
-    _ASSERTE(image->GetModule()->GetAssembly() ==
-             GetAppDomain()->ToCompilationDomain()->GetTargetAssembly());
-
-    if (LoggingOn(LF_ZAP, LL_INFO10000))
-    {
-        StackSString name;
-        TypeString::AppendType(name, TypeHandle(this));
-        LOG((LF_ZAP, LL_INFO10000, "ParamTypeDesc::Fixup %S\n", name.GetUnicode()));
-    }
-
-    if (!m_TemplateMT.IsNull())
-    {
-        if (OwnsTemplateMethodTable())
-        {
-            // In all other cases the type desc "owns" the m_TemplateMT
-            // and it is always stored in the same module as the TypeDesc (i.e. the
-            // TypeDesc and the MT are "tightly-knit") In other words if one is present in
-            // an NGEN image then then other will be, and if one is "used" at runtime then
-            // the other will be too.
-            image->FixupMethodTablePointer(this, &m_TemplateMT);
-            GetTemplateMethodTableInternal()->Fixup(image);
-        }
-        else
-        {
-            // Fixup the pointer to the possibly-shared m_TemplateMT. This might be in a different module.
-            image->FixupMethodTablePointer(this, &m_TemplateMT);
-        }
-    }
-
-    // Fixup the pointer to the element type.
-    image->HardBindTypeHandlePointer(this, offsetof(ParamTypeDesc, m_Arg));
-
-    // The managed object will get regenerated on demand
-    image->ZeroField(this, offsetof(ParamTypeDesc, m_hExposedClassObject), sizeof(m_hExposedClassObject));
-}
-
-BOOL ParamTypeDesc::ComputeNeedsRestore(DataImage *image, TypeHandleList *pVisited)
-{
-    STATIC_STANDARD_VM_CONTRACT;
-
-    _ASSERTE(GetAppDomain()->IsCompilationDomain());
-
-    if (m_typeAndFlags & TypeDesc::enum_flag_NeedsRestore)
-    {
-        return TRUE;
-    }
-    if (m_typeAndFlags & TypeDesc::enum_flag_PreRestored)
-    {
-        return FALSE;
-    }
-
-    BOOL res = FALSE;
-    if (!image->CanPrerestoreEagerBindToTypeHandle(m_Arg, pVisited))
-    {
-        res = TRUE;
-    }
-
-    // This set of checks matches precisely those in ParamTypeDesc::Fixup
-    //
-    if (!m_TemplateMT.IsNull())
-    {
-        if (OwnsTemplateMethodTable())
-        {
-            if (GetTemplateMethodTableInternal()->ComputeNeedsRestore(image, pVisited))
-            {
-                res = TRUE;
-            }
-        }
-        else
-        {
-            if (!image->CanPrerestoreEagerBindToMethodTable(GetTemplateMethodTableInternal(), pVisited))
-            {
-                res = TRUE;
-            }
-        }
-    }
-
-    // Cache the results of running the algorithm.
-    // We can only cache the result if we have not speculatively assumed
-    // that any types are not NeedsRestore, i.e. the visited list is empty
-    if (pVisited == NULL)
-    {
-        if (LoggingOn(LF_ZAP, LL_INFO10000))
-        {
-            StackSString name;
-            TypeString::AppendType(name, TypeHandle(this));
-            LOG((LF_ZAP, LL_INFO10000, "ParamTypeDesc::ComputeNeedsRestore=%d for %S\n", res, name.GetUnicode()));
-        }
-        m_typeAndFlags |= (res ? TypeDesc::enum_flag_NeedsRestore : TypeDesc::enum_flag_PreRestored);
-    }
-    return res;
-}
-#endif // FEATURE_NATIVE_IMAGE_GENERATION
-
-void TypeDesc::SetIsRestored()
-{
-    STATIC_CONTRACT_THROWS;
-    STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_FORBID_FAULT;
-    STATIC_CONTRACT_CANNOT_TAKE_LOCK;
-
-    TypeHandle th = TypeHandle(this);
-    FastInterlockAnd(&m_typeAndFlags, ~TypeDesc::enum_flag_Unrestored);
-}
-
-#endif // #ifndef DACCESS_COMPILE
-
-void TypeDesc::Restore()
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        INJECT_FAULT(COMPlusThrowOM(););
-        CONSISTENCY_CHECK(!HasUnrestoredTypeKey());
-    }
-    CONTRACTL_END;
-
-#ifndef DACCESS_COMPILE
-    if (HasTypeParam())
-    {
-        ParamTypeDesc *pPTD = dac_cast<PTR_ParamTypeDesc>(this);
-
-        OVERRIDE_TYPE_LOAD_LEVEL_LIMIT(CLASS_LOAD_EXACTPARENTS);
-
-        // Must have the same loader module
-        ClassLoader::EnsureLoaded(pPTD->m_Arg, CLASS_LOAD_EXACTPARENTS);
-
-        // Method-table pointer must have been restored by DoRestoreTypeKey
-        Module::RestoreMethodTablePointer(&pPTD->m_TemplateMT, NULL, CLASS_LOAD_EXACTPARENTS);
-    }
-
-    SetIsRestored();
-#else
-    DacNotImpl();
-#endif // #ifndef DACCESS_COMPILE
-}
-
-#endif // FEATURE_PREJIT
-
-
-#ifndef DACCESS_COMPILE
-
-#ifdef FEATURE_NATIVE_IMAGE_GENERATION
-void TypeVarTypeDesc::Save(DataImage *image)
-{
-    STANDARD_VM_CONTRACT;
-
-    // We don't persist the constraints: instead, load them back on demand
-    m_numConstraints = (DWORD) -1;
-
-    LOG((LF_ZAP, LL_INFO10000, "  TypeVarTypeDesc::Save %x (%p)\n", GetToken(), this));
-    image->StoreStructure(this, sizeof(TypeVarTypeDesc),
-                                    DataImage::ITEM_TYVAR_TYPEDESC);
-}
-
-void TypeVarTypeDesc::Fixup(DataImage *image)
-{
-    STANDARD_VM_CONTRACT;
-
-    LOG((LF_ZAP, LL_INFO10000, "  TypeVarTypeDesc::Fixup %x (%p)\n", GetToken(), this));
-    image->FixupRelativePointerField(this, offsetof(TypeVarTypeDesc, m_pModule));
-    image->ZeroField(this, offsetof(TypeVarTypeDesc, m_hExposedClassObject), sizeof(m_hExposedClassObject));
-
-    // We don't persist the constraints: instead, load them back on demand
-    image->ZeroPointerField(this, offsetof(TypeVarTypeDesc, m_constraints));
-
-}
-#endif // FEATURE_NATIVE_IMAGE_GENERATION
 
 MethodDesc * TypeVarTypeDesc::LoadOwnerMethod()
 {
@@ -1951,7 +1645,6 @@ BOOL TypeVarTypeDesc::SatisfiesConstraints(SigTypeContext *pTypeContextOfConstra
 }
 
 
-#ifndef CROSSGEN_COMPILE
 OBJECTREF TypeVarTypeDesc::GetManagedClassObject()
 {
     CONTRACTL {
@@ -1988,7 +1681,6 @@ OBJECTREF TypeVarTypeDesc::GetManagedClassObject()
     }
     return GetManagedClassObjectIfExists();
 }
-#endif // CROSSGEN_COMPILE
 
 #endif //!DACCESS_COMPILE
 
@@ -2003,13 +1695,6 @@ FnPtrTypeDesc::GetRetAndArgTypes()
     }
     CONTRACTL_END;
 
-    // Decode encoded type handles on demand
-#if defined(FEATURE_PREJIT) && !defined(DACCESS_COMPILE)
-    for (DWORD i = 0; i <= m_NumArgs; i++)
-    {
-        Module::RestoreTypeHandlePointerRaw(&m_RetAndArgTypes[i]);
-    }
-#endif //defined(FEATURE_PREJIT) && !defined(DACCESS_COMPILE)
 
     return m_RetAndArgTypes;
 } // FnPtrTypeDesc::GetRetAndArgTypes
@@ -2041,32 +1726,6 @@ FnPtrTypeDesc::IsExternallyVisible() const
 } // FnPtrTypeDesc::IsExternallyVisible
 
 #endif //DACCESS_COMPILE
-
-#if defined(FEATURE_NATIVE_IMAGE_GENERATION) && !defined(DACCESS_COMPILE)
-
-void FnPtrTypeDesc::Save(DataImage * image)
-{
-    STANDARD_VM_CONTRACT;
-
-    image->StoreStructure(
-        this,
-        sizeof(FnPtrTypeDesc) + (m_NumArgs * sizeof(TypeHandle)),
-        DataImage::ITEM_FPTR_TYPEDESC);
-}
-
-void FnPtrTypeDesc::Fixup(DataImage * image)
-{
-    STANDARD_VM_CONTRACT;
-
-    for (DWORD i = 0; i <= m_NumArgs; i++)
-    {
-        image->FixupTypeHandlePointerInPlace(
-            this,
-            (BYTE *)&m_RetAndArgTypes[i] - (BYTE *)this);
-    }
-}
-
-#endif //defined(FEATURE_NATIVE_IMAGE_GENERATION) && !defined(DACCESS_COMPILE)
 
 #ifdef DACCESS_COMPILE
 

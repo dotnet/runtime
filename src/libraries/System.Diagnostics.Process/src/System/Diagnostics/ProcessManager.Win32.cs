@@ -267,105 +267,60 @@ namespace System.Diagnostics
 
     internal static class NtProcessInfoHelper
     {
-        // Cache a single buffer for use in GetProcessInfos().
-        private static long[]? CachedBuffer;
-
         // Use a smaller buffer size on debug to ensure we hit the retry path.
+        private const uint DefaultCachedBufferSize = 1024 *
 #if DEBUG
-        private const int DefaultCachedBufferSize = 1024;
+            8;
 #else
-        private const int DefaultCachedBufferSize = 128 * 1024;
+            1024;
 #endif
+        private static uint MostRecentSize = DefaultCachedBufferSize;
 
-        internal static ProcessInfo[] GetProcessInfos(int? processIdFilter = null)
+        internal static unsafe ProcessInfo[] GetProcessInfos(int? processIdFilter = null)
         {
-            ProcessInfo[] processInfos;
-
             // Start with the default buffer size.
-            int bufferSize = DefaultCachedBufferSize;
+            uint bufferSize = MostRecentSize;
 
-            // Get the cached buffer.
-            long[]? buffer = Interlocked.Exchange(ref CachedBuffer, null);
-
-            try
+            while (true)
             {
-                while (true)
+                void* bufferPtr = NativeMemory.Alloc(bufferSize); // some platforms require the buffer to be 64-bit aligned and NativeLibrary.Alloc guarantees sufficient alignment.
+
+                try
                 {
-                    if (buffer == null)
-                    {
-                        // Allocate buffer of longs since some platforms require the buffer to be 64-bit aligned.
-                        buffer = new long[(bufferSize + 7) / 8];
-                    }
+                    uint actualSize = 0;
+                    uint status = Interop.NtDll.NtQuerySystemInformation(
+                        Interop.NtDll.SystemProcessInformation,
+                        bufferPtr,
+                        bufferSize,
+                        &actualSize);
 
-                    uint requiredSize = 0;
-
-                    unsafe
+                    if (status != Interop.NtDll.STATUS_INFO_LENGTH_MISMATCH)
                     {
-                        // Note that the buffer will contain pointers to itself and it needs to be pinned while it is being processed
-                        // by GetProcessInfos below
-                        fixed (long* bufferPtr = buffer)
+                        // see definition of NT_SUCCESS(Status) in SDK
+                        if ((int)status < 0)
                         {
-                            uint status = Interop.NtDll.NtQuerySystemInformation(
-                                Interop.NtDll.SystemProcessInformation,
-                                bufferPtr,
-                                (uint)(buffer.Length * sizeof(long)),
-                                &requiredSize);
-
-                            if (status != Interop.NtDll.STATUS_INFO_LENGTH_MISMATCH)
-                            {
-                                // see definition of NT_SUCCESS(Status) in SDK
-                                if ((int)status < 0)
-                                {
-                                    throw new InvalidOperationException(SR.CouldntGetProcessInfos, new Win32Exception((int)status));
-                                }
-
-                                // Parse the data block to get process information
-                                processInfos = GetProcessInfos(MemoryMarshal.AsBytes<long>(buffer), processIdFilter);
-                                break;
-                            }
+                            throw new InvalidOperationException(SR.CouldntGetProcessInfos, new Win32Exception((int)status));
                         }
+
+                        Debug.Assert(actualSize > 0 && actualSize <= bufferSize, $"Actual size reported by NtQuerySystemInformation was {actualSize} for a buffer of size={bufferSize}.");
+                        MostRecentSize = GetEstimatedBufferSize(actualSize);
+                        // Parse the data block to get process information
+                        return GetProcessInfos(new ReadOnlySpan<byte>(bufferPtr, (int)actualSize), processIdFilter);
                     }
 
-                    buffer = null;
-                    bufferSize = GetNewBufferSize(bufferSize, (int)requiredSize);
+                    Debug.Assert(actualSize > bufferSize, $"Actual size reported by NtQuerySystemInformation was {actualSize} for a buffer of size={bufferSize}.");
+                    bufferSize = GetEstimatedBufferSize(actualSize);
+                }
+                finally
+                {
+                    NativeMemory.Free(bufferPtr);
                 }
             }
-            finally
-            {
-                // Cache the final buffer for use on the next call.
-                Interlocked.Exchange(ref CachedBuffer, buffer);
-            }
-
-            return processInfos;
         }
 
-        private static int GetNewBufferSize(int existingBufferSize, int requiredSize)
-        {
-            int newSize;
-
-            if (requiredSize == 0)
-            {
-                //
-                // On some old OS like win2000, requiredSize will not be set if the buffer
-                // passed to NtQuerySystemInformation is not enough.
-                //
-                newSize = existingBufferSize * 2;
-            }
-            else
-            {
-                // allocating a few more kilo bytes just in case there are some new process
-                // kicked in since new call to NtQuerySystemInformation
-                newSize = requiredSize + 1024 * 10;
-            }
-
-            if (newSize < 0)
-            {
-                // In reality, we should never overflow.
-                // Adding the code here just in case it happens.
-                throw new OutOfMemoryException();
-            }
-            return newSize;
-        }
+        // allocating a few more kilo bytes just in case there are some new process
+        // kicked in since new call to NtQuerySystemInformation
+        private static uint GetEstimatedBufferSize(uint actualSize) => actualSize + 1024 * 10;
 
         private static unsafe ProcessInfo[] GetProcessInfos(ReadOnlySpan<byte> data, int? processIdFilter)
         {

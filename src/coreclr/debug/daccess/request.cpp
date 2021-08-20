@@ -433,22 +433,10 @@ ClrDataAccess::GetJitManagerList(unsigned int count, struct DacpJitManagerInfo m
             EEJitManager *eeJitManager = PTR_EEJitManager(PTR_HOST_TO_TADDR(managerPtr));
             currentPtr->ptrHeapList = HOST_CDADDR(eeJitManager->m_pCodeHeap);
         }
-#ifdef FEATURE_PREJIT
-        if (count >= 2)
-        {
-            NativeImageJitManager * managerPtr = ExecutionManager::GetNativeImageJitManager();
-            DacpJitManagerInfo *currentPtr = &managers[1];
-            currentPtr->managerAddr = HOST_CDADDR(managerPtr);
-            currentPtr->codeType = managerPtr->GetCodeType();
-        }
-#endif
     }
     else if (pNeeded)
     {
         *pNeeded = 1;
-#ifdef FEATURE_PREJIT
-        (*pNeeded)++;
-#endif
     }
 
     SOSDacLeave();
@@ -747,10 +735,10 @@ ClrDataAccess::GetHeapAllocData(unsigned int count, struct DacpGenerationAllocDa
 
         if (data && count >= 1)
         {
-            DPTR(dac_generation) table = g_gcDacGlobals->generation_table;
+            DPTR(unused_generation) table = g_gcDacGlobals->generation_table;
             for (unsigned int i=0; i < *g_gcDacGlobals->max_gen + 2; i++)
             {
-                dac_generation entry = *GenerationTableIndex(table, i);
+                dac_generation entry = GenerationTableIndex(table, i);
                 data[0].allocData[i].allocBytes = (CLRDATA_ADDRESS)(ULONG_PTR) entry.allocation_context.alloc_bytes;
                 data[0].allocData[i].allocBytesLoh = (CLRDATA_ADDRESS)(ULONG_PTR) entry.allocation_context.alloc_bytes_uoh;
             }
@@ -2809,12 +2797,12 @@ ClrDataAccess::GetGCHeapStaticData(struct DacpGcHeapDetails *detailsData)
     // get bounds for the different generations
     for (unsigned int i=0; i < DAC_NUMBERGENERATIONS; i++)
     {
-        DPTR(dac_generation) generation = GenerationTableIndex(g_gcDacGlobals->generation_table, i);
-        detailsData->generation_table[i].start_segment = (CLRDATA_ADDRESS) dac_cast<TADDR>(generation->start_segment);
-        detailsData->generation_table[i].allocation_start = (CLRDATA_ADDRESS) generation->allocation_start;
-        DPTR(gc_alloc_context) alloc_context = dac_cast<TADDR>(generation) + offsetof(dac_generation, allocation_context);
-        detailsData->generation_table[i].allocContextPtr = (CLRDATA_ADDRESS)alloc_context->alloc_ptr;
-        detailsData->generation_table[i].allocContextLimit = (CLRDATA_ADDRESS)alloc_context->alloc_limit;
+        dac_generation generation = GenerationTableIndex(g_gcDacGlobals->generation_table, i);
+        detailsData->generation_table[i].start_segment = (CLRDATA_ADDRESS) dac_cast<TADDR>(generation.start_segment);
+        detailsData->generation_table[i].allocation_start = (CLRDATA_ADDRESS) generation.allocation_start;
+        gc_alloc_context alloc_context = generation.allocation_context;
+        detailsData->generation_table[i].allocContextPtr = (CLRDATA_ADDRESS)alloc_context.alloc_ptr;
+        detailsData->generation_table[i].allocContextLimit = (CLRDATA_ADDRESS)alloc_context.alloc_limit;
     }
 
     if (g_gcDacGlobals->finalize_queue.IsValid())
@@ -3790,12 +3778,12 @@ ClrDataAccess::EnumWksGlobalMemoryRegions(CLRDataEnumMemoryFlags flags)
             // this is the convention in the GC so it is repeated here
             for (ULONG i = *g_gcDacGlobals->max_gen; i <= *g_gcDacGlobals->max_gen +1; i++)
             {
-                dac_generation *gen = GenerationTableIndex(g_gcDacGlobals->generation_table, i);
-                __DPtr<dac_heap_segment> seg = dac_cast<TADDR>(gen->start_segment);
+                dac_generation gen = GenerationTableIndex(g_gcDacGlobals->generation_table, i);
+                __DPtr<dac_heap_segment> seg = dac_cast<TADDR>(gen.start_segment);
                 while (seg)
                 {
-                        DacEnumMemoryRegion(dac_cast<TADDR>(seg), sizeof(dac_heap_segment));
-                        seg = seg->next;
+                    DacEnumMemoryRegion(dac_cast<TADDR>(seg), sizeof(dac_heap_segment));
+                    seg = seg->next;
                 }
             }
     }
@@ -3842,11 +3830,11 @@ HRESULT ClrDataAccess::GetClrWatsonBucketsWorker(Thread * pThread, GenericModeBl
         if (oThrowable != NULL)
         {
             // Does the throwable have buckets?
-            if (((EXCEPTIONREF)oThrowable)->AreWatsonBucketsPresent())
+            U1ARRAYREF refWatsonBucketArray = ((EXCEPTIONREF)oThrowable)->GetWatsonBucketReference();
+            if (refWatsonBucketArray != NULL)
             {
                 // Get the watson buckets from the throwable for non-preallocated
                 // exceptions
-                U1ARRAYREF refWatsonBucketArray = ((EXCEPTIONREF)oThrowable)->GetWatsonBucketReference();
                 pBuckets = dac_cast<PTR_VOID>(refWatsonBucketArray->GetDataPtr());
             }
             else
@@ -4619,14 +4607,14 @@ HRESULT ClrDataAccess::GetGenerationTable(unsigned int cGenerations, struct Dacp
         {
             for (unsigned int i = 0; i < numGenerationTableEntries; i++)
             {
-                DPTR(dac_generation) generation = GenerationTableIndex(g_gcDacGlobals->generation_table, i);
-                pGenerationData[i].start_segment = (CLRDATA_ADDRESS) dac_cast<TADDR>(generation->start_segment);
+                dac_generation generation = GenerationTableIndex(g_gcDacGlobals->generation_table, i);
+                pGenerationData[i].start_segment = (CLRDATA_ADDRESS) dac_cast<TADDR>(generation.start_segment);
 
-                pGenerationData[i].allocation_start = (CLRDATA_ADDRESS) generation->allocation_start;
+                pGenerationData[i].allocation_start = (CLRDATA_ADDRESS) generation.allocation_start;
 
-                DPTR(gc_alloc_context) alloc_context = dac_cast<TADDR>(generation) + offsetof(dac_generation, allocation_context);
-                pGenerationData[i].allocContextPtr = (CLRDATA_ADDRESS)alloc_context->alloc_ptr;
-                pGenerationData[i].allocContextLimit = (CLRDATA_ADDRESS)alloc_context->alloc_limit;
+                gc_alloc_context alloc_context = generation.allocation_context;
+                pGenerationData[i].allocContextPtr = (CLRDATA_ADDRESS)alloc_context.alloc_ptr;
+                pGenerationData[i].allocContextLimit = (CLRDATA_ADDRESS)alloc_context.alloc_limit;
             }
         }
         else
@@ -4709,12 +4697,12 @@ HRESULT ClrDataAccess::GetGenerationTableSvr(CLRDATA_ADDRESS heapAddr, unsigned 
         {
             for (unsigned int i = 0; i < numGenerationTableEntries; ++i)
             {
-                DPTR(dac_generation) generation = ServerGenerationTableIndex(heapAddress, i);
-                pGenerationData[i].start_segment = (CLRDATA_ADDRESS)dac_cast<TADDR>(generation->start_segment);
-                pGenerationData[i].allocation_start = (CLRDATA_ADDRESS)(ULONG_PTR)generation->allocation_start;
-                DPTR(gc_alloc_context) alloc_context = dac_cast<TADDR>(generation) + offsetof(dac_generation, allocation_context);
-                pGenerationData[i].allocContextPtr = (CLRDATA_ADDRESS)(ULONG_PTR) alloc_context->alloc_ptr;
-                pGenerationData[i].allocContextLimit = (CLRDATA_ADDRESS)(ULONG_PTR) alloc_context->alloc_limit;
+                dac_generation generation = ServerGenerationTableIndex(heapAddress, i);
+                pGenerationData[i].start_segment = (CLRDATA_ADDRESS)dac_cast<TADDR>(generation.start_segment);
+                pGenerationData[i].allocation_start = (CLRDATA_ADDRESS)(ULONG_PTR)generation.allocation_start;
+                gc_alloc_context alloc_context = generation.allocation_context;
+                pGenerationData[i].allocContextPtr = (CLRDATA_ADDRESS)(ULONG_PTR)alloc_context.alloc_ptr;
+                pGenerationData[i].allocContextLimit = (CLRDATA_ADDRESS)(ULONG_PTR)alloc_context.alloc_limit;
             }
         }
         else

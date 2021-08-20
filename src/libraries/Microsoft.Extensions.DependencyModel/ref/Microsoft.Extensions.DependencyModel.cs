@@ -46,10 +46,10 @@ namespace Microsoft.Extensions.DependencyModel
         public bool? PublicSign { get { throw null; } }
         public bool? WarningsAsErrors { get { throw null; } }
     }
-    public partial struct Dependency
+    public readonly partial struct Dependency : System.IEquatable<Dependency>
     {
-        private object _dummy;
-        private int _dummyPrimitive;
+        private readonly object _dummy;
+        private readonly int _dummyPrimitive;
         public Dependency(string name, string version) { throw null; }
         public readonly string Name { get { throw null; } }
         public readonly string Version { get { throw null; } }

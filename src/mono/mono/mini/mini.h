@@ -59,7 +59,6 @@ typedef struct SeqPointInfo SeqPointInfo;
 
 #include "mono/metadata/tabledefs.h"
 #include "mono/metadata/marshal.h"
-#include "mono/metadata/security-manager.h"
 #include "mono/metadata/exception.h"
 #include "mono/metadata/callspec.h"
 #include "mono/metadata/icall-signatures.h"
