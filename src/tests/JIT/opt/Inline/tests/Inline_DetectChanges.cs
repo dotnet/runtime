@@ -30,9 +30,10 @@ public class Program
         }
         catch (NullReferenceException)
         {
+            return 100;
         }
-        return 100;
-    } 
+        return 101;
+    }
 
     public static void Foo(object o)
     {
