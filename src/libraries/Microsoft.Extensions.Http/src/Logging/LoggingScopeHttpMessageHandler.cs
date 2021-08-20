@@ -40,6 +40,7 @@ namespace Microsoft.Extensions.Http.Logging
         /// </summary>
         /// <param name="logger">The <see cref="ILogger"/> to log to.</param>
         /// <param name="options">The <see cref="HttpClientFactoryOptions"/> used to configure the <see cref="LoggingScopeHttpMessageHandler"/> instance.</param>
+        /// <exception cref="ArgumentNullException"><paramref name="logger"/> or <paramref name="options"/> is <see langword="null"/>.</exception>
         public LoggingScopeHttpMessageHandler(ILogger logger, HttpClientFactoryOptions options)
         {
             if (logger == null)
