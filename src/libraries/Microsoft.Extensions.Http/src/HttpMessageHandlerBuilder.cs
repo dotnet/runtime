@@ -72,6 +72,10 @@ namespace Microsoft.Extensions.Http
         /// The handlers are invoked in a top-down fashion. That is, the first entry is invoked first for
         /// an outbound request message but last for an inbound response message.</param>
         /// <returns>The HTTP message handler chain.</returns>
+        /// <exception cref="ArgumentNullException"><paramref name="primaryHandler "/> or <paramref name="additionalHandlers "/> is <see langword="null"/>.</exception>
+        /// <exception cref="InvalidOperationException"><paramref name="additionalHandlers "/> contains a <see langword="null"/> entry.
+        /// -or-
+        /// The <c>DelegatingHandler.InnerHandler</c> property must be <see langword="null"/>. <c>DelegatingHandler</c> instances provided to <c>HttpMessageHandlerBuilder</c> must not be reused or cached.</exception>
         protected internal static HttpMessageHandler CreateHandlerPipeline(HttpMessageHandler primaryHandler, IEnumerable<DelegatingHandler> additionalHandlers)
         {
             // This is similar to https://github.com/aspnet/AspNetWebStack/blob/master/src/System.Net.Http.Formatting/HttpClientFactory.cs#L58
