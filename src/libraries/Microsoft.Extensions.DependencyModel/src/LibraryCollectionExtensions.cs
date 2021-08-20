@@ -17,7 +17,7 @@ namespace Microsoft.Extensions.DependencyModel
             {
                 if (dictionary.ContainsKey(element.Name))
                 {
-                    throw new ArgumentException($"An item with the same key '{element.Name}' has already been added from collection '{collection.GetType()}'.");
+                    throw new ArgumentException(SR.Format(SR.DuplicateItem, element.Name, collection.GetType().ToString()));
                 }
 
                 dictionary.Add(element.Name, element);
