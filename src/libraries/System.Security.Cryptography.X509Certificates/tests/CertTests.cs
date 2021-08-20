@@ -476,13 +476,23 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
-        public static void ReadOnlyMemory_NoCopy()
+        public static void RawDataMemory_NoCopy()
         {
             using (X509Certificate2 cert = new X509Certificate2(TestData.MsCertificate))
             {
                 ReadOnlyMemory<byte> first = cert.RawDataMemory;
                 ReadOnlyMemory<byte> second = cert.RawDataMemory;
                 Assert.True(first.Span == second.Span, "RawDataMemory returned different values.");
+            }
+        }
+
+
+        [Fact]
+        public static void RawDataMemory_RoundTrip()
+        {
+            using (X509Certificate2 cert = new X509Certificate2(TestData.MsCertificate))
+            {
+                AssertExtensions.SequenceEqual(TestData.MsCertificate.AsSpan(), cert.RawDataMemory.Span);
             }
         }
 
