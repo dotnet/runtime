@@ -18,8 +18,35 @@
         <ExcludeList Include="$(XunitTestBinBase)/baseservices/mono/runningmono/*">
             <Issue>This test is to verify we are running mono, and therefore only makes sense on mono.</Issue>
         </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/GC/Coverage/271010/**">
+            <Issue>https://github.com/dotnet/runtime/issues/5933</Issue>
+        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/baseservices/threading/mutex/misc/waitone2/*">
             <Issue>https://github.com/dotnet/runtime/issues/6372</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/GC/Features/LOHFragmentation/lohfragmentation/*">
+            <Issue>https://github.com/dotnet/runtime/issues/5933</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/GC/Regressions/dev10bugs/536168/536168/*">
+            <Issue>https://github.com/dotnet/runtime/issues/5933</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/GC/LargeMemory/Allocation/finalizertest/*">
+            <Issue>https://github.com/dotnet/runtime/issues/5933</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/GC/LargeMemory/API/gc/collect/*">
+            <Issue>https://github.com/dotnet/runtime/issues/5933</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/GC/LargeMemory/API/gc/getgeneration/*">
+            <Issue>https://github.com/dotnet/runtime/issues/5933</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/GC/LargeMemory/API/gc/reregisterforfinalize/*">
+            <Issue>https://github.com/dotnet/runtime/issues/5933</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/baseservices/threading/threadpool/unregister/unregister01/*">
+            <Issue>https://github.com/dotnet/runtime/issues/44054</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/baseservices/threading/threadpool/unregister/unregister03/*">
+            <Issue>https://github.com/dotnet/runtime/issues/44054</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/readytorun/r2rdump/BasicTests/R2RDumpTest/*">
             <Issue>https://github.com/dotnet/runtime/issues/10888 https://github.com/dotnet/runtime/issues/11823 </Issue>
