@@ -7,7 +7,6 @@ namespace Microsoft.Extensions.DependencyModel
     using System.Collections.Generic;
 
     internal static class LibraryCollectionExtensions
-
     {
         public static Dictionary<string, T> LibraryCollectionToDictionary<T>(this IReadOnlyList<T> collection) where T : Library
         {
