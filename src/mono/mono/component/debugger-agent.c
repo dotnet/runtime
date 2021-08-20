@@ -8513,7 +8513,7 @@ method_commands_internal (int command, MonoMethod *method, MonoDomain *domain, g
 			return ERR_INVALID_ARGUMENT;
 		}
 
-		locals = mono_debug_lookup_locals (method, FALSE);
+		locals = mono_debug_lookup_locals (method);
 		if (!locals) {
 			if (CHECK_PROTOCOL_VERSION (2, 43)) {
 				/* Scopes */
@@ -9230,13 +9230,14 @@ frame_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 				pos = - pos - 1;
 				cmd_stack_frame_get_parameter (frame, sig, pos, buf, jit);
 			} else {
-				MonoDebugLocalsInfo *locals;
-
-				locals = mono_debug_lookup_locals (frame->de.method, TRUE);
-				if (locals) {
-					g_assert (pos < locals->num_locals);
-					pos = locals->locals [pos].index;
-					mono_debug_free_locals (locals);
+				if (!CHECK_PROTOCOL_VERSION (2, 59)) { //from newer protocol versions it's sent the pdb index
+					MonoDebugLocalsInfo *locals;
+					locals = mono_debug_lookup_locals (frame->de.method);
+					if (locals) {
+						g_assert (pos < locals->num_locals);
+						pos = locals->locals [pos].index;
+						mono_debug_free_locals (locals);
+					}
 				}
 
 				PRINT_DEBUG_MSG (4, "[dbg]   send local %d.\n", pos);
@@ -9284,13 +9285,14 @@ frame_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 				var = &jit->params [pos];
 				is_arg = TRUE;
 			} else {
-				MonoDebugLocalsInfo *locals;
-
-				locals = mono_debug_lookup_locals (frame->de.method, TRUE);
-				if (locals) {
-					g_assert (pos < locals->num_locals);
-					pos = locals->locals [pos].index;
-					mono_debug_free_locals (locals);
+				if (!CHECK_PROTOCOL_VERSION (2, 59)) { //from newer protocol versions it's sent the pdb index
+					MonoDebugLocalsInfo *locals;
+					locals = mono_debug_lookup_locals (frame->de.method);
+					if (locals) {
+						g_assert (pos < locals->num_locals);
+						pos = locals->locals [pos].index;
+						mono_debug_free_locals (locals);
+					}
 				}
 				g_assert (pos >= 0 && pos < jit->num_locals);
 
