@@ -1230,15 +1230,12 @@ void EEJitManager::SetCpuInfo()
     LIMITED_METHOD_CONTRACT;
 
     //
-    // NOTE: This function needs to be kept in sync with Zapper::CompileAssembly()
     // NOTE: This function needs to be kept in sync with compSetProcesor() in jit\compiler.cpp
     //
 
     CORJIT_FLAGS CPUCompileFlags;
 
 #if defined(TARGET_X86)
-    // NOTE: if you're adding any flags here, you probably should also be doing it
-    // for ngen (zapper.cpp)
     CORINFO_CPU cpuInfo;
     GetSpecificCpuInfo(&cpuInfo);
 
