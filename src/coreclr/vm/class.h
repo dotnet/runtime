@@ -842,7 +842,7 @@ public:
         LIMITED_METHOD_CONTRACT;
         SUPPORTS_DAC;
 
-        return EEClass::m_pMethodTable;
+        return m_pMethodTable;
     }
 
     // DO NOT ADD ANY ASSERTS TO THIS METHOD.
@@ -859,7 +859,7 @@ public:
         CANNOT_HAVE_CONTRACT;
         SUPPORTS_DAC;
 
-        return EEClass::m_pMethodTable;
+        return m_pMethodTable;
     }
 
 #ifndef DACCESS_COMPILE

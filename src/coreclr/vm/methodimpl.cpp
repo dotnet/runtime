@@ -88,7 +88,7 @@ PTR_MethodDesc MethodImpl::GetMethodDesc(DWORD slotIndex, PTR_MethodDesc default
     DPTR(PTR_MethodDesc) pRelPtrForSlot = GetImpMDsNonNull();
     // The method descs are not offset by one
     TADDR base = dac_cast<TADDR>(pRelPtrForSlot) + slotIndex * sizeof(MethodDesc *);
-    PTR_MethodDesc result = dac_cast<PTR_MethodDesc>(base);
+    PTR_MethodDesc result = *dac_cast<DPTR(PTR_MethodDesc)>(base);
 
     // Prejitted images may leave NULL in this table if
     // the methoddesc is declared in another module.

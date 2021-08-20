@@ -225,7 +225,7 @@ public:
     LPCUTF8         m_pszDebugMethodName;
     LPCUTF8         m_pszDebugClassName;
     LPCUTF8         m_pszDebugMethodSignature;
-    PTR_MethodTable   m_pDebugMethodTable;
+    PTR_MethodTable m_pDebugMethodTable;
 
     PTR_GCCoverageInfo m_GcCover;
 

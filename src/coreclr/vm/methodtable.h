@@ -1418,7 +1418,7 @@ public:
     {
         LIMITED_METHOD_DAC_CONTRACT;
         _ASSERTE(HasNonVirtualSlotsArray());
-        return dac_cast<PTR_PCODE>(GetNonVirtualSlotsPtr());
+        return *dac_cast<PTR_PTR_PCODE>(GetNonVirtualSlotsPtr());
     }
 
 #ifndef DACCESS_COMPILE

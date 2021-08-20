@@ -17,7 +17,7 @@ TYPE LookupMap<TYPE>::GetValueAt(PTR_TADDR pValue, TADDR* pFlags, TADDR supporte
 {
     WRAPPER_NO_CONTRACT;
     SUPPORTS_DAC;
-    TYPE value = dac_cast<TYPE>(pValue);
+    TYPE value = dac_cast<TYPE>(*pValue);
 
     if (pFlags)
         *pFlags = dac_cast<TADDR>(value) & supportedFlags;
@@ -63,70 +63,6 @@ void LookupMap<SIZE_T>::SetValueAt(PTR_TADDR pValue, SIZE_T value, TADDR flags)
     *pValue = value | flags;
 }
 #endif // DACCESS_COMPILE
-
-//
-// Specialization of GetValueAt methods for tables with cross-module references
-//
-template<>
-inline
-PTR_TypeRef LookupMap<PTR_TypeRef>::GetValueAt(PTR_TADDR pValue, TADDR* pFlags, TADDR supportedFlags)
-{
-    WRAPPER_NO_CONTRACT;
-    SUPPORTS_DAC;
-
-    // Strip flags before pointer dereference
-    TADDR value = *pValue;
-
-    TADDR flags = (value & supportedFlags);
-    value -= flags;
-    value = *dac_cast<PTR_TADDR>(value);
-
-    if (pFlags)
-        *pFlags = flags;
-
-    return dac_cast<PTR_TypeRef>(value);
-}
-
-template<>
-inline
-PTR_Module LookupMap<PTR_Module>::GetValueAt(PTR_TADDR pValue, TADDR* pFlags, TADDR supportedFlags)
-{
-    WRAPPER_NO_CONTRACT;
-    SUPPORTS_DAC;
-
-    // Strip flags before pointer dereference
-    TADDR value = *pValue;
-
-    TADDR flags = (value & supportedFlags);
-    value -= flags;
-    value = *dac_cast<PTR_TADDR>(value);
-
-    if (pFlags)
-        *pFlags = flags;
-
-    return dac_cast<PTR_Module>(value);
-}
-
-template<>
-inline
-PTR_MemberRef LookupMap<PTR_MemberRef>::GetValueAt(PTR_TADDR pValue, TADDR* pFlags, TADDR supportedFlags)
-{
-    WRAPPER_NO_CONTRACT;
-    SUPPORTS_DAC;
-
-    // Strip flags before pointer dereference
-    TADDR value = *pValue;
-
-    TADDR flags = (value & supportedFlags);
-    value -= flags;
-    value = *dac_cast<PTR_TADDR>(value);
-
-    if (pFlags)
-        *pFlags = flags;
-
-    return dac_cast<PTR_MemberRef>(value);
-
-}
 
 // Retrieve the value associated with a rid
 template<typename TYPE>

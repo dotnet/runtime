@@ -380,7 +380,7 @@ PTR_Module MethodTable::GetModule()
         return pMTForModule->GetLoaderModule();
 
     TADDR pSlot = pMTForModule->GetMultipurposeSlotPtr(enum_flag_HasModuleOverride, c_ModuleOverrideOffsets);
-    return dac_cast<PTR_Module>(pSlot);
+    return *dac_cast<DPTR(PTR_Module)>(pSlot);
 }
 
 //==========================================================================================
@@ -397,7 +397,7 @@ PTR_Module MethodTable::GetModule_NoLogging()
         return pMTForModule->GetLoaderModule();
 
     TADDR pSlot = pMTForModule->GetMultipurposeSlotPtr(enum_flag_HasModuleOverride, c_ModuleOverrideOffsets);
-    return dac_cast<PTR_Module>(pSlot);
+    return *dac_cast<DPTR(PTR_Module)>(pSlot);
 }
 
 //==========================================================================================
@@ -417,7 +417,7 @@ PTR_DispatchMap MethodTable::GetDispatchMap()
     g_IBCLogger.LogDispatchMapAccess(pMT);
 
     TADDR pSlot = pMT->GetMultipurposeSlotPtr(enum_flag_HasDispatchMapSlot, c_DispatchMapSlotOffsets);
-    return dac_cast<PTR_DispatchMap>(pSlot);
+    return *dac_cast<DPTR(PTR_DispatchMap)>(pSlot);
 }
 
 //==========================================================================================
