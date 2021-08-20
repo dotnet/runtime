@@ -174,7 +174,6 @@ namespace Microsoft.Extensions.Caching.Memory
                 .AddExpirationToken(expirationToken)
                 .RegisterPostEvictionCallback((subkey, subValue, reason, state) =>
                 {
-                    // TODO: Verify params
                     var localCallbackInvoked = (ManualResetEvent)state;
                     localCallbackInvoked.Set();
                 }, state: callbackInvoked));
