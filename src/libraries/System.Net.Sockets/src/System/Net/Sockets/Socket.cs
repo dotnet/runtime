@@ -3858,19 +3858,13 @@ namespace System.Net.Sockets
         {
             if (_nonBlockingConnectInProgress)
             {
-                // When the connect completes, the socket becomes writable.
-                if (Poll(0, SelectMode.SelectWrite))
+                if (SocketPal.HasNonBlockingConnectCompleted(_handle, out bool success))
                 {
-                    // Check the result of the connect.
-                    SocketError errorCode = SocketPal.GetSockOpt(_handle, SocketOptionLevel.Socket, SocketOptionName.Error, out int optionValue);
-                    if (errorCode == SocketError.Success)
-                    {
-                        _nonBlockingConnectInProgress = false;
+                    _nonBlockingConnectInProgress = false;
 
-                        if ((SocketError)optionValue == SocketError.Success)
-                        {
-                            SetToConnected();
-                        }
+                    if (success)
+                    {
+                        SetToConnected();
                     }
                 }
             }
