@@ -5,6 +5,7 @@
     <TargetFramework>$(NetCoreAppToolCurrent)</TargetFramework>
     <TargetOS Condition="'$(TargetOS)' == ''">iOS</TargetOS>
     <TargetOS Condition="'$(TargetsiOSSimulator)' == 'true'">iOSSimulator</TargetOS>
+    <DeployAndRun Condition="'$(DeployAndRun)' == ''">true</DeployAndRun>
     <RuntimeIdentifier>$(TargetOS.ToLower())-$(TargetArchitecture)</RuntimeIdentifier>
     <DefineConstants Condition="'$(ArchiveTests)' == 'true'">$(DefineConstants);CI_TEST</DefineConstants>
   </PropertyGroup>
@@ -91,7 +92,7 @@
 
   <Target Name="RunAppBundle"
           AfterTargets="BuildAppBundle"
-          Condition="'$(ArchiveTests)' != 'true'">
+          Condition="'$(ArchiveTests)' != 'true' and '$(DeployAndRun)' == 'true'">
     <!-- FIXME: only run if the TargetArchitecture matches the current architecture -->
 
     <!-- install and run on ios simulator or device -->
