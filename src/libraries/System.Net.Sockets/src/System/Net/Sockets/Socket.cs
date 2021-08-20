@@ -3861,21 +3861,15 @@ namespace System.Net.Sockets
                 // When the connect completes, the socket becomes writable.
                 if (Poll(0, SelectMode.SelectWrite))
                 {
-                    // Read the result of the connect.
+                    // Check the result of the connect.
                     SocketError errorCode = SocketPal.GetSockOpt(_handle, SocketOptionLevel.Socket, SocketOptionName.Error, out int optionValue);
-
                     if (errorCode == SocketError.Success)
                     {
-                        errorCode = (SocketError)optionValue;
+                        _nonBlockingConnectInProgress = false;
 
-                        if (errorCode != SocketError.InProgress)
+                        if ((SocketError)optionValue == SocketError.Success)
                         {
-                            _nonBlockingConnectInProgress = false;
-
-                            if (errorCode == SocketError.Success)
-                            {
-                                SetToConnected();
-                            }
+                            SetToConnected();
                         }
                     }
                 }
