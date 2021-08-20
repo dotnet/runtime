@@ -18,8 +18,6 @@
 #include "object-forward.h"
 #include "object-internals.h"
 #include "reflection.h"
-#include "security-core-clr.h"
-#include "security-manager.h"
 #include "security.h"
 #include "string-icalls.h"
 #include "mono/utils/mono-digest.h"

@@ -143,9 +143,6 @@ set(metadata_common_sources
     profiler-private.h
     runtime.c
     security.h
-    security-core-clr.c
-    security-core-clr.h
-    security-manager.h
     string-icalls.c
     string-icalls.h
     sysmath.c
