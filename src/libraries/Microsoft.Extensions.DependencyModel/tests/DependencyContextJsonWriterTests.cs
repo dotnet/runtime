@@ -60,7 +60,7 @@ namespace Microsoft.Extensions.DependencyModel.Tests
             var context = Create(
                             "Target",
                             "Target/runtime",
-                            null,
+                            true,
                             null,
                             runtimeLibraries: new[]
                             {
