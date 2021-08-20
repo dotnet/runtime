@@ -156,11 +156,11 @@ System.DirectoryServices.ActiveDirectory.DomainController</PackageDescription>
     <Compile Include="$(CommonPath)System\Obsoletions.cs" Link="System\Obsoletions.cs" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Security.AccessControl\src\System.Security.AccessControl.csproj" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.Security.Permissions\src\System.Security.Permissions.csproj" />
   </ItemGroup>
   <ItemGroup Condition="!$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net6.0'))">
     <PackageReference Include="System.IO.FileSystem.AccessControl" Version="$(SystemIOFileSystemAccessControlVersion)" />
-    <PackageReference Include="System.Security.AccessControl" Version="$(SystemSecurityAccessControlVersion)" />
     <PackageReference Include="System.Security.Principal.Windows" Version="$(SystemSecurityPrincipalWindowsVersion)" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
@@ -183,7 +183,6 @@ System.DirectoryServices.ActiveDirectory.DomainController</PackageDescription>
     <Reference Include="System.Runtime" />
     <Reference Include="System.Runtime.Extensions" />
     <Reference Include="System.Runtime.InteropServices" />
-    <Reference Include="System.Security.AccessControl" Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net6.0'))" />
     <Reference Include="System.Security.Claims" />
     <Reference Include="System.Security.Cryptography.Algorithms" />
     <Reference Include="System.Security.Principal.Windows" Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net6.0'))" />

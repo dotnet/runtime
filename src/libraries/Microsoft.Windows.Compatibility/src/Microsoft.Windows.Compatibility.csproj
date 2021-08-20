@@ -29,6 +29,7 @@
     <ProjectReference Include="$(LibrariesProjectRoot)System.Management\src\System.Management.csproj" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.Reflection.Context\src\System.Reflection.Context.csproj" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime.Caching\src\System.Runtime.Caching.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Security.AccessControl\src\System.Security.AccessControl.csproj" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.Security.Cryptography.Pkcs\src\System.Security.Cryptography.Pkcs.csproj" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.Security.Cryptography.ProtectedData\src\System.Security.Cryptography.ProtectedData.csproj" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.Security.Cryptography.Xml\src\System.Security.Cryptography.Xml.csproj" />
@@ -63,7 +64,6 @@
     <PackageReference Include="System.Reflection.Emit" Version="$(SystemReflectionEmitVersion)" />
     <PackageReference Include="System.Reflection.Emit.ILGeneration" Version="$(SystemReflectionEmitILGenerationVersion)" />
     <PackageReference Include="System.Reflection.Emit.Lightweight" Version="$(SystemReflectionEmitLightweightVersion)" />
-    <PackageReference Include="System.Security.AccessControl" Version="$(SystemSecurityAccessControlVersion)" />
     <PackageReference Include="System.Security.Cryptography.Cng" Version="$(SystemSecurityCryptographyCngVersion)" />
     <PackageReference Include="System.Security.Principal.Windows" Version="$(SystemSecurityPrincipalWindowsVersion)" />
   </ItemGroup>
