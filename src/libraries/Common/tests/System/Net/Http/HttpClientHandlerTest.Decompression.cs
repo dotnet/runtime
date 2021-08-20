@@ -60,13 +60,13 @@ namespace System.Net.Http.Functional.Tests
                     compress = s => new BrotliStream(s, CompressionLevel.Optimal, leaveOpen: true);
                     methods = all ? DecompressionMethods.Brotli : _all;
                     break;
-#endif
 
                 case "zlib":
                     compress = s => new ZLibStream(s, CompressionLevel.Optimal, leaveOpen: true);
                     methods = all ? DecompressionMethods.Deflate : _all;
                     encodingName = "deflate";
                     break;
+#endif
 
                 case "deflate":
                     compress = s => new DeflateStream(s, CompressionLevel.Optimal, leaveOpen: true);
