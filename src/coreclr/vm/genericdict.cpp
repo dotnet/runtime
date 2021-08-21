@@ -940,9 +940,6 @@ Dictionary::PopulateEntry(
 
                     if (kind == DispatchStubAddrSlot)
                     {
-                        if (NingenEnabled())
-                            return NULL;
-
                         fRequiresDispatchStub = TRUE;
                     }
 

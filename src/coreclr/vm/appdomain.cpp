@@ -1210,12 +1210,8 @@ void SystemDomain::Init()
         // the state here:
         GCX_COOP();
 
-        if (!NingenEnabled())
-        {
-            CreatePreallocatedExceptions();
-
-            PreallocateSpecialObjects();
-        }
+        CreatePreallocatedExceptions();
+        PreallocateSpecialObjects();
 
         // Finish loading CoreLib now.
         m_pSystemAssembly->GetDomainAssembly()->EnsureActive();
@@ -1461,10 +1457,7 @@ void SystemDomain::LoadBaseSystemClasses()
 #endif // PROFILING_SUPPORTED
 
 #if defined(_DEBUG)
-    if (!NingenEnabled())
-    {
-        g_CoreLib.Check();
-    }
+    g_CoreLib.Check();
 #endif
 }
 
@@ -3337,9 +3330,6 @@ void AppDomain::SetupSharedStatics()
         INJECT_FAULT(COMPlusThrowOM(););
     }
     CONTRACTL_END;
-
-    if (NingenEnabled())
-        return;
 
     LOG((LF_CLASSLOADER, LL_INFO10000, "STATICS: SetupSharedStatics()"));
 

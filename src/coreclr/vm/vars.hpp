@@ -712,12 +712,6 @@ PTR_GSCookie GetProcessGSCookiePtr() { return  PTR_GSCookie(&s_gsCookie); }
 inline
 GSCookie GetProcessGSCookie() { return *(RAW_KEYWORD(volatile) GSCookie *)(&s_gsCookie); }
 
-// Flag for cross-platform ngen: Removes all execution of managed or third-party code in the ngen compilation process.
-inline BOOL NingenEnabled()
-{
-    return FALSE;
-}
-
 // Passed to JitManager APIs to determine whether to avoid calling into the host.
 // The profiling API stackwalking uses this to ensure to avoid re-entering the host
 // (particularly SQL) from a hijacked thread.

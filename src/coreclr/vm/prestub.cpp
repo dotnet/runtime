@@ -1860,8 +1860,6 @@ extern "C" PCODE STDCALL PreStubWorker(TransitionBlock* pTransitionBlock, Method
     STATIC_CONTRACT_MODE_ANY;
     STATIC_CONTRACT_ENTRY_POINT;
 
-    _ASSERTE(!NingenEnabled() && "You cannot invoke managed code inside the ngen compilation process.");
-
     ETWOnStartup(PrestubWorker_V1, PrestubWorkerEnd_V1);
 
     MAKE_CURRENT_THREAD_AVAILABLE_EX(GetThreadNULLOk());
@@ -2285,11 +2283,6 @@ void ThePreStubManager::Init(void)
 void InitPreStubManager(void)
 {
     STANDARD_VM_CONTRACT;
-
-    if (NingenEnabled())
-    {
-        return;
-    }
 
 #if defined(TARGET_X86) && !defined(FEATURE_STUBS_AS_IL)
     g_UMThunkPreStub = GenerateUMThunkPrestub()->GetEntryPoint();

@@ -2185,9 +2185,6 @@ void Module::AllocateRegularStaticHandles(AppDomain* pDomain)
     }
     CONTRACTL_END;
 
-    if (NingenEnabled())
-        return;
-
     // Allocate the handles we will need. Note that AllocateStaticFieldObjRefPtrs will only
     // allocate if pModuleData->GetGCStaticsBasePointerAddress(pMT) != 0, avoiding creating
     // handles more than once for a given MT or module

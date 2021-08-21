@@ -11514,12 +11514,6 @@ InfoAccessType CEEJitInfo::emptyStringLiteral(void ** ppValue)
 
     InfoAccessType result = IAT_PVALUE;
 
-    if(NingenEnabled())
-    {
-        *ppValue = NULL;
-        return result;
-    }
-
     JIT_TO_EE_TRANSITION();
     *ppValue = StringObject::GetEmptyStringRefPtr();
     EE_TO_JIT_TRANSITION();
