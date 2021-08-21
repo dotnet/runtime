@@ -452,7 +452,7 @@ namespace System.Diagnostics.Eventing.Reader
                         && error != UnsafeNativeMethods.ERROR_EVT_UNRESOLVED_PARAMETER_INSERT
                         && error != UnsafeNativeMethods.ERROR_EVT_MAX_INSERTS_REACHED)
             {
-                if(IsNotFoundCase(error))
+                if (IsNotFoundCase(error))
                 {
                     return null;
                 }
@@ -468,7 +468,7 @@ namespace System.Diagnostics.Eventing.Reader
                         && error != UnsafeNativeMethods.ERROR_EVT_UNRESOLVED_PARAMETER_INSERT
                         && error != UnsafeNativeMethods.ERROR_EVT_MAX_INSERTS_REACHED)
             {
-                if(IsNotFoundCase(error))
+                if (IsNotFoundCase(error))
                 {
                     return null;
                 }
@@ -908,7 +908,7 @@ namespace System.Diagnostics.Eventing.Reader
                 // not an exception, but we have no way to convey the partial
                 // success out to enduser.
                 //
-                if(IsNotFoundCase(error))
+                if (IsNotFoundCase(error))
                 {
                     return null;
                 }
@@ -923,7 +923,7 @@ namespace System.Diagnostics.Eventing.Reader
             if (!status && error != UnsafeNativeMethods.ERROR_EVT_UNRESOLVED_VALUE_INSERT
                         && error != UnsafeNativeMethods.ERROR_EVT_UNRESOLVED_PARAMETER_INSERT)
             {
-                if(IsNotFoundCase(error))
+                if (IsNotFoundCase(error))
                 {
                     return null;
                 }
@@ -946,7 +946,7 @@ namespace System.Diagnostics.Eventing.Reader
 
                 if (!status)
                 {
-                    if(IsNotFoundCase(error))
+                    if (IsNotFoundCase(error))
                     {
                         return keywordsList.AsReadOnly();
                     }
@@ -959,7 +959,7 @@ namespace System.Diagnostics.Eventing.Reader
                 error = Marshal.GetLastWin32Error();
                 if (!status)
                 {
-                    if(IsNotFoundCase(error))
+                    if (IsNotFoundCase(error))
                     {
                         return keywordsList;
                     }
@@ -1044,7 +1044,7 @@ namespace System.Diagnostics.Eventing.Reader
                 // not an exception, but we have no way to convey the partial
                 // success out to enduser.
                 //
-                if(IsNotFoundCase(error))
+                if (IsNotFoundCase(error))
                 {
                     return null;
                 }
@@ -1059,7 +1059,7 @@ namespace System.Diagnostics.Eventing.Reader
             if (!status && error != UnsafeNativeMethods.ERROR_EVT_UNRESOLVED_VALUE_INSERT
                         && error != UnsafeNativeMethods.ERROR_EVT_UNRESOLVED_PARAMETER_INSERT)
             {
-                if(IsNotFoundCase(error))
+                if (IsNotFoundCase(error))
                 {
                     return null;
                 }
