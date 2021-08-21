@@ -1516,7 +1516,7 @@ void CEEInfo::getFieldInfo (CORINFO_RESOLVED_TOKEN * pResolvedToken,
                 fieldAccessor = intrinsicAccessor;
             }
             else
-            if (m_pMethodBeingCompiled->IsZapped() || IsCompilingForNGen() ||
+            if (IsCompilingForNGen() ||
                 // Static fields are not pinned in collectible types. We will always access
                 // them using a helper since the address cannot be embeded into the code.
                 pFieldMT->Collectible() ||
@@ -3816,7 +3816,7 @@ CorInfoInitClassResult CEEInfo::initClass(
 
     MethodDesc *methodBeingCompiled = m_pMethodBeingCompiled;
 
-    BOOL fMethodZappedOrNGen = methodBeingCompiled->IsZapped() || IsCompilingForNGen();
+    BOOL fMethodZappedOrNGen = IsCompilingForNGen();
 
     MethodTable *pTypeToInitMT = typeToInitTH.AsMethodTable();
 

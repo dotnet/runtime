@@ -2079,7 +2079,7 @@ public:
     // These are overridden by reflection modules
     virtual TADDR GetIL(RVA il);
 
-    virtual PTR_VOID GetRvaField(RVA field, BOOL fZapped);
+    virtual PTR_VOID GetRvaField(RVA field);
     CHECK CheckRvaField(RVA field);
     CHECK CheckRvaField(RVA field, COUNT_T size);
 
@@ -2538,7 +2538,7 @@ public:
 
     // Overrides functions to access sections
     virtual TADDR GetIL(RVA target);
-    virtual PTR_VOID GetRvaField(RVA rva, BOOL fZapped);
+    virtual PTR_VOID GetRvaField(RVA rva);
 
     Assembly* GetCreatingAssembly( void )
     {

@@ -8912,9 +8912,6 @@ void MethodTableBuilder::CopyExactParentSlots(MethodTable *pMT, MethodTable *pAp
     }
     CONTRACTL_END;
 
-    if (pMT->IsZapped())
-        return;
-
     DWORD nParentVirtuals = pMT->GetNumParentVirtuals();
     if (nParentVirtuals == 0)
         return;
