@@ -452,15 +452,9 @@ namespace System.Diagnostics.Eventing.Reader
                         && error != UnsafeNativeMethods.ERROR_EVT_UNRESOLVED_PARAMETER_INSERT
                         && error != UnsafeNativeMethods.ERROR_EVT_MAX_INSERTS_REACHED)
             {
-                switch (error)
+                if(IsNotFoundCase(error))
                 {
-                    case UnsafeNativeMethods.ERROR_EVT_MESSAGE_NOT_FOUND:
-                    case UnsafeNativeMethods.ERROR_EVT_MESSAGE_ID_NOT_FOUND:
-                    case UnsafeNativeMethods.ERROR_EVT_MESSAGE_LOCALE_NOT_FOUND:
-                    case UnsafeNativeMethods.ERROR_RESOURCE_LANG_NOT_FOUND:
-                    case UnsafeNativeMethods.ERROR_MUI_FILE_NOT_FOUND:
-                    case UnsafeNativeMethods.ERROR_RESOURCE_TYPE_NOT_FOUND:
-                        return null;
+                    return null;
                 }
                 if (error != UnsafeNativeMethods.ERROR_INSUFFICIENT_BUFFER)
                     EventLogException.Throw(error);
@@ -474,15 +468,9 @@ namespace System.Diagnostics.Eventing.Reader
                         && error != UnsafeNativeMethods.ERROR_EVT_UNRESOLVED_PARAMETER_INSERT
                         && error != UnsafeNativeMethods.ERROR_EVT_MAX_INSERTS_REACHED)
             {
-                switch (error)
+                if(IsNotFoundCase(error))
                 {
-                    case UnsafeNativeMethods.ERROR_EVT_MESSAGE_NOT_FOUND:
-                    case UnsafeNativeMethods.ERROR_EVT_MESSAGE_ID_NOT_FOUND:
-                    case UnsafeNativeMethods.ERROR_EVT_MESSAGE_LOCALE_NOT_FOUND:
-                    case UnsafeNativeMethods.ERROR_RESOURCE_LANG_NOT_FOUND:
-                    case UnsafeNativeMethods.ERROR_MUI_FILE_NOT_FOUND:
-                    case UnsafeNativeMethods.ERROR_RESOURCE_TYPE_NOT_FOUND:
-                        return null;
+                    return null;
                 }
                 EventLogException.Throw(error);
             }
@@ -920,15 +908,9 @@ namespace System.Diagnostics.Eventing.Reader
                 // not an exception, but we have no way to convey the partial
                 // success out to enduser.
                 //
-                switch (error)
+                if(IsNotFoundCase(error))
                 {
-                    case UnsafeNativeMethods.ERROR_EVT_MESSAGE_NOT_FOUND:
-                    case UnsafeNativeMethods.ERROR_EVT_MESSAGE_ID_NOT_FOUND:
-                    case UnsafeNativeMethods.ERROR_EVT_MESSAGE_LOCALE_NOT_FOUND:
-                    case UnsafeNativeMethods.ERROR_RESOURCE_LANG_NOT_FOUND:
-                    case UnsafeNativeMethods.ERROR_MUI_FILE_NOT_FOUND:
-                    case UnsafeNativeMethods.ERROR_RESOURCE_TYPE_NOT_FOUND:
-                        return null;
+                    return null;
                 }
                 if (error != (int)UnsafeNativeMethods.ERROR_INSUFFICIENT_BUFFER)
                     EventLogException.Throw(error);
@@ -941,15 +923,9 @@ namespace System.Diagnostics.Eventing.Reader
             if (!status && error != UnsafeNativeMethods.ERROR_EVT_UNRESOLVED_VALUE_INSERT
                         && error != UnsafeNativeMethods.ERROR_EVT_UNRESOLVED_PARAMETER_INSERT)
             {
-                switch (error)
+                if(IsNotFoundCase(error))
                 {
-                    case UnsafeNativeMethods.ERROR_EVT_MESSAGE_NOT_FOUND:
-                    case UnsafeNativeMethods.ERROR_EVT_MESSAGE_ID_NOT_FOUND:
-                    case UnsafeNativeMethods.ERROR_EVT_MESSAGE_LOCALE_NOT_FOUND:
-                    case UnsafeNativeMethods.ERROR_RESOURCE_LANG_NOT_FOUND:
-                    case UnsafeNativeMethods.ERROR_MUI_FILE_NOT_FOUND:
-                    case UnsafeNativeMethods.ERROR_RESOURCE_TYPE_NOT_FOUND:
-                        return null;
+                    return null;
                 }
                 EventLogException.Throw(error);
             }
@@ -970,15 +946,9 @@ namespace System.Diagnostics.Eventing.Reader
 
                 if (!status)
                 {
-                    switch (error)
+                    if(IsNotFoundCase(error))
                     {
-                        case UnsafeNativeMethods.ERROR_EVT_MESSAGE_NOT_FOUND:
-                        case UnsafeNativeMethods.ERROR_EVT_MESSAGE_ID_NOT_FOUND:
-                        case UnsafeNativeMethods.ERROR_EVT_MESSAGE_LOCALE_NOT_FOUND:
-                        case UnsafeNativeMethods.ERROR_RESOURCE_LANG_NOT_FOUND:
-                        case UnsafeNativeMethods.ERROR_MUI_FILE_NOT_FOUND:
-                        case UnsafeNativeMethods.ERROR_RESOURCE_TYPE_NOT_FOUND:
-                            return keywordsList.AsReadOnly();
+                        return keywordsList.AsReadOnly();
                     }
                     if (error != UnsafeNativeMethods.ERROR_INSUFFICIENT_BUFFER)
                         EventLogException.Throw(error);
@@ -989,15 +959,9 @@ namespace System.Diagnostics.Eventing.Reader
                 error = Marshal.GetLastWin32Error();
                 if (!status)
                 {
-                    switch (error)
+                    if(IsNotFoundCase(error))
                     {
-                        case UnsafeNativeMethods.ERROR_EVT_MESSAGE_NOT_FOUND:
-                        case UnsafeNativeMethods.ERROR_EVT_MESSAGE_ID_NOT_FOUND:
-                        case UnsafeNativeMethods.ERROR_EVT_MESSAGE_LOCALE_NOT_FOUND:
-                        case UnsafeNativeMethods.ERROR_RESOURCE_LANG_NOT_FOUND:
-                        case UnsafeNativeMethods.ERROR_MUI_FILE_NOT_FOUND:
-                        case UnsafeNativeMethods.ERROR_RESOURCE_TYPE_NOT_FOUND:
-                            return keywordsList;
+                        return keywordsList;
                     }
                     EventLogException.Throw(error);
                 }
@@ -1080,15 +1044,9 @@ namespace System.Diagnostics.Eventing.Reader
                 // not an exception, but we have no way to convey the partial
                 // success out to enduser.
                 //
-                switch (error)
+                if(IsNotFoundCase(error))
                 {
-                    case UnsafeNativeMethods.ERROR_EVT_MESSAGE_NOT_FOUND:
-                    case UnsafeNativeMethods.ERROR_EVT_MESSAGE_ID_NOT_FOUND:
-                    case UnsafeNativeMethods.ERROR_EVT_MESSAGE_LOCALE_NOT_FOUND:
-                    case UnsafeNativeMethods.ERROR_RESOURCE_LANG_NOT_FOUND:
-                    case UnsafeNativeMethods.ERROR_MUI_FILE_NOT_FOUND:
-                    case UnsafeNativeMethods.ERROR_RESOURCE_TYPE_NOT_FOUND:
-                        return null;
+                    return null;
                 }
                 if (error != UnsafeNativeMethods.ERROR_INSUFFICIENT_BUFFER)
                     EventLogException.Throw(error);
@@ -1101,15 +1059,9 @@ namespace System.Diagnostics.Eventing.Reader
             if (!status && error != UnsafeNativeMethods.ERROR_EVT_UNRESOLVED_VALUE_INSERT
                         && error != UnsafeNativeMethods.ERROR_EVT_UNRESOLVED_PARAMETER_INSERT)
             {
-                switch (error)
+                if(IsNotFoundCase(error))
                 {
-                    case UnsafeNativeMethods.ERROR_EVT_MESSAGE_NOT_FOUND:
-                    case UnsafeNativeMethods.ERROR_EVT_MESSAGE_ID_NOT_FOUND:
-                    case UnsafeNativeMethods.ERROR_EVT_MESSAGE_LOCALE_NOT_FOUND:
-                    case UnsafeNativeMethods.ERROR_RESOURCE_LANG_NOT_FOUND:
-                    case UnsafeNativeMethods.ERROR_MUI_FILE_NOT_FOUND:
-                    case UnsafeNativeMethods.ERROR_RESOURCE_TYPE_NOT_FOUND:
-                        return null;
+                    return null;
                 }
                 EventLogException.Throw(error);
             }
@@ -1366,6 +1318,21 @@ namespace System.Diagnostics.Eventing.Reader
                 }
                 return stringArray;
             }
+        }
+
+        private static bool IsNotFoundCase(int error)
+        {
+            switch (error)
+            {
+                case UnsafeNativeMethods.ERROR_EVT_MESSAGE_NOT_FOUND:
+                case UnsafeNativeMethods.ERROR_EVT_MESSAGE_ID_NOT_FOUND:
+                case UnsafeNativeMethods.ERROR_EVT_MESSAGE_LOCALE_NOT_FOUND:
+                case UnsafeNativeMethods.ERROR_RESOURCE_LANG_NOT_FOUND:
+                case UnsafeNativeMethods.ERROR_MUI_FILE_NOT_FOUND:
+                case UnsafeNativeMethods.ERROR_RESOURCE_TYPE_NOT_FOUND:
+                    return true;
+            }
+            return false;
         }
     }
 }
