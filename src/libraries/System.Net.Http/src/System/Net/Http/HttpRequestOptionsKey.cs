@@ -8,6 +8,9 @@ namespace System.Net.Http
     public readonly struct HttpRequestOptionsKey<TValue>
     {
         public string Key { get; }
+        ///<summary>
+        ///Initializes a new instance of the <see cref="HttpRequestOptionsKey"/> struct using the supplied string key.
+        ///</summary>
         public HttpRequestOptionsKey(string key)
         {
             Key = key;
