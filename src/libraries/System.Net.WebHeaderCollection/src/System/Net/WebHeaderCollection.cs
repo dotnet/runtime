@@ -101,7 +101,6 @@ namespace System.Net
                 this[header.GetName()] = value;
             }
         }
-        
         /// <summary>
         /// Gets or sets the specified header. If http request headers are not allowed, throws an exception.
         /// </summary>

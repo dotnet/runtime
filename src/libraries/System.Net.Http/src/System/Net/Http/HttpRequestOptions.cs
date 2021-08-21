@@ -40,7 +40,6 @@ namespace System.Net.Http
         bool IDictionary<string, object?>.Remove(string key) => Options.Remove(key);
         bool ICollection<KeyValuePair<string, object?>>.Remove(KeyValuePair<string, object?> item) => ((IDictionary<string, object?>)Options).Remove(item);
         bool IDictionary<string, object?>.TryGetValue(string key, out object? value) => Options.TryGetValue(key, out value);
-        
         ///<summary>
         ///Gets the value of a given option.
         ///</summary>
@@ -58,7 +57,6 @@ namespace System.Net.Http
             value = default(TValue);
             return false;
         }
-        
         ///<summary>
         ///Sets the value of a given option.
         ///</summary>
