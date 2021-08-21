@@ -328,7 +328,6 @@ public:
 
     LPCUTF8 GetName(USHORT slot);
 
-    void PrecomputeNameHash();
     BOOL MightHaveName(ULONG nameHashValue);
 
     FORCEINLINE LPCUTF8 GetNameOnNonArrayClass()
@@ -1840,19 +1839,12 @@ public:
     inline BOOL HaveValueTypeParametersBeenWalked()
     {
         LIMITED_METHOD_DAC_CONTRACT;
-
-        // This should only be asked of non-Zapped MethodDescs, and only during execution (not compilation)
-        _ASSERTE(!IsCompilationProcess());
-
         return (m_wFlags3AndTokenRemainder & enum_flag3_ValueTypeParametersWalked) != 0;
     }
 
     inline void SetValueTypeParametersWalked()
     {
         LIMITED_METHOD_CONTRACT;
-
-        _ASSERTE(!IsCompilationProcess());
-
         InterlockedUpdateFlags3(enum_flag3_ValueTypeParametersWalked, TRUE);
     }
 
