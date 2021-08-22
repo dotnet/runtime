@@ -3394,7 +3394,7 @@ void Compiler::fgInitArgInfo(GenTreeCall* call)
                     if (callIsVararg)
                     {
                         // Override the decision and force a split.
-                        isRegArg = isRegArg = (intArgRegNum + (size - 1)) <= maxRegArgs;
+                        isRegArg = (intArgRegNum + (size - 1)) <= maxRegArgs;
                     }
                     else
 #endif // defined(TARGET_WINDOWS)

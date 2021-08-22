@@ -6790,7 +6790,7 @@ void emitter::emitDispImm(int imm, bool addComma, bool alwaysHex /* =false */)
         printf("%d", imm);
     else if ((imm > 0) ||
              (imm == -imm) || // -0x80000000 == 0x80000000. So we don't want to add an extra "-" at the beginning.
-             (emitComp->opts.disDiffable && (imm == 0xD1FFAB1E))) // Don't display this as negative
+             (emitComp->opts.disDiffable && (imm == (int)0xD1FFAB1E))) // Don't display this as negative
         printf("0x%02x", imm);
     else // val <= -1000
         printf("-0x%02x", -imm);
