@@ -350,6 +350,24 @@ namespace Microsoft.Extensions.Logging.Generators.Tests
             Assert.Empty(diagnostics);
         }
 
+        [Fact]
+        public async Task FileScopedNamespaceOK()
+        {
+            IReadOnlyList<Diagnostic> diagnostics = await RunGenerator(@"
+                using Microsoft.Extensions.Logging;
+
+                namespace MyLibrary;
+
+                internal partial class Logger
+                {
+                    [LoggerMessage(EventId = 1, Level = LogLevel.Information, Message = ""Hello {Name}!"")]
+                    public static partial void Greeting(ILogger logger, string name);
+                }
+            ");
+
+            Assert.Empty(diagnostics);
+        }
+
         [Theory]
         [InlineData("false")]
         [InlineData("true")]
