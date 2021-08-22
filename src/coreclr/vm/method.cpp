@@ -166,8 +166,6 @@ BOOL NDirectMethodDesc::HasDefaultDllImportSearchPathsAttribute()
         return (ndirect.m_wFlags  & kDefaultDllImportSearchPathsStatus) != 0;
     }
 
-    _ASSERTE(!IsZapped());
-
     BOOL attributeIsFound = GetDefaultDllImportSearchPathsAttributeValue(GetModule(),GetMemberDef(),&ndirect.m_DefaultDllImportSearchPathsAttributeValue);
 
     if(attributeIsFound )
@@ -545,7 +543,7 @@ PCODE MethodDesc::GetMethodEntryPoint()
 
         TADDR pSlot = dac_cast<TADDR>(this) + size;
 
-        return IsZapped() ? NonVtableSlot::GetValueAtPtr(pSlot) : *PTR_PCODE(pSlot);
+        return *PTR_PCODE(pSlot);
     }
 
     _ASSERTE(GetMethodTable()->IsCanonicalMethodTable());
@@ -567,9 +565,6 @@ TADDR MethodDesc::GetAddrOfSlot()
 
     if (HasNonVtableSlot())
     {
-        // Slots in NGened images are relative pointers
-        _ASSERTE(!IsZapped());
-
         SIZE_T size = GetBaseSize();
 
         return dac_cast<TADDR>(this) + size;
@@ -1405,21 +1400,6 @@ DWORD MethodDesc::GetImplAttrs()
 }
 
 //*******************************************************************************
-Module* MethodDesc::GetZapModule()
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        FORBID_FAULT;
-        SUPPORTS_DAC;
-    }
-    CONTRACTL_END
-
-    return NULL;
-}
-
-//*******************************************************************************
 Module* MethodDesc::GetLoaderModule()
 {
     CONTRACTL
@@ -1430,11 +1410,6 @@ Module* MethodDesc::GetLoaderModule()
     }
     CONTRACTL_END;
 
-    if (IsZapped())
-    {
-        return GetZapModule();
-    }
-    else
     if (HasMethodInstantiation() && !IsGenericMethodDefinition())
     {
         Module *retVal = ClassLoader::ComputeLoaderModule(GetMethodTable(),
@@ -2978,8 +2953,6 @@ PCODE MethodDescChunk::GetTemporaryEntryPoint(int index)
 {
     LIMITED_METHOD_CONTRACT;
 
-    _ASSERTE(HasTemporaryEntryPoints());
-
 #ifdef HAS_COMPACT_ENTRYPOINTS
     if (HasCompactEntryPoints())
     {
@@ -3013,8 +2986,6 @@ PCODE MethodDesc::GetTemporaryEntryPoint()
     CONTRACTL_END;
 
     MethodDescChunk* pChunk = GetMethodDescChunk();
-    _ASSERTE(pChunk->HasTemporaryEntryPoints());
-
     int lo = 0, hi = pChunk->GetCount() - 1;
 
     // Find the temporary entrypoint in the chunk by binary search
@@ -3200,9 +3171,6 @@ bool MethodDesc::DetermineAndSetIsEligibleForTieredCompilation()
     if (
         // Policy
         g_pConfig->TieredCompilation() &&
-
-        // Functional requirement - NGEN images embed direct calls that we would be unable to detect and redirect
-        !IsZapped() &&
 
         // Functional requirement - The NativeCodeSlot is required to hold the code pointer for the default code version because
         // the method's entry point slot will point to a precode or to the current code entry point
@@ -4061,23 +4029,20 @@ MethodDescChunk::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
         pMT->EnumMemoryRegions(flags);
     }
 
-    if (HasTemporaryEntryPoints())
-    {
-        SIZE_T size;
+    SIZE_T size;
 
 #ifdef HAS_COMPACT_ENTRYPOINTS
-        if (HasCompactEntryPoints())
-        {
-            size = SizeOfCompactEntryPoints(GetCount());
-        }
-        else
-#endif // HAS_COMPACT_ENTRYPOINTS
-        {
-            size = Precode::SizeOfTemporaryEntryPoints(GetTemporaryEntryPoints(), GetCount());
-        }
-
-        DacEnumMemoryRegion(GetTemporaryEntryPoints(), size);
+    if (HasCompactEntryPoints())
+    {
+        size = SizeOfCompactEntryPoints(GetCount());
     }
+    else
+#endif // HAS_COMPACT_ENTRYPOINTS
+    {
+        size = Precode::SizeOfTemporaryEntryPoints(GetTemporaryEntryPoints(), GetCount());
+    }
+
+    DacEnumMemoryRegion(GetTemporaryEntryPoints(), size);
 
     MethodDesc * pMD = GetFirstMethodDesc();
     MethodDesc * pOldMD = NULL;
@@ -4222,7 +4187,7 @@ moveToNextToken:
         IfFailThrowBF(ptr.SkipExactlyOne(), BFA_BAD_SIGNATURE, pModule);
     }
 
-    if (!IsZapped() && !IsCompilationProcess() && !HaveValueTypeParametersBeenWalked())
+    if (!IsCompilationProcess() && !HaveValueTypeParametersBeenWalked())
     {
         SetValueTypeParametersWalked();
     }
@@ -4267,7 +4232,7 @@ BOOL MethodDesc::HasTypeEquivalentStructParameters()
 
     WalkValueTypeParameters(this->GetMethodTable(), CheckForEquivalenceAndLoadType, &fHasTypeEquivalentStructParameters);
 
-    if (!fHasTypeEquivalentStructParameters && !IsZapped())
+    if (!fHasTypeEquivalentStructParameters)
         SetDoesNotHaveEquivalentValuetypeParameters();
 
     return fHasTypeEquivalentStructParameters;
@@ -4348,7 +4313,7 @@ void MethodDesc::PrepareForUseAsADependencyOfANativeImageWorker()
     {
     }
     EX_END_CATCH(RethrowTerminalExceptions);
-    _ASSERTE(IsZapped() || HaveValueTypeParametersBeenWalked());
+    _ASSERTE(HaveValueTypeParametersBeenWalked());
 }
 #endif //!DACCESS_COMPILE
 

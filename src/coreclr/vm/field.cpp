@@ -306,7 +306,7 @@ PTR_VOID FieldDesc::GetStaticAddressHandle(PTR_VOID base)
     if (IsRVA())
     {
         Module* pModule = GetModule();
-        PTR_VOID ret = pModule->GetRvaField(GetOffset(), IsZapped());
+        PTR_VOID ret = pModule->GetRvaField(GetOffset());
 
         _ASSERTE(!pModule->IsPEFile() || !pModule->IsRvaFieldTls(GetOffset()));
 

@@ -9083,6 +9083,7 @@ void SetupWatsonBucketsForUEF(BOOL fUseLastThrownObject)
     struct
     {
         OBJECTREF oThrowable;
+        U1ARRAYREF oBuckets;
     } gc;
     ZeroMemory(&gc, sizeof(gc));
     GCPROTECT_BEGIN(gc);
@@ -9184,9 +9185,10 @@ void SetupWatsonBucketsForUEF(BOOL fUseLastThrownObject)
                 SetupWatsonBucketsForNonPreallocatedExceptions(gc.oThrowable);
             }
 
-            if (((EXCEPTIONREF)gc.oThrowable)->AreWatsonBucketsPresent())
+            gc.oBuckets = ((EXCEPTIONREF)gc.oThrowable)->GetWatsonBucketReference();
+            if (gc.oBuckets != NULL)
             {
-                pUEWatsonBucketTracker->CopyBucketsFromThrowable(gc.oThrowable);
+                pUEWatsonBucketTracker->CopyBuckets(gc.oBuckets);
             }
 
             if (pUEWatsonBucketTracker->RetrieveWatsonBuckets() == NULL)
@@ -9506,6 +9508,7 @@ BOOL SetupWatsonBucketsForFailFast(EXCEPTIONREF refException)
     {
         OBJECTREF refException;
         OBJECTREF oInnerMostExceptionThrowable;
+        U1ARRAYREF oBuckets;
     } gc;
     ZeroMemory(&gc, sizeof(gc));
     GCPROTECT_BEGIN(gc);
@@ -9656,10 +9659,11 @@ BOOL SetupWatsonBucketsForFailFast(EXCEPTIONREF refException)
                 }
 
                 // If it has the buckets, copy them over to the current Watson bucket tracker
-                if (((EXCEPTIONREF)gc.oInnerMostExceptionThrowable)->AreWatsonBucketsPresent())
+                gc.oBuckets = ((EXCEPTIONREF)gc.oInnerMostExceptionThrowable)->GetWatsonBucketReference();
+                if (gc.oBuckets != NULL)
                 {
                     pUEWatsonBucketTracker->ClearWatsonBucketDetails();
-                    pUEWatsonBucketTracker->CopyBucketsFromThrowable(gc.oInnerMostExceptionThrowable);
+                    pUEWatsonBucketTracker->CopyBuckets(gc.oBuckets);
                     if (pUEWatsonBucketTracker->RetrieveWatsonBuckets() != NULL)
                     {
                         LOG((LF_EH, LL_INFO1000, "SetupWatsonBucketsForFailFast - Got watson buckets from regular innermost exception.\n"));
@@ -9698,11 +9702,12 @@ BOOL SetupWatsonBucketsForFailFast(EXCEPTIONREF refException)
                 SetupWatsonBucketsForNonPreallocatedExceptions(gc.refException);
             }
 
-            if (((EXCEPTIONREF)gc.refException)->AreWatsonBucketsPresent())
+            gc.oBuckets = ((EXCEPTIONREF)gc.refException)->GetWatsonBucketReference();
+            if (gc.oBuckets != NULL)
             {
                 // Copy the buckets to the current watson bucket tracker
                 pUEWatsonBucketTracker->ClearWatsonBucketDetails();
-                pUEWatsonBucketTracker->CopyBucketsFromThrowable(gc.refException);
+                pUEWatsonBucketTracker->CopyBuckets(gc.oBuckets);
                 if (pUEWatsonBucketTracker->RetrieveWatsonBuckets() != NULL)
                 {
                     LOG((LF_EH, LL_INFO1000, "SetupWatsonBucketsForFailFast - Watson buckets copied from the exception object.\n"));
@@ -9937,6 +9942,9 @@ void SetupInitialThrowBucketDetails(UINT_PTR adjustedIp)
                     EX_TRY
                     {
                         CopyWatsonBucketsToThrowable(pUEWatsonBucketTracker->RetrieveWatsonBuckets());
+
+                        // Technically this assert can fail, as another thread could clear the buckets after
+                        // CopyWatsonBucketsToThrowable but before the assert runs, but it is very unlikely.
                         _ASSERTE(((EXCEPTIONREF)gc.oCurrentThrowable)->AreWatsonBucketsPresent());
                     }
                     EX_CATCH
@@ -10673,7 +10681,7 @@ void EHWatsonBucketTracker::Init()
 
 // This method copies the bucketing details from the specified throwable
 // to the current Watson Bucket tracker.
-void EHWatsonBucketTracker::CopyBucketsFromThrowable(OBJECTREF oThrowable)
+void EHWatsonBucketTracker::CopyBuckets(U1ARRAYREF oBuckets)
 {
 #ifndef DACCESS_COMPILE
     CONTRACTL
@@ -10681,8 +10689,7 @@ void EHWatsonBucketTracker::CopyBucketsFromThrowable(OBJECTREF oThrowable)
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
-        PRECONDITION(oThrowable != NULL);
-        PRECONDITION(((EXCEPTIONREF)oThrowable)->AreWatsonBucketsPresent());
+        PRECONDITION(oBuckets != NULL);
         PRECONDITION(IsWatsonEnabled());
     }
     CONTRACTL_END;
@@ -10691,16 +10698,16 @@ void EHWatsonBucketTracker::CopyBucketsFromThrowable(OBJECTREF oThrowable)
 
     struct
     {
-        OBJECTREF oFrom;
+        U1ARRAYREF oFromBuckets;
     } _gc;
 
     ZeroMemory(&_gc, sizeof(_gc));
     GCPROTECT_BEGIN(_gc);
 
-    _gc.oFrom = oThrowable;
+    _gc.oFromBuckets = oBuckets;
 
-    LOG((LF_EH, LL_INFO1000, "EHWatsonBucketTracker::CopyEHWatsonBucketTracker - Copying bucketing details from throwable (%p) to tracker (%p)\n",
-                            OBJECTREFToObject(_gc.oFrom), this));
+    LOG((LF_EH, LL_INFO1000, "EHWatsonBucketTracker::CopyEHWatsonBucketTracker - Copying bucketing details from bucket (%p) to tracker (%p)\n",
+                            OBJECTREFToObject(_gc.oFromBuckets), this));
 
     // Watson bucket is a "GenericModeBlock" type. Set up an empty GenericModeBlock
     // to hold the bucket parameters.
@@ -10715,8 +10722,7 @@ void EHWatsonBucketTracker::CopyBucketsFromThrowable(OBJECTREF oThrowable)
     else
     {
         // Get the raw array data pointer
-        U1ARRAYREF refWatsonBucketArray = ((EXCEPTIONREF)_gc.oFrom)->GetWatsonBucketReference();
-        PTR_VOID pRawWatsonBucketArray = dac_cast<PTR_VOID>(refWatsonBucketArray->GetDataPtr());
+        PTR_VOID pRawWatsonBucketArray = dac_cast<PTR_VOID>(_gc.oFromBuckets->GetDataPtr());
 
         // Copy over the details to our new allocation
         memcpyNoGCRefs(pgmb, pRawWatsonBucketArray, sizeof(GenericModeBlock));

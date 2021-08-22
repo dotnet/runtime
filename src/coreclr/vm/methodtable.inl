@@ -112,31 +112,6 @@ inline BOOL MethodTable::IsClassPointerValid()
 }
 
 //==========================================================================================
-// Does this immediate item live in an NGEN module?
-inline BOOL MethodTable::IsZapped()
-{
-    LIMITED_METHOD_DAC_CONTRACT;
-
-    return FALSE;
-}
-
-//==========================================================================================
-// For types that are part of an ngen-ed assembly this gets the
-// Module* that contains this methodtable.
-inline PTR_Module MethodTable::GetZapModule()
-{
-    LIMITED_METHOD_DAC_CONTRACT;
-
-    PTR_Module zapModule = NULL;
-    if (IsZapped())
-    {
-        zapModule = ReadPointer(this, &MethodTable::m_pLoaderModule);
-    }
-
-    return zapModule;
-}
-
-//==========================================================================================
 inline PTR_Module MethodTable::GetLoaderModule()
 {
     LIMITED_METHOD_DAC_CONTRACT;

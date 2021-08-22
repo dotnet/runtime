@@ -3283,10 +3283,6 @@ BOOL NDirect::MarshalingRequired(
                 return TRUE;
 
             NDirectMethodDesc* pNMD = (NDirectMethodDesc*)pMD;
-            // Make sure running cctor can be handled by stub
-            if (pNMD->IsClassConstructorTriggeredByILStub())
-                return TRUE;
-
             InitializeSigInfoAndPopulateNDirectMethodDesc(pNMD, &sigInfo);
 
             // Pending exceptions are handled by stub
@@ -5436,11 +5432,6 @@ MethodDesc* NDirect::GetILStubMethodDesc(NDirectMethodDesc* pNMD, PInvokeStaticS
 
     if (!pNMD->IsVarArgs() || SF_IsForNumParamBytes(dwStubFlags))
     {
-        if (pNMD->IsClassConstructorTriggeredByILStub())
-        {
-            dwStubFlags |= NDIRECTSTUB_FL_TRIGGERCCTOR;
-        }
-
         pStubMD = CreateCLRToNativeILStub(
             pSigInfo,
             dwStubFlags & ~NDIRECTSTUB_FL_FOR_NUMPARAMBYTES,
@@ -5958,12 +5949,9 @@ EXTERN_C LPVOID STDCALL NDirectImportWorker(NDirectMethodDesc* pMD)
 
     if (pMD->IsEarlyBound())
     {
-        if (!pMD->IsZapped())
-        {
-            // we need the MD to be populated in case we decide to build an intercept
-            // stub to wrap the target in InitEarlyBoundNDirectTarget
-            NDirect::PopulateNDirectMethodDesc(pMD);
-        }
+        // we need the MD to be populated in case we decide to build an intercept
+        // stub to wrap the target in InitEarlyBoundNDirectTarget
+        NDirect::PopulateNDirectMethodDesc(pMD);
 
         pMD->InitEarlyBoundNDirectTarget();
     }
@@ -5982,16 +5970,7 @@ EXTERN_C LPVOID STDCALL NDirectImportWorker(NDirectMethodDesc* pMD)
             // With IL stubs, we don't have to do anything but ensure the DLL is loaded.
             //
 
-            if (!pMD->IsZapped())
-            {
-                NDirect::PopulateNDirectMethodDesc(pMD);
-            }
-            else
-            {
-                // must have been populated at NGEN time
-                _ASSERTE(pMD->GetLibName() != NULL);
-            }
-
+            NDirect::PopulateNDirectMethodDesc(pMD);
             pMD->CheckRestore();
 
             NDirectLink(pMD);
@@ -6155,11 +6134,6 @@ PCODE GetILStubForCalli(VASigCookie *pVASigCookie, MethodDesc *pMD)
 
         // vararg P/Invoke must be cdecl
         unmgdCallConv = CorInfoCallConvExtension::C;
-
-        if (((NDirectMethodDesc *)pMD)->IsClassConstructorTriggeredByILStub())
-        {
-            dwStubFlags |= NDIRECTSTUB_FL_TRIGGERCCTOR;
-        }
     }
 
     mdMethodDef md;

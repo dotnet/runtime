@@ -2544,7 +2544,7 @@ void Module::FreeClassTables()
                 if (!th.IsTypeDesc())
                 {
                     MethodTable * pMT = th.AsMethodTable();
-                    if (pMT->IsCanonicalMethodTable() && (!pMT->IsZapped() || pMT->GetZapModule() == this))
+                    if (pMT->IsCanonicalMethodTable())
                         pMT->GetClass()->Destruct(pMT);
                 }
             }
@@ -3089,9 +3089,9 @@ ILStubCache* Module::GetILStubCache()
     }
     CONTRACTL_END;
 
-    // Use per-LoaderAllocator cache for modules when not NGENing
+    // Use per-LoaderAllocator cache for modules
     BaseDomain *pDomain = GetDomain();
-    if (!IsSystem() && !pDomain->AsAppDomain()->IsCompilationDomain())
+    if (!IsSystem())
         return GetLoaderAllocator()->GetILStubCache();
 
     if (m_pILStubCache == NULL)
@@ -3261,7 +3261,7 @@ TADDR Module::GetIL(DWORD target)
     return m_file->GetIL(target);
 }
 
-PTR_VOID Module::GetRvaField(DWORD rva, BOOL fZapped)
+PTR_VOID Module::GetRvaField(DWORD rva)
 {
     WRAPPER_NO_CONTRACT;
     SUPPORTS_DAC;
@@ -4660,13 +4660,6 @@ void Module::FixupVTables()
     }
 
     HINSTANCE hInstThis = GetFile()->GetIJWBase();
-
-    // <REVISIT_TODO>@todo: workaround!</REVISIT_TODO>
-    // If we are compiling in-process, we don't want to fixup the vtables - as it
-    // will have side effects on the other copy of the module!
-    if (SystemDomain::GetCurrentDomain()->IsCompilationDomain()) {
-        return;
-    }
 
     // Get vtable fixup data
     COUNT_T cFixupRecords;
@@ -7664,9 +7657,8 @@ TADDR ReflectionModule::GetIL(RVA il) // virtual
 #endif // DACCESS_COMPILE
 }
 
-PTR_VOID ReflectionModule::GetRvaField(RVA field, BOOL fZapped) // virtual
+PTR_VOID ReflectionModule::GetRvaField(RVA field) // virtual
 {
-    _ASSERTE(!fZapped);
 #ifndef DACCESS_COMPILE
     WRAPPER_NO_CONTRACT;
     // This function should be call only if the target is a field or a field with RVA.

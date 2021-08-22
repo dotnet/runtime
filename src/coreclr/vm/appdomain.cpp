@@ -2142,18 +2142,6 @@ void AppDomain::Init()
     m_nativeImageLoadCrst.Init(CrstNativeImageLoad);
 } // AppDomain::Init
 
-
-/*********************************************************************/
-
-BOOL AppDomain::IsCompilationDomain()
-{
-    LIMITED_METHOD_CONTRACT;
-
-    BOOL isCompilationDomain = (m_dwFlags & COMPILATION_DOMAIN) != 0;
-    return isCompilationDomain;
-}
-
-
 void AppDomain::Stop()
 {
     CONTRACTL
