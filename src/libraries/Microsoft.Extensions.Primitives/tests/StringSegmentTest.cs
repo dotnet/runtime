@@ -170,6 +170,9 @@ namespace Microsoft.Extensions.Primitives
             Assert.False(segment.HasValue);
             Assert.Equal(0, segment.Offset);
             Assert.Equal(0, segment.Length);
+            Assert.Null(segment.Buffer);
+            Assert.Null(segment.Value);
+            Assert.Throws<ArgumentOutOfRangeException>(() => segment[0]);
         }
 
         [Fact]
