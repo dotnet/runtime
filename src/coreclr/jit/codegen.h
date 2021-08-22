@@ -841,16 +841,13 @@ protected:
     void genCodeForMul(GenTreeOp* treeNode);
     void genCodeForIncSaturate(GenTree* treeNode);
     void genCodeForMulHi(GenTreeOp* treeNode);
+    void genCodeForMulLong(GenTreeOp* mul);
     void genLeaInstruction(GenTreeAddrMode* lea);
     void genSetRegToCond(regNumber dstReg, GenTree* tree);
 
 #if defined(TARGET_ARMARCH)
     void genScaledAdd(emitAttr attr, regNumber targetReg, regNumber baseReg, regNumber indexReg, int scale);
 #endif // TARGET_ARMARCH
-
-#if defined(TARGET_ARM)
-    void genCodeForMulLong(GenTreeMultiRegOp* treeNode);
-#endif // TARGET_ARM
 
 #if !defined(TARGET_64BIT)
     void genLongToIntCast(GenTree* treeNode);
