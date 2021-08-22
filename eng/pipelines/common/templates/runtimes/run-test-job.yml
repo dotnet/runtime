@@ -380,6 +380,14 @@ jobs:
           - jitstress1_tiered
           - jitstress2
           - jitstress2_tiered
+          - jitstress3
+          - jitstress7
+          - jitstress8
+          - jitstress50
+          - jitstress100
+          - jitstress99
+          - jitstress71
+          - jitstress65
           - zapdisable
           - tailcallstress
         ${{ if in(parameters.testGroup, 'jitstress-isas-arm') }}:

@@ -86,6 +86,14 @@
     <TestEnvironment Include="forcerelocs" ForceRelocs="1" />
     <TestEnvironment Include="jitstress1" JitStress="1" />
     <TestEnvironment Include="jitstress2" JitStress="2" />
+    <TestEnvironment Include="jitstress3" JitStress="3" />
+    <TestEnvironment Include="jitstress7" JitStress="7" />
+    <TestEnvironment Include="jitstress8" JitStress="8" />
+    <TestEnvironment Include="jitstress50" JitStress="50" />
+    <TestEnvironment Include="jitstress100" JitStress="100" />
+    <TestEnvironment Include="jitstress99" JitStress="99" />
+    <TestEnvironment Include="jitstress71" JitStress="71" />
+    <TestEnvironment Include="jitstress65" JitStress="65" />
     <TestEnvironment Include="jitstress1_tiered" JitStress="1" TieredCompilation="1" />
     <TestEnvironment Include="jitstress2_tiered" JitStress="2" TieredCompilation="1" />
     <TestEnvironment Include="jitstress_isas_incompletehwintrinsic" EnableIncompleteISAClass="1"  />
