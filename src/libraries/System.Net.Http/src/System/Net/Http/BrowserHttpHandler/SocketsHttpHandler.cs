@@ -18,12 +18,18 @@ namespace System.Net.Http
         [UnsupportedOSPlatformGuard("browser")]
         public static bool IsSupported => false;
 
+        ///<summary>
+        ///Throws a <see cref="PlatformNotSupportedException"/> exception in all cases.
+        ///</summary>
         public bool UseCookies
         {
             get => throw new PlatformNotSupportedException();
             set => throw new PlatformNotSupportedException();
         }
 
+        ///<summary>
+        ///Throws a <see cref="PlatformNotSupportedException"/> exception in all cases.
+        ///</summary>
         [AllowNull]
         public CookieContainer CookieContainer
         {
@@ -31,6 +37,9 @@ namespace System.Net.Http
             set => throw new PlatformNotSupportedException();
         }
 
+        ///<summary>
+        ///Throws a <see cref="PlatformNotSupportedException"/> exception in all cases.
+        ///</summary>
         public DecompressionMethods AutomaticDecompression
         {
             get => throw new PlatformNotSupportedException();

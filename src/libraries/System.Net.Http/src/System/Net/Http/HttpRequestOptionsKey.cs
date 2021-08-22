@@ -16,7 +16,7 @@ namespace System.Net.Http
         ///</summary>
         public string Key { get; }
         ///<summary>
-        ///Initializes a new instance of the <see cref="HttpRequestOptionsKey"/> struct using the supplied string key.
+        ///Initializes a new instance of the HttpRequestOptionsKey struct using the supplied string key.
         ///</summary>
         public HttpRequestOptionsKey(string key)
         {
