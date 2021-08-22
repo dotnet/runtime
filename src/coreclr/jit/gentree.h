@@ -1428,7 +1428,7 @@ public:
     static bool OperIsMul(genTreeOps gtOper)
     {
         return (gtOper == GT_MUL) || (gtOper == GT_MULHI)
-#if !defined(TARGET_64BIT)
+#if !defined(TARGET_64BIT) || defined(TARGET_ARM64)
                || (gtOper == GT_MUL_LONG)
 #endif
             ;
@@ -2112,13 +2112,13 @@ public:
 
     void SetUnsigned()
     {
-        assert(OperIs(GT_ADD, GT_SUB, GT_MUL, GT_CAST));
+        assert(OperIs(GT_ADD, GT_SUB, GT_CAST) || OperIsMul());
         gtFlags |= GTF_UNSIGNED;
     }
 
     void ClearUnsigned()
     {
-        assert(OperIs(GT_ADD, GT_SUB, GT_MUL, GT_CAST));
+        assert(OperIs(GT_ADD, GT_SUB, GT_CAST) || OperIsMul());
         gtFlags &= ~GTF_UNSIGNED;
     }
 
