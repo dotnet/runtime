@@ -2361,6 +2361,9 @@
 
 
     <ItemGroup Condition=" '$(TargetArchitecture)' == 'wasm' " >
+        <ExcludeList Include="$(XunitTestBinBase)/tracing/eventcounter/runtimeeventsource/runtimeeventsource*">
+            <Issue>AppContext switch events are not available on mono Android and wasm</Issue>
+        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Intrinsics/TypeIntrinsics_r/**">
             <Issue>https://github.com/dotnet/runtime/issues/54867</Issue>
         </ExcludeList>
@@ -2690,6 +2693,9 @@
     </ItemGroup>
 
     <ItemGroup Condition=" $(TargetOS) == 'Android' " >
+        <ExcludeList Include="$(XunitTestBinBase)/tracing/eventcounter/runtimeeventsource/runtimeeventsource*">
+            <Issue>AppContext switch events are not available on mono Android and wasm</Issue>
+        </ExcludeList>
         <ExcludeList Include = "$(XunitTestBinBase)/baseservices/TieredCompilation/**">
             <Issue>No crossgen folder under Core_Root</Issue>
         </ExcludeList>
