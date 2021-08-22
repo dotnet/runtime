@@ -16,11 +16,11 @@ namespace System.Media
         public bool IsLoadCompleted { get { throw null; } }
         public int LoadTimeout { get { throw null; } set { } }
         public string SoundLocation { get { throw null; } set { } }
-        public System.IO.Stream Stream { get { throw null; } set { } }
-        public object Tag { get { throw null; } set { } }
-        public event System.ComponentModel.AsyncCompletedEventHandler LoadCompleted { add { } remove { } }
-        public event System.EventHandler SoundLocationChanged { add { } remove { } }
-        public event System.EventHandler StreamChanged { add { } remove { } }
+        public System.IO.Stream? Stream { get { throw null; } set { } }
+        public object? Tag { get { throw null; } set { } }
+        public event System.ComponentModel.AsyncCompletedEventHandler? LoadCompleted { add { } remove { } }
+        public event System.EventHandler? SoundLocationChanged { add { } remove { } }
+        public event System.EventHandler? StreamChanged { add { } remove { } }
         public void Load() { }
         public void LoadAsync() { }
         protected virtual void OnLoadCompleted(System.ComponentModel.AsyncCompletedEventArgs e) { }
@@ -68,7 +68,7 @@ namespace System.Xaml.Permissions
     {
         internal XamlAccessLevel() { }
         public System.Reflection.AssemblyName AssemblyAccessToAssemblyName { get { throw null; } }
-        public string PrivateAccessToTypeName { get { throw null; } }
+        public string? PrivateAccessToTypeName { get { throw null; } }
         public static System.Xaml.Permissions.XamlAccessLevel AssemblyAccessTo(System.Reflection.Assembly assembly) { throw null; }
         public static System.Xaml.Permissions.XamlAccessLevel AssemblyAccessTo(System.Reflection.AssemblyName assemblyName) { throw null; }
         public static System.Xaml.Permissions.XamlAccessLevel PrivateAccessTo(string assemblyQualifiedTypeName) { throw null; }
