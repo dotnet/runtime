@@ -188,11 +188,12 @@ GTNODE(SUB_LO           , GenTreeOp          ,0,GTK_BINOP)
 GTNODE(SUB_HI           , GenTreeOp          ,0,GTK_BINOP)
 
 // A mul that returns the 2N bit result of an NxN multiply. This op is used for
-// multiplies that take two ints and return a long result. All other multiplies
-// with long results are morphed into helper calls. It is similar to GT_MULHI,
-// the difference being that GT_MULHI drops the lo part of the result, whereas
-// GT_MUL_LONG keeps both parts of the result.
-#if !defined(TARGET_64BIT)
+// multiplies that take two ints and return a long result. On 32 bit targets,
+// all other multiplies with long results are morphed into helper calls.
+// It is similar to GT_MULHI, the difference being that GT_MULHI drops the lo
+// part of the result, whereas GT_MUL_LONG keeps both parts of the result.
+// MUL_LONG is also used on AMR64, where 64 bit multiplication is more expensive.
+#if !defined(TARGET_64BIT) || defined(TARGET_ARM64)
 GTNODE(MUL_LONG         , GenTreeMultiRegOp  ,1,GTK_BINOP)
 #endif
 

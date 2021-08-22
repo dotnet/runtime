@@ -2229,7 +2229,6 @@ public:
     bool gtRequestSetFlags();
 
 #ifdef DEBUG
-    bool       gtIsValid64RsltMul();
     static int gtDispFlags(GenTreeFlags flags, GenTreeDebugFlags debugFlags);
 #endif
 
@@ -3016,6 +3015,13 @@ struct GenTreeOp : public GenTreeUnOp
     {
         return (gtFlags & GTF_DIV_BY_CNS_OPT) != 0;
     }
+
+#if !defined(TARGET_64BIT) || defined(TARGET_ARM64)
+    bool IsValidLongMul();
+#if !defined(TARGET_64BIT) && defined(DEBUG)
+    void DebugCheckLongMul();
+#endif
+#endif
 
 #if DEBUGGABLE_GENTREE
     GenTreeOp() : GenTreeUnOp(), gtOp2(nullptr)

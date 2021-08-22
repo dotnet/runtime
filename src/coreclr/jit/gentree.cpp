@@ -2445,41 +2445,81 @@ GenTree* Compiler::gtReverseCond(GenTree* tree)
     return tree;
 }
 
-/*****************************************************************************/
-
-#ifdef DEBUG
-
-bool GenTree::gtIsValid64RsltMul()
+#if !defined(TARGET_64BIT) || defined(TARGET_ARM64)
+//------------------------------------------------------------------------------
+// IsValidLongMul : Check for long multiplication with 32 bit operands.
+//
+// Recognizes the following tree: MUL(CAST(long <- int), CAST(long <- int) or CONST),
+// where CONST must be an integer constant that fits in 32 bits. Will try to detect
+// cases when the multiplication cannot overflow and return "true" for them.
+//
+// This function does not change the state of the tree and is usable in LIR.
+//
+// Return Value:
+//    Whether this GT_MUL tree is a valid long multiplication candidate.
+//
+bool GenTreeOp::IsValidLongMul()
 {
-    if (!OperIs(GT_MUL) || !Is64RsltMul())
+    assert(OperIs(GT_MUL));
+
+    GenTree* op1 = gtGetOp1();
+    GenTree* op2 = gtGetOp2();
+
+    if (!TypeIs(TYP_LONG))
     {
         return false;
     }
 
-    GenTree* op1 = AsOp()->gtGetOp1();
-    GenTree* op2 = AsOp()->gtGetOp2();
+    assert(op1->TypeIs(TYP_LONG));
+    assert(op2->TypeIs(TYP_LONG));
 
-    if (!TypeIs(TYP_LONG) || !op1->TypeIs(TYP_LONG) || !op2->TypeIs(TYP_LONG))
+    if (!(op1->OperIs(GT_CAST) && genActualTypeIsInt(op1->AsCast()->CastOp())))
+    {
+        return false;
+    }
+
+    if (!(op2->OperIs(GT_CAST) && genActualTypeIsInt(op2->AsCast()->CastOp())) &&
+        !(op2->IsIntegralConst() && FitsIn<int32_t>(op2->AsIntConCommon()->IntegralValue())))
+    {
+        return false;
+    }
+
+    if (op1->gtOverflow() || op2->gtOverflowEx())
     {
         return false;
     }
 
     if (gtOverflow())
     {
-        return false;
-    }
+        auto getMaxValue = [this](GenTree* op) -> int64_t {
+            if (op->OperIs(GT_CAST))
+            {
+                if (op->IsUnsigned())
+                {
+                    switch (op->AsCast()->CastOp()->TypeGet())
+                    {
+                        case TYP_UBYTE:
+                            return UINT8_MAX;
+                        case TYP_USHORT:
+                            return UINT16_MAX;
+                        default:
+                            return UINT32_MAX;
+                    }
+                }
 
-    // op1 has to be CAST(long <- int).
-    if (!(op1->OperIs(GT_CAST) && genActualTypeIsInt(op1->AsCast()->CastOp())))
-    {
-        return false;
-    }
+                return IsUnsigned() ? static_cast<int64_t>(UINT64_MAX) : INT32_MIN;
+            }
 
-    // op2 has to be CAST(long <- int) or a suitably small constant.
-    if (!(op2->OperIs(GT_CAST) && genActualTypeIsInt(op2->AsCast()->CastOp())) &&
-        !(op2->IsIntegralConst() && FitsIn<int32_t>(op2->AsIntConCommon()->IntegralValue())))
-    {
-        return false;
+            return op->AsIntConCommon()->IntegralValue();
+        };
+
+        int64_t maxOp1 = getMaxValue(op1);
+        int64_t maxOp2 = getMaxValue(op2);
+
+        if (CheckedOps::MulOverflows(maxOp1, maxOp2, IsUnsigned()))
+        {
+            return false;
+        }
     }
 
     // Both operands must extend the same way.
@@ -2491,16 +2531,56 @@ bool GenTree::gtIsValid64RsltMul()
         return false;
     }
 
-    // Do unsigned mul iff both operands are zero-extending.
-    if (op1->IsUnsigned() != IsUnsigned())
-    {
-        return false;
-    }
-
     return true;
 }
 
-#endif // DEBUG
+#if !defined(TARGET_64BIT) && defined(DEBUG)
+//------------------------------------------------------------------------------
+// DebugCheckLongMul : Checks that a GTF_MUL_64RSLT tree is a valid MUL_LONG.
+//
+// Notes:
+//    This function is defined for 32 bit targets only because we *must* maintain
+//    the MUL_LONG-compatible tree shape throughout the compilation from morph to
+//    decomposition, since we do not have (great) ability to create new calls in LIR.
+//
+//    It is for this reason that we recognize MUL_LONGs early in morph, mark them with
+//    a flag and then pessimize various places (e. g. assertion propagation) to not look
+//    at them. In contrast, on ARM64 we recognize MUL_LONGs late, in lowering, and thus
+//    do not need this function.
+//
+void GenTreeOp::DebugCheckLongMul()
+{
+    assert(OperIs(GT_MUL));
+    assert(Is64RsltMul());
+    assert(TypeIs(TYP_LONG));
+    assert(!gtOverflow());
+
+    GenTree* op1 = gtGetOp1();
+    GenTree* op2 = gtGetOp2();
+
+    assert(op1->TypeIs(TYP_LONG));
+    assert(op2->TypeIs(TYP_LONG));
+
+    // op1 has to be CAST(long <- int)
+    assert(op1->OperIs(GT_CAST) && genActualTypeIsInt(op1->AsCast()->CastOp()));
+    assert(!op1->gtOverflow());
+
+    // op2 has to be CAST(long <- int) or a suitably small constant.
+    assert((op2->OperIs(GT_CAST) && genActualTypeIsInt(op2->AsCast()->CastOp())) ||
+           (op2->IsIntegralConst() && FitsIn<int32_t>(op2->AsIntConCommon()->IntegralValue())));
+    assert(!op2->gtOverflowEx());
+
+    // Both operands must extend the same way.
+    bool op1ZeroExtends = op1->IsUnsigned();
+    bool op2ZeroExtends = op2->OperIs(GT_CAST) ? op2->IsUnsigned() : op2->AsIntConCommon()->IntegralValue() >= 0;
+    bool op2AnyExtensionIsSuitable = op2->IsIntegralConst() && op2ZeroExtends;
+    assert((op1ZeroExtends == op2ZeroExtends) || op2AnyExtensionIsSuitable);
+
+    // Do unsigned mul iff both operands are zero-extending.
+    assert(op1->IsUnsigned() == IsUnsigned());
+}
+#endif // !defined(TARGET_64BIT) && defined(DEBUG)
+#endif // !defined(TARGET_64BIT) || defined(TARGET_ARM64)
 
 //------------------------------------------------------------------------------
 // gtSetListOrder : Figure out the evaluation order for a list of values.
