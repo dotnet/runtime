@@ -272,8 +272,9 @@ namespace System.Media
                 _stream = webResponse.GetResponseStream();
             }
 
-            Debug.Assert(_stream != null);
-            if (_stream.CanSeek)
+            // DO NOT assert - NRE is expected for null stream
+            // See SoundPlayerTests.Load_NullStream_ThrowsNullReferenceException
+            if (_stream!.CanSeek)
             {
                 // if we can get data synchronously, then get it
                 LoadStream(true);
