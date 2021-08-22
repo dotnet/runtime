@@ -21,6 +21,6 @@ internal static partial class Interop
         internal static extern bool PlaySound(string soundName, IntPtr hmod, int soundFlags);
 
         [DllImport(Libraries.WinMM, ExactSpelling = true, EntryPoint = "PlaySoundW")]
-        internal static extern bool PlaySound(byte[] soundName, IntPtr hmod, int soundFlags);
+        internal static extern bool PlaySound(byte[]? soundName, IntPtr hmod, int soundFlags);
     }
 }

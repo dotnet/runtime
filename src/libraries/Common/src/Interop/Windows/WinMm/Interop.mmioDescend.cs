@@ -13,7 +13,7 @@ internal static partial class Interop
         [DllImport(Libraries.WinMM)]
         internal static extern int mmioDescend(IntPtr hMIO,
                                                [MarshalAs(UnmanagedType.LPStruct)] MMCKINFO lpck,
-                                               [MarshalAs(UnmanagedType.LPStruct)] MMCKINFO lcpkParent,
+                                               [MarshalAs(UnmanagedType.LPStruct)] MMCKINFO? lcpkParent,
                                                int flags);
     }
 }
