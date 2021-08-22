@@ -426,7 +426,7 @@ namespace System.Media
             Interop.WinMM.PlaySound((byte[]?)null, IntPtr.Zero, Interop.WinMM.SND_PURGE);
         }
 
-        public event AsyncCompletedEventHandler LoadCompleted
+        public event AsyncCompletedEventHandler? LoadCompleted
         {
             add
             {
@@ -438,7 +438,7 @@ namespace System.Media
             }
         }
 
-        public event EventHandler SoundLocationChanged
+        public event EventHandler? SoundLocationChanged
         {
             add
             {
@@ -450,7 +450,7 @@ namespace System.Media
             }
         }
 
-        public event EventHandler StreamChanged
+        public event EventHandler? StreamChanged
         {
             add
             {
