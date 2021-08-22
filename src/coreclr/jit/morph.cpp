@@ -13879,7 +13879,7 @@ GenTree* Compiler::fgOptimizeRelationalComparisonWithConst(GenTreeOp* cmp)
             }
             // LE_UN/GT_UN(expr, int/long.MaxValue) => GE/LT(expr, 0).
             else if (((op1->TypeIs(TYP_LONG) && (op2Value == INT64_MAX))) ||
-                ((genActualType(op1) == TYP_INT) && (op2Value == INT32_MAX)))
+                     ((genActualType(op1) == TYP_INT) && (op2Value == INT32_MAX)))
             {
                 oper = (oper == GT_LE) ? GT_GE : GT_LT;
                 cmp->gtFlags &= ~GTF_UNSIGNED;
