@@ -43,6 +43,9 @@ namespace System.Net.Http
         [UnsupportedOSPlatformGuard("browser")]
         public static bool IsSupported => !OperatingSystem.IsBrowser();
 
+        /// <summary>
+        /// Gets or sets a value that indicates if to use cookies.
+        /// </summary>
         public bool UseCookies
         {
             get => _settings._useCookies;
@@ -53,6 +56,9 @@ namespace System.Net.Http
             }
         }
 
+        /// <summary>
+        /// Gets or sets a contianer for a collection of <see cref="CookieCollection"/> objects.
+        /// </summary>
         [AllowNull]
         public CookieContainer CookieContainer
         {
@@ -64,6 +70,9 @@ namespace System.Net.Http
             }
         }
 
+        /// <summary>
+        /// Gets or sets a value that indicates if to automatically decompress and what decompression method to use.
+        /// </summary>
         public DecompressionMethods AutomaticDecompression
         {
             get => _settings._automaticDecompression;
@@ -74,6 +83,9 @@ namespace System.Net.Http
             }
         }
 
+        /// <summary>
+        /// Gets or sets a value that indicates if to use a proxy.
+        /// </summary>
         public bool UseProxy
         {
             get => _settings._useProxy;
@@ -84,6 +96,9 @@ namespace System.Net.Http
             }
         }
 
+        /// <summary>
+        /// Gets or sets a value that indicates the proxy to use.
+        /// </summary>
         public IWebProxy? Proxy
         {
             get => _settings._proxy;
@@ -94,6 +109,9 @@ namespace System.Net.Http
             }
         }
 
+        /// <summary>
+        /// Gets or sets a value that indicates what credentials to use for the proxy.
+        /// </summary>
         public ICredentials? DefaultProxyCredentials
         {
             get => _settings._defaultProxyCredentials;
@@ -104,6 +122,9 @@ namespace System.Net.Http
             }
         }
 
+        /// <summary>
+        /// Gets or sets a value that indicates if to automatically pre-authenticate the connection.
+        /// </summary>
         public bool PreAuthenticate
         {
             get => _settings._preAuthenticate;
@@ -114,6 +135,9 @@ namespace System.Net.Http
             }
         }
 
+        /// <summary>
+        /// Gets or sets a value that indicates what credentials to use for the connection.
+        /// </summary>
         public ICredentials? Credentials
         {
             get => _settings._credentials;
@@ -124,6 +148,9 @@ namespace System.Net.Http
             }
         }
 
+        /// <summary>
+        /// Gets or sets a value that indicates if auto-redirects by the server are allowed.
+        /// </summary>
         public bool AllowAutoRedirect
         {
             get => _settings._allowAutoRedirect;
@@ -134,6 +161,9 @@ namespace System.Net.Http
             }
         }
 
+        /// <summary>
+        /// Gets or sets a value that indicates how many auto-redirects by the server are allowed.
+        /// </summary>
         public int MaxAutomaticRedirections
         {
             get => _settings._maxAutomaticRedirections;
@@ -149,6 +179,9 @@ namespace System.Net.Http
             }
         }
 
+        /// <summary>
+        /// Gets or sets a value that indicates the maximum ammount of connections the server can maintain.
+        /// </summary>
         public int MaxConnectionsPerServer
         {
             get => _settings._maxConnectionsPerServer;
@@ -164,6 +197,9 @@ namespace System.Net.Http
             }
         }
 
+        /// <summary>
+        /// Gets or sets the maximum amount of data that can be drained from responses in bytes.
+        /// </summary>
         public int MaxResponseDrainSize
         {
             get => _settings._maxResponseDrainSize;
@@ -179,6 +215,9 @@ namespace System.Net.Http
             }
         }
 
+        /// <summary>
+        /// Gets or sets the timespan to wait for data to be drained from responses.
+        /// </summary>
         public TimeSpan ResponseDrainTimeout
         {
             get => _settings._maxResponseDrainTime;
@@ -195,6 +234,9 @@ namespace System.Net.Http
             }
         }
 
+        /// <summary>
+        /// Gets or sets the maximum length of reponse headers (in kilobytes).
+        /// </summary>
         public int MaxResponseHeadersLength
         {
             get => _settings._maxResponseHeadersLength;
@@ -210,6 +252,9 @@ namespace System.Net.Http
             }
         }
 
+        /// <summary>
+        /// Gets or sets the options for client TSL authentication.
+        /// </summary>
         [AllowNull]
         public SslClientAuthenticationOptions SslOptions
         {
@@ -221,6 +266,9 @@ namespace System.Net.Http
             }
         }
 
+        /// <summary>
+        /// Gets or sets how long a connection can be in the pool to be considered reusable.
+        /// </summary>
         public TimeSpan PooledConnectionLifetime
         {
             get => _settings._pooledConnectionLifetime;
@@ -236,6 +284,9 @@ namespace System.Net.Http
             }
         }
 
+        /// <summary>
+        /// Gets or sets how long a connection can be idle in the pool to be considered reusable.
+        /// </summary>
         public TimeSpan PooledConnectionIdleTimeout
         {
             get => _settings._pooledConnectionIdleTimeout;
@@ -251,6 +302,9 @@ namespace System.Net.Http
             }
         }
 
+        /// <summary>
+        /// Gets or sets the timespan to wait before the connection establishing times out.
+        /// </summary>
         public TimeSpan ConnectTimeout
         {
             get => _settings._connectTimeout;
@@ -267,6 +321,9 @@ namespace System.Net.Http
             }
         }
 
+        /// <summary>
+        /// Gets or sets the time-out value for server HTTP 100 continue response.
+        /// </summary>
         public TimeSpan Expect100ContinueTimeout
         {
             get => _settings._expect100ContinueTimeout;

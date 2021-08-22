@@ -17,7 +17,7 @@ namespace System.Net.Http
     {
         ///<summary>
         ///Gets a value that indicates whether the this Type is supported.
-        ///<summary/>
+        ///</summary>
         [UnsupportedOSPlatformGuard("browser")]
         public static bool IsSupported => false;
 
