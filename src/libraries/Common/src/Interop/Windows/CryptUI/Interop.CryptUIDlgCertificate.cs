@@ -15,7 +15,7 @@ internal static partial class Interop
             internal uint dwSize;
             internal IntPtr hwndParent;
             internal uint dwFlags;
-            internal string szTitle;
+            internal string? szTitle;
             internal IntPtr pCertContext;
             internal IntPtr rgszPurposes;
             internal uint cPurposes;
@@ -38,9 +38,9 @@ internal static partial class Interop
             internal uint dwSize;
             internal IntPtr hwndParent;
             internal uint dwFlags;
-            internal string szTitle;
+            internal string? szTitle;
             internal uint dwDontUseColumn;
-            internal string szDisplayString;
+            internal string? szDisplayString;
             internal IntPtr pFilterCallback;
             internal IntPtr pDisplayCallback;
             internal IntPtr pvCallbackData;
