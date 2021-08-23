@@ -1429,23 +1429,16 @@ namespace Microsoft.Extensions.Primitives
 
             // StringSegment.Equals(string, ...) and IEquatable<string>.Equals
             {
-                if (b == null)
+                bool areEqual = sa.Equals(b, comparisonType);
+                Assert.Equal(expectedCompareToSign == 0, areEqual);
+
+                if (comparisonType == StringComparison.Ordinal)
                 {
-                    Assert.False(((IEquatable<string>)sa).Equals(b)); // null string never equal, not even to null StringSegment
-                }
-                else
-                {
-                    bool areEqual = sa.Equals(b, comparisonType);
+                    areEqual = sa.Equals(b);
                     Assert.Equal(expectedCompareToSign == 0, areEqual);
 
-                    if (comparisonType == StringComparison.Ordinal)
-                    {
-                        areEqual = sa.Equals(b);
-                        Assert.Equal(expectedCompareToSign == 0, areEqual);
-
-                        areEqual = ((IEquatable<string>)sa).Equals(b);
-                        Assert.Equal(expectedCompareToSign == 0, areEqual);
-                    }
+                    areEqual = ((IEquatable<string>)sa).Equals(b);
+                    Assert.Equal(expectedCompareToSign == 0, areEqual);
                 }
             }
         }
