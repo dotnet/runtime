@@ -45,9 +45,13 @@ namespace Mono.Linker
 
 	public enum TargetRuntimeVersion
 	{
+		// These have to be ordered the same way the versions are
+		// since the code uses > or < on these values.
 		Unknown = 0,
+		Lower = 1, // Anything below 5
 		NET5 = 5,
 		NET6 = 6,
+		Higher = 9999 // Anything above the highest explicitly supported version (future proofing)
 	}
 
 	public class LinkContext : IMetadataResolver, IDisposable
@@ -699,10 +703,13 @@ namespace Mono.Linker
 				return _targetRuntime.Value;
 
 			TypeDefinition objectType = BCL.FindPredefinedType ("System", "Object", this);
-			_targetRuntime = objectType?.Module.Assembly.Name.Version.Major switch {
+			int? majorVersion = objectType?.Module.Assembly.Name.Version.Major;
+			_targetRuntime = majorVersion switch {
+				> 6 => TargetRuntimeVersion.Higher,
 				6 => TargetRuntimeVersion.NET6,
 				5 => TargetRuntimeVersion.NET5,
-				_ => TargetRuntimeVersion.Unknown,
+				< 5 => TargetRuntimeVersion.Lower,
+				_ => TargetRuntimeVersion.Unknown
 			};
 
 			return _targetRuntime.Value;
