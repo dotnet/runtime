@@ -40,8 +40,6 @@ namespace System
         public static bool IsNotBrowser => !IsBrowser;
         public static bool IsMobile => IsBrowser || IsMacCatalyst || IsiOS || IstvOS || IsAndroid;
         public static bool IsNotMobile => !IsMobile;
-        public static bool IsAppleMobile => IsMacCatalyst || IsiOS || IstvOS;
-        public static bool IsNotAppleMobile => !IsAppleMobile;
         public static bool IsNotNetFramework => !IsNetFramework;
 
         public static bool IsArmProcess => RuntimeInformation.ProcessArchitecture == Architecture.Arm;
