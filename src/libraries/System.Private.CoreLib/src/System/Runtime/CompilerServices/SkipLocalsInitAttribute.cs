@@ -25,7 +25,12 @@ namespace System.Runtime.CompilerServices
         | AttributeTargets.Method
         | AttributeTargets.Property
         | AttributeTargets.Event, Inherited = false)]
-    public sealed class SkipLocalsInitAttribute : Attribute
+#if SYSTEM_PRIVATE_CORELIB
+    public
+#else
+    internal
+#endif
+    sealed class SkipLocalsInitAttribute : Attribute
     {
         public SkipLocalsInitAttribute()
         {
