@@ -20,7 +20,7 @@ namespace System.Net.Sockets.Tests
             Assert.Equal(SocketError.WouldBlock, se.SocketErrorCode);
 
             // Give the non-blocking connect some time to complete.
-            socket.Poll(5_000, SelectMode.SelectWrite);
+            socket.Poll(5_000_000 /* microSeconds */, SelectMode.SelectWrite);
 
             Assert.False(socket.Connected);
         }
