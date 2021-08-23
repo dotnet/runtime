@@ -4177,13 +4177,16 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                     GenTreeBoundsChk(GT_ARR_BOUNDS_CHECK, TYP_VOID, index, length, SCK_RNGCHK_FAIL);
 
                 // Element access
-                GenTree*             indexIntPtr = impImplicitIorI4Cast(indexClone, TYP_I_IMPL);
-                GenTree*             sizeofNode  = gtNewIconNode(elemSize);
-                GenTree*             mulNode     = gtNewOperNode(GT_MUL, TYP_I_IMPL, indexIntPtr, sizeofNode);
-                CORINFO_FIELD_HANDLE ptrHnd      = info.compCompHnd->getFieldInClass(clsHnd, 0);
-                const unsigned       ptrOffset   = info.compCompHnd->getFieldOffset(ptrHnd);
-                GenTree*             data        = gtNewFieldRef(TYP_BYREF, ptrHnd, ptrToSpanClone, ptrOffset);
-                GenTree*             result      = gtNewOperNode(GT_ADD, TYP_BYREF, data, mulNode);
+                index = impImplicitIorI4Cast(indexClone, TYP_I_IMPL);
+                if (elemSize != 1)
+                {
+                    GenTree* sizeofNode = gtNewIconNode(elemSize);
+                    index               = gtNewOperNode(GT_MUL, TYP_I_IMPL, index, sizeofNode);
+                }
+                CORINFO_FIELD_HANDLE ptrHnd    = info.compCompHnd->getFieldInClass(clsHnd, 0);
+                const unsigned       ptrOffset = info.compCompHnd->getFieldOffset(ptrHnd);
+                GenTree*             data      = gtNewFieldRef(TYP_BYREF, ptrHnd, ptrToSpanClone, ptrOffset);
+                GenTree*             result    = gtNewOperNode(GT_ADD, TYP_BYREF, data, index);
 
                 // Prepare result
                 var_types resultType = JITtype2varType(sig->retType);
