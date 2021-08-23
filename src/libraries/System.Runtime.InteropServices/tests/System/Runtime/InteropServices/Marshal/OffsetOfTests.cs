@@ -34,7 +34,6 @@ namespace System.Runtime.InteropServices.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/49872", typeof(PlatformDetection), nameof(PlatformDetection.IsAndroid), nameof(PlatformDetection.Is32BitProcess))]
         public void OffsetOf_ExplicitLayout_ReturnsExpected()
         {
             Type t = typeof(ExplicitLayoutTest);
