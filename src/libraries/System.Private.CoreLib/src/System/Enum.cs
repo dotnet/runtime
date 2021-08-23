@@ -7,6 +7,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Reflection;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using Internal.Runtime.CompilerServices;
 
 #if CORERT
@@ -123,7 +124,7 @@ namespace System
 
         private static string? GetEnumName(EnumInfo enumInfo, ulong ulValue)
         {
-            int index = Array.BinarySearch(enumInfo.Values, ulValue);
+            int index = FindDefinedIndex(enumInfo.Values, ulValue);
             if (index >= 0)
             {
                 return enumInfo.Names[index];
@@ -357,7 +358,21 @@ namespace System
             ulong[] ulValues = Enum.InternalGetValues(enumType);
             ulong ulValue = Enum.ToUInt64(value);
 
-            return Array.BinarySearch(ulValues, ulValue) >= 0;
+            return FindDefinedIndex(ulValues, ulValue) >= 0;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static int FindDefinedIndex(ulong[] ulValues, ulong ulValue)
+        {
+            // Binary searching has a higher constant overhead than linear.
+            // For smaller enums, use IndexOf.  For larger enums, use BinarySearch.
+            // This threshold can be tweaked over time as optimizations evolve.
+            const int NumberOfValuesThreshold = 32;
+
+            ref ulong start = ref MemoryMarshal.GetArrayDataReference(ulValues);
+            return ulValues.Length <= NumberOfValuesThreshold ?
+                SpanHelpers.IndexOf(ref start, ulValue, ulValues.Length) :
+                SpanHelpers.BinarySearch(ref start, ulValues.Length, ulValue);
         }
 
         public static bool IsDefined(Type enumType, object value)
