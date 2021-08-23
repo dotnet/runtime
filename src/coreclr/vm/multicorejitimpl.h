@@ -176,13 +176,6 @@ public:
 
         return false;
     }
-
-    bool NativeImageFlagDiff(const ModuleVersion & other) const
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        return false;
-    }
 };
 
 inline unsigned RoundUp(unsigned val)

@@ -344,14 +344,6 @@ bool ModuleRecord::MatchWithModule(ModuleVersion & modVersion, bool & gotVersion
 
         if (version.MatchWith(modVersion))
         {
-            // If matching image with different native image flag is detected, mark and abort playing profile back
-            if (version.NativeImageFlagDiff(modVersion))
-            {
-                MulticoreJitTrace(("    Module with different native image flag: %s", pName));
-
-                shouldAbort = true;
-            }
-
             return true;
         }
     }
@@ -757,7 +749,7 @@ bool MulticoreJitProfilePlayer::ShouldAbort(bool fast) const
 HRESULT MulticoreJitProfilePlayer::HandleModuleInfoRecord(unsigned moduleTo, unsigned level)
 {
     STANDARD_VM_CONTRACT;
-    
+
     HRESULT hr = S_OK;
 
     MulticoreJitTrace(("ModuleDependency(%u) start module load",
@@ -1155,7 +1147,7 @@ HRESULT MulticoreJitProfilePlayer::PlayProfile()
 
         if (rcdTyp == MULTICOREJIT_MODULE_RECORD_ID)
         {
-            rcdLen = data1 & 0xFFFFFF;    
+            rcdLen = data1 & 0xFFFFFF;
         }
         else if (rcdTyp == MULTICOREJIT_MODULEDEPENDENCY_RECORD_ID)
         {
@@ -1314,7 +1306,7 @@ HRESULT MulticoreJitProfilePlayer::PlayProfile()
         {
             hr = COR_E_BADIMAGEFORMAT;
         }
-        
+
         pBuffer += rcdLen;
         nSize -= rcdLen;
 
