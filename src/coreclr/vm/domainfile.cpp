@@ -559,13 +559,10 @@ void DomainFile::PostLoadLibrary()
     // so it doesn't matter if types are pre-loaded. We only need the guarantee that code for the
     // loaded types won't execute yet. For NGEN images we deliver the load notification in
     // FILE_LOAD_DELIVER_EVENTS.
-    if (!GetFile()->HasNativeImage())
+    if (!IsProfilerNotified())
     {
-        if (!IsProfilerNotified())
-        {
-            SetProfilerNotified();
-            GetCurrentModule()->NotifyProfilerLoadFinished(S_OK);
-        }
+        SetProfilerNotified();
+        GetCurrentModule()->NotifyProfilerLoadFinished(S_OK);
     }
 
 #endif

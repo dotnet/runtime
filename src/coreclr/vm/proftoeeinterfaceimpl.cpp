@@ -3932,38 +3932,25 @@ DWORD ProfToEEInterfaceImpl::GetModuleFlags(Module * pModule)
     DWORD dwRet = 0;
 
     // First, set the flags that are dependent on which PEImage / layout we look at
-    // inside the Module (disk/ngen/flat)
-
-    if (pModule->HasNativeImage())
-    {
-        // NGEN
-        dwRet |= (COR_PRF_MODULE_DISK | COR_PRF_MODULE_NGEN);
-
-        // Intentionally not checking for flat, since NGEN PEImages never have flat
-        // layouts.
-    }
-    else
-    {
+    // inside the Module (disk/flat)
 #ifdef FEATURE_READYTORUN
-        // pModule->HasNativeImage() returns false for ReadyToRun images
-        if (pModule->IsReadyToRun())
-        {
-            // Ready To Run
-            dwRet |= (COR_PRF_MODULE_DISK | COR_PRF_MODULE_NGEN);
-        }
+    if (pModule->IsReadyToRun())
+    {
+        // Ready To Run
+        dwRet |= (COR_PRF_MODULE_DISK | COR_PRF_MODULE_NGEN);
+    }
 #endif
-        // Not NGEN or ReadyToRun.
-        if (pPEFile->HasOpenedILimage())
+    // Not NGEN or ReadyToRun.
+    if (pPEFile->HasOpenedILimage())
+    {
+        PEImage * pILImage = pPEFile->GetOpenedILimage();
+        if (pILImage->IsFile())
         {
-            PEImage * pILImage = pPEFile->GetOpenedILimage();
-            if (pILImage->IsFile())
-            {
-                dwRet |= COR_PRF_MODULE_DISK;
-            }
-            if (pPEFile->GetLoadedIL()->IsFlat())
-            {
-                dwRet |= COR_PRF_MODULE_FLAT_LAYOUT;
-            }
+            dwRet |= COR_PRF_MODULE_DISK;
+        }
+        if (pPEFile->GetLoadedIL()->IsFlat())
+        {
+            dwRet |= COR_PRF_MODULE_FLAT_LAYOUT;
         }
     }
 
@@ -9030,9 +9017,9 @@ HRESULT ProfToEEInterfaceImpl::GetObjectGeneration(ObjectID objectId,
                                        "**PROF: GetObjectGeneration 0x%p.\n",
                                        objectId));
 
-    
+
     _ASSERTE((GetThreadNULLOk() == NULL) || (GetThreadNULLOk()->PreemptiveGCDisabled()));
-    
+
 
     // Announce we are using the generation table now
     CounterHolder genTableLock(&s_generationTableLock);

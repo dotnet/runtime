@@ -7066,7 +7066,7 @@ MethodTableBuilder::NeedsNativeCodeSlot(bmtMDMethod * pMDMethod)
 
         // Policy - If QuickJit is disabled and the module does not have any pregenerated code, the method would be ineligible
         // for tiering currently to avoid some unnecessary overhead
-        (g_pConfig->TieredCompilation_QuickJit() || GetModule()->HasNativeOrReadyToRunImage()) &&
+        (g_pConfig->TieredCompilation_QuickJit() || GetModule()->IsILImageReadyToRun()) &&
 
         (pMDMethod->GetMethodType() == METHOD_TYPE_NORMAL || pMDMethod->GetMethodType() == METHOD_TYPE_INSTANTIATED))
 

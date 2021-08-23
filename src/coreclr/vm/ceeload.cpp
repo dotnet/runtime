@@ -337,17 +337,8 @@ IMetaDataEmit *Module::GetValidatedEmitter()
         // verify anything. To ensure we don't break back-compat the verifications are not enabled by default.
         // Right now I have only added verifications for NGEN images, but in the future we might want verifications
         // for all modules.
-        IMetaDataEmit* pEmit = NULL;
-        if (CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_ProfAPI_ValidateNGENInstrumentation) && HasNativeImage())
-        {
-            ProfilerMetadataEmitValidator* pValidator = new ProfilerMetadataEmitValidator(GetEmitter());
-            pValidator->QueryInterface(IID_IMetaDataEmit, (void**)&pEmit);
-        }
-        else
-        {
-            pEmit = GetEmitter();
-            pEmit->AddRef();
-        }
+        IMetaDataEmit* pEmit = GetEmitter();
+        pEmit->AddRef();
         // Atomically swap it into the field (release it if we lose the race)
         if (FastInterlockCompareExchangePointer(&m_pValidatedEmitter, pEmit, NULL) != NULL)
         {
@@ -400,11 +391,8 @@ Module::Module(Assembly *pAssembly, mdFile moduleRef, PEFile *file)
     m_file      = file;
     m_dwTransientFlags = CLASSES_FREED;
 
-    if (!m_file->HasNativeImage())
-    {
-        // Memory allocated on LoaderHeap is zero-filled. Spot-check it here.
-        _ASSERTE(m_pBinder == NULL);
-    }
+    // Memory allocated on LoaderHeap is zero-filled. Spot-check it here.
+    _ASSERTE(m_pBinder == NULL);
 
     file->AddRef();
 }
@@ -417,7 +405,7 @@ void Module::InitializeForProfiling()
         THROWS;
         GC_TRIGGERS;
         MODE_PREEMPTIVE;
-        PRECONDITION(HasNativeOrReadyToRunImage());
+        PRECONDITION(IsILImageReadyToRun());
     }
     CONTRACTL_END;
 
@@ -515,16 +503,13 @@ void Module::Initialize(AllocMemTracker *pamTracker, LPCWSTR szName)
     m_ISymUnmanagedReaderCrst.Init(CrstISymUnmanagedReader, CRST_DEBUGGER_THREAD);
     m_DictionaryCrst.Init(CrstDomainLocalBlock);
 
-    if (!m_file->HasNativeImage())
-    {
-        AllocateMaps();
+    AllocateMaps();
 
-        if (IsSystem() ||
-            (strcmp(m_pSimpleName, "System") == 0) ||
-            (strcmp(m_pSimpleName, "System.Core") == 0))
-        {
-            FastInterlockOr(&m_dwPersistedFlags, LOW_LEVEL_SYSTEM_ASSEMBLY_BY_NAME);
-        }
+    if (IsSystem() ||
+        (strcmp(m_pSimpleName, "System") == 0) ||
+        (strcmp(m_pSimpleName, "System.Core") == 0))
+    {
+        FastInterlockOr(&m_dwPersistedFlags, LOW_LEVEL_SYSTEM_ASSEMBLY_BY_NAME);
     }
 
     m_dwTransientFlags &= ~((DWORD)CLASSES_FREED);  // Set flag indicating LookupMaps are now in a consistent and destructable state
@@ -538,7 +523,7 @@ void Module::Initialize(AllocMemTracker *pamTracker, LPCWSTR szName)
 
 #ifdef FEATURE_READYTORUN
     m_pNativeImage = NULL;
-    if (!HasNativeImage() && !IsResource())
+    if (!IsResource())
     {
         if ((m_pReadyToRunInfo = ReadyToRunInfo::Initialize(this, pamTracker)) != NULL)
         {
@@ -610,7 +595,7 @@ void Module::Initialize(AllocMemTracker *pamTracker, LPCWSTR szName)
     // Prepare statics that are known at module load time
     AllocateStatics(pamTracker);
 
-    if (HasNativeOrReadyToRunImage())
+    if (IsILImageReadyToRun())
     {
         InitializeForProfiling();
     }
@@ -1268,7 +1253,6 @@ BOOL Module::IsEditAndContinueCapable(Assembly *pAssembly, PEFile *file)
     return ! (pAssembly->GetDebuggerInfoBits() & DACF_ALLOW_JIT_OPTS ||
               file->IsSystem() ||
               file->IsResource() ||
-              file->HasNativeImage() ||
               file->IsDynamic());
 }
 
@@ -1858,9 +1842,6 @@ BOOL Module::IsNoStringInterning()
 
     if (!(m_dwPersistedFlags & COMPUTED_STRING_INTERNING))
     {
-        // The flags should be precomputed in native images
-        _ASSERTE(!HasNativeImage());
-
         // Default is string interning
         BOOL fNoStringInterning = FALSE;
 
@@ -1970,9 +1951,6 @@ BOOL Module::IsRuntimeWrapExceptions()
 
     if (!(IsRuntimeWrapExceptionsStatusComputed()))
     {
-        // The flags should be precomputed in native images
-        _ASSERTE(!HasNativeImage());
-
         HRESULT hr;
         BOOL fRuntimeWrapExceptions = FALSE;
 
@@ -2026,9 +2004,6 @@ BOOL Module::IsPreV4Assembly()
 
     if (!(m_dwPersistedFlags & COMPUTED_IS_PRE_V4_ASSEMBLY))
     {
-        // The flags should be precomputed in native images
-        _ASSERTE(!HasNativeImage());
-
         IMDInternalImport *pImport = GetAssembly()->GetManifestImport();
         _ASSERTE(pImport);
 
@@ -2642,7 +2617,7 @@ BOOL Module::IsInSameVersionBubble(Module *target)
         return TRUE;
     }
 
-    if (!HasNativeOrReadyToRunImage())
+    if (!IsILImageReadyToRun())
     {
         return FALSE;
     }
@@ -3192,17 +3167,17 @@ BOOL Module::IsVisibleToDebugger()
     return TRUE;
 }
 
-BOOL            Module::HasNativeOrReadyToRunImage()
+BOOL            Module::IsILImageReadyToRun()
 {
 #ifdef FEATURE_READYTORUN
     if (IsReadyToRun())
         return TRUE;
 #endif
 
-    return HasNativeImage();
+    return FALSE;
 }
 
-PEImageLayout * Module::GetNativeOrReadyToRunImage()
+PEImageLayout * Module::GetReadyToRunImage()
 {
     LIMITED_METHOD_CONTRACT;
 
@@ -3211,7 +3186,7 @@ PEImageLayout * Module::GetNativeOrReadyToRunImage()
         return GetReadyToRunInfo()->GetImage();
 #endif
 
-    return GetNativeImage();
+    return NULL;
 }
 
 PTR_CORCOMPILE_IMPORT_SECTION Module::GetImportSections(COUNT_T *pCount)
@@ -3469,10 +3444,6 @@ BYTE *Module::GetProfilerBase()
     if (m_file == NULL)  // I'd rather assert this is not the case...
     {
         RETURN NULL;
-    }
-    else if (HasNativeImage())
-    {
-        RETURN (BYTE*)(GetNativeImage()->GetBase());
     }
     else if (m_file->IsLoaded())
     {
@@ -4318,29 +4289,7 @@ BOOL Module::MightContainMatchingProperty(mdProperty tkProperty, ULONG nameHash)
     }
     CONTRACTL_END;
 
-    if (m_propertyNameSet)
-    {
-        _ASSERTE(HasNativeImage());
-
-        // if this property was added after the name set was computed, conservatively
-        // assume we might have it. This is known to occur in scenarios where a profiler
-        // injects additional metadata at module load time for an NGEN'ed module. In the
-        // future other dynamic additions to the module might produce a similar result.
-        if (RidFromToken(tkProperty) > m_nPropertyNameSet)
-            return TRUE;
-
-        // Check one bit per iteration, failing if any are not set
-        // We know that all will have been set for any valid (tkProperty,name) pair
-        for (DWORD i = 0; i < NUM_PROPERTY_SET_HASHES; ++i)
-        {
-            DWORD currentHashValue = HashThreeToOne(tkProperty, nameHash, i);
-            DWORD bitPos = currentHashValue % (m_nPropertyNameSet * 8);
-            if ((m_propertyNameSet[bitPos / 8] & (1 << bitPos % 8)) == 0)
-            {
-                return FALSE;
-            }
-        }
-    }
+    _ASSERTE(!m_propertyNameSet);
 
     return TRUE;
 }
@@ -4958,7 +4907,7 @@ Module *Module::GetModuleFromIndex(DWORD ix)
     }
     CONTRACT_END;
 
-    if (HasNativeOrReadyToRunImage())
+    if (IsILImageReadyToRun())
     {
         RETURN ZapSig::DecodeModuleFromIndex(this, ix);
     }
@@ -4988,7 +4937,7 @@ Module *Module::GetModuleFromIndexIfLoaded(DWORD ix)
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
-        PRECONDITION(HasNativeOrReadyToRunImage());
+        PRECONDITION(IsILImageReadyToRun());
         POSTCONDITION(CheckPointer(RETVAL, NULL_OK));
     }
     CONTRACT_END;
@@ -5011,7 +4960,7 @@ IMDInternalImport* Module::GetNativeAssemblyImport(BOOL loadAllowed)
         if (loadAllowed) THROWS;                         else NOTHROW;
         if (loadAllowed) INJECT_FAULT(COMPlusThrowOM()); else FORBID_FAULT;
         MODE_ANY;
-        PRECONDITION(HasNativeOrReadyToRunImage());
+        PRECONDITION(IsILImageReadyToRun());
         POSTCONDITION(loadAllowed ?
             CheckPointer(RETVAL) :
             CheckPointer(RETVAL, NULL_OK));
@@ -5033,7 +4982,7 @@ BYTE* Module::GetNativeFixupBlobData(RVA rva)
     }
     CONTRACT_END;
 
-    RETURN(BYTE*) GetNativeOrReadyToRunImage()->GetRvaData(rva);
+    RETURN(BYTE*) GetReadyToRunImage()->GetRvaData(rva);
 }
 #endif // DACCESS_COMPILE
 
@@ -5100,7 +5049,7 @@ void Module::RunEagerFixupsUnlocked()
 {
     COUNT_T nSections;
     PTR_CORCOMPILE_IMPORT_SECTION pSections = GetImportSections(&nSections);
-    PEImageLayout *pNativeImage = GetNativeOrReadyToRunImage();
+    PEImageLayout *pNativeImage = GetReadyToRunImage();
 
     for (COUNT_T iSection = 0; iSection < nSections; iSection++)
     {
@@ -5188,7 +5137,7 @@ BOOL Module::FixupNativeEntry(CORCOMPILE_IMPORT_SECTION* pSection, SIZE_T fixupI
     {
         if (fixup == NULL)
         {
-            PTR_DWORD pSignatures = dac_cast<PTR_DWORD>(GetNativeOrReadyToRunImage()->GetRvaData(pSection->Signatures));
+            PTR_DWORD pSignatures = dac_cast<PTR_DWORD>(GetReadyToRunImage()->GetRvaData(pSection->Signatures));
 
             if (!LoadDynamicInfoEntry(this, pSignatures[fixupIndex], fixupCell, mayUsePrecompiledNDirectMethods))
                 return FALSE;

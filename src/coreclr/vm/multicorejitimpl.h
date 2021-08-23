@@ -148,8 +148,7 @@ public:
     unsigned short build;
     unsigned short revision;
 
-    unsigned       versionFlags         :31;
-    unsigned       hasNativeImage:1;
+    unsigned       versionFlags;
 
     GUID           mvid;
 
@@ -182,7 +181,7 @@ public:
     {
         LIMITED_METHOD_CONTRACT;
 
-        return hasNativeImage != other.hasNativeImage;
+        return false;
     }
 };
 

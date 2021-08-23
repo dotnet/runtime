@@ -9587,93 +9587,6 @@ void Debugger::LoadModuleFinished(Module * pRuntimeModule, AppDomain * pAppDomai
 
     _ASSERTE(pRuntimeModule != NULL);
     _ASSERTE(pAppDomain != NULL);
-
-    if (CORDBUnrecoverableError(this))
-        return;
-
-    // Just as an optimization, skip binding breakpoints if there's no debugger attached.
-    // If a debugger attaches at some point after here, it will be able to bind patches
-    // by making the request at that time. If a debugger detaches at some point after
-    // here, there's no harm in having extra patches bound.
-    if (!CORDebuggerAttached())
-        return;
-
-    // For now, this notification only does interesting work if the module that loaded is
-    // an NGENd module, because all we care about in this notification is ensuring NGENd
-    // methods get breakpoints bound on them
-    if (!pRuntimeModule->HasNativeImage())
-        return;
-
-    // This notification is called just before MODULE_READY_FOR_TYPELOAD gets set. But
-    // for shared modules (loaded into multiple domains), MODULE_READY_FOR_TYPELOAD has
-    // already been set if this module was already loaded into an earlier domain. For
-    // such cases, there's no need to bind breakpoints now because the module has already
-    // been fully loaded into at least one domain, and breakpoint binding has already
-    // been done for us
-    if (pRuntimeModule->IsReadyForTypeLoad())
-        return;
-
-#ifdef _DEBUG
-    {
-        // This notification is called once the module is loaded
-        DomainFile * pDomainFile = pRuntimeModule->GetDomainFile();
-        _ASSERTE((pDomainFile != NULL) && (pDomainFile->GetLoadLevel() >= FILE_LOADED));
-    }
-#endif // _DEBUG
-
-    // Find all IL Master patches for this module, and bind & activate their
-    // corresponding slave patches.
-    {
-        DebuggerController::ControllerLockHolder ch;
-
-        HASHFIND info;
-        DebuggerPatchTable * pTable = DebuggerController::GetPatchTable();
-
-        for (DebuggerControllerPatch * pMasterPatchCur = pTable->GetFirstPatch(&info);
-            pMasterPatchCur != NULL;
-            pMasterPatchCur = pTable->GetNextPatch(&info))
-        {
-            if (!pMasterPatchCur->IsILMasterPatch())
-                continue;
-
-            DebuggerMethodInfo *dmi = GetOrCreateMethodInfo(pMasterPatchCur->key.module, pMasterPatchCur->key.md);
-
-            // Found a relevant IL master patch. Now bind all corresponding slave patches
-            // that belong to this Module
-            DebuggerMethodInfo::DJIIterator it;
-            dmi->IterateAllDJIs(pAppDomain, pRuntimeModule, pMasterPatchCur->pMethodDescFilter, &it);
-            for (; !it.IsAtEnd(); it.Next())
-            {
-                DebuggerJitInfo *dji = it.Current();
-                _ASSERTE(dji->m_jitComplete);
-
-                if (dji->m_encVersion != pMasterPatchCur->GetEnCVersion())
-                    continue;
-
-                // Do we already have a slave for this DJI & Controller?  If so, no need
-                // to add another one
-                BOOL fSlaveExists = FALSE;
-                HASHFIND f;
-                for (DebuggerControllerPatch * pSlavePatchCur = pTable->GetFirstPatch(&f);
-                    pSlavePatchCur != NULL;
-                    pSlavePatchCur = pTable->GetNextPatch(&f))
-                {
-                    if (pSlavePatchCur->IsILSlavePatch() &&
-                        (pSlavePatchCur->GetDJI() == dji) &&
-                        (pSlavePatchCur->controller == pMasterPatchCur->controller))
-                    {
-                        fSlaveExists = TRUE;
-                        break;
-                    }
-                }
-
-                if (fSlaveExists)
-                    continue;
-
-                pMasterPatchCur->controller->AddBindAndActivateILSlavePatch(pMasterPatchCur, dji);
-            }
-        }
-    }
 }
 
 
@@ -16507,7 +16420,7 @@ HRESULT DebuggerHeap::Init(BOOL fExecutable)
             return E_OUTOFMEMORY;
         }
     }
-#endif    
+#endif
 
 #endif // !DACCESS_COMPILE
 

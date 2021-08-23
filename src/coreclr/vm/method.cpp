@@ -3184,7 +3184,7 @@ bool MethodDesc::DetermineAndSetIsEligibleForTieredCompilation()
 
         // Policy - If QuickJit is disabled and the module does not have any pregenerated code, the method would effectively not
         // be tiered currently, so make the method ineligible for tiering to avoid some unnecessary overhead
-        (g_pConfig->TieredCompilation_QuickJit() || GetModule()->HasNativeOrReadyToRunImage()) &&
+        (g_pConfig->TieredCompilation_QuickJit() || GetModule()->IsILImageReadyToRun()) &&
 
         // Policy - Generating optimized code is not disabled
         !IsJitOptimizationDisabled() &&
