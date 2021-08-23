@@ -15,7 +15,7 @@ namespace System.IO
             {
                 s_defaultTempPath = Interop.Sys.SearchPathTempDirectory();
                 if (s_defaultTempPath == null)
-                    throw new ExternalException();
+                    throw new System.Runtime.InteropServices.ExternalException();
                 return s_defaultTempPath!;
             }
         }
