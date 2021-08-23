@@ -33,11 +33,7 @@ STDAPI BinderAcquirePEImage(LPCTSTR            szAssemblyPath,
 
 STDAPI BinderAcquireImport(PEImage            *pPEImage,
                            IMDInternalImport **pIMetaDataAssemblyImport,
-                           DWORD              *pdwPAFlags,
-                           BOOL                bNativeImage);
-
-STDAPI BinderHasNativeHeader(PEImage *pPEImage,
-                             BOOL    *result);
+                           DWORD              *pdwPAFlags);
 
 STDAPI BinderReleasePEImage(PEImage *pPEImage);
 

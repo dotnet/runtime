@@ -1181,7 +1181,7 @@ namespace BINDER_SPACE
             hr = BinderAcquirePEImage(szAssemblyPath, &pPEImage, bundleFileLocation);
             IF_FAIL_GO(hr);
 
-            hr = BinderAcquireImport(pPEImage, &pIMetaDataAssemblyImport, dwPAFlags, FALSE);
+            hr = BinderAcquireImport(pPEImage, &pIMetaDataAssemblyImport, dwPAFlags);
             IF_FAIL_GO(hr);
 
             IF_FAIL_GO(TranslatePEToArchitectureType(dwPAFlags, &PeKind));

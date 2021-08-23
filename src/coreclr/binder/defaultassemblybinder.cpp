@@ -113,8 +113,7 @@ Exit:;
 
 #if !defined(DACCESS_COMPILE)
 HRESULT DefaultAssemblyBinder::BindUsingPEImage( /* in */ PEImage *pPEImage,
-                                                /* in */ BOOL fIsNativeImage,
-                                                /* [retval][out] */ BINDER_SPACE::Assembly **ppAssembly)
+                                                 /* [retval][out] */ BINDER_SPACE::Assembly **ppAssembly)
 {
     HRESULT hr = S_OK;
 
@@ -128,7 +127,7 @@ HRESULT DefaultAssemblyBinder::BindUsingPEImage( /* in */ PEImage *pPEImage,
 
         // Get the Metadata interface
         DWORD dwPAFlags[2];
-        IF_FAIL_GO(BinderAcquireImport(pPEImage, &pIMetaDataAssemblyImport, dwPAFlags, fIsNativeImage));
+        IF_FAIL_GO(BinderAcquireImport(pPEImage, &pIMetaDataAssemblyImport, dwPAFlags));
         IF_FAIL_GO(AssemblyBinderCommon::TranslatePEToArchitectureType(dwPAFlags, &PeKind));
 
         _ASSERTE(pIMetaDataAssemblyImport != NULL);
