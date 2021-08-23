@@ -68,14 +68,9 @@ static VOID ThrowLoadError(AssemblySpec * pSpec, HRESULT hr)
     EEFileLoadException::Throw(name, hr);
 }
 
-// See code:BINDER_SPACE::AssemblyBinderCommon::GetAssembly for info on fNgenExplicitBind
-// and fExplicitBindToNativeImage, and see code:CEECompileInfo::LoadAssemblyByPath
-// for an example of how they're used.
 VOID  AssemblySpec::Bind(AppDomain      *pAppDomain,
                          BOOL            fThrowOnFileNotFound,
-                         CoreBindResult *pResult,
-                         BOOL fNgenExplicitBind /* = FALSE */,
-                         BOOL fExplicitBindToNativeImage /* = FALSE */)
+                         CoreBindResult *pResult)
 {
     CONTRACTL
     {
@@ -122,8 +117,6 @@ VOID  AssemblySpec::Bind(AppDomain      *pAppDomain,
     }
     else if (m_wszCodeBase == NULL)
     {
-        // For name based binding these arguments shouldn't have been changed from default
-        _ASSERTE(!fNgenExplicitBind && !fExplicitBindToNativeImage);
         AssemblyNameData assemblyNameData = { 0 };
         PopulateAssemblyNameData(assemblyNameData);
         hr = pBinder->BindAssemblyByName(&assemblyNameData, &pPrivAsm);
@@ -132,8 +125,6 @@ VOID  AssemblySpec::Bind(AppDomain      *pAppDomain,
     {
         hr = pTPABinder->Bind(m_wszCodeBase,
                               GetParentAssembly() ? GetParentAssembly()->GetFile() : NULL,
-                              fNgenExplicitBind,
-                              fExplicitBindToNativeImage,
                               &pPrivAsm);
     }
 
@@ -156,8 +147,6 @@ VOID  AssemblySpec::Bind(AppDomain      *pAppDomain,
 
 STDAPI BinderAcquirePEImage(LPCWSTR             wszAssemblyPath,
                             PEImage           **ppPEImage,
-                            PEImage           **ppNativeImage,
-                            BOOL                fExplicitBindToNativeImage,
                             BundleFileLocation  bundleFileLocation)
 {
     HRESULT hr = S_OK;
@@ -166,10 +155,7 @@ STDAPI BinderAcquirePEImage(LPCWSTR             wszAssemblyPath,
 
     EX_TRY
     {
-        PEImageHolder pImage = NULL;
-        PEImageHolder pNativeImage = NULL;
-
-        pImage = PEImage::OpenImage(wszAssemblyPath, MDInternalImport_Default, bundleFileLocation);
+        PEImageHolder pImage = PEImage::OpenImage(wszAssemblyPath, MDInternalImport_Default, bundleFileLocation);
 
         // Make sure that the IL image can be opened if the native image is not available.
         hr=pImage->TryOpenFile();
@@ -180,9 +166,6 @@ STDAPI BinderAcquirePEImage(LPCWSTR             wszAssemblyPath,
 
         if (pImage)
             *ppPEImage = pImage.Extract();
-
-        if (ppNativeImage)
-            *ppNativeImage = pNativeImage.Extract();
     }
     EX_CATCH_HRESULT(hr);
 

@@ -24,13 +24,11 @@ HRESULT DefaultAssemblyBinder::BindAssemblyByNameWorker(BINDER_SPACE::AssemblyNa
 #endif
 
     hr = AssemblyBinderCommon::BindAssembly(this,
-                                      pAssemblyName,
-                                      NULL,
-                                      NULL,
-                                      FALSE, //fNgenExplicitBind,
-                                      FALSE, //fExplicitBindToNativeImage,
-                                      excludeAppPaths,
-                                      ppCoreCLRFoundAssembly);
+                                            pAssemblyName,
+                                            NULL, // szCodeBase
+                                            NULL, // pParentAssembly
+                                            excludeAppPaths,
+                                            ppCoreCLRFoundAssembly);
     if (!FAILED(hr))
     {
         (*ppCoreCLRFoundAssembly)->SetBinder(this);
@@ -201,14 +199,9 @@ HRESULT DefaultAssemblyBinder::SetupBindingPaths(SString  &sTrustedPlatformAssem
     return hr;
 }
 
-// See code:BINDER_SPACE::AssemblyBinderCommon::GetAssembly for info on fNgenExplicitBind
-// and fExplicitBindToNativeImage, and see code:CEECompileInfo::LoadAssemblyByPath
-// for an example of how they're used.
-HRESULT DefaultAssemblyBinder::Bind(LPCWSTR            wszCodeBase,
-                                   PEAssembly        *pParentAssembly,
-                                   BOOL               fNgenExplicitBind,
-                                   BOOL               fExplicitBindToNativeImage,
-                                   BINDER_SPACE::Assembly **ppAssembly)
+HRESULT DefaultAssemblyBinder::Bind(LPCWSTR                  wszCodeBase,
+                                    PEAssembly              *pParentAssembly,
+                                    BINDER_SPACE::Assembly **ppAssembly)
 {
     HRESULT hr = S_OK;
     VALIDATE_ARG_RET(wszCodeBase != NULL && ppAssembly != NULL);
@@ -217,13 +210,11 @@ HRESULT DefaultAssemblyBinder::Bind(LPCWSTR            wszCodeBase,
     {
         ReleaseHolder<BINDER_SPACE::Assembly> pAsm;
         hr = AssemblyBinderCommon::BindAssembly(this,
-                                          NULL,
-                                          wszCodeBase,
-                                          pParentAssembly,
-                                          fNgenExplicitBind,
-                                          fExplicitBindToNativeImage,
-                                          false, // excludeAppPaths
-                                          &pAsm);
+                                                NULL, // pAssemblyName
+                                                wszCodeBase,
+                                                pParentAssembly,
+                                                false, // excludeAppPaths
+                                                &pAsm);
         if(SUCCEEDED(hr))
         {
             _ASSERTE(pAsm != NULL);

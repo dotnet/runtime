@@ -39,8 +39,6 @@ public:
 
     HRESULT Bind(LPCWSTR      wszCodeBase,
                  PEAssembly  *pParentAssembly,
-                 BOOL         fNgenExplicitBind,
-                 BOOL         fExplicitBindToNativeImage,
                  BINDER_SPACE::Assembly **ppAssembly);
 
 private:

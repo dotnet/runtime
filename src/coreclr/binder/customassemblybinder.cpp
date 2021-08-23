@@ -26,13 +26,11 @@ HRESULT CustomAssemblyBinder::BindAssemblyByNameWorker(BINDER_SPACE::AssemblyNam
 
     // Do we have the assembly already loaded in the context of the current binder?
     hr = AssemblyBinderCommon::BindAssembly(this,
-                                      pAssemblyName,
-                                      NULL,
-                                      NULL,
-                                      FALSE, //fNgenExplicitBind,
-                                      FALSE, //fExplicitBindToNativeImage,
-                                      false, //excludeAppPaths,
-                                      ppCoreCLRFoundAssembly);
+                                            pAssemblyName,
+                                            NULL,  // szCodeBase
+                                            NULL,  // pParentAssembly
+                                            false, //excludeAppPaths,
+                                            ppCoreCLRFoundAssembly);
     if (!FAILED(hr))
     {
         _ASSERTE(*ppCoreCLRFoundAssembly != NULL);

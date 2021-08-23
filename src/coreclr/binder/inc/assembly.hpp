@@ -29,8 +29,6 @@
 
 STDAPI BinderAcquirePEImage(LPCTSTR            szAssemblyPath,
                             PEImage          **ppPEImage,
-                            PEImage          **ppNativeImage,
-                            BOOL               fExplicitBindToNativeImage,
                             BundleFileLocation bundleFileLocation);
 
 STDAPI BinderAcquireImport(PEImage            *pPEImage,

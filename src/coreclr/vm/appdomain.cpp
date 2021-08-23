@@ -3829,7 +3829,7 @@ PEAssembly * AppDomain::BindAssemblySpec(
                 // Use CoreClr's fusion alternative
                 CoreBindResult bindResult;
 
-                pSpec->Bind(this, FALSE /* fThrowOnFileNotFound */, &bindResult, FALSE /* fNgenExplicitBind */, FALSE /* fExplicitBindToNativeImage */);
+                pSpec->Bind(this, FALSE /* fThrowOnFileNotFound */, &bindResult);
                 hrBindResult = bindResult.GetHRBindResult();
 
                 if (bindResult.Found())
