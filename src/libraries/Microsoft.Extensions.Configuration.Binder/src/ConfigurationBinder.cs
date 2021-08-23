@@ -20,8 +20,9 @@ namespace Microsoft.Extensions.Configuration
         private const string InstanceGetTypeTrimmingWarningMessage = "Cannot statically analyze the type of instance so its members may be trimmed";
         private const string PropertyTrimmingWarningMessage = "Cannot statically analyze property.PropertyType so its members may be trimmed.";
         private const string BindSingleElementsToArraySwitch = "Microsoft.Extensions.Configuration.BindSingleElementsToArray";
-        private static bool TryGetSwitchBindSingleElementsToArrayFromAppContext = AppContext.TryGetSwitch(BindSingleElementsToArraySwitch, out BindSingleElementsToArray);
-        private static bool BindSingleElementsToArray;
+
+        // Enable this switch by default.
+        private static bool ShouldBindSingleElementsToArray { get; } = AppContext.TryGetSwitch(BindSingleElementsToArraySwitch, out bool verifyCanBindSingleElementsToArray) ? verifyCanBindSingleElementsToArray : true;
 
         /// <summary>
         /// Attempts to bind the configuration instance to a new instance of type T.
@@ -365,7 +366,7 @@ namespace Microsoft.Extensions.Configuration
                 return convertedValue;
             }
 
-            if (config != null && (config.GetChildren().Any() || (configValue != null && ShouldBindSingleElementsToArray())))
+            if (config != null && (config.GetChildren().Any() || (configValue != null && ShouldBindSingleElementsToArray)))
             {
                 // If we don't have an instance, try to create one
                 if (instance == null)
@@ -708,7 +709,7 @@ namespace Microsoft.Extensions.Configuration
 
         private static IEnumerable<IConfigurationSection> GetChildrenOrSelf(IConfiguration config)
         {
-            if (!ShouldBindSingleElementsToArray())
+            if (!ShouldBindSingleElementsToArray)
             {
                 return config.GetChildren();
             }
@@ -725,17 +726,6 @@ namespace Microsoft.Extensions.Configuration
             }
 
             return children;
-        }
-
-        private static bool ShouldBindSingleElementsToArray()
-        {
-            if (TryGetSwitchBindSingleElementsToArrayFromAppContext)
-            {
-                return BindSingleElementsToArray;
-            }
-
-            // Enable this switch by default.
-            return true;
         }
     }
 }

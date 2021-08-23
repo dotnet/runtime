@@ -987,8 +987,6 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
 
                 var stringAsStr = config.GetSection("MyString").Get<string>();
                 Assert.Equal("hello world", stringAsStr);
-
-                AppContext.SetSwitch("Microsoft.Extensions.Configuration.BindSingleElementsToArray", true);
             }).Dispose();
         }
 
