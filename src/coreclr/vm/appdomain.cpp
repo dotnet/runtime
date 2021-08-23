@@ -1322,7 +1322,7 @@ void SystemDomain::LoadBaseSystemClasses()
     ETWOnStartup(LdSysBases_V1, LdSysBasesEnd_V1);
 
     {
-        m_pSystemFile = PEAssembly::OpenSystem(NULL);
+        m_pSystemFile = PEAssembly::OpenSystem();
     }
     // Only partially load the system assembly. Other parts of the code will want to access
     // the globals in this function before finishing the load.
