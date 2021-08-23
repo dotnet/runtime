@@ -254,13 +254,12 @@ ClrDataAccess::EnumSvrGlobalMemoryRegions(CLRDataEnumMemoryFlags flags)
     {
         TADDR heapAddress = HeapTableIndex(g_gcDacGlobals->g_heaps, i);    
         dac_gc_heap heap = LoadGcHeapData(heapAddress);
-        dac_gc_heap* pHeap = &heap;
 
         size_t gen_table_size = g_gcDacGlobals->generation_size * (*g_gcDacGlobals->max_gen + 2);
-        DacEnumMemoryRegion(dac_cast<TADDR>(pHeap), sizeof(dac_gc_heap));
-        DacEnumMemoryRegion(dac_cast<TADDR>(pHeap->finalize_queue), sizeof(dac_finalize_queue));
+        DacEnumMemoryRegion(heapAddress, sizeof(dac_gc_heap));
+        DacEnumMemoryRegion(dac_cast<TADDR>(heap.finalize_queue), sizeof(dac_finalize_queue));
 
-        TADDR taddrTable = dac_cast<TADDR>(pHeap) + offsetof(dac_gc_heap, generation_table);
+        TADDR taddrTable = heapAddress + offsetof(dac_gc_heap, generation_table);
         DacEnumMemoryRegion(taddrTable, gen_table_size);
 
         // enumerating the generations from max (which is normally gen2) to max+1 gives you
