@@ -3566,7 +3566,9 @@ BOOL AppDomain::AddFileToCache(AssemblySpec* pSpec, PEAssembly *pFile, BOOL fAll
     }
     CONTRACTL_END;
 
-    CrstHolder holder(&m_DomainCacheCrst);
+    GCX_PREEMP();
+    DomainCacheCrstHolderForGCCoop holder(this);
+
     // !!! suppress exceptions
     if(!m_AssemblyCache.StoreFile(pSpec, pFile) && !fAllowFailure)
     {
@@ -3596,7 +3598,9 @@ BOOL AppDomain::AddAssemblyToCache(AssemblySpec* pSpec, DomainAssembly *pAssembl
     }
     CONTRACTL_END;
 
-    CrstHolder holder(&m_DomainCacheCrst);
+    GCX_PREEMP();
+    DomainCacheCrstHolderForGCCoop holder(this);
+
     // !!! suppress exceptions
     BOOL bRetVal = m_AssemblyCache.StoreAssembly(pSpec, pAssembly);
     return bRetVal;
@@ -3617,7 +3621,9 @@ BOOL AppDomain::AddExceptionToCache(AssemblySpec* pSpec, Exception *ex)
     if (ex->IsTransient())
         return TRUE;
 
-    CrstHolder holder(&m_DomainCacheCrst);
+    GCX_PREEMP();
+    DomainCacheCrstHolderForGCCoop holder(this);
+
     // !!! suppress exceptions
     return m_AssemblyCache.StoreException(pSpec, ex);
 }
@@ -3635,7 +3641,7 @@ void AppDomain::AddUnmanagedImageToCache(LPCWSTR libraryName, NATIVE_LIBRARY_HAN
     }
     CONTRACTL_END;
 
-    CrstHolder lock(&m_DomainCacheCrst);
+    DomainCacheCrstHolderForGCPreemp lock(this);
 
     const UnmanagedImageCacheEntry *existingEntry = m_unmanagedCache.LookupPtr(libraryName);
     if (existingEntry != NULL)
@@ -3665,7 +3671,8 @@ NATIVE_LIBRARY_HANDLE AppDomain::FindUnmanagedImageInCache(LPCWSTR libraryName)
     }
     CONTRACT_END;
 
-    CrstHolder lock(&m_DomainCacheCrst);
+    DomainCacheCrstHolderForGCPreemp lock(this);
+
     const UnmanagedImageCacheEntry *existingEntry = m_unmanagedCache.LookupPtr(libraryName);
     if (existingEntry == NULL)
         RETURN NULL;
@@ -3707,7 +3714,8 @@ BOOL AppDomain::RemoveAssemblyFromCache(DomainAssembly* pAssembly)
     }
     CONTRACTL_END;
 
-    CrstHolder holder(&m_DomainCacheCrst);
+    GCX_PREEMP();
+    DomainCacheCrstHolderForGCCoop holder(this);
 
     return m_AssemblyCache.RemoveAssembly(pAssembly);
 }
