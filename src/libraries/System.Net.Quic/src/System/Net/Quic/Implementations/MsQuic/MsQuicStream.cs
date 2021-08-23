@@ -95,6 +95,14 @@ namespace System.Net.Quic.Implementations.MsQuic
         // inbound.
         internal MsQuicStream(MsQuicConnection.State connectionState, SafeMsQuicStreamHandle streamHandle, QUIC_STREAM_OPEN_FLAGS flags)
         {
+            if (!connectionState.TryAddStream(this))
+            {
+                throw new ObjectDisposedException(nameof(QuicConnection));
+            }
+            // this assignment should be done before SetCallbackHandlerDelegate to prevent NRE in HandleEventConnectionClose
+            // but after TryAddStream to prevent unnecessary RemoveStream in finalizer
+            _state.ConnectionState = connectionState;
+
             _state.Handle = streamHandle;
             _canRead = true;
             _canWrite = !flags.HasFlag(QUIC_STREAM_OPEN_FLAGS.UNIDIRECTIONAL);
@@ -117,14 +125,6 @@ namespace System.Net.Quic.Implementations.MsQuic
                 throw;
             }
 
-            if (!connectionState.TryAddStream(this))
-            {
-                _state.StateGCHandle.Free();
-                throw new ObjectDisposedException(nameof(QuicConnection));
-            }
-
-            _state.ConnectionState = connectionState;
-
             _state.TraceId = MsQuicTraceHelper.GetTraceId(_state.Handle);
             if (NetEventSource.Log.IsEnabled())
             {
@@ -139,6 +139,14 @@ namespace System.Net.Quic.Implementations.MsQuic
         internal MsQuicStream(MsQuicConnection.State connectionState, QUIC_STREAM_OPEN_FLAGS flags)
         {
             Debug.Assert(connectionState.Handle != null);
+
+            if (!connectionState.TryAddStream(this))
+            {
+                throw new ObjectDisposedException(nameof(QuicConnection));
+            }
+            // this assignment should be done before StreamOpenDelegate to prevent NRE in HandleEventConnectionClose
+            // but after TryAddStream to prevent unnecessary RemoveStream in finalizer
+            _state.ConnectionState = connectionState;
 
             _canRead = !flags.HasFlag(QUIC_STREAM_OPEN_FLAGS.UNIDIRECTIONAL);
             _canWrite = true;
@@ -169,15 +177,6 @@ namespace System.Net.Quic.Implementations.MsQuic
                 _state.StateGCHandle.Free();
                 throw;
             }
-
-            if (!connectionState.TryAddStream(this))
-            {
-                _state.Handle?.Dispose();
-                _state.StateGCHandle.Free();
-                throw new ObjectDisposedException(nameof(QuicConnection));
-            }
-
-            _state.ConnectionState = connectionState;
 
             _state.TraceId = MsQuicTraceHelper.GetTraceId(_state.Handle);
             if (NetEventSource.Log.IsEnabled())
