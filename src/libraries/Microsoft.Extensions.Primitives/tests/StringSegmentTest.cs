@@ -456,18 +456,13 @@ namespace Microsoft.Extensions.Primitives
             Assert.Throws<ArgumentOutOfRangeException>("comparisonType", () => segment.StartsWith(string.Empty, (StringComparison)6));
         }
 
-        public static TheoryData<string, StringComparison, bool> EqualsStringData
+        // candidate / comparer / expected result
+        public static TheoryData<string, StringComparison, bool> EqualsStringData =>new()
         {
-            get
-            {
-                // candidate / comparer / expected result
-                return new TheoryData<string, StringComparison, bool>()
-                {
-                    { "eLLo", StringComparison.OrdinalIgnoreCase, true },
-                    { "eLLo", StringComparison.Ordinal, false },
-                };
-            }
-        }
+            { "eLLo", StringComparison.OrdinalIgnoreCase, true },
+            { "eLLo", StringComparison.Ordinal, false },
+            { null, StringComparison.Ordinal, false },
+        };
 
         [Theory]
         [MemberData(nameof(EqualsStringData))]
@@ -483,15 +478,26 @@ namespace Microsoft.Extensions.Primitives
             Assert.Equal(expectedResult, result);
         }
 
-        [Fact]
-        public void StringSegment_Equals_NullString_Throws()
+        // candidate / comparer / expected result
+        public static TheoryData<string, StringComparison, bool> NullEqualsStringData => new()
+        {
+            { null, StringComparison.OrdinalIgnoreCase, true },
+            { null, StringComparison.Ordinal, true },
+            { "eLLo", StringComparison.Ordinal, false },
+        };
+
+        [Theory]
+        [MemberData(nameof(NullEqualsStringData))]
+        public void StringSegment_Equals_NullString_Valid(string candidate, StringComparison comparison, bool expectedResult)
         {
             // Arrange
-            var segment = new StringSegment();
+            var segment = new StringSegment(null);
+
+            // Act
+            bool result = segment.Equals(candidate, comparison);
 
             // Act & assert
-            Assert.Throws<ArgumentNullException>("text", () => segment.Equals((string)null));
-            Assert.Throws<ArgumentNullException>("text", () => segment.Equals((string)null, StringComparison.Ordinal));
+            Assert.Equal(expectedResult, result);
         }
 
         [Fact]
