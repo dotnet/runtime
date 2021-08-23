@@ -3754,56 +3754,6 @@ size_t LclVarDsc::lvArgStackSize() const
     return stackSize;
 }
 
-/**********************************************************************************
-* Get type of a variable when passed as an argument.
-*/
-var_types LclVarDsc::lvaArgType()
-{
-    var_types type = TypeGet();
-
-#ifdef TARGET_AMD64
-#ifdef UNIX_AMD64_ABI
-    if (type == TYP_STRUCT)
-    {
-        NYI("lvaArgType");
-    }
-#else  //! UNIX_AMD64_ABI
-    if (type == TYP_STRUCT)
-    {
-        switch (lvExactSize)
-        {
-            case 1:
-                type = TYP_BYTE;
-                break;
-            case 2:
-                type = TYP_SHORT;
-                break;
-            case 4:
-                type = TYP_INT;
-                break;
-            case 8:
-                type = m_layout->GetGCPtrType(0);
-                break;
-            default:
-                type = TYP_BYREF;
-                break;
-        }
-    }
-#endif // !UNIX_AMD64_ABI
-#elif defined(TARGET_ARM64)
-    if (type == TYP_STRUCT)
-    {
-        NYI("lvaArgType");
-    }
-#elif defined(TARGET_X86)
-// Nothing to do; use the type as is.
-#else
-    NYI("lvaArgType");
-#endif // TARGET_AMD64
-
-    return type;
-}
-
 //------------------------------------------------------------------------
 // GetRegisterType: Determine register type for this local var.
 //

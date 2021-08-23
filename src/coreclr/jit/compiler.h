@@ -987,8 +987,6 @@ public:
         }
     }
 
-    var_types lvaArgType();
-
     // Returns true if this variable contains GC pointers (including being a GC pointer itself).
     bool HasGCPtr() const
     {
