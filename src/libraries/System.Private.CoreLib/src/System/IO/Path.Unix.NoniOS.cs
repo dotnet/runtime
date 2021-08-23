@@ -5,6 +5,6 @@ namespace System.IO
 {
     public static partial class Path
     {
-        private static string? DefaultTempPath => "/tmp/";
+        private static string DefaultTempPath = "/tmp/";
     }
 }

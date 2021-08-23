@@ -7,13 +7,15 @@ namespace System.IO
 {
     public static partial class Path
     {
-        private static string? s_defaultTempPath;
+        private static string s_defaultTempPath = string.Empty;
 
-        private static string? DefaultTempPath
+        private static string DefaultTempPath
         {
             get
             {
-                s_defaultTempPath ??= Interop.Sys.SearchPathTempDirectory()!;
+                s_defaultTempPath = Interop.Sys.SearchPathTempDirectory();
+                if (s_defaultTempPath == null)
+                    throw new ExternalException();
                 return s_defaultTempPath!;
             }
         }

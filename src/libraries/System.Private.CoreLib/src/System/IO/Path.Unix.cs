@@ -86,7 +86,7 @@ namespace System.IO
             // If it is, return it, ensuring it ends with a slash.
             string? path = Environment.GetEnvironmentVariable(TempEnvVar);
             return
-                string.IsNullOrEmpty(path) ? DefaultTempPath! :
+                string.IsNullOrEmpty(path) ? DefaultTempPath :
                 PathInternal.IsDirectorySeparator(path[path.Length - 1]) ? path :
                 path + PathInternal.DirectorySeparatorChar;
         }
