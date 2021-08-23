@@ -472,6 +472,7 @@ namespace Microsoft.Extensions.Primitives
             { null, StringComparison.OrdinalIgnoreCase, true },
             { null, StringComparison.Ordinal, true },
             { "eLLo", StringComparison.Ordinal, false },
+            { string.Empty, StringComparison.Ordinal, false },
         };
 
         [Theory]
@@ -1523,7 +1524,7 @@ namespace Microsoft.Extensions.Primitives
 
         private static StringSegment MakePaddedStringSegment(string input)
         {
-            return (input is null) ? new StringSegment() : new StringSegment("xx" + input + "zzz", 2, input.Length);
+            return (input is null) ? new StringSegment(null) : new StringSegment("xx" + input + "zzz", 2, input.Length);
         }
     }
 }
