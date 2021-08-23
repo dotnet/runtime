@@ -71,9 +71,7 @@
                      '$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
     <!-- Point MicrosoftNetCoreAppRefPackRefDir to the acquired targeting pack to use it later for AssemblySearchPaths resolution. -->
     <PropertyGroup Condition="'$(UseLocalTargetingRuntimePack)' != 'true'">
-      <_NetCoreAppTargetFrameworkIdentifier Condition="$([MSBuild]::VersionLessThan($(TargetFrameworkVersion), '5.0'))">netcoreapp</_NetCoreAppTargetFrameworkIdentifier>
-      <_NetCoreAppTargetFrameworkIdentifier Condition="$([MSBuild]::VersionGreaterThanOrEquals($(TargetFrameworkVersion), '5.0'))">net</_NetCoreAppTargetFrameworkIdentifier>
-      <MicrosoftNetCoreAppRefPackRefDir>%(ResolvedFrameworkReference.TargetingPackPath)\ref\$(_NetCoreAppTargetFrameworkIdentifier)$(TargetFrameworkVersion.TrimStart('v'))\</MicrosoftNetCoreAppRefPackRefDir>
+      <MicrosoftNetCoreAppRefPackRefDir>%(ResolvedFrameworkReference.TargetingPackPath)\ref\net$(TargetFrameworkVersion.TrimStart('v'))\</MicrosoftNetCoreAppRefPackRefDir>
     </PropertyGroup>
     <ItemGroup>
       <Reference Remove="@(Reference)"
