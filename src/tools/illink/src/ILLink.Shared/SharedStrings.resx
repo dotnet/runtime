@@ -118,10 +118,10 @@
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
   <data name="RequiresUnreferencedCodeTitle" xml:space="preserve">
-    <value>Methods annotated with 'RequiresUnreferencedCodeAttribute' require dynamic access otherwise can break functionality when trimming application code</value>
+    <value>Members annotated with 'RequiresUnreferencedCodeAttribute' require dynamic access otherwise can break functionality when trimming application code</value>
   </data>
   <data name="RequiresUnreferencedCodeMessage" xml:space="preserve">
-    <value>Using method '{0}' which has 'RequiresUnreferencedCodeAttribute' can break functionality when trimming application code.{1}{2}</value>
+    <value>Using member '{0}' which has 'RequiresUnreferencedCodeAttribute' can break functionality when trimming application code.{1}{2}</value>
   </data>
   <data name="AvoidAssemblyLocationInSingleFileTitle" xml:space="preserve">
     <value>Avoid accessing Assembly file path when publishing as a single file</value>
@@ -170,5 +170,11 @@
   </data>
   <data name="DynamicTypeInvocationTitle" xml:space="preserve">
     <value>Using dynamic types might cause types or members to be removed by trimmer.</value>
+  </data>
+  <data name="RequiresUnreferencedCodeOnStaticConstructorMessage" xml:space="preserve">
+    <value>'RequiresUnreferencedCodeAttribute' cannot be placed directly on static constructor '{0}', consider placing 'RequiresUnreferencedCodeAttribute' on the type declaration instead.</value>
+  </data>
+  <data name="RequiresUnreferencedCodeOnStaticConstructorTitle" xml:space="preserve">
+    <value>The use of 'RequiresUnreferencedCodeAttribute' on static constructors is disallowed since is a method not callable by the user, is only called by the runtime. Placing the attribute directly on the static constructor will have no effect, instead use 'RequiresUnreferencedCodeAttribute' on the type which will handle warning and silencing from the static constructor.</value>
   </data>
 </root>

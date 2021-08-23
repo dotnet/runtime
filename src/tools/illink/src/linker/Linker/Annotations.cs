@@ -598,6 +598,10 @@ namespace Mono.Linker
 		/// and .ctors are reported as requiring unreferenced code when the declaring type has RUC on it.</remarks>
 		internal bool DoesMethodRequireUnreferencedCode (MethodDefinition method, out RequiresUnreferencedCodeAttribute attribute)
 		{
+			if (method.IsStaticConstructor ()) {
+				attribute = null;
+				return false;
+			}
 			if (TryGetLinkerAttribute (method, out attribute))
 				return true;
 
@@ -622,6 +626,26 @@ namespace Mono.Linker
 				return true;
 
 			return false;
+		}
+
+		internal bool DoesFieldRequireUnreferencedCode (FieldDefinition field, out RequiresUnreferencedCodeAttribute attribute)
+		{
+			if (!field.IsStatic || field.DeclaringType is null) {
+				attribute = null;
+				return false;
+			}
+
+			return TryGetLinkerAttribute (field.DeclaringType, out attribute);
+		}
+
+		internal bool DoesMemberRequireUnreferencedCode (IMemberDefinition member, out RequiresUnreferencedCodeAttribute attribute)
+		{
+			attribute = null;
+			return member switch {
+				MethodDefinition method => DoesMethodRequireUnreferencedCode (method, out attribute),
+				FieldDefinition field => DoesFieldRequireUnreferencedCode (field, out attribute),
+				_ => false
+			};
 		}
 
 		public void EnqueueVirtualMethod (MethodDefinition method)

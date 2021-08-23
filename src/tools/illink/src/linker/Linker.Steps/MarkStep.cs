@@ -1542,13 +1542,13 @@ namespace Mono.Linker.Steps
 			try {
 				var origin = _scopeStack.CurrentScope.Origin;
 
-				if (member is MethodDefinition method && Annotations.DoesMethodRequireUnreferencedCode (method, out RequiresUnreferencedCodeAttribute attribute)) {
+				if (Annotations.DoesMemberRequireUnreferencedCode (member, out RequiresUnreferencedCodeAttribute requiresUnreferencedCodeAttribute)) {
 					var message = string.Format (
 						"'DynamicallyAccessedMembersAttribute' on '{0}' or one of its base types references '{1}' which requires unreferenced code.{2}{3}",
 						type.GetDisplayName (),
-						method.GetDisplayName (),
-						MessageFormat.FormatRequiresAttributeMessageArg (attribute.Message),
-						MessageFormat.FormatRequiresAttributeMessageArg (attribute.Url));
+						((MemberReference) member).GetDisplayName (), // The cast is valid since it has to be a method or field
+						MessageFormat.FormatRequiresAttributeMessageArg (requiresUnreferencedCodeAttribute.Message),
+						MessageFormat.FormatRequiresAttributeMessageArg (requiresUnreferencedCodeAttribute.Url));
 					var code = reportOnMember ? 2112 : 2113;
 					_context.LogWarning (message, code, origin, MessageSubCategory.TrimAnalysis);
 				}
@@ -1578,6 +1578,11 @@ namespace Mono.Linker.Steps
 			} else {
 				Annotations.Mark (field, reason);
 			}
+
+			if (reason.Kind != DependencyKind.DynamicallyAccessedMemberOnType &&
+				Annotations.DoesFieldRequireUnreferencedCode (field, out RequiresUnreferencedCodeAttribute requiresUnreferencedCodeAttribute) &&
+				!ShouldSuppressAnalysisWarningsForRequiresUnreferencedCode ())
+				ReportRequiresUnreferencedCode (field.GetDisplayName (), requiresUnreferencedCodeAttribute, _scopeStack.CurrentScope.Origin);
 
 			switch (reason.Kind) {
 			case DependencyKind.AccessedViaReflection:
@@ -2766,7 +2771,7 @@ namespace Mono.Linker.Steps
 			switch (dependencyKind) {
 			// DirectCall, VirtualCall and NewObj are handled by ReflectionMethodBodyScanner
 			// This is necessary since the ReflectionMethodBodyScanner has intrinsic handling for some
-			// of the annotated methods annotated (for example Type.GetType)
+			// of the annotated methods (for example Type.GetType)
 			// and it knows when it's OK and when it needs a warning. In this place we don't know
 			// and would have to warn every time.
 			case DependencyKind.DirectCall:
@@ -2901,10 +2906,9 @@ namespace Mono.Linker.Steps
 
 		private void ReportRequiresUnreferencedCode (string displayName, RequiresUnreferencedCodeAttribute requiresUnreferencedCode, MessageOrigin currentOrigin)
 		{
-			string formatString = SharedStrings.RequiresUnreferencedCodeMessage;
 			string arg1 = MessageFormat.FormatRequiresAttributeMessageArg (requiresUnreferencedCode.Message);
 			string arg2 = MessageFormat.FormatRequiresAttributeUrlArg (requiresUnreferencedCode.Url);
-			string message = string.Format (formatString, displayName, arg1, arg2);
+			string message = string.Format (SharedStrings.RequiresUnreferencedCodeMessage, displayName, arg1, arg2);
 			_context.LogWarning (message, 2026, currentOrigin, MessageSubCategory.TrimAnalysis);
 		}
 
@@ -2930,7 +2934,6 @@ namespace Mono.Linker.Steps
 			if (!_methodReasons.Contains (reason.Kind))
 				throw new InternalErrorException ($"Unsupported method dependency {reason.Kind}");
 #endif
-
 			_scopeStack.AssertIsEmpty ();
 			using var parentScope = _scopeStack.PushScope (scope);
 			using var methodScope = _scopeStack.PushScope (new MessageOrigin (method));
@@ -2977,7 +2980,8 @@ namespace Mono.Linker.Steps
 			if (method.IsInstanceConstructor ()) {
 				MarkRequirementsForInstantiatedTypes (method.DeclaringType);
 				Tracer.AddDirectDependency (method.DeclaringType, new DependencyInfo (DependencyKind.InstantiatedByCtor, method), marked: false);
-			}
+			} else if (method.IsStaticConstructor () && Annotations.HasLinkerAttribute<RequiresUnreferencedCodeAttribute> (method))
+				_context.LogWarning (new DiagnosticString (DiagnosticId.RequiresUnreferencedCodeOnStaticConstructor).GetMessage (method.GetDisplayName ()), (int) DiagnosticId.RequiresUnreferencedCodeOnStaticConstructor, _scopeStack.CurrentScope.Origin, MessageSubCategory.TrimAnalysis);
 
 			if (method.IsConstructor) {
 				if (!Annotations.ProcessSatelliteAssemblies && KnownMembers.IsSatelliteAssemblyMarker (method))
