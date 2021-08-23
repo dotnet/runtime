@@ -168,6 +168,33 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Theory]
+        [InlineData("gzip", DecompressionMethods.GZip)]
+#if !NETFRAMEWORK
+        [InlineData("deflate", DecompressionMethods.Deflate)]
+        [InlineData("br", DecompressionMethods.Brotli)]
+#endif
+        [SkipOnPlatform(TestPlatforms.Browser, "AutomaticDecompression not supported on Browser")]
+        public async Task DecompressedResponse_EmptyBody_Success(string encodingName, DecompressionMethods methods)
+        {
+            await LoopbackServer.CreateClientAndServerAsync(async uri =>
+            {
+                using (HttpClientHandler handler = CreateHttpClientHandler())
+                using (HttpClient client = CreateHttpClient(handler))
+                {
+                    handler.AutomaticDecompression = methods;
+                    Assert.Equal(Array.Empty<byte>(), await client.GetByteArrayAsync(TestAsync, useCopyTo: false, uri));
+                }
+            }, async server =>
+            {
+                await server.AcceptConnectionAsync(async connection =>
+                {
+                    await connection.ReadRequestHeaderAsync();
+                    await connection.WriteStringAsync($"HTTP/1.1 200 OK\r\nContent-Encoding: {encodingName}\r\n\r\n");
+                });
+            });
+        }
+
+        [Theory]
 #if NETCOREAPP
         [InlineData(DecompressionMethods.Brotli, "br", "")]
         [InlineData(DecompressionMethods.Brotli, "br", "br")]
