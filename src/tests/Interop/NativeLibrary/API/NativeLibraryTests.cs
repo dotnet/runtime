@@ -189,16 +189,16 @@ public class NativeLibraryTest
             if (IsHostedByCoreRun())
             {
                 // Export from CoreRun host
-                success &= EXPECT(GetSymbolFromEntryPointModuleHandle("GetCurrentClrDetails"));
-                success &= EXPECT(GetSymbolFromEntryPointModuleHandle("NonExistentCoreRunExport"), TestResult.ReturnFailure);
+                success &= EXPECT(GetSymbolfromMainProgramHandle("HostExecutable", "GetCurrentClrDetails"));
+                success &= EXPECT(GetSymbolfromMainProgramHandle("HostExecutable", "NonExistentCoreRunExport"), TestResult.ReturnFailure);
             }
 
             handle = NativeLibrary.Load(libName);
 
             // NativeLibrary does not load symbols globally, so we shouldn't be able to discover symbols from libaries loaded
             // with NativeLibary.Load.
-            success &= EXPECT(GetSymbolFromEntryPointModuleHandle(TestLibrary.Utilities.IsX86 ? "_NativeSum@8" : "NativeSum"),  TestResult.ReturnFailure);
-            success &= EXPECT(GetSymbolFromEntryPointModuleHandle("NonNativeSum"), TestResult.ReturnFailure);
+            success &= EXPECT(GetSymbolfromMainProgramHandle("LocallyLoadedNativeLib", TestLibrary.Utilities.IsX86 ? "_NativeSum@8" : "NativeSum"),  TestResult.ReturnFailure);
+            success &= EXPECT(GetSymbolfromMainProgramHandle("LocallyLoadedNativeLib", "NonNativeSum"), TestResult.ReturnFailure);
 
             NativeLibrary.Free(handle);
 
@@ -209,8 +209,8 @@ public class NativeLibraryTest
                 // with the right flags to test the scenario.
                 handle = LoadLibraryGlobally(Path.Combine(testBinDir, "libGloballyLoadedNativeLibrary.so"));
 
-                success &= EXPECT(GetSymbolFromEntryPointModuleHandle(TestLibrary.Utilities.IsX86 ? "_NativeMultiply@8" : "NativeMultiply"));
-                success &= EXPECT(GetSymbolFromEntryPointModuleHandle("NonNativeMultiply"), TestResult.ReturnFailure);
+                success &= EXPECT(GetSymbolfromMainProgramHandle("GloballyLoadedNativeLib", TestLibrary.Utilities.IsX86 ? "_NativeMultiply@8" : "NativeMultiply"));
+                success &= EXPECT(GetSymbolfromMainProgramHandle("GloballyLoadedNativeLib", "NonNativeMultiply"), TestResult.ReturnFailure);
 
                 NativeLibrary.Free(handle);
             }
@@ -405,9 +405,9 @@ public class NativeLibraryTest
         });
     }
 
-    static TestResult GetSymbolFromEntryPointModuleHandle(string symbolToLoadFromHandle)
+    static TestResult GetSymbolfromMainProgramHandle(string scenarioName, string symbolToLoadFromHandle)
     {
-        CurrentTest = nameof(GetSymbolFromEntryPointModuleHandle);
+        CurrentTest = $"{nameof(GetSymbolfromMainProgramHandle)}-{scenarioName}";
         return Run(() => {
             IntPtr moduleHandle = NativeLibrary.GetMainProgramHandle();
             bool success = NativeLibrary.TryGetExport(moduleHandle, symbolToLoadFromHandle, out IntPtr address);
