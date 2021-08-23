@@ -31,12 +31,13 @@ namespace System.Net.Http.Functional.Tests
             from compressionName in new[] { "gzip", "zlib", "deflate", "br" }
             from all in new[] { false, true }
             from copyTo in new[] { false, true }
-            select new object[] { compressionName, all, copyTo };
+            from contentLength in new[] { 0, 1, 12345 }
+            select new object[] { compressionName, all, copyTo, contentLength };
 
         [Theory]
         [MemberData(nameof(DecompressedResponse_MethodSpecified_DecompressedContentReturned_MemberData))]
         [SkipOnPlatform(TestPlatforms.Browser, "AutomaticDecompression not supported on Browser")]
-        public async Task DecompressedResponse_MethodSpecified_DecompressedContentReturned(string compressionName, bool all, bool useCopyTo)
+        public async Task DecompressedResponse_MethodSpecified_DecompressedContentReturned(string compressionName, bool all, bool useCopyTo, int contentLength)
         {
             if (IsWinHttpHandler &&
                 (compressionName == "br" || compressionName == "zlib"))
@@ -77,7 +78,7 @@ namespace System.Net.Http.Functional.Tests
                     throw new Exception($"Unexpected compression: {compressionName}");
             }
 
-            var expectedContent = new byte[12345];
+            var expectedContent = new byte[contentLength];
             new Random(42).NextBytes(expectedContent);
 
             await LoopbackServer.CreateClientAndServerAsync(async uri =>
@@ -86,7 +87,7 @@ namespace System.Net.Http.Functional.Tests
                 using (HttpClient client = CreateHttpClient(handler))
                 {
                     handler.AutomaticDecompression = methods;
-                    Assert.Equal<byte>(expectedContent, await client.GetByteArrayAsync(TestAsync, useCopyTo, uri));
+                    AssertExtensions.SequenceEqual(expectedContent, await client.GetByteArrayAsync(TestAsync, useCopyTo, uri));
                 }
             }, async server =>
             {
@@ -154,7 +155,7 @@ namespace System.Net.Http.Functional.Tests
                 using (HttpClient client = CreateHttpClient(handler))
                 {
                     handler.AutomaticDecompression = methods;
-                    Assert.Equal<byte>(compressedContent, await client.GetByteArrayAsync(TestAsync, useCopyTo, uri));
+                    AssertExtensions.SequenceEqual(compressedContent, await client.GetByteArrayAsync(TestAsync, useCopyTo, uri));
                 }
             }, async server =>
             {
