@@ -12962,19 +12962,6 @@ PCODE UnsafeJitFunction(PrepareCodeConfig* config,
     return ret;
 }
 
-extern "C" unsigned __stdcall PartialNGenStressPercentage()
-{
-    LIMITED_METHOD_CONTRACT;
-#ifndef _DEBUG
-    return 0;
-#else // _DEBUG
-    static ConfigDWORD partialNGenStress;
-    DWORD partialNGenStressVal = partialNGenStress.val(CLRConfig::INTERNAL_partialNGenStress);
-    _ASSERTE(partialNGenStressVal <= 100);
-    return partialNGenStressVal;
-#endif // _DEBUG
-}
-
 #ifdef FEATURE_READYTORUN
 CorInfoHelpFunc MapReadyToRunHelper(ReadyToRunHelper helperNum)
 {
