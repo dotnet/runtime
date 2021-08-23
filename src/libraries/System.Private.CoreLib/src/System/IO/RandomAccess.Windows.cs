@@ -432,8 +432,10 @@ namespace System.IO
         // 3. not bigger than 2^32 - 1 in total
         // This function is also responsible for pinning the buffers if they
         // are suitable and they must be unpinned after the I/O operation completes.
-        // It also returns a pointer with the segments to be passed to the Windows API and to be
-        // freed by NativeMemory.Free, and the total size of the buffers that is needed as well.
+        // It also returns a pointer with the segments to be passed to the
+        // Windows API, and the total size of the buffers that is needed as well.
+        // The pinned MemoryHandles and the pointer to the segments must be cleaned-up
+        // with the CleanupScatterGatherBuffers method.
         private static unsafe bool TryPrepareScatterGatherBuffers<T, THandler>(IReadOnlyList<T> buffers,
             THandler handler, out MemoryHandle[] handlesToDispose, out IntPtr segmentsPtr, out int totalBytes)
             where THandler: struct, IMemoryHandler<T>
@@ -450,8 +452,8 @@ namespace System.IO
             totalBytes = 0;
 
             // "The array must contain enough elements to store nNumberOfBytesToWrite bytes of data, and one element for the terminating NULL. "
-            long* segmentsArray = (long*) NativeMemory.Alloc((nuint)(buffersCount + 1), sizeof(long));
-            segmentsArray[buffersCount] = 0;
+            long* segments = (long*) NativeMemory.Alloc((nuint)(buffersCount + 1), sizeof(long));
+            segments[buffersCount] = 0;
 
             bool success = false;
             try
@@ -468,14 +470,14 @@ namespace System.IO
                     }
 
                     MemoryHandle handle = handlesToDispose[i] = handler.Pin(in buffer);
-                    long ptr = segmentsArray[i] = (long)handle.Pointer;
+                    long ptr = segments[i] = (long)handle.Pointer;
                     if ((ptr & alignedAtPageSizeMask) != 0)
                     {
                         return false;
                     }
                 }
 
-                segmentsPtr = (IntPtr)segmentsArray;
+                segmentsPtr = (IntPtr)segments;
                 totalBytes = (int)totalBytes64;
                 success = true;
                 return true;
@@ -484,14 +486,19 @@ namespace System.IO
             {
                 if (!success)
                 {
-                    foreach (MemoryHandle handle in handlesToDispose)
-                    {
-                        handle.Dispose();
-                    }
-
-                    NativeMemory.Free(segmentsArray);
+                    CleanupScatterGatherBuffers(handlesToDispose, (IntPtr) segments);
                 }
             }
+        }
+
+        private static unsafe void CleanupScatterGatherBuffers(MemoryHandle[] handlesToDispose, IntPtr segmentsPtr)
+        {
+            foreach (MemoryHandle handle in handlesToDispose)
+            {
+                handle.Dispose();
+            }
+
+            NativeMemory.Free((void*) segmentsPtr);
         }
 
         private static ValueTask<long> ReadScatterAtOffsetAsync(SafeFileHandle handle, IReadOnlyList<Memory<byte>> buffers,
@@ -519,15 +526,7 @@ namespace System.IO
             }
             finally
             {
-                foreach (MemoryHandle memoryHandle in handlesToDispose)
-                {
-                    memoryHandle.Dispose();
-                }
-
-                unsafe
-                {
-                    NativeMemory.Free(segmentsPtr.ToPointer());
-                }
+                CleanupScatterGatherBuffers(handlesToDispose, segmentsPtr);
             }
         }
 
@@ -624,15 +623,7 @@ namespace System.IO
             }
             finally
             {
-                foreach (MemoryHandle memoryHandle in handlesToDispose)
-                {
-                    memoryHandle.Dispose();
-                }
-
-                unsafe
-                {
-                    NativeMemory.Free(segmentsPtr.ToPointer());
-                }
+                CleanupScatterGatherBuffers(handlesToDispose, segmentsPtr);
             }
         }
 
