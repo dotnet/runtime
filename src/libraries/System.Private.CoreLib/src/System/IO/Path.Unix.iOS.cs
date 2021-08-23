@@ -7,10 +7,10 @@ namespace System.IO
 {
     public static partial class Path
     {
-        private static string s_defaultTempPath = string.Empty;
+        private static string? s_defaultTempPath = null;
 
         private static string DefaultTempPath =>
             s_defaultTempPath ?? (s_defaultTempPath = Interop.Sys.SearchPathTempDirectory()) ??
-            ThrowHelper.ThrowInvalidOperationException();
+            throw new InvalidOperationException();
     }
 }
