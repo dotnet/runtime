@@ -205,7 +205,7 @@ BOOL DacValidateMD(MethodDesc * pMD)
             retval = FALSE;
         }
 
-        if (retval && pMD->HasTemporaryEntryPoint())
+        if (retval)
         {
             MethodDesc *pMDCheck = MethodDesc::GetMethodDescFromStubAddr(pMD->GetTemporaryEntryPoint(), TRUE);
 
@@ -3830,11 +3830,11 @@ HRESULT ClrDataAccess::GetClrWatsonBucketsWorker(Thread * pThread, GenericModeBl
         if (oThrowable != NULL)
         {
             // Does the throwable have buckets?
-            if (((EXCEPTIONREF)oThrowable)->AreWatsonBucketsPresent())
+            U1ARRAYREF refWatsonBucketArray = ((EXCEPTIONREF)oThrowable)->GetWatsonBucketReference();
+            if (refWatsonBucketArray != NULL)
             {
                 // Get the watson buckets from the throwable for non-preallocated
                 // exceptions
-                U1ARRAYREF refWatsonBucketArray = ((EXCEPTIONREF)oThrowable)->GetWatsonBucketReference();
                 pBuckets = dac_cast<PTR_VOID>(refWatsonBucketArray->GetDataPtr());
             }
             else

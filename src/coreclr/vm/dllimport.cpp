@@ -5949,12 +5949,9 @@ EXTERN_C LPVOID STDCALL NDirectImportWorker(NDirectMethodDesc* pMD)
 
     if (pMD->IsEarlyBound())
     {
-        if (!pMD->IsZapped())
-        {
-            // we need the MD to be populated in case we decide to build an intercept
-            // stub to wrap the target in InitEarlyBoundNDirectTarget
-            NDirect::PopulateNDirectMethodDesc(pMD);
-        }
+        // we need the MD to be populated in case we decide to build an intercept
+        // stub to wrap the target in InitEarlyBoundNDirectTarget
+        NDirect::PopulateNDirectMethodDesc(pMD);
 
         pMD->InitEarlyBoundNDirectTarget();
     }
@@ -5973,16 +5970,7 @@ EXTERN_C LPVOID STDCALL NDirectImportWorker(NDirectMethodDesc* pMD)
             // With IL stubs, we don't have to do anything but ensure the DLL is loaded.
             //
 
-            if (!pMD->IsZapped())
-            {
-                NDirect::PopulateNDirectMethodDesc(pMD);
-            }
-            else
-            {
-                // must have been populated at NGEN time
-                _ASSERTE(pMD->GetLibName() != NULL);
-            }
-
+            NDirect::PopulateNDirectMethodDesc(pMD);
             pMD->CheckRestore();
 
             NDirectLink(pMD);

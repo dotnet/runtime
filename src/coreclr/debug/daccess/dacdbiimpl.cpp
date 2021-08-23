@@ -1607,7 +1607,7 @@ void DacDbiInterfaceImpl::ComputeFieldData(PTR_FieldDesc pFD,
             {
                 // RVA statics are relative to a base module address
                 DWORD offset = pFD->GetOffset();
-                PTR_VOID addr = pFD->GetModule()->GetRvaField(offset, pFD->IsZapped());
+                PTR_VOID addr = pFD->GetModule()->GetRvaField(offset);
                 if (pCurrentFieldData->OkToGetOrSetStaticAddress())
                 {
                     pCurrentFieldData->SetStaticAddress(PTR_TO_TADDR(addr));

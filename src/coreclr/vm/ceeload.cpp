@@ -2544,7 +2544,7 @@ void Module::FreeClassTables()
                 if (!th.IsTypeDesc())
                 {
                     MethodTable * pMT = th.AsMethodTable();
-                    if (pMT->IsCanonicalMethodTable() && (!pMT->IsZapped() || pMT->GetZapModule() == this))
+                    if (pMT->IsCanonicalMethodTable())
                         pMT->GetClass()->Destruct(pMT);
                 }
             }
@@ -3261,7 +3261,7 @@ TADDR Module::GetIL(DWORD target)
     return m_file->GetIL(target);
 }
 
-PTR_VOID Module::GetRvaField(DWORD rva, BOOL fZapped)
+PTR_VOID Module::GetRvaField(DWORD rva)
 {
     WRAPPER_NO_CONTRACT;
     SUPPORTS_DAC;
@@ -7657,9 +7657,8 @@ TADDR ReflectionModule::GetIL(RVA il) // virtual
 #endif // DACCESS_COMPILE
 }
 
-PTR_VOID ReflectionModule::GetRvaField(RVA field, BOOL fZapped) // virtual
+PTR_VOID ReflectionModule::GetRvaField(RVA field) // virtual
 {
-    _ASSERTE(!fZapped);
 #ifndef DACCESS_COMPILE
     WRAPPER_NO_CONTRACT;
     // This function should be call only if the target is a field or a field with RVA.
