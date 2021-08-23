@@ -11,6 +11,6 @@ namespace System.IO
 
     private static string DefaultTempPath =>
         s_defaultTempPath ?? (s_defaultTempPath = Interop.Sys.SearchPathTempDirectory()) ??
-        throw new System.Runtime.InteropServices.ExternalException();
+        ThrowHelper.ThrowInvalidOperationException();
     }
 }
