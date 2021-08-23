@@ -1,8 +1,8 @@
 <Dependencies>
   <ProductDependencies>
-    <Dependency Name="Microsoft.NETCore.Runtime.ICU.Transport" Version="6.0.0-rc.1.21419.1">
+    <Dependency Name="Microsoft.NETCore.Runtime.ICU.Transport" Version="6.0.0-rc.2.21419.2">
       <Uri>https://github.com/dotnet/icu</Uri>
-      <Sha>d5bcc9e6ee6b9a196996c28f283414674617d10e</Sha>
+      <Sha>2e5cc6f3c87a83cba41a5784840d8bbe198e3a45</Sha>
     </Dependency>
     <Dependency Name="System.Net.MsQuic.Transport" Version="6.0.0-preview.7.21417.1">
       <Uri>https://github.com/dotnet/msquic</Uri>
@@ -233,6 +233,10 @@
     <Dependency Name="Microsoft.CodeAnalysis.NetAnalyzers" Version="6.0.0-rc1.21413.4">
       <Uri>https://github.com/dotnet/roslyn-analyzers</Uri>
       <Sha>9a1f02eff42635a5a9934735f12c722c3bfba8e8</Sha>
+    </Dependency>
+    <Dependency Name="Microsoft.DotNet.Compatibility" Version="1.0.0-rc.2.21419.17">
+      <Uri>https://github.com/dotnet/sdk</Uri>
+      <Sha>c293382261f9f932c772a095ff3c2f6bd97f2cf9</Sha>
     </Dependency>
   </ToolsetDependencies>
 </Dependencies>
