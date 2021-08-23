@@ -9,15 +9,8 @@ namespace System.IO
     {
         private static string s_defaultTempPath = string.Empty;
 
-        private static string DefaultTempPath
-        {
-            get
-            {
-                s_defaultTempPath = Interop.Sys.SearchPathTempDirectory();
-                if (s_defaultTempPath == null)
-                    throw new System.Runtime.InteropServices.ExternalException();
-                return s_defaultTempPath!;
-            }
-        }
+    private static string DefaultTempPath =>
+        s_defaultTempPath ?? (s_defaultTempPath = Interop.Sys.SearchPathTempDirectory()) ??
+        throw new System.Runtime.InteropServices.ExternalException();
     }
 }
