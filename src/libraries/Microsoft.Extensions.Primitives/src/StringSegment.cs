@@ -251,10 +251,10 @@ namespace Microsoft.Extensions.Primitives
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool Equals([NotNullWhen(true)] string? text, StringComparison comparisonType)
         {
-            if (!HasValue)
+            if (!HasValue || text == null)
             {
                 CheckStringComparison(comparisonType); // must arg check before returning
-                return text == null;
+                return text == Buffer; // return true if both are null
             }
 
             return AsSpan().Equals(text.AsSpan(), comparisonType);
