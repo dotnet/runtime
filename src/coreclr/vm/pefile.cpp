@@ -694,7 +694,7 @@ void PEFile::OpenEmitter()
 }
 
 
-void PEFile::ReleaseMetadataInterfaces(BOOL bDestructor, BOOL bKeepNativeData/*=FALSE*/)
+void PEFile::ReleaseMetadataInterfaces(BOOL bDestructor)
 {
     CONTRACTL
     {

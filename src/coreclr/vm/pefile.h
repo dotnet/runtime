@@ -371,7 +371,7 @@ protected:
     void OpenImporter();
     void OpenEmitter();
 
-    void ReleaseMetadataInterfaces(BOOL bDestructor, BOOL bKeepNativeData=FALSE);
+    void ReleaseMetadataInterfaces(BOOL bDestructor);
 
 
     friend class Module;
