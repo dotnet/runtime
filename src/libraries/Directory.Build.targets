@@ -229,9 +229,11 @@
       <PropertyGroup >
         <!-- This is needed to use the SkipLocalsInitAttribute. -->
         <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+        <IncludeSkipLocalsInitAttribute Condition="'$(IncludeSkipLocalsInitAttribute)' == '' and $([MSBuild]::VersionLessThan($(TargetFrameworkVersion), '5.0'))">true</IncludeSkipLocalsInitAttribute>
       </PropertyGroup>
 
       <ItemGroup>
+        <Compile Include="$(CoreLibSharedDir)System\Runtime\CompilerServices\SkipLocalsInitAttribute.cs" Link="System\Runtime\CompilerServices\SkipLocalsInitAttribute.cs" Condition="'$(IncludeSkipLocalsInitAttribute)' == 'true'" />
         <Compile Include="$(CommonPath)SkipLocalsInit.cs" Link="Common\SkipLocalsInit.cs" />
       </ItemGroup>
     </When>
