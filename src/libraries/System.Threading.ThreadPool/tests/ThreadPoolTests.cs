@@ -195,9 +195,9 @@ namespace System.Threading.ThreadPools.Tests
                     RemoteExecutor.Invoke(() =>
                     {
                         int w, c;
-                        Assert.True(ThreadPool.GetMinThreads(out w, out c));
+                        ThreadPool.GetMinThreads(out w, out c);
                         Assert.Equal(1, w);
-                        Assert.True(ThreadPool.GetMaxThreads(out w, out c));
+                        ThreadPool.GetMaxThreads(out w, out c);
                         Assert.Equal(2, w);
                         Assert.True(ThreadPool.SetMinThreads(1, 1));
                         Assert.True(ThreadPool.SetMaxThreads(2, 1));
