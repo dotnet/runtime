@@ -305,7 +305,7 @@ class LocalAddressVisitor final : public GenTreeVisitor<LocalAddressVisitor>
 
                                 haveCorrectFieldForVN =
                                     compiler->info.compCompHnd->doesFieldBelongToClass(field->gtFldHnd, clsHnd);
-                                assert(haveCorrectFieldForVN);
+                                noway_assert(haveCorrectFieldForVN);
                             }
                         }
                     }

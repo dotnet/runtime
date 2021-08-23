@@ -5204,6 +5204,8 @@ public:
     // Does value-numbering for a block assignment.
     void fgValueNumberBlockAssignment(GenTree* tree);
 
+    bool fgValueNumberIsStructReinterpretation(GenTreeLclVarCommon* lhsLclVarTree, GenTreeLclVarCommon* rhsLclVarTree);
+
     // Does value-numbering for a cast tree.
     void fgValueNumberCastTree(GenTree* tree);
 
