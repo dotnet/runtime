@@ -330,7 +330,7 @@ namespace System.Net.Http
 
                     public int PeekFirstByte()
                     {
-                        Debug.Assert(_firstByteStatus == 0);
+                        Debug.Assert(_firstByteStatus == FirstByteStatus.None);
 
                         int value = _stream.ReadByte();
                         if (value == -1)
@@ -346,7 +346,7 @@ namespace System.Net.Http
 
                     public async ValueTask<int> PeekFirstByteAsync(CancellationToken cancellationToken)
                     {
-                        Debug.Assert(_firstByteStatus == 0);
+                        Debug.Assert(_firstByteStatus == FirstByteStatus.None);
 
                         var buffer = new byte[1];
 
@@ -354,7 +354,7 @@ namespace System.Net.Http
                         if (bytesRead == 0)
                         {
                             _firstByteStatus = FirstByteStatus.Consumed;
-                            return 0;
+                            return -1;
                         }
 
                         _firstByte = buffer[0];
@@ -400,7 +400,7 @@ namespace System.Net.Http
 
                     public override async Task CopyToAsync(Stream destination, int bufferSize, CancellationToken cancellationToken)
                     {
-                        Debug.Assert(_firstByteStatus != 0);
+                        Debug.Assert(_firstByteStatus != FirstByteStatus.None);
 
                         ValidateCopyToArguments(destination, bufferSize);
                         if (_firstByteStatus == FirstByteStatus.Available)
