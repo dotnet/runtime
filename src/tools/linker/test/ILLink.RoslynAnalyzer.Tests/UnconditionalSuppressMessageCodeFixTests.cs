@@ -81,14 +81,14 @@ public class C
 {
     [RequiresUnreferencedCode(""message"")]
     public int M1() => 0;
-    [UnconditionalSuppressMessage(""Trimming"", ""IL2026:Methods annotated with 'RequiresUnreferencedCodeAttribute' require dynamic access otherwise can break functionality when trimming application code"", Justification = ""<Pending>"")]
+    [UnconditionalSuppressMessage(""Trimming"", ""IL2026:Members annotated with 'RequiresUnreferencedCodeAttribute' require dynamic access otherwise can break functionality when trimming application code"", Justification = ""<Pending>"")]
     int M2() => M1();
 }";
 			return VerifyUnconditionalSuppressMessageCodeFixWithRUC (
 				test,
 				fixtest,
 				baselineExpected: new[] {
-				// /0/Test0.cs(7,17): warning IL2026: Using method 'C.M1()' which has 'RequiresUnreferencedCodeAttribute' can break functionality when trimming application code. message.
+				// /0/Test0.cs(7,17): warning IL2026: Using member 'C.M1()' which has 'RequiresUnreferencedCodeAttribute' can break functionality when trimming application code. message.
 				VerifyCSUSMwithRUC.Diagnostic (DiagnosticId.RequiresUnreferencedCode).WithSpan (7, 17, 7, 21).WithArguments ("C.M1()", " message.", ""),
 				},
 				fixedExpected: Array.Empty<DiagnosticResult> ());
@@ -118,7 +118,7 @@ public class C
 				test,
 				fixtest,
 				baselineExpected: new[] {
-				// /0/Test0.cs(7,17): warning IL2026: Using method 'C.M1()' which has 'RequiresUnreferencedCodeAttribute' can break functionality when trimming application code. message.
+				// /0/Test0.cs(7,17): warning IL2026: Using member 'C.M1()' which has 'RequiresUnreferencedCodeAttribute' can break functionality when trimming application code. message.
 				VerifyCSUSMwithRAF.Diagnostic (DiagnosticId.RequiresAssemblyFiles).WithSpan (7, 17, 7, 21).WithArguments ("C.M1()", " message.", "")
 				},
 				fixedExpected: Array.Empty<DiagnosticResult> ());
@@ -190,14 +190,14 @@ public class C
     [RequiresUnreferencedCodeAttribute(""message"")]
     public int M1() => 0;
 
-    [UnconditionalSuppressMessage(""Trimming"", ""IL2026:Methods annotated with 'RequiresUnreferencedCodeAttribute' require dynamic access otherwise can break functionality when trimming application code"", Justification = ""<Pending>"")]
+    [UnconditionalSuppressMessage(""Trimming"", ""IL2026:Members annotated with 'RequiresUnreferencedCodeAttribute' require dynamic access otherwise can break functionality when trimming application code"", Justification = ""<Pending>"")]
     int M2 => M1();
 }";
 			return VerifyUnconditionalSuppressMessageCodeFixWithRUC (
 				src,
 				fix,
 				baselineExpected: new[] {
-					// /0/Test0.cs(10,15): warning IL2026: Using method 'C.M1()' which has 'RequiresUnreferencedCodeAttribute' can break functionality when trimming application code. message.
+					// /0/Test0.cs(10,15): warning IL2026: Using member 'C.M1()' which has 'RequiresUnreferencedCodeAttribute' can break functionality when trimming application code. message.
 					VerifyCSUSMwithRUC.Diagnostic (DiagnosticId.RequiresUnreferencedCode).WithSpan(10, 15, 10, 19).WithArguments("C.M1()", " message.", "")
 				},
 				fixedExpected: Array.Empty<DiagnosticResult> ());
@@ -274,7 +274,7 @@ public class C
 
     Action M2()
     {
-        [global::System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute(""Trimming"", ""IL2026:Methods annotated with 'RequiresUnreferencedCodeAttribute' require dynamic access otherwise can break functionality when trimming application code"", Justification = ""<Pending>"")] void Wrapper () => M1();
+        [global::System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute(""Trimming"", ""IL2026:Members annotated with 'RequiresUnreferencedCodeAttribute' require dynamic access otherwise can break functionality when trimming application code"", Justification = ""<Pending>"")] void Wrapper () => M1();
         return Wrapper;
     }
 }";
@@ -283,7 +283,7 @@ public class C
 				src,
 				fix,
 				baselineExpected: new[] {
-					// /0/Test0.cs(12,28): warning IL2026: Using method 'C.M1()' which has 'RequiresUnreferencedCodeAttribute' can break functionality when trimming application code. message.
+					// /0/Test0.cs(12,28): warning IL2026: Using member 'C.M1()' which has 'RequiresUnreferencedCodeAttribute' can break functionality when trimming application code. message.
 					VerifyCSUSMwithRUC.Diagnostic (DiagnosticId.RequiresUnreferencedCode).WithSpan(12, 28, 12, 32).WithArguments("C.M1()", " message.", "")
 				},
 				fixedExpected: Array.Empty<DiagnosticResult> ());
@@ -312,14 +312,14 @@ public class C
     [RequiresUnreferencedCodeAttribute(""message"")]
     public int M1() => 0;
 
-    [UnconditionalSuppressMessage(""Trimming"", ""IL2026:Methods annotated with 'RequiresUnreferencedCodeAttribute' require dynamic access otherwise can break functionality when trimming application code"", Justification = ""<Pending>"")]
+    [UnconditionalSuppressMessage(""Trimming"", ""IL2026:Members annotated with 'RequiresUnreferencedCodeAttribute' require dynamic access otherwise can break functionality when trimming application code"", Justification = ""<Pending>"")]
     public C () => M1();
 }";
 			return VerifyUnconditionalSuppressMessageCodeFixWithRUC (
 				src,
 				fix,
 				baselineExpected: new[] {
-					// /0/Test0.cs(10,15): warning IL2026: Using method 'C.M1()' which has 'RequiresUnreferencedCodeAttribute' can break functionality when trimming application code. message.
+					// /0/Test0.cs(10,15): warning IL2026: Using member 'C.M1()' which has 'RequiresUnreferencedCodeAttribute' can break functionality when trimming application code. message.
 					VerifyCSUSMwithRUC.Diagnostic (DiagnosticId.RequiresUnreferencedCode).WithSpan(10, 20, 10, 24).WithArguments("C.M1()", " message.", "")
 				},
 				fixedExpected: Array.Empty<DiagnosticResult> ());
@@ -355,7 +355,7 @@ public class C
     [RequiresUnreferencedCodeAttribute(""message"")]
     public int M1() => 0;
 
-    [UnconditionalSuppressMessage(""Trimming"", ""IL2026:Methods annotated with 'RequiresUnreferencedCodeAttribute' require dynamic access otherwise can break functionality when trimming application code"", Justification = ""<Pending>"")]
+    [UnconditionalSuppressMessage(""Trimming"", ""IL2026:Members annotated with 'RequiresUnreferencedCodeAttribute' require dynamic access otherwise can break functionality when trimming application code"", Justification = ""<Pending>"")]
     public event EventHandler E1
     {
         add
@@ -369,7 +369,7 @@ public class C
 				src,
 				fix,
 				baselineExpected: new[] {
-					// /0/Test0.cs(14,21): warning IL2026: Using method 'C.M1()' which has 'RequiresUnreferencedCodeAttribute' can break functionality when trimming application code. message.
+					// /0/Test0.cs(14,21): warning IL2026: Using member 'C.M1()' which has 'RequiresUnreferencedCodeAttribute' can break functionality when trimming application code. message.
 					VerifyCSUSMwithRUC.Diagnostic (DiagnosticId.RequiresUnreferencedCode).WithSpan(14, 21, 14, 25).WithArguments("C.M1()", " message.", "")
 				},
 				fixedExpected: Array.Empty<DiagnosticResult> ());

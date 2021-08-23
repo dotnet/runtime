@@ -5,6 +5,7 @@
 		// Linker diagnostic ids.
 		RequiresUnreferencedCode = 2026,
 		RequiresUnreferencedCodeAttributeMismatch = 2046,
+		RequiresUnreferencedCodeOnStaticConstructor = 2116,
 
 		// Single-file diagnostic ids.
 		AvoidAssemblyLocationInSingleFile = 3000,

@@ -502,9 +502,9 @@ the error code. For example:
   </linker>
   ```
 
-#### `IL2026` Trim analysis: Using method 'method' which has 'RequiresUnreferencedCodeAttribute' can break functionality when trimming application code. [message]. [url]
+#### `IL2026` Trim analysis: Using member 'method' which has 'RequiresUnreferencedCodeAttribute' can break functionality when trimming application code. [message]. [url]
 
-- The linker found a call to a method which is annotated with `RequiresUnreferencedCodeAttribute` which can break functionality of a trimmed application.
+- The linker found a call to a member which is annotated with `RequiresUnreferencedCodeAttribute` which can break functionality of a trimmed application.
 
   ```C#
   [RequiresUnreferencedCode("Use 'MethodFriendlyToTrimming' instead", Url="http://help/unreferencedcode")]
@@ -514,7 +514,7 @@ the error code. For example:
 
   void TestMethod()
   {
-      // IL2026: Using method 'MethodWithUnreferencedCodeUsage' which has 'RequiresUnreferencedCodeAttribute' 
+      // IL2026: Using member 'MethodWithUnreferencedCodeUsage' which has 'RequiresUnreferencedCodeAttribute' 
       // can break functionality when trimming application code. Use 'MethodFriendlyToTrimming' instead. http://help/unreferencedcode
       MethodWithUnreferencedCodeUsage();
   }
@@ -1798,7 +1798,7 @@ void TestMethod()
   }
   ```
 
-#### `IL2115 ` Trim analysis: 'DynamicallyAccessedMembersAttribute' on 'type' or one of its base types references 'member' which has 'DynamicallyAccessedMembersAttribute' requirements.
+#### `IL2115` Trim analysis: 'DynamicallyAccessedMembersAttribute' on 'type' or one of its base types references 'member' which has 'DynamicallyAccessedMembersAttribute' requirements.
 
 - A type is annotated with `DynamicallyAccessedMembersAttribute` indicating that the type may dynamically access some members declared on the type or its derived types. This instructs the trimmer to keep the specified members, but a member of one of the base or interface types is annotated with `DynamicallyAccessedMembersAttribute` which can not be statically verified. The `DynamicallyAccessedMembersAttribute` annotation may be directly on the type, or implied by an annotation on one of its base or interface types. This warning originates from the type which has `DynamicallyAccessedMembersAttribute` requirements.
 
@@ -1812,6 +1812,18 @@ void TestMethod()
   // base types references 'System.Type BaseType::Field' which has 'DynamicallyAccessedMembersAttribute' requirements .
   [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields)]
   public class AnnotatedType : BaseType {
+  }
+  ```
+
+#### `IL2116` Trim analysis: 'RequiresUnreferencedCodeAttribute' cannot be placed directly on static constructor 'static constructor', consider placing 'RequiresUnreferencedCodeAttribute' on the type declaration instead.
+
+- The use of 'RequiresUnreferencedCodeAttribute' on static constructors is disallowed since is a method not callable by the user, is only called by the runtime. Placing the attribute directly on the static constructor will have no effect, instead use 'RequiresUnreferencedCodeAttribute' on the type which will handle warning and silencing from the static constructor.
+
+  ```C#
+  public class MyClass {
+      // Trim analysis warning IL2115: 'RequiresUnreferencedCodeAttribute' cannot be placed directly on static constructor 'MyClass..cctor()', consider placing 'RequiresUnreferencedCodeAttribute' on the type declaration instead.
+      [RequiresUnreferencedCode("Dangerous")]
+      static MyClass () { }
   }
   ```
 
