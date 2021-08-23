@@ -9556,40 +9556,6 @@ void Debugger::LoadModule(Module* pRuntimeModule,
     module->SetCanChangeJitFlags(false);
 }
 
-
-//---------------------------------------------------------------------------------------
-//
-// Special LS-only notification that a module has reached the FILE_LOADED level. For now
-// this is only useful to bind breakpoints in generic instantiations from NGENd modules
-// that we couldn't bind earlier (at LoadModule notification time) because the method
-// iterator refuses to consider modules earlier than the FILE_LOADED level. Normally
-// generic instantiations would have their breakpoints bound when they get JITted, but in
-// the case of NGEN that may never happen, so we need to bind them here.
-//
-// Arguments:
-//      * pRuntimeModule - Module that just loaded
-//      * pAppDomain - AD into which the Module was loaded
-//
-// Assumptions:
-//     This is called during the loading process, and blocks that process from
-//     completing. The module has reached the FILE_LOADED stage, but typically not yet
-//     the IsReadyForTypeLoad stage.
-//
-
-void Debugger::LoadModuleFinished(Module * pRuntimeModule, AppDomain * pAppDomain)
-{
-    CONTRACTL
-    {
-        SUPPORTS_DAC;
-        STANDARD_VM_CHECK;
-    }
-    CONTRACTL_END;
-
-    _ASSERTE(pRuntimeModule != NULL);
-    _ASSERTE(pAppDomain != NULL);
-}
-
-
 // Send the raw event for Updating symbols. Debugger must query for contents from out-of-process
 //
 // Arguments:

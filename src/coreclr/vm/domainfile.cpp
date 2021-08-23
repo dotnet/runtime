@@ -617,17 +617,6 @@ void DomainFile::FinishLoad()
     // Now the DAC can find this module by enumerating assemblies in a domain.
     DACNotify::DoModuleLoadNotification(m_pModule);
 
-#if defined(DEBUGGING_SUPPORTED) && !defined(DACCESS_COMPILE)
-    if (IsDebuggerNotified() && (g_pDebugInterface != NULL))
-    {
-        // We already notified dbgapi that this module was loading (via LoadModule()).
-        // Now let the dbgapi know the module has reached FILE_LOADED, so it can do any
-        // processing that needs to wait until this stage (e.g., binding breakpoints in
-        // NGENd generics).
-        g_pDebugInterface->LoadModuleFinished(m_pModule, m_pDomain);
-    }
-#endif // defined(DEBUGGING_SUPPORTED) && !defined(DACCESS_COMPILE)
-
     // Set a bit to indicate that the module has been loaded in some domain, and therefore
     // typeloads can involve types from this module. (Used for candidate instantiations.)
     GetModule()->SetIsReadyForTypeLoad();
