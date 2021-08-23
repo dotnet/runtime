@@ -157,7 +157,6 @@ namespace BINDER_SPACE
         HRESULT CreateImageAssembly(IMDInternalImport       *pIMetaDataAssemblyImport,
                                     PEKIND                   PeKind,
                                     PEImage                 *pPEImage,
-                                    PEImage                 *pNativePEImage,
                                     BindResult              *pBindResult)
         {
             HRESULT hr = S_OK;
@@ -168,7 +167,6 @@ namespace BINDER_SPACE
             IF_FAIL_GO(pAssembly->Init(pIMetaDataAssemblyImport,
                                        PeKind,
                                        pPEImage,
-                                       pNativePEImage,
                                        asesmblyPath,
                                        FALSE /* fIsInTPA */));
 
@@ -1169,7 +1167,6 @@ namespace BINDER_SPACE
         DWORD dwPAFlags[2];
         PEKIND PeKind = peNone;
         PEImage *pPEImage = NULL;
-        PEImage *pNativePEImage = NULL;
 
         // Allocate assembly object
         SAFE_NEW(pAssembly, Assembly);
@@ -1191,7 +1188,6 @@ namespace BINDER_SPACE
         IF_FAIL_GO(pAssembly->Init(pIMetaDataAssemblyImport,
                                    PeKind,
                                    pPEImage,
-                                   pNativePEImage,
                                    assemblyPath,
                                    fIsInTPA));
 
@@ -1201,7 +1197,6 @@ namespace BINDER_SPACE
     Exit:
 
         BinderReleasePEImage(pPEImage);
-        BinderReleasePEImage(pNativePEImage);
 
         // Normalize file not found
         if ((FAILED(hr)) && IsFileNotFound(hr))
@@ -1393,7 +1388,6 @@ Retry:
             IF_FAIL_GO(CreateImageAssembly(pIMetaDataAssemblyImport,
                                            peKind,
                                            pPEImage,
-                                           NULL,
                                            &bindResult));
         }
         else if (hr == S_OK)
