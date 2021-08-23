@@ -4276,24 +4276,6 @@ HRESULT Module::GetPropertyInfoForMethodDef(mdMethodDef md, mdProperty *ppd, LPC
     return GetMDImport()->GetPropertyInfoForMethodDef(md, ppd, pName, pSemantic);
 }
 
-// Check whether the module might possibly have a property with a name with
-// the passed hash value without accessing the property's name.  This is done
-// by consulting a hash filter populated at NGen time.
-BOOL Module::MightContainMatchingProperty(mdProperty tkProperty, ULONG nameHash)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
-    _ASSERTE(!m_propertyNameSet);
-
-    return TRUE;
-}
-
 // Return true if this module has any live (jitted) JMC functions.
 // If a module has no jitted JMC functions, then it's as if it's a
 // non-user module.

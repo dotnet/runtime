@@ -1991,13 +1991,6 @@ public:
     void PopulatePropertyInfoMap();
     HRESULT GetPropertyInfoForMethodDef(mdMethodDef md, mdProperty *ppd, LPCSTR *pName, ULONG *pSemantic);
 
-    #define NUM_PROPERTY_SET_HASHES 4
-    BOOL MightContainMatchingProperty(mdProperty tkProperty, ULONG nameHash);
-
-private:
-    ArrayDPTR(BYTE)    m_propertyNameSet;
-    DWORD              m_nPropertyNameSet;
-
 public:
 
     // Debugger stuff
