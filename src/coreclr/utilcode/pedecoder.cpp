@@ -1731,7 +1731,7 @@ void PEDecoder::LayoutILOnly(void *base, bool enableExecution) const
                            PAGE_READONLY, &oldProtection))
         ThrowLastError();
 
-    // Finally, apply proper protection to copied sections    
+    // Finally, apply proper protection to copied sections
     for (section = sectionStart; section < sectionEnd; section++)
     {
         // Add appropriate page protection.
@@ -2647,7 +2647,6 @@ PEDecoder::EnumMemoryRegions(CLRDataEnumMemoryFlags flags,
     DacEnumMemoryRegion((TADDR)m_base, sizeof(IMAGE_DOS_HEADER));
     m_pNTHeaders.EnumMem();
     m_pCorHeader.EnumMem();
-    m_pNativeHeader.EnumMem();
     m_pReadyToRunHeader.EnumMem();
 
     if (HasNTHeaders())

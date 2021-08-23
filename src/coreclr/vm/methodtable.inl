@@ -89,15 +89,6 @@ inline BOOL MethodTable::IsClassPointerValid()
 }
 
 //==========================================================================================
-// Does this immediate item live in an NGEN module?
-inline BOOL MethodTable::IsZapped()
-{
-    LIMITED_METHOD_DAC_CONTRACT;
-
-    return FALSE;
-}
-
-//==========================================================================================
 inline PTR_Module MethodTable::GetLoaderModule()
 {
     LIMITED_METHOD_DAC_CONTRACT;

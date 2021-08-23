@@ -591,9 +591,6 @@ public:
     // then they will all belong to the same domain.
     PTR_BaseDomain GetDomain();
 
-    // Does this immediate item live in an NGEN module?
-    BOOL IsZapped();
-
     // For regular, non-constructed types, GetLoaderModule() == GetModule()
     // For constructed types (e.g. int[], Dict<int[], C>) the hash table through which a type
     // is accessed lives in a "loader module". The rule for determining the loader module must ensure
@@ -1289,7 +1286,6 @@ public:
     PTR_PCODE GetSlotPtr(UINT32 slotNum)
     {
         WRAPPER_NO_CONTRACT;
-
         return GetSlotPtrRaw(slotNum);
     }
 
@@ -3543,10 +3539,8 @@ private:
         enum_flag_HasNonVirtualSlots        = 0x0008,
         enum_flag_HasModuleOverride         = 0x0010,
 
-        enum_flag_IsZapped                  = 0x0020, // This could be fetched from m_pLoaderModule if we run out of flags
-
-        enum_flag_IsPreRestored             = 0x0040, // Class does not need restore
-                                                      // This flag is set only for NGENed classes (IsZapped is true)
+        // unused                           = 0x0020,
+        // unused                           = 0x0040,
 
         enum_flag_HasModuleDependencies     = 0x0080,
 

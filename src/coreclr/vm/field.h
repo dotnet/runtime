@@ -586,15 +586,6 @@ public:
         return GetApproxEnclosingMethodTable()->GetModule();
     }
 
-    BOOL IsZapped()
-    {
-        WRAPPER_NO_CONTRACT;
-
-        // Field Desc's are currently always saved into the same module as their
-        // corresponding method table.
-        return GetApproxEnclosingMethodTable()->IsZapped();
-    }
-
     Module *GetLoaderModule()
     {
         WRAPPER_NO_CONTRACT;

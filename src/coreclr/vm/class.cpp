@@ -171,7 +171,7 @@ void EEClass::Destruct(MethodTable * pOwningMT)
     }
 
 #ifdef FEATURE_COMINTEROP
-    if (GetSparseCOMInteropVTableMap() != NULL && !pOwningMT->IsZapped())
+    if (GetSparseCOMInteropVTableMap() != NULL)
         delete GetSparseCOMInteropVTableMap();
 #endif // FEATURE_COMINTEROP
 

@@ -66,13 +66,6 @@ inline unsigned int TypeHandle::GetRank() const
     return AsMethodTable()->GetRank();
 }
 
-inline BOOL TypeHandle::IsZapped() const
-{
-    LIMITED_METHOD_DAC_CONTRACT;
-
-    return FALSE;
-}
-
 // Methods to allow you get get a the two possible representations
 inline PTR_MethodTable TypeHandle::AsMethodTable() const
 {

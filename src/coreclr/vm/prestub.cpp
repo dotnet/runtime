@@ -126,9 +126,6 @@ PCODE MethodDesc::DoBackpatch(MethodTable * pMT, MethodTable *pDispatchingMT, BO
     {
         _ASSERTE(pTarget == GetStableEntryPoint());
 
-        if (!HasTemporaryEntryPoint())
-            return pTarget;
-
         pExpected = GetTemporaryEntryPoint();
         if (pExpected == pTarget)
             return pTarget;

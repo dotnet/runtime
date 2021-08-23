@@ -1516,7 +1516,7 @@ void CEEInfo::getFieldInfo (CORINFO_RESOLVED_TOKEN * pResolvedToken,
                 fieldAccessor = intrinsicAccessor;
             }
             else
-            if (m_pMethodBeingCompiled->IsZapped() || IsCompilingForNGen() ||
+            if (IsCompilingForNGen() ||
                 // Static fields are not pinned in collectible types. We will always access
                 // them using a helper since the address cannot be embeded into the code.
                 pFieldMT->Collectible() ||
@@ -3794,7 +3794,7 @@ CorInfoInitClassResult CEEInfo::initClass(
 
     MethodDesc *methodBeingCompiled = m_pMethodBeingCompiled;
 
-    BOOL fMethodZappedOrNGen = methodBeingCompiled->IsZapped() || IsCompilingForNGen();
+    BOOL fMethodZappedOrNGen = IsCompilingForNGen();
 
     MethodTable *pTypeToInitMT = typeToInitTH.AsMethodTable();
 
@@ -12929,19 +12929,6 @@ PCODE UnsafeJitFunction(PrepareCodeConfig* config,
 
     COOPERATIVE_TRANSITION_END();
     return ret;
-}
-
-extern "C" unsigned __stdcall PartialNGenStressPercentage()
-{
-    LIMITED_METHOD_CONTRACT;
-#ifndef _DEBUG
-    return 0;
-#else // _DEBUG
-    static ConfigDWORD partialNGenStress;
-    DWORD partialNGenStressVal = partialNGenStress.val(CLRConfig::INTERNAL_partialNGenStress);
-    _ASSERTE(partialNGenStressVal <= 100);
-    return partialNGenStressVal;
-#endif // _DEBUG
 }
 
 #ifdef FEATURE_READYTORUN
