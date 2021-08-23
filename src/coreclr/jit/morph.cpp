@@ -5685,7 +5685,7 @@ GenTree* Compiler::fgMorphArrayIndex(GenTree* tree)
 
         if (bndsChkType != TYP_INT)
         {
-            arrLen = gtNewCastNode(bndsChkType, arrLen, false, bndsChkType);
+            arrLen = gtNewCastNode(bndsChkType, arrLen, true, bndsChkType);
         }
 
         GenTreeBoundsChk* arrBndsChk = new (this, GT_ARR_BOUNDS_CHECK)
@@ -5714,7 +5714,7 @@ GenTree* Compiler::fgMorphArrayIndex(GenTree* tree)
         }
         else
         {
-            index = gtNewCastNode(TYP_I_IMPL, index, false, TYP_I_IMPL);
+            index = gtNewCastNode(TYP_I_IMPL, index, true, TYP_I_IMPL);
         }
     }
 #endif // TARGET_64BIT
