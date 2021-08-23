@@ -261,7 +261,7 @@ namespace System.Runtime.InteropServices
         /// Get a handle that can be used with <see cref="GetExport" /> or <see cref="TryGetExport" /> to resolve exports from the entry point module.
         /// </summary>
         /// <returns> The handle that can be used to resolve exports from the entry point module.</returns>
-        public static IntPtr GetEntryPointModuleHandle()
+        public static IntPtr GetMainProgramHandle()
         {
             IntPtr result = IntPtr.Zero;
 #if TARGET_WINDOWS

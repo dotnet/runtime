@@ -182,7 +182,7 @@ public class NativeLibraryTest
             NativeLibrary.Free(handle);
 
             // -----------------------------------------------
-            //         GetEntryPointModuleHandle Tests
+            //         GetMainProgramHandle Tests
             // -----------------------------------------------
 
             // Mobile test runs aren't hosted by corerun, so we don't have a well-known export to test here
@@ -409,7 +409,7 @@ public class NativeLibraryTest
     {
         CurrentTest = nameof(GetSymbolFromEntryPointModuleHandle);
         return Run(() => {
-            IntPtr moduleHandle = NativeLibrary.GetEntryPointModuleHandle();
+            IntPtr moduleHandle = NativeLibrary.GetMainProgramHandle();
             bool success = NativeLibrary.TryGetExport(moduleHandle, symbolToLoadFromHandle, out IntPtr address);
             if (!success)
                 return TestResult.ReturnFailure;
