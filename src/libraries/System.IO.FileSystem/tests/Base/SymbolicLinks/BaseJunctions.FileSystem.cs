@@ -7,6 +7,7 @@ using Xunit;
 
 namespace System.IO.Tests
 {
+    [PlatformSpecific(TestPlatforms.Windows)]
     public abstract class BaseJunctions_FileSystem : BaseSymbolicLinks
     {
         protected DirectoryInfo CreateJunction(string junctionPath, string targetPath)
