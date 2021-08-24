@@ -144,8 +144,14 @@ namespace Microsoft.NET.HostModel.AppHost
                         throw new Win32Exception(Marshal.GetLastWin32Error(), $"Could not set file permission {filePermissionOctal} for {appHostDestinationFilePath}.");
                     }
 
-                    if (enableMacOSCodeSign && RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
-                        CodeSign(appHostDestinationFilePath);
+                    if (enableMacOSCodeSign && RuntimeInformation.IsOSPlatform(OSPlatform.OSX) && HostModelUtils.IsCodesignAvailable())
+                    {
+                        (int exitCode, string stdErr) = HostModelUtils.RunCodesign("-s -", appHostDestinationFilePath);
+                        if (exitCode != 0)
+                        {
+                            throw new AppHostSigningException(exitCode, stdErr);
+                        }
+                    }
                 }
             }
             catch (Exception ex)
@@ -237,29 +243,6 @@ namespace Microsoft.NET.HostModel.AppHost
             bundleHeaderOffset = headerOffset;
 
             return headerOffset != 0;
-        }
-
-        private static void CodeSign(string appHostPath)
-        {
-            Debug.Assert(RuntimeInformation.IsOSPlatform(OSPlatform.OSX));
-            const string codesign = @"/usr/bin/codesign";
-            if (!File.Exists(codesign))
-                return;
-
-            var psi = new ProcessStartInfo()
-            {
-                Arguments = $"-s - \"{appHostPath}\"",
-                FileName = codesign,
-                RedirectStandardError = true,
-                UseShellExecute = false,
-            };
-
-            using (var p = Process.Start(psi))
-            {
-                p.WaitForExit();
-                if (p.ExitCode != 0)
-                    throw new AppHostSigningException(p.ExitCode, p.StandardError.ReadToEnd());
-            }
         }
 
         [DllImport("libc", SetLastError = true)]

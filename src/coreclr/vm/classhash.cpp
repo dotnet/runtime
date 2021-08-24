@@ -37,11 +37,6 @@ PTR_VOID EEClassHashEntry::GetData()
     }
     CONTRACTL_END;
 
-    // TypeHandles are encoded as a relative pointer rather than a regular pointer to avoid the need for image
-    // fixups (any TypeHandles in this hash are defined in the same module).
-    if ((dac_cast<TADDR>(m_Data) & EECLASSHASH_TYPEHANDLE_DISCR) == 0)
-        return RelativePointer<PTR_VOID>::GetValueMaybeNullAtPtr(PTR_HOST_INT_MEMBER_TADDR(EEClassHashEntry, this, m_Data));
-
     return m_Data;
 }
 
@@ -56,15 +51,7 @@ void EEClassHashEntry::SetData(void *data)
     }
     CONTRACTL_END;
 
-    // TypeHandles are encoded as a relative pointer rather than a regular pointer to avoid the need for image
-    // fixups (any TypeHandles in this hash are defined in the same module).
-    if (((TADDR)data & EECLASSHASH_TYPEHANDLE_DISCR) == 0)
-    {
-        RelativePointer<void *> *pRelPtr = (RelativePointer<void *> *) &m_Data;
-        pRelPtr->SetValueMaybeNull(data);
-    }
-    else
-        m_Data = data;
+    m_Data = data;
 }
 
 void EEClassHashEntry::SetEncloser(EEClassHashEntry *pEncloser)
@@ -253,7 +240,7 @@ VOID EEClassHashTable::ConstructKeyFromData(PTR_EEClassHashEntry pEntry, // IN  
         // in this case, the lifetime of Key is bounded by the lifetime of cqb, which will free the memory
         // it allocated on destruction.
 
-        _ASSERTE(!m_pModule.IsNull());
+        _ASSERTE(m_pModule != NULL);
         LPSTR        pszName = NULL;
         LPSTR        pszNameSpace = NULL;
         IMDInternalImport *pInternalImport = NULL;
@@ -341,7 +328,7 @@ EEClassHashEntry_t *EEClassHashTable::InsertValue(LPCUTF8 pszNamespace, LPCUTF8 
 
     _ASSERTE(pszNamespace != NULL);
     _ASSERTE(pszClassName != NULL);
-    _ASSERTE(!m_pModule.IsNull());
+    _ASSERTE(m_pModule != NULL);
 
     EEClassHashEntry *pEntry = BaseAllocateEntry(pamTracker);
 
@@ -419,7 +406,7 @@ EEClassHashEntry_t *EEClassHashTable::InsertValueIfNotFound(LPCUTF8 pszNamespace
     }
     CONTRACTL_END;
 
-    _ASSERTE(!m_pModule.IsNull());
+    _ASSERTE(m_pModule != NULL);
     _ASSERTE(pszNamespace != NULL);
     _ASSERTE(pszClassName != NULL);
 
@@ -464,7 +451,7 @@ EEClassHashEntry_t *EEClassHashTable::FindItem(LPCUTF8 pszNamespace, LPCUTF8 psz
     }
     CONTRACTL_END;
 
-    _ASSERTE(!m_pModule.IsNull());
+    _ASSERTE(m_pModule != NULL);
     _ASSERTE(pszNamespace != NULL);
     _ASSERTE(pszClassName != NULL);
 
@@ -518,7 +505,7 @@ EEClassHashEntry_t *EEClassHashTable::FindNextNestedClass(const NameHandle* pNam
     }
     CONTRACTL_END;
 
-    _ASSERTE(!m_pModule.IsNull());
+    _ASSERTE(m_pModule != NULL);
     _ASSERTE(pName);
 
     if (pName->GetNameSpace())
@@ -549,7 +536,7 @@ EEClassHashEntry_t *EEClassHashTable::FindNextNestedClass(LPCUTF8 pszNamespace, 
     }
     CONTRACTL_END;
 
-    _ASSERTE(!m_pModule.IsNull());
+    _ASSERTE(m_pModule != NULL);
 
     PTR_EEClassHashEntry pSearch = BaseFindNextEntryByHash(pContext);
 
@@ -582,7 +569,7 @@ EEClassHashEntry_t *EEClassHashTable::FindNextNestedClass(LPCUTF8 pszFullyQualif
     }
     CONTRACTL_END;
 
-    _ASSERTE(!m_pModule.IsNull());
+    _ASSERTE(m_pModule != NULL);
 
     CQuickBytes szNamespace;
 
@@ -624,7 +611,7 @@ EEClassHashEntry_t * EEClassHashTable::GetValue(LPCUTF8 pszFullyQualifiedName, P
     }
     CONTRACTL_END;
 
-    _ASSERTE(!m_pModule.IsNull());
+    _ASSERTE(m_pModule != NULL);
 
     CQuickBytes szNamespace;
 
@@ -670,7 +657,7 @@ EEClassHashEntry_t * EEClassHashTable::GetValue(LPCUTF8 pszNamespace, LPCUTF8 ps
     CONTRACTL_END;
 
 
-    _ASSERTE(!m_pModule.IsNull());
+    _ASSERTE(m_pModule != NULL);
     EEClassHashEntry_t *pItem = FindItem(pszNamespace, pszClassName, IsNested, pContext);
     if (pItem)
         *pData = pItem->GetData();
@@ -694,7 +681,7 @@ EEClassHashEntry_t * EEClassHashTable::GetValue(const NameHandle* pName, PTR_VOI
 
 
     _ASSERTE(pName);
-    _ASSERTE(!m_pModule.IsNull());
+    _ASSERTE(m_pModule != NULL);
     if(pName->GetNameSpace() == NULL) {
         return GetValue(pName->GetName(), pData, IsNested, pContext);
     }
@@ -737,7 +724,7 @@ BOOL EEClassHashTable::CompareKeys(PTR_EEClassHashEntry pEntry, LPCUTF8 * pKey2)
     CONTRACTL_END;
 
 
-    _ASSERTE(!m_pModule.IsNull());
+    _ASSERTE(m_pModule != NULL);
     _ASSERTE (pEntry);
     _ASSERTE (pKey2);
 
@@ -755,245 +742,6 @@ BOOL EEClassHashTable::CompareKeys(PTR_EEClassHashEntry pEntry, LPCUTF8 * pKey2)
 
 
 #ifndef DACCESS_COMPILE
-
-#ifdef FEATURE_NATIVE_IMAGE_GENERATION
-void EEClassHashTable::Save(DataImage *image, CorProfileData *profileData)
-{
-    STANDARD_VM_CONTRACT;
-
-    // See comment on PrepareExportedTypesForSaving for what's going on here.
-    if (GetModule()->IsManifest())
-        PrepareExportedTypesForSaving(image);
-
-    // The base class handles most of the saving logic (it controls the layout of the hash memory). It will
-    // call us back for some per-entry related details (should we save this entry?, is this entry hot? etc.).
-    // See the methods immediately following this one.
-    BaseSave(image, profileData);
-}
-
-// Should a particular entry be persisted into the ngen image?
-bool EEClassHashTable::ShouldSave(DataImage *pImage, EEClassHashEntry_t *pEntry)
-{
-    LIMITED_METHOD_CONTRACT;
-
-    // We always save all entries.
-    return true;
-}
-
-// Does profile data indicate that this entry is hot (likely to be read at runtime)?
-bool EEClassHashTable::IsHotEntry(EEClassHashEntry_t *pEntry, CorProfileData *pProfileData)
-{
-    STANDARD_VM_CONTRACT;
-
-    PTR_VOID datum = pEntry->GetData();
-    mdToken token;
-
-    if (m_bCaseInsensitive)
-        datum = PTR_EEClassHashEntry((TADDR)datum)->GetData();
-
-    if ((((ULONG_PTR) datum) & EECLASSHASH_TYPEHANDLE_DISCR) == 0)
-    {
-        TypeHandle t = TypeHandle::FromPtr(datum);
-        _ASSERTE(!t.IsNull());
-        MethodTable *pMT = t.GetMethodTable();
-        if (pMT == NULL)
-            return false;
-
-        token = pMT->GetCl();
-    }
-    else if (((ULONG_PTR)datum & EECLASSHASH_MDEXPORT_DISCR) == 0)
-    {
-        DWORD dwDatum = (DWORD)(DWORD_PTR)(datum);
-        token = ((dwDatum >> 1) & 0x00ffffff) | mdtTypeDef;
-    }
-    else
-        return false;
-
-    if (pProfileData->GetTypeProfilingFlagsOfToken(token) & (1 << ReadClassHashTable))
-        return true;
-
-    return false;
-}
-
-// This is our chance to fixup our hash entries before they're committed to the ngen image. Return true if the
-// entry will remain immutable at runtime (this might allow the entry to be stored in a read-only, shareable
-// portion of the image).
-bool EEClassHashTable::SaveEntry(DataImage *pImage, CorProfileData *pProfileData, EEClassHashEntry_t *pOldEntry, EEClassHashEntry_t *pNewEntry, EntryMappingTable *pMap)
-{
-    STANDARD_VM_CONTRACT;
-
-    // If we're a nested class we have a reference to the entry of our enclosing class. But this reference
-    // will have been broken by the saving process (the base class re-creates and re-orders all entries in
-    // order to optimize them for ngen images). So we read the old encloser address from the old version of
-    // our entry and, if there is one, we use the supplied map to transform that address into the new version.
-    // We can then write the updated address back into our encloser field in the new copy of the entry.
-    EEClassHashEntry_t *pOldEncloser = pOldEntry->GetEncloser();
-    if (pOldEncloser)
-        pNewEntry->SetEncloser(pMap->GetNewEntryAddress(pOldEncloser));
-
-    // We have to do something similar with our TypeHandle references (because they're stored as relative
-    // pointers which became invalid when the entry was moved). The following sequence is a no-op if the data
-    // field contains a token rather than a TypeHandle.
-    PTR_VOID oldData = pOldEntry->GetData();
-    pNewEntry->SetData(oldData);
-
-#ifdef _DEBUG
-    if (!pImage->IsStored(pNewEntry->DebugKey[0]))
-        pImage->StoreStructure(pNewEntry->DebugKey[0], (ULONG)(strlen(pNewEntry->DebugKey[0])+1), DataImage::ITEM_DEBUG);
-    if (!pImage->IsStored(pNewEntry->DebugKey[1]))
-        pImage->StoreStructure(pNewEntry->DebugKey[1], (ULONG)(strlen(pNewEntry->DebugKey[1])+1), DataImage::ITEM_DEBUG);
-#endif // _DEBUG
-
-    // The entry is immutable at runtime if it's encoded as a TypeHandle. If it's a token then it might be
-    // bashed into a TypeHandle later on.
-    return ((TADDR)pNewEntry->GetData() & EECLASSHASH_TYPEHANDLE_DISCR) == 0;
-}
-
-// The manifest module contains exported type entries in the EEClassHashTables. During ngen, these entries get
-// populated to the corresponding TypeHandle. However, at runtime, it is not guaranteed for the module
-// containing the exported type to be loaded. Hence, we cannot use the TypeHandle. Instead, we bash the
-// TypeHandle back to the export token.
-void EEClassHashTable::PrepareExportedTypesForSaving(DataImage *image)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        PRECONDITION(GetAppDomain()->IsCompilationDomain());
-        PRECONDITION(GetModule()->IsManifest());
-    }
-    CONTRACTL_END
-
-    IMDInternalImport *pImport = GetModule()->GetMDImport();
-
-    HENUMInternalHolder phEnum(pImport);
-    phEnum.EnumInit(mdtExportedType, mdTokenNil);
-    mdToken mdExportedType;
-
-    for (int i = 0; pImport->EnumNext(&phEnum, &mdExportedType); i++)
-    {
-        mdTypeDef typeDef;
-        LPCSTR pszNameSpace, pszName;
-        mdToken mdImpl;
-        DWORD dwFlags;
-        if (FAILED(pImport->GetExportedTypeProps(
-            mdExportedType,
-            &pszNameSpace,
-            &pszName,
-            &mdImpl,
-            &typeDef,
-            &dwFlags)))
-        {
-            THROW_BAD_FORMAT(BFA_NOFIND_EXPORTED_TYPE, GetModule());
-            continue;
-        }
-
-        CorTokenType tokenType = (CorTokenType) TypeFromToken(mdImpl);
-        CONSISTENCY_CHECK(tokenType == mdtFile ||
-                          tokenType == mdtAssemblyRef ||
-                          tokenType == mdtExportedType);
-
-        // If mdImpl is a file or an assembly, than it points to the location
-        // of the type. If mdImpl is another exported type, then it is the enclosing
-        // exported type for current (nested) type.
-        BOOL isNested = (tokenType == mdtExportedType);
-
-        // ilasm does not consistently set the dwFlags to correctly reflect nesting
-        //CONSISTENCY_CHECK(!isNested || IsTdNested(dwFlags));
-
-        EEClassHashEntry_t * pEntry = NULL;
-
-        if (!isNested)
-        {
-            pEntry = FindItem(pszNameSpace, pszName, FALSE/*nested*/, NULL);
-        }
-        else
-        {
-            PTR_VOID data;
-            LookupContext sContext;
-
-            // This following line finds the 1st "nested" class EEClassHashEntry_t.
-            if ((pEntry = FindItem(pszNameSpace, pszName, TRUE/*nested*/, &sContext)) != NULL)
-            {
-                // The (immediate) encloser of EEClassHashEntry_t (i.e. pEntry) is stored in pEntry->pEncloser.
-                // It needs to be a type of "mdImpl".
-                // "CompareNestedEntryWithExportedType" will check if "pEntry->pEncloser" is a type of "mdImpl",
-                // as well as walking up the enclosing chain.
-                _ASSERTE (TypeFromToken(mdImpl) == mdtExportedType);
-                while ((!GetModule()->GetClassLoader()->CompareNestedEntryWithExportedType(pImport,
-                                                                                           mdImpl,
-                                                                                           this,
-                                                                                           pEntry->GetEncloser()))
-                       && (pEntry = FindNextNestedClass(pszNameSpace, pszName, &data, &sContext)) != NULL)
-                {
-                    ;
-                }
-            }
-        }
-
-        if (!pEntry) {
-            THROW_BAD_FORMAT(BFA_NOFIND_EXPORTED_TYPE, GetModule());
-            continue;
-        }
-
-        if (((ULONG_PTR)(pEntry->GetData())) & EECLASSHASH_TYPEHANDLE_DISCR)
-            continue;
-
-        TypeHandle th = TypeHandle::FromPtr(pEntry->GetData());
-
-#ifdef _DEBUG
-        MethodTable * pMT = th.GetMethodTable();
-        _ASSERTE(tokenType != mdtFile || pMT->GetModule()->GetModuleRef() == mdImpl);
-        // "typeDef" is just a hint for unsigned assemblies, and ILASM sets it to 0
-        // Hence, we need to relax this assert.
-        _ASSERTE(pMT->GetCl() == typeDef || typeDef == mdTokenNil);
-#endif
-
-        if (image->CanEagerBindToTypeHandle(th) && image->CanHardBindToZapModule(th.GetLoaderModule()))
-            continue;
-
-        // Bash the TypeHandle back to the export token
-        pEntry->SetData(EEClassHashTable::CompressClassDef(mdExportedType));
-    }
-}
-
-void EEClassHashTable::Fixup(DataImage *pImage)
-{
-    STANDARD_VM_CONTRACT;
-
-    // The base class does all the main fixup work. We're called back at FixupEntry below for each entry so we
-    // can fixup additional pointers.
-    BaseFixup(pImage);
-}
-
-void EEClassHashTable::FixupEntry(DataImage *pImage, EEClassHashEntry_t *pEntry, void *pFixupBase, DWORD cbFixupOffset)
-{
-    STANDARD_VM_CONTRACT;
-
-    // Cross-entry references require special fixup. Fortunately they know how to do this themselves.
-    pEntry->m_pEncloser.Fixup(pImage, this);
-
-#ifdef _DEBUG
-    pImage->FixupPointerField(pFixupBase, cbFixupOffset + offsetof(EEClassHashEntry_t, DebugKey[0]));
-    pImage->FixupPointerField(pFixupBase, cbFixupOffset + offsetof(EEClassHashEntry_t, DebugKey[1]));
-#endif // _DEBUG
-
-    // Case insensitive tables and normal hash entries pointing to TypeHandles contain relative pointers.
-    // These don't require runtime fixups (because relative pointers remain constant even in the presence of
-    // base relocations) but we still have to register a fixup of type IMAGE_REL_BASED_RELPTR. This does the
-    // work necessary to update the value of the relative pointer once the ngen image is finally layed out
-    // (the layout process can change the relationship between this field and the target it points to, so we
-    // don't know the final delta until the image is just about to be written out).
-    if (m_bCaseInsensitive || ((TADDR)pEntry->GetData() & EECLASSHASH_TYPEHANDLE_DISCR) == 0)
-    {
-        pImage->FixupField(pFixupBase,
-                           cbFixupOffset + offsetof(EEClassHashEntry_t, m_Data),
-                           pEntry->GetData(),
-                           0,
-                           IMAGE_REL_BASED_RELPTR);
-    }
-}
-#endif // FEATURE_NATIVE_IMAGE_GENERATION
 
 /*===========================MakeCaseInsensitiveTable===========================
 **Action: Creates a case-insensitive lookup table for class names.  We create a
@@ -1044,7 +792,7 @@ EEClassHashTable *EEClassHashTable::MakeCaseInsensitiveTable(Module *pModule, Al
 
 
 
-    _ASSERTE(!m_pModule.IsNull());
+    _ASSERTE(m_pModule != NULL);
     _ASSERTE(pModule == GetModule());
 
     // Allocate the table and verify that we actually got one.

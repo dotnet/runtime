@@ -1078,7 +1078,7 @@ namespace ILCompiler.Reflection.ReadyToRun
 
                 GetPgoOffsetAndVersion(decoder.Offset, out int pgoFormatVersion, out int pgoOffset);
 
-                PgoInfoKey key = new PgoInfoKey(GetGlobalMetadata(), owningType, methodHandle, methodTypeArgs);
+                PgoInfoKey key = new PgoInfoKey(mdReader, owningType, methodHandle, methodTypeArgs);
                 PgoInfo info = new PgoInfo(key, this, pgoFormatVersion, Image, pgoOffset);
                 _pgoInfos.Add(key, info);
                 curParser = allEntriesEnum.GetNext();
@@ -1163,7 +1163,12 @@ namespace ILCompiler.Reflection.ReadyToRun
                     return Guid.Empty;
                 }
                 int mvidOffset = GetOffset(mvidSection.RelativeVirtualAddress) + GuidByteSize * assemblyIndex;
-                return new Guid(new ReadOnlySpan<byte>(Image, mvidOffset, ReadyToRunReader.GuidByteSize));
+                byte[] mvidBytes = new byte[ReadyToRunReader.GuidByteSize];
+                for (int i = 0; i < mvidBytes.Length; i++)
+                {
+                    mvidBytes[i] = Image[mvidOffset + i];
+                }
+                return new Guid(mvidBytes);
             }
             else
             {

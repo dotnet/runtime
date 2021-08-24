@@ -22,11 +22,6 @@
 #include "dbginterface.h"
 #include "eventtrace.h"
 
-#ifdef FEATURE_PREJIT
-#include <corcompile.h>
-#include "compile.h"
-#endif  // FEATURE_PREJIT
-
 #include "dllimportcallback.h"
 #include "peimagelayout.inl"
 
@@ -167,14 +162,12 @@ CHECK DomainFile::CheckLoadLevel(FileLoadLevel requiredLevel, BOOL deadlockOK)
 
     if (deadlockOK)
     {
-#ifndef CROSSGEN_COMPILE
         // CheckLoading requires waiting on a host-breakable lock.
         // Since this is only a checked-build assert and we've been
         // living with it for a while, I'll leave it as is.
         //@TODO: CHECK statements are *NOT* debug-only!!!
         CONTRACT_VIOLATION(ThrowsViolation|GCViolation|TakesLockViolation);
         CHECK(this->GetAppDomain()->CheckLoading(this, requiredLevel));
-#endif
     }
     else
     {
@@ -363,28 +356,7 @@ BOOL DomainAssembly::IsVisibleToDebugger()
 }
 
 #ifndef DACCESS_COMPILE
-#ifdef FEATURE_PREJIT
-void DomainFile::ExternalLog(DWORD level, const WCHAR *fmt, ...)
-{
-    WRAPPER_NO_CONTRACT;
 
-    va_list args;
-    va_start(args, fmt);
-
-    GetOriginalFile()->ExternalVLog(LF_ZAP, level, fmt, args);
-
-    va_end(args);
-}
-
-void DomainFile::ExternalLog(DWORD level, const char *msg)
-{
-    WRAPPER_NO_CONTRACT;
-
-    GetOriginalFile()->ExternalLog(level, msg);
-}
-#endif
-
-#ifndef CROSSGEN_COMPILE
 //---------------------------------------------------------------------------------------
 //
 // Returns managed representation of the module (Module or ModuleBuilder).
@@ -456,7 +428,6 @@ OBJECTREF DomainFile::GetExposedModuleObject()
 
     return pLoaderAllocator->GetHandleValue(m_hExposedModuleObject);
 } // DomainFile::GetExposedModuleObject
-#endif // CROSSGEN_COMPILE
 
 BOOL DomainFile::DoIncrementalLoad(FileLoadLevel level)
 {
@@ -473,15 +444,9 @@ BOOL DomainFile::DoIncrementalLoad(FileLoadLevel level)
         break;
 
     case FILE_LOAD_FIND_NATIVE_IMAGE:
-#ifdef FEATURE_PREJIT
-        FindNativeImage();
-#endif
         break;
 
     case FILE_LOAD_VERIFY_NATIVE_IMAGE_DEPENDENCIES:
-#ifdef FEATURE_PREJIT
-        VerifyNativeImageDependencies();
-#endif
         break;
 
     case FILE_LOAD_ALLOCATE:
@@ -542,319 +507,6 @@ BOOL DomainFile::DoIncrementalLoad(FileLoadLevel level)
     return TRUE;
 }
 
-#ifdef FEATURE_PREJIT
-
-void DomainFile::VerifyNativeImageDependencies(bool verifyOnly)
-{
-    CONTRACTL
-    {
-        INSTANCE_CHECK;
-        STANDARD_VM_CHECK;
-        PRECONDITION(verifyOnly || (m_pDomain->GetDomainFileLoadLevel(this) ==
-                                    FILE_LOAD_FIND_NATIVE_IMAGE));
-    }
-    CONTRACTL_END;
-
-    // This function gets called multiple times. The first call is the real work.
-    // Subsequent calls are only to verify that everything still looks OK.
-    if (!verifyOnly)
-        ClearNativeImageStress();
-
-    if (!m_pFile->HasNativeImage())
-    {
-        CheckZapRequired();
-        return;
-    }
-
-    {
-    // Go through native dependencies & make sure they still have their prejit images after
-    // the security check.
-    // NOTE: we could theoretically do this without loading the dependencies, if we cache the
-    // COR_TRUST structures from the dependencies in the version information.
-    //
-    // Verify that all of our hard dependencies are loaded at the right base address.
-    // If not, abandon prejit image (or fix ours up)
-    // Also, if there are any hard dependencies, then our native image also needs to be
-    // loaded at the right base address
-
-    // Note: we will go through all of our dependencies, call Load on them, and check the base
-    // addresses & identity.
-    // It is important to note that all of those dependencies are also going to do the
-    // same thing, so we might conceivably check a base address as OK, and then have that image
-    // abandoned by that assembly during its VerifyNativeImageDependencies phase.
-    // However, we avoid this problem since the hard depedencies stored are a closure of the
-    // hard dependencies of an image.  This effectively means that our check here is a superset
-    // of the check that the dependencies will perform.  Even if we hit a dependency loop, we
-    // will still guarantee that we've examined all of our dependencies.
-
-    ReleaseHolder<PEImage> pNativeImage = m_pFile->GetNativeImageWithRef();
-    if(pNativeImage==NULL)
-    {
-        CheckZapRequired();
-        return;
-    }
-
-    PEImageLayout* pNativeLayout = pNativeImage->GetLoadedLayout();
-
-    // reuse same codepath for both manifest and non-manifest modules
-    ReleaseHolder<PEImage> pManifestNativeImage(NULL);
-
-    PEFile* pManifestFile = m_pFile;
-    PEImageLayout* pManifestNativeLayout = pNativeLayout;
-
-    if (!IsAssembly())
-    {
-        pManifestFile = GetDomainAssembly()->GetCurrentAssembly()
-            ->GetManifestModule()->GetFile();
-
-        pManifestNativeImage = pManifestFile->GetNativeImageWithRef();
-
-        if (pManifestNativeImage == NULL)
-        {
-            ExternalLog(LL_ERROR, "Rejecting native image because there is no "
-                "ngen image for manifest module. Check why the manifest module "
-                "does not have an ngen image");
-            m_dwReasonForRejectingNativeImage = ReasonForRejectingNativeImage_NoNiForManifestModule;
-            STRESS_LOG3(LF_ZAP,LL_INFO100,"Rejecting native file %p, because its manifest module %p has no NI - reason 0x%x\n",pNativeImage.GetValue(),pManifestFile,m_dwReasonForRejectingNativeImage);
-            goto NativeImageRejected;
-        }
-
-        return;
-    }
-
-    COUNT_T cDependencies;
-    CORCOMPILE_DEPENDENCY *pDependencies = pManifestNativeLayout->GetNativeDependencies(&cDependencies);
-
-    LOG((LF_ZAP, LL_INFO100, "ZAP: Checking native image dependencies for %S.\n",
-         pNativeImage->GetPath().GetUnicode()));
-
-    for (COUNT_T iDependency = 0; iDependency < cDependencies; iDependency++)
-    {
-        CORCOMPILE_DEPENDENCY *pDependency = &(pDependencies[iDependency]);
-
-        // Later, for domain neutral assemblies, we will also want to verify security policy
-        // in such cases, the prejit image should store the publisher info for the dependencies
-        // for us.
-
-        // If this is not a hard-bound dependency, then skip to the next dependency
-        if (pDependency->signNativeImage == INVALID_NGEN_SIGNATURE)
-            continue;
-
-
-        //
-        // CoreCLR hard binds to CoreLib only. Avoid going through the full load.
-        //
-
-#ifdef _DEBUG
-        AssemblySpec name;
-        name.InitializeSpec(pDependency->dwAssemblyRef,
-                            ((pManifestNativeImage != NULL) ? pManifestNativeImage : pNativeImage)->GetNativeMDImport(),
-                            GetDomainAssembly());
-        _ASSERTE(name.IsCoreLib());
-#endif
-
-        PEAssembly * pDependencyFile = SystemDomain::SystemFile();
-
-
-        ReleaseHolder<PEImage> pDependencyNativeImage = pDependencyFile->GetNativeImageWithRef();
-        if (pDependencyNativeImage == NULL)
-        {
-            ExternalLog(LL_ERROR, W("Rejecting native image because dependency %s is not native"),
-                        pDependencyFile->GetPath().GetUnicode());
-            m_dwReasonForRejectingNativeImage = ReasonForRejectingNativeImage_DependencyNotNative;
-            STRESS_LOG3(LF_ZAP,LL_INFO100,"Rejecting native file %p, because dependency %p is not NI - reason 0x%x\n",pNativeImage.GetValue(),pDependencyFile,m_dwReasonForRejectingNativeImage);
-            goto NativeImageRejected;
-        }
-
-        PTR_PEImageLayout pDependencyNativeLayout = pDependencyNativeImage->GetLoadedLayout();
-        // Assert that the native image signature is as expected
-        // Fusion will ensure this
-        CORCOMPILE_VERSION_INFO * pDependencyNativeVersion =
-                pDependencyNativeLayout->GetNativeVersionInfo();
-
-        if (!RuntimeVerifyNativeImageDependency(pDependency, pDependencyNativeVersion, pDependencyFile))
-            goto NativeImageRejected;
-    }
-    LOG((LF_ZAP, LL_INFO100, "ZAP: Native image dependencies for %S OK.\n",
-            pNativeImage->GetPath().GetUnicode()));
-
-    return;
-}
-
-NativeImageRejected:
-    m_pFile->ClearNativeImage();
-
-    CheckZapRequired();
-
-    return;
-}
-
-BOOL DomainFile::IsZapRequired()
-{
-    CONTRACTL
-    {
-        INSTANCE_CHECK;
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-        INJECT_FAULT(COMPlusThrowOM(););
-    }
-    CONTRACTL_END;
-
-    if (!m_pFile->HasMetadata() || !g_pConfig->RequireZap(GetSimpleName()))
-        return FALSE;
-
-#if defined(_DEBUG)
-    // If we're intentionally treating NIs as if they were MSIL assemblies, and the test
-    // is flexible enough to accept that (e.g., complus_zaprequired=2), then zaps are not
-    // required (i.e., it's ok for m_pFile->m_nativeImage to be NULL), but only if we
-    // loaded an actual NI to be treated as an IL assembly
-    if (PEFile::ShouldTreatNIAsMSIL())
-    {
-        // Since the RequireZap() call above returned true, we know that some level of
-        // zap requiredness was configured
-        _ASSERTE(g_pConfig->RequireZaps() != EEConfig::REQUIRE_ZAPS_NONE);
-
-        // If config uses this special value (2), zaps are not required, so long as
-        // we're using an actual NI as IL
-        if ((g_pConfig->RequireZaps() == EEConfig::REQUIRE_ZAPS_ALL_JIT_OK) &&
-            m_pFile->HasOpenedILimage() &&
-            m_pFile->GetOpenedILimage()->HasNativeHeader())
-        {
-            return FALSE;
-        }
-    }
-#endif // defined(_DEBUG)
-
-    // Does this look like a resource-only assembly?  We assume an assembly is resource-only
-    // if it contains no TypeDef (other than the <Module> TypeDef) and no MethodDef.
-    // Note that pMD->GetCountWithTokenKind(mdtTypeDef) doesn't count the <Module> type.
-    IMDInternalImportHolder pMD = m_pFile->GetMDImport();
-    if (pMD->GetCountWithTokenKind(mdtTypeDef) == 0 && pMD->GetCountWithTokenKind(mdtMethodDef) == 0)
-        return FALSE;
-
-    DomainAssembly * pDomainAssembly = GetDomainAssembly();
-
-#ifdef FEATURE_NATIVE_IMAGE_GENERATION
-    if (IsCompilationProcess())
-    {
-        // Ignore the assembly being ngened.
-
-        bool fileIsBeingNGened = false;
-
-        if (this->GetAppDomain()->IsCompilationDomain())
-        {
-            Assembly * assemblyBeingNGened = this->GetAppDomain()->ToCompilationDomain()->GetTargetAssembly();
-            if (assemblyBeingNGened == NULL || assemblyBeingNGened == pDomainAssembly->GetCurrentAssembly())
-                fileIsBeingNGened = true;
-        }
-        else if (IsSystem())
-        {
-            // CoreLib gets loaded before the CompilationDomain gets created.
-            // However, we may be ngening CoreLib itself
-            fileIsBeingNGened = true;
-        }
-
-        if (fileIsBeingNGened)
-            return FALSE;
-    }
-#endif
-
-    return TRUE;
-}
-
-void DomainFile::CheckZapRequired()
-{
-    CONTRACTL
-    {
-        INSTANCE_CHECK;
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-        INJECT_FAULT(COMPlusThrowOM(););
-    }
-    CONTRACTL_END;
-
-    if (m_pFile->HasNativeImage() || !IsZapRequired())
-        return;
-
-#ifdef FEATURE_READYTORUN
-    if(m_pFile->GetLoaded()->HasReadyToRunHeader())
-        return;
-#endif
-
-    // Flush any log messages
-    GetFile()->FlushExternalLog();
-
-    StackSString ss;
-    ss.Printf("ZapRequire: Could not get native image for %s.\n",
-              GetSimpleName());
-
-#if defined(_DEBUG)
-    // Assert as some test may not check their error codes well. So throwing an
-    // exception may not cause a test failure (as it should).
-    StackScratchBuffer scratch;
-    DbgAssertDialog(__FILE__, __LINE__, (char*)ss.GetUTF8(scratch));
-#endif // defined(_DEBUG)
-
-    COMPlusThrowNonLocalized(kFileNotFoundException, ss.GetUnicode());
-}
-
-// Discarding an ngen image can cause problems. For more coverage,
-// this stress-mode discards ngen images even if not needed.
-
-void DomainFile::ClearNativeImageStress()
-{
-    WRAPPER_NO_CONTRACT;
-
-#ifdef _DEBUG
-    static ConfigDWORD clearNativeImageStress;
-    DWORD stressPercentage = clearNativeImageStress.val(CLRConfig::INTERNAL_clearNativeImageStress);
-    _ASSERTE(stressPercentage <= 100);
-    if (stressPercentage == 0 || !GetFile()->HasNativeImage())
-        return;
-
-    // Note that discarding a native image can affect dependencies. So its not enough
-    // to only check DomainFile::IsZapRequired() here.
-    if (g_pConfig->RequireZaps() != EEConfig::REQUIRE_ZAPS_NONE)
-        return;
-
-    if (g_IBCLogger.InstrEnabled())
-        return;
-
-    ULONG hash = HashStringA(GetSimpleName());
-
-    // Hash in the FileLoadLevel so that we make a different decision for every level.
-    FileLoadLevel fileLoadLevel = m_pDomain->GetDomainFileLoadLevel(this);
-    hash ^= ULONG(fileLoadLevel);
-    // We do not discard native images after this level
-    _ASSERTE(fileLoadLevel < FILE_LOAD_VERIFY_NATIVE_IMAGE_DEPENDENCIES);
-
-    // Different app-domains should make different decisions
-    hash ^= HashString(this->GetAppDomain()->GetFriendlyName());
-
-#ifdef FEATURE_NATIVE_IMAGE_GENERATION
-    // Since DbgRandomOnHashAndExe() is not so random under ngen.exe, also
-    // factor in the module being compiled
-    if (this->GetAppDomain()->IsCompilationDomain())
-    {
-        Module * module = this->GetAppDomain()->ToCompilationDomain()->GetTargetModule();
-        // Has the target module been set yet?
-        if (module)
-            hash ^= HashStringA(module->GetSimpleName());
-    }
-#endif
-
-    if (DbgRandomOnHashAndExe(hash, float(stressPercentage)/100))
-    {
-        GetFile()->ClearNativeImage();
-        ExternalLog(LL_ERROR, "Rejecting native image for **clearNativeImageStress**");
-    }
-#endif
-}
-
-#endif // FEATURE_PREJIT
-
 void DomainFile::PreLoadLibrary()
 {
     CONTRACTL
@@ -891,12 +543,6 @@ void DomainFile::PostLoadLibrary()
     }
     CONTRACTL_END;
 
-#ifdef FEATURE_PREJIT
-    if (GetFile()->HasNativeImage())
-    {
-        InsertIntoDomainFileWithNativeImageList();
-    }
-#endif
 #ifdef PROFILING_SUPPORTED
     // After this point, it is possible to load types.
     // We need to notify the profiler now because the profiler may need to inject methods into
@@ -934,19 +580,10 @@ void DomainFile::EagerFixups()
 {
     WRAPPER_NO_CONTRACT;
 
-#ifdef FEATURE_PREJIT
-    if (GetCurrentModule()->HasNativeImage())
-    {
-        GetCurrentModule()->RunEagerFixups();
-    }
-    else
-#endif // FEATURE_PREJIT
 #ifdef FEATURE_READYTORUN
     if (GetCurrentModule()->IsReadyToRun())
     {
-#ifndef CROSSGEN_COMPILE
         GetCurrentModule()->RunEagerFixups();
-#endif
 
         PEImageLayout * pLayout = GetCurrentModule()->GetReadyToRunInfo()->GetImage();
 
@@ -964,10 +601,8 @@ void DomainFile::VtableFixups()
 {
     WRAPPER_NO_CONTRACT;
 
-#if !defined(CROSSGEN_COMPILE)
     if (!GetCurrentModule()->IsResource())
         GetCurrentModule()->FixupVTables();
-#endif // !CROSSGEN_COMPILE
 }
 
 void DomainFile::FinishLoad()
@@ -979,27 +614,6 @@ void DomainFile::FinishLoad()
     }
     CONTRACTL_END;
 
-#ifdef FEATURE_PREJIT
-
-    if (m_pFile->HasNativeImage())
-    {
-
-        LOG((LF_ZAP, LL_INFO10, "Using native image %S.\n", m_pFile->GetPersistentNativeImage()->GetPath().GetUnicode()));
-        ExternalLog(LL_INFO10, "Native image successfully used.");
-
-        // Inform metadata that it has been loaded from a native image
-        // (and so there was an opportunity to check for or fix inconsistencies in the original IL metadata)
-        m_pFile->GetMDImport()->SetVerifiedByTrustedSource(TRUE);
-    }
-
-    // Are we absolutely required to use a native image?
-    CheckZapRequired();
-#endif // FEATURE_PREJIT
-
-    // Flush any log messages
-#ifdef FEATURE_PREJIT
-    GetFile()->FlushExternalLog();
-#endif
     // Must set this a bit prematurely for the DAC stuff to work
     m_level = FILE_LOADED;
 
@@ -1055,7 +669,6 @@ void DomainFile::Activate()
     // Now activate any dependencies.
     // This will typically cause reentrancy of course.
 
-#ifndef CROSSGEN_COMPILE
 
     //
     // Now call the module constructor.  Note that this might cause reentrancy;
@@ -1076,31 +689,9 @@ void DomainFile::Activate()
     }
 #endif //_DEBUG
 
-#endif // CROSSGEN_COMPILE
 
     RETURN;
 }
-
-#ifdef FEATURE_PREJIT
-DomainFile *DomainFile::FindNextDomainFileWithNativeImage()
-{
-    LIMITED_METHOD_CONTRACT;
-    return m_pNextDomainFileWithNativeImage;
-}
-
-void DomainFile::InsertIntoDomainFileWithNativeImageList()
-{
-    LIMITED_METHOD_CONTRACT;
-
-    while (true)
-    {
-        DomainFile *pLastDomainFileFoundWithNativeImage = m_pDomain->m_pDomainFileWithNativeImageList;
-        m_pNextDomainFileWithNativeImage = pLastDomainFileFoundWithNativeImage;
-        if (pLastDomainFileFoundWithNativeImage == InterlockedCompareExchangeT(&m_pDomain->m_pDomainFileWithNativeImageList, this, pLastDomainFileFoundWithNativeImage))
-            break;
-    }
-}
-#endif
 
 //--------------------------------------------------------------------------------
 // DomainAssembly
@@ -1180,7 +771,6 @@ void DomainAssembly::SetAssembly(Assembly* pAssembly)
 }
 
 
-#ifndef CROSSGEN_COMPILE
 //---------------------------------------------------------------------------------------
 //
 // Returns managed representation of the assembly (Assembly or AssemblyBuilder).
@@ -1271,7 +861,6 @@ OBJECTREF DomainAssembly::GetExposedAssemblyObject()
 
     return pLoaderAllocator->GetHandleValue(m_hExposedAssemblyObject);
 } // DomainAssembly::GetExposedAssemblyObject
-#endif // CROSSGEN_COMPILE
 
 void DomainAssembly::Begin()
 {
@@ -1281,102 +870,10 @@ void DomainAssembly::Begin()
         AppDomain::LoadLockHolder lock(m_pDomain);
         m_pDomain->AddAssembly(this);
     }
-    // Make it possible to find this DomainAssembly object from associated ICLRPrivAssembly.
+    // Make it possible to find this DomainAssembly object from associated BINDER_SPACE::Assembly.
     GetAppDomain()->PublishHostedAssembly(this);
     m_fHostAssemblyPublished = true;
 }
-
-#ifdef FEATURE_PREJIT
-void DomainAssembly::FindNativeImage()
-{
-    CONTRACTL
-    {
-        INSTANCE_CHECK;
-        STANDARD_VM_CHECK;
-    }
-    CONTRACTL_END;
-
-    ClearNativeImageStress();
-
-    // We already have an image - we just need to do a few more checks
-
-    if (GetFile()->HasNativeImage())
-    {
-#if defined(_DEBUG)
-        if (g_pConfig->ForbidZap(GetSimpleName()))
-        {
-            SString sbuf;
-            StackScratchBuffer scratch;
-            sbuf.Printf("COMPlus_NgenBind_ZapForbid violation: %s.", GetSimpleName());
-            DbgAssertDialog(__FILE__, __LINE__, sbuf.GetUTF8(scratch));
-        }
-#endif
-
-        ReleaseHolder<PEImage> pNativeImage = GetFile()->GetNativeImageWithRef();
-
-        if (!CheckZapDependencyIdentities(pNativeImage))
-        {
-            m_dwReasonForRejectingNativeImage = ReasonForRejectingNativeImage_DependencyIdentityMismatch;
-            STRESS_LOG2(LF_ZAP,LL_INFO100,"Rejecting native file %p, because dependency identity mismatch - reason 0x%x\n",pNativeImage.GetValue(),m_dwReasonForRejectingNativeImage);
-            ExternalLog(LL_ERROR, "Rejecting native image because of identity mismatch "
-                "with one or more of its assembly dependencies. The assembly needs "
-                "to be ngenned again");
-
-            GetFile()->ClearNativeImage();
-
-            // Always throw exceptions when we throw the NI out
-            ThrowHR(CLR_E_BIND_NI_DEP_IDENTITY_MISMATCH);
-        }
-        else
-        {
-            Module *  pNativeModule = pNativeImage->GetLoadedLayout()->GetPersistedModuleImage();
-            PEFile ** ppNativeFile = (PEFile **) (PBYTE(pNativeModule) + Module::GetFileOffset());
-
-            PEAssembly * pFile = (PEAssembly *)FastInterlockCompareExchangePointer((void **)ppNativeFile, (void *)GetFile(), (void *)NULL);
-            STRESS_LOG3(LF_ZAP,LL_INFO100,"Attempted to set  new native file %p, old file was %p, location in the image=%p\n",GetFile(),pFile,ppNativeFile);
-            if (pFile!=NULL)
-            {
-                // The non-shareable native image has already been used in this process by another Module.
-                // We have to abandon the native image.  (Note that it isn't enough to
-                // just abandon the preload image, since the code in the file will
-                // reference the image directly).
-                m_dwReasonForRejectingNativeImage = ReasonForRejectingNativeImage_CannotShareNiAssemblyNotDomainNeutral;
-                STRESS_LOG3(LF_ZAP,LL_INFO100,"Rejecting native file %p, because it is already used by file %p - reason 0x%x\n",GetFile(),pFile,m_dwReasonForRejectingNativeImage);
-
-                ExternalLog(LL_WARNING, "ZAP: An ngen image of an assembly which "
-                    "is not loaded as domain-neutral cannot be used in multiple appdomains "
-                    "- abandoning ngen image. The assembly will be JIT-compiled in "
-                    "the second appdomain. See System.LoaderOptimization.MultiDomain "
-                    "for information about domain-neutral loading.");
-                GetFile()->ClearNativeImage();
-            }
-            else
-            {
-                GetFile()->AddRef();
-
-                LOG((LF_ZAP, LL_INFO100, "ZAP: Found a candidate native image for %s\n", GetSimpleName()));
-            }
-        }
-    }
-
-    if (!GetFile()->HasNativeImage())
-    {
-        //
-        // Verify that the IL image is consistent with the NGen images loaded into appdomain
-        //
-
-        AssemblySpec spec;
-        spec.InitializeSpec(GetFile());
-
-        GUID mvid;
-        GetFile()->GetMVID(&mvid);
-
-        GetAppDomain()->CheckForMismatchedNativeImages(&spec, &mvid);
-    }
-
-    CheckZapRequired();
-}
-#endif // FEATURE_PREJIT
 
 void DomainAssembly::Allocate()
 {
@@ -1415,16 +912,6 @@ void DomainAssembly::Allocate()
 
     SetAssembly(pAssembly);
 
-#ifdef FEATURE_PREJIT
-    // Insert AssemblyDef details into AssemblySpecBindingCache
-    AssemblySpec specAssemblyDef;
-    specAssemblyDef.InitializeSpec(GetFile());
-    if (specAssemblyDef.IsStrongNamed() && specAssemblyDef.HasPublicKey())
-    {
-        specAssemblyDef.ConvertPublicKeyToToken();
-    }
-    m_pDomain->AddAssemblyToCache(&specAssemblyDef, this);
-#endif
 } // DomainAssembly::Allocate
 
 void DomainAssembly::DeliverAsyncEvents()
@@ -1513,290 +1000,6 @@ BOOL DomainAssembly::GetResource(LPCSTR szName, DWORD *cbResource,
 }
 
 
-#ifdef FEATURE_PREJIT
-
-// --------------------------------------------------------------------------------
-// Remember the timestamp of the CLR DLLs used to compile the ngen image.
-// These will be checked at runtime by PEFile::CheckNativeImageTimeStamp().
-//
-
-void GetTimeStampsForNativeImage(CORCOMPILE_VERSION_INFO * pNativeVersionInfo)
-{
-    CONTRACTL
-    {
-        STANDARD_VM_CHECK;
-        PRECONDITION(::GetAppDomain()->IsCompilationDomain());
-    }
-    CONTRACTL_END;
-
-    // Do not store runtime timestamps into NGen image for cross-platform NGen determinism
-}
-
-//
-// Which processor should ngen target?
-// This is needed when ngen wants to target for "reach" if the ngen images will be
-// used on other machines (the Operating System or the OEM build lab can do this).
-// It can also be used to reduce the testing matrix
-//
-void GetNGenCpuInfo(CORINFO_CPU * cpuInfo)
-{
-    LIMITED_METHOD_CONTRACT;
-
-#ifdef TARGET_X86
-
-    static CORINFO_CPU ngenCpuInfo =
-        {
-            (CPU_X86_PENTIUM_PRO << 8), // dwCPUType
-            0x00000000,                 // dwFeatures
-            0                           // dwExtendedFeatures
-        };
-
-    // We always generate P3-compatible code on CoreCLR
-    *cpuInfo = ngenCpuInfo;
-
-#else // TARGET_X86
-    cpuInfo->dwCPUType = 0;
-    cpuInfo->dwFeatures = 0;
-    cpuInfo->dwExtendedFeatures = 0;
-#endif // TARGET_X86
-}
-
-// --------------------------------------------------------------------------------
-
-void DomainAssembly::GetCurrentVersionInfo(CORCOMPILE_VERSION_INFO *pNativeVersionInfo)
-{
-    CONTRACTL
-    {
-        INSTANCE_CHECK;
-        STANDARD_VM_CHECK;
-    }
-    CONTRACTL_END;
-
-    // Clear memory so that we won't write random data into the zapped file
-    ZeroMemory(pNativeVersionInfo, sizeof(CORCOMPILE_VERSION_INFO));
-
-    // Pick up any compilation directives for code flavor
-
-    BOOL fForceDebug, fForceProfiling, fForceInstrument;
-    SystemDomain::GetCompilationOverrides(&fForceDebug,
-                                          &fForceProfiling,
-                                          &fForceInstrument);
-
-#ifndef TARGET_UNIX
-    pNativeVersionInfo->wOSPlatformID = VER_PLATFORM_WIN32_NT;
-#else
-    pNativeVersionInfo->wOSPlatformID = VER_PLATFORM_UNIX;
-#endif
-
-    // The native images should be OS-version agnostic. Do not store the actual OS version for determinism.
-    // pNativeVersionInfo->wOSMajorVersion = (WORD) osInfo.dwMajorVersion;
-    pNativeVersionInfo->wOSMajorVersion = 4;
-
-    pNativeVersionInfo->wMachine = IMAGE_FILE_MACHINE_NATIVE_NI;
-
-    pNativeVersionInfo->wVersionMajor = RuntimeFileMajorVersion;
-    pNativeVersionInfo->wVersionMinor = RuntimeFileMinorVersion;
-    pNativeVersionInfo->wVersionBuildNumber = RuntimeFileBuildVersion;
-    pNativeVersionInfo->wVersionPrivateBuildNumber = RuntimeFileRevisionVersion;
-
-    GetNGenCpuInfo(&pNativeVersionInfo->cpuInfo);
-
-#if _DEBUG
-    pNativeVersionInfo->wBuild = CORCOMPILE_BUILD_CHECKED;
-#else
-    pNativeVersionInfo->wBuild = CORCOMPILE_BUILD_FREE;
-#endif
-
-#ifdef DEBUGGING_SUPPORTED
-    if (fForceDebug || !CORDebuggerAllowJITOpts(GetDebuggerInfoBits()))
-    {
-        pNativeVersionInfo->wCodegenFlags |= CORCOMPILE_CODEGEN_DEBUGGING;
-        pNativeVersionInfo->wConfigFlags |= CORCOMPILE_CONFIG_DEBUG;
-    }
-    else
-#endif // DEBUGGING_SUPPORTED
-    {
-        pNativeVersionInfo->wConfigFlags |= CORCOMPILE_CONFIG_DEBUG_NONE;
-    }
-
-#if defined (PROFILING_SUPPORTED_DATA) || defined(PROFILING_SUPPORTED)
-    if (fForceProfiling || CORProfilerUseProfileImages())
-    {
-        pNativeVersionInfo->wCodegenFlags |= CORCOMPILE_CODEGEN_PROFILING;
-        pNativeVersionInfo->wConfigFlags |= CORCOMPILE_CONFIG_PROFILING;
-#ifdef DEBUGGING_SUPPORTED
-        // Note that we have hardwired profiling to also imply optimized debugging
-        // info.  This cuts down on one permutation of prejit files.
-        pNativeVersionInfo->wCodegenFlags &= ~CORCOMPILE_CODEGEN_DEBUGGING;
-        pNativeVersionInfo->wConfigFlags &= ~(CORCOMPILE_CONFIG_DEBUG|
-                                              CORCOMPILE_CONFIG_DEBUG_DEFAULT);
-        pNativeVersionInfo->wConfigFlags |= CORCOMPILE_CONFIG_DEBUG_NONE;
-#endif // DEBUGGING_SUPPORTED
-    }
-    else
-#endif // PROFILING_SUPPORTED_DATA || PROFILING_SUPPORTED
-    {
-        pNativeVersionInfo->wConfigFlags |= CORCOMPILE_CONFIG_PROFILING_NONE;
-    }
-
-#ifdef DEBUGGING_SUPPORTED
-
-    // Note the default assembly flags (from the custom attributes & INI file) , so we can
-    // set determine whether or not the current settings
-    // match the "default" setting or not.
-
-    // Note that the INI file settings are considered a part of the
-    // assembly, even though they could theoretically change between
-    // ngen time and runtime.  It is just too expensive and awkward to
-    // look up the INI file before binding to the native image at
-    // runtime, so we effectively snapshot it at ngen time.
-
-    DWORD defaultFlags = ComputeDebuggingConfig();
-
-    if (CORDebuggerAllowJITOpts(defaultFlags))
-    {
-        // Default is optimized code
-        if ((pNativeVersionInfo->wCodegenFlags & CORCOMPILE_CODEGEN_DEBUGGING) == 0)
-            pNativeVersionInfo->wConfigFlags |= CORCOMPILE_CONFIG_DEBUG_DEFAULT;
-    }
-    else
-    {
-        // Default is non-optimized debuggable code
-        if ((pNativeVersionInfo->wCodegenFlags & CORCOMPILE_CODEGEN_DEBUGGING) != 0)
-            pNativeVersionInfo->wConfigFlags |= CORCOMPILE_CONFIG_DEBUG_DEFAULT;
-    }
-
-#endif // DEBUGGING_SUPPORTED
-
-    if (fForceInstrument || GetAssembly()->IsInstrumented())
-    {
-        pNativeVersionInfo->wCodegenFlags |= CORCOMPILE_CODEGEN_PROF_INSTRUMENTING;
-        pNativeVersionInfo->wConfigFlags |= CORCOMPILE_CONFIG_INSTRUMENTATION;
-    }
-    else
-    {
-        pNativeVersionInfo->wConfigFlags |= CORCOMPILE_CONFIG_INSTRUMENTATION_NONE;
-    }
-
-
-    GetTimeStampsForNativeImage(pNativeVersionInfo);
-
-    // Store signature of source assembly.
-    GetOptimizedIdentitySignature(&pNativeVersionInfo->sourceAssembly);
-
-    // signature will is hash of the whole file. It is written by zapper.
-    // IfFailThrow(CoCreateGuid(&pNativeVersionInfo->signature));
-}
-
-void DomainAssembly::GetOptimizedIdentitySignature(CORCOMPILE_ASSEMBLY_SIGNATURE *pSignature)
-{
-    CONTRACTL
-    {
-        INSTANCE_CHECK;
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-        INJECT_FAULT(COMPlusThrowOM(););
-    }
-    CONTRACTL_END;
-
-    //
-    // Write the MVID into the version header.
-    //
-
-    //
-    // If this assembly has skip verification permission, then we store its
-    // mvid.  If at load time the assembly still has skip verification
-    // permission, then we can base the matches purely on mvid values and
-    // skip the perf-heavy hashing of the file.
-    //
-
-    //
-    // The reason that we tell IsFullyTrusted to do a quick check
-    // only is because that allows us make a determination for the most
-    // common full trust scenarios (local machine) without actually
-    // resolving policy and bringing in a whole list of assembly
-    // dependencies.
-    //
-    ReleaseHolder<IMDInternalImport> scope (GetFile()->GetMDImportWithRef());
-    IfFailThrow(scope->GetScopeProps(NULL, &pSignature->mvid));
-
-    // Use the NGen image if possible. IL image does not even have to be present on CoreCLR.
-    if (GetFile()->HasNativeImage())
-    {
-        PEImageHolder pNativeImage(GetFile()->GetNativeImageWithRef());
-
-        CORCOMPILE_VERSION_INFO* pVersionInfo = pNativeImage->GetLoadedLayout()->GetNativeVersionInfo();
-        pSignature->timeStamp = pVersionInfo->sourceAssembly.timeStamp;
-        pSignature->ilImageSize = pVersionInfo->sourceAssembly.ilImageSize;
-
-        return;
-    }
-
-    // Write the time stamp
-    PEImageLayoutHolder ilLayout(GetFile()->GetAnyILWithRef());
-    pSignature->timeStamp = ilLayout->GetTimeDateStamp();
-    pSignature->ilImageSize = ilLayout->GetVirtualSize();
-}
-
-BOOL DomainAssembly::CheckZapDependencyIdentities(PEImage *pNativeImage)
-{
-    CONTRACTL
-    {
-        INSTANCE_CHECK;
-        STANDARD_VM_CHECK;
-    }
-    CONTRACTL_END;
-
-    AssemblySpec spec;
-    spec.InitializeSpec(this->GetFile());
-
-    // The assembly spec should have the binding context associated with it
-    _ASSERTE(spec.GetBindingContext()  || spec.IsAssemblySpecForCoreLib());
-
-    CORCOMPILE_VERSION_INFO *pVersionInfo = pNativeImage->GetLoadedLayout()->GetNativeVersionInfo();
-
-    // Check our own assembly first
-    GetAppDomain()->CheckForMismatchedNativeImages(&spec, &pVersionInfo->sourceAssembly.mvid);
-
-    // Check MVID in metadata against MVID in CORCOMPILE_VERSION_INFO - important when metadata is loaded from IL instead of NI
-    ReleaseHolder<IMDInternalImport> pImport(this->GetFile()->GetMDImportWithRef());
-    GUID mvid;
-    IfFailThrow(pImport->GetScopeProps(NULL, &mvid));
-    GetAppDomain()->CheckForMismatchedNativeImages(&spec, &mvid);
-
-    // Now Check dependencies
-    COUNT_T cDependencies;
-    CORCOMPILE_DEPENDENCY *pDependencies = pNativeImage->GetLoadedLayout()->GetNativeDependencies(&cDependencies);
-    CORCOMPILE_DEPENDENCY *pDependenciesEnd = pDependencies + cDependencies;
-
-    while (pDependencies < pDependenciesEnd)
-    {
-        if (pDependencies->dwAssemblyDef != mdAssemblyRefNil)
-        {
-            AssemblySpec name;
-            name.InitializeSpec(pDependencies->dwAssemblyDef, pNativeImage->GetNativeMDImport(), this);
-
-            if (!name.IsAssemblySpecForCoreLib())
-            {
-                // We just initialized the assembly spec for the NI dependency. This will not have binding context
-                // associated with it, so set it from that of the parent.
-                _ASSERTE(!name.GetBindingContext());
-                ICLRPrivBinder *pParentAssemblyBindingContext = name.GetBindingContextFromParentAssembly(name.GetAppDomain());
-                _ASSERTE(pParentAssemblyBindingContext);
-                name.SetBindingContext(pParentAssemblyBindingContext);
-            }
-
-            GetAppDomain()->CheckForMismatchedNativeImages(&name, &pDependencies->signAssemblyDef.mvid);
-        }
-
-        pDependencies++;
-    }
-
-    return TRUE;
-}
-#endif // FEATURE_PREJIT
-
 DWORD DomainAssembly::ComputeDebuggingConfig()
 {
     CONTRACTL
@@ -1856,27 +1059,6 @@ HRESULT DomainAssembly::GetDebuggingCustomAttributes(DWORD *pdwFlags)
 
     HRESULT hr = S_OK;
 
-#ifdef FEATURE_PREJIT
-    ReleaseHolder<PEImage> pNativeImage=GetFile()->GetNativeImageWithRef();
-    if (pNativeImage)
-    {
-        CORCOMPILE_VERSION_INFO * pVersion = pNativeImage->GetLoadedLayout()->GetNativeVersionInfo();
-        PREFIX_ASSUME(pVersion != NULL);
-
-        WORD codegen = pVersion->wCodegenFlags;
-
-        if (codegen & CORCOMPILE_CODEGEN_DEBUGGING)
-        {
-            *pdwFlags &= (~DACF_ALLOW_JIT_OPTS);
-        }
-        else
-        {
-            *pdwFlags |= DACF_ALLOW_JIT_OPTS;
-        }
-
-    }
-    else
-#endif // FEATURE_PREJIT
     {
         ULONG size;
         BYTE *blob;

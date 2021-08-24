@@ -31,8 +31,6 @@
 #include "mono/metadata/reflection-cache.h"
 #include "mono/metadata/sre-internals.h"
 #include "mono/metadata/custom-attrs-internals.h"
-#include "mono/metadata/security-manager.h"
-#include "mono/metadata/security-core-clr.h"
 #include "mono/metadata/tabledefs.h"
 #include "mono/metadata/tokentype.h"
 #include "mono/metadata/abi-details.h"

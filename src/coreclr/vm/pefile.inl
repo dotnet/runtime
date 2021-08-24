@@ -30,9 +30,6 @@ inline CHECK PEFile::Invariant()
     {
         // dynamic module case
         CHECK(m_openedILimage == NULL);
-#ifdef FEATURE_PREJIT
-        CHECK(m_nativeImage == NULL);
-#endif
         CHECK(CheckPointer(m_pEmitter));
     }
     else
@@ -40,9 +37,6 @@ inline CHECK PEFile::Invariant()
         // If m_image is null, then we should have a native image. However, this is not valid initially
         // during construction.  We should find a way to assert this.
         CHECK(CheckPointer((PEImage*) m_openedILimage, NULL_OK));
-#ifdef FEATURE_PREJIT
-        CHECK(CheckPointer((PEImage*) m_nativeImage, NULL_OK));
-#endif
     }
     CHECK_OK;
 }
@@ -100,7 +94,7 @@ inline ULONG PEAssembly::HashIdentity()
         GC_TRIGGERS;
     }
     CONTRACTL_END;
-    return BINDER_SPACE::GetAssemblyFromPrivAssemblyFast(m_pHostAssembly)->GetAssemblyName()->Hash(BINDER_SPACE::AssemblyName::INCLUDE_VERSION);
+    return m_pHostAssembly->GetAssemblyName()->Hash(BINDER_SPACE::AssemblyName::INCLUDE_VERSION);
 }
 
 inline void PEFile::ValidateForExecution()
@@ -526,15 +520,6 @@ inline BOOL PEFile::IsIbcOptimized()
 {
     WRAPPER_NO_CONTRACT;
 
-#ifdef FEATURE_PREJIT
-    if (IsNativeLoaded())
-    {
-        CONSISTENCY_CHECK(HasNativeImage());
-
-        return m_nativeImage->IsIbcOptimized();
-    }
-#endif
-
     return FALSE;
 }
 
@@ -549,15 +534,6 @@ inline BOOL PEFile::IsILImageReadyToRun()
     }
     CONTRACTL_END;
 
-#ifdef FEATURE_PREJIT
-    if (IsNativeLoaded())
-    {
-        CONSISTENCY_CHECK(HasNativeImage());
-
-        return GetLoadedNative()->GetNativeILHasReadyToRunHeader();
-    }
-    else
-#endif // FEATURE_PREJIT
     if (HasOpenedILimage())
     {
         return GetLoadedIL()->HasReadyToRunHeader();
@@ -575,24 +551,6 @@ inline WORD PEFile::GetSubsystem()
     if (IsResource() || IsDynamic())
         return 0;
 
-#ifdef FEATURE_PREJIT
-    if (IsNativeLoaded())
-    {
-        CONSISTENCY_CHECK(HasNativeImage());
-
-        return GetLoadedNative()->GetSubsystem();
-    }
-#ifndef DACCESS_COMPILE
-    if (!HasOpenedILimage())
-    {
-        //don't want to touch the IL image unless we already have
-        ReleaseHolder<PEImage> pNativeImage = GetNativeImageWithRef();
-        if (pNativeImage)
-            return pNativeImage->GetSubsystem();
-    }
-#endif // DACCESS_COMPILE
-#endif // FEATURE_PREJIT
-
     return GetLoadedIL()->GetSubsystem();
 }
 
@@ -607,51 +565,9 @@ inline mdToken PEFile::GetEntryPointToken(
     if (IsResource() || IsDynamic())
         return mdTokenNil;
 
-
-#ifdef FEATURE_PREJIT
-    if (IsNativeLoaded())
-    {
-        CONSISTENCY_CHECK(HasNativeImage());
-        _ASSERTE (!bAssumeLoaded || m_nativeImage->HasLoadedLayout ());
-        return m_nativeImage->GetEntryPointToken();
-    }
-#ifndef DACCESS_COMPILE
-    if (!HasOpenedILimage())
-    {
-        //don't want to touch the IL image unless we already have
-        ReleaseHolder<PEImage> pNativeImage = GetNativeImageWithRef();
-        if (pNativeImage) {
-            _ASSERTE (!bAssumeLoaded || pNativeImage->HasLoadedLayout ());
-            return pNativeImage->GetEntryPointToken();
-        }
-    }
-#endif // DACCESS_COMPILE
-#endif // FEATURE_PREJIT
     _ASSERTE (!bAssumeLoaded || HasLoadedIL ());
     return GetOpenedILimage()->GetEntryPointToken();
 }
-
-#ifdef FEATURE_PREJIT
-inline BOOL PEFile::IsNativeLoaded()
-{
-    WRAPPER_NO_CONTRACT;
-    return (m_nativeImage && m_bHasPersistentMDImport && m_nativeImage->HasLoadedLayout());
-}
-inline void PEFile::MarkNativeImageInvalidIfOwned()
-{
-    WRAPPER_NO_CONTRACT;
-    // If owned, mark the PEFile as dummy, so the image does not get reused
-    PEImageHolder nativeImage(GetNativeImageWithRef());
-    Module * pNativeModule = nativeImage->GetLoadedLayout()->GetPersistedModuleImage();
-    PEFile ** ppNativeFile = (PEFile**) (PBYTE(pNativeModule) + Module::GetFileOffset());
-
-    // Attempt to write only if we claimed the ownership.
-    if (*ppNativeFile == this)
-        FastInterlockCompareExchangePointer(ppNativeFile, Dummy(), this);
-}
-
-
-#endif
 
 inline BOOL PEFile::IsILOnly()
 {
@@ -663,30 +579,6 @@ inline BOOL PEFile::IsILOnly()
     if (IsResource() || IsDynamic())
         return FALSE;
 
-#ifdef FEATURE_PREJIT
-    if (IsNativeLoaded())
-    {
-        CONSISTENCY_CHECK(HasNativeImage());
-
-        return m_nativeImage->IsNativeILILOnly();
-    }
-#ifndef DACCESS_COMPILE
-    if (!HasOpenedILimage())
-    {
-        BOOL retVal = FALSE;
-
-        //don't want to touch the IL image unless we already have
-        ReleaseHolder<PEImage> pNativeImage = GetNativeImageWithRef();
-        if (pNativeImage)
-        {
-            retVal = pNativeImage->IsNativeILILOnly();
-        }
-
-        return retVal;
-    }
-#endif // DACCESS_COMPILE
-#endif // FEATURE_PREJIT
-
     return GetOpenedILimage()->IsILOnly();
 }
 
@@ -696,25 +588,6 @@ inline BOOL PEFile::IsDll()
 
     if (IsResource() || IsDynamic())
         return TRUE;
-
-#ifdef FEATURE_PREJIT
-    if (IsNativeLoaded())
-    {
-        CONSISTENCY_CHECK(HasNativeImage());
-
-        return m_nativeImage->IsNativeILDll();
-    }
-#ifndef DACCESS_COMPILE
-    if (!HasOpenedILimage())
-    {
-        //don't want to touch the IL image unless we already have
-        ReleaseHolder<PEImage> pNativeImage =GetNativeImageWithRef();
-        if (pNativeImage)
-            return pNativeImage->IsNativeILDll();
-    }
-    EnsureImageOpened();
-#endif // DACCESS_COMPILE
-#endif // FEATURE_PREJIT
 
     return GetOpenedILimage()->IsDll();
 }
@@ -1071,21 +944,6 @@ inline BOOL PEFile::IsPtrInILImage(PTR_CVOID data)
 
     if (HasOpenedILimage())
     {
-#if defined(FEATURE_PREJIT)
-        if (m_openedILimage == m_nativeImage)
-        {
-            // On Apollo builds, we sometimes open the native image into the slot
-            // normally reserved for the IL image (as the IL image is often not available
-            // on the disk at all). In such a case, data is not coming directly from an
-            // actual IL image, but see if it's coming from the metadata that we copied
-            // from the IL image into the NI.
-            TADDR taddrData = dac_cast<TADDR>(data);
-            PEDecoder * pDecoder = m_nativeImage->GetLoadedLayout();
-            COUNT_T cbILMetadata;
-            TADDR taddrILMetadata = dac_cast<TADDR>(pDecoder->GetMetadata(&cbILMetadata));
-            return ((taddrILMetadata <= taddrData) && (taddrData < taddrILMetadata + cbILMetadata));
-        }
-#endif // defined(FEATURE_PREJIT)
         return GetOpenedILimage()->IsPtrInImage(data);
     }
     else
@@ -1107,11 +965,7 @@ inline BOOL PEFile::HasNativeImage()
     }
     CONTRACTL_END;
 
-#ifdef FEATURE_PREJIT
-    return (m_nativeImage != NULL);
-#else
     return FALSE;
-#endif
 }
 
 inline BOOL PEFile::HasNativeOrReadyToRunImage()
@@ -1158,15 +1012,7 @@ inline BOOL PEFile::IsLoaded(BOOL bAllowNative/*=TRUE*/)
     CONTRACTL_END;
     if(IsDynamic())
         return TRUE;
-#ifdef FEATURE_PREJIT
-    if (bAllowNative && HasNativeImage())
-    {
-        PEImage *pNativeImage = GetPersistentNativeImage();
-        return pNativeImage->HasLoadedLayout() && (pNativeImage->GetLoadedLayout()->IsNativeILILOnly() || (HasLoadedIL()));
-    }
-    else
-#endif
-        return HasLoadedIL();
+    return HasLoadedIL();
 };
 
 
@@ -1188,72 +1034,10 @@ inline PTR_PEImageLayout PEFile::GetLoadedNative()
     }
     CONTRACTL_END;
 
-#ifdef FEATURE_PREJIT
-    PEImage* pImage=GetPersistentNativeImage();
-    _ASSERTE(pImage && pImage->GetLoadedLayout());
-    return pImage->GetLoadedLayout();
-#else
     // Should never get here
     PRECONDITION(HasNativeImage());
     return NULL;
-#endif
 };
-
-#ifdef FEATURE_PREJIT
-inline PEImage *PEFile::GetPersistentNativeImage()
-{
-    CONTRACT(PEImage *)
-    {
-        INSTANCE_CHECK;
-        PRECONDITION(HasNativeImage());
-        POSTCONDITION(CheckPointer(RETVAL));
-        PRECONDITION(m_bHasPersistentMDImport);
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
-        CANNOT_TAKE_LOCK;
-        SUPPORTS_DAC;
-    }
-    CONTRACT_END;
-
-    RETURN m_nativeImage;
-}
-
-#ifndef DACCESS_COMPILE
-inline PEImage *PEFile::GetNativeImageWithRef()
-{
-    CONTRACT(PEImage *)
-    {
-        INSTANCE_CHECK;
-        NOTHROW;
-        GC_TRIGGERS;
-        MODE_ANY;
-        POSTCONDITION(CheckPointer(RETVAL,NULL_OK));
-    }
-    CONTRACT_END;
-    GCX_PREEMP();
-    SimpleReadLockHolder mdlock(m_pMetadataLock);
-    if(m_nativeImage)
-        m_nativeImage->AddRef();
-    RETURN m_nativeImage;
-}
-#endif // DACCESS_COMPILE
-
-inline BOOL PEFile::HasNativeImageMetadata()
-{
-    CONTRACT(BOOL)
-    {
-        INSTANCE_CHECK;
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
-        SUPPORTS_DAC;
-    }
-    CONTRACT_END;
-
-    RETURN ((m_flags & PEFILE_HAS_NATIVE_IMAGE_METADATA) != 0);
-}
-#endif
 
 
 // ------------------------------------------------------------

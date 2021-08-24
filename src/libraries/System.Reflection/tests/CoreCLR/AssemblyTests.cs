@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.IO;
-using System.Reflection.Emit;
 using System.Runtime.Loader;
 using Xunit;
 
@@ -28,13 +27,6 @@ namespace System.Reflection.Tests
         {
             Assembly assembly = new TestStreamLoadContext().LoadFromAssemblyName(new AssemblyName("TinyAssembly"));
             Assert.Empty(assembly.Location);
-        }
-
-        [Fact]
-        public void DynamicAssembly_Location_ThrowsNotSupportedException()
-        {
-            AssemblyBuilder builder = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName("dynamic"), AssemblyBuilderAccess.Run);
-            Assert.Throws<NotSupportedException>(() => builder.Location);
         }
 
         [Fact]

@@ -31,13 +31,8 @@
 
 #include "eeconfig.h"
 
-#include "ceefilegenwriter.h"
 #include "assemblynative.hpp"
 #include "threadsuspend.h"
-
-#ifdef FEATURE_PREJIT
-#include "corcompile.h"
-#endif
 
 #include "appdomainnative.hpp"
 #include "customattribute.h"
@@ -127,9 +122,9 @@ Assembly::Assembly(BaseDomain *pDomain, PEAssembly* pFile, DebuggerAssemblyContr
 #endif
     m_debuggerFlags(debuggerFlags),
     m_fTerminated(FALSE),
-#if defined(FEATURE_PREJIT) || defined(FEATURE_READYTORUN)
+#if FEATURE_READYTORUN
     m_isInstrumentedStatus(IS_INSTRUMENTED_UNSET)
-#endif
+#endif // FEATURE_READYTORUN
 {
     STANDARD_VM_CONTRACT;
 }
@@ -173,12 +168,10 @@ void Assembly::Init(AllocMemTracker *pamTracker, LoaderAllocator *pLoaderAllocat
     m_pClassLoader = new ClassLoader(this);
     m_pClassLoader->Init(pamTracker);
 
-#ifndef CROSSGEN_COMPILE
     if (GetManifestFile()->IsDynamic())
         // manifest modules of dynamic assemblies are always transient
         m_pManifest = ReflectionModule::Create(this, GetManifestFile(), pamTracker, REFEMIT_MANIFEST_MODULE_NAME);
     else
-#endif
         m_pManifest = Module::Create(this, mdFileNil, GetManifestFile(), pamTracker);
 
     FastInterlockIncrement((LONG*)&g_cAssemblies);
@@ -194,7 +187,6 @@ void Assembly::Init(AllocMemTracker *pamTracker, LoaderAllocator *pLoaderAllocat
     //  loading it entirely.
     //CacheFriendAssemblyInfo();
 
-#ifndef CROSSGEN_COMPILE
     if (IsCollectible())
     {
         COUNT_T size;
@@ -205,7 +197,6 @@ void Assembly::Init(AllocMemTracker *pamTracker, LoaderAllocator *pLoaderAllocat
             LoaderAllocator::AssociateMemoryWithLoaderAllocator(start, start + size, m_pLoaderAllocator);
         }
     }
-#endif
 
     {
         CANNOTTHROWCOMPLUSEXCEPTION();
@@ -218,7 +209,6 @@ void Assembly::Init(AllocMemTracker *pamTracker, LoaderAllocator *pLoaderAllocat
     }
 }
 
-#ifndef CROSSGEN_COMPILE
 Assembly::~Assembly()
 {
     CONTRACTL
@@ -246,24 +236,6 @@ Assembly::~Assembly()
     }
 #endif // FEATURE_COMINTEROP
 }
-
-#ifdef  FEATURE_PREJIT
-void Assembly::DeleteNativeCodeRanges()
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_PREEMPTIVE;
-        FORBID_FAULT;
-    }
-    CONTRACTL_END
-
-    ModuleIterator i = IterateModules();
-    while (i.Next())
-            i.GetModule()->DeleteNativeCodeRanges();
-}
-#endif
 
 #ifdef PROFILING_SUPPORTED
 void ProfilerCallAssemblyUnloadStarted(Assembly* assemblyUnloaded)
@@ -331,7 +303,6 @@ void Assembly::Terminate( BOOL signalProfiler )
 
     this->m_fTerminated = TRUE;
 }
-#endif // CROSSGEN_COMPILE
 
 Assembly * Assembly::Create(
     BaseDomain *                 pDomain,
@@ -377,9 +348,7 @@ Assembly * Assembly::Create(
     return pAssembly;
 } // Assembly::Create
 
-
-#ifndef CROSSGEN_COMPILE
-Assembly *Assembly::CreateDynamic(AppDomain *pDomain, ICLRPrivBinder* pBinderContext, CreateDynamicAssemblyArgs *args)
+Assembly *Assembly::CreateDynamic(AppDomain *pDomain, AssemblyBinder* pBinderContext, CreateDynamicAssemblyArgs *args)
 {
     // WARNING: not backout clean
     CONTRACT(Assembly *)
@@ -521,7 +490,7 @@ Assembly *Assembly::CreateDynamic(AppDomain *pDomain, ICLRPrivBinder* pBinderCon
                                                    &ma));
         pFile = PEAssembly::Create(pCallerAssembly->GetManifestFile(), pAssemblyEmit);
 
-        ICLRPrivBinder* pFallbackLoadContextBinder = pBinderContext;
+        AssemblyBinder* pFallbackLoadContextBinder = pBinderContext;
 
         // If ALC is not specified
         if (pFallbackLoadContextBinder == nullptr)
@@ -550,12 +519,10 @@ Assembly *Assembly::CreateDynamic(AppDomain *pDomain, ICLRPrivBinder* pBinderCon
                 else
                 {
                     // Fetch the binder from the host assembly
-                    PTR_ICLRPrivAssembly pCallerAssemblyHostAssembly = pCallerAssemblyManifestFile->GetHostAssembly();
+                    PTR_BINDER_SPACE_Assembly pCallerAssemblyHostAssembly = pCallerAssemblyManifestFile->GetHostAssembly();
                     _ASSERTE(pCallerAssemblyHostAssembly != nullptr);
 
-                    UINT_PTR assemblyBinderID = 0;
-                    IfFailThrow(pCallerAssemblyHostAssembly->GetBinderID(&assemblyBinderID));
-                    pFallbackLoadContextBinder = reinterpret_cast<ICLRPrivBinder*>(assemblyBinderID);
+                    pFallbackLoadContextBinder = pCallerAssemblyHostAssembly->GetBinder();
                 }
             }
             else
@@ -580,10 +547,9 @@ Assembly *Assembly::CreateDynamic(AppDomain *pDomain, ICLRPrivBinder* pBinderCon
         GCX_PREEMP();
 
         AssemblyLoaderAllocator* pBinderAssemblyLoaderAllocator = nullptr;
-
         if (pBinderContext != nullptr)
         {
-            pBinderContext->GetLoaderAllocator((LPVOID*)&pBinderAssemblyLoaderAllocator);
+            pBinderAssemblyLoaderAllocator = pBinderContext->GetLoaderAllocator();
         }
 
         // Create a new LoaderAllocator if appropriate
@@ -698,7 +664,6 @@ Assembly *Assembly::CreateDynamic(AppDomain *pDomain, ICLRPrivBinder* pBinderCon
 } // Assembly::CreateDynamic
 
 
-#endif // CROSSGEN_COMPILE
 
 void Assembly::SetDomainAssembly(DomainAssembly *pDomainAssembly)
 {
@@ -1342,7 +1307,6 @@ bool Assembly::IgnoresAccessChecksTo(Assembly *pAccessedAssembly)
 }
 
 
-#ifndef CROSSGEN_COMPILE
 
 enum CorEntryPointType
 {
@@ -1694,7 +1658,6 @@ INT32 Assembly::ExecuteMainMethod(PTRARRAYREF *stringArgs, BOOL waitForOtherThre
     END_ENTRYPOINT_THROWS;
     return iRetVal;
 }
-#endif // CROSSGEN_COMPILE
 
 MethodDesc* Assembly::GetEntryPoint()
 {
@@ -1786,7 +1749,6 @@ MethodDesc* Assembly::GetEntryPoint()
     RETURN m_pEntryPoint;
 }
 
-#ifndef CROSSGEN_COMPILE
 OBJECTREF Assembly::GetExposedObject()
 {
     CONTRACT(OBJECTREF)
@@ -1800,7 +1762,6 @@ OBJECTREF Assembly::GetExposedObject()
 
     RETURN GetDomainAssembly()->GetExposedAssemblyObject();
 }
-#endif // CROSSGEN_COMPILE
 
 /* static */
 BOOL Assembly::FileNotFound(HRESULT hr)
@@ -1838,7 +1799,7 @@ BOOL Assembly::GetResource(LPCSTR szName, DWORD *cbResource,
     return result;
 }
 
-#if defined(FEATURE_PREJIT) || defined(FEATURE_READYTORUN)
+#ifdef FEATURE_READYTORUN
 BOOL Assembly::IsInstrumented()
 {
     STATIC_CONTRACT_THROWS;
@@ -1948,7 +1909,7 @@ BOOL Assembly::IsInstrumentedHelper()
 
     return false;
 }
-#endif // FEATURE_PREJIT
+#endif // FEATURE_READYTORUN
 
 
 #ifdef FEATURE_COMINTEROP

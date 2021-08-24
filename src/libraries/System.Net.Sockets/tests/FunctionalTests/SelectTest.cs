@@ -275,7 +275,11 @@ namespace System.Net.Sockets.Tests
                 Assert.True(pair.Value.SafeHandle.IsClosed);
             }
         }
+    }
 
+    [Collection(nameof(NoParallelTests))]
+    public class SelectTest_NonParallel
+    {
         [OuterLoop]
         [Fact]
         public static async Task Select_AcceptNonBlocking_Success()

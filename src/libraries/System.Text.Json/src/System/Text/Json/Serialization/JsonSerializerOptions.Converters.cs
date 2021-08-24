@@ -30,8 +30,8 @@ namespace System.Text.Json
         [RequiresUnreferencedCode(JsonSerializer.SerializationUnreferencedCodeMessage)]
         private void RootBuiltInConverters()
         {
-            s_defaultSimpleConverters ??= GetDefaultSimpleConverters();
-            s_defaultFactoryConverters ??= new JsonConverter[]
+            s_defaultSimpleConverters = GetDefaultSimpleConverters();
+            s_defaultFactoryConverters = new JsonConverter[]
             {
                 // Check for disallowed types.
                 new DisallowedTypeConverterFactory(),

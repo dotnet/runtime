@@ -87,8 +87,8 @@ namespace System.Diagnostics
             Assert(condition, message, string.Empty);
 
         [Conditional("DEBUG")]
-        public static void Assert([DoesNotReturnIf(false)] bool condition, [InterpolatedStringHandlerArgument("condition")] AssertInterpolatedStringHandler message) =>
-            Assert(condition, message.ToString());
+        public static void Assert([DoesNotReturnIf(false)] bool condition, [InterpolatedStringHandlerArgument("condition")] ref AssertInterpolatedStringHandler message) =>
+            Assert(condition, message.ToStringAndClear());
 
         [Conditional("DEBUG")]
         public static void Assert([DoesNotReturnIf(false)] bool condition, string? message, string? detailMessage)
@@ -100,8 +100,8 @@ namespace System.Diagnostics
         }
 
         [Conditional("DEBUG")]
-        public static void Assert([DoesNotReturnIf(false)] bool condition, [InterpolatedStringHandlerArgument("condition")] AssertInterpolatedStringHandler message, [InterpolatedStringHandlerArgument("condition")] AssertInterpolatedStringHandler detailMessage) =>
-            Assert(condition, message.ToString(), detailMessage.ToString());
+        public static void Assert([DoesNotReturnIf(false)] bool condition, [InterpolatedStringHandlerArgument("condition")] ref AssertInterpolatedStringHandler message, [InterpolatedStringHandlerArgument("condition")] ref AssertInterpolatedStringHandler detailMessage) =>
+            Assert(condition, message.ToStringAndClear(), detailMessage.ToStringAndClear());
 
         [Conditional("DEBUG")]
         public static void Assert([DoesNotReturnIf(false)] bool condition, string? message, string detailMessageFormat, params object?[] args) =>
@@ -197,8 +197,8 @@ namespace System.Diagnostics
         }
 
         [Conditional("DEBUG")]
-        public static void WriteIf(bool condition, [InterpolatedStringHandlerArgument("condition")] WriteIfInterpolatedStringHandler message) =>
-            WriteIf(condition, message.ToString());
+        public static void WriteIf(bool condition, [InterpolatedStringHandlerArgument("condition")] ref WriteIfInterpolatedStringHandler message) =>
+            WriteIf(condition, message.ToStringAndClear());
 
         [Conditional("DEBUG")]
         public static void WriteIf(bool condition, object? value)
@@ -219,8 +219,8 @@ namespace System.Diagnostics
         }
 
         [Conditional("DEBUG")]
-        public static void WriteIf(bool condition, [InterpolatedStringHandlerArgument("condition")] WriteIfInterpolatedStringHandler message, string? category) =>
-            WriteIf(condition, message.ToString(), category);
+        public static void WriteIf(bool condition, [InterpolatedStringHandlerArgument("condition")] ref WriteIfInterpolatedStringHandler message, string? category) =>
+            WriteIf(condition, message.ToStringAndClear(), category);
 
         [Conditional("DEBUG")]
         public static void WriteIf(bool condition, object? value, string? category)
@@ -259,8 +259,8 @@ namespace System.Diagnostics
         }
 
         [Conditional("DEBUG")]
-        public static void WriteLineIf(bool condition, [InterpolatedStringHandlerArgument("condition")] WriteIfInterpolatedStringHandler message) =>
-            WriteLineIf(condition, message.ToString());
+        public static void WriteLineIf(bool condition, [InterpolatedStringHandlerArgument("condition")] ref WriteIfInterpolatedStringHandler message) =>
+            WriteLineIf(condition, message.ToStringAndClear());
 
         [Conditional("DEBUG")]
         public static void WriteLineIf(bool condition, string? message, string? category)
@@ -272,8 +272,8 @@ namespace System.Diagnostics
         }
 
         [Conditional("DEBUG")]
-        public static void WriteLineIf(bool condition, [InterpolatedStringHandlerArgument("condition")] WriteIfInterpolatedStringHandler message, string? category) =>
-            WriteLineIf(condition, message.ToString(), category);
+        public static void WriteLineIf(bool condition, [InterpolatedStringHandlerArgument("condition")] ref WriteIfInterpolatedStringHandler message, string? category) =>
+            WriteLineIf(condition, message.ToStringAndClear(), category);
 
         /// <summary>Provides an interpolated string handler for <see cref="Debug.Assert"/> that only performs formatting if the assert fails.</summary>
         [EditorBrowsable(EditorBrowsableState.Never)]
@@ -298,16 +298,21 @@ namespace System.Diagnostics
                 }
                 else
                 {
-                    _stringBuilderHandler = new StringBuilder.AppendInterpolatedStringHandler(literalLength, formattedCount, new StringBuilder(DefaultInterpolatedStringHandler.GetDefaultLength(literalLength, formattedCount)));
+                    // Only used when failing an assert.  Additional allocation here doesn't matter; just create a new StringBuilder.
+                    _stringBuilderHandler = new StringBuilder.AppendInterpolatedStringHandler(literalLength, formattedCount, new StringBuilder());
                     shouldAppend = true;
                 }
             }
 
             /// <summary>Extracts the built string from the handler.</summary>
-            internal new string ToString() =>
-                _stringBuilderHandler._stringBuilder is StringBuilder sb ?
+            internal string ToStringAndClear()
+            {
+                string s = _stringBuilderHandler._stringBuilder is StringBuilder sb ?
                     sb.ToString() :
                     string.Empty;
+                _stringBuilderHandler = default;
+                return s;
+            }
 
             /// <summary>Writes the specified string to the handler.</summary>
             /// <param name="value">The string to write.</param>
@@ -378,7 +383,9 @@ namespace System.Diagnostics
             {
                 if (condition)
                 {
-                    _stringBuilderHandler = new StringBuilder.AppendInterpolatedStringHandler(literalLength, formattedCount, new StringBuilder(DefaultInterpolatedStringHandler.GetDefaultLength(literalLength, formattedCount)));
+                    // Only used in debug, but could be used on non-failure code paths, so use a cached builder.
+                    _stringBuilderHandler = new StringBuilder.AppendInterpolatedStringHandler(literalLength, formattedCount,
+                        StringBuilderCache.Acquire(DefaultInterpolatedStringHandler.GetDefaultLength(literalLength, formattedCount)));
                     shouldAppend = true;
                 }
                 else
@@ -389,10 +396,14 @@ namespace System.Diagnostics
             }
 
             /// <summary>Extracts the built string from the handler.</summary>
-            internal new string ToString() =>
-                _stringBuilderHandler._stringBuilder is StringBuilder sb ?
-                    sb.ToString() :
+            internal string ToStringAndClear()
+            {
+                string s = _stringBuilderHandler._stringBuilder is StringBuilder sb ?
+                    StringBuilderCache.GetStringAndRelease(sb) :
                     string.Empty;
+                _stringBuilderHandler = default;
+                return s;
+            }
 
             /// <summary>Writes the specified string to the handler.</summary>
             /// <param name="value">The string to write.</param>

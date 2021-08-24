@@ -311,12 +311,6 @@ public:
         return (void*)m_MapList;
     }
 
-#ifdef FEATURE_PREJIT
-    // Methods to persist structure
-    void Save(DataImage *image);
-    void Fixup(DataImage *image);
-#endif // FEATURE_PREJIT
-
 private:
 
     enum { MapGrow = 4 };
@@ -556,7 +550,7 @@ class EEClassOptionalFields
 
     // Variance info for each type parameter (gpNonVariant, gpCovariant, or gpContravariant)
     // If NULL, this type has no type parameters that are co/contravariant
-    RelativePointer<PTR_BYTE> m_pVarianceInfo;
+    PTR_BYTE m_pVarianceInfo;
 
     //
     // COM RELATED FIELDS.
@@ -597,7 +591,7 @@ class EEClassOptionalFields
     {
         LIMITED_METHOD_DAC_CONTRACT;
 
-        return ReadPointerMaybeNull(this, &EEClassOptionalFields::m_pVarianceInfo);
+        return m_pVarianceInfo;
     }
 };
 typedef DPTR(EEClassOptionalFields) PTR_EEClassOptionalFields;
@@ -780,13 +774,6 @@ public:
         return IsTdImport(m_dwAttrClass);
     }
 
-#ifdef FEATURE_PREJIT
-    DWORD GetSize();
-
-    void Save(DataImage *image, MethodTable *pMT);
-    void Fixup(DataImage *image, MethodTable *pMT);
-#endif // FEATURE_PREJIT
-
     EEClassLayoutInfo *GetLayoutInfo();
     PTR_EEClassNativeLayoutInfo GetNativeLayoutInfo();
 
@@ -855,7 +842,7 @@ public:
         LIMITED_METHOD_CONTRACT;
         SUPPORTS_DAC;
 
-        return ReadPointerMaybeNull(this, &EEClass::m_pMethodTable);
+        return m_pMethodTable;
     }
 
     // DO NOT ADD ANY ASSERTS TO THIS METHOD.
@@ -872,14 +859,14 @@ public:
         CANNOT_HAVE_CONTRACT;
         SUPPORTS_DAC;
 
-        return ReadPointerMaybeNull(this, &EEClass::m_pMethodTable);
+        return m_pMethodTable;
     }
 
 #ifndef DACCESS_COMPILE
     inline void SetMethodTable(MethodTable*  pMT)
     {
         LIMITED_METHOD_CONTRACT;
-        m_pMethodTable.SetValueMaybeNull(pMT);
+        m_pMethodTable = pMT;
     }
 #endif // !DACCESS_COMPILE
 
@@ -1083,16 +1070,12 @@ public:
      * There are (m_wNumInstanceFields - GetParentClass()->m_wNumInstanceFields + m_wNumStaticFields) entries
      * in this array
      */
-#ifdef FEATURE_PREJIT
-    static DWORD FieldDescListSize(MethodTable * pMT);
-#endif
-
     inline PTR_FieldDesc GetFieldDescList()
     {
         LIMITED_METHOD_DAC_CONTRACT;
         // Careful about using this method. If it's possible that fields may have been added via EnC, then
         // must use the FieldDescIterator as any fields added via EnC won't be in the raw list
-        return m_pFieldDescList.GetValueMaybeNull(PTR_HOST_MEMBER_TADDR(EEClass, this, m_pFieldDescList));
+        return m_pFieldDescList;
     }
 
     PTR_FieldDesc GetFieldDescByIndex(DWORD fieldIndex);
@@ -1101,7 +1084,7 @@ public:
     inline void SetFieldDescList (FieldDesc* pFieldDescList)
     {
         LIMITED_METHOD_CONTRACT;
-        m_pFieldDescList.SetValue(pFieldDescList);
+        m_pFieldDescList = pFieldDescList;
     }
 #endif // !DACCESS_COMPILE
 
@@ -1441,7 +1424,7 @@ public:
     inline void SetChunks (MethodDescChunk* pChunks)
     {
         LIMITED_METHOD_CONTRACT;
-        m_pChunks.SetValueMaybeNull(pChunks);
+        m_pChunks = pChunks;
     }
 #endif // !DACCESS_COMPILE
     void AddChunk (MethodDescChunk* pNewChunk);
@@ -1452,14 +1435,14 @@ public:
     {
         LIMITED_METHOD_DAC_CONTRACT;
 
-        return ReadPointerMaybeNull(this, &EEClass::m_pGuidInfo);
+        return m_pGuidInfo;
     }
 
     inline void SetGuidInfo(GuidInfo* pGuidInfo)
     {
         WRAPPER_NO_CONTRACT;
         #ifndef DACCESS_COMPILE
-        m_pGuidInfo.SetValueMaybeNull(pGuidInfo);
+        m_pGuidInfo = pGuidInfo;
         #endif // DACCESS_COMPILE
     }
 
@@ -1617,7 +1600,7 @@ public:
     {
         LIMITED_METHOD_CONTRACT;
         _ASSERTE(HasOptionalFields());
-        GetOptionalFields()->m_pVarianceInfo.SetValueMaybeNull(pVarianceInfo);
+        GetOptionalFields()->m_pVarianceInfo = pVarianceInfo;
     }
 #endif // !DACCESS_COMPILE
 
@@ -1739,7 +1722,7 @@ public:
     // C_ASSERTs in Jitinterface.cpp need this to be public to check the offset.
     // Put it first so the offset rarely changes, which just reduces the number of times we have to fiddle
     // with the offset.
-    RelativePointer<PTR_GuidInfo> m_pGuidInfo;  // The cached guid information for interfaces.
+    PTR_GuidInfo m_pGuidInfo;  // The cached guid information for interfaces.
 
 #ifdef _DEBUG
 public:
@@ -1750,13 +1733,13 @@ public:
 private:
     // Layout rest of fields below from largest to smallest to lessen the chance of wasting bytes with
     // compiler injected padding (especially with the difference between pointers and DWORDs on 64-bit).
-    RelativePointer<PTR_EEClassOptionalFields> m_rpOptionalFields;
+    PTR_EEClassOptionalFields m_rpOptionalFields;
 
     // TODO: Remove this field. It is only used by SOS and object validation for stress.
-    RelativePointer<PTR_MethodTable> m_pMethodTable;
+    PTR_MethodTable m_pMethodTable;
 
-    RelativePointer<PTR_FieldDesc> m_pFieldDescList;
-    RelativePointer<PTR_MethodDescChunk> m_pChunks;
+    PTR_FieldDesc m_pFieldDescList;
+    PTR_MethodDescChunk m_pChunks;
 
 #ifdef FEATURE_COMINTEROP
     union
@@ -1801,22 +1784,22 @@ public:
     void AttachOptionalFields(EEClassOptionalFields *pFields)
     {
         LIMITED_METHOD_CONTRACT;
-        _ASSERTE(m_rpOptionalFields.IsNull());
+        _ASSERTE(m_rpOptionalFields == NULL);
 
-        m_rpOptionalFields.SetValue(pFields);
+        m_rpOptionalFields = pFields;
     }
 #endif // !DACCESS_COMPILE
 
     bool HasOptionalFields()
     {
         LIMITED_METHOD_DAC_CONTRACT;
-        return !m_rpOptionalFields.IsNull();
+        return m_rpOptionalFields != NULL;
     }
 
     PTR_EEClassOptionalFields GetOptionalFields()
     {
         LIMITED_METHOD_DAC_CONTRACT;
-        return m_rpOptionalFields.GetValueMaybeNull(PTR_HOST_MEMBER_TADDR(EEClass, this, m_rpOptionalFields));
+        return m_rpOptionalFields;
     }
 
 private:
@@ -1947,12 +1930,12 @@ public:
     DAC_ALIGNAS(EEClass) // Align the first member to the alignment of the base class
     PTR_Stub                         m_pStaticCallStub;
     PTR_Stub                         m_pInstRetBuffCallStub;
-    RelativePointer<PTR_MethodDesc>  m_pInvokeMethod;
+    PTR_MethodDesc                   m_pInvokeMethod;
     PTR_Stub                         m_pMultiCastInvokeStub;
     PTR_Stub                         m_pWrapperDelegateInvokeStub;
     UMThunkMarshInfo*                m_pUMThunkMarshInfo;
-    RelativePointer<PTR_MethodDesc>  m_pBeginInvokeMethod;
-    RelativePointer<PTR_MethodDesc>  m_pEndInvokeMethod;
+    PTR_MethodDesc                   m_pBeginInvokeMethod;
+    PTR_MethodDesc                   m_pEndInvokeMethod;
     Volatile<PCODE>                  m_pMarshalStub;
 
 #ifdef FEATURE_COMINTEROP
@@ -1968,17 +1951,17 @@ public:
 
     PTR_MethodDesc GetInvokeMethod()
     {
-        return ReadPointer(this, &DelegateEEClass::m_pInvokeMethod);
+        return m_pInvokeMethod;
     }
 
     PTR_MethodDesc GetBeginInvokeMethod()
     {
-        return ReadPointer(this, &DelegateEEClass::m_pBeginInvokeMethod);
+        return m_pBeginInvokeMethod;
     }
 
     PTR_MethodDesc GetEndInvokeMethod()
     {
-        return ReadPointer(this, &DelegateEEClass::m_pEndInvokeMethod);
+        return m_pEndInvokeMethod;
     }
 
 #ifndef DACCESS_COMPILE
@@ -2001,10 +1984,6 @@ typedef DPTR(ArrayClass) PTR_ArrayClass;
 // Dynamically generated array class structure
 class ArrayClass : public EEClass
 {
-#ifdef FEATURE_PREJIT
-    friend void EEClass::Fixup(DataImage *image, MethodTable *pMethodTable);
-#endif
-
     friend MethodTable* Module::CreateArrayMethodTable(TypeHandle elemTypeHnd, CorElementType arrayKind, unsigned Rank, AllocMemTracker *pamTracker);
 
 #ifndef DACCESS_COMPILE

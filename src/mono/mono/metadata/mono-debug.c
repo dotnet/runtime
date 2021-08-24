@@ -867,7 +867,7 @@ mono_debug_method_lookup_location (MonoDebugMethodInfo *minfo, int il_offset)
  * The result should be freed using mono_debug_free_locals ().
  */
 MonoDebugLocalsInfo*
-mono_debug_lookup_locals (MonoMethod *method, mono_bool ignore_pdb)
+mono_debug_lookup_locals (MonoMethod *method)
 {
 	MonoDebugMethodInfo *minfo;
 	MonoDebugLocalsInfo *res;
@@ -893,18 +893,16 @@ mono_debug_lookup_locals (MonoMethod *method, mono_bool ignore_pdb)
 		return NULL;
 	}
 
-	if (ignore_pdb)
-		res = mono_debug_symfile_lookup_locals (minfo);
-	else {
-		if (minfo->handle->ppdb) {
-			res = mono_ppdb_lookup_locals (minfo);
-		} else {
-			if (!minfo->handle->symfile || !mono_debug_symfile_is_loaded (minfo->handle->symfile))
-				res = NULL;
-			else
-				res = mono_debug_symfile_lookup_locals (minfo);
-		}
+
+	if (minfo->handle->ppdb) {
+		res = mono_ppdb_lookup_locals (minfo);
+	} else {
+		if (!minfo->handle->symfile || !mono_debug_symfile_is_loaded (minfo->handle->symfile))
+			res = NULL;
+		else
+			res = mono_debug_symfile_lookup_locals (minfo);
 	}
+
 	mono_debugger_unlock ();
 
 	return res;
