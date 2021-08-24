@@ -90,7 +90,6 @@ public:
     static EETypeHashTable *Create(LoaderAllocator *pAllocator, Module *pModule, DWORD dwNumBuckets, AllocMemTracker *pamTracker);
 
 private:
-    friend class DacEnumerableHashTable<EETypeHashTable, EETypeHashEntry, 2>;
 
 #ifndef DACCESS_COMPILE
     EETypeHashTable(Module *pModule, LoaderHeap *pHeap, DWORD cInitialBuckets) :

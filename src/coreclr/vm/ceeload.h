@@ -788,7 +788,6 @@ typedef DPTR(class MemberRefToDescHashTable) PTR_MemberRefToDescHashTable;
 
 class MemberRefToDescHashTable: public DacEnumerableHashTable<MemberRefToDescHashTable, MemberRefToDescHashEntry, 2>
 {
-	friend class DacEnumerableHashTable<MemberRefToDescHashTable, MemberRefToDescHashEntry, 2>;
 #ifndef DACCESS_COMPILE
 
 private:

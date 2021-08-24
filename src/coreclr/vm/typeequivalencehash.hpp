@@ -62,11 +62,6 @@ private:
 typedef DPTR(class TypeEquivalenceHashTable) PTR_TypeEquivalenceHashTable;
 class TypeEquivalenceHashTable : public DacEnumerableHashTable<TypeEquivalenceHashTable, TypeEquivalenceEntry, 4>
 {
-    friend class DacEnumerableHashTable<TypeEquivalenceHashTable, TypeEquivalenceEntry, 4>;
-#ifdef DACCESS_COMPILE
-    friend class NativeImageDumper;
-#endif
-
 public:
     enum EquivalenceMatch
     {

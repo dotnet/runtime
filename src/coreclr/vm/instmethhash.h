@@ -99,7 +99,6 @@ public:
     static InstMethodHashTable* Create(LoaderAllocator *pAllocator, Module *pModule, DWORD dwNumBuckets, AllocMemTracker *pamTracker);
 
 private:
-    friend class DacEnumerableHashTable<InstMethodHashTable, InstMethodHashEntry, 4>;
 
 #ifndef DACCESS_COMPILE
     InstMethodHashTable(Module *pModule, LoaderHeap *pHeap, DWORD cInitialBuckets) :
