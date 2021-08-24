@@ -24,8 +24,8 @@
 // provided. Note that the heap provided is not serialized (so you'll allocate from that heap at ngen-time,
 // but revert to allocating from the module's heap at runtime). If no Module pointer is supplied (non-ngen'd
 // hash table) you must provide a direct heap pointer.
-template <NGEN_HASH_PARAMS>
-DacEnumerableHashTable<NGEN_HASH_ARGS>::DacEnumerableHashTable(Module *pModule, LoaderHeap *pHeap, DWORD cInitialBuckets)
+template <DAC_ENUM_HASH_PARAMS>
+DacEnumerableHashTable<DAC_ENUM_HASH_ARGS>::DacEnumerableHashTable(Module *pModule, LoaderHeap *pHeap, DWORD cInitialBuckets)
 {
     CONTRACTL
     {
@@ -56,8 +56,8 @@ DacEnumerableHashTable<NGEN_HASH_ARGS>::DacEnumerableHashTable(Module *pModule, 
 // Allocate an uninitialized entry for the hash table (it's not inserted). The AllocMemTracker is optional and
 // may be specified as NULL for untracked allocations. This is split from the hash insertion logic so that
 // callers can pre-allocate entries and then perform insertions which cannot fault.
-template <NGEN_HASH_PARAMS>
-VALUE *DacEnumerableHashTable<NGEN_HASH_ARGS>::BaseAllocateEntry(AllocMemTracker *pamTracker)
+template <DAC_ENUM_HASH_PARAMS>
+VALUE *DacEnumerableHashTable<DAC_ENUM_HASH_ARGS>::BaseAllocateEntry(AllocMemTracker *pamTracker)
 {
     CONTRACTL
     {
@@ -84,8 +84,8 @@ VALUE *DacEnumerableHashTable<NGEN_HASH_ARGS>::BaseAllocateEntry(AllocMemTracker
 }
 
 // Determine loader heap to be used for allocation of entries and bucket lists.
-template <NGEN_HASH_PARAMS>
-LoaderHeap *DacEnumerableHashTable<NGEN_HASH_ARGS>::GetHeap()
+template <DAC_ENUM_HASH_PARAMS>
+LoaderHeap *DacEnumerableHashTable<DAC_ENUM_HASH_ARGS>::GetHeap()
 {
     CONTRACTL
     {
@@ -108,8 +108,8 @@ LoaderHeap *DacEnumerableHashTable<NGEN_HASH_ARGS>::GetHeap()
 // Insert an entry previously allocated via BaseAllocateEntry (you cannot allocated entries in any other
 // manner) and associated with the given hash value. The entry should have been initialized prior to
 // insertion.
-template <NGEN_HASH_PARAMS>
-void DacEnumerableHashTable<NGEN_HASH_ARGS>::BaseInsertEntry(DacEnumerableHashValue iHash, VALUE *pEntry)
+template <DAC_ENUM_HASH_PARAMS>
+void DacEnumerableHashTable<DAC_ENUM_HASH_ARGS>::BaseInsertEntry(DacEnumerableHashValue iHash, VALUE *pEntry)
 {
     CONTRACTL
     {
@@ -154,8 +154,8 @@ void DacEnumerableHashTable<NGEN_HASH_ARGS>::BaseInsertEntry(DacEnumerableHashVa
 
 // Increase the size of the bucket list in order to reduce the size of bucket chains. Does nothing on failure
 // to allocate (since this impacts perf, not correctness).
-template <NGEN_HASH_PARAMS>
-void DacEnumerableHashTable<NGEN_HASH_ARGS>::GrowTable()
+template <DAC_ENUM_HASH_PARAMS>
+void DacEnumerableHashTable<DAC_ENUM_HASH_ARGS>::GrowTable()
 {
     CONTRACTL
     {
@@ -222,8 +222,8 @@ void DacEnumerableHashTable<NGEN_HASH_ARGS>::GrowTable()
 }
 
 // Returns the next prime larger (or equal to) than the number given.
-template <NGEN_HASH_PARAMS>
-DWORD DacEnumerableHashTable<NGEN_HASH_ARGS>::NextLargestPrime(DWORD dwNumber)
+template <DAC_ENUM_HASH_PARAMS>
+DWORD DacEnumerableHashTable<DAC_ENUM_HASH_ARGS>::NextLargestPrime(DWORD dwNumber)
 {
     for (DWORD i = 0; i < COUNTOF(g_rgPrimes); i++)
         if (g_rgPrimes[i] >= dwNumber)
@@ -237,8 +237,8 @@ DWORD DacEnumerableHashTable<NGEN_HASH_ARGS>::NextLargestPrime(DWORD dwNumber)
 #endif // !DACCESS_COMPILE
 
 // Return the number of entries held in the table (does not include entries allocated but not inserted yet).
-template <NGEN_HASH_PARAMS>
-DWORD DacEnumerableHashTable<NGEN_HASH_ARGS>::BaseGetElementCount()
+template <DAC_ENUM_HASH_PARAMS>
+DWORD DacEnumerableHashTable<DAC_ENUM_HASH_ARGS>::BaseGetElementCount()
 {
     LIMITED_METHOD_DAC_CONTRACT;
 
@@ -249,8 +249,8 @@ DWORD DacEnumerableHashTable<NGEN_HASH_ARGS>::BaseGetElementCount()
 // iterate the remaining matches (until it returns NULL). The LookupContext supplied by the caller is
 // initialized by BaseFindFirstEntryByHash and read/updated by BaseFindNextEntryByHash to keep track of where
 // we are.
-template <NGEN_HASH_PARAMS>
-DPTR(VALUE) DacEnumerableHashTable<NGEN_HASH_ARGS>::BaseFindFirstEntryByHash(DacEnumerableHashValue iHash, LookupContext *pContext)
+template <DAC_ENUM_HASH_PARAMS>
+DPTR(VALUE) DacEnumerableHashTable<DAC_ENUM_HASH_ARGS>::BaseFindFirstEntryByHash(DacEnumerableHashValue iHash, LookupContext *pContext)
 {
     CONTRACTL
     {
@@ -303,8 +303,8 @@ DPTR(VALUE) DacEnumerableHashTable<NGEN_HASH_ARGS>::BaseFindFirstEntryByHash(Dac
 // iterate the remaining matches (until it returns NULL). The LookupContext supplied by the caller is
 // initialized by BaseFindFirstEntryByHash and read/updated by BaseFindNextEntryByHash to keep track of where
 // we are.
-template <NGEN_HASH_PARAMS>
-DPTR(VALUE) DacEnumerableHashTable<NGEN_HASH_ARGS>::BaseFindNextEntryByHash(LookupContext *pContext)
+template <DAC_ENUM_HASH_PARAMS>
+DPTR(VALUE) DacEnumerableHashTable<DAC_ENUM_HASH_ARGS>::BaseFindNextEntryByHash(LookupContext *pContext)
 {
     CONTRACTL
     {
@@ -350,19 +350,19 @@ namespace HashTableDetail
 
     template<typename B>
     struct negation : std::integral_constant<bool, !bool(B::value)> { };
-    template <NGEN_HASH_PARAMS, typename = void>
+    template <DAC_ENUM_HASH_PARAMS, typename = void>
     struct HasCustomEntryMemoryRegionEnum : std::false_type {};
 
-    template <NGEN_HASH_PARAMS>
-    struct HasCustomEntryMemoryRegionEnum<NGEN_HASH_ARGS, void_t<decltype(std::declval<FINAL_CLASS>().EnumMemoryRegionsForEntry(std::declval<DPTR(VALUE)>(), std::declval<CLRDataEnumMemoryFlags>()))>> : std::true_type {};
+    template <DAC_ENUM_HASH_PARAMS>
+    struct HasCustomEntryMemoryRegionEnum<DAC_ENUM_HASH_ARGS, void_t<decltype(std::declval<FINAL_CLASS>().EnumMemoryRegionsForEntry(std::declval<DPTR(VALUE)>(), std::declval<CLRDataEnumMemoryFlags>()))>> : std::true_type {};
 
-    template<NGEN_HASH_PARAMS, typename std::enable_if<HasCustomEntryMemoryRegionEnum<NGEN_HASH_ARGS>::value>::type* = nullptr>
+    template<DAC_ENUM_HASH_PARAMS, typename std::enable_if<HasCustomEntryMemoryRegionEnum<DAC_ENUM_HASH_ARGS>::value>::type* = nullptr>
     void EnumMemoryRegionsForEntry(FINAL_CLASS* hashTable, DPTR(VALUE) pEntry, CLRDataEnumMemoryFlags flags)
     {
         hashTable->EnumMemoryRegionsForEntry(pEntry, flags);
     }
 
-    template<NGEN_HASH_PARAMS, typename std::enable_if<negation<HasCustomEntryMemoryRegionEnum<NGEN_HASH_ARGS>>::value>::type* = nullptr>
+    template<DAC_ENUM_HASH_PARAMS, typename std::enable_if<negation<HasCustomEntryMemoryRegionEnum<DAC_ENUM_HASH_ARGS>>::value>::type* = nullptr>
     void EnumMemoryRegionsForEntry(FINAL_CLASS* hashTable, DPTR(VALUE) pEntry, CLRDataEnumMemoryFlags flags)
     {
     }
@@ -370,8 +370,8 @@ namespace HashTableDetail
 
 // Call during DAC enumeration of memory regions to save all hash table data structures. Calls derived-class
 // implementation of EnumMemoryRegionsForEntry to allow additional per-entry memory to be reported.
-template <NGEN_HASH_PARAMS>
-void DacEnumerableHashTable<NGEN_HASH_ARGS>::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
+template <DAC_ENUM_HASH_PARAMS>
+void DacEnumerableHashTable<DAC_ENUM_HASH_ARGS>::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
 {
     SUPPORTS_DAC;
 
@@ -393,7 +393,7 @@ void DacEnumerableHashTable<NGEN_HASH_ARGS>::EnumMemoryRegions(CLRDataEnumMemory
                 pEntry.EnumMem();
 
                 // Ask the sub-class whether each entry points to further data to be saved.
-                HashTableDetail::EnumMemoryRegionsForEntry<NGEN_HASH_ARGS>((FINAL_CLASS*)this, VALUE_FROM_VOLATILE_ENTRY(pEntry), flags);
+                HashTableDetail::EnumMemoryRegionsForEntry<DAC_ENUM_HASH_ARGS>((FINAL_CLASS*)this, VALUE_FROM_VOLATILE_ENTRY(pEntry), flags);
 
                 pEntry = pEntry->m_pNextEntry;
             }
@@ -408,20 +408,20 @@ void DacEnumerableHashTable<NGEN_HASH_ARGS>::EnumMemoryRegions(CLRDataEnumMemory
 
 // Initializes the iterator context passed by the caller to make it ready to walk every entry in the table in
 // an arbitrary order. Call pIterator->Next() to retrieve the first entry.
-template <NGEN_HASH_PARAMS>
-void DacEnumerableHashTable<NGEN_HASH_ARGS>::BaseInitIterator(BaseIterator *pIterator)
+template <DAC_ENUM_HASH_PARAMS>
+void DacEnumerableHashTable<DAC_ENUM_HASH_ARGS>::BaseInitIterator(BaseIterator *pIterator)
 {
     LIMITED_METHOD_DAC_CONTRACT;
 
-    pIterator->m_pTable = dac_cast<DPTR(DacEnumerableHashTable<NGEN_HASH_ARGS>)>(this);
+    pIterator->m_pTable = dac_cast<DPTR(DacEnumerableHashTable<DAC_ENUM_HASH_ARGS>)>(this);
     pIterator->m_pEntry = NULL;
     pIterator->m_dwBucket = 0;
 }
 
 // Returns a pointer to the next entry in the hash table or NULL once all entries have been enumerated. Once
 // NULL has been return the only legal operation is to re-initialize the iterator with BaseInitIterator.
-template <NGEN_HASH_PARAMS>
-DPTR(VALUE) DacEnumerableHashTable<NGEN_HASH_ARGS>::BaseIterator::Next()
+template <DAC_ENUM_HASH_PARAMS>
+DPTR(VALUE) DacEnumerableHashTable<DAC_ENUM_HASH_ARGS>::BaseIterator::Next()
 {
     CONTRACTL
     {

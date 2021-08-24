@@ -86,12 +86,12 @@ typedef DWORD DacEnumerableHashValue;
 // some cases the arguments) many many times. In the interests of brevity (and to make it a whole lot easier
 // to modify these parameters in the future) we define macro shorthands for them here. Scan through the code
 // to see how these are used.
-#define NGEN_HASH_PARAMS typename FINAL_CLASS, typename VALUE, int SCALE_FACTOR
-#define NGEN_HASH_ARGS FINAL_CLASS, VALUE, SCALE_FACTOR
+#define DAC_ENUM_HASH_PARAMS typename FINAL_CLASS, typename VALUE, int SCALE_FACTOR
+#define DAC_ENUM_HASH_ARGS FINAL_CLASS, VALUE, SCALE_FACTOR
 
 // The base hash class itself. It's abstract and exposes its functionality via protected members (nothing is
 // public).
-template <NGEN_HASH_PARAMS>
+template <DAC_ENUM_HASH_PARAMS>
 class DacEnumerableHashTable
 {
 public:
@@ -108,7 +108,7 @@ protected:
     // hash code. Initialized by BaseFindFirstEntryByHash and read/updated by BaseFindNextEntryByHash.
     class LookupContext
     {
-        friend class DacEnumerableHashTable<NGEN_HASH_ARGS>;
+        friend class DacEnumerableHashTable<DAC_ENUM_HASH_ARGS>;
 
         TADDR   m_pEntry;               // The entry the caller is currently looking at (or NULL to begin
                                         // with). This is a VolatileEntry* and should always be a target address
@@ -129,9 +129,9 @@ protected:
         DPTR(VALUE) Next();
 
     private:
-        friend class DacEnumerableHashTable<NGEN_HASH_ARGS>;
+        friend class DacEnumerableHashTable<DAC_ENUM_HASH_ARGS>;
 
-        DPTR(DacEnumerableHashTable<NGEN_HASH_ARGS>) m_pTable;   // Pointer back to the table being enumerated.
+        DPTR(DacEnumerableHashTable<DAC_ENUM_HASH_ARGS>) m_pTable;   // Pointer back to the table being enumerated.
         TADDR                   m_pEntry;               // The entry the caller is currently looking at (or
                                                         // NULL to begin with). This is a VolatileEntry* and
                                                         // should always be a target address not a DAC PTR_.
