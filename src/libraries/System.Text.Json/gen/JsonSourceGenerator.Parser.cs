@@ -1015,7 +1015,7 @@ namespace System.Text.Json.SourceGeneration
 
                 string clrName = memberInfo.Name;
                 string runtimePropertyName = DetermineRuntimePropName(clrName, jsonPropertyName, _currentContextNamingPolicy);
-                string propertyNameVarName = DeterminePropNameVarName(runtimePropertyName);
+                string propertyNameVarName = DeterminePropNameIdentifier(runtimePropertyName);
 
                 return new PropertyGenerationSpec
                 {
@@ -1082,7 +1082,7 @@ namespace System.Text.Json.SourceGeneration
                 return runtimePropName;
             }
 
-            private static string DeterminePropNameVarName(string runtimePropName)
+            private static string DeterminePropNameIdentifier(string runtimePropName)
             {
                 const string PropName = "PropName_";
 
@@ -1095,6 +1095,10 @@ namespace System.Text.Json.SourceGeneration
                     return PropName + runtimePropName;
                 }
 
+                // Encode the string to a byte[] and then convert to hexadecimal.
+                // To make the generated code more readable, we could use a different strategy in the future
+                // such as including the full class name + the CLR property name when there are duplicates,
+                // but that will create unnecessary JsonEncodedText properties.
                 byte[] utf8Json = Encoding.UTF8.GetBytes(runtimePropName);
 
                 StringBuilder sb = new StringBuilder(
