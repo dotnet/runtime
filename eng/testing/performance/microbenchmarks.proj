@@ -80,7 +80,6 @@
 
   <PropertyGroup>
     <PartitionCount>30</PartitionCount>
-    <EnableAzurePipelinesReporter>false</EnableAzurePipelinesReporter>
   </PropertyGroup>
   <ItemGroup>
     <Partition Include="$(BuildConfig).Partition0" Index="0" />

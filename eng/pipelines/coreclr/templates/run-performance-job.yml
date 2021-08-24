@@ -55,9 +55,9 @@ jobs:
 
     - IsInternal: ''
     - HelixApiAccessToken: ''
-    - HelixPreCommandStemWindows: 'py -m pip install -U pip;py -3 -m venv %HELIX_WORKITEM_PAYLOAD%\.venv;call %HELIX_WORKITEM_PAYLOAD%\.venv\Scripts\activate.bat;set PYTHONPATH=;py -3 -m pip install -U pip;py -3 -m pip install azure.storage.blob==12.0.0;py -3 -m pip install azure.storage.queue==12.0.0;set "PERFLAB_UPLOAD_TOKEN=$(PerfCommandUploadToken)"'
-    - HelixPreCommandStemLinux: 'python3 -m pip install -U pip;sudo apt-get -y install python3-venv;python3 -m venv $HELIX_WORKITEM_PAYLOAD/.venv;source $HELIX_WORKITEM_PAYLOAD/.venv/bin/activate;export PYTHONPATH=;python3 -m pip install -U pip;pip3 install azure.storage.blob==12.0.0;pip3 install azure.storage.queue==12.0.0;sudo apt-get update;sudo apt -y install curl dirmngr apt-transport-https lsb-release ca-certificates;curl -sL https://deb.nodesource.com/setup_12.x | sudo -E bash -;sudo apt-get -y install nodejs;sudo apt-get -y install npm;npm install --prefix $HELIX_WORKITEM_PAYLOAD jsvu -g;$HELIX_WORKITEM_PAYLOAD/bin/jsvu --os=linux64 --engines=v8,javascriptcore;export PERFLAB_UPLOAD_TOKEN="$(PerfCommandUploadTokenLinux)"'
-    - HelixPreCommandStemMsul: 'sudo apk add icu-libs krb5-libs libgcc libintl libssl1.1 libstdc++ zlib;sudo apk add cargo --repository http://dl-cdn.alpinelinux.org/alpine/v3.12/community ;sudo apk add libgdiplus --repository http://dl-cdn.alpinelinux.org/alpine/edge/testing; python3 -m venv $HELIX_WORKITEM_PAYLOAD/.venv;source $HELIX_WORKITEM_PAYLOAD/.venv/bin/activate;export PYTHONPATH=;python3 -m pip install -U pip;pip3 install azure.storage.blob==12.7.1;pip3 install azure.storage.queue==12.1.5;export PERFLAB_UPLOAD_TOKEN="$(PerfCommandUploadTokenLinux)"'
+    - HelixPreCommandStemWindows: 'set ORIGPYPATH=%PYTHONPATH%;py -m pip install -U pip;py -3 -m venv %HELIX_WORKITEM_PAYLOAD%\.venv;call %HELIX_WORKITEM_PAYLOAD%\.venv\Scripts\activate.bat;set PYTHONPATH=;py -3 -m pip install -U pip;py -3 -m pip install azure.storage.blob==12.0.0;py -3 -m pip install azure.storage.queue==12.0.0;set "PERFLAB_UPLOAD_TOKEN=$(PerfCommandUploadToken)"'
+    - HelixPreCommandStemLinux: 'export ORIGPYPATH=$PYTHONPATH;python3 -m pip install -U pip;sudo apt-get -y install python3-venv;python3 -m venv $HELIX_WORKITEM_PAYLOAD/.venv;source $HELIX_WORKITEM_PAYLOAD/.venv/bin/activate;export PYTHONPATH=;python3 -m pip install -U pip;pip3 install azure.storage.blob==12.0.0;pip3 install azure.storage.queue==12.0.0;sudo apt-get update;sudo apt -y install curl dirmngr apt-transport-https lsb-release ca-certificates;curl -sL https://deb.nodesource.com/setup_12.x | sudo -E bash -;sudo apt-get -y install nodejs;sudo apt-get -y install npm;npm install --prefix $HELIX_WORKITEM_PAYLOAD jsvu -g;$HELIX_WORKITEM_PAYLOAD/bin/jsvu --os=linux64 --engines=v8,javascriptcore;export PERFLAB_UPLOAD_TOKEN="$(PerfCommandUploadTokenLinux)"'
+    - HelixPreCommandStemMsul: 'export ORIGPYPATH=$PYTHONPATH;sudo apk add icu-libs krb5-libs libgcc libintl libssl1.1 libstdc++ zlib;sudo apk add cargo --repository http://dl-cdn.alpinelinux.org/alpine/v3.12/community ;sudo apk add libgdiplus --repository http://dl-cdn.alpinelinux.org/alpine/edge/testing; python3 -m venv $HELIX_WORKITEM_PAYLOAD/.venv;source $HELIX_WORKITEM_PAYLOAD/.venv/bin/activate;export PYTHONPATH=;python3 -m pip install -U pip;pip3 install azure.storage.blob==12.7.1;pip3 install azure.storage.queue==12.1.5;export PERFLAB_UPLOAD_TOKEN="$(PerfCommandUploadTokenLinux)"'
     - ExtraMSBuildLogsWindows: 'set MSBUILDDEBUGCOMM=1;set "MSBUILDDEBUGPATH=%HELIX_WORKITEM_UPLOAD_ROOT%"'
     - ExtraMSBuildLogsLinux: 'export MSBUILDDEBUGCOMM=1;export "MSBUILDDEBUGPATH=$HELIX_WORKITEM_UPLOAD_ROOT"'
     - HelixPreCommand: ''
@@ -66,13 +66,16 @@ jobs:
     - ${{ if and(ne(variables['System.TeamProject'], 'public'), notin(variables['Build.Reason'], 'PullRequest')) }}:
       - ${{ if eq( parameters.osGroup, 'windows') }}:
         - HelixPreCommand: $(HelixPreCommandStemWindows);$(ExtraMSBuildLogsWindows)
+        - HelixPostCommand: 'set PYTHONPATH=%ORIGPYPATH%'
         - IsInternal: -Internal
       - ${{ if ne(parameters.osGroup, 'windows') }}:
         - ${{ if eq(parameters.osSubGroup, '_musl') }}:
           - HelixPreCommand: $(HelixPreCommandStemMsul);$(ExtraMSBuildLogsLinux)
+          - HelixPostCommand: 'export PYTHONPATH=$ORIGPYPATH'
           - IsInternal: --internal
         - ${{ if ne(parameters.osSubGroup, '_musl') }}:
           - HelixPreCommand: $(HelixPreCommandStemLinux);$(ExtraMSBuildLogsLinux)
+          - HelixPostCommand: 'export PYTHONPATH=$ORIGPYPATH'
           - IsInternal: --internal
       - group: DotNet-HelixApi-Access
       - group: dotnet-benchview
@@ -132,6 +135,7 @@ jobs:
         HelixAccessToken: $(HelixApiAccessToken)
         HelixTargetQueues: $(Queue)
         HelixPreCommands: $(HelixPreCommand)
+        HelixPostCommands: $(HelixPostCommand)
         Creator: $(Creator)
         WorkItemTimeout: 4:00 # 4 hours
         WorkItemDirectory: '$(WorkItemDirectory)' # WorkItemDirectory can not be empty, so we send it some docs to keep it happy
