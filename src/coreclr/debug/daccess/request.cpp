@@ -3768,24 +3768,24 @@ ClrDataAccess::EnumWksGlobalMemoryRegions(CLRDataEnumMemoryFlags flags)
     Dereference(g_gcDacGlobals->finalize_queue).EnumMem();
 
     // Enumerate the entire generation table, which has variable size
-    size_t gen_table_size = g_gcDacGlobals->generation_size * (*g_gcDacGlobals->max_gen + 2);
-    DacEnumMemoryRegion(dac_cast<TADDR>(g_gcDacGlobals->generation_table), gen_table_size);
+    EnumGenerationTable(dac_cast<TADDR>(g_gcDacGlobals->generation_table));
 
     if (g_gcDacGlobals->generation_table.IsValid())
     {
-            // enumerating the generations from max (which is normally gen2) to max+1 gives you
-            // the segment list for all the normal segements plus the large heap segment (max+1)
-            // this is the convention in the GC so it is repeated here
-            for (ULONG i = *g_gcDacGlobals->max_gen; i <= *g_gcDacGlobals->max_gen +1; i++)
+        ULONG first = IsRegion() ? 0 : (*g_gcDacGlobals->max_gen);
+        // enumerating the first to max + 2 gives you
+        // the segment list for all the normal segments plus the pinned heap segment (max + 2)
+        // this is the convention in the GC so it is repeated here
+        for (ULONG i = first; i <= *g_gcDacGlobals->max_gen + 2; i++)
+        {
+            dac_generation gen = GenerationTableIndex(g_gcDacGlobals->generation_table, i);
+            __DPtr<dac_heap_segment> seg = dac_cast<TADDR>(gen.start_segment);
+            while (seg)
             {
-                dac_generation gen = GenerationTableIndex(g_gcDacGlobals->generation_table, i);
-                __DPtr<dac_heap_segment> seg = dac_cast<TADDR>(gen.start_segment);
-                while (seg)
-                {
-                    DacEnumMemoryRegion(dac_cast<TADDR>(seg), sizeof(dac_heap_segment));
-                    seg = seg->next;
-                }
+                DacEnumMemoryRegion(dac_cast<TADDR>(seg), sizeof(dac_heap_segment));
+                seg = seg->next;
             }
+        }
     }
 }
 
