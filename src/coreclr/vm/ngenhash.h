@@ -13,15 +13,9 @@
 //  * Separate entry allocation and insertion (allowing reliable insertion if required).
 //  * Enumerate all entries or entries matching a particular hash.
 //  * No entry deletion.
-//  * Base logic to efficiently serialize hash contents at ngen time. Hot/cold splitting of entries is
-//    supported (along with the ability to tweak the Save and Fixup stages of each entry if needed).
 //  * Base logic to support DAC memory enumeration of the hash (including per-entry tweaks as needed).
 //  * Lock free lookup (the caller must follow the protocol laid out below under USER REQUIREMENTS).
 //  * Automatic hash expansion (with dialable scale factor).
-//  * Hash insertion is supported at runtime even when an ngen image is loaded with previously serialized hash
-//    entries.
-//  * Base logic to support formatting hashes in the nidump tool (only need to supply code for the unique
-//    aspects of your hash).
 //
 // BENEFITS
 //
@@ -30,8 +24,6 @@
 //      o Increases density of entries.
 //      o Removes a base relocation entry.
 //      o Removes a runtime write to each entry (from the relocation above).
-//  * Serializes all hot/cold hash entries contigiuously:
-//      o Helps keeps hash entries in the same bucket in the same cache line.
 //  * Compresses persisted bucket list and removes the use of pointers:
 //      o Reduces working set hit of reading hash table (especially on 64-bit systems).
 //      o Allows bucket list to be saved in read-only memory and thus use shared rather than private pages.
@@ -60,34 +52,10 @@
 //     NgenHash constructor in this header). If your hash table is created via a static method rather than
 //     direct construction (common) then call your constructor using an in-place new inside the static method
 //     (see EEClassHashTable::Create in ClassHash.cpp for an example).
-//  4) Define your basic hash functionality (creation, insertion, lookup, enumeration, ngen Save/Fixup and DAC
+//  4) Define your basic hash functionality (creation, insertion, lookup, enumeration, and DAC
 //     memory enumeration) using the Base* methods provided by NgenHash.
 //  5) Tweak the operation of BaseSave, BaseFixup and BaseEnumMemoryRegions by providing definitions of the
 //     following methods (note that all methods must be defined though they may be no-ops):
-//
-//          bool ShouldSave(DataImage *pImage, VALUE *pEntry);
-//              Return true if the given entry should be persisted into the ngen image (otherwise it won't be
-//              saved with the rest).
-//
-//          bool IsHotEntry(VALUE *pEntry, CorProfileData *pProfileData);
-//              Return true is the entry is considered hot given the profiling data.
-//
-//          bool SaveEntry(DataImage *pImage, CorProfileData *pProfileData, VALUE *pOldEntry, VALUE *pNewEntry, EntryMappingTable *pMap);
-//              Gives your hash class a chance to save any additional data needed into the ngen image during
-//              the Save phase or otherwise make entry updates prior to saving. The saving process creates a
-//              new copy of each hash entry and this method is passed pointers both to the original entry and
-//              the new version along with a mapping class that can translate any old entry address in the
-//              table into the corresponding new address. If you have inter-entry pointer fields this is your
-//              chance to fix up those fields with the new location of their target entries.
-//
-//          void FixupEntry(DataImage *pImage, VALUE *pEntry, void *pFixupBase, DWORD cbFixupOffset);
-//              Similar to SaveEntry but called during BaseFixup. This is your chance to register fixups for
-//              any pointer type fields in your entry. Due to the way hash entries are packed during ngen
-//              serialization individual hash entries are not saved as separate ngen zap nodes. So this method
-//              is passed a pointer to the enclosing zapped data structure (pFixupBase) and the offset of the
-//              entry from this base (cbFixupOffset). When calling pImage->FixupPointerField(...) for
-//              instance, pass pFixupBase as the first parameter and cbFixupOffset + offsetof(YourEntryClass,
-//              yourField) as the second parameter.
 //
 //          void EnumMemoryRegionsForEntry(EEClassHashEntry_t *pEntry, CLRDataEnumMemoryFlags flags);
 //              Called during BaseEnumMemoryRegions for each entry in the hash. Use to enumerate any memory
@@ -101,35 +69,11 @@
 //
 // OVERALL DESIGN
 //
-// The hash contains up to three groups of hash entries. These consist of two groups of entries persisted to
-// disk at ngen time (split into hot and cold based on profile data) and live entries added at runtime (or
-// during the ngen process itself, prior to the save operation).
-//
-// The persisted entries are tightly packed together and can eliminate some pointers and other metadata since
-// we statically know about every entry at the time we format the hash entries (the save phase of ngen
-// generation).
-//
-// Each persisted entry is assigned to a bucket based on its hash code and all entries that collide on a given
-// bucket are placed contiguously in memory. The bucket list itself therefore consists of an array or pairs,
-// each pair containing the count of entries in the bucket and the location of the first entry in the chain.
-// Since all entries are allocated contiguously entry location can be specified by an index into the array of
-// entries.
-//
-// Separate bucket lists and entry arrays are stored for hot and cold entries.
-//
-// The live entries (referred to here as volatile or warm entries) follow a more traditional hash
-// implementation where entries are allocated individually from a loader heap and are chained together with a
-// singly linked list if they collide. Here the bucket list is a simple array of pointers to the first entry
-// in each chain (if any).
-//
-// Unlike the persisted entris the warm section of the table must cope with entry insertions and growing the
+// The table must cope with entry insertions and growing the
 // bucket list when the table becomes too loaded (too many entries causing excessive bucket collisions). This
 // happens when an entry insertion notes that there are twice as many entries as buckets. The bucket list is
 // then reallocated (from a loader heap, consequently the old one is leaked) and resized based on a scale
 // factor supplied by the hash sub-class.
-//
-// At runtime we lookup or enumerate entries by visiting all three sets of entries in the order Hot, Warm and
-// Cold. This imposes a slight but constant time overhead.
 //
 
 #ifndef __NGEN_HASH_INCLUDED
@@ -175,10 +119,9 @@ protected:
         friend class NgenHashTable<NGEN_HASH_ARGS>;
 
         TADDR   m_pEntry;               // The entry the caller is currently looking at (or NULL to begin
-                                        // with). This is a VolatileEntry* or PersistedEntry* (depending on
+                                        // with). This is a VolatileEntry* (depending on
                                         // m_eType below) and should always be a target address not a DAC
                                         // PTR_.
-        DWORD   m_eType;                // The entry types we're currently walking (Hot, Warm, Cold in that order)
         DWORD   m_cRemainingEntries;    // The remaining entries in the bucket chain (Hot or Cold entries only)
     };
 
@@ -200,11 +143,8 @@ protected:
 
         DPTR(NgenHashTable<NGEN_HASH_ARGS>) m_pTable;   // Pointer back to the table being enumerated.
         TADDR                   m_pEntry;               // The entry the caller is currently looking at (or
-                                                        // NULL to begin with). This is a VolatileEntry* or
-                                                        // PersistedEntry* (depending on m_eType below) and
+                                                        // NULL to begin with). This is a VolatileEntry* and
                                                         // should always be a target address not a DAC PTR_.
-        DWORD                   m_eType;                // The entry types we're currently walking (Hot, Warm,
-                                                        // Cold in that order).
         union
         {
             DWORD               m_dwBucket;             // Index of bucket we're currently walking (Warm).
@@ -267,8 +207,6 @@ protected:
 private:
     // Internal implementation details. Nothing of interest to sub-classers for here on.
 
-    // This is the format of a Warm entry, defined for our purposes to be a non-persisted entry (i.e. those
-    // created at runtime or during the creation of the ngen image itself).
     struct VolatileEntry;
     typedef DPTR(struct VolatileEntry) PTR_VolatileEntry;
     struct VolatileEntry
@@ -277,19 +215,6 @@ private:
         PTR_VolatileEntry   m_pNextEntry;       // Pointer to the next entry in the bucket chain (or NULL)
         NgenHashValue       m_iHashValue;       // The hash value associated with the entry
     };
-
-    // Types of hash entry.
-    enum EntryType
-    {
-        Cold,   // Persisted, profiling suggests this data is not read typically
-        Warm,   // Volatile (in-memory)
-        Hot     // Persisted, profiling suggests this data is probably read (or no profiling data was available)
-    };
-
-    // Find the first volatile (warm) entry that matches the given hash. Looks only at warm entries. Returns
-    // NULL on failure. Otherwise returns pointer to the derived class portion of the entry and initializes
-    // the provided LookupContext to allow enumeration of any further matches.
-    DPTR(VALUE) FindVolatileEntryByHash(NgenHashValue iHash, LookupContext *pContext);
 
 #ifndef DACCESS_COMPILE
     // Determine loader heap to be used for allocation of entries and bucket lists.
@@ -303,7 +228,7 @@ private:
     DWORD NextLargestPrime(DWORD dwNumber);
 #endif // !DACCESS_COMPILE
 
-    DPTR(PTR_VolatileEntry) GetWarmBuckets()
+    DPTR(PTR_VolatileEntry) GetBuckets()
     {
         SUPPORTS_DAC;
 
@@ -314,9 +239,9 @@ private:
     LoaderHeap             *m_pHeap;
 
     // Fields related to the runtime (volatile or warm) part of the hash.
-    DPTR(PTR_VolatileEntry)                  m_pWarmBuckets;  // Pointer to a simple bucket list (array of VolatileEntry pointers)
-    DWORD                                    m_cWarmBuckets;  // Count of buckets in the above array (always non-zero)
-    DWORD                                    m_cWarmEntries;  // Count of elements in the warm section of the hash
+    DPTR(PTR_VolatileEntry)                  m_pBuckets;  // Pointer to a simple bucket list (array of VolatileEntry pointers)
+    DWORD                                    m_cBuckets;  // Count of buckets in the above array (always non-zero)
+    DWORD                                    m_cEntries;  // Count of elements in the warm section of the hash
 };
 
 // Abstraction around cross-hash entry references (e.g. EEClassHashTable, where entries for nested types point

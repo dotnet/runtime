@@ -12,7 +12,6 @@
 // doing this in a DAC-friendly fashion involves some DAC gymnastics. The following couple of macros factor
 // those complexities out.
 #define VALUE_FROM_VOLATILE_ENTRY(_ptr) dac_cast<DPTR(VALUE)>(PTR_TO_MEMBER_TADDR(VolatileEntry, (_ptr), m_sValue))
-#define VALUE_FROM_PERSISTED_ENTRY(_ptr) dac_cast<DPTR(VALUE)>(PTR_TO_MEMBER_TADDR(PersistedEntry, (_ptr), m_sValue))
 
 // We provide a mechanism for the sub-class to extend per-entry operations via a callback mechanism where the
 // sub-class implements methods with a certain name and signature (details in the module header for
@@ -41,7 +40,7 @@ NgenHashTable<NGEN_HASH_ARGS>::NgenHashTable(Module *pModule, LoaderHeap *pHeap,
     }
     CONTRACTL_END;
 
-    // An invariant in the code is that we always have a non-zero number of warm buckets.
+    // An invariant in the code is that we always have a non-zero number of buckets.
     _ASSERTE(cInitialBuckets > 0);
 
     // At least one of module or heap must have been specified or we won't know how to allocate entries and
@@ -52,12 +51,11 @@ NgenHashTable<NGEN_HASH_ARGS>::NgenHashTable(Module *pModule, LoaderHeap *pHeap,
 
     S_SIZE_T cbBuckets = S_SIZE_T(sizeof(VolatileEntry*)) * S_SIZE_T(cInitialBuckets);
 
-    m_cWarmEntries = 0;
-    m_cWarmBuckets = cInitialBuckets;
-    m_pWarmBuckets = (PTR_VolatileEntry*)(void*)GetHeap()->AllocMem(cbBuckets);
+    m_cEntries = 0;
+    m_cBuckets = cInitialBuckets;
+    m_pBuckets = (PTR_VolatileEntry*)(void*)GetHeap()->AllocMem(cbBuckets);
 
     // Note: Memory allocated on loader heap is zero filled
-    // memset(m_pWarmBuckets, 0, sizeof(VolatileEntry*) * cInitialBuckets);
 }
 
 // Allocate an uninitialized entry for the hash table (it's not inserted). The AllocMemTracker is optional and
@@ -126,9 +124,9 @@ void NgenHashTable<NGEN_HASH_ARGS>::BaseInsertEntry(NgenHashValue iHash, VALUE *
     }
     CONTRACTL_END;
 
-    // We are always guaranteed at least one warm bucket (which is important here: some hash table sub-classes
+    // We are always guaranteed at least one bucket (which is important here: some hash table sub-classes
     // require entry insertion to be fault free).
-    _ASSERTE(m_cWarmBuckets > 0);
+    _ASSERTE(m_cBuckets > 0);
 
     // Recover the volatile entry pointer from the sub-class entry pointer passed to us. In debug builds
     // attempt to validate that this transform is really valid and the caller didn't attempt to allocate the
@@ -140,22 +138,22 @@ void NgenHashTable<NGEN_HASH_ARGS>::BaseInsertEntry(NgenHashValue iHash, VALUE *
     pVolatileEntry->m_iHashValue = iHash;
 
     // Compute which bucket the entry belongs in based on the hash.
-    DWORD dwBucket = iHash % m_cWarmBuckets;
+    DWORD dwBucket = iHash % m_cBuckets;
 
     // Prepare to link the new entry at the head of the bucket chain.
-    pVolatileEntry->m_pNextEntry = (GetWarmBuckets())[dwBucket];
+    pVolatileEntry->m_pNextEntry = (GetBuckets())[dwBucket];
 
     // Make sure that all writes to the entry are visible before publishing the entry.
     MemoryBarrier();
 
     // Publish the entry by pointing the bucket at it.
-    (GetWarmBuckets())[dwBucket] = pVolatileEntry;
+    (GetBuckets())[dwBucket] = pVolatileEntry;
 
-    m_cWarmEntries++;
+    m_cEntries++;
 
     // If the insertion pushed the table load over our limit then attempt to grow the bucket list. Note that
     // we ignore any failure (this is a performance operation and is not required for correctness).
-    if (m_cWarmEntries > (2 * m_cWarmBuckets))
+    if (m_cEntries > (2 * m_cBuckets))
         GrowTable();
 }
 
@@ -178,7 +176,7 @@ void NgenHashTable<NGEN_HASH_ARGS>::GrowTable()
     FAULT_NOT_FATAL();
 
     // Make the new bucket table larger by the scale factor requested by the subclass (but also prime).
-    DWORD cNewBuckets = NextLargestPrime(m_cWarmBuckets * SCALE_FACTOR);
+    DWORD cNewBuckets = NextLargestPrime(m_cBuckets * SCALE_FACTOR);
     S_SIZE_T cbNewBuckets = S_SIZE_T(cNewBuckets) * S_SIZE_T(sizeof(PTR_VolatileEntry));
     PTR_VolatileEntry *pNewBuckets = (PTR_VolatileEntry*)(void*)GetHeap()->AllocMem_NoThrow(cbNewBuckets);
     if (!pNewBuckets)
@@ -192,9 +190,9 @@ void NgenHashTable<NGEN_HASH_ARGS>::GrowTable()
     // old table while we are doing this, as there can be concurrent readers! Note that it is OK if the
     // concurrent reader misses out on a match, though - they will have to acquire the lock on a miss & try
     // again.
-    for (DWORD i = 0; i < m_cWarmBuckets; i++)
+    for (DWORD i = 0; i < m_cBuckets; i++)
     {
-        PTR_VolatileEntry pEntry = (GetWarmBuckets())[i];
+        PTR_VolatileEntry pEntry = (GetBuckets())[i];
 
         // Try to lock out readers from scanning this bucket. This is obviously a race which may fail.
         // However, note that it's OK if somebody is already in the list - it's OK if we mess with the bucket
@@ -202,7 +200,7 @@ void NgenHashTable<NGEN_HASH_ARGS>::GrowTable()
         // comparison even if it wanders aimlessly amongst entries while we are rearranging things. If a
         // lookup finds a match under those circumstances, great. If not, they will have to acquire the lock &
         // try again anyway.
-        (GetWarmBuckets())[i] = NULL;
+        (GetBuckets())[i] = NULL;
 
         while (pEntry != NULL)
         {
@@ -218,14 +216,14 @@ void NgenHashTable<NGEN_HASH_ARGS>::GrowTable()
 
     // Make sure that all writes are visible before publishing the new array.
     MemoryBarrier();
-    m_pWarmBuckets = pNewBuckets;
+    m_pBuckets = pNewBuckets;
 
     // The new number of buckets has to be published last (prior to this readers may miscalculate a bucket
     // index, but the result will always be in range and they'll simply walk the wrong chain and get a miss,
     // prompting a retry under the lock). If we let the count become visible unordered wrt to the bucket array
     // itself a reader could potentially read buckets from beyond the end of the old bucket list).
     MemoryBarrier();
-    m_cWarmBuckets = cNewBuckets;
+    m_cBuckets = cNewBuckets;
 }
 
 // Returns the next prime larger (or equal to) than the number given.
@@ -249,7 +247,7 @@ DWORD NgenHashTable<NGEN_HASH_ARGS>::BaseGetElementCount()
 {
     LIMITED_METHOD_DAC_CONTRACT;
 
-    return m_cWarmEntries;
+    return m_cEntries;
 }
 
 // Find first entry matching a given hash value (returns NULL on no match). Call BaseFindNextEntryByHash to
@@ -269,13 +267,40 @@ DPTR(VALUE) NgenHashTable<NGEN_HASH_ARGS>::BaseFindFirstEntryByHash(NgenHashValu
     }
     CONTRACTL_END;
 
-    DPTR(VALUE) pEntry;
+    // No point looking if there are no entries.
+    if (m_cEntries == 0)
+        return NULL;
 
-    // Then the warm entries.
-    pEntry = FindVolatileEntryByHash(iHash, pContext);
-    if (pEntry)
-        return pEntry;
+    // Since there is at least one entry there must be at least one bucket.
+    _ASSERTE(m_cBuckets > 0);
 
+    // Compute which bucket the entry belongs in based on the hash.
+    DWORD dwBucket = iHash % VolatileLoad(&m_cBuckets);
+
+    // Point at the first entry in the bucket chain which would contain any entries with the given hash code.
+    PTR_VolatileEntry pEntry = (GetBuckets())[dwBucket];
+
+    // Walk the bucket chain one entry at a time.
+    while (pEntry)
+    {
+        if (pEntry->m_iHashValue == iHash)
+        {
+            // We've found our match.
+
+            // Record our current search state into the provided context so that a subsequent call to
+            // BaseFindNextEntryByHash can pick up the search where it left off.
+            pContext->m_pEntry = dac_cast<TADDR>(pEntry);
+
+            // Return the address of the sub-classes' embedded entry structure.
+            return VALUE_FROM_VOLATILE_ENTRY(pEntry);
+        }
+
+        // Move to the next entry in the chain.
+        pEntry = pEntry->m_pNextEntry;
+    }
+
+    // If we get here then none of the entries in the target bucket matched the hash code and we have a miss
+    // (for this section of the table at least).
     return NULL;
 }
 
@@ -298,30 +323,25 @@ DPTR(VALUE) NgenHashTable<NGEN_HASH_ARGS>::BaseFindNextEntryByHash(LookupContext
 
     NgenHashValue iHash;
 
-    switch (pContext->m_eType)
-    {
-    case Warm:
-    {
-        // Fetch the entry we were looking at last from the context and remember the corresponding hash code.
-        PTR_VolatileEntry pVolatileEntry = dac_cast<PTR_VolatileEntry>(pContext->m_pEntry);
-        iHash = pVolatileEntry->m_iHashValue;
+    // Fetch the entry we were looking at last from the context and remember the corresponding hash code.
+    PTR_VolatileEntry pVolatileEntry = dac_cast<PTR_VolatileEntry>(pContext->m_pEntry);
+    iHash = pVolatileEntry->m_iHashValue;
 
-        // Iterate over the bucket chain.
-        while (pVolatileEntry->m_pNextEntry)
+    // Iterate over the bucket chain.
+    while (pVolatileEntry->m_pNextEntry)
+    {
+        // Advance to the next entry.
+        pVolatileEntry = pVolatileEntry->m_pNextEntry;
+        if (pVolatileEntry->m_iHashValue == iHash)
         {
-            // Advance to the next entry.
-            pVolatileEntry = pVolatileEntry->m_pNextEntry;
-            if (pVolatileEntry->m_iHashValue == iHash)
-            {
-                // Found a match on hash code. Update our find context to indicate where we got to and return
-                // a pointer to the sub-class portion of the entry.
-                pContext->m_pEntry = dac_cast<TADDR>(pVolatileEntry);
-                return VALUE_FROM_VOLATILE_ENTRY(pVolatileEntry);
-            }
+            // Found a match on hash code. Update our find context to indicate where we got to and return
+            // a pointer to the sub-class portion of the entry.
+            pContext->m_pEntry = dac_cast<TADDR>(pVolatileEntry);
+            return VALUE_FROM_VOLATILE_ENTRY(pVolatileEntry);
         }
-
-        return NULL;
     }
+
+    return NULL;
 
     default:
         _ASSERTE(!"Unknown NgenHashTable entry type");
@@ -342,15 +362,15 @@ void NgenHashTable<NGEN_HASH_ARGS>::BaseEnumMemoryRegions(CLRDataEnumMemoryFlags
     // sub-class).
     DacEnumMemoryRegion(dac_cast<TADDR>(this), sizeof(FINAL_CLASS));
 
-    // Save the warm bucket list.
-    DacEnumMemoryRegion(dac_cast<TADDR>(GetWarmBuckets()), m_cWarmBuckets * sizeof(VolatileEntry*));
+    // Save the bucket list.
+    DacEnumMemoryRegion(dac_cast<TADDR>(GetBuckets()), m_cBuckets * sizeof(VolatileEntry*));
 
-    // Save all the warm entries.
-    if (GetWarmBuckets().IsValid())
+    // Save all the entries.
+    if (GetBuckets().IsValid())
     {
-        for (DWORD i = 0; i < m_cWarmBuckets; i++)
+        for (DWORD i = 0; i < m_cBuckets; i++)
         {
-            PTR_VolatileEntry pEntry = (GetWarmBuckets())[i];
+            PTR_VolatileEntry pEntry = (GetBuckets())[i];
             while (pEntry.IsValid())
             {
                 pEntry.EnumMem();
@@ -369,60 +389,6 @@ void NgenHashTable<NGEN_HASH_ARGS>::BaseEnumMemoryRegions(CLRDataEnumMemoryFlags
 }
 #endif // DACCESS_COMPILE
 
-// Find the first volatile (warm) entry that matches the given hash. Looks only at warm entries. Returns NULL
-// on failure. Otherwise returns pointer to the derived class portion of the entry and initializes the
-// provided LookupContext to allow enumeration of any further matches.
-template <NGEN_HASH_PARAMS>
-DPTR(VALUE) NgenHashTable<NGEN_HASH_ARGS>::FindVolatileEntryByHash(NgenHashValue iHash, LookupContext *pContext)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
-        SUPPORTS_DAC;
-        PRECONDITION(CheckPointer(pContext));
-    }
-    CONTRACTL_END;
-
-    // No point looking if there are no entries.
-    if (m_cWarmEntries == 0)
-        return NULL;
-
-    // Since there is at least one entry there must be at least one bucket.
-    _ASSERTE(m_cWarmBuckets > 0);
-
-    // Compute which bucket the entry belongs in based on the hash.
-    DWORD dwBucket = iHash % VolatileLoad(&m_cWarmBuckets);
-
-    // Point at the first entry in the bucket chain which would contain any entries with the given hash code.
-    PTR_VolatileEntry pEntry = (GetWarmBuckets())[dwBucket];
-
-    // Walk the bucket chain one entry at a time.
-    while (pEntry)
-    {
-        if (pEntry->m_iHashValue == iHash)
-        {
-            // We've found our match.
-
-            // Record our current search state into the provided context so that a subsequent call to
-            // BaseFindNextEntryByHash can pick up the search where it left off.
-            pContext->m_pEntry = dac_cast<TADDR>(pEntry);
-            pContext->m_eType = Warm;
-
-            // Return the address of the sub-classes' embedded entry structure.
-            return VALUE_FROM_VOLATILE_ENTRY(pEntry);
-        }
-
-        // Move to the next entry in the chain.
-        pEntry = pEntry->m_pNextEntry;
-    }
-
-    // If we get here then none of the entries in the target bucket matched the hash code and we have a miss
-    // (for this section of the table at least).
-    return NULL;
-}
-
 // Initializes the iterator context passed by the caller to make it ready to walk every entry in the table in
 // an arbitrary order. Call pIterator->Next() to retrieve the first entry.
 template <NGEN_HASH_PARAMS>
@@ -432,7 +398,6 @@ void NgenHashTable<NGEN_HASH_ARGS>::BaseInitIterator(BaseIterator *pIterator)
 
     pIterator->m_pTable = dac_cast<DPTR(NgenHashTable<NGEN_HASH_ARGS>)>(this);
     pIterator->m_pEntry = NULL;
-    pIterator->m_eType = Warm;
     pIterator->m_dwBucket = 0;
 }
 
@@ -449,44 +414,32 @@ DPTR(VALUE) NgenHashTable<NGEN_HASH_ARGS>::BaseIterator::Next()
         SUPPORTS_DAC;
     }
     CONTRACTL_END;
-
-    // We might need to re-iterate our algorithm if we fall off the end of one hash table section (Hot or
-    // Warm) and need to move onto the next.
     while (true)
     {
-        // What type of section are we walking (Hot, Warm or Cold)?
-        switch (m_eType)
+        if (m_pEntry == NULL)
         {
-        case Warm:
+            // This is our first lookup for a particular bucket, return the first
+            // entry in that bucket.
+            m_pEntry = dac_cast<TADDR>((m_pTable->GetBuckets())[m_dwBucket]);
+        }
+        else
         {
-            if (m_pEntry == NULL)
-            {
-                // This is our first lookup in the warm section for a particular bucket, return the first
-                // entry in that bucket.
-                m_pEntry = dac_cast<TADDR>((m_pTable->GetWarmBuckets())[m_dwBucket]);
-            }
-            else
-            {
-                // This is not our first lookup, return the entry immediately after the last one we
-                // reported.
-                m_pEntry = dac_cast<TADDR>(dac_cast<PTR_VolatileEntry>(m_pEntry)->m_pNextEntry);
-            }
-
-            // If we found an entry in the last step return with it.
-            if (m_pEntry)
-                return VALUE_FROM_VOLATILE_ENTRY(dac_cast<PTR_VolatileEntry>(m_pEntry));
-
-            // Othwerwise we found the end of a bucket chain. Increment the current bucket and, if there are
-            // buckets left to scan go back around again.
-            m_dwBucket++;
-            if (m_dwBucket < m_pTable->m_cWarmBuckets)
-                break;
-
-            return NULL;
+            // This is not our first lookup, return the entry immediately after the last one we
+            // reported.
+            m_pEntry = dac_cast<TADDR>(dac_cast<PTR_VolatileEntry>(m_pEntry)->m_pNextEntry);
         }
-        default:
-            _ASSERTE(!"Invalid hash entry type");
-        }
+
+        // If we found an entry in the last step return with it.
+        if (m_pEntry)
+            return VALUE_FROM_VOLATILE_ENTRY(dac_cast<PTR_VolatileEntry>(m_pEntry));
+
+        // Othwerwise we found the end of a bucket chain. Increment the current bucket and, if there are
+        // buckets left to scan go back around again.
+        m_dwBucket++;
+        if (m_dwBucket < m_pTable->m_cBuckets)
+            break;
+
+        return NULL;
     }
 }
 
