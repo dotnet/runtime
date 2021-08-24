@@ -23,8 +23,6 @@
 #include "eeconfig.h"
 #include "precode.h"
 
-#include "fixuppointer.h"
-
 class Stub;
 class FCallMethodDesc;
 class FieldDesc;
@@ -227,7 +225,7 @@ public:
     LPCUTF8         m_pszDebugMethodName;
     LPCUTF8         m_pszDebugClassName;
     LPCUTF8         m_pszDebugMethodSignature;
-    FixupPointer<PTR_MethodTable>   m_pDebugMethodTable;
+    PTR_MethodTable m_pDebugMethodTable;
 
     PTR_GCCoverageInfo m_GcCover;
 
@@ -1028,7 +1026,7 @@ public:
     inline PTR_MethodTable GetMethodTable() const;
     inline PTR_MethodTable GetMethodTable_NoLogging() const;
 
-    inline DPTR(RelativeFixupPointer<PTR_MethodTable>) GetMethodTablePtr() const;
+    inline DPTR(PTR_MethodTable) GetMethodTablePtr() const;
 
   public:
     inline MethodDescChunk* GetMethodDescChunk() const;
@@ -1104,7 +1102,7 @@ public:
         return IsVirtualSlot() && !HasNonVtableSlot();
     }
 
-    TADDR GetAddrOfSlot();
+    PTR_PCODE GetAddrOfSlot();
 
     PTR_MethodDesc GetDeclMethodDesc(UINT32 slotNumber);
 
@@ -1458,7 +1456,7 @@ public:
 
     BOOL SetNativeCodeInterlocked(PCODE addr, PCODE pExpected = NULL);
 
-    TADDR GetAddrOfNativeCodeSlot();
+    PTR_PCODE GetAddrOfNativeCodeSlot();
 
     BOOL MayHaveNativeCode();
 
@@ -1854,13 +1852,8 @@ public:
 
     // class MethodImpl;                            // Present if HasMethodImplSlot() is true
 
-    typedef RelativePointer<PCODE> NonVtableSlot;   // Present if HasNonVtableSlot() is true
-                                                    // RelativePointer for NGen, PCODE for JIT
-
-#define FIXUP_LIST_MASK 1
-    typedef RelativePointer<TADDR> NativeCodeSlot;  // Present if HasNativeCodeSlot() is true
-                                                    // lower order bit (FIXUP_LIST_MASK) used to determine if FixupListSlot is present
-    typedef RelativePointer<TADDR> FixupListSlot;
+    typedef PCODE NonVtableSlot;   // Present if HasNonVtableSlot() is true
+    typedef PCODE NativeCodeSlot;  // Present if HasNativeCodeSlot() is true
 
 // Stub Dispatch code
 public:
@@ -2269,22 +2262,22 @@ public:
     FORCEINLINE PTR_MethodTable GetMethodTable()
     {
         LIMITED_METHOD_DAC_CONTRACT;
-        return m_methodTable.GetValue(PTR_HOST_MEMBER_TADDR(MethodDescChunk, this, m_methodTable));
+        return m_methodTable;
     }
 
-    inline DPTR(RelativeFixupPointer<PTR_MethodTable>) GetMethodTablePtr() const
+    inline DPTR(PTR_MethodTable) GetMethodTablePtr() const
     {
         LIMITED_METHOD_DAC_CONTRACT;
-        return dac_cast<DPTR(RelativeFixupPointer<PTR_MethodTable>)>(PTR_HOST_MEMBER_TADDR(MethodDescChunk, this, m_methodTable));
+        return dac_cast<DPTR(PTR_MethodTable)>(PTR_HOST_MEMBER_TADDR(MethodDescChunk, this, m_methodTable));
     }
 
 #ifndef DACCESS_COMPILE
     inline void SetMethodTable(MethodTable * pMT)
     {
         LIMITED_METHOD_CONTRACT;
-        _ASSERTE(m_methodTable.IsNull());
+        _ASSERTE(m_methodTable == NULL);
         _ASSERTE(pMT != NULL);
-        m_methodTable.SetValue(pMT);
+        m_methodTable = pMT;
     }
 
     inline void SetSizeAndCount(ULONG sizeOfMethodDescs, COUNT_T methodDescCount)
@@ -2303,14 +2296,14 @@ public:
     void SetNextChunk(MethodDescChunk *chunk)
     {
         LIMITED_METHOD_CONTRACT;
-        m_next.SetValueMaybeNull(chunk);
+        m_next = chunk;
     }
 #endif // !DACCESS_COMPILE
 
     PTR_MethodDescChunk GetNextChunk()
     {
         LIMITED_METHOD_CONTRACT;
-        return m_next.GetValueMaybeNull(PTR_HOST_MEMBER_TADDR(MethodDescChunk, this, m_next));
+        return m_next;
     }
 
     UINT32 GetCount()
@@ -2370,9 +2363,9 @@ private:
         m_flagsAndTokenRange = (m_flagsAndTokenRange & ~enum_flag_TokenRangeMask) | tokenRange;
     }
 
-    RelativeFixupPointer<PTR_MethodTable> m_methodTable;
+    PTR_MethodTable m_methodTable;
 
-    RelativePointer<PTR_MethodDescChunk> m_next;
+    PTR_MethodDescChunk  m_next;
 
     BYTE                 m_size;        // The size of this chunk minus 1 (in multiples of MethodDesc::ALIGNMENT)
     BYTE                 m_count;       // The number of MethodDescs in this chunk minus 1
@@ -2409,7 +2402,7 @@ class StoredSigMethodDesc : public MethodDesc
     // Put the sig RVA in here - this allows us to avoid
     // touching the method desc table when CoreLib is prejitted.
 
-    RelativePointer<TADDR>           m_pSig;
+    TADDR           m_pSig;
     DWORD           m_cSig;
 #ifdef TARGET_64BIT
     // m_dwExtendedFlags is not used by StoredSigMethodDesc itself.
@@ -2421,13 +2414,13 @@ class StoredSigMethodDesc : public MethodDesc
     TADDR GetSigRVA()
     {
         LIMITED_METHOD_DAC_CONTRACT;
-        return RelativePointer<TADDR>::GetValueMaybeNullAtPtr(PTR_HOST_MEMBER_TADDR(StoredSigMethodDesc, this, m_pSig));
+        return m_pSig;
     }
 
     bool HasStoredMethodSig(void)
     {
         LIMITED_METHOD_DAC_CONTRACT;
-        return !m_pSig.IsNull();
+        return m_pSig != NULL;
     }
     PCCOR_SIGNATURE GetStoredMethodSig(DWORD* sigLen = NULL)
     {
@@ -2441,13 +2434,13 @@ class StoredSigMethodDesc : public MethodDesc
             DacInstantiateTypeByAddress(GetSigRVA(), m_cSig, true);
 #else // !DACCESS_COMPILE
         g_IBCLogger.LogNDirectCodeAccess(this);
-        return (PCCOR_SIGNATURE) m_pSig.GetValueMaybeNull();
+        return (PCCOR_SIGNATURE) m_pSig;
 #endif // !DACCESS_COMPILE
     }
     void SetStoredMethodSig(PCCOR_SIGNATURE sig, DWORD sigBytes)
     {
 #ifndef DACCESS_COMPILE
-        m_pSig.SetValueMaybeNull((TADDR)sig);
+        m_pSig = (TADDR)sig;
         m_cSig = sigBytes;
 #endif // !DACCESS_COMPILE
     }
@@ -2507,7 +2500,7 @@ class DynamicMethodDesc : public StoredSigMethodDesc
 #endif
 
 protected:
-    RelativePointer<PTR_CUTF8>           m_pszMethodName;
+    PTR_CUTF8           m_pszMethodName;
     PTR_DynamicResolver m_pResolver;
 
 #ifndef TARGET_64BIT
@@ -2552,7 +2545,7 @@ public:
     PTR_CUTF8 GetMethodName()
     {
         LIMITED_METHOD_DAC_CONTRACT;
-        return RelativePointer<PTR_CUTF8>::GetValueMaybeNullAtPtr(PTR_HOST_MEMBER_TADDR(DynamicMethodDesc, this, m_pszMethodName));
+        return m_pszMethodName;
     }
 
     WORD GetAttrs()
@@ -2768,19 +2761,19 @@ public:
         LPVOID      m_pNativeNDirectTarget;
 
         // Information about the entrypoint
-        RelativePointer<PTR_CUTF8>     m_pszEntrypointName;
+        PTR_CUTF8   m_pszEntrypointName;
 
         union
         {
-            RelativePointer<PTR_CUTF8>     m_pszLibName;
+            PTR_CUTF8   m_pszLibName;
             DWORD       m_dwECallID;    // ECallID for QCalls
         };
 
         // The writeable part of the methoddesc.
-        PlainPointer<PTR_NDirectWriteableData>    m_pWriteableData;
+        PTR_NDirectWriteableData    m_pWriteableData;
 
 #ifdef HAS_NDIRECT_IMPORT_PRECODE
-        RelativePointer<PTR_NDirectImportThunkGlue> m_pImportThunkGlue;
+        PTR_NDirectImportThunkGlue  m_pImportThunkGlue;
 #else // HAS_NDIRECT_IMPORT_PRECODE
         NDirectImportThunkGlue      m_ImportThunkGlue;
 #endif // HAS_NDIRECT_IMPORT_PRECODE
@@ -2796,7 +2789,7 @@ public:
 #endif // defined(TARGET_X86)
 
         // This field gets set only when this MethodDesc is marked as PreImplemented
-        RelativePointer<PTR_MethodDesc> m_pStubMD;
+        PTR_MethodDesc m_pStubMD;
 
     } ndirect;
 
@@ -2919,7 +2912,7 @@ public:
     {
         LIMITED_METHOD_DAC_CONTRACT;
 
-        return RelativePointer<PTR_CUTF8>::GetValueMaybeNullAtPtr(PTR_HOST_MEMBER_TADDR(NDirectMethodDesc, this, ndirect.m_pszLibName));
+        return ndirect.m_pszLibName;
     }
 
 #ifndef DACCESS_COMPILE
@@ -2927,7 +2920,7 @@ public:
     {
         LIMITED_METHOD_CONTRACT;
 
-        return IsQCall() ? "QCall" : ndirect.m_pszLibName.GetValueMaybeNull();
+        return IsQCall() ? "QCall" : ndirect.m_pszLibName;
     }
 #endif // !DACCESS_COMPILE
 
@@ -2935,7 +2928,7 @@ public:
     {
         LIMITED_METHOD_DAC_CONTRACT;
 
-        return RelativePointer<PTR_CUTF8>::GetValueMaybeNullAtPtr(PTR_HOST_MEMBER_TADDR(NDirectMethodDesc, this, ndirect.m_pszEntrypointName));
+        return ndirect.m_pszEntrypointName;
     }
 
     BOOL IsVarArgs() const
@@ -2997,20 +2990,14 @@ public:
     {
         LIMITED_METHOD_DAC_CONTRACT;
 
-        return ReadPointer(this, &NDirectMethodDesc::ndirect, &decltype(NDirectMethodDesc::ndirect)::m_pWriteableData);
+        return ndirect.m_pWriteableData;
     }
 
     PTR_NDirectImportThunkGlue GetNDirectImportThunkGlue()
     {
         LIMITED_METHOD_DAC_CONTRACT;
 
-        TADDR base = PTR_HOST_MEMBER_TADDR(NDirectMethodDesc, this, ndirect.m_pImportThunkGlue);
-
-#ifdef HAS_NDIRECT_IMPORT_PRECODE
-        return RelativePointer<PTR_NDirectImportThunkGlue>::GetValueAtPtr(base);
-#else
-        return dac_cast<PTR_NDirectImportThunkGlue>(base);
-#endif
+        return ndirect.m_pImportThunkGlue;
     }
 
     LPVOID GetNDirectTarget()
@@ -3221,7 +3208,7 @@ struct ComPlusCallInfo
 #endif // TARGET_X86
 
     // This field gets set only when this MethodDesc is marked as PreImplemented
-    RelativePointer<PTR_MethodDesc> m_pStubMD;
+    PTR_MethodDesc m_pStubMD;
 };
 
 
@@ -3353,7 +3340,7 @@ public:
         if (IMD_IsGenericMethodDefinition())
             return TRUE;
         else
-            return !m_pPerInstInfo.IsNull();
+            return m_pPerInstInfo != NULL;
     }
 
     // All varieties of InstantiatedMethodDesc's support this method.
@@ -3371,14 +3358,15 @@ public:
     {
         LIMITED_METHOD_DAC_CONTRACT;
 
-        return ReadPointerMaybeNull(this, &InstantiatedMethodDesc::m_pPerInstInfo);
+        return m_pPerInstInfo;
     }
 
     PTR_Dictionary IMD_GetMethodDictionaryNonNull()
     {
         LIMITED_METHOD_DAC_CONTRACT;
+        _ASSERTE(m_pPerInstInfo != NULL);
 
-        return ReadPointer(this, &InstantiatedMethodDesc::m_pPerInstInfo);
+        return m_pPerInstInfo;
     }
 
     BOOL IMD_IsGenericMethodDefinition()
@@ -3434,7 +3422,7 @@ public:
     PTR_DictionaryLayout GetDictLayoutRaw()
     {
         LIMITED_METHOD_DAC_CONTRACT;
-        return RelativePointer<PTR_DictionaryLayout>::GetValueMaybeNullAtPtr(PTR_HOST_MEMBER_TADDR(InstantiatedMethodDesc, this, m_pDictLayout));
+        return m_pDictLayout;
     }
 
     PTR_MethodDesc IMD_GetWrappedMethodDesc()
@@ -3442,7 +3430,7 @@ public:
         LIMITED_METHOD_DAC_CONTRACT;
 
         _ASSERTE(IMD_IsWrapperStubWithInstantiations());
-        return RelativeFixupPointer<PTR_MethodDesc>::GetValueAtPtr(PTR_HOST_MEMBER_TADDR(InstantiatedMethodDesc, this, m_pWrappedMethodDesc));
+        return m_pWrappedMethodDesc;
     }
 
 #ifndef DACCESS_COMPILE
@@ -3453,10 +3441,10 @@ public:
         if (IMD_IsWrapperStubWithInstantiations() && IMD_HasMethodInstantiation())
         {
             InstantiatedMethodDesc* pIMD = IMD_GetWrappedMethodDesc()->AsInstantiatedMethodDesc();
-            return pIMD->m_pDictLayout.GetValueMaybeNull();
+            return pIMD->m_pDictLayout;
         }
         else if (IMD_IsSharedByGenericMethodInstantiations())
-            return m_pDictLayout.GetValueMaybeNull();
+            return m_pDictLayout;
         else
             return NULL;
     }
@@ -3467,11 +3455,11 @@ public:
         if (IMD_IsWrapperStubWithInstantiations() && IMD_HasMethodInstantiation())
         {
             InstantiatedMethodDesc* pIMD = IMD_GetWrappedMethodDesc()->AsInstantiatedMethodDesc();
-            pIMD->m_pDictLayout.SetValueMaybeNull(pNewLayout);
+            pIMD->m_pDictLayout = pNewLayout;
         }
         else if (IMD_IsSharedByGenericMethodInstantiations())
         {
-            m_pDictLayout.SetValueMaybeNull(pNewLayout);
+            m_pDictLayout = pNewLayout;
         }
     }
 #endif // !DACCESS_COMPILE
@@ -3521,9 +3509,9 @@ private:
 
     friend class MethodDesc; // this fields are currently accessed by MethodDesc::Save/Restore etc.
     union {
-        RelativePointer<PTR_DictionaryLayout> m_pDictLayout; //SharedMethodInstantiation
+        PTR_DictionaryLayout m_pDictLayout; //SharedMethodInstantiation
 
-        RelativeFixupPointer<PTR_MethodDesc> m_pWrappedMethodDesc; // For WrapperStubWithInstantiations
+        PTR_MethodDesc m_pWrappedMethodDesc; // For WrapperStubWithInstantiations
     };
 
 public: // <TODO>make private: JITinterface.cpp accesses through this </TODO>
@@ -3536,7 +3524,7 @@ public: // <TODO>make private: JITinterface.cpp accesses through this </TODO>
     //
     // For generic method definitions that are not the typical method definition (e.g. C<int>.m<U>)
     // this field is null; to obtain the instantiation use LoadMethodInstantiation
-    PlainPointer<PTR_Dictionary> m_pPerInstInfo;  //SHARED
+    PTR_Dictionary m_pPerInstInfo;  //SHARED
 
 private:
     WORD          m_wFlags2;
@@ -3578,7 +3566,7 @@ inline PTR_MethodTable MethodDesc::GetMethodTable() const
     return GetMethodTable_NoLogging();
 }
 
-inline DPTR(RelativeFixupPointer<PTR_MethodTable>) MethodDesc::GetMethodTablePtr() const
+inline DPTR(PTR_MethodTable) MethodDesc::GetMethodTablePtr() const
 {
     LIMITED_METHOD_DAC_CONTRACT;
 
@@ -3678,7 +3666,7 @@ inline BOOL MethodDesc::SanityCheck()
     {
         // If it looks good, do a more intensive sanity test. We don't care about the result,
         // we just want it to not AV.
-        return GetMethodTable() == m_pDebugMethodTable.GetValue() && this->GetModule() != NULL;
+        return GetMethodTable() == m_pDebugMethodTable && this->GetModule() != NULL;
     }
 
     return TRUE;

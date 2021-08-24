@@ -26,7 +26,6 @@
 #include <daccess.h>
 #include <corbbtprof.h>
 #include <clrtypes.h>
-#include <fixuppointer.h>
 
 typedef DPTR(struct CORCOMPILE_EXCEPTION_LOOKUP_TABLE)
     PTR_CORCOMPILE_EXCEPTION_LOOKUP_TABLE;

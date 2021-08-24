@@ -3219,11 +3219,11 @@ CORINFO_GENERIC_HANDLE JIT_GenericHandleWorker(MethodDesc * pMD, MethodTable * p
         // If the dictionary on the base type got expanded, update the current type's base type dictionary
         // pointer to use the new one on the base type.
 
-        Dictionary* pMTDictionary = pMT->GetPerInstInfo()[dictionaryIndex].GetValue();
-        Dictionary* pDeclaringMTDictionary = pDeclaringMT->GetPerInstInfo()[dictionaryIndex].GetValue();
+        Dictionary* pMTDictionary = pMT->GetPerInstInfo()[dictionaryIndex];
+        Dictionary* pDeclaringMTDictionary = pDeclaringMT->GetPerInstInfo()[dictionaryIndex];
         if (pMTDictionary != pDeclaringMTDictionary)
         {
-            TypeHandle** pPerInstInfo = (TypeHandle**)pMT->GetPerInstInfo()->GetValuePtr();
+            TypeHandle** pPerInstInfo = (TypeHandle**)pMT->GetPerInstInfo();
             FastInterlockExchangePointer(pPerInstInfo + dictionaryIndex, (TypeHandle*)pDeclaringMTDictionary);
         }
     }
