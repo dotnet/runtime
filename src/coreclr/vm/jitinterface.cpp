@@ -8498,7 +8498,7 @@ void CEEInfo::getMethodVTableOffset (CORINFO_METHOD_HANDLE methodHnd,
 
     *pOffsetOfIndirection = MethodTable::GetVtableOffset() + MethodTable::GetIndexOfVtableIndirection(method->GetSlot()) * TARGET_POINTER_SIZE /* sizeof(MethodTable::VTableIndir_t) */;
     *pOffsetAfterIndirection = MethodTable::GetIndexAfterVtableIndirection(method->GetSlot()) * TARGET_POINTER_SIZE /* sizeof(MethodTable::VTableIndir2_t) */;
-    *isRelative = 0;
+    *isRelative = false;
 
     EE_TO_JIT_TRANSITION_LEAF();
 }
