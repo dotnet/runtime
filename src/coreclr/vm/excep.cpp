@@ -8168,12 +8168,14 @@ void UnwindAndContinueRethrowHelperInsideCatch(Frame* pEntryFrame, Exception* pE
     pThread->SetFrame(pEntryFrame);
 
 #ifdef _DEBUG
-    CONTRACT_VIOLATION(ThrowsViolation);
-    // Call CLRException::GetThrowableFromException to force us to retrieve the THROWABLE
-    // while we are still within the context of the catch block. This will help diagnose
-    // cases where the last thrown object is NULL.
-    OBJECTREF orThrowable = CLRException::GetThrowableFromException(pException);
-    CONSISTENCY_CHECK(orThrowable != NULL);
+    {
+        CONTRACT_VIOLATION(ThrowsViolation);
+        // Call CLRException::GetThrowableFromException to force us to retrieve the THROWABLE
+        // while we are still within the context of the catch block. This will help diagnose
+        // cases where the last thrown object is NULL.
+        OBJECTREF orThrowable = CLRException::GetThrowableFromException(pException);
+        CONSISTENCY_CHECK(orThrowable != NULL);
+    }
 #endif
 }
 
