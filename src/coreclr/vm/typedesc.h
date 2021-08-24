@@ -118,19 +118,6 @@ public:
     // Is actually ParamTypeDesc (BYREF, PTR)
     BOOL HasTypeParam();
 
-#ifdef FEATURE_PREJIT
-    void Save(DataImage *image);
-    void Fixup(DataImage *image);
-
-    BOOL NeedsRestore(DataImage *image)
-    {
-        WRAPPER_NO_CONTRACT;
-        return ComputeNeedsRestore(image, NULL);
-    }
-
-    BOOL ComputeNeedsRestore(DataImage *image, TypeHandleList *pVisited);
-#endif
-
     void DoRestoreTypeKey();
     void Restore();
     BOOL IsRestored();
@@ -171,9 +158,6 @@ public:
 
     // The module that defined the underlying type
     PTR_Module GetModule();
-
-    // The ngen'ed module where this type-desc lives
-    PTR_Module GetZapModule();
 
     // The module where this type lives for the purposes of loading and prejitting
     // See ComputeLoaderModule for more information
@@ -297,12 +281,6 @@ public:
     }
 
     TypeHandle GetTypeParam();
-
-#ifdef FEATURE_PREJIT
-    void Save(DataImage *image);
-    void Fixup(DataImage *image);
-    BOOL ComputeNeedsRestore(DataImage *image, TypeHandleList *pVisited);
-#endif
 
     BOOL OwnsTemplateMethodTable();
 
@@ -449,11 +427,6 @@ public:
     // instantiate it with a reference type).
     BOOL ConstrainedAsValueType();
 
-#ifdef FEATURE_PREJIT
-    void Save(DataImage *image);
-    void Fixup(DataImage *image);
-#endif // FEATURE_PREJIT
-
 #ifdef DACCESS_COMPILE
     void EnumMemoryRegions(CLRDataEnumMemoryFlags flags);
 #endif
@@ -543,11 +516,6 @@ public:
     // Returns TRUE if all return and argument types are externally visible.
     BOOL IsExternallyVisible() const;
 #endif //DACCESS_COMPILE
-
-#ifdef FEATURE_PREJIT
-    void Save(DataImage *image);
-    void Fixup(DataImage *image);
-#endif //FEATURE_PREJIT
 
 #ifdef DACCESS_COMPILE
     static ULONG32 DacSize(TADDR addr)

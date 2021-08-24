@@ -423,12 +423,6 @@ public:
     // (First strip off array/ptr qualifiers and generic type arguments)
     PTR_Module GetModule() const;
 
-    // The ngen'ed module where this type lives
-    PTR_Module GetZapModule() const;
-
-    // Does this immediate item live in an NGEN module?
-    BOOL IsZapped() const;
-
     // The module where this type lives for the purposes of loading and prejitting
     // Note: NGen time result might differ from runtime result for parametrized types (generics, arrays, etc.)
     // See code:ClassLoader::ComputeLoaderModule or file:clsload.hpp#LoaderModule for more information
@@ -483,9 +477,6 @@ public:
 
     // True if this type handle is a zap-encoded fixup
     BOOL IsEncodedFixup() const;
-
-    // Only used at NGEN-time
-    BOOL ComputeNeedsRestore(DataImage *image, TypeHandleList *pVisited) const;
 
     void DoRestoreTypeKey();
 

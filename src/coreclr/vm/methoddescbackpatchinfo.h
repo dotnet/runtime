@@ -6,7 +6,6 @@
 #include "debugmacrosext.h"
 #include "crossloaderallocatorhash.h"
 
-#ifndef CROSSGEN_COMPILE
 
 #define DISABLE_COPY(T) \
     T(const T &) = delete; \
@@ -163,4 +162,3 @@ public:
 
 #undef DISABLE_COPY
 
-#endif // !CROSSGEN_COMPILE

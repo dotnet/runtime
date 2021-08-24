@@ -126,7 +126,11 @@ namespace Microsoft.WebAssembly.Diagnostics
 
                 case "Runtime.exceptionThrown":
                     {
-                        if (!GetContext(sessionId).IsRuntimeReady)
+                        // Don't process events from sessions we aren't tracking
+                        if (!contexts.TryGetValue(sessionId, out ExecutionContext context))
+                            return false;
+
+                        if (!context.IsRuntimeReady)
                         {
                             string exceptionError = args?["exceptionDetails"]?["exception"]?["value"]?.Value<string>();
                             if (exceptionError == sPauseOnUncaught || exceptionError == sPauseOnCaught)
@@ -139,7 +143,11 @@ namespace Microsoft.WebAssembly.Diagnostics
 
                 case "Debugger.paused":
                     {
-                        if (!GetContext(sessionId).IsRuntimeReady)
+                        // Don't process events from sessions we aren't tracking
+                        if (!contexts.TryGetValue(sessionId, out ExecutionContext context))
+                            return false;
+
+                        if (!context.IsRuntimeReady)
                         {
                             string reason = args?["reason"]?.Value<string>();
                             if (reason == "exception")
@@ -148,13 +156,13 @@ namespace Microsoft.WebAssembly.Diagnostics
                                 if (exceptionError == sPauseOnUncaught)
                                 {
                                     await SendCommand(sessionId, "Debugger.resume", new JObject(), token);
-                                    GetContext(sessionId).PauseOnUncaught = true;
+                                    context.PauseOnUncaught = true;
                                     return true;
                                 }
                                 if (exceptionError == sPauseOnCaught)
                                 {
                                     await SendCommand(sessionId, "Debugger.resume", new JObject(), token);
-                                    GetContext(sessionId).PauseOnCaught = true;
+                                    context.PauseOnCaught = true;
                                     return true;
                                 }
                             }

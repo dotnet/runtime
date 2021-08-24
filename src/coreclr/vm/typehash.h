@@ -34,13 +34,6 @@ typedef struct EETypeHashEntry
     TypeHandle GetTypeHandle();
     void SetTypeHandle(TypeHandle handle);
 
-#ifdef FEATURE_PREJIT
-    // To make ngen saving much more efficient we support marking individual entries as hot (as determined by
-    // profile data).
-    bool IsHot();
-    void MarkAsHot();
-#endif // FEATURE_PREJIT
-
 #ifndef DACCESS_COMPILE
     EETypeHashEntry& operator=(const EETypeHashEntry& src)
     {
@@ -140,21 +133,6 @@ public:
     BOOL FindNext(Iterator *it, EETypeHashEntry **ppEntry);
 
     DWORD GetCount();
-
-#if defined(FEATURE_PREJIT) && !defined(DACCESS_COMPILE)
-    // Save the hash table and any type descriptors referenced by it
-    // Template method tables (for arrays) must be saved separately
-    void Save(DataImage *image, Module *module, CorProfileData *profileData);
-
-    // Record fixups required on the hash table
-    // Recurse into type descriptors and template method tables referenced by it
-    void Fixup(DataImage *image);
-
-    bool ShouldSave(DataImage *pImage, EETypeHashEntry_t *pEntry);
-    bool IsHotEntry(EETypeHashEntry_t *pEntry, CorProfileData *pProfileData);
-    bool SaveEntry(DataImage *pImage, CorProfileData *pProfileData, EETypeHashEntry_t *pOldEntry, EETypeHashEntry_t *pNewEntry, EntryMappingTable *pMap);
-    void FixupEntry(DataImage *pImage, EETypeHashEntry_t *pEntry, void *pFixupBase, DWORD cbFixupOffset);
-#endif // FEATURE_PREJIT && !DACCESS_COMPILE
 
 #ifdef DACCESS_COMPILE
     void EnumMemoryRegions(CLRDataEnumMemoryFlags flags);

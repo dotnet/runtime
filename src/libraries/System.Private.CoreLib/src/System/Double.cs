@@ -187,6 +187,7 @@ namespace System
             throw new ArgumentException(SR.Arg_MustBeDouble);
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public int CompareTo(double value)
         {
             if (m_value < value) return -1;

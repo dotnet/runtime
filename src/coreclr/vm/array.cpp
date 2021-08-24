@@ -330,12 +330,7 @@ MethodTable* Module::CreateArrayMethodTable(TypeHandle elemTypeHnd, CorElementTy
     // Inherit top level class's interface map
     cbMT += pParentClass->GetNumInterfaces() * sizeof(InterfaceInfo_t);
 
-#ifdef FEATURE_PREJIT
-    Module* pComputedPZM = Module::ComputePreferredZapModule(NULL, Instantiation(&elemTypeHnd, 1));
-    BOOL canShareVtableChunks = MethodTable::CanShareVtableChunksFrom(pParentClass, this, pComputedPZM);
-#else
     BOOL canShareVtableChunks = MethodTable::CanShareVtableChunksFrom(pParentClass, this);
-#endif // FEATURE_PREJIT
 
     size_t offsetOfUnsharedVtableChunks = cbMT;
 
@@ -712,14 +707,9 @@ MethodTable* Module::CreateArrayMethodTable(TypeHandle elemTypeHnd, CorElementTy
     // an array whose base type is not a value class was created and was larger then 0xffff (a word)
     _ASSERTE(dwComponentSize == pMT->GetComponentSize());
 
-#ifdef FEATURE_PREJIT
-    _ASSERTE(pComputedPZM == Module::GetPreferredZapModuleForMethodTable(pMT));
-#endif
-
     return(pMT);
 } // Module::CreateArrayMethodTable
 
-#ifndef CROSSGEN_COMPILE
 
 #ifdef FEATURE_ARRAYSTUB_AS_IL
 
@@ -1247,7 +1237,6 @@ UINT ArrayStubCache::Length(const BYTE *pRawStub)
 
 #endif // FEATURE_ARRAYSTUB_AS_IL
 
-#endif // CROSSGEN_COMPILE
 
 //---------------------------------------------------------------------
 // This method returns TRUE if pInterfaceMT could be one of the interfaces

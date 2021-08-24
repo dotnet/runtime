@@ -14,14 +14,6 @@
 #include "regset.h"
 #include "jitgcinfo.h"
 
-#if defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_ARM)
-#define FOREACH_REGISTER_FILE(file)                                                                                    \
-    for ((file) = &(this->intRegState); (file) != NULL;                                                                \
-         (file) = ((file) == &(this->intRegState)) ? &(this->floatRegState) : NULL)
-#else
-#define FOREACH_REGISTER_FILE(file) (file) = &(this->intRegState);
-#endif
-
 class CodeGen final : public CodeGenInterface
 {
     friend class emitter;

@@ -18,4 +18,4 @@ if (-not (Test-Path $refPackPath))
     return 1
 }
 
-Write-Output $refPackPath
+Write-Output "refPackPath=$refPackPath"

@@ -725,5 +725,48 @@ public class Foo
         Console.WriteLine($"time for await");
         return true;
     }
+
+}
+
+public class MainPage
+{
+    public MainPage()
+    {
+    }
+
+    int count = 0;
+    private int someValue;
+
+    public int SomeValue
+    {
+        get
+        {
+            return someValue;
+        }
+        set
+        {
+            someValue = value;
+            count++;
+
+            if (count == 10)
+            {
+                var view = 150;
+
+                if (view != 50)
+                {
+
+                }
+                System.Diagnostics.Debugger.Break();
+            }
+
+            SomeValue = count;
+        }
+    }
+
+    public static void CallSetValue()
+    {
+        var mainPage = new MainPage();
+        mainPage.SomeValue = 10;
+    }
 }
 
