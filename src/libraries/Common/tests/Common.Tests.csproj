@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
@@ -26,7 +26,7 @@
              Link="Common\System\Collections\Generic\LargeArrayBuilder.cs" />
     <Compile Include="$(CommonPath)System\Collections\Generic\LargeArrayBuilder.SpeedOpt.cs"
              Link="Common\System\Collections\Generic\LargeArrayBuilder.SpeedOpt.cs" />
-    <Compile Include="$(CommonPath)System\IO\PathInternal.CaseSensitivity.cs"
+    <Compile Include="$(CoreLibSharedDir)System\IO\PathInternal.CaseSensitivity.cs"
              Link="Common\System\IO\PathInternal.CaseSensitivity.cs" />
     <Compile Include="$(CommonPath)System\IO\RowConfigReader.cs"
              Link="Common\System\IO\RowConfigReader.cs" />

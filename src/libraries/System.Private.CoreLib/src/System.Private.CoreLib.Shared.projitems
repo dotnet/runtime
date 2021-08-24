@@ -1213,7 +1213,7 @@
     <Compile Include="$(CommonPath)System\Diagnostics\CodeAnalysis\ExcludeFromCodeCoverageAttribute.cs">
       <Link>Common\System\Diagnostics\CodeAnalysis\ExcludeFromCodeCoverageAttribute.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)System\IO\PathInternal.CaseSensitivity.cs">
+    <Compile Include="$(CoreLibSharedDir)System\IO\PathInternal.CaseSensitivity.cs">
       <Link>Common\System\IO\PathInternal.CaseSensitivity.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)System\Runtime\CompilerServices\IsExternalInit.cs">

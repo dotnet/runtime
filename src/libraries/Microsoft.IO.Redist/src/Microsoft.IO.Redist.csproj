@@ -202,7 +202,7 @@
              Link="Common\System\IO\FileSystem.Attributes.Windows.cs" />
     <Compile Include="$(CommonPath)System\IO\FileSystem.DirectoryCreation.Windows.cs"
              Link="Common\System\IO\FileSystem.DirectoryCreation.Windows.cs" />
-    <Compile Include="$(CommonPath)System\IO\PathInternal.CaseSensitivity.cs"
+    <Compile Include="$(CoreLibSharedDir)System\IO\PathInternal.CaseSensitivity.cs"
              Link="Common\System\IO\PathInternal.CaseSensitivity.cs" />
     <Compile Include="$(CommonPath)System\Memory\FixedBufferExtensions.cs"
              Link="Common\System\Memory\FixedBufferExtensions.cs" />
