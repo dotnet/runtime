@@ -174,7 +174,7 @@ namespace System.Text.RegularExpressions.Tests
                     return;
                 }
 
-                throw new XunitException($"Expected RegexParseException with error: ({error}) -> Actual error: {regexParseError})");
+                throw new XunitException($"Expected RegexParseException with error {error} offset {offset} -> Actual error: {regexParseError} offset {e.Offset})");
             }
             catch (Exception e)
             {
