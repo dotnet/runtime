@@ -211,10 +211,7 @@ GenerationTableIndex(DPTR(unused_generation) base, size_t index)
     return LoadGeneration(TableIndex(base, index, g_gcDacGlobals->generation_size).GetAddr());
 }
 
-// Indexes into a heap's generation table, given the heap instance
-// and the desired index. Returns a dac_generation
-inline dac_generation
-ServerGenerationTableIndex(TADDR heap, size_t index)
+inline TADDR ServerGenerationTableAddress(TADDR heap)
 {
     DPTR(int) field_offsets = g_gcDacGlobals->gc_heap_field_offsets;
     int field_index = GENERATION_TABLE_FIELD_INDEX;
@@ -222,16 +219,21 @@ ServerGenerationTableIndex(TADDR heap, size_t index)
     LOAD_BASE (generation_table, unused_generation);
     #undef BASE
     assert (generation_table_offset != -1);
+    return p_generation_table.GetAddr();
+}
+
+// Indexes into a heap's generation table, given the heap instance
+// and the desired index. Returns a dac_generation
+inline dac_generation
+ServerGenerationTableIndex(TADDR heap, size_t index)
+{
+    DPTR(unused_generation) p_generation_table = ServerGenerationTableAddress(heap);
     return LoadGeneration(TableIndex(p_generation_table, index, g_gcDacGlobals->generation_size).GetAddr());
 }
 
-inline void EnumGenerationTable(TADDR heap)
+inline void EnumGenerationTable(TADDR generation_table)
 {
-    DPTR(int) field_offsets = g_gcDacGlobals->gc_heap_field_offsets;
-    int field_index = GENERATION_TABLE_FIELD_INDEX;
-    #define BASE heap
-    LOAD_BASE (generation_table, unused_generation);
-    #undef BASE
+    DPTR(unused_generation) p_generation_table = generation_table;
     for (unsigned int i = 0; i < *g_gcDacGlobals->max_gen + 2; i++)
     {
         EnumGeneration(TableIndex(p_generation_table, i, g_gcDacGlobals->generation_size).GetAddr());

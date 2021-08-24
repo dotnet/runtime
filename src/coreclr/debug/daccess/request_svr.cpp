@@ -252,13 +252,12 @@ ClrDataAccess::EnumSvrGlobalMemoryRegions(CLRDataEnumMemoryFlags flags)
 
     for (int i = 0; i < heaps; i++)
     {
-        TADDR heapAddress = HeapTableIndex(g_gcDacGlobals->g_heaps, i);    
+        TADDR heapAddress = HeapTableIndex(g_gcDacGlobals->g_heaps, i);
         dac_gc_heap heap = LoadGcHeapData(heapAddress);
         dac_gc_heap* pHeap = &heap;
-
-        size_t gen_table_size = g_gcDacGlobals->generation_size * (*g_gcDacGlobals->max_gen + 2);
         EnumGcHeap(heapAddress);
-        EnumGenerationTable(heapAddress);
+        TADDR generationTable = ServerGenerationTableAddress(heapAddress);
+        EnumGenerationTable(generationTable);
         DacEnumMemoryRegion(dac_cast<TADDR>(pHeap->finalize_queue), sizeof(dac_finalize_queue));
 
         ULONG first = IsRegion() ? 0 : (*g_gcDacGlobals->max_gen);
