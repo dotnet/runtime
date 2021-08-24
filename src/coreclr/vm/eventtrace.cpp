@@ -98,52 +98,52 @@ Volatile<LONGLONG> ETW::GCLog::s_l64LastClientSequenceNumber = 0;
         { FireEtwMethodLoad_V2(ullMethodIdentifier, ullModuleID, ullMethodStartAddress, ulMethodSize, ulMethodToken, ulMethodFlags, clrInstanceID, nativeCodeId); } \
 }
 
-#define FireEtwMethodUnloadVerbose_V1_or_V2(ullMethodIdentifier, ullModuleID, ullColdMethodStartAddress, ulColdMethodSize, ulMethodToken, ulColdMethodFlags, szDtraceOutput1, szDtraceOutput2, szDtraceOutput3, clrInstanceID, nativeCodeId) \
+#define FireEtwMethodUnloadVerbose_V1_or_V2(ullMethodIdentifier, ullModuleID, ullMethodStartAddress, ulMethodSize, ulMethodToken, ulColdMethodFlags, szDtraceOutput1, szDtraceOutput2, szDtraceOutput3, clrInstanceID, nativeCodeId) \
 {   \
     if (nativeCodeId == 0)   \
-        { FireEtwMethodUnloadVerbose_V1(ullMethodIdentifier, ullModuleID, ullColdMethodStartAddress, ulColdMethodSize, ulMethodToken, ulColdMethodFlags, szDtraceOutput1, szDtraceOutput2, szDtraceOutput3, clrInstanceID); } \
+        { FireEtwMethodUnloadVerbose_V1(ullMethodIdentifier, ullModuleID, ullMethodStartAddress, ulMethodSize, ulMethodToken, ulColdMethodFlags, szDtraceOutput1, szDtraceOutput2, szDtraceOutput3, clrInstanceID); } \
     else \
-        { FireEtwMethodUnloadVerbose_V2(ullMethodIdentifier, ullModuleID, ullColdMethodStartAddress, ulColdMethodSize, ulMethodToken, ulColdMethodFlags, szDtraceOutput1, szDtraceOutput2, szDtraceOutput3, clrInstanceID, nativeCodeId); } \
+        { FireEtwMethodUnloadVerbose_V2(ullMethodIdentifier, ullModuleID, ullMethodStartAddress, ulMethodSize, ulMethodToken, ulColdMethodFlags, szDtraceOutput1, szDtraceOutput2, szDtraceOutput3, clrInstanceID, nativeCodeId); } \
 }
 
-#define FireEtwMethodUnload_V1_or_V2(ullMethodIdentifier, ullModuleID, ullColdMethodStartAddress, ulColdMethodSize, ulMethodToken, ulColdMethodFlags, clrInstanceID, nativeCodeId) \
+#define FireEtwMethodUnload_V1_or_V2(ullMethodIdentifier, ullModuleID, ullMethodStartAddress, ulMethodSize, ulMethodToken, ulColdMethodFlags, clrInstanceID, nativeCodeId) \
 {   \
     if (nativeCodeId == 0)   \
-        { FireEtwMethodUnload_V1(ullMethodIdentifier, ullModuleID, ullColdMethodStartAddress, ulColdMethodSize, ulMethodToken, ulColdMethodFlags, clrInstanceID); } \
+        { FireEtwMethodUnload_V1(ullMethodIdentifier, ullModuleID, ullMethodStartAddress, ulMethodSize, ulMethodToken, ulColdMethodFlags, clrInstanceID); } \
     else \
-        { FireEtwMethodUnload_V2(ullMethodIdentifier, ullModuleID, ullColdMethodStartAddress, ulColdMethodSize, ulMethodToken, ulColdMethodFlags, clrInstanceID, nativeCodeId); } \
+        { FireEtwMethodUnload_V2(ullMethodIdentifier, ullModuleID, ullMethodStartAddress, ulMethodSize, ulMethodToken, ulColdMethodFlags, clrInstanceID, nativeCodeId); } \
 }
 
-#define FireEtwMethodDCStartVerbose_V1_or_V2(ullMethodIdentifier, ullModuleID, ullColdMethodStartAddress, ulColdMethodSize, ulMethodToken, ulColdMethodFlags, szDtraceOutput1, szDtraceOutput2, szDtraceOutput3, clrInstanceID, nativeCodeId) \
+#define FireEtwMethodDCStartVerbose_V1_or_V2(ullMethodIdentifier, ullModuleID, ullMethodStartAddress, ulMethodSize, ulMethodToken, ulColdMethodFlags, szDtraceOutput1, szDtraceOutput2, szDtraceOutput3, clrInstanceID, nativeCodeId) \
 {   \
     if (nativeCodeId == 0)   \
-        { FireEtwMethodDCStartVerbose_V1(ullMethodIdentifier, ullModuleID, ullColdMethodStartAddress, ulColdMethodSize, ulMethodToken, ulColdMethodFlags, szDtraceOutput1, szDtraceOutput2, szDtraceOutput3, clrInstanceID); } \
+        { FireEtwMethodDCStartVerbose_V1(ullMethodIdentifier, ullModuleID, ullMethodStartAddress, ulMethodSize, ulMethodToken, ulColdMethodFlags, szDtraceOutput1, szDtraceOutput2, szDtraceOutput3, clrInstanceID); } \
     else \
-        { FireEtwMethodDCStartVerbose_V2(ullMethodIdentifier, ullModuleID, ullColdMethodStartAddress, ulColdMethodSize, ulMethodToken, ulColdMethodFlags, szDtraceOutput1, szDtraceOutput2, szDtraceOutput3, clrInstanceID, nativeCodeId); } \
+        { FireEtwMethodDCStartVerbose_V2(ullMethodIdentifier, ullModuleID, ullMethodStartAddress, ulMethodSize, ulMethodToken, ulColdMethodFlags, szDtraceOutput1, szDtraceOutput2, szDtraceOutput3, clrInstanceID, nativeCodeId); } \
 }
 
-#define FireEtwMethodDCStart_V1_or_V2(ullMethodIdentifier, ullModuleID, ullColdMethodStartAddress, ulColdMethodSize, ulMethodToken, ulColdMethodFlags, clrInstanceID, nativeCodeId) \
+#define FireEtwMethodDCStart_V1_or_V2(ullMethodIdentifier, ullModuleID, ullMethodStartAddress, ulMethodSize, ulMethodToken, ulColdMethodFlags, clrInstanceID, nativeCodeId) \
 {   \
     if (nativeCodeId == 0)   \
-        { FireEtwMethodDCStart_V1(ullMethodIdentifier, ullModuleID, ullColdMethodStartAddress, ulColdMethodSize, ulMethodToken, ulColdMethodFlags, clrInstanceID); } \
+        { FireEtwMethodDCStart_V1(ullMethodIdentifier, ullModuleID, ullMethodStartAddress, ulMethodSize, ulMethodToken, ulColdMethodFlags, clrInstanceID); } \
     else \
-        { FireEtwMethodDCStart_V2(ullMethodIdentifier, ullModuleID, ullColdMethodStartAddress, ulColdMethodSize, ulMethodToken, ulColdMethodFlags, clrInstanceID, nativeCodeId); } \
+        { FireEtwMethodDCStart_V2(ullMethodIdentifier, ullModuleID, ullMethodStartAddress, ulMethodSize, ulMethodToken, ulColdMethodFlags, clrInstanceID, nativeCodeId); } \
 }
 
-#define FireEtwMethodDCEndVerbose_V1_or_V2(ullMethodIdentifier, ullModuleID, ullColdMethodStartAddress, ulColdMethodSize, ulMethodToken, ulColdMethodFlags, szDtraceOutput1, szDtraceOutput2, szDtraceOutput3, clrInstanceID, nativeCodeId) \
+#define FireEtwMethodDCEndVerbose_V1_or_V2(ullMethodIdentifier, ullModuleID, ullMethodStartAddress, ulMethodSize, ulMethodToken, ulColdMethodFlags, szDtraceOutput1, szDtraceOutput2, szDtraceOutput3, clrInstanceID, nativeCodeId) \
 {   \
     if (nativeCodeId == 0)   \
-        { FireEtwMethodDCEndVerbose_V1(ullMethodIdentifier, ullModuleID, ullColdMethodStartAddress, ulColdMethodSize, ulMethodToken, ulColdMethodFlags, szDtraceOutput1, szDtraceOutput2, szDtraceOutput3, clrInstanceID);  } \
+        { FireEtwMethodDCEndVerbose_V1(ullMethodIdentifier, ullModuleID, ullMethodStartAddress, ulMethodSize, ulMethodToken, ulColdMethodFlags, szDtraceOutput1, szDtraceOutput2, szDtraceOutput3, clrInstanceID);  } \
     else \
-        { FireEtwMethodDCEndVerbose_V2(ullMethodIdentifier, ullModuleID, ullColdMethodStartAddress, ulColdMethodSize, ulMethodToken, ulColdMethodFlags, szDtraceOutput1, szDtraceOutput2, szDtraceOutput3, clrInstanceID, nativeCodeId); } \
+        { FireEtwMethodDCEndVerbose_V2(ullMethodIdentifier, ullModuleID, ullMethodStartAddress, ulMethodSize, ulMethodToken, ulColdMethodFlags, szDtraceOutput1, szDtraceOutput2, szDtraceOutput3, clrInstanceID, nativeCodeId); } \
 }
 
-#define FireEtwMethodDCEnd_V1_or_V2(ullMethodIdentifier, ullModuleID, ullColdMethodStartAddress, ulColdMethodSize, ulMethodToken, ulColdMethodFlags, clrInstanceID, nativeCodeId) \
+#define FireEtwMethodDCEnd_V1_or_V2(ullMethodIdentifier, ullModuleID, ullMethodStartAddress, ulMethodSize, ulMethodToken, ulColdMethodFlags, clrInstanceID, nativeCodeId) \
 {   \
     if (nativeCodeId == 0)   \
-        { FireEtwMethodDCEnd_V1(ullMethodIdentifier, ullModuleID, ullColdMethodStartAddress, ulColdMethodSize, ulMethodToken, ulColdMethodFlags, clrInstanceID);  } \
+        { FireEtwMethodDCEnd_V1(ullMethodIdentifier, ullModuleID, ullMethodStartAddress, ulMethodSize, ulMethodToken, ulColdMethodFlags, clrInstanceID);  } \
     else \
-        { FireEtwMethodDCEnd_V2(ullMethodIdentifier, ullModuleID, ullColdMethodStartAddress, ulColdMethodSize, ulMethodToken, ulColdMethodFlags, clrInstanceID, nativeCodeId); } \
+        { FireEtwMethodDCEnd_V2(ullMethodIdentifier, ullModuleID, ullMethodStartAddress, ulMethodSize, ulMethodToken, ulColdMethodFlags, clrInstanceID, nativeCodeId); } \
 }
 
 // Module load / unload events:
@@ -6576,8 +6576,8 @@ VOID ETW::MethodLog::SendMethodEvent(MethodDesc *pMethodDesc, DWORD dwEventOptio
 
     Module *pModule = NULL;
     Module *pLoaderModule = NULL; // This must not be used except for getting the ModuleID
-    ULONGLONG ullMethodStartAddress=0, ullColdMethodStartAddress=0, ullModuleID=0, ullMethodIdentifier=0;
-    ULONG ulMethodSize=0, ulColdMethodSize=0, ulMethodToken=0, ulMethodFlags=0, ulColdMethodFlags=0;
+    ULONGLONG ullMethodStartAddress=0, ullModuleID=0, ullMethodIdentifier=0;
+    ULONG ulMethodSize=0, ulMethodToken=0, ulMethodFlags=0, ulColdMethodFlags=0;
     PWCHAR pMethodName=NULL, pNamespaceName=NULL, pMethodSignature=NULL;
     BOOL bShowVerboseOutput = FALSE, bIsDynamicMethod = FALSE, bHasSharedGenericCode = FALSE, bIsGenericMethod = FALSE;
     PCWSTR szDtraceOutput1=W(""),szDtraceOutput2=W(""),szDtraceOutput3=W("");
