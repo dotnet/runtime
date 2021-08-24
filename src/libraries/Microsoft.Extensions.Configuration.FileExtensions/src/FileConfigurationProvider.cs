@@ -30,7 +30,7 @@ namespace Microsoft.Extensions.Configuration
             if (Source.ReloadOnChange && Source.FileProvider != null)
             {
                 _changeTokenRegistration = ChangeToken.OnChange(
-                    () => Source.FileProvider.Watch(Source.Path),
+                    () => Source.FileProvider.Watch(Source.Path!),
                     () =>
                     {
                         Thread.Sleep(Source.ReloadDelay);
