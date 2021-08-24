@@ -17,7 +17,7 @@ namespace DebuggerTests
         [Fact]
         public async Task UsingDebuggerDisplay()
         {
-            var bp = await SetBreakpointInMethod("debugger-test.dll", "DebuggerTests.DebuggerCustomViewTest", "run", 6);
+            var bp = await SetBreakpointInMethod("debugger-test.dll", "DebuggerTests.DebuggerCustomViewTest", "run", 12);
             var pause_location = await EvaluateAndCheck(
                 "window.setTimeout(function() { invoke_static_method ('[debugger-test] DebuggerTests.DebuggerCustomViewTest:run'); }, 1);",
                 "dotnet://debugger-test.dll/debugger-custom-view-test.cs",
