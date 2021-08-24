@@ -204,7 +204,7 @@ public:
 
     ModuleRecord(unsigned lenName = 0, unsigned lenAssemblyName = 0);
 
-    bool MatchWithModule(ModuleVersion & version, bool & gotVersion, Module * pModule, bool & shouldAbort) const;
+    bool MatchWithModule(ModuleVersion & version, bool & gotVersion, Module * pModule) const;
 
     unsigned ModuleNameLen() const
     {
@@ -273,7 +273,6 @@ private:
     unsigned                           m_nFileSize;
     MulticoreJitPlayerStat           & m_stats;
     MulticoreJitCounter              & m_appdomainSession;
-    bool                               m_shouldAbort;
 
     Thread                           * m_pThread;
 
