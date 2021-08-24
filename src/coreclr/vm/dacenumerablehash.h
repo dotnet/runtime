@@ -43,7 +43,7 @@
 //      FINAL_CLASS  : The class you're declaring (this is used by the base class to locate certain helper
 //                     methods in your class used to tweak hash behavior).
 //      VALUE        : The type of your hash entries (the class defined in the previous step).
-//      SCALE_FACTOR : A multipler on bucket count every time the hash table is grown (currently once the
+//      SCALE_FACTOR : A multiplier on bucket count every time the hash table is grown (currently once the
 //                     number of hash entries exceeds twice the number of buckets). A value of 2 would double
 //                     the number of buckets on each grow operation for example.
 //  3) Define a constructor that invokes the base class constructor with various setup parameters (see
@@ -222,4 +222,4 @@ private:
     DWORD                                    m_cEntries;  // Count of elements in the warm section of the hash
 };
 
-#endif // __NGEN_HASH_INCLUDED
+#endif // __DAC_ENUMERABLE_HASH_INCLUDED
