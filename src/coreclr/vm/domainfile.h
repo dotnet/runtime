@@ -394,11 +394,6 @@ class DomainFile
     DynamicMethodTable          *m_pDynamicMethodTable;
     class UMThunkHash *m_pUMThunkHash;
     BOOL m_bDisableActivationCheck;
-
-    // This value is to make it easier to diagnose Assembly Loader "rejected native image" crashes.
-    // See Dev11 bug 358184 for more details
-public:
-    DWORD m_dwReasonForRejectingNativeImage; // See code:g_dwLoaderReasonForNotSharing in Assembly.cpp for a similar variable.
 };
 
 // These will sometimes result in a crash with error code 0x80131506 COR_E_EXECUTIONENGINE
