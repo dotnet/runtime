@@ -10,7 +10,9 @@ internal static partial class Interop
 {
     internal static partial class Kernel32
     {
+        // https://docs.microsoft.com/en-us/windows-hardware/drivers/ddi/fltkernel/ns-fltkernel-_flt_file_name_information#remarks
         internal const uint FILE_NAME_NORMALIZED = 0x0;
+        internal const uint FILE_NAME_OPENED = 0x8;
 
         // https://docs.microsoft.com/windows/desktop/api/fileapi/nf-fileapi-getfinalpathnamebyhandlew (kernel32)
         [DllImport(Libraries.Kernel32, EntryPoint = "GetFinalPathNameByHandleW", CharSet = CharSet.Unicode, SetLastError = true, ExactSpelling = true)]
