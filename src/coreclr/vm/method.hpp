@@ -2639,7 +2639,6 @@ public:
         return IsCLRToCOMStub() || IsPInvokeStub();
     }
 
-    void Restore();
     //
     // following implementations defined in DynamicMethod.cpp
     //

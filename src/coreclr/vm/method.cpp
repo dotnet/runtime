@@ -2411,14 +2411,6 @@ BOOL MethodDesc::MayHaveNativeCode()
     return TRUE;
 }
 
-#ifndef DACCESS_COMPILE
-
-void DynamicMethodDesc::Restore()
-{
-}
-
-#endif // !DACCESS_COMPILE
-
 //*******************************************************************************
 void MethodDesc::CheckRestore(ClassLoadLevel level)
 {
@@ -2457,9 +2449,6 @@ void MethodDesc::CheckRestore(ClassLoadLevel level)
             ClassLoader::EnsureLoaded(TypeHandle(GetMethodTable()), level);
 
 #ifndef DACCESS_COMPILE
-            PTR_DynamicMethodDesc pDynamicMD = AsDynamicMethodDesc();
-            pDynamicMD->Restore();
-
             if (ETW_PROVIDER_ENABLED(MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER))
             {
                 ETW::MethodLog::MethodRestored(this);
