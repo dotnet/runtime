@@ -821,6 +821,7 @@ private static {JsonParameterInfoValuesTypeRef}[] {typeGenerationSpec.TypeInfoPr
                     string propVarName = propertyGenSpec.PropertyNameVarName;
 
                     // Add the property names to the context-wide cache; we'll generate the source to initialize them at the end of generation.
+                    Debug.Assert(!_currentContext.RuntimePropertyNames.TryGetValue(runtimePropName, out string? existingName) || existingName == propVarName);
                     _currentContext.RuntimePropertyNames.TryAdd(runtimePropName, propVarName);
 
                     Type propertyType = propertyTypeSpec.Type;
@@ -1208,7 +1209,7 @@ private static {JsonSerializerOptionsTypeRef} {DefaultOptionsStaticVarName} {{ g
                 foreach (KeyValuePair<string, string> name_varName_pair in _currentContext.RuntimePropertyNames)
                 {
                     sb.Append($@"
-private static {JsonEncodedTextTypeRef} {name_varName_pair.Value} = {JsonEncodedTextTypeRef}.Encode(""{name_varName_pair.Key}"");");
+private static readonly {JsonEncodedTextTypeRef} {name_varName_pair.Value} = {JsonEncodedTextTypeRef}.Encode(""{name_varName_pair.Key}"");");
                 }
 
                 return sb.ToString();
