@@ -1761,7 +1761,7 @@ bool Compiler::StructPromotionHelper::CanPromoteStructType(CORINFO_CLASS_HANDLE 
     // or 8 Vector<T>/Vector128<T> fields on SSE2.
     const int MaxOffset = MAX_NumOfFieldsInPromotableStruct * YMM_REGSIZE_BYTES;
 #elif defined(TARGET_ARM64)
-    const int MaxOffset = MAX_NumOfFieldsInPromotableStruct * FP_REGSIZE_BYTES;
+    const int MaxOffset      = MAX_NumOfFieldsInPromotableStruct * FP_REGSIZE_BYTES;
 #endif // defined(TARGET_XARCH) || defined(TARGET_ARM64)
 #else  // !FEATURE_SIMD
     const int MaxOffset = MAX_NumOfFieldsInPromotableStruct * sizeof(double);
