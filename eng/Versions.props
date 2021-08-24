@@ -42,8 +42,8 @@
   </ItemGroup>
   <PropertyGroup>
     <!-- For source generator support we are targeting the latest version of Roslyn for now, until we can support multi-targeting -->
-    <MicrosoftCodeAnalysisCSharpWorkspacesVersion>4.0.0-2.final</MicrosoftCodeAnalysisCSharpWorkspacesVersion>
-    <MicrosoftCodeAnalysisVersion>4.0.0-2.final</MicrosoftCodeAnalysisVersion>
+    <MicrosoftCodeAnalysisCSharpWorkspacesVersion>4.0.0-3.final</MicrosoftCodeAnalysisCSharpWorkspacesVersion>
+    <MicrosoftCodeAnalysisVersion>4.0.0-3.final</MicrosoftCodeAnalysisVersion>
   </PropertyGroup>
   <PropertyGroup>
     <!-- Code analysis dependencies -->
