@@ -2186,7 +2186,7 @@ public:
 class MethodDescChunk
 {
     friend class MethodDesc;
-    friend class CheckAsmOffsets; // DACCESS_COMPILE
+    friend class CheckAsmOffsets;
 
     enum {
         enum_flag_TokenRangeMask                           = 0x03FF, // This must equal METHOD_TOKEN_RANGE_MASK calculated higher in this file
