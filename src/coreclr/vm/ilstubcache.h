@@ -17,7 +17,7 @@
 #include "vars.hpp"
 #include "util.hpp"
 #include "crst.h"
-#include "ngenhash.h"
+#include "dacenumerablehash.h"
 #include "stubgen.h"
 
 class ILStubHashBlobBase

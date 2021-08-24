@@ -4,21 +4,16 @@
 
 //
 // Abstract base class implementation of a hash table suitable for efficient serialization into an ngen image.
-// See NgenHash.h for a more detailed description.
+// See DacEnumerableHash.h for a more detailed description.
 //
 
+#include "clr_std/type_traits"
+
 // Our implementation embeds entry data supplied by the hash sub-class into a larger entry structure
-// containing NgenHash metadata. We often end up returning pointers to the inner entry to sub-class code and
+// containing DacEnumerableHash metadata. We often end up returning pointers to the inner entry to sub-class code and
 // doing this in a DAC-friendly fashion involves some DAC gymnastics. The following couple of macros factor
 // those complexities out.
 #define VALUE_FROM_VOLATILE_ENTRY(_ptr) dac_cast<DPTR(VALUE)>(PTR_TO_MEMBER_TADDR(VolatileEntry, (_ptr), m_sValue))
-
-// We provide a mechanism for the sub-class to extend per-entry operations via a callback mechanism where the
-// sub-class implements methods with a certain name and signature (details in the module header for
-// NgenHash.h). We could have used virtual methods, but this adds a needless indirection since all the details
-// are known statically. In order to have a base class call a method defined only in a sub-class however we
-// need a little pointer trickery. The following macro hides that.
-#define DOWNCALL(_method) ((FINAL_CLASS*)this)->_method
 
 #ifndef DACCESS_COMPILE
 
@@ -30,7 +25,7 @@
 // but revert to allocating from the module's heap at runtime). If no Module pointer is supplied (non-ngen'd
 // hash table) you must provide a direct heap pointer.
 template <NGEN_HASH_PARAMS>
-NgenHashTable<NGEN_HASH_ARGS>::NgenHashTable(Module *pModule, LoaderHeap *pHeap, DWORD cInitialBuckets)
+DacEnumerableHashTable<NGEN_HASH_ARGS>::DacEnumerableHashTable(Module *pModule, LoaderHeap *pHeap, DWORD cInitialBuckets)
 {
     CONTRACTL
     {
@@ -62,7 +57,7 @@ NgenHashTable<NGEN_HASH_ARGS>::NgenHashTable(Module *pModule, LoaderHeap *pHeap,
 // may be specified as NULL for untracked allocations. This is split from the hash insertion logic so that
 // callers can pre-allocate entries and then perform insertions which cannot fault.
 template <NGEN_HASH_PARAMS>
-VALUE *NgenHashTable<NGEN_HASH_ARGS>::BaseAllocateEntry(AllocMemTracker *pamTracker)
+VALUE *DacEnumerableHashTable<NGEN_HASH_ARGS>::BaseAllocateEntry(AllocMemTracker *pamTracker)
 {
     CONTRACTL
     {
@@ -90,7 +85,7 @@ VALUE *NgenHashTable<NGEN_HASH_ARGS>::BaseAllocateEntry(AllocMemTracker *pamTrac
 
 // Determine loader heap to be used for allocation of entries and bucket lists.
 template <NGEN_HASH_PARAMS>
-LoaderHeap *NgenHashTable<NGEN_HASH_ARGS>::GetHeap()
+LoaderHeap *DacEnumerableHashTable<NGEN_HASH_ARGS>::GetHeap()
 {
     CONTRACTL
     {
@@ -114,7 +109,7 @@ LoaderHeap *NgenHashTable<NGEN_HASH_ARGS>::GetHeap()
 // manner) and associated with the given hash value. The entry should have been initialized prior to
 // insertion.
 template <NGEN_HASH_PARAMS>
-void NgenHashTable<NGEN_HASH_ARGS>::BaseInsertEntry(NgenHashValue iHash, VALUE *pEntry)
+void DacEnumerableHashTable<NGEN_HASH_ARGS>::BaseInsertEntry(DacEnumerableHashValue iHash, VALUE *pEntry)
 {
     CONTRACTL
     {
@@ -160,7 +155,7 @@ void NgenHashTable<NGEN_HASH_ARGS>::BaseInsertEntry(NgenHashValue iHash, VALUE *
 // Increase the size of the bucket list in order to reduce the size of bucket chains. Does nothing on failure
 // to allocate (since this impacts perf, not correctness).
 template <NGEN_HASH_PARAMS>
-void NgenHashTable<NGEN_HASH_ARGS>::GrowTable()
+void DacEnumerableHashTable<NGEN_HASH_ARGS>::GrowTable()
 {
     CONTRACTL
     {
@@ -228,7 +223,7 @@ void NgenHashTable<NGEN_HASH_ARGS>::GrowTable()
 
 // Returns the next prime larger (or equal to) than the number given.
 template <NGEN_HASH_PARAMS>
-DWORD NgenHashTable<NGEN_HASH_ARGS>::NextLargestPrime(DWORD dwNumber)
+DWORD DacEnumerableHashTable<NGEN_HASH_ARGS>::NextLargestPrime(DWORD dwNumber)
 {
     for (DWORD i = 0; i < COUNTOF(g_rgPrimes); i++)
         if (g_rgPrimes[i] >= dwNumber)
@@ -243,7 +238,7 @@ DWORD NgenHashTable<NGEN_HASH_ARGS>::NextLargestPrime(DWORD dwNumber)
 
 // Return the number of entries held in the table (does not include entries allocated but not inserted yet).
 template <NGEN_HASH_PARAMS>
-DWORD NgenHashTable<NGEN_HASH_ARGS>::BaseGetElementCount()
+DWORD DacEnumerableHashTable<NGEN_HASH_ARGS>::BaseGetElementCount()
 {
     LIMITED_METHOD_DAC_CONTRACT;
 
@@ -255,7 +250,7 @@ DWORD NgenHashTable<NGEN_HASH_ARGS>::BaseGetElementCount()
 // initialized by BaseFindFirstEntryByHash and read/updated by BaseFindNextEntryByHash to keep track of where
 // we are.
 template <NGEN_HASH_PARAMS>
-DPTR(VALUE) NgenHashTable<NGEN_HASH_ARGS>::BaseFindFirstEntryByHash(NgenHashValue iHash, LookupContext *pContext)
+DPTR(VALUE) DacEnumerableHashTable<NGEN_HASH_ARGS>::BaseFindFirstEntryByHash(DacEnumerableHashValue iHash, LookupContext *pContext)
 {
     CONTRACTL
     {
@@ -309,7 +304,7 @@ DPTR(VALUE) NgenHashTable<NGEN_HASH_ARGS>::BaseFindFirstEntryByHash(NgenHashValu
 // initialized by BaseFindFirstEntryByHash and read/updated by BaseFindNextEntryByHash to keep track of where
 // we are.
 template <NGEN_HASH_PARAMS>
-DPTR(VALUE) NgenHashTable<NGEN_HASH_ARGS>::BaseFindNextEntryByHash(LookupContext *pContext)
+DPTR(VALUE) DacEnumerableHashTable<NGEN_HASH_ARGS>::BaseFindNextEntryByHash(LookupContext *pContext)
 {
     CONTRACTL
     {
@@ -321,7 +316,7 @@ DPTR(VALUE) NgenHashTable<NGEN_HASH_ARGS>::BaseFindNextEntryByHash(LookupContext
     }
     CONTRACTL_END;
 
-    NgenHashValue iHash;
+    DacEnumerableHashValue iHash;
 
     // Fetch the entry we were looking at last from the context and remember the corresponding hash code.
     PTR_VolatileEntry pVolatileEntry = dac_cast<PTR_VolatileEntry>(pContext->m_pEntry);
@@ -342,19 +337,41 @@ DPTR(VALUE) NgenHashTable<NGEN_HASH_ARGS>::BaseFindNextEntryByHash(LookupContext
     }
 
     return NULL;
-
-    default:
-        _ASSERTE(!"Unknown NgenHashTable entry type");
-        return NULL;
-    }
 }
 
 #ifdef DACCESS_COMPILE
 
+namespace HashTableDetail
+{
+    // Use the C++ detection idiom (https://isocpp.org/blog/2017/09/detection-idiom-a-stopgap-for-concepts-simon-brand) to call the
+    // derived table's EnumMemoryRegionsForEntry method if it defines one.
+    template<typename...>
+    using void_t = void;
+
+    template<typename B>
+    struct negation : std::integral_constant<bool, !bool(B::value)> { };
+    template <NGEN_HASH_PARAMS, typename = void>
+    struct HasCustomEntryMemoryRegionEnum : std::false_type {};
+
+    template <NGEN_HASH_PARAMS>
+    struct HasCustomEntryMemoryRegionEnum<NGEN_HASH_ARGS, void_t<decltype(std::declval<FINAL_CLASS>().EnumMemoryRegionsForEntry(std::declval<DPTR(VALUE)>(), std::declval<CLRDataEnumMemoryFlags>()))>> : std::true_type {};
+
+    template<NGEN_HASH_PARAMS, typename std::enable_if<HasCustomEntryMemoryRegionEnum<NGEN_HASH_ARGS>::value>::type* = nullptr>
+    void EnumMemoryRegionsForEntry(FINAL_CLASS* hashTable, DPTR(VALUE) pEntry, CLRDataEnumMemoryFlags flags)
+    {
+        hashTable->EnumMemoryRegionsForEntry(pEntry, flags);
+    }
+
+    template<NGEN_HASH_PARAMS, typename std::enable_if<negation<HasCustomEntryMemoryRegionEnum<NGEN_HASH_ARGS>>::value>::type* = nullptr>
+    void EnumMemoryRegionsForEntry(FINAL_CLASS* hashTable, DPTR(VALUE) pEntry, CLRDataEnumMemoryFlags flags)
+    {
+    }
+}
+
 // Call during DAC enumeration of memory regions to save all hash table data structures. Calls derived-class
 // implementation of EnumMemoryRegionsForEntry to allow additional per-entry memory to be reported.
 template <NGEN_HASH_PARAMS>
-void NgenHashTable<NGEN_HASH_ARGS>::BaseEnumMemoryRegions(CLRDataEnumMemoryFlags flags)
+void DacEnumerableHashTable<NGEN_HASH_ARGS>::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
 {
     SUPPORTS_DAC;
 
@@ -376,7 +393,7 @@ void NgenHashTable<NGEN_HASH_ARGS>::BaseEnumMemoryRegions(CLRDataEnumMemoryFlags
                 pEntry.EnumMem();
 
                 // Ask the sub-class whether each entry points to further data to be saved.
-                DOWNCALL(EnumMemoryRegionsForEntry)(VALUE_FROM_VOLATILE_ENTRY(pEntry), flags);
+                HashTableDetail::EnumMemoryRegionsForEntry<NGEN_HASH_ARGS>((FINAL_CLASS*)this, VALUE_FROM_VOLATILE_ENTRY(pEntry), flags);
 
                 pEntry = pEntry->m_pNextEntry;
             }
@@ -392,11 +409,11 @@ void NgenHashTable<NGEN_HASH_ARGS>::BaseEnumMemoryRegions(CLRDataEnumMemoryFlags
 // Initializes the iterator context passed by the caller to make it ready to walk every entry in the table in
 // an arbitrary order. Call pIterator->Next() to retrieve the first entry.
 template <NGEN_HASH_PARAMS>
-void NgenHashTable<NGEN_HASH_ARGS>::BaseInitIterator(BaseIterator *pIterator)
+void DacEnumerableHashTable<NGEN_HASH_ARGS>::BaseInitIterator(BaseIterator *pIterator)
 {
     LIMITED_METHOD_DAC_CONTRACT;
 
-    pIterator->m_pTable = dac_cast<DPTR(NgenHashTable<NGEN_HASH_ARGS>)>(this);
+    pIterator->m_pTable = dac_cast<DPTR(DacEnumerableHashTable<NGEN_HASH_ARGS>)>(this);
     pIterator->m_pEntry = NULL;
     pIterator->m_dwBucket = 0;
 }
@@ -404,7 +421,7 @@ void NgenHashTable<NGEN_HASH_ARGS>::BaseInitIterator(BaseIterator *pIterator)
 // Returns a pointer to the next entry in the hash table or NULL once all entries have been enumerated. Once
 // NULL has been return the only legal operation is to re-initialize the iterator with BaseInitIterator.
 template <NGEN_HASH_PARAMS>
-DPTR(VALUE) NgenHashTable<NGEN_HASH_ARGS>::BaseIterator::Next()
+DPTR(VALUE) DacEnumerableHashTable<NGEN_HASH_ARGS>::BaseIterator::Next()
 {
     CONTRACTL
     {
@@ -414,7 +431,10 @@ DPTR(VALUE) NgenHashTable<NGEN_HASH_ARGS>::BaseIterator::Next()
         SUPPORTS_DAC;
     }
     CONTRACTL_END;
-    while (true)
+
+    // We might need to re-iterate our algorithm if we fall off the end of one hash table section (Hot or
+    // Warm) and need to move onto the next.
+    while (m_dwBucket < m_pTable->m_cBuckets)
     {
         if (m_pEntry == NULL)
         {
@@ -436,44 +456,6 @@ DPTR(VALUE) NgenHashTable<NGEN_HASH_ARGS>::BaseIterator::Next()
         // Othwerwise we found the end of a bucket chain. Increment the current bucket and, if there are
         // buckets left to scan go back around again.
         m_dwBucket++;
-        if (m_dwBucket < m_pTable->m_cBuckets)
-            break;
-
-        return NULL;
     }
+    return NULL;
 }
-
-// Get a pointer to the referenced entry.
-template <NGEN_HASH_PARAMS>
-DPTR(VALUE) NgenHashEntryRef<NGEN_HASH_ARGS>::Get()
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
-        SUPPORTS_DAC;
-    }
-    CONTRACTL_END;
-
-    return m_rpEntryRef;
-}
-
-#ifndef DACCESS_COMPILE
-
-// Set the reference to point to the given entry.
-template <NGEN_HASH_PARAMS>
-void NgenHashEntryRef<NGEN_HASH_ARGS>::Set(VALUE *pEntry)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
-    m_rpEntryRef = pEntry;
-}
-
-#endif // !DACCESS_COMPILE

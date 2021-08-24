@@ -3,8 +3,9 @@
 //
 
 //
-// NgenHash is an abstract base class (actually a templated base class) designed to factor out the
-// functionality common to hashes persisted into ngen images.
+// DacEnumerableHash is an base class using the "Curiously recurring template pattern"
+// (https://en.wikipedia.org/wiki/Curiously_recurring_template_pattern)
+// designed to factor out the functionality common to hash tables that are captured during DAC memory enumeration
 //
 // SEMANTICS
 //
@@ -33,15 +34,12 @@
 //
 // SUB-CLASSING REQUIREMENTS
 //
-// To author a new NgenHash-based hashtable, the following steps are required:
+// To author a new DacEnumerableHash-based hashtable, the following steps are required:
 //  1) In most cases (where each hash entry will have multiple fields) a structure defining the hash entry
 //     should be declared (see EEClassHashEntry in ClassHash.h for an example). This structure need not
 //     include a field for the hash code or pointer to the next entry in the hash bucket; these are taken care
-//     of automatically by the base class. If the entry must reference another entry in the hash (this should
-//     be rare) the NgenHashEntryRef<> template class should be used to abstract the reference (this class
-//     hides some of the transformation work that must take place when entries are re-ordered during ngen
-//     serialization).
-//  2) Declare your new hash class deriving from NgenHash and providing the following template parameters:
+//     of automatically by the base class.
+//  2) Declare your new hash class deriving from DacEnumerableHash and providing the following template parameters:
 //      FINAL_CLASS  : The class you're declaring (this is used by the base class to locate certain helper
 //                     methods in your class used to tweak hash behavior).
 //      VALUE        : The type of your hash entries (the class defined in the previous step).
@@ -49,17 +47,16 @@
 //                     number of hash entries exceeds twice the number of buckets). A value of 2 would double
 //                     the number of buckets on each grow operation for example.
 //  3) Define a constructor that invokes the base class constructor with various setup parameters (see
-//     NgenHash constructor in this header). If your hash table is created via a static method rather than
+//     DacEnumerableHash constructor in this header). If your hash table is created via a static method rather than
 //     direct construction (common) then call your constructor using an in-place new inside the static method
 //     (see EEClassHashTable::Create in ClassHash.cpp for an example).
 //  4) Define your basic hash functionality (creation, insertion, lookup, enumeration, and DAC
-//     memory enumeration) using the Base* methods provided by NgenHash.
-//  5) Tweak the operation of BaseSave, BaseFixup and BaseEnumMemoryRegions by providing definitions of the
-//     following methods (note that all methods must be defined though they may be no-ops):
+//     memory enumeration) using the Base* methods provided by DacEnumerableHash.
+//  5) The following methods can be defined on the derived class to customize the DAC memory enumeration:
 //
 //          void EnumMemoryRegionsForEntry(EEClassHashEntry_t *pEntry, CLRDataEnumMemoryFlags flags);
-//              Called during BaseEnumMemoryRegions for each entry in the hash. Use to enumerate any memory
-//              referenced by the entry (but not the entry itself).
+//              Called during EnumMemoryRegions for each entry in the hash. Use to enumerate any memory
+//              referenced by the entry (but not the entry itself, that is already done by EnumMemoryRegions).
 //
 // USER REQUIREMENTS
 //
@@ -76,47 +73,42 @@
 // factor supplied by the hash sub-class.
 //
 
-#ifndef __NGEN_HASH_INCLUDED
-#define __NGEN_HASH_INCLUDED
+#ifndef __DAC_ENUMERABLE_HASH_INCLUDED
+#define __DAC_ENUMERABLE_HASH_INCLUDED
 
 // The type used to contain an entry hash value. This is not customizable on a per-hash class basis: all
-// NgenHash derived hashes will share the same definition. Note that we only care about the data size, and the
+// DacEnumerableHash derived hashes will share the same definition. Note that we only care about the data size, and the
 // fact that it is an unsigned integer value (so we can take a modulus for bucket computation and use bitwise
 // equality checks). The base class does not care about or participate in how these hash values are calculated.
-typedef DWORD NgenHashValue;
+typedef DWORD DacEnumerableHashValue;
 
-// The following code (and code in NgenHash.inl) has to replicate the base class template parameters (and in
+// The following code (and code in DacEnumerableHash.inl) has to replicate the base class template parameters (and in
 // some cases the arguments) many many times. In the interests of brevity (and to make it a whole lot easier
 // to modify these parameters in the future) we define macro shorthands for them here. Scan through the code
 // to see how these are used.
 #define NGEN_HASH_PARAMS typename FINAL_CLASS, typename VALUE, int SCALE_FACTOR
 #define NGEN_HASH_ARGS FINAL_CLASS, VALUE, SCALE_FACTOR
 
-// Forward definition of NgenHashEntryRef (it takes the same template parameters as NgenHash and simplifies
-// hash entries that need to refer to other hash entries).
-template <NGEN_HASH_PARAMS>
-class NgenHashEntryRef;
-
 // The base hash class itself. It's abstract and exposes its functionality via protected members (nothing is
 // public).
 template <NGEN_HASH_PARAMS>
-class NgenHashTable
+class DacEnumerableHashTable
 {
-    // NgenHashEntryRef needs access to the base table internal during Fixup in order to compute zap node
-    // bases.
-    friend class NgenHashEntryRef<NGEN_HASH_ARGS>;
+public:
 
 #ifdef DACCESS_COMPILE
-    // Nidump knows how to walk this data structure.
-    friend class NativeImageDumper;
-#endif
+    // Call during DAC enumeration of memory regions to save in mini-dump to enumerate all hash table data
+    // structures. Calls derived-class implementation of EnumMemoryRegionsForEntry to allow additional
+    // per-entry memory to be reported.
+    void EnumMemoryRegions(CLRDataEnumMemoryFlags flags);
+#endif // DACCESS_COMPILE
 
 protected:
     // This opaque structure provides enumeration context when walking the set of entries which share a common
     // hash code. Initialized by BaseFindFirstEntryByHash and read/updated by BaseFindNextEntryByHash.
     class LookupContext
     {
-        friend class NgenHashTable<NGEN_HASH_ARGS>;
+        friend class DacEnumerableHashTable<NGEN_HASH_ARGS>;
 
         TADDR   m_pEntry;               // The entry the caller is currently looking at (or NULL to begin
                                         // with). This is a VolatileEntry* (depending on
@@ -139,9 +131,9 @@ protected:
         DPTR(VALUE) Next();
 
     private:
-        friend class NgenHashTable<NGEN_HASH_ARGS>;
+        friend class DacEnumerableHashTable<NGEN_HASH_ARGS>;
 
-        DPTR(NgenHashTable<NGEN_HASH_ARGS>) m_pTable;   // Pointer back to the table being enumerated.
+        DPTR(DacEnumerableHashTable<NGEN_HASH_ARGS>) m_pTable;   // Pointer back to the table being enumerated.
         TADDR                   m_pEntry;               // The entry the caller is currently looking at (or
                                                         // NULL to begin with). This is a VolatileEntry* and
                                                         // should always be a target address not a DAC PTR_.
@@ -161,7 +153,7 @@ protected:
     // provided. Note that the heap provided is not serialized (so you'll allocate from that heap at
     // ngen-time, but revert to allocating from the module's heap at runtime). If no Module pointer is
     // supplied (non-ngen'd hash table) you must provide a direct heap pointer.
-    NgenHashTable(Module *pModule, LoaderHeap *pHeap, DWORD cInitialBuckets);
+    DacEnumerableHashTable(Module *pModule, LoaderHeap *pHeap, DWORD cInitialBuckets);
 
     // Allocate an uninitialized entry for the hash table (it's not inserted). The AllocMemTracker is optional
     // and may be specified as NULL for untracked allocations. This is split from the hash insertion logic so
@@ -171,7 +163,7 @@ protected:
     // Insert an entry previously allocated via BaseAllocateEntry (you cannot allocated entries in any other
     // manner) and associated with the given hash value. The entry should have been initialized prior to
     // insertion.
-    void BaseInsertEntry(NgenHashValue iHash, VALUE *pEntry);
+    void BaseInsertEntry(DacEnumerableHashValue iHash, VALUE *pEntry);
 #endif // !DACCESS_COMPILE
 
     // Return the number of entries held in the table (does not include entries allocated but not inserted
@@ -186,15 +178,8 @@ protected:
     // to iterate the remaining matches (until it returns NULL). The LookupContext supplied by the caller is
     // initialized by BaseFindFirstEntryByHash and read/updated by BaseFindNextEntryByHash to keep track of
     // where we are.
-    DPTR(VALUE) BaseFindFirstEntryByHash(NgenHashValue iHash, LookupContext *pContext);
+    DPTR(VALUE) BaseFindFirstEntryByHash(DacEnumerableHashValue iHash, LookupContext *pContext);
     DPTR(VALUE) BaseFindNextEntryByHash(LookupContext *pContext);
-
-#ifdef DACCESS_COMPILE
-    // Call during DAC enumeration of memory regions to save in mini-dump to enumerate all hash table data
-    // structures. Calls derived-class implementation of EnumMemoryRegionsForEntry to allow additional
-    // per-entry memory to be reported.
-    void BaseEnumMemoryRegions(CLRDataEnumMemoryFlags flags);
-#endif // DACCESS_COMPILE
 
     PTR_Module GetModule()
     {
@@ -213,7 +198,7 @@ private:
     {
         VALUE               m_sValue;           // The derived-class format of an entry
         PTR_VolatileEntry   m_pNextEntry;       // Pointer to the next entry in the bucket chain (or NULL)
-        NgenHashValue       m_iHashValue;       // The hash value associated with the entry
+        DacEnumerableHashValue       m_iHashValue;       // The hash value associated with the entry
     };
 
 #ifndef DACCESS_COMPILE
@@ -232,7 +217,7 @@ private:
     {
         SUPPORTS_DAC;
 
-        return m_pWarmBuckets;
+        return m_pBuckets;
     }
 
     // Loader heap provided at construction time. May be NULL (in which case m_pModule must *not* be NULL).
@@ -242,33 +227,6 @@ private:
     DPTR(PTR_VolatileEntry)                  m_pBuckets;  // Pointer to a simple bucket list (array of VolatileEntry pointers)
     DWORD                                    m_cBuckets;  // Count of buckets in the above array (always non-zero)
     DWORD                                    m_cEntries;  // Count of elements in the warm section of the hash
-};
-
-// Abstraction around cross-hash entry references (e.g. EEClassHashTable, where entries for nested types point
-// to entries for their enclosing types). Under the covers we use a relative pointer which avoids the need to
-// allocate a base relocation fixup and the resulting write into the entry at load time. The abstraction hides
-// some of the complexity needed to achieve this.
-template <NGEN_HASH_PARAMS>
-class NgenHashEntryRef
-{
-public:
-    // Get a pointer to the referenced entry.
-    DPTR(VALUE) Get();
-
-#ifndef DACCESS_COMPILE
-    // Set the reference to point to the given entry.
-    void Set(VALUE *pEntry);
-
-    NgenHashEntryRef<NGEN_HASH_ARGS>& operator = (const NgenHashEntryRef<NGEN_HASH_ARGS> &src)
-    {
-        src.m_rpEntryRef.BitwiseCopyTo(m_rpEntryRef);
-
-        return *this;
-    }
-#endif // !DACCESS_COMPILE
-
-private:
-    DPTR(VALUE) m_rpEntryRef;  // Entry ref encoded as a delta from this field's location.
 };
 
 #endif // __NGEN_HASH_INCLUDED
