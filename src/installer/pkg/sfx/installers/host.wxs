@@ -24,8 +24,23 @@
         <File Id="fileCoreHostExe" KeyPath="yes" Source="$(var.HostSrc)\dotnet.exe">
           <CopyFile Id="copyFileCoreHostExe" DestinationDirectory="PROGRAMFILES_DOTNET" />
         </File>
+      </Component>
+        
+      <Component Id="cmpSharedHostVersionRegistry" Guid="*">
         <RegistryKey Root="HKLM" Key="SOFTWARE\dotnet\Setup\InstalledVersions\$(var.Platform)\sharedhost">
           <RegistryValue Action="write" Name="Version" Type="string" Value="$(var.NugetVersion)"/>
+        </RegistryKey>
+      </Component>
+
+      <Component Id="cmdPath" Guid="*">
+        <?if $(var.MockPlatform) = x64 ?>
+        <!-- For x64 installer, only add to PATH when actually on native platform -->
+        <Condition>NOT INSTALLING_IN_EMULATION</Condition>
+        <?endif?>
+
+        <!-- A stable keypath with the right SxS characteristics for our PATH entry-->
+        <RegistryKey Root="HKLM" Key="SOFTWARE\dotnet\Setup\InstalledVersions\$(var.Platform)\sharedhost">
+          <RegistryValue KeyPath="yes" Action="write" Name="Path" Type="string" Value="[DOTNETHOME]"/>
         </RegistryKey>
         <Environment Id="E_PATH" Name="PATH" Value="[DOTNETHOME]" Part="last" Action="set" System="yes" />
       </Component>
@@ -47,6 +62,19 @@
     <DirectoryRef Id="$(var.Program_Files)">
       <Directory Id="PROGRAMFILES_DOTNET" Name="dotnet" />
     </DirectoryRef>
+    
+    <?if $(var.Platform) = x64 ?>
+    <CustomActionRef Id="Set_DOTNETHOME_x64" />
+    <CustomActionRef Id="Set_PROGRAMFILES_DOTNET_x64" />
+    <?endif?>
   </Fragment>
-
+  
+  <Fragment>
+    <PropertyRef Id="INSTALLING_IN_EMULATION" />
+    
+    <!-- Unlike DOTNETHOME which gives precedence to a user specified value over an x64 suffix, here we always want the suffixed path -->
+    <SetProperty Action="Set_PROGRAMFILES_DOTNET_x64" Id="PROGRAMFILES_DOTNET" Value="[$(var.ProgramFilesFolder)]dotnet\x64\" Before="CostFinalize">
+      INSTALLING_IN_EMULATION
+    </SetProperty>
+  </Fragment>
 </Wix>
