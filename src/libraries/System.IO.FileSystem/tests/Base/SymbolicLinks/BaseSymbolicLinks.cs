@@ -1,10 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Buffers;
-using System.Diagnostics;
-using System.Runtime.InteropServices;
-using Microsoft.Win32.SafeHandles;
 using Xunit;
 
 namespace System.IO.Tests
@@ -29,12 +25,26 @@ namespace System.IO.Tests
 
         protected string GetRandomFileName() => GetTestFileName() + ".txt";
         protected string GetRandomLinkName() => GetTestFileName() + ".link";
-        protected string GetRandomDirName()  => GetTestFileName() + "_dir";
+        protected string GetRandomDirName() => GetTestFileName() + "_dir";
 
         protected string GetRandomFilePath() => Path.Join(ActualTestDirectory.Value, GetRandomFileName());
         protected string GetRandomLinkPath() => Path.Join(ActualTestDirectory.Value, GetRandomLinkName());
-        protected string GetRandomDirPath()  => Path.Join(ActualTestDirectory.Value, GetRandomDirName());
+        protected string GetRandomDirPath() => Path.Join(ActualTestDirectory.Value, GetRandomDirName());
 
         private Lazy<string> ActualTestDirectory => new Lazy<string>(() => GetTestDirectoryActualCasing());
+
+        /// <summary>
+        /// Changes the current working directory path to a new temporary directory.
+        /// Important: Make sure to call this inside a remote executor to avoid changing the cwd for all tests in same process.
+        /// </summary>
+        /// <returns>The path of the new cwd.</returns>
+        protected string GetNewCwdPath()
+        {
+            string tempCwd = GetRandomDirPath();
+            Directory.CreateDirectory(tempCwd);
+            Directory.SetCurrentDirectory(tempCwd);
+            return tempCwd;
+        }
+
     }
 }
