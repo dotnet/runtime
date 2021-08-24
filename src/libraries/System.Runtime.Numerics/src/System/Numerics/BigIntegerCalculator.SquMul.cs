@@ -35,7 +35,6 @@ namespace System.Numerics
             {
                 // Switching to managed references helps eliminating
                 // index bounds check...
-                ref uint valuePtr = ref MemoryMarshal.GetReference(value);
                 ref uint resultPtr = ref MemoryMarshal.GetReference(bits);
 
                 // Squares the bits using the "grammar-school" method.
@@ -52,11 +51,11 @@ namespace System.Numerics
                 for (int i = 0; i < value.Length; i++)
                 {
                     ulong carry = 0UL;
-                    uint v = Unsafe.Add(ref valuePtr, i);
+                    uint v = value[i];
                     for (int j = 0; j < i; j++)
                     {
                         ulong digit1 = Unsafe.Add(ref resultPtr, i + j) + carry;
-                        ulong digit2 = (ulong)Unsafe.Add(ref valuePtr, j) * v;
+                        ulong digit2 = (ulong)value[j] * v;
                         Unsafe.Add(ref resultPtr, i + j) = unchecked((uint)(digit1 + (digit2 << 1)));
                         carry = (digit2 + (digit1 >> 1)) >> 31;
                     }
@@ -176,8 +175,6 @@ namespace System.Numerics
             {
                 // Switching to managed references helps eliminating
                 // index bounds check...
-                ref uint leftPtr = ref MemoryMarshal.GetReference(left);
-                ref uint rightPtr = ref MemoryMarshal.GetReference(right);
                 ref uint resultPtr = ref MemoryMarshal.GetReference(bits);
 
                 // Multiplies the bits using the "grammar-school" method.
@@ -193,7 +190,7 @@ namespace System.Numerics
                     for (int j = 0; j < left.Length; j++)
                     {
                         ref uint elementPtr = ref Unsafe.Add(ref resultPtr, i + j);
-                        ulong digits = elementPtr + carry + (ulong)Unsafe.Add(ref leftPtr, j) * Unsafe.Add(ref rightPtr, i);
+                        ulong digits = elementPtr + carry + (ulong)left[j] * right[i];
                         elementPtr = unchecked((uint)digits);
                         carry = digits >> 32;
                     }
@@ -299,25 +296,26 @@ namespace System.Numerics
             // Switching to managed references helps eliminating
             // index bounds check...
             ref uint leftPtr = ref MemoryMarshal.GetReference(left);
-            ref uint rightPtr = ref MemoryMarshal.GetReference(right);
             ref uint corePtr = ref MemoryMarshal.GetReference(core);
 
             for ( ; i < right.Length; i++)
             {
-                long digit = (Unsafe.Add(ref corePtr, i) + carry) - Unsafe.Add(ref leftPtr, i) - Unsafe.Add(ref rightPtr, i);
+                long digit = (Unsafe.Add(ref corePtr, i) + carry) - Unsafe.Add(ref leftPtr, i) - right[i];
                 Unsafe.Add(ref corePtr, i) = unchecked((uint)digit);
                 carry = digit >> 32;
             }
+
             for ( ; i < left.Length; i++)
             {
-                long digit = (Unsafe.Add(ref corePtr, i) + carry) - Unsafe.Add(ref leftPtr, i);
+                long digit = (Unsafe.Add(ref corePtr, i) + carry) - left[i];
                 Unsafe.Add(ref corePtr, i) = unchecked((uint)digit);
                 carry = digit >> 32;
             }
+
             for ( ; carry != 0 && i < core.Length; i++)
             {
-                long digit = Unsafe.Add(ref corePtr, i) + carry;
-                Unsafe.Add(ref corePtr, i) = (uint)digit;
+                long digit = core[i] + carry;
+                core[i] = (uint)digit;
                 carry = digit >> 32;
             }
         }

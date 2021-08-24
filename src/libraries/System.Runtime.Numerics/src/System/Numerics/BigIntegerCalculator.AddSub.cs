@@ -87,8 +87,8 @@ namespace System.Numerics
             }
             for ( ; carry != 0 && i < left.Length; i++)
             {
-                long digit = Unsafe.Add(ref leftPtr, i) + carry;
-                Unsafe.Add(ref leftPtr, i) = (uint)digit;
+                long digit = left[i] + carry;
+                left[i] = (uint)digit;
                 carry = digit >> 32;
             }
 
@@ -161,7 +161,6 @@ namespace System.Numerics
             // Switching to managed references helps eliminating
             // index bounds check...
             ref uint leftPtr = ref MemoryMarshal.GetReference(left);
-            ref uint rightPtr = ref MemoryMarshal.GetReference(right);
 
             // Executes the "grammar-school" algorithm for computing z = a - b.
             // Same as above, but we're writing the result directly to a and
@@ -169,14 +168,14 @@ namespace System.Numerics
 
             for (; i < right.Length; i++)
             {
-                long digit = (Unsafe.Add(ref leftPtr, i) + carry) - Unsafe.Add(ref rightPtr, i);
+                long digit = (Unsafe.Add(ref leftPtr, i) + carry) - right[i];
                 Unsafe.Add(ref leftPtr, i) = unchecked((uint)digit);
                 carry = digit >> 32;
             }
             for (; carry != 0 && i < left.Length; i++)
             {
-                long digit = Unsafe.Add(ref leftPtr, i) + carry;
-                Unsafe.Add(ref leftPtr, i) = (uint)digit;
+                long digit = left[i] + carry;
+                left[i] = (uint)digit;
                 carry = digit >> 32;
             }
 
