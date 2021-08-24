@@ -499,32 +499,45 @@ namespace System.IO
                 }
 
                 Span<byte> bufferSpan = new(buffer);
-                success = MemoryMarshal.TryRead(bufferSpan, out Interop.Kernel32.REPARSE_DATA_BUFFER rdb);
+                success = MemoryMarshal.TryRead(bufferSpan, out Interop.Kernel32.SymbolicLinkReparseBuffer rbSymlink);
                 Debug.Assert(success);
 
-                // Only symbolic links are supported at the moment.
-                if ((rdb.ReparseTag & Interop.Kernel32.IOReparseOptions.IO_REPARSE_TAG_SYMLINK) == 0)
+                if (rbSymlink.ReparseTag == Interop.Kernel32.IOReparseOptions.IO_REPARSE_TAG_SYMLINK)
                 {
-                    return null;
+                    // We use PrintName instead of SubstituteName given that we don't want to return a NT path when the link wasn't created with such NT path.
+                    // Unlike SubstituteName and GetFinalPathNameByHandle(), PrintName doesn't start with a prefix.
+                    // Another nuance is that SubstituteName does not contain redundant path segments while PrintName does.
+                    // PrintName can ONLY return a NT path if the link was created explicitly targeting a file/folder in such way. e.g: mklink /D linkName \??\C:\path\to\target.
+
+                    int printNameNameOffset = sizeof(Interop.Kernel32.SymbolicLinkReparseBuffer) + rbSymlink.PrintNameOffset;
+                    int printNameNameLength = rbSymlink.PrintNameLength;
+
+                    Span<char> targetPathSymlink = MemoryMarshal.Cast<byte, char>(bufferSpan.Slice(printNameNameOffset, printNameNameLength));
+                    Debug.Assert((rbSymlink.Flags & Interop.Kernel32.SYMLINK_FLAG_RELATIVE) == 0 || !PathInternal.IsExtended(targetPathSymlink));
+
+                    if (returnFullPath && (rbSymlink.Flags & Interop.Kernel32.SYMLINK_FLAG_RELATIVE) != 0)
+                    {
+                        // Target path is relative and is for ResolveLinkTarget(), we need to append the link directory.
+                        return Path.Join(Path.GetDirectoryName(linkPath.AsSpan()), targetPathSymlink);
+                    }
+
+                    return targetPathSymlink.ToString();
+                }
+                else if (rbSymlink.ReparseTag == Interop.Kernel32.IOReparseOptions.IO_REPARSE_TAG_MOUNT_POINT)
+                {
+                    success = MemoryMarshal.TryRead(bufferSpan, out Interop.Kernel32.MountPointReparseBuffer rbMountPoint);
+                    Debug.Assert(success);
+
+                    int printNameNameOffset = sizeof(Interop.Kernel32.MountPointReparseBuffer) + rbMountPoint.PrintNameOffset;
+                    int printNameNameLength = rbMountPoint.PrintNameLength;
+
+                    Span<char> targetPathMountPoint = MemoryMarshal.Cast<byte, char>(bufferSpan.Slice(printNameNameOffset, printNameNameLength));
+                    Debug.Assert(!PathInternal.IsExtended(targetPathMountPoint));
+
+                    return targetPathMountPoint.ToString();
                 }
 
-                // We use PrintName instead of SubstitutneName given that we don't want to return a NT path when the link wasn't created with such NT path.
-                // Unlike SubstituteName and GetFinalPathNameByHandle(), PrintName doesn't start with a prefix.
-                // Another nuance is that SubstituteName does not contain redundant path segments while PrintName does.
-                // PrintName can ONLY return a NT path if the link was created explicitly targeting a file/folder in such way. e.g: mklink /D linkName \??\C:\path\to\target.
-                int printNameNameOffset = sizeof(Interop.Kernel32.REPARSE_DATA_BUFFER) + rdb.ReparseBufferSymbolicLink.PrintNameOffset;
-                int printNameNameLength = rdb.ReparseBufferSymbolicLink.PrintNameLength;
-
-                Span<char> targetPath = MemoryMarshal.Cast<byte, char>(bufferSpan.Slice(printNameNameOffset, printNameNameLength));
-                Debug.Assert((rdb.ReparseBufferSymbolicLink.Flags & Interop.Kernel32.SYMLINK_FLAG_RELATIVE) == 0 || !PathInternal.IsExtended(targetPath));
-
-                if (returnFullPath && (rdb.ReparseBufferSymbolicLink.Flags & Interop.Kernel32.SYMLINK_FLAG_RELATIVE) != 0)
-                {
-                    // Target path is relative and is for ResolveLinkTarget(), we need to append the link directory.
-                    return Path.Join(Path.GetDirectoryName(linkPath.AsSpan()), targetPath);
-                }
-
-                return targetPath.ToString();
+                return null;
             }
             finally
             {
@@ -602,7 +615,7 @@ namespace System.IO
             {
                 fixed (char* bufPtr = buffer)
                 {
-                    return Interop.Kernel32.GetFinalPathNameByHandle(handle, bufPtr, (uint)buffer.Length, Interop.Kernel32.FILE_NAME_NORMALIZED);
+                    return Interop.Kernel32.GetFinalPathNameByHandle(handle, bufPtr, (uint)buffer.Length, Interop.Kernel32.FILE_NAME_OPENED);
                 }
             }
 
