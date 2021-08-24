@@ -5703,18 +5703,6 @@ PCODE JitILStub(MethodDesc* pStubMD)
     return pCode;
 }
 
-MethodDesc* RestoreNGENedStub(MethodDesc* pStubMD)
-{
-    CONTRACTL
-    {
-        STANDARD_VM_CHECK;
-        PRECONDITION(CheckPointer(pStubMD));
-    }
-    CONTRACTL_END;
-
-    return pStubMD;
-}
-
 PCODE GetStubForInteropMethod(MethodDesc* pMD, DWORD dwStubFlags, MethodDesc **ppStubMD)
 {
     CONTRACT(PCODE)
@@ -5730,10 +5718,6 @@ PCODE GetStubForInteropMethod(MethodDesc* pMD, DWORD dwStubFlags, MethodDesc **p
     MethodDesc*             pStubMD = NULL;
 
     pStubMD = GetStubMethodDescFromInteropMethodDesc(pMD, dwStubFlags);
-    if (pStubMD != NULL)
-    {
-        pStubMD = RestoreNGENedStub(pStubMD);
-    }
 
     if ((NULL == pStubMD) && (SF_IsNGENedStub(dwStubFlags)))
     {

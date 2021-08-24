@@ -770,10 +770,6 @@ PCODE ComCallMethodDesc::CreateCOMToCLRStub(DWORD dwStubFlags, MethodDesc **ppSt
 
         // first see if we have an NGENed stub
         pStubMD = GetStubMethodDescFromInteropMethodDesc(pMD, dwStubFlags);
-        if (pStubMD != NULL)
-        {
-            pStubMD = RestoreNGENedStub(pStubMD);
-        }
         if (pStubMD == NULL)
         {
             // no NGENed stub - create a new one
