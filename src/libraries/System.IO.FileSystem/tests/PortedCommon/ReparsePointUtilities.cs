@@ -10,14 +10,14 @@ This is meant to contain useful utilities for IO related work in ReparsePoints
 #define DEBUG
 
 using System;
-using System.IO;
-using System.Text;
-using System.Diagnostics;
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.IO;
+using System.Linq;
 using System.Runtime.InteropServices;
-using System.ComponentModel;
-using System.Threading;
+using System.Text;
 using System.Threading.Tasks;
+
 public static class MountHelper
 {
     [DllImport("kernel32.dll", EntryPoint = "GetVolumeNameForVolumeMountPointW", CharSet = CharSet.Unicode, BestFitMapping = false, SetLastError = true)]
@@ -37,25 +37,95 @@ public static class MountHelper
         if (OperatingSystem.IsWindows())
         {
             symLinkProcess.StartInfo.FileName = "cmd";
-            symLinkProcess.StartInfo.Arguments = string.Format("/c mklink{0} \"{1}\" \"{2}\"", isDirectory ? " /D" : "", linkPath, targetPath);
+            string option = isDirectory ? "/D" : "";
+            symLinkProcess.StartInfo.Arguments = $"/c mklink {option} \"{linkPath}\" \"{targetPath}\"";
         }
         else
         {
             symLinkProcess.StartInfo.FileName = "/bin/ln";
-            symLinkProcess.StartInfo.Arguments = string.Format("-s \"{0}\" \"{1}\"", targetPath, linkPath);
+            symLinkProcess.StartInfo.Arguments = $"-s \"{targetPath}\" \"{linkPath}\"";
         }
         symLinkProcess.StartInfo.UseShellExecute = false;
         symLinkProcess.StartInfo.RedirectStandardOutput = true;
         symLinkProcess.Start();
+        symLinkProcess.WaitForExit();
+        return (0 == symLinkProcess.ExitCode);
+    }
 
-        if (symLinkProcess != null)
+    public static bool CreateJunction(string junctionPath, string targetPath)
+    {
+        if (!OperatingSystem.IsWindows())
         {
-            symLinkProcess.WaitForExit();
-            return (0 == symLinkProcess.ExitCode);
+            throw new PlatformNotSupportedException();
         }
-        else
+
+        Process junctionProcess = new Process();
+        junctionProcess.StartInfo.FileName = "cmd";
+        junctionProcess.StartInfo.Arguments = $"/c mklink /J \"{junctionPath}\" \"{targetPath}\"";
+        junctionProcess.StartInfo.UseShellExecute = false;
+        junctionProcess.StartInfo.RedirectStandardOutput = true;
+        junctionProcess.Start();
+        junctionProcess.WaitForExit();
+        return (0 == junctionProcess.ExitCode);
+    }
+
+    public static char CreateVirtualDrive(string targetDir)
+    {
+        if (!PlatformDetection.IsWindows)
         {
-            return false;
+            throw new PlatformNotSupportedException();
+        }
+
+        char driveLetter = GetRandomDriveLetter();
+
+        Process substProcess = new Process();
+        substProcess.StartInfo.FileName = "subst";
+        substProcess.StartInfo.Arguments = $"{driveLetter}: {targetDir}";
+        substProcess.StartInfo.UseShellExecute = false;
+        substProcess.StartInfo.RedirectStandardOutput = true;
+        substProcess.Start();
+        substProcess.WaitForExit();
+        if (!DriveInfo.GetDrives().Any(x => x.Name[0] == driveLetter))
+        {
+            throw new InvalidOperationException($"Could not create virtual drive {driveLetter}: with subst");
+        }
+        return driveLetter;
+
+        char GetRandomDriveLetter()
+        {
+            List<char> existingDrives = DriveInfo.GetDrives().Select(x => x.Name[0]).ToList();
+
+            // A,B are reserved, C is usually reserved
+            IEnumerable<int> range = Enumerable.Range('D', 'Z' - 'D');
+            IEnumerable<char> castRange = range.Select(x => Convert.ToChar(x));
+            IEnumerable<char> allDrivesLetters = castRange.Except(existingDrives);
+
+            if (!allDrivesLetters.Any())
+            {
+                throw new ArgumentOutOfRangeException("No drive letters available");
+            }
+
+            return allDrivesLetters.First();
+        }
+    }
+
+    public static void DeleteVirtualDrive(char driveLetter)
+    {
+        if (!PlatformDetection.IsWindows)
+        {
+            throw new PlatformNotSupportedException();
+        }
+
+        Process substProcess = new Process();
+        substProcess.StartInfo.FileName = "subst";
+        substProcess.StartInfo.Arguments = $"/d {driveLetter}:";
+        substProcess.StartInfo.UseShellExecute = false;
+        substProcess.StartInfo.RedirectStandardOutput = true;
+        substProcess.Start();
+        substProcess.WaitForExit();
+        if (DriveInfo.GetDrives().Any(x => x.Name[0] == driveLetter))
+        {
+            throw new InvalidOperationException($"Could not delete virtual drive {driveLetter}: with subst");
         }
     }
 
@@ -94,7 +164,7 @@ public static class MountHelper
     }
 
     /// For standalone debugging help. Change Main0 to Main
-     public static void Main0(string[] args)
+    public static void Main0(string[] args)
     {
          try
         {
