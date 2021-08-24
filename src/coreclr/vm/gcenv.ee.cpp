@@ -1735,5 +1735,5 @@ uint32_t GCToEEInterface::GetCurrentProcessCpuCount()
 
 void GCToEEInterface::DiagAddNewRegion(int generation, uint8_t* rangeStart, uint8_t* rangeEnd, uint8_t* rangeEndReserved)
 {
-    ProfAddNewRegion(generation, rangeStart, rangeEnd, rangeEndReserved);
+    ProfilerAddNewRegion(generation, rangeStart, rangeEnd, rangeEndReserved);
 }

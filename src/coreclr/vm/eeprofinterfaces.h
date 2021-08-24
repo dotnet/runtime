@@ -48,7 +48,7 @@ void __stdcall GarbageCollectionFinishedCallback();
 
 void __stdcall UpdateGenerationBounds();
 
-void __stdcall ProfAddNewRegion(int generation, uint8_t* rangeStart, uint8_t* rangeEnd, uint8_t* rangeEndReserved);
+void __stdcall ProfilerAddNewRegion(int generation, uint8_t* rangeStart, uint8_t* rangeEnd, uint8_t* rangeEndReserved);
 #include "eetoprofinterfaceimpl.h"
 
 

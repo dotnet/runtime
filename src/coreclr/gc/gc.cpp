@@ -6688,9 +6688,6 @@ void gc_heap::gc_thread_function ()
 
             if (!should_proceed_with_gc())
             {
-#ifdef USE_REGIONS
-                GCToEEInterface::DiagUpdateGenerationBounds();
-#endif //USE_REGIONS
                 update_collection_counts_for_no_gc();
                 proceed_with_gc_p = FALSE;
             }
@@ -21228,9 +21225,22 @@ bool gc_heap::extend_soh_for_no_gc()
             }
 
             region = heap_segment_next (region);
-            if ((region == nullptr) && !(region = get_new_region (0)))
+            if (region == nullptr)
             {
-                break;
+                region = get_new_region (0);
+                if (region == nullptr)
+                {
+                    break;
+                }
+                else
+                {
+                    GCToEEInterface::DiagAddNewRegion(
+                            0,
+                            heap_segment_mem (region),
+                            heap_segment_allocated (region),
+                            heap_segment_reserved (region)
+                        );
+                }
             }
         }
         else
@@ -43173,7 +43183,7 @@ unsigned int GCHeap::WhichGeneration (Object* object)
     return g;
 }
 
-unsigned int GCHeap::WhichRange (Object* object, uint8_t** ppStart, uint8_t** ppAllocated, uint8_t** ppReserved)
+unsigned int GCHeap::GetGenerationWithRange (Object* object, uint8_t** ppStart, uint8_t** ppAllocated, uint8_t** ppReserved)
 {
     int generation = -1;
     heap_segment * hs = gc_heap::find_segment ((uint8_t*)object, FALSE);
@@ -43195,7 +43205,11 @@ unsigned int GCHeap::WhichRange (Object* object, uint8_t** ppStart, uint8_t** pp
     *ppAllocated = heap_segment_allocated (hs);
     *ppReserved = heap_segment_reserved (hs);
 #else
-    gc_heap* hp = gc_heap::heap_of ((uint8_t*)object);
+#ifdef MULTIPLE_HEAPS
+    gc_heap* hp = heap_segment_heap (hs);
+#else
+    gc_heap* hp = __this;
+#endif //MULTIPLE_HEAPS
     if (hs == hp->ephemeral_heap_segment)
     {
         uint8_t* reserved = heap_segment_reserved (hs);
@@ -43203,7 +43217,7 @@ unsigned int GCHeap::WhichRange (Object* object, uint8_t** ppStart, uint8_t** pp
         for (int gen = 0; gen < max_generation; gen++)
         {
             uint8_t* start = generation_allocation_start (hp->generation_of (gen));
-            if ((uint8_t*)object > start)
+            if ((uint8_t*)object >= start)
             {
                 generation = gen;
                 *ppStart = start;
@@ -43221,7 +43235,7 @@ unsigned int GCHeap::WhichRange (Object* object, uint8_t** ppStart, uint8_t** pp
     }
     else
     {
-        generation = 2;
+        generation = max_generation;
         if (heap_segment_loh_p (hs))
         {
             generation = loh_generation;

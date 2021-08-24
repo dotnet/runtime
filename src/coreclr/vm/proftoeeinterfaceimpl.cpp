@@ -919,7 +919,7 @@ void __stdcall UpdateGenerationBounds()
     RETURN;
 }
 
-void __stdcall ProfAddNewRegion(int generation, uint8_t* rangeStart, uint8_t* rangeEnd, uint8_t* rangeEndReserved)
+void __stdcall ProfilerAddNewRegion(int generation, uint8_t* rangeStart, uint8_t* rangeEnd, uint8_t* rangeEndReserved)
 {
     CONTRACT_VOID
     {
@@ -8997,7 +8997,7 @@ HRESULT ProfToEEInterfaceImpl::GetObjectGeneration(ObjectID objectId,
     uint8_t* pStart;
     uint8_t* pAllocated;
     uint8_t* pReserved;
-    unsigned int generation = hp->WhichRange((Object*)objectId, &pStart, &pAllocated, &pReserved);
+    unsigned int generation = hp->GetGenerationWithRange((Object*)objectId, &pStart, &pAllocated, &pReserved);
 
     UINT_PTR rangeLength = pAllocated - pStart;
     UINT_PTR rangeLengthReserved = pReserved - pStart;
