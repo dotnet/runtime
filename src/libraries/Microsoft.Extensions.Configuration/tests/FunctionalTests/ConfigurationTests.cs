@@ -137,9 +137,9 @@ CommonKey3:CommonKey4=IniValue6";
 
         private class NotVeryGoodFileProvider : IFileProvider
         {
-            public IDirectoryContents GetDirectoryContents(string? subpath) => null!;
+            public IDirectoryContents GetDirectoryContents(string subpath) => null!;
             public IFileInfo GetFileInfo(string subpath) => null!;
-            public IChangeToken Watch(string? filter) => null!;
+            public IChangeToken Watch(string filter) => null!;
         }
 
         private class MissingFile : IFileInfo
@@ -155,9 +155,9 @@ CommonKey3:CommonKey4=IniValue6";
 
         private class AlwaysMissingFileProvider : IFileProvider
         {
-            public IDirectoryContents GetDirectoryContents(string? subpath) => null!;
+            public IDirectoryContents GetDirectoryContents(string subpath) => null!;
             public IFileInfo GetFileInfo(string subpath) => null!;
-            public IChangeToken Watch(string? filter) => null!;
+            public IChangeToken Watch(string filter) => null!;
         }
 
         private void WriteTestFiles()
