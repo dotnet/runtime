@@ -530,7 +530,7 @@ Dictionary* Dictionary::GetMethodDictionaryWithSizeCheck(MethodDesc* pMD, ULONG 
             *pNewDictionary->GetBackPointerSlot(numGenericArgs) = pDictionary;
 
             // Publish the new dictionary slots to the type.
-            FastInterlockExchangePointer(pIMD->m_pPerInstInfo.GetValuePtr(), pNewDictionary);
+            FastInterlockExchangePointer(&pIMD->m_pPerInstInfo, pNewDictionary);
 
             pDictionary = pNewDictionary;
         }
@@ -589,7 +589,7 @@ Dictionary* Dictionary::GetTypeDictionaryWithSizeCheck(MethodTable* pMT, ULONG s
 
             // Publish the new dictionary slots to the type.
             ULONG dictionaryIndex = pMT->GetNumDicts() - 1;
-            Dictionary** pPerInstInfo = pMT->GetPerInstInfo()->GetValuePtr();
+            Dictionary** pPerInstInfo = pMT->GetPerInstInfo();
             FastInterlockExchangePointer(pPerInstInfo + dictionaryIndex, pNewDictionary);
 
             pDictionary = pNewDictionary;
@@ -725,7 +725,7 @@ Dictionary::PopulateEntry(
 
         // MethodTable is expected to be normalized
         Dictionary* pDictionary = pMT->GetDictionary();
-        _ASSERTE(pDictionary == pMT->GetPerInstInfo()[dictionaryIndex].GetValueMaybeNull());
+        _ASSERTE(pDictionary == pMT->GetPerInstInfo()[dictionaryIndex]);
 #endif
     }
 
@@ -788,10 +788,7 @@ Dictionary::PopulateEntry(
                 th = th.GetMethodTable()->GetMethodTableMatchingParentClass(declaringType.AsMethodTable());
             }
 
-            if (!IsCompilationProcess())
-            {
-                th.GetMethodTable()->EnsureInstanceActive();
-            }
+            th.GetMethodTable()->EnsureInstanceActive();
 
             result = (CORINFO_GENERIC_HANDLE)th.AsPtr();
             break;
@@ -943,9 +940,6 @@ Dictionary::PopulateEntry(
 
                     if (kind == DispatchStubAddrSlot)
                     {
-                        if (NingenEnabled())
-                            return NULL;
-
                         fRequiresDispatchStub = TRUE;
                     }
 
@@ -1147,8 +1141,7 @@ Dictionary::PopulateEntry(
                 FieldDesc* pField = ZapSig::DecodeField((Module*)pZapSigContext->pModuleContext, pZapSigContext->pInfoModule, ptr.GetPtr(), &typeContext, &ownerType);
                 _ASSERTE(!ownerType.IsNull());
 
-                if (!IsCompilationProcess())
-                    ownerType.AsMethodTable()->EnsureInstanceActive();
+                ownerType.AsMethodTable()->EnsureInstanceActive();
 
                 result = (CORINFO_GENERIC_HANDLE)pField;
             }
@@ -1172,8 +1165,7 @@ Dictionary::PopulateEntry(
                 uint32_t fieldIndex;
                 IfFailThrow(ptr.GetData(&fieldIndex));
 
-                if (!IsCompilationProcess())
-                    ownerType.AsMethodTable()->EnsureInstanceActive();
+                ownerType.AsMethodTable()->EnsureInstanceActive();
 
                 result = (CORINFO_GENERIC_HANDLE)ownerType.AsMethodTable()->GetFieldDescByIndex(fieldIndex);
             }
@@ -1274,7 +1266,7 @@ Dictionary::PrepopulateDictionary(
                     nonExpansive,
                     &pSlot);
 
-                _ASSERT((entry == NULL) || (entry == GetSlot(numGenericArgs,i)) || IsCompilationProcess());
+                _ASSERT((entry == NULL) || (entry == GetSlot(numGenericArgs,i)));
                 _ASSERT((pSlot == NULL) || (pSlot == GetSlotAddr(numGenericArgs,i)));
             }
         }

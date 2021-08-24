@@ -1139,7 +1139,7 @@ PEAssembly *PEAssembly::DoOpenSystem(IUnknown * pAppCtx)
     ETWOnStartup (FusionBinding_V1, FusionBindingEnd_V1);
     CoreBindResult bindResult;
     ReleaseHolder<BINDER_SPACE::Assembly> pPrivAsm;
-    IfFailThrow(BINDER_SPACE::AssemblyBinderCommon::BindToSystem(&pPrivAsm, !IsCompilationProcess() || g_fAllowNativeImages));
+    IfFailThrow(BINDER_SPACE::AssemblyBinderCommon::BindToSystem(&pPrivAsm, true));
     if(pPrivAsm != NULL)
     {
         bindResult.Init(pPrivAsm);

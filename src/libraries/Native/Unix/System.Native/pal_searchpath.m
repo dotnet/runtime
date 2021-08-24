@@ -11,3 +11,10 @@ const char* SystemNative_SearchPath(int32_t folderId)
     const char* path = [[url path] UTF8String];
     return path == NULL ? NULL : strdup (path);
 }
+
+const char* SystemNative_SearchPath_TempDirectory()
+{
+    NSString* tempPath = NSTemporaryDirectory();
+    const char *path = [tempPath UTF8String];
+    return path == NULL ? NULL : strdup (path);
+}

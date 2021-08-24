@@ -495,8 +495,12 @@ mono_interp_get_imethod (MonoMethod *method, MonoError *error)
 		imethod->param_types [i] = mini_get_underlying_type (sig->params [i]);
 
 	jit_mm_lock (jit_mm);
-	if (!mono_internal_hash_table_lookup (&jit_mm->interp_code_hash, method))
+	InterpMethod *old_imethod;
+	if (!((old_imethod = mono_internal_hash_table_lookup (&jit_mm->interp_code_hash, method))))
 		mono_internal_hash_table_insert (&jit_mm->interp_code_hash, method, imethod);
+	else {
+		imethod = old_imethod; /* leak the newly allocated InterpMethod to the mempool */
+	}
 	jit_mm_unlock (jit_mm);
 
 	imethod->prof_flags = mono_profiler_get_call_instrumentation_flags (imethod->method);

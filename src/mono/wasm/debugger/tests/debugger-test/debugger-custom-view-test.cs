@@ -67,6 +67,14 @@ namespace DebuggerTests
             var c = new DebuggerDisplayMethodTest();
             List<int> myList = new List<int>{ 1, 2, 3, 4 };
             var listToTestToList = System.Linq.Enumerable.Range(1, 11);
+
+            Dictionary<string, string> openWith = new Dictionary<string, string>();
+
+            openWith.Add("txt", "notepad");
+            openWith.Add("bmp", "paint");
+            openWith.Add("dib", "paint");
+            Console.WriteLine("break here");
+
             Console.WriteLine("break here");
         }
     }

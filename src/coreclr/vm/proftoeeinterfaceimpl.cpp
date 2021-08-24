@@ -7701,16 +7701,6 @@ HRESULT ProfToEEInterfaceImpl::GetClassLayout(ClassID classID,
         return CORPROF_E_DATAINCOMPLETE;
     }
 
-    // Types can be pre-restored, but they still aren't expected to handle queries before
-    // eager fixups have run. This is a targetted band-aid for a bug intellitrace was
-    // running into - attempting to get the class layout for all types at module load time.
-    // If we don't detect this the runtime will AV during the field iteration below. Feel
-    // free to eliminate this check when a more complete solution is available.
-    if (MethodTable::IsParentMethodTableTagged(typeHandle.AsMethodTable()))
-    {
-        return CORPROF_E_DATAINCOMPLETE;
-    }
-
     // !IsValueType = IsArray || IsReferenceType   Since IsArry has been ruled out above, it must
     // be a reference type if !IsValueType.
     BOOL fReferenceType = !typeHandle.IsValueType();

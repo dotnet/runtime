@@ -394,13 +394,13 @@ CallsiteDetails CreateCallsiteDetails(_In_ FramedMethodFrame *pFrame)
         DelegateEEClass* delegateCls = (DelegateEEClass*)pMD->GetMethodTable()->GetClass();
         _ASSERTE(pFrame->GetThis()->GetMethodTable()->IsDelegate());
 
-        if (pMD == delegateCls->m_pBeginInvokeMethod.GetValue())
+        if (pMD == delegateCls->m_pBeginInvokeMethod)
         {
             callsiteFlags |= CallsiteDetails::BeginInvoke;
         }
         else
         {
-            _ASSERTE(pMD == delegateCls->m_pEndInvokeMethod.GetValue());
+            _ASSERTE(pMD == delegateCls->m_pEndInvokeMethod);
             callsiteFlags |= CallsiteDetails::EndInvoke;
         }
 

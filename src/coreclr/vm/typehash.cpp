@@ -62,7 +62,7 @@ LoaderAllocator *EETypeHashTable::GetLoaderAllocator()
     }
     else
     {
-        _ASSERTE(!m_pModule.IsNull());
+        _ASSERTE(m_pModule != NULL);
         return GetModule()->GetLoaderAllocator();
     }
 }
@@ -544,7 +544,7 @@ VOID EETypeHashTable::InsertValue(TypeHandle data)
         PRECONDITION(!data.IsEncodedFixup());
         PRECONDITION(!data.IsGenericTypeDefinition()); // Generic type defs live in typedef table (availableClasses)
         PRECONDITION(data.HasInstantiation() || data.HasTypeParam() || data.IsFnPtrType()); // It's an instantiated type or an array/ptr/byref type
-        PRECONDITION(m_pModule.IsNull() || GetModule()->IsTenured()); // Destruct won't destruct m_pAvailableParamTypes for non-tenured modules - so make sure no one tries to insert one before the Module has been tenured
+        PRECONDITION(m_pModule == NULL || GetModule()->IsTenured()); // Destruct won't destruct m_pAvailableParamTypes for non-tenured modules - so make sure no one tries to insert one before the Module has been tenured
     }
     CONTRACTL_END
 
@@ -592,7 +592,7 @@ void EETypeHashEntry::SetTypeHandle(TypeHandle handle)
 
     // We plan to steal the low-order bit of the handle for ngen purposes.
     _ASSERTE((handle.AsTAddr() & 0x1) == 0);
-    m_data.SetValueMaybeNull(handle.AsPtr());
+    m_data = handle.AsPtr();
 }
 #endif // !DACCESS_COMPILE
 

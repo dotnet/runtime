@@ -188,9 +188,8 @@ class Dictionary
     friend class NativeImageDumper;
 #endif
 private:
-    // First N entries are generic instantiations arguments. They are stored as FixupPointers
-    // in NGen images. It means that the lowest bit is used to mark optional indirection (see code:FixupPointer).
-    // The rest of the open array are normal pointers (no optional indirection).
+    // First N entries are generic instantiations arguments. 
+    // The rest of the open array are normal pointers (no optional indirection) and may be NULL.
     DictionaryEntry m_pEntries[1];
 
     TADDR EntryAddr(ULONG32 idx)
@@ -202,11 +201,11 @@ private:
     }
 
 public:
-    inline DPTR(FixupPointer<TypeHandle>) GetInstantiation()
+    inline DPTR(TypeHandle) GetInstantiation()
     {
         LIMITED_METHOD_CONTRACT;
         SUPPORTS_DAC;
-        return dac_cast<DPTR(FixupPointer<TypeHandle>)>(EntryAddr(0));
+        return dac_cast<DPTR(TypeHandle)>(EntryAddr(0));
     }
 
 #ifndef DACCESS_COMPILE

@@ -385,8 +385,7 @@ void MethodDesc::PitchNativeCode()
 
     if (HasNativeCodeSlot())
     {
-        RelativePointer<TADDR> *pRelPtr = (RelativePointer<TADDR> *)GetAddrOfNativeCodeSlot();
-        pRelPtr->SetValueMaybeNull(NULL);
+        *GetAddrOfNativeCodeSlot() = NULL;
     }
     else
     {
