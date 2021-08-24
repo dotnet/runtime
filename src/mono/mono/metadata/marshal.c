@@ -5621,13 +5621,6 @@ mono_marshal_type_size (MonoType *type, MonoMarshalSpec *mspec, guint32 *align,
 			(mspec && mspec->native == MONO_NATIVE_STRUCT)) {
 			*align = 16;
 			return 16;
-		} else if (strcmp (m_class_get_name_space (klass), "System") == 0 &&
-			strcmp (m_class_get_name (klass), "Decimal") == 0) {
-
-			// Special case: Managed Decimal consists of 4 int32 fields, the alignment should be 8 on x64 to follow
-			// https://github.com/dotnet/coreclr/blob/4450e5ca663b9e66c20e6f9751c941efa3716fde/src/vm/methodtablebuilder.cpp#L9753
-			*align = MONO_ABI_ALIGNOF (gpointer);
-			return mono_class_native_size (klass, NULL);
 		}
 		padded_size = mono_class_native_size (klass, align);
 		if (padded_size == 0)
