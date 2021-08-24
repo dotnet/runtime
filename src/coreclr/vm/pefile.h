@@ -246,7 +246,7 @@ public:
     // ------------------------------------------------------------
 
     BOOL IsIbcOptimized();
-    BOOL IsILImageReadyToRun();
+    BOOL IsReadyToRun();
     WORD GetSubsystem();
     mdToken GetEntryPointToken(
 #ifdef _DEBUG

@@ -401,7 +401,7 @@ void Module::InitializeForProfiling()
         THROWS;
         GC_TRIGGERS;
         MODE_PREEMPTIVE;
-        PRECONDITION(IsILImageReadyToRun());
+        PRECONDITION(IsReadyToRun());
     }
     CONTRACTL_END;
 
@@ -591,7 +591,7 @@ void Module::Initialize(AllocMemTracker *pamTracker, LPCWSTR szName)
     // Prepare statics that are known at module load time
     AllocateStatics(pamTracker);
 
-    if (IsILImageReadyToRun())
+    if (IsReadyToRun())
     {
         InitializeForProfiling();
     }
@@ -2613,7 +2613,7 @@ BOOL Module::IsInSameVersionBubble(Module *target)
         return TRUE;
     }
 
-    if (!IsILImageReadyToRun())
+    if (!IsReadyToRun())
     {
         return FALSE;
     }
@@ -3161,16 +3161,6 @@ BOOL Module::IsVisibleToDebugger()
     }
 
     return TRUE;
-}
-
-BOOL            Module::IsILImageReadyToRun()
-{
-#ifdef FEATURE_READYTORUN
-    if (IsReadyToRun())
-        return TRUE;
-#endif
-
-    return FALSE;
 }
 
 PEImageLayout * Module::GetReadyToRunImage()
@@ -4885,7 +4875,7 @@ Module *Module::GetModuleFromIndex(DWORD ix)
     }
     CONTRACT_END;
 
-    if (IsILImageReadyToRun())
+    if (IsReadyToRun())
     {
         RETURN ZapSig::DecodeModuleFromIndex(this, ix);
     }
@@ -4915,7 +4905,7 @@ Module *Module::GetModuleFromIndexIfLoaded(DWORD ix)
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
-        PRECONDITION(IsILImageReadyToRun());
+        PRECONDITION(IsReadyToRun());
         POSTCONDITION(CheckPointer(RETVAL, NULL_OK));
     }
     CONTRACT_END;
@@ -4938,7 +4928,7 @@ IMDInternalImport* Module::GetNativeAssemblyImport(BOOL loadAllowed)
         if (loadAllowed) THROWS;                         else NOTHROW;
         if (loadAllowed) INJECT_FAULT(COMPlusThrowOM()); else FORBID_FAULT;
         MODE_ANY;
-        PRECONDITION(IsILImageReadyToRun());
+        PRECONDITION(IsReadyToRun());
         POSTCONDITION(loadAllowed ?
             CheckPointer(RETVAL) :
             CheckPointer(RETVAL, NULL_OK));

@@ -518,7 +518,7 @@ inline BOOL PEFile::IsIbcOptimized()
     return FALSE;
 }
 
-inline BOOL PEFile::IsILImageReadyToRun()
+inline BOOL PEFile::IsReadyToRun()
 {
     CONTRACTL
     {
