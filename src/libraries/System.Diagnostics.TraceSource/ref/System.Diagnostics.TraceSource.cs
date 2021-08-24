@@ -61,7 +61,7 @@ namespace System.Diagnostics
     public partial class SourceSwitch : System.Diagnostics.Switch
     {
         public SourceSwitch(string name) : base (default(string), default(string)) { }
-        public SourceSwitch(string displayName, string defaultSwitchValue) : base (default(string), default(string)) { }
+        public SourceSwitch(string displayName, string? defaultSwitchValue) : base (default(string), default(string)) { }
         public System.Diagnostics.SourceLevels Level { get { throw null; } set { } }
         protected override void OnValueChanged() { }
         public bool ShouldTrace(System.Diagnostics.TraceEventType eventType) { throw null; }

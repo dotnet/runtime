@@ -10,7 +10,7 @@ namespace System.Diagnostics
     {
         public SourceSwitch(string name) : base(name, string.Empty) { }
 
-        public SourceSwitch(string displayName, string defaultSwitchValue)
+        public SourceSwitch(string displayName, string? defaultSwitchValue)
             : base(displayName, string.Empty, defaultSwitchValue)
         { }
 
