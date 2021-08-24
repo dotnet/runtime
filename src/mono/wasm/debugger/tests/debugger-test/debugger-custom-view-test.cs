@@ -58,6 +58,13 @@ namespace DebuggerTests
         }
     }
 
+    [DebuggerDisplay("FirstName: {FirstName}, SurName: {SurName}, Age: {Age}")]
+    public class Person {
+        public string FirstName { get; set; }
+        public string SurName { get; set; }
+        public int Age { get; set; }
+    }
+
     class DebuggerCustomViewTest
     {
         public static void run()
@@ -73,6 +80,9 @@ namespace DebuggerTests
             openWith.Add("txt", "notepad");
             openWith.Add("bmp", "paint");
             openWith.Add("dib", "paint");
+            var person1 = new Person { FirstName = "Anton", SurName="Mueller", Age = 44};
+            var person2 = new Person { FirstName = "Lisa", SurName="Müller", Age = 41};
+
             Console.WriteLine("break here");
 
             Console.WriteLine("break here");
