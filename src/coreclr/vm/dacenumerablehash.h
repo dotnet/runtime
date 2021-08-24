@@ -111,10 +111,8 @@ protected:
         friend class DacEnumerableHashTable<NGEN_HASH_ARGS>;
 
         TADDR   m_pEntry;               // The entry the caller is currently looking at (or NULL to begin
-                                        // with). This is a VolatileEntry* (depending on
-                                        // m_eType below) and should always be a target address not a DAC
-                                        // PTR_.
-        DWORD   m_cRemainingEntries;    // The remaining entries in the bucket chain (Hot or Cold entries only)
+                                        // with). This is a VolatileEntry* and should always be a target address
+                                        // not a DAC PTR_.
     };
 
     // This opaque structure provides enumeration context when walking all entries in the table. Initialized
@@ -137,12 +135,7 @@ protected:
         TADDR                   m_pEntry;               // The entry the caller is currently looking at (or
                                                         // NULL to begin with). This is a VolatileEntry* and
                                                         // should always be a target address not a DAC PTR_.
-        union
-        {
-            DWORD               m_dwBucket;             // Index of bucket we're currently walking (Warm).
-            DWORD               m_cRemainingEntries;    // Number of entries remaining in hot/cold section
-                                                        // (Hot, Cold).
-        };
+        DWORD               m_dwBucket;             // Index of bucket we're currently walking
     };
 
 #ifndef DACCESS_COMPILE
