@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 
@@ -10,7 +11,7 @@ namespace Microsoft.Extensions.Primitives
     /// <summary>
     /// An optimized representation of a substring.
     /// </summary>
-    public readonly struct StringSegment : IEquatable<StringSegment>, IEquatable<string>
+    public readonly struct StringSegment : IEquatable<StringSegment>, IEquatable<string?>
     {
         /// <summary>
         /// A <see cref="StringSegment"/> for <see cref="string.Empty"/>.
@@ -23,7 +24,7 @@ namespace Microsoft.Extensions.Primitives
         /// <param name="buffer">
         /// The original <see cref="string"/>. The <see cref="StringSegment"/> includes the whole <see cref="string"/>.
         /// </param>
-        public StringSegment(string buffer)
+        public StringSegment(string? buffer)
         {
             Buffer = buffer;
             Offset = 0;
@@ -62,7 +63,7 @@ namespace Microsoft.Extensions.Primitives
         /// <summary>
         /// Gets the <see cref="string"/> buffer for this <see cref="StringSegment"/>.
         /// </summary>
-        public string Buffer { get; }
+        public string? Buffer { get; }
 
         /// <summary>
         /// Gets the offset within the buffer for this <see cref="StringSegment"/>.
@@ -102,6 +103,7 @@ namespace Microsoft.Extensions.Primitives
                     ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.index);
                 }
 
+                Debug.Assert(Buffer is not null);
                 return Buffer[Offset + index];
             }
         }
@@ -231,20 +233,14 @@ namespace Microsoft.Extensions.Primitives
         /// <param name="b">The second <see cref="StringSegment"/> to compare.</param>
         /// <param name="comparisonType">One of the enumeration values that specifies the rules for the comparison.</param>
         /// <returns><see langword="true" /> if the objects are equal; otherwise, <see langword="false" />.</returns>
-        public static bool Equals(StringSegment a, StringSegment b, StringComparison comparisonType)
-        {
-            return a.Equals(b, comparisonType);
-        }
+        public static bool Equals(StringSegment a, StringSegment b, StringComparison comparisonType) => a.Equals(b, comparisonType);
 
         /// <summary>
         /// Checks if the specified <see cref="string"/> is equal to the current <see cref="StringSegment"/>.
         /// </summary>
         /// <param name="text">The <see cref="string"/> to compare with the current <see cref="StringSegment"/>.</param>
         /// <returns><see langword="true" /> if the specified <see cref="string"/> is equal to the current <see cref="StringSegment"/>; otherwise, <see langword="false" />.</returns>
-        public bool Equals([NotNullWhen(true)] string? text)
-        {
-            return Equals(text, StringComparison.Ordinal);
-        }
+        public bool Equals([NotNullWhen(true)] string? text) => Equals(text, StringComparison.Ordinal);
 
         /// <summary>
         /// Checks if the specified <see cref="string"/> is equal to the current <see cref="StringSegment"/>.
@@ -255,15 +251,10 @@ namespace Microsoft.Extensions.Primitives
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool Equals([NotNullWhen(true)] string? text, StringComparison comparisonType)
         {
-            if (text == null)
-            {
-                return false;
-            }
-
-            if (!HasValue)
+            if (!HasValue || text == null)
             {
                 CheckStringComparison(comparisonType); // must arg check before returning
-                return false;
+                return text == Buffer; // return true if both are null
             }
 
             return AsSpan().Equals(text.AsSpan(), comparisonType);
@@ -311,7 +302,7 @@ namespace Microsoft.Extensions.Primitives
         /// Creates a new <see cref="StringSegment"/> from the given <see cref="string"/>.
         /// </summary>
         /// <param name="value">The <see cref="string"/> to convert to a <see cref="StringSegment"/></param>
-        public static implicit operator StringSegment(string value) => new StringSegment(value);
+        public static implicit operator StringSegment(string? value) => new StringSegment(value);
 
         /// <summary>
         /// Creates a see <see cref="ReadOnlySpan{T}"/> from the given <see cref="StringSegment"/>.
@@ -731,15 +722,6 @@ namespace Microsoft.Extensions.Primitives
 
                 return ThrowHelper.GetArgumentException(ExceptionResource.Argument_InvalidOffsetLengthStringSegment);
             }
-        }
-
-        /// <inheritdoc />
-        bool IEquatable<string>.Equals(string? other)
-        {
-            // Explicit interface implementation for IEquatable<string> because
-            // the interface's Equals method allows null strings, which we return
-            // as not-equal.
-            return other != null && Equals(other);
         }
     }
 }
