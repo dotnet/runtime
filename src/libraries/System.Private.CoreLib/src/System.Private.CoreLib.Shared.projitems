@@ -2112,6 +2112,8 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\IO\FileSystem.Exists.Unix.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\IO\FileSystemInfo.Unix.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\IO\Path.Unix.cs" />
+    <Compile Condition="'$(IsiOSLike)' == 'true'" Include="$(MSBuildThisFileDirectory)System\IO\Path.Unix.iOS.cs" />
+    <Compile Condition="'$(IsiOSLike)' != 'true'" Include="$(MSBuildThisFileDirectory)System\IO\Path.Unix.NoniOS.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\IO\PathInternal.Unix.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\IO\PersistedFiles.Names.Unix.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\IO\RandomAccess.Unix.cs" />
