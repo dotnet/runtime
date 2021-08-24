@@ -569,7 +569,6 @@ DWORD STDMETHODCALLTYPE FalseGetLastError();
 
 PCODE GetILStubForCalli(VASigCookie *pVASigCookie, MethodDesc *pMD);
 
-MethodDesc *GetStubMethodDescFromInteropMethodDesc(MethodDesc* pMD, DWORD dwStubFlags);
 PCODE JitILStub(MethodDesc* pStubMD);
 PCODE GetStubForInteropMethod(MethodDesc* pMD, DWORD dwStubFlags = 0);
 

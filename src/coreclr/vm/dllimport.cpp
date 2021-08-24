@@ -5438,43 +5438,6 @@ MethodDesc* NDirect::GetILStubMethodDesc(NDirectMethodDesc* pNMD, PInvokeStaticS
     return pStubMD;
 }
 
-MethodDesc* GetStubMethodDescFromInteropMethodDesc(MethodDesc* pMD, DWORD dwStubFlags)
-{
-    STANDARD_VM_CONTRACT;
-
-#ifdef FEATURE_COMINTEROP
-    if (SF_IsReverseCOMStub(dwStubFlags))
-    {
-        return NULL;
-    }
-    else
-#endif // FEATURE_COMINTEROP
-    if (pMD->IsNDirect())
-    {
-        return NULL;
-    }
-#ifdef FEATURE_COMINTEROP
-    else if (pMD->IsComPlusCall() || pMD->IsGenericComPlusCall())
-    {
-        return NULL;
-    }
-#endif // FEATURE_COMINTEROP
-    else if (pMD->IsEEImpl())
-    {
-        return NULL;
-    }
-    else if (pMD->IsIL())
-    {
-        // these are currently only created at runtime, not at NGEN time
-        return NULL;
-    }
-    else
-    {
-        UNREACHABLE_MSG("unexpected type of MethodDesc");
-    }
-}
-
-
 namespace
 {
     LPVOID NDirectGetEntryPoint(NDirectMethodDesc *pMD, NATIVE_LIBRARY_HANDLE hMod)
@@ -5707,13 +5670,11 @@ PCODE GetStubForInteropMethod(MethodDesc* pMD, DWORD dwStubFlags)
     PCODE                   pStub = NULL;
     MethodDesc*             pStubMD = NULL;
 
-    pStubMD = GetStubMethodDescFromInteropMethodDesc(pMD, dwStubFlags);
-
-    if ((NULL == pStubMD) && (SF_IsNGENedStub(dwStubFlags)))
+    if (SF_IsNGENedStub(dwStubFlags))
     {
         // Return NULL -- the caller asked only for an ngened stub and
         // one does not exist, so don't do any more work.
-        CONSISTENCY_CHECK(pStub == NULL);
+        return NULL;
     }
     else
     if (pMD->IsNDirect())
