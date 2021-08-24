@@ -19,9 +19,6 @@ class MethodDesc;
 // we need to keep it on a 8 byte boundary.</TODO>
 class MethodImpl
 {
-#ifdef DACCESS_COMPILE
-    friend class NativeImageDumper;
-#endif
 
     RelativePointer<PTR_DWORD>            pdwSlots;       // Maintains the slots and tokens in sorted order, the first entry is the size
     RelativePointer<DPTR( RelativePointer<PTR_MethodDesc> )> pImplementedMD;

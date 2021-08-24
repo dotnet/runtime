@@ -100,9 +100,6 @@ enum class WellKnownAttribute : DWORD;
 //
 struct InterfaceInfo_t
 {
-#ifdef DACCESS_COMPILE
-    friend class NativeImageDumper;
-#endif
 
     // Method table of the interface
     PTR_MethodTable m_pMethodTable;
