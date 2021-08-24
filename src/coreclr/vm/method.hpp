@@ -2783,9 +2783,6 @@ public:
         WORD        m_cbStackArgumentSize;
 #endif // defined(TARGET_X86)
 
-        // This field gets set only when this MethodDesc is marked as PreImplemented
-        RelativePointer<PTR_MethodDesc> m_pStubMD;
-
     } ndirect;
 
     enum Flags
@@ -3207,9 +3204,6 @@ struct ComPlusCallInfo
         LIMITED_METHOD_CONTRACT;
     }
 #endif // TARGET_X86
-
-    // This field gets set only when this MethodDesc is marked as PreImplemented
-    RelativePointer<PTR_MethodDesc> m_pStubMD;
 };
 
 

@@ -180,13 +180,6 @@ PCODE ComPlusCall::GetStubForILStub(MethodDesc* pMD, MethodDesc** ppStubMD)
     DWORD dwStubFlags;
     ComPlusCallInfo* pComInfo = ComPlusCall::PopulateComPlusCallMethodDesc(pMD, &dwStubFlags);
 
-    if (!pComInfo->m_pStubMD.IsNull())
-    {
-        // Discard pre-implemented code
-        PCODE pPreImplementedCode = pComInfo->m_pStubMD.GetValue()->GetNativeCode();
-        InterlockedCompareExchangeT<PCODE>(pComInfo->GetAddrOfILStubField(), NULL, pPreImplementedCode);
-    }
-
     *ppStubMD = ComPlusCall::GetILStubMethodDesc(pMD, dwStubFlags);
 
     if (*ppStubMD != NULL)

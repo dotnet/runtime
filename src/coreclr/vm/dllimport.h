@@ -571,7 +571,7 @@ PCODE GetILStubForCalli(VASigCookie *pVASigCookie, MethodDesc *pMD);
 
 MethodDesc *GetStubMethodDescFromInteropMethodDesc(MethodDesc* pMD, DWORD dwStubFlags);
 PCODE JitILStub(MethodDesc* pStubMD);
-PCODE GetStubForInteropMethod(MethodDesc* pMD, DWORD dwStubFlags = 0, MethodDesc **ppStubMD = NULL);
+PCODE GetStubForInteropMethod(MethodDesc* pMD, DWORD dwStubFlags = 0);
 
 #ifdef FEATURE_COMINTEROP
 // Resolve and return the predefined IL stub method
