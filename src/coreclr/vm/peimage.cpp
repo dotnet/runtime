@@ -490,11 +490,6 @@ void PEImage::OpenMDImport()
                 m_sModuleFileNameHintUsedByDac.Normalize();
             }
          }
-
-        if (IsCompilationProcess())
-        {
-            m_pMDImport->SetOptimizeAccessForSpeed(TRUE);
-        }
     }
     _ASSERTE(m_pMDImport);
 

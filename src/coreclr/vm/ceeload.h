@@ -1706,7 +1706,7 @@ public:
 
         if (pLoadLevel && !th.IsNull())
         {
-            if (!IsCompilationProcess() && (flags & ZAPPED_TYPE_NEEDS_NO_RESTORE))
+            if (flags & ZAPPED_TYPE_NEEDS_NO_RESTORE)
             {
                 // Make sure the flag is consistent with the target data and implies the load level we think it does
                 _ASSERTE(th.AsMethodTable()->IsPreRestored());
@@ -1736,7 +1736,7 @@ public:
 
         if (pLoadLevel && !th.IsNull())
         {
-            if (!IsCompilationProcess() && (flags & ZAPPED_GENERIC_TYPE_NEEDS_NO_RESTORE))
+            if (flags & ZAPPED_GENERIC_TYPE_NEEDS_NO_RESTORE)
             {
                 // Make sure the flag is consistent with the target data and implies the load level we think it does
                 _ASSERTE(th.AsMethodTable()->IsPreRestored());
@@ -1988,7 +1988,6 @@ public:
     MethodDesc *FindMethodThrowing(mdToken pMethod);
     MethodDesc *FindMethod(mdToken pMethod);
 
-    void PopulatePropertyInfoMap();
     HRESULT GetPropertyInfoForMethodDef(mdMethodDef md, mdProperty *ppd, LPCSTR *pName, ULONG *pSemantic);
 
     #define NUM_PROPERTY_SET_HASHES 4

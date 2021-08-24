@@ -395,23 +395,6 @@ inline static CorInfoType toJitType(TypeHandle typeHnd, CORINFO_CLASS_HANDLE *cl
     return CEEInfo::asCorInfoType(typeHnd.GetInternalCorElementType(), typeHnd, clsRet);
 }
 
-void CheckForEquivalenceAndLoadTypeBeforeCodeIsRun(Module *pModule, mdToken token, Module *pDefModule, mdToken defToken, const SigParser *ptr, SigTypeContext *pTypeContext, void *pData)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-    }
-    CONTRACTL_END;
-
-    if (IsTypeDefEquivalent(defToken, pDefModule))
-    {
-        SigPointer sigPtr(*ptr);
-        TypeHandle th = sigPtr.GetTypeHandleThrowing(pModule, pTypeContext);
-        ((ICorDynamicInfo *)pData)->classMustBeLoadedBeforeCodeIsRun(CORINFO_CLASS_HANDLE(th.AsPtr()));
-    }
-}
-
 inline static void TypeEquivalenceFixupSpecificationHelper(ICorDynamicInfo * pCorInfo, MethodDesc *pMD)
 {
     STANDARD_VM_CONTRACT;
@@ -422,15 +405,7 @@ inline static void TypeEquivalenceFixupSpecificationHelper(ICorDynamicInfo * pCo
     // match that those in the actual function. (They must be equivalent, but not necessarily the same.)
     // In non-ngen scenarios this code here will force the types to be loaded directly by the call to
     // HasTypeEquivalentStructParameters.
-    if (!pMD->IsVirtual())
-    {
-        if (pMD->HasTypeEquivalentStructParameters())
-        {
-            if (IsCompilationProcess())
-                pMD->WalkValueTypeParameters(pMD->GetMethodTable(), CheckForEquivalenceAndLoadTypeBeforeCodeIsRun, pCorInfo);
-        }
-    }
-    else
+    if (pMD->IsVirtual())
     {
         if (pMD->GetMethodTable()->DependsOnEquivalentOrForwardedStructs())
         {
@@ -3316,7 +3291,7 @@ NoSpecialCase:
         _ASSERTE(false);
     }
 
-    DictionaryEntrySignatureSource signatureSource = (IsCompilationProcess() ? FromZapImage : FromJIT);
+    DictionaryEntrySignatureSource signatureSource = FromJIT;
 
     WORD slot;
 
@@ -9327,7 +9302,7 @@ void CEEInfo::getBoundaries(CORINFO_METHOD_HANDLE ftn,
     JIT_TO_EE_TRANSITION();
 
 #ifdef DEBUGGING_SUPPORTED
-    if (g_pDebugInterface && !IsCompilationProcess())
+    if (g_pDebugInterface)
     {
         g_pDebugInterface->getBoundaries(GetMethod(ftn), cILOffsets, (DWORD**)pILOffsets,
                                      implicitBoundaries);
@@ -9355,7 +9330,7 @@ void CEEInfo::getVars(CORINFO_METHOD_HANDLE ftn, ULONG32 *cVars, ICorDebugInfo::
     JIT_TO_EE_TRANSITION();
 
 #ifdef DEBUGGING_SUPPORTED
-    if (g_pDebugInterface && !IsCompilationProcess())
+    if (g_pDebugInterface)
     {
         g_pDebugInterface->getVars(GetMethod(ftn), cVars, vars, extendOthers);
     }
@@ -11538,12 +11513,6 @@ InfoAccessType CEEJitInfo::emptyStringLiteral(void ** ppValue)
     } CONTRACTL_END;
 
     InfoAccessType result = IAT_PVALUE;
-
-    if(NingenEnabled())
-    {
-        *ppValue = NULL;
-        return result;
-    }
 
     JIT_TO_EE_TRANSITION();
     *ppValue = StringObject::GetEmptyStringRefPtr();

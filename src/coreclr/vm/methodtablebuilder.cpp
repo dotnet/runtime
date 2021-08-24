@@ -1128,9 +1128,6 @@ MethodTableBuilder::CopyParentVtable()
 //   - Update the m_cbNativeSize and m_cbManagedSize if HasLayout() is true.
 // Return a BOOL result to indicate whether the size has been updated.
 //
-// Will throw IDS_EE_SIMD_NGEN_DISALLOWED if the type is System.Numerics.Vector`1
-// and this is an ngen compilation process.
-//
 BOOL MethodTableBuilder::CheckIfSIMDAndUpdateSize()
 {
     STANDARD_VM_CONTRACT;
@@ -1149,11 +1146,6 @@ BOOL MethodTableBuilder::CheckIfSIMDAndUpdateSize()
 
     if (strcmp(className, "Vector`1") != 0 || strcmp(nameSpace, "System.Numerics") != 0)
         return false;
-
-    if (IsCompilationProcess())
-    {
-        COMPlusThrow(kTypeLoadException, IDS_EE_SIMD_NGEN_DISALLOWED);
-    }
 
     if (!TargetHasAVXSupport())
         return false;

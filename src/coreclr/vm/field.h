@@ -657,7 +657,6 @@ public:
         return GetMDImport()->GetNameOfFieldDef(GetMemberDef(), pszName);
     }
 
-    void PrecomputeNameHash();
     BOOL MightHaveName(ULONG nameHashValue);
 
     // <TODO>@TODO: </TODO>This is slow, don't use it!
