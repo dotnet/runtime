@@ -950,7 +950,7 @@ public:
     {
         LIMITED_METHOD_DAC_CONTRACT;
 
-        return GetPreImplementedCode() != NULL;
+        return FALSE;
     }
 
     //==================================================================
@@ -1466,13 +1466,6 @@ public:
     ULONG GetRVA();
 
 public:
-
-    // Returns preimplemented code of the method if method has one.
-    // Returns NULL if method has no preimplemented code.
-    // Be careful about races with profiler when using this method. The profiler can
-    // replace preimplemented code of the method with jitted code.
-    PCODE GetPreImplementedCode();
-
     // Returns address of code to call. The address is good for one immediate invocation only.
     // Use GetMultiCallableAddrOfCode() to get address that can be invoked multiple times.
     //

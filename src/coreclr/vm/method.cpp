@@ -1012,21 +1012,6 @@ TADDR MethodDesc::GetAddrOfNativeCodeSlot()
 }
 
 //*******************************************************************************
-PCODE MethodDesc::GetPreImplementedCode()
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
-        SUPPORTS_DAC;
-    }
-    CONTRACTL_END;
-
-    return NULL;
-}
-
-//*******************************************************************************
 BOOL MethodDesc::IsVoid()
 {
     WRAPPER_NO_CONTRACT;
