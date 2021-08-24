@@ -137,21 +137,10 @@ public:
     ULONG32 m_cbSegNext;
 };
 
-class Target_HotHeap : public TargetObject
-{
-public:
-    Target_HotHeap();
-    virtual HRESULT ReadFrom(DataTargetReader & reader);
-
-    CORDB_ADDRESS m_pHotHeapHeader;
-};
-
 class Target_StgPoolReadOnly : public Target_StgPoolSeg
 {
 public:
     virtual HRESULT ReadFrom(DataTargetReader & reader);
-
-    Target_HotHeap m_HotHeap;
 };
 
 class Target_StgPool : public Target_StgPoolReadOnly
