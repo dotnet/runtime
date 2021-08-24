@@ -28,7 +28,7 @@ namespace System.Text.RegularExpressions.Tests
                 return;
             }
             catch (Exception e)
-            { 
+            {
                 throw new XunitException($"Expected ArgumentException -> Actual: {e}");
             }
 
@@ -36,7 +36,8 @@ namespace System.Text.RegularExpressions.Tests
         }
 
        /// <summary>
-        /// Checks that action succeeds or throws either a RegexParseException or an ArgumentException.
+        /// Checks that action succeeds or throws either a RegexParseException or an ArgumentException depending on the
+        // environment and the action.
         /// </summary>
         /// <param name="action">The action to invoke.</param>
         static partial void MayThrow(Action action)

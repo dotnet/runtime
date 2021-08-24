@@ -757,7 +757,8 @@ namespace System.Text.RegularExpressions.Tests
         static partial void Throws(RegexParseError error, int offset, Action action);
 
         /// <summary>
-        /// Checks that action succeeds or throws either a RegexParseException or an ArgumentException.
+        /// Checks that action succeeds or throws either a RegexParseException or an ArgumentException depending on the
+        // environment and the action.
         /// </summary>
         /// <param name="action">The action to invoke.</param>
         static partial void MayThrow(Action action);
