@@ -43,15 +43,10 @@ namespace Mono.Linker
 		public virtual Tracer CreateTracer (LinkContext context) => new Tracer (context);
 	}
 
-	public enum TargetRuntimeVersion
+	public static class TargetRuntimeVersion
 	{
-		// These have to be ordered the same way the versions are
-		// since the code uses > or < on these values.
-		Unknown = 0,
-		Lower = 1, // Anything below 5
-		NET5 = 5,
-		NET6 = 6,
-		Higher = 9999 // Anything above the highest explicitly supported version (future proofing)
+		public const int NET5 = 5;
+		public const int NET6 = 6;
 	}
 
 	public class LinkContext : IMetadataResolver, IDisposable
@@ -64,7 +59,7 @@ namespace Mono.Linker
 		bool _linkSymbols;
 		bool _keepTypeForwarderOnlyAssemblies;
 		bool _ignoreUnresolved;
-		TargetRuntimeVersion? _targetRuntime;
+		int? _targetRuntime;
 
 		readonly AssemblyResolver _resolver;
 		readonly TypeNameResolver _typeNameResolver;
@@ -697,20 +692,13 @@ namespace Mono.Linker
 			return WarnVersion.ILLink5;
 		}
 
-		public TargetRuntimeVersion GetTargetRuntimeVersion ()
+		public int GetTargetRuntimeVersion ()
 		{
 			if (_targetRuntime != null)
 				return _targetRuntime.Value;
 
 			TypeDefinition objectType = BCL.FindPredefinedType ("System", "Object", this);
-			int? majorVersion = objectType?.Module.Assembly.Name.Version.Major;
-			_targetRuntime = majorVersion switch {
-				> 6 => TargetRuntimeVersion.Higher,
-				6 => TargetRuntimeVersion.NET6,
-				5 => TargetRuntimeVersion.NET5,
-				< 5 => TargetRuntimeVersion.Lower,
-				_ => TargetRuntimeVersion.Unknown
-			};
+			_targetRuntime = objectType?.Module.Assembly.Name.Version.Major ?? -1;
 
 			return _targetRuntime.Value;
 		}
