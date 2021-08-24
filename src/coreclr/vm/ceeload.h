@@ -1114,13 +1114,6 @@ private:
     ILStubCache                *m_pILStubCache;
 
     ULONG m_DefaultDllImportSearchPathsAttributeValue;
-
-#ifdef PROFILING_SUPPORTED_DATA
-     // a wrapper for the underlying PEFile metadata emitter which validates that the metadata edits being
-     // made are supported modifications to the type system
-     VolatilePtr<IMetaDataEmit> m_pValidatedEmitter;
-#endif
-
 public:
     LookupMap<PTR_MethodTable>::Iterator EnumerateTypeDefs()
     {
@@ -1471,10 +1464,6 @@ protected:
 
         return m_file->GetEmitter();
     }
-
-#if defined(PROFILING_SUPPORTED)
-    IMetaDataEmit *GetValidatedEmitter();
-#endif
 
     IMetaDataImport2 *GetRWImporter()
     {

@@ -314,35 +314,6 @@ void Module::NotifyProfilerLoadFinished(HRESULT hr)
         }
     }
 }
-
-IMetaDataEmit *Module::GetValidatedEmitter()
-{
-    CONTRACTL
-    {
-        INSTANCE_CHECK;
-        THROWS;
-        GC_NOTRIGGER;
-        INJECT_FAULT(COMPlusThrowOM());
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
-    if (m_pValidatedEmitter.Load() == NULL)
-    {
-        // In the past profilers could call any API they wanted on the the IMetaDataEmit interface and we didn't
-        // verify anything. To ensure we don't break back-compat the verifications are not enabled by default.
-        // Right now I have only added verifications for NGEN images, but in the future we might want verifications
-        // for all modules.
-        IMetaDataEmit* pEmit = GetEmitter();
-        pEmit->AddRef();
-        // Atomically swap it into the field (release it if we lose the race)
-        if (FastInterlockCompareExchangePointer(&m_pValidatedEmitter, pEmit, NULL) != NULL)
-        {
-            pEmit->Release();
-        }
-    }
-    return m_pValidatedEmitter.Load();
-}
 #endif // PROFILING_SUPPORTED
 
 void Module::NotifyEtwLoadFinished(HRESULT hr)
@@ -1105,11 +1076,6 @@ void Module::Destruct()
         }
         EX_END_CATCH(SwallowAllExceptions);
         END_PROFILER_CALLBACK();
-    }
-
-    if (m_pValidatedEmitter.Load() != NULL)
-    {
-        m_pValidatedEmitter->Release();
     }
 #endif // PROFILING_SUPPORTED
 

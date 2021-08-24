@@ -4207,7 +4207,7 @@ HRESULT ProfToEEInterfaceImpl::GetModuleMetaData(ModuleID    moduleId,
     IUnknown *pObj = NULL;
     EX_TRY
     {
-        pObj = pModule->GetValidatedEmitter();
+        pObj = pModule->GetEmitter();
     }
     EX_CATCH_HRESULT_NO_ERRORINFO(hr);
 
