@@ -2,9 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Linq;
+using Xunit;
 
 namespace System.IO.Tests
 {
+    [PlatformSpecific(TestPlatforms.Windows)]
     public class DirectoryInfo_Junctions : BaseJunctions_FileSystem
     {
         protected override DirectoryInfo CreateDirectory(string path)

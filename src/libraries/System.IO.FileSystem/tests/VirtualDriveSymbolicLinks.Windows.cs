@@ -7,6 +7,7 @@ namespace System.IO.Tests
 {
     // Need to reuse the same virtual drive for all the test methods.
     // Creating and disposing one virtual drive per class achieves this.
+    [PlatformSpecific(TestPlatforms.Windows)]
     public class VirtualDrive_SymbolicLinks : BaseSymbolicLinks
     {
         protected override void Dispose(bool disposing)
@@ -27,7 +28,7 @@ namespace System.IO.Tests
         // the target path will use the virtual drive
         // The only case of returnFinalTarget: true that will return a target using the virtual drive, is when both
         // the link and the target reside in the virtual drive
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsWindows))]
+        [Theory]
         [InlineData(true, true, false)]
         [InlineData(false, true, false)]
         [InlineData(true, false, false)]
@@ -77,7 +78,7 @@ namespace System.IO.Tests
 
         // When the link target resides in a virtual drive, and returnFinalTarget: true is used,
         // All segments of the target path get resolved, including mount points, to their real path
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsWindows))]
+        [Theory]
         [InlineData(false)]
         [InlineData(true)]
         public void CreateSymbolicLinkVD_ResolvedPathReturned(bool linkInVD)
