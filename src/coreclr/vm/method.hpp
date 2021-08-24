@@ -942,17 +942,6 @@ public:
         return (m_wFlags & mdcSynchronized) != 0;
     }
 
-    // Be careful about races with profiler when using this method. The profiler can
-    // replace preimplemented code of the method with jitted code.
-    // Avoid code patterns like if(IsPreImplemented()) { PCODE pCode = GetPreImplementedCode(); ... }.
-    // Use PCODE pCode = GetPreImplementedCode(); if (pCode != NULL) { ... } instead.
-    BOOL IsPreImplemented()
-    {
-        LIMITED_METHOD_DAC_CONTRACT;
-
-        return FALSE;
-    }
-
     //==================================================================
     // The MethodDesc in relation to the VTable it is associated with.
     // WARNING: Not all MethodDescs have slots, nor do they all have
@@ -1510,9 +1499,7 @@ public:
     PCODE GetMethodEntryPoint();
 
     //*******************************************************************************
-    // Returns the address of the native code. The native code can be one of:
-    // - jitted code if !IsPreImplemented()
-    // - ngened code if IsPreImplemented()
+    // Returns the address of the native code.
     PCODE GetNativeCode();
 
 #if defined(FEATURE_JIT_PITCHING)

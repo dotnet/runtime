@@ -962,9 +962,7 @@ WORD MethodDesc::InterlockedUpdateFlags3(WORD wMask, BOOL fSet)
 #endif // !DACCESS_COMPILE
 
 //*******************************************************************************
-// Returns the address of the native code. The native code can be one of:
-// - jitted code if !IsPreImplemented()
-// - ngened code if IsPreImplemented()
+// Returns the address of the native code.
 //
 // Methods which have no native code are either implemented by stubs or not jitted yet.
 // For example, NDirectMethodDesc's have no native code.  They are treated as
