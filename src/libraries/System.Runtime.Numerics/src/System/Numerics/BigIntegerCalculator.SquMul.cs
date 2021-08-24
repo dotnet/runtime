@@ -165,7 +165,7 @@ namespace System.Numerics
 
             // Executes different algorithms for computing z = a * b
             // based on the actual length of b. If b is "small" enough
-            // we stick to the classic "grammar-school" method; f the
+            // we stick to the classic "grammar-school" method; for the
             // rest we switch to implementations with less complexity
             // albeit more overhead (which needs to pay off!).
 

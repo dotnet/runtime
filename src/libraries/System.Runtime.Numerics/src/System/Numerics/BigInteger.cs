@@ -5,8 +5,6 @@ using System.Buffers;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
-using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 
 namespace System.Numerics
 {
@@ -859,7 +857,7 @@ namespace System.Numerics
                 Debug.Assert(right._bits != null);
                 return left._sign != 0
                     ? BigIntegerCalculator.Gcd(right._bits, NumericsHelpers.Abs(left._sign))
-                    : new BigInteger(right._bits, false);
+                    : new BigInteger(right._bits, negative: false);
             }
 
             if (trivialRight)
@@ -867,7 +865,7 @@ namespace System.Numerics
                 Debug.Assert(left._bits != null);
                 return right._sign != 0
                     ? BigIntegerCalculator.Gcd(left._bits, NumericsHelpers.Abs(right._sign))
-                    : new BigInteger(left._bits, false);
+                    : new BigInteger(left._bits, negative: false);
             }
 
             Debug.Assert(left._bits != null && right._bits != null);
@@ -915,7 +913,7 @@ namespace System.Numerics
                               : bitsFromPool = ArrayPool<uint>.Shared.Rent(leftBits.Length)).Slice(0, leftBits.Length);
 
                 BigIntegerCalculator.Gcd(leftBits, rightBits, bits);
-                result = new BigInteger(bits, false);
+                result = new BigInteger(bits, negative: false);
             }
 
             if (bitsFromPool != null)
@@ -1057,13 +1055,15 @@ namespace System.Numerics
         {
             AssertValid();
 
-            if (_bits == null)
+            if (_bits is null)
                 return _sign;
 
-            HashCode hash = default;
-            hash.Add(_sign);
-            hash.AddBytes(MemoryMarshal.AsBytes(_bits.AsSpan()));
-            return hash.ToHashCode();
+            int hash = _sign;
+            for (int iv = _bits.Length; --iv >= 0;)
+                hash = unchecked((int)CombineHash((uint)hash, _bits[iv]));
+            return hash;
+
+            static uint CombineHash(uint u1, uint u2) => ((u1 << 7) | (u1 >> 25)) ^ u2;
         }
 
         public override bool Equals([NotNullWhen(true)] object? obj)
@@ -1515,7 +1515,7 @@ namespace System.Numerics
                 buffer = buffer.Slice(0, _bits.Length + 1);
                 if (_sign == -1)
                 {
-                    NumericsHelpers.DangerousMakeTwosComplement(buffer[..^1]);  // Mutates dwords
+                    NumericsHelpers.DangerousMakeTwosComplement(buffer.Slice(0, buffer.Length - 1));  // Mutates dwords
                     highDWord = uint.MaxValue;
                 }
                 else
@@ -2123,12 +2123,16 @@ namespace System.Numerics
 
         public static BigInteger operator <<(BigInteger value, int shift)
         {
-            if (shift == 0) return value;
-            else if (shift == int.MinValue) return ((value >> int.MaxValue) >> 1);
-            else if (shift < 0) return value >> -shift;
+            if (shift == 0)
+                return value;
 
-            int digitShift = shift / kcbitUint;
-            int smallShift = shift - (digitShift * kcbitUint);
+            if (shift == int.MinValue)
+                return ((value >> int.MaxValue) >> 1);
+
+            if (shift < 0)
+                return value >> -shift;
+
+            (int digitShift, int smallShift) = Math.DivRem(shift, kcbitUint);
 
             uint[]? xdFromPool = null;
             int xl = value._bits?.Length ?? 1;
@@ -2144,9 +2148,10 @@ namespace System.Numerics
                             : zdFromPool = ArrayPool<uint>.Shared.Rent(zl)).Slice(0, zl);
             zd.Clear();
 
+            uint carry = 0;
             if (smallShift == 0)
             {
-                for (int i = 0; i < xl; i++)
+                for (int i = 0; i < xd.Length; i++)
                 {
                     zd[i + digitShift] = xd[i];
                 }
@@ -2154,16 +2159,16 @@ namespace System.Numerics
             else
             {
                 int carryShift = kcbitUint - smallShift;
-                uint carry = 0;
                 int i;
-                for (i = 0; i < xl; i++)
+                for (i = 0; i < xd.Length; i++)
                 {
                     uint rot = xd[i];
                     zd[i + digitShift] = rot << smallShift | carry;
                     carry = rot >> carryShift;
                 }
-                zd[i + digitShift] = carry;
             }
+
+            zd[zd.Length - 1] = carry;
 
             var result = new BigInteger(zd, negx);
 
@@ -2177,12 +2182,16 @@ namespace System.Numerics
 
         public static BigInteger operator >>(BigInteger value, int shift)
         {
-            if (shift == 0) return value;
-            else if (shift == int.MinValue) return ((value << int.MaxValue) << 1);
-            else if (shift < 0) return value << -shift;
+            if (shift == 0)
+                return value;
 
-            int digitShift = shift / kcbitUint;
-            int smallShift = shift - (digitShift * kcbitUint);
+            if (shift == int.MinValue)
+                return ((value << int.MaxValue) << 1);
+
+            if (shift < 0)
+                return value << -shift;
+
+            (int digitShift, int smallShift) = Math.DivRem(shift, kcbitUint);
 
             BigInteger result;
 
@@ -2197,14 +2206,14 @@ namespace System.Numerics
 
             if (negx)
             {
-                if (shift >= (kcbitUint * xl))
+                if (shift >= (kcbitUint * xd.Length))
                 {
                     result = MinusOne;
                     goto exit;
                 }
 
                 NumericsHelpers.DangerousMakeTwosComplement(xd); // Mutates xd
-                if (xd[^1] == 0)
+                if (xd[xd.Length - 1] == 0)
                 {
                     trackSignBit = true;
                 }
@@ -2219,7 +2228,7 @@ namespace System.Numerics
 
             if (smallShift == 0)
             {
-                for (int i = xl - 1; i >= digitShift; i--)
+                for (int i = xd.Length - 1; i >= digitShift; i--)
                 {
                     zd[i - digitShift] = xd[i];
                 }
@@ -2228,10 +2237,10 @@ namespace System.Numerics
             {
                 int carryShift = kcbitUint - smallShift;
                 uint carry = 0;
-                for (int i = xl - 1; i >= digitShift; i--)
+                for (int i = xd.Length - 1; i >= digitShift; i--)
                 {
                     uint rot = xd[i];
-                    if (negx && i == xl - 1)
+                    if (negx && i == xd.Length - 1)
                         // Sign-extend the first shift for negative ints then let the carry propagate
                         zd[i - digitShift] = (rot >> smallShift) | (0xFFFFFFFF << carryShift);
                     else
@@ -2245,7 +2254,7 @@ namespace System.Numerics
                 NumericsHelpers.DangerousMakeTwosComplement(zd); // Mutates zd
 
                 if (trackSignBit)
-                    zd[^1] = 1;
+                    zd[zd.Length - 1] = 1;
             }
 
             result = new BigInteger(zd, negx);
@@ -2341,7 +2350,7 @@ namespace System.Numerics
                 BigIntegerCalculator.Multiply(left, NumericsHelpers.Abs(rightSign), bits);
                 result = new BigInteger(bits, (leftSign < 0) ^ (rightSign < 0));
             }
-            else if (left.Length == right.Length && Unsafe.AreSame(ref Unsafe.AsRef(in left[0]), ref Unsafe.AsRef(in right[0])))
+            else if (left == right)
             {
                 int size = left.Length + right.Length;
                 Span<uint> bits = ((uint)size <= BigIntegerCalculator.StackAllocThreshold ?
@@ -2349,7 +2358,7 @@ namespace System.Numerics
                                   : bitsFromPool = ArrayPool<uint>.Shared.Rent(size)).Slice(0, size);
 
                 BigIntegerCalculator.Square(left, bits);
-                result = new BigInteger(bits, false);
+                result = new BigInteger(bits, negative: false);
             }
             else if (left.Length < right.Length)
             {

@@ -29,7 +29,7 @@ namespace System.Numerics
                 Debug.Assert(q2.Length == modulus.Length * 2 + 2);
 
                 // Let r = 4^k, with 2^k > m
-                r[^1] = 1;
+                r[r.Length - 1] = 1;
 
                 // Let mu = 4^k / m
                 Divide(r, modulus, mu);
@@ -75,8 +75,6 @@ namespace System.Numerics
                 // but skips the first k limbs of left, which is equivalent to
                 // preceding division by 2^(32*k). To spare memory allocations
                 // we write the result to an already allocated memory.
-
-                bits.Clear();
 
                 if (left.Length > k)
                 {

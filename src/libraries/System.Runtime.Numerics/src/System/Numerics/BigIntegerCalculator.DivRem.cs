@@ -3,8 +3,6 @@
 
 using System.Buffers;
 using System.Diagnostics;
-using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 
 namespace System.Numerics
 {
@@ -120,19 +118,13 @@ namespace System.Numerics
             Debug.Assert(bits.Length == left.Length - right.Length + 1
                 || bits.Length == 0);
 
-            // Switching to managed references helps eliminating
-            // index bounds check...
-            ref uint leftPtr = ref MemoryMarshal.GetReference(left);
-            ref uint rightPtr = ref MemoryMarshal.GetReference(right);
-            ref uint resultPtr = ref MemoryMarshal.GetReference(bits);
-
             // Executes the "grammar-school" algorithm for computing q = a / b.
             // Before calculating q_i, we get more bits into the highest bit
             // block of the divisor. Thus, guessing digits of the quotient
             // will be more precise. Additionally we'll get r = a % b.
 
-            uint divHi = Unsafe.Add(ref rightPtr, right.Length - 1);
-            uint divLo = right.Length > 1 ? Unsafe.Add(ref rightPtr, right.Length - 2) : 0;
+            uint divHi = right[right.Length - 1];
+            uint divLo = right.Length > 1 ? right[right.Length - 2] : 0;
 
             // We measure the leading zeros of the divisor
             int shift = LeadingZeros(divHi);
@@ -141,7 +133,7 @@ namespace System.Numerics
             // And, we make sure the most significant bit is set
             if (shift > 0)
             {
-                uint divNx = right.Length > 2 ? Unsafe.Add(ref rightPtr, right.Length - 3) : 0;
+                uint divNx = right.Length > 2 ? right[right.Length - 3] : 0;
 
                 divHi = (divHi << shift) | (divLo >> backShift);
                 divLo = (divLo << shift) | (divNx >> backShift);
@@ -152,15 +144,15 @@ namespace System.Numerics
             for (int i = left.Length; i >= right.Length; i--)
             {
                 int n = i - right.Length;
-                uint t = (uint)i < (uint)left.Length ? Unsafe.Add(ref leftPtr, i) : 0;
+                uint t = (uint)i < (uint)left.Length ? left[i] : 0;
 
-                ulong valHi = ((ulong)t << 32) | Unsafe.Add(ref leftPtr, i - 1);
-                uint valLo = i > 1 ? Unsafe.Add(ref leftPtr, i - 2) : 0;
+                ulong valHi = ((ulong)t << 32) | left[i - 1];
+                uint valLo = i > 1 ? left[i - 2] : 0;
 
                 // We shifted the divisor, we shift the dividend too
                 if (shift > 0)
                 {
-                    uint valNx = i > 2 ? Unsafe.Add(ref leftPtr, i - 3) : 0;
+                    uint valNx = i > 2 ? left[i - 3] : 0;
 
                     valHi = (valHi << shift) | (valLo >> backShift);
                     valLo = (valLo << shift) | (valNx >> backShift);
@@ -193,10 +185,11 @@ namespace System.Numerics
                 }
 
                 // We have the digit!
-                if (!bits.IsEmpty)
-                    Unsafe.Add(ref resultPtr, n) = (uint)digit;
+                if ((uint)n < (uint)bits.Length)
+                    bits[n] = (uint)digit;
+
                 if ((uint)i < (uint)left.Length)
-                    Unsafe.Add(ref leftPtr, i) = 0;
+                    left[i] = 0;
             }
         }
 
