@@ -22,7 +22,6 @@
 #include "shash.h"
 
 #include "../heaps/export.h"
-#include "../hotdata/export.h"
 #include "../tables/export.h"
 
 struct HENUMInternal;
@@ -1032,14 +1031,6 @@ protected:
     __checkReturn HRESULT SaveENCPoolToStream(int iPool, IStream *pIStream);
 
     __checkReturn
-    HRESULT GetHotMetadataTokensSearchAware(
-        CorProfileData *pProfileData,
-        ULONG ixTbl,
-        ULONG *pResultCount,
-        mdToken *tokenBuffer,
-        ULONG maxCount);
-
-    __checkReturn
     HRESULT GetFullSaveSize(
         CorSaveSize               fSave,
         UINT32                   *pcbSize,
@@ -1058,19 +1049,6 @@ protected:
     HRESULT SaveFullTablesToStream(IStream *pIStream, MetaDataReorderingOptions reorderingOptions=NoReordering, CorProfileData *pProfileData = NULL );
     __checkReturn
     HRESULT SaveENCTablesToStream(IStream *pIStream);
-    __checkReturn
-    HRESULT SaveHotPoolsToStream(
-        IStream                  *pStream,
-        MetaDataReorderingOptions reorderingOptions,
-        CorProfileData           *pProfileData,
-        UINT32                   *pnPoolDirSize,
-        UINT32                   *pnSavedPoolsSize);
-    __checkReturn
-    HRESULT SaveHotPoolToStream(
-        IStream                 *pStream,
-        CorProfileData          *pProfileData,
-        MetaData::HotHeapWriter *pHotHeapWriter,
-        UINT32                  *pnSavedSize);
 
     // TO ELIMINATE:
     __checkReturn

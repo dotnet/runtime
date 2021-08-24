@@ -375,33 +375,6 @@ VOID MethodDesc::GetFullMethodInfo(SString& fullMethodSigName)
     fullMethodSigName.AppendUTF8((char *)qbOut.Ptr());
 }
 
-//*******************************************************************************
-void MethodDesc::PrecomputeNameHash()
-{
-    CONTRACTL
-    {
-        STANDARD_VM_CHECK;
-        PRECONDITION(IsCompilationProcess());
-    }
-    CONTRACTL_END;
-
-
-    // We only have space for a name hash when we can use the packed slot layout
-    if (RequiresFullSlotNumber())
-    {
-        return;
-    }
-
-    // Store a case-insensitive hash so that we can use this value for
-    // both case-sensitive and case-insensitive name lookups
-    SString name(SString::Utf8Literal, GetName());
-    ULONG nameHashValue = (WORD) name.HashCaseInsensitive() & enum_packedSlotLayout_NameHashMask;
-
-    // We expect to set the hash once during NGen and not overwrite any existing bits
-    _ASSERTE((m_wSlotNumber & enum_packedSlotLayout_NameHashMask) == 0);
-
-    m_wSlotNumber |= nameHashValue;
-}
 #endif
 
 //*******************************************************************************
@@ -4107,7 +4080,7 @@ moveToNextToken:
         IfFailThrowBF(ptr.SkipExactlyOne(), BFA_BAD_SIGNATURE, pModule);
     }
 
-    if (!IsCompilationProcess() && !HaveValueTypeParametersBeenWalked())
+    if (!HaveValueTypeParametersBeenWalked())
     {
         SetValueTypeParametersWalked();
     }

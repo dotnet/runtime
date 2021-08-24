@@ -20,6 +20,7 @@
     <BlazorPizzaAOTDirectory>$(ScenarioDirectory)blazorpizzaaot\</BlazorPizzaAOTDirectory>
     <PerflabTargetFrameworks>%PERFLAB_TARGET_FRAMEWORKS%</PerflabTargetFrameworks>
     <PizzaAppPubLocation>pub\wwwroot</PizzaAppPubLocation>
+    <WASMRuntimeConfigPath>%HELIX_CORRELATION_PAYLOAD%\dotnet-wasm\artifacts\bin\mono\Browser.wasm.Release\build\RuntimeComponentManifest.json</WASMRuntimeConfigPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(AGENT_OS)' != 'Windows_NT'">
     <ScenarioDirectory>$HELIX_CORRELATION_PAYLOAD/performance/src/scenarios/</ScenarioDirectory>
@@ -31,6 +32,7 @@
     <BlazorPizzaAOTDirectory>$(ScenarioDirectory)blazorpizzaaot/</BlazorPizzaAOTDirectory>
     <PizzaAppPubLocation>pub/wwwroot</PizzaAppPubLocation>
     <PerflabTargetFrameworks>$PERFLAB_TARGET_FRAMEWORKS</PerflabTargetFrameworks>
+    <WASMRuntimeConfigPath>$HELIX_CORRELATION_PAYLOAD/dotnet-wasm/artifacts/bin/mono/Browser.wasm.Release/build/RuntimeComponentManifest.json</WASMRuntimeConfigPath>
   </PropertyGroup>
 
   <ItemGroup>

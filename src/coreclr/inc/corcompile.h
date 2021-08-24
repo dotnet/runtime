@@ -354,7 +354,6 @@ struct CORCOMPILE_METHOD_PROFILE_LIST
     { return (CORBBTPROF_METHOD_HEADER *) (this+1); }
 };
 
-// see code:CorProfileData.GetHotTokens for how we determine what is in hot meta-data.
 class CorProfileData
 {
 public:
@@ -373,37 +372,6 @@ public:
     CORBBTPROF_BLOB_ENTRY *  GetBlobStream()
     {
         return this->blobStream;
-    }
-
-
-    // see code:MetaData::HotMetaDataHeader for details on reading hot meta-data
-    //
-    // for detail on where we use the API to store the hot meta data
-    //     * code:CMiniMdRW.SaveFullTablesToStream#WritingHotMetaData
-    //     * code:CMiniMdRW.SaveHotPoolsToStream
-    //     * code:CMiniMdRW.SaveHotPoolToStream#CallToGetHotTokens
-    //
-    ULONG GetHotTokens(int table, DWORD mask, DWORD hotValue, mdToken *tokenBuffer, ULONG maxCount)
-    {
-        ULONG count = 0;
-        SectionFormat format = (SectionFormat)(FirstTokenFlagSection + table);
-
-        CORBBTPROF_TOKEN_INFO *profilingData = profilingTokenFlagsData[format].data;
-        DWORD cProfilingData = profilingTokenFlagsData[format].count;
-
-        if (profilingData != NULL)
-        {
-            for (DWORD i = 0; i < cProfilingData; i++)
-            {
-                if ((profilingData[i].flags & mask) == hotValue)
-                {
-                    if (tokenBuffer != NULL && count < maxCount)
-                        tokenBuffer[count] = profilingData[i].token;
-                    count++;
-                }
-            }
-        }
-        return count;
     }
 
     //

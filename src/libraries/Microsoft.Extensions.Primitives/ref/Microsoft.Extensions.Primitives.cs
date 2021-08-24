@@ -36,14 +36,14 @@ namespace Microsoft.Extensions.Primitives
         bool HasChanged { get; }
         System.IDisposable RegisterChangeCallback(System.Action<object?> callback, object? state);
     }
-    public readonly partial struct StringSegment : System.IEquatable<Microsoft.Extensions.Primitives.StringSegment>, System.IEquatable<string>
+    public readonly partial struct StringSegment : System.IEquatable<Microsoft.Extensions.Primitives.StringSegment>, System.IEquatable<string?>
     {
         private readonly object _dummy;
         private readonly int _dummyPrimitive;
         public static readonly Microsoft.Extensions.Primitives.StringSegment Empty;
-        public StringSegment(string buffer) { throw null; }
+        public StringSegment(string? buffer) { throw null; }
         public StringSegment(string buffer, int offset, int length) { throw null; }
-        public string Buffer { get { throw null; } }
+        public string? Buffer { get { throw null; } }
         [System.Diagnostics.CodeAnalysis.MemberNotNullWhen(true, nameof(Buffer))]
         public bool HasValue { get { throw null; } }
         public char this[int index] { get { throw null; } }
@@ -74,7 +74,7 @@ namespace Microsoft.Extensions.Primitives
         public static bool operator ==(Microsoft.Extensions.Primitives.StringSegment left, Microsoft.Extensions.Primitives.StringSegment right) { throw null; }
         public static implicit operator System.ReadOnlyMemory<char>(Microsoft.Extensions.Primitives.StringSegment segment) { throw null; }
         public static implicit operator System.ReadOnlySpan<char>(Microsoft.Extensions.Primitives.StringSegment segment) { throw null; }
-        public static implicit operator Microsoft.Extensions.Primitives.StringSegment(string value) { throw null; }
+        public static implicit operator Microsoft.Extensions.Primitives.StringSegment(string? value) { throw null; }
         public static bool operator !=(Microsoft.Extensions.Primitives.StringSegment left, Microsoft.Extensions.Primitives.StringSegment right) { throw null; }
         public Microsoft.Extensions.Primitives.StringTokenizer Split(char[] chars) { throw null; }
         public bool StartsWith(string text, System.StringComparison comparisonType) { throw null; }

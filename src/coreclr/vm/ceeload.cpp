@@ -2185,9 +2185,6 @@ void Module::AllocateRegularStaticHandles(AppDomain* pDomain)
     }
     CONTRACTL_END;
 
-    if (NingenEnabled())
-        return;
-
     // Allocate the handles we will need. Note that AllocateStaticFieldObjRefPtrs will only
     // allocate if pModuleData->GetGCStaticsBasePointerAddress(pMT) != 0, avoiding creating
     // handles more than once for a given MT or module
@@ -2412,17 +2409,8 @@ void Module::AllocateMaps()
         // Get the number of AssemblyReferences in the map
         m_ManifestModuleReferencesMap.dwCount = pImport->GetCountWithTokenKind(mdtAssemblyRef)+1;
 
-        // These maps are only added to during NGen, so for other scenarios leave them empty
-        if (IsCompilationProcess())
-        {
-            m_GenericTypeDefToCanonMethodTableMap.dwCount = m_TypeDefToMethodTableMap.dwCount;
-            m_MethodDefToPropertyInfoMap.dwCount = m_MethodDefToDescMap.dwCount;
-        }
-        else
-        {
-            m_GenericTypeDefToCanonMethodTableMap.dwCount = 0;
-            m_MethodDefToPropertyInfoMap.dwCount = 0;
-        }
+        m_GenericTypeDefToCanonMethodTableMap.dwCount = 0;
+        m_MethodDefToPropertyInfoMap.dwCount = 0;
     }
 
     S_SIZE_T nTotal;
@@ -4192,48 +4180,6 @@ MethodDesc *Module::FindMethod(mdToken pMethod)
     EX_END_CATCH(SwallowAllExceptions)
 
     RETURN pMDRet;
-}
-
-//
-// PopulatePropertyInfoMap precomputes property information during NGen
-// that is expensive to look up from metadata at runtime.
-//
-
-void Module::PopulatePropertyInfoMap()
-{
-    CONTRACTL
-    {
-        INSTANCE_CHECK;
-        THROWS;
-        GC_NOTRIGGER;
-        MODE_ANY;
-        PRECONDITION(IsCompilationProcess());
-    }
-    CONTRACTL_END;
-
-    IMDInternalImport* mdImport = GetMDImport();
-    HENUMInternalHolder   hEnum(mdImport);
-    hEnum.EnumAllInit(mdtMethodDef);
-
-    mdMethodDef md;
-    while (hEnum.EnumNext(&md))
-    {
-        mdProperty prop = 0;
-        ULONG semantic = 0;
-        if (mdImport->GetPropertyInfoForMethodDef(md, &prop, NULL, &semantic) == S_OK)
-        {
-            // Store the Rid in the lower 24 bits and the semantic in the upper 8
-            _ASSERTE((semantic & 0xFFFFFF00) == 0);
-            SIZE_T value = RidFromToken(prop) | (semantic << 24);
-
-            // We need to make sure a value of zero indicates an empty LookupMap entry
-            // Fortunately the semantic will prevent value from being zero
-            _ASSERTE(value != 0);
-
-            m_MethodDefToPropertyInfoMap.AddElement(this, RidFromToken(md), value);
-        }
-    }
-    FastInterlockOr(&m_dwPersistedFlags, COMPUTED_METHODDEF_TO_PROPERTYINFO_MAP);
 }
 
 //

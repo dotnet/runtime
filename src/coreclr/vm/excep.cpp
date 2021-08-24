@@ -2676,7 +2676,7 @@ VOID DECLSPEC_NORETURN RaiseTheExceptionInternalOnly(OBJECTREF throwable, BOOL r
 
 #ifdef STRESS_LOG
     // Any object could have been thrown, but System.Exception objects have useful information for the stress log
-    if (!NingenEnabled() && throwable == CLRException::GetPreallocatedStackOverflowException())
+    if (throwable == CLRException::GetPreallocatedStackOverflowException())
     {
         // if are handling an SO, don't try to get all that other goop.  It isn't there anyway,
         // and it could cause us to take another SO.
@@ -2749,7 +2749,7 @@ VOID DECLSPEC_NORETURN RaiseTheExceptionInternalOnly(OBJECTREF throwable, BOOL r
         // Note: we use SafeSetLastThrownObject, which will try to set the throwable and if there are any problems,
         // it will set the throwable to something appropiate (like OOM exception) and return the new
         // exception. Thus, the user's exception object can be replaced here.
-        pParam->throwable = NingenEnabled() ? NULL : pParam->pThread->SafeSetLastThrownObject(pParam->throwable);
+        pParam->throwable = pParam->pThread->SafeSetLastThrownObject(pParam->throwable);
 
         if (!pParam->isRethrown ||
 #ifdef FEATURE_INTERPRETER
@@ -2758,7 +2758,7 @@ VOID DECLSPEC_NORETURN RaiseTheExceptionInternalOnly(OBJECTREF throwable, BOOL r
              pParam->pExState->IsComPlusException() ||
             (pParam->pExState->GetExceptionCode() == STATUS_STACK_OVERFLOW))
         {
-            ULONG_PTR hr = NingenEnabled() ? E_FAIL : GetHRFromThrowable(pParam->throwable);
+            ULONG_PTR hr = GetHRFromThrowable(pParam->throwable);
 
             args = pParam->exceptionArgs;
             argCount = MarkAsThrownByUs(args, hr);
@@ -8168,14 +8168,13 @@ void UnwindAndContinueRethrowHelperInsideCatch(Frame* pEntryFrame, Exception* pE
     pThread->SetFrame(pEntryFrame);
 
 #ifdef _DEBUG
-    if (!NingenEnabled())
     {
         CONTRACT_VIOLATION(ThrowsViolation);
-    // Call CLRException::GetThrowableFromException to force us to retrieve the THROWABLE
-    // while we are still within the context of the catch block. This will help diagnose
-    // cases where the last thrown object is NULL.
-    OBJECTREF orThrowable = CLRException::GetThrowableFromException(pException);
-    CONSISTENCY_CHECK(orThrowable != NULL);
+        // Call CLRException::GetThrowableFromException to force us to retrieve the THROWABLE
+        // while we are still within the context of the catch block. This will help diagnose
+        // cases where the last thrown object is NULL.
+        OBJECTREF orThrowable = CLRException::GetThrowableFromException(pException);
+        CONSISTENCY_CHECK(orThrowable != NULL);
     }
 #endif
 }
@@ -8194,7 +8193,7 @@ VOID DECLSPEC_NORETURN UnwindAndContinueRethrowHelperAfterCatch(Frame* pEntryFra
 
     LOG((LF_EH, LL_INFO1000, "UNWIND_AND_CONTINUE caught and will rethrow\n"));
 
-    OBJECTREF orThrowable = NingenEnabled() ? NULL : CLRException::GetThrowableFromException(pException);
+    OBJECTREF orThrowable = CLRException::GetThrowableFromException(pException);
     LOG((LF_EH, LL_INFO1000, "UNWIND_AND_CONTINUE got throwable %p\n",
         OBJECTREFToObject(orThrowable)));
 
