@@ -43,28 +43,36 @@ namespace Wasm.Build.Tests
 
         static BuildTestBase()
         {
-            s_buildEnv = new BuildEnvironment();
-            s_runtimePackPathRegex = new Regex(s_runtimePackPathPattern);
-
-            s_skipProjectCleanup = !string.IsNullOrEmpty(EnvironmentVariables.SkipProjectCleanup) && EnvironmentVariables.SkipProjectCleanup == "1";
-
-            if (string.IsNullOrEmpty(EnvironmentVariables.XHarnessCliPath))
-                s_xharnessRunnerCommand = "xharness";
-            else
-                s_xharnessRunnerCommand = EnvironmentVariables.XHarnessCliPath;
-
-            string? nugetPackagesPath = Environment.GetEnvironmentVariable("NUGET_PACKAGES");
-            if (!string.IsNullOrEmpty(nugetPackagesPath))
+            try
             {
-                if (!Directory.Exists(nugetPackagesPath))
-                    Directory.CreateDirectory(nugetPackagesPath);
-            }
+                s_buildEnv = new BuildEnvironment();
+                s_runtimePackPathRegex = new Regex(s_runtimePackPathPattern);
 
-            Console.WriteLine ("");
-            Console.WriteLine ($"==============================================================================================");
-            Console.WriteLine ($"=============== Running with {(s_buildEnv.IsWorkload ? "Workloads" : "EMSDK")} ===============");
-            Console.WriteLine ($"==============================================================================================");
-            Console.WriteLine ("");
+                s_skipProjectCleanup = !string.IsNullOrEmpty(EnvironmentVariables.SkipProjectCleanup) && EnvironmentVariables.SkipProjectCleanup == "1";
+
+                if (string.IsNullOrEmpty(EnvironmentVariables.XHarnessCliPath))
+                    s_xharnessRunnerCommand = "xharness";
+                else
+                    s_xharnessRunnerCommand = EnvironmentVariables.XHarnessCliPath;
+
+                string? nugetPackagesPath = Environment.GetEnvironmentVariable("NUGET_PACKAGES");
+                if (!string.IsNullOrEmpty(nugetPackagesPath))
+                {
+                    if (!Directory.Exists(nugetPackagesPath))
+                        Directory.CreateDirectory(nugetPackagesPath);
+                }
+
+                Console.WriteLine ("");
+                Console.WriteLine ($"==============================================================================================");
+                Console.WriteLine ($"=============== Running with {(s_buildEnv.IsWorkload ? "Workloads" : "EMSDK")} ===============");
+                Console.WriteLine ($"==============================================================================================");
+                Console.WriteLine ("");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine ($"Exception: {ex}");
+                throw;
+            }
         }
 
         public BuildTestBase(ITestOutputHelper output, SharedBuildPerTestClassFixture buildContext)
@@ -86,25 +94,29 @@ namespace Wasm.Build.Tests
             - aot but no wrapper - check that AppBundle wasn't generated
         */
 
-        public static IEnumerable<IEnumerable<object?>> ConfigWithAOTData(bool aot)
-            => new IEnumerable<object?>[]
+        public static IEnumerable<IEnumerable<object?>> ConfigWithAOTData(bool aot, string? config=null)
+        {
+            if (config == null)
+            {
+                return new IEnumerable<object?>[]
+                    {
+    #if TEST_DEBUG_CONFIG_ALSO
+                        // list of each member data - for Debug+@aot
+                        new object?[] { new BuildArgs("placeholder", "Debug", aot, "placeholder", string.Empty) }.AsEnumerable(),
+    #endif
+                        // list of each member data - for Release+@aot
+                        new object?[] { new BuildArgs("placeholder", "Release", aot, "placeholder", string.Empty) }.AsEnumerable()
+                    }.AsEnumerable();
+            }
+            else
+            {
+                return new IEnumerable<object?>[]
                 {
-#if TEST_DEBUG_CONFIG_ALSO
-                    // list of each member data - for Debug+@aot
-                    new object?[] { new BuildArgs("placeholder", "Debug", aot, "placeholder", string.Empty) }.AsEnumerable(),
-#endif
+                    new object?[] { new BuildArgs("placeholder", config, aot, "placeholder", string.Empty) }.AsEnumerable()
+                };
+            }
+        }
 
-                    // list of each member data - for Release+@aot
-                    new object?[] { new BuildArgs("placeholder", "Release", aot, "placeholder", string.Empty) }.AsEnumerable()
-                }.AsEnumerable();
-
-        public static IEnumerable<object?[]> BuildAndRunData(bool aot = false,
-                                                                        RunHost host = RunHost.All,
-                                                                        params object[] parameters)
-            => ConfigWithAOTData(aot)
-                    .Multiply(parameters)
-                    .WithRunHosts(host)
-                    .UnwrapItemsAsArrays();
 
         protected string RunAndTestWasmApp(BuildArgs buildArgs,
                                            RunHost host,
@@ -271,7 +283,8 @@ namespace Wasm.Build.Tests
                                   bool hasIcudt = true,
                                   bool useCache = true,
                                   bool expectSuccess = true,
-                                  bool createProject = true)
+                                  bool createProject = true,
+                                  string? verbosity=null)
         {
             if (useCache && _buildContext.TryGetBuildFor(buildArgs, out BuildProduct? product))
             {
@@ -310,7 +323,7 @@ namespace Wasm.Build.Tests
             _testOutput.WriteLine($"Binlog path: {logFilePath}");
             Console.WriteLine($"Binlog path: {logFilePath}");
             sb.Append($" /bl:\"{logFilePath}\" /nologo");
-            sb.Append($" /v:diag /fl /flp:\"v:diag,LogFile={logFilePath}.log\" /v:minimal");
+            sb.Append($" /fl /flp:\"v:diag,LogFile={logFilePath}.log\" /v:{verbosity ?? "minimal"}");
             if (buildArgs.ExtraBuildArgs != null)
                 sb.Append($" {buildArgs.ExtraBuildArgs} ");
 
@@ -418,8 +431,8 @@ namespace Wasm.Build.Tests
                 {
                     Assert.True(File.Exists(path),
                             label != null
-                                ? $"{label}: {path} doesn't exist"
-                                : $"{path} doesn't exist");
+                                ? $"{label}: File exists: {path}"
+                                : $"File exists: {path}");
                 }
                 else
                 {
@@ -443,9 +456,9 @@ namespace Wasm.Build.Tests
             FileInfo finfo1 = new(file1);
 
             if (same)
-                Assert.True(finfo0.Length == finfo1.Length, $"{label}: File sizes don't match for {file0} ({finfo0.Length}), and {file1} ({finfo1.Length})");
+                Assert.True(finfo0.Length == finfo1.Length, $"{label}:{Environment.NewLine}  File sizes don't match for {file0} ({finfo0.Length}), and {file1} ({finfo1.Length})");
             else
-                Assert.True(finfo0.Length != finfo1.Length, $"{label}: File sizes should not match for {file0} ({finfo0.Length}), and {file1} ({finfo1.Length})");
+                Assert.True(finfo0.Length != finfo1.Length, $"{label}:{Environment.NewLine}  File sizes should not match for {file0} ({finfo0.Length}), and {file1} ({finfo1.Length})");
         }
 
         protected (int exitCode, string buildOutput) AssertBuild(string args, string label="build", bool expectSuccess=true, IDictionary<string, string>? envVars=null, int? timeoutMs=null)
@@ -464,6 +477,13 @@ namespace Wasm.Build.Tests
             var dir = baseDir ?? _projectDir;
             Assert.NotNull(dir);
             return Path.Combine(dir!, "bin", config, targetFramework, "browser-wasm");
+        }
+
+        protected string GetObjDir(string config, string targetFramework=s_targetFramework, string? baseDir=null)
+        {
+            var dir = baseDir ?? _projectDir;
+            Assert.NotNull(dir);
+            return Path.Combine(dir!, "obj", config, targetFramework, "browser-wasm");
         }
 
         public static (int exitCode, string buildOutput) RunProcess(string path,
@@ -583,11 +603,8 @@ namespace Wasm.Build.Tests
 
         public void Dispose()
         {
-            if (s_skipProjectCleanup || !_enablePerTestCleanup)
-                return;
-
-            if (_projectDir != null)
-                _buildContext.RemoveFromCache(_projectDir);
+            if (_projectDir != null && _enablePerTestCleanup)
+                _buildContext.RemoveFromCache(_projectDir, keepDir: s_skipProjectCleanup);
         }
 
         private static string GetEnvironmentVariableOrDefault(string envVarName, string defaultValue)
@@ -605,6 +622,10 @@ namespace Wasm.Build.Tests
             }";
     }
 
-    public record BuildArgs(string ProjectName, string Config, bool AOT, string ProjectFileContents, string? ExtraBuildArgs);
+    public record BuildArgs(string ProjectName,
+                            string Config,
+                            bool AOT,
+                            string ProjectFileContents,
+                            string? ExtraBuildArgs);
     public record BuildProduct(string ProjectDir, string LogFile, bool Result);
  }

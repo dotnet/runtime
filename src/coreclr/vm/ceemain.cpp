@@ -176,9 +176,7 @@
 #include "stacksampler.h"
 #endif
 
-#ifndef CROSSGEN_COMPILE
 #include "win32threadpool.h"
-#endif
 
 #include <shlwapi.h>
 
@@ -223,16 +221,13 @@
 
 #include "genanalysis.h"
 
-#ifndef CROSSGEN_COMPILE
 static int GetThreadUICultureId(__out LocaleIDValue* pLocale);  // TODO: This shouldn't use the LCID.  We should rely on name instead
 
 static HRESULT GetThreadUICultureNames(__inout StringArrayList* pCultureNames);
-#endif // !CROSSGEN_COMPILE
 
 HRESULT EEStartup();
 
 
-#ifndef CROSSGEN_COMPILE
 static void InitializeGarbageCollector();
 
 #ifdef DEBUGGING_SUPPORTED
@@ -240,7 +235,6 @@ static void InitializeDebugger(void);
 static void TerminateDebugger(void);
 extern "C" HRESULT __cdecl CorDBGetInterface(DebugInterface** rcInterface);
 #endif // DEBUGGING_SUPPORTED
-#endif // !CROSSGEN_COMPILE
 
 // g_coreclr_embedded indicates that coreclr is linked directly into the program
 // g_hostpolicy_embedded indicates that the hostpolicy library is linked directly into the executable
@@ -376,7 +370,6 @@ HRESULT EnsureEEStarted()
 }
 
 
-#ifndef CROSSGEN_COMPILE
 
 #ifndef TARGET_UNIX
 // This is our Ctrl-C, Ctrl-Break, etc. handler.
@@ -435,7 +428,6 @@ void InitializeStartupFlags()
     g_heap_type = ((flags & STARTUP_SERVER_GC) && GetCurrentProcessCpuCount() > 1) ? GC_HEAP_SVR : GC_HEAP_WKS;
     g_IGCHoardVM = (flags & STARTUP_HOARD_GC_VM) == 0 ? 0 : 1;
 }
-#endif // CROSSGEN_COMPILE
 
 
 // BBSweepStartFunction is the first function to execute in the BBT sweeper thread.
@@ -578,7 +570,6 @@ do { \
 #endif
 
 
-#ifndef CROSSGEN_COMPILE
 #ifdef TARGET_UNIX
 void EESocketCleanupHelper(bool isExecutingOnAltStack)
 {
@@ -605,7 +596,6 @@ void EESocketCleanupHelper(bool isExecutingOnAltStack)
 #endif // FEATURE_PERFTRACING
 }
 #endif // TARGET_UNIX
-#endif // CROSSGEN_COMPILE
 
 void FatalErrorHandler(UINT errorCode, LPCWSTR pszMessage)
 {
@@ -634,7 +624,6 @@ void EEStartupHelper()
     {
         g_fEEInit = true;
 
-#ifndef CROSSGEN_COMPILE
 
         // We cache the SystemInfo for anyone to use throughout the life of the EE.
         GetSystemInfo(&g_SystemInfo);
@@ -649,7 +638,6 @@ void EEStartupHelper()
         ::SetConsoleCtrlHandler(DbgCtrlCHandler, TRUE/*add*/);
 #endif
 
-#endif // CROSSGEN_COMPILE
 
         // SString initialization
         // This needs to be done before config because config uses SString::Empty()
@@ -657,7 +645,6 @@ void EEStartupHelper()
 
         IfFailGo(EEConfig::Setup());
 
-#ifndef CROSSGEN_COMPILE
 
 #ifdef HOST_WINDOWS
         InitializeCrashDump();
@@ -733,7 +720,6 @@ void EEStartupHelper()
 
         Frame::Init();
 
-#endif // CROSSGEN_COMPILE
 
 
 
@@ -751,12 +737,10 @@ void EEStartupHelper()
 
         STRESS_LOG0(LF_STARTUP, LL_ALWAYS, "===================EEStartup Starting===================");
 
-#ifndef CROSSGEN_COMPILE
 #ifndef TARGET_UNIX
         IfFailGoLog(EnsureRtlFunctions());
 #endif // !TARGET_UNIX
         InitEventStore();
-#endif
 
         if (g_pConfig != NULL)
         {
@@ -799,7 +783,6 @@ void EEStartupHelper()
         // Cache the (potentially user-overridden) values now so they are accessible from asm routines
         InitializeSpinConstants();
 
-#ifndef CROSSGEN_COMPILE
 
         // Cross-process named objects are not supported in PAL
         // (see CorUnix::InternalCreateEvent - src/pal/src/synchobj/event.cpp)
@@ -836,7 +819,6 @@ void EEStartupHelper()
         }
 #endif // !TARGET_UNIX
 
-#endif // CROSSGEN_COMPILE
 
         // Set up the cor handle map. This map is used to load assemblies in
         // memory instead of using the normal system load
@@ -849,7 +831,6 @@ void EEStartupHelper()
         Stub::Init();
         StubLinkerCPU::Init();
 
-#ifndef CROSSGEN_COMPILE
 
         InitializeGarbageCollector();
 
@@ -863,7 +844,6 @@ void EEStartupHelper()
 
         VirtualCallStubManager::InitStatic();
 
-#endif // CROSSGEN_COMPILE
 
         // Setup the domains. Threads are started in a default domain.
 
@@ -881,7 +861,6 @@ void EEStartupHelper()
 
         JitHost::Init();
 
-#ifndef CROSSGEN_COMPILE
 
 #ifndef TARGET_UNIX
         if (!RegisterOutOfProcessWatsonCallbacks())
@@ -891,13 +870,10 @@ void EEStartupHelper()
 #endif // !TARGET_UNIX
 
 #ifdef DEBUGGING_SUPPORTED
-        if(!NingenEnabled())
-        {
-            // Initialize the debugging services. This must be done before any
-            // EE thread objects are created, and before any classes or
-            // modules are loaded.
-            InitializeDebugger(); // throws on error
-        }
+        // Initialize the debugging services. This must be done before any
+        // EE thread objects are created, and before any classes or
+        // modules are loaded.
+        InitializeDebugger(); // throws on error
 #endif // DEBUGGING_SUPPORTED
 
 #ifdef PROFILING_SUPPORTED
@@ -983,7 +959,6 @@ void EEStartupHelper()
         MethodDesc::Init();
 #endif
 
-#endif // CROSSGEN_COMPILE
 
         Assembly::Initialize();
 
@@ -1008,12 +983,8 @@ void EEStartupHelper()
         StackSampler::Init();
 #endif
 
-#ifndef CROSSGEN_COMPILE
-        if (!NingenEnabled())
-        {
-            // Perform any once-only SafeHandle initialization.
-            SafeHandle::Init();
-        }
+        // Perform any once-only SafeHandle initialization.
+        SafeHandle::Init();
 
 #ifdef FEATURE_MINIMETADATA_IN_TRIAGEDUMPS
         // retrieve configured max size for the mini-metadata buffer (defaults to 64KB)
@@ -1028,14 +999,12 @@ void EEStartupHelper()
                                                 g_MiniMetaDataBuffMaxSize, MEM_COMMIT, PAGE_READWRITE);
 #endif // FEATURE_MINIMETADATA_IN_TRIAGEDUMPS
 
-#endif // !CROSSGEN_COMPILE
 
         g_fEEStarted = TRUE;
         g_EEStartupStatus = S_OK;
         hr = S_OK;
         STRESS_LOG0(LF_STARTUP, LL_ALWAYS, "===================EEStartup Completed===================");
 
-#ifndef CROSSGEN_COMPILE
 
 #ifdef _DEBUG
 
@@ -1056,20 +1025,11 @@ void EEStartupHelper()
         g_CoreLib.CheckExtended();
 #endif // _DEBUG
 
-#endif // !CROSSGEN_COMPILE
 
 ErrExit: ;
     }
     EX_CATCH
     {
-#ifdef CROSSGEN_COMPILE
-        // for minimal impact we won't update hr for regular builds
-        hr = GET_EXCEPTION()->GetHR();
-        _ASSERTE(FAILED(hr));
-        StackSString exceptionMessage;
-        GET_EXCEPTION()->GetMessage(exceptionMessage);
-        fprintf(stderr, "%S\n", exceptionMessage.GetUnicode());
-#endif // CROSSGEN_COMPILE
     }
     EX_END_CATCH(RethrowTerminalExceptionsWithInitCheck)
 
@@ -1142,13 +1102,11 @@ HRESULT EEStartup()
 
     PAL_TRY(PVOID, p, NULL)
     {
-#ifndef CROSSGEN_COMPILE
         InitializeClrNotifications();
 #ifdef TARGET_UNIX
         InitializeJITNotificationTable();
         DacGlobals::Initialize();
 #endif
-#endif // CROSSGEN_COMPILE
 
         EEStartupHelper();
     }
@@ -1163,7 +1121,6 @@ HRESULT EEStartup()
 }
 
 
-#ifndef CROSSGEN_COMPILE
 
 // ---------------------------------------------------------------------------
 // %%Function: ForceEEShutdown()
@@ -2346,4 +2303,3 @@ void ContractRegressionCheck()
 
 #endif // ENABLE_CONTRACTS_IMPL
 
-#endif // CROSSGEN_COMPILE

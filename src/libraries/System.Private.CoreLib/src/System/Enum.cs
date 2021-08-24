@@ -879,6 +879,8 @@ namespace System
 
         private static bool TryParseByName(RuntimeType enumType, ReadOnlySpan<char> value, bool ignoreCase, bool throwOnFailure, out ulong result)
         {
+            ReadOnlySpan<char> originalValue = value;
+
             // Find the field. Let's assume that these are always static classes because the class is an enum.
             EnumInfo enumInfo = GetEnumInfo(enumType);
             string[] enumNames = enumInfo.Names;
@@ -952,7 +954,7 @@ namespace System
 
             if (throwOnFailure)
             {
-                throw new ArgumentException(SR.Format(SR.Arg_EnumValueNotFound, value.ToString()));
+                throw new ArgumentException(SR.Format(SR.Arg_EnumValueNotFound, originalValue.ToString()));
             }
 
             result = 0;

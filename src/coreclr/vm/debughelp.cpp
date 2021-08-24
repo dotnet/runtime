@@ -309,15 +309,13 @@ MethodDesc* AsMethodDesc(size_t addr)
 
             if (isMemoryReadable((TADDR)chunk, sizeof(MethodDescChunk)))
             {
-                RelativeFixupPointer<PTR_MethodTable> * ppMT = chunk->GetMethodTablePtr();
+                PTR_MethodTable * ppMT = chunk->GetMethodTablePtr();
 
-                // The MethodTable is stored as a RelativeFixupPointer which does an
-                // extra indirection if the address is tagged (the low bit is set).
-                // That could AV if we don't check it first.
+                // Access to the MethodTable could AV if we don't check it first.
 
-                if (!ppMT->IsTagged((TADDR)ppMT) || isMemoryReadable((TADDR)ppMT->GetValuePtr(), sizeof(MethodTable*)))
+                if (isMemoryReadable((TADDR)ppMT, sizeof(MethodTable*)))
                 {
-                    if (AsMethodTable((size_t)RelativeFixupPointer<PTR_MethodTable>::GetValueAtPtr((TADDR)ppMT)) != 0)
+                    if (*ppMT != NULL)
                     {
                         pValidMD = pMD;
                     }

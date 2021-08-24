@@ -8,14 +8,8 @@ AssemblyLoadContext::AssemblyLoadContext()
 {
 }
 
-HRESULT AssemblyLoadContext::GetBinderID(
-    UINT_PTR* pBinderId)
-{
-    *pBinderId = reinterpret_cast<UINT_PTR>(this);
-    return S_OK;
-}
-
 #ifndef DACCESS_COMPILE
+
 NativeImage *AssemblyLoadContext::LoadNativeImage(Module *componentModule, LPCUTF8 nativeImageName)
 {
     STANDARD_VM_CONTRACT;
@@ -39,9 +33,7 @@ NativeImage *AssemblyLoadContext::LoadNativeImage(Module *componentModule, LPCUT
 
     return nativeImage;
 }
-#endif
 
-#ifndef DACCESS_COMPILE
 void AssemblyLoadContext::AddLoadedAssembly(Assembly *loadedAssembly)
 {
     BaseDomain::LoadLockHolder lock(AppDomain::GetCurrentDomain());
@@ -51,4 +43,5 @@ void AssemblyLoadContext::AddLoadedAssembly(Assembly *loadedAssembly)
         m_nativeImages[nativeImageIndex]->CheckAssemblyMvid(loadedAssembly);
     }
 }
-#endif
+
+#endif  //DACCESS_COMPILE

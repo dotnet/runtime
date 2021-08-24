@@ -148,12 +148,23 @@ CrashReportWriter::WriteCrashReport()
         WriteValue64("BP", thread->GetFramePointer());
         CloseObject();          // ctx
 
-        OpenArray("unmanaged_frames");
-        for (const StackFrame& frame : thread->StackFrames())
+        OpenArray("stack_frames");
+        for (auto iterator = thread->StackFrames().cbegin(); iterator != thread->StackFrames().cend(); ++iterator)
         {
-            WriteStackFrame(frame);
+            if (thread->IsBeginRepeat(iterator))
+            { 
+                OpenObject();
+                WriteValue32("repeated", thread->NumRepeatedFrames());
+                OpenArray("repeated_frames");
+            }
+            if (thread->IsEndRepeat(iterator))
+            { 
+                CloseArray();   // repeated_frames
+                CloseObject();
+            }
+            WriteStackFrame(*iterator);
         }
-        CloseArray();           // unmanaged_frames
+        CloseArray();           // stack_frames
         CloseObject();
     }
     CloseArray();               // threads

@@ -48,14 +48,10 @@ namespace System.Text.Json
                 throw new ArgumentNullException(nameof(utf8Json));
             }
 
-            return WriteAsync(
-                utf8Json,
-                value,
-                GetRuntimeType(value),
-                options,
-                cancellationToken);
+            Type runtimeType = GetRuntimeType(value);
+            JsonTypeInfo jsonTypeInfo = GetTypeInfo(options, runtimeType);
+            return WriteStreamAsync(utf8Json, value!, jsonTypeInfo, cancellationToken);
         }
-
 
         /// <summary>
         /// Converts the provided value to UTF-8 encoded JSON text and write it to the <see cref="System.IO.Stream"/>.
@@ -81,11 +77,9 @@ namespace System.Text.Json
                 throw new ArgumentNullException(nameof(utf8Json));
             }
 
-            Write(
-                utf8Json,
-                value,
-                GetRuntimeType(value),
-                options);
+            Type runtimeType = GetRuntimeType(value);
+            JsonTypeInfo jsonTypeInfo = GetTypeInfo(options, runtimeType);
+            WriteStream(utf8Json, value!, jsonTypeInfo);
         }
 
         /// <summary>
@@ -120,12 +114,9 @@ namespace System.Text.Json
                 throw new ArgumentNullException(nameof(utf8Json));
             }
 
-            return WriteAsync<object?>(
-                utf8Json,
-                value!,
-                GetRuntimeTypeAndValidateInputType(value, inputType),
-                options,
-                cancellationToken);
+            Type runtimeType = GetRuntimeTypeAndValidateInputType(value, inputType);
+            JsonTypeInfo jsonTypeInfo = GetTypeInfo(options, runtimeType);
+            return WriteStreamAsync(utf8Json, value!, jsonTypeInfo, cancellationToken);
         }
 
         /// <summary>
@@ -157,11 +148,9 @@ namespace System.Text.Json
                 throw new ArgumentNullException(nameof(utf8Json));
             }
 
-            Write<object?>(
-                utf8Json,
-                value!,
-                GetRuntimeTypeAndValidateInputType(value, inputType),
-                options);
+            Type runtimeType = GetRuntimeTypeAndValidateInputType(value, inputType);
+            JsonTypeInfo jsonTypeInfo = GetTypeInfo(options, runtimeType);
+            WriteStream(utf8Json, value!, jsonTypeInfo);
         }
 
         /// <summary>
@@ -195,7 +184,7 @@ namespace System.Text.Json
                 throw new ArgumentNullException(nameof(jsonTypeInfo));
             }
 
-            return WriteAsyncCore(utf8Json, value, jsonTypeInfo, cancellationToken);
+            return WriteStreamAsync(utf8Json, value, jsonTypeInfo, cancellationToken);
         }
 
         /// <summary>
@@ -226,7 +215,7 @@ namespace System.Text.Json
                 throw new ArgumentNullException(nameof(jsonTypeInfo));
             }
 
-            WriteCore(utf8Json, value, jsonTypeInfo);
+            WriteStream(utf8Json, value, jsonTypeInfo);
         }
 
         /// <summary>
@@ -266,7 +255,7 @@ namespace System.Text.Json
             }
 
             Type runtimeType = GetRuntimeTypeAndValidateInputType(value, inputType);
-            return WriteAsyncCore(
+            return WriteStreamAsync(
                 utf8Json,
                 value!,
                 GetTypeInfo(context, runtimeType),
@@ -307,33 +296,10 @@ namespace System.Text.Json
             }
 
             Type runtimeType = GetRuntimeTypeAndValidateInputType(value, inputType);
-            WriteCore(utf8Json, value!, GetTypeInfo(context, runtimeType));
+            WriteStream(utf8Json, value!, GetTypeInfo(context, runtimeType));
         }
 
-        [RequiresUnreferencedCode(SerializationUnreferencedCodeMessage)]
-        private static Task WriteAsync<TValue>(
-            Stream utf8Json,
-            in TValue value,
-            Type runtimeType,
-            JsonSerializerOptions? options,
-            CancellationToken cancellationToken)
-        {
-            JsonTypeInfo jsonTypeInfo = GetTypeInfo(runtimeType, options);
-            return WriteAsyncCore(utf8Json, value!, jsonTypeInfo, cancellationToken);
-        }
-
-        [RequiresUnreferencedCode(SerializationUnreferencedCodeMessage)]
-        private static void Write<TValue>(
-            Stream utf8Json,
-            in TValue value,
-            Type runtimeType,
-            JsonSerializerOptions? options)
-        {
-            JsonTypeInfo jsonTypeInfo = GetTypeInfo(runtimeType, options);
-            WriteCore(utf8Json, value!, jsonTypeInfo);
-        }
-
-        private static async Task WriteAsyncCore<TValue>(
+        private static async Task WriteStreamAsync<TValue>(
             Stream utf8Json,
             TValue value,
             JsonTypeInfo jsonTypeInfo,
@@ -359,28 +325,30 @@ namespace System.Text.Json
                         try
                         {
                             isFinalBlock = WriteCore(converter, writer, value, options, ref state);
+                            await bufferWriter.WriteToStreamAsync(utf8Json, cancellationToken).ConfigureAwait(false);
+                            bufferWriter.Clear();
                         }
                         finally
                         {
-                            if (state.PendingAsyncDisposables?.Count > 0)
+                            // Await any pending resumable converter tasks (currently these can only be IAsyncEnumerator.MoveNextAsync() tasks).
+                            // Note that pending tasks are always awaited, even if an exception has been thrown or the cancellation token has fired.
+                            if (state.PendingTask is not null)
                             {
-                                await state.DisposePendingAsyncDisposables().ConfigureAwait(false);
+                                try
+                                {
+                                    await state.PendingTask.ConfigureAwait(false);
+                                }
+                                catch
+                                {
+                                    // Exceptions should only be propagated by the resuming converter
+                                    // TODO https://github.com/dotnet/runtime/issues/22144
+                                }
                             }
-                        }
 
-                        await bufferWriter.WriteToStreamAsync(utf8Json, cancellationToken).ConfigureAwait(false);
-                        bufferWriter.Clear();
-
-                        if (state.PendingTask is not null)
-                        {
-                            try
+                            // Dispose any pending async disposables (currently these can only be completed IAsyncEnumerators).
+                            if (state.CompletedAsyncDisposables?.Count > 0)
                             {
-                                await state.PendingTask.ConfigureAwait(false);
-                            }
-                            catch
-                            {
-                                // Exceptions will be propagated elsewhere
-                                // TODO https://github.com/dotnet/runtime/issues/22144
+                                await state.DisposeCompletedAsyncDisposables().ConfigureAwait(false);
                             }
                         }
 
@@ -388,13 +356,14 @@ namespace System.Text.Json
                 }
                 catch
                 {
+                    // On exception, walk the WriteStack for any orphaned disposables and try to dispose them.
                     await state.DisposePendingDisposablesOnExceptionAsync().ConfigureAwait(false);
                     throw;
                 }
             }
         }
 
-        private static void WriteCore<TValue>(
+        private static void WriteStream<TValue>(
             Stream utf8Json,
             in TValue value,
             JsonTypeInfo jsonTypeInfo)

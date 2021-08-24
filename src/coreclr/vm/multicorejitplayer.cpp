@@ -360,7 +360,7 @@ bool ModuleRecord::MatchWithModule(ModuleVersion & modVersion, bool & gotVersion
 }
 
 
-MulticoreJitProfilePlayer::MulticoreJitProfilePlayer(ICLRPrivBinder * pBinderContext, LONG nSession)
+MulticoreJitProfilePlayer::MulticoreJitProfilePlayer(AssemblyBinder * pBinderContext, LONG nSession)
     : m_stats(::GetAppDomain()->GetMulticoreJitManager().GetStats()), m_appdomainSession(::GetAppDomain()->GetMulticoreJitManager().GetProfileSession())
 {
     LIMITED_METHOD_CONTRACT;
