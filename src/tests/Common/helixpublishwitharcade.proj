@@ -119,6 +119,7 @@
 
   <PropertyGroup Condition="'$(TargetOS)' == 'Android' or '$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'iOSSimulator'">
     <IncludeXHarnessCli>true</IncludeXHarnessCli>
+    <MicrosoftDotNetXHarnessCLIVersion>1.0.0-prerelease.20322.1</MicrosoftDotNetXHarnessCLIVersion>
   </PropertyGroup>
 
   <Import Project="testgrouping.proj" />
