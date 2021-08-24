@@ -21,16 +21,12 @@
 #include "strongnameinternal.h"
 #include "strongnameholders.h"
 
-#ifdef FEATURE_PREJIT
-#include "compile.h"
-#endif
-
 #include "../binder/inc/textualidentityparser.hpp"
 #include "../binder/inc/assemblyidentity.hpp"
 #include "../binder/inc/assembly.hpp"
 #include "../binder/inc/assemblyname.hpp"
 
-#include "../binder/inc/coreclrbindercommon.h"
+#include "../binder/inc/assemblybindercommon.hpp"
 #include "../binder/inc/applicationcontext.hpp"
 
 STDAPI BinderAddRefPEImage(PEImage *pPEImage)
@@ -72,7 +68,7 @@ static VOID ThrowLoadError(AssemblySpec * pSpec, HRESULT hr)
     EEFileLoadException::Throw(name, hr);
 }
 
-// See code:BINDER_SPACE::AssemblyBinder::GetAssembly for info on fNgenExplicitBind
+// See code:BINDER_SPACE::AssemblyBinderCommon::GetAssembly for info on fNgenExplicitBind
 // and fExplicitBindToNativeImage, and see code:CEECompileInfo::LoadAssemblyByPath
 // for an example of how they're used.
 VOID  AssemblySpec::Bind(AppDomain      *pAppDomain,
@@ -97,12 +93,12 @@ VOID  AssemblySpec::Bind(AppDomain      *pAppDomain,
     pResult->Reset();
 
     // Have a default binding context setup
-    ICLRPrivBinder *pBinder = GetBindingContextFromParentAssembly(pAppDomain);
+    AssemblyBinder *pBinder = GetBindingContextFromParentAssembly(pAppDomain);
 
     // Get the reference to the TPABinder context
-    CLRPrivBinderCoreCLR *pTPABinder = pAppDomain->GetTPABinderContext();
+    DefaultAssemblyBinder *pTPABinder = pAppDomain->GetTPABinderContext();
 
-    ReleaseHolder<ICLRPrivAssembly> pPrivAsm;
+    ReleaseHolder<BINDER_SPACE::Assembly> pPrivAsm;
     _ASSERTE(pBinder != NULL);
 
     if (m_wszCodeBase == NULL && IsCoreLibSatellite())
@@ -122,7 +118,7 @@ VOID  AssemblySpec::Bind(AppDomain      *pAppDomain,
             tmpString.ConvertToUnicode(sCultureName);
         }
 
-        hr = CCoreCLRBinderHelper::BindToSystemSatellite(sSystemDirectory, sSimpleName, sCultureName, &pPrivAsm);
+        hr = BINDER_SPACE::AssemblyBinderCommon::BindToSystemSatellite(sSystemDirectory, sSimpleName, sCultureName, &pPrivAsm);
     }
     else if (m_wszCodeBase == NULL)
     {
@@ -146,7 +142,7 @@ VOID  AssemblySpec::Bind(AppDomain      *pAppDomain,
     {
         _ASSERTE(pPrivAsm != nullptr);
 
-        result = BINDER_SPACE::GetAssemblyFromPrivAssemblyFast(pPrivAsm.Extract());
+        result = pPrivAsm.Extract();
         _ASSERTE(result != nullptr);
 
         pResult->Init(result);
@@ -173,30 +169,13 @@ STDAPI BinderAcquirePEImage(LPCWSTR             wszAssemblyPath,
         PEImageHolder pImage = NULL;
         PEImageHolder pNativeImage = NULL;
 
-#ifdef FEATURE_PREJIT
-        // fExplicitBindToNativeImage is set on Phone when we bind to a list of native images and have no IL on device for an assembly
-        if (fExplicitBindToNativeImage)
-        {
-            pNativeImage = PEImage::OpenImage(wszAssemblyPath, MDInternalImport_TrustedNativeImage, bundleFileLocation);
+        pImage = PEImage::OpenImage(wszAssemblyPath, MDInternalImport_Default, bundleFileLocation);
 
-            // Make sure that the IL image can be opened if the native image is not available.
-            hr=pNativeImage->TryOpenFile();
-            if (FAILED(hr))
-            {
-                goto Exit;
-            }
-        }
-        else
-#endif
+        // Make sure that the IL image can be opened if the native image is not available.
+        hr=pImage->TryOpenFile();
+        if (FAILED(hr))
         {
-            pImage = PEImage::OpenImage(wszAssemblyPath, MDInternalImport_Default, bundleFileLocation);
-
-            // Make sure that the IL image can be opened if the native image is not available.
-            hr=pImage->TryOpenFile();
-            if (FAILED(hr))
-            {
-                goto Exit;
-            }
+            goto Exit;
         }
 
         if (pImage)
@@ -263,16 +242,7 @@ STDAPI BinderAcquireImport(PEImage                  *pPEImage,
         if (!pLayout->CheckFormat())
             IfFailGo(COR_E_BADIMAGEFORMAT);
 
-#ifdef FEATURE_PREJIT
-        if (bNativeImage && pPEImage->IsNativeILILOnly())
-        {
-            pPEImage->GetNativeILPEKindAndMachine(&pdwPAFlags[0], &pdwPAFlags[1]);
-        }
-        else
-#endif
-        {
-            pPEImage->GetPEKindAndMachine(&pdwPAFlags[0], &pdwPAFlags[1]);
-        }
+        pPEImage->GetPEKindAndMachine(&pdwPAFlags[0], &pdwPAFlags[1]);
 
         *ppIAssemblyMetaDataImport = pPEImage->GetMDImport();
         if (!*ppIAssemblyMetaDataImport)
@@ -312,13 +282,13 @@ HRESULT BaseAssemblySpec::ParseName()
         _ASSERTE(pDomain);
 
         BINDER_SPACE::ApplicationContext *pAppContext = NULL;
-        CLRPrivBinderCoreCLR *pBinder = pDomain->GetTPABinderContext();
+        DefaultAssemblyBinder *pBinder = pDomain->GetTPABinderContext();
         if (pBinder != NULL)
         {
             pAppContext = pBinder->GetAppContext();
         }
 
-        hr = CCoreCLRBinderHelper::GetAssemblyIdentity(m_pAssemblyName, pAppContext, pAssemblyIdentity);
+        hr = BINDER_SPACE::AssemblyBinderCommon::GetAssemblyIdentity(m_pAssemblyName, pAppContext, pAssemblyIdentity);
 
         if (FAILED(hr))
         {

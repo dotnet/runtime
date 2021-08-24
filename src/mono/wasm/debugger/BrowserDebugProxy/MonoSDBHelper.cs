@@ -2280,10 +2280,16 @@ namespace Microsoft.WebAssembly.Diagnostics
                             var assemblyNameArg = await GetFullAssemblyName(sessionId, assemblyIdArg, token);
                             var classNameArg = await GetTypeNameOriginal(sessionId, genericTypeArgs[k], token);
                             typeToSearch += classNameArg +", " + assemblyNameArg;
+                            if (k + 1 < genericTypeArgs.Count)
+                                typeToSearch += "], [";
+                            else
+                                typeToSearch += "]";
                         }
-                        typeToSearch += "]]";
+                        typeToSearch += "]";
                         typeToSearch +=  ", " + assemblyName;
                         var genericTypeId = await GetTypeByName(sessionId, typeToSearch, token);
+                        if (genericTypeId < 0)
+                            return null;
                         methodId = await GetMethodIdByName(sessionId, genericTypeId, ".ctor", token);
                     }
                     else

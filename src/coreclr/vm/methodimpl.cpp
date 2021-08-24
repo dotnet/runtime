@@ -211,54 +211,6 @@ void MethodImpl::SetData(DWORD* slots, mdToken* tokens, RelativePointer<MethodDe
     }
 }
 
-#ifdef FEATURE_NATIVE_IMAGE_GENERATION
-void MethodImpl::Save(DataImage *image)
-{
-    STANDARD_VM_CONTRACT;
-
-    DWORD size = GetSize();
-    _ASSERTE(size > 0);
-
-    image->StoreStructure(pdwSlots.GetValue(), (size+1)*sizeof(DWORD)+size*sizeof(mdToken),
-                                    DataImage::ITEM_METHOD_DESC_COLD,
-                                    sizeof(DWORD));
-    image->StoreStructure(pImplementedMD.GetValue(), size*sizeof(RelativePointer<MethodDesc*>),
-                                    DataImage::ITEM_METHOD_DESC_COLD,
-                                    sizeof(MethodDesc*));
-}
-
-void MethodImpl::Fixup(DataImage *image, PVOID p, SSIZE_T offset)
-{
-    STANDARD_VM_CONTRACT;
-
-    DWORD size = GetSize();
-    _ASSERTE(size > 0);
-
-    for (DWORD iMD = 0; iMD < size; iMD++)
-    {
-        // <TODO> Why not use FixupMethodDescPointer? </TODO>
-        // <TODO> Does it matter if the MethodDesc needs a restore? </TODO>
-
-        RelativePointer<MethodDesc *> *pRelPtr = pImplementedMD.GetValue();
-        MethodDesc * pMD = pRelPtr[iMD].GetValueMaybeNull();
-
-        if (image->CanEagerBindToMethodDesc(pMD) &&
-            image->CanHardBindToZapModule(pMD->GetLoaderModule()))
-        {
-            image->FixupRelativePointerField(pImplementedMD.GetValue(), iMD * sizeof(RelativePointer<MethodDesc *>));
-        }
-        else
-        {
-            image->ZeroPointerField(pImplementedMD.GetValue(), iMD * sizeof(RelativePointer<MethodDesc *>));
-        }
-    }
-
-    image->FixupRelativePointerField(p, offset + offsetof(MethodImpl, pdwSlots));
-    image->FixupRelativePointerField(p, offset + offsetof(MethodImpl, pImplementedMD));
-}
-
-#endif // FEATURE_NATIVE_IMAGE_GENERATION
-
 #endif //!DACCESS_COMPILE
 
 #ifdef DACCESS_COMPILE

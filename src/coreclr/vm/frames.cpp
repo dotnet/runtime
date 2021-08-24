@@ -41,7 +41,6 @@
 
 #define CHECK_APP_DOMAIN    0
 
-#if !defined(CROSSGEN_COMPILE)
 //-----------------------------------------------------------------------
 #if _DEBUG
 //-----------------------------------------------------------------------
@@ -457,7 +456,7 @@ VOID Frame::Pop(Thread *pThread)
     m_Next = NULL;
 }
 
-#if defined(TARGET_UNIX) && !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
+#if defined(TARGET_UNIX) && !defined(DACCESS_COMPILE)
 void Frame::PopIfChained()
 {
     CONTRACTL
@@ -476,7 +475,7 @@ void Frame::PopIfChained()
         Pop();
     }
 }
-#endif // TARGET_UNIX && !DACCESS_COMPILE && !CROSSGEN_COMPILE
+#endif // TARGET_UNIX && !DACCESS_COMPILE
 
 //-----------------------------------------------------------------------
 #endif // #ifndef DACCESS_COMPILE
@@ -1977,7 +1976,6 @@ PCODE UnmanagedToManagedFrame::GetReturnAddress()
         return pRetAddr;
     }
 }
-#endif // !CROSSGEN_COMPILE
 
 #ifndef DACCESS_COMPILE
 //=================================================================================

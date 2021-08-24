@@ -4304,7 +4304,6 @@ void ILNativeArrayMarshaler::EmitNewSavedSizeArgLocal(ILCodeStream* pslILEmit)
     pslILEmit->EmitSTLOC(m_dwSavedSizeArg);
 }
 
-#ifndef CROSSGEN_COMPILE
 
 FCIMPL4(void, MngdNativeArrayMarshaler::CreateMarshaler, MngdNativeArrayMarshaler* pThis, MethodTable* pMT, UINT32 dwFlags, PCODE pManagedMarshaler)
 {
@@ -4500,7 +4499,6 @@ void MngdNativeArrayMarshaler::DoClearNativeContents(MngdNativeArrayMarshaler* p
     }
 }
 
-#endif // CROSSGEN_COMPILE
 
 
 void ILFixedArrayMarshaler::EmitCreateMngdMarshaler(ILCodeStream* pslILEmit)
@@ -4542,7 +4540,6 @@ void ILFixedArrayMarshaler::EmitCreateMngdMarshaler(ILCodeStream* pslILEmit)
     pslILEmit->EmitCALL(METHOD__MNGD_FIXED_ARRAY_MARSHALER__CREATE_MARSHALER, 5, 0);
 }
 
-#ifndef CROSSGEN_COMPILE
 
 FCIMPL5(void, MngdFixedArrayMarshaler::CreateMarshaler, MngdFixedArrayMarshaler* pThis, MethodTable* pMT, UINT32 dwFlags, UINT32 cElements, PCODE pManagedElementMarshaler)
 {
@@ -4727,7 +4724,6 @@ FCIMPL3(void, MngdFixedArrayMarshaler::ClearNativeContents, MngdFixedArrayMarsha
 }
 FCIMPLEND
 
-#endif // CROSSGEN_COMPILE
 
 
 #ifdef FEATURE_COMINTEROP
@@ -4815,7 +4811,6 @@ void ILSafeArrayMarshaler::EmitConvertContentsCLRToNative(ILCodeStream* pslILEmi
 }
 
 
-#ifndef CROSSGEN_COMPILE
 
 FCIMPL5(void, MngdSafeArrayMarshaler::CreateMarshaler, MngdSafeArrayMarshaler* pThis, MethodTable* pMT, UINT32 iRank, UINT32 dwFlags, PCODE pManagedMarshaler)
 {
@@ -5016,7 +5011,6 @@ FCIMPL3(void, MngdSafeArrayMarshaler::ClearNative, MngdSafeArrayMarshaler* pThis
 }
 FCIMPLEND
 
-#endif // CROSSGEN_COMPILE
 #endif // FEATURE_COMINTEROP
 
 void ILReferenceCustomMarshaler::EmitCreateMngdMarshaler(ILCodeStream* pslILEmit)
@@ -5063,7 +5057,6 @@ void ILReferenceCustomMarshaler::EmitCreateMngdMarshaler(ILCodeStream* pslILEmit
 }
 
 
-#ifndef CROSSGEN_COMPILE
 
 FCIMPL2(void, MngdRefCustomMarshaler::CreateMarshaler, MngdRefCustomMarshaler* pThis, void* pCMHelper)
 {
@@ -5146,4 +5139,3 @@ FCIMPL3(void, MngdRefCustomMarshaler::ClearManaged, MngdRefCustomMarshaler* pThi
 }
 FCIMPLEND
 
-#endif // CROSSGEN_COMPILE

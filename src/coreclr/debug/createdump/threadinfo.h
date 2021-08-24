@@ -33,6 +33,8 @@ struct user_vfpregs_struct
 } __attribute__((__packed__));
 #endif
 
+#define STACK_OVERFLOW_EXCEPTION    0x800703e9
+
 class ThreadInfo
 {
 private:
@@ -43,8 +45,11 @@ private:
     bool m_managed;                             // if true, thread has managed code running
     uint64_t m_exceptionObject;                 // exception object address
     std::string m_exceptionType;                // exception type
-    int32_t m_exceptionHResult;                 // exception HRESULT
+    uint32_t m_exceptionHResult;                // exception HRESULT
     std::set<StackFrame> m_frames;              // stack frames
+    int m_repeatedFrames;                       // number of repeated frames
+    std::set<StackFrame>::const_iterator m_beginRepeat;   // beginning of stack overflow repeated frame sequence
+    std::set<StackFrame>::const_iterator m_endRepeat;     // end of repeated frame sequence
 
 #ifdef __APPLE__
     mach_port_t m_port;                         // MacOS thread port
@@ -88,9 +93,12 @@ public:
 
     inline bool IsManaged() const { return m_managed; }
     inline uint64_t ManagedExceptionObject() const { return m_exceptionObject; }
-    inline int32_t ManagedExceptionHResult() const { return m_exceptionHResult; }
+    inline uint32_t ManagedExceptionHResult() const { return m_exceptionHResult; }
     inline std::string ManagedExceptionType() const { return m_exceptionType; }
-    inline const std::set<StackFrame> StackFrames() const { return m_frames; }
+    inline const std::set<StackFrame>& StackFrames() const { return m_frames; }
+    inline int NumRepeatedFrames() const { return m_repeatedFrames;  }
+    inline bool IsBeginRepeat(std::set<StackFrame>::const_iterator& iterator) const { return m_repeatedFrames > 0 && iterator == m_beginRepeat; }
+    inline bool IsEndRepeat(std::set<StackFrame>::const_iterator& iterator) const { return  m_repeatedFrames > 0 && iterator == m_endRepeat; }
 
 #ifdef __APPLE__
 #if defined(__x86_64__)

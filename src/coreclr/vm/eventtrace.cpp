@@ -6099,60 +6099,6 @@ ETW_INLINE
 {
     ULONG Result = ERROR_SUCCESS;
 
-#ifdef FEATURE_PREJIT
-    // do not fire the ETW event when:
-    // 1. We did not load the native image
-    // 2. We do not have IBC data for the native image
-    if( !pModule || !pModule->HasNativeImage() || !pModule->IsIbcOptimized() )
-    {
-        return Result;
-    }
-
-    // get information about the hot sections from the native image that has been loaded
-    COUNT_T cbSizeOfSectionTable;
-    CORCOMPILE_VIRTUAL_SECTION_INFO* pVirtualSectionsTable = (CORCOMPILE_VIRTUAL_SECTION_INFO* )pModule->GetNativeImage()->GetVirtualSectionsTable(&cbSizeOfSectionTable);
-
-    COUNT_T RangeCount = cbSizeOfSectionTable/sizeof(CORCOMPILE_VIRTUAL_SECTION_INFO);
-
-    // if we do not have any hot ranges, we do not fire the ETW event
-
-    // Figure out the rest of the event data
-    UINT16 ClrInstanceId = GetClrInstanceId();
-    UINT64 ModuleID = (ULONGLONG)(TADDR) pModule;
-
-    for (COUNT_T i = 0; i < RangeCount; ++i)
-    {
-        DWORD rangeBegin = pVirtualSectionsTable[i].VirtualAddress;
-        DWORD rangeSize = pVirtualSectionsTable[i].Size;
-        DWORD sectionType = pVirtualSectionsTable[i].SectionType;
-
-        UINT8 ibcType = VirtualSectionData::IBCType(sectionType);
-        UINT8 rangeType = VirtualSectionData::RangeType(sectionType);
-        UINT16 virtualSectionType = VirtualSectionData::VirtualSectionType(sectionType);
-        BOOL isIBCProfiledColdSection = VirtualSectionData::IsIBCProfiledColdSection(sectionType);
-        if (dwEventOptions & ETW::EnumerationLog::EnumerationStructs::ModuleRangeLoad)
-        {
-            if (isIBCProfiledColdSection)
-                Result &= FireEtwModuleRangeLoad(ClrInstanceId, ModuleID, rangeBegin, rangeSize, rangeType);
-        }
-        else if (dwEventOptions & ETW::EnumerationLog::EnumerationStructs::ModuleRangeDCStart)
-        {
-            if (isIBCProfiledColdSection)
-                Result &= FireEtwModuleRangeDCStart(ClrInstanceId, ModuleID, rangeBegin, rangeSize, rangeType);
-        }
-        else if (dwEventOptions & ETW::EnumerationLog::EnumerationStructs::ModuleRangeDCEnd)
-        {
-            if (isIBCProfiledColdSection)
-                Result &= FireEtwModuleRangeDCEnd(ClrInstanceId, ModuleID, rangeBegin, rangeSize, rangeType);
-        }
-        // Fire private events if they are requested.
-        if (dwEventOptions & ETW::EnumerationLog::EnumerationStructs::ModuleRangeLoadPrivate)
-        {
-            Result &= FireEtwModuleRangeLoadPrivate(ClrInstanceId, ModuleID, rangeBegin, rangeSize, rangeType, ibcType, virtualSectionType);
-        }
-    }
-#endif
-
     return Result;
 }
 
@@ -6362,9 +6308,6 @@ VOID ETW::LoaderLog::SendModuleEvent(Module *pModule, DWORD dwEventOptions, BOOL
     PCWSTR szDtraceOutput1=W(""),szDtraceOutput2=W("");
     BOOL bIsDynamicAssembly = pModule->GetAssembly()->IsDynamic();
     BOOL bHasNativeImage = FALSE;
-#ifdef FEATURE_PREJIT
-    bHasNativeImage = pModule->HasNativeImage();
-#endif // FEATURE_PREJIT
     BOOL bIsManifestModule = pModule->IsManifest();
     ULONGLONG ullAppDomainId = 0; // This is used only with DomainModule events
     ULONGLONG ullModuleId = (ULONGLONG)(TADDR) pModule;
@@ -6409,11 +6352,6 @@ VOID ETW::LoaderLog::SendModuleEvent(Module *pModule, DWORD dwEventOptions, BOOL
     {
         ModuleILPath = (PWCHAR)pModule->GetAssembly()->GetManifestFile()->GetILimage()->GetPath().GetUnicode();
         ModuleNativePath = (PWCHAR)pEmptyString;
-
-#ifdef FEATURE_PREJIT
-        if(bHasNativeImage)
-            ModuleNativePath = (PWCHAR)pModule->GetNativeImage()->GetPath().GetUnicode();
-#endif // FEATURE_PREJIT
     }
 
     // if we do not have a module path yet, we put the module name
@@ -6701,9 +6639,6 @@ VOID ETW::MethodLog::SendMethodEvent(MethodDesc *pMethodDesc, DWORD dwEventOptio
     }
 
     pModule = pMethodDesc->GetModule_NoLogging();
-#ifdef FEATURE_PREJIT
-    bHasNativeImage = pModule->HasNativeImage();
-#endif // FEATURE_PREJIT
     bIsDynamicMethod = (BOOL)pMethodDesc->IsDynamicMethod();
     bHasSharedGenericCode = pMethodDesc->IsSharedByGenericInstantiations();
 
@@ -7187,19 +7122,6 @@ VOID ETW::MethodLog::SendEventsForNgenMethods(Module *pModule, DWORD dwEventOpti
         return;
     }
 #endif // FEATURE_READYTORUN
-
-#ifdef FEATURE_PREJIT
-    if (pModule->HasNativeImage())
-    {
-        MethodIterator mi(pModule);
-
-        while (mi.Next())
-        {
-            MethodDesc *hotDesc = (MethodDesc *)mi.GetMethodDesc();
-            ETW::MethodLog::SendMethodEvent(hotDesc, dwEventOptions, FALSE);
-        }
-    }
-#endif // FEATURE_PREJIT
 }
 
 // Called be ETW::MethodLog::SendEventsForJitMethods

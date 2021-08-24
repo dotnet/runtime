@@ -356,11 +356,6 @@ public:
 
     BOOL IsObjRef();
 
-#ifdef FEATURE_PREJIT
-    void SaveContents(DataImage *image);
-    void Fixup(DataImage *image);
-#endif // FEATURE_PREJIT
-
     UINT LoadSize();
 
     // Return -1 if the type isn't loaded yet (i.e. if LookupFieldTypeHandle() would return null)
@@ -591,15 +586,6 @@ public:
         return GetApproxEnclosingMethodTable()->GetModule();
     }
 
-    BOOL IsZapped()
-    {
-        WRAPPER_NO_CONTRACT;
-
-        // Field Desc's are currently always saved into the same module as their
-        // corresponding method table.
-        return GetApproxEnclosingMethodTable()->IsZapped();
-    }
-
     Module *GetLoaderModule()
     {
         WRAPPER_NO_CONTRACT;
@@ -671,7 +657,6 @@ public:
         return GetMDImport()->GetNameOfFieldDef(GetMemberDef(), pszName);
     }
 
-    void PrecomputeNameHash();
     BOOL MightHaveName(ULONG nameHashValue);
 
     // <TODO>@TODO: </TODO>This is slow, don't use it!

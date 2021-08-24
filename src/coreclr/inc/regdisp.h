@@ -256,7 +256,6 @@ struct REGDISPLAY : public REGDISPLAY_BASE {
     ArmVolatileContextPointer     volatileCurrContextPointers;
 
     DWORD *  pPC;                // processor neutral name
-#ifndef CROSSGEN_COMPILE
     REGDISPLAY()
     {
         // Initialize regdisplay
@@ -265,10 +264,6 @@ struct REGDISPLAY : public REGDISPLAY_BASE {
         // Setup the pointer to ControlPC field
         pPC = &ControlPC;
     }
-#else
-private:
-    REGDISPLAY();
-#endif
 };
 
 // This function tells us if the given stack pointer is in one of the frames of the functions called by the given frame
