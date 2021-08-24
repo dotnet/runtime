@@ -64,10 +64,6 @@
 #include "typekey.h"
 #include "peimagelayout.inl"
 
-#if defined(PROFILING_SUPPORTED)
-#include "profilermetadataemitvalidator.h"
-#endif
-
 #ifdef _MSC_VER
 #pragma warning(push)
 #pragma warning(disable:4244)
