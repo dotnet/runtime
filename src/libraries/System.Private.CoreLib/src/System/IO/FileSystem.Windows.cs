@@ -618,7 +618,7 @@ namespace System.IO
             {
                 fixed (char* bufPtr = buffer)
                 {
-                    return Interop.Kernel32.GetFinalPathNameByHandle(handle, bufPtr, (uint)buffer.Length, Interop.Kernel32.FILE_NAME_OPENED);
+                    return Interop.Kernel32.GetFinalPathNameByHandle(handle, bufPtr, (uint)buffer.Length, Interop.Kernel32.FILE_NAME_NORMALIZED);
                 }
             }
 
