@@ -15,7 +15,7 @@ namespace Microsoft.Extensions.FileProviders
         /// </summary>
         /// <param name="subpath">A path under the root directory. This parameter is ignored.</param>
         /// <returns>A <see cref="IDirectoryContents"/> that does not exist and does not contain any contents.</returns>
-        public IDirectoryContents GetDirectoryContents(string? subpath) => NotFoundDirectoryContents.Singleton;
+        public IDirectoryContents GetDirectoryContents(string subpath) => NotFoundDirectoryContents.Singleton;
 
         /// <summary>
         /// Locate a non-existent file.
@@ -29,6 +29,6 @@ namespace Microsoft.Extensions.FileProviders
         /// </summary>
         /// <param name="filter">Filter string used to determine what files or folders to monitor. This parameter is ignored.</param>
         /// <returns>A <see cref="IChangeToken"/> that does not register callbacks.</returns>
-        public IChangeToken Watch(string? filter) => NullChangeToken.Singleton;
+        public IChangeToken Watch(string filter) => NullChangeToken.Singleton;
     }
 }

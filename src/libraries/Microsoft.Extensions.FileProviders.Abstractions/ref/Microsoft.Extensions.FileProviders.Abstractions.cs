@@ -22,9 +22,9 @@ namespace Microsoft.Extensions.FileProviders
     }
     public partial interface IFileProvider
     {
-        Microsoft.Extensions.FileProviders.IDirectoryContents GetDirectoryContents(string? subpath);
+        Microsoft.Extensions.FileProviders.IDirectoryContents GetDirectoryContents(string subpath);
         Microsoft.Extensions.FileProviders.IFileInfo GetFileInfo(string subpath);
-        Microsoft.Extensions.Primitives.IChangeToken Watch(string? filter);
+        Microsoft.Extensions.Primitives.IChangeToken Watch(string filter);
     }
     public partial class NotFoundDirectoryContents : Microsoft.Extensions.FileProviders.IDirectoryContents, System.Collections.Generic.IEnumerable<Microsoft.Extensions.FileProviders.IFileInfo>, System.Collections.IEnumerable
     {
@@ -57,8 +57,8 @@ namespace Microsoft.Extensions.FileProviders
     public partial class NullFileProvider : Microsoft.Extensions.FileProviders.IFileProvider
     {
         public NullFileProvider() { }
-        public Microsoft.Extensions.FileProviders.IDirectoryContents GetDirectoryContents(string? subpath) { throw null; }
+        public Microsoft.Extensions.FileProviders.IDirectoryContents GetDirectoryContents(string subpath) { throw null; }
         public Microsoft.Extensions.FileProviders.IFileInfo GetFileInfo(string subpath) { throw null; }
-        public Microsoft.Extensions.Primitives.IChangeToken Watch(string? filter) { throw null; }
+        public Microsoft.Extensions.Primitives.IChangeToken Watch(string filter) { throw null; }
     }
 }
