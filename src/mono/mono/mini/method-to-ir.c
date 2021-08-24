@@ -57,9 +57,7 @@
 #include <mono/metadata/debug-helpers.h>
 #include <mono/metadata/debug-internals.h>
 #include <mono/metadata/gc-internals.h>
-#include <mono/metadata/security-manager.h>
 #include <mono/metadata/threads-types.h>
-#include <mono/metadata/security-core-clr.h>
 #include <mono/metadata/profiler-private.h>
 #include <mono/metadata/profiler.h>
 #include <mono/metadata/monitor.h>
@@ -7314,7 +7312,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 
 			sp -= n;
 
-			if (virtual_ && cmethod && sp [0]->opcode == OP_TYPED_OBJREF) {
+			if (virtual_ && cmethod && sp [0] && sp [0]->opcode == OP_TYPED_OBJREF) {
 				ERROR_DECL (error);
 
 				MonoMethod *new_cmethod = mono_class_get_virtual_method (sp [0]->klass, cmethod, error);

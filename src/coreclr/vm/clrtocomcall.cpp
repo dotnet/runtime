@@ -38,7 +38,6 @@ void CreateCLRToDispatchCOMStub(
             DWORD        dwStubFlags             // NDirectStubFlags
             );
 
-#ifndef CROSSGEN_COMPILE
 
 PCODE TheGenericComplusCallStub()
 {
@@ -47,7 +46,6 @@ PCODE TheGenericComplusCallStub()
     return GetEEFuncEntryPoint(GenericComPlusCallStub);
 }
 
-#endif //#ifndef CROSSGEN_COMPILE
 
 
 ComPlusCallInfo *ComPlusCall::PopulateComPlusCallMethodDesc(MethodDesc* pMD, DWORD* pdwStubFlags)
@@ -171,7 +169,6 @@ MethodDesc* ComPlusCall::GetILStubMethodDesc(MethodDesc* pMD, DWORD dwStubFlags)
 }
 
 
-#ifndef CROSSGEN_COMPILE
 
 PCODE ComPlusCall::GetStubForILStub(MethodDesc* pMD, MethodDesc** ppStubMD)
 {
@@ -189,7 +186,7 @@ PCODE ComPlusCall::GetStubForILStub(MethodDesc* pMD, MethodDesc** ppStubMD)
         pComInfo = ComPlusCallInfo::FromMethodDesc(pMD);
         _ASSERTE(pComInfo != NULL);
 
-        _ASSERTE((*ppStubMD) ==  pComInfo->m_pStubMD.GetValue());
+        _ASSERTE((*ppStubMD) ==  pComInfo->m_pStubMD);
 
         if (pComInfo->m_pInterfaceMT == NULL)
         {
@@ -216,10 +213,10 @@ PCODE ComPlusCall::GetStubForILStub(MethodDesc* pMD, MethodDesc** ppStubMD)
         DWORD dwStubFlags;
         pComInfo = ComPlusCall::PopulateComPlusCallMethodDesc(pMD, &dwStubFlags);
 
-        if (!pComInfo->m_pStubMD.IsNull())
+        if (pComInfo->m_pStubMD != NULL)
         {
             // Discard pre-implemented code
-            PCODE pPreImplementedCode = pComInfo->m_pStubMD.GetValue()->GetNativeCode();
+            PCODE pPreImplementedCode = pComInfo->m_pStubMD->GetNativeCode();
             InterlockedCompareExchangeT<PCODE>(pComInfo->GetAddrOfILStubField(), NULL, pPreImplementedCode);
         }
 
@@ -438,13 +435,13 @@ CallsiteDetails CreateCallsiteDetails(_In_ FramedMethodFrame *pFrame)
         DelegateEEClass* delegateCls = (DelegateEEClass*)pMD->GetMethodTable()->GetClass();
         _ASSERTE(pFrame->GetThis()->GetMethodTable()->IsDelegate());
 
-        if (pMD == delegateCls->m_pBeginInvokeMethod.GetValue())
+        if (pMD == delegateCls->m_pBeginInvokeMethod)
         {
             callsiteFlags |= CallsiteDetails::BeginInvoke;
         }
         else
         {
-            _ASSERTE(pMD == delegateCls->m_pEndInvokeMethod.GetValue());
+            _ASSERTE(pMD == delegateCls->m_pEndInvokeMethod);
             callsiteFlags |= CallsiteDetails::EndInvoke;
         }
 
@@ -795,10 +792,8 @@ UINT32 STDCALL CLRToCOMWorker(TransitionBlock * pTransitionBlock, ComPlusCallMet
 
 #pragma optimize( "", on )
 
-#endif // CROSSGEN_COMPILE
 #endif // #ifndef DACCESS_COMPILE
 
-#ifndef CROSSGEN_COMPILE
 //---------------------------------------------------------
 // Debugger support for ComPlusMethodFrame
 //---------------------------------------------------------
@@ -971,7 +966,6 @@ BOOL ComPlusMethodFrame::TraceFrame(Thread *thread, BOOL fromPatch,
 
     return TRUE;
 }
-#endif //CROSSGEN_COMPILE
 
 #ifdef TARGET_X86
 

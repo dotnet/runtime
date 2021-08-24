@@ -61,7 +61,7 @@ namespace System.Text.Json.Serialization.Converters
                 do
                 {
                     TKey key = enumerator.Current.Key;
-                    _keyConverter.WriteAsPropertyName(writer, key, options, ref state);
+                    _keyConverter.WriteAsPropertyNameCore(writer, key, options, state.Current.IsWritingExtensionDataProperty);
                     _valueConverter.Write(writer, enumerator.Current.Value, options);
                 } while (enumerator.MoveNext());
             }
@@ -80,7 +80,7 @@ namespace System.Text.Json.Serialization.Converters
                         state.Current.PropertyState = StackFramePropertyState.Name;
 
                         TKey key = enumerator.Current.Key;
-                        _keyConverter.WriteAsPropertyName(writer, key, options, ref state);
+                        _keyConverter.WriteAsPropertyNameCore(writer, key, options, state.Current.IsWritingExtensionDataProperty);
                     }
 
                     TValue element = enumerator.Current.Value;

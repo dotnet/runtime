@@ -461,6 +461,3 @@ struct T_CRITICAL_SECTION {
 #define T_CRITICAL_SECTION CRITICAL_SECTION
 #endif
 
-#ifdef CROSSGEN_COMPILE
-void CrossGenNotSupported(const char * message);
-#endif

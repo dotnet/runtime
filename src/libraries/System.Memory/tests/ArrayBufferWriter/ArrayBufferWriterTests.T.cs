@@ -65,7 +65,6 @@ namespace System.Buffers.Tests
         }
 
         [Fact]
-        [SkipOnCoreClr("https://github.com/dotnet/runtime/issues/42517", RuntimeConfiguration.Checked)]
         public void Advance()
         {
             {

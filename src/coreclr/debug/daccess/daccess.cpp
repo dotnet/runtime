@@ -5821,28 +5821,8 @@ ClrDataAccess::RawGetMethodName(
         //
         // Special-cased stub managers
         //
-#ifdef FEATURE_PREJIT
-        if (pStubManager == RangeSectionStubManager::g_pManager)
-        {
-            switch (RangeSectionStubManager::GetStubKind(TO_TADDR(address)))
-            {
-            case STUB_CODE_BLOCK_PRECODE:
-                goto PrecodeStub;
-
-            case STUB_CODE_BLOCK_JUMPSTUB:
-                goto JumpStub;
-
-            default:
-                break;
-            }
-        }
-        else
-#endif
         if (pStubManager == PrecodeStubManager::g_pManager)
         {
-#ifdef FEATURE_PREJIT
-        PrecodeStub:
-#endif
             PCODE alignedAddress = AlignDown(TO_TADDR(address), PRECODE_ALIGNMENT);
 
 #ifdef TARGET_ARM
@@ -5887,9 +5867,6 @@ ClrDataAccess::RawGetMethodName(
         else
         if (pStubManager == JumpStubStubManager::g_pManager)
         {
-#ifdef FEATURE_PREJIT
-        JumpStub:
-#endif
             PCODE pTarget = decodeBackToBackJump(TO_TADDR(address));
 
             HRESULT hr = GetRuntimeNameByAddress(pTarget, flags, bufLen, symbolLen, symbolBuf, NULL);
@@ -6592,14 +6569,8 @@ bool ClrDataAccess::GetILImageInfoFromNgenPEFile(PEFile *peFile,
         // Use DAC hint to retrieve the IL name.
         peFile->GetModuleFileNameHint().DacGetUnicode(cchFilePath, wszFilePath, (COUNT_T *)(&dwWritten));
     }
-#ifdef FEATURE_PREJIT
-    // Need to get IL image information from cached info in the ngen image.
-    dwTimeStamp = peFile->GetLoaded()->GetNativeVersionInfo()->sourceAssembly.timeStamp;
-    dwSize = peFile->GetLoaded()->GetNativeVersionInfo()->sourceAssembly.ilImageSize;
-#else
     dwTimeStamp = 0;
     dwSize = 0;
-#endif //  FEATURE_PREJIT
 
     return true;
 }

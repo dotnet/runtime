@@ -2963,7 +2963,7 @@ GenTree* Compiler::optCopyAssertionProp(AssertionDsc*        curAssertion,
 
     // Extract the matching lclNum and ssaNum.
     const unsigned copyLclNum = (op1.lcl.lclNum == lclNum) ? op2.lcl.lclNum : op1.lcl.lclNum;
-    unsigned       copySsaNum = BAD_VAR_NUM;
+    unsigned       copySsaNum = SsaConfig::RESERVED_SSA_NUM;
     if (!optLocalAssertionProp)
     {
         // Extract the ssaNum of the matching lclNum.
@@ -2991,8 +2991,8 @@ GenTree* Compiler::optCopyAssertionProp(AssertionDsc*        curAssertion,
         return nullptr;
     }
 
-    tree->SetSsaNum(copySsaNum);
     tree->SetLclNum(copyLclNum);
+    tree->SetSsaNum(copySsaNum);
 
 #ifdef DEBUG
     if (verbose)

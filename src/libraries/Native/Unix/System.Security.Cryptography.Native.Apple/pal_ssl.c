@@ -23,6 +23,14 @@ SSLContextRef AppleCryptoNative_SslCreateContext(int32_t isServer)
 #pragma clang diagnostic pop
 }
 
+int32_t AppleCryptoNative_SslSetConnection(SSLContextRef sslContext, SSLConnectionRef sslConnection)
+{
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdeprecated-declarations"
+    return SSLSetConnection(sslContext, sslConnection);
+#pragma clang diagnostic pop
+}
+
 int32_t AppleCryptoNative_SslSetAcceptClientCert(SSLContextRef sslContext)
 {
 #pragma clang diagnostic push

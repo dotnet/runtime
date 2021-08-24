@@ -53,13 +53,17 @@
     <TestRunNamePrefix Condition="'$(TestRunNamePrefixSuffix)' != ''">$(TestRunNamePrefix)$(TestRunNamePrefixSuffix)-</TestRunNamePrefix>
     <TestRunNamePrefix Condition="'$(Scenario)' != ''">$(TestRunNamePrefix)$(Scenario)-</TestRunNamePrefix>
 
+    <BuildWasmAppsJobsList>$(RepositoryEngineeringDir)\testing\scenarios\BuildWasmAppsJobsList.txt</BuildWasmAppsJobsList>
+
     <FailOnTestFailure Condition="'$(WaitForWorkItemCompletion)' != ''">$(WaitForWorkItemCompletion)</FailOnTestFailure>
-    <NeedsToBuildWasmAppsOnHelix Condition="'$(TargetOS)' == 'Browser' and '$(NeedsToBuildWasmAppsOnHelix)' == '' and '$(Scenario)' == 'BuildWasmApps'">true</NeedsToBuildWasmAppsOnHelix>
     <EMSDK_PATH Condition="$([MSBuild]::IsOSPlatform('WINDOWS')) and '$(EMSDK_PATH)' == ''">$(RepoRoot)src\mono\wasm\emsdk\</EMSDK_PATH>
 
-    <NeedsWorkload Condition="'$(TestUsingWorkloads)' == 'true'">true</NeedsWorkload>
-    <NeedsEMSDK Condition="'$(NeedsToBuildWasmAppsOnHelix)' == 'true' and '$(NeedsWorkload)' != 'true'">true</NeedsEMSDK>
+    <NeedsWorkload Condition="'$(Scenario)' == 'BuildWasmApps'">true</NeedsWorkload>
+    <NeedsEMSDK Condition="'$(NeedsToBuildWasmAppsOnHelix)' == 'true' or ('$(Scenario)' == 'BuildWasmApps' and '$(TestUsingWorkloads)' != 'true')">true</NeedsEMSDK>
     <NeedsToRunOnBrowser Condition="'$(TargetOS)' == 'Browser' and ('$(Scenario)' == 'WasmTestOnBrowser' or '$(Scenario)' == 'BuildWasmApps')">true</NeedsToRunOnBrowser>
+
+    <SdkForWorkloadTestingDirName Condition="'$(NeedsWorkload)' == 'true' and '$(TestUsingWorkloads)' == 'true'">dotnet-workload</SdkForWorkloadTestingDirName>
+    <SdkForWorkloadTestingDirName Condition="'$(NeedsWorkload)' == 'true' and '$(TestUsingWorkloads)' != 'true'">sdk-no-workload</SdkForWorkloadTestingDirName>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(HelixType)' == ''">
@@ -161,21 +165,21 @@
     <HelixPreCommand Include="printenv | grep COMPlus" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(TestUsingWorkloads)' == 'true'">
-    <HelixCommandPrefixItem Condition="'$(WindowsShell)' != 'true'" Include="PATH=$HELIX_CORRELATION_PAYLOAD/dotnet-workload:$PATH" />
-    <HelixCommandPrefixItem Condition="'$(WindowsShell)' == 'true'" Include="PATH=%HELIX_CORRELATION_PAYLOAD%\dotnet-workload%3B%PATH%" />
+  <ItemGroup Condition="'$(NeedsWorkload)' == 'true'">
+    <HelixCommandPrefixItem Condition="'$(WindowsShell)' != 'true'" Include="PATH=$HELIX_CORRELATION_PAYLOAD/$(SdkForWorkloadTestingDirName):$PATH" />
+    <HelixCommandPrefixItem Condition="'$(WindowsShell)' == 'true'" Include="PATH=%HELIX_CORRELATION_PAYLOAD%\$(SdkForWorkloadTestingDirName)%3B%PATH%" />
 
-    <HelixCommandPrefixItem Condition="'$(WindowsShell)' != 'true'" Include="DOTNET_CLI_HOME=$HELIX_CORRELATION_PAYLOAD/dotnet-workload" />
-    <!--<HelixCommandPrefixItem Condition="'$(WindowsShell)' == 'true'" Include="DOTNET_CLI_HOME=%HELIX_CORRELATION_PAYLOAD%\dotnet-workload" />-->
+    <HelixCommandPrefixItem Condition="'$(WindowsShell)' != 'true'" Include="DOTNET_CLI_HOME=$HELIX_CORRELATION_PAYLOAD/$(SdkForWorkloadTestingDirName)" />
+    <!--<HelixCommandPrefixItem Condition="'$(WindowsShell)' == 'true'" Include="DOTNET_CLI_HOME=%HELIX_CORRELATION_PAYLOAD%\$(SdkForWorkloadTestingDirName)" />-->
 
-    <HelixCommandPrefixItem Condition="'$(WindowsShell)' != 'true'" Include="DOTNET_ROOT=$HELIX_CORRELATION_PAYLOAD/dotnet-workload" />
-    <!--<HelixCommandPrefixItem Condition="'$(WindowsShell)' == 'true'" Include="DOTNET_ROOT=%HELIX_CORRELATION_PAYLOAD%\dotnet-workload" />-->
+    <HelixCommandPrefixItem Condition="'$(WindowsShell)' != 'true'" Include="DOTNET_ROOT=$HELIX_CORRELATION_PAYLOAD/$(SdkForWorkloadTestingDirName)" />
+    <!--<HelixCommandPrefixItem Condition="'$(WindowsShell)' == 'true'" Include="DOTNET_ROOT=%HELIX_CORRELATION_PAYLOAD%\$(SdkForWorkloadTestingDirName)" />-->
 
-    <HelixCommandPrefixItem Condition="'$(WindowsShell)' != 'true'" Include="SDK_FOR_WORKLOAD_TESTING_PATH=%24{HELIX_CORRELATION_PAYLOAD}/dotnet-workload" />
-    <HelixCommandPrefixItem Condition="'$(WindowsShell)' == 'true'" Include="SDK_FOR_WORKLOAD_TESTING_PATH=%HELIX_CORRELATION_PAYLOAD%\dotnet-workload" />
+    <HelixCommandPrefixItem Condition="'$(WindowsShell)' != 'true'" Include="SDK_FOR_WORKLOAD_TESTING_PATH=%24{HELIX_CORRELATION_PAYLOAD}/$(SdkForWorkloadTestingDirName)" />
+    <HelixCommandPrefixItem Condition="'$(WindowsShell)' == 'true'" Include="SDK_FOR_WORKLOAD_TESTING_PATH=%HELIX_CORRELATION_PAYLOAD%\$(SdkForWorkloadTestingDirName)" />
 
     <HelixCommandPrefixItem Include="DOTNET_CLI_TELEMETRY_OPTOUT=1" />
-    <HelixCommandPrefixItem Include="TEST_USING_WORKLOADS=true" />
+    <HelixCommandPrefixItem Condition="'$(TestUsingWorkloads)' == 'true'" Include="TEST_USING_WORKLOADS=true" />
   </ItemGroup>
 
   <PropertyGroup Condition="'$(NeedsDotNetSdk)' == 'true'">
@@ -290,7 +294,7 @@
         <TestTarget>$(AppleTestTarget)</TestTarget>
       </XHarnessAppBundleToTest>
       <!-- Create work items for run-only apps -->
-      <XHarnessAppBundleToTest Condition="Exists('$(TestArchiveRoot)runonly')" Include="$([System.IO.Directory]::GetDirectories('$(TestArchiveRoot)runonly', '*.app', System.IO.SearchOption.AllDirectories))" >
+      <XHarnessAppBundleToTest Condition="Exists('$(TestArchiveRoot)runonly') and '$(TargetOS)' != 'tvOS'" Include="$([System.IO.Directory]::GetDirectories('$(TestArchiveRoot)runonly', '*.app', System.IO.SearchOption.AllDirectories))" >
         <!-- The sample app doesn't need test runner -->
         <IncludesTestRunner>false</IncludesTestRunner>
         <!-- The sample's C# Main method returns 42 so it should be considered by xharness as a success -->
@@ -354,12 +358,17 @@
       </HelixPostCommands>
     </PropertyGroup>
 
-    <Error Condition="'$(TestUsingWorkloads)' == 'true' and ('$(SdkPathForWorkloadTesting)' == '' or !Exists($(SdkPathForWorkloadTesting)))"
-           Text="Could not find workload at %24(SdkPathForWorkloadTesting)=$(SdkPathForWorkloadTesting)" />
+    <Error Condition="'$(NeedsWorkload)' == 'true' and '$(TestUsingWorkloads)' == 'true' and ('$(SdkWithWorkloadForTestingPath)' == '' or !Exists($(SdkWithWorkloadForTestingPath)))"
+           Text="Could not find workload at %24(SdkWithWorkloadForTestingPath)=$(SdkWithWorkloadForTestingPath)" />
+
+    <Error Condition="'$(NeedsWorkload)' == 'true' and '$(TestUsingWorkloads)' != 'true' and ('$(SdkWithNoWorkloadForTestingPath)' == '' or !Exists($(SdkWithNoWorkloadForTestingPath)))"
+           Text="Could not find workload at %24(SdkWithNoWorkloadForTestingPath)=$(SdkWithNoWorkloadForTestingPath)" />
 
     <ItemGroup Condition="'$(NeedsWorkload)' == 'true'">
-      <HelixCorrelationPayload Include="$(SdkPathForWorkloadTesting)"     Destination="dotnet-workload" />
-      <HelixCorrelationPayload Include="$(MicrosoftNetCoreAppRefPackDir)" Destination="microsoft.netcore.app.ref" />
+      <HelixCorrelationPayload Include="$(SdkWithWorkloadForTestingPath)"     Destination="$(SdkForWorkloadTestingDirName)" Condition="'$(TestUsingWorkloads)' == 'true'" />
+      <HelixCorrelationPayload Include="$(SdkWithNoWorkloadForTestingPath)"   Destination="$(SdkForWorkloadTestingDirName)" Condition="'$(TestUsingWorkloads)' != 'true'" />
+
+      <HelixCorrelationPayload Include="$(MicrosoftNetCoreAppRefPackDir)"     Destination="microsoft.netcore.app.ref" />
     </ItemGroup>
 
     <ItemGroup Condition="'$(NeedsEMSDK)' == 'true'">
@@ -378,6 +387,10 @@
       <HelixCorrelationPayload Include="$(RemoteLoopMiddleware)" Destination="xharness/RemoteLoopMiddleware" />
     </ItemGroup>
 
+    <ReadLinesFromFile File="$(BuildWasmAppsJobsList)" Condition="Exists($(BuildWasmAppsJobsList)) and '$(Scenario)' == 'BuildWasmApps'">
+      <Output TaskParameter="Lines" ItemName="BuildWasmApps_PerJobList" />
+    </ReadLinesFromFile>
+
     <ItemGroup Condition="'$(TargetOS)' != 'Android' and '$(TargetOS)' != 'iOS' and '$(TargetOS)' != 'iOSSimulator' and '$(TargetOS)' != 'tvOS' and '$(TargetOS)' != 'tvOSSimulator' and '$(TargetOS)' != 'MacCatalyst'">
       <HelixCorrelationPayload Include="$(HelixCorrelationPayload)"
                                Condition="'$(IncludeHelixCorrelationPayload)' == 'true' and '$(TargetOS)' != 'Browser'"
@@ -390,8 +403,22 @@
       <_WorkItem Include="$(TestArchiveRoot)runonly/**/WebAssembly.Browser.*.Test.zip" Condition="'$(TargetOS)' == 'Browser' and '$(Scenario)' == 'WasmTestOnBrowser'" />
       <_WorkItem Include="$(TestArchiveRoot)browseronly/**/*.zip" Condition="'$(TargetOS)' == 'Browser' and '$(Scenario)' == 'WasmTestOnBrowser'" />
 
-      <HelixWorkItem Include="@(_WorkItem -> '$(WorkItemPrefix)%(FileName)')">
+      <HelixWorkItem Include="@(_WorkItem -> '$(WorkItemPrefix)%(FileName)')" Condition="'$(Scenario)' != 'BuildWasmApps'">
         <PayloadArchive>%(Identity)</PayloadArchive>
+        <Command>$(HelixCommand)</Command>
+        <Timeout>$(_workItemTimeout)</Timeout>
+      </HelixWorkItem>
+    </ItemGroup>
+
+    <PropertyGroup>
+      <_BuildWasmAppsPayloadArchive>@(_WorkItem)</_BuildWasmAppsPayloadArchive>
+    </PropertyGroup>
+
+    <ItemGroup Condition="'$(Scenario)' == 'BuildWasmApps'">
+      <HelixWorkItem Include="@(BuildWasmApps_PerJobList->'$(WorkItemPrefix)%(FileName)')">
+        <PayloadArchive>$(_BuildWasmAppsPayloadArchive)</PayloadArchive>
+        <PreCommands Condition="'$(OS)' == 'Windows_NT'">set &quot;HELIX_XUNIT_ARGS=-class Wasm.Build.Tests.%(Identity)&quot;</PreCommands>
+        <PreCommands Condition="'$(OS)' != 'Windows_NT'">export &quot;HELIX_XUNIT_ARGS=-class Wasm.Build.Tests.%(Identity)&quot;</PreCommands>
         <Command>$(HelixCommand)</Command>
         <Timeout>$(_workItemTimeout)</Timeout>
       </HelixWorkItem>

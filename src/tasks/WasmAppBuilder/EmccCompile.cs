@@ -8,6 +8,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Build.Framework;
 using Microsoft.Build.Utilities;
@@ -39,6 +40,8 @@ namespace Microsoft.WebAssembly.Build.Tasks
         public ITaskItem[]? OutputFiles            { get; private set; }
 
         private string? _tempPath;
+        private int _totalFiles;
+        private int _numCompiled;
 
         public override bool Execute()
         {
@@ -61,10 +64,42 @@ namespace Microsoft.WebAssembly.Build.Tasks
                 return false;
             }
 
+            _totalFiles = SourceFiles.Length;
             IDictionary<string, string> envVarsDict = GetEnvironmentVariablesDict();
             ConcurrentBag<ITaskItem> outputItems = new();
             try
             {
+                List<(string, string)> filesToCompile = new();
+                foreach (ITaskItem srcItem in SourceFiles)
+                {
+                    string srcFile = srcItem.ItemSpec;
+                    string objFile = srcItem.GetMetadata("ObjectFile");
+                    string depMetadata = srcItem.GetMetadata("Dependencies");
+                    string[] depFiles = string.IsNullOrEmpty(depMetadata)
+                                            ? Array.Empty<string>()
+                                            : depMetadata.Split(new char[] { ';' }, StringSplitOptions.RemoveEmptyEntries);
+
+                    if (!ShouldCompile(srcFile, objFile, depFiles, out string reason))
+                    {
+                        Log.LogMessage(MessageImportance.Low, $"Skipping {srcFile} because {reason}.");
+                    }
+                    else
+                    {
+                        Log.LogMessage(MessageImportance.Low, $"Compiling {srcFile} because {reason}.");
+                        filesToCompile.Add((srcFile, objFile));
+                    }
+                }
+
+                _numCompiled = SourceFiles.Length - filesToCompile.Count;
+                if (_numCompiled == _totalFiles)
+                {
+                    // nothing to do!
+                    return true;
+                }
+
+                if (_numCompiled > 0)
+                    Log.LogMessage(MessageImportance.High, $"[{_numCompiled}/{SourceFiles.Length}] skipped unchanged files");
+
                 Log.LogMessage(MessageImportance.Low, "Using environment variables:");
                 foreach (var kvp in envVarsDict)
                     Log.LogMessage(MessageImportance.Low, $"\t{kvp.Key} = {kvp.Value}");
@@ -76,31 +111,36 @@ namespace Microsoft.WebAssembly.Build.Tasks
                 Directory.CreateDirectory(_tempPath);
 
                 int allowedParallelism = Math.Min(SourceFiles.Length, Environment.ProcessorCount);
-#if false // Enable this when we bump msbuild to 16.1.0
                 if (BuildEngine is IBuildEngine9 be9)
                     allowedParallelism = be9.RequestCores(allowedParallelism);
-#endif
 
                 if (DisableParallelCompile || allowedParallelism == 1)
                 {
-                    foreach (ITaskItem srcItem in SourceFiles)
+                    foreach ((string srcFile, string outFile) in filesToCompile)
                     {
-                        if (!ProcessSourceFile(srcItem))
+                        if (!ProcessSourceFile(srcFile, outFile))
                             return false;
                     }
                 }
                 else
                 {
-                    ParallelLoopResult result = Parallel.ForEach(SourceFiles,
+                    ParallelLoopResult result = Parallel.ForEach(filesToCompile,
                                                     new ParallelOptions { MaxDegreeOfParallelism = allowedParallelism },
-                                                    (srcItem, state) =>
+                                                    (toCompile, state) =>
                     {
-                        if (!ProcessSourceFile(srcItem))
+                        if (!ProcessSourceFile(toCompile.Item1, toCompile.Item2))
                             state.Stop();
                     });
 
                     if (!result.IsCompleted && !Log.HasLoggedErrors)
                         Log.LogError("Unknown failed occured while compiling");
+                }
+
+                if (!Log.HasLoggedErrors)
+                {
+                    int numUnchanged = _totalFiles - _numCompiled;
+                    if (numUnchanged > 0)
+                        Log.LogMessage(MessageImportance.High, $"[{numUnchanged}/{_totalFiles}] unchanged.");
                 }
             }
             finally
@@ -112,14 +152,13 @@ namespace Microsoft.WebAssembly.Build.Tasks
             OutputFiles = outputItems.ToArray();
             return !Log.HasLoggedErrors;
 
-            bool ProcessSourceFile(ITaskItem srcItem)
+            bool ProcessSourceFile(string srcFile, string objFile)
             {
-                string srcFile = srcItem.ItemSpec;
-                string objFile = srcItem.GetMetadata("ObjectFile");
-
+                string tmpObjFile = Path.GetTempFileName();
                 try
                 {
-                    string command = $"emcc {Arguments} -c -o \"{objFile}\" \"{srcFile}\"";
+                    string command = $"emcc {Arguments} -c -o \"{tmpObjFile}\" \"{srcFile}\"";
+                    var startTime = DateTime.Now;
 
                     // Log the command in a compact format which can be copy pasted
                     StringBuilder envStr = new StringBuilder(string.Empty);
@@ -135,21 +174,83 @@ namespace Microsoft.WebAssembly.Build.Tasks
                                                             debugMessageImportance: messageImportance,
                                                             label: Path.GetFileName(srcFile));
 
+                    var endTime = DateTime.Now;
+                    var elapsedSecs = (endTime - startTime).TotalSeconds;
                     if (exitCode != 0)
                     {
-                        Log.LogError($"Failed to compile {srcFile} -> {objFile}");
+                        Log.LogError($"Failed to compile {srcFile} -> {objFile}{Environment.NewLine}{output} [took {elapsedSecs:F}s]");
                         return false;
                     }
+
+                    if (!Utils.CopyIfDifferent(tmpObjFile, objFile, useHash: true))
+                        Log.LogMessage(MessageImportance.Low, $"Did not overwrite {objFile} as the contents are unchanged");
+                    else
+                        Log.LogMessage(MessageImportance.Low, $"Copied {tmpObjFile} to {objFile}");
 
                     ITaskItem newItem = new TaskItem(objFile);
                     newItem.SetMetadata("SourceFile", srcFile);
                     outputItems.Add(newItem);
+
+                    int count = Interlocked.Increment(ref _numCompiled);
+                    Log.LogMessage(MessageImportance.High, $"[{count}/{_totalFiles}] {Path.GetFileName(srcFile)} -> {Path.GetFileName(objFile)} [took {elapsedSecs:F}s]");
 
                     return !Log.HasLoggedErrors;
                 }
                 catch (Exception ex)
                 {
                     Log.LogError($"Failed to compile {srcFile} -> {objFile}{Environment.NewLine}{ex.Message}");
+                    return false;
+                }
+                finally
+                {
+                    File.Delete(tmpObjFile);
+                }
+            }
+        }
+
+        private bool ShouldCompile(string srcFile, string objFile, string[] depFiles, out string reason)
+        {
+            if (!File.Exists(srcFile))
+                throw new ArgumentException($"Could not find source file {srcFile}");
+
+            if (!File.Exists(objFile))
+            {
+                reason = $"output file {objFile} doesn't exist";
+                return true;
+            }
+
+            if (IsNewerThanOutput(srcFile, objFile, out reason))
+                return true;
+
+            foreach (string depFile in depFiles)
+            {
+                if (IsNewerThanOutput(depFile, objFile, out reason))
+                    return true;
+            }
+
+            reason = "everything is up-to-date.";
+            return false;
+
+            bool IsNewerThanOutput(string inFile, string outFile, out string reason)
+            {
+                if (!File.Exists(inFile))
+                {
+                    reason = $"Could not find dependency file {inFile} needed for compiling {srcFile} to {outFile}";
+                    Log.LogWarning(reason);
+                    return true;
+                }
+
+                DateTime lastWriteTimeSrc = File.GetLastWriteTimeUtc(inFile);
+                DateTime lastWriteTimeDst = File.GetLastWriteTimeUtc(outFile);
+
+                if (lastWriteTimeSrc > lastWriteTimeDst)
+                {
+                    reason = $"{inFile} is newer than {outFile}";
+                    return true;
+                }
+                else
+                {
+                    reason = $"{inFile} is older than {outFile}";
                     return false;
                 }
             }

@@ -576,7 +576,7 @@ namespace System.Globalization
         public override DayOfWeek GetDayOfWeek(DateTime time)
         {
             CheckTicksRange(time.Ticks);
-            return (DayOfWeek)((int)(time.Ticks / Calendar.TicksPerDay + 1) % 7);
+            return time.DayOfWeek;
         }
 
         /// <summary>

@@ -7,9 +7,6 @@
 #include "log.h"
 #include "methoddescbackpatchinfo.h"
 
-#ifdef CROSSGEN_COMPILE
-    #error This file is not expected to be included into CrossGen
-#endif
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // EntryPointSlots
@@ -35,7 +32,7 @@ void EntryPointSlots::Backpatch_Locked(TADDR slot, SlotType slotType, PCODE entr
             break;
 
         case SlotType_Vtable:
-            ((MethodTable::VTableIndir2_t *)slot)->SetValue(entryPoint);
+            *((MethodTable::VTableIndir2_t *)slot) = entryPoint;
             break;
 
         case SlotType_Executable:

@@ -118,19 +118,6 @@ public:
     // Is actually ParamTypeDesc (BYREF, PTR)
     BOOL HasTypeParam();
 
-#ifdef FEATURE_PREJIT
-    void Save(DataImage *image);
-    void Fixup(DataImage *image);
-
-    BOOL NeedsRestore(DataImage *image)
-    {
-        WRAPPER_NO_CONTRACT;
-        return ComputeNeedsRestore(image, NULL);
-    }
-
-    BOOL ComputeNeedsRestore(DataImage *image, TypeHandleList *pVisited);
-#endif
-
     void DoRestoreTypeKey();
     void Restore();
     BOOL IsRestored();
@@ -171,9 +158,6 @@ public:
 
     // The module that defined the underlying type
     PTR_Module GetModule();
-
-    // The ngen'ed module where this type-desc lives
-    PTR_Module GetZapModule();
 
     // The module where this type lives for the purposes of loading and prejitting
     // See ComputeLoaderModule for more information
@@ -247,7 +231,7 @@ public:
 
         LIMITED_METHOD_CONTRACT;
 
-        m_TemplateMT.SetValueMaybeNull(pMT);
+        m_TemplateMT = pMT;
 
         // ParamTypeDescs start out life not fully loaded
         m_typeAndFlags |= TypeDesc::enum_flag_IsNotFullyLoaded;
@@ -298,12 +282,6 @@ public:
 
     TypeHandle GetTypeParam();
 
-#ifdef FEATURE_PREJIT
-    void Save(DataImage *image);
-    void Fixup(DataImage *image);
-    BOOL ComputeNeedsRestore(DataImage *image, TypeHandleList *pVisited);
-#endif
-
     BOOL OwnsTemplateMethodTable();
 
 #ifdef DACCESS_COMPILE
@@ -318,11 +296,11 @@ public:
 protected:
     PTR_MethodTable GetTemplateMethodTableInternal() {
         WRAPPER_NO_CONTRACT;
-        return ReadPointerMaybeNull(this, &ParamTypeDesc::m_TemplateMT);
+        return m_TemplateMT;
     }
 
     // the m_typeAndFlags field in TypeDesc tell what kind of parameterized type we have
-    RelativeFixupPointer<PTR_MethodTable> m_TemplateMT; // The shared method table, some variants do not use this field (it is null)
+    PTR_MethodTable m_TemplateMT; // The shared method table, some variants do not use this field (it is null)
     TypeHandle      m_Arg;              // The type that is being modified
     LOADERHANDLE    m_hExposedClassObject;  // handle back to the internal reflection Type object
 };
@@ -356,7 +334,7 @@ public:
         }
         CONTRACTL_END;
 
-        m_pModule.SetValue(pModule);
+        m_pModule = pModule;
         m_typeOrMethodDef = typeOrMethodDef;
         m_token = token;
         m_index = index;
@@ -374,7 +352,7 @@ public:
         LIMITED_METHOD_CONTRACT;
         SUPPORTS_DAC;
 
-        return ReadPointer(this, &TypeVarTypeDesc::m_pModule);
+        return m_pModule;
     }
 
     unsigned int GetIndex()
@@ -449,11 +427,6 @@ public:
     // instantiate it with a reference type).
     BOOL ConstrainedAsValueType();
 
-#ifdef FEATURE_PREJIT
-    void Save(DataImage *image);
-    void Fixup(DataImage *image);
-#endif // FEATURE_PREJIT
-
 #ifdef DACCESS_COMPILE
     void EnumMemoryRegions(CLRDataEnumMemoryFlags flags);
 #endif
@@ -462,7 +435,7 @@ protected:
     BOOL ConstrainedAsObjRefHelper();
 
     // Module containing the generic definition, also the loader module for this type desc
-    RelativePointer<PTR_Module> m_pModule;
+    PTR_Module m_pModule;
 
     // Declaring type or method
     mdToken m_typeOrMethodDef;
@@ -543,11 +516,6 @@ public:
     // Returns TRUE if all return and argument types are externally visible.
     BOOL IsExternallyVisible() const;
 #endif //DACCESS_COMPILE
-
-#ifdef FEATURE_PREJIT
-    void Save(DataImage *image);
-    void Fixup(DataImage *image);
-#endif //FEATURE_PREJIT
 
 #ifdef DACCESS_COMPILE
     static ULONG32 DacSize(TADDR addr)
