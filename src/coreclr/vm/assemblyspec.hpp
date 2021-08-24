@@ -32,7 +32,7 @@ class AssemblySpec  : public BaseAssemblySpec
     DomainAssembly  *m_pParentAssembly;
 
     // Contains the reference to the fallback load context associated with RefEmitted assembly requesting the load of another assembly (static or dynamic)
-    ICLRPrivBinder *m_pFallbackLoadContextBinder;
+    AssemblyBinder *m_pFallbackLoadContextBinder;
 
     // Flag to indicate if we should prefer the fallback load context binder for binding or not.
     bool m_fPreferFallbackLoadContextBinder;
@@ -50,7 +50,7 @@ class AssemblySpec  : public BaseAssemblySpec
                 mdAssemblyRef       kAssemblyRef,
                 IMDInternalImport * pMDImportOverride,
                 BOOL                fDoNotUtilizeExtraChecks,
-                ICLRPrivBinder      *pBindingContextForLoadedAssembly);
+                AssemblyBinder      *pBindingContextForLoadedAssembly);
 
   public:
 
@@ -79,7 +79,7 @@ class AssemblySpec  : public BaseAssemblySpec
 
     DomainAssembly* GetParentAssembly();
 
-    ICLRPrivBinder* GetBindingContextFromParentAssembly(AppDomain *pDomain);
+    AssemblyBinder* GetBindingContextFromParentAssembly(AppDomain *pDomain);
 
     bool HasParentAssembly()
     { WRAPPER_NO_CONTRACT; return GetParentAssembly() != NULL; }
@@ -130,14 +130,14 @@ class AssemblySpec  : public BaseAssemblySpec
         m_pParentAssembly = pAssembly;
     }
 
-    void SetFallbackLoadContextBinderForRequestingAssembly(ICLRPrivBinder *pFallbackLoadContextBinder)
+    void SetFallbackLoadContextBinderForRequestingAssembly(AssemblyBinder *pFallbackLoadContextBinder)
     {
        LIMITED_METHOD_CONTRACT;
 
         m_pFallbackLoadContextBinder = pFallbackLoadContextBinder;
     }
 
-    ICLRPrivBinder* GetFallbackLoadContextBinderForRequestingAssembly()
+    AssemblyBinder* GetFallbackLoadContextBinderForRequestingAssembly()
     {
         LIMITED_METHOD_CONTRACT;
 

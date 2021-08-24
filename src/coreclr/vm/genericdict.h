@@ -15,10 +15,6 @@
 #ifndef _GENERICDICT_H
 #define _GENERICDICT_H
 
-#ifdef FEATURE_PREJIT
-#include "dataimage.h"
-#endif
-
 // DICTIONARIES
 //
 // A dictionary is a cache of handles associated with particular
@@ -182,32 +178,6 @@ public:
             dac_cast<TADDR>(this) + offsetof(DictionaryLayout, m_slots) + sizeof(DictionaryEntryLayout) * i);
     }
 
-
-#ifdef FEATURE_PREJIT
-    DWORD GetObjectSize();
-
-    // Trim the canonical dictionary layout to include only those used slots actually used.
-    // WARNING!!!
-    // You should only call this if
-    //    (a) you're actually saving this shared instantiation into it's PreferredZapModule,
-    //        i.e. you must be both saving the shared instantiation and the module
-    //        you're ngen'ing MUST be that the PreferredZapModule.
-    //    (b) you're sure you've compiled all the shared code for this type
-    //        within the context of this NGEN session.
-    // This is currently the same as saying we can hardbind to the EEClass - if it's in another
-    // module then we will have already trimmed the layout, and if it's being saved into the
-    // current module then we can only hardbind to it if the current module is the PreferredZapModule.
-    //
-    // Note after calling this both GetObjectSize for this layout and the
-    // computed dictionary size for all dictionaries based on this layout may
-    // be reduced.  This may in turn affect the size of all non-canonical
-    // method tables, potentially trimming some dictionary words off the end
-    // of the method table.
-    void Trim();
-    void Save(DataImage *image);
-    void Fixup(DataImage *image, BOOL fMethod);
-#endif // FEATURE_PREJIT
-
 };
 
 
@@ -331,39 +301,6 @@ private:
     static Dictionary* GetMethodDictionaryWithSizeCheck(MethodDesc* pMD, ULONG slotIndex);
 
 #endif // #ifndef DACCESS_COMPILE
-
-public:
-
-#ifdef FEATURE_PREJIT
-
-    // Fixup the dictionary entries, including the type arguments
-    //
-    // WARNING!!!
-    // You should only pass "canSaveSlots=TRUE" if you are certain the dictionary layout
-    // matches that which will be used at runtime.  This means you must either
-    // be able to hard-bind to the EEClass of the canonical instantiation, or else
-    // you are saving a copy of the canonical instantiation itself.
-    //
-    // If we can't save slots, then we will zero all entries in the dictionary (apart from the
-    // instantiation itself) and load at runtime.
-    void Fixup(DataImage *image,
-               BOOL canSaveInstantiation,
-               BOOL canSaveSlots,
-               DWORD numGenericArgs,            // Must be non-zero
-               Module *pModule,                 // module of the generic code
-               DictionaryLayout *pDictLayout);  // If NULL, then only type arguments are present
-
-    BOOL IsWriteable(DataImage *image,
-               BOOL canSaveSlots,
-               DWORD numGenericArgs,            // Must be non-zero
-               Module *pModule,                 // module of the generic code
-               DictionaryLayout *pDictLayout);  // If NULL, then only type arguments are present
-
-    BOOL ComputeNeedsRestore(DataImage *image,
-                             TypeHandleList *pVisited,
-                             DWORD numGenericArgs);
-    void Restore(DWORD numGenericArgs, ClassLoadLevel level);
-#endif // FEATURE_PREJIT
 };
 
 #endif

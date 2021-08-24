@@ -36,10 +36,8 @@
 #define               Thread__m_fPreemptiveGCDisabled   0x0C
 #define               Thread__m_pFrame                  0x10
 
-#ifndef CROSSGEN_COMPILE
 ASMCONSTANTS_C_ASSERT(Thread__m_fPreemptiveGCDisabled == offsetof(Thread, m_fPreemptiveGCDisabled));
 ASMCONSTANTS_C_ASSERT(Thread__m_pFrame == offsetof(Thread, m_pFrame));
-#endif // CROSSGEN_COMPILE
 
 #define Thread_m_pFrame Thread__m_pFrame
 #define Thread_m_fPreemptiveGCDisabled Thread__m_fPreemptiveGCDisabled
@@ -179,12 +177,10 @@ ASMCONSTANTS_C_ASSERT(Offset_MethodDescChunkIndex == offsetof(FixupPrecode, m_Me
 ASMCONSTANTS_C_ASSERT(MethodDesc_ALIGNMENT_SHIFT == MethodDesc::ALIGNMENT_SHIFT);
 ASMCONSTANTS_C_ASSERT((1<<FixupPrecode_ALIGNMENT_SHIFT_1) + (1<<FixupPrecode_ALIGNMENT_SHIFT_2)  == sizeof(FixupPrecode));
 
-#ifndef CROSSGEN_COMPILE
 #define ResolveCacheElem__target      0x10
 #define ResolveCacheElem__pNext       0x18
 ASMCONSTANTS_C_ASSERT(ResolveCacheElem__target == offsetof(ResolveCacheElem, target));
 ASMCONSTANTS_C_ASSERT(ResolveCacheElem__pNext == offsetof(ResolveCacheElem, pNext));
-#endif // CROSSGEN_COMPILE
 
 #define DomainLocalModule__m_pDataBlob 0x30
 #define DomainLocalModule__m_pGCStatics 0x20

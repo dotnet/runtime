@@ -630,7 +630,6 @@ public class ReliabilityFramework
         return (99);
     }
 
-#if !PROJECTK_BUILD
     [DllImport("kernel32.dll")]
     private extern static void DebugBreak();
 
@@ -639,7 +638,6 @@ public class ReliabilityFramework
 
     [DllImport("kernel32.dll")]
     private extern static void OutputDebugString(string debugStr);
-#endif
 
     /// <summary>
     /// Checks to see if we should block all execution due to a fatal error
@@ -661,20 +659,11 @@ public class ReliabilityFramework
     }
     internal static void MyDebugBreak(string extraData)
     {
-#if !PROJECTK_BUILD
         if (IsDebuggerPresent())
         {
-            OutputDebugString(String.Format("\r\n\r\n\r\nRELIABILITYFRAMEWORK DEBUGBREAK: Breaking in because test throw an exception ({0})\r\n\r\n\r\n", extraData));
+            Console.WriteLine(string.Format("DebugBreak: {0}", extraData));
             DebugBreak();
         }
-        else
-#else
-        if (Debugger.IsAttached)
-        {
-            Console.WriteLine(string.Format("DebugBreak: breaking in because test threw an exception: {0}", extraData));
-            Debugger.Break();
-        }
-#endif
         {
             // We need to stop the process now, 
             // but all the threads are still running
@@ -1081,11 +1070,33 @@ public class ReliabilityFramework
             _logger.WriteToInstrumentationLog(_curTestSet, LoggingLevels.StartupShutdown, msg);
             Console.WriteLine(msg);
 
+            int secondsIter = 5;
             int waitCnt = 0;
-            while (_testsRunningCount > 0 && waitCnt < 7200)  // wait a max of 2 hours for the tests to exit...
+            int waitCntTotal = _curTestSet.MaximumWaitTime * 60 / secondsIter;
+            msg = String.Format("START WAITING for {0}s", _curTestSet.MaximumWaitTime * 60);
+            _logger.WriteToInstrumentationLog(_curTestSet, LoggingLevels.StartupShutdown, msg);
+            long lastAllocatedBytes = GC.GetTotalAllocatedBytes(false);
+            while (_testsRunningCount > 0 && waitCnt < waitCntTotal)
             {
-                Thread.Sleep(1000);
-                Console.Write("\b\b\b\b{0,4}", _testsRunningCount);
+                Thread.Sleep(secondsIter * 1000);
+                long currentAllocatedBytes = GC.GetTotalAllocatedBytes(false);
+                msg = String.Format("============current number of tests running {0,4}, allocated {1:n0} so far, {2:n0} since last; (GC {3}:{4}:{5}), waited {6}s",
+                    _testsRunningCount, currentAllocatedBytes, (currentAllocatedBytes - lastAllocatedBytes),
+                    GC.CollectionCount(0),
+                    GC.CollectionCount(1),
+                    GC.CollectionCount(2),
+                    (waitCnt * secondsIter));
+                lastAllocatedBytes = currentAllocatedBytes;
+                _logger.WriteToInstrumentationLog(_curTestSet, LoggingLevels.StartupShutdown, msg);
+
+                for (int i = 0; i < _curTestSet.Tests.Length; i++)
+                {
+                    if (_curTestSet.Tests[i].RunningCount != 0)
+                    {
+                        msg = String.Format("Still running: {0}", _curTestSet.Tests[i].RefOrID);
+                        _logger.WriteToInstrumentationLog(_curTestSet, LoggingLevels.StartupShutdown, msg);
+                    }
+                }
                 waitCnt++;
             }
         }
@@ -1093,13 +1104,12 @@ public class ReliabilityFramework
         // let the user know what tests haven't finished...
         if (_testsRunningCount != 0)
         {
-            string msg;
-
+            _logger.WriteToInstrumentationLog(_curTestSet, LoggingLevels.StartupShutdown, "************Timeout reached************");
             for (int i = 0; i < _curTestSet.Tests.Length; i++)
             {
                 if (_curTestSet.Tests[i].RunningCount != 0)
                 {
-                    msg = String.Format("Still running: {0}", _curTestSet.Tests[i].RefOrID);
+                    string msg = String.Format("Still running: {0}", _curTestSet.Tests[i].RefOrID);
                     _logger.WriteToInstrumentationLog(_curTestSet, LoggingLevels.StartupShutdown, msg);
                     Console.WriteLine(msg);
                     AddFailure("Test Hang", _curTestSet.Tests[i], -1);
@@ -1116,6 +1126,9 @@ public class ReliabilityFramework
     [MethodImpl(MethodImplOptions.NoInlining)]
     private void TestIsHungDebugBreak()
     {
+        string msg = String.Format("break");
+        _logger.WriteToInstrumentationLog(_curTestSet, LoggingLevels.StartupShutdown, msg);
+
         MyDebugBreak("TestHang");
     }
 
@@ -1165,7 +1178,8 @@ public class ReliabilityFramework
 
             Interlocked.Increment(ref _testsRunningCount);
             test.TestStarted();
-            _logger.WriteToInstrumentationLog(_curTestSet, LoggingLevels.TestStarter, String.Format("RF.StartTest, RTs({0}) - Instances of this test: {1} - New Test:{2}", _testsRunningCount, test.RunningCount, test.RefOrID));
+            _logger.WriteToInstrumentationLog(_curTestSet, LoggingLevels.TestStarter, String.Format("RF.StartTest, RTs({0}) - Instances of this test: {1} - New Test:{2}, {3} threads",
+                _testsRunningCount, test.RunningCount, test.RefOrID, Process.GetCurrentProcess().Threads.Count));
 
             newThread.Start(test);
         }
@@ -1207,7 +1221,11 @@ public class ReliabilityFramework
 #if PROJECTK_BUILD
                     Task.Factory.StartNew(() =>
                     {
-                        Console.WriteLine("==============================running test: {0}==============================", daTest.Assembly);
+                        string msg = String.Format("==============================[tid: {0, 4}, running test: {1} STATUS: START, {2} tests running {3} threads ==============================",
+                                    Thread.CurrentThread.ManagedThreadId, daTest.Assembly, _testsRunningCount,
+                                    Process.GetCurrentProcess().Threads.Count);
+                        _logger.WriteToInstrumentationLog(_curTestSet, LoggingLevels.StartupShutdown, msg);
+
                         try
                         {
                             daTest.EntryPointMethod.Invoke(null, new object[] { (daTest.Arguments == null) ? new string[0] : daTest.GetSplitArguments() });
@@ -1220,6 +1238,10 @@ public class ReliabilityFramework
 
                             Console.WriteLine(e);
                         }
+                        msg = String.Format("==============================[tid: {0, 4}, running test: {1} STATUS: DONE, {2} tests running {3} threads ==============================",
+                                    Thread.CurrentThread.ManagedThreadId, daTest.Assembly, _testsRunningCount,
+                                    Process.GetCurrentProcess().Threads.Count);
+                        _logger.WriteToInstrumentationLog(_curTestSet, LoggingLevels.StartupShutdown, msg);
                         Interlocked.Increment(ref _testsRanCount);
                         SignalTestFinished(daTest);
                     });

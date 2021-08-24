@@ -7562,8 +7562,6 @@ void CodeGen::genFnProlog()
      * Take care of register arguments first
      */
 
-    RegState* regState;
-
     // Update the arg initial register locations.
     compiler->lvaUpdateArgsWithInitialReg();
 
@@ -7572,8 +7570,7 @@ void CodeGen::genFnProlog()
     //
     if (!compiler->opts.IsOSR())
     {
-        FOREACH_REGISTER_FILE(regState)
-        {
+        auto assignIncomingRegisterArgs = [this, initReg, &initRegZeroed](RegState* regState) {
             if (regState->rsCalleeRegArgMaskLiveIn)
             {
                 // If we need an extra register to shuffle around the incoming registers
@@ -7600,7 +7597,14 @@ void CodeGen::genFnProlog()
                     initRegZeroed = false;
                 }
             }
-        }
+        };
+
+#if defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_ARM)
+        assignIncomingRegisterArgs(&intRegState);
+        assignIncomingRegisterArgs(&floatRegState);
+#else
+        assignIncomingRegisterArgs(&intRegState);
+#endif
     }
 
     // Home the incoming arguments.

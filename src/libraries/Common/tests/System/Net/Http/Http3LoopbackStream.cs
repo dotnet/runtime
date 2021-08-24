@@ -20,10 +20,10 @@ namespace System.Net.Test.Common
         private const int MaximumVarIntBytes = 8;
         private const long VarIntMax = (1L << 62) - 1;
 
-        private const long DataFrame = 0x0;
-        private const long HeadersFrame = 0x1;
-        private const long SettingsFrame = 0x4;
-        private const long GoAwayFrame = 0x7;
+        public const long DataFrame = 0x0;
+        public const long HeadersFrame = 0x1;
+        public const long SettingsFrame = 0x4;
+        public const long GoAwayFrame = 0x7;
 
         public const long ControlStream = 0x0;
         public const long PushStream = 0x1;

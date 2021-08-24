@@ -29,10 +29,6 @@
 #pragma warning(disable : 4640)
 #endif
 
-#if defined(_DEBUG) && defined(FEATURE_PREJIT)
-#include <corcompile.h>
-#endif
-
 #ifdef TARGET_UNIX
 #include "resourcestring.h"
 #define NATIVE_STRING_RESOURCE_NAME dasm_rc
@@ -98,9 +94,6 @@ BOOL                    g_fThisIsInstanceMethod;
 BOOL                    g_fTryInCode = TRUE;
 
 BOOL                    g_fLimitedVisibility = FALSE;
-#if defined(_DEBUG) && defined(FEATURE_PREJIT)
-BOOL                    g_fNGenNativeMetadata = FALSE;
-#endif
 BOOL                    g_fHidePub = TRUE;
 BOOL                    g_fHidePriv = TRUE;
 BOOL                    g_fHideFam = TRUE;
@@ -7447,29 +7440,6 @@ BOOL DumpFile()
     g_tkEntryPoint = VAL32(IMAGE_COR20_HEADER_FIELD(*g_CORHeader, EntryPointToken)); // integration with MetaInfo
 
 
-#if defined(_DEBUG) && defined(FEATURE_PREJIT)
-    if (g_fNGenNativeMetadata)
-    {
-        //if this is an ngen image, use the native metadata.
-        if( !g_CORHeader->ManagedNativeHeader.Size )
-        {
-            printError( g_pFile, "/native only works on NGen images." );
-            goto exit;
-        }
-        CORCOMPILE_HEADER * pNativeHeader;
-        g_pPELoader->getVAforRVA(VAL32(g_CORHeader->ManagedNativeHeader.VirtualAddress), (void**)&pNativeHeader);
-
-        if (pNativeHeader->Signature != CORCOMPILE_SIGNATURE)
-        {
-            printError( g_pFile, "/native only works on NGen images." );
-            goto exit;
-        }
-
-        g_pPELoader->getVAforRVA(VAL32(pNativeHeader->ManifestMetaData.VirtualAddress), &g_pMetaData);
-        g_cbMetaData = VAL32(pNativeHeader->ManifestMetaData.Size);
-    }
-    else
-#endif
     {
     if (g_pPELoader->getVAforRVA(VAL32(g_CORHeader->MetaData.VirtualAddress),&g_pMetaData) == FALSE)
     {

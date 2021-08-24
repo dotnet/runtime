@@ -93,8 +93,6 @@ void CallDescrWorker(CallDescrData * pCallDescrData)
     STATIC_CONTRACT_THROWS;
     STATIC_CONTRACT_GC_TRIGGERS;
 
-    _ASSERTE(!NingenEnabled() && "You cannot invoke managed code inside the ngen compilation process.");
-
     TRIGGERSGC_NOSTOMP(); // Can't stomp object refs because they are args to the function
 
     // Save a copy of dangerousObjRefs in table.
@@ -280,8 +278,6 @@ void MethodDescCallSite::CallTargetWorker(const ARG_SLOT *pArguments, ARG_SLOT *
         PRECONDITION(m_pMD->CheckActivated());          // EnsureActive will trigger, so we must already be activated
     }
     CONTRACTL_END;
-
-    _ASSERTE(!NingenEnabled() && "You cannot invoke managed code inside the ngen compilation process.");
 
     // If we're invoking an CoreLib method, lift the restriction on type load limits. Calls into CoreLib are
     // typically calls into specific and controlled helper methods for security checks and other linktime tasks.
