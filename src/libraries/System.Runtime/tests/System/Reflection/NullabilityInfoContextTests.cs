@@ -831,6 +831,7 @@ namespace System.Reflection.Tests
 
         [Theory]
         [MemberData(nameof(ValueTupleTestData))]
+        [SkipOnMono("Nullability attributes trimmed on Mono")]
         public void TestValueTupleGenericTypeParameters(string fieldName, NullabilityState param1, NullabilityState param2, NullabilityState fieldState)
         {
             var tupleInfo = nullabilityContext.Create(testType.GetField(fieldName)!);
