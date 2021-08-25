@@ -13,34 +13,5 @@ namespace System.IO.Tests
 
         protected override FileSystemInfo? ResolveLinkTarget(string junctionPath, bool returnFinalTarget) =>
             Directory.ResolveLinkTarget(junctionPath, returnFinalTarget);
-
-        protected override void VerifyEnumerateMethods(string junctionPath, string[] expectedFiles, string[] expectedDirectories, string[] expectedEntries)
-        {
-            EnumerationOptions options = new() { RecurseSubdirectories = true };
-
-            VerifyEnumeration(
-                Directory.EnumerateFiles(junctionPath, "*", options),
-                expectedFiles);
-
-            VerifyEnumeration(
-                Directory.EnumerateDirectories(junctionPath, "*", options),
-                expectedDirectories);
-
-            VerifyEnumeration(
-                Directory.EnumerateFileSystemEntries(junctionPath, "*", options),
-                expectedEntries);
-
-            VerifyEnumeration(
-                Directory.GetFiles(junctionPath, "*", options),
-                expectedFiles);
-
-            VerifyEnumeration(
-                Directory.GetDirectories(junctionPath, "*", options),
-                expectedDirectories);
-
-            VerifyEnumeration(
-                Directory.GetFileSystemEntries(junctionPath, "*", options),
-                expectedEntries);
-        }
     }
 }
