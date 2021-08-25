@@ -38,13 +38,12 @@ namespace System.IO.Tests
         /// Important: Make sure to call this inside a remote executor to avoid changing the cwd for all tests in same process.
         /// </summary>
         /// <returns>The path of the new cwd.</returns>
-        protected string GetNewCwdPath()
+        protected string ChangeCurrentDirectory()
         {
             string tempCwd = GetRandomDirPath();
             Directory.CreateDirectory(tempCwd);
             Directory.SetCurrentDirectory(tempCwd);
             return tempCwd;
         }
-
     }
 }
