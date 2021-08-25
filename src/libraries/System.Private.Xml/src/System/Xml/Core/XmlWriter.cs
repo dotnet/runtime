@@ -229,7 +229,7 @@ namespace System.Xml
         // Writes out the specified namespace-qualified name by looking up the prefix that is in scope for the given namespace.
         public virtual void WriteQualifiedName(string localName, string? ns)
         {
-            if (ns is { Length: > 0 })
+            if (!string.IsNullOrEmpty(ns))
             {
                 string? prefix = LookupPrefix(ns);
                 if (prefix == null)
