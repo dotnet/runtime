@@ -73,7 +73,7 @@
     <PropertyRef Id="INSTALLING_IN_EMULATION" />
     
     <!-- Unlike DOTNETHOME which gives precedence to a user specified value over an x64 suffix, here we always want the suffixed path -->
-    <SetProperty Action="Set_PROGRAMFILES_DOTNET_x64" Id="PROGRAMFILES_DOTNET" Value="[$(var.ProgramFilesFolder)]dotnet\x64\" Before="CostFinalize">
+    <SetProperty Action="Set_PROGRAMFILES_DOTNET_x64" Id="PROGRAMFILES_DOTNET" Value="[$(var.Program_Files)]dotnet\x64\" Before="CostFinalize">
       INSTALLING_IN_EMULATION
     </SetProperty>
   </Fragment>
