@@ -5476,6 +5476,8 @@ void Compiler::optPerformHoistExpr(GenTree* origExpr, BasicBlock* exprBb, unsign
     }
 #endif
 
+    assert(exprBb != nullptr);
+
     // This loop has to be in a form that is approved for hoisting.
     assert(optLoopTable[lnum].lpFlags & LPFLG_HOISTABLE);
 
@@ -5513,7 +5515,7 @@ void Compiler::optPerformHoistExpr(GenTree* origExpr, BasicBlock* exprBb, unsign
     hoist     = fgMorphTree(hoist);
 
     preHead->bbFlags |= (exprBb->bbFlags & (BBF_HAS_IDX_LEN | BBF_HAS_NULLCHECK));
-    
+
     Statement* hoistStmt = gtNewStmt(hoist);
     hoistStmt->SetCompilerAdded();
 
@@ -6300,6 +6302,7 @@ void Compiler::optHoistLoopBlocks(unsigned loopNum, ArrayStack<BasicBlock*>* blo
             , m_beforeSideEffect(true)
             , m_loopNum(loopNum)
             , m_hoistContext(hoistContext)
+            , m_currentBlock(nullptr)
         {
         }
 
