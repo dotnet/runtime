@@ -37,8 +37,8 @@ public static class MountHelper
         if (OperatingSystem.IsWindows())
         {
             symLinkProcess.StartInfo.FileName = "cmd";
-            string option = isDirectory ? "/D" : "";
-            symLinkProcess.StartInfo.Arguments = $"/c mklink {option} \"{linkPath}\" \"{targetPath}\"";
+            string option = isDirectory ? "/D " : "";
+            symLinkProcess.StartInfo.Arguments = $"/c mklink {option}\"{linkPath}\" \"{targetPath}\"";
         }
         else
         {
@@ -71,7 +71,7 @@ public static class MountHelper
 
     public static char CreateVirtualDrive(string targetDir)
     {
-        if (!PlatformDetection.IsWindows)
+        if (!OperatingSystem.IsWindows())
         {
             throw new PlatformNotSupportedException();
         }
@@ -111,7 +111,7 @@ public static class MountHelper
 
     public static void DeleteVirtualDrive(char driveLetter)
     {
-        if (!PlatformDetection.IsWindows)
+        if (!OperatingSystem.IsWindows())
         {
             throw new PlatformNotSupportedException();
         }

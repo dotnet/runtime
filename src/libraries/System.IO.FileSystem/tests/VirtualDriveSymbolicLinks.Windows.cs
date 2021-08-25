@@ -25,7 +25,7 @@ namespace System.IO.Tests
         }
 
         // When the immediate target is requested (via LinkTarget or using returnFinalTarget: false),
-        // the target path will use the virtual drive
+        // the returned path will point to the target using the virtual drive path
         // The only case of returnFinalTarget: true that will return a target using the virtual drive, is when both
         // the link and the target reside in the virtual drive
         [Theory]
@@ -255,11 +255,6 @@ namespace System.IO.Tests
             {
                 if (_virtualDriveTargetDir == null)
                 {
-                    if (!PlatformDetection.IsWindows)
-                    {
-                        throw new PlatformNotSupportedException();
-                    }
-
                     // Create a folder inside the temp directory so that it can be mounted to a drive letter with subst
                     _virtualDriveTargetDir = Path.Join(Path.GetTempPath(), GetRandomDirName());
                     Directory.CreateDirectory(_virtualDriveTargetDir);
@@ -277,11 +272,6 @@ namespace System.IO.Tests
             {
                 if (_virtualDriveLetter == default)
                 {
-                    if (!PlatformDetection.IsWindows)
-                    {
-                        throw new PlatformNotSupportedException();
-                    }
-
                     // Mount the folder to a drive letter
                     _virtualDriveLetter = MountHelper.CreateVirtualDrive(VirtualDriveTargetDir);
                 }
