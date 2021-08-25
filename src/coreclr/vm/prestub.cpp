@@ -166,7 +166,7 @@ PCODE MethodDesc::DoBackpatch(MethodTable * pMT, MethodTable *pDispatchingMT, BO
         RecordAndBackpatchEntryPointSlot_Locked(
             mdLoaderAllocator,
             patchedMT->GetLoaderAllocator(),
-            patchedMT->GetSlotPtr(slotIndex),
+            dac_cast<TADDR>(patchedMT->GetSlotPtr(slotIndex)),
             EntryPointSlots::SlotType_Vtable,
             pTarget);
     };
@@ -1860,8 +1860,6 @@ extern "C" PCODE STDCALL PreStubWorker(TransitionBlock* pTransitionBlock, Method
     STATIC_CONTRACT_MODE_ANY;
     STATIC_CONTRACT_ENTRY_POINT;
 
-    _ASSERTE(!NingenEnabled() && "You cannot invoke managed code inside the ngen compilation process.");
-
     ETWOnStartup(PrestubWorker_V1, PrestubWorkerEnd_V1);
 
     MAKE_CURRENT_THREAD_AVAILABLE_EX(GetThreadNULLOk());
@@ -2286,11 +2284,6 @@ void InitPreStubManager(void)
 {
     STANDARD_VM_CONTRACT;
 
-    if (NingenEnabled())
-    {
-        return;
-    }
-
 #if defined(TARGET_X86) && !defined(FEATURE_STUBS_AS_IL)
     g_UMThunkPreStub = GenerateUMThunkPrestub()->GetEntryPoint();
 #endif // TARGET_X86 && !FEATURE_STUBS_AS_IL
@@ -2637,7 +2630,7 @@ EXTERN_C PCODE STDCALL ExternalMethodFixupWorker(TransitionBlock * pTransitionBl
             }
 
             DispatchToken token;
-            if (pMT->IsInterface() || MethodTable::VTableIndir_t::isRelative)
+            if (pMT->IsInterface())
             {
                 if (pMT->IsInterface())
                     token = pMT->GetLoaderAllocator()->GetDispatchToken(pMT->GetTypeID(), slot);
@@ -2958,11 +2951,6 @@ void ProcessDynamicDictionaryLookup(TransitionBlock *           pTransitionBlock
             pResult->indirections = 2;
             pResult->offsets[0] = offsetof(InstantiatedMethodDesc, m_pPerInstInfo);
 
-            if (decltype(InstantiatedMethodDesc::m_pPerInstInfo)::isRelative)
-            {
-                pResult->indirectFirstOffset = 1;
-            }
-
             uint32_t data;
             IfFailThrow(sigptr.GetData(&data));
             pResult->offsets[1] = sizeof(TypeHandle) * data;
@@ -2978,12 +2966,6 @@ void ProcessDynamicDictionaryLookup(TransitionBlock *           pTransitionBlock
             uint32_t data;
             IfFailThrow(sigptr.GetData(&data));
             pResult->offsets[2] = sizeof(TypeHandle) * data;
-
-            if (MethodTable::IsPerInstInfoRelative())
-            {
-                pResult->indirectFirstOffset = 1;
-                pResult->indirectSecondOffset = 1;
-            }
 
             return;
         }
@@ -3014,11 +2996,6 @@ void ProcessDynamicDictionaryLookup(TransitionBlock *           pTransitionBlock
             // Indirect through dictionary table pointer in InstantiatedMethodDesc
             pResult->offsets[0] = offsetof(InstantiatedMethodDesc, m_pPerInstInfo);
 
-            if (decltype(InstantiatedMethodDesc::m_pPerInstInfo)::isRelative)
-            {
-                pResult->indirectFirstOffset = 1;
-            }
-
             *pDictionaryIndexAndSlot |= dictionarySlot;
         }
     }
@@ -3041,12 +3018,6 @@ void ProcessDynamicDictionaryLookup(TransitionBlock *           pTransitionBlock
 
             // Next indirect through the dictionary appropriate to this instantiated type
             pResult->offsets[1] = sizeof(TypeHandle*) * (pContextMT->GetNumDicts() - 1);
-
-            if (MethodTable::IsPerInstInfoRelative())
-            {
-                pResult->indirectFirstOffset = 1;
-                pResult->indirectSecondOffset = 1;
-            }
 
             *pDictionaryIndexAndSlot |= dictionarySlot;
         }

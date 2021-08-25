@@ -687,6 +687,8 @@ public:
 
     uint32_t getExpectedTargetArchitecture() override final;
 
+    bool doesFieldBelongToClass(CORINFO_FIELD_HANDLE fld, CORINFO_CLASS_HANDLE cls) override final;
+
     void ResetForJitRetry()
     {
         CONTRACTL {

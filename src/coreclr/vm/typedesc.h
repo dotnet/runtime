@@ -231,7 +231,7 @@ public:
 
         LIMITED_METHOD_CONTRACT;
 
-        m_TemplateMT.SetValueMaybeNull(pMT);
+        m_TemplateMT = pMT;
 
         // ParamTypeDescs start out life not fully loaded
         m_typeAndFlags |= TypeDesc::enum_flag_IsNotFullyLoaded;
@@ -296,11 +296,11 @@ public:
 protected:
     PTR_MethodTable GetTemplateMethodTableInternal() {
         WRAPPER_NO_CONTRACT;
-        return ReadPointerMaybeNull(this, &ParamTypeDesc::m_TemplateMT);
+        return m_TemplateMT;
     }
 
     // the m_typeAndFlags field in TypeDesc tell what kind of parameterized type we have
-    RelativeFixupPointer<PTR_MethodTable> m_TemplateMT; // The shared method table, some variants do not use this field (it is null)
+    PTR_MethodTable m_TemplateMT; // The shared method table, some variants do not use this field (it is null)
     TypeHandle      m_Arg;              // The type that is being modified
     LOADERHANDLE    m_hExposedClassObject;  // handle back to the internal reflection Type object
 };
@@ -334,7 +334,7 @@ public:
         }
         CONTRACTL_END;
 
-        m_pModule.SetValue(pModule);
+        m_pModule = pModule;
         m_typeOrMethodDef = typeOrMethodDef;
         m_token = token;
         m_index = index;
@@ -352,7 +352,7 @@ public:
         LIMITED_METHOD_CONTRACT;
         SUPPORTS_DAC;
 
-        return ReadPointer(this, &TypeVarTypeDesc::m_pModule);
+        return m_pModule;
     }
 
     unsigned int GetIndex()
@@ -435,7 +435,7 @@ protected:
     BOOL ConstrainedAsObjRefHelper();
 
     // Module containing the generic definition, also the loader module for this type desc
-    RelativePointer<PTR_Module> m_pModule;
+    PTR_Module m_pModule;
 
     // Declaring type or method
     mdToken m_typeOrMethodDef;

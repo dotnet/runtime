@@ -398,7 +398,7 @@ struct ModuleCtorInfo
     DWORD                   numElements;
     DWORD                   numLastAllocated;
     DWORD                   numElementsHot;
-    DPTR(RelativePointer<PTR_MethodTable>) ppMT; // size is numElements
+    DPTR(PTR_MethodTable)   ppMT; // size is numElements
     PTR_ClassCtorInfoEntry  cctorInfoHot;   // size is numElementsHot
     PTR_ClassCtorInfoEntry  cctorInfoCold;  // size is numElements-numElementsHot
 
@@ -407,8 +407,8 @@ struct ModuleCtorInfo
     DWORD                   numHotHashes;
     DWORD                   numColdHashes;
 
-    ArrayDPTR(RelativeFixupPointer<PTR_MethodTable>) ppHotGCStaticsMTs;            // hot table
-    ArrayDPTR(RelativeFixupPointer<PTR_MethodTable>) ppColdGCStaticsMTs;           // cold table
+    ArrayDPTR(PTR_MethodTable) ppHotGCStaticsMTs;            // hot table
+    ArrayDPTR(PTR_MethodTable) ppColdGCStaticsMTs;           // cold table
 
     DWORD                   numHotGCStaticsMTs;
     DWORD                   numColdGCStaticsMTs;
@@ -444,12 +444,12 @@ struct ModuleCtorInfo
         return hashVal;
     };
 
-    ArrayDPTR(RelativeFixupPointer<PTR_MethodTable>) GetGCStaticMTs(DWORD index);
+    ArrayDPTR(PTR_MethodTable) GetGCStaticMTs(DWORD index);
 
     PTR_MethodTable GetMT(DWORD i)
     {
         LIMITED_METHOD_DAC_CONTRACT;
-        return ppMT[i].GetValue(dac_cast<TADDR>(ppMT) + i * sizeof(RelativePointer<PTR_MethodTable>));
+        return ppMT[i];
     }
 
 };
@@ -1706,7 +1706,7 @@ public:
 
         if (pLoadLevel && !th.IsNull())
         {
-            if (!IsCompilationProcess() && (flags & ZAPPED_TYPE_NEEDS_NO_RESTORE))
+            if (flags & ZAPPED_TYPE_NEEDS_NO_RESTORE)
             {
                 // Make sure the flag is consistent with the target data and implies the load level we think it does
                 _ASSERTE(th.AsMethodTable()->IsPreRestored());
@@ -1736,7 +1736,7 @@ public:
 
         if (pLoadLevel && !th.IsNull())
         {
-            if (!IsCompilationProcess() && (flags & ZAPPED_GENERIC_TYPE_NEEDS_NO_RESTORE))
+            if (flags & ZAPPED_GENERIC_TYPE_NEEDS_NO_RESTORE)
             {
                 // Make sure the flag is consistent with the target data and implies the load level we think it does
                 _ASSERTE(th.AsMethodTable()->IsPreRestored());
@@ -1988,7 +1988,6 @@ public:
     MethodDesc *FindMethodThrowing(mdToken pMethod);
     MethodDesc *FindMethod(mdToken pMethod);
 
-    void PopulatePropertyInfoMap();
     HRESULT GetPropertyInfoForMethodDef(mdMethodDef md, mdProperty *ppd, LPCSTR *pName, ULONG *pSemantic);
 
     #define NUM_PROPERTY_SET_HASHES 4

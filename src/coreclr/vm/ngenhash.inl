@@ -47,14 +47,14 @@ NgenHashTable<NGEN_HASH_ARGS>::NgenHashTable(Module *pModule, LoaderHeap *pHeap,
     // At least one of module or heap must have been specified or we won't know how to allocate entries and
     // buckets.
     _ASSERTE(pModule || pHeap);
-    m_pModule.SetValueMaybeNull(pModule);
+    m_pModule = pModule;
     m_pHeap = pHeap;
 
     S_SIZE_T cbBuckets = S_SIZE_T(sizeof(VolatileEntry*)) * S_SIZE_T(cInitialBuckets);
 
     m_cWarmEntries = 0;
     m_cWarmBuckets = cInitialBuckets;
-    m_pWarmBuckets.SetValue((PTR_VolatileEntry*)(void*)GetHeap()->AllocMem(cbBuckets));
+    m_pWarmBuckets = (PTR_VolatileEntry*)(void*)GetHeap()->AllocMem(cbBuckets);
 
     // Note: Memory allocated on loader heap is zero filled
     // memset(m_pWarmBuckets, 0, sizeof(VolatileEntry*) * cInitialBuckets);
@@ -108,7 +108,7 @@ LoaderHeap *NgenHashTable<NGEN_HASH_ARGS>::GetHeap()
 
     // If not specified then we fall back to the owning module's heap (a module must have been specified in
     // this case).
-    _ASSERTE(!m_pModule.IsNull());
+    _ASSERTE(m_pModule != NULL);
     return GetModule()->GetAssembly()->GetLowFrequencyHeap();
 }
 
@@ -218,7 +218,7 @@ void NgenHashTable<NGEN_HASH_ARGS>::GrowTable()
 
     // Make sure that all writes are visible before publishing the new array.
     MemoryBarrier();
-    m_pWarmBuckets.SetValue(pNewBuckets);
+    m_pWarmBuckets = pNewBuckets;
 
     // The new number of buckets has to be published last (prior to this readers may miscalculate a bucket
     // index, but the result will always be in range and they'll simply walk the wrong chain and get a miss,
@@ -503,21 +503,7 @@ DPTR(VALUE) NgenHashEntryRef<NGEN_HASH_ARGS>::Get()
     }
     CONTRACTL_END;
 
-    // Short-cut the NULL case, it's a lot cheaper than the code below when compiling for DAC.
-    if (m_rpEntryRef.IsNull())
-        return NULL;
-
-    // Note that the following code uses a special DAC lookup for an interior pointer (i.e. "this" isn't a
-    // host address corresponding to a DAC marshalled instance, it's some host address within such an
-    // instance). These lookups are a little slower than the regular kind since we have to search for the
-    // containing instance.
-
-    // @todo: The following causes gcc to choke on Mac 10.4 at least (complains that offsetof is being passed
-    // four arguments instead of two). Expanding the top-level macro manually fixes this.
-    // TADDR pBase = PTR_HOST_INT_MEMBER_TADDR(NgenHashEntryRef<NGEN_HASH_ARGS>, this, m_rpEntryRef);
-    TADDR pBase = PTR_HOST_INT_TO_TADDR(this) + (TADDR)offsetof(NgenHashEntryRef<NGEN_HASH_ARGS>, m_rpEntryRef);
-
-    return m_rpEntryRef.GetValue(pBase);
+    return m_rpEntryRef;
 }
 
 #ifndef DACCESS_COMPILE
@@ -534,7 +520,7 @@ void NgenHashEntryRef<NGEN_HASH_ARGS>::Set(VALUE *pEntry)
     }
     CONTRACTL_END;
 
-    m_rpEntryRef.SetValueMaybeNull(pEntry);
+    m_rpEntryRef = pEntry;
 }
 
 #endif // !DACCESS_COMPILE

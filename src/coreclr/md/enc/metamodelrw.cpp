@@ -20,8 +20,6 @@
 #include "metadata.h"
 #include "streamutil.h"
 
-#include "../hotdata/hotdataformat.h"
-
 #ifdef _MSC_VER
 #pragma intrinsic(memcpy)
 #endif

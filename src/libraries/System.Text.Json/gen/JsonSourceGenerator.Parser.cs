@@ -1014,6 +1014,8 @@ namespace System.Text.Json.SourceGeneration
                 }
 
                 string clrName = memberInfo.Name;
+                string runtimePropertyName = DetermineRuntimePropName(clrName, jsonPropertyName, _currentContextNamingPolicy);
+                string propertyNameVarName = DeterminePropNameIdentifier(runtimePropertyName);
 
                 return new PropertyGenerationSpec
                 {
@@ -1022,7 +1024,8 @@ namespace System.Text.Json.SourceGeneration
                     IsPublic = isPublic,
                     IsVirtual = isVirtual,
                     JsonPropertyName = jsonPropertyName,
-                    RuntimePropertyName = DetermineRuntimePropName(clrName, jsonPropertyName, _currentContextNamingPolicy),
+                    RuntimePropertyName = runtimePropertyName,
+                    PropertyNameVarName = propertyNameVarName,
                     IsReadOnly = isReadOnly,
                     CanUseGetter = canUseGetter,
                     CanUseSetter = canUseSetter,
@@ -1077,6 +1080,37 @@ namespace System.Text.Json.SourceGeneration
                 }
 
                 return runtimePropName;
+            }
+
+            private static string DeterminePropNameIdentifier(string runtimePropName)
+            {
+                const string PropName = "PropName_";
+
+                // Use a different prefix to avoid possible collisions with "PropName_" in
+                // the rare case there is a C# property in a hex format.
+                const string EncodedPropName = "EncodedPropName_";
+
+                if (SyntaxFacts.IsValidIdentifier(runtimePropName))
+                {
+                    return PropName + runtimePropName;
+                }
+
+                // Encode the string to a byte[] and then convert to hexadecimal.
+                // To make the generated code more readable, we could use a different strategy in the future
+                // such as including the full class name + the CLR property name when there are duplicates,
+                // but that will create unnecessary JsonEncodedText properties.
+                byte[] utf8Json = Encoding.UTF8.GetBytes(runtimePropName);
+
+                StringBuilder sb = new StringBuilder(
+                    EncodedPropName,
+                    capacity: EncodedPropName.Length + utf8Json.Length * 2);
+
+                for (int i = 0; i < utf8Json.Length; i++)
+                {
+                    sb.Append(utf8Json[i].ToString("X2")); // X2 is hex format
+                }
+
+                return sb.ToString();
             }
 
             private void PopulateNumberTypes()

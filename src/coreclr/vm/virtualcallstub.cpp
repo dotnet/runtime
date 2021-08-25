@@ -1144,7 +1144,6 @@ PCODE VirtualCallStubManager::GetVTableCallStub(DWORD slot)
         GC_TRIGGERS;
         MODE_ANY;
         INJECT_FAULT(COMPlusThrowOM(););
-        PRECONDITION(!MethodTable::VTableIndir_t::isRelative /* Not yet supported */);
         POSTCONDITION(RETVAL != NULL);
     } CONTRACT_END;
 
@@ -1174,7 +1173,6 @@ VTableCallHolder* VirtualCallStubManager::GenerateVTableCallStub(DWORD slot)
         GC_TRIGGERS;
         MODE_ANY;
         INJECT_FAULT(COMPlusThrowOM(););
-        PRECONDITION(!MethodTable::VTableIndir_t::isRelative /* Not yet supported */);
         POSTCONDITION(RETVAL != NULL);
     } CONTRACT_END;
 

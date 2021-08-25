@@ -29,7 +29,8 @@ jobs:
     # Linux arm
     - ${{ if eq(parameters.platform, 'Linux_arm') }}:
       - ${{ if eq(parameters.jobParameters.isFullMatrix, true) }}:
-        - (Debian.9.Arm32.Open)Ubuntu.1804.ArmArch.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:debian-9-helix-arm32v7-bfcd90a-20200121150037
+        - (Debian.10.Arm32.Open)Ubuntu.1804.ArmArch.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:debian-10-helix-arm32v7-20210304164340-6616c63
+        - (Debian.11.Arm32.Open)Ubuntu.1804.ArmArch.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:debian-11-helix-arm32v7-20210304164347-5a7c380
 
     # Linux arm64
     - ${{ if eq(parameters.platform, 'Linux_arm64') }}:
@@ -64,26 +65,27 @@ jobs:
           - ${{ if eq(parameters.jobParameters.isFullMatrix, true) }}:
             - (Centos.8.Amd64.Open)Ubuntu.1604.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:centos-8-helix-20201229003624-c1bf759
             - RedHat.7.Amd64.Open
-            - Debian.9.Amd64.Open
             - Ubuntu.1604.Amd64.Open
             - Ubuntu.1804.Amd64.Open
             - SLES.12.Amd64.Open
             - SLES.15.Amd64.Open
             - (Fedora.34.Amd64.Open)ubuntu.1604.amd64.open@mcr.microsoft.com/dotnet-buildtools/prereqs:fedora-34-helix-20210728124700-4f64125
             - (Ubuntu.1910.Amd64.Open)ubuntu.1604.amd64.open@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-19.10-helix-amd64-cfcfd50-20191030180623
-            - (Debian.10.Amd64.Open)ubuntu.1604.amd64.open@mcr.microsoft.com/dotnet-buildtools/prereqs:debian-10-helix-amd64-bfcd90a-20200121150006
+            - (Debian.10.Amd64.Open)Ubuntu.1804.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:debian-10-helix-amd64-20210304164434-56c6673
+            - (Debian.11.Amd64.Open)Ubuntu.1804.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:debian-11-helix-amd64-20210304164428-5a7c380
             - (Mariner.1.0.Amd64.Open)ubuntu.1604.amd64.open@mcr.microsoft.com/dotnet-buildtools/prereqs:cbl-mariner-1.0-helix-20210528192219-92bf620
           - ${{ if eq(parameters.jobParameters.isFullMatrix, false) }}:
             - (Centos.8.Amd64.Open)Ubuntu.1604.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:centos-8-helix-20201229003624-c1bf759
             - RedHat.7.Amd64.Open
-            - (Debian.10.Amd64.Open)ubuntu.1604.amd64.open@mcr.microsoft.com/dotnet-buildtools/prereqs:debian-10-helix-amd64-bfcd90a-20200121150006
+            - (Debian.10.Amd64.Open)Ubuntu.1804.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:debian-10-helix-amd64-20210304164434-56c6673
+            - (Debian.11.Amd64.Open)Ubuntu.1804.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:debian-11-helix-amd64-20210304164428-5a7c380
             - Ubuntu.1604.Amd64.Open
             - Ubuntu.1804.Amd64.Open
             - SLES.15.Amd64.Open
             - (Fedora.34.Amd64.Open)ubuntu.1604.amd64.open@mcr.microsoft.com/dotnet-buildtools/prereqs:fedora-34-helix-20210728124700-4f64125
       - ${{ if or(eq(parameters.jobParameters.interpreter, 'true'), eq(parameters.jobParameters.isSingleFile, true)) }}:
         # Limiting interp runs as we don't need as much coverage.
-        - Debian.9.Amd64.Open
+        - (Debian.10.Amd64.Open)Ubuntu.1804.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:debian-10-helix-amd64-20210304164434-56c6673
 
     # OSX arm64
     - ${{ if eq(parameters.platform, 'OSX_arm64') }}:

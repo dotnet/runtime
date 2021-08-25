@@ -5267,21 +5267,7 @@ ClrDataAccess::FollowStubStep(
         // so that the real native address can
         // be picked up once the JIT is done.
 
-        // One special case is ngen'ed code that
-        // needs the prestub run.  This results in
-        // an unjitted trace but no jitting will actually
-        // occur since the code is ngen'ed.  Detect
-        // this and redirect to the actual code.
         methodDesc = trace.GetMethodDesc();
-        if (methodDesc->IsPreImplemented() &&
-            !methodDesc->IsPointingToStableNativeCode() &&
-            !methodDesc->IsGenericMethodDefinition() &&
-            methodDesc->HasNativeCode())
-        {
-            *outAddr = methodDesc->GetNativeCode();
-            *outFlags = CLRDATA_FOLLOW_STUB_EXIT;
-            break;
-        }
 
         *outAddr = GFN_TADDR(DACNotifyCompilationFinished);
         outBuffer->u.flags = STUB_BUF_METHOD_JITTED;

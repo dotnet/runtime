@@ -646,8 +646,4 @@ typedef ReleaseHolder<PEFile> PEFileHolder;
 
 typedef ReleaseHolder<PEAssembly> PEAssemblyHolder;
 
-BOOL RuntimeVerifyNativeImageDependency(const CORCOMPILE_DEPENDENCY   *pExpected,
-    const CORCOMPILE_VERSION_INFO *pActual,
-    PEAssembly                    *pLogAsm);
-
 #endif  // PEFILE_H_
