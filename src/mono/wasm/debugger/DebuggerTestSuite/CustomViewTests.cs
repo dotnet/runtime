@@ -17,7 +17,7 @@ namespace DebuggerTests
         [Fact]
         public async Task UsingDebuggerDisplay()
         {
-            var bp = await SetBreakpointInMethod("debugger-test.dll", "DebuggerTests.DebuggerCustomViewTest", "run", 6);
+            var bp = await SetBreakpointInMethod("debugger-test.dll", "DebuggerTests.DebuggerCustomViewTest", "run", 15);
             var pause_location = await EvaluateAndCheck(
                 "window.setTimeout(function() { invoke_static_method ('[debugger-test] DebuggerTests.DebuggerCustomViewTest:run'); }, 1);",
                 "dotnet://debugger-test.dll/debugger-custom-view-test.cs",
@@ -29,12 +29,14 @@ namespace DebuggerTests
             CheckObject(locals, "a", "DebuggerTests.WithDisplayString", description:"Some one Value 2 End");
             CheckObject(locals, "c", "DebuggerTests.DebuggerDisplayMethodTest", description: "First Int:32 Second Int:43");
             CheckObject(locals, "myList", "System.Collections.Generic.List<int>", description: "Count = 4");
+            CheckObject(locals, "person1", "DebuggerTests.Person", description: "FirstName: Anton, SurName: Mueller, Age: 44");
+            CheckObject(locals, "person2", "DebuggerTests.Person", description: "FirstName: Lisa, SurName: Müller, Age: 41");
         }
 
         [Fact]
         public async Task UsingDebuggerTypeProxy()
         {
-            var bp = await SetBreakpointInMethod("debugger-test.dll", "DebuggerTests.DebuggerCustomViewTest", "run", 6);
+            var bp = await SetBreakpointInMethod("debugger-test.dll", "DebuggerTests.DebuggerCustomViewTest", "run", 15);
             var pause_location = await EvaluateAndCheck(
                 "window.setTimeout(function() { invoke_static_method ('[debugger-test] DebuggerTests.DebuggerCustomViewTest:run'); }, 1);",
                 "dotnet://debugger-test.dll/debugger-custom-view-test.cs",
@@ -54,8 +56,13 @@ namespace DebuggerTests
             props = await GetObjectOnFrame(frame, "b");
             CheckString(props, "Val2", "one");
 
+            CheckObject(locals, "openWith", "System.Collections.Generic.Dictionary<string, string>", description: "Count = 3");
+            props = await GetObjectOnFrame(frame, "openWith");
+            Assert.Equal(1, props.Count());
+
             await EvaluateOnCallFrameAndCheck(frame["callFrameId"].Value<string>(),
                 ("listToTestToList.ToList()", TObject("System.Collections.Generic.List<int>", description: "Count = 11")));
+
         }
     }
 }

@@ -4162,21 +4162,7 @@ BOOL AccessCheckOptions::DemandMemberAccess(AccessCheckContext *pContext, Method
 
     _ASSERTE(m_accessCheckType != kNormalAccessibilityChecks);
 
-    if (NingenEnabled())
-    {
-        // NinGen should always perform normal accessibility checks
-        _ASSERTE(false);
-
-        if (m_fThrowIfTargetIsInaccessible)
-        {
-            ThrowAccessException(pContext, pTargetMT, NULL);
-        }
-
-        return FALSE;
-    }
-
     BOOL canAccessTarget = FALSE;
-
 
     // In CoreCLR kRestrictedMemberAccess means that one can access private/internal
     // classes/members in app code.

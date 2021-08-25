@@ -56,9 +56,6 @@ public:
         ULONG cbData,
         LPCVOID pbData);
 
-    __checkReturn
-    HRESULT InitHotPools(DataBuffer hotMetaData);
-
     void Uninit();
 
 protected:

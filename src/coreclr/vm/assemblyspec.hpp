@@ -188,9 +188,7 @@ class AssemblySpec  : public BaseAssemblySpec
     VOID Bind(
         AppDomain* pAppDomain,
         BOOL fThrowOnFileNotFound,
-        CoreBindResult* pBindResult,
-        BOOL fNgenExplicitBind = FALSE,
-        BOOL fExplicitBindToNativeImage = FALSE);
+        CoreBindResult* pBindResult);
 
     Assembly *LoadAssembly(FileLoadLevel targetLevel,
                            BOOL fThrowOnFileNotFound = TRUE);

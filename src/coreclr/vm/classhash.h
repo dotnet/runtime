@@ -17,9 +17,6 @@ class EEClassHashTable;
 typedef struct EEClassHashEntry
 {
     friend class EEClassHashTable;
-#ifdef DACCESS_COMPILE
-    friend class NativeImageDumper;
-#endif
 
 #ifdef _DEBUG
     PTR_CUTF8                               DebugKey[2];    // Name of the type
@@ -61,9 +58,6 @@ private:
 typedef DPTR(class EEClassHashTable) PTR_EEClassHashTable;
 class EEClassHashTable : public NgenHashTable<EEClassHashTable, EEClassHashEntry, 4>
 {
-#ifdef DACCESS_COMPILE
-    friend class NativeImageDumper;
-#endif
 
 public:
     // The LookupContext type we export to track GetValue/FindNextNestedClass enumerations is simply a rename

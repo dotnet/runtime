@@ -360,10 +360,6 @@ HRESULT EEConfig::sync()
     if (gcConcurrentWasForced || (gcConcurrentConfigVal == -1 && g_IGCconcurrent))
         iGCconcurrent = TRUE;
 
-    // Disable concurrent GC during ngen for the rare case a GC gets triggered, causing problems
-    if (IsCompilationProcess())
-        iGCconcurrent = FALSE;
-
 #if defined(STRESS_HEAP) || defined(_DEBUG)
     iGCStress           =  CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_GCStress);
 #endif

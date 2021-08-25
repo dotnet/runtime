@@ -191,7 +191,7 @@ void DynamicMethodTable::AddMethodsToList()
         pNewMD->SetTemporaryEntryPoint(m_pDomain->GetLoaderAllocator(), &amt);
 
 #ifdef _DEBUG
-        pNewMD->m_pDebugMethodTable.SetValue(m_pMethodTable);
+        pNewMD->m_pDebugMethodTable = m_pMethodTable;
 #endif
 
         if (pPrevMD)
@@ -271,7 +271,7 @@ DynamicMethodDesc* DynamicMethodTable::GetDynamicMethod(BYTE *psig, DWORD sigSiz
     // the store sig part of the method desc
     pNewMD->SetStoredMethodSig((PCCOR_SIGNATURE)psig, sigSize);
     // the dynamic part of the method desc
-    pNewMD->m_pszMethodName.SetValueMaybeNull(name);
+    pNewMD->m_pszMethodName = name;
 
     pNewMD->m_dwExtendedFlags = mdPublic | mdStatic | DynamicMethodDesc::nomdLCGMethod;
 
@@ -880,8 +880,8 @@ void DynamicMethodDesc::Destroy()
     // The m_pSig and m_pszMethodName need to be destroyed after the GetLCGMethodResolver()->Destroy() call
     // otherwise the EEJitManager::CodeHeapIterator could return DynamicMethodDesc with these members NULLed, but
     // the nibble map for the corresponding code memory indicating that this DynamicMethodDesc is still alive.
-    PCODE pSig = m_pSig.GetValue();
-    PTR_CUTF8 pszMethodName = m_pszMethodName.GetValue();
+    PCODE pSig = m_pSig;
+    PTR_CUTF8 pszMethodName = m_pszMethodName;
 
     GetLCGMethodResolver()->Destroy();
     // The current DynamicMethodDesc storage is destroyed at this point

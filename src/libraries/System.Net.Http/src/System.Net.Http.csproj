@@ -12,6 +12,18 @@
   <PropertyGroup Condition="'$(TargetsAndroid)' == 'true' or '$(TargetsiOS)' == 'true' or '$(TargetsMacCatalyst)' == 'true' or '$(TargetsTVOS)' == 'true'">
     <DefineConstants>$(DefineConstants);TARGET_MOBILE</DefineConstants>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(TargetsAndroid)' == 'true'">
+    <DefineConstants>$(DefineConstants);TARGET_ANDROID</DefineConstants>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(TargetsiOS)' == 'true'">
+    <DefineConstants>$(DefineConstants);TARGET_IOS</DefineConstants>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(TargetsMacCatalyst)' == 'true'">
+    <DefineConstants>$(DefineConstants);TARGET_MACCATALYST</DefineConstants>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(TargetsTVOS)' == 'true'">
+    <DefineConstants>$(DefineConstants);TARGET_TVOS</DefineConstants>
+  </PropertyGroup>
   <PropertyGroup Condition="'$(TargetsBrowser)' == 'true'">
     <DefineConstants>$(DefineConstants);TARGET_BROWSER</DefineConstants>
   </PropertyGroup>
@@ -41,10 +53,8 @@
     <Compile Include="System\Net\Http\HttpClient.cs" />
     <Compile Condition="'$(TargetsAndroid)' == 'true' or '$(TargetsiOS)' == 'true' or '$(TargetsMacCatalyst)' == 'true' or '$(TargetsTVOS)' == 'true'"
              Include="System\Net\Http\HttpClientHandler.AnyMobile.cs" />
-    <Compile Condition="'$(TargetsiOS)' == 'true'" Include="System\Net\Http\HttpClientHandler.iOS.cs" />
-    <Compile Condition="'$(TargetsMacCatalyst)' == 'true'" Include="System\Net\Http\HttpClientHandler.MacCatalyst.cs" />
-    <Compile Condition="'$(TargetsTVOS)' == 'true'" Include="System\Net\Http\HttpClientHandler.tvOS.cs" />
-    <Compile Condition="'$(TargetsAndroid)' == 'true'" Include="System\Net\Http\HttpClientHandler.Android.cs" />
+    <Compile Condition="'$(TargetsAndroid)' == 'true' or '$(TargetsiOS)' == 'true' or '$(TargetsMacCatalyst)' == 'true' or '$(TargetsTVOS)' == 'true'"
+             Include="System\Net\Http\HttpClientHandler.AnyMobile.InvokeNativeHandler.cs" />
     <Compile Condition="'$(TargetsAndroid)' != 'true' and '$(TargetsiOS)' != 'true' and '$(TargetsMacCatalyst)' != 'true' and '$(TargetsTVOS)' != 'true'"
              Include="System\Net\Http\HttpClientHandler.cs" />
     <Compile Include="System\Net\Http\HttpCompletionOption.cs" />

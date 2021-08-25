@@ -1210,12 +1210,8 @@ void SystemDomain::Init()
         // the state here:
         GCX_COOP();
 
-        if (!NingenEnabled())
-        {
-            CreatePreallocatedExceptions();
-
-            PreallocateSpecialObjects();
-        }
+        CreatePreallocatedExceptions();
+        PreallocateSpecialObjects();
 
         // Finish loading CoreLib now.
         m_pSystemAssembly->GetDomainAssembly()->EnsureActive();
@@ -1326,7 +1322,7 @@ void SystemDomain::LoadBaseSystemClasses()
     ETWOnStartup(LdSysBases_V1, LdSysBasesEnd_V1);
 
     {
-        m_pSystemFile = PEAssembly::OpenSystem(NULL);
+        m_pSystemFile = PEAssembly::OpenSystem();
     }
     // Only partially load the system assembly. Other parts of the code will want to access
     // the globals in this function before finishing the load.
@@ -1461,10 +1457,7 @@ void SystemDomain::LoadBaseSystemClasses()
 #endif // PROFILING_SUPPORTED
 
 #if defined(_DEBUG)
-    if (!NingenEnabled())
-    {
-        g_CoreLib.Check();
-    }
+    g_CoreLib.Check();
 #endif
 }
 
@@ -3338,9 +3331,6 @@ void AppDomain::SetupSharedStatics()
     }
     CONTRACTL_END;
 
-    if (NingenEnabled())
-        return;
-
     LOG((LF_CLASSLOADER, LL_INFO10000, "STATICS: SetupSharedStatics()"));
 
     // don't do any work in init stage. If not init only do work in non-shared case if are default domain
@@ -3839,7 +3829,7 @@ PEAssembly * AppDomain::BindAssemblySpec(
                 // Use CoreClr's fusion alternative
                 CoreBindResult bindResult;
 
-                pSpec->Bind(this, FALSE /* fThrowOnFileNotFound */, &bindResult, FALSE /* fNgenExplicitBind */, FALSE /* fExplicitBindToNativeImage */);
+                pSpec->Bind(this, FALSE /* fThrowOnFileNotFound */, &bindResult);
                 hrBindResult = bindResult.GetHRBindResult();
 
                 if (bindResult.Found())
