@@ -347,7 +347,7 @@ namespace Microsoft.Extensions.DependencyInjection
 
                     for (int applyIndex = applyIndexStart; givenMatched == false && applyIndex != _parameters.Length; ++applyIndex)
                     {
-                        if (_parameterValues[applyIndex] == null &&
+                        if (_parameterValues[applyIndex] != null &&
                             _parameters[applyIndex].ParameterType.IsAssignableFrom(givenType))
                         {
                             givenMatched = true;
