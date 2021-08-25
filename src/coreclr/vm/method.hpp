@@ -203,9 +203,6 @@ class MethodDesc
     friend class ClrDataAccess;
 
     friend class MethodDescCallSite;
-#ifdef DACCESS_COMPILE
-    friend class NativeImageDumper;
-#endif
 
 public:
 
@@ -939,17 +936,6 @@ public:
         return (m_wFlags & mdcSynchronized) != 0;
     }
 
-    // Be careful about races with profiler when using this method. The profiler can
-    // replace preimplemented code of the method with jitted code.
-    // Avoid code patterns like if(IsPreImplemented()) { PCODE pCode = GetPreImplementedCode(); ... }.
-    // Use PCODE pCode = GetPreImplementedCode(); if (pCode != NULL) { ... } instead.
-    BOOL IsPreImplemented()
-    {
-        LIMITED_METHOD_DAC_CONTRACT;
-
-        return GetPreImplementedCode() != NULL;
-    }
-
     //==================================================================
     // The MethodDesc in relation to the VTable it is associated with.
     // WARNING: Not all MethodDescs have slots, nor do they all have
@@ -1463,13 +1449,6 @@ public:
     ULONG GetRVA();
 
 public:
-
-    // Returns preimplemented code of the method if method has one.
-    // Returns NULL if method has no preimplemented code.
-    // Be careful about races with profiler when using this method. The profiler can
-    // replace preimplemented code of the method with jitted code.
-    PCODE GetPreImplementedCode();
-
     // Returns address of code to call. The address is good for one immediate invocation only.
     // Use GetMultiCallableAddrOfCode() to get address that can be invoked multiple times.
     //
@@ -1514,9 +1493,7 @@ public:
     PCODE GetMethodEntryPoint();
 
     //*******************************************************************************
-    // Returns the address of the native code. The native code can be one of:
-    // - jitted code if !IsPreImplemented()
-    // - ngened code if IsPreImplemented()
+    // Returns the address of the native code.
     PCODE GetNativeCode();
 
 #if defined(FEATURE_JIT_PITCHING)
@@ -2183,9 +2160,6 @@ class MethodDescChunk
 {
     friend class MethodDesc;
     friend class CheckAsmOffsets;
-#ifdef DACCESS_COMPILE
-    friend class NativeImageDumper;
-#endif // DACCESS_COMPILE
 
     enum {
         enum_flag_TokenRangeMask                           = 0x03FF, // This must equal METHOD_TOKEN_RANGE_MASK calculated higher in this file
@@ -2458,9 +2432,6 @@ class StoredSigMethodDesc : public MethodDesc
 
 class FCallMethodDesc : public MethodDesc
 {
-#ifdef DACCESS_COMPILE
-    friend class NativeImageDumper;
-#endif
 
     DWORD   m_dwECallID;
 #ifdef TARGET_64BIT
@@ -2495,9 +2466,6 @@ class DynamicMethodDesc : public StoredSigMethodDesc
     friend class ILStubState;
     friend class DynamicMethodTable;
     friend class MethodDesc;
-#ifdef DACCESS_COMPILE
-    friend class NativeImageDumper;
-#endif
 
 protected:
     PTR_CUTF8           m_pszMethodName;
@@ -2522,7 +2490,7 @@ protected:
         nomdStructMarshalStub        = 0x0080,
         nomdUnbreakable              = 0x0100,
         //unused                     = 0x0200,
-        nomdSignatureNeedsRestore    = 0x0400,
+        //unused                     = 0x0400,
         nomdStubNeedsCOMStarted      = 0x0800,  // EnsureComStarted must be called before executing the method
         nomdMulticastStub            = 0x1000,
         nomdUnboxingILStub           = 0x2000,
@@ -2586,15 +2554,6 @@ public:
         }
     }
 
-    void SetSignatureNeedsRestore(bool value)
-    {
-        LIMITED_METHOD_CONTRACT;
-        if (value)
-        {
-            m_dwExtendedFlags |= nomdSignatureNeedsRestore;
-        }
-    }
-
     void SetStubNeedsCOMStarted(bool value)
     {
         LIMITED_METHOD_CONTRACT;
@@ -2608,17 +2567,6 @@ public:
     {
         LIMITED_METHOD_CONTRACT;
 
-        if (IsSignatureNeedsRestore())
-        {
-            // Since we don't update the signatreNeedsRestore bit when we actually
-            // restore the signature, the bit will have a stall value.  The signature
-            // bit in the metadata will always contain the correct, up-to-date
-            // information.
-            Volatile<BYTE> *pVolatileSig = (Volatile<BYTE> *)GetStoredMethodSig();
-            if ((*pVolatileSig & IMAGE_CEE_CS_CALLCONV_NEEDSRESTORE) != 0)
-                return false;
-        }
-
         return true;
     }
 
@@ -2630,7 +2578,6 @@ public:
     bool IsCOMToCLRStub()    { LIMITED_METHOD_CONTRACT; _ASSERTE(IsILStub()); return ((0 == (m_dwExtendedFlags & mdStatic)) &&  IsReverseStub()); }
     bool IsPInvokeStub()     { LIMITED_METHOD_CONTRACT; _ASSERTE(IsILStub()); return ((0 != (m_dwExtendedFlags & mdStatic)) && !IsReverseStub() && !IsCALLIStub() && !IsStructMarshalStub()); }
     bool IsUnbreakable()     { LIMITED_METHOD_CONTRACT; _ASSERTE(IsILStub()); return (0 != (m_dwExtendedFlags & nomdUnbreakable));  }
-    bool IsSignatureNeedsRestore() { LIMITED_METHOD_CONTRACT; _ASSERTE(IsILStub()); return (0 != (m_dwExtendedFlags & nomdSignatureNeedsRestore)); }
     bool IsStubNeedsCOMStarted()   { LIMITED_METHOD_CONTRACT; _ASSERTE(IsILStub()); return (0 != (m_dwExtendedFlags & nomdStubNeedsCOMStarted)); }
     bool IsStructMarshalStub()   { LIMITED_METHOD_CONTRACT; _ASSERTE(IsILStub()); return (0 != (m_dwExtendedFlags & nomdStructMarshalStub)); }
 #ifdef FEATURE_MULTICASTSTUB_AS_IL
@@ -2660,7 +2607,6 @@ public:
         return IsCLRToCOMStub() || IsPInvokeStub();
     }
 
-    void Restore();
     //
     // following implementations defined in DynamicMethod.cpp
     //
@@ -2787,9 +2733,6 @@ public:
         // Size of outgoing arguments (on stack). Note that in order to get the @n stdcall name decoration,
         WORD        m_cbStackArgumentSize;
 #endif // defined(TARGET_X86)
-
-        // This field gets set only when this MethodDesc is marked as PreImplemented
-        PTR_MethodDesc m_pStubMD;
 
     } ndirect;
 
@@ -3206,9 +3149,6 @@ struct ComPlusCallInfo
         LIMITED_METHOD_CONTRACT;
     }
 #endif // TARGET_X86
-
-    // This field gets set only when this MethodDesc is marked as PreImplemented
-    PTR_MethodDesc m_pStubMD;
 };
 
 
@@ -3326,9 +3266,6 @@ public:
 
 class InstantiatedMethodDesc : public MethodDesc
 {
-#ifdef DACCESS_COMPILE
-    friend class NativeImageDumper;
-#endif
 
 public:
 

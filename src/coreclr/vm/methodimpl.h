@@ -19,9 +19,6 @@ class MethodDesc;
 // we need to keep it on a 8 byte boundary.</TODO>
 class MethodImpl
 {
-#ifdef DACCESS_COMPILE
-    friend class NativeImageDumper;
-#endif
 
     PTR_DWORD            pdwSlots;       // Maintains the slots and tokens in sorted order, the first entry is the size
     DPTR( PTR_MethodDesc ) pImplementedMD;

@@ -122,9 +122,6 @@ private:
 
     friend class DomainFile;
     friend class PEModule;
-#ifdef DACCESS_COMPILE
-    friend class NativeImageDumper;
-#endif
 
 public:
     void LoadLibrary(BOOL allowNativeSkip = TRUE);
@@ -559,11 +556,10 @@ class PEAssembly : public PEFile
     static PEAssembly * Open(
         PEAssembly *       pParent,
         PEImage *          pPEImageIL,
-        PEImage *          pPEImageNI,
         BINDER_SPACE::Assembly * pHostAssembly);
 
     // This opens the canonical System.Private.CoreLib.dll
-    static PEAssembly *OpenSystem(IUnknown *pAppCtx);
+    static PEAssembly *OpenSystem();
 #ifdef DACCESS_COMPILE
     virtual void EnumMemoryRegions(CLRDataEnumMemoryFlags flags);
 #endif
@@ -578,7 +574,7 @@ class PEAssembly : public PEFile
 
   private:
     // Private helpers for crufty exception handling reasons
-    static PEAssembly *DoOpenSystem(IUnknown *pAppCtx);
+    static PEAssembly *DoOpenSystem();
 
   public:
 
@@ -627,7 +623,6 @@ class PEAssembly : public PEFile
         PEFile *creator,
         BOOL system,
         PEImage * pPEImageIL = NULL,
-        PEImage * pPEImageNI = NULL,
         BINDER_SPACE::Assembly * pHostAssembly = NULL
         );
     virtual ~PEAssembly();
