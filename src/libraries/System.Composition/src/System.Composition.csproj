@@ -25,4 +25,11 @@ System.Composition.CompositionContextExtensions</PackageDescription>
     <ProjectReference Include="$(LibrariesProjectRoot)System.Composition.Runtime\src\System.Composition.Runtime.csproj" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.Composition.TypedParts\src\System.Composition.TypedParts.csproj" />
   </ItemGroup>
+
+  <!-- Create placeholder files in the meta package to make sure that NuGet picks the right asset. -->
+  <ItemGroup>
+    <None Include="$(PlaceholderFile)" PackagePath="lib/netstandard2.0" Pack="true" />
+    <None Include="$(PlaceholderFile)" PackagePath="lib/net461" Pack="true" />
+    <None Include="$(PlaceholderFile)" PackagePath="lib/netcoreapp2.0" Pack="true" />
+  </ItemGroup>
 </Project>
