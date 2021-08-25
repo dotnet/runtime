@@ -14,12 +14,12 @@ namespace Microsoft.Extensions.FileSystemGlobbing
         public readonly string Path { get { throw null; } }
         public readonly string? Stem { get { throw null; } }
         public bool Equals(Microsoft.Extensions.FileSystemGlobbing.FilePatternMatch other) { throw null; }
-        public override bool Equals(object? obj) { throw null; }
+        public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? obj) { throw null; }
         public override int GetHashCode() { throw null; }
     }
     public partial class InMemoryDirectoryInfo : Microsoft.Extensions.FileSystemGlobbing.Abstractions.DirectoryInfoBase
     {
-        public InMemoryDirectoryInfo(string rootDir, System.Collections.Generic.IEnumerable<string> files) { }
+        public InMemoryDirectoryInfo(string rootDir, System.Collections.Generic.IEnumerable<string>? files) { }
         public override string FullName { get { throw null; } }
         public override string Name { get { throw null; } }
         public override Microsoft.Extensions.FileSystemGlobbing.Abstractions.DirectoryInfoBase ParentDirectory { get { throw null; } }
@@ -40,9 +40,9 @@ namespace Microsoft.Extensions.FileSystemGlobbing
         public static void AddExcludePatterns(this Microsoft.Extensions.FileSystemGlobbing.Matcher matcher, params System.Collections.Generic.IEnumerable<string>[] excludePatternsGroups) { }
         public static void AddIncludePatterns(this Microsoft.Extensions.FileSystemGlobbing.Matcher matcher, params System.Collections.Generic.IEnumerable<string>[] includePatternsGroups) { }
         public static System.Collections.Generic.IEnumerable<string> GetResultsInFullPath(this Microsoft.Extensions.FileSystemGlobbing.Matcher matcher, string directoryPath) { throw null; }
-        public static Microsoft.Extensions.FileSystemGlobbing.PatternMatchingResult Match(this Microsoft.Extensions.FileSystemGlobbing.Matcher matcher, System.Collections.Generic.IEnumerable<string> files) { throw null; }
+        public static Microsoft.Extensions.FileSystemGlobbing.PatternMatchingResult Match(this Microsoft.Extensions.FileSystemGlobbing.Matcher matcher, System.Collections.Generic.IEnumerable<string>? files) { throw null; }
         public static Microsoft.Extensions.FileSystemGlobbing.PatternMatchingResult Match(this Microsoft.Extensions.FileSystemGlobbing.Matcher matcher, string file) { throw null; }
-        public static Microsoft.Extensions.FileSystemGlobbing.PatternMatchingResult Match(this Microsoft.Extensions.FileSystemGlobbing.Matcher matcher, string rootDir, System.Collections.Generic.IEnumerable<string> files) { throw null; }
+        public static Microsoft.Extensions.FileSystemGlobbing.PatternMatchingResult Match(this Microsoft.Extensions.FileSystemGlobbing.Matcher matcher, string rootDir, System.Collections.Generic.IEnumerable<string>? files) { throw null; }
         public static Microsoft.Extensions.FileSystemGlobbing.PatternMatchingResult Match(this Microsoft.Extensions.FileSystemGlobbing.Matcher matcher, string rootDir, string file) { throw null; }
     }
     public partial class PatternMatchingResult
@@ -67,7 +67,7 @@ namespace Microsoft.Extensions.FileSystemGlobbing.Abstractions
         public DirectoryInfoWrapper(System.IO.DirectoryInfo directoryInfo) { }
         public override string FullName { get { throw null; } }
         public override string Name { get { throw null; } }
-        public override Microsoft.Extensions.FileSystemGlobbing.Abstractions.DirectoryInfoBase? ParentDirectory { get { throw null; } }
+        public override Microsoft.Extensions.FileSystemGlobbing.Abstractions.DirectoryInfoBase ParentDirectory { get { throw null; } }
         public override System.Collections.Generic.IEnumerable<Microsoft.Extensions.FileSystemGlobbing.Abstractions.FileSystemInfoBase> EnumerateFileSystemInfos() { throw null; }
         public override Microsoft.Extensions.FileSystemGlobbing.Abstractions.DirectoryInfoBase? GetDirectory(string name) { throw null; }
         public override Microsoft.Extensions.FileSystemGlobbing.Abstractions.FileInfoBase GetFile(string name) { throw null; }
@@ -81,14 +81,14 @@ namespace Microsoft.Extensions.FileSystemGlobbing.Abstractions
         public FileInfoWrapper(System.IO.FileInfo fileInfo) { }
         public override string FullName { get { throw null; } }
         public override string Name { get { throw null; } }
-        public override Microsoft.Extensions.FileSystemGlobbing.Abstractions.DirectoryInfoBase? ParentDirectory { get { throw null; } }
+        public override Microsoft.Extensions.FileSystemGlobbing.Abstractions.DirectoryInfoBase ParentDirectory { get { throw null; } }
     }
     public abstract partial class FileSystemInfoBase
     {
         protected FileSystemInfoBase() { }
         public abstract string FullName { get; }
         public abstract string Name { get; }
-        public abstract Microsoft.Extensions.FileSystemGlobbing.Abstractions.DirectoryInfoBase? ParentDirectory { get; }
+        public abstract Microsoft.Extensions.FileSystemGlobbing.Abstractions.DirectoryInfoBase ParentDirectory { get; }
     }
 }
 namespace Microsoft.Extensions.FileSystemGlobbing.Internal
@@ -150,7 +150,7 @@ namespace Microsoft.Extensions.FileSystemGlobbing.Internal.PathSegments
         public LiteralPathSegment(string value, System.StringComparison comparisonType) { }
         public bool CanProduceStem { get { throw null; } }
         public string Value { get { throw null; } }
-        public override bool Equals(object? obj) { throw null; }
+        public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? obj) { throw null; }
         public override int GetHashCode() { throw null; }
         public bool Match(string value) { throw null; }
     }
@@ -201,12 +201,12 @@ namespace Microsoft.Extensions.FileSystemGlobbing.Internal.PatternContexts
     }
     public partial class PatternContextLinearExclude : Microsoft.Extensions.FileSystemGlobbing.Internal.PatternContexts.PatternContextLinear
     {
-        public PatternContextLinearExclude(Microsoft.Extensions.FileSystemGlobbing.Internal.ILinearPattern pattern) : base(default(Microsoft.Extensions.FileSystemGlobbing.Internal.ILinearPattern)) { }
+        public PatternContextLinearExclude(Microsoft.Extensions.FileSystemGlobbing.Internal.ILinearPattern pattern) : base (default(Microsoft.Extensions.FileSystemGlobbing.Internal.ILinearPattern)) { }
         public override bool Test(Microsoft.Extensions.FileSystemGlobbing.Abstractions.DirectoryInfoBase directory) { throw null; }
     }
     public partial class PatternContextLinearInclude : Microsoft.Extensions.FileSystemGlobbing.Internal.PatternContexts.PatternContextLinear
     {
-        public PatternContextLinearInclude(Microsoft.Extensions.FileSystemGlobbing.Internal.ILinearPattern pattern) : base(default(Microsoft.Extensions.FileSystemGlobbing.Internal.ILinearPattern)) { }
+        public PatternContextLinearInclude(Microsoft.Extensions.FileSystemGlobbing.Internal.ILinearPattern pattern) : base (default(Microsoft.Extensions.FileSystemGlobbing.Internal.ILinearPattern)) { }
         public override void Declare(System.Action<Microsoft.Extensions.FileSystemGlobbing.Internal.IPathSegment, bool> onDeclare) { }
         public override bool Test(Microsoft.Extensions.FileSystemGlobbing.Abstractions.DirectoryInfoBase directory) { throw null; }
     }
@@ -220,7 +220,7 @@ namespace Microsoft.Extensions.FileSystemGlobbing.Internal.PatternContexts
         public override void PopDirectory() { }
         public sealed override void PushDirectory(Microsoft.Extensions.FileSystemGlobbing.Abstractions.DirectoryInfoBase directory) { }
         public override Microsoft.Extensions.FileSystemGlobbing.Internal.PatternTestResult Test(Microsoft.Extensions.FileSystemGlobbing.Abstractions.FileInfoBase file) { throw null; }
-        protected bool TestMatchingGroup(Microsoft.Extensions.FileSystemGlobbing.Abstractions.FileSystemInfoBase value) { throw null; }
+        protected bool TestMatchingGroup(Microsoft.Extensions.FileSystemGlobbing.Abstractions.FileSystemInfoBase? value) { throw null; }
         protected bool TestMatchingSegment(string value) { throw null; }
         public partial struct FrameData
         {
@@ -238,12 +238,12 @@ namespace Microsoft.Extensions.FileSystemGlobbing.Internal.PatternContexts
     }
     public partial class PatternContextRaggedExclude : Microsoft.Extensions.FileSystemGlobbing.Internal.PatternContexts.PatternContextRagged
     {
-        public PatternContextRaggedExclude(Microsoft.Extensions.FileSystemGlobbing.Internal.IRaggedPattern pattern) : base(default(Microsoft.Extensions.FileSystemGlobbing.Internal.IRaggedPattern)) { }
+        public PatternContextRaggedExclude(Microsoft.Extensions.FileSystemGlobbing.Internal.IRaggedPattern pattern) : base (default(Microsoft.Extensions.FileSystemGlobbing.Internal.IRaggedPattern)) { }
         public override bool Test(Microsoft.Extensions.FileSystemGlobbing.Abstractions.DirectoryInfoBase directory) { throw null; }
     }
     public partial class PatternContextRaggedInclude : Microsoft.Extensions.FileSystemGlobbing.Internal.PatternContexts.PatternContextRagged
     {
-        public PatternContextRaggedInclude(Microsoft.Extensions.FileSystemGlobbing.Internal.IRaggedPattern pattern) : base(default(Microsoft.Extensions.FileSystemGlobbing.Internal.IRaggedPattern)) { }
+        public PatternContextRaggedInclude(Microsoft.Extensions.FileSystemGlobbing.Internal.IRaggedPattern pattern) : base (default(Microsoft.Extensions.FileSystemGlobbing.Internal.IRaggedPattern)) { }
         public override void Declare(System.Action<Microsoft.Extensions.FileSystemGlobbing.Internal.IPathSegment, bool> onDeclare) { }
         public override bool Test(Microsoft.Extensions.FileSystemGlobbing.Abstractions.DirectoryInfoBase directory) { throw null; }
     }
