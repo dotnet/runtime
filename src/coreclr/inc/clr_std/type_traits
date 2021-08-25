@@ -580,7 +580,7 @@ namespace std
 
     // Always false dependent-value for static_asserts.
     template <typename...>
-    struct _Always_False
+    struct _Always_false
     {
         const bool value = false;
     };
@@ -610,7 +610,7 @@ namespace std
     template<typename _Ty>
     typename add_rvalue_reference<_Ty>::type declval() noexcept
     {
-        static_assert(_Always_false<_Ty>, "Calling declval is ill-formed, see N4892 [declval]/2.");
+        static_assert(_Always_false<_Ty>::value, "Calling declval is ill-formed, see N4892 [declval]/2.");
     }
 } // namespace std
 
