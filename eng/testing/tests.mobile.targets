@@ -139,6 +139,10 @@
              TaskName="AppleAppBuilderTask"
              AssemblyFile="$(AppleAppBuilderTasksAssemblyPath)" />
 
+  <UsingTask Condition="'$(RunAOTCompilation)' == 'true' and ('$(TargetOS)' == 'MacCatalyst' or '$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'iOSSimulator' or '$(TargetOS)' == 'tvOS' or '$(TargetOS)' == 'tvOSSimulator')"
+             TaskName="ILStrip"
+             AssemblyFile="$(ILStripTasksAssemblyPath)" />
+
   <PropertyGroup>
     <DevTeamProvisioning Condition="'$(TargetOS)' == 'MacCatalyst' and '$(DevTeamProvisioning)' == ''">adhoc</DevTeamProvisioning>
   </PropertyGroup>
@@ -194,6 +198,8 @@
         <Output TaskParameter="CompiledAssemblies" ItemName="BundleAssemblies" />
     </MonoAOTCompiler>
 
+    <ILStrip Condition="'$(RunAOTCompilation)' == 'true'" Assemblies="@(BundleAssemblies)" />
+
     <ItemGroup>
       <BundleAssemblies Include="@(_BundleNonAotAssemblies)" />
     </ItemGroup>
@@ -227,13 +233,15 @@
       <_AppBundleDir>$(AppBundlePath)/../</_AppBundleDir>
     </PropertyGroup>
 
-    <MakeDir Directories="$(TestArchiveTestsDir)" />
+    <MakeDir Condition="'$(ArchiveTests)' == 'true' and '$(IgnoreForCI)' != 'true'" 
+             Directories="$(TestArchiveTestsDir)" />
     <ZipDirectory Condition="'$(ArchiveTests)' == 'true' and '$(IgnoreForCI)' != 'true'"
                   SourceDirectory="$(_AppBundleDir)"
                   DestinationFile="$([MSBuild]::NormalizePath('$(TestArchiveTestsDir)', '$(TestProjectName).zip'))"
                   Overwrite="true" />
 
-    <RemoveDir Condition="'$(ArchiveTests)' == 'true' and '$(IgnoreForCI)' != 'true'" Directories="$(OutDir)" />
+    <RemoveDir Condition="'$(ArchiveTests)' == 'true' and '$(IgnoreForCI)' != 'true'" 
+               Directories="$(OutDir)" />
   
     <Message Importance="High" Text="Archived Tests at $(TestArchiveTestsDir): $([System.IO.Directory]::GetFiles('$(TestArchiveTestsDir)', '*', System.IO.SearchOption.TopDirectoryOnly).Length.ToString())" />
     <Exec Command="df -h"
