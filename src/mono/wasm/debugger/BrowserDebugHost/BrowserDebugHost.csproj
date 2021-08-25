@@ -1,7 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk.Web">
 
   <PropertyGroup>
-    <StaticWebAssetsEnabled>false</StaticWebAssetsEnabled>
     <TargetFramework>$(AspNetCoreAppCurrent)</TargetFramework>
     <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
     <NoWarn>$(NoWarn),CA2007</NoWarn>

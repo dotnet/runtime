@@ -405,6 +405,9 @@ public class ReliabilityConfig : IEnumerable, IEnumerator
                                             }
 
                                             break;
+                                        case "maximumWaitTime":
+                                            _curTestSet.MaximumWaitTime = ConvertTimeValueToTestRunTime(currentXML.Value);
+                                            break;
                                         case "id":
                                             _curTestSet.FriendlyName = currentXML.Value;
                                             break;

@@ -16,10 +16,6 @@
 #include "eventtrace.h"
 #include "peimagelayout.inl"
 
-#ifdef FEATURE_PREJIT
-#include "compile.h"
-#endif
-
 #ifndef DACCESS_COMPILE
 
 
@@ -79,19 +75,7 @@ CHECK PEImage::CheckLayoutFormat(PEDecoder *pe)
     }
     CONTRACT_CHECK_END;
 
-    // If we are in a compilation domain, we will allow
-    // non-IL only files to be treated as IL only
-
-    // <TODO>@todo: this is not really the right model here.  This is a per-app domain
-    // choice, but an image created this way would become available globally.
-    // (Also, this call prevents us from moving peimage into utilcode.)</TODO>
-
-    if (GetAppDomain() == NULL ||
-        (!GetAppDomain()->IsCompilationDomain()))
-    {
-        CHECK(pe->IsILOnly());
-    }
-
+    CHECK(pe->IsILOnly());
     CHECK(!pe->HasNativeHeader());
     CHECK_OK;
 }
@@ -113,20 +97,7 @@ CHECK PEImage::CheckILFormat()
         pLayoutToCheck = pLayoutHolder;
     }
 
-#ifdef FEATURE_PREJIT
-    if (PEFile::ShouldTreatNIAsMSIL())
-    {
-        // This PEImage may intentionally be an NI image, being used as if it were an
-        // MSIL image.  In that case, rather than using CheckILFormat on its layout,
-        // do CheckCORFormat(), which is the same as CheckILFormat, except it allows for
-        // a native header.  (CheckILFormat() fails if it finds a native header.)
-        CHECK(pLayoutToCheck->CheckCORFormat());
-    }
-    else
-#endif
-    {
-        CHECK(pLayoutToCheck->CheckILFormat());
-    }
+    CHECK(pLayoutToCheck->CheckILFormat());
 
     CHECK_OK;
 };
@@ -519,11 +490,6 @@ void PEImage::OpenMDImport()
                 m_sModuleFileNameHintUsedByDac.Normalize();
             }
          }
-
-        if (IsCompilationProcess())
-        {
-            m_pMDImport->SetOptimizeAccessForSpeed(TRUE);
-        }
     }
     _ASSERTE(m_pMDImport);
 
@@ -614,18 +580,7 @@ void PEImage::VerifyIsILOrNIAssembly(BOOL fIL)
         ThrowFormat(COR_E_ASSEMBLYEXPECTED);
 
     CHECK checkGoodFormat;
-#ifdef FEATURE_PREJIT
-    if (fIL)
-    {
-        checkGoodFormat = CheckILFormat();
-    }
-    else
-    {
-        checkGoodFormat = CheckNativeFormat();
-    }
-#else
     checkGoodFormat = CheckILFormat();
-#endif
     if (!checkGoodFormat)
         ThrowFormat(COR_E_BADIMAGEFORMAT);
 
@@ -647,7 +602,6 @@ void DECLSPEC_NORETURN PEImage::ThrowFormat(HRESULT hrError)
     EEFileLoadException::Throw(m_path, hrError);
 }
 
-#if !defined(CROSSGEN_COMPILE)
 
 //may outlive PEImage
 PEImage::IJWFixupData::IJWFixupData(void *pBase)
@@ -779,7 +733,6 @@ void PEImage::UnloadIJWModule(void *pBase)
         delete pData;
 }
 
-#endif // !CROSSGEN_COMPILE
 
 
 

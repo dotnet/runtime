@@ -80,7 +80,6 @@ namespace System.IO
         public static string GetTempPath()
         {
             const string TempEnvVar = "TMPDIR";
-            const string DefaultTempPath = "/tmp/";
 
             // Get the temp path from the TMPDIR environment variable.
             // If it's not set, just return the default path.

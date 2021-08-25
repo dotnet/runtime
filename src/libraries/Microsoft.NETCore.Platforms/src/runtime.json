@@ -1106,6 +1106,23 @@
         "fedora-x64"
       ]
     },
+    "fedora.36": {
+      "#import": [
+        "fedora"
+      ]
+    },
+    "fedora.36-arm64": {
+      "#import": [
+        "fedora.36",
+        "fedora-arm64"
+      ]
+    },
+    "fedora.36-x64": {
+      "#import": [
+        "fedora.36",
+        "fedora-x64"
+      ]
+    },
     "freebsd": {
       "#import": [
         "unix"

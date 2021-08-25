@@ -271,34 +271,32 @@ namespace System.Text.Json.Serialization.Metadata
                 return true;
             }
 
+            Type potentialNumberType;
             if (!ConverterBase.IsInternalConverter ||
                 ((ConverterStrategy.Enumerable | ConverterStrategy.Dictionary) & ConverterStrategy) == 0)
             {
-                return false;
+                potentialNumberType = DeclaredPropertyType;
             }
-
-            Type? elementType = ConverterBase.ElementType;
-            Debug.Assert(elementType != null);
-
-            elementType = Nullable.GetUnderlyingType(elementType) ?? elementType;
-
-            if (elementType == typeof(byte) ||
-                elementType == typeof(decimal) ||
-                elementType == typeof(double) ||
-                elementType == typeof(short) ||
-                elementType == typeof(int) ||
-                elementType == typeof(long) ||
-                elementType == typeof(sbyte) ||
-                elementType == typeof(float) ||
-                elementType == typeof(ushort) ||
-                elementType == typeof(uint) ||
-                elementType == typeof(ulong) ||
-                elementType == JsonTypeInfo.ObjectType)
+            else
             {
-                return true;
+                Debug.Assert(ConverterBase.ElementType != null);
+                potentialNumberType = ConverterBase.ElementType;
             }
 
-            return false;
+            potentialNumberType = Nullable.GetUnderlyingType(potentialNumberType) ?? potentialNumberType;
+
+            return potentialNumberType == typeof(byte) ||
+                potentialNumberType == typeof(decimal) ||
+                potentialNumberType == typeof(double) ||
+                potentialNumberType == typeof(short) ||
+                potentialNumberType == typeof(int) ||
+                potentialNumberType == typeof(long) ||
+                potentialNumberType == typeof(sbyte) ||
+                potentialNumberType == typeof(float) ||
+                potentialNumberType == typeof(ushort) ||
+                potentialNumberType == typeof(uint) ||
+                potentialNumberType == typeof(ulong) ||
+                potentialNumberType == JsonTypeInfo.ObjectType;
         }
 
         internal static TAttribute? GetAttribute<TAttribute>(MemberInfo memberInfo) where TAttribute : Attribute

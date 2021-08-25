@@ -15,6 +15,7 @@
 #include <mono/metadata/environment.h>
 #include <mono/metadata/object-internals.h>
 #include <mono/metadata/abi-details.h>
+#include <mono/metadata/tokentype.h>
 #include <mono/utils/mono-tls.h>
 #include <mono/utils/mono-dl.h>
 #include <mono/utils/mono-time.h>
@@ -108,6 +109,7 @@ typedef struct {
 	LLVMContextRef context;
 	LLVMValueRef sentinel_exception;
 	LLVMValueRef gc_safe_point_flag_var;
+	LLVMValueRef interrupt_flag_var;
 	void *di_builder, *cu;
 	GHashTable *objc_selector_to_var;
 	GPtrArray *cfgs;
@@ -1909,15 +1911,6 @@ get_aotconst_module (MonoLLVMModule *module, LLVMBuilderRef builder, MonoJumpInf
 	guint32 got_offset;
 	LLVMValueRef load;
 
-	if (module->static_link && type == MONO_PATCH_INFO_GC_SAFE_POINT_FLAG) {
-		const char *symbol = "mono_polling_required";
-		if (!module->gc_safe_point_flag_var) {
-			module->gc_safe_point_flag_var = LLVMAddGlobal (module->lmodule, llvm_type, symbol);
-			LLVMSetLinkage (module->gc_safe_point_flag_var, LLVMExternalLinkage);
-		}
-		return module->gc_safe_point_flag_var;
-	}
-
 	MonoJumpInfo tmp_ji;
 	tmp_ji.type = type;
 	tmp_ji.data.target = data;
@@ -1932,6 +1925,23 @@ get_aotconst_module (MonoLLVMModule *module, LLVMBuilderRef builder, MonoJumpInf
 
 	if (out_got_offset)
 		*out_got_offset = got_offset;
+
+	if (module->static_link && type == MONO_PATCH_INFO_GC_SAFE_POINT_FLAG) {
+		if (!module->gc_safe_point_flag_var) {
+			const char *symbol = "mono_polling_required";
+			module->gc_safe_point_flag_var = LLVMAddGlobal (module->lmodule, llvm_type, symbol);
+			LLVMSetLinkage (module->gc_safe_point_flag_var, LLVMExternalLinkage);
+		}
+		return module->gc_safe_point_flag_var;
+	}
+	if (module->static_link && type == MONO_PATCH_INFO_INTERRUPTION_REQUEST_FLAG) {
+		if (!module->interrupt_flag_var) {
+			const char *symbol = "mono_thread_interruption_request_flag";
+			module->interrupt_flag_var = LLVMAddGlobal (module->lmodule, llvm_type, symbol);
+			LLVMSetLinkage (module->interrupt_flag_var, LLVMExternalLinkage);
+		}
+		return module->interrupt_flag_var;
+	}
 
 	LLVMValueRef const_var = g_hash_table_lookup (module->aotconst_vars, GINT_TO_POINTER (got_offset));
 	if (!const_var) {

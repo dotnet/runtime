@@ -101,7 +101,7 @@ $(_XunitEpilog)
 
   <PropertyGroup>
     <OutputPath>$(XUnitTestBinBase)\$(CategoryWithSlash)</OutputPath>
-    <RuntimeFrameworkVersion>$(MicrosoftNETCoreAppVersion)</RuntimeFrameworkVersion>
+    <RuntimeFrameworkVersion>$(MicrosoftNETCoreAppRuntimewinx64Version)</RuntimeFrameworkVersion>
     <RunAnalyzers>false</RunAnalyzers>
  </PropertyGroup>
 

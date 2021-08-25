@@ -100,6 +100,7 @@ parser.add_argument("--analyze_results_only", dest="analyze_results_only", actio
 parser.add_argument("--verbose", dest="verbose", action="store_true", default=False)
 parser.add_argument("--limited_core_dumps", dest="limited_core_dumps", action="store_true", default=False)
 parser.add_argument("--run_in_context", dest="run_in_context", action="store_true", default=False)
+parser.add_argument("--tiering_test", dest="tiering_test", action="store_true", default=False)
 
 ################################################################################
 # Globals
@@ -885,6 +886,10 @@ def run_tests(args,
         os.environ["RunInUnloadableContext"] = "1";
         per_test_timeout = 20*60*1000
 
+    if args.tiering_test:
+        print("Running test repeatedly to promote methods to tier1")
+        os.environ["CLRCustomTestLauncher"] = args.tieringtest_script_path
+
     # Set __TestTimeout environment variable, which is the per-test timeout in milliseconds.
     # This is read by the test wrapper invoker, in src\tests\Common\Coreclr.TestWrapper\CoreclrTestWrapperLib.cs.
     print("Setting __TestTimeout=%s" % str(per_test_timeout))
@@ -1011,6 +1016,11 @@ def setup_args(args):
                               lambda arg: True,
                               "Error setting run_in_context")
 
+    coreclr_setup_args.verify(args,
+                              "tiering_test",
+                              lambda arg: True,
+                              "Error setting tiering_test")
+
     print("host_os                  : %s" % coreclr_setup_args.host_os)
     print("arch                     : %s" % coreclr_setup_args.arch)
     print("build_type               : %s" % coreclr_setup_args.build_type)
@@ -1023,6 +1033,7 @@ def setup_args(args):
     coreclr_setup_args.coreclr_tests_dir = os.path.join(coreclr_setup_args.coreclr_dir, "tests")
     coreclr_setup_args.coreclr_tests_src_dir = os.path.join(coreclr_setup_args.runtime_repo_location, "src", "tests")
     coreclr_setup_args.runincontext_script_path = os.path.join(coreclr_setup_args.coreclr_tests_src_dir, "Common", "scripts", "runincontext%s" % (".cmd" if coreclr_setup_args.host_os == "windows" else ".sh"))
+    coreclr_setup_args.tieringtest_script_path = os.path.join(coreclr_setup_args.coreclr_tests_src_dir, "Common", "scripts", "tieringtest%s" % (".cmd" if coreclr_setup_args.host_os == "windows" else ".sh"))
     coreclr_setup_args.logs_dir = os.path.join(coreclr_setup_args.artifacts_location, "log")
 
     return coreclr_setup_args

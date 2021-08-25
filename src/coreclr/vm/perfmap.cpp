@@ -15,11 +15,7 @@
 // them as 32-bit numbers for consistent output when cross-targeting and to
 // make the output more compact.
 
-#ifdef CROSSGEN_COMPILE
-#define FMT_CODE_ADDR "%08x"
-#else
 #define FMT_CODE_ADDR "%p"
-#endif
 
 Volatile<bool> PerfMap::s_enabled = false;
 PerfMap * PerfMap::s_Current = nullptr;
@@ -53,7 +49,6 @@ void PerfMap::Initialize()
 
         s_enabled = true;
 
-#ifndef CROSSGEN_COMPILE
         char jitdumpPath[4096];
 
         // CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_PerfMapJitDumpPath) returns a LPWSTR
@@ -67,7 +62,6 @@ void PerfMap::Initialize()
         }
 
         PAL_PerfJitDump_Start(jitdumpPath);
-#endif // CROSSGEN_COMPILE
     }
 }
 
@@ -269,12 +263,10 @@ void PerfMap::LogJITCompiledMethod(MethodDesc * pMethod, PCODE pCode, size_t cod
     }
 
     const char *optimizationTier = nullptr;
-#ifndef CROSSGEN_COMPILE
     if (s_ShowOptimizationTiers)
     {
         optimizationTier = PrepareCodeConfig::GetJitOptimizationTierStr(pConfig, pMethod);
     }
-#endif // CROSSGEN_COMPILE
 
     s_Current->LogMethod(pMethod, pCode, codeSize, optimizationTier);
 }
@@ -424,21 +416,6 @@ void NativeImagePerfMap::LogDataForModule(Module * pModule)
 
     PEImageLayout * pLoadedLayout = pModule->GetFile()->GetLoaded();
     _ASSERTE(pLoadedLayout != nullptr);
-
-#ifdef FEATURE_PREJIT
-    if (!pLoadedLayout->HasReadyToRunHeader())
-    {
-        MethodIterator mi((PTR_Module)pModule);
-        while (mi.Next())
-        {
-            MethodDesc *hotDesc = mi.GetMethodDesc();
-            hotDesc->CheckRestore();
-
-            LogPreCompiledMethod(hotDesc, mi.GetMethodStartAddress(), pLoadedLayout, nullptr);
-        }
-        return;
-    }
-#endif
 
     ReadyToRunInfo::MethodIterator mi(pModule->GetReadyToRunInfo());
     while (mi.Next())

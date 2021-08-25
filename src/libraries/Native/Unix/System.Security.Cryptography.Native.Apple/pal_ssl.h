@@ -36,6 +36,13 @@ Returns NULL if an invalid boolean is given for isServer, an SSLContextRef other
 PALEXPORT SSLContextRef AppleCryptoNative_SslCreateContext(int32_t isServer);
 
 /*
+Data that is used to uniquely identify an SSL session.
+
+Returns the result of SSLSetConnection
+*/
+PALEXPORT int32_t AppleCryptoNative_SslSetConnection(SSLContextRef sslContext, SSLConnectionRef sslConnection);
+
+/*
 Indicate that an SSL Context (in server mode) should allow a client to present a mutual auth cert.
 
 Returns The result of SSLSetClientSideAuthenticate

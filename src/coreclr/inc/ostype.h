@@ -51,7 +51,7 @@ void InitWinRTStatus();
 inline BOOL RunningOnWin8()
 {
     WRAPPER_NO_CONTRACT;
-#if (!defined(HOST_X86) && !defined(HOST_AMD64)) || defined(CROSSGEN_COMPILE)
+#if (!defined(HOST_X86) && !defined(HOST_AMD64))
     return TRUE;
 #else
     if (gRunningOnStatus == RUNNING_ON_STATUS_UNINITED)
@@ -78,9 +78,6 @@ inline BOOL WinRTSupported()
     STATIC_CONTRACT_GC_NOTRIGGER;
     STATIC_CONTRACT_CANNOT_TAKE_LOCK;
 
-#ifdef CROSSGEN_COMPILE
-    return TRUE;
-#endif
 
     if (gWinRTStatus == WINRT_STATUS_UNINITED)
     {

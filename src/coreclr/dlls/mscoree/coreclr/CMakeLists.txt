@@ -98,7 +98,6 @@ set(CORECLR_LIBRARIES
     mdcompiler_wks
     mdruntime_wks
     mdruntimerw_wks
-    mdhotdata_full
     bcltype
     ceefgen
     comfloat_wks

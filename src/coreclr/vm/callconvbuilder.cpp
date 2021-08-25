@@ -384,7 +384,6 @@ HRESULT CallConv::TryGetUnmanagedCallingConventionFromModOpt(
     return  S_OK;
 }
 
-#ifndef CROSSGEN_COMPILE
 namespace
 {
     bool TryGetCallingConventionFromTypeArray(_In_ CaValue* arrayOfTypes, _Inout_ CallConvBuilder* builder)
@@ -556,4 +555,3 @@ bool CallConv::TryGetCallingConventionFromUnmanagedCallersOnly(_In_ MethodDesc* 
     return true;
 }
 
-#endif // CROSSGEN_COMPILE

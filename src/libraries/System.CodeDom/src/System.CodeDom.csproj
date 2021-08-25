@@ -3,6 +3,7 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <DefineConstants>$(DefineConstants);CODEDOM</DefineConstants>
     <TargetFrameworks>$(NetCoreAppCurrent);netstandard2.0;net461</TargetFrameworks>
+    <Nullable>annotations</Nullable>
     <SetIsTrimmable>false</SetIsTrimmable>
     <IsPackable>true</IsPackable>
     <PackageDescription>Provides types that can be used to model the structure of a source code document and to output source code for that model in a supported language.

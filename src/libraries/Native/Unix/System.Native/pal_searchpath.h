@@ -7,3 +7,5 @@
 #include "pal_types.h"
 
 PALEXPORT const char* SystemNative_SearchPath(int32_t folderId);
+
+PALEXPORT const char* SystemNative_SearchPath_TempDirectory(void);
