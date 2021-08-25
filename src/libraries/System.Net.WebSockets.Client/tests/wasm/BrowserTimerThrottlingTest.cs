@@ -26,7 +26,9 @@ namespace System.Net.WebSockets.Client.Wasm.Tests
     {
         public static bool IsBrowser => RuntimeInformation.IsOSPlatform(OSPlatform.Create("BROWSER"));
         const double moreThanLightThrottlingThreshold = 1900;
-        const double detectLightThrottlingThreshold = 950;
+        const double detectLightThrottlingThreshold = 900;
+        const double webSocketMessageFrequency = 45000;
+        const double fastTimeoutFrequency = 100;
 
         public BrowserTimerThrottlingTest(ITestOutputHelper output) : base(output) { }
 
@@ -40,16 +42,14 @@ namespace System.Net.WebSockets.Client.Wasm.Tests
             DateTime start = DateTime.Now;
             CancellationTokenSource cts = new CancellationTokenSource();
 
-            using (var timer = new Timers.Timer(100))
+            using (var timer = new Timers.Timer(fastTimeoutFrequency))
             {
                 DateTime last = DateTime.Now;
-                DateTime lastSent = DateTime.MinValue;
                 timer.AutoReset = true;
                 timer.Enabled = true;
                 timer.Elapsed += (object? source, Timers.ElapsedEventArgs? e) =>
                 {
                     var ms = (e.SignalTime - last).TotalMilliseconds;
-                    var msSent = (e.SignalTime - lastSent).TotalMilliseconds;
                     if (maxDelayMs < ms)
                     {
                         maxDelayMs = ms;
@@ -69,10 +69,6 @@ namespace System.Net.WebSockets.Client.Wasm.Tests
 #if DEBUG
                         Console.WriteLine("Slow tick NO-WS " + ms);
 #endif
-                    }
-                    if (msSent > 45000)
-                    {
-                        lastSent = DateTime.Now;
                     }
                     last = e.SignalTime;
                 };
@@ -97,7 +93,7 @@ namespace System.Net.WebSockets.Client.Wasm.Tests
             using (ClientWebSocket cws = await WebSocketHelper.GetConnectedWebSocket(Test.Common.Configuration.WebSockets.RemoteEchoServer, TimeOutMilliseconds, _output))
             {
                 await SendAndReceive(cws, "test");
-                using (var timer = new Timers.Timer(100))
+                using (var timer = new Timers.Timer(fastTimeoutFrequency))
                 {
                     DateTime last = DateTime.Now;
                     DateTime lastSent = DateTime.MinValue;
@@ -114,7 +110,9 @@ namespace System.Net.WebSockets.Client.Wasm.Tests
                         if (ms > moreThanLightThrottlingThreshold)
                         {
                             // fail fast, we are throttled heavily
+#if DEBUG
                             Console.WriteLine("Too slow tick " + ms);
+#endif
                             cts.Cancel();
                         }
                         else if (ms > detectLightThrottlingThreshold)
@@ -125,7 +123,7 @@ namespace System.Net.WebSockets.Client.Wasm.Tests
                             Console.WriteLine("Slow tick WS " + ms);
 #endif
                         }
-                        if (msSent > 45000)
+                        if (msSent > webSocketMessageFrequency)
                         {
                             await SendAndReceive(cws, "test");
                             lastSent = DateTime.Now;
@@ -162,11 +160,14 @@ namespace System.Net.WebSockets.Client.Wasm.Tests
             }
             catch (Exception ex)
             {
+#if DEBUG
                 Console.WriteLine("SendAndReceive fail:" + ex);
+#endif
             }
         }
     }
 
+    // this is just for convinience, as the second test has side-effect to running page, the first test would take longer if they are in another order
     public class AlphabeticalOrderer : ITestCaseOrderer
     {
         public IEnumerable<TTestCase> OrderTestCases<TTestCase>(IEnumerable<TTestCase> testCases)

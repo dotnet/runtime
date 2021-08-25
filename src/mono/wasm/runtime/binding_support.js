@@ -160,7 +160,16 @@ var BindingSupportLib = {
 				return Promise.resolve(js_obj) === js_obj ||
 						((typeof js_obj === "object" || typeof js_obj === "function") && typeof js_obj.then === "function")
 			};
-			this.isChromium = globalThis.navigator && globalThis.navigator.userAgent && globalThis.navigator.userAgent.includes("Chrome");
+			this.isChromium = false;
+			if (globalThis.navigator) {
+				var nav = globalThis.navigator;
+				if (nav.userAgentData && nav.userAgentData.brands) {
+					this.isChromium = nav.userAgentData.brands.some((i) => i.brand == 'Chromium');
+				}
+				else if (globalThis.navigator.userAgent) {
+					this.isChromium = nav.userAgent.includes("Chrome");
+				}
+			}
 
 			this._empty_string = "";
 			this._empty_string_ptr = 0;
@@ -373,7 +382,7 @@ var BindingSupportLib = {
 			return this._wrap_delegate_gc_handle_as_function(gc_handle);
 		},
 
-		_wrap_delegate_gc_handle_as_function: function (gc_handle, call_after_listener) {
+		_wrap_delegate_gc_handle_as_function: function (gc_handle, after_listener_callback) {
 			this.bindings_lazy_init ();
 
 			// see if we have js owned instance for this gc_handle already
@@ -386,8 +395,8 @@ var BindingSupportLib = {
 					const delegateRoot = MONO.mono_wasm_new_root (BINDING.get_js_owned_object_by_gc_handle(gc_handle));
 					try {
 						const res = BINDING.call_method(result[BINDING.delegate_invoke_symbol], delegateRoot.value, result[BINDING.delegate_invoke_signature_symbol], arguments);
-						if (call_after_listener) { 
-							call_after_listener(); 
+						if (after_listener_callback) { 
+							after_listener_callback(); 
 						}
 						return res;
 					} finally {
