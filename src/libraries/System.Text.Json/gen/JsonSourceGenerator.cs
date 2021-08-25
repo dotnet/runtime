@@ -28,8 +28,8 @@ namespace System.Text.Json.SourceGeneration
         {
 
             var classDeclarations = context.SyntaxProvider
-                .CreateSyntaxProvider((s, _) => Parser.IsSyntaxTargetForGeneration(s), (s, _) => Parser.IsSemanticTargetForGeneration(s))
-                .Where(c => c is object);
+                .CreateSyntaxProvider(static (s, _) => Parser.IsSyntaxTargetForGeneration(s), static (s, _) => Parser.GetSemanticTargetForGeneration(s))
+                .Where(static c => c is not null);
 
             var compilationAndClasses = context.CompilationProvider.Combine(classDeclarations.Collect());
 
@@ -59,7 +59,6 @@ namespace System.Text.Json.SourceGeneration
                 emitter.Emit();
             }
         }
-
 
         /// <summary>
         /// Helper for unit tests.

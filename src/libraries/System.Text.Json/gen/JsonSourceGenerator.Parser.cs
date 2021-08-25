@@ -405,13 +405,13 @@ namespace System.Text.Json.SourceGeneration
 
             internal static bool IsSyntaxTargetForGeneration(SyntaxNode node) => node is ClassDeclarationSyntax { AttributeLists: { Count: > 0 }, BaseList: { Types : {Count : > 0 } } };
 
-            internal static ClassDeclarationSyntax? IsSemanticTargetForGeneration(GeneratorSyntaxContext context)
+            internal static ClassDeclarationSyntax? GetSemanticTargetForGeneration(GeneratorSyntaxContext context)
             {
                 var classDeclarationSyntax = (ClassDeclarationSyntax)context.Node;
 
                 foreach (AttributeListSyntax attributeListSyntax in classDeclarationSyntax.AttributeLists)
                 {
-                    foreach (var attributeSyntax in attributeListSyntax.Attributes)
+                    foreach (AttributeSyntax attributeSyntax in attributeListSyntax.Attributes)
                     {
                         IMethodSymbol attributeSymbol = context.SemanticModel.GetSymbolInfo(attributeSyntax).Symbol as IMethodSymbol;
                         if (attributeSymbol == null)
@@ -420,10 +420,9 @@ namespace System.Text.Json.SourceGeneration
                         }
 
                         INamedTypeSymbol attributeContainingTypeSymbol = attributeSymbol.ContainingType;
-                        var fullName = attributeContainingTypeSymbol.ToDisplayString();
+                        string fullName = attributeContainingTypeSymbol.ToDisplayString();
 
-                        if (fullName == "System.Text.Json.Serialization.JsonSerializableAttribute"
-                            || fullName == "System.Text.Json.Serialization.JsonSourceGenerationOptionsAttribute")
+                        if (fullName == "System.Text.Json.Serialization.JsonSerializableAttribute")
                         {
                             return classDeclarationSyntax;
                         }
