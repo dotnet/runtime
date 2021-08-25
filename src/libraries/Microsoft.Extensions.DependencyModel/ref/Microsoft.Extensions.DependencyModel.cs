@@ -13,9 +13,9 @@ namespace Microsoft.DotNet.PlatformAbstractions
         private int _dummyPrimitive;
         public int CombinedHash { get { throw null; } }
         public void Add(int i) { }
-        public void Add(object o) { }
-        public void Add(string s) { }
-        public void Add<TValue>(TValue value, System.Collections.Generic.IEqualityComparer<TValue> comparer) { }
+        public void Add(object? o) { }
+        public void Add(string? s) { }
+        public void Add<TValue>(TValue? value, System.Collections.Generic.IEqualityComparer<TValue> comparer) { }
         public static Microsoft.DotNet.PlatformAbstractions.HashCodeCombiner Start() { throw null; }
     }
 }
